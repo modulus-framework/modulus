@@ -1,0 +1,79 @@
+## .NET / Visual Studio
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Aa]rm/
+[Aa]rm64/
+[Bb]uild/
+bld/
+[Bb]in/
+[Oo]bj/
+[Oo]ut/
+*.sln.docstates
+*.user
+*.userosscache
+*.suo
+*.userprefs
+*.cache
+*.tlog
+
+## Visual Studio & IDE
+.vs/
+.vscode/
+.idea/
+*.sln.DotSettings.user
+
+## NuGet
+*.nupkg
+*.snupkg
+**/[Pp]ackages/*
+!**/[Pp]ackages/build/
+*.nuget.props
+*.nuget.targets
+project.lock.json
+artifacts/
+
+## Test & Coverage
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+[Cc]overage*/
+*.coverage
+*.coveragexml
+coverage*.xml
+coverage*.info
+*.lcov
+
+## Configuration & Secrets
+**/secrets.json
+**/appsettings.*.json
+**/appsettings.Development.json
+*.pfx
+*.p12
+*.key
+*.pem
+*.cer
+*.crt
+.env
+.env.*
+docker-compose.*.yml
+
+## Docker
+docker/volumes/
+
+## OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+## Logs
+*.log
+logs/
+
+## Misc
+*.swp
+*.bak
+*.tmp
+.config/

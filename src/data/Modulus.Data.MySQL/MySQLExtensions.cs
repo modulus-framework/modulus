@@ -1,0 +1,25 @@
+namespace Modulus.Data.MySQL;
+
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Modulus.EntityFrameworkCore;
+using Modulus.EntityFrameworkCore.Extensions;
+using MySql.EntityFrameworkCore.Extensions;
+using MySql.EntityFrameworkCore.Infrastructure;
+
+public static class MySQLExtensions
+{
+    public static IServiceCollection AddMySQLDatabase<TContext>(
+        this IServiceCollection services,
+        string connectionString,
+        Action<MySQLDbContextOptionsBuilder>? configure = null)
+        where TContext : ModuleDbContext
+    {
+        return services.AddModuleDatabase<TContext>(opts =>
+            opts.UseMySQL(connectionString, my =>
+            {
+                my.EnableRetryOnFailure(3);
+                configure?.Invoke(my);
+            }));
+    }
+}

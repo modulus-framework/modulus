@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Modulus.Inbox.Abstractions/Modulus.Inbox.Abstractions.csproj" />
+    <ProjectReference Include="../../data/Modulus.Data.MongoDB/Modulus.Data.MongoDB.csproj" />
+  </ItemGroup>
+
+</Project>
