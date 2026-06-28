@@ -1,0 +1,8 @@
+using Modulus.Mediator.Abstractions;
+
+namespace {{ module_namespace }}.Application;
+
+public sealed record Update{{ entity_name }}Command(Guid Id, string Name)
+    : ICommand<Update{{ entity_name }}Result>;
+
+public sealed record Update{{ entity_name }}Result(Guid Id);

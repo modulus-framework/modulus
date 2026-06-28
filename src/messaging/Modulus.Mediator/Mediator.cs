@@ -1,5 +1,6 @@
 namespace Modulus.Mediator;
 
+using System.Reflection;
 using Modulus.Mediator.Abstractions;
 
 internal sealed class Mediator(IServiceProvider sp) : IMediator
@@ -20,28 +21,42 @@ internal sealed class Mediator(IServiceProvider sp) : IMediator
         // Build innermost handler delegate
         RequestHandlerDelegate<TResponse> handler = () =>
         {
-            // Try ICommandHandler first, then IQueryHandler
-            var handlerType =
-                typeof(ICommandHandler<,>).MakeGenericType(requestType, typeof(TResponse))
-                is var cmdType && sp.GetService(cmdType) is { } cmdHandler
-                    ? cmdType
-                    : typeof(IQueryHandler<,>).MakeGenericType(requestType, typeof(TResponse));
+            // Resolve the handler by the marker interface the request actually
+            // implements. Building ICommandHandler<,> for an IQuery used to
+            // throw an ArgumentException because TCommand is constrained to
+            // ICommand<TResponse> — the previous "try command then query"
+            // MakeGenericType evaluated eagerly and never reached the fallback.
+            Type handlerType;
+            if (request is ICommand<TResponse>)
+                handlerType = typeof(ICommandHandler<,>).MakeGenericType(requestType, typeof(TResponse));
+            else if (request is IQuery<TResponse>)
+                handlerType = typeof(IQueryHandler<,>).MakeGenericType(requestType, typeof(TResponse));
+            else
+                throw new InvalidOperationException(
+                    $"Request type {requestType.Name} implements neither " +
+                    $"ICommand<{typeof(TResponse).Name}> nor IQuery<{typeof(TResponse).Name}>.");
 
             dynamic h = sp.GetRequiredService(handlerType);
             return h.HandleAsync((dynamic)request, ct);
         };
 
-        // Wrap with behaviors (reverse order = outermost first at execution)
-        var behaviors = sp
-            .GetServices<IPipelineBehavior<object, TResponse>>()
+        // Resolve behaviors for the ACTUAL request type (not 'object')
+        var behaviorInterface = typeof(IPipelineBehavior<,>)
+            .MakeGenericType(requestType, typeof(TResponse));
+
+        var behaviors = ((IEnumerable<object>?)
+            sp.GetService(
+                typeof(IEnumerable<>).MakeGenericType(behaviorInterface))
+            ?? [])
             .Reverse()
             .ToList();
 
+        // Wrap with behaviors (reverse order = outermost first at execution)
         foreach (var behavior in behaviors)
         {
             var next = handler;
-            var b    = behavior;
-            handler  = () => b.HandleAsync(request, next, ct);
+            dynamic b = behavior;
+            handler = () => b.HandleAsync((dynamic)request, next, ct);
         }
 
         return await handler();

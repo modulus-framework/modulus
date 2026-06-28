@@ -31,10 +31,10 @@ internal sealed class RabbitMqEventConsumer : BackgroundService
         IServiceScopeFactory scopeFactory,
         IIntegrationEventRegistry registry)
     {
-        _opts         = options.Value;
-        _logger       = logger;
+        _opts = options.Value;
+        _logger = logger;
         _scopeFactory = scopeFactory;
-        _registry     = registry;
+        _registry = registry;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -63,17 +63,22 @@ internal sealed class RabbitMqEventConsumer : BackgroundService
 
     private async Task ConnectAndConsumeAsync(CancellationToken ct)
     {
+        // Dispose any connection/channel from a previous (crashed) iteration
+        // before creating new ones — otherwise each reconnect leaks a TCP
+        // connection and channel.
+        await CleanupAsync();
+
         var factory = new ConnectionFactory
         {
-            HostName    = _opts.HostName,
-            Port        = _opts.Port,
-            UserName    = _opts.UserName,
-            Password    = _opts.Password,
+            HostName = _opts.HostName,
+            Port = _opts.Port,
+            UserName = _opts.UserName,
+            Password = _opts.Password,
             VirtualHost = _opts.VirtualHost,
         };
 
         _connection = await factory.CreateConnectionAsync(ct);
-        _channel    = await _connection.CreateChannelAsync(cancellationToken: ct);
+        _channel = await _connection.CreateChannelAsync(cancellationToken: ct);
 
         await _channel.ExchangeDeclareAsync(
             _opts.ExchangeName, _opts.ExchangeType,
@@ -143,19 +148,29 @@ internal sealed class RabbitMqEventConsumer : BackgroundService
         }
         catch (Exception ex)
         {
+            // Do NOT requeue: an infinite nack/requeue hot-loop starves the
+            // queue and burns CPU. With requeue:false the message is dropped
+            // or dead-lettered (if a DLX is configured). Consumer-side inbox
+            // dedup handles any redelivery from a DLX retry cycle.
             _logger.LogError(ex,
                 "Error processing RabbitMQ message; nacking (requeue={Requeue})",
-                true);
+                false);
             await channel.BasicNackAsync(
-                ea.DeliveryTag, multiple: false, requeue: true);
+                ea.DeliveryTag, multiple: false, requeue: false);
         }
     }
 
     private async Task CleanupAsync()
     {
         if (_channel is not null)
+        {
             await _channel.DisposeAsync();
+            _channel = null;
+        }
         if (_connection is not null)
+        {
             await _connection.DisposeAsync();
+            _connection = null;
+        }
     }
 }

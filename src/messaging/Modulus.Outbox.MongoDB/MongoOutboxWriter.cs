@@ -11,42 +11,55 @@ using Modulus.Outbox.Abstractions;
 /// </summary>
 public sealed class MongoOutboxMessage
 {
-    public Guid      Id            { get; init; } = Guid.NewGuid();
-    public string    MessageType   { get; init; } = default!;
-    public string    Payload       { get; init; } = default!;
-    public Guid      TenantId      { get; init; }
-    public string    ModuleName    { get; init; } = default!;
-    public DateTime  CreatedAt     { get; init; } = DateTime.UtcNow;
-    public DateTime? ProcessedAt   { get; set;  }
-    public int       RetryCount    { get; set;  }
-    public string?   Error         { get; set;  }
-    public string?   CorrelationId { get; init; }
-    public string?   CausationId   { get; init; }
+    public Guid Id { get; init; } = Guid.NewGuid();
+    public string MessageType { get; init; } = default!;
+    public string Payload { get; init; } = default!;
+    public Guid TenantId { get; init; }
+    public string ModuleName { get; init; } = default!;
+    public DateTime CreatedAt { get; init; } = DateTime.UtcNow;
+    public DateTime? ProcessedAt { get; set; }
+    public string? LockedBy { get; set; }
+    public DateTime? LockedUntil { get; set; }
+    public DateTime? NextAttemptAt { get; set; }
+    public int RetryCount { get; set; }
+    public string? Error { get; set; }
+    public string? CorrelationId { get; init; }
+    public string? CausationId { get; init; }
 }
 
 /// <summary>
-/// IOutboxWriter implementation backed by MongoDB.
-/// Does NOT support transactions — use only with MongoDB's eventual consistency.
+/// <see cref="IOutboxWriter"/> / <see cref="IIntegrationEventOutbox"/>
+/// implementation backed by MongoDB. Does NOT support transactions — use
+/// only with MongoDB's eventual consistency; the <see cref="MongoOutboxProcessor"/>
+/// relays rows to the event bus at-least-once.
 /// </summary>
 internal sealed class MongoOutboxWriter(
     IMongoCollection<MongoOutboxMessage> collection,
     ICurrentTenant tenant)
-    : IOutboxWriter
+    : IOutboxWriter, IIntegrationEventOutbox
 {
+    // ── IIntegrationEventOutbox (non-generic, synchronous) ────────
+    public void Enqueue(IIntegrationEvent @event) =>
+        collection.InsertOne(BuildDoc(@event));
+
+    // ── IOutboxWriter (generic, async) ────────────────────────────
     public Task WriteAsync<TEvent>(
         TEvent @event,
         CancellationToken ct = default)
         where TEvent : IIntegrationEvent
-    {
-        var doc = new MongoOutboxMessage
-        {
-            MessageType   = @event.GetType().AssemblyQualifiedName!,
-            Payload       = JsonSerializer.Serialize(@event, @event.GetType()),
-            TenantId      = tenant.TenantId ?? Guid.Empty,
-            ModuleName    = typeof(TEvent).Module.Name.Replace(".dll", ""),
-            CausationId   = @event.EventId.ToString(),
-        };
+        => collection.InsertOneAsync(BuildDoc(@event), cancellationToken: ct);
 
-        return collection.InsertOneAsync(doc, cancellationToken: ct);
+    // ── Shared document-creation logic ────────────────────────────
+    private MongoOutboxMessage BuildDoc(IIntegrationEvent @event)
+    {
+        var type = @event.GetType();
+        return new MongoOutboxMessage
+        {
+            MessageType = type.AssemblyQualifiedName!,
+            Payload = JsonSerializer.Serialize(@event, type),
+            TenantId = tenant.TenantId ?? Guid.Empty,
+            ModuleName = type.Module.Name.Replace(".dll", ""),
+            CausationId = @event.EventId.ToString(),
+        };
     }
 }

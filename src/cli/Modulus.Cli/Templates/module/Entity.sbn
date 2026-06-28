@@ -1,0 +1,11 @@
+using Modulus.Core.Abstractions.Domain;
+
+namespace {{ module_namespace }}.Domain;
+
+/// <summary>
+/// Sample aggregate root. Replace with your domain entity.
+/// </summary>
+public sealed class {{ entity_name }} : AggregateRoot<Guid>
+{
+    public string Name { get; set; } = string.Empty;
+}

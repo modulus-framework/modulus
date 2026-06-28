@@ -1,20 +1,74 @@
 <Project>
+
+  <!-- ────────────────────────────────────────────────────────────────
+       Modulus Framework — Global Build Properties
+       Applied to every project in the repository.
+       ──────────────────────────────────────────────────────────────── -->
+
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <LangVersion>latest</LangVersion>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <NoWarn>$(NoWarn);CS1591;NU1510</NoWarn>
     <RootNamespace>$(MSBuildProjectName)</RootNamespace>
     <AssemblyName>$(MSBuildProjectName)</AssemblyName>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)'=='Release'">
+
+  <!-- Release-only optimisations -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
     <Optimize>true</Optimize>
     <DebugType>portable</DebugType>
   </PropertyGroup>
+
+  <!-- ──────────────────────────────
+       Package Metadata (applies to every NuGet package produced)
+       ────────────────────────────── -->
+  <PropertyGroup>
+    <Authors>Modulus Framework Contributors</Authors>
+    <Company>Modulus Framework</Company>
+    <Product>Modulus</Product>
+    <Copyright>Copyright (c) 2025 Modulus Framework Contributors. All rights reserved.</Copyright>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/modulus-framework/modulus</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/modulus-framework/modulus.git</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>modulus;framework;ddd;modular-monolith;cqrs;event-driven;dotnet;net10</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <NeutralLanguage>en</NeutralLanguage>
+  </PropertyGroup>
+
+  <!-- ──────────────────────────────
+       Versioning — SemVer
+       Override with -p:VersionPrefix=x.y.z or set on CI
+       ────────────────────────────── -->
+  <PropertyGroup>
+    <VersionPrefix>1.0.0</VersionPrefix>
+    <Version Condition="'$(Version)' == ''">$(VersionPrefix)</Version>
+    <PackageVersion Condition="'$(PackageVersion)' == ''">$(Version)</PackageVersion>
+    <FileVersion Condition="'$(FileVersion)' == ''">$(VersionPrefix).0</FileVersion>
+    <AssemblyVersion Condition="'$(AssemblyVersion)' == ''">$(VersionPrefix).0</AssemblyVersion>
+  </PropertyGroup>
+
+  <!-- ──────────────────────────────
+       Deterministic builds & Source Link
+       (enables reproducible builds and source debugging from NuGet)
+       ────────────────────────────── -->
+  <PropertyGroup>
+    <Deterministic>true</Deterministic>
+    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  </PropertyGroup>
+
+  <!-- ──────────────────────────────
+       Global package references (every project)
+       ────────────────────────────── -->
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" />
@@ -22,6 +76,10 @@
     <PackageReference Include="Microsoft.Extensions.Options" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
   </ItemGroup>
+
+  <!-- ──────────────────────────────
+       Global usings (every project)
+       ────────────────────────────── -->
   <ItemGroup>
     <Using Include="Microsoft.Extensions.Configuration" />
     <Using Include="Microsoft.Extensions.DependencyInjection" />
@@ -29,4 +87,5 @@
     <Using Include="Microsoft.Extensions.Logging" />
     <Using Include="Microsoft.Extensions.Options" />
   </ItemGroup>
+
 </Project>

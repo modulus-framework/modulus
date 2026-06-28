@@ -13,24 +13,24 @@ using Modulus.Data.Abstractions;
 /// </summary>
 public abstract class MongoRepository<T, TDoc>(
     IMongoCollection<TDoc> collection,
-    ICurrentTenant         tenant)
+    ICurrentTenant tenant)
     : IRepository<T>
-    where T    : AggregateRoot
+    where T : AggregateRoot
     where TDoc : class, IHasTenantId
 {
     protected readonly IMongoCollection<TDoc> Collection = collection;
-    protected readonly ICurrentTenant         Tenant     = tenant;
+    protected readonly ICurrentTenant Tenant = tenant;
 
     protected FilterDefinition<TDoc> TenantFilter
         => MongoTenantFilter.For<TDoc>(Tenant);
 
     // Subclass implements these two mapping methods
-    protected abstract T    ToDomain(TDoc doc);
+    protected abstract T ToDomain(TDoc doc);
     protected abstract TDoc ToDocument(T entity);
 
     public async Task<T?> GetByIdAsync(object id, CancellationToken ct)
     {
-        var guid   = (Guid)id;
+        var guid = (Guid)id;
         var filter = MongoTenantFilter.And<TDoc>(Tenant,
             Builders<TDoc>.Filter.Eq("_id", guid));
         var doc = await Collection.Find(filter).FirstOrDefaultAsync(ct);
@@ -46,11 +46,11 @@ public abstract class MongoRepository<T, TDoc>(
             .Find(TenantFilter)
             .ToListAsync(ct);
         IEnumerable<T> domain = docs.Select(ToDomain);
-        if (spec.Filter     != null) domain = domain.Where(spec.Filter.Compile());
-        if (spec.OrderBy    != null) domain = domain.OrderBy(spec.OrderBy.Compile());
-        if (spec.OrderByDesc!= null) domain = domain.OrderByDescending(spec.OrderByDesc.Compile());
-        if (spec.Skip       != null) domain = domain.Skip(spec.Skip.Value);
-        if (spec.Take       != null) domain = domain.Take(spec.Take.Value);
+        if (spec.Filter != null) domain = domain.Where(spec.Filter.Compile());
+        if (spec.OrderBy != null) domain = domain.OrderBy(spec.OrderBy.Compile());
+        if (spec.OrderByDesc != null) domain = domain.OrderByDescending(spec.OrderByDesc.Compile());
+        if (spec.Skip != null) domain = domain.Skip(spec.Skip.Value);
+        if (spec.Take != null) domain = domain.Take(spec.Take.Value);
         return domain.ToList();
     }
 

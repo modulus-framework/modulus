@@ -1,0 +1,27 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Restore
+        run: dotnet restore modulus.slnx
+      - name: Build
+        run: dotnet build modulus.slnx --no-restore --configuration Release
+      - name: Pack
+        run: dotnet pack modulus.slnx --no-build --configuration Release --output artifacts/packages -p:Version=${GITHUB_REF_NAME#v}
+      - name: Publish to NuGet
+        run: |
+          for pkg in artifacts/packages/*.nupkg; do
+            dotnet nuget push "$pkg" --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+          done

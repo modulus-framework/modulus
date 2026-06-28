@@ -11,14 +11,14 @@ using Microsoft.Extensions.Options;
 public abstract class ModuleMongoContext
 {
     protected readonly IMongoDatabase Database;
-    protected readonly string         Prefix;
+    protected readonly string Prefix;
 
     protected ModuleMongoContext(
-        IMongoDatabase           database,
-        IOptions<MongoOptions>   opts)
+        IMongoDatabase database,
+        IOptions<MongoOptions> opts)
     {
         Database = database;
-        Prefix   = opts.Value.CollectionPrefix;
+        Prefix = opts.Value.CollectionPrefix;
     }
 
     /// <summary>

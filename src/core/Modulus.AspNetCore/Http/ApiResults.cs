@@ -31,17 +31,17 @@ public static class ApiResults
         var first = errors[0];
         return Results.Problem(
             statusCode: ToStatusCode(first.Type),
-            title:      first.Code,
-            detail:     first.Description);
+            title: first.Code,
+            detail: first.Description);
     }
 
     private static int ToStatusCode(ErrorType type) => type switch
     {
-        ErrorType.Validation  => StatusCodes.Status400BadRequest,
-        ErrorType.Unauthorized=> StatusCodes.Status401Unauthorized,
-        ErrorType.Forbidden   => StatusCodes.Status403Forbidden,
-        ErrorType.NotFound    => StatusCodes.Status404NotFound,
-        ErrorType.Conflict    => StatusCodes.Status409Conflict,
-        _                     => StatusCodes.Status500InternalServerError,
+        ErrorType.Validation => StatusCodes.Status400BadRequest,
+        ErrorType.Unauthorized => StatusCodes.Status401Unauthorized,
+        ErrorType.Forbidden => StatusCodes.Status403Forbidden,
+        ErrorType.NotFound => StatusCodes.Status404NotFound,
+        ErrorType.Conflict => StatusCodes.Status409Conflict,
+        _ => StatusCodes.Status500InternalServerError,
     };
 }

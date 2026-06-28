@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../../../src/platform/Modulus.MultiTenancy/Modulus.MultiTenancy.csproj" />
+    <ProjectReference Include="../../../src/platform/Modulus.Platform/Modulus.Platform.csproj" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="xunit" />
     <PackageReference Include="xunit.runner.visualstudio" />

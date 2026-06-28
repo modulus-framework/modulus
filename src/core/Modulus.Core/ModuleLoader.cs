@@ -1,23 +1,24 @@
 namespace Modulus.Core;
 
+using System.Reflection;
 using Modulus.Core.Abstractions;
 using Modulus.Core.Abstractions.Exceptions;
 
 public sealed class ModuleLoader : IModuleLoader
 {
     private IReadOnlyList<ModuleDescriptor> _sorted = [];
-    private IReadOnlyList<IModule>          _modules = [];
+    private IReadOnlyList<IModule> _modules = [];
 
     // ── BuildGraph ────────────────────────────────────────────────
     public IReadOnlyList<ModuleDescriptor> BuildGraph(
         IEnumerable<IModule> modules)
     {
         _modules = modules.ToList();
-        var map     = _modules.ToDictionary(m => m.GetType());
+        var map = _modules.ToDictionary(m => m.GetType());
         var visited = new HashSet<Type>();
         var inStack = new HashSet<Type>();
-        var sorted  = new List<ModuleDescriptor>();
-        int order   = 0;
+        var sorted = new List<ModuleDescriptor>();
+        int order = 0;
 
         void Visit(IModule module)
         {
@@ -27,26 +28,49 @@ public sealed class ModuleLoader : IModuleLoader
             if (visited.Contains(t)) return;
 
             inStack.Add(t);
-            foreach (var dep in module.DependsOn)
+
+            // Read dependencies from BOTH [DependsOn] attributes and the
+            // IModule.DependsOn property — same source as ModulusBuilder, so
+            // registration and initialization ordering always agree.
+            foreach (var dep in GetCombinedDependencies(module, map))
             {
                 if (!map.TryGetValue(dep, out var depModule))
                     throw new ModuleNotFoundException(dep);
                 Visit(depModule);
             }
+
             inStack.Remove(t);
             visited.Add(t);
             sorted.Add(new ModuleDescriptor
             {
-                Name         = t.Name,
-                ModuleType   = t,
-                Dependencies = module.DependsOn,
-                InitOrder    = order++,
+                Name = t.Name,
+                ModuleType = t,
+                Dependencies = GetCombinedDependencies(module, map).ToArray(),
+                InitOrder = order++,
             });
         }
 
         foreach (var m in _modules) Visit(m);
         _sorted = sorted.AsReadOnly();
         return _sorted;
+    }
+
+    /// <summary>
+    /// Returns the union of [DependsOn] attribute dependencies and
+    /// <see cref="IModule.DependsOn"/> property dependencies.
+    /// This mirrors <see cref="ModulusBuilder.GetDeclaredDependencies"/>
+    /// so that the builder (registration) and the loader (init ordering)
+    /// always resolve the same dependency graph.
+    /// </summary>
+    private static IEnumerable<Type> GetCombinedDependencies(
+        IModule module,
+        Dictionary<Type, IModule> map)
+    {
+        var attrDeps = module.GetType()
+            .GetCustomAttributes<DependsOnAttribute>(inherit: true)
+            .SelectMany(a => a.Dependencies);
+
+        return attrDeps.Concat(module.DependsOn).Distinct();
     }
 
     /// <inheritdoc/>
@@ -66,15 +90,15 @@ public sealed class ModuleLoader : IModuleLoader
         foreach (var descriptor in _sorted)
         {
             var module = (IModule)sp.GetRequiredService(descriptor.ModuleType);
-            var sw     = System.Diagnostics.Stopwatch.StartNew();
+            var sw = System.Diagnostics.Stopwatch.StartNew();
 
             var ctx = new ModuleContext
             {
                 ServiceProvider = sp,
-                Configuration   = sp.GetRequiredService<IConfiguration>(),
+                Configuration = sp.GetRequiredService<IConfiguration>(),
                 Logger = sp.GetRequiredService<ILoggerFactory>()
                            .CreateLogger(descriptor.ModuleType),
-                Descriptor      = descriptor,
+                Descriptor = descriptor,
             };
 
             await module.InitializeAsync(ctx, ct);

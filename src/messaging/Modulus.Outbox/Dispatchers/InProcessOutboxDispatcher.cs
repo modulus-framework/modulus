@@ -10,7 +10,7 @@ internal sealed class InProcessOutboxDispatcher(IModuleBus bus)
     public async Task DispatchAsync(
         OutboxMessage message, CancellationToken ct)
     {
-        var type   = Type.GetType(message.MessageType)
+        var type = Type.GetType(message.MessageType)
             ?? throw new InvalidOperationException(
                 $"Cannot resolve type: {message.MessageType}");
 

@@ -14,7 +14,7 @@ public sealed class LoggingBehavior<TRequest, TResponse>(
         CancellationToken ct)
     {
         var name = typeof(TRequest).Name;
-        var sw   = System.Diagnostics.Stopwatch.StartNew();
+        var sw = System.Diagnostics.Stopwatch.StartNew();
         logger.LogDebug("Handling {Request}", name);
         try
         {

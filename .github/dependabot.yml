@@ -1,0 +1,25 @@
+version: 2
+updates:
+  - package-ecosystem: "nuget"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "nuget"
+    groups:
+      microsoft-extensions:
+        patterns:
+          - "Microsoft.Extensions.*"
+      entity-framework:
+        patterns:
+          - "Microsoft.EntityFrameworkCore.*"
+      testing:
+        patterns:
+          - "xunit*"
+          - "FluentAssertions"
+          - "NSubstitute"
+          - "Testcontainers*"
+          - "coverlet*"

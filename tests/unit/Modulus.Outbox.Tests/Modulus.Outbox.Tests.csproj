@@ -10,12 +10,20 @@
 
   <ItemGroup>
     <ProjectReference Include="../../../src/messaging/Modulus.Outbox/Modulus.Outbox.csproj" />
+    <ProjectReference Include="../../../src/data/Modulus.EntityFrameworkCore/Modulus.EntityFrameworkCore.csproj" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="xunit" />
     <PackageReference Include="xunit.runner.visualstudio" />
     <PackageReference Include="FluentAssertions" />
     <PackageReference Include="NSubstitute" />
     <PackageReference Include="coverlet.collector" />
+    <!-- SQLite gives us a real relational DB (ExecuteUpdate, transactions)
+         without needing Docker — the right tool for outbox locking tests. -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <PackageReference Include="Microsoft.Extensions.Logging" />
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 
 </Project>

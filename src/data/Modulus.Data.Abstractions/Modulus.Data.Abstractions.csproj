@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../../core/Modulus.Core.Abstractions/Modulus.Core.Abstractions.csproj" />
+    <ProjectReference Include="../../core/Modulus.Core/Modulus.Core.csproj" />
   </ItemGroup>
 
 </Project>

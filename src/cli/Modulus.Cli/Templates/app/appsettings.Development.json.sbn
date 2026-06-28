@@ -1,0 +1,11 @@
+{
+  "ConnectionStrings": {
+    "Default": "{{ connection_string }}"
+  },
+  "Logging": {
+    "LogLevel": {
+      "Default": "Debug",
+      "Microsoft.AspNetCore": "Information"
+    }
+  }
+}

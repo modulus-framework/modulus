@@ -1,7 +1,9 @@
 namespace Modulus.Data.MongoDB.Extensions;
 
 using global::MongoDB.Driver;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
+using Modulus.Core.Abstractions;
 
 public static class MongoServiceCollectionExtensions
 {
@@ -19,6 +21,8 @@ public static class MongoServiceCollectionExtensions
         services.AddSingleton<IMongoDatabase>(sp =>
             sp.GetRequiredService<IMongoClient>()
               .GetDatabase(opts.DatabaseName));
+
+        services.TryAddScoped<IModuleHealthCheck, MongoHealthCheck>();
 
         return services;
     }

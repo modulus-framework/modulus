@@ -1,0 +1,13 @@
+<Project>
+
+  <!-- Chain to the root Directory.Build.props. -->
+  <Import Project="$(MSBuildThisFileDirectory)..\Directory.Build.props" />
+
+  <!-- Test projects are never packed as NuGet packages. -->
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+  </PropertyGroup>
+
+</Project>

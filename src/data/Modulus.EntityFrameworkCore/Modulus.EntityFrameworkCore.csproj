@@ -7,8 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../Modulus.EntityFrameworkCore.Abstractions/Modulus.EntityFrameworkCore.Abstractions.csproj" />
+    <ProjectReference Include="../Modulus.Data.Abstractions/Modulus.Data.Abstractions.csproj" />
+    <ProjectReference Include="../../core/Modulus.Core/Modulus.Core.csproj" />
     <ProjectReference Include="../../messaging/Modulus.Events/Modulus.Events.csproj" />
+    <ProjectReference Include="../../messaging/Modulus.Outbox.Abstractions/Modulus.Outbox.Abstractions.csproj" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" />
   </ItemGroup>

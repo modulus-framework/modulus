@@ -6,18 +6,28 @@ using Modulus.Data.PostgreSQL;
 using Testcontainers.PostgreSql;
 using Xunit;
 
+public sealed class PostgreSqlFixture : IAsyncLifetime
+{
+    private readonly PostgreSqlContainer _container =
+        new PostgreSqlBuilder("postgres:16-alpine").Build();
+
+    public string ConnectionString => _container.GetConnectionString();
+
+    public Task InitializeAsync() => _container.StartAsync();
+    public Task DisposeAsync() => _container.DisposeAsync().AsTask();
+}
+
 [Trait("Category", "Integration")]
-public abstract class EFCoreIntegrationTestBase : IAsyncLifetime
+public abstract class EFCoreIntegrationTestBase
 {
     protected TestCurrentTenant Tenant { get; } = new();
 
-    private readonly PostgreSqlContainer _pg =
-        new PostgreSqlBuilder("postgres:16-alpine").Build();
+    protected string ConnectionString { get; }
 
-    protected string ConnectionString => _pg.GetConnectionString();
-
-    public Task InitializeAsync() => _pg.StartAsync();
-    public Task DisposeAsync()    => _pg.DisposeAsync().AsTask();
+    protected EFCoreIntegrationTestBase(PostgreSqlFixture fixture)
+    {
+        ConnectionString = fixture.ConnectionString;
+    }
 
     protected TestDbContext BuildContext()
     {
@@ -26,7 +36,7 @@ public abstract class EFCoreIntegrationTestBase : IAsyncLifetime
         services.AddSingleton<ICurrentUser>(new TestCurrentUser());
         services.AddSingleton<Modulus.Events.DomainEventDispatcher>();
         services.AddPostgreSQLDatabase<TestDbContext>(ConnectionString);
-        var sp  = services.BuildServiceProvider();
+        var sp = services.BuildServiceProvider();
         var ctx = sp.GetRequiredService<TestDbContext>();
         ctx.Database.EnsureCreated();
         return ctx;

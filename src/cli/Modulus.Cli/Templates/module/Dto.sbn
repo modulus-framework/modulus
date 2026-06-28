@@ -1,0 +1,7 @@
+namespace {{ module_namespace }}.Application.Dtos;
+
+public sealed class {{ entity_name }}Dto
+{
+    public Guid Id { get; init; }
+    public string Name { get; init; } = string.Empty;
+}

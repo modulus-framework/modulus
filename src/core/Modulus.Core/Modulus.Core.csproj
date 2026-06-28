@@ -7,7 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../Modulus.Core.Abstractions/Modulus.Core.Abstractions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Modulus.Core.Tests" />
   </ItemGroup>
 
 </Project>

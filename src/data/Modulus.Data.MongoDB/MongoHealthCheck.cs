@@ -13,7 +13,7 @@ public sealed class MongoHealthCheck(IMongoDatabase db) : IModuleHealthCheck
             await db.RunCommandAsync<dynamic>("{ping:1}", null, ct);
             return new("MongoDB", HealthStatus.Healthy,
                 "MongoDB reachable", sw.Elapsed,
-                new Dictionary<string,object>{["db"]=db.DatabaseNamespace.DatabaseName});
+                new Dictionary<string, object> { ["db"] = db.DatabaseNamespace.DatabaseName });
         }
         catch (Exception ex)
         {

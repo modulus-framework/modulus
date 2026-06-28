@@ -1,0 +1,21 @@
+using Modulus.Mediator.Abstractions;
+using Modulus.EntityFrameworkCore.Abstractions;
+using {{ module_namespace }}.Domain;
+
+namespace {{ module_namespace }}.Application;
+
+public sealed class Create{{ entity_name }}Handler(
+    I{{ entity_name }}Repository repo,
+    IUnitOfWork unitOfWork)
+    : ICommandHandler<Create{{ entity_name }}Command, Guid>
+{
+    public async Task<Guid> HandleAsync(
+        Create{{ entity_name }}Command command,
+        CancellationToken ct)
+    {
+        var entity = new {{ entity_name }} { Name = command.Name };
+        await repo.AddAsync(entity, ct);
+        await unitOfWork.CommitAsync(ct);
+        return entity.Id;
+    }
+}

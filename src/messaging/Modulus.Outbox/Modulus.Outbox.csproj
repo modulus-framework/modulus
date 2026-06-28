@@ -10,6 +10,11 @@
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <ProjectReference Include="../Modulus.Outbox.Abstractions/Modulus.Outbox.Abstractions.csproj" />
     <ProjectReference Include="../../data/Modulus.EntityFrameworkCore/Modulus.EntityFrameworkCore.csproj" />
+    <PackageReference Include="Polly" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Modulus.Outbox.Tests" />
   </ItemGroup>
 
 </Project>

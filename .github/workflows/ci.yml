@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Restore
+        run: dotnet restore modulus.slnx
+      - name: Build
+        run: dotnet build modulus.slnx --no-restore --configuration Release
+      - name: Verify formatting
+        run: dotnet format modulus.slnx --verify-no-changes
+      - name: Test (unit only)
+        run: dotnet test modulus.slnx --no-build --configuration Release --filter "Category=Unit" --verbosity normal
+      - name: Audit vulnerable packages
+        run: dotnet list modulus.slnx package --vulnerable
+      - name: Pack
+        run: dotnet pack modulus.slnx --no-build --configuration Release --output artifacts/packages
+      - name: Upload packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-packages
+          path: artifacts/packages/*.nupkg

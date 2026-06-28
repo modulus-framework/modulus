@@ -2,6 +2,8 @@ namespace Modulus.Data.MySQL;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Modulus.Core.Abstractions;
 using Modulus.EntityFrameworkCore;
 using Modulus.EntityFrameworkCore.Extensions;
 using MySql.EntityFrameworkCore.Extensions;
@@ -15,11 +17,17 @@ public static class MySQLExtensions
         Action<MySQLDbContextOptionsBuilder>? configure = null)
         where TContext : ModuleDbContext
     {
-        return services.AddModuleDatabase<TContext>(opts =>
+        services.AddModuleDatabase<TContext>(opts =>
             opts.UseMySQL(connectionString, my =>
             {
                 my.EnableRetryOnFailure(3);
                 configure?.Invoke(my);
             }));
+
+        services.TryAddScoped(
+            typeof(IModuleHealthCheck),
+            typeof(MySQLHealthCheck<>).MakeGenericType(typeof(TContext)));
+
+        return services;
     }
 }

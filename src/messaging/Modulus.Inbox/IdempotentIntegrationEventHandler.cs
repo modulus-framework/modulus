@@ -1,78 +1,108 @@
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Modulus.Inbox;
 
 using System.Text.Json;
-using Microsoft.EntityFrameworkCore;
 using Modulus.Events.Abstractions;
 using Modulus.Inbox.Abstractions;
 
 /// <summary>
-/// Decorator that wraps IIntegrationEventHandler{T} with inbox deduplication.
-/// Registered automatically by AddInbox{TContext}() for all handlers.
+/// Decorator that wraps <see cref="IIntegrationEventHandler{TEvent}"/> with
+/// inbox deduplication. Registered automatically by <c>AddInbox</c> /
+/// <c>AddMongoInbox</c> for all handlers.
+/// <para>
+/// Dedup is anchored on <see cref="IIntegrationEvent.EventId"/>, which becomes
+/// the <see cref="InboxMessage"/> primary key. This gives a database-level
+/// uniqueness guarantee: two concurrent deliveries of the same event race on
+/// the claim, so only one wins and executes the inner handler.
+/// </para>
+/// <para>
+/// Behaviour by state of the existing inbox row for an EventId:
+/// <list type="bullet">
+///   <item><c>Processed</c> — duplicate; skipped (inner NOT executed).</item>
+///   <item><c>Processing</c> — in-flight elsewhere; deferred (throws
+///       <see cref="InboxDeferralException"/>) so the broker redelivers later,
+///       rather than executing the side effect twice.</item>
+///   <item><c>RetryCount &gt;= MaxRetries</c> — poison message; dead-lettered
+///       (inner NOT executed) to stop a perpetually-failing event hot-looping.</item>
+///   <item>otherwise — the row is claimed (inserted or transitioned to
+///       <c>Processing</c>), the inner handler runs, and the final state is
+///       persisted.</item>
+/// </list>
+/// </para>
 /// </summary>
 public sealed class IdempotentIntegrationEventHandler<TEvent>(
-    IIntegrationEventHandler<TEvent>                      inner,
-    DbContext                                              db,
-    ILogger<IdempotentIntegrationEventHandler<TEvent>>     logger)
+    IIntegrationEventHandler<TEvent> inner,
+    IInboxStore store,
+    IOptions<InboxOptions> opts,
+    ILogger<IdempotentIntegrationEventHandler<TEvent>> logger)
     : IIntegrationEventHandler<TEvent>
     where TEvent : IIntegrationEvent
 {
     public async Task HandleAsync(TEvent @event, CancellationToken ct)
     {
-        // 1. Check for existing inbox record
-        var existing = await db.Set<InboxMessage>()
-            .FirstOrDefaultAsync(m => m.Id == @event.EventId, ct);
+        var id = @event.EventId;
 
-        if (existing?.Status == InboxStatus.Processed)
+        // 1. Atomically claim (or skip/defer).  The store handles all
+        //    storage-specific logic (PK race, status check, retry budget).
+        InboxMessage? claimed;
+        try
         {
-            logger.LogDebug(
-                "Inbox: duplicate {Type} {Id} skipped.",
-                typeof(TEvent).Name, @event.EventId);
+            claimed = await store.TryClaimAsync(
+                id,
+                typeof(TEvent).AssemblyQualifiedName!,
+                JsonSerializer.Serialize(@event),
+                opts.Value.MaxRetries,
+                ct);
+        }
+        catch (InboxDeferralException)
+        {
+            logger.LogDebug("Inbox: {Type} {Id} in-flight elsewhere; deferring.",
+                typeof(TEvent).Name, id);
+            throw;
+        }
+
+        if (claimed is null)
+        {
+            logger.LogDebug("Inbox: {Type} {Id} skipped (duplicate or dead-lettered).",
+                typeof(TEvent).Name, id);
             return;
         }
 
-        // 2. Upsert inbox record — mark Processing
-        InboxMessage inbox;
-        if (existing is null)
-        {
-            inbox = new InboxMessage
-            {
-                Id          = @event.EventId,
-                MessageType = typeof(TEvent).AssemblyQualifiedName!,
-                Payload     = JsonSerializer.Serialize(@event),
-                ModuleName  = db.GetType().Name.Replace("DbContext", ""),
-            };
-            db.Set<InboxMessage>().Add(inbox);
-        }
-        else
-        {
-            inbox = existing;
-        }
-
-        inbox.Status = InboxStatus.Processing;
-        await db.SaveChangesAsync(ct);
-
-        // 3. Execute the real handler
+        // 2. We own the record — execute the real handler. Capture any error
+        //    so we can persist final state AND re-throw the ORIGINAL exception
+        //    (a failure in the persistence step below must not mask it).
+        Exception? handlerError = null;
         try
         {
             await inner.HandleAsync(@event, ct);
-            inbox.Status      = InboxStatus.Processed;
-            inbox.ProcessedAt = DateTime.UtcNow;
         }
         catch (Exception ex)
         {
-            inbox.Status     = InboxStatus.Failed;
-            inbox.Error      = ex.Message;
-            inbox.RetryCount++;
+            handlerError = ex;
             logger.LogError(ex,
                 "Inbox: handler failed for {Type} {Id}",
-                typeof(TEvent).Name, @event.EventId);
-            throw;
+                typeof(TEvent).Name, id);
         }
-        finally
+
+        // 3. Persist final state in its own try/catch. A persistence failure
+        //    here is logged but does NOT replace the handler's exception.
+        try
         {
-            await db.SaveChangesAsync(ct);
+            if (handlerError is null)
+                await store.MarkProcessedAsync(id, ct);
+            else
+                await store.MarkFailedAsync(id, handlerError.Message, ct);
         }
+        catch (Exception persistEx)
+        {
+            logger.LogError(persistEx,
+                "Inbox: failed to persist final state for {Type} {Id}",
+                typeof(TEvent).Name, id);
+        }
+
+        if (handlerError is not null)
+            throw handlerError;
     }
 }

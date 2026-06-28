@@ -8,7 +8,7 @@ using Modulus.Identity.Abstractions;
 /// Called by IdentityModule.InitializeAsync.
 /// </summary>
 internal sealed class DefaultIdentitySeeder<TUser, TRole>(
-    RoleManager<TRole>       roleManager,
+    RoleManager<TRole> roleManager,
     IEnumerable<ModulusRoleSeed> roleSeeds)
     : IIdentitySeeder
     where TUser : ModulusUser
@@ -37,9 +37,9 @@ internal sealed class DefaultIdentitySeeder<TUser, TRole>(
 
         var role = new TRole
         {
-            Name         = roleName,
-            DisplayName  = displayName ?? roleName,
-            IsDefault    = isDefault,
+            Name = roleName,
+            DisplayName = displayName ?? roleName,
+            IsDefault = isDefault,
             NormalizedName = roleName.ToUpperInvariant(),
         };
 
@@ -67,7 +67,7 @@ internal sealed class DefaultIdentitySeeder<TUser, TRole>(
 /// Declarative role seed used during module initialization.
 /// </summary>
 public sealed record ModulusRoleSeed(
-    string   Name,
-    string?  DisplayName,
-    bool     IsDefault,
+    string Name,
+    string? DisplayName,
+    bool IsDefault,
     string[] Permissions);

@@ -1,0 +1,20 @@
+using Modulus.Mediator.Abstractions;
+using {{ module_namespace }}.Domain;
+using {{ module_namespace }}.Application.Dtos;
+
+namespace {{ module_namespace }}.Application;
+
+public sealed class Get{{ entity_name }}ByIdHandler(I{{ entity_name }}Repository repo)
+    : IQueryHandler<Get{{ entity_name }}ByIdQuery, {{ entity_name }}Dto>
+{
+    public async Task<{{ entity_name }}Dto> HandleAsync(
+        Get{{ entity_name }}ByIdQuery query,
+        CancellationToken ct)
+    {
+        var entity = await repo.GetByIdAsync(query.Id, ct)
+            ?? throw new InvalidOperationException(
+                "{{ entity_name }} not found: " + query.Id);
+
+        return new {{ entity_name }}Dto { Id = entity.Id, Name = entity.Name };
+    }
+}

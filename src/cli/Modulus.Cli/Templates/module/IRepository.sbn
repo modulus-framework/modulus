@@ -1,0 +1,8 @@
+using Modulus.Data.Abstractions;
+
+namespace {{ module_namespace }}.Domain;
+
+public interface I{{ entity_name }}Repository : IRepository<{{ entity_name }}>
+{
+    Task<IReadOnlyList<{{ entity_name }}>> GetAllAsync(CancellationToken ct);
+}

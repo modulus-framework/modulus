@@ -1,0 +1,5 @@
+using Modulus.Mediator.Abstractions;
+
+namespace {{ module_namespace }}.Application;
+
+public sealed record Create{{ entity_name }}Command(string Name) : ICommand<Guid>;

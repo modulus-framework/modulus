@@ -10,12 +10,20 @@
 
   <ItemGroup>
     <ProjectReference Include="../../../src/messaging/Modulus.Mediator/Modulus.Mediator.csproj" />
+    <!-- For NullCurrentUser, used to exercise the AuthorizationBehavior
+         pipeline without a full Identity module. -->
+    <ProjectReference Include="../../../src/core/Modulus.Core/Modulus.Core.csproj" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="xunit" />
     <PackageReference Include="xunit.runner.visualstudio" />
     <PackageReference Include="FluentAssertions" />
     <PackageReference Include="NSubstitute" />
     <PackageReference Include="coverlet.collector" />
+    <!-- AddMemoryCache() for CachingBehavior. -->
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory" />
+    <!-- SQLite for TransactionBehavior commit/rollback verification (no Docker). -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" />
   </ItemGroup>
 
 </Project>

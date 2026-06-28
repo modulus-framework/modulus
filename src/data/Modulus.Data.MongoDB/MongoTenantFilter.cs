@@ -9,14 +9,20 @@ public static class MongoTenantFilter
     /// <summary>
     /// Returns a filter that restricts queries to the current tenant.
     /// Apply on EVERY query in every repository method.
+    /// <para>
+    /// When no tenant is in scope (host / background context without a tenant
+    /// scope) this returns <see cref="FilterDefinition{T}.Empty"/> — i.e. no
+    /// restriction (host sees all) — rather than filtering on
+    /// <c>Guid.Empty</c>, which previously surfaced orphan documents and hid
+    /// legitimate host data.
+    /// </para>
     /// </summary>
     public static FilterDefinition<T> For<T>(
         ICurrentTenant tenant)
         where T : IHasTenantId
-    {
-        var tenantId = tenant.TenantId ?? Guid.Empty;
-        return Builders<T>.Filter.Eq(x => x.TenantId, tenantId);
-    }
+        => tenant.TenantId is { } id
+            ? Builders<T>.Filter.Eq(x => x.TenantId, id)
+            : Builders<T>.Filter.Empty;
 
     public static FilterDefinition<T> And<T>(
         ICurrentTenant tenant,

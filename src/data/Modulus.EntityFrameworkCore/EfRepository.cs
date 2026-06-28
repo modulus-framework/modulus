@@ -2,16 +2,80 @@ namespace Modulus.EntityFrameworkCore;
 
 using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Modulus.Core.Abstractions.Common;
 using Modulus.Data.Abstractions;
 
-public class EfRepository<T>(DbContext db)
+/// <summary>
+/// EF Core implementation of <see cref="IRepository{T}"/>. Resolves the
+/// correct <see cref="DbContext"/> for entity <typeparamref name="T"/> by
+/// inspecting the model metadata of all registered contexts. This is
+/// essential in a modular monolith where multiple module DbContexts coexist:
+/// a naive <c>GetRequiredService&lt;DbContext&gt;()</c> would return only the
+/// last-registered context, breaking repos for all other modules.
+/// </summary>
+public class EfRepository<T>(IServiceProvider sp)
     : IRepository<T> where T : class
 {
-    protected readonly DbSet<T> Set = db.Set<T>();
+    private DbContext? _db;
+    private DbSet<T>? _set;
 
-    public Task<T?> GetByIdAsync(object id, CancellationToken ct)
-        => Set.FindAsync([id], ct).AsTask();
+    /// <summary>
+    /// The DbContext that owns entity <typeparamref name="T"/>, discovered
+    /// by scanning <c>GetServices&lt;DbContext&gt;()</c> for a model that
+    /// maps the entity. Falls back to the single registered context when
+    /// only one exists.
+    /// </summary>
+    protected DbContext Db => _db ??= ResolveDbContext(sp);
+
+    protected DbSet<T> Set => _set ??= Db.Set<T>();
+
+    private static DbContext ResolveDbContext(IServiceProvider sp)
+    {
+        var contexts = sp.GetServices<DbContext>();
+
+        // Find the context whose model contains entity T.
+        foreach (var ctx in contexts)
+        {
+            if (ctx.Model.FindEntityType(typeof(T)) is not null)
+                return ctx;
+        }
+
+        // Single-context fallback (common in small apps).
+        if (contexts.Count() == 1)
+            return contexts.First();
+
+        throw new InvalidOperationException(
+            $"No DbContext containing entity '{typeof(T).Name}' is registered. " +
+            "Call AddModuleDatabase<TContext>() for the module that owns this entity.");
+    }
+
+    /// <summary>
+    /// Fetches an entity by primary key using a LINQ query (NOT FindAsync)
+    /// so that global query filters (tenant isolation, soft-delete) are
+    /// applied. <see cref="DbSet{TEntity}.FindAsync(object[])"/> bypasses
+    /// query filters entirely, which would leak cross-tenant and
+    /// soft-deleted records by known id.
+    /// </summary>
+    public async Task<T?> GetByIdAsync(object id, CancellationToken ct)
+    {
+        var entityType = Db.Model.FindEntityType(typeof(T));
+        var pk = entityType?.FindPrimaryKey();
+
+        if (pk?.Properties.Count == 1)
+        {
+            var pkName = pk.Properties[0].Name;
+            var parameter = Expression.Parameter(typeof(T), "e");
+            var property = Expression.Property(parameter, pkName);
+            var converted = Expression.Constant(
+                Convert.ChangeType(id, property.Type), property.Type);
+            var equals = Expression.Equal(property, converted);
+            var predicate = Expression.Lambda<Func<T, bool>>(equals, parameter);
+            return await Set.FirstOrDefaultAsync(predicate, ct);
+        }
+
+        return await Set.FindAsync([id], ct).AsTask();
+    }
 
     public async Task<IReadOnlyList<T>> ListAsync(
         ISpecification<T> spec, CancellationToken ct)
@@ -29,10 +93,7 @@ public class EfRepository<T>(DbContext db)
         => await Set.AddRangeAsync(entities, ct);
 
     public Task UpdateAsync(T entity, CancellationToken ct)
-    {
-        db.Entry(entity).State = EntityState.Modified;
-        return Task.CompletedTask;
-    }
+        => Db.SaveChangesAsync(ct);
 
     public Task DeleteAsync(T entity, CancellationToken ct)
     {
@@ -43,19 +104,19 @@ public class EfRepository<T>(DbContext db)
     protected static IQueryable<T> ApplySpec(
         IQueryable<T> query, ISpecification<T> spec)
     {
-        if (spec.Filter     != null) query = query.Where(spec.Filter);
-        if (spec.OrderBy    != null) query = query.OrderBy(spec.OrderBy);
-        if (spec.OrderByDesc!= null) query = query.OrderByDescending(spec.OrderByDesc);
+        if (spec.Filter != null) query = query.Where(spec.Filter);
+        if (spec.OrderBy != null) query = query.OrderBy(spec.OrderBy);
+        if (spec.OrderByDesc != null) query = query.OrderByDescending(spec.OrderByDesc);
         foreach (var inc in spec.Includes) query = query.Include(inc);
-        if (spec.Skip       != null) query = query.Skip(spec.Skip.Value);
-        if (spec.Take       != null) query = query.Take(spec.Take.Value);
-        if (spec.AsNoTracking)       query = query.AsNoTracking();
+        if (spec.Skip != null) query = query.Skip(spec.Skip.Value);
+        if (spec.Take != null) query = query.Take(spec.Take.Value);
+        if (spec.AsNoTracking) query = query.AsNoTracking();
         return query;
     }
 }
 
-public class EfReadRepository<T>(DbContext db)
-    : EfRepository<T>(db), IReadRepository<T>
+public class EfReadRepository<T>(IServiceProvider sp)
+    : EfRepository<T>(sp), IReadRepository<T>
     where T : class
 {
     public async Task<PagedList<TResult>> ListPagedAsync<TResult>(
@@ -65,16 +126,20 @@ public class EfReadRepository<T>(DbContext db)
         CancellationToken ct)
     {
         var baseQuery = ApplySpec(Set.AsQueryable(), spec);
-        var total     = await baseQuery.CountAsync(ct);
-        var items     = await baseQuery
-            .Skip((page - 1) * size).Take(size)
-            .ToListAsync(ct);
+
+        // If the spec already has Skip/Take, don't double-apply paging.
+        var query = spec.Skip is null && spec.Take is null
+            ? baseQuery.Skip((page - 1) * size).Take(size)
+            : baseQuery;
+
+        var total = await baseQuery.CountAsync(ct);
+        var items = await query.ToListAsync(ct);
         return new PagedList<TResult>
         {
-            Items      = items.Select(selector).ToList().AsReadOnly(),
+            Items = items.Select(selector).ToList().AsReadOnly(),
             TotalCount = total,
-            Page       = page,
-            PageSize   = size,
+            Page = page,
+            PageSize = size,
         };
     }
 

@@ -1,129 +1,133 @@
 # Modulus Framework
 
-An enterprise-grade **modular monolith** framework for .NET 10, built with DDD, CQRS,
-event-driven architecture, and first-class multi-tenancy support.
+An enterprise-grade **modular monolith** framework for **.NET 10**, built with an
+ABP-style `[DependsOn]` module system, CLI scaffolding, a transactional outbox/inbox,
+and first-class multi-tenancy.
 
 ## Overview
 
 Modulus is designed for teams who need the architectural rigour of ABP or eShop
-without the heavyweight abstractions. It provides proven building blocks that compose
-cleanly — pick only what your application needs.
+without the heavyweight abstractions. It provides proven building blocks that
+compose cleanly — pick only what your application needs. The framework ships as
+**23 focused NuGet packages** plus a `dotnet tool` CLI for scaffolding complete
+solutions, modules, and CRUD code.
 
-## Architecture
+## Solution layout
 
 ```
 src/
-├── core/
-│   ├── Modulus.Core.Abstractions      # Domain primitives: AggregateRoot, IDomainEvent, ValueObject
-│   ├── Modulus.Core                    # Base implementations and shared utilities
-│   └── Modulus.AspNetCore              # ASP.NET Core wiring, middleware, module host
-│
-├── messaging/
-│   ├── Modulus.Mediator.Abstractions   # IRequest, IRequestHandler, pipeline behaviors
-│   ├── Modulus.Mediator                # In-process CQRS mediator with validation/logging behaviors
-│   ├── Modulus.Events.Abstractions     # IIntegrationEvent, IModuleBus, IIntegrationEventHandler
-│   ├── Modulus.Events                  # DomainEventDispatcher, InProcessModuleBus, registry
-│   ├── Modulus.EventBus.RabbitMQ       # RabbitMQ event bus (topic exchange, auto-reconnect consumer)
-│   ├── Modulus.EventBus.Kafka          # Kafka event bus (idempotent producer, consumer groups)
-│   ├── Modulus.Outbox.Abstractions     # OutboxMessage, IOutboxWriter, IOutboxDispatcher
-│   ├── Modulus.Outbox                  # EF Core outbox: writer, processor, polling service
-│   ├── Modulus.Outbox.MongoDB          # MongoDB outbox store
-│   ├── Modulus.Inbox.Abstractions      # Inbox for idempotent message processing
-│   ├── Modulus.Inbox                   # Default inbox processor
-│   └── Modulus.Inbox.MongoDB           # MongoDB inbox store
-│
-├── data/
-│   ├── Modulus.Data.Abstractions       # IRepository, IUnitOfWork, auditing interfaces
-│   ├── Modulus.EntityFrameworkCore.Abstractions  # DbContext base, specifications
-│   ├── Modulus.EntityFrameworkCore     # ModuleDbContext, domain event collection, SaveChanges
-│   ├── Modulus.Data.SqlServer          # SQL Server provider
-│   ├── Modulus.Data.PostgreSQL         # PostgreSQL (Npgsql) provider
-│   ├── Modulus.Data.MySQL              # MySQL (Oracle) provider
-│   ├── Modulus.Data.SQLite             # SQLite provider
-│   ├── Modulus.Data.MongoDB            # MongoDB driver wrapper
-│   ├── Modulus.Data.Redis              # StackExchange.Redis wrapper
-│   ├── Modulus.Data.Elasticsearch      # Elastic 9.x client
-│   ├── Modulus.Data.Cassandra          # CassandraCSharpDriver
-│   ├── Modulus.Data.CosmosDB           # Azure Cosmos SDK
-│   └── Modulus.Data.DynamoDB           # AWS DynamoDB
-│
-├── identity/
-│   ├── Modulus.Identity.Abstractions   # ModulusUser, ModulusRole, IExternalIdentityProvider
-│   ├── Modulus.Identity                # OpenIddict server, token endpoints, current-user
-│   ├── Modulus.Identity.EntityFrameworkCore  # Identity + OpenIddict EF mappings
-│   ├── Modulus.Identity.Auth0          # Auth0 OIDC adapter
-│   ├── Modulus.Identity.Authentik      # Authentik OIDC adapter
-│   ├── Modulus.Identity.AzureAd        # Azure AD OIDC adapter
-│   ├── Modulus.Identity.Duende         # Duende IdentityServer adapter
-│   ├── Modulus.Identity.Keycloak       # Keycloak OIDC adapter
-│   └── Modulus.Identity.Okta           # Okta OIDC adapter
-│
-├── platform/
-│   ├── Modulus.MultiTenancy            # Tenant resolution, per-tenant DB, connection resolver
-│   ├── Modulus.Authorization           # Permission system, policy-based authorization
-│   ├── Modulus.BackgroundJobs          # IJobScheduler abstraction
-│   ├── Modulus.BackgroundJobs.Hangfire # Hangfire scheduler + DI integration
-│   ├── Modulus.SignalR.Abstractions    # IBackplane abstraction
-│   ├── Modulus.SignalR                 # Hub base classes, group management
-│   ├── Modulus.SignalR.Redis           # Redis backplane
-│   └── Modulus.SignalR.Azure           # Azure SignalR Service backplane
-│
-└── observability/
-    ├── Modulus.Diagnostics             # Correlation IDs, diagnostic context
-    ├── Modulus.OpenTelemetry           # OTel traces/metrics/logs auto-wiring
-    └── Modulus.Benchmarks              # BenchmarkDotNet harness
+  core/          Modulus.Core (abstractions+impl merged), Modulus.AspNetCore
+  data/          Modulus.Data.Abstractions, Modulus.EntityFrameworkCore,
+                 EF Core providers (SqlServer, PostgreSQL, MySQL, SQLite, MongoDB)
+  identity/      Modulus.Identity (OpenIddict server + 6 IdP adapters +
+                 EF Core mapping merged into one package)
+  messaging/     Modulus.Events (abstractions merged), Modulus.Mediator
+                 (abstractions merged), Modulus.Inbox, Modulus.Outbox,
+                 Modulus.Outbox.Abstractions (kept — circular-dep seam),
+                 Inbox/Outbox.MongoDB, EventBus.RabbitMQ, EventBus.Kafka,
+                 Modulus.Sagas (Rebus-based)
+  platform/      Modulus.Platform (MultiTenancy + Authorization +
+                 BackgroundJobs + Caching + Storage + SignalR merged)
+  observability/ Modulus.Observability (Diagnostics + OpenTelemetry merged)
+  cli/           Modulus.Cli (Spectre.Console.Cli scaffolding tool)
+tests/
+  unit/          xUnit + NSubstitute + FluentAssertions (7 projects)
+  integration/   xUnit + Testcontainers (2 projects)
 ```
 
-## Key Features
+## Getting started
 
-### Domain-Driven Design
-- `AggregateRoot<TId>` with domain event collection
-- `ValueObject` base with structural equality
-- `IDomainEvent` dispatched automatically after `SaveChangesAsync`
+### Prerequisites
 
-### CQRS Mediator
-- `IRequest<TResponse>` / `IRequestHandler<T, R>` — no MediatR dependency
-- Open-generic pipeline behaviors: validation, logging, caching
-- Assembly scanning for handler registration
+- .NET SDK **10.0.109** or newer (`dotnet --version`)
 
-### Event Bus — 3 Providers
+### Create a new application
+
+Install the CLI tool and scaffold a complete modular-monolith solution:
+
+```bash
+# Pack and install the CLI tool
+dotnet pack modulus.slnx -c Release
+dotnet tool install -g --add-source ./nupkg Modulus.Cli
+
+# Generate a new application with a Host + example module
+modulus app MyApp
+```
+
+## CLI commands
+
+The `modulus` CLI (Spectre.Console.Cli + Scriban) is a `dotnet tool` that
+generates complete solutions, modules, and CRUD code:
+
+| Command | Description |
+|---------|-------------|
+| `modulus app <name>` | Creates a modular-monolith solution with Host + example module |
+| `modulus module <name>` | Creates a new business module project |
+| `modulus add-module <name>` | Adds module to existing app + wires `[DependsOn]` + `ProjectReference` |
+| `modulus generate-crud <Entity>` | Generates entity, repo, DTOs, command/query handlers |
+
+Templates are embedded Scriban resources under `src/cli/Modulus.Cli/Templates/`.
+
+## Module system
+
+Modules implement `IModule` or inherit from `ModulusModule`. Dependencies are
+declared via `[DependsOn(typeof(OtherModule))]` attributes (ABP-style).
+`AddModulus<TStartupModule>(configuration)` auto-discovers the full module graph
+via topological sort.
+
 ```csharp
-services.AddModulusEvents(typeof(MyHandler).Assembly);
-
-// Pick ONE:
-services.AddInMemoryEventBus();                                       // in-process
-services.AddRabbitMqEventBus(o => o.HostName = "rabbitmq");           // RabbitMQ
-services.AddKafkaEventBus(o => o.BootstrapServers = "kafka:9092");    // Kafka
+[DependsOn(typeof(IdentityModule), typeof(DataModule))]
+public sealed class ShopModule : ModulusModule
+{
+    public override void ConfigureServices(IServiceCollection services, IConfiguration configuration)
+    {
+        // Register module-specific services
+    }
+}
 ```
-All three implement `IModuleBus` and integrate seamlessly with the Outbox pattern.
 
-### Transactional Outbox
-- EF Core outbox with background `OutboxPollingService`
-- Automatic `IOutboxDispatcher` → `IModuleBus` pipeline
-- MongoDB outbox store available for non-relational deployments
+```csharp
+// Program.cs
+builder.Services.AddModulus<AppHostModule>(builder.Configuration);
+```
 
-### Inbox Pattern
-- Idempotent message deduplication
-- MongoDB inbox store
+## Features
 
-### Multi-Tenancy
-- `ICurrentTenant` with resolution from header, claim, or subdomain
-- Per-tenant connection-string resolver
-- Tenant-scoped filtering on `ModuleDbContext`
-
-### Identity & Authentication
-- OpenIddict-based token server (password, client-credentials, refresh-token grants)
-- 6 external IdP adapters: Auth0, Authentik, Azure AD, Duende, Keycloak, Okta
-- `ICurrentUser` with claims-based implementation
-
-### Data Providers
-- **Relational:** SQL Server, PostgreSQL, MySQL, SQLite (EF Core 10)
-- **NoSQL:** MongoDB, Redis, Elasticsearch, Cassandra, Cosmos DB, DynamoDB
-
-### Observability
-- OpenTelemetry auto-instrumentation (ASP.NET Core, EF Core, HTTP client)
-- Correlation ID propagation
-- BenchmarkDotNet harness for performance testing
+- **Modular architecture** — ABP-style `[DependsOn]` module system with
+  topological-sort discovery and `AddModulus<TStartupModule>()` wiring.
+- **CQRS mediator** — `IRequest` / `IRequestHandler` with open-generic pipeline
+  behaviors (validation, logging, caching, transaction). No MediatR dependency.
+- **Domain-Driven Design** — `AggregateRoot<TId>` with domain-event collection,
+  `ValueObject` base, specifications, auditing interfaces.
+- **Transactional outbox** — domain events implementing `IIntegrationEvent` are
+  enqueued to the outbox *within the same DB transaction* via
+  `ModuleDbContext.SaveChangesAsync`. A background `OutboxProcessor` claims rows
+  atomically, retries with exponential backoff, and dead-letters after max
+  retries.
+- **Inbox dedup** — idempotent message processing. All
+  `IIntegrationEventHandler<T>` registrations are wrapped with an atomic
+  claim-by-EventId decorator (EF Core `EfInboxStore` or MongoDB
+  `MongoInboxStore`) so redeliveries don't double-execute.
+- **Multi-tenancy** — `ICurrentTenant` backed by `AsyncLocal<TenantInfo?>`
+  (flows into background jobs / consumers), resolution from header/claim/subdomain,
+  per-tenant connection-string resolver, and soft-delete+tenant query filters on
+  `ModuleDbContext`.
+- **OpenIddict identity** — password, client-credentials, and refresh-token
+  grants with deny-by-default credential validation, scope allow-listing, and
+  6 external IdP adapters (Auth0, Authentik, Azure AD, Duende, Keycloak, Okta)
+  that validate bearer tokens locally via OIDC discovery (signature, issuer,
+  lifetime).
+- **EF Core providers** — SQL Server, PostgreSQL, MySQL, SQLite (EF Core 10),
+  plus MongoDB for document storage.
+- **Event bus** — RabbitMQ (topic exchange, auto-reconnect) and Kafka
+  (idempotent producer, consumer groups); all implement `IModuleBus` and
+  integrate with the outbox.
+- **Sagas** — Rebus-based long-running orchestration.
+- **Platform services** — permission-based authorization, background job
+  scheduler, caching (memory, tag-based invalidation), file storage (local,
+  S3, Azure Blob), and SignalR hub base classes.
+- **Observability** — OpenTelemetry auto-instrumentation (ASP.NET Core, EF Core,
+  HTTP client) plus correlation-ID propagation.
 
 ## Build
 
@@ -131,28 +135,25 @@ All three implement `IModuleBus` and integrate seamlessly with the Outbox patter
 dotnet build modulus.slnx
 ```
 
-The solution compiles with **0 errors, 0 warnings** (`TreatWarningsAsErrors` is enabled).
-Central Package Management is used via `Directory.Packages.props`.
+The solution compiles with **0 errors, 0 warnings** (`TreatWarningsAsErrors` is
+enabled globally). Central Package Management is used via
+`Directory.Packages.props`.
 
-## Target Framework
+### Common commands
+
+| Task | Command |
+|------|---------|
+| Build (Debug) | `dotnet build modulus.slnx` |
+| Run all tests | `dotnet test modulus.slnx` |
+| Run unit tests | `dotnet test modulus.slnx --filter "Category=Unit"` |
+| Pack NuGet packages | `dotnet pack modulus.slnx -c Release` |
+| Format check | `dotnet format modulus.slnx --verify-no-changes` |
+
+## Target framework
 
 - **.NET 10** (`net10.0`)
 - SDK 10.0.109 or later
 
-## Dependencies (Major)
-
-| Library | Version |
-|---------|---------|
-| EF Core | 10.0.9 |
-| OpenIddict | 7.5.0 |
-| MongoDB.Driver | 3.9.0 |
-| StackExchange.Redis | 3.0.0 |
-| RabbitMQ.Client | 7.2.1 |
-| Confluent.Kafka | 2.14.2 |
-| Hangfire | 1.8.23 |
-| OpenTelemetry | 1.16.0 |
-| Elastic.Clients.Elasticsearch | 9.4.2 |
-
 ## License
 
-Proprietary — All rights reserved.
+Apache License 2.0 — see [LICENSE](LICENSE).

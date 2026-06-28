@@ -24,7 +24,7 @@ internal sealed class RabbitMqEventBus : IModuleBus, IAsyncDisposable
         IOptions<RabbitMqOptions> options,
         ILogger<RabbitMqEventBus> logger)
     {
-        _opts   = options.Value;
+        _opts = options.Value;
         _logger = logger;
     }
 
@@ -40,21 +40,21 @@ internal sealed class RabbitMqEventBus : IModuleBus, IAsyncDisposable
 
         var envelope = new IntegrationEventEnvelope
         {
-            EventId    = @event.EventId,
+            EventId = @event.EventId,
             OccurredAt = @event.OccurredAt,
-            TypeName   = typeof(TEvent).AssemblyQualifiedName!,
+            TypeName = typeof(TEvent).AssemblyQualifiedName!,
             RoutingKey = routingKey,
-            Payload    = JsonSerializer.Serialize(@event, typeof(TEvent)),
+            Payload = JsonSerializer.Serialize(@event, typeof(TEvent)),
         };
 
         var body = Encoding.UTF8.GetBytes(
             JsonSerializer.Serialize(envelope));
 
         await channel.BasicPublishAsync(
-            exchange:    _opts.ExchangeName,
-            routingKey:  routingKey,
-            mandatory:   true,
-            body:        body,
+            exchange: _opts.ExchangeName,
+            routingKey: routingKey,
+            mandatory: true,
+            body: body,
             cancellationToken: ct);
 
         _logger.LogDebug(
@@ -78,10 +78,10 @@ internal sealed class RabbitMqEventBus : IModuleBus, IAsyncDisposable
 
             var factory = new ConnectionFactory
             {
-                HostName    = _opts.HostName,
-                Port        = _opts.Port,
-                UserName    = _opts.UserName,
-                Password    = _opts.Password,
+                HostName = _opts.HostName,
+                Port = _opts.Port,
+                UserName = _opts.UserName,
+                Password = _opts.Password,
                 VirtualHost = _opts.VirtualHost,
             };
 

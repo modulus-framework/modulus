@@ -8,16 +8,19 @@ using Modulus.Core.Abstractions.Domain;
 using Modulus.Core.Abstractions.Entities;
 using Modulus.EntityFrameworkCore.Abstractions;
 using Modulus.Events;
+using Modulus.Events.Abstractions;
+using Modulus.Outbox.Abstractions;
 
 /// <summary>
 /// Base DbContext for all Modulus modules.
 /// Extend this and set TablePrefix to isolate your module tables.
 /// </summary>
 public abstract class ModuleDbContext(
-    DbContextOptions           options,
-    ICurrentTenant             currentTenant,
-    ICurrentUser               currentUser,
-    DomainEventDispatcher      dispatcher)
+    DbContextOptions options,
+    ICurrentTenant currentTenant,
+    ICurrentUser currentUser,
+    DomainEventDispatcher dispatcher,
+    IServiceProvider sp)
     : DbContext(options), IUnitOfWork
 {
     /// <summary>Prefix applied to all table names. e.g. "cat_"</summary>
@@ -33,7 +36,33 @@ public abstract class ModuleDbContext(
     {
         ApplyAuditFields();
         var domainEvents = CollectDomainEvents();
-        var result       = await base.SaveChangesAsync(ct);
+
+        // Enqueue integration events to this context's outbox table BEFORE
+        // SaveChanges so the outbox row(s) participate in the same DB
+        // transaction as the domain writes — closing the dual-write gap.
+        // We add directly to THIS context's Set<OutboxMessage>() rather than
+        // going through IIntegrationEventOutbox, which resolved the wrong
+        // DbContext in multi-module apps (the last-registered one).
+        // The outbox is opt-in: only enqueue when AddOutbox was called
+        // (IOutboxWriter is registered).
+        if (sp.GetService<IOutboxWriter>() is not null)
+        {
+            foreach (var integrationEvent in domainEvents
+                         .OfType<IIntegrationEvent>())
+            {
+                Set<OutboxMessage>().Add(new OutboxMessage
+                {
+                    MessageType = integrationEvent.GetType().AssemblyQualifiedName!,
+                    Payload = System.Text.Json.JsonSerializer.Serialize(
+                        integrationEvent, integrationEvent.GetType()),
+                    TenantId = currentTenant.TenantId ?? Guid.Empty,
+                    ModuleName = GetType().Name.Replace("DbContext", string.Empty),
+                    CausationId = integrationEvent.EventId.ToString(),
+                });
+            }
+        }
+
+        var result = await base.SaveChangesAsync(ct);
         await dispatcher.DispatchAsync(domainEvents, ct);
         return result;
     }
@@ -42,9 +71,30 @@ public abstract class ModuleDbContext(
     protected override void OnModelCreating(ModelBuilder mb)
     {
         base.OnModelCreating(mb);
+        ConfigureOutbox(mb);
         ApplyTablePrefix(mb);
-        ApplySoftDeleteFilter(mb);
-        ApplyTenantFilter(mb);
+        ApplyQueryFilters(mb);
+    }
+
+    /// <summary>
+    /// Maps the <see cref="OutboxMessage"/> entity so that outbox rows share
+    /// the module's DbContext and participate in the same transaction.
+    /// Configured before <see cref="ApplyTablePrefix"/> so the table gets the
+    /// module prefix (e.g. <c>cat_outbox_messages</c>).
+    /// </summary>
+    private static void ConfigureOutbox(ModelBuilder mb)
+    {
+        mb.Entity<OutboxMessage>(b =>
+        {
+            b.ToTable("outbox_messages");
+            b.HasKey(x => x.Id);
+            b.Property(x => x.MessageType).HasMaxLength(500).IsRequired();
+            b.Property(x => x.Payload).IsRequired();
+            b.Property(x => x.ModuleName).HasMaxLength(100);
+            b.HasIndex(x => new { x.ProcessedAt, x.LockedUntil, x.RetryCount });
+            b.HasIndex(x => new { x.ProcessedAt, x.CreatedAt });
+            b.HasIndex(x => x.TenantId);
+        });
     }
 
     // ── Private helpers ───────────────────────────────────────────
@@ -59,50 +109,73 @@ public abstract class ModuleDbContext(
         }
     }
 
-    private void ApplySoftDeleteFilter(ModelBuilder mb)
+    /// <summary>
+    /// Registers global query filters. EF Core allows only ONE query filter
+    /// per entity, so entities implementing both <see cref="ISoftDelete"/> and
+    /// <see cref="IHasTenantId"/> get a single combined predicate (the previous
+    /// separate-registration logic silently dropped soft-delete for them).
+    ///
+    /// The tenant predicate captures the <c>currentTenant</c> service FIELD
+    /// (never a local value), so EF Core re-evaluates it against the current
+    /// DbContext instance on every query. Capturing a value
+    /// (<c>var tid = currentTenant.TenantId</c>) would freeze the tenant into
+    /// the cached model — the first request's tenant would then gate every
+    /// subsequent request, a silent cross-tenant leak. We also register the
+    /// filter unconditionally (no <c>IsAvailable</c> short-circuit at
+    /// model-build time); when no tenant is in scope the predicate degrades to
+    /// match-all rather than filtering on <c>Guid.Empty</c>.
+    /// </summary>
+    private void ApplyQueryFilters(ModelBuilder mb)
     {
-        foreach (var entity in mb.Model.GetEntityTypes()
-            .Where(e => typeof(ISoftDelete)
-                .IsAssignableFrom(e.ClrType)))
+        foreach (var entity in mb.Model.GetEntityTypes())
         {
-            typeof(ModuleDbContext)
-                .GetMethod(nameof(SetSoftDeleteFilter),
-                    BindingFlags.NonPublic | BindingFlags.Static)!
-                .MakeGenericMethod(entity.ClrType)
-                .Invoke(null, [mb]);
-        }
-    }
+            var clr = entity.ClrType;
+            var soft = typeof(ISoftDelete).IsAssignableFrom(clr);
+            var ten = typeof(IHasTenantId).IsAssignableFrom(clr);
+            if (!soft && !ten) continue;
 
-    private static void SetSoftDeleteFilter<T>(
-        ModelBuilder mb) where T : class, ISoftDelete
-        => mb.Entity<T>().HasQueryFilter(e => !e.IsDeleted);
+            var methodName = (soft, ten) switch
+            {
+                (true, true) => nameof(SetTenantAndSoftDeleteFilter),
+                (true, false) => nameof(SetSoftDeleteFilter),
+                (false, true) => nameof(SetTenantFilter),
+                _ => null!,
+            };
 
-    private void ApplyTenantFilter(ModelBuilder mb)
-    {
-        if (!currentTenant.IsAvailable) return;
-        foreach (var entity in mb.Model.GetEntityTypes()
-            .Where(e => typeof(IHasTenantId)
-                .IsAssignableFrom(e.ClrType)))
-        {
             typeof(ModuleDbContext)
-                .GetMethod(nameof(SetTenantFilter),
-                    BindingFlags.NonPublic | BindingFlags.Instance)!
-                .MakeGenericMethod(entity.ClrType)
+                .GetMethod(methodName, BindingFlags.NonPublic | BindingFlags.Instance)!
+                .MakeGenericMethod(clr)
                 .Invoke(this, [mb]);
         }
     }
 
-    private void SetTenantFilter<T>(
-        ModelBuilder mb) where T : class, IHasTenantId
-    {
-        var tid = currentTenant.TenantId;
-        mb.Entity<T>().HasQueryFilter(e => e.TenantId == tid);
-    }
+    private void SetSoftDeleteFilter<T>(ModelBuilder mb) where T : class, ISoftDelete
+        => mb.Entity<T>().HasQueryFilter(e => !e.IsDeleted);
+
+    private void SetTenantFilter<T>(ModelBuilder mb) where T : class, IHasTenantId
+        => mb.Entity<T>().HasQueryFilter(e =>
+            currentTenant.TenantId == null || e.TenantId == currentTenant.TenantId);
+
+    private void SetTenantAndSoftDeleteFilter<T>(ModelBuilder mb)
+        where T : class, IHasTenantId, ISoftDelete
+        => mb.Entity<T>().HasQueryFilter(e => !e.IsDeleted
+            && (currentTenant.TenantId == null || e.TenantId == currentTenant.TenantId));
 
     private void ApplyAuditFields()
     {
-        var now  = DateTime.UtcNow;
+        var now = DateTime.UtcNow;
         var user = currentUser.UserName ?? "system";
+
+        // Soft-delete first so the audit loop below stamps UpdatedAt/UpdatedBy
+        // on the soft-deleted row (which transitions Deleted→Modified).
+        foreach (var entry in ChangeTracker.Entries<ISoftDelete>()
+            .Where(e => e.State == EntityState.Deleted))
+        {
+            entry.State = EntityState.Modified;
+            entry.Entity.IsDeleted = true;
+            entry.Entity.DeletedAt = now;
+            entry.Entity.DeletedBy = user;
+        }
 
         foreach (var entry in ChangeTracker.Entries<IAuditableEntity>())
         {
@@ -118,21 +191,12 @@ public abstract class ModuleDbContext(
                 entry.Entity.UpdatedBy = user;
             }
         }
-
-        foreach (var entry in ChangeTracker.Entries<ISoftDelete>()
-            .Where(e => e.State == EntityState.Deleted))
-        {
-            entry.State             = EntityState.Modified;
-            entry.Entity.IsDeleted  = true;
-            entry.Entity.DeletedAt  = now;
-            entry.Entity.DeletedBy  = user;
-        }
     }
 
     private IReadOnlyList<IDomainEvent> CollectDomainEvents()
     {
         var aggregates = ChangeTracker
-            .Entries<AggregateRoot>()
+            .Entries<IAggregateRoot>()
             .Select(e => e.Entity)
             .Where(a => a.DomainEvents.Count > 0)
             .ToList();

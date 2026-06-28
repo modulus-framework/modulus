@@ -4,8 +4,10 @@ using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 
-public sealed class ModuleDbContextTests : EFCoreIntegrationTestBase
+public sealed class ModuleDbContextTests : EFCoreIntegrationTestBase, IClassFixture<PostgreSqlFixture>
 {
+    public ModuleDbContextTests(PostgreSqlFixture fixture) : base(fixture) { }
+
     [Fact]
     public async Task Tables_HaveModulePrefix()
     {
@@ -19,10 +21,13 @@ public sealed class ModuleDbContextTests : EFCoreIntegrationTestBase
     [Fact]
     public async Task SaveChangesAsync_SetsAuditFields()
     {
-        var ctx     = BuildContext();
+        var ctx = BuildContext();
         var product = new TestProduct(Guid.NewGuid())
-        { Name = "Widget", Price = 9.99m,
-          TenantId = Tenant.TenantId!.Value };
+        {
+            Name = "Widget",
+            Price = 9.99m,
+            TenantId = Tenant.TenantId!.Value
+        };
 
         ctx.Products.Add(product);
         await ctx.SaveChangesAsync();
@@ -35,10 +40,13 @@ public sealed class ModuleDbContextTests : EFCoreIntegrationTestBase
     [Fact]
     public async Task SoftDelete_HidesDeletedRecords()
     {
-        var ctx     = BuildContext();
+        var ctx = BuildContext();
         var product = new TestProduct(Guid.NewGuid())
-        { Name = "ToDelete", Price = 1m,
-          TenantId = Tenant.TenantId!.Value };
+        {
+            Name = "ToDelete",
+            Price = 1m,
+            TenantId = Tenant.TenantId!.Value
+        };
 
         ctx.Products.Add(product);
         await ctx.SaveChangesAsync();
@@ -56,16 +64,19 @@ public sealed class ModuleDbContextTests : EFCoreIntegrationTestBase
     [Fact]
     public async Task TenantFilter_IsolatesData()
     {
-        var ctx      = BuildContext();
-        var tenantA  = Guid.NewGuid();
-        var tenantB  = Guid.NewGuid();
+        var ctx = BuildContext();
+        var tenantA = Guid.NewGuid();
+        var tenantB = Guid.NewGuid();
 
         // Insert under tenant A
         Tenant.TenantId = tenantA;
 
         ctx.Products.Add(new TestProduct(Guid.NewGuid())
-        { Name="A Product",
-          Price=1m, TenantId=tenantA });
+        {
+            Name = "A Product",
+            Price = 1m,
+            TenantId = tenantA
+        });
         await ctx.SaveChangesAsync();
 
         // Switch to tenant B — should not see tenant A products

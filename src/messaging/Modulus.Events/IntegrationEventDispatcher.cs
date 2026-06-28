@@ -19,7 +19,7 @@ public sealed class IntegrationEventDispatcher
         IIntegrationEventRegistry registry)
     {
         _scopeFactory = scopeFactory;
-        _registry     = registry;
+        _registry = registry;
     }
 
     /// <summary>

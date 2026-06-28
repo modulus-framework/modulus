@@ -1,0 +1,66 @@
+name: Bug Report
+description: Report a bug in the Modulus Framework
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug! Please fill out the sections below.
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear description of the bug.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to Reproduce
+      description: Minimal steps to reproduce the behavior.
+      placeholder: |
+        1. Go to '...'
+        2. Call '...'
+        3. See error
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What you expected to happen.
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: What actually happened. Include error messages, stack traces, etc.
+    validations:
+      required: true
+  - type: input
+    id: dotnet-version
+    attributes:
+      label: .NET SDK Version
+      placeholder: '10.0.109'
+    validations:
+      required: true
+  - type: input
+    id: modulus-version
+    attributes:
+      label: Modulus Version
+      placeholder: '1.0.0'
+    validations:
+      required: true
+  - type: dropdown
+    id: project-type
+    attributes:
+      label: Project Type
+      options:
+        - Modular Monolith
+        - Microservice
+        - Web API
+        - Console
+        - Other
+    validations:
+      required: true

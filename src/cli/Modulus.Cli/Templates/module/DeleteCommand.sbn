@@ -1,0 +1,6 @@
+using Modulus.Mediator.Abstractions;
+using Modulus.Core.Abstractions.Common;
+
+namespace {{ module_namespace }}.Application;
+
+public sealed record Delete{{ entity_name }}Command(Guid Id) : ICommand<Unit>;

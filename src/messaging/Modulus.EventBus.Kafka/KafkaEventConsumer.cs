@@ -26,10 +26,10 @@ internal sealed class KafkaEventConsumer : BackgroundService
         IServiceScopeFactory scopeFactory,
         IIntegrationEventRegistry registry)
     {
-        _opts         = options.Value;
-        _logger       = logger;
+        _opts = options.Value;
+        _logger = logger;
         _scopeFactory = scopeFactory;
-        _registry     = registry;
+        _registry = registry;
     }
 
     protected override Task ExecuteAsync(CancellationToken stoppingToken)
@@ -39,11 +39,14 @@ internal sealed class KafkaEventConsumer : BackgroundService
     {
         var config = new ConsumerConfig
         {
-            BootstrapServers       = _opts.BootstrapServers,
-            GroupId                = _opts.GroupId,
-            AutoOffsetReset        = ParseAutoOffsetReset(_opts.AutoOffsetReset),
-            EnableAutoCommit       = _opts.EnableAutoCommit,
-            AutoCommitIntervalMs   = _opts.AutoCommitIntervalMs,
+            BootstrapServers = _opts.BootstrapServers,
+            GroupId = _opts.GroupId,
+            AutoOffsetReset = ParseAutoOffsetReset(_opts.AutoOffsetReset),
+            // Force manual commits regardless of config. Auto-commit would
+            // advance the offset before a handler finishes, silently dropping
+            // failed messages. We commit explicitly after successful dispatch.
+            EnableAutoCommit = false,
+            AutoCommitIntervalMs = _opts.AutoCommitIntervalMs,
         };
 
         KafkaEventBus.ApplySecurity(config, _opts);
@@ -77,13 +80,19 @@ internal sealed class KafkaEventConsumer : BackgroundService
                 var result = consumer.Consume(ct);
 
                 if (result?.Message?.Value is null)
+                {
+                    consumer.Commit(result);
                     continue;
+                }
 
                 var envelope = JsonSerializer
                     .Deserialize<IntegrationEventEnvelope>(result.Message.Value);
 
                 if (envelope is null)
+                {
+                    consumer.Commit(result);
                     continue;
+                }
 
                 using var scope = _scopeFactory.CreateScope();
                 var dispatcher = scope.ServiceProvider
@@ -95,6 +104,10 @@ internal sealed class KafkaEventConsumer : BackgroundService
                     _logger.LogDebug(
                         "No handler for routing key '{RoutingKey}' from topic '{Topic}'",
                         envelope.RoutingKey, result.Topic);
+
+                // Success — commit the offset so Kafka advances past this
+                // message. We never commit on failure so the broker redelivers.
+                consumer.Commit(result);
             }
             catch (OperationCanceledException) when (ct.IsCancellationRequested)
             {
@@ -106,7 +119,10 @@ internal sealed class KafkaEventConsumer : BackgroundService
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error processing Kafka message; continuing");
+                // Dispatch failed — do NOT commit so Kafka redelivers the
+                // message. Log and continue the loop; the broker re-sends.
+                _logger.LogError(ex,
+                    "Error processing Kafka message; not committing — message will be redelivered.");
             }
         }
 
@@ -116,8 +132,8 @@ internal sealed class KafkaEventConsumer : BackgroundService
     private static AutoOffsetReset ParseAutoOffsetReset(string value) =>
         value.ToLowerInvariant() switch
         {
-            "earliest"  => AutoOffsetReset.Earliest,
-            "latest"    => AutoOffsetReset.Latest,
-            _           => AutoOffsetReset.Earliest,
+            "earliest" => AutoOffsetReset.Earliest,
+            "latest" => AutoOffsetReset.Latest,
+            _ => AutoOffsetReset.Earliest,
         };
 }

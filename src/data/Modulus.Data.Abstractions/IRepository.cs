@@ -26,6 +26,6 @@ public interface IReadRepository<T> where T : class
         Func<T, TResult> selector,
         int page, int size,
         CancellationToken ct);
-    Task<int>  CountAsync(ISpecification<T> spec, CancellationToken ct);
+    Task<int> CountAsync(ISpecification<T> spec, CancellationToken ct);
     Task<bool> AnyAsync(ISpecification<T> spec, CancellationToken ct);
 }

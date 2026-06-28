@@ -21,18 +21,18 @@ public interface ICacheRepository
 
 public sealed record SearchRequest(
     string Term,
-    int    Page     = 1,
-    int    PageSize = 20,
+    int Page = 1,
+    int PageSize = 20,
     Dictionary<string, string>? Filters = null,
-    string? SortBy   = null,
-    bool    SortDesc = false);
+    string? SortBy = null,
+    bool SortDesc = false);
 
 public sealed record SearchResult<T>(
     IReadOnlyList<T> Items,
-    long             TotalCount,
-    int              Page,
-    int              PageSize,
-    long             TookMs = 0)
+    long TotalCount,
+    int Page,
+    int PageSize,
+    long TookMs = 0)
 {
     public SearchResult<TResult> Map<TResult>(Func<T, TResult> selector)
         => new(Items.Select(selector).ToList(), TotalCount, Page, PageSize, TookMs);

@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <ProjectReference Include="../../core/Modulus.Core/Modulus.Core.csproj" />
+    <ProjectReference Include="../../messaging/Modulus.Mediator/Modulus.Mediator.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Cronos" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory" />
+    <PackageReference Include="StackExchange.Redis" />
+    <PackageReference Include="AWSSDK.S3" />
+    <PackageReference Include="Azure.Storage.Blobs" />
+    <PackageReference Include="Minio" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.StackExchangeRedis" />
+    <PackageReference Include="Microsoft.Azure.SignalR" />
+    <ProjectReference Include="../../messaging/Modulus.Events/Modulus.Events.csproj" />  </ItemGroup>
+
+</Project>

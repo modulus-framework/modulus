@@ -1,0 +1,19 @@
+using Microsoft.EntityFrameworkCore;
+{{ if !no_example }}using {{ root_namespace }}.Modules.Products.Domain;
+{{ end }}using Modulus.Core.Abstractions;
+using Modulus.EntityFrameworkCore;
+
+namespace {{ root_namespace }}.Host.Infrastructure;
+
+public sealed class AppDbContext(
+    DbContextOptions<AppDbContext> options,
+    ICurrentTenant currentTenant,
+    ICurrentUser currentUser,
+    DomainEventDispatcher dispatcher,
+    IServiceProvider sp)
+    : ModuleDbContext(options, currentTenant, currentUser, dispatcher, sp)
+{
+    protected override string TablePrefix => "app_";
+
+{{ if !no_example }}    public DbSet<Product> Products => Set<Product>();
+{{ end }}}

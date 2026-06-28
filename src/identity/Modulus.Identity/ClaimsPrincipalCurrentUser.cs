@@ -40,8 +40,16 @@ internal sealed class ClaimsPrincipalCurrentUser(
     public bool IsInRole(string role) =>
         Principal?.IsInRole(role) ?? false;
 
-    public bool HasPermission(string permission) =>
-        permissionChecker?.HasPermission(permission) ?? false;
+    public bool HasPermission(string permission)
+    {
+        if (permissionChecker is not null)
+            return permissionChecker.HasPermission(permission);
+
+        // Fallback: honour the "permission" claims on the principal directly
+        // (e.g. issued by the Modulus role/permission seeder) so permissions
+        // resolve even when no custom IPermissionChecker is registered.
+        return Principal?.HasClaim("permission", permission) ?? false;
+    }
 
     public IReadOnlyList<string> Permissions =>
         Principal?.FindAll("permission")

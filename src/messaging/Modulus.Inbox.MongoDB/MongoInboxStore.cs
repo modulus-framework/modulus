@@ -9,55 +9,105 @@ using Modulus.Inbox.Abstractions;
 /// </summary>
 public sealed class MongoInboxMessage
 {
-    public Guid        Id            { get; init; }
-    public string      MessageType   { get; init; } = default!;
-    public string      Payload       { get; init; } = default!;
-    public Guid        TenantId      { get; init; }
-    public string      ModuleName    { get; init; } = default!;
-    public DateTime    ReceivedAt    { get; init; } = DateTime.UtcNow;
-    public DateTime?   ProcessedAt   { get; set;  }
-    public InboxStatus Status        { get; set;  } = InboxStatus.Pending;
-    public string?     Error         { get; set;  }
-    public int         RetryCount    { get; set;  }
-    public string?     CorrelationId { get; init; }
+    public Guid Id { get; init; }
+    public string MessageType { get; init; } = default!;
+    public string Payload { get; init; } = default!;
+    public Guid TenantId { get; init; }
+    public string ModuleName { get; init; } = default!;
+    public DateTime ReceivedAt { get; init; } = DateTime.UtcNow;
+    public DateTime? ProcessedAt { get; set; }
+    public InboxStatus Status { get; set; } = InboxStatus.Pending;
+    public string? Error { get; set; }
+    public int RetryCount { get; set; }
+    public string? CorrelationId { get; init; }
 }
 
 /// <summary>
-/// MongoDB-backed inbox store for idempotent message processing.
-/// Uses the integration event EventId as the _id for deduplication.
+/// MongoDB-backed <see cref="IInboxStore"/> for idempotent message processing.
+/// Uses the integration event EventId as the <c>_id</c> for deduplication;
+/// the collection's unique PK index gives the same atomic-claim guarantee as
+/// EF Core's PK constraint.
 /// </summary>
 internal sealed class MongoInboxStore(
-    IMongoCollection<MongoInboxMessage> collection)
+    IMongoCollection<MongoInboxMessage> collection) : IInboxStore
 {
-    /// <summary>
-    /// Attempts to insert a new inbox record. Returns true if new (first delivery),
-    /// false if the message was already seen (duplicate).
-    /// </summary>
-    public async Task<MongoInboxMessage?> TryEnlistAsync(
-        InboxMessage message, CancellationToken ct)
+    public async Task<InboxMessage?> TryClaimAsync(
+        Guid eventId,
+        string messageType,
+        string payload,
+        int maxRetries,
+        CancellationToken ct)
     {
-        var doc = new MongoInboxMessage
-        {
-            Id            = message.Id,
-            MessageType   = message.MessageType,
-            Payload       = message.Payload,
-            TenantId      = message.TenantId,
-            ModuleName    = message.ModuleName,
-            CorrelationId = message.CorrelationId,
-            ReceivedAt    = message.ReceivedAt,
-            Status        = InboxStatus.Processing,
-        };
+        var existing = await collection
+            .Find(x => x.Id == eventId)
+            .FirstOrDefaultAsync(ct);
 
-        try
+        if (existing is { Status: InboxStatus.Processed })
+            return null;
+
+        if (existing is { } prev && prev.RetryCount >= maxRetries)
+            return null;
+
+        var now = DateTime.UtcNow;
+
+        if (existing is null)
         {
-            await collection.InsertOneAsync(doc, cancellationToken: ct);
-            return doc;
+            // New record — insert atomically. A concurrent insert on the same
+            // _id throws DuplicateKey → defer.
+            var doc = new MongoInboxMessage
+            {
+                Id = eventId,
+                MessageType = messageType,
+                Payload = payload,
+                ModuleName = collection.CollectionNamespace.CollectionName,
+                ReceivedAt = now,
+                Status = InboxStatus.Processing,
+            };
+
+            try
+            {
+                await collection.InsertOneAsync(doc, cancellationToken: ct);
+            }
+            catch (MongoWriteException ex) when (
+                ex.WriteError.Category == ServerErrorCategory.DuplicateKey)
+            {
+                throw new InboxDeferralException(
+                    $"Inbox message {eventId} is being processed by another consumer.");
+            }
         }
-        catch (MongoWriteException ex) when (
-            ex.WriteError.Category == ServerErrorCategory.DuplicateKey)
+        else
         {
-            return null; // Already seen — duplicate delivery
+            if (existing.Status == InboxStatus.Processing)
+                throw new InboxDeferralException(
+                    $"Inbox message {eventId} is already being processed.");
+
+            // Existing Pending/Failed — atomically transition to Processing.
+            // The filter re-checks the status server-side so two consumers
+            // that both read the same Failed row cannot both win: only the
+            // first UPDATE matches; the second affects zero rows → defer.
+            var filter = Builders<MongoInboxMessage>.Filter.And(
+                Builders<MongoInboxMessage>.Filter.Eq(x => x.Id, eventId),
+                Builders<MongoInboxMessage>.Filter.In(x => x.Status,
+                    new[] { InboxStatus.Pending, InboxStatus.Failed }));
+            var update = Builders<MongoInboxMessage>.Update
+                .Set(x => x.Status, InboxStatus.Processing)
+                .Set(x => x.Error, (string?)null);
+
+            var result = await collection.UpdateOneAsync(filter, update, cancellationToken: ct);
+
+            if (result.MatchedCount == 0)
+                throw new InboxDeferralException(
+                    $"Inbox message {eventId} is being processed by another consumer.");
         }
+
+        return new InboxMessage
+        {
+            Id = eventId,
+            MessageType = messageType,
+            Payload = payload,
+            Status = InboxStatus.Processing,
+            ReceivedAt = now,
+        };
     }
 
     public async Task MarkProcessedAsync(Guid id, CancellationToken ct)
@@ -66,13 +116,13 @@ internal sealed class MongoInboxStore(
         var update = Builders<MongoInboxMessage>.Update
             .Set(x => x.Status, InboxStatus.Processed)
             .Set(x => x.ProcessedAt, DateTime.UtcNow)
-            .Set(x => x.RetryCount, 0);
+            .Set(x => x.RetryCount, 0)
+            .Set(x => x.Error, (string?)null);
 
         await collection.UpdateOneAsync(filter, update, cancellationToken: ct);
     }
 
-    public async Task MarkFailedAsync(
-        Guid id, string error, CancellationToken ct)
+    public async Task MarkFailedAsync(Guid id, string error, CancellationToken ct)
     {
         var filter = Builders<MongoInboxMessage>.Filter.Eq(x => x.Id, id);
         var update = Builders<MongoInboxMessage>.Update

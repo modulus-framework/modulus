@@ -7,11 +7,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../Modulus.Mediator.Abstractions/Modulus.Mediator.Abstractions.csproj" />
+    <ProjectReference Include="../../core/Modulus.Core/Modulus.Core.csproj" />
     <ProjectReference Include="../../data/Modulus.EntityFrameworkCore/Modulus.EntityFrameworkCore.csproj" />
     <PackageReference Include="FluentValidation" />
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory" />
   </ItemGroup>
 
 </Project>

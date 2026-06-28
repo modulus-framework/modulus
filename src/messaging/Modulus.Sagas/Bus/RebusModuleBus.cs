@@ -1,0 +1,90 @@
+using Microsoft.Extensions.Logging;
+using Modulus.Events.Abstractions;
+using Modulus.Outbox.Abstractions;
+using Rebus.Bus;
+using Rebus.Handlers;
+
+namespace Modulus.Sagas.Bus;
+
+/// <summary>
+/// <see cref="IModuleBus"/> implementation backed by a Rebus
+/// <see cref="IBus"/>.  Publishing through this bus routes the integration
+/// event through the configured Rebus transport (RabbitMQ, Azure Service Bus,
+/// in-memory, …) so that saga handlers and regular handlers across all
+/// service instances receive it.
+/// </summary>
+internal sealed class RebusModuleBus(
+    IBus bus,
+    ILogger<RebusModuleBus>? logger = null) : IModuleBus
+{
+    public async Task PublishAsync<TEvent>(
+        TEvent @event,
+        CancellationToken ct = default)
+        where TEvent : IIntegrationEvent
+    {
+        logger?.LogDebug("Publishing {EventType} ({EventId}) via Rebus bus",
+            typeof(TEvent).Name, @event.EventId);
+
+        await bus.Publish(@event);
+    }
+}
+
+/// <summary>
+/// <see cref="IOutboxDispatcher"/> implementation backed by a Rebus
+/// <see cref="IBus"/>.  When the <c>OutboxProcessor</c> claims and dispatches
+/// a message, this dispatcher deserialises the payload and publishes it
+/// through Rebus instead of the in-process bus.
+/// </summary>
+internal sealed class RebusOutboxDispatcher(
+    IBus bus,
+    ILogger<RebusOutboxDispatcher>? logger = null) : IOutboxDispatcher
+{
+    public async Task DispatchAsync(
+        OutboxMessage message,
+        CancellationToken ct)
+    {
+        var type = Type.GetType(message.MessageType)
+            ?? throw new InvalidOperationException(
+                $"Cannot resolve outbox message type: {message.MessageType}");
+
+        var @event = System.Text.Json.JsonSerializer.Deserialize(message.Payload, type)
+            ?? throw new InvalidOperationException(
+                $"Failed to deserialise outbox payload for {message.MessageType}");
+
+        logger?.LogDebug("Dispatching outbox {Id} ({Type}) via Rebus bus",
+            message.Id, type.Name);
+
+        await bus.Publish((dynamic)@event);
+    }
+}
+
+/// <summary>
+/// Adapter that bridges Modulus <see cref="IIntegrationEventHandler{TEvent}"/>
+/// registrations to Rebus's <see cref="IHandleMessages{TMessage}"/>
+/// interface.  This lets existing Modulus integration-event handlers
+/// (including those decorated with the inbox idempotency decorator) receive
+/// messages dispatched through Rebus.
+/// </summary>
+internal sealed class IntegrationEventHandlerAdapter<TEvent>(
+    IServiceProvider sp,
+    ILogger<IntegrationEventHandlerAdapter<TEvent>>? logger = null)
+    : IHandleMessages<TEvent>
+    where TEvent : class, IIntegrationEvent
+{
+    public async Task Handle(TEvent message)
+    {
+        var handlers = sp.GetServices<IIntegrationEventHandler<TEvent>>()
+            .ToList();
+
+        if (handlers.Count == 0)
+        {
+            logger?.LogDebug(
+                "No IIntegrationEventHandler<{Type}> registered; adapter is no-op.",
+                typeof(TEvent).Name);
+            return;
+        }
+
+        foreach (var handler in handlers)
+            await handler.HandleAsync(message, CancellationToken.None);
+    }
+}

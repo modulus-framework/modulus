@@ -17,7 +17,7 @@ public sealed class ModuleLoaderTests
     public void BuildGraph_NoDependencies_ReturnsSingleDescriptor()
     {
         var modules = new IModule[] { new AlphaModule() };
-        var graph   = _loader.BuildGraph(modules);
+        var graph = _loader.BuildGraph(modules);
         graph.Should().HaveCount(1);
         graph[0].Name.Should().Be(nameof(AlphaModule));
         graph[0].InitOrder.Should().Be(0);
@@ -28,9 +28,9 @@ public sealed class ModuleLoaderTests
     {
         // BetaModule depends on AlphaModule
         var modules = new IModule[] { new BetaModule(), new AlphaModule() };
-        var graph   = _loader.BuildGraph(modules);
+        var graph = _loader.BuildGraph(modules);
         var alphaIdx = graph.ToList().FindIndex(d => d.ModuleType == typeof(AlphaModule));
-        var betaIdx  = graph.ToList().FindIndex(d => d.ModuleType == typeof(BetaModule));
+        var betaIdx = graph.ToList().FindIndex(d => d.ModuleType == typeof(BetaModule));
         alphaIdx.Should().BeLessThan(betaIdx);
     }
 

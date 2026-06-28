@@ -1,5 +1,8 @@
 using FluentAssertions;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
+using Modulus.Core.Abstractions;
+using Modulus.Core.Null;
 using Modulus.Mediator.Abstractions;
 using Modulus.Mediator.Extensions;
 using Xunit;
@@ -13,6 +16,13 @@ public sealed class MediatorTests
     {
         var services = new ServiceCollection();
         services.AddLogging();
+        // The default-on pipeline behaviors need lightweight infra:
+        //   - CachingBehavior  -> IMemoryCache
+        //   - AuthorizationBehavior -> ICurrentUser (NullCurrentUser: denies,
+        //     but the test commands carry no [RequirePermission], so it no-ops)
+        // TransactionBehavior no-ops when no DbContext is registered.
+        services.AddMemoryCache();
+        services.AddScoped<ICurrentUser, NullCurrentUser>();
         services.AddMediator(opts =>
         {
             opts.RegisterServicesFromAssembly(GetType().Assembly);
@@ -26,7 +36,7 @@ public sealed class MediatorTests
     public async Task SendAsync_WithValidCommand_ReturnsResult()
     {
         var mediator = BuildMediator();
-        var result   = await mediator.SendAsync(new PingCommand());
+        var result = await mediator.SendAsync(new PingCommand());
         result.Should().Be("pong");
     }
 
@@ -34,7 +44,7 @@ public sealed class MediatorTests
     public async Task QueryAsync_ReturnsExpectedValue()
     {
         var mediator = BuildMediator();
-        var result   = await mediator.QueryAsync(new EchoQuery("hello"));
+        var result = await mediator.QueryAsync(new EchoQuery("hello"));
         result.Should().Be("hello");
     }
 

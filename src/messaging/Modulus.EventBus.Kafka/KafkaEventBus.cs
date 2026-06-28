@@ -21,11 +21,11 @@ internal sealed class KafkaEventBus : IModuleBus, IDisposable
         IOptions<KafkaOptions> options,
         ILogger<KafkaEventBus> logger)
     {
-        _opts   = options.Value;
+        _opts = options.Value;
         _logger = logger;
 
         var config = BuildProducerConfig(_opts);
-        _producer  = new ProducerBuilder<string, string>(config).Build();
+        _producer = new ProducerBuilder<string, string>(config).Build();
     }
 
     public async Task PublishAsync<TEvent>(
@@ -38,11 +38,11 @@ internal sealed class KafkaEventBus : IModuleBus, IDisposable
 
         var envelope = new IntegrationEventEnvelope
         {
-            EventId    = @event.EventId,
+            EventId = @event.EventId,
             OccurredAt = @event.OccurredAt,
-            TypeName   = typeof(TEvent).AssemblyQualifiedName!,
+            TypeName = typeof(TEvent).AssemblyQualifiedName!,
             RoutingKey = routingKey,
-            Payload    = JsonSerializer.Serialize(@event, typeof(TEvent)),
+            Payload = JsonSerializer.Serialize(@event, typeof(TEvent)),
         };
 
         var value = JsonSerializer.Serialize(envelope);
@@ -50,7 +50,7 @@ internal sealed class KafkaEventBus : IModuleBus, IDisposable
         var result = await _producer.ProduceAsync(topic,
             new Message<string, string>
             {
-                Key   = routingKey,
+                Key = routingKey,
                 Value = value,
             },
             ct);
@@ -71,10 +71,10 @@ internal sealed class KafkaEventBus : IModuleBus, IDisposable
     {
         var config = new ProducerConfig
         {
-            BootstrapServers       = opts.BootstrapServers,
-            Acks                   = ParseAcks(opts.Acks),
-            MessageSendMaxRetries  = opts.MessageSendMaxRetries,
-            EnableIdempotence      = true,
+            BootstrapServers = opts.BootstrapServers,
+            Acks = ParseAcks(opts.Acks),
+            MessageSendMaxRetries = opts.MessageSendMaxRetries,
+            EnableIdempotence = true,
         };
 
         ApplySecurity(config, opts);
@@ -103,9 +103,9 @@ internal sealed class KafkaEventBus : IModuleBus, IDisposable
         acks.ToLowerInvariant() switch
         {
             "all" or "-1" => Acks.All,
-            "0"           => Acks.None,
-            "1"           => Acks.Leader,
-            _             => Acks.All,
+            "0" => Acks.None,
+            "1" => Acks.Leader,
+            _ => Acks.All,
         };
 
     public void Dispose() => _producer.Dispose();

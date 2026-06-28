@@ -1,0 +1,6 @@
+using Modulus.Mediator.Abstractions;
+using {{ module_namespace }}.Application.Dtos;
+
+namespace {{ module_namespace }}.Application;
+
+public sealed record Get{{ entity_name }}ByIdQuery(Guid Id) : IQuery<{{ entity_name }}Dto>;

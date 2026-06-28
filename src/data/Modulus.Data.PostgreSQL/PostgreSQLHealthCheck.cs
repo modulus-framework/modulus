@@ -13,14 +13,14 @@ public sealed class PostgreSQLHealthCheck<TContext>(
         try
         {
             await db.Database.CanConnectAsync(ct);
-            return new(typeof(TContext).Name.Replace("DbContext",""),
-                HealthStatus.Healthy,"PostgreSQL reachable",sw.Elapsed,
-                new Dictionary<string,object>{["provider"]="postgresql"});
+            return new(typeof(TContext).Name.Replace("DbContext", ""),
+                HealthStatus.Healthy, "PostgreSQL reachable", sw.Elapsed,
+                new Dictionary<string, object> { ["provider"] = "postgresql" });
         }
         catch (Exception ex)
         {
-            return new(typeof(TContext).Name.Replace("DbContext",""),
-                HealthStatus.Unhealthy,ex.Message,sw.Elapsed);
+            return new(typeof(TContext).Name.Replace("DbContext", ""),
+                HealthStatus.Unhealthy, ex.Message, sw.Elapsed);
         }
     }
 }

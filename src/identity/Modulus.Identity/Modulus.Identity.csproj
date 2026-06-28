@@ -8,10 +8,12 @@
 
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
-    <ProjectReference Include="../Modulus.Identity.Abstractions/Modulus.Identity.Abstractions.csproj" />
-    <ProjectReference Include="../../platform/Modulus.Authorization/Modulus.Authorization.csproj" />
+    <ProjectReference Include="../../platform/Modulus.Platform/Modulus.Platform.csproj" />
+    <ProjectReference Include="../../data/Modulus.EntityFrameworkCore/Modulus.EntityFrameworkCore.csproj" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" />
     <PackageReference Include="OpenIddict.AspNetCore" />
+    <PackageReference Include="OpenIddict.EntityFrameworkCore" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" />
   </ItemGroup>
 
 </Project>
