@@ -24,8 +24,20 @@ public static class ModulusServiceCollectionExtensions
         IConfiguration configuration,
         Action<ModulusBuilder> configure)
     {
-        services.AddSingleton<IModuleLoader, ModuleLoader>();
+        RegisterCoreDefaults(services);
 
+        var builder = new ModulusBuilder(services, configuration);
+        configure(builder);
+        FinalizeModuleGraph(services, builder);
+        return services;
+    }
+
+    /// <summary>
+    /// Registers the framework's null defaults and the module-lifecycle hosted
+    /// service. Idempotent (TryAdd everywhere) so the overloads can share it.
+    /// </summary>
+    private static void RegisterCoreDefaults(IServiceCollection services)
+    {
         // Safe defaults — overridden when Identity / Authorization / MultiTenancy
         // modules register.  TryAdd so the first (real) registration wins.
         services.TryAddSingleton<IPermissionRegistry, NullPermissionRegistry>();
@@ -36,11 +48,18 @@ public static class ModulusServiceCollectionExtensions
         // starts accepting connections (IHostedLifecycleService.StartingAsync).
         services.TryAddEnumerable(ServiceDescriptor.Singleton<
             IHostedService, ModuleLifecycleHostedService>());
-
-        var builder = new ModulusBuilder(services, configuration);
-        configure(builder);
-        return services;
     }
+
+    /// <summary>
+    /// Builds the module dependency graph <b>eagerly</b> so an app that forgets
+    /// to call <c>UseModulus()</c> still initializes its modules — the previous
+    /// design left <see cref="IModuleLoader"/> empty until <c>UseModulus()</c>
+    /// ran, so a missing call silently skipped every module's
+    /// <c>InitializeAsync</c>.
+    /// </summary>
+    private static void FinalizeModuleGraph(
+        IServiceCollection services, ModulusBuilder builder)
+        => builder.Complete();
 
     /// <summary>
     /// ABP-style convenience overload: auto-discovers the full module graph
@@ -57,15 +76,11 @@ public static class ModulusServiceCollectionExtensions
         IConfiguration configuration)
         where TStartupModule : class, IModule, new()
     {
-        services.AddSingleton<IModuleLoader, ModuleLoader>();
-        services.TryAddSingleton<IPermissionRegistry, NullPermissionRegistry>();
-        services.TryAddScoped<ICurrentUser, NullCurrentUser>();
-        services.TryAddScoped<ICurrentTenant, NullCurrentTenant>();
-        services.TryAddEnumerable(ServiceDescriptor.Singleton<
-            IHostedService, ModuleLifecycleHostedService>());
+        RegisterCoreDefaults(services);
 
         var builder = new ModulusBuilder(services, configuration);
         builder.AddModules<TStartupModule>();
+        FinalizeModuleGraph(services, builder);
         return services;
     }
 
@@ -78,16 +93,12 @@ public static class ModulusServiceCollectionExtensions
         Action<ModulusBuilder> configure)
         where TStartupModule : class, IModule, new()
     {
-        services.AddSingleton<IModuleLoader, ModuleLoader>();
-        services.TryAddSingleton<IPermissionRegistry, NullPermissionRegistry>();
-        services.TryAddScoped<ICurrentUser, NullCurrentUser>();
-        services.TryAddScoped<ICurrentTenant, NullCurrentTenant>();
-        services.TryAddEnumerable(ServiceDescriptor.Singleton<
-            IHostedService, ModuleLifecycleHostedService>());
+        RegisterCoreDefaults(services);
 
         var builder = new ModulusBuilder(services, configuration);
         builder.AddModules<TStartupModule>();
         configure(builder);
+        FinalizeModuleGraph(services, builder);
         return services;
     }
 
@@ -122,8 +133,10 @@ public static class ModulusServiceCollectionExtensions
     }
 
     /// <summary>
-    /// Registers REPR endpoint infrastructure: FluentValidation auto-discovery
-    /// and API versioning.  Call from Program.cs:
+    /// Registers REPR endpoint infrastructure: FluentValidation validator
+    /// auto-discovery across the given assemblies. For API versioning call
+    /// <see cref="Versioning.ApiVersioningExtensions.AddModulusApiVersioning"/>
+    /// separately.  Call from Program.cs:
     /// <code>
     /// builder.Services.AddModulusEndpoints(typeof(Program).Assembly);
     /// </code>

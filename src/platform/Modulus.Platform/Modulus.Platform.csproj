@@ -14,13 +14,9 @@
 
   <ItemGroup>
     <PackageReference Include="Cronos" />
+    <PackageReference Include="Microsoft.Extensions.Http.Resilience" />
     <PackageReference Include="Microsoft.Extensions.Caching.Memory" />
-    <PackageReference Include="StackExchange.Redis" />
-    <PackageReference Include="AWSSDK.S3" />
-    <PackageReference Include="Azure.Storage.Blobs" />
-    <PackageReference Include="Minio" />
-    <PackageReference Include="Microsoft.AspNetCore.SignalR.StackExchangeRedis" />
-    <PackageReference Include="Microsoft.Azure.SignalR" />
-    <ProjectReference Include="../../messaging/Modulus.Events/Modulus.Events.csproj" />  </ItemGroup>
+    <ProjectReference Include="../../messaging/Modulus.Events/Modulus.Events.csproj" />
+  </ItemGroup>
 
 </Project>

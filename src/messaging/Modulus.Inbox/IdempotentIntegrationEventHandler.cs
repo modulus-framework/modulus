@@ -51,7 +51,7 @@ public sealed class IdempotentIntegrationEventHandler<TEvent>(
         {
             claimed = await store.TryClaimAsync(
                 id,
-                typeof(TEvent).AssemblyQualifiedName!,
+                IntegrationEventNaming.GetName(typeof(TEvent)),
                 JsonSerializer.Serialize(@event),
                 opts.Value.MaxRetries,
                 ct);

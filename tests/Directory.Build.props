@@ -1,13 +1,13 @@
 <Project>
 
-  <!-- Chain to the root Directory.Build.props. -->
-  <Import Project="$(MSBuildThisFileDirectory)..\Directory.Build.props" />
+  <!-- ════════════════════════════════════════════════════════════════
+       tests/Directory.Build.props
 
-  <!-- Test projects are never packed as NuGet packages. -->
-  <PropertyGroup>
-    <IsPackable>false</IsPackable>
-    <IsTestProject>true</IsTestProject>
-    <GenerateDocumentationFile>false</GenerateDocumentationFile>
-  </PropertyGroup>
+       Chains to the root Directory.Build.props, then applies
+       test-specific overrides (non-packable, test SDK, xUnit, …).
+       ════════════════════════════════════════════════════════════════ -->
+
+  <Import Project="$(MSBuildThisFileDirectory)..\Directory.Build.props" />
+  <Import Project="$(MSBuildThisFileDirectory)..\build\Modulus.Test.props" />
 
 </Project>

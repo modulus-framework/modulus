@@ -10,19 +10,30 @@ public static class MongoTenantFilter
     /// Returns a filter that restricts queries to the current tenant.
     /// Apply on EVERY query in every repository method.
     /// <para>
-    /// When no tenant is in scope (host / background context without a tenant
-    /// scope) this returns <see cref="FilterDefinition{T}.Empty"/> — i.e. no
-    /// restriction (host sees all) — rather than filtering on
-    /// <c>Guid.Empty</c>, which previously surfaced orphan documents and hid
-    /// legitimate host data.
+    /// <b>Fail-closed</b>, mirroring the EF Core query filter:
     /// </para>
+    /// <list type="bullet">
+    /// <item>Host context (<see cref="ICurrentTenant.IsHost"/> — multi-tenancy
+    /// off or an explicit <c>Change(null)</c> scope) →
+    /// <see cref="FilterDefinition{T}.Empty"/> (sees all).</item>
+    /// <item>A resolved tenant → equality on its id.</item>
+    /// <item>Multi-tenancy on but no tenant resolved → a filter that matches
+    /// <b>nothing</b>, so a missing/misconfigured tenant never leaks every
+    /// tenant's documents.</item>
+    /// </list>
     /// </summary>
     public static FilterDefinition<T> For<T>(
         ICurrentTenant tenant)
         where T : IHasTenantId
-        => tenant.TenantId is { } id
+    {
+        if (tenant.IsHost)
+            return Builders<T>.Filter.Empty;
+
+        return tenant.TenantId is { } id
             ? Builders<T>.Filter.Eq(x => x.TenantId, id)
-            : Builders<T>.Filter.Empty;
+            // Fail-closed: unresolved tenant matches no documents.
+            : Builders<T>.Filter.Where(_ => false);
+    }
 
     public static FilterDefinition<T> And<T>(
         ICurrentTenant tenant,

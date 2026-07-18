@@ -1,0 +1,27 @@
+using Microsoft.EntityFrameworkCore;
+using Modulus.Core.Abstractions;
+using Modulus.Events;
+using Modulus.EntityFrameworkCore;
+using {{ module_namespace }}.Application;
+{{ if entity_name }}using {{ module_namespace }}.Domain;
+{{ end }}
+namespace {{ module_namespace }}.Infrastructure;
+
+/// <summary>
+/// The {{ module_name }} module's own DbContext. Each module owns its context
+/// (with its own tables/connection) so modules are independently deployable.
+/// Implements the module's <see cref="IUnitOfWork"/> so handlers can save
+/// without depending on EF Core.
+/// </summary>
+public sealed class {{ module_name }}DbContext(
+    DbContextOptions<{{ module_name }}DbContext> options,
+    ICurrentTenant currentTenant,
+    ICurrentUser currentUser,
+    DomainEventDispatcher dispatcher,
+    IServiceProvider sp)
+    : ModuleDbContext(options, currentTenant, currentUser, dispatcher, sp), IUnitOfWork
+{
+    protected override string TablePrefix => "{{ module_name_lower }}_";
+{{ if entity_name }}
+    public DbSet<{{ entity_name }}> {{ entity_plural }} => Set<{{ entity_name }}>();
+{{ end }}}

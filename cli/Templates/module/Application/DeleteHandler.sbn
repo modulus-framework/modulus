@@ -1,0 +1,25 @@
+using Modulus.Mediator.Abstractions;
+using Modulus.Core.Abstractions.Common;
+using {{ module_namespace }}.Domain;
+
+namespace {{ module_namespace }}.Application;
+
+public sealed class Delete{{ entity_name }}Handler(
+    I{{ entity_name }}Repository repo,
+    IUnitOfWork unitOfWork)
+    : ICommandHandler<Delete{{ entity_name }}Command, Unit>
+{
+    public async Task<Unit> HandleAsync(
+        Delete{{ entity_name }}Command command,
+        CancellationToken ct)
+    {
+        var entity = await repo.GetByIdAsync(command.Id, ct)
+            ?? throw new InvalidOperationException(
+                "{{ entity_name }} not found: " + command.Id);
+
+        await repo.DeleteAsync(entity, ct);
+        await unitOfWork.CommitAsync(ct);
+
+        return Unit.Value;
+    }
+}

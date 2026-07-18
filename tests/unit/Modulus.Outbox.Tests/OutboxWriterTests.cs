@@ -12,7 +12,6 @@ using Modulus.Events;
 using Modulus.Events.Abstractions;
 using Modulus.Outbox;
 using Modulus.Outbox.Abstractions;
-using Modulus.Outbox.Configurations;
 using NSubstitute;
 using Xunit;
 
@@ -244,8 +243,19 @@ public sealed class OutboxWriterTests
         DbContextOptions<OutboxDbContext> opts) : DbContext(opts)
     {
         protected override void OnModelCreating(ModelBuilder mb)
-            => new OutboxMessageConfiguration()
-                .Configure(mb.Entity<OutboxMessage>());
+        {
+            mb.Entity<OutboxMessage>(b =>
+            {
+                b.ToTable("outbox_messages");
+                b.HasKey(x => x.Id);
+                b.Property(x => x.MessageType).HasMaxLength(500).IsRequired();
+                b.Property(x => x.Payload).IsRequired();
+                b.Property(x => x.ModuleName).HasMaxLength(100);
+                b.HasIndex(x => new { x.ProcessedAt, x.LockedUntil, x.RetryCount });
+                b.HasIndex(x => new { x.ProcessedAt, x.CreatedAt });
+                b.HasIndex(x => x.TenantId);
+            });
+        }
     }
 
     internal sealed class TestModuleDbContext(

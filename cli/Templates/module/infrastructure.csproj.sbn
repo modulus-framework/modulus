@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Modulus.Core" Version="1.0.0" />
+    <PackageReference Include="Modulus.EntityFrameworkCore" Version="1.0.0" />
+    <PackageReference Include="Modulus.Events" Version="1.0.0" />
+    <PackageReference Include="Modulus.Data.Abstractions" Version="1.0.0" />
+    <PackageReference Include="{{ ef_provider_package }}" Version="{{ ef_provider_version }}" />
+{{ if db_provider == "SQLite" }}    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.3" />
+{{ end }}    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.9" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../{{ module_namespace }}.Application/{{ module_namespace }}.Application.csproj" />
+    <ProjectReference Include="../{{ module_namespace }}.Domain/{{ module_namespace }}.Domain.csproj" />
+    <ProjectReference Include="../../../Shared/{{ root_namespace }}.Shared.Infrastructure/{{ root_namespace }}.Shared.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>

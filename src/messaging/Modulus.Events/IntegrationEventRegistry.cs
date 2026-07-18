@@ -5,9 +5,12 @@ using System.Diagnostics.CodeAnalysis;
 using Modulus.Events.Abstractions;
 
 /// <summary>
-/// Thread-safe registry that maps broker routing keys to integration-event CLR types.
-/// The routing key is the event type's <see cref="Type.FullName"/> — stable across
-/// publisher and consumer as long as both share the same namespace conventions.
+/// Thread-safe registry that maps an integration event's <b>stable transport
+/// name</b> (<see cref="IntegrationEventNaming.GetName"/> — an
+/// <see cref="IntegrationEventNameAttribute"/> value, else the assembly-independent
+/// <see cref="Type.FullName"/>) to its CLR type. This name is the routing key on
+/// the broker and the identifier stored in outbox rows, so it stays valid across
+/// assembly version bumps.
 /// </summary>
 public sealed class IntegrationEventRegistry : IIntegrationEventRegistry
 {
@@ -19,7 +22,7 @@ public sealed class IntegrationEventRegistry : IIntegrationEventRegistry
             throw new InvalidOperationException(
                 $"{eventType.FullName} does not implement {nameof(IIntegrationEvent)}.");
 
-        _byKey[eventType.FullName!] = eventType;
+        _byKey[IntegrationEventNaming.GetName(eventType)] = eventType;
     }
 
     public bool TryGetType(string routingKey, [NotNullWhen(true)] out Type? eventType)

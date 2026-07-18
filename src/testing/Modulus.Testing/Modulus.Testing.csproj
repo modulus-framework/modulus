@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Integration-test harness for Modulus applications: a WebApplicationFactory that boots the fully composed host and swaps every module DbContext to an isolated in-memory SQLite database, plus authenticated test clients.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The DbContext-swap reflection is internal; its unit tests reach it here. -->
+    <InternalsVisibleTo Include="Modulus.Testing.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <!-- WebApplicationFactory<TEntryPoint> + the TestHost server. -->
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+    <!-- Relational SQLite so module contexts get real transactions / ExecuteUpdate
+         (the outbox claim) — EF InMemory would give false greens. -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
+  </ItemGroup>
+
+</Project>

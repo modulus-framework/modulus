@@ -22,11 +22,17 @@ public sealed class Auth0IdentityProvider(
     public async Task<ExternalUserInfo?> GetUserBySubjectAsync(
         string subject, CancellationToken ct = default)
     {
-        http.DefaultRequestHeaders.Authorization =
+        // Use a per-request HttpRequestMessage so the Authorization header is
+        // never written to HttpClient.DefaultRequestHeaders, which is shared
+        // across concurrent calls and would cause a race condition.
+        var url = $"{opts.Authority}api/v2/users/{subject}";
+        using var req = new HttpRequestMessage(HttpMethod.Get, url);
+        req.Headers.Authorization =
             new AuthenticationHeaderValue("Bearer", opts.ManagementToken);
 
-        var url = $"{opts.Authority}api/v2/users/{subject}";
-        var resp = await http.GetFromJsonAsync<JsonElement>(url, ct);
+        using var response = await http.SendAsync(req, ct);
+        response.EnsureSuccessStatusCode();
+        var resp = await response.Content.ReadFromJsonAsync<JsonElement>(ct);
         return MapUser(resp);
     }
 

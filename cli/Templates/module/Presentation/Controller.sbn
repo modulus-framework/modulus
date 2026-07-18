@@ -1,0 +1,53 @@
+using Microsoft.AspNetCore.Mvc;
+using Modulus.Mediator.Abstractions;
+using {{ module_namespace }}.Application;
+using {{ module_namespace }}.Application.Dtos;
+
+namespace {{ module_namespace }}.Presentation;
+
+[ApiController]
+[Route("api/{{ route_name }}")]
+public sealed class {{ entity_name }}sController(IMediator mediator) : ControllerBase
+{
+    [HttpGet]
+    public async Task<ActionResult<IReadOnlyList<{{ entity_name }}Dto>>> GetAll(
+        CancellationToken ct)
+        => Ok(await mediator.QueryAsync(new Get{{ entity_name }}sQuery(), ct));
+
+    [HttpGet("{{ '{' + entity_name_lower + 'Id}' }}")]
+    public async Task<ActionResult<{{ entity_name }}Dto>> GetById(
+        Guid {{ entity_name_lower }}Id,
+        CancellationToken ct)
+        => Ok(await mediator.QueryAsync(new Get{{ entity_name }}ByIdQuery({{ entity_name_lower }}Id), ct));
+
+    [HttpPost]
+    public async Task<ActionResult<Guid>> Create(
+        [FromBody] Create{{ entity_name }}Request request,
+        CancellationToken ct)
+    {
+        var id = await mediator.SendAsync(
+            new Create{{ entity_name }}Command(request.Name), ct);
+        return CreatedAtAction(
+            nameof(GetById), new { {{ entity_name_lower }}Id = id }, id);
+    }
+
+    [HttpPut("{{ '{' + entity_name_lower + 'Id}' }}")]
+    public async Task<ActionResult<Update{{ entity_name }}Result>> Update(
+        Guid {{ entity_name_lower }}Id,
+        [FromBody] Update{{ entity_name }}Request request,
+        CancellationToken ct)
+        => Ok(await mediator.SendAsync(
+            new Update{{ entity_name }}Command({{ entity_name_lower }}Id, request.Name), ct));
+
+    [HttpDelete("{{ '{' + entity_name_lower + 'Id}' }}")]
+    public async Task<ActionResult> Delete(
+        Guid {{ entity_name_lower }}Id,
+        CancellationToken ct)
+    {
+        await mediator.SendAsync(new Delete{{ entity_name }}Command({{ entity_name_lower }}Id), ct);
+        return NoContent();
+    }
+
+    public sealed record Create{{ entity_name }}Request(string Name);
+    public sealed record Update{{ entity_name }}Request(string Name);
+}

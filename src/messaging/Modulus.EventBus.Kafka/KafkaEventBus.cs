@@ -2,27 +2,32 @@ namespace Modulus.EventBus.Kafka;
 
 using System.Text.Json;
 using Confluent.Kafka;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Modulus.Core.Abstractions;
 using Modulus.Events.Abstractions;
 
 /// <summary>
 /// <see cref="IModuleBus"/> implementation that publishes integration events
-/// to Kafka topics.  The topic name is derived from the event CLR type:
-/// <c>{TopicPrefix}.{Type.FullName}</c>.
+/// to Kafka topics.  The topic name is derived from the event's stable transport
+/// name: <c>{TopicPrefix}.{IntegrationEventNaming.GetName(type)}</c>.
 /// </summary>
 internal sealed class KafkaEventBus : IModuleBus, IDisposable
 {
     private readonly KafkaOptions _opts;
     private readonly ILogger<KafkaEventBus> _logger;
+    private readonly IServiceScopeFactory _scopeFactory;
     private readonly IProducer<string, string> _producer;
 
     public KafkaEventBus(
         IOptions<KafkaOptions> options,
-        ILogger<KafkaEventBus> logger)
+        ILogger<KafkaEventBus> logger,
+        IServiceScopeFactory scopeFactory)
     {
         _opts = options.Value;
         _logger = logger;
+        _scopeFactory = scopeFactory;
 
         var config = BuildProducerConfig(_opts);
         _producer = new ProducerBuilder<string, string>(config).Build();
@@ -33,16 +38,19 @@ internal sealed class KafkaEventBus : IModuleBus, IDisposable
         CancellationToken ct = default)
         where TEvent : IIntegrationEvent
     {
-        var topic = GetTopicName<TEvent>();
-        var routingKey = typeof(TEvent).FullName!;
+        var routingKey = IntegrationEventNaming.GetName(typeof(TEvent));
+        var topic = $"{_opts.TopicPrefix}.{routingKey}";
+        var (tenantId, correlationId) = ReadAmbientContext();
 
         var envelope = new IntegrationEventEnvelope
         {
             EventId = @event.EventId,
             OccurredAt = @event.OccurredAt,
-            TypeName = typeof(TEvent).AssemblyQualifiedName!,
+            TypeName = routingKey,
             RoutingKey = routingKey,
             Payload = JsonSerializer.Serialize(@event, typeof(TEvent)),
+            TenantId = tenantId,
+            CorrelationId = correlationId,
         };
 
         var value = JsonSerializer.Serialize(envelope);
@@ -62,10 +70,24 @@ internal sealed class KafkaEventBus : IModuleBus, IDisposable
     }
 
     internal string GetTopicName<TEvent>() =>
-        $"{_opts.TopicPrefix}.{typeof(TEvent).FullName}";
+        $"{_opts.TopicPrefix}.{IntegrationEventNaming.GetName(typeof(TEvent))}";
 
     internal string GetTopicName(Type eventType) =>
-        $"{_opts.TopicPrefix}.{eventType.FullName}";
+        $"{_opts.TopicPrefix}.{IntegrationEventNaming.GetName(eventType)}";
+
+    /// <summary>
+    /// Reads the ambient tenant and correlation id (both AsyncLocal-backed) so
+    /// they travel on the wire even though this bus is a singleton. See the
+    /// RabbitMQ implementation for the rationale.
+    /// </summary>
+    private (Guid? TenantId, string? CorrelationId) ReadAmbientContext()
+    {
+        using var scope = _scopeFactory.CreateScope();
+        var sp = scope.ServiceProvider;
+        var tenantId = sp.GetService<ICurrentTenant>()?.TenantId;
+        var correlationId = sp.GetService<ICorrelationContext>()?.CorrelationId;
+        return (tenantId, correlationId);
+    }
 
     private static ProducerConfig BuildProducerConfig(KafkaOptions opts)
     {

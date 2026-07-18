@@ -1,41 +1,72 @@
-
 <Solution>
-  <Folder Name="/src/" />
-  <Folder Name="/src/core/" />
+  <!-- ── Core ────────────────────────────────────────────────────── -->
+  <Folder Name="/src/core/">
+    <Project Path="src/core/Modulus.Core/Modulus.Core.csproj" />
+    <Project Path="src/core/Modulus.AspNetCore/Modulus.AspNetCore.csproj" />
+  </Folder>
+  <!-- ── Data ────────────────────────────────────────────────────── -->
   <Folder Name="/src/data/">
-    </Folder>
+    <Project Path="src/data/Modulus.Data.Abstractions/Modulus.Data.Abstractions.csproj" />
+    <Project Path="src/data/Modulus.EntityFrameworkCore/Modulus.EntityFrameworkCore.csproj" />
+    <Project Path="src/data/Modulus.Data.SqlServer/Modulus.Data.SqlServer.csproj" />
+    <Project Path="src/data/Modulus.Data.PostgreSQL/Modulus.Data.PostgreSQL.csproj" />
+    <Project Path="src/data/Modulus.Data.MySQL/Modulus.Data.MySQL.csproj" />
+    <Project Path="src/data/Modulus.Data.SQLite/Modulus.Data.SQLite.csproj" />
+    <Project Path="src/data/Modulus.Data.MongoDB/Modulus.Data.MongoDB.csproj" />
+  </Folder>
+  <!-- ── Messaging ───────────────────────────────────────────────── -->
   <Folder Name="/src/messaging/">
-      </Folder>
+    <Project Path="src/messaging/Modulus.Events/Modulus.Events.csproj" />
+    <Project Path="src/messaging/Modulus.Mediator/Modulus.Mediator.csproj" />
+    <Project Path="src/messaging/Modulus.Inbox/Modulus.Inbox.csproj" />
+    <Project Path="src/messaging/Modulus.Inbox.MongoDB/Modulus.Inbox.MongoDB.csproj" />
+    <Project Path="src/messaging/Modulus.Outbox.Abstractions/Modulus.Outbox.Abstractions.csproj" />
+    <Project Path="src/messaging/Modulus.Outbox/Modulus.Outbox.csproj" />
+    <Project Path="src/messaging/Modulus.Outbox.MongoDB/Modulus.Outbox.MongoDB.csproj" />
+    <Project Path="src/messaging/Modulus.EventBus.RabbitMQ/Modulus.EventBus.RabbitMQ.csproj" />
+    <Project Path="src/messaging/Modulus.EventBus.Kafka/Modulus.EventBus.Kafka.csproj" />
+    <Project Path="src/messaging/Modulus.Sagas/Modulus.Sagas.csproj" />
+  </Folder>
+  <!-- ── Identity ────────────────────────────────────────────────── -->
+  <Folder Name="/src/identity/">
+    <Project Path="src/identity/Modulus.Identity/Modulus.Identity.csproj" />
+  </Folder>
+  <!-- ── Platform ────────────────────────────────────────────────── -->
   <Folder Name="/src/platform/">
-        </Folder>
-  <Project Path="src/core/Modulus.AspNetCore/Modulus.AspNetCore.csproj" />
-  <Project Path="src/core/Modulus.Core/Modulus.Core.csproj" />
-  <Project Path="src/data/Modulus.Data.Abstractions/Modulus.Data.Abstractions.csproj" />
-  <Project Path="src/data/Modulus.Data.MongoDB/Modulus.Data.MongoDB.csproj" />
-  <Project Path="src/data/Modulus.Data.MySQL/Modulus.Data.MySQL.csproj" />
-  <Project Path="src/data/Modulus.Data.PostgreSQL/Modulus.Data.PostgreSQL.csproj" />
-  <Project Path="src/data/Modulus.Data.SQLite/Modulus.Data.SQLite.csproj" />
-  <Project Path="src/data/Modulus.Data.SqlServer/Modulus.Data.SqlServer.csproj" />
-  <Project Path="src/data/Modulus.EntityFrameworkCore/Modulus.EntityFrameworkCore.csproj" />
-  <Project Path="src/identity/Modulus.Identity/Modulus.Identity.csproj" />
-  <Project Path="src/messaging/Modulus.EventBus.Kafka/Modulus.EventBus.Kafka.csproj" />
-  <Project Path="src/messaging/Modulus.EventBus.RabbitMQ/Modulus.EventBus.RabbitMQ.csproj" />
-  <Project Path="src/messaging/Modulus.Events/Modulus.Events.csproj" />
-  <Project Path="src/messaging/Modulus.Inbox.MongoDB/Modulus.Inbox.MongoDB.csproj" />
-  <Project Path="src/messaging/Modulus.Inbox/Modulus.Inbox.csproj" />
-  <Project Path="src/messaging/Modulus.Mediator/Modulus.Mediator.csproj" />
-  <Project Path="src/messaging/Modulus.Outbox.MongoDB/Modulus.Outbox.MongoDB.csproj" />
-  <Project Path="src/messaging/Modulus.Outbox.Abstractions/Modulus.Outbox.Abstractions.csproj" />
-  <Project Path="src/messaging/Modulus.Outbox/Modulus.Outbox.csproj" />
-  <Project Path="src/platform/Modulus.Platform/Modulus.Platform.csproj" />
-  <Project Path="src/observability/Modulus.Observability/Modulus.Observability.csproj" />
-  <Project Path="tests/integration/Modulus.EFCore.Integration.Tests/Modulus.EFCore.Integration.Tests.csproj" />
-  <Project Path="tests/unit/Modulus.Core.Tests/Modulus.Core.Tests.csproj" />
-  <Project Path="tests/unit/Modulus.Identity.Tests/Modulus.Identity.Tests.csproj" />
-  <Project Path="tests/unit/Modulus.Inbox.Tests/Modulus.Inbox.Tests.csproj" />
-  <Project Path="tests/unit/Modulus.Mediator.Tests/Modulus.Mediator.Tests.csproj" />
-  <Project Path="tests/unit/Modulus.MultiTenancy.Tests/Modulus.MultiTenancy.Tests.csproj" />
-  <Project Path="tests/unit/Modulus.Outbox.Tests/Modulus.Outbox.Tests.csproj" />
-  <Project Path="src/messaging/Modulus.Sagas/Modulus.Sagas.csproj" />
-  <Project Path="src/cli/Modulus.Cli/Modulus.Cli.csproj" />
+    <Project Path="src/platform/Modulus.Platform/Modulus.Platform.csproj" />
+    <Project Path="src/platform/Modulus.Storage.S3/Modulus.Storage.S3.csproj" />
+    <Project Path="src/platform/Modulus.Storage.AzureBlobs/Modulus.Storage.AzureBlobs.csproj" />
+    <Project Path="src/platform/Modulus.Caching.Redis/Modulus.Caching.Redis.csproj" />
+    <Project Path="src/platform/Modulus.SignalR.Backplane/Modulus.SignalR.Backplane.csproj" />
+    <Project Path="src/platform/Modulus.MultiTenancy.EntityFrameworkCore/Modulus.MultiTenancy.EntityFrameworkCore.csproj" />
+  </Folder>
+  <!-- ── Observability ───────────────────────────────────────────── -->
+  <Folder Name="/src/observability/">
+    <Project Path="src/observability/Modulus.Observability/Modulus.Observability.csproj" />
+  </Folder>
+  <!-- ── Testing ─────────────────────────────────────────────────── -->
+  <Folder Name="/src/testing/">
+    <Project Path="src/testing/Modulus.Testing/Modulus.Testing.csproj" />
+  </Folder>
+  <!-- ── CLI ─────────────────────────────────────────────────────── -->
+  <Folder Name="/cli/">
+    <Project Path="cli/Modulus.Cli.csproj" />
+  </Folder>
+  <!-- ── Tests · Unit ────────────────────────────────────────────── -->
+  <Folder Name="/tests/unit/">
+    <Project Path="tests/unit/Modulus.Core.Tests/Modulus.Core.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.AspNetCore.Tests/Modulus.AspNetCore.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.Mediator.Tests/Modulus.Mediator.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.EntityFrameworkCore.Tests/Modulus.EntityFrameworkCore.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.Inbox.Tests/Modulus.Inbox.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.Outbox.Tests/Modulus.Outbox.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.Identity.Tests/Modulus.Identity.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.MultiTenancy.Tests/Modulus.MultiTenancy.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.Platform.Tests/Modulus.Platform.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.Testing.Tests/Modulus.Testing.Tests.csproj" />
+  </Folder>
+  <!-- ── Tests · Integration ─────────────────────────────────────── -->
+  <Folder Name="/tests/integration/">
+    <Project Path="tests/integration/Modulus.EFCore.Integration.Tests/Modulus.EFCore.Integration.Tests.csproj" />
+  </Folder>
 </Solution>

@@ -83,6 +83,7 @@ public static class SagaServiceCollectionExtensions
             services.AddScoped<IOutboxDispatcher>(sp =>
                 new RebusOutboxDispatcher(
                     sp.GetRequiredService<IBus>(),
+                    sp.GetRequiredService<IIntegrationEventRegistry>(),
                     sp.GetService<ILogger<RebusOutboxDispatcher>>()));
         }
 

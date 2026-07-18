@@ -11,13 +11,16 @@ public sealed class AuthorizationBehavior<TRequest, TResponse>(
     ICurrentUser currentUser)
     : IPipelineBehavior<TRequest, TResponse>
 {
+    // The attribute is fixed per request type; read it once per closed generic.
+    private static readonly RequirePermissionAttribute? s_attr =
+        typeof(TRequest).GetCustomAttribute<RequirePermissionAttribute>();
+
     public Task<TResponse> HandleAsync(
         TRequest request,
         RequestHandlerDelegate<TResponse> next,
         CancellationToken ct)
     {
-        var attr = typeof(TRequest)
-            .GetCustomAttribute<RequirePermissionAttribute>();
+        var attr = s_attr;
 
         if (attr is null) return next();
 

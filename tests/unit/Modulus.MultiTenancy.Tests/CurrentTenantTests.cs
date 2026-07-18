@@ -56,6 +56,33 @@ public sealed class CurrentTenantTests
     }
 
     [Fact]
+    public void Unresolved_IsNotHost_FailClosed()
+    {
+        // The core fail-closed distinction: an unresolved tenant must NOT report
+        // as host, or query filters would match every tenant's rows.
+        var tenant = new CurrentTenant();
+
+        tenant.IsHost.Should().BeFalse();
+        tenant.TenantId.Should().BeNull();
+    }
+
+    [Fact]
+    public void ExplicitHostScope_IsHost_ResolvedTenant_IsNot()
+    {
+        var tenant = new CurrentTenant();
+        var info = new TenantInfo(Guid.NewGuid(), "acme");
+
+        using (tenant.Change(null))
+            tenant.IsHost.Should().BeTrue("Change(null) is the deliberate host scope");
+
+        using (tenant.Change(info))
+            tenant.IsHost.Should().BeFalse("a resolved tenant is never host");
+
+        // Restored to unresolved → fail-closed again.
+        tenant.IsHost.Should().BeFalse();
+    }
+
+    [Fact]
     public void Nested_Changes_RestoreInLifoOrder()
     {
         var tenant = new CurrentTenant();

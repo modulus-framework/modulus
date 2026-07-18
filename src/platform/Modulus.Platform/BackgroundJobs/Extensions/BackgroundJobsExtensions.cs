@@ -15,11 +15,22 @@ public static class BackgroundJobsExtensions
             sp => sp.GetRequiredService<ChannelJobQueue>());
 
         foreach (var assembly in assemblies)
+        {
             foreach (var type in assembly.GetTypes()
-                .Where(t => t is { IsAbstract: false, IsInterface: false }
-                    && t.GetInterfaces().Any(i => i.IsGenericType
-                        && i.GetGenericTypeDefinition() == typeof(IBackgroundJob<>))))
-                services.AddScoped(type);
+                .Where(t => t is { IsAbstract: false, IsInterface: false }))
+            {
+                foreach (var iface in type.GetInterfaces()
+                    .Where(i => i.IsGenericType
+                        && i.GetGenericTypeDefinition() == typeof(IBackgroundJob<>)))
+                {
+                    // Register both the concrete type and the closed generic
+                    // IBackgroundJob<TArgs> so the worker can resolve via the
+                    // interface without knowing the concrete type.
+                    services.AddScoped(type);
+                    services.AddScoped(iface, type);
+                }
+            }
+        }
 
         return services;
     }

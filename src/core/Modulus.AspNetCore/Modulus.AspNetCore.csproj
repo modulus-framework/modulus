@@ -7,6 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="Modulus.AspNetCore.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <ProjectReference Include="../Modulus.Core/Modulus.Core.csproj" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
@@ -15,6 +19,7 @@
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
     <PackageReference Include="Asp.Versioning.Mvc" />
     <PackageReference Include="Asp.Versioning.Mvc.ApiExplorer" />
+    <PackageReference Include="Microsoft.FeatureManagement.AspNetCore" />
   </ItemGroup>
 
 </Project>

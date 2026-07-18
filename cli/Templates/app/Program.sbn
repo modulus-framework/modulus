@@ -1,0 +1,111 @@
+using {{ root_namespace }}.Api.Modules;
+using Modulus.AspNetCore.Extensions;
+using Modulus.AspNetCore.Configuration;
+using Modulus.AspNetCore.Correlation;
+using Modulus.AspNetCore.DataProtection;
+using Modulus.AspNetCore.Cors;
+using Modulus.AspNetCore.FeatureFlags;
+using Modulus.AspNetCore.Idempotency;
+using Modulus.AspNetCore.OpenApi;
+using Modulus.AspNetCore.HealthChecks;
+using Modulus.AspNetCore.RateLimiting;
+using Modulus.AspNetCore.Security;
+using Modulus.AspNetCore.Versioning;
+using Modulus.EntityFrameworkCore.Extensions;
+using Modulus.Events.Extensions;
+using Modulus.Mediator.Extensions;
+using Microsoft.Extensions.DependencyInjection;
+
+var builder = WebApplication.CreateBuilder(args);
+
+// ── Modulus Framework ──────────────────────────────────────────
+builder.Services.AddModulus<{{ app_name }}HostModule>(builder.Configuration);
+builder.Services.AddModulusExceptionHandling();
+
+// ── API cross-cutting concerns (config-bound; see appsettings.json) ─
+builder.Services.AddModulusCorrelation(builder.Configuration);
+builder.Services.AddModulusIdempotency(builder.Configuration);
+builder.Services.AddModulusApiVersioning(builder.Configuration);
+builder.Services.AddModulusRateLimiting(builder.Configuration);
+builder.Services.AddModulusCors(builder.Configuration);
+builder.Services.AddModulusSecurityHeaders(builder.Configuration);
+
+// Runtime feature flags bound to the "FeatureManagement" section. Gate a minimal-API
+// endpoint with .RequireFeature("Flag"); MVC actions can use [FeatureGate("Flag")].
+builder.Services.AddModulusFeatureFlags(builder.Configuration);
+
+// Guard rail (Development/Staging only): fails startup if a connection string or
+// other secret is committed to appsettings*.json instead of coming from environment
+// variables, User Secrets, or a vault. Excludes Production to avoid false positives.
+builder.Services.AddModulusSecretsGuard(builder.Configuration);
+
+// Transparent at-rest encryption for [ProtectedPersonalData] string properties.
+// Registers an IPersonalDataProtector backed by ASP.NET Data Protection (a key ring
+// with automatic rotation); each module DbContext applies the value converter itself,
+// so marking a property is all that's required. In production, persist the key ring
+// outside the app (file share / DB / Key Vault) so restarts keep decrypting old data;
+// for equality search on an encrypted field, set PersonalDataProtection:SearchHashKey
+// via User Secrets or an environment variable and store an IPersonalDataProtector.Hash.
+builder.Services.AddModulusPersonalDataProtection(builder.Configuration);
+
+// ── Domain & integration events ────────────────────────────────
+// Registers DomainEventDispatcher (required by each module's DbContext),
+// the in-process event bus, and discovers handlers in the host assembly.
+// Each module can call AddModulusEvents() with its own assemblies too.
+builder.Services.AddModulusEvents(typeof({{ app_name }}HostModule).Assembly);
+
+// ── CQRS pipeline ──────────────────────────────────────────────
+// Behaviours are registered once here; each module registers its own
+// handlers + its own DbContext + IUnitOfWork in its Module composition root.
+builder.Services.AddMediator();
+
+// ── MVC controllers (module Presentation assemblies) ───────────
+builder.Services.AddControllers();
+
+// ── OpenAPI ────────────────────────────────────────────────────
+// Hardened document: metadata from the OpenApi config section + a JWT Bearer
+// security scheme, with a padlock on operations that require authorization.
+builder.Services.AddModulusOpenApi(builder.Configuration);
+
+var app = builder.Build();
+
+// ── Initialise each module's database on startup ───────────────
+// Each module owns its own DbContext (registered via AddModuleDatabase in its
+// composition root). In Production, Migrate applies authored migrations and fails
+// fast if a module has none — every schema change must go through a migration.
+// Outside Production (Development / Testing / Staging) we use MigrateOrCreate so a
+// freshly generated app (and the integration-test harness) runs before you author
+// the first migration.
+// Author the first migration with:  modulus migrate add <Name> --module <Module>
+await app.Services.MigrateModulusDatabasesAsync(
+    app.Environment.IsProduction()
+        ? DatabaseInitializationMode.Migrate
+        : DatabaseInitializationMode.MigrateOrCreate);
+
+// ── Middleware ─────────────────────────────────────────────────
+// Order matters: correlation first (so every log line, span, and error carries
+// the id), then security headers on every response, then error handling, CORS
+// before auth, rate limiting after auth/tenant, then the module pipeline.
+// Idempotency runs after UseModulus so the tenant is resolved before keys are
+// scoped, and still wraps the controller so responses can be replayed.
+app.UseModulusCorrelation();
+app.UseModulusSecurityHeaders();
+app.UseExceptionHandler();
+app.UseModulusCors();
+app.UseModulusRateLimiting();
+app.UseModulus();
+app.UseModulusIdempotency();
+
+app.MapControllers();
+app.MapModulusHealthChecks();
+
+if (app.Environment.IsDevelopment())
+{
+    app.MapOpenApi();
+}
+
+app.Run();
+
+// Exposes the implicit Program class so integration tests can boot this exact
+// host via Modulus.Testing's ModulusWebAppFactory<Program>.
+public partial class Program;

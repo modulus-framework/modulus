@@ -10,15 +10,25 @@ using Modulus.Core.Abstractions;
 public static class ModulusWebApplicationExtensions
 {
     /// <summary>
-    /// Builds the module dependency graph. Module lifecycle (init/shutdown)
-    /// is driven automatically by <see cref="ModuleLifecycleHostedService"/>
-    /// which is registered during <c>AddModulus</c>.
+    /// Kept for source compatibility and pipeline readability. The module
+    /// dependency graph is now built eagerly inside <c>AddModulus(...)</c>, and
+    /// module lifecycle (init/shutdown) is driven by
+    /// <see cref="ModuleLifecycleHostedService"/>, so calling this is optional.
+    /// It validates that the graph was built and logs a warning if no modules
+    /// were discovered — a strong signal that <c>AddModulus</c> was misconfigured.
     /// </summary>
     public static WebApplication UseModulus(this WebApplication app)
     {
         var loader = app.Services.GetRequiredService<IModuleLoader>();
-        var modules = app.Services.GetServices<IModule>();
-        loader.BuildGraph(modules);
+        if (loader.GetDescriptors().Count == 0)
+        {
+            app.Services.GetService<ILoggerFactory>()?
+                .CreateLogger("Modulus")
+                .LogWarning(
+                    "[Modulus] UseModulus() ran but no modules were discovered. " +
+                    "Ensure AddModulus<TStartupModule>(...) or AddModulus(cfg, b => b.AddModules<...>()) " +
+                    "registered your startup module.");
+        }
 
         return app;
     }

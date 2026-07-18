@@ -86,11 +86,27 @@ internal sealed class RabbitMqEventConsumer : BackgroundService
             autoDelete: _opts.AutoDelete,
             cancellationToken: ct);
 
+        // Build optional queue arguments (DLX, TTL).
+        Dictionary<string, object?>? queueArgs = null;
+        if (!string.IsNullOrEmpty(_opts.DeadLetterExchange))
+        {
+            queueArgs = new Dictionary<string, object?>
+            {
+                ["x-dead-letter-exchange"] = _opts.DeadLetterExchange,
+            };
+        }
+        if (_opts.MessageTtlMs.HasValue)
+        {
+            queueArgs ??= [];
+            queueArgs["x-message-ttl"] = _opts.MessageTtlMs.Value;
+        }
+
         await _channel.QueueDeclareAsync(
             _opts.QueueName,
             durable: _opts.Durable,
             exclusive: false,
             autoDelete: _opts.AutoDelete,
+            arguments: queueArgs,
             cancellationToken: ct);
 
         foreach (var routingKey in _registry.GetRoutingKeys())
@@ -104,7 +120,7 @@ internal sealed class RabbitMqEventConsumer : BackgroundService
         await _channel.BasicQosAsync(0, (ushort)_opts.PrefetchCount, false, ct);
 
         var consumer = new AsyncEventingBasicConsumer(_channel);
-        consumer.ReceivedAsync += OnMessageReceived;
+        consumer.ReceivedAsync += OnMessageReceivedAsync;
 
         await _channel.BasicConsumeAsync(
             _opts.QueueName, autoAck: _opts.AutoAck, consumer, ct);
@@ -117,7 +133,7 @@ internal sealed class RabbitMqEventConsumer : BackgroundService
         await Task.Delay(Timeout.Infinite, ct);
     }
 
-    private async Task OnMessageReceived(object sender, BasicDeliverEventArgs ea)
+    private async Task OnMessageReceivedAsync(object sender, BasicDeliverEventArgs ea)
     {
         var channel = (IChannel)((AsyncEventingBasicConsumer)sender).Channel;
 
@@ -140,9 +156,16 @@ internal sealed class RabbitMqEventConsumer : BackgroundService
             var handled = await dispatcher.DispatchAsync(envelope);
 
             if (!handled)
-                _logger.LogDebug(
-                    "No handler for routing key '{RoutingKey}'; acking",
+            {
+                // No handler registered for this routing key — nack without
+                // requeue so the message is dead-lettered (if a DLX is
+                // configured) rather than silently dropped.
+                _logger.LogWarning(
+                    "No handler registered for routing key '{RoutingKey}'; nacking to DLX",
                     envelope.RoutingKey);
+                await channel.BasicNackAsync(ea.DeliveryTag, multiple: false, requeue: false);
+                return;
+            }
 
             await channel.BasicAckAsync(ea.DeliveryTag, multiple: false);
         }

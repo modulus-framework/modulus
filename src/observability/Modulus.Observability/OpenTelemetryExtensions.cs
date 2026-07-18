@@ -1,55 +1,37 @@
 namespace Modulus.OpenTelemetry.Extensions;
 
-using System.Reflection;
-using global::OpenTelemetry;
 using global::OpenTelemetry.Trace;
 using Microsoft.Extensions.DependencyInjection;
 using Modulus.Mediator.Abstractions;
 
 public static class OpenTelemetryExtensions
 {
+    /// <summary>
+    /// Adds the Modulus activity source to an existing
+    /// <see cref="TracerProviderBuilder"/> so spans from the mediator pipeline,
+    /// outbox, and module lifecycle are captured by the host's OTel provider.
+    /// Call this inside <c>services.AddOpenTelemetry().WithTracing(b => b.UseModulusTracing())</c>.
+    /// </summary>
     public static TracerProviderBuilder UseModulusTracing(
         this TracerProviderBuilder builder)
         => builder.AddSource(ModulusActivitySources.All);
 
     /// <summary>
-    /// Wires the Modulus observability defaults into DI:
-    /// <list type="bullet">
-    ///   <item>Registers <see cref="TracingBehavior{TRequest,TResponse}"/> as an
-    ///     open-generic <see cref="IPipelineBehavior{TRequest,TResponse}"/> so
-    ///     every mediator request is wrapped in an OpenTelemetry span.</item>
-    ///   <item>Registers the Modulus activity sources with the OpenTelemetry SDK
-    ///     so <c>ActivitySource.StartActivity</c> actually produces spans
-    ///     (otherwise it returns <c>null</c> and tracing is a no-op). No
-    ///     exporters are configured here — add OTLP/console exporters on your
-    ///     own tracer provider (e.g. via <see cref="UseModulusTracing"/>) as
-    ///     needed.</item>
-    /// </list>
+    /// Registers <see cref="TracingBehavior{TRequest,TResponse}"/> as an
+    /// open-generic mediator pipeline behavior so every command and query is
+    /// automatically wrapped in an OpenTelemetry span.
+    ///
+    /// This method does NOT create a <see cref="TracerProvider"/> — add
+    /// <see cref="UseModulusTracing"/> to the host's own OTel builder so
+    /// that Modulus spans share the same exporters and sampling configuration
+    /// as ASP.NET Core and EF Core spans.
     /// </summary>
     public static IServiceCollection AddModulusObservability(
-        this IServiceCollection services,
-        params Assembly[] assemblies)
+        this IServiceCollection services)
     {
-        _ = assemblies; // reserved for future per-assembly source discovery
-
         services.AddScoped(
             typeof(IPipelineBehavior<,>),
             typeof(TracingBehavior<,>));
-
-        services.AddSingleton(sp =>
-        {
-            var builder = Sdk.CreateTracerProviderBuilder()
-                ?? throw new InvalidOperationException(
-                    "OpenTelemetry SDK tracer provider builder could not be created.");
-
-            var provider = builder
-                .AddSource(ModulusActivitySources.All)
-                .Build()
-                ?? throw new InvalidOperationException(
-                    "OpenTelemetry SDK tracer provider could not be built.");
-
-            return provider;
-        });
 
         return services;
     }

@@ -55,7 +55,7 @@ internal sealed class MongoOutboxWriter(
         var type = @event.GetType();
         return new MongoOutboxMessage
         {
-            MessageType = type.AssemblyQualifiedName!,
+            MessageType = IntegrationEventNaming.GetName(type),
             Payload = JsonSerializer.Serialize(@event, type),
             TenantId = tenant.TenantId ?? Guid.Empty,
             ModuleName = type.Module.Name.Replace(".dll", ""),

@@ -8,6 +8,7 @@ using System.Reflection;
 using Modulus.Core.Abstractions;
 using Modulus.Core.Null;
 using Modulus.Mediator.Abstractions;
+using Modulus.Mediator.Abstractions.Attributes;
 using Modulus.Mediator.Behaviors;
 
 public static class MediatorServiceCollectionExtensions
@@ -21,16 +22,19 @@ public static class MediatorServiceCollectionExtensions
 
         services.AddScoped<IMediator, Mediator>();
 
+        // Carries the transaction-scoping policy to TransactionBehavior.
+        services.AddSingleton(new TransactionRuntimeOptions(opts.TransactionMode));
+
         // Ensure the pipeline behaviors' dependencies are always available.
         // TryAdd never overwrites a registration the host already made, so a
         // real Identity module (ICurrentUser) or caching configuration
         // (IMemoryCache) takes precedence over these fail-safe defaults.
         services.TryAddSingleton<IMemoryCache, MemoryCache>();
         services.TryAddScoped<ICurrentUser, NullCurrentUser>();
+        services.TryAddScoped<IFeatureGate, NullFeatureGate>();
 
         // Register handlers from specified assemblies
-        foreach (var assembly in opts.Assemblies)
-            RegisterHandlers(services, assembly);
+        services.AddMediatorHandlers(opts.Assemblies.ToArray());
 
         // Register behaviors in order (first registered = outermost)
         if (opts.EnableLogging)
@@ -42,8 +46,15 @@ public static class MediatorServiceCollectionExtensions
                 typeof(ValidationBehavior<,>));
 
         if (opts.EnableAuthorization)
+        {
+            // Feature gate before the permission check: availability is decided ahead of
+            // capability, since a feature disabled for the tenant is inaccessible to
+            // everyone regardless of what they may do (blueprint §5.11, §14).
+            services.AddScoped(typeof(IPipelineBehavior<,>),
+                typeof(FeatureGateBehavior<,>));
             services.AddScoped(typeof(IPipelineBehavior<,>),
                 typeof(AuthorizationBehavior<,>));
+        }
 
         if (opts.EnableCaching)
             services.AddScoped(typeof(IPipelineBehavior<,>),
@@ -53,6 +64,20 @@ public static class MediatorServiceCollectionExtensions
             services.AddScoped(typeof(IPipelineBehavior<,>),
                 typeof(TransactionBehavior<,>));
 
+        return services;
+    }
+
+    /// <summary>
+    /// Registers command/query handlers from the given assemblies **without**
+    /// touching the pipeline behaviors.  Use this from a module's
+    /// <c>ConfigureServices</c> to contribute its handlers; call
+    /// <see cref="AddMediator"/> once in the host to set up the behaviors.
+    /// </summary>
+    public static IServiceCollection AddMediatorHandlers(
+        this IServiceCollection services, params Assembly[] assemblies)
+    {
+        foreach (var assembly in assemblies)
+            RegisterHandlers(services, assembly);
         return services;
     }
 
@@ -86,6 +111,13 @@ public sealed class MediatorOptions
     public bool EnableAuthorization { get; set; } = true;
     public bool EnableCaching { get; set; } = true;
     public bool EnableTransaction { get; set; } = true;
+
+    /// <summary>
+    /// How <c>TransactionBehavior</c> chooses which <c>DbContext</c>s to wrap when
+    /// a command carries no <see cref="Abstractions.Attributes.TransactionalAttribute"/>.
+    /// Defaults to <see cref="TransactionMode.TouchedOrSingle"/>.
+    /// </summary>
+    public TransactionMode TransactionMode { get; set; } = TransactionMode.TouchedOrSingle;
 
     public MediatorOptions RegisterServicesFromAssembly(Assembly assembly)
     { Assemblies.Add(assembly); return this; }

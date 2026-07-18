@@ -2,8 +2,10 @@ namespace Modulus.EventBus.RabbitMQ;
 
 using System.Text;
 using System.Text.Json;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Modulus.Core.Abstractions;
 using Modulus.Events.Abstractions;
 using global::RabbitMQ.Client;
 
@@ -17,15 +19,18 @@ internal sealed class RabbitMqEventBus : IModuleBus, IAsyncDisposable
 {
     private readonly RabbitMqOptions _opts;
     private readonly ILogger<RabbitMqEventBus> _logger;
+    private readonly IServiceScopeFactory _scopeFactory;
     private readonly SemaphoreSlim _connectionGate = new(1, 1);
     private IConnection? _connection;
 
     public RabbitMqEventBus(
         IOptions<RabbitMqOptions> options,
-        ILogger<RabbitMqEventBus> logger)
+        ILogger<RabbitMqEventBus> logger,
+        IServiceScopeFactory scopeFactory)
     {
         _opts = options.Value;
         _logger = logger;
+        _scopeFactory = scopeFactory;
     }
 
     public async Task PublishAsync<TEvent>(
@@ -36,15 +41,19 @@ internal sealed class RabbitMqEventBus : IModuleBus, IAsyncDisposable
         var connection = await EnsureConnectionAsync(ct);
         await using var channel = await connection.CreateChannelAsync(cancellationToken: ct);
 
-        var routingKey = typeof(TEvent).FullName!;
+        // Stable transport name (attribute or assembly-independent FullName).
+        var routingKey = IntegrationEventNaming.GetName(typeof(TEvent));
+        var (tenantId, correlationId) = ReadAmbientContext();
 
         var envelope = new IntegrationEventEnvelope
         {
             EventId = @event.EventId,
             OccurredAt = @event.OccurredAt,
-            TypeName = typeof(TEvent).AssemblyQualifiedName!,
+            TypeName = routingKey,
             RoutingKey = routingKey,
             Payload = JsonSerializer.Serialize(@event, typeof(TEvent)),
+            TenantId = tenantId,
+            CorrelationId = correlationId,
         };
 
         var body = Encoding.UTF8.GetBytes(
@@ -63,6 +72,22 @@ internal sealed class RabbitMqEventBus : IModuleBus, IAsyncDisposable
             _opts.ExchangeName, routingKey);
     }
 
+    /// <summary>
+    /// Reads the ambient tenant and correlation id so they travel on the wire.
+    /// Both accessors are AsyncLocal-backed, so a fresh DI scope still observes
+    /// the values the caller (e.g. the outbox processor) established — this lets
+    /// the singleton bus read request/flow-scoped context without capturing a
+    /// scoped service.
+    /// </summary>
+    private (Guid? TenantId, string? CorrelationId) ReadAmbientContext()
+    {
+        using var scope = _scopeFactory.CreateScope();
+        var sp = scope.ServiceProvider;
+        var tenantId = sp.GetService<ICurrentTenant>()?.TenantId;
+        var correlationId = sp.GetService<ICorrelationContext>()?.CorrelationId;
+        return (tenantId, correlationId);
+    }
+
     private async Task<IConnection> EnsureConnectionAsync(CancellationToken ct)
     {
         if (_connection is { IsOpen: true })
@@ -74,7 +99,8 @@ internal sealed class RabbitMqEventBus : IModuleBus, IAsyncDisposable
             if (_connection is { IsOpen: true })
                 return _connection;
 
-            _connection?.DisposeAsync().AsTask().Wait(ct);
+            if (_connection is not null)
+                await _connection.DisposeAsync();
 
             var factory = new ConnectionFactory
             {

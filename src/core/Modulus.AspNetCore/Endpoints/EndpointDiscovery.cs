@@ -30,7 +30,7 @@ public static class EndpointDiscovery
         if (assemblies.Length == 0)
             assemblies = [Assembly.GetCallingAssembly()];
 
-        var endpointTypes = DiscoverEndpointTypes(assemblies);
+        var endpointTypes = DiscoverEndpointTypes(assemblies, app.ServiceProvider);
         var logger = app.ServiceProvider.GetService<ILoggerFactory>()
             ?.CreateLogger("Modulus.Endpoints");
 
@@ -51,10 +51,16 @@ public static class EndpointDiscovery
     // ── Discovery ──────────────────────────────────────────────────
 
     private static List<(Type Type, EndpointConfig Config)> DiscoverEndpointTypes(
-        Assembly[] assemblies)
+        Assembly[] assemblies, IServiceProvider serviceProvider)
     {
         var results = new List<(Type, EndpointConfig)>();
         var baseType = typeof(EndpointBase);
+
+        // Use a temporary scope so scoped services (IMediator, etc.) resolve
+        // correctly during discovery.  The instance is discarded after
+        // Configure() is called — only the captured EndpointConfig matters.
+        using var scope = serviceProvider.CreateScope();
+        var sp = scope.ServiceProvider;
 
         foreach (var assembly in assemblies)
         {
@@ -66,9 +72,11 @@ public static class EndpointDiscovery
                 if (!baseType.IsAssignableFrom(type))
                     continue;
 
-                // Create a throwaway instance just to call Configure()
+                // Create a throwaway instance just to call Configure().
+                // The real service provider is used so that constructor
+                // injection works (FastEndpoints-style).
                 var instance = (EndpointBase)ActivatorUtilities.CreateInstance(
-                    CreateEmptyServiceProvider(), type)!;
+                    sp, type)!;
 
                 instance.Configure();
 
@@ -385,7 +393,4 @@ public static class EndpointDiscovery
     }
 
     // ── Helpers ────────────────────────────────────────────────────
-
-    private static IServiceProvider CreateEmptyServiceProvider() =>
-        new ServiceCollection().BuildServiceProvider();
 }

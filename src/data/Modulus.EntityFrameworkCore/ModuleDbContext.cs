@@ -1,12 +1,17 @@
 namespace Modulus.EntityFrameworkCore;
 
+using System.Linq.Expressions;
 using System.Reflection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
+using Microsoft.Extensions.DependencyInjection;
 using Modulus.Core.Abstractions;
+using Modulus.Core.Abstractions.DataProtection;
 using Modulus.Core.Abstractions.Domain;
 using Modulus.Core.Abstractions.Entities;
+using Modulus.Core.Null;
 using Modulus.EntityFrameworkCore.Abstractions;
+using Modulus.EntityFrameworkCore.DataProtection;
 using Modulus.Events;
 using Modulus.Events.Abstractions;
 using Modulus.Outbox.Abstractions;
@@ -25,6 +30,19 @@ public abstract class ModuleDbContext(
 {
     /// <summary>Prefix applied to all table names. e.g. "cat_"</summary>
     protected abstract string TablePrefix { get; }
+
+    private ICurrentDataScope? _dataScope;
+
+    /// <summary>
+    /// The organizational data scope for the current request, read by the org-scope
+    /// query filter. Resolved lazily from this context's request container; falls
+    /// back to <see cref="NullCurrentDataScope"/> (unrestricted, filter is a no-op)
+    /// when organizational scoping is not configured. Referenced through the
+    /// executing context so EF Core re-evaluates it per query — the same seam
+    /// <c>currentTenant</c> uses — never frozen into the cached model.
+    /// </summary>
+    private ICurrentDataScope DataScope
+        => _dataScope ??= sp.GetService<ICurrentDataScope>() ?? NullCurrentDataScope.Instance;
 
     // ── IUnitOfWork ───────────────────────────────────────────────
     public Task<int> CommitAsync(CancellationToken ct = default)
@@ -52,7 +70,10 @@ public abstract class ModuleDbContext(
             {
                 Set<OutboxMessage>().Add(new OutboxMessage
                 {
-                    MessageType = integrationEvent.GetType().AssemblyQualifiedName!,
+                    // Stable transport name (attribute or assembly-independent
+                    // FullName), NOT AssemblyQualifiedName — an assembly version
+                    // bump must not orphan unprocessed outbox rows.
+                    MessageType = IntegrationEventNaming.GetName(integrationEvent.GetType()),
                     Payload = System.Text.Json.JsonSerializer.Serialize(
                         integrationEvent, integrationEvent.GetType()),
                     TenantId = currentTenant.TenantId ?? Guid.Empty,
@@ -74,6 +95,20 @@ public abstract class ModuleDbContext(
         ConfigureOutbox(mb);
         ApplyTablePrefix(mb);
         ApplyQueryFilters(mb);
+        ApplyPersonalDataEncryption(mb);
+    }
+
+    /// <summary>
+    /// Attaches the encrypting value converter to every
+    /// <see cref="ProtectedPersonalDataAttribute"/> string property when an
+    /// <see cref="IPersonalDataProtector"/> is registered (i.e. the app called
+    /// <c>AddModulusPersonalDataProtection</c>). Without one this is a no-op and
+    /// marked columns stay plaintext, so encryption is a strictly opt-in capability.
+    /// </summary>
+    private void ApplyPersonalDataEncryption(ModelBuilder mb)
+    {
+        if (sp.GetService<IPersonalDataProtector>() is { } protector)
+            mb.UseModulusPersonalDataEncryption(protector);
     }
 
     /// <summary>
@@ -110,56 +145,101 @@ public abstract class ModuleDbContext(
     }
 
     /// <summary>
-    /// Registers global query filters. EF Core allows only ONE query filter
-    /// per entity, so entities implementing both <see cref="ISoftDelete"/> and
-    /// <see cref="IHasTenantId"/> get a single combined predicate (the previous
-    /// separate-registration logic silently dropped soft-delete for them).
+    /// Registers global query filters. EF Core allows only ONE query filter per
+    /// entity, so the applicable layers — soft-delete
+    /// (<see cref="ISoftDelete"/>), tenant isolation (<see cref="IHasTenantId"/>),
+    /// and organizational scope (<see cref="IHasOrgUnit"/>) — are AND-combined into a
+    /// single predicate (see <see cref="SetCombinedFilter{T}"/>). An entity may
+    /// implement any subset; each layer it opts into is applied without dropping the
+    /// others.
     ///
-    /// The tenant predicate captures the <c>currentTenant</c> service FIELD
-    /// (never a local value), so EF Core re-evaluates it against the current
-    /// DbContext instance on every query. Capturing a value
-    /// (<c>var tid = currentTenant.TenantId</c>) would freeze the tenant into
-    /// the cached model — the first request's tenant would then gate every
-    /// subsequent request, a silent cross-tenant leak. We also register the
-    /// filter unconditionally (no <c>IsAvailable</c> short-circuit at
-    /// model-build time); when no tenant is in scope the predicate degrades to
-    /// match-all rather than filtering on <c>Guid.Empty</c>.
+    /// Each layer's sub-predicate captures its service FIELD (<c>currentTenant</c>,
+    /// <c>DataScope</c>) — never a local value — so EF Core re-evaluates it against
+    /// the executing DbContext on every query. Capturing a value
+    /// (<c>var tid = currentTenant.TenantId</c>) would freeze it into the cached
+    /// model — the first request's context would then gate every subsequent request,
+    /// a silent cross-tenant / cross-scope leak.
+    ///
+    /// Every layer is <b>fail-closed</b>. Tenant: a row is visible only when the
+    /// context is the host (<see cref="ICurrentTenant.IsHost"/> — multi-tenancy off,
+    /// or an explicit <c>Change(null)</c> scope) OR its tenant id matches a
+    /// <i>resolved</i> tenant; an unresolved tenant sees nothing. Org scope: a row is
+    /// visible only when the principal is unrestricted
+    /// (<see cref="ICurrentDataScope.IsUnrestricted"/> — scoping off, or the bypass
+    /// grant) OR its org unit is within the principal's resolved scope; an
+    /// unauthenticated or unplaced principal (once scoping is configured) sees
+    /// nothing. Seeing all tenants / all units requires a deliberate privileged scope.
     /// </summary>
     private void ApplyQueryFilters(ModelBuilder mb)
     {
         foreach (var entity in mb.Model.GetEntityTypes())
         {
             var clr = entity.ClrType;
-            var soft = typeof(ISoftDelete).IsAssignableFrom(clr);
-            var ten = typeof(IHasTenantId).IsAssignableFrom(clr);
-            if (!soft && !ten) continue;
-
-            var methodName = (soft, ten) switch
-            {
-                (true, true) => nameof(SetTenantAndSoftDeleteFilter),
-                (true, false) => nameof(SetSoftDeleteFilter),
-                (false, true) => nameof(SetTenantFilter),
-                _ => null!,
-            };
+            if (!typeof(ISoftDelete).IsAssignableFrom(clr)
+                && !typeof(IHasTenantId).IsAssignableFrom(clr)
+                && !typeof(IHasOrgUnit).IsAssignableFrom(clr))
+                continue;
 
             typeof(ModuleDbContext)
-                .GetMethod(methodName, BindingFlags.NonPublic | BindingFlags.Instance)!
+                .GetMethod(nameof(SetCombinedFilter), BindingFlags.NonPublic | BindingFlags.Instance)!
                 .MakeGenericMethod(clr)
                 .Invoke(this, [mb]);
         }
     }
 
-    private void SetSoftDeleteFilter<T>(ModelBuilder mb) where T : class, ISoftDelete
-        => mb.Entity<T>().HasQueryFilter(e => !e.IsDeleted);
+    /// <summary>
+    /// AND-combines the row-filter layers the entity opts into into the single query
+    /// filter EF Core permits. Each sub-predicate is a compiler-generated lambda
+    /// whose context-rooted closures EF re-evaluates per query; only the entity
+    /// parameter is unified (<see cref="Combine{T}"/>), so each layer's fail-closed
+    /// semantics are preserved exactly. Property access goes through
+    /// <see cref="EF.Property{TProperty}(object, string)"/> so a single
+    /// <c>where T : class</c> method serves every marker combination without an
+    /// interface constraint.
+    /// </summary>
+    private void SetCombinedFilter<T>(ModelBuilder mb) where T : class
+    {
+        Expression<Func<T, bool>>? filter = null;
 
-    private void SetTenantFilter<T>(ModelBuilder mb) where T : class, IHasTenantId
-        => mb.Entity<T>().HasQueryFilter(e =>
-            currentTenant.TenantId == null || e.TenantId == currentTenant.TenantId);
+        if (typeof(ISoftDelete).IsAssignableFrom(typeof(T)))
+            filter = Combine(filter, e => !EF.Property<bool>(e, nameof(ISoftDelete.IsDeleted)));
 
-    private void SetTenantAndSoftDeleteFilter<T>(ModelBuilder mb)
-        where T : class, IHasTenantId, ISoftDelete
-        => mb.Entity<T>().HasQueryFilter(e => !e.IsDeleted
-            && (currentTenant.TenantId == null || e.TenantId == currentTenant.TenantId));
+        if (typeof(IHasTenantId).IsAssignableFrom(typeof(T)))
+            filter = Combine(filter, e =>
+                currentTenant.IsHost
+                || (currentTenant.TenantId != null
+                    && EF.Property<Guid>(e, nameof(IHasTenantId.TenantId)) == currentTenant.TenantId));
+
+        if (typeof(IHasOrgUnit).IsAssignableFrom(typeof(T)))
+            filter = Combine(filter, e =>
+                DataScope.IsUnrestricted
+                || DataScope.OrgUnitIds.Contains(EF.Property<Guid>(e, nameof(IHasOrgUnit.OrgUnitId))));
+
+        if (filter is not null)
+            mb.Entity<T>().HasQueryFilter(filter);
+    }
+
+    /// <summary>
+    /// AND-combines two entity predicates, rebinding the right lambda onto the
+    /// left's parameter so the compiler-generated context closures on both sides are
+    /// left intact (only the entity parameter is unified).
+    /// </summary>
+    private static Expression<Func<T, bool>> Combine<T>(
+        Expression<Func<T, bool>>? left, Expression<Func<T, bool>> right)
+    {
+        if (left is null) return right;
+        var parameter = left.Parameters[0];
+        var rebound = new ParameterReplacer(right.Parameters[0], parameter).Visit(right.Body);
+        return Expression.Lambda<Func<T, bool>>(
+            Expression.AndAlso(left.Body, rebound), parameter);
+    }
+
+    private sealed class ParameterReplacer(ParameterExpression from, ParameterExpression to)
+        : ExpressionVisitor
+    {
+        protected override Expression VisitParameter(ParameterExpression node)
+            => node == from ? to : base.VisitParameter(node);
+    }
 
     private void ApplyAuditFields()
     {

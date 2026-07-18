@@ -97,7 +97,52 @@ public sealed class DependsOnAttributeTests
         services.Should().Contain(s => s.ServiceType == typeof(IdentityModule));
     }
 
+    [Fact]
+    public void Complete_BuildsGraph_AndRegistersLoaderSingleton()
+    {
+        // The graph must be built eagerly by Complete() (called from AddModulus)
+        // so an app that forgets UseModulus() still initializes its modules.
+        var services = new ServiceCollection();
+        var config = new ConfigurationBuilder().Build();
+        var builder = new ModulusBuilder(services, config);
+        builder.AddModules<ShopModule>();
+
+        var loader = builder.Complete();
+
+        loader.GetDescriptors().Should().NotBeEmpty();
+        loader.GetDescriptors().Select(d => d.ModuleType)
+            .Should().Contain(typeof(ShopModule));
+
+        // The built loader instance is registered as the IModuleLoader singleton.
+        services.Should().Contain(s =>
+            s.ServiceType == typeof(IModuleLoader)
+            && ReferenceEquals(s.ImplementationInstance, loader));
+    }
+
+    [Fact]
+    public void AddModules_InstantiatesEachModule_ExactlyOnce()
+    {
+        // Discovery used to construct a throwaway instance just to read
+        // DependsOn, then construct again for registration — running any
+        // constructor side effect twice.
+        CountingModule.Constructions = 0;
+
+        var services = new ServiceCollection();
+        var config = new ConfigurationBuilder().Build();
+        var builder = new ModulusBuilder(services, config);
+
+        builder.AddModules<CountingModule>();
+
+        CountingModule.Constructions.Should().Be(1);
+    }
+
     // ── Test modules ──────────────────────────────────────────────
+
+    private sealed class CountingModule : ModulusModule
+    {
+        public static int Constructions;
+        public CountingModule() => Interlocked.Increment(ref Constructions);
+    }
 
     private sealed class CoreFrameworkModule : ModulusModule { }
 

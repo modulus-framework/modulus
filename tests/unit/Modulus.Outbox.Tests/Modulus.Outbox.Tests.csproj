@@ -1,22 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-    <IsPackable>false</IsPackable>
-    <IsTestProject>true</IsTestProject>
-  </PropertyGroup>
-
   <ItemGroup>
     <ProjectReference Include="../../../src/messaging/Modulus.Outbox/Modulus.Outbox.csproj" />
     <ProjectReference Include="../../../src/data/Modulus.EntityFrameworkCore/Modulus.EntityFrameworkCore.csproj" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" />
-    <PackageReference Include="xunit" />
-    <PackageReference Include="xunit.runner.visualstudio" />
-    <PackageReference Include="FluentAssertions" />
-    <PackageReference Include="NSubstitute" />
-    <PackageReference Include="coverlet.collector" />
     <!-- SQLite gives us a real relational DB (ExecuteUpdate, transactions)
          without needing Docker — the right tool for outbox locking tests. -->
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />

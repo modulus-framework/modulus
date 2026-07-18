@@ -37,14 +37,20 @@ internal sealed class RebusModuleBus(
 /// </summary>
 internal sealed class RebusOutboxDispatcher(
     IBus bus,
+    IIntegrationEventRegistry registry,
     ILogger<RebusOutboxDispatcher>? logger = null) : IOutboxDispatcher
 {
     public async Task DispatchAsync(
         OutboxMessage message,
         CancellationToken ct)
     {
-        var type = Type.GetType(message.MessageType)
-            ?? throw new InvalidOperationException(
+        // Resolve from the stable transport name via the registry; fall back to
+        // Type.GetType for rows written by an older (AQN) version.
+        if (!registry.TryGetType(message.MessageType, out var type))
+            type = Type.GetType(message.MessageType);
+
+        if (type is null)
+            throw new InvalidOperationException(
                 $"Cannot resolve outbox message type: {message.MessageType}");
 
         var @event = System.Text.Json.JsonSerializer.Deserialize(message.Payload, type)

@@ -20,4 +20,19 @@ public sealed class RabbitMqOptions
     public int PrefetchCount { get; set; } = 50;
     public bool AutoAck { get; set; } = false;
     public int ReconnectDelayMs { get; set; } = 5000;
+
+    /// <summary>
+    /// Name of the dead-letter exchange. When set, the queue is declared with
+    /// <c>x-dead-letter-exchange</c> so nacked messages (no handler, or
+    /// processing failure) are routed there instead of being dropped.
+    /// Leave null/empty to disable DLX.
+    /// </summary>
+    public string? DeadLetterExchange { get; set; }
+
+    /// <summary>
+    /// Optional message TTL (milliseconds) for the main queue.
+    /// Expired messages are dead-lettered when <see cref="DeadLetterExchange"/>
+    /// is set, otherwise dropped.
+    /// </summary>
+    public int? MessageTtlMs { get; set; }
 }

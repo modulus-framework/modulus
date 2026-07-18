@@ -5,8 +5,14 @@
   </PropertyGroup>
   <ItemGroup Label="ASP.NET Core">
     <PackageVersion Include="Microsoft.AspNetCore.OpenApi"              Version="10.0.9" />
+    <!-- Transitive pin: AspNetCore.OpenApi 10.0.9 floats to Microsoft.OpenApi 2.0.0,
+         which has a high-severity advisory (GHSA-v5pm-xwqc-g5wc). Pin to latest 2.x. -->
+    <PackageVersion Include="Microsoft.OpenApi"                          Version="2.9.0" />
     <PackageVersion Include="Microsoft.AspNetCore.SignalR.StackExchangeRedis" Version="10.0.9" />
     <PackageVersion Include="Microsoft.Azure.SignalR"                   Version="1.33.0" />
+    <!-- Config-bound feature flags (percentage/time-window filters, [FeatureGate]);
+         wrapped thinly by Modulus.AspNetCore AddModulusFeatureFlags. -->
+    <PackageVersion Include="Microsoft.FeatureManagement.AspNetCore"     Version="4.6.0" />
   </ItemGroup>
   <ItemGroup Label="EF Core">
     <PackageVersion Include="Microsoft.EntityFrameworkCore"             Version="10.0.9" />
@@ -75,7 +81,6 @@
     <PackageVersion Include="AWSSDK.SQS"                             Version="4.0.3.8" />
     <PackageVersion Include="Azure.Storage.Blobs"                    Version="12.24.0" />
     <PackageVersion Include="Azure.Messaging.ServiceBus"             Version="7.19.0" />
-    <PackageVersion Include="Minio"                                   Version="6.0.4" />
   </ItemGroup>
   <ItemGroup Label="Data Access">
     <PackageVersion Include="Dapper"                                  Version="2.1.35" />
@@ -101,6 +106,9 @@
     <PackageVersion Include="Rebus.MongoDb"                             Version="9.0.0" />
     <PackageVersion Include="Rebus.TestHelpers"                         Version="9.3.0" />
     <PackageVersion Include="Polly"                                     Version="8.7.0" />
+    <!-- Standard resilience pipeline for HttpClient (retry, circuit breaker,
+         timeout, rate limiter) — used by Modulus.Platform AddModulusHttpClient. -->
+    <PackageVersion Include="Microsoft.Extensions.Http.Resilience"       Version="10.7.0" />
   </ItemGroup>
   <ItemGroup Label="Source Link &amp; Build Tools">
     <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="8.0.0" />

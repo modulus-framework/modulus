@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Modulus.Core" Version="1.0.0" />
+    <PackageReference Include="Modulus.EntityFrameworkCore" Version="1.0.0" />
+    <PackageReference Include="Modulus.Data.Abstractions" Version="1.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.9" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../modulus.Modules.Catalog.Application/modulus.Modules.Catalog.Application.csproj" />
+    <ProjectReference Include="../modulus.Modules.Catalog.Domain/modulus.Modules.Catalog.Domain.csproj" />
+    <ProjectReference Include="../modulus.Modules.Catalog.Contracts/modulus.Modules.Catalog.Contracts.csproj" />
+    <ProjectReference Include="../../modulus.Shared/modulus.Shared.Infrastructure/modulus.Shared.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>

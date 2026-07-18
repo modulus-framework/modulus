@@ -58,7 +58,7 @@ internal sealed class EfOutboxWriter(
 
         db.Set<OutboxMessage>().Add(new OutboxMessage
         {
-            MessageType = @event.GetType().AssemblyQualifiedName!,
+            MessageType = IntegrationEventNaming.GetName(@event.GetType()),
             Payload = JsonSerializer.Serialize(@event, @event.GetType()),
             TenantId = tenant.TenantId ?? Guid.Empty,
             ModuleName = db.GetType().Name

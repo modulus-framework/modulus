@@ -10,9 +10,28 @@ using Modulus.Events.Abstractions;
 public static class EFCoreServiceCollectionExtensions
 {
     /// <summary>
-    /// Registers a module DbContext + EfRepository + EfReadRepository.
-    /// configure: opts => opts.UseSqlServer(...) or UseNpgsql(...).
+    /// Registers a module <typeparamref name="TContext"/> together with the
+    /// generic <see cref="EfRepository{T}"/> / <see cref="EfReadRepository{T}"/>,
+    /// and exposes the context as <see cref="DbContext"/> so that
+    /// <c>TransactionBehavior</c> (which resolves <c>GetServices&lt;DbContext&gt;()</c>)
+    /// discovers and wraps <em>every</em> module context — not just the first.
     /// </summary>
+    /// <remarks>
+    /// <b>Does not register <see cref="IUnitOfWork"/>.</b> In a modular monolith
+    /// each module owns its own unit-of-work abstraction (see
+    /// <c>Modulus.Core</c> apps: <c>{Module}.Application.IUnitOfWork</c>) and
+    /// forwards it to its context in the module's composition root:
+    /// <code>
+    /// services.AddModuleDatabase&lt;CatalogDbContext&gt;(configure);
+    /// services.AddScoped&lt;IUnitOfWork&gt;(sp =&gt; sp.GetRequiredService&lt;CatalogDbContext&gt;());
+    /// </code>
+    /// This keeps modules fully encapsulated: their <c>IUnitOfWork</c> types are
+    /// distinct, so multiple modules never race for a single registration (the
+    /// old last-wins behaviour silently dropped commits for all but the last
+    /// module). The framework's <see cref="IUnitOfWork"/> is satisfied by
+    /// <see cref="ModuleDbContext"/> (via <see cref="ModuleDbContext.CommitAsync"/>)
+    /// and may be registered the same way for single-module apps.
+    /// </remarks>
     public static IServiceCollection AddModuleDatabase<TContext>(
         this IServiceCollection services,
         Action<DbContextOptionsBuilder> configure)
@@ -22,7 +41,8 @@ public static class EFCoreServiceCollectionExtensions
 
         // Also register as DbContext so TransactionBehavior (which resolves
         // GetServices<DbContext>()) discovers every module context and wraps
-        // them all in a transaction — not just the first one.
+        // them all in a transaction — not just the first one. This is also how
+        // EfRepository<T> locates the context that owns entity T.
         services.AddScoped<DbContext>(sp => sp.GetRequiredService<TContext>());
 
         // Default no-op outbox. Replaced by EfOutboxWriter when AddOutbox
@@ -30,11 +50,31 @@ public static class EFCoreServiceCollectionExtensions
         // can override via Replace.
         services.TryAddScoped<IIntegrationEventOutbox, NullIntegrationEventOutbox>();
 
-        services.AddScoped<IUnitOfWork>(
-            sp => sp.GetRequiredService<TContext>());
+        // Record that TContext owns its entities so EfRepository<T> resolves
+        // exactly this context for them (registration-time routing) instead of
+        // instantiating and model-scanning every registered context per call.
+        GetOrAddEntityContextMapRegistry(services).Register(typeof(TContext));
+
         services.AddScoped(typeof(IRepository<>), typeof(EfRepository<>));
         services.AddScoped(typeof(IReadRepository<>), typeof(EfReadRepository<>));
         return services;
     }
 
+    /// <summary>
+    /// Returns the single <see cref="EntityContextMapRegistry"/> shared across all
+    /// <see cref="AddModuleDatabase{TContext}"/> calls, creating and registering it
+    /// (and the <see cref="IEntityContextMap"/> that reads it) on first use.
+    /// </summary>
+    private static EntityContextMapRegistry GetOrAddEntityContextMapRegistry(
+        IServiceCollection services)
+    {
+        if (services.FirstOrDefault(d => d.ServiceType == typeof(EntityContextMapRegistry))
+                ?.ImplementationInstance is EntityContextMapRegistry existing)
+            return existing;
+
+        var registry = new EntityContextMapRegistry();
+        services.AddSingleton(registry);
+        services.TryAddSingleton<IEntityContextMap, EntityContextMap>();
+        return registry;
+    }
 }

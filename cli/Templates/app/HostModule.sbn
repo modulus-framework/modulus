@@ -1,0 +1,13 @@
+{{ if !no_example }}using {{ root_namespace }}.Modules.{{ example_module }}.Infrastructure;
+{{ end }}using Modulus.Core.Abstractions;
+
+namespace {{ root_namespace }}.Api.Modules;
+
+/// <summary>
+/// Root startup module for {{ app_name }}.  Lists every business module
+/// via [DependsOn] so that Modulus auto-discovers the full graph.
+/// </summary>
+{{ if !no_example }}[DependsOn(typeof({{ example_module }}Module))]
+{{ end }}public sealed class {{ app_name }}HostModule : ModulusModule
+{
+}

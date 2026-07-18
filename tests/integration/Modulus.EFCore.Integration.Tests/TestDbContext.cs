@@ -45,6 +45,8 @@ public sealed class TestCurrentTenant : ICurrentTenant
     public Guid? TenantId { get; set; } = Guid.Parse("aaaaaaaa-0000-0000-0000-000000000001");
     public string? TenantSlug { get; set; } = "test-tenant";
     public bool IsAvailable => TenantId.HasValue;
+    // Models a resolved-tenant request (never the host context).
+    public bool IsHost => false;
 
     // Test double only — scope switching is exercised in the unit-test suite.
     public IDisposable Change(TenantInfo? tenant) => new NoopDisposable();

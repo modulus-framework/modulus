@@ -1,0 +1,65 @@
+{
+  "ConnectionStrings": {
+{{ if !no_example }}    "{{ example_module }}": "{{ connection_string }}"
+{{ end }}  },
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning",
+      "Microsoft.EntityFrameworkCore": "Warning"
+    }
+  },
+  "Correlation": {
+    "HeaderName": "X-Correlation-ID",
+    "IncludeInResponse": true,
+    "UseTraceIdWhenMissing": true
+  },
+  "Idempotency": {
+    "HeaderName": "Idempotency-Key",
+    "Methods": [ "POST", "PATCH" ],
+    "RequireKey": false,
+    "ValidateRequestMatch": true,
+    "RetentionSeconds": 86400
+  },
+  "OpenApi": {
+    "Title": "{{ app_name }} API",
+    "Version": "v1",
+    "IncludeBearerSecurity": true
+  },
+  "ApiVersioning": {
+    "DefaultVersion": "1.0",
+    "AssumeDefaultVersionWhenUnspecified": true,
+    "ReportApiVersions": true
+  },
+  "RateLimiting": {
+    "Enabled": true,
+    "PermitLimit": 100,
+    "WindowSeconds": 60,
+    "QueueLimit": 0,
+    "Partition": "User"
+  },
+  "Cors": {
+    "AllowedOrigins": [],
+    "AllowedMethods": [],
+    "AllowedHeaders": [],
+    "AllowCredentials": false
+  },
+  "SecurityHeaders": {
+    "ContentTypeOptions": true,
+    "FrameOptions": "DENY",
+    "ReferrerPolicy": "strict-origin-when-cross-origin",
+    "EnableHsts": true
+  },
+  "FeatureManagement": {
+    "SampleFeature": false
+  },
+  "SecretsGuard": {
+    "Enabled": true,
+    "FailOnViolation": true
+  },
+  "PersonalDataProtection": {
+    "Enabled": true,
+    "Purpose": "Modulus.PersonalData.Protector.v1"
+  },
+  "AllowedHosts": "*"
+}

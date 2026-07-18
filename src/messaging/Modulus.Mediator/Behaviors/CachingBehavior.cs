@@ -14,14 +14,19 @@ using Modulus.Mediator.Abstractions.Attributes;
 public sealed class CachingBehavior<TRequest, TResponse>(
     IMemoryCache cache) : IPipelineBehavior<TRequest, TResponse>
 {
+    // The attribute is fixed per request type; read it once per closed generic.
+    private static readonly CacheForAttribute? s_attr =
+        typeof(TRequest).GetCustomAttribute<CacheForAttribute>();
+
     public async Task<TResponse> HandleAsync(
         TRequest request,
         RequestHandlerDelegate<TResponse> next,
         CancellationToken ct)
     {
-        var attr = typeof(TRequest).GetCustomAttribute<CacheForAttribute>();
-        if (attr is null)
+        if (s_attr is null)
             return await next();
+
+        var attr = s_attr;
 
         var key = BuildCacheKey(request);
 

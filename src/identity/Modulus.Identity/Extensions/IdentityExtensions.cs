@@ -94,8 +94,12 @@ public static class IdentityExtensions
                        .SetUserInfoEndpointUris("/connect/userinfo");
 
                 options.AllowAuthorizationCodeFlow()
-                       .AllowRefreshTokenFlow()
-                       .AllowPasswordFlow();
+                       .AllowRefreshTokenFlow();
+
+                // ROPC is off by default (removed in OAuth 2.1). Opt in only for
+                // trusted first-party clients via Identity:AllowPasswordFlow.
+                if (identityOptions.AllowPasswordFlow)
+                    options.AllowPasswordFlow();
 
                 options.RegisterScopes(
                     OpenIddictConstants.Scopes.Email,
@@ -109,8 +113,16 @@ public static class IdentityExtensions
                        .SetRefreshTokenLifetime(
                         TimeSpan.FromDays(identityOptions.RefreshTokenLifetimeDays));
 
-                options.AddDevelopmentEncryptionCertificate()
-                       .AddDevelopmentSigningCertificate();
+                // Development certificates are ephemeral (regenerated per restart)
+                // and must never sign production tokens. Off by default; enable via
+                // Identity:UseDevelopmentCertificates in Development only. In
+                // production register real certificates through the configure
+                // callback below — otherwise OpenIddict fails fast at startup.
+                if (identityOptions.UseDevelopmentCertificates)
+                {
+                    options.AddDevelopmentEncryptionCertificate()
+                           .AddDevelopmentSigningCertificate();
+                }
 
                 options.UseAspNetCore()
                        .EnableTokenEndpointPassthrough()
@@ -125,6 +137,23 @@ public static class IdentityExtensions
                 options.UseAspNetCore();
             });
 
+        return services;
+    }
+
+    /// <summary>
+    /// Routes <see cref="ICurrentUser.HasPermission"/> through the server-side grant
+    /// store: the current principal's effective permissions are resolved from its
+    /// user id and role claims (via <c>IPermissionResolver</c>) instead of from
+    /// fine-grained "permission" claims on the token. Requires the authorization
+    /// services (<c>AddModulusAuthorization</c>) and, for any permissions to resolve,
+    /// grants seeded via <c>AddPermissionGrants</c>. Opt-in — without it,
+    /// <see cref="ClaimsPrincipalCurrentUser"/> falls back to permission claims.
+    /// </summary>
+    public static IServiceCollection AddGrantStorePermissionChecker(
+        this IServiceCollection services)
+    {
+        services.AddHttpContextAccessor();
+        services.AddScoped<IPermissionChecker, GrantStorePermissionChecker>();
         return services;
     }
 

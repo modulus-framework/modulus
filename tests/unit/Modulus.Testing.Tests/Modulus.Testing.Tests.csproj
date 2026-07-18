@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <ProjectReference Include="../../../src/testing/Modulus.Testing/Modulus.Testing.csproj" />
+    <ProjectReference Include="../../../src/core/Modulus.Core/Modulus.Core.csproj" />
+    <ProjectReference Include="../../../src/data/Modulus.EntityFrameworkCore/Modulus.EntityFrameworkCore.csproj" />
+    <ProjectReference Include="../../../src/messaging/Modulus.Events/Modulus.Events.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- A non-SQLite provider to register the fake module with, so the swap has
+         something real to replace. -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" />
+  </ItemGroup>
+
+</Project>

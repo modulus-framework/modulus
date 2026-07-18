@@ -102,7 +102,8 @@ public sealed class ChannelJobQueue(
 
     public async Task StopAsync(CancellationToken ct)
     {
-        _cts?.Cancel();
+        if (_cts is not null)
+            await _cts.CancelAsync();
         _channel.Writer.Complete();
 
         var pending = _workers.ToList();
@@ -190,9 +191,12 @@ public sealed class ChannelJobQueue(
             await using var scope = sp.CreateAsyncScope();
             try
             {
-                dynamic job = scope.ServiceProvider
-                    .GetRequiredService(envelope.JobType);
-                await job.ExecuteAsync((dynamic)envelope.Args, ct);
+                // Resolve via the closed generic IBackgroundJob<TArgs> interface
+                // so we can dispatch through the interface without dynamic/DLR.
+                var jobInterface = typeof(IBackgroundJob<>).MakeGenericType(envelope.ArgsType);
+                var job = scope.ServiceProvider.GetRequiredService(jobInterface);
+                var invoker = s_jobInvokers.GetOrAdd(envelope.ArgsType, CompileJobInvoker);
+                await invoker(job, envelope.Args, ct);
             }
             catch (Exception ex)
             {
@@ -200,5 +204,22 @@ public sealed class ChannelJobQueue(
                     envelope.JobType.Name);
             }
         }
+    }
+
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<Type,
+        Func<object, object, CancellationToken, Task>> s_jobInvokers = new();
+
+    private static Func<object, object, CancellationToken, Task> CompileJobInvoker(Type argsType)
+    {
+        var jobType  = typeof(IBackgroundJob<>).MakeGenericType(argsType);
+        var method   = jobType.GetMethod("ExecuteAsync")!;
+        var jobParam = System.Linq.Expressions.Expression.Parameter(typeof(object), "job");
+        var argParam = System.Linq.Expressions.Expression.Parameter(typeof(object), "args");
+        var ctParam  = System.Linq.Expressions.Expression.Parameter(typeof(CancellationToken), "ct");
+        var castJob  = System.Linq.Expressions.Expression.Convert(jobParam, jobType);
+        var castArg  = System.Linq.Expressions.Expression.Convert(argParam, argsType);
+        var call     = System.Linq.Expressions.Expression.Call(castJob, method, castArg, ctParam);
+        return System.Linq.Expressions.Expression.Lambda<Func<object, object, CancellationToken, Task>>(
+            call, jobParam, argParam, ctParam).Compile();
     }
 }

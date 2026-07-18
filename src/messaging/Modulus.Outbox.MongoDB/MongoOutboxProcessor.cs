@@ -89,13 +89,15 @@ public sealed class MongoOutboxProcessor(
         foreach (var message in messages)
         {
             // Restore the tenant context captured when the outbox row was
-            // written so downstream handlers see the correct tenant.
-            IDisposable? tenantScope = null;
-            if (message.TenantId != Guid.Empty && currentTenant is not null)
-            {
-                tenantScope = currentTenant.Change(
-                    new TenantInfo(message.TenantId, message.TenantId.ToString("N")));
-            }
+            // written so downstream handlers see the correct tenant. A row
+            // written in the host context (TenantId == Guid.Empty) dispatches
+            // under an explicit host scope (Change(null)) so fail-closed tenant
+            // filters don't hide the host's own data from the handler.
+            IDisposable? tenantScope = currentTenant is null
+                ? null
+                : currentTenant.Change(message.TenantId == Guid.Empty
+                    ? null
+                    : new TenantInfo(message.TenantId, message.TenantId.ToString("N")));
 
             try
             {

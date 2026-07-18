@@ -30,7 +30,18 @@ public sealed class OutboxProcessor(
         if (contexts.Count == 0) return;
 
         foreach (var db in contexts)
-            await ProcessContextAsync(db, ssp, options, ct);
+        {
+            try
+            {
+                await ProcessContextAsync(db, ssp, options, ct);
+            }
+            catch (InvalidOperationException ex)
+                when (ex.Message.Contains("not included in the model"))
+            {
+                // This DbContext doesn't have an outbox table configured
+                // (AddOutbox wasn't called for it). Skip silently.
+            }
+        }
     }
 
     private async Task ProcessContextAsync(
@@ -41,7 +52,6 @@ public sealed class OutboxProcessor(
     {
         var dispatcher = ssp.GetRequiredService<IOutboxDispatcher>();
         var now = DateTime.UtcNow;
-        var lockUntil = now.AddSeconds(options.LockTimeoutSec);
 
         // 1. Pick candidate ids: unprocessed, under the retry budget, not
         //    currently locked by another instance, and whose backoff (if any)
@@ -63,19 +73,26 @@ public sealed class OutboxProcessor(
         //    both picked the same candidates cannot both win — the UPDATEs
         //    serialize per row and the second affects zero rows. This is the
         //    provider-agnostic equivalent of SELECT ... FOR UPDATE SKIP LOCKED.
+        //    LockUntil is computed fresh here (not from the stale `now`) so the
+        //    full LockTimeoutSec is available from the moment of claiming.
+        var lockUntil = DateTime.UtcNow.AddSeconds(options.LockTimeoutSec);
         await db.Set<OutboxMessage>()
             .Where(m => candidateIds.Contains(m.Id)
                      && m.ProcessedAt == null
-                     && (m.LockedUntil == null || m.LockedUntil < now))
+                     && (m.LockedUntil == null || m.LockedUntil < DateTime.UtcNow))
             .ExecuteUpdateAsync(
                 s => s.SetProperty(m => m.LockedBy, _instanceId)
                       .SetProperty(m => m.LockedUntil, lockUntil),
                 ct);
 
-        // 3. Load the rows this instance now owns (fresh from the DB so the
-        //    claim state is visible). Ignore any whose backoff hasn't elapsed.
+        // 3. Load only the rows this instance claimed in THIS batch (scoped to
+        //    candidateIds). Without this scope, rows locked by this instance in
+        //    a prior cycle that crashed before SaveChanges would also be
+        //    returned, causing duplicate dispatch.
         var messages = await db.Set<OutboxMessage>()
-            .Where(m => m.LockedBy == _instanceId && m.ProcessedAt == null)
+            .Where(m => candidateIds.Contains(m.Id)
+                     && m.LockedBy == _instanceId
+                     && m.ProcessedAt == null)
             .OrderBy(m => m.CreatedAt)
             .ToListAsync(ct);
 
@@ -87,22 +104,33 @@ public sealed class OutboxProcessor(
         //    the claim and the message is redelivered (at-least-once) —
         //    consumers MUST dedup via the inbox.
         var currentTenant = ssp.GetService<ICurrentTenant>();
+        var correlation = ssp.GetService<ICorrelationContext>();
         foreach (var message in messages)
         {
             // Restore the tenant context captured when the outbox row was
             // written so downstream handlers (query filters, etc.) see the
-            // correct tenant. Host/empty-tenant messages dispatch unchanged.
-            IDisposable? tenantScope = null;
-            if (message.TenantId != Guid.Empty && currentTenant is not null)
-            {
-                tenantScope = currentTenant.Change(
-                    new TenantInfo(message.TenantId, message.TenantId.ToString("N")));
-            }
+            // correct tenant. A row written in the host context (TenantId ==
+            // Guid.Empty) is dispatched under an explicit host scope
+            // (Change(null)); without it, fail-closed tenant filters would hide
+            // the host's own data from the handler.
+            IDisposable? tenantScope = currentTenant is null
+                ? null
+                : currentTenant.Change(message.TenantId == Guid.Empty
+                    ? null
+                    : new TenantInfo(message.TenantId, message.TenantId.ToString("N")));
+
+            // Restore the originating correlation id so it flows into the
+            // in-process handlers and onto the broker envelope for cross-service
+            // tracing.
+            IDisposable? correlationScope =
+                correlation is not null && !string.IsNullOrEmpty(message.CorrelationId)
+                    ? correlation.BeginScope(message.CorrelationId)
+                    : null;
 
             try
             {
                 await dispatcher.DispatchAsync(message, ct);
-                message.ProcessedAt = now;
+                message.ProcessedAt = DateTime.UtcNow;
                 message.LockedBy = null;
                 message.LockedUntil = null;
                 logger.LogDebug("Outbox dispatched {Id} ({Type})",
@@ -115,8 +143,9 @@ public sealed class OutboxProcessor(
                 message.LockedBy = null;
                 message.LockedUntil = null;
                 // Exponential backoff so a transient broker outage doesn't
-                // hot-loop the batch. Capped at one hour.
-                message.NextAttemptAt = now.AddSeconds(
+                // hot-loop the batch. Capped at one hour. Use fresh UtcNow so
+                // the backoff starts from the actual failure time.
+                message.NextAttemptAt = DateTime.UtcNow.AddSeconds(
                     Math.Min(options.InitialBackoffSec
                               * Math.Pow(2, message.RetryCount), 3600));
 
@@ -131,6 +160,7 @@ public sealed class OutboxProcessor(
             }
             finally
             {
+                correlationScope?.Dispose();
                 tenantScope?.Dispose();
             }
         }

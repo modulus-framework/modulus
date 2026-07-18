@@ -2,16 +2,17 @@ namespace Modulus.EntityFrameworkCore;
 
 using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.Extensions.DependencyInjection;
 using Modulus.Core.Abstractions.Common;
 using Modulus.Data.Abstractions;
 
 /// <summary>
 /// EF Core implementation of <see cref="IRepository{T}"/>. Resolves the
-/// correct <see cref="DbContext"/> for entity <typeparamref name="T"/> by
-/// inspecting the model metadata of all registered contexts. This is
-/// essential in a modular monolith where multiple module DbContexts coexist:
-/// a naive <c>GetRequiredService&lt;DbContext&gt;()</c> would return only the
+/// correct <see cref="DbContext"/> for entity <typeparamref name="T"/> via the
+/// registration-time <see cref="IEntityContextMap"/>. This is essential in a
+/// modular monolith where multiple module DbContexts coexist: a naive
+/// <c>GetRequiredService&lt;DbContext&gt;()</c> would return only the
 /// last-registered context, breaking repos for all other modules.
 /// </summary>
 public class EfRepository<T>(IServiceProvider sp)
@@ -21,10 +22,10 @@ public class EfRepository<T>(IServiceProvider sp)
     private DbSet<T>? _set;
 
     /// <summary>
-    /// The DbContext that owns entity <typeparamref name="T"/>, discovered
-    /// by scanning <c>GetServices&lt;DbContext&gt;()</c> for a model that
-    /// maps the entity. Falls back to the single registered context when
-    /// only one exists.
+    /// The DbContext that owns entity <typeparamref name="T"/>. Resolved via the
+    /// registration-time <see cref="IEntityContextMap"/> — exactly the owning
+    /// context is instantiated, not every registered context. Falls back to a
+    /// runtime scan for contexts registered outside <c>AddModuleDatabase</c>.
     /// </summary>
     protected DbContext Db => _db ??= ResolveDbContext(sp);
 
@@ -32,9 +33,18 @@ public class EfRepository<T>(IServiceProvider sp)
 
     private static DbContext ResolveDbContext(IServiceProvider sp)
     {
-        var contexts = sp.GetServices<DbContext>();
+        // Fast path: the registration-time map routes entity T to exactly its
+        // owning context, so we resolve only that one context instead of
+        // instantiating every registered DbContext to scan its model.
+        if (sp.GetService<IEntityContextMap>()?.Resolve(typeof(T)) is { } contextType)
+            return (DbContext)sp.GetRequiredService(contextType);
 
-        // Find the context whose model contains entity T.
+        // Fallback: scan every registered DbContext. Covers contexts registered
+        // manually (not through AddModuleDatabase), so they are not in the map.
+        // Materialize once — GetServices<T>() returns a deferred DI enumerable;
+        // iterating it multiple times resolves new instances each time.
+        var contexts = sp.GetServices<DbContext>().ToList();
+
         foreach (var ctx in contexts)
         {
             if (ctx.Model.FindEntityType(typeof(T)) is not null)
@@ -42,8 +52,8 @@ public class EfRepository<T>(IServiceProvider sp)
         }
 
         // Single-context fallback (common in small apps).
-        if (contexts.Count() == 1)
-            return contexts.First();
+        if (contexts.Count == 1)
+            return contexts[0];
 
         throw new InvalidOperationException(
             $"No DbContext containing entity '{typeof(T).Name}' is registered. " +
@@ -93,7 +103,15 @@ public class EfRepository<T>(IServiceProvider sp)
         => await Set.AddRangeAsync(entities, ct);
 
     public Task UpdateAsync(T entity, CancellationToken ct)
-        => Db.SaveChangesAsync(ct);
+    {
+        // Mark the entity as modified so EF Core tracks it. Do NOT call
+        // SaveChangesAsync here — that flushes ALL pending changes across every
+        // tracked entity in the context, violating the unit-of-work pattern.
+        // The caller is responsible for committing via IUnitOfWork.CommitAsync.
+        if (Db.Entry(entity).State == EntityState.Detached)
+            Db.Entry(entity).State = EntityState.Modified;
+        return Task.CompletedTask;
+    }
 
     public Task DeleteAsync(T entity, CancellationToken ct)
     {
