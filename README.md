@@ -9,7 +9,7 @@ and first-class multi-tenancy.
 Modulus is designed for teams who need the architectural rigour of ABP or eShop
 without the heavyweight abstractions. It provides proven building blocks that
 compose cleanly — pick only what your application needs. The framework ships as
-**23 focused NuGet packages** plus a `dotnet tool` CLI for scaffolding complete
+**31 focused NuGet packages** plus a `dotnet tool` CLI for scaffolding complete
 solutions, modules, and CRUD code.
 
 ## Solution layout
@@ -27,12 +27,17 @@ src/
                  Inbox/Outbox.MongoDB, EventBus.RabbitMQ, EventBus.Kafka,
                  Modulus.Sagas (Rebus-based)
   platform/      Modulus.Platform (MultiTenancy + Authorization +
-                 BackgroundJobs + Caching + Storage + SignalR merged)
+                 BackgroundJobs + Caching + Storage + SignalR merged),
+                 Modulus.MultiTenancy.EntityFrameworkCore,
+                 Modulus.Authorization.EntityFrameworkCore (durable EF-backed
+                 grant/org/entitlement/delegation stores),
+                 Modulus.Authorization.Management (admin REST API over them),
+                 Modulus.AspNetCore.Redis (shared idempotency store)
   observability/ Modulus.Observability (Diagnostics + OpenTelemetry merged)
   cli/           Modulus.Cli (Spectre.Console.Cli scaffolding tool)
 tests/
-  unit/          xUnit + NSubstitute + FluentAssertions (7 projects)
-  integration/   xUnit + Testcontainers (2 projects)
+  unit/          xUnit + NSubstitute + FluentAssertions (13 projects)
+  integration/   xUnit + Testcontainers (1 project)
 ```
 
 ## Getting started
@@ -67,6 +72,22 @@ generates complete solutions, modules, and CRUD code:
 | `modulus generate-crud <Entity>` | Generates entity, repo, DTOs, command/query handlers |
 
 Templates are embedded Scriban resources under `src/cli/Modulus.Cli/Templates/`.
+
+## Sample applications
+
+- **`samples/Storefront`** — a runnable app generated with
+  `modulus app Storefront --database SQLite`, showing the framework's
+  recommended shape end to end: module system, CQRS via `Modulus.Mediator`,
+  EF Core persistence with an authored migration, the RFC 7807 error
+  contract, and HTTP integration tests via `Modulus.Testing`. See
+  [samples/Storefront/README.md](samples/Storefront/README.md) to run it.
+- **`samples/cobytemed-erp-app`** — a real, pre-existing ERP application
+  retrofitted onto Modulus incrementally (module system, mediator, HTTP
+  cross-cutting), while deliberately keeping the messaging/event-sourcing/job
+  stack it already had (Rebus, Marten, Quartz) where Modulus has no
+  equivalent. Shows what adopting Modulus into an existing, opinionated
+  codebase looks like. See
+  [samples/cobytemed-erp-app/README.md](samples/cobytemed-erp-app/README.md).
 
 ## Module system
 

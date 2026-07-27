@@ -103,24 +103,6 @@ public static class ModulusServiceCollectionExtensions
     }
 
     /// <summary>
-    /// Convenience overload that resolves <see cref="IConfiguration"/> from the
-    /// collection. Prefer the overload that takes an <see cref="IConfiguration"/>
-    /// argument to avoid building a transient service provider.
-    /// </summary>
-    public static IServiceCollection AddModulus(
-        this IServiceCollection services,
-        Action<ModulusBuilder> configure)
-    {
-        // Resolve IConfiguration without building a throwaway root provider —
-        // ServiceCollectionContainerBuilderExtensions has a dedicated path for
-        // this that avoids the singleton-disposal leak of BuildServiceProvider.
-        var configuration = services
-            .BuildServiceProvider(validateScopes: false)
-            .GetRequiredService<IConfiguration>();
-        return services.AddModulus(configuration, configure);
-    }
-
-    /// <summary>
     /// Registers the global RFC 7807 exception handler that maps
     /// Modulus exceptions to HTTP status codes.
     /// </summary>

@@ -24,11 +24,17 @@ public sealed class KeycloakIdentityProvider(
         var adminToken = await GetAdminTokenAsync(ct);
         if (adminToken is null) return null;
 
-        http.DefaultRequestHeaders.Authorization =
+        // Use a per-request HttpRequestMessage so the Authorization header is
+        // never written to HttpClient.DefaultRequestHeaders, which is shared
+        // across concurrent calls and would cause a race condition.
+        var url = $"{opts.Authority}/admin/realms/{opts.Realm}/users/{subject}";
+        using var req = new HttpRequestMessage(HttpMethod.Get, url);
+        req.Headers.Authorization =
             new AuthenticationHeaderValue("Bearer", adminToken);
 
-        var url = $"{opts.Authority}/admin/realms/{opts.Realm}/users/{subject}";
-        var resp = await http.GetFromJsonAsync<JsonElement>(url, ct);
+        using var response = await http.SendAsync(req, ct);
+        response.EnsureSuccessStatusCode();
+        var resp = await response.Content.ReadFromJsonAsync<JsonElement>(ct);
         return MapUser(resp);
     }
 

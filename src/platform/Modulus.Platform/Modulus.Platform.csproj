@@ -4,6 +4,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <Description>Platform services for Modulus: multi-tenancy, authorization, background jobs, in-memory caching, local file storage, and SignalR integration.</Description>
   </PropertyGroup>
 
   <ItemGroup>

@@ -44,5 +44,17 @@ public sealed class ModulusIdentityOptions
     /// </summary>
     public bool UseDevelopmentCertificates { get; set; }
 
+    /// <summary>
+    /// Bypasses the single-external-provider invariant enforced by
+    /// <see cref="Guards.SingleExternalProviderGuard"/>. <b>Off by default</b> —
+    /// the framework supports at most ONE external identity provider per app
+    /// (call a single <c>AddAuthentik</c>/<c>AddAuth0</c>/<c>AddOkta</c>/
+    /// <c>AddAzureAd</c>/<c>AddDuendeIdentityServer</c>/<c>AddKeycloak</c>).
+    /// Multiple registrations otherwise silently last-wins, which is almost
+    /// always a misconfiguration. Enable this escape hatch only for advanced
+    /// multi-federation scenarios (unsupported; not recommended in production).
+    /// </summary>
+    public bool AllowMultipleExternalProviders { get; set; }
+
     public Dictionary<string, ExternalProviderOptions> ExternalProviders { get; set; } = new();
 }

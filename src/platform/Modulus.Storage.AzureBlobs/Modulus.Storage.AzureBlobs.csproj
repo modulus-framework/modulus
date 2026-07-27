@@ -4,6 +4,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <Description>Azure Blob Storage file storage provider for Modulus.</Description>
   </PropertyGroup>
 
   <ItemGroup>

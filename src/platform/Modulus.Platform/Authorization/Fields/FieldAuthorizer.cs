@@ -9,7 +9,7 @@ using Modulus.Core.Abstractions;
 /// The enforcement point for field-level security. It answers, for the current
 /// principal, which fields of a type they may see and set, and applies that decision at
 /// the two boundaries the blueprint requires (§5.9): <see cref="Redact{T}"/> masks
-/// unreadable fields on a read projection, and <see cref="AuthorizeWrite"/> rejects
+/// unreadable fields on a read projection, and <see cref="AuthorizeWriteAsync"/> rejects
 /// attempts to set fields the caller may not write. Both directions are always required —
 /// a user who cannot see a field must not be able to set it.
 /// </summary>
@@ -36,8 +36,11 @@ public interface IFieldAuthorizer
     /// <paramref name="attemptedFields"/> of <paramref name="type"/> — the command/
     /// validation boundary. Fail-closed: unknown field names and fields above the caller's
     /// clearance are refused, and the denial names the offending fields for diagnostics.
+    /// Async so a decorator can durably record the decision (<c>AddScopedDecisionAuditing</c>,
+    /// blueprint §5.14/§16) — the built-in implementation itself is pure in-memory evaluation.
     /// </summary>
-    AccessDecision AuthorizeWrite(Type type, IEnumerable<string> attemptedFields);
+    Task<AccessDecision> AuthorizeWriteAsync(
+        Type type, IEnumerable<string> attemptedFields, CancellationToken ct = default);
 }
 
 /// <summary>
@@ -94,17 +97,18 @@ public sealed class FieldAuthorizer(
         return projection;
     }
 
-    public AccessDecision AuthorizeWrite(Type type, IEnumerable<string> attemptedFields)
+    public Task<AccessDecision> AuthorizeWriteAsync(
+        Type type, IEnumerable<string> attemptedFields, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(type);
         ArgumentNullException.ThrowIfNull(attemptedFields);
 
         var mask = MaskFor(type);
         var denied = attemptedFields.Where(field => !mask.CanWrite(field)).ToList();
-        return denied.Count == 0
+        return Task.FromResult(denied.Count == 0
             ? AccessDecision.Allow()
             : AccessDecision.Deny(
-                $"write to protected field(s) {string.Join(", ", denied)} on '{type.Name}' is not permitted");
+                $"write to protected field(s) {string.Join(", ", denied)} on '{type.Name}' is not permitted"));
     }
 
     private static PropertyInfo[] SettablePropertiesOf(Type type)

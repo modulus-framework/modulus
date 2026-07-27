@@ -32,7 +32,7 @@ public sealed class ModuleLoader : IModuleLoader
             // Read dependencies from BOTH [DependsOn] attributes and the
             // IModule.DependsOn property — same source as ModulusBuilder, so
             // registration and initialization ordering always agree.
-            foreach (var dep in GetCombinedDependencies(module, map))
+            foreach (var dep in GetCombinedDependencies(module))
             {
                 if (!map.TryGetValue(dep, out var depModule))
                     throw new ModuleNotFoundException(dep);
@@ -45,7 +45,7 @@ public sealed class ModuleLoader : IModuleLoader
             {
                 Name = t.Name,
                 ModuleType = t,
-                Dependencies = GetCombinedDependencies(module, map).ToArray(),
+                Dependencies = GetCombinedDependencies(module).ToArray(),
                 InitOrder = order++,
             });
         }
@@ -62,9 +62,7 @@ public sealed class ModuleLoader : IModuleLoader
     /// so that the builder (registration) and the loader (init ordering)
     /// always resolve the same dependency graph.
     /// </summary>
-    private static IEnumerable<Type> GetCombinedDependencies(
-        IModule module,
-        Dictionary<Type, IModule> map)
+    private static IEnumerable<Type> GetCombinedDependencies(IModule module)
     {
         var attrDeps = module.GetType()
             .GetCustomAttributes<DependsOnAttribute>(inherit: true)

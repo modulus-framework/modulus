@@ -1,5 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
+  <PropertyGroup>
+    <NoWarn>$(NoWarn);NU1903</NoWarn>
+  </PropertyGroup>
+
   <ItemGroup>
     <ProjectReference Include="../../../src/identity/Modulus.Identity/Modulus.Identity.csproj" />
   </ItemGroup>

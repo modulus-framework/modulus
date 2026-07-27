@@ -6,6 +6,7 @@ using Microsoft.Extensions.Configuration;
 using Modulus.Core.Abstractions;
 using Modulus.Identity;
 using Modulus.Identity.Abstractions;
+using Modulus.Identity.Guards;
 using OpenIddict.Abstractions;
 
 public static class IdentityExtensions
@@ -82,6 +83,11 @@ public static class IdentityExtensions
         services.AddScoped<
             IPasswordGrantCredentialValidator,
             NullPasswordGrantCredentialValidator>();
+
+        // Enforce the single-external-provider invariant at startup. The guard
+        // is a no-op when zero or one provider is registered, so double-register
+        // it (e.g. when AddModulusOpenIddict is mistakenly called twice) is safe.
+        services.AddHostedService<SingleExternalProviderGuard>();
 
         var identityOptions = configuration.GetSection("Identity")
             .Get<ModulusIdentityOptions>() ?? new ModulusIdentityOptions();

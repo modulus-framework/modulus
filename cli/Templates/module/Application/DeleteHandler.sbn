@@ -1,5 +1,6 @@
 using Modulus.Mediator.Abstractions;
 using Modulus.Core.Abstractions.Common;
+using Modulus.Core.Abstractions.Exceptions;
 using {{ module_namespace }}.Domain;
 
 namespace {{ module_namespace }}.Application;
@@ -14,7 +15,7 @@ public sealed class Delete{{ entity_name }}Handler(
         CancellationToken ct)
     {
         var entity = await repo.GetByIdAsync(command.Id, ct)
-            ?? throw new InvalidOperationException(
+            ?? throw new NotFoundException(
                 "{{ entity_name }} not found: " + command.Id);
 
         await repo.DeleteAsync(entity, ct);

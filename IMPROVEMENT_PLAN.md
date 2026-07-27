@@ -351,15 +351,347 @@ Regression (+23): `DelegationResolverTests` (7), `DelegationAwarePermissionResol
 shipped** (grant store → org scope → data/row scope → resource/workflow policy →
 field-level security → feature entitlements → delegation + governance).
 
+## 2026-07-19 review pass (P0s from the second architectural review)
+
+### R1. Trust & hygiene — ✅ DONE
+- **`PROJECT_STRUCTURE.md` rewritten** — it described an unrelated project
+  (FoodDeliveryApp, .NET 8, MediatR/MassTransit/Quartz); now documents the actual
+  repo. Policy: never let a doc describe a codebase that isn't this one.
+- **Phantom package pins pruned** from `Directory.Packages.props` (Hangfire, Quartz,
+  Dapper, Cassandra, Cosmos, Elastic, DynamoDB, SQS, Service Bus, Serilog,
+  BenchmarkDotNet, Bogus, unused OTel/Testcontainers/Rebus variants, JwtBearer, the
+  never-resolved `Microsoft.IdentityModel.JsonWebKeys`). **Decision:** a pin exists
+  only alongside the feature that uses it, or as a documented transitive/advisory
+  pin (policy comment now at the top of the file). Kept: the M.E.* alignment group,
+  Newtonsoft (transitive via Rebus), the IdentityModel advisory pins, SQLitePCLRaw.
+- **`AddModulus(Action<ModulusBuilder>)` overload deleted** — it built a throwaway
+  root provider while its comment claimed otherwise; no callers existed. Callers use
+  the `IConfiguration`-taking overloads.
+- Dropped the unused `map` parameter from `ModuleLoader.GetCombinedDependencies`.
+
+### R2. One error contract + strict binding — ✅ DONE (breaking, pre-1.0)
+**Problem.** Two error shapes on the wire (`ApiErrorResponse` envelope vs RFC 7807
+from the exception handler), and `EndpointDiscovery` binding silently swallowed
+conversion failures — `GET /orders/not-a-guid` ran the handler against `Guid.Empty`;
+a malformed JSON body wrote a 400 but **kept executing** the handler pipeline.
+
+**Decision.** RFC 7807 is the only error contract. New internal
+`ProblemResponses` helper (traceId always attached, independent of
+`AddProblemDetails`); binding failures, validation failures,
+`HttpResponseException`, and `SendErrorAsync` all emit it.
+`ApiErrorResponse`/`ApiErrorDetail`/`ApiResponse.Fail` **removed** (the success
+envelope `ApiResponse<T>` stays). Binding is strict: a matched property that fails
+conversion → 400 validation-problem listing *all* bad parameters; bool tokens are
+strict (`true/1/yes/on` / `false/0/no/off`, anything else 400); numeric/date parsing
+is invariant-culture; malformed JSON short-circuits. Unknown route/query keys remain
+ignored (tracking params aren't client errors). Regression: `EndpointBindingTests`
+(7). The REPR engine's larger fate (custom dispatch vs minimal-API conventions) is a
+separate decision — this fixes the correctness bugs regardless.
+
+### R3. EF-backed authorization stores — ✅ DONE (unblocks production authz)
+New package **`Modulus.Authorization.EntityFrameworkCore`** (mirrors the
+MultiTenancy EF package: references Platform + EFCore.Relational only).
+`AuthorizationStoreDbContext` owns `ModulusPermissionGrants`, `ModulusOrgUnits` +
+`ModulusOrgUnitParents` (DAG edges), `ModulusOrgPlacements`, `ModulusPlanFeatures` /
+`ModulusTenantPlans` / `ModulusFeatureOverrides`, and `ModulusDelegations`; row
+types are internal (small public surface). **Decisions:**
+- Stores are **singletons over `IDbContextFactory`** (the seam interfaces are sync
+  and consumed by singleton resolvers; per-request memoisation already happens at
+  the scoped checker/scope layer). The context is registered only via the factory —
+  never as `DbContext` — so it stays out of the module transaction fan-out;
+  `MigrateAuthorizationStoreAsync` initialises the schema.
+- `EfOrgHierarchy` serves closures from an in-memory snapshot (a rebuilt
+  `InMemoryOrgHierarchy` — code reuse, identical DAG/cycle semantics) invalidated by
+  local mutations and a 30s TTL (`CacheDuration`) for cross-instance convergence.
+- Delegation role/permission sets are JSON columns; window validity is evaluated in
+  memory via `Delegation.IsActiveAt` (SQLite stores DateTimeOffset as text — SQL
+  comparison across offsets is unreliable).
+- `AddEfCoreAuthorizationStores(configure)` is call-order independent
+  (`RemoveAll` + re-register against the TryAdd defaults) and registers concrete
+  store types for the async management APIs. In-memory seeds
+  (`AddPermissionGrants`/`AddOrganization`/…) deliberately do **not** apply to EF
+  stores — durable data is provisioned through the management APIs, not re-seeded
+  per boot.
+Regression: `EfAuthorizationStoreTests` (18, kept-open in-memory SQLite): both
+registration orders supersede, grant/deny/revoke round-trips + upsert semantics,
+durable DAG closures + reorg, placement mode replacement, plan redefinition +
+overrides, delegation windows/revocation/JSON round-trip, fail-closed empties.
+
+### R4. Distributed idempotency store — ✅ DONE
+New package **`Modulus.AspNetCore.Redis`** (it hosts Redis-backed *HTTP* concerns —
+placing it in `Modulus.Caching.Redis` would force the AspNetCore framework
+reference onto worker apps). `RedisIdempotencyStore` implements the existing
+`IIdempotencyStore` protocol with two keys per idempotency key: a `:claim` string
+written via **`SET NX`** (atomic first-caller-wins across nodes, holds the request
+fingerprint) and a `:data` string with the completed response for replay; both
+expire after `RetentionSeconds`. **Decisions:** replay wins over re-claiming even
+if the claim key expired ahead of the data key; a corrupt stored entry is treated
+as absent (re-claim + re-execute) rather than poisoning the key; a crashed node's
+claim blocks retries until TTL — same fail-closed semantics as the in-memory
+default. `AddRedisIdempotencyStore` reuses an existing `IConnectionMultiplexer` or
+connects itself; call-order independent. Regression: `RedisIdempotencyStoreTests`
+(8, substituted `IDatabase` — no server needed).
+
+### R5. Feature systems unified behind one decision — ✅ DONE
+**Decision:** the two feature layers are *deliberate* and now composed, not
+competing. Entitlements (`AddFeatureGate` / `IFeatureGate`) answer the
+**commercial** question "may this tenant use the feature at all?"; FeatureManagement
+flags (`AddModulusFeatureFlags` / `IFeatureManager`) answer the **operational**
+question "is it currently rolled out?". `RequireFeature(...)` now enforces the
+**conjunction** — entitled AND rolled out — consulting each layer only when its
+system is registered (a bare container gates nothing; `NullFeatureGate` stays
+allow-all until `AddFeatureGate`). The mediator `FeatureGateBehavior` remains
+entitlement-only (Mediator cannot depend on FeatureManagement). Docs on both
+extension classes explain the split. Regression: `RequireFeatureTests` (5).
+
+### R6. Authorization management (admin) API — ✅ DONE
+New package **`Modulus.Authorization.Management`** (references
+Authorization.EntityFrameworkCore + AspNetCore framework):
+`MapModulusAuthorizationManagement()` maps a minimal-API group (default
+`/authorization`) with grant CRUD (`/grants`), org structure (`/org/units`,
+`/org/placements`), entitlements (`/features/plans`, `/features/tenants/{id}/plan`,
+`/…/overrides`), and delegations (`/delegations` create/list/revoke). **Decisions:**
+every endpoint requires the `authorization:manage` permission through the
+framework's `:`-policy convention, declared via `AddModulusAuthorizationManagement()`
+(which also calls `AddAuthorization()` — `AddModulusAuthorization` only registers
+`AddAuthorizationCore`, and `UseAuthorization` demands the full registration);
+enum-ish inputs travel as strings and invalid values return 400 validation
+problems (the single RFC 7807 contract); handlers bind the *concrete* EF stores —
+the management surface is explicitly coupled to the durable implementation.
+`EfPermissionGrantStore` gained `GetGrantsForHolderAsync` (the admin/review read).
+Regression: `AuthorizationManagementApiTests` (7, real TestServer + test auth
+scheme: 401 unauthenticated, grant/org/entitlement/delegation flows, 400s).
+
+### Samples restore — ✅ DONE (2026-07-26)
+`samples/` initially appeared to hold only an unrelated legacy ERP project
+(`cobytemed-erp-app`, 330MB, zero references to any `Modulus.*` package) with
+no build file; it was dogfooded via `modulus app Storefront --database SQLite`
+plus `modulus migrate add InitialCreate` (an authored EF Core migration, not
+just `EnsureCreated`) as the first sample. `samples/Storefront` is the literal
+CLI output. Verified end to end — `dotnet build`/`test` 0 warnings/errors,
+`dotnet run` serving real CRUD traffic against SQLite in both Development and
+Production (`Migrate` mode) startup paths. **Bug found + fixed at the source
+while dogfooding:** the CLI's `GetByIdHandler.sbn`/`UpdateHandler.sbn`/
+`DeleteHandler.sbn` templates threw `InvalidOperationException` for a missing
+entity instead of the framework's own `Modulus.Core.Abstractions.Exceptions.
+NotFoundException` — every app scaffolded by `modulus app`/`add-module`/
+`generate-crud` returned 500 instead of a 404 problem-details response for a
+missing record. Fixed in the three `.sbn` templates (not just the generated
+sample), so future scaffolds inherit the fix. `samples/Storefront/README.md`
+documents what the sample demonstrates and how to run/test/extend it.
+
+### CobyteMed ERP retrofit onto Modulus — ✅ DONE (2026-07-26)
+`cobytemed-erp-app` turned out to be the user's own real, pre-existing project
+(a "Users module only" extract of a larger app) rather than disposable legacy
+cruft, and was retrofitted onto Modulus in place rather than replaced — a
+second sample showing incremental adoption into an opinionated, already-working
+codebase, as opposed to Storefront's from-scratch CLI scaffold. Scope agreed
+with the user up front: **core overlap only** (module system, mediator, HTTP
+cross-cutting, observability — Rebus/Marten/Quartz/MinIO stay, Modulus has no
+equivalent) and **keep `Result<T>`** (swap the mediator engine, not the app's
+functional error-handling contract). Full details and the exact swap list are
+in `samples/cobytemed-erp-app/README.md`; headline points:
+- `UsersModule` → `ModulusModule` + `[DependsOn]`; `AddModulus<CobyteMedHostModule>`
+  replaces the hand-called `AddUsersModule`.
+- The app's `ICommand`/`ICommand<T>`/`IQuery<T>` marker interfaces now redirect
+  onto `Modulus.Mediator.Abstractions`'s own (so none of the ~35 command/query
+  record declarations needed to change); ~42 handler classes were re-targeted
+  to `ICommandHandler<,>`/`IQueryHandler<,>` (`Handle` → `HandleAsync`); the
+  app's own three pipeline behaviors were ported to Modulus's
+  `IPipelineBehavior<,>` and registered **instead of** Modulus's built-ins
+  (which throw on validation failure, breaking the `Result<T>` contract).
+- `AddModulusCors`/`RateLimiting`/`SecurityHeaders`/`Correlation` replaced the
+  app's own versions (two of which — CORS and rate-limiting middleware — were
+  already dead code, never wired into the live pipeline); `AddModulusIdempotency`
+  is net new. `Modulus.Observability` wires Mediator command/query spans into
+  the app's existing OpenTelemetry pipeline.
+- Forced a `net8.0` → `net10.0` bump (Modulus doesn't multi-target) and a
+  matching wave of EF Core/Npgsql/FluentValidation/Swashbuckle package bumps,
+  plus a local `Directory.Build.props`/`Directory.Packages.props` so the
+  sample doesn't inherit the framework repo's own build props.
+- Fixed several pre-existing, Modulus-unrelated defects blocking the build:
+  a missing `using`, a dangling out-of-repo `Test.Shared` test reference
+  (recreated locally, right-sized to actual usage), five integration tests
+  exercising domain methods that don't exist on the trimmed `User` entity
+  (removed rather than inventing behavior), an `Address.Create` argument-order
+  bug, and a stale Dockerfile referencing removed modules.
+- Verified: full solution builds 0 errors; 151 domain unit tests green.
+  `IntegrationTests` compiles but needs a live Postgres (via Testcontainers,
+  requires a running Docker daemon) to execute — not runnable in this sandbox,
+  so it was verified by compilation only, not a live run.
+
+**Follow-up pass (same day):** user asked to use the framework "where needed"
+beyond core-overlap — re-surveyed every remaining non-Modulus piece against the
+actual Modulus source rather than assumption. One genuine gap found and fixed:
+`Microsoft.AspNetCore.Mvc.Versioning`/`.ApiExplorer` (a different, legacy
+library family) were referenced but never wired to anything, despite every
+route living under `/api/v1/...` — replaced with `AddModulusApiVersioning`
+(`Asp.Versioning`-based, minimal-API-compatible). Everything else surveyed —
+`ModuleDbContext` (would force a new outbox-table migration + entity
+re-annotation for a capability the app already has), `Modulus.Data.PostgreSQL`
+(gated by the same constraint), `Modulus.Sagas` (wraps Rebus generically but
+only pays off by adopting Modulus's own `IIntegrationEvent`/`IOutboxDispatcher`
+wholesale — a live-message-flow change unverifiable without a Docker daemon),
+`Modulus.Testing` (hardcodes a SQLite swap incompatible with this app's
+Postgres-specific JSONB/snake_case usage), `Modulus.AspNetCore.OpenApi` (no
+ApiKey scheme support, a downgrade from Swashbuckle), `Modulus.Identity`'s
+`AuthentikIdentityProvider` (no blacklist/session surface to replace what the
+app already has), and `Modulus.Platform`'s caching/background-jobs (both a
+capability downgrade from the app's existing Redis/Postgres/Valkey cache and
+Quartz's cron-persistent jobs) — was confirmed to be either a genuine
+non-overlap or a net capability loss, not a gap. Rechecked: full solution still
+builds 0 errors, 151 unit tests still green.
+
+### Durable audit emission — increment 1 (administrative changes) — ✅ DONE (2026-07-26)
+Blueprint §5.14/§16: "who was granted what, by whom, when" must be audited
+*unconditionally*; allow/deny decision-auditing is a separate, *declaratively
+scoped* concern (auditing every decision is "prohibitively voluminous") —
+deferred as increment 2 (see below), so this pass covers administrative
+changes only. New `Modulus.Authorization.Audit` namespace (`Modulus.Platform`):
+`AuthorizationAdministrativeChangeEvent` (`IIntegrationEvent`, stable name
+`authorization.administrative-change.v1`, Category/Action/ActorUserId/
+TargetDescription/Details) + `IAuthorizationAuditWriter` seam, no-op
+`NullAuthorizationAuditWriter` default (`AddModulusAuthorization` TryAdds it,
+mirroring every other Null-default seam in the framework).
+**`Modulus.Authorization.EntityFrameworkCore`** (`Audit/`): `AuthorizationStoreDbContext`
+gained its own `OutboxMessage` table (`ModulusAuthorizationAuditOutbox`) —
+**not** shared with a module's `outbox_messages`, since this context is
+deliberately registered only via `IDbContextFactory` (R3's isolation decision)
+and so can't ride `Modulus.Outbox`'s `OutboxProcessor`, which only scans
+bare-registered `DbContext`s. `EfAuthorizationAuditWriter` persists immediately
+(its own transaction — can't share the store write's transaction given that
+isolation); `AuthorizationAuditRelayProcessor` (+ thin `AuthorizationAuditRelayService`
+poller, split for testability the same way `OutboxProcessor`/`OutboxPollingService`
+are) claims/dispatches/retries/dead-letters with the same guarantees as
+`OutboxProcessor`, dispatching through whatever `IOutboxDispatcher` the host
+already has registered. `ICurrentTenant`/`ICorrelationContext` are resolved
+optionally (not TryAdd'd by this package) specifically to avoid a
+registration-order race against a host's real multi-tenancy setup winning or
+losing depending on call order. `AddEfCoreAuthorizationAudit(...)` wires it all
+and supersedes the Null default. **`Modulus.Authorization.Management`**: all 12
+mutating admin endpoints (grants ×2, org units ×2, org placements ×2, feature
+entitlements ×4, delegations ×2) emit an audit event via a shared
+`EmitAuditAsync` helper after their store write succeeds — never before, so a
+failed/rejected request is never audited as if it happened.
+`AddModulusAuthorizationManagement` also TryAdds `ICurrentUser` →
+`NullCurrentUser` (previously only `AddModulus`/`AddMediator`/Identity did this,
+so the package now resolves standalone). Regression: `AuthorizationAuditTests`
+(9, kept-open in-memory SQLite — writer persistence, event-type
+self-registration, dispatch/mark-processed, retry-with-backoff, dead-letter
+after max retries, registration supersession) + `AuthorizationManagementAuditTests`
+(5, real TestServer — a representative slice: grant grant/revoke, org-unit
+create, delegation create are audited with the right Category/Action/Target;
+a validation-rejected request is not). **All unit tests green** (114 in
+`Modulus.Platform.Tests` alone), 0 warnings/errors solution-wide.
+
+### `ICurrentUser.Permissions` wired through the grant store — ✅ DONE (2026-07-26)
+Increment-1 follow-up (auth blueprint §22): `HasPermission` already resolved
+server-side via `GrantStorePermissionChecker`/`IPermissionResolver`, but the
+sibling `Permissions` property on `ClaimsPrincipalCurrentUser` read raw
+`"permission"` claims off the token unconditionally — a live grant-store
+change (revoke, deny-override, delegation) would update what `HasPermission`
+says but not what `Permissions` listed, and a stale/forged permission claim on
+the token would leak straight into `Permissions` even with a checker
+registered. **Root cause**: `IPermissionChecker` only exposed
+`HasPermission(string)` — no set-returning member for `Permissions` to call,
+even though `GrantStorePermissionChecker` already computed and cached the full
+effective set internally (`_effective`) to answer `HasPermission`. **Fix**:
+added `IPermissionChecker.GetEffectivePermissions() : IReadOnlyCollection<string>`
+(a breaking interface change — pre-1.0, no compat shim per working agreement);
+`GrantStorePermissionChecker` returns its already-cached `_effective` set;
+`ClaimsPrincipalCurrentUser.Permissions` now calls it when a checker is
+registered, falling back to token claims only when one isn't (preserving prior
+behavior for apps that never opted into `AddGrantStorePermissionChecker`).
+Delegation is automatically included with no extra code — `DelegationAwarePermissionResolver`
+already implements the same `IPermissionResolver.Resolve` contract the checker
+calls. Regression: `GrantStorePermissionCheckerTests` (+2:
+`GetEffectivePermissions` full set, empty when unauthenticated) +
+new `ClaimsPrincipalCurrentUserTests` (4: resolves from the grant store,
+ignores a stale/forged permission claim once a checker is registered, empty
+when unauthenticated, falls back to token claims with no checker) — the
+codebase had zero prior test coverage on `ClaimsPrincipalCurrentUser` at all.
+**Full solution: 0 warnings/errors, all unit tests green.**
+
+### Decision-audit emission — increment 2 — ✅ DONE (2026-07-26)
+The scoped, opt-in half of blueprint §5.14/§16 deferred at the end of
+increment 1: allow/deny decisions on `IResourceAuthorizer`/`IFieldAuthorizer`,
+recording the deciding grant/rule — but only for resource types/actions
+declaratively marked audit-worthy, since auditing every decision is
+"prohibitively voluminous." **The sync/async question resolved itself**: a
+repo-wide search turned up **zero real call sites** of either interface
+anywhere in `src/` — both ship as enforcement points no handler in this
+codebase calls yet, so converting `IResourceAuthorizer.Authorize` →
+`AuthorizeAsync` and `IFieldAuthorizer.AuthorizeWrite` → `AuthorizeWriteAsync`
+(both now `Task<AccessDecision>`, pre-1.0 breaking rename, no compat shim) had
+a contained ripple: only the two tests exercising them needed `async Task` +
+`await` (11 facts, mechanical). `Redact`/`MaskFor` (the read boundary) stay
+synchronous — read-path field auditing is a further-scoped increment 3, out
+of scope here (auditing every read touching a classified field is even higher
+volume than write decisions). New `Modulus.Platform`
+(`Authorization/Audit/`): `AccessDecisionAuditEvent` (stable name
+`authorization.access-decision.v1`); `IAuditableActionRegistry` (declarative
+`(Type, action)` opt-in, `NullAuditableActionRegistry` fail-safe default —
+nothing audited until marked); `AuditingResourceAuthorizer`/
+`AuditingFieldAuthorizer` decorators that pass the inner decision through
+unchanged and emit an event only when the registry says so.
+`AddScopedDecisionAuditing(configure)` wires it all, mirroring
+`AddDelegation`'s `DelegationAwarePermissionResolver` pattern exactly
+(register the concrete authorizer, `services.Replace` the public seam with
+the decorator wrapping it). Regression: 9 new tests in
+`ScopedDecisionAuditingTests` (registry marking, emits-when-marked/
+emits-nothing-when-unmarked for both authorizers, `Redact` passthrough stays
+unaudited, end-to-end DI wiring) + the 11 renamed-signature call sites fixed.
+**Full solution: 0 warnings/errors, all unit tests green (123 in
+`Modulus.Platform.Tests`).** Both audit-emission increments from the blueprint
+are now shipped.
+
+### REPR engine's fate — ✅ DECIDED: keep REPR, simplify the engine (2026-07-26)
+Zero real adopters of `Endpoint<TRequest,TResponse>` exist anywhere in the repo
+or samples (confirmed by search) — the engineering case favored retiring it for
+plain minimal APIs. **User's call: keep REPR as the authoring convention,
+fix/simplify what's underneath it instead.** Sequenced as tests-first
+(no test had ever driven a real `EndpointBase`-derived endpoint through
+`MapModulusEndpoints` + real routing — `EndpointBindingTests` only calls the
+internal `BindRequestAsync` helper against a hand-built `HttpContext`), then
+simplify.
+
+New `EndpointDispatchIntegrationTests` (11, real `WebApplication` +
+`UseTestServer()`, mirroring `AuthorizationManagementApiTests`'s convention):
+route/query binding through real `MapMethods` routing, malformed-route-value
+400s, FluentValidation failures, malformed-JSON-body short-circuit,
+`HttpResponseException`/`ThrowError` short-circuiting, `DontWrapResponse`,
+role-based authorization enforcement (401/403/200). **This surfaced a real,
+previously-unnoticed defect**: `MapCore`'s per-request delegate creates a
+fresh `TEndpoint` instance via `ActivatorUtilities.CreateFactory` for every
+request, but only the discovery-time throwaway instance ever had `Configure()`
+called on it — the real per-request instance's own `Config` (read at runtime
+by `SendOkAsync`/`SendCreatedAsync` for `WrapResponse`) was silently always
+left at its untouched default. `DontWrapResponse()` was a no-op at runtime for
+every endpoint that ever called it. **Fix**: `EndpointBase.Initialize` now
+takes the discovery-time `EndpointConfig` and assigns it onto the per-request
+instance (`internal void Initialize(HttpContext ctx, EndpointConfig config)`),
+so `Configure()`'s effects reach the instance that actually serves the
+request — no re-invocation of `Configure()` per request needed, consistent
+with the "closed once at startup" design already documented on
+`EndpointDiscovery`.
+
+With the safety net in place, `TryConvertValue`'s bespoke per-type branches
+(`Guid`/`DateTime`/`DateTimeOffset`/`TimeSpan` plus a `Convert.ChangeType`
+catch-all) were replaced with a single path through `IParsable<T>.TryParse` —
+the same convention ASP.NET Core's own minimal-API parameter binding uses —
+cached per target `Type` via `MakeGenericMethod` (which doubles as the
+"does this type support binding" check, since it fails the `where T :
+IParsable<T>` constraint otherwise). The enum branch and the strict-bool
+branch (R2's `true/1/yes/on` / `false/0/no/off` rule) are untouched — neither
+maps cleanly onto `IParsable<T>` semantics. Authoring surface
+(`EndpointBase`/`Configure()`/`HandleAsync()`) is unchanged.
+**Full solution: 0 warnings/errors, all unit tests green (58 in
+`Modulus.AspNetCore.Tests`, including the original 7 `EndpointBindingTests`
+unchanged).**
+
 ### Remaining P1 (not started)
-Docs site + samples restore; API baselines + package validation in CI; test coverage
-push (regression test per fixed defect; fakes package). Authorization-adjacent follow-ups
-now that the 7-layer PDP is complete: **durable audit emission** (administrative-change +
-scoped decision auditing over the existing outbox transport, blueprint §5.14/§16 — the one
-governance piece modelled but not yet wired to a transport); an **EF-backed** grant/org/
-entitlement/delegation store set (the in-memory stores were built TryAdd-superseded for
-exactly this); and wiring increment-1's `ICurrentUser.Permissions` through the grant store
-(still reads permission claims).
+Docs site; API baselines + package validation in CI; broader test coverage
+push (regression test per fixed defect; fakes package).
 
 ## P2 / P3
 Localization, audit module, persistent scheduler (Quartz/Hangfire), distributed

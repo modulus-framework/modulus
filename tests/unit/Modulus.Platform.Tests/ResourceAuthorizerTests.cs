@@ -22,59 +22,59 @@ public sealed class ResourceAuthorizerTests
         .Allow("read", r => r.InCallerScope()));
 
     [Fact]
-    public void NoPolicyRegistered_Denies_FailClosed()
+    public async Task NoPolicyRegistered_Denies_FailClosed()
     {
         var authorizer = new ResourceAuthorizer(
             new StubUser(Owner), Unrestricted, new StubRegistry(policy: null));
 
-        var decision = authorizer.Authorize(new Doc(), "edit");
+        var decision = await authorizer.AuthorizeAsync(new Doc(), "edit");
 
         decision.IsAllowed.Should().BeFalse();
         decision.Reason.Should().Contain("no resource policy");
     }
 
     [Fact]
-    public void OwnerInDraft_MayEdit_ViaCurrentUserIdentity()
+    public async Task OwnerInDraft_MayEdit_ViaCurrentUserIdentity()
     {
         var authorizer = new ResourceAuthorizer(
             new StubUser(Owner), Unrestricted, new StubRegistry(DocPolicy));
 
-        authorizer.Authorize(new Doc { OwnerId = Owner, WorkflowState = "Draft" }, "edit")
+        (await authorizer.AuthorizeAsync(new Doc { OwnerId = Owner, WorkflowState = "Draft" }, "edit"))
             .IsAllowed.Should().BeTrue();
     }
 
     [Fact]
-    public void NonOwner_MayNotEdit()
+    public async Task NonOwner_MayNotEdit()
     {
         var authorizer = new ResourceAuthorizer(
             new StubUser(Guid.NewGuid()), Unrestricted, new StubRegistry(DocPolicy));
 
-        authorizer.Authorize(new Doc { OwnerId = Owner, WorkflowState = "Draft" }, "edit")
+        (await authorizer.AuthorizeAsync(new Doc { OwnerId = Owner, WorkflowState = "Draft" }, "edit"))
             .IsAllowed.Should().BeFalse();
     }
 
     [Fact]
-    public void AnonymousPrincipal_IsDenied()
+    public async Task AnonymousPrincipal_IsDenied()
     {
         var authorizer = new ResourceAuthorizer(
             new StubUser(userId: null), Unrestricted, new StubRegistry(DocPolicy));
 
-        authorizer.Authorize(new Doc { OwnerId = Owner, WorkflowState = "Draft" }, "edit")
+        (await authorizer.AuthorizeAsync(new Doc { OwnerId = Owner, WorkflowState = "Draft" }, "edit"))
             .IsAllowed.Should().BeFalse();
     }
 
     [Fact]
-    public void ReadIsScopeGated_ReusingCurrentDataScope()
+    public async Task ReadIsScopeGated_ReusingCurrentDataScope()
     {
         var doc = new Doc { OrgUnitId = Unit, WorkflowState = "Draft" };
 
         // In scope → allowed.
-        new ResourceAuthorizer(new StubUser(Owner), new StubScope(Unit), new StubRegistry(DocPolicy))
-            .Authorize(doc, "read").IsAllowed.Should().BeTrue();
+        (await new ResourceAuthorizer(new StubUser(Owner), new StubScope(Unit), new StubRegistry(DocPolicy))
+            .AuthorizeAsync(doc, "read")).IsAllowed.Should().BeTrue();
 
         // Out of scope (restricted to a different unit) → denied, mirroring the list filter.
-        new ResourceAuthorizer(new StubUser(Owner), new StubScope(Guid.NewGuid()), new StubRegistry(DocPolicy))
-            .Authorize(doc, "read").IsAllowed.Should().BeFalse();
+        (await new ResourceAuthorizer(new StubUser(Owner), new StubScope(Guid.NewGuid()), new StubRegistry(DocPolicy))
+            .AuthorizeAsync(doc, "read")).IsAllowed.Should().BeFalse();
     }
 
     private static StubScope Unrestricted => new(unrestricted: true);

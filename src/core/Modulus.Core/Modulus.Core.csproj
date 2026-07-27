@@ -4,6 +4,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <Description>Core abstractions and utilities for the Modulus framework: module system, domain events, multi-tenancy, storage and data protection abstractions.</Description>
   </PropertyGroup>
 
   <ItemGroup>

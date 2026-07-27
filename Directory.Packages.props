@@ -3,16 +3,14 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
   </PropertyGroup>
+
   <ItemGroup Label="ASP.NET Core">
     <PackageVersion Include="Microsoft.AspNetCore.OpenApi"              Version="10.0.9" />
-    <!-- Transitive pin: AspNetCore.OpenApi 10.0.9 floats to Microsoft.OpenApi 2.0.0,
-         which has a high-severity advisory (GHSA-v5pm-xwqc-g5wc). Pin to latest 2.x. -->
     <PackageVersion Include="Microsoft.OpenApi"                          Version="2.9.0" />
     <PackageVersion Include="Microsoft.AspNetCore.SignalR.StackExchangeRedis" Version="10.0.9" />
     <PackageVersion Include="Microsoft.Azure.SignalR"                   Version="1.33.0" />
-    <!-- Config-bound feature flags (percentage/time-window filters, [FeatureGate]);
-         wrapped thinly by Modulus.AspNetCore AddModulusFeatureFlags. -->
     <PackageVersion Include="Microsoft.FeatureManagement.AspNetCore"     Version="4.6.0" />
+    <PackageVersion Include="Swashbuckle.AspNetCore"                     Version="6.9.0" />
   </ItemGroup>
   <ItemGroup Label="EF Core">
     <PackageVersion Include="Microsoft.EntityFrameworkCore"             Version="10.0.9" />
@@ -33,12 +31,8 @@
   <ItemGroup Label="NoSQL">
     <PackageVersion Include="MongoDB.Driver"                            Version="3.9.0" />
     <PackageVersion Include="StackExchange.Redis"                       Version="3.0.0" />
-    <PackageVersion Include="Elastic.Clients.Elasticsearch"             Version="9.4.2" />
-    <PackageVersion Include="CassandraCSharpDriver"                     Version="3.22.0" />
-    <PackageVersion Include="Microsoft.Azure.Cosmos"                    Version="3.61.0" />
-    <PackageVersion Include="AWSSDK.DynamoDBv2"                        Version="4.0.21.6" />
   </ItemGroup>
-  <ItemGroup Label="Microsoft.Extensions (abstractions)">
+  <ItemGroup Label="Microsoft.Extensions">
     <PackageVersion Include="Microsoft.Extensions.Configuration.Abstractions"          Version="10.0.9" />
     <PackageVersion Include="Microsoft.Extensions.Configuration.Binder"               Version="10.0.9" />
     <PackageVersion Include="Microsoft.Extensions.Configuration"                       Version="10.0.9" />
@@ -53,16 +47,13 @@
     <PackageVersion Include="Microsoft.Extensions.Hosting.Abstractions"                Version="10.0.9" />
     <PackageVersion Include="Microsoft.Extensions.Hosting"                            Version="10.0.9" />
   </ItemGroup>
-  <ItemGroup Label="Security (pinned to clear advisories)">
-    <!-- Pinned above Hangfire's transitive floor to clear NU1903 (GHSA-5crp-9r3c-p9vr) -->
+  <ItemGroup Label="Security">
     <PackageVersion Include="Newtonsoft.Json"                                        Version="13.0.4" />
-    <PackageVersion Include="Microsoft.IdentityModel.JsonWebKeys"                     Version="8.12.1" />
-    <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer"          Version="10.0.9" />
     <PackageVersion Include="Microsoft.IdentityModel.Protocols.OpenIdConnect"         Version="8.12.1" />
     <PackageVersion Include="Microsoft.AspNetCore.Authentication.OpenIdConnect"       Version="10.0.9" />
     <PackageVersion Include="System.IdentityModel.Tokens.Jwt"                         Version="8.12.1" />
   </ItemGroup>
-  <ItemGroup Label="Validation &amp; Mapping">
+  <ItemGroup Label="Validation">
     <PackageVersion Include="FluentValidation"                          Version="12.1.1" />
     <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
     <PackageVersion Include="ErrorOr"                                   Version="2.1.1" />
@@ -71,26 +62,13 @@
     <PackageVersion Include="OpenTelemetry"                             Version="1.16.0" />
     <PackageVersion Include="OpenTelemetry.Api"                        Version="1.16.0" />
     <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore"  Version="1.15.2" />
-    <PackageVersion Include="OpenTelemetry.Instrumentation.EntityFrameworkCore" Version="1.15.1-beta.1" />
-    <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.16.0" />
-    <PackageVersion Include="Serilog.AspNetCore"                        Version="10.0.0" />
-    <PackageVersion Include="BenchmarkDotNet"                           Version="0.15.8" />
   </ItemGroup>
-  <ItemGroup Label="Cloud Storage &amp; Messaging">
+  <ItemGroup Label="Cloud Storage">
     <PackageVersion Include="AWSSDK.S3"                              Version="4.0.22" />
-    <PackageVersion Include="AWSSDK.SQS"                             Version="4.0.3.8" />
     <PackageVersion Include="Azure.Storage.Blobs"                    Version="12.24.0" />
-    <PackageVersion Include="Azure.Messaging.ServiceBus"             Version="7.19.0" />
-  </ItemGroup>
-  <ItemGroup Label="Data Access">
-    <PackageVersion Include="Dapper"                                  Version="2.1.35" />
   </ItemGroup>
   <ItemGroup Label="Background Jobs">
-    <PackageVersion Include="Hangfire.Core"                             Version="1.8.23" />
-    <PackageVersion Include="Hangfire.AspNetCore"                       Version="1.8.23" />
     <PackageVersion Include="Cronos"                                    Version="0.9.0" />
-    <PackageVersion Include="Quartz"                                    Version="3.13.1" />
-    <PackageVersion Include="Quartz.Extensions.Hosting"                 Version="3.13.1" />
   </ItemGroup>
   <ItemGroup Label="Message Brokers">
     <PackageVersion Include="RabbitMQ.Client"                           Version="7.2.1" />
@@ -100,17 +78,10 @@
     <PackageVersion Include="Rebus"                                     Version="8.9.2" />
     <PackageVersion Include="Rebus.ServiceProvider"                     Version="10.7.2" />
     <PackageVersion Include="Rebus.Microsoft.Extensions.Logging"        Version="5.2.0" />
-    <PackageVersion Include="Rebus.RabbitMq"                            Version="10.1.1" />
-    <PackageVersion Include="Rebus.SqlServer"                           Version="8.4.1" />
-    <PackageVersion Include="Rebus.PostgreSql"                          Version="9.1.1" />
-    <PackageVersion Include="Rebus.MongoDb"                             Version="9.0.0" />
-    <PackageVersion Include="Rebus.TestHelpers"                         Version="9.3.0" />
     <PackageVersion Include="Polly"                                     Version="8.7.0" />
-    <!-- Standard resilience pipeline for HttpClient (retry, circuit breaker,
-         timeout, rate limiter) — used by Modulus.Platform AddModulusHttpClient. -->
     <PackageVersion Include="Microsoft.Extensions.Http.Resilience"       Version="10.7.0" />
   </ItemGroup>
-  <ItemGroup Label="Source Link &amp; Build Tools">
+  <ItemGroup Label="Source Link">
     <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="8.0.0" />
     <PackageVersion Include="Microsoft.VisualStudio.Threading.Analyzers" Version="17.13.2" />
     <PackageVersion Include="Roslynator.Analyzers" Version="4.13.1" />
@@ -129,17 +100,8 @@
     <PackageVersion Include="xunit.runner.visualstudio"                Version="3.1.5" />
     <PackageVersion Include="FluentAssertions"                          Version="7.2.0" />
     <PackageVersion Include="NSubstitute"                               Version="5.3.0" />
-    <PackageVersion Include="Bogus"                                     Version="35.6.5" />
     <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing"          Version="10.0.9" />
-    <PackageVersion Include="Testcontainers"                            Version="4.12.0" />
     <PackageVersion Include="Testcontainers.PostgreSql"                 Version="4.12.0" />
-    <PackageVersion Include="Testcontainers.MsSql"                      Version="4.12.0" />
-    <PackageVersion Include="Testcontainers.MySql"                      Version="4.12.0" />
-    <PackageVersion Include="Testcontainers.MongoDB"                    Version="4.12.0" />
-    <PackageVersion Include="Testcontainers.Redis"                      Version="4.12.0" />
-    <PackageVersion Include="Testcontainers.Elasticsearch"              Version="4.12.0" />
-    <PackageVersion Include="Testcontainers.RabbitMq"                   Version="4.12.0" />
-    <PackageVersion Include="Testcontainers.Kafka"                      Version="4.12.0" />
     <PackageVersion Include="coverlet.collector"                        Version="10.0.1" />
   </ItemGroup>
 </Project>

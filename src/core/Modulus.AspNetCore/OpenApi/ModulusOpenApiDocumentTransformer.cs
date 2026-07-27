@@ -1,3 +1,4 @@
+#if NET10_0_OR_GREATER
 namespace Modulus.AspNetCore.OpenApi;
 
 using Microsoft.AspNetCore.OpenApi;
@@ -63,3 +64,4 @@ internal sealed class ModulusOpenApiDocumentTransformer(IOptions<ModulusOpenApiO
     private static Uri? ParseUri(string? value)
         => Uri.TryCreate(value, UriKind.Absolute, out var uri) ? uri : null;
 }
+#endif

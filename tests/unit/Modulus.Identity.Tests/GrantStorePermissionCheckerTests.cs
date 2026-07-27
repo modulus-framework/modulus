@@ -96,4 +96,26 @@ public sealed class GrantStorePermissionCheckerTests
 
         checker.HasPermission("finance:ledger:post").Should().BeFalse();
     }
+
+    [Fact]
+    public void GetEffectivePermissions_ReturnsTheFullResolvedSet()
+    {
+        var checker = BuildChecker(
+            Authenticated(User, "clerk"),
+            s => s.GrantToRole("clerk", "sales:order:read", "sales:order:update")
+                  .GrantToUser(User, "reports:view"));
+
+        checker.GetEffectivePermissions().Should().BeEquivalentTo(
+            ["sales:order:read", "sales:order:update", "reports:view"]);
+    }
+
+    [Fact]
+    public void GetEffectivePermissions_IsEmpty_WhenUnauthenticated()
+    {
+        var checker = BuildChecker(
+            principal: null,
+            seed: s => s.GrantToRole("clerk", "sales:order:read"));
+
+        checker.GetEffectivePermissions().Should().BeEmpty();
+    }
 }

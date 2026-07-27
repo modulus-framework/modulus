@@ -12,6 +12,18 @@ using Microsoft.FeatureManagement.FeatureFilters;
 /// <see cref="AddModulusFeatureFlags"/> (services) with
 /// <see cref="RequireFeatureExtensions.RequireFeature{TBuilder}"/> to gate
 /// minimal-API endpoints.
+/// <para>
+/// <b>How this relates to feature entitlements.</b> Modulus has two deliberate
+/// feature layers with distinct owners: <i>entitlements</i>
+/// (<c>AddFeatureGate</c> + plans/overrides behind
+/// <see cref="Modulus.Core.Abstractions.IFeatureGate"/>) answer the
+/// <b>commercial</b> question "may this tenant use the feature at all?", while
+/// these config-bound flags answer the <b>operational</b> question "is the
+/// feature currently rolled out (globally, by percentage, by time window)?".
+/// Use either alone, or both: <c>RequireFeature</c> enforces the conjunction —
+/// a feature is served only when the tenant is entitled <i>and</i> the rollout
+/// flag is on.
+/// </para>
 /// </summary>
 public static class FeatureFlagsExtensions
 {

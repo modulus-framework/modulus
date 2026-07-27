@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Modulus.Authorization.Audit;
 using Modulus.Authorization.Features;
 using Modulus.Authorization.Fields;
 using Modulus.Authorization.Governance;
@@ -29,6 +30,11 @@ public static class AuthorizationExtensions
         services.AddSingleton<IAuthorizationPolicyProvider,
             ModulusPermissionPolicyProvider>();
         services.AddAuthorizationCore();
+        // The handler behind every ':'-permission policy: decisions are resolved
+        // server-side through IPermissionResolver (so runtime grant changes take
+        // effect immediately), with token permission claims as a second source.
+        services.TryAddEnumerable(ServiceDescriptor
+            .Singleton<IAuthorizationHandler, PermissionRequirementHandler>());
         services.AddHostedService<PermissionInitHostedService>();
 
         // Grant store + resolver. TryAdd so a later increment (e.g. an EF-backed
@@ -86,6 +92,12 @@ public static class AuthorizationExtensions
         services.TryAddSingleton<IDelegationResolver>(EmptyDelegationResolver.Instance);
         services.TryAddSingleton<ISodPolicy>(SodPolicy.Empty);
         services.TryAddSingleton<IEffectiveAccessService, EffectiveAccessService>();
+
+        // Audit emission (blueprint §5.14/§16): no-op until AddEfCoreAuthorizationAudit
+        // (Modulus.Authorization.EntityFrameworkCore) supersedes it. The action registry
+        // is empty (nothing audit-worthy) until AddScopedDecisionAuditing marks entries.
+        services.TryAddSingleton<IAuthorizationAuditWriter>(NullAuthorizationAuditWriter.Instance);
+        services.TryAddSingleton<IAuditableActionRegistry>(NullAuditableActionRegistry.Instance);
         return services;
     }
 
@@ -149,8 +161,8 @@ public static class AuthorizationExtensions
     /// resource type <typeparamref name="T"/> and, on first use, the scoped
     /// <see cref="IResourceAuthorizer"/> that enforces it — the instance-level
     /// authorization layer (blueprint §5.7, §5.8). Call
-    /// <c>authorizer.Authorize(record, "approve")</c> in a handler after loading the
-    /// record. Fail-closed: a type with no policy, or an action no rule grants,
+    /// <c>await authorizer.AuthorizeAsync(record, "approve")</c> in a handler after loading
+    /// the record. Fail-closed: a type with no policy, or an action no rule grants,
     /// denies. Multiple calls register policies for different types (last one for a
     /// given type wins). Requires a real <see cref="ICurrentUser"/> (Identity module)
     /// and — for scope-conditioned rules — <see cref="AddOrgDataScope"/>.
@@ -171,7 +183,7 @@ public static class AuthorizationExtensions
     /// <see cref="IFieldAuthorizer"/> that enforces it — the field-level security layer
     /// (blueprint §5.9, §11). Use <c>authorizer.Redact(dto)</c> at the read/projection
     /// boundary to mask fields the caller may not see, and
-    /// <c>authorizer.AuthorizeWrite(typeof(T), attemptedFields)</c> at the command
+    /// <c>await authorizer.AuthorizeWriteAsync(typeof(T), attemptedFields)</c> at the command
     /// boundary to reject writes to fields above their clearance. Fail-closed: a field
     /// classified on the model is protected by the built-in deny-by-default rules even
     /// before a profile opens it. Multiple calls register profiles for different types
@@ -185,6 +197,58 @@ public static class AuthorizationExtensions
         services.AddSingleton(new FieldSecurityRegistration(typeof(T), profile));
         services.TryAddSingleton<IFieldSecurityRegistry, FieldSecurityRegistry>();
         services.TryAddScoped<IFieldAuthorizer, FieldAuthorizer>();
+        return services;
+    }
+
+    /// <summary>
+    /// Turns on <b>scoped decision auditing</b> (blueprint §5.14/§16): wraps
+    /// <see cref="IResourceAuthorizer"/> and <see cref="IFieldAuthorizer"/> (both
+    /// registered by <see cref="AddResourcePolicy{T}"/>/<see cref="AddFieldSecurity{T}"/>)
+    /// with decorators that emit an <see cref="AccessDecisionAuditEvent"/> via
+    /// <see cref="IAuthorizationAuditWriter"/> — but only for the resource
+    /// type/action pairs <paramref name="configure"/> marks audit-worthy, since
+    /// auditing every decision is "prohibitively voluminous" per the blueprint.
+    /// Requires <see cref="AddResourcePolicy{T}"/>/<see cref="AddFieldSecurity{T}"/>
+    /// to already be registered for the decorated instance to have an inner
+    /// authorizer to wrap, and — to actually persist events — an
+    /// <see cref="IAuthorizationAuditWriter"/> (<c>AddEfCoreAuthorizationAudit</c>
+    /// in <c>Modulus.Authorization.EntityFrameworkCore</c>; otherwise the no-op
+    /// default silently discards them).
+    /// <code>
+    /// services.AddResourcePolicy&lt;Invoice&gt;(policy);
+    /// services.AddScopedDecisionAuditing(registry =>
+    ///     registry.Mark(typeof(Invoice), "approve"));
+    /// </code>
+    /// </summary>
+    public static IServiceCollection AddScopedDecisionAuditing(
+        this IServiceCollection services,
+        Action<AuditableActionRegistry> configure)
+    {
+        ArgumentNullException.ThrowIfNull(configure);
+
+        var registry = new AuditableActionRegistry();
+        configure(registry);
+        services.Replace(ServiceDescriptor.Singleton<IAuditableActionRegistry>(registry));
+
+        // Register the concrete authorizers so the decorator can depend on the
+        // *undecorated* instance, then Replace the public seam — the same
+        // pattern AddDelegation uses for DelegationAwarePermissionResolver.
+        services.TryAddScoped<ResourceAuthorizer>();
+        services.Replace(ServiceDescriptor.Scoped<IResourceAuthorizer>(sp =>
+            new AuditingResourceAuthorizer(
+                sp.GetRequiredService<ResourceAuthorizer>(),
+                sp.GetRequiredService<IAuditableActionRegistry>(),
+                sp.GetRequiredService<IAuthorizationAuditWriter>(),
+                sp.GetRequiredService<ICurrentUser>())));
+
+        services.TryAddScoped<FieldAuthorizer>();
+        services.Replace(ServiceDescriptor.Scoped<IFieldAuthorizer>(sp =>
+            new AuditingFieldAuthorizer(
+                sp.GetRequiredService<FieldAuthorizer>(),
+                sp.GetRequiredService<IAuditableActionRegistry>(),
+                sp.GetRequiredService<IAuthorizationAuditWriter>(),
+                sp.GetRequiredService<ICurrentUser>())));
+
         return services;
     }
 

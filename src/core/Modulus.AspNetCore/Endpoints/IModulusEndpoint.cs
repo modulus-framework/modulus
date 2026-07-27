@@ -14,6 +14,19 @@ public interface IModulusEndpoint
 }
 
 /// <summary>
+/// The typed handler contract of a REPR endpoint. Implemented by
+/// <see cref="Endpoint{TRequest, TResponse}"/> and <see cref="Endpoint{TRequest}"/>;
+/// <see cref="EndpointDiscovery"/> dispatches through it with a statically-typed
+/// call closed per endpoint at startup — no per-request reflection.
+/// </summary>
+public interface IEndpointHandler<in TRequest>
+    where TRequest : class
+{
+    /// <summary>Handles the bound, validated request.</summary>
+    Task HandleAsync(TRequest req, CancellationToken ct);
+}
+
+/// <summary>
 /// Internal metadata captured from <see cref="IModulusEndpoint.Configure"/>.
 /// Read at registration time to build minimal-API route entries.
 /// </summary>

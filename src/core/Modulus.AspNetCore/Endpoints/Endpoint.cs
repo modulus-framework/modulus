@@ -32,7 +32,7 @@ using Modulus.AspNetCore.Http;
 /// </code>
 /// </example>
 /// </summary>
-public abstract class Endpoint<TRequest, TResponse> : EndpointBase
+public abstract class Endpoint<TRequest, TResponse> : EndpointBase, IEndpointHandler<TRequest>
     where TRequest : class, new()
 {
     protected Endpoint()
@@ -80,7 +80,7 @@ public abstract class Endpoint<TRequest, TResponse> : EndpointBase
 /// <summary>
 /// Endpoint variant for requests with no response body (HTTP 204).
 /// </summary>
-public abstract class Endpoint<TRequest> : EndpointBase
+public abstract class Endpoint<TRequest> : EndpointBase, IEndpointHandler<TRequest>
     where TRequest : class, new()
 {
     protected Endpoint()
@@ -89,6 +89,11 @@ public abstract class Endpoint<TRequest> : EndpointBase
         Config.ResponseType = null;
     }
 
+    /// <summary>
+    /// Override to implement the endpoint logic.
+    /// With no response type the endpoint conventionally ends with
+    /// <c>SendNoContentAsync</c> or an error helper.
+    /// </summary>
     public abstract Task HandleAsync(TRequest req, CancellationToken ct);
 }
 

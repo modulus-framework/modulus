@@ -52,10 +52,14 @@ internal sealed class ClaimsPrincipalCurrentUser(
     }
 
     public IReadOnlyList<string> Permissions =>
-        Principal?.FindAll("permission")
-            .Select(c => c.Value)
-            .ToList()
-        ?? (IReadOnlyList<string>)[];
+        permissionChecker is not null
+            ? permissionChecker.GetEffectivePermissions().ToList()
+            // Fallback: same claim-based reasoning as HasPermission's fallback —
+            // resolve from the token when no store-backed checker is registered.
+            : Principal?.FindAll("permission")
+                .Select(c => c.Value)
+                .ToList()
+            ?? (IReadOnlyList<string>)[];
 }
 
 /// <summary>
@@ -65,4 +69,13 @@ internal sealed class ClaimsPrincipalCurrentUser(
 public interface IPermissionChecker
 {
     bool HasPermission(string permission);
+
+    /// <summary>
+    /// The principal's full effective permission set (blueprint §22) — backs
+    /// <see cref="ICurrentUser.Permissions"/> so it reflects live grant-store
+    /// state (implication closure, wildcards, deny-override, delegation) the
+    /// same way <see cref="HasPermission"/> already does, instead of trusting
+    /// whatever "permission" claims happen to be baked into the token.
+    /// </summary>
+    IReadOnlyCollection<string> GetEffectivePermissions();
 }

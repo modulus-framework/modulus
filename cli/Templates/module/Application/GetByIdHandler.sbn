@@ -1,4 +1,5 @@
 using Modulus.Mediator.Abstractions;
+using Modulus.Core.Abstractions.Exceptions;
 using {{ module_namespace }}.Domain;
 using {{ module_namespace }}.Application.Dtos;
 
@@ -12,7 +13,7 @@ public sealed class Get{{ entity_name }}ByIdHandler(I{{ entity_name }}Repository
         CancellationToken ct)
     {
         var entity = await repo.GetByIdAsync(query.Id, ct)
-            ?? throw new InvalidOperationException(
+            ?? throw new NotFoundException(
                 "{{ entity_name }} not found: " + query.Id);
 
         return new {{ entity_name }}Dto { Id = entity.Id, Name = entity.Name };

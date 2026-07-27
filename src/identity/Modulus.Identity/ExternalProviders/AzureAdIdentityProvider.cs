@@ -24,11 +24,17 @@ public sealed class AzureAdIdentityProvider(
         var token = await GetAccessTokenAsync(ct);
         if (token is null) return null;
 
-        http.DefaultRequestHeaders.Authorization =
+        // Use a per-request HttpRequestMessage so the Authorization header is
+        // never written to HttpClient.DefaultRequestHeaders, which is shared
+        // across concurrent calls and would cause a race condition.
+        var url = $"{opts.GraphApiBaseUrl}users/{subject}";
+        using var req = new HttpRequestMessage(HttpMethod.Get, url);
+        req.Headers.Authorization =
             new AuthenticationHeaderValue("Bearer", token);
 
-        var url = $"{opts.GraphApiBaseUrl}users/{subject}";
-        var resp = await http.GetFromJsonAsync<JsonElement>(url, ct);
+        using var response = await http.SendAsync(req, ct);
+        response.EnsureSuccessStatusCode();
+        var resp = await response.Content.ReadFromJsonAsync<JsonElement>(ct);
         return MapUser(resp);
     }
 

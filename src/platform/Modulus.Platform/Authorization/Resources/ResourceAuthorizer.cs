@@ -14,9 +14,12 @@ public interface IResourceAuthorizer
     /// <summary>
     /// Decides whether the current principal may perform <paramref name="action"/> on
     /// <paramref name="resource"/>. Fail-closed: a resource type with no registered
-    /// policy, or a policy with no granting rule, denies.
+    /// policy, or a policy with no granting rule, denies. Async so a decorator can
+    /// durably record the decision (<c>AddScopedDecisionAuditing</c>, blueprint
+    /// §5.14/§16) — the built-in implementation itself is pure in-memory evaluation.
     /// </summary>
-    AccessDecision Authorize(object resource, string action);
+    Task<AccessDecision> AuthorizeAsync(
+        object resource, string action, CancellationToken ct = default);
 }
 
 /// <summary>
@@ -33,15 +36,16 @@ public sealed class ResourceAuthorizer(
     ICurrentDataScope dataScope,
     IResourcePolicyRegistry registry) : IResourceAuthorizer
 {
-    public AccessDecision Authorize(object resource, string action)
+    public Task<AccessDecision> AuthorizeAsync(
+        object resource, string action, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(resource);
         ArgumentException.ThrowIfNullOrWhiteSpace(action);
 
         var policy = registry.Find(resource.GetType());
         if (policy is null)
-            return AccessDecision.Deny(
-                $"no resource policy is registered for '{resource.GetType().Name}'");
+            return Task.FromResult(AccessDecision.Deny(
+                $"no resource policy is registered for '{resource.GetType().Name}'"));
 
         var request = new ResourceRequest(
             currentUser.UserId,
@@ -51,6 +55,6 @@ public sealed class ResourceAuthorizer(
             ResourceAttributes.From(resource),
             action);
 
-        return policy.Evaluate(request);
+        return Task.FromResult(policy.Evaluate(request));
     }
 }

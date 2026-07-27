@@ -1,5 +1,3 @@
-using System.Collections.Concurrent;
-using System.Linq.Expressions;
 using System.Reflection;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
@@ -15,7 +13,12 @@ using Modulus.AspNetCore.Http;
 
 /// <summary>
 /// Scans assemblies for REPR endpoints (classes inheriting from
-/// <see cref="EndpointBase"/>) and registers minimal-API routes for each.
+/// <see cref="EndpointBase"/>) and maps each one as a standard minimal-API
+/// route. The authoring surface stays REPR (<c>Configure()</c> + typed
+/// <c>HandleAsync</c>); the engine underneath is conventional ASP.NET Core: a
+/// route registered through <c>MapMethods</c> with authorization and OpenAPI
+/// metadata attached as endpoint conventions, executing in the request's own
+/// DI scope through a statically-typed delegate closed once at startup.
 /// </summary>
 public static class EndpointDiscovery
 {
@@ -95,51 +98,154 @@ public static class EndpointDiscovery
 
     // ── Route registration ────────────────────────────────────────
 
+    private static readonly MethodInfo s_mapCore = typeof(EndpointDiscovery)
+        .GetMethod(nameof(MapCore), BindingFlags.NonPublic | BindingFlags.Static)!;
+
     private static void RegisterEndpoint(
         IEndpointRouteBuilder app,
         Type endpointType,
         EndpointConfig config)
     {
-        var builder = app.MapMethods(
-            config.Route,
-            [config.Verb],
-            async (HttpContext ctx) =>
-                await ExecuteAsync(endpointType, config, ctx));
+        if (config.RequestType is null
+            || !typeof(IEndpointHandler<>).MakeGenericType(config.RequestType)
+                .IsAssignableFrom(endpointType))
+        {
+            throw new InvalidOperationException(
+                $"Endpoint '{endpointType.FullName}' must inherit " +
+                "Endpoint<TRequest>, Endpoint<TRequest, TResponse>, or " +
+                "EndpointWithoutRequest<TResponse>.");
+        }
 
-        // Authorization
+        // Close the typed registration once at startup; every per-request
+        // concern from here on is statically typed.
+        s_mapCore.MakeGenericMethod(endpointType, config.RequestType)
+            .Invoke(null, [app, endpointType, config]);
+    }
+
+    private static void MapCore<TEndpoint, TRequest>(
+        IEndpointRouteBuilder app,
+        Type endpointType,
+        EndpointConfig config)
+        where TEndpoint : EndpointBase, IEndpointHandler<TRequest>
+        where TRequest : class, new()
+    {
+        // Constructor injection without registering endpoints in DI: the
+        // factory is resolved once and reused for every request.
+        var factory = ActivatorUtilities.CreateFactory(typeof(TEndpoint), Type.EmptyTypes);
+        var verb = config.Verb;
+        var bindsRequest = typeof(TRequest) != typeof(EmptyRequest);
+
+        // Typed as Delegate (not the implicit Func<HttpContext, Task> match) so
+        // overload resolution picks the minimal-API MapMethods(Delegate) overload
+        // returning RouteHandlerBuilder — a bare RequestDelegate-shaped lambda
+        // binds to the RequestDelegate overload instead, which only returns
+        // IEndpointConventionBuilder and has no OpenAPI metadata methods.
+        Delegate handler = async (HttpContext ctx) =>
+        {
+            // The endpoint runs in the request's own scope (ctx.RequestServices),
+            // sharing scoped services with middleware — the previous engine
+            // created a nested scope, silently forking e.g. the current tenant.
+            var ct = ctx.RequestAborted;
+            var endpoint = (TEndpoint)factory(ctx.RequestServices, arguments: null);
+            endpoint.Initialize(ctx, config);
+
+            var request = new TRequest();
+            if (bindsRequest)
+            {
+                // A binding failure has already written a 400 problem response —
+                // the handler must never run against a half-bound request.
+                var (bound, succeeded) = await BindRequestAsync(
+                    typeof(TRequest), ctx, verb, ct);
+                if (!succeeded)
+                    return;
+
+                request = (TRequest)bound;
+                if (!await ValidateAsync(
+                        ctx.RequestServices, typeof(TRequest), request, ctx, ct))
+                    return;
+            }
+
+            try
+            {
+                await endpoint.HandleAsync(request, ct);
+            }
+            catch (HttpResponseException ex)
+            {
+                if (!ctx.Response.HasStarted)
+                    await ProblemResponses.WriteAsync(ctx, ex.StatusCode, ex.Message);
+            }
+        };
+
+        var builder = app.MapMethods(config.Route, [verb], handler);
+
+        ApplyAuthorization(builder, config);
+        ApplyOpenApi(builder, endpointType, config, bindsRequest);
+    }
+
+    private static void ApplyAuthorization(
+        IEndpointConventionBuilder builder, EndpointConfig config)
+    {
         if (config.AllowAnonymous)
         {
             builder.AllowAnonymous();
-        }
-        else
-        {
-            var authData = new List<IAuthorizeData>();
-
-            foreach (var perm in config.Permissions)
-                authData.Add(new AuthorizeAttribute(perm));
-
-            foreach (var policy in config.Policies)
-                authData.Add(new AuthorizeAttribute(policy));
-
-            if (config.Roles.Length > 0)
-                authData.Add(new AuthorizeAttribute
-                {
-                    Roles = string.Join(',', config.Roles)
-                });
-
-            if (authData.Count > 0)
-                builder.RequireAuthorization([.. authData]);
+            return;
         }
 
-        // OpenAPI metadata
-        var tag = config.Tag ?? ExtractTag(endpointType);
-        builder.WithTags(tag);
+        var authData = new List<IAuthorizeData>();
+
+        foreach (var perm in config.Permissions)
+            authData.Add(new AuthorizeAttribute(perm));
+
+        foreach (var policy in config.Policies)
+            authData.Add(new AuthorizeAttribute(policy));
+
+        if (config.Roles.Length > 0)
+            authData.Add(new AuthorizeAttribute
+            {
+                Roles = string.Join(',', config.Roles)
+            });
+
+        if (authData.Count > 0)
+            builder.RequireAuthorization([.. authData]);
+    }
+
+    private static void ApplyOpenApi(
+        RouteHandlerBuilder builder,
+        Type endpointType,
+        EndpointConfig config,
+        bool bindsRequest)
+    {
+        builder.WithTags(config.Tag ?? ExtractTag(endpointType));
 
         if (config.Summary is not null)
             builder.WithSummary(config.Summary);
 
         if (config.Deprecated)
             builder.WithDescription("[DEPRECATED] " + (config.Summary ?? ""));
+
+        // Request/response shapes for OpenAPI. The response type reflects the
+        // conventional success path: the (optionally wrapped) payload for
+        // endpoints with a response type, 204 for those without. Binding and
+        // validation failures surface as RFC 7807 validation problems.
+        if (bindsRequest && verbHasBody(config.Verb))
+            builder.Accepts(config.RequestType, "application/json");
+
+        if (config.ResponseType is null)
+        {
+            builder.Produces(StatusCodes.Status204NoContent);
+        }
+        else
+        {
+            var responseType = config.WrapResponse
+                ? typeof(ApiResponse<>).MakeGenericType(config.ResponseType)
+                : config.ResponseType;
+            builder.Produces(StatusCodes.Status200OK, responseType);
+        }
+
+        if (bindsRequest)
+            builder.ProducesValidationProblem();
+
+        static bool verbHasBody(string verb) => IsBodyMethod(verb);
     }
 
     private static string ExtractTag(Type endpointType)
@@ -165,84 +271,17 @@ public static class EndpointDiscovery
     private static readonly string[] s_actionPrefixes =
         ["Create", "Get", "List", "Update", "Delete", "Upsert", "Search", "Find"];
 
-    // ── Request execution ─────────────────────────────────────────
-
-    /// <summary>
-    /// Cached compiled delegates per endpoint type. Replaces the old
-    /// <c>dynamic</c> dispatch which paid the DLR runtime-binder cost on
-    /// every request and lost compile-time type safety.
-    /// </summary>
-    private static readonly ConcurrentDictionary<Type, Func<EndpointBase, object, CancellationToken, Task>> s_handlers = new();
-
-    private static async Task ExecuteAsync(
-        Type endpointType,
-        EndpointConfig config,
-        HttpContext ctx)
-    {
-        await using var scope = ctx.RequestServices.CreateAsyncScope();
-        var sp = scope.ServiceProvider;
-        var ct = ctx.RequestAborted;
-
-        // Activate endpoint from DI
-        var endpoint = (EndpointBase)ActivatorUtilities.CreateInstance(sp, endpointType);
-        endpoint.Initialize(ctx);
-
-        // Bind request
-        var request = await BindRequestAsync(config.RequestType, ctx, config.Verb, ct);
-
-        // Validate
-        if (!await ValidateAsync(sp, config.RequestType, request, ctx, ct))
-            return;
-
-        // Execute handler via a cached compiled delegate (no dynamic dispatch)
-        try
-        {
-            var handler = s_handlers.GetOrAdd(endpointType, CompileHandler);
-            await handler(endpoint, request, ct);
-        }
-        catch (HttpResponseException ex)
-        {
-            if (!ctx.Response.HasStarted)
-            {
-                ctx.Response.StatusCode = ex.StatusCode;
-                await ctx.Response.WriteAsJsonAsync(
-                    ApiResponse.Fail(ex.Message, traceId: ctx.TraceIdentifier), ct);
-            }
-        }
-    }
-
-    /// <summary>
-    /// Compiles a strongly-typed delegate for the endpoint's HandleAsync
-    /// method so the per-request call avoids DLR overhead.
-    /// </summary>
-    private static Func<EndpointBase, object, CancellationToken, Task> CompileHandler(
-        Type endpointType)
-    {
-        var method = endpointType.GetMethod(
-            "HandleAsync", BindingFlags.Public | BindingFlags.Instance);
-
-        if (method is null)
-            throw new InvalidOperationException(
-                $"Endpoint '{endpointType.FullName}' must have a public HandleAsync method.");
-
-        var requestType = method.GetParameters()[0].ParameterType;
-
-        var epParam = Expression.Parameter(typeof(EndpointBase), "ep");
-        var reqParam = Expression.Parameter(typeof(object), "req");
-        var ctParam = Expression.Parameter(typeof(CancellationToken), "ct");
-
-        var castEp = Expression.Convert(epParam, endpointType);
-        var castReq = Expression.Convert(reqParam, requestType);
-
-        var call = Expression.Call(castEp, method, castReq, ctParam);
-
-        return Expression.Lambda<Func<EndpointBase, object, CancellationToken, Task>>(
-            call, epParam, reqParam, ctParam).Compile();
-    }
-
     // ── Request binding ────────────────────────────────────────────
 
-    private static async Task<object> BindRequestAsync(
+    /// <summary>
+    /// Binds the request from body, route values, and query string. Returns
+    /// <c>Succeeded = false</c> after writing a 400 problem response when the
+    /// body is malformed JSON or any matched property fails conversion — a bad
+    /// value must never be silently skipped (the previous behaviour left e.g.
+    /// a malformed Guid id as <c>Guid.Empty</c> and ran the handler against
+    /// the wrong key). Internal for regression tests.
+    /// </summary>
+    internal static async Task<(object Request, bool Succeeded)> BindRequestAsync(
         Type requestType, HttpContext ctx, string verb, CancellationToken ct)
     {
         object? request = null;
@@ -256,23 +295,23 @@ public static class EndpointDiscovery
             }
             catch (System.Text.Json.JsonException)
             {
-                ctx.Response.StatusCode = StatusCodes.Status400BadRequest;
-                await ctx.Response.WriteAsJsonAsync(new ApiErrorResponse
-                {
-                    Message = "Malformed JSON body.",
-                    TraceId = ctx.TraceIdentifier,
-                }, ct);
-                return request!;
+                await ProblemResponses.WriteAsync(
+                    ctx, StatusCodes.Status400BadRequest, "Malformed JSON body.");
+                return (null!, false);
             }
         }
 
         request ??= Activator.CreateInstance(requestType)!;
 
+        // Collect every conversion failure so the client sees all bad
+        // parameters at once, mirroring validation-problem semantics.
+        Dictionary<string, string[]>? errors = null;
+
         // Overlay route values (always — route params have highest priority)
         foreach (var (key, value) in ctx.GetRouteData().Values)
         {
             if (value is not null)
-                SetProperty(request, key, value.ToString()!);
+                BindProperty(request, key, value.ToString()!, ref errors);
         }
 
         // Query binding for non-body methods
@@ -281,71 +320,140 @@ public static class EndpointDiscovery
             foreach (var (key, values) in ctx.Request.Query)
             {
                 if (values.Count > 0)
-                    SetProperty(request, key, values.ToString()!);
+                    BindProperty(request, key, values.ToString(), ref errors);
             }
         }
 
-        return request;
+        if (errors is not null)
+        {
+            await ProblemResponses.WriteValidationAsync(
+                ctx, errors, title: "One or more binding errors occurred.");
+            return (null!, false);
+        }
+
+        return (request, true);
     }
 
     private static bool IsBodyMethod(string verb)
         => verb is "POST" or "PUT" or "PATCH";
 
-    private static void SetProperty(object target, string key, string value)
+    private static void BindProperty(
+        object target, string key, string value,
+        ref Dictionary<string, string[]>? errors)
     {
         var prop = target.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance)
             .FirstOrDefault(p => string.Equals(p.Name, key, StringComparison.OrdinalIgnoreCase)
                                  && p.CanWrite);
 
+        // Unknown route/query keys are simply not bound — extra query
+        // parameters (tracking params etc.) are not a client error.
         if (prop is null)
             return;
 
-        var converted = ConvertValue(value, prop.PropertyType);
-        if (converted is not null)
-            prop.SetValue(target, converted);
+        if (TryConvertValue(value, prop.PropertyType, out var converted))
+        {
+            if (converted is not null)
+                prop.SetValue(target, converted);
+        }
+        else
+        {
+            errors ??= new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase);
+            errors[prop.Name] =
+                [$"The value '{value}' is not valid for {prop.Name}."];
+        }
     }
 
-    private static object? ConvertValue(string value, Type targetType)
+    private static bool TryConvertValue(
+        string value, Type targetType, out object? converted)
     {
-        try
+        converted = null;
+
+        var nullableType = Nullable.GetUnderlyingType(targetType);
+        if (nullableType is not null)
         {
-            var nullableType = Nullable.GetUnderlyingType(targetType);
-            if (nullableType is not null)
-                targetType = nullableType;
+            // An explicitly empty value clears a nullable property.
+            if (value.Length == 0)
+                return true;
+            targetType = nullableType;
+        }
 
-            if (targetType == typeof(string))
-                return value;
+        if (targetType == typeof(string))
+        {
+            converted = value;
+            return true;
+        }
 
-            if (targetType == typeof(Guid) && Guid.TryParse(value, out var guid))
-                return guid;
+        if (targetType.IsEnum)
+        {
+            if (!Enum.TryParse(targetType, value, ignoreCase: true, out var parsed))
+                return false;
+            converted = parsed;
+            return true;
+        }
 
-            if (targetType == typeof(DateTime) && DateTime.TryParse(value, out var dt))
-                return dt;
-
-            if (targetType == typeof(DateTimeOffset) && DateTimeOffset.TryParse(value, out var dto))
-                return dto;
-
-            if (targetType == typeof(TimeSpan) && TimeSpan.TryParse(value, out var ts))
-                return ts;
-
-            if (targetType.IsEnum)
-                return Enum.Parse(targetType, value, ignoreCase: true);
-
-            if (targetType == typeof(bool))
+        if (targetType == typeof(bool))
+        {
+            // Strict: an unrecognised token is a client error, never a
+            // silent `false`.
+            switch (value.ToLowerInvariant())
             {
-                return value.ToLowerInvariant() switch
-                {
-                    "true" or "1" or "yes" or "on" => true,
-                    _ => false
-                };
+                case "true" or "1" or "yes" or "on":
+                    converted = true;
+                    return true;
+                case "false" or "0" or "no" or "off":
+                    converted = false;
+                    return true;
+                default:
+                    return false;
             }
+        }
 
-            return Convert.ChangeType(value, targetType);
-        }
-        catch
+        // Every other supported target (Guid, DateTime, DateTimeOffset,
+        // TimeSpan, the numeric types, and any custom type) is bound through
+        // the same IParsable<T> convention ASP.NET Core's own minimal-API
+        // parameter binding uses — not a bespoke conversion per type.
+        var parseMethod = s_parsableMethods.GetOrAdd(targetType, ResolveParsableMethod);
+        if (parseMethod is null)
+            return false;
+
+        var args = new object?[] { value, System.Globalization.CultureInfo.InvariantCulture, null };
+        var succeeded = (bool)parseMethod.Invoke(null, args)!;
+        converted = args[2];
+        return succeeded;
+    }
+
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<Type, MethodInfo?>
+        s_parsableMethods = new();
+
+    private static readonly MethodInfo s_tryParseDefinition = typeof(EndpointDiscovery)
+        .GetMethod(nameof(TryParseGeneric), BindingFlags.NonPublic | BindingFlags.Static)!;
+
+    // Closed once per distinct target type and cached: MakeGenericMethod
+    // both proves targetType implements IParsable<targetType> (it fails the
+    // generic constraint otherwise) and hands back the exact static method
+    // to invoke, so every later binding of that type skips reflection.
+    private static MethodInfo? ResolveParsableMethod(Type targetType)
+    {
+        var implementsIParsable = targetType.GetInterfaces().Any(i =>
+            i.IsGenericType &&
+            i.GetGenericTypeDefinition() == typeof(IParsable<>) &&
+            i.GetGenericArguments()[0] == targetType);
+
+        return implementsIParsable ? s_tryParseDefinition.MakeGenericMethod(targetType) : null;
+    }
+
+    private static bool TryParseGeneric<T>(
+        string value, IFormatProvider provider, out object? converted)
+        where T : IParsable<T>
+    {
+        if (T.TryParse(value, provider, out var result))
         {
-            return null;
+            converted = result;
+            return true;
         }
+
+        converted = null;
+        return false;
     }
 
     // ── Validation ────────────────────────────────────────────────
@@ -371,26 +479,12 @@ public static class EndpointDiscovery
             return true;
 
         var errors = result.Errors
-            .Select(e => new ApiErrorDetail
-            {
-                Code = e.ErrorCode,
-                Property = e.PropertyName,
-                Message = e.ErrorMessage
-            })
-            .ToArray();
+            .GroupBy(e => e.PropertyName ?? string.Empty)
+            .ToDictionary(
+                g => g.Key,
+                g => g.Select(e => e.ErrorMessage).ToArray());
 
-        ctx.Response.StatusCode = StatusCodes.Status400BadRequest;
-        await ctx.Response.WriteAsJsonAsync(
-            new ApiErrorResponse
-            {
-                Message = "One or more validation errors occurred.",
-                Errors = errors,
-                TraceId = ctx.TraceIdentifier
-            },
-            ct);
-
+        await ProblemResponses.WriteValidationAsync(ctx, errors);
         return false;
     }
-
-    // ── Helpers ────────────────────────────────────────────────────
 }

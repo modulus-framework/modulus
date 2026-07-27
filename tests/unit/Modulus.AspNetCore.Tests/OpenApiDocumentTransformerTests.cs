@@ -1,3 +1,4 @@
+#if NET10_0_OR_GREATER
 using FluentAssertions;
 using Microsoft.Extensions.Options;
 using Microsoft.OpenApi;
@@ -71,3 +72,4 @@ public sealed class OpenApiDocumentTransformerTests
         doc.Info.License!.Name.Should().Be("MIT");
     }
 }
+#endif

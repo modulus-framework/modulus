@@ -23,6 +23,9 @@ internal sealed class GrantStorePermissionChecker(
     public bool HasPermission(string permission)
         => (_effective ??= Resolve()).Contains(permission);
 
+    public IReadOnlyCollection<string> GetEffectivePermissions()
+        => _effective ??= Resolve();
+
     private IReadOnlySet<string> Resolve()
     {
         var principal = httpContextAccessor.HttpContext?.User;

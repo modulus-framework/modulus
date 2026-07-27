@@ -4,6 +4,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <Description>MongoDB data access provider for Modulus with tenant-aware collection filtering.</Description>
   </PropertyGroup>
 
   <ItemGroup>

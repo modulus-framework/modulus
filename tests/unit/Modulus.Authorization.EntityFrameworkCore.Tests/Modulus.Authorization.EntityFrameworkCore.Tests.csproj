@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="../../../src/platform/Modulus.Platform/Modulus.Platform.csproj" />
+    <ProjectReference Include="../../../src/platform/Modulus.Authorization.EntityFrameworkCore/Modulus.Authorization.EntityFrameworkCore.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
+  </ItemGroup>
+
+</Project>

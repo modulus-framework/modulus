@@ -59,36 +59,36 @@ public sealed class FieldAuthorizerTests
     }
 
     [Fact]
-    public void AuthorizeWrite_RejectsProtectedFields_ButAllowsPublicOnes()
+    public async Task AuthorizeWrite_RejectsProtectedFields_ButAllowsPublicOnes()
     {
         var authorizer = AuthorizerFor(CandidateProfile); // holds nothing
 
-        authorizer.AuthorizeWrite(typeof(Candidate), ["Name"])
+        (await authorizer.AuthorizeWriteAsync(typeof(Candidate), ["Name"]))
             .IsAllowed.Should().BeTrue("a public field is writable");
 
-        var denied = authorizer.AuthorizeWrite(typeof(Candidate), ["Name", "Salary"]);
+        var denied = await authorizer.AuthorizeWriteAsync(typeof(Candidate), ["Name", "Salary"]);
         denied.IsAllowed.Should().BeFalse();
         denied.Reason.Should().Contain("Salary");
     }
 
     [Fact]
-    public void AuthorizeWrite_AllowsAField_TheCallerIsClearedToWrite()
+    public async Task AuthorizeWrite_AllowsAField_TheCallerIsClearedToWrite()
     {
-        AuthorizerFor(CandidateProfile, "candidate:comp:write")
-            .AuthorizeWrite(typeof(Candidate), ["Salary"])
+        (await AuthorizerFor(CandidateProfile, "candidate:comp:write")
+            .AuthorizeWriteAsync(typeof(Candidate), ["Salary"]))
             .IsAllowed.Should().BeTrue();
     }
 
     [Fact]
-    public void AuthorizeWrite_RejectsUnknownFieldNames_FailClosed()
+    public async Task AuthorizeWrite_RejectsUnknownFieldNames_FailClosed()
     {
-        AuthorizerFor(CandidateProfile, "candidate:comp:write")
-            .AuthorizeWrite(typeof(Candidate), ["Bonus"])
+        (await AuthorizerFor(CandidateProfile, "candidate:comp:write")
+            .AuthorizeWriteAsync(typeof(Candidate), ["Bonus"]))
             .IsAllowed.Should().BeFalse("a field that is not a known property must not be settable");
     }
 
     [Fact]
-    public void ClassifiedField_IsFailClosed_EvenWithNoRegisteredProfile()
+    public async Task ClassifiedField_IsFailClosed_EvenWithNoRegisteredProfile()
     {
         // No profile registered → Empty profile → classification alone protects the field.
         var authorizer = AuthorizerFor(profile: null);
@@ -97,7 +97,7 @@ public sealed class FieldAuthorizerTests
 
         dto.Name.Should().Be("Ada");
         dto.Notes.Should().BeNull("a classified field with no profile is closed, not open");
-        authorizer.AuthorizeWrite(typeof(Candidate), ["Notes"]).IsAllowed.Should().BeFalse();
+        (await authorizer.AuthorizeWriteAsync(typeof(Candidate), ["Notes"])).IsAllowed.Should().BeFalse();
     }
 
     [Fact]

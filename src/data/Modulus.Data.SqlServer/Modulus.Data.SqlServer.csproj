@@ -4,6 +4,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <Description>SQL Server database provider for Modulus Entity Framework Core modules.</Description>
   </PropertyGroup>
 
   <ItemGroup>

@@ -39,6 +39,9 @@
     <Project Path="src/platform/Modulus.Caching.Redis/Modulus.Caching.Redis.csproj" />
     <Project Path="src/platform/Modulus.SignalR.Backplane/Modulus.SignalR.Backplane.csproj" />
     <Project Path="src/platform/Modulus.MultiTenancy.EntityFrameworkCore/Modulus.MultiTenancy.EntityFrameworkCore.csproj" />
+    <Project Path="src/platform/Modulus.Authorization.EntityFrameworkCore/Modulus.Authorization.EntityFrameworkCore.csproj" />
+    <Project Path="src/platform/Modulus.AspNetCore.Redis/Modulus.AspNetCore.Redis.csproj" />
+    <Project Path="src/platform/Modulus.Authorization.Management/Modulus.Authorization.Management.csproj" />
   </Folder>
   <!-- ── Observability ───────────────────────────────────────────── -->
   <Folder Name="/src/observability/">
@@ -63,6 +66,9 @@
     <Project Path="tests/unit/Modulus.Identity.Tests/Modulus.Identity.Tests.csproj" />
     <Project Path="tests/unit/Modulus.MultiTenancy.Tests/Modulus.MultiTenancy.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Platform.Tests/Modulus.Platform.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.Authorization.EntityFrameworkCore.Tests/Modulus.Authorization.EntityFrameworkCore.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.AspNetCore.Redis.Tests/Modulus.AspNetCore.Redis.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.Authorization.Management.Tests/Modulus.Authorization.Management.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Testing.Tests/Modulus.Testing.Tests.csproj" />
   </Folder>
   <!-- ── Tests · Integration ─────────────────────────────────────── -->

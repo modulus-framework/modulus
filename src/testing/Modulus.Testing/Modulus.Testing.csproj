@@ -11,10 +11,7 @@
 
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
-    <!-- WebApplicationFactory<TEntryPoint> + the TestHost server. -->
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
-    <!-- Relational SQLite so module contexts get real transactions / ExecuteUpdate
-         (the outbox claim) — EF InMemory would give false greens. -->
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
   </ItemGroup>
 

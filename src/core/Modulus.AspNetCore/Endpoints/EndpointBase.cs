@@ -12,7 +12,7 @@ using Modulus.AspNetCore.Http;
 /// </summary>
 public abstract class EndpointBase : IModulusEndpoint
 {
-    internal EndpointConfig Config { get; } = new();
+    internal EndpointConfig Config { get; private set; } = new();
 
     /// <summary>The current HTTP context for this request.</summary>
     protected HttpContext HttpContext { get; private set; } = null!;
@@ -27,10 +27,19 @@ public abstract class EndpointBase : IModulusEndpoint
     /// version, permissions, etc.</summary>
     public abstract void Configure();
 
-    internal void Initialize(HttpContext ctx)
+    /// <summary>
+    /// Wires the per-request context and the <see cref="EndpointConfig"/>
+    /// computed once at startup (by the throwaway discovery-time instance's
+    /// <see cref="Configure"/> call) onto this request's own endpoint
+    /// instance — without this, config read at runtime (e.g. <c>WrapResponse</c>
+    /// in <c>SendOkAsync</c>) would silently see this instance's untouched
+    /// defaults instead of what <see cref="Configure"/> set.
+    /// </summary>
+    internal void Initialize(HttpContext ctx, EndpointConfig config)
     {
         HttpContext = ctx;
         CancellationToken = ctx.RequestAborted;
+        Config = config;
     }
 
     // ── HTTP verb DSL ──────────────────────────────────────────────
@@ -81,14 +90,12 @@ public abstract class EndpointBase : IModulusEndpoint
         return Task.CompletedTask;
     }
 
+    /// <summary>Writes an RFC 7807 problem response — the same error contract
+    /// the global exception handler and binding/validation failures emit.</summary>
     protected Task SendErrorAsync(
         int statusCode, string message,
         CancellationToken ct = default)
-    {
-        HttpContext.Response.StatusCode = statusCode;
-        return HttpContext.Response.WriteAsJsonAsync(
-            ApiResponse.Fail(message, traceId: HttpContext.TraceIdentifier), ct);
-    }
+        => ProblemResponses.WriteAsync(HttpContext, statusCode, message);
 
     /// <summary>Throws an <see cref="HttpResponseException"/> to short-circuit
     /// the pipeline with the given status code and message.</summary>
