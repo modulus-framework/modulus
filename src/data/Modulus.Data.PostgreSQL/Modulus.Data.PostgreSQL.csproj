@@ -10,6 +10,7 @@
   <ItemGroup>
     <ProjectReference Include="../Modulus.EntityFrameworkCore/Modulus.EntityFrameworkCore.csproj" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <PackageReference Include="EFCore.NamingConventions" />
   </ItemGroup>
 
 </Project>

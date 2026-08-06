@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Modulus.Core.Abstractions;
 using Modulus.EntityFrameworkCore.Extensions;
+using Modulus.Events.Extensions;
 using Modulus.Mediator.Extensions;
 using {{ module_namespace }}.Application;
 {{ if entity_name }}using {{ module_namespace }}.Domain;
@@ -11,8 +12,9 @@ using {{ module_namespace }}.Application;
 /// <summary>
 /// Composition root for the {{ module_name }} module. Registers the module's own
 /// DbContext (via <see cref="EFCoreServiceCollectionExtensions.AddModuleDatabase{TContext}"/>),
-/// binds the module's <see cref="IUnitOfWork"/> to it, and contributes the
-/// module's mediator handlers. Add [DependsOn] for any framework modules.
+/// binds the module's <see cref="IUnitOfWork"/> to it, contributes the module's
+/// mediator handlers, and registers the module's integration events. Add
+/// [DependsOn] for any framework modules.
 /// </summary>
 public sealed class {{ module_name }}Module : ModulusModule
 {
@@ -25,6 +27,10 @@ public sealed class {{ module_name }}Module : ModulusModule
                 ?? "{{ connection_string }}"));
 
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<{{ module_name }}DbContext>());
+
+        // Integration events + domain events from this module's Application
+        // assembly (IUnitOfWork is the always-present anchor type there).
+        services.AddModulusEvents(typeof(IUnitOfWork).Assembly);
 {{ if entity_name }}
         services.AddScoped<I{{ entity_name }}Repository, {{ entity_name }}Repository>();
         services.AddMediatorHandlers(typeof(Create{{ entity_name }}Handler).Assembly);

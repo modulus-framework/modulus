@@ -1,5 +1,4 @@
 using System.ComponentModel;
-using System.Diagnostics;
 using Modulus.Cli.Services;
 using Spectre.Console;
 using Spectre.Console.Cli;
@@ -51,28 +50,15 @@ internal static class MigrateSupport
     /// <summary>Runs <c>dotnet ef</c> with the given args from <paramref name="workingDir"/>.</summary>
     public static int RunDotnetEf(string workingDir, params string[] args)
     {
-        var psi = new ProcessStartInfo("dotnet")
-        {
-            WorkingDirectory = workingDir,
-            UseShellExecute = false,
-        };
-        psi.ArgumentList.Add("ef");
-        foreach (var a in args)
-            psi.ArgumentList.Add(a);
+        var argString = "ef " + string.Join(' ', args.Select(a => Quote(a)));
+        return Ux.RunProcess("dotnet", argString, workingDir, dryRunLabel: "");
+    }
 
-        try
-        {
-            using var proc = Process.Start(psi)!;
-            proc.WaitForExit();
-            return proc.ExitCode;
-        }
-        catch (Exception ex)
-        {
-            AnsiConsole.MarkupLine("[red]Failed to launch 'dotnet ef':[/] {0}", ex.Message);
-            AnsiConsole.MarkupLine(
-                "[grey]Install the EF Core tools with[/] dotnet tool install --global dotnet-ef");
-            return 1;
-        }
+    private static string Quote(string arg)
+    {
+        // Shell-style: quote only if it contains whitespace and isn't already quoted.
+        if (arg.Length > 0 && arg[0] == '"') return arg;
+        return arg.Any(c => char.IsWhiteSpace(c)) ? $"\"{arg}\"" : arg;
     }
 
     /// <summary>Resolves the app root and startup project, printing errors on failure.</summary>
@@ -105,7 +91,7 @@ internal static class MigrateSupport
 /// </summary>
 internal sealed class MigrateAddCommand : Command<MigrateAddCommand.Settings>
 {
-    internal sealed class Settings : CommandSettings
+    internal sealed class Settings : ModulusSettings
     {
         [Description("Migration name (e.g. InitialCreate, AddOrderTotals)")]
         [CommandArgument(0, "<name>")]
@@ -122,43 +108,55 @@ internal sealed class MigrateAddCommand : Command<MigrateAddCommand.Settings>
 
     public override int Execute(CommandContext ctx, Settings s)
     {
-        if (!MigrateSupport.TryResolve(s.Output, out var root, out _, out var startupRel))
-            return 1;
-
-        var modules = MigrateSupport.FindModuleProjects(root, s.Module);
-        if (modules.Count == 0)
+        s.Apply();
+        return CommandRunner.Run(() =>
         {
-            AnsiConsole.MarkupLine(
-                "[red]Error:[/] No module Infrastructure projects found{0}.",
-                s.Module is null ? "" : $" for module '{s.Module}'");
-            return 1;
-        }
+            if (!MigrateSupport.TryResolve(s.Output, out var root, out _, out var startupRel))
+                return 1;
 
-        var failed = 0;
-        foreach (var m in modules)
-        {
-            var projRel = Path.GetRelativePath(root, m.InfrastructureCsproj);
-            AnsiConsole.MarkupLine(
-                "[cyan]›[/] Adding migration [green]{0}[/] to [grey]{1}[/]", s.Name, m.Name);
-
-            var code = MigrateSupport.RunDotnetEf(root,
-                "migrations", "add", s.Name,
-                "--project", projRel,
-                "--startup-project", startupRel,
-                "--output-dir", "Migrations");
-
-            if (code != 0)
+            var modules = MigrateSupport.FindModuleProjects(root, s.Module);
+            if (modules.Count == 0)
             {
-                AnsiConsole.MarkupLine("[red]✗[/] Migration failed for {0}", m.Name);
-                failed++;
+                Ux.Error($"No module Infrastructure projects found" +
+                    (s.Module is null ? "." : $" for module '{s.Module}'."));
+                return 1;
             }
-        }
 
-        if (failed == 0)
-            AnsiConsole.MarkupLine(
-                "[green]✓[/] Added migration to {0} module(s). Apply with [grey]modulus migrate update[/].",
-                modules.Count);
-        return failed == 0 ? 0 : 1;
+            Ux.Info($"Scaffolding migration [cyan]{s.Name}[/] in [grey]{modules.Count}[/] module(s)…");
+
+            var failed = 0;
+            foreach (var m in modules)
+            {
+                var projRel = Path.GetRelativePath(root, m.InfrastructureCsproj);
+                if (Ux.DryRun)
+                    Ux.DryRunNote($"would scaffold [cyan]{s.Name}[/] in {m.Name}");
+                else
+                    Ux.Info($"  [grey]›[/] {m.Name}");
+
+                var code = MigrateSupport.RunDotnetEf(root,
+                    "migrations", "add", s.Name,
+                    "--project", projRel,
+                    "--startup-project", startupRel,
+                    "--output-dir", "Migrations");
+
+                if (code != 0)
+                {
+                    Ux.Error($"Migration failed for {m.Name}");
+                    failed++;
+                }
+            }
+
+            if (failed == 0)
+            {
+                if (Ux.DryRun)
+                    Ux.Success($"Would add migration to {modules.Count} module(s).",
+                        "Apply with: modulus migrate update");
+                else
+                    Ux.Success($"Added migration to {modules.Count} module(s).",
+                        "Apply with: modulus migrate update");
+            }
+            return failed == 0 ? 0 : 1;
+        });
     }
 }
 
@@ -168,7 +166,7 @@ internal sealed class MigrateAddCommand : Command<MigrateAddCommand.Settings>
 /// </summary>
 internal sealed class MigrateUpdateCommand : Command<MigrateUpdateCommand.Settings>
 {
-    internal sealed class Settings : CommandSettings
+    internal sealed class Settings : ModulusSettings
     {
         [Description("Only update this module (default: every module)")]
         [CommandOption("-m|--module")]
@@ -181,38 +179,57 @@ internal sealed class MigrateUpdateCommand : Command<MigrateUpdateCommand.Settin
 
     public override int Execute(CommandContext ctx, Settings s)
     {
-        if (!MigrateSupport.TryResolve(s.Output, out var root, out _, out var startupRel))
-            return 1;
-
-        var modules = MigrateSupport.FindModuleProjects(root, s.Module);
-        if (modules.Count == 0)
+        s.Apply();
+        return CommandRunner.Run(() =>
         {
-            AnsiConsole.MarkupLine(
-                "[red]Error:[/] No module Infrastructure projects found{0}.",
-                s.Module is null ? "" : $" for module '{s.Module}'");
-            return 1;
-        }
+            if (!MigrateSupport.TryResolve(s.Output, out var root, out _, out var startupRel))
+                return 1;
 
-        var failed = 0;
-        foreach (var m in modules)
-        {
-            var projRel = Path.GetRelativePath(root, m.InfrastructureCsproj);
-            AnsiConsole.MarkupLine("[cyan]›[/] Updating database for [grey]{0}[/]", m.Name);
-
-            var code = MigrateSupport.RunDotnetEf(root,
-                "database", "update",
-                "--project", projRel,
-                "--startup-project", startupRel);
-
-            if (code != 0)
+            var modules = MigrateSupport.FindModuleProjects(root, s.Module);
+            if (modules.Count == 0)
             {
-                AnsiConsole.MarkupLine("[red]✗[/] Update failed for {0}", m.Name);
-                failed++;
+                Ux.Error($"No module Infrastructure projects found" +
+                    (s.Module is null ? "." : $" for module '{s.Module}'."));
+                return 1;
             }
-        }
 
-        if (failed == 0)
-            AnsiConsole.MarkupLine("[green]✓[/] Applied migrations to {0} module(s).", modules.Count);
-        return failed == 0 ? 0 : 1;
+            // Confirm before touching real databases (skipped by --force or CI).
+            var target = s.Module is null ? $"{modules.Count} module database(s)" : $"the {s.Module} database";
+            if (!Ux.Confirm($"Apply pending migrations to [cyan]{target}[/]?", nonInteractiveDefault: true))
+            {
+                Ux.Warning("Aborted (nothing was changed).");
+                return 0;
+            }
+
+            var failed = 0;
+            foreach (var m in modules)
+            {
+                var projRel = Path.GetRelativePath(root, m.InfrastructureCsproj);
+                if (Ux.DryRun)
+                    Ux.DryRunNote($"would update database for {m.Name}");
+                else
+                    Ux.Info($"  [grey]›[/] {m.Name}");
+
+                var code = MigrateSupport.RunDotnetEf(root,
+                    "database", "update",
+                    "--project", projRel,
+                    "--startup-project", startupRel);
+
+                if (code != 0)
+                {
+                    Ux.Error($"Update failed for {m.Name}");
+                    failed++;
+                }
+            }
+
+            if (failed == 0)
+            {
+                if (Ux.DryRun)
+                    Ux.Success($"Would apply migrations to {modules.Count} module(s).");
+                else
+                    Ux.Success($"Applied migrations to {modules.Count} module(s).");
+            }
+            return failed == 0 ? 0 : 1;
+        });
     }
 }

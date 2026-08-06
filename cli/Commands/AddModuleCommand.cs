@@ -11,19 +11,24 @@ namespace Modulus.Cli.Commands;
 /// </summary>
 internal sealed class AddModuleCommand : Command<AddModuleCommand.Settings>
 {
-    internal sealed class Settings : CommandSettings
+    internal sealed class Settings : ModulusSettings
     {
-        [Description("Name of the module to add (e.g. Orders, Billing)")]
-        [CommandArgument(0, "<name>")]
-        public required string Name { get; init; }
+        [Description("Name of the module to add (e.g. Orders, Billing). Omit to be prompted.")]
+        [CommandArgument(0, "[name]")]
+        public string? Name { get; init; }
 
         [Description("Database provider: SQLite (default), SqlServer, PostgreSQL, MySQL")]
         [CommandOption("-d|--database")]
-        [DefaultValue("SQLite")]
-        public string Database { get; init; } = "SQLite";
+        public string? Database { get; init; }
     }
 
     public override int Execute(CommandContext ctx, Settings s)
+    {
+        s.Apply();
+        return CommandRunner.Run(() => ExecuteCore(ctx, s));
+    }
+
+    private int ExecuteCore(CommandContext ctx, Settings s)
     {
         var slnx = SolutionHelper.FindSolution(Environment.CurrentDirectory)
             ?? throw new InvalidOperationException(
@@ -33,27 +38,41 @@ internal sealed class AddModuleCommand : Command<AddModuleCommand.Settings>
         var solutionDir = Path.GetDirectoryName(slnx)!;
         var rootNs = DetectRootNamespace(solutionDir)
             ?? Path.GetFileNameWithoutExtension(slnx);
-        var moduleName = s.Name;
+
+        var moduleName = !string.IsNullOrWhiteSpace(s.Name)
+            ? CodeGen.ValidateIdentifier(s.Name, "Module")
+            : Ux.AskRequired("Module name [grey](e.g. Orders, Billing)[/]:",
+                ciHint: "Pass the module name, e.g. `modulus add-module Orders`.");
+
         var moduleNs = $"{rootNs}.Modules.{moduleName}";
         var projectDir = Path.Combine(solutionDir, "src", "Modules", moduleNs);
 
-        if (Directory.Exists(projectDir))
+        if (Directory.Exists(projectDir) && Directory.EnumerateFileSystemEntries(projectDir).Any())
         {
-            AnsiConsole.MarkupLine("[red]Error:[/] Module already exists: {0}", projectDir);
-            return 1;
+            if (!Ux.Confirm($"Module [cyan]{moduleName}[/] already exists. Overwrite?", nonInteractiveDefault: false))
+            {
+                Ux.Error("Aborted.");
+                return 1;
+            }
+            Ux.DeleteDirectory(projectDir);
         }
+
+        var database = string.IsNullOrWhiteSpace(s.Database)
+            ? Ux.SelectOrFallback("Database provider?", NewAppCommand.KnownProviders, "SQLite")
+            : s.Database!;
 
         var model = new ModuleModel
         {
             RootNamespace = rootNs,
             ModuleName = moduleName,
             ModuleNamespace = moduleNs,
-            DbProvider = s.Database,
+            DbProvider = database,
         };
 
         // Generate the layered module skeleton.
         var appCmd = new NewAppCommand();
-        appCmd.GenerateModule(projectDir, model);
+        Ux.Status($"Scaffolding {moduleName} module...",
+            () => appCmd.GenerateModule(projectDir, model));
 
         // Add all layer projects to .slnx.
         foreach (var rel in NewAppCommand.ModuleProjectPaths(rootNs, moduleName))
@@ -67,11 +86,22 @@ internal sealed class AddModuleCommand : Command<AddModuleCommand.Settings>
         // Add Host → Infrastructure + Presentation ProjectReferences.
         AddHostProjectReferences(solutionDir, rootNs, moduleNs);
 
-        AnsiConsole.MarkupLine("[green]✓[/] Module [cyan]{0}[/] added and wired into [grey]{1}[/]",
-            moduleName, Path.GetFileName(slnx));
+        // Restore so `migrate add` / `dotnet build` works immediately
+        // (the newly added csproj isn't in any existing project.assets.json).
+        if (!Ux.DryRun)
+        {
+            Ux.Status("Restoring packages…", () =>
+                Ux.RunProcess("dotnet", "restore", solutionDir, "dotnet restore"));
+        }
+
+        AnsiConsole.WriteLine();
+        Ux.Success($"Module [cyan]{moduleName}[/] added and wired into [grey]{Path.GetFileName(slnx)}[/]");
+        if (Ux.DryRun) Ux.Warning("Dry-run: nothing was actually written.");
         AnsiConsole.MarkupLine("[grey]  →[/] Created 4 projects under [grey]{0}[/]", moduleNs);
         AnsiConsole.MarkupLine("[grey]  →[/] Added Host → Infrastructure + Presentation ProjectReferences");
         AnsiConsole.MarkupLine("[grey]  →[/] Added [[DependsOn]] to host module");
+        AnsiConsole.WriteLine();
+        AnsiConsole.MarkupLine("[grey]Next:[/] modulus generate-crud Item --module {0}", moduleName);
 
         return 0;
     }
@@ -128,7 +158,7 @@ internal sealed class AddModuleCommand : Command<AddModuleCommand.Settings>
             }
 
             content = content.Insert(insertIdx, attribute);
-            File.WriteAllText(file, content);
+            Ux.WriteFile(file, content);
         }
     }
 
@@ -161,7 +191,7 @@ internal sealed class AddModuleCommand : Command<AddModuleCommand.Settings>
         if (closeIdx < 0) return;
 
         content = content.Insert(closeIdx, block);
-        File.WriteAllText(apiCsproj, content);
+        Ux.WriteFile(apiCsproj, content);
     }
 
     /// <summary>

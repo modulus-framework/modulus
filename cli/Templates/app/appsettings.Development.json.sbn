@@ -1,11 +1,11 @@
 {
-  "ConnectionStrings": {
-    "Default": "{{ connection_string }}"
-  },
   "Logging": {
     "LogLevel": {
       "Default": "Debug",
       "Microsoft.AspNetCore": "Information"
     }
-  }
+  }{{ if auth == "openiddict" }},
+  "Identity": {
+    "UseDevelopmentCertificates": true
+  }{{ end }}
 }

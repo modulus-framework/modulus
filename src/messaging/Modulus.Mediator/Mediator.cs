@@ -81,12 +81,12 @@ internal sealed class Mediator(IServiceProvider sp) : IMediator
 
         var requestType = method.GetParameters()[0].ParameterType;
 
-        var handlerParam  = Expression.Parameter(typeof(object), "h");
-        var requestParam  = Expression.Parameter(typeof(object), "req");
-        var ctParam       = Expression.Parameter(typeof(CancellationToken), "ct");
-        var castHandler   = Expression.Convert(handlerParam, handlerType);
-        var castRequest   = Expression.Convert(requestParam, requestType);
-        var call          = Expression.Call(castHandler, method, castRequest, ctParam);
+        var handlerParam = Expression.Parameter(typeof(object), "h");
+        var requestParam = Expression.Parameter(typeof(object), "req");
+        var ctParam = Expression.Parameter(typeof(CancellationToken), "ct");
+        var castHandler = Expression.Convert(handlerParam, handlerType);
+        var castRequest = Expression.Convert(requestParam, requestType);
+        var call = Expression.Call(castHandler, method, castRequest, ctParam);
 
         return Expression.Lambda<Func<object, object, CancellationToken, Task<TResponse>>>(
             call, handlerParam, requestParam, ctParam).Compile();
@@ -101,12 +101,12 @@ internal sealed class Mediator(IServiceProvider sp) : IMediator
                 $"Behavior '{behaviorType.FullName}' has no public HandleAsync method.");
 
         var behaviorParam = Expression.Parameter(typeof(object), "b");
-        var requestParam  = Expression.Parameter(typeof(object), "req");
-        var nextParam     = Expression.Parameter(typeof(RequestHandlerDelegate<TResponse>), "next");
-        var ctParam       = Expression.Parameter(typeof(CancellationToken), "ct");
-        var castBehavior  = Expression.Convert(behaviorParam, behaviorType);
-        var castRequest   = Expression.Convert(requestParam, requestType);
-        var call          = Expression.Call(castBehavior, method, castRequest, nextParam, ctParam);
+        var requestParam = Expression.Parameter(typeof(object), "req");
+        var nextParam = Expression.Parameter(typeof(RequestHandlerDelegate<TResponse>), "next");
+        var ctParam = Expression.Parameter(typeof(CancellationToken), "ct");
+        var castBehavior = Expression.Convert(behaviorParam, behaviorType);
+        var castRequest = Expression.Convert(requestParam, requestType);
+        var call = Expression.Call(castBehavior, method, castRequest, nextParam, ctParam);
 
         return Expression.Lambda<Func<object, object, RequestHandlerDelegate<TResponse>, CancellationToken, Task<TResponse>>>(
             call, behaviorParam, requestParam, nextParam, ctParam).Compile();

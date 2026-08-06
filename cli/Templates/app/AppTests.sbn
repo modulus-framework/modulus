@@ -68,11 +68,11 @@ public sealed class ApiIntegrationTests(ModulusWebAppFactory<Program> factory)
 
         // POST creates a row in the (swapped) in-memory database…
         var created = await client.PostAsJsonAsync(
-            "/api/{{ example_route }}", new { name = "smoke-test" });
+            "/api/{{ example_module_lower }}/{{ example_route }}", new { name = "smoke-test" });
         Assert.Equal(HttpStatusCode.Created, created.StatusCode);
 
         // …and it is readable back through the module's query pipeline.
-        var list = await client.GetAsync("/api/{{ example_route }}");
+        var list = await client.GetAsync("/api/{{ example_module_lower }}/{{ example_route }}");
         Assert.Equal(HttpStatusCode.OK, list.StatusCode);
     }
 {{ end }}

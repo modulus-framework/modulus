@@ -1,0 +1,18 @@
+using Modulus.Core.Abstractions.Common;
+using Modulus.Mediator.Abstractions;
+
+namespace {{ module_namespace }}.Application;
+
+/// <summary>Handler for {{ feature_name }}Command</summary>
+public sealed class {{ feature_name }}Handler
+    : ICommandHandler<{{ feature_name }}Command, Unit>
+{
+    public async Task<Unit> HandleAsync(
+        {{ feature_name }}Command command,
+        CancellationToken ct)
+    {
+        // TODO: Implement {{ feature_name }} logic here
+        await Task.CompletedTask;
+        return Unit.Value;
+    }
+}

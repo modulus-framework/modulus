@@ -18,7 +18,7 @@
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5" />
     <!-- Integration-test harness: boots this app's host against isolated
          in-memory SQLite. See ModulusWebAppFactory. -->
-    <PackageReference Include="Modulus.Testing" Version="1.0.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Testing" Version="{{ framework_version }}" />
   </ItemGroup>
 
 </Project>

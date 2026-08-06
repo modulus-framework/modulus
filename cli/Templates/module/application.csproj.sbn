@@ -7,10 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Modulus.Core" Version="1.0.0" />
-    <PackageReference Include="Modulus.Mediator" Version="1.0.0" />
-    <PackageReference Include="Modulus.EntityFrameworkCore" Version="1.0.0" />
-    <PackageReference Include="Modulus.Events" Version="1.0.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Core" Version="{{ framework_version }}" />
+    <PackageReference Include="Cobytelabs.Modulus.Mediator" Version="{{ framework_version }}" />
+    <PackageReference Include="Cobytelabs.Modulus.EntityFrameworkCore" Version="{{ framework_version }}" />
+    <PackageReference Include="Cobytelabs.Modulus.Events" Version="{{ framework_version }}" />
   </ItemGroup>
 
   <ItemGroup>

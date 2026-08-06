@@ -91,7 +91,7 @@ public sealed class EndpointDispatchIntegrationTests : IAsyncLifetime
     {
         var id = Guid.NewGuid();
 
-        var response = await _client.GetAsync($"/echo/{id}?name=Ada");
+        var response = await _client.GetAsync($"/api/v1/echo/{id}?name=Ada");
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = await response.Content.ReadFromJsonAsync<ApiEnvelope<EchoResponseView>>();
@@ -103,7 +103,7 @@ public sealed class EndpointDispatchIntegrationTests : IAsyncLifetime
     [Fact]
     public async Task Malformed_route_value_is_a_400_problem_end_to_end()
     {
-        var response = await _client.GetAsync("/echo/not-a-guid?name=Ada");
+        var response = await _client.GetAsync("/api/v1/echo/not-a-guid?name=Ada");
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         (await response.Content.ReadAsStringAsync()).Should().Contain("Id");
@@ -114,7 +114,7 @@ public sealed class EndpointDispatchIntegrationTests : IAsyncLifetime
     [Fact]
     public async Task Valid_body_is_created_and_the_response_is_wrapped()
     {
-        var response = await _client.PostAsJsonAsync("/widgets", new { name = "Widget" });
+        var response = await _client.PostAsJsonAsync("/api/v1/widgets", new { name = "Widget" });
 
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         response.Headers.Location.Should().NotBeNull();
@@ -127,7 +127,7 @@ public sealed class EndpointDispatchIntegrationTests : IAsyncLifetime
     [Fact]
     public async Task Validator_failure_is_a_400_validation_problem()
     {
-        var response = await _client.PostAsJsonAsync("/widgets", new { name = "" });
+        var response = await _client.PostAsJsonAsync("/api/v1/widgets", new { name = "" });
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         (await response.Content.ReadAsStringAsync()).Should().Contain("Name");
@@ -138,7 +138,7 @@ public sealed class EndpointDispatchIntegrationTests : IAsyncLifetime
     {
         using var malformed = new StringContent("{not-json", Encoding.UTF8, "application/json");
 
-        var response = await _client.PostAsync("/widgets", malformed);
+        var response = await _client.PostAsync("/api/v1/widgets", malformed);
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         (await response.Content.ReadAsStringAsync()).Should().Contain("Malformed JSON body");
@@ -149,7 +149,7 @@ public sealed class EndpointDispatchIntegrationTests : IAsyncLifetime
     [Fact]
     public async Task ThrowError_short_circuits_to_the_given_status_and_message()
     {
-        var response = await _client.GetAsync("/boom");
+        var response = await _client.GetAsync("/api/v1/boom");
 
         response.StatusCode.Should().Be(HttpStatusCode.Conflict);
         (await response.Content.ReadAsStringAsync()).Should().Contain("already exists");
@@ -160,7 +160,7 @@ public sealed class EndpointDispatchIntegrationTests : IAsyncLifetime
     [Fact]
     public async Task DontWrapResponse_sends_the_raw_payload_unwrapped()
     {
-        var response = await _client.GetAsync("/plain");
+        var response = await _client.GetAsync("/api/v1/plain");
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         (await response.Content.ReadFromJsonAsync<string>()).Should().Be("raw");
@@ -171,7 +171,7 @@ public sealed class EndpointDispatchIntegrationTests : IAsyncLifetime
     [Fact]
     public async Task Unauthenticated_request_to_a_role_restricted_endpoint_is_401()
     {
-        var response = await _client.GetAsync("/admin-only");
+        var response = await _client.GetAsync("/api/v1/admin-only");
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
@@ -179,7 +179,7 @@ public sealed class EndpointDispatchIntegrationTests : IAsyncLifetime
     [Fact]
     public async Task Authenticated_without_the_required_role_is_403()
     {
-        using var request = new HttpRequestMessage(HttpMethod.Get, "/admin-only");
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/api/v1/admin-only");
         request.Headers.Add("X-Test-Authenticated", "yes");
 
         var response = await _client.SendAsync(request);
@@ -190,7 +190,7 @@ public sealed class EndpointDispatchIntegrationTests : IAsyncLifetime
     [Fact]
     public async Task Authenticated_with_the_required_role_succeeds()
     {
-        using var request = new HttpRequestMessage(HttpMethod.Get, "/admin-only");
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/api/v1/admin-only");
         request.Headers.Add("X-Test-Authenticated", "yes");
         request.Headers.Add("X-Test-Roles", "admin");
 
@@ -220,7 +220,7 @@ public sealed class EchoEndpoint : Endpoint<EchoRequest, EchoResponse>
 {
     public override void Configure()
     {
-        Get("/echo/{id}");
+        Get("/api/v1/echo/{id}");
         AllowAnonymous();
     }
 
@@ -248,14 +248,14 @@ public sealed class CreateWidgetEndpoint : Endpoint<CreateWidgetRequest, CreateW
 {
     public override void Configure()
     {
-        Post("/widgets");
+        Post("/api/v1/widgets");
         AllowAnonymous();
     }
 
     public override Task HandleAsync(CreateWidgetRequest req, CancellationToken ct)
     {
         var id = Guid.NewGuid();
-        return SendCreatedAsync(new CreateWidgetResponse { Id = id, Name = req.Name }, $"/widgets/{id}", ct);
+        return SendCreatedAsync(new CreateWidgetResponse { Id = id, Name = req.Name }, $"/api/v1/widgets/{id}", ct);
     }
 }
 
@@ -263,7 +263,7 @@ public sealed class AdminOnlyEndpoint : EndpointWithoutRequest<string>
 {
     public override void Configure()
     {
-        Get("/admin-only");
+        Get("/api/v1/admin-only");
         Roles("admin");
     }
 
@@ -274,7 +274,7 @@ public sealed class BoomEndpoint : EndpointWithoutRequest<string>
 {
     public override void Configure()
     {
-        Get("/boom");
+        Get("/api/v1/boom");
         AllowAnonymous();
     }
 
@@ -286,7 +286,7 @@ public sealed class PlainTextEndpoint : EndpointWithoutRequest<string>
 {
     public override void Configure()
     {
-        Get("/plain");
+        Get("/api/v1/plain");
         AllowAnonymous();
         DontWrapResponse();
     }

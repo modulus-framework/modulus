@@ -52,12 +52,12 @@ public sealed class DomainEventDispatcher(IServiceProvider sp)
                 $"Handler '{handlerType.FullName}' has no HandleAsync({eventType.Name}, CancellationToken) method.");
 
         var handlerParam = Expression.Parameter(typeof(object), "handler");
-        var eventParam   = Expression.Parameter(typeof(IDomainEvent), "event");
-        var ctParam      = Expression.Parameter(typeof(CancellationToken), "ct");
+        var eventParam = Expression.Parameter(typeof(IDomainEvent), "event");
+        var ctParam = Expression.Parameter(typeof(CancellationToken), "ct");
 
         var castHandler = Expression.Convert(handlerParam, handlerType);
-        var castEvent   = Expression.Convert(eventParam, eventType);
-        var call        = Expression.Call(castHandler, method, castEvent, ctParam);
+        var castEvent = Expression.Convert(eventParam, eventType);
+        var call = Expression.Call(castHandler, method, castEvent, ctParam);
 
         return Expression.Lambda<Func<object, IDomainEvent, CancellationToken, Task>>(
             call, handlerParam, eventParam, ctParam).Compile();

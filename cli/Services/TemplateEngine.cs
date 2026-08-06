@@ -45,16 +45,15 @@ internal sealed class TemplateEngine
 
     /// <summary>
     /// Renders a template and writes it to <paramref name="outputPath"/>,
-    /// creating parent directories as needed.
+    /// creating parent directories as needed. Routes through
+    /// <see cref="Ux.WriteFile"/> so <c>--dry-run</c> and <c>--verbose</c>
+    /// apply uniformly to every generated file.
     /// </summary>
     public void RenderToFile(
         string templatePath, object model, string outputPath)
     {
         var content = Render(templatePath, model);
-        var dir = Path.GetDirectoryName(outputPath);
-        if (!string.IsNullOrEmpty(dir))
-            Directory.CreateDirectory(dir);
-        File.WriteAllText(outputPath, content);
+        Ux.WriteFile(outputPath, content);
     }
 
     /// <summary>

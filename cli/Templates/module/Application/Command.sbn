@@ -1,0 +1,7 @@
+using Modulus.Core.Abstractions.Common;
+using Modulus.Mediator.Abstractions;
+
+namespace {{ module_namespace }}.Application;
+
+/// <summary>Command: {{ feature_name }}</summary>
+public sealed record {{ feature_name }}Command : ICommand<Unit>;

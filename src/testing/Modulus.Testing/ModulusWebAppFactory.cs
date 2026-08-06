@@ -16,11 +16,15 @@ using Modulus.Testing.Internal;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Each factory instance owns a private in-memory SQLite database (a unique
-/// <c>Cache=Shared</c> name), so tests are isolated: a second factory never sees
-/// the first's data. A single keep-alive connection is held open for the
-/// factory's lifetime so the database survives between the pooled connections the
-/// module contexts open and close.
+/// Each factory instance owns its own set of in-memory SQLite databases — one
+/// per module <c>DbContext</c> (a unique <c>Cache=Shared</c> name per context,
+/// e.g. <c>modulus-test-&lt;guid&gt;-CatalogDbContext</c>), so tests are isolated
+/// and every module context gets its own schema. Per-context databases matter in
+/// multi-module apps: <c>EnsureCreated</c> short-circuits when the database
+/// already has tables, so sharing one database would silently skip the second
+/// module's schema. A keep-alive connection is held open per database for the
+/// factory's lifetime so they survive between the pooled connections the module
+/// contexts open and close.
 /// </para>
 /// <para>
 /// The host runs in the <c>Testing</c> environment. Register per-test overrides
@@ -35,10 +39,9 @@ using Modulus.Testing.Internal;
 public class ModulusWebAppFactory<TEntryPoint> : WebApplicationFactory<TEntryPoint>
     where TEntryPoint : class
 {
-    private readonly string _connectionString =
-        $"Data Source=modulus-test-{Guid.NewGuid():N};Mode=Memory;Cache=Shared";
+    private readonly string _databasePrefix = $"modulus-test-{Guid.NewGuid():N}";
 
-    private SqliteConnection? _keepAlive;
+    private readonly List<SqliteConnection> _keepAlives = [];
 
     /// <inheritdoc />
     protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -46,8 +49,11 @@ public class ModulusWebAppFactory<TEntryPoint> : WebApplicationFactory<TEntryPoi
         builder.UseEnvironment("Testing");
         builder.ConfigureTestServices(services =>
         {
-            // Point every module DbContext at this factory's SQLite database…
-            services.UseSharedSqlite(_connectionString);
+            // Point every module DbContext at its own factory-owned SQLite
+            // database. The per-context connection map is only available once
+            // this callback runs (during host build), so the keep-alives are
+            // opened in CreateHost after the host is built — see there.
+            services.UsePerContextSqlite(_databasePrefix);
 
             // …and make the header-driven test scheme the default so [Authorize]
             // endpoints accept CreateAuthenticatedClient's principal.
@@ -60,19 +66,38 @@ public class ModulusWebAppFactory<TEntryPoint> : WebApplicationFactory<TEntryPoi
     /// <inheritdoc />
     protected override IHost CreateHost(IHostBuilder builder)
     {
-        // Open the keep-alive BEFORE the host boots: a generated Program runs
-        // MigrateModulusDatabasesAsync (EnsureCreated) during startup, and the
-        // shared in-memory database must already exist by then.
-        _keepAlive = new SqliteConnection(_connectionString);
-        _keepAlive.Open();
-
+        // The host's startup (generated Program) runs MigrateModulusDatabasesAsync
+        // while this method's base call builds it — but ConfigureTestServices (and
+        // therefore the SQLite swap) executes only at that point, so the per-context
+        // connection map is not available before the host exists. The schema the
+        // startup just created lives in in-memory databases held only by transient
+        // connections, so it is lost the moment those connections close.
         var host = base.CreateHost(builder);
 
-        // Safety net: create the schema for hosts that don't initialise it
-        // themselves. EnsureCreated is idempotent, so this is a no-op when the
-        // app already ran MigrateModulusDatabasesAsync.
-        using var scope = host.Services.CreateScope();
-        foreach (var db in scope.ServiceProvider.GetServices<DbContext>())
+        // So: resolve each module context from the built host, open a keep-alive
+        // for its own database (a shared-cache in-memory DB survives only while at
+        // least one connection to it stays open — otherwise it dies with the last
+        // closing connection), and then recreate the schema inside those kept-alive
+        // databases. The connection string comes from the context itself, so the
+        // keep-alive is guaranteed to target the exact cache the context uses.
+        using (var scope = host.Services.CreateScope())
+        {
+            foreach (var db in scope.ServiceProvider.GetServices<DbContext>())
+            {
+                var connectionString = db.Database.GetConnectionString();
+                if (string.IsNullOrWhiteSpace(connectionString))
+                    continue;
+
+                var keepAlive = new SqliteConnection(connectionString);
+                keepAlive.Open();
+                _keepAlives.Add(keepAlive);
+            }
+        }
+
+        // EnsureCreated is idempotent per context, so this is a no-op when the
+        // app already ran MigrateModulusDatabasesAsync against these databases.
+        using var safetyScope = host.Services.CreateScope();
+        foreach (var db in safetyScope.ServiceProvider.GetServices<DbContext>())
             db.Database.EnsureCreated();
 
         return host;
@@ -120,7 +145,11 @@ public class ModulusWebAppFactory<TEntryPoint> : WebApplicationFactory<TEntryPoi
     protected override void Dispose(bool disposing)
     {
         if (disposing)
-            _keepAlive?.Dispose();
+        {
+            foreach (var keepAlive in _keepAlives)
+                keepAlive.Dispose();
+            _keepAlives.Clear();
+        }
         base.Dispose(disposing);
     }
 }

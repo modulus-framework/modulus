@@ -12,11 +12,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Modulus.AspNetCore" Version="1.0.0" />
-    <PackageReference Include="Modulus.Core" Version="1.0.0" />
-    <PackageReference Include="Modulus.Mediator" Version="1.0.0" />
-    <PackageReference Include="Modulus.EntityFrameworkCore" Version="1.0.0" />
-    <!-- Transitive pin: AspNetCore.OpenApi floats to Microsoft.OpenApi 2.0.0,
+    <PackageReference Include="Cobytelabs.Modulus.AspNetCore" Version="{{ framework_version }}" />
+    <PackageReference Include="Cobytelabs.Modulus.Core" Version="{{ framework_version }}" />
+    <PackageReference Include="Cobytelabs.Modulus.Mediator" Version="{{ framework_version }}" />
+    <PackageReference Include="Cobytelabs.Modulus.EntityFrameworkCore" Version="{{ framework_version }}" />
+{{ if auth != "none" }}    <PackageReference Include="Cobytelabs.Modulus.Identity" Version="{{ framework_version }}" />
+{{ end }}    <!-- Transitive pin: AspNetCore.OpenApi floats to Microsoft.OpenApi 2.0.0,
          which has a high-severity advisory (GHSA-v5pm-xwqc-g5wc). Pin to latest 2.x. -->
     <PackageReference Include="Microsoft.OpenApi" Version="2.9.0" />
 {{ if db_provider == "SQLite" }}    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.3" />

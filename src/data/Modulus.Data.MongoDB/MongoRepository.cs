@@ -91,11 +91,11 @@ public abstract class MongoRepository<T, TDoc>(
 
         // Client-side fallback: fetch all tenant docs, map, then filter/sort/page.
         IEnumerable<T> domain = (await findFluent.ToListAsync(ct)).Select(ToDomain);
-        if (spec.Filter     is not null) domain = domain.Where(spec.Filter.Compile());
-        if (spec.OrderBy    is not null) domain = domain.OrderBy(spec.OrderBy.Compile());
+        if (spec.Filter is not null) domain = domain.Where(spec.Filter.Compile());
+        if (spec.OrderBy is not null) domain = domain.OrderBy(spec.OrderBy.Compile());
         if (spec.OrderByDesc is not null) domain = domain.OrderByDescending(spec.OrderByDesc.Compile());
-        if (spec.Skip.HasValue)  domain = domain.Skip(spec.Skip.Value);
-        if (spec.Take.HasValue)  domain = domain.Take(spec.Take.Value);
+        if (spec.Skip.HasValue) domain = domain.Skip(spec.Skip.Value);
+        if (spec.Take.HasValue) domain = domain.Take(spec.Take.Value);
         return domain.ToList();
     }
 

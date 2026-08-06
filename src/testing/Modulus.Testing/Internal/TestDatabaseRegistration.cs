@@ -35,6 +35,38 @@ internal static class TestDatabaseRegistration
     /// </summary>
     public static void UseSharedSqlite(
         this IServiceCollection services, string connectionString)
+        => SwapToSqlite(services, _ => connectionString);
+
+    /// <summary>
+    /// Like <see cref="UseSharedSqlite"/>, but gives <b>each</b> registered module
+    /// context its <b>own</b> in-memory SQLite database named after the context
+    /// (e.g. <c>Data Source={prefix}-CatalogDbContext;Mode=Memory;Cache=Shared</c>).
+    /// Returns the context-type → connection-string map so the caller can open a
+    /// keep-alive connection per database.
+    /// </summary>
+    /// <remarks>
+    /// Required for multi-module apps: <c>EnsureCreated</c> short-circuits when the
+    /// database already has tables, so contexts sharing one database would have
+    /// their schema silently skipped (the second module's tables would never be
+    /// created). Per-context databases give every module an isolated schema, which
+    /// also matches the framework's per-module-database design.
+    /// </remarks>
+    public static IReadOnlyDictionary<Type, string> UsePerContextSqlite(
+        this IServiceCollection services, string databasePrefix)
+    {
+        var map = new Dictionary<Type, string>();
+        SwapToSqlite(services, contextType =>
+        {
+            var connectionString =
+                $"Data Source={databasePrefix}-{contextType.Name};Mode=Memory;Cache=Shared";
+            map[contextType] = connectionString;
+            return connectionString;
+        });
+        return map;
+    }
+
+    private static void SwapToSqlite(
+        IServiceCollection services, Func<Type, string> connectionFor)
     {
         // One DbContextOptions<TContext> is registered per module context.
         var contextTypes = services
@@ -60,11 +92,11 @@ internal static class TestDatabaseRegistration
         foreach (var descriptor in stale)
             services.Remove(descriptor);
 
-        Action<DbContextOptionsBuilder> configure =
-            options => options.UseSqlite(connectionString);
-
         foreach (var contextType in contextTypes)
         {
+            var connectionString = connectionFor(contextType);
+            Action<DbContextOptionsBuilder> configure =
+                options => options.UseSqlite(connectionString);
             AddDbContext
                 .MakeGenericMethod(contextType)
                 .Invoke(null, [services, configure, ServiceLifetime.Scoped, ServiceLifetime.Scoped]);

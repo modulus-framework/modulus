@@ -8,21 +8,22 @@ namespace Modulus.Cli.Commands;
 /// <summary>
 /// Generates CRUD (Create, Read, Update, Delete) code for a domain entity
 /// within an existing layered module, distributing the files across the
-/// module's layer projects.
+/// module's layer projects. Existing files are never overwritten — they are
+/// reported as skipped instead.
 /// </summary>
 internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings>
 {
-    internal sealed class Settings : CommandSettings
+    internal sealed class Settings : ModulusSettings
     {
-        [Description("Entity name (e.g. Product, Order)")]
-        [CommandArgument(0, "<entity>")]
-        public required string Entity { get; init; }
+        [Description("Entity name (e.g. Product, Order). Omit to be prompted.")]
+        [CommandArgument(0, "[entity]")]
+        public string? Entity { get; init; }
 
-        [Description("Module name or namespace (e.g. Catalog, MyApp.Modules.Catalog)")]
+        [Description("Module name or namespace (e.g. Catalog, MyApp.Modules.Catalog). Auto-detected if one module.")]
         [CommandOption("-m|--module")]
         public string? Module { get; init; }
 
-        [Description("Generate with additional fields (comma-separated: name:string,price:decimal)")]
+        [Description("NOT YET SUPPORTED: extra fields (name:string,price:decimal). Reserved for a future release.")]
         [CommandOption("--fields")]
         public string? Fields { get; init; }
     }
@@ -31,143 +32,144 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
 
     public override int Execute(CommandContext ctx, Settings s)
     {
-        var entity = s.Entity;
-        var entityLower = ToCamelCase(entity);
-        var plural = ToPlural(entity);
+        s.Apply();
+        return CommandRunner.Run(() => ExecuteCore(ctx, s));
+    }
+
+    private int ExecuteCore(CommandContext ctx, Settings s)
+    {
+        if (s.Fields is not null)
+            Ux.Warning("--fields is reserved and currently ignored (entities ship with a single Name field).");
+
+        var entity = !string.IsNullOrWhiteSpace(s.Entity)
+            ? CodeGen.ValidateIdentifier(s.Entity, "Entity")
+            : Ux.AskRequired("Entity name [grey](e.g. Product, Order)[/]:",
+                ciHint: "Pass the entity name, e.g. `modulus generate-crud Product --module Catalog`.");
+
+        var entityLower = CodeGen.ToCamelCase(entity);
+        var plural = CodeGen.Pluralize(entity);
         var routeName = plural.ToLowerInvariant();
 
-        // Resolve module root directory (src/{rootNs}.Modules.{Module}).
-        var moduleDir = ResolveModuleDirectory(s.Module)
-            ?? throw new InvalidOperationException("Could not resolve module directory.");
-        var moduleNs = ResolveModuleNamespace(moduleDir);
-        var moduleName = moduleNs.Split('.').LastOrDefault() ?? "Module";
-        var rootNs = ExtractRootNamespace(moduleNs);
+        var module = CodeGen.ResolveModule(s.Module);
 
         // Locate the layer project directories.
-        var domainDir = LayerDir(moduleDir, moduleNs, "Domain");
-        var appDir = LayerDir(moduleDir, moduleNs, "Application");
-        var infraDir = LayerDir(moduleDir, moduleNs, "Infrastructure");
-        var presDir = LayerDir(moduleDir, moduleNs, "Presentation");
+        var domainDir = CodeGen.LayerDir(module.Directory, module.Namespace, "Domain");
+        var appDir = CodeGen.LayerDir(module.Directory, module.Namespace, "Application");
+        var infraDir = CodeGen.LayerDir(module.Directory, module.Namespace, "Infrastructure");
+        var presDir = CodeGen.LayerDir(module.Directory, module.Namespace, "Presentation");
 
         var model = new ModuleModel
         {
-            RootNamespace = rootNs,
-            ModuleNamespace = moduleNs,
-            ModuleName = moduleName,
+            RootNamespace = module.RootNamespace,
+            ModuleNamespace = module.Namespace,
+            ModuleName = module.Name,
             EntityName = entity,
             EntityNameLower = entityLower,
             RouteName = routeName,
         };
 
         var generated = new List<string>();
+        var skipped = new List<string>();
 
         // ── Domain layer ──────────────────────────────────────────
-        var entityFile = Path.Combine(domainDir, $"{entity}.cs");
-        if (!File.Exists(entityFile))
-        {
-            _templates.RenderToFile("module/Domain/Entity", model, entityFile);
-            generated.Add(Rel(domainDir, $"{entity}.cs"));
-        }
-
-        var repoInterface = Path.Combine(domainDir, $"I{entity}Repository.cs");
-        if (!File.Exists(repoInterface))
-        {
-            _templates.RenderToFile("module/Domain/IRepository", model, repoInterface);
-            generated.Add(Rel(domainDir, $"I{entity}Repository.cs"));
-        }
+        WriteIfMissing("module/Domain/Entity", model,
+            Path.Combine(domainDir, $"{entity}.cs"), generated, skipped);
+        WriteIfMissing("module/Domain/IRepository", model,
+            Path.Combine(domainDir, $"I{entity}Repository.cs"), generated, skipped);
 
         // ── Application layer (DTOs + commands/handlers/queries) ────
-        _templates.RenderToFile("module/Application/Dto", model,
-            Path.Combine(appDir, "Dtos", $"{entity}Dto.cs"));
-        generated.Add(Rel(appDir, $"Dtos/{entity}Dto.cs"));
+        WriteIfMissing("module/Application/Dto", model,
+            Path.Combine(appDir, "Dtos", $"{entity}Dto.cs"), generated, skipped);
 
-        // ── Application layer (commands/handlers/queries) ─────────
-        _templates.RenderToFile("module/Application/CreateCommand", model,
-            Path.Combine(appDir, $"Create{entity}Command.cs"));
-        generated.Add(Rel(appDir, $"Create{entity}Command.cs"));
+        WriteIfMissing("module/Application/CreateCommand", model,
+            Path.Combine(appDir, $"Create{entity}Command.cs"), generated, skipped);
+        WriteIfMissing("module/Application/CreateHandler", model,
+            Path.Combine(appDir, $"Create{entity}Handler.cs"), generated, skipped);
 
-        _templates.RenderToFile("module/Application/CreateHandler", model,
-            Path.Combine(appDir, $"Create{entity}Handler.cs"));
-        generated.Add(Rel(appDir, $"Create{entity}Handler.cs"));
+        WriteIfMissing("module/Application/GetAllQuery", model,
+            Path.Combine(appDir, $"Get{plural}Query.cs"), generated, skipped);
+        WriteIfMissing("module/Application/GetAllHandler", model,
+            Path.Combine(appDir, $"Get{plural}Handler.cs"), generated, skipped);
 
-        _templates.RenderToFile("module/Application/GetAllQuery", model,
-            Path.Combine(appDir, $"Get{plural}Query.cs"));
-        generated.Add(Rel(appDir, $"Get{plural}Query.cs"));
+        WriteIfMissing("module/Application/GetByIdQuery", model,
+            Path.Combine(appDir, $"Get{entity}ByIdQuery.cs"), generated, skipped);
+        WriteIfMissing("module/Application/GetByIdHandler", model,
+            Path.Combine(appDir, $"Get{entity}ByIdHandler.cs"), generated, skipped);
 
-        _templates.RenderToFile("module/Application/GetAllHandler", model,
-            Path.Combine(appDir, $"Get{plural}Handler.cs"));
-        generated.Add(Rel(appDir, $"Get{plural}Handler.cs"));
+        WriteIfMissing("module/Application/UpdateCommand", model,
+            Path.Combine(appDir, $"Update{entity}Command.cs"), generated, skipped);
+        WriteIfMissing("module/Application/UpdateHandler", model,
+            Path.Combine(appDir, $"Update{entity}Handler.cs"), generated, skipped);
 
-        _templates.RenderToFile("module/Application/GetByIdQuery", model,
-            Path.Combine(appDir, $"Get{entity}ByIdQuery.cs"));
-        generated.Add(Rel(appDir, $"Get{entity}ByIdQuery.cs"));
-
-        _templates.RenderToFile("module/Application/GetByIdHandler", model,
-            Path.Combine(appDir, $"Get{entity}ByIdHandler.cs"));
-        generated.Add(Rel(appDir, $"Get{entity}ByIdHandler.cs"));
-
-        _templates.RenderToFile("module/Application/UpdateCommand", model,
-            Path.Combine(appDir, $"Update{entity}Command.cs"));
-        generated.Add(Rel(appDir, $"Update{entity}Command.cs"));
-
-        _templates.RenderToFile("module/Application/UpdateHandler", model,
-            Path.Combine(appDir, $"Update{entity}Handler.cs"));
-        generated.Add(Rel(appDir, $"Update{entity}Handler.cs"));
-
-        _templates.RenderToFile("module/Application/DeleteCommand", model,
-            Path.Combine(appDir, $"Delete{entity}Command.cs"));
-        generated.Add(Rel(appDir, $"Delete{entity}Command.cs"));
-
-        _templates.RenderToFile("module/Application/DeleteHandler", model,
-            Path.Combine(appDir, $"Delete{entity}Handler.cs"));
-        generated.Add(Rel(appDir, $"Delete{entity}Handler.cs"));
+        WriteIfMissing("module/Application/DeleteCommand", model,
+            Path.Combine(appDir, $"Delete{entity}Command.cs"), generated, skipped);
+        WriteIfMissing("module/Application/DeleteHandler", model,
+            Path.Combine(appDir, $"Delete{entity}Handler.cs"), generated, skipped);
 
         // ── Integration event (Application layer) ──────────────────
-        var evtFile = Path.Combine(appDir, "IntegrationEvents", $"{entity}CreatedIntegrationEvent.cs");
-        if (!File.Exists(evtFile))
-        {
-            _templates.RenderToFile("module/Application/IntegrationEvent", model, evtFile);
-            generated.Add(Rel(appDir, $"IntegrationEvents/{entity}CreatedIntegrationEvent.cs"));
-        }
+        WriteIfMissing("module/Application/IntegrationEvent", model,
+            Path.Combine(appDir, "IntegrationEvents", $"{entity}CreatedIntegrationEvent.cs"),
+            generated, skipped);
 
         // ── Infrastructure layer ──────────────────────────────────
-        _templates.RenderToFile("module/Infrastructure/Repository", model,
-            Path.Combine(infraDir, $"{entity}Repository.cs"));
-        generated.Add(Rel(infraDir, $"{entity}Repository.cs"));
+        WriteIfMissing("module/Infrastructure/Repository", model,
+            Path.Combine(infraDir, $"{entity}Repository.cs"), generated, skipped);
 
         // Wire repository + handler registration into the module class.
-        var moduleFile = Path.Combine(infraDir, $"{moduleName}Module.cs");
+        var moduleFile = Path.Combine(infraDir, $"{module.Name}Module.cs");
         if (File.Exists(moduleFile))
         {
-            var wired = EnsureModuleRegistrations(moduleFile, moduleNs, entity);
+            var wired = EnsureModuleRegistrations(moduleFile, module.Namespace, entity);
             if (wired)
-                generated.Add(Rel(infraDir, $"{moduleName}Module.cs (updated)"));
+                generated.Add(CodeGen.Rel(infraDir, $"{module.Name}Module.cs (updated)"));
         }
 
         // Auto-wire the DbSet into the module's own DbContext.
-        var dbContextFile = Path.Combine(infraDir, $"{moduleName}DbContext.cs");
+        var dbContextFile = Path.Combine(infraDir, $"{module.Name}DbContext.cs");
         if (File.Exists(dbContextFile))
         {
-            var wired = EnsureDbSetRegistration(dbContextFile, moduleNs, entity, plural);
+            var wired = EnsureDbSetRegistration(dbContextFile, module.Namespace, entity, plural);
             if (wired)
-                generated.Add(Rel(infraDir, $"{moduleName}DbContext.cs (updated)"));
+                generated.Add(CodeGen.Rel(infraDir, $"{module.Name}DbContext.cs (updated)"));
         }
 
         // ── Presentation layer ────────────────────────────────────
-        _templates.RenderToFile("module/Presentation/Controller", model,
-            Path.Combine(presDir, $"{entity}sController.cs"));
-        generated.Add(Rel(presDir, $"{entity}sController.cs"));
+        WriteIfMissing("module/Presentation/Controller", model,
+            Path.Combine(presDir, $"{plural}Controller.cs"), generated, skipped);
 
         // ── Summary ───────────────────────────────────────────────
         AnsiConsole.MarkupLine("[green]✓[/] Generated CRUD for [cyan]{0}[/] in [grey]{1}[/]",
-            entity, moduleName);
+            entity, module.Name);
         foreach (var f in generated)
             AnsiConsole.MarkupLine("  [green]→[/] [grey]{0}[/]", f);
+        foreach (var f in skipped)
+            AnsiConsole.MarkupLine("  [yellow]•[/] [grey]{0}[/] [yellow](exists, skipped)[/]", f);
 
         AnsiConsole.MarkupLine("[grey]  The DbSet + using were auto-wired into {0}DbContext.cs.[/]",
-            moduleName);
+            module.Name);
 
         return 0;
+    }
+
+    /// <summary>
+    /// Renders <paramref name="templatePath"/> to <paramref name="outputPath"/>
+    /// only when the file does not already exist; otherwise reports it as skipped.
+    /// </summary>
+    private void WriteIfMissing(
+        string templatePath,
+        ModuleModel model,
+        string outputPath,
+        List<string> generated,
+        List<string> skipped)
+    {
+        if (File.Exists(outputPath))
+        {
+            skipped.Add(CodeGen.Rel(Path.GetDirectoryName(outputPath)!, Path.GetFileName(outputPath)));
+            return;
+        }
+
+        _templates.RenderToFile(templatePath, model, outputPath);
+        generated.Add(CodeGen.Rel(Path.GetDirectoryName(outputPath)!, Path.GetFileName(outputPath)));
     }
 
     /// <summary>
@@ -199,13 +201,15 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
 
         if (!content.Contains($"I{entity}Repository,", StringComparison.Ordinal))
             content = InsertInConfigureServices(content, repoLine);
-        if (!content.Contains($"Create{entity}Handler).Assembly", StringComparison.Ordinal))
+        // Use generic check: if ANY AddMediatorHandlers call exists, don't insert another.
+        // This prevents double-registration when single commands/queries are added later.
+        if (!content.Contains("AddMediatorHandlers(typeof(", StringComparison.Ordinal))
             content = InsertInConfigureServices(content, handlerLine);
 
         if (content == original)
             return false;
 
-        File.WriteAllText(moduleFile, content);
+        Ux.WriteFile(moduleFile, content);
         return true;
     }
 
@@ -273,7 +277,7 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
         if (content == original)
             return false;
 
-        File.WriteAllText(dbContextFile, content);
+        Ux.WriteFile(dbContextFile, content);
         return true;
     }
 
@@ -291,75 +295,5 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
         if (bodyOpen < 0) return content;
 
         return content.Insert(bodyOpen + 1, "\n" + line);
-    }
-
-    private static string LayerDir(string moduleDir, string moduleNs, string layer)
-        => Path.Combine(moduleDir, $"{moduleNs}.{layer}");
-
-    private static string Rel(string dir, string file)
-        => $"{Path.GetFileName(dir)}/{file}";
-
-    private string? ResolveModuleDirectory(string? module)
-    {
-        var modulesDir = Path.Combine(Environment.CurrentDirectory, "src", "Modules");
-        if (!Directory.Exists(modulesDir))
-            throw new InvalidOperationException(
-                "No 'src/Modules' directory found. Run from the solution root.");
-
-        // If module specified, find matching directory by suffix.
-        if (!string.IsNullOrEmpty(module))
-        {
-            var matches = Directory.GetDirectories(modulesDir, $"*.{module}")
-                .Where(d => d.Contains(".Modules."))
-                .ToArray();
-            if (matches.Length == 1) return matches[0];
-            if (matches.Length == 0)
-                throw new InvalidOperationException(
-                    $"No module matching '{module}' found in src/Modules/.");
-        }
-
-        // Auto-detect: find .Modules.* directories.
-        var modDirs = Directory.GetDirectories(modulesDir, "*.Modules.*");
-        if (modDirs.Length == 1) return modDirs[0];
-        if (modDirs.Length > 1)
-            throw new InvalidOperationException(
-                "Multiple modules found. Specify --module <name>.\n" +
-                "Found: " + string.Join(", ", modDirs.Select(Path.GetFileName)));
-
-        throw new InvalidOperationException(
-            "Could not find a module directory. Run from the solution root " +
-            "or specify --module <ModuleName>.");
-    }
-
-    /// <summary>
-    /// Derives the module namespace from the resolved module directory name.
-    /// Module directories are named after their namespace, e.g.
-    /// <c>src/MyApp.Modules.Products</c> → <c>MyApp.Modules.Products</c>.
-    /// </summary>
-    private static string ResolveModuleNamespace(string moduleDir)
-        => Path.GetFileName(moduleDir.TrimEnd(
-               Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
-
-    private static string ExtractRootNamespace(string moduleNs)
-    {
-        var parts = moduleNs.Split('.');
-        return parts.Length >= 2 ? string.Join(".", parts[..^2]) : moduleNs;
-    }
-
-    private static string ToCamelCase(string s) =>
-        char.ToLowerInvariant(s[0]) + s[1..];
-
-    private static string ToPlural(string s)
-    {
-        if (string.IsNullOrEmpty(s)) return s;
-        if (s.EndsWith("ch", StringComparison.OrdinalIgnoreCase)
-         || s.EndsWith("sh", StringComparison.OrdinalIgnoreCase)
-         || s.EndsWith('x') || s.EndsWith('z'))
-            return s + "es";
-        if (s.Length > 1 && s.EndsWith('y') && !"aeiouAEIOU".Contains(s[^2]))
-            return s[..^1] + "ies";
-        if (s.EndsWith('s'))
-            return s + "es";
-        return s + "s";
     }
 }

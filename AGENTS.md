@@ -27,7 +27,7 @@ All commands are run from the repository root (`E:\Personal\framework\modulus`).
 | Run only unit tests | `dotnet test modulus.slnx --filter "Category=Unit"` |
 | Run only integration tests | `dotnet test modulus.slnx --filter "Category=Integration"` |
 | Pack NuGet packages | `dotnet pack modulus.slnx -c Release` |
-| Install CLI tool | `dotnet tool install -g --add-source ./nupkg Modulus.Cli` |
+| Install CLI tool | `dotnet tool install -g --add-source ./nupkg Cobytelabs.Modulus.Cli` |
 | Create new app | `modulus app MyApp` |
 | Add a module | `modulus add-module Catalog` |
 | Generate CRUD | `modulus generate-crud Product --module Catalog` |
@@ -205,9 +205,9 @@ contributes its own handlers without re-registering behaviours. The generated
 `.slnx` uses flat sibling solution folders (no nesting) so that `dotnet test`
 and `dotnet sln list` discover all projects.
 
-A working example lives at `samples/Ecommerce` (Catalog + Orders modules,
-SQLite). Because the `Modulus.*` packages aren't on nuget.org yet, the sample
-ships a `NuGet.config` pointing at the repo's local `nupkg/` feed — run
+A working example lives at `samples/ModulusSampleErp` (API host + Users module,
+SQLite). Because the `Cobytelabs.Modulus.*` packages aren't on nuget.org yet, the
+sample ships a `NuGet.config` pointing at the repo's local `nupkg/` feed — run
 `dotnet pack modulus.slnx -c Release` first if the feed is empty.
 
 Templates are embedded Scriban resources under `cli/Templates/`
@@ -373,14 +373,20 @@ but for synchronous HTTP callers/retries rather than integration events.
 
 - **Integration-test harness** (`Modulus.Testing`, a packable library) —
   `ModulusWebAppFactory<TEntryPoint>` boots the fully composed host (every
-  middleware + the mediator pipeline) and swaps **every** module `DbContext` to a
-  per-factory in-memory SQLite database, so tests drive real endpoints over HTTP
-  with no external database. The swap (`TestDatabaseRegistration.UseSharedSqlite`)
-  removes each context's options *and* its EF Core 9+ `IDbContextOptionsConfiguration`
-  descriptor before re-adding `UseSqlite` — leaving the config behind applies both
-  the module provider and SQLite ("multiple providers registered"). Isolation is by
-  a unique `Cache=Shared` name held open by a keep-alive connection for the
-  factory's lifetime. `CreateAuthenticatedClient(...)` drives a header-based
+  middleware + the mediator pipeline) and swaps **every** module `DbContext` to
+  its **own** per-factory in-memory SQLite database (one shared `Cache=Shared`
+  database per module context — required for multi-module apps, because a shared
+  database makes `EnsureCreated` a no-op for every context after the first), so
+  tests drive real endpoints over HTTP with no external database. The swap
+  (`TestDatabaseRegistration.UsePerContextSqlite`) removes each context's options
+  *and* its EF Core 9+ `IDbContextOptionsConfiguration` descriptor before
+  re-adding `UseSqlite` — leaving the config behind applies both the module
+  provider and SQLite ("multiple providers registered"). In-memory SQLite dies
+  when its last connection closes, so the factory opens a **keep-alive per
+  context** (from the built host's own connection strings — the per-context map
+  only exists after `ConfigureTestServices` runs during host build) and then
+  re-runs `EnsureCreated` per context. Isolation is by a unique `Cache=Shared`
+  name held open by the keep-alive connection for the factory's lifetime. `CreateAuthenticatedClient(...)` drives a header-based
   `TestAuthHandler` (default scheme `Test`) so `[Authorize]` endpoints and a
   `ClaimsPrincipal`-based `ICurrentUser` see a caller-chosen identity; requests with
   no user header stay anonymous. Generated `Program.cs` exposes `public partial
@@ -475,9 +481,9 @@ history is discoverable:
   IntegrationEvents / Tests projects) was collapsed: DTOs live under
   `Application/Dtos`, integration events under `Application/IntegrationEvents`,
   and tests at the solution root. The host is `{App}.Api` (was `{App}.Host`).
-  A working `samples/Ecommerce` (Catalog + Orders modules, SQLite) validates the
-  full flow: `app` → `add-module` → `generate-crud`, building and running
-  end-to-end.
+  A working `samples/ModulusSampleErp` (API host + Users module, SQLite)
+  validates the full flow: `app` → `add-module` → `generate-crud`, building and
+  running end-to-end.
 - **Outbox row-locking & retries** (`OutboxProcessor`) — claims rows atomically
   via an `ExecuteUpdateAsync` whose `WHERE` re-checks `LockedUntil` (the
   provider-agnostic equivalent of `FOR UPDATE SKIP LOCKED`), so multiple app

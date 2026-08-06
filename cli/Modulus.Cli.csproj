@@ -5,14 +5,14 @@
     <TargetFramework>net10.0</TargetFramework>
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>modulus</ToolCommandName>
-    <PackageId>Modulus.Cli</PackageId>
+    <PackageId>Cobytelabs.Modulus.Cli</PackageId>
     <Description>
-      Command-line interface for the Modulus framework.
+      Command-line interface for the Cobytelabs Modulus framework.
       Scaffold modular-monolith applications, add modules, and generate CRUD code.
     </Description>
-    <PackageTags>modulus;cli;scaffolding;code-generation</PackageTags>
+    <PackageTags>cobytelabs;modulus;cli;scaffolding;code-generation</PackageTags>
     <!-- CLI is a dev-only tool; Scriban vulnerabilities don't affect generated apps -->
-    <NoWarn>$(NoWarn);NU1903;NU1902;NU1904;NU1603</NoWarn>
+    <NoWarn>$(NoWarn);NU1903;NU1902;NU1904;NU1603;VSTHRD002;VSTHRD103</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -22,6 +22,10 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Templates\**\*.sbn" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Modulus.Cli.Tests" />
   </ItemGroup>
 
 </Project>

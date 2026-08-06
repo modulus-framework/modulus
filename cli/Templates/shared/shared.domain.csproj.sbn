@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Modulus.Core" Version="1.0.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Core" Version="{{ framework_version }}" />
   </ItemGroup>
 
 </Project>

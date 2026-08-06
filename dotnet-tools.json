@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "isRoot": true,
+  "tools": {
+    "cobytelabs.modulus.cli": {
+      "version": "1.0.0",
+      "commands": [
+        "modulus"
+      ],
+      "rollForward": false
+    }
+  }
+}

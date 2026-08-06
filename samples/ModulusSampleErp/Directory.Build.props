@@ -1,0 +1,30 @@
+<Project>
+
+  <!-- This app predates Modulus and lives inside the framework's repo purely
+       as a sample. Without this file, MSBuild walks up and picks up the
+       framework repo's own Directory.Build.props (TreatWarningsAsErrors,
+       global PackageReferences with no Version) which collides with this
+       app's own explicit-Version project files. Stopping the walk here keeps
+       the two build graphs isolated. Originally net8.0 — bumped to net10.0
+       so it can reference Modulus (which is net10.0-only, no multi-targeting)
+       via ProjectReference. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+    <RootNamespace>$(MSBuildProjectName)</RootNamespace>
+    <AssemblyName>$(MSBuildProjectName)</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Using Include="Microsoft.Extensions.Configuration" />
+    <Using Include="Microsoft.Extensions.DependencyInjection" />
+    <Using Include="Microsoft.Extensions.DependencyInjection.Extensions" />
+    <Using Include="Microsoft.Extensions.Hosting" />
+    <Using Include="Microsoft.Extensions.Logging" />
+    <Using Include="Microsoft.Extensions.Options" />
+  </ItemGroup>
+
+</Project>

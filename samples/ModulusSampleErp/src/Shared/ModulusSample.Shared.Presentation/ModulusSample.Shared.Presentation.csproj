@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Cobytelabs.Modulus.AspNetCore" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Authorization.Management" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Core" Version="1.2.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ModulusSample.Shared.Application\ModulusSample.Shared.Application.csproj" />
+  </ItemGroup>
+
+</Project>

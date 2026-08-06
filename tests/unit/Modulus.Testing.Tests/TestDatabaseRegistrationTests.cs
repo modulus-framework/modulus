@@ -93,6 +93,67 @@ public sealed class TestDatabaseRegistrationTests
         }
     }
 
+    private static ServiceCollection TwoModulesRegisteredWithSqlServer()
+    {
+        var services = ModuleRegisteredWithSqlServer();
+        services.AddModuleDatabase<GadgetDbContext>(
+            options => options.UseSqlServer("Server=nonexistent;Database=modulus;"));
+        return services;
+    }
+
+    [Fact]
+    public void UsePerContextSqlite_GivesEachContextItsOwnDatabase()
+    {
+        var services = TwoModulesRegisteredWithSqlServer();
+
+        var map = services.UsePerContextSqlite($"swap-{Guid.NewGuid():N}");
+
+        map.Keys.Should().BeEquivalentTo(
+            new[] { typeof(WidgetDbContext), typeof(GadgetDbContext) });
+        map[typeof(WidgetDbContext)].Should().NotBe(map[typeof(GadgetDbContext)]);
+        map.Values.Should().OnlyContain(cs => cs.Contains("Cache=Shared"));
+    }
+
+    [Fact]
+    public void UsePerContextSqlite_EveryContextGetsItsSchema()
+    {
+        // Regression: a single shared database makes EnsureCreated a no-op for
+        // every context after the first (the database already has tables), so the
+        // second module's tables were silently never created — multi-module apps
+        // then failed with "no such table" at runtime.
+        var prefix = $"swap-{Guid.NewGuid():N}";
+        var services = TwoModulesRegisteredWithSqlServer();
+        var map = services.UsePerContextSqlite(prefix);
+
+        using var keepAliveA = new SqliteConnection(map[typeof(WidgetDbContext)]);
+        using var keepAliveB = new SqliteConnection(map[typeof(GadgetDbContext)]);
+        keepAliveA.Open();
+        keepAliveB.Open();
+
+        using var provider = services.BuildServiceProvider();
+        using (var scope = provider.CreateScope())
+        {
+            var widgets = scope.ServiceProvider.GetRequiredService<WidgetDbContext>();
+            widgets.Database.EnsureCreated();
+            widgets.Widgets.Add(new Widget { Id = Guid.NewGuid(), Name = "gizmo" });
+            widgets.SaveChanges();
+
+            var gadgets = scope.ServiceProvider.GetRequiredService<GadgetDbContext>();
+            gadgets.Database.EnsureCreated();
+            gadgets.Gadgets.Add(new Gadget { Id = Guid.NewGuid(), Name = "gadget" });
+            gadgets.SaveChanges();
+        }
+
+        using (var scope = provider.CreateScope())
+        {
+            var widgets = scope.ServiceProvider.GetRequiredService<WidgetDbContext>();
+            widgets.Widgets.Should().ContainSingle(w => w.Name == "gizmo");
+
+            var gadgets = scope.ServiceProvider.GetRequiredService<GadgetDbContext>();
+            gadgets.Gadgets.Should().ContainSingle(g => g.Name == "gadget");
+        }
+    }
+
     [Fact]
     public void UseSharedSqlite_IsolatesDatabasesByConnectionString()
     {

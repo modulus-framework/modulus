@@ -61,5 +61,73 @@
     "Enabled": true,
     "Purpose": "Modulus.PersonalData.Protector.v1"
   },
-  "AllowedHosts": "*"
+{{ if auth == "openiddict" }}  "Identity": {
+    "UseDevelopmentCertificates": false,
+    "AccessTokenLifetimeMin": 15,
+    "RefreshTokenLifetimeDays": 7
+  },
+{{ else if auth == "auth0" }}  "Identity": {
+    "ExternalProviders": {
+      "Auth0": {
+        "Authority": "https://your-tenant.auth0.com/",
+        "ClientId": "your-client-id",
+        "ClientSecret": "",
+        "Scope": "openid profile email"
+      }
+    }
+  },
+{{ else if auth == "authentik" }}  "Identity": {
+    "ExternalProviders": {
+      "Authentik": {
+        "Authority": "https://authentik.example.com/",
+        "ClientId": "your-client-id",
+        "ClientSecret": "",
+        "Scope": "openid profile email"
+      }
+    }
+  },
+{{ else if auth == "azuread" }}  "Identity": {
+    "ExternalProviders": {
+      "AzureAd": {
+        "Instance": "https://login.microsoftonline.com/",
+        "TenantId": "your-tenant-id",
+        "ClientId": "your-client-id",
+        "ClientSecret": "",
+        "Scope": "openid profile email User.Read"
+      }
+    }
+  },
+{{ else if auth == "duende" }}  "Identity": {
+    "ExternalProviders": {
+      "Duende": {
+        "Authority": "https://localhost:5001",
+        "ClientId": "your-client-id",
+        "ClientSecret": "",
+        "ApiName": "modulus",
+        "Scope": "openid profile email roles"
+      }
+    }
+  },
+{{ else if auth == "keycloak" }}  "Identity": {
+    "ExternalProviders": {
+      "Keycloak": {
+        "Authority": "https://localhost:8443",
+        "Realm": "master",
+        "ClientId": "your-client-id",
+        "ClientSecret": "",
+        "Scope": "openid profile email roles"
+      }
+    }
+  },
+{{ else if auth == "okta" }}  "Identity": {
+    "ExternalProviders": {
+      "Okta": {
+        "Authority": "https://your-tenant.okta.com/",
+        "ClientId": "your-client-id",
+        "ClientSecret": "",
+        "Scope": "openid profile email"
+      }
+    }
+  },
+{{ end }}  "AllowedHosts": "*"
 }

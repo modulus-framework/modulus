@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<configuration>
+  <packageSources>
+    <clear />
+    <add key="nuget.org" value="https://api.nuget.org/v3/index.json" protocolVersion="3" />
+    <!--
+      The Cobytelabs.Modulus.* packages are not on nuget.org yet. To restore
+      them from a local feed (e.g. the framework repo's nupkg/ folder), uncomment
+      the entry below and point it at your feed location:
+
+      <add key="modulus-local" value="../../nupkg" />
+    -->
+  </packageSources>
+</configuration>

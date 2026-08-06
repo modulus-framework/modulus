@@ -70,6 +70,7 @@
     <Project Path="tests/unit/Modulus.AspNetCore.Redis.Tests/Modulus.AspNetCore.Redis.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Authorization.Management.Tests/Modulus.Authorization.Management.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Testing.Tests/Modulus.Testing.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.Cli.Tests/Modulus.Cli.Tests.csproj" />
   </Folder>
   <!-- ── Tests · Integration ─────────────────────────────────────── -->
   <Folder Name="/tests/integration/">

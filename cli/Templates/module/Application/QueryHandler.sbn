@@ -1,0 +1,15 @@
+using Modulus.Mediator.Abstractions;
+
+namespace {{ module_namespace }}.Application;
+
+/// <summary>Handler for {{ feature_name }}Query</summary>
+public sealed class {{ feature_name }}Handler : IQueryHandler<{{ feature_name }}Query, object>
+{
+    public async Task<object> HandleAsync(
+        {{ feature_name }}Query query,
+        CancellationToken ct)
+    {
+        // TODO: Implement {{ feature_name }} logic here
+        return await Task.FromResult(new { });
+    }
+}

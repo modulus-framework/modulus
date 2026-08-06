@@ -1,0 +1,71 @@
+root = true
+
+[*]
+indent_style = space
+indent_size = 4
+end_of_line = lf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+[*.{json,xml,csproj,props,targets,slnx,yml,yaml}]
+indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false
+
+# ════════════════════════════════════════════════════════════════
+#  C# code-style & analyzer configuration
+# ════════════════════════════════════════════════════════════════
+[*.cs]
+
+# ── Language conventions ───────────────────────────────────────
+dotnet_style_qualification_for_field = false:suggestion
+dotnet_style_qualification_for_property = false:suggestion
+dotnet_style_qualification_for_method = false:suggestion
+dotnet_style_qualification_for_event = false:suggestion
+dotnet_style_predefined_type_for_locals_parameters_members = true:suggestion
+dotnet_style_predefined_type_for_member_access = true:suggestion
+dotnet_style_readonly_field = true:warning
+dotnet_style_require_accessibility_modifiers = always:suggestion
+
+# var preferences
+csharp_style_var_for_built_in_types = false:suggestion
+csharp_style_var_when_type_is_apparent = true:suggestion
+csharp_style_var_elsewhere = false:suggestion
+
+# Expression-bodied members
+csharp_style_expression_bodied_methods = when_on_single_line:silent
+csharp_style_expression_bodied_properties = true:suggestion
+
+# Pattern matching
+csharp_style_pattern_matching_over_is_with_cast_check = true:suggestion
+csharp_style_pattern_matching_over_as_with_null_check = true:suggestion
+
+# Null checking
+csharp_style_throw_expression = true:suggestion
+csharp_style_conditional_delegate_call = true:suggestion
+
+# Modifiers
+csharp_preferred_modifier_order = public,private,protected,internal,static,extern,new,virtual,abstract,sealed,override,readonly,unsafe,volatile,async:suggestion
+
+# ── Roslynator — enable as IDE suggestions, don't fail builds ──
+# Exception-constructor boilerplate (RCS1194): modern primary-constructor
+# exceptions intentionally omit the legacy 4-constructor pattern.
+dotnet_diagnostic.RCS1194.severity = suggestion
+
+# Empty catch in best-effort cleanup/rollback code (RCS1075): swallowing
+# errors during rollback/dispose is the correct pattern — re-throwing would
+# mask the original exception that triggered the rollback.
+dotnet_diagnostic.RCS1075.severity = suggestion
+
+# Async-method naming (VSTHRD200): good guidance but controller actions and
+# event handlers legitimately omit the "Async" suffix. Enforced as suggestion.
+dotnet_diagnostic.VSTHRD200.severity = suggestion
+
+# ── Code-quality analyzers kept at error (fail the build) ──────
+# (TreatWarningsAsErrors turns warnings into errors automatically;
+#  the rules below are explicitly confirmed as errors.)
+
+# CS1591: Missing XML comment for publicly visible type or member
+dotnet_diagnostic.CS1591.severity = none

@@ -7,54 +7,226 @@ namespace Modulus.Cli.Commands;
 
 internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
 {
-    internal sealed class Settings : CommandSettings
+    internal sealed class Settings : ModulusSettings
     {
-        [Description("Name of the application (e.g. MyApp or MyCompany.MyApp)")]
-        [CommandArgument(0, "<name>")]
-        public required string Name { get; init; }
+        [Description("Name of the application (e.g. MyApp or MyCompany.MyApp). Omit to be prompted.")]
+        [CommandArgument(0, "[name]")]
+        public string? Name { get; init; }
 
         [Description("Output directory (default: current directory)")]
         [CommandOption("-o|--output")]
         [DefaultValue("./")]
         public string? Output { get; init; }
 
-        [Description("Database provider: SQLite (default), SqlServer, PostgreSQL, MySQL")]
+        [Description("Database provider: SQLite, SqlServer, PostgreSQL, MySQL. Omit to be prompted.")]
         [CommandOption("-d|--database")]
-        [DefaultValue("SQLite")]
-        public string Database { get; init; } = "SQLite";
+        public string? Database { get; init; }
 
-        [Description("Skip generating the example Catalog module")]
+        [Description("Auth provider: none, openiddict, auth0, authentik, azuread, duende, keycloak, okta. Omit to be prompted.")]
+        [CommandOption("--auth")]
+        public string? Auth { get; init; }
+
+        [Description("Skip the example Catalog module. Omit to be prompted (CI default: include).")]
         [CommandOption("--no-example")]
-        [DefaultValue(false)]
-        public bool NoExample { get; init; }
+        public bool? NoExample { get; init; }
+
+        [Description("Message broker: none, rabbitmq, kafka. Omit to be prompted.")]
+        [CommandOption("--message-broker")]
+        public string? MessageBroker { get; init; }
+
+        [Description("Caching provider: inmemory, redis. Omit to be prompted.")]
+        [CommandOption("--caching")]
+        public string? Caching { get; init; }
+
+        [Description("Storage provider: local, s3, azureblobs. Omit to be prompted.")]
+        [CommandOption("--storage")]
+        public string? Storage { get; init; }
+
+        [Description("SignalR backplane: none, redis, azure. Omit to be prompted.")]
+        [CommandOption("--signalr")]
+        public string? SignalR { get; init; }
+
+        [Description("Enable API versioning (default: true).")]
+        [CommandOption("--enable-api-versioning")]
+        public bool? EnableApiVersioning { get; init; }
+
+        [Description("Enable rate limiting (default: true).")]
+        [CommandOption("--enable-rate-limiting")]
+        public bool? EnableRateLimiting { get; init; }
+
+        [Description("Enable health checks (default: true).")]
+        [CommandOption("--enable-health-checks")]
+        public bool? EnableHealthChecks { get; init; }
+
+        [Description("Enable feature flags (default: false).")]
+        [CommandOption("--enable-feature-flags")]
+        public bool? EnableFeatureFlags { get; init; }
+
+        [Description("Enable CORS (default: true).")]
+        [CommandOption("--enable-cors")]
+        public bool? EnableCors { get; init; }
+
+        [Description("Enable security headers (default: true).")]
+        [CommandOption("--enable-security-headers")]
+        public bool? EnableSecurityHeaders { get; init; }
+
+        [Description("Enable HTTP idempotency (default: false).")]
+        [CommandOption("--enable-idempotency")]
+        public bool? EnableIdempotency { get; init; }
+
+        [Description("Enable request correlation (default: true).")]
+        [CommandOption("--enable-correlation")]
+        public bool? EnableCorrelation { get; init; }
+
+        [Description("Enable secrets guard (default: true).")]
+        [CommandOption("--enable-secrets-guard")]
+        public bool? EnableSecretsGuard { get; init; }
+
+        [Description("Enable personal data protection (default: false).")]
+        [CommandOption("--enable-personal-data-protection")]
+        public bool? EnablePersonalDataProtection { get; init; }
     }
+
+    /// <summary>Valid provider choices, in selection-menu order.</summary>
+    internal static readonly string[] KnownProviders = ["SQLite", "SqlServer", "PostgreSQL", "MySQL"];
+
+    /// <summary>Valid message broker choices, in selection-menu order.</summary>
+    internal static readonly string[] KnownMessageBrokers = ["none", "rabbitmq", "kafka"];
+
+    /// <summary>Valid caching provider choices, in selection-menu order.</summary>
+    internal static readonly string[] KnownCachingProviders = ["inmemory", "redis"];
+
+    /// <summary>Valid storage provider choices, in selection-menu order.</summary>
+    internal static readonly string[] KnownStorageProviders = ["local", "s3", "azureblobs"];
+
+    /// <summary>Valid SignalR backplane choices, in selection-menu order.</summary>
+    internal static readonly string[] KnownSignalRBackplanes = ["none", "redis", "azure"];
 
     private readonly TemplateEngine _templates = new();
 
     public override int Execute(CommandContext ctx, Settings s)
     {
-        var parts = s.Name.Split('.');
+        s.Apply();
+        return CommandRunner.Run(() => ExecuteCore(ctx, s));
+    }
+
+    private int ExecuteCore(CommandContext ctx, Settings s)
+    {
+        if (Ux.IsInteractive && !Ux.Quiet)
+            AnsiConsole.Write(new Rule("[cyan]Modulus — create a new application[/]") { Border = BoxBorder.Rounded });
+
+        // ── Resolve args (interactive when missing, TTY-aware) ──────────
+        var name = s.Name;
+        if (string.IsNullOrWhiteSpace(name))
+            name = Ux.AskRequired("App name [grey](e.g. MyApp or MyCompany.MyApp)[/]:",
+                ciHint: "Pass the app name, e.g. `modulus app MyApp`.");
+        var rootNs = ValidateAppName(name);
+
+        var database = ResolveDatabase(s.Database);
+
+        var auth = ResolveAuth(s.Auth);
+
+        // Resolve infrastructure options
+        var messageBroker = ResolveMessageBroker(s.MessageBroker);
+        var cachingProvider = ResolveCachingProvider(s.Caching);
+        var storageProvider = ResolveStorageProvider(s.Storage);
+        var signalRBackplane = ResolveSignalRBackplane(s.SignalR);
+
+        // Resolve production hardening features
+        var enableApiVersioning = ResolveFeature(s.EnableApiVersioning, true, "API versioning");
+        var enableRateLimiting = ResolveFeature(s.EnableRateLimiting, true, "rate limiting");
+        var enableHealthChecks = ResolveFeature(s.EnableHealthChecks, true, "health checks");
+        var enableFeatureFlags = ResolveFeature(s.EnableFeatureFlags, false, "feature flags");
+        var enableCors = ResolveFeature(s.EnableCors, true, "CORS");
+        var enableSecurityHeaders = ResolveFeature(s.EnableSecurityHeaders, true, "security headers");
+        var enableIdempotency = ResolveFeature(s.EnableIdempotency, false, "HTTP idempotency");
+        var enableCorrelation = ResolveFeature(s.EnableCorrelation, true, "request correlation");
+        var enableSecretsGuard = ResolveFeature(s.EnableSecretsGuard, true, "secrets guard");
+        var enablePersonalDataProtection = ResolveFeature(s.EnablePersonalDataProtection, false, "personal data protection");
+
+        // NoExample is tri-state: null = unspecified → prompt (interactive)
+        // or default to include (CI). True/False are explicit user choices.
+        bool noExample;
+        if (s.NoExample is { } noExampleFlag)
+        {
+            noExample = noExampleFlag;
+        }
+        else if (Ux.IsInteractive)
+        {
+            var include = Ux.Confirm("Include the example [cyan]Catalog[/] module?", nonInteractiveDefault: true);
+            noExample = !include;
+        }
+        else
+        {
+            noExample = false;
+        }
+
+        var parts = rootNs.Split('.');
         var appName = parts[^1];
-        var rootNs = s.Name;
         var outputDir = Path.GetFullPath(s.Output ?? "./");
         var projectDir = Path.Combine(outputDir, appName);
 
-        if (Directory.Exists(projectDir))
+        // ── Target directory conflict ───────────────────────────────────
+        if (Directory.Exists(projectDir) && Directory.EnumerateFileSystemEntries(projectDir).Any())
         {
-            AnsiConsole.MarkupLine("[red]Error:[/] Directory already exists:[/] {0}", projectDir);
-            return 1;
+            if (!Ux.Confirm($"Directory [cyan]{projectDir}[/] is not empty. Continue and overwrite?", nonInteractiveDefault: false))
+            {
+                Ux.Error("Aborted.");
+                return 1;
+            }
+            Ux.Status($"Clearing {appName}/", () => Ux.DeleteDirectory(projectDir));
         }
-
-        Directory.CreateDirectory(projectDir);
 
         var model = new AppModel
         {
             RootNamespace = rootNs,
             AppName = appName,
-            DbProvider = s.Database,
-            NoExample = s.NoExample,
+            DbProvider = database,
+            NoExample = noExample,
+            Auth = auth,
+            MessageBroker = messageBroker,
+            CachingProvider = cachingProvider,
+            StorageProvider = storageProvider,
+            SignalRBackplane = signalRBackplane,
+            EnableApiVersioning = enableApiVersioning,
+            EnableRateLimiting = enableRateLimiting,
+            EnableHealthChecks = enableHealthChecks,
+            EnableFeatureFlags = enableFeatureFlags,
+            EnableCors = enableCors,
+            EnableSecurityHeaders = enableSecurityHeaders,
+            EnableIdempotency = enableIdempotency,
+            EnableCorrelation = enableCorrelation,
+            EnableSecretsGuard = enableSecretsGuard,
+            EnablePersonalDataProtection = enablePersonalDataProtection,
         };
 
+        Ux.Status($"Scaffolding {appName}...", () => GenerateAll(projectDir, model));
+
+        // ── Summary ────────────────────────────────────────────────────
+        AnsiConsole.WriteLine();
+        Ux.Success($"Created [cyan]{appName}[/] at [grey]{projectDir}[/]");
+        if (Ux.DryRun)
+            Ux.Warning("Dry-run: nothing was actually written.");
+        AnsiConsole.WriteLine();
+        AnsiConsole.MarkupLine("[yellow]Next steps:[/]");
+        AnsiConsole.MarkupLine("  [grey]cd[/] {0}", appName);
+        if (!Ux.DryRun)
+        {
+            AnsiConsole.MarkupLine("  [grey]dotnet restore[/]");
+            AnsiConsole.MarkupLine("  [grey]dotnet run --project[/] src/API/{0}.Api", rootNs);
+        }
+        AnsiConsole.WriteLine();
+        AnsiConsole.MarkupLine("[grey]Then try:[/]");
+        AnsiConsole.MarkupLine("  [grey]modulus add-module[/] Orders");
+        AnsiConsole.MarkupLine("  [grey]modulus generate-crud[/] Order --module Orders");
+        AnsiConsole.MarkupLine("  [grey]modulus list[/]  [grey]# see what's in this app[/]");
+
+        return 0;
+    }
+
+    private void GenerateAll(string projectDir, AppModel model)
+    {
+        var rootNs = model.RootNamespace;
         var projects = new List<string>();
 
         // ── Host / API project ─────────────────────────────────────
@@ -64,18 +236,24 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         _templates.RenderToFile("app/Program", model,
             Path.Combine(apiDir, "Program.cs"));
         _templates.RenderToFile("app/HostModule", model,
-            Path.Combine(apiDir, "Modules", $"{appName}HostModule.cs"));
+            Path.Combine(apiDir, "Modules", $"{model.AppName}HostModule.cs"));
         _templates.RenderToFile("app/appsettings.json", model,
             Path.Combine(apiDir, "appsettings.json"));
         _templates.RenderToFile("app/appsettings.Development.json", model,
             Path.Combine(apiDir, "appsettings.Development.json"));
+        // Without launchSettings.json, `dotnet run` defaults to the Production
+        // environment, which switches the database initialisation to Migrate mode
+        // (throws on an empty schema). The Development profile keeps the default
+        // dev experience working out of the box.
+        _templates.RenderToFile("app/launchSettings.json", model,
+            Path.Combine(apiDir, "Properties", "launchSettings.json"));
         projects.Add($"src/API/{rootNs}.Api/{rootNs}.Api.csproj");
 
         // ── Shared kernel ─────────────────────────────────────────
         GenerateShared(Path.Combine(projectDir, "src", "Shared"), model, projects);
 
         // ── Example Catalog module ─────────────────────────────────
-        if (!s.NoExample)
+        if (!model.NoExample)
         {
             var modNs = $"{rootNs}.Modules.{model.ExampleModule}";
             var modDir = Path.Combine(projectDir, "src", "Modules", modNs);
@@ -86,8 +264,8 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
                 ModuleNamespace = modNs,
                 DbProvider = model.DbProvider,
                 EntityName = model.ExampleEntity,
-                EntityNameLower = ToCamel(model.ExampleEntity),
-                RouteName = ToPlural(model.ExampleEntity).ToLowerInvariant(),
+                EntityNameLower = CodeGen.ToCamelCase(model.ExampleEntity),
+                RouteName = CodeGen.Pluralize(model.ExampleEntity).ToLowerInvariant(),
             };
             GenerateModule(modDir, modModel);
             projects.AddRange(ModuleProjectPaths(rootNs, model.ExampleModule));
@@ -103,8 +281,8 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
 
         // ── Solution file ─────────────────────────────────────────
         SolutionHelper.Create(
-            Path.Combine(projectDir, $"{appName}.slnx"),
-            appName, projects);
+            Path.Combine(projectDir, $"{model.AppName}.slnx"),
+            model.AppName, projects);
 
         // ── Directory.Build.props ─────────────────────────────────
         _templates.RenderToFile("app/Directory.Build.props", model,
@@ -122,21 +300,183 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         _templates.RenderToFile("app/editorconfig", model,
             Path.Combine(projectDir, ".editorconfig"));
 
+        // ── NuGet.config ──────────────────────────────────────────
+        _templates.RenderToFile("app/NuGet.config", model,
+            Path.Combine(projectDir, "NuGet.config"));
+
         // ── .gitignore ────────────────────────────────────────────
-        // Keeps build output, user files, SQLite databases, and — importantly —
-        // secrets (secrets.json / appsettings.*.json) out of source control.
         _templates.RenderToFile("app/gitignore", model,
             Path.Combine(projectDir, ".gitignore"));
+    }
 
-        // ── Summary ───────────────────────────────────────────────
-        AnsiConsole.MarkupLine("[green]✓[/] Created [cyan]{0}[/] at [grey]{1}[/]", appName, projectDir);
-        AnsiConsole.WriteLine();
-        AnsiConsole.MarkupLine("[yellow]Next steps:[/]");
-        AnsiConsole.MarkupLine("  [grey]cd[/] {0}", appName);
-        AnsiConsole.MarkupLine("  [grey]dotnet restore[/]");
-        AnsiConsole.MarkupLine("  [grey]dotnet run --project[/] src/API/{0}.Api", rootNs);
+    private static string ResolveDatabase(string? provided)
+    {
+        string database;
+        if (string.IsNullOrWhiteSpace(provided))
+        {
+            database = Ux.SelectOrFallback(
+                "Database provider?",
+                KnownProviders,
+                "SQLite");
+        }
+        else
+        {
+            database = provided;
+        }
 
-        return 0;
+        if (!KnownProviders.Contains(database, StringComparer.OrdinalIgnoreCase))
+            throw new ArgumentException(
+                $"Unknown database provider '{database}'. Valid: {string.Join(", ", KnownProviders)}.");
+
+        // Normalise casing (templates index by exact string).
+        return KnownProviders.First(p => string.Equals(p, database, StringComparison.OrdinalIgnoreCase));
+    }
+
+    /// <summary>
+    /// Resolves the auth provider: interactive selection when not supplied,
+    /// validation + normalisation when passed on the command line.
+    /// </summary>
+    private static string ResolveAuth(string? provided)
+    {
+        string auth;
+        if (string.IsNullOrWhiteSpace(provided))
+        {
+            var choices = AuthProviders.DisplayChoices;
+            var picked = Ux.SelectOrFallback(
+                "Authentication provider?",
+                choices,
+                "none");
+            // Map the display label back to the key.
+            auth = AuthProviders.All.First(p => p.DisplayName == picked).Key;
+        }
+        else
+        {
+            auth = provided;
+        }
+
+        if (AuthProviders.Find(auth) is null)
+            throw new ArgumentException(
+                $"Unknown auth provider '{auth}'. Valid: {string.Join(", ", AuthProviders.Keys)}.");
+
+        return AuthProviders.Find(auth)!.Key;
+    }
+
+    /// <summary>
+    /// Resolves the message broker: interactive selection when not supplied,
+    /// validation + normalisation when passed on the command line.
+    /// </summary>
+    private static string ResolveMessageBroker(string? provided)
+    {
+        string broker;
+        if (string.IsNullOrWhiteSpace(provided))
+        {
+            broker = Ux.SelectOrFallback(
+                "Message broker?",
+                KnownMessageBrokers,
+                "none");
+        }
+        else
+        {
+            broker = provided;
+        }
+
+        if (!KnownMessageBrokers.Contains(broker, StringComparer.OrdinalIgnoreCase))
+            throw new ArgumentException(
+                $"Unknown message broker '{broker}'. Valid: {string.Join(", ", KnownMessageBrokers)}.");
+
+        return KnownMessageBrokers.First(b => string.Equals(b, broker, StringComparison.OrdinalIgnoreCase));
+    }
+
+    /// <summary>
+    /// Resolves the caching provider: interactive selection when not supplied,
+    /// validation + normalisation when passed on the command line.
+    /// </summary>
+    private static string ResolveCachingProvider(string? provided)
+    {
+        string caching;
+        if (string.IsNullOrWhiteSpace(provided))
+        {
+            caching = Ux.SelectOrFallback(
+                "Caching provider?",
+                KnownCachingProviders,
+                "inmemory");
+        }
+        else
+        {
+            caching = provided;
+        }
+
+        if (!KnownCachingProviders.Contains(caching, StringComparer.OrdinalIgnoreCase))
+            throw new ArgumentException(
+                $"Unknown caching provider '{caching}'. Valid: {string.Join(", ", KnownCachingProviders)}.");
+
+        return KnownCachingProviders.First(c => string.Equals(c, caching, StringComparison.OrdinalIgnoreCase));
+    }
+
+    /// <summary>
+    /// Resolves the storage provider: interactive selection when not supplied,
+    /// validation + normalisation when passed on the command line.
+    /// </summary>
+    private static string ResolveStorageProvider(string? provided)
+    {
+        string storage;
+        if (string.IsNullOrWhiteSpace(provided))
+        {
+            storage = Ux.SelectOrFallback(
+                "Storage provider?",
+                KnownStorageProviders,
+                "local");
+        }
+        else
+        {
+            storage = provided;
+        }
+
+        if (!KnownStorageProviders.Contains(storage, StringComparer.OrdinalIgnoreCase))
+            throw new ArgumentException(
+                $"Unknown storage provider '{storage}'. Valid: {string.Join(", ", KnownStorageProviders)}.");
+
+        return KnownStorageProviders.First(s => string.Equals(s, storage, StringComparison.OrdinalIgnoreCase));
+    }
+
+    /// <summary>
+    /// Resolves the SignalR backplane: interactive selection when not supplied,
+    /// validation + normalisation when passed on the command line.
+    /// </summary>
+    private static string ResolveSignalRBackplane(string? provided)
+    {
+        string signalR;
+        if (string.IsNullOrWhiteSpace(provided))
+        {
+            signalR = Ux.SelectOrFallback(
+                "SignalR backplane?",
+                KnownSignalRBackplanes,
+                "none");
+        }
+        else
+        {
+            signalR = provided;
+        }
+
+        if (!KnownSignalRBackplanes.Contains(signalR, StringComparer.OrdinalIgnoreCase))
+            throw new ArgumentException(
+                $"Unknown SignalR backplane '{signalR}'. Valid: {string.Join(", ", KnownSignalRBackplanes)}.");
+
+        return KnownSignalRBackplanes.First(s => string.Equals(s, signalR, StringComparison.OrdinalIgnoreCase));
+    }
+
+    /// <summary>
+    /// Resolves a boolean feature flag with interactive prompt when not supplied.
+    /// </summary>
+    private static bool ResolveFeature(bool? provided, bool defaultValue, string featureName)
+    {
+        if (provided.HasValue)
+            return provided.Value;
+
+        if (Ux.IsInteractive)
+            return Ux.Confirm($"Enable {featureName}?", nonInteractiveDefault: defaultValue);
+
+        return defaultValue;
     }
 
     /// <summary>
@@ -211,9 +551,9 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
             _templates.RenderToFile("module/Application/CreateHandler", m,
                 Path.Combine(appDir, $"Create{entityName}Handler.cs"));
             _templates.RenderToFile("module/Application/GetAllQuery", m,
-                Path.Combine(appDir, $"Get{ToPlural(entityName)}Query.cs"));
+                Path.Combine(appDir, $"Get{m.EntityPlural}Query.cs"));
             _templates.RenderToFile("module/Application/GetAllHandler", m,
-                Path.Combine(appDir, $"Get{ToPlural(entityName)}Handler.cs"));
+                Path.Combine(appDir, $"Get{m.EntityPlural}Handler.cs"));
             _templates.RenderToFile("module/Application/GetByIdQuery", m,
                 Path.Combine(appDir, $"Get{entityName}ByIdQuery.cs"));
             _templates.RenderToFile("module/Application/GetByIdHandler", m,
@@ -260,7 +600,7 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         if (hasEntity)
         {
             _templates.RenderToFile("module/Presentation/Controller", m,
-                Path.Combine(presDir, $"{entityName}sController.cs"));
+                Path.Combine(presDir, $"{m.EntityPlural}Controller.cs"));
         }
     }
 
@@ -279,8 +619,15 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         }
     }
 
-    private static string ToPlural(string s) => s.EndsWith('s') ? s + "es" : s + "s";
+    private static string ValidateAppName(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            throw new ArgumentException("Application name cannot be empty.");
 
-    private static string ToCamel(string s) =>
-        char.ToLowerInvariant(s[0]) + s[1..];
+        var parts = name.Split('.');
+        foreach (var part in parts)
+            CodeGen.ValidateIdentifier(part, "Application");
+
+        return name;
+    }
 }

@@ -176,7 +176,15 @@ public static class EndpointDiscovery
             }
         };
 
-        var builder = app.MapMethods(config.Route, [verb], handler);
+        // Auto-prepend API version prefix unless the route already has one
+        var route = config.Route;
+        if (config.Versions.Length > 0
+            && !route.StartsWith("/api/", StringComparison.OrdinalIgnoreCase))
+        {
+            route = $"/api/v{config.Versions[0]}{route}";
+        }
+
+        var builder = app.MapMethods(route, [verb], handler);
 
         ApplyAuthorization(builder, config);
         ApplyOpenApi(builder, endpointType, config, bindsRequest);
@@ -193,8 +201,11 @@ public static class EndpointDiscovery
 
         var authData = new List<IAuthorizeData>();
 
-        foreach (var perm in config.Permissions)
-            authData.Add(new AuthorizeAttribute(perm));
+        if (config.Permissions.Length > 0)
+        {
+            foreach (var perm in config.Permissions)
+                authData.Add(new AuthorizeAttribute(perm));
+        }
 
         foreach (var policy in config.Policies)
             authData.Add(new AuthorizeAttribute(policy));
@@ -205,8 +216,11 @@ public static class EndpointDiscovery
                 Roles = string.Join(',', config.Roles)
             });
 
+        // Default: require authenticated user when no explicit auth settings
         if (authData.Count > 0)
             builder.RequireAuthorization([.. authData]);
+        else
+            builder.RequireAuthorization();
     }
 
     private static void ApplyOpenApi(

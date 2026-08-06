@@ -6,13 +6,13 @@ using {{ module_namespace }}.Application.Dtos;
 namespace {{ module_namespace }}.Presentation;
 
 [ApiController]
-[Route("api/{{ route_name }}")]
-public sealed class {{ entity_name }}sController(IMediator mediator) : ControllerBase
+[Route("api/{{ module_name_lower }}/{{ route_name }}")]
+public sealed class {{ entity_plural }}Controller(IMediator mediator) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<{{ entity_name }}Dto>>> GetAll(
         CancellationToken ct)
-        => Ok(await mediator.QueryAsync(new Get{{ entity_name }}sQuery(), ct));
+        => Ok(await mediator.QueryAsync(new Get{{ entity_plural }}Query(), ct));
 
     [HttpGet("{{ '{' + entity_name_lower + 'Id}' }}")]
     public async Task<ActionResult<{{ entity_name }}Dto>> GetById(

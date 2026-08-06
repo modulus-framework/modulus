@@ -211,14 +211,14 @@ public sealed class ChannelJobQueue(
 
     private static Func<object, object, CancellationToken, Task> CompileJobInvoker(Type argsType)
     {
-        var jobType  = typeof(IBackgroundJob<>).MakeGenericType(argsType);
-        var method   = jobType.GetMethod("ExecuteAsync")!;
+        var jobType = typeof(IBackgroundJob<>).MakeGenericType(argsType);
+        var method = jobType.GetMethod("ExecuteAsync")!;
         var jobParam = System.Linq.Expressions.Expression.Parameter(typeof(object), "job");
         var argParam = System.Linq.Expressions.Expression.Parameter(typeof(object), "args");
-        var ctParam  = System.Linq.Expressions.Expression.Parameter(typeof(CancellationToken), "ct");
-        var castJob  = System.Linq.Expressions.Expression.Convert(jobParam, jobType);
-        var castArg  = System.Linq.Expressions.Expression.Convert(argParam, argsType);
-        var call     = System.Linq.Expressions.Expression.Call(castJob, method, castArg, ctParam);
+        var ctParam = System.Linq.Expressions.Expression.Parameter(typeof(CancellationToken), "ct");
+        var castJob = System.Linq.Expressions.Expression.Convert(jobParam, jobType);
+        var castArg = System.Linq.Expressions.Expression.Convert(argParam, argsType);
+        var call = System.Linq.Expressions.Expression.Call(castJob, method, castArg, ctParam);
         return System.Linq.Expressions.Expression.Lambda<Func<object, object, CancellationToken, Task>>(
             call, jobParam, argParam, ctParam).Compile();
     }

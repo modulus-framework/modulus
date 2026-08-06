@@ -1,0 +1,25 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Design;
+
+namespace ModulusSample.Modules.Identity.Infrastructure.Database;
+
+internal sealed class IdentityDbContextFactory : IDesignTimeDbContextFactory<IdentityDbContext>
+{
+    private const string DefaultConnectionString =
+        "Host=localhost;Port=5432;Database=modulussample;Username=postgres;Password=postgres";
+
+    public IdentityDbContext CreateDbContext(string[] args)
+    {
+        var connectionString = Environment.GetEnvironmentVariable("IDENTITY_CONNECTION")
+                               ?? DefaultConnectionString;
+
+        var optionsBuilder = new DbContextOptionsBuilder<IdentityDbContext>();
+        optionsBuilder
+            .UseNpgsql(connectionString, npgsqlOptions =>
+                npgsqlOptions.MigrationsHistoryTable(
+                    "__EFMigrationsHistory", Schemas.Users))
+            .UseSnakeCaseNamingConvention();
+
+        return new IdentityDbContext(optionsBuilder.Options, null!);
+    }
+}

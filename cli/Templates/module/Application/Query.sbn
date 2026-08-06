@@ -1,0 +1,6 @@
+using Modulus.Mediator.Abstractions;
+
+namespace {{ module_namespace }}.Application;
+
+/// <summary>Query: {{ feature_name }}</summary>
+public sealed record {{ feature_name }}Query : IQuery<object>;

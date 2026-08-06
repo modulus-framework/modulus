@@ -1,0 +1,50 @@
+<Solution>
+  <Folder Name="/src/API/">
+    <Project Path="src/API/ModulusSample.Api/ModulusSample.Api.csproj" />
+  </Folder>
+  <Folder Name="/src/Shared/">
+    <Project Path="src/Shared/ModulusSample.Shared.Domain/ModulusSample.Shared.Domain.csproj" />
+    <Project Path="src/Shared/ModulusSample.Shared.Application/ModulusSample.Shared.Application.csproj" />
+    <Project Path="src/Shared/ModulusSample.Shared.Infrastructure/ModulusSample.Shared.Infrastructure.csproj" />
+    <Project Path="src/Shared/ModulusSample.Shared.Presentation/ModulusSample.Shared.Presentation.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Identity/">
+    <Project Path="src/Modules/Identity/ModulusSample.Modules.Identity.Domain/ModulusSample.Modules.Identity.Domain.csproj" />
+    <Project Path="src/Modules/Identity/ModulusSample.Modules.Identity.Application/ModulusSample.Modules.Identity.Application.csproj" />
+    <Project Path="src/Modules/Identity/ModulusSample.Modules.Identity.Infrastructure/ModulusSample.Modules.Identity.Infrastructure.csproj" />
+    <Project Path="src/Modules/Identity/ModulusSample.Modules.Identity.Presentation/ModulusSample.Modules.Identity.Presentation.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Identity/Tests/">
+    <Project Path="src/Modules/Identity/ModulusSample.Modules.Identity.UnitTests/ModulusSample.Modules.Identity.UnitTests.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Settings/">
+    <Project Path="src/Modules/Settings/ModulusSample.Modules.Settings.Domain/ModulusSample.Modules.Settings.Domain.csproj" />
+    <Project Path="src/Modules/Settings/ModulusSample.Modules.Settings.Application/ModulusSample.Modules.Settings.Application.csproj" />
+    <Project Path="src/Modules/Settings/ModulusSample.Modules.Settings.Infrastructure/ModulusSample.Modules.Settings.Infrastructure.csproj" />
+    <Project Path="src/Modules/Settings/ModulusSample.Modules.Settings.Presentation/ModulusSample.Modules.Settings.Presentation.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Tenants/">
+    <Project Path="src/Modules/Tenants/ModulusSample.Modules.Tenants.Domain/ModulusSample.Modules.Tenants.Domain.csproj" />
+    <Project Path="src/Modules/Tenants/ModulusSample.Modules.Tenants.Application/ModulusSample.Modules.Tenants.Application.csproj" />
+    <Project Path="src/Modules/Tenants/ModulusSample.Modules.Tenants.Infrastructure/ModulusSample.Modules.Tenants.Infrastructure.csproj" />
+    <Project Path="src/Modules/Tenants/ModulusSample.Modules.Tenants.Presentation/ModulusSample.Modules.Tenants.Presentation.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Features/">
+    <Project Path="src/Modules/Features/ModulusSample.Modules.Features.Domain/ModulusSample.Modules.Features.Domain.csproj" />
+    <Project Path="src/Modules/Features/ModulusSample.Modules.Features.Application/ModulusSample.Modules.Features.Application.csproj" />
+    <Project Path="src/Modules/Features/ModulusSample.Modules.Features.Infrastructure/ModulusSample.Modules.Features.Infrastructure.csproj" />
+    <Project Path="src/Modules/Features/ModulusSample.Modules.Features.Presentation/ModulusSample.Modules.Features.Presentation.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/VirtualFileExplorer/">
+    <Project Path="src/Modules/VirtualFileExplorer/ModulusSample.Modules.VirtualFileExplorer.Domain/ModulusSample.Modules.VirtualFileExplorer.Domain.csproj" />
+    <Project Path="src/Modules/VirtualFileExplorer/ModulusSample.Modules.VirtualFileExplorer.Application/ModulusSample.Modules.VirtualFileExplorer.Application.csproj" />
+    <Project Path="src/Modules/VirtualFileExplorer/ModulusSample.Modules.VirtualFileExplorer.Infrastructure/ModulusSample.Modules.VirtualFileExplorer.Infrastructure.csproj" />
+    <Project Path="src/Modules/VirtualFileExplorer/ModulusSample.Modules.VirtualFileExplorer.Presentation/ModulusSample.Modules.VirtualFileExplorer.Presentation.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Notifications/">
+    <Project Path="src/Modules/Notifications/ModulusSample.Modules.Notifications.Domain/ModulusSample.Modules.Notifications.Domain.csproj" />
+    <Project Path="src/Modules/Notifications/ModulusSample.Modules.Notifications.Application/ModulusSample.Modules.Notifications.Application.csproj" />
+    <Project Path="src/Modules/Notifications/ModulusSample.Modules.Notifications.Infrastructure/ModulusSample.Modules.Notifications.Infrastructure.csproj" />
+    <Project Path="src/Modules/Notifications/ModulusSample.Modules.Notifications.Presentation/ModulusSample.Modules.Notifications.Presentation.csproj" />
+  </Folder>
+</Solution>

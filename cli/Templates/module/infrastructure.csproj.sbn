@@ -7,10 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Modulus.Core" Version="1.0.0" />
-    <PackageReference Include="Modulus.EntityFrameworkCore" Version="1.0.0" />
-    <PackageReference Include="Modulus.Events" Version="1.0.0" />
-    <PackageReference Include="Modulus.Data.Abstractions" Version="1.0.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Core" Version="{{ framework_version }}" />
+    <PackageReference Include="Cobytelabs.Modulus.EntityFrameworkCore" Version="{{ framework_version }}" />
+    <PackageReference Include="Cobytelabs.Modulus.Events" Version="{{ framework_version }}" />
+    <PackageReference Include="Cobytelabs.Modulus.Data.Abstractions" Version="1.0.0" />
     <PackageReference Include="{{ ef_provider_package }}" Version="{{ ef_provider_version }}" />
 {{ if db_provider == "SQLite" }}    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.3" />
 {{ end }}    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.9" />

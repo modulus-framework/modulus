@@ -7,9 +7,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Modulus.Core" Version="1.0.0" />
-    <PackageReference Include="Modulus.EntityFrameworkCore" Version="1.0.0" />
-    <PackageReference Include="Modulus.Data.Abstractions" Version="1.0.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Core" Version="{{ framework_version }}" />
+    <PackageReference Include="Cobytelabs.Modulus.EntityFrameworkCore" Version="{{ framework_version }}" />
+    <PackageReference Include="Cobytelabs.Modulus.Data.Abstractions" Version="1.0.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.9" />
   </ItemGroup>
 

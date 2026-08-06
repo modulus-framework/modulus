@@ -6,13 +6,12 @@ namespace Modulus.Cli.Services;
 /// <summary>
 /// Creates and modifies .slnx solution files, organising projects into solution
 /// folders that mirror the on-disk module/layer structure.
-/// </summary>
-/// <remarks>
+/// </summary>/// <remarks>
 /// The .slnx format requires <b>all</b> <c>&lt;Folder&gt;</c> elements to be
 /// direct children of <c>&lt;Solution&gt;</c> (siblings), with
 /// <c>&lt;Project&gt;</c> elements one level deep.  Nested folders are not
 /// traversed by the .NET SDK for project/test discovery, so we collapse each
-    /// module's four layer projects into a single top-level folder named after the
+/// module's four layer projects into a single top-level folder named after the
 /// module (e.g. <c>/src/App.Modules.Catalog/</c>).
 /// </remarks>
 internal static class SolutionHelper
@@ -34,7 +33,7 @@ internal static class SolutionHelper
         foreach (var path in projectPaths)
             AddProjectElement(slnx.Root!, path.Replace('\\', '/'));
 
-        File.WriteAllText(slnxPath, slnx.ToString() + "\n");
+        Ux.WriteFile(slnxPath, slnx.ToString() + "\n");
     }
 
     /// <summary>
@@ -58,7 +57,7 @@ internal static class SolutionHelper
         if (alreadyPresent) return;
 
         AddProjectElement(doc.Root!, normalized);
-        File.WriteAllText(slnxPath, doc.ToString() + "\n");
+        Ux.WriteFile(slnxPath, doc.ToString() + "\n");
     }
 
     /// <summary>

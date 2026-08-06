@@ -1,0 +1,33 @@
+﻿{
+  "Users": {
+    "Authentik": {
+      "IssuerUrl": "http://localhost:9000",
+      "InternalIssuerUrl": "http://localhost:9000",
+      "AppSlug": "ModulusSample",
+      "Audience": "ModulusSample-service",
+      "ClientId": "ModulusSample-service",
+      "ClientSecret": "8t5Vxa6BwSepeHBsiS83wX3xs6MRL3Ge",
+      "ServiceAccountClientId": "ModulusSample-service",
+      "ServiceAccountClientSecret": "8t5Vxa6BwSepeHBsiS83wX3xs6MRL3Ge",
+      "RequireHttpsMetadata": false
+    },
+    "Outbox": {
+      "IntervalInSeconds": 10,
+      "BatchSize": 20
+    },
+    "Inbox": {
+      "IntervalInSeconds": 10,
+      "BatchSize": 20
+    },
+    "RateLimits": {
+      "LoginAttemptsPerMinute": 10000,
+      "RegistrationPerHour": 100000
+    },
+    "AuthentikTokenValidation": {
+      "IntervalInSeconds": 60
+    },
+    "SessionCleanup": {
+      "IntervalInSeconds": 3600
+    }
+  }
+}
