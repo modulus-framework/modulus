@@ -89,4 +89,7 @@
     <Project Path="src/Modules/Billing/ModulusSample.Modules.Billing.Infrastructure/ModulusSample.Modules.Billing.Infrastructure.csproj" />
     <Project Path="src/Modules/Billing/ModulusSample.Modules.Billing.Presentation/ModulusSample.Modules.Billing.Presentation.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/ModulusSampleErp.IntegrationTests/ModulusSampleErp.IntegrationTests.csproj" />
+  </Folder>
 </Solution>
