@@ -568,6 +568,7 @@ app.MapModulusEndpoints(
     ModulusSample.Modules.Media.Presentation.AssemblyReference.Assembly);
 
 // Map explicit endpoints for business modules and platform modules
+ModulusSample.Modules.Catalog.Presentation.Endpoints.CatalogEndpoints.MapCatalogEndpoints(app);
 ModulusSample.Modules.Partners.Presentation.PartnersEndpoints.MapPartnersEndpoints(app);
 ModulusSample.Modules.Inventory.Presentation.InventoryEndpoints.MapInventoryEndpoints(app);
 ModulusSample.Modules.Sales.Presentation.SalesEndpoints.MapSalesEndpoints(app);

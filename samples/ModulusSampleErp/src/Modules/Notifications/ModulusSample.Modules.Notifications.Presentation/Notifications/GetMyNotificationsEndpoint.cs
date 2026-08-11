@@ -15,7 +15,7 @@ internal sealed class GetMyNotificationsEndpoint : Endpoint<GetMyNotificationsEn
     {
         Get("/notifications/my");
         Tag(Tags.Notifications);
-        Summary("Get the current user's notifications with optional filtering")RequireAuthorization(); ;
+        Summary("Get the current user's notifications with optional filtering");
     }
 
     public override async Task HandleAsync(GetMyNotificationsRequest req, CancellationToken ct)

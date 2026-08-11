@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
 using Modulus.Mediator.Abstractions;
 using ModulusSample.Modules.Partners.Application.Commands;
 using ModulusSample.Modules.Partners.Application.Queries;
@@ -8,23 +9,19 @@ namespace ModulusSample.Modules.Partners.Presentation;
 
 public static class PartnersEndpoints
 {
-    public static void MapPartnersEndpoints(this WebApplication app)
+    public static void MapPartnersEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/partners")
-            .WithName("Partners")
-            .WithOpenApi();
+            .WithName("Partners");
 
         group.MapPost("/", CreatePartner)
-            .WithName("CreatePartner")
-            .WithOpenApi();
+            .WithName("CreatePartner");
 
         group.MapGet("/{id}", GetPartnerById)
-            .WithName("GetPartnerById")
-            .WithOpenApi();
+            .WithName("GetPartnerById");
 
         group.MapGet("/", ListPartners)
-            .WithName("ListPartners")
-            .WithOpenApi();
+            .WithName("ListPartners");
     }
 
     private static async Task<IResult> CreatePartner(

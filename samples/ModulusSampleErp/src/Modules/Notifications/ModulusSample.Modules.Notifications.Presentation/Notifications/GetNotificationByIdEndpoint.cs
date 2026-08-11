@@ -15,7 +15,7 @@ internal sealed class GetNotificationByIdEndpoint : Endpoint<GetNotificationById
     {
         Get("/notifications/{notificationId}");
         Tag(Tags.Notifications);
-        Summary("Get a notification by ID")RequireAuthorization(); ;
+        Summary("Get a notification by ID");
     }
 
     public override async Task HandleAsync(GetNotificationByIdRequest req, CancellationToken ct)

@@ -18,7 +18,9 @@
       "Bash(git commit -m 'Phase 1: Complete module scaffolding, seeders, and handler fixes *)",
       "PowerShell(Head *)",
       "Bash(grep -v \"//\")",
-      "Bash(xargs grep -l \"Catalog\\\\|Partners\\\\|Inventory\\\\|Sales\")"
+      "Bash(xargs grep -l \"Catalog\\\\|Partners\\\\|Inventory\\\\|Sales\")",
+      "PowerShell(cd \"E:\\\\Personal\\\\framework\\\\modulus\\\\samples\\\\ModulusSampleErp\"; foreach \\($proj in @\\('Partners','Inventory','Sales','Purchasing','Billing','Media'\\)\\) { Write-Host \"Building $proj...\"; dotnet build \"src/Modules/$proj/ModulusSample.Modules.$proj.Presentation/ModulusSample.Modules.$proj.Presentation.csproj\" 2>&1 | Select-Object -Last 2 })",
+      "Bash(git commit -m 'refactor: standardize all business module endpoints to professional REPR pattern *)"
     ]
   }
 }

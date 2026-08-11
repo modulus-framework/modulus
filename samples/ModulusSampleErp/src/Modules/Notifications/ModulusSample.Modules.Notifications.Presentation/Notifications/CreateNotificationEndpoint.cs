@@ -7,7 +7,8 @@ using ModulusSample.Shared.Domain;
 
 namespace ModulusSample.Modules.Notifications.Presentation.Notifications;
 
-internal sealed class CreateNotificationEndpoint : Endpoint<CreateNotificationEndpoint.CreateNotificationRequest, NotificationResponse>
+internal sealed class
+    CreateNotificationEndpoint : Endpoint<CreateNotificationEndpoint.CreateNotificationRequest, NotificationResponse>
 {
     private readonly IMediator _mediator;
     private readonly ICurrentTenant _currentTenant;
@@ -22,7 +23,7 @@ internal sealed class CreateNotificationEndpoint : Endpoint<CreateNotificationEn
     {
         Post("/notifications");
         Tag(Tags.Notifications);
-        Summary("Create a new notification for a user")RequireAuthorization(); ;
+        Summary("Create a new notification for a user");
     }
 
     public override async Task HandleAsync(CreateNotificationRequest req, CancellationToken ct)

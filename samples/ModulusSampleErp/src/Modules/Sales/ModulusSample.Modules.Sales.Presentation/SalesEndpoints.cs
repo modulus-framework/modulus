@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
 using Modulus.Mediator.Abstractions;
 using ModulusSample.Modules.Sales.Application.Commands;
 using ModulusSample.Modules.Sales.Application.Queries;
@@ -8,28 +9,24 @@ namespace ModulusSample.Modules.Sales.Presentation;
 
 public static class SalesEndpoints
 {
-    public static void MapSalesEndpoints(this WebApplication app)
+    public static void MapSalesEndpoints(this IEndpointRouteBuilder app)
     {
         MapSalesOrderEndpoints(app);
     }
 
-    private static void MapSalesOrderEndpoints(WebApplication app)
+    private static void MapSalesOrderEndpoints(IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/sales-orders")
-            .WithName("SalesOrders")
-            .WithOpenApi();
+            .WithName("SalesOrders");
 
         group.MapPost("/", CreateSalesOrder)
-            .WithName("CreateSalesOrder")
-            .WithOpenApi();
+            .WithName("CreateSalesOrder");
 
         group.MapGet("/{id}", GetSalesOrderById)
-            .WithName("GetSalesOrderById")
-            .WithOpenApi();
+            .WithName("GetSalesOrderById");
 
         group.MapGet("/", ListSalesOrders)
-            .WithName("ListSalesOrders")
-            .WithOpenApi();
+            .WithName("ListSalesOrders");
     }
 
     private static async Task<IResult> CreateSalesOrder(

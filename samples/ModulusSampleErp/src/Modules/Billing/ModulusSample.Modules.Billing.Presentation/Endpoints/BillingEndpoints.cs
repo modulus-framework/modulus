@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
 using Modulus.Mediator.Abstractions;
 using ModulusSample.Modules.Billing.Application.Commands;
 using ModulusSample.Modules.Billing.Application.Queries;
@@ -8,19 +9,18 @@ namespace ModulusSample.Modules.Billing.Presentation.Endpoints;
 
 public static class BillingEndpoints
 {
-    public static void MapBillingEndpoints(this WebApplication app)
+    public static void MapBillingEndpoints(this IEndpointRouteBuilder app)
     {
         MapInvoiceEndpoints(app);
         MapPaymentEndpoints(app);
         MapCreditNoteEndpoints(app);
     }
 
-    private static void MapInvoiceEndpoints(WebApplication app)
+    private static void MapInvoiceEndpoints(IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/invoices")
             .WithName("Invoices")
-            .WithDescription("Manage customer invoices")
-            .WithOpenApi();
+            .WithDescription("Manage customer invoices");
 
         group.MapPost("/", CreateInvoice)
             .WithName("CreateInvoice")
@@ -51,12 +51,11 @@ public static class BillingEndpoints
             .WithDescription("List all invoices");
     }
 
-    private static void MapPaymentEndpoints(WebApplication app)
+    private static void MapPaymentEndpoints(IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/payments")
             .WithName("Payments")
-            .WithDescription("Manage invoice payments")
-            .WithOpenApi();
+            .WithDescription("Manage invoice payments");
 
         group.MapPost("/", CreatePayment)
             .WithName("CreatePayment")
@@ -75,12 +74,11 @@ public static class BillingEndpoints
             .WithDescription("List all payments");
     }
 
-    private static void MapCreditNoteEndpoints(WebApplication app)
+    private static void MapCreditNoteEndpoints(IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/credit-notes")
             .WithName("CreditNotes")
-            .WithDescription("Manage credit notes")
-            .WithOpenApi();
+            .WithDescription("Manage credit notes");
 
         group.MapPost("/", CreateCreditNote)
             .WithName("CreateCreditNote")

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
 using Modulus.Mediator.Abstractions;
 using ModulusSample.Modules.Inventory.Application.Commands;
 using ModulusSample.Modules.Inventory.Application.Queries;
@@ -8,28 +9,24 @@ namespace ModulusSample.Modules.Inventory.Presentation;
 
 public static class InventoryEndpoints
 {
-    public static void MapInventoryEndpoints(this WebApplication app)
+    public static void MapInventoryEndpoints(this IEndpointRouteBuilder app)
     {
         MapWarehouseEndpoints(app);
     }
 
-    private static void MapWarehouseEndpoints(WebApplication app)
+    private static void MapWarehouseEndpoints(IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/warehouses")
-            .WithName("Warehouses")
-            .WithOpenApi();
+            .WithName("Warehouses");
 
         group.MapPost("/", CreateWarehouse)
-            .WithName("CreateWarehouse")
-            .WithOpenApi();
+            .WithName("CreateWarehouse");
 
         group.MapGet("/{id}", GetWarehouseById)
-            .WithName("GetWarehouseById")
-            .WithOpenApi();
+            .WithName("GetWarehouseById");
 
         group.MapGet("/", ListWarehouses)
-            .WithName("ListWarehouses")
-            .WithOpenApi();
+            .WithName("ListWarehouses");
     }
 
     private static async Task<IResult> CreateWarehouse(

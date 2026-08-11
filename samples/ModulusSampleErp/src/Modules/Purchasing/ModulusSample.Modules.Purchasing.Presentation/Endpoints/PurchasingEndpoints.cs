@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
 using Modulus.Mediator.Abstractions;
 using ModulusSample.Modules.Purchasing.Application.Commands;
 using ModulusSample.Modules.Purchasing.Application.Queries;
@@ -8,14 +9,14 @@ namespace ModulusSample.Modules.Purchasing.Presentation.Endpoints;
 
 public static class PurchasingEndpoints
 {
-    public static void MapPurchasingEndpoints(this WebApplication app)
+    public static void MapPurchasingEndpoints(this IEndpointRouteBuilder app)
     {
         MapRequisitionEndpoints(app);
         MapOrderEndpoints(app);
         MapReceiptEndpoints(app);
     }
 
-    private static void MapRequisitionEndpoints(WebApplication app)
+    private static void MapRequisitionEndpoints(IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/purchase-requisitions")
             .WithName("PurchaseRequisitions")
@@ -42,7 +43,7 @@ public static class PurchasingEndpoints
             ;
     }
 
-    private static void MapOrderEndpoints(WebApplication app)
+    private static void MapOrderEndpoints(IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/purchase-orders")
             .WithName("PurchaseOrders")
@@ -61,7 +62,7 @@ public static class PurchasingEndpoints
             ;
     }
 
-    private static void MapReceiptEndpoints(WebApplication app)
+    private static void MapReceiptEndpoints(IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/goods-receipts")
             .WithName("GoodsReceipts")
