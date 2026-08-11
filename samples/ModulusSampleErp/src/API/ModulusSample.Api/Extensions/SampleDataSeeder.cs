@@ -66,16 +66,36 @@ internal static class SampleDataSeeder
         // Use the first tenant ID for business data
         var tenantId = GlobalTenantId;
 
-        // Placeholder IDs - these would come from properly seeded OrgUnits and Users in a full implementation
-        var ownerId = Guid.NewGuid();
-        var orgUnitId = Guid.NewGuid();
+        // Org Hierarchy: Company -> 2 Regions -> 4 Branches
+        var companyId = Guid.Parse("00000000-0000-0000-0000-000000000001");
+        var region1Id = Guid.Parse("00000000-0000-0000-0000-000000000011");
+        var region2Id = Guid.Parse("00000000-0000-0000-0000-000000000012");
+        var branch1Id = Guid.Parse("00000000-0000-0000-0000-000000000111"); // Region 1
+        var branch2Id = Guid.Parse("00000000-0000-0000-0000-000000000112"); // Region 1
+        var branch3Id = Guid.Parse("00000000-0000-0000-0000-000000000121"); // Region 2
+        var branch4Id = Guid.Parse("00000000-0000-0000-0000-000000000122"); // Region 2
+
+        // 6 Personas: Sales Rep, Branch Manager, Regional Manager, Buyer, Purchasing Manager, Finance
+        var salesRepId = Guid.Parse("10000000-0000-0000-0000-000000000001");
+        var branchManagerId = Guid.Parse("10000000-0000-0000-0000-000000000002");
+        var regionalManagerId = Guid.Parse("10000000-0000-0000-0000-000000000003");
+        var buyerId = Guid.Parse("10000000-0000-0000-0000-000000000004");
+        var purchasingManagerId = Guid.Parse("10000000-0000-0000-0000-000000000005");
+        var financeUserId = Guid.Parse("10000000-0000-0000-0000-000000000006");
+
+        logger.LogInformation("Seeding demo org hierarchy and personas");
 
         await CatalogDbContextSeed.SeedAsync(catalogContext, logger, tenantId);
-        await PartnersDbContextSeed.SeedAsync(partnersContext, logger, tenantId, ownerId);
-        await InventoryDbContextSeed.SeedAsync(inventoryContext, logger, tenantId, orgUnitId);
-        await SalesDbContextSeed.SeedAsync(salesContext, logger, tenantId, orgUnitId);
-        await PurchasingDbContextSeed.SeedAsync(purchasingContext, logger, tenantId, orgUnitId);
-        await BillingDbContextSeed.SeedAsync(billingContext, logger, tenantId, orgUnitId);
+        await PartnersDbContextSeed.SeedAsync(partnersContext, logger, tenantId, salesRepId);
+        await InventoryDbContextSeed.SeedAsync(inventoryContext, logger, tenantId, branch1Id);
+        await SalesDbContextSeed.SeedAsync(salesContext, logger, tenantId, branch1Id);
+        await PurchasingDbContextSeed.SeedAsync(purchasingContext, logger, tenantId, companyId);
+        await BillingDbContextSeed.SeedAsync(billingContext, logger, tenantId, companyId);
+
+        logger.LogInformation("Demo org hierarchy: Company[{CompanyId}] -> Region1[{Region1Id}], Region2[{Region2Id}] -> Branches[{Branch1Id},{Branch2Id},{Branch3Id},{Branch4Id}]",
+            companyId, region1Id, region2Id, branch1Id, branch2Id, branch3Id, branch4Id);
+        logger.LogInformation("6 Personas: SalesRep[{SalesRep}], BranchMgr[{BranchMgr}], RegionalMgr[{RegionalMgr}], Buyer[{Buyer}], PurchasingMgr[{PurchasingMgr}], Finance[{Finance}]",
+            salesRepId, branchManagerId, regionalManagerId, buyerId, purchasingManagerId, financeUserId);
     }
 
     private static async Task SeedSettingsAsync(IServiceScope scope, ILogger logger)
