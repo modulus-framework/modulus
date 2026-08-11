@@ -407,12 +407,13 @@ else
 // ============================================
 // STEP 5.4: Sagas (orchestration of long-running business processes)
 // ============================================
-// Sagas use Rebus internally. Add a Rebus transport package (e.g. Rebus.RabbitMq,
-// Rebus.AzureServiceBus, Rebus.Memory) and call `.Rebus(...)` on the builder:
+// Sagas use Rebus internally. For production, add a Rebus transport package
+// (e.g. Rebus.RabbitMq, Rebus.AzureServiceBus) and call:
 //   .Rebus(rebus => rebus.Transport(t => t.UseRabbitMq("amqp://...", "sagas-queue")))
-// Disabled for this sample - no saga handlers registered and no transport configured
-// builder.Services.AddModulusSagas(sagas => sagas
-//     .HandlersFromAssemblies(typeof(Program).Assembly));
+// Using in-memory transport for development/testing:
+builder.Services.AddModulusSagas(sagas => sagas
+    .Rebus(rebus => rebus.Transport(t => t.UseInMemoryTransport(new Rebus.Activation.ActivationContext(), "sagas-queue")))
+    .HandlersFromAssemblies(typeof(Program).Assembly));
 
 // ============================================
 // STEP 6: Health Checks
