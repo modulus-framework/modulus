@@ -101,6 +101,6 @@ internal sealed class VerifyEmailCommandHandler(
     {
         byte[] bytes = System.Text.Encoding.UTF8.GetBytes(rawToken);
         byte[] hash = System.Security.Cryptography.SHA256.HashData(bytes);
-        return Convert.ToBase64String(hash);
+        return Convert.ToHexString(hash).ToLowerInvariant();
     }
 }

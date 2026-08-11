@@ -5,6 +5,7 @@ using ModulusSample.Modules.Identity.Domain.Entities;
 using ModulusSample.Modules.Identity.Domain.Enums;
 using ModulusSample.Modules.Identity.Domain.ValueObjects;
 using ModulusSample.Shared.Domain.ValueObjects;
+using ModulusSample.Modules.Identity.Infrastructure.Authentication;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -150,10 +151,7 @@ public static class IdentityDbContextSeed
 
     private static async Task SeedRolePermissionsAsync(IdentityDbContext context, ILogger logger)
     {
-        List<Role> roles = await context.Roles
-            .Include(r => r.Permissions)
-            .ToListAsync();
-
+        List<Role> roles = await context.Roles.ToListAsync();
         List<Permission> permissions = await context.Permissions.ToListAsync();
 
         var permissionMap = permissions.ToDictionary(p => p.Code, p => p.Id);
@@ -199,12 +197,8 @@ public static class IdentityDbContextSeed
                     continue;
                 }
 
-                int before = role.Permissions.Count;
                 role.AddPermission(permissionId, grantedByUserId);
-                if (role.Permissions.Count > before)
-                {
-                    addedCount++;
-                }
+                addedCount++;
             }
         }
 
@@ -265,6 +259,7 @@ public static class IdentityDbContextSeed
 
             if (user != null)
             {
+                user.PasswordHash = new PasswordHasher().Hash(data.Password);
                 users.Add(user);
                 userCredentials.Add((data.UserName, data.Password, data.Email));
             }

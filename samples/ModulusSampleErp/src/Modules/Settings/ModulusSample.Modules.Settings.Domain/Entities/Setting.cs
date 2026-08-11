@@ -5,7 +5,7 @@ using Modulus.Core.Abstractions.Entities;
 
 namespace ModulusSample.Modules.Settings.Domain.Entities;
 
-public sealed class Setting : AggregateRoot, IAuditableEntity
+public sealed class Setting : AggregateRoot, IAuditableEntity, IHasTenantId
 {
     public new SettingId Id { get; private set; }
     public SettingKey Key { get; private set; } = default!;
@@ -13,12 +13,12 @@ public sealed class Setting : AggregateRoot, IAuditableEntity
     public string Category { get; private set; } = default!;
     public string Description { get; private set; } = default!;
     public bool IsPublic { get; private set; }
-    public Guid TenantId { get; private set; }
+    public Guid TenantId { get; set; }
 
-    public DateTime CreatedAt { get; private set; }
-    public string? CreatedBy { get; private set; }
-    public DateTime LastModifiedAt { get; private set; }
-    public string? LastModifiedBy { get; private set; }
+    public DateTime CreatedAt { get;  set; }
+    public string? CreatedBy { get;  set; }
+    public DateTime? UpdatedAt { get;  set; }
+    public string? UpdatedBy { get;  set; }
 
     private Setting() { }
 
@@ -42,8 +42,8 @@ public sealed class Setting : AggregateRoot, IAuditableEntity
         TenantId = tenantId;
         CreatedAt = DateTime.UtcNow;
         CreatedBy = createdBy;
-        LastModifiedAt = DateTime.UtcNow;
-        LastModifiedBy = createdBy;
+        UpdatedAt = DateTime.UtcNow;
+        UpdatedBy = createdBy;
 
         Raise(new SettingCreatedDomainEvent(id, key.Value, category, tenantId, DateTime.UtcNow));
     }
@@ -85,8 +85,8 @@ public sealed class Setting : AggregateRoot, IAuditableEntity
 
         string oldValue = Value;
         Value = newValue;
-        LastModifiedAt = DateTime.UtcNow;
-        LastModifiedBy = modifiedBy;
+        UpdatedAt = DateTime.UtcNow;
+        UpdatedBy = modifiedBy;
         IncrementVersion();
 
         Raise(new SettingUpdatedDomainEvent(Id, Key.Value, oldValue, newValue, modifiedBy ?? string.Empty, DateTime.UtcNow));
@@ -114,8 +114,8 @@ public sealed class Setting : AggregateRoot, IAuditableEntity
         Category = category;
         Description = description ?? string.Empty;
         IsPublic = isPublic;
-        LastModifiedAt = DateTime.UtcNow;
-        LastModifiedBy = modifiedBy;
+        UpdatedAt = DateTime.UtcNow;
+        UpdatedBy = modifiedBy;
         IncrementVersion();
 
         Raise(new SettingUpdatedDomainEvent(Id, Key.Value, Value, Value, modifiedBy ?? string.Empty, DateTime.UtcNow));
@@ -129,10 +129,6 @@ public sealed class Setting : AggregateRoot, IAuditableEntity
     }
 
     public void SetCreatedBy(string createdBy) => CreatedBy = createdBy;
-    public void SetLastModifiedBy(string modifiedBy) => LastModifiedBy = modifiedBy;
+    public void SetLastModifiedBy(string modifiedBy) => UpdatedBy = modifiedBy;
 
-    DateTime IAuditableEntity.CreatedAt { get => CreatedAt; set => CreatedAt = value; }
-    string? IAuditableEntity.CreatedBy { get => CreatedBy; set => CreatedBy = value; }
-    DateTime? IAuditableEntity.UpdatedAt { get => LastModifiedAt; set { if (value.HasValue) LastModifiedAt = value.Value; } }
-    string? IAuditableEntity.UpdatedBy { get => LastModifiedBy; set => LastModifiedBy = value; }
 }

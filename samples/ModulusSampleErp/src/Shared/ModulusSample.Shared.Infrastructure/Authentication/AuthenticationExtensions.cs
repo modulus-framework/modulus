@@ -193,6 +193,17 @@ public static class AuthenticationExtensions
 
                                     logger.LogDebug("Resolved user context for external ID: {ExternalId}, User ID: {UserId}",
                                         externalId, userId);
+
+                                    // Check if all user tokens are blacklisted
+                                    if (userId is Guid resolvedUserId)
+                                    {
+                                        if (await blacklistService.AreAllUserTokensBlacklistedAsync(resolvedUserId.ToString(), ct))
+                                        {
+                                            logger.LogWarning("All tokens for user {UserId} are blacklisted", resolvedUserId);
+                                            context.Fail("All tokens are blacklisted");
+                                            return;
+                                        }
+                                    }
                                 }
                             }
                         }

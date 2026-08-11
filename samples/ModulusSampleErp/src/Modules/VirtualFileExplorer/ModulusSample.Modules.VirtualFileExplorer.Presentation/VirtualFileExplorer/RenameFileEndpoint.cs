@@ -22,6 +22,7 @@ internal sealed class RenameFileEndpoint : Endpoint<RenameFileEndpoint.RenameFil
         Put("/file-explorer/files/{fileId}");
         Tag(Tags.VirtualFileExplorer);
         Summary("Rename a file in a virtual folder");
+        RequireAuthorization(); ;
     }
 
     public override async Task HandleAsync(RenameFileRequest req, CancellationToken ct)

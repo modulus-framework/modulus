@@ -16,6 +16,7 @@ internal sealed class ListFolderFilesEndpoint : Endpoint<ListFolderFilesEndpoint
         Get("/file-explorer/folders/{folderId}/files");
         Tag(Tags.VirtualFileExplorer);
         Summary("List files in a folder with optional search and paging");
+        RequireAuthorization(); ;
     }
 
     public override async Task HandleAsync(ListFolderFilesRequest req, CancellationToken ct)

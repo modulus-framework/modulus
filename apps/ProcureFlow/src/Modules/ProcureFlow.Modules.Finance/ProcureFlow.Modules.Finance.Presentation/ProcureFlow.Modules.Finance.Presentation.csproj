@@ -1,0 +1,24 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Cobytelabs.Modulus.Core" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.AspNetCore" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Mediator" Version="1.2.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../ProcureFlow.Modules.Finance.Application/ProcureFlow.Modules.Finance.Application.csproj" />
+    <ProjectReference Include="../../../Shared/ProcureFlow.Shared.Presentation/ProcureFlow.Shared.Presentation.csproj" />
+  </ItemGroup>
+
+</Project>

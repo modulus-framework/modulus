@@ -16,6 +16,7 @@ internal sealed class GetFileByIdEndpoint : Endpoint<GetFileByIdEndpoint.GetFile
         Get("/file-explorer/files/{fileId}");
         Tag(Tags.VirtualFileExplorer);
         Summary("Get a file's metadata");
+        RequireAuthorization(); ;
     }
 
     public override async Task HandleAsync(GetFileByIdRequest req, CancellationToken ct)

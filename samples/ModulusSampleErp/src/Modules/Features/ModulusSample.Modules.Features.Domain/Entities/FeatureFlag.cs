@@ -5,19 +5,20 @@ using Modulus.Core.Abstractions.Entities;
 
 namespace ModulusSample.Modules.Features.Domain.Entities;
 
-public sealed class FeatureFlag : AggregateRoot, IAuditableEntity
+public sealed class FeatureFlag : AggregateRoot, IAuditableEntity, IHasTenantId
 {
     public new FeatureFlagId Id { get; private set; } = null!;
     public FeatureKey Key { get; private set; } = null!;
     public string Name { get; private set; } = null!;
     public string? Description { get; private set; }
     public bool IsEnabled { get; private set; }
-    public Guid TenantId { get; private set; }
+    public Guid TenantId { get;  set; }
 
-    public DateTime CreatedAt { get; private set; }
-    public string? CreatedBy { get; private set; }
-    public DateTime LastModifiedAt { get; private set; }
-    public string? LastModifiedBy { get; private set; }
+    public DateTime CreatedAt { get;  set; }
+    public string? CreatedBy { get;  set; }
+    public DateTime? UpdatedAt { get; set; }
+    public string? UpdatedBy { get; set; }
+
 
     private FeatureFlag() { }
 
@@ -39,8 +40,8 @@ public sealed class FeatureFlag : AggregateRoot, IAuditableEntity
         TenantId = tenantId;
         CreatedAt = DateTime.UtcNow;
         CreatedBy = createdBy;
-        LastModifiedAt = DateTime.UtcNow;
-        LastModifiedBy = createdBy;
+        UpdatedAt = DateTime.UtcNow;
+        UpdatedBy = createdBy;
 
         Raise(new FeatureFlagCreatedDomainEvent(id, key.Value, name, tenantId, DateTime.UtcNow));
     }
@@ -91,8 +92,8 @@ public sealed class FeatureFlag : AggregateRoot, IAuditableEntity
 
         Name = name;
         Description = description;
-        LastModifiedAt = DateTime.UtcNow;
-        LastModifiedBy = modifiedBy;
+        UpdatedAt = DateTime.UtcNow;
+        UpdatedBy = modifiedBy;
         IncrementVersion();
 
         Raise(new FeatureFlagUpdatedDomainEvent(Id, Key.Value, Name, TenantId, DateTime.UtcNow));
@@ -108,8 +109,8 @@ public sealed class FeatureFlag : AggregateRoot, IAuditableEntity
         }
 
         IsEnabled = isEnabled;
-        LastModifiedAt = DateTime.UtcNow;
-        LastModifiedBy = modifiedBy;
+        UpdatedAt = DateTime.UtcNow;
+        UpdatedBy = modifiedBy;
         IncrementVersion();
 
         Raise(new FeatureFlagToggledDomainEvent(Id, Key.Value, IsEnabled, TenantId, DateTime.UtcNow));
@@ -119,8 +120,8 @@ public sealed class FeatureFlag : AggregateRoot, IAuditableEntity
 
     public Result Delete(string deletedBy)
     {
-        LastModifiedAt = DateTime.UtcNow;
-        LastModifiedBy = deletedBy;
+        UpdatedAt = DateTime.UtcNow;
+        UpdatedBy = deletedBy;
         IncrementVersion();
 
         Raise(new FeatureFlagDeletedDomainEvent(Id, Key.Value, TenantId, DateTime.UtcNow));
@@ -128,8 +129,4 @@ public sealed class FeatureFlag : AggregateRoot, IAuditableEntity
         return Result.Success();
     }
 
-    DateTime IAuditableEntity.CreatedAt { get => CreatedAt; set => CreatedAt = value; }
-    string? IAuditableEntity.CreatedBy { get => CreatedBy; set => CreatedBy = value; }
-    DateTime? IAuditableEntity.UpdatedAt { get => LastModifiedAt; set { if (value.HasValue) LastModifiedAt = value.Value; } }
-    string? IAuditableEntity.UpdatedBy { get => LastModifiedBy; set => LastModifiedBy = value; }
 }

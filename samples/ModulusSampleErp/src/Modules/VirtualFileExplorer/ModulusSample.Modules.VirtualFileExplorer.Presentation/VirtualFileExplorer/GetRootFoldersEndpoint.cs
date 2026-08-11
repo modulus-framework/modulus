@@ -16,6 +16,7 @@ internal sealed class GetRootFoldersEndpoint : EndpointWithoutRequest<IReadOnlyL
         Get("/file-explorer/folders");
         Tag(Tags.VirtualFileExplorer);
         Summary("Get all root-level folders");
+        RequireAuthorization(); ;
     }
 
     protected override async Task HandleAsync(CancellationToken ct)

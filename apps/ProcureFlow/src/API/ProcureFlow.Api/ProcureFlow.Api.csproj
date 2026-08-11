@@ -1,0 +1,103 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>355eedd2-09ad-402b-b56b-770bb71140c3</UserSecretsId>
+    <InterceptorsNamespaces>$(InterceptorsNamespaces);Microsoft.AspNetCore.OpenApi.Generated</InterceptorsNamespaces>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Cobytelabs.Modulus.Core" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.AspNetCore" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Platform" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.MultiTenancy.EntityFrameworkCore" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Caching.Redis" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.AspNetCore.Redis" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Mediator" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Events" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Outbox" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Outbox.Abstractions" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Inbox" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.EventBus.RabbitMQ" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.EntityFrameworkCore" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Identity" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Observability" Version="1.2.0" />
+    <ProjectReference Include="../../Shared/ProcureFlow.Shared.Infrastructure/ProcureFlow.Shared.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Transitive pin: AspNetCore.OpenApi floats to Microsoft.OpenApi 2.0.0,
+         which has a high-severity advisory (GHSA-v5pm-xwqc-g5wc). Pin to latest 2.x. -->
+    <PackageReference Include="Microsoft.OpenApi" Version="2.9.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.9">
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.2" />
+    <!-- Version unification pins (mirror the ModulusSampleErp app): the OpenIddict
+         transitive graph floats Microsoft.IdentityModel.* to 8.0.1 while OpenIddict 7.5.0
+         requires JsonWebTokens >= 8.16.0; align the whole IdentityModel family so the
+         MSB3277 assembly conflict and NU1605 downgrade are resolved. -->
+    <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" Version="8.16.0" />
+    <PackageReference Include="Microsoft.IdentityModel.Protocols.OpenIdConnect" Version="8.16.0" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.16.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../Modules/ProcureFlow.Modules.Identity/ProcureFlow.Modules.Identity.Infrastructure/ProcureFlow.Modules.Identity.Infrastructure.csproj" />
+    <ProjectReference Include="../../Modules/ProcureFlow.Modules.Identity/ProcureFlow.Modules.Identity.Presentation/ProcureFlow.Modules.Identity.Presentation.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../Modules/ProcureFlow.Modules.TenantManagement/ProcureFlow.Modules.TenantManagement.Infrastructure/ProcureFlow.Modules.TenantManagement.Infrastructure.csproj" />
+    <ProjectReference Include="../../Modules/ProcureFlow.Modules.TenantManagement/ProcureFlow.Modules.TenantManagement.Presentation/ProcureFlow.Modules.TenantManagement.Presentation.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../Modules/ProcureFlow.Modules.Organization/ProcureFlow.Modules.Organization.Infrastructure/ProcureFlow.Modules.Organization.Infrastructure.csproj" />
+    <ProjectReference Include="../../Modules/ProcureFlow.Modules.Organization/ProcureFlow.Modules.Organization.Presentation/ProcureFlow.Modules.Organization.Presentation.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../Modules/ProcureFlow.Modules.Catalog/ProcureFlow.Modules.Catalog.Infrastructure/ProcureFlow.Modules.Catalog.Infrastructure.csproj" />
+    <ProjectReference Include="../../Modules/ProcureFlow.Modules.Catalog/ProcureFlow.Modules.Catalog.Presentation/ProcureFlow.Modules.Catalog.Presentation.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../Modules/ProcureFlow.Modules.SupplierManagement/ProcureFlow.Modules.SupplierManagement.Infrastructure/ProcureFlow.Modules.SupplierManagement.Infrastructure.csproj" />
+    <ProjectReference Include="../../Modules/ProcureFlow.Modules.SupplierManagement/ProcureFlow.Modules.SupplierManagement.Presentation/ProcureFlow.Modules.SupplierManagement.Presentation.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../Modules/ProcureFlow.Modules.Procurement/ProcureFlow.Modules.Procurement.Infrastructure/ProcureFlow.Modules.Procurement.Infrastructure.csproj" />
+    <ProjectReference Include="../../Modules/ProcureFlow.Modules.Procurement/ProcureFlow.Modules.Procurement.Presentation/ProcureFlow.Modules.Procurement.Presentation.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../Modules/ProcureFlow.Modules.Approval/ProcureFlow.Modules.Approval.Infrastructure/ProcureFlow.Modules.Approval.Infrastructure.csproj" />
+    <ProjectReference Include="../../Modules/ProcureFlow.Modules.Approval/ProcureFlow.Modules.Approval.Presentation/ProcureFlow.Modules.Approval.Presentation.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../Modules/ProcureFlow.Modules.Warehouse/ProcureFlow.Modules.Warehouse.Infrastructure/ProcureFlow.Modules.Warehouse.Infrastructure.csproj" />
+    <ProjectReference Include="../../Modules/ProcureFlow.Modules.Warehouse/ProcureFlow.Modules.Warehouse.Presentation/ProcureFlow.Modules.Warehouse.Presentation.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../Modules/ProcureFlow.Modules.Inventory/ProcureFlow.Modules.Inventory.Infrastructure/ProcureFlow.Modules.Inventory.Infrastructure.csproj" />
+    <ProjectReference Include="../../Modules/ProcureFlow.Modules.Inventory/ProcureFlow.Modules.Inventory.Presentation/ProcureFlow.Modules.Inventory.Presentation.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../Modules/ProcureFlow.Modules.Finance/ProcureFlow.Modules.Finance.Infrastructure/ProcureFlow.Modules.Finance.Infrastructure.csproj" />
+    <ProjectReference Include="../../Modules/ProcureFlow.Modules.Finance/ProcureFlow.Modules.Finance.Presentation/ProcureFlow.Modules.Finance.Presentation.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../Modules/ProcureFlow.Modules.Payment/ProcureFlow.Modules.Payment.Infrastructure/ProcureFlow.Modules.Payment.Infrastructure.csproj" />
+    <ProjectReference Include="../../Modules/ProcureFlow.Modules.Payment/ProcureFlow.Modules.Payment.Presentation/ProcureFlow.Modules.Payment.Presentation.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../Modules/ProcureFlow.Modules.Notification/ProcureFlow.Modules.Notification.Infrastructure/ProcureFlow.Modules.Notification.Infrastructure.csproj" />
+    <ProjectReference Include="../../Modules/ProcureFlow.Modules.Notification/ProcureFlow.Modules.Notification.Presentation/ProcureFlow.Modules.Notification.Presentation.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../Modules/ProcureFlow.Modules.Audit/ProcureFlow.Modules.Audit.Infrastructure/ProcureFlow.Modules.Audit.Infrastructure.csproj" />
+    <ProjectReference Include="../../Modules/ProcureFlow.Modules.Audit/ProcureFlow.Modules.Audit.Presentation/ProcureFlow.Modules.Audit.Presentation.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../Modules/ProcureFlow.Modules.Reporting/ProcureFlow.Modules.Reporting.Infrastructure/ProcureFlow.Modules.Reporting.Infrastructure.csproj" />
+    <ProjectReference Include="../../Modules/ProcureFlow.Modules.Reporting/ProcureFlow.Modules.Reporting.Presentation/ProcureFlow.Modules.Reporting.Presentation.csproj" />
+  </ItemGroup>
+</Project>

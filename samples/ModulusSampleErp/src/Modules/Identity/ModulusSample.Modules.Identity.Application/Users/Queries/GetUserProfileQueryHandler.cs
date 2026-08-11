@@ -21,7 +21,7 @@ internal sealed class GetUserProfileQueryHandler(
         GetUserProfileQuery request,
         CancellationToken cancellationToken)
     {
-        UserId? userId = request.UserId.HasValue ? UserId.Create(request.UserId.Value) : userContext.UserId;
+        UserId userId = userContext.UserId ?? throw new InvalidOperationException("User not authenticated");
 
         if (userId is null)
         {

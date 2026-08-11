@@ -21,7 +21,7 @@ internal sealed class MarkNotificationAsReadEndpoint : Endpoint<MarkNotification
     {
         Patch("/notifications/{notificationId}/read");
         Tag(Tags.Notifications);
-        Summary("Mark a notification as read");
+        Summary("Mark a notification as read")RequireAuthorization(); ;
     }
 
     public override async Task HandleAsync(MarkNotificationAsReadRequest req, CancellationToken ct)

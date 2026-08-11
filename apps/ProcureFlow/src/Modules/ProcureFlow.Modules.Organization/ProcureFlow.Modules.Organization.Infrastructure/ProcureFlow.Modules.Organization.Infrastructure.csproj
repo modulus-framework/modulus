@@ -1,0 +1,30 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Cobytelabs.Modulus.Core" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.EntityFrameworkCore" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Events" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Data.Abstractions" Version="1.2.0" />
+    
+    
+    
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../ProcureFlow.Modules.Organization.Application/ProcureFlow.Modules.Organization.Application.csproj" />
+    <ProjectReference Include="../ProcureFlow.Modules.Organization.Domain/ProcureFlow.Modules.Organization.Domain.csproj" />
+    <ProjectReference Include="../../../Shared/ProcureFlow.Shared.Infrastructure/ProcureFlow.Shared.Infrastructure.csproj" />
+  </ItemGroup>
+
+
+
+  <ItemGroup>
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.2" />
+  </ItemGroup>
+</Project>

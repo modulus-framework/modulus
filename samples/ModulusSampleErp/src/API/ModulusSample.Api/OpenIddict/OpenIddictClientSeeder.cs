@@ -19,66 +19,78 @@ internal sealed class OpenIddictClientSeeder(
             var existing = await manager.FindByClientIdAsync(client.ClientId, cancellationToken);
             if (existing is not null)
             {
-                logger.LogDebug("OpenIddict client {ClientId} already exists, skipping", client.ClientId);
+                // Sync the persisted client with the current appsettings so config
+                // changes (e.g. enabling password flow) take effect on re-run.
+                // appsettings.json is the source of truth for the sample clients.
+                var syncDescriptor = BuildDescriptor(client);
+                await manager.UpdateAsync(existing, syncDescriptor, cancellationToken);
+                logger.LogDebug("OpenIddict client {ClientId} re-synced", client.ClientId);
                 continue;
             }
 
-            var descriptor = new OpenIddictApplicationDescriptor
-            {
-                ClientId = client.ClientId,
-                ClientSecret = client.RequireClientSecret ? client.ClientSecret : null,
-                DisplayName = client.DisplayName,
-                ConsentType = client.ConsentType,
-                Permissions =
-                {
-                    OpenIddictConstants.Permissions.Endpoints.Token,
-                },
-                Requirements =
-                {
-                    OpenIddictConstants.Requirements.Features.ProofKeyForCodeExchange,
-                },
-            };
-
-            if (client.AllowAuthorizationCode)
-            {
-                descriptor.Permissions.Add(OpenIddictConstants.Permissions.GrantTypes.AuthorizationCode);
-                descriptor.Permissions.Add(OpenIddictConstants.Permissions.Endpoints.Authorization);
-                descriptor.Permissions.Add(OpenIddictConstants.Permissions.ResponseTypes.Code);
-            }
-
-            if (client.AllowPasswordFlow)
-            {
-                descriptor.Permissions.Add(OpenIddictConstants.Permissions.GrantTypes.Password);
-            }
-
-            if (client.AllowRefreshToken)
-            {
-                descriptor.Permissions.Add(OpenIddictConstants.Permissions.GrantTypes.RefreshToken);
-            }
-
-            if (client.AllowClientCredentials)
-            {
-                descriptor.Permissions.Add(OpenIddictConstants.Permissions.GrantTypes.ClientCredentials);
-            }
-
-            foreach (var uri in client.RedirectUris)
-            {
-                descriptor.RedirectUris.Add(uri);
-            }
-
-            foreach (var uri in client.PostLogoutRedirectUris)
-            {
-                descriptor.PostLogoutRedirectUris.Add(uri);
-            }
-
-            descriptor.Permissions.Add(OpenIddictConstants.Permissions.Scopes.Email);
-            descriptor.Permissions.Add(OpenIddictConstants.Permissions.Scopes.Profile);
-            descriptor.Permissions.Add(OpenIddictConstants.Permissions.Scopes.Roles);
-            descriptor.Permissions.Add("modulus");
+            var descriptor = BuildDescriptor(client);
 
             await manager.CreateAsync(descriptor, cancellationToken);
             logger.LogInformation("Created OpenIddict client {ClientId}", client.ClientId);
         }
+    }
+
+    private static OpenIddictApplicationDescriptor BuildDescriptor(OpenIddictClientDescriptor client)
+    {
+        var descriptor = new OpenIddictApplicationDescriptor
+        {
+            ClientId = client.ClientId,
+            ClientSecret = client.RequireClientSecret ? client.ClientSecret : null,
+            DisplayName = client.DisplayName,
+            ConsentType = client.ConsentType,
+            Permissions =
+            {
+                OpenIddictConstants.Permissions.Endpoints.Token,
+            },
+            Requirements =
+            {
+                OpenIddictConstants.Requirements.Features.ProofKeyForCodeExchange,
+            },
+        };
+
+        if (client.AllowAuthorizationCode)
+        {
+            descriptor.Permissions.Add(OpenIddictConstants.Permissions.GrantTypes.AuthorizationCode);
+            descriptor.Permissions.Add(OpenIddictConstants.Permissions.Endpoints.Authorization);
+            descriptor.Permissions.Add(OpenIddictConstants.Permissions.ResponseTypes.Code);
+        }
+
+        if (client.AllowPasswordFlow)
+        {
+            descriptor.Permissions.Add(OpenIddictConstants.Permissions.GrantTypes.Password);
+        }
+
+        if (client.AllowRefreshToken)
+        {
+            descriptor.Permissions.Add(OpenIddictConstants.Permissions.GrantTypes.RefreshToken);
+        }
+
+        if (client.AllowClientCredentials)
+        {
+            descriptor.Permissions.Add(OpenIddictConstants.Permissions.GrantTypes.ClientCredentials);
+        }
+
+        foreach (var uri in client.RedirectUris)
+        {
+            descriptor.RedirectUris.Add(uri);
+        }
+
+        foreach (var uri in client.PostLogoutRedirectUris)
+        {
+            descriptor.PostLogoutRedirectUris.Add(uri);
+        }
+
+        descriptor.Permissions.Add(OpenIddictConstants.Permissions.Scopes.Email);
+        descriptor.Permissions.Add(OpenIddictConstants.Permissions.Scopes.Profile);
+        descriptor.Permissions.Add(OpenIddictConstants.Permissions.Scopes.Roles);
+        descriptor.Permissions.Add("modulus");
+
+        return descriptor;
     }
 
     public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;

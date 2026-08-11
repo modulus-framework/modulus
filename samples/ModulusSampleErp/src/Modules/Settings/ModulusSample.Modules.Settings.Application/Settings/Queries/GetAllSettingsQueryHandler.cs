@@ -34,8 +34,8 @@ public sealed class GetAllSettingsQueryHandler(
             s.TenantId,
             s.CreatedAt,
             s.CreatedBy,
-            s.LastModifiedAt,
-            s.LastModifiedBy)).ToList();
+            s.UpdatedAt,
+            s.UpdatedBy)).ToList();
 
         return Result.Success(new PagedResult<SettingResponse>(
             responses,

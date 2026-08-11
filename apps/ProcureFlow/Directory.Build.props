@@ -1,0 +1,22 @@
+<Project>
+
+  <PropertyGroup>
+    <!-- Absolute path to the Modulus framework repo root (this app lives at
+         <repo>/apps/ProcureFlow). All Cobytelabs.Modulus.* references are
+         ProjectReferences into ../src so the app iterates against live source
+         instead of the packed feed. -->
+    <ProcureFlowFrameworkRoot>$(MSBuildThisFileDirectory)../..</ProcureFlowFrameworkRoot>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <!-- Generated apps use explicit Versions on each PackageReference, so
+         disable Central Package Management.  This also prevents the
+         generated app from inheriting CPM settings from a parent repo
+         (e.g. when scaffolded inside another solution). -->
+    <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+</Project>

@@ -36,6 +36,7 @@ using Modulus.Identity;
 using Modulus.Identity.EntityFrameworkCore.Extensions;
 using Modulus.Identity.Extensions;
 using ModulusSample.Modules.Identity.Infrastructure.Database;
+using ModulusSample.Modules.Notifications.Presentation;
 using Modulus.Platform.Http;
 using Modulus.Sagas.Extensions;
 using Modulus.SignalR;
@@ -187,8 +188,18 @@ if (!string.IsNullOrWhiteSpace(sentryDsnConfig))
 // (Must be before any service that uses IOptions)
 // ============================================
 builder.Configuration.AddModuleConfiguration([
+    "catalog",
+    "partners",
+    "inventory",
+    "sales",
+    "purchasing",
     "identity",
     "tenants",
+    "settings",
+    "features",
+    "virtualfileexplorer",
+    "notifications",
+    "media",
 ], builder.Environment.EnvironmentName);
 
 // Add environment variables AFTER module configs to ensure they override JSON values
@@ -200,8 +211,17 @@ builder.Configuration.AddEnvironmentVariables();
 // ============================================
 Assembly[] moduleApplicationAssemblies =
 [
+    ModulusSample.Modules.Catalog.Application.AssemblyReference.Assembly,
+    ModulusSample.Modules.Partners.Application.AssemblyReference.Assembly,
+    ModulusSample.Modules.Inventory.Application.AssemblyReference.Assembly,
+    ModulusSample.Modules.Sales.Application.AssemblyReference.Assembly,
+    ModulusSample.Modules.Purchasing.Application.AssemblyReference.Assembly,
     ModulusSample.Modules.Identity.Application.AssemblyReference.Assembly,
+    ModulusSample.Modules.Settings.Application.AssemblyReference.Assembly,
     ModulusSample.Modules.Tenants.Application.AssemblyReference.Assembly,
+    ModulusSample.Modules.Features.Application.AssemblyReference.Assembly,
+    ModulusSample.Modules.VirtualFileExplorer.Application.AssemblyReference.Assembly,
+    ModulusSample.Modules.Notifications.Application.AssemblyReference.Assembly,
 ];
 
 builder.Services.AddApplication(moduleApplicationAssemblies);
@@ -308,32 +328,15 @@ builder.Services.AddDataProtection()
 // Authorization (in-memory permission grants, org hierarchy, resource policies, field security, SoD)
 builder.Services.AddModulusAuthorization();
 
-// Register module permissions with the framework's permission registry
-builder.Services.AddPermissions("Identity", registry =>
-{
-    registry.Add(ModulusSample.Shared.Domain.AppPermissions.IdentityProfileViewOwn, "View own profile");
-    registry.Add(ModulusSample.Shared.Domain.AppPermissions.IdentityProfileManageOwn, "Manage own profile");
-    registry.Add(ModulusSample.Shared.Domain.AppPermissions.IdentityPasswordChangeOwn, "Change own password");
-    registry.Add(ModulusSample.Shared.Domain.AppPermissions.IdentityUserViewAll, "View all users");
-    registry.Add(ModulusSample.Shared.Domain.AppPermissions.IdentityUserManageAll, "Manage all users");
-    registry.Add(ModulusSample.Shared.Domain.AppPermissions.IdentityRoleManageAll, "Manage all roles");
-    registry.Add(ModulusSample.Shared.Domain.AppPermissions.IdentityAdmin, "Administrator access");
-});
-
-builder.Services.AddPermissions("Tenants", registry =>
-{
-    registry.Add(ModulusSample.Shared.Domain.AppPermissions.TenantViewAll, "View all tenants");
-    registry.Add(ModulusSample.Shared.Domain.AppPermissions.TenantManageAll, "Manage all tenants");
-    registry.Add(ModulusSample.Shared.Domain.AppPermissions.TenantCreate, "Create tenants");
-    registry.Add(ModulusSample.Shared.Domain.AppPermissions.TenantUpdate, "Update tenants");
-    registry.Add(ModulusSample.Shared.Domain.AppPermissions.TenantDelete, "Delete tenants");
-    registry.Add(ModulusSample.Shared.Domain.AppPermissions.TenantAdmin, "Tenant administrator access");
-});
-
-// EF-backed authorization store (swap in-memory for database-backed stores).
-// Uncomment and add Npgsql.EntityFrameworkCore.PostgreSQL / Microsoft.EntityFrameworkCore.SqlServer:
-// builder.Services.AddEfCoreAuthorizationStores(options =>
-//     options.UseNpgsql(databaseConnectionString));
+// EF-backed authorization stores, replacing the in-memory defaults registered above.
+// These must be registered for the management API below to bind: its endpoints inject
+// the concrete Ef*Store types, and a minimal-API parameter that is neither a route/query
+// value nor a known DI service is inferred as a *body* parameter — several of those on
+// one endpoint is what previously made MapModulusAuthorizationManagement throw at startup.
+// The context is registered only via IDbContextFactory, so it stays out of the module
+// transaction fan-out and the module migration loop (see MigrateAuthorizationStoreAsync).
+builder.Services.AddEfCoreAuthorizationStores(options =>
+    options.UseNpgsql(databaseConnectionString));
 
 // Authorization management (CRUD API for permissions, orgs, placements, plans, delegations, overrides)
 builder.Services.AddModulusAuthorizationManagement();
@@ -350,13 +353,6 @@ builder.Services.AddMultiTenancy(t => t.UseHeaderResolver());
 // Uncomment and add the Cobytelabs.Modulus.Caching.Redis NuGet package:
 // builder.Services.AddRedisCacheService(redisConnectionString);
 
-// SignalR hub (real-time notifications, updates)
-var signalRBuilder = builder.Services.AddModulusSignalR(builder.Configuration);
-
-// SignalR backplane (Redis for multi-node scaling — optional).
-// Uncomment and add the Cobytelabs.Modulus.SignalR.Backplane NuGet package:
-// signalRBuilder.AddRedisBackplane(builder.Configuration);
-
 // File storage (local by default; add Cobytelabs.Modulus.Storage.AzureBlobs or
 // Cobytelabs.Modulus.Storage.S3 NuGet package for cloud storage).
 builder.Services.AddFileStorage(builder.Configuration);
@@ -369,17 +365,28 @@ builder.Services.AddModulusHttpClient("Default");
 // ============================================
 // STEP 5.2.5: OpenIddict Authorization Server
 // ============================================
-builder.Services.AddModulusOpenIddict(builder.Configuration);
+// The dev issuer is an http:// URI so OpenIddict permits plain-HTTP token
+// requests during local development (ID2083 "HTTPS required" otherwise).
+// In production this URL must be the public HTTPS authority of the token server.
+if (builder.Environment.IsDevelopment())
+{
+    const string devIssuer = "http://localhost:5016";
+    builder.Services.AddModulusOpenIddict(builder.Configuration, options =>
+    {
+        options.SetIssuer(new Uri(devIssuer));
+        options.UseAspNetCore().DisableTransportSecurityRequirement();
+    });
+}
+else
+{
+    builder.Services.AddModulusOpenIddict(builder.Configuration);
+}
 builder.Services.AddModulusIdentityStore<IdentityDbContext>();
 
 // Register Modulus.Identity controllers for the token/userinfo endpoints
 builder.Services.AddControllers()
-    .AddApplicationPart(typeof(ModulusTokenController).Assembly);
-
-// Seed OpenIddict client applications on startup
-builder.Services.Configure<ModulusSample.Api.OpenIddict.OpenIddictClientOptions>(
-    builder.Configuration.GetSection("Identity:Clients"));
-builder.Services.AddHostedService<ModulusSample.Api.OpenIddict.OpenIddictClientSeeder>();
+    .AddApplicationPart(typeof(ModulusTokenController).Assembly)
+    .AddApplicationPart(typeof(ModulusSample.Modules.Media.Presentation.Controllers.FilesController).Assembly);
 
 // Dual authentication: OpenIddict validation (self-issued) + external OIDC fallback
 builder.Services.AddDualAuthentication(builder.Configuration);
@@ -403,8 +410,9 @@ else
 // Sagas use Rebus internally. Add a Rebus transport package (e.g. Rebus.RabbitMq,
 // Rebus.AzureServiceBus, Rebus.Memory) and call `.Rebus(...)` on the builder:
 //   .Rebus(rebus => rebus.Transport(t => t.UseRabbitMq("amqp://...", "sagas-queue")))
-builder.Services.AddModulusSagas(sagas => sagas
-    .HandlersFromAssemblies(typeof(Program).Assembly));
+// Disabled for this sample - no saga handlers registered and no transport configured
+// builder.Services.AddModulusSagas(sagas => sagas
+//     .HandlersFromAssemblies(typeof(Program).Assembly));
 
 // ============================================
 // STEP 6: Health Checks
@@ -514,14 +522,16 @@ app.UseAuthorization();
 app.UseModulus();
 app.UseModulusIdempotency();
 
-// 7.7. Multi-tenancy middleware
-app.UseMultiTenancy();
-
-// 7.8. SignalR hubs (real-time notifications, updates)
+// 7.7. SignalR hubs (real-time notifications, updates)
 app.MapModuleHubs();
+app.MapNotificationHub();
 
-// 7.9. Authorization management endpoints (CRUD for permissions, orgs, placements, plans, delegations, overrides)
-app.MapModulusAuthorizationManagement("/api/auth");
+// 7.9. Authorization management endpoints (CRUD for grants, orgs, placements, plans,
+// delegations, overrides), all guarded by the `authorization:manage` permission.
+// Mounted at /api/authorization rather than /api/auth so it reads as *authorization*
+// administration and stays clearly distinct from the Identity module's /auth/* endpoints,
+// which are authentication.
+app.MapModulusAuthorizationManagement("/api/authorization");
 
 // 8. User context logging (handled by CorrelationIdMiddleware above; nothing extra needed)
 
@@ -541,12 +551,23 @@ app.MapHealthChecks("health", new HealthCheckOptions
 
 // API endpoints (REPR-style auto-discovery)
 app.MapModulusEndpoints(
+    ModulusSample.Modules.Catalog.Presentation.AssemblyReference.Assembly,
+    ModulusSample.Modules.Partners.Presentation.AssemblyReference.Assembly,
+    ModulusSample.Modules.Inventory.Presentation.AssemblyReference.Assembly,
+    ModulusSample.Modules.Sales.Presentation.AssemblyReference.Assembly,
+    ModulusSample.Modules.Purchasing.Presentation.AssemblyReference.Assembly,
     ModulusSample.Modules.Identity.Presentation.AssemblyReference.Assembly,
     ModulusSample.Modules.Settings.Presentation.AssemblyReference.Assembly,
     ModulusSample.Modules.Tenants.Presentation.AssemblyReference.Assembly,
     ModulusSample.Modules.Features.Presentation.AssemblyReference.Assembly,
     ModulusSample.Modules.VirtualFileExplorer.Presentation.AssemblyReference.Assembly,
     ModulusSample.Modules.Notifications.Presentation.AssemblyReference.Assembly);
+
+// Map explicit endpoints for business modules
+ModulusSample.Modules.Partners.Presentation.PartnersEndpoints.MapPartnersEndpoints(app);
+ModulusSample.Modules.Inventory.Presentation.InventoryEndpoints.MapInventoryEndpoints(app);
+ModulusSample.Modules.Sales.Presentation.SalesEndpoints.MapSalesEndpoints(app);
+ModulusSample.Modules.Purchasing.Presentation.PurchasingEndpoints.MapPurchasingEndpoints(app);
 
 // ============================================
 // RUN APPLICATION

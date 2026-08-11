@@ -6,7 +6,7 @@ using ModulusSample.Shared.Domain;
 
 namespace ModulusSample.Modules.Identity.Presentation.Users;
 
-internal sealed class GetUserProfileEndpoint : Endpoint<GetUserProfileEndpoint.GetUserProfileRequest, UserProfileResponse>
+internal sealed class GetUserProfileEndpoint : Endpoint<UserProfileResponse>
 {
     private readonly IMediator _mediator;
 
@@ -14,14 +14,14 @@ internal sealed class GetUserProfileEndpoint : Endpoint<GetUserProfileEndpoint.G
 
     public override void Configure()
     {
-        Get("/users/{userId:guid}");
+        Get("/users/profile");
         Tag(Tags.Users);
-        Summary("Get user profile");
+        Summary("Get current user profile");
     }
 
-    public override async Task HandleAsync(GetUserProfileRequest req, CancellationToken ct)
+    public override async Task HandleAsync(CancellationToken ct)
     {
-        Result<UserProfileResponse> result = await _mediator.QueryAsync(new GetUserProfileQuery(req.UserId), ct);
+        Result<UserProfileResponse> result = await _mediator.QueryAsync(new GetUserProfileQuery(), ct);
 
         if (result.IsFailure)
         {
@@ -30,10 +30,5 @@ internal sealed class GetUserProfileEndpoint : Endpoint<GetUserProfileEndpoint.G
         }
 
         await SendOkAsync(result.Value, ct);
-    }
-
-    internal sealed class GetUserProfileRequest
-    {
-        public Guid UserId { get; set; }
     }
 }

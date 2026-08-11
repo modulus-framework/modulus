@@ -7,7 +7,18 @@
       "Bash(dotnet test *)",
       "Bash('E:/Personal/framework/modulus/cli/bin/Debug/net10.0/Modulus.Cli.exe' generate-command *)",
       "Bash('E:/Personal/framework/modulus/cli/bin/Debug/net10.0/Modulus.Cli.exe' generate-query *)",
-      "Bash(dir \"E:\\\\Personal\\\\framework\\\\modulus\\\\cli\\\\Templates\")"
+      "Bash(dir \"E:\\\\Personal\\\\framework\\\\modulus\\\\cli\\\\Templates\")",
+      "Bash(dotnet tool *)",
+      "Bash(modulus add-module *)",
+      "Bash(dotnet nuget *)",
+      "Bash(dotnet restore *)",
+      "Bash(dotnet ef *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git commit -m 'Phase 1: Complete module scaffolding, seeders, and handler fixes *)",
+      "PowerShell(Head *)",
+      "Bash(grep -v \"//\")",
+      "Bash(xargs grep -l \"Catalog\\\\|Partners\\\\|Inventory\\\\|Sales\")"
     ]
   }
 }

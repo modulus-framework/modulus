@@ -43,7 +43,7 @@ public sealed class SettingsModule : ModulusModule
         services.AddDbContext<SettingsDbContext>((sp, options) =>
             options
                 .UseNpgsql(
-                    configuration.GetConnectionString("Database"),
+                    configuration.GetConnectionString("Settings"),
                     npgsqlOptions => npgsqlOptions
                         .MigrationsHistoryTable(HistoryRepository.DefaultTableName, Database.Schemas.Settings)
                         .UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery))

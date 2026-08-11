@@ -1,8 +1,21 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using ModulusSample.Modules.Identity.Infrastructure.Database;
+using ModulusSample.Modules.Settings.Infrastructure.Database;
+using ModulusSample.Modules.Tenants.Infrastructure.Database;
+using ModulusSample.Modules.Features.Infrastructure.Database;
+using ModulusSample.Modules.VirtualFileExplorer.Infrastructure.Database;
+using ModulusSample.Modules.Notifications.Infrastructure.Database;
+using ModulusSample.Modules.Media.Infrastructure.Database;
+using ModulusSample.Modules.Catalog.Infrastructure.Database;
+using ModulusSample.Modules.Partners.Infrastructure.Database;
+using ModulusSample.Modules.Inventory.Infrastructure.Database;
+using ModulusSample.Modules.Sales.Infrastructure.Database;
+using ModulusSample.Modules.Purchasing.Infrastructure.Database;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
+using Modulus.Authorization.EntityFrameworkCore.Extensions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -22,7 +35,26 @@ internal static class MigrationExtensions
 
         try
         {
-            await ApplyMigrationAsync<IdentityDbContext>(scope, logger);
+            // IdentityDbContext has real EF migrations; the other module contexts
+            // are created from their model (none of them have migrations yet).
+            await ApplyMigrationOrCreateAsync<IdentityDbContext>(scope, logger);
+            await ApplyMigrationOrCreateAsync<SettingsDbContext>(scope, logger);
+            await ApplyMigrationOrCreateAsync<TenantsDbContext>(scope, logger);
+            await ApplyMigrationOrCreateAsync<FeaturesDbContext>(scope, logger);
+            await ApplyMigrationOrCreateAsync<VirtualFileExplorerDbContext>(scope, logger);
+            await ApplyMigrationOrCreateAsync<NotificationsDbContext>(scope, logger);
+            await ApplyMigrationOrCreateAsync<MediaDbContext>(scope, logger);
+            await ApplyMigrationOrCreateAsync<CatalogDbContext>(scope, logger);
+            await ApplyMigrationOrCreateAsync<PartnersDbContext>(scope, logger);
+            await ApplyMigrationOrCreateAsync<InventoryDbContext>(scope, logger);
+            await ApplyMigrationOrCreateAsync<SalesDbContext>(scope, logger);
+            await ApplyMigrationOrCreateAsync<PurchasingDbContext>(scope, logger);
+
+            // The authorization store is registered through IDbContextFactory only, so it
+            // is deliberately outside the module loop above and brings its own helper.
+            await app.ApplicationServices.MigrateAuthorizationStoreAsync(
+                ensureCreatedIfNoMigrations: true);
+            logger.LogInformation("Ensured schema for AuthorizationStoreDbContext");
 
             logger.LogInformation("All database migrations applied successfully");
         }
@@ -34,7 +66,7 @@ internal static class MigrationExtensions
     }
 
     /// <summary>
-    /// Seeds data only.
+    /// Seeds data only (identity + sample data).
     /// </summary>
     internal static async Task ApplySeeding(this IApplicationBuilder app)
     {
@@ -44,6 +76,7 @@ internal static class MigrationExtensions
         try
         {
             await SeedIdentityModule(scope);
+            await SampleDataSeeder.SeedAsync(scope);
             logger.LogInformation("All data seeding completed successfully");
         }
         catch (Exception ex)
@@ -64,10 +97,24 @@ internal static class MigrationExtensions
         await IdentityDbContextSeed.SeedAsync(context, logger, environment);
     }
 
-    private static async Task ApplyMigrationAsync<TDbContext>(IServiceScope scope, ILogger logger)
+    /// <summary>
+    /// Migrates a context when it has real EF migrations; otherwise creates the
+    /// database + schema from the model snapshot (EnsureCreated). Mirrors the
+    /// framework's DatabaseInitializationMode.MigrateOrCreate default.
+    /// </summary>
+    private static async Task ApplyMigrationOrCreateAsync<TDbContext>(IServiceScope scope, ILogger logger)
         where TDbContext : DbContext
     {
         TDbContext context = scope.ServiceProvider.GetRequiredService<TDbContext>();
+
+        bool hasMigrations = context.Database.GetMigrations().Any();
+        if (!hasMigrations)
+        {
+            await context.Database.EnsureCreatedAsync();
+            logger.LogInformation("Ensured schema for {DbContext} (no EF migrations)", typeof(TDbContext).Name);
+            return;
+        }
+
         const int maxRetries = 3;
         int retryCount = 0;
 

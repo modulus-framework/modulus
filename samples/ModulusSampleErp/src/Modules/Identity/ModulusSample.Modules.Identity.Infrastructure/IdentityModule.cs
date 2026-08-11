@@ -1,7 +1,10 @@
 using Modulus.Identity.Abstractions;
+using Modulus.Identity.EntityFrameworkCore.Extensions;
+using Modulus.Identity.Extensions;
 using ModulusSample.Modules.Identity.Application.Abstractions.Authentication;
 using ModulusSample.Modules.Identity.Application.Abstractions.Identity;
 using ModulusSample.Modules.Identity.Application.IntegrationEvents;
+using ModulusSample.Modules.Identity.Presentation;
 using ModulusSample.Shared.Application.Abstractions.Oidc;
 using ModulusSample.Shared.Application.Authorization;
 using ModulusSample.Shared.Application.Caching;
@@ -12,6 +15,7 @@ using ModulusSample.Modules.Identity.Infrastructure.Authentication;
 using ModulusSample.Modules.Identity.Infrastructure.Caching;
 using ModulusSample.Modules.Identity.Infrastructure.Configurations;
 using ModulusSample.Modules.Identity.Infrastructure.Database;
+using ModulusSample.Modules.Identity.Infrastructure.OpenIddict;
 using ModulusSample.Modules.Identity.Infrastructure.Repositories;
 using ModulusSample.Modules.Identity.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
@@ -22,9 +26,12 @@ using FluentValidation;
 using ModulusSample.Modules.Identity.Application.Abstractions;
 using ModulusSample.Modules.Identity.Application.Abstractions.Data;
 using ModulusSample.Shared.Application.Abstractions;
+using ModulusSample.Shared.Application.Data;
+using ModulusSample.Shared.Infrastructure.Caching;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Modulus.Core.Abstractions;
+using Modulus.Authorization.Extensions;
 
 using Modulus.Mediator.Extensions;
 using ModulusSample.Modules.Identity.Application;
@@ -36,11 +43,26 @@ public sealed class IdentityModule : ModulusModule
         IServiceCollection services,
         IConfiguration configuration)
     {
+        AddPermissions(services);
         services.AddMediatorHandlers(typeof(NotifyUserCreatedHandler).Assembly);
         services.AddValidatorsFromAssembly(Application.AssemblyReference.Assembly);
         AddDomainEventHandlers(services);
         AddIntegrationEventHandlers(services);
         AddInfrastructure(services, configuration);
+    }
+
+    private static void AddPermissions(IServiceCollection services)
+    {
+        services.AddPermissions("Identity", registry =>
+        {
+            registry.Add(IdentityPermissions.IdentityProfileViewOwn, "View own profile");
+            registry.Add(IdentityPermissions.IdentityProfileManageOwn, "Manage own profile");
+            registry.Add(IdentityPermissions.IdentityPasswordChangeOwn, "Change own password");
+            registry.Add(IdentityPermissions.IdentityUserViewAll, "View all users");
+            registry.Add(IdentityPermissions.IdentityUserManageAll, "Manage all users");
+            registry.Add(IdentityPermissions.IdentityRoleManageAll, "Manage all roles");
+            registry.Add(IdentityPermissions.IdentityAdmin, "Administrator access");
+        });
     }
 
     public static Type[] HandledIntegrationEvents =>
@@ -65,6 +87,15 @@ public sealed class IdentityModule : ModulusModule
                 .UseSnakeCaseNamingConvention());
 
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<IdentityDbContext>());
+
+        // ============================================
+        // SHARED INFRASTRUCTURE BRIDGE
+        // (abstractions consumed by the Dapper read-side + auth pipeline)
+        // ============================================
+        services.AddScoped<IDbConnectionFactory, PostgresDbConnectionFactory>();
+        services.AddScoped<IUserIdentifierMapper, UserIdentifierMapper>();
+        services.AddMemoryCache();
+        services.TryAddSingleton<ICacheService, MemoryCacheService>();
 
         // ============================================
         // APPLICATION SERVICES
@@ -94,6 +125,11 @@ public sealed class IdentityModule : ModulusModule
 
         // OpenIddict password grant validator (replaces deny-by-default NullPasswordGrantCredentialValidator)
         services.AddScoped<IPasswordGrantCredentialValidator, SamplePasswordGrantValidator>();
+
+        // Seed OpenIddict client applications on startup
+        services.Configure<OpenIddictClientOptions>(
+            configuration.GetSection("Identity:Clients"));
+        services.AddHostedService<OpenIddictClientSeeder>();
     }
 
     #region Domain Event Handlers

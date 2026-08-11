@@ -10,5 +10,5 @@ public sealed record SettingResponse(
     Guid TenantId,
     DateTime CreatedAt,
     string? CreatedBy,
-    DateTime LastModifiedAt,
+    DateTime? LastModifiedAt,
     string? LastModifiedBy);

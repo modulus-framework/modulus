@@ -19,8 +19,8 @@ internal sealed class ChangePasswordCommandHandler(
         ChangePasswordCommand request,
         CancellationToken cancellationToken)
     {
-        User? user = await userRepository.GetByIdWithRolesAsync(
-            UserId.Create(request.UserId),
+        User? user = await userRepository.GetByIdAsync(
+            userContext.UserId ?? throw new InvalidOperationException("User not authenticated"),
             cancellationToken);
 
         if (user is null)

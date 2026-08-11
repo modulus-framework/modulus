@@ -17,6 +17,7 @@ internal sealed class GetActiveTenantsEndpoint : EndpointWithoutRequest<IReadOnl
         Get("/tenants/active");
         Tag(Tags.Tenants);
         Summary("Get all active tenants");
+        RequireAuthorization();
     }
 
     protected override async Task HandleAsync(CancellationToken ct)

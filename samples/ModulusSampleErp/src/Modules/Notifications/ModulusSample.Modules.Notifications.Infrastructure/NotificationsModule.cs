@@ -4,6 +4,7 @@ using ModulusSample.Modules.Notifications.Application.IntegrationEvents;
 using ModulusSample.Modules.Notifications.Domain.Repositories;
 using ModulusSample.Modules.Notifications.Infrastructure.Database;
 using ModulusSample.Modules.Notifications.Infrastructure.Repositories;
+using ModulusSample.Modules.Notifications.Presentation.Hubs;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.Configuration;
@@ -11,6 +12,8 @@ using Microsoft.Extensions.DependencyInjection;
 using FluentValidation;
 using Modulus.Core.Abstractions;
 using Modulus.Mediator.Extensions;
+using Modulus.AspNetCore.Extensions;
+using Modulus.SignalR.Extensions;
 
 namespace ModulusSample.Modules.Notifications.Infrastructure;
 
@@ -24,6 +27,7 @@ public sealed class NotificationsModule : ModulusModule
         services.AddValidatorsFromAssembly(Application.AssemblyReference.Assembly);
         AddDomainEventHandlers(services);
         AddInfrastructure(services, configuration);
+        AddSignalR(services, configuration);
     }
 
     public static Type[] HandledIntegrationEvents =>
@@ -48,6 +52,13 @@ public sealed class NotificationsModule : ModulusModule
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<NotificationsDbContext>());
 
         services.AddScoped<INotificationRepository, EfNotificationRepository>();
+    }
+
+    private static void AddSignalR(IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddModulusSignalR(configuration);
+        services.AddSignalR();
+        services.AddScoped<INotificationSignalRService, NotificationSignalRService>();
     }
 
     private static void AddDomainEventHandlers(IServiceCollection services)

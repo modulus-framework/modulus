@@ -17,6 +17,7 @@ internal sealed class GetAllTenantsEndpoint : Endpoint<GetAllTenantsEndpoint.Get
         Get("/tenants");
         Tag(Tags.Tenants);
         Summary("Get all tenants with optional filtering");
+        RequireAuthorization();
     }
 
     public override async Task HandleAsync(GetAllTenantsRequest req, CancellationToken ct)

@@ -13,7 +13,7 @@ public sealed record TenantId(Guid Value)
 public sealed record Subdomain
 {
     private static readonly Regex Regex = new(@"^[a-z0-9]([a-z0-9-]{1,61}[a-z0-9])?$", RegexOptions.Compiled);
-    
+
     public string Value { get; }
 
     private Subdomain(string value)

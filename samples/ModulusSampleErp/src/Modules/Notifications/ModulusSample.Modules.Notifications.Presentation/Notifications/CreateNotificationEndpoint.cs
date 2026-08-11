@@ -22,7 +22,7 @@ internal sealed class CreateNotificationEndpoint : Endpoint<CreateNotificationEn
     {
         Post("/notifications");
         Tag(Tags.Notifications);
-        Summary("Create a new notification for a user");
+        Summary("Create a new notification for a user")RequireAuthorization(); ;
     }
 
     public override async Task HandleAsync(CreateNotificationRequest req, CancellationToken ct)

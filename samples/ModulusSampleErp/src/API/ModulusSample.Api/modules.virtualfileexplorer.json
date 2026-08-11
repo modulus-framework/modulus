@@ -1,0 +1,5 @@
+{
+  "ConnectionStrings": {
+    "VirtualFileExplorer": "Host=localhost;Port=5432;Database=ModulusSample;Username=ModulusSample;Password=ModulusSample"
+  }
+}

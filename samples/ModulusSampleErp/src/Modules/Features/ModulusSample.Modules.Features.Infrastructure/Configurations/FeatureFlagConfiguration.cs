@@ -44,13 +44,13 @@ public sealed class FeatureFlagConfiguration : IEntityTypeConfiguration<FeatureF
             .IsRequired();
 
         builder.Property(f => f.CreatedBy)
-            .HasMaxLength(200);
+            .HasMaxLength(36);
 
-        builder.Property(f => f.LastModifiedAt)
+        builder.Property(f => f.UpdatedAt)
             .IsRequired();
 
-        builder.Property(f => f.LastModifiedBy)
-            .HasMaxLength(200);
+        builder.Property(f => f.UpdatedBy)
+            .HasMaxLength(36);
 
         builder.Property(f => f.Version)
             .IsConcurrencyToken()

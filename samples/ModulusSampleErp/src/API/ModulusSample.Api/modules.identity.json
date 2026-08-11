@@ -1,0 +1,46 @@
+{
+  "ConnectionStrings": {
+    "Database": "Host=localhost;Port=5432;Database=ModulusSample;Username=ModulusSample;Password=ModulusSample"
+  },
+  "Identity": {
+    "RequireConfirmedEmail": false,
+    "AccessTokenLifetimeMin": 30,
+    "RefreshTokenLifetimeDays": 14,
+    "AllowPasswordFlow": false,
+    "UseDevelopmentCertificates": false,
+    "Clients": {
+      "Clients": [
+        {
+          "ClientId": "modulussample-spa",
+          "DisplayName": "Modulus Sample ERP SPA",
+          "ConsentType": "explicit",
+          "AllowAuthorizationCode": true,
+          "AllowPasswordFlow": false,
+          "AllowRefreshToken": true,
+          "RequireClientSecret": false,
+          "RedirectUris": [
+            "http://localhost:3000/callback",
+            "http://localhost:8000/callback"
+          ],
+          "PostLogoutRedirectUris": [
+            "http://localhost:3000",
+            "http://localhost:8000"
+          ]
+        },
+        {
+          "ClientId": "modulussample-swagger",
+          "DisplayName": "Swagger UI",
+          "ConsentType": "implicit",
+          "AllowAuthorizationCode": true,
+          "AllowPasswordFlow": true,
+          "AllowRefreshToken": true,
+          "RequireClientSecret": false,
+          "RedirectUris": [
+            "http://localhost:5016/swagger/oauth2-redirect.html",
+            "https://localhost:7200/swagger/oauth2-redirect.html"
+          ]
+        }
+      ]
+    }
+  }
+}

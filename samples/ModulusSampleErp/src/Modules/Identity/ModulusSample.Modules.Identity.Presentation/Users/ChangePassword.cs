@@ -13,14 +13,14 @@ internal sealed class ChangePasswordEndpoint : Endpoint<ChangePasswordEndpoint.C
 
     public override void Configure()
     {
-        Put("/users/{userId:guid}/password");
+        Put("/users/password");
         Tag(Tags.Users);
-        Summary("Change user password");
+        Summary("Change current user password");
     }
 
     public override async Task HandleAsync(ChangePasswordRequest req, CancellationToken ct)
     {
-        var command = new ChangePasswordCommand(req.UserId, req.CurrentPassword, req.NewPassword);
+        var command = new ChangePasswordCommand(req.CurrentPassword, req.NewPassword);
         Result result = await _mediator.SendAsync(command, ct);
 
         if (result.IsFailure)
@@ -34,7 +34,6 @@ internal sealed class ChangePasswordEndpoint : Endpoint<ChangePasswordEndpoint.C
 
     internal sealed class ChangePasswordRequest
     {
-        public Guid UserId { get; set; }
         public string CurrentPassword { get; set; } = string.Empty;
         public string NewPassword { get; set; } = string.Empty;
     }

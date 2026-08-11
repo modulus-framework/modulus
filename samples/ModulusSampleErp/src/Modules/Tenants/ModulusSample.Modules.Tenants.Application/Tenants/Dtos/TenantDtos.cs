@@ -6,7 +6,6 @@ public sealed record TenantDto(
     Guid Id,
     string Name,
     string Subdomain,
-    string DatabaseConnectionString,
     bool IsActive,
     JsonDocument Features,
     JsonDocument Settings,

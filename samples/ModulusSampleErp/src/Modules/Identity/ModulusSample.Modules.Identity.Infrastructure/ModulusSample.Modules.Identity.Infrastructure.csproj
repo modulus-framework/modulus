@@ -8,11 +8,32 @@
 
   <ItemGroup>
     <PackageReference Include="BCrypt.Net-Next" Version="4.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.AspNetCore" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Caching.Redis" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.AspNetCore.Redis" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.SignalR.Backplane" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Core" Version="1.2.0" />
     <PackageReference Include="Cobytelabs.Modulus.EntityFrameworkCore" Version="1.2.0" />
     <PackageReference Include="Cobytelabs.Modulus.Data.PostgreSQL" Version="1.2.0" />
     <PackageReference Include="Cobytelabs.Modulus.Identity" Version="1.2.0" />
     <PackageReference Include="Cobytelabs.Modulus.Outbox" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Outbox.Abstractions" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Outbox.MongoDB" Version="1.2.0" />
     <PackageReference Include="Cobytelabs.Modulus.Inbox" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Inbox.MongoDB" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Platform" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Events" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Mediator" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.EventBus.Kafka" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.EventBus.RabbitMQ" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Observability" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Sagas" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Testing" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Storage.AzureBlobs" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Storage.S3" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.MultiTenancy.EntityFrameworkCore" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Authorization.EntityFrameworkCore" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Authorization.Management" Version="1.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.9" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.Google" Version="10.0.9" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.Facebook" Version="10.0.9" />
@@ -26,7 +47,6 @@
     <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" Version="8.16.0" />
     <PackageReference Include="Microsoft.Extensions.Http.Resilience" Version="10.7.0" />
     <PackageReference Include="Polly" Version="8.7.0" />
-    <PackageReference Include="Cobytelabs.Modulus.Core" Version="1.2.0" />
   </ItemGroup>
 
   <ItemGroup>

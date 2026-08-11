@@ -68,8 +68,8 @@ public sealed class TokenBlacklistService(
         catch (Exception ex)
         {
             logger.LogError(ex, "Error checking if token {TokenId} is blacklisted", tokenId);
-            // In case of error, assume token is not blacklisted to avoid service disruption
-            return false;
+            // In case of error, deny access for security
+            return true;
         }
     }
 
@@ -152,7 +152,8 @@ public sealed class TokenBlacklistService(
         catch (Exception ex)
         {
             logger.LogError(ex, "Error checking if user {UserId} tokens are blacklisted", userId);
-            return false;
+            // In case of error, deny access for security
+            return true;
         }
     }
 

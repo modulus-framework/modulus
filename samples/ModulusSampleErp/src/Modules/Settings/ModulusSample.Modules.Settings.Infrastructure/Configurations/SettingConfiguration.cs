@@ -43,10 +43,10 @@ public sealed class SettingConfiguration : IEntityTypeConfiguration<Setting>
         builder.Property(s => s.CreatedBy)
             .HasMaxLength(256);
 
-        builder.Property(s => s.LastModifiedAt)
+        builder.Property(s => s.UpdatedAt)
             .IsRequired();
 
-        builder.Property(s => s.LastModifiedBy)
+        builder.Property(s => s.UpdatedBy)
             .HasMaxLength(256);
 
         builder.HasIndex(s => new { s.TenantId, s.Key })

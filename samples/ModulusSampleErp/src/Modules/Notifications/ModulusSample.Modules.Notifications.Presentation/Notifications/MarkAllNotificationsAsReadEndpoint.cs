@@ -21,7 +21,7 @@ internal sealed class MarkAllNotificationsAsReadEndpoint : EndpointWithoutReques
     {
         Patch("/notifications/read-all");
         Tag(Tags.Notifications);
-        Summary("Mark all of the current user's notifications as read");
+        Summary("Mark all of the current user's notifications as read")RequireAuthorization(); ;
     }
 
     protected override async Task HandleAsync(CancellationToken ct)

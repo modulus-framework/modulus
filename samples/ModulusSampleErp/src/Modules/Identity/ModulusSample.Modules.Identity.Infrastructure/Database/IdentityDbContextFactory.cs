@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
+using Modulus.EntityFrameworkCore.Design;
 
 namespace ModulusSample.Modules.Identity.Infrastructure.Database;
 
@@ -20,6 +21,11 @@ internal sealed class IdentityDbContextFactory : IDesignTimeDbContextFactory<Ide
                     "__EFMigrationsHistory", Schemas.Users))
             .UseSnakeCaseNamingConvention();
 
-        return new IdentityDbContext(optionsBuilder.Options, null!);
+        return new IdentityDbContext(
+            optionsBuilder.Options,
+            DesignTimeContext.Tenant,
+            DesignTimeContext.User,
+            DesignTimeContext.Dispatcher,
+            DesignTimeContext.Services);
     }
 }

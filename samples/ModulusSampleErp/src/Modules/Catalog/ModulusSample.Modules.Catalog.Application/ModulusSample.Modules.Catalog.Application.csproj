@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Shared\ModulusSample.Shared.Application\ModulusSample.Shared.Application.csproj"/>
+    <ProjectReference Include="..\ModulusSample.Modules.Catalog.Domain\ModulusSample.Modules.Catalog.Domain.csproj" />
+  </ItemGroup>
+
+</Project>

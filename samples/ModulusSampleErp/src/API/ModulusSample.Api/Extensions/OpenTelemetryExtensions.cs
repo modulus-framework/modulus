@@ -29,9 +29,20 @@ public static class OpenTelemetryExtensions
         bool enableConsoleExporter = section.GetValue("EnableConsoleExporter", false);
 
         IConfigurationSection otlp = section.GetSection("Otlp");
-        string otlpEndpoint = otlp["Endpoint"] ?? "http://localhost:4317";
+        string? otlpEndpoint = otlp["Endpoint"];
         bool exportTraces = otlp.GetValue("ExportTraces", true);
         bool exportMetrics = otlp.GetValue("ExportMetrics", true);
+
+        // Disable OTLP export if endpoint is empty or not configured
+        if (string.IsNullOrWhiteSpace(otlpEndpoint))
+        {
+            exportTraces = false;
+            exportMetrics = false;
+        }
+        else
+        {
+            otlpEndpoint = new Uri(otlpEndpoint).ToString(); // Validate and normalize URI
+        }
 
         services.AddOpenTelemetry()
             .ConfigureResource(resource => resource.AddService(serviceName))

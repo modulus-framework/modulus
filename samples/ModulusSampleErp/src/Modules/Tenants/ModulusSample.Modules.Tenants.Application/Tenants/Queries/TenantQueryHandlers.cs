@@ -129,7 +129,6 @@ internal static class TenantDtoMapper
         tenant.Id.Value,
         tenant.Name,
         tenant.Subdomain.Value,
-        tenant.DatabaseConnectionString,
         tenant.IsActive,
         tenant.Features,
         tenant.Settings,

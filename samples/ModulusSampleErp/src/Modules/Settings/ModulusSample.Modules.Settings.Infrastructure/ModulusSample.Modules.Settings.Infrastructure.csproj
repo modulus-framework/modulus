@@ -7,10 +7,30 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Cobytelabs.Modulus.AspNetCore" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Caching.Redis" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.AspNetCore.Redis" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.SignalR.Backplane" Version="1.2.0" />
     <PackageReference Include="Cobytelabs.Modulus.EntityFrameworkCore" Version="1.2.0" />
     <PackageReference Include="Cobytelabs.Modulus.Data.PostgreSQL" Version="1.2.0" />
     <PackageReference Include="Cobytelabs.Modulus.Outbox" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Outbox.Abstractions" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Outbox.MongoDB" Version="1.2.0" />
     <PackageReference Include="Cobytelabs.Modulus.Inbox" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Inbox.MongoDB" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Platform" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Events" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Mediator" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.EventBus.Kafka" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.EventBus.RabbitMQ" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Observability" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Sagas" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Testing" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Storage.AzureBlobs" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Storage.S3" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.MultiTenancy.EntityFrameworkCore" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Authorization.EntityFrameworkCore" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Authorization.Management" Version="1.2.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.9">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>

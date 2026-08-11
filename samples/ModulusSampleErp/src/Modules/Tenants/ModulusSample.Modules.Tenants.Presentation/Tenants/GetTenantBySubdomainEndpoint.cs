@@ -17,7 +17,7 @@ internal sealed class GetTenantBySubdomainEndpoint : Endpoint<GetTenantBySubdoma
         Get("/tenants/subdomain/{subdomain}");
         Tag(Tags.Tenants);
         Summary("Get a tenant by subdomain");
-        AllowAnonymous();
+        RequireAuthorization();
     }
 
     public override async Task HandleAsync(GetBySubdomainRequest req, CancellationToken ct)

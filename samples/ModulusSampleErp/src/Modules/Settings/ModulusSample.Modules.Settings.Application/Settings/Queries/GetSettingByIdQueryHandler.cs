@@ -34,8 +34,8 @@ public sealed class GetSettingByIdQueryHandler(
             setting.TenantId,
             setting.CreatedAt,
             setting.CreatedBy,
-            setting.LastModifiedAt,
-            setting.LastModifiedBy);
+            setting.UpdatedAt,
+            setting.UpdatedBy);
 
         return Result.Success(response);
     }

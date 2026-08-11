@@ -4,15 +4,28 @@ A comprehensive sample application built on the **Modulus** modular-monolith fra
 
 This sample demonstrates a real-world enterprise resource planning (ERP) application with:
 - Modular architecture with clean domain boundaries
-- Users module with authentication, authorization, and session management
-- Generic infrastructure that can be adapted for any business domain
+- **7 complete business modules**: Identity, Settings, Tenants, Features, VirtualFileExplorer, Notifications, Media (S3/MinIO uploads)
 - Production-ready features: caching, rate limiting, security, observability
+- 4-layer Clean Architecture per module (Domain → Application → Infrastructure → Presentation)
 
 ## Architecture
 
 ### Module System
 
-The application uses the **Modulus module system** with a clean separation of concerns:
+The application uses the **Modulus module system** with a clean 4-layer separation of concerns per module:
+
+Each business module follows this structure:
+- **Domain**: Entities, value objects, domain events, repository interfaces
+- **Application**: Commands, queries, handlers, DTOs, integration events, `IUnitOfWork`
+- **Infrastructure**: `ModuleDbContext`, migrations, repository implementations, module composition root
+- **Presentation**: Minimal API endpoints (REPR pattern)
+
+All modules are auto-discovered via `AddModulus<ModulusSampleHostModule>()` and share:
+- Multi-tenancy support via `ICurrentTenant`
+- User context via `ICurrentUser`
+- Domain event dispatching via `DomainEventDispatcher`
+- Audit trails via `ModuleDbContext`
+- Snake_case naming conventions via `EFCore.NamingConventions`
 
 ```
 src/
@@ -24,60 +37,92 @@ src/
 │   ├── ModulusSample.Shared.Infrastructure/
 │   └── ModulusSample.Shared.Presentation/
 └── Modules/
-    └── Users/
-        ├── ModulusSample.Modules.Users.Domain/
-        ├── ModulusSample.Modules.Users.Application/
-        ├── ModulusSample.Modules.Users.Infrastructure/
-        └── ModulusSample.Modules.Users.Presentation/
+    ├── Identity/                    # User authentication, authorization, session management
+    ├── Settings/                    # Application configuration management
+    ├── Tenants/                     # Multi-tenant organization management
+    ├── Features/                    # Feature flag management system
+    ├── VirtualFileExplorer/         # File and folder management
+    └── Notifications/               # User notification system
 ```
 
-### Users Module
+### Business Modules
 
-A generic identity and access management module featuring:
+All modules implement the **4-layer Clean Architecture** pattern with complete separation of concerns:
 
-- **Authentication**
-  - User registration and email verification
-  - Password management
-  - Session management with revocation support
-  - OIDC/External authentication integration
+#### **Identity Module**
+- **Authentication**: User registration, email verification, password management
+- **Authorization**: RBAC with role-permission mapping, dynamic permission assignment
+- **Session Management**: Device tokens, user sessions with revocation support
+- **External OIDC**: Authentik, Keycloak, Auth0 integration
 
-- **Authorization**
-  - Role-based access control (RBAC)
-  - Permission-based access control
-  - Dynamic permission assignment to roles
-  - User role management
+#### **Settings Module**
+- Application configuration management
+- Setting categories (System, User, Tenant)
+- Bulk update operations
+- Public/private setting visibility
 
-- **User Management**
-  - Profile management
-  - Account activation/suspension
-  - Soft delete with GDPR compliance
-  - Activity tracking
+#### **Tenants Module**
+- Multi-tenant organization management
+- Tenant isolation with audit trails
+- Tenant-level configuration
+
+#### **Features Module**
+- Feature flag management system
+- Percentage rollout and time-window gates
+- Feature categorization
+
+#### **VirtualFileExplorer Module**
+- File and folder management
+- Virtual directory structure
+- Upload/download operations
+
+#### **Notifications Module**
+- User notification system
+- Notification delivery channels
+- Notification preferences
 
 ## Running it
 
-This app needs Postgres, Redis, and RabbitMQ (`docker compose up -d` starts all three).
-OIDC is optional — configure `Users:Oidc` to point at any external identity provider
-(e.g. Authentik, Keycloak, Auth0); the sample also supports its own password grant flow
-without one.
+This app uses a **single shared Postgres database** (per-module schemas), Redis,
+and RabbitMQ (`docker compose up -d` starts the full stack **including the API**).
+OIDC is optional — configure `Identity:Oidc` to point at any external identity
+provider (e.g. Authentik, Keycloak, Auth0); the sample also supports its own
+password grant flow without one.
+
+```bash
+docker compose up -d                          # infra + API (http://localhost:5016)
+docker compose ps                             # wait until all services are healthy
+```
+
+To run the API locally instead (needs just the infra services up):
 
 ```bash
 dotnet restore ModulusSampleErp.slnx
-dotnet run --project src/API/ModulusSample.Api -- --migrate   # apply EF Core migrations
+dotnet build ModulusSampleErp.slnx
+dotnet run --project src/API/ModulusSample.Api -- --seed   # migrate + seed sample data (incl. users admin/Admin123!)
 dotnet run --project src/API/ModulusSample.Api
 ```
 
+> **Media module & MinIO**: the Media module stores uploads in an S3-compatible
+> bucket (`modulussample-uploads`). `docker compose up -d` also starts MinIO
+> (http://localhost:9001, minioadmin/minioadmin) and a one-shot init container
+> that creates the bucket. See `TESTING.md` for the full walkthrough.
+
 ## Configuration
 
-Update `appsettings.json` with your connection strings and external service settings:
+Update the per-module config files (`modules.<module>.json`) with your connection
+strings and external service settings. Identity settings live in
+`modules.identity.json`, the shared `Database`/`Cache` connection strings in
+`appsettings.json`:
 
 ```json
+// appsettings.json
 {
   "ConnectionStrings": {
-    "Database": "Host=localhost;Port=5432;Database=modulussample;Username=postgres;Password=your_password",
-    "Cache": "localhost:6379",
-    "RabbitMq": "amqp://guest:guest@localhost:5672/%2f"
+    "Database": "Host=localhost;Port=5432;Database=ModulusSample;Username=ModulusSample;Password=ModulusSample",
+    "Cache": "localhost:6379"
   },
-  "Users": {
+  "Identity": {
     "Oidc": {
       "IssuerUrl": "https://your-oidc-provider.com",
       "ClientId": "your-client-id"
@@ -86,10 +131,28 @@ Update `appsettings.json` with your connection strings and external service sett
 }
 ```
 
+```json
+// modules.settings.json  (each module file carries its own connection string)
+{
+  "ConnectionStrings": {
+    "Settings": "Host=localhost;Port=5432;Database=ModulusSample;Username=ModulusSample;Password=ModulusSample"
+  }
+}
+```
+
+Every module connection string points at the **same** `ModulusSample` database —
+modules keep their tables isolated via per-module Postgres schemas, so one
+database serves the whole app. The containerized stack overrides these with the
+`ConnectionStrings__*` environment variables in `docker-compose.yml`.
+
 ## Testing
 
 ```bash
-dotnet test src/Modules/Users/Tests/ModulusSample.Modules.Users.UnitTests/ModulusSample.Modules.Users.UnitTests.csproj
+# Run all unit tests
+dotnet test ModulusSampleErp.slnx --filter "Category=Unit"
+
+# Run specific module tests
+dotnet test src/Modules/Identity/ModulusSample.Modules.Identity.UnitTests/ModulusSample.Modules.Identity.UnitTests.csproj
 ```
 
 ## Features
@@ -128,13 +191,14 @@ local disk storage is used by default).
 
 ## Customization
 
-This is designed as a **generic template** that can be adapted for any business domain:
+This is designed as a **modular template** that can be adapted for any business domain:
 
-1. **Keep the Users module** as-is for identity and access management
-2. **Add business modules** following the same 4-layer pattern
-3. **Configure external services** via `appsettings.json`
-4. **Extend permissions** for your specific domain requirements
-5. **Customize UI** by replacing the API endpoints with your frontend
+1. **Use the Identity module** as-is for identity and access management
+2. **Add business modules** following the 4-layer pattern (Domain → Application → Infrastructure → Presentation)
+3. **Configure external services** via `modules.{modulename}.json` files
+4. **Extend permissions** in `Program.cs` for your specific domain requirements
+5. **Customize endpoints** by adding new REPR endpoints in Presentation layers
+6. **Run migrations** per module: `dotnet ef migrations add {Name} --project {Module}.Infrastructure`
 
 ## License
 

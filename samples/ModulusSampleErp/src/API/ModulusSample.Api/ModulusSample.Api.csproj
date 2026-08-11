@@ -78,4 +78,16 @@
         </Content>
     </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="../../Modules/Media/ModulusSample.Modules.Media.Infrastructure/ModulusSample.Modules.Media.Infrastructure.csproj" />
+    <ProjectReference Include="../../Modules/Media/ModulusSample.Modules.Media.Presentation/ModulusSample.Modules.Media.Presentation.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../Modules/ModulusSample.Modules.Catalog/ModulusSample.Modules.Catalog.Infrastructure/ModulusSample.Modules.Catalog.Infrastructure.csproj" />
+    <ProjectReference Include="../../Modules/ModulusSample.Modules.Catalog/ModulusSample.Modules.Catalog.Presentation/ModulusSample.Modules.Catalog.Presentation.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../Modules/ModulusSample.Modules.Partners/ModulusSample.Modules.Partners.Infrastructure/ModulusSample.Modules.Partners.Infrastructure.csproj" />
+    <ProjectReference Include="../../Modules/ModulusSample.Modules.Partners/ModulusSample.Modules.Partners.Presentation/ModulusSample.Modules.Partners.Presentation.csproj" />
+  </ItemGroup>
 </Project>

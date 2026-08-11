@@ -47,4 +47,40 @@
     <Project Path="src/Modules/Notifications/ModulusSample.Modules.Notifications.Infrastructure/ModulusSample.Modules.Notifications.Infrastructure.csproj" />
     <Project Path="src/Modules/Notifications/ModulusSample.Modules.Notifications.Presentation/ModulusSample.Modules.Notifications.Presentation.csproj" />
   </Folder>
+  <Folder Name="/src/Modules/Media/">
+    <Project Path="src/Modules/Media/ModulusSample.Modules.Media.Domain/ModulusSample.Modules.Media.Domain.csproj" />
+    <Project Path="src/Modules/Media/ModulusSample.Modules.Media.Application/ModulusSample.Modules.Media.Application.csproj" />
+    <Project Path="src/Modules/Media/ModulusSample.Modules.Media.Infrastructure/ModulusSample.Modules.Media.Infrastructure.csproj" />
+    <Project Path="src/Modules/Media/ModulusSample.Modules.Media.Presentation/ModulusSample.Modules.Media.Presentation.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Catalog/">
+    <Project Path="src/Modules/Catalog/ModulusSample.Modules.Catalog.Domain/ModulusSample.Modules.Catalog.Domain.csproj" />
+    <Project Path="src/Modules/Catalog/ModulusSample.Modules.Catalog.Application/ModulusSample.Modules.Catalog.Application.csproj" />
+    <Project Path="src/Modules/Catalog/ModulusSample.Modules.Catalog.Infrastructure/ModulusSample.Modules.Catalog.Infrastructure.csproj" />
+    <Project Path="src/Modules/Catalog/ModulusSample.Modules.Catalog.Presentation/ModulusSample.Modules.Catalog.Presentation.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Partners/">
+    <Project Path="src/Modules/Partners/ModulusSample.Modules.Partners.Domain/ModulusSample.Modules.Partners.Domain.csproj" />
+    <Project Path="src/Modules/Partners/ModulusSample.Modules.Partners.Application/ModulusSample.Modules.Partners.Application.csproj" />
+    <Project Path="src/Modules/Partners/ModulusSample.Modules.Partners.Infrastructure/ModulusSample.Modules.Partners.Infrastructure.csproj" />
+    <Project Path="src/Modules/Partners/ModulusSample.Modules.Partners.Presentation/ModulusSample.Modules.Partners.Presentation.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Inventory/">
+    <Project Path="src/Modules/Inventory/ModulusSample.Modules.Inventory.Domain/ModulusSample.Modules.Inventory.Domain.csproj" />
+    <Project Path="src/Modules/Inventory/ModulusSample.Modules.Inventory.Application/ModulusSample.Modules.Inventory.Application.csproj" />
+    <Project Path="src/Modules/Inventory/ModulusSample.Modules.Inventory.Infrastructure/ModulusSample.Modules.Inventory.Infrastructure.csproj" />
+    <Project Path="src/Modules/Inventory/ModulusSample.Modules.Inventory.Presentation/ModulusSample.Modules.Inventory.Presentation.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Sales/">
+    <Project Path="src/Modules/Sales/ModulusSample.Modules.Sales.Domain/ModulusSample.Modules.Sales.Domain.csproj" />
+    <Project Path="src/Modules/Sales/ModulusSample.Modules.Sales.Application/ModulusSample.Modules.Sales.Application.csproj" />
+    <Project Path="src/Modules/Sales/ModulusSample.Modules.Sales.Infrastructure/ModulusSample.Modules.Sales.Infrastructure.csproj" />
+    <Project Path="src/Modules/Sales/ModulusSample.Modules.Sales.Presentation/ModulusSample.Modules.Sales.Presentation.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Purchasing/">
+    <Project Path="src/Modules/Purchasing/ModulusSample.Modules.Purchasing.Domain/ModulusSample.Modules.Purchasing.Domain.csproj" />
+    <Project Path="src/Modules/Purchasing/ModulusSample.Modules.Purchasing.Application/ModulusSample.Modules.Purchasing.Application.csproj" />
+    <Project Path="src/Modules/Purchasing/ModulusSample.Modules.Purchasing.Infrastructure/ModulusSample.Modules.Purchasing.Infrastructure.csproj" />
+    <Project Path="src/Modules/Purchasing/ModulusSample.Modules.Purchasing.Presentation/ModulusSample.Modules.Purchasing.Presentation.csproj" />
+  </Folder>
 </Solution>

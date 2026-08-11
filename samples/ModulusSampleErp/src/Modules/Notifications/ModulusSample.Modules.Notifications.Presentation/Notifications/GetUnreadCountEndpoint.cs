@@ -15,7 +15,7 @@ internal sealed class GetUnreadCountEndpoint : EndpointWithoutRequest<UnreadCoun
     {
         Get("/notifications/unread-count");
         Tag(Tags.Notifications);
-        Summary("Get the current user's unread notification count");
+        Summary("Get the current user's unread notification count")RequireAuthorization(); ;
     }
 
     protected override async Task HandleAsync(CancellationToken ct)

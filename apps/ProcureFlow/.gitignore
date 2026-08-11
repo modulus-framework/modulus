@@ -1,0 +1,31 @@
+# Build output
+[Bb]in/
+[Oo]bj/
+[Oo]ut/
+artifacts/
+
+# IDE / user files
+.vs/
+.idea/
+*.user
+*.suo
+*.userprefs
+
+# ── Secrets (never commit these) ──────────────────────────────
+# Developer secrets belong in User Secrets (dotnet user-secrets) or environment
+# variables, not in committed configuration. The SecretsGuard fails startup in
+# Development/Staging if a secret leaks into appsettings*.json.
+secrets.json
+appsettings.*.json
+!appsettings.json
+# Keep the non-secret Development template that ships with the app; ignore any
+# local override a developer creates from it.
+appsettings.Development.local.json
+
+# SQLite databases created at runtime
+*.db
+*.db-shm
+*.db-wal
+
+# Local NuGet configuration pointing at a private/local feed
+NuGet.local.config

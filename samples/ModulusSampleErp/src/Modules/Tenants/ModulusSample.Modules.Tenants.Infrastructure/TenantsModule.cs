@@ -1,19 +1,16 @@
-using ModulusSample.Modules.Tenants.Application.DomainEventHandlers;
 using ModulusSample.Modules.Tenants.Application.IntegrationEvents;
 using ModulusSample.Modules.Tenants.Application.Abstractions;
 using ModulusSample.Modules.Tenants.Domain.Constants;
 using ModulusSample.Modules.Tenants.Domain.Repositories;
-using ModulusSample.Modules.Tenants.Infrastructure.Configurations;
 using ModulusSample.Modules.Tenants.Infrastructure.Database;
 using ModulusSample.Modules.Tenants.Infrastructure.Repositories;
+using ModulusSample.Modules.Tenants.Presentation;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Migrations;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using FluentValidation;
 using Modulus.Core.Abstractions;
 using Modulus.Mediator.Extensions;
-using ModulusSample.Modules.Tenants.Application;
+using Modulus.Authorization.Extensions;
 
 namespace ModulusSample.Modules.Tenants.Infrastructure;
 
@@ -23,10 +20,24 @@ public sealed class TenantsModule : ModulusModule
         IServiceCollection services,
         IConfiguration configuration)
     {
-        services.AddMediatorHandlers(typeof(AssemblyReference).Assembly);
+        AddPermissions(services);
+        services.AddMediatorHandlers(typeof(Application.AssemblyReference).Assembly);
         services.AddValidatorsFromAssembly(Application.AssemblyReference.Assembly);
         AddDomainEventHandlers(services);
         AddInfrastructure(services, configuration);
+    }
+
+    private static void AddPermissions(IServiceCollection services)
+    {
+        services.AddPermissions("Tenants", registry =>
+        {
+            registry.Add(TenantPermissions.TenantViewAll, "View all tenants");
+            registry.Add(TenantPermissions.TenantManageAll, "Manage all tenants");
+            registry.Add(TenantPermissions.TenantCreate, "Create tenants");
+            registry.Add(TenantPermissions.TenantUpdate, "Update tenants");
+            registry.Add(TenantPermissions.TenantDelete, "Delete tenants");
+            registry.Add(TenantPermissions.TenantAdmin, "Tenant administrator access");
+        });
     }
 
     public static Type[] HandledIntegrationEvents =>

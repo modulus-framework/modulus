@@ -22,6 +22,7 @@ internal sealed class UploadFileEndpoint : Endpoint<UploadFileEndpoint.UploadFil
         Post("/file-explorer/folders/{folderId}/files");
         Tag(Tags.VirtualFileExplorer);
         Summary("Register a file in a virtual folder");
+        RequireAuthorization(); ;
     }
 
     public override async Task HandleAsync(UploadFileRequest req, CancellationToken ct)
