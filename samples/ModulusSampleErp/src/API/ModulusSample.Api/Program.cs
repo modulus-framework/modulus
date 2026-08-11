@@ -387,8 +387,7 @@ builder.Services.AddModulusIdentityStore<IdentityDbContext>();
 
 // Register Modulus.Identity controllers for the token/userinfo endpoints
 builder.Services.AddControllers()
-    .AddApplicationPart(typeof(ModulusTokenController).Assembly)
-    .AddApplicationPart(typeof(ModulusSample.Modules.Media.Presentation.Controllers.FilesController).Assembly);
+    .AddApplicationPart(typeof(ModulusTokenController).Assembly);
 
 // Dual authentication: OpenIddict validation (self-issued) + external OIDC fallback
 builder.Services.AddDualAuthentication(builder.Configuration);
@@ -565,14 +564,16 @@ app.MapModulusEndpoints(
     ModulusSample.Modules.Tenants.Presentation.AssemblyReference.Assembly,
     ModulusSample.Modules.Features.Presentation.AssemblyReference.Assembly,
     ModulusSample.Modules.VirtualFileExplorer.Presentation.AssemblyReference.Assembly,
-    ModulusSample.Modules.Notifications.Presentation.AssemblyReference.Assembly);
+    ModulusSample.Modules.Notifications.Presentation.AssemblyReference.Assembly,
+    ModulusSample.Modules.Media.Presentation.AssemblyReference.Assembly);
 
-// Map explicit endpoints for business modules
+// Map explicit endpoints for business modules and platform modules
 ModulusSample.Modules.Partners.Presentation.PartnersEndpoints.MapPartnersEndpoints(app);
 ModulusSample.Modules.Inventory.Presentation.InventoryEndpoints.MapInventoryEndpoints(app);
 ModulusSample.Modules.Sales.Presentation.SalesEndpoints.MapSalesEndpoints(app);
 ModulusSample.Modules.Purchasing.Presentation.PurchasingEndpoints.MapPurchasingEndpoints(app);
 ModulusSample.Modules.Billing.Presentation.BillingEndpoints.MapBillingEndpoints(app);
+ModulusSample.Modules.Media.Presentation.Endpoints.MediaEndpoints.MapMediaEndpoints(app);
 
 // ============================================
 // RUN APPLICATION
