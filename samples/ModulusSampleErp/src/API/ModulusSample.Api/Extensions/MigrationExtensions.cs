@@ -13,6 +13,7 @@ using ModulusSample.Modules.Partners.Infrastructure.Database;
 using ModulusSample.Modules.Inventory.Infrastructure.Database;
 using ModulusSample.Modules.Sales.Infrastructure.Database;
 using ModulusSample.Modules.Purchasing.Infrastructure.Database;
+using ModulusSample.Modules.Billing.Infrastructure.Database;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using Modulus.Authorization.EntityFrameworkCore.Extensions;
@@ -49,6 +50,7 @@ internal static class MigrationExtensions
             await ApplyMigrationOrCreateAsync<InventoryDbContext>(scope, logger);
             await ApplyMigrationOrCreateAsync<SalesDbContext>(scope, logger);
             await ApplyMigrationOrCreateAsync<PurchasingDbContext>(scope, logger);
+            await ApplyMigrationOrCreateAsync<BillingDbContext>(scope, logger);
 
             // The authorization store is registered through IDbContextFactory only, so it
             // is deliberately outside the module loop above and brings its own helper.

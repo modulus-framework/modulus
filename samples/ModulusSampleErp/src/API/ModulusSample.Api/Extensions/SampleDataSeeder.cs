@@ -26,6 +26,7 @@ using ModulusSample.Modules.Partners.Infrastructure.Database;
 using ModulusSample.Modules.Inventory.Infrastructure.Database;
 using ModulusSample.Modules.Sales.Infrastructure.Database;
 using ModulusSample.Modules.Purchasing.Infrastructure.Database;
+using ModulusSample.Modules.Billing.Infrastructure.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -54,12 +55,13 @@ internal static class SampleDataSeeder
         await SeedNotificationsAsync(scope, logger);
         await SeedMediaFoldersAsync(scope, logger);
 
-        // Seed business modules (Catalog, Partners, Inventory, Sales, Purchasing)
+        // Seed business modules (Catalog, Partners, Inventory, Sales, Purchasing, Billing)
         var catalogContext = scope.ServiceProvider.GetRequiredService<CatalogDbContext>();
         var partnersContext = scope.ServiceProvider.GetRequiredService<PartnersDbContext>();
         var inventoryContext = scope.ServiceProvider.GetRequiredService<InventoryDbContext>();
         var salesContext = scope.ServiceProvider.GetRequiredService<SalesDbContext>();
         var purchasingContext = scope.ServiceProvider.GetRequiredService<PurchasingDbContext>();
+        var billingContext = scope.ServiceProvider.GetRequiredService<BillingDbContext>();
 
         // Use the first tenant ID for business data
         var tenantId = GlobalTenantId;
@@ -73,6 +75,7 @@ internal static class SampleDataSeeder
         await InventoryDbContextSeed.SeedAsync(inventoryContext, logger, tenantId, orgUnitId);
         await SalesDbContextSeed.SeedAsync(salesContext, logger, tenantId, orgUnitId);
         await PurchasingDbContextSeed.SeedAsync(purchasingContext, logger, tenantId, orgUnitId);
+        await BillingDbContextSeed.SeedAsync(billingContext, logger, tenantId, orgUnitId);
     }
 
     private static async Task SeedSettingsAsync(IServiceScope scope, ILogger logger)

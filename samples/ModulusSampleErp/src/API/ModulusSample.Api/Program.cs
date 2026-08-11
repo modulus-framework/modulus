@@ -193,6 +193,7 @@ builder.Configuration.AddModuleConfiguration([
     "inventory",
     "sales",
     "purchasing",
+    "billing",
     "identity",
     "tenants",
     "settings",
@@ -216,6 +217,7 @@ Assembly[] moduleApplicationAssemblies =
     ModulusSample.Modules.Inventory.Application.AssemblyReference.Assembly,
     ModulusSample.Modules.Sales.Application.AssemblyReference.Assembly,
     ModulusSample.Modules.Purchasing.Application.AssemblyReference.Assembly,
+    ModulusSample.Modules.Billing.Application.AssemblyReference.Assembly,
     ModulusSample.Modules.Identity.Application.AssemblyReference.Assembly,
     ModulusSample.Modules.Settings.Application.AssemblyReference.Assembly,
     ModulusSample.Modules.Tenants.Application.AssemblyReference.Assembly,
@@ -557,6 +559,7 @@ app.MapModulusEndpoints(
     ModulusSample.Modules.Inventory.Presentation.AssemblyReference.Assembly,
     ModulusSample.Modules.Sales.Presentation.AssemblyReference.Assembly,
     ModulusSample.Modules.Purchasing.Presentation.AssemblyReference.Assembly,
+    ModulusSample.Modules.Billing.Presentation.AssemblyReference.Assembly,
     ModulusSample.Modules.Identity.Presentation.AssemblyReference.Assembly,
     ModulusSample.Modules.Settings.Presentation.AssemblyReference.Assembly,
     ModulusSample.Modules.Tenants.Presentation.AssemblyReference.Assembly,
@@ -569,6 +572,7 @@ ModulusSample.Modules.Partners.Presentation.PartnersEndpoints.MapPartnersEndpoin
 ModulusSample.Modules.Inventory.Presentation.InventoryEndpoints.MapInventoryEndpoints(app);
 ModulusSample.Modules.Sales.Presentation.SalesEndpoints.MapSalesEndpoints(app);
 ModulusSample.Modules.Purchasing.Presentation.PurchasingEndpoints.MapPurchasingEndpoints(app);
+ModulusSample.Modules.Billing.Presentation.BillingEndpoints.MapBillingEndpoints(app);
 
 // ============================================
 // RUN APPLICATION

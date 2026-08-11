@@ -10,6 +10,7 @@ using ModulusSample.Modules.Partners.Infrastructure;
 using ModulusSample.Modules.Inventory.Infrastructure;
 using ModulusSample.Modules.Sales.Infrastructure;
 using ModulusSample.Modules.Purchasing.Infrastructure;
+using ModulusSample.Modules.Billing.Infrastructure;
 using Modulus.Core.Abstractions;
 namespace ModulusSample.Api.Modules;
 
@@ -23,6 +24,7 @@ namespace ModulusSample.Api.Modules;
     typeof(InventoryModule),
     typeof(SalesModule),
     typeof(PurchasingModule),
+    typeof(BillingModule),
     typeof(IdentityModule),
     typeof(SettingsModule),
     typeof(TenantsModule),

@@ -83,4 +83,10 @@
     <Project Path="src/Modules/Purchasing/ModulusSample.Modules.Purchasing.Infrastructure/ModulusSample.Modules.Purchasing.Infrastructure.csproj" />
     <Project Path="src/Modules/Purchasing/ModulusSample.Modules.Purchasing.Presentation/ModulusSample.Modules.Purchasing.Presentation.csproj" />
   </Folder>
+  <Folder Name="/src/Modules/Billing/">
+    <Project Path="src/Modules/Billing/ModulusSample.Modules.Billing.Domain/ModulusSample.Modules.Billing.Domain.csproj" />
+    <Project Path="src/Modules/Billing/ModulusSample.Modules.Billing.Application/ModulusSample.Modules.Billing.Application.csproj" />
+    <Project Path="src/Modules/Billing/ModulusSample.Modules.Billing.Infrastructure/ModulusSample.Modules.Billing.Infrastructure.csproj" />
+    <Project Path="src/Modules/Billing/ModulusSample.Modules.Billing.Presentation/ModulusSample.Modules.Billing.Presentation.csproj" />
+  </Folder>
 </Solution>
