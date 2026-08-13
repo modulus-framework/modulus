@@ -1,9 +1,9 @@
-using ModulusSample.Modules.Features.Application.Abstractions;
 using ModulusSample.Modules.Features.Domain.Entities;
 using ModulusSample.Modules.Features.Infrastructure.Configurations;
 using Microsoft.EntityFrameworkCore;
 using Modulus.Core.Abstractions;
 using Modulus.EntityFrameworkCore;
+using Modulus.EntityFrameworkCore.Abstractions;
 using Modulus.Events;
 
 namespace ModulusSample.Modules.Features.Infrastructure.Database;

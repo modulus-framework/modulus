@@ -1,5 +1,26 @@
 {
   "ConnectionStrings": {
     "Media": "Host=localhost;Port=5432;Database=ModulusSample;Username=ModulusSample;Password=ModulusSample"
+  },
+  "Media": {
+    "MaxFileSizeMB": 50,
+    "AllowedExtensions": [".jpg", ".jpeg", ".png", ".gif", ".pdf", ".doc", ".docx", ".xls", ".xlsx"],
+    "EnableImageOptimization": true,
+    "ThumbnailWidthPixels": 200,
+    "ThumbnailHeightPixels": 200
+  },
+  "Outbox": {
+    "IntervalInSeconds": 30,
+    "BatchSize": 100,
+    "MaxRetries": 5,
+    "InitialDelayInSeconds": 5,
+    "EnableDeadLetterQueue": true
+  },
+  "Inbox": {
+    "IntervalInSeconds": 30,
+    "BatchSize": 100,
+    "MaxRetries": 5,
+    "InitialDelayInSeconds": 5,
+    "EnableDeadLetterQueue": true
   }
 }

@@ -1,12 +1,11 @@
 using Modulus.AspNetCore.Endpoints;
 using Modulus.Mediator.Abstractions;
-using ModulusSample.Modules.Billing.Application.Dtos;
-using ModulusSample.Modules.Billing.Application.Queries;
-using ModulusSample.Shared.Domain;
+using ModulusSample.Modules.Billing.Application.CreditNotes.Dtos;
+using ModulusSample.Modules.Billing.Application.CreditNotes.Queries;
 
 namespace ModulusSample.Modules.Billing.Presentation.CreditNotes;
 
-internal sealed class GetCreditNoteByIdEndpoint : Endpoint<CreditNoteDto>
+internal sealed class GetCreditNoteByIdEndpoint : Endpoint<GetCreditNoteByIdEndpoint.GetCreditNoteByIdRequest, CreditNoteDto>
 {
     private readonly IMediator _mediator;
 
@@ -19,17 +18,21 @@ internal sealed class GetCreditNoteByIdEndpoint : Endpoint<CreditNoteDto>
         Summary("Get credit note details");
     }
 
-    public override async Task HandleAsync(CancellationToken ct)
+    public override async Task HandleAsync(GetCreditNoteByIdRequest req, CancellationToken ct)
     {
-        var id = Route<Guid>("id");
-        Result<CreditNoteDto> result = await _mediator.QueryAsync(new GetCreditNoteByIdQuery(id), ct);
+        CreditNoteDto? creditNote = await _mediator.QueryAsync(new GetCreditNoteByIdQuery(req.Id), ct);
 
-        if (result.IsFailure || result.Value is null)
+        if (creditNote is null)
         {
             await SendNotFoundAsync(ct);
             return;
         }
 
-        await SendOkAsync(result.Value, ct);
+        await SendOkAsync(creditNote, ct);
+    }
+
+    internal sealed class GetCreditNoteByIdRequest
+    {
+        public Guid Id { get; set; }
     }
 }

@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using ModulusSample.Modules.Features.Domain.Entities;
 using ModulusSample.Modules.Features.Domain.ValueObjects;
@@ -63,39 +64,44 @@ internal static class SampleDataSeeder
         var purchasingContext = scope.ServiceProvider.GetRequiredService<PurchasingDbContext>();
         var billingContext = scope.ServiceProvider.GetRequiredService<BillingDbContext>();
 
-        // Use the first tenant ID for business data
-        var tenantId = GlobalTenantId;
+        // Demo Tenants with different plans
+        var acmeCorpTenantId = Guid.Parse("11111111-1111-1111-1111-111111111111"); // Enterprise plan
+        var startupIncTenantId = Guid.Parse("22222222-2222-2222-2222-222222222222"); // Starter plan
 
-        // Org Hierarchy: Company -> 2 Regions -> 4 Branches
-        var companyId = Guid.Parse("00000000-0000-0000-0000-000000000001");
-        var region1Id = Guid.Parse("00000000-0000-0000-0000-000000000011");
-        var region2Id = Guid.Parse("00000000-0000-0000-0000-000000000012");
-        var branch1Id = Guid.Parse("00000000-0000-0000-0000-000000000111"); // Region 1
-        var branch2Id = Guid.Parse("00000000-0000-0000-0000-000000000112"); // Region 1
-        var branch3Id = Guid.Parse("00000000-0000-0000-0000-000000000121"); // Region 2
-        var branch4Id = Guid.Parse("00000000-0000-0000-0000-000000000122"); // Region 2
+        // Org Hierarchy: Acme Corp -> 2 Regions -> 4 Branches/Warehouses
+        var acmeCompanyId = Guid.Parse("aaaa0000-0000-0000-0000-000000000001");
+        var acmeNorthRegionId = Guid.Parse("aaaa0000-0000-0000-0000-000000000011");
+        var acmeSouthRegionId = Guid.Parse("aaaa0000-0000-0000-0000-000000000012");
+        var acmeNycWarehouseId = Guid.Parse("aaaa0000-0000-0000-0000-000000000101"); // North Region
+        var acmeBostonWarehouseId = Guid.Parse("aaaa0000-0000-0000-0000-000000000102"); // North Region
+        var acmeMiamiWarehouseId = Guid.Parse("aaaa0000-0000-0000-0000-000000000201"); // South Region
+        var acmeAtlantaWarehouseId = Guid.Parse("aaaa0000-0000-0000-0000-000000000202"); // South Region
 
         // 6 Personas: Sales Rep, Branch Manager, Regional Manager, Buyer, Purchasing Manager, Finance
-        var salesRepId = Guid.Parse("10000000-0000-0000-0000-000000000001");
-        var branchManagerId = Guid.Parse("10000000-0000-0000-0000-000000000002");
-        var regionalManagerId = Guid.Parse("10000000-0000-0000-0000-000000000003");
-        var buyerId = Guid.Parse("10000000-0000-0000-0000-000000000004");
-        var purchasingManagerId = Guid.Parse("10000000-0000-0000-0000-000000000005");
-        var financeUserId = Guid.Parse("10000000-0000-0000-0000-000000000006");
+        var aliceSalesRepId = Guid.Parse("alice000-0000-0000-0000-000000000001");
+        var bobBranchMgrId = Guid.Parse("bob00000-0000-0000-0000-000000000001");
+        var charlieRegionalMgrId = Guid.Parse("charlie0-0000-0000-0000-000000000001");
+        var dianaBuyerId = Guid.Parse("diana000-0000-0000-0000-000000000001");
+        var evePurchasingMgrId = Guid.Parse("eve00000-0000-0000-0000-000000000001");
+        var frankFinanceId = Guid.Parse("frank000-0000-0000-0000-000000000001");
 
-        logger.LogInformation("Seeding demo org hierarchy and personas");
+        logger.LogInformation("Seeding comprehensive demo data for scenarios");
 
-        await CatalogDbContextSeed.SeedAsync(catalogContext, logger, tenantId);
-        await PartnersDbContextSeed.SeedAsync(partnersContext, logger, tenantId, salesRepId);
-        await InventoryDbContextSeed.SeedAsync(inventoryContext, logger, tenantId, branch1Id);
-        await SalesDbContextSeed.SeedAsync(salesContext, logger, tenantId, branch1Id);
-        await PurchasingDbContextSeed.SeedAsync(purchasingContext, logger, tenantId, companyId);
-        await BillingDbContextSeed.SeedAsync(billingContext, logger, tenantId, companyId);
+        // Seed modules with detailed demo data
+        await CatalogDbContextSeed.SeedEnhancedAsync(catalogContext, logger, acmeCorpTenantId);
+        await PartnersDbContextSeed.SeedEnhancedAsync(partnersContext, logger, acmeCorpTenantId, aliceSalesRepId);
+        await InventoryDbContextSeed.SeedEnhancedAsync(inventoryContext, logger, acmeCorpTenantId,
+            acmeNycWarehouseId, acmeBostonWarehouseId, acmeMiamiWarehouseId, acmeAtlantaWarehouseId);
+        await SalesDbContextSeed.SeedEnhancedAsync(salesContext, logger, acmeCorpTenantId, aliceSalesRepId, acmeNycWarehouseId);
+        await PurchasingDbContextSeed.SeedEnhancedAsync(purchasingContext, logger, acmeCorpTenantId,
+            dianaBuyerId, evePurchasingMgrId, acmeNorthRegionId);
+        await BillingDbContextSeed.SeedEnhancedAsync(billingContext, logger, acmeCorpTenantId, acmeCompanyId, frankFinanceId);
 
-        logger.LogInformation("Demo org hierarchy: Company[{CompanyId}] -> Region1[{Region1Id}], Region2[{Region2Id}] -> Branches[{Branch1Id},{Branch2Id},{Branch3Id},{Branch4Id}]",
-            companyId, region1Id, region2Id, branch1Id, branch2Id, branch3Id, branch4Id);
-        logger.LogInformation("6 Personas: SalesRep[{SalesRep}], BranchMgr[{BranchMgr}], RegionalMgr[{RegionalMgr}], Buyer[{Buyer}], PurchasingMgr[{PurchasingMgr}], Finance[{Finance}]",
-            salesRepId, branchManagerId, regionalManagerId, buyerId, purchasingManagerId, financeUserId);
+        logger.LogInformation("Comprehensive demo data seeded:");
+        logger.LogInformation("  Tenants: Acme Corp[Enterprise], StartUp Inc[Starter]");
+        logger.LogInformation("  Org Hierarchy: Acme -> North/South Regions -> NYC/Boston/Miami/Atlanta Warehouses");
+        logger.LogInformation("  6 Personas: Alice[Sales Rep], Bob[Branch Mgr], Charlie[Regional Mgr], Diana[Buyer], Eve[Purchasing Mgr], Frank[Finance]");
+        logger.LogInformation("  Business Data: 10 products, 4 customers, 4 suppliers, 4 warehouses with stock, 5 orders");
     }
 
     private static async Task SeedSettingsAsync(IServiceScope scope, ILogger logger)
@@ -145,13 +151,26 @@ internal static class SampleDataSeeder
         }
 
         var connectionString = "Host=localhost;Port=5432;Database=ModulusSample;Username=ModulusSample;Password=ModulusSample";
+
         var tenants = new[]
         {
-            ("Acme Corporation", "acme"),
-            ("Globex Ltd", "globex"),
+            (
+                Name: "Acme Corporation",
+                Subdomain: "acme",
+                Plan: "Enterprise",
+                TenantId: Guid.Parse("11111111-1111-1111-1111-111111111111"),
+                Features: new[] { "multi-warehouse-transfers", "billing-reports", "ar-aging", "advanced-analytics" }
+            ),
+            (
+                Name: "StartUp Inc",
+                Subdomain: "startup",
+                Plan: "Starter",
+                TenantId: Guid.Parse("22222222-2222-2222-2222-222222222222"),
+                Features: new[] { "basic-reports" }
+            )
         };
 
-        foreach ((string name, string subdomain) in tenants)
+        foreach ((string name, string subdomain, string plan, Guid tenantId, string[] features) in tenants)
         {
             var subdomainResult = Subdomain.Create(subdomain);
             if (!subdomainResult.IsSuccess)
@@ -159,12 +178,18 @@ internal static class SampleDataSeeder
                 continue;
             }
 
+            JsonDocument metadata = JsonDocument.Parse(new JsonObject
+            {
+                ["plan"] = plan,
+                ["features"] = JsonSerializer.SerializeToNode(features)
+            }.ToJsonString());
+
             var result = Tenant.Create(
-                TenantId.New(),
+                TenantId.From(tenantId),
                 name,
                 subdomainResult.Value,
                 connectionString,
-                JsonDocument.Parse("{}"),
+                metadata,
                 JsonDocument.Parse("{}"),
                 SystemUser);
 
@@ -175,7 +200,7 @@ internal static class SampleDataSeeder
         }
 
         await context.SaveChangesAsync();
-        logger.LogInformation("Seeded Tenants module sample data");
+        logger.LogInformation("Seeded Tenants: Acme Corp[Enterprise], StartUp Inc[Starter]");
     }
 
     private static async Task SeedFeatureFlagsAsync(IServiceScope scope, ILogger logger)

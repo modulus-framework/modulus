@@ -19,6 +19,8 @@
     <PackageReference Include="Cobytelabs.Modulus.Events" Version="1.2.0" />
     <PackageReference Include="Cobytelabs.Modulus.Mediator" Version="1.2.0" />
     <PackageReference Include="Cobytelabs.Modulus.Sagas" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Outbox" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Inbox" Version="1.2.0" />
   </ItemGroup>
 
 </Project>

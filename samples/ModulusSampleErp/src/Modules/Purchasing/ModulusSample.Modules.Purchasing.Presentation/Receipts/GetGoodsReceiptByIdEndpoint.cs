@@ -1,12 +1,13 @@
 using Modulus.AspNetCore.Endpoints;
 using Modulus.Mediator.Abstractions;
-using ModulusSample.Modules.Purchasing.Application.Dtos;
-using ModulusSample.Modules.Purchasing.Application.Queries;
+using ModulusSample.Modules.Purchasing.Application.Receipts.Dtos;
+using ModulusSample.Modules.Purchasing.Application.Receipts.Queries;
 using ModulusSample.Shared.Domain;
+using ModulusSample.Shared.Presentation;
 
 namespace ModulusSample.Modules.Purchasing.Presentation.Receipts;
 
-internal sealed class GetGoodsReceiptByIdEndpoint : Endpoint<ReceiptDto>
+internal sealed class GetGoodsReceiptByIdEndpoint : Endpoint<GetGoodsReceiptByIdEndpoint.GetReceiptByIdRequest, GoodsReceiptDto>
 {
     private readonly IMediator _mediator;
 
@@ -19,17 +20,27 @@ internal sealed class GetGoodsReceiptByIdEndpoint : Endpoint<ReceiptDto>
         Summary("Get goods receipt details");
     }
 
-    public override async Task HandleAsync(CancellationToken ct)
+    public override async Task HandleAsync(GetReceiptByIdRequest req, CancellationToken ct)
     {
-        var id = Route<Guid>("id");
-        Result<ReceiptDto> result = await _mediator.QueryAsync(new GetReceiptByIdQuery(id), ct);
+        Result<GoodsReceiptDto?> result = await _mediator.QueryAsync(new GetReceiptByIdQuery(req.Id), ct);
 
-        if (result.IsFailure || result.Value is null)
+        if (result.IsFailure)
+        {
+            await EndpointFailure.SendFailureAsync(HttpContext, result, ct);
+            return;
+        }
+
+        if (result.Value is null)
         {
             await SendNotFoundAsync(ct);
             return;
         }
 
         await SendOkAsync(result.Value, ct);
+    }
+
+    internal sealed class GetReceiptByIdRequest
+    {
+        public Guid Id { get; set; }
     }
 }

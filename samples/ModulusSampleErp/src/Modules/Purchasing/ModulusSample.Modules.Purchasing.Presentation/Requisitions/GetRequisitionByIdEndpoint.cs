@@ -1,12 +1,13 @@
 using Modulus.AspNetCore.Endpoints;
 using Modulus.Mediator.Abstractions;
-using ModulusSample.Modules.Purchasing.Application.Dtos;
-using ModulusSample.Modules.Purchasing.Application.Queries;
+using ModulusSample.Modules.Purchasing.Application.Requisitions.Dtos;
+using ModulusSample.Modules.Purchasing.Application.Requisitions.Queries;
 using ModulusSample.Shared.Domain;
+using ModulusSample.Shared.Presentation;
 
 namespace ModulusSample.Modules.Purchasing.Presentation.Requisitions;
 
-internal sealed class GetRequisitionByIdEndpoint : Endpoint<RequisitionDto>
+internal sealed class GetRequisitionByIdEndpoint : Endpoint<GetRequisitionByIdEndpoint.GetRequisitionByIdRequest, PurchaseRequisitionDto>
 {
     private readonly IMediator _mediator;
 
@@ -19,17 +20,27 @@ internal sealed class GetRequisitionByIdEndpoint : Endpoint<RequisitionDto>
         Summary("Get purchase requisition details");
     }
 
-    public override async Task HandleAsync(CancellationToken ct)
+    public override async Task HandleAsync(GetRequisitionByIdRequest req, CancellationToken ct)
     {
-        var id = Route<Guid>("id");
-        Result<RequisitionDto> result = await _mediator.QueryAsync(new GetRequisitionByIdQuery(id), ct);
+        Result<PurchaseRequisitionDto?> result = await _mediator.QueryAsync(new GetRequisitionByIdQuery(req.Id), ct);
 
-        if (result.IsFailure || result.Value is null)
+        if (result.IsFailure)
+        {
+            await EndpointFailure.SendFailureAsync(HttpContext, result, ct);
+            return;
+        }
+
+        if (result.Value is null)
         {
             await SendNotFoundAsync(ct);
             return;
         }
 
         await SendOkAsync(result.Value, ct);
+    }
+
+    internal sealed class GetRequisitionByIdRequest
+    {
+        public Guid Id { get; set; }
     }
 }

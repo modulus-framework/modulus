@@ -1,4 +1,5 @@
-using ModulusSample.Modules.Identity.Application.Abstractions.Data;
+using ModulusSample.Modules.Identity.Application.Abstractions.Authentication;
+using Modulus.EntityFrameworkCore.Abstractions;
 using ModulusSample.Modules.Identity.Application.Abstractions.Identity;
 using ModulusSample.Modules.Identity.Domain.Entities;
 using ModulusSample.Modules.Identity.Domain.Errors;
@@ -12,7 +13,8 @@ namespace ModulusSample.Modules.Identity.Application.Users.Commands;
 internal sealed class ChangePasswordCommandHandler(
     IUserRepository userRepository,
     IPasswordHasher passwordHasher,
-    IUnitOfWork unitOfWork)
+    IUnitOfWork unitOfWork,
+    IUserContext userContext)
     : Modulus.Mediator.Abstractions.ICommandHandler<ChangePasswordCommand, Result>
 {
     public async Task<Result> HandleAsync(
@@ -20,10 +22,10 @@ internal sealed class ChangePasswordCommandHandler(
         CancellationToken cancellationToken)
     {
         User? user = await userRepository.GetByIdAsync(
-            userContext.UserId ?? throw new InvalidOperationException("User not authenticated"),
+            new UserId(userContext.UserId),
             cancellationToken);
 
-        if (user is null)
+        if (user is null || userContext.UserId == Guid.Empty)
         {
             return Result.Failure(IdentityErrors.User.InvalidCredentials);
         }
@@ -34,7 +36,7 @@ internal sealed class ChangePasswordCommandHandler(
         }
 
         user.PasswordHash = passwordHasher.Hash(request.NewPassword);
-        await unitOfWork.SaveChangesAsync(cancellationToken);
+        await unitOfWork.CommitAsync(cancellationToken);
         return Result.Success();
     }
 }

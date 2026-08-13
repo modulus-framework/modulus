@@ -1,5 +1,5 @@
 using ModulusSample.Modules.Notifications.Application;
-using ModulusSample.Modules.Notifications.Application.Abstractions;
+using Modulus.EntityFrameworkCore.Abstractions;
 using ModulusSample.Modules.Notifications.Application.IntegrationEvents;
 using ModulusSample.Modules.Notifications.Domain.Repositories;
 using ModulusSample.Modules.Notifications.Infrastructure.Database;
@@ -14,6 +14,10 @@ using Modulus.Core.Abstractions;
 using Modulus.Mediator.Extensions;
 using Modulus.AspNetCore.Extensions;
 using Modulus.SignalR.Extensions;
+using Modulus.Outbox.Extensions;
+using Modulus.Inbox.Extensions;
+using Modulus.Outbox.Abstractions;
+using Modulus.Inbox.Abstractions;
 
 namespace ModulusSample.Modules.Notifications.Infrastructure;
 
@@ -52,6 +56,22 @@ public sealed class NotificationsModule : ModulusModule
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<NotificationsDbContext>());
 
         services.AddScoped<INotificationRepository, EfNotificationRepository>();
+
+        services.AddOutbox<NotificationsDbContext>(opts =>
+        {
+            var outboxConfig = configuration.GetSection("Outbox");
+            opts.BatchSize = outboxConfig.GetValue<int>("BatchSize");
+            opts.MaxRetries = outboxConfig.GetValue<int>("MaxRetries");
+            opts.PollingIntervalSec = outboxConfig.GetValue<int>("IntervalInSeconds");
+            opts.InitialBackoffSec = outboxConfig.GetValue<int>("InitialDelayInSeconds");
+        });
+
+        services.AddInbox<NotificationsDbContext>(opts =>
+        {
+            var inboxConfig = configuration.GetSection("Inbox");
+            opts.MaxRetries = inboxConfig.GetValue<int>("MaxRetries");
+            opts.HandlerRetryCount = inboxConfig.GetValue<int>("MaxRetries");
+        });
     }
 
     private static void AddSignalR(IServiceCollection services, IConfiguration configuration)

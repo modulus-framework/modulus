@@ -42,5 +42,19 @@
         }
       ]
     }
+  },
+  "Outbox": {
+    "IntervalInSeconds": 30,
+    "BatchSize": 100,
+    "MaxRetries": 5,
+    "InitialDelayInSeconds": 5,
+    "EnableDeadLetterQueue": true
+  },
+  "Inbox": {
+    "IntervalInSeconds": 30,
+    "BatchSize": 100,
+    "MaxRetries": 5,
+    "InitialDelayInSeconds": 5,
+    "EnableDeadLetterQueue": true
   }
 }

@@ -1,4 +1,4 @@
-using ModulusSample.Modules.Identity.Application.Abstractions.Data;
+using Modulus.EntityFrameworkCore.Abstractions;
 using ModulusSample.Modules.Identity.Application.Abstractions.Identity;
 using ModulusSample.Modules.Identity.Domain.Entities;
 using ModulusSample.Modules.Identity.Domain.Enums;
@@ -64,7 +64,7 @@ internal sealed class UserIdentityService(
         }
 
         await userRepository.AddAsync(user, ct);
-        await unitOfWork.SaveChangesAsync(ct);
+        await unitOfWork.CommitAsync(ct);
         await InvalidateUserCacheAsync(user.Id.Value);
 
         logger.LogInformation("Provision: created new user {UserId}", user.Id.Value);

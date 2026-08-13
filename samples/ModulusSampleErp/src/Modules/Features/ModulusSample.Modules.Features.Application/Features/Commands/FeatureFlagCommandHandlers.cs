@@ -1,6 +1,6 @@
 using Modulus.Core.Abstractions;
 using Modulus.Mediator.Abstractions;
-using ModulusSample.Modules.Features.Application.Abstractions;
+using Modulus.EntityFrameworkCore.Abstractions;
 using ModulusSample.Modules.Features.Application.Features.Dtos;
 using ModulusSample.Modules.Features.Domain.Constants;
 using ModulusSample.Modules.Features.Domain.Entities;
@@ -44,7 +44,7 @@ public sealed class CreateFeatureFlagHandler(
         }
 
         await repository.AddAsync(featureResult.Value, ct);
-        await unitOfWork.SaveChangesAsync(ct);
+        await unitOfWork.CommitAsync(ct);
 
         return Result.Success(new CreateFeatureFlagResponse(
             featureResult.Value.Id.Value,
@@ -73,7 +73,7 @@ public sealed class UpdateFeatureFlagHandler(
         }
 
         await repository.UpdateAsync(feature, ct);
-        await unitOfWork.SaveChangesAsync(ct);
+        await unitOfWork.CommitAsync(ct);
 
         return Result.Success(new UpdateFeatureFlagResponse(
             feature.Id.Value,
@@ -104,7 +104,7 @@ public sealed class ToggleFeatureFlagHandler(
         }
 
         await repository.UpdateAsync(feature, ct);
-        await unitOfWork.SaveChangesAsync(ct);
+        await unitOfWork.CommitAsync(ct);
 
         return Result.Success(new UpdateFeatureFlagResponse(
             feature.Id.Value,
@@ -130,7 +130,7 @@ public sealed class DeleteFeatureFlagHandler(
 
         feature.Delete(currentUser.UserId?.ToString() ?? "system");
         await repository.DeleteAsync(feature, ct);
-        await unitOfWork.SaveChangesAsync(ct);
+        await unitOfWork.CommitAsync(ct);
 
         return Result.Success();
     }

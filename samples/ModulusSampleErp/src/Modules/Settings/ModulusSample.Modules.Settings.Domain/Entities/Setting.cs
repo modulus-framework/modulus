@@ -15,10 +15,10 @@ public sealed class Setting : AggregateRoot, IAuditableEntity, IHasTenantId
     public bool IsPublic { get; private set; }
     public Guid TenantId { get; set; }
 
-    public DateTime CreatedAt { get;  set; }
-    public string? CreatedBy { get;  set; }
-    public DateTime? UpdatedAt { get;  set; }
-    public string? UpdatedBy { get;  set; }
+    public DateTime CreatedAt { get; set; }
+    public string? CreatedBy { get; set; }
+    public DateTime? UpdatedAt { get; set; }
+    public string? UpdatedBy { get; set; }
 
     private Setting() { }
 

@@ -1,7 +1,8 @@
-using Modulus.Core.Abstractions;
-using Modulus.Core.Domain;
-using Modulus.EntityFrameworkCore.Extensions;
 using Microsoft.EntityFrameworkCore;
+using Modulus.Core.Abstractions;
+using Modulus.EntityFrameworkCore;
+using Modulus.EntityFrameworkCore.Abstractions;
+using Modulus.Events;
 using ModulusSample.Modules.Billing.Domain.Entities;
 
 namespace ModulusSample.Modules.Billing.Infrastructure.Database;
@@ -17,6 +18,8 @@ public sealed class BillingDbContext(
     public DbSet<Invoice> Invoices { get; set; } = null!;
     public DbSet<Payment> Payments { get; set; } = null!;
     public DbSet<CreditNote> CreditNotes { get; set; } = null!;
+
+    protected override string TablePrefix => string.Empty;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

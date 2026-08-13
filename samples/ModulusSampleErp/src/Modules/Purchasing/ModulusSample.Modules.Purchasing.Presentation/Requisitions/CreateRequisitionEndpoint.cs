@@ -1,7 +1,8 @@
 using Modulus.AspNetCore.Endpoints;
 using Modulus.Mediator.Abstractions;
-using ModulusSample.Modules.Purchasing.Application.Commands;
+using ModulusSample.Modules.Purchasing.Application.Requisitions.Commands;
 using ModulusSample.Shared.Domain;
+using ModulusSample.Shared.Presentation;
 
 namespace ModulusSample.Modules.Purchasing.Presentation.Requisitions;
 
@@ -25,12 +26,16 @@ internal sealed class CreateRequisitionEndpoint : Endpoint<CreateRequisitionEndp
 
         if (result.IsFailure)
         {
-            await SendAsync(null, statusCode: StatusCodes.Status400BadRequest, cancellation: ct);
+            await EndpointFailure.SendFailureAsync(HttpContext, result, ct);
             return;
         }
 
-        await SendCreatedAsync($"/api/purchase-requisitions/{result.Value}", ct);
+        await SendCreatedAsync(result.Value, $"/api/purchase-requisitions/{result.Value}", ct);
     }
 
-    public sealed record CreateRequisitionRequest(string RequisitionNumber, Guid OrgUnitId);
+    internal sealed class CreateRequisitionRequest
+    {
+        public string RequisitionNumber { get; set; } = string.Empty;
+        public Guid OrgUnitId { get; set; }
+    }
 }

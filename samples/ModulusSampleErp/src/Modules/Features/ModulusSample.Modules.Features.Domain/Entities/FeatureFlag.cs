@@ -12,12 +12,15 @@ public sealed class FeatureFlag : AggregateRoot, IAuditableEntity, IHasTenantId
     public string Name { get; private set; } = null!;
     public string? Description { get; private set; }
     public bool IsEnabled { get; private set; }
-    public Guid TenantId { get;  set; }
+    public Guid TenantId { get; set; }
 
-    public DateTime CreatedAt { get;  set; }
-    public string? CreatedBy { get;  set; }
+    public DateTime CreatedAt { get; set; }
+    public string? CreatedBy { get; set; }
     public DateTime? UpdatedAt { get; set; }
     public string? UpdatedBy { get; set; }
+
+    public DateTime LastModifiedAt => UpdatedAt ?? CreatedAt;
+    public string? LastModifiedBy => UpdatedBy;
 
 
     private FeatureFlag() { }

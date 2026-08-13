@@ -83,11 +83,17 @@
     <ProjectReference Include="../../Modules/Media/ModulusSample.Modules.Media.Presentation/ModulusSample.Modules.Media.Presentation.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="../../Modules/ModulusSample.Modules.Catalog/ModulusSample.Modules.Catalog.Infrastructure/ModulusSample.Modules.Catalog.Infrastructure.csproj" />
-    <ProjectReference Include="../../Modules/ModulusSample.Modules.Catalog/ModulusSample.Modules.Catalog.Presentation/ModulusSample.Modules.Catalog.Presentation.csproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="../../Modules/ModulusSample.Modules.Partners/ModulusSample.Modules.Partners.Infrastructure/ModulusSample.Modules.Partners.Infrastructure.csproj" />
-    <ProjectReference Include="../../Modules/ModulusSample.Modules.Partners/ModulusSample.Modules.Partners.Presentation/ModulusSample.Modules.Partners.Presentation.csproj" />
+    <ProjectReference Include="..\..\Modules\Catalog\ModulusSample.Modules.Catalog.Infrastructure\ModulusSample.Modules.Catalog.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\Catalog\ModulusSample.Modules.Catalog.Presentation\ModulusSample.Modules.Catalog.Presentation.csproj" />
+    <ProjectReference Include="..\..\Modules\Partners\ModulusSample.Modules.Partners.Infrastructure\ModulusSample.Modules.Partners.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\Partners\ModulusSample.Modules.Partners.Presentation\ModulusSample.Modules.Partners.Presentation.csproj" />
+    <ProjectReference Include="..\..\Modules\Inventory\ModulusSample.Modules.Inventory.Infrastructure\ModulusSample.Modules.Inventory.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\Inventory\ModulusSample.Modules.Inventory.Presentation\ModulusSample.Modules.Inventory.Presentation.csproj" />
+    <ProjectReference Include="..\..\Modules\Sales\ModulusSample.Modules.Sales.Infrastructure\ModulusSample.Modules.Sales.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\Sales\ModulusSample.Modules.Sales.Presentation\ModulusSample.Modules.Sales.Presentation.csproj" />
+    <ProjectReference Include="..\..\Modules\Purchasing\ModulusSample.Modules.Purchasing.Infrastructure\ModulusSample.Modules.Purchasing.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\Purchasing\ModulusSample.Modules.Purchasing.Presentation\ModulusSample.Modules.Purchasing.Presentation.csproj" />
+    <ProjectReference Include="..\..\Modules\Billing\ModulusSample.Modules.Billing.Infrastructure\ModulusSample.Modules.Billing.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\Billing\ModulusSample.Modules.Billing.Presentation\ModulusSample.Modules.Billing.Presentation.csproj" />
   </ItemGroup>
 </Project>

@@ -24,7 +24,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using FluentValidation;
 using ModulusSample.Modules.Identity.Application.Abstractions;
-using ModulusSample.Modules.Identity.Application.Abstractions.Data;
+using Modulus.EntityFrameworkCore.Abstractions;
 using ModulusSample.Shared.Application.Abstractions;
 using ModulusSample.Shared.Application.Data;
 using ModulusSample.Shared.Infrastructure.Caching;

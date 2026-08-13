@@ -1,7 +1,8 @@
 using Modulus.AspNetCore.Endpoints;
 using Modulus.Mediator.Abstractions;
-using ModulusSample.Modules.Partners.Application.Commands;
+using ModulusSample.Modules.Partners.Application.Partners.Commands;
 using ModulusSample.Shared.Domain;
+using ModulusSample.Shared.Presentation;
 
 namespace ModulusSample.Modules.Partners.Presentation.Partners;
 
@@ -25,12 +26,19 @@ internal sealed class CreatePartnerEndpoint : Endpoint<CreatePartnerEndpoint.Cre
 
         if (result.IsFailure)
         {
-            await SendAsync(null, statusCode: StatusCodes.Status400BadRequest, cancellation: ct);
+            await EndpointFailure.SendFailureAsync(HttpContext, result, ct);
             return;
         }
 
-        await SendCreatedAsync($"/api/partners/{result.Value}", ct);
+        await SendCreatedAsync(result.Value, $"/api/partners/{result.Value}", ct);
     }
 
-    public sealed record CreatePartnerRequest(string Name, string Type, string Email, string Phone, string Address);
+    internal sealed class CreatePartnerRequest
+    {
+        public string Name { get; set; } = string.Empty;
+        public string Type { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string Phone { get; set; } = string.Empty;
+        public string Address { get; set; } = string.Empty;
+    }
 }

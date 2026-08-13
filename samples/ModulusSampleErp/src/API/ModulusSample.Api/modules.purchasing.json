@@ -1,0 +1,25 @@
+{
+  "ConnectionStrings": {
+    "Purchasing": "Host=localhost;Port=5432;Database=ModulusSample;Username=ModulusSample;Password=ModulusSample"
+  },
+  "Purchasing": {
+    "MaxPurchaseOrderItems": 100,
+    "AutoApproveThreshold": 1000.00,
+    "CacheTtlSeconds": 1800,
+    "VendorApprovalRequired": true
+  },
+  "Outbox": {
+    "IntervalInSeconds": 30,
+    "BatchSize": 100,
+    "MaxRetries": 5,
+    "InitialDelayInSeconds": 5,
+    "EnableDeadLetterQueue": true
+  },
+  "Inbox": {
+    "IntervalInSeconds": 30,
+    "BatchSize": 100,
+    "MaxRetries": 5,
+    "InitialDelayInSeconds": 5,
+    "EnableDeadLetterQueue": true
+  }
+}

@@ -1,6 +1,6 @@
 using Modulus.Core.Abstractions;
 using Modulus.Mediator.Abstractions;
-using ModulusSample.Modules.Settings.Application.Abstractions;
+using Modulus.EntityFrameworkCore.Abstractions;
 using ModulusSample.Modules.Settings.Application.Settings.Commands;
 using ModulusSample.Modules.Settings.Domain.Entities;
 using ModulusSample.Modules.Settings.Domain.Repositories;
@@ -42,7 +42,7 @@ public sealed class BulkUpdateSettingsCommandHandler(
 
         if (updatedCount > 0)
         {
-            await unitOfWork.SaveChangesAsync(ct);
+            await unitOfWork.CommitAsync(ct);
         }
 
         return Result.Success(updatedCount);

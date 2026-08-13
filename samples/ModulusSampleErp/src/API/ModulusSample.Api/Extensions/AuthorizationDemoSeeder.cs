@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Modulus.Authorization.EntityFrameworkCore;
@@ -41,9 +42,10 @@ internal static class AuthorizationDemoSeeder
             }
 
             await using var authDb = await factory.CreateDbContextAsync();
-            bool alreadySeeded = await authDb.Set<Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry>()
-                .Where(e => e.Entity.GetType().Name == "OrgUnit")
-                .AnyAsync();
+            int orgUnitCount = await authDb.Database
+                .SqlQueryRaw<int>("SELECT COUNT(*) AS \"Value\" FROM \"ModulusOrgUnits\"")
+                .SingleAsync();
+            bool alreadySeeded = orgUnitCount > 0;
 
             if (alreadySeeded)
             {

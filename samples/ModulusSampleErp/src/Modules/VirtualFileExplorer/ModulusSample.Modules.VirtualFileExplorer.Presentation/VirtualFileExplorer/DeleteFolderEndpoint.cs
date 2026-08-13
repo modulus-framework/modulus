@@ -21,7 +21,6 @@ internal sealed class DeleteFolderEndpoint : Endpoint<DeleteFolderEndpoint.Delet
         Delete("/file-explorer/folders/{folderId}");
         Tag(Tags.VirtualFileExplorer);
         Summary("Delete an empty virtual folder");
-        RequireAuthorization(); ;
     }
 
     public override async Task HandleAsync(DeleteFolderRequest req, CancellationToken ct)

@@ -1,6 +1,6 @@
 using Modulus.Core.Abstractions;
 using Modulus.Mediator.Abstractions;
-using ModulusSample.Modules.VirtualFileExplorer.Application.Abstractions;
+using Modulus.EntityFrameworkCore.Abstractions;
 using ModulusSample.Modules.VirtualFileExplorer.Application.VirtualFileExplorer.Commands;
 using ModulusSample.Modules.VirtualFileExplorer.Application.VirtualFileExplorer.Dtos;
 using ModulusSample.Modules.VirtualFileExplorer.Domain.Constants;
@@ -51,7 +51,7 @@ public sealed class CreateFolderCommandHandler(
         }
 
         await repository.AddAsync(folderResult.Value, ct);
-        await unitOfWork.SaveChangesAsync(ct);
+        await unitOfWork.CommitAsync(ct);
 
         return Result.Success(ToResponse(folderResult.Value));
     }
@@ -90,7 +90,7 @@ public sealed class RenameFolderCommandHandler(
         }
 
         await repository.UpdateAsync(folder, ct);
-        await unitOfWork.SaveChangesAsync(ct);
+        await unitOfWork.CommitAsync(ct);
 
         return Result.Success(new FolderResponse(
             folder.Id.Value,
@@ -133,7 +133,7 @@ public sealed class DeleteFolderCommandHandler(
 
         folder.Delete(currentUser.UserId?.ToString() ?? "system");
         await folderRepository.DeleteAsync(folder, ct);
-        await unitOfWork.SaveChangesAsync(ct);
+        await unitOfWork.CommitAsync(ct);
 
         return Result.Success();
     }
@@ -179,7 +179,7 @@ public sealed class UploadFileCommandHandler(
         }
 
         await repository.AddAsync(fileResult.Value, ct);
-        await unitOfWork.SaveChangesAsync(ct);
+        await unitOfWork.CommitAsync(ct);
 
         return Result.Success(ToResponse(fileResult.Value));
     }
@@ -223,7 +223,7 @@ public sealed class RenameFileCommandHandler(
         }
 
         await repository.UpdateAsync(file, ct);
-        await unitOfWork.SaveChangesAsync(ct);
+        await unitOfWork.CommitAsync(ct);
 
         return Result.Success(new FileResponse(
             file.Id.Value,
@@ -255,7 +255,7 @@ public sealed class DeleteFileCommandHandler(
 
         file.Delete(currentUser.UserId?.ToString() ?? "system");
         await repository.DeleteAsync(file, ct);
-        await unitOfWork.SaveChangesAsync(ct);
+        await unitOfWork.CommitAsync(ct);
 
         return Result.Success();
     }

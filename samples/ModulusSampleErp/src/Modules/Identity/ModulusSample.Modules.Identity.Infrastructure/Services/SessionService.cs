@@ -1,4 +1,4 @@
-using ModulusSample.Modules.Identity.Application.Abstractions.Data;
+using Modulus.EntityFrameworkCore.Abstractions;
 using ModulusSample.Modules.Identity.Domain.Entities;
 using ModulusSample.Modules.Identity.Domain.Errors;
 using ModulusSample.Modules.Identity.Domain.Repositories;
@@ -100,7 +100,7 @@ internal sealed class SessionService(
             }
 
             await sessionRepository.AddAsync(session, ct);
-            await unitOfWork.SaveChangesAsync(ct);
+            await unitOfWork.CommitAsync(ct);
 
             // Cache the new session
             await CacheSessionAsync(session, ct);
@@ -263,7 +263,7 @@ internal sealed class SessionService(
             }
 
             await sessionRepository.AddAsync(newSession, ct);
-            await unitOfWork.SaveChangesAsync(ct);
+            await unitOfWork.CommitAsync(ct);
             await CacheSessionAsync(newSession, ct);
 
             logger.LogInformation(
@@ -339,7 +339,7 @@ internal sealed class SessionService(
             return result;
         }
 
-        await unitOfWork.SaveChangesAsync(ct);
+        await unitOfWork.CommitAsync(ct);
         await InvalidateCacheAsync(session, ct);
 
         logger.LogInformation("Revoked session {SessionId} for reason: {Reason}", sessionId, reason);
@@ -370,7 +370,7 @@ internal sealed class SessionService(
             revokedCount++;
         }
 
-        await unitOfWork.SaveChangesAsync(ct);
+        await unitOfWork.CommitAsync(ct);
 
         logger.LogInformation(
             "Revoked {Count} other sessions for user {Guid}",
@@ -394,7 +394,7 @@ internal sealed class SessionService(
             await InvalidateCacheAsync(session, ct);
         }
 
-        await unitOfWork.SaveChangesAsync(ct);
+        await unitOfWork.CommitAsync(ct);
 
         logger.LogInformation(
             "Revoked sessions for user {Guid}",
@@ -464,7 +464,7 @@ internal sealed class SessionService(
 
             // UpdateAsync attaches an AsNoTracking entity as Modified so the touch persists.
             await sessionRepository.UpdateAsync(session, ct);
-            await unitOfWork.SaveChangesAsync(ct);
+            await unitOfWork.CommitAsync(ct);
         }
         catch (Exception ex)
         {
@@ -484,7 +484,7 @@ internal sealed class SessionService(
             if (session != null)
             {
                 session.SetIdTokenHash(idTokenHash);
-                await unitOfWork.SaveChangesAsync(ct);
+                await unitOfWork.CommitAsync(ct);
             }
         }
         catch (Exception ex)
@@ -504,7 +504,7 @@ internal sealed class SessionService(
             if (session != null)
             {
                 session.ClearIdTokenHash();
-                await unitOfWork.SaveChangesAsync(ct);
+                await unitOfWork.CommitAsync(ct);
             }
         }
         catch (Exception ex)

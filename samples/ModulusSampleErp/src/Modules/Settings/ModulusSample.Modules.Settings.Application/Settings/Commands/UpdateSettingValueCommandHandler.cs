@@ -1,6 +1,6 @@
 using Modulus.Core.Abstractions;
 using Modulus.Mediator.Abstractions;
-using ModulusSample.Modules.Settings.Application.Abstractions;
+using Modulus.EntityFrameworkCore.Abstractions;
 using ModulusSample.Modules.Settings.Application.Settings.Commands;
 using ModulusSample.Modules.Settings.Application.Settings.Dtos;
 using ModulusSample.Modules.Settings.Domain.Entities;
@@ -33,7 +33,7 @@ public sealed class UpdateSettingValueCommandHandler(
         }
 
         await repository.UpdateAsync(setting, ct);
-        await unitOfWork.SaveChangesAsync(ct);
+        await unitOfWork.CommitAsync(ct);
 
         return Result.Success(new UpdateSettingResponse(setting.Id.Value, setting.Key.Value));
     }

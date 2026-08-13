@@ -21,15 +21,15 @@ internal sealed class GetUserProfileQueryHandler(
         GetUserProfileQuery request,
         CancellationToken cancellationToken)
     {
-        UserId userId = userContext.UserId ?? throw new InvalidOperationException("User not authenticated");
+        Guid userId = userContext.UserId;
 
-        if (userId is null)
+        if (userId == Guid.Empty)
         {
             return Result.Failure<UserProfileResponse>(IdentityErrors.User.NotFound);
         }
 
         UserProfileResponse response = await cacheService.GetOrCreateAsync(
-            CacheKeys.User.UserProfile(userId.Value),
+            CacheKeys.User.UserProfile(userId),
             async () =>
             {
                 await using DbConnection connection = await dbConnectionFactory.OpenConnectionAsync();
@@ -54,7 +54,7 @@ internal sealed class GetUserProfileQueryHandler(
 
                 return (await connection.QueryFirstOrDefaultAsync<UserProfileResponse>(
                     sql,
-                    new { UserId = userId.Value }))!;
+                    new { UserId = userId }))!;
             },
             TimeSpan.FromMinutes(30),
             cancellationToken);

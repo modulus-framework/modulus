@@ -1,12 +1,13 @@
 using Modulus.AspNetCore.Endpoints;
 using Modulus.Mediator.Abstractions;
-using ModulusSample.Modules.Purchasing.Application.Dtos;
-using ModulusSample.Modules.Purchasing.Application.Queries;
+using ModulusSample.Modules.Purchasing.Application.Requisitions.Dtos;
+using ModulusSample.Modules.Purchasing.Application.Requisitions.Queries;
 using ModulusSample.Shared.Domain;
+using ModulusSample.Shared.Presentation;
 
 namespace ModulusSample.Modules.Purchasing.Presentation.Requisitions;
 
-internal sealed class ListRequisitionsEndpoint : Endpoint<PagedResult<RequisitionDto>>
+internal sealed class ListRequisitionsEndpoint : Endpoint<ListRequisitionsEndpoint.ListRequisitionsRequest, PagedResult<PurchaseRequisitionDto>>
 {
     private readonly IMediator _mediator;
 
@@ -19,19 +20,22 @@ internal sealed class ListRequisitionsEndpoint : Endpoint<PagedResult<Requisitio
         Summary("List all purchase requisitions");
     }
 
-    public override async Task HandleAsync(CancellationToken ct)
+    public override async Task HandleAsync(ListRequisitionsRequest req, CancellationToken ct)
     {
-        int page = Query<int>("page", 1);
-        int pageSize = Query<int>("pageSize", 10);
-
-        Result<PagedResult<RequisitionDto>> result = await _mediator.QueryAsync(new ListRequisitionsQuery(page, pageSize), ct);
+        Result<PagedResult<PurchaseRequisitionDto>> result = await _mediator.QueryAsync(new ListRequisitionsQuery(req.PageNumber, req.PageSize), ct);
 
         if (result.IsFailure)
         {
-            await SendAsync(null, statusCode: StatusCodes.Status400BadRequest, cancellation: ct);
+            await EndpointFailure.SendFailureAsync(HttpContext, result, ct);
             return;
         }
 
         await SendOkAsync(result.Value, ct);
+    }
+
+    internal sealed class ListRequisitionsRequest
+    {
+        public int PageNumber { get; set; } = 1;
+        public int PageSize { get; set; } = 10;
     }
 }

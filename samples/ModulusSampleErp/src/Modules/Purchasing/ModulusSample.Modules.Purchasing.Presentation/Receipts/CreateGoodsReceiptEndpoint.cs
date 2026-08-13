@@ -1,7 +1,8 @@
 using Modulus.AspNetCore.Endpoints;
 using Modulus.Mediator.Abstractions;
-using ModulusSample.Modules.Purchasing.Application.Commands;
+using ModulusSample.Modules.Purchasing.Application.Receipts.Commands;
 using ModulusSample.Shared.Domain;
+using ModulusSample.Shared.Presentation;
 
 namespace ModulusSample.Modules.Purchasing.Presentation.Receipts;
 
@@ -25,12 +26,17 @@ internal sealed class CreateGoodsReceiptEndpoint : Endpoint<CreateGoodsReceiptEn
 
         if (result.IsFailure)
         {
-            await SendAsync(null, statusCode: StatusCodes.Status400BadRequest, cancellation: ct);
+            await EndpointFailure.SendFailureAsync(HttpContext, result, ct);
             return;
         }
 
-        await SendCreatedAsync($"/api/goods-receipts/{result.Value}", ct);
+        await SendCreatedAsync(result.Value, $"/api/goods-receipts/{result.Value}", ct);
     }
 
-    public sealed record CreateReceiptRequest(string ReceiptNumber, Guid PurchaseOrderId, Guid OrgUnitId);
+    internal sealed class CreateReceiptRequest
+    {
+        public string ReceiptNumber { get; set; } = string.Empty;
+        public Guid PurchaseOrderId { get; set; }
+        public Guid OrgUnitId { get; set; }
+    }
 }

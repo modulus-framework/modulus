@@ -1,7 +1,8 @@
 using Modulus.AspNetCore.Endpoints;
 using Modulus.Mediator.Abstractions;
-using ModulusSample.Modules.Sales.Application.Commands;
+using ModulusSample.Modules.Sales.Application.Orders.Commands;
 using ModulusSample.Shared.Domain;
+using ModulusSample.Shared.Presentation;
 
 namespace ModulusSample.Modules.Sales.Presentation.Orders;
 
@@ -25,12 +26,17 @@ internal sealed class CreateSalesOrderEndpoint : Endpoint<CreateSalesOrderEndpoi
 
         if (result.IsFailure)
         {
-            await SendAsync(null, statusCode: StatusCodes.Status400BadRequest, cancellation: ct);
+            await EndpointFailure.SendFailureAsync(HttpContext, result, ct);
             return;
         }
 
-        await SendCreatedAsync($"/api/sales-orders/{result.Value}", ct);
+        await SendCreatedAsync(result.Value, $"/api/sales-orders/{result.Value}", ct);
     }
 
-    public sealed record CreateSalesOrderRequest(string OrderNumber, Guid CustomerId, Guid OrgUnitId);
+    internal sealed class CreateSalesOrderRequest
+    {
+        public string OrderNumber { get; set; } = string.Empty;
+        public Guid CustomerId { get; set; }
+        public Guid OrgUnitId { get; set; }
+    }
 }

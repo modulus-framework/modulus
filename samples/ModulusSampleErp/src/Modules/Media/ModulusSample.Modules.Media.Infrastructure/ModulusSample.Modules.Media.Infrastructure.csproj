@@ -13,6 +13,8 @@
     <PackageReference Include="Cobytelabs.Modulus.Data.Abstractions" Version="1.2.0" />
     <PackageReference Include="Cobytelabs.Modulus.Data.PostgreSQL" Version="1.2.0" />
     <PackageReference Include="Cobytelabs.Modulus.Storage.S3" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Outbox" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Inbox" Version="1.2.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.9">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>

@@ -1,6 +1,6 @@
 using Modulus.Core.Abstractions;
 using Modulus.Mediator.Abstractions;
-using ModulusSample.Modules.Settings.Application.Abstractions;
+using Modulus.EntityFrameworkCore.Abstractions;
 using ModulusSample.Modules.Settings.Application.Settings.Commands;
 using ModulusSample.Modules.Settings.Domain.Entities;
 using ModulusSample.Modules.Settings.Domain.Repositories;
@@ -27,7 +27,7 @@ public sealed class DeleteSettingCommandHandler(
 
         setting.Delete(currentUser.UserId?.ToString() ?? "system");
         await repository.DeleteAsync(setting, ct);
-        await unitOfWork.SaveChangesAsync(ct);
+        await unitOfWork.CommitAsync(ct);
 
         return Result.Success();
     }

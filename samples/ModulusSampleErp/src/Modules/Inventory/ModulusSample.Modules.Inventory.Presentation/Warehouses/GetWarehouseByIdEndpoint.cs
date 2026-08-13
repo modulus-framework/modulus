@@ -1,12 +1,11 @@
 using Modulus.AspNetCore.Endpoints;
 using Modulus.Mediator.Abstractions;
-using ModulusSample.Modules.Inventory.Application.Dtos;
-using ModulusSample.Modules.Inventory.Application.Queries;
-using ModulusSample.Shared.Domain;
+using ModulusSample.Modules.Inventory.Application.Warehouses.Dtos;
+using ModulusSample.Modules.Inventory.Application.Warehouses.Queries;
 
 namespace ModulusSample.Modules.Inventory.Presentation.Warehouses;
 
-internal sealed class GetWarehouseByIdEndpoint : Endpoint<WarehouseDto>
+internal sealed class GetWarehouseByIdEndpoint : Endpoint<GetWarehouseByIdEndpoint.GetWarehouseByIdRequest, WarehouseDto>
 {
     private readonly IMediator _mediator;
 
@@ -19,17 +18,21 @@ internal sealed class GetWarehouseByIdEndpoint : Endpoint<WarehouseDto>
         Summary("Get warehouse details");
     }
 
-    public override async Task HandleAsync(CancellationToken ct)
+    public override async Task HandleAsync(GetWarehouseByIdRequest req, CancellationToken ct)
     {
-        var id = Route<Guid>("id");
-        Result<WarehouseDto> result = await _mediator.QueryAsync(new GetWarehouseByIdQuery(id), ct);
+        WarehouseDto? result = await _mediator.QueryAsync(new GetWarehouseByIdQuery(req.Id), ct);
 
-        if (result.IsFailure || result.Value is null)
+        if (result is null)
         {
             await SendNotFoundAsync(ct);
             return;
         }
 
-        await SendOkAsync(result.Value, ct);
+        await SendOkAsync(result, ct);
+    }
+
+    internal sealed class GetWarehouseByIdRequest
+    {
+        public Guid Id { get; set; }
     }
 }

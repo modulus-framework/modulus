@@ -1,4 +1,4 @@
-using ModulusSample.Modules.Identity.Application.Abstractions.Data;
+using Modulus.EntityFrameworkCore.Abstractions;
 using ModulusSample.Modules.Identity.Application.Abstractions.Identity;
 using ModulusSample.Modules.Identity.Application.IntegrationEvents;
 using ModulusSample.Modules.Identity.Application.Users.Dtos;
@@ -88,7 +88,7 @@ internal sealed class RegisterUserCommandHandler(
         try
         {
             await userRepository.AddAsync(user, cancellationToken);
-            await unitOfWork.SaveChangesAsync(cancellationToken);
+            await unitOfWork.CommitAsync(cancellationToken);
 
             // Generate email verification token
             Result<string> tokenResult = await emailVerificationTokenService.GenerateTokenAsync(

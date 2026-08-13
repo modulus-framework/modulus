@@ -1,4 +1,4 @@
-using ModulusSample.Modules.VirtualFileExplorer.Application.Abstractions;
+using Modulus.EntityFrameworkCore.Abstractions;
 using ModulusSample.Modules.VirtualFileExplorer.Domain.Entities;
 using ModulusSample.Modules.VirtualFileExplorer.Infrastructure.Configurations;
 using Microsoft.EntityFrameworkCore;

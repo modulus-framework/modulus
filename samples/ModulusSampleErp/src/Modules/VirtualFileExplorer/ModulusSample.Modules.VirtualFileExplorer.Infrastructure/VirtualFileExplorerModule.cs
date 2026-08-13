@@ -1,5 +1,5 @@
 using ModulusSample.Modules.VirtualFileExplorer.Application;
-using ModulusSample.Modules.VirtualFileExplorer.Application.Abstractions;
+using Modulus.EntityFrameworkCore.Abstractions;
 using ModulusSample.Modules.VirtualFileExplorer.Application.DomainEventHandlers;
 using ModulusSample.Modules.VirtualFileExplorer.Application.IntegrationEvents;
 using ModulusSample.Modules.VirtualFileExplorer.Domain.Repositories;
@@ -12,6 +12,10 @@ using Microsoft.Extensions.DependencyInjection;
 using FluentValidation;
 using Modulus.Core.Abstractions;
 using Modulus.Mediator.Extensions;
+using Modulus.Outbox.Extensions;
+using Modulus.Inbox.Extensions;
+using Modulus.Outbox.Abstractions;
+using Modulus.Inbox.Abstractions;
 
 namespace ModulusSample.Modules.VirtualFileExplorer.Infrastructure;
 
@@ -52,6 +56,22 @@ public sealed class VirtualFileExplorerModule : ModulusModule
 
         services.AddScoped<IVirtualFolderRepository, EfVirtualFolderRepository>();
         services.AddScoped<IVirtualFileRepository, EfVirtualFileRepository>();
+
+        services.AddOutbox<VirtualFileExplorerDbContext>(opts =>
+        {
+            var outboxConfig = configuration.GetSection("Outbox");
+            opts.BatchSize = outboxConfig.GetValue<int>("BatchSize");
+            opts.MaxRetries = outboxConfig.GetValue<int>("MaxRetries");
+            opts.PollingIntervalSec = outboxConfig.GetValue<int>("IntervalInSeconds");
+            opts.InitialBackoffSec = outboxConfig.GetValue<int>("InitialDelayInSeconds");
+        });
+
+        services.AddInbox<VirtualFileExplorerDbContext>(opts =>
+        {
+            var inboxConfig = configuration.GetSection("Inbox");
+            opts.MaxRetries = inboxConfig.GetValue<int>("MaxRetries");
+            opts.HandlerRetryCount = inboxConfig.GetValue<int>("MaxRetries");
+        });
     }
 
     private static void AddDomainEventHandlers(IServiceCollection services)

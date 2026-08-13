@@ -7,12 +7,16 @@ using Modulus.EntityFrameworkCore.Extensions;
 using Modulus.Events.Extensions;
 using Modulus.Mediator.Extensions;
 using Modulus.Storage;
-using ModulusSample.Modules.Media.Application;
+using Modulus.EntityFrameworkCore.Abstractions;
 using ModulusSample.Modules.Media.Domain.Repositories;
 using ModulusSample.Modules.Media.Domain.Services;
 using ModulusSample.Modules.Media.Infrastructure.Database;
 using ModulusSample.Modules.Media.Infrastructure.Repositories;
 using ModulusSample.Modules.Media.Infrastructure.Services;
+using Modulus.Outbox.Extensions;
+using Modulus.Inbox.Extensions;
+using Modulus.Outbox.Abstractions;
+using Modulus.Inbox.Abstractions;
 
 namespace ModulusSample.Modules.Media.Infrastructure;
 
@@ -54,5 +58,21 @@ public sealed class MediaModule : ModulusModule
 
         // Register mediator handlers
         services.AddMediatorHandlers(typeof(IUnitOfWork).Assembly);
+
+        services.AddOutbox<MediaDbContext>(opts =>
+        {
+            var outboxConfig = configuration.GetSection("Outbox");
+            opts.BatchSize = outboxConfig.GetValue<int>("BatchSize");
+            opts.MaxRetries = outboxConfig.GetValue<int>("MaxRetries");
+            opts.PollingIntervalSec = outboxConfig.GetValue<int>("IntervalInSeconds");
+            opts.InitialBackoffSec = outboxConfig.GetValue<int>("InitialDelayInSeconds");
+        });
+
+        services.AddInbox<MediaDbContext>(opts =>
+        {
+            var inboxConfig = configuration.GetSection("Inbox");
+            opts.MaxRetries = inboxConfig.GetValue<int>("MaxRetries");
+            opts.HandlerRetryCount = inboxConfig.GetValue<int>("MaxRetries");
+        });
     }
 }

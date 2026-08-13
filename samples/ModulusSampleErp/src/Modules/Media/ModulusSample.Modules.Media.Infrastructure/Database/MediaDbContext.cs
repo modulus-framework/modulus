@@ -20,7 +20,7 @@ public sealed class MediaDbContext(
     ICurrentUser currentUser,
     DomainEventDispatcher dispatcher,
     IServiceProvider sp)
-    : ModuleDbContext(options, currentTenant, currentUser, dispatcher, sp), IUnitOfWork
+    : ModuleDbContext(options, currentTenant, currentUser, dispatcher, sp)
 {
     protected override string TablePrefix => "media_";
 

@@ -51,6 +51,36 @@ COPY ["src/Modules/ModulusSample.Modules.Media/ModulusSample.Modules.Media.Appli
 COPY ["src/Modules/ModulusSample.Modules.Media/ModulusSample.Modules.Media.Infrastructure/ModulusSample.Modules.Media.Infrastructure.csproj", "Modules/Media/ModulusSample.Modules.Media.Infrastructure/"]
 COPY ["src/Modules/ModulusSample.Modules.Media/ModulusSample.Modules.Media.Presentation/ModulusSample.Modules.Media.Presentation.csproj", "Modules/Media/ModulusSample.Modules.Media.Presentation/"]
 
+COPY ["src/Modules/Catalog/ModulusSample.Modules.Catalog.Domain/ModulusSample.Modules.Catalog.Domain.csproj", "Modules/Catalog/ModulusSample.Modules.Catalog.Domain/"]
+COPY ["src/Modules/Catalog/ModulusSample.Modules.Catalog.Application/ModulusSample.Modules.Catalog.Application.csproj", "Modules/Catalog/ModulusSample.Modules.Catalog.Application/"]
+COPY ["src/Modules/Catalog/ModulusSample.Modules.Catalog.Infrastructure/ModulusSample.Modules.Catalog.Infrastructure.csproj", "Modules/Catalog/ModulusSample.Modules.Catalog.Infrastructure/"]
+COPY ["src/Modules/Catalog/ModulusSample.Modules.Catalog.Presentation/ModulusSample.Modules.Catalog.Presentation.csproj", "Modules/Catalog/ModulusSample.Modules.Catalog.Presentation/"]
+
+COPY ["src/Modules/Partners/ModulusSample.Modules.Partners.Domain/ModulusSample.Modules.Partners.Domain.csproj", "Modules/Partners/ModulusSample.Modules.Partners.Domain/"]
+COPY ["src/Modules/Partners/ModulusSample.Modules.Partners.Application/ModulusSample.Modules.Partners.Application.csproj", "Modules/Partners/ModulusSample.Modules.Partners.Application/"]
+COPY ["src/Modules/Partners/ModulusSample.Modules.Partners.Infrastructure/ModulusSample.Modules.Partners.Infrastructure.csproj", "Modules/Partners/ModulusSample.Modules.Partners.Infrastructure/"]
+COPY ["src/Modules/Partners/ModulusSample.Modules.Partners.Presentation/ModulusSample.Modules.Partners.Presentation.csproj", "Modules/Partners/ModulusSample.Modules.Partners.Presentation/"]
+
+COPY ["src/Modules/Inventory/ModulusSample.Modules.Inventory.Domain/ModulusSample.Modules.Inventory.Domain.csproj", "Modules/Inventory/ModulusSample.Modules.Inventory.Domain/"]
+COPY ["src/Modules/Inventory/ModulusSample.Modules.Inventory.Application/ModulusSample.Modules.Inventory.Application.csproj", "Modules/Inventory/ModulusSample.Modules.Inventory.Application/"]
+COPY ["src/Modules/Inventory/ModulusSample.Modules.Inventory.Infrastructure/ModulusSample.Modules.Inventory.Infrastructure.csproj", "Modules/Inventory/ModulusSample.Modules.Inventory.Infrastructure/"]
+COPY ["src/Modules/Inventory/ModulusSample.Modules.Inventory.Presentation/ModulusSample.Modules.Inventory.Presentation.csproj", "Modules/Inventory/ModulusSample.Modules.Inventory.Presentation/"]
+
+COPY ["src/Modules/Sales/ModulusSample.Modules.Sales.Domain/ModulusSample.Modules.Sales.Domain.csproj", "Modules/Sales/ModulusSample.Modules.Sales.Domain/"]
+COPY ["src/Modules/Sales/ModulusSample.Modules.Sales.Application/ModulusSample.Modules.Sales.Application.csproj", "Modules/Sales/ModulusSample.Modules.Sales.Application/"]
+COPY ["src/Modules/Sales/ModulusSample.Modules.Sales.Infrastructure/ModulusSample.Modules.Sales.Infrastructure.csproj", "Modules/Sales/ModulusSample.Modules.Sales.Infrastructure/"]
+COPY ["src/Modules/Sales/ModulusSample.Modules.Sales.Presentation/ModulusSample.Modules.Sales.Presentation.csproj", "Modules/Sales/ModulusSample.Modules.Sales.Presentation/"]
+
+COPY ["src/Modules/Purchasing/ModulusSample.Modules.Purchasing.Domain/ModulusSample.Modules.Purchasing.Domain.csproj", "Modules/Purchasing/ModulusSample.Modules.Purchasing.Domain/"]
+COPY ["src/Modules/Purchasing/ModulusSample.Modules.Purchasing.Application/ModulusSample.Modules.Purchasing.Application.csproj", "Modules/Purchasing/ModulusSample.Modules.Purchasing.Application/"]
+COPY ["src/Modules/Purchasing/ModulusSample.Modules.Purchasing.Infrastructure/ModulusSample.Modules.Purchasing.Infrastructure.csproj", "Modules/Purchasing/ModulusSample.Modules.Purchasing.Infrastructure/"]
+COPY ["src/Modules/Purchasing/ModulusSample.Modules.Purchasing.Presentation/ModulusSample.Modules.Purchasing.Presentation.csproj", "Modules/Purchasing/ModulusSample.Modules.Purchasing.Presentation/"]
+
+COPY ["src/Modules/Billing/ModulusSample.Modules.Billing.Domain/ModulusSample.Modules.Billing.Domain.csproj", "Modules/Billing/ModulusSample.Modules.Billing.Domain/"]
+COPY ["src/Modules/Billing/ModulusSample.Modules.Billing.Application/ModulusSample.Modules.Billing.Application.csproj", "Modules/Billing/ModulusSample.Modules.Billing.Application/"]
+COPY ["src/Modules/Billing/ModulusSample.Modules.Billing.Infrastructure/ModulusSample.Modules.Billing.Infrastructure.csproj", "Modules/Billing/ModulusSample.Modules.Billing.Infrastructure/"]
+COPY ["src/Modules/Billing/ModulusSample.Modules.Billing.Presentation/ModulusSample.Modules.Billing.Presentation.csproj", "Modules/Billing/ModulusSample.Modules.Billing.Presentation/"]
+
 RUN dotnet restore "./API/ModulusSample.Api/ModulusSample.Api.csproj"
 
 COPY . .

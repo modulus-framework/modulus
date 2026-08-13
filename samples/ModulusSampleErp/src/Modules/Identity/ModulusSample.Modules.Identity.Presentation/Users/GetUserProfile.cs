@@ -6,7 +6,7 @@ using ModulusSample.Shared.Domain;
 
 namespace ModulusSample.Modules.Identity.Presentation.Users;
 
-internal sealed class GetUserProfileEndpoint : Endpoint<UserProfileResponse>
+internal sealed class GetUserProfileEndpoint : EndpointWithoutRequest<UserProfileResponse>
 {
     private readonly IMediator _mediator;
 
@@ -19,7 +19,7 @@ internal sealed class GetUserProfileEndpoint : Endpoint<UserProfileResponse>
         Summary("Get current user profile");
     }
 
-    public override async Task HandleAsync(CancellationToken ct)
+    protected override async Task HandleAsync(CancellationToken ct)
     {
         Result<UserProfileResponse> result = await _mediator.QueryAsync(new GetUserProfileQuery(), ct);
 

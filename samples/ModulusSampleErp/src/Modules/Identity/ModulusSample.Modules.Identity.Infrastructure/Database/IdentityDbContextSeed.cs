@@ -62,7 +62,7 @@ public static class IdentityDbContextSeed
             }
 
             context.Permissions.RemoveRange(stalePermissions);
-            await context.SaveChangesAsync();
+            await context.CommitAsync();
 
             await context.Database.CommitTransactionAsync();
         }
@@ -99,7 +99,7 @@ public static class IdentityDbContextSeed
         }
 
         await context.Permissions.AddRangeAsync(permissions);
-        await context.SaveChangesAsync();
+        await context.CommitAsync();
 
         logger.LogInformation("Seeded {Count} permissions", permissions.Count);
     }
@@ -143,7 +143,7 @@ public static class IdentityDbContextSeed
         if (roles.Count > 0)
         {
             await context.Roles.AddRangeAsync(roles);
-            await context.SaveChangesAsync();
+            await context.CommitAsync();
         }
 
         logger.LogInformation("Seeded {Count} roles", roles.Count);
@@ -176,7 +176,7 @@ public static class IdentityDbContextSeed
             systemUser.AddRole(systemAdminRole.Id);
 
             await context.Users.AddAsync(systemUser);
-            await context.SaveChangesAsync();
+            await context.CommitAsync();
 
             firstUser = systemUser;
             logger.LogInformation("Created system user {UserId} for seeding purposes", systemUserId.Value);
@@ -190,7 +190,7 @@ public static class IdentityDbContextSeed
         {
             foreach (string permissionCode in RolePermissions.GetPermissionsForRole(role.Name))
             {
-                if (!permissionMap.TryGetValue(permissionCode, out PermissionId permissionId))
+                if (!permissionMap.TryGetValue(permissionCode, out PermissionId? permissionId))
                 {
                     logger.LogWarning("Permission code '{PermissionCode}' not found in seeded permissions.",
                         permissionCode);
@@ -202,7 +202,7 @@ public static class IdentityDbContextSeed
             }
         }
 
-        await context.SaveChangesAsync();
+        await context.CommitAsync();
 
         logger.LogInformation("Seeded {Count} new role permissions", addedCount);
     }
@@ -268,7 +268,7 @@ public static class IdentityDbContextSeed
         if (users.Count > 0)
         {
             await context.Users.AddRangeAsync(users);
-            await context.SaveChangesAsync();
+            await context.CommitAsync();
 
             logger.LogInformation("Seeded {Count} users in local database", users.Count);
 

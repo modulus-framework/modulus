@@ -1,7 +1,7 @@
 using ModulusSample.Modules.Settings.Application.DomainEventHandlers;
 using ModulusSample.Modules.Settings.Application.IntegrationEvents;
 using ModulusSample.Modules.Settings.Application.Settings.Queries;
-using ModulusSample.Modules.Settings.Application.Abstractions;
+using Modulus.EntityFrameworkCore.Abstractions;
 using ModulusSample.Modules.Settings.Domain.Repositories;
 using ModulusSample.Modules.Settings.Infrastructure.Configurations;
 using ModulusSample.Modules.Settings.Infrastructure.Database;
@@ -14,6 +14,10 @@ using FluentValidation;
 using Modulus.Core.Abstractions;
 using Modulus.Mediator.Extensions;
 using ModulusSample.Modules.Settings.Application;
+using Modulus.Outbox.Extensions;
+using Modulus.Inbox.Extensions;
+using Modulus.Outbox.Abstractions;
+using Modulus.Inbox.Abstractions;
 
 namespace ModulusSample.Modules.Settings.Infrastructure;
 
@@ -52,6 +56,22 @@ public sealed class SettingsModule : ModulusModule
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<SettingsDbContext>());
 
         services.AddScoped<ISettingRepository, EfSettingRepository>();
+
+        services.AddOutbox<SettingsDbContext>(opts =>
+        {
+            var outboxConfig = configuration.GetSection("Outbox");
+            opts.BatchSize = outboxConfig.GetValue<int>("BatchSize");
+            opts.MaxRetries = outboxConfig.GetValue<int>("MaxRetries");
+            opts.PollingIntervalSec = outboxConfig.GetValue<int>("IntervalInSeconds");
+            opts.InitialBackoffSec = outboxConfig.GetValue<int>("InitialDelayInSeconds");
+        });
+
+        services.AddInbox<SettingsDbContext>(opts =>
+        {
+            var inboxConfig = configuration.GetSection("Inbox");
+            opts.MaxRetries = inboxConfig.GetValue<int>("MaxRetries");
+            opts.HandlerRetryCount = inboxConfig.GetValue<int>("MaxRetries");
+        });
     }
 
     private static void AddDomainEventHandlers(IServiceCollection services)

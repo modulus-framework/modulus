@@ -21,7 +21,6 @@ internal sealed class DeleteFileEndpoint : Endpoint<DeleteFileEndpoint.DeleteFil
         Delete("/file-explorer/files/{fileId}");
         Tag(Tags.VirtualFileExplorer);
         Summary("Delete a file from a virtual folder");
-        RequireAuthorization(); ;
     }
 
     public override async Task HandleAsync(DeleteFileRequest req, CancellationToken ct)

@@ -1,7 +1,8 @@
 using Modulus.AspNetCore.Endpoints;
 using Modulus.Mediator.Abstractions;
-using ModulusSample.Modules.Purchasing.Application.Commands;
+using ModulusSample.Modules.Purchasing.Application.Orders.Commands;
 using ModulusSample.Shared.Domain;
+using ModulusSample.Shared.Presentation;
 
 namespace ModulusSample.Modules.Purchasing.Presentation.Orders;
 
@@ -25,12 +26,18 @@ internal sealed class CreatePurchaseOrderEndpoint : Endpoint<CreatePurchaseOrder
 
         if (result.IsFailure)
         {
-            await SendAsync(null, statusCode: StatusCodes.Status400BadRequest, cancellation: ct);
+            await EndpointFailure.SendFailureAsync(HttpContext, result, ct);
             return;
         }
 
-        await SendCreatedAsync($"/api/purchase-orders/{result.Value}", ct);
+        await SendCreatedAsync(result.Value, $"/api/purchase-orders/{result.Value}", ct);
     }
 
-    public sealed record CreateOrderRequest(string OrderNumber, Guid RequisitionId, Guid SupplierId, Guid OrgUnitId);
+    internal sealed class CreateOrderRequest
+    {
+        public string OrderNumber { get; set; } = string.Empty;
+        public Guid RequisitionId { get; set; }
+        public Guid SupplierId { get; set; }
+        public Guid OrgUnitId { get; set; }
+    }
 }

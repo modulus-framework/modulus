@@ -1,12 +1,11 @@
 using Modulus.AspNetCore.Endpoints;
 using Modulus.Mediator.Abstractions;
-using ModulusSample.Modules.Billing.Application.Dtos;
-using ModulusSample.Modules.Billing.Application.Queries;
-using ModulusSample.Shared.Domain;
+using ModulusSample.Modules.Billing.Application.Invoices.Dtos;
+using ModulusSample.Modules.Billing.Application.Invoices.Queries;
 
 namespace ModulusSample.Modules.Billing.Presentation.Invoices;
 
-internal sealed class GetInvoiceByIdEndpoint : Endpoint<InvoiceDto>
+internal sealed class GetInvoiceByIdEndpoint : Endpoint<GetInvoiceByIdEndpoint.GetInvoiceByIdRequest, InvoiceDto>
 {
     private readonly IMediator _mediator;
 
@@ -19,17 +18,21 @@ internal sealed class GetInvoiceByIdEndpoint : Endpoint<InvoiceDto>
         Summary("Get invoice details");
     }
 
-    public override async Task HandleAsync(CancellationToken ct)
+    public override async Task HandleAsync(GetInvoiceByIdRequest req, CancellationToken ct)
     {
-        var id = Route<Guid>("id");
-        Result<InvoiceDto> result = await _mediator.QueryAsync(new GetInvoiceByIdQuery(id), ct);
+        InvoiceDto? invoice = await _mediator.QueryAsync(new GetInvoiceByIdQuery(req.Id), ct);
 
-        if (result.IsFailure || result.Value is null)
+        if (invoice is null)
         {
             await SendNotFoundAsync(ct);
             return;
         }
 
-        await SendOkAsync(result.Value, ct);
+        await SendOkAsync(invoice, ct);
+    }
+
+    internal sealed class GetInvoiceByIdRequest
+    {
+        public Guid Id { get; set; }
     }
 }

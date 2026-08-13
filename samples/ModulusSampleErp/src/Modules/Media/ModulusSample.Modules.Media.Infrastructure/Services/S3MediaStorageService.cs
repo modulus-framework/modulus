@@ -23,26 +23,26 @@ public sealed class S3MediaStorageService : IMediaStorageService
         _logger = logger;
     }
 
-public async Task<string> UploadFileAsync(
-    string storagePath,
-    Stream content,
-    string contentType,
-    CancellationToken cancellationToken = default)
-{
-    try
+    public async Task<string> UploadFileAsync(
+        string storagePath,
+        Stream content,
+        string contentType,
+        CancellationToken cancellationToken = default)
     {
-        await _fileStorage.UploadAsync(storagePath, content, contentType, cancellationToken);
+        try
+        {
+            await _fileStorage.UploadAsync(storagePath, content, contentType, cancellationToken);
 
-        _logger.LogInformation("Successfully uploaded file to storage: {Key}", storagePath);
+            _logger.LogInformation("Successfully uploaded file to storage: {Key}", storagePath);
 
-        return storagePath;
+            return storagePath;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to upload file to storage: {StoragePath}", storagePath);
+            throw;
+        }
     }
-    catch (Exception ex)
-    {
-        _logger.LogError(ex, "Failed to upload file to storage: {StoragePath}", storagePath);
-        throw;
-    }
-}
 
     public async Task<Stream> DownloadFileAsync(string storagePath, CancellationToken cancellationToken = default)
     {

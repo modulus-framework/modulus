@@ -1,7 +1,7 @@
 using System.Text.Json;
 using Modulus.Core.Abstractions;
 using Modulus.Mediator.Abstractions;
-using ModulusSample.Modules.Tenants.Application.Abstractions;
+using Modulus.EntityFrameworkCore.Abstractions;
 using ModulusSample.Modules.Tenants.Application.Tenants.Dtos;
 using ModulusSample.Modules.Tenants.Domain.Constants;
 using ModulusSample.Modules.Tenants.Domain.Entities;
@@ -54,7 +54,7 @@ public sealed class CreateTenantHandler(
         }
 
         await tenantRepository.AddAsync(tenantResult.Value, ct);
-        await unitOfWork.SaveChangesAsync(ct);
+        await unitOfWork.CommitAsync(ct);
 
         logger.LogInformation("Tenant {TenantId} created by {User}", tenantId.Value, currentUserEmail);
 
@@ -93,7 +93,7 @@ public sealed class UpdateTenantHandler(
         }
 
         await tenantRepository.UpdateAsync(tenant, ct);
-        await unitOfWork.SaveChangesAsync(ct);
+        await unitOfWork.CommitAsync(ct);
 
         logger.LogInformation("Tenant {TenantId} updated by {User}", tenant.Id.Value, currentUserEmail);
 
@@ -124,7 +124,7 @@ public sealed class ActivateTenantHandler(
         }
 
         await tenantRepository.UpdateAsync(tenant, ct);
-        await unitOfWork.SaveChangesAsync(ct);
+        await unitOfWork.CommitAsync(ct);
 
         logger.LogInformation("Tenant {TenantId} activated by {User}", tenant.Id.Value, currentUserEmail);
 
@@ -159,7 +159,7 @@ public sealed class DeactivateTenantHandler(
         }
 
         await tenantRepository.UpdateAsync(tenant, ct);
-        await unitOfWork.SaveChangesAsync(ct);
+        await unitOfWork.CommitAsync(ct);
 
         logger.LogInformation("Tenant {TenantId} deactivated by {User}", tenant.Id.Value, currentUserEmail);
 
@@ -194,7 +194,7 @@ public sealed class DeleteTenantHandler(
         }
 
         await tenantRepository.DeleteAsync(tenant, ct);
-        await unitOfWork.SaveChangesAsync(ct);
+        await unitOfWork.CommitAsync(ct);
 
         logger.LogInformation("Tenant {TenantId} deleted by {User}", tenant.Id.Value, currentUserEmail);
 
@@ -225,7 +225,7 @@ public sealed class UpdateTenantFeaturesHandler(
         }
 
         await tenantRepository.UpdateAsync(tenant, ct);
-        await unitOfWork.SaveChangesAsync(ct);
+        await unitOfWork.CommitAsync(ct);
 
         logger.LogInformation("Tenant {TenantId} features updated by {User}", tenant.Id.Value, currentUserEmail);
 
@@ -256,7 +256,7 @@ public sealed class UpdateTenantSettingsHandler(
         }
 
         await tenantRepository.UpdateAsync(tenant, ct);
-        await unitOfWork.SaveChangesAsync(ct);
+        await unitOfWork.CommitAsync(ct);
 
         logger.LogInformation("Tenant {TenantId} settings updated by {User}", tenant.Id.Value, currentUserEmail);
 

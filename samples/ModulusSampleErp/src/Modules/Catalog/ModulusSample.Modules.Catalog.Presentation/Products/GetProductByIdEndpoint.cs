@@ -1,12 +1,11 @@
 using Modulus.AspNetCore.Endpoints;
 using Modulus.Mediator.Abstractions;
-using ModulusSample.Modules.Catalog.Application.Dtos;
-using ModulusSample.Modules.Catalog.Application.Queries;
-using ModulusSample.Shared.Domain;
+using ModulusSample.Modules.Catalog.Application.Products.Dtos;
+using ModulusSample.Modules.Catalog.Application.Products.Queries;
 
 namespace ModulusSample.Modules.Catalog.Presentation.Products;
 
-internal sealed class GetProductByIdEndpoint : Endpoint<ProductDto>
+internal sealed class GetProductByIdEndpoint : Endpoint<GetProductByIdEndpoint.GetProductByIdRequest, ProductDto>
 {
     private readonly IMediator _mediator;
 
@@ -19,17 +18,21 @@ internal sealed class GetProductByIdEndpoint : Endpoint<ProductDto>
         Summary("Get product details");
     }
 
-    public override async Task HandleAsync(CancellationToken ct)
+    public override async Task HandleAsync(GetProductByIdRequest req, CancellationToken ct)
     {
-        var id = Route<Guid>("id");
-        Result<ProductDto> result = await _mediator.QueryAsync(new GetProductByIdQuery(id), ct);
+        ProductDto? result = await _mediator.QueryAsync(new GetProductByIdQuery(req.Id), ct);
 
-        if (result.IsFailure || result.Value is null)
+        if (result is null)
         {
             await SendNotFoundAsync(ct);
             return;
         }
 
-        await SendOkAsync(result.Value, ct);
+        await SendOkAsync(result, ct);
+    }
+
+    internal sealed class GetProductByIdRequest
+    {
+        public Guid Id { get; set; }
     }
 }

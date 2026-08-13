@@ -140,3 +140,25 @@ docker compose ps   # wait until postgres/redis/rabbitmq/minio are healthy and a
 - **Ports already in use** — override in `docker-compose.yml`; then update the
   matching `ConnectionStrings` in `modules.<module>.json` (or the compose `api`
   environment overrides).
+
+## 8. Automated tests
+
+- **Unit tests** — `src/Modules/Identity/ModulusSample.Modules.Identity.UnitTests`
+  runs without external dependencies:
+
+  ```bash
+  dotnet test src/Modules/Identity/ModulusSample.Modules.Identity.UnitTests
+  ```
+
+- **Integration tests** — `tests/ModulusSampleErp.IntegrationTests` boots the
+  full host via `Modulus.Testing` (`ModulusWebAppFactory`), which swaps every
+  module `DbContext` to a per-factory in-memory SQLite database.
+
+  **Known limitation:** the Identity module model is authored for PostgreSQL — it
+  uses Npgsql-only default SQL like
+  `HasDefaultValueSql("(NOW() AT TIME ZONE 'UTC')")` and `timestamp with time
+  zone` columns. SQLite cannot build that schema, so the integration tests
+  currently do **not** pass in this setup; they fail at host startup with
+  `SQLite Error: near "AT": syntax error`. Running them requires the real
+  Postgres stack from section 1. The unit tests above plus the manual flows in
+  sections 2–6 cover the sample in a Postgres-less environment.

@@ -1,12 +1,12 @@
 using Modulus.AspNetCore.Endpoints;
 using Modulus.Mediator.Abstractions;
-using ModulusSample.Modules.Inventory.Application.Dtos;
-using ModulusSample.Modules.Inventory.Application.Queries;
+using ModulusSample.Modules.Inventory.Application.Warehouses.Dtos;
+using ModulusSample.Modules.Inventory.Application.Warehouses.Queries;
 using ModulusSample.Shared.Domain;
 
 namespace ModulusSample.Modules.Inventory.Presentation.Warehouses;
 
-internal sealed class ListWarehousesEndpoint : Endpoint<PagedResult<WarehouseDto>>
+internal sealed class ListWarehousesEndpoint : Endpoint<ListWarehousesEndpoint.ListWarehousesRequest, PagedResult<WarehouseDto>>
 {
     private readonly IMediator _mediator;
 
@@ -19,19 +19,16 @@ internal sealed class ListWarehousesEndpoint : Endpoint<PagedResult<WarehouseDto
         Summary("List all warehouses");
     }
 
-    public override async Task HandleAsync(CancellationToken ct)
+    public override async Task HandleAsync(ListWarehousesRequest req, CancellationToken ct)
     {
-        int page = Query<int>("page", 1);
-        int pageSize = Query<int>("pageSize", 10);
+        PagedResult<WarehouseDto> result = await _mediator.QueryAsync(new ListWarehousesQuery(req.PageNumber, req.PageSize), ct);
 
-        Result<PagedResult<WarehouseDto>> result = await _mediator.QueryAsync(new ListWarehousesQuery(page, pageSize), ct);
+        await SendOkAsync(result, ct);
+    }
 
-        if (result.IsFailure)
-        {
-            await SendAsync(null, statusCode: StatusCodes.Status400BadRequest, cancellation: ct);
-            return;
-        }
-
-        await SendOkAsync(result.Value, ct);
+    internal sealed class ListWarehousesRequest
+    {
+        public int PageNumber { get; set; } = 1;
+        public int PageSize { get; set; } = 10;
     }
 }

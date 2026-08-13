@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
 using Xunit;
 
 namespace ModulusSampleErp.IntegrationTests;
@@ -32,8 +33,8 @@ public class PurchasingTests
 
         // Assert
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
-        var result = await response.Content.ReadAsAsync<dynamic>();
-        Assert.NotNull(result?.id);
+        JsonElement result = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.True(result.TryGetProperty("id", out _));
     }
 
     [Fact]
@@ -51,8 +52,9 @@ public class PurchasingTests
         };
 
         var createResponse = await _fixture.Client.PostAsJsonAsync("/api/purchase-requisitions", createRequest);
-        var createResult = await createResponse.Content.ReadAsAsync<dynamic>();
-        var requisitionId = createResult!.id;
+        JsonElement createResult = await createResponse.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.True(createResult.TryGetProperty("id", out JsonElement idElement));
+        var requisitionId = idElement.GetString();
 
         // Submit the requisition
         await _fixture.Client.PostAsync($"/api/purchase-requisitions/{requisitionId}/submit", null);
@@ -65,8 +67,8 @@ public class PurchasingTests
 
         // Assert
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        var error = await response.Content.ReadAsAsync<dynamic>();
-        Assert.Contains("Segregation of Duties", error?.error?.ToString() ?? "");
+        JsonElement error = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Contains("Segregation of Duties", error.ToString());
     }
 
     [Fact]
@@ -86,8 +88,9 @@ public class PurchasingTests
         };
 
         var createResponse = await _fixture.Client.PostAsJsonAsync("/api/purchase-requisitions", createRequest);
-        var createResult = await createResponse.Content.ReadAsAsync<dynamic>();
-        var requisitionId = createResult!.id;
+        JsonElement createResult = await createResponse.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.True(createResult.TryGetProperty("id", out JsonElement idElement));
+        var requisitionId = idElement.GetString();
 
         // Submit
         await _fixture.Client.PostAsync($"/api/purchase-requisitions/{requisitionId}/submit", null);

@@ -1,12 +1,12 @@
 using Modulus.AspNetCore.Endpoints;
 using Modulus.Mediator.Abstractions;
-using ModulusSample.Modules.Billing.Application.Dtos;
-using ModulusSample.Modules.Billing.Application.Queries;
+using ModulusSample.Modules.Billing.Application.Invoices.Dtos;
+using ModulusSample.Modules.Billing.Application.Invoices.Queries;
 using ModulusSample.Shared.Domain;
 
 namespace ModulusSample.Modules.Billing.Presentation.Invoices;
 
-internal sealed class ListInvoicesEndpoint : Endpoint<PagedResult<InvoiceDto>>
+internal sealed class ListInvoicesEndpoint : Endpoint<ListInvoicesEndpoint.ListInvoicesRequest, PagedResult<InvoiceDto>>
 {
     private readonly IMediator _mediator;
 
@@ -19,19 +19,17 @@ internal sealed class ListInvoicesEndpoint : Endpoint<PagedResult<InvoiceDto>>
         Summary("List all invoices");
     }
 
-    public override async Task HandleAsync(CancellationToken ct)
+    public override async Task HandleAsync(ListInvoicesRequest req, CancellationToken ct)
     {
-        int page = Query<int>("pageNumber", 1);
-        int pageSize = Query<int>("pageSize", 10);
+        PagedResult<InvoiceDto> result = await _mediator.QueryAsync(
+            new ListInvoicesQuery(req.PageNumber, req.PageSize), ct);
 
-        Result<PagedResult<InvoiceDto>> result = await _mediator.QueryAsync(new ListInvoicesQuery(page, pageSize), ct);
+        await SendOkAsync(result, ct);
+    }
 
-        if (result.IsFailure)
-        {
-            await SendAsync(null, statusCode: StatusCodes.Status400BadRequest, cancellation: ct);
-            return;
-        }
-
-        await SendOkAsync(result.Value, ct);
+    internal sealed class ListInvoicesRequest
+    {
+        public int PageNumber { get; set; } = 1;
+        public int PageSize { get; set; } = 10;
     }
 }

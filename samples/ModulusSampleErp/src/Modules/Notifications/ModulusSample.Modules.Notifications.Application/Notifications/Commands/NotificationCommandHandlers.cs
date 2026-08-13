@@ -1,6 +1,6 @@
 using Modulus.Core.Abstractions;
 using Modulus.Mediator.Abstractions;
-using ModulusSample.Modules.Notifications.Application.Abstractions;
+using Modulus.EntityFrameworkCore.Abstractions;
 using ModulusSample.Modules.Notifications.Application.Notifications.Commands;
 using ModulusSample.Modules.Notifications.Application.Notifications.Dtos;
 using ModulusSample.Modules.Notifications.Domain.Constants;
@@ -34,7 +34,7 @@ public sealed class CreateNotificationCommandHandler(
         }
 
         await repository.AddAsync(notificationResult.Value, ct);
-        await unitOfWork.SaveChangesAsync(ct);
+        await unitOfWork.CommitAsync(ct);
 
         return Result.Success(ToResponse(notificationResult.Value));
     }
@@ -82,7 +82,7 @@ public sealed class MarkNotificationAsReadCommandHandler(
         }
 
         await repository.UpdateAsync(notification, ct);
-        await unitOfWork.SaveChangesAsync(ct);
+        await unitOfWork.CommitAsync(ct);
 
         return Result.Success(ToResponse(notification));
     }
@@ -118,7 +118,7 @@ public sealed class MarkAllNotificationsAsReadCommandHandler(
             await repository.UpdateAsync(notification, ct);
         }
 
-        await unitOfWork.SaveChangesAsync(ct);
+        await unitOfWork.CommitAsync(ct);
 
         return Result.Success(new MarkAllReadResponse(unread.Count));
     }

@@ -14,6 +14,7 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Modulus.AspNetCore.Endpoints;
 using Modulus.AspNetCore.Extensions;
@@ -42,6 +43,7 @@ using Modulus.Sagas.Extensions;
 using Modulus.SignalR;
 using Modulus.SignalR.Extensions;
 using Modulus.Storage;
+using Rebus.Transport.InMem;
 using Serilog;
 using Sentry;
 using Sentry.AspNetCore;
@@ -413,7 +415,7 @@ else
 //   .Rebus(rebus => rebus.Transport(t => t.UseRabbitMq("amqp://...", "sagas-queue")))
 // Using in-memory transport for development/testing:
 builder.Services.AddModulusSagas(sagas => sagas
-    .Rebus(rebus => rebus.Transport(t => t.UseInMemoryTransport(new Rebus.Activation.ActivationContext(), "sagas-queue")))
+    .Rebus(rebus => rebus.Transport(t => t.UseInMemoryTransport(new InMemNetwork(), "sagas-queue")))
     .HandlersFromAssemblies(typeof(Program).Assembly));
 
 // ============================================
@@ -475,9 +477,12 @@ app.UseSwaggerConfiguration(app.Configuration);
 // ============================================
 // Skip migrations when running under EF Core tools (design-time)
 bool isEfDesignTime = AppContext.GetData("EFDesignTime") as bool? == true;
-if (app.Environment.IsDevelopment() && !isEfDesignTime)
+if (!isEfDesignTime
+    && (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Testing")))
 {
-    // Apply database migrations in development
+    // Apply database migrations in development (and in Testing so the
+    // Modulus.Testing in-memory SQLite databases get their schema before the
+    // hosted OpenIddict seeder runs).
     await app.ApplyMigrations();
 }
 

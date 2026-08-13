@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
-using Modulus.Core.Domain;
-using ModulusSample.Shared.Infrastructure.Extensions;
+using Modulus.EntityFrameworkCore.Design;
 
 namespace ModulusSample.Modules.Billing.Infrastructure.Database;
 
@@ -9,9 +8,9 @@ public sealed class BillingDbContextFactory : IDesignTimeDbContextFactory<Billin
 {
     public BillingDbContext CreateDbContext(string[] args)
     {
-        var optionsBuilder = new DbContextOptionsBuilder<BillingDbContext>();
-        const string connectionString = "Host=localhost;Port=5432;Database=ModulusSample;Username=ModulusSample;Password=ModulusSample";
-        optionsBuilder.UseNpgsql(connectionString);
+        var connectionString = "Host=localhost;Port=5432;Database=ModulusSample;Username=ModulusSample;Password=ModulusSample";
+        var optionsBuilder = new DbContextOptionsBuilder<BillingDbContext>()
+            .UseNpgsql(connectionString);
 
         return new BillingDbContext(
             optionsBuilder.Options,

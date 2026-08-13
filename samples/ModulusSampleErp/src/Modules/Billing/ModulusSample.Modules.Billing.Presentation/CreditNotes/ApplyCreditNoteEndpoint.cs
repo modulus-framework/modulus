@@ -1,11 +1,12 @@
 using Modulus.AspNetCore.Endpoints;
 using Modulus.Mediator.Abstractions;
-using ModulusSample.Modules.Billing.Application.Commands;
+using ModulusSample.Modules.Billing.Application.CreditNotes.Commands;
 using ModulusSample.Shared.Domain;
+using ModulusSample.Shared.Presentation;
 
 namespace ModulusSample.Modules.Billing.Presentation.CreditNotes;
 
-internal sealed class ApplyCreditNoteEndpoint : Endpoint
+internal sealed class ApplyCreditNoteEndpoint : Endpoint<ApplyCreditNoteEndpoint.ApplyCreditNoteRequest>
 {
     private readonly IMediator _mediator;
 
@@ -18,18 +19,21 @@ internal sealed class ApplyCreditNoteEndpoint : Endpoint
         Summary("Apply a credit note to invoice");
     }
 
-    public override async Task HandleAsync(CancellationToken ct)
+    public override async Task HandleAsync(ApplyCreditNoteRequest req, CancellationToken ct)
     {
-        var id = Route<Guid>("id");
-        var command = new ApplyCreditNoteCommand(id);
-        Result result = await _mediator.SendAsync(command, ct);
+        Result result = await _mediator.SendAsync(new ApplyCreditNoteCommand(req.Id), ct);
 
         if (result.IsFailure)
         {
-            await SendAsync(null, statusCode: StatusCodes.Status400BadRequest, cancellation: ct);
+            await EndpointFailure.SendFailureAsync(HttpContext, result, ct);
             return;
         }
 
-        await SendOkAsync(ct);
+        await SendNoContentAsync(ct);
+    }
+
+    internal sealed class ApplyCreditNoteRequest
+    {
+        public Guid Id { get; set; }
     }
 }

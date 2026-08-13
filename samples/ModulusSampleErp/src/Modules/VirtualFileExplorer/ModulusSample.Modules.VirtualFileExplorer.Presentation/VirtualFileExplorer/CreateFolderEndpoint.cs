@@ -22,7 +22,6 @@ internal sealed class CreateFolderEndpoint : Endpoint<CreateFolderEndpoint.Creat
         Post("/file-explorer/folders");
         Tag(Tags.VirtualFileExplorer);
         Summary("Create a new virtual folder");
-        RequireAuthorization();
     }
 
     public override async Task HandleAsync(CreateFolderRequest req, CancellationToken ct)

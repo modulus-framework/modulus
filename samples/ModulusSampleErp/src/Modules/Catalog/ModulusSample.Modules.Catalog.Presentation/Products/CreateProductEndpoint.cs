@@ -1,8 +1,8 @@
 using Modulus.AspNetCore.Endpoints;
 using Modulus.Mediator.Abstractions;
-using ModulusSample.Modules.Catalog.Application.Commands;
-using ModulusSample.Modules.Catalog.Application.Dtos;
+using ModulusSample.Modules.Catalog.Application.Products.Commands;
 using ModulusSample.Shared.Domain;
+using ModulusSample.Shared.Presentation;
 
 namespace ModulusSample.Modules.Catalog.Presentation.Products;
 
@@ -26,17 +26,19 @@ internal sealed class CreateProductEndpoint : Endpoint<CreateProductEndpoint.Cre
 
         if (result.IsFailure)
         {
-            await SendAsync(null, statusCode: StatusCodes.Status400BadRequest, cancellation: ct);
+            await EndpointFailure.SendFailureAsync(HttpContext, result, ct);
             return;
         }
 
-        await SendCreatedAsync($"/api/catalog/products/{result.Value}", ct);
+        await SendCreatedAsync(result.Value, $"/api/catalog/products/{result.Value}", ct);
     }
 
-    public sealed record CreateProductRequest(
-        string Name,
-        decimal UnitCost,
-        decimal ListPrice,
-        string? Description = null,
-        Guid? CategoryId = null);
+    internal sealed class CreateProductRequest
+    {
+        public string Name { get; set; } = string.Empty;
+        public decimal UnitCost { get; set; }
+        public decimal ListPrice { get; set; }
+        public string? Description { get; set; }
+        public Guid? CategoryId { get; set; }
+    }
 }

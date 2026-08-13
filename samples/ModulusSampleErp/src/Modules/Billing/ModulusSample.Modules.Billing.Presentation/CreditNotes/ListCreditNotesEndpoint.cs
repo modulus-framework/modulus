@@ -1,12 +1,12 @@
 using Modulus.AspNetCore.Endpoints;
 using Modulus.Mediator.Abstractions;
-using ModulusSample.Modules.Billing.Application.Dtos;
-using ModulusSample.Modules.Billing.Application.Queries;
+using ModulusSample.Modules.Billing.Application.CreditNotes.Dtos;
+using ModulusSample.Modules.Billing.Application.CreditNotes.Queries;
 using ModulusSample.Shared.Domain;
 
 namespace ModulusSample.Modules.Billing.Presentation.CreditNotes;
 
-internal sealed class ListCreditNotesEndpoint : Endpoint<PagedResult<CreditNoteDto>>
+internal sealed class ListCreditNotesEndpoint : Endpoint<ListCreditNotesEndpoint.ListCreditNotesRequest, PagedResult<CreditNoteDto>>
 {
     private readonly IMediator _mediator;
 
@@ -19,19 +19,17 @@ internal sealed class ListCreditNotesEndpoint : Endpoint<PagedResult<CreditNoteD
         Summary("List all credit notes");
     }
 
-    public override async Task HandleAsync(CancellationToken ct)
+    public override async Task HandleAsync(ListCreditNotesRequest req, CancellationToken ct)
     {
-        int page = Query<int>("pageNumber", 1);
-        int pageSize = Query<int>("pageSize", 10);
+        PagedResult<CreditNoteDto> result = await _mediator.QueryAsync(
+            new ListCreditNotesQuery(req.PageNumber, req.PageSize), ct);
 
-        Result<PagedResult<CreditNoteDto>> result = await _mediator.QueryAsync(new ListCreditNotesQuery(page, pageSize), ct);
+        await SendOkAsync(result, ct);
+    }
 
-        if (result.IsFailure)
-        {
-            await SendAsync(null, statusCode: StatusCodes.Status400BadRequest, cancellation: ct);
-            return;
-        }
-
-        await SendOkAsync(result.Value, ct);
+    internal sealed class ListCreditNotesRequest
+    {
+        public int PageNumber { get; set; } = 1;
+        public int PageSize { get; set; } = 10;
     }
 }

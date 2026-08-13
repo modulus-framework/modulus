@@ -1,12 +1,11 @@
 using Modulus.AspNetCore.Endpoints;
 using Modulus.Mediator.Abstractions;
-using ModulusSample.Modules.Sales.Application.Dtos;
-using ModulusSample.Modules.Sales.Application.Queries;
-using ModulusSample.Shared.Domain;
+using ModulusSample.Modules.Sales.Application.Orders.Dtos;
+using ModulusSample.Modules.Sales.Application.Orders.Queries;
 
 namespace ModulusSample.Modules.Sales.Presentation.Orders;
 
-internal sealed class GetSalesOrderByIdEndpoint : Endpoint<SalesOrderDto>
+internal sealed class GetSalesOrderByIdEndpoint : Endpoint<GetSalesOrderByIdEndpoint.GetSalesOrderByIdRequest, SalesOrderDto>
 {
     private readonly IMediator _mediator;
 
@@ -19,17 +18,21 @@ internal sealed class GetSalesOrderByIdEndpoint : Endpoint<SalesOrderDto>
         Summary("Get sales order details");
     }
 
-    public override async Task HandleAsync(CancellationToken ct)
+    public override async Task HandleAsync(GetSalesOrderByIdRequest req, CancellationToken ct)
     {
-        var id = Route<Guid>("id");
-        Result<SalesOrderDto> result = await _mediator.QueryAsync(new GetSalesOrderByIdQuery(id), ct);
+        SalesOrderDto? result = await _mediator.QueryAsync(new GetSalesOrderByIdQuery(req.Id), ct);
 
-        if (result.IsFailure || result.Value is null)
+        if (result is null)
         {
             await SendNotFoundAsync(ct);
             return;
         }
 
-        await SendOkAsync(result.Value, ct);
+        await SendOkAsync(result, ct);
+    }
+
+    internal sealed class GetSalesOrderByIdRequest
+    {
+        public Guid Id { get; set; }
     }
 }

@@ -1,5 +1,5 @@
 using ModulusSample.Modules.Identity.Application.Abstractions.Authentication;
-using ModulusSample.Modules.Identity.Application.Abstractions.Data;
+using Modulus.EntityFrameworkCore.Abstractions;
 using ModulusSample.Shared.Application.Abstractions.Oidc;
 using ModulusSample.Shared.Domain;
 using Microsoft.Extensions.Logging;

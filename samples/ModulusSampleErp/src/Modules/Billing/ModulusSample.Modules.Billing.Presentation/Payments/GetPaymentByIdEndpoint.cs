@@ -1,12 +1,11 @@
 using Modulus.AspNetCore.Endpoints;
 using Modulus.Mediator.Abstractions;
-using ModulusSample.Modules.Billing.Application.Dtos;
-using ModulusSample.Modules.Billing.Application.Queries;
-using ModulusSample.Shared.Domain;
+using ModulusSample.Modules.Billing.Application.Payments.Dtos;
+using ModulusSample.Modules.Billing.Application.Payments.Queries;
 
 namespace ModulusSample.Modules.Billing.Presentation.Payments;
 
-internal sealed class GetPaymentByIdEndpoint : Endpoint<PaymentDto>
+internal sealed class GetPaymentByIdEndpoint : Endpoint<GetPaymentByIdEndpoint.GetPaymentByIdRequest, PaymentDto>
 {
     private readonly IMediator _mediator;
 
@@ -19,17 +18,21 @@ internal sealed class GetPaymentByIdEndpoint : Endpoint<PaymentDto>
         Summary("Get payment details");
     }
 
-    public override async Task HandleAsync(CancellationToken ct)
+    public override async Task HandleAsync(GetPaymentByIdRequest req, CancellationToken ct)
     {
-        var id = Route<Guid>("id");
-        Result<PaymentDto> result = await _mediator.QueryAsync(new GetPaymentByIdQuery(id), ct);
+        PaymentDto? payment = await _mediator.QueryAsync(new GetPaymentByIdQuery(req.Id), ct);
 
-        if (result.IsFailure || result.Value is null)
+        if (payment is null)
         {
             await SendNotFoundAsync(ct);
             return;
         }
 
-        await SendOkAsync(result.Value, ct);
+        await SendOkAsync(payment, ct);
+    }
+
+    internal sealed class GetPaymentByIdRequest
+    {
+        public Guid Id { get; set; }
     }
 }

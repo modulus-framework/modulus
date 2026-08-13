@@ -1,4 +1,4 @@
-using ModulusSample.Modules.Identity.Application.Abstractions.Data;
+using Modulus.EntityFrameworkCore.Abstractions;
 using ModulusSample.Modules.Identity.Domain.Entities;
 using ModulusSample.Modules.Identity.Domain.Enums;
 using ModulusSample.Modules.Identity.Domain.Errors;
@@ -34,7 +34,7 @@ public sealed class UpdateUserTypeCommandHandler(
         user.UpdateUserType(request.UserType);
 
         await userRepository.UpdateAsync(user, cancellationToken);
-        await unitOfWork.SaveChangesAsync(cancellationToken);
+        await unitOfWork.CommitAsync(cancellationToken);
 
         return Result.Success();
     }

@@ -1,4 +1,4 @@
-using ModulusSample.Modules.Tenants.Application.Abstractions;
+using Modulus.EntityFrameworkCore.Abstractions;
 using ModulusSample.Modules.Tenants.Domain.Constants;
 using ModulusSample.Modules.Tenants.Domain.Entities;
 using ModulusSample.Modules.Tenants.Infrastructure.Configurations;

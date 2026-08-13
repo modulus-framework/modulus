@@ -16,7 +16,7 @@ using ModulusSample.Modules.Purchasing.Infrastructure.Database;
 using ModulusSample.Modules.Billing.Infrastructure.Database;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
-using Modulus.Authorization.EntityFrameworkCore.Extensions;
+using Modulus.Authorization.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -102,18 +102,25 @@ internal static class MigrationExtensions
     /// <summary>
     /// Migrates a context when it has real EF migrations; otherwise creates the
     /// database + schema from the model snapshot (EnsureCreated). Mirrors the
-    /// framework's DatabaseInitializationMode.MigrateOrCreate default.
+    /// framework's DatabaseInitializationMode.MigrateOrCreate default. EF
+    /// migrations in this sample are authored for PostgreSQL — when the runtime
+    /// provider is a different one (e.g. Modulus.Testing swaps module contexts
+    /// to in-memory SQLite), they cannot be applied faithfully, so the schema is
+    /// created directly from the model instead.
     /// </summary>
     private static async Task ApplyMigrationOrCreateAsync<TDbContext>(IServiceScope scope, ILogger logger)
         where TDbContext : DbContext
     {
         TDbContext context = scope.ServiceProvider.GetRequiredService<TDbContext>();
 
+        bool isPostgres = (context.Database.ProviderName ?? string.Empty)
+            .Contains("Npgsql", StringComparison.OrdinalIgnoreCase);
+
         bool hasMigrations = context.Database.GetMigrations().Any();
-        if (!hasMigrations)
+        if (!hasMigrations || !isPostgres)
         {
             await context.Database.EnsureCreatedAsync();
-            logger.LogInformation("Ensured schema for {DbContext} (no EF migrations)", typeof(TDbContext).Name);
+            logger.LogInformation("Ensured schema for {DbContext} (no EF migrations or non-PostgreSQL provider)", typeof(TDbContext).Name);
             return;
         }
 

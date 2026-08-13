@@ -105,6 +105,12 @@
       ConnectionStrings__VirtualFileExplorer: "Host=postgres;Port=5432;Database=ModulusSample;Username=ModulusSample;Password=ModulusSample"
       ConnectionStrings__Notifications: "Host=postgres;Port=5432;Database=ModulusSample;Username=ModulusSample;Password=ModulusSample"
       ConnectionStrings__Media: "Host=postgres;Port=5432;Database=ModulusSample;Username=ModulusSample;Password=ModulusSample"
+      ConnectionStrings__Catalog: "Host=postgres;Port=5432;Database=ModulusSample;Username=ModulusSample;Password=ModulusSample"
+      ConnectionStrings__Partners: "Host=postgres;Port=5432;Database=ModulusSample;Username=ModulusSample;Password=ModulusSample"
+      ConnectionStrings__Inventory: "Host=postgres;Port=5432;Database=ModulusSample;Username=ModulusSample;Password=ModulusSample"
+      ConnectionStrings__Sales: "Host=postgres;Port=5432;Database=ModulusSample;Username=ModulusSample;Password=ModulusSample"
+      ConnectionStrings__Purchasing: "Host=postgres;Port=5432;Database=ModulusSample;Username=ModulusSample;Password=ModulusSample"
+      ConnectionStrings__Billing: "Host=postgres;Port=5432;Database=ModulusSample;Username=ModulusSample;Password=ModulusSample"
       ConnectionStrings__Cache: "redis:6379"
       MessageBus__RabbitMq__HostName: rabbitmq
       MessageBus__RabbitMq__Port: 5672

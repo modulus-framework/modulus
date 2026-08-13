@@ -1,7 +1,8 @@
 using Modulus.AspNetCore.Endpoints;
 using Modulus.Mediator.Abstractions;
-using ModulusSample.Modules.Inventory.Application.Commands;
+using ModulusSample.Modules.Inventory.Application.Warehouses.Commands;
 using ModulusSample.Shared.Domain;
+using ModulusSample.Shared.Presentation;
 
 namespace ModulusSample.Modules.Inventory.Presentation.Warehouses;
 
@@ -26,19 +27,21 @@ internal sealed class CreateWarehouseEndpoint : Endpoint<CreateWarehouseEndpoint
 
         if (result.IsFailure)
         {
-            await SendAsync(null, statusCode: StatusCodes.Status400BadRequest, cancellation: ct);
+            await EndpointFailure.SendFailureAsync(HttpContext, result, ct);
             return;
         }
 
-        await SendCreatedAsync($"/api/warehouses/{result.Value}", ct);
+        await SendCreatedAsync(result.Value, $"/api/warehouses/{result.Value}", ct);
     }
 
-    public sealed record CreateWarehouseRequest(
-        string Code,
-        string Name,
-        string Address,
-        string City,
-        string PostalCode,
-        string Country,
-        Guid OrgUnitId);
+    internal sealed class CreateWarehouseRequest
+    {
+        public string Code { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+        public string Address { get; set; } = string.Empty;
+        public string City { get; set; } = string.Empty;
+        public string PostalCode { get; set; } = string.Empty;
+        public string Country { get; set; } = string.Empty;
+        public Guid OrgUnitId { get; set; }
+    }
 }

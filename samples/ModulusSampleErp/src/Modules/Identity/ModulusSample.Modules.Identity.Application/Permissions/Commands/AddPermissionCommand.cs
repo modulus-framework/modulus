@@ -1,6 +1,6 @@
 using Modulus.Mediator.Abstractions.Attributes;
 using ModulusSample.Modules.Identity.Application.Abstractions.Authentication;
-using ModulusSample.Modules.Identity.Application.Abstractions.Data;
+using Modulus.EntityFrameworkCore.Abstractions;
 using ModulusSample.Modules.Identity.Domain.Entities;
 using ModulusSample.Modules.Identity.Domain.Errors;
 using ModulusSample.Modules.Identity.Domain.Repositories;
@@ -63,7 +63,7 @@ public sealed class AddPermissionCommandHandler(
         role.AddPermission(permission.Id, grantedByUserId);
 
         await roleRepository.UpdateAsync(role, cancellationToken);
-        await unitOfWork.SaveChangesAsync(cancellationToken);
+        await unitOfWork.CommitAsync(cancellationToken);
 
         await cacheService.RemoveByPrefixAsync(CacheKeys.User.AllRolesPrefix(), cancellationToken);
 

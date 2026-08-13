@@ -1,4 +1,4 @@
-using ModulusSample.Modules.Identity.Application.Abstractions.Data;
+using Modulus.EntityFrameworkCore.Abstractions;
 using ModulusSample.Modules.Identity.Application.Abstractions.Identity;
 using ModulusSample.Modules.Identity.Application.IntegrationEvents;
 using ModulusSample.Modules.Identity.Domain.Entities;
@@ -76,7 +76,7 @@ internal sealed class VerifyEmailCommandHandler(
 
             // Update the user
             await userRepository.UpdateAsync(user, cancellationToken);
-            await unitOfWork.SaveChangesAsync(cancellationToken);
+            await unitOfWork.CommitAsync(cancellationToken);
 
             // Publish integration event
             UserEmailVerifiedIntegrationEvent integrationEvent = new(

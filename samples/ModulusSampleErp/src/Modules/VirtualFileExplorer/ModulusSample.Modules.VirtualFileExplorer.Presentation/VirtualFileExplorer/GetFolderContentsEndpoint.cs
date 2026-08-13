@@ -16,7 +16,6 @@ internal sealed class GetFolderContentsEndpoint : Endpoint<GetFolderContentsEndp
         Get("/file-explorer/folders/{folderId}");
         Tag(Tags.VirtualFileExplorer);
         Summary("Get a folder's sub-folders and files");
-        RequireAuthorization(); ;
     }
 
     public override async Task HandleAsync(GetFolderContentsRequest req, CancellationToken ct)

@@ -1,4 +1,4 @@
-using ModulusSample.Modules.Notifications.Application.Abstractions;
+using Modulus.EntityFrameworkCore.Abstractions;
 using ModulusSample.Modules.Notifications.Domain.Entities;
 using ModulusSample.Modules.Notifications.Infrastructure.Configurations;
 using Microsoft.EntityFrameworkCore;

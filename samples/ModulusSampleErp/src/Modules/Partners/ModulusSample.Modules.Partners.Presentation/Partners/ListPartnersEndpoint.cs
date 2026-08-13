@@ -1,12 +1,12 @@
 using Modulus.AspNetCore.Endpoints;
 using Modulus.Mediator.Abstractions;
-using ModulusSample.Modules.Partners.Application.Dtos;
-using ModulusSample.Modules.Partners.Application.Queries;
+using ModulusSample.Modules.Partners.Application.Partners.Dtos;
+using ModulusSample.Modules.Partners.Application.Partners.Queries;
 using ModulusSample.Shared.Domain;
 
 namespace ModulusSample.Modules.Partners.Presentation.Partners;
 
-internal sealed class ListPartnersEndpoint : Endpoint<PagedResult<PartnerDto>>
+internal sealed class ListPartnersEndpoint : Endpoint<ListPartnersEndpoint.ListPartnersRequest, PagedResult<PartnerDto>>
 {
     private readonly IMediator _mediator;
 
@@ -19,19 +19,16 @@ internal sealed class ListPartnersEndpoint : Endpoint<PagedResult<PartnerDto>>
         Summary("List all partners");
     }
 
-    public override async Task HandleAsync(CancellationToken ct)
+    public override async Task HandleAsync(ListPartnersRequest req, CancellationToken ct)
     {
-        int page = Query<int>("page", 1);
-        int pageSize = Query<int>("pageSize", 10);
+        PagedResult<PartnerDto> result = await _mediator.QueryAsync(new ListPartnersQuery(req.PageNumber, req.PageSize), ct);
 
-        Result<PagedResult<PartnerDto>> result = await _mediator.QueryAsync(new ListPartnersQuery(page, pageSize), ct);
+        await SendOkAsync(result, ct);
+    }
 
-        if (result.IsFailure)
-        {
-            await SendAsync(null, statusCode: StatusCodes.Status400BadRequest, cancellation: ct);
-            return;
-        }
-
-        await SendOkAsync(result.Value, ct);
+    internal sealed class ListPartnersRequest
+    {
+        public int PageNumber { get; set; } = 1;
+        public int PageSize { get; set; } = 10;
     }
 }

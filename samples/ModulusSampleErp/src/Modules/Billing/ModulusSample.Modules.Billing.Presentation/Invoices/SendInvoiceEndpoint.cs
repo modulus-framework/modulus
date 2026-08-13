@@ -1,11 +1,12 @@
 using Modulus.AspNetCore.Endpoints;
 using Modulus.Mediator.Abstractions;
-using ModulusSample.Modules.Billing.Application.Commands;
+using ModulusSample.Modules.Billing.Application.Invoices.Commands;
 using ModulusSample.Shared.Domain;
+using ModulusSample.Shared.Presentation;
 
 namespace ModulusSample.Modules.Billing.Presentation.Invoices;
 
-internal sealed class SendInvoiceEndpoint : Endpoint
+internal sealed class SendInvoiceEndpoint : Endpoint<SendInvoiceEndpoint.SendInvoiceRequest>
 {
     private readonly IMediator _mediator;
 
@@ -18,18 +19,21 @@ internal sealed class SendInvoiceEndpoint : Endpoint
         Summary("Send an invoice to customer");
     }
 
-    public override async Task HandleAsync(CancellationToken ct)
+    public override async Task HandleAsync(SendInvoiceRequest req, CancellationToken ct)
     {
-        var id = Route<Guid>("id");
-        var command = new SendInvoiceCommand(id);
-        Result result = await _mediator.SendAsync(command, ct);
+        Result result = await _mediator.SendAsync(new SendInvoiceCommand(req.Id), ct);
 
         if (result.IsFailure)
         {
-            await SendAsync(null, statusCode: StatusCodes.Status400BadRequest, cancellation: ct);
+            await EndpointFailure.SendFailureAsync(HttpContext, result, ct);
             return;
         }
 
-        await SendOkAsync(ct);
+        await SendNoContentAsync(ct);
+    }
+
+    internal sealed class SendInvoiceRequest
+    {
+        public Guid Id { get; set; }
     }
 }

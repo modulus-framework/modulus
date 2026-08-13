@@ -1,4 +1,4 @@
-using ModulusSample.Modules.Identity.Application.Abstractions.Data;
+using Modulus.EntityFrameworkCore.Abstractions;
 using ModulusSample.Modules.Identity.Domain.Entities;
 using ModulusSample.Modules.Identity.Domain.Errors;
 using ModulusSample.Modules.Identity.Domain.Repositories;
@@ -48,7 +48,7 @@ internal sealed class UpdateProfileCommandHandler(
             request.ProfileImageUrl);
 
         await userRepository.UpdateAsync(user, cancellationToken);
-        await unitOfWork.SaveChangesAsync(cancellationToken);
+        await unitOfWork.CommitAsync(cancellationToken);
 
         await cacheService.RemoveAsync(CacheKeys.User.UserProfile(request.UserId), cancellationToken);
 

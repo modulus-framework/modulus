@@ -14,9 +14,6 @@ public class ApiFixture : IAsyncLifetime
     {
         _factory = new ModulusWebAppFactory<Program>();
         _client = _factory.CreateClient();
-
-        // Seed the database with test data
-        await _factory.InitializeAsync();
     }
 
     public async Task DisposeAsync()
@@ -60,7 +57,7 @@ public class ApiFixture : IAsyncLifetime
     }
 }
 
-[Collection("API Tests")]
+[CollectionDefinition("API Tests")]
 public class ApiTestsCollection : ICollectionFixture<ApiFixture>
 {
 }

@@ -16,7 +16,6 @@ internal sealed class GetFolderTreeEndpoint : EndpointWithoutRequest<IReadOnlyLi
         Get("/file-explorer/tree");
         Tag(Tags.VirtualFileExplorer);
         Summary("Get the full folder tree");
-        RequireAuthorization(); ;
     }
 
     protected override async Task HandleAsync(CancellationToken ct)

@@ -1,11 +1,12 @@
 using Modulus.AspNetCore.Endpoints;
 using Modulus.Mediator.Abstractions;
-using ModulusSample.Modules.Billing.Application.Commands;
+using ModulusSample.Modules.Billing.Application.Payments.Commands;
 using ModulusSample.Shared.Domain;
+using ModulusSample.Shared.Presentation;
 
 namespace ModulusSample.Modules.Billing.Presentation.Payments;
 
-internal sealed class ConfirmPaymentEndpoint : Endpoint<ConfirmPaymentCommand>
+internal sealed class ConfirmPaymentEndpoint : Endpoint<ConfirmPaymentEndpoint.ConfirmPaymentRequest>
 {
     private readonly IMediator _mediator;
 
@@ -18,18 +19,23 @@ internal sealed class ConfirmPaymentEndpoint : Endpoint<ConfirmPaymentCommand>
         Summary("Confirm a payment");
     }
 
-    public override async Task HandleAsync(ConfirmPaymentCommand req, CancellationToken ct)
+    public override async Task HandleAsync(ConfirmPaymentRequest req, CancellationToken ct)
     {
-        var id = Route<Guid>("id");
-        var command = req with { PaymentId = id };
-        Result result = await _mediator.SendAsync(command, ct);
+        Result result = await _mediator.SendAsync(
+            new ConfirmPaymentCommand(req.Id, req.ReferenceNumber), ct);
 
         if (result.IsFailure)
         {
-            await SendAsync(null, statusCode: StatusCodes.Status400BadRequest, cancellation: ct);
+            await EndpointFailure.SendFailureAsync(HttpContext, result, ct);
             return;
         }
 
-        await SendOkAsync(ct);
+        await SendNoContentAsync(ct);
+    }
+
+    internal sealed class ConfirmPaymentRequest
+    {
+        public Guid Id { get; set; }
+        public string? ReferenceNumber { get; set; }
     }
 }

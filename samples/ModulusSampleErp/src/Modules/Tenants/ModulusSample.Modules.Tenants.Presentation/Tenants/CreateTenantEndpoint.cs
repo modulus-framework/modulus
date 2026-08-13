@@ -18,7 +18,6 @@ internal sealed class CreateTenantEndpoint : Endpoint<CreateTenantEndpoint.Creat
         Post("/tenants");
         Tag(Tags.Tenants);
         Summary("Create a new tenant");
-        RequireAuthorization();
     }
 
     public override async Task HandleAsync(CreateTenantRequest req, CancellationToken ct)

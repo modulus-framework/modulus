@@ -1,4 +1,4 @@
-using ModulusSample.Modules.Settings.Application.Abstractions;
+using Modulus.EntityFrameworkCore.Abstractions;
 using ModulusSample.Modules.Settings.Domain.Entities;
 using ModulusSample.Modules.Settings.Infrastructure.Configurations;
 using Microsoft.EntityFrameworkCore;
