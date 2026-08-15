@@ -41,7 +41,7 @@ public sealed class EfSettingRepository(SettingsDbContext context) : ISettingRep
 
         return await query
             .OrderBy(s => s.Category)
-            .ThenBy(s => s.Key.Value)
+            .ThenBy(s => s.Key)
             .ToListAsync(ct);
     }
 
@@ -102,7 +102,7 @@ public sealed class EfSettingRepository(SettingsDbContext context) : ISettingRep
 
         var settings = await query
             .OrderBy(s => s.Category)
-            .ThenBy(s => s.Key.Value)
+            .ThenBy(s => s.Key)
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync(ct);
@@ -117,7 +117,7 @@ public sealed class EfSettingRepository(SettingsDbContext context) : ISettingRep
     {
         return await context.Settings
             .Where(s => s.TenantId == tenantId && s.Category == category)
-            .OrderBy(s => s.Key.Value)
+            .OrderBy(s => s.Key)
             .ToListAsync(ct);
     }
 
@@ -126,7 +126,7 @@ public sealed class EfSettingRepository(SettingsDbContext context) : ISettingRep
         return await context.Settings
             .Where(s => s.TenantId == tenantId && s.IsPublic)
             .OrderBy(s => s.Category)
-            .ThenBy(s => s.Key.Value)
+            .ThenBy(s => s.Key)
             .ToListAsync(ct);
     }
 }

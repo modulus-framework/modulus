@@ -36,7 +36,7 @@ public sealed class BillingDbContext(
             {
                 nav.ToTable("invoice_lines");
                 nav.WithOwner().HasForeignKey("invoice_id");
-                nav.HasKey("id");
+                nav.HasKey(nameof(InvoiceLine.Id));
                 nav.Property(l => l.Description).IsRequired().HasMaxLength(500);
             });
         });

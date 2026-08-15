@@ -3,7 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using ModulusSample.Modules.Media.Infrastructure;
+using ModulusSample.Modules.Media.Infrastructure.Database;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
@@ -105,7 +105,6 @@ namespace ModulusSample.Modules.Media.Infrastructure.Database.Migrations
             modelBuilder.Entity("ModulusSample.Modules.Media.Domain.Entities.MediaFile", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -218,7 +217,6 @@ namespace ModulusSample.Modules.Media.Infrastructure.Database.Migrations
             modelBuilder.Entity("ModulusSample.Modules.Media.Domain.Entities.MediaFolder", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -289,7 +287,7 @@ namespace ModulusSample.Modules.Media.Infrastructure.Database.Migrations
                         {
                             b1.Property<Guid>("MediaFileId")
                                 .HasColumnType("uuid")
-                                .HasColumnName("media_file_id");
+                                .HasColumnName("id");
 
                             b1.Property<int>("Height")
                                 .HasColumnType("integer")
@@ -299,14 +297,13 @@ namespace ModulusSample.Modules.Media.Infrastructure.Database.Migrations
                                 .HasColumnType("integer")
                                 .HasColumnName("width");
 
-                            b1.HasKey("MediaFileId")
-                                .HasName("pk_media_dimensions");
+                            b1.HasKey("MediaFileId");
 
-                            b1.ToTable("media_dimensions", "media");
+                            b1.ToTable("media_files", "media");
 
                             b1.WithOwner()
                                 .HasForeignKey("MediaFileId")
-                                .HasConstraintName("fk_media_dimensions_media_files_media_file_id");
+                                .HasConstraintName("fk_media_files_media_files_id");
                         });
 
                     b.Navigation("Dimensions");

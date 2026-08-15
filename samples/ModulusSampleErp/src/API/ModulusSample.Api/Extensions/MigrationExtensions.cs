@@ -17,6 +17,7 @@ using ModulusSample.Modules.Billing.Infrastructure.Database;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using Modulus.Authorization.EntityFrameworkCore;
+using Modulus.Core.Abstractions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -77,8 +78,16 @@ internal static class MigrationExtensions
 
         try
         {
-            await SeedIdentityModule(scope);
-            await SampleDataSeeder.SeedAsync(scope);
+            // Seed inside an explicit host scope so the tenant query filter
+            // (fail-closed: an unresolved tenant sees nothing) does not hide the
+            // TenantId = Guid.Empty rows the seeders write — otherwise the
+            // "already exists" AnyAsync() guards keep reporting false on re-runs
+            // and every seeding attempt tries to re-insert the same rows.
+            using (scope.ServiceProvider.GetRequiredService<ICurrentTenant>().Change(null))
+            {
+                await SeedIdentityModule(scope);
+                await SampleDataSeeder.SeedAsync(scope);
+            }
             logger.LogInformation("All data seeding completed successfully");
         }
         catch (Exception ex)

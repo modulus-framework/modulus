@@ -13,8 +13,6 @@ using Modulus.Authorization.Extensions;
 using Modulus.EntityFrameworkCore.Abstractions;
 using Modulus.Outbox.Extensions;
 using Modulus.Inbox.Extensions;
-using Modulus.Outbox.Abstractions;
-using Modulus.Inbox.Abstractions;
 
 namespace ModulusSample.Modules.Tenants.Infrastructure;
 

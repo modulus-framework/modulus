@@ -12,7 +12,10 @@ public sealed class UserContext(IHttpContextAccessor httpContextAccessor) : IUse
     {
         get
         {
-            string? userIdClaim = httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.UserId)?.Value;
+            string? userIdClaim = httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.UserId)?.Value
+                ?? httpContextAccessor.HttpContext?.User?.FindFirst("sub")?.Value
+                ?? httpContextAccessor.HttpContext?.User?.FindFirst(
+                    System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
             return Guid.TryParse(userIdClaim, out Guid userId) ? userId : Guid.Empty;
         }
     }

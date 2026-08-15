@@ -11,7 +11,10 @@ public sealed class SettingConfiguration : IEntityTypeConfiguration<Setting>
     {
         builder.ToTable("settings", Schemas.Settings);
 
-        builder.Property<Guid>("id")
+        builder.Property(s => s.Id)
+            .HasConversion(
+                id => id.Value,
+                value => ModulusSample.Modules.Settings.Domain.ValueObjects.SettingId.From(value))
             .IsRequired();
 
         builder.Property(s => s.Key)
@@ -56,7 +59,6 @@ public sealed class SettingConfiguration : IEntityTypeConfiguration<Setting>
         builder.HasIndex(s => s.Category);
         builder.HasIndex(s => s.IsPublic);
 
-        builder.Ignore(s => s.Id);
         builder.Ignore(s => s.DomainEvents);
         builder.Ignore(s => s.Version);
     }

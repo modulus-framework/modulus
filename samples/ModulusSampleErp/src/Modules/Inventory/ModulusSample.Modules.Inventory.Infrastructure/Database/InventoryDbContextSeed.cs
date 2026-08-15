@@ -76,7 +76,7 @@ public static class InventoryDbContextSeed
             var warehouses = new[]
             {
                 Warehouse.Create(
-                    Guid.Parse("wh000001-0000-0000-0000-000000000001"),
+                    Guid.Parse("d0000000-0000-0000-0000-000000000001"),
                     "NYC-001",
                     "New York Distribution Center",
                     "350 Fifth Avenue, New York, NY 10118",
@@ -87,7 +87,7 @@ public static class InventoryDbContextSeed
                     tenantId).Value,
 
                 Warehouse.Create(
-                    Guid.Parse("wh000002-0000-0000-0000-000000000002"),
+                    Guid.Parse("d0000000-0000-0000-0000-000000000002"),
                     "BOS-001",
                     "Boston Regional Hub",
                     "200 Clarendon Street, Boston, MA 02116",
@@ -98,7 +98,7 @@ public static class InventoryDbContextSeed
                     tenantId).Value,
 
                 Warehouse.Create(
-                    Guid.Parse("wh000003-0000-0000-0000-000000000003"),
+                    Guid.Parse("d0000000-0000-0000-0000-000000000003"),
                     "MIA-001",
                     "Miami Distribution Center",
                     "100 Biscayne Boulevard, Miami, FL 33132",
@@ -109,7 +109,7 @@ public static class InventoryDbContextSeed
                     tenantId).Value,
 
                 Warehouse.Create(
-                    Guid.Parse("wh000004-0000-0000-0000-000000000004"),
+                    Guid.Parse("d0000000-0000-0000-0000-000000000004"),
                     "ATL-001",
                     "Atlanta Regional Hub",
                     "3280 Peachtree Road, Atlanta, GA 30305",

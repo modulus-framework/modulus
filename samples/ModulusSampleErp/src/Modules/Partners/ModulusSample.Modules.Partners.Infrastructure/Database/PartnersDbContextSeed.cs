@@ -52,7 +52,7 @@ public static class PartnersDbContextSeed
             var customers = new[]
             {
                 Partner.Create(
-                    Guid.Parse("cust0001-0000-0000-0000-000000000001"),
+                    Guid.Parse("c0000000-0000-0000-0000-000000000001"),
                     "Acme Corporation",
                     "Customer",
                     "orders@acmecorp.com",
@@ -62,7 +62,7 @@ public static class PartnersDbContextSeed
                     tenantId).Value,
 
                 Partner.Create(
-                    Guid.Parse("cust0002-0000-0000-0000-000000000002"),
+                    Guid.Parse("c0000000-0000-0000-0000-000000000002"),
                     "Global Distributors LLC",
                     "Customer",
                     "sales@globaldist.com",
@@ -72,7 +72,7 @@ public static class PartnersDbContextSeed
                     tenantId).Value,
 
                 Partner.Create(
-                    Guid.Parse("cust0003-0000-0000-0000-000000000003"),
+                    Guid.Parse("c0000000-0000-0000-0000-000000000003"),
                     "Southern Wholesale Inc",
                     "Customer",
                     "orders@southernwholesale.com",
@@ -82,7 +82,7 @@ public static class PartnersDbContextSeed
                     tenantId).Value,
 
                 Partner.Create(
-                    Guid.Parse("cust0004-0000-0000-0000-000000000004"),
+                    Guid.Parse("c0000000-0000-0000-0000-000000000004"),
                     "Atlantic Trading Co",
                     "Customer",
                     "purchasing@atlantictrading.com",
@@ -96,7 +96,7 @@ public static class PartnersDbContextSeed
             var suppliers = new[]
             {
                 Partner.Create(
-                    Guid.Parse("supp0001-0000-0000-0000-000000000001"),
+                    Guid.Parse("b0000000-0000-0000-0000-000000000001"),
                     "Tech Supplies Ltd",
                     "Supplier",
                     "sales@techsupplies.com",
@@ -106,7 +106,7 @@ public static class PartnersDbContextSeed
                     tenantId).Value,
 
                 Partner.Create(
-                    Guid.Parse("supp0002-0000-0000-0000-000000000002"),
+                    Guid.Parse("b0000000-0000-0000-0000-000000000002"),
                     "Premium Materials Inc",
                     "Supplier",
                     "procurement@premmat.com",
@@ -116,7 +116,7 @@ public static class PartnersDbContextSeed
                     tenantId).Value,
 
                 Partner.Create(
-                    Guid.Parse("supp0003-0000-0000-0000-000000000003"),
+                    Guid.Parse("b0000000-0000-0000-0000-000000000003"),
                     "Global Components Corp",
                     "Supplier",
                     "orders@globalcomponents.com",
@@ -126,7 +126,7 @@ public static class PartnersDbContextSeed
                     tenantId).Value,
 
                 Partner.Create(
-                    Guid.Parse("supp0004-0000-0000-0000-000000000004"),
+                    Guid.Parse("b0000000-0000-0000-0000-000000000004"),
                     "Industrial Parts Warehouse",
                     "Supplier",
                     "sales@industrialparts.com",

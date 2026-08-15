@@ -46,10 +46,10 @@ COPY ["src/Modules/Notifications/ModulusSample.Modules.Notifications.Application
 COPY ["src/Modules/Notifications/ModulusSample.Modules.Notifications.Infrastructure/ModulusSample.Modules.Notifications.Infrastructure.csproj", "Modules/Notifications/ModulusSample.Modules.Notifications.Infrastructure/"]
 COPY ["src/Modules/Notifications/ModulusSample.Modules.Notifications.Presentation/ModulusSample.Modules.Notifications.Presentation.csproj", "Modules/Notifications/ModulusSample.Modules.Notifications.Presentation/"]
 
-COPY ["src/Modules/ModulusSample.Modules.Media/ModulusSample.Modules.Media.Domain/ModulusSample.Modules.Media.Domain.csproj", "Modules/Media/ModulusSample.Modules.Media.Domain/"]
-COPY ["src/Modules/ModulusSample.Modules.Media/ModulusSample.Modules.Media.Application/ModulusSample.Modules.Media.Application.csproj", "Modules/Media/ModulusSample.Modules.Media.Application/"]
-COPY ["src/Modules/ModulusSample.Modules.Media/ModulusSample.Modules.Media.Infrastructure/ModulusSample.Modules.Media.Infrastructure.csproj", "Modules/Media/ModulusSample.Modules.Media.Infrastructure/"]
-COPY ["src/Modules/ModulusSample.Modules.Media/ModulusSample.Modules.Media.Presentation/ModulusSample.Modules.Media.Presentation.csproj", "Modules/Media/ModulusSample.Modules.Media.Presentation/"]
+COPY ["src/Modules/Media/ModulusSample.Modules.Media.Domain/ModulusSample.Modules.Media.Domain.csproj", "Modules/Media/ModulusSample.Modules.Media.Domain/"]
+COPY ["src/Modules/Media/ModulusSample.Modules.Media.Application/ModulusSample.Modules.Media.Application.csproj", "Modules/Media/ModulusSample.Modules.Media.Application/"]
+COPY ["src/Modules/Media/ModulusSample.Modules.Media.Infrastructure/ModulusSample.Modules.Media.Infrastructure.csproj", "Modules/Media/ModulusSample.Modules.Media.Infrastructure/"]
+COPY ["src/Modules/Media/ModulusSample.Modules.Media.Presentation/ModulusSample.Modules.Media.Presentation.csproj", "Modules/Media/ModulusSample.Modules.Media.Presentation/"]
 
 COPY ["src/Modules/Catalog/ModulusSample.Modules.Catalog.Domain/ModulusSample.Modules.Catalog.Domain.csproj", "Modules/Catalog/ModulusSample.Modules.Catalog.Domain/"]
 COPY ["src/Modules/Catalog/ModulusSample.Modules.Catalog.Application/ModulusSample.Modules.Catalog.Application.csproj", "Modules/Catalog/ModulusSample.Modules.Catalog.Application/"]

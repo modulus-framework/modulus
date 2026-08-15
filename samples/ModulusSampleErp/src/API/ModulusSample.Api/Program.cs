@@ -30,6 +30,7 @@ using Modulus.Authorization.Management;
 using Modulus.Caching;
 using Modulus.EventBus.Kafka.Extensions;
 using Modulus.EventBus.RabbitMQ.Extensions;
+using Modulus.Core.Abstractions;
 using Modulus.MultiTenancy.EntityFrameworkCore;
 using Modulus.MultiTenancy.Extensions;
 using Modulus.Events.Extensions;
@@ -494,6 +495,26 @@ app.UseForwardedHeaders();
 
 // 1. Correlation ID (first to track all requests)
 app.UseModulusCorrelation();
+
+// 1.5. Multi-tenancy: resolve a tenant from the X-Tenant-Id header when
+// present; otherwise enter the explicit host scope so the "no tenant header"
+// API flow reads host-scoped (TenantId = Guid.Empty) seeded data. The sample
+// data is seeded under the host tenant, so the default flow must be host.
+app.Use(async (context, next) =>
+{
+    var hasTenantHeader = context.Request.Headers.ContainsKey("X-Tenant-Id");
+    if (hasTenantHeader)
+    {
+        await next(context);
+        return;
+    }
+
+    var currentTenant = context.RequestServices.GetRequiredService<ICurrentTenant>();
+    using (currentTenant.Change(null))
+    {
+        await next(context);
+    }
+});
 
 // 2. Request logging (captures all requests with correlation ID)
 app.UseSerilogRequestLogging();

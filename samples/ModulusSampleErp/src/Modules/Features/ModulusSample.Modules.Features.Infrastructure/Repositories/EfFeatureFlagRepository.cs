@@ -30,14 +30,14 @@ public sealed class EfFeatureFlagRepository(FeaturesDbContext context) : IFeatur
             query = query.Where(f => f.IsEnabled == isEnabled.Value);
         }
 
-        return await query.OrderBy(f => f.Key.Value).ToListAsync(ct);
+        return await query.OrderBy(f => f.Key).ToListAsync(ct);
     }
 
     public async Task<IReadOnlyList<FeatureFlag>> GetEnabledAsync(Guid tenantId, CancellationToken ct = default)
     {
         return await context.FeatureFlags
             .Where(f => f.TenantId == tenantId && f.IsEnabled)
-            .OrderBy(f => f.Key.Value)
+            .OrderBy(f => f.Key)
             .ToListAsync(ct);
     }
 
@@ -71,7 +71,7 @@ public sealed class EfFeatureFlagRepository(FeaturesDbContext context) : IFeatur
 
         int totalCount = await query.CountAsync(ct);
         var items = await query
-            .OrderBy(f => f.Key.Value)
+            .OrderBy(f => f.Key)
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync(ct);

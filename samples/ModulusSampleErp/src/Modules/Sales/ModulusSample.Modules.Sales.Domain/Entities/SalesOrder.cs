@@ -65,12 +65,11 @@ public sealed class SalesOrder : AggregateRoot<Guid>, IHasOrgUnit
     }
 }
 
-public sealed class OrderLine(Guid id, Guid productId, int quantity, decimal unitPrice)
+public sealed record OrderLine(
+    Guid Id,
+    Guid ProductId,
+    int Quantity,
+    decimal UnitPrice)
 {
-    public Guid Id { get; } = id;
-    public Guid ProductId { get; } = productId;
-    public int Quantity { get; private set; } = quantity;
-    public decimal UnitPrice { get; } = unitPrice;
-
     public decimal LineTotal => Quantity * UnitPrice;
 }

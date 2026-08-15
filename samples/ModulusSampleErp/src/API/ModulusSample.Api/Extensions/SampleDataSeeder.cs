@@ -78,12 +78,12 @@ internal static class SampleDataSeeder
         var acmeAtlantaWarehouseId = Guid.Parse("aaaa0000-0000-0000-0000-000000000202"); // South Region
 
         // 6 Personas: Sales Rep, Branch Manager, Regional Manager, Buyer, Purchasing Manager, Finance
-        var aliceSalesRepId = Guid.Parse("alice000-0000-0000-0000-000000000001");
-        var bobBranchMgrId = Guid.Parse("bob00000-0000-0000-0000-000000000001");
-        var charlieRegionalMgrId = Guid.Parse("charlie0-0000-0000-0000-000000000001");
-        var dianaBuyerId = Guid.Parse("diana000-0000-0000-0000-000000000001");
-        var evePurchasingMgrId = Guid.Parse("eve00000-0000-0000-0000-000000000001");
-        var frankFinanceId = Guid.Parse("frank000-0000-0000-0000-000000000001");
+        var aliceSalesRepId = Guid.Parse("a11ce000-0000-0000-0000-000000000001");
+        var bobBranchMgrId = Guid.Parse("b0b00000-0000-0000-0000-000000000001");
+        var charlieRegionalMgrId = Guid.Parse("c4a1e000-0000-0000-0000-000000000001");
+        var dianaBuyerId = Guid.Parse("d1a4a000-0000-0000-0000-000000000001");
+        var evePurchasingMgrId = Guid.Parse("e5e00000-0000-0000-0000-000000000001");
+        var frankFinanceId = Guid.Parse("f4a4a000-0000-0000-0000-000000000001");
 
         logger.LogInformation("Seeding comprehensive demo data for scenarios");
 

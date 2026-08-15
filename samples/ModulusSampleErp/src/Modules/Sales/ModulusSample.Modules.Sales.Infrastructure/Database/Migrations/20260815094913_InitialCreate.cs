@@ -1,10 +1,9 @@
-using System;
-using System.Text.Json;
+﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace ModulusSample.Modules.Tenants.Infrastructure.Database.Migrations
+namespace ModulusSample.Modules.Sales.Infrastructure.Database.Migrations
 {
     /// <inheritdoc />
     public partial class InitialCreate : Migration
@@ -13,11 +12,29 @@ namespace ModulusSample.Modules.Tenants.Infrastructure.Database.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.EnsureSchema(
-                name: "tenants");
+                name: "sales");
+
+            migrationBuilder.CreateTable(
+                name: "Orders",
+                schema: "sales",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    OrderNumber = table.Column<string>(type: "text", nullable: false),
+                    CustomerId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Status = table.Column<string>(type: "text", nullable: false),
+                    TotalAmount = table.Column<decimal>(type: "numeric", nullable: false),
+                    OrgUnitId = table.Column<Guid>(type: "uuid", nullable: false),
+                    TenantId = table.Column<Guid>(type: "uuid", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Orders", x => x.Id);
+                });
 
             migrationBuilder.CreateTable(
                 name: "outbox_messages",
-                schema: "tenants",
+                schema: "sales",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -41,73 +58,67 @@ namespace ModulusSample.Modules.Tenants.Infrastructure.Database.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Tenants",
-                schema: "tenants",
+                name: "OrderLines",
+                schema: "sales",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    Name = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
-                    Subdomain = table.Column<string>(type: "text", nullable: false),
-                    DatabaseConnectionString = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: false),
-                    IsActive = table.Column<bool>(type: "boolean", nullable: false),
-                    Features = table.Column<JsonDocument>(type: "jsonb", nullable: false),
-                    Settings = table.Column<JsonDocument>(type: "jsonb", nullable: false),
-                    CreatedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    CreatedBy = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
-                    LastModifiedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    LastModifiedBy = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
-                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
-                    DeletedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    DeletedBy = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
-                    Version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L)
+                    ProductId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Quantity = table.Column<int>(type: "integer", nullable: false),
+                    UnitPrice = table.Column<decimal>(type: "numeric", nullable: false),
+                    SalesOrderId = table.Column<Guid>(type: "uuid", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Tenants", x => x.Id);
+                    table.PrimaryKey("PK_OrderLines", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_OrderLines_Orders_SalesOrderId",
+                        column: x => x.SalesOrderId,
+                        principalSchema: "sales",
+                        principalTable: "Orders",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateIndex(
+                name: "IX_OrderLines_SalesOrderId",
+                schema: "sales",
+                table: "OrderLines",
+                column: "SalesOrderId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_outbox_messages_ProcessedAt_CreatedAt",
-                schema: "tenants",
+                schema: "sales",
                 table: "outbox_messages",
                 columns: new[] { "ProcessedAt", "CreatedAt" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_outbox_messages_ProcessedAt_LockedUntil_RetryCount",
-                schema: "tenants",
+                schema: "sales",
                 table: "outbox_messages",
                 columns: new[] { "ProcessedAt", "LockedUntil", "RetryCount" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_outbox_messages_TenantId",
-                schema: "tenants",
+                schema: "sales",
                 table: "outbox_messages",
                 column: "TenantId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Tenants_Name",
-                schema: "tenants",
-                table: "Tenants",
-                column: "Name");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Tenants_Subdomain",
-                schema: "tenants",
-                table: "Tenants",
-                column: "Subdomain",
-                unique: true);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "outbox_messages",
-                schema: "tenants");
+                name: "OrderLines",
+                schema: "sales");
 
             migrationBuilder.DropTable(
-                name: "Tenants",
-                schema: "tenants");
+                name: "outbox_messages",
+                schema: "sales");
+
+            migrationBuilder.DropTable(
+                name: "Orders",
+                schema: "sales");
         }
     }
 }

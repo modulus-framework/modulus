@@ -36,7 +36,29 @@ internal sealed class AuthorizationPipelineBehavior<TRequest, TResponse>(
 
     private static TResponse CreateFailure(string message)
     {
-        var result = Result.Failure(new Error("Authorization", message, ErrorType.Unauthorized));
-        return (TResponse)(object)result;
+        var error = new Error("Authorization", message, ErrorType.Unauthorized);
+
+        if (typeof(TResponse).IsGenericType &&
+            typeof(TResponse).GetGenericTypeDefinition() == typeof(Result<>))
+        {
+            Type resultType = typeof(TResponse).GetGenericArguments()[0];
+
+            MethodInfo? failureMethod = typeof(Result)
+                .GetMethod(nameof(Result.Failure), 1, [typeof(Error)]);
+
+            if (failureMethod is not null)
+            {
+                return (TResponse)failureMethod
+                    .MakeGenericMethod(resultType)
+                    .Invoke(null, [error])!;
+            }
+        }
+        else if (typeof(TResponse) == typeof(Result))
+        {
+            return (TResponse)(object)Result.Failure(error);
+        }
+
+        throw new InvalidOperationException(
+            $"Unsupported response type {typeof(TResponse).Name} for authorization failure.");
     }
 }

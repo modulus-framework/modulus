@@ -113,8 +113,8 @@ namespace ModulusSample.Modules.Features.Infrastructure.Database.Migrations
                         .HasColumnName("created_at");
 
                     b.Property<string>("CreatedBy")
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
+                        .HasMaxLength(36)
+                        .HasColumnType("character varying(36)")
                         .HasColumnName("created_by");
 
                     b.Property<string>("Description")
@@ -132,15 +132,6 @@ namespace ModulusSample.Modules.Features.Infrastructure.Database.Migrations
                         .HasColumnType("character varying(256)")
                         .HasColumnName("key");
 
-                    b.Property<DateTime>("LastModifiedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("last_modified_at");
-
-                    b.Property<string>("LastModifiedBy")
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
-                        .HasColumnName("last_modified_by");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -150,6 +141,15 @@ namespace ModulusSample.Modules.Features.Infrastructure.Database.Migrations
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid")
                         .HasColumnName("tenant_id");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(36)
+                        .HasColumnType("character varying(36)")
+                        .HasColumnName("updated_by");
 
                     b.Property<long>("Version")
                         .IsConcurrencyToken()

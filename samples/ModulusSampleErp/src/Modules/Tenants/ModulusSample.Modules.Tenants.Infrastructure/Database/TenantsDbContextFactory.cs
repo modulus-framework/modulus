@@ -29,13 +29,15 @@ public sealed class TenantsDbContextFactory : IDesignTimeDbContextFactory<Tenant
             connectionString = "Host=localhost;Port=5432;Database=modulus_sample_tenants;Username=postgres;Password=postgres";
         }
 
-        optionsBuilder.UseNpgsql(connectionString, npgsqlOptions =>
-        {
-            npgsqlOptions.MigrationsHistoryTable(
-                "__EFMigrationsHistory",
-                Schemas.Tenants);
-            npgsqlOptions.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery);
-        });
+        optionsBuilder
+            .UseNpgsql(connectionString, npgsqlOptions =>
+            {
+                npgsqlOptions.MigrationsHistoryTable(
+                    "__EFMigrationsHistory",
+                    Schemas.Tenants);
+                npgsqlOptions.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery);
+            })
+            .UseSnakeCaseNamingConvention();
 
         return new TenantsDbContext(
             optionsBuilder.Options,

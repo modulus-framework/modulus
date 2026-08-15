@@ -63,8 +63,8 @@ public static class PurchasingDbContextSeed
                 return;
 
             // Supplier IDs from Partners module
-            var techSuppliesSupplierId = Guid.Parse("supp0001-0000-0000-0000-000000000001");
-            var premiumMaterialsSupplierId = Guid.Parse("supp0002-0000-0000-0000-000000000002");
+            var techSuppliesSupplierId = Guid.Parse("b0000000-0000-0000-0000-000000000001");
+            var premiumMaterialsSupplierId = Guid.Parse("b0000000-0000-0000-0000-000000000002");
 
             // Product IDs from Catalog module
             var widgetAProductId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
