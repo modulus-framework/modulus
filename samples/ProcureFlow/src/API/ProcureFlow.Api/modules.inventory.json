@@ -1,0 +1,25 @@
+{
+  "ConnectionStrings": {
+    "Inventory": "Host=localhost;Port=5432;Database=ModulusSample;Username=ModulusSample;Password=ModulusSample"
+  },
+  "Inventory": {
+    "LowStockThreshold": 10,
+    "OutOfStockThreshold": 0,
+    "AutoReorderEnabled": true,
+    "CacheTtlSeconds": 1800
+  },
+  "Outbox": {
+    "IntervalInSeconds": 30,
+    "BatchSize": 100,
+    "MaxRetries": 5,
+    "InitialDelayInSeconds": 5,
+    "EnableDeadLetterQueue": true
+  },
+  "Inbox": {
+    "IntervalInSeconds": 30,
+    "BatchSize": 100,
+    "MaxRetries": 5,
+    "InitialDelayInSeconds": 5,
+    "EnableDeadLetterQueue": true
+  }
+}

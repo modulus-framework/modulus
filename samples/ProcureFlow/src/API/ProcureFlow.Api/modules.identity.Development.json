@@ -1,0 +1,9 @@
+{
+  "Identity": {
+    "RequireConfirmedEmail": false,
+    "AccessTokenLifetimeMin": 30,
+    "RefreshTokenLifetimeDays": 14,
+    "AllowPasswordFlow": true,
+    "UseDevelopmentCertificates": true
+  }
+}

@@ -11,8 +11,8 @@ using Modulus.AspNetCore.HealthChecks;
 using Modulus.AspNetCore.RateLimiting;
 using Modulus.AspNetCore.Security;
 using Modulus.AspNetCore.Versioning;
-using Modulus.EntityFrameworkCore.Extensions;
-using Modulus.Events.Extensions;
+{{ if !use_dbsh }}using Modulus.EntityFrameworkCore.Extensions;
+{{ end }}using Modulus.Events.Extensions;
 using Modulus.Mediator.Extensions;
 {{ if auth == "openiddict" }}using Modulus.Identity.Extensions;
 {{ end }}{{ if use_external_provider }}using {{ external_provider_namespace }};
@@ -112,10 +112,15 @@ var app = builder.Build();
 // freshly generated app (and the integration-test harness) runs before you author
 // the first migration.
 // Author the first migration with:  modulus migrate add <Name> --module <Module>
-await app.Services.MigrateModulusDatabasesAsync(
+{{ if !use_dbsh }}await app.Services.MigrateModulusDatabasesAsync(
     app.Environment.IsProduction()
         ? DatabaseInitializationMode.Migrate
         : DatabaseInitializationMode.MigrateOrCreate);
+{{ else }}
+// Schema is managed externally (dbsh). Run:  dbsh migrate --yes
+// Each module's DbContext is marked ExternallyManaged so the framework
+// skips EF Migrate/EnsureCreated and lets dbsh own the schema.
+{{ end }}
 
 // ── Middleware ─────────────────────────────────────────────────
 // Order matters: forwarded headers first (so everything downstream sees the

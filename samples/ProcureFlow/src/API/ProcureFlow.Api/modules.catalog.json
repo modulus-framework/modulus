@@ -1,0 +1,24 @@
+{
+  "ConnectionStrings": {
+    "Catalog": "Host=localhost;Port=5432;Database=ModulusSample;Username=ModulusSample;Password=ModulusSample"
+  },
+  "Catalog": {
+    "MaxProductsPerCategory": 10000,
+    "EnableProductSearch": true,
+    "CacheTtlSeconds": 3600
+  },
+  "Outbox": {
+    "IntervalInSeconds": 30,
+    "BatchSize": 100,
+    "MaxRetries": 5,
+    "InitialDelayInSeconds": 5,
+    "EnableDeadLetterQueue": true
+  },
+  "Inbox": {
+    "IntervalInSeconds": 30,
+    "BatchSize": 100,
+    "MaxRetries": 5,
+    "InitialDelayInSeconds": 5,
+    "EnableDeadLetterQueue": true
+  }
+}
