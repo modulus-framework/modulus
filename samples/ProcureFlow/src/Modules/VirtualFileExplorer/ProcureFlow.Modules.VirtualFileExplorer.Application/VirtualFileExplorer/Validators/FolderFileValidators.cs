@@ -1,7 +1,7 @@
 using FluentValidation;
-using ModulusSample.Modules.VirtualFileExplorer.Application.VirtualFileExplorer.Commands;
+using ProcureFlow.Modules.VirtualFileExplorer.Application.VirtualFileExplorer.Commands;
 
-namespace ModulusSample.Modules.VirtualFileExplorer.Application.VirtualFileExplorer.Validators;
+namespace ProcureFlow.Modules.VirtualFileExplorer.Application.VirtualFileExplorer.Validators;
 
 public sealed class CreateFolderCommandValidator : AbstractValidator<CreateFolderCommand>
 {

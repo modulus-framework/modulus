@@ -2,6 +2,7 @@ using System.Text;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Modulus.AspNetCore.Idempotency;
 using Xunit;
@@ -139,7 +140,8 @@ public sealed class IdempotencyMiddlewareTests
         };
 
         var store = new InMemoryIdempotencyStore(Options.Create(options));
-        var mw = new IdempotencyMiddleware(next, Options.Create(options));
+        var mw = new IdempotencyMiddleware(
+            next, Options.Create(options), NullLogger<IdempotencyMiddleware>.Instance);
         return (mw, store, calls);
     }
 

@@ -4,10 +4,10 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <Description>MongoDB inbox store for Modulus idempotent integration-event consumption, sharing the decorator pipeline with the EF Core inbox.</Description>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../Modulus.Inbox/Modulus.Inbox.csproj" />
     <ProjectReference Include="../Modulus.Inbox/Modulus.Inbox.csproj" />
     <ProjectReference Include="../../data/Modulus.Data.MongoDB/Modulus.Data.MongoDB.csproj" />
   </ItemGroup>

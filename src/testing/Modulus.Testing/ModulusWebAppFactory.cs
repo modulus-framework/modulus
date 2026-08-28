@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Modulus.Testing.Internal;
 
 /// <summary>
@@ -27,6 +29,14 @@ using Modulus.Testing.Internal;
 /// contexts open and close.
 /// </para>
 /// <para>
+/// The keep-alives are opened by a hosted service registered <b>before</b> the
+/// application's own hosted services: startup seeders (OpenIddict clients,
+/// background jobs, …) hit the database during <c>StartAsync</c>, and a
+/// shared-cache in-memory database dies the moment its last connection closes —
+/// so by the time any startup hosted service runs, the schema created while the
+/// host was being wired has already evaporated. Running first fixes that.
+/// </para>
+/// <para>
 /// The host runs in the <c>Testing</c> environment. Register per-test overrides
 /// (a fixed <see cref="TimeProvider"/>, stub services, seed data) by subclassing
 /// and overriding <see cref="ConfigureWebHost"/> with a further
@@ -43,6 +53,8 @@ public class ModulusWebAppFactory<TEntryPoint> : WebApplicationFactory<TEntryPoi
 
     private readonly List<SqliteConnection> _keepAlives = [];
 
+    private readonly TestDatabaseRegistry _registry = new();
+
     /// <inheritdoc />
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -50,58 +62,27 @@ public class ModulusWebAppFactory<TEntryPoint> : WebApplicationFactory<TEntryPoi
         builder.ConfigureTestServices(services =>
         {
             // Point every module DbContext at its own factory-owned SQLite
-            // database. The per-context connection map is only available once
-            // this callback runs (during host build), so the keep-alives are
-            // opened in CreateHost after the host is built — see there.
-            services.UsePerContextSqlite(_databasePrefix);
+            // database; record which contexts are factory-registered so the
+            // keep-alive pass below can reach those too.
+            services.UsePerContextSqlite(_databasePrefix, _registry);
 
             // …and make the header-driven test scheme the default so [Authorize]
             // endpoints accept CreateAuthenticatedClient's principal.
             services.AddAuthentication(TestAuthDefaults.SchemeName)
                 .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(
                     TestAuthDefaults.SchemeName, _ => { });
+
+            // Keep-alive + EnsureCreated for every swapped database, running
+            // BEFORE the application's own hosted services (index 0) so startup
+            // seeders see live schema. Scoped/module contexts resolve through
+            // DI; factory-only contexts (e.g. AddEfCoreAuthorizationStores)
+            // resolve through their IDbContextFactory<T>.
+            services.Insert(0, ServiceDescriptor.Singleton<IHostedService>(sp =>
+                new SqliteKeepAliveService(sp, _registry, HoldConnection)));
         });
     }
 
-    /// <inheritdoc />
-    protected override IHost CreateHost(IHostBuilder builder)
-    {
-        // The host's startup (generated Program) runs MigrateModulusDatabasesAsync
-        // while this method's base call builds it — but ConfigureTestServices (and
-        // therefore the SQLite swap) executes only at that point, so the per-context
-        // connection map is not available before the host exists. The schema the
-        // startup just created lives in in-memory databases held only by transient
-        // connections, so it is lost the moment those connections close.
-        var host = base.CreateHost(builder);
-
-        // So: resolve each module context from the built host, open a keep-alive
-        // for its own database (a shared-cache in-memory DB survives only while at
-        // least one connection to it stays open — otherwise it dies with the last
-        // closing connection), and then recreate the schema inside those kept-alive
-        // databases. The connection string comes from the context itself, so the
-        // keep-alive is guaranteed to target the exact cache the context uses.
-        using (var scope = host.Services.CreateScope())
-        {
-            foreach (var db in scope.ServiceProvider.GetServices<DbContext>())
-            {
-                var connectionString = db.Database.GetConnectionString();
-                if (string.IsNullOrWhiteSpace(connectionString))
-                    continue;
-
-                var keepAlive = new SqliteConnection(connectionString);
-                keepAlive.Open();
-                _keepAlives.Add(keepAlive);
-            }
-        }
-
-        // EnsureCreated is idempotent per context, so this is a no-op when the
-        // app already ran MigrateModulusDatabasesAsync against these databases.
-        using var safetyScope = host.Services.CreateScope();
-        foreach (var db in safetyScope.ServiceProvider.GetServices<DbContext>())
-            db.Database.EnsureCreated();
-
-        return host;
-    }
+    private void HoldConnection(SqliteConnection connection) => _keepAlives.Add(connection);
 
     /// <summary>
     /// Creates an <see cref="HttpClient"/> whose requests carry a test principal.
@@ -151,5 +132,57 @@ public class ModulusWebAppFactory<TEntryPoint> : WebApplicationFactory<TEntryPoi
             _keepAlives.Clear();
         }
         base.Dispose(disposing);
+    }
+
+    /// <summary>
+    /// Opens one keep-alive connection per swapped database and creates its
+    /// schema, before the application's hosted services start. A shared-cache
+    /// in-memory SQLite database only lives while at least one connection to
+    /// it is open, and connections opened during host wiring (startup
+    /// migrations) close before <c>StartAsync</c> — without this service the
+    /// first startup seeder would find an empty database.
+    /// </summary>
+    private sealed class SqliteKeepAliveService(
+        IServiceProvider provider,
+        TestDatabaseRegistry registry,
+        Action<SqliteConnection> holdConnection) : IHostedService
+    {
+        public async Task StartAsync(CancellationToken cancellationToken)
+        {
+            using (var scope = provider.CreateScope())
+            {
+                foreach (var db in scope.ServiceProvider.GetServices<DbContext>())
+                    await KeepAliveAsync(db, cancellationToken);
+            }
+
+            foreach (var contextType in registry.FactoryContextTypes)
+            {
+                var factoryType = typeof(IDbContextFactory<>).MakeGenericType(contextType);
+                var createAsync = factoryType.GetMethod(
+                    "CreateDbContextAsync", [typeof(CancellationToken)])!;
+                var factory = provider.GetRequiredService(factoryType);
+                var task = (Task)createAsync.Invoke(factory, [cancellationToken])!;
+                await task;
+                var db = (DbContext)task.GetType().GetProperty("Result")!.GetValue(task)!;
+                await KeepAliveAsync(db, cancellationToken);
+            }
+        }
+
+        public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+        private async Task KeepAliveAsync(DbContext db, CancellationToken cancellationToken)
+        {
+            var connectionString = db.Database.GetConnectionString();
+            if (string.IsNullOrWhiteSpace(connectionString))
+                return;
+
+            var keepAlive = new SqliteConnection(connectionString);
+            await keepAlive.OpenAsync(cancellationToken);
+            holdConnection(keepAlive);
+
+            // EnsureCreated is idempotent per context; any schema the app
+            // created while wiring the host died with its connections.
+            await db.Database.EnsureCreatedAsync(cancellationToken);
+        }
     }
 }

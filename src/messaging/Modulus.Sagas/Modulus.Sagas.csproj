@@ -4,11 +4,8 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <Description>Rebus-based saga/process-manager orchestration for Modulus: Polly resilience, ambient context propagation, IIntegrationEventHandler bridging, and module-bus routing.</Description>
   </PropertyGroup>
-
-  <ItemGroup>
-    <FrameworkReference Include="Microsoft.AspNetCore.App" />
-  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Rebus" />
@@ -20,7 +17,6 @@
   <ItemGroup>
     <ProjectReference Include="../Modulus.Events/Modulus.Events.csproj" />
     <ProjectReference Include="../Modulus.Outbox.Abstractions/Modulus.Outbox.Abstractions.csproj" />
-    <ProjectReference Include="../Modulus.Inbox/Modulus.Inbox.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -33,7 +33,7 @@
              Cobytelabs.Modulus.SignalR.Backplane   (Redis backplane for multi-node SignalR)
              Cobytelabs.Modulus.Storage.AzureBlobs  (Azure Blob file storage)
              Cobytelabs.Modulus.Storage.S3          (S3-compatible file storage, e.g. MinIO) -->
-        <PackageReference Include="Cobytelabs.Modulus.Testing" Version="1.2.0" />
+        <PackageReference Include="Cobytelabs.Modulus.Testing" Version="1.2.3" />
         <PackageReference Include="Microsoft.AspNetCore.DataProtection.StackExchangeRedis" Version="10.0.3" />
         <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.9" />
         <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.9">
@@ -77,6 +77,9 @@
         <ProjectReference Include="..\..\Modules\Inventory\ProcureFlow.Modules.Inventory.Infrastructure\ProcureFlow.Modules.Inventory.Infrastructure.csproj" />
         <ProjectReference Include="..\..\Modules\Costing\ProcureFlow.Modules.Costing.Infrastructure\ProcureFlow.Modules.Costing.Infrastructure.csproj" />
         <ProjectReference Include="..\..\Modules\Finance\ProcureFlow.Modules.Finance.Infrastructure\ProcureFlow.Modules.Finance.Infrastructure.csproj" />
+        <ProjectReference Include="..\..\Modules\OrgStructure\ProcureFlow.Modules.OrgStructure.Infrastructure\ProcureFlow.Modules.OrgStructure.Infrastructure.csproj" />
+        <ProjectReference Include="..\..\Modules\VirtualFileExplorer\ProcureFlow.Modules.VirtualFileExplorer.Infrastructure\ProcureFlow.Modules.VirtualFileExplorer.Infrastructure.csproj" />
+        <ProjectReference Include="..\..\Modules\WorkflowEngine\ProcureFlow.Modules.WorkflowEngine.Infrastructure\ProcureFlow.Modules.WorkflowEngine.Infrastructure.csproj" />
     </ItemGroup>
 
     <ItemGroup>

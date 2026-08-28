@@ -1,10 +1,10 @@
 using Modulus.Core.Abstractions;
 using Modulus.Mediator.Abstractions;
-using ModulusSample.Modules.VirtualFileExplorer.Application.VirtualFileExplorer.Commands;
-using ModulusSample.Modules.VirtualFileExplorer.Application.VirtualFileExplorer.Dtos;
-using ModulusSample.Shared.Domain;
+using ProcureFlow.Modules.VirtualFileExplorer.Application.VirtualFileExplorer.Commands;
+using ProcureFlow.Modules.VirtualFileExplorer.Application.VirtualFileExplorer.Dtos;
+using ProcureFlow.Shared.Domain;
 
-namespace ModulusSample.Modules.VirtualFileExplorer.Presentation.VirtualFileExplorer;
+namespace ProcureFlow.Modules.VirtualFileExplorer.Presentation.VirtualFileExplorer;
 
 internal sealed class RenameFolderEndpoint : Endpoint<RenameFolderEndpoint.RenameFolderRequest, FolderResponse>
 {

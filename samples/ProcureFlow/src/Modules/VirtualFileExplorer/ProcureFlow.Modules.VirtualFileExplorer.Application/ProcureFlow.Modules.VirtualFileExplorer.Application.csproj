@@ -7,8 +7,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\Shared\ModulusSample.Shared.Application\ModulusSample.Shared.Application.csproj"/>
-    <ProjectReference Include="..\ModulusSample.Modules.VirtualFileExplorer.Domain\ModulusSample.Modules.VirtualFileExplorer.Domain.csproj" />
+    <ProjectReference Include="..\..\..\Shared\ProcureFlow.Shared.Application\ProcureFlow.Shared.Application.csproj"/>
+    <ProjectReference Include="..\ProcureFlow.Modules.VirtualFileExplorer.Domain\ProcureFlow.Modules.VirtualFileExplorer.Domain.csproj" />
     <PackageReference Include="FluentValidation" Version="12.1.1" />
   </ItemGroup>
 

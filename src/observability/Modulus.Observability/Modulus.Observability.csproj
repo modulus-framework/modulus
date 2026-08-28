@@ -4,6 +4,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <Description>Observability for Modulus: OpenTelemetry wiring, activity sources, tracing behaviour, and module graph/health diagnostic endpoints.</Description>
   </PropertyGroup>
 
   <ItemGroup>

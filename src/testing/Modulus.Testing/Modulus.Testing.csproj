@@ -2,6 +2,15 @@
 
   <PropertyGroup>
     <Description>Integration-test harness for Modulus applications: a WebApplicationFactory that boots the fully composed host and swaps every module DbContext to an isolated in-memory SQLite database, plus authenticated test clients.</Description>
+    <!-- Local override of the repo-wide 1.2.0: the SQLite swap silently dropped
+         IDbContextFactory registrations (factory-only contexts such as
+         AddEfCoreAuthorizationStores became unresolvable in tests), and the
+         keep-alive/EnsureCreated pass ran after hosted services started
+         (startup seeders saw empty databases). Both properties must be set:
+         build/Modulus.Packaging.props assigns PackageVersion before this
+         project body is evaluated. -->
+    <Version>1.2.3</Version>
+    <PackageVersion>1.2.3</PackageVersion>
   </PropertyGroup>
 
   <ItemGroup>

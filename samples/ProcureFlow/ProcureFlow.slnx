@@ -43,6 +43,12 @@
     <Project Path="src/Modules/Vendors/ProcureFlow.Modules.Vendors.Infrastructure/ProcureFlow.Modules.Vendors.Infrastructure.csproj" />
     <Project Path="src/Modules/Vendors/ProcureFlow.Modules.Vendors.Presentation/ProcureFlow.Modules.Vendors.Presentation.csproj" />
   </Folder>
+  <Folder Name="/src/Modules/OrgStructure/">
+    <Project Path="src/Modules/OrgStructure/ProcureFlow.Modules.OrgStructure.Domain/ProcureFlow.Modules.OrgStructure.Domain.csproj" />
+    <Project Path="src/Modules/OrgStructure/ProcureFlow.Modules.OrgStructure.Application/ProcureFlow.Modules.OrgStructure.Application.csproj" />
+    <Project Path="src/Modules/OrgStructure/ProcureFlow.Modules.OrgStructure.Infrastructure/ProcureFlow.Modules.OrgStructure.Infrastructure.csproj" />
+    <Project Path="src/Modules/OrgStructure/ProcureFlow.Modules.OrgStructure.Presentation/ProcureFlow.Modules.OrgStructure.Presentation.csproj" />
+  </Folder>
   <Folder Name="/src/Modules/" />
 
   <Folder Name="/src/Modules/Budgeting/">
@@ -98,6 +104,20 @@
     <Project Path="src/Modules/Costing/ProcureFlow.Modules.Costing.Application/ProcureFlow.Modules.Costing.Application.csproj" />
     <Project Path="src/Modules/Costing/ProcureFlow.Modules.Costing.Infrastructure/ProcureFlow.Modules.Costing.Infrastructure.csproj" />
     <Project Path="src/Modules/Costing/ProcureFlow.Modules.Costing.Presentation/ProcureFlow.Modules.Costing.Presentation.csproj" />
+  </Folder>
+
+  <Folder Name="/src/Modules/VirtualFileExplorer/">
+    <Project Path="src/Modules/VirtualFileExplorer/ProcureFlow.Modules.VirtualFileExplorer.Domain/ProcureFlow.Modules.VirtualFileExplorer.Domain.csproj" />
+    <Project Path="src/Modules/VirtualFileExplorer/ProcureFlow.Modules.VirtualFileExplorer.Application/ProcureFlow.Modules.VirtualFileExplorer.Application.csproj" />
+    <Project Path="src/Modules/VirtualFileExplorer/ProcureFlow.Modules.VirtualFileExplorer.Infrastructure/ProcureFlow.Modules.VirtualFileExplorer.Infrastructure.csproj" />
+    <Project Path="src/Modules/VirtualFileExplorer/ProcureFlow.Modules.VirtualFileExplorer.Presentation/ProcureFlow.Modules.VirtualFileExplorer.Presentation.csproj" />
+  </Folder>
+
+  <Folder Name="/src/Modules/WorkflowEngine/">
+    <Project Path="src/Modules/WorkflowEngine/ProcureFlow.Modules.WorkflowEngine.Domain/ProcureFlow.Modules.WorkflowEngine.Domain.csproj" />
+    <Project Path="src/Modules/WorkflowEngine/ProcureFlow.Modules.WorkflowEngine.Application/ProcureFlow.Modules.WorkflowEngine.Application.csproj" />
+    <Project Path="src/Modules/WorkflowEngine/ProcureFlow.Modules.WorkflowEngine.Infrastructure/ProcureFlow.Modules.WorkflowEngine.Infrastructure.csproj" />
+    <Project Path="src/Modules/WorkflowEngine/ProcureFlow.Modules.WorkflowEngine.Presentation/ProcureFlow.Modules.WorkflowEngine.Presentation.csproj" />
   </Folder>
 
   <Folder Name="/tests/">

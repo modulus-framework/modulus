@@ -1,6 +1,6 @@
 using Modulus.Events.Abstractions;
 
-namespace ModulusSample.Modules.VirtualFileExplorer.Application.IntegrationEvents;
+namespace ProcureFlow.Modules.VirtualFileExplorer.Application.IntegrationEvents;
 
 public sealed record VirtualFolderCreatedIntegrationEvent(
     Guid FolderId,

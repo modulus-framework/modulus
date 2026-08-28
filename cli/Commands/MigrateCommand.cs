@@ -14,6 +14,10 @@ internal static class MigrateSupport
 {
     internal sealed record ModuleProject(string Name, string InfrastructureCsproj);
 
+    /// <summary>Detects whether a module uses dbsh by checking for dbsh.toml.</summary>
+    internal static bool IsDbshModule(string infraDir)
+        => File.Exists(Path.Combine(infraDir, "dbsh.toml"));
+
     /// <summary>The host/startup project (<c>*.Api.csproj</c>) EF resolves config from.</summary>
     public static string? FindStartupProject(string root)
     {
@@ -128,16 +132,29 @@ internal sealed class MigrateAddCommand : Command<MigrateAddCommand.Settings>
             foreach (var m in modules)
             {
                 var projRel = Path.GetRelativePath(root, m.InfrastructureCsproj);
-                if (Ux.DryRun)
-                    Ux.DryRunNote($"would scaffold [cyan]{s.Name}[/] in {m.Name}");
-                else
-                    Ux.Info($"  [grey]›[/] {m.Name}");
+                var infraDir = Path.GetDirectoryName(m.InfrastructureCsproj)!;
+                var isDbsh = MigrateSupport.IsDbshModule(infraDir);
 
-                var code = MigrateSupport.RunDotnetEf(root,
-                    "migrations", "add", s.Name,
-                    "--project", projRel,
-                    "--startup-project", startupRel,
-                    "--output-dir", "Migrations");
+                if (Ux.DryRun)
+                    Ux.DryRunNote($"would scaffold [cyan]{s.Name}[/] in {m.Name} ({(isDbsh ? "dbsh" : "efcore")})");
+                else
+                    Ux.Info($"  [grey]›[/] {m.Name} ({(isDbsh ? "dbsh" : "efcore")})");
+
+                int code;
+                if (isDbsh)
+                {
+                    code = Ux.RunProcess("dbsh",
+                        $"create --name {s.Name} --type schema --module {m.Name}",
+                        root, dryRunLabel: "");
+                }
+                else
+                {
+                    code = MigrateSupport.RunDotnetEf(root,
+                        "migrations", "add", s.Name,
+                        "--project", projRel,
+                        "--startup-project", startupRel,
+                        "--output-dir", "Migrations");
+                }
 
                 if (code != 0)
                 {
@@ -205,15 +222,28 @@ internal sealed class MigrateUpdateCommand : Command<MigrateUpdateCommand.Settin
             foreach (var m in modules)
             {
                 var projRel = Path.GetRelativePath(root, m.InfrastructureCsproj);
-                if (Ux.DryRun)
-                    Ux.DryRunNote($"would update database for {m.Name}");
-                else
-                    Ux.Info($"  [grey]›[/] {m.Name}");
+                var infraDir = Path.GetDirectoryName(m.InfrastructureCsproj)!;
+                var isDbsh = MigrateSupport.IsDbshModule(infraDir);
 
-                var code = MigrateSupport.RunDotnetEf(root,
-                    "database", "update",
-                    "--project", projRel,
-                    "--startup-project", startupRel);
+                if (Ux.DryRun)
+                    Ux.DryRunNote($"would update database for {m.Name} ({(isDbsh ? "dbsh" : "efcore")})");
+                else
+                    Ux.Info($"  [grey]›[/] {m.Name} ({(isDbsh ? "dbsh" : "efcore")})");
+
+                int code;
+                if (isDbsh)
+                {
+                    code = Ux.RunProcess("dbsh",
+                        $"migrate --module {m.Name} --yes",
+                        root, dryRunLabel: "");
+                }
+                else
+                {
+                    code = MigrateSupport.RunDotnetEf(root,
+                        "database", "update",
+                        "--project", projRel,
+                        "--startup-project", startupRel);
+                }
 
                 if (code != 0)
                 {

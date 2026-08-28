@@ -99,15 +99,21 @@
       # Single shared database (per-module Postgres schemas): every connection
       # string targets the same ProcureFlow DB on the postgres service.
       ConnectionStrings__Database: "Host=postgres;Port=5432;Database=ProcureFlow;Username=ProcureFlow;Password=ProcureFlow"
+      ConnectionStrings__Authorization: "Host=postgres;Port=5432;Database=ProcureFlow_Authorization;Username=ProcureFlow;Password=ProcureFlow"
       ConnectionStrings__Configuration: "Host=postgres;Port=5432;Database=ProcureFlow;Username=ProcureFlow;Password=ProcureFlow"
       ConnectionStrings__Tenants: "Host=postgres;Port=5432;Database=ProcureFlow;Username=ProcureFlow;Password=ProcureFlow"
-      ConnectionStrings__Media: "Host=postgres;Port=5432;Database=ProcureFlow;Username=ProcureFlow;Password=ProcureFlow"
-      ConnectionStrings__Catalog: "Host=postgres;Port=5432;Database=ProcureFlow;Username=ProcureFlow;Password=ProcureFlow"
-      ConnectionStrings__Partners: "Host=postgres;Port=5432;Database=ProcureFlow;Username=ProcureFlow;Password=ProcureFlow"
+      ConnectionStrings__Notifications: "Host=postgres;Port=5432;Database=ProcureFlow;Username=ProcureFlow;Password=ProcureFlow"
+      ConnectionStrings__Vendors: "Host=postgres;Port=5432;Database=ProcureFlow;Username=ProcureFlow;Password=ProcureFlow"
+      ConnectionStrings__OrgStructure: "Host=postgres;Port=5432;Database=ProcureFlow;Username=ProcureFlow;Password=ProcureFlow"
+      ConnectionStrings__Budgeting: "Host=postgres;Port=5432;Database=ProcureFlow;Username=ProcureFlow;Password=ProcureFlow"
+      ConnectionStrings__Customs: "Host=postgres;Port=5432;Database=ProcureFlow;Username=ProcureFlow;Password=ProcureFlow"
+      ConnectionStrings__Procurement: "Host=postgres;Port=5432;Database=ProcureFlow;Username=ProcureFlow;Password=ProcureFlow"
+      ConnectionStrings__TradeFinance: "Host=postgres;Port=5432;Database=ProcureFlow;Username=ProcureFlow;Password=ProcureFlow"
+      ConnectionStrings__Import: "Host=postgres;Port=5432;Database=ProcureFlow;Username=ProcureFlow;Password=ProcureFlow"
       ConnectionStrings__Inventory: "Host=postgres;Port=5432;Database=ProcureFlow;Username=ProcureFlow;Password=ProcureFlow"
-      ConnectionStrings__Sales: "Host=postgres;Port=5432;Database=ProcureFlow;Username=ProcureFlow;Password=ProcureFlow"
-      ConnectionStrings__Purchasing: "Host=postgres;Port=5432;Database=ProcureFlow;Username=ProcureFlow;Password=ProcureFlow"
-      ConnectionStrings__Billing: "Host=postgres;Port=5432;Database=ProcureFlow;Username=ProcureFlow;Password=ProcureFlow"
+      ConnectionStrings__Costing: "Host=postgres;Port=5432;Database=ProcureFlow;Username=ProcureFlow;Password=ProcureFlow"
+      ConnectionStrings__Finance: "Host=postgres;Port=5432;Database=ProcureFlow;Username=ProcureFlow;Password=ProcureFlow"
+      ConnectionStrings__VirtualFileExplorer: "Host=postgres;Port=5432;Database=ProcureFlow;Username=ProcureFlow;Password=ProcureFlow"
       ConnectionStrings__Cache: "redis:6379"
       MessageBus__RabbitMq__HostName: rabbitmq
       MessageBus__RabbitMq__Port: 5672

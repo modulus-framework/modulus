@@ -1,10 +1,10 @@
-using ModulusSample.Modules.VirtualFileExplorer.Application;
+using ProcureFlow.Modules.VirtualFileExplorer.Application;
 using Modulus.EntityFrameworkCore.Abstractions;
-using ModulusSample.Modules.VirtualFileExplorer.Application.DomainEventHandlers;
-using ModulusSample.Modules.VirtualFileExplorer.Application.IntegrationEvents;
-using ModulusSample.Modules.VirtualFileExplorer.Domain.Repositories;
-using ModulusSample.Modules.VirtualFileExplorer.Infrastructure.Database;
-using ModulusSample.Modules.VirtualFileExplorer.Infrastructure.Repositories;
+using ProcureFlow.Modules.VirtualFileExplorer.Application.DomainEventHandlers;
+using ProcureFlow.Modules.VirtualFileExplorer.Application.IntegrationEvents;
+using ProcureFlow.Modules.VirtualFileExplorer.Domain.Repositories;
+using ProcureFlow.Modules.VirtualFileExplorer.Infrastructure.Database;
+using ProcureFlow.Modules.VirtualFileExplorer.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.Configuration;
@@ -17,7 +17,7 @@ using Modulus.Inbox.Extensions;
 using Modulus.Outbox.Abstractions;
 using Modulus.Inbox.Abstractions;
 
-namespace ModulusSample.Modules.VirtualFileExplorer.Infrastructure;
+namespace ProcureFlow.Modules.VirtualFileExplorer.Infrastructure;
 
 public sealed class VirtualFileExplorerModule : ModulusModule
 {
@@ -27,7 +27,9 @@ public sealed class VirtualFileExplorerModule : ModulusModule
     {
         services.AddMediatorHandlers(typeof(AssemblyReference).Assembly);
         services.AddValidatorsFromAssembly(Application.AssemblyReference.Assembly);
-        AddDomainEventHandlers(services);
+        // NOTE: IDomainEventHandler registrations are global — the host's
+        // AddModulusEvents scans every module Application assembly. A local
+        // registration loop here would double-register (and double-publish).
         AddInfrastructure(services, configuration);
     }
 
@@ -72,20 +74,5 @@ public sealed class VirtualFileExplorerModule : ModulusModule
             opts.MaxRetries = inboxConfig.GetValue<int>("MaxRetries");
             opts.HandlerRetryCount = inboxConfig.GetValue<int>("MaxRetries");
         });
-    }
-
-    private static void AddDomainEventHandlers(IServiceCollection services)
-    {
-        Type openHandlerType = typeof(Modulus.Events.Abstractions.IDomainEventHandler<>);
-        Type[] domainEventHandlers = Application.AssemblyReference.Assembly
-            .GetTypes()
-            .Where(t => !t.IsAbstract && !t.IsInterface && t.GetInterfaces().Any(i =>
-                i.IsGenericType && i.GetGenericTypeDefinition() == openHandlerType))
-            .ToArray();
-
-        foreach (Type domainEventHandler in domainEventHandlers)
-        {
-            services.AddScoped(domainEventHandler);
-        }
     }
 }

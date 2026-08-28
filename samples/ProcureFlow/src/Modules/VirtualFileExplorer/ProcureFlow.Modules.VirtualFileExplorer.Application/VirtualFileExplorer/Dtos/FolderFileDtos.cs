@@ -1,4 +1,4 @@
-namespace ModulusSample.Modules.VirtualFileExplorer.Application.VirtualFileExplorer.Dtos;
+namespace ProcureFlow.Modules.VirtualFileExplorer.Application.VirtualFileExplorer.Dtos;
 
 public sealed record FolderResponse(
     Guid FolderId,

@@ -1,6 +1,6 @@
-using ModulusSample.Shared.Domain;
+using ProcureFlow.Shared.Domain;
 
-namespace ModulusSample.Modules.VirtualFileExplorer.Domain.Constants;
+namespace ProcureFlow.Modules.VirtualFileExplorer.Domain.Constants;
 
 public static class VirtualFileExplorerErrors
 {

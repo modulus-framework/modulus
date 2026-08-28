@@ -73,15 +73,26 @@ internal sealed class KafkaEventConsumer : BackgroundService
             "Kafka consumer started — group '{Group}', {TopicCount} topic(s): {Topics}",
             _opts.GroupId, topics.Count, string.Join(", ", topics));
 
+        // Bounded per-message redelivery bookkeeping: keyed by the exact
+        // position of the failing message so retries across partitions or
+        // rebalances never bleed into unrelated messages.
+        var failureAttempts =
+            new Dictionary<(string Topic, int Partition, long Offset), int>();
+
         while (!ct.IsCancellationRequested)
         {
+            // Reset per iteration: exceptions thrown by a later Consume() must
+            // never be attributed to the previous message's offset.
+            ConsumeResult<string, string>? result = null;
+
             try
             {
-                var result = consumer.Consume(ct);
+                result = consumer.Consume(ct);
 
                 if (result?.Message?.Value is null)
                 {
-                    consumer.Commit(result);
+                    if (result is not null)
+                        consumer.Commit(result);
                     continue;
                 }
 
@@ -98,15 +109,23 @@ internal sealed class KafkaEventConsumer : BackgroundService
                 var dispatcher = scope.ServiceProvider
                     .GetRequiredService<IntegrationEventDispatcher>();
 
-                var handled = await dispatcher.DispatchAsync(envelope, ct);
+                // Restore tenant/correlation carried on the envelope around
+                // handler invocation — otherwise handlers run in host scope
+                // where tenant query filters match everything and writes stamp
+                // TenantId as empty.
+                bool handled;
+                using (EnvelopeAmbientScope.Restore(envelope, scope.ServiceProvider))
+                    handled = await dispatcher.DispatchAsync(envelope, ct);
 
                 if (!handled)
                     _logger.LogDebug(
                         "No handler for routing key '{RoutingKey}' from topic '{Topic}'",
                         envelope.RoutingKey, result.Topic);
 
-                // Success — commit the offset so Kafka advances past this
-                // message. We never commit on failure so the broker redelivers.
+                failureAttempts.Remove(
+                    (result.Topic, result.Partition.Value, result.Offset.Value));
+
+                // Success — commit the offset so Kafka advances past this message.
                 consumer.Commit(result);
             }
             catch (OperationCanceledException) when (ct.IsCancellationRequested)
@@ -119,14 +138,67 @@ internal sealed class KafkaEventConsumer : BackgroundService
             }
             catch (Exception ex)
             {
-                // Dispatch failed — do NOT commit so Kafka redelivers the
-                // message. Log and continue the loop; the broker re-sends.
-                _logger.LogError(ex,
-                    "Error processing Kafka message; not committing — message will be redelivered.");
+                if (result is null)
+                    throw;
+
+                await RedeliverOrParkAsync(consumer, result, failureAttempts, ex, ct);
             }
         }
 
         consumer.Close();
+    }
+
+    /// <summary>
+    /// Handles a failed dispatch by seeking back to the failed offset (so the
+    /// broker genuinely redelivers) up to <see cref="KafkaOptions.MaxDeliveryAttempts"/>
+    /// times with capped exponential back-off, then committing past the
+    /// poisoned message instead of blocking the partition forever.
+    /// </summary>
+    /// <remarks>
+    /// Merely skipping the commit does NOT cause redelivery: the next
+    /// successful <c>Commit(result)</c> implicitly advances past every earlier
+    /// uncommitted offset, silently dropping the failed event. Only a seek
+    /// makes the next <c>Consume()</c> return the failed message again. A seek
+    /// failure escapes to the host: with default settings that stops the host,
+    /// and a restart rejoins the group and resumes from the last committed
+    /// offset — i.e. the failed message itself.
+    /// </remarks>
+    private async Task RedeliverOrParkAsync(
+        IConsumer<string, string> consumer,
+        ConsumeResult<string, string> result,
+        Dictionary<(string Topic, int Partition, long Offset), int> failureAttempts,
+        Exception failure,
+        CancellationToken ct)
+    {
+        var key = (result.Topic, result.Partition.Value, result.Offset.Value);
+        var attempt = failureAttempts.TryGetValue(key, out var seen) ? seen + 1 : 1;
+        failureAttempts[key] = attempt;
+
+        if (attempt >= Math.Max(1, _opts.MaxDeliveryAttempts))
+        {
+            failureAttempts.Remove(key);
+            _logger.LogError(failure,
+                "Kafka message {Topic}[{Partition}]@{Offset} failed after {Attempts} delivery attempts; committing past the poisoned message — manual replay required",
+                result.Topic, result.Partition.Value, result.Offset.Value, attempt);
+            try
+            {
+                consumer.Commit(result);
+            }
+            catch (KafkaException commitEx)
+            {
+                _logger.LogError(commitEx,
+                    "Could not commit past poisoned Kafka message {Topic}[{Partition}]@{Offset}; the partition will be reprocessed from the last committed offset",
+                    result.Topic, result.Partition.Value, result.Offset.Value);
+            }
+            return;
+        }
+
+        consumer.Seek(new TopicPartitionOffset(result.TopicPartition, result.Offset));
+
+        var backoffMs = Math.Min(
+            _opts.RedeliveryMaxBackoffMs,
+            100 * (int)Math.Pow(2, Math.Min(attempt - 1, 5)));
+        await Task.Delay(backoffMs, ct);
     }
 
     private static AutoOffsetReset ParseAutoOffsetReset(string value) =>

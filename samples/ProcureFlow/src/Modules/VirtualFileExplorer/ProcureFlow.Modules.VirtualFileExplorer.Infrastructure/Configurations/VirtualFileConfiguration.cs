@@ -1,9 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using ModulusSample.Modules.VirtualFileExplorer.Domain.Entities;
-using ModulusSample.Modules.VirtualFileExplorer.Domain.ValueObjects;
+using ProcureFlow.Modules.VirtualFileExplorer.Domain.Entities;
+using ProcureFlow.Modules.VirtualFileExplorer.Domain.ValueObjects;
 
-namespace ModulusSample.Modules.VirtualFileExplorer.Infrastructure.Configurations;
+namespace ProcureFlow.Modules.VirtualFileExplorer.Infrastructure.Configurations;
 
 public sealed class VirtualFileConfiguration : IEntityTypeConfiguration<VirtualFile>
 {

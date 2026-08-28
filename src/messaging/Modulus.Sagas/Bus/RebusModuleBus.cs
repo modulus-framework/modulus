@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using Modulus.Core.Abstractions;
 using Modulus.Events.Abstractions;
 using Modulus.Outbox.Abstractions;
 using Rebus.Bus;
@@ -13,8 +14,16 @@ namespace Modulus.Sagas.Bus;
 /// in-memory, …) so that saga handlers and regular handlers across all
 /// service instances receive it.
 /// </summary>
+/// <remarks>
+/// The ambient tenant id and correlation id are stamped onto outgoing
+/// message headers (see <see cref="AmbientContextHeaders"/>) and restored by
+/// <see cref="Modulus.Sagas.Pipeline.AmbientContextIncomingStep"/> on the
+/// consumer side, so handlers run in the publisher's business context.
+/// </remarks>
 internal sealed class RebusModuleBus(
     IBus bus,
+    ICurrentTenant currentTenant,
+    ICorrelationContext? correlationContext,
     ILogger<RebusModuleBus>? logger = null) : IModuleBus
 {
     public async Task PublishAsync<TEvent>(
@@ -25,7 +34,11 @@ internal sealed class RebusModuleBus(
         logger?.LogDebug("Publishing {EventType} ({EventId}) via Rebus bus",
             typeof(TEvent).Name, @event.EventId);
 
-        await bus.Publish(@event);
+        var headers = new Dictionary<string, string>();
+        AmbientContextHeaders.Stamp(
+            headers, currentTenant.TenantId, correlationContext?.CorrelationId);
+
+        await bus.Publish(@event, headers);
     }
 }
 
@@ -33,7 +46,8 @@ internal sealed class RebusModuleBus(
 /// <see cref="IOutboxDispatcher"/> implementation backed by a Rebus
 /// <see cref="IBus"/>.  When the <c>OutboxProcessor</c> claims and dispatches
 /// a message, this dispatcher deserialises the payload and publishes it
-/// through Rebus instead of the in-process bus.
+/// through Rebus instead of the in-process bus. The row's persisted tenant
+/// and correlation ids ride along as message headers.
 /// </summary>
 internal sealed class RebusOutboxDispatcher(
     IBus bus,
@@ -60,7 +74,13 @@ internal sealed class RebusOutboxDispatcher(
         logger?.LogDebug("Dispatching outbox {Id} ({Type}) via Rebus bus",
             message.Id, type.Name);
 
-        await bus.Publish((dynamic)@event);
+        var headers = new Dictionary<string, string>();
+        AmbientContextHeaders.Stamp(
+            headers,
+            message.TenantId == Guid.Empty ? null : message.TenantId,
+            message.CorrelationId);
+
+        await bus.Publish((dynamic)@event, headers);
     }
 }
 

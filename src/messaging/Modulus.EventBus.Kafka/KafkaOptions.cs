@@ -29,6 +29,17 @@ public sealed class KafkaOptions
     /// <summary>Auto-offset-reset for new consumer groups: earliest, latest, error.</summary>
     public string AutoOffsetReset { get; set; } = "Earliest";
 
+    /// <summary>
+    /// Maximum attempts to dispatch a single message before it is treated as
+    /// poisoned: logged (dead-letter style) and committed past so the partition
+    /// is not blocked forever. The consumer seeks back to the failed offset on
+    /// each earlier failure so the broker genuinely redelivers.
+    /// </summary>
+    public int MaxDeliveryAttempts { get; set; } = 5;
+
+    /// <summary>Maximum delay between redelivery attempts of a failed message, in milliseconds.</summary>
+    public int RedeliveryMaxBackoffMs { get; set; } = 2000;
+
     /// <summary>Enable auto-commit of consumer offsets.</summary>
     public bool EnableAutoCommit { get; set; } = true;
 

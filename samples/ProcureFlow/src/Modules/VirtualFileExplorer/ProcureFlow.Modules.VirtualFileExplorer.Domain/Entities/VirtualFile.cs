@@ -1,9 +1,9 @@
-using ModulusSample.Modules.VirtualFileExplorer.Domain.Events;
-using ModulusSample.Modules.VirtualFileExplorer.Domain.ValueObjects;
-using ModulusSample.Shared.Domain;
+using ProcureFlow.Modules.VirtualFileExplorer.Domain.Events;
+using ProcureFlow.Modules.VirtualFileExplorer.Domain.ValueObjects;
+using ProcureFlow.Shared.Domain;
 using Modulus.Core.Abstractions.Entities;
 
-namespace ModulusSample.Modules.VirtualFileExplorer.Domain.Entities;
+namespace ProcureFlow.Modules.VirtualFileExplorer.Domain.Entities;
 
 public sealed class VirtualFile : AggregateRoot, IAuditableEntity
 {

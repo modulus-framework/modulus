@@ -45,6 +45,7 @@ public sealed class InventoryModule : ModulusModule
         services.AddScoped<IQcInspectionRepository, EfQcInspectionRepository>();
         services.AddScoped<IBatchRepository, EfBatchRepository>();
         services.AddScoped<IInventoryValueLedgerRepository, EfInventoryValueLedgerRepository>();
+        services.AddScoped<IGrnReturnDraftRepository, EfGrnReturnDraftRepository>();
 
         services.AddOutbox<InventoryDbContext>(opts =>
         {

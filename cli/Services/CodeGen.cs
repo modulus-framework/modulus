@@ -121,7 +121,7 @@ internal static partial class CodeGen
                 return namespaceMatches[0];
 
             // Strategy 2: layer directories under a folder containing the module
-            // name (e.g., Users/ModulusSample.Modules.Users.Domain).
+            // name (e.g., Users/MyApp.Modules.Users.Domain).
             var layerDirs = Directory.GetDirectories(modulesDir, $"*.Modules.{module}.*", SearchOption.AllDirectories)
                 .ToArray();
             if (layerDirs.Length > 0)

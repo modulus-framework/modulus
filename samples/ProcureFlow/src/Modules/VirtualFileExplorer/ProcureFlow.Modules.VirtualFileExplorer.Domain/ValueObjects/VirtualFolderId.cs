@@ -1,4 +1,4 @@
-namespace ModulusSample.Modules.VirtualFileExplorer.Domain.ValueObjects;
+namespace ProcureFlow.Modules.VirtualFileExplorer.Domain.ValueObjects;
 
 public readonly record struct VirtualFolderId(Guid Value)
 {

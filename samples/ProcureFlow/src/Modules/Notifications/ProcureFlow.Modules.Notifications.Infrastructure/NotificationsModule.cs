@@ -47,6 +47,10 @@ public sealed class NotificationsModule : ModulusModule
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<NotificationsDbContext>());
 
         services.AddScoped<INotificationRepository, EfNotificationRepository>();
+        services.AddScoped<INotificationRuleRepository, EfNotificationRuleRepository>();
+        services.AddScoped<INotificationTemplateRepository, EfNotificationTemplateRepository>();
+        services.AddScoped<INotificationPreferenceRepository, EfNotificationPreferenceRepository>();
+        services.AddScoped<INotificationLogRepository, EfNotificationLogRepository>();
 
         services.AddOutbox<NotificationsDbContext>(opts =>
         {

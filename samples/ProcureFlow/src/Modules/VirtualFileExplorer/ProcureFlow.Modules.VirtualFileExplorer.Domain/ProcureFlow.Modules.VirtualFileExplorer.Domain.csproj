@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\Shared\ModulusSample.Shared.Domain\ModulusSample.Shared.Domain.csproj"/>
+    <ProjectReference Include="..\..\..\Shared\ProcureFlow.Shared.Domain\ProcureFlow.Shared.Domain.csproj"/>
   </ItemGroup>
 
 </Project>

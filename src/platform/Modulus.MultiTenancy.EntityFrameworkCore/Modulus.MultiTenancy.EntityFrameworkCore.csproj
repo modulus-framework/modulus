@@ -4,6 +4,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <Description>EF Core tenant store for Modulus multi-tenancy: an ITenantStore implementation backed by a dedicated DbContext.</Description>
   </PropertyGroup>
 
   <ItemGroup>

@@ -6,6 +6,7 @@ using ProcureFlow.Modules.Configuration.Infrastructure.Database;
 using ProcureFlow.Modules.Tenants.Infrastructure.Database;
 using ProcureFlow.Modules.Notifications.Infrastructure.Database;
 using ProcureFlow.Modules.Vendors.Infrastructure.Database;
+using ProcureFlow.Modules.OrgStructure.Infrastructure.Database;
 using ProcureFlow.Modules.Budgeting.Infrastructure.Database;
 using ProcureFlow.Modules.Customs.Infrastructure.Database;
 using ProcureFlow.Modules.Procurement.Infrastructure.Database;
@@ -14,6 +15,7 @@ using ProcureFlow.Modules.Import.Infrastructure.Database;
 using ProcureFlow.Modules.Inventory.Infrastructure.Database;
 using ProcureFlow.Modules.Costing.Infrastructure.Database;
 using ProcureFlow.Modules.Finance.Infrastructure.Database;
+using ProcureFlow.Modules.VirtualFileExplorer.Infrastructure.Database;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using Modulus.Authorization.EntityFrameworkCore;
@@ -44,6 +46,7 @@ internal static class MigrationExtensions
             await ApplyMigrationOrCreateAsync<TenantsDbContext>(scope, logger);
             await ApplyMigrationOrCreateAsync<NotificationsDbContext>(scope, logger);
             await ApplyMigrationOrCreateAsync<VendorsDbContext>(scope, logger);
+            await ApplyMigrationOrCreateAsync<OrgStructureDbContext>(scope, logger);
             await ApplyMigrationOrCreateAsync<BudgetsDbContext>(scope, logger);
             await ApplyMigrationOrCreateAsync<CustomsDbContext>(scope, logger);
             await ApplyMigrationOrCreateAsync<ProcurementDbContext>(scope, logger);
@@ -52,6 +55,7 @@ internal static class MigrationExtensions
             await ApplyMigrationOrCreateAsync<InventoryDbContext>(scope, logger);
             await ApplyMigrationOrCreateAsync<CostingDbContext>(scope, logger);
             await ApplyMigrationOrCreateAsync<FinanceDbContext>(scope, logger);
+            await ApplyMigrationOrCreateAsync<VirtualFileExplorerDbContext>(scope, logger);
 
             // The authorization store is registered through IDbContextFactory only, so it
             // is deliberately outside the module loop above and brings its own helper.

@@ -212,6 +212,7 @@ Assembly[] moduleApplicationAssemblies =
     ProcureFlow.Modules.Configuration.Application.AssemblyReference.Assembly,
     ProcureFlow.Modules.Notifications.Application.AssemblyReference.Assembly,
     ProcureFlow.Modules.Vendors.Application.AssemblyReference.Assembly,
+    ProcureFlow.Modules.OrgStructure.Application.AssemblyReference.Assembly,
     ProcureFlow.Modules.Budgeting.Application.AssemblyReference.Assembly,
     ProcureFlow.Modules.Customs.Application.AssemblyReference.Assembly,
     ProcureFlow.Modules.Procurement.Application.AssemblyReference.Assembly,
@@ -220,6 +221,7 @@ Assembly[] moduleApplicationAssemblies =
     ProcureFlow.Modules.Inventory.Application.AssemblyReference.Assembly,
     ProcureFlow.Modules.Costing.Application.AssemblyReference.Assembly,
     ProcureFlow.Modules.Finance.Application.AssemblyReference.Assembly,
+    ProcureFlow.Modules.VirtualFileExplorer.Application.AssemblyReference.Assembly,
 ];
 
 builder.Services.AddApplication(moduleApplicationAssemblies);
@@ -239,6 +241,7 @@ Assembly[] moduleDomainAssemblies =
     typeof(ProcureFlow.Modules.Configuration.Domain.Events.FeatureFlagCreatedDomainEvent).Assembly,
     typeof(ProcureFlow.Modules.Notifications.Domain.Events.NotificationCreatedDomainEvent).Assembly,
     typeof(ProcureFlow.Modules.Vendors.Domain.Events.VendorCreatedDomainEvent).Assembly,
+    typeof(ProcureFlow.Modules.OrgStructure.Domain.Events.OrgNodeCreatedDomainEvent).Assembly,
     typeof(ProcureFlow.Modules.Budgeting.Domain.Events.BudgetCreatedDomainEvent).Assembly,
     typeof(ProcureFlow.Modules.Customs.Domain.Events.BoeSubmittedDomainEvent).Assembly,
     typeof(ProcureFlow.Modules.Procurement.Domain.Events.PrApprovedDomainEvent).Assembly,
@@ -247,6 +250,7 @@ Assembly[] moduleDomainAssemblies =
     typeof(ProcureFlow.Modules.Inventory.Domain.Events.GrnPostedDomainEvent).Assembly,
     typeof(ProcureFlow.Modules.Costing.Domain.Events.CostSheetFinalizedDomainEvent).Assembly,
     typeof(ProcureFlow.Modules.Finance.Domain.Events.JournalPostedDomainEvent).Assembly,
+    typeof(ProcureFlow.Modules.VirtualFileExplorer.Domain.Events.VirtualFolderCreatedDomainEvent).Assembly,
 ];
 
 builder.Services.AddModulusEvents([.. moduleApplicationAssemblies, .. moduleDomainAssemblies]);
@@ -609,6 +613,7 @@ app.MapModulusEndpoints(
     ProcureFlow.Modules.Configuration.Presentation.AssemblyReference.Assembly,
     ProcureFlow.Modules.Notifications.Presentation.AssemblyReference.Assembly,
     ProcureFlow.Modules.Vendors.Presentation.AssemblyReference.Assembly,
+    ProcureFlow.Modules.OrgStructure.Presentation.AssemblyReference.Assembly,
     ProcureFlow.Modules.Budgeting.Presentation.AssemblyReference.Assembly,
     ProcureFlow.Modules.Customs.Presentation.AssemblyReference.Assembly,
     ProcureFlow.Modules.Procurement.Presentation.AssemblyReference.Assembly,
@@ -616,7 +621,8 @@ app.MapModulusEndpoints(
     ProcureFlow.Modules.Import.Presentation.AssemblyReference.Assembly,
     ProcureFlow.Modules.Inventory.Presentation.AssemblyReference.Assembly,
     ProcureFlow.Modules.Costing.Presentation.AssemblyReference.Assembly,
-    ProcureFlow.Modules.Finance.Presentation.AssemblyReference.Assembly);
+    ProcureFlow.Modules.Finance.Presentation.AssemblyReference.Assembly,
+    ProcureFlow.Modules.VirtualFileExplorer.Presentation.AssemblyReference.Assembly);
 
 
 // ============================================

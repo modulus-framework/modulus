@@ -1,12 +1,12 @@
-using System.Text.Json;
 using FluentAssertions;
 using Microsoft.Data.Sqlite;
-using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Modulus.Core;
 using Modulus.Core.Abstractions;
 using Modulus.Core.Abstractions.Domain;
 using Modulus.Core.Abstractions.Entities;
+using Modulus.Core.Correlation;
 using Modulus.EntityFrameworkCore;
 using Modulus.Events;
 using Modulus.Events.Abstractions;
@@ -23,12 +23,12 @@ public sealed class OutboxWriterTests
     // ── EfOutboxWriter: transactional persistence ──────────────────
 
     [Fact]
-    public async Task Enqueue_ThenSaveChanges_PersistsOutboxRow()
+    public async Task WriteAsync_ThenSaveChanges_PersistsOutboxRow()
     {
         await using var h = await WriterHarness.BuildAsync();
-        var outbox = h.Scope.ServiceProvider.GetRequiredService<IIntegrationEventOutbox>();
+        var writer = h.Scope.ServiceProvider.GetRequiredService<IOutboxWriter>();
 
-        outbox.Enqueue(new TestIntegrationEvent("payload-A"));
+        await writer.WriteAsync(new TestIntegrationEvent("payload-A"));
         await h.Db.SaveChangesAsync();
 
         var rows = await h.ReadOutboxRowsAsync();
@@ -39,13 +39,31 @@ public sealed class OutboxWriterTests
     }
 
     [Fact]
-    public async Task Enqueue_ThenSaveChanges_InTransaction_ThenRollback_RowGone()
+    public async Task WriteAsync_CapturesAmbientCorrelationId()
     {
         await using var h = await WriterHarness.BuildAsync();
-        var outbox = h.Scope.ServiceProvider.GetRequiredService<IIntegrationEventOutbox>();
+        var correlation = h.Scope.ServiceProvider.GetRequiredService<ICorrelationContext>();
+
+        using (correlation.BeginScope("corr-123"))
+        {
+            await h.Writer.WriteAsync(new TestIntegrationEvent("payload-corr"));
+        }
+
+        await h.Db.SaveChangesAsync();
+
+        var rows = await h.ReadOutboxRowsAsync();
+        rows.Should().HaveCount(1);
+        rows[0].CorrelationId.Should().Be("corr-123");
+    }
+
+    [Fact]
+    public async Task WriteAsync_ThenSaveChanges_InTransaction_ThenRollback_RowGone()
+    {
+        await using var h = await WriterHarness.BuildAsync();
+        var writer = h.Scope.ServiceProvider.GetRequiredService<IOutboxWriter>();
 
         await using var tx = await h.Db.Database.BeginTransactionAsync();
-        outbox.Enqueue(new TestIntegrationEvent("payload-B"));
+        await writer.WriteAsync(new TestIntegrationEvent("payload-B"));
         await h.Db.SaveChangesAsync();
 
         // Row is visible inside the transaction
@@ -56,16 +74,6 @@ public sealed class OutboxWriterTests
         // Row is gone after rollback — proving the outbox write was
         // in the same transaction as SaveChanges (no dual-write gap).
         (await h.CountOutboxRowsAsync()).Should().Be(0);
-    }
-
-    // ── Null outbox ────────────────────────────────────────────────
-
-    [Fact]
-    public void NullOutbox_Enqueue_IsNoOp()
-    {
-        var outbox = new NullIntegrationEventOutbox();
-        var act = () => outbox.Enqueue(new TestIntegrationEvent("x"));
-        act.Should().NotThrow();
     }
 
     // ── ModuleDbContext integration: domain events → outbox ────────
@@ -87,6 +95,24 @@ public sealed class OutboxWriterTests
     }
 
     [Fact]
+    public async Task ModuleDbContext_SaveChanges_CapturesAmbientCorrelationId()
+    {
+        await using var h = await ModuleHarness.BuildAsync();
+        var correlation = h.Scope.ServiceProvider.GetRequiredService<ICorrelationContext>();
+
+        using (correlation.BeginScope("corr-domain-42"))
+        {
+            h.Db.TestItems.Add(new TestItem(Guid.NewGuid(), "widget"));
+            await h.Db.SaveChangesAsync();
+        }
+
+        var rows = await h.ReadOutboxRowsAsync();
+        rows.Should().HaveCount(1);
+        rows[0].CorrelationId.Should().Be("corr-domain-42",
+            "outbox rows must carry the ambient business correlation id");
+    }
+
+    [Fact]
     public async Task ModuleDbContext_SaveChanges_DoesNotEnqueuePlainDomainEvents()
     {
         await using var h = await ModuleHarness.BuildAsync();
@@ -101,7 +127,7 @@ public sealed class OutboxWriterTests
     [Fact]
     public async Task ModuleDbContext_WithoutOutbox_SaveChangesStillWorks()
     {
-        // When no IIntegrationEventOutbox is registered, ModuleDbContext
+        // When no IOutboxWriter is registered, ModuleDbContext
         // must still save successfully (sp.GetService returns null → skip).
         await using var h = await ModuleHarness.BuildAsync(registerOutbox: false);
 
@@ -119,16 +145,18 @@ public sealed class OutboxWriterTests
         private readonly SqliteConnection _conn;
         private readonly ServiceProvider _root;
 
-        private WriterHarness(SqliteConnection conn, ServiceProvider root, IServiceScope scope, OutboxDbContext db)
+        private WriterHarness(SqliteConnection conn, ServiceProvider root, IServiceScope scope, OutboxDbContext db, IOutboxWriter writer)
         {
             _conn = conn;
             _root = root;
             Scope = scope;
             Db = db;
+            Writer = writer;
         }
 
         public IServiceScope Scope { get; }
         public OutboxDbContext Db { get; }
+        public IOutboxWriter Writer { get; }
 
         public static async Task<WriterHarness> BuildAsync()
         {
@@ -144,15 +172,16 @@ public sealed class OutboxWriterTests
             var tenant = Substitute.For<ICurrentTenant>();
             tenant.TenantId.Returns((Guid?)null);
             services.AddSingleton(tenant);
-            services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
-            services.AddScoped<IIntegrationEventOutbox, EfOutboxWriter>();
+            services.AddSingleton<ICorrelationContext, CorrelationContext>();
+            services.AddScoped<IOutboxWriter, EfOutboxWriter>();
 
             var root = services.BuildServiceProvider();
             var scope = root.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<OutboxDbContext>();
             await db.Database.EnsureCreatedAsync();
+            var writer = scope.ServiceProvider.GetRequiredService<IOutboxWriter>();
 
-            return new WriterHarness(conn, root, scope, db);
+            return new WriterHarness(conn, root, scope, db, writer);
         }
 
         public Task<List<OutboxMessage>> ReadOutboxRowsAsync() =>
@@ -168,7 +197,7 @@ public sealed class OutboxWriterTests
         }
     }
 
-    // ── Harness: ModuleDbContext with spy outbox ───────────────────
+    // ── Harness: ModuleDbContext with real outbox enabled ──────────
 
     private sealed class ModuleHarness : IAsyncDisposable
     {
@@ -198,6 +227,7 @@ public sealed class OutboxWriterTests
 
             services.AddSingleton<ICurrentTenant>(Substitute.For<ICurrentTenant>());
             services.AddSingleton<ICurrentUser>(Substitute.For<ICurrentUser>());
+            services.AddSingleton<ICorrelationContext, CorrelationContext>();
             services.AddScoped<DomainEventDispatcher>();
 
             if (registerOutbox)
@@ -315,12 +345,5 @@ public sealed class OutboxWriterTests
         : DomainEventBase, IIntegrationEvent
     {
         public string EventType => "test.integration.v1";
-    }
-
-    /// <summary>Captures enqueued events without touching a DbContext.</summary>
-    internal sealed class SpyOutbox : IIntegrationEventOutbox
-    {
-        public List<IIntegrationEvent> Enqueued { get; } = [];
-        public void Enqueue(IIntegrationEvent @event) => Enqueued.Add(@event);
     }
 }

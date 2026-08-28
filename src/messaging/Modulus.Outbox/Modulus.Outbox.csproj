@@ -4,13 +4,12 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <Description>Transactional outbox for Modulus over EF Core: atomic claiming, retry back-off, dead-lettering, purge, and background relay of pending messages.</Description>
   </PropertyGroup>
 
   <ItemGroup>
-    <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <ProjectReference Include="../Modulus.Outbox.Abstractions/Modulus.Outbox.Abstractions.csproj" />
     <ProjectReference Include="../../data/Modulus.EntityFrameworkCore/Modulus.EntityFrameworkCore.csproj" />
-    <PackageReference Include="Polly" />
   </ItemGroup>
 
   <ItemGroup>

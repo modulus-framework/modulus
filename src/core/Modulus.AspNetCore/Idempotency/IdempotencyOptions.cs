@@ -35,4 +35,15 @@ public sealed class IdempotencyOptions
     /// <summary>How long a completed response is retained for replay, in seconds.
     /// Defaults to 24 hours.</summary>
     public int RetentionSeconds { get; set; } = 86_400;
+
+    /// <summary>
+    /// Largest response body cached for replay, in bytes. Responses larger
+    /// than this are NOT cached (the request still runs; a retry re-runs it).
+    /// Caps per-key memory pressure in the in-memory store. Defaults to
+    /// 1 MB.
+    /// </summary>
+    public int MaxResponseBytes { get; set; } = 1024 * 1024;
+
+    /// <summary>Minimum accepted value floor for <see cref="MaxResponseBytes"/>.</summary>
+    public const int MinResponseBytes = 1;
 }

@@ -1,9 +1,11 @@
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Modulus.Inbox.Extensions;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using Modulus.EntityFrameworkCore.ModelBuilding;
 using Modulus.Events.Abstractions;
 using Modulus.Inbox.Abstractions;
 
@@ -12,8 +14,9 @@ public static class InboxServiceCollectionExtensions
     /// <summary>
     /// Wraps all <c>IIntegrationEventHandler{T}</c> registrations with the
     /// idempotent decorator (<see cref="IdempotentIntegrationEventHandler{TEvent}"/>),
-    /// registers <see cref="EfInboxStore"/> as <see cref="IInboxStore"/>,
-    /// and configures inbox options.
+    /// registers <see cref="EfInboxStore"/> as <see cref="IInboxStore"/>, maps
+    /// the <see cref="InboxMessage"/> entity into every module context, and
+    /// configures inbox options.
     /// </summary>
     public static IServiceCollection AddInbox<TContext>(
         this IServiceCollection services,
@@ -28,6 +31,11 @@ public static class InboxServiceCollectionExtensions
             sp => sp.GetRequiredService<TContext>());
 
         services.AddScoped<IInboxStore, EfInboxStore>();
+
+        // Map InboxMessage into every ModuleDbContext (TryAddEnumerable so a
+        // second AddInbox call — e.g. for another context — is idempotent).
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<
+            IModuleModelContributor, InboxModelContributor>());
 
         return services.DecorateIntegrationEventHandlers();
     }

@@ -65,10 +65,22 @@ public static class DatabaseMigrationExtensions
         await using var scope = services.CreateAsyncScope();
         var sp = scope.ServiceProvider;
         var logger = sp.GetService<ILoggerFactory>()?.CreateLogger("Modulus.Database");
+        var registry = sp.GetService<IModuleMigrationRegistry>();
 
         foreach (var db in sp.GetServices<DbContext>())
         {
             var name = db.GetType().Name;
+
+            // Skip externally-managed modules (e.g. dbsh). The schema is
+            // applied by an out-of-band tool; letting EF Migrate or
+            // EnsureCreated run would overwrite that schema.
+            if (registry is not null && registry.IsExternallyManaged(db.GetType()))
+            {
+                logger?.LogInformation(
+                    "Skipping {Context} (schema managed externally).", name);
+                continue;
+            }
+
             var strategy = db.Database.CreateExecutionStrategy();
 
             await strategy.ExecuteAsync(async () =>

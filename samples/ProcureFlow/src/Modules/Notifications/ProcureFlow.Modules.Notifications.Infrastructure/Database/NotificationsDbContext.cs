@@ -17,6 +17,10 @@ public sealed class NotificationsDbContext(
     : ModuleDbContext(options, currentTenant, currentUser, dispatcher, serviceProvider), IUnitOfWork
 {
     public DbSet<Notification> Notifications => Set<Notification>();
+    public DbSet<NotificationRule> NotificationRules => Set<NotificationRule>();
+    public DbSet<NotificationTemplate> NotificationTemplates => Set<NotificationTemplate>();
+    public DbSet<NotificationPreference> NotificationPreferences => Set<NotificationPreference>();
+    public DbSet<NotificationLog> NotificationLogs => Set<NotificationLog>();
 
     protected override string TablePrefix => string.Empty;
 
@@ -24,6 +28,10 @@ public sealed class NotificationsDbContext(
     {
         modelBuilder.HasDefaultSchema(Schemas.Notifications);
         modelBuilder.ApplyConfiguration(new NotificationConfiguration());
+        modelBuilder.ApplyConfiguration(new NotificationRuleConfiguration());
+        modelBuilder.ApplyConfiguration(new NotificationTemplateConfiguration());
+        modelBuilder.ApplyConfiguration(new NotificationPreferenceConfiguration());
+        modelBuilder.ApplyConfiguration(new NotificationLogConfiguration());
         base.OnModelCreating(modelBuilder);
     }
 }

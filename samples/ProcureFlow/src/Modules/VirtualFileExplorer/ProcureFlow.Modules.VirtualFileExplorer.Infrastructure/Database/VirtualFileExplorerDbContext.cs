@@ -1,12 +1,12 @@
 using Modulus.EntityFrameworkCore.Abstractions;
-using ModulusSample.Modules.VirtualFileExplorer.Domain.Entities;
-using ModulusSample.Modules.VirtualFileExplorer.Infrastructure.Configurations;
+using ProcureFlow.Modules.VirtualFileExplorer.Domain.Entities;
+using ProcureFlow.Modules.VirtualFileExplorer.Infrastructure.Configurations;
 using Microsoft.EntityFrameworkCore;
 using Modulus.Core.Abstractions;
 using Modulus.EntityFrameworkCore;
 using Modulus.Events;
 
-namespace ModulusSample.Modules.VirtualFileExplorer.Infrastructure.Database;
+namespace ProcureFlow.Modules.VirtualFileExplorer.Infrastructure.Database;
 
 public sealed class VirtualFileExplorerDbContext(
     DbContextOptions<VirtualFileExplorerDbContext> options,

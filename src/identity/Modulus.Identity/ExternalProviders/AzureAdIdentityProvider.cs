@@ -13,7 +13,9 @@ public sealed class AzureAdIdentityProvider(
     HttpClient http, AzureAdOptions opts) : IExternalIdentityProvider
 {
     private readonly OidcDiscoveryValidator _tokenValidator =
-        new($"{opts.Authority}/.well-known/openid-configuration");
+        OidcDiscoveryValidatorCache.GetOrCreate(
+            $"{opts.Authority}/.well-known/openid-configuration",
+            opts.Audience is null ? null : [opts.Audience]);
 
     public string Name => "azuread";
     public string DisplayName => "Microsoft Entra ID";
@@ -27,7 +29,7 @@ public sealed class AzureAdIdentityProvider(
         // Use a per-request HttpRequestMessage so the Authorization header is
         // never written to HttpClient.DefaultRequestHeaders, which is shared
         // across concurrent calls and would cause a race condition.
-        var url = $"{opts.GraphApiBaseUrl}users/{subject}";
+        var url = $"{opts.GraphApiBaseUrl}users/{Uri.EscapeDataString(subject)}";
         using var req = new HttpRequestMessage(HttpMethod.Get, url);
         req.Headers.Authorization =
             new AuthenticationHeaderValue("Bearer", token);
@@ -53,11 +55,27 @@ public sealed class AzureAdIdentityProvider(
         });
 
         var resp = await http.PostAsync(
-            $"{opts.Authority}oauth2/v2.0/token", content, ct);
+            BuildTokenEndpoint(opts.Authority), content, ct);
         if (!resp.IsSuccessStatusCode) return null;
 
         var body = await resp.Content.ReadFromJsonAsync<JsonElement>(ct);
         return body.GetProperty("access_token").GetString();
+    }
+
+    /// <summary>
+    /// Builds the v2.0 token endpoint from the authority. The bound
+    /// <see cref="AzureAdOptions.Authority"/> ends with <c>/v2.0</c> (no
+    /// trailing slash); the token endpoint lives directly under the tenant
+    /// root, so simply concatenating produces
+    /// <c>.../&lt;tenant&gt;/v2.0oauth2/v2.0/token</c> — a 404 on every call.
+    /// </summary>
+    private static string BuildTokenEndpoint(string authority)
+    {
+        var tenantRoot = authority.TrimEnd('/');
+        const string V2Suffix = "/v2.0";
+        if (tenantRoot.EndsWith(V2Suffix, StringComparison.OrdinalIgnoreCase))
+            tenantRoot = tenantRoot[..^V2Suffix.Length];
+        return $"{tenantRoot}/oauth2/v2.0/token";
     }
 
     private static ExternalUserInfo? MapUser(JsonElement el)
@@ -89,6 +107,15 @@ public sealed class AzureAdOptions
     public string GraphApiBaseUrl { get; set; } = "https://graph.microsoft.com/v1.0/";
     public string Authority => $"{Instance}{TenantId}/v2.0";
     public string Scope { get; set; } = "openid profile email User.Read";
+
+    /// <summary>
+    /// Expected audience (<c>aud</c>) of access tokens — for Entra ID access
+    /// tokens this is usually the client id of this application. Configured
+    /// locally so bearer tokens minted for any other client are rejected.
+    /// When null, audience validation is skipped — recommended to set in
+    /// production.
+    /// </summary>
+    public string? Audience { get; set; }
 }
 
 public static class AzureAdExtensions

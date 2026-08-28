@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Contracts only: brings in the Microsoft.Extensions.* abstractions the
+         app-level global usings expect, without any implementation deps. -->
+    <PackageReference Include="Cobytelabs.Modulus.Core" Version="1.2.0" />
+  </ItemGroup>
+
+</Project>

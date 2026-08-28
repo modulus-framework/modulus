@@ -16,7 +16,9 @@ public sealed class OktaIdentityProvider(
     HttpClient http, OktaOptions opts) : IExternalIdentityProvider
 {
     private readonly OidcDiscoveryValidator _tokenValidator =
-        new($"{opts.Authority.TrimEnd('/')}/oauth2/default/.well-known/openid-configuration");
+        OidcDiscoveryValidatorCache.GetOrCreate(
+            $"{opts.Authority.TrimEnd('/')}/oauth2/default/.well-known/openid-configuration",
+            opts.Audience is null ? null : [opts.Audience]);
 
     public string Name => "okta";
     public string DisplayName => "Okta";
@@ -27,7 +29,7 @@ public sealed class OktaIdentityProvider(
         // Use a per-request HttpRequestMessage so the Authorization header is
         // never written to HttpClient.DefaultRequestHeaders, which is shared
         // across concurrent calls and would cause a race condition.
-        var url = $"{opts.Authority}/api/v1/users/{subject}";
+        var url = $"{opts.Authority.TrimEnd('/')}/api/v1/users/{Uri.EscapeDataString(subject)}";
         using var req = new HttpRequestMessage(HttpMethod.Get, url);
         req.Headers.Authorization =
             new AuthenticationHeaderValue("SSWS", opts.ApiToken);
@@ -70,6 +72,15 @@ public sealed class OktaOptions
     public string ClientSecret { get; set; } = default!;
     public string? ApiToken { get; set; }
     public string Scope { get; set; } = "openid profile email";
+
+    /// <summary>
+    /// Expected audience (<c>aud</c>) of access tokens issued for this
+    /// application (typically the OAuth client id or a custom audience).
+    /// Configured locally so bearer tokens minted for any other client are
+    /// rejected. When null, audience validation is skipped — recommended to
+    /// set in production.
+    /// </summary>
+    public string? Audience { get; set; }
 }
 
 public static class OktaExtensions

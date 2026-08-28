@@ -1,6 +1,6 @@
-namespace ModulusSample.Modules.VirtualFileExplorer.Domain.Events;
+namespace ProcureFlow.Modules.VirtualFileExplorer.Domain.Events;
 
-using ModulusSample.Modules.VirtualFileExplorer.Domain.ValueObjects;
+using ProcureFlow.Modules.VirtualFileExplorer.Domain.ValueObjects;
 
 public sealed record VirtualFolderDeletedDomainEvent(
     VirtualFolderId FolderId,

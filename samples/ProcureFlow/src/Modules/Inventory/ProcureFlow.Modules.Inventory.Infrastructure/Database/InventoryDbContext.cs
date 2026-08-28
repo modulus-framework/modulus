@@ -22,6 +22,7 @@ public sealed class InventoryDbContext(
     public DbSet<QcInspection> QcInspections => Set<QcInspection>();
     public DbSet<Batch> Batches => Set<Batch>();
     public DbSet<InventoryValueLedgerEntry> LedgerEntries => Set<InventoryValueLedgerEntry>();
+    public DbSet<GrnReturnDraft> ReturnDrafts => Set<GrnReturnDraft>();
 
     protected override string TablePrefix => string.Empty;
 
@@ -96,6 +97,26 @@ public sealed class InventoryDbContext(
             builder.Property(e => e.UnitCost).HasPrecision(18, 4);
             builder.Property(e => e.ValueDelta).HasPrecision(18, 4);
             builder.HasIndex(e => new { e.TenantId, e.SiteId, e.ItemId, e.OccurredAtUtc });
+        });
+
+        // ── GRN Return Draft (BR-GRN-02) ────────────────────────────
+        modelBuilder.Entity<GrnReturnDraft>(builder =>
+        {
+            builder.ToTable("grn_return_drafts");
+            builder.Property(r => r.GrnNumber).HasMaxLength(50).IsRequired();
+            builder.Property(r => r.CreatedBy).HasMaxLength(100).IsRequired();
+            builder.Property(r => r.DebitNoteNumber).HasMaxLength(50);
+            builder.HasIndex(r => r.GrnId);
+
+            builder.OwnsMany(r => r.Lines, line =>
+            {
+                line.ToTable("grn_return_draft_lines");
+                line.WithOwner().HasForeignKey("DraftId");
+                line.HasKey("DraftId", "Id");
+                line.Property(l => l.Reason).HasMaxLength(500).IsRequired();
+                line.Property(l => l.RejectedQty).HasPrecision(18, 4);
+                line.Property(l => l.UnitCost).HasPrecision(18, 4);
+            });
         });
     }
 }

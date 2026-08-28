@@ -15,10 +15,9 @@ public static class OutboxMongoExtensions
     /// <summary>
     /// Registers the MongoDB-backed outbox writer, dispatcher, and polling
     /// processor. Pass the same <see cref="IMongoDatabase"/> that your module
-    /// uses. Replaces the default <see cref="NullIntegrationEventOutbox"/>
-    /// (registered by <c>AddModuleDatabase</c>) so that
-    /// <c>ModuleDbContext.SaveChangesAsync</c> enqueues integration events to
-    /// the MongoDB outbox collection.
+    /// uses. Registering an <see cref="IOutboxWriter"/> is what enables
+    /// transactional enqueue in EF-backed modules; for MongoDB-only apps the
+    /// writer serves direct <c>IOutboxWriter.WriteAsync</c> callers.
     /// </summary>
     public static IServiceCollection AddMongoOutbox(
         this IServiceCollection services,
@@ -39,12 +38,6 @@ public static class OutboxMongoExtensions
         // ICurrentTenant reads a static AsyncLocal, so scoped is correct and
         // matches the EF Core writer's lifetime.
         services.AddScoped<IOutboxWriter, MongoOutboxWriter>();
-
-        // Replace the NullIntegrationEventOutbox (registered by
-        // AddModuleDatabase) so ModuleDbContext enqueues integration events
-        // to MongoDB instead of the no-op.
-        services.Replace(ServiceDescriptor.Scoped<
-            IIntegrationEventOutbox, MongoOutboxWriter>());
 
         // Default dispatcher (in-process IModuleBus). Registered as TryAdd so
         // a host that wires its own IOutboxDispatcher takes precedence.

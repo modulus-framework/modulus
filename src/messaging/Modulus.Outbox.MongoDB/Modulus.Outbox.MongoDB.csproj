@@ -4,6 +4,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <Description>MongoDB adapter for the Modulus transactional outbox: writer, processor, dispatcher, and polling service.</Description>
   </PropertyGroup>
 
   <ItemGroup>

@@ -1,4 +1,3 @@
-using System.Reflection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -6,7 +5,6 @@ using Microsoft.Extensions.Hosting;
 
 namespace Modulus.AspNetCore.Extensions;
 
-using FluentValidation;
 using Modulus.AspNetCore.Middleware;
 using Modulus.Core;
 using Modulus.Core.Abstractions;
@@ -14,24 +12,6 @@ using Modulus.Core.Null;
 
 public static class ModulusServiceCollectionExtensions
 {
-    /// <summary>
-    /// Registers the Modulus framework core: module loader + safe null
-    /// defaults for <see cref="ICurrentUser"/> / <see cref="IPermissionRegistry"/>.
-    /// Real identity/authorization modules override these with TryAdd semantics.
-    /// </summary>
-    public static IServiceCollection AddModulus(
-        this IServiceCollection services,
-        IConfiguration configuration,
-        Action<ModulusBuilder> configure)
-    {
-        RegisterCoreDefaults(services);
-
-        var builder = new ModulusBuilder(services, configuration);
-        configure(builder);
-        FinalizeModuleGraph(services, builder);
-        return services;
-    }
-
     /// <summary>
     /// Registers the framework's null defaults and the module-lifecycle hosted
     /// service. Idempotent (TryAdd everywhere) so the overloads can share it.
@@ -85,24 +65,6 @@ public static class ModulusServiceCollectionExtensions
     }
 
     /// <summary>
-    /// ABP-style convenience overload with additional manual configuration.
-    /// </summary>
-    public static IServiceCollection AddModulus<TStartupModule>(
-        this IServiceCollection services,
-        IConfiguration configuration,
-        Action<ModulusBuilder> configure)
-        where TStartupModule : class, IModule, new()
-    {
-        RegisterCoreDefaults(services);
-
-        var builder = new ModulusBuilder(services, configuration);
-        builder.AddModules<TStartupModule>();
-        configure(builder);
-        FinalizeModuleGraph(services, builder);
-        return services;
-    }
-
-    /// <summary>
     /// Registers the global RFC 7807 exception handler that maps
     /// Modulus exceptions to HTTP status codes.
     /// </summary>
@@ -111,26 +73,6 @@ public static class ModulusServiceCollectionExtensions
     {
         services.AddExceptionHandler<GlobalExceptionHandler>();
         services.AddProblemDetails();
-        return services;
-    }
-
-    /// <summary>
-    /// Registers REPR endpoint infrastructure: FluentValidation validator
-    /// auto-discovery across the given assemblies. For API versioning call
-    /// <see cref="Versioning.ApiVersioningExtensions.AddModulusApiVersioning"/>
-    /// separately.  Call from Program.cs:
-    /// <code>
-    /// builder.Services.AddModulusEndpoints(typeof(Program).Assembly);
-    /// </code>
-    /// </summary>
-    public static IServiceCollection AddModulusEndpoints(
-        this IServiceCollection services,
-        params Assembly[] assemblies)
-    {
-        // Auto-register all FluentValidation validators
-        if (assemblies.Length > 0)
-            services.AddValidatorsFromAssemblies(assemblies);
-
         return services;
     }
 }

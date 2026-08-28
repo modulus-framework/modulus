@@ -2,12 +2,12 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Modulus.EntityFrameworkCore.Design;
 
-namespace ModulusSample.Modules.VirtualFileExplorer.Infrastructure.Database;
+namespace ProcureFlow.Modules.VirtualFileExplorer.Infrastructure.Database;
 
 internal sealed class VirtualFileExplorerDbContextFactory : IDesignTimeDbContextFactory<VirtualFileExplorerDbContext>
 {
     private const string DefaultConnectionString =
-        "Host=localhost;Port=5432;Database=modulussample;Username=postgres;Password=postgres";
+        "Host=localhost;Port=5432;Database=ProcureFlow;Username=ProcureFlow;Password=ProcureFlow";
 
     public VirtualFileExplorerDbContext CreateDbContext(string[] args)
     {

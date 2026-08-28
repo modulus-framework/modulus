@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Http;
-using ModulusSample.Shared.Domain;
+using ProcureFlow.Shared.Domain;
 
-namespace ModulusSample.Modules.VirtualFileExplorer.Presentation;
+namespace ProcureFlow.Modules.VirtualFileExplorer.Presentation;
 
 internal static class EndpointHelper
 {

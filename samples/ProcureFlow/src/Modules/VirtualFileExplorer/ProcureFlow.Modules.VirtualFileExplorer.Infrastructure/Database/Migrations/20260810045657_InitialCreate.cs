@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace ModulusSample.Modules.VirtualFileExplorer.Infrastructure.Database.Migrations
+namespace ProcureFlow.Modules.VirtualFileExplorer.Infrastructure.Database.Migrations
 {
     /// <inheritdoc />
     public partial class InitialCreate : Migration

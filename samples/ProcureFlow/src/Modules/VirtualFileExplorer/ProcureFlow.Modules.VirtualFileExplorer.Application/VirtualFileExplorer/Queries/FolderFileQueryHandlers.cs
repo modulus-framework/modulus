@@ -1,14 +1,14 @@
 using Modulus.Core.Abstractions;
 using Modulus.Mediator.Abstractions;
-using ModulusSample.Modules.VirtualFileExplorer.Application.VirtualFileExplorer.Dtos;
-using ModulusSample.Modules.VirtualFileExplorer.Application.VirtualFileExplorer.Queries;
-using ModulusSample.Modules.VirtualFileExplorer.Domain.Constants;
-using ModulusSample.Modules.VirtualFileExplorer.Domain.Entities;
-using ModulusSample.Modules.VirtualFileExplorer.Domain.Repositories;
-using ModulusSample.Modules.VirtualFileExplorer.Domain.ValueObjects;
-using ModulusSample.Shared.Domain;
+using ProcureFlow.Modules.VirtualFileExplorer.Application.VirtualFileExplorer.Dtos;
+using ProcureFlow.Modules.VirtualFileExplorer.Application.VirtualFileExplorer.Queries;
+using ProcureFlow.Modules.VirtualFileExplorer.Domain.Constants;
+using ProcureFlow.Modules.VirtualFileExplorer.Domain.Entities;
+using ProcureFlow.Modules.VirtualFileExplorer.Domain.Repositories;
+using ProcureFlow.Modules.VirtualFileExplorer.Domain.ValueObjects;
+using ProcureFlow.Shared.Domain;
 
-namespace ModulusSample.Modules.VirtualFileExplorer.Application.VirtualFileExplorer.Queries;
+namespace ProcureFlow.Modules.VirtualFileExplorer.Application.VirtualFileExplorer.Queries;
 
 public sealed class GetRootFoldersHandler(
     IVirtualFolderRepository repository,

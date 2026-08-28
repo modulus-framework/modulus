@@ -23,6 +23,8 @@ public sealed class MongoOutboxProcessor(
     // instances (or concurrent polls) don't dispatch the same message twice.
     private readonly string _instanceId = Guid.NewGuid().ToString("N");
 
+    private const int PurgeBatchSize = 1000;
+
     public async Task ProcessAsync(CancellationToken ct = default)
     {
         await using var scope = sp.CreateAsyncScope();
@@ -32,6 +34,12 @@ public sealed class MongoOutboxProcessor(
         var options = opts.Value;
         var now = DateTime.UtcNow;
         var lockUntil = now.AddSeconds(options.LockTimeoutSec);
+
+        // Housekeeping FIRST: a quiet system exits at the empty-candidates
+        // short-circuit below, so purge must run before it or dispatched /
+        // dead-lettered documents would accumulate forever once steady state
+        // is reached. Mirrors OutboxProcessor (EF Core).
+        await PurgeExpiredAsync(collection, options, ct);
 
         // 1. Pick candidate ids: unprocessed, under the retry budget, not
         //    currently locked by another instance, and whose backoff (if any)
@@ -143,6 +151,44 @@ public sealed class MongoOutboxProcessor(
                 tenantScope?.Dispose();
             }
         }
+    }
+
+    /// <summary>
+    /// Bounded housekeeping delete of documents past their retention window:
+    /// dispatched (ProcessedAt set) and dead-lettered (RetryCount exhausted)
+    /// rows older than PurgeAfterDays. The id-probe + DeleteMany two-step
+    /// keeps each pass bounded to <see cref="PurgeBatchSize"/> documents.
+    /// </summary>
+    private static async Task PurgeExpiredAsync(
+        IMongoCollection<MongoOutboxMessage> collection,
+        OutboxOptions options,
+        CancellationToken ct)
+    {
+        if (options.PurgeAfterDays <= 0)
+            return;
+
+        var cutoff = DateTime.UtcNow.AddDays(-options.PurgeAfterDays);
+
+        var expiredFilter = Builders<MongoOutboxMessage>.Filter.Or(
+            Builders<MongoOutboxMessage>.Filter.And(
+                Builders<MongoOutboxMessage>.Filter.Ne(m => m.ProcessedAt, null),
+                Builders<MongoOutboxMessage>.Filter.Lt(m => m.ProcessedAt!, cutoff)),
+            Builders<MongoOutboxMessage>.Filter.And(
+                Builders<MongoOutboxMessage>.Filter.Eq(m => m.ProcessedAt, null),
+                Builders<MongoOutboxMessage>.Filter.Gte(m => m.RetryCount, options.MaxRetries),
+                Builders<MongoOutboxMessage>.Filter.Lt(m => m.CreatedAt, cutoff)));
+
+        var expiredIds = await collection
+            .Find(expiredFilter)
+            .Limit(PurgeBatchSize)
+            .Project(m => m.Id)
+            .ToListAsync(ct);
+        if (expiredIds.Count == 0)
+            return;
+
+        await collection.DeleteManyAsync(
+            Builders<MongoOutboxMessage>.Filter.In(m => m.Id, expiredIds),
+            cancellationToken: ct);
     }
 
     private static OutboxMessage ToOutboxMessage(MongoOutboxMessage m) => new()

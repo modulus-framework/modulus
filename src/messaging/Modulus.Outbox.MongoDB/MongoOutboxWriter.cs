@@ -28,21 +28,16 @@ public sealed class MongoOutboxMessage
 }
 
 /// <summary>
-/// <see cref="IOutboxWriter"/> / <see cref="IIntegrationEventOutbox"/>
-/// implementation backed by MongoDB. Does NOT support transactions — use
-/// only with MongoDB's eventual consistency; the <see cref="MongoOutboxProcessor"/>
-/// relays rows to the event bus at-least-once.
+/// <see cref="IOutboxWriter"/> implementation backed by MongoDB. Does NOT
+/// support transactions — use only with MongoDB's eventual consistency; the
+/// <see cref="MongoOutboxProcessor"/> relays rows to the event bus
+/// at-least-once.
 /// </summary>
 internal sealed class MongoOutboxWriter(
     IMongoCollection<MongoOutboxMessage> collection,
     ICurrentTenant tenant)
-    : IOutboxWriter, IIntegrationEventOutbox
+    : IOutboxWriter
 {
-    // ── IIntegrationEventOutbox (non-generic, synchronous) ────────
-    public void Enqueue(IIntegrationEvent @event) =>
-        collection.InsertOne(BuildDoc(@event));
-
-    // ── IOutboxWriter (generic, async) ────────────────────────────
     public Task WriteAsync<TEvent>(
         TEvent @event,
         CancellationToken ct = default)

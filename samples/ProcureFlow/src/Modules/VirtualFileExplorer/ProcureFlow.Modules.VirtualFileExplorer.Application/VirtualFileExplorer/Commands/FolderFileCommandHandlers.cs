@@ -1,16 +1,16 @@
 using Modulus.Core.Abstractions;
 using Modulus.Mediator.Abstractions;
 using Modulus.EntityFrameworkCore.Abstractions;
-using ModulusSample.Modules.VirtualFileExplorer.Application.VirtualFileExplorer.Commands;
-using ModulusSample.Modules.VirtualFileExplorer.Application.VirtualFileExplorer.Dtos;
-using ModulusSample.Modules.VirtualFileExplorer.Domain.Constants;
-using ModulusSample.Modules.VirtualFileExplorer.Domain.Entities;
-using ModulusSample.Modules.VirtualFileExplorer.Domain.Repositories;
-using ModulusSample.Modules.VirtualFileExplorer.Domain.ValueObjects;
-using ModulusSample.Shared.Application.Authorization;
-using ModulusSample.Shared.Domain;
+using ProcureFlow.Modules.VirtualFileExplorer.Application.VirtualFileExplorer.Commands;
+using ProcureFlow.Modules.VirtualFileExplorer.Application.VirtualFileExplorer.Dtos;
+using ProcureFlow.Modules.VirtualFileExplorer.Domain.Constants;
+using ProcureFlow.Modules.VirtualFileExplorer.Domain.Entities;
+using ProcureFlow.Modules.VirtualFileExplorer.Domain.Repositories;
+using ProcureFlow.Modules.VirtualFileExplorer.Domain.ValueObjects;
+using ProcureFlow.Shared.Application.Authorization;
+using ProcureFlow.Shared.Domain;
 
-namespace ModulusSample.Modules.VirtualFileExplorer.Application.VirtualFileExplorer.Commands;
+namespace ProcureFlow.Modules.VirtualFileExplorer.Application.VirtualFileExplorer.Commands;
 
 public sealed class CreateFolderCommandHandler(
     IVirtualFolderRepository repository,

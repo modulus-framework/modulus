@@ -4,6 +4,7 @@ using Microsoft.Extensions.Caching.Memory;
 
 namespace Modulus.Mediator.Behaviors;
 
+using Modulus.Core.Abstractions;
 using Modulus.Mediator.Abstractions;
 using Modulus.Mediator.Abstractions.Attributes;
 
@@ -11,8 +12,15 @@ using Modulus.Mediator.Abstractions.Attributes;
 /// Pipeline behavior that caches query results when the request class is
 /// decorated with <see cref="CacheForAttribute"/>.
 /// </summary>
+/// <remarks>
+/// Cache keys are scoped by the ambient tenant (via
+/// <see cref="ICurrentTenant"/>) — without that, a query executed for tenant A
+/// would be served verbatim to tenant B whenever the serialised request
+/// parameters matched. Host-scope queries share a single "host" partition.
+/// </remarks>
 public sealed class CachingBehavior<TRequest, TResponse>(
-    IMemoryCache cache) : IPipelineBehavior<TRequest, TResponse>
+    IMemoryCache cache,
+    ICurrentTenant? currentTenant = null) : IPipelineBehavior<TRequest, TResponse>
 {
     // The attribute is fixed per request type; read it once per closed generic.
     private static readonly CacheForAttribute? s_attr =
@@ -38,12 +46,14 @@ public sealed class CachingBehavior<TRequest, TResponse>(
         return result;
     }
 
-    private static string BuildCacheKey(TRequest request)
+    private string BuildCacheKey(TRequest request)
     {
         var type = typeof(TRequest).FullName ?? typeof(TRequest).Name;
         // Use JSON to serialise the request — ensures different parameter
         // values produce different keys.
         var payload = JsonSerializer.Serialize(request);
-        return $"modulus:cache:{type}:{payload}";
+
+        var tenantPart = currentTenant?.TenantId?.ToString() ?? "host";
+        return $"modulus:cache:t:{tenantPart}:{type}:{payload}";
     }
 }

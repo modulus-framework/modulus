@@ -20,5 +20,5 @@ You will receive a response within 48 hours. If the vulnerability is confirmed, 
 
 | Version | Supported          |
 |---------|--------------------|
-| 1.0.x   | :white_check_mark: |
-| < 1.0   | :x:                |
+| 1.2.x   | :white_check_mark: |
+| < 1.2   | :x:                |

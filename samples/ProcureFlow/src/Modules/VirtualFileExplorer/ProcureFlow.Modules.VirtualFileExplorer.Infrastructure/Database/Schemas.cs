@@ -1,4 +1,4 @@
-namespace ModulusSample.Modules.VirtualFileExplorer.Infrastructure.Database;
+namespace ProcureFlow.Modules.VirtualFileExplorer.Infrastructure.Database;
 
 public static class Schemas
 {

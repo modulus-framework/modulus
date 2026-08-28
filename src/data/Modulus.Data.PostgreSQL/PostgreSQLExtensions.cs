@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Modulus.Core.Abstractions;
 using Modulus.EntityFrameworkCore;
 using Modulus.EntityFrameworkCore.Extensions;
+using Modulus.EntityFrameworkCore.Health;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Infrastructure;
 
 public static class PostgreSQLExtensions
@@ -23,14 +24,14 @@ public static class PostgreSQLExtensions
                 pg.EnableRetryOnFailure(3);
                 configure?.Invoke(pg);
             });
-            
+
             if (useSnakeCaseNaming)
                 opts.UseSnakeCaseNamingConvention();
         });
 
-        services.TryAddScoped(
-            typeof(IModuleHealthCheck),
-            typeof(PostgreSQLHealthCheck<>).MakeGenericType(typeof(TContext)));
+        services.TryAddScoped<IModuleHealthCheck>(sp =>
+            new RelationalDatabaseHealthCheck<TContext>(
+                sp.GetRequiredService<TContext>(), "postgresql"));
 
         return services;
     }

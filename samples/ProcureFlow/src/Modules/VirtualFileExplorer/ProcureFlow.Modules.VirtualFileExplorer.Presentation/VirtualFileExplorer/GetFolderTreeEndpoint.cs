@@ -1,9 +1,9 @@
 using Modulus.Mediator.Abstractions;
-using ModulusSample.Modules.VirtualFileExplorer.Application.VirtualFileExplorer.Dtos;
-using ModulusSample.Modules.VirtualFileExplorer.Application.VirtualFileExplorer.Queries;
-using ModulusSample.Shared.Domain;
+using ProcureFlow.Modules.VirtualFileExplorer.Application.VirtualFileExplorer.Dtos;
+using ProcureFlow.Modules.VirtualFileExplorer.Application.VirtualFileExplorer.Queries;
+using ProcureFlow.Shared.Domain;
 
-namespace ModulusSample.Modules.VirtualFileExplorer.Presentation.VirtualFileExplorer;
+namespace ProcureFlow.Modules.VirtualFileExplorer.Presentation.VirtualFileExplorer;
 
 internal sealed class GetFolderTreeEndpoint : EndpointWithoutRequest<IReadOnlyList<FolderTreeNodeResponse>>
 {

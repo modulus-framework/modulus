@@ -125,7 +125,7 @@ public class ModulusTokenController(
         // Re-verify the subject is still present and active before re-issuing
         // tokens. A refresh token can outlive a disabled/deleted account, so
         // we must not blindly mint a new access token for a stale subject.
-        if (!await IsSubjectActiveAsync(HttpContext.RequestAborted))
+        if (!await IsSubjectActiveAsync(info.Principal, HttpContext.RequestAborted))
         {
             return Forbid(
                 new AuthenticationProperties(new Dictionary<string, string?>
@@ -155,14 +155,19 @@ public class ModulusTokenController(
 
     /// <summary>
     /// Resolves the current subject from the authenticated refresh-token
-    /// principal and confirms the underlying account still exists and is
-    /// active. When ASP.NET Core Identity (with <see cref="ModulusUser"/>) is
-    /// wired up, the user store is consulted; otherwise the presence of a
-    /// subject claim is treated as sufficient.
+    /// principal (<paramref name="principal"/> — NOT the controller's
+    /// <c>User</c> property, which is populated by the default authentication
+    /// scheme (e.g. the Identity cookie) and is typically anonymous at
+    /// <c>/connect/token</c>) and confirms the underlying account still exists
+    /// and is active. When ASP.NET Core Identity (with
+    /// <see cref="ModulusUser"/>) is wired up, the user store is consulted;
+    /// otherwise the presence of a subject claim is treated as sufficient.
     /// </summary>
-    private async Task<bool> IsSubjectActiveAsync(CancellationToken ct)
+    private async Task<bool> IsSubjectActiveAsync(
+        ClaimsPrincipal principal,
+        CancellationToken ct)
     {
-        var subject = User.GetClaim(OpenIddictConstants.Claims.Subject);
+        var subject = principal.GetClaim(OpenIddictConstants.Claims.Subject);
         if (string.IsNullOrWhiteSpace(subject))
             return false;
 

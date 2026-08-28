@@ -1,9 +1,9 @@
 using Modulus.Core.Abstractions;
 using Modulus.Mediator.Abstractions;
-using ModulusSample.Modules.VirtualFileExplorer.Application.VirtualFileExplorer.Commands;
-using ModulusSample.Shared.Domain;
+using ProcureFlow.Modules.VirtualFileExplorer.Application.VirtualFileExplorer.Commands;
+using ProcureFlow.Shared.Domain;
 
-namespace ModulusSample.Modules.VirtualFileExplorer.Presentation.VirtualFileExplorer;
+namespace ProcureFlow.Modules.VirtualFileExplorer.Presentation.VirtualFileExplorer;
 
 internal sealed class DeleteFolderEndpoint : Endpoint<DeleteFolderEndpoint.DeleteFolderRequest>
 {

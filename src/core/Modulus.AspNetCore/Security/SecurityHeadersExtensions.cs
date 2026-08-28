@@ -1,3 +1,5 @@
+using Modulus.AspNetCore.Configuration;
+
 namespace Modulus.AspNetCore.Security;
 
 using Microsoft.AspNetCore.Builder;
@@ -19,11 +21,8 @@ public static class SecurityHeadersExtensions
         IConfiguration configuration,
         Action<SecurityHeadersOptions>? configure = null)
     {
-        services.AddOptions<SecurityHeadersOptions>()
-            .Bind(configuration.GetSection(SecurityHeadersOptions.SectionName))
-            .ValidateOnStart();
-        if (configure is not null)
-            services.Configure(configure);
+        services.AddValidatedOptions(
+            configuration, SecurityHeadersOptions.SectionName, configure);
         return services;
     }
 

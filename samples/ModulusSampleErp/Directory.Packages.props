@@ -1,9 +1,0 @@
-<Project>
-  <PropertyGroup>
-    <!-- Stops the SDK from walking up into the framework repo's own
-         Directory.Packages.props (Central Package Management, different
-         package set entirely). This app's csproj files pin explicit
-         Versions on every PackageReference instead. -->
-    <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
-  </PropertyGroup>
-</Project>

@@ -1,8 +1,8 @@
-using ModulusSample.Modules.VirtualFileExplorer.Domain.Entities;
-using ModulusSample.Modules.VirtualFileExplorer.Domain.ValueObjects;
-using ModulusSample.Shared.Domain;
+using ProcureFlow.Modules.VirtualFileExplorer.Domain.Entities;
+using ProcureFlow.Modules.VirtualFileExplorer.Domain.ValueObjects;
+using ProcureFlow.Shared.Domain;
 
-namespace ModulusSample.Modules.VirtualFileExplorer.Domain.Repositories;
+namespace ProcureFlow.Modules.VirtualFileExplorer.Domain.Repositories;
 
 public interface IVirtualFileRepository
 {

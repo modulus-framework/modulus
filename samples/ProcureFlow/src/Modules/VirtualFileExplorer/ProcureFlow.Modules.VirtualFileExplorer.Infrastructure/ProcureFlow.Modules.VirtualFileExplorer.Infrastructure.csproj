@@ -21,9 +21,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\Shared\ModulusSample.Shared.Infrastructure\ModulusSample.Shared.Infrastructure.csproj" />
-    <ProjectReference Include="..\ModulusSample.Modules.VirtualFileExplorer.Application\ModulusSample.Modules.VirtualFileExplorer.Application.csproj" />
-    <ProjectReference Include="..\ModulusSample.Modules.VirtualFileExplorer.Presentation\ModulusSample.Modules.VirtualFileExplorer.Presentation.csproj" />
+    <ProjectReference Include="..\..\..\Shared\ProcureFlow.Shared.Infrastructure\ProcureFlow.Shared.Infrastructure.csproj" />
+    <ProjectReference Include="..\ProcureFlow.Modules.VirtualFileExplorer.Application\ProcureFlow.Modules.VirtualFileExplorer.Application.csproj" />
+    <ProjectReference Include="..\ProcureFlow.Modules.VirtualFileExplorer.Presentation\ProcureFlow.Modules.VirtualFileExplorer.Presentation.csproj" />
   </ItemGroup>
 
 </Project>

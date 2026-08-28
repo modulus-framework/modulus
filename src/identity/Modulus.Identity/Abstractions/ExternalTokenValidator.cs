@@ -1,5 +1,6 @@
 namespace Modulus.Identity.Abstractions;
 
+using System.Collections.Concurrent;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
@@ -111,5 +112,47 @@ public static class ExternalTokenValidator
         {
             return false;
         }
+    }
+}
+
+/// <summary>
+/// Process-wide cache of <see cref="OidcDiscoveryValidator"/> instances keyed
+/// by metadata address + audience set. Provider adapters are DI-scoped; without
+/// sharing, every request would construct a fresh
+/// <see cref="Microsoft.IdentityModel.Protocols.ConfigurationManager{OpenIdConnectConfiguration}"/>
+/// and re-fetch discovery/JWKS from the IdP (a per-request round trip that
+/// couples token validation to the IdP's availability). The underlying
+/// <see cref="Microsoft.IdentityModel.Protocols.ConfigurationManager{OpenIdConnectConfiguration}"/>
+/// is thread-safe and self-refreshing, so one shared instance per
+/// configuration is correct.
+/// </summary>
+public static class OidcDiscoveryValidatorCache
+{
+    private readonly record struct EntryKey(
+        string MetadataAddress,
+        string OrderedAudiences);
+
+    private static readonly ConcurrentDictionary<EntryKey, OidcDiscoveryValidator> Cache = new();
+
+    /// <summary>
+    /// Returns the shared validator for <paramref name="metadataAddress"/>,
+    /// creating it (with the given optional audiences for local validation) on
+    /// first use.
+    /// </summary>
+    public static OidcDiscoveryValidator GetOrCreate(
+        string metadataAddress,
+        IEnumerable<string>? validAudiences = null)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(metadataAddress);
+
+        var audiences = (validAudiences ?? [])
+            .Where(a => !string.IsNullOrWhiteSpace(a))
+            .Distinct(StringComparer.Ordinal)
+            .OrderBy(a => a, StringComparer.Ordinal)
+            .ToArray();
+
+        return Cache.GetOrAdd(
+            new EntryKey(metadataAddress, string.Join("|", audiences)),
+            _ => new OidcDiscoveryValidator(metadataAddress, audiences));
     }
 }

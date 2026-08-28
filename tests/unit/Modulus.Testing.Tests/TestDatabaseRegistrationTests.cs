@@ -188,4 +188,49 @@ public sealed class TestDatabaseRegistrationTests
             db.Widgets.Should().BeEmpty("factory B has its own isolated database");
         }
     }
+
+    // Mirrors AddEfCoreAuthorizationStores: a context registered ONLY through
+    // IDbContextFactory<TContext>, never as a scoped module DbContext.
+    private static ServiceCollection FactoryRegisteredContext()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddSingleton<ICurrentTenant, NullCurrentTenant>();
+        services.AddSingleton<ICurrentUser, NullCurrentUser>();
+        services.AddSingleton<DomainEventDispatcher>();
+        services.AddDbContextFactory<WidgetDbContext>(
+            options => options.UseSqlServer("Server=nonexistent;Database=modulus;"));
+        return services;
+    }
+
+    [Fact]
+    public void UseSharedSqlite_PreservesDbContextFactoryRegistrations()
+    {
+        // Regression: the descriptor sweep dropped IDbContextFactory<TContext>
+        // (its service type is closed over the context type) and AddDbContext
+        // never re-created it — factory-dependent singletons (e.g.
+        // EfPermissionGrantStore) then failed to activate in tests.
+        var services = FactoryRegisteredContext();
+
+        services.UseSharedSqlite(SharedMemoryConnectionString());
+
+        using var provider = services.BuildServiceProvider();
+        var factory = provider.GetRequiredService<IDbContextFactory<WidgetDbContext>>();
+        using var db = factory.CreateDbContext();
+        db.Database.ProviderName.Should().Be(SqliteProvider);
+    }
+
+    [Fact]
+    public void UsePerContextSqlite_IncludesFactoryRegisteredContexts()
+    {
+        var services = FactoryRegisteredContext();
+
+        var map = services.UsePerContextSqlite($"swap-{Guid.NewGuid():N}");
+
+        map.Keys.Should().Contain(typeof(WidgetDbContext));
+        using var provider = services.BuildServiceProvider();
+        var factory = provider.GetRequiredService<IDbContextFactory<WidgetDbContext>>();
+        using var db = factory.CreateDbContext();
+        db.Database.ProviderName.Should().Be(SqliteProvider);
+    }
 }

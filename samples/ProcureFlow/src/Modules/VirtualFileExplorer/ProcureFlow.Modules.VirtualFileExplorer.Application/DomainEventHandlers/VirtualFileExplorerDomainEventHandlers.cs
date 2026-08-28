@@ -1,10 +1,10 @@
 using Modulus.Core.Abstractions;
 using Modulus.Events.Abstractions;
-using ModulusSample.Modules.VirtualFileExplorer.Application.IntegrationEvents;
-using ModulusSample.Modules.VirtualFileExplorer.Domain.Events;
+using ProcureFlow.Modules.VirtualFileExplorer.Application.IntegrationEvents;
+using ProcureFlow.Modules.VirtualFileExplorer.Domain.Events;
 using Microsoft.Extensions.Logging;
 
-namespace ModulusSample.Modules.VirtualFileExplorer.Application.DomainEventHandlers;
+namespace ProcureFlow.Modules.VirtualFileExplorer.Application.DomainEventHandlers;
 
 public sealed class VirtualFolderCreatedDomainEventHandler(
     IModuleBus moduleBus,

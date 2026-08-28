@@ -15,6 +15,18 @@ internal sealed record RecurringEntry(
     CronExpression Cron,
     DateTime NextRun);
 
+/// <summary>
+/// In-memory background job queue backed by <see cref="Channel{T}"/>.
+/// Enqueued jobs run on a worker pool, and recurring jobs fire on a 30-second
+/// scheduler — but all state (enqueued jobs, delayed jobs, cron schedules) is
+/// held in memory and lost on process shutdown.
+/// <para>
+/// <b>Development use only.</b> For production, register a durable scheduler
+/// (Quartz.NET, Hangfire) that persists jobs to a database and coordinates
+/// execution across replicas. See <see cref="IJobScheduler"/> for the durability
+/// boundary and why multi-replica deployments should not use this.
+/// </para>
+/// </summary>
 public sealed class ChannelJobQueue(
     IServiceProvider sp,
     ILogger<ChannelJobQueue> logger)

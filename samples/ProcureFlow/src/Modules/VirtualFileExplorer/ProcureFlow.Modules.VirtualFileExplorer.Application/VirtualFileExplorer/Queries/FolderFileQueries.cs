@@ -1,7 +1,7 @@
-using ModulusSample.Modules.VirtualFileExplorer.Application.VirtualFileExplorer.Dtos;
-using ModulusSample.Shared.Domain;
+using ProcureFlow.Modules.VirtualFileExplorer.Application.VirtualFileExplorer.Dtos;
+using ProcureFlow.Shared.Domain;
 
-namespace ModulusSample.Modules.VirtualFileExplorer.Application.VirtualFileExplorer.Queries;
+namespace ProcureFlow.Modules.VirtualFileExplorer.Application.VirtualFileExplorer.Queries;
 
 public sealed record GetRootFoldersQuery : Modulus.Mediator.Abstractions.IQuery<Result<IReadOnlyList<FolderResponse>>>;
 

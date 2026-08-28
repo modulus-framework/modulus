@@ -1,11 +1,11 @@
 using Microsoft.EntityFrameworkCore;
-using ModulusSample.Modules.VirtualFileExplorer.Domain.Entities;
-using ModulusSample.Modules.VirtualFileExplorer.Domain.Repositories;
-using ModulusSample.Modules.VirtualFileExplorer.Domain.ValueObjects;
-using ModulusSample.Modules.VirtualFileExplorer.Infrastructure.Database;
-using ModulusSample.Shared.Domain;
+using ProcureFlow.Modules.VirtualFileExplorer.Domain.Entities;
+using ProcureFlow.Modules.VirtualFileExplorer.Domain.Repositories;
+using ProcureFlow.Modules.VirtualFileExplorer.Domain.ValueObjects;
+using ProcureFlow.Modules.VirtualFileExplorer.Infrastructure.Database;
+using ProcureFlow.Shared.Domain;
 
-namespace ModulusSample.Modules.VirtualFileExplorer.Infrastructure.Repositories;
+namespace ProcureFlow.Modules.VirtualFileExplorer.Infrastructure.Repositories;
 
 public sealed class EfVirtualFileRepository(VirtualFileExplorerDbContext context) : IVirtualFileRepository
 {

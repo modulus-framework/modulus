@@ -7,7 +7,9 @@ namespace Modulus.Cli.Services;
 /// </summary>
 internal static class FrameworkVersion
 {
-    public const string Current = "1.1.0";
+    // Keep in sync with <VersionPrefix> in build/Modulus.Packaging.props —
+    // generated apps pin Cobytelabs.Modulus.* packages at this version.
+    public const string Current = "1.2.0";
 }
 
 /// <summary>
@@ -87,6 +89,15 @@ internal sealed class AppModel
     public string DbProvider { get; set; } = "SQLite";
 
     /// <summary>
+    /// Path to a local NuGet feed containing the Cobytelabs.Modulus.* packages
+    /// (from <c>--package-source</c>). When set, the generated NuGet.config
+    /// registers it as an ACTIVE <c>modulus-local</c> source; when null only
+    /// nuget.org is configured and a restore of the framework packages will
+    /// fail until one is wired (flagged in the command's next-steps output).
+    /// </summary>
+    public string? LocalPackageSource { get; set; }
+
+    /// <summary>
     /// Auth provider key: "none" (default), "openiddict", or one of the six
     /// external IdPs ("auth0", "authentik", "azuread", "duende", "keycloak", "okta").
     /// </summary>
@@ -129,6 +140,15 @@ internal sealed class AppModel
 
     /// <summary>EF Core package version for the provider.</summary>
     public string EfProviderVersion => DbProviderInfo.Version(DbProvider);
+
+    // ── Migration Engine ───────────────────────────────────────────
+    /// <summary>
+    /// Migration engine: "efcore" (default) or "dbsh" (SQL files, managed externally).
+    /// </summary>
+    public string MigrationEngine { get; set; } = "efcore";
+
+    /// <summary>True when the user chose dbsh as the migration engine.</summary>
+    public bool UseDbsh => MigrationEngine == "dbsh";
 
     /// <summary>
     /// Per-app User Secrets id, stamped into the host .csproj so
@@ -244,6 +264,16 @@ internal sealed class ModuleModel
     // ── Database provider ──────────────────────────────────────────
     /// <summary>"SQLite", "SqlServer", "PostgreSQL", or "MySQL".</summary>
     public string DbProvider { get; set; } = "SQLite";
+
+    // ── Migration engine ──────────────────────────────────────────
+    /// <summary>"efcore" (default) or "dbsh" (SQL files, managed externally).</summary>
+    public string MigrationEngine { get; set; } = "efcore";
+
+    /// <summary>True when the user chose dbsh as the migration engine.</summary>
+    public bool UseDbsh => MigrationEngine == "dbsh";
+
+    /// <summary>dbsh module name derived from <see cref="ModuleNameLower"/> (Module name, lower-case).</summary>
+    public string DbshModuleName => ModuleNameLower;
 
     /// <summary>EF Core DbContextOptions extension method name.</summary>
     public string UseDbMethod => DbProviderInfo.UseMethod(DbProvider);

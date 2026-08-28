@@ -63,6 +63,7 @@
     <Project Path="tests/unit/Modulus.EntityFrameworkCore.Tests/Modulus.EntityFrameworkCore.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Inbox.Tests/Modulus.Inbox.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Outbox.Tests/Modulus.Outbox.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.Sagas.Tests/Modulus.Sagas.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Identity.Tests/Modulus.Identity.Tests.csproj" />
     <Project Path="tests/unit/Modulus.MultiTenancy.Tests/Modulus.MultiTenancy.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Platform.Tests/Modulus.Platform.Tests.csproj" />

@@ -7,9 +7,77 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — Production-hardening pass
+
+Security & correctness fixes across transports, identity, tenancy, and the
+request pipeline:
+
+- **Repo hygiene** — tracked `build/*.props` (imported unconditionally by
+  `Directory.Build.props` but previously gitignored); removed
+  `.claude/settings.local.json` from the index.
+- **Kafka consumer** — failed deliveries are re-seeked with capped exponential
+  backoff (`MaxDeliveryAttempts`, default 5); exhausted messages are committed
+  past and logged instead of hot-looping the partition.
+- **Broker dispatch context** — RabbitMQ and Kafka consumers restore the
+  ambient tenant/correlation scope around handler invocation via the shared
+  `EnvelopeAmbientScope`, matching HTTP-request semantics downstream.
+- **`TransactionBehavior`** — dedupes resolved contexts by runtime type and
+  begins transactions inside the try block, so a failure while starting a
+  transaction rolls prior contexts back cleanly.
+- **Identity token endpoint** — the password-grant subject-activity check now
+  inspects the principal produced by sign-in (previously the ambient
+  controller user, anonymous during token issuance); default granted scopes
+  include `openid` and `offline_access`.
+- **External IdP token validators** — OIDC discovery validators are cached per
+  metadata-address/audience set; all five adapters (Auth0, Okta, AzureAd,
+  Duende, Authentik) gained optional `Audience` validation; fixed the AzureAd
+  v2.0 authority's token-endpoint path; Duende userinfo calls authenticate with
+  client credentials; subject lookups are URL-escaped.
+- **CLI templates** — `Modulus.Data.Abstractions` package references follow the
+  framework version instead of a hardcoded `1.0.0`; generated apps can embed a
+  local package feed via `modulus app --package-source`; `--database` /
+  `--migration-engine` values are validated up front with clear errors.
+- **Query cache isolation** — `CachingBehavior` includes the ambient tenant id
+  in cache keys, closing a cross-tenant response leak between tenants whose
+  requests serialise identically.
+- **Rate limiting** — a custom evictable fixed-window limiter plus background
+  sweeper removes idle partitions, bounding memory under per-user/per-IP churn;
+  options are bound once so `IOptions` and middleware behaviour cannot diverge.
+- **HTTP idempotency** — replay keys are scoped by tenant *and* authenticated
+  caller; bodies larger than `IdempotencyOptions.MaxResponseBytes` (default
+  1 MB) are executed but not cached; `Date` and `Set-Cookie` headers are never
+  replayed.
+- **Subdomain tenant resolver** — host matching requires the dot boundary
+  (`.baseDomain`), blocking spoofed hosts such as `attacker-modulus.app`;
+  requests to the bare domain resolve to no tenant instead of throwing; slugs
+  are length- and charset-validated before hitting the store.
+- **Outbox writer routing** — direct `IOutboxWriter.WriteAsync` callers resolve
+  the owning module context through `IEntityContextMap` instead of whichever
+  `DbContext` happened to be registered last.
+- **SQLite in-memory provider** — each context gets its own uniquely named
+  shared-cache database (sharing one name made second+ modules' schema setup
+  silent no-ops), and a real opened keep-alive connection replaces the
+  lazily-created keyed singleton nothing ever resolved.
+- **Role claims** — server-side permission resolution accepts both
+  `ClaimTypes.Role` and short-form `role`, so tokens validated with inbound
+  claim mapping disabled authorise correctly.
+
+### Added — Production-hardening pass
+
+- **Outbox purge** — EF Core and MongoDB processors delete dispatched and
+  dead-lettered rows older than `OutboxOptions.PurgeAfterDays` (default 7,
+  0 disables) in bounded batches, running before the empty-poll short-circuit
+  so steady-state tables stay bounded.
+- **Release workflow gates** — tag-triggered releases run unit *and*
+  integration tests before packing/publishing.
+- Package `<Description>` metadata filled in for every library; README and
+  AGENTS.md project counts/layout brought in line with the actual tree
+  (31 src projects).
+
 ### Changed — Package consolidation (55 → 23)
 
-The framework was consolidated from 55 packages down to 23 focused packages.
+The framework was consolidated from 55 packages down to 23 focused packages
+(the solution has since grown back to 31 as new opt-in providers landed).
 Namespaces are preserved — types keep their original namespaces (e.g.
 `Modulus.Core.Abstractions.IModule`) even when compiled into a different
 assembly. Only `<ProjectReference>` / `<PackageReference>` names changed.

@@ -1,4 +1,4 @@
-namespace ModulusSample.Modules.VirtualFileExplorer.Application;
+namespace ProcureFlow.Modules.VirtualFileExplorer.Application;
 
 public static class AssemblyReference
 {

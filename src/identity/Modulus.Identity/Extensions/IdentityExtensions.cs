@@ -107,10 +107,16 @@ public static class IdentityExtensions
                 if (identityOptions.AllowPasswordFlow)
                     options.AllowPasswordFlow();
 
+                // Must include the scopes the token endpoint's allow-list can
+                // grant: without `openid` every scope request is rejected with
+                // invalid_scope, and without `offline_access` OpenIddict never
+                // mints a refresh token even though the refresh flow is enabled.
                 options.RegisterScopes(
+                    OpenIddictConstants.Scopes.OpenId,
                     OpenIddictConstants.Scopes.Email,
                     OpenIddictConstants.Scopes.Profile,
                     OpenIddictConstants.Scopes.Roles,
+                    OpenIddictConstants.Scopes.OfflineAccess,
                     "modulus");
 
                 // Apply token lifetimes from the bound identity options.

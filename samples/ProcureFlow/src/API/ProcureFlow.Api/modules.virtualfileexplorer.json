@@ -1,6 +1,6 @@
 {
   "ConnectionStrings": {
-    "VirtualFileExplorer": "Host=localhost;Port=5432;Database=ModulusSample;Username=ModulusSample;Password=ModulusSample"
+    "VirtualFileExplorer": "Host=localhost;Port=5432;Database=ProcureFlow;Username=ProcureFlow;Password=ProcureFlow"
   },
   "VirtualFileExplorer": {
     "MaxFileSizeMB": 100,

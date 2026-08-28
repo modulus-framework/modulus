@@ -290,6 +290,18 @@ public static class AuthorizationManagementExtensions
             EfDelegationStore store, IAuthorizationAuditWriter auditWriter,
             ICurrentUser currentUser, CancellationToken ct) =>
         {
+            if (request.Permissions is not { Length: > 0 })
+                return Results.ValidationProblem(new Dictionary<string, string[]>
+                {
+                    ["permissions"] = ["At least one permission is required."],
+                });
+
+            if (request.FromUserId == request.ToUserId)
+                return Results.ValidationProblem(new Dictionary<string, string[]>
+                {
+                    ["toUserId"] = ["A delegation must be to a different user than the delegator."],
+                });
+
             if (request.NotAfter <= request.NotBefore)
                 return Results.ValidationProblem(new Dictionary<string, string[]>
                 {
