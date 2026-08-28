@@ -1,7 +1,7 @@
 namespace Modulus.Core;
 
-using System.Reflection;
 using Modulus.Core.Abstractions;
+using Modulus.Core.Abstractions.Exceptions;
 
 /// <summary>
 /// Fluent builder used inside <c>AddModulus(...)</c>.  Supports both explicit
@@ -33,7 +33,8 @@ public sealed class ModulusBuilder
     // Single instance per module type. Shared by discovery and registration.
     private readonly Dictionary<Type, IModule> _instances = [];
 
-    // Registered modules in registration order (dependencies first).
+    // Registered modules in registration order (dependencies first after
+    // Complete() sorts them; registration order before that).
     internal List<IModule> Modules { get; } = [];
 
     public ModulusBuilder(
@@ -115,12 +116,17 @@ public sealed class ModulusBuilder
     /// Phase order is <see cref="IModule.PreConfigureServices"/> for all modules,
     /// then <see cref="IModule.ConfigureServices"/> for all modules, then
     /// <see cref="IModule.PostConfigureServices"/> for all modules.
-    /// <see cref="Modules"/> is already in dependency order (topological for the
-    /// discovery path, registration order for manual <see cref="AddModule(Type)"/>),
-    /// so within each phase dependencies configure before dependents.
+    /// Before the phases run, <see cref="Modules"/> is topologically sorted via
+    /// the shared <see cref="ModuleGraph"/> engine — this also covers manual
+    /// <see cref="AddModule(Type)"/> calls made in dependency-before-dependent
+    /// order, which previously ran unsorted. Every declared dependency must be
+    /// registered by this point; a missing one throws
+    /// <see cref="ModuleNotFoundException"/>.
     /// </remarks>
     public IModuleLoader Complete()
     {
+        SortModulesTopologically();
+
         foreach (var module in Modules)
             module.PreConfigureServices(_services, _configuration);
 
@@ -137,6 +143,42 @@ public sealed class ModulusBuilder
     }
 
     /// <summary>
+    /// Reorders <see cref="Modules"/> into topological order (dependencies
+    /// first) using the same engine as discovery and lifecycle ordering, so all
+    /// three orders always agree — including manually-registered modules that
+    /// were added dependent-first.
+    /// </summary>
+    private void SortModulesTopologically()
+    {
+        var sortedTypes = ModuleGraph.Sort(
+            Modules.Select(m => m.GetType()),
+            type => RegisteredRequiredDeps(type));
+
+        var sortedModules = new List<IModule>(sortedTypes.Count);
+        foreach (var type in sortedTypes)
+            sortedModules.Add(GetOrCreate(type));
+
+        Modules.Clear();
+        Modules.AddRange(sortedModules);
+    }
+
+    /// <summary>
+    /// Required dependencies of a registered module; every dependency must be
+    /// registered by <see cref="Complete"/> time, otherwise startup fails with
+    /// a descriptive error naming the declaring module.
+    /// </summary>
+    private IEnumerable<Type> RegisteredRequiredDeps(Type moduleType)
+    {
+        foreach (var dep in DeclaredDeps(moduleType))
+        {
+            if (!Modules.Any(m => m.GetType() == dep))
+                throw new ModuleNotFoundException(dep, moduleType);
+
+            yield return dep;
+        }
+    }
+
+    /// <summary>
     /// Returns (and caches) the single instance for <paramref name="moduleType"/>.
     /// </summary>
     private IModule GetOrCreate(Type moduleType)
@@ -150,56 +192,31 @@ public sealed class ModulusBuilder
     }
 
     /// <summary>
-    /// DFS that resolves [DependsOn] attributes recursively, producing a
-    /// topologically-sorted list (dependencies first).
+    /// Topologically-sorts the module graph reachable from <paramref name="root"/>
+    /// via required dependencies (optional dependencies are not discovered),
+    /// delegating to the shared <see cref="ModuleGraph"/> engine.
     /// </summary>
     private List<Type> DiscoverModuleTypes(Type root)
-    {
-        var visited = new HashSet<Type>();
-        var ordered = new List<Type>();
-        var inStack = new HashSet<Type>();
-
-        void Visit(Type type)
-        {
-            if (visited.Contains(type)) return;
-            if (inStack.Contains(type))
-                throw new InvalidOperationException(
-                    $"Circular module dependency detected at {type.FullName}.");
-
-            inStack.Add(type);
-
-            foreach (var dep in GetDeclaredDependencies(type))
-                Visit(dep);
-
-            inStack.Remove(type);
-            visited.Add(type);
-            ordered.Add(type);
-        }
-
-        Visit(root);
-        return ordered;
-    }
+        => [.. ModuleGraph.Sort([root], DeclaredDeps)];
 
     /// <summary>
-    /// Gets dependency module types declared via [DependsOn] attributes,
-    /// falling back to the IModule.DependsOn property for modules that
-    /// implement IModule directly without inheriting ModulusModule. Reads the
-    /// module's single cached instance — no throwaway construction.
+    /// Required dependencies declared via non-optional [DependsOn] attributes
+    /// plus the <see cref="IModule.DependsOn"/> property, read through the
+    /// cached <see cref="ModuleGraph"/> resolver. Optional attribute
+    /// dependencies are excluded — they never pull unregistered modules into
+    /// the graph during discovery.
     /// </summary>
-    private IEnumerable<Type> GetDeclaredDependencies(Type moduleType)
+    private IEnumerable<Type> DeclaredDeps(Type moduleType)
     {
-        // Read from [DependsOn] attributes
-        var attrDeps = moduleType
-            .GetCustomAttributes<DependsOnAttribute>(inherit: true)
-            .SelectMany(a => a.Dependencies);
+        foreach (var dep in ModuleGraph.GetRequiredAttributeDeps(moduleType))
+            yield return dep;
 
         // Also read from IModule.DependsOn property (for non-ModulusModule impls)
         if (typeof(IModule).IsAssignableFrom(moduleType) &&
             !moduleType.IsAbstract)
         {
-            return attrDeps.Concat(GetOrCreate(moduleType).DependsOn).Distinct();
+            foreach (var dep in GetOrCreate(moduleType).DependsOn)
+                yield return dep;
         }
-
-        return attrDeps.Distinct();
     }
 }

@@ -8,7 +8,7 @@
 
   <ItemGroup>
     <PackageReference Include="Cobytelabs.Modulus.Core" Version="{{ framework_version }}" />
-    <PackageReference Include="Cobytelabs.Modulus.Data.Abstractions" Version="1.0.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Data.Abstractions" Version="{{ framework_version }}" />
   </ItemGroup>
 
   <ItemGroup>

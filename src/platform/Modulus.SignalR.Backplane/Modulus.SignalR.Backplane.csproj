@@ -4,6 +4,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <Description>Scale-out backplane options for Modulus SignalR hubs (Redis or Azure SignalR Service).</Description>
   </PropertyGroup>
 
   <ItemGroup>

@@ -1,3 +1,5 @@
+using Modulus.AspNetCore.Configuration;
+
 namespace Modulus.AspNetCore.Idempotency;
 
 using Microsoft.AspNetCore.Builder;
@@ -24,11 +26,8 @@ public static class IdempotencyExtensions
         IConfiguration configuration,
         Action<IdempotencyOptions>? configure = null)
     {
-        services.AddOptions<IdempotencyOptions>()
-            .Bind(configuration.GetSection(IdempotencyOptions.SectionName))
-            .ValidateOnStart();
-        if (configure is not null)
-            services.Configure(configure);
+        services.AddValidatedOptions(
+            configuration, IdempotencyOptions.SectionName, configure);
 
         services.TryAddSingleton<IIdempotencyStore, InMemoryIdempotencyStore>();
         return services;

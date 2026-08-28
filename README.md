@@ -9,33 +9,37 @@ and first-class multi-tenancy.
 Modulus is designed for teams who need the architectural rigour of ABP or eShop
 without the heavyweight abstractions. It provides proven building blocks that
 compose cleanly — pick only what your application needs. The framework ships as
-**23 focused NuGet packages** (published as `Cobytelabs.Modulus.*`) plus a
+**31 focused NuGet packages** (published as `Cobytelabs.Modulus.*`) plus a
 `dotnet tool` CLI for scaffolding complete solutions, modules, and CRUD code.
 
 ## Solution layout
 
 ```
-src/
-  core/          Modulus.Core (abstractions+impl merged), Modulus.AspNetCore
+src/                    31 projects across:
+  core/          Modulus.Core (abstractions+impl merged), Modulus.AspNetCore,
+                 Modulus.AspNetCore.Redis (Redis-backed idempotency store)
   data/          Modulus.Data.Abstractions, Modulus.EntityFrameworkCore,
                  EF Core providers (SqlServer, PostgreSQL, MySQL, SQLite, MongoDB)
   identity/      Modulus.Identity (OpenIddict server + 6 IdP adapters +
                  EF Core mapping merged into one package)
   messaging/     Modulus.Events (abstractions merged), Modulus.Mediator
-                 (abstractions merged), Modulus.Inbox, Modulus.Outbox,
+                 (abstractions merged), Modulus.Inbox (+ MongoDB), Modulus.Outbox,
                  Modulus.Outbox.Abstractions (kept — circular-dep seam),
-                 Inbox/Outbox.MongoDB, EventBus.RabbitMQ, EventBus.Kafka,
+                 Outbox.MongoDB, EventBus.RabbitMQ, EventBus.Kafka,
                  Modulus.Sagas (Rebus-based)
   platform/      Modulus.Platform (MultiTenancy + Authorization +
                  BackgroundJobs + in-memory Caching + local Storage +
                  in-process SignalR — NO heavy cloud SDKs), cloud providers
                  opt-in: Storage.S3, Storage.AzureBlobs, Caching.Redis,
-                 SignalR.Backplane, MultiTenancy.EntityFrameworkCore
+                 SignalR.Backplane, MultiTenancy.EntityFrameworkCore,
+                 Authorization.EntityFrameworkCore + Authorization.Management
+                 (EF grant store + management API)
   observability/ Modulus.Observability (Diagnostics + OpenTelemetry merged)
+  testing/       Modulus.Testing (WebApplicationFactory-based integration harness)
   cli/           Modulus.Cli (Spectre.Console.Cli scaffolding tool)
-tests/
-  unit/          xUnit + NSubstitute + FluentAssertions (7 projects)
-  integration/   xUnit + Testcontainers (2 projects)
+tests/                  16 projects
+  unit/          xUnit + NSubstitute + FluentAssertions
+  integration/   xUnit + Testcontainers (Docker required)
 ```
 
 ## Getting started
@@ -88,7 +92,7 @@ Templates are embedded Scriban resources under `cli/Templates/`.
 
 ## Sample application
 
-- **`samples/ModulusSampleErp`** — a reference application (API host + Users
+- **`samples/ProcureFlow`** — a reference application (API host + Users
   module) showing the framework's recommended shape: module system, CQRS via
   `Modulus.Mediator`, per-module EF Core persistence, Serilog, Sentry, and
   forwarded-headers hardening. Ships a `NuGet.config` pointing at the repo's
@@ -150,13 +154,15 @@ builder.Services.AddModulus<AppHostModule>(builder.Configuration);
   integrate with the outbox.
 - **Sagas** — Rebus-based long-running orchestration.
 - **Platform services** — permission-based authorization, background job
-  scheduler, caching (memory, tag-based invalidation), file storage (local,
-  S3, Azure Blob), and SignalR hub base classes.
+  scheduler (in-memory default; replace with Quartz.NET or Hangfire for
+  production multi-replica deployments), caching (memory, tag-based invalidation),
+  file storage (local, S3, Azure Blob), and SignalR hub base classes.
 - **API hardening** — rate limiting, API versioning, health probes
   (`/health/live`, `/health/ready`), CORS, security headers, idempotency keys,
   feature flags, secrets guard, at-rest PII encryption, forwarded-headers.
-- **Observability** — OpenTelemetry auto-instrumentation (ASP.NET Core, EF Core,
-  HTTP client) plus correlation-ID propagation.
+- **Observability** — OpenTelemetry tracing wired to the mediator pipeline and
+  module lifecycle; correlation-ID propagation. Add EF Core and HTTP
+  instrumentation via their respective OpenTelemetry packages.
 
 ## Build
 

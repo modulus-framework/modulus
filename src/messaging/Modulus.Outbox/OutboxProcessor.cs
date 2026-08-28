@@ -6,6 +6,7 @@ namespace Modulus.Outbox;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Modulus.Core.Abstractions;
+using Modulus.Observability;
 using Modulus.Outbox.Abstractions;
 
 public sealed class OutboxProcessor(
@@ -16,6 +17,8 @@ public sealed class OutboxProcessor(
     // Unique id per processor instance, used to claim rows so concurrent
     // instances (or concurrent polls) don't dispatch the same message twice.
     private readonly string _instanceId = Guid.NewGuid().ToString("N");
+
+    private const int PurgeBatchSize = 1000;
 
     public async Task ProcessAsync(CancellationToken ct = default)
     {
@@ -52,6 +55,18 @@ public sealed class OutboxProcessor(
     {
         var dispatcher = ssp.GetRequiredService<IOutboxDispatcher>();
         var now = DateTime.UtcNow;
+
+        // Record current depth of pending messages
+        var pendingCount = await db.Set<OutboxMessage>()
+            .Where(m => m.ProcessedAt == null && m.RetryCount < options.MaxRetries)
+            .CountAsync(ct);
+        ModulusMeters.OutboxDepth.Add(pendingCount);
+
+        // Housekeeping FIRST: a quiet system (everything already dispatched)
+        // exits this method at the empty-candidates short-circuit below, so a
+        // purge placed at the end would rarely run once steady state is
+        // reached and dead/dispatched rows would accumulate forever.
+        await PurgeExpiredAsync(db, options, ct);
 
         // 1. Pick candidate ids: unprocessed, under the retry budget, not
         //    currently locked by another instance, and whose backoff (if any)
@@ -133,6 +148,7 @@ public sealed class OutboxProcessor(
                 message.ProcessedAt = DateTime.UtcNow;
                 message.LockedBy = null;
                 message.LockedUntil = null;
+                ModulusMeters.OutboxDispatched.Add(1);
                 logger.LogDebug("Outbox dispatched {Id} ({Type})",
                     message.Id, message.MessageType);
             }
@@ -150,9 +166,12 @@ public sealed class OutboxProcessor(
                               * Math.Pow(2, message.RetryCount), 3600));
 
                 if (message.RetryCount >= options.MaxRetries)
+                {
+                    ModulusMeters.OutboxDeadLettered.Add(1);
                     logger.LogError(ex,
                         "Outbox message {Id} ({Type}) dead-lettered after {N} attempts.",
                         message.Id, message.MessageType, message.RetryCount);
+                }
                 else
                     logger.LogWarning(ex,
                         "Outbox dispatch failed for {Id} (attempt {N}); next attempt at {Next}.",
@@ -166,5 +185,37 @@ public sealed class OutboxProcessor(
         }
 
         await db.SaveChangesAsync(ct);
+    }
+
+    /// <summary>
+    /// Bounded housekeeping delete of rows past their retention window:
+    /// successfully dispatched rows (by ProcessedAt) and dead-lettered rows
+    /// (RetryCount exhausted) older than PurgeAfterDays. Capped per poll so
+    /// cleanup never monopolises a cycle and table growth stays bounded even
+    /// under sustained failure storms.
+    /// </summary>
+    private static async Task PurgeExpiredAsync(
+        DbContext db, OutboxOptions options, CancellationToken ct)
+    {
+        if (options.PurgeAfterDays <= 0)
+            return;
+
+        var cutoff = DateTime.UtcNow.AddDays(-options.PurgeAfterDays);
+
+        var expiredIds = await db.Set<OutboxMessage>()
+            .Where(m => (m.ProcessedAt != null && m.ProcessedAt < cutoff)
+                     || (m.ProcessedAt == null
+                         && m.RetryCount >= options.MaxRetries
+                         && m.CreatedAt < cutoff))
+            .OrderBy(m => m.Id)
+            .Take(PurgeBatchSize)
+            .Select(m => m.Id)
+            .ToListAsync(ct);
+        if (expiredIds.Count == 0)
+            return;
+
+        await db.Set<OutboxMessage>()
+            .Where(m => expiredIds.Contains(m.Id))
+            .ExecuteDeleteAsync(ct);
     }
 }

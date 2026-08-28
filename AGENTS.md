@@ -5,9 +5,9 @@ Guidance for AI agents (and humans) working on the Modulus framework.
 ## Project
 
 Modulus is a modular-monolith framework for **.NET 10** (`net10.0`). It is a
-multi-project solution made of **23 libraries** under `src/` (core, data,
-identity, messaging, platform, observability) plus unit/integration tests under
-`tests/` and a **CLI tool** (`Modulus.Cli`) for scaffolding.
+multi-project solution made of **31 libraries** under `src/` (core, data,
+identity, messaging, platform, observability, testing) plus unit/integration
+tests under `tests/` and a **CLI tool** (`Modulus.Cli`) for scaffolding.
 
 ## Prerequisites
 
@@ -68,7 +68,7 @@ src/
                  (abstractions merged), Modulus.Inbox, Modulus.Outbox,
                  Modulus.Outbox.Abstractions (kept — circular-dep seam),
                  Inbox/Outbox.MongoDB, EventBus.RabbitMQ, EventBus.Kafka,
-                 Modulus.Sagas (Rebus-based)
+                 Modulus.Sagas (Rebus saga orchestration)
   platform/      Modulus.Platform (MultiTenancy + Authorization +
                  BackgroundJobs + in-memory Caching + local Storage +
                  in-process SignalR — NO heavy cloud SDKs). Cloud providers are
@@ -77,12 +77,16 @@ src/
                  (Azure.Storage.Blobs), Modulus.Caching.Redis (StackExchange.Redis),
                  Modulus.SignalR.Backplane (Redis/Azure SignalR backplane),
                  Modulus.MultiTenancy.EntityFrameworkCore (EF-backed ITenantStore
-                 — keeps EF Core out of Modulus.Platform).
+                 — keeps EF Core out of Modulus.Platform),
+                 Modulus.Authorization.EntityFrameworkCore (EF permission grant
+                 store) + Modulus.Authorization.Management (admin API),
+                 Modulus.AspNetCore.Redis (distributed idempotency store).
   observability/ Modulus.Observability (Diagnostics + OpenTelemetry merged)
+  testing/       Modulus.Testing (packable WebApplicationFactory harness)
   cli/           Modulus.Cli (Spectre.Console.Cli scaffolding tool)
 tests/
-  unit/          xUnit + NSubstitute + FluentAssertions (7 projects)
-  integration/   xUnit + Testcontainers (2 projects)
+  unit/          xUnit + NSubstitute + FluentAssertions
+  integration/   xUnit + Testcontainers (Docker required)
 ```
 
 ## Module system
@@ -126,12 +130,12 @@ large DDD/CQRS modular monoliths.
 
 | Command | Description |
 |---------|-------------|
-| `modulus app <name>` | Creates a solution: `src/API/{App}.Api` host + `src/Shared/{App}.Shared.*` kernel (4 projects) + example `Catalog` module (4 projects) + top-level tests |
+| `modulus app <name>` | Creates a solution: `src/API/{App}.Api` host + `src/Shared/{App}.Shared.*` kernel (4 projects) + example `Catalog` module (4 projects) + top-level tests. Prompts for `--migration-engine {efcore|dbsh}`. |
 | `modulus module <name>` | Creates a blank 4-layer business module |
-| `modulus add-module <name>` | Adds a module to an existing app + wires `[DependsOn]` + Host `ProjectReference`s |
+| `modulus add-module <name>` | Adds a module to an existing app + wires `[DependsOn]` + Host `ProjectReference`s. Prompts for `--migration-engine`. |
 | `modulus generate-crud <Entity>` | Generates entity, repo, DTOs, command/query handlers across the module's layers |
-| `modulus migrate add <Name>` | Scaffolds an EF Core migration in each module's Infrastructure project (or one via `--module`) |
-| `modulus migrate update` | Applies pending migrations to each module's database (`dotnet ef database update` per module) |
+| `modulus migrate add <Name>` | Scaffolds an EF Core migration in each module's Infrastructure project (or one via `--module`). Routes to `dbsh create` for dbsh modules. |
+| `modulus migrate update` | Applies pending migrations to each module's database (`dotnet ef database update` per module). Routes to `dbsh migrate` for dbsh modules. |
 
 ### Generated layout
 
@@ -153,7 +157,7 @@ large DDD/CQRS modular monoliths.
         └── {App}.Modules.{Module}/
             ├── .Domain/          # entity, IRepository
             ├── .Application/     # IUnitOfWork, commands/queries/handlers + Dtos/ + IntegrationEvents/
-            ├── .Infrastructure/  # {Module}DbContext, {Module}DbContextFactory (design-time), Migrations/, repository impl, {Module}Module composition root
+            ├── .Infrastructure/  # {Module}DbContext, {Module}DbContextFactory (EF) or dbsh.toml + Database/Migrations/ (dbsh), repository impl, {Module}Module composition root
             └── .Presentation/    # API controllers
 ```
 
@@ -163,7 +167,7 @@ Each module gets **four** projects named `{App}.Modules.{Module}.{Layer}`:
 |-------|----------|------------|
 | `Domain` | Entity, `IRepository` | `Shared.Domain`, `Modulus.Core`, `Modulus.Data.Abstractions` |
 | `Application` | **`IUnitOfWork`**, commands, queries, handlers, **DTOs** (`Dtos/`), **integration events** (`IntegrationEvents/`) | `Domain`, `Shared.Application`, `Modulus.Mediator`, `Modulus.EntityFrameworkCore`, `Modulus.Events` |
-| `Infrastructure` | **`{Module}DbContext`**, **`{Module}DbContextFactory`** (design-time), `Migrations/`, repository impl, `{Module}Module` composition root | `Application`, `Domain`, `Shared.Infrastructure`, `Modulus.EntityFrameworkCore`, `Modulus.Events`, EF Core provider package |
+| `Infrastructure` | **`{Module}DbContext`**, **`{Module}DbContextFactory`** (EF) or `dbsh.toml` + `Database/Migrations/` (dbsh), repository impl, `{Module}Module` composition root | `Application`, `Domain`, `Shared.Infrastructure`, `Modulus.EntityFrameworkCore`, `Modulus.Events`, EF Core provider package |
 | `Presentation` | API controllers | `Application`, `Shared.Presentation`, `Modulus.AspNetCore` |
 
 There are **no separate Contracts / IntegrationEvents / Tests projects** —
@@ -205,7 +209,7 @@ contributes its own handlers without re-registering behaviours. The generated
 `.slnx` uses flat sibling solution folders (no nesting) so that `dotnet test`
 and `dotnet sln list` discover all projects.
 
-A working example lives at `samples/ModulusSampleErp` (API host + Users module,
+A working example lives at `samples/ProcureFlow` (API host + Users module,
 SQLite). Because the `Cobytelabs.Modulus.*` packages aren't on nuget.org yet, the
 sample ships a `NuGet.config` pointing at the repo's local `nupkg/` feed — run
 `dotnet pack modulus.slnx -c Release` first if the feed is empty.
@@ -218,8 +222,9 @@ Templates are embedded Scriban resources under `cli/Templates/`
 These are architectural defects that need design discussion before fixing. See
 the review notes and do not silently change them:
 
-- **Transactional outbox (dual-write)** — FIXED: `ModuleDbContext.SaveChangesAsync` now enqueues domain events that implement `IIntegrationEvent` to `IIntegrationEventOutbox` (backed by `EfOutboxWriter`) BEFORE calling `base.SaveChangesAsync`, so the outbox row(s) participate in the same DB transaction. `AddModuleDatabase` registers a `NullIntegrationEventOutbox` by default (no-op); `AddOutbox<TContext>` replaces it with `EfOutboxWriter`. The original bug was worse than "caller must call WriteAsync before CommitAsync": nobody called `IOutboxWriter.WriteAsync` at all — the outbox was registered but completely unwired. `EfOutboxWriter` now implements both `IOutboxWriter` and `IIntegrationEventOutbox`, resolving `DbContext` lazily via `IServiceProvider` to break the circular DI dependency (ModuleDbContext → outbox → DbContext → ModuleDbContext).
+- **Transactional outbox (dual-write)** — FIXED: `ModuleDbContext.SaveChangesAsync` now enqueues domain events that implement `IIntegrationEvent` directly into its own `Set<OutboxMessage>()` BEFORE calling `base.SaveChangesAsync`, so the outbox row(s) participate in the same DB transaction. Enqueue is gated on `IOutboxWriter` being registered (i.e. the app called `AddOutbox<TContext>`); rows are built through the shared `OutboxRowFactory` (Modulus.Outbox.Abstractions) so all call sites produce identical rows, including `CorrelationId` (captured from `ICorrelationContext`). The former `IIntegrationEventOutbox`/`NullIntegrationEventOutbox` seam was removed — it was dead code whose registration dance never executed at runtime (the context writes inline), and it duplicated row-building with a silent CorrelationId divergence.
 - **Inbox (MongoDB)** — FIXED: `AddMongoInbox` now calls `DecorateIntegrationEventHandlers()` (the same decorator wiring as `AddInbox<TContext>`), so all `IIntegrationEventHandler<T>` registrations are wrapped with the idempotent decorator backed by `MongoInboxStore`. The original bug: `MongoInboxStore` was registered but the handler pipeline was never decorated — `AddMongoInbox` provided zero dedup. A common `IInboxStore` interface now backs both EF Core (`EfInboxStore`) and MongoDB (`MongoInboxStore`), so the decorator logic is shared.
+- **Inbox (EF Core model mapping)** — FIXED: `AddInbox<TContext>` now registers an `IModuleModelContributor` that maps `InboxMessage` into every `ModuleDbContext` (applied in `OnModelCreating` before table-prefixing). The original bug: `InboxMessageConfiguration` existed but nothing applied it — the EF inbox could not persist claims at all without undocumented hand-wiring.
 - **`TransactionBehavior` enlists only the first registered `DbContext`** — FIXED: now starts an explicit `BeginTransactionAsync` on *every* resolved `DbContext` (see below). The original bug was actually worse than "first context only": `AddDbContext<T>` does not register the context as `DbContext`, so `GetServices<DbContext>()` returned **zero** items and the behavior silently skipped transaction wrapping entirely. `AddModuleDatabase<TContext>` now also registers the context as `DbContext` so the behavior can discover it. Multi-context caveat: each context runs in its own independent DB transaction (true cross-connection atomicity needs 2PC/MSDTC); for cross-module consistency prefer the transactional outbox.
 - 5 empty test projects removed; `Modulus.App` template replaced by CLI
   (`modulus app`).
@@ -296,6 +301,49 @@ migrations for CatalogDbContext"*.
   Discovers the `*.Api.csproj` startup project and `*.Infrastructure.csproj`
   module projects under the app root. Requires the `dotnet-ef` global tool.
 
+## Migration engines (EF Core vs dbsh)
+
+Modules can use **EF Core migrations** (built-in, default) or **dbsh** (an
+external SQL-first migration tool). The choice is per-module and set at app
+creation time or when adding a module via `--migration-engine {efcore|dbsh}`.
+
+### How it works
+
+- **EF Core mode** (default) — the generated module includes an
+  `IDesignTimeDbContextFactory` and EF migration files in
+  `Infrastructure/Migrations/`. `MigrateModulusDatabasesAsync` applies them at
+  startup. `modulus migrate add/update` shells out to `dotnet ef`.
+- **dbsh mode** — the generated module emits a `Database/Migrations/` folder
+  with a `dbsh.toml` config and a `.gitkeep` placeholder. The module's
+  composition root calls `AddModuleDatabase<TContext>(...).ExternallyManaged<TContext>()`,
+  which registers the context as externally managed. The generated `Program.cs`
+  does **not** call `MigrateModulusDatabasesAsync` (the schema is managed
+  externally by the user running `dbsh migrate`). `modulus migrate add/update`
+  shells out to the `dbsh` CLI (requires `dotnet tool install --global dbsh`).
+
+### Framework hook
+
+`IModuleMigrationRegistry` (singleton, in `Modulus.EntityFrameworkCore.Extensions`)
+maps each `DbContext` type → `IsExternallyManaged`. `MigrateModulusDatabasesAsync`
+checks the registry and skips externally-managed contexts (logs *"schema managed
+externally"*). This is engine-agnostic — not dbsh-specific — so any external
+migration tool can use it.
+
+### TablePrefix ↔ dbsh convention
+
+The template enforces **`TablePrefix == "<dbshModuleName>_"`** so EF table names
+and dbsh SQL targets the same tables. E.g. a module with `TablePrefix = "cat_"`
+uses dbsh module name `"cat"` and dbsh produces `cat__<table>` (MySQL/SQLite)
+or schema `cat` (PostgreSQL/SQL Server).
+
+### Caveats
+
+- dbsh has no model-diff — the developer keeps the EF model and dbsh SQL in
+  sync manually. `dbsh validate` catches script errors but not schema drift.
+- dbsh has no MongoDB support. Mongo modules use neither tool.
+- A module can switch engines after creation by changing the composition root
+  call and re-scaffolding (or removing) the `DbContextFactory` / `dbsh.toml`.
+
 ## Microservice hardening (Tier 2)
 
 Cross-service concerns for the microservice deployment style: request
@@ -329,6 +377,44 @@ caller-supplied id, or deriving one from the request trace id when absent.
   limiter) plus the correlation handler as the outer handler. `TryAddSingleton`s
   the correlation context so it works even without the inbound middleware (then
   no-ops). New package: `Microsoft.Extensions.Http.Resilience` 10.7.0.
+
+## Sagas (Rebus) — as-built decision
+
+`Modulus.Sagas` is the **opt-in saga/process-manager package** built on Rebus.
+It deliberately wraps (not replaces) Rebus's native `Saga<TData>` model — sagas
+are authored with standard Rebus APIs; the package wires them into Modulus:
+
+- **`AddModulusSagas(b => b ...)`** composes: MS logging, an optional Polly v8
+  retry/circuit-breaker incoming-pipeline step (`PollyRetryStep`), ambient
+  tenant/correlation propagation (`AmbientContextIncomingStep`), handler
+  auto-registration from chosen assemblies, and adapters that bridge existing
+  `IIntegrationEventHandler<T>` registrations into Rebus's
+  `IHandleMessages<T>` pipeline (so inbox-decorated handlers work unchanged).
+- **Ambient context on messages**: publishers stamp `mod-tenant-id` /
+  `mod-correlation-id` headers (`RebusModuleBus`, `RebusOutboxDispatcher`);
+  consumers restore them around handler invocation so tenant query filters and
+  log correlation behave like the HTTP path.
+- **`.ReplaceModuleBus()` / `.ReplaceOutboxDispatcher()`** route
+  `IModuleBus.PublishAsync` and outbox relaying through Rebus instead of the
+  in-process bus / dispatcher. Both are opt-in.
+- Transport + saga persistence are bring-your-own in the `.Rebus(...)`
+  callback (`cfg.Transport(...)`, `cfg.Options(o => o.EnableSagas())` +
+  `cfg.Sagas(...)`). Covered by `tests/unit/Modulus.Sagas.Tests`.
+
+## HTTP endpoint styles — both supported by design
+
+Modulus ships **two endpoint authoring styles**; apps choose per module or per
+endpoint (both compile to ordinary ASP.NET Core routes):
+
+1. **Minimal API style** — implement `IEndpoint`/`IMinimalEndpoint`
+   (`src/core/Modulus.AspNetCore/Endpoints/`), register via
+   `services.AddEndpoints(assembly)`, map via `app.MapEndpoints()`.
+2. **REPR pattern** — inherit `Endpoint<TRequest,TResponse>` with declarative
+   `Configure()` metadata, map via `app.MapModulusEndpoints()`.
+
+Framework-internal diagnostics endpoints (`/health/modules`,
+`/health/graph`) are mapped explicitly via `MapModulusDiagnostics(app)` —
+they no longer depend on the user-facing registration path.
 
 ## API robustness (Tier 3)
 
@@ -481,7 +567,7 @@ history is discoverable:
   IntegrationEvents / Tests projects) was collapsed: DTOs live under
   `Application/Dtos`, integration events under `Application/IntegrationEvents`,
   and tests at the solution root. The host is `{App}.Api` (was `{App}.Host`).
-  A working `samples/ModulusSampleErp` (API host + Users module, SQLite)
+  A working `samples/ProcureFlow` (API host + Users module, SQLite)
   validates the full flow: `app` → `add-module` → `generate-crud`, building and
   running end-to-end.
 - **Outbox row-locking & retries** (`OutboxProcessor`) — claims rows atomically

@@ -8,9 +8,10 @@ using Modulus.Mediator.Abstractions.Attributes;
 namespace Modulus.Mediator.Behaviors;
 
 /// <summary>
-/// Wraps command handling in a database transaction across every
-/// <see cref="DbContext"/> resolved from the current service scope, not just
-/// the first one. This replaces the previous behaviour which began a
+/// Wraps command handling in a database transaction across every *distinct*
+/// <see cref="DbContext"/> resolved from the current service scope (duplicate
+/// registrations of the same instance are collapsed by type), not just the
+/// first one. This replaces the previous behaviour which began a
 /// transaction on only the *first* registered <see cref="DbContext"/>,
 /// leaving additional contexts (e.g. cross-module writes in a modular
 /// monolith) without transactional protection.
@@ -69,9 +70,16 @@ public sealed class TransactionBehavior<TRequest, TResponse>(
         if (s_skip || request is IQuery<TResponse>)
             return await next();
 
-        // Resolve every DbContext in scope, then narrow to the ones this command
-        // actually needs so we don't open a transaction on every module context.
-        var contexts = sp.GetServices<DbContext>().ToList();
+        // Resolve every DbContext in scope, deduplicated by runtime type:
+        // AddModuleDatabase / AddOutbox / AddInbox each add their own
+        // scoped <c>DbContext</c> descriptor resolving the *same* instance, so
+        // the raw registration count (2–3) would defeat the TouchedOrSingle
+        // mode and make a "multi-context" command out of every single-module
+        // write. Only genuinely distinct context types participate.
+        var contexts = sp.GetServices<DbContext>()
+            .GroupBy(ctx => ctx.GetType())
+            .Select(group => group.First())
+            .ToList();
         var toWrap = SelectContexts(contexts);
         if (toWrap.Count == 0)
             return await next();
@@ -86,14 +94,16 @@ public sealed class TransactionBehavior<TRequest, TResponse>(
         var strategy = contexts[0].Database.CreateExecutionStrategy();
         return await strategy.ExecuteAsync(async () =>
         {
-            // Start a transaction on *every* context so all writes are protected,
-            // not just those on the first registered DbContext.
+            // Start a transaction on *every* wrapped context so all writes are
+            // protected. The begin loop runs inside the try: if opening
+            // context #2 fails, context #1's already-open transaction is still
+            // rolled back — begun outside, it would leak until disposal.
             var transactions = new List<IDbContextTransaction>(contexts.Count);
-            foreach (var ctx in contexts)
-                transactions.Add(await ctx.Database.BeginTransactionAsync(ct));
-
             try
             {
+                foreach (var ctx in contexts)
+                    transactions.Add(await ctx.Database.BeginTransactionAsync(ct));
+
                 var result = await next();
 
                 // Commit once the handler has succeeded.

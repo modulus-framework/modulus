@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Modulus.Authorization.Audit;
 using Modulus.Authorization.EntityFrameworkCore;
 using Modulus.Authorization.Extensions;
+using Modulus.Authorization.Governance;
 using Modulus.Authorization.Grants;
 using Modulus.Authorization.Organization;
 using Modulus.Core.Abstractions;
@@ -67,6 +68,7 @@ public static class AuthorizationManagementExtensions
         MapOrganization(group);
         MapEntitlements(group);
         MapDelegations(group);
+        MapGovernance(group);
         return group;
     }
 
@@ -89,7 +91,8 @@ public static class AuthorizationManagementExtensions
         group.MapPost("/grants", async (
             GrantWriteRequest request,
             EfPermissionGrantStore store, IAuthorizationAuditWriter auditWriter,
-            ICurrentUser currentUser, CancellationToken ct) =>
+            ICurrentUser currentUser, ISodPolicy sodPolicy,
+            IEffectiveAccessService? effectiveAccessService, CancellationToken ct) =>
         {
             if (!Enum.TryParse<GrantHolderType>(request.HolderType, ignoreCase: true, out var holderType))
                 return InvalidEnum("holderType", request.HolderType, typeof(GrantHolderType));
@@ -102,7 +105,34 @@ public static class AuthorizationManagementExtensions
                     ["permissions"] = ["At least one permission is required."],
                 });
 
+            // For Allow grants, check for SoD violations before applying
             var allow = grantType is PermissionGrantType.Allow;
+            if (allow && effectiveAccessService is not null && holderType is GrantHolderType.User)
+            {
+                var userId = ParseUser(request.Holder);
+                var currentReport = effectiveAccessService.Report(new PrincipalGrantQuery(userId, []));
+
+                // Simulate adding the new permissions and check for violations
+                var proposedPermissions = new HashSet<string>(currentReport.AllPermissions, StringComparer.OrdinalIgnoreCase);
+                foreach (var perm in request.Permissions)
+                    proposedPermissions.Add(perm);
+
+                var violations = sodPolicy.Evaluate(proposedPermissions);
+                if (violations.Count > 0)
+                {
+                    var violationDetails = violations
+                        .Select(v => new { constraint = v.Constraint.Name, held = v.HeldPermissions })
+                        .ToList();
+
+                    return Results.Conflict(new
+                    {
+                        error = "SoD violation",
+                        message = "Granting these permissions would create segregation-of-duties violations.",
+                        violations = violationDetails,
+                    });
+                }
+            }
+
             if (holderType is GrantHolderType.Role)
                 await (allow
                     ? store.GrantToRoleAsync(request.Holder, request.Permissions, ct)
@@ -290,6 +320,18 @@ public static class AuthorizationManagementExtensions
             EfDelegationStore store, IAuthorizationAuditWriter auditWriter,
             ICurrentUser currentUser, CancellationToken ct) =>
         {
+            if (request.Permissions is not { Length: > 0 })
+                return Results.ValidationProblem(new Dictionary<string, string[]>
+                {
+                    ["permissions"] = ["At least one permission is required."],
+                });
+
+            if (request.FromUserId == request.ToUserId)
+                return Results.ValidationProblem(new Dictionary<string, string[]>
+                {
+                    ["toUserId"] = ["A delegation must be to a different user than the delegator."],
+                });
+
             if (request.NotAfter <= request.NotBefore)
                 return Results.ValidationProblem(new Dictionary<string, string[]>
                 {
@@ -349,6 +391,83 @@ public static class AuthorizationManagementExtensions
             new AuthorizationAdministrativeChangeEvent(
                 category, action, currentUser.UserId?.ToString(), targetDescription, details),
             ct);
+
+    // ── Governance ───────────────────────────────────────────────
+
+    private static void MapGovernance(RouteGroupBuilder group)
+    {
+        // GET /authorization/effective-access/{userId} — what can this user do?
+        group.MapGet("/effective-access/{userId:guid}", (
+            Guid userId,
+            IEffectiveAccessService? effectiveAccessService) =>
+        {
+            if (effectiveAccessService is null)
+                return Results.NotFound("Effective access service not registered.");
+
+            var report = effectiveAccessService.Report(new PrincipalGrantQuery(userId, []));
+            return Results.Ok(new
+            {
+                userId = report.UserId,
+                directPermissions = report.DirectPermissions,
+                delegatedPermissions = report.DelegatedPermissions.Select(d => new
+                {
+                    permission = d.Permission,
+                    onBehalfOf = d.OnBehalfOf,
+                    delegationId = d.DelegationId,
+                }),
+                allPermissions = report.AllPermissions,
+                sodViolations = report.SodViolations.Select(v => new
+                {
+                    constraint = v.Constraint.Name,
+                    rationale = v.Constraint.Rationale,
+                    heldPermissions = v.HeldPermissions,
+                }),
+            });
+        })
+        .WithSummary("Get effective access for a user")
+        .WithName("GetEffectiveAccess");
+
+        // POST /authorization/sod-violations/scan — who's violating SoD?
+        group.MapPost("/sod-violations/scan", async (
+            EfPermissionGrantStore store,
+            IEffectiveAccessService? effectiveAccessService,
+            ISodPolicy sodPolicy,
+            CancellationToken ct) =>
+        {
+            if (effectiveAccessService is null)
+                return Results.NotFound("Effective access service not registered.");
+
+            // Scan all users in the grant store
+            var allUsers = await store.GetAllUsersWithGrantsAsync(ct);
+            var violations = new List<object>();
+
+            foreach (var userId in allUsers)
+            {
+                var report = effectiveAccessService.Report(new PrincipalGrantQuery(userId, []));
+                if (report.SodViolations.Count > 0)
+                {
+                    violations.Add(new
+                    {
+                        userId,
+                        violations = report.SodViolations.Select(v => new
+                        {
+                            constraint = v.Constraint.Name,
+                            rationale = v.Constraint.Rationale,
+                            heldPermissions = v.HeldPermissions,
+                        }),
+                    });
+                }
+            }
+
+            return Results.Ok(new
+            {
+                totalViolations = violations.Count,
+                violations,
+            });
+        })
+        .WithSummary("Scan for SoD violations across all users")
+        .WithName("ScanSodViolations");
+    }
 
     private static Guid ParseUser(string holder)
         => Guid.TryParse(holder, out var id)

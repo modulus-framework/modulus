@@ -96,7 +96,17 @@ internal sealed class PermissionRequirementHandler(
         var sub = principal.FindFirst(ClaimTypes.NameIdentifier)?.Value
                ?? principal.FindFirst("sub")?.Value;
         Guid? userId = Guid.TryParse(sub, out var id) ? id : null;
-        var roles = principal.FindAll(ClaimTypes.Role).Select(c => c.Value).ToArray();
+
+        // Accept BOTH the long and short role claim types: principals built
+        // from tokens validated with MapInboundClaims=false (OpenIddict, most
+        // OIDC library defaults) keep the literal "role" name, while
+        // ASP.NET-normalised identities carry ClaimTypes.Role.
+        var roles = principal.Claims
+            .Where(c => c.Type is ClaimTypes.Role or "role")
+            .Select(c => c.Value)
+            .Distinct()
+            .ToArray();
+
         return new PrincipalGrantQuery(userId, roles);
     }
 }

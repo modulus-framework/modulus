@@ -18,7 +18,9 @@ public sealed class AuthentikIdentityProvider(
     HttpClient http, AuthentikOptions opts) : IExternalIdentityProvider
 {
     private readonly OidcDiscoveryValidator _tokenValidator =
-        new($"{opts.Authority}application/o/{opts.ClientId}/.well-known/openid-configuration");
+        OidcDiscoveryValidatorCache.GetOrCreate(
+            $"{opts.Authority}application/o/{Uri.EscapeDataString(opts.ClientId)}/.well-known/openid-configuration",
+            opts.Audience is null ? null : [opts.Audience]);
 
     public string Name => "authentik";
     public string DisplayName => "Authentik";
@@ -29,7 +31,7 @@ public sealed class AuthentikIdentityProvider(
         // Use a per-request HttpRequestMessage so the Authorization header is
         // never written to HttpClient.DefaultRequestHeaders, which is shared
         // across concurrent calls and would cause a race condition.
-        var url = $"{opts.Authority}api/v3/core/users/{subject}/";
+        var url = $"{opts.Authority}api/v3/core/users/{Uri.EscapeDataString(subject)}/";
         using var req = new HttpRequestMessage(HttpMethod.Get, url);
         req.Headers.Authorization =
             new AuthenticationHeaderValue("Bearer", opts.ApiToken);
@@ -72,6 +74,15 @@ public sealed class AuthentikOptions
     public string ClientSecret { get; set; } = default!;
     public string? ApiToken { get; set; }
     public string Scope { get; set; } = "openid profile email";
+
+    /// <summary>
+    /// Expected audience (<c>aud</c>) of access tokens issued for this
+    /// application (typically the OAuth client id). Configured locally so
+    /// bearer tokens minted for any other application are rejected. When
+    /// null, audience validation is skipped — recommended to set in
+    /// production.
+    /// </summary>
+    public string? Audience { get; set; }
 }
 
 public static class AuthentikExtensions
@@ -91,7 +102,7 @@ public static class AuthentikExtensions
         builder.AddOpenIdConnect("Authentik", options =>
         {
             options.Authority = opts.Authority;
-            options.MetadataAddress = $"{opts.Authority}application/o/{opts.ClientId}/.well-known/openid-configuration";
+            options.MetadataAddress = $"{opts.Authority}application/o/{Uri.EscapeDataString(opts.ClientId)}/.well-known/openid-configuration";
             options.ClientId = opts.ClientId;
             options.ClientSecret = opts.ClientSecret;
             options.ResponseType = "code";

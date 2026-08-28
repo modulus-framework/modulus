@@ -1,0 +1,133 @@
+<Solution>
+
+  <Folder Name="/src/" />
+  <Folder Name="/src/API/">
+    <Project Path="src/API/ProcureFlow.Api/ProcureFlow.Api.csproj" />
+  </Folder>
+  <Folder Name="/src/Shared/">
+    <Project Path="src/Shared/ProcureFlow.Shared.Domain/ProcureFlow.Shared.Domain.csproj" />
+    <Project Path="src/Shared/ProcureFlow.Shared.Application/ProcureFlow.Shared.Application.csproj" />
+    <Project Path="src/Shared/ProcureFlow.Shared.Infrastructure/ProcureFlow.Shared.Infrastructure.csproj" />
+    <Project Path="src/Shared/ProcureFlow.Shared.Presentation/ProcureFlow.Shared.Presentation.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Identity/">
+    <Project Path="src/Modules/Identity/ProcureFlow.Modules.Identity.Domain/ProcureFlow.Modules.Identity.Domain.csproj" />
+    <Project Path="src/Modules/Identity/ProcureFlow.Modules.Identity.Application/ProcureFlow.Modules.Identity.Application.csproj" />
+    <Project Path="src/Modules/Identity/ProcureFlow.Modules.Identity.Infrastructure/ProcureFlow.Modules.Identity.Infrastructure.csproj" />
+    <Project Path="src/Modules/Identity/ProcureFlow.Modules.Identity.Presentation/ProcureFlow.Modules.Identity.Presentation.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Configuration/">
+    <Project Path="src/Modules/Configuration/ProcureFlow.Modules.Configuration.Domain/ProcureFlow.Modules.Configuration.Domain.csproj" />
+    <Project Path="src/Modules/Configuration/ProcureFlow.Modules.Configuration.Application/ProcureFlow.Modules.Configuration.Application.csproj" />
+    <Project Path="src/Modules/Configuration/ProcureFlow.Modules.Configuration.Infrastructure/ProcureFlow.Modules.Configuration.Infrastructure.csproj" />
+    <Project Path="src/Modules/Configuration/ProcureFlow.Modules.Configuration.Presentation/ProcureFlow.Modules.Configuration.Presentation.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Tenants/">
+    <Project Path="src/Modules/Tenants/ProcureFlow.Modules.Tenants.Domain/ProcureFlow.Modules.Tenants.Domain.csproj" />
+    <Project Path="src/Modules/Tenants/ProcureFlow.Modules.Tenants.Application/ProcureFlow.Modules.Tenants.Application.csproj" />
+    <Project Path="src/Modules/Tenants/ProcureFlow.Modules.Tenants.Infrastructure/ProcureFlow.Modules.Tenants.Infrastructure.csproj" />
+    <Project Path="src/Modules/Tenants/ProcureFlow.Modules.Tenants.Presentation/ProcureFlow.Modules.Tenants.Presentation.csproj" />
+  </Folder>
+
+  <Folder Name="/src/Modules/Notifications/">
+    <Project Path="src/Modules/Notifications/ProcureFlow.Modules.Notifications.Domain/ProcureFlow.Modules.Notifications.Domain.csproj" />
+    <Project Path="src/Modules/Notifications/ProcureFlow.Modules.Notifications.Application/ProcureFlow.Modules.Notifications.Application.csproj" />
+    <Project Path="src/Modules/Notifications/ProcureFlow.Modules.Notifications.Infrastructure/ProcureFlow.Modules.Notifications.Infrastructure.csproj" />
+    <Project Path="src/Modules/Notifications/ProcureFlow.Modules.Notifications.Presentation/ProcureFlow.Modules.Notifications.Presentation.csproj" />
+  </Folder>
+
+  <Folder Name="/src/Modules/Vendors/">
+    <Project Path="src/Modules/Vendors/ProcureFlow.Modules.Vendors.Domain/ProcureFlow.Modules.Vendors.Domain.csproj" />
+    <Project Path="src/Modules/Vendors/ProcureFlow.Modules.Vendors.Application/ProcureFlow.Modules.Vendors.Application.csproj" />
+    <Project Path="src/Modules/Vendors/ProcureFlow.Modules.Vendors.PublicApi/ProcureFlow.Modules.Vendors.PublicApi.csproj" />
+    <Project Path="src/Modules/Vendors/ProcureFlow.Modules.Vendors.Infrastructure/ProcureFlow.Modules.Vendors.Infrastructure.csproj" />
+    <Project Path="src/Modules/Vendors/ProcureFlow.Modules.Vendors.Presentation/ProcureFlow.Modules.Vendors.Presentation.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/OrgStructure/">
+    <Project Path="src/Modules/OrgStructure/ProcureFlow.Modules.OrgStructure.Domain/ProcureFlow.Modules.OrgStructure.Domain.csproj" />
+    <Project Path="src/Modules/OrgStructure/ProcureFlow.Modules.OrgStructure.Application/ProcureFlow.Modules.OrgStructure.Application.csproj" />
+    <Project Path="src/Modules/OrgStructure/ProcureFlow.Modules.OrgStructure.Infrastructure/ProcureFlow.Modules.OrgStructure.Infrastructure.csproj" />
+    <Project Path="src/Modules/OrgStructure/ProcureFlow.Modules.OrgStructure.Presentation/ProcureFlow.Modules.OrgStructure.Presentation.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/" />
+
+  <Folder Name="/src/Modules/Budgeting/">
+    <Project Path="src/Modules/Budgeting/ProcureFlow.Modules.Budgeting.Domain/ProcureFlow.Modules.Budgeting.Domain.csproj" />
+    <Project Path="src/Modules/Budgeting/ProcureFlow.Modules.Budgeting.Application/ProcureFlow.Modules.Budgeting.Application.csproj" />
+    <Project Path="src/Modules/Budgeting/ProcureFlow.Modules.Budgeting.Infrastructure/ProcureFlow.Modules.Budgeting.Infrastructure.csproj" />
+    <Project Path="src/Modules/Budgeting/ProcureFlow.Modules.Budgeting.Presentation/ProcureFlow.Modules.Budgeting.Presentation.csproj" />
+  </Folder>
+
+  <Folder Name="/src/Modules/Customs/">
+    <Project Path="src/Modules/Customs/ProcureFlow.Modules.Customs.Domain/ProcureFlow.Modules.Customs.Domain.csproj" />
+    <Project Path="src/Modules/Customs/ProcureFlow.Modules.Customs.Application/ProcureFlow.Modules.Customs.Application.csproj" />
+    <Project Path="src/Modules/Customs/ProcureFlow.Modules.Customs.Infrastructure/ProcureFlow.Modules.Customs.Infrastructure.csproj" />
+    <Project Path="src/Modules/Customs/ProcureFlow.Modules.Customs.Presentation/ProcureFlow.Modules.Customs.Presentation.csproj" />
+  </Folder>
+
+  <Folder Name="/src/Modules/Procurement/">
+    <Project Path="src/Modules/Procurement/ProcureFlow.Modules.Procurement.Domain/ProcureFlow.Modules.Procurement.Domain.csproj" />
+    <Project Path="src/Modules/Procurement/ProcureFlow.Modules.Procurement.Application/ProcureFlow.Modules.Procurement.Application.csproj" />
+    <Project Path="src/Modules/Procurement/ProcureFlow.Modules.Procurement.Infrastructure/ProcureFlow.Modules.Procurement.Infrastructure.csproj" />
+    <Project Path="src/Modules/Procurement/ProcureFlow.Modules.Procurement.Presentation/ProcureFlow.Modules.Procurement.Presentation.csproj" />
+  </Folder>
+
+  <Folder Name="/src/Modules/TradeFinance/">
+    <Project Path="src/Modules/TradeFinance/ProcureFlow.Modules.TradeFinance.Domain/ProcureFlow.Modules.TradeFinance.Domain.csproj" />
+    <Project Path="src/Modules/TradeFinance/ProcureFlow.Modules.TradeFinance.Application/ProcureFlow.Modules.TradeFinance.Application.csproj" />
+    <Project Path="src/Modules/TradeFinance/ProcureFlow.Modules.TradeFinance.Infrastructure/ProcureFlow.Modules.TradeFinance.Infrastructure.csproj" />
+    <Project Path="src/Modules/TradeFinance/ProcureFlow.Modules.TradeFinance.Presentation/ProcureFlow.Modules.TradeFinance.Presentation.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Finance/">
+    <Project Path="src/Modules/Finance/ProcureFlow.Modules.Finance.Application/ProcureFlow.Modules.Finance.Application.csproj" />
+    <Project Path="src/Modules/Finance/ProcureFlow.Modules.Finance.Domain/ProcureFlow.Modules.Finance.Domain.csproj" />
+    <Project Path="src/Modules/Finance/ProcureFlow.Modules.Finance.Infrastructure/ProcureFlow.Modules.Finance.Infrastructure.csproj" />
+    <Project Path="src/Modules/Finance/ProcureFlow.Modules.Finance.Presentation/ProcureFlow.Modules.Finance.Presentation.csproj" />
+  </Folder>
+
+  <Folder Name="/src/Modules/Import/">
+    <Project Path="src/Modules/Import/ProcureFlow.Modules.Import.Domain/ProcureFlow.Modules.Import.Domain.csproj" />
+    <Project Path="src/Modules/Import/ProcureFlow.Modules.Import.Application/ProcureFlow.Modules.Import.Application.csproj" />
+    <Project Path="src/Modules/Import/ProcureFlow.Modules.Import.Infrastructure/ProcureFlow.Modules.Import.Infrastructure.csproj" />
+    <Project Path="src/Modules/Import/ProcureFlow.Modules.Import.Presentation/ProcureFlow.Modules.Import.Presentation.csproj" />
+  </Folder>
+
+  <Folder Name="/src/Modules/Inventory/">
+    <Project Path="src/Modules/Inventory/ProcureFlow.Modules.Inventory.Domain/ProcureFlow.Modules.Inventory.Domain.csproj" />
+    <Project Path="src/Modules/Inventory/ProcureFlow.Modules.Inventory.Application/ProcureFlow.Modules.Inventory.Application.csproj" />
+    <Project Path="src/Modules/Inventory/ProcureFlow.Modules.Inventory.Infrastructure/ProcureFlow.Modules.Inventory.Infrastructure.csproj" />
+    <Project Path="src/Modules/Inventory/ProcureFlow.Modules.Inventory.Presentation/ProcureFlow.Modules.Inventory.Presentation.csproj" />
+  </Folder>
+
+  <Folder Name="/src/Modules/Costing/">
+    <Project Path="src/Modules/Costing/ProcureFlow.Modules.Costing.Domain/ProcureFlow.Modules.Costing.Domain.csproj" />
+    <Project Path="src/Modules/Costing/ProcureFlow.Modules.Costing.Application/ProcureFlow.Modules.Costing.Application.csproj" />
+    <Project Path="src/Modules/Costing/ProcureFlow.Modules.Costing.Infrastructure/ProcureFlow.Modules.Costing.Infrastructure.csproj" />
+    <Project Path="src/Modules/Costing/ProcureFlow.Modules.Costing.Presentation/ProcureFlow.Modules.Costing.Presentation.csproj" />
+  </Folder>
+
+  <Folder Name="/src/Modules/VirtualFileExplorer/">
+    <Project Path="src/Modules/VirtualFileExplorer/ProcureFlow.Modules.VirtualFileExplorer.Domain/ProcureFlow.Modules.VirtualFileExplorer.Domain.csproj" />
+    <Project Path="src/Modules/VirtualFileExplorer/ProcureFlow.Modules.VirtualFileExplorer.Application/ProcureFlow.Modules.VirtualFileExplorer.Application.csproj" />
+    <Project Path="src/Modules/VirtualFileExplorer/ProcureFlow.Modules.VirtualFileExplorer.Infrastructure/ProcureFlow.Modules.VirtualFileExplorer.Infrastructure.csproj" />
+    <Project Path="src/Modules/VirtualFileExplorer/ProcureFlow.Modules.VirtualFileExplorer.Presentation/ProcureFlow.Modules.VirtualFileExplorer.Presentation.csproj" />
+  </Folder>
+
+  <Folder Name="/src/Modules/WorkflowEngine/">
+    <Project Path="src/Modules/WorkflowEngine/ProcureFlow.Modules.WorkflowEngine.Domain/ProcureFlow.Modules.WorkflowEngine.Domain.csproj" />
+    <Project Path="src/Modules/WorkflowEngine/ProcureFlow.Modules.WorkflowEngine.Application/ProcureFlow.Modules.WorkflowEngine.Application.csproj" />
+    <Project Path="src/Modules/WorkflowEngine/ProcureFlow.Modules.WorkflowEngine.Infrastructure/ProcureFlow.Modules.WorkflowEngine.Infrastructure.csproj" />
+    <Project Path="src/Modules/WorkflowEngine/ProcureFlow.Modules.WorkflowEngine.Presentation/ProcureFlow.Modules.WorkflowEngine.Presentation.csproj" />
+  </Folder>
+
+  <Folder Name="/tests/">
+    <Project Path="tests/E2E/ProcureFlow.E2ETests/ProcureFlow.E2ETests.csproj" />
+  </Folder>
+
+  <Folder Name="/tests/Modules/">
+    <Project Path="tests/Modules/Import/ProcureFlow.Modules.Import.UnitTests/ProcureFlow.Modules.Import.UnitTests.csproj" />
+    <Project Path="tests/Modules/Inventory/ProcureFlow.Modules.Inventory.UnitTests/ProcureFlow.Modules.Inventory.UnitTests.csproj" />
+    <Project Path="tests/Modules/Costing/ProcureFlow.Modules.Costing.UnitTests/ProcureFlow.Modules.Costing.UnitTests.csproj" />
+    <Project Path="tests/Modules/Identity/ProcureFlow.Modules.Identity.UnitTests/ProcureFlow.Modules.Identity.UnitTests.csproj" />
+  </Folder>
+</Solution>

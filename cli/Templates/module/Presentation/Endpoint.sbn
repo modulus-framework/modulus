@@ -1,0 +1,81 @@
+using Modulus.AspNetCore.Endpoints;
+using Modulus.Mediator.Abstractions;
+using {{ module_namespace }}.Application;
+using {{ module_namespace }}.Application.Dtos;
+
+namespace {{ module_namespace }}.Presentation;
+
+public sealed class Get{{ entity_plural }}Endpoint(IMediator mediator) : EndpointBase
+{
+    public override void Configure()
+    {
+        Get("/api/{{ module_name_lower }}/{{ route_name }}");
+        AllowAnonymous();
+        Summary("Get all {{ entity_name_lower }}s");
+    }
+
+    public async Task<IReadOnlyList<{{ entity_name }}Dto>> HandleAsync(CancellationToken ct)
+        => await mediator.QueryAsync(new Get{{ entity_plural }}Query(), ct);
+}
+
+public sealed class Get{{ entity_name }}ByIdEndpoint(IMediator mediator) : EndpointBase
+{
+    public override void Configure()
+    {
+        Get("/api/{{ module_name_lower }}/{{ route_name }}/{id}");
+        AllowAnonymous();
+        Summary("Get {{ entity_name_lower }} by ID");
+    }
+
+    public async Task<{{ entity_name }}Dto> HandleAsync(Guid id, CancellationToken ct)
+        => await mediator.QueryAsync(new Get{{ entity_name }}ByIdQuery(id), ct);
+}
+
+public sealed class Create{{ entity_name }}Request
+{
+    public required string Name { get; set; }
+}
+
+public sealed class Create{{ entity_name }}Endpoint(IMediator mediator) : EndpointBase
+{
+    public override void Configure()
+    {
+        Post("/api/{{ module_name_lower }}/{{ route_name }}");
+        Summary("Create a new {{ entity_name_lower }}");
+    }
+
+    public async Task<Guid> HandleAsync(Create{{ entity_name }}Request request, CancellationToken ct)
+        => await mediator.SendAsync(new Create{{ entity_name }}Command(request.Name), ct);
+}
+
+public sealed class Update{{ entity_name }}Request
+{
+    public required string Name { get; set; }
+}
+
+public sealed class Update{{ entity_name }}Endpoint(IMediator mediator) : EndpointBase
+{
+    public override void Configure()
+    {
+        Put("/api/{{ module_name_lower }}/{{ route_name }}/{id}");
+        Summary("Update an existing {{ entity_name_lower }}");
+    }
+
+    public async Task<{{ entity_name }}Dto> HandleAsync(Guid id, Update{{ entity_name }}Request request, CancellationToken ct)
+        => await mediator.SendAsync(new Update{{ entity_name }}Command(id, request.Name), ct);
+}
+
+public sealed class Delete{{ entity_name }}Endpoint(IMediator mediator) : EndpointBase
+{
+    public override void Configure()
+    {
+        Delete("/api/{{ module_name_lower }}/{{ route_name }}/{id}");
+        Summary("Delete a {{ entity_name_lower }}");
+    }
+
+    public async Task HandleAsync(Guid id, CancellationToken ct)
+    {
+        await mediator.SendAsync(new Delete{{ entity_name }}Command(id), ct);
+        await SendNoContentAsync(ct);
+    }
+}

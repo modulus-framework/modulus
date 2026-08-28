@@ -2,6 +2,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Modulus.Core;
 using Modulus.Core.Abstractions;
+using Modulus.Core.Abstractions.Exceptions;
 using FluentAssertions;
 using Xunit;
 
@@ -72,15 +73,131 @@ public sealed class DependsOnAttributeTests
     }
 
     [Fact]
-    public void AddModules_CircularDependency_Throws()
+    public void AddModules_CircularDependency_ThrowsTypedException_WithCyclePath()
     {
         var services = new ServiceCollection();
         var config = new ConfigurationBuilder().Build();
         var builder = new ModulusBuilder(services, config);
 
         var act = () => builder.AddModules<CircularA>();
-        act.Should().Throw<InvalidOperationException>()
-           .WithMessage("*Circular*");
+        act.Should().Throw<CircularDependencyException>()
+           .WithMessage("*CircularA -> CircularB -> CircularA*");
+    }
+
+    [Fact]
+    public void AddModules_DependencyNotIModule_ThrowsNamingDeclaringModule()
+    {
+        var services = new ServiceCollection();
+        var config = new ConfigurationBuilder().Build();
+        var builder = new ModulusBuilder(services, config);
+
+        var act = () => builder.AddModules<NotAModuleDependency>();
+        act.Should().Throw<InvalidModuleDependencyException>()
+           .WithMessage($"*{typeof(NotAModuleDependency).FullName}*{typeof(string).FullName}*does not implement*");
+    }
+
+    [Fact]
+    public void AddModules_AbstractDependency_Throws()
+    {
+        var services = new ServiceCollection();
+        var config = new ConfigurationBuilder().Build();
+        var builder = new ModulusBuilder(services, config);
+
+        var act = () => builder.AddModules<AbstractDependencyModule>();
+        act.Should().Throw<InvalidModuleDependencyException>()
+           .WithMessage("*abstract*");
+    }
+
+    [Fact]
+    public void Complete_ManuallyRegisteredOutOfOrder_PhasesStillRunDependenciesFirst()
+    {
+        // Manual AddModule calls used to run config phases in raw call order;
+        // Complete() must now topologically sort them like the discovery path.
+        var log = new List<string>();
+        Recorder.Log = log;
+
+        var services = new ServiceCollection();
+        var config = new ConfigurationBuilder().Build();
+        var builder = new ModulusBuilder(services, config);
+
+        builder.AddModule<ManualDependent>();   // depends on ManualBase — added FIRST
+        builder.AddModule<ManualBase>();
+
+        builder.Complete();
+
+        foreach (var phase in new[] { "Pre", "Configure", "Post" })
+        {
+            var order = log.Where(e => e.StartsWith(phase + ":")).ToArray();
+            Array.IndexOf(order, $"{phase}:ManualBase")
+                .Should().BeLessThan(Array.IndexOf(order, $"{phase}:ManualDependent"),
+                    $"in the {phase} phase, the dependency runs first even when registered later");
+        }
+    }
+
+    [Fact]
+    public void Complete_MissingRequiredDependency_ThrowsNamingBothModules()
+    {
+        var services = new ServiceCollection();
+        var config = new ConfigurationBuilder().Build();
+        var builder = new ModulusBuilder(services, config);
+
+        // ManualBase never registered
+        builder.AddModule<ManualDependent>();
+
+        var act = () => builder.Complete();
+        act.Should().Throw<ModuleNotFoundException>()
+           .WithMessage($"*{typeof(ManualDependent).FullName}*depends on*{typeof(ManualBase).FullName}*never registered*");
+    }
+
+    [Fact]
+    public void OptionalDependency_PresentInGraph_OrdersBeforeDependent()
+    {
+        var loader = new ModuleLoader();
+        var graph = loader.BuildGraph(new IModule[] { new OptionalDependent(), new OptionalProvider() });
+
+        var providerIdx = graph.ToList().FindIndex(d => d.ModuleType == typeof(OptionalProvider));
+        var dependentIdx = graph.ToList().FindIndex(d => d.ModuleType == typeof(OptionalDependent));
+        providerIdx.Should().BeLessThan(dependentIdx);
+    }
+
+    [Fact]
+    public void OptionalDependency_AbsentFromGraph_DoesNotThrow()
+    {
+        var loader = new ModuleLoader();
+        var act = () => loader.BuildGraph([new OptionalDependent()]);
+        act.Should().NotThrow();
+    }
+
+    [Fact]
+    public void AddModules_OptionalDependency_IsNotDiscoveredTransitively()
+    {
+        var services = new ServiceCollection();
+        var config = new ConfigurationBuilder().Build();
+        var builder = new ModulusBuilder(services, config);
+
+        builder.AddModules<OptionalDependent>();
+
+        builder.Modules.Select(m => m.GetType())
+            .Should().Contain(typeof(OptionalDependent))
+            .And.NotContain(typeof(OptionalProvider));
+    }
+
+    [Fact]
+    public void PropertyOverride_UnionsWithAttributeDeps()
+    {
+        // The override replaces ModulusModule.DependsOn (so it reports only the
+        // programmatic deps); the union with attribute deps happens in the
+        // graph engine, visible via BuildGraph descriptors.
+        var module = new UnionModule();
+        module.DependsOn.Should().Contain(typeof(DataModule));
+
+        var loader = new ModuleLoader();
+        var graph = loader.BuildGraph(
+            [new CoreFrameworkModule(), new IdentityModule(), new DataModule(), module]);
+
+        var descriptor = graph.Single(d => d.ModuleType == typeof(UnionModule));
+        descriptor.Dependencies.Should().Contain(
+            [typeof(IdentityModule), typeof(DataModule)]);
     }
 
     [Fact]
@@ -176,6 +293,46 @@ public sealed class DependsOnAttributeTests
 
     [DependsOn(typeof(CircularA))]
     private sealed class CircularB : ModulusModule { }
+
+    [DependsOn(typeof(IdentityModule))]
+    private sealed class UnionModule : ModulusModule
+    {
+        public override Type[] DependsOn => [typeof(DataModule)];
+    }
+
+    private static class Recorder
+    {
+        [ThreadStatic] public static List<string>? Log;
+    }
+
+    private class RecordingManualModule : ModulusModule
+    {
+        private string Tag => GetType().Name;
+        public override void PreConfigureServices(IServiceCollection s, IConfiguration c)
+            => Recorder.Log?.Add($"Pre:{Tag}");
+        public override void ConfigureServices(IServiceCollection s, IConfiguration c)
+            => Recorder.Log?.Add($"Configure:{Tag}");
+        public override void PostConfigureServices(IServiceCollection s, IConfiguration c)
+            => Recorder.Log?.Add($"Post:{Tag}");
+    }
+
+    private sealed class ManualBase : RecordingManualModule { }
+
+    [DependsOn(typeof(ManualBase))]
+    private sealed class ManualDependent : RecordingManualModule { }
+
+    [DependsOn(typeof(OptionalProvider), Optional = true)]
+    private sealed class OptionalDependent : ModulusModule { }
+
+    private sealed class OptionalProvider : ModulusModule { }
+
+    [DependsOn(typeof(string))]
+    private sealed class NotAModuleDependency : ModulusModule { }
+
+    [DependsOn(typeof(AbstractModuleBase))]
+    private sealed class AbstractDependencyModule : ModulusModule { }
+
+    private abstract class AbstractModuleBase : ModulusModule { }
 
     private static int IndexOf(string[] arr, string name) =>
         Array.FindIndex(arr, n => n == name);

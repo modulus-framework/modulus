@@ -1,0 +1,65 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BCrypt.Net-Next" Version="4.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.AspNetCore" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Caching.Redis" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.AspNetCore.Redis" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.SignalR.Backplane" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Core" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.EntityFrameworkCore" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Data.PostgreSQL" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Identity" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Outbox" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Outbox.Abstractions" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Outbox.MongoDB" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Inbox" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Inbox.MongoDB" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Platform" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Events" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Mediator" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.EventBus.Kafka" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.EventBus.RabbitMQ" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Observability" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Sagas" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Testing" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Storage.AzureBlobs" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Storage.S3" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.MultiTenancy.EntityFrameworkCore" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Authorization.EntityFrameworkCore" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Authorization.Management" Version="1.2.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.9" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.Google" Version="10.0.9" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.Facebook" Version="10.0.9" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.MicrosoftAccount" Version="10.0.9" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="10.0.9" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.9">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.12.1" />
+    <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" Version="8.16.0" />
+    <!-- Transitive advisory pin: OpenIddict's DataProtection integrations pull
+         System.Security.Cryptography.Xml 10.0.7 (multiple high-severity advisories). -->
+    <PackageReference Include="System.Security.Cryptography.Xml" Version="10.0.10" />
+    <PackageReference Include="Microsoft.Extensions.Http.Resilience" Version="10.7.0" />
+    <PackageReference Include="Polly" Version="8.7.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Shared\ProcureFlow.Shared.Infrastructure\ProcureFlow.Shared.Infrastructure.csproj" />
+    <ProjectReference Include="..\ProcureFlow.Modules.Identity.Application\ProcureFlow.Modules.Identity.Application.csproj" />
+    <ProjectReference Include="..\ProcureFlow.Modules.Identity.Presentation\ProcureFlow.Modules.Identity.Presentation.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="ProcureFlow.Modules.Identity.Application" />
+  </ItemGroup>
+
+</Project>

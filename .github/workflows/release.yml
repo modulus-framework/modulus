@@ -18,6 +18,10 @@ jobs:
         run: dotnet restore modulus.slnx
       - name: Build
         run: dotnet build modulus.slnx --no-restore --configuration Release
+      - name: Test (unit)
+        run: dotnet test modulus.slnx --no-build --configuration Release --filter "Category=Unit" --verbosity minimal
+      - name: Test (integration)
+        run: dotnet test modulus.slnx --no-build --configuration Release --filter "Category=Integration" --verbosity minimal
       - name: Pack
         run: dotnet pack modulus.slnx --no-build --configuration Release --output artifacts/packages -p:Version=${GITHUB_REF_NAME#v}
       - name: Publish to NuGet

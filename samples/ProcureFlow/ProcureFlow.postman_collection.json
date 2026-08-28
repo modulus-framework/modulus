@@ -1,0 +1,267 @@
+{
+  "info": {
+    "name": "ProcureFlow",
+    "description": "End-to-end collection for the ProcureFlow API. Boot the infrastructure (docker compose up -d), start the API, open '1. Identity - Login' and click Send to capture a bearer token in the `token` variable (Collection > Pre-request Script).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5016", "type": "string" },
+    { "key": "token", "value": "", "type": "string" },
+    { "key": "settingId", "value": "", "type": "string" },
+    { "key": "tenantId", "value": "", "type": "string" },
+    { "key": "featureFlagId", "value": "", "type": "string" },
+    { "key": "folderId", "value": "", "type": "string" },
+    { "key": "notificationId", "value": "", "type": "string" },
+    { "key": "mediaFolderId", "value": "", "type": "string" }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+  },
+  "item": [
+    {
+      "name": "1. Identity (auth)",
+      "item": [
+        {
+          "name": "Login (password grant)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json && json.access_token) {",
+                  "  pm.collectionVariables.set('token', json.access_token);",
+                  "}",
+                  "pm.test('mints an access token', function () {",
+                  "  pm.expect(json).to.have.property('access_token');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/x-www-form-urlencoded" }],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                { "key": "grant_type", "value": "password", "type": "text" },
+                { "key": "username", "value": "admin", "type": "text" },
+                { "key": "password", "value": "Admin123!", "type": "text" },
+                { "key": "scope", "value": "openid profile email roles offline_access", "type": "text" }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/connect/token",
+              "host": ["{{baseUrl}}"],
+              "path": ["connect", "token"]
+            }
+          }
+        },
+        { "name": "Get current user", "method": "GET", "url": "{{baseUrl}}/api/v1/users" },
+        { "name": "Get my roles", "method": "GET", "url": "{{baseUrl}}/api/v1/users/roles" },
+        { "name": "Get my permissions", "method": "GET", "url": "{{baseUrl}}/api/v1/users/permissions" },
+        { "name": "List admin users", "method": "GET", "url": "{{baseUrl}}/api/v1/admin/users" },
+        { "name": "List user sessions", "method": "GET", "url": "{{baseUrl}}/api/v1/sessions" }
+      ]
+    },
+    {
+      "name": "2. Settings",
+      "item": [
+        {
+          "name": "List settings",
+          "method": "GET",
+          "url": "{{baseUrl}}/api/v1/settings"
+        },
+        {
+          "name": "Get public settings",
+          "method": "GET",
+          "url": "{{baseUrl}}/api/v1/settings/public"
+        },
+        {
+          "name": "Create setting",
+          "method": "POST",
+          "url": "{{baseUrl}}/api/v1/settings",
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "body": {
+            "mode": "raw",
+            "raw": "{ \"key\": \"ui.theme\", \"value\": \"dark\", \"category\": \"UI\", \"description\": \"UI color theme\", \"isPublic\": true }"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) pm.collectionVariables.set('settingId', pm.response.json().settingId);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        { "name": "Get setting by key", "method": "GET", "url": "{{baseUrl}}/api/v1/settings/key/ui.theme" },
+        { "name": "Get setting by id", "method": "GET", "url": "{{baseUrl}}/api/v1/settings/{{settingId}}" }
+      ]
+    },
+    {
+      "name": "3. Tenants",
+      "item": [
+        {
+          "name": "List tenants",
+          "method": "GET",
+          "url": "{{baseUrl}}/api/v1/tenants"
+        },
+        {
+          "name": "Get active tenants",
+          "method": "GET",
+          "url": "{{baseUrl}}/api/v1/tenants/active"
+        },
+        {
+          "name": "Get tenant by subdomain (seeded)",
+          "method": "GET",
+          "url": "{{baseUrl}}/api/v1/tenants/subdomain/acme"
+        },
+        {
+          "name": "Create tenant",
+          "method": "POST",
+          "url": "{{baseUrl}}/api/v1/tenants",
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "body": {
+            "mode": "raw",
+            "raw": "{ \"name\": \"TechCorp\", \"subdomain\": \"techcorp\", \"features\": {}, \"settings\": {} }"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) pm.collectionVariables.set('tenantId', pm.response.json().tenantId);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        { "name": "Get tenant by id", "method": "GET", "url": "{{baseUrl}}/api/v1/tenants/{{tenantId}}" }
+      ]
+    },
+    {
+      "name": "4. Features",
+      "item": [
+        {
+          "name": "List feature flags",
+          "method": "GET",
+          "url": "{{baseUrl}}/api/v1/features"
+        },
+        {
+          "name": "Get enabled flags",
+          "method": "GET",
+          "url": "{{baseUrl}}/api/v1/features/enabled"
+        },
+        {
+          "name": "Create feature flag",
+          "method": "POST",
+          "url": "{{baseUrl}}/api/v1/features",
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "body": {
+            "mode": "raw",
+            "raw": "{ \"key\": \"catalog.wishlist\", \"name\": \"Wishlist\", \"description\": \"Enable wishlist\", \"isEnabled\": true }"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) pm.collectionVariables.set('featureFlagId', pm.response.json().featureFlagId);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        { "name": "Get feature flag by key", "method": "GET", "url": "{{baseUrl}}/api/v1/features/key/catalog.new-checkout"         }
+      ]
+    },
+    {
+      "name": "5. Notifications",
+      "item": [
+        { "name": "Get my notifications (seeded)", "method": "GET", "url": "{{baseUrl}}/api/v1/notifications/my" },
+        { "name": "Get unread count", "method": "GET", "url": "{{baseUrl}}/api/v1/notifications/unread-count" },
+        {
+          "name": "Create notification",
+          "method": "POST",
+          "url": "{{baseUrl}}/api/v1/notifications",
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "body": {
+            "mode": "raw",
+            "raw": "{ \"recipientUserId\": \"00000000-0000-0000-0000-000000000000\", \"title\": \"Hello\", \"message\": \"A test notification\", \"type\": 0 }"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) pm.collectionVariables.set('notificationId', pm.response.json().notificationId);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        { "name": "Get notification by id", "method": "GET", "url": "{{baseUrl}}/api/v1/notifications/{{notificationId}}" },
+        { "name": "Mark all as read", "method": "PATCH", "url": "{{baseUrl}}/api/v1/notifications/read-all" }
+      ]
+    },
+    {
+      "name": "6. Media (controllers)",
+      "item": [
+        { "name": "List root folders (seeded)", "method": "GET", "url": "{{baseUrl}}/api/media/folders" },
+        {
+          "name": "Create media folder",
+          "method": "POST",
+          "url": "{{baseUrl}}/api/media/folders",
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "body": {
+            "mode": "raw",
+            "raw": "{ \"name\": \"Team\", \"description\": \"Team photos\" }"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) pm.collectionVariables.set('mediaFolderId', pm.response.json().id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Upload media file (needs MinIO)",
+          "method": "POST",
+          "url": "{{baseUrl}}/api/media/files",
+          "body": {
+            "mode": "formdata",
+            "formdata": [
+              { "key": "file", "type": "file", "src": null },
+              { "key": "folderId", "value": "{{mediaFolderId}}", "type": "text" },
+              { "key": "altText", "value": "A sample upload", "type": "text" }
+            ]
+          }
+        },
+        { "name": "Get media files by folder", "method": "GET", "url": "{{baseUrl}}/api/media/files/by-folder?folderId={{mediaFolderId}}" }
+      ]
+    },
+    {
+      "name": "7. Platform & Discoverability",
+      "item": [
+        { "name": "Health (liveness)", "method": "GET", "url": "{{baseUrl}}/health" },
+        { "name": "OpenAPI document", "method": "GET", "url": "{{baseUrl}}/openapi/v1.json" },
+        { "name": "Swagger UI", "method": "GET", "url": "{{baseUrl}}/swagger" }
+      ]
+    }
+  ]
+}

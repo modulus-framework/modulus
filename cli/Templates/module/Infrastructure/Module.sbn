@@ -24,7 +24,7 @@ public sealed class {{ module_name }}Module : ModulusModule
     {
         services.AddModuleDatabase<{{ module_name }}DbContext>(options =>
             options.{{ use_db_method }}(configuration.GetConnectionString("{{ module_name }}")
-                ?? "{{ connection_string }}"));
+                ?? "{{ connection_string }}")){{ if use_dbsh }}.ExternallyManaged<{{ module_name }}DbContext>(){{ end }};
 
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<{{ module_name }}DbContext>());
 

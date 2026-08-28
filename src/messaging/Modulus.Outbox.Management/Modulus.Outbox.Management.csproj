@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <Description>Operational management API for the transactional outbox: list, inspect, and replay dead-lettered messages.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <ProjectReference Include="../../core/Modulus.Core/Modulus.Core.csproj" />
+    <ProjectReference Include="../../core/Modulus.AspNetCore/Modulus.AspNetCore.csproj" />
+    <ProjectReference Include="../../platform/Modulus.Platform/Modulus.Platform.csproj" />
+    <ProjectReference Include="../Modulus.Outbox/Modulus.Outbox.csproj" />
+    <ProjectReference Include="../Modulus.Outbox.Abstractions/Modulus.Outbox.Abstractions.csproj" />
+  </ItemGroup>
+
+</Project>

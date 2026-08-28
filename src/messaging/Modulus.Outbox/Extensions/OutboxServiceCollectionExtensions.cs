@@ -3,9 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Modulus.Outbox.Extensions;
 
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
-using Modulus.Events.Abstractions;
 using Modulus.Outbox.Abstractions;
 using Modulus.Outbox.Dispatchers;
 
@@ -24,12 +22,6 @@ public static class OutboxServiceCollectionExtensions
         services.AddScoped<DbContext>(
             sp => sp.GetRequiredService<TContext>());
         services.AddScoped<IOutboxWriter, EfOutboxWriter>();
-
-        // Replace the NullIntegrationEventOutbox (registered by
-        // AddModuleDatabase) with the EF Core writer so that
-        // ModuleDbContext enqueues integration events transactionally.
-        services.Replace(ServiceDescriptor.Scoped<
-            IIntegrationEventOutbox, EfOutboxWriter>());
 
         // Dispatcher (default: in-process)
         services.AddScoped<IOutboxDispatcher, InProcessOutboxDispatcher>();

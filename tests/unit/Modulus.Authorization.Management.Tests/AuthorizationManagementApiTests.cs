@@ -269,6 +269,45 @@ public sealed class AuthorizationManagementApiTests : IAsyncLifetime
     private sealed record DelegationView(Guid Id, Guid FromUserId, Guid ToUserId, bool Revoked);
 
     [Fact]
+    public async Task Delegation_with_empty_permissions_is_a_400_validation_problem()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var response = await _client.PostAsJsonAsync("/authorization/delegations", new
+        {
+            fromUserId = Guid.NewGuid(),
+            fromRoles = new[] { "manager" },
+            toUserId = Guid.NewGuid(),
+            permissions = Array.Empty<string>(),
+            notBefore = now,
+            notAfter = now.AddDays(1),
+        });
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await response.Content.ReadAsStringAsync())
+            .Should().Contain("At least one permission is required");
+    }
+
+    [Fact]
+    public async Task Self_delegation_is_a_400_validation_problem()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var self = Guid.NewGuid();
+        var response = await _client.PostAsJsonAsync("/authorization/delegations", new
+        {
+            fromUserId = self,
+            fromRoles = new[] { "manager" },
+            toUserId = self,
+            permissions = new[] { "orders:approve" },
+            notBefore = now,
+            notAfter = now.AddDays(1),
+        });
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await response.Content.ReadAsStringAsync())
+            .Should().Contain("different user");
+    }
+
+    [Fact]
     public async Task Inverted_delegation_window_is_a_400_validation_problem()
     {
         var now = DateTimeOffset.UtcNow;

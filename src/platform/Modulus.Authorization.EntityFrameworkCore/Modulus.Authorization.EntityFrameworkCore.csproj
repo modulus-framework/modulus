@@ -4,6 +4,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <Description>EF Core persistence for Modulus authorization: permission grants, org hierarchy and placement, delegation, feature entitlements, and audit records.</Description>
   </PropertyGroup>
 
   <ItemGroup>

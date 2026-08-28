@@ -57,7 +57,8 @@ internal sealed class NewModuleCommand : Command<NewModuleCommand.Settings>
 
         var database = string.IsNullOrWhiteSpace(s.Database)
             ? Ux.SelectOrFallback("Database provider?", NewAppCommand.KnownProviders, "SQLite")
-            : s.Database!;
+            : NewAppCommand.ValidateChoice(
+                s.Database!, NewAppCommand.KnownProviders, "database provider");
 
         var model = new ModuleModel
         {

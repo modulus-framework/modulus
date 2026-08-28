@@ -29,7 +29,11 @@ public sealed class MultiTenancyBuilder(IServiceCollection services)
     public MultiTenancyBuilder UseHeaderResolver(
         string headerName = "X-Tenant-Id")
     {
-        services.AddScoped<ITenantResolver>(
+        // Resolvers are stateless (they read the ambient request) and are injected
+        // into TenantMiddleware, whose constructor is resolved from the ROOT
+        // provider when the pipeline is built. They must therefore be singletons;
+        // a scoped registration breaks startup when ValidateScopes is enabled.
+        services.AddSingleton<ITenantResolver>(
             sp => new Resolvers.HeaderTenantResolver(
                 sp.GetRequiredService<ITenantStore>(), headerName));
         return this;
@@ -38,7 +42,7 @@ public sealed class MultiTenancyBuilder(IServiceCollection services)
     public MultiTenancyBuilder UseJwtClaimResolver(
         string claimType = "tid")
     {
-        services.AddScoped<ITenantResolver>(
+        services.AddSingleton<ITenantResolver>(
             sp => new Resolvers.JwtClaimTenantResolver(
                 sp.GetRequiredService<ITenantStore>(), claimType));
         return this;
@@ -47,7 +51,7 @@ public sealed class MultiTenancyBuilder(IServiceCollection services)
     public MultiTenancyBuilder UseSubdomainResolver(
         string baseDomain)
     {
-        services.AddScoped<ITenantResolver>(
+        services.AddSingleton<ITenantResolver>(
             sp => new Resolvers.SubdomainTenantResolver(
                 sp.GetRequiredService<ITenantStore>(), baseDomain));
         return this;

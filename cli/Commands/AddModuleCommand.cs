@@ -20,6 +20,10 @@ internal sealed class AddModuleCommand : Command<AddModuleCommand.Settings>
         [Description("Database provider: SQLite (default), SqlServer, PostgreSQL, MySQL")]
         [CommandOption("-d|--database")]
         public string? Database { get; init; }
+
+        [Description("Migration engine: efcore (default), dbsh (SQL files managed separately). Omit to be prompted.")]
+        [CommandOption("--migration-engine")]
+        public string? MigrationEngine { get; init; }
     }
 
     public override int Execute(CommandContext ctx, Settings s)
@@ -59,7 +63,13 @@ internal sealed class AddModuleCommand : Command<AddModuleCommand.Settings>
 
         var database = string.IsNullOrWhiteSpace(s.Database)
             ? Ux.SelectOrFallback("Database provider?", NewAppCommand.KnownProviders, "SQLite")
-            : s.Database!;
+            : NewAppCommand.ValidateChoice(
+                s.Database!, NewAppCommand.KnownProviders, "database provider");
+
+        var migrationEngine = string.IsNullOrWhiteSpace(s.MigrationEngine)
+            ? Ux.SelectOrFallback("Migration engine?", NewAppCommand.KnownMigrationEngines, "efcore")
+            : NewAppCommand.ValidateChoice(
+                s.MigrationEngine!, NewAppCommand.KnownMigrationEngines, "migration engine");
 
         var model = new ModuleModel
         {
@@ -67,6 +77,7 @@ internal sealed class AddModuleCommand : Command<AddModuleCommand.Settings>
             ModuleName = moduleName,
             ModuleNamespace = moduleNs,
             DbProvider = database,
+            MigrationEngine = migrationEngine,
         };
 
         // Generate the layered module skeleton.

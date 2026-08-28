@@ -4,6 +4,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Modulus.Core.Abstractions;
 
@@ -14,14 +15,22 @@ using Modulus.Core.Abstractions;
 /// A key reused with a different payload is rejected with 422. Failed (5xx) and
 /// faulted requests release the claim so a genuine retry can run again.
 /// </summary>
-public sealed class IdempotencyMiddleware(RequestDelegate next, IOptions<IdempotencyOptions> options)
+public sealed class IdempotencyMiddleware(
+    RequestDelegate next,
+    IOptions<IdempotencyOptions> options,
+    ILogger<IdempotencyMiddleware> logger)
 {
     // Transport-managed headers must not be replayed verbatim — the server sets
-    // them for the actual replay response.
+    // them for the actual replay response. Date would re-serve a stale timestamp
+    // and Set-Cookie could re-mint an earlier session/state on a later replay.
     private static readonly HashSet<string> ExcludedHeaders =
-        new(StringComparer.OrdinalIgnoreCase) { "Transfer-Encoding", "Content-Length" };
+        new(StringComparer.OrdinalIgnoreCase)
+        {
+            "Transfer-Encoding", "Content-Length", "Date", "Set-Cookie",
+        };
 
     private readonly IdempotencyOptions _options = options.Value;
+    private readonly ILogger<IdempotencyMiddleware> _logger = logger;
 
     public async Task InvokeAsync(HttpContext context, IIdempotencyStore store)
     {
@@ -111,11 +120,23 @@ public sealed class IdempotencyMiddleware(RequestDelegate next, IOptions<Idempot
 
         if (IsCacheable(context.Response.StatusCode))
         {
-            var cached = new CachedResponse(
-                context.Response.StatusCode,
-                SnapshotHeaders(context.Response),
-                buffer.ToArray());
-            await store.CompleteAsync(scopedKey, cached, CancellationToken.None);
+            if (buffer.Length <= Math.Max(IdempotencyOptions.MinResponseBytes, _options.MaxResponseBytes))
+            {
+                var cached = new CachedResponse(
+                    context.Response.StatusCode,
+                    SnapshotHeaders(context.Response),
+                    buffer.ToArray());
+                await store.CompleteAsync(scopedKey, cached, CancellationToken.None);
+            }
+            else
+            {
+                // Too large to cache — release the claim so a retry re-runs
+                // the request instead of being served from an unbounded store.
+                _logger.LogWarning(
+                    "Idempotency response for key '{Key}' is {Bytes} bytes (MaxResponseBytes {Cap}); not caching — retries will re-execute.",
+                    scopedKey, buffer.Length, _options.MaxResponseBytes);
+                await store.AbandonAsync(scopedKey, CancellationToken.None);
+            }
         }
         else
         {
@@ -151,9 +172,27 @@ public sealed class IdempotencyMiddleware(RequestDelegate next, IOptions<Idempot
 
     private static string BuildScopedKey(HttpContext context, string key)
     {
-        // Scope by tenant so keys can't collide (or leak responses) across tenants.
+        // Scope by tenant so keys can't collide (or leak responses) across
+        // tenants, and by authenticated user within the tenant: otherwise
+        // another caller in the same tenant who replays a captured key
+        // receives the original caller's response.
         var tenant = context.RequestServices.GetService<ICurrentTenant>()?.TenantId;
-        return tenant is { } id ? $"{id}:{key}" : key;
+        var user = GetCallerId(context);
+
+        var scoped = tenant is { } id ? $"{id}" : "";
+        if (!string.IsNullOrEmpty(user))
+            scoped = $"{scoped}:{user}";
+        return string.IsNullOrEmpty(scoped) ? key : $"{scoped}:{key}";
+    }
+
+    private static string? GetCallerId(HttpContext context)
+    {
+        var principal = context.User;
+        if (principal.Identity?.IsAuthenticated != true)
+            return null;
+
+        return principal.FindFirst("sub")?.Value
+            ?? principal.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
     }
 
     private static async Task<string> ComputeFingerprintAsync(HttpContext context)

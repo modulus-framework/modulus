@@ -4,6 +4,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <Description>Kafka transport for Modulus integration events with bounded redelivery, poison-message parking, and ambient tenant/correlation propagation.</Description>
   </PropertyGroup>
 
   <ItemGroup>

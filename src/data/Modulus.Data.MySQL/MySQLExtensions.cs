@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Modulus.Core.Abstractions;
 using Modulus.EntityFrameworkCore;
 using Modulus.EntityFrameworkCore.Extensions;
+using Modulus.EntityFrameworkCore.Health;
 using MySql.EntityFrameworkCore.Extensions;
 using MySql.EntityFrameworkCore.Infrastructure;
 
@@ -24,9 +25,9 @@ public static class MySQLExtensions
                 configure?.Invoke(my);
             }));
 
-        services.TryAddScoped(
-            typeof(IModuleHealthCheck),
-            typeof(MySQLHealthCheck<>).MakeGenericType(typeof(TContext)));
+        services.TryAddScoped<IModuleHealthCheck>(sp =>
+            new RelationalDatabaseHealthCheck<TContext>(
+                sp.GetRequiredService<TContext>(), "mysql"));
 
         return services;
     }

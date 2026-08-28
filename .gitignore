@@ -7,7 +7,10 @@ x64/
 x86/
 [Aa]rm/
 [Aa]rm64/
+# build/ holds the tracked MSBuild props chain imported by Directory.Build.props.
 [Bb]uild/
+!build/
+!build/**
 bld/
 [Bb]in/
 [Oo]bj/

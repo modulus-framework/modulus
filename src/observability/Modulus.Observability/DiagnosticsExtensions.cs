@@ -1,5 +1,6 @@
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
-using Modulus.AspNetCore.Endpoints;
 using Modulus.Core.Abstractions;
 using Modulus.Diagnostics.Endpoints;
 
@@ -9,6 +10,16 @@ using System.Reflection;
 
 public static class DiagnosticsExtensions
 {
+    /// <summary>
+    /// Discovers <see cref="IModuleHealthCheck"/> implementations in the given
+    /// assemblies and registers them for aggregation.
+    /// </summary>
+    /// <remarks>
+    /// Pair with <see cref="MapModulusDiagnostics"/> to expose the aggregated
+    /// module-health endpoint. This method intentionally does NOT register
+    /// HTTP endpoints itself — mapping is explicit so hosts control their
+    /// route table.
+    /// </remarks>
     public static IServiceCollection AddModuleDiagnostics(
         this IServiceCollection services,
         params Assembly[] assemblies)
@@ -21,9 +32,21 @@ public static class DiagnosticsExtensions
                     && t.IsAssignableTo(typeof(IModuleHealthCheck))))
                 services.AddScoped(typeof(IModuleHealthCheck), type);
 
-        // Register health endpoints
-        services.AddScoped<IEndpoint, ModuleHealthEndpoint>();
-        services.AddScoped<IEndpoint, ModuleGraphEndpoint>();
         return services;
+    }
+
+    /// <summary>
+    /// Maps the diagnostics endpoints:
+    /// <c>GET /health/modules</c> — aggregates every registered
+    /// <see cref="IModuleHealthCheck"/> (503 when any is unhealthy);
+    /// <c>GET /health/graph</c> — the module dependency graph with
+    /// initialisation order.
+    /// </summary>
+    public static IEndpointRouteBuilder MapModulusDiagnostics(
+        this IEndpointRouteBuilder app)
+    {
+        new ModuleHealthEndpoint().MapEndpoint(app);
+        new ModuleGraphEndpoint().MapEndpoint(app);
+        return app;
     }
 }

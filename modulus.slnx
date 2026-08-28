@@ -22,6 +22,7 @@
     <Project Path="src/messaging/Modulus.Inbox.MongoDB/Modulus.Inbox.MongoDB.csproj" />
     <Project Path="src/messaging/Modulus.Outbox.Abstractions/Modulus.Outbox.Abstractions.csproj" />
     <Project Path="src/messaging/Modulus.Outbox/Modulus.Outbox.csproj" />
+    <Project Path="src/messaging/Modulus.Outbox.Management/Modulus.Outbox.Management.csproj" />
     <Project Path="src/messaging/Modulus.Outbox.MongoDB/Modulus.Outbox.MongoDB.csproj" />
     <Project Path="src/messaging/Modulus.EventBus.RabbitMQ/Modulus.EventBus.RabbitMQ.csproj" />
     <Project Path="src/messaging/Modulus.EventBus.Kafka/Modulus.EventBus.Kafka.csproj" />
@@ -34,6 +35,7 @@
   <!-- ── Platform ────────────────────────────────────────────────── -->
   <Folder Name="/src/platform/">
     <Project Path="src/platform/Modulus.Platform/Modulus.Platform.csproj" />
+    <Project Path="src/platform/Modulus.BackgroundJobs.Quartz/Modulus.BackgroundJobs.Quartz.csproj" />
     <Project Path="src/platform/Modulus.Storage.S3/Modulus.Storage.S3.csproj" />
     <Project Path="src/platform/Modulus.Storage.AzureBlobs/Modulus.Storage.AzureBlobs.csproj" />
     <Project Path="src/platform/Modulus.Caching.Redis/Modulus.Caching.Redis.csproj" />
@@ -63,6 +65,7 @@
     <Project Path="tests/unit/Modulus.EntityFrameworkCore.Tests/Modulus.EntityFrameworkCore.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Inbox.Tests/Modulus.Inbox.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Outbox.Tests/Modulus.Outbox.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.Sagas.Tests/Modulus.Sagas.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Identity.Tests/Modulus.Identity.Tests.csproj" />
     <Project Path="tests/unit/Modulus.MultiTenancy.Tests/Modulus.MultiTenancy.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Platform.Tests/Modulus.Platform.Tests.csproj" />

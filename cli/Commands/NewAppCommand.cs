@@ -85,6 +85,14 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         [Description("Enable personal data protection (default: false).")]
         [CommandOption("--enable-personal-data-protection")]
         public bool? EnablePersonalDataProtection { get; init; }
+
+        [Description("Migration engine: efcore (default), dbsh (SQL files managed separately). Omit to be prompted.")]
+        [CommandOption("--migration-engine")]
+        public string? MigrationEngine { get; init; }
+
+        [Description("Path to a local NuGet feed containing the Cobytelabs.Modulus.* packages (written as an active 'modulus-local' source in NuGet.config). Omit to leave only nuget.org configured.")]
+        [CommandOption("--package-source")]
+        public string? PackageSource { get; init; }
     }
 
     /// <summary>Valid provider choices, in selection-menu order.</summary>
@@ -101,6 +109,9 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
 
     /// <summary>Valid SignalR backplane choices, in selection-menu order.</summary>
     internal static readonly string[] KnownSignalRBackplanes = ["none", "redis", "azure"];
+
+    /// <summary>Valid migration engine choices, in selection-menu order.</summary>
+    internal static readonly string[] KnownMigrationEngines = ["efcore", "dbsh"];
 
     private readonly TemplateEngine _templates = new();
 
@@ -143,6 +154,8 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         var enableCorrelation = ResolveFeature(s.EnableCorrelation, true, "request correlation");
         var enableSecretsGuard = ResolveFeature(s.EnableSecretsGuard, true, "secrets guard");
         var enablePersonalDataProtection = ResolveFeature(s.EnablePersonalDataProtection, false, "personal data protection");
+
+        var migrationEngine = ResolveMigrationEngine(s.MigrationEngine);
 
         // NoExample is tri-state: null = unspecified → prompt (interactive)
         // or default to include (CI). True/False are explicit user choices.
@@ -198,6 +211,8 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
             EnableCorrelation = enableCorrelation,
             EnableSecretsGuard = enableSecretsGuard,
             EnablePersonalDataProtection = enablePersonalDataProtection,
+            MigrationEngine = migrationEngine,
+            LocalPackageSource = s.PackageSource,
         };
 
         Ux.Status($"Scaffolding {appName}...", () => GenerateAll(projectDir, model));
@@ -214,6 +229,12 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         {
             AnsiConsole.MarkupLine("  [grey]dotnet restore[/]");
             AnsiConsole.MarkupLine("  [grey]dotnet run --project[/] src/API/{0}.Api", rootNs);
+            if (string.IsNullOrWhiteSpace(s.PackageSource))
+            {
+                AnsiConsole.MarkupLine(
+                    "[yellow]Note:[/] Cobytelabs.Modulus.* packages are not on nuget.org yet — " +
+                    "wire a local feed in NuGet.config or re-run with [grey]--package-source[/].");
+            }
         }
         AnsiConsole.WriteLine();
         AnsiConsole.MarkupLine("[grey]Then try:[/]");
@@ -263,6 +284,7 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
                 ModuleName = model.ExampleModule,
                 ModuleNamespace = modNs,
                 DbProvider = model.DbProvider,
+                MigrationEngine = model.MigrationEngine,
                 EntityName = model.ExampleEntity,
                 EntityNameLower = CodeGen.ToCamelCase(model.ExampleEntity),
                 RouteName = CodeGen.Pluralize(model.ExampleEntity).ToLowerInvariant(),
@@ -309,27 +331,35 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
             Path.Combine(projectDir, ".gitignore"));
     }
 
+    /// <summary>
+    /// Validates + normalises a CLI-supplied choice against
+    /// <paramref name="known"/> (case-insensitive). Templates switch on the
+    /// canonical spelling; without this, e.g. <c>--database postgresql</c> or
+    /// <c>--migration-engine Dbsh</c> silently fell through to the SQLite /
+    /// efcore default.
+    /// </summary>
+    internal static string ValidateChoice(
+        string provided, IEnumerable<string> known, string description)
+    {
+        if (!known.Contains(provided, StringComparer.OrdinalIgnoreCase))
+            throw new ArgumentException(
+                $"Unknown {description} '{provided}'. Valid: {string.Join(", ", known)}.");
+
+        return known.First(p =>
+            string.Equals(p, provided, StringComparison.OrdinalIgnoreCase));
+    }
+
     private static string ResolveDatabase(string? provided)
     {
-        string database;
-        if (string.IsNullOrWhiteSpace(provided))
-        {
-            database = Ux.SelectOrFallback(
+        var database = string.IsNullOrWhiteSpace(provided)
+            ? Ux.SelectOrFallback(
                 "Database provider?",
                 KnownProviders,
-                "SQLite");
-        }
-        else
-        {
-            database = provided;
-        }
-
-        if (!KnownProviders.Contains(database, StringComparer.OrdinalIgnoreCase))
-            throw new ArgumentException(
-                $"Unknown database provider '{database}'. Valid: {string.Join(", ", KnownProviders)}.");
+                "SQLite")
+            : provided;
 
         // Normalise casing (templates index by exact string).
-        return KnownProviders.First(p => string.Equals(p, database, StringComparison.OrdinalIgnoreCase));
+        return ValidateChoice(database, KnownProviders, "database provider");
     }
 
     /// <summary>
@@ -345,7 +375,7 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
             var picked = Ux.SelectOrFallback(
                 "Authentication provider?",
                 choices,
-                "none");
+                AuthProviders.DisplayChoices[0]);
             // Map the display label back to the key.
             auth = AuthProviders.All.First(p => p.DisplayName == picked).Key;
         }
@@ -466,6 +496,32 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
     }
 
     /// <summary>
+    /// Resolves the migration engine: interactive selection when not supplied,
+    /// validation + normalisation when passed on the command line.
+    /// </summary>
+    private static string ResolveMigrationEngine(string? provided)
+    {
+        string engine;
+        if (string.IsNullOrWhiteSpace(provided))
+        {
+            engine = Ux.SelectOrFallback(
+                "Migration engine?",
+                KnownMigrationEngines,
+                "efcore");
+        }
+        else
+        {
+            engine = provided;
+        }
+
+        if (!KnownMigrationEngines.Contains(engine, StringComparer.OrdinalIgnoreCase))
+            throw new ArgumentException(
+                $"Unknown migration engine '{engine}'. Valid: {string.Join(", ", KnownMigrationEngines)}.");
+
+        return KnownMigrationEngines.First(e => string.Equals(e, engine, StringComparison.OrdinalIgnoreCase));
+    }
+
+    /// <summary>
     /// Resolves a boolean feature flag with interactive prompt when not supplied.
     /// </summary>
     private static bool ResolveFeature(bool? provided, bool defaultValue, string featureName)
@@ -580,10 +636,22 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         _templates.RenderToFile("module/Infrastructure/DbContext", m,
             Path.Combine(infraDir, $"{m.ModuleName}DbContext.cs"));
 
-        // Design-time factory so `dotnet ef` / `modulus migrate` can construct the
-        // context without the app's DI container (see DesignTimeContext stubs).
-        _templates.RenderToFile("module/Infrastructure/DbContextFactory", m,
-            Path.Combine(infraDir, $"{m.ModuleName}DbContextFactory.cs"));
+        if (m.UseDbsh)
+        {
+            // dbsh: emit Database/Migrations placeholder + dbsh config.
+            var dbshDir = Path.Combine(infraDir, "Database", "Migrations");
+            Ux.CreateDirectory(dbshDir);
+            Ux.WriteFile(Path.Combine(dbshDir, ".gitkeep"), "");
+            _templates.RenderToFile("module/Infrastructure/dbsh.toml", m,
+                Path.Combine(infraDir, "dbsh.toml"));
+        }
+        else
+        {
+            // EF Core: design-time factory so `dotnet ef` / `modulus migrate` can
+            // construct the context without the app's DI container.
+            _templates.RenderToFile("module/Infrastructure/DbContextFactory", m,
+                Path.Combine(infraDir, $"{m.ModuleName}DbContextFactory.cs"));
+        }
 
         if (hasEntity)
         {
@@ -599,8 +667,8 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
             Path.Combine(presDir, $"{m.PresentationProject}.csproj"));
         if (hasEntity)
         {
-            _templates.RenderToFile("module/Presentation/Controller", m,
-                Path.Combine(presDir, $"{m.EntityPlural}Controller.cs"));
+            _templates.RenderToFile("module/Presentation/Endpoint", m,
+                Path.Combine(presDir, $"{m.EntityPlural}Endpoint.cs"));
         }
     }
 

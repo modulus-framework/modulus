@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Modulus.Core.Abstractions;
 using Modulus.EntityFrameworkCore;
 using Modulus.EntityFrameworkCore.Extensions;
+using Modulus.EntityFrameworkCore.Health;
 
 public static class SqlServerExtensions
 {
@@ -22,9 +23,9 @@ public static class SqlServerExtensions
                 configure?.Invoke(sql);
             }));
 
-        services.TryAddScoped(
-            typeof(IModuleHealthCheck),
-            typeof(SqlServerHealthCheck<>).MakeGenericType(typeof(TContext)));
+        services.TryAddScoped<IModuleHealthCheck>(sp =>
+            new RelationalDatabaseHealthCheck<TContext>(
+                sp.GetRequiredService<TContext>(), "sqlserver"));
 
         return services;
     }

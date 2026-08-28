@@ -2,6 +2,18 @@ namespace Modulus.Testing.Internal;
 
 using System.Reflection;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+
+/// <summary>
+/// Records what the SQLite swap discovered, so the keep-alive hosted service
+/// can cover every swapped database — including contexts registered only via
+/// <c>IDbContextFactory&lt;T&gt;</c>, which never appear in
+/// <c>GetServices&lt;DbContext&gt;()</c>.
+/// </summary>
+internal sealed class TestDatabaseRegistry
+{
+    public HashSet<Type> FactoryContextTypes { get; } = [];
+}
 
 /// <summary>
 /// Rewires every registered module <see cref="DbContext"/> to a shared in-memory
@@ -26,6 +38,20 @@ internal static class TestDatabaseRegistration
             && p[1].ParameterType == typeof(Action<DbContextOptionsBuilder>)
             && p[2].ParameterType == typeof(ServiceLifetime)
             && p[3].ParameterType == typeof(ServiceLifetime));
+
+    // The AddDbContextFactory<TContext>(services, configure, factoryLifetime)
+    // overload — used for contexts the app registered through a factory (e.g.
+    // AddEfCoreAuthorizationStores) so their IDbContextFactory<T> survives the
+    // swap instead of being silently dropped and leaving factory-dependent
+    // singletons (EfPermissionGrantStore, …) unresolvable.
+    private static readonly MethodInfo AddDbContextFactory = typeof(EntityFrameworkServiceCollectionExtensions)
+        .GetMethods(BindingFlags.Public | BindingFlags.Static)
+        .Single(m => m.Name == nameof(EntityFrameworkServiceCollectionExtensions.AddDbContextFactory)
+            && m.IsGenericMethodDefinition
+            && m.GetGenericArguments().Length == 1
+            && m.GetParameters() is { Length: 3 } p
+            && p[1].ParameterType == typeof(Action<DbContextOptionsBuilder>)
+            && p[2].ParameterType == typeof(ServiceLifetime));
 
     /// <summary>
     /// Replaces the options of every registered <c>DbContextOptions&lt;TContext&gt;</c>
@@ -52,7 +78,8 @@ internal static class TestDatabaseRegistration
     /// also matches the framework's per-module-database design.
     /// </remarks>
     public static IReadOnlyDictionary<Type, string> UsePerContextSqlite(
-        this IServiceCollection services, string databasePrefix)
+        this IServiceCollection services, string databasePrefix,
+        TestDatabaseRegistry? registry = null)
     {
         var map = new Dictionary<Type, string>();
         SwapToSqlite(services, contextType =>
@@ -61,13 +88,27 @@ internal static class TestDatabaseRegistration
                 $"Data Source={databasePrefix}-{contextType.Name};Mode=Memory;Cache=Shared";
             map[contextType] = connectionString;
             return connectionString;
-        });
+        }, registry);
         return map;
     }
 
     private static void SwapToSqlite(
-        IServiceCollection services, Func<Type, string> connectionFor)
+        IServiceCollection services, Func<Type, string> connectionFor,
+        TestDatabaseRegistry? registry = null)
     {
+        // Contexts the app registered ONLY through IDbContextFactory<TContext>
+        // (never as a scoped DbContext) must be re-registered through a factory
+        // as well: the descriptor sweep below matches any service type closed
+        // over the context type, which includes the factory itself.
+        var factoryContexts = services
+            .Where(d => d.ServiceType.IsGenericType
+                && d.ServiceType.GetGenericTypeDefinition() == typeof(IDbContextFactory<>))
+            .Select(d => d.ServiceType.GetGenericArguments()[0])
+            .ToHashSet();
+        if (registry is not null)
+            foreach (var contextType in factoryContexts)
+                registry.FactoryContextTypes.Add(contextType);
+
         // One DbContextOptions<TContext> is registered per module context.
         var contextTypes = services
             .Where(d => d.ServiceType.IsGenericType
@@ -97,9 +138,14 @@ internal static class TestDatabaseRegistration
             var connectionString = connectionFor(contextType);
             Action<DbContextOptionsBuilder> configure =
                 options => options.UseSqlite(connectionString);
-            AddDbContext
-                .MakeGenericMethod(contextType)
-                .Invoke(null, [services, configure, ServiceLifetime.Scoped, ServiceLifetime.Scoped]);
+            if (factoryContexts.Contains(contextType))
+                AddDbContextFactory
+                    .MakeGenericMethod(contextType)
+                    .Invoke(null, [services, configure, ServiceLifetime.Singleton]);
+            else
+                AddDbContext
+                    .MakeGenericMethod(contextType)
+                    .Invoke(null, [services, configure, ServiceLifetime.Scoped, ServiceLifetime.Scoped]);
         }
     }
 }

@@ -1,3 +1,5 @@
+using Modulus.AspNetCore.Configuration;
+
 namespace Modulus.AspNetCore.RateLimiting;
 
 using System.Security.Claims;
@@ -27,29 +29,39 @@ public static class RateLimitingExtensions
         Action<RateLimitingOptions>? configure = null)
     {
         var section = configuration.GetSection(RateLimitingOptions.SectionName);
-        services.AddOptions<RateLimitingOptions>()
-            .Bind(section)
-            .ValidateOnStart();
-        if (configure is not null)
-            services.Configure(configure);
+        services.AddValidatedOptions(configuration, RateLimitingOptions.SectionName, configure);
+
+        // Bind ONCE here so the AddRateLimiter delegate and the stored
+        // IOptions view cannot diverge (a side-effecting configure delegate
+        // applied twice produced different option instances).
+        var options = section.Get<RateLimitingOptions>() ?? new RateLimitingOptions();
+        configure?.Invoke(options);
+
+        var window = TimeSpan.FromSeconds(Math.Max(1, options.WindowSeconds));
+        // A partition is evictable after being idle well past one full window,
+        // and the sweeper runs frequently enough that churn doesn't pile up.
+        var idleThreshold = TimeSpan.FromTicks(window.Ticks * 4);
+        var sweepInterval =
+            window > TimeSpan.FromSeconds(15) ? window : TimeSpan.FromSeconds(15);
+
+        var evictor = new EvictableFixedWindowLimiter(
+            context => ResolvePartitionKey(context, options.Partition),
+            () => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = options.PermitLimit,
+                Window = window,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = options.QueueLimit,
+            },
+            idleThreshold,
+            sweepInterval);
+        services.AddSingleton(evictor);
+        services.AddHostedService<RateLimitPartitionSweeper>();
 
         services.AddRateLimiter(limiter =>
         {
-            var options = section.Get<RateLimitingOptions>() ?? new RateLimitingOptions();
-            if (configure is not null)
-                configure(options);
-
             limiter.RejectionStatusCode = options.RejectionStatusCode;
-            limiter.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(
-                context => RateLimitPartition.GetFixedWindowLimiter(
-                    partitionKey: ResolvePartitionKey(context, options.Partition),
-                    factory: _ => new FixedWindowRateLimiterOptions
-                    {
-                        PermitLimit = options.PermitLimit,
-                        Window = TimeSpan.FromSeconds(options.WindowSeconds),
-                        QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
-                        QueueLimit = options.QueueLimit,
-                    }));
+            limiter.GlobalLimiter = evictor;
         });
 
         return services;

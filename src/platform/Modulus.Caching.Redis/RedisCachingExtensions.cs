@@ -3,6 +3,8 @@ namespace Modulus.Caching;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Modulus.Caching.Redis;
+using Modulus.Core.Abstractions;
 using StackExchange.Redis;
 
 /// <summary>
@@ -39,6 +41,47 @@ public static class RedisCachingExtensions
         services.TryAddSingleton<IConnectionMultiplexer>(multiplexer);
         services.RemoveAll<ICacheService>();
         services.AddSingleton<ICacheService, RedisCacheService>();
+        return services;
+    }
+
+    /// <summary>
+    /// Registers a Redis-backed <see cref="IDistributedLock"/> using the same
+    /// connection as the cache service. Requires <see cref="IConnectionMultiplexer"/>
+    /// to be registered (either by AddRedisCacheService or separately).
+    /// </summary>
+    public static IServiceCollection AddRedisDistributedLock(
+        this IServiceCollection services)
+    {
+        services.TryAddSingleton<IConnectionMultiplexer>(sp =>
+            ConnectionMultiplexer.Connect("localhost"));
+        services.AddSingleton<IDistributedLock, RedisDistributedLock>();
+        return services;
+    }
+
+    /// <summary>
+    /// Registers a Redis-backed <see cref="IDistributedLock"/> using
+    /// <c>Caching:Redis:ConnectionString</c> from configuration.
+    /// </summary>
+    public static IServiceCollection AddRedisDistributedLock(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        var connectionString = configuration["Caching:Redis:ConnectionString"]
+            ?? throw new InvalidOperationException(
+                "Caching:Redis:ConnectionString is required for Redis distributed lock.");
+        return services.AddRedisDistributedLock(connectionString);
+    }
+
+    /// <summary>
+    /// Registers a Redis-backed <see cref="IDistributedLock"/> at the given connection string.
+    /// </summary>
+    public static IServiceCollection AddRedisDistributedLock(
+        this IServiceCollection services,
+        string connectionString)
+    {
+        var multiplexer = ConnectionMultiplexer.Connect(connectionString);
+        services.TryAddSingleton(multiplexer);
+        services.AddSingleton<IDistributedLock, RedisDistributedLock>();
         return services;
     }
 }

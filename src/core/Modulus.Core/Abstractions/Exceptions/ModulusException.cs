@@ -4,13 +4,50 @@ namespace Modulus.Core.Abstractions.Exceptions;
 public abstract class ModulusException(string message, Exception? inner = null)
     : Exception(message, inner);
 
-public sealed class CircularDependencyException(Type moduleType)
-    : ModulusException($"Circular dependency detected involving module: {moduleType.Name}");
-
-public sealed class ModuleNotFoundException(Type dependencyType)
+/// <summary>
+/// Thrown when the module dependency graph contains a cycle. The message
+/// includes the full cycle path (e.g. <c>A -> B -> C -> A</c>).
+/// </summary>
+public sealed class CircularDependencyException(IReadOnlyList<Type> cycle)
     : ModulusException(
-        $"Module {dependencyType.Name} is declared as a dependency but was not registered. " +
-        $"Call AddModule<{dependencyType.Name}>() before the dependent module.");
+        $"Circular module dependency detected: {string.Join(" -> ", cycle.Select(t => t.Name))}. " +
+        "Break the cycle by removing one of these [DependsOn] declarations.")
+{
+    /// <summary>The module types forming the cycle, in order (first repeats last).</summary>
+    public IReadOnlyList<Type> Cycle { get; } = cycle;
+}
+
+public sealed class ModuleNotFoundException(Type dependencyType, Type? declaringModule = null)
+    : ModulusException(BuildMessage(dependencyType, declaringModule))
+{
+    public Type DependencyType { get; } = dependencyType;
+
+    private static string BuildMessage(Type dep, Type? declaring)
+    {
+        var target = $"'{dep.FullName}'";
+        return declaring is null
+            ? $"Module {target} is declared as a module dependency but was never registered. " +
+              $"Register it via AddModule<{dep.Name}>() or make it reachable from the startup " +
+              "module's [DependsOn] graph."
+            : $"Module '{declaring.FullName}' depends on {target}, which was never registered. " +
+              $"Register it via AddModule<{dep.Name}>() or make it reachable from the startup " +
+              "module's [DependsOn] graph.";
+    }
+}
+
+/// <summary>
+/// Thrown when a <see cref="DependsOnAttribute"/> declares a dependency on a type
+/// that cannot serve as a module (not an <see cref="IModule"/>, or abstract and
+/// therefore not instantiable).
+/// </summary>
+public sealed class InvalidModuleDependencyException(Type declaringModule, Type dependencyType, string reason)
+    : ModulusException(
+        $"{declaringModule.FullName} declares a dependency on {dependencyType.FullName}: {reason}. " +
+        "[DependsOn] types must be concrete classes implementing IModule.")
+{
+    public Type DeclaringModule { get; } = declaringModule;
+    public Type DependencyType { get; } = dependencyType;
+}
 
 public sealed class NotFoundException(string message)
     : ModulusException(message);

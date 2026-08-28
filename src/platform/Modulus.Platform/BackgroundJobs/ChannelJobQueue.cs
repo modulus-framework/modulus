@@ -3,6 +3,7 @@ namespace Modulus.BackgroundJobs;
 using System.Threading.Channels;
 using Cronos;
 using Microsoft.Extensions.Hosting;
+using Modulus.Observability;
 
 internal sealed record JobEnvelope(
     Type JobType,
@@ -15,6 +16,18 @@ internal sealed record RecurringEntry(
     CronExpression Cron,
     DateTime NextRun);
 
+/// <summary>
+/// In-memory background job queue backed by <see cref="Channel{T}"/>.
+/// Enqueued jobs run on a worker pool, and recurring jobs fire on a 30-second
+/// scheduler — but all state (enqueued jobs, delayed jobs, cron schedules) is
+/// held in memory and lost on process shutdown.
+/// <para>
+/// <b>Development use only.</b> For production, register a durable scheduler
+/// (Quartz.NET, Hangfire) that persists jobs to a database and coordinates
+/// execution across replicas. See <see cref="IJobScheduler"/> for the durability
+/// boundary and why multi-replica deployments should not use this.
+/// </para>
+/// </summary>
 public sealed class ChannelJobQueue(
     IServiceProvider sp,
     ILogger<ChannelJobQueue> logger)
@@ -71,6 +84,7 @@ public sealed class ChannelJobQueue(
                 envelope, cron, nextRun?.UtcDateTime ?? DateTime.UtcNow);
         }
 
+        ModulusMeters.RecurringJobCount.Add(1);
         logger.LogInformation(
             "Recurring job {JobId} scheduled with '{Cron}', next run at {NextRun:O}",
             jobId, cronExpression, nextRun);
@@ -80,7 +94,8 @@ public sealed class ChannelJobQueue(
     {
         lock (_recurringLock)
         {
-            _recurring.Remove(jobId);
+            if (_recurring.Remove(jobId))
+                ModulusMeters.RecurringJobCount.Add(-1);
         }
     }
 
@@ -189,6 +204,7 @@ public sealed class ChannelJobQueue(
         await foreach (var envelope in _channel.Reader.ReadAllAsync(ct))
         {
             await using var scope = sp.CreateAsyncScope();
+            ModulusMeters.JobsStarted.Add(1);
             try
             {
                 // Resolve via the closed generic IBackgroundJob<TArgs> interface
@@ -197,9 +213,11 @@ public sealed class ChannelJobQueue(
                 var job = scope.ServiceProvider.GetRequiredService(jobInterface);
                 var invoker = s_jobInvokers.GetOrAdd(envelope.ArgsType, CompileJobInvoker);
                 await invoker(job, envelope.Args, ct);
+                ModulusMeters.JobsCompleted.Add(1);
             }
             catch (Exception ex)
             {
+                ModulusMeters.JobsFailed.Add(1);
                 logger.LogError(ex, "Job {Type} failed",
                     envelope.JobType.Name);
             }

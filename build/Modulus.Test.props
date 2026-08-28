@@ -1,0 +1,27 @@
+<Project>
+
+  <!-- ════════════════════════════════════════════════════════════════
+       Modulus.Test.props
+
+       Settings shared by every test project.  Imported by
+       tests/Directory.Build.props after the root Directory.Build.props
+       so that it can override packaging-related defaults.
+       ════════════════════════════════════════════════════════════════ -->
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="FluentAssertions" />
+    <PackageReference Include="NSubstitute" />
+    <PackageReference Include="coverlet.collector" />
+  </ItemGroup>
+
+</Project>

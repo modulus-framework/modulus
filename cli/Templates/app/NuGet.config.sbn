@@ -3,12 +3,19 @@
   <packageSources>
     <clear />
     <add key="nuget.org" value="https://api.nuget.org/v3/index.json" protocolVersion="3" />
+{{ if local_package_source }}
+    <!-- Local feed supplied via modulus app (package-source option) -->
+    <add key="modulus-local" value="{{ local_package_source }}" />
+{{ else }}
     <!--
-      The Cobytelabs.Modulus.* packages are not on nuget.org yet. To restore
-      them from a local feed (e.g. the framework repo's nupkg/ folder), uncomment
-      the entry below and point it at your feed location:
+      The Cobytelabs.Modulus.* packages are not on nuget.org yet. To use them,
+      either re-scaffold with: modulus app {{ app_name }} (package-source /path/to/nupkg)
+
+      or uncomment the entry below, pointing to your feed location
+      (e.g. framework repo's nupkg folder after dotnet pack):
 
       <add key="modulus-local" value="../../nupkg" />
     -->
+{{ end }}
   </packageSources>
 </configuration>

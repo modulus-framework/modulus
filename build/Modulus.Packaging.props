@@ -1,0 +1,62 @@
+<Project>
+
+  <!-- ════════════════════════════════════════════════════════════════
+       Modulus.Packaging.props
+
+       NuGet package metadata, versioning, and deterministic-build /
+       Source Link settings.  Imported by the root Directory.Build.props
+       so every src project produces a properly attributed package.
+       Test projects override <IsPackable> via build/Modulus.Test.props.
+       ════════════════════════════════════════════════════════════════ -->
+
+  <!-- ── Package metadata ─────────────────────────────────────────── -->
+  <PropertyGroup>
+    <Authors>Cobytelabs</Authors>
+    <Company>Cobytelabs</Company>
+    <Product>Modulus</Product>
+    <Copyright>Copyright (c) 2025 Cobytelabs. All rights reserved.</Copyright>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/modulus-framework/modulus</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/modulus-framework/modulus.git</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>modulus;framework;ddd;modular-monolith;cqrs;event-driven;dotnet;net10</PackageTags>
+    <PackageReleaseNotes>https://github.com/modulus-framework/modulus/releases</PackageReleaseNotes>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIcon Condition="Exists('$(MSBuildThisFileDirectory)..\icon.png')">icon.png</PackageIcon>
+    <NeutralLanguage>en</NeutralLanguage>
+    <PackageId>Cobytelabs.$(AssemblyName)</PackageId>
+  </PropertyGroup>
+
+  <!-- ── Versioning (SemVer — override on CI with -p:VersionPrefix / VersionSuffix) ─ -->
+  <PropertyGroup>
+    <VersionPrefix>1.2.0</VersionPrefix>
+    <VersionSuffix></VersionSuffix>
+    <Version Condition="'$(Version)' == '' AND '$(VersionSuffix)' != ''">$(VersionPrefix)-$(VersionSuffix)</Version>
+    <Version Condition="'$(Version)' == '' AND '$(VersionSuffix)' == ''">$(VersionPrefix)</Version>
+    <PackageVersion Condition="'$(PackageVersion)' == ''">$(Version)</PackageVersion>
+    <FileVersion Condition="'$(FileVersion)' == ''">$(VersionPrefix).0</FileVersion>
+    <AssemblyVersion Condition="'$(AssemblyVersion)' == ''">$(VersionPrefix).0</AssemblyVersion>
+  </PropertyGroup>
+
+  <!-- ── Deterministic builds & Source Link ──────────────────────── -->
+  <PropertyGroup>
+    <Deterministic>true</Deterministic>
+    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  </PropertyGroup>
+
+  <!-- ── Source Link package (enables source debugging from NuGet) ─ -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="All" />
+  </ItemGroup>
+
+  <!-- ── Pack README + icon into every package ───────────────────── -->
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)..\README.md" Pack="true" PackagePath="\" Visible="false" />
+    <None Include="$(MSBuildThisFileDirectory)..\icon.png"  Pack="true" PackagePath="\" Visible="false" Condition="Exists('$(MSBuildThisFileDirectory)..\icon.png')" />
+  </ItemGroup>
+
+</Project>

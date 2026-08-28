@@ -13,10 +13,10 @@ public sealed class InboxMessageConfiguration
         b.HasKey(x => x.Id);
         b.Property(x => x.MessageType).HasMaxLength(500).IsRequired();
         b.Property(x => x.ModuleName).HasMaxLength(100);
+        // Unique claim semantics come from the PK itself (EventId): a
+        // concurrent duplicate INSERT races and the loser defers.
         b.Property(x => x.Status)
          .HasConversion<string>().HasMaxLength(20);
-        // Unique index prevents concurrent duplicate processing
-        b.HasIndex(x => x.Id).IsUnique();
         b.HasIndex(x => new { x.Status, x.ReceivedAt });
     }
 }

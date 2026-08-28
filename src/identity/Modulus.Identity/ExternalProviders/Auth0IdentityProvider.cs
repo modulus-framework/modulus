@@ -14,7 +14,9 @@ public sealed class Auth0IdentityProvider(
     Auth0Options opts) : IExternalIdentityProvider
 {
     private readonly OidcDiscoveryValidator _tokenValidator =
-        new($"{opts.Authority}.well-known/openid-configuration");
+        OidcDiscoveryValidatorCache.GetOrCreate(
+            $"{opts.Authority}.well-known/openid-configuration",
+            opts.Audience is null ? null : [opts.Audience]);
 
     public string Name => "auth0";
     public string DisplayName => "Auth0";
@@ -25,7 +27,7 @@ public sealed class Auth0IdentityProvider(
         // Use a per-request HttpRequestMessage so the Authorization header is
         // never written to HttpClient.DefaultRequestHeaders, which is shared
         // across concurrent calls and would cause a race condition.
-        var url = $"{opts.Authority}api/v2/users/{subject}";
+        var url = $"{opts.Authority}api/v2/users/{Uri.EscapeDataString(subject)}";
         using var req = new HttpRequestMessage(HttpMethod.Get, url);
         req.Headers.Authorization =
             new AuthenticationHeaderValue("Bearer", opts.ManagementToken);
@@ -65,6 +67,14 @@ public sealed class Auth0Options
     public string ClientSecret { get; set; } = default!;
     public string? ManagementToken { get; set; }
     public string Scope { get; set; } = "openid profile email";
+
+    /// <summary>
+    /// Expected audience (<c>aud</c>) of access tokens issued for this
+    /// application (e.g. your API identifier). Configured locally so bearer
+    /// tokens minted for any other client/resource are rejected. When null,
+    /// audience validation is skipped — recommended to set in production.
+    /// </summary>
+    public string? Audience { get; set; }
 }
 
 public static class Auth0Extensions

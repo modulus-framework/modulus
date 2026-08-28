@@ -153,6 +153,13 @@ internal sealed class RabbitMqEventConsumer : BackgroundService
             var dispatcher = scope.ServiceProvider
                 .GetRequiredService<IntegrationEventDispatcher>();
 
+            // Restore the tenant/correlation carried on the envelope around
+            // handler invocation — otherwise handlers run in host scope where
+            // tenant query filters match everything and writes stamp TenantId
+            // as empty.
+            using var ambient = EnvelopeAmbientScope.Restore(
+                envelope, scope.ServiceProvider);
+
             var handled = await dispatcher.DispatchAsync(envelope);
 
             if (!handled)

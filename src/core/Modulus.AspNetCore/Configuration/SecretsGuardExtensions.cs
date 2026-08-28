@@ -1,3 +1,5 @@
+using Modulus.AspNetCore.Configuration;
+
 namespace Modulus.AspNetCore.Configuration;
 
 using Microsoft.Extensions.Configuration;
@@ -23,11 +25,8 @@ public static class SecretsGuardExtensions
         IConfiguration configuration,
         Action<SecretsGuardOptions>? configure = null)
     {
-        services.AddOptions<SecretsGuardOptions>()
-            .Bind(configuration.GetSection(SecretsGuardOptions.SectionName))
-            .ValidateOnStart();
-        if (configure is not null)
-            services.Configure(configure);
+        services.AddValidatedOptions(
+            configuration, SecretsGuardOptions.SectionName, configure);
 
         services.AddHostedService<SecretsGuardHostedService>();
         return services;

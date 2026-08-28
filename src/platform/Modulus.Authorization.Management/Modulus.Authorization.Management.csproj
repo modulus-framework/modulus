@@ -4,6 +4,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <Description>Administration API extensions for Modulus authorization built on the EF Core permission grant store.</Description>
   </PropertyGroup>
 
   <ItemGroup>

@@ -5,7 +5,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Modulus.Data.Abstractions;
 using Modulus.EntityFrameworkCore.Abstractions;
-using Modulus.Events.Abstractions;
 
 public static class EFCoreServiceCollectionExtensions
 {
@@ -44,11 +43,6 @@ public static class EFCoreServiceCollectionExtensions
         // them all in a transaction — not just the first one. This is also how
         // EfRepository<T> locates the context that owns entity T.
         services.AddScoped<DbContext>(sp => sp.GetRequiredService<TContext>());
-
-        // Default no-op outbox. Replaced by EfOutboxWriter when AddOutbox
-        // is called.  TryAdd so the first registration wins and AddOutbox
-        // can override via Replace.
-        services.TryAddScoped<IIntegrationEventOutbox, NullIntegrationEventOutbox>();
 
         // Record that TContext owns its entities so EfRepository<T> resolves
         // exactly this context for them (registration-time routing) instead of

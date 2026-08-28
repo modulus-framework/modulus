@@ -11,7 +11,9 @@ using Modulus.Core.Abstractions.Domain;
 using Modulus.Core.Abstractions.Entities;
 using Modulus.Core.Null;
 using Modulus.EntityFrameworkCore.Abstractions;
+using Modulus.EntityFrameworkCore.ChangeHistory;
 using Modulus.EntityFrameworkCore.DataProtection;
+using Modulus.EntityFrameworkCore.ModelBuilding;
 using Modulus.Events;
 using Modulus.Events.Abstractions;
 using Modulus.Outbox.Abstractions;
@@ -48,6 +50,23 @@ public abstract class ModuleDbContext(
     public Task<int> CommitAsync(CancellationToken ct = default)
         => SaveChangesAsync(ct);
 
+    // ── SaveChanges sync override ──────────────────────────────────
+    // Intentionally not implemented: all framework guarantees (audit fields,
+    // soft-delete conversion, outbox enqueueing, domain event dispatch) require
+    // async execution. Calling sync SaveChanges bypasses all of them, risking
+    // data loss (Remove() becomes hard DELETE) and silent event loss.
+    public override int SaveChanges(bool acceptAllChangesOnSuccess)
+        => throw new NotSupportedException(
+            "ModuleDbContext requires SaveChangesAsync(). " +
+            "Sync SaveChanges() bypasses audit fields, soft-delete conversion, " +
+            "and outbox enqueueing. Call SaveChangesAsync() instead.");
+
+    public override int SaveChanges()
+        => throw new NotSupportedException(
+            "ModuleDbContext requires SaveChangesAsync(). " +
+            "Sync SaveChanges() bypasses audit fields, soft-delete conversion, " +
+            "and outbox enqueueing. Call SaveChangesAsync() instead.");
+
     // ── SaveChangesAsync override ─────────────────────────────────
     public override async Task<int> SaveChangesAsync(
         CancellationToken ct = default)
@@ -58,28 +77,22 @@ public abstract class ModuleDbContext(
         // Enqueue integration events to this context's outbox table BEFORE
         // SaveChanges so the outbox row(s) participate in the same DB
         // transaction as the domain writes — closing the dual-write gap.
-        // We add directly to THIS context's Set<OutboxMessage>() rather than
-        // going through IIntegrationEventOutbox, which resolved the wrong
-        // DbContext in multi-module apps (the last-registered one).
-        // The outbox is opt-in: only enqueue when AddOutbox was called
-        // (IOutboxWriter is registered).
+        // We add directly to THIS context's Set<OutboxMessage>() so rows are
+        // always written by the context that owns the domain data (never a
+        // last-registered context in multi-module apps). The outbox is
+        // opt-in: only enqueue when AddOutbox was called (IOutboxWriter is
+        // registered).
         if (sp.GetService<IOutboxWriter>() is not null)
         {
+            var correlationId = sp.GetService<ICorrelationContext>()?.CorrelationId;
             foreach (var integrationEvent in domainEvents
                          .OfType<IIntegrationEvent>())
             {
-                Set<OutboxMessage>().Add(new OutboxMessage
-                {
-                    // Stable transport name (attribute or assembly-independent
-                    // FullName), NOT AssemblyQualifiedName — an assembly version
-                    // bump must not orphan unprocessed outbox rows.
-                    MessageType = IntegrationEventNaming.GetName(integrationEvent.GetType()),
-                    Payload = System.Text.Json.JsonSerializer.Serialize(
-                        integrationEvent, integrationEvent.GetType()),
-                    TenantId = currentTenant.TenantId ?? Guid.Empty,
-                    ModuleName = GetType().Name.Replace("DbContext", string.Empty),
-                    CausationId = integrationEvent.EventId.ToString(),
-                });
+                Set<OutboxMessage>().Add(OutboxRowFactory.Create(
+                    integrationEvent,
+                    currentTenant.TenantId ?? Guid.Empty,
+                    GetType().Name.Replace("DbContext", string.Empty),
+                    correlationId));
             }
         }
 
@@ -92,7 +105,14 @@ public abstract class ModuleDbContext(
     protected override void OnModelCreating(ModelBuilder mb)
     {
         base.OnModelCreating(mb);
+
+        // Feature packages (Inbox, …) contribute entity mappings through this
+        // seam — before prefixing so their tables get the module prefix.
+        foreach (var contributor in sp.GetServices<IModuleModelContributor>())
+            contributor.Contribute(mb);
+
         ConfigureOutbox(mb);
+        ConfigureEntityChangeHistory(mb);
         ApplyTablePrefix(mb);
         ApplyQueryFilters(mb);
         ApplyPersonalDataEncryption(mb);
@@ -129,6 +149,28 @@ public abstract class ModuleDbContext(
             b.HasIndex(x => new { x.ProcessedAt, x.LockedUntil, x.RetryCount });
             b.HasIndex(x => new { x.ProcessedAt, x.CreatedAt });
             b.HasIndex(x => x.TenantId);
+        });
+    }
+
+    /// <summary>
+    /// Maps the <see cref="EntityChange"/> entity for field-level audit history.
+    /// Configured before <see cref="ApplyTablePrefix"/> so the table gets the
+    /// module prefix (e.g. <c>cat_entity_changes</c>).
+    /// </summary>
+    private static void ConfigureEntityChangeHistory(ModelBuilder mb)
+    {
+        mb.Entity<EntityChange>(b =>
+        {
+            b.ToTable("entity_changes");
+            b.HasKey(x => x.Id);
+            b.Property(x => x.EntityName).HasMaxLength(255).IsRequired();
+            b.Property(x => x.EntityKey).HasMaxLength(500).IsRequired();
+            b.Property(x => x.PropertyName).HasMaxLength(255).IsRequired();
+            b.Property(x => x.ChangedBy).HasMaxLength(255).IsRequired();
+            b.Property(x => x.Operation).HasMaxLength(20).IsRequired();
+            b.HasIndex(x => new { x.EntityName, x.EntityKey, x.ChangedAt });
+            b.HasIndex(x => new { x.TenantId, x.ChangedAt });
+            b.HasIndex(x => x.CorrelationId);
         });
     }
 
@@ -270,6 +312,17 @@ public abstract class ModuleDbContext(
                 entry.Entity.UpdatedAt = now;
                 entry.Entity.UpdatedBy = user;
             }
+        }
+
+        // Capture field-level changes for audited entities
+        var changeHistoryWriter = sp.GetService<IEntityChangeHistoryWriter>();
+        if (changeHistoryWriter is not null)
+        {
+            var correlation = sp.GetService<ICorrelationContext>();
+            changeHistoryWriter.CaptureChanges(
+                ChangeTracker.Entries().ToList(),
+                user,
+                correlation?.CorrelationId);
         }
     }
 
