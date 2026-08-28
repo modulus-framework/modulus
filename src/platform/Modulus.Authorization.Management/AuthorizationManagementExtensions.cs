@@ -467,7 +467,172 @@ public static class AuthorizationManagementExtensions
         })
         .WithSummary("Scan for SoD violations across all users")
         .WithName("ScanSodViolations");
+
+        // GET /authorization/recertifications — list active campaigns
+        group.MapGet("/recertifications", async (
+            IRecertificationCampaignStore? store,
+            CancellationToken ct) =>
+        {
+            if (store is null)
+                return Results.NotFound("Recertification campaign store not registered.");
+
+            var campaigns = await store.ListActiveAsync(ct);
+            return Results.Ok(campaigns.Select(c => new
+            {
+                campaignId = c.Id,
+                name = c.Name,
+                pendingCount = c.PendingCount,
+                totalCount = c.TotalCount,
+                progress = c.TotalCount > 0 ? ((c.TotalCount - c.PendingCount) * 100) / c.TotalCount : 100,
+            }));
+        })
+        .WithSummary("List active recertification campaigns")
+        .WithName("ListRecertifications");
+
+        // GET /authorization/recertifications/{campaignId} — get campaign details
+        group.MapGet("/recertifications/{campaignId:guid}", async (
+            Guid campaignId,
+            IRecertificationCampaignStore? store,
+            CancellationToken ct) =>
+        {
+            if (store is null)
+                return Results.NotFound("Recertification campaign store not registered.");
+
+            var campaign = await store.GetAsync(campaignId, ct);
+            if (campaign is null)
+                return Results.NotFound();
+
+            return Results.Ok(new
+            {
+                campaignId,
+                name = campaign.Name,
+                itemCount = campaign.Items.Count,
+                pendingCount = campaign.Pending.Count,
+                revokedCount = campaign.Revoked.Count,
+                isComplete = campaign.IsComplete,
+                items = campaign.Items.Select(i => new
+                {
+                    userId = i.UserId,
+                    permission = i.Permission,
+                    source = i.Source.ToString(),
+                    decision = i.Decision.ToString(),
+                }),
+            });
+        })
+        .WithSummary("Get campaign details")
+        .WithName("GetRecertification");
+
+        // POST /authorization/recertifications — create campaign
+        group.MapPost("/recertifications", async (
+            RecertificationCreateRequest request,
+            IEffectiveAccessService? effectiveAccessService,
+            IRecertificationCampaignStore? store,
+            ICurrentUser currentUser,
+            IAuthorizationAuditWriter auditWriter,
+            CancellationToken ct) =>
+        {
+            if (effectiveAccessService is null)
+                return Results.BadRequest("Effective access service not registered.");
+            if (store is null)
+                return Results.BadRequest("Recertification campaign store not registered.");
+
+            var userIds = request.UserIds ?? [];
+            var reports = new List<EffectiveAccessReport>();
+
+            foreach (var userId in userIds)
+                reports.Add(effectiveAccessService.Report(new PrincipalGrantQuery(userId, [])));
+
+            var campaign = new RecertificationCampaign(request.Name, reports);
+            var createdBy = currentUser.UserId ?? Guid.Empty;
+            var campaignId = await store.CreateAsync(request.Name,
+                campaign.Items.ToList(), createdBy, ct);
+
+            await EmitAuditAsync(auditWriter, currentUser, "Recertification", "Created",
+                $"campaign:{campaignId}",
+                new Dictionary<string, string> { ["itemCount"] = campaign.Items.Count.ToString() }, ct);
+
+            return Results.Created($"/authorization/recertifications/{campaignId}",
+                new { campaignId, itemCount = campaign.Items.Count });
+        })
+        .WithSummary("Create recertification campaign")
+        .WithName("CreateRecertification");
+
+        // POST /authorization/recertifications/{campaignId}/review — review one item
+        group.MapPost("/recertifications/{campaignId:guid}/review", async (
+            Guid campaignId,
+            RecertificationReviewRequest request,
+            IRecertificationCampaignStore? store,
+            ICurrentUser currentUser,
+            IAuthorizationAuditWriter auditWriter,
+            CancellationToken ct) =>
+        {
+            if (store is null)
+                return Results.NotFound("Recertification campaign store not registered.");
+
+            var campaign = await store.GetAsync(campaignId, ct);
+            if (campaign is null)
+                return Results.NotFound();
+
+            if (!Enum.TryParse<RecertificationDecision>(request.Decision, ignoreCase: true, out var decision))
+                return Results.ValidationProblem(new Dictionary<string, string[]>
+                {
+                    ["decision"] = ["Must be 'Certified' or 'Revoked'"],
+                });
+
+            var reviewedBy = currentUser.UserId ?? Guid.Empty;
+            await store.UpdateDecisionAsync(campaignId, request.UserId, request.Permission,
+                decision, reviewedBy, ct);
+
+            await EmitAuditAsync(auditWriter, currentUser, "Recertification", "Reviewed",
+                $"campaign:{campaignId}",
+                new Dictionary<string, string>
+                {
+                    ["userId"] = request.UserId.ToString(),
+                    ["permission"] = request.Permission,
+                    ["decision"] = decision.ToString(),
+                }, ct);
+
+            return Results.NoContent();
+        })
+        .WithSummary("Review one access line in a campaign")
+        .WithName("ReviewRecertification");
+
+        // POST /authorization/recertifications/{campaignId}/complete — mark campaign done
+        group.MapPost("/recertifications/{campaignId:guid}/complete", async (
+            Guid campaignId,
+            IRecertificationCampaignStore? store,
+            ICurrentUser currentUser,
+            IAuthorizationAuditWriter auditWriter,
+            CancellationToken ct) =>
+        {
+            if (store is null)
+                return Results.NotFound("Recertification campaign store not registered.");
+
+            var campaign = await store.GetAsync(campaignId, ct);
+            if (campaign is null)
+                return Results.NotFound();
+
+            if (!campaign.IsComplete)
+                return Results.BadRequest(new { error = "Campaign has pending reviews" });
+
+            await store.CompleteAsync(campaignId, ct);
+
+            await EmitAuditAsync(auditWriter, currentUser, "Recertification", "Completed",
+                $"campaign:{campaignId}",
+                new Dictionary<string, string>
+                {
+                    ["revokedCount"] = campaign.Revoked.Count.ToString(),
+                }, ct);
+
+            return Results.NoContent();
+        })
+        .WithSummary("Mark campaign as complete")
+        .WithName("CompleteRecertification");
     }
+
+    // Request/response models for recertification
+    private sealed record RecertificationCreateRequest(string Name, Guid[]? UserIds);
+    private sealed record RecertificationReviewRequest(Guid UserId, string Permission, string Decision);
 
     private static Guid ParseUser(string holder)
         => Guid.TryParse(holder, out var id)

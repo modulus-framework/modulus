@@ -75,6 +75,11 @@ public static class EfAuthorizationStoreExtensions
         services.AddSingleton<IDelegationStore>(
             sp => sp.GetRequiredService<EfDelegationStore>());
 
+        services.TryAddSingleton<EfRecertificationCampaignStore>();
+        services.RemoveAll<IRecertificationCampaignStore>();
+        services.AddSingleton<IRecertificationCampaignStore>(
+            sp => sp.GetRequiredService<EfRecertificationCampaignStore>());
+
         return services;
     }
 

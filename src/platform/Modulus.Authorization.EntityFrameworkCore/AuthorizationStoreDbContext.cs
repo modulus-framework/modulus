@@ -38,6 +38,9 @@ public class AuthorizationStoreDbContext(
     /// </summary>
     internal DbSet<OutboxMessage> AuditOutbox => Set<OutboxMessage>();
 
+    internal DbSet<RecertificationCampaignRow> RecertificationCampaigns => Set<RecertificationCampaignRow>();
+    internal DbSet<RecertificationItemRow> RecertificationItems => Set<RecertificationItemRow>();
+
     /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -89,6 +92,20 @@ public class AuthorizationStoreDbContext(
         auditOutbox.HasKey(m => m.Id);
         auditOutbox.Property(m => m.MessageType).HasMaxLength(256);
         auditOutbox.HasIndex(m => new { m.ProcessedAt, m.NextAttemptAt });
+
+        var campaign = modelBuilder.Entity<RecertificationCampaignRow>();
+        campaign.ToTable("ModulusRecertificationCampaigns");
+        campaign.HasKey(c => c.Id);
+        campaign.HasMany(c => c.Items)
+            .WithOne(i => i.Campaign)
+            .HasForeignKey(i => i.CampaignId);
+        campaign.HasIndex(c => c.CompletedAt);
+
+        var item = modelBuilder.Entity<RecertificationItemRow>();
+        item.ToTable("ModulusRecertificationItems");
+        item.HasKey(i => i.Id);
+        item.HasIndex(i => new { i.CampaignId, i.Decision });
+        item.HasIndex(i => new { i.CampaignId, i.UserId });
     }
 }
 
