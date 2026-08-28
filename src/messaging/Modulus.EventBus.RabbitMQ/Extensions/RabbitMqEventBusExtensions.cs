@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Modulus.Core.Abstractions;
 using Modulus.EventBus.RabbitMQ;
 using Modulus.Events.Abstractions;
 using Modulus.Events.Extensions;
@@ -31,6 +32,9 @@ public static class RabbitMqEventBusExtensions
         services.AddScoped<IModuleBus>(sp => sp.GetRequiredService<RabbitMqEventBus>());
 
         services.AddHostedService<RabbitMqEventConsumer>();
+
+        // Register health check for broker connectivity
+        services.AddScoped<IModuleHealthCheck, RabbitMqHealthCheck>();
 
         return services;
     }

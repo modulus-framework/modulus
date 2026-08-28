@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Modulus.Core.Abstractions;
 using Modulus.EventBus.Kafka;
 using Modulus.Events.Abstractions;
 using Modulus.Events.Extensions;
@@ -31,6 +32,9 @@ public static class KafkaEventBusExtensions
         services.AddScoped<IModuleBus>(sp => sp.GetRequiredService<KafkaEventBus>());
 
         services.AddHostedService<KafkaEventConsumer>();
+
+        // Register health check for broker connectivity
+        services.AddScoped<IModuleHealthCheck, KafkaHealthCheck>();
 
         return services;
     }
