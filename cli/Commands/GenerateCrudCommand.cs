@@ -134,8 +134,8 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
         }
 
         // ── Presentation layer ────────────────────────────────────
-        WriteIfMissing("module/Presentation/Controller", model,
-            Path.Combine(presDir, $"{plural}Controller.cs"), generated, skipped);
+        WriteIfMissing("module/Presentation/Endpoint", model,
+            Path.Combine(presDir, $"{plural}Endpoint.cs"), generated, skipped);
 
         // ── Summary ───────────────────────────────────────────────
         AnsiConsole.MarkupLine("[green]✓[/] Generated CRUD for [cyan]{0}[/] in [grey]{1}[/]",

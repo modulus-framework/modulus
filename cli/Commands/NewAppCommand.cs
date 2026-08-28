@@ -667,8 +667,8 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
             Path.Combine(presDir, $"{m.PresentationProject}.csproj"));
         if (hasEntity)
         {
-            _templates.RenderToFile("module/Presentation/Controller", m,
-                Path.Combine(presDir, $"{m.EntityPlural}Controller.cs"));
+            _templates.RenderToFile("module/Presentation/Endpoint", m,
+                Path.Combine(presDir, $"{m.EntityPlural}Endpoint.cs"));
         }
     }
 

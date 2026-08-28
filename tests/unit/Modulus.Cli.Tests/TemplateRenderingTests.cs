@@ -69,4 +69,30 @@ public class TemplateRenderingTests
         var output = _engine.Render(templatePath, model);
         output.Should().NotContain("{{");
     }
+
+    [Fact]
+    public void Endpoint_template_renders_without_errors()
+    {
+        var model = new ModuleModel
+        {
+            RootNamespace = "MyApp",
+            ModuleNamespace = "MyApp.Modules.Catalog",
+            ModuleName = "Catalog",
+            EntityName = "Product",
+            EntityNameLower = "product",
+            RouteName = "products",
+        };
+
+        var act = () => _engine.Render("module/Presentation/Endpoint", model);
+        act.Should().NotThrow();
+
+        var output = _engine.Render("module/Presentation/Endpoint", model);
+        output.Should().Contain("class GetProductsEndpoint");
+        output.Should().Contain("class GetProductByIdEndpoint");
+        output.Should().Contain("class CreateProductEndpoint");
+        output.Should().Contain("class UpdateProductEndpoint");
+        output.Should().Contain("class DeleteProductEndpoint");
+        output.Should().Contain("EndpointBase");
+        output.Should().NotContain("{{");
+    }
 }
