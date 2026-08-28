@@ -10,7 +10,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Modulus.Identity.Abstractions;
 
 public sealed class AzureAdIdentityProvider(
-    HttpClient http, AzureAdOptions opts) : IExternalIdentityProvider
+    HttpClient http, AzureAdOptions opts) : IExternalIdentityProviderWithProfileFetch
 {
     private readonly OidcDiscoveryValidator _tokenValidator =
         OidcDiscoveryValidatorCache.GetOrCreate(
@@ -120,6 +120,10 @@ public sealed class AzureAdOptions
 
 public static class AzureAdExtensions
 {
+    /// <summary>
+    /// Register Microsoft Entra ID for OIDC sign-in and token validation only (recommended).
+    /// User profile is derived from standard OIDC claims in the token.
+    /// </summary>
     public static AuthenticationBuilder AddAzureAd(
         this AuthenticationBuilder builder,
         IConfiguration configuration)
@@ -146,6 +150,23 @@ public static class AzureAdExtensions
             options.TokenValidationParameters.RoleClaimType = "roles";
         });
 
+        return builder;
+    }
+
+    /// <summary>
+    /// Register Microsoft Entra ID with profile-fetch capability. This is an opt-in method
+    /// that additionally enables <see cref="IExternalIdentityProviderWithProfileFetch"/>.
+    ///
+    /// SECURITY WARNING: This method requires storing an Entra ID client secret in config.
+    /// For production environments, prefer AddAzureAd() which derives user profiles from
+    /// standard OIDC claims instead.
+    /// </summary>
+    public static AuthenticationBuilder AddAzureAdWithProfileFetch(
+        this AuthenticationBuilder builder,
+        IConfiguration configuration)
+    {
+        AddAzureAd(builder, configuration);
+        builder.Services.AddScoped<IExternalIdentityProviderWithProfileFetch, AzureAdIdentityProvider>();
         return builder;
     }
 }

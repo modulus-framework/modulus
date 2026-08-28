@@ -11,7 +11,7 @@ using Modulus.Identity.Abstractions;
 
 public sealed class Auth0IdentityProvider(
     HttpClient http,
-    Auth0Options opts) : IExternalIdentityProvider
+    Auth0Options opts) : IExternalIdentityProviderWithProfileFetch
 {
     private readonly OidcDiscoveryValidator _tokenValidator =
         OidcDiscoveryValidatorCache.GetOrCreate(
@@ -79,6 +79,11 @@ public sealed class Auth0Options
 
 public static class Auth0Extensions
 {
+    /// <summary>
+    /// Register Auth0 for OIDC sign-in and token validation only (recommended).
+    /// User profile is derived from standard OIDC claims in the token.
+    /// No long-lived admin credentials required.
+    /// </summary>
     public static AuthenticationBuilder AddAuth0(
         this AuthenticationBuilder builder,
         IConfiguration configuration)
@@ -105,6 +110,23 @@ public static class Auth0Extensions
             options.TokenValidationParameters.RoleClaimType = "https://schemas.modulus.app/roles";
         });
 
+        return builder;
+    }
+
+    /// <summary>
+    /// Register Auth0 with profile-fetch capability. This is an opt-in method
+    /// that additionally enables <see cref="IExternalIdentityProviderWithProfileFetch"/>.
+    ///
+    /// SECURITY WARNING: This method requires storing a long-lived Auth0 management
+    /// API token in config. For production environments, prefer AddAuth0() which
+    /// derives user profiles from standard OIDC claims instead.
+    /// </summary>
+    public static AuthenticationBuilder AddAuth0WithProfileFetch(
+        this AuthenticationBuilder builder,
+        IConfiguration configuration)
+    {
+        AddAuth0(builder, configuration);
+        builder.Services.AddScoped<IExternalIdentityProviderWithProfileFetch, Auth0IdentityProvider>();
         return builder;
     }
 }

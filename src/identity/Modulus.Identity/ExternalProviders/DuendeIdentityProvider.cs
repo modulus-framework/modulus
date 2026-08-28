@@ -13,7 +13,7 @@ using Modulus.Identity.Abstractions;
 /// Adapter for Duende IdentityServer as an external identity provider.
 /// </summary>
 public sealed class DuendeIdentityProvider(
-    HttpClient http, DuendeOptions opts) : IExternalIdentityProvider
+    HttpClient http, DuendeOptions opts) : IExternalIdentityProviderWithProfileFetch
 {
     private readonly OidcDiscoveryValidator _tokenValidator =
         OidcDiscoveryValidatorCache.GetOrCreate(
@@ -121,6 +121,10 @@ public sealed class DuendeOptions
 
 public static class DuendeExtensions
 {
+    /// <summary>
+    /// Register Duende IdentityServer for OIDC sign-in and token validation only (recommended).
+    /// User profile is derived from standard OIDC claims in the token.
+    /// </summary>
     public static AuthenticationBuilder AddDuendeIdentityServer(
         this AuthenticationBuilder builder,
         IConfiguration configuration)
@@ -146,6 +150,23 @@ public static class DuendeExtensions
             options.TokenValidationParameters.RoleClaimType = "role";
         });
 
+        return builder;
+    }
+
+    /// <summary>
+    /// Register Duende IdentityServer with profile-fetch capability. This is an opt-in method
+    /// that additionally enables <see cref="IExternalIdentityProviderWithProfileFetch"/>.
+    ///
+    /// SECURITY WARNING: This method requires storing Duende client credentials in config.
+    /// For production environments, prefer AddDuendeIdentityServer() which derives user
+    /// profiles from standard OIDC claims instead.
+    /// </summary>
+    public static AuthenticationBuilder AddDuendeIdentityServerWithProfileFetch(
+        this AuthenticationBuilder builder,
+        IConfiguration configuration)
+    {
+        AddDuendeIdentityServer(builder, configuration);
+        builder.Services.AddScoped<IExternalIdentityProviderWithProfileFetch, DuendeIdentityProvider>();
         return builder;
     }
 }

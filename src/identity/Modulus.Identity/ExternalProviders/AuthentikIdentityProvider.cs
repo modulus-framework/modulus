@@ -15,7 +15,7 @@ using Modulus.Identity.Abstractions;
 /// user details from the REST admin API (<c>/api/v3/core/users/&lt;pk&gt;/</c>).
 /// </summary>
 public sealed class AuthentikIdentityProvider(
-    HttpClient http, AuthentikOptions opts) : IExternalIdentityProvider
+    HttpClient http, AuthentikOptions opts) : IExternalIdentityProviderWithProfileFetch
 {
     private readonly OidcDiscoveryValidator _tokenValidator =
         OidcDiscoveryValidatorCache.GetOrCreate(
@@ -87,6 +87,11 @@ public sealed class AuthentikOptions
 
 public static class AuthentikExtensions
 {
+    /// <summary>
+    /// Register Authentik for OIDC sign-in and token validation only (recommended).
+    /// User profile is derived from standard OIDC claims in the token.
+    /// No long-lived admin credentials required.
+    /// </summary>
     public static AuthenticationBuilder AddAuthentik(
         this AuthenticationBuilder builder,
         IConfiguration configuration)
@@ -118,6 +123,23 @@ public static class AuthentikExtensions
             options.TokenValidationParameters.RoleClaimType = "groups";
         });
 
+        return builder;
+    }
+
+    /// <summary>
+    /// Register Authentik with profile-fetch capability. This is an opt-in method
+    /// that additionally enables <see cref="IExternalIdentityProviderWithProfileFetch"/>.
+    ///
+    /// SECURITY WARNING: This method requires storing a long-lived Authentik API token
+    /// in config. For production environments, prefer AddAuthentik() which derives user
+    /// profiles from standard OIDC claims instead.
+    /// </summary>
+    public static AuthenticationBuilder AddAuthentikWithProfileFetch(
+        this AuthenticationBuilder builder,
+        IConfiguration configuration)
+    {
+        AddAuthentik(builder, configuration);
+        builder.Services.AddScoped<IExternalIdentityProviderWithProfileFetch, AuthentikIdentityProvider>();
         return builder;
     }
 }

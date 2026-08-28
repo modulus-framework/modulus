@@ -13,7 +13,7 @@ using Modulus.Identity.Abstractions;
 /// Adapter for Okta as an external identity provider.
 /// </summary>
 public sealed class OktaIdentityProvider(
-    HttpClient http, OktaOptions opts) : IExternalIdentityProvider
+    HttpClient http, OktaOptions opts) : IExternalIdentityProviderWithProfileFetch
 {
     private readonly OidcDiscoveryValidator _tokenValidator =
         OidcDiscoveryValidatorCache.GetOrCreate(
@@ -85,6 +85,11 @@ public sealed class OktaOptions
 
 public static class OktaExtensions
 {
+    /// <summary>
+    /// Register Okta for OIDC sign-in and token validation only (recommended).
+    /// User profile is derived from standard OIDC claims in the token.
+    /// No long-lived API credentials required.
+    /// </summary>
     public static AuthenticationBuilder AddOkta(
         this AuthenticationBuilder builder,
         IConfiguration configuration)
@@ -109,6 +114,23 @@ public static class OktaExtensions
             options.TokenValidationParameters.NameClaimType = "preferred_username";
         });
 
+        return builder;
+    }
+
+    /// <summary>
+    /// Register Okta with profile-fetch capability. This is an opt-in method
+    /// that additionally enables <see cref="IExternalIdentityProviderWithProfileFetch"/>.
+    ///
+    /// SECURITY WARNING: This method requires storing a long-lived Okta API token
+    /// in config. For production environments, prefer AddOkta() which derives user
+    /// profiles from standard OIDC claims instead.
+    /// </summary>
+    public static AuthenticationBuilder AddOktaWithProfileFetch(
+        this AuthenticationBuilder builder,
+        IConfiguration configuration)
+    {
+        AddOkta(builder, configuration);
+        builder.Services.AddScoped<IExternalIdentityProviderWithProfileFetch, OktaIdentityProvider>();
         return builder;
     }
 }

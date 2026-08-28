@@ -13,7 +13,7 @@ using Modulus.Identity.Abstractions;
 /// Adapter for Keycloak as an external identity provider.
 /// </summary>
 public sealed class KeycloakIdentityProvider(
-    HttpClient http, KeycloakOptions opts) : IExternalIdentityProvider
+    HttpClient http, KeycloakOptions opts) : IExternalIdentityProviderWithProfileFetch
 {
     public string Name => "keycloak";
     public string DisplayName => "Keycloak";
@@ -115,6 +115,11 @@ public sealed class KeycloakOptions
 
 public static class KeycloakExtensions
 {
+    /// <summary>
+    /// Register Keycloak for OIDC sign-in and token validation only (recommended).
+    /// User profile is derived from standard OIDC claims in the token.
+    /// No admin credentials required.
+    /// </summary>
     public static AuthenticationBuilder AddKeycloak(
         this AuthenticationBuilder builder,
         IConfiguration configuration)
@@ -140,6 +145,23 @@ public static class KeycloakExtensions
             options.TokenValidationParameters.RoleClaimType = "realm_access.roles";
         });
 
+        return builder;
+    }
+
+    /// <summary>
+    /// Register Keycloak with profile-fetch capability. This is an opt-in method
+    /// that additionally enables <see cref="IExternalIdentityProviderWithProfileFetch"/>.
+    ///
+    /// SECURITY WARNING: This method requires storing Keycloak admin credentials in config.
+    /// For production environments, prefer AddKeycloak() which derives user profiles from
+    /// standard OIDC claims instead.
+    /// </summary>
+    public static AuthenticationBuilder AddKeycloakWithProfileFetch(
+        this AuthenticationBuilder builder,
+        IConfiguration configuration)
+    {
+        AddKeycloak(builder, configuration);
+        builder.Services.AddScoped<IExternalIdentityProviderWithProfileFetch, KeycloakIdentityProvider>();
         return builder;
     }
 }
