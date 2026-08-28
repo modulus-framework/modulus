@@ -11,6 +11,7 @@ using Modulus.Core.Abstractions.Domain;
 using Modulus.Core.Abstractions.Entities;
 using Modulus.Core.Null;
 using Modulus.EntityFrameworkCore.Abstractions;
+using Modulus.EntityFrameworkCore.ChangeHistory;
 using Modulus.EntityFrameworkCore.DataProtection;
 using Modulus.EntityFrameworkCore.ModelBuilding;
 using Modulus.Events;
@@ -111,6 +112,7 @@ public abstract class ModuleDbContext(
             contributor.Contribute(mb);
 
         ConfigureOutbox(mb);
+        ConfigureEntityChangeHistory(mb);
         ApplyTablePrefix(mb);
         ApplyQueryFilters(mb);
         ApplyPersonalDataEncryption(mb);
@@ -147,6 +149,28 @@ public abstract class ModuleDbContext(
             b.HasIndex(x => new { x.ProcessedAt, x.LockedUntil, x.RetryCount });
             b.HasIndex(x => new { x.ProcessedAt, x.CreatedAt });
             b.HasIndex(x => x.TenantId);
+        });
+    }
+
+    /// <summary>
+    /// Maps the <see cref="EntityChange"/> entity for field-level audit history.
+    /// Configured before <see cref="ApplyTablePrefix"/> so the table gets the
+    /// module prefix (e.g. <c>cat_entity_changes</c>).
+    /// </summary>
+    private static void ConfigureEntityChangeHistory(ModelBuilder mb)
+    {
+        mb.Entity<EntityChange>(b =>
+        {
+            b.ToTable("entity_changes");
+            b.HasKey(x => x.Id);
+            b.Property(x => x.EntityName).HasMaxLength(255).IsRequired();
+            b.Property(x => x.EntityKey).HasMaxLength(500).IsRequired();
+            b.Property(x => x.PropertyName).HasMaxLength(255).IsRequired();
+            b.Property(x => x.ChangedBy).HasMaxLength(255).IsRequired();
+            b.Property(x => x.Operation).HasMaxLength(20).IsRequired();
+            b.HasIndex(x => new { x.EntityName, x.EntityKey, x.ChangedAt });
+            b.HasIndex(x => new { x.TenantId, x.ChangedAt });
+            b.HasIndex(x => x.CorrelationId);
         });
     }
 
@@ -288,6 +312,17 @@ public abstract class ModuleDbContext(
                 entry.Entity.UpdatedAt = now;
                 entry.Entity.UpdatedBy = user;
             }
+        }
+
+        // Capture field-level changes for audited entities
+        var changeHistoryWriter = sp.GetService<IEntityChangeHistoryWriter>();
+        if (changeHistoryWriter is not null)
+        {
+            var correlation = sp.GetService<ICorrelationContext>();
+            changeHistoryWriter.CaptureChanges(
+                ChangeTracker.Entries().ToList(),
+                user,
+                correlation?.CorrelationId);
         }
     }
 
