@@ -35,6 +35,7 @@
   <!-- ── Platform ────────────────────────────────────────────────── -->
   <Folder Name="/src/platform/">
     <Project Path="src/platform/Modulus.Platform/Modulus.Platform.csproj" />
+    <Project Path="src/platform/Modulus.BackgroundJobs.Quartz/Modulus.BackgroundJobs.Quartz.csproj" />
     <Project Path="src/platform/Modulus.Storage.S3/Modulus.Storage.S3.csproj" />
     <Project Path="src/platform/Modulus.Storage.AzureBlobs/Modulus.Storage.AzureBlobs.csproj" />
     <Project Path="src/platform/Modulus.Caching.Redis/Modulus.Caching.Redis.csproj" />
