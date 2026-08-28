@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Modulus.Authorization.Audit;
 using Modulus.Authorization.EntityFrameworkCore;
 using Modulus.Authorization.Extensions;
+using Modulus.Authorization.Governance;
 using Modulus.Authorization.Grants;
 using Modulus.Authorization.Organization;
 using Modulus.Core.Abstractions;
@@ -89,7 +90,8 @@ public static class AuthorizationManagementExtensions
         group.MapPost("/grants", async (
             GrantWriteRequest request,
             EfPermissionGrantStore store, IAuthorizationAuditWriter auditWriter,
-            ICurrentUser currentUser, CancellationToken ct) =>
+            ICurrentUser currentUser, ISodPolicy sodPolicy,
+            IEffectiveAccessService? effectiveAccessService, CancellationToken ct) =>
         {
             if (!Enum.TryParse<GrantHolderType>(request.HolderType, ignoreCase: true, out var holderType))
                 return InvalidEnum("holderType", request.HolderType, typeof(GrantHolderType));
@@ -102,7 +104,34 @@ public static class AuthorizationManagementExtensions
                     ["permissions"] = ["At least one permission is required."],
                 });
 
+            // For Allow grants, check for SoD violations before applying
             var allow = grantType is PermissionGrantType.Allow;
+            if (allow && effectiveAccessService is not null && holderType is GrantHolderType.User)
+            {
+                var userId = ParseUser(request.Holder);
+                var currentReport = effectiveAccessService.Report(new PrincipalGrantQuery(userId, []));
+
+                // Simulate adding the new permissions and check for violations
+                var proposedPermissions = new HashSet<string>(currentReport.AllPermissions, StringComparer.OrdinalIgnoreCase);
+                foreach (var perm in request.Permissions)
+                    proposedPermissions.Add(perm);
+
+                var violations = sodPolicy.Evaluate(proposedPermissions);
+                if (violations.Count > 0)
+                {
+                    var violationDetails = violations
+                        .Select(v => new { constraint = v.Constraint.Name, held = v.HeldPermissions })
+                        .ToList();
+
+                    return Results.Conflict(new
+                    {
+                        error = "SoD violation",
+                        message = "Granting these permissions would create segregation-of-duties violations.",
+                        violations = violationDetails,
+                    });
+                }
+            }
+
             if (holderType is GrantHolderType.Role)
                 await (allow
                     ? store.GrantToRoleAsync(request.Holder, request.Permissions, ct)
