@@ -18,16 +18,24 @@ public sealed class EntityChangeHistoryIntegrationTests : EFCoreIntegrationTestB
     public EntityChangeHistoryIntegrationTests(PostgreSqlFixture fixture) : base(fixture) { }
 
     [Fact]
-    public async Task SaveChangesAsync_CapturesChanges_ForAuditedEntities()
+    public async Task AuditableEntity_CapturesCreatedByAndCreatedAt()
     {
-        // Integration test: verify entity change history captures all field-level changes
-        // When [Audited] marks a property, changes should be recorded:
-        // 1. On INSERT: capture all [Audited] fields
-        // 2. On UPDATE: capture before/after values
-        // 3. On DELETE: mark operation as "Delete"
-        // 4. Include ChangedBy (from ICurrentUser) and ChangedAt timestamp
-        // 5. Capture CorrelationId if present for audit trail linkage
+        using var ctx = BuildContext();
 
+        var id = Guid.NewGuid();
+        var product = new TestProduct(id) { Name = "Test Product", Price = 100m };
+        ctx.Products.Add(product);
+        await ctx.SaveChangesAsync();
+
+        // Verify audit fields were populated
+        Assert.NotNull(product.CreatedBy);
+        Assert.NotEqual(default(DateTime), product.CreatedAt);
+        Assert.Equal("testuser", product.CreatedBy);
+    }
+
+    [Fact]
+    public async Task AuditableEntity_CapturesUpdatedByAndUpdatedAt_OnModification()
+    {
         using var ctx = BuildContext();
 
         var id = Guid.NewGuid();
@@ -35,15 +43,19 @@ public sealed class EntityChangeHistoryIntegrationTests : EFCoreIntegrationTestB
         ctx.Products.Add(product);
         await ctx.SaveChangesAsync();
 
-        ctx.ChangeTracker.Clear();
+        var createdAt = product.CreatedAt;
+
+        // Wait a tiny bit to ensure timestamps differ
+        await Task.Delay(10);
 
         product.Name = "Modified";
         ctx.Update(product);
         await ctx.SaveChangesAsync();
 
-        // In a real test with change history enabled, we'd query ctx.EntityChanges
-        // and verify it captured the Name change. For now, just verify SaveChanges worked.
-        Assert.NotEqual(default(Guid), product.Id);
+        // Verify update audit fields
+        Assert.NotNull(product.UpdatedBy);
+        Assert.NotEqual(default(DateTime), product.UpdatedAt);
+        Assert.True(product.UpdatedAt > createdAt, "UpdatedAt should be after CreatedAt");
     }
 
     [Fact]
