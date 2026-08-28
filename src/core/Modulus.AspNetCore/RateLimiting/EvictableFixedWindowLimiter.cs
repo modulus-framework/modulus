@@ -3,6 +3,7 @@ namespace Modulus.AspNetCore.RateLimiting;
 using System.Collections.Concurrent;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Http;
+using Modulus.Observability;
 
 /// <summary>
 /// A fixed-window <see cref="PartitionedRateLimiter{TResource}"/> that OWNS its
@@ -48,6 +49,7 @@ internal sealed class EvictableFixedWindowLimiter(
                 _partitions.TryRemove(pair.Key, out _))
             {
                 removed++;
+                ModulusMeters.RateLimitPartitions.Add(-1);
             }
         }
         return removed;
@@ -57,22 +59,38 @@ internal sealed class EvictableFixedWindowLimiter(
     protected override async ValueTask<RateLimitLease> AcquireAsyncCore(
         HttpContext resource, int permitCount, CancellationToken cancellationToken)
     {
+        var key = partitionKey(resource);
+        var isNew = !_partitions.ContainsKey(key);
         var limiter = _partitions.GetOrAdd(
-            partitionKey(resource),
+            key,
             _ => new FixedWindowRateLimiter(optionsFactory()));
 
-        return await limiter.AcquireAsync(permitCount, cancellationToken);
+        if (isNew)
+            ModulusMeters.RateLimitPartitions.Add(1);
+
+        var lease = await limiter.AcquireAsync(permitCount, cancellationToken);
+        if (!lease.IsAcquired)
+            ModulusMeters.RateLimitRejected.Add(1);
+        return lease;
     }
 
     /// <inheritdoc />
     protected override RateLimitLease AttemptAcquireCore(
         HttpContext resource, int permitCount)
     {
+        var key = partitionKey(resource);
+        var isNew = !_partitions.ContainsKey(key);
         var limiter = _partitions.GetOrAdd(
-            partitionKey(resource),
+            key,
             _ => new FixedWindowRateLimiter(optionsFactory()));
 
-        return limiter.AttemptAcquire(permitCount);
+        if (isNew)
+            ModulusMeters.RateLimitPartitions.Add(1);
+
+        var lease = limiter.AttemptAcquire(permitCount);
+        if (!lease.IsAcquired)
+            ModulusMeters.RateLimitRejected.Add(1);
+        return lease;
     }
 
     /// <inheritdoc />

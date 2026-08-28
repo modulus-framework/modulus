@@ -6,6 +6,7 @@ namespace Modulus.Inbox;
 using System.Text.Json;
 using Modulus.Events.Abstractions;
 using Modulus.Inbox.Abstractions;
+using Modulus.Observability;
 
 /// <summary>
 /// Decorator that wraps <see cref="IIntegrationEventHandler{TEvent}"/> with
@@ -65,6 +66,7 @@ public sealed class IdempotentIntegrationEventHandler<TEvent>(
 
         if (claimed is null)
         {
+            ModulusMeters.InboxDedupHits.Add(1);
             logger.LogDebug("Inbox: {Type} {Id} skipped (duplicate or dead-lettered).",
                 typeof(TEvent).Name, id);
             return;

@@ -6,6 +6,7 @@ namespace Modulus.Outbox;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Modulus.Core.Abstractions;
+using Modulus.Observability;
 using Modulus.Outbox.Abstractions;
 
 public sealed class OutboxProcessor(
@@ -54,6 +55,12 @@ public sealed class OutboxProcessor(
     {
         var dispatcher = ssp.GetRequiredService<IOutboxDispatcher>();
         var now = DateTime.UtcNow;
+
+        // Record current depth of pending messages
+        var pendingCount = await db.Set<OutboxMessage>()
+            .Where(m => m.ProcessedAt == null && m.RetryCount < options.MaxRetries)
+            .CountAsync(ct);
+        ModulusMeters.OutboxDepth.Add(pendingCount);
 
         // Housekeeping FIRST: a quiet system (everything already dispatched)
         // exits this method at the empty-candidates short-circuit below, so a
@@ -141,6 +148,7 @@ public sealed class OutboxProcessor(
                 message.ProcessedAt = DateTime.UtcNow;
                 message.LockedBy = null;
                 message.LockedUntil = null;
+                ModulusMeters.OutboxDispatched.Add(1);
                 logger.LogDebug("Outbox dispatched {Id} ({Type})",
                     message.Id, message.MessageType);
             }
@@ -158,9 +166,12 @@ public sealed class OutboxProcessor(
                               * Math.Pow(2, message.RetryCount), 3600));
 
                 if (message.RetryCount >= options.MaxRetries)
+                {
+                    ModulusMeters.OutboxDeadLettered.Add(1);
                     logger.LogError(ex,
                         "Outbox message {Id} ({Type}) dead-lettered after {N} attempts.",
                         message.Id, message.MessageType, message.RetryCount);
+                }
                 else
                     logger.LogWarning(ex,
                         "Outbox dispatch failed for {Id} (attempt {N}); next attempt at {Next}.",

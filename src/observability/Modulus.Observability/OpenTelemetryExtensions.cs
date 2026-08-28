@@ -1,8 +1,10 @@
 namespace Modulus.OpenTelemetry.Extensions;
 
+using global::OpenTelemetry.Metrics;
 using global::OpenTelemetry.Trace;
 using Microsoft.Extensions.DependencyInjection;
 using Modulus.Mediator.Abstractions;
+using Modulus.Observability;
 
 public static class OpenTelemetryExtensions
 {
@@ -15,6 +17,17 @@ public static class OpenTelemetryExtensions
     public static TracerProviderBuilder UseModulusTracing(
         this TracerProviderBuilder builder)
         => builder.AddSource(ModulusActivitySources.All);
+
+    /// <summary>
+    /// Adds the Modulus metric instruments to an existing
+    /// <see cref="MeterProviderBuilder"/> so metrics from the outbox, inbox,
+    /// background jobs, rate limiting, and multi-tenancy are captured by the
+    /// host's OTel provider.
+    /// Call this inside <c>services.AddOpenTelemetry().WithMetrics(b => b.UseModulusMetrics())</c>.
+    /// </summary>
+    public static MeterProviderBuilder UseModulusMetrics(
+        this MeterProviderBuilder builder)
+        => builder.AddMeter(ModulusMeters.AllMeters);
 
     /// <summary>
     /// Registers <see cref="TracingBehavior{TRequest,TResponse}"/> as an
