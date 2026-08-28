@@ -12,7 +12,14 @@ public interface IExternalIdentityProvider
     /// <summary>Human-readable display name.</summary>
     string DisplayName { get; }
 
-    /// <summary>Retrieve user info by the provider-specific subject id.</summary>
+    /// <summary>
+    /// Retrieve user info by the provider-specific subject id.
+    /// <b>Not recommended for production multi-tenant deployments.</b>
+    /// This method requires storing a long-lived admin credential in config for
+    /// each IdP, posing a security risk. For production, prefer deriving user info
+    /// from the standard OIDC claims already present in the token (email, name, etc.)
+    /// via <c>User.FindFirst("claim_name")</c> after token validation.
+    /// </summary>
     Task<ExternalUserInfo?> GetUserBySubjectAsync(
         string subject,
         CancellationToken ct = default);

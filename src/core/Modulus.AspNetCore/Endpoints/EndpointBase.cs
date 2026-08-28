@@ -31,9 +31,8 @@ public abstract class EndpointBase : IModulusEndpoint
     /// Wires the per-request context and the <see cref="EndpointConfig"/>
     /// computed once at startup (by the throwaway discovery-time instance's
     /// <see cref="Configure"/> call) onto this request's own endpoint
-    /// instance — without this, config read at runtime (e.g. <c>WrapResponse</c>
-    /// in <c>SendOkAsync</c>) would silently see this instance's untouched
-    /// defaults instead of what <see cref="Configure"/> set.
+    /// instance — without this, config read at runtime would silently see this
+    /// instance's untouched defaults instead of what <see cref="Configure"/> set.
     /// </summary>
     internal void Initialize(HttpContext ctx, EndpointConfig config)
     {
@@ -62,6 +61,7 @@ public abstract class EndpointBase : IModulusEndpoint
     protected void Tag(string tag) => Config.Tag = tag;
     protected void Summary(string summary) => Config.Summary = summary;
     protected void Deprecated() => Config.Deprecated = true;
+    protected void WrapResponse() => Config.WrapResponse = true;
     protected void DontWrapResponse() => Config.WrapResponse = false;
 
     // ── Common response helpers (no payload) ───────────────────────

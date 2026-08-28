@@ -10,9 +10,7 @@ public static class CachingExtensions
     /// default). For a distributed cache, add the <c>Modulus.Caching.Redis</c>
     /// package and call <c>AddRedisCacheService</c>, which replaces this.
     /// </summary>
-    public static IServiceCollection AddModulusCaching(
-        this IServiceCollection services,
-        IConfiguration configuration)
+    public static IServiceCollection AddModulusCaching(this IServiceCollection services)
         => services.AddMemoryCacheService();
 
     public static IServiceCollection AddMemoryCacheService(this IServiceCollection services)

@@ -43,7 +43,7 @@ internal sealed class EndpointConfig
     public string? Tag { get; set; }
     public string? Summary { get; set; }
     public bool Deprecated { get; set; }
-    public bool WrapResponse { get; set; } = true;
+    public bool WrapResponse { get; set; }
 
     public Type RequestType { get; set; } = null!;
     public Type? ResponseType { get; set; }

@@ -32,13 +32,14 @@ public static class RedisCachingExtensions
     /// <summary>
     /// Connects to Redis at <paramref name="connectionString"/> and registers
     /// <see cref="RedisCacheService"/> as the <see cref="ICacheService"/>.
+    /// Connection is lazy — it's established only when first accessed.
     /// </summary>
     public static IServiceCollection AddRedisCacheService(
         this IServiceCollection services,
         string connectionString)
     {
-        var multiplexer = ConnectionMultiplexer.Connect(connectionString);
-        services.TryAddSingleton<IConnectionMultiplexer>(multiplexer);
+        services.TryAddSingleton<IConnectionMultiplexer>(sp =>
+            ConnectionMultiplexer.Connect(connectionString));
         services.RemoveAll<ICacheService>();
         services.AddSingleton<ICacheService, RedisCacheService>();
         return services;
@@ -74,13 +75,14 @@ public static class RedisCachingExtensions
 
     /// <summary>
     /// Registers a Redis-backed <see cref="IDistributedLock"/> at the given connection string.
+    /// Connection is lazy — it's established only when first accessed.
     /// </summary>
     public static IServiceCollection AddRedisDistributedLock(
         this IServiceCollection services,
         string connectionString)
     {
-        var multiplexer = ConnectionMultiplexer.Connect(connectionString);
-        services.TryAddSingleton(multiplexer);
+        services.TryAddSingleton<IConnectionMultiplexer>(sp =>
+            ConnectionMultiplexer.Connect(connectionString));
         services.AddSingleton<IDistributedLock, RedisDistributedLock>();
         return services;
     }

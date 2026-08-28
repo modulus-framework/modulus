@@ -37,6 +37,7 @@ public static class RedisIdempotencyExtensions
     /// Connects to Redis at <paramref name="connectionString"/> (registering the
     /// <see cref="IConnectionMultiplexer"/> if none exists yet) and replaces the
     /// in-process idempotency store with <see cref="RedisIdempotencyStore"/>.
+    /// Connection is lazy — it's established only when first accessed.
     /// </summary>
     public static IServiceCollection AddRedisIdempotencyStore(
         this IServiceCollection services,
@@ -44,7 +45,7 @@ public static class RedisIdempotencyExtensions
         Action<RedisIdempotencyStoreOptions>? configure = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(connectionString);
-        services.TryAddSingleton<IConnectionMultiplexer>(
+        services.TryAddSingleton<IConnectionMultiplexer>(sp =>
             ConnectionMultiplexer.Connect(connectionString));
         return services.AddRedisIdempotencyStore(configure);
     }
