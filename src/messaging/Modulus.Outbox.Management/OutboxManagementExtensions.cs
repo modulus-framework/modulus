@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Options;
 using Modulus.Authorization.Extensions;
 using Modulus.Core.Abstractions;
 using Modulus.Core.Null;
@@ -76,6 +77,7 @@ public static class OutboxManagementExtensions
             string? moduleFilter,
             string? tenantFilter,
             CancellationToken ct,
+            IOptions<OutboxOptions> options,
             params DbContext[] contexts) =>
         {
             var p = page ?? 1;
@@ -83,13 +85,14 @@ public static class OutboxManagementExtensions
             if (p < 1) p = 1;
             if (ps < 1 || ps > 1000) ps = 20;
 
+            var maxRetries = options.Value.MaxRetries;
             var allMessages = new List<OutboxMessage>();
             foreach (var db in contexts)
             {
                 try
                 {
                     var contextMessages = await db.Set<OutboxMessage>()
-                        .Where(m => m.ProcessedAt == null && m.RetryCount >= 3) // Assuming MaxRetries=3 default
+                        .Where(m => m.ProcessedAt == null && m.RetryCount >= maxRetries)
                         .AsNoTracking()
                         .ToListAsync(ct);
                     allMessages.AddRange(contextMessages);
@@ -129,8 +132,10 @@ public static class OutboxManagementExtensions
         group.MapGet("/dead-letters/{id:guid}", async (
             Guid id,
             CancellationToken ct,
+            IOptions<OutboxOptions> options,
             params DbContext[] contexts) =>
         {
+            var maxRetries = options.Value.MaxRetries;
             foreach (var db in contexts)
             {
                 try
@@ -139,7 +144,7 @@ public static class OutboxManagementExtensions
                         .AsNoTracking()
                         .FirstOrDefaultAsync(m => m.Id == id, ct);
 
-                    if (message is not null && message.ProcessedAt == null && message.RetryCount >= 3)
+                    if (message is not null && message.ProcessedAt == null && message.RetryCount >= maxRetries)
                         return Results.Ok(new OutboxDeadLetterDetail(
                             message.Id, message.MessageType, message.Payload,
                             message.ModuleName, message.TenantId,
@@ -228,12 +233,14 @@ public static class OutboxManagementExtensions
             int? beforeDays,
             ICurrentUser currentUser,
             CancellationToken ct,
+            IOptions<OutboxOptions> options,
             params DbContext[] contexts) =>
         {
             var days = beforeDays ?? 30;
             if (days < 0) days = 0;
 
             var cutoff = DateTime.UtcNow.AddDays(-days);
+            var maxRetries = options.Value.MaxRetries;
             int purgedCount = 0;
 
             foreach (var db in contexts)
@@ -242,7 +249,7 @@ public static class OutboxManagementExtensions
                 {
                     purgedCount += await db.Set<OutboxMessage>()
                         .Where(m => m.ProcessedAt == null
-                                 && m.RetryCount >= 3
+                                 && m.RetryCount >= maxRetries
                                  && m.CreatedAt < cutoff)
                         .ExecuteDeleteAsync(ct);
                 }

@@ -70,17 +70,64 @@ public sealed class QuartzJobScheduler(ISchedulerFactory schedulerFactory) : IJo
         TArgs args)
         where TJob : IBackgroundJob<TArgs>
     {
-        throw new NotImplementedException(
-            "Recurring jobs must be configured directly via Quartz.NET APIs. " +
-            "Call AddQuartzJobScheduler() with a configurator that sets up " +
-            "recurring job triggers before the app starts.");
+        _ = Task.Run(() => AddRecurringAsync<TJob, TArgs>(jobId, cronExpression, args));
+    }
+
+    private async Task AddRecurringAsync<TJob, TArgs>(
+        string jobId,
+        string cronExpression,
+        TArgs args)
+        where TJob : IBackgroundJob<TArgs>
+    {
+        try
+        {
+            var scheduler = await GetSchedulerAsync();
+            var jobDataMap = new JobDataMap { ["args"] = args! };
+
+            var jobDetail = JobBuilder.Create<QuartzJobAdapter<TJob, TArgs>>()
+                .WithIdentity(jobId, "recurring")
+                .SetJobData(jobDataMap)
+                .StoreDurably()
+                .Build();
+
+            var trigger = TriggerBuilder.Create()
+                .WithIdentity($"{jobId}_trigger", "recurring")
+                .WithCronSchedule(cronExpression)
+                .StartNow()
+                .Build();
+
+            var jobKey = jobDetail.Key;
+            if (await scheduler.CheckExists(jobKey))
+                await scheduler.RescheduleJob(trigger.Key, trigger);
+            else
+                await scheduler.ScheduleJob(jobDetail, trigger);
+        }
+        catch (Exception ex)
+        {
+            // Log but don't throw — AddRecurring is fire-and-forget, so schedule errors
+            // won't propagate to the caller. This is consistent with the ChannelJobQueue.
+            System.Diagnostics.Debug.WriteLine($"Failed to schedule recurring job: {ex}");
+        }
     }
 
     public void RemoveRecurring(string jobId)
     {
-        throw new NotImplementedException(
-            "RemoveRecurring is not yet implemented in the Quartz adapter. " +
-            "Manage recurring jobs directly via Quartz.NET.");
+        _ = Task.Run(() => RemoveRecurringAsync(jobId));
+    }
+
+    private async Task RemoveRecurringAsync(string jobId)
+    {
+        try
+        {
+            var scheduler = await GetSchedulerAsync();
+            var jobKey = new JobKey(jobId, "recurring");
+            if (await scheduler.CheckExists(jobKey))
+                await scheduler.DeleteJob(jobKey);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Failed to remove recurring job: {ex}");
+        }
     }
 
     private static string GetJobName<TJob>() => typeof(TJob).Name;
