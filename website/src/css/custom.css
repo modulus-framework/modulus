@@ -1,0 +1,34 @@
+/**
+ * Modulus Framework - Custom CSS
+ */
+
+:root {
+  --ifm-color-primary: #1a73e8;
+  --ifm-color-primary-dark: #1565c0;
+  --ifm-color-primary-darker: #1257b0;
+  --ifm-color-primary-darkest: #0d4090;
+  --ifm-color-primary-light: #2e8bf0;
+  --ifm-color-primary-lighter: #3d95f2;
+  --ifm-color-primary-lightest: #6bb3f7;
+  --ifm-code-font-size: 95%;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme='dark'] {
+  --ifm-color-primary: #4da3ff;
+  --ifm-color-primary-dark: #2e8bf0;
+  --ifm-color-primary-darker: #1a73e8;
+  --ifm-color-primary-darkest: #0d5ab8;
+  --ifm-color-primary-light: #6bb3f7;
+  --ifm-color-primary-lighter: #85c4fa;
+  --ifm-color-primary-lightest: #b5dcfc;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+}
+
+.navbar {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.footer--dark {
+  background-color: #1a1a2e;
+}
