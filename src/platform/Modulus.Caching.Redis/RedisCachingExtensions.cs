@@ -46,15 +46,15 @@ public static class RedisCachingExtensions
     }
 
     /// <summary>
-    /// Registers a Redis-backed <see cref="IDistributedLock"/> using the same
-    /// connection as the cache service. Requires <see cref="IConnectionMultiplexer"/>
-    /// to be registered (either by AddRedisCacheService or separately).
+    /// Registers a Redis-backed <see cref="IDistributedLock"/>. Requires an
+    /// <see cref="IConnectionMultiplexer"/> to be registered (either by
+    /// <c>AddRedisCacheService</c> or <c>AddRedisDistributedLock(string)</c> or separately).
+    /// Use this overload only if the multiplexer is already available (e.g. shared
+    /// with the cache service).
     /// </summary>
     public static IServiceCollection AddRedisDistributedLock(
         this IServiceCollection services)
     {
-        services.TryAddSingleton<IConnectionMultiplexer>(sp =>
-            ConnectionMultiplexer.Connect("localhost"));
         services.AddSingleton<IDistributedLock, RedisDistributedLock>();
         return services;
     }
