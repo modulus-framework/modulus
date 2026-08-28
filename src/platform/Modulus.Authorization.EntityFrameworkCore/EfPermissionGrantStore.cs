@@ -60,6 +60,22 @@ public sealed class EfPermissionGrantStore(
             .ToList();
     }
 
+    /// <summary>All distinct user IDs with at least one grant (direct or role-based).</summary>
+    public async Task<IReadOnlyCollection<Guid>> GetAllUsersWithGrantsAsync(CancellationToken ct = default)
+    {
+        await using var db = await factory.CreateDbContextAsync(ct);
+        var userIds = await db.Grants.AsNoTracking()
+            .Where(g => g.HolderType == GrantHolderType.User)
+            .Select(g => g.Holder)
+            .Distinct()
+            .ToListAsync(ct);
+
+        return userIds
+            .Where(id => Guid.TryParse(id, out _))
+            .Select(Guid.Parse)
+            .ToList();
+    }
+
     /// <summary>Grants one or more permissions to a role.</summary>
     public Task GrantToRoleAsync(string role, IEnumerable<string> permissions, CancellationToken ct = default)
         => SetAsync(GrantHolderType.Role, role, PermissionGrantType.Allow, permissions, ct);

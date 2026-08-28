@@ -68,6 +68,7 @@ public static class AuthorizationManagementExtensions
         MapOrganization(group);
         MapEntitlements(group);
         MapDelegations(group);
+        MapGovernance(group);
         return group;
     }
 
@@ -390,6 +391,83 @@ public static class AuthorizationManagementExtensions
             new AuthorizationAdministrativeChangeEvent(
                 category, action, currentUser.UserId?.ToString(), targetDescription, details),
             ct);
+
+    // ── Governance ───────────────────────────────────────────────
+
+    private static void MapGovernance(RouteGroupBuilder group)
+    {
+        // GET /authorization/effective-access/{userId} — what can this user do?
+        group.MapGet("/effective-access/{userId:guid}", (
+            Guid userId,
+            IEffectiveAccessService? effectiveAccessService) =>
+        {
+            if (effectiveAccessService is null)
+                return Results.NotFound("Effective access service not registered.");
+
+            var report = effectiveAccessService.Report(new PrincipalGrantQuery(userId, []));
+            return Results.Ok(new
+            {
+                userId = report.UserId,
+                directPermissions = report.DirectPermissions,
+                delegatedPermissions = report.DelegatedPermissions.Select(d => new
+                {
+                    permission = d.Permission,
+                    onBehalfOf = d.OnBehalfOf,
+                    delegationId = d.DelegationId,
+                }),
+                allPermissions = report.AllPermissions,
+                sodViolations = report.SodViolations.Select(v => new
+                {
+                    constraint = v.Constraint.Name,
+                    rationale = v.Constraint.Rationale,
+                    heldPermissions = v.HeldPermissions,
+                }),
+            });
+        })
+        .WithSummary("Get effective access for a user")
+        .WithName("GetEffectiveAccess");
+
+        // POST /authorization/sod-violations/scan — who's violating SoD?
+        group.MapPost("/sod-violations/scan", async (
+            EfPermissionGrantStore store,
+            IEffectiveAccessService? effectiveAccessService,
+            ISodPolicy sodPolicy,
+            CancellationToken ct) =>
+        {
+            if (effectiveAccessService is null)
+                return Results.NotFound("Effective access service not registered.");
+
+            // Scan all users in the grant store
+            var allUsers = await store.GetAllUsersWithGrantsAsync(ct);
+            var violations = new List<object>();
+
+            foreach (var userId in allUsers)
+            {
+                var report = effectiveAccessService.Report(new PrincipalGrantQuery(userId, []));
+                if (report.SodViolations.Count > 0)
+                {
+                    violations.Add(new
+                    {
+                        userId,
+                        violations = report.SodViolations.Select(v => new
+                        {
+                            constraint = v.Constraint.Name,
+                            rationale = v.Constraint.Rationale,
+                            heldPermissions = v.HeldPermissions,
+                        }),
+                    });
+                }
+            }
+
+            return Results.Ok(new
+            {
+                totalViolations = violations.Count,
+                violations,
+            });
+        })
+        .WithSummary("Scan for SoD violations across all users")
+        .WithName("ScanSodViolations");
+    }
 
     private static Guid ParseUser(string holder)
         => Guid.TryParse(holder, out var id)
