@@ -19,6 +19,7 @@
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
     <PackageReference Include="Asp.Versioning.Mvc" />
     <PackageReference Include="Asp.Versioning.Mvc.ApiExplorer" />
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" />
     <PackageReference Include="Microsoft.FeatureManagement.AspNetCore" />
     <!-- Built-in OpenApi with IOpenApiDocumentTransformer -->
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
