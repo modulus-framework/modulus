@@ -53,8 +53,12 @@ internal sealed class RabbitMqEventBus : IModuleBus, IAsyncDisposable
         // silently and the event is lost with no trace.
         channel.BasicReturnAsync += OnBasicReturnAsync;
 
-        // Stable transport name (attribute or assembly-independent FullName).
-        var routingKey = IntegrationEventNaming.GetName(typeof(TEvent));
+        // Stable transport name uses the runtime event type, not the generic parameter.
+        // When an event is published through a base-type variable (IIntegrationEvent),
+        // typeof(TEvent) would be the base type and serialize only base properties,
+        // losing the concrete event's fields. GetType() captures the actual type.
+        var eventType = @event.GetType();
+        var routingKey = IntegrationEventNaming.GetName(eventType);
         var (tenantId, correlationId) = ReadAmbientContext();
         var activity = Activity.Current;
 
@@ -64,7 +68,7 @@ internal sealed class RabbitMqEventBus : IModuleBus, IAsyncDisposable
             OccurredAt = @event.OccurredAt,
             TypeName = routingKey,
             RoutingKey = routingKey,
-            Payload = _serializer.Serialize(@event, typeof(TEvent)),
+            Payload = _serializer.Serialize(@event, eventType),
             TenantId = tenantId,
             CorrelationId = correlationId,
             TraceParent = activity?.Id,

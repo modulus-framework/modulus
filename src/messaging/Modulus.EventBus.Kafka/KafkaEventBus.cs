@@ -42,7 +42,11 @@ internal sealed class KafkaEventBus : IModuleBus, IDisposable
         CancellationToken ct = default)
         where TEvent : IIntegrationEvent
     {
-        var routingKey = IntegrationEventNaming.GetName(typeof(TEvent));
+        // Use runtime event type, not the generic parameter, for the same reason
+        // as RabbitMQ: when published through IIntegrationEvent, GetType() gives
+        // the concrete type while typeof(TEvent) would give the base type.
+        var eventType = @event.GetType();
+        var routingKey = IntegrationEventNaming.GetName(eventType);
         var topic = $"{_opts.TopicPrefix}.{routingKey}";
         var (tenantId, correlationId) = ReadAmbientContext();
         var activity = Activity.Current;
@@ -53,7 +57,7 @@ internal sealed class KafkaEventBus : IModuleBus, IDisposable
             OccurredAt = @event.OccurredAt,
             TypeName = routingKey,
             RoutingKey = routingKey,
-            Payload = _serializer.Serialize(@event, typeof(TEvent)),
+            Payload = _serializer.Serialize(@event, eventType),
             TenantId = tenantId,
             CorrelationId = correlationId,
             TraceParent = activity?.Id,
