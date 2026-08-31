@@ -18,4 +18,5 @@ public sealed class OutboxMessage
     public string? CausationId { get; init; }
     public string? TraceParent { get; init; }
     public string? TraceState { get; init; }
+    public int? SchemaVersion { get; init; }
 }

@@ -1,7 +1,6 @@
 namespace Modulus.Outbox.MongoDB;
 
 using System.Diagnostics;
-using System.Text.Json;
 using global::MongoDB.Driver;
 using Microsoft.Extensions.DependencyInjection;
 using Modulus.Core.Abstractions;
@@ -29,6 +28,7 @@ public sealed class MongoOutboxMessage
     public string? CausationId { get; init; }
     public string? TraceParent { get; init; }
     public string? TraceState { get; init; }
+    public int? SchemaVersion { get; init; }
 }
 
 /// <summary>
@@ -54,10 +54,11 @@ internal sealed class MongoOutboxWriter(
     {
         var type = @event.GetType();
         var activity = Activity.Current;
+        var serializer = sp.GetRequiredService<IMessageSerializer>();
         return new MongoOutboxMessage
         {
             MessageType = IntegrationEventNaming.GetName(type),
-            Payload = JsonSerializer.Serialize(@event, type),
+            Payload = serializer.Serialize(@event, type),
             TenantId = tenant.TenantId ?? Guid.Empty,
             ModuleName = type.Module.Name.Replace(".dll", ""),
             // Resolved lazily so registration doesn't depend on the correlation

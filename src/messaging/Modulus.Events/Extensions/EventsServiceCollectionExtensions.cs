@@ -16,6 +16,9 @@ public static class EventsServiceCollectionExtensions
         this IServiceCollection services,
         params Assembly[] assemblies)
     {
+        // Message serializer (singleton — shared across all message I/O paths).
+        services.TryAddSingleton<IMessageSerializer, SystemTextJsonMessageSerializer>();
+
         services.TryAddScoped<DomainEventDispatcher>();
         services.TryAddScoped<IntegrationEventDispatcher>();
 

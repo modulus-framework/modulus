@@ -53,4 +53,11 @@ public sealed class IntegrationEventEnvelope
     /// trace state (e.g. CloudTrace, X-Ray, honeycomb) across the broker boundary.
     /// </summary>
     public string? TraceState { get; init; }
+
+    /// <summary>
+    /// Event schema version. Enables consumers to apply upcasters when the schema
+    /// of <see cref="Payload"/> differs from the deserialized CLR type's expectations.
+    /// Null when not set (legacy events, assume version 1).
+    /// </summary>
+    public int? SchemaVersion { get; init; }
 }

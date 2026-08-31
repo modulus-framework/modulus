@@ -23,17 +23,20 @@ internal sealed class RabbitMqEventBus : IModuleBus, IAsyncDisposable
     private readonly RabbitMqOptions _opts;
     private readonly ILogger<RabbitMqEventBus> _logger;
     private readonly IServiceScopeFactory _scopeFactory;
+    private readonly IMessageSerializer _serializer;
     private readonly SemaphoreSlim _connectionGate = new(1, 1);
     private IConnection? _connection;
 
     public RabbitMqEventBus(
         IOptions<RabbitMqOptions> options,
         ILogger<RabbitMqEventBus> logger,
-        IServiceScopeFactory scopeFactory)
+        IServiceScopeFactory scopeFactory,
+        IMessageSerializer serializer)
     {
         _opts = options.Value;
         _logger = logger;
         _scopeFactory = scopeFactory;
+        _serializer = serializer;
     }
 
     public async Task PublishAsync<TEvent>(
@@ -60,7 +63,7 @@ internal sealed class RabbitMqEventBus : IModuleBus, IAsyncDisposable
             OccurredAt = @event.OccurredAt,
             TypeName = routingKey,
             RoutingKey = routingKey,
-            Payload = JsonSerializer.Serialize(@event, typeof(TEvent)),
+            Payload = _serializer.Serialize(@event, typeof(TEvent)),
             TenantId = tenantId,
             CorrelationId = correlationId,
             TraceParent = activity?.Id,
@@ -68,7 +71,7 @@ internal sealed class RabbitMqEventBus : IModuleBus, IAsyncDisposable
         };
 
         var body = Encoding.UTF8.GetBytes(
-            JsonSerializer.Serialize(envelope));
+            _serializer.Serialize(envelope, typeof(IntegrationEventEnvelope)));
 
         await channel.BasicPublishAsync(
             exchange: _opts.ExchangeName,

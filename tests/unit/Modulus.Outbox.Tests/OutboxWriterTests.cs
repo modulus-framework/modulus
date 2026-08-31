@@ -173,6 +173,7 @@ public sealed class OutboxWriterTests
             tenant.TenantId.Returns((Guid?)null);
             services.AddSingleton(tenant);
             services.AddSingleton<ICorrelationContext, CorrelationContext>();
+            services.AddSingleton<IMessageSerializer, SystemTextJsonMessageSerializer>();
             services.AddScoped<IOutboxWriter, EfOutboxWriter>();
 
             var root = services.BuildServiceProvider();
@@ -228,6 +229,7 @@ public sealed class OutboxWriterTests
             services.AddSingleton<ICurrentTenant>(Substitute.For<ICurrentTenant>());
             services.AddSingleton<ICurrentUser>(Substitute.For<ICurrentUser>());
             services.AddSingleton<ICorrelationContext, CorrelationContext>();
+            services.AddSingleton<IMessageSerializer, SystemTextJsonMessageSerializer>();
             services.AddScoped<DomainEventDispatcher>();
 
             if (registerOutbox)

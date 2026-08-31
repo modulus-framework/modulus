@@ -19,16 +19,19 @@ internal sealed class KafkaEventBus : IModuleBus, IDisposable
     private readonly KafkaOptions _opts;
     private readonly ILogger<KafkaEventBus> _logger;
     private readonly IServiceScopeFactory _scopeFactory;
+    private readonly IMessageSerializer _serializer;
     private readonly IProducer<string, string> _producer;
 
     public KafkaEventBus(
         IOptions<KafkaOptions> options,
         ILogger<KafkaEventBus> logger,
-        IServiceScopeFactory scopeFactory)
+        IServiceScopeFactory scopeFactory,
+        IMessageSerializer serializer)
     {
         _opts = options.Value;
         _logger = logger;
         _scopeFactory = scopeFactory;
+        _serializer = serializer;
 
         var config = BuildProducerConfig(_opts);
         _producer = new ProducerBuilder<string, string>(config).Build();
@@ -50,14 +53,14 @@ internal sealed class KafkaEventBus : IModuleBus, IDisposable
             OccurredAt = @event.OccurredAt,
             TypeName = routingKey,
             RoutingKey = routingKey,
-            Payload = JsonSerializer.Serialize(@event, typeof(TEvent)),
+            Payload = _serializer.Serialize(@event, typeof(TEvent)),
             TenantId = tenantId,
             CorrelationId = correlationId,
             TraceParent = activity?.Id,
             TraceState = activity?.TraceStateString,
         };
 
-        var value = JsonSerializer.Serialize(envelope);
+        var value = _serializer.Serialize(envelope, typeof(IntegrationEventEnvelope));
 
         var result = await _producer.ProduceAsync(topic,
             new Message<string, string>

@@ -1,7 +1,6 @@
 namespace Modulus.Outbox.Abstractions;
 
 using System.Diagnostics;
-using System.Text.Json;
 using Modulus.Events.Abstractions;
 
 /// <summary>
@@ -25,11 +24,13 @@ public static class OutboxRowFactory
     /// <param name="correlationId">
     /// Ambient business correlation id, when one is in scope.
     /// </param>
+    /// <param name="serializer">Message serializer (e.g., System.Text.Json).</param>
     public static OutboxMessage Create(
         IIntegrationEvent @event,
         Guid tenantId,
         string moduleName,
-        string? correlationId = null)
+        string? correlationId,
+        IMessageSerializer serializer)
     {
         var activity = Activity.Current;
         return new()
@@ -38,7 +39,7 @@ public static class OutboxRowFactory
             // FullName), NOT AssemblyQualifiedName — an assembly version bump
             // must not orphan unprocessed outbox rows.
             MessageType = IntegrationEventNaming.GetName(@event.GetType()),
-            Payload = JsonSerializer.Serialize(@event, @event.GetType()),
+            Payload = serializer.Serialize(@event, @event.GetType()),
             TenantId = tenantId,
             ModuleName = moduleName,
             CorrelationId = correlationId,

@@ -49,11 +49,13 @@ internal sealed class EfOutboxWriter(
         CancellationToken ct = default)
         where TEvent : IIntegrationEvent
     {
+        var serializer = sp.GetRequiredService<IMessageSerializer>();
         Db.Set<OutboxMessage>().Add(OutboxRowFactory.Create(
             @event,
             tenant.TenantId ?? Guid.Empty,
             Db.GetType().Name.Replace("DbContext", string.Empty),
-            sp.GetService<ICorrelationContext>()?.CorrelationId));
+            sp.GetService<ICorrelationContext>()?.CorrelationId,
+            serializer));
         return Task.CompletedTask;
     }
 }

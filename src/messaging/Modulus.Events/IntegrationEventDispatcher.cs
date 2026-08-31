@@ -1,7 +1,6 @@
 namespace Modulus.Events;
 
 using System.Diagnostics;
-using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Modulus.Events.Abstractions;
 
@@ -15,13 +14,16 @@ public sealed class IntegrationEventDispatcher
     private static readonly ActivitySource s_activitySource = new("Modulus.Events");
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly IIntegrationEventRegistry _registry;
+    private readonly IMessageSerializer _serializer;
 
     public IntegrationEventDispatcher(
         IServiceScopeFactory scopeFactory,
-        IIntegrationEventRegistry registry)
+        IIntegrationEventRegistry registry,
+        IMessageSerializer serializer)
     {
         _scopeFactory = scopeFactory;
         _registry = registry;
+        _serializer = serializer;
     }
 
     /// <summary>
@@ -35,7 +37,7 @@ public sealed class IntegrationEventDispatcher
         if (!_registry.TryGetType(envelope.RoutingKey, out var eventType))
             return false;
 
-        var @event = JsonSerializer.Deserialize(envelope.Payload, eventType);
+        var @event = _serializer.Deserialize(envelope.Payload, eventType);
         if (@event is null)
             return false;
 

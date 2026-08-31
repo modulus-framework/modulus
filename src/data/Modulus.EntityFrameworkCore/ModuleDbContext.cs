@@ -101,6 +101,7 @@ public abstract class ModuleDbContext(
         if (sp.GetService<IOutboxWriter>() is not null)
         {
             var correlationId = sp.GetService<ICorrelationContext>()?.CorrelationId;
+            var serializer = sp.GetRequiredService<IMessageSerializer>();
             foreach (var integrationEvent in domainEvents
                          .OfType<IIntegrationEvent>())
             {
@@ -108,7 +109,8 @@ public abstract class ModuleDbContext(
                     integrationEvent,
                     currentTenant.TenantId ?? Guid.Empty,
                     GetType().Name.Replace("DbContext", string.Empty),
-                    correlationId));
+                    correlationId,
+                    serializer));
             }
         }
 
