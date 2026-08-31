@@ -1,5 +1,6 @@
 namespace Modulus.EventBus.RabbitMQ;
 
+using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
@@ -51,6 +52,7 @@ internal sealed class RabbitMqEventBus : IModuleBus, IAsyncDisposable
         // Stable transport name (attribute or assembly-independent FullName).
         var routingKey = IntegrationEventNaming.GetName(typeof(TEvent));
         var (tenantId, correlationId) = ReadAmbientContext();
+        var activity = Activity.Current;
 
         var envelope = new IntegrationEventEnvelope
         {
@@ -61,6 +63,8 @@ internal sealed class RabbitMqEventBus : IModuleBus, IAsyncDisposable
             Payload = JsonSerializer.Serialize(@event, typeof(TEvent)),
             TenantId = tenantId,
             CorrelationId = correlationId,
+            TraceParent = activity?.Id,
+            TraceState = activity?.TraceStateString,
         };
 
         var body = Encoding.UTF8.GetBytes(

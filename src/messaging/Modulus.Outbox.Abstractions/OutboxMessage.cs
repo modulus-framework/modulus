@@ -16,4 +16,6 @@ public sealed class OutboxMessage
     public string? Error { get; set; }
     public string? CorrelationId { get; init; }
     public string? CausationId { get; init; }
+    public string? TraceParent { get; init; }
+    public string? TraceState { get; init; }
 }

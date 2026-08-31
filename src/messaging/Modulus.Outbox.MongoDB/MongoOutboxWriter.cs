@@ -1,5 +1,6 @@
 namespace Modulus.Outbox.MongoDB;
 
+using System.Diagnostics;
 using System.Text.Json;
 using global::MongoDB.Driver;
 using Microsoft.Extensions.DependencyInjection;
@@ -26,6 +27,8 @@ public sealed class MongoOutboxMessage
     public string? Error { get; set; }
     public string? CorrelationId { get; init; }
     public string? CausationId { get; init; }
+    public string? TraceParent { get; init; }
+    public string? TraceState { get; init; }
 }
 
 /// <summary>
@@ -50,6 +53,7 @@ internal sealed class MongoOutboxWriter(
     private MongoOutboxMessage BuildDoc(IIntegrationEvent @event)
     {
         var type = @event.GetType();
+        var activity = Activity.Current;
         return new MongoOutboxMessage
         {
             MessageType = IntegrationEventNaming.GetName(type),
@@ -60,6 +64,8 @@ internal sealed class MongoOutboxWriter(
             // context being wired (matches EfOutboxWriter).
             CorrelationId = sp.GetService<ICorrelationContext>()?.CorrelationId,
             CausationId = @event.EventId.ToString(),
+            TraceParent = activity?.Id,
+            TraceState = activity?.TraceStateString,
         };
     }
 }

@@ -1,5 +1,6 @@
 namespace Modulus.EventBus.Kafka;
 
+using System.Diagnostics;
 using System.Text.Json;
 using Confluent.Kafka;
 using Microsoft.Extensions.DependencyInjection;
@@ -41,6 +42,7 @@ internal sealed class KafkaEventBus : IModuleBus, IDisposable
         var routingKey = IntegrationEventNaming.GetName(typeof(TEvent));
         var topic = $"{_opts.TopicPrefix}.{routingKey}";
         var (tenantId, correlationId) = ReadAmbientContext();
+        var activity = Activity.Current;
 
         var envelope = new IntegrationEventEnvelope
         {
@@ -51,6 +53,8 @@ internal sealed class KafkaEventBus : IModuleBus, IDisposable
             Payload = JsonSerializer.Serialize(@event, typeof(TEvent)),
             TenantId = tenantId,
             CorrelationId = correlationId,
+            TraceParent = activity?.Id,
+            TraceState = activity?.TraceStateString,
         };
 
         var value = JsonSerializer.Serialize(envelope);

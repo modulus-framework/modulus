@@ -1,5 +1,6 @@
 namespace Modulus.Outbox.Abstractions;
 
+using System.Diagnostics;
 using System.Text.Json;
 using Modulus.Events.Abstractions;
 
@@ -29,7 +30,9 @@ public static class OutboxRowFactory
         Guid tenantId,
         string moduleName,
         string? correlationId = null)
-        => new()
+    {
+        var activity = Activity.Current;
+        return new()
         {
             // Stable transport name (attribute or assembly-independent
             // FullName), NOT AssemblyQualifiedName — an assembly version bump
@@ -40,5 +43,8 @@ public static class OutboxRowFactory
             ModuleName = moduleName,
             CorrelationId = correlationId,
             CausationId = @event.EventId.ToString(),
+            TraceParent = activity?.Id,
+            TraceState = activity?.TraceStateString,
         };
+    }
 }
