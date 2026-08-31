@@ -1,5 +1,6 @@
 namespace Modulus.Events;
 
+using System.Diagnostics;
 using Modulus.Events.Abstractions;
 
 /// <summary>
@@ -10,11 +11,26 @@ using Modulus.Events.Abstractions;
 internal sealed class InProcessModuleBus(IServiceProvider sp)
     : IModuleBus
 {
+    private static readonly ActivitySource s_activitySource = new("Modulus.Events");
+
     public async Task PublishAsync<TEvent>(
         TEvent @event,
         CancellationToken ct = default)
         where TEvent : IIntegrationEvent
     {
+        var eventName = typeof(TEvent).Name;
+        using var activity = s_activitySource.StartActivity(
+            "message publish",
+            ActivityKind.Producer);
+
+        if (activity is not null)
+        {
+            activity.SetTag("messaging.system", "modulus");
+            activity.SetTag("messaging.operation", "publish");
+            activity.SetTag("messaging.destination.name", eventName);
+            activity.SetTag("messaging.message.id", @event.EventId.ToString("N"));
+        }
+
         var handlers = sp
             .GetServices<IIntegrationEventHandler<TEvent>>();
 

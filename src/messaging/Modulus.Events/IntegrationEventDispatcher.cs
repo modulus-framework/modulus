@@ -1,5 +1,6 @@
 namespace Modulus.Events;
 
+using System.Diagnostics;
 using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Modulus.Events.Abstractions;
@@ -11,6 +12,7 @@ using Modulus.Events.Abstractions;
 /// </summary>
 public sealed class IntegrationEventDispatcher
 {
+    private static readonly ActivitySource s_activitySource = new("Modulus.Events");
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly IIntegrationEventRegistry _registry;
 
@@ -36,6 +38,25 @@ public sealed class IntegrationEventDispatcher
         var @event = JsonSerializer.Deserialize(envelope.Payload, eventType);
         if (@event is null)
             return false;
+
+        // Restore distributed trace context from wire format
+        ActivityContext parentContext = default;
+        if (!string.IsNullOrEmpty(envelope.TraceParent) &&
+            ActivityContext.TryParse(envelope.TraceParent, envelope.TraceState, out var parsedContext))
+            parentContext = parsedContext;
+
+        using var activity = s_activitySource.StartActivity(
+            "message process",
+            ActivityKind.Consumer,
+            parentContext);
+
+        if (activity is not null)
+        {
+            activity.SetTag("messaging.system", "modulus");
+            activity.SetTag("messaging.operation", "process");
+            activity.SetTag("messaging.destination.name", envelope.RoutingKey);
+            activity.SetTag("messaging.message.id", envelope.EventId.ToString("N"));
+        }
 
         using var scope = _scopeFactory.CreateScope();
         var handlerType = typeof(IIntegrationEventHandler<>)
