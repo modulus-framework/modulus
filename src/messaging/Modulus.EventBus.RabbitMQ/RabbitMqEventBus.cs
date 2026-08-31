@@ -44,6 +44,7 @@ internal sealed class RabbitMqEventBus : IModuleBus, IAsyncDisposable
         CancellationToken ct = default)
         where TEvent : IIntegrationEvent
     {
+        var sw = Stopwatch.StartNew();
         var connection = await EnsureConnectionAsync(ct);
         await using var channel = await connection.CreateChannelAsync(cancellationToken: ct);
 
@@ -73,17 +74,41 @@ internal sealed class RabbitMqEventBus : IModuleBus, IAsyncDisposable
         var body = Encoding.UTF8.GetBytes(
             _serializer.Serialize(envelope, typeof(IntegrationEventEnvelope)));
 
+        // Set BasicProperties with persistence and correlation data
+        var props = new BasicProperties
+        {
+            // Persistent: survive broker restart (DeliveryMode 2)
+            Persistent = true,
+            ContentType = "application/json",
+            ContentEncoding = "utf-8",
+            // Unique identifier for deduplication and tracing
+            MessageId = envelope.EventId.ToString(),
+            // Business correlation chain
+            CorrelationId = correlationId ?? string.Empty,
+            // Headers for OTel and other consumers
+            Headers = new Dictionary<string, object?>
+            {
+                ["x-trace-parent"] = envelope.TraceParent,
+                ["x-trace-state"] = envelope.TraceState,
+                ["x-tenant-id"] = tenantId.ToString(),
+            }
+        };
+
         await channel.BasicPublishAsync(
             exchange: _opts.ExchangeName,
             routingKey: routingKey,
             mandatory: true,
+            basicProperties: props,
             body: body,
             cancellationToken: ct);
 
+        sw.Stop();
+        ModulusMeters.EventsPublishDuration.Record(sw.Elapsed.TotalMilliseconds);
+
         _logger.LogDebug(
-            "Published {EventType} ({EventId}) to exchange '{Exchange}' [{RoutingKey}]",
+            "Published {EventType} ({EventId}) to exchange '{Exchange}' [{RoutingKey}] ({Ms}ms)",
             typeof(TEvent).Name, envelope.EventId,
-            _opts.ExchangeName, routingKey);
+            _opts.ExchangeName, routingKey, sw.ElapsedMilliseconds);
     }
 
     private Task OnBasicReturnAsync(object sender, BasicReturnEventArgs e)
@@ -134,6 +159,11 @@ internal sealed class RabbitMqEventBus : IModuleBus, IAsyncDisposable
                 UserName = _opts.UserName,
                 Password = _opts.Password,
                 VirtualHost = _opts.VirtualHost,
+                // Automatic recovery from broker restarts and connection failures
+                AutomaticRecoveryEnabled = true,
+                NetworkRecoveryInterval = TimeSpan.FromSeconds(10),
+                // Client identification for broker logging and management UI
+                ClientProvidedName = "Modulus.EventBus.RabbitMQ",
             };
 
             _connection = await factory.CreateConnectionAsync(ct);
