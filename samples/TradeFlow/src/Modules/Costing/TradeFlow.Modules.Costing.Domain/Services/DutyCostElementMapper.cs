@@ -1,8 +1,13 @@
 using TradeFlow.Modules.Costing.Domain.Entities;
-using TradeFlow.Modules.Customs.Domain.Entities;
 using TradeFlow.Shared.Domain;
 
 namespace TradeFlow.Modules.Costing.Domain.Services;
+
+/// <summary>
+/// Simple DTO for duty component data from Customs assessment.
+/// Maps to <c>AssessedDutyLine</c> in the Customs module.
+/// </summary>
+public sealed record DutyComponentData(string Component, decimal Amount);
 
 /// <summary>
 /// Domain service that maps duty calculation results (from BoE assessment)
@@ -24,16 +29,16 @@ public static class DutyCostElementMapper
         Guid tenantId,
         Guid fileId,
         string boeNo,
-        IReadOnlyList<AssessedDutyLine> assessedDutyLines,
+        IReadOnlyList<DutyComponentData> dutyComponents,
         decimal customsExchangeRate,
         bool isVatRecoverable = false)
     {
-        if (assessedDutyLines == null || assessedDutyLines.Count == 0)
+        if (dutyComponents == null || dutyComponents.Count == 0)
             return Array.Empty<CostElement>();
 
         var elements = new List<CostElement>();
 
-        foreach (AssessedDutyLine dutyLine in assessedDutyLines)
+        foreach (DutyComponentData dutyLine in dutyComponents)
         {
             if (dutyLine.Amount == 0m)
                 continue;
@@ -90,7 +95,7 @@ public static class DutyCostElementMapper
         Guid tenantId,
         Guid fileId,
         string reference,
-        IReadOnlyList<TradeFlow.Modules.Customs.Domain.Duty.DutyComponentResult> components,
+        IReadOnlyList<DutyComponentData> components,
         decimal customsExchangeRate,
         bool isVatRecoverable = false)
     {
@@ -99,13 +104,13 @@ public static class DutyCostElementMapper
 
         var elements = new List<CostElement>();
 
-        foreach (var component in components)
+        foreach (DutyComponentData component in components)
         {
             if (component.Amount == 0m)
                 continue;
 
             (string componentName, CostTreatment treatment) = GetComponentTreatment(
-                component.Component.ToString(), isVatRecoverable);
+                component.Component, isVatRecoverable);
 
             var element = new CostElement(
                 id: Guid.NewGuid(),

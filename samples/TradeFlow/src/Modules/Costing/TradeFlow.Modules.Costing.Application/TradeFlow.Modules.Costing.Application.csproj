@@ -9,6 +9,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\..\Shared\TradeFlow.Shared.Application\TradeFlow.Shared.Application.csproj"/>
     <ProjectReference Include="..\TradeFlow.Modules.Costing.Domain\TradeFlow.Modules.Costing.Domain.csproj" />
+    <ProjectReference Include="..\..\Customs\TradeFlow.Modules.Customs.Application\TradeFlow.Modules.Customs.Application.csproj" />
     <PackageReference Include="FluentValidation" Version="12.1.1" />
   </ItemGroup>
 

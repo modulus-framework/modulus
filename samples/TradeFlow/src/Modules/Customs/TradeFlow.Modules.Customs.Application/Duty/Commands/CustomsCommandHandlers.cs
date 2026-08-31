@@ -181,7 +181,10 @@ public sealed class AssessBoeHandler(
                     AitAtEntryType.Addition, boe.FileId, boe.Id, boe.BoeDate), ct);
         }
 
-        boe.Assess(request.TolerancePct);
+        var assessedDutyLines = boe.Lines.SelectMany(l => l.AssessedDutyLines).ToList();
+        decimal customsExchangeRate = boe.Lines.FirstOrDefault()?.CustomsExchangeRate ?? 1.0m;
+
+        boe.Assess(request.TolerancePct, assessedDutyLines, customsExchangeRate);
         boe.RecordVarianceDisputes(DisputeResolutionType.QueryResponse, null);
 
         await repository.SaveAsync(boe, ct);

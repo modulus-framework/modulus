@@ -49,11 +49,15 @@ public sealed class BoeAssessedIntegrationEventHandler(
             return;
         }
 
+        var dutyComponents = @event.AssessedDutyLines
+            .Select(d => new DutyComponentData(d.Component, d.Amount))
+            .ToList();
+
         IReadOnlyList<CostElement> dutyElements = DutyCostElementMapper.MapFromBoeAssessment(
             tenantId,
             @event.FileId.Value,
             @event.BoeNo,
-            @event.AssessedDutyLines,
+            dutyComponents,
             @event.CustomsExchangeRate);
 
         if (dutyElements.Count == 0)
