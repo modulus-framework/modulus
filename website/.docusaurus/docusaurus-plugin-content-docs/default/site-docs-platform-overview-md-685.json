@@ -1,0 +1,27 @@
+{
+  "id": "platform/overview",
+  "title": "Platform Services Overview",
+  "description": "Modulus.Platform provides cross-cutting concerns for multi-tenant applications.",
+  "source": "@site/docs/platform/overview.md",
+  "sourceDirName": "platform",
+  "slug": "/platform/overview",
+  "permalink": "/docs/platform/overview",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/cobytelabs/modulus/tree/main/website/docs/platform/overview.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "sidebar_position": 1
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "External Providers",
+    "permalink": "/docs/identity/external-providers"
+  },
+  "next": {
+    "title": "Multi-Tenancy",
+    "permalink": "/docs/platform/multi-tenancy"
+  }
+}

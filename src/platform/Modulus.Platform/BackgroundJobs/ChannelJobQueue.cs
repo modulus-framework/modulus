@@ -2,14 +2,22 @@ namespace Modulus.BackgroundJobs;
 
 using System.Threading.Channels;
 using Cronos;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Modulus.Core.Abstractions;
+using Modulus.Core.Correlation;
 using Modulus.Observability;
 
+// Ambient context captured at enqueue and restored on the worker, so tenant
+// query filters and log correlation behave inside the job as they did on the
+// enqueuing flow (mirrors EnvelopeAmbientScope for broker messages).
 internal sealed record JobEnvelope(
     Type JobType,
     Type ArgsType,
     object Args,
-    TimeSpan Delay = default);
+    TimeSpan Delay = default,
+    Guid? TenantId = null,
+    string? CorrelationId = null);
 
 internal sealed record RecurringEntry(
     JobEnvelope Envelope,
@@ -52,7 +60,9 @@ public sealed class ChannelJobQueue(
         where TJob : IBackgroundJob<TArgs>
     {
         var envelope = new JobEnvelope(
-            typeof(TJob), typeof(TArgs), args!);
+            typeof(TJob), typeof(TArgs), args!,
+            TenantId: ResolveTenantId(),
+            CorrelationId: ResolveCorrelationId());
         await _channel.Writer.WriteAsync(envelope, ct);
     }
 
@@ -60,11 +70,29 @@ public sealed class ChannelJobQueue(
         TArgs args, TimeSpan delay, CancellationToken ct)
         where TJob : IBackgroundJob<TArgs>
     {
+        var envelope = new JobEnvelope(
+            typeof(TJob), typeof(TArgs), args!,
+            TenantId: ResolveTenantId(),
+            CorrelationId: ResolveCorrelationId());
+
+        // Fire-and-forget: cancellation is expected (shutdown / caller abort)
+        // and must not surface as an unobserved task exception; any other
+        // fault is logged so a lost delayed enqueue is diagnosable.
         _ = Task.Run(async () =>
         {
-            await Task.Delay(delay, ct);
-            await _channel.Writer.WriteAsync(
-                new JobEnvelope(typeof(TJob), typeof(TArgs), args!), ct);
+            try
+            {
+                await Task.Delay(delay, ct);
+                await _channel.Writer.WriteAsync(envelope, ct);
+            }
+            catch (OperationCanceledException)
+            {
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to enqueue delayed job {JobType} after {Delay}",
+                    typeof(TJob).Name, delay);
+            }
         }, ct);
         return Task.CompletedTask;
     }
@@ -73,7 +101,10 @@ public sealed class ChannelJobQueue(
         string jobId, string cronExpression, TArgs args)
         where TJob : IBackgroundJob<TArgs>
     {
-        var envelope = new JobEnvelope(typeof(TJob), typeof(TArgs), args!);
+        var envelope = new JobEnvelope(
+            typeof(TJob), typeof(TArgs), args!,
+            TenantId: ResolveTenantId(),
+            CorrelationId: ResolveCorrelationId());
         var cron = CronExpression.Parse(cronExpression);
         var nextRun = cron.GetNextOccurrence(
             DateTimeOffset.UtcNow, TimeZoneInfo.Utc);
@@ -205,6 +236,21 @@ public sealed class ChannelJobQueue(
         {
             await using var scope = sp.CreateAsyncScope();
             ModulusMeters.JobsStarted.Add(1);
+
+            // Restore the ambient tenant/correlation captured at enqueue.
+            // The accessors are stateless AsyncLocal wrappers, so resolving
+            // them here (outside the job's scope) sets the flow the job then
+            // runs on. TenantSlug is not carried across the boundary — jobs
+            // that need it should re-resolve from the store.
+            using var tenantScope = envelope.TenantId is { } tenantId
+                && sp.GetService<ICurrentTenant>() is { } tenant
+                    ? tenant.Change(new TenantInfo(tenantId, string.Empty))
+                    : null;
+            using var correlationScope = envelope.CorrelationId is { } correlationId
+                && sp.GetService<ICorrelationContext>() is { } correlation
+                    ? correlation.BeginScope(correlationId)
+                    : null;
+
             try
             {
                 // Resolve via the closed generic IBackgroundJob<TArgs> interface
@@ -223,6 +269,14 @@ public sealed class ChannelJobQueue(
             }
         }
     }
+
+    private Guid? ResolveTenantId()
+        => sp.GetService<ICurrentTenant>() is { IsHost: false, TenantId: { } tenantId }
+            ? tenantId
+            : null;
+
+    private string? ResolveCorrelationId()
+        => sp.GetService<ICorrelationContext>()?.CorrelationId;
 
     private static readonly System.Collections.Concurrent.ConcurrentDictionary<Type,
         Func<object, object, CancellationToken, Task>> s_jobInvokers = new();

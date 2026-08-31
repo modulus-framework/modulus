@@ -1,0 +1,27 @@
+{
+  "id": "cli/global-flags",
+  "title": "Global Flags",
+  "description": "All CLI commands support these flags.",
+  "source": "@site/docs/cli/global-flags.md",
+  "sourceDirName": "cli",
+  "slug": "/cli/global-flags",
+  "permalink": "/docs/cli/global-flags",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/cobytelabs/modulus/tree/main/website/docs/cli/global-flags.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 12,
+  "frontMatter": {
+    "sidebar_position": 12
+  },
+  "sidebar": "cliSidebar",
+  "previous": {
+    "title": "modulus doctor",
+    "permalink": "/docs/cli/doctor"
+  },
+  "next": {
+    "title": "Templates",
+    "permalink": "/docs/cli/templates"
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "id": "architecture/module-system",
+  "title": "Module System",
+  "description": "Modules are the fundamental building blocks of a Modulus application. Each module encapsulates a business domain with its own data, logic, and API surface.",
+  "source": "@site/docs/architecture/module-system.md",
+  "sourceDirName": "architecture",
+  "slug": "/architecture/module-system",
+  "permalink": "/docs/architecture/module-system",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/cobytelabs/modulus/tree/main/website/docs/architecture/module-system.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 2,
+  "frontMatter": {
+    "sidebar_position": 2
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Architecture Overview",
+    "permalink": "/docs/architecture/overview"
+  },
+  "next": {
+    "title": "Service Lifecycle",
+    "permalink": "/docs/architecture/service-lifecycle"
+  }
+}

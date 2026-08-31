@@ -1,0 +1,27 @@
+{
+  "id": "messaging/kafka",
+  "title": "Kafka",
+  "description": "Modulus integrates with Apache Kafka for high-throughput event streaming.",
+  "source": "@site/docs/messaging/kafka.md",
+  "sourceDirName": "messaging",
+  "slug": "/messaging/kafka",
+  "permalink": "/docs/messaging/kafka",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/cobytelabs/modulus/tree/main/website/docs/messaging/kafka.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 7,
+  "frontMatter": {
+    "sidebar_position": 7
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "RabbitMQ",
+    "permalink": "/docs/messaging/rabbitmq"
+  },
+  "next": {
+    "title": "Identity Overview",
+    "permalink": "/docs/identity/overview"
+  }
+}

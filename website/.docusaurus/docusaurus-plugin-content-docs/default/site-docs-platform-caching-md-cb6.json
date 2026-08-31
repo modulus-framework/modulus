@@ -1,0 +1,27 @@
+{
+  "id": "platform/caching",
+  "title": "Caching",
+  "description": "Modulus provides in-memory caching with tag-based invalidation.",
+  "source": "@site/docs/platform/caching.md",
+  "sourceDirName": "platform",
+  "slug": "/platform/caching",
+  "permalink": "/docs/platform/caching",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/cobytelabs/modulus/tree/main/website/docs/platform/caching.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 5,
+  "frontMatter": {
+    "sidebar_position": 5
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Background Jobs",
+    "permalink": "/docs/platform/background-jobs"
+  },
+  "next": {
+    "title": "Storage",
+    "permalink": "/docs/platform/storage"
+  }
+}

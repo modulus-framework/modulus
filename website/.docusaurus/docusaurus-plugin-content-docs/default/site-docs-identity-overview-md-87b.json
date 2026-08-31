@@ -1,0 +1,27 @@
+{
+  "id": "identity/overview",
+  "title": "Identity Overview",
+  "description": "Modulus provides authentication and authorization via OpenIddict with support for 6 external identity providers.",
+  "source": "@site/docs/identity/overview.md",
+  "sourceDirName": "identity",
+  "slug": "/identity/overview",
+  "permalink": "/docs/identity/overview",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/cobytelabs/modulus/tree/main/website/docs/identity/overview.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "sidebar_position": 1
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Kafka",
+    "permalink": "/docs/messaging/kafka"
+  },
+  "next": {
+    "title": "OpenIddict",
+    "permalink": "/docs/identity/openiddict"
+  }
+}

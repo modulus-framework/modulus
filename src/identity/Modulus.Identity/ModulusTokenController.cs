@@ -85,6 +85,13 @@ public class ModulusTokenController(
         foreach (var role in result.Roles)
             identity.AddClaim(new Claim(OpenIddictConstants.Claims.Role, role));
 
+        // Embed the security stamp so the refresh handler can detect
+        // password changes / security invalidations without a DB round-trip
+        // on every access-token use. The claim is only in the access token
+        // (not the identity token) and is validated on refresh.
+        if (!string.IsNullOrWhiteSpace(result.SecurityStamp))
+            identity.AddClaim(new Claim("security_stamp", result.SecurityStamp));
+
         var principal = new ClaimsPrincipal(identity);
 
         // Grant only scopes that are both requested and explicitly allowed.
@@ -100,6 +107,11 @@ public class ModulusTokenController(
                 OpenIddictConstants.Claims.Email
                     => [OpenIddictConstants.Destinations.AccessToken,
                         OpenIddictConstants.Destinations.IdentityToken],
+                // Security stamp is internal — only needed in the access
+                // token for refresh-time validation; never in the identity
+                // token which is sent to the client.
+                "security_stamp"
+                    => [OpenIddictConstants.Destinations.AccessToken],
                 _ => [OpenIddictConstants.Destinations.AccessToken],
             });
         }
@@ -122,22 +134,72 @@ public class ModulusTokenController(
                 }),
                 OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
 
-        // Re-verify the subject is still present and active before re-issuing
-        // tokens. A refresh token can outlive a disabled/deleted account, so
-        // we must not blindly mint a new access token for a stale subject.
-        if (!await IsSubjectActiveAsync(info.Principal, HttpContext.RequestAborted))
+        var userManager = HttpContext.RequestServices
+            .GetService<UserManager<ModulusUser>>();
+
+        ClaimsPrincipal principal;
+
+        if (userManager is not null)
         {
-            return Forbid(
-                new AuthenticationProperties(new Dictionary<string, string?>
-                {
-                    [OpenIddictServerAspNetCoreConstants.Properties.Error] = OpenIddictConstants.Errors.InvalidGrant,
-                    [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] =
-                        "The user account is no longer active.",
-                }),
-                OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+            // Re-verify the subject is still present and active before
+            // re-issuing tokens. A refresh token can outlive a disabled/
+            // deleted account, so we must not blindly mint a new access token
+            // for a stale subject.
+            var subject = info.Principal.GetClaim(OpenIddictConstants.Claims.Subject);
+            var user = string.IsNullOrWhiteSpace(subject)
+                ? null
+                : await userManager.FindByIdAsync(subject);
+
+            if (user is not { IsActive: true })
+            {
+                return Forbid(
+                    new AuthenticationProperties(new Dictionary<string, string?>
+                    {
+                        [OpenIddictServerAspNetCoreConstants.Properties.Error] = OpenIddictConstants.Errors.InvalidGrant,
+                        [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] =
+                            "The user account is no longer active.",
+                    }),
+                    OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+            }
+
+            // Rebuild the dynamic claims (name/email/roles) from the CURRENT
+            // store state: minting from the refresh principal's frozen claims
+            // would keep a role change, demotion, or profile edit invisible
+            // until the user logs in again. The subject travels with the
+            // refresh token itself, so only volatile claims are refreshed.
+            principal = await BuildPrincipalAsync(user, userManager);
+            principal.SetScopes(info.Principal.GetScopes());
+
+            // Security-stamp check: if the stamp stored in the refresh token
+            // differs from the user's current stamp, the user changed their
+            // password or was otherwise security-invalidated. Reject the
+            // refresh so the user must re-authenticate. This mirrors
+            // SignInManager's ValidateSecurityStampAsync for opaque tokens.
+            var storedStamp = info.Principal.FindFirstValue("security_stamp");
+            var currentStamp = await userManager.GetSecurityStampAsync(user);
+            if (!string.IsNullOrWhiteSpace(storedStamp) &&
+                !string.Equals(storedStamp, currentStamp, StringComparison.Ordinal))
+            {
+                return Forbid(
+                    new AuthenticationProperties(new Dictionary<string, string?>
+                    {
+                        [OpenIddictServerAspNetCoreConstants.Properties.Error] =
+                            OpenIddictConstants.Errors.InvalidGrant,
+                        [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] =
+                            "The security stamp has changed; please sign in again.",
+                    }),
+                    OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+            }
+        }
+        else
+        {
+            // No Identity user store configured for ModulusUser — nothing to
+            // re-verify or refresh beyond the (already server-validated)
+            // refresh token; honour its claims as-is.
+            principal = info.Principal;
         }
 
-        foreach (var claim in info.Principal.Claims)
+        foreach (var claim in principal.Claims)
         {
             claim.SetDestinations(claim.Type switch
             {
@@ -146,41 +208,39 @@ public class ModulusTokenController(
                 OpenIddictConstants.Claims.Email
                     => [OpenIddictConstants.Destinations.AccessToken,
                         OpenIddictConstants.Destinations.IdentityToken],
+                "security_stamp"
+                    => [OpenIddictConstants.Destinations.AccessToken],
                 _ => [OpenIddictConstants.Destinations.AccessToken],
             });
         }
 
-        return SignIn(info.Principal, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+        return SignIn(principal, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
     }
 
-    /// <summary>
-    /// Resolves the current subject from the authenticated refresh-token
-    /// principal (<paramref name="principal"/> — NOT the controller's
-    /// <c>User</c> property, which is populated by the default authentication
-    /// scheme (e.g. the Identity cookie) and is typically anonymous at
-    /// <c>/connect/token</c>) and confirms the underlying account still exists
-    /// and is active. When ASP.NET Core Identity (with
-    /// <see cref="ModulusUser"/>) is wired up, the user store is consulted;
-    /// otherwise the presence of a subject claim is treated as sufficient.
-    /// </summary>
-    private async Task<bool> IsSubjectActiveAsync(
-        ClaimsPrincipal principal,
-        CancellationToken ct)
+    private static async Task<ClaimsPrincipal> BuildPrincipalAsync(
+        ModulusUser user, UserManager<ModulusUser> userManager)
     {
-        var subject = principal.GetClaim(OpenIddictConstants.Claims.Subject);
-        if (string.IsNullOrWhiteSpace(subject))
-            return false;
+        var identity = new ClaimsIdentity(
+            authenticationType: "OpenIddict",
+            nameType: OpenIddictConstants.Claims.Name,
+            roleType: OpenIddictConstants.Claims.Role);
 
-        var userManager = HttpContext.RequestServices
-            .GetService<UserManager<ModulusUser>>();
+        identity.AddClaim(new Claim(OpenIddictConstants.Claims.Subject, user.Id.ToString()));
+        if (!string.IsNullOrWhiteSpace(user.UserName))
+            identity.AddClaim(new Claim(OpenIddictConstants.Claims.Name, user.UserName));
+        if (!string.IsNullOrWhiteSpace(user.Email))
+            identity.AddClaim(new Claim(OpenIddictConstants.Claims.Email, user.Email));
+        foreach (var role in await userManager.GetRolesAsync(user))
+            identity.AddClaim(new Claim(OpenIddictConstants.Claims.Role, role));
 
-        // No Identity user store configured for ModulusUser — nothing to
-        // re-verify, so honour the (already-validated) refresh token.
-        if (userManager is null)
-            return true;
+        // Embed the current security stamp so the next refresh can detect
+        // concurrent password changes. Without this, every refresh after
+        // the initial login would carry a stale stamp and be rejected.
+        var stamp = await userManager.GetSecurityStampAsync(user);
+        if (!string.IsNullOrWhiteSpace(stamp))
+            identity.AddClaim(new Claim("security_stamp", stamp));
 
-        var user = await userManager.FindByIdAsync(subject);
-        return user is { IsActive: true };
+        return new ClaimsPrincipal(identity);
     }
 }
 

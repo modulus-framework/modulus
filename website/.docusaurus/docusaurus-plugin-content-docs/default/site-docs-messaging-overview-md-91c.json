@@ -1,0 +1,27 @@
+{
+  "id": "messaging/overview",
+  "title": "Messaging Overview",
+  "description": "Modulus provides a complete messaging stack for event-driven architecture within the monolith.",
+  "source": "@site/docs/messaging/overview.md",
+  "sourceDirName": "messaging",
+  "slug": "/messaging/overview",
+  "permalink": "/docs/messaging/overview",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/cobytelabs/modulus/tree/main/website/docs/messaging/overview.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "sidebar_position": 1
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Migrations",
+    "permalink": "/docs/data/migrations"
+  },
+  "next": {
+    "title": "Mediator",
+    "permalink": "/docs/messaging/mediator"
+  }
+}

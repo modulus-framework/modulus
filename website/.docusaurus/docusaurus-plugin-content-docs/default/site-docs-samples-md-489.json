@@ -1,0 +1,23 @@
+{
+  "id": "samples",
+  "title": "Samples",
+  "description": "ProcureFlow",
+  "source": "@site/docs/samples.md",
+  "sourceDirName": ".",
+  "slug": "/samples",
+  "permalink": "/docs/samples",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/cobytelabs/modulus/tree/main/website/docs/samples.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "sidebar_position": 1
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Deployment",
+    "permalink": "/docs/deployment"
+  }
+}

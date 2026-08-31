@@ -1,0 +1,27 @@
+{
+  "id": "observability/opentelemetry",
+  "title": "OpenTelemetry",
+  "description": "Modulus integrates with OpenTelemetry for distributed tracing and metrics.",
+  "source": "@site/docs/observability/opentelemetry.md",
+  "sourceDirName": "observability",
+  "slug": "/observability/opentelemetry",
+  "permalink": "/docs/observability/opentelemetry",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/cobytelabs/modulus/tree/main/website/docs/observability/opentelemetry.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 2,
+  "frontMatter": {
+    "sidebar_position": 2
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Observability Overview",
+    "permalink": "/docs/observability/overview"
+  },
+  "next": {
+    "title": "Testing Overview",
+    "permalink": "/docs/testing/overview"
+  }
+}

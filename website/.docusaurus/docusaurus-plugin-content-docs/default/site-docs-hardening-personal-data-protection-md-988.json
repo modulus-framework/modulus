@@ -1,0 +1,27 @@
+{
+  "id": "hardening/personal-data-protection",
+  "title": "Personal Data Protection",
+  "description": "Modulus provides transparent at-rest encryption of designated personal data columns.",
+  "source": "@site/docs/hardening/personal-data-protection.md",
+  "sourceDirName": "hardening",
+  "slug": "/hardening/personal-data-protection",
+  "permalink": "/docs/hardening/personal-data-protection",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/cobytelabs/modulus/tree/main/website/docs/hardening/personal-data-protection.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 9,
+  "frontMatter": {
+    "sidebar_position": 9
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Secrets Guard",
+    "permalink": "/docs/hardening/secrets-guard"
+  },
+  "next": {
+    "title": "Observability Overview",
+    "permalink": "/docs/observability/overview"
+  }
+}

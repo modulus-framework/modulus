@@ -33,6 +33,33 @@ public sealed class DelegationAwarePermissionResolver(
         if (delegated.Count == 0)
             return effective;
 
+        return Union(effective, delegated);
+    }
+
+    /// <inheritdoc />
+    public IReadOnlySet<string> Resolve(PrincipalGrantQuery principal, IReadOnlyCollection<PermissionGrant> grants)
+    {
+        ArgumentNullException.ThrowIfNull(principal);
+        ArgumentNullException.ThrowIfNull(grants);
+
+        // Consume the supplied grants — no second store read. Delegated
+        // permissions still union in: they are keyed on the user id, not on
+        // grant rows.
+        var effective = directAuthority.Resolve(principal, grants);
+        if (principal.UserId is not { } userId)
+            return effective;
+
+        var delegated = delegationResolver.DelegatedPermissions(userId);
+        if (delegated.Count == 0)
+            return effective;
+
+        return Union(effective, delegated);
+    }
+
+    private static IReadOnlySet<string> Union(
+        IReadOnlySet<string> effective,
+        IReadOnlyCollection<DelegatedPermission> delegated)
+    {
         var combined = new HashSet<string>(effective, StringComparer.OrdinalIgnoreCase);
         foreach (var permission in delegated)
             combined.Add(permission.Permission);

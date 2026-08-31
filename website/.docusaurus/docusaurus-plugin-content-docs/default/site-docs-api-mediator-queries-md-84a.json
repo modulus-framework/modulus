@@ -1,0 +1,27 @@
+{
+  "id": "api/mediator/queries",
+  "title": "Queries API",
+  "description": "IQuery\\",
+  "source": "@site/docs/api/mediator/queries.md",
+  "sourceDirName": "api/mediator",
+  "slug": "/api/mediator/queries",
+  "permalink": "/docs/api/mediator/queries",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/cobytelabs/modulus/tree/main/website/docs/api/mediator/queries.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 8,
+  "frontMatter": {
+    "sidebar_position": 8
+  },
+  "sidebar": "apiSidebar",
+  "previous": {
+    "title": "Commands API",
+    "permalink": "/docs/api/mediator/commands"
+  },
+  "next": {
+    "title": "Pipeline Behaviors API",
+    "permalink": "/docs/api/mediator/behaviors"
+  }
+}

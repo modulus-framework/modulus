@@ -28,8 +28,14 @@ public sealed class OutboxProcessor(
 
         // Resolve ALL registered DbContexts so that outbox rows from every
         // module context are drained. In a modular monolith, each module's
-        // ModuleDbContext maps its own outbox_messages table.
-        var contexts = ssp.GetServices<DbContext>().ToList();
+        // ModuleDbContext maps its own outbox_messages table. AddOutbox /
+        // AddInbox each contribute their own DbContext descriptor, so dedupe
+        // by runtime type to avoid processing the same module context (and
+        // re-logging its no-outbox skip) multiple times per cycle.
+        var contexts = ssp.GetServices<DbContext>()
+            .GroupBy(db => db.GetType())
+            .Select(g => g.First())
+            .ToList();
         if (contexts.Count == 0) return;
 
         foreach (var db in contexts)

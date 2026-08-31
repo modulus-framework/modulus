@@ -1,0 +1,27 @@
+{
+  "id": "hardening/correlation",
+  "title": "Request Correlation",
+  "description": "Modulus provides automatic correlation ID propagation across services.",
+  "source": "@site/docs/hardening/correlation.md",
+  "sourceDirName": "hardening",
+  "slug": "/hardening/correlation",
+  "permalink": "/docs/hardening/correlation",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/cobytelabs/modulus/tree/main/website/docs/hardening/correlation.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 6,
+  "frontMatter": {
+    "sidebar_position": 6
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "HTTP Idempotency",
+    "permalink": "/docs/hardening/idempotency"
+  },
+  "next": {
+    "title": "Feature Flags",
+    "permalink": "/docs/hardening/feature-flags"
+  }
+}

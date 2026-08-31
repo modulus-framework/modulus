@@ -1,0 +1,27 @@
+{
+  "id": "data/mongodb",
+  "title": "MongoDB",
+  "description": "Modulus supports MongoDB as an alternative to relational databases.",
+  "source": "@site/docs/data/mongodb.md",
+  "sourceDirName": "data",
+  "slug": "/data/mongodb",
+  "permalink": "/docs/data/mongodb",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/cobytelabs/modulus/tree/main/website/docs/data/mongodb.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 3,
+  "frontMatter": {
+    "sidebar_position": 3
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Entity Framework Core",
+    "permalink": "/docs/data/entity-framework"
+  },
+  "next": {
+    "title": "Repositories",
+    "permalink": "/docs/data/repositories"
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "id": "observability/overview",
+  "title": "Observability Overview",
+  "description": "Modulus provides built-in observability via OpenTelemetry.",
+  "source": "@site/docs/observability/overview.md",
+  "sourceDirName": "observability",
+  "slug": "/observability/overview",
+  "permalink": "/docs/observability/overview",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/cobytelabs/modulus/tree/main/website/docs/observability/overview.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "sidebar_position": 1
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Personal Data Protection",
+    "permalink": "/docs/hardening/personal-data-protection"
+  },
+  "next": {
+    "title": "OpenTelemetry",
+    "permalink": "/docs/observability/opentelemetry"
+  }
+}

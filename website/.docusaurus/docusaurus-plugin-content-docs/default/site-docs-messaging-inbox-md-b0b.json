@@ -1,0 +1,27 @@
+{
+  "id": "messaging/inbox",
+  "title": "Inbox",
+  "description": "The inbox pattern provides idempotent message consumption — ensuring each integration event is processed exactly once.",
+  "source": "@site/docs/messaging/inbox.md",
+  "sourceDirName": "messaging",
+  "slug": "/messaging/inbox",
+  "permalink": "/docs/messaging/inbox",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/cobytelabs/modulus/tree/main/website/docs/messaging/inbox.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 5,
+  "frontMatter": {
+    "sidebar_position": 5
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Outbox",
+    "permalink": "/docs/messaging/outbox"
+  },
+  "next": {
+    "title": "RabbitMQ",
+    "permalink": "/docs/messaging/rabbitmq"
+  }
+}

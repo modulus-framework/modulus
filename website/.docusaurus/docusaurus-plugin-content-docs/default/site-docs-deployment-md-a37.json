@@ -1,0 +1,27 @@
+{
+  "id": "deployment",
+  "title": "Deployment",
+  "description": "Modulus applications deploy as a single process.",
+  "source": "@site/docs/deployment.md",
+  "sourceDirName": ".",
+  "slug": "/deployment",
+  "permalink": "/docs/deployment",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/cobytelabs/modulus/tree/main/website/docs/deployment.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "sidebar_position": 1
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "appsettings.json",
+    "permalink": "/docs/configuration/appsettings"
+  },
+  "next": {
+    "title": "Samples",
+    "permalink": "/docs/samples"
+  }
+}

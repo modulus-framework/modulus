@@ -27,6 +27,16 @@ public sealed class OutboxOptions
     public bool DisableAutoPolling { get; set; } = false;
 
     /// <summary>
+    /// When enabled, the polling service acquires a distributed lock
+    /// before each processing cycle. Only the replica that holds the lock
+    /// polls the outbox; others idle until the lease expires. Prevents
+    /// redundant cross-replica polling while the row-level claim already
+    /// provides correctness. Requires an <c>IDistributedLock</c>
+    /// implementation (e.g. Redis). Defaults to false.
+    /// </summary>
+    public bool EnableLeaderElection { get; set; } = false;
+
+    /// <summary>
     /// Retention window, in days, after which dispatched rows (and dead-lettered
     /// rows past MaxRetries) are deleted from outbox_messages by the processor.
     /// Housekeeping runs in bounded batches so long-lived tables don't grow

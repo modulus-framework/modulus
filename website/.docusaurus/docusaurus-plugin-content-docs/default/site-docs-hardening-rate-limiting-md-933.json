@@ -1,0 +1,27 @@
+{
+  "id": "hardening/rate-limiting",
+  "title": "Rate Limiting",
+  "description": "Modulus provides built-in rate limiting partitioned by user, tenant, IP, or globally.",
+  "source": "@site/docs/hardening/rate-limiting.md",
+  "sourceDirName": "hardening",
+  "slug": "/hardening/rate-limiting",
+  "permalink": "/docs/hardening/rate-limiting",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/cobytelabs/modulus/tree/main/website/docs/hardening/rate-limiting.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "sidebar_position": 1
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "SignalR",
+    "permalink": "/docs/platform/signalr"
+  },
+  "next": {
+    "title": "Health Checks",
+    "permalink": "/docs/hardening/health-checks"
+  }
+}

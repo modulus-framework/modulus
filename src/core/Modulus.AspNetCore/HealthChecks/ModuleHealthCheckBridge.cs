@@ -1,45 +1,58 @@
 namespace Modulus.AspNetCore.HealthChecks;
 
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Modulus.Core.Abstractions;
 using ModulusHealthStatus = Modulus.Core.Abstractions.HealthStatus;
 using StandardHealthStatus = Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus;
 
 /// <summary>
-/// Adapts <see cref="IModuleHealthCheck"/> to the standard <see cref="IHealthCheck"/>
-/// interface so Modulus health checks integrate seamlessly with the standard
-/// ASP.NET Core health-check ecosystem (AddHealthChecks, MapHealthChecks, etc.).
+/// Adapts every registered <see cref="IModuleHealthCheck"/> into the standard
+/// <see cref="IHealthCheck"/> ecosystem so Modulus health checks integrate with
+/// <c>AddHealthChecks</c> / <c>MapHealthChecks</c>. Resolution is deferred to
+/// check time — registrations added after <c>AddModulusHealthChecks</c> are still
+/// discovered, and no throwaway <see cref="IServiceProvider"/> is built.
 /// </summary>
-internal sealed class ModuleHealthCheckBridge(IModuleHealthCheck inner) : IHealthCheck
+internal sealed class ModuleHealthCheckBridge(IServiceProvider services) : IHealthCheck
 {
     public async Task<HealthCheckResult> CheckHealthAsync(
         HealthCheckContext context,
         CancellationToken cancellationToken = default)
     {
-        var result = await inner.CheckAsync(cancellationToken);
+        var checks = services.GetServices<IModuleHealthCheck>().ToList();
 
-        var data = new Dictionary<string, object?>();
-        if (result.Data is not null)
+        if (checks.Count == 0)
+            return HealthCheckResult.Healthy("No module health checks registered.");
+
+        var results = await Task.WhenAll(checks.Select(c => c.CheckAsync(cancellationToken)));
+
+        var data = new Dictionary<string, object>();
+        foreach (var r in results)
         {
-            foreach (var kvp in result.Data)
-                data[kvp.Key] = kvp.Value;
+            data[r.ModuleName] = new
+            {
+                status = r.Status.ToString(),
+                description = r.Description,
+                durationMs = r.CheckDuration.TotalMilliseconds,
+            };
         }
 
-        // Preserve duration and description alongside framework-standard fields
-        data["duration_ms"] = result.CheckDuration.TotalMilliseconds;
+        var unhealthy = results
+            .Where(r => r.Status == ModulusHealthStatus.Unhealthy)
+            .ToList();
 
-        return new HealthCheckResult(
-            MapStatus(result.Status),
-            description: result.Description,
-            data: data.Count > 0 ? (IReadOnlyDictionary<string, object>)data : null);
-    }
-
-    private static StandardHealthStatus MapStatus(ModulusHealthStatus status) =>
-        status switch
+        if (unhealthy.Count > 0)
         {
-            ModulusHealthStatus.Healthy => StandardHealthStatus.Healthy,
-            ModulusHealthStatus.Degraded => StandardHealthStatus.Degraded,
-            ModulusHealthStatus.Unhealthy => StandardHealthStatus.Unhealthy,
-            _ => throw new ArgumentOutOfRangeException(nameof(status), status, "Unknown health status"),
-        };
+            var detail = string.Join("; ", unhealthy.Select(r => $"{r.ModuleName}: {r.Description}"));
+            return new HealthCheckResult(StandardHealthStatus.Unhealthy, detail, data: data);
+        }
+
+        var degraded = results.Any(r => r.Status == ModulusHealthStatus.Degraded);
+        return degraded
+            ? new HealthCheckResult(
+                StandardHealthStatus.Degraded,
+                "One or more module health checks are degraded.",
+                data: data)
+            : new HealthCheckResult(StandardHealthStatus.Healthy, data: data);
+    }
 }

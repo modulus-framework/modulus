@@ -5,8 +5,10 @@ using Microsoft.Extensions.Caching.Memory;
 
 public sealed class MemoryCacheService(IMemoryCache cache) : ICacheService
 {
-    // tag -> set of cache keys registered under that tag
-    private readonly ConcurrentDictionary<string, ConcurrentBag<string>> _tagIndex = new();
+    // tag -> set of cache keys registered under that tag. A dictionary is used
+    // as a concurrent set so a specific key can be removed when its entry is
+    // evicted (a ConcurrentBag can only pop an arbitrary element).
+    private readonly ConcurrentDictionary<string, ConcurrentDictionary<string, byte>> _tagIndex = new();
 
     public Task<T?> GetAsync<T>(string key, CancellationToken ct = default)
     {
@@ -27,11 +29,30 @@ public sealed class MemoryCacheService(IMemoryCache cache) : ICacheService
         var options = new MemoryCacheEntryOptions();
         if (expiry.HasValue)
             options.AbsoluteExpirationRelativeToNow = expiry;
-        cache.Set(key, value, options);
 
         if (tags is { Length: > 0 })
-            RegisterTags(key, tags);
+        {
+            var taggedKeys = tags.Where(t => !string.IsNullOrEmpty(t)).ToArray();
+            if (taggedKeys.Length > 0)
+            {
+                RegisterTags(key, taggedKeys);
 
+                // When the entry is evicted (TTL expiry, memory pressure, or an
+                // explicit Remove), drop it from the tag index so the sets don't
+                // accumulate stale keys forever.
+                options.RegisterPostEvictionCallback(
+                    (_, _, _, state) =>
+                    {
+                        var (evictedKey, tagList) = ((string Key, string[] Tags))state!;
+                        foreach (var tag in tagList)
+                            if (_tagIndex.TryGetValue(tag, out var set))
+                                set.TryRemove(evictedKey, out _);
+                    },
+                    (key, taggedKeys));
+            }
+        }
+
+        cache.Set(key, value, options);
         return Task.CompletedTask;
     }
 
@@ -44,8 +65,11 @@ public sealed class MemoryCacheService(IMemoryCache cache) : ICacheService
     public Task RemoveByTagAsync(string tag, CancellationToken ct = default)
     {
         if (_tagIndex.TryRemove(tag, out var keys))
-            foreach (var key in keys)
+        {
+            foreach (var key in keys.Keys)
                 cache.Remove(key);
+            keys.Clear();
+        }
         return Task.CompletedTask;
     }
 
@@ -60,9 +84,7 @@ public sealed class MemoryCacheService(IMemoryCache cache) : ICacheService
     internal void RegisterTags(string key, params string[] tags)
     {
         foreach (var tag in tags)
-        {
-            var bag = _tagIndex.GetOrAdd(tag, _ => new ConcurrentBag<string>());
-            bag.Add(key);
-        }
+            _tagIndex.GetOrAdd(tag, _ => new ConcurrentDictionary<string, byte>())
+                .TryAdd(key, 0);
     }
 }

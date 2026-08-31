@@ -1,0 +1,27 @@
+{
+  "id": "data/overview",
+  "title": "Data Layer Overview",
+  "description": "Modulus provides a flexible data access layer supporting relational databases (via EF Core) and MongoDB.",
+  "source": "@site/docs/data/overview.md",
+  "sourceDirName": "data",
+  "slug": "/data/overview",
+  "permalink": "/docs/data/overview",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/cobytelabs/modulus/tree/main/website/docs/data/overview.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "sidebar_position": 1
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Clean Architecture",
+    "permalink": "/docs/architecture/clean-architecture"
+  },
+  "next": {
+    "title": "Entity Framework Core",
+    "permalink": "/docs/data/entity-framework"
+  }
+}

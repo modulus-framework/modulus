@@ -32,7 +32,15 @@ public sealed class PermissionResolver(
     {
         ArgumentNullException.ThrowIfNull(principal);
 
-        var grants = grantStore.GetGrants(principal);
+        return Resolve(principal, grantStore.GetGrants(principal));
+    }
+
+    /// <inheritdoc />
+    public IReadOnlySet<string> Resolve(PrincipalGrantQuery principal, IReadOnlyCollection<PermissionGrant> grants)
+    {
+        ArgumentNullException.ThrowIfNull(principal);
+        ArgumentNullException.ThrowIfNull(grants);
+
         if (grants.Count == 0)
             return EmptySet;
 

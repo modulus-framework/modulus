@@ -1,0 +1,27 @@
+{
+  "id": "platform/multi-tenancy",
+  "title": "Multi-Tenancy",
+  "description": "Modulus provides built-in multi-tenant data isolation.",
+  "source": "@site/docs/platform/multi-tenancy.md",
+  "sourceDirName": "platform",
+  "slug": "/platform/multi-tenancy",
+  "permalink": "/docs/platform/multi-tenancy",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/cobytelabs/modulus/tree/main/website/docs/platform/multi-tenancy.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 2,
+  "frontMatter": {
+    "sidebar_position": 2
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Platform Services Overview",
+    "permalink": "/docs/platform/overview"
+  },
+  "next": {
+    "title": "Authorization",
+    "permalink": "/docs/platform/authorization"
+  }
+}

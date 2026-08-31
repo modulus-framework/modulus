@@ -1,0 +1,27 @@
+{
+  "id": "api/core/ddd",
+  "title": "DDD Primitives",
+  "description": "AggregateRoot\\",
+  "source": "@site/docs/api/core/ddd.md",
+  "sourceDirName": "api/core",
+  "slug": "/api/core/ddd",
+  "permalink": "/docs/api/core/ddd",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/cobytelabs/modulus/tree/main/website/docs/api/core/ddd.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 3,
+  "frontMatter": {
+    "sidebar_position": 3
+  },
+  "sidebar": "apiSidebar",
+  "previous": {
+    "title": "Module API",
+    "permalink": "/docs/api/core/module"
+  },
+  "next": {
+    "title": "Abstractions",
+    "permalink": "/docs/api/core/abstractions"
+  }
+}

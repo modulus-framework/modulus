@@ -1,0 +1,27 @@
+{
+  "id": "platform/background-jobs",
+  "title": "Background Jobs",
+  "description": "Modulus provides an in-process background job system with optional Quartz.NET integration.",
+  "source": "@site/docs/platform/background-jobs.md",
+  "sourceDirName": "platform",
+  "slug": "/platform/background-jobs",
+  "permalink": "/docs/platform/background-jobs",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/cobytelabs/modulus/tree/main/website/docs/platform/background-jobs.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 4,
+  "frontMatter": {
+    "sidebar_position": 4
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Authorization",
+    "permalink": "/docs/platform/authorization"
+  },
+  "next": {
+    "title": "Caching",
+    "permalink": "/docs/platform/caching"
+  }
+}

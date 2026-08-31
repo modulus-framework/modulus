@@ -31,6 +31,7 @@ public sealed class MongoOutboxProcessor(
         var ssp = scope.ServiceProvider;
         var dispatcher = ssp.GetRequiredService<IOutboxDispatcher>();
         var currentTenant = ssp.GetService<ICurrentTenant>();
+        var correlation = ssp.GetService<ICorrelationContext>();
         var options = opts.Value;
         var now = DateTime.UtcNow;
         var lockUntil = now.AddSeconds(options.LockTimeoutSec);
@@ -79,9 +80,13 @@ public sealed class MongoOutboxProcessor(
 
         await collection.UpdateManyAsync(claimFilter, claimUpdate, cancellationToken: ct);
 
-        // 3. Load the rows this instance now owns (fresh from the collection
-        //    so the claim state is visible).
+        // 3. Load only the rows this instance claimed in THIS batch (scoped to
+        //    candidateIds, mirroring OutboxProcessor). Without this scope,
+        //    rows locked by this instance in a prior cycle that crashed before
+        //    their status update would also be returned, causing duplicate
+        //    dispatch if the processor instance were ever reused.
         var ownedFilter = Builders<MongoOutboxMessage>.Filter.And(
+            Builders<MongoOutboxMessage>.Filter.In(m => m.Id, candidateIds),
             Builders<MongoOutboxMessage>.Filter.Eq(m => m.LockedBy, _instanceId),
             Builders<MongoOutboxMessage>.Filter.Eq(m => m.ProcessedAt, null));
 
@@ -106,6 +111,14 @@ public sealed class MongoOutboxProcessor(
                 : currentTenant.Change(message.TenantId == Guid.Empty
                     ? null
                     : new TenantInfo(message.TenantId, message.TenantId.ToString("N")));
+
+            // Restore the originating correlation id so it flows into the
+            // in-process handlers and onto the broker envelope for cross-service
+            // tracing (mirrors OutboxProcessor).
+            IDisposable? correlationScope =
+                correlation is not null && !string.IsNullOrEmpty(message.CorrelationId)
+                    ? correlation.BeginScope(message.CorrelationId)
+                    : null;
 
             try
             {
@@ -148,6 +161,7 @@ public sealed class MongoOutboxProcessor(
             }
             finally
             {
+                correlationScope?.Dispose();
                 tenantScope?.Dispose();
             }
         }

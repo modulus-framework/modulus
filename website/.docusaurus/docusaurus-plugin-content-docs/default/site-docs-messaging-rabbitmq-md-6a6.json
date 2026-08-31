@@ -1,0 +1,27 @@
+{
+  "id": "messaging/rabbitmq",
+  "title": "RabbitMQ",
+  "description": "Modulus integrates with RabbitMQ for cross-service event delivery.",
+  "source": "@site/docs/messaging/rabbitmq.md",
+  "sourceDirName": "messaging",
+  "slug": "/messaging/rabbitmq",
+  "permalink": "/docs/messaging/rabbitmq",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/cobytelabs/modulus/tree/main/website/docs/messaging/rabbitmq.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 6,
+  "frontMatter": {
+    "sidebar_position": 6
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Inbox",
+    "permalink": "/docs/messaging/inbox"
+  },
+  "next": {
+    "title": "Kafka",
+    "permalink": "/docs/messaging/kafka"
+  }
+}

@@ -41,6 +41,13 @@ public sealed record PasswordGrantResult
     /// <summary>Role names copied into the <c>role</c> claim when granted.</summary>
     public IReadOnlyList<string> Roles { get; init; } = [];
 
+    /// <summary>
+    /// ASP.NET Identity security stamp embedded in the access token so the
+    /// refresh handler can detect password changes without hitting the DB
+    /// on every access-token use. Null when no Identity store is configured.
+    /// </summary>
+    public string? SecurityStamp { get; init; }
+
     /// <summary>OAuth error code (e.g. <c>invalid_grant</c>) surfaced to the client.</summary>
     public string Error { get; init; } = "invalid_grant";
 

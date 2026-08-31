@@ -18,8 +18,10 @@ artifacts/
 secrets.json
 appsettings.*.json
 !appsettings.json
-# Keep the non-secret Development template that ships with the app; ignore any
-# local override a developer creates from it.
+# Keep the non-secret Development template that ships with the app (it carries
+# only logging defaults + dev-certificate flags); ignore any local override a
+# developer creates from it.
+!appsettings.Development.json
 appsettings.Development.local.json
 
 # SQLite databases created at runtime

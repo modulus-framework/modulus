@@ -1,6 +1,7 @@
 namespace Modulus.Data.MongoDB.Extensions;
 
 using global::MongoDB.Driver;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 using Modulus.Core.Abstractions;
@@ -22,7 +23,8 @@ public static class MongoServiceCollectionExtensions
             sp.GetRequiredService<IMongoClient>()
               .GetDatabase(opts.DatabaseName));
 
-        services.TryAddScoped<IModuleHealthCheck, MongoHealthCheck>();
+        services.TryAddEnumerable(
+            ServiceDescriptor.Scoped<IModuleHealthCheck, MongoHealthCheck>());
 
         return services;
     }

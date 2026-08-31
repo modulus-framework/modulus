@@ -1,0 +1,27 @@
+{
+  "id": "getting-started/first-module",
+  "title": "First Module",
+  "description": "This guide walks you through creating a business module with CRUD operations.",
+  "source": "@site/docs/getting-started/first-module.md",
+  "sourceDirName": "getting-started",
+  "slug": "/getting-started/first-module",
+  "permalink": "/docs/getting-started/first-module",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/cobytelabs/modulus/tree/main/website/docs/getting-started/first-module.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 3,
+  "frontMatter": {
+    "sidebar_position": 3
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Quick Start",
+    "permalink": "/docs/getting-started/quick-start"
+  },
+  "next": {
+    "title": "Architecture Overview",
+    "permalink": "/docs/architecture/overview"
+  }
+}

@@ -26,8 +26,7 @@ public static class ModulusWebApplicationExtensions
                 .CreateLogger("Modulus")
                 .LogWarning(
                     "[Modulus] UseModulus() ran but no modules were discovered. " +
-                    "Ensure AddModulus<TStartupModule>(...) or AddModulus(cfg, b => b.AddModules<...>()) " +
-                    "registered your startup module.");
+                    "Ensure AddModulus<TStartupModule>(...) registered your startup module.");
         }
 
         return app;

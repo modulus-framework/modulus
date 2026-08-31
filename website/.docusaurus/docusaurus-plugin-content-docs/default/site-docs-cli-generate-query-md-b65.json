@@ -1,0 +1,27 @@
+{
+  "id": "cli/generate-query",
+  "title": "modulus generate-query",
+  "description": "Generates a single query and handler.",
+  "source": "@site/docs/cli/generate-query.md",
+  "sourceDirName": "cli",
+  "slug": "/cli/generate-query",
+  "permalink": "/docs/cli/generate-query",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/cobytelabs/modulus/tree/main/website/docs/cli/generate-query.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 7,
+  "frontMatter": {
+    "sidebar_position": 7
+  },
+  "sidebar": "cliSidebar",
+  "previous": {
+    "title": "modulus generate-command",
+    "permalink": "/docs/cli/generate-command"
+  },
+  "next": {
+    "title": "modulus migrate",
+    "permalink": "/docs/cli/migrate"
+  }
+}

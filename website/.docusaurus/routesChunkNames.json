@@ -1,0 +1,360 @@
+{
+  "/__docusaurus/debug-5ff": {
+    "__comp": "__comp---theme-debug-config-23-a-2ff",
+    "__context": {
+      "plugin": "plugin---docusaurus-debugb-38-ad3"
+    }
+  },
+  "/__docusaurus/debug/config-5ba": {
+    "__comp": "__comp---theme-debug-config-23-a-2ff",
+    "__context": {
+      "plugin": "plugin---docusaurus-debugb-38-ad3"
+    }
+  },
+  "/__docusaurus/debug/content-a2b": {
+    "__comp": "__comp---theme-debug-contentba-8-ce7",
+    "__context": {
+      "plugin": "plugin---docusaurus-debugb-38-ad3"
+    },
+    "__props": "__props---docusaurus-debug-content-3-c-0-be2"
+  },
+  "/__docusaurus/debug/globalData-c3c": {
+    "__comp": "__comp---theme-debug-global-dataede-0fa",
+    "__context": {
+      "plugin": "plugin---docusaurus-debugb-38-ad3"
+    }
+  },
+  "/__docusaurus/debug/metadata-156": {
+    "__comp": "__comp---theme-debug-site-metadata-68-e-3d4",
+    "__context": {
+      "plugin": "plugin---docusaurus-debugb-38-ad3"
+    }
+  },
+  "/__docusaurus/debug/registry-88c": {
+    "__comp": "__comp---theme-debug-registry-679-501",
+    "__context": {
+      "plugin": "plugin---docusaurus-debugb-38-ad3"
+    }
+  },
+  "/__docusaurus/debug/routes-000": {
+    "__comp": "__comp---theme-debug-routes-946-699",
+    "__context": {
+      "plugin": "plugin---docusaurus-debugb-38-ad3"
+    }
+  },
+  "/markdown-page-53a": {
+    "__comp": "__comp---theme-mdx-page-1-f-3-b90",
+    "__context": {
+      "plugin": "plugin---markdown-pagea-74-7b5"
+    },
+    "content": "content---markdown-page-4-c-6-c89"
+  },
+  "/docs-da6": {
+    "__comp": "__comp---theme-docs-root-5-e-9-0b6",
+    "__context": {
+      "plugin": "plugin---docsaba-d7c"
+    }
+  },
+  "/docs-fa6": {
+    "__comp": "__comp---theme-doc-version-roota-7-b-5de",
+    "__props": "__props---docs-005-788"
+  },
+  "/docs-cd4": {
+    "__comp": "__comp---theme-doc-roota-94-67a"
+  },
+  "/docs/api/-b2d": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-api-5-e-8-853"
+  },
+  "/docs/api/aspnetcore/endpoints-684": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-api-aspnetcore-endpoints-8-d-7-176"
+  },
+  "/docs/api/aspnetcore/middleware-9b6": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-api-aspnetcore-middlewaref-4-b-c8f"
+  },
+  "/docs/api/core/abstractions-bcf": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-api-core-abstractionsebe-e67"
+  },
+  "/docs/api/core/ddd-1b2": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-api-core-dddb-5-c-c04"
+  },
+  "/docs/api/core/module-841": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-api-core-module-23-d-3d7"
+  },
+  "/docs/api/data/db-context-edb": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-api-data-db-contextd-7-b-92e"
+  },
+  "/docs/api/data/repository-dd4": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-api-data-repository-8-ad-96f"
+  },
+  "/docs/api/mediator/behaviors-5c9": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-api-mediator-behaviors-2-f-6-67b"
+  },
+  "/docs/api/mediator/commands-575": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-api-mediator-commands-0-f-5-ef5"
+  },
+  "/docs/api/mediator/queries-2cf": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-api-mediator-queries-84-a-aa1"
+  },
+  "/docs/architecture/clean-architecture-44b": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-architecture-clean-architecture-24-b-d4d"
+  },
+  "/docs/architecture/module-system-693": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-architecture-module-systema-15-38b"
+  },
+  "/docs/architecture/overview-8f4": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-architecture-overview-0-b-1-a4c"
+  },
+  "/docs/architecture/service-lifecycle-05a": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-architecture-service-lifecycle-1-c-2-326"
+  },
+  "/docs/cli/-f3b": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-cli-776-349"
+  },
+  "/docs/cli/add-module-3fd": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-cli-add-module-25-a-15d"
+  },
+  "/docs/cli/app-a31": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-cli-app-107-7fb"
+  },
+  "/docs/cli/doctor-a81": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-cli-doctor-8-ba-7d2"
+  },
+  "/docs/cli/generate-command-e36": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-cli-generate-command-55-e-e6a"
+  },
+  "/docs/cli/generate-crud-5d7": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-cli-generate-crud-674-7e3"
+  },
+  "/docs/cli/generate-query-1bc": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-cli-generate-queryb-65-5f8"
+  },
+  "/docs/cli/global-flags-345": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-cli-global-flags-6-f-0-2ba"
+  },
+  "/docs/cli/info-1b9": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-cli-infoe-44-51e"
+  },
+  "/docs/cli/list-463": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-cli-list-0-d-6-7b3"
+  },
+  "/docs/cli/migrate-f00": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-cli-migrate-49-e-8dc"
+  },
+  "/docs/cli/module-a98": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-cli-module-14-a-53a"
+  },
+  "/docs/cli/templates-071": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-cli-templates-771-5f6"
+  },
+  "/docs/configuration/appsettings-61f": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-configuration-appsettings-4-b-1-3a2"
+  },
+  "/docs/configuration/build-system-ec5": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-configuration-build-systeme-17-388"
+  },
+  "/docs/configuration/central-package-management-0ec": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-configuration-central-package-management-190-7cd"
+  },
+  "/docs/data/entity-framework-72a": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-data-entity-framework-0-ab-881"
+  },
+  "/docs/data/migrations-941": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-data-migrationsee-1-49f"
+  },
+  "/docs/data/mongodb-4d6": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-data-mongodbb-3-a-07c"
+  },
+  "/docs/data/overview-771": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-data-overview-19-a-863"
+  },
+  "/docs/data/repositories-19f": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-data-repositories-81-f-32e"
+  },
+  "/docs/deployment-9a4": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-deploymenta-37-88b"
+  },
+  "/docs/getting-started/first-module-7ac": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-getting-started-first-moduled-19-7f2"
+  },
+  "/docs/getting-started/prerequisites-5fc": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-getting-started-prerequisites-737-2a9"
+  },
+  "/docs/getting-started/quick-start-835": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-getting-started-quick-start-588-94b"
+  },
+  "/docs/hardening/correlation-55f": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-hardening-correlation-397-d83"
+  },
+  "/docs/hardening/cors-2f1": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-hardening-corsf-45-c5a"
+  },
+  "/docs/hardening/feature-flags-a97": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-hardening-feature-flags-5-cf-05e"
+  },
+  "/docs/hardening/health-checks-885": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-hardening-health-checks-62-a-629"
+  },
+  "/docs/hardening/idempotency-c79": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-hardening-idempotency-5-ce-314"
+  },
+  "/docs/hardening/personal-data-protection-2ca": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-hardening-personal-data-protection-988-8f2"
+  },
+  "/docs/hardening/rate-limiting-e6d": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-hardening-rate-limiting-933-57c"
+  },
+  "/docs/hardening/secrets-guard-6cb": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-hardening-secrets-guard-226-474"
+  },
+  "/docs/hardening/security-headers-ea4": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-hardening-security-headers-5-cf-a20"
+  },
+  "/docs/identity/external-providers-335": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-identity-external-providers-9-bd-ecc"
+  },
+  "/docs/identity/openiddict-3b1": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-identity-openiddictc-67-96c"
+  },
+  "/docs/identity/overview-b22": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-identity-overview-87-b-cbb"
+  },
+  "/docs/introduction-894": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-introductiona-09-6b4"
+  },
+  "/docs/messaging/events-2e1": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-messaging-eventsbc-1-8e1"
+  },
+  "/docs/messaging/inbox-84f": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-messaging-inboxb-0-b-798"
+  },
+  "/docs/messaging/kafka-e9f": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-messaging-kafka-405-b63"
+  },
+  "/docs/messaging/mediator-c73": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-messaging-mediator-5-d-5-117"
+  },
+  "/docs/messaging/outbox-7ed": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-messaging-outboxab-3-253"
+  },
+  "/docs/messaging/overview-6eb": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-messaging-overview-91-c-65f"
+  },
+  "/docs/messaging/rabbitmq-ccd": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-messaging-rabbitmq-6-a-6-7f5"
+  },
+  "/docs/observability/opentelemetry-ff9": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-observability-opentelemetry-2-c-7-6d1"
+  },
+  "/docs/observability/overview-6ca": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-observability-overview-277-359"
+  },
+  "/docs/platform/authorization-80f": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-platform-authorization-5-c-4-b3b"
+  },
+  "/docs/platform/background-jobs-8a3": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-platform-background-jobs-5-e-2-f59"
+  },
+  "/docs/platform/caching-a44": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-platform-cachingcb-6-dad"
+  },
+  "/docs/platform/multi-tenancy-09e": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-platform-multi-tenancy-614-7b7"
+  },
+  "/docs/platform/overview-4b0": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-platform-overview-685-1e0"
+  },
+  "/docs/platform/signalr-171": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-platform-signalr-39-d-bf3"
+  },
+  "/docs/platform/storage-83e": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-platform-storagea-7-b-872"
+  },
+  "/docs/samples-e88": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-samples-489-08f"
+  },
+  "/docs/testing/integration-tests-f3d": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-testing-integration-testsa-3-b-178"
+  },
+  "/docs/testing/overview-66f": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-testing-overviewf-87-35c"
+  },
+  "/-e5f": {
+    "__comp": "__comp---site-src-pages-index-tsx-1-df-d3e",
+    "__context": {
+      "plugin": "plugin---markdown-pagea-74-7b5"
+    },
+    "config": "config---5-e-9-4f3"
+  }
+}

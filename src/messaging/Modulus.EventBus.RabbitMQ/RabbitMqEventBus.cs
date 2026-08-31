@@ -7,7 +7,9 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Modulus.Core.Abstractions;
 using Modulus.Events.Abstractions;
+using Modulus.Observability;
 using global::RabbitMQ.Client;
+using global::RabbitMQ.Client.Events;
 
 /// <summary>
 /// <see cref="IModuleBus"/> implementation that publishes integration events
@@ -41,6 +43,11 @@ internal sealed class RabbitMqEventBus : IModuleBus, IAsyncDisposable
         var connection = await EnsureConnectionAsync(ct);
         await using var channel = await connection.CreateChannelAsync(cancellationToken: ct);
 
+        // mandatory:true makes the broker return (basic.return) publishes that
+        // match no bound queue — without this handler those frames are dropped
+        // silently and the event is lost with no trace.
+        channel.BasicReturnAsync += OnBasicReturnAsync;
+
         // Stable transport name (attribute or assembly-independent FullName).
         var routingKey = IntegrationEventNaming.GetName(typeof(TEvent));
         var (tenantId, correlationId) = ReadAmbientContext();
@@ -70,6 +77,17 @@ internal sealed class RabbitMqEventBus : IModuleBus, IAsyncDisposable
             "Published {EventType} ({EventId}) to exchange '{Exchange}' [{RoutingKey}]",
             typeof(TEvent).Name, envelope.EventId,
             _opts.ExchangeName, routingKey);
+    }
+
+    private Task OnBasicReturnAsync(object sender, BasicReturnEventArgs e)
+    {
+        ModulusMeters.EventsUnroutable.Add(1);
+        _logger.LogWarning(
+            "Broker returned an integration event as unroutable (no queue bound for the routing key): " +
+            "exchange '{Exchange}' routing key '{RoutingKey}' — {ReplyCode} {ReplyText}. " +
+            "Bind a queue for this routing key or the event is lost.",
+            e.Exchange, e.RoutingKey, e.ReplyCode, e.ReplyText);
+        return Task.CompletedTask;
     }
 
     /// <summary>

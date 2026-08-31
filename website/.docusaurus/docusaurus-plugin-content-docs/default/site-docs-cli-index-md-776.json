@@ -1,0 +1,23 @@
+{
+  "id": "cli/index",
+  "title": "CLI Reference",
+  "description": "The modulus CLI tool generates complete solutions, modules, and CRUD code.",
+  "source": "@site/docs/cli/index.md",
+  "sourceDirName": "cli",
+  "slug": "/cli/",
+  "permalink": "/docs/cli/",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/cobytelabs/modulus/tree/main/website/docs/cli/index.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "sidebar_position": 1
+  },
+  "sidebar": "cliSidebar",
+  "next": {
+    "title": "modulus app",
+    "permalink": "/docs/cli/app"
+  }
+}

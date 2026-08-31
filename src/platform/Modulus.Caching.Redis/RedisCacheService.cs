@@ -1,13 +1,27 @@
 namespace Modulus.Caching;
 
 using System.Text.Json;
+using Microsoft.Extensions.DependencyInjection;
+using Modulus.Core.Abstractions;
 using StackExchange.Redis;
 
-public sealed class RedisCacheService(IConnectionMultiplexer redis) : ICacheService
+public sealed class RedisCacheService(IConnectionMultiplexer redis, IServiceProvider services) : ICacheService
 {
     private readonly IDatabase _db = redis.GetDatabase();
 
-    private static string TagKey(string tag) => $"modulus:tag:{tag}";
+    // Tag keys are scoped by the ambient tenant so two tenants sharing a tag
+    // name cannot invalidate each other's entries. The tenant accessor is
+    // resolved per call (not captured) because it is registered scoped, and
+    // multi-tenancy may be off entirely. Root-provider resolution is safe:
+    // CurrentTenant is a stateless AsyncLocal accessor, so even a fresh
+    // instance reads the ambient async flow.
+    private string TagKey(string tag)
+    {
+        var tenant = services.GetService<ICurrentTenant>();
+        return tenant is { IsHost: false, TenantId: { } tenantId }
+            ? $"modulus:tag:{tenantId:N}:{tag}"
+            : $"modulus:tag:{tag}";
+    }
 
     public async Task<T?> GetAsync<T>(string key, CancellationToken ct = default)
     {
@@ -33,25 +47,54 @@ public sealed class RedisCacheService(IConnectionMultiplexer redis) : ICacheServ
             foreach (var tag in tags)
             {
                 await _db.SetAddAsync(TagKey(tag), key);
+                // Keep the tag-set key alive for at least as long as the longest
+                // lived entry it references: only extend, never shrink, so a
+                // short-lived key cannot expire the set while longer-lived keys
+                // still depend on it (and vice-versa).
                 if (expiry.HasValue)
-                    await _db.KeyExpireAsync(TagKey(tag), expiry.Value);
+                {
+                    var ttl = await _db.KeyTimeToLiveAsync(TagKey(tag));
+                    if (!ttl.HasValue || ttl.Value < expiry.Value)
+                        await _db.KeyExpireAsync(TagKey(tag), expiry.Value);
+                }
             }
         }
     }
 
     public Task RemoveAsync(string key, CancellationToken ct = default)
-        => _db.KeyDeleteAsync(key);
+    {
+        // Notify peers before the local delete so concurrent reads on other
+        // nodes see the invalidation while their own key is still live — a
+        // brief window is acceptable for an eventually-consistent cache.
+        if (redis is not null)
+            RedisCacheBackplane.Publish(redis, keys: [key]);
+        return _db.KeyDeleteAsync(key);
+    }
 
     public async Task RemoveByTagAsync(string tag, CancellationToken ct = default)
     {
         var tagKey = TagKey(tag);
         var keys = await _db.SetMembersAsync(tagKey);
-        if (keys.Length > 0)
+        if (keys.Length == 0)
         {
-            var tasks = keys.Select(k => _db.KeyDeleteAsync(k.ToString())).ToList();
-            tasks.Add(_db.KeyDeleteAsync(tagKey));
-            await Task.WhenAll(tasks);
+            await _db.KeyDeleteAsync(tagKey);
+            return;
         }
+
+        // Remove the referenced keys and the tag set atomically so a concurrent
+        // write between the read and delete cannot strand entries. Individual
+        // transaction commands are queued (not awaited) — ExecuteAsync commits.
+        var tran = _db.CreateTransaction();
+        foreach (var k in keys)
+            _ = tran.KeyDeleteAsync(k.ToString());
+        _ = tran.KeyDeleteAsync(tagKey);
+        await tran.ExecuteAsync();
+
+        // Notify peer nodes to evict the same keys from their local L1 cache.
+        // Fire-and-forget: a failed publish means peers will converge when
+        // their own TTL expires (acceptable for cache consistency).
+        if (redis is not null)
+            RedisCacheBackplane.Publish(redis, tags: [tag]);
     }
 
     public async Task RemoveByTagsAsync(string[] tags, CancellationToken ct = default)

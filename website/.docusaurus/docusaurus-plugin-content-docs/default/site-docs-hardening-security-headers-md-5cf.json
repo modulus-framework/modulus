@@ -1,0 +1,27 @@
+{
+  "id": "hardening/security-headers",
+  "title": "Security Headers",
+  "description": "Modulus adds security headers to all responses.",
+  "source": "@site/docs/hardening/security-headers.md",
+  "sourceDirName": "hardening",
+  "slug": "/hardening/security-headers",
+  "permalink": "/docs/hardening/security-headers",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/cobytelabs/modulus/tree/main/website/docs/hardening/security-headers.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 4,
+  "frontMatter": {
+    "sidebar_position": 4
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "CORS",
+    "permalink": "/docs/hardening/cors"
+  },
+  "next": {
+    "title": "HTTP Idempotency",
+    "permalink": "/docs/hardening/idempotency"
+  }
+}

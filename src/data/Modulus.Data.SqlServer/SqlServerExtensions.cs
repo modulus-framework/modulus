@@ -23,9 +23,10 @@ public static class SqlServerExtensions
                 configure?.Invoke(sql);
             }));
 
-        services.TryAddScoped<IModuleHealthCheck>(sp =>
-            new RelationalDatabaseHealthCheck<TContext>(
-                sp.GetRequiredService<TContext>(), "sqlserver"));
+        services.TryAddEnumerable(
+            ServiceDescriptor.Scoped<IModuleHealthCheck, RelationalDatabaseHealthCheck<TContext>>(
+                sp => new RelationalDatabaseHealthCheck<TContext>(
+                    sp.GetRequiredService<TContext>(), "sqlserver")));
 
         return services;
     }

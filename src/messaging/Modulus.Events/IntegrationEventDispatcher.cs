@@ -44,18 +44,37 @@ public sealed class IntegrationEventDispatcher
         var handlers = scope.ServiceProvider
             .GetServices(handlerType)
             .Where(h => h is not null)
+            .Cast<object>()
             .ToList();
 
         if (handlers.Count == 0)
             return false;
 
+        // One compiled delegate per closed handler interface, cached process-wide
+        // — reflection (GetMethod + Invoke) runs only on the first dispatch.
+        var invoker = s_handlerInvokers.GetOrAdd(handlerType, CompileHandlerInvoker);
         foreach (var handler in handlers)
-        {
-            var method = handlerType.GetMethod(nameof(IIntegrationEventHandler<IIntegrationEvent>.HandleAsync))!;
-            var task = (Task)method.Invoke(handler, [@event, ct])!;
-            await task;
-        }
+            await invoker(handler, @event, ct);
 
         return true;
+    }
+
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<Type,
+        Func<object, object, CancellationToken, Task>> s_handlerInvokers = new();
+
+    private static Func<object, object, CancellationToken, Task> CompileHandlerInvoker(Type handlerType)
+    {
+        var method = handlerType.GetMethod(nameof(IIntegrationEventHandler<IIntegrationEvent>.HandleAsync))!;
+        var handlerParam = System.Linq.Expressions.Expression.Parameter(typeof(object), "handler");
+        var eventParam = System.Linq.Expressions.Expression.Parameter(typeof(object), "event");
+        var ctParam = System.Linq.Expressions.Expression.Parameter(typeof(CancellationToken), "ct");
+        var eventType = method.GetParameters()[0].ParameterType;
+        var call = System.Linq.Expressions.Expression.Call(
+            System.Linq.Expressions.Expression.Convert(handlerParam, handlerType),
+            method,
+            System.Linq.Expressions.Expression.Convert(eventParam, eventType),
+            ctParam);
+        return System.Linq.Expressions.Expression.Lambda<Func<object, object, CancellationToken, Task>>(
+            call, handlerParam, eventParam, ctParam).Compile();
     }
 }

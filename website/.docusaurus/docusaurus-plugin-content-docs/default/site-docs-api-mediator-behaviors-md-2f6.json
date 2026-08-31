@@ -1,0 +1,27 @@
+{
+  "id": "api/mediator/behaviors",
+  "title": "Pipeline Behaviors API",
+  "description": "IPipelineBehavior\\",
+  "source": "@site/docs/api/mediator/behaviors.md",
+  "sourceDirName": "api/mediator",
+  "slug": "/api/mediator/behaviors",
+  "permalink": "/docs/api/mediator/behaviors",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/cobytelabs/modulus/tree/main/website/docs/api/mediator/behaviors.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 9,
+  "frontMatter": {
+    "sidebar_position": 9
+  },
+  "sidebar": "apiSidebar",
+  "previous": {
+    "title": "Queries API",
+    "permalink": "/docs/api/mediator/queries"
+  },
+  "next": {
+    "title": "Endpoints API",
+    "permalink": "/docs/api/aspnetcore/endpoints"
+  }
+}

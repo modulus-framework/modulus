@@ -86,4 +86,16 @@ public static class RedisCachingExtensions
         services.AddSingleton<IDistributedLock, RedisDistributedLock>();
         return services;
     }
+
+    /// <summary>
+    /// Starts a background subscriber that listens for Redis pub/sub
+    /// invalidation messages and evicts matching entries from the local
+    /// <see cref="ICacheService"/>. Call after <c>AddRedisCacheService</c>
+    /// so the multiplexer is available.
+    /// </summary>
+    public static IServiceCollection AddRedisCacheBackplane(this IServiceCollection services)
+    {
+        services.AddHostedService<RedisCacheBackplane>();
+        return services;
+    }
 }

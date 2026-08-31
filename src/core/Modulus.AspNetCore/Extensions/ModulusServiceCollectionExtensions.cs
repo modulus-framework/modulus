@@ -23,6 +23,11 @@ public static class ModulusServiceCollectionExtensions
         services.TryAddSingleton<IPermissionRegistry, NullPermissionRegistry>();
         services.TryAddScoped<ICurrentUser, NullCurrentUser>();
         services.TryAddScoped<ICurrentTenant, NullCurrentTenant>();
+        services.TryAddScoped<ICurrentDataScope, NullCurrentDataScope>();
+
+        // TimeProvider — allows tests (and libraries) to freeze the clock via
+        // a single seam instead of shimming DateTime.UtcNow at every callsite.
+        services.TryAddSingleton(TimeProvider.System);
 
         // Module lifecycle hosted service — initialised before the server
         // starts accepting connections (IHostedLifecycleService.StartingAsync).

@@ -1,0 +1,27 @@
+{
+  "id": "api/mediator/commands",
+  "title": "Commands API",
+  "description": "ICommand\\",
+  "source": "@site/docs/api/mediator/commands.md",
+  "sourceDirName": "api/mediator",
+  "slug": "/api/mediator/commands",
+  "permalink": "/docs/api/mediator/commands",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/cobytelabs/modulus/tree/main/website/docs/api/mediator/commands.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 7,
+  "frontMatter": {
+    "sidebar_position": 7
+  },
+  "sidebar": "apiSidebar",
+  "previous": {
+    "title": "DbContext API",
+    "permalink": "/docs/api/data/db-context"
+  },
+  "next": {
+    "title": "Queries API",
+    "permalink": "/docs/api/mediator/queries"
+  }
+}

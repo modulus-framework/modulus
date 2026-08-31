@@ -1,0 +1,27 @@
+{
+  "id": "platform/storage",
+  "title": "Storage",
+  "description": "Modulus provides file storage abstraction with local and cloud providers.",
+  "source": "@site/docs/platform/storage.md",
+  "sourceDirName": "platform",
+  "slug": "/platform/storage",
+  "permalink": "/docs/platform/storage",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/cobytelabs/modulus/tree/main/website/docs/platform/storage.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 6,
+  "frontMatter": {
+    "sidebar_position": 6
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Caching",
+    "permalink": "/docs/platform/caching"
+  },
+  "next": {
+    "title": "SignalR",
+    "permalink": "/docs/platform/signalr"
+  }
+}

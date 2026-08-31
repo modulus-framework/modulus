@@ -14,9 +14,10 @@ public static class OutboxServiceCollectionExtensions
         Action<OutboxOptions>? configure = null)
         where TContext : DbContext
     {
-        var opts = new OutboxOptions();
-        configure?.Invoke(opts);
-        services.AddSingleton(Options.Create(opts));
+        // Merge every AddOutbox call into ONE options instance. Registering
+        // Options.Create directly would make the last module's configuration
+        // silently discard every earlier module's settings.
+        services.AddOptions<OutboxOptions>().Configure(o => configure?.Invoke(o));
 
         // Writer uses the scoped TContext
         services.AddScoped<DbContext>(
@@ -31,9 +32,11 @@ public static class OutboxServiceCollectionExtensions
         // could not resolve it.
         services.AddScoped<OutboxProcessor>();
 
-        // Processor (register as hosted service unless disabled)
-        if (!opts.DisableAutoPolling)
-            services.AddHostedService<OutboxPollingService>();
+        // Polling hosted service. AddHostedService is TryAddEnumerable, so
+        // multiple AddOutbox calls register it only once; DisableAutoPolling is
+        // honoured at runtime (see OutboxPollingService) because the final
+        // merged options are not known until the container is built.
+        services.AddHostedService<OutboxPollingService>();
 
         return services;
     }

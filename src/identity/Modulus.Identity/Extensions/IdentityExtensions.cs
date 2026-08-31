@@ -3,6 +3,7 @@ namespace Modulus.Identity.Extensions;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Modulus.Core.Abstractions;
 using Modulus.Identity;
 using Modulus.Identity.Abstractions;
@@ -32,7 +33,7 @@ public static class IdentityExtensions
             .Get<ModulusIdentityOptions>() ?? new ModulusIdentityOptions();
 
         services.AddHttpContextAccessor();
-        services.AddScoped<ICurrentUser, ClaimsPrincipalCurrentUser>();
+        services.TryAddScoped<ICurrentUser, ClaimsPrincipalCurrentUser>();
 
         var builder = services.AddIdentity<TUser, TRole>(options =>
         {
@@ -95,9 +96,13 @@ public static class IdentityExtensions
         services.AddOpenIddict()
             .AddServer(options =>
             {
+                // Token storage is required for revocation (RFC 7009): the server
+                // must be able to look up and mark tokens as revoked. The EF Core
+                // store is configured by AddModulusIdentityStore.
                 options.SetTokenEndpointUris("/connect/token")
                        .SetAuthorizationEndpointUris("/connect/authorize")
-                       .SetUserInfoEndpointUris("/connect/userinfo");
+                       .SetUserInfoEndpointUris("/connect/userinfo")
+                       .SetRevocationEndpointUris("/connect/revoke");
 
                 options.AllowAuthorizationCodeFlow()
                        .AllowRefreshTokenFlow();

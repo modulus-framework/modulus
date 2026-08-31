@@ -1,0 +1,27 @@
+{
+  "id": "data/entity-framework",
+  "title": "Entity Framework Core",
+  "description": "Modulus integrates deeply with EF Core for relational database access.",
+  "source": "@site/docs/data/entity-framework.md",
+  "sourceDirName": "data",
+  "slug": "/data/entity-framework",
+  "permalink": "/docs/data/entity-framework",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/cobytelabs/modulus/tree/main/website/docs/data/entity-framework.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 2,
+  "frontMatter": {
+    "sidebar_position": 2
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Data Layer Overview",
+    "permalink": "/docs/data/overview"
+  },
+  "next": {
+    "title": "MongoDB",
+    "permalink": "/docs/data/mongodb"
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "id": "configuration/appsettings",
+  "title": "appsettings.json",
+  "description": "Modulus apps use a hierarchical configuration system.",
+  "source": "@site/docs/configuration/appsettings.md",
+  "sourceDirName": "configuration",
+  "slug": "/configuration/appsettings",
+  "permalink": "/docs/configuration/appsettings",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/cobytelabs/modulus/tree/main/website/docs/configuration/appsettings.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 3,
+  "frontMatter": {
+    "sidebar_position": 3
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Central Package Management",
+    "permalink": "/docs/configuration/central-package-management"
+  },
+  "next": {
+    "title": "Deployment",
+    "permalink": "/docs/deployment"
+  }
+}

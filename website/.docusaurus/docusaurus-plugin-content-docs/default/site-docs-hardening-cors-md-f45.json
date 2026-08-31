@@ -1,0 +1,27 @@
+{
+  "id": "hardening/cors",
+  "title": "CORS",
+  "description": "Modulus provides CORS configuration with wildcard-subdomain awareness.",
+  "source": "@site/docs/hardening/cors.md",
+  "sourceDirName": "hardening",
+  "slug": "/hardening/cors",
+  "permalink": "/docs/hardening/cors",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/cobytelabs/modulus/tree/main/website/docs/hardening/cors.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 3,
+  "frontMatter": {
+    "sidebar_position": 3
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Health Checks",
+    "permalink": "/docs/hardening/health-checks"
+  },
+  "next": {
+    "title": "Security Headers",
+    "permalink": "/docs/hardening/security-headers"
+  }
+}

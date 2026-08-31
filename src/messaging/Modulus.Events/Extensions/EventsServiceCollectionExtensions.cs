@@ -2,6 +2,7 @@ namespace Modulus.Events.Extensions;
 
 using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Modulus.Events.Abstractions;
 
 public static class EventsServiceCollectionExtensions
@@ -15,11 +16,17 @@ public static class EventsServiceCollectionExtensions
         this IServiceCollection services,
         params Assembly[] assemblies)
     {
-        services.AddScoped<DomainEventDispatcher>();
-        services.AddScoped<IntegrationEventDispatcher>();
+        services.TryAddScoped<DomainEventDispatcher>();
+        services.TryAddScoped<IntegrationEventDispatcher>();
 
-        // Registry (singleton — populated once at startup)
-        var registry = new IntegrationEventRegistry();
+        // Registry (singleton — shared across every AddModulusEvents call so the
+        // host and each module accumulate their integration-event types into the
+        // same instance instead of the last call overwriting the earlier ones).
+        var existing = services.FirstOrDefault(d =>
+            d.ServiceType == typeof(IIntegrationEventRegistry)
+            && d.ImplementationInstance is IntegrationEventRegistry);
+        var registry = (existing?.ImplementationInstance as IntegrationEventRegistry)
+            ?? new IntegrationEventRegistry();
         services.AddSingleton<IIntegrationEventRegistry>(registry);
 
         foreach (var assembly in assemblies)
@@ -30,7 +37,7 @@ public static class EventsServiceCollectionExtensions
 
         // Default bus: in-process.  Call AddRabbitMqEventBus / AddKafkaEventBus
         // AFTER this to swap the implementation.
-        services.AddScoped<IModuleBus, InProcessModuleBus>();
+        services.TryAddScoped<IModuleBus, InProcessModuleBus>();
 
         return services;
     }

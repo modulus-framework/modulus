@@ -1,0 +1,27 @@
+{
+  "id": "testing/integration-tests",
+  "title": "Integration Tests",
+  "description": "Modulus provides ModulusWebAppFactory for HTTP-based integration testing.",
+  "source": "@site/docs/testing/integration-tests.md",
+  "sourceDirName": "testing",
+  "slug": "/testing/integration-tests",
+  "permalink": "/docs/testing/integration-tests",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/cobytelabs/modulus/tree/main/website/docs/testing/integration-tests.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 2,
+  "frontMatter": {
+    "sidebar_position": 2
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Testing Overview",
+    "permalink": "/docs/testing/overview"
+  },
+  "next": {
+    "title": "Build System",
+    "permalink": "/docs/configuration/build-system"
+  }
+}

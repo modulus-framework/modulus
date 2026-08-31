@@ -10,18 +10,13 @@ namespace Modulus.EntityFrameworkCore.ChangeHistory;
 /// Reflects over entities to find <see cref="AuditedAttribute"/> markers
 /// and captures changes to those properties as <see cref="EntityChange"/> rows.
 /// </summary>
-internal sealed class EntityChangeHistoryWriter : IEntityChangeHistoryWriter
+internal sealed class EntityChangeHistoryWriter(ICurrentTenant? currentTenant)
+    : IEntityChangeHistoryWriter
 {
-    private readonly DbContext _dbContext;
-    private readonly ICurrentTenant? _currentTenant;
-
-    public EntityChangeHistoryWriter(DbContext dbContext, ICurrentTenant? currentTenant)
-    {
-        _dbContext = dbContext;
-        _currentTenant = currentTenant;
-    }
+    private readonly ICurrentTenant? _currentTenant = currentTenant;
 
     public void CaptureChanges(
+        DbContext context,
         IEnumerable<EntityEntry> entries,
         string changedBy,
         string? correlationId = null)
@@ -101,7 +96,7 @@ internal sealed class EntityChangeHistoryWriter : IEntityChangeHistoryWriter
         }
 
         if (changes.Count > 0)
-            _dbContext.Set<EntityChange>().AddRange(changes);
+            context.Set<EntityChange>().AddRange(changes);
     }
 
     private static string GetEntityKey(EntityEntry entry)

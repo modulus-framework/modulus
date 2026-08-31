@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Modulus.Core.Abstractions;
 using Modulus.EventBus.Kafka;
 using Modulus.Events.Abstractions;
@@ -33,8 +34,11 @@ public static class KafkaEventBusExtensions
 
         services.AddHostedService<KafkaEventConsumer>();
 
-        // Register health check for broker connectivity
-        services.AddScoped<IModuleHealthCheck, KafkaHealthCheck>();
+        // Register health check for broker connectivity (TryAddEnumerable because a
+        // multi-bus app might not use Kafka, or a test might swap it out; keying on
+        // implementation type rather than interface allows multiple bus implementations).
+        services.TryAddEnumerable(
+            ServiceDescriptor.Scoped<IModuleHealthCheck, KafkaHealthCheck>());
 
         return services;
     }

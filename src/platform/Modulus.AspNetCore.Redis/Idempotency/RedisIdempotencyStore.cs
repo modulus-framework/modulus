@@ -71,8 +71,12 @@ public sealed class RedisIdempotencyStore(
         var entry = new StoredEntry(
             claimFingerprint.HasValue ? claimFingerprint.ToString() : string.Empty,
             response);
+        // When.NotExists: if our claim expired and another node re-claimed and
+        // is (or was) processing this key, its completion wins — a late
+        // completer must not clobber the current owner's stored response
+        // (which TryBeginAsync would otherwise replay to other callers).
         await db.StringSetAsync(
-            DataKey(key), JsonSerializer.Serialize(entry), Ttl, keepTtl: false, When.Always);
+            DataKey(key), JsonSerializer.Serialize(entry), Ttl, keepTtl: false, When.NotExists);
     }
 
     /// <inheritdoc />

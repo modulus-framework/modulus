@@ -66,25 +66,70 @@ public class EfRepository<T>(IServiceProvider sp)
     /// applied. <see cref="DbSet{TEntity}.FindAsync(object[])"/> bypasses
     /// query filters entirely, which would leak cross-tenant and
     /// soft-deleted records by known id.
+    /// <para>
+    /// Composite primary keys are supported: pass the key values positionally
+    /// as an <c>object[]</c> in primary-key property order.
+    /// </para>
     /// </summary>
     public async Task<T?> GetByIdAsync(object id, CancellationToken ct)
     {
         var entityType = Db.Model.FindEntityType(typeof(T));
         var pk = entityType?.FindPrimaryKey();
 
-        if (pk?.Properties.Count == 1)
+        if (pk is null || pk.Properties.Count == 0)
+            return await Set.FindAsync([id], ct).AsTask();
+
+        var properties = pk.Properties;
+        object[] keyValues;
+
+        if (properties.Count == 1)
         {
-            var pkName = pk.Properties[0].Name;
-            var parameter = Expression.Parameter(typeof(T), "e");
-            var property = Expression.Property(parameter, pkName);
-            var converted = Expression.Constant(
-                Convert.ChangeType(id, property.Type), property.Type);
-            var equals = Expression.Equal(property, converted);
-            var predicate = Expression.Lambda<Func<T, bool>>(equals, parameter);
-            return await Set.FirstOrDefaultAsync(predicate, ct);
+            keyValues = [id];
+        }
+        else
+        {
+            keyValues = id as object[]
+                ?? throw new ArgumentException(
+                    $"Entity '{typeof(T).Name}' has a composite primary key with " +
+                    $"{properties.Count} parts; pass the key values as object[] " +
+                    "in primary-key property order.", nameof(id));
+
+            if (keyValues.Length != properties.Count)
+                throw new ArgumentException(
+                    $"Entity '{typeof(T).Name}' has a composite primary key with " +
+                    $"{properties.Count} parts, but {keyValues.Length} key values were supplied.",
+                    nameof(id));
         }
 
-        return await Set.FindAsync([id], ct).AsTask();
+        // e => EF.Property<TKey>(e, "K1") == v1 && ... — EF.Property also
+        // covers shadow primary-key properties, which Expression.Property
+        // cannot reach.
+        var efProperty = typeof(EF).GetMethod(nameof(EF.Property))!;
+        var parameter = Expression.Parameter(typeof(T), "e");
+        Expression? body = null;
+        for (var i = 0; i < properties.Count; i++)
+        {
+            var property = properties[i];
+            var propertyExpr = Expression.Call(
+                efProperty.MakeGenericMethod(property.ClrType),
+                parameter,
+                Expression.Constant(property.Name));
+            var converted = Expression.Constant(
+                CoerceKeyValue(keyValues[i], property.ClrType), property.ClrType);
+            var equals = Expression.Equal(propertyExpr, converted);
+            body = body is null ? equals : Expression.AndAlso(body, equals);
+        }
+
+        var predicate = Expression.Lambda<Func<T, bool>>(body!, parameter);
+        return await Set.FirstOrDefaultAsync(predicate, ct);
+    }
+
+    private static object? CoerceKeyValue(object value, Type targetType)
+    {
+        var underlying = Nullable.GetUnderlyingType(targetType) ?? targetType;
+        if (underlying.IsInstanceOfType(value))
+            return value;
+        return Convert.ChangeType(value, underlying);
     }
 
     public async Task<IReadOnlyList<T>> ListAsync(

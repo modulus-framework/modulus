@@ -1,0 +1,27 @@
+{
+  "id": "architecture/service-lifecycle",
+  "title": "Service Lifecycle",
+  "description": "Modulus modules go through a well-defined lifecycle from discovery to shutdown.",
+  "source": "@site/docs/architecture/service-lifecycle.md",
+  "sourceDirName": "architecture",
+  "slug": "/architecture/service-lifecycle",
+  "permalink": "/docs/architecture/service-lifecycle",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/cobytelabs/modulus/tree/main/website/docs/architecture/service-lifecycle.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 3,
+  "frontMatter": {
+    "sidebar_position": 3
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Module System",
+    "permalink": "/docs/architecture/module-system"
+  },
+  "next": {
+    "title": "Clean Architecture",
+    "permalink": "/docs/architecture/clean-architecture"
+  }
+}

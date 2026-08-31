@@ -14,8 +14,8 @@ public static class MultiTenancyExtensions
         // ITenantStore even before a real one is registered.
         services.TryAddSingleton<ITenantStore, NullTenantStore>();
 
-        services.AddScoped<CurrentTenant>();
-        services.AddScoped<ICurrentTenant>(
+        services.TryAddScoped<CurrentTenant>();
+        services.TryAddScoped<ICurrentTenant>(
             sp => sp.GetRequiredService<CurrentTenant>());
 
         var builder = new MultiTenancyBuilder(services);

@@ -20,11 +20,6 @@ internal sealed class GlobalExceptionHandler(
         if (exception is OperationCanceledException)
             return false;
 
-        // With `using System.ComponentModel.DataAnnotations;` removed, the
-        // unqualified `ValidationException` binds unambiguously to the
-        // framework's own Modulus.Core.Abstractions.Exceptions.ValidationException.
-        // (Previously the DataAnnotations type shadowed it and framework
-        // validation errors fell through to the 500 arm.)
         var (status, title, isClientError) = exception switch
         {
             ValidationException => (StatusCodes.Status400BadRequest, "Validation failed", true),
@@ -32,6 +27,8 @@ internal sealed class GlobalExceptionHandler(
             UnauthorizedException => (StatusCodes.Status401Unauthorized, "Unauthorized", true),
             ForbiddenException => (StatusCodes.Status403Forbidden, "Forbidden", true),
             ConflictException => (StatusCodes.Status409Conflict, "Conflict", true),
+            FeatureDisabledException => (StatusCodes.Status404NotFound, "Feature not available", true),
+            _ when IsDbUpdateConcurrencyException(exception) => (StatusCodes.Status409Conflict, "Concurrent update conflict", true),
             _ => (StatusCodes.Status500InternalServerError, "An unexpected error occurred", false),
         };
 
@@ -47,6 +44,8 @@ internal sealed class GlobalExceptionHandler(
         Dictionary<string, object?>? extensions = null;
         if (exception is ValidationException ve)
             extensions = new() { ["errors"] = ve.Errors };
+        else if (exception is FeatureDisabledException fe)
+            extensions = new() { ["feature"] = fe.Feature };
 
         await Results.Problem(
                 title: title,
@@ -56,4 +55,14 @@ internal sealed class GlobalExceptionHandler(
 
         return true;
     }
+
+    /// <summary>
+    /// Matches EF Core's DbUpdateConcurrencyException without a hard dependency
+    /// on the EntityFrameworkCore assembly (Modulus.AspNetCore does not reference it).
+    /// </summary>
+    private static bool IsDbUpdateConcurrencyException(Exception ex)
+        => string.Equals(
+            ex.GetType().FullName,
+            "Microsoft.EntityFrameworkCore.DbUpdateConcurrencyException",
+            StringComparison.Ordinal);
 }

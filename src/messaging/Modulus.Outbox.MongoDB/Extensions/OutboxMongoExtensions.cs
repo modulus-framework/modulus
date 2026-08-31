@@ -26,7 +26,9 @@ public static class OutboxMongoExtensions
     {
         var opts = new OutboxOptions();
         configure?.Invoke(opts);
-        services.AddSingleton(Options.Create(opts));
+        // Merge into one options instance (AddOptions chains) so multiple
+        // AddMongoOutbox / AddOutbox calls don't overwrite each other.
+        services.AddOptions<OutboxOptions>().Configure(o => configure?.Invoke(o));
 
         services.AddSingleton(sp =>
         {
@@ -46,10 +48,10 @@ public static class OutboxMongoExtensions
         // Processor: scoped (one per polling iteration).
         services.AddScoped<MongoOutboxProcessor>();
 
-        // Polling hosted service (unless the host wants to drive the loop
-        // itself).
-        if (!opts.DisableAutoPolling)
-            services.AddHostedService<MongoOutboxPollingService>();
+        // Polling hosted service (AddHostedService is TryAddEnumerable — one
+        // registration even when called multiple times). DisableAutoPolling is
+        // honoured at runtime by MongoOutboxPollingService.
+        services.AddHostedService<MongoOutboxPollingService>();
 
         // Ensure TTL index for auto-cleanup of processed messages (optional)
         services.AddHostedService<OutboxIndexInitializer>();

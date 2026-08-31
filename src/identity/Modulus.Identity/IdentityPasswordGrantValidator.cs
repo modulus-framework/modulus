@@ -44,6 +44,7 @@ internal sealed class IdentityPasswordGrantValidator<TUser>(
         }
 
         var roles = await userManager.GetRolesAsync(user);
+        var securityStamp = await userManager.GetSecurityStampAsync(user);
 
         return new PasswordGrantResult
         {
@@ -52,6 +53,7 @@ internal sealed class IdentityPasswordGrantValidator<TUser>(
             UserName = user.FullName,
             Email = await userManager.GetEmailAsync(user),
             Roles = roles.ToList(),
+            SecurityStamp = securityStamp,
         };
     }
 }

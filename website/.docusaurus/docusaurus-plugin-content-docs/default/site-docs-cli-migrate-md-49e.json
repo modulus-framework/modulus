@@ -1,0 +1,27 @@
+{
+  "id": "cli/migrate",
+  "title": "modulus migrate",
+  "description": "Database migration commands.",
+  "source": "@site/docs/cli/migrate.md",
+  "sourceDirName": "cli",
+  "slug": "/cli/migrate",
+  "permalink": "/docs/cli/migrate",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/cobytelabs/modulus/tree/main/website/docs/cli/migrate.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 8,
+  "frontMatter": {
+    "sidebar_position": 8
+  },
+  "sidebar": "cliSidebar",
+  "previous": {
+    "title": "modulus generate-query",
+    "permalink": "/docs/cli/generate-query"
+  },
+  "next": {
+    "title": "modulus list",
+    "permalink": "/docs/cli/list"
+  }
+}

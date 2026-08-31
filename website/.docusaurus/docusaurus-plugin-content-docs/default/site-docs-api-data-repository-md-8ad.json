@@ -1,0 +1,27 @@
+{
+  "id": "api/data/repository",
+  "title": "Repository API",
+  "description": "IRepository\\",
+  "source": "@site/docs/api/data/repository.md",
+  "sourceDirName": "api/data",
+  "slug": "/api/data/repository",
+  "permalink": "/docs/api/data/repository",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/cobytelabs/modulus/tree/main/website/docs/api/data/repository.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 5,
+  "frontMatter": {
+    "sidebar_position": 5
+  },
+  "sidebar": "apiSidebar",
+  "previous": {
+    "title": "Abstractions",
+    "permalink": "/docs/api/core/abstractions"
+  },
+  "next": {
+    "title": "DbContext API",
+    "permalink": "/docs/api/data/db-context"
+  }
+}

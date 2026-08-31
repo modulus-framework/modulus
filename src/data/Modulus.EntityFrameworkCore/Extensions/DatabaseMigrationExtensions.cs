@@ -3,6 +3,7 @@ namespace Modulus.EntityFrameworkCore.Extensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Modulus.Core.Abstractions;
 
 /// <summary>
 /// Controls how <see cref="DatabaseMigrationExtensions.MigrateModulusDatabasesAsync"/>
@@ -120,6 +121,35 @@ public static class DatabaseMigrationExtensions
                         break;
                 }
             });
+        }
+    }
+
+    /// <summary>
+    /// Runs every registered <see cref="IDataSeeder"/> in dependency order.
+    /// Call after <see cref="MigrateModulusDatabasesAsync"/> so that schema
+    /// is in place before seed data is written.
+    /// </summary>
+    public static async Task SeedModulusDataAsync(
+        this IServiceProvider services,
+        CancellationToken ct = default)
+    {
+        await using var scope = services.CreateAsyncScope();
+        var sp = scope.ServiceProvider;
+        var logger = sp.GetService<ILoggerFactory>()?.CreateLogger("Modulus.Seed");
+        var seeders = sp.GetServices<IDataSeeder>().ToList();
+
+        foreach (var seeder in seeders)
+        {
+            var name = seeder.GetType().Name;
+            try
+            {
+                await seeder.SeedAsync(ct);
+                logger?.LogInformation("Seeded data for {Seeder}.", name);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                logger?.LogError(ex, "Seeder {Seeder} failed.", name);
+            }
         }
     }
 }

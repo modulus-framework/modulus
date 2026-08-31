@@ -1,0 +1,27 @@
+{
+  "id": "identity/external-providers",
+  "title": "External Providers",
+  "description": "Modulus supports 6 external identity providers with local token validation.",
+  "source": "@site/docs/identity/external-providers.md",
+  "sourceDirName": "identity",
+  "slug": "/identity/external-providers",
+  "permalink": "/docs/identity/external-providers",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/cobytelabs/modulus/tree/main/website/docs/identity/external-providers.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 3,
+  "frontMatter": {
+    "sidebar_position": 3
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "OpenIddict",
+    "permalink": "/docs/identity/openiddict"
+  },
+  "next": {
+    "title": "Platform Services Overview",
+    "permalink": "/docs/platform/overview"
+  }
+}

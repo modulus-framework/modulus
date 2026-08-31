@@ -1,0 +1,27 @@
+{
+  "id": "configuration/build-system",
+  "title": "Build System",
+  "description": "Modulus uses MSBuild with centralized configuration.",
+  "source": "@site/docs/configuration/build-system.md",
+  "sourceDirName": "configuration",
+  "slug": "/configuration/build-system",
+  "permalink": "/docs/configuration/build-system",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/cobytelabs/modulus/tree/main/website/docs/configuration/build-system.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "sidebar_position": 1
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Integration Tests",
+    "permalink": "/docs/testing/integration-tests"
+  },
+  "next": {
+    "title": "Central Package Management",
+    "permalink": "/docs/configuration/central-package-management"
+  }
+}

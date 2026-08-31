@@ -1,0 +1,27 @@
+{
+  "id": "api/core/abstractions",
+  "title": "Abstractions",
+  "description": "ICurrentTenant",
+  "source": "@site/docs/api/core/abstractions.md",
+  "sourceDirName": "api/core",
+  "slug": "/api/core/abstractions",
+  "permalink": "/docs/api/core/abstractions",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/cobytelabs/modulus/tree/main/website/docs/api/core/abstractions.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 4,
+  "frontMatter": {
+    "sidebar_position": 4
+  },
+  "sidebar": "apiSidebar",
+  "previous": {
+    "title": "DDD Primitives",
+    "permalink": "/docs/api/core/ddd"
+  },
+  "next": {
+    "title": "Repository API",
+    "permalink": "/docs/api/data/repository"
+  }
+}

@@ -36,21 +36,12 @@ public static class HealthCheckExtensions
     public static IHealthChecksBuilder AddModulusHealthChecks(
         this IHealthChecksBuilder builder)
     {
-        var services = builder.Services;
-
-        // Discover all IModuleHealthCheck registrations at the time AddHealthChecks is called.
-        // Each is wrapped in a bridge and registered with its type name as the check name.
-        var serviceProvider = services.BuildServiceProvider();
-        var moduleChecks = serviceProvider.GetServices<IModuleHealthCheck>().ToList();
-
-        foreach (var check in moduleChecks)
-        {
-            var checkName = check.GetType().Name;
-            builder.AddCheck(
-                checkName,
-                new ModuleHealthCheckBridge(check),
-                failureStatus: StandardHealthStatus.Unhealthy);
-        }
+        // Resolve IModuleHealthCheck instances lazily at check time via a single
+        // aggregate bridge, so late-registered checks are discovered and we avoid
+        // building a throwaway IServiceProvider during container configuration.
+        builder.AddCheck<ModuleHealthCheckBridge>(
+            "ModulusModules",
+            failureStatus: StandardHealthStatus.Unhealthy);
 
         return builder;
     }

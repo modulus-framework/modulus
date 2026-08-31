@@ -1,0 +1,23 @@
+{
+  "id": "cli/templates",
+  "title": "Templates",
+  "description": "The CLI uses Scriban templates embedded as resources.",
+  "source": "@site/docs/cli/templates.md",
+  "sourceDirName": "cli",
+  "slug": "/cli/templates",
+  "permalink": "/docs/cli/templates",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/cobytelabs/modulus/tree/main/website/docs/cli/templates.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 13,
+  "frontMatter": {
+    "sidebar_position": 13
+  },
+  "sidebar": "cliSidebar",
+  "previous": {
+    "title": "Global Flags",
+    "permalink": "/docs/cli/global-flags"
+  }
+}

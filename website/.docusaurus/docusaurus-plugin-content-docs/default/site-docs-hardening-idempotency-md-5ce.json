@@ -1,0 +1,27 @@
+{
+  "id": "hardening/idempotency",
+  "title": "HTTP Idempotency",
+  "description": "Modulus provides idempotency for unsafe (mutating) HTTP endpoints.",
+  "source": "@site/docs/hardening/idempotency.md",
+  "sourceDirName": "hardening",
+  "slug": "/hardening/idempotency",
+  "permalink": "/docs/hardening/idempotency",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/cobytelabs/modulus/tree/main/website/docs/hardening/idempotency.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 5,
+  "frontMatter": {
+    "sidebar_position": 5
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Security Headers",
+    "permalink": "/docs/hardening/security-headers"
+  },
+  "next": {
+    "title": "Request Correlation",
+    "permalink": "/docs/hardening/correlation"
+  }
+}

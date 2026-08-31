@@ -1,0 +1,27 @@
+{
+  "id": "cli/info",
+  "title": "modulus info",
+  "description": "Shows an overview of the application.",
+  "source": "@site/docs/cli/info.md",
+  "sourceDirName": "cli",
+  "slug": "/cli/info",
+  "permalink": "/docs/cli/info",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/cobytelabs/modulus/tree/main/website/docs/cli/info.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 10,
+  "frontMatter": {
+    "sidebar_position": 10
+  },
+  "sidebar": "cliSidebar",
+  "previous": {
+    "title": "modulus list",
+    "permalink": "/docs/cli/list"
+  },
+  "next": {
+    "title": "modulus doctor",
+    "permalink": "/docs/cli/doctor"
+  }
+}

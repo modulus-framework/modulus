@@ -1,0 +1,23 @@
+{
+  "id": "api/aspnetcore/middleware",
+  "title": "Middleware API",
+  "description": "Available Middleware",
+  "source": "@site/docs/api/aspnetcore/middleware.md",
+  "sourceDirName": "api/aspnetcore",
+  "slug": "/api/aspnetcore/middleware",
+  "permalink": "/docs/api/aspnetcore/middleware",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/cobytelabs/modulus/tree/main/website/docs/api/aspnetcore/middleware.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 11,
+  "frontMatter": {
+    "sidebar_position": 11
+  },
+  "sidebar": "apiSidebar",
+  "previous": {
+    "title": "Endpoints API",
+    "permalink": "/docs/api/aspnetcore/endpoints"
+  }
+}

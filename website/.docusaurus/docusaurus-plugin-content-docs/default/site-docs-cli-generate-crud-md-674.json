@@ -1,0 +1,27 @@
+{
+  "id": "cli/generate-crud",
+  "title": "modulus generate-crud",
+  "description": "Generates complete CRUD operations for an entity.",
+  "source": "@site/docs/cli/generate-crud.md",
+  "sourceDirName": "cli",
+  "slug": "/cli/generate-crud",
+  "permalink": "/docs/cli/generate-crud",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/cobytelabs/modulus/tree/main/website/docs/cli/generate-crud.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 5,
+  "frontMatter": {
+    "sidebar_position": 5
+  },
+  "sidebar": "cliSidebar",
+  "previous": {
+    "title": "modulus add-module",
+    "permalink": "/docs/cli/add-module"
+  },
+  "next": {
+    "title": "modulus generate-command",
+    "permalink": "/docs/cli/generate-command"
+  }
+}

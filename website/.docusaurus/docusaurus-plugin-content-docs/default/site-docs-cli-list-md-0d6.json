@@ -1,0 +1,27 @@
+{
+  "id": "cli/list",
+  "title": "modulus list",
+  "description": "Lists all modules and their entities.",
+  "source": "@site/docs/cli/list.md",
+  "sourceDirName": "cli",
+  "slug": "/cli/list",
+  "permalink": "/docs/cli/list",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/cobytelabs/modulus/tree/main/website/docs/cli/list.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 9,
+  "frontMatter": {
+    "sidebar_position": 9
+  },
+  "sidebar": "cliSidebar",
+  "previous": {
+    "title": "modulus migrate",
+    "permalink": "/docs/cli/migrate"
+  },
+  "next": {
+    "title": "modulus info",
+    "permalink": "/docs/cli/info"
+  }
+}

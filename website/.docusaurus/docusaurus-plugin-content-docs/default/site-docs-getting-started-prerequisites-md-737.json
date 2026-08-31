@@ -1,0 +1,27 @@
+{
+  "id": "getting-started/prerequisites",
+  "title": "Prerequisites",
+  "description": "Required",
+  "source": "@site/docs/getting-started/prerequisites.md",
+  "sourceDirName": "getting-started",
+  "slug": "/getting-started/prerequisites",
+  "permalink": "/docs/getting-started/prerequisites",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/cobytelabs/modulus/tree/main/website/docs/getting-started/prerequisites.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "sidebar_position": 1
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Modulus Framework",
+    "permalink": "/docs/introduction"
+  },
+  "next": {
+    "title": "Quick Start",
+    "permalink": "/docs/getting-started/quick-start"
+  }
+}

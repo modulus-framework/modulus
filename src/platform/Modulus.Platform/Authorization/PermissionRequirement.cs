@@ -57,14 +57,20 @@ internal sealed class PermissionRequirementHandler(
 
         var query = BuildQuery(principal);
 
+        // ONE store read: raw grants feed both the deny check below and the
+        // resolver (which must not re-read the store for them).
+        var grants = grantStore.GetGrants(query);
+
         // A store-level Deny for this permission always wins, even over a
         // token-embedded permission claim — otherwise a revoked grant would
-        // stay effective until the caller's token expires.
-        if (IsExplicitlyDenied(query, requirement.Permission))
+        // stay effective until the caller's token expires. Checked against the
+        // raw grants (not the resolved set) so a covering wildcard deny also
+        // blocks a matching claim.
+        if (IsExplicitlyDenied(grants, requirement.Permission))
             return Task.CompletedTask;
 
         if (principal.HasClaim("permission", requirement.Permission)
-            || resolver.Resolve(query).Contains(requirement.Permission))
+            || resolver.Resolve(query, grants).Contains(requirement.Permission))
         {
             context.Succeed(requirement);
         }
@@ -72,9 +78,9 @@ internal sealed class PermissionRequirementHandler(
         return Task.CompletedTask;
     }
 
-    private bool IsExplicitlyDenied(PrincipalGrantQuery query, string permission)
+    private bool IsExplicitlyDenied(IReadOnlyCollection<PermissionGrant> grants, string permission)
     {
-        foreach (var grant in grantStore.GetGrants(query))
+        foreach (var grant in grants)
         {
             if (grant.Type != PermissionGrantType.Deny)
                 continue;

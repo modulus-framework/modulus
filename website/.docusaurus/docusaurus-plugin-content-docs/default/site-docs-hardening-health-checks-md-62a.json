@@ -1,0 +1,27 @@
+{
+  "id": "hardening/health-checks",
+  "title": "Health Checks",
+  "description": "Modulus provides liveness and readiness health probes.",
+  "source": "@site/docs/hardening/health-checks.md",
+  "sourceDirName": "hardening",
+  "slug": "/hardening/health-checks",
+  "permalink": "/docs/hardening/health-checks",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/cobytelabs/modulus/tree/main/website/docs/hardening/health-checks.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 2,
+  "frontMatter": {
+    "sidebar_position": 2
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Rate Limiting",
+    "permalink": "/docs/hardening/rate-limiting"
+  },
+  "next": {
+    "title": "CORS",
+    "permalink": "/docs/hardening/cors"
+  }
+}

@@ -64,7 +64,7 @@ public sealed class TestDatabaseRegistrationTests
     }
 
     [Fact]
-    public void UseSharedSqlite_RoundTripsDataAcrossContextsInTheSameFactory()
+    public async Task UseSharedSqlite_RoundTripsDataAcrossContextsInTheSameFactory()
     {
         var connectionString = SharedMemoryConnectionString();
         var services = ModuleRegisteredWithSqlServer();
@@ -73,7 +73,7 @@ public sealed class TestDatabaseRegistrationTests
         // Keep-alive connection so the shared in-memory DB survives between the
         // short-lived contexts below — mirrors what the factory does.
         using var keepAlive = new SqliteConnection(connectionString);
-        keepAlive.Open();
+        await keepAlive.OpenAsync();
 
         using var provider = services.BuildServiceProvider();
         var id = Guid.NewGuid();
@@ -81,9 +81,9 @@ public sealed class TestDatabaseRegistrationTests
         using (var scope = provider.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<WidgetDbContext>();
-            db.Database.EnsureCreated();
+            await db.Database.EnsureCreatedAsync();
             db.Widgets.Add(new Widget { Id = id, Name = "gizmo" });
-            db.SaveChanges();
+            await db.SaveChangesAsync();
         }
 
         using (var scope = provider.CreateScope())
@@ -115,7 +115,7 @@ public sealed class TestDatabaseRegistrationTests
     }
 
     [Fact]
-    public void UsePerContextSqlite_EveryContextGetsItsSchema()
+    public async Task UsePerContextSqlite_EveryContextGetsItsSchema()
     {
         // Regression: a single shared database makes EnsureCreated a no-op for
         // every context after the first (the database already has tables), so the
@@ -127,21 +127,21 @@ public sealed class TestDatabaseRegistrationTests
 
         using var keepAliveA = new SqliteConnection(map[typeof(WidgetDbContext)]);
         using var keepAliveB = new SqliteConnection(map[typeof(GadgetDbContext)]);
-        keepAliveA.Open();
-        keepAliveB.Open();
+        await keepAliveA.OpenAsync();
+        await keepAliveB.OpenAsync();
 
         using var provider = services.BuildServiceProvider();
         using (var scope = provider.CreateScope())
         {
             var widgets = scope.ServiceProvider.GetRequiredService<WidgetDbContext>();
-            widgets.Database.EnsureCreated();
+            await widgets.Database.EnsureCreatedAsync();
             widgets.Widgets.Add(new Widget { Id = Guid.NewGuid(), Name = "gizmo" });
-            widgets.SaveChanges();
+            await widgets.SaveChangesAsync();
 
             var gadgets = scope.ServiceProvider.GetRequiredService<GadgetDbContext>();
-            gadgets.Database.EnsureCreated();
+            await gadgets.Database.EnsureCreatedAsync();
             gadgets.Gadgets.Add(new Gadget { Id = Guid.NewGuid(), Name = "gadget" });
-            gadgets.SaveChanges();
+            await gadgets.SaveChangesAsync();
         }
 
         using (var scope = provider.CreateScope())
@@ -155,15 +155,15 @@ public sealed class TestDatabaseRegistrationTests
     }
 
     [Fact]
-    public void UseSharedSqlite_IsolatesDatabasesByConnectionString()
+    public async Task UseSharedSqlite_IsolatesDatabasesByConnectionString()
     {
         var firstConn = SharedMemoryConnectionString();
         var secondConn = SharedMemoryConnectionString();
 
         using var keepAliveA = new SqliteConnection(firstConn);
         using var keepAliveB = new SqliteConnection(secondConn);
-        keepAliveA.Open();
-        keepAliveB.Open();
+        await keepAliveA.OpenAsync();
+        await keepAliveB.OpenAsync();
 
         var first = ModuleRegisteredWithSqlServer();
         first.UseSharedSqlite(firstConn);
@@ -176,9 +176,9 @@ public sealed class TestDatabaseRegistrationTests
         using (var scope = providerA.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<WidgetDbContext>();
-            db.Database.EnsureCreated();
+            await db.Database.EnsureCreatedAsync();
             db.Widgets.Add(new Widget { Id = Guid.NewGuid(), Name = "only-in-A" });
-            db.SaveChanges();
+            await db.SaveChangesAsync();
         }
 
         using (var scope = providerB.CreateScope())

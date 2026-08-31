@@ -1,0 +1,27 @@
+{
+  "id": "configuration/central-package-management",
+  "title": "Central Package Management",
+  "description": "Modulus uses NuGet Central Package Management (CPM) for dependency version control.",
+  "source": "@site/docs/configuration/central-package-management.md",
+  "sourceDirName": "configuration",
+  "slug": "/configuration/central-package-management",
+  "permalink": "/docs/configuration/central-package-management",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/cobytelabs/modulus/tree/main/website/docs/configuration/central-package-management.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 2,
+  "frontMatter": {
+    "sidebar_position": 2
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Build System",
+    "permalink": "/docs/configuration/build-system"
+  },
+  "next": {
+    "title": "appsettings.json",
+    "permalink": "/docs/configuration/appsettings"
+  }
+}

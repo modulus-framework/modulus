@@ -27,4 +27,13 @@ public interface IPermissionResolver
     /// holds. The set is case-insensitive and never null.
     /// </summary>
     IReadOnlySet<string> Resolve(PrincipalGrantQuery principal);
+
+    /// <summary>
+    /// Resolves the effective set from <paramref name="grants"/> instead of
+    /// reading the grant store — for callers that already fetched the grants
+    /// and need them for their own checks (e.g. the <c>[Authorize]</c> policy
+    /// handler, which must also inspect raw denies). Implementations must not
+    /// re-read the store for these grants.
+    /// </summary>
+    IReadOnlySet<string> Resolve(PrincipalGrantQuery principal, IReadOnlyCollection<PermissionGrant> grants);
 }

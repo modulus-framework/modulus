@@ -2,6 +2,7 @@ namespace Modulus.Outbox.MongoDB;
 
 using System.Text.Json;
 using global::MongoDB.Driver;
+using Microsoft.Extensions.DependencyInjection;
 using Modulus.Core.Abstractions;
 using Modulus.Events.Abstractions;
 using Modulus.Outbox.Abstractions;
@@ -35,6 +36,7 @@ public sealed class MongoOutboxMessage
 /// </summary>
 internal sealed class MongoOutboxWriter(
     IMongoCollection<MongoOutboxMessage> collection,
+    IServiceProvider sp,
     ICurrentTenant tenant)
     : IOutboxWriter
 {
@@ -54,6 +56,9 @@ internal sealed class MongoOutboxWriter(
             Payload = JsonSerializer.Serialize(@event, type),
             TenantId = tenant.TenantId ?? Guid.Empty,
             ModuleName = type.Module.Name.Replace(".dll", ""),
+            // Resolved lazily so registration doesn't depend on the correlation
+            // context being wired (matches EfOutboxWriter).
+            CorrelationId = sp.GetService<ICorrelationContext>()?.CorrelationId,
             CausationId = @event.EventId.ToString(),
         };
     }

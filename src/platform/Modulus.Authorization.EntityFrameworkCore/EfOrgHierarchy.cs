@@ -92,26 +92,40 @@ public sealed class EfOrgHierarchy(
 
     private InMemoryOrgHierarchy Snapshot()
     {
+        // Fast path: a fresh snapshot serves without touching the database or
+        // contending on the gate.
         lock (_gate)
         {
-            var now = time.GetUtcNow();
-            if (_snapshot is not null && now - _loadedAt < CacheDuration)
+            if (_snapshot is not null && time.GetUtcNow() - _loadedAt < CacheDuration)
                 return _snapshot;
+        }
 
-            using var db = factory.CreateDbContext();
-            var edgesByChild = db.OrgUnitParents.AsNoTracking()
-                .AsEnumerable()
-                .GroupBy(e => e.ChildId)
-                .ToDictionary(g => g.Key, g => g.Select(e => e.ParentId).ToArray());
+        // Refresh OUTSIDE the gate: concurrent callers may all reload (the
+        // rebuild is idempotent), but no thread ever holds the lock across
+        // DbContext creation and table reads.
+        using var db = factory.CreateDbContext();
+        var edgesByChild = db.OrgUnitParents.AsNoTracking()
+            .AsEnumerable()
+            .GroupBy(e => e.ChildId)
+            .ToDictionary(g => g.Key, g => g.Select(e => e.ParentId).ToArray());
 
-            var snapshot = new InMemoryOrgHierarchy();
-            foreach (var unitId in db.OrgUnits.AsNoTracking().Select(u => u.Id))
-                snapshot.AddUnit(unitId,
-                    edgesByChild.TryGetValue(unitId, out var parents) ? parents : []);
+        var snapshot = new InMemoryOrgHierarchy();
+        foreach (var unitId in db.OrgUnits.AsNoTracking().Select(u => u.Id))
+            snapshot.AddUnit(unitId,
+                edgesByChild.TryGetValue(unitId, out var parents) ? parents : []);
 
-            _snapshot = snapshot;
-            _loadedAt = now;
-            return snapshot;
+        lock (_gate)
+        {
+            // Another caller may have published a fresher snapshot while this
+            // one was loading; keep whichever load is newest.
+            var now = time.GetUtcNow();
+            if (_snapshot is null || now - _loadedAt >= CacheDuration)
+            {
+                _snapshot = snapshot;
+                _loadedAt = now;
+            }
+
+            return _snapshot;
         }
     }
 

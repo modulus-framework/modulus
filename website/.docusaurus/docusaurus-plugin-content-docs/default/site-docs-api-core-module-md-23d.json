@@ -1,0 +1,27 @@
+{
+  "id": "api/core/module",
+  "title": "Module API",
+  "description": "IModule",
+  "source": "@site/docs/api/core/module.md",
+  "sourceDirName": "api/core",
+  "slug": "/api/core/module",
+  "permalink": "/docs/api/core/module",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/cobytelabs/modulus/tree/main/website/docs/api/core/module.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 2,
+  "frontMatter": {
+    "sidebar_position": 2
+  },
+  "sidebar": "apiSidebar",
+  "previous": {
+    "title": "API Reference",
+    "permalink": "/docs/api/"
+  },
+  "next": {
+    "title": "DDD Primitives",
+    "permalink": "/docs/api/core/ddd"
+  }
+}

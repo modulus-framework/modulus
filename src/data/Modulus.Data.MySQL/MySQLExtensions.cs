@@ -25,9 +25,10 @@ public static class MySQLExtensions
                 configure?.Invoke(my);
             }));
 
-        services.TryAddScoped<IModuleHealthCheck>(sp =>
-            new RelationalDatabaseHealthCheck<TContext>(
-                sp.GetRequiredService<TContext>(), "mysql"));
+        services.TryAddEnumerable(
+            ServiceDescriptor.Scoped<IModuleHealthCheck, RelationalDatabaseHealthCheck<TContext>>(
+                sp => new RelationalDatabaseHealthCheck<TContext>(
+                    sp.GetRequiredService<TContext>(), "mysql")));
 
         return services;
     }

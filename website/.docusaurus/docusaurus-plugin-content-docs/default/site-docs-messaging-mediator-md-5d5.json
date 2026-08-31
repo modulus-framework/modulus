@@ -1,0 +1,27 @@
+{
+  "id": "messaging/mediator",
+  "title": "Mediator",
+  "description": "The mediator implements the CQRS pattern with command/query separation and pipeline behaviors.",
+  "source": "@site/docs/messaging/mediator.md",
+  "sourceDirName": "messaging",
+  "slug": "/messaging/mediator",
+  "permalink": "/docs/messaging/mediator",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/cobytelabs/modulus/tree/main/website/docs/messaging/mediator.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 2,
+  "frontMatter": {
+    "sidebar_position": 2
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Messaging Overview",
+    "permalink": "/docs/messaging/overview"
+  },
+  "next": {
+    "title": "Events",
+    "permalink": "/docs/messaging/events"
+  }
+}

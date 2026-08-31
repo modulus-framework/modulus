@@ -1,0 +1,27 @@
+{
+  "id": "hardening/feature-flags",
+  "title": "Feature Flags",
+  "description": "Modulus integrates Microsoft.FeatureManagement for feature toggling.",
+  "source": "@site/docs/hardening/feature-flags.md",
+  "sourceDirName": "hardening",
+  "slug": "/hardening/feature-flags",
+  "permalink": "/docs/hardening/feature-flags",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/cobytelabs/modulus/tree/main/website/docs/hardening/feature-flags.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 7,
+  "frontMatter": {
+    "sidebar_position": 7
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Request Correlation",
+    "permalink": "/docs/hardening/correlation"
+  },
+  "next": {
+    "title": "Secrets Guard",
+    "permalink": "/docs/hardening/secrets-guard"
+  }
+}

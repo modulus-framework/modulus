@@ -1,0 +1,27 @@
+{
+  "id": "platform/signalr",
+  "title": "SignalR",
+  "description": "Modulus provides real-time communication via SignalR.",
+  "source": "@site/docs/platform/signalr.md",
+  "sourceDirName": "platform",
+  "slug": "/platform/signalr",
+  "permalink": "/docs/platform/signalr",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/cobytelabs/modulus/tree/main/website/docs/platform/signalr.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 7,
+  "frontMatter": {
+    "sidebar_position": 7
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Storage",
+    "permalink": "/docs/platform/storage"
+  },
+  "next": {
+    "title": "Rate Limiting",
+    "permalink": "/docs/hardening/rate-limiting"
+  }
+}

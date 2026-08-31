@@ -1,0 +1,27 @@
+{
+  "id": "cli/module",
+  "title": "modulus module",
+  "description": "Creates a blank 4-layer business module.",
+  "source": "@site/docs/cli/module.md",
+  "sourceDirName": "cli",
+  "slug": "/cli/module",
+  "permalink": "/docs/cli/module",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/cobytelabs/modulus/tree/main/website/docs/cli/module.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 3,
+  "frontMatter": {
+    "sidebar_position": 3
+  },
+  "sidebar": "cliSidebar",
+  "previous": {
+    "title": "modulus app",
+    "permalink": "/docs/cli/app"
+  },
+  "next": {
+    "title": "modulus add-module",
+    "permalink": "/docs/cli/add-module"
+  }
+}

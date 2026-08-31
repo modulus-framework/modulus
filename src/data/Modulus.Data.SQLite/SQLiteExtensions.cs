@@ -24,9 +24,10 @@ public static class SQLiteExtensions
         services.AddModuleDatabase<TContext>(
             opts => opts.UseSqlite($"Data Source={dataSource}"));
 
-        services.TryAddScoped<IModuleHealthCheck>(sp =>
-            new RelationalDatabaseHealthCheck<TContext>(
-                sp.GetRequiredService<TContext>(), "sqlite"));
+        services.TryAddEnumerable(
+            ServiceDescriptor.Scoped<IModuleHealthCheck, RelationalDatabaseHealthCheck<TContext>>(
+                sp => new RelationalDatabaseHealthCheck<TContext>(
+                    sp.GetRequiredService<TContext>(), "sqlite")));
 
         return services;
     }

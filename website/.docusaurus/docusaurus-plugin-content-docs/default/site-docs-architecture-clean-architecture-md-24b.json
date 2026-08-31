@@ -1,0 +1,27 @@
+{
+  "id": "architecture/clean-architecture",
+  "title": "Clean Architecture",
+  "description": "Each Modulus module follows a 4-layer Clean Architecture layout:",
+  "source": "@site/docs/architecture/clean-architecture.md",
+  "sourceDirName": "architecture",
+  "slug": "/architecture/clean-architecture",
+  "permalink": "/docs/architecture/clean-architecture",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/cobytelabs/modulus/tree/main/website/docs/architecture/clean-architecture.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 4,
+  "frontMatter": {
+    "sidebar_position": 4
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Service Lifecycle",
+    "permalink": "/docs/architecture/service-lifecycle"
+  },
+  "next": {
+    "title": "Data Layer Overview",
+    "permalink": "/docs/data/overview"
+  }
+}

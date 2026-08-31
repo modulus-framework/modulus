@@ -17,11 +17,22 @@ public sealed class AmbientContextIncomingStep(
     ICurrentTenant? currentTenant,
     ICorrelationContext? correlationContext) : IIncomingStep
 {
-    public Task Process(IncomingStepContext context, Func<Task> next)
+    /// <summary>Restores and maintains ambient context for the handler.</summary>
+    /// <remarks>
+    /// This method <b>must</b> be <c>async</c> and <c>await next()</c>. Returning
+    /// the task from a synchronous method would run the <c>using</c> disposals the
+    /// moment <c>next()</c> yields at its first <c>await</c> — tearing the tenant
+    /// and correlation scopes down while the handler is still running, so tenant
+    /// query filters would resolve against the wrong tenant (or none at all).
+    /// </remarks>
+    public async Task Process(IncomingStepContext context, Func<Task> next)
     {
         var headers = context.Load<Message>()?.Headers;
         if (headers is null || (currentTenant is null && correlationContext is null))
-            return next();
+        {
+            await next();
+            return;
+        }
 
         var (tenantId, correlationId) = AmbientContextHeaders.Read(headers);
 
@@ -34,6 +45,6 @@ public sealed class AmbientContextIncomingStep(
             ? correlationContext.BeginScope(correlationId)
             : null;
 
-        return next();
+        await next();
     }
 }

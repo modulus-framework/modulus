@@ -1,0 +1,27 @@
+{
+  "id": "messaging/outbox",
+  "title": "Outbox",
+  "description": "The transactional outbox pattern ensures reliable event publishing by storing events in the database within the same transaction as business data.",
+  "source": "@site/docs/messaging/outbox.md",
+  "sourceDirName": "messaging",
+  "slug": "/messaging/outbox",
+  "permalink": "/docs/messaging/outbox",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/cobytelabs/modulus/tree/main/website/docs/messaging/outbox.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 4,
+  "frontMatter": {
+    "sidebar_position": 4
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Events",
+    "permalink": "/docs/messaging/events"
+  },
+  "next": {
+    "title": "Inbox",
+    "permalink": "/docs/messaging/inbox"
+  }
+}

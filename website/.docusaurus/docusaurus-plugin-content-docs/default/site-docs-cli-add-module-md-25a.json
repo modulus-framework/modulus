@@ -1,0 +1,27 @@
+{
+  "id": "cli/add-module",
+  "title": "modulus add-module",
+  "description": "Adds a layered module to an existing Modulus application.",
+  "source": "@site/docs/cli/add-module.md",
+  "sourceDirName": "cli",
+  "slug": "/cli/add-module",
+  "permalink": "/docs/cli/add-module",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/cobytelabs/modulus/tree/main/website/docs/cli/add-module.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 4,
+  "frontMatter": {
+    "sidebar_position": 4
+  },
+  "sidebar": "cliSidebar",
+  "previous": {
+    "title": "modulus module",
+    "permalink": "/docs/cli/module"
+  },
+  "next": {
+    "title": "modulus generate-crud",
+    "permalink": "/docs/cli/generate-crud"
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "id": "platform/authorization",
+  "title": "Authorization",
+  "description": "Modulus provides a permission-based authorization system.",
+  "source": "@site/docs/platform/authorization.md",
+  "sourceDirName": "platform",
+  "slug": "/platform/authorization",
+  "permalink": "/docs/platform/authorization",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/cobytelabs/modulus/tree/main/website/docs/platform/authorization.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 3,
+  "frontMatter": {
+    "sidebar_position": 3
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Multi-Tenancy",
+    "permalink": "/docs/platform/multi-tenancy"
+  },
+  "next": {
+    "title": "Background Jobs",
+    "permalink": "/docs/platform/background-jobs"
+  }
+}

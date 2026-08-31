@@ -204,6 +204,12 @@ public sealed class IdempotencyMiddleware(
         hasher.AppendData(Encoding.UTF8.GetBytes(
             $"{request.Method}\n{request.Path}\n{request.QueryString}\n"));
 
+        // Content-Type is part of the request identity: the same bytes sent as
+        // JSON vs. form-encoded can bind to different models, so they must not
+        // collide under one key.
+        hasher.AppendData(Encoding.UTF8.GetBytes(
+            $"{request.ContentType}\n"));
+
         request.Body.Position = 0;
         var rented = new byte[8192];
         int read;

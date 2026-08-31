@@ -55,9 +55,44 @@ public static class EFCoreServiceCollectionExtensions
     }
 
     /// <summary>
-    /// Returns the single <see cref="EntityContextMapRegistry"/> shared across all
-    /// <see cref="AddModuleDatabase{TContext}"/> calls, creating and registering it
-    /// (and the <see cref="IEntityContextMap"/> that reads it) on first use.
+    /// Registers a module <typeparamref name="TContext"/> with a connection
+    /// string resolved per-request via <paramref name="resolveConnectionString"/>.
+    /// Use this overload when a single context type must route to different
+    /// databases per tenant — the factory is invoked once per context creation,
+    /// so a tenant-scoped resolver (reading the ambient tenant) picks the
+    /// correct connection string for each request.
+    /// </summary>
+    /// <remarks>
+    /// The context is registered with <c>optionsLifetime: Scoped</c> so that
+    /// EF Core rebuilds <c>DbContextOptions</c> on every scope — the
+    /// default singleton lifetime would cache the first tenant's connection
+    /// string and return it for all subsequent tenants.
+    /// </remarks>
+    public static IServiceCollection AddModuleDatabase<TContext>(
+        this IServiceCollection services,
+        Func<IServiceProvider, string> resolveConnectionString,
+        Action<DbContextOptionsBuilder, string>? configure = null)
+        where TContext : ModuleDbContext
+    {
+        services.AddDbContext<TContext>(
+            (sp, options) =>
+            {
+                var connectionString = resolveConnectionString(sp);
+                configure?.Invoke(options, connectionString);
+            },
+            optionsLifetime: ServiceLifetime.Scoped);
+
+        services.AddScoped<DbContext>(sp => sp.GetRequiredService<TContext>());
+        GetOrAddEntityContextMapRegistry(services).Register(typeof(TContext));
+        services.AddScoped(typeof(IRepository<>), typeof(EfRepository<>));
+        services.AddScoped(typeof(IReadRepository<>), typeof(EfReadRepository<>));
+        return services;
+    }
+
+    /// <summary>
+    /// The single <see cref="EntityContextMapRegistry"/> shared across all
+    /// <c>AddModuleDatabase&lt;TContext&gt;</c> calls, creating and registering
+    /// it (and the <see cref="IEntityContextMap"/> that reads it) on first use.
     /// </summary>
     private static EntityContextMapRegistry GetOrAddEntityContextMapRegistry(
         IServiceCollection services)

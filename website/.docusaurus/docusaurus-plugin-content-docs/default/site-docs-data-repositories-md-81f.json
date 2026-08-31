@@ -1,0 +1,27 @@
+{
+  "id": "data/repositories",
+  "title": "Repositories",
+  "description": "Modulus uses the Repository pattern to abstract data access.",
+  "source": "@site/docs/data/repositories.md",
+  "sourceDirName": "data",
+  "slug": "/data/repositories",
+  "permalink": "/docs/data/repositories",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/cobytelabs/modulus/tree/main/website/docs/data/repositories.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 4,
+  "frontMatter": {
+    "sidebar_position": 4
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "MongoDB",
+    "permalink": "/docs/data/mongodb"
+  },
+  "next": {
+    "title": "Migrations",
+    "permalink": "/docs/data/migrations"
+  }
+}

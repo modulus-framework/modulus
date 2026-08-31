@@ -29,9 +29,17 @@ public static class PostgreSQLExtensions
                 opts.UseSnakeCaseNamingConvention();
         });
 
-        services.TryAddScoped<IModuleHealthCheck>(sp =>
-            new RelationalDatabaseHealthCheck<TContext>(
-                sp.GetRequiredService<TContext>(), "postgresql"));
+        // TryAddEnumerable, NOT TryAddScoped: TryAdd* keys on the *service* type,
+        // so in a multi-module app the second AddPostgreSQLDatabase<T> call would
+        // find IModuleHealthCheck already registered and add nothing — only the
+        // first module's database would ever be health-checked, and /health/ready
+        // would report healthy while another module's database was down.
+        // TryAddEnumerable keys on the implementation type, which is distinct per
+        // TContext, so every module contributes its own check exactly once.
+        services.TryAddEnumerable(
+            ServiceDescriptor.Scoped<IModuleHealthCheck, RelationalDatabaseHealthCheck<TContext>>(
+                sp => new RelationalDatabaseHealthCheck<TContext>(
+                    sp.GetRequiredService<TContext>(), "postgresql")));
 
         return services;
     }

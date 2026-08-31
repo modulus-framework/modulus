@@ -4,13 +4,17 @@ using Microsoft.EntityFrameworkCore;
 using Modulus.Authorization.Governance;
 
 /// <summary>
-/// EF Core implementation of the recertification campaign store.
+/// EF Core implementation of the recertification campaign store. Registered as a
+/// singleton over <see cref="IDbContextFactory{TContext}"/>; each operation opens
+/// a short-lived context so the store stays thread-safe.
 /// </summary>
-public sealed class EfRecertificationCampaignStore(AuthorizationStoreDbContext db)
+public sealed class EfRecertificationCampaignStore(
+    IDbContextFactory<AuthorizationStoreDbContext> factory)
     : IRecertificationCampaignStore
 {
     public async Task<RecertificationCampaign?> GetAsync(Guid campaignId, CancellationToken ct)
     {
+        await using var db = await factory.CreateDbContextAsync(ct);
         var entity = await db.RecertificationCampaigns
             .Include(c => c.Items)
             .FirstOrDefaultAsync(c => c.Id == campaignId && c.CompletedAt == null, ct);
@@ -22,6 +26,7 @@ public sealed class EfRecertificationCampaignStore(AuthorizationStoreDbContext d
 
     public async Task<List<(Guid Id, string Name, int PendingCount, int TotalCount)>> ListActiveAsync(CancellationToken ct)
     {
+        await using var db = await factory.CreateDbContextAsync(ct);
         var results = await db.RecertificationCampaigns
             .Where(c => c.CompletedAt == null)
             .Select(c => new
@@ -40,6 +45,7 @@ public sealed class EfRecertificationCampaignStore(AuthorizationStoreDbContext d
     public async Task<Guid> CreateAsync(string name, List<RecertificationItem> items, Guid createdBy, CancellationToken ct)
     {
         var id = Guid.NewGuid();
+        await using var db = await factory.CreateDbContextAsync(ct);
         var entity = new RecertificationCampaignRow
         {
             Id = id,
@@ -65,6 +71,7 @@ public sealed class EfRecertificationCampaignStore(AuthorizationStoreDbContext d
     public async Task UpdateDecisionAsync(Guid campaignId, Guid userId, string permission,
         RecertificationDecision decision, Guid reviewedBy, CancellationToken ct)
     {
+        await using var db = await factory.CreateDbContextAsync(ct);
         var items = await db.RecertificationItems
             .Where(i => i.CampaignId == campaignId
                      && i.UserId == userId
@@ -83,6 +90,7 @@ public sealed class EfRecertificationCampaignStore(AuthorizationStoreDbContext d
 
     public async Task CompleteAsync(Guid campaignId, CancellationToken ct)
     {
+        await using var db = await factory.CreateDbContextAsync(ct);
         var campaign = await db.RecertificationCampaigns.FirstOrDefaultAsync(c => c.Id == campaignId, ct);
         if (campaign is not null)
         {

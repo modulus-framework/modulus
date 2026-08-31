@@ -1,0 +1,27 @@
+{
+  "id": "identity/openiddict",
+  "title": "OpenIddict",
+  "description": "OpenIddict provides the OAuth 2.0 / OpenID Connect server.",
+  "source": "@site/docs/identity/openiddict.md",
+  "sourceDirName": "identity",
+  "slug": "/identity/openiddict",
+  "permalink": "/docs/identity/openiddict",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/cobytelabs/modulus/tree/main/website/docs/identity/openiddict.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 2,
+  "frontMatter": {
+    "sidebar_position": 2
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Identity Overview",
+    "permalink": "/docs/identity/overview"
+  },
+  "next": {
+    "title": "External Providers",
+    "permalink": "/docs/identity/external-providers"
+  }
+}

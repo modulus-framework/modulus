@@ -47,4 +47,5 @@ public interface ICurrentTenant
 public sealed record TenantInfo(
     Guid TenantId,
     string TenantSlug,
-    string? DisplayName = null);
+    string? DisplayName = null,
+    string? ConnectionString = null);

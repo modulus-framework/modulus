@@ -20,6 +20,12 @@ internal sealed class MongoOutboxPollingService(
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        // Honoured at runtime: multiple AddOutbox/AddMongoOutbox calls merge
+        // their options, so the flag's final value is only known after the
+        // container is built.
+        if (opts.Value.DisableAutoPolling)
+            return;
+
         var interval = TimeSpan.FromSeconds(opts.Value.PollingIntervalSec);
 
         while (!stoppingToken.IsCancellationRequested)

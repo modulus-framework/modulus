@@ -145,7 +145,9 @@ public sealed class RedisIdempotencyStoreTests
             Arg.Do<RedisValue>(v => written = v),
             TimeSpan.FromSeconds(60),
             false,
-            When.Always,
+            // First-completion-wins: the data write must NOT overwrite a
+            // claim that was re-taken after expiry (When.NotExists).
+            When.NotExists,
             Arg.Any<CommandFlags>());
 
         await _store.CompleteAsync(

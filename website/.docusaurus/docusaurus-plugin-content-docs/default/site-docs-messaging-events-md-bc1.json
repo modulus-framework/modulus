@@ -1,0 +1,27 @@
+{
+  "id": "messaging/events",
+  "title": "Events",
+  "description": "Modulus supports two types of events: domain events and integration events.",
+  "source": "@site/docs/messaging/events.md",
+  "sourceDirName": "messaging",
+  "slug": "/messaging/events",
+  "permalink": "/docs/messaging/events",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/cobytelabs/modulus/tree/main/website/docs/messaging/events.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 3,
+  "frontMatter": {
+    "sidebar_position": 3
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Mediator",
+    "permalink": "/docs/messaging/mediator"
+  },
+  "next": {
+    "title": "Outbox",
+    "permalink": "/docs/messaging/outbox"
+  }
+}

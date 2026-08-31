@@ -1,0 +1,27 @@
+{
+  "id": "cli/generate-command",
+  "title": "modulus generate-command",
+  "description": "Generates a single command and handler.",
+  "source": "@site/docs/cli/generate-command.md",
+  "sourceDirName": "cli",
+  "slug": "/cli/generate-command",
+  "permalink": "/docs/cli/generate-command",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/cobytelabs/modulus/tree/main/website/docs/cli/generate-command.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 6,
+  "frontMatter": {
+    "sidebar_position": 6
+  },
+  "sidebar": "cliSidebar",
+  "previous": {
+    "title": "modulus generate-crud",
+    "permalink": "/docs/cli/generate-crud"
+  },
+  "next": {
+    "title": "modulus generate-query",
+    "permalink": "/docs/cli/generate-query"
+  }
+}

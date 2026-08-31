@@ -1,0 +1,27 @@
+{
+  "id": "cli/app",
+  "title": "modulus app",
+  "description": "Creates a complete modular-monolith application with interactive setup.",
+  "source": "@site/docs/cli/app.md",
+  "sourceDirName": "cli",
+  "slug": "/cli/app",
+  "permalink": "/docs/cli/app",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/cobytelabs/modulus/tree/main/website/docs/cli/app.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 2,
+  "frontMatter": {
+    "sidebar_position": 2
+  },
+  "sidebar": "cliSidebar",
+  "previous": {
+    "title": "CLI Reference",
+    "permalink": "/docs/cli/"
+  },
+  "next": {
+    "title": "modulus module",
+    "permalink": "/docs/cli/module"
+  }
+}

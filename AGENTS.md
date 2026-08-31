@@ -674,6 +674,72 @@ The framework was consolidated from 55 packages to 23:
   `Modulus.Core.Abstractions.IModule`) even when compiled into a different
   assembly. Only `<ProjectReference>` / `<PackageReference>` names changed.
 
+## Hardening (Batch A–D, recent work)
+
+These were identified in the full framework review and fixed across four batches:
+
+### Batch A — Defect fixes (13 items)
+
+- **A1** `RedisCacheService` — tag keys now tenant-scoped via `ICurrentTenant`.
+- **A2+A3** `ChannelJobQueue` — `JobEnvelope` carries `TenantId`/`CorrelationId`;
+  worker loop restores ambient context; `ScheduleAsync` fire-and-forget catches OCE.
+- **A4** `EfOrgHierarchy` — `Snapshot()` DB reads moved outside `lock(_gate)`
+  with double-check swap to avoid blocking writers during queries.
+- **A5** `IntegrationEventDispatcher` — static `ConcurrentDictionary`
+  compiled-delegate cache mirrors `ChannelJobQueue.s_jobInvokers`.
+- **A6** `PermissionResolver` + `PermissionRequirementHandler` +
+  `DelegationAwarePermissionResolver` — new 2-arg `Resolve(query, grants)`;
+  handler fetches grants once and passes to resolver (single DB read per request).
+- **A7** `IdempotencyMiddleware` — fingerprint now includes `Content-Type`.
+- **A8** `EfRepository` — `GetByIdAsync` uses `EF.Property` predicates
+  (filter-honoring), supports composite PKs as `object[]`.
+- **A9** `RabbitMqEventBus` — `BasicReturnAsync` handler logs + meters
+  unroutable publishes; new `ModulusMeters.Events` meter added.
+- **A10** `ModuleHealthEndpoint` — per-check try/catch + 5s timeout.
+- **A11** `ModulusTokenController` — refresh grant rebuilds principal from
+  current user store (roles, claims).
+- **A12** `TestDatabaseRegistrationTests` — 3 tests converted to async.
+- **A13** `EndpointConfig.WrapResponse` default changed to `true`.
+
+### Batch B — Foundations (4 items)
+
+- **B1** `TimeProvider` — optional param on `ModuleDbContext` primary constructor;
+  `ApplyAuditFields` uses `_clock.GetUtcNow()`; `RegisterCoreDefaults` registers
+  `TimeProvider.System`.
+- **B2** Auto-`TenantId` stamping — `ModuleDbContext.SaveChangesAsync` stamps
+  `IHasTenantId.TenantId` on `EntityState.Added` entities when tenant is active.
+- **B3** `IDataSeeder` interface + `SeedModulusDataAsync` extension on
+  `IServiceProvider` for startup data seeding.
+- **B4** `IHasConcurrencyStamp` marker + `ConfigureConcurrencyTokens` on
+  `ModuleDbContext` + `GlobalExceptionHandler` maps `DbUpdateConcurrencyException`
+  → 409.
+
+### Batch C — Tenancy + multi-node (4 items)
+
+- **C1** Tenant-scoped cache keys (done in A1).
+- **C2** `TenantInfo.ConnectionString` + per-tenant `AddModuleDatabase` overload
+  with `Func<IServiceProvider, string>` resolver and `optionsLifetime: Scoped`.
+- **C3** `RedisCacheBackplane` — `BackgroundService` subscribing to Redis
+  pub/sub; `RedisCacheService` publishes invalidations after
+  `RemoveByTagAsync`/`RemoveAsync`; `AddRedisCacheBackplane()` extension.
+- **C4** Outbox leader election — `OutboxOptions.EnableLeaderElection` acquires
+  `IDistributedLock` before each polling cycle; other replicas idle until lease
+  expires.
+
+### Batch D — Identity (2 items)
+
+- **D1** `/connect/revoke` endpoint — enabled via `SetRevocationEndpointUris`
+  in `AddModulusOpenIddict`; OpenIddict handles RFC 7009 revocation natively.
+- **D4** Security-stamp sessions — `PasswordGrantResult.SecurityStamp` embedded
+  in access token; refresh handler validates stamp still matches current user;
+  `BuildPrincipalAsync` refreshes stamp on each refresh cycle; claim gated to
+  `AccessToken` destination only.
+
+**Remaining:** `IAuthorizeInteractionService` hook (consent/custom interaction
+handling). User/role CRUD is app-specific and intentionally not in the framework;
+`Modulus.Identity` exposes `ModulusUser`/`ModulusRole` + ASP.NET Core Identity
+abstractions for apps to wire their own admin APIs.
+
 ## Testing notes
 
 - Unit tests use `[Trait("Category", "Unit")]`; integration tests use

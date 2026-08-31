@@ -1,0 +1,27 @@
+{
+  "id": "data/migrations",
+  "title": "Migrations",
+  "description": "Modulus supports two migration engines: EF Core (default) and dbsh (SQL-first).",
+  "source": "@site/docs/data/migrations.md",
+  "sourceDirName": "data",
+  "slug": "/data/migrations",
+  "permalink": "/docs/data/migrations",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/cobytelabs/modulus/tree/main/website/docs/data/migrations.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 5,
+  "frontMatter": {
+    "sidebar_position": 5
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Repositories",
+    "permalink": "/docs/data/repositories"
+  },
+  "next": {
+    "title": "Messaging Overview",
+    "permalink": "/docs/messaging/overview"
+  }
+}

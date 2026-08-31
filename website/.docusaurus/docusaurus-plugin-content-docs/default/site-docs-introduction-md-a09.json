@@ -1,0 +1,23 @@
+{
+  "id": "introduction",
+  "title": "Modulus Framework",
+  "description": "A modular-monolith framework for .NET 10 that combines the simplicity of a single deployment with the boundaries of microservices.",
+  "source": "@site/docs/introduction.md",
+  "sourceDirName": ".",
+  "slug": "/introduction",
+  "permalink": "/docs/introduction",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/cobytelabs/modulus/tree/main/website/docs/introduction.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "sidebar_position": 1
+  },
+  "sidebar": "docsSidebar",
+  "next": {
+    "title": "Prerequisites",
+    "permalink": "/docs/getting-started/prerequisites"
+  }
+}

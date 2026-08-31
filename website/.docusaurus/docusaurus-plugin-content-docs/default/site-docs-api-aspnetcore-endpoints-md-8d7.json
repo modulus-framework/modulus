@@ -1,0 +1,27 @@
+{
+  "id": "api/aspnetcore/endpoints",
+  "title": "Endpoints API",
+  "description": "Minimal API Style",
+  "source": "@site/docs/api/aspnetcore/endpoints.md",
+  "sourceDirName": "api/aspnetcore",
+  "slug": "/api/aspnetcore/endpoints",
+  "permalink": "/docs/api/aspnetcore/endpoints",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/cobytelabs/modulus/tree/main/website/docs/api/aspnetcore/endpoints.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 10,
+  "frontMatter": {
+    "sidebar_position": 10
+  },
+  "sidebar": "apiSidebar",
+  "previous": {
+    "title": "Pipeline Behaviors API",
+    "permalink": "/docs/api/mediator/behaviors"
+  },
+  "next": {
+    "title": "Middleware API",
+    "permalink": "/docs/api/aspnetcore/middleware"
+  }
+}

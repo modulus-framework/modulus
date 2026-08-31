@@ -1,0 +1,27 @@
+{
+  "id": "cli/doctor",
+  "title": "modulus doctor",
+  "description": "Checks the development environment for issues.",
+  "source": "@site/docs/cli/doctor.md",
+  "sourceDirName": "cli",
+  "slug": "/cli/doctor",
+  "permalink": "/docs/cli/doctor",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/cobytelabs/modulus/tree/main/website/docs/cli/doctor.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 11,
+  "frontMatter": {
+    "sidebar_position": 11
+  },
+  "sidebar": "cliSidebar",
+  "previous": {
+    "title": "modulus info",
+    "permalink": "/docs/cli/info"
+  },
+  "next": {
+    "title": "Global Flags",
+    "permalink": "/docs/cli/global-flags"
+  }
+}

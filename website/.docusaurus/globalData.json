@@ -1,0 +1,400 @@
+{
+  "docusaurus-plugin-content-docs": {
+    "default": {
+      "path": "/docs",
+      "versions": [
+        {
+          "name": "current",
+          "label": "Next",
+          "isLast": true,
+          "path": "/docs",
+          "mainDocId": "introduction",
+          "docs": [
+            {
+              "id": "api/aspnetcore/endpoints",
+              "path": "/docs/api/aspnetcore/endpoints",
+              "sidebar": "apiSidebar"
+            },
+            {
+              "id": "api/aspnetcore/middleware",
+              "path": "/docs/api/aspnetcore/middleware",
+              "sidebar": "apiSidebar"
+            },
+            {
+              "id": "api/core/abstractions",
+              "path": "/docs/api/core/abstractions",
+              "sidebar": "apiSidebar"
+            },
+            {
+              "id": "api/core/ddd",
+              "path": "/docs/api/core/ddd",
+              "sidebar": "apiSidebar"
+            },
+            {
+              "id": "api/core/module",
+              "path": "/docs/api/core/module",
+              "sidebar": "apiSidebar"
+            },
+            {
+              "id": "api/data/db-context",
+              "path": "/docs/api/data/db-context",
+              "sidebar": "apiSidebar"
+            },
+            {
+              "id": "api/data/repository",
+              "path": "/docs/api/data/repository",
+              "sidebar": "apiSidebar"
+            },
+            {
+              "id": "api/index",
+              "path": "/docs/api/",
+              "sidebar": "apiSidebar"
+            },
+            {
+              "id": "api/mediator/behaviors",
+              "path": "/docs/api/mediator/behaviors",
+              "sidebar": "apiSidebar"
+            },
+            {
+              "id": "api/mediator/commands",
+              "path": "/docs/api/mediator/commands",
+              "sidebar": "apiSidebar"
+            },
+            {
+              "id": "api/mediator/queries",
+              "path": "/docs/api/mediator/queries",
+              "sidebar": "apiSidebar"
+            },
+            {
+              "id": "architecture/clean-architecture",
+              "path": "/docs/architecture/clean-architecture",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "architecture/module-system",
+              "path": "/docs/architecture/module-system",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "architecture/overview",
+              "path": "/docs/architecture/overview",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "architecture/service-lifecycle",
+              "path": "/docs/architecture/service-lifecycle",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "cli/add-module",
+              "path": "/docs/cli/add-module",
+              "sidebar": "cliSidebar"
+            },
+            {
+              "id": "cli/app",
+              "path": "/docs/cli/app",
+              "sidebar": "cliSidebar"
+            },
+            {
+              "id": "cli/doctor",
+              "path": "/docs/cli/doctor",
+              "sidebar": "cliSidebar"
+            },
+            {
+              "id": "cli/generate-command",
+              "path": "/docs/cli/generate-command",
+              "sidebar": "cliSidebar"
+            },
+            {
+              "id": "cli/generate-crud",
+              "path": "/docs/cli/generate-crud",
+              "sidebar": "cliSidebar"
+            },
+            {
+              "id": "cli/generate-query",
+              "path": "/docs/cli/generate-query",
+              "sidebar": "cliSidebar"
+            },
+            {
+              "id": "cli/global-flags",
+              "path": "/docs/cli/global-flags",
+              "sidebar": "cliSidebar"
+            },
+            {
+              "id": "cli/index",
+              "path": "/docs/cli/",
+              "sidebar": "cliSidebar"
+            },
+            {
+              "id": "cli/info",
+              "path": "/docs/cli/info",
+              "sidebar": "cliSidebar"
+            },
+            {
+              "id": "cli/list",
+              "path": "/docs/cli/list",
+              "sidebar": "cliSidebar"
+            },
+            {
+              "id": "cli/migrate",
+              "path": "/docs/cli/migrate",
+              "sidebar": "cliSidebar"
+            },
+            {
+              "id": "cli/module",
+              "path": "/docs/cli/module",
+              "sidebar": "cliSidebar"
+            },
+            {
+              "id": "cli/templates",
+              "path": "/docs/cli/templates",
+              "sidebar": "cliSidebar"
+            },
+            {
+              "id": "configuration/appsettings",
+              "path": "/docs/configuration/appsettings",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "configuration/build-system",
+              "path": "/docs/configuration/build-system",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "configuration/central-package-management",
+              "path": "/docs/configuration/central-package-management",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "data/entity-framework",
+              "path": "/docs/data/entity-framework",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "data/migrations",
+              "path": "/docs/data/migrations",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "data/mongodb",
+              "path": "/docs/data/mongodb",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "data/overview",
+              "path": "/docs/data/overview",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "data/repositories",
+              "path": "/docs/data/repositories",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "deployment",
+              "path": "/docs/deployment",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "getting-started/first-module",
+              "path": "/docs/getting-started/first-module",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "getting-started/prerequisites",
+              "path": "/docs/getting-started/prerequisites",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "getting-started/quick-start",
+              "path": "/docs/getting-started/quick-start",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "hardening/correlation",
+              "path": "/docs/hardening/correlation",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "hardening/cors",
+              "path": "/docs/hardening/cors",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "hardening/feature-flags",
+              "path": "/docs/hardening/feature-flags",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "hardening/health-checks",
+              "path": "/docs/hardening/health-checks",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "hardening/idempotency",
+              "path": "/docs/hardening/idempotency",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "hardening/personal-data-protection",
+              "path": "/docs/hardening/personal-data-protection",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "hardening/rate-limiting",
+              "path": "/docs/hardening/rate-limiting",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "hardening/secrets-guard",
+              "path": "/docs/hardening/secrets-guard",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "hardening/security-headers",
+              "path": "/docs/hardening/security-headers",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "identity/external-providers",
+              "path": "/docs/identity/external-providers",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "identity/openiddict",
+              "path": "/docs/identity/openiddict",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "identity/overview",
+              "path": "/docs/identity/overview",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "introduction",
+              "path": "/docs/introduction",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "messaging/events",
+              "path": "/docs/messaging/events",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "messaging/inbox",
+              "path": "/docs/messaging/inbox",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "messaging/kafka",
+              "path": "/docs/messaging/kafka",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "messaging/mediator",
+              "path": "/docs/messaging/mediator",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "messaging/outbox",
+              "path": "/docs/messaging/outbox",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "messaging/overview",
+              "path": "/docs/messaging/overview",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "messaging/rabbitmq",
+              "path": "/docs/messaging/rabbitmq",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "observability/opentelemetry",
+              "path": "/docs/observability/opentelemetry",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "observability/overview",
+              "path": "/docs/observability/overview",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "platform/authorization",
+              "path": "/docs/platform/authorization",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "platform/background-jobs",
+              "path": "/docs/platform/background-jobs",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "platform/caching",
+              "path": "/docs/platform/caching",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "platform/multi-tenancy",
+              "path": "/docs/platform/multi-tenancy",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "platform/overview",
+              "path": "/docs/platform/overview",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "platform/signalr",
+              "path": "/docs/platform/signalr",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "platform/storage",
+              "path": "/docs/platform/storage",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "samples",
+              "path": "/docs/samples",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "testing/integration-tests",
+              "path": "/docs/testing/integration-tests",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "testing/overview",
+              "path": "/docs/testing/overview",
+              "sidebar": "docsSidebar"
+            }
+          ],
+          "draftIds": [],
+          "sidebars": {
+            "docsSidebar": {
+              "link": {
+                "path": "/docs/introduction",
+                "label": "introduction"
+              }
+            },
+            "cliSidebar": {
+              "link": {
+                "path": "/docs/cli/",
+                "label": "cli/index"
+              }
+            },
+            "apiSidebar": {
+              "link": {
+                "path": "/docs/api/",
+                "label": "api/index"
+              }
+            }
+          }
+        }
+      ],
+      "breadcrumbs": true
+    }
+  }
+}
