@@ -1,8 +1,10 @@
 namespace Modulus.OpenTelemetry;
 
 using System.Diagnostics;
+using Modulus.Core;
 using Modulus.Core.Abstractions;
 using Modulus.Mediator.Abstractions;
+using Modulus.Observability;
 
 public sealed class TracingBehavior<TRequest, TResponse>(
     ICurrentTenant tenant,
@@ -33,6 +35,7 @@ public sealed class TracingBehavior<TRequest, TResponse>(
             activity.SetTag("modulus.user.id",
                 user.UserId.ToString());
 
+        var sw = Stopwatch.StartNew();
         try
         {
             var result = await next();
@@ -46,6 +49,11 @@ public sealed class TracingBehavior<TRequest, TResponse>(
             activity.SetTag("exception.message", ex.Message);
             activity.SetTag("exception.stacktrace", ex.ToString());
             throw;
+        }
+        finally
+        {
+            sw.Stop();
+            ModulusMeters.MediatorHandlerDuration.Record(sw.Elapsed.TotalMilliseconds);
         }
     }
 }

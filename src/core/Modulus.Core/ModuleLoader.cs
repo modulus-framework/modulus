@@ -2,6 +2,7 @@ namespace Modulus.Core;
 
 using Modulus.Core.Abstractions;
 using Modulus.Core.Abstractions.Exceptions;
+using Modulus.Observability;
 
 public sealed class ModuleLoader : IModuleLoader
 {
@@ -81,6 +82,9 @@ public sealed class ModuleLoader : IModuleLoader
 
             await module.InitializeAsync(ctx, ct);
             sw.Stop();
+
+            ModulusMeters.ModuleInitDuration.Record(sw.Elapsed.TotalMilliseconds,
+                new KeyValuePair<string, object?>("module", descriptor.Name));
 
             logger.LogInformation(
                 "[Modulus] {Module} initialized ({Ms}ms)",

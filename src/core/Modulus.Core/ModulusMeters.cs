@@ -11,21 +11,27 @@ public static class ModulusMeters
 {
     private const string Version = "1.0.0";
 
+    public static readonly Meter Mediator = new("Modulus.Mediator", Version);
     public static readonly Meter Outbox = new("Modulus.Outbox", Version);
     public static readonly Meter Inbox = new("Modulus.Inbox", Version);
     public static readonly Meter Events = new("Modulus.Events", Version);
     public static readonly Meter BackgroundJobs = new("Modulus.BackgroundJobs", Version);
     public static readonly Meter RateLimiting = new("Modulus.RateLimiting", Version);
     public static readonly Meter MultiTenancy = new("Modulus.MultiTenancy", Version);
+    public static readonly Meter Caching = new("Modulus.Caching", Version);
+    public static readonly Meter Authorization = new("Modulus.Authorization", Version);
 
     public static readonly string[] AllMeters =
     [
+        Mediator.Name,
         Outbox.Name,
         Inbox.Name,
         Events.Name,
         BackgroundJobs.Name,
         RateLimiting.Name,
         MultiTenancy.Name,
+        Caching.Name,
+        Authorization.Name,
     ];
 
     /// <summary>Outbox: count of messages dispatched successfully.</summary>
@@ -111,4 +117,66 @@ public static class ModulusMeters
         "modulus.tenant.unresolved",
         unit: "1",
         description: "Count of requests where tenant resolution was required but failed");
+
+    // ── Histograms (latency measurements) ──────────────────────────────
+
+    /// <summary>Mediator: handler execution duration (excluding pipeline behaviors).</summary>
+    public static readonly Histogram<double> MediatorHandlerDuration = Mediator.CreateHistogram<double>(
+        "modulus.mediator.handler.duration",
+        unit: "ms",
+        description: "Handler execution duration in milliseconds");
+
+    /// <summary>Outbox: time from message creation to dispatch.</summary>
+    public static readonly Histogram<double> OutboxDispatchLag = Outbox.CreateHistogram<double>(
+        "modulus.outbox.dispatch_lag",
+        unit: "ms",
+        description: "Elapsed time from outbox message creation to dispatch in milliseconds");
+
+    /// <summary>Events: broker publish duration (time to broker ack).</summary>
+    public static readonly Histogram<double> EventsPublishDuration = Events.CreateHistogram<double>(
+        "modulus.events.publish.duration",
+        unit: "ms",
+        description: "Event publish duration (time to broker acknowledgement) in milliseconds");
+
+    /// <summary>Caching: cache lookup duration.</summary>
+    public static readonly Histogram<double> CacheLookupDuration = Caching.CreateHistogram<double>(
+        "modulus.cache.lookup.duration",
+        unit: "ms",
+        description: "Cache lookup duration in milliseconds");
+
+    /// <summary>Caching: count of cache hits.</summary>
+    public static readonly Counter<long> CacheHits = Caching.CreateCounter<long>(
+        "modulus.cache.hits",
+        unit: "1",
+        description: "Count of cache hits");
+
+    /// <summary>Caching: count of cache misses.</summary>
+    public static readonly Counter<long> CacheMisses = Caching.CreateCounter<long>(
+        "modulus.cache.misses",
+        unit: "1",
+        description: "Count of cache misses");
+
+    /// <summary>Authorization: decision evaluation duration.</summary>
+    public static readonly Histogram<double> AuthorizationDecisionDuration = Authorization.CreateHistogram<double>(
+        "modulus.authorization.decision.duration",
+        unit: "ms",
+        description: "Authorization decision evaluation duration in milliseconds");
+
+    /// <summary>Authorization: count of permission decisions (allowed).</summary>
+    public static readonly Counter<long> AuthorizationAllowed = Authorization.CreateCounter<long>(
+        "modulus.authorization.allowed",
+        unit: "1",
+        description: "Count of authorization decisions that allowed access");
+
+    /// <summary>Authorization: count of permission decisions (denied).</summary>
+    public static readonly Counter<long> AuthorizationDenied = Authorization.CreateCounter<long>(
+        "modulus.authorization.denied",
+        unit: "1",
+        description: "Count of authorization decisions that denied access");
+
+    /// <summary>Mediator: module initialization duration per module.</summary>
+    public static readonly Histogram<double> ModuleInitDuration = Mediator.CreateHistogram<double>(
+        "modulus.module.init.duration",
+        unit: "ms",
+        description: "Module initialization duration in milliseconds");
 }
