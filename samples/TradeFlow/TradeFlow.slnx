@@ -1,0 +1,136 @@
+<Solution>
+
+  <Folder Name="/src/" />
+  <Folder Name="/src/API/">
+    <Project Path="src/API/TradeFlow.Api/TradeFlow.Api.csproj" />
+  </Folder>
+  <Folder Name="/src/Shared/">
+    <Project Path="src/Shared/TradeFlow.Shared.Domain/TradeFlow.Shared.Domain.csproj" />
+    <Project Path="src/Shared/TradeFlow.Shared.Application/TradeFlow.Shared.Application.csproj" />
+    <Project Path="src/Shared/TradeFlow.Shared.Infrastructure/TradeFlow.Shared.Infrastructure.csproj" />
+    <Project Path="src/Shared/TradeFlow.Shared.Presentation/TradeFlow.Shared.Presentation.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Identity/">
+    <Project Path="src/Modules/Identity/TradeFlow.Modules.Identity.Domain/TradeFlow.Modules.Identity.Domain.csproj" />
+    <Project Path="src/Modules/Identity/TradeFlow.Modules.Identity.Application/TradeFlow.Modules.Identity.Application.csproj" />
+    <Project Path="src/Modules/Identity/TradeFlow.Modules.Identity.Infrastructure/TradeFlow.Modules.Identity.Infrastructure.csproj" />
+    <Project Path="src/Modules/Identity/TradeFlow.Modules.Identity.Presentation/TradeFlow.Modules.Identity.Presentation.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Configuration/">
+    <Project Path="src/Modules/Configuration/TradeFlow.Modules.Configuration.Domain/TradeFlow.Modules.Configuration.Domain.csproj" />
+    <Project Path="src/Modules/Configuration/TradeFlow.Modules.Configuration.Application/TradeFlow.Modules.Configuration.Application.csproj" />
+    <Project Path="src/Modules/Configuration/TradeFlow.Modules.Configuration.Infrastructure/TradeFlow.Modules.Configuration.Infrastructure.csproj" />
+    <Project Path="src/Modules/Configuration/TradeFlow.Modules.Configuration.Presentation/TradeFlow.Modules.Configuration.Presentation.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Tenants/">
+    <Project Path="src/Modules/Tenants/TradeFlow.Modules.Tenants.Domain/TradeFlow.Modules.Tenants.Domain.csproj" />
+    <Project Path="src/Modules/Tenants/TradeFlow.Modules.Tenants.Application/TradeFlow.Modules.Tenants.Application.csproj" />
+    <Project Path="src/Modules/Tenants/TradeFlow.Modules.Tenants.Infrastructure/TradeFlow.Modules.Tenants.Infrastructure.csproj" />
+    <Project Path="src/Modules/Tenants/TradeFlow.Modules.Tenants.Presentation/TradeFlow.Modules.Tenants.Presentation.csproj" />
+  </Folder>
+
+  <Folder Name="/src/Modules/Notifications/">
+    <Project Path="src/Modules/Notifications/TradeFlow.Modules.Notifications.Domain/TradeFlow.Modules.Notifications.Domain.csproj" />
+    <Project Path="src/Modules/Notifications/TradeFlow.Modules.Notifications.Application/TradeFlow.Modules.Notifications.Application.csproj" />
+    <Project Path="src/Modules/Notifications/TradeFlow.Modules.Notifications.Infrastructure/TradeFlow.Modules.Notifications.Infrastructure.csproj" />
+    <Project Path="src/Modules/Notifications/TradeFlow.Modules.Notifications.Presentation/TradeFlow.Modules.Notifications.Presentation.csproj" />
+  </Folder>
+
+  <Folder Name="/src/Modules/Vendors/">
+    <Project Path="src/Modules/Vendors/TradeFlow.Modules.Vendors.Domain/TradeFlow.Modules.Vendors.Domain.csproj" />
+    <Project Path="src/Modules/Vendors/TradeFlow.Modules.Vendors.Application/TradeFlow.Modules.Vendors.Application.csproj" />
+    <Project Path="src/Modules/Vendors/TradeFlow.Modules.Vendors.PublicApi/TradeFlow.Modules.Vendors.PublicApi.csproj" />
+    <Project Path="src/Modules/Vendors/TradeFlow.Modules.Vendors.Infrastructure/TradeFlow.Modules.Vendors.Infrastructure.csproj" />
+    <Project Path="src/Modules/Vendors/TradeFlow.Modules.Vendors.Presentation/TradeFlow.Modules.Vendors.Presentation.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/OrgStructure/">
+    <Project Path="src/Modules/OrgStructure/TradeFlow.Modules.OrgStructure.Domain/TradeFlow.Modules.OrgStructure.Domain.csproj" />
+    <Project Path="src/Modules/OrgStructure/TradeFlow.Modules.OrgStructure.Application/TradeFlow.Modules.OrgStructure.Application.csproj" />
+    <Project Path="src/Modules/OrgStructure/TradeFlow.Modules.OrgStructure.Infrastructure/TradeFlow.Modules.OrgStructure.Infrastructure.csproj" />
+    <Project Path="src/Modules/OrgStructure/TradeFlow.Modules.OrgStructure.Presentation/TradeFlow.Modules.OrgStructure.Presentation.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/" />
+
+  <Folder Name="/src/Modules/Budgeting/">
+    <Project Path="src/Modules/Budgeting/TradeFlow.Modules.Budgeting.Domain/TradeFlow.Modules.Budgeting.Domain.csproj" />
+    <Project Path="src/Modules/Budgeting/TradeFlow.Modules.Budgeting.Application/TradeFlow.Modules.Budgeting.Application.csproj" />
+    <Project Path="src/Modules/Budgeting/TradeFlow.Modules.Budgeting.Infrastructure/TradeFlow.Modules.Budgeting.Infrastructure.csproj" />
+    <Project Path="src/Modules/Budgeting/TradeFlow.Modules.Budgeting.Presentation/TradeFlow.Modules.Budgeting.Presentation.csproj" />
+  </Folder>
+
+  <Folder Name="/src/Modules/Customs/">
+    <Project Path="src/Modules/Customs/TradeFlow.Modules.Customs.Domain/TradeFlow.Modules.Customs.Domain.csproj" />
+    <Project Path="src/Modules/Customs/TradeFlow.Modules.Customs.Application/TradeFlow.Modules.Customs.Application.csproj" />
+    <Project Path="src/Modules/Customs/TradeFlow.Modules.Customs.Infrastructure/TradeFlow.Modules.Customs.Infrastructure.csproj" />
+    <Project Path="src/Modules/Customs/TradeFlow.Modules.Customs.Presentation/TradeFlow.Modules.Customs.Presentation.csproj" />
+  </Folder>
+
+  <Folder Name="/src/Modules/Procurement/">
+    <Project Path="src/Modules/Procurement/TradeFlow.Modules.Procurement.Domain/TradeFlow.Modules.Procurement.Domain.csproj" />
+    <Project Path="src/Modules/Procurement/TradeFlow.Modules.Procurement.Application/TradeFlow.Modules.Procurement.Application.csproj" />
+    <Project Path="src/Modules/Procurement/TradeFlow.Modules.Procurement.Infrastructure/TradeFlow.Modules.Procurement.Infrastructure.csproj" />
+    <Project Path="src/Modules/Procurement/TradeFlow.Modules.Procurement.Presentation/TradeFlow.Modules.Procurement.Presentation.csproj" />
+  </Folder>
+
+  <Folder Name="/src/Modules/TradeFinance/">
+    <Project Path="src/Modules/TradeFinance/TradeFlow.Modules.TradeFinance.Domain/TradeFlow.Modules.TradeFinance.Domain.csproj" />
+    <Project Path="src/Modules/TradeFinance/TradeFlow.Modules.TradeFinance.Application/TradeFlow.Modules.TradeFinance.Application.csproj" />
+    <Project Path="src/Modules/TradeFinance/TradeFlow.Modules.TradeFinance.Infrastructure/TradeFlow.Modules.TradeFinance.Infrastructure.csproj" />
+    <Project Path="src/Modules/TradeFinance/TradeFlow.Modules.TradeFinance.Presentation/TradeFlow.Modules.TradeFinance.Presentation.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Finance/">
+    <Project Path="src/Modules/Finance/TradeFlow.Modules.Finance.Application/TradeFlow.Modules.Finance.Application.csproj" />
+    <Project Path="src/Modules/Finance/TradeFlow.Modules.Finance.Domain/TradeFlow.Modules.Finance.Domain.csproj" />
+    <Project Path="src/Modules/Finance/TradeFlow.Modules.Finance.Infrastructure/TradeFlow.Modules.Finance.Infrastructure.csproj" />
+    <Project Path="src/Modules/Finance/TradeFlow.Modules.Finance.Presentation/TradeFlow.Modules.Finance.Presentation.csproj" />
+  </Folder>
+
+  <Folder Name="/src/Modules/Import/">
+    <Project Path="src/Modules/Import/TradeFlow.Modules.Import.Domain/TradeFlow.Modules.Import.Domain.csproj" />
+    <Project Path="src/Modules/Import/TradeFlow.Modules.Import.Application/TradeFlow.Modules.Import.Application.csproj" />
+    <Project Path="src/Modules/Import/TradeFlow.Modules.Import.Infrastructure/TradeFlow.Modules.Import.Infrastructure.csproj" />
+    <Project Path="src/Modules/Import/TradeFlow.Modules.Import.Presentation/TradeFlow.Modules.Import.Presentation.csproj" />
+  </Folder>
+
+  <Folder Name="/src/Modules/Inventory/">
+    <Project Path="src/Modules/Inventory/TradeFlow.Modules.Inventory.Domain/TradeFlow.Modules.Inventory.Domain.csproj" />
+    <Project Path="src/Modules/Inventory/TradeFlow.Modules.Inventory.Application/TradeFlow.Modules.Inventory.Application.csproj" />
+    <Project Path="src/Modules/Inventory/TradeFlow.Modules.Inventory.Infrastructure/TradeFlow.Modules.Inventory.Infrastructure.csproj" />
+    <Project Path="src/Modules/Inventory/TradeFlow.Modules.Inventory.Presentation/TradeFlow.Modules.Inventory.Presentation.csproj" />
+  </Folder>
+
+  <Folder Name="/src/Modules/Costing/">
+    <Project Path="src/Modules/Costing/TradeFlow.Modules.Costing.Domain/TradeFlow.Modules.Costing.Domain.csproj" />
+    <Project Path="src/Modules/Costing/TradeFlow.Modules.Costing.Application/TradeFlow.Modules.Costing.Application.csproj" />
+    <Project Path="src/Modules/Costing/TradeFlow.Modules.Costing.Infrastructure/TradeFlow.Modules.Costing.Infrastructure.csproj" />
+    <Project Path="src/Modules/Costing/TradeFlow.Modules.Costing.Presentation/TradeFlow.Modules.Costing.Presentation.csproj" />
+  </Folder>
+
+  <Folder Name="/src/Modules/VirtualFileExplorer/">
+    <Project Path="src/Modules/VirtualFileExplorer/TradeFlow.Modules.VirtualFileExplorer.Domain/TradeFlow.Modules.VirtualFileExplorer.Domain.csproj" />
+    <Project Path="src/Modules/VirtualFileExplorer/TradeFlow.Modules.VirtualFileExplorer.Application/TradeFlow.Modules.VirtualFileExplorer.Application.csproj" />
+    <Project Path="src/Modules/VirtualFileExplorer/TradeFlow.Modules.VirtualFileExplorer.Infrastructure/TradeFlow.Modules.VirtualFileExplorer.Infrastructure.csproj" />
+    <Project Path="src/Modules/VirtualFileExplorer/TradeFlow.Modules.VirtualFileExplorer.Presentation/TradeFlow.Modules.VirtualFileExplorer.Presentation.csproj" />
+  </Folder>
+
+  <Folder Name="/src/Modules/WorkflowEngine/">
+    <Project Path="src/Modules/WorkflowEngine/TradeFlow.Modules.WorkflowEngine.Domain/TradeFlow.Modules.WorkflowEngine.Domain.csproj" />
+    <Project Path="src/Modules/WorkflowEngine/TradeFlow.Modules.WorkflowEngine.Application/TradeFlow.Modules.WorkflowEngine.Application.csproj" />
+    <Project Path="src/Modules/WorkflowEngine/TradeFlow.Modules.WorkflowEngine.Infrastructure/TradeFlow.Modules.WorkflowEngine.Infrastructure.csproj" />
+    <Project Path="src/Modules/WorkflowEngine/TradeFlow.Modules.WorkflowEngine.Presentation/TradeFlow.Modules.WorkflowEngine.Presentation.csproj" />
+  </Folder>
+
+  <Folder Name="/tests/">
+    <Project Path="tests/E2E/TradeFlow.E2ETests/TradeFlow.E2ETests.csproj" />
+  </Folder>
+
+  <Folder Name="/tests/Modules/">
+    <Project Path="tests/Modules/Import/TradeFlow.Modules.Import.UnitTests/TradeFlow.Modules.Import.UnitTests.csproj" />
+    <Project Path="tests/Modules/Inventory/TradeFlow.Modules.Inventory.UnitTests/TradeFlow.Modules.Inventory.UnitTests.csproj" />
+    <Project Path="tests/Modules/Costing/TradeFlow.Modules.Costing.UnitTests/TradeFlow.Modules.Costing.UnitTests.csproj" />
+    <Project Path="tests/Modules/Identity/TradeFlow.Modules.Identity.UnitTests/TradeFlow.Modules.Identity.UnitTests.csproj" />
+  </Folder>
+  <Folder Name="/tests/Modules/Vendors/">
+    <Project Path="tests/Modules/Vendors/TradeFlow.Modules.Vendors.UnitTests/TradeFlow.Modules.Vendors.UnitTests.csproj" />
+  </Folder>
+</Solution>

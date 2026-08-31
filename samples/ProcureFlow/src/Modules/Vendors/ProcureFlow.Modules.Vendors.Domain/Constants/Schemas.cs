@@ -1,6 +1,0 @@
-namespace ProcureFlow.Modules.Vendors.Domain.Constants;
-
-public static class Schemas
-{
-    public const string Vendors = "vendors";
-}

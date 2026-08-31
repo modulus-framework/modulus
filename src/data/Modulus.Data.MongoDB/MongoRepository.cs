@@ -92,8 +92,25 @@ public abstract class MongoRepository<T, TDoc>(
         // Client-side fallback: fetch all tenant docs, map, then filter/sort/page.
         IEnumerable<T> domain = (await findFluent.ToListAsync(ct)).Select(ToDomain);
         if (spec.Filter is not null) domain = domain.Where(spec.Filter.Compile());
-        if (spec.OrderBy is not null) domain = domain.OrderBy(spec.OrderBy.Compile());
-        if (spec.OrderByDesc is not null) domain = domain.OrderByDescending(spec.OrderByDesc.Compile());
+
+        // Apply ordering: OrderBy, then ThenBy for each subsequent clause
+        if (spec.OrderByClauses is { Count: > 0 })
+        {
+            var orderedDomain = (IOrderedEnumerable<T>?)null;
+            foreach (var orderBy in spec.OrderByClauses)
+            {
+                var compiledSelector = orderBy.Selector.Compile();
+                orderedDomain = orderedDomain is null
+                    ? (orderBy.Descending
+                        ? domain.OrderByDescending(compiledSelector)
+                        : domain.OrderBy(compiledSelector))
+                    : (orderBy.Descending
+                        ? orderedDomain.ThenByDescending(compiledSelector)
+                        : orderedDomain.ThenBy(compiledSelector));
+            }
+            domain = orderedDomain ?? domain;
+        }
+
         if (spec.Skip.HasValue) domain = domain.Skip(spec.Skip.Value);
         if (spec.Take.HasValue) domain = domain.Take(spec.Take.Value);
         return domain.ToList();
@@ -139,4 +156,44 @@ public abstract class MongoRepository<T, TDoc>(
         => Collection.DeleteOneAsync(
             MongoTenantFilter.And<TDoc>(Tenant,
                 Builders<TDoc>.Filter.Eq("_id", entity.Id)), ct);
+
+    public async Task<T?> FirstOrDefaultAsync(ISpecification<T> spec, CancellationToken ct)
+    {
+        var list = await ListAsync(spec, ct);
+        return list.FirstOrDefault();
+    }
+
+    public async Task<T> SingleAsync(ISpecification<T> spec, CancellationToken ct)
+    {
+        var list = await ListAsync(spec, ct);
+        return list.Count == 1
+            ? list[0]
+            : throw new InvalidOperationException(
+                $"Expected exactly one entity, but found {list.Count}.");
+    }
+
+    public async Task<T?> SingleOrDefaultAsync(ISpecification<T> spec, CancellationToken ct)
+    {
+        var list = await ListAsync(spec, ct);
+        return list.Count switch
+        {
+            0 => null,
+            1 => list[0],
+            _ => throw new InvalidOperationException(
+                $"Expected at most one entity, but found {list.Count}.")
+        };
+    }
+
+    public async IAsyncEnumerable<T> AsAsyncEnumerable(ISpecification<T> spec)
+    {
+        var items = await ListAsync(spec, CancellationToken.None);
+        foreach (var item in items)
+            yield return item;
+    }
+
+    public async Task DeleteRangeAsync(ISpecification<T> spec, CancellationToken ct)
+    {
+        var docFilter = BuildDocumentFilter(spec);
+        await Collection.DeleteManyAsync(docFilter, ct);
+    }
 }

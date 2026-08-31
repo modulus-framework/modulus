@@ -1,0 +1,22 @@
+using TradeFlow.Modules.Identity.Domain.Events;
+using TradeFlow.Shared.Application.Caching;
+using Microsoft.Extensions.Logging;
+using Modulus.Events.Abstractions;
+
+namespace TradeFlow.Modules.Identity.Application.DomainEventHandlers;
+
+internal sealed class PermissionRevokedFromRoleDomainEventHandler(
+    ICacheService cacheService,
+    ILogger<PermissionRevokedFromRoleDomainEventHandler> logger) : IDomainEventHandler<PermissionRevokedFromRoleDomainEvent>
+{
+    public async Task HandleAsync(PermissionRevokedFromRoleDomainEvent domainEvent, CancellationToken cancellationToken)
+    {
+        await cacheService.RemoveByPrefixAsync(CacheKeys.User.AllPermissionsPrefix(), cancellationToken);
+        await cacheService.RemoveByPrefixAsync(CacheKeys.User.AllRolesPrefix(), cancellationToken);
+
+        logger.LogInformation(
+            "Cache invalidated for permission revocation - RoleId: {RoleId}, PermissionId: {PermissionId}",
+            domainEvent.RoleId.Value,
+            domainEvent.PermissionId.Value);
+    }
+}

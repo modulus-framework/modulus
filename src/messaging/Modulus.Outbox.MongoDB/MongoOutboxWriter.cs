@@ -64,7 +64,7 @@ internal sealed class MongoOutboxWriter(
             // Resolved lazily so registration doesn't depend on the correlation
             // context being wired (matches EfOutboxWriter).
             CorrelationId = sp.GetService<ICorrelationContext>()?.CorrelationId,
-            CausationId = @event.EventId.ToString(),
+            CausationId = sp.GetService<ICausationIdContext>()?.CausationId,
             TraceParent = activity?.Id,
             TraceState = activity?.TraceStateString,
         };

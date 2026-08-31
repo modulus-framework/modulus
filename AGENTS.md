@@ -82,7 +82,9 @@ src/
                  store) + Modulus.Authorization.Management (admin API),
                  Modulus.AspNetCore.Redis (distributed idempotency store).
   observability/ Modulus.Observability (Diagnostics + OpenTelemetry merged)
-  testing/       Modulus.Testing (packable WebApplicationFactory harness)
+  testing/       Modulus.Testing (WebApplicationFactory harness, RecordingModuleBus,
+                 event assertions), Modulus.Testing.Architecture (module boundary
+                 rules: integration event naming, cross-module reference detection)
   cli/           Modulus.Cli (Spectre.Console.Cli scaffolding tool)
 tests/
   unit/          xUnit + NSubstitute + FluentAssertions
@@ -130,12 +132,12 @@ large DDD/CQRS modular monoliths.
 
 | Command | Description |
 |---------|-------------|
-| `modulus app <name>` | Creates a solution: `src/API/{App}.Api` host + `src/Shared/{App}.Shared.*` kernel (4 projects) + example `Catalog` module (4 projects) + top-level tests. Prompts for `--migration-engine {efcore|dbsh}`. |
+| `modulus app <name>` | Creates a solution: `src/API/{App}.Api` host + `src/Shared/{App}.Shared.*` kernel (4 projects) + example `Catalog` module (4 projects) + top-level tests. |
 | `modulus module <name>` | Creates a blank 4-layer business module |
-| `modulus add-module <name>` | Adds a module to an existing app + wires `[DependsOn]` + Host `ProjectReference`s. Prompts for `--migration-engine`. |
+| `modulus add-module <name>` | Adds a module to an existing app + wires `[DependsOn]` + Host `ProjectReference`s. |
 | `modulus generate-crud <Entity>` | Generates entity, repo, DTOs, command/query handlers across the module's layers |
-| `modulus migrate add <Name>` | Scaffolds an EF Core migration in each module's Infrastructure project (or one via `--module`). Routes to `dbsh create` for dbsh modules. |
-| `modulus migrate update` | Applies pending migrations to each module's database (`dotnet ef database update` per module). Routes to `dbsh migrate` for dbsh modules. |
+| `modulus migrate add <Name>` | Scaffolds an EF Core migration in each module's Infrastructure project (or one via `--module`). |
+| `modulus migrate update` | Applies pending migrations to each module's database (`dotnet ef database update` per module). |
 
 ### Generated layout
 
@@ -157,7 +159,7 @@ large DDD/CQRS modular monoliths.
         └── {App}.Modules.{Module}/
             ├── .Domain/          # entity, IRepository
             ├── .Application/     # IUnitOfWork, commands/queries/handlers + Dtos/ + IntegrationEvents/
-            ├── .Infrastructure/  # {Module}DbContext, {Module}DbContextFactory (EF) or dbsh.toml + Database/Migrations/ (dbsh), repository impl, {Module}Module composition root
+            ├── .Infrastructure/  # {Module}DbContext, {Module}DbContextFactory, repository impl, {Module}Module composition root
             └── .Presentation/    # API controllers
 ```
 
@@ -167,7 +169,7 @@ Each module gets **four** projects named `{App}.Modules.{Module}.{Layer}`:
 |-------|----------|------------|
 | `Domain` | Entity, `IRepository` | `Shared.Domain`, `Modulus.Core`, `Modulus.Data.Abstractions` |
 | `Application` | **`IUnitOfWork`**, commands, queries, handlers, **DTOs** (`Dtos/`), **integration events** (`IntegrationEvents/`) | `Domain`, `Shared.Application`, `Modulus.Mediator`, `Modulus.EntityFrameworkCore`, `Modulus.Events` |
-| `Infrastructure` | **`{Module}DbContext`**, **`{Module}DbContextFactory`** (EF) or `dbsh.toml` + `Database/Migrations/` (dbsh), repository impl, `{Module}Module` composition root | `Application`, `Domain`, `Shared.Infrastructure`, `Modulus.EntityFrameworkCore`, `Modulus.Events`, EF Core provider package |
+| `Infrastructure` | **`{Module}DbContext`**, **`{Module}DbContextFactory`**, repository impl, `{Module}Module` composition root | `Application`, `Domain`, `Shared.Infrastructure`, `Modulus.EntityFrameworkCore`, `Modulus.Events`, EF Core provider package |
 | `Presentation` | API controllers | `Application`, `Shared.Presentation`, `Modulus.AspNetCore` |
 
 There are **no separate Contracts / IntegrationEvents / Tests projects** —
@@ -301,48 +303,14 @@ migrations for CatalogDbContext"*.
   Discovers the `*.Api.csproj` startup project and `*.Infrastructure.csproj`
   module projects under the app root. Requires the `dotnet-ef` global tool.
 
-## Migration engines (EF Core vs dbsh)
+## EF Core migrations engine
 
-Modules can use **EF Core migrations** (built-in, default) or **dbsh** (an
-external SQL-first migration tool). The choice is per-module and set at app
-creation time or when adding a module via `--migration-engine {efcore|dbsh}`.
-
-### How it works
-
-- **EF Core mode** (default) — the generated module includes an
-  `IDesignTimeDbContextFactory` and EF migration files in
-  `Infrastructure/Migrations/`. `MigrateModulusDatabasesAsync` applies them at
-  startup. `modulus migrate add/update` shells out to `dotnet ef`.
-- **dbsh mode** — the generated module emits a `Database/Migrations/` folder
-  with a `dbsh.toml` config and a `.gitkeep` placeholder. The module's
-  composition root calls `AddModuleDatabase<TContext>(...).ExternallyManaged<TContext>()`,
-  which registers the context as externally managed. The generated `Program.cs`
-  does **not** call `MigrateModulusDatabasesAsync` (the schema is managed
-  externally by the user running `dbsh migrate`). `modulus migrate add/update`
-  shells out to the `dbsh` CLI (requires `dotnet tool install --global dbsh`).
-
-### Framework hook
-
-`IModuleMigrationRegistry` (singleton, in `Modulus.EntityFrameworkCore.Extensions`)
-maps each `DbContext` type → `IsExternallyManaged`. `MigrateModulusDatabasesAsync`
-checks the registry and skips externally-managed contexts (logs *"schema managed
-externally"*). This is engine-agnostic — not dbsh-specific — so any external
-migration tool can use it.
-
-### TablePrefix ↔ dbsh convention
-
-The template enforces **`TablePrefix == "<dbshModuleName>_"`** so EF table names
-and dbsh SQL targets the same tables. E.g. a module with `TablePrefix = "cat_"`
-uses dbsh module name `"cat"` and dbsh produces `cat__<table>` (MySQL/SQLite)
-or schema `cat` (PostgreSQL/SQL Server).
-
-### Caveats
-
-- dbsh has no model-diff — the developer keeps the EF model and dbsh SQL in
-  sync manually. `dbsh validate` catches script errors but not schema drift.
-- dbsh has no MongoDB support. Mongo modules use neither tool.
-- A module can switch engines after creation by changing the composition root
-  call and re-scaffolding (or removing) the `DbContextFactory` / `dbsh.toml`.
+All modules use **EF Core migrations** by default. Each module includes an
+`IDesignTimeDbContextFactory` implementation and EF migration files in
+`Infrastructure/Migrations/`. `MigrateModulusDatabasesAsync` applies them at
+startup via `dotnet ef database update` routed per module. The CLI provides
+`modulus migrate add <Name>` and `modulus migrate update` commands to scaffold
+and apply migrations respectively.
 
 ## Microservice hardening (Tier 2)
 

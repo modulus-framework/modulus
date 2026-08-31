@@ -67,8 +67,11 @@ public static class HttpClientExtensions
         return builder;
     }
 
-    // Ensure a correlation context exists even if AddModulusCorrelation (the
-    // ASP.NET inbound side) was not called — the handler then simply no-ops.
+    // Ensure correlation and causation contexts exist even if AddModulusCorrelation
+    // (the ASP.NET inbound side) was not called — the handlers then simply no-op.
     private static void RegisterCorrelationDependencies(IServiceCollection services)
-        => services.TryAddSingleton<ICorrelationContext, CorrelationContext>();
+    {
+        services.TryAddSingleton<ICorrelationContext, CorrelationContext>();
+        services.TryAddSingleton<ICausationIdContext, CausationIdContext>();
+    }
 }

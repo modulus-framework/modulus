@@ -72,8 +72,17 @@ dotnet run
 └─────────────────────────────────────────────────────────┘
 ```
 
+## Framework Highlights
+
+- **Distributed Tracing** — W3C trace context flows across async boundaries and message brokers
+- **Message Durability** — Publisher confirms (RabbitMQ), at-least-once semantics (Kafka)
+- **Server-Side Projection** — Query directly for DTOs without materializing full entities
+- **Event Assertions** — Built-in fakes and helpers for testing event-driven code
+- **Architecture Rules** — Enforce module boundaries with integration event naming validation
+
 ## Next Steps
 
+- [Features](features) — Explore the latest capabilities
 - [Prerequisites](getting-started/prerequisites) — Set up your development environment
 - [Quick Start](getting-started/quick-start) — Create your first Modulus app
 - [Architecture](architecture/overview) — Understand the framework's design

@@ -55,7 +55,8 @@ internal sealed class EfOutboxWriter(
             tenant.TenantId ?? Guid.Empty,
             Db.GetType().Name.Replace("DbContext", string.Empty),
             sp.GetService<ICorrelationContext>()?.CorrelationId,
-            serializer));
+            serializer,
+            sp.GetService<ICausationIdContext>()?.CausationId));
         return Task.CompletedTask;
     }
 }

@@ -20,18 +20,21 @@ internal sealed class KafkaEventBus : IModuleBus, IDisposable
     private readonly ILogger<KafkaEventBus> _logger;
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly IMessageSerializer _serializer;
+    private readonly IPartitionKeyProvider _partitionKeyProvider;
     private readonly IProducer<string, string> _producer;
 
     public KafkaEventBus(
         IOptions<KafkaOptions> options,
         ILogger<KafkaEventBus> logger,
         IServiceScopeFactory scopeFactory,
-        IMessageSerializer serializer)
+        IMessageSerializer serializer,
+        IPartitionKeyProvider? partitionKeyProvider = null)
     {
         _opts = options.Value;
         _logger = logger;
         _scopeFactory = scopeFactory;
         _serializer = serializer;
+        _partitionKeyProvider = partitionKeyProvider ?? new DefaultPartitionKeyProvider(null);
 
         var config = BuildProducerConfig(_opts);
         _producer = new ProducerBuilder<string, string>(config).Build();
@@ -66,11 +69,26 @@ internal sealed class KafkaEventBus : IModuleBus, IDisposable
 
         var value = _serializer.Serialize(envelope, typeof(IntegrationEventEnvelope));
 
+        // Partition key spreads load across partitions by tenant (not one-per-event-type)
+        var partitionKey = _partitionKeyProvider.GetPartitionKey(@event);
+
+        // Headers carry W3C trace context and correlation metadata for consumers
+        var headers = new Headers();
+        if (envelope.TraceParent is { Length: > 0 } tp)
+            headers.Add("x-trace-parent", System.Text.Encoding.UTF8.GetBytes(tp));
+        if (envelope.TraceState is { Length: > 0 } ts)
+            headers.Add("x-trace-state", System.Text.Encoding.UTF8.GetBytes(ts));
+        if (correlationId is { Length: > 0 } cid)
+            headers.Add("x-correlation-id", System.Text.Encoding.UTF8.GetBytes(cid));
+        if (tenantId.HasValue && tenantId != Guid.Empty)
+            headers.Add("x-tenant-id", System.Text.Encoding.UTF8.GetBytes(tenantId.Value.ToString()));
+
         var result = await _producer.ProduceAsync(topic,
             new Message<string, string>
             {
-                Key = routingKey,
+                Key = partitionKey,
                 Value = value,
+                Headers = headers,
             },
             ct);
 

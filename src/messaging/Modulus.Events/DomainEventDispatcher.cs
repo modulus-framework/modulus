@@ -21,6 +21,7 @@ public sealed class DomainEventDispatcher(IServiceProvider sp)
         IEnumerable<IDomainEvent> events,
         CancellationToken ct = default)
     {
+        var errors = new List<Exception>();
         foreach (var @event in events)
         {
             var handlerType = typeof(IDomainEventHandler<>)
@@ -31,11 +32,25 @@ public sealed class DomainEventDispatcher(IServiceProvider sp)
             foreach (var handler in handlers)
             {
                 if (handler is null) continue;
-                var invoke = s_delegates.GetOrAdd(
-                    (handler.GetType(), @event.GetType()),
-                    static key => CompileDelegate(key.Item1, key.Item2));
-                await invoke(handler, @event, ct);
+                try
+                {
+                    var invoke = s_delegates.GetOrAdd(
+                        (handler.GetType(), @event.GetType()),
+                        static key => CompileDelegate(key.Item1, key.Item2));
+                    await invoke(handler, @event, ct);
+                }
+                catch (Exception ex)
+                {
+                    errors.Add(ex);
+                }
             }
+        }
+
+        if (errors.Count > 0)
+        {
+            throw errors.Count == 1
+                ? errors[0]
+                : new AggregateException("One or more domain event handlers failed.", errors);
         }
     }
 

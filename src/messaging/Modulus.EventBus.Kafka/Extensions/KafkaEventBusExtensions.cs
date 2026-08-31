@@ -28,6 +28,9 @@ public static class KafkaEventBusExtensions
                 cfg.GetSection(sectionName).Bind(opts))
             .Configure(opts => configure?.Invoke(opts));
 
+        // Partition key provider (tenant-aware partitioning)
+        services.TryAddSingleton<IPartitionKeyProvider, DefaultPartitionKeyProvider>();
+
         services.RemoveIModuleBusRegistrations();
         services.AddSingleton<KafkaEventBus>();
         services.AddScoped<IModuleBus>(sp => sp.GetRequiredService<KafkaEventBus>());

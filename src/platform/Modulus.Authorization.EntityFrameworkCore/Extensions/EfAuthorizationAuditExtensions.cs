@@ -44,6 +44,10 @@ public static class EfAuthorizationAuditExtensions
         // an existing AddModulusEvents registration is reused, not replaced.
         services.TryAddSingleton<IIntegrationEventRegistry, IntegrationEventRegistry>();
 
+        // Similarly, IMessageSerializer is needed for audit event serialization.
+        // TryAdd so an existing AddModulusEvents registration is reused.
+        services.TryAddSingleton<IMessageSerializer, SystemTextJsonMessageSerializer>();
+
         services.RemoveAll<IAuthorizationAuditWriter>();
         services.AddScoped<IAuthorizationAuditWriter, EfAuthorizationAuditWriter>();
 

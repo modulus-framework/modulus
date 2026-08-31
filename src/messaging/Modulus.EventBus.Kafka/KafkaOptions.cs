@@ -40,8 +40,12 @@ public sealed class KafkaOptions
     /// <summary>Maximum delay between redelivery attempts of a failed message, in milliseconds.</summary>
     public int RedeliveryMaxBackoffMs { get; set; } = 2000;
 
-    /// <summary>Enable auto-commit of consumer offsets.</summary>
-    public bool EnableAutoCommit { get; set; } = true;
+    /// <summary>
+    /// Enable auto-commit of consumer offsets. Defaults to false (at-least-once)
+    /// so offsets commit only after successful handler completion. Set true for
+    /// at-most-once (lower latency, possible duplicates on crash).
+    /// </summary>
+    public bool EnableAutoCommit { get; set; } = false;
 
     /// <summary>Auto-commit interval in milliseconds.</summary>
     public int AutoCommitIntervalMs { get; set; } = 5000;

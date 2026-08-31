@@ -18,7 +18,8 @@ public static class CorrelationExtensions
     /// Registers the singleton <see cref="ICorrelationContext"/> (AsyncLocal) and
     /// binds <see cref="CorrelationOptions"/> from the <c>Correlation</c> section.
     /// Registered as a singleton so the outbound propagation handler (pooled with
-    /// the HTTP message handler) can depend on it.
+    /// the HTTP message handler) can depend on it. Also registers
+    /// <see cref="ICausationIdContext"/> so event consumers can track causation chains.
     /// </summary>
     public static IServiceCollection AddModulusCorrelation(
         this IServiceCollection services,
@@ -27,6 +28,7 @@ public static class CorrelationExtensions
         services.Configure<CorrelationOptions>(
             configuration.GetSection(CorrelationOptions.SectionName));
         services.TryAddSingleton<ICorrelationContext, CorrelationContext>();
+        services.TryAddSingleton<ICausationIdContext, CausationIdContext>();
         return services;
     }
 

@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Architecture rules for Modulus modular monoliths: enforce module boundaries, layer rules, entity ownership, and integration event naming conventions.</Description>
+    <Version>1.0.0</Version>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\core\Modulus.Core\Modulus.Core.csproj" />
+    <ProjectReference Include="..\..\messaging\Modulus.Events\Modulus.Events.csproj" />
+  </ItemGroup>
+
+</Project>

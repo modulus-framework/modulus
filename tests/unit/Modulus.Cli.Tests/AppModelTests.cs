@@ -78,36 +78,4 @@ public class AppModelTests
         model.IdentityConfigJson.Should().BeEmpty();
     }
 
-    [Fact]
-    public void Default_migration_engine_is_efcore()
-    {
-        var model = new AppModel();
-        model.MigrationEngine.Should().Be("efcore");
-        model.UseDbsh.Should().BeFalse();
-    }
-
-    [Fact]
-    public void Dbsh_migration_engine_sets_correct_flags()
-    {
-        var model = new AppModel { MigrationEngine = "dbsh" };
-        model.UseDbsh.Should().BeTrue();
-        model.MigrationEngine.Should().Be("dbsh");
-    }
-
-    [Fact]
-    public void ModuleModel_default_migration_engine_is_efcore()
-    {
-        var model = new ModuleModel();
-        model.MigrationEngine.Should().Be("efcore");
-        model.UseDbsh.Should().BeFalse();
-        model.DbshModuleName.Should().Be(model.ModuleNameLower);
-    }
-
-    [Fact]
-    public void ModuleModel_dbsh_sets_correct_flags()
-    {
-        var model = new ModuleModel { ModuleName = "Catalog", MigrationEngine = "dbsh" };
-        model.UseDbsh.Should().BeTrue();
-        model.DbshModuleName.Should().Be("catalog");
-    }
 }

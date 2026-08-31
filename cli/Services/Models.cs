@@ -141,14 +141,6 @@ internal sealed class AppModel
     /// <summary>EF Core package version for the provider.</summary>
     public string EfProviderVersion => DbProviderInfo.Version(DbProvider);
 
-    // ── Migration Engine ───────────────────────────────────────────
-    /// <summary>
-    /// Migration engine: "efcore" (default) or "dbsh" (SQL files, managed externally).
-    /// </summary>
-    public string MigrationEngine { get; set; } = "efcore";
-
-    /// <summary>True when the user chose dbsh as the migration engine.</summary>
-    public bool UseDbsh => MigrationEngine == "dbsh";
 
     /// <summary>
     /// Per-app User Secrets id, stamped into the host .csproj so
@@ -264,16 +256,6 @@ internal sealed class ModuleModel
     // ── Database provider ──────────────────────────────────────────
     /// <summary>"SQLite", "SqlServer", "PostgreSQL", or "MySQL".</summary>
     public string DbProvider { get; set; } = "SQLite";
-
-    // ── Migration engine ──────────────────────────────────────────
-    /// <summary>"efcore" (default) or "dbsh" (SQL files, managed externally).</summary>
-    public string MigrationEngine { get; set; } = "efcore";
-
-    /// <summary>True when the user chose dbsh as the migration engine.</summary>
-    public bool UseDbsh => MigrationEngine == "dbsh";
-
-    /// <summary>dbsh module name derived from <see cref="ModuleNameLower"/> (Module name, lower-case).</summary>
-    public string DbshModuleName => ModuleNameLower;
 
     /// <summary>EF Core DbContextOptions extension method name.</summary>
     public string UseDbMethod => DbProviderInfo.UseMethod(DbProvider);

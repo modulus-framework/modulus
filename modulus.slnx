@@ -1,4 +1,5 @@
 <Solution>
+  <Folder Name="/src/" />
   <!-- ── Core ────────────────────────────────────────────────────── -->
   <Folder Name="/src/core/">
     <Project Path="src/core/Modulus.Core/Modulus.Core.csproj" />
@@ -51,6 +52,7 @@
   </Folder>
   <!-- ── Testing ─────────────────────────────────────────────────── -->
   <Folder Name="/src/testing/">
+    <Project Path="src/testing/Modulus.Testing.Architecture/Modulus.Testing.Architecture.csproj" />
     <Project Path="src/testing/Modulus.Testing/Modulus.Testing.csproj" />
   </Folder>
   <!-- ── CLI ─────────────────────────────────────────────────────── -->
@@ -63,9 +65,14 @@
     <Project Path="tests/unit/Modulus.AspNetCore.Tests/Modulus.AspNetCore.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Mediator.Tests/Modulus.Mediator.Tests.csproj" />
     <Project Path="tests/unit/Modulus.EntityFrameworkCore.Tests/Modulus.EntityFrameworkCore.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.Inbox.MongoDB.Tests/Modulus.Inbox.MongoDB.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Inbox.Tests/Modulus.Inbox.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.Outbox.MongoDB.Tests/Modulus.Outbox.MongoDB.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Outbox.Tests/Modulus.Outbox.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Sagas.Tests/Modulus.Sagas.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.EventBus.Kafka.Tests/Modulus.EventBus.Kafka.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.EventBus.RabbitMQ.Tests/Modulus.EventBus.RabbitMQ.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.Events.Tests/Modulus.Events.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Identity.Tests/Modulus.Identity.Tests.csproj" />
     <Project Path="tests/unit/Modulus.MultiTenancy.Tests/Modulus.MultiTenancy.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Platform.Tests/Modulus.Platform.Tests.csproj" />
@@ -73,10 +80,13 @@
     <Project Path="tests/unit/Modulus.AspNetCore.Redis.Tests/Modulus.AspNetCore.Redis.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Authorization.Management.Tests/Modulus.Authorization.Management.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Testing.Tests/Modulus.Testing.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.Caching.Redis.Tests/Modulus.Caching.Redis.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Cli.Tests/Modulus.Cli.Tests.csproj" />
   </Folder>
+  <Folder Name="/tests/" />
   <!-- ── Tests · Integration ─────────────────────────────────────── -->
   <Folder Name="/tests/integration/">
     <Project Path="tests/integration/Modulus.EFCore.Integration.Tests/Modulus.EFCore.Integration.Tests.csproj" />
+    <Project Path="tests/integration/Modulus.Messaging.Integration.Tests/Modulus.Messaging.Integration.Tests.csproj" />
   </Folder>
 </Solution>

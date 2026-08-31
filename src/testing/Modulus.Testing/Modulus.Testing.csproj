@@ -19,6 +19,14 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\core\Modulus.Core\Modulus.Core.csproj" />
+    <ProjectReference Include="..\..\core\Modulus.AspNetCore\Modulus.AspNetCore.csproj" />
+    <ProjectReference Include="..\..\messaging\Modulus.Events\Modulus.Events.csproj" />
+    <ProjectReference Include="..\..\data\Modulus.Data.Abstractions\Modulus.Data.Abstractions.csproj" />
+    <ProjectReference Include="..\..\data\Modulus.EntityFrameworkCore\Modulus.EntityFrameworkCore.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />

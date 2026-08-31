@@ -1,12 +1,12 @@
 namespace Modulus.Authorization.EntityFrameworkCore.Audit;
 
-using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Modulus.Authorization.Audit;
 using Modulus.Core.Abstractions;
 using Modulus.Events.Abstractions;
 using Modulus.Outbox.Abstractions;
+using Modulus.Core.Correlation;
 
 /// <summary>
 /// Persists audit events durably to <see cref="AuthorizationStoreDbContext"/>'s
@@ -46,15 +46,17 @@ public sealed class EfAuthorizationAuditWriter : IAuthorizationAuditWriter
         // race against the host's real multi-tenancy setup.
         var tenant = _sp.GetService<ICurrentTenant>();
         var correlation = _sp.GetService<ICorrelationContext>();
+        var causation = _sp.GetService<ICausationIdContext>();
+        var serializer = _sp.GetRequiredService<IMessageSerializer>();
 
         db.Set<OutboxMessage>().Add(new OutboxMessage
         {
             MessageType = IntegrationEventNaming.GetName(auditEvent.GetType()),
-            Payload = JsonSerializer.Serialize(auditEvent, auditEvent.GetType()),
+            Payload = serializer.Serialize(auditEvent, auditEvent.GetType()),
             TenantId = tenant?.TenantId ?? Guid.Empty,
             ModuleName = "Authorization",
             CorrelationId = correlation is { IsSet: true } ? correlation.CorrelationId : null,
-            CausationId = auditEvent.EventId.ToString(),
+            CausationId = causation?.CausationId,
         });
 
         await db.SaveChangesAsync(ct);

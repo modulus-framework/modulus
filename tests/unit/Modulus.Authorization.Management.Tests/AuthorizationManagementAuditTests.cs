@@ -142,10 +142,10 @@ public sealed class AuthorizationManagementAuditTests : IAsyncLifetime
         rows[0].MessageType.Should().Be("authorization.administrative-change.v1");
 
         using var payload = JsonDocument.Parse(rows[0].Payload);
-        payload.RootElement.GetProperty("Category").GetString().Should().Be("Grant");
-        payload.RootElement.GetProperty("Action").GetString().Should().Be("Granted");
-        payload.RootElement.GetProperty("TargetDescription").GetString().Should().Be("Role:manager");
-        payload.RootElement.GetProperty("ActorUserId").GetString().Should().NotBeNullOrEmpty();
+        payload.RootElement.GetProperty("category").GetString().Should().Be("Grant");
+        payload.RootElement.GetProperty("action").GetString().Should().Be("Granted");
+        payload.RootElement.GetProperty("targetDescription").GetString().Should().Be("Role:manager");
+        payload.RootElement.GetProperty("actorUserId").GetString().Should().NotBeNullOrEmpty();
     }
 
     [Fact]
@@ -163,7 +163,7 @@ public sealed class AuthorizationManagementAuditTests : IAsyncLifetime
         var rows = await ReadAuditRowsAsync();
         rows.Should().HaveCount(2);
         using var payload = JsonDocument.Parse(rows[1].Payload);
-        payload.RootElement.GetProperty("Action").GetString().Should().Be("Revoked");
+        payload.RootElement.GetProperty("action").GetString().Should().Be("Revoked");
     }
 
     [Fact]
@@ -176,9 +176,9 @@ public sealed class AuthorizationManagementAuditTests : IAsyncLifetime
         var rows = await ReadAuditRowsAsync();
         rows.Should().ContainSingle();
         using var payload = JsonDocument.Parse(rows[0].Payload);
-        payload.RootElement.GetProperty("Category").GetString().Should().Be("OrgUnit");
-        payload.RootElement.GetProperty("Action").GetString().Should().Be("Created");
-        payload.RootElement.GetProperty("TargetDescription").GetString().Should().Be($"unit:{id}");
+        payload.RootElement.GetProperty("category").GetString().Should().Be("OrgUnit");
+        payload.RootElement.GetProperty("action").GetString().Should().Be("Created");
+        payload.RootElement.GetProperty("targetDescription").GetString().Should().Be($"unit:{id}");
     }
 
     [Fact]
@@ -200,9 +200,9 @@ public sealed class AuthorizationManagementAuditTests : IAsyncLifetime
         var rows = await ReadAuditRowsAsync();
         rows.Should().ContainSingle();
         using var payload = JsonDocument.Parse(rows[0].Payload);
-        payload.RootElement.GetProperty("Category").GetString().Should().Be("Delegation");
-        payload.RootElement.GetProperty("Action").GetString().Should().Be("Created");
-        payload.RootElement.GetProperty("TargetDescription").GetString()
+        payload.RootElement.GetProperty("category").GetString().Should().Be("Delegation");
+        payload.RootElement.GetProperty("action").GetString().Should().Be("Created");
+        payload.RootElement.GetProperty("targetDescription").GetString()
             .Should().Be($"from:{from} -> to:{to}");
     }
 

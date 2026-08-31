@@ -112,15 +112,10 @@ var app = builder.Build();
 // freshly generated app (and the integration-test harness) runs before you author
 // the first migration.
 // Author the first migration with:  modulus migrate add <Name> --module <Module>
-{{ if !use_dbsh }}await app.Services.MigrateModulusDatabasesAsync(
+await app.Services.MigrateModulusDatabasesAsync(
     app.Environment.IsProduction()
         ? DatabaseInitializationMode.Migrate
         : DatabaseInitializationMode.MigrateOrCreate);
-{{ else }}
-// Schema is managed externally (dbsh). Run:  dbsh migrate --yes
-// Each module's DbContext is marked ExternallyManaged so the framework
-// skips EF Migrate/EnsureCreated and lets dbsh own the schema.
-{{ end }}
 
 // ── Middleware ─────────────────────────────────────────────────
 // Order matters: forwarded headers first (so everything downstream sees the

@@ -164,16 +164,73 @@ public class EfRepository<T>(IServiceProvider sp)
         return Task.CompletedTask;
     }
 
+    public async Task<T?> FirstOrDefaultAsync(ISpecification<T> spec, CancellationToken ct)
+        => await ApplySpec(Set.AsQueryable(), spec).FirstOrDefaultAsync(ct);
+
+    public async Task<T> SingleAsync(ISpecification<T> spec, CancellationToken ct)
+        => await ApplySpec(Set.AsQueryable(), spec).SingleAsync(ct);
+
+    public async Task<T?> SingleOrDefaultAsync(ISpecification<T> spec, CancellationToken ct)
+        => await ApplySpec(Set.AsQueryable(), spec).SingleOrDefaultAsync(ct);
+
+    public IAsyncEnumerable<T> AsAsyncEnumerable(ISpecification<T> spec)
+        => ApplySpec(Set.AsQueryable(), spec).AsAsyncEnumerable();
+
+    public async Task DeleteRangeAsync(ISpecification<T> spec, CancellationToken ct)
+    {
+        var entitiesToDelete = await ApplySpec(Set.AsQueryable(), spec).ToListAsync(ct);
+        Set.RemoveRange(entitiesToDelete);
+    }
+
     protected static IQueryable<T> ApplySpec(
         IQueryable<T> query, ISpecification<T> spec)
     {
-        if (spec.Filter != null) query = query.Where(spec.Filter);
-        if (spec.OrderBy != null) query = query.OrderBy(spec.OrderBy);
-        if (spec.OrderByDesc != null) query = query.OrderByDescending(spec.OrderByDesc);
-        foreach (var inc in spec.Includes) query = query.Include(inc);
-        if (spec.Skip != null) query = query.Skip(spec.Skip.Value);
-        if (spec.Take != null) query = query.Take(spec.Take.Value);
-        if (spec.AsNoTracking) query = query.AsNoTracking();
+        if (spec.Filter != null)
+            query = query.Where(spec.Filter);
+
+        if (spec.IgnoreQueryFilters)
+            query = query.IgnoreQueryFilters();
+
+        if (spec.AsSplitQuery)
+            query = query.AsSplitQuery();
+
+        if (spec.IncludeChains is { Count: > 0 })
+            foreach (var include in spec.IncludeChains)
+                query = query.Include(include.IncludeExpression);
+
+        // Apply ordering: OrderBy, then ThenBy for each subsequent clause
+        bool isFirstOrderBy = true;
+        if (spec.OrderByClauses is { Count: > 0 })
+        {
+            foreach (var orderBy in spec.OrderByClauses)
+            {
+                query = isFirstOrderBy
+                    ? (orderBy.Descending
+                        ? query.OrderByDescending(orderBy.Selector)
+                        : query.OrderBy(orderBy.Selector))
+                    : (orderBy.Descending
+                        ? ((IOrderedQueryable<T>)query).ThenByDescending(orderBy.Selector)
+                        : ((IOrderedQueryable<T>)query).ThenBy(orderBy.Selector));
+                isFirstOrderBy = false;
+            }
+        }
+
+        // Paging requires ordering
+        if ((spec.Skip != null || spec.Take != null) && isFirstOrderBy)
+            throw new InvalidOperationException(
+                "Specifications with Skip/Take must define at least one OrderBy clause.");
+
+        if (spec.Skip != null)
+            query = query.Skip(spec.Skip.Value);
+        if (spec.Take != null)
+            query = query.Take(spec.Take.Value);
+
+        if (spec.Tag is not null)
+            query = query.TagWith(spec.Tag);
+
+        if (spec.AsNoTracking)
+            query = query.AsNoTracking();
+
         return query;
     }
 }
@@ -184,10 +241,11 @@ public class EfReadRepository<T>(IServiceProvider sp)
 {
     public async Task<PagedList<TResult>> ListPagedAsync<TResult>(
         ISpecification<T> spec,
-        Func<T, TResult> selector,
+        Expression<Func<T, TResult>> selector,
         int page, int size,
         CancellationToken ct)
     {
+        ArgumentNullException.ThrowIfNull(selector);
         var baseQuery = ApplySpec(Set.AsQueryable(), spec);
 
         // If the spec already has Skip/Take, don't double-apply paging.
@@ -196,10 +254,11 @@ public class EfReadRepository<T>(IServiceProvider sp)
             : baseQuery;
 
         var total = await baseQuery.CountAsync(ct);
-        var items = await query.ToListAsync(ct);
+        // Project on the server-side within the query
+        var items = await query.Select(selector).ToListAsync(ct);
         return new PagedList<TResult>
         {
-            Items = items.Select(selector).ToList().AsReadOnly(),
+            Items = items.AsReadOnly(),
             TotalCount = total,
             Page = page,
             PageSize = size,

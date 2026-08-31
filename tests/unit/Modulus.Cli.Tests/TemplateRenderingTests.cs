@@ -18,7 +18,6 @@ public class TemplateRenderingTests
             AppName = "MyApp",
             DbProvider = "SQLite",
             Auth = "none",
-            MigrationEngine = "efcore",
         };
 
         var act = () => _engine.Render("app/Program", model);
@@ -38,7 +37,6 @@ public class TemplateRenderingTests
             AppName = "MyApp",
             DbProvider = "PostgreSQL",
             Auth = "openiddict",
-            MigrationEngine = "efcore",
         };
 
         var output = _engine.Render("app/Program", model);
