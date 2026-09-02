@@ -3,7 +3,16 @@
 using Modulus.AspNetCore.Endpoints;
 using Modulus.AspNetCore.Extensions;
 using Modulus.AspNetCore.Configuration;
+using Modulus.AspNetCore.Cors;
+using Modulus.AspNetCore.Correlation;
 using Modulus.AspNetCore.DataProtection;
+using Modulus.AspNetCore.FeatureFlags;
+using Modulus.AspNetCore.HealthChecks;
+using Modulus.AspNetCore.Idempotency;
+using Modulus.AspNetCore.OpenApi;
+using Modulus.AspNetCore.RateLimiting;
+using Modulus.AspNetCore.Security;
+using Modulus.AspNetCore.Versioning;
 using Modulus.EntityFrameworkCore.Extensions;
 using Modulus.Events.Extensions;
 using Modulus.Mediator.Extensions;
