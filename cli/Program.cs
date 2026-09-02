@@ -73,6 +73,19 @@ public static class Program
             config.AddCommand<Commands.DoctorCommand>("doctor")
                 .WithDescription("Check the .NET SDK, dotnet-ef tool, and that this app is well-formed.")
                 .WithExample("doctor");
+
+            // ── Version management ─────────────────────────────────────
+            config.AddCommand<Commands.OutdatedCommand>("outdated")
+                .WithDescription("Show outdated packages in the current application.")
+                .WithExample("outdated")
+                .WithExample("outdated", "--framework-only");
+
+            config.AddCommand<Commands.UpdateCommand>("update")
+                .WithDescription("Update packages to latest versions.")
+                .WithExample("update")
+                .WithExample("update", "--dry-run")
+                .WithExample("update", "--framework-only")
+                .WithExample("update", "--force");
         });
 
         return app.Run(args);
@@ -98,7 +111,9 @@ internal sealed class DefaultCommand : Command
             new Markup("  [grey]$[/] modulus add-module Orders     [grey dim]# add a module[/]"),
             new Markup("  [grey]$[/] modulus generate-crud Order --module Orders"),
             new Markup("  [grey]$[/] modulus list                  [grey dim]# inspect your app[/]"),
-            new Markup("  [grey]$[/] modulus doctor                [grey dim]# check your env[/]")))
+            new Markup("  [grey]$[/] modulus doctor                [grey dim]# check your env[/]"),
+            new Markup("  [grey]$[/] modulus outdated              [grey dim]# check for updates[/]"),
+            new Markup("  [grey]$[/] modulus update                [grey dim]# update packages[/]")))
             .RoundedBorder()
             .Header("[cyan]Quick start[/]");
         AnsiConsole.Write(panel);
@@ -121,6 +136,8 @@ internal sealed class DefaultCommand : Command
         table.AddRow("[cyan]list[/]", "List this app's modules + entities + migrations");
         table.AddRow("[cyan]info[/]", "Overview: host, framework features wired, modules");
         table.AddRow("[cyan]doctor[/]", "Check .NET SDK / dotnet-ef / app structure");
+        table.AddRow("[cyan]outdated[/]", "Show outdated packages in the current app");
+        table.AddRow("[cyan]update[/]", "Update packages to latest versions");
 
         AnsiConsole.Write(table);
         AnsiConsole.WriteLine();

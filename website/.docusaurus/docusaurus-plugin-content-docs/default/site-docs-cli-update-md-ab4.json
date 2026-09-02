@@ -1,0 +1,27 @@
+{
+  "id": "cli/update",
+  "title": "modulus update",
+  "description": "Updates packages to their latest versions with backup and rollback support.",
+  "source": "@site/docs/cli/update.md",
+  "sourceDirName": "cli",
+  "slug": "/cli/update",
+  "permalink": "/docs/cli/update",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/cobytelabs/modulus/tree/main/website/docs/cli/update.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 13,
+  "frontMatter": {
+    "sidebar_position": 13
+  },
+  "sidebar": "cliSidebar",
+  "previous": {
+    "title": "modulus outdated",
+    "permalink": "/docs/cli/outdated"
+  },
+  "next": {
+    "title": "Global Flags",
+    "permalink": "/docs/cli/global-flags"
+  }
+}

@@ -44,7 +44,8 @@ public sealed class InboxModelContributorTests
 
         var store = h.Scope.ServiceProvider.GetRequiredService<IInboxStore>();
         var claimed = await store.TryClaimAsync(
-            Guid.NewGuid(), "test.event.v1", "{}", maxRetries: 3, default);
+            Guid.NewGuid(), "test.event.v1", "{}", maxRetries: 3,
+            claimTimeout: TimeSpan.FromMinutes(5), default);
 
         claimed.Should().NotBeNull();
         claimed!.Status.Should().Be(InboxStatus.Processing);

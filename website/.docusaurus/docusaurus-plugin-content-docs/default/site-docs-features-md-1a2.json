@@ -1,0 +1,18 @@
+{
+  "id": "features",
+  "title": "Framework Features",
+  "description": "Modulus provides a comprehensive set of features for building scalable, production-ready modular-monolith applications.",
+  "source": "@site/docs/features.md",
+  "sourceDirName": ".",
+  "slug": "/features",
+  "permalink": "/docs/features",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/cobytelabs/modulus/tree/main/website/docs/features.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 2,
+  "frontMatter": {
+    "sidebar_position": 2
+  }
+}

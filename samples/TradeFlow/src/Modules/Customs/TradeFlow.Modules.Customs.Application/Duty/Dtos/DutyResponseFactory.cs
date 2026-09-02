@@ -14,6 +14,11 @@ public static class DutyResponseFactory
         benefit.OverrideRate, benefit.CapPercent, benefit.Conditions,
         benefit.EffectiveFrom, benefit.EffectiveTo);
 
+    public static AitAtLedgerEntryResponse ToResponse(AitAtLedgerEntry entry) => new(
+        entry.Id, entry.CompanyId, entry.FiscalYear, entry.Component, entry.Amount,
+        entry.EntryType, entry.FileId, entry.BoeId, entry.BookedOn,
+        entry.ReturnPeriod, entry.Narrative);
+
     public static BoeResponse ToResponse(BillOfEntry boe) => new(
         boe.Id, boe.TenantId, boe.FileId, boe.BoeNo, boe.BoeDate, boe.OfficeCode, boe.DeclarantAin,
         boe.Status, boe.Lane,
@@ -28,7 +33,7 @@ public static class DutyResponseFactory
     public static BoeLineResponse ToLineResponse(BoeLine line) => new(
         line.Id, line.CiLineId, line.HsCode, line.Description, line.Quantity, line.Uom,
         line.DeclaredAvFcy, line.CustomsExchangeRate, line.LandingChargePct, line.TariffValueBdt,
-        line.ComputedTtiBdt, line.AssessedTtiBdt,
+        line.ComputedTtiBdt, line.AssessedTtiBdt, line.SroSavingsBdt,
         line.AssessedDutyLines.Select(d => new AssessedDutyLineResponse(d.Component, d.Amount)).ToList(),
         line.RateLineage.Select(r => new RateLineageResponse(r.Component, r.RateRowId, r.RateUsed)).ToList());
 

@@ -70,6 +70,14 @@ public sealed class BoeLine
     public decimal? ComputedTtiBdt { get; private set; }
     public decimal? AssessedTtiBdt { get; private set; }
 
+    /// <summary>
+    /// Realized SRO-benefit savings vs the statutory base rate, captured at
+    /// assessment (§6.1/§6.8 "SRO savings realized") — the counterfactual
+    /// duty at the base rate minus the benefit-reduced amount. Null when no
+    /// SRO benefit affected the line.
+    /// </summary>
+    public decimal? SroSavingsBdt { get; private set; }
+
     private readonly List<AssessedDutyLine> _assessedDutyLines = new();
     public IReadOnlyList<AssessedDutyLine> AssessedDutyLines => _assessedDutyLines;
 
@@ -84,9 +92,10 @@ public sealed class BoeLine
         TariffValueBdt = tariffValueBdt;
     }
 
-    public void RecordComputed(decimal computedTtiBdt, IEnumerable<RateLineageRow> lineage)
+    public void RecordComputed(decimal computedTtiBdt, IEnumerable<RateLineageRow> lineage, decimal? sroSavingsBdt = null)
     {
         ComputedTtiBdt = computedTtiBdt;
+        SroSavingsBdt = sroSavingsBdt;
         _rateLineage.Clear();
         _rateLineage.AddRange(lineage);
     }

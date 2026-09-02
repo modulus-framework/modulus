@@ -141,7 +141,7 @@ internal sealed class AddCostElementEndpoint : Endpoint<AddCostElementEndpoint.R
     {
         Result<LandedCostSheetResponse> result = await _mediator.SendAsync(new AddCostElementCommand(
             req.SheetId, req.Name, req.AmountFcy, req.FxRate, req.AmountBdt, req.Driver, req.Scope,
-            req.Treatment, req.SourceDocType, req.SourceDocNumber, req.SelectedLineIds), ct);
+            req.Treatment, req.SourceDocType, req.SourceDocNumber, req.SelectedLineIds, req.Currency), ct);
         await EndpointHelper.ResolveAsync(HttpContext, result, ct);
     }
 
@@ -158,6 +158,7 @@ internal sealed class AddCostElementEndpoint : Endpoint<AddCostElementEndpoint.R
         public string SourceDocType { get; set; } = string.Empty;
         public string SourceDocNumber { get; set; } = string.Empty;
         public List<Guid>? SelectedLineIds { get; set; }
+        public string? Currency { get; set; }
     }
 }
 
@@ -233,5 +234,57 @@ internal sealed class OpenAdjustmentEndpoint : Endpoint<OpenAdjustmentEndpoint.R
     internal sealed class Request
     {
         public Guid SheetId { get; set; }
+    }
+}
+
+internal sealed class GetCostAnalyticsEndpoint : Endpoint<GetCostAnalyticsEndpoint.Request, CostAnalyticsResponse>
+{
+    private readonly IMediator _mediator;
+
+    public GetCostAnalyticsEndpoint(IMediator mediator) => _mediator = mediator;
+
+    public override void Configure()
+    {
+        Get("/cost-sheets/analytics");
+        Tag(Tags.LandedCost);
+        Summary("Cost analytics: duty portion of landed cost, treatment mix, monthly trend (doc 06 §6.8)");
+    }
+
+    public override async Task HandleAsync(Request req, CancellationToken ct)
+    {
+        Result<CostAnalyticsResponse> result = await _mediator.QueryAsync(
+            new GetCostAnalyticsQuery(req.From, req.To), ct);
+        await EndpointHelper.ResolveAsync(HttpContext, result, ct);
+    }
+
+    internal sealed class Request
+    {
+        public DateOnly From { get; set; }
+        public DateOnly To { get; set; }
+    }
+}
+
+internal sealed class GetRevaluationHistoryEndpoint : Endpoint<GetRevaluationHistoryEndpoint.Request, IReadOnlyList<RevaluationRunResponse>>
+{
+    private readonly IMediator _mediator;
+
+    public GetRevaluationHistoryEndpoint(IMediator mediator) => _mediator = mediator;
+
+    public override void Configure()
+    {
+        Get("/cost-sheets/revaluations");
+        Tag(Tags.LandedCost);
+        Summary("Revaluation run history with FX gain/loss totals (BR-LCS-10)");
+    }
+
+    public override async Task HandleAsync(Request req, CancellationToken ct)
+    {
+        Result<IReadOnlyList<RevaluationRunResponse>> result = await _mediator.QueryAsync(
+            new GetRevaluationHistoryQuery(), ct);
+        await EndpointHelper.ResolveAsync(HttpContext, result, ct);
+    }
+
+    internal sealed class Request
+    {
     }
 }

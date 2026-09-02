@@ -23,7 +23,10 @@ public class ModuleDiscoveryTests
             File.WriteAllText(tempFile, """
                 using Modulus.AspNetCore.Extensions;
 
-                builder.Services.AddModulus<AppHostModule>(builder.Configuration);
+                builder.Services.AddModulus(builder.Configuration, modules =>
+                {
+                    modules.AddModule<AppModule>();
+                });
                 builder.Services.AddModulusCorrelation(builder.Configuration);
                 builder.Services.AddModulusIdempotency(builder.Configuration);
                 builder.Services.AddModulusApiVersioning(builder.Configuration);
@@ -34,7 +37,7 @@ public class ModuleDiscoveryTests
                 builder.Services.AddModulusSecretsGuard(builder.Configuration);
                 builder.Services.AddModulusPersonalDataProtection(builder.Configuration);
                 builder.Services.AddModulusOpenApi(builder.Configuration);
-                builder.Services.AddModulusEvents(typeof(AppHostModule).Assembly);
+                builder.Services.AddModulusEvents(typeof(Program).Assembly);
                 builder.Services.AddMediator();
                 builder.Services.AddControllers();
                 builder.Services.Configure<ForwardedHeadersOptions>(_ => { });
@@ -46,7 +49,7 @@ public class ModuleDiscoveryTests
                 "Correlation", "Idempotency", "API versioning", "Rate limiting",
                 "CORS", "Security headers", "Feature flags", "Secrets guard",
                 "PII encryption", "OpenAPI", "Health checks", "Forwarded headers",
-                "Modulus module graph", "Mediator", "Domain events",
+                "Modulus modules", "Mediator", "Domain events",
             });
         }
         finally

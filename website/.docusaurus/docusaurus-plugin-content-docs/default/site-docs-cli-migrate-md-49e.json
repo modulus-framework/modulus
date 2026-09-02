@@ -1,7 +1,7 @@
 {
   "id": "cli/migrate",
   "title": "modulus migrate",
-  "description": "Database migration commands.",
+  "description": "Database migration commands. Works with both EF Core and dbsh engines.",
   "source": "@site/docs/cli/migrate.md",
   "sourceDirName": "cli",
   "slug": "/cli/migrate",

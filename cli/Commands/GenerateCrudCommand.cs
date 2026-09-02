@@ -148,6 +148,18 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
         AnsiConsole.MarkupLine("[grey]  The DbSet + using were auto-wired into {0}DbContext.cs.[/]",
             module.Name);
 
+        // dbsh modules: the EF model changed, but the schema is SQL-first —
+        // remind the developer to author a migration for it.
+        if (MigrateSupport.IsDbshModule(infraDir))
+        {
+            AnsiConsole.MarkupLine(
+                "[yellow]![/] {0} uses dbsh (SQL-first schema) — author a migration for {1}:",
+                module.Name, entity);
+            AnsiConsole.MarkupLine(
+                "[grey]    modulus migrate add Add{0} --module {1}  # then write the SQL under Database/Migrations/{1}/[/]",
+                entity, module.Name);
+        }
+
         return 0;
     }
 
@@ -184,6 +196,9 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
         var appNs = $"{moduleNs}.Application";
         var domainNs = $"{moduleNs}.Domain";
 
+        // Detect the prevailing line ending style to avoid mixed \r\n / \n.
+        var nl = content.Contains("\r\n") ? "\r\n" : "\n";
+
         // Ensure required usings. Check without the newline suffix so the guard
         // works on both LF and CRLF files (Windows writes CRLF by default).
         foreach (var u in new[] { "using Modulus.Mediator.Extensions;", $"using {appNs};", $"using {domainNs};" })
@@ -192,7 +207,7 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
             {
                 var nsIdx = content.IndexOf("namespace ", StringComparison.Ordinal);
                 if (nsIdx >= 0)
-                    content = content.Insert(nsIdx, u + "\n");
+                    content = content.Insert(nsIdx, u + nl);
             }
         }
 
@@ -223,19 +238,22 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
         var content = File.ReadAllText(dbContextFile);
         var original = content;
 
+        // Detect the prevailing line ending style to avoid mixed \r\n / \n.
+        var nl = content.Contains("\r\n") ? "\r\n" : "\n";
+
         // Ensure the Domain using is present (CRLF-safe: no "\n" suffix).
         var domainUsing = $"using {moduleNs}.Domain;";
         if (!content.Contains(domainUsing, StringComparison.Ordinal))
         {
             var nsIdx = content.IndexOf("namespace ", StringComparison.Ordinal);
             if (nsIdx >= 0)
-                content = content.Insert(nsIdx, domainUsing + "\n");
+                content = content.Insert(nsIdx, domainUsing + nl);
         }
 
         // Insert the DbSet property after the TablePrefix line if not present.
         if (!content.Contains($"DbSet<{entity}>", StringComparison.Ordinal))
         {
-            var dbSetLine = $"\n    public DbSet<{entity}> {plural} => Set<{entity}>();\n";
+            var dbSetLine = $"{nl}    public DbSet<{entity}> {plural} => Set<{entity}>();{nl}";
             var tpIdx = content.IndexOf("TablePrefix", StringComparison.Ordinal);
             if (tpIdx >= 0)
             {
@@ -294,6 +312,8 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
         var bodyOpen = content.IndexOf('{', methodIdx);
         if (bodyOpen < 0) return content;
 
-        return content.Insert(bodyOpen + 1, "\n" + line);
+        // Detect the prevailing line ending style to avoid mixed \r\n / \n.
+        var nl = content.Contains("\r\n") ? "\r\n" : "\n";
+        return content.Insert(bodyOpen + 1, nl + line);
     }
 }

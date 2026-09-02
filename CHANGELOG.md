@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — explicit module registration (breaking)
+
+The `[DependsOn]` module-dependency mechanism has been removed. Modules are now
+registered explicitly in `Program.cs`; registration order is authoritative for
+every lifecycle phase (config phases, `InitializeAsync`; `ShutdownAsync` runs in
+reverse).
+
+- **Removed**: `[DependsOn]` attribute, `IModule.DependsOn`, `ModuleGraph`
+  (topological sort / cycle detection), `ModuleDependencyNotFoundException` /
+  `ModuleDependencyResolutionException` / `ModuleCycleException`, and the
+  `AddModulus<TStartupModule>(configuration)` startup-module overload.
+- **Added**: `AddModulus(IConfiguration, Action<ModulusBuilder>)` +
+  `ModulusBuilder.AddModule<T>()` / `AddModule(Type)` — Program.cs is the
+  composition root; duplicate registrations are ignored (idempotent). Generated
+  apps no longer ship an `{App}HostModule`.
+- **CLI**: `modulus add-module` now wires `modules.AddModule<{Module}Module>()`
+  into Program.cs instead of `[DependsOn]` on a host module (detects the
+  `AddModulus(` anchor; refuses with migration guidance on legacy
+  `AddModulus<` apps).
+- **Observability**: `GET /health/graph` now returns an ordered module
+  inventory (`name`, `type`, `initOrder`) instead of a mermaid dependency graph.
+- Migrating: replace `builder.Services.AddModulus<HostModule>(config)` with an
+  explicit `AddModulus(config, modules => modules.AddModule<A>()...)` listing
+  every module (the old host module's `[DependsOn]` list is the source of
+  truth for the order), then delete the host module class.
+
 ### Fixed — Production-hardening pass
 
 Security & correctness fixes across transports, identity, tenancy, and the
@@ -68,6 +94,15 @@ request pipeline:
   dead-lettered rows older than `OutboxOptions.PurgeAfterDays` (default 7,
   0 disables) in bounded batches, running before the empty-poll short-circuit
   so steady-state tables stay bounded.
+- **dbsh migration engine** — SQL-first alternative to EF Core migrations.
+  Each module can independently use EF Core or dbsh; the CLI auto-detects
+  the engine per module and dispatches `dotnet ef` or `dbsh` accordingly.
+  `--migration-engine dbsh` on `modulus app` / `modulus add-module` generates
+  `Database/Config/migration.json` (provider + `${VAR}` connection) and
+  `Database/Migrations/{Module}/` for hand-written `.sql` files.
+  `ExternallyManaged<TContext>()` marks the context so startup skips it.
+  `modulus doctor` validates `dbsh` availability. `modulus migrate add`
+  scaffolds a SQL stub; `modulus migrate update` runs `dbsh init && dbsh migrate`.
 - **Release workflow gates** — tag-triggered releases run unit *and*
   integration tests before packing/publishing.
 - Package `<Description>` metadata filled in for every library; README and

@@ -86,6 +86,10 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         [CommandOption("--enable-personal-data-protection")]
         public bool? EnablePersonalDataProtection { get; init; }
 
+        [Description("Migration engine: efcore (default, EF Core migrations), dbsh (SQL-first migrations via the dbsh tool). Omit to be prompted.")]
+        [CommandOption("--migration-engine")]
+        public string? MigrationEngine { get; init; }
+
 
         [Description("Path to a local NuGet feed containing the Cobytelabs.Modulus.* packages (written as an active 'modulus-local' source in NuGet.config). Omit to leave only nuget.org configured.")]
         [CommandOption("--package-source")]
@@ -106,6 +110,9 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
 
     /// <summary>Valid SignalR backplane choices, in selection-menu order.</summary>
     internal static readonly string[] KnownSignalRBackplanes = ["none", "redis", "azure"];
+
+    /// <summary>Valid migration engine choices, in selection-menu order.</summary>
+    internal static readonly string[] KnownMigrationEngines = ["efcore", "dbsh"];
 
     private readonly TemplateEngine _templates = new();
 
@@ -148,6 +155,8 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         var enableCorrelation = ResolveFeature(s.EnableCorrelation, true, "request correlation");
         var enableSecretsGuard = ResolveFeature(s.EnableSecretsGuard, true, "secrets guard");
         var enablePersonalDataProtection = ResolveFeature(s.EnablePersonalDataProtection, false, "personal data protection");
+
+        var migrationEngine = ResolveMigrationEngine(s.MigrationEngine);
 
         // NoExample is tri-state: null = unspecified → prompt (interactive)
         // or default to include (CI). True/False are explicit user choices.
@@ -203,6 +212,7 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
             EnableCorrelation = enableCorrelation,
             EnableSecretsGuard = enableSecretsGuard,
             EnablePersonalDataProtection = enablePersonalDataProtection,
+            MigrationEngine = migrationEngine,
             LocalPackageSource = s.PackageSource,
         };
 
@@ -232,6 +242,15 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         AnsiConsole.MarkupLine("  [grey]modulus add-module[/] Orders");
         AnsiConsole.MarkupLine("  [grey]modulus generate-crud[/] Order --module Orders");
         AnsiConsole.MarkupLine("  [grey]modulus list[/]  [grey]# see what's in this app[/]");
+        if (model.UseDbsh)
+        {
+            AnsiConsole.WriteLine();
+            AnsiConsole.MarkupLine(
+                "[yellow]dbsh:[/] modules use SQL-first migrations. Install the tool " +
+                "[grey]dotnet tool install --global dbsh[/], then author + apply with:");
+            AnsiConsole.MarkupLine("  [grey]modulus migrate add[/] InitialCreate");
+            AnsiConsole.MarkupLine("  [grey]modulus migrate update[/]");
+        }
 
         return 0;
     }
@@ -247,8 +266,6 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
             Path.Combine(apiDir, $"{rootNs}.Api.csproj"));
         _templates.RenderToFile("app/Program", model,
             Path.Combine(apiDir, "Program.cs"));
-        _templates.RenderToFile("app/HostModule", model,
-            Path.Combine(apiDir, "Modules", $"{model.AppName}HostModule.cs"));
         _templates.RenderToFile("app/appsettings.json", model,
             Path.Combine(apiDir, "appsettings.json"));
         _templates.RenderToFile("app/appsettings.Development.json", model,
@@ -275,6 +292,7 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
                 ModuleName = model.ExampleModule,
                 ModuleNamespace = modNs,
                 DbProvider = model.DbProvider,
+                MigrationEngine = model.MigrationEngine,
                 EntityName = model.ExampleEntity,
                 EntityNameLower = CodeGen.ToCamelCase(model.ExampleEntity),
                 RouteName = CodeGen.Pluralize(model.ExampleEntity).ToLowerInvariant(),
@@ -486,6 +504,32 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
     }
 
     /// <summary>
+    /// Resolves the migration engine: interactive selection when not supplied,
+    /// validation + normalisation when passed on the command line.
+    /// </summary>
+    private static string ResolveMigrationEngine(string? provided)
+    {
+        string engine;
+        if (string.IsNullOrWhiteSpace(provided))
+        {
+            engine = Ux.SelectOrFallback(
+                "Migration engine?",
+                KnownMigrationEngines,
+                "efcore");
+        }
+        else
+        {
+            engine = provided;
+        }
+
+        if (!KnownMigrationEngines.Contains(engine, StringComparer.OrdinalIgnoreCase))
+            throw new ArgumentException(
+                $"Unknown migration engine '{engine}'. Valid: {string.Join(", ", KnownMigrationEngines)}.");
+
+        return KnownMigrationEngines.First(e => string.Equals(e, engine, StringComparison.OrdinalIgnoreCase));
+    }
+
+    /// <summary>
     /// Resolves a boolean feature flag with interactive prompt when not supplied.
     /// </summary>
     private static bool ResolveFeature(bool? provided, bool defaultValue, string featureName)
@@ -601,9 +645,23 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
             Path.Combine(infraDir, $"{m.ModuleName}DbContext.cs"));
 
         // EF Core: design-time factory so `dotnet ef` / `modulus migrate` can
-        // construct the context without the app's DI container.
+        // construct the context without the app's DI container. Rendered for
+        // dbsh modules too — `dotnet ef migrations script` is the quickest way
+        // to bootstrap the initial schema SQL to paste into a V001 migration.
         _templates.RenderToFile("module/Infrastructure/DbContextFactory", m,
             Path.Combine(infraDir, $"{m.ModuleName}DbContextFactory.cs"));
+
+        if (m.UseDbsh)
+        {
+            // dbsh: per-module config + SQL migrations folder inside the
+            // Infrastructure project (native dbsh layout, so running dbsh from
+            // the module's Infrastructure directory discovers everything).
+            _templates.RenderToFile("module/Infrastructure/dbsh.migration.json", m,
+                Path.Combine(infraDir, "Database", "Config", "migration.json"));
+            _templates.RenderToFile("module/Infrastructure/dbsh.local.json", m,
+                Path.Combine(infraDir, "Database", "Config", "environments", "local.json"));
+            Ux.WriteFile(Path.Combine(infraDir, "Database", "Migrations", ".gitkeep"), "");
+        }
 
         if (hasEntity)
         {

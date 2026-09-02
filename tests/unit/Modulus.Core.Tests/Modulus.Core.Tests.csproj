@@ -3,6 +3,8 @@
   <ItemGroup>
     <ProjectReference Include="../../../src/core/Modulus.Core/Modulus.Core.csproj" />
     <PackageReference Include="Microsoft.Extensions.Configuration" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <PackageReference Include="Microsoft.Extensions.Logging" />
   </ItemGroup>
 
 </Project>

@@ -1,6 +1,5 @@
 namespace Modulus.Outbox.MongoDB;
 
-using System.Text.Json;
 using Modulus.Events.Abstractions;
 using Modulus.Outbox.Abstractions;
 
@@ -13,7 +12,8 @@ using Modulus.Outbox.Abstractions;
 /// </summary>
 internal sealed class MongoOutboxDispatcher(
     IModuleBus bus,
-    IIntegrationEventRegistry registry) : IOutboxDispatcher
+    IIntegrationEventRegistry registry,
+    IMessageSerializer serializer) : IOutboxDispatcher
 {
     public async Task DispatchAsync(OutboxMessage message, CancellationToken ct)
     {
@@ -27,8 +27,13 @@ internal sealed class MongoOutboxDispatcher(
                 $"Cannot resolve integration event '{message.MessageType}'. " +
                 "Ensure its assembly is scanned by AddModulusEvents(...).");
 
-        var @event = (IIntegrationEvent)JsonSerializer
-            .Deserialize(message.Payload, type)!;
+        // Deserialise with the shared IMessageSerializer — the same options the
+        // row was written with (camelCase + string enums). Raw JsonSerializer
+        // defaults are case-sensitive and would silently drop init-only
+        // properties (EventId/OccurredAt re-minted) and fail on enum payloads.
+        var @event = (IIntegrationEvent?)(serializer.Deserialize(message.Payload, type))
+            ?? throw new InvalidOperationException(
+                $"Failed to deserialise outbox payload for '{message.MessageType}'.");
 
         await bus.PublishAsync((dynamic)@event, ct);
     }

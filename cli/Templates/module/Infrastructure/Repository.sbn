@@ -20,6 +20,25 @@ public sealed class {{ entity_name }}Repository({{ module_name }}DbContext conte
         CancellationToken ct)
         => await ApplySpec(spec).ToListAsync(ct);
 
+    public async Task<{{ entity_name }}?> FirstOrDefaultAsync(
+        ISpecification<{{ entity_name }}> spec,
+        CancellationToken ct)
+        => await ApplySpec(spec).FirstOrDefaultAsync(ct);
+
+    public async Task<{{ entity_name }}> SingleAsync(
+        ISpecification<{{ entity_name }}> spec,
+        CancellationToken ct)
+        => await ApplySpec(spec).SingleAsync(ct);
+
+    public async Task<{{ entity_name }}?> SingleOrDefaultAsync(
+        ISpecification<{{ entity_name }}> spec,
+        CancellationToken ct)
+        => await ApplySpec(spec).SingleOrDefaultAsync(ct);
+
+    public IAsyncEnumerable<{{ entity_name }}> AsAsyncEnumerable(
+        ISpecification<{{ entity_name }}> spec)
+        => ApplySpec(spec).AsAsyncEnumerable();
+
     public async Task<int> CountAsync(
         ISpecification<{{ entity_name }}> spec,
         CancellationToken ct)
@@ -43,29 +62,63 @@ public sealed class {{ entity_name }}Repository({{ module_name }}DbContext conte
         return Task.CompletedTask;
     }
 
+    public async Task DeleteRangeAsync(
+        ISpecification<{{ entity_name }}> spec,
+        CancellationToken ct)
+    {
+        var matched = await ApplySpec(spec).ToListAsync(ct);
+        _dbSet.RemoveRange(matched);
+    }
+
     private IQueryable<{{ entity_name }}> ApplySpec(
         ISpecification<{{ entity_name }}> spec, bool includePaging = true)
     {
-        var query = spec.AsNoTracking ? _dbSet.AsNoTracking() : _dbSet;
+        var query = _dbSet.AsQueryable();
 
-        if (spec.Filter is not null)
-            query = query.Where(spec.Filter);
+        if (spec.IgnoreQueryFilters)
+            query = query.IgnoreQueryFilters();
 
-        foreach (var include in spec.Includes)
-            query = query.Include(include);
+        if (spec.AsSplitQuery)
+            query = query.AsSplitQuery();
 
-        if (spec.OrderBy is not null)
-            query = query.OrderBy(spec.OrderBy);
-        else if (spec.OrderByDesc is not null)
-            query = query.OrderByDescending(spec.OrderByDesc);
+        if (spec.IncludeChains is { Count: > 0 })
+            foreach (var include in spec.IncludeChains)
+                query = query.Include(include.IncludeExpression);
+
+        // Apply ordering: OrderBy, then ThenBy for each subsequent clause.
+        var isFirstOrderBy = true;
+        if (spec.OrderByClauses is { Count: > 0 })
+        {
+            foreach (var orderBy in spec.OrderByClauses)
+            {
+                query = isFirstOrderBy
+                    ? (orderBy.Descending
+                        ? query.OrderByDescending(orderBy.Selector)
+                        : query.OrderBy(orderBy.Selector))
+                    : (orderBy.Descending
+                        ? ((IOrderedQueryable<{{ entity_name }}>)query).ThenByDescending(orderBy.Selector)
+                        : ((IOrderedQueryable<{{ entity_name }}>)query).ThenBy(orderBy.Selector));
+                isFirstOrderBy = false;
+            }
+        }
 
         if (includePaging)
         {
-            if (spec.Skip is { } skip)
-                query = query.Skip(skip);
-            if (spec.Take is { } take)
-                query = query.Take(take);
+            // Paging requires ordering (stable offsets).
+            if ((spec.Skip != null || spec.Take != null) && isFirstOrderBy)
+                throw new InvalidOperationException(
+                    "Specifications with Skip/Take must define at least one OrderBy clause.");
+            if (spec.Skip != null)
+                query = query.Skip(spec.Skip.Value);
+            if (spec.Take != null)
+                query = query.Take(spec.Take.Value);
         }
+
+        if (spec.Tag is not null)
+            query = query.TagWith(spec.Tag);
+
+        if (spec.AsNoTracking)
+            query = query.AsNoTracking();
 
         return query;
     }

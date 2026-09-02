@@ -29,10 +29,17 @@ public static class EfTenantStoreExtensions
         services.AddDbContext<TenantStoreDbContext>(configure);
         services.AddScoped<TenantManager>();
 
-        // Supersede the NullTenantStore registered by AddMultiTenancy so that
-        // ITenantStore resolves to the EF implementation regardless of call order.
+        // Supersede the NullTenantStore registered by AddMultiTenancy. The
+        // ITenantStore facade is a SINGLETON bridge that resolves the scoped
+        // EfTenantStore from a fresh scope per lookup — the singleton tenant
+        // resolvers capture ITenantStore from the root provider, so a scoped
+        // registration here would either throw at startup (ValidateScopes) or
+        // share one DbContext across all requests in production.
         services.RemoveAll<ITenantStore>();
-        services.AddScoped<ITenantStore, EfTenantStore>();
+        services.AddScoped<EfTenantStore>();
+        services.AddSingleton<ITenantStore>(
+            sp => new ScopedTenantStoreBridge(
+                sp.GetRequiredService<IServiceScopeFactory>()));
         return services;
     }
 

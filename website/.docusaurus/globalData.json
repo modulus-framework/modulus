@@ -146,8 +146,18 @@
               "sidebar": "cliSidebar"
             },
             {
+              "id": "cli/outdated",
+              "path": "/docs/cli/outdated",
+              "sidebar": "cliSidebar"
+            },
+            {
               "id": "cli/templates",
               "path": "/docs/cli/templates",
+              "sidebar": "cliSidebar"
+            },
+            {
+              "id": "cli/update",
+              "path": "/docs/cli/update",
               "sidebar": "cliSidebar"
             },
             {
@@ -194,6 +204,10 @@
               "id": "deployment",
               "path": "/docs/deployment",
               "sidebar": "docsSidebar"
+            },
+            {
+              "id": "features",
+              "path": "/docs/features"
             },
             {
               "id": "getting-started/first-module",

@@ -90,7 +90,7 @@ internal static partial class ModuleDiscovery
             ("OpenAPI",                "AddModulusOpenApi("),
             ("Health checks",          "MapModulusHealthChecks("),
             ("Forwarded headers",      "ForwardedHeadersOptions"),
-            ("Modulus module graph",   "AddModulus<"),
+            ("Modulus modules",        "AddModulus("),
             ("Mediator",               "AddMediator("),
             ("Domain events",          "AddModulusEvents("),
             ("Auth: OpenIddict",       "AddModulusOpenIddict("),

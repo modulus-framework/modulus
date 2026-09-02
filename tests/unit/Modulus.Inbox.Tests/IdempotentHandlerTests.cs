@@ -136,6 +136,79 @@ public sealed class IdempotentHandlerTests
         await inner.DidNotReceive().HandleAsync(Arg.Any<TestEvent>(), default);
     }
 
+    [Fact]
+    public async Task HandleAsync_AbandonedClaim_ReclaimedAfterTimeout()
+    {
+        // SQLite (not InMemory) because the reclaim path uses ExecuteUpdateAsync.
+        var connection = new Microsoft.Data.Sqlite.SqliteConnection("DataSource=:memory:");
+        await connection.OpenAsync();
+        var opts = new DbContextOptionsBuilder<TestDbContext>()
+            .UseSqlite(connection)
+            .Options;
+        var db = new TestDbContext(opts);
+        db.Database.EnsureCreated();
+
+        var inner = Substitute.For<IIntegrationEventHandler<TestEvent>>();
+        var sut = new IdempotentIntegrationEventHandler<TestEvent>(
+            inner, store: new EfInboxStore(db),
+            Options.Create(new InboxOptions()), // ClaimTimeoutSeconds = 300
+            NullLogger<IdempotentIntegrationEventHandler<TestEvent>>.Instance);
+
+        var @event = new TestEvent();
+        db.Set<InboxMessage>().Add(new InboxMessage
+        {
+            Id = @event.EventId,
+            MessageType = typeof(TestEvent).AssemblyQualifiedName!,
+            Payload = "{}",
+            ModuleName = "Test",
+            Status = InboxStatus.Processing,
+            // Claim taken 10 minutes ago — far past the 300 s lease.
+            ClaimedAt = DateTime.UtcNow.AddMinutes(-10),
+        });
+        await db.SaveChangesAsync();
+
+        await sut.HandleAsync(@event, default); // reclaims instead of deferring
+
+        await inner.Received(1).HandleAsync(@event, default);
+        var inbox = db.Set<InboxMessage>().Single();
+        inbox.Status.Should().Be(InboxStatus.Processed);
+    }
+
+    [Fact]
+    public async Task HandleAsync_LegacyProcessingRow_NoClaimedAt_UsesReceivedAt()
+    {
+        var connection = new Microsoft.Data.Sqlite.SqliteConnection("DataSource=:memory:");
+        await connection.OpenAsync();
+        var opts = new DbContextOptionsBuilder<TestDbContext>()
+            .UseSqlite(connection)
+            .Options;
+        var db = new TestDbContext(opts);
+        db.Database.EnsureCreated();
+
+        var inner = Substitute.For<IIntegrationEventHandler<TestEvent>>();
+        var sut = new IdempotentIntegrationEventHandler<TestEvent>(
+            inner, store: new EfInboxStore(db),
+            Options.Create(new InboxOptions()),
+            NullLogger<IdempotentIntegrationEventHandler<TestEvent>>.Instance);
+
+        var @event = new TestEvent();
+        db.Set<InboxMessage>().Add(new InboxMessage
+        {
+            Id = @event.EventId,
+            MessageType = typeof(TestEvent).AssemblyQualifiedName!,
+            Payload = "{}",
+            ModuleName = "Test",
+            Status = InboxStatus.Processing,
+            // Legacy row written before ClaimedAt existed — ReceivedAt is old.
+            ReceivedAt = DateTime.UtcNow.AddMinutes(-30),
+        });
+        await db.SaveChangesAsync();
+
+        await sut.HandleAsync(@event, default);
+
+        await inner.Received(1).HandleAsync(@event, default);
+    }
+
     // ── Test doubles ─────────────────────────────────────────────
     public record TestEvent : IIntegrationEvent
     {

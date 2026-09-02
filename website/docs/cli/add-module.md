@@ -21,7 +21,7 @@ modulus add-module <name> [options]
 ## What It Does
 
 1. Creates 4 projects under `src/Modules/{App}.Modules.{Module}/`
-2. Adds `[DependsOn]` to the host module
+2. Registers the module in `Program.cs` (`modules.AddModule<{Module}Module>()`)
 3. Adds `ProjectReference`s to the host `.csproj`
 4. Adds projects to the `.slnx` solution
 

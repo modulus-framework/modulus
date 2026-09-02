@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Modulus.Core.Abstractions;
@@ -162,6 +163,48 @@ public sealed class ProcurementDbContext(
                 snapshot.Property(s => s.Verdict).HasMaxLength(20).IsRequired();
                 snapshot.Property(s => s.Score).HasPrecision(9, 6);
                 snapshot.Property(s => s.Reasons).HasMaxLength(2000);
+
+                snapshot.Property(s => s.NormalizedWeights)
+                    .HasConversion(
+                        w => JsonSerializer.Serialize(w, (JsonSerializerOptions?)null),
+                        json => (IReadOnlyDictionary<string, decimal>)(JsonSerializer.Deserialize<Dictionary<string, decimal>>(json, (JsonSerializerOptions?)null) ?? new Dictionary<string, decimal>()))
+                    .HasMaxLength(2000)
+                    .IsRequired();
+
+                snapshot.OwnsMany(s => s.Factors, f =>
+                {
+                    f.ToTable("po_feasibility_factors");
+                    f.Property<int>("Id");
+                    f.WithOwner().HasForeignKey("FeasibilityPoId");
+                    f.HasKey("FeasibilityPoId", "Id");
+                    f.Property(x => x.Name).HasMaxLength(100).IsRequired();
+                    f.Property(x => x.RawValue).HasPrecision(18, 6);
+                    f.Property(x => x.NormalizedScore).HasPrecision(9, 6);
+                    f.Property(x => x.WeightedContribution).HasPrecision(9, 6);
+                    f.Property(x => x.Description).HasMaxLength(500).IsRequired();
+                });
+
+                snapshot.OwnsMany(s => s.RiskFlags, rf =>
+                {
+                    rf.ToTable("po_feasibility_risk_flags");
+                    rf.Property<int>("Id");
+                    rf.WithOwner().HasForeignKey("FeasibilityPoId");
+                    rf.HasKey("FeasibilityPoId", "Id");
+                    rf.Property(x => x.Category).HasMaxLength(50).IsRequired();
+                    rf.Property(x => x.Message).HasMaxLength(500).IsRequired();
+                    rf.Property(x => x.Severity).HasMaxLength(20).IsRequired();
+                });
+
+                snapshot.OwnsMany(s => s.Counterfactuals, cf =>
+                {
+                    cf.ToTable("po_feasibility_counterfactuals");
+                    cf.Property<int>("Id");
+                    cf.WithOwner().HasForeignKey("FeasibilityPoId");
+                    cf.HasKey("FeasibilityPoId", "Id");
+                    cf.Property(c => c.Description).HasMaxLength(500).IsRequired();
+                    cf.Property(c => c.EstimatedScoreDelta).HasPrecision(9, 6);
+                    cf.Property(c => c.EstimatedCostDelta).HasPrecision(18, 4);
+                });
             });
         });
 

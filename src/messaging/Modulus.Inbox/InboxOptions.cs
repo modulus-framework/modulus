@@ -13,6 +13,16 @@ public sealed class InboxOptions
     /// </summary>
     public int MaxRetries { get; set; } = 5;
 
+    /// <summary>
+    /// How long a <see cref="InboxStatus.Processing"/> claim may be held
+    /// before it is considered abandoned (the consumer crashed between
+    /// claiming and marking the final state) and can be reclaimed by a
+    /// redelivery. Defaults to 300 seconds. Without this lease a crashed
+    /// consumer wedges the event in <c>Processing</c> forever — every
+    /// redelivery defers and the event is never processed nor dead-lettered.
+    /// </summary>
+    public int ClaimTimeoutSeconds { get; set; } = 300;
+
     // ── Polly handler retry ────────────────────────────────────────
     // When HandlerRetryCount > 0, each handler invocation is wrapped in a
     // Polly resilience pipeline for fast in-process retries before the

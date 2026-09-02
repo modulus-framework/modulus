@@ -73,6 +73,42 @@ public sealed class RedisCacheService(IConnectionMultiplexer redis, IServiceProv
 
     public async Task RemoveByTagAsync(string tag, CancellationToken ct = default)
     {
+        await DeleteTagAsync(tag, ct);
+
+        // Notify peer nodes to evict the same keys from their local L1 cache.
+        // Fire-and-forget: a failed publish means peers will converge when
+        // their own TTL expires (acceptable for cache consistency).
+        if (redis is not null)
+            RedisCacheBackplane.Publish(redis, tags: [tag]);
+    }
+
+    public async Task RemoveByTagsAsync(string[] tags, CancellationToken ct = default)
+    {
+        foreach (var tag in tags)
+            await RemoveByTagAsync(tag, ct);
+    }
+
+    /// <summary>
+    /// Publish-free key deletion used by the backplane to converge after a
+    /// peer's invalidation. The publishing node already deleted these keys in
+    /// the shared database and broadcast the message — republishing here would
+    /// self-amplify into a pub/sub storm.
+    /// </summary>
+    internal async Task PurgeKeysAsync(string[] keys, CancellationToken ct = default)
+    {
+        foreach (var key in keys)
+            await _db.KeyDeleteAsync(key);
+    }
+
+    /// <summary>Publish-free tag deletion used by the backplane (see <see cref="PurgeKeysAsync"/>).</summary>
+    internal async Task PurgeTagsAsync(string[] tags, CancellationToken ct = default)
+    {
+        foreach (var tag in tags)
+            await DeleteTagAsync(tag, ct);
+    }
+
+    private async Task DeleteTagAsync(string tag, CancellationToken ct = default)
+    {
         var tagKey = TagKey(tag);
         var keys = await _db.SetMembersAsync(tagKey);
         if (keys.Length == 0)
@@ -89,17 +125,5 @@ public sealed class RedisCacheService(IConnectionMultiplexer redis, IServiceProv
             _ = tran.KeyDeleteAsync(k.ToString());
         _ = tran.KeyDeleteAsync(tagKey);
         await tran.ExecuteAsync();
-
-        // Notify peer nodes to evict the same keys from their local L1 cache.
-        // Fire-and-forget: a failed publish means peers will converge when
-        // their own TTL expires (acceptable for cache consistency).
-        if (redis is not null)
-            RedisCacheBackplane.Publish(redis, tags: [tag]);
-    }
-
-    public async Task RemoveByTagsAsync(string[] tags, CancellationToken ct = default)
-    {
-        foreach (var tag in tags)
-            await RemoveByTagAsync(tag, ct);
     }
 }

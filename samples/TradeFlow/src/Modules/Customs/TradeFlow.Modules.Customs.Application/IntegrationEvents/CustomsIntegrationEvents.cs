@@ -46,3 +46,29 @@ public sealed record DutyVarianceOpenedIntegrationEvent(
     public decimal VarianceAmount { get; } = VarianceAmount;
     public DateTime OccurredAtUtc { get; } = OccurredAtUtc;
 }
+
+/// <summary>
+/// Published when the Tax Officer counterposts an AIT/AT adjustment per return
+/// period. Finance subscribes to post Dr Income Tax Expense / Cr Advance Tax Asset.
+/// </summary>
+public sealed record AitAtAdjustmentRecordedIntegrationEvent(
+    Guid EntryId,
+    Guid TenantId,
+    Guid CompanyId,
+    int FiscalYear,
+    string Component,
+    decimal Amount,
+    string ReturnPeriod,
+    DateOnly BookedOn,
+    DateTime OccurredAtUtc) : IntegrationEventBase("Customs.AitAtAdjustmentRecorded.v1")
+{
+    public Guid EntryId { get; } = EntryId;
+    public Guid TenantId { get; } = TenantId;
+    public Guid CompanyId { get; } = CompanyId;
+    public int FiscalYear { get; } = FiscalYear;
+    public string Component { get; } = Component;
+    public decimal Amount { get; } = Amount;
+    public string ReturnPeriod { get; } = ReturnPeriod;
+    public DateOnly BookedOn { get; } = BookedOn;
+    public DateTime OccurredAtUtc { get; } = OccurredAtUtc;
+}

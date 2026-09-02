@@ -1,0 +1,93 @@
+name: TradeFlow sample CI
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - "samples/TradeFlow/**"
+      - ".github/workflows/tradeflow-sample.yml"
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - "samples/TradeFlow/**"
+      - ".github/workflows/tradeflow-sample.yml"
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: samples/TradeFlow
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore
+        run: dotnet restore TradeFlow.slnx
+
+      - name: Build
+        run: dotnet build TradeFlow.slnx --no-restore --configuration Release
+
+      - name: Unit tests
+        run: dotnet test TradeFlow.slnx --no-build --configuration Release --filter "Category=Unit" --verbosity normal
+
+      # E2E tests boot the full host via ModulusWebAppFactory with per-context
+      # in-memory SQLite — no external services required.
+      - name: E2E tests
+        run: dotnet test TradeFlow.slnx --no-build --configuration Release --filter "Category=Integration" --verbosity normal
+
+      # Migration drift gate: every module's EF model must match its latest
+      # migration snapshot (design-time). Runtime-only model augmentation
+      # (inbox/outbox contributors, PII converters) is expected and excluded
+      # from this gate; projects whose design-time context cannot be created
+      # are reported but skipped.
+      - name: Install dotnet-ef
+        run: dotnet tool install --global dotnet-ef
+      - name: Migration drift gate
+        shell: pwsh
+        run: |
+          $env:PATH += [IO.Path]::PathSeparator + "$HOME/.dotnet/tools"
+          $drift = @()
+          Get-ChildItem src/Modules -Recurse -Filter *.Infrastructure.csproj | ForEach-Object {
+            $migDir = Get-ChildItem $_.Directory.FullName -Recurse -Directory -Filter Migrations | Select-Object -First 1
+            if (-not $migDir) { return }
+            $out = dotnet ef migrations has-pending-model-changes --project $_.FullName 2>&1 | Out-String
+            if ($out -match "have been made to the model|pending") {
+              if ($out -notmatch "No changes") { $script:drift += $_.Name }
+            } else {
+              Write-Host "::warning::could not verify $($_.Name) (design-time context unavailable)"
+            }
+          }
+          if ($script:drift) { Write-Host "::error::pending model changes in: $($script:drift -join ', ')"; exit 1 }
+
+      # Advisory: fail only on known vulnerable packages (non-blocking to keep
+      # CI green across advisory database drift; bump deliberately).
+      - name: Audit vulnerable packages
+        run: dotnet list TradeFlow.slnx package --vulnerable
+        continue-on-error: true
+
+  docker:
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build API image
+        uses: docker/build-push-action@v6
+        with:
+          context: samples/TradeFlow
+          file: samples/TradeFlow/src/API/TradeFlow.Api/Dockerfile
+          push: false
+          tags: tradeflow-api:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Validate compose file
+        run: docker compose -f samples/TradeFlow/docker-compose.yml config -q

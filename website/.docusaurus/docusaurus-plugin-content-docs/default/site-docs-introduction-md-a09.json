@@ -1,7 +1,7 @@
 {
   "id": "introduction",
   "title": "Modulus Framework",
-  "description": "A modular-monolith framework for .NET 10 that combines the simplicity of a single deployment with the boundaries of microservices.",
+  "description": "Modulus logo",
   "source": "@site/docs/introduction.md",
   "sourceDirName": ".",
   "slug": "/introduction",

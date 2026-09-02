@@ -70,6 +70,16 @@ internal sealed class InMemoryIdempotencyStore : IIdempotencyStore
         return Task.CompletedTask;
     }
 
+    public Task PurgeExpiredAsync(DateTimeOffset cutoff, CancellationToken ct)
+    {
+        foreach (var kvp in _entries)
+        {
+            if (kvp.Value.ExpiresAt <= cutoff)
+                _entries.TryRemove(kvp.Key, out _);
+        }
+        return Task.CompletedTask;
+    }
+
     private sealed class Entry(string fingerprint, DateTimeOffset expiresAt)
     {
         public object SyncRoot { get; } = new();

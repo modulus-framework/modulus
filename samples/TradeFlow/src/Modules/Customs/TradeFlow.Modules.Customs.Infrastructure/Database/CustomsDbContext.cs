@@ -86,6 +86,7 @@ public sealed class CustomsDbContext(
                 line.Property(l => l.TariffValueBdt).HasPrecision(18, 4);
                 line.Property(l => l.ComputedTtiBdt).HasPrecision(18, 4);
                 line.Property(l => l.AssessedTtiBdt).HasPrecision(18, 4);
+                line.Property(l => l.SroSavingsBdt).HasPrecision(18, 4);
                 line.HasIndex(l => l.HsCode);
 
                 line.OwnsMany(l => l.AssessedDutyLines, duty =>
@@ -141,6 +142,8 @@ public sealed class CustomsDbContext(
         {
             builder.ToTable("ait_at_ledger");
             builder.Property(a => a.Amount).HasPrecision(18, 4);
+            builder.Property(a => a.ReturnPeriod).HasMaxLength(20);
+            builder.Property(a => a.Narrative).HasMaxLength(500);
             builder.HasIndex(a => new { a.CompanyId, a.FiscalYear, a.Component });
         });
 

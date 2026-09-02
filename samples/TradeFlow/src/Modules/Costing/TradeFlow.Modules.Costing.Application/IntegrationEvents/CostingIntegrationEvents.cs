@@ -26,3 +26,19 @@ public sealed record CostSheetAdjustedIntegrationEvent(
     int Version,
     DateTime OccurredAtUtc
 ) : IntegrationEventBase("Costing.CostSheetAdjusted.v1");
+
+/// <summary>
+/// Integration event published when a periodic landed-cost FX revaluation run
+/// completes. Carries tenant-wide FX gain/loss totals for the P&L / GL posting.
+/// </summary>
+public sealed record LandedCostRevaluedIntegrationEvent(
+    Guid RunId,
+    Guid TenantId,
+    DateOnly PeriodEnd,
+    int SheetsScanned,
+    int VarianceCount,
+    decimal TotalOriginalValueBdt,
+    decimal TotalRevaluedValueBdt,
+    decimal TotalFxGainLossBdt,
+    DateTime OccurredAtUtc
+) : IntegrationEventBase("Costing.LandedCostRevalued.v1");

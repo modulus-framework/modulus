@@ -4,6 +4,8 @@ sidebar_position: 1
 
 # CLI Reference
 
+<img src="/img/icon.png" alt="Modulus CLI icon" width="96" />
+
 The `modulus` CLI tool generates complete solutions, modules, and CRUD code.
 
 ## Installation
@@ -26,6 +28,8 @@ dotnet tool install -g --add-source ./nupkg Cobytelabs.Modulus.Cli
 | [`modulus list`](list) | List modules and entities |
 | [`modulus info`](info) | Show app overview |
 | [`modulus doctor`](doctor) | Check environment |
+| [`modulus outdated`](outdated) | Check for package updates |
+| [`modulus update`](update) | Apply package updates |
 
 ## Global Flags
 

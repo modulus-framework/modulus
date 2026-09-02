@@ -4,6 +4,8 @@ sidebar_position: 1
 
 # Modulus Framework
 
+![Modulus logo](/img/logo.png)
+
 A modular-monolith framework for **.NET 10** that combines the simplicity of a single deployment with the boundaries of microservices.
 
 ## What is Modulus?

@@ -47,7 +47,11 @@ public sealed record SroBenefitApplication(
     decimal? OverrideRate,
     decimal? CapPercent);
 
-/// <summary>One computed duty component for a line — the reproducible artifact (BR-DS-04).</summary>
+/// <summary>
+/// One computed duty component for a line — the reproducible artifact (BR-DS-04).
+/// When an SRO benefit affected the component, its id/name are itemized here so
+/// the breakdown is audit-ready (§6.1 SRO / Exemption Layer).
+/// </summary>
 public sealed record DutyComponentResult(
     DutyComponent Component,
     Guid RateRowId,
@@ -58,7 +62,9 @@ public sealed record DutyComponentResult(
     bool IsSroExempt,
     bool IsSroOverridden,
     bool IsSroCapped,
-    bool IsSpecific);
+    bool IsSpecific,
+    Guid? SroBenefitId = null,
+    string? SroBenefitName = null);
 
 /// <summary>Full cascade output for one BoE line (BR-DS-04, §23.1).</summary>
 public sealed record DutyCalculationResult(
@@ -145,17 +151,22 @@ public static class DutyCascadeCalculator
 
         if (benefit is { Type: SroBenefitType.Exempt })
         {
-            results.Add(new DutyComponentResult(component, rate.RateRowId, rate.Rate, "0 (SRO exempt)", baseAmount, 0m, true, false, false, false));
+            results.Add(new DutyComponentResult(component, rate.RateRowId, rate.Rate, "0 (SRO exempt)", baseAmount, 0m,
+                true, false, false, false, benefit.BenefitId, benefit.Name));
             return 0m;
         }
 
         decimal rateUsed = rate.Rate;
         bool overridden = false;
+        Guid? sroBenefitId = null;
+        string? sroBenefitName = null;
         SroBenefitApplication? overrideBenefit = sroBenefits.FirstOrDefault(b => b.Type == SroBenefitType.RateOverride && b.OverrideRate.HasValue);
         if (overrideBenefit is not null)
         {
             rateUsed = overrideBenefit.OverrideRate!.Value;
             overridden = true;
+            sroBenefitId = overrideBenefit.BenefitId;
+            sroBenefitName = overrideBenefit.Name;
         }
 
         decimal adValorem = Round2(baseAmount * rateUsed);
@@ -181,10 +192,16 @@ public static class DutyCascadeCalculator
             {
                 amount = cap;
                 capped = true;
+                if (sroBenefitId is null)
+                {
+                    sroBenefitId = capBenefit.BenefitId;
+                    sroBenefitName = capBenefit.Name;
+                }
             }
         }
 
-        results.Add(new DutyComponentResult(component, rate.RateRowId, rateUsed, rateUsed.ToString("P2"), baseAmount, amount, false, overridden, capped, isSpecific));
+        results.Add(new DutyComponentResult(component, rate.RateRowId, rateUsed, rateUsed.ToString("P2"), baseAmount, amount,
+            false, overridden, capped, isSpecific, sroBenefitId, sroBenefitName));
         return amount;
     }
 

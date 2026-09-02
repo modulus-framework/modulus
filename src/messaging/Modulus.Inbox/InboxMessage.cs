@@ -13,6 +13,15 @@ public sealed class InboxMessage
     public string? Error { get; set; }
     public int RetryCount { get; set; }
     public string? CorrelationId { get; init; }
+
+    /// <summary>
+    /// When the current <see cref="InboxStatus.Processing"/> claim was taken.
+    /// A claim older than the configured timeout (<c>InboxOptions.ClaimTimeoutSeconds</c>)
+    /// is treated as abandoned (crashed consumer) and may be reclaimed by a
+    /// redelivery. Null for rows not currently claimed (or legacy rows — those
+    /// fall back to <see cref="ReceivedAt"/> as the claim time).
+    /// </summary>
+    public DateTime? ClaimedAt { get; set; }
 }
 
 public enum InboxStatus

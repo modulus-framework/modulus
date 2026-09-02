@@ -29,7 +29,7 @@
 
   <!-- ── Versioning (SemVer — override on CI with -p:VersionPrefix / VersionSuffix) ─ -->
   <PropertyGroup>
-    <VersionPrefix>1.2.0</VersionPrefix>
+    <VersionPrefix>1.3.0</VersionPrefix>
     <VersionSuffix></VersionSuffix>
     <Version Condition="'$(Version)' == '' AND '$(VersionSuffix)' != ''">$(VersionPrefix)-$(VersionSuffix)</Version>
     <Version Condition="'$(Version)' == '' AND '$(VersionSuffix)' == ''">$(VersionPrefix)</Version>

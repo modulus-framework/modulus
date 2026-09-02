@@ -1,6 +1,5 @@
 namespace Modulus.EventBus.Kafka;
 
-using System.Text.Json;
 using Confluent.Kafka;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -19,17 +18,20 @@ internal sealed class KafkaEventConsumer : BackgroundService
     private readonly ILogger<KafkaEventConsumer> _logger;
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly IIntegrationEventRegistry _registry;
+    private readonly IMessageSerializer _serializer;
 
     public KafkaEventConsumer(
         IOptions<KafkaOptions> options,
         ILogger<KafkaEventConsumer> logger,
         IServiceScopeFactory scopeFactory,
-        IIntegrationEventRegistry registry)
+        IIntegrationEventRegistry registry,
+        IMessageSerializer serializer)
     {
         _opts = options.Value;
         _logger = logger;
         _scopeFactory = scopeFactory;
         _registry = registry;
+        _serializer = serializer;
     }
 
     protected override Task ExecuteAsync(CancellationToken stoppingToken)
@@ -96,11 +98,22 @@ internal sealed class KafkaEventConsumer : BackgroundService
                     continue;
                 }
 
-                var envelope = JsonSerializer
-                    .Deserialize<IntegrationEventEnvelope>(result.Message.Value);
+                // Deserialise with the shared IMessageSerializer so the
+                // envelope is read with the same options the producer wrote
+                // it with (camelCase + string enums). Raw JsonSerializer
+                // defaults are case-sensitive and would yield an
+                // all-defaults envelope.
+                var envelope = (IntegrationEventEnvelope?)_serializer
+                    .Deserialize(result.Message.Value, typeof(IntegrationEventEnvelope));
 
                 if (envelope is null)
                 {
+                    // Malformed / undeserialisable message — poison. Commit
+                    // past it (redelivery cannot fix a malformed payload) with
+                    // a loud log; manual replay from the DLQ is required.
+                    _logger.LogError(
+                        "Failed to deserialise Kafka envelope from {Topic}[{Partition}]@{Offset}; committing past the poisoned message — manual replay required",
+                        result.Topic, result.Partition.Value, result.Offset.Value);
                     consumer.Commit(result);
                     continue;
                 }

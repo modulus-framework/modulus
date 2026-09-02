@@ -12,8 +12,8 @@ using Modulus.Testing;
 using Modulus.Testing.Assertions;
 using Modulus.Testing.Architecture;
 using Modulus.Testing.Fakes;
-using {{ root_namespace }}.Api.Modules;
-
+{{ if !no_example }}using {{ root_namespace }}.Modules.{{ example_module }}.Infrastructure;
+{{ end }}
 namespace {{ root_namespace }}.Tests;
 
 /// <summary>
@@ -28,9 +28,12 @@ public sealed class AppSmokeTest
     {
         var builder = Host.CreateApplicationBuilder();
 
-        builder.Services.AddModulus<{{ app_name }}HostModule>(builder.Configuration);
+        builder.Services.AddModulus(builder.Configuration, modules =>
+        {
+{{ if !no_example }}            modules.AddModule<{{ example_module }}Module>();
+{{ end }}        });
         builder.Services.AddMediator();
-        builder.Services.AddModulusEvents(typeof({{ app_name }}HostModule).Assembly);
+        builder.Services.AddModulusEvents(typeof(Program).Assembly);
 
         using var host = builder.Build();
         using var scope = host.Services.CreateScope();
@@ -42,8 +45,8 @@ public sealed class AppSmokeTest
             .GetServices<DbContext>()
             .ToList();
 
-        Assert.NotEmpty(contexts);
-    }
+{{ if !no_example }}        Assert.NotEmpty(contexts);
+{{ end }}    }
 }
 
 /// <summary>

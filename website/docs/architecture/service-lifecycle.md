@@ -8,14 +8,13 @@ Modulus modules go through a well-defined lifecycle from discovery to shutdown.
 
 ## Startup Phases
 
-### 1. Module Discovery
+### 1. Module Registration
 
-When `AddModulus<TStartupModule>()` is called, the framework:
+When `AddModulus(configuration, modules => ...)` is called, the framework:
 
-1. Finds `TStartupModule` and scans its `[DependsOn]` attributes
-2. Recursively discovers all dependent modules
-3. Builds a dependency graph
-4. Performs topological sort to determine configuration order
+1. Instantiates each module registered via `AddModule<T>()` (exactly once)
+2. Registers every module instance in DI
+3. Preserves the registration order as the authoritative lifecycle order
 
 ### 2. PreConfigureServices
 
@@ -84,7 +83,7 @@ public override async Task InitializeAsync(ModuleContext context)
 
 ### ShutdownAsync
 
-Runs in **reverse dependency order** when the application stops:
+Runs in **reverse registration order** when the application stops:
 
 ```csharp
 public override async Task ShutdownAsync()
@@ -97,23 +96,25 @@ public override async Task ShutdownAsync()
 
 ## Execution Order Example
 
-Given this dependency graph:
+Given this registration in `Program.cs`:
 
-```
-HostModule → CatalogModule → IdentityModule
-         → OrdersModule → IdentityModule
-         → InventoryModule
+```csharp
+builder.Services.AddModulus(builder.Configuration, modules => modules
+    .AddModule<IdentityModule>()
+    .AddModule<CatalogModule>()
+    .AddModule<OrdersModule>()
+    .AddModule<InventoryModule>());
 ```
 
 The execution order is:
 
 | Phase | Order |
 |-------|-------|
-| PreConfigureServices | Identity → Catalog → Orders → Inventory → Host |
-| ConfigureServices | Identity → Catalog → Orders → Inventory → Host |
-| PostConfigureServices | Identity → Catalog → Orders → Inventory → Host |
-| InitializeAsync | Identity → Catalog → Orders → Inventory → Host |
-| ShutdownAsync | Host → Inventory → Orders → Catalog → Identity |
+| PreConfigureServices | Identity → Catalog → Orders → Inventory |
+| ConfigureServices | Identity → Catalog → Orders → Inventory |
+| PostConfigureServices | Identity → Catalog → Orders → Inventory |
+| InitializeAsync | Identity → Catalog → Orders → Inventory |
+| ShutdownAsync | Inventory → Orders → Catalog → Identity |
 
 ## Module Context
 

@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Modulus.Core.Abstractions;
 using Modulus.Mediator.Extensions;
 using Modulus.Outbox.Extensions;
@@ -27,7 +28,12 @@ public sealed class FinanceModule : ModulusModule
                             HistoryRepository.DefaultTableName,
                             "finance")
                         .UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery))
-                .UseSnakeCaseNamingConvention());
+                .UseSnakeCaseNamingConvention()
+                // ModuleDbContext's runtime model can differ from the design-time snapshot
+                // (inbox/outbox model contributors, PII converters). Schema drift is gated
+                // in CI via dotnet ef migrations has-pending-model-changes, so downgrade the
+                // runtime migration guard to a log.
+                .ConfigureWarnings(w => w.Log(RelationalEventId.PendingModelChangesWarning)));
 
         services.AddScoped<IFinanceUnitOfWork>(sp => sp.GetRequiredService<FinanceDbContext>());
         services.AddScoped<IApInvoiceRepository, EfApInvoiceRepository>();

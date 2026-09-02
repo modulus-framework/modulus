@@ -9,7 +9,7 @@ TradeFlow is a modular-monolith **.NET 10** ERP sample built on the **Modulus fr
 ## Prerequisites
 
 - .NET SDK **10.0.109** or newer
-- Docker (for Keycloak, PostgreSQL, Redis, RabbitMQ, Seq, MinIO)
+- Docker (for PostgreSQL, Redis, RabbitMQ, Seq, MinIO — `docker compose up -d`; identity is in-app OpenIddict, no Keycloak)
 
 ## Common commands
 

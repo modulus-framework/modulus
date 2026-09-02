@@ -1,59 +1,47 @@
 namespace Modulus.Core;
 
 using Modulus.Core.Abstractions;
-using Modulus.Core.Abstractions.Exceptions;
 using Modulus.Observability;
 
+/// <summary>
+/// Default <see cref="IModuleLoader"/>: captures the registered modules in
+/// registration order, initializes them in that order, and shuts them down in
+/// reverse. Built by <see cref="ModulusBuilder.Complete"/>.
+/// </summary>
 public sealed class ModuleLoader : IModuleLoader
 {
-    private IReadOnlyList<ModuleDescriptor> _sorted = [];
-    private IReadOnlyList<IModule> _modules = [];
-    private Dictionary<Type, IModule> _modulesByType = [];
+    private readonly IReadOnlyList<ModuleDescriptor> _descriptors;
+    private readonly Dictionary<Type, IModule> _modulesByType;
 
-    // ── BuildGraph ────────────────────────────────────────────────
     /// <summary>
-    /// Topologically sorts the given modules (dependencies first) using the
-    /// shared <see cref="ModuleGraph"/> engine — the same engine used for
-    /// registration discovery and configuration-phase ordering, so all orders
-    /// always agree. Optional <see cref="DependsOnAttribute"/> dependencies
-    /// order a registered module before its dependent but never fail startup
-    /// when absent.
+    /// Creates a loader over the given modules. Registration order is
+    /// authoritative: it becomes the configuration-phase order, the init
+    /// order (<see cref="InitializeAllAsync"/>), and the reverse of the
+    /// shutdown order (<see cref="ShutdownAllAsync"/>).
     /// </summary>
-    /// <exception cref="CircularDependencyException">The graph contains a cycle.</exception>
-    /// <exception cref="ModuleNotFoundException">
-    /// A module declares a required dependency that is not in <paramref name="modules"/>.
-    /// </exception>
-    public IReadOnlyList<ModuleDescriptor> BuildGraph(
-        IEnumerable<IModule> modules)
+    public ModuleLoader(IEnumerable<IModule> modules)
     {
-        _modules = modules.ToList();
-        _modulesByType = BuildModuleMap(_modules);
-        var registeredTypes = _modulesByType.Keys.ToHashSet();
+        var list = modules.ToList();
+        _modulesByType = BuildModuleMap(list);
 
-        var sortedTypes = ModuleGraph.Sort(
-            _modulesByType.Keys,
-            type => RequiredAndOptionalPresent(map: _modulesByType, type));
-
-        var sorted = new List<ModuleDescriptor>(sortedTypes.Count);
-        int order = 0;
-        foreach (var type in sortedTypes)
+        var descriptors = new List<ModuleDescriptor>(list.Count);
+        var order = 0;
+        foreach (var module in list)
         {
-            var module = _modulesByType[type];
-            sorted.Add(new ModuleDescriptor
+            var type = module.GetType();
+            descriptors.Add(new ModuleDescriptor
             {
                 Name = type.Name,
                 ModuleType = type,
-                Dependencies = DeclaredDependencies(module),
                 InitOrder = order++,
             });
         }
 
-        _sorted = sorted.AsReadOnly();
-        return _sorted;
+        _descriptors = descriptors.AsReadOnly();
     }
 
     /// <inheritdoc/>
-    public IReadOnlyList<ModuleDescriptor> GetDescriptors() => _sorted;
+    public IReadOnlyList<ModuleDescriptor> GetDescriptors() => _descriptors;
 
     // ── InitializeAllAsync ────────────────────────────────────────
     public async Task InitializeAllAsync(
@@ -64,9 +52,9 @@ public sealed class ModuleLoader : IModuleLoader
             .CreateLogger<ModuleLoader>();
 
         logger.LogInformation("[Modulus] Initializing {Count} modules...",
-            _sorted.Count);
+            _descriptors.Count);
 
-        foreach (var descriptor in _sorted)
+        foreach (var descriptor in _descriptors)
         {
             var module = (IModule)sp.GetRequiredService(descriptor.ModuleType);
             var sw = System.Diagnostics.Stopwatch.StartNew();
@@ -92,52 +80,19 @@ public sealed class ModuleLoader : IModuleLoader
         }
 
         logger.LogInformation("[Modulus] All {Count} modules ready.",
-            _sorted.Count);
+            _descriptors.Count);
     }
 
     // ── ShutdownAllAsync ──────────────────────────────────────────
     public async Task ShutdownAllAsync(CancellationToken ct = default)
     {
-        foreach (var descriptor in _sorted.Reverse())
+        for (var i = _descriptors.Count - 1; i >= 0; i--)
         {
+            var descriptor = _descriptors[i];
             var module = _modulesByType[descriptor.ModuleType];
             await module.ShutdownAsync(ct);
         }
     }
-
-    /// <summary>
-    /// Required dependencies (attributes ∪ property) followed by any optional
-    /// attribute dependencies that are present in <paramref name="map"/> — an
-    /// unregistered optional dependency is silently skipped instead of failing
-    /// startup.
-    /// </summary>
-    private static IEnumerable<Type> RequiredAndOptionalPresent(
-        IReadOnlyDictionary<Type, IModule> map,
-        Type type)
-    {
-        var module = map[type];
-
-        foreach (var dep in ModuleGraph.RequiredDeps(module))
-        {
-            if (!map.ContainsKey(dep))
-                throw new ModuleNotFoundException(dep, type);
-
-            yield return dep;
-        }
-
-        foreach (var dep in ModuleGraph.GetOptionalAttributeDeps(type))
-        {
-            if (map.ContainsKey(dep))
-                yield return dep;
-        }
-    }
-
-    /// <summary>All declared dependencies (required + optional present), for reporting.</summary>
-    private static Type[] DeclaredDependencies(IModule module)
-        => ModuleGraph.RequiredDeps(module)
-            .Concat(ModuleGraph.GetOptionalAttributeDeps(module.GetType()))
-            .Distinct()
-            .ToArray();
 
     /// <summary>
     /// Indexes modules by concrete type; duplicate registrations fail with a
@@ -152,7 +107,7 @@ public sealed class ModuleLoader : IModuleLoader
             if (!map.TryAdd(type, module))
                 throw new InvalidOperationException(
                     $"Module type {type.FullName} was registered more than once. " +
-                    "Each module type may only appear once in the graph.");
+                    "Each module type may only appear once in the module list.");
         }
 
         return map;

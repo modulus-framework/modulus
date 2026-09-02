@@ -1,0 +1,19 @@
+{
+  "migration": {
+    "version": "1.0.0",
+    "database": {
+      "provider": "{{ dbsh_provider }}",
+      "connectionString": "{{ dbsh_connection_string_token }}"
+    },
+    "scripts": {
+      "path": "./Database/Migrations",
+      "pattern": "*.sql"
+    },
+    "execution": {
+      "lockTimeoutSeconds": 300,
+      "commandTimeoutSeconds": 3600,
+      "batchSize": 10,
+      "stopOnFailure": true
+    }
+  }
+}

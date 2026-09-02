@@ -109,6 +109,9 @@ internal sealed class GenerateQueryCommand : Command<GenerateQueryCommand.Settin
 
         var appNs = $"{moduleNs}.Application";
 
+        // Detect the prevailing line ending style to avoid mixed \r\n / \n.
+        var nl = content.Contains("\r\n") ? "\r\n" : "\n";
+
         // Ensure required usings.
         foreach (var u in new[] { "using Modulus.Mediator.Extensions;", $"using {appNs};" })
         {
@@ -116,7 +119,7 @@ internal sealed class GenerateQueryCommand : Command<GenerateQueryCommand.Settin
             {
                 var nsIdx = content.IndexOf("namespace ", StringComparison.Ordinal);
                 if (nsIdx >= 0)
-                    content = content.Insert(nsIdx, u + "\n");
+                    content = content.Insert(nsIdx, u + nl);
             }
         }
 
@@ -144,6 +147,7 @@ internal sealed class GenerateQueryCommand : Command<GenerateQueryCommand.Settin
         var bodyOpen = content.IndexOf('{', methodIdx);
         if (bodyOpen < 0) return content;
 
-        return content.Insert(bodyOpen + 1, "\n" + line);
+        var nl = content.Contains("\r\n") ? "\r\n" : "\n";
+        return content.Insert(bodyOpen + 1, nl + line);
     }
 }

@@ -157,8 +157,20 @@ public sealed class AssessBoeHandler(
                 line.Quantity, line.DeclaredAvFcy, 0m, 0m, line.CustomsExchangeRate,
                 line.LandingChargePct, line.TariffValueBdt, rates, sro);
 
+            // SRO savings realized: counterfactual duty at the statutory base rate
+            // minus the benefit-reduced amount, captured per line for §6.8 reporting.
+            decimal sroSavings = 0m;
+            foreach (DutyComponentResult component in calc.Components)
+            {
+                if (!(component.IsSroExempt || component.IsSroOverridden || component.IsSroCapped))
+                    continue;
+                if (rates.TryGetValue(component.Component, out DutyRateRow? baseRow))
+                    sroSavings += component.BaseAmount * baseRow.Rate - component.Amount;
+            }
+
             line.RecordComputed(calc.Tti, calc.Components.Select(c => new RateLineageRow(
-                c.Component.ToString(), c.RateRowId, c.Rate)));
+                c.Component.ToString(), c.RateRowId, c.Rate)),
+                sroSavings == 0m ? null : decimal.Round(sroSavings, 4, MidpointRounding.ToEven));
 
             if (assessedByLine.TryGetValue(line.Id, out AssessedLineInput? assessed))
             {
@@ -405,5 +417,47 @@ public sealed class RejectItemHsMappingHandler(
         await repository.SaveAsync(mapping, ct);
         await unitOfWork.CommitAsync(ct);
         return Result.Success(DutyResponseFactory.ToResponse(mapping));
+    }
+}
+
+// ── AIT/AT Advance-Tax Ledger (BR-CUS-07) ─────────────────────────
+
+public sealed class RecordAitAtAdjustmentHandler(
+    IAitAtLedgerRepository repository,
+    IUnitOfWork unitOfWork) : ICommandHandler<RecordAitAtAdjustmentCommand, Result<AitAtLedgerEntryResponse>>
+{
+    public async Task<Result<AitAtLedgerEntryResponse>> HandleAsync(RecordAitAtAdjustmentCommand request, CancellationToken ct)
+    {
+        if (request.Component is not (DutyComponent.Ait or DutyComponent.At))
+            return Result.Failure<AitAtLedgerEntryResponse>(Error.Validation(
+                "AitAt.Component", "Only AIT/AT components belong in the advance-tax ledger"));
+
+        IReadOnlyList<AitAtLedgerEntry> entries =
+            await repository.GetForCompanyFyAsync(request.CompanyId, request.FiscalYear, ct);
+
+        // Counterposting invariant: cannot credit more than the accumulated advance-tax asset.
+        decimal balance = entries
+            .Where(e => e.Component == request.Component)
+            .Sum(e => e.EntryType == AitAtEntryType.Addition ? e.Amount : -e.Amount);
+
+        if (request.Amount > balance)
+            return Result.Failure<AitAtLedgerEntryResponse>(Error.BusinessRule(
+                "AitAt.OverAdjustment",
+                $"Adjustment {request.Amount:N2} exceeds the accumulated {request.Component} balance {balance:N2} (BR-CUS-07)"));
+
+        AitAtLedgerEntry entry;
+        try
+        {
+            entry = AitAtLedgerEntry.RecordAdjustment(request.CompanyId, request.FiscalYear, request.Component,
+                request.Amount, request.ReturnPeriod, request.Narrative, request.BookedOn);
+        }
+        catch (ArgumentException ex)
+        {
+            return Result.Failure<AitAtLedgerEntryResponse>(Error.Validation("AitAt.Adjustment", ex.Message));
+        }
+
+        await repository.AddAsync(entry, ct);
+        await unitOfWork.CommitAsync(ct);
+        return Result.Success(DutyResponseFactory.ToResponse(entry));
     }
 }

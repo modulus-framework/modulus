@@ -52,6 +52,7 @@ internal sealed class RebusModuleBus(
 internal sealed class RebusOutboxDispatcher(
     IBus bus,
     IIntegrationEventRegistry registry,
+    IMessageSerializer serializer,
     ILogger<RebusOutboxDispatcher>? logger = null) : IOutboxDispatcher
 {
     public async Task DispatchAsync(
@@ -67,7 +68,11 @@ internal sealed class RebusOutboxDispatcher(
             throw new InvalidOperationException(
                 $"Cannot resolve outbox message type: {message.MessageType}");
 
-        var @event = System.Text.Json.JsonSerializer.Deserialize(message.Payload, type)
+        // Deserialise with the shared IMessageSerializer — the same options the
+        // row was written with (camelCase + string enums). Raw JsonSerializer
+        // defaults are case-sensitive and would silently drop init-only
+        // properties (EventId/OccurredAt re-minted) and fail on enum payloads.
+        var @event = (IIntegrationEvent?)(serializer.Deserialize(message.Payload, type))
             ?? throw new InvalidOperationException(
                 $"Failed to deserialise outbox payload for {message.MessageType}");
 

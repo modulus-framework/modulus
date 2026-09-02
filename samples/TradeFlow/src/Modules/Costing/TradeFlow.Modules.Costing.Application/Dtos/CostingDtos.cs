@@ -29,7 +29,8 @@ public sealed record CostElementResponse(
     CostElementScope Scope,
     CostTreatment Treatment,
     string SourceDocType,
-    string SourceDocNumber);
+    string SourceDocNumber,
+    string? Currency = null);
 
 public sealed record LandedCostSheetResponse(
     Guid Id,
@@ -42,3 +43,40 @@ public sealed record LandedCostSheetResponse(
     DateTime? FinalizedAtUtc,
     IReadOnlyList<CostSheetLineResponse> Lines,
     IReadOnlyList<CostElementResponse> Elements);
+
+// ── Cost Analytics + Revaluation History (doc 06 §6.8) ───────────
+
+public sealed record CostSheetAnalyticsResponse(
+    Guid SheetId,
+    string SheetNumber,
+    Guid FileId,
+    CostSheetStatus Status,
+    DateTime? FinalizedAtUtc,
+    decimal TotalLandedCostBdt,
+    decimal DutyPortionBdt,
+    decimal DutyPctOfLanded,
+    decimal LandedCostPortionBdt,
+    decimal RecoverablePortionBdt,
+    decimal AdvanceAssetPortionBdt,
+    int LineCount,
+    decimal AvgUnitCost);
+
+public sealed record CostTrendPointResponse(int Year, int Month, decimal TotalLandedCostBdt, decimal DutyPortionBdt, decimal DutyPct);
+
+public sealed record CostAnalyticsResponse(
+    DateOnly From,
+    DateOnly To,
+    IReadOnlyList<CostSheetAnalyticsResponse> Sheets,
+    IReadOnlyList<CostTrendPointResponse> Trend);
+
+public sealed record RevaluationRunResponse(
+    Guid RunId,
+    DateOnly PeriodEnd,
+    RevaluationRunStatus Status,
+    DateTime StartedAtUtc,
+    DateTime? CompletedAtUtc,
+    int SheetsScanned,
+    decimal TotalOriginalValueBdt,
+    decimal TotalRevaluedValueBdt,
+    decimal TotalFxGainLossBdt,
+    int VarianceCount);

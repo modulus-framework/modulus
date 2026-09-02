@@ -2,12 +2,14 @@ namespace Modulus.Core;
 
 using Modulus.Core.Abstractions;
 
+/// <summary>
+/// Holds the registered modules in registration order and drives their
+/// initialization (registration order) and shutdown (reverse registration
+/// order). Built by <see cref="ModulusBuilder.Complete"/>.
+/// </summary>
 public interface IModuleLoader
 {
-    IReadOnlyList<ModuleDescriptor> BuildGraph(
-        IEnumerable<IModule> modules);
-
-    /// <summary>Sorted module descriptors after <see cref="BuildGraph"/>.</summary>
+    /// <summary>Module descriptors in registration order.</summary>
     IReadOnlyList<ModuleDescriptor> GetDescriptors();
 
     Task InitializeAllAsync(

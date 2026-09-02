@@ -55,6 +55,7 @@ public sealed class IdempotentIntegrationEventHandler<TEvent>(
                 IntegrationEventNaming.GetName(typeof(TEvent)),
                 JsonSerializer.Serialize(@event),
                 opts.Value.MaxRetries,
+                TimeSpan.FromSeconds(Math.Max(1, opts.Value.ClaimTimeoutSeconds)),
                 ct);
         }
         catch (InboxDeferralException)

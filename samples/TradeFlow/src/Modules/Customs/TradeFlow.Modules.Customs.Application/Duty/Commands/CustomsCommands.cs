@@ -136,3 +136,14 @@ public sealed record ApproveItemHsMappingCommand(
 public sealed record RejectItemHsMappingCommand(
     Guid MappingId,
     string Reason) : Modulus.Mediator.Abstractions.ICommand<Result<ItemHsMappingResponse>>;
+
+// ── AIT/AT Advance-Tax Ledger (BR-CUS-07) ─────────────────────────
+
+public sealed record RecordAitAtAdjustmentCommand(
+    Guid CompanyId,
+    int FiscalYear,
+    DutyComponent Component,
+    decimal Amount,
+    string ReturnPeriod,
+    string? Narrative,
+    DateOnly BookedOn) : Modulus.Mediator.Abstractions.ICommand<Result<AitAtLedgerEntryResponse>>;

@@ -31,7 +31,8 @@ public sealed record AddCostElementCommand(
     CostTreatment Treatment,
     string SourceDocType,
     string SourceDocNumber,
-    IReadOnlyList<Guid>? SelectedLineIds) : Modulus.Mediator.Abstractions.ICommand<Result<LandedCostSheetResponse>>;
+    IReadOnlyList<Guid>? SelectedLineIds,
+    string? Currency = null) : Modulus.Mediator.Abstractions.ICommand<Result<LandedCostSheetResponse>>;
 
 public sealed record AllocateCostsCommand(
     Guid SheetId) : Modulus.Mediator.Abstractions.ICommand<Result<LandedCostSheetResponse>>;

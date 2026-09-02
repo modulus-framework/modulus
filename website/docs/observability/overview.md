@@ -26,7 +26,7 @@ services.AddModulusObservability(config);
 | Endpoint | Purpose |
 |----------|---------|
 | `/health/modules` | Per-module health aggregation |
-| `/health/graph` | Module dependency graph |
+| `/health/graph` | Loaded-module inventory in registration (= initialization) order |
 
 ## Distributed Tracing
 

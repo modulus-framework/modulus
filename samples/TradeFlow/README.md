@@ -22,7 +22,7 @@ Each business module follows this structure:
 - **Infrastructure**: `ModuleDbContext`, migrations, repository implementations, module composition root
 - **Presentation**: Minimal API endpoints (REPR pattern)
 
-All modules are auto-discovered via `AddModulus<TradeFlowHostModule>()` and share:
+All modules are registered explicitly in `Program.cs` (`AddModulus(builder.Configuration, modules => modules.AddModule<...>()...)` — registration order is authoritative) and share:
 - Multi-tenancy support via `ICurrentTenant`
 - User context via `ICurrentUser`
 - Domain event dispatching via `DomainEventDispatcher`
@@ -224,7 +224,7 @@ This is designed as a **modular template** that can be adapted for any business 
 1. **Use the platform modules** as-is for identity, tenants, and notifications
 2. **Add business modules** following the 4-layer pattern (Domain → Application → Infrastructure → Presentation)
 3. **Configure external services** via `appsettings.json` and per-module settings
-4. **Extend permissions** in `TradeFlowHostModule.cs` for your specific domain requirements
+4. **Extend permissions** in each module's `Permissions.cs` for your specific domain requirements
 5. **Customize endpoints** by adding new REPR endpoints in Presentation layers
 6. **Run migrations** per module: `dotnet ef migrations add {Name} --project {Module}.Infrastructure`
 

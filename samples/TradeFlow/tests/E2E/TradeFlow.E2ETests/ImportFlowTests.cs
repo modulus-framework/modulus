@@ -6,6 +6,7 @@ using Xunit;
 namespace TradeFlow.E2ETests;
 
 [Collection("API Tests")]
+[Trait("Category", "Integration")]
 public class ImportFlowTests
 {
     private const string TenantId = "10000000-0000-0000-0000-000000000001";

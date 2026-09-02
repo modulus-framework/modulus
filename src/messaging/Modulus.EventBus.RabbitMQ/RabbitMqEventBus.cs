@@ -1,5 +1,6 @@
 namespace Modulus.EventBus.RabbitMQ;
 
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
@@ -46,12 +47,37 @@ internal sealed class RabbitMqEventBus : IModuleBus, IAsyncDisposable
     {
         var sw = Stopwatch.StartNew();
         var connection = await EnsureConnectionAsync(ct);
-        await using var channel = await connection.CreateChannelAsync(cancellationToken: ct);
+
+        // Publisher confirms: with tracking enabled the awaited publish
+        // completes only when the broker acks, and a nacked (or, on clients
+        // that surface it, returned) publish throws — so a broker restart or
+        // an unroutable routing key becomes a dispatch failure the outbox can
+        // retry instead of a silent loss reported as success.
+        var channelOptions = _opts.PublisherConfirms
+            // (publisherConfirmationsEnabled, publisherConfirmationTrackingEnabled)
+            ? new CreateChannelOptions(true, true)
+            : null;
+        await using var channel = channelOptions is null
+            ? await connection.CreateChannelAsync(cancellationToken: ct)
+            : await connection.CreateChannelAsync(channelOptions, ct);
 
         // mandatory:true makes the broker return (basic.return) publishes that
         // match no bound queue — without this handler those frames are dropped
         // silently and the event is lost with no trace.
-        channel.BasicReturnAsync += OnBasicReturnAsync;
+        var returnedIds = new ConcurrentDictionary<Guid, byte>();
+        channel.BasicReturnAsync += (sender, e) =>
+        {
+            ModulusMeters.EventsUnroutable.Add(1);
+            _logger.LogWarning(
+                "Broker returned an integration event as unroutable (no queue bound for the routing key): " +
+                "exchange '{Exchange}' routing key '{RoutingKey}' — {ReplyCode} {ReplyText}. " +
+                "Bind a queue for this routing key or the event is lost.",
+                e.Exchange, e.RoutingKey, e.ReplyCode, e.ReplyText);
+            if (e.BasicProperties?.MessageId is { } mid
+                && Guid.TryParse(mid, out var returnedId))
+                returnedIds[returnedId] = 1;
+            return Task.CompletedTask;
+        };
 
         // Stable transport name uses the runtime event type, not the generic parameter.
         // When an event is published through a base-type variable (IIntegrationEvent),
@@ -106,6 +132,17 @@ internal sealed class RabbitMqEventBus : IModuleBus, IAsyncDisposable
             body: body,
             cancellationToken: ct);
 
+        // The broker sends basic.return BEFORE the basic.ack for an unroutable
+        // mandatory publish, so by the time the confirmed publish completes
+        // any return has been recorded. Treat "acked but returned" as a
+        // failure so the outbox retries instead of marking it processed.
+        if (returnedIds.ContainsKey(envelope.EventId))
+            throw new InvalidOperationException(
+                $"RabbitMQ returned event {envelope.EventId} ({routingKey}) as " +
+                $"unroutable on exchange '{_opts.ExchangeName}' — no queue is " +
+                "bound for this routing key. Bind a consumer queue or correct " +
+                "the routing key; treating as a failed dispatch.");
+
         sw.Stop();
         ModulusMeters.EventsPublishDuration.Record(sw.Elapsed.TotalMilliseconds);
 
@@ -113,17 +150,6 @@ internal sealed class RabbitMqEventBus : IModuleBus, IAsyncDisposable
             "Published {EventType} ({EventId}) to exchange '{Exchange}' [{RoutingKey}] ({Ms}ms)",
             typeof(TEvent).Name, envelope.EventId,
             _opts.ExchangeName, routingKey, sw.ElapsedMilliseconds);
-    }
-
-    private Task OnBasicReturnAsync(object sender, BasicReturnEventArgs e)
-    {
-        ModulusMeters.EventsUnroutable.Add(1);
-        _logger.LogWarning(
-            "Broker returned an integration event as unroutable (no queue bound for the routing key): " +
-            "exchange '{Exchange}' routing key '{RoutingKey}' — {ReplyCode} {ReplyText}. " +
-            "Bind a queue for this routing key or the event is lost.",
-            e.Exchange, e.RoutingKey, e.ReplyCode, e.ReplyText);
-        return Task.CompletedTask;
     }
 
     /// <summary>

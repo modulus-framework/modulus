@@ -8,8 +8,9 @@ namespace Modulus.Cli.Commands;
 
 /// <summary>
 /// <c>modulus doctor</c> — verifies the environment and the current app
-/// are ready to build and migrate: checks the .NET SDK, the dotnet-ef
-/// global tool, that we're inside a Modulus app, that every module's
+/// are ready to build and migrate: checks the .NET SDK, the migration tools
+/// each module's engine needs (dotnet-ef for EF Core modules, dbsh for dbsh
+/// modules), that we're inside a Modulus app, that every module's
 /// Infrastructure project + DbContext exist, and that a NuGet.config is
 /// present. Reports each check as pass/warn/fail.
 /// </summary>
@@ -25,7 +26,7 @@ internal sealed class DoctorCommand : Command<DoctorCommand.Settings>
     public override int Execute(CommandContext ctx, Settings s)
     {
         s.Apply();
-        return CommandRunner.Run(() =>
+        return CommandRunner.Run(async () =>
         {
             var start = Path.GetFullPath(s.Output ?? "./");
 
@@ -35,7 +36,6 @@ internal sealed class DoctorCommand : Command<DoctorCommand.Settings>
             var checks = new List<CheckResult>();
 
             checks.Add(CheckDotNetSdk());
-            checks.Add(CheckDotNetEf());
 
             var inventory = ModuleDiscovery.Inventory(start);
             if (inventory is null)
@@ -45,6 +45,23 @@ internal sealed class DoctorCommand : Command<DoctorCommand.Settings>
                     "No .slnx found in the current directory tree."));
                 return Report(checks);
             }
+
+            // Per-module migration engine (dbsh modules carry a
+            // Database/Config/migration.json marker in their Infrastructure dir).
+            var dbshModules = new List<string>();
+            foreach (var m in inventory.Modules)
+            {
+                var infraDir = Path.Combine(m.Directory, m.Namespace + ".Infrastructure");
+                if (MigrateSupport.IsDbshModule(infraDir))
+                    dbshModules.Add(m.Name);
+            }
+            var efModules = inventory.Modules.Count - dbshModules.Count;
+
+            // Each engine's tool is only required when at least one module uses it.
+            if (efModules > 0 || inventory.Modules.Count == 0)
+                checks.Add(CheckDotNetEf());
+            if (dbshModules.Count > 0)
+                checks.Add(CheckDbsh());
 
             checks.Add(CheckResult.Pass(
                 "Inside a Modulus app",
@@ -70,7 +87,8 @@ internal sealed class DoctorCommand : Command<DoctorCommand.Settings>
                 Path.Combine(inventory.SolutionDir, ".gitignore"),
                 inventory.SolutionDir));
 
-            // Each module: Infrastructure project + DbContext + design-time factory.
+            // Each module: Infrastructure project + DbContext + design-time factory
+            // + migration engine marker consistency.
             foreach (var m in inventory.Modules)
             {
                 var infraDir = Path.Combine(m.Directory, m.Namespace + ".Infrastructure");
@@ -88,6 +106,14 @@ internal sealed class DoctorCommand : Command<DoctorCommand.Settings>
                     $"{m.Name}: design-time factory",
                     Path.Combine(infraDir, m.Name + "DbContextFactory.cs"),
                     inventory.SolutionDir));
+
+                checks.Add(MigrateSupport.IsDbshModule(infraDir)
+                    ? CheckResult.Pass(
+                        $"{m.Name}: migration engine",
+                        "dbsh (Database/Config/migration.json)")
+                    : CheckResult.Pass(
+                        $"{m.Name}: migration engine",
+                        "efcore (Migrations/)"));
             }
 
             if (inventory.Modules.Count == 0)
@@ -96,6 +122,10 @@ internal sealed class DoctorCommand : Command<DoctorCommand.Settings>
                     "Modules",
                     "None found under src/Modules/. Add one with: modulus add-module <Name>"));
             }
+
+            // ── Version checks ─────────────────────────────────────────
+            checks.Add(await CheckCliVersionAsync());
+            checks.Add(await CheckFrameworkVersionAsync(inventory.SolutionDir));
 
             return Report(checks);
         });
@@ -173,6 +203,31 @@ internal sealed class DoctorCommand : Command<DoctorCommand.Settings>
         }
     }
 
+    /// <summary>
+    /// dbsh is only required when at least one module manages its schema with
+    /// SQL migrations (dbsh engine) — checked against <c>dbsh --version</c>.
+    /// </summary>
+    private static CheckResult CheckDbsh()
+    {
+        try
+        {
+            var (code, output) = Capture("dbsh", "--version");
+            if (code != 0)
+                return CheckResult.Warn(
+                    "dbsh tool",
+                    "Not usable. Install: dotnet tool install --global dbsh");
+            var line = output.Split('\n').FirstOrDefault(l => l.Contains("dbsh", StringComparison.OrdinalIgnoreCase))?.Trim()
+                ?? output.Trim();
+            return CheckResult.Pass("dbsh tool", line);
+        }
+        catch (Exception ex)
+        {
+            return CheckResult.Warn(
+                "dbsh tool",
+                $"dbsh not found on PATH ({ex.Message}). Install: dotnet tool install --global dbsh");
+        }
+    }
+
     private static CheckResult CheckFile(string name, string fullPath, string solutionDir)
     {
         if (File.Exists(fullPath))
@@ -180,9 +235,61 @@ internal sealed class DoctorCommand : Command<DoctorCommand.Settings>
             var rel = Path.GetRelativePath(solutionDir, fullPath);
             return CheckResult.Pass(name, rel);
         }
-        return CheckResult.Fail(name, "missing: " + (File.Exists(solutionDir)
+        return CheckResult.Fail(name, "missing: " + (Directory.Exists(solutionDir)
             ? Path.GetRelativePath(solutionDir, fullPath)
             : fullPath));
+    }
+
+    // ── Version checks ────────────────────────────────────────────────
+
+    private static async Task<CheckResult> CheckCliVersionAsync()
+    {
+        try
+        {
+            var result = await VersionCheckService.CheckCliUpdatesAsync();
+            if (result.Error is not null)
+                return CheckResult.Warn("CLI tool version", result.Error);
+
+            if (result.HasUpdate)
+                return CheckResult.Warn(
+                    "CLI tool version",
+                    $"v{result.InstalledVersion} installed, v{result.LatestVersion} available. Run: {result.UpdateCommand}");
+
+            return CheckResult.Pass("CLI tool version", $"v{result.InstalledVersion} (latest)");
+        }
+        catch (Exception ex)
+        {
+            return CheckResult.Warn("CLI tool version", $"Could not check: {ex.Message}");
+        }
+    }
+
+    private static async Task<CheckResult> CheckFrameworkVersionAsync(string solutionDir)
+    {
+        try
+        {
+            var currentVersion = ProjectFileService.DetectCurrentFrameworkVersion(solutionDir);
+            if (currentVersion is null)
+                return CheckResult.Warn(
+                    "Framework version",
+                    "Could not detect Cobytelabs.Modulus.* version in the project.");
+
+            var latestVersion = await NuGetVersionService.GetLatestVersionAsync(
+                ThirdPartyPackages.FrameworkPackagePrefix + "Core");
+
+            if (latestVersion is null)
+                return CheckResult.Pass("Framework version", $"v{currentVersion} (could not query NuGet)");
+
+            if (NuGetVersionService.IsNewer(latestVersion, currentVersion))
+                return CheckResult.Warn(
+                    "Framework version",
+                    $"v{currentVersion} installed, v{latestVersion} available. Run: modulus update");
+
+            return CheckResult.Pass("Framework version", $"v{currentVersion} (latest)");
+        }
+        catch (Exception ex)
+        {
+            return CheckResult.Warn("Framework version", $"Could not check: {ex.Message}");
+        }
     }
 
     /// <summary>Captures stdout of a process (no console output, short timeout).</summary>
@@ -195,9 +302,14 @@ internal sealed class DoctorCommand : Command<DoctorCommand.Settings>
             RedirectStandardError = true,
         };
         using var proc = Process.Start(psi)!;
-        var stdout = proc.StandardOutput.ReadToEnd();
+        var stdout = proc.StandardOutput.ReadToEndAsync();
+        var stderr = proc.StandardError.ReadToEndAsync();
         proc.WaitForExit(5000);
-        return (proc.ExitCode, stdout);
+        // Drain remaining buffers to avoid deadlock if process wrote more
+        // than the pipe buffer (~256KB) before exiting.
+        stdout.Wait();
+        stderr.Wait();
+        return (proc.ExitCode, stdout.Result);
     }
 
     private enum CheckKind { Pass, Warn, Fail }

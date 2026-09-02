@@ -1,5 +1,6 @@
 using Modulus.Core.Abstractions.Domain;
 using Modulus.Events.Abstractions;
+using TradeFlow.Modules.Customs.Domain.Duty;
 using TradeFlow.Modules.Customs.Domain.Entities;
 
 namespace TradeFlow.Modules.Customs.Domain.Events;
@@ -50,4 +51,20 @@ public sealed record DutyVarianceDisputeOpenedDomainEvent(Guid BoeId, Guid BoeLi
     public Guid EventId { get; } = Guid.NewGuid();
     public DateTime OccurredAt { get; } = DateTime.UtcNow;
     public string EventType => "Customs.DutyVarianceOpened.v1";
+}
+
+[IntegrationEventName("Customs.AitAtAdjustmentRecorded.v1")]
+public sealed record AitAtAdjustmentRecordedDomainEvent(
+    Guid EntryId,
+    Guid CompanyId,
+    int FiscalYear,
+    DutyComponent Component,
+    decimal Amount,
+    string ReturnPeriod,
+    DateOnly BookedOn)
+    : IDomainEvent, IIntegrationEvent
+{
+    public Guid EventId { get; } = Guid.NewGuid();
+    public DateTime OccurredAt { get; } = DateTime.UtcNow;
+    public string EventType => "Customs.AitAtAdjustmentRecorded.v1";
 }

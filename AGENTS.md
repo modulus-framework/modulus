@@ -34,6 +34,8 @@ All commands are run from the repository root (`E:\Personal\framework\modulus`).
 | Audit vulnerable packages | `dotnet list modulus.slnx package --vulnerable` |
 | Format check (no writes) | `dotnet format modulus.slnx --verify-no-changes` |
 | Format (apply) | `dotnet format modulus.slnx` |
+| Check for updates | `modulus outdated` |
+| Update packages | `modulus update` |
 
 ## Build conventions
 
@@ -93,13 +95,13 @@ tests/
 
 ## Module system
 
-Modules implement `IModule` or inherit from `ModulusModule`. Dependencies are
-declared via `[DependsOn(typeof(OtherModule))]` attributes (ABP-style).
-`AddModulus<TStartupModule>(configuration)` auto-discovers the full module graph
-via topological sort.
+Modules implement `IModule` or inherit from `ModulusModule` and are
+registered **explicitly** in `Program.cs` — there is no dependency-attribute
+discovery and no startup module. `AddModulus(configuration, configure)`
+invokes a `ModulusBuilder` callback where each module is added in order;
+**registration order is authoritative** for every lifecycle phase.
 
 ```csharp
-[DependsOn(typeof(IdentityModule), typeof(DataModule))]
 public sealed class ShopModule : ModulusModule
 {
     public override void ConfigureServices(IServiceCollection s, IConfiguration c)
@@ -109,11 +111,14 @@ public sealed class ShopModule : ModulusModule
 }
 
 // Program.cs
-builder.Services.AddModulus<AppHostModule>(builder.Configuration);
+builder.Services.AddModulus(builder.Configuration, modules => modules
+    .AddModule<IdentityModule>()
+    .AddModule<DataModule>()
+    .AddModule<ShopModule>());
 ```
 
 Service registration runs in three ordered phases across all modules (each in
-dependency order): `PreConfigureServices` for every module, then
+registration order): `PreConfigureServices` for every module, then
 `ConfigureServices` for every module, then `PostConfigureServices` for every
 module. Use `PreConfigureServices` to seed shared options/registries other
 modules contribute to, and `PostConfigureServices` to finalize once every module
@@ -132,12 +137,15 @@ large DDD/CQRS modular monoliths.
 
 | Command | Description |
 |---------|-------------|
-| `modulus app <name>` | Creates a solution: `src/API/{App}.Api` host + `src/Shared/{App}.Shared.*` kernel (4 projects) + example `Catalog` module (4 projects) + top-level tests. |
+| `modulus app <name>` | Creates a solution: `src/API/{App}.Api` host + `src/Shared/{App}.Shared.*` kernel (4 projects) + example `Catalog` module (4 projects) + top-level tests. `--migration-engine dbsh` uses SQL-first migrations. |
 | `modulus module <name>` | Creates a blank 4-layer business module |
-| `modulus add-module <name>` | Adds a module to an existing app + wires `[DependsOn]` + Host `ProjectReference`s. |
+| `modulus add-module <name>` | Adds a module to an existing app + wires Program.cs registration + Host `ProjectReference`s. `--migration-engine` defaults to `dbsh` when all existing modules use dbsh. |
 | `modulus generate-crud <Entity>` | Generates entity, repo, DTOs, command/query handlers across the module's layers |
-| `modulus migrate add <Name>` | Scaffolds an EF Core migration in each module's Infrastructure project (or one via `--module`). |
-| `modulus migrate update` | Applies pending migrations to each module's database (`dotnet ef database update` per module). |
+| `modulus migrate add <Name>` | Scaffolds a migration in each module's Infrastructure project (or one via `--module`). Auto-detects engine: `dotnet ef` for EF Core modules, `dbsh create` for dbsh modules. |
+| `modulus migrate update` | Applies pending migrations to each module's database. Auto-detects engine: `dotnet ef database update` for EF Core, `dbsh init && dbsh migrate` for dbsh modules. |
+| `modulus doctor` | Checks environment health: .NET SDK, `dotnet-ef`, `dbsh` tool availability, dbsh config presence, CLI tool version, framework package versions. |
+| `modulus outdated` | Shows all packages with newer versions available on NuGet. `--framework-only` to check only `Cobytelabs.Modulus.*` packages. |
+| `modulus update` | Updates packages to latest versions with backup and rollback support. `--dry-run` to preview changes, `--force` to skip prompts. |
 
 ### Generated layout
 
@@ -148,8 +156,7 @@ large DDD/CQRS modular monoliths.
 ├── .editorconfig
 └── src/
     ├── API/{App}.Api/                        # composition root (single executable)
-    │   ├── Program.cs                        # AddModulus<>, AddMediator; MigrateModulusDatabasesAsync over all DbContexts
-    │   └── Modules/{App}HostModule.cs        # [DependsOn] lists every business module
+    │   ├── Program.cs                        # AddModulus(callback), AddMediator; MigrateModulusDatabasesAsync over all DbContexts
     ├── Shared/                               # shared kernel (4 projects)
     │   ├── {App}.Shared.Domain
     │   ├── {App}.Shared.Application
@@ -311,6 +318,27 @@ All modules use **EF Core migrations** by default. Each module includes an
 startup via `dotnet ef database update` routed per module. The CLI provides
 `modulus migrate add <Name>` and `modulus migrate update` commands to scaffold
 and apply migrations respectively.
+
+**dbsh** is the alternative engine. When `--migration-engine dbsh` is passed
+to `modulus app` or `modulus add-module`, the generated module gets:
+
+- `Database/Config/migration.json` — dbsh config (provider, `${VAR}` connection)
+- `Database/Config/local.json` — dev environment override
+- `Database/Migrations/{Module}/` — empty dir for hand-written `.sql` files
+- `.ExternallyManaged<TContext>()` in the module composition root — tells
+  `MigrateModulusDatabasesAsync` to skip this context
+
+The CLI detects dbsh modules by the `Database/Config/migration.json` marker
+file. `modulus migrate add` runs `dbsh create` instead of
+`dotnet ef migrations add`; `modulus migrate update` runs `dbsh init && dbsh
+migrate` instead of `dotnet ef database update`. When `--migration-engine` is
+omitted, the CLI defaults to `dbsh` when every existing module already uses
+dbsh, otherwise `efcore`.
+
+Runtime: `MigrateModulusDatabasesAsync` skips contexts registered via
+`ExternallyManaged<TContext>()` — the schema is applied by the dbsh tool,
+not by EF Core. The `modulus doctor` command checks `dbsh --version` when
+any dbsh module is present.
 
 ## Microservice hardening (Tier 2)
 

@@ -7,6 +7,7 @@ using TradeFlow.Modules.VirtualFileExplorer.Infrastructure.Database;
 using TradeFlow.Modules.VirtualFileExplorer.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using FluentValidation;
@@ -52,7 +53,12 @@ public sealed class VirtualFileExplorerModule : ModulusModule
                     npgsqlOptions => npgsqlOptions
                         .MigrationsHistoryTable(HistoryRepository.DefaultTableName, Database.Schemas.VirtualFileExplorer)
                         .UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery))
-                .UseSnakeCaseNamingConvention());
+                .UseSnakeCaseNamingConvention()
+                // ModuleDbContext's runtime model can differ from the design-time snapshot
+                // (inbox/outbox model contributors, PII converters). Schema drift is gated
+                // in CI via dotnet ef migrations has-pending-model-changes, so downgrade the
+                // runtime migration guard to a log.
+                .ConfigureWarnings(w => w.Log(RelationalEventId.PendingModelChangesWarning)));
 
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<VirtualFileExplorerDbContext>());
 

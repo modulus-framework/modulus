@@ -43,6 +43,23 @@ public sealed class EfDutyRateRepository(CustomsDbContext context) : IDutyRateRe
             d => new DutyRateRow(d.Id, d.Component, d.Rate, d.SpecificRate, d.Uom, d.EffectiveFrom, d.EffectiveTo));
     }
 
+    public async Task<IReadOnlyDictionary<string, IReadOnlyDictionary<DutyComponent, DutyRateRow>>> GetEffectiveRatesForAsync(
+        IReadOnlyList<string> hsCodes, DateOnly date, CancellationToken ct = default)
+    {
+        var rates = await context.DutyRates
+            .Where(d => hsCodes.Contains(d.HsCode) && d.Status == DutyRateStatus.Approved && d.IsEffectiveOn(date))
+            .AsNoTracking()
+            .ToListAsync(ct);
+
+        return rates
+            .GroupBy(d => d.HsCode)
+            .ToDictionary(
+                g => g.Key,
+                g => (IReadOnlyDictionary<DutyComponent, DutyRateRow>)g.ToDictionary(
+                    d => d.Component,
+                    d => new DutyRateRow(d.Id, d.Component, d.Rate, d.SpecificRate, d.Uom, d.EffectiveFrom, d.EffectiveTo)));
+    }
+
     public Task<DutyRate?> GetByIdAsync(Guid id, CancellationToken ct = default)
         => context.DutyRates.FirstOrDefaultAsync(d => d.Id == id, ct);
 
@@ -82,6 +99,13 @@ public sealed class EfSroBenefitRepository(CustomsDbContext context) : ISroBenef
             .ToList();
     }
 
+    public Task<IReadOnlyList<SroBenefit>> GetActiveOnAsync(DateOnly date, CancellationToken ct = default)
+        => context.SroBenefits
+            .Where(s => s.IsEffectiveOn(date))
+            .OrderBy(s => s.Name)
+            .ToListAsync(ct)
+            .ContinueWith(t => (IReadOnlyList<SroBenefit>)t.Result, ct);
+
     public Task<IReadOnlyList<SroBenefit>> GetAllAsync(CancellationToken ct = default)
         => context.SroBenefits
             .OrderBy(s => s.Name)
@@ -120,6 +144,18 @@ public sealed class EfBoeRepository(CustomsDbContext context) : IBoeRepository
             .OrderByDescending(b => b.BoeDate)
             .ToListAsync(ct)
             .ContinueWith(t => (IReadOnlyList<BillOfEntry>)t.Result, ct);
+
+    public async Task<IReadOnlyList<BillOfEntry>> GetAssessedBetweenAsync(
+        DateOnly from, DateOnly to, CancellationToken ct = default)
+    {
+        return await context.BillsOfEntry
+            .AsSplitQuery()
+            .Include(b => b.Lines)
+                .ThenInclude(l => l.AssessedDutyLines)
+            .Where(b => b.BoeDate >= from && b.BoeDate <= to)
+            .OrderBy(b => b.BoeDate)
+            .ToListAsync(ct);
+    }
 
     public async Task AddAsync(BillOfEntry boe, CancellationToken ct = default)
         => await context.BillsOfEntry.AddAsync(boe, ct);

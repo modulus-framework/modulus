@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Security.Claims;
 
 namespace Modulus.Identity;
@@ -10,6 +11,15 @@ using Microsoft.Extensions.DependencyInjection;
 using Modulus.Identity.Abstractions;
 using OpenIddict.Abstractions;
 using OpenIddict.Server.AspNetCore;
+
+/// <summary>
+/// Minimal OpenIddict token endpoint supporting password and refresh flows.
+/// The password grant is credential-checked via
+/// <see cref="IPasswordGrantCredentialValidator"/>; if no validator is wired
+/// the deny-default <see cref="NullPasswordGrantCredentialValidator"/> rejects
+/// every request, so tokens are never minted without a real credential check.
+/// Override or extend for custom grant types.
+/// </summary>
 
 /// <summary>
 /// Minimal OpenIddict token endpoint supporting password and refresh flows.
@@ -134,8 +144,13 @@ public class ModulusTokenController(
                 }),
                 OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
 
-        var userManager = HttpContext.RequestServices
-            .GetService<UserManager<ModulusUser>>();
+        // Resolve the UserManager for the concrete user type registered by
+        // AddModulusIdentity<TUser>.  GetService<UserManager<ModulusUser>>
+        // returns null for derived types (e.g. AppUser : ModulusUser), which
+        // caused the controller to silently skip ALL security checks
+        // (IsActive, roles, security stamp, lockout).
+        var rawUserManager = ResolveUserManagerRaw();
+        var userManager = rawUserManager as UserManager<ModulusUser>;
 
         ClaimsPrincipal principal;
 
@@ -162,12 +177,26 @@ public class ModulusTokenController(
                     OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
             }
 
+            // Lock-out check: a locked-out user must not be able to refresh.
+            // This mirrors the sign-in flow's lock-out policy.
+            if (await userManager.IsLockedOutAsync(user))
+            {
+                return Forbid(
+                    new AuthenticationProperties(new Dictionary<string, string?>
+                    {
+                        [OpenIddictServerAspNetCoreConstants.Properties.Error] = OpenIddictConstants.Errors.InvalidGrant,
+                        [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] =
+                            "The user account is currently locked out.",
+                    }),
+                    OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+            }
+
             // Rebuild the dynamic claims (name/email/roles) from the CURRENT
             // store state: minting from the refresh principal's frozen claims
             // would keep a role change, demotion, or profile edit invisible
             // until the user logs in again. The subject travels with the
             // refresh token itself, so only volatile claims are refreshed.
-            principal = await BuildPrincipalAsync(user, userManager);
+            principal = await BuildPrincipalAsync(user, rawUserManager!);
             principal.SetScopes(info.Principal.GetScopes());
 
             // Security-stamp check: if the stamp stored in the refresh token
@@ -217,9 +246,19 @@ public class ModulusTokenController(
         return SignIn(principal, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
     }
 
+    /// <summary>
+    /// Builds a fresh ClaimsPrincipal from the current store state. Uses
+    /// reflection to invoke UserManager methods on the concrete user type
+    /// so derived <c>TUser</c> types are handled correctly — a
+    /// <c>UserManager&lt;DerivedUser&gt;</c> is NOT covariant with
+    /// <c>UserManager&lt;ModulusUser&gt;</c>, so casting fails at runtime.
+    /// </summary>
     private static async Task<ClaimsPrincipal> BuildPrincipalAsync(
-        ModulusUser user, UserManager<ModulusUser> userManager)
+        ModulusUser user, object userManager)
     {
+        var userType = userManager.GetType().GetGenericArguments()[0];
+        var userManagerType = typeof(UserManager<>).MakeGenericType(userType);
+
         var identity = new ClaimsIdentity(
             authenticationType: "OpenIddict",
             nameType: OpenIddictConstants.Claims.Name,
@@ -230,17 +269,51 @@ public class ModulusTokenController(
             identity.AddClaim(new Claim(OpenIddictConstants.Claims.Name, user.UserName));
         if (!string.IsNullOrWhiteSpace(user.Email))
             identity.AddClaim(new Claim(OpenIddictConstants.Claims.Email, user.Email));
-        foreach (var role in await userManager.GetRolesAsync(user))
+
+        var getRoles = userManagerType.GetMethod(nameof(UserManager<ModulusUser>.GetRolesAsync))
+            ?? throw new InvalidOperationException("GetRolesAsync method not found on UserManager.");
+        var roles = (IReadOnlyList<string>)await (Task<IReadOnlyList<string>>)getRoles.Invoke(userManager, [user])!;
+
+        foreach (var role in roles)
             identity.AddClaim(new Claim(OpenIddictConstants.Claims.Role, role));
 
-        // Embed the current security stamp so the next refresh can detect
-        // concurrent password changes. Without this, every refresh after
-        // the initial login would carry a stale stamp and be rejected.
-        var stamp = await userManager.GetSecurityStampAsync(user);
+        var getStamp = userManagerType.GetMethod(nameof(UserManager<ModulusUser>.GetSecurityStampAsync))
+            ?? throw new InvalidOperationException("GetSecurityStampAsync method not found on UserManager.");
+        var stamp = (string?)await (Task<string>)getStamp.Invoke(userManager, [user])!;
+
         if (!string.IsNullOrWhiteSpace(stamp))
             identity.AddClaim(new Claim("security_stamp", stamp));
 
         return new ClaimsPrincipal(identity);
+    }
+
+    /// <summary>
+    /// Resolves <c>UserManager&lt;TConcreteUser&gt;</c> from DI using the
+    /// actual user type registered by <c>AddModulusIdentity&lt;TUser&gt;</c>.
+    /// </summary>
+    /// <remarks>
+    /// The previous code resolved <c>UserManager&lt;ModulusUser&gt;</c>, which
+    /// returns <c>null</c> when a derived <c>TUser</c> is registered — causing
+    /// the refresh handler to silently skip the IsActive check, role/claim
+    /// rebuild, security-stamp verification, and lock-out validation.  This
+    /// method resolves the correct concrete <c>UserManager&lt;T&gt;</c> using
+    /// <see cref="ModulusUserType.Value"/> at runtime.
+    /// </remarks>
+    private UserManager<ModulusUser>? ResolveUserManager()
+        => ResolveUserManagerRaw() as UserManager<ModulusUser>;
+
+    /// <summary>
+    /// Resolves the raw <c>UserManager&lt;TConcreteUser&gt;</c> object from
+    /// DI without casting — used by <see cref="BuildPrincipalAsync"/> which
+    /// invokes methods via reflection (to support derived user types where
+    /// the concrete <c>UserManager&lt;DerivedUser&gt;</c> is NOT covariant
+    /// with <c>UserManager&lt;ModulusUser&gt;</c>).
+    /// </summary>
+    private object? ResolveUserManagerRaw()
+    {
+        var userType = ModulusUserType.Value;
+        var userManagerType = typeof(UserManager<>).MakeGenericType(userType);
+        return HttpContext.RequestServices.GetService(userManagerType);
     }
 }
 

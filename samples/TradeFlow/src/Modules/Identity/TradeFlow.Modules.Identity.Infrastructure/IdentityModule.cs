@@ -18,6 +18,7 @@ using TradeFlow.Modules.Identity.Infrastructure.OpenIddict;
 using TradeFlow.Modules.Identity.Infrastructure.Repositories;
 using TradeFlow.Modules.Identity.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -75,7 +76,13 @@ public sealed class IdentityModule : ModulusModule
                     npgsqlOptions => npgsqlOptions
                         .MigrationsHistoryTable(HistoryRepository.DefaultTableName, Schemas.Users)
                         .UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery))
-                .UseSnakeCaseNamingConvention());
+                .UseSnakeCaseNamingConvention()
+                // OpenIddict's model conventions (UseOpenIddict) resolve differently at
+                // design time (dotnet-ef, no OpenIddict core registered) than at runtime,
+                // so the runtime model legitimately diverges from the design-time
+                // snapshot. Downgrade EF's pending-changes migration guard to a log for
+                // this context only — the schema itself is migration-managed.
+                .ConfigureWarnings(w => w.Log(RelationalEventId.PendingModelChangesWarning)));
 
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<IdentityDbContext>());
 

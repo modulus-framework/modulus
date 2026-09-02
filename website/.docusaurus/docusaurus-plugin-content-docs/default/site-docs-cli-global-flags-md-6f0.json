@@ -17,8 +17,8 @@
   },
   "sidebar": "cliSidebar",
   "previous": {
-    "title": "modulus doctor",
-    "permalink": "/docs/cli/doctor"
+    "title": "modulus update",
+    "permalink": "/docs/cli/update"
   },
   "next": {
     "title": "Templates",

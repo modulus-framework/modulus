@@ -117,23 +117,4 @@ internal static class SolutionHelper
         }
         return null;
     }
-
-    /// <summary>
-    /// Runs a dotnet CLI command and streams output to the console.
-    /// </summary>
-    public static int RunDotNet(string args, string? workingDir = null)
-    {
-        var psi = new ProcessStartInfo("dotnet", args)
-        {
-            UseShellExecute = false,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            WorkingDirectory = workingDir ?? Environment.CurrentDirectory,
-        };
-
-        using var proc = Process.Start(psi)
-            ?? throw new InvalidOperationException("Failed to start dotnet process.");
-        proc.WaitForExit();
-        return proc.ExitCode;
-    }
 }

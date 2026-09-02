@@ -15,6 +15,8 @@ public interface IDutyRateRepository
 {
     /// <summary>Effective, approved rates for all components of a HS code on a date (BR-DS-01).</summary>
     Task<IReadOnlyDictionary<DutyComponent, DutyRateRow>> GetEffectiveRatesAsync(string hsCode, DateOnly date, CancellationToken ct = default);
+    /// <summary>Effective, approved rates for many HS codes on a date, keyed by HS code (bulk lookup).</summary>
+    Task<IReadOnlyDictionary<string, IReadOnlyDictionary<DutyComponent, DutyRateRow>>> GetEffectiveRatesForAsync(IReadOnlyList<string> hsCodes, DateOnly date, CancellationToken ct = default);
     Task<DutyRate?> GetByIdAsync(Guid id, CancellationToken ct = default);
     Task<IReadOnlyList<DutyRate>> GetByHsCodeAsync(string hsCode, CancellationToken ct = default);
     Task AddAsync(DutyRate rate, CancellationToken ct = default);
@@ -25,6 +27,8 @@ public interface ISroBenefitRepository
 {
     /// <summary>Active SRO benefits matching the HS prefix for a tenant (BR-DS-05).</summary>
     Task<IReadOnlyList<SroBenefitApplication>> GetActiveForAsync(string hsCode, Guid tenantId, DateOnly date, CancellationToken ct = default);
+    /// <summary>All SRO benefits effective on a date (bulk callers prefix-match per HS code).</summary>
+    Task<IReadOnlyList<SroBenefit>> GetActiveOnAsync(DateOnly date, CancellationToken ct = default);
     Task<IReadOnlyList<SroBenefit>> GetAllAsync(CancellationToken ct = default);
     Task AddAsync(SroBenefit benefit, CancellationToken ct = default);
 }
@@ -34,6 +38,8 @@ public interface IBoeRepository
     Task<BillOfEntry?> GetByIdAsync(Guid id, CancellationToken ct = default);
     Task<IReadOnlyList<BillOfEntry>> GetByFileAsync(Guid fileId, CancellationToken ct = default);
     Task<IReadOnlyList<BillOfEntry>> GetAllAsync(CancellationToken ct = default);
+    /// <summary>BoEs filed within the date range, with lines + assessed duties loaded (duty analysis).</summary>
+    Task<IReadOnlyList<BillOfEntry>> GetAssessedBetweenAsync(DateOnly from, DateOnly to, CancellationToken ct = default);
     Task AddAsync(BillOfEntry boe, CancellationToken ct = default);
     Task SaveAsync(BillOfEntry boe, CancellationToken ct = default);
 }

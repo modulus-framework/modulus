@@ -135,6 +135,7 @@ public static class SagaServiceCollectionExtensions
                 new RebusOutboxDispatcher(
                     sp.GetRequiredService<IBus>(),
                     sp.GetRequiredService<IIntegrationEventRegistry>(),
+                    sp.GetRequiredService<IMessageSerializer>(),
                     sp.GetService<ILogger<RebusOutboxDispatcher>>()));
         }
 

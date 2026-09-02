@@ -24,7 +24,9 @@ public class TemplateRenderingTests
         act.Should().NotThrow();
 
         var output = _engine.Render("app/Program", model);
-        output.Should().Contain("using MyApp.Api.Modules");
+        output.Should().Contain("AddModulus(builder.Configuration, modules =>");
+        output.Should().Contain("modules.AddModule<CatalogModule>()");
+        output.Should().NotContain("HostModule");
         output.Should().NotContain("{{");
     }
 
@@ -90,7 +92,9 @@ public class TemplateRenderingTests
         output.Should().Contain("class CreateProductEndpoint");
         output.Should().Contain("class UpdateProductEndpoint");
         output.Should().Contain("class DeleteProductEndpoint");
-        output.Should().Contain("EndpointBase");
+        output.Should().Contain("EndpointWithoutRequest<IReadOnlyList<ProductDto>>");
+        output.Should().Contain("Endpoint<GetProductByIdRequest, ProductDto>");
+        output.Should().Contain("Endpoint<CreateProductRequest, Guid>");
         output.Should().NotContain("{{");
     }
 }

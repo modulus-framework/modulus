@@ -1,82 +1,97 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Modulus.Core;
 using Modulus.Core.Abstractions;
-using Modulus.Core.Abstractions.Exceptions;
 using Xunit;
 using FluentAssertions;
 
 namespace Modulus.Core.Tests;
 
+/// <summary>
+/// Spec for the module loader: descriptors follow registration order,
+/// initialization runs in that order, shutdown runs in reverse, and duplicate
+/// module types are rejected.
+/// </summary>
 [Trait("Category", "Unit")]
 public sealed class ModuleLoaderTests
 {
-    private readonly ModuleLoader _loader = new();
-
     [Fact]
-    public void BuildGraph_NoDependencies_ReturnsSingleDescriptor()
+    public void Descriptors_FollowRegistrationOrder()
     {
-        var modules = new IModule[] { new AlphaModule() };
-        var graph = _loader.BuildGraph(modules);
-        graph.Should().HaveCount(1);
-        graph[0].Name.Should().Be(nameof(AlphaModule));
-        graph[0].InitOrder.Should().Be(0);
+        var loader = new ModuleLoader([new BetaModule(), new AlphaModule()]);
+
+        var descriptors = loader.GetDescriptors();
+
+        descriptors.Should().HaveCount(2);
+        descriptors[0].ModuleType.Should().Be(typeof(BetaModule));
+        descriptors[0].InitOrder.Should().Be(0);
+        descriptors[1].ModuleType.Should().Be(typeof(AlphaModule));
+        descriptors[1].InitOrder.Should().Be(1);
     }
 
     [Fact]
-    public void BuildGraph_WithDependency_OrdersCorrectly()
+    public async Task InitializeAllAsync_RunsInRegistrationOrder()
     {
-        // BetaModule depends on AlphaModule
-        var modules = new IModule[] { new BetaModule(), new AlphaModule() };
-        var graph = _loader.BuildGraph(modules);
-        var alphaIdx = graph.ToList().FindIndex(d => d.ModuleType == typeof(AlphaModule));
-        var betaIdx = graph.ToList().FindIndex(d => d.ModuleType == typeof(BetaModule));
-        alphaIdx.Should().BeLessThan(betaIdx);
+        var log = new List<string>();
+        var alpha = new AlphaModule { InitLog = log };
+        var beta = new BetaModule { InitLog = log };
+        var loader = new ModuleLoader([alpha, beta]);
+
+        var services = new ServiceCollection();
+        services.AddSingleton<IConfiguration>(new ConfigurationBuilder().Build());
+        services.AddLogging();
+        services.AddSingleton(alpha);
+        services.AddSingleton(beta);
+        await using var sp = services.BuildServiceProvider();
+
+        await loader.InitializeAllAsync(sp);
+
+        log.Should().Equal(["AlphaModule", "BetaModule"]);
     }
 
     [Fact]
-    public void BuildGraph_CircularDependency_Throws()
+    public async Task ShutdownAllAsync_RunsInReverseRegistrationOrder()
     {
-        var modules = new IModule[] { new CyclicA(), new CyclicB() };
-        var act = () => _loader.BuildGraph(modules);
-        act.Should().Throw<CircularDependencyException>();
+        var log = new List<string>();
+        var alpha = new AlphaModule { ShutdownLog = log };
+        var beta = new BetaModule { ShutdownLog = log };
+        var loader = new ModuleLoader([alpha, beta]);
+
+        await loader.ShutdownAllAsync();
+
+        log.Should().Equal(["BetaModule", "AlphaModule"]);
     }
 
     [Fact]
-    public void BuildGraph_MissingDependency_Throws()
+    public void DuplicateModuleType_Throws()
     {
-        var modules = new IModule[] { new BetaModule() }; // AlphaModule missing
-        var act = () => _loader.BuildGraph(modules);
-        act.Should().Throw<ModuleNotFoundException>();
+        var act = () => new ModuleLoader([new AlphaModule(), new AlphaModule()]);
+        act.Should().Throw<InvalidOperationException>()
+           .WithMessage($"*{typeof(AlphaModule).FullName}*registered more than once*");
     }
 
-    // ── Test helpers ─────────────────────────────────────────────
+    // ── Test modules ──────────────────────────────────────────────
+
     private class AlphaModule : IModule
     {
-        public Type[] DependsOn => [];
+        public List<string>? InitLog { get; set; }
+        public List<string>? ShutdownLog { get; set; }
+
         public void ConfigureServices(IServiceCollection s, IConfiguration c) { }
-        public Task InitializeAsync(ModuleContext ctx, CancellationToken ct) => Task.CompletedTask;
-        public Task ShutdownAsync(CancellationToken ct) => Task.CompletedTask;
+
+        public Task InitializeAsync(ModuleContext ctx, CancellationToken ct)
+        {
+            InitLog?.Add(GetType().Name);
+            return Task.CompletedTask;
+        }
+
+        public Task ShutdownAsync(CancellationToken ct)
+        {
+            ShutdownLog?.Add(GetType().Name);
+            return Task.CompletedTask;
+        }
     }
-    private class BetaModule : IModule
-    {
-        public Type[] DependsOn => [typeof(AlphaModule)];
-        public void ConfigureServices(IServiceCollection s, IConfiguration c) { }
-        public Task InitializeAsync(ModuleContext ctx, CancellationToken ct) => Task.CompletedTask;
-        public Task ShutdownAsync(CancellationToken ct) => Task.CompletedTask;
-    }
-    private class CyclicA : IModule
-    {
-        public Type[] DependsOn => [typeof(CyclicB)];
-        public void ConfigureServices(IServiceCollection s, IConfiguration c) { }
-        public Task InitializeAsync(ModuleContext ctx, CancellationToken ct) => Task.CompletedTask;
-        public Task ShutdownAsync(CancellationToken ct) => Task.CompletedTask;
-    }
-    private class CyclicB : IModule
-    {
-        public Type[] DependsOn => [typeof(CyclicA)];
-        public void ConfigureServices(IServiceCollection s, IConfiguration c) { }
-        public Task InitializeAsync(ModuleContext ctx, CancellationToken ct) => Task.CompletedTask;
-        public Task ShutdownAsync(CancellationToken ct) => Task.CompletedTask;
-    }
+
+    private class BetaModule : AlphaModule { }
 }

@@ -2,9 +2,23 @@ using System.Reflection;
 using TradeFlow.Api;
 using TradeFlow.Api.Extensions;
 using TradeFlow.Api.Middleware;
-using TradeFlow.Api.Modules;
 using TradeFlow.Api.OpenTelemetry;
 using TradeFlow.Modules.Identity.Infrastructure;
+using TradeFlow.Modules.Configuration.Infrastructure;
+using TradeFlow.Modules.Tenants.Infrastructure;
+using TradeFlow.Modules.Notifications.Infrastructure;
+using TradeFlow.Modules.Vendors.Infrastructure;
+using TradeFlow.Modules.OrgStructure.Infrastructure;
+using TradeFlow.Modules.Budgeting.Infrastructure;
+using TradeFlow.Modules.Customs.Infrastructure;
+using TradeFlow.Modules.Procurement.Infrastructure;
+using TradeFlow.Modules.TradeFinance.Infrastructure;
+using TradeFlow.Modules.Import.Infrastructure;
+using TradeFlow.Modules.Inventory.Infrastructure;
+using TradeFlow.Modules.Costing.Infrastructure;
+using TradeFlow.Modules.Finance.Infrastructure;
+using TradeFlow.Modules.VirtualFileExplorer.Infrastructure;
+using TradeFlow.Modules.WorkflowEngine.Infrastructure;
 using TradeFlow.Shared.Application;
 using TradeFlow.Shared.Infrastructure;
 using TradeFlow.Shared.Infrastructure.Authentication;
@@ -463,13 +477,30 @@ if (!string.IsNullOrWhiteSpace(oidcIssuerUrl))
 }
 
 // ============================================
-// STEP 7: Module Infrastructure Registration
-// (all 13 modules — discovered via the module graph below)
+// STEP 7: Module Registration
 // ============================================
 
-// Modulus module system: TradeFlowHostModule's [DependsOn] list declares every
-// business module, so this single call discovers + configures the full module graph.
-builder.Services.AddModulus<TradeFlowHostModule>(builder.Configuration);
+// Modulus module system: every business module is registered explicitly — this
+// list is the single composition root. Registration order is authoritative
+// (PreConfigure → Configure → PostConfigure, then InitializeAsync, run in this
+// order on startup; ShutdownAsync runs in reverse).
+builder.Services.AddModulus(builder.Configuration, modules => modules
+    .AddModule<IdentityModule>()
+    .AddModule<ConfigurationModule>()
+    .AddModule<TenantsModule>()
+    .AddModule<NotificationsModule>()
+    .AddModule<VendorsModule>()
+    .AddModule<OrgStructureModule>()
+    .AddModule<BudgetsModule>()
+    .AddModule<CustomsModule>()
+    .AddModule<ProcurementModule>()
+    .AddModule<TradeFinanceModule>()
+    .AddModule<ImportModule>()
+    .AddModule<InventoryModule>()
+    .AddModule<CostingModule>()
+    .AddModule<FinanceModule>()
+    .AddModule<VirtualFileExplorerModule>()
+    .AddModule<WorkflowEngineModule>());
 
 WebApplication app = builder.Build();
 

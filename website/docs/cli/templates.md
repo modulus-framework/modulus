@@ -13,7 +13,6 @@ cli/Templates/
 ├── app/                          # App scaffolding
 │   ├── api.csproj.sbn
 │   ├── Program.sbn
-│   ├── HostModule.sbn
 │   ├── appsettings.json.sbn
 │   └── ...
 ├── module/                       # 4-layer module

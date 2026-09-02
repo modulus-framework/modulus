@@ -30,6 +30,7 @@ public static class IdempotencyExtensions
             configuration, IdempotencyOptions.SectionName, configure);
 
         services.TryAddSingleton<IIdempotencyStore, InMemoryIdempotencyStore>();
+        services.AddHostedService<IdempotencyStoreSweeper>();
         return services;
     }
 

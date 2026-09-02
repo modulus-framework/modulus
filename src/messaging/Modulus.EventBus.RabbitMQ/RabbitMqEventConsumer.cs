@@ -1,7 +1,6 @@
 namespace Modulus.EventBus.RabbitMQ;
 
 using System.Text;
-using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -22,6 +21,7 @@ internal sealed class RabbitMqEventConsumer : BackgroundService
     private readonly ILogger<RabbitMqEventConsumer> _logger;
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly IIntegrationEventRegistry _registry;
+    private readonly IMessageSerializer _serializer;
     private IConnection? _connection;
     private IChannel? _channel;
 
@@ -29,12 +29,14 @@ internal sealed class RabbitMqEventConsumer : BackgroundService
         IOptions<RabbitMqOptions> options,
         ILogger<RabbitMqEventConsumer> logger,
         IServiceScopeFactory scopeFactory,
-        IIntegrationEventRegistry registry)
+        IIntegrationEventRegistry registry,
+        IMessageSerializer serializer)
     {
         _opts = options.Value;
         _logger = logger;
         _scopeFactory = scopeFactory;
         _registry = registry;
+        _serializer = serializer;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -140,12 +142,20 @@ internal sealed class RabbitMqEventConsumer : BackgroundService
         try
         {
             var json = Encoding.UTF8.GetString(ea.Body.Span);
-            var envelope = JsonSerializer.Deserialize<IntegrationEventEnvelope>(json);
+            // Deserialise with the shared IMessageSerializer so the envelope
+            // is read with the same options the producer wrote it with
+            // (camelCase + string enums). Raw JsonSerializer defaults are
+            // case-sensitive and would yield an all-defaults envelope.
+            var envelope = (IntegrationEventEnvelope?)_serializer
+                .Deserialize(json, typeof(IntegrationEventEnvelope));
 
             if (envelope is null)
             {
-                _logger.LogWarning("Received null envelope from RabbitMQ; acking");
-                await channel.BasicAckAsync(ea.DeliveryTag, multiple: false);
+                // Malformed / undeserialisable message — poison. Dead-letter
+                // (requeue:false) rather than acking so it is inspectable.
+                _logger.LogError(
+                    "Failed to deserialise RabbitMQ envelope; nacking to DLX");
+                await channel.BasicNackAsync(ea.DeliveryTag, multiple: false, requeue: false);
                 return;
             }
 

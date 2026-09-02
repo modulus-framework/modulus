@@ -1,7 +1,11 @@
 # Modulus Framework
 
+<p align="center">
+  <img src="logo.png" alt="Modulus logo" width="160" />
+</p>
+
 An enterprise-grade **modular monolith** framework for **.NET 10**, built with an
-ABP-style `[DependsOn]` module system, CLI scaffolding, a transactional outbox/inbox,
+explicit-registration module system, CLI scaffolding, a transactional outbox/inbox,
 and first-class multi-tenancy.
 
 ## Overview
@@ -76,7 +80,7 @@ generates complete solutions, modules, commands, queries, and CRUD code:
 |---------|-------------|
 | `modulus app <name>` | Creates a modular-monolith solution (Host + Shared kernel + example module + tests) |
 | `modulus module <name>` | Creates a blank 4-layer business module |
-| `modulus add-module <name>` | Adds a module to an existing app + wires `[DependsOn]` + `ProjectReference` |
+| `modulus add-module <name>` | Adds a module to an existing app + wires Program.cs registration + `ProjectReference` |
 | `modulus generate-crud <Entity> --module M` | Generates entity, repo, DTOs, command/query handlers, controller |
 | `modulus generate-command <Name> --module M` | Generates a single command + handler |
 | `modulus generate-query <Name> --module M` | Generates a single query + handler |
@@ -100,13 +104,13 @@ Templates are embedded Scriban resources under `cli/Templates/`.
 
 ## Module system
 
-Modules implement `IModule` or inherit from `ModulusModule`. Dependencies are
-declared via `[DependsOn(typeof(OtherModule))]` attributes (ABP-style).
-`AddModulus<TStartupModule>(configuration)` auto-discovers the full module graph
-via topological sort.
+Modules implement `IModule` or inherit from `ModulusModule` and are registered
+**explicitly** in `Program.cs`. `AddModulus(configuration, configure)` invokes a
+`ModulusBuilder` callback where each module is added in order — **registration
+order is authoritative** for every lifecycle phase (no dependency-attribute
+discovery, no startup module).
 
 ```csharp
-[DependsOn(typeof(IdentityModule), typeof(DataModule))]
 public sealed class ShopModule : ModulusModule
 {
     public override void ConfigureServices(IServiceCollection services, IConfiguration configuration)
@@ -118,13 +122,17 @@ public sealed class ShopModule : ModulusModule
 
 ```csharp
 // Program.cs
-builder.Services.AddModulus<AppHostModule>(builder.Configuration);
+builder.Services.AddModulus(builder.Configuration, modules => modules
+    .AddModule<IdentityModule>()
+    .AddModule<DataModule>()
+    .AddModule<ShopModule>());
 ```
 
 ## Features
 
-- **Modular architecture** — ABP-style `[DependsOn]` module system with
-  topological-sort discovery and `AddModulus<TStartupModule>()` wiring.
+- **Modular architecture** — explicit-registration module system where
+  `AddModulus(configuration, modules => modules.AddModule<T>()...)` wires the
+  app and registration order drives every lifecycle phase.
 - **CQRS mediator** — `ICommand<TResult>` / `IQuery<TResult>` with open-generic
   pipeline behaviors (validation, logging, transaction). No MediatR dependency.
 - **Domain-Driven Design** — `AggregateRoot<TId>` with domain-event collection,

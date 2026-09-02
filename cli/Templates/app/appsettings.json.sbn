@@ -9,59 +9,59 @@
       "Microsoft.EntityFrameworkCore": "Warning"
     }
   },
-  "Correlation": {
+{{ if enable_correlation }}  "Correlation": {
     "HeaderName": "X-Correlation-ID",
     "IncludeInResponse": true,
     "UseTraceIdWhenMissing": true
   },
-  "Idempotency": {
+{{ end }}{{ if enable_idempotency }}  "Idempotency": {
     "HeaderName": "Idempotency-Key",
     "Methods": [ "POST", "PATCH" ],
     "RequireKey": false,
     "ValidateRequestMatch": true,
     "RetentionSeconds": 86400
   },
-  "OpenApi": {
+{{ end }}  "OpenApi": {
     "Title": "{{ app_name }} API",
     "Version": "v1",
     "IncludeBearerSecurity": true
   },
-  "ApiVersioning": {
+{{ if enable_api_versioning }}  "ApiVersioning": {
     "DefaultVersion": "1.0",
     "AssumeDefaultVersionWhenUnspecified": true,
     "ReportApiVersions": true
   },
-  "RateLimiting": {
+{{ end }}{{ if enable_rate_limiting }}  "RateLimiting": {
     "Enabled": true,
     "PermitLimit": 100,
     "WindowSeconds": 60,
     "QueueLimit": 0,
     "Partition": "User"
   },
-  "Cors": {
+{{ end }}{{ if enable_cors }}  "Cors": {
     "AllowedOrigins": [],
     "AllowedMethods": [],
     "AllowedHeaders": [],
     "AllowCredentials": false
   },
-  "SecurityHeaders": {
+{{ end }}{{ if enable_security_headers }}  "SecurityHeaders": {
     "ContentTypeOptions": true,
     "FrameOptions": "DENY",
     "ReferrerPolicy": "strict-origin-when-cross-origin",
     "EnableHsts": true
   },
-  "FeatureManagement": {
+{{ end }}  "FeatureManagement": {
     "SampleFeature": false
   },
-  "SecretsGuard": {
+{{ if enable_secrets_guard }}  "SecretsGuard": {
     "Enabled": true,
     "FailOnViolation": true
   },
-  "PersonalDataProtection": {
+{{ end }}{{ if enable_personal_data_protection }}  "PersonalDataProtection": {
     "Enabled": true,
     "Purpose": "Modulus.PersonalData.Protector.v1"
   },
-{{ if auth == "openiddict" }}  "Identity": {
+{{ end }}{{ if auth == "openiddict" }}  "Identity": {
     "UseDevelopmentCertificates": false,
     "AccessTokenLifetimeMin": 15,
     "RefreshTokenLifetimeDays": 7

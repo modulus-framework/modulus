@@ -1,4 +1,23 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
-  <rect width="100" height="100" rx="16" fill="#1a73e8"/>
-  <text x="50" y="68" font-family="system-ui, -apple-system, sans-serif" font-size="48" font-weight="bold" fill="white" text-anchor="middle">M</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" fill="none" role="img" aria-label="Modulus logo">
+  <defs>
+    <linearGradient id="tile" x1="14" y1="8" x2="114" y2="120" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#6366F1"/>
+      <stop offset="0.55" stop-color="#4F46E5"/>
+      <stop offset="1" stop-color="#0EA5E9"/>
+    </linearGradient>
+    <radialGradient id="sheen" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(30 22) rotate(58) scale(78)">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.22"/>
+      <stop offset="0.6" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="128" height="128" rx="28" fill="url(#tile)"/>
+  <rect width="128" height="128" rx="28" fill="url(#sheen)"/>
+  <path d="M30 90V40L64 72L98 40V90" stroke="#FFFFFF" stroke-width="13" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <g fill="#A5F3FC">
+    <circle cx="30" cy="90" r="5"/>
+    <circle cx="30" cy="40" r="5"/>
+    <circle cx="64" cy="72" r="5"/>
+    <circle cx="98" cy="40" r="5"/>
+    <circle cx="98" cy="90" r="5"/>
+  </g>
 </svg>

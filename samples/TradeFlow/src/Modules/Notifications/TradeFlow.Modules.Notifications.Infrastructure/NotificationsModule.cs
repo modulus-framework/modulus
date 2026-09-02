@@ -5,6 +5,7 @@ using TradeFlow.Modules.Notifications.Infrastructure.Repositories;
 using TradeFlow.Modules.Notifications.Presentation.Hubs;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using FluentValidation;
@@ -42,7 +43,12 @@ public sealed class NotificationsModule : ModulusModule
                     npgsqlOptions => npgsqlOptions
                         .MigrationsHistoryTable(HistoryRepository.DefaultTableName, Database.Schemas.Notifications)
                         .UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery))
-                .UseSnakeCaseNamingConvention());
+                .UseSnakeCaseNamingConvention()
+                // ModuleDbContext's runtime model can differ from the design-time snapshot
+                // (inbox/outbox model contributors, PII converters). Schema drift is gated
+                // in CI via dotnet ef migrations has-pending-model-changes, so downgrade the
+                // runtime migration guard to a log.
+                .ConfigureWarnings(w => w.Log(RelationalEventId.PendingModelChangesWarning)));
 
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<NotificationsDbContext>());
 

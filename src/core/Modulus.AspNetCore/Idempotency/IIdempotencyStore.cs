@@ -27,6 +27,16 @@ public interface IIdempotencyStore
 
     /// <summary>Releases a claimed key so the request can be safely retried.</summary>
     Task AbandonAsync(string key, CancellationToken ct);
+
+    /// <summary>
+    /// Evicts expired entries from the store. Called periodically by the
+    /// background sweeper to bound memory consumption. Implementations that
+    /// use external persistence (Redis, EF Core) may no-op since TTL is
+    /// managed at the store level. The <paramref name="cutoff"/> timestamp
+    /// identifies entries whose claim or completion has expired.
+    /// </summary>
+    Task PurgeExpiredAsync(DateTimeOffset cutoff, CancellationToken ct)
+        => Task.CompletedTask; // default no-op for external stores
 }
 
 /// <summary>Outcome of an <see cref="IIdempotencyStore.TryBeginAsync"/> claim.</summary>

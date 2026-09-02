@@ -23,6 +23,7 @@ public sealed class ModuleDescriptor
 {
     public required string Name { get; init; }
     public required Type ModuleType { get; init; }
-    public required Type[] Dependencies { get; init; }
+
+    /// <summary>Zero-based position in registration order; also the init order.</summary>
     public required int InitOrder { get; init; }
 }

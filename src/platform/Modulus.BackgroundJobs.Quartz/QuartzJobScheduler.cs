@@ -1,5 +1,6 @@
 using Quartz;
 using Modulus.BackgroundJobs;
+using Modulus.Core.Abstractions;
 
 namespace Modulus.BackgroundJobs.Quartz;
 
@@ -8,7 +9,9 @@ namespace Modulus.BackgroundJobs.Quartz;
 /// Jobs are persisted to a relational database and executed reliably across
 /// multiple replicas with built-in clustering, retry, and failure handling.
 /// </summary>
-public sealed class QuartzJobScheduler(ISchedulerFactory schedulerFactory) : IJobScheduler
+public sealed class QuartzJobScheduler(
+    ISchedulerFactory schedulerFactory,
+    IServiceProvider serviceProvider) : IJobScheduler
 {
     private IScheduler? _scheduler;
 
@@ -26,7 +29,12 @@ public sealed class QuartzJobScheduler(ISchedulerFactory schedulerFactory) : IJo
     {
         var scheduler = await GetSchedulerAsync();
         var jobName = GetJobName<TJob>();
-        var jobDataMap = new JobDataMap { ["args"] = args! };
+        var jobDataMap = new JobDataMap
+        {
+            ["args"] = args!,
+            ["tenantId"] = serviceProvider.GetService<ICurrentTenant>()?.TenantId?.ToString("N") ?? string.Empty,
+            ["correlationId"] = serviceProvider.GetService<ICorrelationContext>()?.CorrelationId ?? string.Empty,
+        };
 
         var jobDetail = JobBuilder.Create<QuartzJobAdapter<TJob, TArgs>>()
             .WithIdentity(jobName, Guid.NewGuid().ToString())

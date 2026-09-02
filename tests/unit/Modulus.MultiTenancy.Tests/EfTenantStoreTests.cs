@@ -39,7 +39,7 @@ public sealed class EfTenantStoreTests : IDisposable
     {
         using var scope = _provider.CreateScope();
         scope.ServiceProvider.GetRequiredService<ITenantStore>()
-            .Should().BeOfType<EfTenantStore>();
+            .Should().BeOfType<ScopedTenantStoreBridge>();
     }
 
     [Fact]

@@ -56,5 +56,16 @@ public sealed class ModulusIdentityOptions
     /// </summary>
     public bool AllowMultipleExternalProviders { get; set; }
 
+    /// <summary>
+    /// Enables the authorization code flow. Requires the app to implement
+    /// its own <c>connect/authorize</c> endpoint (the framework ships only
+    /// the token endpoint). <b>Off by default</b> — the framework's
+    /// token endpoint cannot handle the <c>authorization_code</c> grant,
+    /// so enabling this without an authorize controller results in
+    /// <c>unsupported_grant_type</c> for code exchanges. Enable when the
+    /// app wires its own authorize endpoint.
+    /// </summary>
+    public bool AllowAuthorizationCodeFlow { get; set; }
+
     public Dictionary<string, ExternalProviderOptions> ExternalProviders { get; set; } = new();
 }

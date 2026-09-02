@@ -28,7 +28,7 @@ modulus/
 
 | Area | Project | Contents |
 |---|---|---|
-| core | `Modulus.Core` | Module system (`IModule`, `ModulusModule`, `[DependsOn]`, `ModuleLoader`, `ModulusBuilder`), DDD primitives (`AggregateRoot`, `ValueObject`), entity markers (`ISoftDelete`, `IHasTenantId`, `IHasOrgUnit`, `IHasOwner`, `IHasWorkflowState`, `[Classified]`), core seams (`ICurrentUser`, `ICurrentTenant`, `ICurrentDataScope`, `IFeatureGate`, `IPermissionRegistry`) with Null defaults, correlation context |
+| core | `Modulus.Core` | Module system (`IModule`, `ModulusModule`, `ModuleLoader`, `ModulusBuilder`), DDD primitives (`AggregateRoot`, `ValueObject`), entity markers (`ISoftDelete`, `IHasTenantId`, `IHasOrgUnit`, `IHasOwner`, `IHasWorkflowState`, `[Classified]`), core seams (`ICurrentUser`, `ICurrentTenant`, `ICurrentDataScope`, `IFeatureGate`, `IPermissionRegistry`) with Null defaults, correlation context |
 | core | `Modulus.AspNetCore` | `AddModulus`/`UseModulus`, REPR endpoints, global exception handler (ProblemDetails), correlation middleware, CORS, security headers, rate limiting, API versioning, OpenAPI transformers, idempotency, feature flags (FeatureManagement wrapper), secrets guard, personal-data protection |
 | data | `Modulus.Data.Abstractions` | `IRepository`, `ISpecification`, `ISearchRepository` |
 | data | `Modulus.EntityFrameworkCore` | `ModuleDbContext` (outbox enqueue, audit stamping, combined soft-delete∧tenant∧org-scope query filters, PII encryption), `EfRepository`, `IEntityContextMap`, migration helpers |
@@ -52,8 +52,9 @@ modulus/
 ## Conventions (enforced or expected)
 
 - **0 warnings**: `TreatWarningsAsErrors` is global; XML docs are required on public APIs.
-- **Modules**: inherit `ModulusModule`, declare deps with `[DependsOn(typeof(...))]`,
-  register via `builder.Services.AddModulus<AppHostModule>(builder.Configuration)`.
+- **Modules**: inherit `ModulusModule`, register explicitly via
+  `builder.Services.AddModulus(builder.Configuration, modules => modules.AddModule<T>()...)`
+  — registration order is authoritative (no `[DependsOn]`, no startup module).
 - **Cross-cutting features** follow the shape documented in `ROADMAP_TIER3.md` →
   "Shared conventions": config-bound `XxxOptions`, `AddModulusXxx`/`UseModulusXxx`,
   swappable services registered with `TryAdd`.

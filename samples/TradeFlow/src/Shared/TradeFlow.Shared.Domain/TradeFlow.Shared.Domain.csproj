@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Cobytelabs.Modulus.Core" Version="1.2.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Core" Version="1.3.0" />
   </ItemGroup>
 
 </Project>

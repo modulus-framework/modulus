@@ -213,7 +213,8 @@ public sealed class CostElement
 {
     public CostElement(Guid id, string name, decimal amountFcy, decimal fxRate, decimal amountBdt,
         CostElementDriver driver, CostElementScope scope, CostTreatment treatment,
-        string sourceDocType, string sourceDocNumber, IReadOnlyList<Guid>? selectedLineIds = null)
+        string sourceDocType, string sourceDocNumber, IReadOnlyList<Guid>? selectedLineIds = null,
+        string? currency = null)
     {
         Id = id;
         Name = name;
@@ -226,6 +227,7 @@ public sealed class CostElement
         SourceDocType = sourceDocType;
         SourceDocNumber = sourceDocNumber;
         SelectedLineIds = selectedLineIds;
+        Currency = currency;
     }
 
     public Guid Id { get; private set; }
@@ -239,6 +241,9 @@ public sealed class CostElement
     public string SourceDocType { get; private set; } = null!;
     public string SourceDocNumber { get; private set; } = null!;
     public IReadOnlyList<Guid>? SelectedLineIds { get; private set; }
+
+    /// <summary>FCY currency code of <see cref="AmountFcy"/>; null (or BDT) when the element is BDT-denominated.</summary>
+    public string? Currency { get; private set; }
 }
 
 /// <summary>Allocated amount of one element onto one line (BR-LCS-07).</summary>

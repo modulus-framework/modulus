@@ -9,7 +9,6 @@ Modules are the fundamental building blocks of a Modulus application. Each modul
 ## Module Declaration
 
 ```csharp
-[DependsOn(typeof(IdentityModule), typeof(DataModule))]
 public sealed class CatalogModule : ModulusModule
 {
     public override void ConfigureServices(IServiceCollection services, IConfiguration config)
@@ -21,16 +20,26 @@ public sealed class CatalogModule : ModulusModule
 }
 ```
 
-## Module Discovery
+## Module Registration
 
-Modules are discovered via the `[DependsOn]` attribute. The framework builds a dependency graph and runs services in topological order:
+Modules are registered **explicitly** in `Program.cs` — there is no
+dependency-attribute discovery and no startup module. `AddModulus(configuration,
+configure)` invokes a `ModulusBuilder` callback where each module is added in
+order. **Registration order is authoritative**: it is the order in which every
+lifecycle phase runs, so register a module *before* the modules that rely on its
+services.
 
 ```csharp
 // Program.cs
-builder.Services.AddModulus<HostModule>(builder.Configuration);
+builder.Services.AddModulus(builder.Configuration, modules => modules
+    .AddModule<IdentityModule>()
+    .AddModule<CatalogModule>()
+    .AddModule<OrdersModule>()
+    .AddModule<InventoryModule>());
 ```
 
-This automatically discovers all modules and configures services in three phases:
+Services are then configured in three phases (each phase runs across **all**
+modules, in registration order):
 
 | Phase | Purpose | Example |
 |-------|---------|---------|
@@ -38,36 +47,26 @@ This automatically discovers all modules and configures services in three phases
 | `ConfigureServices` | Main service registration | Register DbContext, repositories, handlers |
 | `PostConfigureServices` | Finalize after all modules registered | Freeze registries, build consolidated maps |
 
-## Dependency Declaration
-
-```csharp
-// Simple dependency
-[DependsOn(typeof(IdentityModule))]
-
-// Optional dependency (module works without it)
-[DependsOn(typeof(ReportingModule), Optional = true)]
-```
-
 ## Module Lifecycle
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                    Application Startup                       │
 ├─────────────────────────────────────────────────────────────┤
-│  1. Module Discovery (topological sort)                     │
-│  2. PreConfigureServices (per module, in dependency order)  │
-│  3. ConfigureServices (per module, in dependency order)     │
-│  4. PostConfigureServices (per module, in dependency order) │
+│  1. Explicit registration (AddModulus callback)             │
+│  2. PreConfigureServices (per module, in registration order)│
+│  3. ConfigureServices (per module, in registration order)   │
+│  4. PostConfigureServices (per module, in registration order)│
 │  5. Host Build                                              │
-│  6. InitializeAsync (per module, in dependency order)       │
+│  6. InitializeAsync (per module, in registration order)     │
 ├─────────────────────────────────────────────────────────────┤
 │                    Application Shutdown                      │
 ├─────────────────────────────────────────────────────────────┤
-│  7. ShutdownAsync (per module, REVERSE dependency order)    │
+│  7. ShutdownAsync (per module, REVERSE registration order)  │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-## Module Registration
+## Service Registration
 
 Each module registers its own services in `ConfigureServices`:
 
@@ -89,31 +88,11 @@ public override void ConfigureServices(IServiceCollection services, IConfigurati
 }
 ```
 
-## Host Module
-
-The host module declares dependencies on all business modules:
-
-```csharp
-[DependsOn(
-    typeof(CatalogModule),
-    typeof(OrdersModule),
-    typeof(InventoryModule),
-    typeof(IdentityModule)
-)]
-public sealed class HostModule : ModulusModule
-{
-    public override void ConfigureServices(IServiceCollection services, IConfiguration config)
-    {
-        // Host-level configuration only
-    }
-}
-```
-
 ## Cross-Module Communication
 
 Modules communicate through:
 
-1. **Direct dependencies** — `[DependsOn]` + inject services from other modules
+1. **Shared services** — register in an earlier module, consume from a later one (registration order guarantees the provider is configured first)
 2. **Integration events** — Publish events that other modules subscribe to
 3. **Shared kernel** — Common abstractions in `Modulus.Core`
 

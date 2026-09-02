@@ -44,15 +44,15 @@ export default [
   },
   {
     path: '/docs',
-    component: ComponentCreator('/docs', 'da6'),
+    component: ComponentCreator('/docs', '66e'),
     routes: [
       {
         path: '/docs',
-        component: ComponentCreator('/docs', 'fa6'),
+        component: ComponentCreator('/docs', 'adf'),
         routes: [
           {
             path: '/docs',
-            component: ComponentCreator('/docs', 'cd4'),
+            component: ComponentCreator('/docs', '8bf'),
             routes: [
               {
                 path: '/docs/api/',
@@ -217,8 +217,20 @@ export default [
                 sidebar: "cliSidebar"
               },
               {
+                path: '/docs/cli/outdated',
+                component: ComponentCreator('/docs/cli/outdated', '4b2'),
+                exact: true,
+                sidebar: "cliSidebar"
+              },
+              {
                 path: '/docs/cli/templates',
                 component: ComponentCreator('/docs/cli/templates', '071'),
+                exact: true,
+                sidebar: "cliSidebar"
+              },
+              {
+                path: '/docs/cli/update',
+                component: ComponentCreator('/docs/cli/update', '1f8'),
                 exact: true,
                 sidebar: "cliSidebar"
               },
@@ -275,6 +287,11 @@ export default [
                 component: ComponentCreator('/docs/deployment', '9a4'),
                 exact: true,
                 sidebar: "docsSidebar"
+              },
+              {
+                path: '/docs/features',
+                component: ComponentCreator('/docs/features', 'e9b'),
+                exact: true
               },
               {
                 path: '/docs/getting-started/first-module',

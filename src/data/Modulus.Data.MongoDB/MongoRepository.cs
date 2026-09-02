@@ -194,6 +194,31 @@ public abstract class MongoRepository<T, TDoc>(
     public async Task DeleteRangeAsync(ISpecification<T> spec, CancellationToken ct)
     {
         var docFilter = BuildDocumentFilter(spec);
-        await Collection.DeleteManyAsync(docFilter, ct);
+        if (docFilter is not null)
+        {
+            // Server-side delete, always tenant-scoped.
+            await Collection.DeleteManyAsync(
+                Builders<TDoc>.Filter.And(TenantFilter, docFilter), ct);
+            return;
+        }
+
+        if (spec.Filter is null)
+        {
+            // No domain filter: delete everything in the current tenant scope.
+            await Collection.DeleteManyAsync(TenantFilter, ct);
+            return;
+        }
+
+        // Domain filter without a server-side translation: resolve the
+        // matching ids first (ListAsync already applies the tenant filter,
+        // domain filter and ordering), then delete exactly those ids —
+        // again tenant-scoped. Never falls back to an unscoped DeleteMany.
+        var ids = (await ListAsync(spec, ct)).Select(e => e.Id).ToList();
+        if (ids.Count == 0)
+            return;
+
+        var idFilter = Builders<TDoc>.Filter.In("_id", ids);
+        await Collection.DeleteManyAsync(
+            MongoTenantFilter.And<TDoc>(Tenant, idFilter), ct);
     }
 }

@@ -35,4 +35,14 @@ public sealed class RabbitMqOptions
     /// is set, otherwise dropped.
     /// </summary>
     public int? MessageTtlMs { get; set; }
+
+    /// <summary>
+    /// Enables RabbitMQ publisher confirms (broker acknowledgements) and makes
+    /// <c>PublishAsync</c> await them. A nacked or unroutable publish then
+    /// throws instead of reporting success — without this, a broker restart or
+    /// an unbound routing key silently loses events (the outbox would mark
+    /// them processed). Defaults to <c>true</c>. Disable only for fire-and-forget
+    /// throughput at the cost of durability.
+    /// </summary>
+    public bool PublisherConfirms { get; set; } = true;
 }

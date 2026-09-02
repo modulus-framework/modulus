@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../../../src/messaging/Modulus.Outbox/Modulus.Outbox.csproj" />
+    <ProjectReference Include="../../../src/messaging/Modulus.Events/Modulus.Events.csproj" />
     <ProjectReference Include="../../../src/data/Modulus.EntityFrameworkCore/Modulus.EntityFrameworkCore.csproj" />
     <!-- SQLite gives us a real relational DB (ExecuteUpdate, transactions)
          without needing Docker — the right tool for outbox locking tests. -->

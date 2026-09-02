@@ -25,6 +25,10 @@ internal sealed class NewModuleCommand : Command<NewModuleCommand.Settings>
         [Description("Database provider: SQLite (default), SqlServer, PostgreSQL, MySQL")]
         [CommandOption("-d|--database")]
         public string? Database { get; init; }
+
+        [Description("Migration engine: efcore (default), dbsh. Omit to inherit from the app's existing modules.")]
+        [CommandOption("--migration-engine")]
+        public string? MigrationEngine { get; init; }
     }
 
     public override int Execute(CommandContext ctx, Settings s)
@@ -60,12 +64,20 @@ internal sealed class NewModuleCommand : Command<NewModuleCommand.Settings>
             : NewAppCommand.ValidateChoice(
                 s.Database!, NewAppCommand.KnownProviders, "database provider");
 
+        // Explicit flag wins; otherwise inherit the app's prevailing engine
+        // (dbsh when every existing module uses dbsh, else efcore).
+        var migrationEngine = string.IsNullOrWhiteSpace(s.MigrationEngine)
+            ? MigrateSupport.DetectEngine(outputBase)
+            : NewAppCommand.ValidateChoice(
+                s.MigrationEngine!, NewAppCommand.KnownMigrationEngines, "migration engine");
+
         var model = new ModuleModel
         {
             RootNamespace = rootNs,
             ModuleName = moduleName,
             ModuleNamespace = moduleNs,
             DbProvider = database,
+            MigrationEngine = migrationEngine,
         };
 
         // Generate a blank layered module skeleton (no entity yet).
@@ -87,6 +99,7 @@ internal sealed class NewModuleCommand : Command<NewModuleCommand.Settings>
         AnsiConsole.WriteLine();
         Ux.Success($"Created layered module [cyan]{moduleName}[/] at [grey]{projectDir}[/]");
         if (Ux.DryRun) Ux.Warning("Dry-run: nothing was actually written.");
+        AnsiConsole.MarkupLine("[grey]  →[/] Migration engine: {0}", migrationEngine);
         AnsiConsole.WriteLine();
         AnsiConsole.MarkupLine("[grey]Tip:[/] modulus generate-crud Item --module {0}", moduleName);
 

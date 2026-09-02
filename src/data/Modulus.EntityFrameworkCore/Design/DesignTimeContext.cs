@@ -49,8 +49,18 @@ public static class DesignTimeContext
     /// </summary>
     public static DomainEventDispatcher Dispatcher { get; } = new DomainEventDispatcher(Services);
 
+    /// <summary>
+    /// Emulates the MS DI contract the model-building path relies on:
+    /// <c>IEnumerable&lt;T&gt;</c> resolves to an <em>empty sequence</em> (never
+    /// null), so <c>GetServices&lt;IModuleModelContributor&gt;()</c> and similar
+    /// seams work without a real container. Everything else resolves to null.
+    /// </summary>
     private sealed class EmptyServiceProvider : IServiceProvider
     {
-        public object? GetService(Type serviceType) => null;
+        public object? GetService(Type serviceType)
+            => serviceType.IsGenericType
+                && serviceType.GetGenericTypeDefinition() == typeof(IEnumerable<>)
+                    ? Array.CreateInstance(serviceType.GetGenericArguments()[0], 0)
+                    : null;
     }
 }

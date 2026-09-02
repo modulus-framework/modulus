@@ -321,6 +321,6 @@ await app.Services.MigrateModulusDatabasesAsync(
 ## Next Steps
 
 - [Messaging Overview](messaging/overview) — Deep dive into E1 features
-- [Data Layer](data/repository) — Using E2 specifications and projections
+- [Data Layer](data/repositories) — Using E2 specifications and projections
 - [Testing](testing/overview) — Integration and unit test patterns
 - [Architecture](architecture/module-system) — Enforcing module boundaries

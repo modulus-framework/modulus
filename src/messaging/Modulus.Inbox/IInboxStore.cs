@@ -28,12 +28,19 @@ public interface IInboxStore
     /// <see cref="InboxStatus.Processing"/> (in-flight elsewhere) or a
     /// concurrent claim won the race — the caller should NACK / redeliver.
     /// </para>
+    /// <para>
+    /// A <see cref="InboxStatus.Processing"/> claim held longer than
+    /// <paramref name="claimTimeout"/> is treated as abandoned (the claimant
+    /// crashed) and is reclaimed by this call instead of deferring — otherwise
+    /// the event would be wedged in <c>Processing</c> forever.
+    /// </para>
     /// </summary>
     Task<InboxMessage?> TryClaimAsync(
         Guid eventId,
         string messageType,
         string payload,
         int maxRetries,
+        TimeSpan claimTimeout,
         CancellationToken ct);
 
     /// <summary>

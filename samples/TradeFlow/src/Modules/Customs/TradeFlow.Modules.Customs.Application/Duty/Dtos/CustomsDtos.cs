@@ -31,6 +31,44 @@ public sealed record SroBenefitResponse(
     DateOnly EffectiveFrom,
     DateOnly? EffectiveTo);
 
+// ── SRO Benefit Sourcing + Bulk Lookup (§6.1 SRO layer, BR-DS-05) ────
+
+public sealed record ResolvedSroBenefitResponse(
+    Guid BenefitId,
+    string Name,
+    SroBenefitType Type,
+    decimal? OverrideRate,
+    decimal? CapPercent,
+    string Conditions);
+
+public sealed record SroComponentSourceResponse(
+    DutyComponent Component,
+    decimal BaseRate,
+    decimal EffectiveRate,
+    string Effect,
+    Guid RateRowId);
+
+public sealed record SroSourceResponse(
+    string HsCode,
+    DateOnly AsOfDate,
+    IReadOnlyList<SroComponentSourceResponse> Components,
+    IReadOnlyList<ResolvedSroBenefitResponse> AppliedBenefits);
+
+public sealed record BulkComponentRateResponse(
+    DutyComponent Component,
+    decimal Rate,
+    decimal? SpecificRate,
+    string? Uom,
+    Guid RateRowId,
+    DateOnly EffectiveFrom,
+    DateOnly? EffectiveTo);
+
+public sealed record BulkDutyLookupEntryResponse(
+    string HsCode,
+    bool RatesFound,
+    IReadOnlyList<BulkComponentRateResponse> ComponentRates,
+    IReadOnlyList<ResolvedSroBenefitResponse> SroBenefits);
+
 public sealed record AssessedDutyLineResponse(string Component, decimal Amount);
 
 public sealed record RateLineageResponse(string Component, Guid RateRowId, decimal RateUsed);
@@ -48,8 +86,9 @@ public sealed record BoeLineResponse(
     decimal? TariffValueBdt,
     decimal? ComputedTtiBdt,
     decimal? AssessedTtiBdt,
-    IReadOnlyList<AssessedDutyLineResponse> AssessedDutyLines,
-    IReadOnlyList<RateLineageResponse> RateLineage);
+    decimal? SroSavingsBdt = null,
+    IReadOnlyList<AssessedDutyLineResponse>? AssessedDutyLines = null,
+    IReadOnlyList<RateLineageResponse>? RateLineage = null);
 
 public sealed record ChallanResponse(Guid Id, string ChallanNo, decimal Amount, DateTime PaidAtUtc, string? EvidenceRef);
 
@@ -90,7 +129,9 @@ public sealed record AitAtLedgerEntryResponse(
     AitAtEntryType EntryType,
     Guid? FileId,
     Guid? BoeId,
-    DateOnly BookedOn);
+    DateOnly BookedOn,
+    string? ReturnPeriod = null,
+    string? Narrative = null);
 
 public sealed record AitAtLedgerResponse(
     int FiscalYear,
@@ -101,7 +142,35 @@ public sealed record AitAtLedgerResponse(
     decimal AtOpeningBalance,
     decimal AtAdditions,
     decimal AtAdjustments,
-    decimal AtClosingBalance);
+    decimal AtClosingBalance,
+    IReadOnlyList<AitAtLedgerEntryResponse>? Entries = null);
+
+// ── Duty Analysis report (doc 08 Report 3, §6.8) ─────────────────
+
+public sealed record DutyComponentMixResponse(string Component, decimal Amount);
+
+public sealed record DutyHsAnalysisResponse(
+    string HsCode,
+    int LineCount,
+    decimal DeclaredAvBdt,
+    decimal ComputedTtiBdt,
+    decimal AssessedTtiBdt,
+    decimal VarianceBdt,
+    decimal UpliftPct,
+    decimal EffectiveDutyPct,
+    decimal SroSavingsBdt,
+    IReadOnlyList<DutyComponentMixResponse> ComponentMix);
+
+public sealed record DutyAnalysisResponse(
+    DateOnly From,
+    DateOnly To,
+    int LineCount,
+    decimal ComputedTtiBdt,
+    decimal AssessedTtiBdt,
+    decimal VarianceBdt,
+    decimal UpliftPct,
+    decimal SroSavingsBdt,
+    IReadOnlyList<DutyHsAnalysisResponse> ByHsCode);
 
 public sealed record DemurrageResponse(
     Guid Id,

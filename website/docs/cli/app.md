@@ -48,8 +48,7 @@ MyApp/
 ├── NuGet.config
 └── src/
     ├── API/MyApp.Api/
-    │   ├── Program.cs
-    │   └── Modules/MyAppHostModule.cs
+    │   └── Program.cs
     ├── Shared/
     │   ├── MyApp.Shared.Domain
     │   ├── MyApp.Shared.Application

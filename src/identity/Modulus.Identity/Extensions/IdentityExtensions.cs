@@ -35,6 +35,13 @@ public static class IdentityExtensions
         services.AddHttpContextAccessor();
         services.TryAddScoped<ICurrentUser, ClaimsPrincipalCurrentUser>();
 
+        // Store the concrete user type so the token controller can resolve
+        // UserManager<TConcreteUser> at runtime without knowing the generic
+        // parameter at compile time.  The controller currently resolves
+        // UserManager<ModulusUser>, which returns null for derived user types
+        // — this field bridges the gap.
+        ModulusUserType.Value = typeof(TUser);
+
         var builder = services.AddIdentity<TUser, TRole>(options =>
         {
             options.SignIn.RequireConfirmedEmail = identityOptions.RequireConfirmedEmail;
@@ -104,8 +111,14 @@ public static class IdentityExtensions
                        .SetUserInfoEndpointUris("/connect/userinfo")
                        .SetRevocationEndpointUris("/connect/revoke");
 
-                options.AllowAuthorizationCodeFlow()
-                       .AllowRefreshTokenFlow();
+                options.AllowRefreshTokenFlow();
+
+                // Authorization code flow requires the app to implement its
+                // own connect/authorize endpoint — the framework only ships
+                // the token endpoint. Off by default; enable via
+                // Identity:AllowAuthorizationCodeFlow.
+                if (identityOptions.AllowAuthorizationCodeFlow)
+                    options.AllowAuthorizationCodeFlow();
 
                 // ROPC is off by default (removed in OAuth 2.1). Opt in only for
                 // trusted first-party clients via Identity:AllowPasswordFlow.

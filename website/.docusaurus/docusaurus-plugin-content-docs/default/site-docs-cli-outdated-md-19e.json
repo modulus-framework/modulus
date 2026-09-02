@@ -1,0 +1,27 @@
+{
+  "id": "cli/outdated",
+  "title": "modulus outdated",
+  "description": "Shows all packages with newer versions available on NuGet.",
+  "source": "@site/docs/cli/outdated.md",
+  "sourceDirName": "cli",
+  "slug": "/cli/outdated",
+  "permalink": "/docs/cli/outdated",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/cobytelabs/modulus/tree/main/website/docs/cli/outdated.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 12,
+  "frontMatter": {
+    "sidebar_position": 12
+  },
+  "sidebar": "cliSidebar",
+  "previous": {
+    "title": "modulus doctor",
+    "permalink": "/docs/cli/doctor"
+  },
+  "next": {
+    "title": "modulus update",
+    "permalink": "/docs/cli/update"
+  }
+}

@@ -13,5 +13,5 @@ public static class CostingResponseFactory
             l.Allocations.Select(a => new LineAllocationResponse(a.ElementId, a.ElementName, a.AmountBdt,
                 a.Treatment, a.IsResidual)).ToArray())).ToArray(),
         sheet.Elements.Select(e => new CostElementResponse(e.Id, e.Name, e.AmountFcy, e.FxRate, e.AmountBdt,
-            e.Driver, e.Scope, e.Treatment, e.SourceDocType, e.SourceDocNumber)).ToArray());
+            e.Driver, e.Scope, e.Treatment, e.SourceDocType, e.SourceDocNumber, e.Currency)).ToArray());
 }

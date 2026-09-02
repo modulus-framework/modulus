@@ -130,6 +130,9 @@
     <Project Path="tests/Modules/Costing/TradeFlow.Modules.Costing.UnitTests/TradeFlow.Modules.Costing.UnitTests.csproj" />
     <Project Path="tests/Modules/Identity/TradeFlow.Modules.Identity.UnitTests/TradeFlow.Modules.Identity.UnitTests.csproj" />
   </Folder>
+  <Folder Name="/tests/Modules/Customs/">
+    <Project Path="tests/Modules/Customs/TradeFlow.Modules.Customs.UnitTests/TradeFlow.Modules.Customs.UnitTests.csproj" />
+  </Folder>
   <Folder Name="/tests/Modules/Vendors/">
     <Project Path="tests/Modules/Vendors/TradeFlow.Modules.Vendors.UnitTests/TradeFlow.Modules.Vendors.UnitTests.csproj" />
   </Folder>

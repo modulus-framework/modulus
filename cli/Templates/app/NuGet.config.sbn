@@ -8,14 +8,28 @@
     <add key="modulus-local" value="{{ local_package_source }}" />
 {{ else }}
     <!--
-      The Cobytelabs.Modulus.* packages are not on nuget.org yet. To use them,
-      either re-scaffold with: modulus app {{ app_name }} (package-source /path/to/nupkg)
+      To use a local feed of the Cobytelabs.Modulus.* packages (e.g. the
+      framework repo's nupkg folder after dotnet pack), pass the feed path
+      via the package-source option of "modulus app {{ app_name }}".
 
-      or uncomment the entry below, pointing to your feed location
-      (e.g. framework repo's nupkg folder after dotnet pack):
+      or uncomment the entry below:
 
       <add key="modulus-local" value="../../nupkg" />
     -->
 {{ end }}
   </packageSources>
+{{ if local_package_source }}
+  <!-- Source mapping makes the local feed authoritative for framework
+       packages: published nuget.org versions with the same number can be
+       older than the local build, and identical versions otherwise resolve
+       non-deterministically. -->
+  <packageSourceMapping>
+    <packageSource key="nuget.org">
+      <package pattern="*" exclude="Cobytelabs.*" />
+    </packageSource>
+    <packageSource key="modulus-local">
+      <package pattern="Cobytelabs.*" />
+    </packageSource>
+  </packageSourceMapping>
+{{ end }}
 </configuration>

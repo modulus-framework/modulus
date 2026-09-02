@@ -8,6 +8,12 @@ using Modulus.AspNetCore.Endpoints;
 using Modulus.Core;
 using Modulus.Core.Abstractions;
 
+/// <summary>
+/// Maps <c>GET /health/graph</c>: the loaded-module inventory in registration
+/// (= initialization) order. Registration order is authoritative in Modulus,
+/// so this endpoint reports each module's <c>initOrder</c> rather than a
+/// dependency graph.
+/// </summary>
 internal sealed class ModuleGraphEndpoint : IMinimalEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
@@ -17,16 +23,15 @@ internal sealed class ModuleGraphEndpoint : IMinimalEndpoint
 
     private static IResult Handle(IModuleLoader loader)
     {
-        var descriptors = loader.GetDescriptors();
+        var modules = loader.GetDescriptors()
+            .Select(d => new
+            {
+                d.Name,
+                Type = d.ModuleType.FullName,
+                d.InitOrder,
+            })
+            .ToList();
 
-        var graph = descriptors.Select(d => new
-        {
-            d.Name,
-            d.InitOrder,
-            DependsOn = d.Dependencies
-                .Select(t => t.Name).ToList(),
-        });
-
-        return Results.Ok(graph);
+        return Results.Ok(modules);
     }
 }

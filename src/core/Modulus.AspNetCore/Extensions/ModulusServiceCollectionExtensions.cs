@@ -42,30 +42,39 @@ public static class ModulusServiceCollectionExtensions
     /// ran, so a missing call silently skipped every module's
     /// <c>InitializeAsync</c>.
     /// </summary>
-    private static void FinalizeModuleGraph(
+    private static void FinalizeModules(
         IServiceCollection services, ModulusBuilder builder)
         => builder.Complete();
 
     /// <summary>
-    /// ABP-style convenience overload: auto-discovers the full module graph
-    /// from <typeparamref name="TStartupModule"/> via <see cref="DependsOnAttribute"/>.
+    /// Composition root: registers the framework's null defaults, the module
+    /// lifecycle hosted service, and every module registered through the
+    /// <paramref name="configure"/> callback. Registration order is
+    /// authoritative — it becomes the order of every module lifecycle phase
+    /// (initialization runs in registration order, shutdown in reverse).
     /// </summary>
-    /// <typeparam name="TStartupModule">The application's root module.</typeparam>
+    /// <param name="services">The service collection.</param>
+    /// <param name="configuration">The application configuration.</param>
+    /// <param name="configure">Registers modules via <see cref="ModulusBuilder.AddModule{TModule}"/>.</param>
     /// <example>
     /// <code>
-    /// builder.Services.AddModulus&lt;MyAppModule&gt;(builder.Configuration);
+    /// builder.Services.AddModulus(builder.Configuration, modules => modules
+    ///     .AddModule&lt;DataModule&gt;()
+    ///     .AddModule&lt;CatalogModule&gt;());
     /// </code>
     /// </example>
-    public static IServiceCollection AddModulus<TStartupModule>(
+    public static IServiceCollection AddModulus(
         this IServiceCollection services,
-        IConfiguration configuration)
-        where TStartupModule : class, IModule, new()
+        IConfiguration configuration,
+        Action<ModulusBuilder> configure)
     {
+        ArgumentNullException.ThrowIfNull(configure);
+
         RegisterCoreDefaults(services);
 
         var builder = new ModulusBuilder(services, configuration);
-        builder.AddModules<TStartupModule>();
-        FinalizeModuleGraph(services, builder);
+        configure(builder);
+        FinalizeModules(services, builder);
         return services;
     }
 

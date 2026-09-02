@@ -21,6 +21,8 @@ modulus doctor [options]
 | **App Structure** | Host project, Program.cs, NuGet.config |
 | **Modules** | Infrastructure projects, DbContext, design-time factories |
 | **Git** | .gitignore configured |
+| **CLI Version** | Latest CLI tool version on NuGet |
+| **Framework Version** | Latest framework package versions |
 
 ## Example Output
 
@@ -44,6 +46,10 @@ Modules:
     ✓ OrdersDbContextFactory
   ✗ Inventory.Infrastructure
     ✗ Missing design-time factory
+
+Versions:
+  ✓ CLI tool version: v1.3.0 (latest)
+  ✓ Framework version: v1.3.0 (latest)
 ```
 
 ## See Also

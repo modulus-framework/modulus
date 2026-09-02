@@ -49,17 +49,17 @@
     },
     "content": "content---markdown-page-4-c-6-c89"
   },
-  "/docs-da6": {
+  "/docs-66e": {
     "__comp": "__comp---theme-docs-root-5-e-9-0b6",
     "__context": {
       "plugin": "plugin---docsaba-d7c"
     }
   },
-  "/docs-fa6": {
+  "/docs-adf": {
     "__comp": "__comp---theme-doc-version-roota-7-b-5de",
     "__props": "__props---docs-005-788"
   },
-  "/docs-cd4": {
+  "/docs-8bf": {
     "__comp": "__comp---theme-doc-roota-94-67a"
   },
   "/docs/api/-b2d": {
@@ -170,9 +170,17 @@
     "__comp": "__comp---theme-doc-item-178-a40",
     "content": "content---docs-cli-module-14-a-53a"
   },
+  "/docs/cli/outdated-4b2": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-cli-outdated-19-e-8fe"
+  },
   "/docs/cli/templates-071": {
     "__comp": "__comp---theme-doc-item-178-a40",
     "content": "content---docs-cli-templates-771-5f6"
+  },
+  "/docs/cli/update-1f8": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-cli-updateab-4-892"
   },
   "/docs/configuration/appsettings-61f": {
     "__comp": "__comp---theme-doc-item-178-a40",
@@ -209,6 +217,10 @@
   "/docs/deployment-9a4": {
     "__comp": "__comp---theme-doc-item-178-a40",
     "content": "content---docs-deploymenta-37-88b"
+  },
+  "/docs/features-e9b": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-features-1-a-2-3cc"
   },
   "/docs/getting-started/first-module-7ac": {
     "__comp": "__comp---theme-doc-item-178-a40",

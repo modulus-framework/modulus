@@ -15,10 +15,48 @@ internal static class CommandRunner
         {
             return action();
         }
-        catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
+        catch (Exception ex) when (ex is
+            ArgumentException or
+            InvalidOperationException or
+            IOException or
+            UnauthorizedAccessException or
+            DirectoryNotFoundException)
         {
-            AnsiConsole.MarkupLine("[red]Error:[/] {0}", ex.Message);
+            AnsiConsole.MarkupLine("[red]Error:[/] {0}", Markup.Escape(ex.Message));
             return 1;
         }
+    }
+
+    public static int Run(Func<Task<int>> action)
+    {
+        try
+        {
+            return action().GetAwaiter().GetResult();
+        }
+        catch (AggregateException agg) when (agg.InnerException is Exception inner)
+        {
+            return RunException(inner);
+        }
+        catch (Exception ex)
+        {
+            return RunException(ex);
+        }
+    }
+
+    private static int RunException(Exception ex)
+    {
+        if (ex is
+            ArgumentException or
+            InvalidOperationException or
+            IOException or
+            UnauthorizedAccessException or
+            DirectoryNotFoundException)
+        {
+            AnsiConsole.MarkupLine("[red]Error:[/] {0}", Markup.Escape(ex.Message));
+            return 1;
+        }
+
+        AnsiConsole.MarkupLine("[red]Unexpected error:[/] {0}", Markup.Escape(ex.Message));
+        return 1;
     }
 }

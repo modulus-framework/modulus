@@ -20,6 +20,7 @@ public sealed class MongoInboxMessage
     public string? Error { get; set; }
     public int RetryCount { get; set; }
     public string? CorrelationId { get; init; }
+    public DateTime? ClaimedAt { get; set; }
 }
 
 /// <summary>
@@ -36,6 +37,7 @@ internal sealed class MongoInboxStore(
         string messageType,
         string payload,
         int maxRetries,
+        TimeSpan claimTimeout,
         CancellationToken ct)
     {
         var existing = await collection
@@ -62,6 +64,7 @@ internal sealed class MongoInboxStore(
                 ModuleName = collection.CollectionNamespace.CollectionName,
                 ReceivedAt = now,
                 Status = InboxStatus.Processing,
+                ClaimedAt = now,
             };
 
             try
@@ -75,12 +78,35 @@ internal sealed class MongoInboxStore(
                     $"Inbox message {eventId} is being processed by another consumer.");
             }
         }
-        else
+        else if (existing.Status == InboxStatus.Processing)
         {
-            if (existing.Status == InboxStatus.Processing)
+            // Lease check: a claim held past the timeout means the claimant
+            // crashed between claiming and persisting the final state. Reclaim
+            // it (optimistically — the filter re-checks ClaimedAt) instead of
+            // deferring forever. Legacy docs (ClaimedAt null) fall back to
+            // ReceivedAt as the claim time.
+            var claimedAt = existing.ClaimedAt ?? existing.ReceivedAt;
+            if (now - claimedAt < claimTimeout)
                 throw new InboxDeferralException(
                     $"Inbox message {eventId} is already being processed.");
 
+            var reclaimFilter = Builders<MongoInboxMessage>.Filter.And(
+                Builders<MongoInboxMessage>.Filter.Eq(x => x.Id, eventId),
+                Builders<MongoInboxMessage>.Filter.Eq(x => x.Status, InboxStatus.Processing),
+                Builders<MongoInboxMessage>.Filter.Eq(x => x.ClaimedAt, existing.ClaimedAt));
+            var reclaimUpdate = Builders<MongoInboxMessage>.Update
+                .Set(x => x.ClaimedAt, now)
+                .Set(x => x.Error, (string?)null);
+
+            var reclaimed = await collection.UpdateOneAsync(
+                reclaimFilter, reclaimUpdate, cancellationToken: ct);
+
+            if (reclaimed.MatchedCount == 0)
+                throw new InboxDeferralException(
+                    $"Inbox message {eventId} is being processed by another consumer.");
+        }
+        else
+        {
             // Existing Pending/Failed — atomically transition to Processing.
             // The filter re-checks the status server-side so two consumers
             // that both read the same Failed row cannot both win: only the
@@ -91,6 +117,7 @@ internal sealed class MongoInboxStore(
                     new[] { InboxStatus.Pending, InboxStatus.Failed }));
             var update = Builders<MongoInboxMessage>.Update
                 .Set(x => x.Status, InboxStatus.Processing)
+                .Set(x => x.ClaimedAt, now)
                 .Set(x => x.Error, (string?)null);
 
             var result = await collection.UpdateOneAsync(filter, update, cancellationToken: ct);
@@ -107,6 +134,7 @@ internal sealed class MongoInboxStore(
             Payload = payload,
             Status = InboxStatus.Processing,
             ReceivedAt = now,
+            ClaimedAt = now,
         };
     }
 
@@ -117,7 +145,8 @@ internal sealed class MongoInboxStore(
             .Set(x => x.Status, InboxStatus.Processed)
             .Set(x => x.ProcessedAt, DateTime.UtcNow)
             .Set(x => x.RetryCount, 0)
-            .Set(x => x.Error, (string?)null);
+            .Set(x => x.Error, (string?)null)
+            .Set(x => x.ClaimedAt, (DateTime?)null);
 
         await collection.UpdateOneAsync(filter, update, cancellationToken: ct);
     }
@@ -128,6 +157,7 @@ internal sealed class MongoInboxStore(
         var update = Builders<MongoInboxMessage>.Update
             .Set(x => x.Status, InboxStatus.Failed)
             .Set(x => x.Error, error)
+            .Set(x => x.ClaimedAt, (DateTime?)null)
             .Inc(x => x.RetryCount, 1);
 
         await collection.UpdateOneAsync(filter, update, cancellationToken: ct);

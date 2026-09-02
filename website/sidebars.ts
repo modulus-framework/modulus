@@ -128,6 +128,8 @@ const sidebars: SidebarsConfig = {
         'cli/list',
         'cli/info',
         'cli/doctor',
+        'cli/outdated',
+        'cli/update',
       ],
     },
     'cli/global-flags',

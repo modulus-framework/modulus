@@ -167,6 +167,20 @@ internal static class Ux
     public static void Status(string label, Action action)
         => Status<object?>(label, () => { action(); return null; });
 
+    /// <summary>
+    /// Runs an async <paramref name="action"/> under a status spinner with the
+    /// given label. Use this for async operations like network calls.
+    /// </summary>
+    public static async Task<T> StatusAsync<T>(string label, Func<Task<T>> action)
+    {
+        if (Quiet || !IsInteractive)
+            return await action();
+        return await AnsiConsole.Status()
+            .Spinner(Spinner.Known.Dots)
+            .SpinnerStyle(Style.Parse("cyan"))
+            .StartAsync(label, _ => action());
+    }
+
     // ── Filesystem (dry-run aware) ────────────────────────────────────
 
     /// <summary>

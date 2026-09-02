@@ -5,7 +5,7 @@ using {{ module_namespace }}.Application.Dtos;
 
 namespace {{ module_namespace }}.Presentation;
 
-public sealed class Get{{ entity_plural }}Endpoint(IMediator mediator) : EndpointBase
+public sealed class Get{{ entity_plural }}Endpoint(IMediator mediator) : EndpointWithoutRequest<IReadOnlyList<{{ entity_name }}Dto>>
 {
     public override void Configure()
     {
@@ -14,11 +14,19 @@ public sealed class Get{{ entity_plural }}Endpoint(IMediator mediator) : Endpoin
         Summary("Get all {{ entity_name_lower }}s");
     }
 
-    public async Task<IReadOnlyList<{{ entity_name }}Dto>> HandleAsync(CancellationToken ct)
-        => await mediator.QueryAsync(new Get{{ entity_plural }}Query(), ct);
+    protected override async Task HandleAsync(CancellationToken ct)
+    {
+        var items = await mediator.QueryAsync(new Get{{ entity_plural }}Query(), ct);
+        await SendOkAsync(items, ct);
+    }
 }
 
-public sealed class Get{{ entity_name }}ByIdEndpoint(IMediator mediator) : EndpointBase
+public sealed class Get{{ entity_name }}ByIdRequest
+{
+    public Guid Id { get; set; }
+}
+
+public sealed class Get{{ entity_name }}ByIdEndpoint(IMediator mediator) : Endpoint<Get{{ entity_name }}ByIdRequest, {{ entity_name }}Dto>
 {
     public override void Configure()
     {
@@ -27,55 +35,73 @@ public sealed class Get{{ entity_name }}ByIdEndpoint(IMediator mediator) : Endpo
         Summary("Get {{ entity_name_lower }} by ID");
     }
 
-    public async Task<{{ entity_name }}Dto> HandleAsync(Guid id, CancellationToken ct)
-        => await mediator.QueryAsync(new Get{{ entity_name }}ByIdQuery(id), ct);
+    public override async Task HandleAsync(Get{{ entity_name }}ByIdRequest req, CancellationToken ct)
+    {
+        var item = await mediator.QueryAsync(new Get{{ entity_name }}ByIdQuery(req.Id), ct);
+        await SendOkAsync(item, ct);
+    }
 }
 
 public sealed class Create{{ entity_name }}Request
 {
-    public required string Name { get; set; }
+    public string Name { get; set; } = default!;
 }
 
-public sealed class Create{{ entity_name }}Endpoint(IMediator mediator) : EndpointBase
+public sealed class Create{{ entity_name }}Endpoint(IMediator mediator) : Endpoint<Create{{ entity_name }}Request, Guid>
 {
     public override void Configure()
     {
         Post("/api/{{ module_name_lower }}/{{ route_name }}");
+        AllowAnonymous();
         Summary("Create a new {{ entity_name_lower }}");
     }
 
-    public async Task<Guid> HandleAsync(Create{{ entity_name }}Request request, CancellationToken ct)
-        => await mediator.SendAsync(new Create{{ entity_name }}Command(request.Name), ct);
+    public override async Task HandleAsync(Create{{ entity_name }}Request req, CancellationToken ct)
+    {
+        var id = await mediator.SendAsync(new Create{{ entity_name }}Command(req.Name), ct);
+        await SendCreatedAsync(id, $"/api/{{ module_name_lower }}/{{ route_name }}/{id}", ct);
+    }
 }
 
 public sealed class Update{{ entity_name }}Request
 {
-    public required string Name { get; set; }
+    public Guid Id { get; set; }
+    public string Name { get; set; } = default!;
 }
 
-public sealed class Update{{ entity_name }}Endpoint(IMediator mediator) : EndpointBase
+public sealed class Update{{ entity_name }}Endpoint(IMediator mediator) : Endpoint<Update{{ entity_name }}Request, Update{{ entity_name }}Result>
 {
     public override void Configure()
     {
         Put("/api/{{ module_name_lower }}/{{ route_name }}/{id}");
+        AllowAnonymous();
         Summary("Update an existing {{ entity_name_lower }}");
     }
 
-    public async Task<{{ entity_name }}Dto> HandleAsync(Guid id, Update{{ entity_name }}Request request, CancellationToken ct)
-        => await mediator.SendAsync(new Update{{ entity_name }}Command(id, request.Name), ct);
+    public override async Task HandleAsync(Update{{ entity_name }}Request req, CancellationToken ct)
+    {
+        var result = await mediator.SendAsync(new Update{{ entity_name }}Command(req.Id, req.Name), ct);
+        await SendOkAsync(result, ct);
+    }
 }
 
-public sealed class Delete{{ entity_name }}Endpoint(IMediator mediator) : EndpointBase
+public sealed class Delete{{ entity_name }}Request
+{
+    public Guid Id { get; set; }
+}
+
+public sealed class Delete{{ entity_name }}Endpoint(IMediator mediator) : Endpoint<Delete{{ entity_name }}Request>
 {
     public override void Configure()
     {
         Delete("/api/{{ module_name_lower }}/{{ route_name }}/{id}");
+        AllowAnonymous();
         Summary("Delete a {{ entity_name_lower }}");
     }
 
-    public async Task HandleAsync(Guid id, CancellationToken ct)
+    public override async Task HandleAsync(Delete{{ entity_name }}Request req, CancellationToken ct)
     {
-        await mediator.SendAsync(new Delete{{ entity_name }}Command(id), ct);
+        await mediator.SendAsync(new Delete{{ entity_name }}Command(req.Id), ct);
         await SendNoContentAsync(ct);
     }
 }

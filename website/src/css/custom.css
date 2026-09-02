@@ -1,34 +1,149 @@
 /**
- * Modulus Framework - Custom CSS
+ * Modulus Framework — Theme
+ * Brand: indigo → sky gradient, Inter type, deep-navy surfaces.
  */
 
+@import '@fontsource/inter/latin-400.css';
+@import '@fontsource/inter/latin-500.css';
+@import '@fontsource/inter/latin-600.css';
+@import '@fontsource/inter/latin-700.css';
+
 :root {
-  --ifm-color-primary: #1a73e8;
-  --ifm-color-primary-dark: #1565c0;
-  --ifm-color-primary-darker: #1257b0;
-  --ifm-color-primary-darkest: #0d4090;
-  --ifm-color-primary-light: #2e8bf0;
-  --ifm-color-primary-lighter: #3d95f2;
-  --ifm-color-primary-lightest: #6bb3f7;
+  /* Primary — indigo 600 */
+  --ifm-color-primary: #4f46e5;
+  --ifm-color-primary-dark: #4338ca;
+  --ifm-color-primary-darker: #3730a3;
+  --ifm-color-primary-darkest: #312e81;
+  --ifm-color-primary-light: #6366f1;
+  --ifm-color-primary-lighter: #818cf8;
+  --ifm-color-primary-lightest: #a5b4fc;
+
+  --ifm-font-family-base: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto,
+    Helvetica, Arial, sans-serif;
+  --ifm-heading-font-family: 'Inter', system-ui, -apple-system, 'Segoe UI',
+    Roboto, Helvetica, Arial, sans-serif;
+  --ifm-heading-font-weight: 700;
   --ifm-code-font-size: 95%;
-  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+  --ifm-button-border-radius: 10px;
+  --ifm-card-border-radius: 14px;
+  --ifm-navbar-height: 4rem;
+  --ifm-line-height-base: 1.7;
+
+  --ifm-global-shadow-lw: 0 1px 2px rgba(15, 23, 42, 0.06),
+    0 4px 12px rgba(15, 23, 42, 0.06);
+  --ifm-global-shadow-md: 0 4px 10px rgba(15, 23, 42, 0.08),
+    0 12px 32px rgba(15, 23, 42, 0.1);
+  --ifm-global-shadow-tl: 0 8px 20px rgba(15, 23, 42, 0.12),
+    0 24px 56px rgba(15, 23, 42, 0.16);
+
+  --mod-hero-gradient: linear-gradient(135deg, #101736 0%, #1e1b4b 55%, #172554 100%);
+  --mod-brand-gradient: linear-gradient(120deg, #6366f1, #0ea5e9);
+  --docusaurus-highlighted-code-line-bg: rgba(79, 70, 229, 0.12);
 }
 
 [data-theme='dark'] {
-  --ifm-color-primary: #4da3ff;
-  --ifm-color-primary-dark: #2e8bf0;
-  --ifm-color-primary-darker: #1a73e8;
-  --ifm-color-primary-darkest: #0d5ab8;
-  --ifm-color-primary-light: #6bb3f7;
-  --ifm-color-primary-lighter: #85c4fa;
-  --ifm-color-primary-lightest: #b5dcfc;
-  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+  /* Primary — indigo 400 (AA on dark surfaces) */
+  --ifm-color-primary: #818cf8;
+  --ifm-color-primary-dark: #6366f1;
+  --ifm-color-primary-darker: #4f46e5;
+  --ifm-color-primary-darkest: #4338ca;
+  --ifm-color-primary-light: #a5b4fc;
+  --ifm-color-primary-lighter: #c7d2fe;
+  --ifm-color-primary-lightest: #e0e7ff;
+
+  --ifm-background-color: #0b1021;
+  --ifm-background-surface-color: #111731;
+  --ifm-navbar-background-color: rgba(11, 16, 33, 0.82);
+  --ifm-footer-background-color: #0b1021;
+  --ifm-card-background-color: #111731;
+  --docusaurus-highlighted-code-line-bg: rgba(129, 140, 248, 0.22);
 }
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(129, 140, 248, 0.4) transparent;
+}
+
+::selection {
+  background: rgba(99, 102, 241, 0.32);
+}
+
+h1, h2, h3, h4 {
+  letter-spacing: -0.02em;
+}
+
+/* ---------- Navbar ---------- */
 
 .navbar {
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: none;
+  border-bottom: 1px solid var(--ifm-color-emphasis-100);
 }
 
-.footer--dark {
-  background-color: #1a1a2e;
+.navbar__title {
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.navbar__logo {
+  height: 2.1rem;
+  width: auto;
+  max-width: none;
+  border-radius: 8px;
+}
+
+[data-theme='dark'] .navbar {
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+/* ---------- Footer ---------- */
+
+.footer {
+  border-top: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.footer .footer__title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #94a3b8;
+}
+
+.footer .footer__link-item {
+  color: #cbd5e1;
+  font-weight: 400;
+}
+
+.footer .footer__link-item:hover {
+  color: #ffffff;
+}
+
+/* ---------- Code blocks ---------- */
+
+.theme-code-block,
+ div[class^='codeBlockContainer'] {
+  border-radius: 12px;
+  box-shadow: var(--ifm-global-shadow-md);
+}
+
+/* ---------- Docs polish ---------- */
+
+.theme-doc-sidebar-container {
+  border-right-color: var(--ifm-color-emphasis-100) !important;
+}
+
+article table th,
+article table td {
+  border-color: var(--ifm-color-emphasis-200);
+}
+
+.admonition {
+  border-radius: 12px;
+}
+
+/* Smooth anchor offset under fixed navbar */
+.hash-link {
+  scroll-margin-top: calc(var(--ifm-navbar-height) + 1rem);
 }

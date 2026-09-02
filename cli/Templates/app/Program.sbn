@@ -1,18 +1,11 @@
-using {{ root_namespace }}.Api.Modules;
+{{ if !no_example }}using {{ root_namespace }}.Modules.{{ example_module }}.Infrastructure;
+{{ end }}using System.Reflection;
+using Modulus.AspNetCore.Endpoints;
 using Modulus.AspNetCore.Extensions;
 using Modulus.AspNetCore.Configuration;
-using Modulus.AspNetCore.Correlation;
 using Modulus.AspNetCore.DataProtection;
-using Modulus.AspNetCore.Cors;
-using Modulus.AspNetCore.FeatureFlags;
-using Modulus.AspNetCore.Idempotency;
-using Modulus.AspNetCore.OpenApi;
-using Modulus.AspNetCore.HealthChecks;
-using Modulus.AspNetCore.RateLimiting;
-using Modulus.AspNetCore.Security;
-using Modulus.AspNetCore.Versioning;
-{{ if !use_dbsh }}using Modulus.EntityFrameworkCore.Extensions;
-{{ end }}using Modulus.Events.Extensions;
+using Modulus.EntityFrameworkCore.Extensions;
+using Modulus.Events.Extensions;
 using Modulus.Mediator.Extensions;
 {{ if auth == "openiddict" }}using Modulus.Identity.Extensions;
 {{ end }}{{ if use_external_provider }}using {{ external_provider_namespace }};
@@ -22,26 +15,32 @@ using Microsoft.Extensions.DependencyInjection;
 var builder = WebApplication.CreateBuilder(args);
 
 // ── Modulus Framework ──────────────────────────────────────────
-builder.Services.AddModulus<{{ app_name }}HostModule>(builder.Configuration);
+// Modules are registered explicitly — this list is the single composition
+// root. Registration order is authoritative: each module's PreConfigure →
+// Configure → PostConfigure phases run in this order at startup, then
+// InitializeAsync in this order, and ShutdownAsync in reverse.
+builder.Services.AddModulus(builder.Configuration, modules =>
+{
+{{ if !no_example }}    modules.AddModule<{{ example_module }}Module>();
+{{ end }}});
 builder.Services.AddModulusExceptionHandling();
 
 // ── API cross-cutting concerns (config-bound; see appsettings.json) ─
-builder.Services.AddModulusCorrelation(builder.Configuration);
-builder.Services.AddModulusIdempotency(builder.Configuration);
-builder.Services.AddModulusApiVersioning(builder.Configuration);
-builder.Services.AddModulusRateLimiting(builder.Configuration);
-builder.Services.AddModulusCors(builder.Configuration);
-builder.Services.AddModulusSecurityHeaders(builder.Configuration);
-
-// Runtime feature flags bound to the "FeatureManagement" section. Gate a minimal-API
+{{ if enable_correlation }}builder.Services.AddModulusCorrelation(builder.Configuration);
+{{ end }}{{ if enable_idempotency }}builder.Services.AddModulusIdempotency(builder.Configuration);
+{{ end }}{{ if enable_api_versioning }}builder.Services.AddModulusApiVersioning(builder.Configuration);
+{{ end }}{{ if enable_rate_limiting }}builder.Services.AddModulusRateLimiting(builder.Configuration);
+{{ end }}{{ if enable_cors }}builder.Services.AddModulusCors(builder.Configuration);
+{{ end }}{{ if enable_security_headers }}builder.Services.AddModulusSecurityHeaders(builder.Configuration);
+{{ end }}
+{{ if enable_feature_flags }}// Runtime feature flags bound to the "FeatureManagement" section. Gate a minimal-API
 // endpoint with .RequireFeature("Flag"); MVC actions can use [FeatureGate("Flag")].
 builder.Services.AddModulusFeatureFlags(builder.Configuration);
-
-// Guard rail (Development/Staging only): fails startup if a connection string or
+{{ end }}{{ if enable_secrets_guard }}// Guard rail (Development/Staging only): fails startup if a connection string or
 // other secret is committed to appsettings*.json instead of coming from environment
 // variables, User Secrets, or a vault. Excludes Production to avoid false positives.
 builder.Services.AddModulusSecretsGuard(builder.Configuration);
-
+{{ end }}
 // ── Forwarded headers ──────────────────────────────────────────
 // Required when behind a reverse proxy / load balancer so the app sees real
 // client IPs and the correct scheme (https). Trusting all proxies is safe in
@@ -55,7 +54,7 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
     options.KnownProxies.Clear();
 });
 
-// Transparent at-rest encryption for [ProtectedPersonalData] string properties.
+{{ if enable_personal_data_protection }}// Transparent at-rest encryption for [ProtectedPersonalData] string properties.
 // Registers an IPersonalDataProtector backed by ASP.NET Data Protection (a key ring
 // with automatic rotation); each module DbContext applies the value converter itself,
 // so marking a property is all that's required. In production, persist the key ring
@@ -63,12 +62,12 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 // for equality search on an encrypted field, set PersonalDataProtection:SearchHashKey
 // via User Secrets or an environment variable and store an IPersonalDataProtector.Hash.
 builder.Services.AddModulusPersonalDataProtection(builder.Configuration);
-
+{{ end }}
 // ── Domain & integration events ────────────────────────────────
 // Registers DomainEventDispatcher (required by each module's DbContext),
 // the in-process event bus, and discovers handlers in the host assembly.
 // Each module can call AddModulusEvents() with its own assemblies too.
-builder.Services.AddModulusEvents(typeof({{ app_name }}HostModule).Assembly);
+builder.Services.AddModulusEvents(typeof(Program).Assembly);
 
 // ── CQRS pipeline ──────────────────────────────────────────────
 // Behaviours are registered once here; each module registers its own
@@ -110,7 +109,9 @@ var app = builder.Build();
 // fast if a module has none — every schema change must go through a migration.
 // Outside Production (Development / Testing / Staging) we use MigrateOrCreate so a
 // freshly generated app (and the integration-test harness) runs before you author
-// the first migration.
+// the first migration. Modules whose schema is managed externally (dbsh —
+// registered via .ExternallyManaged<TContext>()) are skipped here; apply theirs
+// with `modulus migrate update`.
 // Author the first migration with:  modulus migrate add <Name> --module <Module>
 await app.Services.MigrateModulusDatabasesAsync(
     app.Environment.IsProduction()
@@ -125,19 +126,29 @@ await app.Services.MigrateModulusDatabasesAsync(
 // pipeline. Idempotency runs after UseModulus so the tenant is resolved before
 // keys are scoped, and still wraps the controller so responses can be replayed.
 app.UseForwardedHeaders();
-app.UseModulusCorrelation();
-app.UseModulusSecurityHeaders();
-app.UseExceptionHandler();
-app.UseModulusCors();
-{{ if auth != "none" }}app.UseAuthentication();
+{{ if enable_correlation }}app.UseModulusCorrelation();
+{{ end }}{{ if enable_security_headers }}app.UseModulusSecurityHeaders();
+{{ end }}app.UseExceptionHandler();
+{{ if enable_cors }}app.UseModulusCors();
+{{ end }}{{ if auth != "none" }}app.UseAuthentication();
 app.UseAuthorization();
-{{ end }}app.UseModulusRateLimiting();
-app.UseModulus();
-app.UseModulusIdempotency();
-
+{{ end }}{{ if enable_rate_limiting }}app.UseModulusRateLimiting();
+{{ end }}app.UseModulus();
+{{ if enable_idempotency }}app.UseModulusIdempotency();
+{{ end }}
 app.MapControllers();
-app.MapModulusHealthChecks();
 
+// REPR endpoints (EndpointBase subclasses) contributed by module Presentation
+// assemblies. `modulus add-module` adds ProjectReferences; the Presentation DLLs
+// land in the bin directory and are discovered by naming convention.
+// For explicit control, replace with app.MapModulusEndpoints(typeof(SomeEndpoints).Assembly).
+app.MapModulusEndpoints(
+    Directory.GetFiles(AppContext.BaseDirectory, "{{ root_namespace }}.Modules.*.Presentation.dll")
+        .Select(Assembly.LoadFrom)
+        .ToArray());
+
+{{ if enable_health_checks }}app.MapModulusHealthChecks();
+{{ end }}
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();

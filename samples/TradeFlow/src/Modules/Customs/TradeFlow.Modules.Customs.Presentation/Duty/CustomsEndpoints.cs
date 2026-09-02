@@ -418,6 +418,39 @@ internal sealed class GetAitAtLedgerEndpoint : Endpoint<GetAitAtLedgerEndpoint.R
     }
 }
 
+internal sealed class RecordAitAtAdjustmentEndpoint : Endpoint<RecordAitAtAdjustmentEndpoint.Request, AitAtLedgerEntryResponse>
+{
+    private readonly IMediator _mediator;
+
+    public RecordAitAtAdjustmentEndpoint(IMediator mediator) => _mediator = mediator;
+
+    public override void Configure()
+    {
+        Post("/ait-at-ledger/adjustments");
+        Tag(Tags.AitAtLedger);
+        Summary("Counterpost an AIT/AT adjustment per return period (BR-CUS-07)");
+    }
+
+    public override async Task HandleAsync(Request req, CancellationToken ct)
+    {
+        Result<AitAtLedgerEntryResponse> result = await _mediator.SendAsync(new RecordAitAtAdjustmentCommand(
+            req.CompanyId, req.FiscalYear, req.Component, req.Amount, req.ReturnPeriod,
+            req.Narrative, req.BookedOn), ct);
+        await EndpointHelper.ResolveAsync(HttpContext, result, ct);
+    }
+
+    internal sealed class Request
+    {
+        public Guid CompanyId { get; set; }
+        public int FiscalYear { get; set; }
+        public DutyComponent Component { get; set; }
+        public decimal Amount { get; set; }
+        public string ReturnPeriod { get; set; } = string.Empty;
+        public string? Narrative { get; set; }
+        public DateOnly BookedOn { get; set; }
+    }
+}
+
 internal sealed class AccrueDemurrageEndpoint : Endpoint<AccrueDemurrageEndpoint.Request, DemurrageResponse>
 {
     private readonly IMediator _mediator;
@@ -598,6 +631,87 @@ internal sealed class ListSroBenefitsEndpoint : Endpoint<ListSroBenefitsEndpoint
 
     internal sealed class Request
     {
+    }
+}
+
+internal sealed class ResolveSroBenefitsEndpoint : Endpoint<ResolveSroBenefitsEndpoint.Request, SroSourceResponse>
+{
+    private readonly IMediator _mediator;
+
+    public ResolveSroBenefitsEndpoint(IMediator mediator) => _mediator = mediator;
+
+    public override void Configure()
+    {
+        Get("/duty/sro-source");
+        Tag(Tags.SroBenefits);
+        Summary("Source the duty structure for an HS code: base rates + resolved SRO benefits with effective rates (BR-DS-05)");
+    }
+
+    public override async Task HandleAsync(Request req, CancellationToken ct)
+    {
+        Result<SroSourceResponse> result = await _mediator.QueryAsync(
+            new ResolveSroBenefitsQuery(req.HsCode, req.AsOfDate), ct);
+        await EndpointHelper.ResolveAsync(HttpContext, result, ct);
+    }
+
+    internal sealed class Request
+    {
+        public string HsCode { get; set; } = string.Empty;
+        public DateOnly AsOfDate { get; set; }
+    }
+}
+
+internal sealed class BulkDutyLookupEndpoint : Endpoint<BulkDutyLookupEndpoint.Request, IReadOnlyList<BulkDutyLookupEntryResponse>>
+{
+    private readonly IMediator _mediator;
+
+    public BulkDutyLookupEndpoint(IMediator mediator) => _mediator = mediator;
+
+    public override void Configure()
+    {
+        Post("/duty/bulk-lookup");
+        Tag(Tags.Duty);
+        Summary("Bulk tax lookup across many HS codes: effective rates + applicable SRO benefits (max 50 per call)");
+    }
+
+    public override async Task HandleAsync(Request req, CancellationToken ct)
+    {
+        Result<IReadOnlyList<BulkDutyLookupEntryResponse>> result = await _mediator.QueryAsync(
+            new BulkDutyLookupQuery(req.HsCodes, req.AsOfDate), ct);
+        await EndpointHelper.ResolveAsync(HttpContext, result, ct);
+    }
+
+    internal sealed class Request
+    {
+        public IReadOnlyList<string> HsCodes { get; set; } = [];
+        public DateOnly AsOfDate { get; set; }
+    }
+}
+
+internal sealed class GetDutyAnalysisEndpoint : Endpoint<GetDutyAnalysisEndpoint.Request, DutyAnalysisResponse>
+{
+    private readonly IMediator _mediator;
+
+    public GetDutyAnalysisEndpoint(IMediator mediator) => _mediator = mediator;
+
+    public override void Configure()
+    {
+        Get("/duty/analysis");
+        Tag(Tags.Duty);
+        Summary("Duty Analysis report: component mix by HS, computed-vs-assessed variance, effective duty %, SRO savings (doc 08 Report 3)");
+    }
+
+    public override async Task HandleAsync(Request req, CancellationToken ct)
+    {
+        Result<DutyAnalysisResponse> result = await _mediator.QueryAsync(
+            new GetDutyAnalysisQuery(req.From, req.To), ct);
+        await EndpointHelper.ResolveAsync(HttpContext, result, ct);
+    }
+
+    internal sealed class Request
+    {
+        public DateOnly From { get; set; }
+        public DateOnly To { get; set; }
     }
 }
 

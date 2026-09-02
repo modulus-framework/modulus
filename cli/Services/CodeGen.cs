@@ -99,11 +99,34 @@ internal static partial class CodeGen
             throw new ArgumentException(
                 $"{what} name '{name}' must not start with a digit.");
 
+        if (CSharpKeywords.Contains(name))
+            throw new ArgumentException(
+                $"{what} name '{name}' is a C# reserved keyword. " +
+                "Choose a different name (e.g. Order instead of class, Product instead of int).");
+
         return name;
     }
 
     [GeneratedRegex(@"^[A-Za-z_][A-Za-z0-9_]*$")]
     private static partial Regex IdentifierRegex();
+
+    private static readonly HashSet<string> CSharpKeywords = new(StringComparer.Ordinal)
+    {
+        "abstract","as","base","bool","break","byte","case","catch","char","checked",
+        "class","const","continue","decimal","default","delegate","do","double","else",
+        "enum","event","explicit","extern","false","finally","fixed","float","for",
+        "foreach","goto","if","implicit","in","int","interface","internal","is","lock",
+        "long","namespace","new","null","object","operator","out","override","params",
+        "private","protected","public","readonly","ref","return","sbyte","sealed","short",
+        "sizeof","stackalloc","static","string","struct","switch","this","throw","true",
+        "try","typeof","uint","ulong","unchecked","unsafe","ushort","using","virtual",
+        "void","volatile","while",
+        // Contextual keywords that are reserved in some contexts
+        "add","and","alias","ascending","async","await","by","descending","dynamic",
+        "equals","from","get","global","group","init","into","join","let","nameof",
+        "not","notnull","on","or","orderby","partial","remove","select","set","unmanaged",
+        "value","var","when","where","with","yield",
+    };
 
     private static string ResolveModuleDirectory(string? module)
     {

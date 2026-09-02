@@ -12,7 +12,7 @@ This section documents the key interfaces and classes in the Modulus framework.
 |------|-----------|-------------|
 | `IModule` | `Modulus.Core.Abstractions` | Module contract |
 | `ModulusModule` | `Modulus.Core.Abstractions` | Module base class |
-| `[DependsOn]` | `Modulus.Core.Abstractions` | Module dependency attribute |
+| `ModulusBuilder` | `Modulus.Core` | Explicit module registration (`AddModule<T>()`) |
 | `AggregateRoot<TId>` | `Modulus.Core.Abstractions.Domain` | DDD aggregate root |
 | `ValueObject` | `Modulus.Core.Abstractions.Domain` | DDD value object |
 | `IDomainEvent` | `Modulus.Core.Abstractions.Domain` | Domain event marker |

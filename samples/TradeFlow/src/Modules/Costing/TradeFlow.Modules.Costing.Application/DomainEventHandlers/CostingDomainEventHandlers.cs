@@ -30,3 +30,19 @@ public sealed class CostSheetAdjustedDomainEventHandler(
             @event.SheetId, @event.TenantId, @event.FileId, @event.SheetNumber, @event.Version, @event.OccurredAt), ct);
     }
 }
+
+public sealed class LandedCostRevaluedDomainEventHandler(
+    IModuleBus moduleBus,
+    ILogger<LandedCostRevaluedDomainEventHandler> logger) : IDomainEventHandler<LandedCostRevaluedDomainEvent>
+{
+    public Task HandleAsync(LandedCostRevaluedDomainEvent @event, CancellationToken ct)
+    {
+        logger.LogInformation(
+            "Publishing integration event for landed-cost revaluation run {RunId} ({Count} variances, {GainLoss:N2} BDT)",
+            @event.RunId, @event.VarianceCount, @event.TotalFxGainLossBdt);
+        return moduleBus.PublishAsync(new LandedCostRevaluedIntegrationEvent(
+            @event.RunId, @event.TenantId, @event.PeriodEnd, @event.SheetsScanned, @event.VarianceCount,
+            @event.TotalOriginalValueBdt, @event.TotalRevaluedValueBdt, @event.TotalFxGainLossBdt,
+            @event.OccurredAt), ct);
+    }
+}

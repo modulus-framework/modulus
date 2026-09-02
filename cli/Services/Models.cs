@@ -9,7 +9,7 @@ internal static class FrameworkVersion
 {
     // Keep in sync with <VersionPrefix> in build/Modulus.Packaging.props —
     // generated apps pin Cobytelabs.Modulus.* packages at this version.
-    public const string Current = "1.2.0";
+    public const string Current = "1.3.0";
 }
 
 /// <summary>
@@ -57,6 +57,18 @@ internal static class DbProviderInfo
             _ => $"Data Source={db}.db",
         };
     }
+
+    /// <summary>
+    /// The dbsh provider id for an EF provider name (dbsh uses lower-case
+    /// ids: sqlite, sqlserver, postgresql, mysql, ...).
+    /// </summary>
+    public static string DbshProvider(string provider) => provider switch
+    {
+        "SqlServer" => "sqlserver",
+        "PostgreSQL" => "postgresql",
+        "MySQL" => "mysql",
+        _ => "sqlite",
+    };
 }
 
 /// <summary>
@@ -96,6 +108,16 @@ internal sealed class AppModel
     /// fail until one is wired (flagged in the command's next-steps output).
     /// </summary>
     public string? LocalPackageSource { get; set; }
+
+    /// <summary>
+    /// Migration engine for generated modules: "efcore" (default, EF Core
+    /// migrations) or "dbsh" (SQL-first migrations managed by the external
+    /// dbsh tool). Propagates to every module the app generates.
+    /// </summary>
+    public string MigrationEngine { get; set; } = "efcore";
+
+    /// <summary>True when modules manage their schema with dbsh SQL migrations.</summary>
+    public bool UseDbsh => MigrationEngine == "dbsh";
 
     /// <summary>
     /// Auth provider key: "none" (default), "openiddict", or one of the six
@@ -269,6 +291,35 @@ internal sealed class ModuleModel
     /// <summary>Per-module connection string (fallback if not in appsettings).</summary>
     public string ConnectionString =>
         DbProviderInfo.ConnectionString(DbProvider, ModuleName);
+
+    // ── Migration engine ───────────────────────────────────────────
+    /// <summary>
+    /// Migration engine: "efcore" (default, EF Core migrations authored in
+    /// Infrastructure/Migrations) or "dbsh" (SQL-first migrations under
+    /// Infrastructure/Database, applied by the external dbsh tool).
+    /// </summary>
+    public string MigrationEngine { get; set; } = "efcore";
+
+    /// <summary>True when the module's schema is managed by dbsh SQL migrations.</summary>
+    public bool UseDbsh => MigrationEngine == "dbsh";
+
+    /// <summary>dbsh provider id for the module's database ("sqlite", ...).</summary>
+    public string DbshProvider => DbProviderInfo.DbshProvider(DbProvider);
+
+    /// <summary>
+    /// Environment variable dbsh expands for the module's connection string
+    /// (e.g. <c>CATALOG_CONNECTION</c> — referenced as <c>${CATALOG_CONNECTION}</c>
+    /// in the generated migration.json so no secret is ever committed).
+    /// </summary>
+    public string DbshConnectionEnvVar => $"{ModuleName.ToUpperInvariant()}_CONNECTION";
+
+    /// <summary>
+    /// The <c>${MODULE_CONNECTION}</c> expansion token for the generated
+    /// migration.json (dbsh expands <c>${VAR}</c> tokens from the environment).
+    /// Pre-built as one value because Scriban would treat a literal <c>{</c>
+    /// before a <c>{{ }}</c> block as part of the tag delimiter.
+    /// </summary>
+    public string DbshConnectionStringToken => "${" + DbshConnectionEnvVar + "}";
 
     // ── Layer project names (4-layer layout) ──────────────────────
     public string DomainProject => $"{ModuleNamespace}.Domain";

@@ -13,8 +13,8 @@ using {{ module_namespace }}.Application;
 /// Composition root for the {{ module_name }} module. Registers the module's own
 /// DbContext (via <see cref="EFCoreServiceCollectionExtensions.AddModuleDatabase{TContext}"/>),
 /// binds the module's <see cref="IUnitOfWork"/> to it, contributes the module's
-/// mediator handlers, and registers the module's integration events. Add
-/// [DependsOn] for any framework modules.
+/// mediator handlers, and registers the module's integration events. The module
+/// is registered in the host's Program.cs via AddModulus(modules => modules.AddModule&lt;…&gt;).
 /// </summary>
 public sealed class {{ module_name }}Module : ModulusModule
 {
@@ -22,9 +22,12 @@ public sealed class {{ module_name }}Module : ModulusModule
         IServiceCollection services,
         IConfiguration configuration)
     {
-        services.AddModuleDatabase<{{ module_name }}DbContext>(options =>
+{{ if use_dbsh }}        // Schema for this module is managed by dbsh (SQL files under
+        // Database/). ExternallyManaged marks the context so startup's
+        // MigrateModulusDatabasesAsync skips it; apply with `modulus migrate update`.
+{{ end }}        services.AddModuleDatabase<{{ module_name }}DbContext>(options =>
             options.{{ use_db_method }}(configuration.GetConnectionString("{{ module_name }}")
-                ?? "{{ connection_string }}"));
+                ?? "{{ connection_string }}")){{ if use_dbsh }}.ExternallyManaged<{{ module_name }}DbContext>(){{ end }};
 
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<{{ module_name }}DbContext>());
 

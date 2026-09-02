@@ -1,12 +1,12 @@
 namespace Modulus.Outbox.Dispatchers;
 
-using System.Text.Json;
 using Modulus.Events.Abstractions;
 using Modulus.Outbox.Abstractions;
 
 internal sealed class InProcessOutboxDispatcher(
     IModuleBus bus,
-    IIntegrationEventRegistry registry)
+    IIntegrationEventRegistry registry,
+    IMessageSerializer serializer)
     : IOutboxDispatcher
 {
     public async Task DispatchAsync(
@@ -24,8 +24,13 @@ internal sealed class InProcessOutboxDispatcher(
                 "Ensure its assembly is scanned by AddModulusEvents(...) so the " +
                 "event type is registered.");
 
-        var @event = (IIntegrationEvent)JsonSerializer
-            .Deserialize(message.Payload, type)!;
+        // Deserialise with the shared IMessageSerializer — the same options the
+        // row was written with (camelCase + string enums). Raw JsonSerializer
+        // defaults are case-sensitive and would silently drop init-only
+        // properties (EventId/OccurredAt re-minted) and fail on enum payloads.
+        var @event = (IIntegrationEvent?)(serializer.Deserialize(message.Payload, type))
+            ?? throw new InvalidOperationException(
+                $"Failed to deserialise outbox payload for '{message.MessageType}'.");
 
         await bus.PublishAsync((dynamic)@event, ct);
     }

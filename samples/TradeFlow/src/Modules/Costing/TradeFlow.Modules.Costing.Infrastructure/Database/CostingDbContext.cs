@@ -18,6 +18,7 @@ public sealed class CostingDbContext(
     : ModuleDbContext(options, currentTenant, currentUser, dispatcher, serviceProvider), IUnitOfWork
 {
     public DbSet<LandedCostSheet> LandedCostSheets => Set<LandedCostSheet>();
+    public DbSet<RevaluationRun> RevaluationRuns => Set<RevaluationRun>();
 
     protected override string TablePrefix => string.Empty;
 
@@ -73,6 +74,33 @@ public sealed class CostingDbContext(
                 element.Property(e => e.AmountBdt).HasPrecision(18, 4);
                 element.Property(e => e.SelectedLineIds)
                     .HasColumnType("uuid[]");
+                element.Property(e => e.Currency).HasMaxLength(3);
+            });
+        });
+
+        modelBuilder.Entity<RevaluationRun>(builder =>
+        {
+            builder.ToTable("revaluation_runs");
+            builder.Property(r => r.PeriodEnd).IsRequired();
+            builder.HasIndex(r => new { r.TenantId, r.PeriodEnd });
+            builder.Property(r => r.TotalOriginalValueBdt).HasPrecision(18, 4);
+            builder.Property(r => r.TotalRevaluedValueBdt).HasPrecision(18, 4);
+            builder.Property(r => r.TotalFxGainLossBdt).HasPrecision(18, 4);
+
+            builder.OwnsMany(r => r.Variances, variance =>
+            {
+                variance.ToTable("revaluation_variances");
+                variance.WithOwner().HasForeignKey("RunId");
+                variance.HasKey("RunId", "Id");
+                variance.Property(v => v.SheetNumber).HasMaxLength(50).IsRequired();
+                variance.Property(v => v.ElementName).HasMaxLength(100).IsRequired();
+                variance.Property(v => v.Currency).HasMaxLength(3).IsRequired();
+                variance.Property(v => v.OriginalAmountFcy).HasPrecision(18, 4);
+                variance.Property(v => v.OriginalFxRate).HasPrecision(18, 6);
+                variance.Property(v => v.OriginalAmountBdt).HasPrecision(18, 4);
+                variance.Property(v => v.NewFxRate).HasPrecision(18, 6);
+                variance.Property(v => v.NewAmountBdt).HasPrecision(18, 4);
+                variance.Property(v => v.FxGainLossBdt).HasPrecision(18, 4);
             });
         });
     }

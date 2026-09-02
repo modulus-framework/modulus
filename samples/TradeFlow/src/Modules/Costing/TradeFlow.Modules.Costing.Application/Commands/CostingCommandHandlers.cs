@@ -49,7 +49,7 @@ public sealed class AddCostElementHandler(
 
         var element = new CostElement(Guid.NewGuid(), request.Name, request.AmountFcy, request.FxRate,
             request.AmountBdt, request.Driver, request.Scope, request.Treatment, request.SourceDocType,
-            request.SourceDocNumber, request.SelectedLineIds);
+            request.SourceDocNumber, request.SelectedLineIds, request.Currency);
 
         Result result = sheet.AddElement(element);
         if (result.IsFailure)

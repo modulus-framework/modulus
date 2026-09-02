@@ -7,7 +7,8 @@ namespace Modulus.Cli.Commands;
 
 /// <summary>
 /// Adds a layered module to an existing application and wires it into
-/// the host module's [DependsOn] and the Host project's ProjectReferences.
+/// the host Program.cs's AddModulus registration and the Host project's
+/// ProjectReferences.
 /// </summary>
 internal sealed class AddModuleCommand : Command<AddModuleCommand.Settings>
 {
@@ -20,6 +21,10 @@ internal sealed class AddModuleCommand : Command<AddModuleCommand.Settings>
         [Description("Database provider: SQLite (default), SqlServer, PostgreSQL, MySQL")]
         [CommandOption("-d|--database")]
         public string? Database { get; init; }
+
+        [Description("Migration engine: efcore (default), dbsh. Omit to inherit from the app's existing modules.")]
+        [CommandOption("--migration-engine")]
+        public string? MigrationEngine { get; init; }
     }
 
     public override int Execute(CommandContext ctx, Settings s)
@@ -62,12 +67,20 @@ internal sealed class AddModuleCommand : Command<AddModuleCommand.Settings>
             : NewAppCommand.ValidateChoice(
                 s.Database!, NewAppCommand.KnownProviders, "database provider");
 
+        // Explicit flag wins; otherwise inherit the app's prevailing engine
+        // (dbsh when every existing module uses dbsh, else efcore).
+        var migrationEngine = string.IsNullOrWhiteSpace(s.MigrationEngine)
+            ? MigrateSupport.DetectEngine(solutionDir)
+            : NewAppCommand.ValidateChoice(
+                s.MigrationEngine!, NewAppCommand.KnownMigrationEngines, "migration engine");
+
         var model = new ModuleModel
         {
             RootNamespace = rootNs,
             ModuleName = moduleName,
             ModuleNamespace = moduleNs,
             DbProvider = database,
+            MigrationEngine = migrationEngine,
         };
 
         // Generate the layered module skeleton.
@@ -81,8 +94,8 @@ internal sealed class AddModuleCommand : Command<AddModuleCommand.Settings>
             SolutionHelper.AddProject(slnx, rel.Replace('\\', '/'));
         }
 
-        // Wire [DependsOn] + using into the host module class.
-        WireDependsOn(solutionDir, rootNs, moduleName);
+        // Wire the module into Program.cs's AddModulus callback (+ using).
+        WireModuleRegistration(solutionDir, rootNs, moduleName);
 
         // Add Host → Infrastructure + Presentation ProjectReferences.
         AddHostProjectReferences(solutionDir, rootNs, moduleNs);
@@ -100,67 +113,91 @@ internal sealed class AddModuleCommand : Command<AddModuleCommand.Settings>
         if (Ux.DryRun) Ux.Warning("Dry-run: nothing was actually written.");
         AnsiConsole.MarkupLine("[grey]  →[/] Created 4 projects under [grey]{0}[/]", moduleNs);
         AnsiConsole.MarkupLine("[grey]  →[/] Added Host → Infrastructure + Presentation ProjectReferences");
-        AnsiConsole.MarkupLine("[grey]  →[/] Added [[DependsOn]] to host module");
+        AnsiConsole.MarkupLine("[grey]  →[/] Registered {0}Module in Program.cs", moduleName);
+        AnsiConsole.MarkupLine("[grey]  →[/] Migration engine: {0}", migrationEngine);
         AnsiConsole.WriteLine();
         AnsiConsole.MarkupLine("[grey]Next:[/] modulus generate-crud Item --module {0}", moduleName);
 
         return 0;
     }
 
-    private static void WireDependsOn(string solutionDir, string rootNs, string moduleName)
+    /// <summary>
+    /// Wires the new module into the host Program.cs: adds the
+    /// <c>using {RootNs}.Modules.{Module}.Infrastructure;</c> directive and a
+    /// <c>modules.AddModule&lt;{Module}Module&gt;();</c> line inside the
+    /// <c>AddModulus(configuration, modules => { … })</c> callback (appended
+    /// last so registration order matches the order modules were added).
+    /// </summary>
+    private static void WireModuleRegistration(string solutionDir, string rootNs, string moduleName)
     {
-        var apiDir = Path.Combine(solutionDir, "src", "API", $"{rootNs}.Api");
-        var moduleFiles = Directory.GetFiles(apiDir, "*Module.cs", SearchOption.AllDirectories);
+        var programCs = Path.Combine(solutionDir, "src", "API", $"{rootNs}.Api", "Program.cs");
+        if (!File.Exists(programCs))
+            throw new InvalidOperationException(
+                $"Program.cs not found at {programCs}. " +
+                "Register the module manually with " +
+                $"modules.AddModule<{moduleName}Module>() in AddModulus(...).");
 
-        var moduleClass = $"{moduleName}Module";
+        var content = File.ReadAllText(programCs);
+
+        if (content.Contains($"AddModule<{moduleName}Module>()", StringComparison.Ordinal))
+            return; // already registered (e.g. re-running add-module)
+
+        if (content.Contains("AddModulus<", StringComparison.Ordinal))
+            throw new InvalidOperationException(
+                "Program.cs uses the removed AddModulus<TStartupModule> API. " +
+                "Modulus modules are now registered explicitly — migrate to " +
+                "AddModulus(configuration, modules => { modules.AddModule<...>(); }) " +
+                $"and add modules.AddModule<{moduleName}Module>(); there.");
+
+        // 1) Insert the using for the module's Infrastructure namespace (where
+        //    the module class lives) at the top of the using block.
         var infraNs = $"{rootNs}.Modules.{moduleName}.Infrastructure";
-
-        foreach (var file in moduleFiles)
+        var usingLine = $"using {infraNs};";
+        if (!content.Contains(usingLine, StringComparison.Ordinal))
         {
-            var content = File.ReadAllText(file);
-            if (content.Contains($"typeof({moduleClass})", StringComparison.Ordinal))
-                continue;
-
-            // Add the using for the module's Infrastructure namespace (where the
-            // module class lives) unless already present.
-            var usingLine = $"using {infraNs};";
-            if (!content.Contains(usingLine, StringComparison.Ordinal))
+            // Insert after the last leading using directive; fall back to the
+            // very top when the file has none yet.
+            var insertAt = 0;
+            for (var i = content.IndexOf("using ", StringComparison.Ordinal);
+                 i >= 0;
+                 i = content.IndexOf("using ", i + 1, StringComparison.Ordinal))
             {
-                // Insert before the namespace declaration to keep usings at top.
-                // Use >= 0 (not > 0) so a file that starts with "namespace" at
-                // position 0 is handled correctly.
-                var nsIdx = content.IndexOf("namespace ", StringComparison.Ordinal);
-                if (nsIdx >= 0)
-                    content = content.Insert(nsIdx, usingLine + "\n");
+                var lineEnd = content.IndexOf('\n', i);
+                if (lineEnd < 0) break;
+                var line = content[i..lineEnd].TrimEnd();
+                if (line.StartsWith("using ", StringComparison.Ordinal) && line.EndsWith(';'))
+                    insertAt = lineEnd + 1;
+                else
+                    break;
             }
 
-            // Add [DependsOn(typeof({Module}Module))] before the class declaration.
-            // Handle two cases:
-            //  a) An existing [DependsOn(...)] attribute is present — insert a new
-            //     one before it so we don't nest inside an existing attribute list.
-            //  b) No [DependsOn] exists — insert before the class declaration.
-            var attribute = $"[DependsOn(typeof({moduleClass}))]\n";
-
-            var existingDepAttr = content.IndexOf("[DependsOn(", StringComparison.Ordinal);
-            var classPattern = "public sealed class";
-            var classIdx = content.IndexOf(classPattern, StringComparison.Ordinal);
-            if (classIdx < 0) continue;
-
-            int insertIdx;
-            if (existingDepAttr >= 0 && existingDepAttr < classIdx)
-            {
-                // Insert before the first [DependsOn] block.
-                insertIdx = content.LastIndexOf('\n', existingDepAttr) + 1;
-            }
-            else
-            {
-                // No existing [DependsOn] — insert on the line before the class.
-                insertIdx = content.LastIndexOf('\n', classIdx) + 1;
-            }
-
-            content = content.Insert(insertIdx, attribute);
-            Ux.WriteFile(file, content);
+            content = content.Insert(insertAt, usingLine + "\n");
         }
+
+        // 2) Append modules.AddModule<{Module}Module>(); as the last entry of
+        //    the AddModulus callback — inside the closing brace of the
+        //    lambda body, before the "});" that closes the call.
+        var anchor = content.IndexOf("});", content.IndexOf("AddModulus(", StringComparison.Ordinal), StringComparison.Ordinal);
+        if (anchor < 0)
+            throw new InvalidOperationException(
+                "Could not find the AddModulus(configuration, modules => { … }) " +
+                "callback in Program.cs. Register the module manually with " +
+                $"modules.AddModule<{moduleName}Module>();");
+
+        // Walk back to the start of the line holding "});" so the new entry
+        // is inserted on its own line above it, indented to match siblings.
+        var lineStart = content.LastIndexOf('\n', anchor) + 1;
+        var indent = "    ";
+        var lastReg = content.LastIndexOf("modules.AddModule<", StringComparison.Ordinal);
+        if (lastReg >= 0)
+        {
+            var regLineStart = content.LastIndexOf('\n', lastReg) + 1;
+            indent = content[regLineStart..lastReg];
+        }
+
+        content = content.Insert(lineStart, $"{indent}modules.AddModule<{moduleName}Module>();\n");
+
+        Ux.WriteFile(programCs, content);
     }
 
     private static void AddHostProjectReferences(string solutionDir, string rootNs, string moduleNs)

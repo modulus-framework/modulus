@@ -40,8 +40,7 @@ MyApp/
 ├── .gitignore
 └── src/
     ├── API/MyApp.Api/                    # Host (composition root)
-    │   ├── Program.cs
-    │   └── Modules/MyAppHostModule.cs
+    │   └── Program.cs
     ├── Shared/                           # Shared kernel (4 projects)
     │   ├── MyApp.Shared.Domain
     │   ├── MyApp.Shared.Application

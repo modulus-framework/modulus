@@ -78,7 +78,7 @@ app.MapModulusDiagnostics(app);
 
 Provides:
 - `/health/modules` — Per-module health status
-- `/health/graph` — Module dependency graph (mermaid format)
+- `/health/graph` — Loaded-module inventory in registration order (`name`, `type`, `initOrder`)
 
 ## See Also
 
