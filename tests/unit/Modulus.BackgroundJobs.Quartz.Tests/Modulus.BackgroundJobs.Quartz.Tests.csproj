@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="../../../src/platform/Modulus.BackgroundJobs.Quartz/Modulus.BackgroundJobs.Quartz.csproj" />
+    <ProjectReference Include="../../../src/platform/Modulus.Platform/Modulus.Platform.csproj" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <PackageReference Include="Microsoft.Extensions.Logging" />
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+</Project>

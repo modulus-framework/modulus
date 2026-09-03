@@ -84,13 +84,33 @@ public sealed class ModuleLoader : IModuleLoader
     }
 
     // ── ShutdownAllAsync ──────────────────────────────────────────
-    public async Task ShutdownAllAsync(CancellationToken ct = default)
+    public async Task ShutdownAllAsync(
+        IServiceProvider sp,
+        CancellationToken ct = default)
     {
+        var logger = sp.GetRequiredService<ILoggerFactory>()
+            .CreateLogger<ModuleLoader>();
+
         for (var i = _descriptors.Count - 1; i >= 0; i--)
         {
             var descriptor = _descriptors[i];
             var module = _modulesByType[descriptor.ModuleType];
-            await module.ShutdownAsync(ct);
+
+            try
+            {
+                await module.ShutdownAsync(ct);
+            }
+            catch (Exception ex)
+            {
+                // Log and continue: a broken module's ShutdownAsync must not
+                // abort the loop, or every module still queued (earlier in
+                // registration order, later in shutdown order) never gets its
+                // own ShutdownAsync called — leaking connections and dropping
+                // in-flight work on a shutdown that's already underway.
+                logger.LogError(ex,
+                    "[Modulus] {Module} threw during shutdown; continuing with remaining modules.",
+                    descriptor.Name);
+            }
         }
     }
 

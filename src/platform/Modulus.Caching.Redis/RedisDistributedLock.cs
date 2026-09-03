@@ -1,6 +1,6 @@
 namespace Modulus.Caching.Redis;
 
-using System.Diagnostics;
+using Microsoft.Extensions.Logging;
 using Modulus.Core.Abstractions;
 using StackExchange.Redis;
 
@@ -10,7 +10,9 @@ using StackExchange.Redis;
 /// they still own the lock before releasing it (preventing accidental release if the lock
 /// was auto-expired and reacquired by another replica).
 /// </summary>
-internal sealed class RedisDistributedLock(IConnectionMultiplexer redis) : IDistributedLock
+internal sealed class RedisDistributedLock(
+    IConnectionMultiplexer redis,
+    ILogger<RedisDistributedLock> logger) : IDistributedLock
 {
     public async Task<IAsyncDisposable?> TryAcquireAsync(
         string key,
@@ -38,7 +40,7 @@ internal sealed class RedisDistributedLock(IConnectionMultiplexer redis) : IDist
             if (!acquired)
                 return null;
 
-            return new RedisDistributedLease(db, key, lockValue);
+            return new RedisDistributedLease(db, key, lockValue, logger);
         }
         catch (OperationCanceledException)
         {
@@ -51,7 +53,11 @@ internal sealed class RedisDistributedLock(IConnectionMultiplexer redis) : IDist
         }
     }
 
-    private sealed class RedisDistributedLease(IDatabase db, string key, string lockValue)
+    private sealed class RedisDistributedLease(
+        IDatabase db,
+        string key,
+        string lockValue,
+        ILogger logger)
         : IDistributedLease
     {
         private bool _disposed;
@@ -73,7 +79,10 @@ internal sealed class RedisDistributedLock(IConnectionMultiplexer redis) : IDist
             catch (Exception ex)
             {
                 // Log but don't throw — the lease is already expired server-side anyway.
-                Debug.WriteLine($"Failed to release distributed lock '{key}': {ex.Message}");
+                // Debug.WriteLine here previously — [Conditional("DEBUG")] means it was
+                // compiled OUT of Release builds, so a failed release was silently
+                // invisible in production with zero telemetry.
+                logger.LogWarning(ex, "Failed to release distributed lock '{Key}'", key);
             }
         }
     }

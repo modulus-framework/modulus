@@ -10,16 +10,23 @@ using Modulus.Observability;
 
 /// <summary>
 /// Decorator that wraps <see cref="IIntegrationEventHandler{TEvent}"/> with
-/// inbox deduplication. Registered automatically by <c>AddInbox</c> /
-/// <c>AddMongoInbox</c> for all handlers.
+/// inbox deduplication. Applied at dispatch time by
+/// <c>InboxHandlerDecorator</c> (registered by <c>AddInbox</c> /
+/// <c>AddMongoInbox</c>) rather than by mutating DI registrations — see
+/// <see cref="IIntegrationEventHandlerDecorator"/>'s remarks for why.
 /// <para>
-/// Dedup is anchored on <see cref="IIntegrationEvent.EventId"/>, which becomes
-/// the <see cref="InboxMessage"/> primary key. This gives a database-level
-/// uniqueness guarantee: two concurrent deliveries of the same event race on
-/// the claim, so only one wins and executes the inner handler.
+/// Dedup is anchored on <c>(EventId, HandlerName)</c> — see
+/// <see cref="InboxMessage.HandlerName"/> — which becomes the
+/// <see cref="InboxMessage"/> composite primary key. The handler name is the
+/// wrapped inner handler's own concrete type name, so two different handlers
+/// subscribed to the same event each get an independent claim instead of
+/// racing over one shared-by-EventId row: without this, the first handler to
+/// claim marks the event <c>Processed</c> and every OTHER handler for that
+/// event is then skipped forever.
 /// </para>
 /// <para>
-/// Behaviour by state of the existing inbox row for an EventId:
+/// Behaviour by state of the existing inbox row for this
+/// <c>(EventId, HandlerName)</c>:
 /// <list type="bullet">
 ///   <item><c>Processed</c> — duplicate; skipped (inner NOT executed).</item>
 ///   <item><c>Processing</c> — in-flight elsewhere; deferred (throws
@@ -41,6 +48,21 @@ public sealed class IdempotentIntegrationEventHandler<TEvent>(
     : IIntegrationEventHandler<TEvent>
     where TEvent : IIntegrationEvent
 {
+    /// <summary>
+    /// Stable identity of the wrapped inner handler, used as the second half
+    /// of the inbox composite key. The inner handler's concrete type name is
+    /// stable across process restarts (unlike an instance hash code) and
+    /// unique per handler class (the normal case: one class implements
+    /// <c>IIntegrationEventHandler&lt;TEvent&gt;</c> once).
+    /// </summary>
+    private readonly string _handlerName = TruncateToColumnWidth(
+        inner.GetType().FullName ?? inner.GetType().Name);
+
+    private const int HandlerNameMaxLength = 500; // matches InboxMessageConfiguration
+
+    private static string TruncateToColumnWidth(string name)
+        => name.Length <= HandlerNameMaxLength ? name : name[..HandlerNameMaxLength];
+
     public async Task HandleAsync(TEvent @event, CancellationToken ct)
     {
         var id = @event.EventId;
@@ -52,6 +74,7 @@ public sealed class IdempotentIntegrationEventHandler<TEvent>(
         {
             claimed = await store.TryClaimAsync(
                 id,
+                _handlerName,
                 IntegrationEventNaming.GetName(typeof(TEvent)),
                 JsonSerializer.Serialize(@event),
                 opts.Value.MaxRetries,
@@ -60,16 +83,16 @@ public sealed class IdempotentIntegrationEventHandler<TEvent>(
         }
         catch (InboxDeferralException)
         {
-            logger.LogDebug("Inbox: {Type} {Id} in-flight elsewhere; deferring.",
-                typeof(TEvent).Name, id);
+            logger.LogDebug("Inbox: {Type} {Id} ({Handler}) in-flight elsewhere; deferring.",
+                typeof(TEvent).Name, id, _handlerName);
             throw;
         }
 
         if (claimed is null)
         {
             ModulusMeters.InboxDedupHits.Add(1);
-            logger.LogDebug("Inbox: {Type} {Id} skipped (duplicate or dead-lettered).",
-                typeof(TEvent).Name, id);
+            logger.LogDebug("Inbox: {Type} {Id} ({Handler}) skipped (duplicate or dead-lettered).",
+                typeof(TEvent).Name, id, _handlerName);
             return;
         }
 
@@ -85,8 +108,8 @@ public sealed class IdempotentIntegrationEventHandler<TEvent>(
         {
             handlerError = ex;
             logger.LogError(ex,
-                "Inbox: handler failed for {Type} {Id}",
-                typeof(TEvent).Name, id);
+                "Inbox: handler failed for {Type} {Id} ({Handler})",
+                typeof(TEvent).Name, id, _handlerName);
         }
 
         // 3. Persist final state in its own try/catch. A persistence failure
@@ -94,15 +117,15 @@ public sealed class IdempotentIntegrationEventHandler<TEvent>(
         try
         {
             if (handlerError is null)
-                await store.MarkProcessedAsync(id, ct);
+                await store.MarkProcessedAsync(id, _handlerName, ct);
             else
-                await store.MarkFailedAsync(id, handlerError.Message, ct);
+                await store.MarkFailedAsync(id, _handlerName, handlerError.Message, ct);
         }
         catch (Exception persistEx)
         {
             logger.LogError(persistEx,
-                "Inbox: failed to persist final state for {Type} {Id}",
-                typeof(TEvent).Name, id);
+                "Inbox: failed to persist final state for {Type} {Id} ({Handler})",
+                typeof(TEvent).Name, id, _handlerName);
         }
 
         if (handlerError is not null)

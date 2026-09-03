@@ -209,7 +209,114 @@ public sealed class IdempotentHandlerTests
         await inner.Received(1).HandleAsync(@event, default);
     }
 
+    [Fact]
+    public async Task HandleAsync_LegacyProcessedRow_HonouredForAnyHandler_SkipsWithoutReexecuting()
+    {
+        // B1/B2 legacy-migration contract: a row written before HandlerName
+        // existed (HandlerName == "") must be honoured for EVERY handler
+        // claiming that EventId — not just re-run because the row's
+        // HandlerName doesn't match this handler's computed name.
+        var (db, store) = BuildStore();
+        var inner = Substitute.For<IIntegrationEventHandler<TestEvent>>();
+        var sut = new IdempotentIntegrationEventHandler<TestEvent>(
+            inner, store,
+            Options.Create(new InboxOptions()),
+            NullLogger<IdempotentIntegrationEventHandler<TestEvent>>.Instance);
+
+        var @event = new TestEvent();
+        db.Set<InboxMessage>().Add(new InboxMessage
+        {
+            Id = @event.EventId,
+            // HandlerName intentionally left unset (defaults to "" — the
+            // legacy sentinel), simulating a row from before this column
+            // existed.
+            MessageType = typeof(TestEvent).AssemblyQualifiedName!,
+            Payload = "{}",
+            ModuleName = "Test",
+            Status = InboxStatus.Processed,
+        });
+        await db.SaveChangesAsync();
+
+        await sut.HandleAsync(@event, default); // must not throw, must not re-run
+
+        await inner.DidNotReceive().HandleAsync(Arg.Any<TestEvent>(), default);
+        db.Set<InboxMessage>().Count(m => m.Id == @event.EventId).Should().Be(1,
+            "the legacy row is honoured, not duplicated with a fresh claim");
+    }
+
+    [Fact]
+    public async Task HandleAsync_LegacyPendingRow_AdoptedByFirstHandler_SecondHandlerGetsOwnRow()
+    {
+        // Two DIFFERENT handler classes subscribed to the same event (the B2
+        // fan-out scenario) both racing to claim ONE pre-migration legacy row:
+        // the first adopts it; the second must not be blocked by that
+        // adoption — it gets its own fresh row instead of deferring forever.
+        // SQLite (not InMemory): adoption uses ExecuteUpdateAsync, which the
+        // InMemory provider does not support — see
+        // HandleAsync_AbandonedClaim_ReclaimedAfterTimeout above.
+        var connection = new Microsoft.Data.Sqlite.SqliteConnection("DataSource=:memory:");
+        await connection.OpenAsync();
+        var opts = new DbContextOptionsBuilder<TestDbContext>()
+            .UseSqlite(connection)
+            .Options;
+        var db = new TestDbContext(opts);
+        db.Database.EnsureCreated();
+        var store = new EfInboxStore(db);
+
+        var innerA = new LegacyFanOutHandlerA();
+        var sutA = new IdempotentIntegrationEventHandler<TestEvent>(
+            innerA, store,
+            Options.Create(new InboxOptions()),
+            NullLogger<IdempotentIntegrationEventHandler<TestEvent>>.Instance);
+
+        var innerB = new LegacyFanOutHandlerB();
+        var sutB = new IdempotentIntegrationEventHandler<TestEvent>(
+            innerB, store,
+            Options.Create(new InboxOptions()),
+            NullLogger<IdempotentIntegrationEventHandler<TestEvent>>.Instance);
+
+        var @event = new TestEvent();
+        db.Set<InboxMessage>().Add(new InboxMessage
+        {
+            Id = @event.EventId,
+            MessageType = typeof(TestEvent).AssemblyQualifiedName!,
+            Payload = "{}",
+            ModuleName = "Test",
+            Status = InboxStatus.Pending,
+        });
+        await db.SaveChangesAsync();
+
+        await sutA.HandleAsync(@event, default);
+        await sutB.HandleAsync(@event, default);
+
+        innerA.CallCount.Should().Be(1);
+        innerB.CallCount.Should().Be(1,
+            "adopting the legacy row for handler A must not block handler B");
+        db.Set<InboxMessage>().Count(m => m.Id == @event.EventId).Should().Be(2,
+            "the adopted legacy row plus handler B's fresh row");
+    }
+
     // ── Test doubles ─────────────────────────────────────────────
+    private sealed class LegacyFanOutHandlerA : IIntegrationEventHandler<TestEvent>
+    {
+        public int CallCount;
+        public Task HandleAsync(TestEvent e, CancellationToken ct)
+        {
+            CallCount++;
+            return Task.CompletedTask;
+        }
+    }
+
+    private sealed class LegacyFanOutHandlerB : IIntegrationEventHandler<TestEvent>
+    {
+        public int CallCount;
+        public Task HandleAsync(TestEvent e, CancellationToken ct)
+        {
+            CallCount++;
+            return Task.CompletedTask;
+        }
+    }
+
     public record TestEvent : IIntegrationEvent
     {
         public Guid EventId { get; } = Guid.NewGuid();

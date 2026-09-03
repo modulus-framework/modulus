@@ -34,7 +34,17 @@ internal sealed class InProcessModuleBus(IServiceProvider sp)
         var handlers = sp
             .GetServices<IIntegrationEventHandler<TEvent>>();
 
+        // Wrap each resolved handler (e.g. with inbox dedup) at dispatch time —
+        // see IIntegrationEventHandlerDecorator's remarks. Optional: falls back
+        // to invoking the raw handler when no such feature is registered.
+        var decorator = sp.GetService<IIntegrationEventHandlerDecorator>();
+
         foreach (var handler in handlers)
-            await handler.HandleAsync(@event, ct);
+        {
+            var target = decorator is null
+                ? handler
+                : (IIntegrationEventHandler<TEvent>)decorator.Decorate(sp, typeof(TEvent), handler);
+            await target.HandleAsync(@event, ct);
+        }
     }
 }

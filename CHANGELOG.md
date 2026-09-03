@@ -7,6 +7,87 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — inbox dedup was silently broken in both registration orderings the framework ships (breaking, migration required)
+
+`AddInbox<TContext>`/`AddMongoInbox` decorated `IIntegrationEventHandler<T>`
+registrations by mutating `IServiceDescriptor`s at the moment they ran — which
+only worked if every handler was already registered first, and only if
+`AddInbox` ran once. Neither held:
+
+- **CLI-generated apps** call `AddModulus(...)` (which runs every module's
+  `AddInbox`) *before* `AddModulusEvents(...)` registers any handlers — the
+  decorator ran against zero handlers, so the inbox silently provided **no
+  deduplication at all**.
+- **Multi-module apps calling `AddModulusEvents` first** (e.g. TradeFlow, 15+
+  modules each calling `AddInbox`) re-wrapped the already-wrapped descriptor on
+  every subsequent call, nesting up to N decorators per handler. The outer
+  claim always deferred on the inner claim for the same EventId, so every
+  integration event dead-lettered without the real handler ever running —
+  logged and counted as a dedup hit (`modulus.inbox.dedup_hits`),
+  indistinguishable from healthy deduplication.
+- Independently, the claim key was the bare EventId with no handler
+  discriminator: an event with **more than one** handler had the first to
+  claim mark it `Processed`, silently skipping every other handler forever.
+
+**Fixed** by moving the wrap from DI-registration time to dispatch time.
+`AddInbox`/`AddMongoInbox` now register a stateless
+`IIntegrationEventHandlerDecorator` (new seam in `Modulus.Events.Abstractions`,
+`TryAddSingleton` — idempotent across repeated `AddInbox` calls);
+`IntegrationEventDispatcher` and `InProcessModuleBus` both wrap each handler
+they resolve, at the moment they dispatch — after every handler *and* every
+inbox registration has run, regardless of which came first in `Program.cs`.
+
+- **Breaking schema change**: `InboxMessage`/`MongoInboxMessage` gain a
+  `HandlerName` column (the wrapped handler's `Type.FullName`); the EF Core
+  primary key becomes `(Id, HandlerName)` and the Mongo claim key becomes a
+  unique compound index on `(EventId, HandlerName)` instead of relying on
+  `_id` alone. **Apps must run `modulus migrate add` per module using
+  `AddInbox`** before deploying this version.
+- **Migration safety**: rows written before this column existed are honoured
+  for *any* handler claiming that EventId (a legacy `Processed`/dead-lettered
+  row is skipped for every handler; a legacy row still eligible to claim is
+  "adopted" by the first handler that claims it) — an in-flight upgrade
+  neither reprocesses an already-handled event nor drops one still mid-flight.
+- `IInboxStore.TryClaimAsync`/`MarkProcessedAsync`/`MarkFailedAsync` all gained
+  a `handlerName` parameter — a breaking change to the (rarely
+  directly-implemented) `IInboxStore` interface.
+
+### Fixed — Quartz delayed/recurring jobs ran with no ambient tenant
+
+`QuartzJobScheduler.EnqueueAsync` populated `tenantId`/`correlationId` in the
+job's `JobDataMap`, but `ScheduleAsync` (delayed) and `AddRecurringAsync`
+(cron) built theirs with only `["args"]` — `QuartzJobAdapter` silently opens
+no tenant scope when those keys are absent, so on the framework's only
+production-durable scheduler, every delayed or recurring job ran outside
+tenant isolation while immediate jobs worked correctly, with nothing logged.
+All three scheduling paths now build their `JobDataMap` through one shared
+helper. New `Modulus.BackgroundJobs.Quartz.Tests` project (none existed) adds
+regression coverage for all three paths.
+
+### Fixed — `MemoryCacheService` had no tenant scoping, unlike `RedisCacheService`
+
+`RedisCacheService.TagKey` prefixes tag keys with the ambient tenant id so two
+tenants sharing a tag name (e.g. `"catalog"`) can't invalidate each other's
+entries; `MemoryCacheService`'s tag index was a flat dictionary keyed on the
+raw tag with no tenant awareness at all. In a multi-tenant app running the
+in-memory cache — the default — two tenants using the same tag name could
+invalidate each other's cache entries. `MemoryCacheService` now applies the
+identical `TagKey` scoping as `RedisCacheService`, so the two
+`ICacheService` implementations behave the same regardless of which one an
+app has wired up.
+
+### Fixed — background-job/lock failures were compiled out of Release builds
+
+Three catch blocks reported failures via `System.Diagnostics.Debug.WriteLine`,
+which is `[Conditional("DEBUG")]` and therefore removed entirely from Release
+builds: `QuartzJobScheduler`'s recurring-job schedule/remove failures, and
+`RedisDistributedLock`'s failed lock-release. All three ran on fire-and-forget
+paths with nothing else to surface the error, so a production failure to
+schedule a recurring job or release a distributed lock was silently invisible
+— no log, no metric, no exception. Both types now take an injected `ILogger`
+and log at `LogError`/`LogWarning`, matching `ChannelJobQueue`'s existing
+pattern.
+
 ### Changed — explicit module registration (breaking)
 
 The `[DependsOn]` module-dependency mechanism has been removed. Modules are now
@@ -32,6 +113,26 @@ reverse).
   explicit `AddModulus(config, modules => modules.AddModule<A>()...)` listing
   every module (the old host module's `[DependsOn]` list is the source of
   truth for the order), then delete the host module class.
+
+### Fixed — CLI template & testing-harness bugs (found by regenerating an app e2e)
+
+- **`NuGet.config` template generated invalid XML** — the guidance comment
+  contained `--package-source`, and `--` is illegal inside XML comments, so
+  every freshly generated app failed restore with "NuGet.Config is not valid
+  XML". Comment reworded to avoid the double dash.
+- **`Program.cs` template missed namespace imports** — the host usings never
+  included `Modulus.AspNetCore.{Correlation,Cors,FeatureFlags,HealthChecks,
+  Idempotency,OpenApi,RateLimiting,Security,Versioning}`, so every generated
+  app failed to compile its own middleware wiring (`AddModulusCorrelation`,
+  `AddModulusRateLimiting`, …). All nine imports added.
+- **`ModuleBoundaryRules` was inoperative** — it scanned only `Modulus.*`
+  framework assemblies (never the app's own modules/events) and resolved
+  `typeof(IModule)` against a local placeholder interface nothing implements,
+  so `FindModuleTypes()` always returned empty and app-owned integration
+  events were never name-checked. Now scans all non-dynamic assemblies
+  (ReflectionTypeLoadException-safe), skips abstract bases (no more
+  `IntegrationEventBase` false positive), and uses the real
+  `Modulus.Core.Abstractions.IModule`.
 
 ### Fixed — Production-hardening pass
 

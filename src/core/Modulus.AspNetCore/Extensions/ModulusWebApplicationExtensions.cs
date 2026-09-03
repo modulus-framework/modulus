@@ -75,7 +75,7 @@ internal sealed class ModuleLifecycleHostedService(
         try
         {
             logger.LogInformation("[Modulus] Shutting down modules...");
-            await loader.ShutdownAllAsync(ct);
+            await loader.ShutdownAllAsync(sp, ct);
         }
         catch (Exception ex)
         {

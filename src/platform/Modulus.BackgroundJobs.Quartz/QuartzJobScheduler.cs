@@ -1,4 +1,5 @@
 using Quartz;
+using Microsoft.Extensions.Logging;
 using Modulus.BackgroundJobs;
 using Modulus.Core.Abstractions;
 
@@ -11,7 +12,8 @@ namespace Modulus.BackgroundJobs.Quartz;
 /// </summary>
 public sealed class QuartzJobScheduler(
     ISchedulerFactory schedulerFactory,
-    IServiceProvider serviceProvider) : IJobScheduler
+    IServiceProvider serviceProvider,
+    ILogger<QuartzJobScheduler> logger) : IJobScheduler
 {
     private IScheduler? _scheduler;
 
@@ -22,6 +24,23 @@ public sealed class QuartzJobScheduler(
         return _scheduler;
     }
 
+    /// <summary>
+    /// Builds a JobDataMap carrying <paramref name="args"/> plus the CURRENT
+    /// ambient tenant/correlation context, restored by
+    /// <see cref="QuartzJobAdapter{TJob,TArgs}"/> when the job fires. Shared by
+    /// every scheduling path (immediate, delayed, recurring) so none of them
+    /// can silently drift out of sync with the others — a job that fires
+    /// without this context runs with NO ambient tenant, which is a
+    /// cross-tenant data-isolation risk for any handler that touches a
+    /// tenant-scoped <c>ModuleDbContext</c>.
+    /// </summary>
+    private JobDataMap BuildJobDataMap<TArgs>(TArgs args) => new()
+    {
+        ["args"] = args!,
+        ["tenantId"] = serviceProvider.GetService<ICurrentTenant>()?.TenantId?.ToString("N") ?? string.Empty,
+        ["correlationId"] = serviceProvider.GetService<ICorrelationContext>()?.CorrelationId ?? string.Empty,
+    };
+
     public async Task EnqueueAsync<TJob, TArgs>(
         TArgs args,
         CancellationToken ct = default)
@@ -29,16 +48,10 @@ public sealed class QuartzJobScheduler(
     {
         var scheduler = await GetSchedulerAsync();
         var jobName = GetJobName<TJob>();
-        var jobDataMap = new JobDataMap
-        {
-            ["args"] = args!,
-            ["tenantId"] = serviceProvider.GetService<ICurrentTenant>()?.TenantId?.ToString("N") ?? string.Empty,
-            ["correlationId"] = serviceProvider.GetService<ICorrelationContext>()?.CorrelationId ?? string.Empty,
-        };
 
         var jobDetail = JobBuilder.Create<QuartzJobAdapter<TJob, TArgs>>()
             .WithIdentity(jobName, Guid.NewGuid().ToString())
-            .SetJobData(jobDataMap)
+            .SetJobData(BuildJobDataMap(args))
             .Build();
 
         var trigger = TriggerBuilder.Create()
@@ -57,11 +70,10 @@ public sealed class QuartzJobScheduler(
     {
         var scheduler = await GetSchedulerAsync();
         var jobName = GetJobName<TJob>();
-        var jobDataMap = new JobDataMap { ["args"] = args! };
 
         var jobDetail = JobBuilder.Create<QuartzJobAdapter<TJob, TArgs>>()
             .WithIdentity(jobName, Guid.NewGuid().ToString())
-            .SetJobData(jobDataMap)
+            .SetJobData(BuildJobDataMap(args))
             .Build();
 
         var trigger = TriggerBuilder.Create()
@@ -90,11 +102,10 @@ public sealed class QuartzJobScheduler(
         try
         {
             var scheduler = await GetSchedulerAsync();
-            var jobDataMap = new JobDataMap { ["args"] = args! };
 
             var jobDetail = JobBuilder.Create<QuartzJobAdapter<TJob, TArgs>>()
                 .WithIdentity(jobId, "recurring")
-                .SetJobData(jobDataMap)
+                .SetJobData(BuildJobDataMap(args))
                 .StoreDurably()
                 .Build();
 
@@ -114,7 +125,7 @@ public sealed class QuartzJobScheduler(
         {
             // Log but don't throw — AddRecurring is fire-and-forget, so schedule errors
             // won't propagate to the caller. This is consistent with the ChannelJobQueue.
-            System.Diagnostics.Debug.WriteLine($"Failed to schedule recurring job: {ex}");
+            logger.LogError(ex, "Failed to schedule recurring job {JobId}", jobId);
         }
     }
 
@@ -134,7 +145,7 @@ public sealed class QuartzJobScheduler(
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"Failed to remove recurring job: {ex}");
+            logger.LogError(ex, "Failed to remove recurring job {JobId}", jobId);
         }
     }
 

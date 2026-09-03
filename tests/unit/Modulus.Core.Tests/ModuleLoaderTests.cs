@@ -57,10 +57,38 @@ public sealed class ModuleLoaderTests
         var alpha = new AlphaModule { ShutdownLog = log };
         var beta = new BetaModule { ShutdownLog = log };
         var loader = new ModuleLoader([alpha, beta]);
+        await using var sp = BuildLoggingProvider();
 
-        await loader.ShutdownAllAsync();
+        await loader.ShutdownAllAsync(sp);
 
         log.Should().Equal(["BetaModule", "AlphaModule"]);
+    }
+
+    [Fact]
+    public async Task ShutdownAllAsync_OneModuleThrows_RemainingModulesStillShutDown()
+    {
+        // H8: a module whose ShutdownAsync throws must not abort the loop —
+        // every module still queued (earlier in registration order, later in
+        // shutdown order) must still get its own ShutdownAsync called.
+        var log = new List<string>();
+        var alpha = new AlphaModule { ShutdownLog = log };
+        // Beta shuts down FIRST (reverse registration order) and throws.
+        var beta = new ThrowingShutdownModule { ShutdownLog = log };
+        var loader = new ModuleLoader([alpha, beta]);
+        await using var sp = BuildLoggingProvider();
+
+        // Must not throw — the exception is caught and logged, not propagated.
+        await loader.ShutdownAllAsync(sp);
+
+        log.Should().Equal(["AlphaModule"],
+            "alpha's ShutdownAsync must still run even though beta's threw first");
+    }
+
+    private static ServiceProvider BuildLoggingProvider()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        return services.BuildServiceProvider();
     }
 
     [Fact]
@@ -86,7 +114,7 @@ public sealed class ModuleLoaderTests
             return Task.CompletedTask;
         }
 
-        public Task ShutdownAsync(CancellationToken ct)
+        public virtual Task ShutdownAsync(CancellationToken ct)
         {
             ShutdownLog?.Add(GetType().Name);
             return Task.CompletedTask;
@@ -94,4 +122,10 @@ public sealed class ModuleLoaderTests
     }
 
     private class BetaModule : AlphaModule { }
+
+    private sealed class ThrowingShutdownModule : AlphaModule
+    {
+        public override Task ShutdownAsync(CancellationToken ct)
+            => throw new InvalidOperationException("boom");
+    }
 }

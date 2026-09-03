@@ -73,8 +73,19 @@ public sealed class IntegrationEventDispatcher
         if (handlers.Count == 0)
             return false;
 
+        // Wrap each resolved handler (e.g. with inbox dedup) at dispatch time,
+        // not at DI-registration time — see IIntegrationEventHandlerDecorator's
+        // remarks for why. Optional: no-op when no such feature is registered.
+        var decorator = scope.ServiceProvider.GetService<IIntegrationEventHandlerDecorator>();
+        if (decorator is not null)
+            handlers = handlers
+                .Select(h => decorator.Decorate(scope.ServiceProvider, eventType, h))
+                .ToList();
+
         // One compiled delegate per closed handler interface, cached process-wide
-        // — reflection (GetMethod + Invoke) runs only on the first dispatch.
+        // — reflection (GetMethod + Invoke) runs only on the first dispatch. The
+        // decorator returned above implements the same closed handler interface,
+        // so the same compiled invoker applies to it unchanged.
         var invoker = s_handlerInvokers.GetOrAdd(handlerType, CompileHandlerInvoker);
         foreach (var handler in handlers)
             await invoker(handler, @event, ct);
