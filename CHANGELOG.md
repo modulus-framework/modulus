@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — module shutdown aborted on the first module that threw
+
+`ModuleLoader.ShutdownAllAsync` had no per-module try/catch: one module's
+`ShutdownAsync` throwing aborted the reverse-order loop, so every module still
+queued (earlier in registration order, later in shutdown order) never got its
+own `ShutdownAsync` called — leaking connections and dropping in-flight work
+on a shutdown that was already underway. Each module's shutdown is now
+individually wrapped; a failure is logged and shutdown continues with the
+remaining modules. **Breaking**: `IModuleLoader.ShutdownAllAsync` now takes
+`IServiceProvider` (to resolve a logger), matching `InitializeAllAsync`'s
+existing signature.
+
+### Fixed — no environment guard on `UseDevelopmentCertificates`
+
+Nothing checked at runtime whether `Identity:UseDevelopmentCertificates` was
+enabled in Production — only a doc comment said "Development only". Since
+every environment-specific `appsettings.*.json` is gitignored repo-wide (only
+the base `appsettings.json` is tracked, anywhere in the repo — including
+samples), a deployment with no local `appsettings.Production.json` override
+falls back entirely to the base file's settings, which enable both
+`UseDevelopmentCertificates` and `AllowPasswordFlow` for local dev. Nothing
+previously stopped that combination from silently reaching a Production
+deployment and signing every token with OpenIddict's ephemeral,
+regenerated-per-restart development certificate. `AddModulusOpenIddict` now
+registers a `DevelopmentCertificateGuard` hosted service that fails fast at
+startup if the flag is set while `IHostEnvironment.IsProduction()` is true —
+this is the actual enforcement point regardless of which config file (or
+none) a given deployment supplies.
+
 ### Fixed — inbox dedup was silently broken in both registration orderings the framework ships (breaking, migration required)
 
 `AddInbox<TContext>`/`AddMongoInbox` decorated `IIntegrationEventHandler<T>`

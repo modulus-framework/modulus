@@ -97,6 +97,10 @@ public static class IdentityExtensions
         // it (e.g. when AddModulusOpenIddict is mistakenly called twice) is safe.
         services.AddHostedService<SingleExternalProviderGuard>();
 
+        // Fail fast if UseDevelopmentCertificates is set in Production — see
+        // DevelopmentCertificateGuard's doc comment for why this exists.
+        services.AddHostedService<DevelopmentCertificateGuard>();
+
         var identityOptions = configuration.GetSection("Identity")
             .Get<ModulusIdentityOptions>() ?? new ModulusIdentityOptions();
 
