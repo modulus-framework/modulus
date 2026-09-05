@@ -1,16 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-    <IsTestProject>true</IsTestProject>
-  </PropertyGroup>
-
   <ItemGroup>
     <ProjectReference Include="..\..\..\src\messaging\Modulus.EventBus.RabbitMQ\Modulus.EventBus.RabbitMQ.csproj" />
     <ProjectReference Include="..\..\..\src\messaging\Modulus.EventBus.Kafka\Modulus.EventBus.Kafka.csproj" />
-    <ProjectReference Include="..\..\..\src\testing\Modulus.Testing\Modulus.Testing.csproj" />
+    <ProjectReference Include="..\..\..\src\messaging\Modulus.Events\Modulus.Events.csproj" />
+    <PackageReference Include="Testcontainers.RabbitMq" />
+    <PackageReference Include="Testcontainers.Kafka" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <PackageReference Include="Microsoft.Extensions.Logging" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" />
   </ItemGroup>
 
 </Project>

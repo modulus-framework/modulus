@@ -24,7 +24,13 @@ jobs:
       - name: Test (unit only)
         run: dotnet test modulus.slnx --no-build --configuration Release --filter "Category=Unit" --verbosity normal
       - name: Audit vulnerable packages
-        run: dotnet list modulus.slnx package --vulnerable
+        run: |
+          out=$(dotnet list modulus.slnx package --vulnerable --include-transitive)
+          echo "$out"
+          if echo "$out" | grep -q "has the following vulnerable packages"; then
+            echo "::error::Vulnerable package(s) found — see the audit output above."
+            exit 1
+          fi
       - name: Pack
         run: dotnet pack modulus.slnx --no-build --configuration Release --output artifacts/packages
       - name: Upload packages
@@ -32,3 +38,23 @@ jobs:
         with:
           name: nuget-packages
           path: artifacts/packages/*.nupkg
+
+  integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Restore
+        run: dotnet restore modulus.slnx
+      - name: Build
+        run: dotnet build modulus.slnx --no-restore --configuration Release
+      # Testcontainers manages its own container lifecycle over the Docker
+      # socket already present on ubuntu-latest runners — no services: block
+      # needed. Runs on every push/PR (unlike release.yml, where integration
+      # tests only ran on a tag push — the first time broker/database
+      # behaviour was exercised was during a release).
+      - name: Test (integration)
+        run: dotnet test modulus.slnx --no-build --configuration Release --filter "Category=Integration" --verbosity normal

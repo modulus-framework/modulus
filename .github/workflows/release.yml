@@ -16,8 +16,13 @@ jobs:
           dotnet-version: '10.0.x'
       - name: Restore
         run: dotnet restore modulus.slnx
+      # Version is passed at BUILD time (not just pack) so AssemblyVersion/
+      # FileVersion baked into the DLLs match the package version — packing
+      # --no-build with -p:Version only on the pack step left every assembly
+      # stamped with the repo's default VersionPrefix (1.3.0) regardless of
+      # the release tag.
       - name: Build
-        run: dotnet build modulus.slnx --no-restore --configuration Release
+        run: dotnet build modulus.slnx --no-restore --configuration Release -p:Version=${GITHUB_REF_NAME#v}
       - name: Test (unit)
         run: dotnet test modulus.slnx --no-build --configuration Release --filter "Category=Unit" --verbosity minimal
       - name: Test (integration)
