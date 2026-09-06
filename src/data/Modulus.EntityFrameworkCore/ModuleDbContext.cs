@@ -17,6 +17,7 @@ using Modulus.EntityFrameworkCore.ModelBuilding;
 using Modulus.Events;
 using Modulus.Events.Abstractions;
 using Modulus.Outbox.Abstractions;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 
 /// <summary>
 /// Base DbContext for all Modulus modules.
@@ -117,7 +118,22 @@ public abstract class ModuleDbContext(
         }
 
         var result = await base.SaveChangesAsync(acceptAllChangesOnSuccess, ct);
-        await dispatcher.DispatchAsync(domainEvents, ct);
+
+        // When an explicit transaction is active (e.g., wrapped by TransactionBehavior),
+        // defer dispatch until after the transaction commits. This preserves the
+        // documented "domain events fire after commit" semantics and prevents handlers
+        // from observing or affecting uncommitted state. When no explicit transaction
+        // is present, dispatch immediately (after the implicit transaction commits).
+        if (Database.CurrentTransaction is not null)
+        {
+            var queue = sp.GetRequiredService<IDeferredDomainEventQueue>();
+            queue.Enqueue(domainEvents);
+        }
+        else
+        {
+            await dispatcher.DispatchAsync(domainEvents, ct);
+        }
+
         return result;
     }
 

@@ -21,6 +21,7 @@ public static class EventsServiceCollectionExtensions
 
         services.TryAddScoped<DomainEventDispatcher>();
         services.TryAddScoped<IntegrationEventDispatcher>();
+        services.TryAddScoped<IDeferredDomainEventQueue, DeferredDomainEventQueue>();
 
         // Registry (singleton — shared across every AddModulusEvents call so the
         // host and each module accumulate their integration-event types into the

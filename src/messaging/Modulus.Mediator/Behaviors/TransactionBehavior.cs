@@ -2,6 +2,8 @@ using System.Reflection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
+using Modulus.Events;
+using Modulus.Events.Abstractions;
 using Modulus.Mediator.Abstractions;
 using Modulus.Mediator.Abstractions.Attributes;
 
@@ -22,6 +24,13 @@ namespace Modulus.Mediator.Behaviors;
 /// resolved <see cref="DbContext"/> before the handler runs. If the handler
 /// succeeds, all transactions are committed; if it throws, all are rolled
 /// back.
+/// </para>
+/// <para>
+/// <b>Domain event dispatch timing:</b> Domain events that ModuleDbContext
+/// collected are deferred when explicit transactions are active (they would
+/// otherwise dispatch before commit). After all transactions commit, this
+/// behavior dispatches the queued events, ensuring the documented "after
+/// commit" semantics: handlers see consistent, committed state.
 /// </para>
 /// <para>
 /// <b>Single-context case (most common):</b> Fully atomic — one transaction,
@@ -110,6 +119,12 @@ public sealed class TransactionBehavior<TRequest, TResponse>(
                 foreach (var tx in transactions)
                     await tx.CommitAsync(ct);
 
+                // After all transactions commit, dispatch any domain events that
+                // were deferred by ModuleDbContext.SaveChangesAsync while the
+                // transaction was active. This ensures handlers observe committed
+                // state and can safely perform external side effects.
+                await DispatchDeferredDomainEventsAsync(ct);
+
                 return result;
             }
             catch
@@ -155,5 +170,24 @@ public sealed class TransactionBehavior<TRequest, TResponse>(
 
         // TouchedOrSingle: wrap the one context if unambiguous, else nothing.
         return contexts.Count == 1 ? contexts : [];
+    }
+
+    /// <summary>
+    /// Dispatches any domain events that were deferred by ModuleDbContext while
+    /// transactions were active. Called after all transactions commit to ensure
+    /// handlers observe committed state and can safely perform external side effects.
+    /// </summary>
+    private async Task DispatchDeferredDomainEventsAsync(CancellationToken ct)
+    {
+        var queue = sp.GetService<IDeferredDomainEventQueue>();
+        if (queue is null) return;
+
+        var events = queue.DequeueAll();
+        if (events.Count == 0) return;
+
+        var dispatcher = sp.GetService<DomainEventDispatcher>();
+        if (dispatcher is null) return;
+
+        await dispatcher.DispatchAsync(events, ct);
     }
 }
