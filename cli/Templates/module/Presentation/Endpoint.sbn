@@ -10,7 +10,7 @@ public sealed class Get{{ entity_plural }}Endpoint(IMediator mediator) : Endpoin
     public override void Configure()
     {
         Get("/api/{{ module_name_lower }}/{{ route_name }}");
-        AllowAnonymous();
+        RequireAuthorization();
         Summary("Get all {{ entity_name_lower }}s");
     }
 
@@ -31,7 +31,7 @@ public sealed class Get{{ entity_name }}ByIdEndpoint(IMediator mediator) : Endpo
     public override void Configure()
     {
         Get("/api/{{ module_name_lower }}/{{ route_name }}/{id}");
-        AllowAnonymous();
+        RequireAuthorization();
         Summary("Get {{ entity_name_lower }} by ID");
     }
 
@@ -52,7 +52,7 @@ public sealed class Create{{ entity_name }}Endpoint(IMediator mediator) : Endpoi
     public override void Configure()
     {
         Post("/api/{{ module_name_lower }}/{{ route_name }}");
-        AllowAnonymous();
+        RequireAuthorization();
         Summary("Create a new {{ entity_name_lower }}");
     }
 
@@ -74,7 +74,7 @@ public sealed class Update{{ entity_name }}Endpoint(IMediator mediator) : Endpoi
     public override void Configure()
     {
         Put("/api/{{ module_name_lower }}/{{ route_name }}/{id}");
-        AllowAnonymous();
+        RequireAuthorization();
         Summary("Update an existing {{ entity_name_lower }}");
     }
 
@@ -95,7 +95,7 @@ public sealed class Delete{{ entity_name }}Endpoint(IMediator mediator) : Endpoi
     public override void Configure()
     {
         Delete("/api/{{ module_name_lower }}/{{ route_name }}/{id}");
-        AllowAnonymous();
+        RequireAuthorization();
         Summary("Delete a {{ entity_name_lower }}");
     }
 
