@@ -67,9 +67,7 @@ modulus/
 
 ```bash
 dotnet build modulus.slnx                                   # expect 0 warnings, 0 errors
+dotnet format modulus.slnx --verify-no-changes              # enforced in CI
 dotnet test modulus.slnx --filter "Category=Unit"
 dotnet pack modulus.slnx -c Release
 ```
-
-> Note: `dotnet format --verify-no-changes` currently fails repo-wide on
-> pre-existing CRLF issues; do not mass-reformat unrelated files.
