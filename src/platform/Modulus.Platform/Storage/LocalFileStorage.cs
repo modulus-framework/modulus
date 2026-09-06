@@ -69,4 +69,7 @@ public sealed class LocalFileStorage(IOptions<StorageOptions> options) : IFileSt
 
     public Task<string> GetPresignedUrlAsync(string path, TimeSpan expiry, CancellationToken ct = default)
         => Task.FromResult($"/storage/{path}");
+
+    public Task<string> GetPresignedUploadUrlAsync(string path, TimeSpan expiry, string? contentType = null, CancellationToken ct = default)
+        => Task.FromResult($"/storage/{path}");
 }

@@ -69,4 +69,19 @@ public sealed class S3FileStorage(
         });
         return Task.FromResult(url);
     }
+
+    public Task<string> GetPresignedUploadUrlAsync(string path, TimeSpan expiry, string? contentType = null, CancellationToken ct = default)
+    {
+#pragma warning disable VSTHRD103
+        var url = client.GetPreSignedURL(new GetPreSignedUrlRequest
+#pragma warning restore VSTHRD103
+        {
+            BucketName = _bucket,
+            Key = path,
+            Expires = DateTime.UtcNow.Add(expiry),
+            Verb = HttpVerb.PUT,
+            ContentType = contentType ?? "application/octet-stream"
+        });
+        return Task.FromResult(url);
+    }
 }

@@ -17,10 +17,12 @@ public abstract class ModulusHub<TClient> : Hub<TClient>
     /// to extend the behaviour.
     /// </summary>
     protected ICurrentUser CurrentUser { get; }
+    protected ICurrentTenant CurrentTenant { get; }
 
-    protected ModulusHub(ICurrentUser currentUser)
+    protected ModulusHub(ICurrentUser currentUser, ICurrentTenant currentTenant)
     {
         CurrentUser = currentUser;
+        CurrentTenant = currentTenant;
     }
 
     /// <summary>
@@ -38,10 +40,34 @@ public abstract class ModulusHub<TClient> : Hub<TClient>
     protected Task JoinGroupAsync(string groupName)
         => Groups.AddToGroupAsync(Context.ConnectionId, groupName);
 
+    /// <summary>
+    /// Joins a group scoped to the current tenant, preventing cross-tenant access.
+    /// The group name is prefixed with <c>tenant:{TenantId}:</c> to ensure isolation.
+    /// Throws <see cref="InvalidOperationException"/> if no tenant is in scope.
+    /// </summary>
+    protected Task JoinTenantGroupAsync(string groupName)
+    {
+        if (!CurrentTenant.IsAvailable || CurrentTenant.TenantId is null)
+            throw new InvalidOperationException("No tenant in scope; cannot join tenant-scoped group.");
+        return Groups.AddToGroupAsync(Context.ConnectionId, $"tenant:{CurrentTenant.TenantId}:{groupName}");
+    }
+
     protected Task LeaveGroupAsync(string groupName)
         => Groups.RemoveFromGroupAsync(Context.ConnectionId, groupName);
+
+    /// <summary>Leaves a tenant-scoped group (inverse of <see cref="JoinTenantGroupAsync"/>).</summary>
+    protected Task LeaveTenantGroupAsync(string groupName)
+    {
+        if (!CurrentTenant.IsAvailable || CurrentTenant.TenantId is null)
+            throw new InvalidOperationException("No tenant in scope; cannot leave tenant-scoped group.");
+        return Groups.RemoveFromGroupAsync(Context.ConnectionId, $"tenant:{CurrentTenant.TenantId}:{groupName}");
+    }
 
     /// <summary>Standard group name helper: <c>{prefix}:{id}</c></summary>
     protected static string GroupName(string prefix, object id)
         => $"{prefix}:{id}";
+
+    /// <summary>Tenant-scoped group name helper: <c>tenant:{tenantId}:{groupName}</c></summary>
+    protected static string TenantGroupName(Guid tenantId, string groupName)
+        => $"tenant:{tenantId}:{groupName}";
 }

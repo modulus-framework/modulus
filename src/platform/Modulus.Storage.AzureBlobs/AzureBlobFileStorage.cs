@@ -39,4 +39,11 @@ public sealed class AzureBlobFileStorage(
         var sas = blob.GenerateSasUri(BlobSasPermissions.Read, DateTime.UtcNow.Add(expiry));
         return Task.FromResult(sas.ToString());
     }
+
+    public Task<string> GetPresignedUploadUrlAsync(string path, TimeSpan expiry, string? contentType = null, CancellationToken ct = default)
+    {
+        var blob = GetBlob(path);
+        var sas = blob.GenerateSasUri(BlobSasPermissions.Add | BlobSasPermissions.Create | BlobSasPermissions.Write, DateTime.UtcNow.Add(expiry));
+        return Task.FromResult(sas.ToString());
+    }
 }
