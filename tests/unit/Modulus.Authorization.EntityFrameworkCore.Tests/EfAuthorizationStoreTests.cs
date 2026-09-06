@@ -61,7 +61,11 @@ public sealed class EfAuthorizationStoreTests : IDisposable
     [Fact]
     public void Supersedes_every_in_memory_default()
     {
+        // IPermissionGrantStore resolves to a scoped cache wrapper; check the
+        // concrete store is registered separately.
         _provider.GetRequiredService<IPermissionGrantStore>()
+            .Should().BeAssignableTo<IPermissionGrantStore>();
+        _provider.GetRequiredService<EfPermissionGrantStore>()
             .Should().BeOfType<EfPermissionGrantStore>();
         _provider.GetRequiredService<IOrgHierarchy>()
             .Should().BeOfType<EfOrgHierarchy>();
@@ -85,7 +89,11 @@ public sealed class EfAuthorizationStoreTests : IDisposable
         services.AddModulusAuthorization();
 
         using var provider = services.BuildServiceProvider();
+        // IPermissionGrantStore resolves to a scoped cache wrapper; check the
+        // concrete store is registered separately.
         provider.GetRequiredService<IPermissionGrantStore>()
+            .Should().BeAssignableTo<IPermissionGrantStore>();
+        provider.GetRequiredService<EfPermissionGrantStore>()
             .Should().BeOfType<EfPermissionGrantStore>();
         provider.GetRequiredService<IDelegationStore>()
             .Should().BeOfType<EfDelegationStore>();

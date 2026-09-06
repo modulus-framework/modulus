@@ -21,7 +21,8 @@ public static class AuthorizationExtensions
     /// a hosted service that materialises all module permission declarations at
     /// startup, and the server-side grant store + effective-permission resolver
     /// (empty and therefore fail-closed until grants are seeded via
-    /// <see cref="AddPermissionGrants"/>).
+    /// <see cref="AddPermissionGrants"/>). The grant store is wrapped with
+    /// request-scoped caching to memoize GetGrants() per principal.
     /// </summary>
     public static IServiceCollection AddModulusAuthorization(
         this IServiceCollection services)
@@ -37,15 +38,23 @@ public static class AuthorizationExtensions
             .Singleton<IAuthorizationHandler, PermissionRequirementHandler>());
         services.AddHostedService<PermissionInitHostedService>();
 
-        // Grant store + resolver. TryAdd so a later increment (e.g. an EF-backed
-        // store) can supersede the in-memory default by registering first.
-        services.TryAddSingleton<IPermissionGrantStore>(sp =>
+        // Grant store + resolver. Register the concrete store first, then
+        // wrap it with request-scoped caching on the interface.
+        services.TryAddSingleton<InMemoryPermissionGrantStore>(sp =>
         {
             var store = new InMemoryPermissionGrantStore();
             foreach (var seed in sp.GetServices<IPermissionGrantSeed>())
                 seed.Apply(store);
             return store;
         });
+        services.TryAddSingleton<IPermissionGrantStore>(sp =>
+            sp.GetRequiredService<InMemoryPermissionGrantStore>());
+
+        // Request-scoped cache wrapper: memoizes GetGrants per principal within
+        // a single request. Wraps the singleton store and caches its results.
+        services.AddScoped<IPermissionGrantStore>(sp =>
+            new CachedPermissionGrantStore(sp.GetRequiredService<InMemoryPermissionGrantStore>()));
+
         // Register the concrete resolver once and map the interface to it, so the
         // delegation-aware decorator (AddDelegation) and the effective-access reporter can
         // depend on the *direct* resolver (bypassing delegation) without a second instance.
@@ -98,6 +107,7 @@ public static class AuthorizationExtensions
         // is empty (nothing audit-worthy) until AddScopedDecisionAuditing marks entries.
         services.TryAddSingleton<IAuthorizationAuditWriter>(NullAuthorizationAuditWriter.Instance);
         services.TryAddSingleton<IAuditableActionRegistry>(NullAuditableActionRegistry.Instance);
+
         return services;
     }
 
@@ -376,4 +386,5 @@ public static class AuthorizationExtensions
             new PermissionRegistration(moduleName, configure));
         return services;
     }
+
 }

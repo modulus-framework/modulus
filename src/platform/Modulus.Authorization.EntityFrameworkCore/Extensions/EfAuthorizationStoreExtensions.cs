@@ -55,6 +55,12 @@ public static class EfAuthorizationStoreExtensions
         services.AddSingleton<IPermissionGrantStore>(
             sp => sp.GetRequiredService<EfPermissionGrantStore>());
 
+        // Wrap the grant store with request-scoped caching: memoizes GetGrants per
+        // principal within a single request, eliminating redundant DB queries when
+        // multiple permissions are checked against the same principal.
+        services.AddScoped<IPermissionGrantStore>(sp =>
+            new CachedPermissionGrantStore(sp.GetRequiredService<EfPermissionGrantStore>()));
+
         services.TryAddSingleton<EfOrgHierarchy>();
         services.RemoveAll<IOrgHierarchy>();
         services.AddSingleton<IOrgHierarchy>(

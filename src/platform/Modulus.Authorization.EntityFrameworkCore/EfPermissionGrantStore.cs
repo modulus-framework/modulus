@@ -13,10 +13,9 @@ namespace Modulus.Authorization.EntityFrameworkCore;
 /// set once per request).
 /// </summary>
 /// <remarks>
-/// Holder and permission comparisons follow the database collation, unlike the
-/// in-memory store's ordinal-ignore-case dictionaries — keep grant data in the
-/// same casing your identity provider emits, or use a case-insensitive
-/// collation.
+/// Grant holder and permission matching is case-insensitive (OrdinalIgnoreCase),
+/// matching the <see cref="InMemoryPermissionGrantStore"/> behavior. Both stores
+/// treat role names and permission strings the same way regardless of casing.
 /// </remarks>
 public sealed class EfPermissionGrantStore(
     IDbContextFactory<AuthorizationStoreDbContext> factory)
@@ -33,15 +32,19 @@ public sealed class EfPermissionGrantStore(
             return [];
 
         using var db = factory.CreateDbContext();
-        return db.Grants.AsNoTracking()
-            .Where(g =>
-                (g.HolderType == GrantHolderType.Role && roles.Contains(g.Holder))
-                || (userKey != null
-                    && g.HolderType == GrantHolderType.User
-                    && g.Holder == userKey))
-            .AsEnumerable()
+        var grantRows = db.Grants.AsNoTracking().ToList();
+
+        // Filter in-memory with case-insensitive comparison to match InMemoryPermissionGrantStore
+        var result = grantRows.Where(g =>
+            (g.HolderType == GrantHolderType.Role
+             && roles.Any(r => string.Equals(r, g.Holder, StringComparison.OrdinalIgnoreCase)))
+            || (userKey != null
+                && g.HolderType == GrantHolderType.User
+                && string.Equals(userKey, g.Holder, StringComparison.OrdinalIgnoreCase)))
             .Select(g => new PermissionGrant(g.HolderType, g.Holder, g.Permission, g.Type))
             .ToList();
+
+        return result;
     }
 
     /// <summary>Every grant attached to one holder — the admin/review read,

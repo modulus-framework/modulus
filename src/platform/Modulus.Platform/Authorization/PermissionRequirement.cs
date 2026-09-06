@@ -43,7 +43,7 @@ public sealed class PermissionRequirement : IAuthorizationRequirement
 /// imperative <c>IAuthorizationService.AuthorizeAsync(user, …)</c> checks.
 /// </summary>
 internal sealed class PermissionRequirementHandler(
-    IPermissionResolver resolver, IPermissionGrantStore grantStore)
+    IPermissionResolver resolver, IServiceProvider sp)
     : AuthorizationHandler<PermissionRequirement>
 {
     private const string WildcardSuffix = ":*";
@@ -57,8 +57,13 @@ internal sealed class PermissionRequirementHandler(
 
         var query = BuildQuery(principal);
 
-        // ONE store read: raw grants feed both the deny check below and the
-        // resolver (which must not re-read the store for them).
+        // Resolve the grant store from the current request scope to get the cached
+        // version (per-request memoization). The cache memoizes GetGrants per
+        // principal, eliminating redundant store lookups within a single request.
+        var grantStore = sp.GetRequiredService<IPermissionGrantStore>();
+
+        // ONE store read per principal per request: raw grants feed both the deny
+        // check below and the resolver (which must not re-read the store for them).
         var grants = grantStore.GetGrants(query);
 
         // A store-level Deny for this permission always wins, even over a
