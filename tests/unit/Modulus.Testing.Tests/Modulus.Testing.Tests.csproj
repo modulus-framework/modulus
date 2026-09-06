@@ -3,6 +3,7 @@
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <ProjectReference Include="../../../src/testing/Modulus.Testing/Modulus.Testing.csproj" />
+    <ProjectReference Include="../../../src/testing/Modulus.Testing.Architecture/Modulus.Testing.Architecture.csproj" />
     <ProjectReference Include="../../../src/core/Modulus.Core/Modulus.Core.csproj" />
     <ProjectReference Include="../../../src/data/Modulus.EntityFrameworkCore/Modulus.EntityFrameworkCore.csproj" />
     <ProjectReference Include="../../../src/messaging/Modulus.Events/Modulus.Events.csproj" />

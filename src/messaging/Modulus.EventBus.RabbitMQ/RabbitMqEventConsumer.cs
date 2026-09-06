@@ -25,6 +25,9 @@ internal sealed class RabbitMqEventConsumer : BackgroundService
     private IConnection? _connection;
     private IChannel? _channel;
 
+    // Track retry attempts per delivery tag for bounded backoff.
+    private readonly Dictionary<ulong, int> _deliveryAttempts = new();
+
     public RabbitMqEventConsumer(
         IOptions<RabbitMqOptions> options,
         ILogger<RabbitMqEventConsumer> logger,
@@ -138,6 +141,7 @@ internal sealed class RabbitMqEventConsumer : BackgroundService
     private async Task OnMessageReceivedAsync(object sender, BasicDeliverEventArgs ea)
     {
         var channel = (IChannel)((AsyncEventingBasicConsumer)sender).Channel;
+        IntegrationEventEnvelope? envelope = null;
 
         try
         {
@@ -146,7 +150,7 @@ internal sealed class RabbitMqEventConsumer : BackgroundService
             // is read with the same options the producer wrote it with
             // (camelCase + string enums). Raw JsonSerializer defaults are
             // case-sensitive and would yield an all-defaults envelope.
-            var envelope = (IntegrationEventEnvelope?)_serializer
+            envelope = (IntegrationEventEnvelope?)_serializer
                 .Deserialize(json, typeof(IntegrationEventEnvelope));
 
             if (envelope is null)
@@ -188,16 +192,46 @@ internal sealed class RabbitMqEventConsumer : BackgroundService
         }
         catch (Exception ex)
         {
-            // Do NOT requeue: an infinite nack/requeue hot-loop starves the
-            // queue and burns CPU. With requeue:false the message is dropped
-            // or dead-lettered (if a DLX is configured). Consumer-side inbox
-            // dedup handles any redelivery from a DLX retry cycle.
-            _logger.LogError(ex,
-                "Error processing RabbitMQ message; nacking (requeue={Requeue})",
-                false);
-            await channel.BasicNackAsync(
-                ea.DeliveryTag, multiple: false, requeue: false);
+            await HandleDeliveryFailureAsync(
+                channel, ea.DeliveryTag, envelope?.RoutingKey, ex);
         }
+    }
+
+    private async Task HandleDeliveryFailureAsync(
+        IChannel channel, ulong deliveryTag, string? routingKey, Exception ex)
+    {
+        var attempt = _deliveryAttempts.TryGetValue(deliveryTag, out var seen)
+            ? seen + 1
+            : 1;
+        _deliveryAttempts[deliveryTag] = attempt;
+
+        var maxRetries = _opts.MaxDeliveryAttempts ?? 3;
+
+        if (attempt >= maxRetries)
+        {
+            _deliveryAttempts.Remove(deliveryTag);
+            _logger.LogError(ex,
+                "RabbitMQ message (routing key '{RoutingKey}') failed after {Attempts} delivery attempts; nacking to DLX",
+                routingKey, attempt);
+            await channel.BasicNackAsync(deliveryTag, multiple: false, requeue: false);
+            return;
+        }
+
+        // Requeue with exponential backoff: 100ms * 2^(attempt-1), capped at 30s
+        var backoffMs = Math.Min(
+            30_000,
+            100 * (int)Math.Pow(2, Math.Min(attempt - 1, 8)));
+
+        _logger.LogWarning(ex,
+            "RabbitMQ message (routing key '{RoutingKey}') delivery failed (attempt {Attempt}); requeuing in {BackoffMs}ms",
+            routingKey, attempt, backoffMs);
+
+        // Requeue the message so the broker redelivers it. The backoff is
+        // observed at the consumer level — we wait before continuing to
+        // process the next message, effectively slowing redelivery without
+        // requiring broker-side delay configuration.
+        await Task.Delay(backoffMs);
+        await channel.BasicNackAsync(deliveryTag, multiple: false, requeue: true);
     }
 
     private async Task CleanupAsync()

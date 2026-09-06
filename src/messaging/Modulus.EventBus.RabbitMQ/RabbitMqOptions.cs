@@ -22,6 +22,14 @@ public sealed class RabbitMqOptions
     public int ReconnectDelayMs { get; set; } = 5000;
 
     /// <summary>
+    /// Maximum number of delivery attempts before a message is dead-lettered.
+    /// On failure, the consumer requeues with exponential backoff (100ms * 2^(attempt-1))
+    /// up to this limit. After exceeding the limit, the message is nacked without
+    /// requeue, dropping it or routing to the DLX if configured. Defaults to 3.
+    /// </summary>
+    public int? MaxDeliveryAttempts { get; set; } = 3;
+
+    /// <summary>
     /// Name of the dead-letter exchange. When set, the queue is declared with
     /// <c>x-dead-letter-exchange</c> so nacked messages (no handler, or
     /// processing failure) are routed there instead of being dropped.
