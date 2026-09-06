@@ -18,7 +18,13 @@ public sealed class ExternalProviderOptions
 /// </summary>
 public sealed class ModulusIdentityOptions
 {
-    public bool RequireConfirmedEmail { get; set; } = true;
+    /// <summary>
+    /// Requires users to confirm their email address before signing in.
+    /// Default is <c>false</c> — users can sign in immediately after registration.
+    /// When enabled, an email confirmation endpoint must be implemented so users
+    /// can complete the confirmation flow.
+    /// </summary>
+    public bool RequireConfirmedEmail { get; set; } = false;
     public int AccessTokenLifetimeMin { get; set; } = 15;
     public int RefreshTokenLifetimeDays { get; set; } = 7;
     public bool EnableRefreshToken { get; set; } = true;

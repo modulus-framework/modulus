@@ -339,3 +339,58 @@ public class ModulusUserInfoController : ControllerBase
         });
     }
 }
+
+/// <summary>
+/// Token introspection endpoint (RFC 7662): validates access and refresh tokens.
+/// Clients use this to check if a token is still valid before using it.
+/// </summary>
+public class ModulusIntrospectionController : ControllerBase
+{
+    [HttpPost("~/connect/introspect")]
+    [IgnoreAntiforgeryToken]
+    public IActionResult Introspect()
+    {
+        if (User.Identity?.IsAuthenticated != true)
+            return Ok(new { active = false });
+
+        // Token is valid if the user is authenticated in the OpenIddict context.
+        return Ok(new
+        {
+            active = true,
+            sub = User.GetClaim(OpenIddictConstants.Claims.Subject),
+            client_id = User.GetClaim(OpenIddictConstants.Claims.ClientId),
+            scope = string.Join(" ", User.GetClaims(OpenIddictConstants.Claims.Scope)),
+            exp = long.TryParse(User.GetClaim(OpenIddictConstants.Claims.ExpiresAt), out var exp)
+                ? exp
+                : (long?)null,
+        });
+    }
+}
+
+/// <summary>
+/// End session endpoint (RP-initiated logout): revokes the user's session
+/// and optionally redirects to a post-logout URI.
+/// </summary>
+public class ModulusEndSessionController : ControllerBase
+{
+    [HttpGet("~/connect/end-session")]
+    [HttpPost("~/connect/end-session")]
+    public async Task<IActionResult> EndSessionAsync(
+        [FromQuery] string? post_logout_redirect_uri,
+        [FromServices] SignInManager<ModulusUser> signInManager)
+    {
+        if (User.Identity?.IsAuthenticated == true)
+        {
+            await signInManager.SignOutAsync();
+        }
+
+        // Return to the specified URI if provided, otherwise return 200 OK.
+        if (!string.IsNullOrEmpty(post_logout_redirect_uri) &&
+            Uri.IsWellFormedUriString(post_logout_redirect_uri, UriKind.Absolute))
+        {
+            return Redirect(post_logout_redirect_uri);
+        }
+
+        return Ok(new { message = "Logged out successfully" });
+    }
+}
