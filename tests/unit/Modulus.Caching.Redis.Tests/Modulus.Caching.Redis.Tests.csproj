@@ -6,6 +6,8 @@
     <IsTestProject>true</IsTestProject>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="src/platform/Modulus.Caching.Redis/Modulus.Caching.Redis.csproj" />
+    <ProjectReference Include="../../../../src/platform/Modulus.Caching.Redis/Modulus.Caching.Redis.csproj" />
+    <PackageReference Include="Testcontainers.Redis" />
+    <PackageReference Include="StackExchange.Redis" />
   </ItemGroup>
 </Project>

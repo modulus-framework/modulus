@@ -6,6 +6,8 @@
     <IsTestProject>true</IsTestProject>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="src/messaging/Modulus.Outbox.MongoDB/Modulus.Outbox.MongoDB.csproj" />
+    <ProjectReference Include="../../../../src/messaging/Modulus.Outbox.MongoDB/Modulus.Outbox.MongoDB.csproj" />
+    <PackageReference Include="Testcontainers.MongoDb" />
+    <PackageReference Include="MongoDB.Driver" />
   </ItemGroup>
 </Project>
