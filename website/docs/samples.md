@@ -4,15 +4,15 @@ sidebar_position: 1
 
 # Samples
 
-## ProcureFlow
+## TradeFlow
 
 A reference application demonstrating the framework's recommended shape with 18 modules covering procurement, import management, trade finance, inventory, and workflow.
 
 ### Structure
 
 ```
-samples/ProcureFlow/
-├── ProcureFlow.slnx
+samples/TradeFlow/
+├── TradeFlow.slnx
 ├── src/
 │   ├── API/                            # Host API
 │   ├── Shared/                         # Shared kernel
@@ -41,8 +41,8 @@ samples/ProcureFlow/
 ### Running
 
 ```bash
-cd samples/ProcureFlow
-dotnet run --project src/API/ProcureFlow.Api
+cd samples/TradeFlow
+dotnet run --project src/API/TradeFlow.Api
 ```
 
 ### Features Demonstrated

@@ -22,14 +22,14 @@ to read the `DependsOn` property, then `AddModule` instantiates it again.
 **Decision.** `AddModulus` builds the graph eagerly and registers a pre-built
 `ModuleLoader` singleton instance; module instances are created once during discovery
 and reused for registration. `UseModulus()` stays as a source-compatible no-op
-(validation only). The `IModule.DependsOn` property remains supported but discovery
-reads each instance once — `[DependsOn]` attributes are the recommended source.
+(validation only). The `IModule.DependsOn` property and `[DependsOn]` attributes are
+no longer supported — use explicit `AddModule<>()` registration order instead.
 
 ### P0-6. Production-safe defaults
-- Identity: `AddDevelopmentEncryptionCertificate`/`AddDevelopmentSigningCertificate`
-  applied only when environment is Development or `Identity:UseDevelopmentCertificates`
-  is explicitly true. ROPC password flow becomes opt-in
-  (`Identity:AllowPasswordFlow`, default **false**) — removed in OAuth 2.1.
+- Identity: `UseDevelopmentCertificates` must be false in Production; the
+  `DevelopmentCertificateGuard` hosted service fails fast at startup if true.
+  ROPC password flow is opt-in (`Identity:AllowPasswordFlow`, default **false**) —
+  removed in OAuth 2.1.
 - `MigrateModulusDatabasesAsync` default mode changes `MigrateOrCreate` → `Migrate`
   (fail loudly in production); the app template passes `MigrateOrCreate` explicitly
   in Development only.

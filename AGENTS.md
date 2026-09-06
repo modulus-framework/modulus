@@ -218,7 +218,7 @@ contributes its own handlers without re-registering behaviours. The generated
 `.slnx` uses flat sibling solution folders (no nesting) so that `dotnet test`
 and `dotnet sln list` discover all projects.
 
-A working example lives at `samples/ProcureFlow` (API host + Users module,
+A working example lives at `samples/TradeFlow` (API host + Users module,
 SQLite). Because the `Cobytelabs.Modulus.*` packages aren't on nuget.org yet, the
 sample ships a `NuGet.config` pointing at the repo's local `nupkg/` feed — run
 `dotnet pack modulus.slnx -c Release` first if the feed is empty.
@@ -563,7 +563,7 @@ history is discoverable:
   IntegrationEvents / Tests projects) was collapsed: DTOs live under
   `Application/Dtos`, integration events under `Application/IntegrationEvents`,
   and tests at the solution root. The host is `{App}.Api` (was `{App}.Host`).
-  A working `samples/ProcureFlow` (API host + Users module, SQLite)
+  A working `samples/TradeFlow` (API host + Users module, SQLite)
   validates the full flow: `app` → `add-module` → `generate-crud`, building and
   running end-to-end.
 - **Outbox row-locking & retries** (`OutboxProcessor`) — claims rows atomically

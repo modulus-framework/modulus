@@ -4,7 +4,7 @@ A comprehensive **modular ERP system** for cross-border trade, built on the **Mo
 
 This sample demonstrates a real-world enterprise application implementing a complete import procurement workflow:
 
-- **12 complete modules** — platform foundation + 8 business modules covering the full import-to-stock lifecycle
+- **18 complete modules** — platform foundation (Configuration, Identity, Tenants, Notifications) + 14 business modules covering the full import-to-stock lifecycle
 - **4-layer Clean Architecture** per module (Domain → Application → Infrastructure → Presentation)
 - **Per-module DbContext** with EF Core migrations (or SQLite for development)
 - **Production-ready features** — rate limiting, security headers, idempotency, observability, correlation IDs

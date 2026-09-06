@@ -17,8 +17,8 @@ modulus/
 ├── src/                         # Framework packages (see below)
 ├── cli/                         # Modulus.Cli — `modulus` dotnet tool (Spectre.Console + Scriban)
 ├── tests/                       # unit/ (xUnit, Category=Unit) and integration/ (Testcontainers)
-├── samples/                     # Storefront (`modulus app` output) + cobytemed-erp-app
-│                                 # (real app retrofitted onto Modulus) — see their READMEs
+├── samples/                     # TradeFlow — 18-module reference app (procurement, trade finance,
+│                                 # inventory, workflow) with Dockerfile, compose, and GitHub Actions CI
 ├── docs/architecture/           # Design blueprints
 ├── IMPROVEMENT_PLAN.md          # Living decision log: completed P0/P1 fixes + backlog
 └── .github/workflows/           # ci.yml (build/format/test/pack), codeql.yml, release.yml

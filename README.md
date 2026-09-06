@@ -96,11 +96,12 @@ Templates are embedded Scriban resources under `cli/Templates/`.
 
 ## Sample application
 
-- **`samples/ProcureFlow`** — a reference application (API host + Users
-  module) showing the framework's recommended shape: module system, CQRS via
-  `Modulus.Mediator`, per-module EF Core persistence, Serilog, Sentry, and
-  forwarded-headers hardening. Ships a `NuGet.config` pointing at the repo's
+- **`samples/TradeFlow`** — a reference application (18 modules, 77 projects)
+  demonstrating the framework's recommended shape: module system, CQRS via
+  `Modulus.Mediator`, per-module EF Core persistence, Serilog, Sentry,
+  multi-tenancy, and authentication. Ships a `NuGet.config` pointing at the repo's
   local `nupkg/` feed, so it builds straight after `dotnet pack modulus.slnx -c Release`.
+  Also includes Dockerfile, docker-compose.yml, and GitHub Actions CI.
 
 ## Module system
 
