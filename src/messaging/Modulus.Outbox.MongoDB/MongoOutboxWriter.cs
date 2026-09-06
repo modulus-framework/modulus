@@ -32,10 +32,18 @@ public sealed class MongoOutboxMessage
 }
 
 /// <summary>
-/// <see cref="IOutboxWriter"/> implementation backed by MongoDB. Does NOT
-/// support transactions — use only with MongoDB's eventual consistency; the
-/// <see cref="MongoOutboxProcessor"/> relays rows to the event bus
-/// at-least-once.
+/// <see cref="IOutboxWriter"/> implementation backed by MongoDB.
+///
+/// ⚠️ LIMITATION: Does NOT support transactions. Domain writes and outbox
+/// writes are separate operations — a domain write may succeed while the
+/// outbox write fails, or vice versa. This violates the outbox pattern's
+/// core guarantee: a published integration event whose domain side-effect
+/// failed (rolled back), or a domain change with no corresponding outbox row.
+///
+/// For production use: either migrate to a relational database (EF Core)
+/// which uses shared transactions, or accept eventual-consistency semantics
+/// and ensure your domain logic is idempotent. The <see cref="MongoOutboxProcessor"/>
+/// relays rows to the event bus at-least-once; handler idempotency is mandatory.
 /// </summary>
 internal sealed class MongoOutboxWriter(
     IMongoCollection<MongoOutboxMessage> collection,

@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Modulus.Core.Abstractions;
+using Modulus.Observability;
 using Modulus.Outbox.Abstractions;
 
 /// <summary>
@@ -63,6 +64,13 @@ public sealed class MongoOutboxProcessor(
             .ToListAsync(ct);
 
         if (candidateIds.Count == 0) return;
+
+        // Record outbox depth (pending messages not yet dispatched)
+        var depthFilter = Builders<MongoOutboxMessage>.Filter.And(
+            Builders<MongoOutboxMessage>.Filter.Eq(m => m.ProcessedAt, null),
+            Builders<MongoOutboxMessage>.Filter.Lt(m => m.RetryCount, options.MaxRetries));
+        var depth = await collection.CountDocumentsAsync(depthFilter, cancellationToken: ct);
+        ModulusMeters.OutboxDepth.Add((int)depth);
 
         // 2. Atomically claim those rows. The filter re-checks ProcessedAt and
         //    LockedUntil server-side, so two instances that both picked the
@@ -131,6 +139,7 @@ public sealed class MongoOutboxProcessor(
                     .Set(m => m.LockedUntil, (DateTime?)null);
                 await collection.UpdateOneAsync(doneFilter, doneUpdate, cancellationToken: ct);
 
+                ModulusMeters.OutboxDispatched.Add(1);
                 logger.LogDebug("Outbox dispatched {Id} ({Type})",
                     message.Id, message.MessageType);
             }
@@ -151,9 +160,12 @@ public sealed class MongoOutboxProcessor(
                 await collection.UpdateOneAsync(errFilter, errUpdate, cancellationToken: ct);
 
                 if (newRetry >= options.MaxRetries)
+                {
+                    ModulusMeters.OutboxDeadLettered.Add(1);
                     logger.LogError(ex,
                         "Outbox message {Id} ({Type}) dead-lettered after {N} attempts.",
                         message.Id, message.MessageType, newRetry);
+                }
                 else
                     logger.LogWarning(ex,
                         "Outbox dispatch failed for {Id} (attempt {N}); next attempt at {Next}.",
