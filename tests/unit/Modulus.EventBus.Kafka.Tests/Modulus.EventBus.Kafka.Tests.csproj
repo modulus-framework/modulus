@@ -6,7 +6,7 @@
     <IsTestProject>true</IsTestProject>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="../../../../src/messaging/Modulus.EventBus.Kafka/Modulus.EventBus.Kafka.csproj" />
+    <ProjectReference Include="../../../src/messaging/Modulus.EventBus.Kafka/Modulus.EventBus.Kafka.csproj" />
     <PackageReference Include="Testcontainers.Kafka" />
     <PackageReference Include="Confluent.Kafka" />
   </ItemGroup>
