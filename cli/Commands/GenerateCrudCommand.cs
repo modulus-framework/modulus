@@ -22,10 +22,6 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
         [Description("Module name or namespace (e.g. Catalog, MyApp.Modules.Catalog). Auto-detected if one module.")]
         [CommandOption("-m|--module")]
         public string? Module { get; init; }
-
-        [Description("NOT YET SUPPORTED: extra fields (name:string,price:decimal). Reserved for a future release.")]
-        [CommandOption("--fields")]
-        public string? Fields { get; init; }
     }
 
     private readonly TemplateEngine _templates = new();
@@ -38,9 +34,6 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
 
     private int ExecuteCore(CommandContext ctx, Settings s)
     {
-        if (s.Fields is not null)
-            Ux.Warning("--fields is reserved and currently ignored (entities ship with a single Name field).");
-
         var entity = !string.IsNullOrWhiteSpace(s.Entity)
             ? CodeGen.ValidateIdentifier(s.Entity, "Entity")
             : Ux.AskRequired("Entity name [grey](e.g. Product, Order)[/]:",
