@@ -36,8 +36,13 @@ public static class S3StorageExtensions
         if (options.Region is not null)
             config.RegionEndpoint = Amazon.RegionEndpoint.GetBySystemName(options.Region);
 
-        var client = new AmazonS3Client(
-            new BasicAWSCredentials(options.AccessKey!, options.SecretKey!), config);
+        // Create client with explicit credentials if provided, or fall back to the
+        // default AWS credential chain (EC2/ECS instance roles, environment variables,
+        // ~/.aws/credentials, etc.) when keys are not set.
+        IAmazonS3 client = string.IsNullOrEmpty(options.AccessKey) || string.IsNullOrEmpty(options.SecretKey)
+            ? new AmazonS3Client(config)
+            : new AmazonS3Client(
+                new BasicAWSCredentials(options.AccessKey, options.SecretKey), config);
 
         services.AddSingleton<IAmazonS3>(client);
         services.RemoveAll<IFileStorage>();
