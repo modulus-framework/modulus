@@ -191,6 +191,37 @@ public sealed class KafkaEventBusTests : IClassFixture<KafkaFixture>, IAsyncDisp
         AlwaysFailingHandler.CallCounts[followUp.EventId].Should().Be(1);
     }
 
+    [Fact]
+    public async Task PublishAsync_MultipleHandlers_BothReceiveEvent_ExactlyOnce()
+    {
+        // Regression test for B1 (inbox decoration order independence) and B2
+        // (composite dedup key (EventId, HandlerName) supporting fan-out to
+        // multiple handlers of the same event type). Before the fix, the second
+        // handler was silently skipped because both handlers shared the same
+        // dedup key, and the first one to claim marked the message Processed.
+        var prefix = "test" + Guid.NewGuid().ToString("N");
+        var group = "group-" + Guid.NewGuid().ToString("N");
+        FanOutHandlerA.Received.Clear();
+        FanOutHandlerB.Received.Clear();
+
+        var provider = await StartAsync(prefix, group);
+        await Task.Delay(3000);
+
+        var bus = provider.GetRequiredService<IModuleBus>();
+        var @event = new FanOutEvent();
+        await bus.PublishAsync(@event);
+
+        await WaitUntilAsync(
+            () => FanOutHandlerA.Received.ContainsKey(@event.EventId) &&
+                  FanOutHandlerB.Received.ContainsKey(@event.EventId),
+            TimeSpan.FromSeconds(30));
+
+        FanOutHandlerA.Received[@event.EventId].Should().Be(1,
+            "first handler must receive the event exactly once");
+        FanOutHandlerB.Received[@event.EventId].Should().Be(1,
+            "second handler must also receive the event exactly once (proving composite dedup key works)");
+    }
+
     // ── Test doubles ─────────────────────────────────────────────
     [IntegrationEventName("kafka-test.event.v1")]
     public sealed class TestEvent : IIntegrationEvent
@@ -258,6 +289,36 @@ public sealed class KafkaEventBusTests : IClassFixture<KafkaFixture>, IAsyncDisp
             CallCounts.AddOrUpdate(@event.EventId, 1, (_, count) => count + 1);
             if (@event.EventId == PoisonEventId)
                 throw new InvalidOperationException("simulated permanent failure");
+            return Task.CompletedTask;
+        }
+    }
+
+    [IntegrationEventName("kafka-test.fanout-event.v1")]
+    public sealed class FanOutEvent : IIntegrationEvent
+    {
+        public Guid EventId { get; init; } = Guid.NewGuid();
+        public string EventType { get; init; } = "kafka-test.fanout-event.v1";
+        public DateTime OccurredAt { get; init; } = DateTime.UtcNow;
+    }
+
+    public sealed class FanOutHandlerA : IIntegrationEventHandler<FanOutEvent>
+    {
+        public static readonly ConcurrentDictionary<Guid, int> Received = new();
+
+        public Task HandleAsync(FanOutEvent @event, CancellationToken ct)
+        {
+            Received.AddOrUpdate(@event.EventId, 1, (_, count) => count + 1);
+            return Task.CompletedTask;
+        }
+    }
+
+    public sealed class FanOutHandlerB : IIntegrationEventHandler<FanOutEvent>
+    {
+        public static readonly ConcurrentDictionary<Guid, int> Received = new();
+
+        public Task HandleAsync(FanOutEvent @event, CancellationToken ct)
+        {
+            Received.AddOrUpdate(@event.EventId, 1, (_, count) => count + 1);
             return Task.CompletedTask;
         }
     }
