@@ -1,5 +1,6 @@
 namespace Modulus.OpenTelemetry.Extensions;
 
+using global::OpenTelemetry.Logs;
 using global::OpenTelemetry.Metrics;
 using global::OpenTelemetry.Trace;
 using Microsoft.Extensions.DependencyInjection;
@@ -30,6 +31,31 @@ public static class OpenTelemetryExtensions
         => builder.AddMeter(ModulusMeters.AllMeters);
 
     /// <summary>
+    /// Enables OpenTelemetry logging so ILogger output is exported to OTLP
+    /// alongside traces and metrics. This method is a no-op placeholder;
+    /// the real configuration happens via AddOpenTelemetry().WithLogging()
+    /// in your host setup.
+    ///
+    /// Call this inside <c>services.AddOpenTelemetry().WithLogging(b => b.UseModulusLogging())</c>,
+    /// typically in the same OTel builder as <c>UseModulusTracing()</c> and
+    /// <c>UseModulusMetrics()</c>.
+    ///
+    /// Example:
+    /// <code>
+    /// services.AddOpenTelemetry()
+    ///     .WithTracing(b => b.UseModulusTracing().AddJaegerExporter())
+    ///     .WithMetrics(b => b.UseModulusMetrics().AddOtlpExporter())
+    ///     .WithLogging(b => b.UseModulusLogging().AddOtlpExporter());
+    /// </code>
+    ///
+    /// To control log levels, configure the logging builder in services.Configure&lt;LoggerFilterOptions&gt;
+    /// or via appsettings.json Logging.LogLevel settings.
+    /// </summary>
+    public static LoggerProviderBuilder UseModulusLogging(
+        this LoggerProviderBuilder builder)
+        => builder;
+
+    /// <summary>
     /// Registers <see cref="TracingBehavior{TRequest,TResponse}"/> as an
     /// open-generic mediator pipeline behavior so every command and query is
     /// automatically wrapped in an OpenTelemetry span.
@@ -38,6 +64,24 @@ public static class OpenTelemetryExtensions
     /// <see cref="UseModulusTracing"/> to the host's own OTel builder so
     /// that Modulus spans share the same exporters and sampling configuration
     /// as ASP.NET Core and EF Core spans.
+    ///
+    /// Complete setup example:
+    /// <code>
+    /// services
+    ///     .AddOpenTelemetry()
+    ///     .WithTracing(b => b
+    ///         .UseModulusTracing()
+    ///         .AddAspNetCoreInstrumentation()
+    ///         .AddJaegerExporter())
+    ///     .WithMetrics(b => b
+    ///         .UseModulusMetrics()
+    ///         .AddRuntimeInstrumentation()
+    ///         .AddOtlpExporter())
+    ///     .WithLogging(b => b
+    ///         .UseModulusLogging()
+    ///         .AddOtlpExporter());
+    /// services.AddModulusObservability();
+    /// </code>
     /// </summary>
     public static IServiceCollection AddModulusObservability(
         this IServiceCollection services)
