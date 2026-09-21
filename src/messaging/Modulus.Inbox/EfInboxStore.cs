@@ -134,6 +134,18 @@ internal sealed class EfInboxStore(DbContext db, ILogger<EfInboxStore>? logger =
             }
             catch (DbUpdateException)
             {
+                // This is a re-entrant SaveChangesAsync: db is the same
+                // DbContext instance OutboxProcessor is mid-batch on (dispatch
+                // runs handlers, which claim through this same scope), so a
+                // losing INSERT here leaves `inbox` stuck tracked as Added.
+                // Left tracked, the next SaveChangesAsync on db — the
+                // processor's own terminal write-back — retries this same
+                // failed INSERT, throws again, and discards every OTHER
+                // message's ProcessedAt in that call along with it: up to a
+                // full batch redispatches for one benign inbox collision.
+                // Detach so this claim's loss is fully contained to its own
+                // InboxDeferralException.
+                db.Entry(inbox).State = EntityState.Detached;
                 throw new InboxDeferralException(
                     $"Inbox message {eventId} is being processed by another consumer.");
             }

@@ -223,7 +223,14 @@ public sealed class OutboxProcessor(
             }
         }
 
-        await db.SaveChangesAsync(ct);
+        // CancellationToken.None, deliberately not `ct`: every message above
+        // that reached DispatchAsync already had its (irreversible) side
+        // effect happen — a broker publish, an inbox claim, a handler's own
+        // writes. A graceful shutdown cancelling THIS save would lose the
+        // ProcessedAt/RetryCount/lock-release bookkeeping for all of them
+        // after the real work already occurred, so the next poll would
+        // redispatch messages the outside world already saw.
+        await db.SaveChangesAsync(CancellationToken.None);
         return pendingCount;
     }
 
