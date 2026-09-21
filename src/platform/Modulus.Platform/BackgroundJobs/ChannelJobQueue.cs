@@ -52,7 +52,14 @@ public sealed class ChannelJobQueue(
 
     private readonly Dictionary<string, RecurringEntry> _recurring = [];
     private readonly Lock _recurringLock = new();
+
+    // Job workers and the recurring scheduler are cancelled on different
+    // schedules during shutdown (see StopAsync): the scheduler stops
+    // immediately since it has no in-flight work worth draining, while
+    // workers keep reading the channel until it drains or the grace period
+    // elapses, whichever comes first.
     private CancellationTokenSource? _cts;
+    private CancellationTokenSource? _recurringCts;
 
     // Tracked so StopAsync can await in-flight workers for graceful shutdown.
     private Task? _recurringTask;
@@ -145,9 +152,10 @@ public sealed class ChannelJobQueue(
                 "Register a durable scheduler (Quartz/Hangfire) for Production.");
 
         _cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        _recurringCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
 
         // Recurring-job scheduler — checks every 30 seconds
-        _recurringTask = Task.Run(() => RecurringSchedulerAsync(_cts.Token), _cts.Token);
+        _recurringTask = Task.Run(() => RecurringSchedulerAsync(_recurringCts.Token), _recurringCts.Token);
 
         // Worker pool
         var workerCount = Math.Max(1, Environment.ProcessorCount / 2);
@@ -159,8 +167,20 @@ public sealed class ChannelJobQueue(
 
     public async Task StopAsync(CancellationToken ct)
     {
-        if (_cts is not null)
-            await _cts.CancelAsync();
+        // Stop scheduling new recurring triggers right away — shutdown should
+        // not fire a fresh cron tick while workers are still draining the
+        // channel below. Unlike a running job, an unscheduled tick has no
+        // in-flight state worth waiting on.
+        if (_recurringCts is not null)
+            await _recurringCts.CancelAsync();
+
+        // Complete BEFORE cancelling: this stops new writes and lets each
+        // worker's ReadAllAsync finish naturally once the channel drains,
+        // instead of throwing immediately out from under already-queued
+        // jobs. This is what actually gives the grace period below
+        // something to wait for — previously _cts was cancelled first, so
+        // ReadAllAsync(ct) threw on the very next iteration and every
+        // still-queued job was dropped unprocessed.
         _channel.Writer.Complete();
 
         var pending = _workers.ToList();
@@ -184,6 +204,17 @@ public sealed class ChannelJobQueue(
         {
             logger.LogWarning(ex,
                 "One or more background job workers faulted during shutdown.");
+        }
+        finally
+        {
+            // Cancel LAST: unblocks anything still stuck (a hung job that
+            // observes its CancellationToken) once the drain window is over,
+            // so this method always returns instead of leaking those tasks
+            // running past it.
+            if (_cts is not null)
+                await _cts.CancelAsync();
+            _cts?.Dispose();
+            _recurringCts?.Dispose();
         }
     }
 
@@ -231,6 +262,11 @@ public sealed class ChannelJobQueue(
                 {
                     await _channel.Writer.WriteAsync(envelope, ct);
                     logger.LogInformation("Recurring job {JobId} enqueued", jobId);
+                }
+                catch (OperationCanceledException)
+                {
+                    // Shutdown raced this write (see StopAsync) — expected,
+                    // not a failure worth logging as an error.
                 }
                 catch (Exception ex)
                 {

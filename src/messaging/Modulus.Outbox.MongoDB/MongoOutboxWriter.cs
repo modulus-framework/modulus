@@ -77,6 +77,13 @@ internal sealed class MongoOutboxWriter(
         var serializer = sp.GetRequiredService<IMessageSerializer>();
         return new MongoOutboxMessage
         {
+            // Id must be the event's own EventId, not the property default
+            // (a fresh Guid per document) -- otherwise a retried WriteAsync
+            // after a dual-write-gap failure mints a NEW Mongo _id and
+            // inserts a genuine duplicate instead of colliding on the
+            // existing one, contradicting this class's own doc comment about
+            // idempotent retries.
+            Id = @event.EventId,
             MessageType = IntegrationEventNaming.GetName(type),
             Payload = serializer.Serialize(@event, type),
             TenantId = tenant.TenantId ?? Guid.Empty,

@@ -1,5 +1,6 @@
 namespace Modulus.Outbox.MongoDB.Tests;
 
+using FluentAssertions;
 using global::MongoDB.Driver;
 using Modulus.Core.Abstractions;
 using Modulus.Events.Abstractions;
@@ -27,6 +28,34 @@ public sealed class MongoOutboxWriterSessionTests
             Arg.Any<MongoOutboxMessage>(),
             Arg.Any<InsertOneOptions>(),
             Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task WriteAsync_UsesTheEventsOwnEventId_SoARetriedWriteCollidesInsteadOfDuplicating()
+    {
+        // Regression guard for H5: the class doc promises the no-session
+        // fallback uses "an idempotent Id (EventId)" so a retried WriteAsync
+        // after a dual-write-gap failure collides on Mongo's unique _id
+        // instead of inserting a duplicate. Id used to be left at its
+        // property default (a fresh Guid.NewGuid() per document instance),
+        // silently breaking that promise.
+        MongoOutboxMessage? captured = null;
+        var collection = Substitute.For<IMongoCollection<MongoOutboxMessage>>();
+        await collection.InsertOneAsync(
+            Arg.Do<MongoOutboxMessage>(doc => captured = doc),
+            Arg.Any<InsertOneOptions>(),
+            Arg.Any<CancellationToken>());
+        var sp = Substitute.For<IServiceProvider>();
+        sp.GetService(typeof(IMessageSerializer)).Returns(new StubSerializer());
+        var tenant = Substitute.For<ICurrentTenant>();
+        tenant.TenantId.Returns((Guid?)null);
+        var stubEvent = new StubEvent("test.stub.v1");
+
+        var writer = new MongoOutboxWriter(collection, sp, tenant);
+        await writer.WriteAsync(stubEvent);
+
+        captured.Should().NotBeNull();
+        captured!.Id.Should().Be(stubEvent.EventId);
     }
 
     [Fact]
