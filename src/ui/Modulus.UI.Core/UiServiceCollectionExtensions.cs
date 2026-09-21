@@ -30,6 +30,12 @@ public static class UiServiceCollectionExtensions
         // Fail-closed default (denies every permission) so menus/slots resolve without Identity;
         // TryAdd lets the real ICurrentUser win whenever it is registered.
         services.TryAddScoped<ICurrentUser, NullCurrentUser>();
+        // Same fail-closed shape for ICurrentTenant (IsHost false, TenantId null):
+        // feature pages (e.g. AuditLogs) that inject it must resolve to "no tenant" —
+        // not throw — when a host runs the UI framework without AddModulusMultiTenancy().
+        // ICurrentTenant is a singleton: it's a stateless AsyncLocal accessor in the
+        // real implementation, and so is this null default.
+        services.TryAddSingleton<ICurrentTenant, NullCurrentTenant>();
         services.TryAddScoped<IUiMenuProvider, UiMenuProvider>();
         services.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>();
         services.TryAddScoped<HtmxResponse>();
