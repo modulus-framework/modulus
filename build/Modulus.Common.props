@@ -15,11 +15,15 @@
     <LangVersion>latest</LangVersion>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <NoWarn>$(NoWarn);CS1591;NU1510;NU1902</NoWarn>
-    <!-- NU1902: Microsoft.Build.Tasks.Git 8.0.0 (via Microsoft.SourceLink.GitHub,
-         PrivateAssets=All build-time only) has a moderate advisory. Suppressed
-         globally so restores stay green under TreatWarningsAsErrors; revisit on
-         SourceLink bump. -->
+    <NoWarn>$(NoWarn);CS1591;NU1510</NoWarn>
+    <!-- NU1510: "PackageReference will not be pruned" fires broadly across the
+         repo for Microsoft.Extensions.* abstractions already provided
+         transitively by the shared framework. Suppressed globally; cleaning it
+         up project-by-project is a separate, unrelated pass.
+         NU1902 (Microsoft.Build.Tasks.Git via Microsoft.SourceLink.GitHub) is
+         no longer suppressed here — the SourceLink.GitHub PackageReference was
+         removed (see Modulus.Packaging.props); the SDK's built-in Source Link
+         support still stamps repository/commit metadata without it. -->
     <RootNamespace>$(MSBuildProjectName)</RootNamespace>
     <AssemblyName>$(MSBuildProjectName)</AssemblyName>
   </PropertyGroup>

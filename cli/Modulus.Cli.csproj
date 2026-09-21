@@ -11,8 +11,7 @@
       Scaffold modular-monolith applications, add modules, and generate CRUD code.
     </Description>
     <PackageTags>cobytelabs;modulus;cli;scaffolding;code-generation</PackageTags>
-    <!-- CLI is a dev-only tool; Scriban vulnerabilities don't affect generated apps -->
-    <NoWarn>$(NoWarn);NU1903;NU1902;NU1904;NU1603;VSTHRD002;VSTHRD103</NoWarn>
+    <NoWarn>$(NoWarn);NU1603;VSTHRD002;VSTHRD103</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
