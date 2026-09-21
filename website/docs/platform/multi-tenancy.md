@@ -13,17 +13,22 @@ Modulus provides built-in multi-tenant data isolation.
 │                    Request Pipeline                          │
 │                                                              │
 │  1. TenantMiddleware tries resolvers in registration order   │
-│     ├── Header: X-Tenant-Id (default)                       │
-│     ├── JWT claim: tid (default)                            │
+│     ├── JWT claim: tid (recommended first — see below)      │
+│     ├── Header: X-Tenant-Id                                 │
 │     └── Subdomain: {tenant}.{baseDomain}                    │
 │     First non-null result wins                               │
 │                                                              │
-│  2. ICurrentTenant populated (static AsyncLocal — flows     │
+│  2. If the caller is authenticated and a JWT-claim resolver  │
+│     is configured, its claim-derived tenant is cross-checked │
+│     against whichever tenant resolved in step 1 — a mismatch │
+│     is rejected (403), not silently trusted (see below)      │
+│                                                              │
+│  3. ICurrentTenant populated (static AsyncLocal — flows     │
 │     into background jobs and message consumers too)          │
 │                                                              │
-│  3. EF Core query filter: tenant rows only (fail-closed)    │
+│  4. EF Core query filter: tenant rows only (fail-closed)    │
 │                                                              │
-│  4. TenantId stamped on new entities                         │
+│  5. TenantId stamped on new entities                         │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -31,8 +36,8 @@ Modulus provides built-in multi-tenant data isolation.
 
 ```csharp
 services.AddMultiTenancy(builder => builder
-    .UseHeaderResolver()              // X-Tenant-Id, default
-    .UseJwtClaimResolver()            // JWT "tid" claim
+    .UseJwtClaimResolver()            // JWT "tid" claim — prefer this first
+    .UseHeaderResolver()              // X-Tenant-Id
     .UseSubdomainResolver("app.com")  // {tenant}.app.com
 );
 ```
@@ -43,6 +48,23 @@ There is no route-segment resolver. For an EF-backed tenant store:
 ```csharp
 services.AddEfCoreTenantStore(options => options.UseSqlite(connection));
 ```
+
+## Resolver Security
+
+`HeaderTenantResolver` trusts the `X-Tenant-Id` header **unconditionally** —
+it has no way to know whether the value came from a trusted edge component
+(an API gateway, Azure Front Door, Cloudflare Access) that authenticated the
+caller and mapped them to a tenant, or from the caller itself. Never expose it
+to a client you don't fully trust to set that header honestly.
+
+When `UseJwtClaimResolver()` is also configured, `TenantMiddleware`
+cross-checks an authenticated caller's claim-derived tenant against whichever
+tenant actually resolved (from any resolver) and **rejects the request with
+403** on a mismatch — closing the gap where a caller authenticated to tenant A
+sends `X-Tenant-Id: <B>` and would otherwise silently run as tenant B. This
+check only fires when both a `JwtClaimTenantResolver` is registered *and* the
+caller is authenticated with that claim present; a purely header-driven,
+trusted-edge deployment with no JWT resolver configured is unaffected.
 
 ## ICurrentTenant
 
