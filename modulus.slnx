@@ -113,6 +113,7 @@
   <Folder Name="/tests/" />
   <!-- ── Tests · Integration ─────────────────────────────────────── -->
   <Folder Name="/tests/integration/">
+    <Project Path="tests/integration/Modulus.Cli.Integration.Tests/Modulus.Cli.Integration.Tests.csproj" />
     <Project Path="tests/integration/Modulus.EFCore.Integration.Tests/Modulus.EFCore.Integration.Tests.csproj" />
     <Project Path="tests/integration/Modulus.Messaging.Integration.Tests/Modulus.Messaging.Integration.Tests.csproj" />
   </Folder>
