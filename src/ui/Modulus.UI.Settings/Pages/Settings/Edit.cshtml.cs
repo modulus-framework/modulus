@@ -69,6 +69,17 @@ public sealed class EditModel(
             return HtmxOrPage();
         }
 
+        if (scope is SettingScope.Global && !_currentTenant.IsHost)
+        {
+            // Global is "shared by the whole installation" (SettingScope's own
+            // doc) -- any settings:manage holder could otherwise write it from
+            // inside a single tenant's admin panel and change behavior for
+            // every other tenant too. Writing it requires host context, same
+            // as the host-only actions Tenancy already gates on IsHost.
+            ModelState.AddModelError(nameof(Input.Scope), await TextAsync("Edit.GlobalRequiresHost"));
+            return HtmxOrPage();
+        }
+
         if (scope is SettingScope.Tenant && _currentTenant.TenantId is null)
         {
             ModelState.AddModelError(nameof(Input.Scope), await TextAsync("Edit.TenantRequired"));

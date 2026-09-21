@@ -35,6 +35,7 @@ public static class SettingsUiLocalization
             ["Edit.UnknownScope"] = "Scope must be Global, Tenant, or User.",
             ["Edit.TenantRequired"] = "Tenant scope needs an ambient tenant in scope.",
             ["Edit.UserRequired"] = "User scope needs an authenticated user.",
+            ["Edit.GlobalRequiresHost"] = "Global scope applies to every tenant and can only be edited in host context.",
             ["Edit.NotFound"] = "Setting not found.",
             ["Edit.Saved"] = "Saved.",
         };
@@ -53,6 +54,7 @@ public static class SettingsUiLocalization
             ["Edit.UnknownScope"] = "El ámbito debe ser Global, Tenant o User.",
             ["Edit.TenantRequired"] = "El ámbito Tenant necesita un inquilino en contexto.",
             ["Edit.UserRequired"] = "El ámbito User necesita un usuario autenticado.",
+            ["Edit.GlobalRequiresHost"] = "El ámbito Global afecta a todos los inquilinos y solo puede editarse en contexto de host.",
             ["Edit.NotFound"] = "Ajuste no encontrado.",
             ["Edit.Saved"] = "Guardado.",
         };

@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc.Abstractions;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Routing;
 using Modulus.Core.Abstractions;
-using Modulus.MultiTenancy;
+using Modulus.Core.Null;
 using Modulus.Settings;
 using Modulus.UI.Settings.Pages.Settings;
 using NSubstitute;
@@ -20,15 +20,19 @@ namespace Modulus.UI.Settings.Tests;
 [Trait("Category", "Unit")]
 public sealed class SettingsPageTests
 {
+    // NullCurrentTenant.IsHost is true, so these existing (non-tenant-focused)
+    // tests keep write access to every scope, including Global; the
+    // host-only Global check is exercised separately below with an explicit
+    // non-host tenant.
     private static (EditModel Model, ISettingManager Manager) BuildEdit(
-        SettingDefinition? definition = null)
+        SettingDefinition? definition = null, ICurrentTenant? currentTenant = null)
     {
         var registry = Substitute.For<ISettingDefinitionRegistry>();
         registry.Find(Arg.Any<string>()).Returns(definition);
         var manager = Substitute.For<ISettingManager>();
         var user = Substitute.For<ICurrentUser>();
         var model = new EditModel(
-            registry, manager, new CurrentTenant(), user, new TestLocalizer());
+            registry, manager, currentTenant ?? new NullCurrentTenant(), user, new TestLocalizer());
         return (model, manager);
     }
 
@@ -117,6 +121,38 @@ public sealed class SettingsPageTests
     }
 
     [Fact]
+    public async Task Edit_Post_GlobalScope_FromNonHostTenant_RendersError()
+    {
+        // Global is "shared by the whole installation" — a tenant-scoped
+        // settings:manage holder must not be able to write it and change
+        // behavior for every other tenant.
+        var tenant = new FakeCurrentTenant(Guid.NewGuid(), isHost: false);
+        var (model, manager) = BuildEdit(new SettingDefinition("App.Theme", "light"), tenant);
+        model.Input = new EditModel.InputModel { Value = "dark", Scope = "Global" };
+
+        var result = await model.OnPostAsync("App.Theme", default);
+
+        result.Should().BeOfType<PageResult>();
+        model.ModelState.IsValid.Should().BeFalse();
+        await manager.DidNotReceiveWithAnyArgs().SetAsync(
+            default!, default!, default, default);
+    }
+
+    [Fact]
+    public async Task Edit_Post_GlobalScope_FromHost_Succeeds()
+    {
+        var host = new FakeCurrentTenant(tenantId: null, isHost: true);
+        var (model, manager) = BuildEdit(new SettingDefinition("App.Theme", "light"), host);
+        model.Input = new EditModel.InputModel { Value = "dark", Scope = "Global" };
+
+        var result = await model.OnPostAsync("App.Theme", default);
+
+        result.Should().BeOfType<RedirectToPageResult>();
+        await manager.Received(1).SetAsync(
+            "App.Theme", "dark", SettingScope.Global, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
     public async Task Edit_Post_UnknownScope_RendersError()
     {
         var (model, manager) = BuildEdit(new SettingDefinition("App.Theme", "light"));
@@ -191,5 +227,14 @@ public sealed class SettingsPageTests
         partial.ViewData!.ModelState.IsValid.Should().BeFalse();
         await manager.DidNotReceiveWithAnyArgs().SetAsync(
             default!, default!, default, default);
+    }
+
+    private sealed class FakeCurrentTenant(Guid? tenantId, bool isHost) : ICurrentTenant
+    {
+        public Guid? TenantId => tenantId;
+        public string? TenantSlug => null;
+        public bool IsAvailable => tenantId is not null;
+        public bool IsHost => isHost;
+        public IDisposable Change(TenantInfo? tenant) => throw new NotSupportedException();
     }
 }
