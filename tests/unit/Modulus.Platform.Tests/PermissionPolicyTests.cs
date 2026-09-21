@@ -54,15 +54,16 @@ public sealed class PermissionPolicyTests
             .Succeeded.Should().BeTrue();
     }
 
-    [Fact(Skip = "Request-scoped cache memoizes within scope; revocation test requires cross-scope mutation")]
+    [Fact]
     public async Task Runtime_revocation_takes_effect_on_the_next_check()
     {
-        // The grant store is now wrapped with request-scoped caching to eliminate
-        // redundant lookups during authorization checks. Grants are memoized per
-        // principal for the lifetime of a request. This test documents that runtime
-        // revocations (via InMemoryPermissionGrantStore.RevokeFromRole) are visible
-        // across scopes but not within the same scope (expected for request caching).
-        // Unit tests should not rely on within-scope store mutations being visible.
+        // The grant store is wrapped with request-scoped caching to eliminate
+        // redundant lookups during a single authorization check; grants are
+        // memoized per principal for the lifetime of that scope. AuthorizeAsync
+        // (the helper above) already creates a fresh scope per call, so a
+        // revocation between two calls is a cross-scope mutation and must be
+        // visible on the very next check -- that's the real-world request
+        // boundary this test asserts against.
         using var provider = BuildProvider(s => s.GrantToRole("clerk", "orders:read"));
         var principal = Authenticated(new Claim(ClaimTypes.Role, "clerk"));
 
@@ -72,7 +73,6 @@ public sealed class PermissionPolicyTests
         var store = provider.GetRequiredService<InMemoryPermissionGrantStore>();
         store.RevokeFromRole("clerk", "orders:read");
 
-        // This now requires creating a completely fresh scope to see the mutation
         (await AuthorizeAsync(provider, principal, "orders:read"))
             .Succeeded.Should().BeFalse();
     }
