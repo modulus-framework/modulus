@@ -11,10 +11,19 @@ The primary contract for all Modulus modules.
 ```csharp
 public interface IModule
 {
+    // Default no-op: seed shared options/registries other modules contribute to
     void PreConfigureServices(IServiceCollection services, IConfiguration config);
+
+    // Required: register module services
     void ConfigureServices(IServiceCollection services, IConfiguration config);
+
+    // Default no-op: finalize once every module has registered
     void PostConfigureServices(IServiceCollection services, IConfiguration config);
+
+    // Required: migrations, seeding (runs in registration order)
     Task InitializeAsync(ModuleContext context, CancellationToken cancellationToken = default);
+
+    // Required: cleanup (runs in reverse order; only initialized modules)
     Task ShutdownAsync(CancellationToken cancellationToken = default);
 }
 ```
@@ -51,11 +60,12 @@ builder.Services.AddModulus(builder.Configuration, modules => modules
 Passed to `InitializeAsync`.
 
 ```csharp
-public class ModuleContext
+public sealed class ModuleContext
 {
-    public IServiceProvider ServiceProvider { get; }
-    public IConfiguration Configuration { get; }
-    public CancellationToken CancellationToken { get; }
+    public required IServiceProvider ServiceProvider { get; init; }
+    public required IConfiguration Configuration { get; init; }
+    public required ILogger Logger { get; init; }
+    public required ModuleDescriptor Descriptor { get; init; } // Name, ModuleType, InitOrder
 }
 ```
 

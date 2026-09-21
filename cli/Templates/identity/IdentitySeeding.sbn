@@ -1,0 +1,173 @@
+using System.Security.Cryptography;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using Modulus.Identity.Abstractions;
+using OpenIddict.Abstractions;
+
+using static OpenIddict.Abstractions.OpenIddictConstants;
+
+namespace {{ identity_namespace }}.Infrastructure;
+
+/// <summary>
+/// Seeds the identity database on startup (call <c>SeedIdentityAsync</c> after the databases are
+/// migrated). It always ensures the <c>Admin</c> role and the first-party client <c>{{ app_name_lower }}</c>
+/// (the <c>client_id</c> a mobile, desktop or other first-party app sends to <c>/connect/token</c>; a public
+/// client, so it has no secret). It creates the first administrator only when
+/// the app has no users, and only where that is safe:
+/// <list type="bullet">
+/// <item>when <c>Identity:Seed:AdminEmail</c> and <c>Identity:Seed:AdminPassword</c> are configured
+/// (put the password in User Secrets or an environment variable, never in a committed file), in any
+/// environment;</item>
+/// <item>otherwise, in Development only, with <c>admin@{{ app_name_lower }}.local</c> and a random
+/// password that is logged once.</item>
+/// </list>
+/// Production with no configured admin creates none: create the first user another way.
+/// </summary>
+public static class IdentitySeeding
+{
+    public const string AdminRole = "Admin";
+
+    /// <summary>The client id of the first-party client (send it as <c>client_id</c> to <c>/connect/token</c>).</summary>
+    public const string ClientId = "{{ app_name_lower }}";
+
+    public static async Task SeedIdentityAsync(
+        this IServiceProvider services, IHostEnvironment environment, CancellationToken ct = default)
+    {
+        await using var scope = services.CreateAsyncScope();
+        var provider = scope.ServiceProvider;
+        var logger = provider.GetRequiredService<ILoggerFactory>().CreateLogger("Identity.Seeding");
+        var roles = provider.GetRequiredService<RoleManager<ModulusRole>>();
+        var users = provider.GetRequiredService<UserManager<ModulusUser>>();
+        var configuration = provider.GetRequiredService<IConfiguration>();
+
+        await EnsureClientAsync(provider.GetRequiredService<IOpenIddictApplicationManager>(), configuration, ct);
+
+        if (!await roles.RoleExistsAsync(AdminRole))
+        {
+            Require(await roles.CreateAsync(new ModulusRole { Name = AdminRole, DisplayName = "Administrator" }), "create the Admin role");
+        }
+
+        if (users.Users.Any())
+        {
+            return;
+        }
+
+        var email = configuration["Identity:Seed:AdminEmail"];
+        var password = configuration["Identity:Seed:AdminPassword"];
+        var generated = false;
+        if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
+        {
+            if (!environment.IsDevelopment())
+            {
+                logger.LogWarning(
+                    "No users exist and Identity:Seed:AdminEmail / Identity:Seed:AdminPassword are not configured: no administrator was created.");
+                return;
+            }
+
+            email = "admin@{{ app_name_lower }}.local";
+            password = GeneratePassword();
+            generated = true;
+        }
+
+        var admin = new ModulusUser { UserName = email, Email = email, EmailConfirmed = true };
+        Require(await users.CreateAsync(admin, password), "create the administrator");
+        Require(await users.AddToRoleAsync(admin, AdminRole), "add the administrator to the Admin role");
+
+        if (generated)
+        {
+            logger.LogWarning(
+                "Development administrator created: {Email} / {Password} (random; shown once). Set Identity:Seed:AdminEmail and Identity:Seed:AdminPassword to choose your own.",
+                email, password);
+        }
+        else
+        {
+            logger.LogInformation("Administrator {Email} created from configuration.", email);
+        }
+    }
+
+    // A public client (no secret) for first-party apps. The password grant only works while Identity:AllowPasswordFlow
+    // is on; refresh and revocation are what a signed-in app keeps using afterwards. With Identity:Seed:RedirectUris it can
+    // also sign users in with the authorization-code flow + PKCE (the recommended way for mobile, desktop and single-page
+    // apps): list the exact redirect URIs of your apps there. The client is brought in line with the configuration on every
+    // start, so adding a redirect URI is a settings change.
+    private static async Task EnsureClientAsync(
+        IOpenIddictApplicationManager applications, IConfiguration configuration, CancellationToken ct)
+    {
+        var redirectUris = (configuration.GetSection("Identity:Seed:RedirectUris").Get<string[]>() ?? [])
+            .Where(u => Uri.TryCreate(u, UriKind.Absolute, out _))
+            .ToArray();
+
+        var descriptor = new OpenIddictApplicationDescriptor
+        {
+            ClientId = ClientId,
+            ClientType = ClientTypes.Public,
+            DisplayName = "{{ app_name }} (first-party)",
+        };
+
+        var existing = await applications.FindByClientIdAsync(ClientId, ct);
+        if (existing is not null)
+        {
+            await applications.PopulateAsync(descriptor, existing, ct);
+        }
+
+        var changed = existing is null;
+        foreach (var permission in RequiredPermissions(redirectUris.Length > 0))
+        {
+            changed |= descriptor.Permissions.Add(permission);
+        }
+
+        if (redirectUris.Length > 0)
+        {
+            changed |= descriptor.Requirements.Add(Requirements.Features.ProofKeyForCodeExchange);
+            foreach (var uri in redirectUris.Select(u => new Uri(u, UriKind.Absolute)))
+            {
+                changed |= descriptor.RedirectUris.Add(uri);
+            }
+        }
+
+        if (existing is null)
+        {
+            await applications.CreateAsync(descriptor, ct);
+        }
+        else if (changed)
+        {
+            await applications.UpdateAsync(existing, descriptor, ct);
+        }
+    }
+
+    private static IEnumerable<string> RequiredPermissions(bool codeFlow)
+    {
+        yield return Permissions.Endpoints.Token;
+        yield return Permissions.Endpoints.Revocation;
+        yield return Permissions.GrantTypes.Password;
+        yield return Permissions.GrantTypes.RefreshToken;
+        yield return Permissions.Scopes.Email;
+        yield return Permissions.Scopes.Profile;
+        yield return Permissions.Scopes.Roles;
+        yield return Permissions.Prefixes.Scope + Scopes.OfflineAccess;
+        yield return Permissions.Prefixes.Scope + "modulus";
+
+        if (codeFlow)
+        {
+            yield return Permissions.Endpoints.Authorization;
+            yield return Permissions.GrantTypes.AuthorizationCode;
+            yield return Permissions.ResponseTypes.Code;
+        }
+    }
+
+    // Meets the default password rules (digit, upper case, length 8) with room to spare.
+    private static string GeneratePassword()
+        => "Aa1-" + Convert.ToHexString(RandomNumberGenerator.GetBytes(9));
+
+    private static void Require(IdentityResult result, string action)
+    {
+        if (!result.Succeeded)
+        {
+            throw new InvalidOperationException(
+                $"Identity seeding failed to {action}: {string.Join("; ", result.Errors.Select(e => e.Description))}");
+        }
+    }
+}

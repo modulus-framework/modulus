@@ -69,7 +69,11 @@ public static class HealthCheckExtensions
         IEnumerable<IModuleHealthCheck> checks,
         CancellationToken ct)
     {
-        var results = await Task.WhenAll(checks.Select(c => c.CheckAsync(ct)));
+        // Same per-check isolation as /health/modules (shared runner): one
+        // throwing check reports Unhealthy (→ 503) instead of failing the
+        // probe with a 500, and one hung check cannot stall it forever.
+        var results = await Task.WhenAll(
+            checks.Select(c => ModuleHealthCheckRunner.RunIsolatedAsync(c, ct)));
 
         var overall = results.Length == 0
             ? ModulusHealthStatus.Healthy

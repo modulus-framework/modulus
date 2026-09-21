@@ -1,0 +1,17 @@
+@page
+@model Modulus.UI.Identity.Pages.Account.SignOutModel
+@{
+    ViewData["Title"] = "Sign out";
+}
+<div class="container-tight px-0 my-4">
+    <div class="card">
+        <div class="card-body text-center">
+            <h2 class="card-title mb-4">Sign out</h2>
+            <p class="text-secondary">Are you sure you want to sign out?</p>
+            <form method="post">
+                <button type="submit" class="btn btn-danger w-100 mb-2">Sign out</button>
+                <a href="~/" class="btn btn-ghost-secondary w-100">Cancel</a>
+            </form>
+        </div>
+    </div>
+</div>

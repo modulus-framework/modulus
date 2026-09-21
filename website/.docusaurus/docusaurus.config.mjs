@@ -9,7 +9,7 @@ export default {
   "favicon": "img/icon.png",
   "url": "https://modulus.dev",
   "baseUrl": "/",
-  "organizationName": "cobytelabs",
+  "organizationName": "modulus-framework",
   "projectName": "modulus",
   "onBrokenLinks": "throw",
   "i18n": {
@@ -26,7 +26,7 @@ export default {
       {
         "docs": {
           "sidebarPath": "./sidebars.ts",
-          "editUrl": "https://github.com/cobytelabs/modulus/tree/main/website/"
+          "editUrl": "https://github.com/modulus-framework/modulus/tree/main/website/"
         },
         "blog": false,
         "theme": {
@@ -103,7 +103,7 @@ export default {
           "label": "API"
         },
         {
-          "href": "https://github.com/cobytelabs/modulus",
+          "href": "https://github.com/modulus-framework/modulus",
           "label": "GitHub",
           "position": "right"
         }
@@ -135,11 +135,11 @@ export default {
           "items": [
             {
               "label": "GitHub",
-              "href": "https://github.com/cobytelabs/modulus"
+              "href": "https://github.com/modulus-framework/modulus"
             },
             {
               "label": "Issues",
-              "href": "https://github.com/cobytelabs/modulus/issues"
+              "href": "https://github.com/modulus-framework/modulus/issues"
             }
           ]
         },
@@ -152,7 +152,7 @@ export default {
             },
             {
               "label": "Samples",
-              "href": "https://github.com/cobytelabs/modulus/tree/main/samples"
+              "href": "https://github.com/modulus-framework/modulus/tree/main/samples"
             }
           ]
         }
@@ -387,23 +387,33 @@ export default {
     }
   },
   "baseUrlIssueBanner": true,
+  "storage": {
+    "type": "localStorage",
+    "namespace": false
+  },
   "future": {
-    "experimental_faster": {
+    "v4": {
+      "removeLegacyPostBuildHeadAttribute": false,
+      "useCssCascadeLayers": false,
+      "siteStorageNamespacing": false,
+      "fasterByDefault": false,
+      "mdx1CompatDisabledByDefault": false
+    },
+    "faster": {
       "swcJsLoader": false,
       "swcJsMinimizer": false,
       "swcHtmlMinimizer": false,
       "lightningCssMinimizer": false,
       "mdxCrossCompilerCache": false,
-      "rspackBundler": false
+      "rspackBundler": false,
+      "rspackPersistentCache": false,
+      "ssgWorkerThreads": false,
+      "gitEagerVcs": false
     },
-    "experimental_storage": {
-      "type": "localStorage",
-      "namespace": false
-    },
+    "experimental_vcs": {},
     "experimental_router": "browser"
   },
   "onBrokenAnchors": "warn",
-  "onBrokenMarkdownLinks": "warn",
   "onDuplicateRoutes": "warn",
   "staticDirectories": [
     "static"
@@ -420,6 +430,7 @@ export default {
   "markdown": {
     "format": "mdx",
     "mermaid": false,
+    "emoji": true,
     "mdx1Compat": {
       "comments": true,
       "admonitions": true,
@@ -427,6 +438,10 @@ export default {
     },
     "anchors": {
       "maintainCase": false
+    },
+    "hooks": {
+      "onBrokenMarkdownLinks": "warn",
+      "onBrokenMarkdownImages": "throw"
     }
   }
 };

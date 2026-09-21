@@ -1,0 +1,42 @@
+@page
+@model Meetup.Modules.Meetings.Web.Pages.Meetings.IndexModel
+@{
+    ViewData["Title"] = "Meetings";
+    // HTMX fragment callers swap the inner content; full navigations
+    // get the Tabler shell.
+    Layout = Model.IsHtmxFragment ? null : "_UiLayout";
+}
+<m-page-header title="@ViewData["Title"]" subtitle="Meetings" />
+@if (Model.Groups.Count == 0)
+{
+    @await Html.PartialAsync("_Alert", UiAlert.Info("No meeting groups yet — propose the first one in Administration."))
+}
+else
+{
+    <div class="card mb-3">
+        <div class="card-body">
+            <label class="form-label" for="group-picker">Meeting group</label>
+            <select id="group-picker" name="groupId" class="form-select"
+                     hx-get="@Url.Page("./Index", "Table")"
+                     hx-target="#meetings-table" hx-swap="innerHTML" hx-push-url="true">
+                @foreach (var g in Model.Groups)
+                {
+                    <option value="@g.Id" selected="@(g.Id == Model.SelectedGroupId)">@g.Name (@g.City)</option>
+                }
+            </select>
+        </div>
+    </div>
+}
+@* Alpine owns this local UI state (collapsed/expanded); htmx owns every
+   server round-trip below. The form keeps working with no JS: the toggle
+   button is progressive enhancement, the post is a classic form post. *@
+<div x-data="{ open: false }">
+    <button type="button" class="btn btn-outline-primary mb-3" x-on:click="open = !open"
+            x-text="open ? 'Hide new meeting form' : 'New meeting…'"></button>
+    <div x-show="open" x-cloak>
+        @await Html.PartialAsync("_CreateForm", Model)
+    </div>
+</div>
+<div id="meetings-table">
+    @await Html.PartialAsync("_MeetingsTable", Model)
+</div>

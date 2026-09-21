@@ -28,8 +28,11 @@ public static class KafkaEventBusExtensions
                 cfg.GetSection(sectionName).Bind(opts))
             .Configure(opts => configure?.Invoke(opts));
 
-        // Partition key provider (tenant-aware partitioning)
-        services.TryAddSingleton<IPartitionKeyProvider, DefaultPartitionKeyProvider>();
+        // Partition key provider (tenant-aware partitioning). Scoped, not
+        // singleton: DefaultPartitionKeyProvider consumes the scoped
+        // ICurrentTenant, so a singleton here would throw under scope
+        // validation (Development default) or pin a root-scope tenant.
+        services.TryAddScoped<IPartitionKeyProvider, DefaultPartitionKeyProvider>();
 
         services.RemoveIModuleBusRegistrations();
         services.AddSingleton<KafkaEventBus>();

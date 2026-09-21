@@ -21,7 +21,10 @@ jobs:
         run: dotnet build modulus.slnx --no-restore --configuration Release
       - name: Verify formatting
         run: dotnet format modulus.slnx --verify-no-changes
-      - name: Test (unit only)
+      - name: Test (unit only, Docker-free)
+        # Category=Unit is Docker-free by convention: any test using
+        # Testcontainers.* must be [Trait(Category, Integration)]. The unit job
+        # has no Docker guarantee; container tests run in the integration job.
         run: dotnet test modulus.slnx --no-build --configuration Release --filter "Category=Unit" --verbosity normal
       - name: Audit vulnerable packages
         run: |

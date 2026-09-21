@@ -90,6 +90,18 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         [CommandOption("--migration-engine")]
         public string? MigrationEngine { get; init; }
 
+        [Description("App kind: api (an API host, no UI is created) or web (a web app + the same API for external clients such as mobile or desktop apps). Omit to be prompted; implied web by --ui-modules, otherwise api when not interactive.")]
+        [CommandOption("--kind")]
+        public string? Kind { get; init; }
+
+        [Description("Web apps only: UI modules to include: none, identity, permissions, tenancy, users, settings, auditlogging, notifications, files, or 'full' for a complete admin dashboard. Comma-separated or omit to be prompted.")]
+        [CommandOption("--ui-modules")]
+        public string? UiModules { get; init; }
+
+        [Description("Web apps only: do not install the Tabler theme (keep Core's built-in layout or bring your own ITheme).")]
+        [CommandOption("--no-theme")]
+        [DefaultValue(false)]
+        public bool NoTheme { get; init; }
 
         [Description("Path to a local NuGet feed containing the Cobytelabs.Modulus.* packages (written as an active 'modulus-local' source in NuGet.config). Omit to leave only nuget.org configured.")]
         [CommandOption("--package-source")]
@@ -114,6 +126,11 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
     /// <summary>Valid migration engine choices, in selection-menu order.</summary>
     internal static readonly string[] KnownMigrationEngines = ["efcore", "dbsh"];
 
+    internal static readonly string[] KnownUiModules = [
+        "identity", "permissions", "tenancy", "users",
+        "settings", "auditlogging", "notifications", "files"
+    ];
+
     private readonly TemplateEngine _templates = new();
 
     public override int Execute(CommandContext ctx, Settings s)
@@ -133,6 +150,8 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
             name = Ux.AskRequired("App name [grey](e.g. MyApp or MyCompany.MyApp)[/]:",
                 ciHint: "Pass the app name, e.g. `modulus app MyApp`.");
         var rootNs = ValidateAppName(name);
+
+        var kind = ResolveKind(s.Kind, s.UiModules);
 
         var database = ResolveDatabase(s.Database);
 
@@ -157,6 +176,14 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         var enablePersonalDataProtection = ResolveFeature(s.EnablePersonalDataProtection, false, "personal data protection");
 
         var migrationEngine = ResolveMigrationEngine(s.MigrationEngine);
+
+        // UI modules only exist in a web app; an API host is never asked.
+        var uiModules = kind == AppKind.Web ? ResolveUiModules(s.UiModules) : [];
+        if (WithSignInPage(kind, auth, uiModules) is { } withSignIn && withSignIn.Count != uiModules.Count)
+        {
+            AnsiConsole.MarkupLine("[grey]  A web app with the local token server also gets the Identity UI: it is the sign-in page.[/]");
+            uiModules = withSignIn;
+        }
 
         // NoExample is tri-state: null = unspecified → prompt (interactive)
         // or default to include (CI). True/False are explicit user choices.
@@ -213,6 +240,9 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
             EnableSecretsGuard = enableSecretsGuard,
             EnablePersonalDataProtection = enablePersonalDataProtection,
             MigrationEngine = migrationEngine,
+            Kind = kind,
+            UiModules = uiModules,
+            UseTablerTheme = kind == AppKind.Web && !s.NoTheme,
             LocalPackageSource = s.PackageSource,
         };
 
@@ -220,9 +250,16 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
 
         // ── Summary ────────────────────────────────────────────────────
         AnsiConsole.WriteLine();
-        Ux.Success($"Created [cyan]{appName}[/] at [grey]{projectDir}[/]");
+        Ux.Success($"Created [cyan]{appName}[/] ({kind.Label()}) at [grey]{projectDir}[/]");
         if (Ux.DryRun)
             Ux.Warning("Dry-run: nothing was actually written.");
+        if (AuthNote(auth, kind) is { } authNote)
+        {
+            if (auth == "none")
+                Ux.Warning(authNote);
+            else
+                Ux.Info(authNote);
+        }
         AnsiConsole.WriteLine();
         AnsiConsole.MarkupLine("[yellow]Next steps:[/]");
         AnsiConsole.MarkupLine("  [grey]cd[/] {0}", appName);
@@ -240,7 +277,12 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         AnsiConsole.WriteLine();
         AnsiConsole.MarkupLine("[grey]Then try:[/]");
         AnsiConsole.MarkupLine("  [grey]modulus add-module[/] Orders");
-        AnsiConsole.MarkupLine("  [grey]modulus generate-crud[/] Order --module Orders");
+        AnsiConsole.MarkupLine(kind == AppKind.Web
+            ? "  [grey]modulus generate-crud[/] Order --module Orders  [grey]# API endpoints + an admin page (--no-ui: API only)[/]"
+            : "  [grey]modulus generate-crud[/] Order --module Orders  [grey]# API endpoints; this app has no UI[/]");
+        if (kind == AppKind.Web && !noExample)
+            AnsiConsole.MarkupLine("  [grey]modulus generate-crud[/] {0} --module {1}  [grey]# add the example module's admin page[/]",
+                model.ExampleEntity, model.ExampleModule);
         AnsiConsole.MarkupLine("  [grey]modulus list[/]  [grey]# see what's in this app[/]");
         if (model.UseDbsh)
         {
@@ -270,6 +312,11 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
             Path.Combine(apiDir, "appsettings.json"));
         _templates.RenderToFile("app/appsettings.Development.json", model,
             Path.Combine(apiDir, "appsettings.Development.json"));
+        // The integration tests boot the host in the Testing environment, where the token server needs the same throwaway
+        // certificates Development uses (its base settings register none, on purpose).
+        if (model.UseOpenIddict)
+            _templates.RenderToFile("app/appsettings.Testing.json", model,
+                Path.Combine(apiDir, "appsettings.Testing.json"));
         // Without launchSettings.json, `dotnet run` defaults to the Production
         // environment, which switches the database initialisation to Migrate mode
         // (throws on an empty schema). The Development profile keeps the default
@@ -280,6 +327,13 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
 
         // ── Shared kernel ─────────────────────────────────────────
         GenerateShared(Path.Combine(projectDir, "src", "Shared"), model, projects);
+
+        // ── Identity backend (local token server needs users) ──────
+        if (model.UseOpenIddict)
+        {
+            GenerateIdentityModule(Path.Combine(projectDir, "src", "Modules", model.IdentityNamespace), model);
+            projects.Add(IdentityProjectPath(model));
+        }
 
         // ── Example Catalog module ─────────────────────────────────
         if (!model.NoExample)
@@ -296,6 +350,10 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
                 EntityName = model.ExampleEntity,
                 EntityNameLower = CodeGen.ToCamelCase(model.ExampleEntity),
                 RouteName = CodeGen.Pluralize(model.ExampleEntity).ToLowerInvariant(),
+                // A web app's API exposes the entity's extension fields, filtered through the UI registry.
+                HasApiExtraFields = model.UseUi,
+                // With the identity backend the example API needs the permission the Admin role holds (see Program.cs).
+                RequiredPermission = model.ExamplePermission,
             };
             GenerateModule(modDir, modModel);
             projects.AddRange(ModuleProjectPaths(rootNs, model.ExampleModule));
@@ -337,6 +395,112 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         // ── .gitignore ────────────────────────────────────────────
         _templates.RenderToFile("app/gitignore", model,
             Path.Combine(projectDir, ".gitignore"));
+
+        // ── UI Modules ───────────────────────────────────────────────
+        if (model.UseUi)
+        {
+            WireUiModules(projectDir, model);
+        }
+    }
+
+    /// <summary>The identity module's project in the <c>.slnx</c> (it has an Infrastructure project only).</summary>
+    internal static string IdentityProjectPath(AppModel model)
+        => $"src/Modules/{model.IdentityNamespace}/{model.IdentityNamespace}.Infrastructure/{model.IdentityNamespace}.Infrastructure.csproj";
+
+    /// <summary>
+    /// Generates the identity backend that <c>--auth openiddict</c> needs: a module with an Infrastructure project
+    /// only (no Domain/Application/Presentation, nothing to put there), so <c>modulus migrate</c> finds its
+    /// context like any module's, while <c>generate-crud</c> never mistakes it for a business module.
+    /// </summary>
+    internal void GenerateIdentityModule(string moduleDir, AppModel model)
+    {
+        var infraDir = Path.Combine(moduleDir, $"{model.IdentityNamespace}.Infrastructure");
+        _templates.RenderToFile("identity/infrastructure.csproj", model,
+            Path.Combine(infraDir, $"{model.IdentityNamespace}.Infrastructure.csproj"));
+        _templates.RenderToFile("identity/AppIdentityDbContext", model,
+            Path.Combine(infraDir, "AppIdentityDbContext.cs"));
+        _templates.RenderToFile("identity/AppIdentityDbContextFactory", model,
+            Path.Combine(infraDir, "AppIdentityDbContextFactory.cs"));
+        _templates.RenderToFile("identity/IdentityModule", model,
+            Path.Combine(infraDir, "IdentityModule.cs"));
+        _templates.RenderToFile("identity/IdentitySeeding", model,
+            Path.Combine(infraDir, "IdentitySeeding.cs"));
+    }
+
+    private void WireUiModules(string projectDir, AppModel model)
+    {
+        var apiProject = Path.Combine(projectDir, "src", "API", $"{model.RootNamespace}.Api", $"{model.RootNamespace}.Api.csproj");
+        var programCs = Path.Combine(projectDir, "src", "API", $"{model.RootNamespace}.Api", "Program.cs");
+
+        if (!File.Exists(apiProject) || !File.Exists(programCs))
+            return;
+
+        // The localization services the UI foundation registers live in Platform (feature UI packages bring it
+        // themselves, but a web app with no feature module has only UI.Core).
+        ProjectFileService.EnsureCsprojPackageReference(
+            apiProject, "Cobytelabs.Modulus.Platform", model.FrameworkVersion, Ux.DryRun);
+
+        foreach (var module in ResolveWebInstall(model.UiModules, model.UseTablerTheme))
+        {
+            // Add package reference
+            var command = $"dotnet add \"{apiProject}\" package \"{module.PackageId}\" --version {module.Version}";
+            if (!Ux.DryRun)
+            {
+                var psi = new System.Diagnostics.ProcessStartInfo("dotnet", command)
+                {
+                    WorkingDirectory = Path.GetDirectoryName(apiProject),
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                };
+                using var proc = new System.Diagnostics.Process { StartInfo = psi };
+                proc.Start();
+                proc.WaitForExit();
+            }
+
+            // Wire in Program.cs (shared idempotent surgery; also adds the
+            // Razor Pages services the mapped endpoints require).
+            var content = UiHostWiring.EnsureUiWiring(File.ReadAllText(programCs), module);
+
+            if (!Ux.DryRun)
+            {
+                File.WriteAllText(programCs, content);
+
+                // Admin UIs (Users, Settings, ...) require their permission, which the Admin role is granted.
+                UiAccessGates.WriteSettings(programCs, module);
+            }
+        }
+
+        if (!Ux.DryRun)
+        {
+            // Restore packages
+            var restorePsi = new System.Diagnostics.ProcessStartInfo("dotnet", "restore")
+            {
+                WorkingDirectory = projectDir,
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+            };
+            using var restoreProc = new System.Diagnostics.Process { StartInfo = restorePsi };
+            restoreProc.Start();
+            restoreProc.WaitForExit();
+        }
+    }
+
+    /// <summary>
+    /// What a web app installs and wires, in order: the UI foundation (<c>Modulus.UI.Core</c>, so a web app with no
+    /// prebuilt module still has its Razor Pages, menu and layout), the chosen UI modules, then the Tabler theme when
+    /// requested. Resolves through <see cref="UiModuleCatalog.Find"/> (ids like <c>identity</c> match the module name);
+    /// the previous inline lookup compared against the catalog id (<c>Modulus.Identity</c>), never matched, and
+    /// silently wired nothing.
+    /// </summary>
+    internal static IReadOnlyList<UiModuleDefinition> ResolveWebInstall(IEnumerable<string> uiModuleIds, bool withTheme)
+    {
+        var modules = uiModuleIds.Select(UiModuleCatalog.Find).ToList();
+        modules.Insert(0, UiModuleCatalog.Find("Modulus.UI.Core"));
+        if (withTheme)
+            modules.Add(UiModuleCatalog.Find(UiCrudWiring.TablerThemeId));
+        return modules;
     }
 
     /// <summary>
@@ -527,6 +691,132 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
                 $"Unknown migration engine '{engine}'. Valid: {string.Join(", ", KnownMigrationEngines)}.");
 
         return KnownMigrationEngines.First(e => string.Equals(e, engine, StringComparison.OrdinalIgnoreCase));
+    }
+
+    /// <summary>
+    /// What to know about the chosen auth provider in a freshly generated app, or null when nothing needs saying.
+    /// Endpoints require an authenticated user by default (the framework is secure by default), so an app with no
+    /// authentication scheme answers every API call with a 500 (<c>none</c>: a warning). <c>openiddict</c> comes with
+    /// an Identity module, so it works out of the box in Development; the note says what to do before production.
+    /// A web app's API is also meant for external clients, which is why it matters most there.
+    /// </summary>
+    internal static string? AuthNote(string auth, AppKind kind)
+    {
+        var clients = kind == AppKind.Web ? "The API is also for external clients (mobile, desktop), which need a way to sign in. " : "";
+        return auth switch
+        {
+            "none" => clients +
+                "Auth is 'none': endpoints require an authenticated user and no authentication scheme is registered, so the API answers 500 " +
+                "until you register one (AddAuthentication().AddJwtBearer(...)) or re-run with --auth openiddict or an external provider. " +
+                "Call AllowAnonymous() in an endpoint's Configure() to open it.",
+            "openiddict" =>
+                "Auth is 'openiddict': an Identity module (users, roles, token store) was generated. In Development it creates an admin " +
+                "(random password, logged once) and turns the password grant on, so a client can POST /connect/token and call the API with the " +
+                "bearer token." + (kind == AppKind.Web
+                    ? " The web app also serves the authorization-code + PKCE flow (/connect/authorize, signing in through the Identity UI) " +
+                      "for mobile, desktop and single-page clients; the redirect URIs they may use are Identity:Seed:RedirectUris."
+                    : string.Empty) +
+                " Before production: modulus migrate add InitialCreate --module Identity, real signing certificates, " +
+                "Identity:Seed:AdminEmail/AdminPassword from secrets, and Identity:AllowPasswordFlow only for trusted first-party clients.",
+            _ => null,
+        };
+    }
+
+    private const string ApiChoice = "API: an API host, no UI";
+    private const string WebChoice = "Web app + API: a UI, plus the API for external clients (mobile, desktop, other systems)";
+
+    /// <summary>
+    /// Resolves the app kind. An explicit <c>--kind</c> wins (and cannot be <c>api</c> together with UI modules);
+    /// <c>--ui-modules</c> alone implies a web app, so existing command lines keep working; otherwise the user is asked,
+    /// and a non-interactive run defaults to <c>api</c>.
+    /// </summary>
+    internal static AppKind ResolveKind(string? kind, string? uiModules)
+    {
+        var wantsUi = !string.IsNullOrWhiteSpace(uiModules)
+            && !string.Equals(uiModules.Trim(), "none", StringComparison.OrdinalIgnoreCase);
+
+        if (!string.IsNullOrWhiteSpace(kind))
+        {
+            var parsed = AppKinds.Parse(kind);
+            if (parsed == AppKind.Api && wantsUi)
+                throw new ArgumentException(
+                    "--ui-modules needs a web app: an API host creates no UI. Use --kind web, or drop --ui-modules.");
+            return parsed;
+        }
+
+        if (wantsUi)
+            return AppKind.Web;
+
+        return Ux.SelectOrFallback("Application type?", [ApiChoice, WebChoice], ApiChoice) == WebChoice
+            ? AppKind.Web
+            : AppKind.Api;
+    }
+
+    /// <summary>
+    /// A web app that signs users in with the local token server needs somewhere to do it: every page is behind the sign-in
+    /// (<c>AddModulusPageAuthorization</c>) and the authorization-code flow sends users to the same page, so the Identity UI is
+    /// part of the app. Returns <paramref name="uiModules"/> with <c>identity</c> added when it is missing.
+    /// </summary>
+    internal static IReadOnlyList<string> WithSignInPage(AppKind kind, string auth, IReadOnlyList<string> uiModules)
+    {
+        ArgumentNullException.ThrowIfNull(uiModules);
+        if (kind != AppKind.Web
+            || !string.Equals(auth, "openiddict", StringComparison.OrdinalIgnoreCase)
+            || uiModules.Contains("identity", StringComparer.OrdinalIgnoreCase))
+        {
+            return uiModules;
+        }
+
+        return ["identity", .. uiModules];
+    }
+
+    /// <summary>
+    /// Resolves the UI modules to include: interactive multi-select when not supplied,
+    /// validation + normalisation when passed on the command line.
+    /// </summary>
+    private static IReadOnlyList<string> ResolveUiModules(string? provided)
+    {
+        if (!string.IsNullOrWhiteSpace(provided))
+        {
+            var parts = provided.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            var normalized = new List<string>();
+            foreach (var p in parts)
+            {
+                var lower = p.ToLowerInvariant();
+                if (lower == "none")
+                {
+                    continue;
+                }
+                if (lower == "full")
+                {
+                    return KnownUiModules;
+                }
+                if (KnownUiModules.Contains(lower, StringComparer.OrdinalIgnoreCase))
+                {
+                    normalized.Add(KnownUiModules.First(k => string.Equals(k, lower, StringComparison.OrdinalIgnoreCase)));
+                }
+                else
+                {
+                    throw new ArgumentException($"Unknown UI module '{p}'. Valid: {string.Join(", ", KnownUiModules)} or 'full'.");
+                }
+            }
+            return normalized;
+        }
+
+        if (Ux.IsInteractive)
+        {
+            var choices = KnownUiModules.Select(m => char.ToUpper(m[0]) + m[1..]).ToArray();
+            var picked = AnsiConsole.Prompt(
+                new MultiSelectionPrompt<string>()
+                    .Title("Prebuilt UI modules to include (space to select, enter to confirm; none is fine):")
+                    .NotRequired()
+                    .PageSize(10)
+                    .AddChoices(choices)
+                    .InstructionsText("[grey](Press [blue]space[/] to toggle, [blue]enter[/] to confirm)[/]"));
+            return picked.Select(m => m.ToLowerInvariant()).ToArray();
+        }
+
+        return [];
     }
 
     /// <summary>

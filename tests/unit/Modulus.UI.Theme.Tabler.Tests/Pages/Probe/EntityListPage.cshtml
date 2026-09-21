@@ -1,0 +1,40 @@
+@page
+@using Modulus.Core.Abstractions
+@inject IEntityUiRegistry Registry
+@inject ICurrentUser CurrentUser
+@functions {
+    public sealed record Product(int Id, string Name);
+
+    public List<Product> Rows { get; set; } = [];
+
+    public EntityColumnValues Extra { get; set; } = EntityColumnValues.Empty;
+
+    public string? Source { get; set; }
+
+    public async Task OnGetAsync(bool empty = false, bool skipLoad = false, bool live = false)
+    {
+        Source = live ? "/Probe/EntityListPage?handler=Rows" : null;
+        Rows = empty ? [] : [new(1, "Widget"), new(2, "Gadget")];
+        if (!skipLoad)
+        {
+            Extra = await Registry.LoadEntityColumnsAsync(
+                HttpContext.RequestServices, "Catalog.Product", CurrentUser, Rows.Select(r => r.Id.ToString()), HttpContext.RequestAborted);
+        }
+    }
+}
+@{
+    Layout = "/Themes/Tabler/Layouts/Empty.cshtml";
+}
+<m-datatable entity="Catalog.Product" source="@Source" empty="@(Rows.Count == 0)" empty-message="No products">
+    <m-column>Name</m-column>
+    <m-entity-columns />
+    <m-column class="text-end"></m-column>
+    @foreach (var row in Rows)
+    {
+        <tr>
+            <td>@row.Name</td>
+            <m-entity-cells entity="Catalog.Product" row-id="@row.Id.ToString()" values="Extra" />
+            <td><m-entity-actions entity="Catalog.Product" row-id="@row.Id.ToString()" /></td>
+        </tr>
+    }
+</m-datatable>

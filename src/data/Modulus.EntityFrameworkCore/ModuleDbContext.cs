@@ -137,6 +137,38 @@ public abstract class ModuleDbContext(
         return result;
     }
 
+    // ── Deferred event drain (invoked by the transaction interceptor) ──
+    /// <summary>
+    /// Drains and dispatches the domain events that <see cref="SaveChangesAsync"/>
+    /// deferred while an explicit transaction was active. Invoked by
+    /// <see cref="Transactions.DeferredDomainEventTransactionInterceptor"/> the
+    /// moment the context's transaction commits — this is what makes the
+    /// "dispatch after commit" guarantee hold for <em>manual</em> transactions
+    /// (Begin/Commit outside the mediator pipeline), which nothing else drains.
+    /// TransactionBehavior's post-commit drain calls the same queue and becomes
+    /// a no-op here, so events dispatch exactly once.
+    /// </summary>
+    internal async Task DrainDeferredDomainEventsAsync(CancellationToken ct)
+    {
+        var queue = sp.GetService<IDeferredDomainEventQueue>();
+        if (queue is null) return;
+
+        var events = queue.DequeueAll();
+        if (events.Count == 0) return;
+
+        await dispatcher.DispatchAsync(events, ct);
+    }
+
+    /// <summary>
+    /// Discards all deferred domain events without dispatching them. Invoked by
+    /// the transaction interceptor on rollback: events whose writes were rolled
+    /// back must never fire, and clearing the queue here also stops a rolled
+    /// back unit's events from leaking into a later, unrelated commit that
+    /// shares the same DI scope.
+    /// </summary>
+    internal void ClearDeferredDomainEvents()
+        => sp.GetService<IDeferredDomainEventQueue>()?.DequeueAll();
+
     // ── Model configuration ───────────────────────────────────────
     protected override void OnModelCreating(ModelBuilder mb)
     {
@@ -150,6 +182,7 @@ public abstract class ModuleDbContext(
         ConfigureOutbox(mb);
         ConfigureEntityChangeHistory(mb);
         ConfigureConcurrencyTokens(mb);
+        mb.UseModulusExtraProperties();
         ApplyTablePrefix(mb);
         ApplyQueryFilters(mb);
         ApplyPersonalDataEncryption(mb);

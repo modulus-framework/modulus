@@ -19,6 +19,7 @@ public sealed class DomainEventDispatchTimingTests : IAsyncDisposable
     private readonly SqliteConnection _conn;
     private readonly ServiceProvider _sp;
     private readonly TestDbContext _db;
+    private readonly List<Guid> _handled = [];
 
     public DomainEventDispatchTimingTests()
     {
@@ -31,6 +32,8 @@ public sealed class DomainEventDispatchTimingTests : IAsyncDisposable
         services.AddScoped<ICurrentUser, NullCurrentUser>();
         services.TryAddScoped<DomainEventDispatcher>();
         services.TryAddScoped<IDeferredDomainEventQueue, DeferredDomainEventQueue>();
+        services.AddScoped<IDomainEventHandler<TestDomainEvent>>(
+            _ => new RecordingHandler(_handled));
         services.AddModuleDatabase<TestDbContext>(o => o.UseSqlite(_conn));
         _sp = services.BuildServiceProvider();
         _db = _sp.GetRequiredService<TestDbContext>();
@@ -62,82 +65,91 @@ public sealed class DomainEventDispatchTimingTests : IAsyncDisposable
 
     /// <summary>
     /// Verifies that when an explicit transaction is active (e.g., TransactionBehavior
-    /// wrapping a command handler), domain events are DEFERRED and dispatched AFTER
-    /// the transaction commits, not before. This ensures handlers see committed state
-    /// and side effects are safe.
+    /// wrapping a command handler, or a <em>manual</em> Begin/Commit outside the
+    /// mediator pipeline), domain events are DEFERRED while the transaction runs and
+    /// dispatched AFTER it commits — without anyone draining the queue manually.
+    /// The transaction interceptor registered by AddModuleDatabase performs the
+    /// dispatch, so manual transactions no longer lose their events.
     /// </summary>
     [Fact]
     public async Task DomainEventDispatch_WithExplicitTransaction_DefersUntilAfterCommit()
     {
-        var dispatchOrder = new List<string>();
-
-        // Create a simple in-process test handler
-        var testEventHandled = false;
-        Func<TestDomainEvent, CancellationToken, Task> handleFunc = async (evt, ct) =>
-        {
-            dispatchOrder.Add("event-handler");
-            testEventHandled = true;
-            await Task.CompletedTask;
-        };
-
-        // Manually simulate TransactionBehavior wrapping:
-        // 1. Begin transaction
-        // 2. Run handler (which calls SaveChangesAsync)
-        // 3. Commit transaction
-        // 4. Dispatch deferred events
-        dispatchOrder.Add("before-txn");
-
         var txn = await _db.Database.BeginTransactionAsync();
         try
         {
-            dispatchOrder.Add("txn-started");
-
             var aggregate = new TestAggregate();
             aggregate.RaiseEvent();
             _db.Aggregates.Add(aggregate);
 
-            dispatchOrder.Add("before-save");
             await _db.SaveChangesAsync();
-            dispatchOrder.Add("after-save");
 
-            // At this point, the event should be deferred, not dispatched yet
-            testEventHandled.Should().BeFalse("handler should not run until after commit");
+            // While the transaction is open the event must not have dispatched.
+            _handled.Should().BeEmpty("handler should not run until after commit");
 
             await txn.CommitAsync();
-            dispatchOrder.Add("after-commit");
 
-            // Still not dispatched; must manually dispatch deferred events
-            // (simulating what TransactionBehavior does)
-            var queue = _sp.GetRequiredService<IDeferredDomainEventQueue>();
-            var deferred = queue.DequeueAll();
+            // The interceptor dispatches the deferred events during commit —
+            // no manual drain required (the TransactionBehavior drain is a no-op).
+            _handled.Should().HaveCount(1, "commit must dispatch deferred events automatically");
 
-            dispatchOrder.Add("before-deferred-dispatch");
-            if (deferred.Count > 0)
-            {
-                foreach (var evt in deferred.OfType<TestDomainEvent>())
-                {
-                    await handleFunc(evt, CancellationToken.None);
-                }
-            }
-            dispatchOrder.Add("after-deferred-dispatch");
+            // The queue must be fully drained so no later dispatch replays them.
+            _sp.GetRequiredService<IDeferredDomainEventQueue>()
+                .DequeueAll().Should().BeEmpty("events dispatch exactly once");
         }
         finally
         {
             await txn.DisposeAsync();
         }
+    }
 
-        // Expected order: events are deferred, dispatched only after commit
-        dispatchOrder.Should().Equal(
-            "before-txn",
-            "txn-started",
-            "before-save",
-            "after-save",
-            "after-commit",
-            "before-deferred-dispatch",
-            "event-handler",
-            "after-deferred-dispatch");
+    /// <summary>
+    /// Verifies that rolling a transaction back DISCARDS its deferred events:
+    /// handlers never observe writes that were rolled back, and a later,
+    /// unrelated commit in the same DI scope must not re-dispatch them.
+    /// </summary>
+    [Fact]
+    public async Task DomainEventDispatch_OnRollback_DiscardsDeferredEvents()
+    {
+        var rolledBack = await _db.Database.BeginTransactionAsync();
+        try
+        {
+            var first = new TestAggregate();
+            first.RaiseEvent();
+            _db.Aggregates.Add(first);
+            await _db.SaveChangesAsync();
 
-        testEventHandled.Should().BeTrue("handler should have been called after commit");
+            await rolledBack.RollbackAsync();
+        }
+        finally
+        {
+            await rolledBack.DisposeAsync();
+        }
+
+        _handled.Should().BeEmpty("events from a rolled-back unit must never dispatch");
+        _sp.GetRequiredService<IDeferredDomainEventQueue>()
+            .DequeueAll().Should().BeEmpty("rollback must clear the deferred queue");
+
+        // A later, unrelated unit in the same scope must not resurrect the
+        // rolled-back unit's events.
+        var secondTxn = await _db.Database.BeginTransactionAsync();
+        try
+        {
+            var second = new TestAggregate();
+            second.RaiseEvent();
+            _db.Aggregates.Add(second);
+            await _db.SaveChangesAsync();
+
+            _handled.Should().BeEmpty("still deferred while the second transaction is open");
+
+            await secondTxn.CommitAsync();
+        }
+        finally
+        {
+            await secondTxn.DisposeAsync();
+        }
+
+        _handled.Should().ContainSingle(
+            "only the second unit's event dispatches; the rolled-back unit's event was cleared");
     }
 
     async ValueTask IAsyncDisposable.DisposeAsync()
@@ -198,11 +210,11 @@ public sealed class DomainEventDispatchTimingTests : IAsyncDisposable
         public DateTime OccurredAt { get; } = DateTime.UtcNow;
     }
 
-    private sealed class TrackingEventHandler(List<string> dispatchOrder) : IDomainEventHandler<TestDomainEvent>
+    private sealed class RecordingHandler(List<Guid> handled) : IDomainEventHandler<TestDomainEvent>
     {
         public Task HandleAsync(TestDomainEvent @event, CancellationToken ct)
         {
-            dispatchOrder.Add("event-handler");
+            handled.Add(@event.EventId);
             return Task.CompletedTask;
         }
     }

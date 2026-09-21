@@ -13,7 +13,10 @@ using Modulus.Core.Abstractions;
 /// request for a key is processed and its response buffered; concurrent duplicates
 /// get 409 while it runs, and later duplicates get the original response replayed.
 /// A key reused with a different payload is rejected with 422. Failed (5xx) and
-/// faulted requests release the claim so a genuine retry can run again.
+/// faulted requests release the claim so a genuine retry can run again. Responses
+/// larger than <see cref="IdempotencyOptions.MaxResponseBytes"/> are streamed
+/// through uncached — buffering stops at the cap, so an oversized response is
+/// never held in memory in full.
 /// </summary>
 public sealed class IdempotencyMiddleware(
     RequestDelegate next,
@@ -101,8 +104,13 @@ public sealed class IdempotencyMiddleware(
     {
         // Buffer the response so it can be cached and replayed. Nothing is flushed
         // to the client until we copy the buffer back, so status/headers stay mutable.
+        // The buffer is capped: once a response outgrows MaxResponseBytes the stream
+        // overflows into pass-through (the buffered prefix is flushed and everything
+        // from then on streams straight to the client), so an oversized response is
+        // never held in memory in full — middleware memory stays bounded by the cap.
+        var cap = Math.Max(IdempotencyOptions.MinResponseBytes, _options.MaxResponseBytes);
         var originalBody = context.Response.Body;
-        using var buffer = new MemoryStream();
+        using var buffer = new CappingBufferStream(originalBody, cap);
         context.Response.Body = buffer;
 
         try
@@ -118,25 +126,25 @@ public sealed class IdempotencyMiddleware(
 
         context.Response.Body = originalBody;
 
+        if (buffer.Overflow)
+        {
+            // Already streamed to the client in full — nothing to cache. Release
+            // the claim so a retry re-runs the request instead of being served
+            // from an unbounded store.
+            _logger.LogWarning(
+                "Idempotency response for key '{Key}' exceeded MaxResponseBytes {Cap}; not caching — retries will re-execute.",
+                scopedKey, cap);
+            await store.AbandonAsync(scopedKey, CancellationToken.None);
+            return;
+        }
+
         if (IsCacheable(context.Response.StatusCode))
         {
-            if (buffer.Length <= Math.Max(IdempotencyOptions.MinResponseBytes, _options.MaxResponseBytes))
-            {
-                var cached = new CachedResponse(
-                    context.Response.StatusCode,
-                    SnapshotHeaders(context.Response),
-                    buffer.ToArray());
-                await store.CompleteAsync(scopedKey, cached, CancellationToken.None);
-            }
-            else
-            {
-                // Too large to cache — release the claim so a retry re-runs
-                // the request instead of being served from an unbounded store.
-                _logger.LogWarning(
-                    "Idempotency response for key '{Key}' is {Bytes} bytes (MaxResponseBytes {Cap}); not caching — retries will re-execute.",
-                    scopedKey, buffer.Length, _options.MaxResponseBytes);
-                await store.AbandonAsync(scopedKey, CancellationToken.None);
-            }
+            var cached = new CachedResponse(
+                context.Response.StatusCode,
+                SnapshotHeaders(context.Response),
+                buffer.GetBufferedBytes());
+            await store.CompleteAsync(scopedKey, cached, CancellationToken.None);
         }
         else
         {
@@ -144,8 +152,7 @@ public sealed class IdempotencyMiddleware(
             await store.AbandonAsync(scopedKey, CancellationToken.None);
         }
 
-        buffer.Position = 0;
-        await buffer.CopyToAsync(originalBody, context.RequestAborted);
+        await buffer.CopyBufferedToAsync(originalBody, context.RequestAborted);
     }
 
     private async Task ReplayAsync(HttpContext context, CachedResponse cached)
@@ -227,6 +234,89 @@ public sealed class IdempotencyMiddleware(
             if (!ExcludedHeaders.Contains(header.Key))
                 snapshot[header.Key] = header.Value.ToString();
         return snapshot;
+    }
+
+    /// <summary>
+    /// Response body that buffers up to <paramref name="maxBytes"/> and, once a
+    /// write would exceed the cap, flushes the buffered prefix to the original
+    /// body and streams everything from then on through uncached — bounding
+    /// middleware memory to the cap regardless of response size.
+    /// </summary>
+    private sealed class CappingBufferStream(Stream original, long maxBytes) : Stream
+    {
+        private readonly MemoryStream _buffer = new();
+        private bool _overflow;
+
+        /// <summary>True once the response outgrew the cap and switched to pass-through.</summary>
+        public bool Overflow => _overflow;
+
+        public byte[] GetBufferedBytes() => _buffer.ToArray();
+
+        public async Task CopyBufferedToAsync(Stream destination, CancellationToken ct)
+        {
+            _buffer.Position = 0;
+            await _buffer.CopyToAsync(destination, ct);
+        }
+
+        public override async ValueTask WriteAsync(
+            ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            if (!_overflow && _buffer.Length + buffer.Length > maxBytes)
+            {
+                _overflow = true;
+                _buffer.Position = 0;
+                await _buffer.CopyToAsync(original, cancellationToken);
+                _buffer.SetLength(0); // release the buffered prefix promptly
+            }
+
+            if (_overflow)
+                await original.WriteAsync(buffer, cancellationToken);
+            else
+                await _buffer.WriteAsync(buffer, cancellationToken);
+        }
+
+        public override void Write(byte[] buffer, int offset, int count)
+        {
+            if (!_overflow && _buffer.Length + count > maxBytes)
+            {
+                _overflow = true;
+                _buffer.Position = 0;
+                _buffer.CopyTo(original);
+                _buffer.SetLength(0);
+            }
+
+            if (_overflow)
+                original.Write(buffer, offset, count);
+            else
+                _buffer.Write(buffer, offset, count);
+        }
+
+        public override async Task FlushAsync(CancellationToken cancellationToken)
+        {
+            if (_overflow)
+                await original.FlushAsync(cancellationToken);
+        }
+
+        public override void Flush()
+        {
+            if (_overflow)
+                original.Flush();
+        }
+
+        public override bool CanRead => false;
+        public override bool CanSeek => false;
+        public override bool CanWrite => true;
+        public override long Length => throw new NotSupportedException();
+        public override long Position
+        {
+            get => throw new NotSupportedException();
+            set => throw new NotSupportedException();
+        }
+        public override int Read(byte[] buffer, int offset, int count)
+            => throw new NotSupportedException();
+        public override long Seek(long offset, SeekOrigin origin)
+            => throw new NotSupportedException();
+        public override void SetLength(long value) => throw new NotSupportedException();
     }
 
     private Task WriteReuseConflictAsync(HttpContext context)

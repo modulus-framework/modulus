@@ -25,6 +25,17 @@ public sealed class EfTenantStore(TenantStoreDbContext db) : ITenantStore
         return Map(entity);
     }
 
+    public async Task<IReadOnlyList<TenantInfo>> ListAsync(CancellationToken ct)
+    {
+        var entities = await db.Tenants.AsNoTracking()
+            .Where(t => t.IsActive)
+            .OrderBy(t => t.Slug)
+            .ToListAsync(ct);
+        return entities
+            .Select(e => Map(e)!)
+            .ToList();
+    }
+
     private static TenantInfo? Map(TenantEntity? entity)
         => entity is null
             ? null

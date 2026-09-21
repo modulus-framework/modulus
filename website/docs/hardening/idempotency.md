@@ -36,7 +36,11 @@ Modulus provides idempotency for unsafe (mutating) HTTP endpoints.
 
 ## Setup
 
+Place after `UseModulus()` so the tenant is resolved before keys are scoped,
+still wrapping the controllers so responses can be replayed:
+
 ```csharp
+builder.Services.AddModulusIdempotency(builder.Configuration);
 app.UseModulusIdempotency();
 ```
 
@@ -49,8 +53,9 @@ app.UseModulusIdempotency();
     "Methods": ["POST", "PATCH"],
     "RequireKey": false,
     "ValidateRequestMatch": true,
-    "MaxKeyLength": 256,
-    "RetentionSeconds": 86400
+    "MaxKeyLength": 255,
+    "RetentionSeconds": 86400,
+    "MaxResponseBytes": 1048576
   }
 }
 ```
@@ -63,27 +68,22 @@ app.UseModulusIdempotency();
 | Duplicate (completed) | Replay cached response with `Idempotency-Replayed: true` |
 | Concurrent duplicate | **409 Conflict** while processing |
 | Different payload with same key | **422 Unprocessable Entity** |
+| Missing/overlong key with `RequireKey` | **400 Bad Request** |
 | 5xx error | Release key (allows retry) |
+| Response over `MaxResponseBytes` | Not cached — still runs; retry re-runs |
 
 ## Store
 
 Default: `InMemoryIdempotencyStore` (per-instance, TTL-bounded).
 
-For multi-node deployments, register a distributed store:
-
-```csharp
-// Redis
-services.AddSingleton<IIdempotencyStore, RedisIdempotencyStore>();
-
-// EF Core
-services.AddScoped<IIdempotencyStore, EfIdempotencyStore>();
-```
-
-Register **before** `AddModulusIdempotency` (uses `TryAdd`).
+For multi-node deployments, register your own `IIdempotencyStore` (e.g.
+Redis- or EF-backed) **before** `AddModulusIdempotency` (`TryAdd` leaves a
+prior registration in place).
 
 ## Tenant Scoping
 
-Keys are scoped by tenant — they cannot collide across tenants.
+Keys are scoped by tenant **and** authenticated user — they cannot collide or
+leak responses across tenants.
 
 ## Request Fingerprint
 
@@ -92,6 +92,7 @@ The idempotency check includes a SHA-256 fingerprint of:
 - Path
 - Query string
 - Request body
+- Content-Type
 
 A key reused with a different request returns **422**.
 

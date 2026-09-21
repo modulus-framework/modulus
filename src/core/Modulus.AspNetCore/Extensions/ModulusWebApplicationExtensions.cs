@@ -48,13 +48,12 @@ internal sealed class ModuleLifecycleHostedService(
     {
         var loader = sp.GetRequiredService<IModuleLoader>();
 
-        // Open a scope so modules can resolve scoped services during init.
-        await using var scope = sp.CreateAsyncScope();
-
+        // ModuleLoader opens a child scope per module so scoped services
+        // never bleed across modules; pass the root provider here.
         try
         {
             logger.LogInformation("[Modulus] Starting module initialization...");
-            await loader.InitializeAllAsync(scope.ServiceProvider, ct);
+            await loader.InitializeAllAsync(sp, ct);
             logger.LogInformation("[Modulus] All modules initialized successfully.");
         }
         catch (Exception ex)

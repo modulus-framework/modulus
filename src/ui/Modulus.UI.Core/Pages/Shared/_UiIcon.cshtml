@@ -1,0 +1,16 @@
+@* Inline Tabler outline icon for a UiMenuItem.Icon name. Renders nothing for
+   null/unknown names so nav stays readable. Artwork lives in UiIcons
+   (vendored @tabler/icons 3.46.0, MIT); this partial only adds the Tabler
+   nav-icon shell (same geometry/classes Tabler uses: 24x24, stroke
+   currentColor, .nav-link-icon sizing). *@
+@using Modulus.UI
+@model string?
+@{
+    var inner = UiIcons.GetInnerSvg(Model);
+}
+@if (inner.Length > 0)
+{
+    <span class="nav-link-icon d-md-none d-lg-inline-block">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">@Html.Raw(inner)</svg>
+    </span>
+}

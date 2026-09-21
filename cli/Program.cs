@@ -18,6 +18,8 @@ public static class Program
                 .WithDescription("Create a new Modulus application with comprehensive interactive configuration.")
                 .WithExample("app", "MyCompany.MyApp")
                 .WithExample("app", "MyApp", "--database", "SqlServer")
+                .WithExample("app", "MyApp", "--kind", "api")
+                .WithExample("app", "MyApp", "--kind", "web", "--ui-modules", "identity,users")
                 .WithExample("app", "MyApp", "--no-example")
                 .WithExample("app", "MyApp", "--message-broker", "rabbitmq", "--caching", "redis")
                 .WithExample("app", "MyApp", "--storage", "s3", "--enable-feature-flags")
@@ -35,7 +37,8 @@ public static class Program
             // ── Code generation ────────────────────────────────────────
             config.AddCommand<Commands.GenerateCrudCommand>("generate-crud")
                 .WithDescription("Generate CRUD endpoints, handlers, and entity for a domain object.")
-                .WithExample("generate-crud", "Product", "--module", "Catalog");
+                .WithExample("generate-crud", "Product", "--module", "Catalog")
+                .WithExample("generate-crud", "Product", "--module", "Catalog", "--no-ui");
 
             config.AddCommand<Commands.GenerateCommandCommand>("generate-command")
                 .WithDescription("Generate a single command handler in a module.")
@@ -86,6 +89,57 @@ public static class Program
                 .WithExample("update", "--dry-run")
                 .WithExample("update", "--framework-only")
                 .WithExample("update", "--force");
+
+            // ── UI Modules ──────────────────────────────────────────────
+            config.AddBranch("ui", ui =>
+            {
+                ui.SetDescription("Manage Modulus UI modules (Razor RCLs).");
+
+                ui.AddCommand<Commands.UiListCommand>("list")
+                    .WithDescription("List all available UI modules.")
+                    .WithExample("ui", "list")
+                    .WithExample("ui", "list", "--installed");
+
+                ui.AddCommand<Commands.UiSearchCommand>("search")
+                    .WithDescription("Search UI modules by name, feature, or package.")
+                    .WithExample("ui", "search", "identity")
+                    .WithExample("ui", "search", "notifications");
+
+                ui.AddCommand<Commands.UiInfoCommand>("info")
+                    .WithDescription("Show details for a specific UI module.")
+                    .WithExample("ui", "info", "Identity");
+
+                ui.AddCommand<Commands.UiAddCommand>("add")
+                    .WithDescription("Add a UI module to the current application.")
+                    .WithExample("ui", "add", "Identity")
+                    .WithExample("ui", "add", "Permissions", "--dry-run");
+
+                ui.AddCommand<Commands.UiRemoveCommand>("remove")
+                    .WithDescription("Remove a UI module from the current application.")
+                    .WithExample("ui", "remove", "Notifications")
+                    .WithExample("ui", "remove", "Files", "--force");
+
+                ui.AddCommand<Commands.UiUpdateCommand>("update")
+                    .WithDescription("Update installed UI modules to the latest version.")
+                    .WithExample("ui", "update")
+                    .WithExample("ui", "update", "Identity")
+                    .WithExample("ui", "update", "--dry-run");
+
+                ui.AddCommand<Commands.UiEjectCommand>("eject")
+                    .WithDescription("Copy framework views (components, feature UI pages, theme layouts) into the app so they can be customized.")
+                    .WithExample("ui", "eject", "--list")
+                    .WithExample("ui", "eject", "Card")
+                    .WithExample("ui", "eject", "Users")
+                    .WithExample("ui", "eject", "Users/Details", "Tabler/Layouts/Application")
+                    .WithExample("ui", "eject", "DataTable", "Input", "--force");
+
+                ui.AddCommand<Commands.UiDiffCommand>("diff")
+                    .WithDescription("Show how the app's overrides of framework views differ from the framework's current views.")
+                    .WithExample("ui", "diff")
+                    .WithExample("ui", "diff", "Card")
+                    .WithExample("ui", "diff", "Users")
+                    .WithExample("ui", "diff", "--check", "--summary");
+            });
         });
 
         return app.Run(args);
@@ -138,6 +192,12 @@ internal sealed class DefaultCommand : Command
         table.AddRow("[cyan]doctor[/]", "Check .NET SDK / dotnet-ef / app structure");
         table.AddRow("[cyan]outdated[/]", "Show outdated packages in the current app");
         table.AddRow("[cyan]update[/]", "Update packages to latest versions");
+        table.AddRow("[cyan]ui list[/]", "List all available UI modules");
+        table.AddRow("[cyan]ui search[/] [grey]<term>[/]", "Search UI modules by name/feature/package");
+        table.AddRow("[cyan]ui info[/] [grey]<module>[/]", "Show details for a UI module");
+        table.AddRow("[cyan]ui add[/] [grey]<module>[/]", "Add a UI module to the current app");
+        table.AddRow("[cyan]ui remove[/] [grey]<module>[/]", "Remove a UI module from the current app");
+        table.AddRow("[cyan]ui update[/] [grey][[module]][/]", "Update installed UI modules");
 
         AnsiConsole.Write(table);
         AnsiConsole.WriteLine();

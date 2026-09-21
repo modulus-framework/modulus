@@ -5,7 +5,7 @@ using FluentAssertions;
 using Testcontainers.Kafka;
 using Xunit;
 
-[Trait("Category", "Unit")]
+[Trait("Category", "Integration")]
 public sealed class KafkaConsumerTests : IAsyncLifetime
 {
     private KafkaContainer _container = null!;

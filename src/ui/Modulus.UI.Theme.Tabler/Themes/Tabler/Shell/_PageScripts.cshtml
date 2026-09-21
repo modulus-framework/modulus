@@ -1,0 +1,9 @@
+@* Second half of the end-of-body shell (see _PageEnd): the Scripts slot, then
+   Alpine last so page scripts registering Alpine.data() are in place when
+   Alpine starts. *@
+@inject IThemeAccessor Themes
+@await Html.ModulusSlotAsync(UiSlots.Scripts)
+@foreach (var script in Themes.Current.Scripts.Where(s => TablerAssets.IsAlpine(s.Path)))
+{
+    <script src="@Url.Content("~" + script.Path)" defer="@script.Defer" integrity="@script.Integrity"></script>
+}

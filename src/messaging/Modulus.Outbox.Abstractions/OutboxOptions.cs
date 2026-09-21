@@ -20,6 +20,12 @@ public sealed class OutboxOptions
     /// <summary>First retry delay for a failed dispatch, in seconds; doubles per attempt. Defaults to 2.</summary>
     public int InitialBackoffSec { get; set; } = 2;
 
+    /// <summary>
+    /// Short requeue delay for transient deferrals (e.g. inbox already claimed
+    /// elsewhere). Deferrals do not consume retry budget. Defaults to 15 seconds.
+    /// </summary>
+    public int DeferDelaySec { get; set; } = 15;
+
     /// <summary>Dispatcher used to relay dispatched messages. Defaults to "in-process".</summary>
     public string Dispatcher { get; set; } = "in-process";
 

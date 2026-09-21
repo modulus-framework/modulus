@@ -17,7 +17,7 @@ public sealed class OktaIdentityProvider(
 {
     private readonly OidcDiscoveryValidator _tokenValidator =
         OidcDiscoveryValidatorCache.GetOrCreate(
-            $"{opts.Authority.TrimEnd('/')}/oauth2/default/.well-known/openid-configuration",
+            $"{OktaExtensions.AuthorizationServerRoot(opts)}/.well-known/openid-configuration",
             opts.Audience is null ? null : [opts.Audience]);
 
     public string Name => "okta";
@@ -74,6 +74,17 @@ public sealed class OktaOptions
     public string Scope { get; set; } = "openid profile email";
 
     /// <summary>
+    /// Okta authorization server id (the <c>{authorizationServerId}</c> in
+    /// <c>https://{org}.okta.com/oauth2/{authorizationServerId}</c>).
+    /// Defaults to <c>"default"</c>. Set to empty to use the Org authorization
+    /// server (<c>https://{org}.okta.com</c> — no <c>/oauth2/…</c> segment),
+    /// or to a custom server id for any other custom server. Custom-server
+    /// orgs previously validated against the wrong issuer/keys because
+    /// <c>"default"</c> was hardcoded.
+    /// </summary>
+    public string AuthorizationServerId { get; set; } = "default";
+
+    /// <summary>
     /// Expected audience (<c>aud</c>) of access tokens issued for this
     /// application (typically the OAuth client id or a custom audience).
     /// Configured locally so bearer tokens minted for any other client are
@@ -99,16 +110,27 @@ public static class OktaExtensions
 
         builder.Services.Configure<OktaOptions>(
             configuration.GetSection("Identity:ExternalProviders:Okta"));
+        // The provider takes the raw options in its constructor (snapshot
+        // semantics, matching the OIDC handler setup below), so the bound
+        // value must also be resolvable or scoped activation fails container
+        // validation in Development.
+        builder.Services.AddSingleton(opts);
         builder.Services.AddHttpClient<OktaIdentityProvider>();
         builder.Services.AddScoped<IExternalIdentityProvider, OktaIdentityProvider>();
 
         builder.AddOpenIdConnect("Okta", options =>
         {
-            options.Authority = $"{opts.Authority}/oauth2/default";
+            options.Authority = AuthorizationServerRoot(opts);
             options.ClientId = opts.ClientId;
             options.ClientSecret = opts.ClientSecret;
             options.ResponseType = "code";
-            options.Scope.Add(opts.Scope);
+            // Split the configured scope string: adding it as a single entry
+            // only works by accident of OIDC re-splitting on whitespace.
+            foreach (var scope in opts.Scope.Split(
+                ' ', StringSplitOptions.RemoveEmptyEntries))
+            {
+                options.Scope.Add(scope);
+            }
             options.GetClaimsFromUserInfoEndpoint = true;
             options.SaveTokens = true;
             options.TokenValidationParameters.NameClaimType = "preferred_username";
@@ -132,5 +154,19 @@ public static class OktaExtensions
         AddOkta(builder, configuration);
         builder.Services.AddScoped<IExternalIdentityProviderWithProfileFetch, OktaIdentityProvider>();
         return builder;
+    }
+
+    /// <summary>
+    /// Issuer root for the configured authorization server: the org root when
+    /// <see cref="OktaOptions.AuthorizationServerId"/> is empty, otherwise the
+    /// <c>/oauth2/{id}</c> custom-server root. Centralised so token
+    /// validation and OIDC sign-in always derive from the same value.
+    /// </summary>
+    internal static string AuthorizationServerRoot(OktaOptions opts)
+    {
+        var root = opts.Authority.TrimEnd('/');
+        return string.IsNullOrEmpty(opts.AuthorizationServerId)
+            ? root
+            : $"{root}/oauth2/{opts.AuthorizationServerId}";
     }
 }

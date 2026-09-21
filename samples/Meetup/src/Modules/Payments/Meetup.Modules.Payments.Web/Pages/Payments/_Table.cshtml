@@ -1,0 +1,45 @@
+@using Meetup.Modules.Payments.Application.Dtos
+@model IReadOnlyList<SubscriptionDto>
+@if (Model.Count == 0)
+{
+    @await Html.PartialAsync("_Alert", UiAlert.Info("No subscriptions yet — buy the first one above."))
+}
+else
+{
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-vcenter card-table">
+                <thead>
+                    <tr>
+                        <th>Payer</th>
+                        <th>Valid from</th>
+                        <th>Valid to</th>
+                        <th>Price</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td>@item.PayerLogin</td>
+                            <td>@item.ValidFrom.ToString("u")</td>
+                            <td>@item.ValidTo.ToString("u")</td>
+                            <td>@item.Price @item.Currency</td>
+                            <td>
+                                @if (item.IsActive)
+                                {
+                                    <span class="badge bg-green-lt">Active</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary-lt">Expired</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}

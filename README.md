@@ -55,17 +55,22 @@ tests/                  16 projects
 
 ### Create a new application
 
-The `Cobytelabs.Modulus.*` packages aren't on nuget.org yet, so pack the local
+The `Cobytelabs.Modulus.*` packages are published to nuget.org on release
+(tags `v*` via `.github/workflows/release.yml`, requires `NUGET_API_KEY`),
+but you can also use a local feed built from this repo. Pack the local
 feed first, then install the CLI tool and scaffold a complete modular-monolith
 solution:
 
 ```bash
 # Pack and install the CLI tool
-dotnet pack modulus.slnx -c Release
+dotnet pack modulus.slnx -c Release -o ./nupkg
 dotnet tool install -g --add-source ./nupkg Cobytelabs.Modulus.Cli
 
-# Generate a new application (SQLite by default) and run it
-modulus app MyApp
+# Generate a new application (SQLite by default) and run it.
+# --package-source wires the generated NuGet.config's modulus-local source
+# (with Cobytelabs.* source mapping) to your local feed; omit it once the
+# framework version you need is on nuget.org.
+modulus app MyApp --package-source "<abs-path-to>/nupkg"
 cd MyApp
 dotnet restore
 dotnet run --project src/API/MyApp.Api
@@ -99,8 +104,9 @@ Templates are embedded Scriban resources under `cli/Templates/`.
 - **`samples/TradeFlow`** — a reference application (18 modules, 77 projects)
   demonstrating the framework's recommended shape: module system, CQRS via
   `Modulus.Mediator`, per-module EF Core persistence, Serilog, Sentry,
-  multi-tenancy, and authentication. Ships a `NuGet.config` pointing at the repo's
-  local `nupkg/` feed, so it builds straight after `dotnet pack modulus.slnx -c Release`.
+  multi-tenancy, and authentication. Ships a `NuGet.config` pointing at the
+  sample-local `nupkg/` feed (with `Cobytelabs.*` source mapping), so it builds
+  straight after `dotnet pack modulus.slnx -c Release -o samples/TradeFlow/nupkg`.
   Also includes Dockerfile, docker-compose.yml, and GitHub Actions CI.
 
 ## Module system

@@ -6,6 +6,7 @@ using Modulus.Events.Abstractions;
 using Modulus.Events.Extensions;
 using Modulus.Inbox.Abstractions;
 using Modulus.Inbox.Extensions;
+using NSubstitute;
 using Xunit;
 
 namespace Modulus.Inbox.Tests;
@@ -223,6 +224,62 @@ public sealed class InboxDecoratorTests
             "the redelivery must be deduped, not re-executed");
     }
 
+    [Fact]
+    public async Task AddInbox_ExplicitHandlerLists_RouteEachHandlerToItsOwnContext()
+    {
+        // Two module contexts own different handlers for the same event. Each
+        // handler must claim in its own inbox database rather than collapsing
+        // to whichever context registered last.
+        FirstRoutedHandler.CallCount = 0;
+        SecondRoutedHandler.CallCount = 0;
+
+        var services = new ServiceCollection();
+        services.AddLogging();
+        var dbName = "inbox-routed-" + Guid.NewGuid();
+        services.AddDbContext<FirstRoutedDbContext>(
+            o => o.UseInMemoryDatabase(dbName + "-first"));
+        services.AddDbContext<SecondRoutedDbContext>(
+            o => o.UseInMemoryDatabase(dbName + "-second"));
+        services.AddModulusEvents(typeof(InboxDecoratorTests).Assembly);
+        services.AddInbox<FirstRoutedDbContext>(new[] { typeof(FirstRoutedHandler) });
+        services.AddInbox<SecondRoutedDbContext>(new[] { typeof(SecondRoutedHandler) });
+
+        await using var sp = services.BuildServiceProvider();
+        using var scope = sp.CreateScope();
+        var bus = scope.ServiceProvider.GetRequiredService<IModuleBus>();
+
+        var @event = new RoutedEvent();
+        await bus.PublishAsync(@event);
+
+        FirstRoutedHandler.CallCount.Should().Be(1);
+        SecondRoutedHandler.CallCount.Should().Be(1);
+
+        var firstDb = scope.ServiceProvider.GetRequiredService<FirstRoutedDbContext>();
+        firstDb.Set<InboxMessage>().Single(m => m.Id == @event.EventId);
+
+        var secondDb = scope.ServiceProvider.GetRequiredService<SecondRoutedDbContext>();
+        secondDb.Set<InboxMessage>().Single(m => m.Id == @event.EventId);
+    }
+
+    [Fact]
+    public void Decorate_WithoutRegistry_FallsBackToRegisteredStore()
+    {
+        // Hosts that register a non-EF store directly (for example MongoDB)
+        // do not create an EF store registry. The shared decorator must use
+        // that store instead of requiring EF routing metadata.
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddOptions<InboxOptions>();
+        var store = Substitute.For<IInboxStore>();
+        services.AddSingleton(store);
+
+        using var provider = services.BuildServiceProvider();
+        var decorated = new InboxHandlerDecorator()
+            .Decorate(provider, typeof(DecoratorEvent), new DecoratorHandler());
+
+        decorated.Should().BeOfType<IdempotentIntegrationEventHandler<DecoratorEvent>>();
+    }
+
     // ── Test doubles ─────────────────────────────────────────────
     public sealed class DecoratorEvent : IIntegrationEvent
     {
@@ -268,6 +325,53 @@ public sealed class InboxDecoratorTests
         {
             Interlocked.Increment(ref CallCount);
             return Task.CompletedTask;
+        }
+    }
+
+    public sealed class RoutedEvent : IIntegrationEvent
+    {
+        public Guid EventId { get; } = Guid.NewGuid();
+        public string EventType { get; } = "routed.event.v1";
+        public DateTime OccurredAt { get; } = DateTime.UtcNow;
+    }
+
+    public sealed class FirstRoutedHandler : IIntegrationEventHandler<RoutedEvent>
+    {
+        public static int CallCount;
+        public Task HandleAsync(RoutedEvent e, CancellationToken ct)
+        {
+            Interlocked.Increment(ref CallCount);
+            return Task.CompletedTask;
+        }
+    }
+
+    public sealed class SecondRoutedHandler : IIntegrationEventHandler<RoutedEvent>
+    {
+        public static int CallCount;
+        public Task HandleAsync(RoutedEvent e, CancellationToken ct)
+        {
+            Interlocked.Increment(ref CallCount);
+            return Task.CompletedTask;
+        }
+    }
+
+    public sealed class FirstRoutedDbContext(DbContextOptions<FirstRoutedDbContext> options)
+        : DbContext(options)
+    {
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            new Modulus.Inbox.Configurations.InboxMessageConfiguration()
+                .Configure(modelBuilder.Entity<InboxMessage>());
+        }
+    }
+
+    public sealed class SecondRoutedDbContext(DbContextOptions<SecondRoutedDbContext> options)
+        : DbContext(options)
+    {
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            new Modulus.Inbox.Configurations.InboxMessageConfiguration()
+                .Configure(modelBuilder.Entity<InboxMessage>());
         }
     }
 }

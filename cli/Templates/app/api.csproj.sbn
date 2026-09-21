@@ -4,6 +4,9 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <!-- What this host is: 'api' (no UI) or 'web' (web app + the API for external clients). The modulus CLI reads
+         it: generate-crud scaffolds a UI only for 'web', and 'ui add' refuses an 'api' host. -->
+    <ModulusAppKind>{{ kind_name }}</ModulusAppKind>
     <!-- Home for developer secrets in Development, so credentials stay out of
          appsettings*.json (the SecretsGuard fails startup if they don't). Manage with
          'dotnet user-secrets set <Key> <value>'. -->
@@ -18,7 +21,9 @@
     <PackageReference Include="Cobytelabs.Modulus.EntityFrameworkCore" Version="{{ framework_version }}" />
 {{ if auth != "none" }}    <PackageReference Include="Cobytelabs.Modulus.Identity" Version="{{ framework_version }}" />
 {{ end }}    <!-- Transitive pin: AspNetCore.OpenApi floats to Microsoft.OpenApi 2.0.0,
-         which has a high-severity advisory (GHSA-v5pm-xwqc-g5wc). Pin to latest 2.x. -->
+          which has a high-severity advisory (GHSA-v5pm-xwqc-g5wc). Pin to latest 2.x.
+          Source of truth: Directory.Packages.props (Microsoft.OpenApi 2.9.0,
+          SQLitePCLRaw.bundle_e_sqlite3 3.0.3, Microsoft.EntityFrameworkCore.Design 10.0.9). -->
     <PackageReference Include="Microsoft.OpenApi" Version="2.9.0" />
 {{ if db_provider == "SQLite" }}    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.3" />
 {{ end }}    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.9">
@@ -29,7 +34,11 @@
   <ItemGroup>
     <ProjectReference Include="../../Shared/{{ root_namespace }}.Shared.Infrastructure/{{ root_namespace }}.Shared.Infrastructure.csproj" />
   </ItemGroup>
-{{ if !no_example }}
+{{ if auth == "openiddict" }}
+  <ItemGroup>
+    <ProjectReference Include="../../Modules/{{ identity_namespace }}/{{ identity_namespace }}.Infrastructure/{{ identity_namespace }}.Infrastructure.csproj" />
+  </ItemGroup>
+{{ end }}{{ if !no_example }}
   <ItemGroup>
     <ProjectReference Include="../../Modules/{{ root_namespace }}.Modules.{{ example_module }}/{{ root_namespace }}.Modules.{{ example_module }}.Infrastructure/{{ root_namespace }}.Modules.{{ example_module }}.Infrastructure.csproj" />
     <ProjectReference Include="../../Modules/{{ root_namespace }}.Modules.{{ example_module }}/{{ root_namespace }}.Modules.{{ example_module }}.Presentation/{{ root_namespace }}.Modules.{{ example_module }}.Presentation.csproj" />

@@ -8,6 +8,9 @@ using Modulus.Events.Abstractions;
 /// </summary>
 public sealed class RecordingModuleBus : IModuleBus
 {
+    // Lock-guarded: handlers publish concurrently in tests; an unsynchronised
+    // List corrupts (lost entries, torn state) under concurrent Add.
+    private readonly Lock _gate = new();
     private readonly List<IIntegrationEvent> _published = [];
 
     public async Task PublishAsync<TEvent>(
@@ -16,18 +19,33 @@ public sealed class RecordingModuleBus : IModuleBus
         where TEvent : IIntegrationEvent
     {
         ArgumentNullException.ThrowIfNull(@event);
-        _published.Add(@event);
+        lock (_gate)
+            _published.Add(@event);
         await Task.CompletedTask;
     }
 
     /// <summary>Returns all published events of type TEvent.</summary>
     public IReadOnlyList<TEvent> PublishedEvents<TEvent>()
         where TEvent : IIntegrationEvent
-        => _published.OfType<TEvent>().ToList().AsReadOnly();
+    {
+        lock (_gate)
+            return _published.OfType<TEvent>().ToList().AsReadOnly();
+    }
 
     /// <summary>Returns all published events (of any type).</summary>
-    public IReadOnlyList<IIntegrationEvent> AllPublishedEvents => _published.AsReadOnly();
+    public IReadOnlyList<IIntegrationEvent> AllPublishedEvents
+    {
+        get
+        {
+            lock (_gate)
+                return _published.ToList().AsReadOnly();
+        }
+    }
 
     /// <summary>Clears the publication history.</summary>
-    public void Clear() => _published.Clear();
+    public void Clear()
+    {
+        lock (_gate)
+            _published.Clear();
+    }
 }

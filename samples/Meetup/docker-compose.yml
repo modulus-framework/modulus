@@ -1,0 +1,98 @@
+# Meetup local infrastructure: PostgreSQL 16 for the app + Authentik (SSO).
+# The API itself runs with `dotnet run` (or ./build.ps1 -Target Run);
+# this compose file provides everything it expects:
+#   - app databases on localhost:5432 (credentials match appsettings.json)
+#   - Authentik IdP on http://localhost:9000 (all API calls need its JWTs)
+#
+# Authentik settings come from `.env` (see .env.example). The defaults below
+# are DEV-ONLY conveniences — generate real values for anything shared.
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: meetup
+      POSTGRES_PASSWORD: meetup
+      POSTGRES_DB: meetup
+    ports:
+      - "5432:5432"
+    volumes:
+      - meetup-postgres-data:/var/lib/postgresql/data
+      - ./docker/postgres-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U meetup"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ── Authentik (identity provider) ──────────────────────────────
+  # Own postgres + redis, both internal-only (no host ports) so they can
+  # never clash with the app's database on 5432.
+  authentik-postgresql:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${AUTHENTIK_PG_USER:-authentik}
+      POSTGRES_PASSWORD: ${AUTHENTIK_PG_PASS:-authentik}
+      POSTGRES_DB: ${AUTHENTIK_PG_DB:-authentik}
+    volumes:
+      - authentik-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  authentik-redis:
+    image: redis:alpine
+    command: --save "" --appendonly no
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  authentik-server:
+    image: ghcr.io/goauthentik/server:2026.8
+    command: server
+    environment:
+      AUTHENTIK_SECRET_KEY: ${AUTHENTIK_SECRET_KEY:-dev-only-insecure-key-change-me}
+      AUTHENTIK_POSTGRESQL__HOST: authentik-postgresql
+      AUTHENTIK_POSTGRESQL__USER: ${AUTHENTIK_PG_USER:-authentik}
+      AUTHENTIK_POSTGRESQL__NAME: ${AUTHENTIK_PG_DB:-authentik}
+      AUTHENTIK_POSTGRESQL__PASSWORD: ${AUTHENTIK_PG_PASS:-authentik}
+      AUTHENTIK_REDIS__HOST: authentik-redis
+      AUTHENTIK_BOOTSTRAP_PASSWORD: ${AUTHENTIK_BOOTSTRAP_PASSWORD:-admin}
+      AUTHENTIK_BOOTSTRAP_EMAIL: ${AUTHENTIK_BOOTSTRAP_EMAIL:-admin@example.com}
+      AUTHENTIK_BOOTSTRAP_TOKEN: ${AUTHENTIK_BOOTSTRAP_TOKEN:-}
+    ports:
+      # Host 9000 is taken by FoodDelivery's minio in shared dev environments.
+      - "9010:9000"
+      - "9443:9443"
+    volumes:
+      - ./docker/authentik-data:/data
+    depends_on:
+      authentik-postgresql:
+        condition: service_healthy
+      authentik-redis:
+        condition: service_healthy
+
+  authentik-worker:
+    image: ghcr.io/goauthentik/server:2026.8
+    command: worker
+    environment:
+      AUTHENTIK_SECRET_KEY: ${AUTHENTIK_SECRET_KEY:-dev-only-insecure-key-change-me}
+      AUTHENTIK_POSTGRESQL__HOST: authentik-postgresql
+      AUTHENTIK_POSTGRESQL__USER: ${AUTHENTIK_PG_USER:-authentik}
+      AUTHENTIK_POSTGRESQL__NAME: ${AUTHENTIK_PG_DB:-authentik}
+      AUTHENTIK_POSTGRESQL__PASSWORD: ${AUTHENTIK_PG_PASS:-authentik}
+      AUTHENTIK_REDIS__HOST: authentik-redis
+    volumes:
+      - ./docker/authentik-data:/data
+    depends_on:
+      authentik-postgresql:
+        condition: service_healthy
+      authentik-redis:
+        condition: service_healthy
+
+volumes:
+  meetup-postgres-data:
+  authentik-postgres-data:

@@ -1,0 +1,49 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <!--
+    An app that has run `modulus ui eject` compiles the framework's page and theme views in its OWN assembly.
+    This project is that app: it links every ejectable view in as if it had been ejected (same paths, same
+    per-folder _ViewImports), so the build fails when a view needs something only the package can see
+    (an `internal` type, say), and the tests prove the app's copy is what the view engine serves.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AddRazorSupportForMvc>true</AddRazorSupportForMvc>
+    <UiSrc>$(MSBuildThisFileDirectory)../../../src/ui/</UiSrc>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <ProjectReference Include="../../../src/ui/Modulus.UI.Core/Modulus.UI.Core.csproj" />
+    <ProjectReference Include="../../../src/ui/Modulus.UI.Theme.Tabler/Modulus.UI.Theme.Tabler.csproj" />
+    <ProjectReference Include="../../../src/ui/Modulus.UI.Identity/Modulus.UI.Identity.csproj" />
+    <ProjectReference Include="../../../src/ui/Modulus.UI.Users/Modulus.UI.Users.csproj" />
+    <ProjectReference Include="../../../src/ui/Modulus.UI.Tenancy/Modulus.UI.Tenancy.csproj" />
+    <ProjectReference Include="../../../src/ui/Modulus.UI.Permissions/Modulus.UI.Permissions.csproj" />
+    <ProjectReference Include="../../../src/ui/Modulus.UI.Settings/Modulus.UI.Settings.csproj" />
+    <ProjectReference Include="../../../src/ui/Modulus.UI.AuditLogging/Modulus.UI.AuditLogging.csproj" />
+    <ProjectReference Include="../../../src/ui/Modulus.UI.Notifications/Modulus.UI.Notifications.csproj" />
+    <ProjectReference Include="../../../src/ui/Modulus.UI.Files/Modulus.UI.Files.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+  </ItemGroup>
+
+  <!-- The ejectable views, linked at the path `modulus ui eject` writes them to in an app. -->
+  <ItemGroup>
+    <Content Include="$(UiSrc)Modulus.UI.Identity/Pages/**/*.cshtml" Link="Pages/%(RecursiveDir)%(Filename)%(Extension)" />
+    <Content Include="$(UiSrc)Modulus.UI.Users/Pages/**/*.cshtml" Link="Pages/%(RecursiveDir)%(Filename)%(Extension)" />
+    <Content Include="$(UiSrc)Modulus.UI.Tenancy/Pages/**/*.cshtml" Link="Pages/%(RecursiveDir)%(Filename)%(Extension)" />
+    <Content Include="$(UiSrc)Modulus.UI.Permissions/Pages/**/*.cshtml" Link="Pages/%(RecursiveDir)%(Filename)%(Extension)" />
+    <Content Include="$(UiSrc)Modulus.UI.Settings/Pages/**/*.cshtml" Link="Pages/%(RecursiveDir)%(Filename)%(Extension)" />
+    <Content Include="$(UiSrc)Modulus.UI.AuditLogging/Pages/**/*.cshtml" Link="Pages/%(RecursiveDir)%(Filename)%(Extension)" />
+    <Content Include="$(UiSrc)Modulus.UI.Notifications/Pages/**/*.cshtml" Link="Pages/%(RecursiveDir)%(Filename)%(Extension)" />
+    <Content Include="$(UiSrc)Modulus.UI.Files/Pages/**/*.cshtml" Link="Pages/%(RecursiveDir)%(Filename)%(Extension)" />
+    <Content Include="$(UiSrc)Modulus.UI.Core/Pages/Shared/_Alert.cshtml;$(UiSrc)Modulus.UI.Core/Pages/Shared/_UiIcon.cshtml;$(UiSrc)Modulus.UI.Core/Pages/Shared/_ViewImports.cshtml" Link="Pages/Shared/%(Filename)%(Extension)" />
+    <Content Include="$(UiSrc)Modulus.UI.Theme.Tabler/Themes/**/*.cshtml" Link="Themes/%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+
+</Project>

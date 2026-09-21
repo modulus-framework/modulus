@@ -1,0 +1,33 @@
+@* Standalone error document shared by _403/_404/_500. Deliberately layout-free
+   and dependency-light (only IWebHostEnvironment for the asset URL, no menu,
+   slots or theme accessor) so it still renders when other shell services are
+   what failed. Anonymous-safe: shows only the status code and static text. *@
+@model Modulus.UI.Theming.Tabler.ErrorPageModel
+@inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment Env
+@{
+    var assets = TablerAssets.ContentBase(Env);
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@Model.Code · @Model.Title</title>
+    <link rel="stylesheet" href="@Url.Content("~" + TablerAssets.Url(assets, TablerAssets.Files.TablerCss))" />
+    <link rel="stylesheet" href="@Url.Content("~" + TablerAssets.Url(assets, TablerAssets.Files.ModulusCss))" />
+</head>
+<body class="m-layout m-layout-error d-flex flex-column">
+    <div class="page page-center">
+        <div class="container-tight py-4">
+            <div class="empty">
+                <div class="empty-header">@Model.Code</div>
+                <p class="empty-title">@Model.Title</p>
+                <p class="empty-subtitle text-secondary">@Model.Text</p>
+                <div class="empty-action">
+                    <a href="@Url.Content("~/")" class="btn btn-primary">Take me home</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

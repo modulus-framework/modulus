@@ -29,7 +29,12 @@ public static class SignalRExtensions
     public static WebApplication MapModuleHubs(
         this WebApplication app)
     {
-        var hubs = app.Services
+        // Resolved inside a scope: hub registrars are transient and may
+        // (transitively) depend on scoped services — resolving from the root
+        // provider would throw under scope validation or pin root-scope
+        // instances.
+        using var scope = app.Services.CreateScope();
+        var hubs = scope.ServiceProvider
             .GetRequiredService<IEnumerable<IModuleHub>>();
         foreach (var hub in hubs)
             hub.MapHub(app);

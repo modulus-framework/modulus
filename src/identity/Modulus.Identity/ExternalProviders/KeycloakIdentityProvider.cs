@@ -27,7 +27,9 @@ public sealed class KeycloakIdentityProvider(
         // Use a per-request HttpRequestMessage so the Authorization header is
         // never written to HttpClient.DefaultRequestHeaders, which is shared
         // across concurrent calls and would cause a race condition.
-        var url = $"{opts.Authority}/admin/realms/{opts.Realm}/users/{subject}";
+        // Path segments are escaped: an unescaped subject could traverse into
+        // other admin-API paths with the admin bearer token attached.
+        var url = $"{opts.Authority.TrimEnd('/')}/admin/realms/{Uri.EscapeDataString(opts.Realm)}/users/{Uri.EscapeDataString(subject)}";
         using var req = new HttpRequestMessage(HttpMethod.Get, url);
         req.Headers.Authorization =
             new AuthenticationHeaderValue("Bearer", adminToken);
@@ -51,7 +53,7 @@ public sealed class KeycloakIdentityProvider(
             });
 
             var resp = await http.PostAsync(
-                $"{opts.Authority}/realms/{opts.Realm}/protocol/openid-connect/token/introspect",
+                $"{opts.Authority.TrimEnd('/')}/realms/{Uri.EscapeDataString(opts.Realm)}/protocol/openid-connect/token/introspect",
                 content, ct);
             if (!resp.IsSuccessStatusCode) return false;
 
@@ -74,7 +76,7 @@ public sealed class KeycloakIdentityProvider(
         });
 
         var resp = await http.PostAsync(
-            $"{opts.Authority}/realms/{opts.Realm}/protocol/openid-connect/token",
+            $"{opts.Authority.TrimEnd('/')}/realms/{Uri.EscapeDataString(opts.Realm)}/protocol/openid-connect/token",
             content, ct);
         if (!resp.IsSuccessStatusCode) return null;
 
@@ -129,6 +131,11 @@ public static class KeycloakExtensions
 
         builder.Services.Configure<KeycloakOptions>(
             configuration.GetSection("Identity:ExternalProviders:Keycloak"));
+        // The provider takes the raw options in its constructor (snapshot
+        // semantics, matching the OIDC handler setup below), so the bound
+        // value must also be resolvable or scoped activation fails container
+        // validation in Development.
+        builder.Services.AddSingleton(opts);
         builder.Services.AddHttpClient<KeycloakIdentityProvider>();
         builder.Services.AddScoped<IExternalIdentityProvider, KeycloakIdentityProvider>();
 
@@ -138,11 +145,23 @@ public static class KeycloakExtensions
             options.ClientId = opts.ClientId;
             options.ClientSecret = opts.ClientSecret;
             options.ResponseType = "code";
-            options.Scope.Add(opts.Scope);
+            // Split the configured scope string: adding it as a single entry
+            // only works by accident of OIDC re-splitting on whitespace.
+            foreach (var scope in opts.Scope.Split(
+                ' ', StringSplitOptions.RemoveEmptyEntries))
+            {
+                options.Scope.Add(scope);
+            }
             options.GetClaimsFromUserInfoEndpoint = true;
             options.SaveTokens = true;
             options.TokenValidationParameters.NameClaimType = "preferred_username";
-            options.TokenValidationParameters.RoleClaimType = "realm_access.roles";
+            // Keycloak nests roles as {"realm_access": {"roles": [...]}} — a
+            // literal RoleClaimType of "realm_access.roles" never matches a
+            // real claim, so role-based authorization would silently deny
+            // everything. Flatten the nested array into real "role" claims at
+            // sign-in and point role resolution at them.
+            options.TokenValidationParameters.RoleClaimType = "role";
+            options.ClaimActions.MapJsonSubKey("role", "realm_access", "roles");
         });
 
         return builder;

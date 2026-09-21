@@ -82,6 +82,8 @@ const sidebars: SidebarsConfig = {
         'hardening/feature-flags',
         'hardening/secrets-guard',
         'hardening/personal-data-protection',
+        'hardening/versioning',
+        'hardening/openapi',
       ],
     },
     {

@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AddRazorSupportForMvc>true</AddRazorSupportForMvc>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <ProjectReference Include="../../../src/ui/Modulus.UI.Theme.Tabler/Modulus.UI.Theme.Tabler.csproj" />
+    <!-- Real feature pages, rendered end to end through the theme. -->
+    <ProjectReference Include="../../../src/ui/Modulus.UI.Tenancy/Modulus.UI.Tenancy.csproj" />
+    <ProjectReference Include="../../../src/ui/Modulus.UI.AuditLogging/Modulus.UI.AuditLogging.csproj" />
+    <ProjectReference Include="../../../src/ui/Modulus.UI.Notifications/Modulus.UI.Notifications.csproj" />
+    <ProjectReference Include="../../../src/ui/Modulus.UI.Files/Modulus.UI.Files.csproj" />
+    <ProjectReference Include="../../../src/ui/Modulus.UI.Identity/Modulus.UI.Identity.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+  </ItemGroup>
+
+</Project>

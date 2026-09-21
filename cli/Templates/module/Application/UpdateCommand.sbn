@@ -1,8 +1,17 @@
 using Modulus.Mediator.Abstractions;
+using Modulus.Mediator.Abstractions.Attributes;
 
 namespace {{ module_namespace }}.Application;
 
-public sealed record Update{{ entity_name }}Command(Guid Id, string Name)
+/// <param name="Id">The {{ entity_name_lower }} to update.</param>
+/// <param name="Name">The new name.</param>
+/// <param name="ExtraProperties">
+/// Values of the fields other modules contributed to this entity (invariant-culture text by field name), already
+/// validated by the caller. They are merged: an empty value removes the field, fields not listed are left alone,
+/// and null changes none.
+/// </param>
+[Transactional(typeof(IUnitOfWork))]
+public sealed record Update{{ entity_name }}Command(Guid Id, string Name, IReadOnlyDictionary<string, string?>? ExtraProperties = null)
     : ICommand<Update{{ entity_name }}Result>;
 
 public sealed record Update{{ entity_name }}Result(Guid Id);

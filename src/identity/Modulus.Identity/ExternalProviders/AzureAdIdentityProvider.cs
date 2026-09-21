@@ -14,7 +14,7 @@ public sealed class AzureAdIdentityProvider(
 {
     private readonly OidcDiscoveryValidator _tokenValidator =
         OidcDiscoveryValidatorCache.GetOrCreate(
-            $"{opts.Authority}/.well-known/openid-configuration",
+            $"{opts.Authority.TrimEnd('/')}/.well-known/openid-configuration",
             opts.Audience is null ? null : [opts.Audience]);
 
     public string Name => "azuread";
@@ -133,6 +133,11 @@ public static class AzureAdExtensions
 
         builder.Services.Configure<AzureAdOptions>(
             configuration.GetSection("Identity:ExternalProviders:AzureAd"));
+        // The provider takes the raw options in its constructor (snapshot
+        // semantics, matching the OIDC handler setup below), so the bound
+        // value must also be resolvable or scoped activation fails container
+        // validation in Development.
+        builder.Services.AddSingleton(opts);
         builder.Services.AddHttpClient<AzureAdIdentityProvider>();
         builder.Services.AddScoped<IExternalIdentityProvider, AzureAdIdentityProvider>();
 
@@ -144,7 +149,13 @@ public static class AzureAdExtensions
             options.ResponseType = "code";
             options.UseTokenLifetime = true;
             options.SaveTokens = true;
-            options.Scope.Add(opts.Scope);
+            // Split the configured scope string: adding it as a single entry
+            // only works by accident of OIDC re-splitting on whitespace.
+            foreach (var scope in opts.Scope.Split(
+                ' ', StringSplitOptions.RemoveEmptyEntries))
+            {
+                options.Scope.Add(scope);
+            }
             options.GetClaimsFromUserInfoEndpoint = true;
             options.TokenValidationParameters.NameClaimType = "name";
             options.TokenValidationParameters.RoleClaimType = "roles";

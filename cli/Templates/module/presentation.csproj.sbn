@@ -10,7 +10,9 @@
     <PackageReference Include="Cobytelabs.Modulus.Core" Version="{{ framework_version }}" />
     <PackageReference Include="Cobytelabs.Modulus.AspNetCore" Version="{{ framework_version }}" />
     <PackageReference Include="Cobytelabs.Modulus.Mediator" Version="{{ framework_version }}" />
-  </ItemGroup>
+{{ if has_api_extra_fields }}    <!-- The entity UI registry: the API filters extension fields through it, like the admin page does. -->
+    <PackageReference Include="Cobytelabs.Modulus.UI.Core" Version="{{ framework_version }}" />
+{{ end }}  </ItemGroup>
 
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />

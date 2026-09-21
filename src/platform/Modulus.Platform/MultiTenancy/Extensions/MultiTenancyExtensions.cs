@@ -14,8 +14,14 @@ public static class MultiTenancyExtensions
         // ITenantStore even before a real one is registered.
         services.TryAddSingleton<ITenantStore, NullTenantStore>();
 
-        services.TryAddScoped<CurrentTenant>();
-        services.TryAddScoped<ICurrentTenant>(
+        // Singleton, not scoped: CurrentTenant is a stateless accessor over a
+        // static AsyncLocal — it carries no per-scope state, so one instance
+        // serves every scope and async flow. Scoped registration would break
+        // every singleton that reads the ambient tenant (cache tag keys, job
+        // queues, bus ambient restores) under scope validation, for no
+        // benefit: the AsyncLocal already isolates concurrent flows.
+        services.TryAddSingleton<CurrentTenant>();
+        services.TryAddSingleton<ICurrentTenant>(
             sp => sp.GetRequiredService<CurrentTenant>());
 
         var builder = new MultiTenancyBuilder(services);

@@ -4,23 +4,13 @@ sidebar_position: 5
 
 # Caching
 
-Modulus provides in-memory caching with tag-based invalidation.
+Modulus provides in-memory caching with tag-based invalidation
+(`Modulus.Platform`), and a Redis implementation (`Modulus.Caching.Redis`).
 
 ## Setup
 
 ```csharp
-services.AddModulusCaching(config);
-```
-
-## Configuration
-
-```json
-{
-  "Caching": {
-    "DefaultExpirationMinutes": 5,
-    "MaxCacheSize": 10000
-  }
-}
+services.AddModulusCaching();   // in-memory default, no config
 ```
 
 ## Usage
@@ -29,17 +19,24 @@ services.AddModulusCaching(config);
 
 ```csharp
 public sealed class GetProductHandler(IProductRepository repository, ICacheService cache)
-    : IQueryHandler<GetProductById, ProductDto>
+    : IQueryHandler<GetProductByIdQuery, ProductDto?>
 {
-    public async Task<ProductDto> HandleAsync(GetProductById query, CancellationToken ct)
+    public async Task<ProductDto?> HandleAsync(GetProductByIdQuery query, CancellationToken ct)
     {
         var cacheKey = $"product:{query.Id}";
 
-        return await cache.GetOrCreateAsync(cacheKey, async () =>
-        {
-            var product = await repository.GetByIdAsync(query.Id, ct);
-            return new ProductDto(product.Id, product.Name, product.Price);
-        }, tags: new[] { "products" });
+        var cached = await cache.GetAsync<ProductDto>(cacheKey, ct);
+        if (cached is not null)
+            return cached;
+
+        var product = await repository.GetByIdAsync(query.Id, ct);
+        if (product is null)
+            return null;
+
+        var dto = new ProductDto { Id = product.Id, Name = product.Name };
+        await cache.SetAsync(cacheKey, dto, TimeSpan.FromMinutes(5),
+            tags: ["products"], ct);
+        return dto;
     }
 }
 ```
@@ -48,32 +45,34 @@ public sealed class GetProductHandler(IProductRepository repository, ICacheServi
 
 ```csharp
 // Invalidate by key
-await cache.RemoveAsync("product:123");
+await cache.RemoveAsync("product:123", ct);
 
 // Invalidate by tag
-await cache.InvalidateTagAsync("products");
+await cache.RemoveByTagAsync("products", ct);
+await cache.RemoveByTagsAsync(["products", "catalog"], ct);
 ```
+
+Tags are **tenant-scoped** (`modulus:tag:{tenantId}:{tag}`, or
+`modulus:tag:{tag}` on the host) — invalidating a tag only affects the
+current tenant's entries.
 
 ## Redis Cache
 
-For distributed caching:
+For distributed caching (`Modulus.Caching.Redis` replaces the in-memory
+implementation):
 
 ```bash
-modulus app MyApp --cache redis
-```
-
-```json
-{
-  "Redis": {
-    "ConnectionString": "localhost:6379"
-  }
-}
+modulus app MyApp --caching redis
 ```
 
 ```csharp
-services.AddModulusCaching(config)
-    .UseRedis(config);
+services.AddRedisCacheService(configuration); // reads Caching:Redis:ConnectionString
 ```
+
+Cross-node invalidation flows through the Redis backplane
+(`AddRedisCacheBackplane()`): invalidations publish on
+`modulus:cache:invalidate` so every node evicts. Custom L1 caches must evict
+locally on notification — never republish.
 
 ## See Also
 

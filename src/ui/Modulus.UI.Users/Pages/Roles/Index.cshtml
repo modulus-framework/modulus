@@ -1,0 +1,25 @@
+@page
+@model Modulus.UI.Users.Pages.Roles.IndexModel
+@{
+    ViewData["Title"] = await Model.TextAsync("Roles.Title");
+    ViewData.SetPageId("Users.Roles");
+}
+<m-page-header title="@ViewData["Title"]" page-id="Users.Roles" />
+<div class="card mb-3">
+    <div class="card-body">
+        <form method="post" asp-page-handler="Create">
+            <div class="row g-2">
+                <div class="col">
+                    <label class="form-label" for="name">@await Model.TextAsync("Roles.Name")</label>
+                    <input class="form-control" id="name" name="name" />
+                </div>
+                <div class="col-auto align-self-end">
+                    <button class="btn btn-primary" type="submit">@await Model.TextAsync("Roles.Create")</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+<div id="role-table">
+    @await Html.PartialAsync("_RoleTable", Model)
+</div>

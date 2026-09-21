@@ -41,18 +41,24 @@ public sealed class KafkaOptions
     public int RedeliveryMaxBackoffMs { get; set; } = 2000;
 
     /// <summary>
-    /// Enable auto-commit of consumer offsets. Defaults to false (at-least-once)
-    /// so offsets commit only after successful handler completion. Set true for
-    /// at-most-once (lower latency, possible duplicates on crash).
+    /// When true, poison/malformed/unhandled messages are produced to a dead-letter
+    /// topic before committing past them, instead of being dropped. DLQ topic =
+    /// <c>{source-topic}{DeadLetterTopicSuffix}</c> (default ".dlq").
     /// </summary>
-    public bool EnableAutoCommit { get; set; } = false;
+    public bool EnableDlq { get; set; } = true;
 
-    /// <summary>Auto-commit interval in milliseconds.</summary>
-    public int AutoCommitIntervalMs { get; set; } = 5000;
+    /// <summary>Suffix appended to the source topic for dead-lettered messages.</summary>
+    public string DeadLetterTopicSuffix { get; set; } = ".dlq";
+
+    /// <summary>Maximum tracked in-flight failure keys before oldest entries are evicted.</summary>
+    public int MaxTrackedFailures { get; set; } = 10_000;
 
     /// <summary>Number of retries for transient produce failures.</summary>
     public int MessageSendMaxRetries { get; set; } = 3;
 
-    /// <summary>Acks: all = -1, leader = 1, none = 0.</summary>
+    /// <summary>Acks: all = -1, leader = 1, none = 0. Idempotent production
+    /// is enabled exactly when acks is "all" (librdkafka rejects any weaker
+    /// combination); weaker settings produce with plain at-most-once
+    /// semantics.</summary>
     public string Acks { get; set; } = "all";
 }

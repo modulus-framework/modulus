@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../Modulus.Outbox.Abstractions/Modulus.Outbox.Abstractions.csproj" />
+    <ProjectReference Include="../Modulus.Inbox/Modulus.Inbox.csproj" />
     <ProjectReference Include="../../data/Modulus.EntityFrameworkCore/Modulus.EntityFrameworkCore.csproj" />
   </ItemGroup>
 

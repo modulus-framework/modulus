@@ -71,15 +71,26 @@ public sealed class EfOrgHierarchy(
             throw new ArgumentException("A unit cannot be its own parent.", nameof(newParents));
 
         await using var db = await factory.CreateDbContextAsync(ct);
-        await EnsureUnitAsync(db, id, ct);
-        await db.OrgUnitParents.Where(e => e.ChildId == id).ExecuteDeleteAsync(ct);
-        foreach (var parent in newParents)
-        {
-            await EnsureUnitAsync(db, parent, ct);
-            db.OrgUnitParents.Add(new OrgUnitParentRow { ChildId = id, ParentId = parent });
-        }
 
-        await db.SaveChangesAsync(ct);
+        // Delete + re-insert must be atomic: a mid-way failure would otherwise
+        // leave the unit parentless (a root), silently widening or narrowing
+        // every scope computed from it.
+        var strategy = db.Database.CreateExecutionStrategy();
+        await strategy.ExecuteAsync(async () =>
+        {
+            await using var tx = await db.Database.BeginTransactionAsync(ct);
+            await EnsureUnitAsync(db, id, ct);
+            await db.OrgUnitParents.Where(e => e.ChildId == id).ExecuteDeleteAsync(ct);
+            foreach (var parent in newParents)
+            {
+                await EnsureUnitAsync(db, parent, ct);
+                db.OrgUnitParents.Add(new OrgUnitParentRow { ChildId = id, ParentId = parent });
+            }
+
+            await db.SaveChangesAsync(ct);
+            await tx.CommitAsync(ct);
+        });
+
         Invalidate();
     }
 

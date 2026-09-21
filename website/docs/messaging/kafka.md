@@ -14,12 +14,25 @@ modulus app MyApp --message-broker kafka
 
 ## Configuration
 
+Binds from `"EventBus:Kafka"`:
+
 ```json
 {
-  "Kafka": {
-    "BootstrapServers": "localhost:9092",
-    "GroupId": "modulus",
-    "AutoOffsetReset": "Earliest"
+  "EventBus": {
+    "Kafka": {
+      "BootstrapServers": "localhost:9092",
+      "GroupId": "modulus-consumer",
+      "AutoOffsetReset": "Earliest",
+      "TopicPrefix": "modulus",
+      "Acks": "all",
+      "EnableDlq": true,
+      "DeadLetterTopicSuffix": ".dlq",
+      "MaxDeliveryAttempts": 5,
+      "SaslMechanism": "Plain",
+      "SecurityProtocol": "Plaintext",
+      "SaslUsername": null,
+      "SaslPassword": null
+    }
   }
 }
 ```
@@ -34,22 +47,18 @@ services.AddKafkaEventBus(config);
 ### Publishing Events
 
 ```csharp
-await _bus.PublishAsync(new ProductCreatedEvent
-{
-    ProductId = product.Id,
-    Name = product.Name
-});
+await _bus.PublishAsync(new ProductCreatedIntegrationEvent(product.Id));
 ```
 
 ### Consuming Events
 
 ```csharp
 public sealed class ProductCreatedConsumer
-    : IIntegrationEventHandler<ProductCreatedEvent>
+    : IIntegrationEventHandler<ProductCreatedIntegrationEvent>
 {
-    public async Task HandleAsync(ProductCreatedEvent @event)
+    public async Task HandleAsync(ProductCreatedIntegrationEvent @event)
     {
-        // Process the event
+        // Process the event (must be idempotent — delivery is at-least-once)
     }
 }
 ```
@@ -58,20 +67,19 @@ public sealed class ProductCreatedConsumer
 
 | Feature | Description |
 |---------|-------------|
-| **Idempotent producer** | Avoids duplicate messages |
-| **Consumer groups** | Horizontal scaling |
+| **Idempotent producer** | Enabled exactly when `Acks` is `"all"`; weaker settings are at-most-once |
+| **Consumer groups** | Horizontal scaling (`EnableAutoCommit = false`, at-least-once) |
 | **Partitioning** | Order per key |
-| **Offset management** | Manual or auto commit |
+| **Dead-letter topic** | Poison/malformed messages go to `{topic}.dlq` when `EnableDlq` (default on); otherwise committed past |
+| **Poison handling** | Failed offsets are seeked-back for genuine redelivery, up to `MaxDeliveryAttempts` |
 
 ## Topic Naming
 
 ```
-{module}.{event-type}
+{TopicPrefix}.{Type.FullName}
 
-Examples:
-catalog.product.created
-orders.order.placed
-inventory.stock.updated
+Example (prefix "modulus"):
+modulus.MyApp.Modules.Catalog.Application.IntegrationEvents.ProductCreatedIntegrationEvent
 ```
 
 ## See Also

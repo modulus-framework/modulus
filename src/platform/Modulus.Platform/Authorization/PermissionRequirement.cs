@@ -37,13 +37,17 @@ public sealed class PermissionRequirement : IAuthorizationRequirement
 
 /// <summary>
 /// Evaluates <see cref="PermissionRequirement"/> with the semantics documented on
-/// the requirement. Registered as a singleton — resolver and store are
-/// stateless/thread-safe, and identity is read from the evaluated principal
-/// rather than the ambient <c>HttpContext</c>, so the handler also serves
-/// imperative <c>IAuthorizationService.AuthorizeAsync(user, …)</c> checks.
+/// the requirement. Registered as <b>scoped</b> — the grant store seam carries a
+/// request-scoped caching registration (per-principal memoization within a single
+/// request), so the handler must be built inside the consuming scope to observe
+/// it. Identity is read from the evaluated principal rather than the ambient
+/// <c>HttpContext</c>, so the handler also serves imperative
+/// <c>IAuthorizationService.AuthorizeAsync(user, …)</c> checks (resolve the
+/// authorization service from a scope when calling from singletons/hosted
+/// services).
 /// </summary>
 internal sealed class PermissionRequirementHandler(
-    IPermissionResolver resolver, IServiceProvider sp)
+    IPermissionResolver resolver, IPermissionGrantStore grantStore)
     : AuthorizationHandler<PermissionRequirement>
 {
     private const string WildcardSuffix = ":*";
@@ -57,13 +61,11 @@ internal sealed class PermissionRequirementHandler(
 
         var query = BuildQuery(principal);
 
-        // Resolve the grant store from the current request scope to get the cached
-        // version (per-request memoization). The cache memoizes GetGrants per
-        // principal, eliminating redundant store lookups within a single request.
-        var grantStore = sp.GetRequiredService<IPermissionGrantStore>();
-
-        // ONE store read per principal per request: raw grants feed both the deny
-        // check below and the resolver (which must not re-read the store for them).
+        // Constructor-injected from the current scope: the scoped registration
+        // wraps the durable store with per-request memoization, so multiple
+        // checks against the same principal cost ONE store read per request.
+        // Never resolve this from the root provider — a root-scope cache would
+        // serve stale grants until restart.
         var grants = grantStore.GetGrants(query);
 
         // A store-level Deny for this permission always wins, even over a

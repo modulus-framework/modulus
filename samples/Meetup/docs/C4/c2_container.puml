@@ -1,0 +1,25 @@
+@startuml C2_Container
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+title Meetup — Containers (C2)
+
+Person(member, "Member")
+
+System_Boundary(meetup, "Meetup (single deployable)") {
+  Container(web, "Meetup.Web", "ASP.NET Core (.NET 10)", "Thin host: middleware, module registration, API endpoints + Razor UI, health, OpenAPI")
+  ContainerDb(dbReg, "meetup-registrations.db", "SQLite", "Registrations module data")
+  ContainerDb(dbUsers, "meetup-useraccess.db", "SQLite", "UserAccess module data")
+  ContainerDb(dbAdmin, "meetup-administration.db", "SQLite", "Administration module data")
+  ContainerDb(dbPay, "meetup-payments.db", "SQLite", "Payments module data")
+  ContainerDb(dbMeet, "meetup-meetings.db", "SQLite", "Meetings module data")
+}
+
+Rel(member, api, "HTTPS/JSON")
+Rel(api, dbReg, "EF Core")
+Rel(api, dbUsers, "EF Core")
+Rel(api, dbAdmin, "EF Core")
+Rel(api, dbPay, "EF Core")
+Rel(api, dbMeet, "EF Core")
+
+Lay_D(dbReg, dbUsers)
+@enduml

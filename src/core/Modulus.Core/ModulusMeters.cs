@@ -46,6 +46,12 @@ public static class ModulusMeters
         unit: "1",
         description: "Count of outbox messages dead-lettered after exhausting retries");
 
+    /// <summary>Outbox: count of transient deferrals (inbox contention) that did not consume retry budget.</summary>
+    public static readonly Counter<long> OutboxDeferred = Outbox.CreateCounter<long>(
+        "modulus.outbox.deferred",
+        unit: "1",
+        description: "Count of outbox dispatches deferred due to transient contention");
+
     /// <summary>Outbox: current depth (pending messages).</summary>
     public static readonly UpDownCounter<long> OutboxDepth = Outbox.CreateUpDownCounter<long>(
         "modulus.outbox.depth",

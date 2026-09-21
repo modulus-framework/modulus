@@ -1,0 +1,22 @@
+@page "{id:guid}"
+@using Modulus.UI
+@model Modulus.UI.Users.Pages.Users.DetailsModel
+@{
+    ViewData["Title"] = $"{await Model.TextAsync("Details.Title")}: {Model.Account?.UserName ?? Model.Account?.Email ?? RouteData.Values["id"]?.ToString()}";
+}
+<m-page-header title="@ViewData["Title"]">
+    <a class="btn" asp-page="./Index">&larr;</a>
+</m-page-header>
+@if (Model.Account is null)
+{
+    @await Html.PartialAsync("_Alert", UiAlert.Warning(await Model.TextAsync("Details.NotFound")))
+}
+else
+{
+    <div id="user-card">
+        @await Html.PartialAsync("_UserCard", Model)
+    </div>
+    <div id="role-list">
+        @await Html.PartialAsync("_RoleList", Model)
+    </div>
+}

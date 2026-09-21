@@ -117,7 +117,7 @@ Access via `ICausationIdContext` for custom event correlation.
 builder.Services.AddModulusEvents();       // Domain events + in-process bus
 builder.Services.AddMediator();            // CQRS mediator
 builder.Services.AddRabbitMqEventBus(config); // or AddKafkaEventBus
-builder.Services.AddModulusOutbox();       // Transactional outbox
+services.AddOutbox<CatalogDbContext>();    // Transactional outbox, per module DbContext
 ```
 
 ## See Also

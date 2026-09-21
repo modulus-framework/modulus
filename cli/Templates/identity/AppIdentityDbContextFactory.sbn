@@ -1,0 +1,29 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Design;
+
+namespace {{ identity_namespace }}.Infrastructure;
+
+/// <summary>
+/// Design-time factory used by the EF Core tools (<c>dotnet ef</c> / <c>modulus migrate</c>) to
+/// construct <see cref="AppIdentityDbContext"/> without the application's DI container.
+/// </summary>
+/// <remarks>
+/// The connection string is read from the <c>IDENTITY_CONNECTION</c> environment variable when
+/// set (so CI/CD can point migrations at the real database), otherwise it falls back to the
+/// default development connection string.
+/// </remarks>
+public sealed class AppIdentityDbContextFactory : IDesignTimeDbContextFactory<AppIdentityDbContext>
+{
+    public AppIdentityDbContext CreateDbContext(string[] args)
+    {
+        var connectionString =
+            Environment.GetEnvironmentVariable("IDENTITY_CONNECTION")
+            ?? "{{ identity_connection_string }}";
+
+        var options = new DbContextOptionsBuilder<AppIdentityDbContext>()
+            .{{ use_db_method }}(connectionString)
+            .Options;
+
+        return new AppIdentityDbContext(options);
+    }
+}

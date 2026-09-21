@@ -13,7 +13,12 @@ public sealed class Get{{ entity_plural }}Handler(I{{ entity_name }}Repository r
     {
         var entities = await repo.GetAllAsync(ct);
         return entities
-            .Select(e => new {{ entity_name }}Dto { Id = e.Id, Name = e.Name })
+            .Select(e => new {{ entity_name }}Dto
+            {
+                Id = e.Id,
+                Name = e.Name,
+{{ if has_api_extra_fields }}                ExtraProperties = new Dictionary<string, string?>(e.ExtraProperties),
+{{ end }}            })
             .ToList();
     }
 }

@@ -1,0 +1,67 @@
+@model Meetup.Modules.Meetings.Web.Pages.Meetings.IndexModel
+<div class="card mb-3">
+    <div class="card-header">
+        <h3 class="card-title">New meeting</h3>
+    </div>
+    <div class="card-body">
+        <form method="post" asp-page-handler="Create"
+              hx-post="@Url.Page("./Index", "Create")"
+              hx-target="#meetings-table" hx-swap="innerHTML">
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label" asp-for="Input.GroupId">Group</label>
+                    <select class="form-select" asp-for="Input.GroupId">
+                        @foreach (var g in Model.Groups)
+                        {
+                            <option value="@g.Id" selected="@(g.Id == Model.SelectedGroupId)">@g.Name (@g.City)</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label" asp-for="Input.CreatorLogin">Organizer login</label>
+                    <input class="form-control" asp-for="Input.CreatorLogin" placeholder="group creator login" />
+                    <span class="invalid-feedback d-block" asp-validation-for="Input.CreatorLogin"></span>
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label" asp-for="Input.Title">Title</label>
+                <input class="form-control" asp-for="Input.Title" placeholder="Meeting title" />
+                <span class="invalid-feedback d-block" asp-validation-for="Input.Title"></span>
+            </div>
+            <div class="mb-3">
+                <label class="form-label" asp-for="Input.Description">Description</label>
+                <textarea class="form-control" asp-for="Input.Description" rows="2"></textarea>
+            </div>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label" asp-for="Input.StartUtc">Starts (UTC)</label>
+                    <input class="form-control" asp-for="Input.StartUtc" type="datetime-local" />
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label" asp-for="Input.EndUtc">Ends (UTC)</label>
+                    <input class="form-control" asp-for="Input.EndUtc" type="datetime-local" />
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-3 mb-3">
+                    <label class="form-label" asp-for="Input.AttendeesLimit">Attendees limit</label>
+                    <input class="form-control" asp-for="Input.AttendeesLimit" type="number" min="1" placeholder="unlimited" />
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label class="form-label" asp-for="Input.GuestsLimit">Guests limit</label>
+                    <input class="form-control" asp-for="Input.GuestsLimit" type="number" min="0" />
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label class="form-label" asp-for="Input.EventFee">Event fee</label>
+                    <input class="form-control" asp-for="Input.EventFee" type="number" min="0" step="0.01" />
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label class="form-label" asp-for="Input.EventFeeCurrency">Currency</label>
+                    <input class="form-control" asp-for="Input.EventFeeCurrency" maxlength="3" />
+                </div>
+            </div>
+            <button class="btn btn-primary" type="submit">Create meeting</button>
+        </form>
+    </div>
+</div>

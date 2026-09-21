@@ -1,0 +1,27 @@
+{
+  "id": "hardening/openapi",
+  "title": "OpenAPI",
+  "description": "AddModulusOpenApi replaces a bare AddOpenApi() with a hardened document",
+  "source": "@site/docs/hardening/openapi.md",
+  "sourceDirName": "hardening",
+  "slug": "/hardening/openapi",
+  "permalink": "/docs/hardening/openapi",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/modulus-framework/modulus/tree/main/website/docs/hardening/openapi.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 11,
+  "frontMatter": {
+    "sidebar_position": 11
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "API Versioning",
+    "permalink": "/docs/hardening/versioning"
+  },
+  "next": {
+    "title": "Observability Overview",
+    "permalink": "/docs/observability/overview"
+  }
+}

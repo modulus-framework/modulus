@@ -32,13 +32,22 @@ public static class EndpointExtensions
     /// Maps all registered IEndpoint instances into the route table.
     /// Call once in Program.cs after app.Build().
     /// </summary>
+    /// <remarks>
+    /// Resolved inside a scope: endpoint implementations are transient and
+    /// may (transitively) depend on scoped services — resolving them from the
+    /// root provider would throw under scope validation or pin root-scope
+    /// instances. Endpoint implementations must still resolve per-request
+    /// dependencies from <c>HttpContext.RequestServices</c> inside their
+    /// handlers rather than capturing scoped services at construction time.
+    /// </remarks>
     public static WebApplication MapEndpoints(
         this WebApplication app,
         RouteGroupBuilder? routeGroup = null)
     {
         IEndpointRouteBuilder builder = routeGroup ?? (IEndpointRouteBuilder)app;
 
-        var endpoints = app.Services
+        using var scope = app.Services.CreateScope();
+        var endpoints = scope.ServiceProvider
             .GetRequiredService<IEnumerable<IEndpoint>>();
 
         foreach (var endpoint in endpoints)

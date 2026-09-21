@@ -1,0 +1,13 @@
+@page
+@model Meetup.Modules.Payments.Web.Pages.Payments.IndexModel
+@{
+    ViewData["Title"] = "Subscriptions";
+    // HTMX fragment callers swap the inner content; full navigations
+    // get the Tabler shell.
+    Layout = Model.IsHtmxFragment ? null : "_UiLayout";
+}
+<m-page-header title="@ViewData["Title"]" subtitle="Payments" />
+@await Html.PartialAsync("_CreateForm", Model)
+<div id="subscription-table">
+    @await Html.PartialAsync("_Table", Model.Items)
+</div>

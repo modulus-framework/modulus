@@ -8,7 +8,14 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="Modulus.Outbox.MongoDB.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <ProjectReference Include="../Modulus.Outbox.Abstractions/Modulus.Outbox.Abstractions.csproj" />
+    <ProjectReference Include="../Modulus.Outbox.Management/Modulus.Outbox.Management.csproj" />
+    <ProjectReference Include="../Modulus.Inbox/Modulus.Inbox.csproj" />
     <ProjectReference Include="../../data/Modulus.Data.MongoDB/Modulus.Data.MongoDB.csproj" />
   </ItemGroup>
 

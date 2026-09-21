@@ -38,16 +38,22 @@ internal sealed class EntityChangeHistoryWriter(ICurrentTenant? currentTenant)
                 _ => "Unknown",
             };
 
-            var properties = entry.Entity.GetType().GetProperties();
-            foreach (var property in properties)
+            // Class-level [Audited] is computed once per entry (it cannot vary
+            // per property).
+            var classAudited = entry.Entity.GetType()
+                .GetCustomAttributes(typeof(AuditedAttribute), false)
+                .Any();
+
+            // Enumerate MAPPED SCALAR properties only. Reflecting over CLR
+            // properties would also hit navigations and [NotMapped] members,
+            // and reading OriginalValues for a non-scalar throws — failing
+            // every SaveChanges of a class-audited entity with navigations.
+            foreach (var property in entry.Metadata.GetProperties())
             {
                 // Check if the property or class is marked [Audited]
-                var classAudited = entry.Entity.GetType()
+                var propertyAudited = property.PropertyInfo?
                     .GetCustomAttributes(typeof(AuditedAttribute), false)
-                    .Any();
-                var propertyAudited = property
-                    .GetCustomAttributes(typeof(AuditedAttribute), false)
-                    .Any();
+                    .Any() == true;
 
                 if (!classAudited && !propertyAudited)
                     continue;
@@ -56,14 +62,16 @@ internal sealed class EntityChangeHistoryWriter(ICurrentTenant? currentTenant)
                 if (IsAuditField(property.Name))
                     continue;
 
+                var propertyEntry = entry.Property(property.Name);
+
                 // Capture the change
                 var originalValue = entry.State switch
                 {
                     EntityState.Added => null,
-                    EntityState.Deleted => Serialize(entry.OriginalValues[property.Name]),
-                    EntityState.Modified when entry.OriginalValues[property.Name]
-                        != entry.CurrentValues[property.Name]
-                        => Serialize(entry.OriginalValues[property.Name]),
+                    EntityState.Deleted => Serialize(propertyEntry.OriginalValue),
+                    EntityState.Modified when !Equals(
+                        propertyEntry.OriginalValue, propertyEntry.CurrentValue)
+                        => Serialize(propertyEntry.OriginalValue),
                     _ => null,
                 };
 
@@ -71,7 +79,7 @@ internal sealed class EntityChangeHistoryWriter(ICurrentTenant? currentTenant)
                 {
                     EntityState.Deleted => null,
                     EntityState.Added or EntityState.Modified
-                        => Serialize(entry.CurrentValues[property.Name]),
+                        => Serialize(propertyEntry.CurrentValue),
                     _ => null,
                 };
 

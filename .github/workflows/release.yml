@@ -30,6 +30,9 @@ jobs:
       - name: Pack
         run: dotnet pack modulus.slnx --no-build --configuration Release --output artifacts/packages -p:Version=${GITHUB_REF_NAME#v}
       - name: Publish to NuGet
+        # Requires repository secret NUGET_API_KEY (nuget.org API key).
+        # Publishes Cobytelabs.Modulus.* to https://api.nuget.org/v3/index.json.
+        # After the first 1.3.0 push, generated apps can omit --package-source.
         run: |
           for pkg in artifacts/packages/*.nupkg; do
             dotnet nuget push "$pkg" --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate

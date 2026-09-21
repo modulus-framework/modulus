@@ -134,6 +134,11 @@ public static class DuendeExtensions
 
         builder.Services.Configure<DuendeOptions>(
             configuration.GetSection("Identity:ExternalProviders:Duende"));
+        // The provider takes the raw options in its constructor (snapshot
+        // semantics, matching the OIDC handler setup below), so the bound
+        // value must also be resolvable or scoped activation fails container
+        // validation in Development.
+        builder.Services.AddSingleton(opts);
         builder.Services.AddHttpClient<DuendeIdentityProvider>();
         builder.Services.AddScoped<IExternalIdentityProvider, DuendeIdentityProvider>();
 
@@ -143,7 +148,13 @@ public static class DuendeExtensions
             options.ClientId = opts.ClientId;
             options.ClientSecret = opts.ClientSecret;
             options.ResponseType = "code";
-            options.Scope.Add(opts.Scope);
+            // Split the configured scope string: adding it as a single entry
+            // only works by accident of OIDC re-splitting on whitespace.
+            foreach (var scope in opts.Scope.Split(
+                ' ', StringSplitOptions.RemoveEmptyEntries))
+            {
+                options.Scope.Add(scope);
+            }
             options.GetClaimsFromUserInfoEndpoint = true;
             options.SaveTokens = true;
             options.TokenValidationParameters.NameClaimType = "name";

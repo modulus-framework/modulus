@@ -49,17 +49,17 @@
     },
     "content": "content---markdown-page-4-c-6-c89"
   },
-  "/docs-66e": {
+  "/docs-ac1": {
     "__comp": "__comp---theme-docs-root-5-e-9-0b6",
     "__context": {
       "plugin": "plugin---docsaba-d7c"
     }
   },
-  "/docs-adf": {
+  "/docs-a79": {
     "__comp": "__comp---theme-doc-version-roota-7-b-5de",
     "__props": "__props---docs-005-788"
   },
-  "/docs-8bf": {
+  "/docs-df1": {
     "__comp": "__comp---theme-doc-roota-94-67a"
   },
   "/docs/api/-b2d": {
@@ -254,6 +254,10 @@
     "__comp": "__comp---theme-doc-item-178-a40",
     "content": "content---docs-hardening-idempotency-5-ce-314"
   },
+  "/docs/hardening/openapi-13f": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-hardening-openapi-90-e-996"
+  },
   "/docs/hardening/personal-data-protection-2ca": {
     "__comp": "__comp---theme-doc-item-178-a40",
     "content": "content---docs-hardening-personal-data-protection-988-8f2"
@@ -269,6 +273,10 @@
   "/docs/hardening/security-headers-ea4": {
     "__comp": "__comp---theme-doc-item-178-a40",
     "content": "content---docs-hardening-security-headers-5-cf-a20"
+  },
+  "/docs/hardening/versioning-7fd": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-hardening-versioning-274-2c2"
   },
   "/docs/identity/external-providers-335": {
     "__comp": "__comp---theme-doc-item-178-a40",

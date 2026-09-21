@@ -1,0 +1,27 @@
+@* Default markup for <m-select>: label, dropdown, validation errors and hint. *@
+@model FieldModel
+@{
+    var invalid = Model.HasErrors ? " is-invalid" : string.Empty;
+}
+<div class="mb-3">
+    <label class="form-label@(Model.Required ? " required" : string.Empty)" for="@Model.Id">@Model.Label</label>
+    <select class="form-select@(invalid)" id="@Model.Id" name="@Model.Name"
+            required="@Model.Required" disabled="@Model.Disabled">
+        @if (Model.Placeholder is not null)
+        {
+            <option value="">@Model.Placeholder</option>
+        }
+        @foreach (var option in Model.Options)
+        {
+            <option value="@option.Value" selected="@option.Selected">@option.Text</option>
+        }
+    </select>
+    @foreach (var error in Model.Errors)
+    {
+        <div class="invalid-feedback d-block">@error</div>
+    }
+    @if (!string.IsNullOrWhiteSpace(Model.Hint))
+    {
+        <div class="form-hint">@Model.Hint</div>
+    }
+</div>

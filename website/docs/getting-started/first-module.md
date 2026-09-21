@@ -29,14 +29,13 @@ modulus generate-crud Product --module Products
 
 This generates:
 
-- **Entity** (`Product`) with properties
-- **Repository** interface and implementation
-- **DTOs** (`ProductDto`, `CreateProductRequest`, `UpdateProductRequest`)
-- **Commands** (`CreateProduct`, `UpdateProduct`, `DeleteProduct`)
-- **Queries** (`GetAllProducts`, `GetProductById`)
-- **Handlers** for each command/query
-- **Integration Event** (`ProductCreatedEvent`)
-- **API Endpoint** (REST controller)
+- **Entity** (`Product`) — `AggregateRoot<Guid>` with a `Name`
+- **Repository** interface (`IProductRepository`) and spec-based implementation
+- **DTO** (`ProductDto` with `Id` + `Name`) under `Application/Dtos/`
+- **Commands** (`CreateProductCommand`, …) + handlers using `IUnitOfWork.CommitAsync`
+- **Queries** (`GetProductsQuery`, `GetProductByIdQuery`) + handlers
+- **Integration Event** (`ProductCreatedIntegrationEvent`) under `Application/IntegrationEvents/`
+- **API Endpoints** (REPR `Endpoint<>` classes with `RequireAuthorization()`)
 - **DbContext mapping** (auto-wired `DbSet<Product>`)
 
 ## 3. Implement Business Logic
@@ -44,22 +43,19 @@ This generates:
 Edit the command handlers in `Application/`:
 
 ```csharp
-public sealed class CreateProductHandler(IProductsUnitOfWork unitOfWork)
-    : ICommandHandler<CreateProduct, ProductDto>
+public sealed class CreateProductHandler(
+    IProductRepository repo,
+    IUnitOfWork unitOfWork)
+    : ICommandHandler<CreateProductCommand, Guid>
 {
-    public async Task<ProductDto> HandleAsync(
-        CreateProduct command,
-        CancellationToken ct = default)
+    public async Task<Guid> HandleAsync(
+        CreateProductCommand command,
+        CancellationToken ct)
     {
-        var product = new Product(
-            command.Name,
-            command.Price,
-            command.Category);
-
-        unitOfWork.Products.Add(product);
-        await unitOfWork.SaveChangesAsync(ct);
-
-        return new ProductDto(product.Id, product.Name, product.Price);
+        var product = new Product { Name = command.Name };
+        await repo.AddAsync(product, ct);
+        await unitOfWork.CommitAsync(ct);
+        return product.Id;
     }
 }
 ```
@@ -92,7 +88,11 @@ public sealed class ProductsModule : ModulusModule
 {
     public override void ConfigureServices(IServiceCollection services, IConfiguration config)
     {
-        services.AddModuleDatabase<ProductsDbContext>(config);
+        services.AddModuleDatabase<ProductsDbContext>(options =>
+            options.UseSqlite(config.GetConnectionString("Products")
+                ?? "Data Source=products.db"));
+        services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<ProductsDbContext>());
+        services.AddMediatorHandlers(typeof(IUnitOfWork).Assembly);
     }
 
     public override async Task InitializeAsync(ModuleContext context)

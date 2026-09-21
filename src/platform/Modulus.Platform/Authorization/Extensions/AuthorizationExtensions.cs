@@ -34,12 +34,24 @@ public static class AuthorizationExtensions
         // The handler behind every ':'-permission policy: decisions are resolved
         // server-side through IPermissionResolver (so runtime grant changes take
         // effect immediately), with token permission claims as a second source.
+        // Scoped (like ASP.NET Core handlers with scoped dependencies): the
+        // grant store seam has a request-scoped caching registration, and a
+        // singleton handler would either throw under scope validation or pin a
+        // root-scope cache that never invalidates (stale grants forever).
         services.TryAddEnumerable(ServiceDescriptor
-            .Singleton<IAuthorizationHandler, PermissionRequirementHandler>());
+            .Scoped<IAuthorizationHandler, PermissionRequirementHandler>());
         services.AddHostedService<PermissionInitHostedService>();
 
-        // Grant store + resolver. Register the concrete store first, then
-        // wrap it with request-scoped caching on the interface.
+        // Grant store + resolver. Register the concrete store first (the durable
+        // seam — management APIs inject it by concrete type), then expose the
+        // interface as the request-scoped cache wrapper: memoizes GetGrants per
+        // principal within a single request. The interface registration is the
+        // ONLY one: every consumer of IPermissionGrantStore is scoped, so the
+        // wrapper is always consumed inside a request scope and runtime grant
+        // changes take effect on the next request. TryAdd so an EF-backed store
+        // (AddEfCoreAuthorizationStores) wins regardless of call order: if it
+        // registered its own wrapper first, that one stays and this line
+        // no-ops instead of shadowing it with the empty in-memory store.
         services.TryAddSingleton<InMemoryPermissionGrantStore>(sp =>
         {
             var store = new InMemoryPermissionGrantStore();
@@ -47,19 +59,19 @@ public static class AuthorizationExtensions
                 seed.Apply(store);
             return store;
         });
-        services.TryAddSingleton<IPermissionGrantStore>(sp =>
-            sp.GetRequiredService<InMemoryPermissionGrantStore>());
-
-        // Request-scoped cache wrapper: memoizes GetGrants per principal within
-        // a single request. Wraps the singleton store and caches its results.
-        services.AddScoped<IPermissionGrantStore>(sp =>
+        services.TryAddScoped<IPermissionGrantStore>(sp =>
             new CachedPermissionGrantStore(sp.GetRequiredService<InMemoryPermissionGrantStore>()));
 
-        // Register the concrete resolver once and map the interface to it, so the
-        // delegation-aware decorator (AddDelegation) and the effective-access reporter can
-        // depend on the *direct* resolver (bypassing delegation) without a second instance.
-        services.TryAddSingleton<PermissionResolver>();
-        services.TryAddSingleton<IPermissionResolver>(sp => sp.GetRequiredService<PermissionResolver>());
+        // Register the concrete resolver once per scope and map the interface to
+        // it, so the delegation-aware decorator (AddDelegation) and the
+        // effective-access reporter can depend on the *direct* resolver
+        // (bypassing delegation) without a second instance. Scoped, not
+        // singleton: the resolver consumes IPermissionGrantStore, whose effective
+        // registration is the request-scoped cache wrapper — a singleton here
+        // would either throw under scope validation or pin a process-lifetime
+        // cache that serves stale grants until restart.
+        services.TryAddScoped<PermissionResolver>();
+        services.TryAddScoped<IPermissionResolver>(sp => sp.GetRequiredService<PermissionResolver>());
 
         // Organizational scope: hierarchy + placements + scope resolver. TryAdd so
         // an EF-backed store can supersede the in-memory defaults by registering
@@ -100,7 +112,9 @@ public static class AuthorizationExtensions
         services.TryAddSingleton(TimeProvider.System);
         services.TryAddSingleton<IDelegationResolver>(EmptyDelegationResolver.Instance);
         services.TryAddSingleton<ISodPolicy>(SodPolicy.Empty);
-        services.TryAddSingleton<IEffectiveAccessService, EffectiveAccessService>();
+        // Scoped like the resolver chain it composes — it consumes the concrete
+        // PermissionResolver, which reads the request-scoped grant store seam.
+        services.TryAddScoped<IEffectiveAccessService, EffectiveAccessService>();
 
         // Audit emission (blueprint §5.14/§16): no-op until AddEfCoreAuthorizationAudit
         // (Modulus.Authorization.EntityFrameworkCore) supersedes it. The action registry
@@ -343,14 +357,15 @@ public static class AuthorizationExtensions
 
         // The resolver caps against the delegator's DIRECT authority (concrete resolver),
         // never the delegation-aware decorator — so delegated authority is not re-delegable.
-        services.Replace(ServiceDescriptor.Singleton<IDelegationResolver>(sp =>
+        // Scoped, matching the PermissionResolver it consumes.
+        services.Replace(ServiceDescriptor.Scoped<IDelegationResolver>(sp =>
             new DelegationResolver(
                 sp.GetRequiredService<IDelegationStore>(),
                 sp.GetRequiredService<PermissionResolver>(),
                 sp.GetRequiredService<TimeProvider>())));
 
         // Decorate the capability resolver so HasPermission includes delegated authority.
-        services.Replace(ServiceDescriptor.Singleton<IPermissionResolver>(sp =>
+        services.Replace(ServiceDescriptor.Scoped<IPermissionResolver>(sp =>
             new DelegationAwarePermissionResolver(
                 sp.GetRequiredService<PermissionResolver>(),
                 sp.GetRequiredService<IDelegationResolver>())));

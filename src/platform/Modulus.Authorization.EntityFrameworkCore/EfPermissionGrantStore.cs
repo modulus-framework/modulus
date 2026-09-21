@@ -31,20 +31,26 @@ public sealed class EfPermissionGrantStore(
         if (roles.Count == 0 && userKey is null)
             return [];
 
-        using var db = factory.CreateDbContext();
-        var grantRows = db.Grants.AsNoTracking().ToList();
+        // Filter server-side so only the principal's rows cross the wire —
+        // never the whole grants table. Holder matching is case-insensitive:
+        // EF translates string.ToLower() to the provider's LOWER(), which is
+        // deterministic (invariant) casing on the ASCII role/permission names
+        // this store holds. HolderType is filtered as a plain enum predicate.
+        var lowerRoles = roles.Select(r => r.ToLowerInvariant()).ToList();
+        var lowerUser = userKey?.ToLowerInvariant();
 
-        // Filter in-memory with case-insensitive comparison to match InMemoryPermissionGrantStore
-        var result = grantRows.Where(g =>
-            (g.HolderType == GrantHolderType.Role
-             && roles.Any(r => string.Equals(r, g.Holder, StringComparison.OrdinalIgnoreCase)))
-            || (userKey != null
-                && g.HolderType == GrantHolderType.User
-                && string.Equals(userKey, g.Holder, StringComparison.OrdinalIgnoreCase)))
-            .Select(g => new PermissionGrant(g.HolderType, g.Holder, g.Permission, g.Type))
+        using var db = factory.CreateDbContext();
+        var grantRows = db.Grants.AsNoTracking()
+            .Where(g =>
+                (g.HolderType == GrantHolderType.Role && lowerRoles.Contains(g.Holder.ToLower()))
+                || (lowerUser != null
+                    && g.HolderType == GrantHolderType.User
+                    && g.Holder.ToLower() == lowerUser))
             .ToList();
 
-        return result;
+        return grantRows
+            .Select(g => new PermissionGrant(g.HolderType, g.Holder, g.Permission, g.Type))
+            .ToList();
     }
 
     /// <summary>Every grant attached to one holder — the admin/review read,

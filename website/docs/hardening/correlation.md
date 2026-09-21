@@ -32,11 +32,13 @@ Modulus provides automatic correlation ID propagation across services.
 ## Setup
 
 ```csharp
-// Program.cs
+// Program.cs — place first in the pipeline
+builder.Services.AddModulusCorrelation(builder.Configuration);
 app.UseModulusCorrelation();
 
-// For outbound HTTP clients
+// Resilient outbound client (standard resilience + correlation propagation)
 services.AddModulusHttpClient("my-service");
+services.AddModulusHttpClient<MyTypedClient>();
 ```
 
 ## Configuration
@@ -59,7 +61,7 @@ public sealed class MyHandler(ICorrelationContext correlation)
 {
     public async Task<Unit> HandleAsync(MyCommand command, CancellationToken ct)
     {
-        var correlationId = correlation.Id;
+        var correlationId = correlation.CorrelationId; // string?, plus IsSet
         // Use for logging, tracing, etc.
         return Unit.Value;
     }
@@ -68,12 +70,11 @@ public sealed class MyHandler(ICorrelationContext correlation)
 
 ## Outbound Propagation
 
-```csharp
-services.AddModulusHttpClient("inventory-service")
-    .AddHttpMessageHandler<CorrelationIdPropagationHandler>();
-```
-
-The handler automatically copies the current correlation ID to outgoing requests.
+`AddModulusHttpClient` already wires `CorrelationIdPropagationHandler` as the
+outer handler (standard resilience handler + correlation). The handler copies
+the current correlation ID to outgoing requests and never overwrites a
+caller-set header. W3C `traceparent` is auto-injected by `HttpClient` itself,
+so this carries only the business correlation id.
 
 ## Background Jobs
 

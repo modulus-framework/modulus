@@ -42,9 +42,13 @@ public sealed class ChannelJobQueue(
     : IJobScheduler, IHostedService
 {
     private readonly Channel<JobEnvelope> _channel =
-        Channel.CreateUnbounded<JobEnvelope>(
-            new UnboundedChannelOptions
-            { SingleReader = false, SingleWriter = false });
+        Channel.CreateBounded<JobEnvelope>(
+            new BoundedChannelOptions(10_000)
+            {
+                SingleReader = false,
+                SingleWriter = false,
+                FullMode = BoundedChannelFullMode.Wait,
+            });
 
     private readonly Dictionary<string, RecurringEntry> _recurring = [];
     private readonly Lock _recurringLock = new();
@@ -133,6 +137,13 @@ public sealed class ChannelJobQueue(
     // ── IHostedService ────────────────────────────────────────────
     public Task StartAsync(CancellationToken ct)
     {
+        var env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")
+            ?? Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT");
+        if (string.Equals(env, "Production", StringComparison.OrdinalIgnoreCase))
+            logger.LogWarning(
+                "ChannelJobQueue is in-memory (bounded 10,000, lost on shutdown, duplicated across replicas). " +
+                "Register a durable scheduler (Quartz/Hangfire) for Production.");
+
         _cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
 
         // Recurring-job scheduler — checks every 30 seconds

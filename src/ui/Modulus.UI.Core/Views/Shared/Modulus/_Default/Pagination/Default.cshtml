@@ -1,0 +1,15 @@
+@* Default markup for <m-pagination> (a card footer: "Page N" plus previous/next links). *@
+@model PaginationModel
+<div class="card-footer d-flex justify-content-between align-items-center">
+    <span class="text-secondary">@Model.Label @Model.Page</span>
+    <div class="btn-group">
+        @if (Model.PreviousUrl is not null)
+        {
+            <a class="btn" href="@Model.PreviousUrl" rel="prev" aria-label="Previous page">&larr;</a>
+        }
+        @if (Model.NextUrl is not null)
+        {
+            <a class="btn" href="@Model.NextUrl" rel="next" aria-label="Next page">&rarr;</a>
+        }
+    </div>
+</div>

@@ -1,5 +1,7 @@
 namespace Modulus.AspNetCore.Idempotency;
 
+using System.ComponentModel.DataAnnotations;
+
 /// <summary>
 /// Binds from the <c>Idempotency</c> configuration section. Backs
 /// <see cref="IdempotencyExtensions.AddModulusIdempotency"/> — safe request
@@ -33,7 +35,10 @@ public sealed class IdempotencyOptions
     public int MaxKeyLength { get; set; } = 255;
 
     /// <summary>How long a completed response is retained for replay, in seconds.
-    /// Defaults to 24 hours.</summary>
+    /// Defaults to 24 hours. Must be positive — zero/negative would expire
+    /// every claim instantly and silently disable dedup (including the 409
+    /// in-progress path); validated at startup.</summary>
+    [Range(1, int.MaxValue)]
     public int RetentionSeconds { get; set; } = 86_400;
 
     /// <summary>

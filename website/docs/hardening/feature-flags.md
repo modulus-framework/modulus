@@ -14,16 +14,19 @@ services.AddModulusFeatureFlags(config);
 
 ## Configuration
 
+Binds the `FeatureManagement` section (the library's own convention).
+Only the `Percentage` and `TimeWindow` filters are registered:
+
 ```json
 {
   "FeatureManagement": {
     "NewCheckout": true,
     "BetaReporting": false,
     "AdvancedSearch": {
-      "Enabled": true,
-      "Percentage": 25,
-      "StartTime": "2025-01-01T00:00:00Z",
-      "EndTime": "2025-06-01T00:00:00Z"
+      "EnabledFor": [
+        { "Name": "Percentage", "Parameters": { "Value": 25 } },
+        { "Name": "TimeWindow", "Parameters": { "Start": "2026-01-01T00:00:00Z", "End": "2026-06-01T00:00:00Z" } }
+      ]
     }
   }
 }
@@ -48,7 +51,11 @@ app.MapPost("/api/checkout", HandleCheckout)
     .RequireFeature("NewCheckout");
 ```
 
-When the flag is off, the endpoint returns **404** (hiding it from clients).
+When the flag is off, the endpoint returns **404** (hiding it from clients) —
+the equivalent of MVC's `[FeatureGate]`. Evaluation is scoped (filters can
+read the ambient tenant/user) and gated endpoints additionally require the
+`IFeatureGate` entitlement: both the entitlement **and** the rollout must
+allow.
 
 ## Usage in Handlers
 

@@ -1,3 +1,4 @@
+using Modulus.Core.Abstractions.Entities;
 using Modulus.Mediator.Abstractions;
 using {{ module_namespace }}.Domain;
 
@@ -13,6 +14,9 @@ public sealed class Create{{ entity_name }}Handler(
         CancellationToken ct)
     {
         var entity = new {{ entity_name }} { Name = command.Name };
+        if (command.ExtraProperties is not null)
+            entity.SetExtraProperties(command.ExtraProperties);
+
         await repo.AddAsync(entity, ct);
         await unitOfWork.CommitAsync(ct);
         return entity.Id;

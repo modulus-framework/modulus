@@ -8,7 +8,7 @@
   "permalink": "/docs/hardening/personal-data-protection",
   "draft": false,
   "unlisted": false,
-  "editUrl": "https://github.com/cobytelabs/modulus/tree/main/website/docs/hardening/personal-data-protection.md",
+  "editUrl": "https://github.com/modulus-framework/modulus/tree/main/website/docs/hardening/personal-data-protection.md",
   "tags": [],
   "version": "current",
   "sidebarPosition": 9,
@@ -21,7 +21,7 @@
     "permalink": "/docs/hardening/secrets-guard"
   },
   "next": {
-    "title": "Observability Overview",
-    "permalink": "/docs/observability/overview"
+    "title": "API Versioning",
+    "permalink": "/docs/hardening/versioning"
   }
 }

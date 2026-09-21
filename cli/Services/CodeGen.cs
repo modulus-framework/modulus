@@ -181,8 +181,22 @@ internal static partial class CodeGen
                 moduleRoots.Add(Path.GetDirectoryName(parentDir)!);
         }
 
+        return ChooseModuleRoot(moduleRoots);
+    }
+
+    /// <summary>
+    /// The module to use when <c>--module</c> is omitted: the only module, or the only <i>business</i> module. The
+    /// generated Identity module is infrastructure only (no Application layer): it is not a place for business code,
+    /// so it must not make a one-business-module app ambiguous.
+    /// </summary>
+    internal static string ChooseModuleRoot(IReadOnlyCollection<string> moduleRoots)
+    {
         if (moduleRoots.Count == 1)
             return moduleRoots.First();
+
+        var business = moduleRoots.Where(r => Directory.GetDirectories(r, "*.Application").Length > 0).ToList();
+        if (business.Count == 1)
+            return business[0];
 
         throw new InvalidOperationException(
             "Multiple modules found. Specify --module <name>.\n" +

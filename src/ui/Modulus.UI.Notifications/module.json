@@ -1,0 +1,7 @@
+{
+  "id": "Modulus.Notifications",
+  "name": "Notifications",
+  "version": "1.4.0",
+  "dependencies": ["Modulus.UI.Core"],
+  "features": ["Notifications"]
+}

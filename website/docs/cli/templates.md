@@ -1,10 +1,12 @@
 ---
-sidebar_position: 13
+sidebar_position: 14
 ---
 
 # Templates
 
-The CLI uses Scriban templates embedded as resources.
+The CLI uses Scriban templates embedded as assembly resources
+(`TemplateEngine` loads them via `GetManifestResourceStream` — there is no
+filesystem override; customizing output means building a custom CLI).
 
 ## Template Structure
 
@@ -16,14 +18,10 @@ cli/Templates/
 │   ├── appsettings.json.sbn
 │   └── ...
 ├── module/                       # 4-layer module
-│   ├── domain.csproj.sbn
-│   ├── application.csproj.sbn
-│   ├── infrastructure.csproj.sbn
-│   ├── presentation.csproj.sbn
 │   ├── Domain/
-│   ├── Application/
-│   ├── Infrastructure/
-│   └── Presentation/
+│   ├── Application/              # handlers, Dtos/, IntegrationEvents/
+│   ├── Infrastructure/           # DbContext, repository, module composition root
+│   └── Presentation/             # Endpoint.sbn (REPR endpoints)
 └── shared/                       # Shared kernel
     ├── shared.domain.csproj.sbn
     ├── shared.application.csproj.sbn
@@ -35,27 +33,17 @@ cli/Templates/
 
 Templates use [Scriban](https://github.com/scriban/scriban) syntax:
 
-```handlebars
-public sealed class {{ entity_name }}Controller : ControllerBase
+```scriban
+public sealed class Get{{ entity_plural }}Endpoint(IMediator mediator)
+    : EndpointWithoutRequest<IReadOnlyList<{{ entity_name }}Dto>>
 {
-    private readonly IMediator _mediator;
-
-    public {{ entity_name }}Controller(IMediator mediator) => _mediator = mediator;
-
-    [HttpGet]
-    public async Task<ActionResult<List<{{ entity_name }}Dto>>> GetAll()
-        => await _mediator.QueryAsync(new GetAll{{ entity_name }}s());
+    public override void Configure()
+    {
+        Get("/api/{{ module_name_lower }}/{{ route_name }}");
+        RequireAuthorization();
+    }
 }
 ```
-
-## Customizing Templates
-
-To customize generated code:
-
-1. Extract templates from the CLI package
-2. Modify the `.sbn` files
-3. Place them in your project's `Templates/` directory
-4. The CLI will use local templates when available
 
 ## See Also
 

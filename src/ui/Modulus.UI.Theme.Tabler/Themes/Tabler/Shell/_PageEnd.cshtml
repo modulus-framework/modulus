@@ -1,0 +1,37 @@
+@* First half of the end-of-body shell shared by every Tabler layout: toast /
+   modal / confirm hosts, the antiforgery token, and the theme scripts that must
+   run before page scripts (htmx, Tabler, modulus.js).
+   A partial cannot render @section content, and RenderSectionAsync writes
+   straight to the output, so each layout emits this partial, then
+   @await RenderSectionAsync("Scripts"), then _PageScripts (Scripts slot and
+   Alpine last) — so page scripts that register Alpine.data() run before Alpine
+   starts. *@
+@inject IThemeAccessor Themes
+@{
+    var scripts = Themes.Current.Scripts;
+}
+<div id="modulus-toasts" class="toast-container position-fixed top-0 end-0 p-3 m-toast-host" aria-live="polite" aria-atomic="true"></div>
+<div class="modal modal-blur fade" id="m-modal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content" id="m-modal-container"></div>
+    </div>
+</div>
+<div class="modal modal-blur fade" id="modulus-confirm" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-sm modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-body">
+                <div class="modal-title">Please confirm</div>
+                <div class="text-secondary" id="modulus-confirm-body"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-link link-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="modulus-confirm-ok">Confirm</button>
+            </div>
+        </div>
+    </div>
+</div>
+@Html.AntiForgeryToken()
+@foreach (var script in scripts.Where(s => !TablerAssets.IsAlpine(s.Path)))
+{
+    <script src="@Url.Content("~" + script.Path)" defer="@script.Defer" integrity="@script.Integrity"></script>
+}

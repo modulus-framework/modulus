@@ -1,0 +1,24 @@
+@model Modulus.UI.Settings.Pages.Settings.EditModel
+@* Setting form. Saves re-render this region in place; validation failures surface through the
+   validation summary that <m-form> renders (ModelState rides the fragment). *@
+<div class="card">
+    <div class="card-body">
+        <m-form page="./Edit" route-name="@Model.Definition?.Name" target="#settings-form">
+            <div class="mb-3">
+                <label class="form-label" asp-for="Input.Value">@await Model.TextAsync("Edit.Value")</label>
+                <input class="form-control" asp-for="Input.Value" />
+                <div class="form-hint">@await Model.TextAsync("Edit.ValueHint")</div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label" asp-for="Input.Scope">@await Model.TextAsync("Edit.Scope")</label>
+                <select class="form-select" asp-for="Input.Scope">
+                    <option value="Global">Global</option>
+                    <option value="Tenant">Tenant</option>
+                    <option value="User">User</option>
+                </select>
+                <span class="invalid-feedback d-block" asp-validation-for="Input.Scope"></span>
+            </div>
+            <button class="btn btn-primary" type="submit">@await Model.TextAsync("Edit.Submit")</button>
+        </m-form>
+    </div>
+</div>

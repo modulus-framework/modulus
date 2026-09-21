@@ -1,0 +1,17 @@
+@* Default markup for <m-stat>. Override at /Views/Shared/Modulus/Stat/Default.cshtml (app)
+   or /Themes/{Theme}/Views/Stat/Default.cshtml (theme). *@
+@model StatModel
+<div class="card card-sm">
+    <div class="card-body">
+        <div class="subheader">@Model.Label</div>
+        <div class="h1 mb-0">@Model.Value</div>
+        @if (!string.IsNullOrWhiteSpace(Model.Delta))
+        {
+            <div class="small mt-1 text-@Model.Tone">@Model.Delta</div>
+        }
+        @if (!string.IsNullOrWhiteSpace(Model.Hint))
+        {
+            <div class="text-secondary small">@Model.Hint</div>
+        }
+    </div>
+</div>

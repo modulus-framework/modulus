@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Cobytelabs.Modulus.Core" Version="{{ framework_version }}" />
+    <PackageReference Include="Cobytelabs.Modulus.Identity" Version="{{ framework_version }}" />
+    <PackageReference Include="Cobytelabs.Modulus.EntityFrameworkCore" Version="{{ framework_version }}" />
+    <PackageReference Include="{{ ef_provider_package }}" Version="{{ ef_provider_version }}" />
+{{ if db_provider == "SQLite" }}    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.3" />
+{{ end }}    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.9" />
+  </ItemGroup>
+
+</Project>

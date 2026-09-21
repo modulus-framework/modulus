@@ -33,41 +33,46 @@ public static class CatalogPermissions
     public const string ProductsDelete = "catalog.products.delete";
 }
 
-// Register in module
-services.AddPermissions(builder =>
+// Register in module (declarations replay against the registry at startup)
+services.AddPermissions("Catalog", registry =>
 {
-    builder.Register(CatalogPermissions.ProductsView, "View products");
-    builder.Register(CatalogPermissions.ProductsCreate, "Create products");
+    registry.Add(CatalogPermissions.ProductsView, "View products");
+    registry.Add(CatalogPermissions.ProductsCreate, "Create products");
 });
 ```
 
 ## Using Permissions
 
-### In Controllers
+### In Endpoints
+
+REPR endpoints declare requirements via `RequireAuthorization`, MVC actions
+via `[Authorize(Policy = "...")]`:
 
 ```csharp
-[ApiController]
-[Route("api/products")]
+// REPR
+Get("/api/catalog/products");
+RequireAuthorization("catalog.products.create");
+
+// MVC
 [Authorize(Policy = "catalog.products.create")]
-public sealed class ProductController : ControllerBase
-{
-    // Only users with catalog.products.create permission can access
-}
+public sealed class CreateProductEndpoint : ControllerBase { }
 ```
+
+Only users holding the permission can access the endpoint.
 
 ### In Handlers
 
 ```csharp
-public sealed class CreateProductHandler(IAuthorizationService auth)
-    : ICommandHandler<CreateProduct, ProductDto>
+public sealed class CreateProductHandler(IAuthorizationService auth, ...)
+    : ICommandHandler<CreateProductCommand, Guid>
 {
-    public async Task<ProductDto> HandleAsync(CreateProduct command, CancellationToken ct)
+    public async Task<Guid> HandleAsync(CreateProductCommand command, CancellationToken ct)
     {
         await auth.AuthorizeAsync(CatalogPermissions.ProductsCreate);
 
         // Proceed if authorized
-        var product = new Product(command.Name, command.Price);
-        return new ProductDto(product.Id, product.Name, product.Price);
+        var product = new Product { Name = command.Name };
+        ...
     }
 }
 ```
@@ -79,33 +84,31 @@ public sealed class CatalogModule : ModulusModule
 {
     public override void PreConfigureServices(IServiceCollection services, IConfiguration config)
     {
-        services.AddPermissions(builder =>
+        services.AddPermissions("Catalog", registry =>
         {
-            builder.Register("catalog.products.view", "View products");
-            builder.Register("catalog.products.create", "Create products");
+            registry.Add("catalog.products.view", "View products");
+            registry.Add("catalog.products.create", "Create products");
         });
     }
 }
 ```
 
+The registry (`Add`/`GetAll`/`GetByModule`/`Exists`) freezes after startup —
+declare everything in `ConfigureServices`. Grants are fetched once per request
+and passed to the resolver (single DB read).
+
 ## Organization Scoping
 
-Permissions can be scoped to organizational units:
-
-```csharp
-public sealed class OrgScopedPermission : IOrgUnitScoped
-{
-    public Guid OrgUnitId { get; set; }
-    public string Permission { get; set; } = default!;
-}
-```
+Org-unit reads go through `IHasOrgUnit` entities + `ResourceAttributes`
+(evaluated by `ResourceAuthorizer`); delegations, SoD policies, and access
+recertification live in the Governance model (`IDelegationStore`,
+`EffectiveAccessService`).
 
 ## Field-Level Security
 
-```csharp
-[FieldAuthorization("salary")]
-public decimal Salary { get; set; }
-```
+Field classification + masking profiles (`FieldSecurityProfile`,
+`FieldAuthorizer`) control per-field read/write/mask decisions — see the
+`Modulus.Platform.Authorization.Fields` namespace.
 
 ## See Also
 

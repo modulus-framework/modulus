@@ -5,8 +5,12 @@ namespace Modulus.Authorization.Management;
 /// <param name="Holder">Role name, or the user id for user grants.</param>
 /// <param name="Permissions">Permission names to grant or deny.</param>
 /// <param name="Type"><c>Allow</c> (default when omitted) or <c>Deny</c>.</param>
+/// <param name="HolderRoles">For user holders: the user's current role memberships,
+/// used by the pre-grant SoD simulation — the grant store cannot know Identity
+/// role membership, so without this the simulation sees direct grants only and
+/// role-delivered halves of toxic combinations slip through. Omit when unknown.</param>
 public sealed record GrantWriteRequest(
-    string HolderType, string Holder, string[] Permissions, string? Type);
+    string HolderType, string Holder, string[] Permissions, string? Type, string[]? HolderRoles = null);
 
 /// <summary>A grant as returned by the management API (enum names as strings).</summary>
 /// <param name="HolderType"><c>Role</c> or <c>User</c>.</param>

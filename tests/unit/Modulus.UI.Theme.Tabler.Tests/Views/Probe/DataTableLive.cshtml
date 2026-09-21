@@ -1,0 +1,13 @@
+@{ Layout = "/Themes/Tabler/Layouts/Empty.cshtml"; }
+<m-datatable id="live" source="/products?handler=Rows" refresh-on="product:changed, order:changed">
+    <m-column>Name</m-column>
+    <tr><td>Alice</td></tr>
+</m-datatable>
+<m-datatable id="lazy" source="/lazy" empty="true" empty-message="Nothing yet">
+    <m-column>Name</m-column>
+    <m-column class="text-end" />
+</m-datatable>
+<m-datatable id="static">
+    <m-column>Name</m-column>
+    <tr><td>Zed</td></tr>
+</m-datatable>

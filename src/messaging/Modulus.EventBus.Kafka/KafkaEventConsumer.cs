@@ -44,11 +44,10 @@ internal sealed class KafkaEventConsumer : BackgroundService
             BootstrapServers = _opts.BootstrapServers,
             GroupId = _opts.GroupId,
             AutoOffsetReset = ParseAutoOffsetReset(_opts.AutoOffsetReset),
-            // Force manual commits regardless of config. Auto-commit would
-            // advance the offset before a handler finishes, silently dropping
-            // failed messages. We commit explicitly after successful dispatch.
+            // Force manual commits. Auto-commit would advance the offset
+            // before a handler finishes, silently dropping failed messages.
+            // We commit explicitly after successful dispatch.
             EnableAutoCommit = false,
-            AutoCommitIntervalMs = _opts.AutoCommitIntervalMs,
         };
 
         KafkaEventBus.ApplySecurity(config, _opts);
@@ -108,12 +107,12 @@ internal sealed class KafkaEventConsumer : BackgroundService
 
                 if (envelope is null)
                 {
-                    // Malformed / undeserialisable message — poison. Commit
-                    // past it (redelivery cannot fix a malformed payload) with
-                    // a loud log; manual replay from the DLQ is required.
+                    // Malformed / undeserialisable message — poison. Produce to DLQ
+                    // (when enabled) then commit past; redelivery cannot fix it.
                     _logger.LogError(
-                        "Failed to deserialise Kafka envelope from {Topic}[{Partition}]@{Offset}; committing past the poisoned message — manual replay required",
+                        "Failed to deserialise Kafka envelope from {Topic}[{Partition}]@{Offset}; routing to DLQ",
                         result.Topic, result.Partition.Value, result.Offset.Value);
+                    await DeadLetterAsync(result.Topic, result, result.Message.Value, "deserialization-failed", ct);
                     consumer.Commit(result);
                     continue;
                 }
@@ -131,9 +130,14 @@ internal sealed class KafkaEventConsumer : BackgroundService
                     handled = await dispatcher.DispatchAsync(envelope, ct);
 
                 if (!handled)
-                    _logger.LogDebug(
-                        "No handler for routing key '{RoutingKey}' from topic '{Topic}'",
-                        envelope.RoutingKey, result.Topic);
+                {
+                    // No handler registered — produce to DLQ (when enabled) then
+                    // commit past; do not silently drop.
+                    _logger.LogWarning(
+                        "No handler for routing key '{RoutingKey}' from topic '{Topic}' [{Partition}]@{Offset}; routing to DLQ",
+                        envelope.RoutingKey, result.Topic, result.Partition.Value, result.Offset.Value);
+                    await DeadLetterAsync(result.Topic, result, result.Message.Value, "unhandled-routing-key", ct);
+                }
 
                 failureAttempts.Remove(
                     (result.Topic, result.Partition.Value, result.Offset.Value));
@@ -183,16 +187,44 @@ internal sealed class KafkaEventConsumer : BackgroundService
         Exception failure,
         CancellationToken ct)
     {
+        // Transient inbox contention: seek back without consuming retry budget.
+        if (IsDeferral(failure))
+        {
+            _logger.LogDebug(failure,
+                "Kafka message {Topic}[{Partition}]@{Offset} deferred (inbox contention); seeking for redelivery",
+                result.Topic, result.Partition.Value, result.Offset.Value);
+            consumer.Seek(new TopicPartitionOffset(result.TopicPartition, result.Offset));
+            await Task.Delay(Math.Min(1000, _opts.RedeliveryMaxBackoffMs), ct);
+            return;
+        }
+
         var key = (result.Topic, result.Partition.Value, result.Offset.Value);
         var attempt = failureAttempts.TryGetValue(key, out var seen) ? seen + 1 : 1;
         failureAttempts[key] = attempt;
+
+        // Bound the map with oldest-entry eviction (failure storms must not grow it).
+        if (failureAttempts.Count > Math.Max(1000, _opts.MaxTrackedFailures))
+        {
+            using var enumerator = failureAttempts.Keys.GetEnumerator();
+            if (enumerator.MoveNext())
+                failureAttempts.Remove(enumerator.Current);
+        }
 
         if (attempt >= Math.Max(1, _opts.MaxDeliveryAttempts))
         {
             failureAttempts.Remove(key);
             _logger.LogError(failure,
-                "Kafka message {Topic}[{Partition}]@{Offset} failed after {Attempts} delivery attempts; committing past the poisoned message — manual replay required",
+                "Kafka message {Topic}[{Partition}]@{Offset} failed after {Attempts} delivery attempts; routing to DLQ",
                 result.Topic, result.Partition.Value, result.Offset.Value, attempt);
+            var produced = await DeadLetterAsync(result.Topic, result, result.Message.Value,
+                $"max-attempts:{attempt}:{failure.GetType().Name}:{failure.Message}", ct);
+            if (!produced)
+            {
+                // DLQ produce failed — do NOT commit; seek back so the message
+                // is retried and the DLQ write re-attempted.
+                consumer.Seek(new TopicPartitionOffset(result.TopicPartition, result.Offset));
+                return;
+            }
             try
             {
                 consumer.Commit(result);
@@ -220,5 +252,71 @@ internal sealed class KafkaEventConsumer : BackgroundService
             "earliest" => AutoOffsetReset.Earliest,
             "latest" => AutoOffsetReset.Latest,
             _ => AutoOffsetReset.Earliest,
+        };
+
+    private static bool IsDeferral(Exception ex) =>
+        ex.GetType().FullName == "Modulus.Inbox.Abstractions.InboxDeferralException" ||
+        (ex.InnerException is not null &&
+         ex.InnerException.GetType().FullName == "Modulus.Inbox.Abstractions.InboxDeferralException");
+
+    /// <summary>
+    /// Best-effort produce of the original payload to the DLQ topic with source
+    /// headers. Returns false when disabled or the produce fails (caller must
+    /// not commit past the message then).
+    /// </summary>
+    private async Task<bool> DeadLetterAsync(
+        string sourceTopic,
+        ConsumeResult<string, string> result,
+        string? payload,
+        string reason,
+        CancellationToken ct)
+    {
+        if (!_opts.EnableDlq)
+            return true;
+
+        try
+        {
+            var producerConfig = new ProducerConfig
+            {
+                BootstrapServers = _opts.BootstrapServers,
+                Acks = ParseAcks(_opts.Acks),
+                MessageSendMaxRetries = Math.Max(1, _opts.MessageSendMaxRetries),
+            };
+            KafkaEventBus.ApplySecurity(producerConfig, _opts);
+
+            using var producer = new ProducerBuilder<string, string>(producerConfig).Build();
+            await producer.ProduceAsync(
+                sourceTopic + _opts.DeadLetterTopicSuffix,
+                new Message<string, string>
+                {
+                    Key = result.Message.Key,
+                    Value = payload ?? result.Message.Value,
+                    Headers = new Headers
+                    {
+                        { "mod-dlq-source-topic", System.Text.Encoding.UTF8.GetBytes(sourceTopic) },
+                        { "mod-dlq-partition", BitConverter.GetBytes(result.Partition.Value) },
+                        { "mod-dlq-offset", BitConverter.GetBytes(result.Offset.Value) },
+                        { "mod-dlq-reason", System.Text.Encoding.UTF8.GetBytes(reason) },
+                    },
+                },
+                ct);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,
+                "Failed to produce DLQ message for {Topic}[{Partition}]@{Offset}; will retry",
+                result.Topic, result.Partition.Value, result.Offset.Value);
+            return false;
+        }
+    }
+
+    private static Acks ParseAcks(string value) =>
+        value.ToLowerInvariant() switch
+        {
+            "all" or "-1" => Acks.All,
+            "1" or "leader" => Acks.Leader,
+            "0" or "none" => Acks.None,
+            _ => Acks.All,
         };
 }

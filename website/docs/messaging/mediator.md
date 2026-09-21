@@ -16,34 +16,37 @@ builder.Services.AddMediator();
 services.AddMediatorHandlers(typeof(CatalogModule).Assembly);
 ```
 
+The host calls `AddMediator()` once (behaviors); each module contributes its
+own handlers via `AddMediatorHandlers(...)` without re-registering behaviors.
+
 ## Commands
 
 ### Define a Command
 
 ```csharp
 // Command with response
-public sealed record CreateProduct(string Name, decimal Price)
-    : ICommand<ProductDto>;
+public sealed record CreateProductCommand(string Name) : ICommand<Guid>;
 
 // Command without response
-public sealed record DeleteProduct(Guid Id) : ICommand;
+public sealed record DeleteProductCommand(Guid Id) : ICommand<Unit>;
 ```
 
 ### Implement a Handler
 
 ```csharp
-public sealed class CreateProductHandler(ICatalogUnitOfWork unitOfWork)
-    : ICommandHandler<CreateProduct, ProductDto>
+public sealed class CreateProductHandler(
+    IProductRepository repo,
+    IUnitOfWork unitOfWork)
+    : ICommandHandler<CreateProductCommand, Guid>
 {
-    public async Task<ProductDto> HandleAsync(
-        CreateProduct command,
-        CancellationToken ct = default)
+    public async Task<Guid> HandleAsync(
+        CreateProductCommand command,
+        CancellationToken ct)
     {
-        var product = new Product(command.Name, command.Price);
-        unitOfWork.Products.Add(product);
-        await unitOfWork.SaveChangesAsync(ct);
-
-        return new ProductDto(product.Id, product.Name, product.Price);
+        var product = new Product { Name = command.Name };
+        await repo.AddAsync(product, ct);
+        await unitOfWork.CommitAsync(ct);
+        return product.Id;
     }
 }
 ```
@@ -51,8 +54,7 @@ public sealed class CreateProductHandler(ICatalogUnitOfWork unitOfWork)
 ### Send a Command
 
 ```csharp
-var result = await _mediator.SendAsync(
-    new CreateProduct("Widget", 9.99m));
+var id = await _mediator.SendAsync(new CreateProductCommand("Widget"));
 ```
 
 ## Queries
@@ -60,23 +62,23 @@ var result = await _mediator.SendAsync(
 ### Define a Query
 
 ```csharp
-public sealed record GetProductById(Guid Id) : IQuery<ProductDto>;
+public sealed record GetProductByIdQuery(Guid Id) : IQuery<ProductDto?>;
 ```
 
 ### Implement a Handler
 
 ```csharp
 public sealed class GetProductByIdHandler(IProductRepository repository)
-    : IQueryHandler<GetProductById, ProductDto>
+    : IQueryHandler<GetProductByIdQuery, ProductDto?>
 {
-    public async Task<ProductDto> HandleAsync(
-        GetProductById query,
-        CancellationToken ct = default)
+    public async Task<ProductDto?> HandleAsync(
+        GetProductByIdQuery query,
+        CancellationToken ct)
     {
-        var product = await repository.GetByIdAsync(query.Id, ct)
-            ?? throw new NotFoundException(nameof(Product), query.Id);
-
-        return new ProductDto(product.Id, product.Name, product.Price);
+        var product = await repository.GetByIdAsync(query.Id, ct);
+        return product is null
+            ? null
+            : new ProductDto { Id = product.Id, Name = product.Name };
     }
 }
 ```
@@ -85,7 +87,7 @@ public sealed class GetProductByIdHandler(IProductRepository repository)
 
 ```csharp
 var product = await _mediator.QueryAsync(
-    new GetProductById(productId));
+    new GetProductByIdQuery(productId));
 ```
 
 ## Pipeline Behaviors
@@ -96,9 +98,23 @@ Behaviors run before/after every handler:
 |----------|---------|
 | `LoggingBehavior` | Logs command/query execution time |
 | `ValidationBehavior` | Validates using FluentValidation |
-| `TransactionBehavior` | Wraps handler in a database transaction |
+| `TransactionBehavior` | Wraps the handler in a DB transaction (see below) |
 | `FeatureGateBehavior` | Gates commands behind feature flags |
 | `AuthorizationBehavior` | Checks permissions before execution |
+
+### TransactionBehavior
+
+- Wraps **every distinct** module `DbContext` (deduped by type), driven
+  through EF's execution strategy so `EnableRetryOnFailure` providers work
+  (keep handler bodies safe to re-run on transient-failure retry).
+- **Skips queries** (`IQuery<T>`) and requests marked `[SkipTransaction]`.
+- **Fail-fast on ambiguity**: with more than one context and no declared
+  intent it throws — add `[Transactional(typeof(...))]`,
+  `TransactionMode.AllContexts`, or `[SkipTransaction]`.
+- Multi-context commits are **independent, non-atomic** — for cross-module
+  consistency prefer the transactional [outbox](outbox).
+- Deferred domain events drain after commit (via the transaction interceptor);
+  manual transactions outside the pipeline are covered too.
 
 ### Custom Behavior
 
@@ -143,10 +159,11 @@ public sealed class TimingBehavior<TRequest, TResponse>
 Handlers can throw exceptions or return `ErrorOr<T>`:
 
 ```csharp
-public sealed class CreateProductHandler : ICommandHandler<CreateProduct, ErrorOr<ProductDto>>
+public sealed class CreateProductHandler
+    : ICommandHandler<CreateProductCommand, ErrorOr<Guid>>
 {
-    public async Task<ErrorOr<ProductDto>> HandleAsync(
-        CreateProduct command,
+    public async Task<ErrorOr<Guid>> HandleAsync(
+        CreateProductCommand command,
         CancellationToken ct)
     {
         if (string.IsNullOrEmpty(command.Name))
@@ -154,26 +171,31 @@ public sealed class CreateProductHandler : ICommandHandler<CreateProduct, ErrorO
 
         // ... create product
 
-        return new ProductDto(product.Id, product.Name, product.Price);
+        return product.Id;
     }
 }
 ```
 
 ## Unit of Work Pattern
 
-Each module defines its own IUnitOfWork:
+Each module defines its own non-generic `IUnitOfWork` and binds it to its own
+`DbContext` in the module composition root:
 
 ```csharp
-public interface ICatalogUnitOfWork : IUnitOfWork
+public interface IUnitOfWork
 {
-    DbSet<Product> Products { get; }
+    Task<int> CommitAsync(CancellationToken cancellationToken = default);
 }
+
+// Module composition root
+services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<CatalogDbContext>());
 ```
 
-Handlers call `SaveChangesAsync` to commit:
+Handlers call `CommitAsync` to persist:
 
 ```csharp
-await unitOfWork.SaveChangesAsync(ct);
+await unitOfWork.CommitAsync(ct);
 ```
 
-The `TransactionBehavior` wraps this in a transaction automatically.
+The `TransactionBehavior` wraps the handler in a transaction automatically
+(see above).

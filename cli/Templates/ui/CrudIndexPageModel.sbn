@@ -1,0 +1,166 @@
+{{ if required_permission }}using Microsoft.AspNetCore.Authorization;
+{{ end }}using Microsoft.AspNetCore.Mvc;
+using Modulus.Core.Abstractions;
+using Modulus.Mediator.Abstractions;
+using Modulus.UI;
+using {{ module_namespace }}.Application;
+using {{ module_namespace }}.Application.Dtos;
+
+namespace {{ api_namespace }}.Pages.{{ module_name }}.{{ entity_plural }};
+
+/// <summary>
+/// {{ entity_plural }} admin page (<c>/{{ module_name_lower }}/{{ route_name }}</c>):
+/// list + inline create + row delete over the {{ module_name }} mediator
+/// handlers. Mutations keep the classic redirect flow for non-JS callers and
+/// swap the table fragment with a toast for HTMX callers; validation failures
+/// re-render the create form with a 422 (see <c>modulus-ui.js</c>). Columns and row
+/// actions other modules contribute to <see cref="EntityKey"/> through
+/// <c>services.ConfigureEntityUi(...)</c> show up in the table; their values are loaded
+/// once per page by <see cref="LoadAsync"/>.
+/// </summary>
+{{- if required_permission }}
+[Authorize(Policy = "{{ required_permission }}")]
+{{- end }}
+public sealed class IndexModel(IMediator mediator, IEntityUiRegistry entityUi, ICurrentUser currentUser) : HtmxPageModel
+{
+    private readonly IMediator _mediator = mediator;
+    private readonly IEntityUiRegistry _entityUi = entityUi;
+    private readonly ICurrentUser _currentUser = currentUser;
+
+    /// <summary>The key other modules use in <c>ConfigureEntityUi</c> to extend this entity's UI.</summary>
+    public string EntityKey => "{{ module_name }}.{{ entity_name }}";
+
+    public IReadOnlyList<{{ entity_name }}Dto> Items { get; private set; } = [];
+
+    /// <summary>Values of the columns other modules contributed, for the rows in <see cref="Items"/>.</summary>
+    public EntityColumnValues ColumnValues { get; private set; } = EntityColumnValues.Empty;
+
+    [BindProperty]
+    public CreateInput Input { get; set; } = new();
+    {{- if has_edit_form }}
+
+    /// <summary>The edit modal's form (posted as <c>Edit.*</c>, so it never mixes with the create form's <c>Input.*</c>).</summary>
+    [BindProperty]
+    public EditInput Edit { get; set; } = new();
+    {{- end }}
+
+    public async Task OnGetAsync(CancellationToken ct) => await LoadAsync(ct);
+    {{- if has_edit_form }}
+
+    /// <summary>Loads the edit modal for one row, pre-filled with the stored values (including extension fields).</summary>
+    public async Task<IActionResult> OnGetEditAsync(Guid id, CancellationToken ct)
+    {
+        var item = await _mediator.QueryAsync(new Get{{ entity_name }}ForEditQuery(id), ct);
+        Edit = new EditInput
+        {
+            Id = item.Id,
+            Name = item.Name,
+            Extra = new Dictionary<string, string?>(item.ExtraProperties),
+        };
+        return HtmxPartial("_EditForm", this);
+    }
+
+    public async Task<IActionResult> OnPostUpdateAsync(CancellationToken ct)
+    {
+        // Same rules as create: contributed fields are validated first (errors under Edit.Extra[Name], modal re-rendered
+        // with a 422), and only fields the user may see are saved (the rest of the stored values stay untouched).
+        if (!_entityUi.ValidateEntityFields(EntityKey, _currentUser, Edit.Extra, ModelState, "Edit.Extra"))
+        {
+            Response.StatusCode = StatusCodes.Status422UnprocessableEntity;
+            return HtmxPartial("_EditForm", this);
+        }
+
+        var extra = _entityUi.ReadEntityFieldText(EntityKey, _currentUser, Edit.Extra);
+        return await HandleAsync(
+            async () =>
+            {
+                await _mediator.SendAsync(new Update{{ entity_name }}Command(Edit.Id, Edit.Name, extra), ct);
+                await LoadAsync(ct);
+            },
+            "_EditForm",
+            () =>
+            {
+                if (!IsHtmxRequest)
+                    return RedirectToPage();
+
+                // The form targets the modal (so a 422 re-renders it in place); on success the fresh table goes to the list instead.
+                Htmx.Retarget("#{{ entity_name_lower }}-table").Reswap("innerHTML").CloseModal();
+                HtmxToast("{{ entity_name }} updated.");
+                return HtmxPartial("_Table", this);
+            });
+    }
+    {{- end }}
+
+    public async Task<IActionResult> OnPostCreateAsync(CancellationToken ct)
+    {
+        {{- if has_extra_fields }}
+        // Fields other modules contributed are validated here (the command knows nothing about them); errors are
+        // filed under Input.Extra[Name] and the form re-renders with a 422. Fields the user lacks permission for are
+        // neither validated nor saved.
+        if (!_entityUi.ValidateEntityFields(EntityKey, _currentUser, Input.Extra, ModelState, "Input.Extra"))
+        {
+            Response.StatusCode = StatusCodes.Status422UnprocessableEntity;
+            return HtmxPartial("_CreateForm", this);
+        }
+
+        var extra = _entityUi.ReadEntityFieldText(EntityKey, _currentUser, Input.Extra);
+
+        {{- end }}
+        return await HandleAsync(
+            async () =>
+            {
+                await _mediator.SendAsync(new Create{{ entity_name }}Command(Input.Name{{ if has_extra_fields }}, extra{{ end }}), ct);
+                await LoadAsync(ct);
+            },
+            "_CreateForm",
+            () =>
+            {
+                if (!IsHtmxRequest)
+                    return RedirectToPage();
+
+                HtmxToast("{{ entity_name }} created.");
+                return HtmxPartial("_Table", this);
+            });
+    }
+
+    public async Task<IActionResult> OnPostDeleteAsync(Guid id, CancellationToken ct)
+    {
+        await _mediator.SendAsync(new Delete{{ entity_name }}Command(id), ct);
+        await LoadAsync(ct);
+
+        if (!IsHtmxRequest)
+            return RedirectToPage();
+
+        HtmxToast("{{ entity_name }} deleted.");
+        return HtmxPartial("_Table", this);
+    }
+
+    private async Task LoadAsync(CancellationToken ct)
+    {
+        Items = await _mediator.QueryAsync(new Get{{ entity_plural }}Query(), ct);
+        ColumnValues = await _entityUi.LoadEntityColumnsAsync(
+            HttpContext.RequestServices, EntityKey, _currentUser, Items.Select(i => i.Id.ToString()), ct);
+    }
+
+    public sealed class CreateInput
+    {
+        public string Name { get; set; } = string.Empty;
+        {{- if has_extra_fields }}
+
+        /// <summary>Values of the fields other modules contributed, posted as <c>Input.Extra[Name]</c>.</summary>
+        public Dictionary<string, string?> Extra { get; set; } = [];
+        {{- end }}
+    }
+    {{- if has_edit_form }}
+
+    public sealed class EditInput
+    {
+        public Guid Id { get; set; }
+
+        public string Name { get; set; } = string.Empty;
+
+        /// <summary>Values of the fields other modules contributed, posted as <c>Edit.Extra[Name]</c>.</summary>
+        public Dictionary<string, string?> Extra { get; set; } = [];
+    }
+    {{- end }}
+}

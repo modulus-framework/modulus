@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Modulus.Data.Abstractions;
 using Modulus.EntityFrameworkCore.Abstractions;
+using Modulus.EntityFrameworkCore.Transactions;
 
 public static class EFCoreServiceCollectionExtensions
 {
@@ -36,7 +37,17 @@ public static class EFCoreServiceCollectionExtensions
         Action<DbContextOptionsBuilder> configure)
         where TContext : ModuleDbContext
     {
-        services.AddDbContext<TContext>(configure);
+        ThrowIfPooled(services);
+        services.AddDbContext<TContext>(options =>
+        {
+            configure(options);
+
+            // Dispatches deferred domain events on transaction commit and
+            // clears them on rollback (see DeferredDomainEventTransactionInterceptor).
+            // Without this, events saved inside a *manual* transaction are
+            // queued by ModuleDbContext and never drained.
+            options.AddInterceptors(DeferredDomainEventTransactionInterceptor.Instance);
+        });
 
         // Also register as DbContext so TransactionBehavior (which resolves
         // GetServices<DbContext>()) discovers every module context and wraps
@@ -74,11 +85,15 @@ public static class EFCoreServiceCollectionExtensions
         Action<DbContextOptionsBuilder, string>? configure = null)
         where TContext : ModuleDbContext
     {
+        ThrowIfPooled(services);
         services.AddDbContext<TContext>(
             (sp, options) =>
             {
                 var connectionString = resolveConnectionString(sp);
                 configure?.Invoke(options, connectionString);
+
+                // Same deferred-event drain/clear wiring as the simple overload.
+                options.AddInterceptors(DeferredDomainEventTransactionInterceptor.Instance);
             },
             optionsLifetime: ServiceLifetime.Scoped);
 
@@ -94,6 +109,19 @@ public static class EFCoreServiceCollectionExtensions
     /// <c>AddModuleDatabase&lt;TContext&gt;</c> calls, creating and registering
     /// it (and the <see cref="IEntityContextMap"/> that reads it) on first use.
     /// </summary>
+    /// <remarks>
+    /// ModuleDbContext captures scoped services (ICurrentTenant, ICurrentUser)
+    /// for query filters and is incompatible with AddDbContextPool — pooled
+    /// instances would reuse stale tenant/user state across requests.
+    /// </remarks>
+    private static void ThrowIfPooled(IServiceCollection services)
+    {
+        if (services.Any(d => d.ServiceType.IsGenericType &&
+                d.ServiceType.Name.StartsWith("DbContextPool", StringComparison.Ordinal)))
+            throw new InvalidOperationException(
+                "AddModuleDatabase is incompatible with AddDbContextPool: ModuleDbContext holds " +
+                "scoped ICurrentTenant/ICurrentUser for query filters. Use AddDbContext via AddModuleDatabase.");
+    }
     private static EntityContextMapRegistry GetOrAddEntityContextMapRegistry(
         IServiceCollection services)
     {

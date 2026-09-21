@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Modulus.Inbox.Abstractions;
 
 namespace Modulus.Outbox;
 
@@ -20,6 +21,11 @@ public sealed class OutboxProcessor(
 
     private const int PurgeBatchSize = 1000;
 
+    // Last cycle's total pending depth. OutboxDepth is an UpDownCounter (a
+    // cumulative instrument), so each cycle records the DELTA against this —
+    // Add(absolute) on every poll would grow the metric without bound.
+    private long _lastReportedDepth;
+
     public async Task ProcessAsync(CancellationToken ct = default)
     {
         await using var scope = sp.CreateAsyncScope();
@@ -38,22 +44,36 @@ public sealed class OutboxProcessor(
             .ToList();
         if (contexts.Count == 0) return;
 
+        var totalDepth = 0;
         foreach (var db in contexts)
         {
+            // Skip contexts with no outbox table mapped (AddOutbox wasn't
+            // called for them). Detected via the model — not by catching an
+            // exception whose message text is brittle across EF versions and
+            // cultures and fires only after a wasted query round-trip.
+            if (db.Model.FindEntityType(typeof(OutboxMessage)) is null)
+                continue;
+
             try
             {
-                await ProcessContextAsync(db, ssp, options, ct);
+                totalDepth += await ProcessContextAsync(db, ssp, options, ct);
             }
-            catch (InvalidOperationException ex)
-                when (ex.Message.Contains("not included in the model"))
+            catch (Exception ex)
             {
-                // This DbContext doesn't have an outbox table configured
-                // (AddOutbox wasn't called for it). Skip silently.
+                // One failing context must not starve the others: log and
+                // continue with the remaining contexts; the polling loop
+                // retries everything on the next cycle.
+                logger.LogError(ex,
+                    "Outbox processing failed for context {Context}; continuing with remaining contexts.",
+                    db.GetType().Name);
             }
         }
+
+        ModulusMeters.OutboxDepth.Add(totalDepth - _lastReportedDepth);
+        _lastReportedDepth = totalDepth;
     }
 
-    private async Task ProcessContextAsync(
+    private async Task<int> ProcessContextAsync(
         DbContext db,
         IServiceProvider ssp,
         OutboxOptions options,
@@ -62,11 +82,11 @@ public sealed class OutboxProcessor(
         var dispatcher = ssp.GetRequiredService<IOutboxDispatcher>();
         var now = DateTime.UtcNow;
 
-        // Record current depth of pending messages
+        // Current depth of pending messages for this context (returned so the
+        // cycle can report the delta-based depth metric).
         var pendingCount = await db.Set<OutboxMessage>()
             .Where(m => m.ProcessedAt == null && m.RetryCount < options.MaxRetries)
             .CountAsync(ct);
-        ModulusMeters.OutboxDepth.Add(pendingCount);
 
         // Housekeeping FIRST: a quiet system (everything already dispatched)
         // exits this method at the empty-candidates short-circuit below, so a
@@ -87,7 +107,7 @@ public sealed class OutboxProcessor(
             .Select(m => m.Id)
             .ToListAsync(ct);
 
-        if (candidateIds.Count == 0) return;
+        if (candidateIds.Count == 0) return pendingCount;
 
         // 2. Atomically claim those rows for this instance. The WHERE re-check
         //    on LockedUntil is evaluated server-side, so two instances that
@@ -117,7 +137,7 @@ public sealed class OutboxProcessor(
             .OrderBy(m => m.CreatedAt)
             .ToListAsync(ct);
 
-        if (messages.Count == 0) return;
+        if (messages.Count == 0) return pendingCount;
 
         // 4. Dispatch each. Dispatch is an irreversible side effect, so we mark
         //    ProcessedAt only AFTER success. If the process crashes between a
@@ -158,6 +178,19 @@ public sealed class OutboxProcessor(
                 logger.LogDebug("Outbox dispatched {Id} ({Type})",
                     message.Id, message.MessageType);
             }
+            catch (InboxDeferralException dex)
+            {
+                // Transient contention (another consumer holds the inbox claim):
+                // release promptly and requeue shortly WITHOUT burning retry
+                // budget, error text, or dead-letter counting.
+                message.LockedBy = null;
+                message.LockedUntil = null;
+                message.NextAttemptAt = DateTime.UtcNow.AddSeconds(options.DeferDelaySec);
+                ModulusMeters.OutboxDeferred.Add(1);
+                logger.LogDebug(dex,
+                    "Outbox message {Id} deferred (inbox contention); next attempt at {Next}.",
+                    message.Id, message.NextAttemptAt);
+            }
             catch (Exception ex)
             {
                 message.RetryCount += 1;
@@ -191,6 +224,7 @@ public sealed class OutboxProcessor(
         }
 
         await db.SaveChangesAsync(ct);
+        return pendingCount;
     }
 
     /// <summary>

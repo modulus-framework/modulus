@@ -1,0 +1,54 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>meetup-sample-9f2c4a1e-7d3b-4c8a-b6e5-1a2b3c4d5e6f</UserSecretsId>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Cobytelabs.Modulus.AspNetCore" Version="1.4.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Core" Version="1.4.0" />
+    <PackageReference Include="Cobytelabs.Modulus.EntityFrameworkCore" Version="1.4.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Events" Version="1.4.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Identity" Version="1.4.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Mediator" Version="1.4.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Platform" Version="1.4.0" />
+    <PackageReference Include="Cobytelabs.Modulus.UI.Core" Version="1.4.0" />
+    <PackageReference Include="Cobytelabs.Modulus.UI.Identity" Version="1.4.0" />
+    <PackageReference Include="Cobytelabs.Modulus.UI.Permissions" Version="1.4.0" />
+    <PackageReference Include="Cobytelabs.Modulus.UI.Users" Version="1.4.0" />
+    <PackageReference Include="Cobytelabs.Modulus.UI.Tenancy" Version="1.4.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.9" />
+    <PackageReference Include="FluentValidation" Version="12.1.1" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.9">
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.OpenApi" Version="2.9.0" />
+    <PackageReference Include="Scalar.AspNetCore" Version="2.17.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Shared\Meetup.Shared.Infrastructure\Meetup.Shared.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\UserAccess\Meetup.Modules.UserAccess.Infrastructure\Meetup.Modules.UserAccess.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\UserAccess\Meetup.Modules.UserAccess.Presentation\Meetup.Modules.UserAccess.Presentation.csproj" />
+    <ProjectReference Include="..\..\Modules\UserAccess\Meetup.Modules.UserAccess.Web\Meetup.Modules.UserAccess.Web.csproj" />
+    <ProjectReference Include="..\..\Modules\Registrations\Meetup.Modules.Registrations.Infrastructure\Meetup.Modules.Registrations.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\Registrations\Meetup.Modules.Registrations.Presentation\Meetup.Modules.Registrations.Presentation.csproj" />
+    <ProjectReference Include="..\..\Modules\Registrations\Meetup.Modules.Registrations.Web\Meetup.Modules.Registrations.Web.csproj" />
+    <ProjectReference Include="..\..\Modules\Meetings\Meetup.Modules.Meetings.Infrastructure\Meetup.Modules.Meetings.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\Meetings\Meetup.Modules.Meetings.Presentation\Meetup.Modules.Meetings.Presentation.csproj" />
+    <ProjectReference Include="..\..\Modules\Meetings\Meetup.Modules.Meetings.Web\Meetup.Modules.Meetings.Web.csproj" />
+    <ProjectReference Include="..\..\Modules\Administration\Meetup.Modules.Administration.Infrastructure\Meetup.Modules.Administration.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\Administration\Meetup.Modules.Administration.Presentation\Meetup.Modules.Administration.Presentation.csproj" />
+    <ProjectReference Include="..\..\Modules\Administration\Meetup.Modules.Administration.Web\Meetup.Modules.Administration.Web.csproj" />
+    <ProjectReference Include="..\..\Modules\Payments\Meetup.Modules.Payments.Infrastructure\Meetup.Modules.Payments.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\Payments\Meetup.Modules.Payments.Presentation\Meetup.Modules.Payments.Presentation.csproj" />
+    <ProjectReference Include="..\..\Modules\Payments\Meetup.Modules.Payments.Web\Meetup.Modules.Payments.Web.csproj" />
+  </ItemGroup>
+
+</Project>

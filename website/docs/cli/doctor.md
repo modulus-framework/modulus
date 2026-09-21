@@ -16,40 +16,28 @@ modulus doctor [options]
 
 | Check | Description |
 |-------|-------------|
-| **.NET SDK** | Version 10.0.109+ installed |
-| **dotnet-ef** | Global tool installed |
-| **App Structure** | Host project, Program.cs, NuGet.config |
-| **Modules** | Infrastructure projects, DbContext, design-time factories |
-| **Git** | .gitignore configured |
+| **.NET SDK** | Installed SDK version (reported, no minimum enforced) |
+| **dotnet-ef** | Global tool installed (only when an EF Core module exists) |
+| **dbsh** | `dbsh` tool available (only when a dbsh module exists) |
+| **App Structure** | Inside a Modulus app, host API project, Program.cs, NuGet.config, .gitignore |
+| **Modules** | Per module: Infrastructure project, DbContext, design-time factory, migration engine (`dbsh` or `efcore`) |
 | **CLI Version** | Latest CLI tool version on NuGet |
 | **Framework Version** | Latest framework package versions |
 
 ## Example Output
 
+A 3-column table (`Check` / `Status` / `Detail`) with `✓ ok` / `! warn` / `✗ fail`:
+
 ```
-Environment Checks:
-  ✓ .NET SDK 10.0.109
-  ✓ dotnet-ef 10.0.9
-
-App Structure:
-  ✓ Host project: src/API/MyApp.Api/MyApp.Api.csproj
-  ✓ Program.cs
-  ✓ NuGet.config
-  ✓ .gitignore
-
-Modules:
-  ✓ Catalog.Infrastructure
-    ✓ CatalogDbContext
-    ✓ CatalogDbContextFactory
-  ✓ Orders.Infrastructure
-    ✓ OrdersDbContext
-    ✓ OrdersDbContextFactory
-  ✗ Inventory.Infrastructure
-    ✗ Missing design-time factory
-
-Versions:
-  ✓ CLI tool version: v1.3.0 (latest)
-  ✓ Framework version: v1.3.0 (latest)
+Check                              │ Status │ Detail
+.NET SDK                           │ ✓ ok   │ 10.0.109
+dotnet-ef tool                     │ ✓ ok   │ 10.0.9
+Inside a Modulus app               │ ✓ ok   │ MyApp.slnx
+Host API project exists            │ ✓ ok   │ src/API/MyApp.Api/…
+Catalog: design-time factory       │ ✓ ok   │ src/Modules/…/CatalogDbContextFactory.cs
+Catalog: migration engine          │ ✓ ok   │ efcore (Migrations/)
+CLI tool version                   │ ✓ ok   │ v1.3.0 (latest)
+Framework version                  │ ✓ ok   │ v1.3.0 (latest)
 ```
 
 ## See Also

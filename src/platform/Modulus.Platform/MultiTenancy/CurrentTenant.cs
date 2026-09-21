@@ -33,7 +33,7 @@ public sealed class CurrentTenant : ICurrentTenant
 
     /// <summary>
     /// Back-compat write surface for <see cref="TenantMiddleware"/>, which
-    /// resolves the scoped instance once per request. Sets the ambient
+    /// resolves the singleton instance per request. Sets the ambient
     /// tenant for the remainder of the current async flow.
     /// </summary>
     internal void Set(TenantInfo info)

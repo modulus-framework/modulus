@@ -6,7 +6,7 @@ using global::MongoDB.Driver;
 using Testcontainers.MongoDb;
 using Xunit;
 
-[Trait("Category", "Unit")]
+[Trait("Category", "Integration")]
 public sealed class MongoOutboxStoreTests : IAsyncLifetime
 {
     private MongoDbContainer _container = null!;

@@ -1,0 +1,16 @@
+@page "{slug}"
+@model Modulus.UI.Tenancy.Pages.Tenancy.DetailsModel
+@{
+    ViewData["Title"] = Model.Tenant?.DisplayName ?? Model.Tenant?.TenantSlug;
+}
+<m-page-header title="@ViewData["Title"]" />
+<div class="card">
+    <div class="card-body">
+        <dl class="row">
+            <dt class="col-3">Id</dt>
+            <dd class="col-9">@Model.Tenant!.TenantId</dd>
+            <dt class="col-3">Slug</dt>
+            <dd class="col-9">@Model.Tenant.TenantSlug</dd>
+        </dl>
+    </div>
+</div>

@@ -1,0 +1,20 @@
+@* Default markup for <m-entity-actions>: the row buttons other modules contributed. Url actions are links;
+   the others are htmx buttons that swap into the modal or replace the row. *@
+@model EntityActionsModel
+<div class="btn-list justify-content-end flex-nowrap">
+    @foreach (var action in Model.Actions)
+    {
+        if (!string.IsNullOrWhiteSpace(action.Url))
+        {
+            <a class="btn btn-sm @action.Css" href="@Url.Content(action.Url)">@action.Label</a>
+        }
+        else if (!string.IsNullOrWhiteSpace(action.HxGet))
+        {
+            <button type="button" class="btn btn-sm @action.Css" hx-get="@action.HxGet" hx-target="@action.HxTarget" hx-swap="@action.HxSwap">@action.Label</button>
+        }
+        else
+        {
+            <button type="button" class="btn btn-sm @action.Css" hx-post="@action.HxPost" hx-target="@action.HxTarget" hx-swap="@action.HxSwap">@action.Label</button>
+        }
+    }
+</div>

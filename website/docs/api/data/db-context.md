@@ -38,13 +38,20 @@ public abstract class ModuleDbContext : DbContext
 ```csharp
 public static IServiceCollection AddModuleDatabase<TContext>(
     this IServiceCollection services,
-    IConfiguration config)
+    Action<DbContextOptionsBuilder> configure)
     where TContext : ModuleDbContext
 {
-    // Registers DbContext with provider-specific configuration
+    // Registers DbContext with the provider configured in the lambda
     // Registers generic IRepository<T>
     // Exposes context as DbContext for TransactionBehavior
+    // Registers the deferred-domain-event transaction interceptor
 }
+
+// Per-tenant variant: connection string resolved per scope
+public static IServiceCollection AddModuleDatabase<TContext>(
+    this IServiceCollection services,
+    Func<IServiceProvider, string> connectionStringResolver,
+    Action<DbContextOptionsBuilder>? configure = null);
 ```
 
 ## MigrateModulusDatabasesAsync
@@ -52,12 +59,21 @@ public static IServiceCollection AddModuleDatabase<TContext>(
 ```csharp
 public static async Task MigrateModulusDatabasesAsync(
     this IServiceProvider serviceProvider,
-    DatabaseInitializationMode mode = DatabaseInitializationMode.MigrateOrCreate,
+    DatabaseInitializationMode mode = DatabaseInitializationMode.Migrate,
     CancellationToken ct = default)
 {
-    // Resolves every DbContext
-    // Per module: Migrate() when migrations exist, else EnsureCreated()
+    // Resolves every DbContext (deduped by type)
+    // Per module, through its own execution strategy:
+    //   Migrate (default): apply migrations, throw if none
+    //   MigrateOrCreate: migrate when migrations exist, else EnsureCreated
+    //   EnsureCreated: snapshot only
 }
+
+// Per-tenant fan-out (migrator job / init container)
+public static async Task MigrateModulusDatabasesForTenantsAsync(
+    this IServiceProvider serviceProvider,
+    DatabaseInitializationMode mode = DatabaseInitializationMode.Migrate,
+    CancellationToken ct = default);
 ```
 
 ## See Also

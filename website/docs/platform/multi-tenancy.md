@@ -12,15 +12,16 @@ Modulus provides built-in multi-tenant data isolation.
 ┌─────────────────────────────────────────────────────────────┐
 │                    Request Pipeline                          │
 │                                                              │
-│  1. TenantMiddleware resolves tenant                         │
-│     ├── Header: X-Tenant-Id                                 │
-│     ├── Claim: tenant_id                                    │
-│     ├── Subdomain: {tenant}.app.com                         │
-│     └── Route: /api/{tenant}/...                            │
+│  1. TenantMiddleware tries resolvers in registration order   │
+│     ├── Header: X-Tenant-Id (default)                       │
+│     ├── JWT claim: tid (default)                            │
+│     └── Subdomain: {tenant}.{baseDomain}                    │
+│     First non-null result wins                               │
 │                                                              │
-│  2. ICurrentTenant populated (AsyncLocal)                    │
+│  2. ICurrentTenant populated (static AsyncLocal — flows     │
+│     into background jobs and message consumers too)          │
 │                                                              │
-│  3. EF Core query filter: WHERE TenantId = @tenantId        │
+│  3. EF Core query filter: tenant rows only (fail-closed)    │
 │                                                              │
 │  4. TenantId stamped on new entities                         │
 └─────────────────────────────────────────────────────────────┘
@@ -29,77 +30,136 @@ Modulus provides built-in multi-tenant data isolation.
 ## Setup
 
 ```csharp
-services.AddModulusMultiTenancy(config);
+services.AddMultiTenancy(builder => builder
+    .UseHeaderResolver()              // X-Tenant-Id, default
+    .UseJwtClaimResolver()            // JWT "tid" claim
+    .UseSubdomainResolver("app.com")  // {tenant}.app.com
+);
 ```
 
-## Resolution
+Resolvers are tried in registration order; the first non-null result wins.
+There is no route-segment resolver. For an EF-backed tenant store:
 
-Tenants are resolved from (in order):
-
-| Source | Config Key | Example |
-|--------|------------|---------|
-| **Header** | `X-Tenant-Id` | `X-Tenant-Id: 550e8400-e29b-41d4-a716-446655440000` |
-| **Claim** | `tenant_id` | JWT claim |
-| **Subdomain** | `{tenant}.app.com` | URL subdomain |
-| **Route** | `/api/{tenant}/...` | URL segment |
+```csharp
+services.AddEfCoreTenantStore(options => options.UseSqlite(connection));
+```
 
 ## ICurrentTenant
 
 ```csharp
-public sealed class GetProductsHandler(ICurrentTenant tenant)
-    : IQueryHandler<GetProducts, List<ProductDto>>
+public interface ICurrentTenant
 {
-    public async Task<List<ProductDto>> HandleAsync(
-        GetProducts query, CancellationToken ct)
+    Guid? TenantId { get; }
+    string? TenantSlug { get; }
+    bool IsAvailable { get; }
+    bool IsHost { get; }
+    IDisposable Change(TenantInfo? tenant);
+}
+```
+
+`IsHost` is true only when multi-tenancy is off or code explicitly entered
+the host scope — it is the seam that makes filtering **fail-closed** (see below).
+
+```csharp
+public sealed class GetProductsHandler(ICurrentTenant tenant, IProductRepository repo)
+    : IQueryHandler<GetProductsQuery, IReadOnlyList<ProductDto>>
+{
+    public async Task<IReadOnlyList<ProductDto>> HandleAsync(
+        GetProductsQuery query, CancellationToken ct)
     {
-        var tenantId = tenant.Id; // null when in host context
-        // Query automatically filtered by EF Core
+        // Queries are automatically filtered by EF Core — no manual check needed.
+        return await repo.ListAsync(new AllProductsSpec(), ct);
     }
 }
 ```
 
 ## Changing Tenant
 
+Background jobs, message consumers, and hosted services run outside HTTP and
+must establish a tenant explicitly:
+
 ```csharp
-using (tenant.Change(tenantId))
+using (tenant.Change(new TenantInfo(tenantId, "acme")))
 {
-    // All queries within this scope are filtered by tenantId
-    var products = await repository.ListAsync(ct);
+    // All queries within this scope see this tenant
+    var products = await repository.ListAsync(spec, ct);
+}
+
+using (tenant.Change(null))
+{
+    // Explicit, privileged host scope — sees ALL tenants
 }
 ```
 
 ## Data Isolation
 
-EF Core query filters automatically apply:
+The query filter captures the `ICurrentTenant` **service** (re-evaluated per
+query) and combines soft-delete + tenant predicates — never capture a tenant
+*value* into the model (it would freeze the first request's tenant into the
+cached model and leak across tenants):
 
 ```csharp
-// In ModuleDbContext
-modelBuilder.Entity<Product>().HasQueryFilter(
-    p => !p.IsDeleted && p.TenantId == _currentTenantId);
+// In ModuleDbContext (simplified)
+modelBuilder.Entity<Product>().HasQueryFilter(p =>
+    !p.IsDeleted && (currentTenant.IsHost || p.TenantId == currentTenant.TenantId));
 ```
+
+Fail-closed rule: multi-tenancy on but **no tenant resolved** → filters match
+**nothing** (never all rows). Seeing all tenants requires the deliberate
+`Change(null)` host scope.
 
 ## NoSQL Support
 
-MongoDB repositories apply tenant filtering:
+MongoDB repositories apply tenant filtering via the static helper:
 
 ```csharp
-// MongoTenantFilter adds { tenantId: X } to all queries
-public class MongoTenantFilter<TDocument> : IClientSessionHandle
-{
-    // Automatically applied by MongoRepository
-}
+// MongoTenantFilter.For<T>(tenant) adds { tenantId: X } to queries.
+// Host scope sees all; unresolved tenant matches nothing.
+var filter = MongoTenantFilter.For<Product>(currentTenant);
 ```
 
 ## Host Context
 
-When no tenant is in scope (host-level operations):
+```csharp
+tenant.IsHost;     // true only when multi-tenancy is off or inside Change(null)
+tenant.TenantId;   // null in host context
+```
+
+An unresolved tenant is **not** the host context: unresolved sees nothing,
+host sees everything.
+
+## Tenant Store
+
+`ITenantStore` looks tenants up by id/slug and enumerates them for fan-out:
 
 ```csharp
-var tenantId = tenant.Id; // null
-// EF Core matches all tenants (no filter applied)
+public interface ITenantStore
+{
+    Task<TenantInfo?> FindByIdAsync(Guid id, CancellationToken ct);
+    Task<TenantInfo?> FindBySlugAsync(string slug, CancellationToken ct);
+    Task<IReadOnlyList<TenantInfo>> ListAsync(CancellationToken ct); // default: empty
+}
+```
+
+`EfTenantStore` returns active tenants in slug order. Deactivated tenants
+resolve as `null` (fail-closed).
+
+## Per-Tenant Databases
+
+Resolve the connection string per scope and migrate per tenant:
+
+```csharp
+// Per-tenant connection resolver (scoped options)
+services.AddModuleDatabase<CatalogDbContext>(
+    sp => sp.GetRequiredService<ICurrentTenant>().ConnectionString ?? hostConnection,
+    options => options.UseNpgsql(...));
+
+// Migrator job / init container (not every replica)
+await services.MigrateModulusDatabasesForTenantsAsync(DatabaseInitializationMode.Migrate);
 ```
 
 ## See Also
 
 - [Authorization](authorization) — Per-tenant permissions
 - [Entity Framework](../data/entity-framework) — Query filters
+- [Migrations](../data/migrations) — Per-tenant migration fan-out

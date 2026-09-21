@@ -1,0 +1,48 @@
+@page
+@using System.ComponentModel.DataAnnotations
+@using Modulus.Core.Abstractions
+@attribute [Microsoft.AspNetCore.Mvc.IgnoreAntiforgeryToken]
+@functions {
+    public sealed class ProductInput
+    {
+        [Required]
+        public string? Name { get; set; }
+
+        public Dictionary<string, string?> Extra { get; set; } = new();
+    }
+
+    [BindProperty]
+    public ProductInput Input { get; set; } = new();
+
+    public string Entity { get; set; } = "Catalog.Product";
+
+    public string? Tab { get; set; }
+
+    public void OnGet(string? entity, string? tab)
+    {
+        Entity = entity ?? Entity;
+        Tab = tab;
+        Input.Name = "Widget";
+        Input.Extra["ReorderLevel"] = "10";
+        Input.Extra["Active"] = "true";
+    }
+
+    public IActionResult OnPost([FromServices] IEntityUiRegistry registry, [FromServices] ICurrentUser user)
+    {
+        registry.ValidateEntityFields(Entity, user, Input.Extra, ModelState, "Input.Extra");
+        if (!ModelState.IsValid)
+        {
+            return Page();
+        }
+
+        var read = registry.ReadEntityFields(Entity, user, Input.Extra);
+        return Content(string.Join("|", read.OrderBy(p => p.Key).Select(p => $"{p.Key}={Convert.ToString(p.Value, System.Globalization.CultureInfo.InvariantCulture)}")));
+    }
+}
+@{
+    Layout = "/Themes/Tabler/Layouts/Empty.cshtml";
+}
+<m-form>
+    <m-input for="Input.Name" />
+    <m-fields entity="@Entity" for="Input.Extra" tab="@Tab" />
+</m-form>

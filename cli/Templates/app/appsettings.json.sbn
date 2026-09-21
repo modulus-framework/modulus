@@ -1,6 +1,7 @@
 {
   "ConnectionStrings": {
-{{ if !no_example }}    "{{ example_module }}": "{{ connection_string }}"
+{{ if auth == "openiddict" }}    "Identity": "{{ identity_connection_string }}"{{ if !no_example }},{{ end }}
+{{ end }}{{ if !no_example }}    "{{ example_module }}": "{{ connection_string }}"
 {{ end }}  },
   "Logging": {
     "LogLevel": {
@@ -63,7 +64,9 @@
   },
 {{ end }}{{ if auth == "openiddict" }}  "Identity": {
     "UseDevelopmentCertificates": false,
-    "AccessTokenLifetimeMin": 15,
+    "AllowPasswordFlow": false,
+{{ if use_code_flow }}    "AllowAuthorizationCodeFlow": true,
+{{ end }}    "AccessTokenLifetimeMin": 15,
     "RefreshTokenLifetimeDays": 7
   },
 {{ else if auth == "auth0" }}  "Identity": {

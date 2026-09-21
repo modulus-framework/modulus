@@ -81,36 +81,40 @@ Events now fail independently:
 
 ### Composable Specifications
 
-Build complex queries with fluent combinators:
+Build queries as objects with combinators:
 
 ```csharp
-var spec = new Specification<Product>()
-    .WithOrderBy(p => p.CreatedAt)
-    .WithThenBy(p => p.Name)
-    .WithInclude(p => p.Category)
-    .WithInclude(p => p.Tags)
-    .WithAsSplitQuery() // Prevent cartesian explosion
-    .WithIgnoreQueryFilters() // Bypass tenant/soft-delete
-    .WithTag("GetProductsWithDetails");
+public sealed class ProductsByCategorySpec : Specification<Product>
+{
+    public ProductsByCategorySpec(string category)
+    {
+        Filter = p => p.Category == category;
+        AddOrderBy(p => p.CreatedAt);
+        AddInclude(p => p.Category);
+        AsSplitQuery = true; // Prevent cartesian explosion
+    }
+}
 
-// Combinators for complex predicates
-var spec2 = baseSpec.And(p => p.Active).Or(p => p.Featured).Not(p => p.Deleted);
+// Combinators for complex predicates (mutate + return the spec)
+var spec2 = baseSpec.And(p => p.Active).Or(p => p.Featured).Not();
 ```
+
+Also available: `IgnoreQueryFilters`, `Tag`, `AsNoTracking`, `Skip`/`Take`.
 
 ### Server-Side Projection
 
 Project directly in the database query:
 
 ```csharp
-// Expression-based projection (executes in SQL)
-var dtos = await repo.ListPagedAsync<ProductDto>(
-    x => new ProductDto 
-    { 
+// Expression-based projection (executes in SQL) — spec first, then selector
+var dtos = await repo.ListPagedAsync(
+    spec,
+    x => new ProductDto
+    {
         Id = x.Id,
-        Name = x.Name,
-        CategoryName = x.Category.Name // Joined in SQL, not LINQ-to-Objects
+        Name = x.Name // Joined in SQL, not LINQ-to-Objects
     },
-    spec, page: 1, pageSize: 10);
+    page: 1, size: 10, ct);
 ```
 
 ### New Repository Methods
@@ -119,24 +123,25 @@ var dtos = await repo.ListPagedAsync<ProductDto>(
 - `SingleAsync(spec)` — Single row (throws if 0 or 2+)
 - `SingleOrDefaultAsync(spec)` — Single row or null
 - `AsAsyncEnumerable(spec)` — Streaming large result sets
-- `DeleteRangeAsync(entities)` — Bulk delete with filters respected
-- `ExecuteUpdateAsync(spec)` — Bulk update preserving soft-delete filters
+- `DeleteRangeAsync(spec)` — Bulk delete matching a spec, filters respected
+- `GetByIdAsync(object id, ct)` — Filter-honoring lookup, composite-PK aware
 
 ### Specification Validation
 
-Paging now requires ordering to be deterministic:
+Paging requires ordering to be deterministic (`Skip`/`Take` without an
+`OrderBy` clause throws `InvalidOperationException`):
 
 ```csharp
-var spec = new Specification<Product>()
-    .WithOrderBy(p => p.Id)
-    .WithSkip(10)
-    .WithTake(20);
+public sealed class PagedSpec : Specification<Product>
+{
+    public PagedSpec()
+    {
+        AddOrderBy(p => p.Id);
+        Skip = 10;
+        Take = 20;
+    }
+}
 // ✓ Valid: OrderBy is set
-
-var badSpec = new Specification<Product>()
-    .WithSkip(10)
-    .WithTake(20);
-// ✗ Throws: Skip/Take require OrderBy
 ```
 
 ---
@@ -181,71 +186,45 @@ public async Task Event_published_in_activity_is_consumed_with_same_traceId()
 
 ## Testing & DX Package (E4)
 
-### Test Doubles (Fakes)
+### Test Doubles
 
-Pre-built fakes for ambient services, ready to inject:
+`Modulus.Testing` ships a recording bus plus event assertions for
+integration tests:
 
 ```csharp
-var factory = new ModulusWebAppFactory<Program>()
-    .WithFake<ICurrentTenant>(new FakeCurrentTenant { Id = Guid.NewGuid() })
-    .WithFake<ICurrentUser>(new FakeCurrentUser { Id = "user123", Roles = ["Admin"] })
-    .WithFake<IModuleBus>(new RecordingModuleBus());
-
-var client = factory.CreateClient();
+var bus = factory.Services.GetRequiredService<RecordingModuleBus>();
+bus.PublishedEvents<ProductCreatedIntegrationEvent>()
+    .Should().ContainSingle();
+bus.Clear();
 ```
 
-**Fakes included:**
-- `FakeCurrentTenant` — Settable tenant context
-- `FakeCurrentUser` — Settable user + roles
-- `FakePermissionRegistry` — Mock permission checks
-- `FakeFeatureGate` — Feature flag toggles
-- `FakeCacheService` — In-memory cache with inspection
-- `FakeDistributedLock` — Mock distributed lock
-- `RecordingModuleBus` — Captures published events
-- `RecordingOutboxWriter` — Captures outbox entries
+There is no `.WithFake<T>()` chain, `FakeCurrentTenant/User`, or
+`ModuleTestFixture` — use NSubstitute mocks or register test doubles in DI
+directly. Real seams: `RecordingModuleBus`, event assertions,
+`ModuleBoundaryRules.FindUnnamedIntegrationEvents()` / `FindModuleTypes()`.
 
 ### Event Assertions
 
-Built-in helpers for event-driven test assertions:
+Built-in recording bus for event-driven test assertions:
 
 ```csharp
 var bus = factory.Services.GetRequiredService<RecordingModuleBus>();
 
 // Assert event was published
-bus.GetPublishedEvents<OrderCreatedEvent>().Should().HaveCount(1);
+bus.PublishedEvents<OrderCreatedIntegrationEvent>().Should().HaveCount(1);
 
-// Assert with predicate
-bus.HasPublished<OrderCreatedEvent>(e => e.OrderId == orderId).Should().BeTrue();
-
-// Count with filter
-var productEvents = bus.CountPublished<ProductCreatedEvent>(
-    e => e.ProductId == productId);
+// All events, or reset between phases
+bus.AllPublishedEvents.Should().NotBeEmpty();
+bus.Clear();
 ```
 
-### Module Test Fixture
+### Module Smoke Test
 
-Boot a single module's DI graph without the full host:
-
-```csharp
-[Collection("Catalog")]
-public class CatalogModuleTests : IAsyncLifetime
-{
-    private readonly ModuleTestFixture<CatalogModule> _fixture = new();
-
-    public async Task InitializeAsync() => await _fixture.InitializeAsync();
-    public async Task DisposeAsync() => await _fixture.DisposeAsync();
-
-    [Fact]
-    public async Task CreateProduct_StoresInDatabase()
-    {
-        var mediator = _fixture.Services.GetRequiredService<IMediator>();
-        await mediator.SendAsync(new CreateProductCommand { ... });
-        
-        var db = _fixture.GetContext<CatalogDbContext>();
-        db.Products.Should().Contain(p => p.Name == "Widget");
-    }
-}
-```
+Generated apps include a smoke test that boots the full module pipeline and
+verifies every module `DbContext` resolves from DI; the integration-test
+harness (`ModulusWebAppFactory<Program>`) boots the composed host with
+per-context SQLite databases for HTTP round-trips (see
+[Integration Tests](testing/integration-tests)):
 
 ### Architecture Rules
 
@@ -276,15 +255,18 @@ public void AllModules_CanBeInstantiated()
 
 ---
 
-## EF Core Migrations
+## Migrations
 
-Framework exclusively uses EF Core migrations. Each module includes:
+EF Core migrations are the default; **dbsh** is the supported SQL-first
+alternative (`--migration-engine dbsh`). Each EF module includes:
 
 - `DbContextFactory` for design-time support
 - Migration files in `Infrastructure/Migrations/`
 - Per-module migrations scaffold via `modulus migrate add <Name>`
 
-No external migration tools required. Migrations apply at startup:
+EF modules migrate at startup (modes above); dbsh modules are skipped via
+`ExternallyManaged<TContext>` and applied with `modulus migrate update`
+(`dbsh init && dbsh migrate`).
 
 ```csharp
 await app.Services.MigrateModulusDatabasesAsync(
@@ -313,7 +295,7 @@ await app.Services.MigrateModulusDatabasesAsync(
 | Integration Tests |  |  | ✓ |  |
 | Test Doubles |  |  |  | ✓ |
 | Event Assertions |  |  |  | ✓ |
-| Module Test Fixture |  |  |  | ✓ |
+| Module Smoke Test |  |  |  | ✓ |
 | Architecture Rules |  |  |  | ✓ |
 
 ---

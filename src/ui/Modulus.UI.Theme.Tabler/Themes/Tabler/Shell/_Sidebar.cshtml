@@ -1,0 +1,64 @@
+@* Vertical navigation sidebar. Menu entries come from IUiMenuProvider, which
+   is already filtered to the current user — nothing the caller may not use
+   reaches the markup. Groups render as collapsible dropdowns and open when a
+   child matches the current request path. *@
+@inject IUiMenuProvider Navigation
+@inject IOptions<UiOptions> Ui
+@{
+    var branding = Ui.Value.Branding;
+    var logo = branding.LogoDarkUrl ?? branding.LogoUrl;
+    var menu = Navigation.GetMenu();
+}
+<aside class="navbar navbar-vertical navbar-expand-lg m-sidebar" data-bs-theme="dark" aria-label="Main navigation">
+    <div class="container-fluid">
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#m-sidebar-menu" aria-controls="m-sidebar-menu" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="navbar-brand navbar-brand-autodark">
+            <a href="@Url.Content(branding.BrandHref)" class="m-brand">
+                @if (!string.IsNullOrWhiteSpace(logo))
+                {
+                    <img src="@Url.Content(logo)" alt="@branding.AppName" class="m-brand-logo" />
+                }
+                else
+                {
+                    <span>@branding.AppName</span>
+                }
+            </a>
+        </div>
+        <div class="collapse navbar-collapse" id="m-sidebar-menu">
+            @await Html.ModulusSlotAsync(UiSlots.SidebarTop)
+            <ul class="navbar-nav pt-lg-3">
+                @foreach (var item in menu)
+                {
+                    var active = TablerShell.IsActive(Context.Request, item);
+                    if (item.Children is { Count: > 0 })
+                    {
+                        <li class="nav-item dropdown@(active ? " active" : "")">
+                            <a class="nav-link dropdown-toggle@(active ? " show" : "")" href="#m-nav-@item.Id" data-bs-toggle="dropdown" data-bs-auto-close="false" role="button" aria-expanded="@(active ? "true" : "false")">
+                                @await Html.PartialAsync("/Pages/Shared/_UiIcon.cshtml", item.Icon)
+                                <span class="nav-link-title">@item.Title</span>
+                            </a>
+                            <div class="dropdown-menu@(active ? " show" : "")">
+                                @foreach (var child in item.Children)
+                                {
+                                    <a class="dropdown-item@(TablerShell.IsActive(Context.Request, child) ? " active" : "")" href="@Url.Content(child.Url)">@child.Title</a>
+                                }
+                            </div>
+                        </li>
+                    }
+                    else
+                    {
+                        <li class="nav-item@(active ? " active" : "")">
+                            <a class="nav-link" href="@Url.Content(item.Url)" aria-current="@(active ? "page" : null)">
+                                @await Html.PartialAsync("/Pages/Shared/_UiIcon.cshtml", item.Icon)
+                                <span class="nav-link-title">@item.Title</span>
+                            </a>
+                        </li>
+                    }
+                }
+            </ul>
+            @await Html.ModulusSlotAsync(UiSlots.SidebarBottom)
+        </div>
+    </div>
+</aside>

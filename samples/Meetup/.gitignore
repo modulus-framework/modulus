@@ -1,0 +1,13 @@
+# Local environment / secrets (see .env.example)
+.env
+secrets.json
+
+# SQLite leftovers / local data dirs
+*.db
+*.db-*
+docker/authentik-data/
+
+# .NET build output
+bin/
+obj/
+TestResults/

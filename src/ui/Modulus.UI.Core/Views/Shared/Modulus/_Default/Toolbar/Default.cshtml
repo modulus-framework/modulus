@@ -1,0 +1,30 @@
+@* Default markup for <m-toolbar>: contributed page buttons. Url items are links; HxGet / HxPost
+   items are htmx buttons that swap into the item's Target (default: the shared modal). The first
+   item is the primary action unless it sets its own CssClass. *@
+@using Microsoft.AspNetCore.Html
+@model ToolbarModel
+<div class="btn-list">
+    @for (var i = 0; i < Model.Items.Count; i++)
+    {
+        var item = Model.Items[i];
+        var css = item.CssClass ?? (i == 0 ? "btn-primary" : "btn-outline-secondary");
+        var inner = UiIcons.GetInnerSvg(item.Icon);
+        var icon = inner.Length == 0
+            ? HtmlString.Empty
+            : new HtmlString($"<svg xmlns=\"http://www.w3.org/2000/svg\" class=\"icon me-1\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\">{inner}</svg>");
+        var target = item.Target ?? "#m-modal-container";
+
+        if (!string.IsNullOrWhiteSpace(item.Url))
+        {
+            <a class="btn @css" href="@Url.Content(item.Url)">@icon@item.Title</a>
+        }
+        else if (!string.IsNullOrWhiteSpace(item.HxGet))
+        {
+            <button type="button" class="btn @css" hx-get="@item.HxGet" hx-target="@target" hx-swap="innerHTML">@icon@item.Title</button>
+        }
+        else
+        {
+            <button type="button" class="btn @css" hx-post="@item.HxPost" hx-target="@target" hx-swap="innerHTML">@icon@item.Title</button>
+        }
+    }
+</div>

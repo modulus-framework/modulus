@@ -1,4 +1,5 @@
 using Modulus.Mediator.Abstractions;
+using Modulus.Core.Abstractions.Entities;
 using Modulus.Core.Abstractions.Exceptions;
 using {{ module_namespace }}.Domain;
 
@@ -18,6 +19,8 @@ public sealed class Update{{ entity_name }}Handler(
                 "{{ entity_name }} not found: " + command.Id);
 
         entity.Name = command.Name;
+        if (command.ExtraProperties is not null)
+            entity.SetExtraProperties(command.ExtraProperties);
 
         await repo.UpdateAsync(entity, ct);
         await unitOfWork.CommitAsync(ct);

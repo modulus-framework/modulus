@@ -23,10 +23,10 @@ public sealed class InboxOptions
     /// </summary>
     public int ClaimTimeoutSeconds { get; set; } = 300;
 
-    // ── Polly handler retry ────────────────────────────────────────
-    // When HandlerRetryCount > 0, each handler invocation is wrapped in a
-    // Polly resilience pipeline for fast in-process retries before the
-    // inbox's own retry/dead-letter cycle kicks in.
+    // ── In-pipeline handler retry ──────────────────────────────────
+    // When HandlerRetryCount > 0, each handler invocation is retried
+    // in-process (back-off below) for fast recovery from transient faults
+    // before the inbox's own claim/retry/dead-letter cycle kicks in.
 
     /// <summary>Number of in-pipeline retries per handler invocation. 0 disables Polly. Default 3.</summary>
     public int HandlerRetryCount { get; set; } = 3;

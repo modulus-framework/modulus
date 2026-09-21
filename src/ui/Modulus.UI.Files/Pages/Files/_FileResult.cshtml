@@ -1,0 +1,46 @@
+@using Modulus.Localization
+@using Modulus.UI
+@using Modulus.UI.Files
+@using Modulus.UI.Files.Pages.Files
+@inject IModulusLocalizer Localizer
+@model FileResultView
+@* Result card for the looked-up path. Re-rendered in place by htmx upload /
+   delete; validation errors ride along via the fragment's ModelState copy.
+   The path copy button is Alpine-local state (mCopyButton, see UI.Core
+   alpine-components.js; no server round-trip). *@
+<div class="card mb-3">
+    <div class="card-body">
+        @if (!ViewData.ModelState.IsValid)
+        {
+            <div class="alert alert-danger" role="alert">
+                <div asp-validation-summary="All"></div>
+            </div>
+        }
+        @if (Model.Exists == true)
+        {
+            @await Html.PartialAsync("_Alert", UiAlert.Success(await Localizer.GetAsync(FilesUiLocalization.ResourceName, "Index.Exists")))
+            <div class="mb-2" x-data="mCopyButton">
+                <code>@Model.Path</code>
+                <button type="button" class="btn btn-sm ms-2" data-path="@Model.Path" x-on:click="copy">
+                    <span x-show="notCopied">@(await Localizer.GetAsync(FilesUiLocalization.ResourceName, "Index.Copy"))</span>
+                    <span x-show="copied" x-cloak>@(await Localizer.GetAsync(FilesUiLocalization.ResourceName, "Index.Copied"))</span>
+                </button>
+            </div>
+            <div class="btn-group">
+                <a class="btn btn-primary" asp-page-handler="Download" asp-route-path="@Model.Path">@(await Localizer.GetAsync(FilesUiLocalization.ResourceName, "Index.Download"))</a>
+                <form method="post"
+                      asp-page-handler="Delete" asp-route-path="@Model.Path"
+                      hx-post="@Url.Page("./Index", "Delete", new { path = Model.Path })"
+                      hx-target="#file-result" hx-swap="innerHTML"
+                      hx-confirm="@(await Localizer.GetAsync(FilesUiLocalization.ResourceName, "Index.ConfirmDelete"))">
+                    <button class="btn btn-ghost-danger" type="submit">@(await Localizer.GetAsync(FilesUiLocalization.ResourceName, "Index.Delete"))</button>
+                </form>
+            </div>
+        }
+        else if (Model.Exists == false)
+        {
+            @await Html.PartialAsync("_Alert", UiAlert.Info(await Localizer.GetAsync(FilesUiLocalization.ResourceName, "Index.Missing")))
+            <div class="text-secondary"><code>@Model.Path</code></div>
+        }
+    </div>
+</div>

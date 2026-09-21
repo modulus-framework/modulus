@@ -1,0 +1,43 @@
+@page
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Mvc.Rendering
+@attribute [Microsoft.AspNetCore.Mvc.IgnoreAntiforgeryToken]
+@functions {
+    public sealed class FieldsInput
+    {
+        [Required, EmailAddress, Display(Name = "E-mail address")]
+        public string Email { get; set; } = string.Empty;
+
+        [Required]
+        public string Password { get; set; } = string.Empty;
+
+        public string? Notes { get; set; }
+
+        public decimal Price { get; set; } = 12.5m;
+
+        public DateOnly Due { get; set; } = new(2026, 3, 9);
+
+        public bool Active { get; set; }
+
+        public string Status { get; set; } = "b";
+    }
+
+    [BindProperty]
+    public FieldsInput Input { get; set; } = new();
+
+    public List<SelectListItem> Statuses { get; } = [new("Alpha", "a"), new("Beta", "b")];
+
+    public IActionResult OnPost() => ModelState.IsValid ? Content("ok") : Page();
+}
+@{
+    Layout = "/Themes/Tabler/Layouts/Empty.cshtml";
+}
+<form method="post">
+    <m-input for="Input.Email" type="email" hint="We never share it" autocomplete="email" />
+    <m-input for="Input.Password" type="password" />
+    <m-input for="Input.Notes" type="textarea" rows="3" placeholder="Notes" />
+    <m-input for="Input.Price" type="number" step="0.01" min="0" />
+    <m-input for="Input.Due" type="date" />
+    <m-input for="Input.Active" type="checkbox" label="Active" />
+    <m-select for="Input.Status" items="Statuses" placeholder="Choose..." />
+</form>

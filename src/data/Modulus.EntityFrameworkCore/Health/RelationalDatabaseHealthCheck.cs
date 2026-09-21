@@ -23,7 +23,18 @@ public sealed class RelationalDatabaseHealthCheck<TContext>(
         var sw = Stopwatch.StartNew();
         try
         {
-            await db.Database.CanConnectAsync(ct);
+            // CanConnectAsync returns false (rather than throwing) when the
+            // database is unreachable — a false result is Unhealthy, not
+            // Healthy. Reporting it Healthy would keep a DB-less pod in the
+            // load-balancer rotation.
+            if (!await db.Database.CanConnectAsync(ct))
+                return new(
+                    _moduleName,
+                    HealthStatus.Unhealthy,
+                    $"{providerTag} unreachable",
+                    sw.Elapsed,
+                    new Dictionary<string, object> { ["provider"] = providerTag });
+
             return new(
                 _moduleName,
                 HealthStatus.Healthy,

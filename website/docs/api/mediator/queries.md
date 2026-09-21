@@ -24,20 +24,21 @@ public interface IQueryHandler<in TQuery, TResponse>
 
 ```csharp
 // Query
-public sealed record GetProductById(Guid Id) : IQuery<ProductDto>;
+public sealed record GetProductByIdQuery(Guid Id) : IQuery<ProductDto?>;
 
 // Handler
 public sealed class GetProductByIdHandler(IProductRepository repository)
-    : IQueryHandler<GetProductById, ProductDto>
+    : IQueryHandler<GetProductByIdQuery, ProductDto?>
 {
-    public async Task<ProductDto> HandleAsync(GetProductById query, CancellationToken ct)
+    public async Task<ProductDto?> HandleAsync(GetProductByIdQuery query, CancellationToken ct)
     {
-        var product = await repository.GetByIdAsync(query.Id, ct)
-            ?? throw new NotFoundException(nameof(Product), query.Id);
-        return new ProductDto(product.Id, product.Name, product.Price);
+        var product = await repository.GetByIdAsync(query.Id, ct);
+        return product is null
+            ? null
+            : new ProductDto { Id = product.Id, Name = product.Name };
     }
 }
 
 // Usage
-var product = await mediator.QueryAsync(new GetProductById(productId));
+var product = await mediator.QueryAsync(new GetProductByIdQuery(productId));
 ```

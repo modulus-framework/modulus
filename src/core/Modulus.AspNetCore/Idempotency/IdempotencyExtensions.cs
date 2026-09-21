@@ -19,7 +19,8 @@ public static class IdempotencyExtensions
     /// and registers the default in-process <see cref="IIdempotencyStore"/>. To use
     /// a shared store across instances, register your own
     /// <see cref="IIdempotencyStore"/> before calling this — <c>TryAdd</c> leaves it
-    /// in place.
+    /// in place. The default is node-local: multi-replica deployments must register
+    /// a shared store (e.g. Redis) or retries to another node re-execute.
     /// </summary>
     public static IServiceCollection AddModulusIdempotency(
         this IServiceCollection services,
@@ -31,6 +32,7 @@ public static class IdempotencyExtensions
 
         services.TryAddSingleton<IIdempotencyStore, InMemoryIdempotencyStore>();
         services.AddHostedService<IdempotencyStoreSweeper>();
+        services.AddHostedService<NodeLocalIdempotencyWarning>();
         return services;
     }
 

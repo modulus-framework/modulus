@@ -20,9 +20,12 @@ public static class ModulusServiceCollectionExtensions
     {
         // Safe defaults — overridden when Identity / Authorization / MultiTenancy
         // modules register.  TryAdd so the first (real) registration wins.
+        // ICurrentTenant is a singleton: the real CurrentTenant is a stateless
+        // AsyncLocal accessor, and so is this null default — resolving the
+        // ambient tenant from singletons must never depend on a scope.
         services.TryAddSingleton<IPermissionRegistry, NullPermissionRegistry>();
         services.TryAddScoped<ICurrentUser, NullCurrentUser>();
-        services.TryAddScoped<ICurrentTenant, NullCurrentTenant>();
+        services.TryAddSingleton<ICurrentTenant, NullCurrentTenant>();
         services.TryAddScoped<ICurrentDataScope, NullCurrentDataScope>();
 
         // TimeProvider — allows tests (and libraries) to freeze the clock via

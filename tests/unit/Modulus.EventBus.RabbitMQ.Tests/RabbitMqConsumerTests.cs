@@ -5,7 +5,7 @@ using global::RabbitMQ.Client;
 using Testcontainers.RabbitMq;
 using Xunit;
 
-[Trait("Category", "Unit")]
+[Trait("Category", "Integration")]
 public sealed class RabbitMqConsumerTests : IAsyncLifetime
 {
     private RabbitMqContainer _container = null!;

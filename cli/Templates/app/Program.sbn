@@ -13,24 +13,48 @@ using Modulus.AspNetCore.OpenApi;
 using Modulus.AspNetCore.RateLimiting;
 using Modulus.AspNetCore.Security;
 using Modulus.AspNetCore.Versioning;
-using Modulus.EntityFrameworkCore.Extensions;
+{{ if example_permission }}using Modulus.Authorization.Extensions;
+{{ end }}using Modulus.EntityFrameworkCore.Extensions;
 using Modulus.Events.Extensions;
 using Modulus.Mediator.Extensions;
-{{ if auth == "openiddict" }}using Modulus.Identity.Extensions;
-{{ end }}{{ if use_external_provider }}using {{ external_provider_namespace }};
+{{ if auth == "openiddict" }}using {{ identity_namespace }}.Infrastructure;
+using Modulus.Identity.Extensions;
+using OpenIddict.Server.AspNetCore;
+using OpenIddict.Validation.AspNetCore;
+{{ if use_ui }}using Modulus.UI;
+{{ end }}{{ end }}{{ if use_external_provider }}using {{ external_provider_namespace }};
 {{ end }}using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.DependencyInjection;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ── Modulus Framework ──────────────────────────────────────────
+{{ if auth == "openiddict" }}// ── Token server (OpenIddict) ──────────────────────────────────
+// Local OAuth2/OIDC token server: /connect/token, /connect/userinfo, /connect/revoke.
+// The users, roles and token store live in the Identity module (AddModule<IdentityModule>() below),
+// which is also what makes the API usable by external clients (mobile, desktop, other systems):
+//   curl -d grant_type=password -d client_id={{ app_name_lower }} -d username=<email> -d password=<password> http://localhost:5000/connect/token
+// then call the API with "Authorization: Bearer <access_token>".
+// Development uses ephemeral certificates and the password grant (see appsettings.Development.json).
+// Production: register real signing/encryption certificates in the callback below, serve over https, and
+// turn on Identity:AllowPasswordFlow only if a trusted first-party client needs it (it is off by default:
+// the password grant hands the user's credentials to the client).
+builder.Services.AddModulusOpenIddict(builder.Configuration, options =>
+{
+    // Development runs over plain http on localhost; OpenIddict insists on https unless told otherwise.
+    if (builder.Environment.IsDevelopment())
+        options.UseAspNetCore().DisableTransportSecurityRequirement();
+});
+// Register it BEFORE AddModulus: the Identity module's AddModulusIdentity replaces the deny-everything
+// password validator that AddModulusOpenIddict installs, and the later registration wins.
+{{ end }}// ── Modulus Framework ──────────────────────────────────────────
 // Modules are registered explicitly — this list is the single composition
 // root. Registration order is authoritative: each module's PreConfigure →
 // Configure → PostConfigure phases run in this order at startup, then
 // InitializeAsync in this order, and ShutdownAsync in reverse.
 builder.Services.AddModulus(builder.Configuration, modules =>
 {
-{{ if !no_example }}    modules.AddModule<{{ example_module }}Module>();
+{{ if auth == "openiddict" }}    modules.AddModule<IdentityModule>();
+{{ end }}{{ if !no_example }}    modules.AddModule<{{ example_module }}Module>();
 {{ end }}});
 builder.Services.AddModulusExceptionHandling();
 
@@ -85,18 +109,37 @@ builder.Services.AddMediator();
 
 // ── MVC controllers (module Presentation assemblies) ───────────
 builder.Services.AddControllers();
-{{ if auth != "none" }}
+{{ if auth == "none" }}
+// ── Authentication ─────────────────────────────────────────────
+// None is registered. Endpoints require an authenticated user by default, so until you
+// add a scheme every API call fails (500: no authentication scheme). Either register one
+// here (e.g. builder.Services.AddAuthentication().AddJwtBearer(...) and, after
+// app.UseExceptionHandler(), app.UseAuthentication()), re-generate with --auth openiddict
+// or an external provider, or call AllowAnonymous() in an endpoint's Configure().
+{{ end }}{{ if auth != "none" }}
 // ── Authentication & Authorization ──────────────────────────────
-{{ if auth == "openiddict" }}// Local OAuth2/OIDC token server (OpenIddict).
-// Provides /connect/token, /connect/authorize, /connect/userinfo endpoints.
-// Uses ephemeral development certificates in Development (see appsettings.Development.json).
-// In Production, register real signing/encryption certificates via the configure callback.
-// To add local user accounts (ASP.NET Identity + password grant), also call:
-//   builder.Services.AddModulusIdentity<TContext, ModulusUser, ModulusRole>(builder.Configuration);
-// To persist OpenIddict tokens/applications, also call:
-//   builder.Services.AddModulusIdentityStore<TContext>();
-builder.Services.AddModulusOpenIddict(builder.Configuration);
-{{ else if use_external_provider }}// External identity provider ({{ external_provider_name }}).
+{{ if auth == "openiddict" }}{{ if use_ui }}// One host, two kinds of caller: API callers (bearer token) and browsers (the Identity cookie).
+builder.Services.AddModulusSmartAuth();
+// Pages require a signed-in user (only /Account, the sign-in pages, is open). Add a folder to the call to make it public,
+// and set a feature UI's RequirePermission to also gate it by permission.
+builder.Services.AddModulusPageAuthorization();
+{{ else }}// API only: callers present a bearer token. AddModulusIdentity would otherwise make the cookie the default.
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultScheme = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme;
+    options.DefaultAuthenticateScheme = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme;
+});
+{{ end }}{{ if example_permission }}
+// The example API{{ if use_ui }} and its admin page need{{ else }} needs{{ end }} a permission, and the Admin role (seeded below) holds it: a signed-in caller without it gets 403.
+// AddModulusAuthorization turns a "module:thing:action" name into a permission check, resolved from the grants of the caller's roles.
+// The grants below are an in-memory seed: to edit them at run time (Permissions UI or API), keep them in the database with
+// AddEfCoreAuthorizationStores (Modulus.Authorization.EntityFrameworkCore) instead.
+builder.Services.AddModulusAuthorization();
+builder.Services.AddGrantStorePermissionChecker();
+builder.Services.AddPermissions("{{ example_module_lower }}", permissions => permissions.Add("{{ example_permission }}", "{{ example_permission_description }}"));
+builder.Services.AddPermissionGrants(grants => grants.GrantToRole("{{ admin_role }}", "{{ example_permission }}"));
+{{ end }}{{ else if use_external_provider }}// External identity provider ({{ external_provider_name }}).
 // Validates bearer tokens issued by {{ external_provider_name }} via OIDC discovery /
 // introspection. Configure the provider details under
 // "{{ external_provider_config_key }}" in appsettings.json.
@@ -126,7 +169,10 @@ await app.Services.MigrateModulusDatabasesAsync(
     app.Environment.IsProduction()
         ? DatabaseInitializationMode.Migrate
         : DatabaseInitializationMode.MigrateOrCreate);
-
+{{ if auth == "openiddict" }}
+// Roles, and the first administrator where that is safe (see IdentitySeeding).
+await app.Services.SeedIdentityAsync(app.Environment);
+{{ end }}
 // ── Middleware ─────────────────────────────────────────────────
 // Order matters: forwarded headers first (so everything downstream sees the
 // real client IP/scheme), then correlation (so every log line, span, and error

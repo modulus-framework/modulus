@@ -9,112 +9,94 @@ Generates complete CRUD operations for an entity.
 ## Usage
 
 ```bash
-modulus generate-crud <Entity> --module <Module> [options]
+modulus generate-crud <Entity> [-m|--module <Module>] [options]
 ```
 
 ## Options
 
 | Option | Description |
 |--------|-------------|
-| `--module` | Target module name (required) |
+| `-m, --module` | Target module name. Auto-detected when the app has a single module |
 | `--dry-run` | Preview without writing files |
 
 ## What It Generates
 
-### Entity
+Files are distributed across the module's layer projects (existing files are
+reported as skipped, never overwritten):
+
+### Entity (`Domain`)
 
 ```csharp
 public sealed class Product : AggregateRoot<Guid>
 {
-    public string Name { get; private set; } = default!;
-    public decimal Price { get; private set; }
-
-    private Product() { }
-
-    public Product(string name, decimal price)
-    {
-        Name = name;
-        Price = price;
-    }
+    public string Name { get; set; } = string.Empty;
 }
 ```
 
-### Repository
+### Repository (`Domain` interface + `Infrastructure` implementation)
 
 ```csharp
+// Domain: IProductRepository.cs
 public interface IProductRepository : IRepository<Product> { }
 
-public class ProductRepository : EfRepository<Product>, IProductRepository
+// Infrastructure: ProductRepository.cs — standalone spec-based repo
+// (DbSet + ISpecification methods), auto-wired in the module composition root
+public sealed class ProductRepository(CatalogDbContext context) : IProductRepository { ... }
+```
+
+### DTO (`Application/Dtos`)
+
+```csharp
+public sealed class ProductDto
 {
-    public ProductRepository(CatalogDbContext context) : base(context) { }
+    public Guid Id { get; init; }
+    public string Name { get; init; } = string.Empty;
 }
 ```
 
-### DTOs
+### Commands & Queries (`Application`, flat — no `Commands/`/`Queries/` subfolders)
 
 ```csharp
-public sealed record ProductDto(Guid Id, string Name, decimal Price);
-public sealed record CreateProductRequest(string Name, decimal Price);
-public sealed record UpdateProductRequest(string Name, decimal Price);
-```
+public sealed record CreateProductCommand(string Name) : ICommand<Guid>;
 
-### Commands & Handlers
-
-```csharp
-public sealed record CreateProduct(string Name, decimal Price) : ICommand<ProductDto>;
-public sealed record UpdateProduct(Guid Id, string Name, decimal Price) : ICommand<ProductDto>;
-public sealed record DeleteProduct(Guid Id) : ICommand;
-```
-
-### Queries & Handlers
-
-```csharp
-public sealed record GetAllProducts : IQuery<List<ProductDto>>;
-public sealed record GetProductById(Guid Id) : IQuery<ProductDto>;
-```
-
-### Integration Event
-
-```csharp
-public sealed record ProductCreatedEvent : IIntegrationEvent
+public sealed class CreateProductHandler(
+    IProductRepository repo,
+    IUnitOfWork unitOfWork)
+    : ICommandHandler<CreateProductCommand, Guid>
 {
-    public Guid ProductId { get; init; }
-    public string Name { get; init; } = default!;
-    public decimal Price { get; init; }
-}
-```
-
-### API Endpoint
-
-```csharp
-[ApiController]
-[Route("api/products")]
-public sealed class ProductController : ControllerBase
-{
-    private readonly IMediator _mediator;
-
-    [HttpGet]
-    public async Task<ActionResult<List<ProductDto>>> GetAll()
-        => await _mediator.QueryAsync(new GetAllProducts());
-
-    [HttpGet("{id:guid}")]
-    public async Task<ActionResult<ProductDto>> GetById(Guid id)
-        => await _mediator.QueryAsync(new GetProductById(id));
-
-    [HttpPost]
-    public async Task<ActionResult<ProductDto>> Create(CreateProductRequest request)
-        => await _mediator.SendAsync(new CreateProduct(request.Name, request.Price));
-
-    [HttpPut("{id:guid}")]
-    public async Task<ActionResult<ProductDto>> Update(Guid id, UpdateProductRequest request)
-        => await _mediator.SendAsync(new UpdateProduct(id, request.Name, request.Price));
-
-    [HttpDelete("{id:guid}")]
-    public async Task<IActionResult> Delete(Guid id)
+    public async Task<Guid> HandleAsync(CreateProductCommand command, CancellationToken ct)
     {
-        await _mediator.SendAsync(new DeleteProduct(id));
-        return NoContent();
+        var entity = new Product { Name = command.Name };
+        await repo.AddAsync(entity, ct);
+        await unitOfWork.CommitAsync(ct);
+        return entity.Id;
     }
+}
+```
+
+Plus `Update`/`Delete` commands and `Get{Entities}`/`Get{Entity}ById` queries with handlers.
+
+### Integration Event (`Application/IntegrationEvents`)
+
+```csharp
+public sealed record ProductCreatedIntegrationEvent(Guid Id)
+    : IntegrationEventBase("catalog.product-created.v1");
+```
+
+### API Endpoints (`Presentation/{Entities}Endpoint.cs`)
+
+REPR-style endpoints (no MVC controllers), all with `RequireAuthorization()`:
+
+```csharp
+public sealed class GetProductsEndpoint(IMediator mediator)
+    : EndpointWithoutRequest<IReadOnlyList<ProductDto>>
+{
+    public override void Configure()
+    {
+        Get("/api/catalog/products");
+        RequireAuthorization();
+    }
+    // ... GetProductById / Create / Update / Delete endpoints included
 }
 ```
 

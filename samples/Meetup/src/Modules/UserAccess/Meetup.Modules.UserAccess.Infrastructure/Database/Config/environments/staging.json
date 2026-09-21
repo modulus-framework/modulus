@@ -1,0 +1,11 @@
+{
+  "name": "staging",
+  "database": {
+    "connectionString": ""
+  },
+  "migration": {
+    "requireApproval": true,
+    "lockTimeoutSeconds": 60,
+    "maxBatchSize": 10
+  }
+}

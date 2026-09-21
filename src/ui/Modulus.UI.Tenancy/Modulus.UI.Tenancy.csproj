@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AddRazorSupportForMvc>true</AddRazorSupportForMvc>
+    <Description>Prebuilt Tenancy UI for Modulus: Tabler tenant directory and details Razor Pages plus navigation metadata.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="module.json" Pack="true" PackagePath="module.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <ProjectReference Include="../Modulus.UI.Core/Modulus.UI.Core.csproj" />
+    <ProjectReference Include="../../platform/Modulus.Platform/Modulus.Platform.csproj" />
+  </ItemGroup>
+
+</Project>

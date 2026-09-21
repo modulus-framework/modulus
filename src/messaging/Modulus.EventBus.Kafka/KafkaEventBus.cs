@@ -120,12 +120,18 @@ internal sealed class KafkaEventBus : IModuleBus, IDisposable
 
     private static ProducerConfig BuildProducerConfig(KafkaOptions opts)
     {
+        var acks = ParseAcks(opts.Acks);
         var config = new ProducerConfig
         {
             BootstrapServers = opts.BootstrapServers,
-            Acks = ParseAcks(opts.Acks),
+            Acks = acks,
             MessageSendMaxRetries = opts.MessageSendMaxRetries,
-            EnableIdempotence = true,
+            // librdkafka only supports idempotent production with acks=all
+            // (any weaker combination is rejected at runtime, failing every
+            // produce). Keep idempotence exactly when the configured acks
+            // allow it; a weaker acks setting gets plain at-most-once
+            // semantics, as configured.
+            EnableIdempotence = acks == Acks.All,
         };
 
         ApplySecurity(config, opts);

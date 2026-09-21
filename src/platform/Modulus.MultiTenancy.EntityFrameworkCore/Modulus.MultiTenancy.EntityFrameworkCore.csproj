@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../Modulus.Platform/Modulus.Platform.csproj" />
+    <ProjectReference Include="../../data/Modulus.EntityFrameworkCore/Modulus.EntityFrameworkCore.csproj" />
   </ItemGroup>
 
   <ItemGroup>

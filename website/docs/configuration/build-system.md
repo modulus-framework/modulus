@@ -46,7 +46,7 @@ global using Microsoft.Extensions.Options;
 | Setting | Value |
 |---------|-------|
 | Authors | Cobytelabs |
-| VersionPrefix | 1.2.0 |
+| VersionPrefix | 1.3.0 |
 | License | Apache-2.0 |
 | Source Link | GitHub |
 | Symbols | snupkg |

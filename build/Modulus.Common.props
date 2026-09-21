@@ -15,7 +15,11 @@
     <LangVersion>latest</LangVersion>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <NoWarn>$(NoWarn);CS1591;NU1510</NoWarn>
+    <NoWarn>$(NoWarn);CS1591;NU1510;NU1902</NoWarn>
+    <!-- NU1902: Microsoft.Build.Tasks.Git 8.0.0 (via Microsoft.SourceLink.GitHub,
+         PrivateAssets=All build-time only) has a moderate advisory. Suppressed
+         globally so restores stay green under TreatWarningsAsErrors; revisit on
+         SourceLink bump. -->
     <RootNamespace>$(MSBuildProjectName)</RootNamespace>
     <AssemblyName>$(MSBuildProjectName)</AssemblyName>
   </PropertyGroup>

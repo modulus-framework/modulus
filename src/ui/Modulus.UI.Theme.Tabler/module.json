@@ -1,0 +1,7 @@
+{
+  "id": "Modulus.UI.Theme.Tabler",
+  "name": "Tabler Theme",
+  "version": "1.4.0",
+  "dependencies": ["Modulus.UI.Core"],
+  "features": ["Layouts", "Shell", "Error pages", "Design tokens", "Client runtime"]
+}

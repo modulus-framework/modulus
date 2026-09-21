@@ -1,0 +1,11 @@
+@* Dismissible Tabler alert with Alpine auto-hide (mDismissibleAlert, see
+   alpine-components.js: CSP-safe, no inline expressions). Falls back to a
+   static alert when Alpine fails to load (close button is then inert). *@
+@model UiAlert
+<div class="alert alert-@Model.Type alert-dismissible" role="alert"
+     x-data="mDismissibleAlert"
+     x-show="show"
+     x-transition>
+    <div>@Model.Message</div>
+    <button type="button" class="btn-close" x-on:click="dismiss" aria-label="Close"></button>
+</div>

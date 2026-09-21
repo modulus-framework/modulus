@@ -1,0 +1,19 @@
+@* Page footer: branding footer text plus the Footer slot. Renders nothing when
+   both are empty so pages without a footer don't get an empty band. *@
+@inject IOptions<UiOptions> Ui
+@inject ISlotRenderer Slots
+@{
+    var text = Ui.Value.Branding.FooterText;
+    var slot = await Slots.RenderAsync(UiSlots.Footer, ViewContext);
+}
+@if (!string.IsNullOrWhiteSpace(text) || slot is not null)
+{
+    <footer class="footer footer-transparent d-print-none m-footer">
+        <div class="container-xl">
+            <div class="row text-center align-items-center flex-row-reverse">
+                <div class="col-lg-auto ms-lg-auto">@slot</div>
+                <div class="col-12 col-lg-auto mt-3 mt-lg-0">@text</div>
+            </div>
+        </div>
+    </footer>
+}

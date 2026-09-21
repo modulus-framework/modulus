@@ -1,0 +1,6 @@
+@* Default markup for <m-confirm>: an htmx button guarded by hx-confirm. The theme runtime routes
+   hx-confirm to Modulus.confirm (its modal), so no script is needed here. *@
+@model ConfirmModel
+<button type="button" class="@Model.Class" hx-confirm="@Model.Message"
+        hx-post="@Model.Post" hx-delete="@Model.Delete"
+        hx-target="@Model.Target" hx-swap="@Model.Swap">@Model.Body</button>

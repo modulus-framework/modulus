@@ -9,44 +9,46 @@ Generates a single query and handler.
 ## Usage
 
 ```bash
-modulus generate-query <Name> --module <Module> [options]
+modulus generate-query <Name> [-m|--module <Module>] [options]
 ```
 
 ## Options
 
 | Option | Description |
 |--------|-------------|
-| `--module` | Target module name (required) |
-| `--response` | Response type (required) |
+| `-m, --module` | Target module name. Auto-detected when the app has a single module |
 
 ## What It Generates
 
 ### Query
 
 ```csharp
-public sealed record GetProductStats : IQuery<ProductStatsDto>;
+public sealed record GetProductStatsQuery : IQuery<object>;
 ```
 
 ### Handler
 
 ```csharp
-public sealed class GetProductStatsHandler(IProductRepository repository)
-    : IQueryHandler<GetProductStats, ProductStatsDto>
+public sealed class GetProductStatsHandler : IQueryHandler<GetProductStatsQuery, object>
 {
-    public async Task<ProductStatsDto> HandleAsync(
-        GetProductStats query, CancellationToken ct)
+    public async Task<object> HandleAsync(
+        GetProductStatsQuery query,
+        CancellationToken ct)
     {
-        // TODO: Implement query logic
-        return new ProductStatsDto(0, 0);
+        // TODO: Implement GetProductStats logic here
+        return await Task.FromResult(new { });
     }
 }
 ```
 
+The handler returns a placeholder object — replace `object` with a real DTO
+and inject the module's repository as needed.
+
 ## Example
 
 ```bash
-modulus generate-query GetProductStats --module Catalog --response ProductStatsDto
-modulus generate-query GetOrderHistory --module Orders --response List<OrderDto>
+modulus generate-query GetProductStats --module Catalog
+modulus generate-query GetOrderHistory --module Orders
 ```
 
 ## See Also

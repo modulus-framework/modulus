@@ -1,5 +1,13 @@
 using Modulus.Mediator.Abstractions;
+using Modulus.Mediator.Abstractions.Attributes;
 
 namespace {{ module_namespace }}.Application;
 
-public sealed record Create{{ entity_name }}Command(string Name) : ICommand<Guid>;
+/// <param name="Name">The {{ entity_name_lower }}'s name.</param>
+/// <param name="ExtraProperties">
+/// Values of the fields other modules contributed to this entity (invariant-culture text by field name), already
+/// validated by the caller; null when there are none.
+/// </param>
+[Transactional(typeof(IUnitOfWork))]
+public sealed record Create{{ entity_name }}Command(string Name, IReadOnlyDictionary<string, string?>? ExtraProperties = null)
+    : ICommand<Guid>;

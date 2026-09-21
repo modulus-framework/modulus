@@ -120,6 +120,27 @@ public sealed class IdempotencyMiddlewareTests
         second.Response.StatusCode.Should().Be(200);
     }
 
+    [Fact]
+    public async Task OversizedResponse_StreamsThroughUncached_AndRetryReprocesses()
+    {
+        var (mw, store, calls) = Build(
+            o => o.MaxResponseBytes = 16,
+            downstream: async ctx =>
+            {
+                ctx.Response.StatusCode = 200;
+                await ctx.Response.WriteAsync(new string('a', 100));
+            });
+
+        var first = await InvokeAsync(mw, store, "POST", key: "k", body: "payload");
+        var second = await InvokeAsync(mw, store, "POST", key: "k", body: "payload");
+
+        calls.Count.Should().Be(2); // oversized response was not cached — retry re-ran
+        first.Response.StatusCode.Should().Be(200);
+        ReadBody(first).Should().HaveLength(100); // full body still reached the client
+        ReadBody(second).Should().HaveLength(100);
+        first.Response.Headers.ContainsKey("Idempotency-Replayed").Should().BeFalse();
+    }
+
     // ── helpers ────────────────────────────────────────────────────
 
     private static (IdempotencyMiddleware, IIdempotencyStore, List<HttpContext>) Build(

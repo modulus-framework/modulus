@@ -1,0 +1,23 @@
+{
+  "name": "production",
+  "database": {
+    "connectionString": ""
+  },
+  "migration": {
+    "requireApproval": true,
+    "lockTimeoutSeconds": 300,
+    "maxBatchSize": 5
+  },
+  "deploymentWindow": {
+    "enabled": true,
+    "startTime": "02:00",
+    "endTime": "06:00",
+    "allowedDays": [
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday"
+    ]
+  }
+}

@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Cobytelabs.Modulus.Core" Version="1.4.0" />
+    <PackageReference Include="Cobytelabs.Modulus.EntityFrameworkCore" Version="1.4.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Events" Version="1.4.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Inbox" Version="1.4.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Data.Abstractions" Version="1.4.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Data.PostgreSQL" Version="1.4.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Outbox" Version="1.4.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.9" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="10.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Meetup.Modules.Administration.Application\Meetup.Modules.Administration.Application.csproj" />
+    <ProjectReference Include="..\Meetup.Modules.Administration.Domain\Meetup.Modules.Administration.Domain.csproj" />
+    <ProjectReference Include="..\..\..\Shared\Meetup.Shared.Infrastructure\Meetup.Shared.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>

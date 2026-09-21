@@ -23,6 +23,8 @@ appsettings.*.json
 # developer creates from it.
 !appsettings.Development.json
 appsettings.Development.local.json
+# Same for the Testing settings the integration tests boot the host with (throwaway certificates only).
+!appsettings.Testing.json
 
 # SQLite databases created at runtime
 *.db

@@ -95,6 +95,8 @@ public sealed class SagaConfigurationBuilder
     internal Func<RebusConfigurer, IServiceProvider, RebusConfigurer> RebusConfigurer =>
         _rebusConfigurer ?? ((cfg, _) => cfg);
 
+    internal bool HasRebusConfig => _rebusConfigurer is not null;
+
     internal PollyRetryOptions? PollyOptions => _pollyOptions;
 
     internal IReadOnlyList<Assembly> HandlerAssemblies => _handlerAssemblies;

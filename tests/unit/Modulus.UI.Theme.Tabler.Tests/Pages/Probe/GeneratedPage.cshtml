@@ -1,0 +1,8 @@
+@page
+@* Mirrors the shape of the CLI's generated CRUD Index page: a Razor Page (not a view) that picks its
+   layout with HttpContext.GetThemeLayout() and drops it for htmx fragment requests. *@
+@{
+    var fragment = Request.Headers.ContainsKey("HX-Request");
+    Layout = fragment ? null : HttpContext.GetThemeLayout();
+}
+<div id="generated-page">content</div>

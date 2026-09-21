@@ -1,0 +1,22 @@
+@{ Layout = "/Themes/Tabler/Layouts/Empty.cshtml"; }
+<div id="stat"><m-stat label="Open orders" value="128" delta="+12%" tone="success" hint="vs last week" /></div>
+<div id="stat-bare"><m-stat label="Users" value="9" /></div>
+<div id="empty"><m-empty-state title="No products" message="Create the first one." icon="folder"><a class="btn btn-primary" href="/new">New product</a></m-empty-state></div>
+<div id="empty-bare"><m-empty-state title="Nothing here" /></div>
+<div id="details">
+    <m-detail-list>
+        <m-detail label="Email" value="@("<b>a@x.io</b>")" />
+        <m-detail label="Status"><span class="badge bg-success">Active</span></m-detail>
+        <m-detail label="Phone" />
+    </m-detail-list>
+</div>
+<div id="timeline">
+    <m-timeline>
+        <m-timeline-item title="Shipped" time="2 h ago" tone="success">Left the warehouse</m-timeline-item>
+        <m-timeline-item title="Created" time="1 d ago" />
+    </m-timeline>
+</div>
+<div id="confirm">
+    <m-confirm message="Delete this user?" delete="/users/4" target="closest tr" swap="outerHTML">Delete</m-confirm>
+    <m-confirm message="Purge everything?" post="/purge" class="btn btn-outline-danger">Purge</m-confirm>
+</div>

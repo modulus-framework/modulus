@@ -1,0 +1,57 @@
+@model Modulus.UI.Users.Pages.Users.DetailsModel
+@* Account status card. Status mutations re-render this region in place;
+   failures surface through the summary (ModelState rides the fragment). *@
+@if (!ViewData.ModelState.IsValid)
+{
+    <div class="alert alert-danger mb-3" role="alert">
+        <div asp-validation-summary="All"></div>
+    </div>
+}
+@if (Model.Account is null)
+{
+    <div class="alert alert-warning" role="alert">@await Model.TextAsync("Details.NotFound")</div>
+}
+else
+{
+    <div class="card mb-3">
+        <div class="card-body">
+            <dl class="row">
+                <dt class="col-3">Id</dt>
+                <dd class="col-9"><code>@Model.Account.Id</code></dd>
+                <dt class="col-3">@await Model.TextAsync("Users.Email")</dt>
+                <dd class="col-9">@(Model.Account.Email ?? "—")</dd>
+                <dt class="col-3">@await Model.TextAsync("Users.Active")</dt>
+                <dd class="col-9"><span class="badge bg-@(Model.Account.IsActive ? "green" : "red")">@Model.Account.IsActive</span></dd>
+                <dt class="col-3">@await Model.TextAsync("Users.LockedOut")</dt>
+                <dd class="col-9"><span class="badge bg-@(Model.LockedOut ? "red" : "green")">@Model.LockedOut</span></dd>
+            </dl>
+            <div class="btn-group">
+                <form method="post"
+                      asp-page-handler="ToggleActive"
+                      hx-post="@Url.Page("./Details", "ToggleActive", new { id = Model.Account.Id })"
+                      hx-target="#user-card" hx-swap="innerHTML">
+                    <button class="btn" type="submit">@await Model.TextAsync(Model.Account.IsActive ? "Details.Deactivate" : "Details.Activate")</button>
+                </form>
+                @if (Model.LockedOut)
+                {
+                    <form method="post"
+                          asp-page-handler="Unlock"
+                          hx-post="@Url.Page("./Details", "Unlock", new { id = Model.Account.Id })"
+                          hx-target="#user-card" hx-swap="innerHTML">
+                        <button class="btn" type="submit">@await Model.TextAsync("Details.Unlock")</button>
+                    </form>
+                }
+                else
+                {
+                    <form method="post"
+                          asp-page-handler="Lock"
+                          hx-post="@Url.Page("./Details", "Lock", new { id = Model.Account.Id })"
+                          hx-target="#user-card" hx-swap="innerHTML"
+                          hx-confirm="@await Model.TextAsync("Details.ConfirmLock")">
+                        <button class="btn btn-ghost-danger" type="submit">@await Model.TextAsync("Details.Lock")</button>
+                    </form>
+                }
+            </div>
+        </div>
+    </div>
+}

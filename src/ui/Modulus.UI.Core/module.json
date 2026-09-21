@@ -1,0 +1,7 @@
+{
+  "id": "Modulus.UI.Core",
+  "name": "UI Core",
+  "version": "1.4.0",
+  "dependencies": [],
+  "features": ["Navigation", "Tabler shell", "HTMX", "Alpine"]
+}

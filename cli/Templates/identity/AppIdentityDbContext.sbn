@@ -1,0 +1,14 @@
+using Microsoft.EntityFrameworkCore;
+using Modulus.Identity.EntityFrameworkCore;
+
+namespace {{ identity_namespace }}.Infrastructure;
+
+/// <summary>
+/// The app's identity database: ASP.NET Core Identity (users, roles, claims) plus the
+/// OpenIddict token store, in one context that the <see cref="IdentityModule"/> owns.
+/// Add your own user fields by deriving a user type from <c>ModulusUser</c> and switching
+/// this context, <c>AddModulusIdentity&lt;,,&gt;</c> and the seeder to it, then author a
+/// migration: <c>modulus migrate add AddUserFields --module Identity</c>.
+/// </summary>
+public sealed class AppIdentityDbContext(DbContextOptions<AppIdentityDbContext> options)
+    : ModulusIdentityDbContext(options);

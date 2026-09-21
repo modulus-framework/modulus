@@ -110,7 +110,12 @@ public static class AuthorizationManagementExtensions
             if (allow && effectiveAccessService is not null && holderType is GrantHolderType.User)
             {
                 var userId = ParseUser(request.Holder);
-                var currentReport = effectiveAccessService.Report(new PrincipalGrantQuery(userId, []));
+                // Role membership comes from the caller (the store cannot know
+                // Identity membership): without it the simulation covers
+                // direct grants only and role-delivered halves of toxic
+                // combinations would slip through.
+                var currentReport = effectiveAccessService.Report(
+                    new PrincipalGrantQuery(userId, request.HolderRoles ?? []));
 
                 // Simulate adding the new permissions and check for violations
                 var proposedPermissions = new HashSet<string>(currentReport.AllPermissions, StringComparer.OrdinalIgnoreCase);
@@ -397,14 +402,18 @@ public static class AuthorizationManagementExtensions
     private static void MapGovernance(RouteGroupBuilder group)
     {
         // GET /authorization/effective-access/{userId} — what can this user do?
+        // Optional ?roles=r1&r2 supplies the user's role memberships (the
+        // store cannot know Identity membership); without them the report
+        // covers direct grants and delegations only.
         group.MapGet("/effective-access/{userId:guid}", (
             Guid userId,
+            string[]? roles,
             IEffectiveAccessService? effectiveAccessService) =>
         {
             if (effectiveAccessService is null)
                 return Results.NotFound("Effective access service not registered.");
 
-            var report = effectiveAccessService.Report(new PrincipalGrantQuery(userId, []));
+            var report = effectiveAccessService.Report(new PrincipalGrantQuery(userId, roles ?? []));
             return Results.Ok(new
             {
                 userId = report.UserId,
@@ -428,6 +437,10 @@ public static class AuthorizationManagementExtensions
         .WithName("GetEffectiveAccess");
 
         // POST /authorization/sod-violations/scan — who's violating SoD?
+        // Bulk scan: no caller supplies role membership here, so reports cover
+        // direct grants and delegations only — role-delivered halves of toxic
+        // combinations are invisible to this scan. Use the per-user
+        // effective-access endpoint (with ?roles=) for a complete picture.
         group.MapPost("/sod-violations/scan", async (
             EfPermissionGrantStore store,
             IEffectiveAccessService? effectiveAccessService,
@@ -539,8 +552,16 @@ public static class AuthorizationManagementExtensions
             var userIds = request.UserIds ?? [];
             var reports = new List<EffectiveAccessReport>();
 
+            // Role membership comes from the caller (user id → roles); the
+            // store cannot know Identity membership. Users absent from the map
+            // are reported on direct grants and delegations only.
             foreach (var userId in userIds)
-                reports.Add(effectiveAccessService.Report(new PrincipalGrantQuery(userId, [])));
+            {
+                string[] roles = [];
+                if (request.UserRoles?.TryGetValue(userId.ToString(), out var r) == true && r is not null)
+                    roles = r;
+                reports.Add(effectiveAccessService.Report(new PrincipalGrantQuery(userId, roles)));
+            }
 
             var campaign = new RecertificationCampaign(request.Name, reports);
             var createdBy = currentUser.UserId ?? Guid.Empty;
@@ -631,7 +652,8 @@ public static class AuthorizationManagementExtensions
     }
 
     // Request/response models for recertification
-    private sealed record RecertificationCreateRequest(string Name, Guid[]? UserIds);
+    private sealed record RecertificationCreateRequest(
+        string Name, Guid[]? UserIds, Dictionary<string, string[]>? UserRoles = null);
     private sealed record RecertificationReviewRequest(Guid UserId, string Permission, string Decision);
 
     private static Guid ParseUser(string holder)

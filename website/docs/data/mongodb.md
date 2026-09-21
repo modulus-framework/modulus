@@ -49,12 +49,10 @@ public sealed class ProductRepository : MongoRepository<Product>, IProductReposi
 MongoDB repositories automatically apply tenant filtering:
 
 ```csharp
-// The MongoTenantFilter intercepts queries and adds tenantId filter
-// when ICurrentTenant is available
-public class MongoTenantFilter<TDocument> : IClientSessionHandle
-{
-    // Automatically filters by tenantId
-}
+// MongoTenantFilter.For<T>(tenant) adds { tenantId: X } to all queries.
+// Fail-closed like EF Core: host scope (multi-tenancy off or explicit
+// Change(null)) sees all; an unresolved tenant matches nothing.
+var filter = MongoTenantFilter.For<Product>(currentTenant);
 ```
 
 ## Health Checks

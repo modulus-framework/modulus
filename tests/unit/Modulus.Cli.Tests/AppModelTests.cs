@@ -78,4 +78,37 @@ public class AppModelTests
         model.IdentityConfigJson.Should().BeEmpty();
     }
 
+    [Fact]
+    public void Framework_version_matches_packaging_prefix()
+    {
+        // Keep cli/Services/Models.cs FrameworkVersion.Current in sync with
+        // build/Modulus.Packaging.props <VersionPrefix>.
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        string? propsPath = null;
+        while (dir is not null)
+        {
+            var candidate = Path.Combine(dir.FullName, "build", "Modulus.Packaging.props");
+            if (File.Exists(candidate))
+            {
+                propsPath = candidate;
+                break;
+            }
+            dir = dir.Parent;
+        }
+        propsPath.Should().NotBeNull("repo root with build/Modulus.Packaging.props should be discoverable");
+        var props = File.ReadAllText(propsPath!);
+        props.Should().Contain($"<VersionPrefix>{FrameworkVersion.Current}</VersionPrefix>");
+    }
+
+    [Theory]
+    [InlineData("SqlServer", "Microsoft.EntityFrameworkCore.SqlServer", "10.0.9")]
+    [InlineData("PostgreSQL", "Npgsql.EntityFrameworkCore.PostgreSQL", "10.0.2")]
+    [InlineData("MySQL", "MySql.EntityFrameworkCore", "10.0.7")]
+    [InlineData("SQLite", "Microsoft.EntityFrameworkCore.Sqlite", "10.0.9")]
+    public void Db_provider_info_matches_central_pins(string provider, string package, string version)
+    {
+        DbProviderInfo.Package(provider).Should().Be(package);
+        DbProviderInfo.Version(provider).Should().Be(version);
+    }
+
 }

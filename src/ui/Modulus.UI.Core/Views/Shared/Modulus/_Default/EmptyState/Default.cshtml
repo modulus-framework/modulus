@@ -1,0 +1,26 @@
+@* Default markup for <m-empty-state>. *@
+@using Microsoft.AspNetCore.Html
+@model EmptyStateModel
+@{
+    var inner = UiIcons.GetInnerSvg(Model.Icon);
+}
+<div class="empty">
+    @if (inner.Length > 0)
+    {
+        <div class="empty-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">@(new HtmlString(inner))</svg>
+        </div>
+    }
+    @if (!string.IsNullOrWhiteSpace(Model.Title))
+    {
+        <p class="empty-title">@Model.Title</p>
+    }
+    @if (!string.IsNullOrWhiteSpace(Model.Message))
+    {
+        <p class="empty-subtitle text-secondary">@Model.Message</p>
+    }
+    @if (Model.Actions is not null)
+    {
+        <div class="empty-action">@Model.Actions</div>
+    }
+</div>

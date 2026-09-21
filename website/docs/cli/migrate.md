@@ -27,7 +27,7 @@ Scaffolds a new migration. The command auto-detects the engine per module:
 
 | Option | Description |
 |--------|-------------|
-| `--module` | Specific module (default: all) |
+| `-m, --module` | Specific module (default: all) |
 | `-o, --output` | App root directory (default: current dir) |
 
 ### Examples
@@ -52,7 +52,8 @@ When the target module uses dbsh, the CLI:
 
 1. Changes to the module's Infrastructure directory
 2. Runs `dbsh create --name {Name} --type schema --module {ModuleName}`
-3. Produces `Database/Migrations/{ModuleName}/{seq}_{Name}.sql`
+3. Produces a SQL stub under `Database/Migrations/` (exact layout owned by the
+   dbsh tool)
 
 This is a stub — you fill in the SQL by hand.
 
@@ -64,7 +65,7 @@ Applies pending migrations to each module's database.
 
 | Option | Description |
 |--------|-------------|
-| `--module` | Specific module (default: all) |
+| `-m, --module` | Specific module (default: all) |
 | `-o, --output` | App root directory (default: current dir) |
 
 ### Examples
@@ -85,11 +86,12 @@ modulus migrate update --module Catalog
 dotnet ef database update --project <module.csproj> --startup-project <host.csproj>
 ```
 
-**dbsh modules:**
+**dbsh modules** (run from the module's Infrastructure dir so dbsh discovers
+its `Database/Config/migration.json`; deliberately no `--module` flag):
 
 ```bash
-dbsh init <infra-dir>       # idempotent: create tracking tables if missing
-dbsh migrate --yes <infra-dir>  # apply pending .sql files
+dbsh init            # idempotent: create tracking tables if missing
+dbsh migrate --yes   # apply pending .sql files
 ```
 
 The CLI warns when `{MODULE}_CONNECTION` is not set — dbsh falls back to
@@ -109,14 +111,17 @@ own engine.
 ## Automatic Migrations at Startup
 
 ```csharp
-// Program.cs
-await app.Services.MigrateModulusDatabasesAsync();
+// Program.cs (generated apps pass the mode explicitly per environment)
+await app.Services.MigrateModulusDatabasesAsync(
+    app.Environment.IsProduction()
+        ? DatabaseInitializationMode.Migrate
+        : DatabaseInitializationMode.MigrateOrCreate);
 ```
 
 | Mode | Behavior |
 |------|----------|
-| `MigrateOrCreate` (default) | `Migrate()` when migrations exist, else `EnsureCreated()` |
-| `Migrate` | Always applies migrations; throws if none |
+| `Migrate` (method default) | Always applies migrations; throws if a module has none — use in production |
+| `MigrateOrCreate` | `Migrate()` when migrations exist, else `EnsureCreated()` — dev convenience |
 | `EnsureCreated` | Snapshot only; no migration history |
 
 dbsh modules are **skipped** by `MigrateModulusDatabasesAsync` — they are

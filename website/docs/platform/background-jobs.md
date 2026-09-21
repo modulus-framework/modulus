@@ -4,90 +4,56 @@ sidebar_position: 4
 
 # Background Jobs
 
-Modulus provides an in-process background job system with optional Quartz.NET integration.
+Modulus ships an in-process background job system for **dev/test**,
+plus a Quartz.NET package for production.
 
-## Setup
+## In-Process Jobs (dev/test)
 
-```csharp
-services.AddModulusBackgroundJobs(config);
-```
-
-## Defining a Job
+Jobs take typed args:
 
 ```csharp
-public sealed class SendWelcomeEmailJob : IBackgroundJob
+public sealed class SendWelcomeEmailJob(IEmailService email)
+    : IBackgroundJob<SendWelcomeEmailArgs>
 {
-    private readonly IEmailService _email;
-
-    public SendWelcomeEmailJob(IEmailService email) => _email = email;
-
-    public async Task ExecuteAsync(CancellationToken ct)
+    public async Task ExecuteAsync(SendWelcomeEmailArgs args, CancellationToken ct)
     {
-        // Job logic here
+        await email.SendAsync(args.Address, ct);
     }
 }
 ```
 
-## Scheduling Jobs
-
-### One-Time Jobs
+### Scheduling Jobs
 
 ```csharp
-public sealed class RegisterUserHandler : ICommandHandler<RegisterUser, Unit>
-{
-    private readonly IJobScheduler _scheduler;
+// Run as soon as a worker is available
+await _scheduler.EnqueueAsync<SendWelcomeEmailJob, SendWelcomeEmailArgs>(
+    new(args.Address), ct);
 
-    public async Task<Unit> HandleAsync(RegisterUser command, CancellationToken ct)
-    {
-        // ... register user
+// Run after a delay (held in memory as Task.Delay — lost on shutdown)
+await _scheduler.ScheduleAsync<SendWelcomeEmailJob, SendWelcomeEmailArgs>(
+    new(args.Address), TimeSpan.FromMinutes(5), ct);
 
-        await _scheduler.EnqueueAsync<SendWelcomeEmailJob>(
-            TimeSpan.FromMinutes(5)); // Delay 5 minutes
-
-        return Unit.Value;
-    }
-}
+// Cron schedule (in-memory; fires per replica — see below)
+_scheduler.AddRecurring<DailyReportJob, DailyReportArgs>(
+    "daily-report", "0 0 6 * * ?", new());
+_scheduler.RemoveRecurring("daily-report");
 ```
 
-### Recurring Jobs
+### Job Queue
 
-```csharp
-await _scheduler.ScheduleAsync<DailyReportJob>(
-    CronExpression.Daily);
-```
+`ChannelJobQueue` uses `System.Threading.Channels` — bounded capacity **10,000**
+(`FullMode.Wait`), `max(1, ProcessorCount/2)` workers, 30s recurring tick.
+There is no options class.
 
-## Job Queue
+### Ambient Context + Durability Boundary
 
-The default `ChannelJobQueue` uses `System.Threading.Channels`:
-
-```json
-{
-  "BackgroundJobs": {
-    "MaxConcurrentJobs": 5,
-    "QueueCapacity": 1000
-  }
-}
-```
-
-## Quartz Integration
-
-For production-grade scheduling:
-
-```bash
-modulus app MyApp --scheduler quartz
-```
-
-```csharp
-services.AddModulusBackgroundJobs(config)
-    .UseQuartz(config);
-```
-
-Quartz provides:
-
-- Persistent job storage
-- Cluster support
-- Cron expressions
-- Misfire handling
+- The envelope carries `TenantId`/`CorrelationId` at enqueue time and restores
+  them on the worker — jobs see the same tenant/logs as the request that queued
+  them.
+- **Everything is in-memory**: delayed/recurring work is lost on shutdown, and
+  recurring jobs fire **once per replica per tick**. Production logs a warning
+  pointing at Quartz/Hangfire. For durable, clustered scheduling use the
+  Quartz package (`Modulus.BackgroundJobs.Quartz`).
 
 ## See Also
 

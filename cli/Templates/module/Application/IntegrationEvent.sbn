@@ -5,5 +5,6 @@ namespace {{ module_namespace }}.Application.IntegrationEvents;
 /// <summary>
 /// Sample integration event published when a {{ entity_name_lower }} is created.
 /// </summary>
+[IntegrationEventName("{{ module_name_lower }}.{{ entity_name_lower }}-created.v1")]
 public sealed record {{ entity_name }}CreatedIntegrationEvent(Guid Id)
     : IntegrationEventBase("{{ module_name_lower }}.{{ entity_name_lower }}-created.v1");

@@ -21,27 +21,29 @@ Modulus provides a comprehensive testing harness.
 [Trait("Category", "Unit")]
 public sealed class CreateProductHandlerTests
 {
+    private readonly IProductRepository _repo = Substitute.For<IProductRepository>();
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
     private readonly CreateProductHandler _sut;
 
     public CreateProductHandlerTests()
     {
-        _sut = new CreateProductHandler(_unitOfWork);
+        _sut = new CreateProductHandler(_repo, _unitOfWork);
     }
 
     [Fact]
     public async Task HandleAsync_CreatesProduct()
     {
         // Arrange
-        var command = new CreateProduct("Widget", 9.99m);
+        var command = new CreateProductCommand("Widget");
 
         // Act
-        var result = await _sut.HandleAsync(command);
+        var id = await _sut.HandleAsync(command, CancellationToken.None);
 
         // Assert
-        result.Name.Should().Be("Widget");
-        result.Price.Should().Be(9.99m);
-        await _unitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        await _repo.Received(1).AddAsync(
+            Arg.Is<Product>(p => p.Name == "Widget"),
+            Arg.Any<CancellationToken>());
+        await _unitOfWork.Received(1).CommitAsync(Arg.Any<CancellationToken>());
     }
 }
 ```
@@ -72,34 +74,38 @@ dotnet test tests/unit/Modulus.Core.Tests
 | `Modulus.Events.Tests` | Integration event naming, trace context |
 | `Modulus.EventBus.RabbitMQ.Tests` | RabbitMQ publisher confirms, durability |
 | `Modulus.EventBus.Kafka.Tests` | Kafka partition distribution, offset management |
-| `Modulus.Inbox.Tests` | Inbox deduplication |
-| `Modulus.Outbox.Tests` | Outbox processor, at-least-once delivery |
+| `Modulus.Inbox.Tests` / `Modulus.Inbox.MongoDB.Tests` | Inbox deduplication (EF + Mongo) |
+| `Modulus.Outbox.Tests` / `Modulus.Outbox.MongoDB.Tests` | Outbox processor, at-least-once delivery |
 | `Modulus.Caching.Redis.Tests` | Redis cache backend |
 | `Modulus.Mediator.Tests` | Pipeline behaviors |
-| `Modulus.Identity.Tests` | Password grant, external IdP validation |
+| `Modulus.MultiTenancy.Tests` | Tenant store, migration fan-out |
+| `Modulus.Platform.Tests` | Platform services |
+| `Modulus.Authorization.*.Tests` | Grants, management API |
+| `Modulus.Sagas.Tests` | Saga orchestration |
+| `Modulus.BackgroundJobs.Quartz.Tests` | Quartz scheduling |
+| `Modulus.Identity.Tests` | Password grant, external IdP validation, account endpoints |
+| `Modulus.Observability.Tests` | OTel bootstrap wiring |
 | `Modulus.Testing.Tests` | Test harness, WebApplicationFactory |
+| `Modulus.Cli.Tests` | Scaffolding, template rendering |
 
 ## Test Doubles
 
-Pre-built fakes for dependency injection in tests:
+`Modulus.Testing` ships a recording bus plus event assertions for
+integration tests (register `RecordingModuleBus` as the `IModuleBus` in the
+test host):
 
 ```csharp
-var factory = new ModulusWebAppFactory<Program>()
-    .WithFake<ICurrentTenant>(new FakeCurrentTenant { Id = Guid.NewGuid() })
-    .WithFake<ICurrentUser>(new FakeCurrentUser { Id = "user123" })
-    .WithFake<IModuleBus>(new RecordingModuleBus());
-
-var client = factory.CreateClient();
-var response = await client.PostAsync("/api/products", ...);
+var bus = factory.Services.GetRequiredService<RecordingModuleBus>();
+var published = bus.PublishedEvents<ProductCreatedIntegrationEvent>();
+published.Should().ContainSingle(e => e.Id == productId);
+bus.Clear();
 ```
 
-**Available fakes:**
-- `FakeCurrentTenant` — Inject tenant context
-- `FakeCurrentUser` — Inject user + roles
-- `FakePermissionRegistry` — Mock authorization
-- `FakeFeatureGate` — Feature flag toggles
-- `FakeCacheService` — In-memory cache
-- `RecordingModuleBus` — Capture published events
+**Real test seams:** `RecordingModuleBus` (+ event assertions),
+`ModuleBoundaryRules.FindUnnamedIntegrationEvents()` /
+`FindModuleTypes()` for architecture tests. There is no `.WithFake<T>()`
+chain, `FakeCurrentTenant/User`, or `ModuleTestFixture` — substitute
+NSubstitute mocks or register test doubles in DI directly.
 
 ## Event Assertions
 
@@ -111,12 +117,12 @@ public async Task CreateProduct_PublishesEvent()
 {
     var bus = factory.Services.GetRequiredService<RecordingModuleBus>();
     var client = factory.CreateClient();
-    
-    await client.PostAsync("/api/products", 
+
+    await client.PostAsync("/api/catalog/products",
         JsonContent.Create(new { name = "Widget" }));
-    
-    bus.HasPublished<ProductCreatedEvent>(
-        e => e.Name == "Widget").Should().BeTrue();
+
+    bus.PublishedEvents<ProductCreatedIntegrationEvent>()
+        .Should().ContainSingle();
 }
 ```
 

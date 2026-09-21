@@ -63,6 +63,22 @@ public sealed class IdempotentIntegrationEventHandler<TEvent>(
     private static string TruncateToColumnWidth(string name)
         => name.Length <= HandlerNameMaxLength ? name : name[..HandlerNameMaxLength];
 
+    /// <summary>
+    /// Back-off before in-pipeline retry <paramref name="failedAttempt"/>
+    /// (1-based): exponential (<c>base * 2^(n-1)</c>) or flat, with optional
+    /// ±20% jitter, capped at 5 minutes.
+    /// </summary>
+    private static TimeSpan ComputeRetryDelay(InboxOptions options, int failedAttempt)
+    {
+        var @base = Math.Max(0, options.HandlerRetryBaseDelaySec);
+        var seconds = options.HandlerRetryExponential
+            ? @base * Math.Pow(2, Math.Min(failedAttempt - 1, 10))
+            : @base;
+        if (options.HandlerRetryJitter)
+            seconds *= 0.8 + Random.Shared.NextDouble() * 0.4;
+        return TimeSpan.FromSeconds(Math.Min(seconds, 300));
+    }
+
     public async Task HandleAsync(TEvent @event, CancellationToken ct)
     {
         var id = @event.EventId;
@@ -96,20 +112,39 @@ public sealed class IdempotentIntegrationEventHandler<TEvent>(
             return;
         }
 
-        // 2. We own the record — execute the real handler. Capture any error
-        //    so we can persist final state AND re-throw the ORIGINAL exception
-        //    (a failure in the persistence step below must not mask it).
+        // 2. We own the record — execute the real handler with the configured
+        //    in-pipeline retries (fast, in-process retries before the inbox's
+        //    own claim/retry/dead-letter cycle kicks in). Capture the final
+        //    error so we can persist final state AND re-throw the ORIGINAL
+        //    exception (a failure in the persistence step below must not
+        //    mask it).
         Exception? handlerError = null;
-        try
+        var retry = opts.Value;
+        var maxAttempts = Math.Max(1, retry.HandlerRetryCount + 1);
+        for (var attempt = 1; ; attempt++)
         {
-            await inner.HandleAsync(@event, ct);
-        }
-        catch (Exception ex)
-        {
-            handlerError = ex;
-            logger.LogError(ex,
-                "Inbox: handler failed for {Type} {Id} ({Handler})",
-                typeof(TEvent).Name, id, _handlerName);
+            try
+            {
+                await inner.HandleAsync(@event, ct);
+                break;
+            }
+            catch (Exception ex) when (attempt < maxAttempts && !ct.IsCancellationRequested)
+            {
+                var delay = ComputeRetryDelay(retry, attempt);
+                logger.LogWarning(ex,
+                    "Inbox: handler failed for {Type} {Id} ({Handler}) (attempt {Attempt}/{MaxAttempts}); retrying in {DelayMs}ms",
+                    typeof(TEvent).Name, id, _handlerName,
+                    attempt, maxAttempts, delay.TotalMilliseconds);
+                await Task.Delay(delay, ct);
+            }
+            catch (Exception ex)
+            {
+                handlerError = ex;
+                logger.LogError(ex,
+                    "Inbox: handler failed for {Type} {Id} ({Handler})",
+                    typeof(TEvent).Name, id, _handlerName);
+                break;
+            }
         }
 
         // 3. Persist final state in its own try/catch. A persistence failure

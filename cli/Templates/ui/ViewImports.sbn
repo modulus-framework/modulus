@@ -1,0 +1,5 @@
+@namespace {{ api_namespace }}.Pages
+@using {{ api_namespace }}.Pages
+@using Modulus.UI
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+@addTagHelper *, Modulus.UI.Core

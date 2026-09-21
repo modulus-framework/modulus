@@ -48,11 +48,23 @@ public sealed class SagaInfrastructureTests
     {
         var services = new Microsoft.Extensions.DependencyInjection.ServiceCollection();
 
-        services.AddModulusSagas(b => b.HandlersFromAssemblyOf<SagaInfrastructureTests>());
+        services.AddModulusSagas(b => b
+            .Rebus(cfg => cfg)
+            .HandlersFromAssemblyOf<SagaInfrastructureTests>());
 
         services.Should().Contain(d =>
             d.ServiceType == typeof(Rebus.Handlers.IHandleMessages<TestSagaEvent>)
             && d.ImplementationType == typeof(Modulus.Sagas.Bus.IntegrationEventHandlerAdapter<TestSagaEvent>));
+    }
+
+    [Fact]
+    public void AddModulusSagas_WithoutRebus_Throws()
+    {
+        var services = new Microsoft.Extensions.DependencyInjection.ServiceCollection();
+
+        FluentActions.Invoking(() => services.AddModulusSagas(b => b.HandlersFromAssemblyOf<SagaInfrastructureTests>()))
+            .Should().Throw<InvalidOperationException>()
+            .WithMessage("*.Rebus*");
     }
 
     // ── Polly pipeline factory ────────────────────────────────────

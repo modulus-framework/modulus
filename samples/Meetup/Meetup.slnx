@@ -1,0 +1,49 @@
+<Solution>
+
+  <Folder Name="/src/" />
+  <Folder Name="/src/Web/">
+    <Project Path="src/Web/Meetup.Web/Meetup.Web.csproj" />
+  </Folder>
+  <Folder Name="/src/Shared/">
+    <Project Path="src/Shared/Meetup.Shared.Domain/Meetup.Shared.Domain.csproj" />
+    <Project Path="src/Shared/Meetup.Shared.Application/Meetup.Shared.Application.csproj" />
+    <Project Path="src/Shared/Meetup.Shared.Infrastructure/Meetup.Shared.Infrastructure.csproj" />
+    <Project Path="src/Shared/Meetup.Shared.Presentation/Meetup.Shared.Presentation.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/UserAccess/">
+    <Project Path="src/Modules/UserAccess/Meetup.Modules.UserAccess.Domain/Meetup.Modules.UserAccess.Domain.csproj" />
+    <Project Path="src/Modules/UserAccess/Meetup.Modules.UserAccess.Application/Meetup.Modules.UserAccess.Application.csproj" />
+    <Project Path="src/Modules/UserAccess/Meetup.Modules.UserAccess.Infrastructure/Meetup.Modules.UserAccess.Infrastructure.csproj" />
+    <Project Path="src/Modules/UserAccess/Meetup.Modules.UserAccess.Presentation/Meetup.Modules.UserAccess.Presentation.csproj" />
+    <Project Path="src/Modules/UserAccess/Meetup.Modules.UserAccess.Web/Meetup.Modules.UserAccess.Web.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Registrations/">
+    <Project Path="src/Modules/Registrations/Meetup.Modules.Registrations.Domain/Meetup.Modules.Registrations.Domain.csproj" />
+    <Project Path="src/Modules/Registrations/Meetup.Modules.Registrations.Application/Meetup.Modules.Registrations.Application.csproj" />
+    <Project Path="src/Modules/Registrations/Meetup.Modules.Registrations.Infrastructure/Meetup.Modules.Registrations.Infrastructure.csproj" />
+    <Project Path="src/Modules/Registrations/Meetup.Modules.Registrations.Presentation/Meetup.Modules.Registrations.Presentation.csproj" />
+    <Project Path="src/Modules/Registrations/Meetup.Modules.Registrations.Web/Meetup.Modules.Registrations.Web.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Meetings/">
+    <Project Path="src/Modules/Meetings/Meetup.Modules.Meetings.Domain/Meetup.Modules.Meetings.Domain.csproj" />
+    <Project Path="src/Modules/Meetings/Meetup.Modules.Meetings.Application/Meetup.Modules.Meetings.Application.csproj" />
+    <Project Path="src/Modules/Meetings/Meetup.Modules.Meetings.Infrastructure/Meetup.Modules.Meetings.Infrastructure.csproj" />
+    <Project Path="src/Modules/Meetings/Meetup.Modules.Meetings.Presentation/Meetup.Modules.Meetings.Presentation.csproj" />
+    <Project Path="src/Modules/Meetings/Meetup.Modules.Meetings.Web/Meetup.Modules.Meetings.Web.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Administration/">
+    <Project Path="src/Modules/Administration/Meetup.Modules.Administration.Domain/Meetup.Modules.Administration.Domain.csproj" />
+    <Project Path="src/Modules/Administration/Meetup.Modules.Administration.Application/Meetup.Modules.Administration.Application.csproj" />
+    <Project Path="src/Modules/Administration/Meetup.Modules.Administration.Infrastructure/Meetup.Modules.Administration.Infrastructure.csproj" />
+    <Project Path="src/Modules/Administration/Meetup.Modules.Administration.Presentation/Meetup.Modules.Administration.Presentation.csproj" />
+    <Project Path="src/Modules/Administration/Meetup.Modules.Administration.Web/Meetup.Modules.Administration.Web.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Payments/">
+    <Project Path="src/Modules/Payments/Meetup.Modules.Payments.Domain/Meetup.Modules.Payments.Domain.csproj" />
+    <Project Path="src/Modules/Payments/Meetup.Modules.Payments.Application/Meetup.Modules.Payments.Application.csproj" />
+    <Project Path="src/Modules/Payments/Meetup.Modules.Payments.Infrastructure/Meetup.Modules.Payments.Infrastructure.csproj" />
+    <Project Path="src/Modules/Payments/Meetup.Modules.Payments.Presentation/Meetup.Modules.Payments.Presentation.csproj" />
+    <Project Path="src/Modules/Payments/Meetup.Modules.Payments.Web/Meetup.Modules.Payments.Web.csproj" />
+  </Folder>
+
+</Solution>

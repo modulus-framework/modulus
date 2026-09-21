@@ -1,0 +1,39 @@
+@startuml C4_Meeting_Aggregate
+title Meetup — Meeting aggregate (code level)
+
+class Meeting {
+  + GroupId : Guid
+  + Title : string
+  + AttendeesLimit : int?
+  + GuestsLimit : int
+  + EventFee : decimal
+  + Create(...) : Meeting
+}
+
+class MeetingAttendee {
+  + MeetingId : Guid
+  + Login : string
+  + IsHost : bool
+  + Status : AttendeeStatus
+  + Join(...) : MeetingAttendee
+  + Decline()
+}
+
+class MeetingComment {
+  + MeetingId : Guid
+  + AuthorLogin : string
+  + Text : string
+  + ReplyToId : Guid?
+  + Add(...) : MeetingComment
+}
+
+enum AttendeeStatus {
+  Attendee
+  Waitlist
+  Declined
+}
+
+Meeting "1" *-- "0..*" MeetingAttendee : attendees
+Meeting "1" *-- "0..*" MeetingComment : discussion
+MeetingAttendee --> AttendeeStatus
+@enduml

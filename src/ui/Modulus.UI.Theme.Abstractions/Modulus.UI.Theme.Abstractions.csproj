@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Theme contracts for the Modulus UI framework: ITheme, ThemeAsset, standard layouts, theme options, layout slots, and design tokens. Themes are Razor class libraries implementing ITheme (see Modulus.UI.Theme.Tabler for the reference theme). Depends on nothing UI-specific, so any theme can be swapped without touching UI.Core.</Description>
+  </PropertyGroup>
+
+</Project>

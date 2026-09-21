@@ -1,0 +1,22 @@
+@model {{ api_namespace }}.Pages.{{ module_name }}.{{ entity_plural }}.IndexModel
+@* Edit modal: loaded into #m-modal-container by the row's Edit button. A failed post (422) re-renders it in place;
+   a successful one swaps the refreshed table into #{{ entity_name_lower }}-table and closes the modal (see OnPostUpdateAsync). *@
+<m-modal title="Edit {{ entity_name_lower }}">
+    <form id="{{ entity_name_lower }}-edit-form" method="post" asp-page-handler="Update"
+          hx-post="@Url.Page("./Index", "Update")"
+          hx-target="#m-modal-container" hx-swap="innerHTML">
+        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+        <input type="hidden" asp-for="Edit.Id" />
+        <div class="mb-3">
+            <label class="form-label" asp-for="Edit.Name">Name</label>
+            <input class="form-control" asp-for="Edit.Name" placeholder="{{ entity_name }} name" />
+            <span class="invalid-feedback d-block" asp-validation-for="Edit.Name"></span>
+        </div>
+        @* Fields other modules contribute to this entity (ConfigureEntityUi), pre-filled from the stored values. *@
+        <m-fields entity="@Model.EntityKey" for="Edit.Extra" />
+    </form>
+    <m-modal-footer>
+        <button class="btn btn-link link-secondary" type="button" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-primary" type="submit" form="{{ entity_name_lower }}-edit-form">Save changes</button>
+    </m-modal-footer>
+</m-modal>

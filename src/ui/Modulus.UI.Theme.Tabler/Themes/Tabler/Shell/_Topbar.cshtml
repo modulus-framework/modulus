@@ -1,0 +1,51 @@
+@* Top navbar: Topbar.Start / Topbar.End slots, optional global search and
+   color-mode switcher (driven by modulus.js via data attributes), and the
+   signed-in user's dropdown with the UserMenu slot. *@
+@inject IOptions<UiOptions> Ui
+@inject IOptions<ThemeOptions> ThemeCfg
+@{
+    var features = Ui.Value.Features;
+    var showSwitch = ThemeCfg.Value.AllowUserThemeSwitch || features.UserThemeSwitch;
+    var user = Context.User;
+    var displayName = user.Identity?.Name;
+    var initial = string.IsNullOrEmpty(displayName) ? "?" : displayName[..1].ToUpperInvariant();
+    var userMenu = await Html.ModulusSlotAsync(UiSlots.UserMenu);
+}
+<header class="navbar navbar-expand-md d-print-none m-topbar">
+    <div class="container-xl">
+        <div class="navbar-nav flex-row order-md-last">
+            @await Html.ModulusSlotAsync(UiSlots.TopbarEnd)
+            @if (showSwitch)
+            {
+                <div class="nav-item d-none d-md-flex me-2">
+                    <button type="button" class="btn btn-icon btn-ghost-secondary" data-m-color-mode-toggle aria-label="Toggle color mode" title="Toggle color mode">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" /><path d="M12 3v18" /><path d="M12 9l4.65 -4.65" /><path d="M12 14.3l7.37 -7.37" /><path d="M12 19.6l8.85 -8.85" /></svg>
+                    </button>
+                </div>
+            }
+            @if (user.Identity?.IsAuthenticated == true)
+            {
+                <div class="nav-item dropdown">
+                    <a href="#" class="nav-link d-flex lh-1 p-0 px-2" data-bs-toggle="dropdown" aria-label="Open user menu">
+                        <span class="avatar avatar-sm">@initial</span>
+                        <div class="d-none d-xl-block ps-2">
+                            <div>@displayName</div>
+                        </div>
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+                        @userMenu
+                    </div>
+                </div>
+            }
+        </div>
+        <div class="collapse navbar-collapse" id="m-topbar-menu">
+            @await Html.ModulusSlotAsync(UiSlots.TopbarStart)
+            @if (features.GlobalSearch)
+            {
+                <form class="ms-md-3 d-flex" action="@Url.Content("~/search")" method="get" role="search" autocomplete="off">
+                    <input type="search" name="q" class="form-control" placeholder="Search…" aria-label="Search" />
+                </form>
+            }
+        </div>
+    </div>
+</header>

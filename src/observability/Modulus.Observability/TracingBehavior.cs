@@ -44,10 +44,12 @@ public sealed class TracingBehavior<TRequest, TResponse>(
         }
         catch (Exception ex)
         {
-            activity.SetStatus(ActivityStatusCode.Error, ex.Message);
+            // Record only the exception TYPE on the span: messages and stack
+            // traces can carry sensitive internals (connection strings, PII,
+            // SQL) into telemetry backends with broad readership. Full
+            // details stay in the exception log, not the trace.
+            activity.SetStatus(ActivityStatusCode.Error, ex.GetType().Name);
             activity.SetTag("exception.type", ex.GetType().FullName);
-            activity.SetTag("exception.message", ex.Message);
-            activity.SetTag("exception.stacktrace", ex.ToString());
             throw;
         }
         finally

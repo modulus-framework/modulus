@@ -1,0 +1,11 @@
+{
+  "name": "local",
+  "database": {
+    "connectionString": "Host=localhost;Port=5432;Database=meetup_meetings;Username=meetup;Password=meetup"
+  },
+  "migration": {
+    "requireApproval": false,
+    "lockTimeoutSeconds": 30,
+    "maxBatchSize": 10
+  }
+}

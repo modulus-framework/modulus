@@ -1,0 +1,9 @@
+@page "{name}"
+@model Modulus.UI.Settings.Pages.Settings.EditModel
+@{
+    ViewData["Title"] = $"{await Model.TextAsync("Edit.Title")}: {Model.Definition?.DisplayName ?? RouteData.Values["name"]}";
+}
+<m-page-header title="@ViewData["Title"]" subtitle="@Model.Definition?.Description" />
+<div id="settings-form">
+    @await Html.PartialAsync("_EditForm", Model)
+</div>

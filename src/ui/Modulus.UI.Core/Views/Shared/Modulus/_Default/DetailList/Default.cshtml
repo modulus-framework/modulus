@@ -1,0 +1,18 @@
+@* Default markup for <m-detail-list>: a definition list of label/value pairs. *@
+@model DetailListModel
+<dl class="row mb-0">
+    @foreach (var item in Model.Items)
+    {
+        <dt class="col-sm-4 col-md-3 text-secondary fw-normal">@item.Label</dt>
+        <dd class="col-sm-8 col-md-9">
+            @if (item.IsEmpty)
+            {
+                <span class="text-secondary">&mdash;</span>
+            }
+            else
+            {
+                @item.Value
+            }
+        </dd>
+    }
+</dl>

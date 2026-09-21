@@ -69,9 +69,9 @@ public interface IDomainEvent { }
 ```csharp
 public interface ISoftDelete
 {
-    bool IsDeleted { get; }
-    DateTime? DeletedAt { get; }
-    string? DeletedBy { get; }
+    bool IsDeleted { get; set; }
+    DateTime? DeletedAt { get; set; }
+    string? DeletedBy { get; set; }
 }
 ```
 
@@ -80,10 +80,10 @@ public interface ISoftDelete
 ```csharp
 public interface IAuditableEntity
 {
-    DateTime CreatedAt { get; }
-    string? CreatedBy { get; }
-    DateTime? UpdatedAt { get; }
-    string? UpdatedBy { get; }
+    DateTime CreatedAt { get; set; }
+    string? CreatedBy { get; set; }
+    DateTime? UpdatedAt { get; set; }
+    string? UpdatedBy { get; set; }
 }
 ```
 
@@ -92,7 +92,7 @@ public interface IAuditableEntity
 ```csharp
 public interface IHasTenantId
 {
-    Guid? TenantId { get; }
+    Guid TenantId { get; set; }   // non-nullable; stamped automatically
 }
 ```
 
@@ -100,18 +100,24 @@ public interface IHasTenantId
 
 ```csharp
 [AttributeUsage(AttributeTargets.Property)]
-public sealed class ClassifiedAttribute : Attribute { }
+public sealed class ProtectedPersonalDataAttribute : Attribute { }
 ```
+
+Mark a `string` property to encrypt it at rest (see
+[Personal Data Protection](../../hardening/personal-data-protection)).
 
 ## PagedList\<T\>
 
 ```csharp
-public class PagedList<T>
+public sealed record PagedList<T>
 {
-    public IReadOnlyList<T> Items { get; }
-    public int TotalCount { get; }
+    public IReadOnlyList<T> Items { get; init; }
+    public int TotalCount { get; init; }
+    public int Page { get; init; }
+    public int PageSize { get; init; }
+    public bool HasNextPage => Page * PageSize < TotalCount;
+    public bool HasPreviousPage => Page > 1;
     public int TotalPages { get; }
-    public int Page { get; }
-    public int PageSize { get; }
+    public PagedList<TResult> Map<TResult>(Func<T, TResult> selector);
 }
 ```

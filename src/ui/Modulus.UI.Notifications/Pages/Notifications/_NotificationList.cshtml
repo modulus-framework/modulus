@@ -1,0 +1,25 @@
+@using Modulus.Localization
+@using Modulus.UI
+@using Modulus.UI.Notifications
+@using Modulus.UI.Notifications.Pages.Notifications
+@inject IModulusLocalizer Localizer
+@model NotificationListView
+@if (Model.Result.Items.Count == 0)
+{
+    @await Html.PartialAsync("_Alert", UiAlert.Info(await Localizer.GetAsync(NotificationsUiLocalization.ResourceName, "Index.Empty")))
+}
+else
+{
+    <div class="card">
+        <div class="list-group list-group-flush">
+            @foreach (var item in Model.Result.Items)
+            {
+                @await Html.PartialAsync("_NotificationRow", new NotificationRowView(item, Model.UnreadOnly, Model.Result.Page))
+            }
+        </div>
+        @* Links are rebuilt from the current URL (the htmx handler key is dropped), with the
+           filter pinned explicitly because this partial also renders as a fragment. *@
+        <m-pagination page="@Model.Result.Page" has-previous="@Model.Result.HasPreviousPage" has-next="@Model.Result.HasNextPage"
+                      route-UnreadOnly="@Model.UnreadOnly.ToString()" />
+    </div>
+}

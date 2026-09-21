@@ -1,0 +1,27 @@
+{
+  "id": "hardening/versioning",
+  "title": "API Versioning",
+  "description": "Modulus wires Asp.Versioning for both REPR endpoints and MVC controllers.",
+  "source": "@site/docs/hardening/versioning.md",
+  "sourceDirName": "hardening",
+  "slug": "/hardening/versioning",
+  "permalink": "/docs/hardening/versioning",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/modulus-framework/modulus/tree/main/website/docs/hardening/versioning.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 10,
+  "frontMatter": {
+    "sidebar_position": 10
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Personal Data Protection",
+    "permalink": "/docs/hardening/personal-data-protection"
+  },
+  "next": {
+    "title": "OpenAPI",
+    "permalink": "/docs/hardening/openapi"
+  }
+}

@@ -1,0 +1,18 @@
+@startuml C1_System_Context
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+title Meetup — System Context (C1)
+
+Person(member, "Member", "Organizes and attends meetings")
+Person(admin, "Administrator", "Accepts/rejects meeting group proposals")
+
+System(meetup, "Meetup", "Modular monolith (.NET 10): meeting groups, meetings, payments, registrations, user access")
+
+System_Ext(smtp, "E-mail provider", "Future: registration confirmations")
+System_Ext(paymentGw, "Payment gateway", "Future: real subscription/fee charges")
+
+Rel(member, meetup, "Uses (HTTPS/JSON)")
+Rel(admin, meetup, "Moderates (HTTPS/JSON)")
+Rel(meetup, smtp, "Sends (future)")
+Rel(meetup, paymentGw, "Charges (future)")
+@enduml

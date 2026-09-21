@@ -1,5 +1,6 @@
 namespace Modulus.Storage;
 
+using Azure;
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
 using Azure.Storage.Sas;
@@ -34,16 +35,53 @@ public sealed class AzureBlobFileStorage(
         => await GetBlob(path).ExistsAsync(ct);
 
     public Task<string> GetPresignedUrlAsync(string path, TimeSpan expiry, CancellationToken ct = default)
-    {
-        var blob = GetBlob(path);
-        var sas = blob.GenerateSasUri(BlobSasPermissions.Read, DateTime.UtcNow.Add(expiry));
-        return Task.FromResult(sas.ToString());
-    }
+        => GeneratePresignedAsync(
+            GetBlob(path), BlobSasPermissions.Read,
+            DateTimeOffset.UtcNow.Add(expiry), ct);
 
     public Task<string> GetPresignedUploadUrlAsync(string path, TimeSpan expiry, string? contentType = null, CancellationToken ct = default)
+        => GeneratePresignedAsync(
+            GetBlob(path),
+            BlobSasPermissions.Add | BlobSasPermissions.Create | BlobSasPermissions.Write,
+            DateTimeOffset.UtcNow.Add(expiry), ct);
+
+    private async Task<string> GeneratePresignedAsync(
+        BlobClient blob,
+        BlobSasPermissions permissions,
+        DateTimeOffset expiresOn,
+        CancellationToken ct)
     {
-        var blob = GetBlob(path);
-        var sas = blob.GenerateSasUri(BlobSasPermissions.Add | BlobSasPermissions.Create | BlobSasPermissions.Write, DateTime.UtcNow.Add(expiry));
-        return Task.FromResult(sas.ToString());
+        // Shared-key clients mint a service SAS directly.
+        if (blob.CanGenerateSasUri)
+            return blob.GenerateSasUri(permissions, expiresOn).ToString();
+
+        // AAD-backed clients (TokenCredential) cannot mint a service SAS —
+        // GenerateSasUri would throw at runtime. Mint a user-delegation SAS
+        // instead, failing fast with a clear message when the identity lacks
+        // the delegation permission.
+        UserDelegationKey delegationKey;
+        try
+        {
+            delegationKey = (await client.GetUserDelegationKeyAsync(
+                startsOn: null, expiresOn: expiresOn, cancellationToken: ct)).Value;
+        }
+        catch (RequestFailedException ex)
+        {
+            throw new InvalidOperationException(
+                "Cannot generate a presigned URL: the BlobServiceClient uses Azure AD " +
+                "authentication (no shared key) and the identity is not permitted to " +
+                "mint a user-delegation SAS (grant e.g. the 'Storage Blob Delegated' " +
+                "role). Either configure a shared-key connection string or grant the role.",
+                ex);
+        }
+
+        var builder = new BlobSasBuilder(permissions, expiresOn)
+        {
+            BlobContainerName = _container,
+            BlobName = blob.Name,
+            Resource = "b",
+        };
+        var sas = builder.ToSasQueryParameters(delegationKey, client.AccountName);
+        return new BlobUriBuilder(blob.Uri) { Sas = sas }.ToUri().ToString();
     }
 }

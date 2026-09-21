@@ -47,17 +47,14 @@ public static class EfAuthorizationStoreExtensions
         services.AddDbContextFactory<AuthorizationStoreDbContext>(configure);
         services.TryAddSingleton(TimeProvider.System);
 
-        // Register each concrete store once and map its seam interface onto it,
-        // so applications can inject the concrete type for the async management
-        // API while the resolvers keep depending on the seam.
+        // Register the concrete store for the management API, then expose the
+        // seam interface as the request-scoped cache wrapper — the ONLY
+        // IPermissionGrantStore registration, so every consumer (resolver
+        // chain, authorization handler) is scoped and memoizes GetGrants per
+        // principal within a single request, eliminating redundant DB queries
+        // when multiple permissions are checked against the same principal.
         services.TryAddSingleton<EfPermissionGrantStore>();
         services.RemoveAll<IPermissionGrantStore>();
-        services.AddSingleton<IPermissionGrantStore>(
-            sp => sp.GetRequiredService<EfPermissionGrantStore>());
-
-        // Wrap the grant store with request-scoped caching: memoizes GetGrants per
-        // principal within a single request, eliminating redundant DB queries when
-        // multiple permissions are checked against the same principal.
         services.AddScoped<IPermissionGrantStore>(sp =>
             new CachedPermissionGrantStore(sp.GetRequiredService<EfPermissionGrantStore>()));
 

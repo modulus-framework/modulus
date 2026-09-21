@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Cobytelabs.Modulus.Core" Version="1.4.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Mediator" Version="1.4.0" />
+    <PackageReference Include="Cobytelabs.Modulus.Events" Version="1.4.0" />
+    <PackageReference Include="FluentValidation" Version="12.1.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Meetup.Modules.Meetings.Domain\Meetup.Modules.Meetings.Domain.csproj" />
+    <ProjectReference Include="..\..\..\Shared\Meetup.Shared.Application\Meetup.Shared.Application.csproj" />
+    <!-- Cross-module contracts only (integration events). Modules never
+         reference another module's Application handlers or Infrastructure. -->
+    <ProjectReference Include="..\..\Administration\Meetup.Modules.Administration.Application\Meetup.Modules.Administration.Application.csproj" />
+    <ProjectReference Include="..\..\Payments\Meetup.Modules.Payments.Application\Meetup.Modules.Payments.Application.csproj" />
+  </ItemGroup>
+
+</Project>

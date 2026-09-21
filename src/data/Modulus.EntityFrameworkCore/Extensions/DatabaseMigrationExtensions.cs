@@ -23,11 +23,19 @@ public enum DatabaseInitializationMode
     MigrateOrCreate,
 
     /// <summary>
-    /// Always apply migrations. Throws if the context defines none. <b>This is the
+    /// Always apply migrations. Fails fast when a context defines none. <b>This is the
     /// default</b> — production must bring every schema change through a migration,
     /// and failing fast on a context with no migrations surfaces the mistake at
     /// startup rather than silently creating an un-migratable schema.
     /// </summary>
+    /// <remarks>
+    /// EF Core's <c>MigrateAsync</c> alone is a no-op with no migrations, so this
+    /// mode explicitly checks <c>GetMigrations()</c> and throws.
+    /// Run a single migrator in multi-replica deployments (init container / leader)
+    /// — concurrent <c>MigrateAsync</c> calls race on the history table.
+    /// Per-tenant connection resolvers only migrate the ambient/host tenant here;
+    /// fan out per tenant out-of-band or via a dedicated migrator job.
+    /// </remarks>
     Migrate,
 
     /// <summary>
@@ -68,7 +76,12 @@ public static class DatabaseMigrationExtensions
         var logger = sp.GetService<ILoggerFactory>()?.CreateLogger("Modulus.Database");
         var registry = sp.GetService<IModuleMigrationRegistry>();
 
-        foreach (var db in sp.GetServices<DbContext>())
+        // AddModuleDatabase/AddOutbox/AddInbox each register a DbContext descriptor
+        // resolving the same instance — dedup by runtime type so each database
+        // migrates exactly once per boot.
+        foreach (var db in sp.GetServices<DbContext>()
+                     .GroupBy(ctx => ctx.GetType())
+                     .Select(g => g.First()))
         {
             var name = db.GetType().Name;
 
@@ -95,6 +108,10 @@ public static class DatabaseMigrationExtensions
                         break;
 
                     case DatabaseInitializationMode.Migrate:
+                        if (!db.Database.GetMigrations().Any())
+                            throw new InvalidOperationException(
+                                $"Context {name} defines no EF Core migrations. " +
+                                "Author one with 'modulus migrate add <Name>' or use MigrateOrCreate outside Production.");
                         await db.Database.MigrateAsync(ct);
                         logger?.LogInformation(
                             "Applied migrations for {Context}.", name);
@@ -129,9 +146,15 @@ public static class DatabaseMigrationExtensions
     /// Call after <see cref="MigrateModulusDatabasesAsync"/> so that schema
     /// is in place before seed data is written.
     /// </summary>
+    /// <param name="services">Root provider used to open a scope for seeders.</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <param name="throwOnFailure">When true (default), a failing seeder throws
+    /// <see cref="SeederFailedException"/> instead of being logged and skipped,
+    /// so partial seeds never look like success in production.</param>
     public static async Task SeedModulusDataAsync(
         this IServiceProvider services,
-        CancellationToken ct = default)
+        CancellationToken ct = default,
+        bool throwOnFailure = true)
     {
         await using var scope = services.CreateAsyncScope();
         var sp = scope.ServiceProvider;
@@ -149,7 +172,20 @@ public static class DatabaseMigrationExtensions
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
                 logger?.LogError(ex, "Seeder {Seeder} failed.", name);
+                if (throwOnFailure)
+                    throw new SeederFailedException(name, ex);
             }
         }
     }
+}
+
+/// <summary>
+/// Thrown when an <see cref="IDataSeeder"/> fails and
+/// <see cref="DatabaseMigrationExtensions.SeedModulusDataAsync"/> runs with
+/// <c>throwOnFailure: true</c> (the default).
+/// </summary>
+public sealed class SeederFailedException(string seederName, Exception inner)
+    : InvalidOperationException($"Seeder '{seederName}' failed.", inner)
+{
+    public string SeederName { get; } = seederName;
 }

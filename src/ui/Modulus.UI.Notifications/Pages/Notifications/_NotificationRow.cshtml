@@ -1,0 +1,41 @@
+@using Modulus.Localization
+@using Modulus.UI.Notifications
+@using Modulus.UI.Notifications.Pages.Notifications
+@inject IModulusLocalizer Localizer
+@model NotificationRowView
+@* One inbox row. Mutations keep method="post" + asp-page-handler so they work
+   without JS; hx-post takes over when htmx loads, swapping this row (or
+   removing it when the handler returns an empty body). *@
+<div class="list-group-item @(Model.Item.ReadAt is null ? "bg-azure-lt" : null)">
+    <div class="row align-items-center">
+        <div class="col">
+            <strong>@Model.Item.Title</strong>
+            <span class="badge bg-@(Model.Item.Severity switch { Modulus.Notifications.NotificationSeverity.Success => "green", Modulus.Notifications.NotificationSeverity.Warning => "yellow", Modulus.Notifications.NotificationSeverity.Error => "red", _ => "blue" }) ms-1">@Model.Item.Severity</span>
+            @if (!string.IsNullOrWhiteSpace(Model.Item.Message))
+            {
+                <div class="text-secondary">@Model.Item.Message</div>
+            }
+            <div class="text-secondary small">@Model.Item.CreatedAt.ToString("u")</div>
+        </div>
+        <div class="col-auto">
+            <div class="btn-group">
+                @if (Model.Item.ReadAt is null)
+                {
+                    <form method="post"
+                          asp-page-handler="MarkRead" asp-route-id="@Model.Item.Id" asp-route-UnreadOnly="@Model.UnreadOnly" asp-route-PageNumber="@Model.PageNumber"
+                          hx-post="@Url.Page("./Index", "MarkRead", new { id = Model.Item.Id, UnreadOnly = Model.UnreadOnly, PageNumber = Model.PageNumber })"
+                          hx-target="closest div.list-group-item" hx-swap="outerHTML">
+                        <button class="btn btn-sm" type="submit">@(await Localizer.GetAsync(NotificationsUiLocalization.ResourceName, "Index.MarkRead"))</button>
+                    </form>
+                }
+                <form method="post"
+                      asp-page-handler="Delete" asp-route-id="@Model.Item.Id" asp-route-UnreadOnly="@Model.UnreadOnly" asp-route-PageNumber="@Model.PageNumber"
+                      hx-post="@Url.Page("./Index", "Delete", new { id = Model.Item.Id, UnreadOnly = Model.UnreadOnly, PageNumber = Model.PageNumber })"
+                      hx-target="closest div.list-group-item" hx-swap="outerHTML"
+                      hx-confirm="@(await Localizer.GetAsync(NotificationsUiLocalization.ResourceName, "Index.ConfirmDelete"))">
+                    <button class="btn btn-sm btn-ghost-danger" type="submit">@(await Localizer.GetAsync(NotificationsUiLocalization.ResourceName, "Index.Delete"))</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Modulus.Core.Abstractions;
+using Modulus.Inbox.Abstractions;
 using Modulus.Observability;
 using Modulus.Outbox.Abstractions;
 
@@ -25,6 +26,9 @@ public sealed class MongoOutboxProcessor(
     private readonly string _instanceId = Guid.NewGuid().ToString("N");
 
     private const int PurgeBatchSize = 1000;
+
+    // OutboxDepth is an UpDownCounter — report deltas, not absolutes (mirrors EF).
+    private long _lastReportedDepth;
 
     public async Task ProcessAsync(CancellationToken ct = default)
     {
@@ -65,23 +69,26 @@ public sealed class MongoOutboxProcessor(
 
         if (candidateIds.Count == 0) return;
 
-        // Record outbox depth (pending messages not yet dispatched)
+        // Record outbox depth (pending messages not yet dispatched) as a delta.
         var depthFilter = Builders<MongoOutboxMessage>.Filter.And(
             Builders<MongoOutboxMessage>.Filter.Eq(m => m.ProcessedAt, null),
             Builders<MongoOutboxMessage>.Filter.Lt(m => m.RetryCount, options.MaxRetries));
         var depth = await collection.CountDocumentsAsync(depthFilter, cancellationToken: ct);
-        ModulusMeters.OutboxDepth.Add((int)depth);
+        ModulusMeters.OutboxDepth.Add((long)depth - _lastReportedDepth);
+        _lastReportedDepth = (long)depth;
 
-        // 2. Atomically claim those rows. The filter re-checks ProcessedAt and
-        //    LockedUntil server-side, so two instances that both picked the
-        //    same candidates cannot both win — the writes serialize per doc
-        //    and the second affects zero rows.
+        // 2. Atomically claim those rows. The filter re-checks ProcessedAt,
+        //    LockedUntil AND NextAttemptAt server-side, so backoff cannot be
+        //    bypassed by a claim race.
         var claimFilter = Builders<MongoOutboxMessage>.Filter.And(
             Builders<MongoOutboxMessage>.Filter.In(m => m.Id, candidateIds),
             Builders<MongoOutboxMessage>.Filter.Eq(m => m.ProcessedAt, null),
             Builders<MongoOutboxMessage>.Filter.Or(
                 Builders<MongoOutboxMessage>.Filter.Eq(m => m.LockedUntil, null),
-                Builders<MongoOutboxMessage>.Filter.Lt(m => m.LockedUntil, now)));
+                Builders<MongoOutboxMessage>.Filter.Lt(m => m.LockedUntil, now)),
+            Builders<MongoOutboxMessage>.Filter.Or(
+                Builders<MongoOutboxMessage>.Filter.Eq(m => m.NextAttemptAt, null),
+                Builders<MongoOutboxMessage>.Filter.Lte(m => m.NextAttemptAt, now)));
         var claimUpdate = Builders<MongoOutboxMessage>.Update
             .Set(m => m.LockedBy, _instanceId)
             .Set(m => m.LockedUntil, lockUntil);
@@ -132,9 +139,11 @@ public sealed class MongoOutboxProcessor(
             {
                 await dispatcher.DispatchAsync(ToOutboxMessage(message), ct);
 
-                var doneFilter = Builders<MongoOutboxMessage>.Filter.Eq(m => m.Id, message.Id);
+                var doneFilter = Builders<MongoOutboxMessage>.Filter.And(
+                    Builders<MongoOutboxMessage>.Filter.Eq(m => m.Id, message.Id),
+                    Builders<MongoOutboxMessage>.Filter.Eq(m => m.LockedBy, _instanceId));
                 var doneUpdate = Builders<MongoOutboxMessage>.Update
-                    .Set(m => m.ProcessedAt, now)
+                    .Set(m => m.ProcessedAt, DateTime.UtcNow)
                     .Set(m => m.LockedBy, (string?)null)
                     .Set(m => m.LockedUntil, (DateTime?)null);
                 await collection.UpdateOneAsync(doneFilter, doneUpdate, cancellationToken: ct);
@@ -143,14 +152,31 @@ public sealed class MongoOutboxProcessor(
                 logger.LogDebug("Outbox dispatched {Id} ({Type})",
                     message.Id, message.MessageType);
             }
+            catch (InboxDeferralException dex)
+            {
+                var deferFilter = Builders<MongoOutboxMessage>.Filter.And(
+                    Builders<MongoOutboxMessage>.Filter.Eq(m => m.Id, message.Id),
+                    Builders<MongoOutboxMessage>.Filter.Eq(m => m.LockedBy, _instanceId));
+                var deferUpdate = Builders<MongoOutboxMessage>.Update
+                    .Set(m => m.LockedBy, (string?)null)
+                    .Set(m => m.LockedUntil, (DateTime?)null)
+                    .Set(m => m.NextAttemptAt, DateTime.UtcNow.AddSeconds(options.DeferDelaySec));
+                await collection.UpdateOneAsync(deferFilter, deferUpdate, cancellationToken: ct);
+
+                ModulusMeters.OutboxDeferred.Add(1);
+                logger.LogDebug(dex,
+                    "Outbox message {Id} deferred (inbox contention).", message.Id);
+            }
             catch (Exception ex)
             {
                 var newRetry = message.RetryCount + 1;
-                var nextAttempt = now.AddSeconds(
+                var nextAttempt = DateTime.UtcNow.AddSeconds(
                     Math.Min(options.InitialBackoffSec
                               * Math.Pow(2, newRetry), 3600));
 
-                var errFilter = Builders<MongoOutboxMessage>.Filter.Eq(m => m.Id, message.Id);
+                var errFilter = Builders<MongoOutboxMessage>.Filter.And(
+                    Builders<MongoOutboxMessage>.Filter.Eq(m => m.Id, message.Id),
+                    Builders<MongoOutboxMessage>.Filter.Eq(m => m.LockedBy, _instanceId));
                 var errUpdate = Builders<MongoOutboxMessage>.Update
                     .Set(m => m.RetryCount, newRetry)
                     .Set(m => m.Error, ex.Message)

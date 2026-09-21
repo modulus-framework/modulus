@@ -32,18 +32,24 @@ public sealed class MongoOutboxMessage
 }
 
 /// <summary>
+/// Provides ambient MongoDB sessions so domain writes and outbox writes can
+/// commit atomically via a multi-document transaction (requires a replica set).
+/// Register an implementation and flow the session from your unit of work; when
+/// absent the writer falls back to a plain insert (at-least-once, dual-write gap).
+/// </summary>
+public interface IMongoOutboxSessionProvider
+{
+    IClientSessionHandle? CurrentSession { get; }
+}
+
+/// <summary>
 /// <see cref="IOutboxWriter"/> implementation backed by MongoDB.
 ///
-/// ⚠️ LIMITATION: Does NOT support transactions. Domain writes and outbox
-/// writes are separate operations — a domain write may succeed while the
-/// outbox write fails, or vice versa. This violates the outbox pattern's
-/// core guarantee: a published integration event whose domain side-effect
-/// failed (rolled back), or a domain change with no corresponding outbox row.
-///
-/// For production use: either migrate to a relational database (EF Core)
-/// which uses shared transactions, or accept eventual-consistency semantics
-/// and ensure your domain logic is idempotent. The <see cref="MongoOutboxProcessor"/>
-/// relays rows to the event bus at-least-once; handler idempotency is mandatory.
+/// When <see cref="IMongoOutboxSessionProvider.CurrentSession"/> is present the
+/// insert joins that session's transaction (atomic with domain writes); otherwise
+/// it falls back to a plain insert with an idempotent <c>Id</c> (EventId) so
+/// retried writes do not duplicate. Either way consumers must dedup via inbox.
+/// Row fields mirror <c>OutboxRowFactory</c> (tenant/correlation/causation/trace).
 /// </summary>
 internal sealed class MongoOutboxWriter(
     IMongoCollection<MongoOutboxMessage> collection,
@@ -55,7 +61,13 @@ internal sealed class MongoOutboxWriter(
         TEvent @event,
         CancellationToken ct = default)
         where TEvent : IIntegrationEvent
-        => collection.InsertOneAsync(BuildDoc(@event), cancellationToken: ct);
+    {
+        var doc = BuildDoc(@event);
+        var session = sp.GetService<IMongoOutboxSessionProvider>()?.CurrentSession;
+        return session is null
+            ? collection.InsertOneAsync(doc, cancellationToken: ct)
+            : collection.InsertOneAsync(session, doc, cancellationToken: ct);
+    }
 
     // ── Shared document-creation logic ────────────────────────────
     private MongoOutboxMessage BuildDoc(IIntegrationEvent @event)

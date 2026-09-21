@@ -50,30 +50,39 @@ public sealed class TestWebAppFactory : ModulusWebAppFactory<Program>
 public async Task CreateProduct_AsAuthenticatedUser_ReturnsCreated()
 {
     var client = factory.CreateAuthenticatedClient(
-        userId: "test-user-id",
-        userName: "Test User");
+        userId: Guid.NewGuid(),
+        userName: "Test User",
+        roles: ["admin"],
+        permissions: ["catalog.products.create"]);
 
-    var response = await client.PostAsJsonAsync("/api/products", new
+    var response = await client.PostAsJsonAsync("/api/catalog/products", new
     {
-        name = "Widget",
-        price = 9.99
+        name = "Widget"
     });
 
     response.StatusCode.Should().Be(HttpStatusCode.Created);
 }
 ```
 
+`CreateAuthenticatedClient(Guid? userId, string? userName, string? email,
+IEnumerable<string>? roles/permissions, Guid? tenantId)` — omitted userId
+becomes a random Guid, userName defaults to `test-user`; `tenantId` is sent
+as `X-Tenant-Id` (requires the app's tenant store to resolve it).
+
 The `TestAuthHandler` processes headers:
 
 | Header | Value |
 |--------|-------|
-| `X-Test-User-Id` | User ID |
-| `X-Test-User-Name` | User name |
-| `X-Test-User-Email` | User email |
+| `X-Test-UserId` | User ID |
+| `X-Test-UserName` | User name |
+| `X-Test-Email` | User email |
+| `X-Test-Roles` | Comma-separated roles |
+| `X-Test-Permissions` | Comma-separated permissions |
 
 ## Database Isolation
 
-Each test class gets a fresh set of databases:
+Isolation is per **factory instance**: tests sharing one factory (e.g. via a
+shared `IClassFixture`) share databases; a new factory gets a fresh set:
 
 - Unique `Cache=Shared` name per factory instance
 - Keep-alive connections prevent SQLite from being disposed
@@ -90,7 +99,6 @@ public sealed class ProductApiTests : IClassFixture<ModulusWebAppFactory<Program
     public ProductApiTests(ModulusWebAppFactory<Program> factory)
     {
         _client = factory.CreateAuthenticatedClient(
-            userId: "test-user",
             userName: "Test User");
     }
 
@@ -98,10 +106,9 @@ public sealed class ProductApiTests : IClassFixture<ModulusWebAppFactory<Program
     public async Task PostGet_RoundTrip()
     {
         // Create
-        var createResponse = await _client.PostAsJsonAsync("/api/products", new
+        var createResponse = await _client.PostAsJsonAsync("/api/catalog/products", new
         {
-            name = "Widget",
-            price = 9.99m
+            name = "Widget"
         });
         createResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 

@@ -1,0 +1,59 @@
+@page
+@model Modulus.UI.Permissions.Pages.Permissions.HolderModel
+@{
+    ViewData["Title"] = await Model.TextAsync("Holder.Title");
+}
+<m-page-header title="@ViewData["Title"]" subtitle="@(await Model.TextAsync("Holder.ReadOnlyNote"))" />
+<div class="card mb-3">
+    <div class="card-body">
+        <form method="post">
+            <div class="mb-3">
+                <label class="form-label" asp-for="Query.HolderType">@await Model.TextAsync("Holder.HolderType")</label>
+                <select class="form-select" asp-for="Query.HolderType">
+                    <option value="Role">Role</option>
+                    <option value="User">User</option>
+                </select>
+                <span class="invalid-feedback d-block" asp-validation-for="Query.HolderType"></span>
+            </div>
+            <div class="mb-3">
+                <label class="form-label" asp-for="Query.Holder">@await Model.TextAsync("Holder.Holder")</label>
+                <input class="form-control" asp-for="Query.Holder" />
+                <span class="invalid-feedback d-block" asp-validation-for="Query.Holder"></span>
+            </div>
+            <div class="mb-3">
+                <label class="form-label" asp-for="Query.Roles">@await Model.TextAsync("Holder.Roles")</label>
+                <input class="form-control" asp-for="Query.Roles" />
+                <div class="form-hint">@await Model.TextAsync("Holder.RolesHint")</div>
+            </div>
+            <button class="btn btn-primary" type="submit">@await Model.TextAsync("Holder.Submit")</button>
+        </form>
+    </div>
+</div>
+@if (Model.Searched)
+{
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-vcenter card-table">
+                <thead>
+                    <tr>
+                        <th>@await Model.TextAsync("Holder.Permission")</th>
+                        <th>@await Model.TextAsync("Holder.Type")</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Result.Count == 0)
+                    {
+                        <tr><td colspan="2">@await Model.TextAsync("Holder.NoGrants")</td></tr>
+                    }
+                    @foreach (var grant in Model.Result)
+                    {
+                        <tr>
+                            <td><code>@grant.Permission</code></td>
+                            <td>@grant.Type</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}

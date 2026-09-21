@@ -14,14 +14,30 @@ modulus app MyApp --message-broker rabbitmq
 
 ## Configuration
 
+Binds from `"EventBus:RabbitMq"`:
+
 ```json
 {
-  "RabbitMQ": {
-    "HostName": "localhost",
-    "Port": 5672,
-    "UserName": "guest",
-    "Password": "guest",
-    "ExchangeName": "modulus"
+  "EventBus": {
+    "RabbitMq": {
+      "HostName": "localhost",
+      "Port": 5672,
+      "UserName": "guest",
+      "Password": "guest",
+      "VirtualHost": "/",
+      "ExchangeName": "modulus.events",
+      "QueueName": "modulus.events.app",
+      "ExchangeType": "topic",
+      "Durable": true,
+      "AutoDelete": false,
+      "PrefetchCount": 50,
+      "AutoAck": false,
+      "ReconnectDelayMs": 5000,
+      "MaxDeliveryAttempts": 3,
+      "DeadLetterExchange": null,
+      "MessageTtlMs": null,
+      "PublisherConfirms": true
+    }
   }
 }
 ```
@@ -35,36 +51,22 @@ services.AddRabbitMqEventBus(config);
 
 ### Publishing Events
 
+Publish integration events through the module bus (prefer the transactional
+[outbox](outbox) so the publish survives crashes):
+
 ```csharp
-public sealed class ProductCreatedHandler : ICommandHandler<CreateProduct, ProductDto>
-{
-    private readonly IModuleBus _bus;
-
-    public async Task<ProductDto> HandleAsync(CreateProduct command, CancellationToken ct)
-    {
-        var product = new Product(command.Name, command.Price);
-        await _unitOfWork.SaveChangesAsync(ct);
-
-        await _bus.PublishAsync(new ProductCreatedEvent
-        {
-            ProductId = product.Id,
-            Name = product.Name
-        });
-
-        return new ProductDto(product.Id, product.Name, product.Price);
-    }
-}
+await _bus.PublishAsync(new ProductCreatedIntegrationEvent(product.Id));
 ```
 
 ### Consuming Events
 
 ```csharp
 public sealed class ProductCreatedConsumer
-    : IIntegrationEventHandler<ProductCreatedEvent>
+    : IIntegrationEventHandler<ProductCreatedIntegrationEvent>
 {
-    public async Task HandleAsync(ProductCreatedEvent @event)
+    public async Task HandleAsync(ProductCreatedIntegrationEvent @event)
     {
-        // Process the event
+        // Process the event (must be idempotent — delivery is at-least-once)
     }
 }
 ```
@@ -73,26 +75,28 @@ public sealed class ProductCreatedConsumer
 
 | Feature | Description |
 |---------|-------------|
-| **Topic exchange** | Route events by type |
-| **Auto-reconnect** | Handles connection failures |
-| **Prefetch control** | Limit concurrent messages |
-| **Manual acknowledgment** | Ensure processing before ack |
-| **Dead letter queue** | Route failed messages |
+| **Topic exchange** | Route events by type (`modulus.events` by default) |
+| **Publisher confirms** | On by default — a nacked/unroutable publish throws instead of silently losing events |
+| **Manual acknowledgment** | `AutoAck: false` — ack only after the handler succeeds |
+| **Prefetch control** | `PrefetchCount` limits concurrent messages (default 50) |
+| **Poison handling** | Failures requeue with backoff up to `MaxDeliveryAttempts`, then nacked without requeue |
+| **Dead letter exchange** | Opt-in via `DeadLetterExchange` — nacked messages route there instead of being dropped |
+| **Unroutable publishes** | Logged + metered via `BasicReturn` handling |
 
 ## Exchange Topology
 
 ```
-                    ┌──────────────────┐
-                    │  modulus-exchange │
-                    │  (topic)         │
-                    └────────┬─────────┘
-                             │
-              ┌──────────────┼──────────────┐
-              │              │              │
-    ┌─────────┴──────┐ ┌────┴─────┐ ┌─────┴────────┐
-    │ catalog.events │ │orders.events│ │inventory.events│
-    │ (queue)        │ │ (queue)    │ │ (queue)       │
-    └────────────────┘ └──────────┘ └──────────────┘
+                     ┌──────────────────┐
+                     │ modulus.events   │
+                     │ (topic)          │
+                     └────────┬─────────┘
+                              │
+               ┌──────────────┼──────────────┐
+               │              │              │
+     ┌─────────┴──────┐ ┌────┴─────┐ ┌─────┴────────┐
+     │ queues bound   │ │...       │ │...           │
+     │ by routing key │ │          │ │              │
+     └────────────────┘ └──────────┘ └──────────────┘
 ```
 
 ## See Also

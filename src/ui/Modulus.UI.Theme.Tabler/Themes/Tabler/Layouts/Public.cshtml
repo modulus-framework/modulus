@@ -1,0 +1,49 @@
+@* Public shell: topbar with brand + footer, no sidebar and no menu. For
+   landing / marketing pages served to anonymous visitors. *@
+@inject IOptions<UiOptions> Ui
+@inject IOptions<ThemeOptions> ThemeCfg
+@{
+    var branding = Ui.Value.Branding;
+    var colorMode = TablerShell.ResolveColorMode(Context.Request, ThemeCfg.Value);
+    var followSystem = TablerShell.FollowsSystem(Context.Request, ThemeCfg.Value);
+}
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="@colorMode" data-m-color-mode="@(followSystem ? "system" : colorMode)">
+<head>
+    <partial name="/Themes/Tabler/Shell/_Head.cshtml" />
+</head>
+<body class="m-layout m-layout-public" hx-boost="@(Ui.Value.Features.Boost ? "true" : "false")" hx-ext="@(Ui.Value.Features.Morph ? "morph" : null)">
+    <div class="page">
+        <header class="navbar navbar-expand-md d-print-none m-topbar">
+            <div class="container-xl">
+                <a href="@Url.Content(branding.BrandHref)" class="navbar-brand m-brand">
+                    @if (!string.IsNullOrWhiteSpace(branding.LogoUrl))
+                    {
+                        <img src="@Url.Content(branding.LogoUrl)" alt="@branding.AppName" class="m-brand-logo" />
+                    }
+                    else
+                    {
+                        <span>@branding.AppName</span>
+                    }
+                </a>
+                <div class="navbar-nav flex-row ms-auto">
+                    @await Html.ModulusSlotAsync(UiSlots.TopbarEnd)
+                </div>
+            </div>
+        </header>
+        @await Html.ModulusSlotAsync(UiSlots.PageBeforeContent)
+        <div class="page-wrapper">
+            <div class="page-body">
+                <div class="container-xl m-page-container" id="m-main">
+                    @RenderBody()
+                </div>
+            </div>
+            @await Html.ModulusSlotAsync(UiSlots.PageAfterContent)
+            <partial name="/Themes/Tabler/Shell/_Footer.cshtml" />
+        </div>
+    </div>
+    <partial name="/Themes/Tabler/Shell/_PageEnd.cshtml" />
+    @await RenderSectionAsync("Scripts", required: false)
+    <partial name="/Themes/Tabler/Shell/_PageScripts.cshtml" />
+</body>
+</html>

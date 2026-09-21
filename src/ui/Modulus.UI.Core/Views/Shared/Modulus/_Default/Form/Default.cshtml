@@ -1,0 +1,19 @@
+@* Default markup for <m-form>. A plain POST form (works without JavaScript) that gains htmx
+   attributes only when a target is set. The MVC form tag helper turns antiforgery OFF whenever
+   an explicit action attribute is present (it assumes a hand-written form), so the token is
+   requested explicitly with asp-antiforgery. *@
+@model FormModel
+<form method="post" action="@Model.Action" class="@Model.Class" asp-antiforgery="true"
+      enctype="@(Model.Multipart ? "multipart/form-data" : null)"
+      hx-encoding="@(Model.Multipart && Model.HxTarget is not null ? "multipart/form-data" : null)"
+      hx-post="@(Model.HxTarget is null ? null : Model.Action)"
+      hx-target="@Model.HxTarget"
+      hx-swap="@(Model.HxTarget is null ? null : Model.HxSwap)">
+    @if (Model.ShowSummary && !ViewData.ModelState.IsValid)
+    {
+        <div class="alert alert-danger mb-3" role="alert">
+            <div asp-validation-summary="All"></div>
+        </div>
+    }
+    @Model.Body
+</form>

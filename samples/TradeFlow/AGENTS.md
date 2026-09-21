@@ -4,7 +4,7 @@ Guidance for AI agents (and humans) working on this sample app.
 
 ## Project
 
-TradeFlow is a modular-monolith **.NET 10** ERP sample built on the **Modulus framework** (`Cobytelabs.Modulus.*` packages). It demonstrates the 4-layer module pattern: Domain → Application → Infrastructure → Presentation, plus IntegrationEvents and PublicApi contract projects.
+TradeFlow is a modular-monolith **.NET 10** ERP sample built on the **Modulus framework** (`Cobytelabs.Modulus.*` packages). It demonstrates the 4-layer module pattern: Domain → Application → Infrastructure → Presentation, with DTOs under `Application/Dtos` and integration events under `Application/IntegrationEvents` (no separate Contracts/IntegrationEvents/Test projects).
 
 ## Prerequisites
 
@@ -27,7 +27,10 @@ All commands are run from this directory (`samples/TradeFlow`).
 
 ## Module layout (Vendors = exemplar)
 
-Each module follows the 6-project shape:
+Each module follows the 4-layer CLI shape (Domain / Application /
+Infrastructure / Presentation) plus a hand-added `PublicApi` project —
+**5** projects (there is no separate `IntegrationEvents` project;
+integration events live under `Application/IntegrationEvents`):
 
 ```
 src/Modules/{Module}/
@@ -49,9 +52,8 @@ src/Modules/{Module}/
         {UseCase}Query.cs
         {UseCase}QueryHandler.cs
       Dtos/
+      IntegrationEvents/  # published event contracts (no logic)
     DomainEventHandlers/
-  TradeFlow.Modules.{Module}.IntegrationEvents/
-    # Published event contracts (no logic)
   TradeFlow.Modules.{Module}.PublicApi/
     # Sync cross-module interfaces (no logic)
   TradeFlow.Modules.{Module}.Infrastructure/

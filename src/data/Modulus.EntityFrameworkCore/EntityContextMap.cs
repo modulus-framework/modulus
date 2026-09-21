@@ -61,7 +61,8 @@ internal sealed class EntityContextMap(
     private static IReadOnlyDictionary<Type, Type> Build(
         IServiceProvider root, EntityContextMapRegistry registry)
     {
-        var map = new Dictionary<Type, Type>();
+        var counts = new Dictionary<Type, int>();
+        var firstOwner = new Dictionary<Type, Type>();
         using var scope = root.CreateScope();
         var sp = scope.ServiceProvider;
 
@@ -70,12 +71,20 @@ internal sealed class EntityContextMap(
             var context = (DbContext)sp.GetRequiredService(contextType);
             foreach (var entity in context.Model.GetEntityTypes())
             {
-                // First registration wins. This mirrors the previous first-match
-                // scan and keeps framework entities that every module context
-                // maps (e.g. OutboxMessage) routed deterministically to the
-                // first-registered context rather than throwing on ambiguity.
-                map.TryAdd(entity.ClrType, contextType);
+                counts[entity.ClrType] = counts.TryGetValue(entity.ClrType, out var n) ? n + 1 : 1;
+                firstOwner.TryAdd(entity.ClrType, contextType);
             }
+        }
+
+        // Only unambiguous owners are routable. Framework entities mapped into
+        // every module context (OutboxMessage, InboxMessage, EntityChange) would
+        // otherwise first-win to the wrong module database — return null so
+        // callers fall back to the ambient/single context or throw explicitly.
+        var map = new Dictionary<Type, Type>();
+        foreach (var (entity, owner) in firstOwner)
+        {
+            if (counts[entity] == 1)
+                map[entity] = owner;
         }
 
         return map;

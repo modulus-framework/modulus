@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AddRazorSupportForMvc>true</AddRazorSupportForMvc>
+    <Description>Default reference theme for the Modulus UI framework, built on Tabler: Application / Account / Empty / Public layouts, shell partials (sidebar, topbar, footer), themed 403/404/500 pages, the --m-* design-token layer, and the modulus.js client runtime. Self-hosted htmx, Alpine and Tabler assets (no CDN).</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Modulus.UI.Theme.Tabler.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="module.json" Pack="true" PackagePath="module.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <ProjectReference Include="../Modulus.UI.Core/Modulus.UI.Core.csproj" />
+    <ProjectReference Include="../Modulus.UI.Theme.Abstractions/Modulus.UI.Theme.Abstractions.csproj" />
+  </ItemGroup>
+
+</Project>

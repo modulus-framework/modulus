@@ -1,0 +1,21 @@
+@* Bare document: theme assets + RenderBody only. For print views, embeds
+   and pages that bring their own chrome. *@
+@inject IOptions<ThemeOptions> ThemeCfg
+@{
+    var colorMode = TablerShell.ResolveColorMode(Context.Request, ThemeCfg.Value);
+    var followSystem = TablerShell.FollowsSystem(Context.Request, ThemeCfg.Value);
+}
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="@colorMode" data-m-color-mode="@(followSystem ? "system" : colorMode)">
+<head>
+    <partial name="/Themes/Tabler/Shell/_Head.cshtml" />
+</head>
+<body class="m-layout m-layout-empty">
+    <main id="m-main">
+        @RenderBody()
+    </main>
+    <partial name="/Themes/Tabler/Shell/_PageEnd.cshtml" />
+    @await RenderSectionAsync("Scripts", required: false)
+    <partial name="/Themes/Tabler/Shell/_PageScripts.cshtml" />
+</body>
+</html>

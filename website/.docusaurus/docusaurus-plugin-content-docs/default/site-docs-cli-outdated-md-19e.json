@@ -8,12 +8,12 @@
   "permalink": "/docs/cli/outdated",
   "draft": false,
   "unlisted": false,
-  "editUrl": "https://github.com/cobytelabs/modulus/tree/main/website/docs/cli/outdated.md",
+  "editUrl": "https://github.com/modulus-framework/modulus/tree/main/website/docs/cli/outdated.md",
   "tags": [],
   "version": "current",
-  "sidebarPosition": 12,
+  "sidebarPosition": 15,
   "frontMatter": {
-    "sidebar_position": 12
+    "sidebar_position": 15
   },
   "sidebar": "cliSidebar",
   "previous": {

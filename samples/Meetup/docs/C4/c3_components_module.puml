@@ -1,0 +1,22 @@
+@startuml C3_Components_Module
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title Meetup — Inside one module: Meetings (C3, module level)
+
+Container_Boundary(meetings, "Meetings module") {
+  Component(domain, "Domain", "Entities, enums, repo contracts", "Meeting, MeetingAttendee, MeetingComment, MeetingGroup(+Member); invariants throw")
+  Component(app, "Application", "Commands/queries/events", "CreateMeeting, JoinMeeting, AddComment; Get*; MeetingGroupCreated event + proposal/subscription handlers")
+  Component(infra, "Infrastructure", "EF Core + composition", "MeetingsModule, MeetingsDbContext, EF repositories, migrations")
+  Component(endpoints, "Presentation", "REPR endpoints", "CreateMeeting, JoinMeeting, AddComment, Get* endpoints")
+}
+
+Component_Ext(mediator, "IMediator", "Host-provided")
+Component_Ext(bus, "IModuleBus", "Cross-module events")
+
+Rel(endpoints, mediator, "Send/query")
+Rel(mediator, app, "Dispatches to handlers")
+Rel(app, domain, "Loads, acts, enforces invariants")
+Rel(app, infra, "Persist via IUnitOfWork + repos")
+Rel(app, bus, "Publishes MeetingGroupCreated")
+Rel(bus, app, "ProposalAccepted, SubscriptionPurchased")
+@enduml

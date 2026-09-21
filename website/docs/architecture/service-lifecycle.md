@@ -129,17 +129,16 @@ public override async Task InitializeAsync(ModuleContext context)
     // Module configuration
     var config = context.Configuration;
 
-    // Cancellation token
-    var ct = context.CancellationToken;
+    // Module-scoped logger + descriptor (name, type, init order)
+    var logger = context.Logger;
+    var descriptor = context.Descriptor;
 }
 ```
 
 ## Error Handling
 
-If a module's `InitializeAsync` throws:
-
-1. The exception propagates to the host
-2. The application fails to start
-3. No modules are initialized (partial initialization is not supported)
-
-This ensures consistent startup state.
+If a module's `InitializeAsync` throws, the loader raises
+`ModuleInitializationException` and aborts the remaining modules — earlier
+modules **stay** initialized (there is no rollback). Shutdown then covers
+only initialized modules, in reverse order, with each module's shutdown
+individually guarded (a throwing shutdown is logged and the rest still run).

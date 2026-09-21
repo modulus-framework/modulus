@@ -1,0 +1,18 @@
+@page
+@model Modulus.UI.Tenancy.Pages.Tenancy.IndexModel
+@{
+    ViewData["Title"] = await Model.TextAsync("Directory.Title");
+    ViewData.SetPageId("Tenancy.Directory");
+}
+<m-page-header title="@ViewData["Title"]" subtitle="@($"{await Model.TextAsync("Directory.Current")}: {Model.CurrentDescription}")" page-id="Tenancy.Directory" />
+<m-datatable empty="@(Model.Tenants.Count == 0)" empty-message="@await Model.TextAsync("Directory.Empty")">
+    <m-column>@await Model.TextAsync("Directory.Slug")</m-column>
+    <m-column>@await Model.TextAsync("Directory.Name")</m-column>
+    @foreach (var tenant in Model.Tenants)
+    {
+        <tr>
+            <td><a asp-page="./Details" asp-route-slug="@tenant.TenantSlug">@tenant.TenantSlug</a></td>
+            <td>@(tenant.DisplayName ?? tenant.TenantSlug)</td>
+        </tr>
+    }
+</m-datatable>

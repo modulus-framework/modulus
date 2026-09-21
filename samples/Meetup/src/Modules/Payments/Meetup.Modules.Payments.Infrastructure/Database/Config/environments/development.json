@@ -1,0 +1,11 @@
+{
+  "name": "development",
+  "database": {
+    "connectionString": "Host=localhost;Port=5432;Database=meetup_payments;Username=meetup;Password=meetup"
+  },
+  "migration": {
+    "requireApproval": false,
+    "lockTimeoutSeconds": 60,
+    "maxBatchSize": 10
+  }
+}

@@ -1,0 +1,80 @@
+/* Modulus UI — Tabler theme token layer.
+
+   Apps and modules override ONLY the --m-* tokens below (see UiDesignTokens);
+   this file maps them onto Tabler's --tblr-* variables so the CSS framework can
+   be upgraded or replaced without touching customizations. Load order: after
+   vendor/tabler.min.css (ITheme.Styles order), before any app stylesheet.
+
+   Override from an app stylesheet, e.g. wwwroot/css/theme.css:
+     :root { --m-primary: #0d9488; --m-primary-rgb: 13, 148, 136; }
+
+   --m-primary-rgb is a helper (not a canonical token): Tabler derives tints
+   and focus rings from an "r, g, b" triple, which CSS cannot compute from a
+   hex value, so set both when changing the primary color. */
+
+:root {
+    --m-primary: #066fd1;
+    --m-primary-rgb: 6, 111, 209;
+    --m-primary-foreground: #fff;
+    --m-font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+    --m-radius: 6px;
+    --m-sidebar-width: 15rem;
+    --m-sidebar-bg: #182433;
+    --m-page-max-width: 1440px;
+    --m-table-density: 0.75rem;
+}
+
+/* Token → Tabler mapping. `[data-bs-theme]` keeps the mapping in force inside
+   nested color-mode scopes (e.g. the always-dark sidebar). */
+:root,
+[data-bs-theme] {
+    --tblr-primary: var(--m-primary);
+    --tblr-primary-rgb: var(--m-primary-rgb);
+    --tblr-primary-fg: var(--m-primary-foreground);
+    --tblr-font-sans-serif: var(--m-font-sans);
+    --tblr-border-radius: var(--m-radius);
+    --tblr-sidebar-width: var(--m-sidebar-width);
+}
+
+.navbar-vertical.m-sidebar {
+    --tblr-navbar-bg: var(--m-sidebar-bg);
+}
+
+.container-xl.m-page-container {
+    max-width: var(--m-page-max-width);
+}
+
+.table > :not(caption) > * > * {
+    padding-block: var(--m-table-density);
+}
+
+/* Layout helpers (kept in CSS, never inline styles, so a strict CSP holds). */
+[x-cloak] {
+    display: none !important;
+}
+
+.m-toast-host {
+    z-index: 1080;
+}
+
+.m-brand-logo {
+    max-height: 2rem;
+    width: auto;
+}
+
+/* htmx request indicator: htmx.config.includeIndicatorStyles is off (CSP), so
+   the spinner behavior lives here. Any element with .htmx-indicator fades in
+   while its request (or a parent's) is in flight. */
+.htmx-indicator {
+    opacity: 0;
+    transition: opacity 150ms ease-in;
+}
+
+.htmx-request .htmx-indicator,
+.htmx-request.htmx-indicator {
+    opacity: 1;
+}
+
+.htmx-request {
+    cursor: progress;
+}

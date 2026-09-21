@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
-using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -29,12 +28,10 @@ using Modulus.Testing.Internal;
 /// contexts open and close.
 /// </para>
 /// <para>
-/// The keep-alives are opened by a hosted service registered <b>before</b> the
-/// application's own hosted services: startup seeders (OpenIddict clients,
-/// background jobs, …) hit the database during <c>StartAsync</c>, and a
-/// shared-cache in-memory database dies the moment its last connection closes —
-/// so by the time any startup hosted service runs, the schema created while the
-/// host was being wired has already evaporated. Running first fixes that.
+/// A keep-alive connection is opened for each database the moment its context's options are first built, and the schema is
+/// (re)created by a hosted service registered <b>before</b> the application's own: a shared-cache in-memory database dies the
+/// moment its last connection closes, so a host that migrates and seeds in <c>Program.cs</c> (before any hosted service starts)
+/// needs the first, and startup seeders that run during <c>StartAsync</c> need the second.
 /// </para>
 /// <para>
 /// The host runs in the <c>Testing</c> environment. Register per-test overrides
@@ -51,8 +48,6 @@ public class ModulusWebAppFactory<TEntryPoint> : WebApplicationFactory<TEntryPoi
 {
     private readonly string _databasePrefix = $"modulus-test-{Guid.NewGuid():N}";
 
-    private readonly List<SqliteConnection> _keepAlives = [];
-
     private readonly TestDatabaseRegistry _registry = new();
 
     /// <inheritdoc />
@@ -67,10 +62,20 @@ public class ModulusWebAppFactory<TEntryPoint> : WebApplicationFactory<TEntryPoi
             services.UsePerContextSqlite(_databasePrefix, _registry);
 
             // …and make the header-driven test scheme the default so [Authorize]
-            // endpoints accept CreateAuthenticatedClient's principal.
+            // endpoints accept CreateAuthenticatedClient's principal. An app that
+            // set its own defaults (a token server's validation scheme, a cookie/bearer
+            // policy scheme) would otherwise keep authenticating with them, so the
+            // defaults are overridden after every registration, PostConfigure included.
             services.AddAuthentication(TestAuthDefaults.SchemeName)
                 .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(
                     TestAuthDefaults.SchemeName, _ => { });
+            services.PostConfigure<AuthenticationOptions>(options =>
+            {
+                options.DefaultScheme = TestAuthDefaults.SchemeName;
+                options.DefaultAuthenticateScheme = TestAuthDefaults.SchemeName;
+                options.DefaultChallengeScheme = TestAuthDefaults.SchemeName;
+                options.DefaultForbidScheme = TestAuthDefaults.SchemeName;
+            });
 
             // Keep-alive + EnsureCreated for every swapped database, running
             // BEFORE the application's own hosted services (index 0) so startup
@@ -78,11 +83,9 @@ public class ModulusWebAppFactory<TEntryPoint> : WebApplicationFactory<TEntryPoi
             // DI; factory-only contexts (e.g. AddEfCoreAuthorizationStores)
             // resolve through their IDbContextFactory<T>.
             services.Insert(0, ServiceDescriptor.Singleton<IHostedService>(sp =>
-                new SqliteKeepAliveService(sp, _registry, HoldConnection)));
+                new SqliteKeepAliveService(sp, _registry)));
         });
     }
-
-    private void HoldConnection(SqliteConnection connection) => _keepAlives.Add(connection);
 
     /// <summary>
     /// Creates an <see cref="HttpClient"/> whose requests carry a test principal.
@@ -127,9 +130,7 @@ public class ModulusWebAppFactory<TEntryPoint> : WebApplicationFactory<TEntryPoi
     {
         if (disposing)
         {
-            foreach (var keepAlive in _keepAlives)
-                keepAlive.Dispose();
-            _keepAlives.Clear();
+            _registry.Dispose();
         }
         base.Dispose(disposing);
     }
@@ -144,8 +145,7 @@ public class ModulusWebAppFactory<TEntryPoint> : WebApplicationFactory<TEntryPoi
     /// </summary>
     private sealed class SqliteKeepAliveService(
         IServiceProvider provider,
-        TestDatabaseRegistry registry,
-        Action<SqliteConnection> holdConnection) : IHostedService
+        TestDatabaseRegistry registry) : IHostedService
     {
         public async Task StartAsync(CancellationToken cancellationToken)
         {
@@ -176,9 +176,8 @@ public class ModulusWebAppFactory<TEntryPoint> : WebApplicationFactory<TEntryPoi
             if (string.IsNullOrWhiteSpace(connectionString))
                 return;
 
-            var keepAlive = new SqliteConnection(connectionString);
-            await keepAlive.OpenAsync(cancellationToken);
-            holdConnection(keepAlive);
+            // Normally already open (the options hook did it when the context was first built); this covers the rest.
+            registry.KeepAlive(connectionString);
 
             // EnsureCreated is idempotent per context; any schema the app
             // created while wiring the host died with its connections.

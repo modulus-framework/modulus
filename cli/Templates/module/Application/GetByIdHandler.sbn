@@ -16,6 +16,11 @@ public sealed class Get{{ entity_name }}ByIdHandler(I{{ entity_name }}Repository
             ?? throw new NotFoundException(
                 "{{ entity_name }} not found: " + query.Id);
 
-        return new {{ entity_name }}Dto { Id = entity.Id, Name = entity.Name };
+        return new {{ entity_name }}Dto
+        {
+            Id = entity.Id,
+            Name = entity.Name,
+{{ if has_api_extra_fields }}            ExtraProperties = new Dictionary<string, string?>(entity.ExtraProperties),
+{{ end }}        };
     }
 }

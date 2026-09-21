@@ -48,44 +48,54 @@ Modulus follows a **modular-monolith** architecture — a single deployable appl
 | **Microservices** | Multiple processes | Network (HTTP/gRPC) | Database per service |
 | **Monolith** | Single process | Direct method calls | Shared database |
 
-## Package Structure (23 packages)
+## Package Structure (34 libraries)
 
-The framework was consolidated from 55 to 23 packages:
+The framework ships 34 libraries under `src/` (plus the `Modulus.Cli` tool):
 
 | Package | Purpose |
 |---------|---------|
 | `Modulus.Core` | Module system, DDD primitives, abstractions |
 | `Modulus.AspNetCore` | ASP.NET Core integration, middleware, hardening |
+| `Modulus.AspNetCore.Redis` | Distributed idempotency store |
 | `Modulus.Data.Abstractions` | Repository and specification interfaces |
 | `Modulus.EntityFrameworkCore` | EF Core integration, module DbContext |
 | `Modulus.Data.{SqlServer,PostgreSQL,MySQL,SQLite}` | Database provider registrations |
 | `Modulus.Data.MongoDB` | MongoDB document storage |
 | `Modulus.Mediator` | CQRS mediator with pipeline behaviors |
 | `Modulus.Events` | Domain events, integration events, in-process bus |
-| `Modulus.Inbox` | Idempotent message consumption (EF Core) |
+| `Modulus.Inbox` / `Modulus.Inbox.MongoDB` | Idempotent consumption (EF Core / MongoDB) |
 | `Modulus.Outbox` | Transactional outbox processor |
 | `Modulus.Outbox.Abstractions` | Outbox row factory (circular-dep seam) |
-| `Modulus.Inbox.MongoDB` / `Modulus.Outbox.MongoDB` | MongoDB variants |
+| `Modulus.Outbox.Management` | Dead-letter list/inspect/replay/purge API (EF) |
+| `Modulus.Outbox.MongoDB` | MongoDB outbox + management API |
 | `Modulus.EventBus.RabbitMQ` / `Modulus.EventBus.Kafka` | Message broker transports |
 | `Modulus.Sagas` | Rebus-based saga orchestration |
-| `Modulus.Identity` | OpenIddict + external IdP adapters |
-| `Modulus.Platform` | Multi-tenancy, authorization, caching, storage, SignalR |
-| `Modulus.Observability` | OpenTelemetry, tracing, health endpoints |
-| `Modulus.Testing` | Test harness with per-module SQLite |
+| `Modulus.Identity` | OpenIddict + 6 external IdP adapters |
+| `Modulus.Platform` | Multi-tenancy, authorization, jobs, caching, storage, SignalR |
+| `Modulus.MultiTenancy.EntityFrameworkCore` | EF tenant store + per-tenant migration fan-out |
+| `Modulus.Authorization.EntityFrameworkCore` | EF permission grant store |
+| `Modulus.Authorization.Management` | Permission admin API |
+| `Modulus.BackgroundJobs.Quartz` | Durable Quartz.NET scheduling |
+| `Modulus.Caching.Redis` | Redis cache + invalidation backplane |
+| `Modulus.Storage.S3` / `Modulus.Storage.AzureBlobs` | Cloud file storage (opt-in SDKs) |
+| `Modulus.SignalR.Backplane` | Redis/Azure SignalR backplane (opt-in SDKs) |
+| `Modulus.Observability` | OpenTelemetry bootstrap, tracing, health endpoints |
+| `Modulus.Testing` / `Modulus.Testing.Architecture` | Test harness + module boundary rules |
 
 ## Solution Layout
 
 ```
 src/
-  core/          Modulus.Core, Modulus.AspNetCore
+  core/          Modulus.Core, Modulus.AspNetCore (+ Redis idempotency store)
   data/          Abstractions, EF Core, providers (SqlServer, PostgreSQL, MySQL, SQLite, MongoDB)
   identity/      OpenIddict + 6 IdP adapters
-  messaging/     Events, Mediator, Inbox, Outbox, RabbitMQ, Kafka, Sagas
-  platform/      MultiTenancy, Authorization, BackgroundJobs, Caching, Storage, SignalR
-  observability/ Diagnostics, OpenTelemetry
-  testing/       WebApplicationFactory harness
+  messaging/     Events, Mediator, Inbox (+MongoDB), Outbox (+Abstractions, Management, MongoDB), RabbitMQ, Kafka, Sagas
+  platform/      Platform core + MultiTenancy.EFCore, Authorization.EFCore/Management,
+                 BackgroundJobs.Quartz, Caching.Redis, Storage.S3/AzureBlobs, SignalR.Backplane
+  observability/ OpenTelemetry wiring
+  testing/       WebApplicationFactory harness + architecture rules
   cli/           Modulus.Cli scaffolding tool
 tests/
-  unit/          15 xUnit test projects
+  unit/          23 xUnit test projects
   integration/   Testcontainers-based tests
 ```

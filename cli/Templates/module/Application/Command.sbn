@@ -1,7 +1,9 @@
 using Modulus.Core.Abstractions.Common;
 using Modulus.Mediator.Abstractions;
+using Modulus.Mediator.Abstractions.Attributes;
 
 namespace {{ module_namespace }}.Application;
 
 /// <summary>Command: {{ feature_name }}</summary>
+[Transactional(typeof(IUnitOfWork))]
 public sealed record {{ feature_name }}Command : ICommand<Unit>;

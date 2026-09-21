@@ -2,6 +2,7 @@ using System.Reflection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Modulus.Events;
 using Modulus.Events.Abstractions;
 using Modulus.Mediator.Abstractions;
@@ -28,9 +29,13 @@ namespace Modulus.Mediator.Behaviors;
 /// <para>
 /// <b>Domain event dispatch timing:</b> Domain events that ModuleDbContext
 /// collected are deferred when explicit transactions are active (they would
-/// otherwise dispatch before commit). After all transactions commit, this
-/// behavior dispatches the queued events, ensuring the documented "after
-/// commit" semantics: handlers see consistent, committed state.
+/// otherwise dispatch before commit). The deferred queue is drained by the
+/// transaction interceptor (DeferredDomainEventTransactionInterceptor) the
+/// moment the first wrapped transaction commits, so handlers see consistent,
+/// committed state. This behavior drains the queue again after its own commits
+/// as a safety net — by then the interceptor has emptied it, so events
+/// dispatch exactly once. Manual (non-mediator) transactions are covered by
+/// the same interceptor.
 /// </para>
 /// <para>
 /// <b>Single-context case (most common):</b> Fully atomic — one transaction,
@@ -54,7 +59,9 @@ namespace Modulus.Mediator.Behaviors;
 /// SQLite) the strategy is a passthrough that runs the delegate once, so the
 /// wrapping is always safe. On a transient failure the strategy rolls the
 /// transaction back and re-invokes the handler, so handler bodies must be
-/// safe to re-run.
+/// safe to re-run. The shared deferred domain-event queue is discarded at the
+/// start of each attempt so a re-run cannot double-dispatch the rolled-back
+/// attempt's events.
 /// </para>
 /// </remarks>
 public sealed class TransactionBehavior<TRequest, TResponse>(
@@ -89,7 +96,7 @@ public sealed class TransactionBehavior<TRequest, TResponse>(
             .GroupBy(ctx => ctx.GetType())
             .Select(group => group.First())
             .ToList();
-        var toWrap = SelectContexts(contexts);
+        var toWrap = SelectContexts(contexts, typeof(TRequest).Name);
         if (toWrap.Count == 0)
             return await next();
 
@@ -103,6 +110,15 @@ public sealed class TransactionBehavior<TRequest, TResponse>(
         var strategy = contexts[0].Database.CreateExecutionStrategy();
         return await strategy.ExecuteAsync(async () =>
         {
+            // Each execution-strategy retry re-invokes this delegate after
+            // rolling back the previous attempt. Events that the failed
+            // attempt queued into the shared deferred queue are NOT cleared
+            // by the rollback — the re-run handler would enqueue them a
+            // second time and the post-commit drain would dispatch every
+            // event twice. Discard the rolled-back attempt's leftovers first
+            // (a no-op on the first attempt, when the queue is empty).
+            sp.GetService<IDeferredDomainEventQueue>()?.DequeueAll();
+
             // Start a transaction on *every* wrapped context so all writes are
             // protected. The begin loop runs inside the try: if opening
             // context #2 fails, context #1's already-open transaction is still
@@ -115,14 +131,28 @@ public sealed class TransactionBehavior<TRequest, TResponse>(
 
                 var result = await next();
 
-                // Commit once the handler has succeeded.
-                foreach (var tx in transactions)
-                    await tx.CommitAsync(ct);
+                // Commit once the handler has succeeded. Multi-context commits are
+                // sequential and non-atomic: if a later commit fails, earlier ones
+                // cannot be undone — prefer the transactional outbox for
+                // cross-module consistency.
+                try
+                {
+                    foreach (var tx in transactions)
+                        await tx.CommitAsync(ct);
+                }
+                catch (Exception commitEx)
+                {
+                    sp.GetService<ILogger<TransactionBehavior<TRequest, TResponse>>>()?.LogError(
+                        commitEx,
+                        "Transaction commit failed for {Request} after partial commits; already-committed contexts cannot be rolled back.",
+                        typeof(TRequest).Name);
+                    throw;
+                }
 
-                // After all transactions commit, dispatch any domain events that
-                // were deferred by ModuleDbContext.SaveChangesAsync while the
-                // transaction was active. This ensures handlers observe committed
-                // state and can safely perform external side effects.
+                // Safety net: the transaction interceptor drains the deferred
+                // queue at the first commit; this post-commit drain is a no-op
+                // when it did, and still dispatches for contexts whose provider
+                // path bypasses interceptors.
                 await DispatchDeferredDomainEventsAsync(ct);
 
                 return result;
@@ -140,7 +170,10 @@ public sealed class TransactionBehavior<TRequest, TResponse>(
             finally
             {
                 foreach (var tx in transactions)
-                    await tx.DisposeAsync();
+                {
+                    try { await tx.DisposeAsync(); }
+                    catch (Exception) { /* a failed dispose must not mask the result */ }
+                }
             }
         });
     }
@@ -150,12 +183,12 @@ public sealed class TransactionBehavior<TRequest, TResponse>(
     /// <list type="bullet">
     /// <item>[Transactional(types)] present → exactly those context types.</item>
     /// <item><see cref="TransactionMode.AllContexts"/> → every context (legacy).</item>
-    /// <item>otherwise (default) → the single registered context, or none when
-    /// several exist (each SaveChanges is atomic on its own; declare intent with
-    /// [Transactional] to wrap specific contexts).</item>
+    /// <item>otherwise (default) → the single registered context; when several
+    /// exist an <see cref="InvalidOperationException"/> is thrown so the missing
+    /// intent is fixed instead of silently running without a transaction.</item>
     /// </list>
     /// </summary>
-    private List<DbContext> SelectContexts(List<DbContext> contexts)
+    private List<DbContext> SelectContexts(List<DbContext> contexts, string requestName)
     {
         if (contexts.Count == 0)
             return contexts;
@@ -168,14 +201,23 @@ public sealed class TransactionBehavior<TRequest, TResponse>(
         if (options.Mode == TransactionMode.AllContexts)
             return contexts;
 
-        // TouchedOrSingle: wrap the one context if unambiguous, else nothing.
-        return contexts.Count == 1 ? contexts : [];
+        // TouchedOrSingle: wrap the one context if unambiguous, else fail fast.
+        if (contexts.Count == 1)
+            return contexts;
+
+        throw new InvalidOperationException(
+            $"Command {requestName} touches an ambiguous transaction scope: {contexts.Count} DbContexts " +
+            $"({string.Join(", ", contexts.Select(c => c.GetType().Name))}) are registered but the command " +
+            "declares none. Add [Transactional(typeof(...))] to wrap specific contexts, " +
+            "opt into TransactionMode.AllContexts, or add [SkipTransaction] when no transaction is intended.");
     }
 
     /// <summary>
-    /// Dispatches any domain events that were deferred by ModuleDbContext while
-    /// transactions were active. Called after all transactions commit to ensure
-    /// handlers observe committed state and can safely perform external side effects.
+    /// Safety-net drain of the deferred domain-event queue. The transaction
+    /// interceptor (registered by AddModuleDatabase) already drains and
+    /// dispatches when a transaction commits; this catches the rare provider
+    /// paths that bypass interceptors. Draining twice is harmless — the queue
+    /// clears on read, so events dispatch exactly once.
     /// </summary>
     private async Task DispatchDeferredDomainEventsAsync(CancellationToken ct)
     {

@@ -16,52 +16,41 @@ Modulus provides liveness and readiness health probes.
 ## Setup
 
 ```csharp
-app.MapModulusHealthChecks();
+builder.Services.AddHealthChecks()
+    .AddModulusHealthChecks();   // bridges IModuleHealthCheck into the ecosystem
+
+app.MapModulusHealthChecks();    // /health/live + /health/ready (paths overridable)
 ```
 
 ## Module Health Checks
 
-Each module can register health checks:
+Each module implements the framework seam (not `IHealthCheck` directly):
 
 ```csharp
-public sealed class CatalogModule : ModulusModule
-{
-    public override void ConfigureServices(IServiceCollection services, IConfiguration config)
-    {
-        services.AddHealthChecks()
-            .AddCheck<CatalogDbHealthCheck>("catalog-db");
-    }
-}
-
 public sealed class CatalogDbHealthCheck(CatalogDbContext db)
-    : IHealthCheck
+    : IModuleHealthCheck
 {
-    public async Task<HealthCheckResult> CheckHealthAsync(
-        HealthCheckContext context, CancellationToken ct)
+    public async Task<ModuleHealthResult> CheckAsync(CancellationToken ct)
     {
         var canConnect = await db.Database.CanConnectAsync(ct);
         return canConnect
-            ? HealthCheckResult.Healthy()
-            : HealthCheckResult.Unhealthy("Cannot connect to database");
+            ? new ModuleHealthResult("catalog-db", HealthStatus.Healthy, "OK", TimeSpan.Zero)
+            : new ModuleHealthResult("catalog-db", HealthStatus.Unhealthy, "Cannot connect", TimeSpan.Zero);
     }
 }
 ```
+
+Checks run isolated: a throwing check reports `Unhealthy` (never a probe
+500), and a hung check times out after 5s. This is separate from
+Observability's `/health/modules` aggregator.
 
 ## Readiness Behavior
 
 - Returns **200** when all modules are `Healthy` or `Degraded`
 - Returns **503** when any module is `Unhealthy`
 
-## Configuration
-
-```json
-{
-  "HealthChecks": {
-    "Enabled": true,
-    "Path": "/health"
-  }
-}
-```
+Paths default to `/health/live` + `/health/ready` (method arguments, no
+config section).
 
 ## See Also
 

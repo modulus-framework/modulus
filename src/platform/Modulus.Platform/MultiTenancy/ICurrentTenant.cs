@@ -19,4 +19,10 @@ public interface ITenantStore
 {
     Task<TenantInfo?> FindByIdAsync(Guid id, CancellationToken ct);
     Task<TenantInfo?> FindBySlugAsync(string slug, CancellationToken ct);
+
+    /// <summary>
+    /// Lists all tenants for out-of-band fan-out (e.g. per-tenant migration).
+    /// Default returns empty; implement when per-tenant databases are used.
+    /// </summary>
+    Task<IReadOnlyList<TenantInfo>> ListAsync(CancellationToken ct) => Task.FromResult<IReadOnlyList<TenantInfo>>([]);
 }

@@ -1,0 +1,56 @@
+@model Meetup.Modules.Meetings.Web.Pages.Meetings.IndexModel
+@* Keeps the create form's group select in sync when the picker changes. *@
+<select id="Input_GroupId" name="Input.GroupId" class="form-select" hx-swap-oob="true">
+    @foreach (var g in Model.Groups)
+    {
+        <option value="@g.Id" selected="@(g.Id == Model.SelectedGroupId)">@g.Name (@g.City)</option>
+    }
+</select>
+@if (Model.SelectedGroupId is null)
+{
+    @await Html.PartialAsync("_Alert", UiAlert.Info("Select a meeting group to see its meetings."))
+}
+else if (Model.Meetings.Count == 0)
+{
+    @await Html.PartialAsync("_Alert", UiAlert.Info("No meetings in this group yet — create the first one above."))
+}
+else
+{
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-vcenter card-table">
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Starts (UTC)</th>
+                        <th>Fee</th>
+                        <th>Creator</th>
+                        <th class="w-1">Join</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var m in Model.Meetings)
+                    {
+                        <tr>
+                            <td>@m.Title</td>
+                            <td>@m.StartUtc.ToString("u")</td>
+                            <td>@m.EventFee @m.EventFeeCurrency</td>
+                            <td>@m.CreatorLogin</td>
+                            <td>
+                                <form method="post" asp-page-handler="Join"
+                                      asp-route-meetingId="@m.Id" asp-route-groupId="@Model.SelectedGroupId"
+                                      hx-post="@Url.Page("./Index", "Join", new { meetingId = m.Id, groupId = Model.SelectedGroupId })"
+                                      hx-target="#meetings-table" hx-swap="innerHTML"
+                                      class="d-flex gap-1">
+                                    <input class="form-control form-control-sm" name="Join.Login" placeholder="login" style="width: 7rem" />
+                                    <input class="form-control form-control-sm" name="Join.GuestsCount" type="number" min="0" value="0" style="width: 4rem" title="Guests" />
+                                    <button class="btn btn-sm btn-outline-primary" type="submit">Join</button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}

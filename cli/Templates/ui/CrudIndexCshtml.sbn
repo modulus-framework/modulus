@@ -1,0 +1,15 @@
+@page
+@model {{ api_namespace }}.Pages.{{ module_name }}.{{ entity_plural }}.IndexModel
+@{
+    ViewData["Title"] = "{{ entity_plural }}";
+    // HTMX fragment callers swap the inner content; full navigations get the
+    // active theme's layout (Tabler when AddTablerTheme() is registered,
+    // otherwise Core's built-in shell).
+    // (A Razor Page exposes HttpContext; `Context` only exists in views and _ViewStart.)
+    Layout = Model.IsHtmxFragment ? null : HttpContext.GetThemeLayout();
+}
+<m-page-header title="@ViewData["Title"]" subtitle="{{ module_name }}" />
+@await Html.PartialAsync("_CreateForm", Model)
+<div id="{{ entity_name_lower }}-table">
+    @await Html.PartialAsync("_Table", Model)
+</div>

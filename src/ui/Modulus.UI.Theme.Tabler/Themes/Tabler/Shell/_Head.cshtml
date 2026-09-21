@@ -1,0 +1,21 @@
+@* <head> content shared by every Tabler layout: title, favicon, theme
+   stylesheets (in ITheme.Styles order) and the Head slot. No inline
+   <style>/<script> so the shell stays CSP-clean. *@
+@inject IThemeAccessor Themes
+@inject IOptions<UiOptions> Ui
+@{
+    var branding = Ui.Value.Branding;
+    var title = ViewData["Title"] as string;
+}
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>@(string.IsNullOrWhiteSpace(title) ? branding.AppName : $"{title} · {branding.AppName}")</title>
+@if (!string.IsNullOrWhiteSpace(branding.FaviconUrl))
+{
+    <link rel="icon" href="@Url.Content(branding.FaviconUrl)" />
+}
+@foreach (var style in Themes.Current.Styles)
+{
+    <link rel="stylesheet" href="@Url.Content("~" + style.Path)" integrity="@style.Integrity" />
+}
+@await Html.ModulusSlotAsync(UiSlots.Head)

@@ -1,0 +1,43 @@
+@model Meetup.Modules.Administration.Web.Pages.Administration.IndexModel
+<div class="card mb-3">
+    <div class="card-header">
+        <h3 class="card-title">New proposal</h3>
+    </div>
+    <div class="card-body">
+        <form method="post" asp-page-handler="Create"
+              hx-post="@Url.Page("./Index", "Create")"
+              hx-target="#proposal-table" hx-swap="innerHTML"
+              hx-on::after-request="this.reset()">
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label" asp-for="Input.Name">Group name</label>
+                    <input class="form-control" asp-for="Input.Name" placeholder="Weekend Hikers" />
+                    <span class="invalid-feedback d-block" asp-validation-for="Input.Name"></span>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label" asp-for="Input.ProposerLogin">Proposer login</label>
+                    <input class="form-control" asp-for="Input.ProposerLogin" placeholder="jdoe" />
+                    <span class="invalid-feedback d-block" asp-validation-for="Input.ProposerLogin"></span>
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label" asp-for="Input.Description">Description</label>
+                <textarea class="form-control" asp-for="Input.Description" rows="2"></textarea>
+            </div>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label" asp-for="Input.City">City</label>
+                    <input class="form-control" asp-for="Input.City" placeholder="Seattle" />
+                    <span class="invalid-feedback d-block" asp-validation-for="Input.City"></span>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label" asp-for="Input.CountryCode">Country code</label>
+                    <input class="form-control" asp-for="Input.CountryCode" maxlength="2" />
+                    <span class="invalid-feedback d-block" asp-validation-for="Input.CountryCode"></span>
+                </div>
+            </div>
+            <button class="btn btn-primary" type="submit">Propose group</button>
+        </form>
+    </div>
+</div>

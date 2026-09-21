@@ -35,6 +35,16 @@ internal sealed class IdentityPasswordGrantValidator<TUser>(
             return PasswordGrantResult.Denied("account_disabled");
         }
 
+        // Honor the SignIn requirements (RequireConfirmedEmail /
+        // RequireConfirmedPhoneNumber / RequireConfirmedAccount).
+        // CheckPasswordSignInAsync deliberately does NOT enforce these —
+        // skipping this check would let unconfirmed accounts obtain tokens
+        // when Identity:RequireConfirmedEmail=true.
+        if (!await signInManager.CanSignInAsync(user))
+        {
+            return PasswordGrantResult.Denied();
+        }
+
         var check = await signInManager.CheckPasswordSignInAsync(
             user, password, lockoutOnFailure: true);
 

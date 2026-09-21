@@ -1,0 +1,33 @@
+@* Default markup for <m-tabs>: Tabler tabs wired through Bootstrap data attributes (no page
+   script). A tab with a Source lazy-loads its pane with htmx the first time the pane is shown
+   (a hidden pane never intersects, so `intersect once` fires on reveal). *@
+@model TabsModel
+<div class="card" id="@Model.Id">
+    <div class="card-header">
+        <ul class="nav nav-tabs card-header-tabs" data-bs-toggle="tabs" role="tablist">
+            @foreach (var tab in Model.Tabs)
+            {
+                <li class="nav-item" role="presentation">
+                    <a href="#@tab.PaneId" class="nav-link@(tab.Active ? " active" : "")" data-bs-toggle="tab" role="tab" aria-selected="@(tab.Active ? "true" : "false")">@tab.Title</a>
+                </li>
+            }
+        </ul>
+    </div>
+    <div class="card-body">
+        <div class="tab-content">
+            @foreach (var tab in Model.Tabs)
+            {
+                <div class="tab-pane@(tab.Active ? " active show" : "")" id="@tab.PaneId" role="tabpanel">
+                    @if (tab.Source is not null)
+                    {
+                        <div hx-get="@tab.Source" hx-trigger="intersect once" hx-swap="innerHTML"></div>
+                    }
+                    else
+                    {
+                        @tab.Body
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>

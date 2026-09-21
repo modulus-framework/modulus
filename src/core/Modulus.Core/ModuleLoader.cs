@@ -2,6 +2,18 @@ namespace Modulus.Core;
 
 using Modulus.Core.Abstractions;
 using Modulus.Observability;
+using Microsoft.Extensions.DependencyInjection;
+
+/// <summary>
+/// Thrown when a module's <see cref="IModule.InitializeAsync"/> fails. Carries
+/// the module name so boot failures are attributable instead of surfacing as a
+/// bare handler exception. Remaining modules are not initialized.
+/// </summary>
+public sealed class ModuleInitializationException(string moduleName, Exception inner)
+    : InvalidOperationException($"Module '{moduleName}' failed to initialize.", inner)
+{
+    public string ModuleName { get; } = moduleName;
+}
 
 /// <summary>
 /// Default <see cref="IModuleLoader"/>: captures the registered modules in
@@ -12,6 +24,7 @@ public sealed class ModuleLoader : IModuleLoader
 {
     private readonly IReadOnlyList<ModuleDescriptor> _descriptors;
     private readonly Dictionary<Type, IModule> _modulesByType;
+    private readonly HashSet<Type> _initialized = new();
 
     /// <summary>
     /// Creates a loader over the given modules. Registration order is
@@ -56,20 +69,38 @@ public sealed class ModuleLoader : IModuleLoader
 
         foreach (var descriptor in _descriptors)
         {
-            var module = (IModule)sp.GetRequiredService(descriptor.ModuleType);
+            // Per-module child scope so scoped services (DbContext, tenant,
+            // correlation) never bleed across modules during init.
+            await using var scope = sp.CreateAsyncScope();
+            var scoped = scope.ServiceProvider;
+            var module = (IModule)scoped.GetRequiredService(descriptor.ModuleType);
             var sw = System.Diagnostics.Stopwatch.StartNew();
 
             var ctx = new ModuleContext
             {
-                ServiceProvider = sp,
-                Configuration = sp.GetRequiredService<IConfiguration>(),
-                Logger = sp.GetRequiredService<ILoggerFactory>()
+                ServiceProvider = scoped,
+                Configuration = scoped.GetRequiredService<IConfiguration>(),
+                Logger = scoped.GetRequiredService<ILoggerFactory>()
                            .CreateLogger(descriptor.ModuleType),
                 Descriptor = descriptor,
             };
 
-            await module.InitializeAsync(ctx, ct);
+            try
+            {
+                await module.InitializeAsync(ctx, ct);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                sw.Stop();
+                logger.LogCritical(ex,
+                    "[Modulus] {Module} failed to initialize; aborting remaining initializations.",
+                    descriptor.Name);
+                throw new ModuleInitializationException(descriptor.Name, ex);
+            }
+
             sw.Stop();
+            lock (_initialized)
+                _initialized.Add(descriptor.ModuleType);
 
             ModulusMeters.ModuleInitDuration.Record(sw.Elapsed.TotalMilliseconds,
                 new KeyValuePair<string, object?>("module", descriptor.Name));
@@ -94,7 +125,15 @@ public sealed class ModuleLoader : IModuleLoader
         for (var i = _descriptors.Count - 1; i >= 0; i--)
         {
             var descriptor = _descriptors[i];
-            var module = _modulesByType[descriptor.ModuleType];
+            lock (_initialized)
+            {
+                // After a failed boot only shut down modules that initialized;
+                // when init never ran, shut everything down (safe no-op path).
+                if (_initialized.Count > 0 && !_initialized.Contains(descriptor.ModuleType))
+                    continue;
+            }
+            var module = (IModule?)sp.GetService(descriptor.ModuleType)
+                ?? _modulesByType[descriptor.ModuleType];
 
             try
             {

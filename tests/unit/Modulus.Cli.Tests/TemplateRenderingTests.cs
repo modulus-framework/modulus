@@ -71,6 +71,19 @@ public class TemplateRenderingTests
     }
 
     [Fact]
+    public void NuGet_config_template_renders_valid_xml()
+    {
+        // The fallback comment once contained "--", which is illegal in XML
+        // and broke restore for every generated app without a local feed.
+        var model = new AppModel { AppName = "TestApp", RootNamespace = "Test" };
+
+        var output = _engine.Render("app/NuGet.config", model);
+
+        var act = () => System.Xml.Linq.XDocument.Parse(output);
+        act.Should().NotThrow();
+    }
+
+    [Fact]
     public void Endpoint_template_renders_without_errors()
     {
         var model = new ModuleModel
@@ -96,5 +109,8 @@ public class TemplateRenderingTests
         output.Should().Contain("Endpoint<GetProductByIdRequest, ProductDto>");
         output.Should().Contain("Endpoint<CreateProductRequest, Guid>");
         output.Should().NotContain("{{");
+        // Endpoints require authorization by default (EndpointDiscovery);
+        // the DSL has no RequireAuthorization() method.
+        output.Should().NotContain("RequireAuthorization");
     }
 }

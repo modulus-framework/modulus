@@ -1,0 +1,33 @@
+@startuml C3_Components
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title Meetup — Components, high level (C3)
+
+Container_Boundary(web, "Meetup.Web") {
+  Component(host, "Host / Middleware", "ASP.NET Core", "Correlation, idempotency, security headers, exception handling, health, OpenAPI")
+  Component(pres, "Presentation endpoints", "REPR (Modulus.AspNetCore)", "One file per endpoint, IMediator only")
+  Component(mediator, "Mediator + pipeline", "Modulus.Mediator", "Validation, transactions, logging")
+  Component(bus, "Module bus", "Modulus.Events (in-process)", "Integration events pub/sub")
+
+  Component(mUsers, "UserAccess module", "Domain→App→Infra", "Auth + users")
+  Component(mReg, "Registrations module", "Domain→App→Infra", "Sign-up + confirmation")
+  Component(mAdmin, "Administration module", "Domain→App→Infra", "Group proposals")
+  Component(mPay, "Payments module", "Domain→App→Infra", "Subscriptions + fees")
+  Component(mMeet, "Meetings module", "Domain→App→Infra", "Groups + meetings")
+}
+
+Rel(host, pres, "Maps")
+Rel(pres, mediator, "Send/query")
+Rel(mediator, mUsers, "Dispatches")
+Rel(mediator, mReg, "Dispatches")
+Rel(mediator, mAdmin, "Dispatches")
+Rel(mediator, mPay, "Dispatches")
+Rel(mediator, mMeet, "Dispatches")
+
+Rel(mReg, bus, "UserRegistered / Confirmed")
+Rel(mAdmin, bus, "ProposalAccepted")
+Rel(mPay, bus, "SubscriptionPurchased")
+Rel(mMeet, bus, "MeetingGroupCreated")
+Rel(bus, mUsers, "Create/activate user")
+Rel(bus, mMeet, "Create group / extend payment")
+@enduml

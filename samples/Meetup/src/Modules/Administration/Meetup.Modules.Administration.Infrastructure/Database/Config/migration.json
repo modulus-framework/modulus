@@ -1,0 +1,23 @@
+{
+  "migration": {
+    "version": "1.0.0",
+    "database": {
+      "provider": "postgresql",
+      "connectionString": "${ADMINISTRATION_CONNECTION}"
+    },
+    "scripts": {
+      "path": "./Database/Migrations",
+      "pattern": "*.sql"
+    },
+    "tracking": {
+      "schema": "public",
+      "tableName": "__migration_history"
+    },
+    "execution": {
+      "lockTimeoutSeconds": 300,
+      "commandTimeoutSeconds": 3600,
+      "batchSize": 10,
+      "stopOnFailure": true
+    }
+  }
+}

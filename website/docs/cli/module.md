@@ -16,28 +16,29 @@ modulus module <name> [options]
 
 | Option | Description |
 |--------|-------------|
-| `--migration-engine` | efcore (default) or dbsh |
+| `--app` | Root namespace of the application (auto-detected when omitted) |
+| `-o, --output` | Output directory |
+| `-d, --database` | Database provider: `SQLite` (default), `SqlServer`, `PostgreSQL`, `MySQL` |
+| `--migration-engine` | `efcore` or `dbsh`. Omit to inherit from the app's existing modules |
 
 ## Generated Structure
 
 ```
 MyApp.Modules.Products/
 ├── .Domain/
-│   ├── Product.cs
+│   ├── Product.cs              # AggregateRoot<Guid> sample entity
 │   └── IProductRepository.cs
 ├── .Application/
-│   ├── IUnitOfWork.cs
+│   ├── IUnitOfWork.cs          # CommitAsync
 │   ├── Dtos/
-│   ├── Commands/
-│   ├── Queries/
-│   └── IntegrationEvents/
+│   └── IntegrationEvents/      # e.g. ProductCreatedIntegrationEvent
 ├── .Infrastructure/
 │   ├── ProductsDbContext.cs
 │   ├── ProductsDbContextFactory.cs
 │   ├── ProductRepository.cs
 │   └── ProductsModule.cs
 └── .Presentation/
-    └── ProductController.cs
+    └── ProductsEndpoint.cs     # REPR endpoints (Endpoint<> classes, RequireAuthorization)
 ```
 
 ## Example

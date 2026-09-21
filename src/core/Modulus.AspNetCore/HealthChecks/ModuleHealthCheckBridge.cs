@@ -24,7 +24,9 @@ internal sealed class ModuleHealthCheckBridge(IServiceProvider services) : IHeal
         if (checks.Count == 0)
             return HealthCheckResult.Healthy("No module health checks registered.");
 
-        var results = await Task.WhenAll(checks.Select(c => c.CheckAsync(cancellationToken)));
+        // Same per-check isolation as the /health/* endpoints (shared runner).
+        var results = await Task.WhenAll(checks.Select(
+            c => ModuleHealthCheckRunner.RunIsolatedAsync(c, cancellationToken)));
 
         var data = new Dictionary<string, object>();
         foreach (var r in results)

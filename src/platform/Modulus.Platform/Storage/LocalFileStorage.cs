@@ -4,8 +4,10 @@ using Microsoft.Extensions.Options;
 
 public sealed class LocalFileStorage(IOptions<StorageOptions> options) : IFileStorage
 {
+    // StorageOptions.BasePath defaults to "" (not null), so `?? "storage"` never applied and an
+    // unconfigured host threw "The path is empty" on the first file operation.
     private readonly string _basePath =
-        Path.GetFullPath(options.Value.BasePath ?? "storage");
+        Path.GetFullPath(string.IsNullOrWhiteSpace(options.Value.BasePath) ? "storage" : options.Value.BasePath);
 
     /// <summary>
     /// Resolves <paramref name="path"/> against <see cref="_basePath"/> and
@@ -67,9 +69,23 @@ public sealed class LocalFileStorage(IOptions<StorageOptions> options) : IFileSt
         return Task.FromResult(File.Exists(FullPath(path)));
     }
 
+    /// <summary>
+    /// Returns the plain local download path (<c>/storage/{path}</c>).
+    /// <b>Unsigned and non-expiring: local storage has no signing scheme, so
+    /// <paramref name="expiry"/> is ignored.</b> Do not hand this URL to
+    /// untrusted callers expecting a time-limited authorized link — serve
+    /// local files behind an authenticated download endpoint instead. The S3 /
+    /// Azure Blob implementations return real expiring signed URLs.
+    /// </summary>
     public Task<string> GetPresignedUrlAsync(string path, TimeSpan expiry, CancellationToken ct = default)
         => Task.FromResult($"/storage/{path}");
 
+    /// <summary>
+    /// Returns the plain local upload path (<c>/storage/{path}</c>).
+    /// <b>Unsigned and non-expiring</b> — see
+    /// <see cref="GetPresignedUrlAsync"/>; accept local uploads only through
+    /// an authenticated endpoint.
+    /// </summary>
     public Task<string> GetPresignedUploadUrlAsync(string path, TimeSpan expiry, string? contentType = null, CancellationToken ct = default)
         => Task.FromResult($"/storage/{path}");
 }

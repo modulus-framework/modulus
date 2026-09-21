@@ -15,8 +15,14 @@ public sealed class CatalogDbContext : ModuleDbContext
 {
     public DbSet<Product> Products => Set<Product>();
 
-    public CatalogDbContext(DbContextOptions<CatalogDbContext> options)
-        : base(options) { }
+    public CatalogDbContext(
+        DbContextOptions<CatalogDbContext> options,
+        ICurrentTenant tenant,
+        ICurrentUser user,
+        DomainEventDispatcher dispatcher,
+        IServiceProvider services,
+        TimeProvider? clock = null)
+        : base(options, tenant, user, dispatcher, services, clock) { }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -26,7 +32,6 @@ public sealed class CatalogDbContext : ModuleDbContext
         {
             e.HasKey(p => p.Id);
             e.Property(p => p.Name).HasMaxLength(200);
-            e.Property(p => p.Price).HasPrecision(18, 2);
         });
     }
 }
@@ -47,24 +52,32 @@ public sealed class CatalogDbContext : ModuleDbContext
 
 ## Provider Configuration
 
-Each provider has an extension method:
+The provider call goes *inside* the options lambda:
 
 ```csharp
 // SQLite
-services.AddModuleDatabase<CatalogDbContext>(config)
-    .UseSqlite(config.GetConnectionString("Catalog"));
+services.AddModuleDatabase<CatalogDbContext>(options =>
+    options.UseSqlite(config.GetConnectionString("Catalog")));
 
 // SQL Server
-services.AddModuleDatabase<CatalogDbContext>(config)
-    .UseSqlServer(config.GetConnectionString("Catalog"));
+services.AddModuleDatabase<CatalogDbContext>(options =>
+    options.UseSqlServer(config.GetConnectionString("Catalog")));
 
 // PostgreSQL
-services.AddModuleDatabase<CatalogDbContext>(config)
-    .UseNpgsql(config.GetConnectionString("Catalog"));
+services.AddModuleDatabase<CatalogDbContext>(options =>
+    options.UseNpgsql(config.GetConnectionString("Catalog")));
 
 // MySQL
-services.AddModuleDatabase<CatalogDbContext>(config)
-    .UseMySql(config.GetConnectionString("Catalog"), ServerVersion.AutoDetect(...));
+services.AddModuleDatabase<CatalogDbContext>(options =>
+    options.UseMySql(config.GetConnectionString("Catalog"), ServerVersion.AutoDetect(...)));
+```
+
+Per-tenant databases resolve the connection string per scope (scoped options):
+
+```csharp
+services.AddModuleDatabase<CatalogDbContext>(
+    sp => sp.GetRequiredService<ICurrentTenant>().ConnectionString ?? hostConnection,
+    options => options.UseNpgsql(...));
 ```
 
 ## Entity Configuration
@@ -80,10 +93,8 @@ protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         e.HasKey(p => p.Id);
         e.Property(p => p.Name).HasMaxLength(200).IsRequired();
-        e.Property(p => p.Price).HasPrecision(18, 2);
 
         e.HasIndex(p => p.Name);
-        e.HasOne(p => p.Category).WithMany(c => c.Products);
     });
 }
 ```
@@ -95,10 +106,7 @@ public sealed class Product : AggregateRoot<Guid>
 {
     [MaxLength(200)]
     [Required]
-    public string Name { get; private set; } = default!;
-
-    [Precision(18, 2)]
-    public decimal Price { get; private set; }
+    public string Name { get; set; } = string.Empty;
 }
 ```
 
@@ -109,7 +117,7 @@ Each module defines its own Unit of Work:
 ```csharp
 public interface IUnitOfWork
 {
-    Task<int> SaveChangesAsync(CancellationToken ct = default);
+    Task<int> CommitAsync(CancellationToken cancellationToken = default);
 }
 ```
 
@@ -123,18 +131,20 @@ services.AddScoped<IUnitOfWork>(sp =>
 Handlers use it to commit changes:
 
 ```csharp
-public async Task<ProductDto> HandleAsync(CreateProduct command, CancellationToken ct)
+public async Task<Guid> HandleAsync(CreateProductCommand command, CancellationToken ct)
 {
-    var product = new Product(command.Name, command.Price);
-    _unitOfWork.Products.Add(product);
-    await _unitOfWork.SaveChangesAsync(ct);
-    return new ProductDto(product.Id, product.Name, product.Price);
+    var product = new Product { Name = command.Name };
+    await _repo.AddAsync(product, ct);
+    await _unitOfWork.CommitAsync(ct);
+    return product.Id;
 }
 ```
 
 ## Design-Time Factory
 
-For `dotnet ef` migrations without the full app:
+For `dotnet ef` migrations without the full app (connection from
+`{MODULE}_CONNECTION` env, else the design-time default; tenant/user/
+dispatcher are no-op stubs):
 
 ```csharp
 public sealed class CatalogDbContextFactory
@@ -142,9 +152,20 @@ public sealed class CatalogDbContextFactory
 {
     public CatalogDbContext CreateDbContext(string[] args)
     {
-        var optionsBuilder = new DbContextOptionsBuilder<CatalogDbContext>();
-        optionsBuilder.UseSqlite("Data Source=catalog.db");
-        return new CatalogDbContext(optionsBuilder.Options);
+        var connectionString =
+            Environment.GetEnvironmentVariable("CATALOG_CONNECTION")
+            ?? "Data Source=catalog.db";
+
+        var options = new DbContextOptionsBuilder<CatalogDbContext>()
+            .UseSqlite(connectionString)
+            .Options;
+
+        return new CatalogDbContext(
+            options,
+            DesignTimeContext.Tenant,
+            DesignTimeContext.User,
+            DesignTimeContext.Dispatcher,
+            DesignTimeContext.Services);
     }
 }
 ```
@@ -155,7 +176,8 @@ The framework routes entities to the correct DbContext via `IEntityContextMap`:
 
 ```csharp
 // Registration-time mapping (no DB scan)
-services.AddModuleDatabase<CatalogDbContext>(config);
+services.AddModuleDatabase<CatalogDbContext>(options =>
+    options.UseSqlite(config.GetConnectionString("Catalog")));
 
 // At runtime, EfRepository<Product> resolves only CatalogDbContext
 // instead of scanning all registered contexts

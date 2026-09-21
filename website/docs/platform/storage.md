@@ -42,13 +42,27 @@ public sealed class UploadProductImageHandler(IFileStorage storage)
 ### Reading Files
 
 ```csharp
-var stream = await storage.OpenReadAsync("products/123/image.jpg", ct);
+await using var stream = await storage.DownloadAsync("products/123/image.jpg", ct);
 ```
 
-### Listing Files
+### Existence + Deletion
 
 ```csharp
-var files = await storage.ListAsync("products/123/", ct);
+if (await storage.ExistsAsync("products/123/image.jpg", ct))
+    await storage.DeleteAsync("products/123/image.jpg", ct);
+```
+
+### Presigned URLs
+
+Direct client-to-storage transfers without server-side relay:
+
+```csharp
+// Download (GET) — valid for the given duration, no credentials needed
+var url = await storage.GetPresignedUrlAsync("products/123/image.jpg", TimeSpan.FromHours(1), ct);
+
+// Upload (PUT) — optionally constrain the content type
+var uploadUrl = await storage.GetPresignedUploadUrlAsync(
+    "products/123/image.jpg", TimeSpan.FromMinutes(15), "image/jpeg", ct);
 ```
 
 ## Local Storage

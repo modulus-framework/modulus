@@ -1,0 +1,46 @@
+@page
+@model Modulus.UI.Settings.Pages.Settings.IndexModel
+@{
+    ViewData["Title"] = await Model.TextAsync("Index.Title");
+}
+<m-page-header title="@ViewData["Title"]" />
+@if (Model.Groups.Count == 0)
+{
+    @await Html.PartialAsync("_Alert", UiAlert.Info(await Model.TextAsync("Index.Empty")))
+}
+else
+{
+    @foreach (var group in Model.Groups)
+    {
+        <div class="card mb-3">
+            <div class="card-header">
+                <h3 class="card-title">@group.Group</h3>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-vcenter card-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>@await Model.TextAsync("Index.Value")</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var row in group.Rows)
+                        {
+                            <tr>
+                                <td>
+                                    <a asp-page="./Edit" asp-route-name="@row.Definition.Name">@row.Definition.DisplayName ?? @row.Definition.Name</a>
+                                    @if (!string.IsNullOrWhiteSpace(row.Definition.Description))
+                                    {
+                                        <div class="text-secondary">@row.Definition.Description</div>
+                                    }
+                                </td>
+                                <td><code>@(row.EffectiveValue ?? row.Definition.DefaultValue ?? "—")</code></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+}

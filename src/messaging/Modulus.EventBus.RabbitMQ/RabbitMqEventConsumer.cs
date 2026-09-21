@@ -1,5 +1,6 @@
 namespace Modulus.EventBus.RabbitMQ;
 
+using System.Collections.Concurrent;
 using System.Text;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -25,8 +26,17 @@ internal sealed class RabbitMqEventConsumer : BackgroundService
     private IConnection? _connection;
     private IChannel? _channel;
 
-    // Track retry attempts per delivery tag for bounded backoff.
-    private readonly Dictionary<ulong, int> _deliveryAttempts = new();
+    // Track retry attempts per message for bounded backoff. Keyed by the
+    // envelope's EventId — the only stable identity across redeliveries —
+    // NOT the delivery tag: tags are channel-scoped, restart at 1 on every
+    // reconnect (stale entries would dead-letter fresh messages prematurely)
+    // and change on every broker redelivery (attempt counts would never
+    // accumulate, so the retry cap could never fire). Entries are removed on
+    // successful ack and on dead-letter, so the map stays bounded by the set
+    // of messages currently failing.
+    private readonly ConcurrentDictionary<Guid, int> _deliveryAttempts = new();
+
+    private const int MaxRetryMapSize = 10_000;
 
     public RabbitMqEventConsumer(
         IOptions<RabbitMqOptions> options,
@@ -189,49 +199,97 @@ internal sealed class RabbitMqEventConsumer : BackgroundService
             }
 
             await channel.BasicAckAsync(ea.DeliveryTag, multiple: false);
+            _deliveryAttempts.TryRemove(envelope.EventId, out _);
         }
         catch (Exception ex)
         {
             await HandleDeliveryFailureAsync(
-                channel, ea.DeliveryTag, envelope?.RoutingKey, ex);
+                channel, ea.DeliveryTag, envelope?.EventId, envelope?.RoutingKey, ex);
         }
     }
 
     private async Task HandleDeliveryFailureAsync(
-        IChannel channel, ulong deliveryTag, string? routingKey, Exception ex)
+        IChannel channel, ulong deliveryTag, Guid? eventId, string? routingKey, Exception ex,
+        CancellationToken ct = default)
     {
-        var attempt = _deliveryAttempts.TryGetValue(deliveryTag, out var seen)
-            ? seen + 1
-            : 1;
-        _deliveryAttempts[deliveryTag] = attempt;
-
-        var maxRetries = _opts.MaxDeliveryAttempts ?? 3;
-
-        if (attempt >= maxRetries)
+        // Transient inbox contention must not burn poison budget: requeue
+        // promptly without counting an attempt. Matched by full name to avoid
+        // a transport -> inbox assembly dependency.
+        if (ex.GetType().FullName == "Modulus.Inbox.Abstractions.InboxDeferralException" ||
+            (ex.InnerException is not null &&
+             ex.InnerException.GetType().FullName == "Modulus.Inbox.Abstractions.InboxDeferralException"))
         {
-            _deliveryAttempts.Remove(deliveryTag);
+            _logger.LogDebug(ex,
+                "RabbitMQ message (routing key '{RoutingKey}', event {EventId}) deferred (inbox contention); requeuing",
+                routingKey, eventId);
+            await channel.BasicNackAsync(deliveryTag, multiple: false, requeue: true, cancellationToken: ct);
+            return;
+        }
+
+        // Without a stable identity (undecipherable envelope) there is nothing
+        // to count attempts against — and retrying is pointless for a poison
+        // message. Dead-letter immediately.
+        if (eventId is null || eventId.Value == Guid.Empty)
+        {
             _logger.LogError(ex,
-                "RabbitMQ message (routing key '{RoutingKey}') failed after {Attempts} delivery attempts; nacking to DLX",
-                routingKey, attempt);
+                "RabbitMQ message (routing key '{RoutingKey}') could not be identified; nacking to DLX",
+                routingKey);
             await channel.BasicNackAsync(deliveryTag, multiple: false, requeue: false);
             return;
         }
 
-        // Requeue with exponential backoff: 100ms * 2^(attempt-1), capped at 30s
+        var attempt = _deliveryAttempts.AddOrUpdate(eventId.Value, 1, (_, seen) => seen + 1);
+        var maxRetries = _opts.MaxDeliveryAttempts ?? 3;
+
+        if (attempt >= maxRetries)
+        {
+            _deliveryAttempts.TryRemove(eventId.Value, out _);
+            _logger.LogError(ex,
+                "RabbitMQ message (routing key '{RoutingKey}', event {EventId}) failed after {Attempts} delivery attempts; nacking to DLX",
+                routingKey, eventId, attempt);
+            await channel.BasicNackAsync(deliveryTag, multiple: false, requeue: false);
+            return;
+        }
+
+        // Requeue with exponential backoff: 100ms * 2^(attempt-1), capped at 30s.
+        // NOTE: the delay runs on the consumer dispatch pipeline and head-of-line
+        // blocks this channel — configure a broker-side delayed-retry topology
+        // (x-delayed-message / TTL+DLX) for strict production backoff.
         var backoffMs = Math.Min(
             30_000,
             100 * (int)Math.Pow(2, Math.Min(attempt - 1, 8)));
 
         _logger.LogWarning(ex,
-            "RabbitMQ message (routing key '{RoutingKey}') delivery failed (attempt {Attempt}); requeuing in {BackoffMs}ms",
-            routingKey, attempt, backoffMs);
+            "RabbitMQ message (routing key '{RoutingKey}', event {EventId}) delivery failed (attempt {Attempt}); requeuing in {BackoffMs}ms",
+            routingKey, eventId, attempt, backoffMs);
 
         // Requeue the message so the broker redelivers it. The backoff is
         // observed at the consumer level — we wait before continuing to
         // process the next message, effectively slowing redelivery without
         // requiring broker-side delay configuration.
-        await Task.Delay(backoffMs);
-        await channel.BasicNackAsync(deliveryTag, multiple: false, requeue: true);
+        try
+        {
+            await Task.Delay(backoffMs, ct);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            // Shutdown: requeue immediately without waiting out the backoff.
+        }
+        await channel.BasicNackAsync(deliveryTag, multiple: false, requeue: true, cancellationToken: ct);
+
+        // Bound the retry map with per-key eviction: entries are removed on ack
+        // and on dead-letter; evict an arbitrary oldest entry instead of
+        // clearing the whole map (which would grant every in-flight message a
+        // fresh retry budget).
+        if (_deliveryAttempts.Count > MaxRetryMapSize)
+        {
+            using var enumerator = _deliveryAttempts.Keys.GetEnumerator();
+            if (enumerator.MoveNext())
+                _deliveryAttempts.TryRemove(enumerator.Current, out _);
+            _logger.LogWarning(
+                "RabbitMQ retry-attempt map exceeded {Size} entries; evicted one entry",
+                MaxRetryMapSize);
+        }
     }
 
     private async Task CleanupAsync()

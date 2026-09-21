@@ -1,0 +1,44 @@
+@* Default markup for <m-datatable>: card + responsive table, the empty state, and the pager
+   (rendered through the resolver, so the Pagination view is overridable independently).
+   With a Source the shell always renders (even when empty) and the <tbody> re-queries itself
+   on the RefreshTrigger (htmx: entity *:changed events from the body, or once on load). *@
+@model DataTableModel
+@inject IModulusViewResolver Views
+@{
+    var live = !string.IsNullOrWhiteSpace(Model.Source);
+}
+@if (Model.IsEmpty && !live)
+{
+    <div class="alert alert-info" role="alert">@Model.EmptyMessage</div>
+}
+else
+{
+    <div class="card" id="@Model.Id">
+        <div class="table-responsive">
+            <table class="table table-vcenter card-table">
+                <thead>
+                    <tr>
+                        @foreach (var column in Model.Columns)
+                        {
+                            <th class="@column.Class">@column.Header</th>
+                        }
+                    </tr>
+                </thead>
+                <tbody hx-get="@Model.Source" hx-trigger="@Model.RefreshTrigger" hx-swap="innerHTML">
+                    @if (Model.IsEmpty)
+                    {
+                        <tr><td colspan="@Model.Columns.Count" class="text-secondary text-center">@Model.EmptyMessage</td></tr>
+                    }
+                    else
+                    {
+                        @Model.Rows
+                    }
+                </tbody>
+            </table>
+        </div>
+        @if (Model.Pagination is not null)
+        {
+            @await Html.PartialAsync(Views.Resolve("Pagination", "Default"), Model.Pagination)
+        }
+    </div>
+}

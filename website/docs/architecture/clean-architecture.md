@@ -156,9 +156,11 @@ Presentation ─── Application ─── Shared.Presentation, Modulus.AspNet
 
 ## Dependency Rules
 
-1. **Domain** depends on nothing
-2. **Application** depends only on Domain
+1. **Domain** depends on nothing (plus `Shared.Domain`, `Modulus.Core`)
+2. **Application** depends on Domain (plus `Shared.Application`, `Modulus.Mediator`, `Modulus.Events`)
 3. **Infrastructure** depends on Application and Domain
-4. **Presentation** depends on Application (and optionally Domain)
+4. **Presentation** depends on Application (plus `Shared.Presentation`, `Modulus.AspNetCore`)
 
-Never reference Infrastructure from Presentation or Domain from Infrastructure.
+Never reference Infrastructure from Presentation or Application. DTOs live
+under `Application/Dtos`, integration events under
+`Application/IntegrationEvents` — there are no separate Contracts projects.

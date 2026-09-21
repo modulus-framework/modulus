@@ -1,0 +1,6 @@
+{
+  "Identity": {
+    "UseDevelopmentCertificates": true,
+    "AllowPasswordFlow": true
+  }
+}

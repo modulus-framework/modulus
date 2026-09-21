@@ -37,20 +37,44 @@ modulus migrate update --module Catalog
 
 ### Startup Behavior
 
+Generated apps pass the mode explicitly per environment:
+
 ```csharp
 // Program.cs
-await app.Services.MigrateModulusDatabasesAsync();
+await app.Services.MigrateModulusDatabasesAsync(
+    app.Environment.IsProduction()
+        ? DatabaseInitializationMode.Migrate
+        : DatabaseInitializationMode.MigrateOrCreate);
 ```
 
 | Mode | Behavior |
 |------|----------|
-| `MigrateOrCreate` (default) | `Migrate()` when migrations exist, else `EnsureCreated()` |
-| `Migrate` | Always applies migrations; throws if none exist |
+| `Migrate` (method default) | Always applies migrations; **throws** if a context defines none — use in production |
+| `MigrateOrCreate` | `Migrate()` when migrations exist, else `EnsureCreated()` — dev convenience |
 | `EnsureCreated` | Snapshot only; no migration history |
+
+Do not mix `Migrate` and `EnsureCreated` on one database in production.
+Run a single migrator in multi-replica deployments (init container / leader) —
+concurrent migrations race on the history table.
+
+### Per-Tenant Databases
+
+The startup helper migrates the ambient/host database only. Apps with
+per-tenant connection resolvers fan out from a dedicated migrator job or init
+container (not every replica):
+
+```csharp
+await services.MigrateModulusDatabasesForTenantsAsync(
+    DatabaseInitializationMode.Migrate);
+// Migrates the host DB, then enumerates ITenantStore.ListAsync()
+// (active tenants, slug order) and re-runs inside each Change(tenant) scope.
+```
 
 ### Design-Time Factory
 
-Each module has a `DbContextFactory` for `dotnet ef`:
+Each module has a `DbContextFactory` for `dotnet ef`. The factory builds full
+`ModuleDbContext` dependencies (tenant/user/dispatcher stubs — migrations only
+build the model, never touch live state):
 
 ```csharp
 public sealed class CatalogDbContextFactory
@@ -60,7 +84,12 @@ public sealed class CatalogDbContextFactory
     {
         var optionsBuilder = new DbContextOptionsBuilder<CatalogDbContext>();
         optionsBuilder.UseSqlite("Data Source=catalog.db");
-        return new CatalogDbContext(optionsBuilder.Options);
+        return new CatalogDbContext(
+            optionsBuilder.Options,
+            DesignTimeContext.Tenant,
+            DesignTimeContext.User,
+            DesignTimeContext.Dispatcher,
+            DesignTimeContext.Services);
     }
 }
 ```

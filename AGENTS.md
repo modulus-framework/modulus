@@ -6,8 +6,10 @@ Guidance for AI agents (and humans) working on the Modulus framework.
 
 Modulus is a modular-monolith framework for **.NET 10** (`net10.0`). It is a
 multi-project solution made of **31 libraries** under `src/` (core, data,
-identity, messaging, platform, observability, testing) plus unit/integration
-tests under `tests/` and a **CLI tool** (`Modulus.Cli`) for scaffolding.
+identity, messaging, platform, observability, testing) plus the optional,
+server-rendered **UI framework** under `src/ui/` (see *Modulus.UI* below),
+unit/integration tests under `tests/` and a **CLI tool** (`Modulus.Cli`) for
+scaffolding.
 
 ## Prerequisites
 
@@ -87,6 +89,10 @@ src/
   testing/       Modulus.Testing (WebApplicationFactory harness, RecordingModuleBus,
                  event assertions), Modulus.Testing.Architecture (module boundary
                  rules: integration event naming, cross-module reference detection)
+  ui/            Modulus.UI.Theme.Abstractions (ITheme contracts), Modulus.UI.Core
+                 (HTMX model, contributors, view resolver), Modulus.UI.Theme.Tabler
+                 (reference theme), + feature UIs: Identity, Users, Permissions,
+                 Tenancy, Settings, AuditLogging, Notifications, Files
   cli/           Modulus.Cli (Spectre.Console.Cli scaffolding tool)
 tests/
   unit/          xUnit + NSubstitute + FluentAssertions
@@ -137,7 +143,7 @@ large DDD/CQRS modular monoliths.
 
 | Command | Description |
 |---------|-------------|
-| `modulus app <name>` | Creates a solution: `src/API/{App}.Api` host + `src/Shared/{App}.Shared.*` kernel (4 projects) + example `Catalog` module (4 projects) + top-level tests. `--migration-engine dbsh` uses SQL-first migrations. |
+| `modulus app <name>` | Creates a solution: `src/API/{App}.Api` host + `src/Shared/{App}.Shared.*` kernel (4 projects) + example `Catalog` module (4 projects) + top-level tests. `--migration-engine dbsh` uses SQL-first migrations. `--kind api\|web` picks the **app kind** (see below). |
 | `modulus module <name>` | Creates a blank 4-layer business module |
 | `modulus add-module <name>` | Adds a module to an existing app + wires Program.cs registration + Host `ProjectReference`s. `--migration-engine` defaults to `dbsh` when all existing modules use dbsh. |
 | `modulus generate-crud <Entity>` | Generates entity, repo, DTOs, command/query handlers across the module's layers |
@@ -309,6 +315,12 @@ migrations for CatalogDbContext"*.
   `modulus migrate update [--module M]` runs `dotnet ef database update` per module.
   Discovers the `*.Api.csproj` startup project and `*.Infrastructure.csproj`
   module projects under the app root. Requires the `dotnet-ef` global tool.
+- **Per-tenant fan-out** — `Modulus.MultiTenancy.EntityFrameworkCore.TenantDatabaseMigrationExtensions.MigrateModulusDatabasesForTenantsAsync(mode, ct)`
+  migrates the host database first, then enumerates `ITenantStore.ListAsync()`
+  (default returns empty; `EfTenantStore` lists active tenants in slug order)
+  and re-runs the migration inside each tenant's `Change(tenant)` scope so
+  tenant-aware connection resolvers target each tenant database. Call from a
+  dedicated migrator job / init container, not every replica.
 
 ## EF Core migrations engine
 
@@ -464,10 +476,11 @@ but for synchronous HTTP callers/retries rather than integration events.
   *and* its EF Core 9+ `IDbContextOptionsConfiguration` descriptor before
   re-adding `UseSqlite` — leaving the config behind applies both the module
   provider and SQLite ("multiple providers registered"). In-memory SQLite dies
-  when its last connection closes, so the factory opens a **keep-alive per
-  context** (from the built host's own connection strings — the per-context map
-  only exists after `ConfigureTestServices` runs during host build) and then
-  re-runs `EnsureCreated` per context. Isolation is by a unique `Cache=Shared`
+  when its last connection closes, so the registry (`TestDatabaseRegistry`) owns a **keep-alive per
+  connection string**, opened the first time a context's options are built (Program.cs code between `Build()`
+  and `Run()`, such as migrate/seed, runs before any hosted service, so opening it later loses the schema), and
+  the factory re-runs `EnsureCreated` per context. The factory also forces its test scheme as the default
+  authenticate/challenge/forbid scheme, so a host with its own default scheme (Identity, OpenIddict) still sees the test user. Isolation is by a unique `Cache=Shared`
   name held open by the keep-alive connection for the factory's lifetime. `CreateAuthenticatedClient(...)` drives a header-based
   `TestAuthHandler` (default scheme `Test`) so `[Authorize]` endpoints and a
   `ClaimsPrincipal`-based `ICurrentUser` see a caller-chosen identity; requests with
@@ -549,6 +562,32 @@ but for synchronous HTTP callers/retries rather than integration events.
 
 All Tier 3 items are complete; see [`ROADMAP_TIER3.md`](ROADMAP_TIER3.md) for the
 as-built records.
+
+## Deferred hardening (recent work)
+
+Follow-ups that closed gaps left by earlier batches; all verified
+(`dotnet build` 0/0, `dotnet format` clean, `Category=Unit` green):
+
+- **Outbox management (EF)** — `MapModulusOutboxManagement` list endpoint now
+  pushes filters to the DB and fetches at most `page*pageSize` rows per context
+  (bounded memory under a failure storm); replay only touches dead-lettered rows
+  (`ProcessedAt == null && RetryCount >= MaxRetries`) via batched
+  `ExecuteUpdateAsync`, archiving the error + acting user to the log instead of
+  nulling history away.
+- **Outbox management (Mongo)** — `MapModulusMongoOutboxManagement`
+  (`Modulus.Outbox.MongoDB`) mirrors list/inspect/replay/purge with server-side
+  filter/sort/skip/limit; reuses the same models + `messaging:manage` permission
+  (register via `AddModulusOutboxManagement`, then map the group).
+- **Mongo outbox sessions** — `IMongoOutboxSessionProvider` lets a unit of work
+  flow its `IClientSessionHandle`; the writer joins the session's transaction
+  (atomic with domain writes on a replica set) and falls back to a plain insert
+  otherwise. Consumers still dedup via inbox either way.
+- **OTel bootstrap** — `Modulus.Observability.ModulusOpenTelemetrySetup.AddModulusOpenTelemetry(configuration, environment)`
+  binds the `OpenTelemetry` section (`Enabled`/`ServiceName`/
+  `EnableConsoleExporter`/`Otlp:Endpoint|ExportTraces|ExportMetrics`), wires
+  ASP.NET Core + HttpClient + Runtime instrumentation plus the Modulus
+  sources/meters, and only adds exporters when explicitly enabled (OTLP needs an
+  endpoint). New `Modulus.Observability.Tests` project covers on/off wiring.
 
 ## Already addressed (recent work)
 
@@ -736,9 +775,324 @@ handling). User/role CRUD is app-specific and intentionally not in the framework
 `Modulus.Identity` exposes `ModulusUser`/`ModulusRole` + ASP.NET Core Identity
 abstractions for apps to wire their own admin APIs.
 
+## Modulus.UI (Razor Pages + HTMX + Alpine + Tabler)
+
+Optional server-rendered UI, designed in
+[`docs/UI_FRAMEWORK_GUIDELINE.md`](docs/UI_FRAMEWORK_GUIDELINE.md) (v2, adopted;
+supersedes `UI_FRAMEWORK_PLAN.md`). v1 is evolved in place, so there is no separate
+`Modulus.UI.Htmx` package. **Dependency rule (enforced by tests):** UI references
+Modulus, never the reverse; feature UIs depend on `Theme.Abstractions`, never on
+`Theme.Tabler` (`ThemeDependencyRulesTests`, `UiDependencyDirectionTests`).
+
+- **`Modulus.UI.Theme.Abstractions`** — `ITheme` (`GetLayout`, `Styles`, `Scripts`),
+  `ThemeAsset`, `StandardLayouts` (Application/Account/Empty/Public), `ThemeOptions`
+  (`Modulus:Ui:Theme`), `UiSlots`, `UiDesignTokens` (`--m-*`).
+- **`Modulus.UI.Core`** — `HtmxResponse`/`HtmxPageModel`, `UiNavigationRegistry` +
+  `IMenuContributor` / `IToolbarContributor` / `ISlotContributor` (all run in
+  registration order, permission-filtered against `ICurrentUser`),
+  `IModulusViewResolver` (app `/Views/Shared/Modulus/...` → theme
+  `/Themes/{Theme}/Views/...` → `_Default`), `IThemeAccessor`, framework error pages
+  (`UseModulusErrorPages` + `MapModulusErrorPages`). `AddModulusUi()` registers a
+  fail-closed `NullCurrentUser` default so menus/slots resolve without Identity.
+  `IUiNavigationRegistry.GetMenu()` / `IToolbarProvider.GetItems()` are synchronous
+  contracts, so they block on the (async) contributor `ValueTask` under a scoped
+  `VSTHRD002` suppression — safe because Modulus hosts have no `SynchronizationContext`.
+- **`Modulus.UI.Theme.Tabler`** — `AddTablerTheme(configuration?)`. Layouts at
+  `/Themes/Tabler/Layouts/{Application,Account,Empty,Public}.cshtml`; shell partials
+  in `Shell/` (`_Head`, `_Sidebar`, `_Topbar`, `_Footer`, `_PageEnd`, `_PageScripts`);
+  standalone `_403/_404/_500` under `Views/Errors/`. Vendored htmx/Alpine/Tabler live
+  in `wwwroot/tabler/vendor/` (no CDN); `css/modulus.css` maps `--m-*` tokens onto
+  `--tblr-*` (apps override only `--m-*`; set `--m-primary-rgb` with `--m-primary`);
+  `js/modulus.js` is the client runtime (`window.Modulus`: `onLoad`, `components`,
+  `toast`, `confirm`, `colorMode`, antiforgery header, 422 swap, modal host).
+- **Layout gotchas.** `RenderSectionAsync` writes straight to the output (never call it
+  into a variable), and a partial cannot render a section — so each layout emits
+  `_PageEnd`, then `@await RenderSectionAsync("Scripts")`, then `_PageScripts`
+  (Scripts slot, Alpine last so page `Alpine.data()` registrations precede Alpine's
+  start). Framework views must stay CSP-clean: no inline `<script>` or `style=`
+  (asserted by `TablerLayoutRenderTests`). Layouts stamp `data-bs-theme` (Tabler's
+  attribute); the color-mode cookie is `modulus-color-mode`.
+- **Testing** — `tests/unit/Modulus.UI.Theme.Tabler.Tests` boots a real TestServer
+  host (Razor SDK test project with probe views) and asserts on rendered HTML; add
+  `AddApplicationPart` for both `Modulus.UI.Core` and the theme assembly in such
+  hosts, since the entry assembly is the test host.
+- **Alpine is the CSP build** (`@alpinejs/csp`, no `eval`), so directives may only
+  reference component members, never inline expressions (`x-data="{ show: true }"`
+  fails). Shared components (`mDismissibleAlert`, `mCopyButton`, `mPasswordToggle`) live
+  in `Modulus.UI.Core/wwwroot/modulus-ui/alpine-components.js`, which every theme must
+  load *before* Alpine (`alpine:init` fires once). `AlpineCspSafetyTests` scans every
+  `src/ui` view and fails on an inline expression or an unregistered `x-data` name.
+- **`Features.Morph`** adds `hx-ext="morph"` to the body (idiomorph 0.7.3 is vendored);
+  elements opt in with `hx-swap="morph"`. It is off by default.
+- **Feature UIs use the active theme.** Each package's `Pages/_ViewStart.cshtml` calls
+  `Context.GetThemeLayout(StandardLayouts.Application)` (Identity uses `Account`), which
+  resolves through `ThemeOptions.Layouts`, returns `null` for htmx fragment requests, and
+  falls back to the legacy `_UiLayout` when **no** `ITheme` is registered — so apps that
+  only call `AddModulusUi()` (including CLI-generated ones) keep rendering. Call
+  `AddTablerTheme()` to opt in.
+- **Component library (guideline phase 2, in `Modulus.UI.Core/Components/`).** Tag helpers
+  hold no markup: they build a view model and render `Views/Shared/Modulus/_Default/{Component}/Default.cshtml`
+  through `ComponentRenderer` → `IModulusViewResolver` (app `/Views/Shared/Modulus/...` →
+  theme `/Themes/{Theme}/Views/...` → `_Default`), so any component is overridable by file
+  path. `AddModulusUi()` registers the resolver, so components work without a theme.
+  - `m-card`, `m-datatable` (+ `m-column` headers; the page writes its own `<tr>` rows, so
+    cell markup stays in the page; `empty`/`empty-message`, optional pager via `page`),
+    `m-pagination` (links rebuilt from the **current URL**: filters survive paging, the
+    `handler` key is dropped, `route-Name="v"` layers extra/overriding values, null removes),
+    `m-form` (`handler`/`page`/`action`, `target` or `modal` for htmx, validation summary on 422),
+    `m-modal` (+ `m-modal-footer`; content of `#m-modal-container`), `m-tabs`/`m-tab`
+    (Bootstrap data attributes; `source` lazy-loads with `hx-trigger="intersect once"`),
+    `m-breadcrumbs` (`IBreadcrumbContributor` / `IBreadcrumbProvider` /
+    `ViewData.SetBreadcrumbs`, gated by `Features.Breadcrumbs`, rendered by the Application
+    layout), `m-toolbar` and `m-page-header page-id="..."` (contributed `ToolbarItem`s; `Target`
+    defaults to the modal container).
+  - Pages declare `ViewData.SetPageId(...)`. Migrated pages reuse their **menu ids** as page ids
+    (`Users.Directory`, `Users.Roles`, `Tenancy.Directory`, `AuditLogging.Browser`,
+    `Notifications.Inbox`); treat them as public contract like menu ids.
+  - Gotchas found by the render tests: the MVC form tag helper turns antiforgery **off** when an
+    explicit `action` attribute exists, so `m-form`'s view sets `asp-antiforgery="true"`; a
+    self-closing `<m-page-header ... />` drops helper-set content unless
+    `TagMode.StartTagAndEndTag` is forced (it used to render an empty `<div />`); views under
+    `Views/Shared/Modulus/` need `@using global::Modulus.UI` because the generated namespace
+    contains a `Modulus` segment.
+  - **Self-refreshing grids.** `m-datatable source="/x?handler=Rows" refresh-on="product:changed"` puts
+    `hx-get`/`hx-trigger="product:changed from:body"` on the `<tbody>`, so a response that calls
+    `HtmxResponse.NotifyChanged("product:changed")` makes the grid re-query and swap fresh `<tr>` fragments.
+    Entries must end with `:changed` (validated); `source` alone loads once (`hx-trigger="load"`); an empty grid
+    with a `source` still renders its table shell. The pager is not refreshed, so keep source grids unpaged.
+    The rendered attributes are tested; the htmx round-trip itself is not exercised in a browser.
+  - Display components: `m-stat` (`label`/`value`/`delta`/`tone`/`hint`; values arrive pre-formatted),
+    `m-empty-state` (`title`/`message`/`icon`, content = actions), `m-detail-list` + `m-detail`
+    (`value` attribute is encoded, element content is markup, empty shows a dash), `m-timeline` +
+    `m-timeline-item` (Tabler 1.5 `.timeline-event*`), `m-confirm` (a button with `hx-confirm`, exactly one of
+    `post`/`delete`; the theme runtime routes `hx-confirm` to its modal, so no script).
+  - Form fields: `m-input for="Input.Email"` and `m-select for="…" items="…"`. The tag helper resolves the
+    posted name/id from the expression, the label (`[Display]`) and required marker from metadata (never for
+    a checkbox), prefers the **posted** value on a re-render (ModelState `AttemptedValue`), gathers the field's
+    errors, and never echoes a password; the partial is plain markup. `type` covers text/email/password/number/
+    date/datetime-local/textarea/checkbox, so dates and money are `type="date"` / `step="0.01"` rather than
+    separate `m-date`/`m-money` components. The class names are `ModulusInputTagHelper`/`ModulusSelectTagHelper`
+    (MVC ships its own `InputTagHelper`/`SelectTagHelper`).
+  - File upload: `m-file for="Input.Attachment"` (an `IFormFile` member) or `m-file name="file"` (a handler parameter such as
+    `OnPostUpload(IFormFile file)`), inside `<m-form multipart="true">` (adds `enctype` and, with a `target`, `hx-encoding`).
+    `accept`/`multiple`/`hint`/`label` as usual; a file input is never pre-filled. Razor Pages files a missing-file error
+    under the bare property name (`Attachment`) when no file part is posted, so `m-file` also looks there. The Files UI's
+    upload form uses it.
+  - Editable child rows: `<m-line-items for="Input.Lines" row-partial="_LineRow" add-label="…" remove-label="…" />`. The row
+    partial's model is the collection's element type and its fields are ordinary `m-input for="Sku"`s: the tag helper renders it
+    once per item with `TemplateInfo.HtmlFieldPrefix = "Input.Lines[i]"` (so names are `Input.Lines[i].Sku` and posted values/errors
+    land on the right row on a 422), and once blank inside a `<template>` with the literal index `__index__`. The `mLineItems`
+    Alpine component clones that template for "add" and renumbers names/ids/`for`s after a "remove", so indexes stay contiguous
+    (the default collection binder silently drops rows after a gap, and model-state keys would no longer match a re-render).
+    An overriding view must keep the `data-line-items` / `data-line-rows` / `data-line-row` / `data-line-template` and
+    `data-name-prefix` / `data-id-prefix` hooks. The row's model needs a parameterless constructor for the blank template row
+    (otherwise the blank row renders with a null model). Gotcha: a partial's `ViewDataDictionary` cannot be copied from the page's
+    (it is typed to the page), so the tag helper builds an untyped one that shares the page's `ModelState`.
+  - Extension fields: another module contributes fields to an entity's form with
+    `services.ConfigureEntityUi("Catalog.Product", e => e.Fields.Add(new EntityField("ReorderLevel", typeof(decimal), "Reorder level", tab: "Inventory", validators: [new RangeAttribute(0, 1000)])))`
+    (from `ConfigureServices`; calls accumulate in module registration order and a later module may `Fields.Remove` an earlier
+    one's field; a duplicate name throws), and the owning page renders them with
+    `<m-fields entity="Catalog.Product" for="Input.Extra" />`, where `Extra` is a `Dictionary<string, string?>` on the input model.
+    Each field goes through the overridable `Input` component (so it posts as `Input.Extra[Name]`, shows the posted value and its
+    errors on a 422) inside the overridable `Fields/Default` wrapper; `tab="..."` renders one tab's fields (omit or leave empty for all).
+    Supported types: string, bool, int, long, decimal, double, DateOnly, DateTime, TimeOnly (or nullable), converted with the invariant
+    culture. Server side, `registry.ValidateEntityFields(entity, user, Input.Extra, ModelState, "Input.Extra")` runs each field's
+    `ValidationAttribute`s and files errors under `Input.Extra[Name]`, and `registry.ReadEntityFields(...)` returns the typed values.
+    **A field with `requiredPermission` is neither rendered, validated nor read for a user without it**, so a hand-crafted post cannot
+    set it (always go through `ReadEntityFields`, never copy the raw bag). `IEntityUiRegistry` is frozen on first use. Gotcha: Razor passes a null
+    `tab="@Model.Tab"` to a string attribute as `""`, so an empty tab means "all".
+  - Extension-field **storage** (`IHasExtraProperties`, in `Modulus.Core/Abstractions/Entities`): an entity that implements it
+    (`Dictionary<string, string?> ExtraProperties { get; set; }`) gets a required JSON text column mapped by `ModuleDbContext`
+    (`UseModulusExtraProperties`, applied to every root entity type implementing the marker, no per-field schema change) with a
+    **content-based `ValueComparer`**, so `entity.ExtraProperties["Bin"] = "A-7"` is detected as a change; a new entity is stored as
+    `{}` and never reads back null. Values are invariant-culture text keyed by field name. The page's save path is
+    `registry.ValidateEntityFields(...)`, then `entity.SetExtraProperties(registry.ReadEntityFieldText("Catalog.Product", user, Input.Extra))`:
+    `ReadEntityFieldText` returns the *visible* fields as canonical text (`EntityField.ToText`: `true`/`false`, `25.5`, `2026-09-20`,
+    `2026-09-20T10:30`, `08:15`; seconds only when non-zero; round-trips through `TryConvert`), with null for an emptied field, and
+    `SetExtraProperties` **merges** (null/empty removes the key, unmentioned keys stay), so a user without the field's permission can
+    neither set nor erase it. To pre-fill an edit form copy the stored bag into `Input.Extra`. `EF` expression trees cannot hold
+    `out var`, hence the static comparer helpers. Not built: `IEntityFieldHandler` (the contributing module saves into its own tables
+    instead of the JSON bag) and a migration step: an existing table needs the `ExtraProperties` column added (not null, default `'{}'`).
+  - Extension columns and row actions (same `ConfigureEntityUi`, `e.Columns` / `e.Actions`; a later module may `Remove` either, duplicates
+    throw): `new EntityAction("Inventory.Adjust", "Adjust stock", hxGet: "/Inventory/Adjust?productId={id}", target: EntityActionTarget.Modal,
+    requiredPermission: ...)` (exactly one of `url`/`hxGet`/`hxPost`; `{id}` becomes the URL-encoded row id; `Modal` swaps into
+    `#m-modal-container`, `Row` replaces `closest tr` with the response) and `new EntityColumn("Stock", "Stock", typeof(StockProvider), order: 45)`.
+    Because a page writes its own `<tr>`s, the owning page places them: `<m-datatable entity="Catalog.Product">` appends the visible contributed
+    headers where `<m-entity-columns />` sits among the `m-column`s (default: after the last; the empty-state `colspan` counts them),
+    `<m-entity-cells entity=".." row-id="@p.Id" values="Model.Extra" />` writes the matching `<td>`s at the same position (a dash when there
+    is no value, so the table stays aligned) and `<m-entity-actions entity=".." row-id="@p.Id" />` renders the row's buttons (nothing when none).
+    The page loads the values once per page: `Extra = await registry.LoadEntityColumnsAsync(HttpContext.RequestServices, "Catalog.Product", user, ids)`
+    calls each visible column's `IEntityColumnValueProvider.LoadAsync(ids)` **once with the whole page** (resolved from DI if registered, else
+    `ActivatorUtilities`); values are pre-formatted text and are HTML-encoded on output. A column/action needing a permission the user lacks
+    is neither rendered nor loaded. There is no `Columns.Hide` (page-written cells cannot be hidden by name).
+  - Covered by `TablerComponentRenderTests` (probe views + a Razor Page), `FieldAndDisplayComponentTests`
+    (display components + `Pages/Probe/FieldsPage`, including a rejected post), `LineItemsComponentTests`
+    (`Pages/Probe/LineItemsPage`: rows, blank template, bind, per-row errors), `EntityFieldsComponentTests`
+    (`Pages/Probe/EntityFieldsPage`: contributed fields, tabs, permissions, typed post, per-field errors), `EntityListComponentTests`
+    (`Pages/Probe/EntityListPage`: contributed headers/cells/actions), and `EntityUiRegistryTests` / `EntityListContributionTests`
+    (UI.Core: registry, conversion, validation, batch loading), `FeatureUiRenderTests`
+    (real Tenancy and AuditLogs pages through the theme) and `ComponentLogicTests`. The `mLineItems` script itself is not
+    exercised in a browser by the suite (it was checked once against the rendered page in jsdom).
+- **CSP rules for views.** Framework views load nothing from a CDN and use no inline event handlers
+  (`onchange=`/`onclick=`): use a vendored asset or an Alpine component (`mAutoSubmit` submits its
+  `<form>` on change; Identity relies on server-side validation only). `AlpineCspSafetyTests` fails on either.
+- **App kind (`api` vs `web`).** Product rule: an **API** app creates no UI at all; a **web** app (`--kind web`) creates the web UI **and** keeps the API,
+  so the same modules serve the UI and external clients (mobile, desktop, other systems). All UI, prebuilt feature UIs included (Identity, Users, ...), must
+  stay customizable by the app. The kind lives in the host csproj as `<ModulusAppKind>` (`AppKinds.Read`, `ModuleDiscovery.AppInventory.Kind`); a host
+  without it predates app kinds and is unconstrained (`null`, so the old opt-in `--with-ui` keeps working). `modulus app` resolves it in `NewAppCommand.ResolveKind`
+  (explicit `--kind`; `--ui-modules` alone implies `web`; `--kind api` with UI modules is an error; prompt, else `api` when non-interactive). A web app installs
+  `NewAppCommand.ResolveWebInstall`: `UI.Core` foundation, the chosen modules, then the Tabler theme (`--no-theme` opts out), plus `Platform`, even with no prebuilt module.
+  `AppKinds.ResolveCrudUi` decides `generate-crud`: `web` scaffolds the admin page by default (`--no-ui` = API side only), `api` refuses `--with-ui`, unmarked = opt-in
+  `--with-ui`. `ui add`, `ui eject` and `ui diff` refuse an `api` host. Covered by `AppKindTests`. **Identity backend (`--auth openiddict`).** A local token server needs users, so `modulus app --auth openiddict` (either kind) also generates
+  `src/Modules/{App}.Modules.Identity/{App}.Modules.Identity.Infrastructure` (an infrastructure-only module: `AppIdentityDbContext : ModulusIdentityDbContext`,
+  its design-time factory, `IdentityModule`, `IdentitySeeding`; `NewAppCommand.GenerateIdentityModule`, templates in `cli/Templates/identity/`). `modulus migrate` finds it like
+  any module (`migrate add InitialCreate --module Identity`), and `CodeGen.ChooseModuleRoot` ignores it (no Application layer) so `generate-crud` without `--module` still
+  picks the one business module. `IdentityModule` registers the context, `AddModulusIdentity`, `AddModulusIdentityStore` and the token controller's application part;
+  `AddModulusOpenIddict` stays in Program.cs and **must come before `AddModulus(...)`** (the module's `AddModulusIdentity` replaces the deny-everything password validator
+  and the later registration wins; the framework now `TryAdd`s that default so the order no longer matters). Program.cs seeds after migrating (`SeedIdentityAsync`):
+  the `Admin` role and a public first-party client whose id is the lower-cased app name (`ClientId`) always; the first administrator only when no users exist and either
+  `Identity:Seed:AdminEmail`/`AdminPassword` are configured (any environment) or, in Development only, `admin@{app}.local` with a random password logged once.
+  Development settings turn `Identity:AllowPasswordFlow` on (the base file leaves it off: the password grant hands credentials to the client, so production opts in
+  deliberately for trusted first-party clients), plus development certificates. Auth schemes: a **web** app calls `AddModulusSmartAuth()` (bearer for `/api` and
+  `Bearer` headers, the Identity cookie for pages; the helper now `PostConfigure`s authenticate/forbid too, because `AddIdentity` sets its own defaults that beat
+  `DefaultScheme`), an **api** app makes the OpenIddict validation scheme the default. Verified end to end for both kinds: anonymous API call 401, password grant 200,
+  bearer `POST` 201 / `GET` 200, refresh 200, revoke 200, and a web app's UI shows the row created through the API. Generated Create/Update/Delete (and `generate-command`)
+  commands carry `[Transactional(typeof(IUnitOfWork))]`: with more than one `DbContext` registered (the identity database, or a second module) an undeclared command failed
+  with "ambiguous transaction scope", i.e. every generated POST answered 500; `IUnitOfWork` is the module's own interface, implemented by its context, so the Application layer
+  scopes the transaction without referencing Infrastructure. `--auth none` still registers no scheme (endpoints require an authenticated user by default, so the API answers 500
+  until one is added; `modulus app` warns and Program.cs has a comment) and external providers validate tokens only. **API permission:** every endpoint of a generated CRUD set declares `Permissions("{module}:{route}:manage")` (`ModuleModel.RequiredPermission`, set when the host has
+  the Admin role: `UiAccessGates.HasAdminRole` = the sign-in or `SeedIdentityAsync(`, so an api app qualifies), the permission that guards the entity's admin page; the Admin role holds it
+  (`Program.cs`: `AddModulusAuthorization`, `AddGrantStorePermissionChecker`, `AddPermissions`, `AddPermissionGrants`, for the example module and for each later `generate-crud`, in an api host inserted
+  before `builder.Build()`, at the file's own indentation). Anonymous 401, signed in without the role 403. A host with no identity backend keeps endpoints as open as the host. The generated test project
+  signs in as `Admin` and asserts 401/403/200, and ships `appsettings.Testing.json` (throwaway certificates, password grant; un-ignored in `.gitignore`). `generate-crud` also updates existing files it
+  otherwise never overwrites: `UiNavSidecar.EnsureItem` (second entity gets a sidebar item and manifest feature; an item without `requiredPermission` gets one) and
+  `UiAccessGates.EnsurePageGuard` (an unguarded `IndexModel` gets `[Authorize(Policy = ...)]`); a hand-edited file without the generated shape is left alone.
+  **Authorization-code + PKCE** (`Identity:AllowAuthorizationCodeFlow`, on in a generated web app): `ModulusAuthorizeController` (`/connect/authorize`) signs the user in through the Identity cookie
+  (`/account/login`, `ReturnUrl` = the same request; `prompt=login` / `max_age` re-authenticate, `prompt=none` answers `login_required`), issues the code with the cookie user's claims (`BuildPrincipal`,
+  scopes intersected with `AllowedGrantScopes`, security stamp kept), and `ModulusTokenController` redeems it through the refresh path's re-verification (active, lock-out, stamp, current roles).
+  PKCE is mandatory, consent implicit (first-party). A web app with `--auth openiddict` always gets the Identity UI (it is the login page: `NewAppCommand.WithSignInPage`); Development lists
+  `Identity:Seed:RedirectUris` (`{app}://callback`, `http://localhost:5173/callback`) and `IdentitySeeding.EnsureClientAsync` syncs the first-party client (authorization endpoint, code grant, PKCE,
+  redirect URIs) on every start. An API app has no login page and stays on the password grant. Verified end to end (login, code, redeem, gated API, refresh, replay/wrong verifier/missing challenge/bad
+  redirect refused; note a replayed code revokes the tokens it issued, by design). Known gaps: `modulus app` does not scaffold the example module's page (run `generate-crud Product --module Catalog`),
+  grants are the in-memory seed (switch to the EF grant store for runtime edits), an external-provider web app has no cookie login for pages, and there is no third-party consent screen.
+- **API extension fields (web apps).** A web app's generated API exposes an entity's extension fields to external clients, through the same registry and per-field
+  permissions as the admin page, never by returning the stored `ExtraProperties` bag. `EntityApiFields` (Modulus.UI.Core, extension methods on `IEntityUiRegistry`):
+  `VisibleExtraProperties(entity, user, stored)` (only the entries of fields the caller may see), `ValidateEntityFieldsForApi(entity, user, values, partial)` (error list; a create
+  checks every visible field so a missing required one is reported, an update (`partial`) only those sent; a name that is not a visible field is `Unknown extension field 'X'`, the same
+  message whether it does not exist or is gated, so the response never reveals a hidden field) and `ReadSubmittedEntityFieldText(entity, user, values)` (canonical text of only the visible
+  fields the caller sent; an empty value maps to null, which removes the key; unsent fields stay untouched). They differ from `EntityFieldValues` (the form's helpers) on purpose: a form
+  always posts every field so an empty one means "clear", an API caller sends only what it changes. Generated for a **fresh** set in a web app (`ModuleModel.HasApiExtraFields`,
+  `GenerateCrudCommand.ExposesExtraFieldsInApi`: kind is `web`, none of the DTO/query-handler/endpoint files exist yet, and the entity and both commands carry the marker; files are never
+  overwritten, so an older set keeps its API as it was; the example module of `modulus app --kind web` gets it too): the DTO becomes a `record` with an `ExtraProperties` bag that the
+  query handlers fill with the **unfiltered** stored copy (an endpoint must filter it), the create and update requests take `extraProperties`, the endpoints inject
+  `IEntityUiRegistry` + `ICurrentUser`, reject with `ValidationException` (400 with an `errors` list) and pass only `ReadSubmittedEntityFieldText(...)` to the command, whose handler already
+  merges. The Presentation project gains a `Cobytelabs.Modulus.UI.Core` reference (`generate-crud` adds it to an existing module). Registry key = `{Module}.{Entity}`, the admin page's
+  `EntityKey`. Verified end to end on a generated web app with two contributed fields (one gated by a permission): create 201, out-of-range 400, the gated field 400 "Unknown
+  extension field", GET returns only visible fields, an update without `extraProperties` keeps them, an empty value clears one, and the stored JSON is `{"ReorderLevel":"30"}` then `{}`.
+  Covered by `EntityApiFieldsTests` and `ApiExtraFieldsTests`. Not done: exposing contributed columns/actions over the API, and a discovery endpoint listing the fields a caller may set.
+- **CLI (guideline phase 3, partial).** The generated UI shell (`ui/ViewStart.sbn`,
+  `ui/CrudIndexCshtml.sbn`) uses `Context.GetThemeLayout()`, so generated pages follow the active theme
+  and still fall back to `_UiLayout` when none is registered. `modulus ui add Tabler` installs
+  `Cobytelabs.Modulus.UI.Theme.Tabler` and wires `AddTablerTheme(builder.Configuration)` plus its
+  `using Modulus.UI.Theming.Tabler;` (`UiModuleDefinition.HasEndpoints: false` = no `Map…` call;
+  `ExtensionNamespace` = extra using). **`generate-crud --with-ui` installs the theme by default** (package
+  reference + `AddTablerTheme`, via `UiCrudWiring.EnsureHostWiring`); `--no-theme` opts out, and a later run
+  upgrades a host that was wired without one. `modulus app --ui-modules …` installs it by default too
+  (`--no-theme` opts out; a web app always gets it), via `NewAppCommand.ResolveWebInstall`, which resolves ids
+  through `UiModuleCatalog.Find` (the old inline lookup compared `identity` to the catalog id `Modulus.Identity`,
+  never matched, and silently wired nothing). `UiHostWiring.EnsureUiWiring` adds `using Modulus.UI;` and the
+  module's own extension namespace (`ExtensionNamespace ?? Namespace`); before, only the theme's namespace was
+  added, so `ui add` and `app --ui-modules` produced a non-compiling `Program.cs`. `UiHostWiring` also registers the backend
+  services a feature UI's pages resolve (`UiModuleDefinition.BackendRegistrations`: Files → `AddFileStorage`, Settings →
+  `AddModulusSettings`, Notifications → `AddModulusNotifications`, AuditLogging → `AddModulusAuditLogging`, Tenancy →
+  `AddMultiTenancy`, Permissions → `AddModulusAuthorization`), all in-memory/`TryAdd` defaults, so the page no longer 500s on first
+  request. A registration the host already has is left alone; the `Marker` must include the `(` (`AddModulusSettings`
+  alone matches the module's own `AddModulusSettingsUi(`). Identity/Users are not covered: they need an app-specific user store.
+  The generated list (`ui/CrudTablePartial.sbn`) is an entity-aware `m-datatable entity="@Model.EntityKey"` (`EntityKey` = `{Module}.{Entity}`,
+  e.g. `Catalog.Product`): columns and row actions other modules contribute with `ConfigureEntityUi` show up with no page edit, the page model
+  loads their values once per page (`LoadEntityColumnsAsync` inside `LoadAsync`, so htmx table swaps refresh them) and `_Table` takes the
+  page model, not the item list. The create flow carries extension fields: a new entity implements `IHasExtraProperties` (so its table gets the
+  JSON `ExtraProperties` column), `Create{Entity}Command(string Name, IReadOnlyDictionary<string, string?>? ExtraProperties = null)` (optional, so the API
+  endpoint and existing callers still compile) has its handler call `SetExtraProperties`, and the page model (`ModuleModel.HasExtraFields`) validates
+  `Input.Extra` with `ValidateEntityFields` (422 with per-field errors, before the command is sent) and passes `ReadEntityFieldText(...)` to the command,
+  while `_CreateForm` renders `<m-fields entity="@Model.EntityKey" for="Input.Extra" />` (nothing when no module contributed a field). Files are never
+  overwritten, so `GenerateCrudCommand.SupportsExtraFields` checks the entity and create command on disk: a CRUD set generated before this keeps its old
+  command and gets a UI without `m-fields` that still compiles. An API-only app's endpoints and DTOs never expose the bag (there is no registry to filter it with); a web app's do, see *API extension fields* below. A new entity therefore has an `ExtraProperties` column, and a migration scaffolded after `generate-crud` includes it.
+  **Edit modal** (`ModuleModel.HasEditForm`): a row's Edit button (`hx-get` `?handler=Edit&id=` into `#m-modal-container`) loads `_EditForm` (an `<m-modal>` whose
+  footer submit points at the form by id), pre-filled by `Get{Entity}ForEditQuery` (a UI-only query returning `{Entity}EditDto` with a *copy* of the bag; no API
+  endpoint uses it). The form posts `Edit.*` (never mixed with the create form's `Input.*`) to `OnPostUpdateAsync`, which validates `Edit.Extra` first and sends
+  `Update{Entity}Command(Id, Name, ExtraProperties = null)`; its handler merges (an emptied field removes its key, fields the user cannot see stay).
+  The form targets the modal so a 422 re-renders it in place; success sets `HX-Retarget: #{entity}-table` + `HX-Reswap: innerHTML` and `CloseModal()`,
+  so the fresh table goes to the list. It is generated only when the update command on disk carries `ExtraProperties` **and** a theme is installed
+  (only a theme's layout hosts the modal container; Core's legacy shell has none), so `--no-theme` and older CRUD sets get no Edit button.
+  The CRUD form resets through the shared `mResetOnSuccess` Alpine component (no inline `hx-on`);
+  `AlpineCspSafetyTests` also scans `cli/Templates/ui/*.sbn` for unregistered `x-data`, CDN assets and `hx-on`.
+  Gotcha: a Razor **Page** has `HttpContext`, not `Context` (views and `_ViewStart` have `Context`), so the CRUD
+  Index page template uses `HttpContext.GetThemeLayout()`. `UiHostWiring` inserts with the file's own line
+  ending (never `Environment.NewLine`), or a second wiring pass mis-anchors its `using` insert.
+  **`modulus ui eject` / `ui diff`** (every UI view: components, feature-UI pages, Core shared partials, theme layouts): the packages ship their views compiled, so the CLI embeds
+  them (`Modulus.Cli.csproj`: `UiViews/{Component}/{View}.cshtml` from Core's `_Default` components, `UiPages/{Group}/...` from each feature UI's `Pages/**`, `UiPages/Shared/Shared/...`
+  from Core's `Pages/Shared`, `UiThemes/Tabler/...` from the theme; `UiViewCatalog`). A target is a **component** (`Card`, `Card:Compact`, `--view V`), a **group** named like a
+  `UiModuleCatalog` entry (`Users`, `Identity`, `Tenancy`, `Permissions`, `Settings`, `AuditLogging`, `Notifications`, `Files`), `Shared` (Core's `_Alert`/`_UiIcon`) or `Tabler`, or
+  **one view**: a page's bare path (`Users/Details`, `Account/Login`) or a theme path (`Tabler/Layouts/Application`). Group names must not collide with component names. Feature UIs
+  and the theme must be installed (`UiEject.IsInstalled` reads the host csproj's `PackageReference`/`ProjectReference` `Include`, since a CPM app has no `Version`), else the command
+  errors with a `modulus ui add X` hint; `--all` covers every component plus every installed group. `ui eject <target>… | --all [--view V] [--force] [--dry-run] [--list]` writes
+  the view where the framework's own lives, so it wins with **no registration**: an app file at the same virtual path beats a package's compiled view (the entry assembly's part is
+  first), for `/Pages/...`, `/Themes/Tabler/...` and absolute-path partials alike; components resolve app (`Views/Shared/Modulus/{C}/{V}.cshtml`), theme, then `_Default`. It also
+  writes the **nearest `_ViewImports.cshtml`** (marked, when missing): imports are compile-time, an ejected view compiles in the *app's* assembly, so it needs the package's `@using`s,
+  tag helpers and `@namespace` beside it (`@model FileResultView` relies on the namespace); `_ViewStart` is found by path at runtime, so it is never copied. An existing file is
+  skipped without `--force`. **A page's PageModel stays in the package** (public classes): the app owns the markup, and behavior changes through the services the page uses. Ejected
+  theme views use `TablerShell` and `TablerAssets.IsAlpine`, which are therefore public. The first line of an ejected file is a Razor comment
+  `@* modulus-eject component= view= base=<sha256/16 of the framework source> framework=<version> *@` before `@page` (line endings are normalized to LF before hashing, so a CRLF
+  checkout compares equal). `ui diff [target] [--summary] [--check]` walks the catalog, checks each `AppPath` and classifies every override against the framework's **current**
+  view: *identical* (nothing customized; deletable), *customized* (app changed, framework did not since eject), *outdated* (app unchanged, framework changed: `eject --force` takes
+  the update), *conflict* (both changed: merge by hand) or *unmarked* (hand-written, no baseline), with a small line diff; an unmarked `_ViewImports` is the app's own and is skipped.
+  `--check` exits 1 for outdated/conflict (CI after an upgrade). The CLI version must match the app's framework version for the baseline to mean anything; the embedded views are the
+  CLI's own build, not the installed package's. Covered by `UiEjectTests`, `UiEjectPagesTests` and the compile guard `Modulus.UI.Ejection.Tests` (links every ejectable view into a Razor
+  test host, so a view that stops compiling in an app's assembly, or loses to its package copy, fails). Verified end to end on a generated web app with the real CLI: all 66 views
+  ejected and compiled with 0 warnings, the overrides won at runtime with the right layouts, the ejected login signed in, and `ui diff` reported customized and identical.
+  **Per-folder `_ViewStart` / `_ViewImports`.** Each feature UI ships them inside its own page folders (`Account`, `Users` + `Roles`, `Tenancy`, `Permissions`, `Settings`, `AuditLogs`,
+  `Notifications`, `Files`; Core: `Pages/Shared`), never at `Pages/` root: several RCLs shipping `/Pages/_ViewStart.cshtml` collide (first wins), which rendered every admin page in
+  Identity's login-card `Account` layout once Identity was installed. The theme keeps one `Themes/Tabler/_ViewImports.cshtml`. Guarded by
+  `Feature_uis_installed_together_each_keep_their_own_layout` (`FeatureUiRenderTests`, both registration orders).
+  **Page authorization.** A feature UI gates its folder only when the app sets its `RequirePermission` (default null = open), so a generated web app calls
+  `AddModulusPageAuthorization()` (`Modulus.UI.Core`, next to `AddModulusSmartAuth()` in `Program.cs`): `AuthorizeFolder("/")` plus `AllowAnonymousToFolder("/Account")` (pass folders to
+  keep others public), so an anonymous visitor is challenged (the cookie redirect to the login page) and a permission set on a feature UI still applies on top. It uses
+  `PostConfigure<RazorPagesOptions>`: `AddRazorPages()` registers a setup that **replaces the conventions collection**, so a plain `Configure` registered before it is silently lost
+  (the UI wiring adds `AddRazorPages` after the template's auth block). API endpoints, controllers and the minimal-API error pages are unaffected. An api host has no pages and does
+  not call it; a host with `--auth none` has no scheme to challenge with, so it does not either. Covered by `PageAuthorizationTests` and the template assertion in `IdentityBackendTests`.
+  **Admin gates** (`UiAccessGates`, `UiModuleDefinition.Gate`): a signed-in user is not an administrator, so `ui add` / `app --ui-modules` also lock the admin UIs to the
+  `Admin` role, the role the identity backend seeds the first administrator into: Users `users:manage`, Tenancy `tenancy:view`, Permissions `permissions:view`, Settings
+  `settings:manage`, AuditLogging `audit:view`, Files `files:manage` (Identity and Notifications, the user's own inbox, only need the sign-in). Three pieces, all idempotent:
+  `appsettings.json` gets `"UsersUi": { "RequirePermission": "users:manage" }` (appended textually so formatting and comments stay; an existing section is the app's choice and is
+  never rewritten; the UI reads it when it registers its folder convention), `Program.cs` gets `AddModulusAuthorization()` (the `:`-policy provider) and
+  `AddPermissionGrants(grants => grants.GrantToRole("Admin", "users:manage"))` (in-memory seed; switch to the EF grant store for grants edited at runtime). It applies only when
+  `Program.cs` has `AddModulusPageAuthorization(` (a host with no sign-in has no role to grant to, so requiring a permission would lock everyone out). The gate names duplicate the
+  UI packages' constants (the CLI cannot reference them); `UiAccessGateTests` reads the UI option sources to keep them in step. Verified on a generated web app: the administrator gets
+  `/Users` 200, a self-registered user is sent to `/Account/AccessDenied`, an anonymous visitor to the login page. The same wiring adds `AddGrantStorePermissionChecker()`: the
+  menu asks `ICurrentUser.HasPermission`, which reads `permission` claims (a cookie sign-in carries none) unless the grant store backs it, so without it every gated menu item, the
+  administrator's included, was hidden. **`generate-crud --with-ui`** guards its page the same way when the host has the sign-in (`ModuleModel.RequiredPermission`, else the page
+  stays as open as its host): `[Authorize(Policy = "{module}:{route}:manage")]` on the `IndexModel` (`UiAccessGates.CrudPermission`, e.g. `catalog:products:manage`, so `catalog:*`
+  covers a module), `requiredPermission:` on the sidecar's nav item, and in `Program.cs` the registry declaration (`AddPermissions("catalog", ...)`, so the Permissions UI lists it) plus
+  the Admin grant (`UiCrudWiring.EnsurePagePermission`, idempotent per entity). An existing page keeps its old markup (files are never overwritten), so it stays behind the sign-in only.
+  **`ICurrentUser` fix:** `AddModulusIdentity` used `TryAddScoped<ICurrentUser, ClaimsPrincipalCurrentUser>`, but `AddModulus`, `AddMediator` and `AddModulusUi` each `TryAdd` the
+  fail-closed `NullCurrentUser` first, so in a generated web app every `ICurrentUser` consumer saw an anonymous user (empty permission-filtered menu, entity-field permissions, audit).
+  It now replaces a `NullCurrentUser` registration and keeps any other implementation the app registered (`CurrentUserRegistrationTests`).
+  Verified end to end: a generated app (`app` → `generate-crud --with-ui`) built against freshly packed
+  UI.Core/Theme.Tabler, booted, and served the Tabler layout, vendored assets, sidebar entry and a working
+  htmx create.
+- **Known gaps.** Not built yet:
+  `IEntityFieldHandler` (extension values in the contributing module's own tables; only the `IHasExtraProperties` JSON bag exists), an edit form
+  for `--no-theme` hosts (the modal needs a theme) and
+  `IUserUiPreferenceStore`; tiered mode is a later phase. `ui eject` copies views only (a page's handlers/PageModel stay in the package), and static assets
+  are customized through the `--m-*` tokens or a same-path file in the app's `wwwroot`. Legacy `_UiLayout` is not ejectable and still ships Core's standard Alpine
+  build plus an inline `<style>`.
+
 ## Testing notes
 
 - Unit tests use `[Trait("Category", "Unit")]`; integration tests use
   `"Integration"`. Keep this convention so the `--filter` above keeps working.
+- CLI tests that scaffold files (they write through `Ux.WriteFile`, which honours the static `Ux.DryRun`) or flip `Ux.DryRun`/`Force`/`Quiet`
+  belong to the `[Collection(UxStateCollection.Name)]` collection (runs alone), or they race `UxTests` and fail randomly.
 - Integration tests spin up real containers; prefer `IClassFixture`/collection
   fixtures rather than a container-per-test.

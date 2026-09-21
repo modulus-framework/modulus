@@ -73,8 +73,8 @@ internal sealed class TemplateEngine
             return reader.ReadToEnd();
         }
 
-        public ValueTask<string> LoadAsync(TemplateContext context, SourceSpan callerSpan, string templatePath)
-            => ValueTask.FromResult(Load(context, callerSpan, templatePath));
+        public ValueTask<string?> LoadAsync(TemplateContext context, SourceSpan callerSpan, string templatePath)
+            => ValueTask.FromResult<string?>(Load(context, callerSpan, templatePath));
     }
 
     /// <summary>

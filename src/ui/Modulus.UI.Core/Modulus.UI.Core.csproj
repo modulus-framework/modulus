@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AddRazorSupportForMvc>true</AddRazorSupportForMvc>
+    <Description>UI foundation for the Modulus framework: UI module contracts, modular navigation registry, module manifests, menu/manifest endpoints, shared Tabler shell (self-hosted htmx + Alpine), and HTMX/Alpine conventions for UI modules.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Modulus.UI.Core.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="module.json" Pack="true" PackagePath="module.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <ProjectReference Include="../../core/Modulus.Core/Modulus.Core.csproj" />
+    <ProjectReference Include="../Modulus.UI.Theme.Abstractions/Modulus.UI.Theme.Abstractions.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -5,6 +5,7 @@ using Xunit;
 namespace Modulus.Cli.Tests;
 
 [Trait("Category", "Unit")]
+[Collection(UxStateCollection.Name)]
 public class UxTests
 {
     [Fact]

@@ -22,6 +22,21 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
         [Description("Module name or namespace (e.g. Catalog, MyApp.Modules.Catalog). Auto-detected if one module.")]
         [CommandOption("-m|--module")]
         public string? Module { get; init; }
+
+        [Description("Also scaffold the HTMX admin page + sidebar entry in the host API project. A web app does this by default; an API-only app has no UI and refuses it.")]
+        [CommandOption("--with-ui")]
+        [DefaultValue(false)]
+        public bool WithUi { get; init; }
+
+        [Description("Web apps: scaffold only the API side (entity, handlers, endpoints), not the admin page.")]
+        [CommandOption("--no-ui")]
+        [DefaultValue(false)]
+        public bool NoUi { get; init; }
+
+        [Description("When scaffolding the UI: do not install the Tabler theme (keep Core's built-in layout or bring your own ITheme).")]
+        [CommandOption("--no-theme")]
+        [DefaultValue(false)]
+        public bool NoTheme { get; init; }
     }
 
     private readonly TemplateEngine _templates = new();
@@ -45,6 +60,11 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
 
         var module = CodeGen.ResolveModule(s.Module);
 
+        // A web app gets the admin page by default, an API-only app never does, and a host generated before app
+        // kinds existed keeps the opt-in --with-ui. Decided up front so a refusal writes nothing.
+        var kind = ModuleDiscovery.Inventory(Environment.CurrentDirectory)?.Kind;
+        var withUi = AppKinds.ResolveCrudUi(kind, s.WithUi, s.NoUi);
+
         // Locate the layer project directories.
         var domainDir = CodeGen.LayerDir(module.Directory, module.Namespace, "Domain");
         var appDir = CodeGen.LayerDir(module.Directory, module.Namespace, "Application");
@@ -60,6 +80,14 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
             EntityNameLower = entityLower,
             RouteName = routeName,
         };
+        model.HasApiExtraFields = ExposesExtraFieldsInApi(kind, domainDir, appDir, presDir, entity, plural);
+
+        // A host with the identity backend guards the API endpoints (and the admin page) with a permission the Admin role holds;
+        // a host with no such role has nothing to grant it to, so its endpoints stay as open as the rest of that host.
+        var host = ResolveHost(module);
+        model.RequiredPermission = File.Exists(host.ProgramCs) && UiAccessGates.HasAdminRole(File.ReadAllText(host.ProgramCs))
+            ? UiAccessGates.CrudPermission(module.Name, routeName)
+            : null;
 
         var generated = new List<string>();
         var skipped = new List<string>();
@@ -130,6 +158,21 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
         WriteIfMissing("module/Presentation/Endpoint", model,
             Path.Combine(presDir, $"{plural}Endpoint.cs"), generated, skipped);
 
+        // The endpoints filter extension fields through the UI registry, which lives in Modulus.UI.Core.
+        var presentationCsproj = Path.Combine(presDir, $"{module.Namespace}.Presentation.csproj");
+        if (model.HasApiExtraFields && File.Exists(presentationCsproj)
+            && ProjectFileService.EnsureCsprojPackageReference(
+                presentationCsproj, "Cobytelabs.Modulus.UI.Core", model.FrameworkVersion, Ux.DryRun))
+        {
+            generated.Add(CodeGen.Rel(presDir, $"{module.Namespace}.Presentation.csproj (updated)"));
+        }
+
+        // ── Host UI companion (default for a web app, opt-in for an unmarked host) ──
+        if (withUi)
+            GenerateUiCompanion(module, model, host, withTheme: !s.NoTheme, generated, skipped);
+        else if (model.RequiredPermission is not null)
+            EnsureApiPermission(module, model, host, generated);
+
         // ── Summary ───────────────────────────────────────────────
         AnsiConsole.MarkupLine("[green]✓[/] Generated CRUD for [cyan]{0}[/] in [grey]{1}[/]",
             entity, module.Name);
@@ -155,6 +198,238 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
 
         return 0;
     }
+
+    /// <summary>Rewrites an existing file through <paramref name="update"/> and lists it as updated when that changed it.</summary>
+    private static void UpdateExisting(string path, string apiDir, List<string> generated, Func<string, string> update)
+    {
+        if (!File.Exists(path))
+            return;
+
+        var original = File.ReadAllText(path);
+        var updated = update(original);
+        if (updated == original)
+            return;
+
+        Ux.WriteFile(path, updated);
+        generated.Add(CodeGen.Rel(apiDir, Path.GetRelativePath(apiDir, path).Replace(Path.DirectorySeparatorChar, '/') + " (updated)"));
+    }
+
+    /// <summary>The host project's files a CRUD set touches.</summary>
+    private sealed record HostFiles(string ApiDir, string ApiCsproj, string ProgramCs);
+
+    /// <summary>
+    /// Prefers the discovered host paths (custom layouts); falls back to the generated-app convention when there is no
+    /// <c>.slnx</c> (e.g. tests).
+    /// </summary>
+    private static HostFiles ResolveHost(CodeGen.ModuleInfo module)
+    {
+        var inventory = ModuleDiscovery.Inventory(Environment.CurrentDirectory);
+        var apiDir = inventory?.ApiProjectPath is { Length: > 0 } apiProject
+                && File.Exists(apiProject)
+            ? Path.GetDirectoryName(apiProject)!
+            : Path.Combine(Environment.CurrentDirectory, "src", "API", $"{module.RootNamespace}.Api");
+        var apiCsproj = inventory?.ApiProjectPath is { Length: > 0 } project
+                && File.Exists(project)
+            ? project
+            : Path.Combine(apiDir, $"{module.RootNamespace}.Api.csproj");
+        var programCs = inventory?.ProgramCsPath is { Length: > 0 } program
+                && File.Exists(program)
+            ? program
+            : Path.Combine(apiDir, "Program.cs");
+        return new HostFiles(apiDir, apiCsproj, programCs);
+    }
+
+    /// <summary>
+    /// The <c>Program.cs</c> half of the API's permission when there is no admin page to carry it: the policy provider, the
+    /// registry declaration and the Admin role's grant (all idempotent). The endpoints declare the permission themselves.
+    /// </summary>
+    private static void EnsureApiPermission(
+        CodeGen.ModuleInfo module, ModuleModel model, HostFiles host, List<string> generated)
+    {
+        if (model.RequiredPermission is not { } permission || !File.Exists(host.ProgramCs))
+            return;
+
+        var original = File.ReadAllText(host.ProgramCs);
+        var wired = UiCrudWiring.EnsurePagePermission(
+            original, module.Name, permission, UiAccessGates.CrudPermissionDescription(model.EntityPlural ?? module.Name));
+        if (wired == original)
+            return;
+
+        if (!Ux.DryRun)
+            Ux.WriteFile(host.ProgramCs, wired);
+        generated.Add(CodeGen.Rel(host.ApiDir, "Program.cs (updated)"));
+    }
+
+    /// <summary>
+    /// Scaffolds the HTMX admin page + sidebar entry for the entity in the
+    /// host API project (Web SDK compiles <c>Pages/</c> with no csproj SDK
+    /// changes; no new projects, so the <c>.slnx</c> is untouched):
+    /// <list type="bullet">
+    /// <item><c>Pages/{module}/{route}/Index.cshtml(.cs)</c> + table/form
+    /// partials driving the module's mediator handlers;</item>
+    /// <item><c>Pages/_ViewImports.cshtml</c> + <c>_ViewStart.cshtml</c> shell
+    /// chrome (once per host, mirroring the sidecar <c>Pages/</c> convention);</item>
+    /// <item><c>Ui/{Module}UiModule.cs</c>, a <c>CustomUiModule</c> nav sidecar
+    /// (the framework ships prebuilt UI modules only for its own areas —
+    /// app-specific modules own theirs);</item>
+    /// <item>the <c>Cobytelabs.Modulus.UI.Core</c> + <c>Platform</c> package
+    /// references (localization services live in Platform) + host
+    /// wiring (<c>UiHostWiring</c> shared bits, then the
+    /// <c>AddUiModule&lt;&gt;</c> registration).</item>
+    /// </list>
+    /// Existing files are never overwritten (same <c>WriteIfMissing</c>
+    /// semantics as the backend layers).
+    /// </summary>
+    private void GenerateUiCompanion(
+        CodeGen.ModuleInfo module,
+        ModuleModel model,
+        HostFiles host,
+        bool withTheme,
+        List<string> generated,
+        List<string> skipped)
+    {
+        var route = model.RouteName
+            ?? throw new InvalidOperationException("RouteName must be set before UI generation.");
+
+        var entityName = model.EntityName
+            ?? throw new InvalidOperationException("EntityName must be set before UI generation.");
+        var domainFile = Path.Combine(CodeGen.LayerDir(module.Directory, module.Namespace, "Domain"), $"{entityName}.cs");
+        var appDir = CodeGen.LayerDir(module.Directory, module.Namespace, "Application");
+        model.HasExtraFields = SupportsExtraFields(domainFile, Path.Combine(appDir, $"Create{entityName}Command.cs"));
+        // The edit form is a modal, and only a theme's layout hosts the modal container (Core's legacy shell has none).
+        model.HasEditForm = withTheme
+            && SupportsExtraFields(domainFile, Path.Combine(appDir, $"Update{entityName}Command.cs"));
+
+        if (model.HasEditForm)
+        {
+            WriteIfMissing("module/Application/GetForEditQuery", model,
+                Path.Combine(appDir, $"Get{entityName}ForEditQuery.cs"), generated, skipped);
+            WriteIfMissing("module/Application/GetForEditHandler", model,
+                Path.Combine(appDir, $"Get{entityName}ForEditHandler.cs"), generated, skipped);
+        }
+
+        var apiDir = host.ApiDir;
+        var apiCsproj = host.ApiCsproj;
+        var programCs = host.ProgramCs;
+
+        if (!Directory.Exists(apiDir) || !File.Exists(apiCsproj))
+            throw new InvalidOperationException(
+                $"The admin UI needs the host API project at '{apiDir}'. " +
+                "Run from the solution root of a generated app (or pass --no-ui).");
+
+        // ── Razor Pages (route: /{module}/{route}) ────────────────
+        var pageDir = Path.Combine(apiDir, "Pages", model.ModuleNameLower, route);
+        WriteIfMissing("ui/CrudIndexCshtml", model,
+            Path.Combine(pageDir, "Index.cshtml"), generated, skipped);
+        WriteIfMissing("ui/CrudIndexPageModel", model,
+            Path.Combine(pageDir, "Index.cshtml.cs"), generated, skipped);
+        WriteIfMissing("ui/CrudFormPartial", model,
+            Path.Combine(pageDir, "_CreateForm.cshtml"), generated, skipped);
+        WriteIfMissing("ui/CrudTablePartial", model,
+            Path.Combine(pageDir, "_Table.cshtml"), generated, skipped);
+        if (model.HasEditForm)
+            WriteIfMissing("ui/CrudEditFormPartial", model,
+                Path.Combine(pageDir, "_EditForm.cshtml"), generated, skipped);
+
+        // ── Shell chrome (once per host) ──────────────────────────
+        WriteIfMissing("ui/ViewImports", model,
+            Path.Combine(apiDir, "Pages", "_ViewImports.cshtml"), generated, skipped);
+        WriteIfMissing("ui/ViewStart", model,
+            Path.Combine(apiDir, "Pages", "_ViewStart.cshtml"), generated, skipped);
+
+        // ── Nav sidecar (app-owned CustomUiModule) ────────────────
+        var sidecar = Path.Combine(apiDir, "Ui", $"{module.Name}UiModule.cs");
+        WriteIfMissing("ui/UiModule", model, sidecar, generated, skipped);
+
+        // Files are never overwritten, so a set generated earlier needs its pieces brought in line: this entity's sidebar item (the
+        // sidecar is written once per module, so a second entity would never reach the menu) and, where the host has a permission
+        // to require, the guard on the page and its menu entry.
+        UpdateExisting(sidecar, apiDir, generated,
+            text => UiNavSidecar.EnsureItem(text, module.Name, model.EntityPlural ?? entityName, route, model.RequiredPermission));
+        if (model.RequiredPermission is { } requiredPermission)
+        {
+            UpdateExisting(Path.Combine(pageDir, "Index.cshtml.cs"), apiDir, generated,
+                text => UiAccessGates.EnsurePageGuard(text, requiredPermission));
+        }
+
+        // ── UI foundation references (offline csproj edits; the next
+        // `dotnet build` restores them like every other scaffold step).
+        // UI.Core brings the pages/nav contracts; Platform brings the
+        // localization services the host wiring registers (every sidecar
+        // lists Platform as a backend package for the same reason).
+        var uiCoreAdded = ProjectFileService.EnsureCsprojPackageReference(
+            apiCsproj, "Cobytelabs.Modulus.UI.Core", model.FrameworkVersion, Ux.DryRun);
+        var platformAdded = ProjectFileService.EnsureCsprojPackageReference(
+            apiCsproj, "Cobytelabs.Modulus.Platform", model.FrameworkVersion, Ux.DryRun);
+        // The Tabler theme is the default look (opt out with --no-theme): generated pages already
+        // resolve their layout through Context.GetThemeLayout(), so this only supplies the theme.
+        var themeAdded = withTheme && ProjectFileService.EnsureCsprojPackageReference(
+            apiCsproj, UiModuleCatalog.Find(UiCrudWiring.TablerThemeId).PackageId, model.FrameworkVersion, Ux.DryRun);
+        if (uiCoreAdded || platformAdded || themeAdded)
+            generated.Add(CodeGen.Rel(apiDir, $"{module.RootNamespace}.Api.csproj (updated)"));
+
+        // ── Host wiring ───────────────────────────────────────────
+        if (!File.Exists(programCs))
+            throw new InvalidOperationException(
+                $"The admin UI needs Program.cs at '{programCs}' to register the UI module.");
+
+        var original = File.ReadAllText(programCs);
+        var wired = UiCrudWiring.EnsureHostWiring(
+            original, model.ApiNamespace, module.Name, withTheme, model.RequiredPermission,
+            UiAccessGates.CrudPermissionDescription(model.EntityPlural ?? module.Name));
+
+        if (wired != original)
+        {
+            if (!Ux.DryRun)
+                Ux.WriteFile(programCs, wired);
+            generated.Add(CodeGen.Rel(apiDir, "Program.cs (updated)"));
+        }
+
+        AnsiConsole.MarkupLine("[grey]  UI: /{0}/{1} + {2} sidebar entry (rebuild to restore new packages).[/]",
+            model.ModuleNameLower, route, module.Name);
+        AnsiConsole.MarkupLine(withTheme
+            ? "[grey]  Theme: Tabler (AddTablerTheme). Pass --no-theme to keep Core's built-in layout.[/]"
+            : "[grey]  Theme: none installed (--no-theme); pages use Core's built-in layout unless you register an ITheme.[/]");
+    }
+
+    /// <summary>
+    /// Whether the generated API exposes the entity's extension fields (through <c>EntityApiFields</c>, so callers only see and
+    /// set what the registry lets them). Only a web app has the registry, and only a <i>fresh</i> set: files are never
+    /// overwritten, so if any API file exists already the rest would not match a DTO or endpoint that predates this.
+    /// </summary>
+    internal static bool ExposesExtraFieldsInApi(
+        AppKind? kind, string domainDir, string appDir, string presDir, string entity, string plural)
+    {
+        if (kind != AppKind.Web)
+        {
+            return false;
+        }
+
+        string[] apiFiles =
+        [
+            Path.Combine(appDir, "Dtos", $"{entity}Dto.cs"),
+            Path.Combine(appDir, $"Get{plural}Handler.cs"),
+            Path.Combine(appDir, $"Get{entity}ByIdHandler.cs"),
+            Path.Combine(presDir, $"{plural}Endpoint.cs"),
+        ];
+
+        var entityFile = Path.Combine(domainDir, $"{entity}.cs");
+        return apiFiles.All(f => !File.Exists(f))
+            && SupportsExtraFields(entityFile, Path.Combine(appDir, $"Create{entity}Command.cs"))
+            && SupportsExtraFields(entityFile, Path.Combine(appDir, $"Update{entity}Command.cs"));
+    }
+
+    /// <summary>
+    /// Whether the entity and a create or update command on disk support extension fields. A file that was just
+    /// generated always does; one that existed before (never overwritten) does only if it already mentions the
+    /// marker, so a CRUD set generated earlier still gets a UI that compiles against it.
+    /// </summary>
+    internal static bool SupportsExtraFields(string entityFile, string commandFile)
+        => Mentions(entityFile, "IHasExtraProperties") && Mentions(commandFile, "ExtraProperties");
+
+    // A missing file is one this run generates (or, on a dry run, would generate) from the current template.
+    private static bool Mentions(string file, string text)
+        => !File.Exists(file) || File.ReadAllText(file).Contains(text, StringComparison.Ordinal);
 
     /// <summary>
     /// Renders <paramref name="templatePath"/> to <paramref name="outputPath"/>

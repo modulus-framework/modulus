@@ -39,9 +39,26 @@ internal sealed class EfOutboxWriter(
         var contextType = sp.GetService<IEntityContextMap>()
             ?.Resolve(typeof(OutboxMessage));
 
-        return contextType is not null
-            ? (DbContext)sp.GetRequiredService(contextType)
-            : sp.GetRequiredService<DbContext>();
+        if (contextType is not null)
+            return (DbContext)sp.GetRequiredService(contextType);
+
+        // OutboxMessage is mapped into every module context (ambiguous by design)
+        // so the map intentionally returns null. Use the single registered
+        // context when unambiguous; otherwise fail fast — direct writes have no
+        // ambient owner, unlike ModuleDbContext.SaveChangesAsync which uses its
+        // own Set<OutboxMessage>() inline.
+        var distinct = sp.GetServices<DbContext>()
+            .GroupBy(ctx => ctx.GetType())
+            .Select(g => g.First())
+            .ToList();
+
+        if (distinct.Count == 1)
+            return distinct[0];
+
+        throw new InvalidOperationException(
+            $"Cannot resolve a unique DbContext for {nameof(OutboxMessage)}: " +
+            $"{distinct.Count} contexts are registered. Write via the owning module's " +
+            "ModuleDbContext (domain events enqueue inline) instead of direct IOutboxWriter.");
     }
 
     public Task WriteAsync<TEvent>(

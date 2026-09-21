@@ -9,6 +9,7 @@ Modulus adds security headers to all responses.
 ## Setup
 
 ```csharp
+builder.Services.AddModulusSecurityHeaders(builder.Configuration);
 app.UseModulusSecurityHeaders();
 ```
 
@@ -29,11 +30,15 @@ app.UseModulusSecurityHeaders();
 ```json
 {
   "SecurityHeaders": {
-    "Enabled": true,
-    "HstsMaxAgeDays": 365,
-    "IncludeSubDomains": true,
+    "ContentTypeOptions": true,
+    "FrameOptions": "DENY",
+    "ReferrerPolicy": "strict-origin-when-cross-origin",
     "ContentSecurityPolicy": "default-src 'self'",
-    "PermissionsPolicy": "camera=(), microphone=()"
+    "PermissionsPolicy": "camera=(), microphone=()",
+    "EnableHsts": true,
+    "HstsMaxAgeSeconds": 31536000,
+    "HstsIncludeSubDomains": true,
+    "RemoveServerHeader": true
   }
 }
 ```

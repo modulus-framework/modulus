@@ -1,0 +1,29 @@
+@page
+@using Modulus.UI.Theme.Tabler.Tests
+@attribute [Microsoft.AspNetCore.Mvc.IgnoreAntiforgeryToken]
+@functions {
+    public sealed class InvoiceInput
+    {
+        public List<InvoiceLine> Lines { get; set; } = [];
+    }
+
+    [BindProperty]
+    public InvoiceInput Input { get; set; } = new();
+
+    public void OnGet(bool empty = false)
+    {
+        if (!empty)
+        {
+            Input.Lines = [new() { Sku = "A-1", Quantity = 2 }, new() { Sku = "B-2", Quantity = 5 }];
+        }
+    }
+
+    public IActionResult OnPost()
+        => ModelState.IsValid ? Content(string.Join("|", Input.Lines.Select(l => $"{l.Sku}x{l.Quantity}"))) : Page();
+}
+@{
+    Layout = "/Themes/Tabler/Layouts/Empty.cshtml";
+}
+<m-form>
+    <m-line-items for="Input.Lines" row-partial="_LineRow" add-label="Add line" remove-label="Drop" hint="At least one line" />
+</m-form>

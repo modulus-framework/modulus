@@ -39,8 +39,12 @@ public sealed class KafkaHealthCheck(
 
             using var adminClient = new AdminClientBuilder(config).Build();
 
-            // Lightweight metadata fetch (ping) with 5-second timeout
-            var metadata = adminClient.GetMetadata(TimeSpan.FromSeconds(5));
+            // Lightweight metadata fetch (ping) with 5-second timeout. The
+            // librdkafka call is blocking, so run it off-thread and honour
+            // the probe cancellation instead of stalling the health endpoint.
+            var metadata = await Task.Run(
+                () => adminClient.GetMetadata(TimeSpan.FromSeconds(5)), ct)
+                .WaitAsync(ct);
 
             sw.Stop();
             var brokerCount = metadata.Brokers.Count;

@@ -1,0 +1,32 @@
+@model {{ api_namespace }}.Pages.{{ module_name }}.{{ entity_plural }}.IndexModel
+@* Built-in columns first; columns other modules contribute to this entity (ConfigureEntityUi) land at
+   <m-entity-columns />, with matching <m-entity-cells> in each row and their row buttons from <m-entity-actions>. *@
+<m-datatable entity="@Model.EntityKey" empty="@(Model.Items.Count == 0)"
+             empty-message="No {{ route_name }} yet — create the first one above.">
+    <m-column>Name</m-column>
+    <m-entity-columns />
+    <m-column class="w-1"></m-column>
+    @foreach (var item in Model.Items)
+    {
+        <tr>
+            <td>@item.Name</td>
+            <m-entity-cells entity="@Model.EntityKey" row-id="@item.Id.ToString()" values="Model.ColumnValues" />
+            <td>
+                <div class="d-flex justify-content-end gap-2">
+                    <m-entity-actions entity="@Model.EntityKey" row-id="@item.Id.ToString()" />
+                    {{- if has_edit_form }}
+                    <button class="btn btn-sm btn-outline-secondary" type="button"
+                            hx-get="@Url.Page("./Index", "Edit", new { id = item.Id })"
+                            hx-target="#m-modal-container">Edit</button>
+                    {{- end }}
+                    <form method="post" asp-page-handler="Delete" asp-route-id="@item.Id"
+                          hx-post="@Url.Page("./Index", "Delete", new { id = item.Id })"
+                          hx-target="#{{ entity_name_lower }}-table" hx-swap="innerHTML"
+                          hx-confirm="Delete '@item.Name'?">
+                        <button class="btn btn-sm btn-outline-danger" type="submit">Delete</button>
+                    </form>
+                </div>
+            </td>
+        </tr>
+    }
+</m-datatable>

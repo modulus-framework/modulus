@@ -8,7 +8,7 @@
   "permalink": "/docs/observability/overview",
   "draft": false,
   "unlisted": false,
-  "editUrl": "https://github.com/cobytelabs/modulus/tree/main/website/docs/observability/overview.md",
+  "editUrl": "https://github.com/modulus-framework/modulus/tree/main/website/docs/observability/overview.md",
   "tags": [],
   "version": "current",
   "sidebarPosition": 1,
@@ -17,8 +17,8 @@
   },
   "sidebar": "docsSidebar",
   "previous": {
-    "title": "Personal Data Protection",
-    "permalink": "/docs/hardening/personal-data-protection"
+    "title": "OpenAPI",
+    "permalink": "/docs/hardening/openapi"
   },
   "next": {
     "title": "OpenTelemetry",

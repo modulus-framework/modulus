@@ -1,0 +1,31 @@
+@model Modulus.UI.Users.Pages.Roles.IndexModel
+@* Role table region. Deletes re-render this region in place; failures surface
+   through the summary (ModelState rides the fragment). The create form stays
+   on the full page so its field validation renders next to the inputs. *@
+@if (!ViewData.ModelState.IsValid)
+{
+    <div class="alert alert-danger mb-3" role="alert">
+        <div asp-validation-summary="All"></div>
+    </div>
+}
+<m-datatable empty="@(Model.Rows.Count == 0)" empty-message="@await Model.TextAsync("Roles.Empty")">
+    <m-column>@await Model.TextAsync("Roles.Name")</m-column>
+    <m-column>@await Model.TextAsync("Roles.DisplayName")</m-column>
+    <m-column class="text-end"></m-column>
+    @foreach (var role in Model.Rows)
+    {
+        <tr>
+            <td><code>@role.Name</code></td>
+            <td class="text-secondary">@(role.DisplayName ?? "—")</td>
+            <td class="text-end">
+                <form method="post"
+                      asp-page-handler="Delete" asp-route-id="@role.Id"
+                      hx-post="@Url.Page("./Index", "Delete", new { id = role.Id })"
+                      hx-target="#role-table" hx-swap="innerHTML"
+                      hx-confirm="@await Model.TextAsync("Roles.ConfirmDelete")">
+                    <button class="btn btn-sm btn-ghost-danger" type="submit">@await Model.TextAsync("Roles.Delete")</button>
+                </form>
+            </td>
+        </tr>
+    }
+</m-datatable>

@@ -11,17 +11,16 @@ Implement `IEndpoint` or `IMinimalEndpoint`:
 ```csharp
 public sealed class GetProductsEndpoint : IEndpoint
 {
-    public void Configure(IEndpointRouteBuilder app)
+    public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapGet("/api/products", HandleAsync)
+        app.MapGet("/api/catalog/products", HandleAsync)
             .WithName("GetProducts")
             .Produces<List<ProductDto>>();
     }
 
-    private static async Task<IResult> HandleAsync(
-        IMediator mediator)
+    private static async Task<IResult> HandleAsync(IMediator mediator, CancellationToken ct)
     {
-        var products = await mediator.QueryAsync(new GetAllProducts());
+        var products = await mediator.QueryAsync(new GetProductsQuery(), ct);
         return Results.Ok(products);
     }
 }
@@ -37,7 +36,9 @@ app.MapEndpoints();
 
 ## REPR Pattern
 
-Inherit `Endpoint<TRequest, TResponse>`:
+Inherit `Endpoint<TRequest, TResponse>` (request binding + validation are
+automatic; use `SendOkAsync`/`SendCreatedAsync`, or `SendAsync` with an
+explicit status code):
 
 ```csharp
 public sealed class GetProductEndpoint
@@ -45,8 +46,8 @@ public sealed class GetProductEndpoint
 {
     public override void Configure()
     {
-        Get("/api/products/{Id}");
-        AllowAnonymous();
+        Get("/api/catalog/products/{Id}");
+        RequireAuthorization();
     }
 
     public override async Task HandleAsync(
@@ -54,8 +55,8 @@ public sealed class GetProductEndpoint
         CancellationToken ct)
     {
         var product = await Mediator.QueryAsync(
-            new GetProductById(req.Id), ct);
-        await SendAsync(product, ct);
+            new GetProductByIdQuery(req.Id), ct);
+        await SendOkAsync(product, ct);
     }
 }
 ```

@@ -5,7 +5,10 @@ using Modulus.Core.Abstractions;
 /// <summary>
 /// Default <see cref="IPermissionResolver"/>. Resolves against an
 /// <see cref="IPermissionGrantStore"/> and the frozen <see cref="IPermissionRegistry"/>.
-/// Stateless and thread-safe — registered as a singleton.
+/// Stateless and thread-safe — registered as <b>scoped</b>: the grant store seam
+/// carries a request-scoped caching registration, so the resolver must be built
+/// inside the consuming scope to observe it (a singleton would pin a root-scope
+/// cache that serves stale grants until restart).
 /// </summary>
 public sealed class PermissionResolver(
     IPermissionGrantStore grantStore,

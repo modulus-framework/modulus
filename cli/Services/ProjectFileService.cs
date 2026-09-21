@@ -204,6 +204,60 @@ internal static class ProjectFileService
     }
 
     /// <summary>
+    /// Ensures a <c>&lt;PackageReference&gt;</c> exists in a <c>.csproj</c> file,
+    /// appending it to the first <c>ItemGroup</c> that already holds package
+    /// references (or a new trailing <c>ItemGroup</c> when none does).
+    /// Idempotent: returns <c>false</c> and touches nothing when the reference
+    /// already exists (any version). Generated apps are non-CPM (explicit
+    /// versions in each csproj), so the version is stamped on the reference.
+    /// </summary>
+    /// <returns>True when the reference was missing (added, or would be added under <paramref name="dryRun"/>).</returns>
+    public static bool EnsureCsprojPackageReference(
+        string csprojPath,
+        string packageId,
+        string version,
+        bool dryRun = false)
+    {
+        if (!File.Exists(csprojPath))
+            throw new FileNotFoundException($"Project file not found: {csprojPath}");
+
+        // Keep the file's own whitespace: without it the inserted indent text switches the parent to mixed content
+        // and the closing </ItemGroup> ends up glued to the new line.
+        var doc = XDocument.Load(csprojPath, LoadOptions.PreserveWhitespace);
+        var existing = doc.Descendants("PackageReference").FirstOrDefault(e =>
+            string.Equals(e.Attribute("Include")?.Value, packageId, StringComparison.OrdinalIgnoreCase));
+        if (existing is not null)
+            return false;
+
+        if (!dryRun)
+        {
+            var reference = new XElement("PackageReference",
+                new XAttribute("Include", packageId),
+                new XAttribute("Version", version));
+
+            var group = doc.Descendants("ItemGroup")
+                .FirstOrDefault(g => g.Elements("PackageReference").Any());
+            if (group is not null)
+            {
+                // Clone the last reference's indentation so the new element
+                // inherits the file's style instead of gluing onto a line.
+                var last = group.Elements("PackageReference").Last();
+                var indent = (last.PreviousNode as XText)?.Value ?? "\n    ";
+                last.AddAfterSelf(new XText(indent), reference);
+            }
+            else
+            {
+                doc.Root!.Add(
+                    new XElement("ItemGroup", new XText("\n    "), reference, new XText("\n  ")));
+            }
+
+            File.WriteAllText(csprojPath, doc.ToString());
+        }
+
+        return true;
+    }
+
+    /// <summary>
     /// Creates a backup of a file before modification.
     /// Returns the backup path.
     /// </summary>

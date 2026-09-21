@@ -12,32 +12,40 @@ Modulus provides real-time communication via SignalR.
 services.AddModulusSignalR(config);
 ```
 
+(`EnableDetailedErrors` is Development-only — never shipped to clients in
+production.)
+
 ## Hub
 
+Hubs derive from the generic `ModulusHub<TClient>` (namespace
+`Modulus.SignalR`), which requires the ambient user + tenant:
+
 ```csharp
-public sealed class NotificationHub : ModulusHub
+public sealed class NotificationHub(ICurrentUser user, ICurrentTenant tenant)
+    : ModulusHub<INotificationClient>
 {
     public async Task SendNotification(string message)
     {
-        await Clients.All.SendAsync("notification", message);
+        await Clients.All.ReceiveNotification(message);
     }
 }
 ```
 
+Module hubs are discovered via `IModuleHub` registrars
+(`AddModuleHubs(assemblies)` / `MapModuleHubs(app)`).
+
 ## Usage
 
-### Server-Side
+Publish integration events; registered `IRealtimeEventMapping<TEvent>`
+mappings fan them out to clients:
 
 ```csharp
 public sealed class OrderPlacedHandler(IRealtimeBus realtime)
-    : IIntegrationEventHandler<OrderPlacedEvent>
+    : IIntegrationEventHandler<OrderPlacedIntegrationEvent>
 {
-    public async Task HandleAsync(OrderPlacedEvent @event)
+    public async Task HandleAsync(OrderPlacedIntegrationEvent @event, CancellationToken ct)
     {
-        await realtime.SendToGroupAsync(
-            $"tenant:{@event.TenantId}",
-            "orderPlaced",
-            new { OrderId = @event.OrderId });
+        await realtime.PublishAsync(@event, ct);
     }
 }
 ```
@@ -58,6 +66,8 @@ await connection.start();
 
 ## Groups
 
+Tenant-scoped groups are supported:
+
 ```csharp
 // Join a group
 await Groups.AddToGroupAsync(Context.ConnectionId, "admin");
@@ -68,19 +78,17 @@ await Clients.Group("admin").SendAsync("update", data);
 
 ## Backplane
 
-For multi-instance deployments:
+For multi-instance deployments (kept in the opt-in
+`Modulus.SignalR.Backplane` package so the Redis/Azure SDKs stay out of
+`Modulus.Platform`):
 
 ```bash
-modulus app MyApp --signalr-backplane redis
+modulus app MyApp --signalr redis
 ```
 
-```json
-{
-  "SignalR": {
-    "Backplane": "redis",
-    "RedisConnectionString": "localhost:6379"
-  }
-}
+```csharp
+services.AddModulusSignalR(config).AddRedisBackplane(config);
+// or .AddAzureBackplane(config);
 ```
 
 ## See Also

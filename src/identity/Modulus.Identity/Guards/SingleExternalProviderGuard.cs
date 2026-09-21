@@ -1,5 +1,6 @@
 namespace Modulus.Identity.Guards;
 
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Modulus.Identity.Abstractions;
@@ -19,7 +20,7 @@ using Modulus.Identity.Abstractions;
 /// The guard is auto-registered by <c>AddModulusOpenIddict</c>.
 /// </remarks>
 internal sealed class SingleExternalProviderGuard(
-    IEnumerable<IExternalIdentityProvider> providers,
+    IServiceProvider serviceProvider,
     IOptions<ModulusIdentityOptions> options) : IHostedService
 {
     public Task StartAsync(CancellationToken cancellationToken)
@@ -27,8 +28,14 @@ internal sealed class SingleExternalProviderGuard(
         if (options.Value.AllowMultipleExternalProviders)
             return Task.CompletedTask;
 
-        // Force enumeration once; the underlying service collection may be lazy.
-        var registered = providers.ToList();
+        // Resolved inside a scope at startup: the providers are registered
+        // scoped, so constructor-injecting them into this singleton hosted
+        // service would throw under scope validation (Development default)
+        // or capture a root-scope instance in Production.
+        using var scope = serviceProvider.CreateScope();
+        var registered = scope.ServiceProvider
+            .GetServices<IExternalIdentityProvider>()
+            .ToList();
         if (registered.Count <= 1)
             return Task.CompletedTask;
 

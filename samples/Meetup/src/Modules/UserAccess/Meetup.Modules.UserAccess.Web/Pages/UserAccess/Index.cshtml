@@ -1,0 +1,12 @@
+@page
+@model Meetup.Modules.UserAccess.Web.Pages.UserAccess.IndexModel
+@{
+    ViewData["Title"] = "Users";
+    // HTMX fragment callers swap the inner content; full navigations
+    // get the Tabler shell.
+    Layout = Model.IsHtmxFragment ? null : "_UiLayout";
+}
+<m-page-header title="@ViewData["Title"]" subtitle="User access" />
+<div id="user-table">
+    @await Html.PartialAsync("_Table", Model.Items)
+</div>

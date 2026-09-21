@@ -1,0 +1,24 @@
+@model {{ api_namespace }}.Pages.{{ module_name }}.{{ entity_plural }}.IndexModel
+<div class="card mb-3">
+    <div class="card-header">
+        <h3 class="card-title">New {{ entity_name_lower }}</h3>
+    </div>
+    <div class="card-body">
+        <form method="post" asp-page-handler="Create"
+              hx-post="@Url.Page("./Index", "Create")"
+              hx-target="#{{ entity_name_lower }}-table" hx-swap="innerHTML"
+              x-data="mResetOnSuccess" x-on:htmx:after-request="reset">
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+            <div class="mb-3">
+                <label class="form-label" asp-for="Input.Name">Name</label>
+                <input class="form-control" asp-for="Input.Name" placeholder="{{ entity_name }} name" />
+                <span class="invalid-feedback d-block" asp-validation-for="Input.Name"></span>
+            </div>
+            {{- if has_extra_fields }}
+            @* Fields other modules contribute to this entity (ConfigureEntityUi); nothing renders when there are none. *@
+            <m-fields entity="@Model.EntityKey" for="Input.Extra" />
+            {{- end }}
+            <button class="btn btn-primary" type="submit">Create {{ entity_name_lower }}</button>
+        </form>
+    </div>
+</div>

@@ -50,6 +50,20 @@
   <Folder Name="/src/observability/">
     <Project Path="src/observability/Modulus.Observability/Modulus.Observability.csproj" />
   </Folder>
+  <!-- ── UI ──────────────────────────────────────────────────────── -->
+  <Folder Name="/src/ui/">
+    <Project Path="src/ui/Modulus.UI.Theme.Abstractions/Modulus.UI.Theme.Abstractions.csproj" />
+    <Project Path="src/ui/Modulus.UI.Core/Modulus.UI.Core.csproj" />
+    <Project Path="src/ui/Modulus.UI.Theme.Tabler/Modulus.UI.Theme.Tabler.csproj" />
+    <Project Path="src/ui/Modulus.UI.Identity/Modulus.UI.Identity.csproj" />
+    <Project Path="src/ui/Modulus.UI.Tenancy/Modulus.UI.Tenancy.csproj" />
+    <Project Path="src/ui/Modulus.UI.Permissions/Modulus.UI.Permissions.csproj" />
+    <Project Path="src/ui/Modulus.UI.Settings/Modulus.UI.Settings.csproj" />
+    <Project Path="src/ui/Modulus.UI.AuditLogging/Modulus.UI.AuditLogging.csproj" />
+    <Project Path="src/ui/Modulus.UI.Notifications/Modulus.UI.Notifications.csproj" />
+    <Project Path="src/ui/Modulus.UI.Files/Modulus.UI.Files.csproj" />
+    <Project Path="src/ui/Modulus.UI.Users/Modulus.UI.Users.csproj" />
+  </Folder>
   <!-- ── Testing ─────────────────────────────────────────────────── -->
   <Folder Name="/src/testing/">
     <Project Path="src/testing/Modulus.Testing.Architecture/Modulus.Testing.Architecture.csproj" />
@@ -83,6 +97,18 @@
     <Project Path="tests/unit/Modulus.Testing.Tests/Modulus.Testing.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Caching.Redis.Tests/Modulus.Caching.Redis.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Cli.Tests/Modulus.Cli.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.Observability.Tests/Modulus.Observability.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.UI.Core.Tests/Modulus.UI.Core.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.UI.Theme.Tabler.Tests/Modulus.UI.Theme.Tabler.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.UI.Ejection.Tests/Modulus.UI.Ejection.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.UI.Identity.Tests/Modulus.UI.Identity.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.UI.Tenancy.Tests/Modulus.UI.Tenancy.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.UI.Permissions.Tests/Modulus.UI.Permissions.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.UI.Settings.Tests/Modulus.UI.Settings.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.UI.AuditLogging.Tests/Modulus.UI.AuditLogging.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.UI.Notifications.Tests/Modulus.UI.Notifications.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.UI.Files.Tests/Modulus.UI.Files.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.UI.Users.Tests/Modulus.UI.Users.Tests.csproj" />
   </Folder>
   <Folder Name="/tests/" />
   <!-- ── Tests · Integration ─────────────────────────────────────── -->

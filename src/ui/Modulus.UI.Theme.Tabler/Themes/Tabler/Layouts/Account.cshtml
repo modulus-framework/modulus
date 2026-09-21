@@ -1,0 +1,43 @@
+@* Centered-card shell for login / MFA / password reset: no sidebar or topbar,
+   brand above the card, footer text below. *@
+@inject IOptions<UiOptions> Ui
+@inject IOptions<ThemeOptions> ThemeCfg
+@{
+    var branding = Ui.Value.Branding;
+    var colorMode = TablerShell.ResolveColorMode(Context.Request, ThemeCfg.Value);
+    var followSystem = TablerShell.FollowsSystem(Context.Request, ThemeCfg.Value);
+}
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="@colorMode" data-m-color-mode="@(followSystem ? "system" : colorMode)">
+<head>
+    <partial name="/Themes/Tabler/Shell/_Head.cshtml" />
+</head>
+<body class="m-layout m-layout-account d-flex flex-column" hx-boost="@(Ui.Value.Features.Boost ? "true" : "false")" hx-ext="@(Ui.Value.Features.Morph ? "morph" : null)">
+    <div class="page page-center">
+        <div class="container container-tight py-4">
+            <div class="text-center mb-4">
+                <a href="@Url.Content(branding.BrandHref)" class="navbar-brand navbar-brand-autodark m-brand">
+                    @if (!string.IsNullOrWhiteSpace(branding.LogoUrl))
+                    {
+                        <img src="@Url.Content(branding.LogoUrl)" alt="@branding.AppName" class="m-brand-logo" />
+                    }
+                    else
+                    {
+                        <span>@branding.AppName</span>
+                    }
+                </a>
+            </div>
+            <main id="m-main">
+                @RenderBody()
+            </main>
+            @if (!string.IsNullOrWhiteSpace(branding.FooterText))
+            {
+                <div class="text-center text-secondary mt-3">@branding.FooterText</div>
+            }
+        </div>
+    </div>
+    <partial name="/Themes/Tabler/Shell/_PageEnd.cshtml" />
+    @await RenderSectionAsync("Scripts", required: false)
+    <partial name="/Themes/Tabler/Shell/_PageScripts.cshtml" />
+</body>
+</html>

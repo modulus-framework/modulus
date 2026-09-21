@@ -152,12 +152,11 @@ public sealed class TransactionBehaviorTests
     // ── Scoping policy (the P0-4 fix) ───────────────────────────────
 
     [Fact]
-    public async Task MultipleContexts_NoAttribute_Default_DoesNotWrap()
+    public async Task MultipleContexts_NoAttribute_Default_Throws()
     {
         // Two registered contexts + no [Transactional] + TouchedOrSingle:
-        // the behavior must NOT begin a transaction (it can't know which to use),
-        // so a handler that does no DB work just runs. The old behavior opened a
-        // transaction on every context — the cost this fix removes.
+        // fail fast so the missing intent is fixed instead of silently
+        // running without a transaction.
         using var fixture = new SqliteFixture();
         var sp = fixture.BuildScope();
         // Register a second DbContext type so GetServices<DbContext>() yields >1.
@@ -169,13 +168,12 @@ public sealed class TransactionBehaviorTests
         var multi = services.BuildServiceProvider().CreateScope().ServiceProvider;
 
         var behavior = new TransactionBehavior<PlainCommand, int>(multi, TxOptions);
-        var ran = false;
 
-        var result = await behavior.HandleAsync(
-            new PlainCommand(), () => { ran = true; return Task.FromResult(7); }, default);
+        var act = async () => await behavior.HandleAsync(
+            new PlainCommand(), () => Task.FromResult(7), default);
 
-        ran.Should().BeTrue();
-        result.Should().Be(7);
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("*ambiguous transaction scope*");
     }
 
     [Fact]

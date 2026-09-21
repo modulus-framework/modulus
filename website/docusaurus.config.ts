@@ -10,7 +10,7 @@ const config: Config = {
   url: 'https://modulus.dev',
   baseUrl: '/',
 
-  organizationName: 'cobytelabs',
+  organizationName: 'modulus-framework',
   projectName: 'modulus',
 
   onBrokenLinks: 'throw',
@@ -26,7 +26,7 @@ const config: Config = {
       {
         docs: {
           sidebarPath: './sidebars.ts',
-          editUrl: 'https://github.com/cobytelabs/modulus/tree/main/website/',
+          editUrl: 'https://github.com/modulus-framework/modulus/tree/main/website/',
         },
         blog: false,
         theme: {
@@ -78,7 +78,7 @@ const config: Config = {
           label: 'API',
         },
         {
-          href: 'https://github.com/cobytelabs/modulus',
+          href: 'https://github.com/modulus-framework/modulus',
           label: 'GitHub',
           position: 'right',
         },
@@ -98,15 +98,15 @@ const config: Config = {
         {
           title: 'Community',
           items: [
-            { label: 'GitHub', href: 'https://github.com/cobytelabs/modulus' },
-            { label: 'Issues', href: 'https://github.com/cobytelabs/modulus/issues' },
+            { label: 'GitHub', href: 'https://github.com/modulus-framework/modulus' },
+            { label: 'Issues', href: 'https://github.com/modulus-framework/modulus/issues' },
           ],
         },
         {
           title: 'More',
           items: [
             { label: 'NuGet', href: 'https://www.nuget.org/profiles/Cobytelabs' },
-            { label: 'Samples', href: 'https://github.com/cobytelabs/modulus/tree/main/samples' },
+            { label: 'Samples', href: 'https://github.com/modulus-framework/modulus/tree/main/samples' },
           ],
         },
       ],

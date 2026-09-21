@@ -1,6 +1,7 @@
 namespace Modulus.Inbox;
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Modulus.Inbox.Abstractions;
 
 /// <summary>
@@ -9,7 +10,7 @@ using Modulus.Inbox.Abstractions;
 /// claim semantics: concurrent inserts race on a single INSERT, the loser gets
 /// a <see cref="DbUpdateException"/> and defers.
 /// </summary>
-internal sealed class EfInboxStore(DbContext db) : IInboxStore
+internal sealed class EfInboxStore(DbContext db, ILogger<EfInboxStore>? logger = null) : IInboxStore
 {
     public async Task<InboxMessage?> TryClaimAsync(
         Guid eventId,
@@ -220,24 +221,112 @@ internal sealed class EfInboxStore(DbContext db) : IInboxStore
 
     public async Task MarkProcessedAsync(Guid eventId, string handlerName, CancellationToken ct)
     {
+        // Atomic: only the Processing owner wins; concurrent reclaim loses (0 rows).
+        var now = DateTime.UtcNow;
+        try
+        {
+            var rows = await db.Set<InboxMessage>()
+                .Where(m => m.Id == eventId && m.HandlerName == handlerName
+                         && m.Status == InboxStatus.Processing)
+                .ExecuteUpdateAsync(
+                    s => s.SetProperty(m => m.Status, InboxStatus.Processed)
+                          .SetProperty(m => m.ProcessedAt, now)
+                          .SetProperty(m => m.ClaimedAt, (DateTime?)null),
+                    ct);
+            SyncTracked(eventId, handlerName, rows > 0 ? InboxStatus.Processed : null, now, null, 0);
+            if (rows == 0)
+                logger?.LogDebug(
+                    "Inbox {Id}/{Handler} MarkProcessed lost race (already completed/reclaimed).",
+                    eventId, handlerName);
+            return;
+        }
+        catch (InvalidOperationException)
+        {
+            // Providers without ExecuteUpdate support (e.g. EF InMemory in tests).
+        }
+
         var msg = await db.Set<InboxMessage>()
             .FirstOrDefaultAsync(m => m.Id == eventId && m.HandlerName == handlerName, ct);
-        if (msg is null) return;
+        if (msg is null)
+            return;
+        if (msg.Status != InboxStatus.Processing)
+        {
+            logger?.LogDebug(
+                "Inbox {Id}/{Handler} MarkProcessed lost race (already completed/reclaimed).",
+                eventId, handlerName);
+            return;
+        }
         msg.Status = InboxStatus.Processed;
-        msg.ProcessedAt = DateTime.UtcNow;
+        msg.ProcessedAt = now;
         msg.ClaimedAt = null;
         await db.SaveChangesAsync(ct);
     }
 
     public async Task MarkFailedAsync(Guid eventId, string handlerName, string error, CancellationToken ct)
     {
+        // Atomic server-side RetryCount increment; only the Processing owner wins.
+        try
+        {
+            var rows = await db.Set<InboxMessage>()
+                .Where(m => m.Id == eventId && m.HandlerName == handlerName
+                         && m.Status == InboxStatus.Processing)
+                .ExecuteUpdateAsync(
+                    s => s.SetProperty(m => m.Status, InboxStatus.Failed)
+                          .SetProperty(m => m.Error, error)
+                          .SetProperty(m => m.RetryCount, m => m.RetryCount + 1)
+                          .SetProperty(m => m.ClaimedAt, (DateTime?)null),
+                    ct);
+            SyncTracked(eventId, handlerName, rows > 0 ? InboxStatus.Failed : null, null, error, 1);
+            if (rows == 0)
+                logger?.LogDebug(
+                    "Inbox {Id}/{Handler} MarkFailed lost race (already completed/reclaimed).",
+                    eventId, handlerName);
+            return;
+        }
+        catch (InvalidOperationException)
+        {
+            // Providers without ExecuteUpdate support (e.g. EF InMemory in tests).
+        }
+
         var msg = await db.Set<InboxMessage>()
             .FirstOrDefaultAsync(m => m.Id == eventId && m.HandlerName == handlerName, ct);
-        if (msg is null) return;
+        if (msg is null)
+            return;
+        if (msg.Status != InboxStatus.Processing)
+        {
+            logger?.LogDebug(
+                "Inbox {Id}/{Handler} MarkFailed lost race (already completed/reclaimed).",
+                eventId, handlerName);
+            return;
+        }
         msg.Status = InboxStatus.Failed;
         msg.Error = error;
         msg.RetryCount += 1;
         msg.ClaimedAt = null;
         await db.SaveChangesAsync(ct);
+    }
+
+    /// <summary>
+    /// ExecuteUpdate bypasses the change tracker, so a same-context tracked
+    /// instance (unit tests, same-scope assertions) would stay stale. Mirror the
+    /// final state onto it when present.
+    /// </summary>
+    private void SyncTracked(Guid eventId, string handlerName, InboxStatus? status, DateTime? processedAt, string? error, int retryIncrement)
+    {
+        if (status is null)
+            return;
+        var tracked = db.ChangeTracker.Entries<InboxMessage>()
+            .FirstOrDefault(e => e.Entity.Id == eventId && e.Entity.HandlerName == handlerName);
+        if (tracked is null)
+            return;
+        tracked.Entity.Status = status.Value;
+        if (processedAt.HasValue)
+            tracked.Entity.ProcessedAt = processedAt;
+        if (error is not null)
+        {
+            tracked.Entity.Error = error;
+            tracked.Entity.RetryCount += retryIncrement;
+        }
+        tracked.Entity.ClaimedAt = null;
     }
 }

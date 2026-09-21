@@ -1,0 +1,35 @@
+using Modulus.UI;
+
+namespace {{ api_namespace }}.Ui;
+
+/// <summary>
+/// App-owned UI sidecar for the {{ module_name }} module: contributes the
+/// {{ entity_plural }} admin page (<c>/{{ module_name_lower }}/{{ route_name }}</c>)
+/// to the sidebar. The framework ships prebuilt UI modules only for its own
+/// areas — app-specific modules own theirs via <c>CustomUiModule</c>.
+/// Registered from <c>Program.cs</c> via
+/// <c>builder.Services.AddUiModule&lt;{{ module_name }}UiModule&gt;()</c>.
+/// </summary>
+public sealed class {{ module_name }}UiModule : CustomUiModule
+{
+    public {{ module_name }}UiModule()
+        : base(
+            new ModuleManifest(
+                "{{ root_namespace }}.{{ module_name }}",
+                "{{ module_name }}",
+                "1.0.0",
+                [],
+                ["{{ entity_plural }}"]),
+            nav => nav
+                .AddGroup("{{ module_name_lower }}", "{{ module_name }}", icon: "box", order: 30)
+                .AddItem(
+                    "{{ module_name }}.{{ entity_plural }}",
+                    "{{ entity_plural }}",
+                    "/{{ module_name_lower }}/{{ route_name }}",
+                    groupId: "{{ module_name_lower }}"
+{{- if required_permission }},
+                    requiredPermission: "{{ required_permission }}"
+{{- end }}))
+    {
+    }
+}

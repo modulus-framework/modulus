@@ -1,0 +1,20 @@
+@page
+@{
+    Layout = "/Themes/Tabler/Layouts/Empty.cshtml";
+    if (Request.Query.ContainsKey("invalid"))
+    {
+        ViewData.ModelState.AddModelError(string.Empty, "Something failed");
+    }
+}
+<div id="handler-form">
+    <m-form handler="Save" target="#form-region" route-id="7"><input name="x" value="1" /></m-form>
+</div>
+<div id="modal-form">
+    <m-form handler="Save" modal="true" swap="outerHTML" class="p-2"><input name="y" /></m-form>
+</div>
+<div id="plain-form">
+    <m-form handler="Save"><input name="z" /></m-form>
+</div>
+<div id="custom-form">
+    <m-form action="/custom/post" summary="false" target="#t"><input name="w" /></m-form>
+</div>

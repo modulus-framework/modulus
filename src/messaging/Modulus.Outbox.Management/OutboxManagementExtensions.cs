@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Modulus.Authorization.Extensions;
 using Modulus.Core.Abstractions;
@@ -86,16 +87,31 @@ public static class OutboxManagementExtensions
             if (ps < 1 || ps > 1000) ps = 20;
 
             var maxRetries = options.Value.MaxRetries;
-            var allMessages = new List<OutboxMessage>();
+            // Bounded per-context fetch: filters pushed to the DB, each context
+            // contributes at most p*ps rows so memory stays bounded even under a
+            // failure storm (instead of loading every DLQ row into memory).
+            var candidates = new List<OutboxMessage>();
+            var total = 0;
             foreach (var db in contexts)
             {
                 try
                 {
-                    var contextMessages = await db.Set<OutboxMessage>()
-                        .Where(m => m.ProcessedAt == null && m.RetryCount >= maxRetries)
+                    if (db.Model.FindEntityType(typeof(OutboxMessage)) is null)
+                        continue;
+                    var q = db.Set<OutboxMessage>()
+                        .Where(m => m.ProcessedAt == null && m.RetryCount >= maxRetries);
+                    if (!string.IsNullOrWhiteSpace(moduleFilter))
+                        q = q.Where(m => m.ModuleName.Contains(moduleFilter));
+                    if (Guid.TryParse(tenantFilter, out var tenantId) && tenantId != Guid.Empty)
+                        q = q.Where(m => m.TenantId == tenantId);
+
+                    total += await q.CountAsync(ct);
+                    var rows = await q
+                        .OrderByDescending(m => m.CreatedAt)
+                        .Take(p * ps)
                         .AsNoTracking()
                         .ToListAsync(ct);
-                    allMessages.AddRange(contextMessages);
+                    candidates.AddRange(rows);
                 }
                 catch (InvalidOperationException) when (
                     db.Model.FindEntityType(typeof(OutboxMessage)) == null)
@@ -104,18 +120,11 @@ public static class OutboxManagementExtensions
                 }
             }
 
-            // Apply filters
-            var query = allMessages.AsEnumerable();
-            if (!string.IsNullOrWhiteSpace(moduleFilter))
-                query = query.Where(m => m.ModuleName.Contains(moduleFilter, StringComparison.OrdinalIgnoreCase));
-            if (Guid.TryParse(tenantFilter, out var tenantId) && tenantId != Guid.Empty)
-                query = query.Where(m => m.TenantId == tenantId);
-
-            var sorted = query
+            var sorted = candidates
                 .OrderByDescending(m => m.CreatedAt)
                 .ToList();
 
-            var total = sorted.Count;
+            var totalCapped = total;
             var items = sorted
                 .Skip((p - 1) * ps)
                 .Take(ps)
@@ -124,7 +133,7 @@ public static class OutboxManagementExtensions
                     m.CreatedAt, m.RetryCount, m.Error))
                 .ToList();
 
-            return Results.Ok(new PaginatedResponse<OutboxDeadLetterListItem>(items, total, p, ps));
+            return Results.Ok(new PaginatedResponse<OutboxDeadLetterListItem>(items, totalCapped, p, ps));
         })
         .WithSummary("List dead-lettered messages");
 
@@ -164,64 +173,77 @@ public static class OutboxManagementExtensions
 
     private static void MapReplay(RouteGroupBuilder group)
     {
-        // POST /outbox/replay
+        // POST /outbox/replay — only dead-lettered rows (Retry>=Max, unprocessed).
+        // History is preserved: Error is archived into the audit log with the
+        // acting user instead of being nulled. Batch ExecuteUpdate per context.
         group.MapPost("/replay", async (
             OutboxReplayRequest request,
             ICurrentUser currentUser,
+            ILoggerFactory loggerFactory,
+            IOptions<OutboxOptions> options,
             CancellationToken ct,
             params DbContext[] contexts) =>
         {
             if (request.MessageIds is not { Length: > 0 })
                 return Results.BadRequest("MessageIds must be non-empty");
 
-            int replayedCount = 0, notFoundCount = 0, failedCount = 0;
+            var logger = loggerFactory.CreateLogger("Modulus.Outbox.Management");
+            var maxRetries = options.Value.MaxRetries;
+            var ids = request.MessageIds.Distinct().ToArray();
+            var remaining = new HashSet<Guid>(ids);
+            int replayedCount = 0, failedCount = 0;
             var failures = new List<string>();
 
-            foreach (var messageId in request.MessageIds)
+            foreach (var db in contexts)
             {
-                bool found = false;
-                foreach (var db in contexts)
+                if (remaining.Count == 0)
+                    break;
+                try
                 {
-                    try
-                    {
-                        var message = await db.Set<OutboxMessage>()
-                            .FirstOrDefaultAsync(m => m.Id == messageId, ct);
+                    if (db.Model.FindEntityType(typeof(OutboxMessage)) is null)
+                        continue;
 
-                        if (message is not null && message.ProcessedAt == null)
-                        {
-                            found = true;
-                            try
-                            {
-                                // Reset the message for retry: clear retry count, clear error,
-                                // clear locks, set NextAttemptAt to now so it's picked up immediately.
-                                message.RetryCount = 0;
-                                message.Error = null;
-                                message.LockedBy = null;
-                                message.LockedUntil = null;
-                                message.NextAttemptAt = DateTime.UtcNow;
+                    // Audit history before reset (Error would otherwise be lost).
+                    var doomed = await db.Set<OutboxMessage>()
+                        .Where(m => remaining.Contains(m.Id)
+                                 && m.ProcessedAt == null
+                                 && m.RetryCount >= maxRetries)
+                        .Select(m => new { m.Id, m.MessageType, m.Error, m.RetryCount })
+                        .AsNoTracking()
+                        .ToListAsync(ct);
 
-                                await db.SaveChangesAsync(ct);
-                                replayedCount++;
-                            }
-                            catch (Exception ex)
-                            {
-                                failedCount++;
-                                failures.Add($"{messageId}: {ex.Message}");
-                            }
-                            break;
-                        }
-                    }
-                    catch (InvalidOperationException)
+                    var replayedIds = doomed.Select(d => d.Id).ToArray();
+                    if (replayedIds.Length == 0)
+                        continue;
+
+                    await db.Set<OutboxMessage>()
+                        .Where(m => replayedIds.Contains(m.Id))
+                        .ExecuteUpdateAsync(
+                            s => s.SetProperty(m => m.RetryCount, 0)
+                                  .SetProperty(m => m.Error, (string?)null)
+                                  .SetProperty(m => m.LockedBy, (string?)null)
+                                  .SetProperty(m => m.LockedUntil, (DateTime?)null)
+                                  .SetProperty(m => m.NextAttemptAt, DateTime.UtcNow),
+                            ct);
+
+                    foreach (var d in doomed)
                     {
-                        // DbContext doesn't have outbox table
+                        remaining.Remove(d.Id);
+                        replayedCount++;
+                        logger.LogInformation(
+                            "Outbox message {Id} ({Type}) replayed by {User}; archived error after {N} attempts: {Error}",
+                            d.Id, d.MessageType, currentUser.UserId?.ToString() ?? "unknown", d.RetryCount, d.Error);
                     }
                 }
-
-                if (!found)
-                    notFoundCount++;
+                catch (Exception ex)
+                {
+                    failedCount += remaining.Count;
+                    failures.Add($"context {db.GetType().Name}: {ex.Message}");
+                    break;
+                }
             }
 
-            return Results.Ok(new OutboxReplayResponse(replayedCount, notFoundCount, failedCount, failures));
+            return Results.Ok(new OutboxReplayResponse(replayedCount, remaining.Count, failedCount, failures));
         })
         .WithSummary("Replay dead-lettered messages");
     }

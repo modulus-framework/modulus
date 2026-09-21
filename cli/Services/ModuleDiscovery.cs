@@ -18,6 +18,10 @@ internal static partial class ModuleDiscovery
         public string RootNamespace { get; init; } = "";
         public string ApiProjectPath { get; init; } = "";
         public string ProgramCsPath { get; init; } = "";
+
+        /// <summary>The app kind recorded in the host project; null for a host generated before app kinds existed.</summary>
+        public AppKind? Kind { get; init; }
+
         public IReadOnlyList<ModuleSummary> Modules { get; init; } = [];
     }
 
@@ -46,9 +50,10 @@ internal static partial class ModuleDiscovery
         var solutionDir = Path.GetDirectoryName(slnx)!;
 
         var rootNs = DetectRootNamespace(solutionDir) ?? Path.GetFileNameWithoutExtension(slnx);
-        var apiCsproj = Directory
-            .EnumerateFiles(Path.Combine(solutionDir, "src", "API"), "*.Api.csproj", SearchOption.AllDirectories)
-            .FirstOrDefault();
+        var apiDir = Path.Combine(solutionDir, "src", "API");
+        var apiCsproj = Directory.Exists(apiDir)
+            ? Directory.EnumerateFiles(apiDir, "*.Api.csproj", SearchOption.AllDirectories).FirstOrDefault()
+            : null;
         var programCs = apiCsproj is not null
             ? Path.Combine(Path.GetDirectoryName(apiCsproj)!, "Program.cs")
             : "";
@@ -60,6 +65,7 @@ internal static partial class ModuleDiscovery
             RootNamespace = rootNs,
             ApiProjectPath = apiCsproj ?? "",
             ProgramCsPath = programCs,
+            Kind = AppKinds.Read(apiCsproj),
             Modules = FindModules(solutionDir, rootNs),
         };
     }

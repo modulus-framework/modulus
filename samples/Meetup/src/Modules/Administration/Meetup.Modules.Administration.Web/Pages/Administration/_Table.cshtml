@@ -1,0 +1,68 @@
+@using Meetup.Modules.Administration.Application.Dtos
+@model IReadOnlyList<MeetingGroupProposalDto>
+@if (Model.Count == 0)
+{
+    @await Html.PartialAsync("_Alert", UiAlert.Info("No proposals yet — propose the first group above."))
+}
+else
+{
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-vcenter card-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>City</th>
+                        <th>Proposer</th>
+                        <th>Status</th>
+                        <th>Proposed</th>
+                        <th class="w-1"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td>@item.Name</td>
+                            <td>@item.City (@item.CountryCode)</td>
+                            <td>@item.ProposerLogin</td>
+                            <td>
+                                @if (item.DecidedAt is null)
+                                {
+                                    <span class="badge bg-yellow-lt">Proposed</span>
+                                }
+                                else if (item.Status == "Accepted")
+                                {
+                                    <span class="badge bg-green-lt">Accepted</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-red-lt">@item.Status</span>
+                                }
+                            </td>
+                            <td>@item.ProposedAt.ToString("u")</td>
+                            <td>
+                                @if (item.DecidedAt is null)
+                                {
+                                    <div class="d-flex gap-1">
+                                        <form method="post" asp-page-handler="Accept" asp-route-id="@item.Id"
+                                              hx-post="@Url.Page("./Index", "Accept", new { id = item.Id })"
+                                              hx-target="#proposal-table" hx-swap="innerHTML">
+                                            <button class="btn btn-sm btn-outline-primary" type="submit">Accept</button>
+                                        </form>
+                                        <form method="post" asp-page-handler="Reject" asp-route-id="@item.Id"
+                                              hx-post="@Url.Page("./Index", "Reject", new { id = item.Id })"
+                                              hx-target="#proposal-table" hx-swap="innerHTML"
+                                              hx-confirm="Reject '@item.Name'?">
+                                            <button class="btn btn-sm btn-outline-danger" type="submit">Reject</button>
+                                        </form>
+                                    </div>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}

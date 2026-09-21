@@ -313,6 +313,15 @@ public static class EndpointDiscovery
                     ctx, StatusCodes.Status400BadRequest, "Malformed JSON body.");
                 return (null!, false);
             }
+            catch (NotSupportedException)
+            {
+                // Non-JSON Content-Type on a body method (e.g. text/plain):
+                // ReadFromJsonAsync refuses with NotSupportedException. A 400,
+                // not an unhandled 500.
+                await ProblemResponses.WriteAsync(
+                    ctx, StatusCodes.Status400BadRequest, "Expected a JSON request body.");
+                return (null!, false);
+            }
         }
 
         request ??= Activator.CreateInstance(requestType)!;

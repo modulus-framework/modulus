@@ -1,19 +1,19 @@
 {
   "id": "cli/templates",
   "title": "Templates",
-  "description": "The CLI uses Scriban templates embedded as resources.",
+  "description": "The CLI uses Scriban templates embedded as assembly resources",
   "source": "@site/docs/cli/templates.md",
   "sourceDirName": "cli",
   "slug": "/cli/templates",
   "permalink": "/docs/cli/templates",
   "draft": false,
   "unlisted": false,
-  "editUrl": "https://github.com/cobytelabs/modulus/tree/main/website/docs/cli/templates.md",
+  "editUrl": "https://github.com/modulus-framework/modulus/tree/main/website/docs/cli/templates.md",
   "tags": [],
   "version": "current",
-  "sidebarPosition": 13,
+  "sidebarPosition": 14,
   "frontMatter": {
-    "sidebar_position": 13
+    "sidebar_position": 14
   },
   "sidebar": "cliSidebar",
   "previous": {

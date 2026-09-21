@@ -12,6 +12,7 @@ namespace Modulus.Cli.Tests;
 /// register their DbContext as externally managed so startup skips it.
 /// </summary>
 [Trait("Category", "Unit")]
+[Collection(UxStateCollection.Name)]
 public class MigrationEngineTests
 {
     private readonly TemplateEngine _engine = new();

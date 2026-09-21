@@ -15,7 +15,7 @@ public sealed class Auth0IdentityProvider(
 {
     private readonly OidcDiscoveryValidator _tokenValidator =
         OidcDiscoveryValidatorCache.GetOrCreate(
-            $"{opts.Authority}.well-known/openid-configuration",
+            $"{opts.Authority.TrimEnd('/')}/.well-known/openid-configuration",
             opts.Audience is null ? null : [opts.Audience]);
 
     public string Name => "auth0";
@@ -27,7 +27,7 @@ public sealed class Auth0IdentityProvider(
         // Use a per-request HttpRequestMessage so the Authorization header is
         // never written to HttpClient.DefaultRequestHeaders, which is shared
         // across concurrent calls and would cause a race condition.
-        var url = $"{opts.Authority}api/v2/users/{Uri.EscapeDataString(subject)}";
+        var url = $"{opts.Authority.TrimEnd('/')}/api/v2/users/{Uri.EscapeDataString(subject)}";
         using var req = new HttpRequestMessage(HttpMethod.Get, url);
         req.Headers.Authorization =
             new AuthenticationHeaderValue("Bearer", opts.ManagementToken);
@@ -93,6 +93,11 @@ public static class Auth0Extensions
 
         builder.Services.Configure<Auth0Options>(
             configuration.GetSection("Identity:ExternalProviders:Auth0"));
+        // The provider takes the raw options in its constructor (snapshot
+        // semantics, matching the OIDC handler setup below), so the bound
+        // value must also be resolvable or scoped activation fails container
+        // validation in Development.
+        builder.Services.AddSingleton(opts);
         builder.Services.AddHttpClient<Auth0IdentityProvider>();
         builder.Services.AddScoped<IExternalIdentityProvider, Auth0IdentityProvider>();
 
@@ -102,7 +107,13 @@ public static class Auth0Extensions
             options.ClientId = opts.ClientId;
             options.ClientSecret = opts.ClientSecret;
             options.ResponseType = "code";
-            options.Scope.Add(opts.Scope);
+            // Split the configured scope string: adding it as a single entry
+            // only works by accident of OIDC re-splitting on whitespace.
+            foreach (var scope in opts.Scope.Split(
+                ' ', StringSplitOptions.RemoveEmptyEntries))
+            {
+                options.Scope.Add(scope);
+            }
             options.GetClaimsFromUserInfoEndpoint = true;
             options.SaveTokens = true;
             options.MapInboundClaims = false;

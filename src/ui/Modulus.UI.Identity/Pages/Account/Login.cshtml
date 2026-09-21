@@ -1,0 +1,37 @@
+@page
+@model Modulus.UI.Identity.Pages.Account.LoginModel
+@{
+    ViewData["Title"] = "Sign in";
+}
+<div class="container-tight px-0 my-4">
+    <div class="card">
+        <div class="card-body">
+            <h2 class="card-title text-center mb-4">Sign in</h2>
+            <form method="post" asp-route-returnUrl="@Model.ReturnUrl">
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+                <div class="mb-3">
+                    <label asp-for="Input.Email" class="form-label">Email</label>
+                    <input asp-for="Input.Email" class="form-control" autocomplete="username" />
+                    <span asp-validation-for="Input.Email" class="text-danger"></span>
+                </div>
+                <div class="mb-3" x-data="mPasswordToggle">
+                    <label asp-for="Input.Password" class="form-label">Password</label>
+                    <div class="input-group">
+                        <input asp-for="Input.Password" class="form-control" autocomplete="current-password" x-bind:type="inputType" />
+                        <button type="button" class="btn" x-on:click="toggle" x-text="label">Show</button>
+                    </div>
+                    <span asp-validation-for="Input.Password" class="text-danger"></span>
+                </div>
+                <div class="mb-3">
+                    <label class="form-check">
+                        <input asp-for="Input.RememberMe" class="form-check-input" />
+                        <span class="form-check-label">Remember me</span>
+                    </label>
+                </div>
+                <div class="form-footer">
+                    <button type="submit" class="btn btn-primary w-100">Sign in</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

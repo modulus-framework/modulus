@@ -18,7 +18,7 @@ Modulus provides built-in observability via OpenTelemetry.
 ## Setup
 
 ```csharp
-services.AddModulusObservability(config);
+services.AddModulusOpenTelemetry(builder.Configuration, builder.Environment);
 ```
 
 ## Endpoints
@@ -61,13 +61,13 @@ Performance counters for operational insights:
 
 | Metric | Description |
 |--------|-------------|
-| **mediator.handler.duration** | Command/query handler execution time (histogram) |
-| **outbox.dispatch.lag** | Time from outbox write to dispatch (histogram) |
-| **cache.hits** | Cache hit counter |
-| **cache.misses** | Cache miss counter |
-| **cache.lookup.duration** | Cache lookup time (histogram) |
-| **authorization.decision.duration** | Permission check duration (histogram) |
-| **module.init.duration** | Module initialization time (histogram) |
+| **modulus.mediator.handler.duration** | Command/query handler execution time (histogram) |
+| **modulus.outbox.dispatch_lag** | Time from outbox write to dispatch (histogram) |
+| **modulus.cache.hits** | Cache hit counter |
+| **modulus.cache.misses** | Cache miss counter |
+| **modulus.cache.lookup.duration** | Cache lookup time (histogram) |
+| **modulus.authorization.decision.duration** | Permission check duration (histogram) |
+| **modulus.module.init.duration** | Module initialization time (histogram) |
 
 Access via `MeterListener` in production telemetry:
 
@@ -85,11 +85,15 @@ listener.Start();
 
 ```json
 {
-  "Observability": {
+  "OpenTelemetry": {
+    "Enabled": true,
     "ServiceName": "MyApp",
-    "EnableTracing": true,
-    "EnableMetrics": true,
-    "Exporters": ["otlp"]
+    "EnableConsoleExporter": false,
+    "Otlp": {
+      "Endpoint": "http://localhost:4317",
+      "ExportTraces": true,
+      "ExportMetrics": true
+    }
   }
 }
 ```

@@ -8,8 +8,11 @@ Modulus provides CORS configuration with wildcard-subdomain awareness.
 
 ## Setup
 
+Both calls are required:
+
 ```csharp
-app.UseModulusCors();
+builder.Services.AddModulusCors(builder.Configuration);
+app.UseModulusCors();   // between routing and authentication
 ```
 
 ## Configuration
@@ -49,8 +52,8 @@ This matches:
 ## Security Notes
 
 - Never combine `*` origin with `AllowCredentials`
-- The wildcard policy is named `ModulusCorsPolicy`
-- CORS is applied after authentication in the pipeline
+- The single named policy is `ModulusCors`
+- Call `UseModulusCors()` before auth/authorization (between routing and authentication)
 
 ## See Also
 

@@ -1,0 +1,42 @@
+@* Default markup for <m-input>: label, control, validation errors and hint. Passwords are never
+   echoed back (the model carries an empty value). *@
+@model FieldModel
+@{
+    var invalid = Model.HasErrors ? " is-invalid" : string.Empty;
+}
+<div class="mb-3">
+    @if (Model.Type == "checkbox")
+    {
+        <label class="form-check">
+            <input type="checkbox" class="form-check-input@(invalid)" id="@Model.Id" name="@Model.Name" value="true"
+                   checked="@Model.Checked" disabled="@Model.Disabled" />
+            <span class="form-check-label">@Model.Label</span>
+        </label>
+        <input type="hidden" name="@Model.Name" value="false" />
+    }
+    else
+    {
+        <label class="form-label@(Model.Required ? " required" : string.Empty)" for="@Model.Id">@Model.Label</label>
+        @if (Model.Type == "textarea")
+        {
+            <textarea class="form-control@(invalid)" id="@Model.Id" name="@Model.Name" rows="@Model.Rows"
+                      placeholder="@Model.Placeholder" required="@Model.Required" disabled="@Model.Disabled"
+                      readonly="@Model.ReadOnly">@Model.Value</textarea>
+        }
+        else
+        {
+            <input type="@Model.Type" class="form-control@(invalid)" id="@Model.Id" name="@Model.Name" value="@Model.Value"
+                   placeholder="@Model.Placeholder" autocomplete="@Model.Autocomplete"
+                   step="@Model.Step" min="@Model.Min" max="@Model.Max"
+                   required="@Model.Required" disabled="@Model.Disabled" readonly="@Model.ReadOnly" />
+        }
+    }
+    @foreach (var error in Model.Errors)
+    {
+        <div class="invalid-feedback d-block">@error</div>
+    }
+    @if (!string.IsNullOrWhiteSpace(Model.Hint))
+    {
+        <div class="form-hint">@Model.Hint</div>
+    }
+</div>

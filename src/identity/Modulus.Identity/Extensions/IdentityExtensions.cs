@@ -1,10 +1,12 @@
 namespace Modulus.Identity.Extensions;
 
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Modulus.Core.Abstractions;
+using Modulus.Core.Null;
 using Modulus.Identity;
 using Modulus.Identity.Abstractions;
 using Modulus.Identity.Guards;
@@ -33,14 +35,27 @@ public static class IdentityExtensions
             .Get<ModulusIdentityOptions>() ?? new ModulusIdentityOptions();
 
         services.AddHttpContextAccessor();
-        services.TryAddScoped<ICurrentUser, ClaimsPrincipalCurrentUser>();
+        UseClaimsPrincipalCurrentUser(services);
 
-        // Store the concrete user type so the token controller can resolve
-        // UserManager<TConcreteUser> at runtime without knowing the generic
-        // parameter at compile time.  The controller currently resolves
-        // UserManager<ModulusUser>, which returns null for derived user types
-        // — this field bridges the gap.
-        ModulusUserType.Value = typeof(TUser);
+        // Token delivery for the account endpoints (password reset / email
+        // confirmation). No-op by default: without a real sender the emails
+        // are discarded, keeping the flows unusable (fail-closed) rather than
+        // returning tokens in API responses.
+        services.TryAddScoped<IIdentityEmailSender, NoopIdentityEmailSender>();
+
+        // Make the closed-generic AccountController<TUser> discoverable by
+        // MVC — the default controller feature provider rejects generic
+        // controller types, leaving every /account/* route unreachable.
+        services.AddControllers().ConfigureApplicationPartManager(manager =>
+            manager.FeatureProviders.Add(
+                new AccountControllerFeatureProvider(typeof(TUser))));
+
+        // Register the concrete user type in this host's container so the
+        // token controller can resolve UserManager<TConcreteUser> at runtime
+        // without knowing the generic parameter at compile time. A singleton
+        // descriptor (not a process-wide static) so parallel in-process hosts
+        // keep their own user type.
+        services.TryAddSingleton(new ModulusUserTypeDescriptor(typeof(TUser)));
 
         var builder = services.AddIdentity<TUser, TRole>(options =>
         {
@@ -69,6 +84,14 @@ public static class IdentityExtensions
             options.LogoutPath = "/account/logout";
             options.ExpireTimeSpan = TimeSpan.FromHours(1);
             options.SlidingExpiration = true;
+
+            // Never let the auth cookie cross the wire over plain HTTP —
+            // SameAsRequest (the ASP.NET default) silently does exactly that
+            // on a misconfigured HTTP deployment. Local dev should use the
+            // default https localhost bindings (or a scoped override).
+            options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+            options.Cookie.HttpOnly = true;
+            options.Cookie.SameSite = SameSiteMode.Lax;
         });
 
         return builder;
@@ -87,8 +110,11 @@ public static class IdentityExtensions
         Action<OpenIddictServerBuilder>? configure = null)
     {
         // Fail-closed: no password grant succeeds unless AddModulusIdentity
-        // (or a custom validator) overrides this default.
-        services.AddScoped<
+        // (or a custom validator) overrides this default. TryAdd, so the
+        // outcome does not depend on call order: AddModulusIdentity registered
+        // first (e.g. from a module's ConfigureServices, which runs inside
+        // AddModulus) is not clobbered by a later AddModulusOpenIddict.
+        services.TryAddScoped<
             IPasswordGrantCredentialValidator,
             NullPasswordGrantCredentialValidator>();
 
@@ -115,14 +141,23 @@ public static class IdentityExtensions
                        .SetUserInfoEndpointUris("/connect/userinfo")
                        .SetRevocationEndpointUris("/connect/revoke");
 
-                options.AllowRefreshTokenFlow();
+                // The refresh grant is gated on Identity:EnableRefreshToken
+                // (default true). Setting it to false makes the token endpoint
+                // reject grant_type=refresh_token requests.
+                if (identityOptions.EnableRefreshToken)
+                    options.AllowRefreshTokenFlow();
 
-                // Authorization code flow requires the app to implement its
-                // own connect/authorize endpoint — the framework only ships
-                // the token endpoint. Off by default; enable via
-                // Identity:AllowAuthorizationCodeFlow.
+                // Authorization code flow: ModulusAuthorizeController serves
+                // /connect/authorize and ModulusTokenController redeems the code.
+                // Off by default; enable via Identity:AllowAuthorizationCodeFlow.
+                // PKCE is mandatory (a public client such as a mobile or desktop
+                // app cannot keep a secret, so the code is bound to a verifier
+                // only the app that started the flow knows).
                 if (identityOptions.AllowAuthorizationCodeFlow)
-                    options.AllowAuthorizationCodeFlow();
+                {
+                    options.AllowAuthorizationCodeFlow()
+                           .RequireProofKeyForCodeExchange();
+                }
 
                 // ROPC is off by default (removed in OAuth 2.1). Opt in only for
                 // trusted first-party clients via Identity:AllowPasswordFlow.
@@ -172,6 +207,22 @@ public static class IdentityExtensions
             });
 
         return services;
+    }
+
+    /// <summary>
+    /// Makes <see cref="ClaimsPrincipalCurrentUser"/> the <see cref="ICurrentUser"/> unless the app registered its own. Several Modulus
+    /// packages <c>TryAdd</c> the fail-closed <see cref="NullCurrentUser"/> as a default (<c>AddModulus</c>, <c>AddMediator</c>,
+    /// <c>AddModulusUi</c>, ...), and one registered first made a plain <c>TryAdd</c> here a no-op, so a signed-in administrator was still
+    /// anonymous to every <c>ICurrentUser</c> consumer (menu permission filtering, entity-field permissions, audit). Only that default is
+    /// replaced; a custom implementation registered earlier is kept.
+    /// </summary>
+    private static void UseClaimsPrincipalCurrentUser(IServiceCollection services)
+    {
+        var registered = services.LastOrDefault(d => d.ServiceType == typeof(ICurrentUser));
+        if (registered is null || registered.ImplementationType == typeof(NullCurrentUser))
+        {
+            services.Replace(ServiceDescriptor.Scoped<ICurrentUser, ClaimsPrincipalCurrentUser>());
+        }
     }
 
     /// <summary>

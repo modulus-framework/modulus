@@ -51,7 +51,7 @@ This section documents the key interfaces and classes in the Modulus framework.
 | Type | Namespace | Description |
 |------|-----------|-------------|
 | `Endpoint<TReq,TResp>` | `Modulus.AspNetCore.Endpoints` | REPR endpoint |
-| `ModulusHub` | `Modulus.AspNetCore.SignalR` | SignalR hub base |
+| `ModulusHub<TClient>` | `Modulus.SignalR` | SignalR hub base |
 | `ModulusWebAppFactory<T>` | `Modulus.Testing` | Test harness |
 
 See individual sections for detailed API documentation.

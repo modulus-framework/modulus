@@ -71,7 +71,8 @@ public sealed class ApiIntegrationTests(ModulusWebAppFactory<Program> factory)
     [Fact]
     public async Task Create{{ example_entity }}_ThenList_RoundTripsThroughTheHost()
     {
-        var client = factory.CreateClient();
+        // The endpoints need a signed-in caller{{ if example_permission }} holding "{{ example_permission }}", which the {{ admin_role }} role is granted in Program.cs{{ end }}.
+        var client = factory.CreateAuthenticatedClient({{ if example_permission }}roles: ["{{ admin_role }}"]{{ end }});
 
         // POST creates a row in the (swapped) in-memory database…
         var created = await client.PostAsJsonAsync(
@@ -82,7 +83,18 @@ public sealed class ApiIntegrationTests(ModulusWebAppFactory<Program> factory)
         var list = await client.GetAsync("/api/{{ example_module_lower }}/{{ example_route }}");
         Assert.Equal(HttpStatusCode.OK, list.StatusCode);
     }
-{{ end }}
+{{ if example_permission }}
+    [Fact]
+    public async Task {{ example_entity }}Api_RequiresSignIn_AndThePermission()
+    {
+        var url = "/api/{{ example_module_lower }}/{{ example_route }}";
+
+        // Anonymous: challenged. Signed in without the permission: forbidden. The {{ admin_role }} role: allowed.
+        Assert.Equal(HttpStatusCode.Unauthorized, (await factory.CreateClient().GetAsync(url)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await factory.CreateAuthenticatedClient().GetAsync(url)).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await factory.CreateAuthenticatedClient(roles: ["{{ admin_role }}"]).GetAsync(url)).StatusCode);
+    }
+{{ end }}{{ end }}
 }
 
 /// <summary>
@@ -93,6 +105,14 @@ public sealed class ApiIntegrationTests(ModulusWebAppFactory<Program> factory)
 /// </summary>
 public sealed class ModuleBoundaryTests
 {
+    // The rules scan the assemblies loaded in the test process, and the runtime loads one only when something first
+    // uses it: load the app's own up front so the result does not depend on which test happened to run first.
+    static ModuleBoundaryTests()
+    {
+        foreach (var path in Directory.GetFiles(AppContext.BaseDirectory, "{{ root_namespace }}.*.dll"))
+            System.Reflection.Assembly.LoadFrom(path);
+    }
+
     [Fact]
     public void AllIntegrationEvents_HaveExplicitNames()
     {

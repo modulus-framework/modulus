@@ -1,0 +1,7 @@
+{
+  "id": "Modulus.Users",
+  "name": "Users",
+  "version": "1.4.0",
+  "dependencies": ["Modulus.Identity", "Modulus.UI.Core"],
+  "features": ["Users", "Roles"]
+}

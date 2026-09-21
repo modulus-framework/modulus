@@ -22,6 +22,23 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Templates\**\*.sbn" />
+    <!-- The framework's views, for `modulus ui eject` / `ui diff` (the UI packages ship them compiled, not as source). Component views: -->
+    <EmbeddedResource Include="..\src\ui\Modulus.UI.Core\Views\Shared\Modulus\_Default\**\*.cshtml"
+                      LogicalName="UiViews/%(RecursiveDir)%(Filename)%(Extension)" />
+    <!-- Feature UI pages and partials (`ui eject Users`, `ui eject Users/Details`): one logical folder per package, named as in UiModuleCatalog. -->
+    <EmbeddedResource Include="..\src\ui\Modulus.UI.Identity\Pages\**\*.cshtml" LogicalName="UiPages/Identity/%(RecursiveDir)%(Filename)%(Extension)" />
+    <EmbeddedResource Include="..\src\ui\Modulus.UI.Users\Pages\**\*.cshtml" LogicalName="UiPages/Users/%(RecursiveDir)%(Filename)%(Extension)" />
+    <EmbeddedResource Include="..\src\ui\Modulus.UI.Tenancy\Pages\**\*.cshtml" LogicalName="UiPages/Tenancy/%(RecursiveDir)%(Filename)%(Extension)" />
+    <EmbeddedResource Include="..\src\ui\Modulus.UI.Permissions\Pages\**\*.cshtml" LogicalName="UiPages/Permissions/%(RecursiveDir)%(Filename)%(Extension)" />
+    <EmbeddedResource Include="..\src\ui\Modulus.UI.Settings\Pages\**\*.cshtml" LogicalName="UiPages/Settings/%(RecursiveDir)%(Filename)%(Extension)" />
+    <EmbeddedResource Include="..\src\ui\Modulus.UI.AuditLogging\Pages\**\*.cshtml" LogicalName="UiPages/AuditLogging/%(RecursiveDir)%(Filename)%(Extension)" />
+    <EmbeddedResource Include="..\src\ui\Modulus.UI.Notifications\Pages\**\*.cshtml" LogicalName="UiPages/Notifications/%(RecursiveDir)%(Filename)%(Extension)" />
+    <EmbeddedResource Include="..\src\ui\Modulus.UI.Files\Pages\**\*.cshtml" LogicalName="UiPages/Files/%(RecursiveDir)%(Filename)%(Extension)" />
+    <!-- UI.Core's shared partials (the legacy _UiLayout is left out: it is what a host without a theme falls back to). -->
+    <EmbeddedResource Include="..\src\ui\Modulus.UI.Core\Pages\Shared\_Alert.cshtml;..\src\ui\Modulus.UI.Core\Pages\Shared\_UiIcon.cshtml;..\src\ui\Modulus.UI.Core\Pages\Shared\_ViewImports.cshtml"
+                      LogicalName="UiPages/Shared/Shared/%(Filename)%(Extension)" />
+    <!-- The Tabler theme's layouts, shell partials and error pages (`ui eject Tabler`). -->
+    <EmbeddedResource Include="..\src\ui\Modulus.UI.Theme.Tabler\Themes\Tabler\**\*.cshtml" LogicalName="UiThemes/Tabler/%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
 
   <ItemGroup>

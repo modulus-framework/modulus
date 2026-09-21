@@ -1,0 +1,13 @@
+@page
+@model Meetup.Modules.Registrations.Web.Pages.Registrations.IndexModel
+@{
+    ViewData["Title"] = "Registrations";
+    // HTMX fragment callers swap the inner content; full navigations
+    // get the Tabler shell.
+    Layout = Model.IsHtmxFragment ? null : "_UiLayout";
+}
+<m-page-header title="@ViewData["Title"]" subtitle="Registrations" />
+@await Html.PartialAsync("_CreateForm", Model)
+<div id="registration-table">
+    @await Html.PartialAsync("_Table", Model.Items)
+</div>

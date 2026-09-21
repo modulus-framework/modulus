@@ -1,0 +1,7 @@
+{
+  "id": "Modulus.Files",
+  "name": "Files",
+  "version": "1.4.0",
+  "dependencies": ["Modulus.UI.Core"],
+  "features": ["Files"]
+}

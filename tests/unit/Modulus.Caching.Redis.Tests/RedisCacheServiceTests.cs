@@ -5,7 +5,7 @@ using global::StackExchange.Redis;
 using Testcontainers.Redis;
 using Xunit;
 
-[Trait("Category", "Unit")]
+[Trait("Category", "Integration")]
 public sealed class RedisCacheServiceTests : IAsyncLifetime
 {
     private RedisContainer _container = null!;

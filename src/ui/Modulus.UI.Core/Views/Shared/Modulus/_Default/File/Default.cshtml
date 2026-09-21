@@ -1,0 +1,20 @@
+@* Default markup for <m-file>: label, file control, validation errors and hint. A file input
+   cannot be pre-filled, so the model carries no value. *@
+@model FieldModel
+@{
+    var invalid = Model.HasErrors ? " is-invalid" : string.Empty;
+}
+<div class="mb-3">
+    <label class="form-label@(Model.Required ? " required" : string.Empty)" for="@Model.Id">@Model.Label</label>
+    <input type="file" class="form-control@(invalid)" id="@Model.Id" name="@Model.Name"
+           accept="@Model.Accept" multiple="@Model.Multiple"
+           required="@Model.Required" disabled="@Model.Disabled" />
+    @foreach (var error in Model.Errors)
+    {
+        <div class="invalid-feedback d-block">@error</div>
+    }
+    @if (!string.IsNullOrWhiteSpace(Model.Hint))
+    {
+        <div class="form-hint">@Model.Hint</div>
+    }
+</div>

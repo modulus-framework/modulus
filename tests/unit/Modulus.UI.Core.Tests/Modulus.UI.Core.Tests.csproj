@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="../../../src/ui/Modulus.UI.Core/Modulus.UI.Core.csproj" />
+  </ItemGroup>
+
+</Project>

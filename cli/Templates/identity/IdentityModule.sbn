@@ -1,0 +1,39 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Modulus.Core.Abstractions;
+using Modulus.Identity;
+using Modulus.Identity.Abstractions;
+using Modulus.Identity.EntityFrameworkCore.Extensions;
+using Modulus.Identity.Extensions;
+
+namespace {{ identity_namespace }}.Infrastructure;
+
+/// <summary>
+/// Composition root for the identity backend: ASP.NET Core Identity on
+/// <see cref="AppIdentityDbContext"/>, the OpenIddict token store, and the framework's token
+/// endpoint (<c>/connect/token</c>) and account endpoints (<c>/account/*</c>). It gives the API
+/// a way to sign in, so external clients (mobile, desktop, other systems) can call it with a
+/// bearer token, and the web UI (when there is one) a user store.
+/// </summary>
+/// <remarks>
+/// The OpenIddict server itself is registered in Program.cs (<c>AddModulusOpenIddict</c>), where
+/// the issuer and the certificates belong. Sign-in with a password (<c>grant_type=password</c>)
+/// is enabled for first-party clients by <c>Identity:AllowPasswordFlow</c> in appsettings.
+/// </remarks>
+public sealed class IdentityModule : ModulusModule
+{
+    public override void ConfigureServices(IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddDbContext<AppIdentityDbContext>(options =>
+            options.{{ use_db_method }}(configuration.GetConnectionString("Identity")
+                ?? "{{ identity_connection_string }}"));
+
+        services.AddModulusIdentity<AppIdentityDbContext, ModulusUser, ModulusRole>(configuration);
+        services.AddModulusIdentityStore<AppIdentityDbContext>();
+
+        // The token controller lives in the Modulus.Identity package; MVC only finds it when its
+        // assembly is an application part.
+        services.AddControllers().AddApplicationPart(typeof(ModulusTokenController).Assembly);
+    }
+}

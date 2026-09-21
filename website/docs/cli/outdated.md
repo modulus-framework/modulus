@@ -1,5 +1,5 @@
 ---
-sidebar_position: 12
+sidebar_position: 15
 ---
 
 # modulus outdated
@@ -30,23 +30,17 @@ modulus outdated [options]
 | Category | Description |
 |----------|-------------|
 | **Framework** | `Cobytelabs.Modulus.*` packages |
-| **Third-party** | Microsoft, Serilog, MassTransit, etc. |
+| **Third-party** | Microsoft, Rebus, Serilog, etc. |
 
 ## Example Output
 
+A 5-column table (`Package` / `Current` / `Available` / `Type` / `Update`):
+
 ```
-───────────────────────── Modulus outdated ─────────────────────────
-
-> Scanning 27 packages for updates...
-
-Package                          Current    Latest     Type
-────────────────────────────────────────────────────────────────────
-Microsoft.EntityFrameworkCore     9.0.0      10.0.11    Major
-Microsoft.Extensions.Caching      9.0.0      10.0.10    Major
-Serilog                           3.1.1      4.0.0      Minor
-xunit                             2.8.1      2.9.0      Patch
-
-4 update(s) available.
+Package                          Current    Available  Type         Update
+────────────────────────────────────────────────────────────────────────
+Microsoft.EntityFrameworkCore     10.0.9     10.0.11    Third-party  Minor
+Cobytelabs.Modulus.Core           1.3.0      1.4.0      Framework    Minor
 ```
 
 ## Examples

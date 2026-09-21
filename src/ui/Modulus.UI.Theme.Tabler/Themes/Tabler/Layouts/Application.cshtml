@@ -1,0 +1,38 @@
+@* Authenticated app shell: vertical sidebar + topbar + content. Page content
+   sits in #m-main; the Page.BeforeContent / Page.AfterContent slots wrap it.
+   Pages render into the layout via Layout = ThemeAccessor.Current.GetLayout(...)
+   or the absolute path /Themes/Tabler/Layouts/Application.cshtml. *@
+@inject IOptions<UiOptions> Ui
+@inject IOptions<ThemeOptions> ThemeCfg
+@{
+    var colorMode = TablerShell.ResolveColorMode(Context.Request, ThemeCfg.Value);
+    var followSystem = TablerShell.FollowsSystem(Context.Request, ThemeCfg.Value);
+}
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="@colorMode" data-m-color-mode="@(followSystem ? "system" : colorMode)">
+<head>
+    <partial name="/Themes/Tabler/Shell/_Head.cshtml" />
+</head>
+<body class="m-layout m-layout-application" hx-boost="@(Ui.Value.Features.Boost ? "true" : "false")" hx-ext="@(Ui.Value.Features.Morph ? "morph" : null)">
+    <div class="page">
+        <partial name="/Themes/Tabler/Shell/_Sidebar.cshtml" />
+        <div class="page-wrapper">
+            <partial name="/Themes/Tabler/Shell/_Topbar.cshtml" />
+            @await Html.ModulusSlotAsync(UiSlots.PageBeforeContent)
+            <div class="page-body">
+                <div class="container-xl m-page-container" id="m-main">
+                    @* Renders only when the page declared a trail (SetBreadcrumbs / SetPageId +
+                       a contributor) and Features.Breadcrumbs is on. *@
+                    <m-breadcrumbs />
+                    @RenderBody()
+                </div>
+            </div>
+            @await Html.ModulusSlotAsync(UiSlots.PageAfterContent)
+            <partial name="/Themes/Tabler/Shell/_Footer.cshtml" />
+        </div>
+    </div>
+    <partial name="/Themes/Tabler/Shell/_PageEnd.cshtml" />
+    @await RenderSectionAsync("Scripts", required: false)
+    <partial name="/Themes/Tabler/Shell/_PageScripts.cshtml" />
+</body>
+</html>

@@ -1,0 +1,33 @@
+@page
+@model Modulus.UI.Identity.Pages.Account.RegisterModel
+@{
+    ViewData["Title"] = "Create account";
+}
+<div class="container-tight px-0 my-4">
+    <div class="card">
+        <div class="card-body">
+            <h2 class="card-title text-center mb-4">Create account</h2>
+            <form method="post" asp-route-returnUrl="@Model.ReturnUrl">
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+                <div class="mb-3">
+                    <label asp-for="Input.Email" class="form-label">Email</label>
+                    <input asp-for="Input.Email" class="form-control" autocomplete="email" />
+                    <span asp-validation-for="Input.Email" class="text-danger"></span>
+                </div>
+                <div class="mb-3">
+                    <label asp-for="Input.Password" class="form-label">Password</label>
+                    <input asp-for="Input.Password" class="form-control" autocomplete="new-password" />
+                    <span asp-validation-for="Input.Password" class="text-danger"></span>
+                </div>
+                <div class="mb-3">
+                    <label asp-for="Input.ConfirmPassword" class="form-label">Confirm password</label>
+                    <input asp-for="Input.ConfirmPassword" class="form-control" autocomplete="new-password" />
+                    <span asp-validation-for="Input.ConfirmPassword" class="text-danger"></span>
+                </div>
+                <div class="form-footer">
+                    <button type="submit" class="btn btn-primary w-100">Register</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

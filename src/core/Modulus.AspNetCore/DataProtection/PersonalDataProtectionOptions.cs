@@ -31,4 +31,19 @@ public sealed class PersonalDataProtectionOptions
     /// vault (never commit it). When unset, <c>Hash</c> throws.
     /// </summary>
     public string? SearchHashKey { get; set; }
+
+    /// <summary>
+    /// Directory where the Data Protection key ring is persisted. Required in
+    /// Production when <see cref="Enabled"/> — without persistence every restart
+    /// and every additional replica mints a fresh ring and previously encrypted
+    /// columns become undecryptable. Point at a shared volume (file share) or
+    /// switch to PersistKeysToDb/Redis/Azure in code.
+    /// </summary>
+    public string? KeyRingDirectory { get; set; }
+
+    /// <summary>
+    /// Stable application name isolating this app's key ring. Defaults to
+    /// <c>Modulus</c>; set per deployment when several apps share a ring folder.
+    /// </summary>
+    public string ApplicationName { get; set; } = "Modulus";
 }

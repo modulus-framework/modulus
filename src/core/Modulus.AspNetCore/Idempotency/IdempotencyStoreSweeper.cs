@@ -1,7 +1,30 @@
 namespace Modulus.AspNetCore.Idempotency;
 
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+
+/// <summary>
+/// Startup warning when idempotency is node-local in Production. Retries routed
+/// to another replica re-execute — register a shared IIdempotencyStore (Redis).
+/// </summary>
+internal sealed class NodeLocalIdempotencyWarning(
+    IServiceProvider sp,
+    IHostEnvironment env,
+    ILogger<NodeLocalIdempotencyWarning> logger) : IHostedService
+{
+    public Task StartAsync(CancellationToken ct)
+    {
+        if (env.IsProduction() && sp.GetService<IIdempotencyStore>() is InMemoryIdempotencyStore)
+            logger.LogWarning(
+                "Idempotency uses the node-local InMemoryIdempotencyStore in Production. " +
+                "Register a shared IIdempotencyStore (e.g. Redis) before AddModulusIdempotency for multi-replica safety.");
+        return Task.CompletedTask;
+    }
+
+    public Task StopAsync(CancellationToken ct) => Task.CompletedTask;
+}
 
 /// <summary>
 /// Background service that periodically evicts expired entries from the

@@ -40,21 +40,23 @@ public interface IMediator
 
 ```csharp
 // Command
-public sealed record CreateProduct(string Name, decimal Price) : ICommand<ProductDto>;
+public sealed record CreateProductCommand(string Name) : ICommand<Guid>;
 
 // Handler
-public sealed class CreateProductHandler(ICatalogUnitOfWork unitOfWork)
-    : ICommandHandler<CreateProduct, ProductDto>
+public sealed class CreateProductHandler(
+    IProductRepository repo,
+    IUnitOfWork unitOfWork)
+    : ICommandHandler<CreateProductCommand, Guid>
 {
-    public async Task<ProductDto> HandleAsync(CreateProduct command, CancellationToken ct)
+    public async Task<Guid> HandleAsync(CreateProductCommand command, CancellationToken ct)
     {
-        var product = new Product(command.Name, command.Price);
-        unitOfWork.Products.Add(product);
-        await unitOfWork.SaveChangesAsync(ct);
-        return new ProductDto(product.Id, product.Name, product.Price);
+        var product = new Product { Name = command.Name };
+        await repo.AddAsync(product, ct);
+        await unitOfWork.CommitAsync(ct);
+        return product.Id;
     }
 }
 
 // Usage
-var result = await mediator.SendAsync(new CreateProduct("Widget", 9.99m));
+var id = await mediator.SendAsync(new CreateProductCommand("Widget"));
 ```

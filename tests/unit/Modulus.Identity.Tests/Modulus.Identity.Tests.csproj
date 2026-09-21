@@ -5,6 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <ProjectReference Include="../../../src/identity/Modulus.Identity/Modulus.Identity.csproj" />
   </ItemGroup>
 

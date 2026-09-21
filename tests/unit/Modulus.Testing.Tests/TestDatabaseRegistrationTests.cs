@@ -233,4 +233,31 @@ public sealed class TestDatabaseRegistrationTests
         using var db = factory.CreateDbContext();
         db.Database.ProviderName.Should().Be(SqliteProvider);
     }
+
+    [Fact]
+    public async Task UsePerContextSqlite_WithARegistry_KeepsTheSchemaAliveBetweenContexts()
+    {
+        // Regression: a host that migrates and seeds in Program.cs runs before any hosted service starts, so a keep-alive opened
+        // by one found an empty database ("no such table: OpenIddictApplications"). The registry now holds the database open from
+        // the moment a context's options are first built, so the schema one context creates is there for the next.
+        using var registry = new TestDatabaseRegistry();
+        var services = ModuleRegisteredWithSqlServer();
+        services.UsePerContextSqlite($"swap-{Guid.NewGuid():N}", registry);
+
+        using var provider = services.BuildServiceProvider();
+        var id = Guid.NewGuid();
+        await using (var scope = provider.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<WidgetDbContext>();
+            await db.Database.EnsureCreatedAsync();
+            db.Widgets.Add(new Widget { Id = id, Name = "seeded" });
+            await db.SaveChangesAsync();
+        }
+
+        await using (var scope = provider.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<WidgetDbContext>();
+            (await db.Widgets.AnyAsync(w => w.Id == id)).Should().BeTrue("no connection was left open by the test itself");
+        }
+    }
 }

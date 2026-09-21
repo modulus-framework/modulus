@@ -13,12 +13,19 @@ Modulus uses the Repository pattern to abstract data access.
 ```csharp
 public interface IRepository<T> where T : class
 {
-    Task<T?> GetByIdAsync(Guid id, CancellationToken ct = default);
-    Task<IReadOnlyList<T>> ListAsync(CancellationToken ct = default);
-    Task<int> CountAsync(CancellationToken ct = default);
-    Task AddAsync(T entity, CancellationToken ct = default);
-    Task UpdateAsync(T entity, CancellationToken ct = default);
-    Task DeleteAsync(T entity, CancellationToken ct = default);
+    // object id: composite PKs supported; filter-honoring (no FindAsync)
+    Task<T?> GetByIdAsync(object id, CancellationToken ct);
+    Task<IReadOnlyList<T>> ListAsync(ISpecification<T> spec, CancellationToken ct);
+    Task<T?> FirstOrDefaultAsync(ISpecification<T> spec, CancellationToken ct);
+    Task<T> SingleAsync(ISpecification<T> spec, CancellationToken ct);
+    Task<T?> SingleOrDefaultAsync(ISpecification<T> spec, CancellationToken ct);
+    IAsyncEnumerable<T> AsAsyncEnumerable(ISpecification<T> spec);
+    Task<int> CountAsync(ISpecification<T> spec, CancellationToken ct);
+    Task AddAsync(T entity, CancellationToken ct);
+    Task AddRangeAsync(IEnumerable<T> entities, CancellationToken ct);
+    Task UpdateAsync(T entity, CancellationToken ct);
+    Task DeleteAsync(T entity, CancellationToken ct);
+    Task DeleteRangeAsync(ISpecification<T> spec, CancellationToken ct);
 }
 ```
 
@@ -27,11 +34,16 @@ public interface IRepository<T> where T : class
 ```csharp
 public interface IReadRepository<T> where T : class
 {
-    Task<T?> GetByIdAsync(Guid id, CancellationToken ct = default);
-    Task<IReadOnlyList<T>> ListAsync(CancellationToken ct = default);
-    Task<IReadOnlyList<T>> ListPagedAsync(int page, int pageSize, CancellationToken ct = default);
-    Task<int> CountAsync(CancellationToken ct = default);
-    Task<bool> AnyAsync(CancellationToken ct = default);
+    Task<T?> GetByIdAsync(object id, CancellationToken ct);
+    Task<IReadOnlyList<T>> ListAsync(ISpecification<T> spec, CancellationToken ct);
+    // Server-side projection: only projected columns are materialized
+    Task<PagedList<TResult>> ListPagedAsync<TResult>(
+        ISpecification<T> spec,
+        Expression<Func<T, TResult>> selector,
+        int page, int size,
+        CancellationToken ct);
+    Task<int> CountAsync(ISpecification<T> spec, CancellationToken ct);
+    Task<bool> AnyAsync(ISpecification<T> spec, CancellationToken ct);
 }
 ```
 
@@ -49,23 +61,17 @@ public interface IProductRepository : IRepository<Product>
 
 ### Implement with EF Core
 
+Generated modules ship a standalone spec-based repository (not an
+`EfRepository` subclass). The framework's generic `EfRepository<T>`
+resolves the owning module context at runtime via `IEntityContextMap`:
+
 ```csharp
-public sealed class ProductRepository : EfRepository<Product>, IProductRepository
+public sealed class ProductRepository(CatalogDbContext context) : IProductRepository
 {
-    public ProductRepository(CatalogDbContext context) : base(context) { }
+    private readonly DbSet<Product> _dbSet = context.Set<Product>();
 
     public async Task<Product?> GetByNameAsync(string name, CancellationToken ct)
-    {
-        return await Context.Products
-            .FirstOrDefaultAsync(p => p.Name == name, ct);
-    }
-
-    public async Task<IReadOnlyList<Product>> GetByCategoryAsync(string category, CancellationToken ct)
-    {
-        return await Context.Products
-            .Where(p => p.Category == category)
-            .ToListAsync(ct);
-    }
+        => await _dbSet.FirstOrDefaultAsync(p => p.Name == name, ct);
 }
 ```
 
@@ -74,7 +80,8 @@ public sealed class ProductRepository : EfRepository<Product>, IProductRepositor
 ```csharp
 public override void ConfigureServices(IServiceCollection services, IConfiguration config)
 {
-    services.AddModuleDatabase<CatalogDbContext>(config);
+    services.AddModuleDatabase<CatalogDbContext>(options =>
+        options.UseSqlite(config.GetConnectionString("Catalog")));
     services.AddScoped<IProductRepository, ProductRepository>();
 }
 ```
@@ -106,55 +113,43 @@ The framework provides a generic `EfRepository<T>` that:
 ```csharp
 // EfRepository is automatically registered for each entity
 // when you call AddModuleDatabase<TContext>()
-services.AddModuleDatabase<CatalogDbContext>(config);
+services.AddModuleDatabase<CatalogDbContext>(options =>
+    options.UseSqlite(config.GetConnectionString("Catalog")));
 // Registers IRepository<Product>, IRepository<Order>, etc.
 ```
 
 ## Specification Pattern
 
-Use specifications for complex queries with composable operators:
+Use specifications for complex queries with composable operators.
+Set `Filter` in the constructor; add ordering/includes with the protected
+helpers:
 
 ```csharp
 public sealed class ProductsByCategorySpec : Specification<Product>
 {
     public ProductsByCategorySpec(string category)
     {
-        AddCriteria(p => p.Category == category);
+        Filter = p => p.Category == category;
         AddOrderBy(p => p.CreatedAt);
         AddInclude(p => p.Category);
-        AddInclude(p => p.Tags);
-        AddAsSplitQuery(); // Prevent cartesian explosion
+        AsSplitQuery = true; // Prevent cartesian explosion
     }
 }
 
 // Usage
 var spec = new ProductsByCategorySpec("Electronics");
-var products = await repository.ListAsync(spec);
+var products = await repository.ListAsync(spec, ct);
 
-// Composable combinators
+// Composable combinators (mutate and return the same spec)
 var spec2 = baseSpec
     .And(p => p.Active)
     .Or(p => p.Featured)
-    .Not(p => p.Discontinued);
+    .Not();
 ```
 
-## Fluent Specification Builder
-
-Build specifications inline with chainable methods:
-
-```csharp
-var spec = new Specification<Product>()
-    .WithCriteria(p => p.Category == "Electronics")
-    .WithOrderBy(p => p.Price)
-    .WithThenBy(p => p.Name)
-    .WithInclude(p => p.Category)
-    .WithThenInclude((Product p) => p.Category.Parent)
-    .WithAsSplitQuery()
-    .WithSkip(10)
-    .WithTake(20);
-
-var products = await repository.ListAsync(spec);
-```
+Available surface: `Filter`, `IncludeChains` (with ThenInclude),
+`OrderByClauses` (multiple, ThenBy), `Skip`/`Take`, `AsSplitQuery`,
+`IgnoreQueryFilters`, `Tag`, `AsNoTracking`.
 
 ## Server-Side Projection
 
@@ -166,21 +161,29 @@ public sealed class ProductListDtoSpec : Specification<Product, ProductListDto>
 {
     public ProductListDtoSpec()
     {
-        WithOrderBy(p => p.CreatedAt);
-        WithInclude(p => p.Category);
+        ProjectionExpression = p => new ProductListDto
+        {
+            Id = p.Id,
+            Name = p.Name
+        };
+        AddOrderBy(p => p.Id);
     }
 }
+```
 
+Or project ad-hoc with `ListPagedAsync` (note argument order —
+spec first, then selector):
+
+```csharp
 // Returns DTOs, not full Product entities
 var dtos = await repository.ListPagedAsync(
+    spec,
     (Product p) => new ProductListDto
     {
         Id = p.Id,
-        Name = p.Name,
-        Category = p.Category.Name, // Joined in SQL
-        Price = p.Price
+        Name = p.Name
     },
-    spec, page: 1, pageSize: 10);
+    page: 1, size: 10, ct);
 ```
 
 ## New Repository Methods
@@ -205,27 +208,24 @@ await foreach (var product in repository.AsAsyncEnumerable(spec))
     // Process one at a time
 }
 
-// Bulk delete with filters respected
-await repository.DeleteRangeAsync(productsToDelete);
-
-// Bulk update with tenant/soft-delete filters
-var updated = await repository.ExecuteUpdateAsync(spec, 
-    p => p.Price, 100m);
+// Bulk delete matching a spec (tenant/soft-delete filters respected)
+await repository.DeleteRangeAsync(spec);
 ```
 
 ## Specification Validation
 
-Paging requires ordering to be deterministic:
+Paging requires ordering to be deterministic (`Skip`/`Take` without an
+`OrderBy` clause throws `InvalidOperationException`):
 
 ```csharp
-var spec = new Specification<Product>()
-    .WithOrderBy(p => p.Id)
-    .WithSkip(10)
-    .WithTake(20);
+public sealed class PagedSpec : Specification<Product>
+{
+    public PagedSpec()
+    {
+        AddOrderBy(p => p.Id);
+        Skip = 10;
+        Take = 20;
+    }
+}
 // ✓ Valid: OrderBy is set
-
-var badSpec = new Specification<Product>()
-    .WithSkip(10)
-    .WithTake(20);
-// ✗ Throws: Skip/Take require OrderBy
 ```

@@ -1,0 +1,23 @@
+@* Default markup for <m-timeline>: Tabler's .timeline (v1.5: timeline-event / timeline-event-card). *@
+@model TimelineModel
+<ul class="timeline">
+    @foreach (var item in Model.Items)
+    {
+        <li class="timeline-event">
+            <div class="timeline-event-icon bg-@item.Tone-lt text-@item.Tone"></div>
+            <div class="card timeline-event-card">
+                <div class="card-body">
+                    @if (!string.IsNullOrWhiteSpace(item.Time))
+                    {
+                        <div class="text-secondary float-end">@item.Time</div>
+                    }
+                    <h4>@item.Title</h4>
+                    @if (item.Body is not null)
+                    {
+                        <div class="text-secondary">@item.Body</div>
+                    }
+                </div>
+            </div>
+        </li>
+    }
+</ul>

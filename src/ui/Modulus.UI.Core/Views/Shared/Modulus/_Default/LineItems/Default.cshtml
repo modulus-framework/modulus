@@ -1,0 +1,32 @@
+@* Default markup for <m-line-items>: the existing rows, a blank-row <template>, the add button, and the
+   collection's own errors and hint. Each row is the caller's row partial plus a remove button. The
+   mLineItems Alpine component (alpine-components.js) clones the template for "add" and renumbers the rows
+   after a "remove"; both need only the data-* hooks below, so an overriding view must keep them. *@
+@model LineItemsModel
+<div class="mb-3" x-data="mLineItems" data-line-items data-name-prefix="@Model.NamePrefix" data-id-prefix="@Model.IdPrefix">
+    <label class="form-label">@Model.Label</label>
+    <div data-line-rows>
+        @foreach (var row in Model.Rows)
+        {
+            <div class="d-flex gap-2 align-items-start mb-2" data-line-row>
+                <div class="flex-fill">@row.Content</div>
+                <button type="button" class="btn btn-icon btn-outline-danger" x-on:click="remove" aria-label="@Model.RemoveLabel" title="@Model.RemoveLabel">&times;</button>
+            </div>
+        }
+    </div>
+    <template data-line-template>
+        <div class="d-flex gap-2 align-items-start mb-2" data-line-row>
+            <div class="flex-fill">@Model.Template</div>
+            <button type="button" class="btn btn-icon btn-outline-danger" x-on:click="remove" aria-label="@Model.RemoveLabel" title="@Model.RemoveLabel">&times;</button>
+        </div>
+    </template>
+    <button type="button" class="btn btn-outline-primary btn-sm" x-on:click="add">@Model.AddLabel</button>
+    @foreach (var error in Model.Errors)
+    {
+        <div class="invalid-feedback d-block">@error</div>
+    }
+    @if (!string.IsNullOrWhiteSpace(Model.Hint))
+    {
+        <div class="form-hint">@Model.Hint</div>
+    }
+</div>

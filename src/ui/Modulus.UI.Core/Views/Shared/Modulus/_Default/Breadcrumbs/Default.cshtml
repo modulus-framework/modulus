@@ -1,0 +1,21 @@
+@* Default markup for <m-breadcrumbs>. The last item is the current page: plain text, aria-current. *@
+@model BreadcrumbsModel
+<nav aria-label="breadcrumb" class="d-print-none mb-3">
+    <ol class="breadcrumb">
+        @for (var i = 0; i < Model.Items.Count; i++)
+        {
+            var item = Model.Items[i];
+            var last = i == Model.Items.Count - 1;
+            <li class="breadcrumb-item@(last ? " active" : "")" aria-current="@(last ? "page" : null)">
+                @if (!last && item.Url is not null)
+                {
+                    <a href="@Url.Content(item.Url)">@item.Title</a>
+                }
+                else
+                {
+                    @item.Title
+                }
+            </li>
+        }
+    </ol>
+</nav>

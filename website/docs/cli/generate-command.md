@@ -9,67 +9,48 @@ Generates a single command and handler.
 ## Usage
 
 ```bash
-modulus generate-command <Name> --module <Module> [options]
+modulus generate-command <Name> [-m|--module <Module>] [options]
 ```
 
 ## Options
 
 | Option | Description |
 |--------|-------------|
-| `--module` | Target module name (required) |
-| `--response` | Response type (default: none) |
+| `-m, --module` | Target module name. Auto-detected when the app has a single module |
 
 ## What It Generates
 
 ### Command
 
 ```csharp
-public sealed record ArchiveProduct(Guid Id) : ICommand;
+public sealed record ArchiveProductCommand : ICommand<Unit>;
 ```
 
 ### Handler
 
 ```csharp
-public sealed class ArchiveProductHandler(ICatalogUnitOfWork unitOfWork)
-    : ICommandHandler<ArchiveProduct>
+public sealed class ArchiveProductHandler
+    : ICommandHandler<ArchiveProductCommand, Unit>
 {
-    public async Task<Unit> HandleAsync(ArchiveProduct command, CancellationToken ct)
+    public async Task<Unit> HandleAsync(
+        ArchiveProductCommand command,
+        CancellationToken ct)
     {
-        // TODO: Implement handler logic
-        await unitOfWork.SaveChangesAsync(ct);
+        // TODO: Implement ArchiveProduct logic here
+        await Task.CompletedTask;
         return Unit.Value;
     }
 }
 ```
 
-## With Response
-
-```bash
-modulus generate-command ArchiveProduct --module Catalog --response ProductDto
-```
-
-Generates:
-
-```csharp
-public sealed record ArchiveProduct(Guid Id) : ICommand<ProductDto>;
-
-public sealed class ArchiveProductHandler(ICatalogUnitOfWork unitOfWork)
-    : ICommandHandler<ArchiveProduct, ProductDto>
-{
-    public async Task<ProductDto> HandleAsync(ArchiveProduct command, CancellationToken ct)
-    {
-        // TODO: Implement handler logic
-        await unitOfWork.SaveChangesAsync(ct);
-        return new ProductDto(command.Id, "", 0);
-    }
-}
-```
+The handler is a starting point with no injected dependencies — add the
+module's `IUnitOfWork` / repositories as needed.
 
 ## Example
 
 ```bash
 modulus generate-command ArchiveProduct --module Catalog
-modulus generate-command CancelOrder --module Orders --response OrderDto
+modulus generate-command CancelOrder --module Orders
 ```
 
 ## See Also

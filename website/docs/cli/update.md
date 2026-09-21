@@ -28,7 +28,7 @@ modulus update [options]
 3. Creates backups of modified files
 4. Updates package versions in `.csproj` or `Directory.Packages.props`
 5. Runs `dotnet restore` to verify compatibility
-6. Rolls back on failure
+6. Rolls back on restore failure (run `dotnet build` yourself to verify the result)
 
 ## Update Process
 
@@ -44,7 +44,7 @@ modulus update [options]
 ├─────────────────────────────────────────────────────────┤
 │  5. Run dotnet restore                                  │
 ├─────────────────────────────────────────────────────────┤
-│  6. Verify build succeeds                               │
+│  6. Roll back if restore fails (then `dotnet build`)     │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -63,14 +63,14 @@ modulus update [options]
 
 Package                          Current    Latest     Update
 ────────────────────────────────────────────────────────────────────
-Microsoft.EntityFrameworkCore     9.0.0      10.0.11    Major
-Microsoft.Extensions.Caching      9.0.0      10.0.10    Major
+Microsoft.EntityFrameworkCore     10.0.9     10.0.11    Minor
+Cobytelabs.Modulus.Core           1.3.0      1.4.0      Minor
 
 Update 2 package(s)? [y/N]: y
 
 > Updating packages...
-  ✓ Microsoft.EntityFrameworkCore 9.0.0 → 10.0.11
-  ✓ Microsoft.Extensions.Caching 9.0.0 → 10.0.10
+  ✓ Microsoft.EntityFrameworkCore 10.0.9 → 10.0.11
+  ✓ Cobytelabs.Modulus.Core 1.3.0 → 1.4.0
 
 > Running dotnet restore...
   ✓ Restore successful

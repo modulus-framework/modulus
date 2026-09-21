@@ -33,10 +33,10 @@ public enum TransactionMode
 {
     /// <summary>
     /// Default. Wrap the single registered context when exactly one exists (the
-    /// common case — fully atomic); when multiple contexts are registered, wrap
-    /// none (each context's <c>SaveChangesAsync</c> is still atomic on its own,
-    /// and cross-connection wrapping was only pseudo-atomic anyway). Declare
-    /// intent with <see cref="TransactionalAttribute"/> to wrap specific contexts.
+    /// common case — fully atomic); when multiple contexts are registered, fail
+    /// fast so the missing intent is fixed instead of silently running without
+    /// a transaction. Declare intent with <see cref="TransactionalAttribute"/>
+    /// to wrap specific contexts, or opt into <see cref="AllContexts"/>.
     /// </summary>
     TouchedOrSingle,
 

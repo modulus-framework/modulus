@@ -1,6 +1,8 @@
 using Modulus.Mediator.Abstractions;
+using Modulus.Mediator.Abstractions.Attributes;
 using Modulus.Core.Abstractions.Common;
 
 namespace {{ module_namespace }}.Application;
 
+[Transactional(typeof(IUnitOfWork))]
 public sealed record Delete{{ entity_name }}Command(Guid Id) : ICommand<Unit>;

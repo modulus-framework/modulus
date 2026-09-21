@@ -1,0 +1,123 @@
+@* Shared Tabler shell for all Modulus UI modules.
+   Vendored assets (self-hosted, no CDN — works offline/air-gapped and under a
+   strict Content-Security-Policy with no script-src allow-listing):
+      - htmx 2.0.10      (https://cdn.jsdelivr.net/npm/htmx.org@2.0.10/dist/htmx.min.js)
+      - Alpine.js 3.17.3 (https://cdn.jsdelivr.net/npm/alpinejs@3.17.3/dist/cdn.min.js)
+      - Tabler 1.5.1     (https://cdn.jsdelivr.net/npm/@tabler/core@1.5.1/dist/{css/tabler.min.css,js/tabler.min.js})
+      - Tabler Icons 3.46.0 outline SVGs, only the 9 names UI modules use
+        (https://cdn.jsdelivr.net/npm/@tabler/icons@3.46.0/icons/outline/<name>.svg),
+        inlined via _UiIcon (no webfont, no extra requests, currentColor strokes)
+   Vendored 2026-09-17 into wwwroot/modulus-ui/{vendor,icons}/; served at
+   /_content/<package-or-assembly>/modulus-ui/... — the segment differs between
+   ProjectReference (assembly name) and PackageReference (package id)
+   consumption, so UiAssets.ContentBase resolves it at runtime. To
+   upgrade, replace the files and update the versions above.
+
+   Division of labor: htmx owns every server round-trip (mutations swap
+   fragments, filters/pagers re-query with hx-push-url); Alpine owns local UI
+   state only (dismissible alerts, toggles, clipboard) so pages stay usable
+   when the Alpine bundle fails to load. modulus-ui.js (vanilla, no
+   dependencies) wires the antiforgery token into htmx requests and renders
+   server-sent modulusToast triggers.
+
+   Navigation renders from IUiMenuProvider (registration order is
+   authoritative, filtered to the current user — entries the caller may not
+   use never reach the markup). *@
+@inject IUiMenuProvider Navigation
+@inject Microsoft.Extensions.Options.IOptions<ModulusUiOptions> Branding
+@inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment WebEnv
+@{
+    var appName = Branding.Value.AppName;
+    var assets = UiAssets.ContentBase(WebEnv);
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"] - @appName</title>
+    <link rel="stylesheet" href="~@assets/modulus-ui/vendor/tabler.min.css" />
+    <style>[x-cloak] { display: none !important; }</style>
+    <script defer src="~@assets/modulus-ui/vendor/htmx.min.js"></script>
+    <script defer src="~@assets/modulus-ui/alpine-components.js"></script>
+    <script defer src="~@assets/modulus-ui/vendor/alpine.min.js"></script>
+    <script defer src="~@assets/modulus-ui/modulus-ui.js"></script>
+</head>
+<body hx-boost="true">
+    <div class="page">
+        <header class="navbar navbar-expand-md d-print-none">
+            <div class="container-xl">
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar-menu" aria-controls="navbar-menu" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <h1 class="navbar-brand navbar-brand-autodark d-none-navbar-horizontal pe-0 pe-md-3">
+                    <a href="@Branding.Value.BrandHref">@appName</a>
+                </h1>
+                <div class="collapse navbar-collapse" id="navbar-menu">
+                    <div class="navbar-nav">
+                        @foreach (var item in Navigation.GetMenu())
+                        {
+                            @if (item.Children is { Count: > 0 })
+                            {
+                                <div class="nav-item dropdown">
+                                    <a class="nav-link dropdown-toggle" href="#navbar-@item.Id" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
+                                        @await Html.PartialAsync("_UiIcon", item.Icon)
+                                        <span class="nav-link-title">@item.Title</span>
+                                    </a>
+                                    <div class="dropdown-menu">
+                                        @foreach (var child in item.Children)
+                                        {
+                                            <a class="dropdown-item" href="@child.Url">
+                                                @await Html.PartialAsync("_UiIcon", child.Icon)@child.Title
+                                            </a>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="nav-item">
+                                    <a class="nav-link px-0" href="@item.Url">
+                                        @await Html.PartialAsync("_UiIcon", item.Icon)@item.Title
+                                    </a>
+                                </div>
+                            }
+                        }
+                    </div>
+                </div>
+            </div>
+        </header>
+        <div class="page-wrapper">
+            <div class="page-body">
+                <div class="container-xl">
+                    <div id="modulus-toasts" class="position-fixed top-0 end-0 p-3" style="z-index: 1080"></div>
+                    @RenderBody()
+                    @if (!string.IsNullOrWhiteSpace(Branding.Value.FooterText))
+                    {
+                        <footer class="mt-4 text-center text-secondary small">@Branding.Value.FooterText</footer>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+    @* Tabler confirm modal: modulus-ui.js intercepts htmx:confirm and shows
+       this instead of the native browser dialog (see design guide §6). *@
+    <div class="modal modal-blur fade" id="modulus-confirm" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-sm modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-body">
+                    <div class="modal-title">Please confirm</div>
+                    <div class="text-secondary" id="modulus-confirm-body"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-link link-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" id="modulus-confirm-ok">Confirm</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    @Html.AntiForgeryToken()
+    <script src="~@assets/modulus-ui/vendor/tabler.min.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

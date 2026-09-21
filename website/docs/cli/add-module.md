@@ -16,7 +16,8 @@ modulus add-module <name> [options]
 
 | Option | Description |
 |--------|-------------|
-| `--migration-engine` | efcore (default) or dbsh |
+| `-d, --database` | Database provider: `SQLite` (default), `SqlServer`, `PostgreSQL`, `MySQL` |
+| `--migration-engine` | `efcore` or `dbsh`. Omit to inherit: `dbsh` when every existing module uses dbsh, otherwise `efcore` |
 
 ## What It Does
 

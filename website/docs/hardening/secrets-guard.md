@@ -43,11 +43,16 @@ Scans effective configuration at boot and flags sensitive values sourced from co
   "SecretsGuard": {
     "Enabled": true,
     "FailOnViolation": true,
-    "Environments": ["Development", "Staging"],
-    "SensitiveKeyPatterns": ["ApiKey", "Secret", "Password", "ConnectionString"]
+    "SensitiveKeyPatterns": [
+      "ConnectionStrings:*", "*Secret", "*Password", "*Pwd",
+      "*ApiKey", "*AccessKey", "*SecretKey", "*PrivateKey", "*Token"
+    ]
   }
 }
 ```
+
+Only Development/Staging are guarded (Production is excluded so a false
+positive can never block a boot); `Environments` is not a setting.
 
 ## Fixing Violations
 

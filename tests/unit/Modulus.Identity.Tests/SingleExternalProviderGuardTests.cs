@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Modulus.Identity.Abstractions;
 using Modulus.Identity.Guards;
@@ -16,11 +17,23 @@ public sealed class SingleExternalProviderGuardTests
             AllowMultipleExternalProviders = allowMultiple,
         });
 
+    private static SingleExternalProviderGuard Build(
+        IEnumerable<IExternalIdentityProvider> providers,
+        IOptions<ModulusIdentityOptions> options)
+    {
+        // Mirror production: providers are registered scoped, the guard
+        // resolves them inside a scope at startup.
+        var services = new ServiceCollection();
+        foreach (var provider in providers)
+            services.AddScoped<IExternalIdentityProvider>(_ => provider);
+        return new SingleExternalProviderGuard(
+            services.BuildServiceProvider(), options);
+    }
+
     [Fact]
     public async Task StartAsync_ZeroProviders_DoesNotThrow()
     {
-        var guard = new SingleExternalProviderGuard(
-            Array.Empty<IExternalIdentityProvider>(), Opts());
+        var guard = Build(Array.Empty<IExternalIdentityProvider>(), Opts());
 
         var act = () => guard.StartAsync(CancellationToken.None);
 
@@ -30,7 +43,7 @@ public sealed class SingleExternalProviderGuardTests
     [Fact]
     public async Task StartAsync_OneProvider_DoesNotThrow()
     {
-        var guard = new SingleExternalProviderGuard(
+        var guard = Build(
             new[] { new FakeProvider("authentik", "Authentik") }, Opts());
 
         var act = () => guard.StartAsync(CancellationToken.None);
@@ -46,7 +59,7 @@ public sealed class SingleExternalProviderGuardTests
             new FakeProvider("authentik", "Authentik"),
             new FakeProvider("okta", "Okta"),
         };
-        var guard = new SingleExternalProviderGuard(providers, Opts());
+        var guard = Build(providers, Opts());
 
         var act = () => guard.StartAsync(CancellationToken.None);
 
@@ -68,7 +81,7 @@ public sealed class SingleExternalProviderGuardTests
             new FakeProvider("okta", "Okta"),
             new FakeProvider("keycloak", "Keycloak"),
         };
-        var guard = new SingleExternalProviderGuard(providers, Opts(allowMultiple: true));
+        var guard = Build(providers, Opts(allowMultiple: true));
 
         var act = () => guard.StartAsync(CancellationToken.None);
 
@@ -78,8 +91,7 @@ public sealed class SingleExternalProviderGuardTests
     [Fact]
     public async Task StopAsync_IsNoOp()
     {
-        var guard = new SingleExternalProviderGuard(
-            Array.Empty<IExternalIdentityProvider>(), Opts());
+        var guard = Build(Array.Empty<IExternalIdentityProvider>(), Opts());
 
         var act = () => guard.StopAsync(CancellationToken.None);
 

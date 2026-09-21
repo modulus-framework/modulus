@@ -250,6 +250,11 @@
               "sidebar": "docsSidebar"
             },
             {
+              "id": "hardening/openapi",
+              "path": "/docs/hardening/openapi",
+              "sidebar": "docsSidebar"
+            },
+            {
               "id": "hardening/personal-data-protection",
               "path": "/docs/hardening/personal-data-protection",
               "sidebar": "docsSidebar"
@@ -267,6 +272,11 @@
             {
               "id": "hardening/security-headers",
               "path": "/docs/hardening/security-headers",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "hardening/versioning",
+              "path": "/docs/hardening/versioning",
               "sidebar": "docsSidebar"
             },
             {

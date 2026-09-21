@@ -44,15 +44,15 @@ export default [
   },
   {
     path: '/docs',
-    component: ComponentCreator('/docs', '66e'),
+    component: ComponentCreator('/docs', 'ac1'),
     routes: [
       {
         path: '/docs',
-        component: ComponentCreator('/docs', 'adf'),
+        component: ComponentCreator('/docs', 'a79'),
         routes: [
           {
             path: '/docs',
-            component: ComponentCreator('/docs', '8bf'),
+            component: ComponentCreator('/docs', 'df1'),
             routes: [
               {
                 path: '/docs/api/',
@@ -342,6 +342,12 @@ export default [
                 sidebar: "docsSidebar"
               },
               {
+                path: '/docs/hardening/openapi',
+                component: ComponentCreator('/docs/hardening/openapi', '13f'),
+                exact: true,
+                sidebar: "docsSidebar"
+              },
+              {
                 path: '/docs/hardening/personal-data-protection',
                 component: ComponentCreator('/docs/hardening/personal-data-protection', '2ca'),
                 exact: true,
@@ -362,6 +368,12 @@ export default [
               {
                 path: '/docs/hardening/security-headers',
                 component: ComponentCreator('/docs/hardening/security-headers', 'ea4'),
+                exact: true,
+                sidebar: "docsSidebar"
+              },
+              {
+                path: '/docs/hardening/versioning',
+                component: ComponentCreator('/docs/hardening/versioning', '7fd'),
                 exact: true,
                 sidebar: "docsSidebar"
               },

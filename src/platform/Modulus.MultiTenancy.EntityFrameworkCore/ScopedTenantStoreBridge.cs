@@ -36,4 +36,12 @@ public sealed class ScopedTenantStoreBridge(
             .GetRequiredService<EfTenantStore>()
             .FindBySlugAsync(slug, ct);
     }
+
+    public async Task<IReadOnlyList<TenantInfo>> ListAsync(CancellationToken ct)
+    {
+        await using var scope = scopeFactory.CreateAsyncScope();
+        return await scope.ServiceProvider
+            .GetRequiredService<EfTenantStore>()
+            .ListAsync(ct);
+    }
 }

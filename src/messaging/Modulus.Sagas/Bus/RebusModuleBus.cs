@@ -38,6 +38,9 @@ internal sealed class RebusModuleBus(
         AmbientContextHeaders.Stamp(
             headers, currentTenant.TenantId, correlationContext?.CorrelationId);
 
+        // Rebus IBus.Publish has no CancellationToken overload — shutdown drain
+        // is owned by the Rebus bus lifecycle, not this token.
+        _ = ct;
         await bus.Publish(@event, headers);
     }
 }
@@ -85,6 +88,9 @@ internal sealed class RebusOutboxDispatcher(
             message.TenantId == Guid.Empty ? null : message.TenantId,
             message.CorrelationId);
 
+        // Rebus IBus.Publish has no CancellationToken overload — the outbox
+        // processor's token governs claiming, not the Rebus send.
+        _ = ct;
         await bus.Publish((dynamic)@event, headers);
     }
 }
@@ -115,7 +121,22 @@ internal sealed class IntegrationEventHandlerAdapter<TEvent>(
             return;
         }
 
+        // Wrap each handler (e.g. with inbox dedup) at dispatch time — the
+        // same seam InProcessModuleBus and IntegrationEventDispatcher use.
+        // Without this, every Rebus redelivery (error-queue retry, consumer
+        // crash before commit) would re-execute handler side effects,
+        // silently voiding the framework's at-least-once + inbox guarantees.
+        var decorator = sp.GetService<IIntegrationEventHandlerDecorator>();
+
         foreach (var handler in handlers)
-            await handler.HandleAsync(message, CancellationToken.None);
+        {
+            var target = decorator is null
+                ? handler
+                : (IIntegrationEventHandler<TEvent>)decorator.Decorate(
+                    sp, typeof(TEvent), handler);
+            // Rebus IHandleMessages.Handle has no CancellationToken — long
+            // handlers ignore shutdown; keep them short and idempotent.
+            await target.HandleAsync(message, CancellationToken.None);
+        }
     }
 }

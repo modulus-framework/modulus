@@ -23,23 +23,36 @@ Modulus supports 6 external identity providers with local token validation.
 modulus app MyApp --auth auth0
 ```
 
-Or add manually:
+Or add manually (extension methods on `AuthenticationBuilder`):
 
 ```csharp
-builder.Services.AddModulusAuth0(config);
+builder.Services.AddAuthentication()
+    .AddAuth0(builder.Configuration);
 ```
+
+Config binds under `Identity:ExternalProviders:{Provider}`.
 
 ## Configuration
 
 ```json
 {
-  "Auth0": {
-    "Domain": "your-tenant.auth0.com",
-    "ClientId": "your-client-id",
-    "ClientSecret": "your-client-secret"
+  "Identity": {
+    "ExternalProviders": {
+      "Auth0": {
+        "Authority": "https://your-tenant.auth0.com/",
+        "ClientId": "your-client-id",
+        "ClientSecret": "your-client-secret",
+        "Scope": "openid profile email",
+        "Audience": null
+      }
+    }
   }
 }
 ```
+
+Only **one** external provider per app is supported (`AllowMultipleExternalProviders`
+is off by default — multiple registrations silently last-wins and are treated
+as misconfiguration).
 
 ## Token Validation
 
@@ -52,7 +65,8 @@ All providers (except Keycloak) validate tokens locally:
 
 ```csharp
 // The adapter handles all validation automatically
-builder.Services.AddModulusAuth0(config);
+builder.Services.AddAuthentication()
+    .AddAuth0(builder.Configuration);
 
 // Users are authenticated via the external provider
 // ICurrentUser reflects the external user's claims
@@ -63,29 +77,36 @@ builder.Services.AddModulusAuth0(config);
 Keycloak uses RFC 7662 token introspection:
 
 ```csharp
-builder.Services.AddModulusKeycloak(config);
+builder.Services.AddAuthentication()
+    .AddKeycloak(builder.Configuration);
 ```
 
 ```json
 {
-  "Keycloak": {
-    "Realm": "my-realm",
-    "AuthServerUrl": "https://keycloak.example.com",
-    "IntrospectionClient": "my-service",
-    "IntrospectionSecret": "secret"
+  "Identity": {
+    "ExternalProviders": {
+      "Keycloak": {
+        "Authority": "https://keycloak.example.com",
+        "Realm": "my-realm",
+        "ClientId": "my-service",
+        "ClientSecret": "secret",
+        "AdminClientId": null,
+        "AdminClientSecret": null,
+        "Scope": "openid profile email roles"
+      }
+    }
   }
 }
 ```
 
+`AddKeycloakWithProfileFetch` (and the `AddXWithProfileFetch` variants)
+additionally fetch user profiles via admin credentials.
+
 ## Audience Validation
 
-Audience validation is opt-in:
-
-```csharp
-builder.Services.AddModulusAuth0(config, validAudiences: new[] { "my-api" });
-```
-
-When enabled, the token's `aud` claim must match one of the configured audiences.
+Audience validation is opt-in via config (`Audience` above, or the provider's
+`opts.Audience`) — recommended for production; off by default to avoid
+rejecting valid tokens whose audience isn't the client id.
 
 ## See Also
 

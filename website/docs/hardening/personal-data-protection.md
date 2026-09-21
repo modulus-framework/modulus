@@ -18,11 +18,18 @@ services.AddModulusPersonalDataProtection(config);
 {
   "PersonalDataProtection": {
     "Enabled": true,
-    "Purpose": "Modulus.PersonalData.v1",
-    "SearchHashKey": "your-secret-hash-key-out-of-band"
+    "Purpose": "Modulus.PersonalData.Protector.v1",
+    "SearchHashKey": "your-secret-hash-key-out-of-band",
+    "KeyRingDirectory": "/var/keys/myapp",
+    "ApplicationName": "Modulus"
   }
 }
 ```
+
+`KeyRingDirectory` is required in Production — without key-ring persistence
+every restart/replica mints a fresh ring and old ciphertext becomes
+undecryptable. `ApplicationName` isolates the ring when several apps share a
+folder.
 
 ## Marking Fields
 
@@ -50,7 +57,9 @@ public sealed class Customer : AggregateRoot<Guid>
 
 ## Search Hash
 
-Since `Protect()` is non-deterministic, encrypted columns can't be queried by equality. Use a companion hash column:
+Since `Protect()` is non-deterministic, encrypted columns can't be queried by
+equality. Use a companion hash column populated via
+`IPersonalDataProtector.Hash` (deterministic keyed HMAC-SHA256):
 
 ```csharp
 public sealed class Customer : AggregateRoot<Guid>
@@ -58,12 +67,14 @@ public sealed class Customer : AggregateRoot<Guid>
     [ProtectedPersonalData]
     public string Email { get; set; } = default!;
 
-    [PersonalDataHash(nameof(Email))]
+    // Companion column for equality search, populated in code via
+    // protector.Hash(email). There is no [PersonalDataHash] attribute.
     public string EmailHash { get; set; } = default!;
 }
 ```
 
-The hash uses a keyed HMAC-SHA256 with `PersonalDataProtection:SearchHashKey`.
+The hash uses a keyed HMAC-SHA256 with `PersonalDataProtection:SearchHashKey`
+(supplied out-of-band, never committed).
 
 ## Key Management
 

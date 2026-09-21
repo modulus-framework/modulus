@@ -183,7 +183,7 @@ public class EfRepository<T>(IServiceProvider sp)
     }
 
     protected static IQueryable<T> ApplySpec(
-        IQueryable<T> query, ISpecification<T> spec)
+        IQueryable<T> query, ISpecification<T> spec, bool applyPaging = true)
     {
         if (spec.Filter != null)
             query = query.Where(spec.Filter);
@@ -220,9 +220,9 @@ public class EfRepository<T>(IServiceProvider sp)
             throw new InvalidOperationException(
                 "Specifications with Skip/Take must define at least one OrderBy clause.");
 
-        if (spec.Skip != null)
+        if (spec.Skip != null && applyPaging)
             query = query.Skip(spec.Skip.Value);
-        if (spec.Take != null)
+        if (spec.Take != null && applyPaging)
             query = query.Take(spec.Take.Value);
 
         if (spec.Tag is not null)
@@ -246,14 +246,25 @@ public class EfReadRepository<T>(IServiceProvider sp)
         CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(selector);
-        var baseQuery = ApplySpec(Set.AsQueryable(), spec);
+        ArgumentNullException.ThrowIfNull(spec);
+        page = Math.Max(1, page);
+        size = Math.Max(1, size);
+
+        // The total counts the FULL filtered set: a spec carrying its own
+        // Skip/Take must not shrink TotalCount to its window size.
+        var filtered = ApplySpec(Set.AsQueryable(), spec, applyPaging: false);
 
         // If the spec already has Skip/Take, don't double-apply paging.
-        var query = spec.Skip is null && spec.Take is null
-            ? baseQuery.Skip((page - 1) * size).Take(size)
-            : baseQuery;
+        IQueryable<T> query = filtered;
+        if (spec.Skip is null && spec.Take is null)
+            query = query.Skip((page - 1) * size).Take(size);
+        else
+        {
+            if (spec.Skip is not null) query = query.Skip(spec.Skip.Value);
+            if (spec.Take is not null) query = query.Take(spec.Take.Value);
+        }
 
-        var total = await baseQuery.CountAsync(ct);
+        var total = await filtered.CountAsync(ct);
         // Project on the server-side within the query
         var items = await query.Select(selector).ToListAsync(ct);
         return new PagedList<TResult>

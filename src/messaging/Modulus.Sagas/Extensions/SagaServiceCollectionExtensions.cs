@@ -62,6 +62,11 @@ public static class SagaServiceCollectionExtensions
         var builder = new SagaConfigurationBuilder();
         configure(builder);
 
+        if (!builder.HasRebusConfig)
+            throw new InvalidOperationException(
+                "AddModulusSagas requires .Rebus(cfg => ...) with a transport and saga persistence. " +
+                "Without it the bus runs in-memory and sagas are lost on restart.");
+
         var userConfigurer = builder.RebusConfigurer;
         var pollyOptions = builder.PollyOptions;
 
@@ -73,6 +78,11 @@ public static class SagaServiceCollectionExtensions
 
             cfg.Options(o =>
             {
+                // When Polly owns transient retries, keep Rebus delivery attempts
+                // at 1 so retries are not multiplicative (Polly x Rebus). Configure
+                // poison -> error queue in the user .Rebus callback; Polly handles
+                // transient faults, Rebus owns the error queue.
+
                 // Restore the publisher's tenant/correlation context on every
                 // incoming message so handlers run in the right business
                 // context (tenant query filters, log correlation).

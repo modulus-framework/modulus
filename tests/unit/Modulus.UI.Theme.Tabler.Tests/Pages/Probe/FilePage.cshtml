@@ -1,0 +1,32 @@
+@page
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Http
+@attribute [Microsoft.AspNetCore.Mvc.IgnoreAntiforgeryToken]
+@functions {
+    public sealed class UploadInput
+    {
+        [Required, Display(Name = "Contract")]
+        public IFormFile? Attachment { get; set; }
+    }
+
+    [BindProperty]
+    public UploadInput Input { get; set; } = new();
+
+    public IActionResult OnPost() => ModelState.IsValid ? Content($"got {Input.Attachment?.FileName}") : Page();
+}
+@{
+    Layout = "/Themes/Tabler/Layouts/Empty.cshtml";
+}
+<div id="bound">
+    <m-form multipart="true">
+        <m-file for="Input.Attachment" accept=".pdf" hint="PDF only" />
+    </m-form>
+</div>
+<div id="named">
+    <m-form handler="Upload" target="#out" multipart="true">
+        <m-file name="file" label="Upload" multiple="true" />
+    </m-form>
+</div>
+<div id="plain">
+    <m-form><input name="q" /></m-form>
+</div>

@@ -6,6 +6,10 @@
     }
   }{{ if auth == "openiddict" }},
   "Identity": {
-    "UseDevelopmentCertificates": true
+    "UseDevelopmentCertificates": true,
+    "AllowPasswordFlow": true{{ if use_code_flow }},
+    "Seed": {
+      "RedirectUris": [ {{ for uri in dev_redirect_uris }}"{{ uri }}"{{ if !for.last }}, {{ end }}{{ end }} ]
+    }{{ end }}
   }{{ end }}
 }

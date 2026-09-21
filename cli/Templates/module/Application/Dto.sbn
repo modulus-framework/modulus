@@ -1,7 +1,19 @@
 namespace {{ module_namespace }}.Application.Dtos;
 
-public sealed class {{ entity_name }}Dto
+{{ if has_api_extra_fields }}/// <summary>
+/// The {{ entity_name_lower }} as the application returns it. <see cref="ExtraProperties"/> is the <b>stored</b> bag, unfiltered:
+/// an API endpoint must pass it through <c>EntityApiFields.VisibleExtraProperties</c> before sending it to a caller, or a
+/// field the registry hides from them would leak.
+/// </summary>
+public sealed record {{ entity_name }}Dto
+{
+    public Guid Id { get; init; }
+    public string Name { get; init; } = string.Empty;
+    public IReadOnlyDictionary<string, string?> ExtraProperties { get; init; } = new Dictionary<string, string?>();
+}
+{{ else }}public sealed class {{ entity_name }}Dto
 {
     public Guid Id { get; init; }
     public string Name { get; init; } = string.Empty;
 }
+{{ end }}

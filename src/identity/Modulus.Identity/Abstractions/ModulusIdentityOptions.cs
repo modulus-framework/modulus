@@ -27,8 +27,24 @@ public sealed class ModulusIdentityOptions
     public bool RequireConfirmedEmail { get; set; } = false;
     public int AccessTokenLifetimeMin { get; set; } = 15;
     public int RefreshTokenLifetimeDays { get; set; } = 7;
+
+    /// <summary>
+    /// Enables the refresh-token grant on the OpenIddict server. Default
+    /// <c>true</c>. Setting this to <c>false</c> disables the refresh flow —
+    /// the token endpoint then rejects <c>grant_type=refresh_token</c> requests.
+    /// </summary>
     public bool EnableRefreshToken { get; set; } = true;
-    public string DefaultRedirectUri { get; set; } = "/";
+
+    /// <summary>
+    /// Exact-match allow-list of absolute URIs the end-session endpoint
+    /// (<c>/connect/end-session</c>) may redirect to via
+    /// <c>post_logout_redirect_uri</c>. <b>Empty by default</b> — with no
+    /// allow-listed URI the endpoint logs the user out and returns 200 JSON
+    /// instead of redirecting, which is the safe behaviour: an unrestricted
+    /// redirect is an open-redirect/phishing vector. Values must be absolute,
+    /// well-formed URIs compared exactly (scheme + host + port + path + query).
+    /// </summary>
+    public List<string> AllowedPostLogoutRedirectUris { get; set; } = [];
 
     /// <summary>
     /// Enables the OAuth 2.0 Resource Owner Password Credentials (ROPC) grant.
@@ -63,15 +79,36 @@ public sealed class ModulusIdentityOptions
     public bool AllowMultipleExternalProviders { get; set; }
 
     /// <summary>
-    /// Enables the authorization code flow. Requires the app to implement
-    /// its own <c>connect/authorize</c> endpoint (the framework ships only
-    /// the token endpoint). <b>Off by default</b> — the framework's
-    /// token endpoint cannot handle the <c>authorization_code</c> grant,
-    /// so enabling this without an authorize controller results in
-    /// <c>unsupported_grant_type</c> for code exchanges. Enable when the
-    /// app wires its own authorize endpoint.
+    /// Enables the authorization code flow with PKCE, the way a mobile, desktop or single-page client signs a user in
+    /// without handling the password: the framework serves <c>/connect/authorize</c> (<see cref="ModulusAuthorizeController"/>)
+    /// and redeems the code at <c>/connect/token</c>. PKCE is mandatory. The user signs in through the app's login page (the
+    /// ASP.NET Core Identity cookie, so the app needs one at <c>/account/login</c>, e.g. the Identity UI), and a client must be
+    /// registered with the authorization endpoint, the code grant and its exact redirect URIs. <b>Off by default</b>; without
+    /// a login page a sign-in cannot complete.
     /// </summary>
     public bool AllowAuthorizationCodeFlow { get; set; }
+
+    /// <summary>
+    /// Client id that authorizes callers of the RFC 7662 introspection endpoint
+    /// (<c>/connect/introspect</c>) — i.e. the protected resources (API gateways)
+    /// allowed to ask "is this token active?". <b>Unset by default, which shuts
+    /// the endpoint</b>: every caller is rejected with 401. RFC 7662 §2.1
+    /// requires the endpoint to authenticate its callers; the framework has no
+    /// OpenIddict client store, so the pair is configured here instead. Supply
+    /// the secret out-of-band (environment variable / user secrets / vault —
+    /// never a committed appsettings.json). Callers authenticate with HTTP
+    /// Basic (<c>Authorization: Basic base64(id:secret)</c>) or the
+    /// <c>client_id</c>/<c>client_secret</c> form fields. End-user bearer
+    /// tokens do NOT authorize introspection.
+    /// </summary>
+    public string? IntrospectionClientId { get; set; }
+
+    /// <summary>
+    /// Secret paired with <see cref="IntrospectionClientId"/>. Both values must
+    /// be set (non-empty) for the introspection endpoint to serve any caller.
+    /// Compared in constant time.
+    /// </summary>
+    public string? IntrospectionClientSecret { get; set; }
 
     public Dictionary<string, ExternalProviderOptions> ExternalProviders { get; set; } = new();
 }

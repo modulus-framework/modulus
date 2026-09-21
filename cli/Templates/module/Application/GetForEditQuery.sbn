@@ -1,0 +1,15 @@
+using Modulus.Mediator.Abstractions;
+
+namespace {{ module_namespace }}.Application;
+
+/// <summary>
+/// Loads a {{ entity_name_lower }} together with its extension values to pre-fill the admin edit form. Deliberately not
+/// exposed by an API endpoint: the values of fields other modules contributed are only shown after the UI filtered
+/// them by the user's permissions.
+/// </summary>
+public sealed record Get{{ entity_name }}ForEditQuery(Guid Id) : IQuery<{{ entity_name }}EditDto>;
+
+public sealed record {{ entity_name }}EditDto(
+    Guid Id,
+    string Name,
+    IReadOnlyDictionary<string, string?> ExtraProperties);

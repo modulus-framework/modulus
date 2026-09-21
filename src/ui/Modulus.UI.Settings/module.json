@@ -1,0 +1,7 @@
+{
+  "id": "Modulus.Settings",
+  "name": "Settings",
+  "version": "1.4.0",
+  "dependencies": ["Modulus.UI.Core"],
+  "features": ["Settings"]
+}

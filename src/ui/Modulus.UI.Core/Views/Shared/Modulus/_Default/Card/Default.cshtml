@@ -1,0 +1,19 @@
+@* Default markup for <m-card>. Override at /Views/Shared/Modulus/Card/Default.cshtml (app)
+   or /Themes/{Theme}/Views/Card/Default.cshtml (theme). *@
+@model CardModel
+<div class="card">
+    @if (!string.IsNullOrWhiteSpace(Model.Title))
+    {
+        <div class="card-header">
+            <h3 class="card-title">@Model.Title</h3>
+        </div>
+    }
+    @if (Model.Padded)
+    {
+        <div class="card-body">@Model.Body</div>
+    }
+    else
+    {
+        @Model.Body
+    }
+</div>

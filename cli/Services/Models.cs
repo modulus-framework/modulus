@@ -9,7 +9,7 @@ internal static class FrameworkVersion
 {
     // Keep in sync with <VersionPrefix> in build/Modulus.Packaging.props —
     // generated apps pin Cobytelabs.Modulus.* packages at this version.
-    public const string Current = "1.3.0";
+    public const string Current = "1.4.0";
 }
 
 /// <summary>
@@ -18,6 +18,8 @@ internal static class FrameworkVersion
 /// </summary>
 internal static class DbProviderInfo
 {
+    // Source of truth: Directory.Packages.props (EF Core group).
+    // Keep Package()/Version() below in sync when bumping EF provider versions.
     public static string Package(string provider) => provider switch
     {
         "SqlServer" => "Microsoft.EntityFrameworkCore.SqlServer",
@@ -120,6 +122,23 @@ internal sealed class AppModel
     public bool UseDbsh => MigrationEngine == "dbsh";
 
     /// <summary>
+    /// UI modules to include in the generated app (lower-case IDs: identity, permissions, tenancy, users, settings, auditlogging, notifications, files).
+    /// </summary>
+    public IReadOnlyList<string> UiModules { get; set; } = [];
+
+    /// <summary>API only, or a web app that also exposes the API (<c>--kind</c>).</summary>
+    public AppKind Kind { get; set; } = AppKind.Api;
+
+    /// <summary>The kind as written into the host csproj (<c>&lt;ModulusAppKind&gt;</c>).</summary>
+    public string KindName => Kind.Name();
+
+    /// <summary>True for a web app: it gets the UI foundation (and the theme), whatever feature modules are chosen.</summary>
+    public bool UseUi => Kind == AppKind.Web;
+
+    /// <summary>Install the Tabler theme next to the UI modules (default; <c>--no-theme</c> turns it off).</summary>
+    public bool UseTablerTheme { get; set; }
+
+    /// <summary>
     /// Auth provider key: "none" (default), "openiddict", or one of the six
     /// external IdPs ("auth0", "authentik", "azuread", "duende", "keycloak", "okta").
     /// </summary>
@@ -130,6 +149,18 @@ internal sealed class AppModel
 
     /// <summary>True when the local OpenIddict token server is selected.</summary>
     public bool UseOpenIddict => Auth == "openiddict";
+
+    /// <summary>Lower-cased app name (the seeded development administrator is <c>admin@{name}.local</c>).</summary>
+    public string AppNameLower => AppName.ToLowerInvariant();
+
+    /// <summary>
+    /// Namespace of the generated identity backend module (<c>{Root}.Modules.Identity</c>), generated with
+    /// <c>--auth openiddict</c>: a local token server needs users, so it comes with an identity database.
+    /// </summary>
+    public string IdentityNamespace => $"{RootNamespace}.Modules.Identity";
+
+    /// <summary>Connection string for the identity database (its own database, like every module).</summary>
+    public string IdentityConnectionString => DbProviderInfo.ConnectionString(DbProvider, "Identity");
 
     /// <summary>True when an external identity provider is selected.</summary>
     public bool UseExternalProvider => AuthProviders.IsExternalProvider(Auth);
@@ -182,6 +213,30 @@ internal sealed class AppModel
     /// </summary>
     public string ExampleRoute =>
         CodeGen.Pluralize(ExampleEntity).ToLowerInvariant();
+
+    /// <summary>
+    /// The permission that guards the example entity's API (and its admin page), when the app has the identity backend whose
+    /// <c>Admin</c> role holds it; null otherwise. The same <c>{module}:{route}:manage</c> a later <c>generate-crud</c> would pick.
+    /// </summary>
+    public string? ExamplePermission =>
+        UseOpenIddict && !NoExample ? UiAccessGates.CrudPermission(ExampleModule, ExampleRoute) : null;
+
+    /// <summary>
+    /// True when the app serves the authorization-code flow with PKCE (<c>/connect/authorize</c>): a web app with the local token
+    /// server, because that flow signs the user in through the app's own login page (the Identity UI). An API host has no page to
+    /// sign in with, so its clients use the password grant while it is on, then refresh tokens.
+    /// </summary>
+    public bool UseCodeFlow => UseOpenIddict && UseUi;
+
+    /// <summary>Redirect URIs the seeded first-party client is registered with in Development: a native app's custom scheme and a local SPA dev server.</summary>
+    public IReadOnlyList<string> DevRedirectUris => [$"{AppNameLower}://callback", "http://localhost:5173/callback"];
+
+    /// <summary>What the example permission's registry entry says.</summary>
+    public string ExamplePermissionDescription =>
+        UiAccessGates.CrudPermissionDescription(CodeGen.Pluralize(ExampleEntity));
+
+    /// <summary>The role that holds the example permission (the one the identity backend seeds the first administrator into).</summary>
+    public string AdminRole => UiAccessGates.AdminRole;
 
     // ── Message Broker Configuration ────────────────────────────────
     /// <summary>Message broker: "none", "rabbitmq", or "kafka".</summary>
@@ -330,11 +385,49 @@ internal sealed class ModuleModel
     // Lower-cased module name, used for table prefix + integration event type strings.
     public string ModuleNameLower => ModuleName.ToLowerInvariant();
 
+    /// <summary>
+    /// The host API project's root namespace (e.g. <c>MyApp.Api</c>). Used by
+    /// <c>generate-crud --with-ui</c> for the companion Razor Pages + the
+    /// <c>CustomUiModule</c> nav sidecar, which live in the Api project (Web SDK
+    /// compiles <c>Pages/</c> with no csproj changes).
+    /// </summary>
+    public string ApiNamespace => $"{RootNamespace}.Api";
+
     // ── Entity being scaffolded (null when generating a blank module) ──
     // Scriban treats "" as truthy, so blank modules must leave these null.
     public string? EntityName { get; set; }       // "Product"
     public string? EntityNameLower { get; set; }  // "product"
     public string? RouteName { get; set; }        // "products"
+
+    /// <summary>
+    /// True when the entity implements <c>IHasExtraProperties</c> and its create command carries the extension values,
+    /// so the generated create form can render <c>&lt;m-fields&gt;</c> and pass them on. False for a CRUD set generated
+    /// before that existed (files are never overwritten), where the form would only collect data that is dropped.
+    /// </summary>
+    public bool HasExtraFields { get; set; }
+
+    /// <summary>
+    /// True when the page also gets an edit modal: the update command carries the extension values (so an edit can
+    /// save them) and the host has a theme that provides the modal container. The edit form reads the stored values
+    /// through a dedicated <c>Get{Entity}ForEditQuery</c>, not the API DTO.
+    /// </summary>
+    public bool HasEditForm { get; set; }
+
+    /// <summary>
+    /// True in a web app: the API exposes the entity's extension fields, filtered through the same registry and
+    /// per-field permissions as the form (<c>EntityApiFields</c>), so external clients (mobile, desktop, other systems)
+    /// can read and write them. The DTO carries the bag, the endpoints validate and filter it, and the Presentation
+    /// project references <c>Modulus.UI.Core</c> for the registry. False for an API-only app (there is no registry to
+    /// filter with, so the bag is never exposed) and for a CRUD set generated before extension fields existed.
+    /// </summary>
+    public bool HasApiExtraFields { get; set; }
+
+    /// <summary>
+    /// The permission (e.g. <c>catalog:products:manage</c>) the generated API endpoints and admin page require, or null when the host
+    /// has no identity backend whose <c>Admin</c> role could hold it (then they are as open as the rest of that host). See
+    /// <see cref="UiAccessGates.CrudPermission"/>.
+    /// </summary>
+    public string? RequiredPermission { get; set; }
 
     /// <summary>Pascal-case plural of <see cref="EntityName"/> (e.g. "Products").</summary>
     public string? EntityPlural => string.IsNullOrEmpty(EntityName)

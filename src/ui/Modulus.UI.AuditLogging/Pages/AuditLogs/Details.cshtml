@@ -1,0 +1,35 @@
+@page "{id:guid}"
+@model Modulus.UI.AuditLogging.Pages.AuditLogs.DetailsModel
+@{
+    ViewData["Title"] = await Model.TextAsync("Details.Title");
+}
+<m-page-header title="@ViewData["Title"]">
+    <a class="btn" asp-page="./Index">&larr;</a>
+</m-page-header>
+@if (Model.Entry is null)
+{
+    @await Html.PartialAsync("_Alert", UiAlert.Warning(await Model.TextAsync("Details.NotFound")))
+}
+else
+{
+    <div class="card">
+        <div class="card-body">
+            <dl class="row">
+                <dt class="col-3">Id</dt>
+                <dd class="col-9"><code>@Model.Entry.Id</code></dd>
+                <dt class="col-3">Action</dt>
+                <dd class="col-9"><code>@Model.Entry.Action</code></dd>
+                <dt class="col-3">Resource</dt>
+                <dd class="col-9">@(Model.Entry.Resource ?? "—")</dd>
+                <dt class="col-3">User</dt>
+                <dd class="col-9"><code>@(Model.Entry.UserId?.ToString() ?? "—")</code></dd>
+                <dt class="col-3">Tenant</dt>
+                <dd class="col-9"><code>@(Model.Entry.TenantId?.ToString() ?? "—")</code></dd>
+                <dt class="col-3">Occurred</dt>
+                <dd class="col-9">@Model.Entry.OccurredAt.ToString("u")</dd>
+                <dt class="col-3">Detail</dt>
+                <dd class="col-9">@(Model.Entry.Detail ?? "—")</dd>
+            </dl>
+        </div>
+    </div>
+}

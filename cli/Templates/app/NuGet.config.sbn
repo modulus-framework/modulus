@@ -10,7 +10,8 @@
     <!--
       To use a local feed of the Cobytelabs.Modulus.* packages (e.g. the
       framework repo's nupkg folder after dotnet pack), pass the feed path
-      via the package-source option of "modulus app {{ app_name }}".
+      via the package source option to the new app command
+      (see: modulus app help).
 
       or uncomment the entry below:
 

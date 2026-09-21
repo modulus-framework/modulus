@@ -1,0 +1,15 @@
+@* Default markup for <m-modal>: the content of the shared modal (#m-modal-container is the
+   .modal-content element, so this renders header / body / footer directly). *@
+@model ModalModel
+<div class="modal-header">
+    <h5 class="modal-title">@Model.Title</h5>
+    @if (Model.Dismissible)
+    {
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    }
+</div>
+<div class="modal-body">@Model.Body</div>
+@if (Model.Footer is not null)
+{
+    <div class="modal-footer">@Model.Footer</div>
+}

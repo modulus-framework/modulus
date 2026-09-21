@@ -1,6 +1,7 @@
 namespace Modulus.Testing.Internal;
 
 using System.Reflection;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -10,9 +11,41 @@ using Microsoft.Extensions.DependencyInjection;
 /// <c>IDbContextFactory&lt;T&gt;</c>, which never appear in
 /// <c>GetServices&lt;DbContext&gt;()</c>.
 /// </summary>
-internal sealed class TestDatabaseRegistry
+/// <remarks>
+/// It also owns the keep-alive connections. A shared-cache in-memory SQLite database lives only while a connection to it is
+/// open, so the first one is opened the moment a context's options are first built (see <see cref="KeepAlive"/>): a host that
+/// migrates and seeds in <c>Program.cs</c>, before any hosted service starts, then finds the schema it just created.
+/// </remarks>
+internal sealed class TestDatabaseRegistry : IDisposable
 {
+    private readonly object _gate = new();
+    private readonly Dictionary<string, SqliteConnection> _keepAlives = [];
+
     public HashSet<Type> FactoryContextTypes { get; } = [];
+
+    /// <summary>Opens (once per connection string) a connection that keeps the in-memory database alive until the registry is disposed.</summary>
+    public void KeepAlive(string connectionString)
+    {
+        lock (_gate)
+        {
+            if (_keepAlives.ContainsKey(connectionString))
+                return;
+
+            var connection = new SqliteConnection(connectionString);
+            connection.Open();
+            _keepAlives.Add(connectionString, connection);
+        }
+    }
+
+    public void Dispose()
+    {
+        lock (_gate)
+        {
+            foreach (var connection in _keepAlives.Values)
+                connection.Dispose();
+            _keepAlives.Clear();
+        }
+    }
 }
 
 /// <summary>
@@ -136,8 +169,13 @@ internal static class TestDatabaseRegistration
         foreach (var contextType in contextTypes)
         {
             var connectionString = connectionFor(contextType);
-            Action<DbContextOptionsBuilder> configure =
-                options => options.UseSqlite(connectionString);
+            Action<DbContextOptionsBuilder> configure = options =>
+            {
+                // Only in-memory databases need it, and only when the caller owns a registry to hold the connections.
+                if (registry is not null && connectionString.Contains("Mode=Memory", StringComparison.OrdinalIgnoreCase))
+                    registry.KeepAlive(connectionString);
+                options.UseSqlite(connectionString);
+            };
             if (factoryContexts.Contains(contextType))
                 AddDbContextFactory
                     .MakeGenericMethod(contextType)

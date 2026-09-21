@@ -16,26 +16,22 @@ modulus list [options]
 
 | Option | Description |
 |--------|-------------|
-| `--verbose` | Show detailed information |
+| `-o, --output` | App root directory (default: current directory) |
+
+Run from inside a Modulus application. Global `-v` only raises log detail.
 
 ## Example Output
 
+A 4-column table (`Module` / `Provider` / `Entities` / `Migrations`),
+where `Migrations` is `yes`/`no` (whether the module has authored migrations):
+
 ```
-Modules:
-  Catalog
-    Database: SQLite (catalog.db)
-    Entities: Product, Category
-    Migration: 3 migrations applied
-
-  Orders
-    Database: SqlServer (Server=localhost;Database=Orders)
-    Entities: Order, OrderItem
-    Migration: 2 migrations applied
-
-  Inventory
-    Database: PostgreSQL (Host=localhost;Database=Inventory)
-    Entities: StockItem, Warehouse
-    Migration: 1 migration applied
+╭──────────────────────────────────────────────────╮
+│ Modules in MyApp.slnx                            │
+│ Module    │ Provider │ Entities        │ Migrations │
+│ Catalog   │ SQLite   │ Product         │ yes        │
+│ Orders    │ SQLite   │ Order, OrderItem│ no         │
+╰──────────────────────────────────────────────────╯
 ```
 
 ## See Also

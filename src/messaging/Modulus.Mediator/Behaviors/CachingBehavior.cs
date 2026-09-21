@@ -17,10 +17,16 @@ using Modulus.Mediator.Abstractions.Attributes;
 /// <see cref="ICurrentTenant"/>) — without that, a query executed for tenant A
 /// would be served verbatim to tenant B whenever the serialised request
 /// parameters matched. Host-scope queries share a single "host" partition.
+/// Keys are additionally scoped by the calling user (via
+/// <see cref="ICurrentUser"/>): cached results frequently embed per-user
+/// authorization filtering (visibility, redaction), so serving one user's
+/// cached page to another user in the same tenant would leak data across
+/// users. Anonymous callers share an "anon" partition.
 /// </remarks>
 public sealed class CachingBehavior<TRequest, TResponse>(
     IMemoryCache cache,
-    ICurrentTenant? currentTenant = null) : IPipelineBehavior<TRequest, TResponse>
+    ICurrentTenant? currentTenant = null,
+    ICurrentUser? currentUser = null) : IPipelineBehavior<TRequest, TResponse>
 {
     // The attribute is fixed per request type; read it once per closed generic.
     private static readonly CacheForAttribute? s_attr =
@@ -54,6 +60,7 @@ public sealed class CachingBehavior<TRequest, TResponse>(
         var payload = JsonSerializer.Serialize(request);
 
         var tenantPart = currentTenant?.TenantId?.ToString() ?? "host";
-        return $"modulus:cache:t:{tenantPart}:{type}:{payload}";
+        var userPart = currentUser?.UserId?.ToString() ?? "anon";
+        return $"modulus:cache:t:{tenantPart}:u:{userPart}:{type}:{payload}";
     }
 }

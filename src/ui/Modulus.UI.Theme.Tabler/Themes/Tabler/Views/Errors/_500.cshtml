@@ -1,0 +1,3 @@
+@* Themed 500 page (see _ErrorShell). *@
+@model UiErrorViewModel
+@await Html.PartialAsync("/Themes/Tabler/Views/Errors/_ErrorShell.cshtml", new ErrorPageModel(500, "Something went wrong", Model.Message ?? "An unexpected error occurred. Please try again later."))

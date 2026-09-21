@@ -1,0 +1,38 @@
+@page
+@using Modulus.UI
+@model Modulus.UI.Notifications.Pages.Notifications.IndexModel
+@{
+    ViewData["Title"] = await Model.TextAsync("Index.Title");
+    ViewData.SetPageId("Notifications.Inbox");
+}
+<m-page-header title="@ViewData["Title"]" page-id="Notifications.Inbox">
+    @if (User.Identity?.IsAuthenticated == true)
+    {
+        <form method="post"
+              asp-page-handler="MarkAllRead" asp-route-UnreadOnly="@Model.UnreadOnly"
+              hx-post="@Url.Page("./Index", "MarkAllRead", new { UnreadOnly = Model.UnreadOnly })"
+              hx-target="#notifications-list" hx-swap="innerHTML">
+            <button class="btn" type="submit">@await Model.TextAsync("Index.MarkAllRead")</button>
+        </form>
+    }
+</m-page-header>
+@if (User.Identity?.IsAuthenticated != true)
+{
+    @await Html.PartialAsync("_Alert", UiAlert.Info(await Model.TextAsync("Index.SignIn")))
+}
+else
+{
+    <div class="card mb-3">
+        <div class="card-body">
+            <form method="get" x-data="mAutoSubmit" x-on:change="submit">
+                <label class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" asp-for="UnreadOnly" />
+                    <span class="form-check-label">@await Model.TextAsync("Index.UnreadOnly")</span>
+                </label>
+            </form>
+        </div>
+    </div>
+    <div id="notifications-list">
+        @await Html.PartialAsync("_NotificationList", Model.ListView())
+    </div>
+}

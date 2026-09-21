@@ -17,11 +17,10 @@ public sealed class MemoryCacheService(IMemoryCache cache, IServiceProvider serv
 
     // Mirrors RedisCacheService.TagKey exactly, so the two ICacheService
     // implementations behave identically regardless of which one an app has
-    // wired up. Resolved per call (not captured) because ICurrentTenant is
-    // registered scoped while this service is a singleton, and multi-tenancy
-    // may be off entirely. Root-provider resolution is safe: CurrentTenant is
-    // a stateless AsyncLocal accessor, so even a fresh instance reads the
-    // ambient async flow.
+    // wired up. Resolved per call (not captured): ICurrentTenant is a
+    // stateless AsyncLocal-backed singleton, so root-provider resolution is
+    // safe and always observes the ambient async flow, whether or not
+    // multi-tenancy is registered.
     private string TagKey(string tag)
     {
         var tenant = services.GetService<ICurrentTenant>();
@@ -50,21 +49,26 @@ public sealed class MemoryCacheService(IMemoryCache cache, IServiceProvider serv
         if (expiry.HasValue)
             options.AbsoluteExpirationRelativeToNow = expiry;
 
+        string[] scopedTags = [];
         if (tags is { Length: > 0 })
         {
             var taggedKeys = tags.Where(t => !string.IsNullOrEmpty(t)).ToArray();
             if (taggedKeys.Length > 0)
             {
-                var scopedTags = Array.ConvertAll(taggedKeys, TagKey);
-                RegisterTags(key, scopedTags);
+                scopedTags = Array.ConvertAll(taggedKeys, TagKey);
 
                 // When the entry is evicted (TTL expiry, memory pressure, or an
                 // explicit Remove), drop it from the tag index so the sets don't
-                // accumulate stale keys forever.
+                // accumulate stale keys forever. The presence check is the
+                // replacement guard: Set on an existing key evicts the old
+                // entry, and the old entry's callback must not drop the NEW
+                // entry from the index.
                 options.RegisterPostEvictionCallback(
                     (_, _, _, state) =>
                     {
                         var (evictedKey, tagList) = ((string Key, string[] Tags))state!;
+                        if (cache.TryGetValue(evictedKey, out _))
+                            return;
                         foreach (var tag in tagList)
                             if (_tagIndex.TryGetValue(tag, out var set))
                                 set.TryRemove(evictedKey, out _);
@@ -74,6 +78,14 @@ public sealed class MemoryCacheService(IMemoryCache cache, IServiceProvider serv
         }
 
         cache.Set(key, value, options);
+
+        // Register AFTER Set: Set on an existing key evicts (replaces) the old
+        // entry, and registering first would let the old entry's post-eviction
+        // callback remove the just-registered key from the tag index —
+        // RemoveByTag would then miss the live entry.
+        if (scopedTags.Length > 0)
+            RegisterTags(key, scopedTags);
+
         return Task.CompletedTask;
     }
 

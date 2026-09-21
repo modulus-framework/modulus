@@ -109,6 +109,25 @@ public sealed class EfTenantStoreTests : IDisposable
         ok.Should().BeFalse();
     }
 
+    [Fact]
+    public async Task List_ReturnsOnlyActiveTenants_InSlugOrder()
+    {
+        await WithManager(m => m.CreateAsync("zebra"));
+        var inactive = await WithManager(m => m.CreateAsync("apple"));
+        await WithManager(m => m.CreateAsync("mango"));
+        await WithManager(m => m.SetActiveAsync(inactive.TenantId, isActive: false));
+
+        var list = await WithStore(s => s.ListAsync(default));
+
+        list.Select(t => t.TenantSlug).Should().Equal("mango", "zebra");
+    }
+
+    [Fact]
+    public async Task List_EmptyStore_ReturnsEmpty()
+    {
+        (await WithStore(s => s.ListAsync(default))).Should().BeEmpty();
+    }
+
     // ── Scope helpers ─────────────────────────────────────────────
     private async Task<T> WithStore<T>(Func<ITenantStore, Task<T>> act)
     {

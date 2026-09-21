@@ -46,8 +46,11 @@ public class ValidationBehavior<TRequest, TResponse>
 public class TransactionBehavior<TRequest, TResponse>
     : IPipelineBehavior<TRequest, TResponse>
 {
-    // Wraps handler in a database transaction
-    // Uses execution strategy for retry compatibility
+    // Wraps every distinct DbContext (deduped by type) via the EF execution
+    // strategy (EnableRetryOnFailure-safe; handlers must be re-runnable).
+    // Skips IQuery<T> + [SkipTransaction]; fail-fast when >1 context and no
+    // [Transactional(...)]/AllContexts intent; multi-context commits are
+    // independent (non-atomic) — prefer the outbox for cross-module consistency.
 }
 ```
 

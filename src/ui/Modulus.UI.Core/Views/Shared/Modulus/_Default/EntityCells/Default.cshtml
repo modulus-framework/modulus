@@ -1,0 +1,15 @@
+@* Default markup for <m-entity-cells>: one <td> per contributed column, a dash when the row has no value. *@
+@model EntityCellsModel
+@foreach (var cell in Model.Cells)
+{
+    <td class="@cell.Class">
+        @if (string.IsNullOrEmpty(cell.Text))
+        {
+            <span class="text-secondary">&mdash;</span>
+        }
+        else
+        {
+            @cell.Text
+        }
+    </td>
+}

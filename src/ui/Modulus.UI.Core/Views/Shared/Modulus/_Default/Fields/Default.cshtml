@@ -1,0 +1,12 @@
+@* Default markup for <m-fields>: the extension fields other modules contributed to an entity, each already
+   rendered through the Input component. Nothing is emitted when there are none. *@
+@model EntityFieldsModel
+@if (Model.Fields.Count > 0)
+{
+    <div data-entity-fields="@Model.Entity">
+        @foreach (var field in Model.Fields)
+        {
+            @field
+        }
+    </div>
+}
