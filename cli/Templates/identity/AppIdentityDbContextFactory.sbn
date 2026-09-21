@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
+using Modulus.Core.Null;
 
 namespace {{ identity_namespace }}.Infrastructure;
 
@@ -24,6 +25,9 @@ public sealed class AppIdentityDbContextFactory : IDesignTimeDbContextFactory<Ap
             .{{ use_db_method }}(connectionString)
             .Options;
 
-        return new AppIdentityDbContext(options);
+        // Design-time tooling has no request and no DI container to resolve a
+        // tenant from; NullCurrentTenant is the host view (IsHost true, the
+        // tenant query filter becomes a no-op), which is what migrations need.
+        return new AppIdentityDbContext(options, new NullCurrentTenant());
     }
 }

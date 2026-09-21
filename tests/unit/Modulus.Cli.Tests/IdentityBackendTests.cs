@@ -71,6 +71,22 @@ public sealed class IdentityBackendTests : IDisposable
     }
 
     [Fact]
+    public void The_generated_identity_context_takes_and_forwards_the_ambient_tenant()
+    {
+        // ModulusIdentityDbContext applies a tenant query filter (users/roles are
+        // isolated per tenant, not just indexed by it), so the generated context
+        // and its design-time factory must carry ICurrentTenant through — a
+        // one-argument AppIdentityDbContext(options) no longer compiles against
+        // the base class.
+        var context = Render("identity/AppIdentityDbContext", Model());
+        context.Should().Contain("ICurrentTenant currentTenant")
+            .And.Contain(": ModulusIdentityDbContext(options, currentTenant)");
+
+        var factory = Render("identity/AppIdentityDbContextFactory", Model());
+        factory.Should().Contain("new AppIdentityDbContext(options, new NullCurrentTenant())");
+    }
+
+    [Fact]
     public void The_module_wires_identity_the_store_and_the_token_controller_on_its_own_context()
     {
         var module = Render("identity/IdentityModule", Model());
