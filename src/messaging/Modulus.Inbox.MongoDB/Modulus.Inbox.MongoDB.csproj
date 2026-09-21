@@ -12,4 +12,11 @@
     <ProjectReference Include="../../data/Modulus.Data.MongoDB/Modulus.Data.MongoDB.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- MongoInboxStore and InboxIndexInitializer are internal; the test
+         project constructs both directly against a real Testcontainers
+         Mongo, mirroring Modulus.Inbox's InternalsVisibleTo for EfInboxStore. -->
+    <InternalsVisibleTo Include="Modulus.Inbox.MongoDB.Tests" />
+  </ItemGroup>
+
 </Project>
