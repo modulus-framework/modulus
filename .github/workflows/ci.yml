@@ -25,7 +25,33 @@ jobs:
         # Category=Unit is Docker-free by convention: any test using
         # Testcontainers.* must be [Trait(Category, Integration)]. The unit job
         # has no Docker guarantee; container tests run in the integration job.
-        run: dotnet test modulus.slnx --no-build --configuration Release --filter "Category=Unit" --verbosity normal
+        run: >
+          dotnet test modulus.slnx --no-build --configuration Release
+          --filter "Category=Unit" --verbosity normal
+          --collect:"XPlat Code Coverage" --results-directory artifacts/coverage
+      - name: Enforce coverage floor
+        run: |
+          dotnet tool install -g dotnet-reportgenerator-globaltool
+          export PATH="$PATH:$HOME/.dotnet/tools"
+          reportgenerator -reports:"artifacts/coverage/**/coverage.cobertura.xml" \
+            -targetdir:artifacts/coverage-report -reporttypes:"Cobertura;TextSummary"
+          cat artifacts/coverage-report/Summary.txt
+          line=$(grep -oP '(?<=Line coverage: )[0-9]+(\.[0-9]+)?' artifacts/coverage-report/Summary.txt)
+          # Floor set below the 44.2% measured when this gate was added —
+          # room for normal variance, high enough to catch a real collapse
+          # (e.g. a whole suite silently failing to run). Raise it over time
+          # as coverage improves; do not lower it to make a failing PR pass.
+          floor=35
+          echo "Line coverage: ${line}% (floor ${floor}%)"
+          if awk "BEGIN { exit !($line < $floor) }"; then
+            echo "::error::Line coverage ${line}% is below the ${floor}% floor."
+            exit 1
+          fi
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: artifacts/coverage-report
       - name: Audit vulnerable packages
         run: |
           out=$(dotnet list modulus.slnx package --vulnerable --include-transitive)
