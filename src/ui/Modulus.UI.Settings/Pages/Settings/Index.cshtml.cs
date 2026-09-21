@@ -1,5 +1,6 @@
 namespace Modulus.UI.Settings.Pages.Settings;
 
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Modulus.Localization;
 using Modulus.Settings;
@@ -9,6 +10,7 @@ using Modulus.Settings;
 /// first dotted segment, each with its effective value for the ambient
 /// scope (user → tenant → global → default).
 /// </summary>
+[Authorize]
 public sealed class IndexModel(
     ISettingDefinitionRegistry registry,
     ISettingManager manager,

@@ -1,5 +1,6 @@
 namespace Modulus.UI.Users.Pages.Roles;
 
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
@@ -19,6 +20,7 @@ using Modulus.UI.Users;
 /// full-page so field validation renders next to the create form. Non-JS
 /// callers keep the classic redirect flow.
 /// </remarks>
+[Authorize]
 public sealed class IndexModel(
     RoleManager<ModulusRole> roles,
     IOptions<UsersUiOptions> options,

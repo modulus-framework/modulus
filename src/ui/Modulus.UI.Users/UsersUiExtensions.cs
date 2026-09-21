@@ -34,9 +34,15 @@ public static class UsersUiExtensions
 
         // Folder conventions need the value at registration time, so read it
         // eagerly; the bound options remain the runtime source of truth.
+        // IConfigurationSection.Get<T>() returns null (not a default-
+        // constructed instance) when the section is absent — the common case
+        // for a host that hasn't touched UsersUi:RequirePermission — so the
+        // fallback to the compiled-in permission must happen here, not only
+        // on the options class's property initializer.
         var requirePermission = configuration
             ?.GetSection(UsersUiOptions.SectionName)
-            .Get<UsersUiOptions>()?.RequirePermission;
+            .Get<UsersUiOptions>()?.RequirePermission
+            ?? UsersUiPermissions.Manage;
         if (!string.IsNullOrWhiteSpace(requirePermission))
         {
             pages.AddRazorPagesOptions(o =>

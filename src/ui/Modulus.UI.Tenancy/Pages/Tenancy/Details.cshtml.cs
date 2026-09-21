@@ -1,5 +1,6 @@
 namespace Modulus.UI.Tenancy.Pages.Tenancy;
 
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Modulus.Core.Abstractions;
@@ -7,6 +8,7 @@ using Modulus.Localization;
 using Modulus.MultiTenancy;
 
 /// <summary>Tenant details (<c>/tenancy/{slug}</c>): unknown slugs are 404.</summary>
+[Authorize]
 public sealed class DetailsModel(
     ITenantStore tenantStore,
     IModulusLocalizer localizer) : PageModel

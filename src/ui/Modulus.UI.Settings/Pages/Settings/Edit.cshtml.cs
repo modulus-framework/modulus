@@ -2,6 +2,7 @@ namespace Modulus.UI.Settings.Pages.Settings;
 
 using System.ComponentModel.DataAnnotations;
 
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Modulus.Core.Abstractions;
 using Modulus.Localization;
@@ -20,6 +21,7 @@ using Modulus.UI;
 /// a toast; validation failures re-render with inline errors. Non-JS callers
 /// keep the classic redirect/page flow.
 /// </remarks>
+[Authorize]
 public sealed class EditModel(
     ISettingDefinitionRegistry registry,
     ISettingManager manager,

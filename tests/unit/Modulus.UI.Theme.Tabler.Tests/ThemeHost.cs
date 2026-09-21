@@ -1,4 +1,6 @@
 using System.Security.Claims;
+using System.Text.Encodings.Web;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -11,6 +13,7 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 using Modulus.UI;
 using Modulus.UI.Theming.Tabler;
 
@@ -65,6 +68,25 @@ internal sealed class ThemeHost : IAsyncDisposable
         }
 
         services?.Invoke(builder.Services);
+
+        // Feature-page models carry a bare [Authorize] floor (Modulus.UI.*'s
+        // fail-closed-by-default fix), and AddRazorPages() registers
+        // authorization services that WebApplication's implicit middleware
+        // then auto-inserts UseAuthorization() for — even though this host
+        // never calls it explicitly. Without any authentication scheme, an
+        // anonymous request to a protected page throws (no default challenge
+        // scheme) instead of cleanly 401ing. Tests that care about auth
+        // register their own scheme via `services:` (see
+        // PageAuthorizationTests); everyone else gets this minimal fallback
+        // so "?as=name" (set below) keeps authenticating as before and a
+        // truly anonymous request gets a plain 401.
+        if (!builder.Services.Any(d => d.ServiceType == typeof(IAuthenticationSchemeProvider)))
+        {
+            builder.Services.AddAuthentication(AnonymousDenyHandler.SchemeName)
+                .AddScheme<AuthenticationSchemeOptions, AnonymousDenyHandler>(
+                    AnonymousDenyHandler.SchemeName, _ => { });
+        }
+
         builder.Services.AddTablerTheme(builder.Configuration);
         var mvc = builder.Services.AddRazorPages()
             .AddApplicationPart(typeof(UiOptions).Assembly)
@@ -87,6 +109,17 @@ internal sealed class ThemeHost : IAsyncDisposable
 
             return next(http);
         });
+
+        // Explicit, not relying on WebApplication's implicit middleware
+        // insertion: that inserts UseAuthentication/UseAuthorization near the
+        // front of the pipeline (registered here or not), which would run
+        // them BEFORE the "?as=" middleware above ever sets HttpContext.User
+        // — authorizing every request as anonymous regardless of "?as=".
+        // Calling them here, after "?as=", both fixes the ordering and
+        // suppresses the implicit insertion (it only fires when neither was
+        // called explicitly).
+        app.UseAuthentication();
+        app.UseAuthorization();
 
         pipeline?.Invoke(app);
 
@@ -134,6 +167,32 @@ internal sealed class ThemeHost : IAsyncDisposable
 
             return new ViewResult { ViewName = viewPath, ViewData = viewData }
                 .ExecuteResultAsync(actionContext);
+        }
+    }
+
+    /// <summary>
+    /// Fallback authentication scheme registered when a test supplies none of
+    /// its own: never authenticates a request on its own (the "?as=" middleware
+    /// above sets <see cref="HttpContext.User"/> directly for tests that want a
+    /// signed-in caller), and answers a bare 401 on challenge instead of
+    /// redirecting or throwing — matching how a real host's default scheme
+    /// behaves for an API-shaped anonymous request.
+    /// </summary>
+    private sealed class AnonymousDenyHandler(
+        IOptionsMonitor<AuthenticationSchemeOptions> options,
+        Microsoft.Extensions.Logging.ILoggerFactory logger,
+        UrlEncoder encoder)
+        : AuthenticationHandler<AuthenticationSchemeOptions>(options, logger, encoder)
+    {
+        public const string SchemeName = "ThemeHostFallback";
+
+        protected override Task<AuthenticateResult> HandleAuthenticateAsync()
+            => Task.FromResult(AuthenticateResult.NoResult());
+
+        protected override Task HandleChallengeAsync(AuthenticationProperties properties)
+        {
+            Response.StatusCode = StatusCodes.Status401Unauthorized;
+            return Task.CompletedTask;
         }
     }
 }

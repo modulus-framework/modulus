@@ -1,5 +1,6 @@
 namespace Modulus.UI.Users.Pages.Users;
 
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Options;
@@ -11,6 +12,7 @@ using Modulus.Localization;
 /// ordered by username, with active/lockout state. Mutations live on the
 /// details page; creation on <c>/users/create</c>.
 /// </summary>
+[Authorize]
 public sealed class IndexModel(
     UserManager<ModulusUser> users,
     IOptions<UsersUiOptions> options,

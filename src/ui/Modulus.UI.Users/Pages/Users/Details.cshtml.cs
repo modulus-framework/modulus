@@ -1,5 +1,6 @@
 namespace Modulus.UI.Users.Pages.Users;
 
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Modulus.Identity.Abstractions;
@@ -18,6 +19,7 @@ using Modulus.UI;
 /// (<c>_RoleList</c>), each with a toast on success and inline errors on
 /// failure. Non-JS callers keep the classic redirect/page flow.
 /// </remarks>
+[Authorize]
 public sealed class DetailsModel(
     UserManager<ModulusUser> users,
     RoleManager<ModulusRole> roles,

@@ -1,5 +1,6 @@
 namespace Modulus.UI.AuditLogging.Pages.AuditLogs;
 
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Options;
@@ -12,6 +13,7 @@ using Modulus.Localization;
 /// (action / resource / user / time window). Unknown-user-id input renders a
 /// validation error instead of querying.
 /// </summary>
+[Authorize]
 public sealed class IndexModel(
     IAuditLogStore store,
     IOptions<AuditLoggingUiOptions> options,

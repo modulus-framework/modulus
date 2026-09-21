@@ -2,6 +2,7 @@ namespace Modulus.UI.Users.Pages.Users;
 
 using System.ComponentModel.DataAnnotations;
 
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -13,6 +14,7 @@ using Modulus.Localization;
 /// password via <c>UserManager&lt;ModulusUser&gt;.CreateAsync</c>. Identity
 /// validation failures surface as model errors on the same page.
 /// </summary>
+[Authorize]
 public sealed class CreateModel(
     UserManager<ModulusUser> users,
     IModulusLocalizer localizer) : PageModel

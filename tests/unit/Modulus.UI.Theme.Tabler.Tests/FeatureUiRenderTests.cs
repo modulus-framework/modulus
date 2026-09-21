@@ -96,7 +96,7 @@ public sealed class FeatureUiRenderTests
             },
             applicationParts: Parts);
 
-        var html = await host.GetStringAsync("/Files");
+        var html = await host.GetStringAsync("/Files?as=alice");
 
         html.Should().Contain("m-layout-application");
         // m-form: posts to the Upload handler, swaps the result card, and carries the multipart encoding.
@@ -132,7 +132,7 @@ public sealed class FeatureUiRenderTests
             applicationParts: identityFirst ? [identity, tenancy] : [tenancy, identity]);
 
         (await host.GetStringAsync("/Account/AccessDenied")).Should().Contain("m-layout-account").And.NotContain("m-layout-application");
-        (await host.GetStringAsync("/Tenancy")).Should().Contain("m-layout-application").And.NotContain("m-layout-account");
+        (await host.GetStringAsync("/Tenancy?as=alice")).Should().Contain("m-layout-application").And.NotContain("m-layout-account");
     }
 
     [Fact]
@@ -140,7 +140,7 @@ public sealed class FeatureUiRenderTests
     {
         await using var host = await TenancyHost(new TenantInfo(Guid.NewGuid(), "acme", "Acme Corp"));
 
-        var html = await host.GetStringAsync("/Tenancy");
+        var html = await host.GetStringAsync("/Tenancy?as=alice");
 
         // Layout came from Tenancy's _ViewStart -> GetThemeLayout -> the registered Tabler theme.
         html.Should().Contain("m-layout-application").And.Contain("navbar-vertical");
@@ -157,7 +157,7 @@ public sealed class FeatureUiRenderTests
     {
         await using var host = await TenancyHost();
 
-        var html = await host.GetStringAsync("/Tenancy");
+        var html = await host.GetStringAsync("/Tenancy?as=alice");
 
         html.Should().Contain("alert alert-info").And.Contain("Directory.Empty");
         html.Should().NotContain("<thead>");
@@ -176,7 +176,7 @@ public sealed class FeatureUiRenderTests
             },
             applicationParts: Parts);
 
-        var html = await host.GetStringAsync("/Tenancy");
+        var html = await host.GetStringAsync("/Tenancy?as=alice");
 
         html.Should().Contain("href=\"/tenancy/new\"").And.Contain("New tenant");
     }
@@ -203,15 +203,19 @@ public sealed class FeatureUiRenderTests
         var store = new FakeAudit(new PagedList<AuditLogEntry> { Items = entries, TotalCount = 6, PageSize = 2 });
         await using var host = await AuditHost(store);
 
-        var html = await host.GetStringAsync("/AuditLogs?PageNumber=2&Action=Login&Resource=Order&handler=List");
+        var html = await host.GetStringAsync("/AuditLogs?PageNumber=2&Action=Login&Resource=Order&handler=List&as=alice");
 
         store.LastQuery!.Page.Should().Be(2);
         store.LastQuery.Action.Should().Be("Login");
         html.Should().Contain("<h2 class=\"page-title\">Index.Title</h2>");
         html.Should().Contain("<code>Login1</code>").And.Contain("<code>Login2</code>");
         html.Should().Contain("Page 2");
-        html.Should().Contain("href=\"/AuditLogs?Action=Login&amp;Resource=Order&amp;PageNumber=1\"");
-        html.Should().Contain("href=\"/AuditLogs?Action=Login&amp;Resource=Order&amp;PageNumber=3\"");
+        // "as=alice" (this test host's stand-in for a signed-in cookie, not a
+        // real query param) round-trips into the pager links along with the
+        // real filters — the assertion still proves Action/Resource survive
+        // and handler= is dropped.
+        html.Should().Contain("href=\"/AuditLogs?Action=Login&amp;Resource=Order&amp;as=alice&amp;PageNumber=1\"");
+        html.Should().Contain("href=\"/AuditLogs?Action=Login&amp;Resource=Order&amp;as=alice&amp;PageNumber=3\"");
         html.Should().NotContain("handler=");
     }
 
@@ -221,7 +225,7 @@ public sealed class FeatureUiRenderTests
         var entries = new List<AuditLogEntry> { new() { Action = "Only", OccurredAt = DateTimeOffset.UnixEpoch } };
         await using var host = await AuditHost(new FakeAudit(new PagedList<AuditLogEntry> { Items = entries, TotalCount = 1, PageSize = 2 }));
 
-        var html = await host.GetStringAsync("/AuditLogs");
+        var html = await host.GetStringAsync("/AuditLogs?as=alice");
 
         html.Should().Contain("Page 1");
         html.Should().NotContain("rel=\"prev\"").And.NotContain("rel=\"next\"");
@@ -232,7 +236,7 @@ public sealed class FeatureUiRenderTests
     {
         await using var host = await AuditHost(new FakeAudit(new PagedList<AuditLogEntry> { PageSize = 2 }));
 
-        var html = await host.GetStringAsync("/AuditLogs");
+        var html = await host.GetStringAsync("/AuditLogs?as=alice");
 
         html.Should().Contain("alert alert-info").And.Contain("Index.Empty");
         html.Should().NotContain("card-footer");

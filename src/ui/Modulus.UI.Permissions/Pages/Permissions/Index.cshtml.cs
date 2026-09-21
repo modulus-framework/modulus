@@ -1,5 +1,6 @@
 namespace Modulus.UI.Permissions.Pages.Permissions;
 
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Modulus.Core.Abstractions;
 using Modulus.Localization;
@@ -9,6 +10,7 @@ using Modulus.Localization;
 /// module prefix (the segment before <c>:</c>, mirroring
 /// <c>GetByModule</c>). Ungrouped names fall under <c>General</c>.
 /// </summary>
+[Authorize]
 public sealed class IndexModel(
     IPermissionRegistry registry,
     IModulusLocalizer localizer) : PageModel

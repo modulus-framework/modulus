@@ -1,3 +1,6 @@
+using System.Security.Claims;
+using System.Text.Encodings.Web;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Razor.Compilation;
@@ -5,6 +8,7 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 using Modulus.UI.Theming.Tabler;
 
 namespace Modulus.UI.Ejection.Tests;
@@ -36,6 +40,21 @@ internal sealed class EjectionHost : IAsyncDisposable
         builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?>());
 
         services?.Invoke(builder.Services);
+
+        // This host tests view resolution (which assembly serves a page's
+        // markup), not authorization — but feature-page models carry a bare
+        // [Authorize] floor, so every request needs a signed-in principal or
+        // AddRazorPages()'s authorization services (picked up by
+        // WebApplication's implicit UseAuthorization insertion) reject it.
+        // Always authenticate as a fixed test user unless the test supplied
+        // its own scheme.
+        if (!builder.Services.Any(d => d.ServiceType == typeof(IAuthenticationSchemeProvider)))
+        {
+            builder.Services.AddAuthentication(AlwaysAuthenticatedHandler.SchemeName)
+                .AddScheme<AuthenticationSchemeOptions, AlwaysAuthenticatedHandler>(
+                    AlwaysAuthenticatedHandler.SchemeName, _ => { });
+        }
+
         builder.Services.AddTablerTheme(builder.Configuration);
 
         var mvc = builder.Services.AddRazorPages().AddApplicationPart(typeof(EjectionHost).Assembly);
@@ -45,6 +64,8 @@ internal sealed class EjectionHost : IAsyncDisposable
         }
 
         var app = builder.Build();
+        app.UseAuthentication();
+        app.UseAuthorization();
         app.MapRazorPages();
         await app.StartAsync();
         return new EjectionHost(app, app.GetTestClient());
@@ -75,5 +96,22 @@ internal sealed class EjectionHost : IAsyncDisposable
         Client.Dispose();
         await _app.StopAsync();
         await _app.DisposeAsync();
+    }
+
+    /// <summary>Fallback authentication scheme: every request is a signed-in "test-user" unless the test registers its own scheme.</summary>
+    private sealed class AlwaysAuthenticatedHandler(
+        IOptionsMonitor<AuthenticationSchemeOptions> options,
+        Microsoft.Extensions.Logging.ILoggerFactory logger,
+        UrlEncoder encoder)
+        : AuthenticationHandler<AuthenticationSchemeOptions>(options, logger, encoder)
+    {
+        public const string SchemeName = "EjectionHostFallback";
+
+        protected override Task<AuthenticateResult> HandleAuthenticateAsync()
+        {
+            var identity = new ClaimsIdentity([new Claim(ClaimTypes.Name, "test-user")], SchemeName);
+            var ticket = new AuthenticationTicket(new ClaimsPrincipal(identity), SchemeName);
+            return Task.FromResult(AuthenticateResult.Success(ticket));
+        }
     }
 }

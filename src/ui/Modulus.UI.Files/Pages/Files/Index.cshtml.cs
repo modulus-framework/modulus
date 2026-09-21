@@ -1,5 +1,6 @@
 namespace Modulus.UI.Files.Pages.Files;
 
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
@@ -21,6 +22,7 @@ using Modulus.UI;
 /// redirect/page flow. Lookup and download stay full-page (bookmarkable URL
 /// and real file download respectively).
 /// </remarks>
+[Authorize]
 public sealed class IndexModel(
     IFileStorage storage,
     IOptions<FilesUiOptions> options,

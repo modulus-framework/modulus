@@ -12,8 +12,10 @@ using Xunit;
 namespace Modulus.UI.Theme.Tabler.Tests;
 
 /// <summary>
-/// <c>AddModulusPageAuthorization</c>: a feature UI applies its own permission check only when the app configures one, so a
-/// generated web app calls this to keep every page behind a sign-in (the sign-in pages excepted).
+/// <c>AddModulusPageAuthorization</c>: every prebuilt feature-UI page model also carries a bare
+/// <c>[Authorize]</c> floor (sign-in required) independent of this call, so <c>AddModulusPageAuthorization</c>'s
+/// job is extending that same requirement to the app's <em>own</em> pages too — a generated web app calls this
+/// to keep every page behind a sign-in (the sign-in pages excepted), not just the framework's.
 /// </summary>
 [Trait("Category", "Unit")]
 public sealed class PageAuthorizationTests
@@ -43,12 +45,7 @@ public sealed class PageAuthorizationTests
                     s.AddModulusPageAuthorization(anonymousFolders);
                 }
             },
-            applicationParts: Parts,
-            pipeline: app =>
-            {
-                app.UseAuthentication();
-                app.UseAuthorization();
-            });
+            applicationParts: Parts);
 
     private static async Task<HttpStatusCode> StatusAsync(ThemeHost host, string url)
     {
@@ -57,11 +54,18 @@ public sealed class PageAuthorizationTests
     }
 
     [Fact]
-    public async Task Without_it_a_feature_page_is_open_to_anyone()
+    public async Task Without_it_a_feature_page_still_requires_sign_in()
     {
+        // Modulus.UI.Files.Pages.Files.IndexModel carries a bare [Authorize] as
+        // an unconditional floor (independent of AddModulusPageAuthorization
+        // and of FilesUiOptions.RequirePermission), so an anonymous visitor is
+        // challenged even when the host wires nothing beyond a plain cookie
+        // scheme + AddAuthorization() — the exact setup that used to leave
+        // every prebuilt admin page open to anyone who could reach the site.
         await using var host = await StartAsync(authorize: false);
 
-        (await StatusAsync(host, "/Files")).Should().Be(HttpStatusCode.OK);
+        (await StatusAsync(host, "/Files")).Should().Be(HttpStatusCode.Unauthorized);
+        (await StatusAsync(host, "/Files?as=alice")).Should().Be(HttpStatusCode.OK);
     }
 
     [Fact]

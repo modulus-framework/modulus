@@ -1,5 +1,6 @@
 namespace Modulus.UI.Tenancy.Pages.Tenancy;
 
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Modulus.Core.Abstractions;
 using Modulus.Localization;
@@ -11,6 +12,7 @@ using Modulus.MultiTenancy;
 /// opt-in fan-out surface) — the page then shows the empty-state hint
 /// instead of an empty table.
 /// </summary>
+[Authorize]
 public sealed class IndexModel(
     ICurrentTenant currentTenant,
     ITenantStore tenantStore,

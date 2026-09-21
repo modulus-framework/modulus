@@ -34,9 +34,15 @@ public static class FilesUiExtensions
 
         // Folder convention needs the value at registration time, so read it
         // eagerly; the bound options remain the runtime source of truth.
+        // IConfigurationSection.Get<T>() returns null (not a default-
+        // constructed instance) when the section is absent — the common case
+        // for a host that hasn't touched FilesUi:RequirePermission — so the
+        // fallback to the compiled-in permission must happen here, not only
+        // on the options class's property initializer.
         var requirePermission = configuration
             ?.GetSection(FilesUiOptions.SectionName)
-            .Get<FilesUiOptions>()?.RequirePermission;
+            .Get<FilesUiOptions>()?.RequirePermission
+            ?? FilesUiPermissions.Manage;
         if (!string.IsNullOrWhiteSpace(requirePermission))
             pages.AddRazorPagesOptions(o => o.Conventions.AuthorizeFolder("/Files", requirePermission));
 

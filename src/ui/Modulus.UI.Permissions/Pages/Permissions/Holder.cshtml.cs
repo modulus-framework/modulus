@@ -2,6 +2,7 @@ namespace Modulus.UI.Permissions.Pages.Permissions;
 
 using System.ComponentModel.DataAnnotations;
 
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Modulus.Authorization.Grants;
@@ -15,6 +16,7 @@ using Modulus.Localization;
 /// effective-access endpoint documents. Read-only: editing lives in the
 /// <c>/authorization</c> management API.
 /// </summary>
+[Authorize]
 public sealed class HolderModel(
     IPermissionGrantStore grants,
     IModulusLocalizer localizer) : PageModel

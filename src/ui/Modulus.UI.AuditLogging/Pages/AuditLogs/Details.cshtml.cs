@@ -1,5 +1,6 @@
 namespace Modulus.UI.AuditLogging.Pages.AuditLogs;
 
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Modulus.AuditLogging;
@@ -9,6 +10,7 @@ using Modulus.Localization;
 /// Audit-entry details (<c>/audit-logs/{id}</c>): full field dump; 404 for
 /// unknown ids.
 /// </summary>
+[Authorize]
 public sealed class DetailsModel(
     IAuditLogStore store,
     IModulusLocalizer localizer) : PageModel
