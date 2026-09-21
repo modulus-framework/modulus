@@ -29,9 +29,20 @@ public sealed class MemoryCacheService(IMemoryCache cache, IServiceProvider serv
             : $"modulus:tag:{tag}";
     }
 
+    // Entry keys get the same tenant scoping as tags (see TagKey): without
+    // it, GetAsync/SetAsync used the caller's raw key verbatim, so
+    // cache.SetAsync("products", ...) in tenant A was readable by tenant B.
+    private string EntryKey(string key)
+    {
+        var tenant = services.GetService<ICurrentTenant>();
+        return tenant is { IsHost: false, TenantId: { } tenantId }
+            ? $"modulus:entry:{tenantId:N}:{key}"
+            : $"modulus:entry:{key}";
+    }
+
     public Task<T?> GetAsync<T>(string key, CancellationToken ct = default)
     {
-        cache.TryGetValue(key, out T? value);
+        cache.TryGetValue(EntryKey(key), out T? value);
         return Task.FromResult(value);
     }
 
@@ -45,6 +56,7 @@ public sealed class MemoryCacheService(IMemoryCache cache, IServiceProvider serv
         string[]? tags,
         CancellationToken ct = default)
     {
+        var scopedKey = EntryKey(key);
         var options = new MemoryCacheEntryOptions();
         if (expiry.HasValue)
             options.AbsoluteExpirationRelativeToNow = expiry;
@@ -73,25 +85,25 @@ public sealed class MemoryCacheService(IMemoryCache cache, IServiceProvider serv
                             if (_tagIndex.TryGetValue(tag, out var set))
                                 set.TryRemove(evictedKey, out _);
                     },
-                    (key, scopedTags));
+                    (scopedKey, scopedTags));
             }
         }
 
-        cache.Set(key, value, options);
+        cache.Set(scopedKey, value, options);
 
         // Register AFTER Set: Set on an existing key evicts (replaces) the old
         // entry, and registering first would let the old entry's post-eviction
         // callback remove the just-registered key from the tag index —
         // RemoveByTag would then miss the live entry.
         if (scopedTags.Length > 0)
-            RegisterTags(key, scopedTags);
+            RegisterTags(scopedKey, scopedTags);
 
         return Task.CompletedTask;
     }
 
     public Task RemoveAsync(string key, CancellationToken ct = default)
     {
-        cache.Remove(key);
+        cache.Remove(EntryKey(key));
         return Task.CompletedTask;
     }
 

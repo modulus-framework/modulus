@@ -17,6 +17,12 @@ using Modulus.Mediator.Abstractions.Attributes;
 /// <see cref="ICurrentTenant"/>) — without that, a query executed for tenant A
 /// would be served verbatim to tenant B whenever the serialised request
 /// parameters matched. Host-scope queries share a single "host" partition.
+/// An <b>unresolved</b> tenant (multi-tenancy is on but no tenant resolved —
+/// a missing header, a misconfigured resolver) gets its own "unresolved"
+/// partition, distinct from "host": conflating the two would let an
+/// unresolved caller be served the host's "sees every tenant" cached result,
+/// the same fail-closed distinction <see cref="ICurrentTenant.IsHost"/>
+/// itself draws.
 /// Keys are additionally scoped by the calling user (via
 /// <see cref="ICurrentUser"/>): cached results frequently embed per-user
 /// authorization filtering (visibility, redaction), so serving one user's
@@ -59,7 +65,13 @@ public sealed class CachingBehavior<TRequest, TResponse>(
         // values produce different keys.
         var payload = JsonSerializer.Serialize(request);
 
-        var tenantPart = currentTenant?.TenantId?.ToString() ?? "host";
+        var tenantPart = currentTenant switch
+        {
+            null => "host",
+            { IsHost: true } => "host",
+            { TenantId: { } tenantId } => tenantId.ToString(),
+            _ => "unresolved",
+        };
         var userPart = currentUser?.UserId?.ToString() ?? "anon";
         return $"modulus:cache:t:{tenantPart}:u:{userPart}:{type}:{payload}";
     }

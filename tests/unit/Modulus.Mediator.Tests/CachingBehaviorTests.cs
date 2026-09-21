@@ -66,6 +66,29 @@ public sealed class CachingBehaviorTests
     }
 
     [Fact]
+    public async Task UnresolvedTenant_NeverSharesTheHostPartition()
+    {
+        // Regression guard for H3: the old key builder used
+        // `currentTenant?.TenantId?.ToString() ?? "host"`, which put BOTH the
+        // explicit host scope AND an unresolved tenant (IsHost false,
+        // TenantId null -- a missing header, a misconfigured resolver) into
+        // the same "host" partition. An unresolved caller could then be
+        // served the host's "sees every tenant" cached result.
+        var cache = new MemoryCache(new MemoryCacheOptions());
+        var tenant = new ThreeStateTenant();
+        var behavior = new CachingBehavior<CachedQuery, string>(cache, tenant);
+        var counter = new Counter();
+
+        tenant.SetHost();
+        await Invoke(behavior, counter); // populates the host partition
+
+        tenant.SetUnresolved();
+        await Invoke(behavior, counter); // must NOT be served the host's cached entry
+
+        counter.Calls.Should().Be(2);
+    }
+
+    [Fact]
     public async Task DifferentPayloads_InSameTenant_CacheSeparately()
     {
         var cache = new MemoryCache(new MemoryCacheOptions());
@@ -145,6 +168,29 @@ public sealed class CachingBehaviorTests
         {
             public void Dispose() => source.CurrentTenant = previous;
         }
+    }
+
+    /// <summary>Unlike <see cref="SwitchableTenant"/>, host and unresolved are independently settable states, not both collapsed onto "no TenantId".</summary>
+    private sealed class ThreeStateTenant : ICurrentTenant
+    {
+        public Guid? TenantId { get; private set; }
+        public string? TenantSlug => null;
+        public bool IsAvailable => TenantId is not null;
+        public bool IsHost { get; private set; }
+
+        public void SetHost()
+        {
+            IsHost = true;
+            TenantId = null;
+        }
+
+        public void SetUnresolved()
+        {
+            IsHost = false;
+            TenantId = null;
+        }
+
+        public IDisposable Change(TenantInfo? tenant) => throw new NotSupportedException();
     }
 
     private sealed class FakeCurrentTenant : ICurrentTenant

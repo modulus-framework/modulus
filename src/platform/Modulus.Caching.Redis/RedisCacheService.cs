@@ -23,9 +23,20 @@ public sealed class RedisCacheService(IConnectionMultiplexer redis, IServiceProv
             : $"modulus:tag:{tag}";
     }
 
+    // Entry keys get the same tenant scoping as tags (see TagKey): without
+    // it, GetAsync/SetAsync used the caller's raw key verbatim, so
+    // cache.SetAsync("products", ...) in tenant A was readable by tenant B.
+    private string EntryKey(string key)
+    {
+        var tenant = services.GetService<ICurrentTenant>();
+        return tenant is { IsHost: false, TenantId: { } tenantId }
+            ? $"modulus:entry:{tenantId:N}:{key}"
+            : $"modulus:entry:{key}";
+    }
+
     public async Task<T?> GetAsync<T>(string key, CancellationToken ct = default)
     {
-        var value = await _db.StringGetAsync(key);
+        var value = await _db.StringGetAsync(EntryKey(key));
         return value.IsNullOrEmpty ? default : JsonSerializer.Deserialize<T>((byte[])value!);
     }
 
@@ -39,14 +50,15 @@ public sealed class RedisCacheService(IConnectionMultiplexer redis, IServiceProv
         string[]? tags,
         CancellationToken ct = default)
     {
+        var scopedKey = EntryKey(key);
         var json = JsonSerializer.Serialize(value);
-        await _db.StringSetAsync(key, json, expiry.HasValue ? new Expiration(expiry.Value) : default);
+        await _db.StringSetAsync(scopedKey, json, expiry.HasValue ? new Expiration(expiry.Value) : default);
 
         if (tags is { Length: > 0 })
         {
             foreach (var tag in tags)
             {
-                await _db.SetAddAsync(TagKey(tag), key);
+                await _db.SetAddAsync(TagKey(tag), scopedKey);
                 // Keep the tag-set key alive for at least as long as the longest
                 // lived entry it references: only extend, never shrink, so a
                 // short-lived key cannot expire the set while longer-lived keys
@@ -63,12 +75,13 @@ public sealed class RedisCacheService(IConnectionMultiplexer redis, IServiceProv
 
     public Task RemoveAsync(string key, CancellationToken ct = default)
     {
+        var scopedKey = EntryKey(key);
         // Notify peers before the local delete so concurrent reads on other
         // nodes see the invalidation while their own key is still live — a
         // brief window is acceptable for an eventually-consistent cache.
         if (redis is not null)
-            RedisCacheBackplane.Publish(redis, keys: [key]);
-        return _db.KeyDeleteAsync(key);
+            RedisCacheBackplane.Publish(redis, keys: [scopedKey]);
+        return _db.KeyDeleteAsync(scopedKey);
     }
 
     public async Task RemoveByTagAsync(string tag, CancellationToken ct = default)
