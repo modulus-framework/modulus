@@ -1,7 +1,6 @@
 namespace Modulus.UI.AuditLogging;
 
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -46,7 +45,7 @@ public static class AuditLoggingUiExtensions
         if (!string.IsNullOrWhiteSpace(requirePermission))
             pages.AddRazorPagesOptions(o => o.Conventions.AuthorizeFolder("/AuditLogs", requirePermission));
 
-        services.AddSingleton<IStartupFilter, AuditLoggingUiStartupFilter>();
+        services.AddLocalizationSeed(AuditLoggingUiLocalization.SeedAsync);
         return services;
     }
 
@@ -55,17 +54,5 @@ public static class AuditLoggingUiExtensions
     {
         endpoints.MapRazorPages();
         return endpoints;
-    }
-
-    private sealed class AuditLoggingUiStartupFilter : IStartupFilter
-    {
-        public Action<IApplicationBuilder> Configure(Action<IApplicationBuilder> next) => app =>
-        {
-            var store = app.ApplicationServices.GetService(typeof(ILocalizationStore)) as ILocalizationStore;
-            if (store is not null)
-                AuditLoggingUiLocalization.Seed(store);
-
-            next(app);
-        };
     }
 }

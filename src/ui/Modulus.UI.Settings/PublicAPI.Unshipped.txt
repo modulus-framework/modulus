@@ -62,4 +62,4 @@ static Modulus.UI.Settings.Pages.Settings.IndexModel.SettingRow.operator !=(Modu
 static Modulus.UI.Settings.Pages.Settings.IndexModel.SettingRow.operator ==(Modulus.UI.Settings.Pages.Settings.IndexModel.SettingRow? left, Modulus.UI.Settings.Pages.Settings.IndexModel.SettingRow? right) -> bool
 static Modulus.UI.Settings.SettingsUiExtensions.AddModulusSettingsUi(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration? configuration = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static Modulus.UI.Settings.SettingsUiExtensions.MapModulusSettingsUi(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints) -> Microsoft.AspNetCore.Routing.IEndpointRouteBuilder!
-static Modulus.UI.Settings.SettingsUiLocalization.Seed(Modulus.Localization.ILocalizationStore! store) -> void
+static Modulus.UI.Settings.SettingsUiLocalization.SeedAsync(Modulus.Localization.ILocalizationStore! store, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!

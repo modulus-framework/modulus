@@ -40,6 +40,6 @@ override Modulus.UI.Files.Pages.Files.FileResultView.GetHashCode() -> int
 override Modulus.UI.Files.Pages.Files.FileResultView.ToString() -> string!
 static Modulus.UI.Files.FilesUiExtensions.AddModulusFilesUi(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration? configuration = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static Modulus.UI.Files.FilesUiExtensions.MapModulusFilesUi(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints) -> Microsoft.AspNetCore.Routing.IEndpointRouteBuilder!
-static Modulus.UI.Files.FilesUiLocalization.Seed(Modulus.Localization.ILocalizationStore! store) -> void
 static Modulus.UI.Files.Pages.Files.FileResultView.operator !=(Modulus.UI.Files.Pages.Files.FileResultView? left, Modulus.UI.Files.Pages.Files.FileResultView? right) -> bool
 static Modulus.UI.Files.Pages.Files.FileResultView.operator ==(Modulus.UI.Files.Pages.Files.FileResultView? left, Modulus.UI.Files.Pages.Files.FileResultView? right) -> bool
+static Modulus.UI.Files.FilesUiLocalization.SeedAsync(Modulus.Localization.ILocalizationStore! store, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!

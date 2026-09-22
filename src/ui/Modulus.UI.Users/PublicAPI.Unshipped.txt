@@ -71,4 +71,4 @@ static Modulus.UI.Users.Pages.Users.IndexModel.UserRow.operator !=(Modulus.UI.Us
 static Modulus.UI.Users.Pages.Users.IndexModel.UserRow.operator ==(Modulus.UI.Users.Pages.Users.IndexModel.UserRow? left, Modulus.UI.Users.Pages.Users.IndexModel.UserRow? right) -> bool
 static Modulus.UI.Users.UsersUiExtensions.AddModulusUsersUi(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration? configuration = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static Modulus.UI.Users.UsersUiExtensions.MapModulusUsersUi(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints) -> Microsoft.AspNetCore.Routing.IEndpointRouteBuilder!
-static Modulus.UI.Users.UsersUiLocalization.Seed(Modulus.Localization.ILocalizationStore! store) -> void
+static Modulus.UI.Users.UsersUiLocalization.SeedAsync(Modulus.Localization.ILocalizationStore! store, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!

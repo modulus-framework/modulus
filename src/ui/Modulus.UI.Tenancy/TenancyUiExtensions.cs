@@ -1,7 +1,6 @@
 namespace Modulus.UI.Tenancy;
 
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -46,7 +45,7 @@ public static class TenancyUiExtensions
         if (!string.IsNullOrWhiteSpace(requirePermission))
             pages.AddRazorPagesOptions(o => o.Conventions.AuthorizeFolder("/Tenancy", requirePermission));
 
-        services.AddSingleton<IStartupFilter, TenancyUiStartupFilter>();
+        services.AddLocalizationSeed(TenancyUiLocalization.SeedAsync);
         return services;
     }
 
@@ -55,17 +54,5 @@ public static class TenancyUiExtensions
     {
         endpoints.MapRazorPages();
         return endpoints;
-    }
-
-    private sealed class TenancyUiStartupFilter : IStartupFilter
-    {
-        public Action<IApplicationBuilder> Configure(Action<IApplicationBuilder> next) => app =>
-        {
-            var store = app.ApplicationServices.GetService(typeof(ILocalizationStore)) as ILocalizationStore;
-            if (store is not null)
-                TenancyUiLocalization.Seed(store);
-
-            next(app);
-        };
     }
 }

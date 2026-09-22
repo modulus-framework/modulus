@@ -1,7 +1,6 @@
 namespace Modulus.UI.Users;
 
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -52,7 +51,7 @@ public static class UsersUiExtensions
             });
         }
 
-        services.AddSingleton<IStartupFilter, UsersUiStartupFilter>();
+        services.AddLocalizationSeed(UsersUiLocalization.SeedAsync);
         return services;
     }
 
@@ -61,17 +60,5 @@ public static class UsersUiExtensions
     {
         endpoints.MapRazorPages();
         return endpoints;
-    }
-
-    private sealed class UsersUiStartupFilter : IStartupFilter
-    {
-        public Action<IApplicationBuilder> Configure(Action<IApplicationBuilder> next) => app =>
-        {
-            var store = app.ApplicationServices.GetService(typeof(ILocalizationStore)) as ILocalizationStore;
-            if (store is not null)
-                UsersUiLocalization.Seed(store);
-
-            next(app);
-        };
     }
 }

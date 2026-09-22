@@ -1,7 +1,6 @@
 namespace Modulus.UI.Permissions;
 
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -46,7 +45,7 @@ public static class PermissionsUiExtensions
         if (!string.IsNullOrWhiteSpace(requirePermission))
             pages.AddRazorPagesOptions(o => o.Conventions.AuthorizeFolder("/Permissions", requirePermission));
 
-        services.AddSingleton<IStartupFilter, PermissionsUiStartupFilter>();
+        services.AddLocalizationSeed(PermissionsUiLocalization.SeedAsync);
         return services;
     }
 
@@ -55,17 +54,5 @@ public static class PermissionsUiExtensions
     {
         endpoints.MapRazorPages();
         return endpoints;
-    }
-
-    private sealed class PermissionsUiStartupFilter : IStartupFilter
-    {
-        public Action<IApplicationBuilder> Configure(Action<IApplicationBuilder> next) => app =>
-        {
-            var store = app.ApplicationServices.GetService(typeof(ILocalizationStore)) as ILocalizationStore;
-            if (store is not null)
-                PermissionsUiLocalization.Seed(store);
-
-            next(app);
-        };
     }
 }

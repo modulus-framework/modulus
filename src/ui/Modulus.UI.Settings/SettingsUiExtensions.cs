@@ -1,7 +1,6 @@
 namespace Modulus.UI.Settings;
 
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -46,7 +45,7 @@ public static class SettingsUiExtensions
         if (!string.IsNullOrWhiteSpace(requirePermission))
             pages.AddRazorPagesOptions(o => o.Conventions.AuthorizeFolder("/Settings", requirePermission));
 
-        services.AddSingleton<IStartupFilter, SettingsUiStartupFilter>();
+        services.AddLocalizationSeed(SettingsUiLocalization.SeedAsync);
         return services;
     }
 
@@ -55,17 +54,5 @@ public static class SettingsUiExtensions
     {
         endpoints.MapRazorPages();
         return endpoints;
-    }
-
-    private sealed class SettingsUiStartupFilter : IStartupFilter
-    {
-        public Action<IApplicationBuilder> Configure(Action<IApplicationBuilder> next) => app =>
-        {
-            var store = app.ApplicationServices.GetService(typeof(ILocalizationStore)) as ILocalizationStore;
-            if (store is not null)
-                SettingsUiLocalization.Seed(store);
-
-            next(app);
-        };
     }
 }

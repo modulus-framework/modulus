@@ -11,14 +11,13 @@ public static class SettingsUiLocalization
 {
     public const string ResourceName = "Modulus.Settings";
 
-    public static void Seed(ILocalizationStore store)
+    public static async Task SeedAsync(ILocalizationStore store, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(store);
-        if (store is InMemoryLocalizationStore memory)
-        {
-            memory.Add(ResourceName, "en", English);
-            memory.Add(ResourceName, "es", Spanish);
-        }
+        foreach (var (key, value) in English)
+            await store.SetAsync(ResourceName, "en", key, value, ct).ConfigureAwait(false);
+        foreach (var (key, value) in Spanish)
+            await store.SetAsync(ResourceName, "es", key, value, ct).ConfigureAwait(false);
     }
 
     private static readonly IReadOnlyDictionary<string, string> English =

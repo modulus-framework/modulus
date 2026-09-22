@@ -25,4 +25,4 @@ override Modulus.UI.Tenancy.TenancyUiModule.ConfigureNavigation(Modulus.UI.UiNav
 override Modulus.UI.Tenancy.TenancyUiModule.Manifest.get -> Modulus.UI.ModuleManifest!
 static Modulus.UI.Tenancy.TenancyUiExtensions.AddModulusTenancyUi(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration? configuration = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static Modulus.UI.Tenancy.TenancyUiExtensions.MapModulusTenancyUi(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints) -> Microsoft.AspNetCore.Routing.IEndpointRouteBuilder!
-static Modulus.UI.Tenancy.TenancyUiLocalization.Seed(Modulus.Localization.ILocalizationStore! store) -> void
+static Modulus.UI.Tenancy.TenancyUiLocalization.SeedAsync(Modulus.Localization.ILocalizationStore! store, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!

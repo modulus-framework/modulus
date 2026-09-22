@@ -1,7 +1,6 @@
 namespace Modulus.UI.Identity;
 
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -33,7 +32,7 @@ public static class IdentityUiExtensions
 
         services.AddRazorPages();
         services.AddUiModule<IdentityUiModule>();
-        services.AddSingleton<IStartupFilter, IdentityUiStartupFilter>();
+        services.AddLocalizationSeed(IdentityUiLocalization.SeedAsync);
         return services;
     }
 
@@ -42,17 +41,5 @@ public static class IdentityUiExtensions
     {
         endpoints.MapRazorPages();
         return endpoints;
-    }
-
-    private sealed class IdentityUiStartupFilter : IStartupFilter
-    {
-        public Action<IApplicationBuilder> Configure(Action<IApplicationBuilder> next) => app =>
-        {
-            var store = app.ApplicationServices.GetService(typeof(ILocalizationStore)) as ILocalizationStore;
-            if (store is not null)
-                IdentityUiLocalization.Seed(store);
-
-            next(app);
-        };
     }
 }

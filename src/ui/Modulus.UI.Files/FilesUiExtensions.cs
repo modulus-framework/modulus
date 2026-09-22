@@ -1,7 +1,6 @@
 namespace Modulus.UI.Files;
 
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -46,7 +45,7 @@ public static class FilesUiExtensions
         if (!string.IsNullOrWhiteSpace(requirePermission))
             pages.AddRazorPagesOptions(o => o.Conventions.AuthorizeFolder("/Files", requirePermission));
 
-        services.AddSingleton<IStartupFilter, FilesUiStartupFilter>();
+        services.AddLocalizationSeed(FilesUiLocalization.SeedAsync);
         return services;
     }
 
@@ -55,17 +54,5 @@ public static class FilesUiExtensions
     {
         endpoints.MapRazorPages();
         return endpoints;
-    }
-
-    private sealed class FilesUiStartupFilter : IStartupFilter
-    {
-        public Action<IApplicationBuilder> Configure(Action<IApplicationBuilder> next) => app =>
-        {
-            var store = app.ApplicationServices.GetService(typeof(ILocalizationStore)) as ILocalizationStore;
-            if (store is not null)
-                FilesUiLocalization.Seed(store);
-
-            next(app);
-        };
     }
 }

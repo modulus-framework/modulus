@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Localization;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 
 public static class LocalizationExtensions
@@ -26,6 +27,23 @@ public static class LocalizationExtensions
 
         services.TryAddSingleton<ILocalizationStore, InMemoryLocalizationStore>();
         services.TryAddScoped<IModulusLocalizer, ModulusLocalizer>();
+        return services;
+    }
+
+    /// <summary>
+    /// Registers a module's <c>*UiLocalization.SeedAsync</c> to run once at
+    /// host startup, against whichever <see cref="ILocalizationStore"/> the
+    /// host has registered — in-memory, database, or otherwise. Each UI
+    /// module's <c>AddModulusXxxUi</c> calls this instead of the old
+    /// synchronous <c>IStartupFilter</c> seeding, which could only reach
+    /// <see cref="InMemoryLocalizationStore"/> (plan finding H20).
+    /// </summary>
+    public static IServiceCollection AddLocalizationSeed(
+        this IServiceCollection services,
+        Func<ILocalizationStore, CancellationToken, Task> seed)
+    {
+        services.AddSingleton<IHostedService>(sp =>
+            new LocalizationSeedHostedService(sp.GetRequiredService<ILocalizationStore>(), seed));
         return services;
     }
 

@@ -39,4 +39,4 @@ override Modulus.UI.AuditLogging.AuditLoggingUiModule.ConfigureNavigation(Modulu
 override Modulus.UI.AuditLogging.AuditLoggingUiModule.Manifest.get -> Modulus.UI.ModuleManifest!
 static Modulus.UI.AuditLogging.AuditLoggingUiExtensions.AddModulusAuditLoggingUi(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration? configuration = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static Modulus.UI.AuditLogging.AuditLoggingUiExtensions.MapModulusAuditLoggingUi(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints) -> Microsoft.AspNetCore.Routing.IEndpointRouteBuilder!
-static Modulus.UI.AuditLogging.AuditLoggingUiLocalization.Seed(Modulus.Localization.ILocalizationStore! store) -> void
+static Modulus.UI.AuditLogging.AuditLoggingUiLocalization.SeedAsync(Modulus.Localization.ILocalizationStore! store, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!

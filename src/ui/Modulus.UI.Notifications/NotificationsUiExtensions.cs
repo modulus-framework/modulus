@@ -1,7 +1,6 @@
 namespace Modulus.UI.Notifications;
 
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -41,7 +40,7 @@ public static class NotificationsUiExtensions
         if (!string.IsNullOrWhiteSpace(requirePermission))
             pages.AddRazorPagesOptions(o => o.Conventions.AuthorizeFolder("/Notifications", requirePermission));
 
-        services.AddSingleton<IStartupFilter, NotificationsUiStartupFilter>();
+        services.AddLocalizationSeed(NotificationsUiLocalization.SeedAsync);
         return services;
     }
 
@@ -50,17 +49,5 @@ public static class NotificationsUiExtensions
     {
         endpoints.MapRazorPages();
         return endpoints;
-    }
-
-    private sealed class NotificationsUiStartupFilter : IStartupFilter
-    {
-        public Action<IApplicationBuilder> Configure(Action<IApplicationBuilder> next) => app =>
-        {
-            var store = app.ApplicationServices.GetService(typeof(ILocalizationStore)) as ILocalizationStore;
-            if (store is not null)
-                NotificationsUiLocalization.Seed(store);
-
-            next(app);
-        };
     }
 }

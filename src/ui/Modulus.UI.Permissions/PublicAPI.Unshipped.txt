@@ -51,4 +51,4 @@ static Modulus.UI.Permissions.Pages.Permissions.IndexModel.PermissionGroup.opera
 static Modulus.UI.Permissions.Pages.Permissions.IndexModel.PermissionGroup.operator ==(Modulus.UI.Permissions.Pages.Permissions.IndexModel.PermissionGroup? left, Modulus.UI.Permissions.Pages.Permissions.IndexModel.PermissionGroup? right) -> bool
 static Modulus.UI.Permissions.PermissionsUiExtensions.AddModulusPermissionsUi(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration? configuration = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static Modulus.UI.Permissions.PermissionsUiExtensions.MapModulusPermissionsUi(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints) -> Microsoft.AspNetCore.Routing.IEndpointRouteBuilder!
-static Modulus.UI.Permissions.PermissionsUiLocalization.Seed(Modulus.Localization.ILocalizationStore! store) -> void
+static Modulus.UI.Permissions.PermissionsUiLocalization.SeedAsync(Modulus.Localization.ILocalizationStore! store, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
