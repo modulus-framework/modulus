@@ -8,11 +8,12 @@
     var followSystem = TablerShell.FollowsSystem(Context.Request, ThemeCfg.Value);
 }
 <!DOCTYPE html>
-<html lang="en" data-bs-theme="@colorMode" data-m-color-mode="@(followSystem ? "system" : colorMode)">
+<html lang="@System.Globalization.CultureInfo.CurrentUICulture.Name" data-bs-theme="@colorMode" data-m-color-mode="@(followSystem ? "system" : colorMode)">
 <head>
     <partial name="/Themes/Tabler/Shell/_Head.cshtml" />
 </head>
 <body class="m-layout m-layout-public" hx-boost="@(Ui.Value.Features.Boost ? "true" : "false")" hx-ext="@(Ui.Value.Features.Morph ? "morph" : null)">
+    <a class="visually-hidden-focusable" href="#m-main">Skip to main content</a>
     <div class="page">
         <header class="navbar navbar-expand-md d-print-none m-topbar">
             <div class="container-xl">
@@ -34,9 +35,9 @@
         @await Html.ModulusSlotAsync(UiSlots.PageBeforeContent)
         <div class="page-wrapper">
             <div class="page-body">
-                <div class="container-xl m-page-container" id="m-main">
+                <main class="container-xl m-page-container" id="m-main" aria-live="polite">
                     @RenderBody()
-                </div>
+                </main>
             </div>
             @await Html.ModulusSlotAsync(UiSlots.PageAfterContent)
             <partial name="/Themes/Tabler/Shell/_Footer.cshtml" />

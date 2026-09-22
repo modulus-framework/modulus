@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using FluentAssertions;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Html;
 using Microsoft.Extensions.DependencyInjection;
 using Modulus.Core.Abstractions;
@@ -328,6 +329,53 @@ public sealed partial class TablerLayoutRenderTests
 
         (await off.GetStringAsync($"/probe/{layout}")).Should().NotContain("hx-ext");
         (await on.GetStringAsync($"/probe/{layout}")).Should().Contain("hx-ext=\"morph\"");
+    }
+
+    [Theory]
+    [InlineData("Application")]
+    [InlineData("Public")]
+    public async Task Main_content_region_is_a_main_landmark_with_aria_live(string layout)
+    {
+        await using var host = await Host();
+
+        var html = await host.GetStringAsync($"/probe/{layout}");
+
+        html.Should().MatchRegex("<main class=\"container-xl m-page-container\" id=\"m-main\" aria-live=\"polite\"");
+        html.Should().Contain("</main>");
+        html.Should().NotContain("<div class=\"container-xl m-page-container\" id=\"m-main\">");
+    }
+
+    [Theory]
+    [InlineData("Application")]
+    [InlineData("Public")]
+    [InlineData("Account")]
+    public async Task First_focusable_element_in_body_is_a_skip_link_to_main_content(string layout)
+    {
+        await using var host = await Host();
+
+        var html = await host.GetStringAsync($"/probe/{layout}");
+
+        html.Should().MatchRegex(
+            "<body[^>]*>\\s*<a class=\"visually-hidden-focusable\" href=\"#m-main\">Skip to main content</a>");
+    }
+
+    [Theory]
+    [InlineData("Application")]
+    [InlineData("Account")]
+    [InlineData("Empty")]
+    [InlineData("Public")]
+    public async Task Html_lang_reflects_the_request_culture(string layout)
+    {
+        await using var host = await ThemeHost.StartAsync(pipeline: app => app.Use((http, next) =>
+        {
+            System.Globalization.CultureInfo.CurrentUICulture = new System.Globalization.CultureInfo("fr-FR");
+            return next(http);
+        }));
+
+        var html = await host.GetStringAsync($"/probe/{layout}");
+
+        html.Should().Contain("<html lang=\"fr-FR\"");
+        html.Should().NotContain("<html lang=\"en\"");
     }
 
     [Fact]

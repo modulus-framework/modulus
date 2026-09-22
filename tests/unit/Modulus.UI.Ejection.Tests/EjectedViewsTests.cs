@@ -155,6 +155,6 @@ public sealed class EjectedViewsTests
         var html = await host.GetStringAsync("/Tenancy");
 
         html.Should().Contain("m-layout-application").And.Contain("navbar-vertical");
-        html.Should().Contain("<h2 class=\"page-title\">Directory.Title</h2>").And.Contain("Acme Corp");
+        html.Should().Contain("<h1 class=\"page-title\">Directory.Title</h1>").And.Contain("Acme Corp");
     }
 }

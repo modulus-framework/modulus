@@ -322,6 +322,33 @@ public sealed class TablerComponentRenderTests
     }
 
     [Fact]
+    public async Task Tabs_cross_reference_each_tab_and_its_pane_for_assistive_tech()
+    {
+        await using var host = await Host();
+
+        var html = await Html(host, "/probe/Tabs");
+
+        // Each tab <a> gets a stable id its pane points back at, and points at its pane in turn.
+        html.Should().Contain("id=\"tab-probe-tabs-general\"").And.Contain("aria-controls=\"probe-tabs-general\"");
+        html.Should().Contain("id=\"tab-probe-tabs-audit\"").And.Contain("aria-controls=\"probe-tabs-audit\"");
+        html.Should().Contain("id=\"tab-probe-tabs-more\"").And.Contain("aria-controls=\"probe-tabs-more\"");
+        html.Should().MatchRegex("role=\"tabpanel\" aria-labelledby=\"tab-probe-tabs-general\"");
+        html.Should().MatchRegex("role=\"tabpanel\" aria-labelledby=\"tab-probe-tabs-audit\"");
+        html.Should().MatchRegex("role=\"tabpanel\" aria-labelledby=\"tab-probe-tabs-more\"");
+    }
+
+    [Fact]
+    public async Task Tabs_wire_a_csp_safe_alpine_component_for_arrow_key_navigation()
+    {
+        await using var host = await Host();
+
+        var html = await Html(host, "/probe/Tabs");
+
+        html.Should().Contain("x-data=\"mTabs\"").And.Contain("x-on:keydown=\"onKeydown\"");
+        html.Should().NotMatchRegex("x-(data|on:keydown)=\"\\{", "the Alpine CSP build cannot evaluate inline expressions");
+    }
+
+    [Fact]
     public async Task Tabs_lazy_load_a_source_pane_with_htmx_and_never_render_its_body()
     {
         await using var host = await Host();
@@ -432,7 +459,7 @@ public sealed class TablerComponentRenderTests
         var html = await Html(host, "/probe/PageHeader");
         var first = html[..html.IndexOf("Bare", StringComparison.Ordinal)];
 
-        first.Should().Contain("<h2 class=\"page-title\">Products</h2>");
+        first.Should().Contain("<h1 class=\"page-title\">Products</h1>");
         first.IndexOf("Own action", StringComparison.Ordinal).Should().BeLessThan(first.IndexOf("New product", StringComparison.Ordinal));
         first.Should().Contain("col-auto ms-auto");
         // A page id with no contributed items adds no actions column.

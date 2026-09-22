@@ -59,9 +59,9 @@ public sealed class PageHeaderTagHelper : TagHelper
         var toolbar = await RenderToolbarAsync();
 
         output.Content.AppendHtml("<div class=\"row align-items-center\"><div class=\"col\">");
-        output.Content.AppendHtml("<h2 class=\"page-title\">");
+        output.Content.AppendHtml("<h1 class=\"page-title\">");
         output.Content.Append(Title ?? string.Empty);
-        output.Content.AppendHtml("</h2>");
+        output.Content.AppendHtml("</h1>");
         if (!string.IsNullOrWhiteSpace(Subtitle))
         {
             output.Content.AppendHtml("<div class=\"text-secondary mt-1\">");

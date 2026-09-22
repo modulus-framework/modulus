@@ -1,14 +1,17 @@
 @* Default markup for <m-tabs>: Tabler tabs wired through Bootstrap data attributes (no page
    script). A tab with a Source lazy-loads its pane with htmx the first time the pane is shown
-   (a hidden pane never intersects, so `intersect once` fires on reveal). *@
+   (a hidden pane never intersects, so `intersect once` fires on reveal). Each tab <a> carries an
+   id (aria-controls'd by nothing else needed) referenced by its pane's aria-labelledby, plus
+   aria-controls back at the pane; x-data="mTabs" adds ArrowLeft/ArrowRight roving focus per the
+   WAI-ARIA Tabs pattern (the vendored Bootstrap tab plugin only handles click/activation). *@
 @model TabsModel
 <div class="card" id="@Model.Id">
     <div class="card-header">
-        <ul class="nav nav-tabs card-header-tabs" data-bs-toggle="tabs" role="tablist">
+        <ul class="nav nav-tabs card-header-tabs" data-bs-toggle="tabs" role="tablist" x-data="mTabs" x-on:keydown="onKeydown">
             @foreach (var tab in Model.Tabs)
             {
                 <li class="nav-item" role="presentation">
-                    <a href="#@tab.PaneId" class="nav-link@(tab.Active ? " active" : "")" data-bs-toggle="tab" role="tab" aria-selected="@(tab.Active ? "true" : "false")">@tab.Title</a>
+                    <a href="#@tab.PaneId" id="tab-@tab.PaneId" class="nav-link@(tab.Active ? " active" : "")" data-bs-toggle="tab" role="tab" aria-selected="@(tab.Active ? "true" : "false")" aria-controls="@tab.PaneId">@tab.Title</a>
                 </li>
             }
         </ul>
@@ -17,7 +20,7 @@
         <div class="tab-content">
             @foreach (var tab in Model.Tabs)
             {
-                <div class="tab-pane@(tab.Active ? " active show" : "")" id="@tab.PaneId" role="tabpanel">
+                <div class="tab-pane@(tab.Active ? " active show" : "")" id="@tab.PaneId" role="tabpanel" aria-labelledby="tab-@tab.PaneId">
                     @if (tab.Source is not null)
                     {
                         <div hx-get="@tab.Source" hx-trigger="intersect once" hx-swap="innerHTML"></div>

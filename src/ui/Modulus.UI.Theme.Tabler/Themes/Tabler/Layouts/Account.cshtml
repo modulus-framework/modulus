@@ -8,11 +8,12 @@
     var followSystem = TablerShell.FollowsSystem(Context.Request, ThemeCfg.Value);
 }
 <!DOCTYPE html>
-<html lang="en" data-bs-theme="@colorMode" data-m-color-mode="@(followSystem ? "system" : colorMode)">
+<html lang="@System.Globalization.CultureInfo.CurrentUICulture.Name" data-bs-theme="@colorMode" data-m-color-mode="@(followSystem ? "system" : colorMode)">
 <head>
     <partial name="/Themes/Tabler/Shell/_Head.cshtml" />
 </head>
 <body class="m-layout m-layout-account d-flex flex-column" hx-boost="@(Ui.Value.Features.Boost ? "true" : "false")" hx-ext="@(Ui.Value.Features.Morph ? "morph" : null)">
+    <a class="visually-hidden-focusable" href="#m-main">Skip to main content</a>
     <div class="page page-center">
         <div class="container container-tight py-4">
             <div class="text-center mb-4">

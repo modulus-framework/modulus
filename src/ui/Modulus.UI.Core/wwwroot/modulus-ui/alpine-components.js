@@ -12,6 +12,7 @@
      x-data="mAutoSubmit"         x-on:change="submit"   (on a <form>)
      x-data="mResetOnSuccess"     x-on:htmx:after-request="reset"   (on an hx-post <form>)
      x-data="mLineItems"          x-on:click="add" / "remove"      (m-line-items rows)
+     x-data="mTabs"               x-on:keydown="onKeydown"         (m-tabs tablist)
 
    Themes must load this file BEFORE Alpine (Alpine dispatches alpine:init
    once, when it starts). It has no dependency on any theme, so feature UIs
@@ -148,6 +149,26 @@ document.addEventListener('alpine:init', function () {
                 var root = row.closest('[data-line-items]');
                 row.remove();
                 renumber(root);
+            }
+        };
+    });
+
+    // ArrowLeft/ArrowRight roving focus between an <m-tabs> tablist's tab links (WAI-ARIA Tabs
+    // pattern). Native Tab-key focus and click activation already work via the vendored Bootstrap
+    // tab plugin (data-bs-toggle="tab"); this only adds arrow-key movement between tabs, and
+    // activates the newly focused tab the same way a click would (automatic activation model).
+    Alpine.data('mTabs', function () {
+        return {
+            onKeydown: function (event) {
+                if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+                var tabs = Array.prototype.slice.call(this.$el.querySelectorAll('[role="tab"]'));
+                var current = tabs.indexOf(event.target);
+                if (current === -1) return;
+                event.preventDefault();
+                var delta = event.key === 'ArrowRight' ? 1 : -1;
+                var next = tabs[(current + delta + tabs.length) % tabs.length];
+                next.focus();
+                next.click();
             }
         };
     });

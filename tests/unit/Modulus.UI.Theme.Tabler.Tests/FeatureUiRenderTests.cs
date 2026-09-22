@@ -174,7 +174,7 @@ public sealed class FeatureUiRenderTests
         // Layout came from Tenancy's _ViewStart -> GetThemeLayout -> the registered Tabler theme.
         html.Should().Contain("m-layout-application").And.Contain("navbar-vertical");
         // A self-closing <m-page-header ... /> used to render an empty div and lose the title.
-        html.Should().Contain("<h2 class=\"page-title\">Directory.Title</h2>");
+        html.Should().Contain("<h1 class=\"page-title\">Directory.Title</h1>");
         html.Should().Contain("Directory.Current: Directory.Host");
         html.Should().Contain("<th>Directory.Slug</th>").And.Contain("<th>Directory.Name</th>");
         html.Should().Contain(">acme</a>").And.Contain("Acme Corp");
@@ -236,7 +236,7 @@ public sealed class FeatureUiRenderTests
 
         store.LastQuery!.Page.Should().Be(2);
         store.LastQuery.Action.Should().Be("Login");
-        html.Should().Contain("<h2 class=\"page-title\">Index.Title</h2>");
+        html.Should().Contain("<h1 class=\"page-title\">Index.Title</h1>");
         html.Should().Contain("<code>Login1</code>").And.Contain("<code>Login2</code>");
         html.Should().Contain("Page 2");
         // "as=alice" (this test host's stand-in for a signed-in cookie, not a

@@ -44,7 +44,7 @@ public sealed class PageHeaderTagHelperTests
         output.TagName.Should().Be("div");
         output.Attributes["class"]?.Value.Should().Be("page-header d-print-none");
         var html = Html(output);
-        html.Should().Contain("<h2 class=\"page-title\">Users</h2>");
+        html.Should().Contain("<h1 class=\"page-title\">Users</h1>");
         html.Should().NotContain("col-auto ms-auto");
         html.Should().NotContain("text-secondary mt-1");
     }
@@ -61,7 +61,7 @@ public sealed class PageHeaderTagHelperTests
         await helper.ProcessAsync(ctx, output);
 
         output.TagMode.Should().Be(TagMode.StartTagAndEndTag);
-        Html(output).Should().Contain("<h2 class=\"page-title\">Audit</h2>").And.Contain("All events");
+        Html(output).Should().Contain("<h1 class=\"page-title\">Audit</h1>").And.Contain("All events");
     }
 
     [Fact]

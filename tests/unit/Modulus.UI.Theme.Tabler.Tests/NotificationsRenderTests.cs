@@ -82,7 +82,7 @@ public sealed class NotificationsRenderTests
         var html = await host.GetStringAsync("/Notifications?as=alice");
 
         html.Should().Contain("m-layout-application");
-        html.Should().Contain("<h2 class=\"page-title\">Index.Title</h2>");
+        html.Should().Contain("<h1 class=\"page-title\">Index.Title</h1>");
         html.Should().Contain("x-data=\"mAutoSubmit\"").And.Contain("x-on:change=\"submit\"");
         html.Should().NotContain("onchange=");
         html.Should().Contain("Note1").And.Contain("Note2");
