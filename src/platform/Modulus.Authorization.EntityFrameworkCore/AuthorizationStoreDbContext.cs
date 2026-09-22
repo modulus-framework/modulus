@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Modulus.Authorization.Grants;
 using Modulus.Authorization.Organization;
+using Modulus.Core.Abstractions;
+using Modulus.Core.Abstractions.Entities;
 using Modulus.Outbox.Abstractions;
 
 namespace Modulus.Authorization.EntityFrameworkCore;
@@ -15,7 +17,8 @@ namespace Modulus.Authorization.EntityFrameworkCore;
 /// <c>MigrateAuthorizationStoreAsync</c>.
 /// </summary>
 public class AuthorizationStoreDbContext(
-    DbContextOptions<AuthorizationStoreDbContext> options)
+    DbContextOptions<AuthorizationStoreDbContext> options,
+    ICurrentTenant currentTenant)
     : DbContext(options)
 {
     internal DbSet<PermissionGrantRow> Grants => Set<PermissionGrantRow>();
@@ -41,30 +44,75 @@ public class AuthorizationStoreDbContext(
     internal DbSet<RecertificationCampaignRow> RecertificationCampaigns => Set<RecertificationCampaignRow>();
     internal DbSet<RecertificationItemRow> RecertificationItems => Set<RecertificationItemRow>();
 
+    // ── SaveChanges sync override ──────────────────────────────────
+    // Intentionally not implemented: the tenant auto-stamp below only runs
+    // from the async override. Allowing sync SaveChanges would let a caller
+    // silently bypass it, misfiling a tenant-scoped row as host/global data
+    // (TenantId left at Guid.Empty). No store in this project calls the sync
+    // overload today; this just makes that a compile-time-safe invariant.
+    public override int SaveChanges(bool acceptAllChangesOnSuccess)
+        => throw new NotSupportedException(
+            "AuthorizationStoreDbContext requires SaveChangesAsync(). " +
+            "Sync SaveChanges() bypasses the tenant auto-stamp. " +
+            "Call SaveChangesAsync() instead.");
+
+    public override int SaveChanges()
+        => throw new NotSupportedException(
+            "AuthorizationStoreDbContext requires SaveChangesAsync(). " +
+            "Sync SaveChanges() bypasses the tenant auto-stamp. " +
+            "Call SaveChangesAsync() instead.");
+
+    /// <inheritdoc />
+    public override async Task<int> SaveChangesAsync(
+        bool acceptAllChangesOnSuccess,
+        CancellationToken ct = default)
+    {
+        // Auto-stamp TenantId on newly added rows when a resolved tenant is in
+        // scope. Host-context inserts (IsHost = true) skip this — they
+        // represent cross-tenant / global data that must NOT carry a tenant
+        // id. Entity code that explicitly sets TenantId before SaveChanges is
+        // also safe: the guard only fires when the value is still Guid.Empty.
+        // Mirrors ModuleDbContext.ApplyAuditFields' identical block exactly.
+        if (!currentTenant.IsHost && currentTenant.TenantId is { } tenantId)
+        {
+            foreach (var entry in ChangeTracker.Entries<IHasTenantId>()
+                         .Where(e => e.State == EntityState.Added
+                                     && e.Entity.TenantId == default))
+            {
+                entry.Entity.TenantId = tenantId;
+            }
+        }
+
+        return await base.SaveChangesAsync(acceptAllChangesOnSuccess, ct);
+    }
+
     /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        // One grant per (holder, permission): re-granting the same triple
-        // replaces the Allow/Deny type, mirroring the in-memory store's
-        // bucket[permission] = grant upsert semantics.
+        // One grant per (tenant, holder, permission): re-granting the same
+        // triple within a tenant replaces the Allow/Deny type, mirroring the
+        // in-memory store's bucket[permission] = grant upsert semantics. The
+        // same role/holder name in two different tenants is a distinct row.
         var grant = modelBuilder.Entity<PermissionGrantRow>();
         grant.ToTable("ModulusPermissionGrants");
-        grant.HasKey(g => new { g.HolderType, g.Holder, g.Permission });
+        grant.HasKey(g => new { g.TenantId, g.HolderType, g.Holder, g.Permission });
         grant.Property(g => g.Holder).HasMaxLength(256);
         grant.Property(g => g.Permission).HasMaxLength(256);
 
         var unit = modelBuilder.Entity<OrgUnitRow>();
         unit.ToTable("ModulusOrgUnits");
         unit.HasKey(u => u.Id);
+        unit.HasIndex(u => u.TenantId);
 
         var edge = modelBuilder.Entity<OrgUnitParentRow>();
         edge.ToTable("ModulusOrgUnitParents");
-        edge.HasKey(e => new { e.ChildId, e.ParentId });
+        edge.HasKey(e => new { e.TenantId, e.ChildId, e.ParentId });
 
-        // One placement per (user, unit): re-placing updates the traversal mode.
+        // One placement per (tenant, user, unit): re-placing updates the
+        // traversal mode.
         var placement = modelBuilder.Entity<OrgPlacementRow>();
         placement.ToTable("ModulusOrgPlacements");
-        placement.HasKey(p => new { p.UserId, p.OrgUnitId });
+        placement.HasKey(p => new { p.TenantId, p.UserId, p.OrgUnitId });
 
         var planFeature = modelBuilder.Entity<PlanFeatureRow>();
         planFeature.ToTable("ModulusPlanFeatures");
@@ -85,7 +133,7 @@ public class AuthorizationStoreDbContext(
         var delegation = modelBuilder.Entity<DelegationRow>();
         delegation.ToTable("ModulusDelegations");
         delegation.HasKey(d => d.Id);
-        delegation.HasIndex(d => d.ToUserId);
+        delegation.HasIndex(d => new { d.TenantId, d.ToUserId });
 
         var auditOutbox = modelBuilder.Entity<OutboxMessage>();
         auditOutbox.ToTable("ModulusAuthorizationAuditOutbox");
@@ -106,12 +154,44 @@ public class AuthorizationStoreDbContext(
         item.HasKey(i => i.Id);
         item.HasIndex(i => new { i.CampaignId, i.Decision });
         item.HasIndex(i => new { i.CampaignId, i.UserId });
+
+        ApplyTenantFilters(modelBuilder);
+    }
+
+    /// <summary>
+    /// Tenant isolation for grants, org structure, and delegations (auth
+    /// blueprint gap — see plan item B4). Mirrors ModuleDbContext's
+    /// IHasTenantId filter exactly: a row is visible only when the context
+    /// is the host (ICurrentTenant.IsHost — multi-tenancy off, or an
+    /// explicit Change(null) scope) OR its TenantId matches a *resolved*
+    /// tenant; an unresolved tenant sees nothing. Feature entitlements
+    /// (TenantPlanRow/FeatureOverrideRow) are already correctly tenant-keyed
+    /// by explicit parameter and don't need this — see EfFeatureEntitlementStore.
+    /// </summary>
+    private void ApplyTenantFilters(ModelBuilder mb)
+    {
+        mb.Entity<PermissionGrantRow>().HasQueryFilter(e =>
+            currentTenant.IsHost
+            || (currentTenant.TenantId != null && e.TenantId == currentTenant.TenantId));
+        mb.Entity<OrgUnitRow>().HasQueryFilter(e =>
+            currentTenant.IsHost
+            || (currentTenant.TenantId != null && e.TenantId == currentTenant.TenantId));
+        mb.Entity<OrgUnitParentRow>().HasQueryFilter(e =>
+            currentTenant.IsHost
+            || (currentTenant.TenantId != null && e.TenantId == currentTenant.TenantId));
+        mb.Entity<OrgPlacementRow>().HasQueryFilter(e =>
+            currentTenant.IsHost
+            || (currentTenant.TenantId != null && e.TenantId == currentTenant.TenantId));
+        mb.Entity<DelegationRow>().HasQueryFilter(e =>
+            currentTenant.IsHost
+            || (currentTenant.TenantId != null && e.TenantId == currentTenant.TenantId));
     }
 }
 
 /// <summary>Row backing a <see cref="PermissionGrant"/>.</summary>
-internal sealed class PermissionGrantRow
+internal sealed class PermissionGrantRow : IHasTenantId
 {
+    public Guid TenantId { get; set; }
     public GrantHolderType HolderType { get; set; }
     public string Holder { get; set; } = null!;
     public string Permission { get; set; } = null!;
@@ -119,21 +199,24 @@ internal sealed class PermissionGrantRow
 }
 
 /// <summary>A node of the organizational hierarchy.</summary>
-internal sealed class OrgUnitRow
+internal sealed class OrgUnitRow : IHasTenantId
 {
     public Guid Id { get; set; }
+    public Guid TenantId { get; set; }
 }
 
 /// <summary>A child→parent edge; several rows per child model a matrixed DAG.</summary>
-internal sealed class OrgUnitParentRow
+internal sealed class OrgUnitParentRow : IHasTenantId
 {
+    public Guid TenantId { get; set; }
     public Guid ChildId { get; set; }
     public Guid ParentId { get; set; }
 }
 
 /// <summary>Row backing an <see cref="OrgPlacement"/>.</summary>
-internal sealed class OrgPlacementRow
+internal sealed class OrgPlacementRow : IHasTenantId
 {
+    public Guid TenantId { get; set; }
     public Guid UserId { get; set; }
     public Guid OrgUnitId { get; set; }
     public OrgScopeMode Mode { get; set; }
@@ -168,9 +251,10 @@ internal sealed class FeatureOverrideRow
 /// identical across database providers (SQLite stores DateTimeOffset as text,
 /// where SQL comparison across offsets is unreliable).
 /// </summary>
-internal sealed class DelegationRow
+internal sealed class DelegationRow : IHasTenantId
 {
     public Guid Id { get; set; }
+    public Guid TenantId { get; set; }
     public Guid FromUserId { get; set; }
     public string FromRolesJson { get; set; } = "[]";
     public Guid ToUserId { get; set; }

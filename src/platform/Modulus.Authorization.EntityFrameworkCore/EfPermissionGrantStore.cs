@@ -122,8 +122,9 @@ public sealed class EfPermissionGrantStore(
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(permission);
 
-            var existing = await db.Grants.FindAsync(
-                [holderType, holder, permission], ct);
+            var existing = await db.Grants
+                .Where(g => g.HolderType == holderType && g.Holder == holder && g.Permission == permission)
+                .SingleOrDefaultAsync(ct);
             if (existing is null)
                 db.Grants.Add(new PermissionGrantRow
                 {

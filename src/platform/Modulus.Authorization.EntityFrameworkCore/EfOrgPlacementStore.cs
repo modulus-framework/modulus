@@ -31,7 +31,9 @@ public sealed class EfOrgPlacementStore(
         CancellationToken ct = default)
     {
         await using var db = await factory.CreateDbContextAsync(ct);
-        var existing = await db.OrgPlacements.FindAsync([userId, orgUnitId], ct);
+        var existing = await db.OrgPlacements
+            .Where(p => p.UserId == userId && p.OrgUnitId == orgUnitId)
+            .SingleOrDefaultAsync(ct);
         if (existing is null)
             db.OrgPlacements.Add(new OrgPlacementRow
             {

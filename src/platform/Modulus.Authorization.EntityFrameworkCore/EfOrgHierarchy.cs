@@ -1,5 +1,7 @@
+using System.Collections.Concurrent;
 using Microsoft.EntityFrameworkCore;
 using Modulus.Authorization.Organization;
+using Modulus.Core.Abstractions;
 
 namespace Modulus.Authorization.EntityFrameworkCore;
 
@@ -7,22 +9,36 @@ namespace Modulus.Authorization.EntityFrameworkCore;
 /// EF Core-backed <see cref="IOrgHierarchy"/>. The unit/edge tables are the
 /// durable source of truth; closure queries are served from an in-memory
 /// snapshot (an <see cref="InMemoryOrgHierarchy"/> rebuilt from the tables) so
-/// per-request descendant/ancestor lookups never hit the database. The snapshot
-/// is invalidated by local mutations (<see cref="AddUnitAsync"/> /
-/// <see cref="MoveUnitAsync"/>) and expires after <see cref="CacheDuration"/>
-/// so other application instances converge on structural changes without a
-/// distributed signal — org structure changes are rare and a short convergence
-/// window is acceptable; call <see cref="Invalidate"/> to force an immediate
-/// reload.
+/// per-request descendant/ancestor lookups never hit the database. The
+/// snapshot is cached <b>per tenant</b> (auth blueprint gap — plan item B4):
+/// a single shared snapshot would otherwise reflect whichever tenant happened
+/// to be ambient on the thread that triggered a refresh, leaking that
+/// tenant's graph into every other tenant's reads for up to
+/// <see cref="CacheDuration"/>. The host's own cache entry (keyed by
+/// <see cref="Guid.Empty"/>) legitimately holds the union of every tenant's
+/// units, since the query filter bypasses entirely in host scope — same
+/// "host sees everything" convention as the row-level filter. An unresolved
+/// tenant (fail-closed) never touches the cache or the database at all: it
+/// always resolves to an empty hierarchy. A local mutation
+/// (<see cref="AddUnitAsync"/> / <see cref="MoveUnitAsync"/>) invalidates
+/// only the current tenant's entry; other application instances converge
+/// on structural changes without a distributed signal once that tenant's
+/// entry expires — org structure changes are rare and a short convergence
+/// window is acceptable; call <see cref="Invalidate"/> to force an
+/// immediate reload of the current tenant's entry.
 /// </summary>
 public sealed class EfOrgHierarchy(
     IDbContextFactory<AuthorizationStoreDbContext> factory,
-    TimeProvider time)
+    TimeProvider time,
+    ICurrentTenant currentTenant)
     : IOrgHierarchy
 {
+    private static readonly InMemoryOrgHierarchy Empty = new();
+
     private readonly object _gate = new();
-    private InMemoryOrgHierarchy? _snapshot;
-    private DateTimeOffset _loadedAt;
+    private readonly ConcurrentDictionary<Guid, CachedSnapshot> _snapshots = new();
+
+    private sealed record CachedSnapshot(InMemoryOrgHierarchy Hierarchy, DateTimeOffset LoadedAt);
 
     /// <summary>How long a loaded snapshot serves before it is refreshed.</summary>
     public TimeSpan CacheDuration { get; init; } = TimeSpan.FromSeconds(30);
@@ -51,7 +67,10 @@ public sealed class EfOrgHierarchy(
         foreach (var parent in parents)
         {
             await EnsureUnitAsync(db, parent, ct);
-            if (await db.OrgUnitParents.FindAsync([id, parent], ct) is null)
+            var edgeExists = await db.OrgUnitParents
+                .Where(e => e.ChildId == id && e.ParentId == parent)
+                .AnyAsync(ct);
+            if (!edgeExists)
                 db.OrgUnitParents.Add(new OrgUnitParentRow { ChildId = id, ParentId = parent });
         }
 
@@ -94,26 +113,48 @@ public sealed class EfOrgHierarchy(
         Invalidate();
     }
 
-    /// <summary>Discards the cached snapshot; the next query reloads from the database.</summary>
+    /// <summary>Discards the current tenant's cached snapshot; its next query
+    /// reloads from the database. Other tenants' cached entries are untouched.</summary>
     public void Invalidate()
     {
+        if (!currentTenant.IsHost && currentTenant.TenantId is null)
+            return;
+
         lock (_gate)
-            _snapshot = null;
+            _snapshots.TryRemove(CacheKey(), out _);
     }
+
+    /// <summary>
+    /// Host scope (<see cref="ICurrentTenant.IsHost"/>) and each resolved
+    /// tenant get their own cache slot, keyed by tenant id (host uses
+    /// <see cref="Guid.Empty"/> — no real tenant id is ever that value).
+    /// </summary>
+    private Guid CacheKey() => currentTenant.IsHost ? Guid.Empty : currentTenant.TenantId!.Value;
 
     private InMemoryOrgHierarchy Snapshot()
     {
+        // Fail-closed: an unresolved tenant never touches the cache or the
+        // database, and never shares another tenant's (or the host's) entry.
+        if (!currentTenant.IsHost && currentTenant.TenantId is null)
+            return Empty;
+
+        var key = CacheKey();
+
         // Fast path: a fresh snapshot serves without touching the database or
         // contending on the gate.
         lock (_gate)
         {
-            if (_snapshot is not null && time.GetUtcNow() - _loadedAt < CacheDuration)
-                return _snapshot;
+            if (_snapshots.TryGetValue(key, out var cached)
+                && time.GetUtcNow() - cached.LoadedAt < CacheDuration)
+                return cached.Hierarchy;
         }
 
         // Refresh OUTSIDE the gate: concurrent callers may all reload (the
         // rebuild is idempotent), but no thread ever holds the lock across
-        // DbContext creation and table reads.
+        // DbContext creation and table reads. This context reads the SAME
+        // ambient ICurrentTenant that produced `key`, so its query filter
+        // scopes the refresh to exactly that tenant (or bypasses entirely
+        // for the host key).
         using var db = factory.CreateDbContext();
         var edgesByChild = db.OrgUnitParents.AsNoTracking()
             .AsEnumerable()
@@ -130,20 +171,22 @@ public sealed class EfOrgHierarchy(
             // Another caller may have published a fresher snapshot while this
             // one was loading; keep whichever load is newest.
             var now = time.GetUtcNow();
-            if (_snapshot is null || now - _loadedAt >= CacheDuration)
+            if (!_snapshots.TryGetValue(key, out var existing) || now - existing.LoadedAt >= CacheDuration)
             {
-                _snapshot = snapshot;
-                _loadedAt = now;
+                var fresh = new CachedSnapshot(snapshot, now);
+                _snapshots[key] = fresh;
+                return fresh.Hierarchy;
             }
 
-            return _snapshot;
+            return existing.Hierarchy;
         }
     }
 
     private static async Task EnsureUnitAsync(
         AuthorizationStoreDbContext db, Guid id, CancellationToken ct)
     {
-        if (await db.OrgUnits.FindAsync([id], ct) is null)
+        var exists = await db.OrgUnits.Where(u => u.Id == id).AnyAsync(ct);
+        if (!exists)
             db.OrgUnits.Add(new OrgUnitRow { Id = id });
     }
 }

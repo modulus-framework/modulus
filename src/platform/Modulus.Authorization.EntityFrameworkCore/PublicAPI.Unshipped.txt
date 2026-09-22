@@ -21,7 +21,10 @@ Modulus.Authorization.EntityFrameworkCore.Audit.EfAuthorizationAuditWriter
 Modulus.Authorization.EntityFrameworkCore.Audit.EfAuthorizationAuditWriter.EfAuthorizationAuditWriter(Microsoft.EntityFrameworkCore.IDbContextFactory<Modulus.Authorization.EntityFrameworkCore.AuthorizationStoreDbContext!>! factory, Modulus.Events.Abstractions.IIntegrationEventRegistry! registry, System.IServiceProvider! sp) -> void
 Modulus.Authorization.EntityFrameworkCore.Audit.EfAuthorizationAuditWriter.WriteAsync(Modulus.Events.Abstractions.IIntegrationEvent! auditEvent, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
 Modulus.Authorization.EntityFrameworkCore.AuthorizationStoreDbContext
-Modulus.Authorization.EntityFrameworkCore.AuthorizationStoreDbContext.AuthorizationStoreDbContext(Microsoft.EntityFrameworkCore.DbContextOptions<Modulus.Authorization.EntityFrameworkCore.AuthorizationStoreDbContext!>! options) -> void
+Modulus.Authorization.EntityFrameworkCore.AuthorizationStoreDbContext.AuthorizationStoreDbContext(Microsoft.EntityFrameworkCore.DbContextOptions<Modulus.Authorization.EntityFrameworkCore.AuthorizationStoreDbContext!>! options, Modulus.Core.Abstractions.ICurrentTenant! currentTenant) -> void
+override Modulus.Authorization.EntityFrameworkCore.AuthorizationStoreDbContext.SaveChanges() -> int
+override Modulus.Authorization.EntityFrameworkCore.AuthorizationStoreDbContext.SaveChanges(bool acceptAllChangesOnSuccess) -> int
+override Modulus.Authorization.EntityFrameworkCore.AuthorizationStoreDbContext.SaveChangesAsync(bool acceptAllChangesOnSuccess, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<int>!
 Modulus.Authorization.EntityFrameworkCore.EfAuthorizationStoreExtensions
 Modulus.Authorization.EntityFrameworkCore.EfDelegationStore
 Modulus.Authorization.EntityFrameworkCore.EfDelegationStore.ActiveFor(System.Guid toUserId, System.DateTimeOffset now) -> System.Collections.Generic.IReadOnlyCollection<Modulus.Authorization.Governance.Delegation!>!
@@ -47,7 +50,7 @@ Modulus.Authorization.EntityFrameworkCore.EfOrgHierarchy.CacheDuration.get -> Sy
 Modulus.Authorization.EntityFrameworkCore.EfOrgHierarchy.CacheDuration.init -> void
 Modulus.Authorization.EntityFrameworkCore.EfOrgHierarchy.Contains(System.Guid orgUnitId) -> bool
 Modulus.Authorization.EntityFrameworkCore.EfOrgHierarchy.Descendants(System.Guid orgUnitId) -> System.Collections.Generic.IReadOnlySet<System.Guid>!
-Modulus.Authorization.EntityFrameworkCore.EfOrgHierarchy.EfOrgHierarchy(Microsoft.EntityFrameworkCore.IDbContextFactory<Modulus.Authorization.EntityFrameworkCore.AuthorizationStoreDbContext!>! factory, System.TimeProvider! time) -> void
+Modulus.Authorization.EntityFrameworkCore.EfOrgHierarchy.EfOrgHierarchy(Microsoft.EntityFrameworkCore.IDbContextFactory<Modulus.Authorization.EntityFrameworkCore.AuthorizationStoreDbContext!>! factory, System.TimeProvider! time, Modulus.Core.Abstractions.ICurrentTenant! currentTenant) -> void
 Modulus.Authorization.EntityFrameworkCore.EfOrgHierarchy.Invalidate() -> void
 Modulus.Authorization.EntityFrameworkCore.EfOrgHierarchy.MoveUnitAsync(System.Guid id, System.Guid[]! newParents, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
 Modulus.Authorization.EntityFrameworkCore.EfOrgPlacementStore

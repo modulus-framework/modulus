@@ -5,6 +5,8 @@ using Modulus.Authorization.Features;
 using Modulus.Authorization.Governance;
 using Modulus.Authorization.Grants;
 using Modulus.Authorization.Organization;
+using Modulus.Core.Abstractions;
+using Modulus.Core.Null;
 
 namespace Modulus.Authorization.EntityFrameworkCore;
 
@@ -46,6 +48,13 @@ public static class EfAuthorizationStoreExtensions
     {
         services.AddDbContextFactory<AuthorizationStoreDbContext>(configure);
         services.TryAddSingleton(TimeProvider.System);
+
+        // Fail-safe default (mirrors AddModulusAuthorizationManagement's
+        // ICurrentUser guard below): a host that never touches multi-tenancy
+        // keeps working exactly as before — NullCurrentTenant.IsHost is
+        // always true, so the tenant query filter added for B4 bypasses
+        // entirely and every row stays visible, unfiltered.
+        services.TryAddScoped<ICurrentTenant, NullCurrentTenant>();
 
         // Register the concrete store for the management API, then expose the
         // seam interface as the request-scoped cache wrapper — the ONLY
