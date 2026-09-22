@@ -13,13 +13,13 @@ and first-class multi-tenancy.
 Modulus is designed for teams who need the architectural rigour of ABP or eShop
 without the heavyweight abstractions. It provides proven building blocks that
 compose cleanly — pick only what your application needs. The framework ships as
-**31 focused NuGet packages** (published as `Cobytelabs.Modulus.*`) plus a
+**45 focused NuGet packages** (published as `Cobytelabs.Modulus.*`) plus a
 `dotnet tool` CLI for scaffolding complete solutions, modules, and CRUD code.
 
 ## Solution layout
 
 ```
-src/                    31 projects across:
+src/                    45 projects across:
   core/          Modulus.Core (abstractions+impl merged), Modulus.AspNetCore,
                  Modulus.AspNetCore.Redis (Redis-backed idempotency store)
   data/          Modulus.Data.Abstractions, Modulus.EntityFrameworkCore,
