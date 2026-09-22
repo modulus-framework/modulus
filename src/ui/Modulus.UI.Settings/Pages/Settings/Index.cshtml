@@ -29,7 +29,7 @@ else
                         {
                             <tr>
                                 <td>
-                                    <a asp-page="./Edit" asp-route-name="@row.Definition.Name">@row.Definition.DisplayName ?? @row.Definition.Name</a>
+                                    <a asp-page="./Edit" asp-route-name="@row.Definition.Name">@(row.Definition.DisplayName ?? row.Definition.Name)</a>
                                     @if (!string.IsNullOrWhiteSpace(row.Definition.Description))
                                     {
                                         <div class="text-secondary">@row.Definition.Description</div>

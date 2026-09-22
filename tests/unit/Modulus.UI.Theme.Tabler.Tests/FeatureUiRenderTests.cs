@@ -6,11 +6,13 @@ using Modulus.Core.Abstractions;
 using Modulus.Core.Abstractions.Common;
 using Modulus.Localization;
 using Modulus.MultiTenancy;
+using Modulus.Settings;
 using Modulus.Storage;
 using NSubstitute;
 using Xunit;
 using AuditIndexModel = Modulus.UI.AuditLogging.Pages.AuditLogs.IndexModel;
 using FilesIndexModel = Modulus.UI.Files.Pages.Files.IndexModel;
+using SettingsIndexModel = Modulus.UI.Settings.Pages.Settings.IndexModel;
 using TenancyIndexModel = Modulus.UI.Tenancy.Pages.Tenancy.IndexModel;
 
 namespace Modulus.UI.Theme.Tabler.Tests;
@@ -61,7 +63,34 @@ public sealed class FeatureUiRenderTests
         typeof(TenancyIndexModel).Assembly,
         typeof(AuditIndexModel).Assembly,
         typeof(FilesIndexModel).Assembly,
+        typeof(SettingsIndexModel).Assembly,
     ];
+
+    private sealed class FakeSettingRegistry(params SettingDefinition[] definitions) : ISettingDefinitionRegistry
+    {
+        private readonly List<SettingDefinition> _definitions = [.. definitions];
+
+        public void Add(SettingDefinition definition) => _definitions.Add(definition);
+
+        public SettingDefinition? Find(string name) => _definitions.FirstOrDefault(d => d.Name == name);
+
+        public IReadOnlyList<SettingDefinition> List() => _definitions;
+    }
+
+    private sealed class FakeSettingManager(IReadOnlyDictionary<string, string?>? values = null) : ISettingManager
+    {
+        public Task<string?> GetOrNullAsync(string name, CancellationToken ct = default)
+            => Task.FromResult(values is not null && values.TryGetValue(name, out var v) ? v : null);
+
+        public Task<T?> GetAsync<T>(string name, T? fallback = default, CancellationToken ct = default)
+            => Task.FromResult(fallback);
+
+        public Task SetAsync(string name, string? value, SettingScope scope, CancellationToken ct = default)
+            => Task.CompletedTask;
+
+        public Task RemoveAsync(string name, SettingScope scope, CancellationToken ct = default)
+            => Task.CompletedTask;
+    }
 
     private static Task<ThemeHost> TenancyHost(params TenantInfo[] tenants)
         => ThemeHost.StartAsync(
@@ -240,5 +269,34 @@ public sealed class FeatureUiRenderTests
 
         html.Should().Contain("alert alert-info").And.Contain("Index.Empty");
         html.Should().NotContain("card-footer");
+    }
+
+    /// <summary>
+    /// H22: <c>@row.Definition.DisplayName ?? @row.Definition.Name</c> put the
+    /// "??" outside the Razor expression, so it rendered as literal text
+    /// ("DisplayName ?? Name") instead of coalescing — and the fallback
+    /// <c>Definition.Name</c> never rendered at all when DisplayName was set,
+    /// since only the first <c>@</c>-expression was evaluated.
+    /// </summary>
+    [Fact]
+    public async Task Settings_page_coalesces_display_name_instead_of_rendering_the_operator_literally()
+    {
+        var registry = new FakeSettingRegistry(
+            new SettingDefinition("app.title", DisplayName: "App Title"),
+            new SettingDefinition("app.no-display-name"));
+        await using var host = await ThemeHost.StartAsync(
+            services: s =>
+            {
+                s.AddSingleton<IModulusLocalizer, KeyLocalizer>();
+                s.AddSingleton<ISettingDefinitionRegistry>(registry);
+                s.AddSingleton<ISettingManager>(new FakeSettingManager());
+            },
+            applicationParts: Parts);
+
+        var html = await host.GetStringAsync("/Settings?as=alice");
+
+        html.Should().Contain(">App Title</a>");
+        html.Should().Contain(">app.no-display-name</a>");
+        html.Should().NotContain("??");
     }
 }
