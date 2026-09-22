@@ -87,7 +87,7 @@ public sealed class LoginModel(
             ? LocalRedirect(returnUrl)
             : Redirect("~/");
 
-    private Task<string> TextAsync(string key)
+    public Task<string> TextAsync(string key)
         => _localizer.GetAsync(IdentityUiLocalization.ResourceName, key);
 
     public sealed class InputModel

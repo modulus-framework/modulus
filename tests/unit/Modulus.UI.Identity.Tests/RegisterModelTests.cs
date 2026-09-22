@@ -157,7 +157,7 @@ public sealed class SignOutModelTests
             Substitute.For<ILogger<SignInManager<ModulusUser>>>(),
             Substitute.For<IAuthenticationSchemeProvider>(),
             Substitute.For<IUserConfirmation<ModulusUser>>());
-        var model = new SignOutModel(signIns);
+        var model = new SignOutModel(signIns, new FakeLocalizer());
 
         var result = await model.OnPostAsync();
 

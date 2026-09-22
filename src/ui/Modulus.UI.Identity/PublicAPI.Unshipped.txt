@@ -44,8 +44,17 @@ Modulus.UI.Identity.Pages.Account.RegisterModel.ReturnUrl.set -> void
 Modulus.UI.Identity.Pages.Account.SignOutModel
 Modulus.UI.Identity.Pages.Account.SignOutModel.OnGet() -> void
 Modulus.UI.Identity.Pages.Account.SignOutModel.OnPostAsync() -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Mvc.IActionResult!>!
-Modulus.UI.Identity.Pages.Account.SignOutModel.SignOutModel(Microsoft.AspNetCore.Identity.SignInManager<Modulus.Identity.Abstractions.ModulusUser!>! signInManager) -> void
+Modulus.UI.Identity.Pages.Account.SignOutModel.SignOutModel(Microsoft.AspNetCore.Identity.SignInManager<Modulus.Identity.Abstractions.ModulusUser!>! signInManager, Modulus.Localization.IModulusLocalizer! localizer) -> void
+Modulus.UI.Identity.Pages.Account.SignOutModel.TextAsync(string! key) -> System.Threading.Tasks.Task<string!>!
+Modulus.UI.Identity.Pages.Account.LoginModel.TextAsync(string! key) -> System.Threading.Tasks.Task<string!>!
+Modulus.UI.Identity.Pages.Account.RegisterModel.TextAsync(string! key) -> System.Threading.Tasks.Task<string!>!
+Modulus.UI.Identity.Pages.Account.LoggedOutModel
+Modulus.UI.Identity.Pages.Account.LoggedOutModel.LoggedOutModel(Modulus.Localization.IModulusLocalizer! localizer) -> void
+Modulus.UI.Identity.Pages.Account.LoggedOutModel.TextAsync(string! key) -> System.Threading.Tasks.Task<string!>!
+Modulus.UI.Identity.Pages.Account.AccessDeniedModel
+Modulus.UI.Identity.Pages.Account.AccessDeniedModel.AccessDeniedModel(Modulus.Localization.IModulusLocalizer! localizer) -> void
+Modulus.UI.Identity.Pages.Account.AccessDeniedModel.TextAsync(string! key) -> System.Threading.Tasks.Task<string!>!
 override Modulus.UI.Identity.IdentityUiModule.Manifest.get -> Modulus.UI.ModuleManifest!
 static Modulus.UI.Identity.IdentityUiExtensions.AddModulusIdentityUi(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration? configuration = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static Modulus.UI.Identity.IdentityUiExtensions.MapModulusIdentityUi(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints) -> Microsoft.AspNetCore.Routing.IEndpointRouteBuilder!
-static Modulus.UI.Identity.IdentityUiLocalization.Seed(Modulus.Localization.ILocalizationStore! store) -> void
+static Modulus.UI.Identity.IdentityUiLocalization.SeedAsync(Modulus.Localization.ILocalizationStore! store, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!

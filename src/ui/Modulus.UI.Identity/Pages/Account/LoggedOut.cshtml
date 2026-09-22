@@ -1,13 +1,14 @@
 @page
+@model Modulus.UI.Identity.Pages.Account.LoggedOutModel
 @{
-    ViewData["Title"] = "Signed out";
+    ViewData["Title"] = await Model.TextAsync("LoggedOut.Title");
 }
 <div class="container-tight px-0 my-4">
     <div class="card">
         <div class="card-body text-center">
-            <h2 class="card-title mb-4">Signed out</h2>
-            <p class="text-secondary">You have been signed out.</p>
-            <a href="~/Account/Login" class="btn btn-primary w-100">Back to sign in</a>
+            <h2 class="card-title mb-4">@await Model.TextAsync("LoggedOut.Title")</h2>
+            <p class="text-secondary">@await Model.TextAsync("LoggedOut.Message")</p>
+            <a href="~/Account/Login" class="btn btn-primary w-100">@await Model.TextAsync("LoggedOut.LoginLink")</a>
         </div>
     </div>
 </div>
