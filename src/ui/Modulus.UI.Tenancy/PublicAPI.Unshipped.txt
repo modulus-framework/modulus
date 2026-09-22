@@ -1,0 +1,28 @@
+#nullable enable
+const Modulus.UI.Tenancy.TenancyUiLocalization.ResourceName = "Modulus.Tenancy" -> string!
+const Modulus.UI.Tenancy.TenancyUiOptions.SectionName = "TenancyUi" -> string!
+const Modulus.UI.Tenancy.TenancyUiPermissions.View = "tenancy:view" -> string!
+Modulus.UI.Tenancy.Pages.Tenancy.DetailsModel
+Modulus.UI.Tenancy.Pages.Tenancy.DetailsModel.DetailsModel(Modulus.MultiTenancy.ITenantStore! tenantStore, Modulus.Localization.IModulusLocalizer! localizer) -> void
+Modulus.UI.Tenancy.Pages.Tenancy.DetailsModel.OnGetAsync(string! slug, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Mvc.IActionResult!>!
+Modulus.UI.Tenancy.Pages.Tenancy.DetailsModel.Tenant.get -> Modulus.Core.Abstractions.TenantInfo?
+Modulus.UI.Tenancy.Pages.Tenancy.IndexModel
+Modulus.UI.Tenancy.Pages.Tenancy.IndexModel.CurrentDescription.get -> string!
+Modulus.UI.Tenancy.Pages.Tenancy.IndexModel.IndexModel(Modulus.Core.Abstractions.ICurrentTenant! currentTenant, Modulus.MultiTenancy.ITenantStore! tenantStore, Modulus.Localization.IModulusLocalizer! localizer) -> void
+Modulus.UI.Tenancy.Pages.Tenancy.IndexModel.OnGetAsync(System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
+Modulus.UI.Tenancy.Pages.Tenancy.IndexModel.Tenants.get -> System.Collections.Generic.IReadOnlyList<Modulus.Core.Abstractions.TenantInfo!>!
+Modulus.UI.Tenancy.Pages.Tenancy.IndexModel.TextAsync(string! key) -> System.Threading.Tasks.Task<string!>!
+Modulus.UI.Tenancy.TenancyUiExtensions
+Modulus.UI.Tenancy.TenancyUiLocalization
+Modulus.UI.Tenancy.TenancyUiModule
+Modulus.UI.Tenancy.TenancyUiModule.TenancyUiModule() -> void
+Modulus.UI.Tenancy.TenancyUiOptions
+Modulus.UI.Tenancy.TenancyUiOptions.RequirePermission.get -> string?
+Modulus.UI.Tenancy.TenancyUiOptions.RequirePermission.set -> void
+Modulus.UI.Tenancy.TenancyUiOptions.TenancyUiOptions() -> void
+Modulus.UI.Tenancy.TenancyUiPermissions
+override Modulus.UI.Tenancy.TenancyUiModule.ConfigureNavigation(Modulus.UI.UiNavigationBuilder! navigation) -> void
+override Modulus.UI.Tenancy.TenancyUiModule.Manifest.get -> Modulus.UI.ModuleManifest!
+static Modulus.UI.Tenancy.TenancyUiExtensions.AddModulusTenancyUi(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration? configuration = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.UI.Tenancy.TenancyUiExtensions.MapModulusTenancyUi(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints) -> Microsoft.AspNetCore.Routing.IEndpointRouteBuilder!
+static Modulus.UI.Tenancy.TenancyUiLocalization.Seed(Modulus.Localization.ILocalizationStore! store) -> void

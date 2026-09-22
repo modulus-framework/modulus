@@ -1,0 +1,49 @@
+#nullable enable
+const Modulus.Sagas.Bus.AmbientContextHeaders.CorrelationId = "mod-correlation-id" -> string!
+const Modulus.Sagas.Bus.AmbientContextHeaders.TenantId = "mod-tenant-id" -> string!
+Modulus.Sagas.Bus.AmbientContextHeaders
+Modulus.Sagas.Extensions.SagaConfigurationBuilder
+Modulus.Sagas.Extensions.SagaConfigurationBuilder.HandlersFromAssemblies(params System.Reflection.Assembly![]! assemblies) -> Modulus.Sagas.Extensions.SagaConfigurationBuilder!
+Modulus.Sagas.Extensions.SagaConfigurationBuilder.HandlersFromAssemblyOf<T>() -> Modulus.Sagas.Extensions.SagaConfigurationBuilder!
+Modulus.Sagas.Extensions.SagaConfigurationBuilder.PollyRetry(System.Action<Modulus.Sagas.PollyRetryOptions!>! configure) -> Modulus.Sagas.Extensions.SagaConfigurationBuilder!
+Modulus.Sagas.Extensions.SagaConfigurationBuilder.Rebus(System.Func<Rebus.Config.RebusConfigurer!, Rebus.Config.RebusConfigurer!>! configure) -> Modulus.Sagas.Extensions.SagaConfigurationBuilder!
+Modulus.Sagas.Extensions.SagaConfigurationBuilder.Rebus(System.Func<Rebus.Config.RebusConfigurer!, System.IServiceProvider!, Rebus.Config.RebusConfigurer!>! configure) -> Modulus.Sagas.Extensions.SagaConfigurationBuilder!
+Modulus.Sagas.Extensions.SagaConfigurationBuilder.ReplaceModuleBus() -> Modulus.Sagas.Extensions.SagaConfigurationBuilder!
+Modulus.Sagas.Extensions.SagaConfigurationBuilder.ReplaceOutboxDispatcher() -> Modulus.Sagas.Extensions.SagaConfigurationBuilder!
+Modulus.Sagas.Extensions.SagaConfigurationBuilder.SagaConfigurationBuilder() -> void
+Modulus.Sagas.Extensions.SagaServiceCollectionExtensions
+Modulus.Sagas.Pipeline.AmbientContextIncomingStep
+Modulus.Sagas.Pipeline.AmbientContextIncomingStep.AmbientContextIncomingStep(Modulus.Core.Abstractions.ICurrentTenant? currentTenant, Modulus.Core.Abstractions.ICorrelationContext? correlationContext) -> void
+Modulus.Sagas.Pipeline.AmbientContextIncomingStep.Process(Rebus.Pipeline.IncomingStepContext! context, System.Func<System.Threading.Tasks.Task!>! next) -> System.Threading.Tasks.Task!
+Modulus.Sagas.PollyRetry
+Modulus.Sagas.PollyRetryOptions
+Modulus.Sagas.PollyRetryOptions.BaseDelay.get -> System.TimeSpan
+Modulus.Sagas.PollyRetryOptions.BaseDelay.set -> void
+Modulus.Sagas.PollyRetryOptions.CircuitBreakerBreakDuration.get -> System.TimeSpan
+Modulus.Sagas.PollyRetryOptions.CircuitBreakerBreakDuration.set -> void
+Modulus.Sagas.PollyRetryOptions.CircuitBreakerFailureRatio.get -> double
+Modulus.Sagas.PollyRetryOptions.CircuitBreakerFailureRatio.set -> void
+Modulus.Sagas.PollyRetryOptions.CircuitBreakerMinimumThroughput.get -> int
+Modulus.Sagas.PollyRetryOptions.CircuitBreakerMinimumThroughput.set -> void
+Modulus.Sagas.PollyRetryOptions.CircuitBreakerSamplingDuration.get -> System.TimeSpan
+Modulus.Sagas.PollyRetryOptions.CircuitBreakerSamplingDuration.set -> void
+Modulus.Sagas.PollyRetryOptions.DelayBackoffType.get -> Polly.DelayBackoffType
+Modulus.Sagas.PollyRetryOptions.DelayBackoffType.set -> void
+Modulus.Sagas.PollyRetryOptions.EnableCircuitBreaker.get -> bool
+Modulus.Sagas.PollyRetryOptions.EnableCircuitBreaker.set -> void
+Modulus.Sagas.PollyRetryOptions.MaxRetryAttempts.get -> int
+Modulus.Sagas.PollyRetryOptions.MaxRetryAttempts.set -> void
+Modulus.Sagas.PollyRetryOptions.PollyRetryOptions() -> void
+Modulus.Sagas.PollyRetryOptions.UseJitter.get -> bool
+Modulus.Sagas.PollyRetryOptions.UseJitter.set -> void
+Modulus.Sagas.Resilience.PollyPipelineFactory
+Modulus.Sagas.Resilience.PollyRetryStep
+Modulus.Sagas.Resilience.PollyRetryStep.PollyRetryStep(Polly.ResiliencePipeline! pipeline, Microsoft.Extensions.Logging.ILogger<Modulus.Sagas.Resilience.PollyRetryStep!>? logger = null) -> void
+Modulus.Sagas.Resilience.PollyRetryStep.Process(Rebus.Pipeline.IncomingStepContext! context, System.Func<System.Threading.Tasks.Task!>! next) -> System.Threading.Tasks.Task!
+static Modulus.Sagas.Bus.AmbientContextHeaders.Read(System.Collections.Generic.IReadOnlyDictionary<string!, string!>! headers) -> (System.Guid? TenantId, string? CorrelationId)
+static Modulus.Sagas.Bus.AmbientContextHeaders.Stamp(System.Collections.Generic.IDictionary<string!, string!>! headers, System.Guid? tenantId, string? correlationId) -> void
+static Modulus.Sagas.Extensions.SagaServiceCollectionExtensions.AddModulusSagas(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<Modulus.Sagas.Extensions.SagaConfigurationBuilder!>! configure) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.Sagas.Extensions.SagaServiceCollectionExtensions.AddModulusSagas(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Func<Rebus.Config.RebusConfigurer!, Rebus.Config.RebusConfigurer!>! configureRebus, System.Action<Modulus.Sagas.PollyRetryOptions!>? configurePolly = null, params System.Reflection.Assembly![]! handlerAssemblies) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.Sagas.PollyRetry.Default() -> Modulus.Sagas.PollyRetryOptions!
+static Modulus.Sagas.PollyRetry.None() -> Modulus.Sagas.PollyRetryOptions!
+static Modulus.Sagas.Resilience.PollyPipelineFactory.Create(Modulus.Sagas.PollyRetryOptions! options) -> Polly.ResiliencePipeline!

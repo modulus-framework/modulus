@@ -1,0 +1,25 @@
+#nullable enable
+const Modulus.Testing.TestAuthDefaults.EmailHeader = "X-Test-Email" -> string!
+const Modulus.Testing.TestAuthDefaults.PermissionsHeader = "X-Test-Permissions" -> string!
+const Modulus.Testing.TestAuthDefaults.RolesHeader = "X-Test-Roles" -> string!
+const Modulus.Testing.TestAuthDefaults.SchemeName = "Test" -> string!
+const Modulus.Testing.TestAuthDefaults.UserIdHeader = "X-Test-UserId" -> string!
+const Modulus.Testing.TestAuthDefaults.UserNameHeader = "X-Test-UserName" -> string!
+Modulus.Testing.Assertions.EventAssertions
+Modulus.Testing.Fakes.RecordingModuleBus
+Modulus.Testing.Fakes.RecordingModuleBus.AllPublishedEvents.get -> System.Collections.Generic.IReadOnlyList<Modulus.Events.Abstractions.IIntegrationEvent!>!
+Modulus.Testing.Fakes.RecordingModuleBus.Clear() -> void
+Modulus.Testing.Fakes.RecordingModuleBus.PublishAsync<TEvent>(TEvent event, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Testing.Fakes.RecordingModuleBus.PublishedEvents<TEvent>() -> System.Collections.Generic.IReadOnlyList<TEvent>!
+Modulus.Testing.Fakes.RecordingModuleBus.RecordingModuleBus() -> void
+Modulus.Testing.ModulusWebAppFactory<TEntryPoint>
+Modulus.Testing.ModulusWebAppFactory<TEntryPoint>.CreateAuthenticatedClient(System.Guid? userId = null, string? userName = null, string? email = null, System.Collections.Generic.IEnumerable<string!>? roles = null, System.Collections.Generic.IEnumerable<string!>? permissions = null, System.Guid? tenantId = null) -> System.Net.Http.HttpClient!
+Modulus.Testing.ModulusWebAppFactory<TEntryPoint>.ModulusWebAppFactory() -> void
+Modulus.Testing.TestAuthDefaults
+Modulus.Testing.TestAuthHandler
+Modulus.Testing.TestAuthHandler.TestAuthHandler(Microsoft.Extensions.Options.IOptionsMonitor<Microsoft.AspNetCore.Authentication.AuthenticationSchemeOptions!>! options, Microsoft.Extensions.Logging.ILoggerFactory! logger, System.Text.Encodings.Web.UrlEncoder! encoder) -> void
+override Modulus.Testing.ModulusWebAppFactory<TEntryPoint>.ConfigureWebHost(Microsoft.AspNetCore.Hosting.IWebHostBuilder! builder) -> void
+override Modulus.Testing.ModulusWebAppFactory<TEntryPoint>.Dispose(bool disposing) -> void
+static Modulus.Testing.Assertions.EventAssertions.CountPublished<TEvent>(this Modulus.Testing.Fakes.RecordingModuleBus! bus, System.Func<TEvent, bool>? predicate = null) -> int
+static Modulus.Testing.Assertions.EventAssertions.GetPublishedEvents<TEvent>(this Modulus.Testing.Fakes.RecordingModuleBus! bus) -> System.Collections.Generic.IReadOnlyList<TEvent>!
+static Modulus.Testing.Assertions.EventAssertions.HasPublished<TEvent>(this Modulus.Testing.Fakes.RecordingModuleBus! bus, System.Func<TEvent, bool>! predicate) -> bool

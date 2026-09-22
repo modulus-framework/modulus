@@ -1,0 +1,41 @@
+<Project>
+
+  <!-- ════════════════════════════════════════════════════════════════
+       Modulus.PublicApi.props
+
+       Public API surface tracking for packable framework libraries.
+       Microsoft.CodeAnalysis.PublicApiAnalyzers requires every public
+       member to be declared in PublicAPI.Shipped.txt / .Unshipped.txt
+       next to the project file, and fails the build (RS0016/RS0017,
+       errors under TreatWarningsAsErrors) on any undeclared addition
+       or removal — a silent breaking change can no longer slip through
+       a "1.4.0" that claims SemVer. Imported by src/Directory.Build.props
+       and cli/Directory.Build.props; test and sample projects do not
+       import it, since they ship no public API contract of their own.
+
+       The package itself wires PublicAPI.Shipped.txt / .Unshipped.txt in
+       as AdditionalFiles when they exist next to the project (its own
+       "workaround for dotnet/roslyn#4655") — adding that ItemGroup here
+       too just produces "Duplicate source file" warnings, so this file
+       only needs the PackageReference.
+       ════════════════════════════════════════════════════════════════ -->
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" PrivateAssets="All" />
+  </ItemGroup>
+
+  <!-- The package also ships a stricter "API design" rule bundle (RS0026,
+       RS0027, ...) enabled by default alongside the shipped/unshipped
+       tracking rules this file exists for. RS0026/RS0027 flag "multiple
+       public overloads with optional parameters" — an established,
+       intentional pattern already used across this codebase (e.g.
+       ICacheService.SetAsync, ModulusLocalizer.GetAsync). Enforcing it
+       would mean reshaping existing, shipped-in-spirit public signatures
+       as a side effect of adding surface *tracking*, which is a separate,
+       much larger decision than this file's job. Suppressed here rather
+       than left to silently block every build. -->
+  <PropertyGroup>
+    <NoWarn>$(NoWarn);RS0026;RS0027</NoWarn>
+  </PropertyGroup>
+
+</Project>

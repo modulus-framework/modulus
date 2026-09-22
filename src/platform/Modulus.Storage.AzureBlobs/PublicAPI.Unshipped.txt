@@ -1,0 +1,11 @@
+#nullable enable
+Modulus.Storage.AzureBlobFileStorage
+Modulus.Storage.AzureBlobFileStorage.AzureBlobFileStorage(Azure.Storage.Blobs.BlobServiceClient! client, Microsoft.Extensions.Options.IOptions<Modulus.Storage.StorageOptions!>! options) -> void
+Modulus.Storage.AzureBlobFileStorage.DeleteAsync(string! path, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Storage.AzureBlobFileStorage.DownloadAsync(string! path, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.IO.Stream!>!
+Modulus.Storage.AzureBlobFileStorage.ExistsAsync(string! path, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.Storage.AzureBlobFileStorage.GetPresignedUploadUrlAsync(string! path, System.TimeSpan expiry, string? contentType = null, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<string!>!
+Modulus.Storage.AzureBlobFileStorage.GetPresignedUrlAsync(string! path, System.TimeSpan expiry, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<string!>!
+Modulus.Storage.AzureBlobFileStorage.UploadAsync(string! path, System.IO.Stream! content, string? contentType = null, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Storage.AzureBlobStorageExtensions
+static Modulus.Storage.AzureBlobStorageExtensions.AddAzureBlobFileStorage(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!

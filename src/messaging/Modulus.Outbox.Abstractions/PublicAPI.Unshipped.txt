@@ -1,0 +1,65 @@
+#nullable enable
+Modulus.Outbox.Abstractions.IOutboxDispatcher
+Modulus.Outbox.Abstractions.IOutboxDispatcher.DispatchAsync(Modulus.Outbox.Abstractions.OutboxMessage! message, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
+Modulus.Outbox.Abstractions.IOutboxWriter
+Modulus.Outbox.Abstractions.IOutboxWriter.WriteAsync<TEvent>(TEvent event, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Outbox.Abstractions.OutboxMessage
+Modulus.Outbox.Abstractions.OutboxMessage.CausationId.get -> string?
+Modulus.Outbox.Abstractions.OutboxMessage.CausationId.init -> void
+Modulus.Outbox.Abstractions.OutboxMessage.CorrelationId.get -> string?
+Modulus.Outbox.Abstractions.OutboxMessage.CorrelationId.init -> void
+Modulus.Outbox.Abstractions.OutboxMessage.CreatedAt.get -> System.DateTime
+Modulus.Outbox.Abstractions.OutboxMessage.CreatedAt.init -> void
+Modulus.Outbox.Abstractions.OutboxMessage.Error.get -> string?
+Modulus.Outbox.Abstractions.OutboxMessage.Error.set -> void
+Modulus.Outbox.Abstractions.OutboxMessage.Id.get -> System.Guid
+Modulus.Outbox.Abstractions.OutboxMessage.Id.init -> void
+Modulus.Outbox.Abstractions.OutboxMessage.LockedBy.get -> string?
+Modulus.Outbox.Abstractions.OutboxMessage.LockedBy.set -> void
+Modulus.Outbox.Abstractions.OutboxMessage.LockedUntil.get -> System.DateTime?
+Modulus.Outbox.Abstractions.OutboxMessage.LockedUntil.set -> void
+Modulus.Outbox.Abstractions.OutboxMessage.MessageType.get -> string!
+Modulus.Outbox.Abstractions.OutboxMessage.MessageType.init -> void
+Modulus.Outbox.Abstractions.OutboxMessage.ModuleName.get -> string!
+Modulus.Outbox.Abstractions.OutboxMessage.ModuleName.init -> void
+Modulus.Outbox.Abstractions.OutboxMessage.NextAttemptAt.get -> System.DateTime?
+Modulus.Outbox.Abstractions.OutboxMessage.NextAttemptAt.set -> void
+Modulus.Outbox.Abstractions.OutboxMessage.OutboxMessage() -> void
+Modulus.Outbox.Abstractions.OutboxMessage.Payload.get -> string!
+Modulus.Outbox.Abstractions.OutboxMessage.Payload.init -> void
+Modulus.Outbox.Abstractions.OutboxMessage.ProcessedAt.get -> System.DateTime?
+Modulus.Outbox.Abstractions.OutboxMessage.ProcessedAt.set -> void
+Modulus.Outbox.Abstractions.OutboxMessage.RetryCount.get -> int
+Modulus.Outbox.Abstractions.OutboxMessage.RetryCount.set -> void
+Modulus.Outbox.Abstractions.OutboxMessage.SchemaVersion.get -> int?
+Modulus.Outbox.Abstractions.OutboxMessage.SchemaVersion.init -> void
+Modulus.Outbox.Abstractions.OutboxMessage.TenantId.get -> System.Guid
+Modulus.Outbox.Abstractions.OutboxMessage.TenantId.init -> void
+Modulus.Outbox.Abstractions.OutboxMessage.TraceParent.get -> string?
+Modulus.Outbox.Abstractions.OutboxMessage.TraceParent.init -> void
+Modulus.Outbox.Abstractions.OutboxMessage.TraceState.get -> string?
+Modulus.Outbox.Abstractions.OutboxMessage.TraceState.init -> void
+Modulus.Outbox.Abstractions.OutboxOptions
+Modulus.Outbox.Abstractions.OutboxOptions.BatchSize.get -> int
+Modulus.Outbox.Abstractions.OutboxOptions.BatchSize.set -> void
+Modulus.Outbox.Abstractions.OutboxOptions.DeferDelaySec.get -> int
+Modulus.Outbox.Abstractions.OutboxOptions.DeferDelaySec.set -> void
+Modulus.Outbox.Abstractions.OutboxOptions.DisableAutoPolling.get -> bool
+Modulus.Outbox.Abstractions.OutboxOptions.DisableAutoPolling.set -> void
+Modulus.Outbox.Abstractions.OutboxOptions.Dispatcher.get -> string!
+Modulus.Outbox.Abstractions.OutboxOptions.Dispatcher.set -> void
+Modulus.Outbox.Abstractions.OutboxOptions.EnableLeaderElection.get -> bool
+Modulus.Outbox.Abstractions.OutboxOptions.EnableLeaderElection.set -> void
+Modulus.Outbox.Abstractions.OutboxOptions.InitialBackoffSec.get -> int
+Modulus.Outbox.Abstractions.OutboxOptions.InitialBackoffSec.set -> void
+Modulus.Outbox.Abstractions.OutboxOptions.LockTimeoutSec.get -> int
+Modulus.Outbox.Abstractions.OutboxOptions.LockTimeoutSec.set -> void
+Modulus.Outbox.Abstractions.OutboxOptions.MaxRetries.get -> int
+Modulus.Outbox.Abstractions.OutboxOptions.MaxRetries.set -> void
+Modulus.Outbox.Abstractions.OutboxOptions.OutboxOptions() -> void
+Modulus.Outbox.Abstractions.OutboxOptions.PollingIntervalSec.get -> int
+Modulus.Outbox.Abstractions.OutboxOptions.PollingIntervalSec.set -> void
+Modulus.Outbox.Abstractions.OutboxOptions.PurgeAfterDays.get -> int
+Modulus.Outbox.Abstractions.OutboxOptions.PurgeAfterDays.set -> void
+Modulus.Outbox.Abstractions.OutboxRowFactory
+static Modulus.Outbox.Abstractions.OutboxRowFactory.Create(Modulus.Events.Abstractions.IIntegrationEvent! event, System.Guid tenantId, string! moduleName, string? correlationId, Modulus.Events.Abstractions.IMessageSerializer! serializer, string? causationId = null) -> Modulus.Outbox.Abstractions.OutboxMessage!

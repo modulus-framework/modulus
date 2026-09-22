@@ -1,0 +1,51 @@
+#nullable enable
+const Modulus.UI.Identity.IdentityUiLocalization.ResourceName = "Modulus.Identity" -> string!
+const Modulus.UI.Identity.IdentityUiOptions.SectionName = "IdentityUi" -> string!
+Modulus.UI.Identity.IdentityUiExtensions
+Modulus.UI.Identity.IdentityUiLocalization
+Modulus.UI.Identity.IdentityUiModule
+Modulus.UI.Identity.IdentityUiModule.IdentityUiModule() -> void
+Modulus.UI.Identity.IdentityUiOptions
+Modulus.UI.Identity.IdentityUiOptions.AllowSelfRegistration.get -> bool
+Modulus.UI.Identity.IdentityUiOptions.AllowSelfRegistration.set -> void
+Modulus.UI.Identity.IdentityUiOptions.IdentityUiOptions() -> void
+Modulus.UI.Identity.Pages.Account.LoginModel
+Modulus.UI.Identity.Pages.Account.LoginModel.Input.get -> Modulus.UI.Identity.Pages.Account.LoginModel.InputModel!
+Modulus.UI.Identity.Pages.Account.LoginModel.Input.set -> void
+Modulus.UI.Identity.Pages.Account.LoginModel.InputModel
+Modulus.UI.Identity.Pages.Account.LoginModel.InputModel.Email.get -> string!
+Modulus.UI.Identity.Pages.Account.LoginModel.InputModel.Email.set -> void
+Modulus.UI.Identity.Pages.Account.LoginModel.InputModel.InputModel() -> void
+Modulus.UI.Identity.Pages.Account.LoginModel.InputModel.Password.get -> string!
+Modulus.UI.Identity.Pages.Account.LoginModel.InputModel.Password.set -> void
+Modulus.UI.Identity.Pages.Account.LoginModel.InputModel.RememberMe.get -> bool
+Modulus.UI.Identity.Pages.Account.LoginModel.InputModel.RememberMe.set -> void
+Modulus.UI.Identity.Pages.Account.LoginModel.LoginModel(Microsoft.AspNetCore.Identity.SignInManager<Modulus.Identity.Abstractions.ModulusUser!>! signInManager, Microsoft.AspNetCore.Identity.UserManager<Modulus.Identity.Abstractions.ModulusUser!>! userManager, Modulus.Localization.IModulusLocalizer! localizer) -> void
+Modulus.UI.Identity.Pages.Account.LoginModel.OnGet(string? returnUrl = null) -> void
+Modulus.UI.Identity.Pages.Account.LoginModel.OnPostAsync(string? returnUrl = null) -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Mvc.IActionResult!>!
+Modulus.UI.Identity.Pages.Account.LoginModel.ReturnUrl.get -> string?
+Modulus.UI.Identity.Pages.Account.LoginModel.ReturnUrl.set -> void
+Modulus.UI.Identity.Pages.Account.RegisterModel
+Modulus.UI.Identity.Pages.Account.RegisterModel.Input.get -> Modulus.UI.Identity.Pages.Account.RegisterModel.InputModel!
+Modulus.UI.Identity.Pages.Account.RegisterModel.Input.set -> void
+Modulus.UI.Identity.Pages.Account.RegisterModel.InputModel
+Modulus.UI.Identity.Pages.Account.RegisterModel.InputModel.ConfirmPassword.get -> string!
+Modulus.UI.Identity.Pages.Account.RegisterModel.InputModel.ConfirmPassword.set -> void
+Modulus.UI.Identity.Pages.Account.RegisterModel.InputModel.Email.get -> string!
+Modulus.UI.Identity.Pages.Account.RegisterModel.InputModel.Email.set -> void
+Modulus.UI.Identity.Pages.Account.RegisterModel.InputModel.InputModel() -> void
+Modulus.UI.Identity.Pages.Account.RegisterModel.InputModel.Password.get -> string!
+Modulus.UI.Identity.Pages.Account.RegisterModel.InputModel.Password.set -> void
+Modulus.UI.Identity.Pages.Account.RegisterModel.OnGet(string? returnUrl = null) -> Microsoft.AspNetCore.Mvc.IActionResult!
+Modulus.UI.Identity.Pages.Account.RegisterModel.OnPostAsync(string? returnUrl = null) -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Mvc.IActionResult!>!
+Modulus.UI.Identity.Pages.Account.RegisterModel.RegisterModel(Microsoft.AspNetCore.Identity.UserManager<Modulus.Identity.Abstractions.ModulusUser!>! userManager, Microsoft.AspNetCore.Identity.SignInManager<Modulus.Identity.Abstractions.ModulusUser!>! signInManager, Modulus.Core.Abstractions.ICurrentTenant! currentTenant, Microsoft.Extensions.Options.IOptions<Modulus.UI.Identity.IdentityUiOptions!>! uiOptions, Microsoft.Extensions.Options.IOptions<Modulus.Identity.Abstractions.ModulusIdentityOptions!>! identityOptions, Modulus.Localization.IModulusLocalizer! localizer) -> void
+Modulus.UI.Identity.Pages.Account.RegisterModel.ReturnUrl.get -> string?
+Modulus.UI.Identity.Pages.Account.RegisterModel.ReturnUrl.set -> void
+Modulus.UI.Identity.Pages.Account.SignOutModel
+Modulus.UI.Identity.Pages.Account.SignOutModel.OnGet() -> void
+Modulus.UI.Identity.Pages.Account.SignOutModel.OnPostAsync() -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Mvc.IActionResult!>!
+Modulus.UI.Identity.Pages.Account.SignOutModel.SignOutModel(Microsoft.AspNetCore.Identity.SignInManager<Modulus.Identity.Abstractions.ModulusUser!>! signInManager) -> void
+override Modulus.UI.Identity.IdentityUiModule.Manifest.get -> Modulus.UI.ModuleManifest!
+static Modulus.UI.Identity.IdentityUiExtensions.AddModulusIdentityUi(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration? configuration = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.UI.Identity.IdentityUiExtensions.MapModulusIdentityUi(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints) -> Microsoft.AspNetCore.Routing.IEndpointRouteBuilder!
+static Modulus.UI.Identity.IdentityUiLocalization.Seed(Modulus.Localization.ILocalizationStore! store) -> void

@@ -1,0 +1,16 @@
+#nullable enable
+Modulus.Caching.RedisCacheService
+Modulus.Caching.RedisCacheService.GetAsync<T>(string! key, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<T?>!
+Modulus.Caching.RedisCacheService.RedisCacheService(StackExchange.Redis.IConnectionMultiplexer! redis, System.IServiceProvider! services) -> void
+Modulus.Caching.RedisCacheService.RemoveAsync(string! key, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Caching.RedisCacheService.RemoveByTagAsync(string! tag, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Caching.RedisCacheService.RemoveByTagsAsync(string![]! tags, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Caching.RedisCacheService.SetAsync<T>(string! key, T value, System.TimeSpan? expiry = null, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Caching.RedisCacheService.SetAsync<T>(string! key, T value, System.TimeSpan? expiry, string![]? tags, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Caching.RedisCachingExtensions
+static Modulus.Caching.RedisCachingExtensions.AddRedisCacheBackplane(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.Caching.RedisCachingExtensions.AddRedisCacheService(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.Caching.RedisCachingExtensions.AddRedisCacheService(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, string! connectionString) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.Caching.RedisCachingExtensions.AddRedisDistributedLock(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.Caching.RedisCachingExtensions.AddRedisDistributedLock(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.Caching.RedisCachingExtensions.AddRedisDistributedLock(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, string! connectionString) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!

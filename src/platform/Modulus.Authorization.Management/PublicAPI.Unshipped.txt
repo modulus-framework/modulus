@@ -1,0 +1,143 @@
+#nullable enable
+const Modulus.Authorization.Management.AuthorizationManagementExtensions.ManagePermission = "authorization:manage" -> string!
+Modulus.Authorization.Management.AuthorizationManagementExtensions
+Modulus.Authorization.Management.DelegationWriteRequest
+Modulus.Authorization.Management.DelegationWriteRequest.<Clone>$() -> Modulus.Authorization.Management.DelegationWriteRequest!
+Modulus.Authorization.Management.DelegationWriteRequest.Deconstruct(out System.Guid FromUserId, out string![]! FromRoles, out System.Guid ToUserId, out string![]! Permissions, out System.DateTimeOffset NotBefore, out System.DateTimeOffset NotAfter) -> void
+Modulus.Authorization.Management.DelegationWriteRequest.DelegationWriteRequest(System.Guid FromUserId, string![]! FromRoles, System.Guid ToUserId, string![]! Permissions, System.DateTimeOffset NotBefore, System.DateTimeOffset NotAfter) -> void
+Modulus.Authorization.Management.DelegationWriteRequest.Equals(Modulus.Authorization.Management.DelegationWriteRequest? other) -> bool
+Modulus.Authorization.Management.DelegationWriteRequest.FromRoles.get -> string![]!
+Modulus.Authorization.Management.DelegationWriteRequest.FromRoles.init -> void
+Modulus.Authorization.Management.DelegationWriteRequest.FromUserId.get -> System.Guid
+Modulus.Authorization.Management.DelegationWriteRequest.FromUserId.init -> void
+Modulus.Authorization.Management.DelegationWriteRequest.NotAfter.get -> System.DateTimeOffset
+Modulus.Authorization.Management.DelegationWriteRequest.NotAfter.init -> void
+Modulus.Authorization.Management.DelegationWriteRequest.NotBefore.get -> System.DateTimeOffset
+Modulus.Authorization.Management.DelegationWriteRequest.NotBefore.init -> void
+Modulus.Authorization.Management.DelegationWriteRequest.Permissions.get -> string![]!
+Modulus.Authorization.Management.DelegationWriteRequest.Permissions.init -> void
+Modulus.Authorization.Management.DelegationWriteRequest.ToUserId.get -> System.Guid
+Modulus.Authorization.Management.DelegationWriteRequest.ToUserId.init -> void
+Modulus.Authorization.Management.GrantResponse
+Modulus.Authorization.Management.GrantResponse.<Clone>$() -> Modulus.Authorization.Management.GrantResponse!
+Modulus.Authorization.Management.GrantResponse.Deconstruct(out string! HolderType, out string! Holder, out string! Permission, out string! Type) -> void
+Modulus.Authorization.Management.GrantResponse.Equals(Modulus.Authorization.Management.GrantResponse? other) -> bool
+Modulus.Authorization.Management.GrantResponse.GrantResponse(string! HolderType, string! Holder, string! Permission, string! Type) -> void
+Modulus.Authorization.Management.GrantResponse.Holder.get -> string!
+Modulus.Authorization.Management.GrantResponse.Holder.init -> void
+Modulus.Authorization.Management.GrantResponse.HolderType.get -> string!
+Modulus.Authorization.Management.GrantResponse.HolderType.init -> void
+Modulus.Authorization.Management.GrantResponse.Permission.get -> string!
+Modulus.Authorization.Management.GrantResponse.Permission.init -> void
+Modulus.Authorization.Management.GrantResponse.Type.get -> string!
+Modulus.Authorization.Management.GrantResponse.Type.init -> void
+Modulus.Authorization.Management.GrantWriteRequest
+Modulus.Authorization.Management.GrantWriteRequest.<Clone>$() -> Modulus.Authorization.Management.GrantWriteRequest!
+Modulus.Authorization.Management.GrantWriteRequest.Deconstruct(out string! HolderType, out string! Holder, out string![]! Permissions, out string? Type, out string![]? HolderRoles) -> void
+Modulus.Authorization.Management.GrantWriteRequest.Equals(Modulus.Authorization.Management.GrantWriteRequest? other) -> bool
+Modulus.Authorization.Management.GrantWriteRequest.GrantWriteRequest(string! HolderType, string! Holder, string![]! Permissions, string? Type, string![]? HolderRoles = null) -> void
+Modulus.Authorization.Management.GrantWriteRequest.Holder.get -> string!
+Modulus.Authorization.Management.GrantWriteRequest.Holder.init -> void
+Modulus.Authorization.Management.GrantWriteRequest.HolderRoles.get -> string![]?
+Modulus.Authorization.Management.GrantWriteRequest.HolderRoles.init -> void
+Modulus.Authorization.Management.GrantWriteRequest.HolderType.get -> string!
+Modulus.Authorization.Management.GrantWriteRequest.HolderType.init -> void
+Modulus.Authorization.Management.GrantWriteRequest.Permissions.get -> string![]!
+Modulus.Authorization.Management.GrantWriteRequest.Permissions.init -> void
+Modulus.Authorization.Management.GrantWriteRequest.Type.get -> string?
+Modulus.Authorization.Management.GrantWriteRequest.Type.init -> void
+Modulus.Authorization.Management.OrgUnitParentsRequest
+Modulus.Authorization.Management.OrgUnitParentsRequest.<Clone>$() -> Modulus.Authorization.Management.OrgUnitParentsRequest!
+Modulus.Authorization.Management.OrgUnitParentsRequest.Deconstruct(out System.Guid[]! Parents) -> void
+Modulus.Authorization.Management.OrgUnitParentsRequest.Equals(Modulus.Authorization.Management.OrgUnitParentsRequest? other) -> bool
+Modulus.Authorization.Management.OrgUnitParentsRequest.OrgUnitParentsRequest(System.Guid[]! Parents) -> void
+Modulus.Authorization.Management.OrgUnitParentsRequest.Parents.get -> System.Guid[]!
+Modulus.Authorization.Management.OrgUnitParentsRequest.Parents.init -> void
+Modulus.Authorization.Management.OrgUnitWriteRequest
+Modulus.Authorization.Management.OrgUnitWriteRequest.<Clone>$() -> Modulus.Authorization.Management.OrgUnitWriteRequest!
+Modulus.Authorization.Management.OrgUnitWriteRequest.Deconstruct(out System.Guid Id, out System.Guid[]? Parents) -> void
+Modulus.Authorization.Management.OrgUnitWriteRequest.Equals(Modulus.Authorization.Management.OrgUnitWriteRequest? other) -> bool
+Modulus.Authorization.Management.OrgUnitWriteRequest.Id.get -> System.Guid
+Modulus.Authorization.Management.OrgUnitWriteRequest.Id.init -> void
+Modulus.Authorization.Management.OrgUnitWriteRequest.OrgUnitWriteRequest(System.Guid Id, System.Guid[]? Parents) -> void
+Modulus.Authorization.Management.OrgUnitWriteRequest.Parents.get -> System.Guid[]?
+Modulus.Authorization.Management.OrgUnitWriteRequest.Parents.init -> void
+Modulus.Authorization.Management.OverrideWriteRequest
+Modulus.Authorization.Management.OverrideWriteRequest.<Clone>$() -> Modulus.Authorization.Management.OverrideWriteRequest!
+Modulus.Authorization.Management.OverrideWriteRequest.Deconstruct(out bool Enabled) -> void
+Modulus.Authorization.Management.OverrideWriteRequest.Enabled.get -> bool
+Modulus.Authorization.Management.OverrideWriteRequest.Enabled.init -> void
+Modulus.Authorization.Management.OverrideWriteRequest.Equals(Modulus.Authorization.Management.OverrideWriteRequest? other) -> bool
+Modulus.Authorization.Management.OverrideWriteRequest.OverrideWriteRequest(bool Enabled) -> void
+Modulus.Authorization.Management.PlacementWriteRequest
+Modulus.Authorization.Management.PlacementWriteRequest.<Clone>$() -> Modulus.Authorization.Management.PlacementWriteRequest!
+Modulus.Authorization.Management.PlacementWriteRequest.Deconstruct(out System.Guid UserId, out System.Guid OrgUnitId, out string? Mode) -> void
+Modulus.Authorization.Management.PlacementWriteRequest.Equals(Modulus.Authorization.Management.PlacementWriteRequest? other) -> bool
+Modulus.Authorization.Management.PlacementWriteRequest.Mode.get -> string?
+Modulus.Authorization.Management.PlacementWriteRequest.Mode.init -> void
+Modulus.Authorization.Management.PlacementWriteRequest.OrgUnitId.get -> System.Guid
+Modulus.Authorization.Management.PlacementWriteRequest.OrgUnitId.init -> void
+Modulus.Authorization.Management.PlacementWriteRequest.PlacementWriteRequest(System.Guid UserId, System.Guid OrgUnitId, string? Mode) -> void
+Modulus.Authorization.Management.PlacementWriteRequest.UserId.get -> System.Guid
+Modulus.Authorization.Management.PlacementWriteRequest.UserId.init -> void
+Modulus.Authorization.Management.PlanAssignmentRequest
+Modulus.Authorization.Management.PlanAssignmentRequest.<Clone>$() -> Modulus.Authorization.Management.PlanAssignmentRequest!
+Modulus.Authorization.Management.PlanAssignmentRequest.Deconstruct(out string! Plan) -> void
+Modulus.Authorization.Management.PlanAssignmentRequest.Equals(Modulus.Authorization.Management.PlanAssignmentRequest? other) -> bool
+Modulus.Authorization.Management.PlanAssignmentRequest.Plan.get -> string!
+Modulus.Authorization.Management.PlanAssignmentRequest.Plan.init -> void
+Modulus.Authorization.Management.PlanAssignmentRequest.PlanAssignmentRequest(string! Plan) -> void
+Modulus.Authorization.Management.PlanDefinitionRequest
+Modulus.Authorization.Management.PlanDefinitionRequest.<Clone>$() -> Modulus.Authorization.Management.PlanDefinitionRequest!
+Modulus.Authorization.Management.PlanDefinitionRequest.Deconstruct(out string![]! Features) -> void
+Modulus.Authorization.Management.PlanDefinitionRequest.Equals(Modulus.Authorization.Management.PlanDefinitionRequest? other) -> bool
+Modulus.Authorization.Management.PlanDefinitionRequest.Features.get -> string![]!
+Modulus.Authorization.Management.PlanDefinitionRequest.Features.init -> void
+Modulus.Authorization.Management.PlanDefinitionRequest.PlanDefinitionRequest(string![]! Features) -> void
+override Modulus.Authorization.Management.DelegationWriteRequest.Equals(object? obj) -> bool
+override Modulus.Authorization.Management.DelegationWriteRequest.GetHashCode() -> int
+override Modulus.Authorization.Management.DelegationWriteRequest.ToString() -> string!
+override Modulus.Authorization.Management.GrantResponse.Equals(object? obj) -> bool
+override Modulus.Authorization.Management.GrantResponse.GetHashCode() -> int
+override Modulus.Authorization.Management.GrantResponse.ToString() -> string!
+override Modulus.Authorization.Management.GrantWriteRequest.Equals(object? obj) -> bool
+override Modulus.Authorization.Management.GrantWriteRequest.GetHashCode() -> int
+override Modulus.Authorization.Management.GrantWriteRequest.ToString() -> string!
+override Modulus.Authorization.Management.OrgUnitParentsRequest.Equals(object? obj) -> bool
+override Modulus.Authorization.Management.OrgUnitParentsRequest.GetHashCode() -> int
+override Modulus.Authorization.Management.OrgUnitParentsRequest.ToString() -> string!
+override Modulus.Authorization.Management.OrgUnitWriteRequest.Equals(object? obj) -> bool
+override Modulus.Authorization.Management.OrgUnitWriteRequest.GetHashCode() -> int
+override Modulus.Authorization.Management.OrgUnitWriteRequest.ToString() -> string!
+override Modulus.Authorization.Management.OverrideWriteRequest.Equals(object? obj) -> bool
+override Modulus.Authorization.Management.OverrideWriteRequest.GetHashCode() -> int
+override Modulus.Authorization.Management.OverrideWriteRequest.ToString() -> string!
+override Modulus.Authorization.Management.PlacementWriteRequest.Equals(object? obj) -> bool
+override Modulus.Authorization.Management.PlacementWriteRequest.GetHashCode() -> int
+override Modulus.Authorization.Management.PlacementWriteRequest.ToString() -> string!
+override Modulus.Authorization.Management.PlanAssignmentRequest.Equals(object? obj) -> bool
+override Modulus.Authorization.Management.PlanAssignmentRequest.GetHashCode() -> int
+override Modulus.Authorization.Management.PlanAssignmentRequest.ToString() -> string!
+override Modulus.Authorization.Management.PlanDefinitionRequest.Equals(object? obj) -> bool
+override Modulus.Authorization.Management.PlanDefinitionRequest.GetHashCode() -> int
+override Modulus.Authorization.Management.PlanDefinitionRequest.ToString() -> string!
+static Modulus.Authorization.Management.AuthorizationManagementExtensions.AddModulusAuthorizationManagement(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.Authorization.Management.AuthorizationManagementExtensions.MapModulusAuthorizationManagement(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! prefix = "/authorization") -> Microsoft.AspNetCore.Routing.RouteGroupBuilder!
+static Modulus.Authorization.Management.DelegationWriteRequest.operator !=(Modulus.Authorization.Management.DelegationWriteRequest? left, Modulus.Authorization.Management.DelegationWriteRequest? right) -> bool
+static Modulus.Authorization.Management.DelegationWriteRequest.operator ==(Modulus.Authorization.Management.DelegationWriteRequest? left, Modulus.Authorization.Management.DelegationWriteRequest? right) -> bool
+static Modulus.Authorization.Management.GrantResponse.operator !=(Modulus.Authorization.Management.GrantResponse? left, Modulus.Authorization.Management.GrantResponse? right) -> bool
+static Modulus.Authorization.Management.GrantResponse.operator ==(Modulus.Authorization.Management.GrantResponse? left, Modulus.Authorization.Management.GrantResponse? right) -> bool
+static Modulus.Authorization.Management.GrantWriteRequest.operator !=(Modulus.Authorization.Management.GrantWriteRequest? left, Modulus.Authorization.Management.GrantWriteRequest? right) -> bool
+static Modulus.Authorization.Management.GrantWriteRequest.operator ==(Modulus.Authorization.Management.GrantWriteRequest? left, Modulus.Authorization.Management.GrantWriteRequest? right) -> bool
+static Modulus.Authorization.Management.OrgUnitParentsRequest.operator !=(Modulus.Authorization.Management.OrgUnitParentsRequest? left, Modulus.Authorization.Management.OrgUnitParentsRequest? right) -> bool
+static Modulus.Authorization.Management.OrgUnitParentsRequest.operator ==(Modulus.Authorization.Management.OrgUnitParentsRequest? left, Modulus.Authorization.Management.OrgUnitParentsRequest? right) -> bool
+static Modulus.Authorization.Management.OrgUnitWriteRequest.operator !=(Modulus.Authorization.Management.OrgUnitWriteRequest? left, Modulus.Authorization.Management.OrgUnitWriteRequest? right) -> bool
+static Modulus.Authorization.Management.OrgUnitWriteRequest.operator ==(Modulus.Authorization.Management.OrgUnitWriteRequest? left, Modulus.Authorization.Management.OrgUnitWriteRequest? right) -> bool
+static Modulus.Authorization.Management.OverrideWriteRequest.operator !=(Modulus.Authorization.Management.OverrideWriteRequest? left, Modulus.Authorization.Management.OverrideWriteRequest? right) -> bool
+static Modulus.Authorization.Management.OverrideWriteRequest.operator ==(Modulus.Authorization.Management.OverrideWriteRequest? left, Modulus.Authorization.Management.OverrideWriteRequest? right) -> bool
+static Modulus.Authorization.Management.PlacementWriteRequest.operator !=(Modulus.Authorization.Management.PlacementWriteRequest? left, Modulus.Authorization.Management.PlacementWriteRequest? right) -> bool
+static Modulus.Authorization.Management.PlacementWriteRequest.operator ==(Modulus.Authorization.Management.PlacementWriteRequest? left, Modulus.Authorization.Management.PlacementWriteRequest? right) -> bool
+static Modulus.Authorization.Management.PlanAssignmentRequest.operator !=(Modulus.Authorization.Management.PlanAssignmentRequest? left, Modulus.Authorization.Management.PlanAssignmentRequest? right) -> bool
+static Modulus.Authorization.Management.PlanAssignmentRequest.operator ==(Modulus.Authorization.Management.PlanAssignmentRequest? left, Modulus.Authorization.Management.PlanAssignmentRequest? right) -> bool
+static Modulus.Authorization.Management.PlanDefinitionRequest.operator !=(Modulus.Authorization.Management.PlanDefinitionRequest? left, Modulus.Authorization.Management.PlanDefinitionRequest? right) -> bool
+static Modulus.Authorization.Management.PlanDefinitionRequest.operator ==(Modulus.Authorization.Management.PlanDefinitionRequest? left, Modulus.Authorization.Management.PlanDefinitionRequest? right) -> bool

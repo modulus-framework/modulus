@@ -1,0 +1,48 @@
+#nullable enable
+const Modulus.UI.Theming.Tabler.TablerAssets.AssetRoot = "tabler" -> string!
+const Modulus.UI.Theming.Tabler.TablerAssets.Files.AlpineJs = "vendor/alpine.csp.min.js" -> string!
+const Modulus.UI.Theming.Tabler.TablerAssets.Files.HtmxJs = "vendor/htmx.min.js" -> string!
+const Modulus.UI.Theming.Tabler.TablerAssets.Files.IdiomorphJs = "vendor/idiomorph-ext.min.js" -> string!
+const Modulus.UI.Theming.Tabler.TablerAssets.Files.ModulusCss = "css/modulus.css" -> string!
+const Modulus.UI.Theming.Tabler.TablerAssets.Files.ModulusJs = "js/modulus.js" -> string!
+const Modulus.UI.Theming.Tabler.TablerAssets.Files.TablerCss = "vendor/tabler.min.css" -> string!
+const Modulus.UI.Theming.Tabler.TablerAssets.Files.TablerJs = "vendor/tabler.min.js" -> string!
+const Modulus.UI.Theming.Tabler.TablerShell.ColorModeCookie = "modulus-color-mode" -> string!
+const Modulus.UI.Theming.Tabler.TablerTheme.ThemeName = "Tabler" -> string!
+Modulus.UI.Theming.Tabler.ErrorPageModel
+Modulus.UI.Theming.Tabler.ErrorPageModel.<Clone>$() -> Modulus.UI.Theming.Tabler.ErrorPageModel!
+Modulus.UI.Theming.Tabler.ErrorPageModel.Code.get -> int
+Modulus.UI.Theming.Tabler.ErrorPageModel.Code.init -> void
+Modulus.UI.Theming.Tabler.ErrorPageModel.Deconstruct(out int Code, out string! Title, out string! Text) -> void
+Modulus.UI.Theming.Tabler.ErrorPageModel.Equals(Modulus.UI.Theming.Tabler.ErrorPageModel? other) -> bool
+Modulus.UI.Theming.Tabler.ErrorPageModel.ErrorPageModel(int Code, string! Title, string! Text) -> void
+Modulus.UI.Theming.Tabler.ErrorPageModel.Text.get -> string!
+Modulus.UI.Theming.Tabler.ErrorPageModel.Text.init -> void
+Modulus.UI.Theming.Tabler.ErrorPageModel.Title.get -> string!
+Modulus.UI.Theming.Tabler.ErrorPageModel.Title.init -> void
+Modulus.UI.Theming.Tabler.TablerAssets
+Modulus.UI.Theming.Tabler.TablerAssets.Files
+Modulus.UI.Theming.Tabler.TablerShell
+Modulus.UI.Theming.Tabler.TablerTheme
+Modulus.UI.Theming.Tabler.TablerTheme.GetLayout(string! layoutName) -> string!
+Modulus.UI.Theming.Tabler.TablerTheme.Name.get -> string!
+Modulus.UI.Theming.Tabler.TablerTheme.Scripts.get -> System.Collections.Generic.IReadOnlyList<Modulus.UI.Theming.ThemeAsset!>!
+Modulus.UI.Theming.Tabler.TablerTheme.Styles.get -> System.Collections.Generic.IReadOnlyList<Modulus.UI.Theming.ThemeAsset!>!
+Modulus.UI.Theming.Tabler.TablerTheme.TablerTheme(Microsoft.AspNetCore.Hosting.IWebHostEnvironment! environment) -> void
+Modulus.UI.Theming.Tabler.TablerThemeExtensions
+Modulus.UI.Theming.Tabler.TablerThemeModule
+Modulus.UI.Theming.Tabler.TablerThemeModule.TablerThemeModule() -> void
+override Modulus.UI.Theming.Tabler.ErrorPageModel.Equals(object? obj) -> bool
+override Modulus.UI.Theming.Tabler.ErrorPageModel.GetHashCode() -> int
+override Modulus.UI.Theming.Tabler.ErrorPageModel.ToString() -> string!
+override Modulus.UI.Theming.Tabler.TablerThemeModule.Manifest.get -> Modulus.UI.ModuleManifest!
+static Modulus.UI.Theming.Tabler.ErrorPageModel.operator !=(Modulus.UI.Theming.Tabler.ErrorPageModel? left, Modulus.UI.Theming.Tabler.ErrorPageModel? right) -> bool
+static Modulus.UI.Theming.Tabler.ErrorPageModel.operator ==(Modulus.UI.Theming.Tabler.ErrorPageModel? left, Modulus.UI.Theming.Tabler.ErrorPageModel? right) -> bool
+static Modulus.UI.Theming.Tabler.TablerAssets.ContentBase(Microsoft.AspNetCore.Hosting.IWebHostEnvironment! environment) -> string!
+static Modulus.UI.Theming.Tabler.TablerAssets.ContentBase(Microsoft.Extensions.FileProviders.IFileProvider! webRootFiles) -> string!
+static Modulus.UI.Theming.Tabler.TablerAssets.IsAlpine(string! path) -> bool
+static Modulus.UI.Theming.Tabler.TablerAssets.Url(string! contentBase, string! file) -> string!
+static Modulus.UI.Theming.Tabler.TablerShell.FollowsSystem(Microsoft.AspNetCore.Http.HttpRequest! request, Modulus.UI.Theming.ThemeOptions! options) -> bool
+static Modulus.UI.Theming.Tabler.TablerShell.IsActive(Microsoft.AspNetCore.Http.HttpRequest! request, Modulus.UI.UiMenuItem! item) -> bool
+static Modulus.UI.Theming.Tabler.TablerShell.ResolveColorMode(Microsoft.AspNetCore.Http.HttpRequest! request, Modulus.UI.Theming.ThemeOptions! options) -> string!
+static Modulus.UI.Theming.Tabler.TablerThemeExtensions.AddTablerTheme(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration? configuration = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!

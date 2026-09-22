@@ -1,0 +1,65 @@
+#nullable enable
+const Modulus.UI.Settings.SettingsUiLocalization.ResourceName = "Modulus.Settings" -> string!
+const Modulus.UI.Settings.SettingsUiOptions.SectionName = "SettingsUi" -> string!
+const Modulus.UI.Settings.SettingsUiPermissions.Manage = "settings:manage" -> string!
+Modulus.UI.Settings.Pages.Settings.EditModel
+Modulus.UI.Settings.Pages.Settings.EditModel.Definition.get -> Modulus.Settings.SettingDefinition?
+Modulus.UI.Settings.Pages.Settings.EditModel.EditModel(Modulus.Settings.ISettingDefinitionRegistry! registry, Modulus.Settings.ISettingManager! manager, Modulus.Core.Abstractions.ICurrentTenant! currentTenant, Modulus.Core.Abstractions.ICurrentUser! currentUser, Modulus.Localization.IModulusLocalizer! localizer) -> void
+Modulus.UI.Settings.Pages.Settings.EditModel.Input.get -> Modulus.UI.Settings.Pages.Settings.EditModel.InputModel!
+Modulus.UI.Settings.Pages.Settings.EditModel.Input.set -> void
+Modulus.UI.Settings.Pages.Settings.EditModel.InputModel
+Modulus.UI.Settings.Pages.Settings.EditModel.InputModel.InputModel() -> void
+Modulus.UI.Settings.Pages.Settings.EditModel.InputModel.Scope.get -> string!
+Modulus.UI.Settings.Pages.Settings.EditModel.InputModel.Scope.set -> void
+Modulus.UI.Settings.Pages.Settings.EditModel.InputModel.Value.get -> string?
+Modulus.UI.Settings.Pages.Settings.EditModel.InputModel.Value.set -> void
+Modulus.UI.Settings.Pages.Settings.EditModel.OnGetAsync(string! name, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Mvc.IActionResult!>!
+Modulus.UI.Settings.Pages.Settings.EditModel.OnPostAsync(string! name, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Mvc.IActionResult!>!
+Modulus.UI.Settings.Pages.Settings.EditModel.TextAsync(string! key) -> System.Threading.Tasks.Task<string!>!
+Modulus.UI.Settings.Pages.Settings.IndexModel
+Modulus.UI.Settings.Pages.Settings.IndexModel.Groups.get -> System.Collections.Generic.IReadOnlyList<Modulus.UI.Settings.Pages.Settings.IndexModel.SettingGroup!>!
+Modulus.UI.Settings.Pages.Settings.IndexModel.IndexModel(Modulus.Settings.ISettingDefinitionRegistry! registry, Modulus.Settings.ISettingManager! manager, Modulus.Localization.IModulusLocalizer! localizer) -> void
+Modulus.UI.Settings.Pages.Settings.IndexModel.OnGetAsync(System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
+Modulus.UI.Settings.Pages.Settings.IndexModel.SettingGroup
+Modulus.UI.Settings.Pages.Settings.IndexModel.SettingGroup.<Clone>$() -> Modulus.UI.Settings.Pages.Settings.IndexModel.SettingGroup!
+Modulus.UI.Settings.Pages.Settings.IndexModel.SettingGroup.Deconstruct(out string! Group, out System.Collections.Generic.IReadOnlyList<Modulus.UI.Settings.Pages.Settings.IndexModel.SettingRow!>! Rows) -> void
+Modulus.UI.Settings.Pages.Settings.IndexModel.SettingGroup.Equals(Modulus.UI.Settings.Pages.Settings.IndexModel.SettingGroup? other) -> bool
+Modulus.UI.Settings.Pages.Settings.IndexModel.SettingGroup.Group.get -> string!
+Modulus.UI.Settings.Pages.Settings.IndexModel.SettingGroup.Group.init -> void
+Modulus.UI.Settings.Pages.Settings.IndexModel.SettingGroup.Rows.get -> System.Collections.Generic.IReadOnlyList<Modulus.UI.Settings.Pages.Settings.IndexModel.SettingRow!>!
+Modulus.UI.Settings.Pages.Settings.IndexModel.SettingGroup.Rows.init -> void
+Modulus.UI.Settings.Pages.Settings.IndexModel.SettingGroup.SettingGroup(string! Group, System.Collections.Generic.IReadOnlyList<Modulus.UI.Settings.Pages.Settings.IndexModel.SettingRow!>! Rows) -> void
+Modulus.UI.Settings.Pages.Settings.IndexModel.SettingRow
+Modulus.UI.Settings.Pages.Settings.IndexModel.SettingRow.<Clone>$() -> Modulus.UI.Settings.Pages.Settings.IndexModel.SettingRow!
+Modulus.UI.Settings.Pages.Settings.IndexModel.SettingRow.Deconstruct(out Modulus.Settings.SettingDefinition! Definition, out string? EffectiveValue) -> void
+Modulus.UI.Settings.Pages.Settings.IndexModel.SettingRow.Definition.get -> Modulus.Settings.SettingDefinition!
+Modulus.UI.Settings.Pages.Settings.IndexModel.SettingRow.Definition.init -> void
+Modulus.UI.Settings.Pages.Settings.IndexModel.SettingRow.EffectiveValue.get -> string?
+Modulus.UI.Settings.Pages.Settings.IndexModel.SettingRow.EffectiveValue.init -> void
+Modulus.UI.Settings.Pages.Settings.IndexModel.SettingRow.Equals(Modulus.UI.Settings.Pages.Settings.IndexModel.SettingRow? other) -> bool
+Modulus.UI.Settings.Pages.Settings.IndexModel.SettingRow.SettingRow(Modulus.Settings.SettingDefinition! Definition, string? EffectiveValue) -> void
+Modulus.UI.Settings.Pages.Settings.IndexModel.TextAsync(string! key) -> System.Threading.Tasks.Task<string!>!
+Modulus.UI.Settings.SettingsUiExtensions
+Modulus.UI.Settings.SettingsUiLocalization
+Modulus.UI.Settings.SettingsUiModule
+Modulus.UI.Settings.SettingsUiModule.SettingsUiModule() -> void
+Modulus.UI.Settings.SettingsUiOptions
+Modulus.UI.Settings.SettingsUiOptions.RequirePermission.get -> string?
+Modulus.UI.Settings.SettingsUiOptions.RequirePermission.set -> void
+Modulus.UI.Settings.SettingsUiOptions.SettingsUiOptions() -> void
+Modulus.UI.Settings.SettingsUiPermissions
+override Modulus.UI.Settings.Pages.Settings.IndexModel.SettingGroup.Equals(object? obj) -> bool
+override Modulus.UI.Settings.Pages.Settings.IndexModel.SettingGroup.GetHashCode() -> int
+override Modulus.UI.Settings.Pages.Settings.IndexModel.SettingGroup.ToString() -> string!
+override Modulus.UI.Settings.Pages.Settings.IndexModel.SettingRow.Equals(object? obj) -> bool
+override Modulus.UI.Settings.Pages.Settings.IndexModel.SettingRow.GetHashCode() -> int
+override Modulus.UI.Settings.Pages.Settings.IndexModel.SettingRow.ToString() -> string!
+override Modulus.UI.Settings.SettingsUiModule.ConfigureNavigation(Modulus.UI.UiNavigationBuilder! navigation) -> void
+override Modulus.UI.Settings.SettingsUiModule.Manifest.get -> Modulus.UI.ModuleManifest!
+static Modulus.UI.Settings.Pages.Settings.IndexModel.SettingGroup.operator !=(Modulus.UI.Settings.Pages.Settings.IndexModel.SettingGroup? left, Modulus.UI.Settings.Pages.Settings.IndexModel.SettingGroup? right) -> bool
+static Modulus.UI.Settings.Pages.Settings.IndexModel.SettingGroup.operator ==(Modulus.UI.Settings.Pages.Settings.IndexModel.SettingGroup? left, Modulus.UI.Settings.Pages.Settings.IndexModel.SettingGroup? right) -> bool
+static Modulus.UI.Settings.Pages.Settings.IndexModel.SettingRow.operator !=(Modulus.UI.Settings.Pages.Settings.IndexModel.SettingRow? left, Modulus.UI.Settings.Pages.Settings.IndexModel.SettingRow? right) -> bool
+static Modulus.UI.Settings.Pages.Settings.IndexModel.SettingRow.operator ==(Modulus.UI.Settings.Pages.Settings.IndexModel.SettingRow? left, Modulus.UI.Settings.Pages.Settings.IndexModel.SettingRow? right) -> bool
+static Modulus.UI.Settings.SettingsUiExtensions.AddModulusSettingsUi(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration? configuration = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.UI.Settings.SettingsUiExtensions.MapModulusSettingsUi(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints) -> Microsoft.AspNetCore.Routing.IEndpointRouteBuilder!
+static Modulus.UI.Settings.SettingsUiLocalization.Seed(Modulus.Localization.ILocalizationStore! store) -> void

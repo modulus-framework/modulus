@@ -1,0 +1,8 @@
+#nullable enable
+Modulus.Outbox.Extensions.OutboxServiceCollectionExtensions
+Modulus.Outbox.OutboxPollingService
+Modulus.Outbox.OutboxPollingService.OutboxPollingService(System.IServiceProvider! sp, Microsoft.Extensions.Options.IOptions<Modulus.Outbox.Abstractions.OutboxOptions!>! opts, Microsoft.Extensions.Logging.ILogger<Modulus.Outbox.OutboxPollingService!>! logger) -> void
+Modulus.Outbox.OutboxProcessor
+Modulus.Outbox.OutboxProcessor.OutboxProcessor(System.IServiceProvider! sp, Microsoft.Extensions.Options.IOptions<Modulus.Outbox.Abstractions.OutboxOptions!>! opts, Microsoft.Extensions.Logging.ILogger<Modulus.Outbox.OutboxProcessor!>! logger) -> void
+Modulus.Outbox.OutboxProcessor.ProcessAsync(System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+static Modulus.Outbox.Extensions.OutboxServiceCollectionExtensions.AddOutbox<TContext>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<Modulus.Outbox.Abstractions.OutboxOptions!>? configure = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!

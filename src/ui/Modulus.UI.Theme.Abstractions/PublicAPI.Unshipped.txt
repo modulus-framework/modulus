@@ -1,0 +1,64 @@
+#nullable enable
+const Modulus.UI.Theming.StandardLayouts.Account = "Account" -> string!
+const Modulus.UI.Theming.StandardLayouts.Application = "Application" -> string!
+const Modulus.UI.Theming.StandardLayouts.Empty = "Empty" -> string!
+const Modulus.UI.Theming.StandardLayouts.Public = "Public" -> string!
+const Modulus.UI.Theming.ThemeOptions.SectionName = "Modulus:Ui:Theme" -> string!
+const Modulus.UI.Theming.UiDesignTokens.FontSans = "FontSans" -> string!
+const Modulus.UI.Theming.UiDesignTokens.PageMaxWidth = "PageMaxWidth" -> string!
+const Modulus.UI.Theming.UiDesignTokens.Primary = "Primary" -> string!
+const Modulus.UI.Theming.UiDesignTokens.PrimaryForeground = "PrimaryForeground" -> string!
+const Modulus.UI.Theming.UiDesignTokens.Radius = "Radius" -> string!
+const Modulus.UI.Theming.UiDesignTokens.SidebarBg = "SidebarBg" -> string!
+const Modulus.UI.Theming.UiDesignTokens.SidebarWidth = "SidebarWidth" -> string!
+const Modulus.UI.Theming.UiDesignTokens.TableDensity = "TableDensity" -> string!
+const Modulus.UI.Theming.UiSlots.Dashboard = "Dashboard" -> string!
+const Modulus.UI.Theming.UiSlots.Footer = "Footer" -> string!
+const Modulus.UI.Theming.UiSlots.Head = "Head" -> string!
+const Modulus.UI.Theming.UiSlots.PageAfterContent = "Page.AfterContent" -> string!
+const Modulus.UI.Theming.UiSlots.PageBeforeContent = "Page.BeforeContent" -> string!
+const Modulus.UI.Theming.UiSlots.Scripts = "Scripts" -> string!
+const Modulus.UI.Theming.UiSlots.SidebarBottom = "Sidebar.Bottom" -> string!
+const Modulus.UI.Theming.UiSlots.SidebarTop = "Sidebar.Top" -> string!
+const Modulus.UI.Theming.UiSlots.TopbarEnd = "Topbar.End" -> string!
+const Modulus.UI.Theming.UiSlots.TopbarStart = "Topbar.Start" -> string!
+const Modulus.UI.Theming.UiSlots.UserMenu = "UserMenu" -> string!
+Modulus.UI.Theming.ITheme
+Modulus.UI.Theming.ITheme.GetLayout(string! layoutName) -> string!
+Modulus.UI.Theming.ITheme.Name.get -> string!
+Modulus.UI.Theming.ITheme.Scripts.get -> System.Collections.Generic.IReadOnlyList<Modulus.UI.Theming.ThemeAsset!>!
+Modulus.UI.Theming.ITheme.Styles.get -> System.Collections.Generic.IReadOnlyList<Modulus.UI.Theming.ThemeAsset!>!
+Modulus.UI.Theming.StandardLayouts
+Modulus.UI.Theming.ThemeAsset
+Modulus.UI.Theming.ThemeAsset.<Clone>$() -> Modulus.UI.Theming.ThemeAsset!
+Modulus.UI.Theming.ThemeAsset.Deconstruct(out string! Path, out bool Defer, out string? Integrity) -> void
+Modulus.UI.Theming.ThemeAsset.Defer.get -> bool
+Modulus.UI.Theming.ThemeAsset.Defer.init -> void
+Modulus.UI.Theming.ThemeAsset.Equals(Modulus.UI.Theming.ThemeAsset? other) -> bool
+Modulus.UI.Theming.ThemeAsset.Integrity.get -> string?
+Modulus.UI.Theming.ThemeAsset.Integrity.init -> void
+Modulus.UI.Theming.ThemeAsset.Path.get -> string!
+Modulus.UI.Theming.ThemeAsset.Path.init -> void
+Modulus.UI.Theming.ThemeAsset.ThemeAsset(string! Path, bool Defer = true, string? Integrity = null) -> void
+Modulus.UI.Theming.ThemeOptions
+Modulus.UI.Theming.ThemeOptions.AllowUserThemeSwitch.get -> bool
+Modulus.UI.Theming.ThemeOptions.AllowUserThemeSwitch.set -> void
+Modulus.UI.Theming.ThemeOptions.ColorMode.get -> string!
+Modulus.UI.Theming.ThemeOptions.ColorMode.set -> void
+Modulus.UI.Theming.ThemeOptions.Layouts.get -> System.Collections.Generic.Dictionary<string!, string!>!
+Modulus.UI.Theming.ThemeOptions.Layouts.set -> void
+Modulus.UI.Theming.ThemeOptions.Name.get -> string!
+Modulus.UI.Theming.ThemeOptions.Name.set -> void
+Modulus.UI.Theming.ThemeOptions.ResolveLayout(string! layoutName) -> string!
+Modulus.UI.Theming.ThemeOptions.ThemeOptions() -> void
+Modulus.UI.Theming.UiDesignTokens
+Modulus.UI.Theming.UiSlots
+override Modulus.UI.Theming.ThemeAsset.Equals(object? obj) -> bool
+override Modulus.UI.Theming.ThemeAsset.GetHashCode() -> int
+override Modulus.UI.Theming.ThemeAsset.ToString() -> string!
+static Modulus.UI.Theming.ThemeAsset.operator !=(Modulus.UI.Theming.ThemeAsset? left, Modulus.UI.Theming.ThemeAsset? right) -> bool
+static Modulus.UI.Theming.ThemeAsset.operator ==(Modulus.UI.Theming.ThemeAsset? left, Modulus.UI.Theming.ThemeAsset? right) -> bool
+static Modulus.UI.Theming.UiDesignTokens.CssVar(string! token) -> string!
+static readonly Modulus.UI.Theming.StandardLayouts.All -> System.Collections.Generic.IReadOnlyList<string!>!
+static readonly Modulus.UI.Theming.UiDesignTokens.All -> System.Collections.Generic.IReadOnlyList<string!>!
+static readonly Modulus.UI.Theming.UiSlots.All -> System.Collections.Generic.IReadOnlyList<string!>!

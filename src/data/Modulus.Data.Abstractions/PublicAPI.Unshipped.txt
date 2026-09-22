@@ -1,0 +1,82 @@
+#nullable enable
+abstract Modulus.Data.Abstractions.IncludeChain<T>.IncludeExpression.get -> System.Linq.Expressions.Expression<System.Func<T, object!>!>!
+abstract Modulus.Data.Abstractions.IncludeChain<T>.ThenInclude.get -> Modulus.Data.Abstractions.IncludeChain<object!>?
+Modulus.Data.Abstractions.IncludeChain<T>
+Modulus.Data.Abstractions.IncludeChain<T>.IncludeChain() -> void
+Modulus.Data.Abstractions.IReadRepository<T>
+Modulus.Data.Abstractions.IReadRepository<T>.AnyAsync(Modulus.Data.Abstractions.ISpecification<T!>! spec, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<bool>!
+Modulus.Data.Abstractions.IReadRepository<T>.CountAsync(Modulus.Data.Abstractions.ISpecification<T!>! spec, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<int>!
+Modulus.Data.Abstractions.IReadRepository<T>.GetByIdAsync(object! id, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<T?>!
+Modulus.Data.Abstractions.IReadRepository<T>.ListAsync(Modulus.Data.Abstractions.ISpecification<T!>! spec, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<T!>!>!
+Modulus.Data.Abstractions.IReadRepository<T>.ListPagedAsync<TResult>(Modulus.Data.Abstractions.ISpecification<T!>! spec, System.Linq.Expressions.Expression<System.Func<T!, TResult>!>! selector, int page, int size, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Modulus.Core.Abstractions.Common.PagedList<TResult>!>!
+Modulus.Data.Abstractions.IRepository<T>
+Modulus.Data.Abstractions.IRepository<T>.AddAsync(T! entity, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
+Modulus.Data.Abstractions.IRepository<T>.AddRangeAsync(System.Collections.Generic.IEnumerable<T!>! entities, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
+Modulus.Data.Abstractions.IRepository<T>.AsAsyncEnumerable(Modulus.Data.Abstractions.ISpecification<T!>! spec) -> System.Collections.Generic.IAsyncEnumerable<T!>!
+Modulus.Data.Abstractions.IRepository<T>.CountAsync(Modulus.Data.Abstractions.ISpecification<T!>! spec, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<int>!
+Modulus.Data.Abstractions.IRepository<T>.DeleteAsync(T! entity, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
+Modulus.Data.Abstractions.IRepository<T>.DeleteRangeAsync(Modulus.Data.Abstractions.ISpecification<T!>! spec, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
+Modulus.Data.Abstractions.IRepository<T>.FirstOrDefaultAsync(Modulus.Data.Abstractions.ISpecification<T!>! spec, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<T?>!
+Modulus.Data.Abstractions.IRepository<T>.GetByIdAsync(object! id, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<T?>!
+Modulus.Data.Abstractions.IRepository<T>.ListAsync(Modulus.Data.Abstractions.ISpecification<T!>! spec, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<T!>!>!
+Modulus.Data.Abstractions.IRepository<T>.SingleAsync(Modulus.Data.Abstractions.ISpecification<T!>! spec, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<T!>!
+Modulus.Data.Abstractions.IRepository<T>.SingleOrDefaultAsync(Modulus.Data.Abstractions.ISpecification<T!>! spec, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<T?>!
+Modulus.Data.Abstractions.IRepository<T>.UpdateAsync(T! entity, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
+Modulus.Data.Abstractions.ISpecification<T, TResult>
+Modulus.Data.Abstractions.ISpecification<T, TResult>.ProjectionExpression.get -> System.Linq.Expressions.Expression<System.Func<T!, TResult>!>?
+Modulus.Data.Abstractions.ISpecification<T>
+Modulus.Data.Abstractions.ISpecification<T>.And(System.Linq.Expressions.Expression<System.Func<T, bool>!>! other) -> Modulus.Data.Abstractions.ISpecification<T>!
+Modulus.Data.Abstractions.ISpecification<T>.AsNoTracking.get -> bool
+Modulus.Data.Abstractions.ISpecification<T>.AsSplitQuery.get -> bool
+Modulus.Data.Abstractions.ISpecification<T>.Filter.get -> System.Linq.Expressions.Expression<System.Func<T, bool>!>?
+Modulus.Data.Abstractions.ISpecification<T>.IgnoreQueryFilters.get -> bool
+Modulus.Data.Abstractions.ISpecification<T>.IncludeChains.get -> System.Collections.Generic.List<Modulus.Data.Abstractions.IncludeChain<T>!>?
+Modulus.Data.Abstractions.ISpecification<T>.Not() -> Modulus.Data.Abstractions.ISpecification<T>!
+Modulus.Data.Abstractions.ISpecification<T>.Or(System.Linq.Expressions.Expression<System.Func<T, bool>!>! other) -> Modulus.Data.Abstractions.ISpecification<T>!
+Modulus.Data.Abstractions.ISpecification<T>.OrderByClauses.get -> System.Collections.Generic.List<Modulus.Data.Abstractions.OrderByClause<T>!>?
+Modulus.Data.Abstractions.ISpecification<T>.Skip.get -> int?
+Modulus.Data.Abstractions.ISpecification<T>.Tag.get -> string?
+Modulus.Data.Abstractions.ISpecification<T>.Take.get -> int?
+Modulus.Data.Abstractions.OrderByClause<T>
+Modulus.Data.Abstractions.OrderByClause<T>.<Clone>$() -> Modulus.Data.Abstractions.OrderByClause<T>!
+Modulus.Data.Abstractions.OrderByClause<T>.Deconstruct(out System.Linq.Expressions.Expression<System.Func<T, object!>!>! Selector, out bool Descending) -> void
+Modulus.Data.Abstractions.OrderByClause<T>.Descending.get -> bool
+Modulus.Data.Abstractions.OrderByClause<T>.Descending.init -> void
+Modulus.Data.Abstractions.OrderByClause<T>.Equals(Modulus.Data.Abstractions.OrderByClause<T>? other) -> bool
+Modulus.Data.Abstractions.OrderByClause<T>.OrderByClause(System.Linq.Expressions.Expression<System.Func<T, object!>!>! Selector, bool Descending = false) -> void
+Modulus.Data.Abstractions.OrderByClause<T>.Selector.get -> System.Linq.Expressions.Expression<System.Func<T, object!>!>!
+Modulus.Data.Abstractions.OrderByClause<T>.Selector.init -> void
+Modulus.Data.Abstractions.Specification<T, TResult>
+Modulus.Data.Abstractions.Specification<T, TResult>.ProjectionExpression.get -> System.Linq.Expressions.Expression<System.Func<T!, TResult>!>?
+Modulus.Data.Abstractions.Specification<T, TResult>.ProjectionExpression.set -> void
+Modulus.Data.Abstractions.Specification<T, TResult>.Specification() -> void
+Modulus.Data.Abstractions.Specification<T>
+Modulus.Data.Abstractions.Specification<T>.AddInclude(System.Linq.Expressions.Expression<System.Func<T, object!>!>! selector) -> void
+Modulus.Data.Abstractions.Specification<T>.AddOrderBy(System.Linq.Expressions.Expression<System.Func<T, object!>!>! selector, bool descending = false) -> void
+Modulus.Data.Abstractions.Specification<T>.AsNoTracking.get -> bool
+Modulus.Data.Abstractions.Specification<T>.AsNoTracking.set -> void
+Modulus.Data.Abstractions.Specification<T>.AsSplitQuery.get -> bool
+Modulus.Data.Abstractions.Specification<T>.AsSplitQuery.set -> void
+Modulus.Data.Abstractions.Specification<T>.Filter.get -> System.Linq.Expressions.Expression<System.Func<T, bool>!>?
+Modulus.Data.Abstractions.Specification<T>.Filter.set -> void
+Modulus.Data.Abstractions.Specification<T>.IgnoreQueryFilters.get -> bool
+Modulus.Data.Abstractions.Specification<T>.IgnoreQueryFilters.set -> void
+Modulus.Data.Abstractions.Specification<T>.IncludeChains.get -> System.Collections.Generic.List<Modulus.Data.Abstractions.IncludeChain<T>!>?
+Modulus.Data.Abstractions.Specification<T>.IncludeChains.set -> void
+Modulus.Data.Abstractions.Specification<T>.OrderByClauses.get -> System.Collections.Generic.List<Modulus.Data.Abstractions.OrderByClause<T>!>?
+Modulus.Data.Abstractions.Specification<T>.OrderByClauses.set -> void
+Modulus.Data.Abstractions.Specification<T>.Skip.get -> int?
+Modulus.Data.Abstractions.Specification<T>.Skip.set -> void
+Modulus.Data.Abstractions.Specification<T>.Specification() -> void
+Modulus.Data.Abstractions.Specification<T>.Tag.get -> string?
+Modulus.Data.Abstractions.Specification<T>.Tag.set -> void
+Modulus.Data.Abstractions.Specification<T>.Take.get -> int?
+Modulus.Data.Abstractions.Specification<T>.Take.set -> void
+override Modulus.Data.Abstractions.OrderByClause<T>.Equals(object? obj) -> bool
+override Modulus.Data.Abstractions.OrderByClause<T>.GetHashCode() -> int
+override Modulus.Data.Abstractions.OrderByClause<T>.ToString() -> string!
+static Modulus.Data.Abstractions.OrderByClause<T>.operator !=(Modulus.Data.Abstractions.OrderByClause<T>? left, Modulus.Data.Abstractions.OrderByClause<T>? right) -> bool
+static Modulus.Data.Abstractions.OrderByClause<T>.operator ==(Modulus.Data.Abstractions.OrderByClause<T>? left, Modulus.Data.Abstractions.OrderByClause<T>? right) -> bool
+virtual Modulus.Data.Abstractions.Specification<T>.And(System.Linq.Expressions.Expression<System.Func<T, bool>!>! other) -> Modulus.Data.Abstractions.ISpecification<T>!
+virtual Modulus.Data.Abstractions.Specification<T>.Not() -> Modulus.Data.Abstractions.ISpecification<T>!
+virtual Modulus.Data.Abstractions.Specification<T>.Or(System.Linq.Expressions.Expression<System.Func<T, bool>!>! other) -> Modulus.Data.Abstractions.ISpecification<T>!

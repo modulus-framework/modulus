@@ -1,0 +1,3 @@
+#nullable enable
+Modulus.Data.MySQL.MySQLExtensions
+static Modulus.Data.MySQL.MySQLExtensions.AddMySQLDatabase<TContext>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, string! connectionString, System.Action<MySql.EntityFrameworkCore.Infrastructure.MySQLDbContextOptionsBuilder!>? configure = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!

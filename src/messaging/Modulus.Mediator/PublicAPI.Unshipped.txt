@@ -1,0 +1,83 @@
+#nullable enable
+Modulus.Mediator.Abstractions.Attributes.CacheForAttribute
+Modulus.Mediator.Abstractions.Attributes.CacheForAttribute.CacheForAttribute(int seconds) -> void
+Modulus.Mediator.Abstractions.Attributes.CacheForAttribute.Seconds.get -> int
+Modulus.Mediator.Abstractions.Attributes.RequireFeatureAttribute
+Modulus.Mediator.Abstractions.Attributes.RequireFeatureAttribute.Feature.get -> string!
+Modulus.Mediator.Abstractions.Attributes.RequireFeatureAttribute.RequireFeatureAttribute(string! feature) -> void
+Modulus.Mediator.Abstractions.Attributes.RequirePermissionAttribute
+Modulus.Mediator.Abstractions.Attributes.RequirePermissionAttribute.Permission.get -> string!
+Modulus.Mediator.Abstractions.Attributes.RequirePermissionAttribute.RequirePermissionAttribute(string! permission) -> void
+Modulus.Mediator.Abstractions.Attributes.SkipTransactionAttribute
+Modulus.Mediator.Abstractions.Attributes.SkipTransactionAttribute.SkipTransactionAttribute() -> void
+Modulus.Mediator.Abstractions.Attributes.SkipValidationAttribute
+Modulus.Mediator.Abstractions.Attributes.SkipValidationAttribute.SkipValidationAttribute() -> void
+Modulus.Mediator.Abstractions.Attributes.TransactionalAttribute
+Modulus.Mediator.Abstractions.Attributes.TransactionalAttribute.Contexts.get -> System.Type![]!
+Modulus.Mediator.Abstractions.Attributes.TransactionalAttribute.TransactionalAttribute(params System.Type![]! contexts) -> void
+Modulus.Mediator.Abstractions.Attributes.TransactionMode
+Modulus.Mediator.Abstractions.Attributes.TransactionMode.AllContexts = 1 -> Modulus.Mediator.Abstractions.Attributes.TransactionMode
+Modulus.Mediator.Abstractions.Attributes.TransactionMode.TouchedOrSingle = 0 -> Modulus.Mediator.Abstractions.Attributes.TransactionMode
+Modulus.Mediator.Abstractions.Attributes.TransactionRuntimeOptions
+Modulus.Mediator.Abstractions.Attributes.TransactionRuntimeOptions.<Clone>$() -> Modulus.Mediator.Abstractions.Attributes.TransactionRuntimeOptions!
+Modulus.Mediator.Abstractions.Attributes.TransactionRuntimeOptions.Deconstruct(out Modulus.Mediator.Abstractions.Attributes.TransactionMode Mode) -> void
+Modulus.Mediator.Abstractions.Attributes.TransactionRuntimeOptions.Equals(Modulus.Mediator.Abstractions.Attributes.TransactionRuntimeOptions? other) -> bool
+Modulus.Mediator.Abstractions.Attributes.TransactionRuntimeOptions.Mode.get -> Modulus.Mediator.Abstractions.Attributes.TransactionMode
+Modulus.Mediator.Abstractions.Attributes.TransactionRuntimeOptions.Mode.init -> void
+Modulus.Mediator.Abstractions.Attributes.TransactionRuntimeOptions.TransactionRuntimeOptions(Modulus.Mediator.Abstractions.Attributes.TransactionMode Mode) -> void
+Modulus.Mediator.Abstractions.ICommand
+Modulus.Mediator.Abstractions.ICommand<TResponse>
+Modulus.Mediator.Abstractions.ICommandHandler<TCommand, TResponse>
+Modulus.Mediator.Abstractions.ICommandHandler<TCommand, TResponse>.HandleAsync(TCommand command, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<TResponse>!
+Modulus.Mediator.Abstractions.IMediator
+Modulus.Mediator.Abstractions.IMediator.QueryAsync<TResponse>(Modulus.Mediator.Abstractions.IQuery<TResponse>! query, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<TResponse>!
+Modulus.Mediator.Abstractions.IMediator.SendAsync<TResponse>(Modulus.Mediator.Abstractions.ICommand<TResponse>! command, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<TResponse>!
+Modulus.Mediator.Abstractions.IPipelineBehavior<TRequest, TResponse>
+Modulus.Mediator.Abstractions.IPipelineBehavior<TRequest, TResponse>.HandleAsync(TRequest request, Modulus.Mediator.Abstractions.RequestHandlerDelegate<TResponse>! next, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<TResponse>!
+Modulus.Mediator.Abstractions.IQuery<TResponse>
+Modulus.Mediator.Abstractions.IQueryHandler<TQuery, TResponse>
+Modulus.Mediator.Abstractions.IQueryHandler<TQuery, TResponse>.HandleAsync(TQuery query, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<TResponse>!
+Modulus.Mediator.Abstractions.RequestHandlerDelegate<TResponse>
+Modulus.Mediator.Behaviors.AuthorizationBehavior<TRequest, TResponse>
+Modulus.Mediator.Behaviors.AuthorizationBehavior<TRequest, TResponse>.AuthorizationBehavior(Modulus.Core.Abstractions.ICurrentUser! currentUser) -> void
+Modulus.Mediator.Behaviors.AuthorizationBehavior<TRequest, TResponse>.HandleAsync(TRequest request, Modulus.Mediator.Abstractions.RequestHandlerDelegate<TResponse>! next, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<TResponse>!
+Modulus.Mediator.Behaviors.CachingBehavior<TRequest, TResponse>
+Modulus.Mediator.Behaviors.CachingBehavior<TRequest, TResponse>.CachingBehavior(Microsoft.Extensions.Caching.Memory.IMemoryCache! cache, Modulus.Core.Abstractions.ICurrentTenant? currentTenant = null, Modulus.Core.Abstractions.ICurrentUser? currentUser = null) -> void
+Modulus.Mediator.Behaviors.CachingBehavior<TRequest, TResponse>.HandleAsync(TRequest request, Modulus.Mediator.Abstractions.RequestHandlerDelegate<TResponse>! next, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<TResponse>!
+Modulus.Mediator.Behaviors.FeatureGateBehavior<TRequest, TResponse>
+Modulus.Mediator.Behaviors.FeatureGateBehavior<TRequest, TResponse>.FeatureGateBehavior(Modulus.Core.Abstractions.IFeatureGate! featureGate) -> void
+Modulus.Mediator.Behaviors.FeatureGateBehavior<TRequest, TResponse>.HandleAsync(TRequest request, Modulus.Mediator.Abstractions.RequestHandlerDelegate<TResponse>! next, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<TResponse>!
+Modulus.Mediator.Behaviors.LoggingBehavior<TRequest, TResponse>
+Modulus.Mediator.Behaviors.LoggingBehavior<TRequest, TResponse>.HandleAsync(TRequest request, Modulus.Mediator.Abstractions.RequestHandlerDelegate<TResponse>! next, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<TResponse>!
+Modulus.Mediator.Behaviors.LoggingBehavior<TRequest, TResponse>.LoggingBehavior(Microsoft.Extensions.Logging.ILogger<Modulus.Mediator.Behaviors.LoggingBehavior<TRequest, TResponse>!>! logger) -> void
+Modulus.Mediator.Behaviors.TransactionBehavior<TRequest, TResponse>
+Modulus.Mediator.Behaviors.TransactionBehavior<TRequest, TResponse>.HandleAsync(TRequest request, Modulus.Mediator.Abstractions.RequestHandlerDelegate<TResponse>! next, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<TResponse>!
+Modulus.Mediator.Behaviors.TransactionBehavior<TRequest, TResponse>.TransactionBehavior(System.IServiceProvider! sp, Modulus.Mediator.Abstractions.Attributes.TransactionRuntimeOptions! options) -> void
+Modulus.Mediator.Behaviors.ValidationBehavior<TRequest, TResponse>
+Modulus.Mediator.Behaviors.ValidationBehavior<TRequest, TResponse>.HandleAsync(TRequest request, Modulus.Mediator.Abstractions.RequestHandlerDelegate<TResponse>! next, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<TResponse>!
+Modulus.Mediator.Behaviors.ValidationBehavior<TRequest, TResponse>.ValidationBehavior(System.Collections.Generic.IEnumerable<FluentValidation.IValidator<TRequest>!>! validators) -> void
+Modulus.Mediator.Extensions.MediatorOptions
+Modulus.Mediator.Extensions.MediatorOptions.Assemblies.get -> System.Collections.Generic.List<System.Reflection.Assembly!>!
+Modulus.Mediator.Extensions.MediatorOptions.EnableAuthorization.get -> bool
+Modulus.Mediator.Extensions.MediatorOptions.EnableAuthorization.set -> void
+Modulus.Mediator.Extensions.MediatorOptions.EnableCaching.get -> bool
+Modulus.Mediator.Extensions.MediatorOptions.EnableCaching.set -> void
+Modulus.Mediator.Extensions.MediatorOptions.EnableLogging.get -> bool
+Modulus.Mediator.Extensions.MediatorOptions.EnableLogging.set -> void
+Modulus.Mediator.Extensions.MediatorOptions.EnableTransaction.get -> bool
+Modulus.Mediator.Extensions.MediatorOptions.EnableTransaction.set -> void
+Modulus.Mediator.Extensions.MediatorOptions.EnableValidation.get -> bool
+Modulus.Mediator.Extensions.MediatorOptions.EnableValidation.set -> void
+Modulus.Mediator.Extensions.MediatorOptions.MediatorOptions() -> void
+Modulus.Mediator.Extensions.MediatorOptions.RegisterServicesFromAssembly(System.Reflection.Assembly! assembly) -> Modulus.Mediator.Extensions.MediatorOptions!
+Modulus.Mediator.Extensions.MediatorOptions.TransactionMode.get -> Modulus.Mediator.Abstractions.Attributes.TransactionMode
+Modulus.Mediator.Extensions.MediatorOptions.TransactionMode.set -> void
+Modulus.Mediator.Extensions.MediatorServiceCollectionExtensions
+override Modulus.Mediator.Abstractions.Attributes.TransactionRuntimeOptions.Equals(object? obj) -> bool
+override Modulus.Mediator.Abstractions.Attributes.TransactionRuntimeOptions.GetHashCode() -> int
+override Modulus.Mediator.Abstractions.Attributes.TransactionRuntimeOptions.ToString() -> string!
+static Modulus.Mediator.Abstractions.Attributes.TransactionRuntimeOptions.operator !=(Modulus.Mediator.Abstractions.Attributes.TransactionRuntimeOptions? left, Modulus.Mediator.Abstractions.Attributes.TransactionRuntimeOptions? right) -> bool
+static Modulus.Mediator.Abstractions.Attributes.TransactionRuntimeOptions.operator ==(Modulus.Mediator.Abstractions.Attributes.TransactionRuntimeOptions? left, Modulus.Mediator.Abstractions.Attributes.TransactionRuntimeOptions? right) -> bool
+static Modulus.Mediator.Extensions.MediatorServiceCollectionExtensions.AddMediator(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<Modulus.Mediator.Extensions.MediatorOptions!>? configure = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.Mediator.Extensions.MediatorServiceCollectionExtensions.AddMediatorHandlers(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, params System.Reflection.Assembly![]! assemblies) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+virtual Modulus.Mediator.Abstractions.RequestHandlerDelegate<TResponse>.Invoke() -> System.Threading.Tasks.Task<TResponse>!

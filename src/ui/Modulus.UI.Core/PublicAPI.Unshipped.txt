@@ -1,0 +1,1188 @@
+#nullable enable
+abstract Modulus.UI.ComponentTagHelper.Component.get -> string!
+abstract Modulus.UI.UiModule.Manifest.get -> Modulus.UI.ModuleManifest!
+const Modulus.UI.HtmxPageModel.HxRedirectHeader = "HX-Redirect" -> string!
+const Modulus.UI.HtmxPageModel.HxRequestHeader = "HX-Request" -> string!
+const Modulus.UI.HtmxPageModel.HxTriggerHeader = "HX-Trigger" -> string!
+const Modulus.UI.HtmxResponse.ModalCloseEvent = "modulus:modal:close" -> string!
+const Modulus.UI.HtmxResponse.ToastEvent = "modulusToast" -> string!
+const Modulus.UI.HtmxResponse.ToastEventAlias = "modulus:toast" -> string!
+const Modulus.UI.ModulusLineItemsTagHelper.IndexPlaceholder = "__index__" -> string!
+const Modulus.UI.ModulusSmartAuthExtensions.DefaultAnonymousFolder = "/Account" -> string!
+const Modulus.UI.ModulusSmartAuthExtensions.DefaultBearerScheme = "OpenIddict.Validation.AspNetCore" -> string!
+const Modulus.UI.ModulusSmartAuthExtensions.DefaultCookieScheme = "Identity.Application" -> string!
+const Modulus.UI.ModulusSmartAuthExtensions.DefaultSmartScheme = "Modulus.Smart" -> string!
+const Modulus.UI.ModulusUiOptions.SectionName = "ModulusUi" -> string!
+const Modulus.UI.ThemeLayoutExtensions.LegacyLayout = "_UiLayout" -> string!
+const Modulus.UI.UiAssets.AssetRoot = "modulus-ui" -> string!
+const Modulus.UI.UiOptions.SectionName = "Modulus:Ui" -> string!
+Modulus.UI.BrandingOptions
+Modulus.UI.BrandingOptions.AppName.get -> string!
+Modulus.UI.BrandingOptions.AppName.set -> void
+Modulus.UI.BrandingOptions.BrandHref.get -> string!
+Modulus.UI.BrandingOptions.BrandHref.set -> void
+Modulus.UI.BrandingOptions.BrandingOptions() -> void
+Modulus.UI.BrandingOptions.FaviconUrl.get -> string?
+Modulus.UI.BrandingOptions.FaviconUrl.set -> void
+Modulus.UI.BrandingOptions.FooterText.get -> string?
+Modulus.UI.BrandingOptions.FooterText.set -> void
+Modulus.UI.BrandingOptions.LogoDarkUrl.get -> string?
+Modulus.UI.BrandingOptions.LogoDarkUrl.set -> void
+Modulus.UI.BrandingOptions.LogoUrl.get -> string?
+Modulus.UI.BrandingOptions.LogoUrl.set -> void
+Modulus.UI.BreadcrumbContext
+Modulus.UI.BreadcrumbContext.Add(string! title, string? url = null) -> Modulus.UI.BreadcrumbContext!
+Modulus.UI.BreadcrumbContext.BreadcrumbContext(string! pageId) -> void
+Modulus.UI.BreadcrumbContext.Items.get -> System.Collections.Generic.IList<Modulus.UI.BreadcrumbItem!>!
+Modulus.UI.BreadcrumbContext.PageId.get -> string!
+Modulus.UI.BreadcrumbItem
+Modulus.UI.BreadcrumbItem.<Clone>$() -> Modulus.UI.BreadcrumbItem!
+Modulus.UI.BreadcrumbItem.BreadcrumbItem(string! Title, string? Url = null) -> void
+Modulus.UI.BreadcrumbItem.Deconstruct(out string! Title, out string? Url) -> void
+Modulus.UI.BreadcrumbItem.Equals(Modulus.UI.BreadcrumbItem? other) -> bool
+Modulus.UI.BreadcrumbItem.Title.get -> string!
+Modulus.UI.BreadcrumbItem.Title.init -> void
+Modulus.UI.BreadcrumbItem.Url.get -> string?
+Modulus.UI.BreadcrumbItem.Url.init -> void
+Modulus.UI.BreadcrumbProvider
+Modulus.UI.BreadcrumbProvider.BreadcrumbProvider(System.Collections.Generic.IEnumerable<Modulus.UI.IBreadcrumbContributor!>! contributors) -> void
+Modulus.UI.BreadcrumbProvider.GetItems(string! pageId) -> System.Collections.Generic.IReadOnlyList<Modulus.UI.BreadcrumbItem!>!
+Modulus.UI.BreadcrumbsModel
+Modulus.UI.BreadcrumbsModel.<Clone>$() -> Modulus.UI.BreadcrumbsModel!
+Modulus.UI.BreadcrumbsModel.BreadcrumbsModel(System.Collections.Generic.IReadOnlyList<Modulus.UI.BreadcrumbItem!>! Items) -> void
+Modulus.UI.BreadcrumbsModel.Deconstruct(out System.Collections.Generic.IReadOnlyList<Modulus.UI.BreadcrumbItem!>! Items) -> void
+Modulus.UI.BreadcrumbsModel.Equals(Modulus.UI.BreadcrumbsModel? other) -> bool
+Modulus.UI.BreadcrumbsModel.Items.get -> System.Collections.Generic.IReadOnlyList<Modulus.UI.BreadcrumbItem!>!
+Modulus.UI.BreadcrumbsModel.Items.init -> void
+Modulus.UI.BreadcrumbsTagHelper
+Modulus.UI.BreadcrumbsTagHelper.BreadcrumbsTagHelper() -> void
+Modulus.UI.BreadcrumbsTagHelper.Items.get -> System.Collections.Generic.IEnumerable<Modulus.UI.BreadcrumbItem!>?
+Modulus.UI.BreadcrumbsTagHelper.Items.set -> void
+Modulus.UI.BreadcrumbsTagHelper.PageId.get -> string?
+Modulus.UI.BreadcrumbsTagHelper.PageId.set -> void
+Modulus.UI.CardModel
+Modulus.UI.CardModel.<Clone>$() -> Modulus.UI.CardModel!
+Modulus.UI.CardModel.Body.get -> Microsoft.AspNetCore.Html.IHtmlContent!
+Modulus.UI.CardModel.Body.init -> void
+Modulus.UI.CardModel.CardModel(string? Title, bool Padded, Microsoft.AspNetCore.Html.IHtmlContent! Body) -> void
+Modulus.UI.CardModel.Deconstruct(out string? Title, out bool Padded, out Microsoft.AspNetCore.Html.IHtmlContent! Body) -> void
+Modulus.UI.CardModel.Equals(Modulus.UI.CardModel? other) -> bool
+Modulus.UI.CardModel.Padded.get -> bool
+Modulus.UI.CardModel.Padded.init -> void
+Modulus.UI.CardModel.Title.get -> string?
+Modulus.UI.CardModel.Title.init -> void
+Modulus.UI.CardTagHelper
+Modulus.UI.CardTagHelper.CardTagHelper() -> void
+Modulus.UI.CardTagHelper.Padded.get -> bool
+Modulus.UI.CardTagHelper.Padded.set -> void
+Modulus.UI.CardTagHelper.Title.get -> string?
+Modulus.UI.CardTagHelper.Title.set -> void
+Modulus.UI.ComponentRenderer
+Modulus.UI.ComponentTagHelper
+Modulus.UI.ComponentTagHelper.ComponentTagHelper() -> void
+Modulus.UI.ComponentTagHelper.RenderAsync(Microsoft.AspNetCore.Razor.TagHelpers.TagHelperOutput! output, object! model, string! view = "Default") -> System.Threading.Tasks.Task!
+Modulus.UI.ComponentTagHelper.ViewContext.get -> Microsoft.AspNetCore.Mvc.Rendering.ViewContext!
+Modulus.UI.ComponentTagHelper.ViewContext.set -> void
+Modulus.UI.ConfirmModel
+Modulus.UI.ConfirmModel.<Clone>$() -> Modulus.UI.ConfirmModel!
+Modulus.UI.ConfirmModel.Body.get -> Microsoft.AspNetCore.Html.IHtmlContent!
+Modulus.UI.ConfirmModel.Body.init -> void
+Modulus.UI.ConfirmModel.Class.get -> string!
+Modulus.UI.ConfirmModel.Class.init -> void
+Modulus.UI.ConfirmModel.ConfirmModel(string! Message, string? Post, string? Delete, string? Target, string? Swap, string! Class, Microsoft.AspNetCore.Html.IHtmlContent! Body) -> void
+Modulus.UI.ConfirmModel.Deconstruct(out string! Message, out string? Post, out string? Delete, out string? Target, out string? Swap, out string! Class, out Microsoft.AspNetCore.Html.IHtmlContent! Body) -> void
+Modulus.UI.ConfirmModel.Delete.get -> string?
+Modulus.UI.ConfirmModel.Delete.init -> void
+Modulus.UI.ConfirmModel.Equals(Modulus.UI.ConfirmModel? other) -> bool
+Modulus.UI.ConfirmModel.Message.get -> string!
+Modulus.UI.ConfirmModel.Message.init -> void
+Modulus.UI.ConfirmModel.Post.get -> string?
+Modulus.UI.ConfirmModel.Post.init -> void
+Modulus.UI.ConfirmModel.Swap.get -> string?
+Modulus.UI.ConfirmModel.Swap.init -> void
+Modulus.UI.ConfirmModel.Target.get -> string?
+Modulus.UI.ConfirmModel.Target.init -> void
+Modulus.UI.ConfirmTagHelper
+Modulus.UI.ConfirmTagHelper.Class.get -> string!
+Modulus.UI.ConfirmTagHelper.Class.set -> void
+Modulus.UI.ConfirmTagHelper.ConfirmTagHelper() -> void
+Modulus.UI.ConfirmTagHelper.Delete.get -> string?
+Modulus.UI.ConfirmTagHelper.Delete.set -> void
+Modulus.UI.ConfirmTagHelper.Message.get -> string?
+Modulus.UI.ConfirmTagHelper.Message.set -> void
+Modulus.UI.ConfirmTagHelper.Post.get -> string?
+Modulus.UI.ConfirmTagHelper.Post.set -> void
+Modulus.UI.ConfirmTagHelper.Swap.get -> string?
+Modulus.UI.ConfirmTagHelper.Swap.set -> void
+Modulus.UI.ConfirmTagHelper.Target.get -> string?
+Modulus.UI.ConfirmTagHelper.Target.set -> void
+Modulus.UI.CustomUiModule
+Modulus.UI.CustomUiModule.CustomUiModule(Modulus.UI.ModuleManifest! manifest, System.Action<Modulus.UI.UiNavigationBuilder!>? configure = null) -> void
+Modulus.UI.DataTableColumn
+Modulus.UI.DataTableColumn.<Clone>$() -> Modulus.UI.DataTableColumn!
+Modulus.UI.DataTableColumn.Class.get -> string?
+Modulus.UI.DataTableColumn.Class.init -> void
+Modulus.UI.DataTableColumn.DataTableColumn(Microsoft.AspNetCore.Html.IHtmlContent! Header, string? Class) -> void
+Modulus.UI.DataTableColumn.Deconstruct(out Microsoft.AspNetCore.Html.IHtmlContent! Header, out string? Class) -> void
+Modulus.UI.DataTableColumn.Equals(Modulus.UI.DataTableColumn? other) -> bool
+Modulus.UI.DataTableColumn.Header.get -> Microsoft.AspNetCore.Html.IHtmlContent!
+Modulus.UI.DataTableColumn.Header.init -> void
+Modulus.UI.DataTableColumnTagHelper
+Modulus.UI.DataTableColumnTagHelper.Class.get -> string?
+Modulus.UI.DataTableColumnTagHelper.Class.set -> void
+Modulus.UI.DataTableColumnTagHelper.DataTableColumnTagHelper() -> void
+Modulus.UI.DataTableEntityColumnsTagHelper
+Modulus.UI.DataTableEntityColumnsTagHelper.DataTableEntityColumnsTagHelper() -> void
+Modulus.UI.DataTableModel
+Modulus.UI.DataTableModel.<Clone>$() -> Modulus.UI.DataTableModel!
+Modulus.UI.DataTableModel.Columns.get -> System.Collections.Generic.IReadOnlyList<Modulus.UI.DataTableColumn!>!
+Modulus.UI.DataTableModel.Columns.init -> void
+Modulus.UI.DataTableModel.DataTableModel(string? Id, System.Collections.Generic.IReadOnlyList<Modulus.UI.DataTableColumn!>! Columns, Microsoft.AspNetCore.Html.IHtmlContent! Rows, bool IsEmpty, string? EmptyMessage, Modulus.UI.PaginationModel? Pagination, string? Source = null, string? RefreshTrigger = null) -> void
+Modulus.UI.DataTableModel.Deconstruct(out string? Id, out System.Collections.Generic.IReadOnlyList<Modulus.UI.DataTableColumn!>! Columns, out Microsoft.AspNetCore.Html.IHtmlContent! Rows, out bool IsEmpty, out string? EmptyMessage, out Modulus.UI.PaginationModel? Pagination, out string? Source, out string? RefreshTrigger) -> void
+Modulus.UI.DataTableModel.EmptyMessage.get -> string?
+Modulus.UI.DataTableModel.EmptyMessage.init -> void
+Modulus.UI.DataTableModel.Equals(Modulus.UI.DataTableModel? other) -> bool
+Modulus.UI.DataTableModel.Id.get -> string?
+Modulus.UI.DataTableModel.Id.init -> void
+Modulus.UI.DataTableModel.IsEmpty.get -> bool
+Modulus.UI.DataTableModel.IsEmpty.init -> void
+Modulus.UI.DataTableModel.Pagination.get -> Modulus.UI.PaginationModel?
+Modulus.UI.DataTableModel.Pagination.init -> void
+Modulus.UI.DataTableModel.RefreshTrigger.get -> string?
+Modulus.UI.DataTableModel.RefreshTrigger.init -> void
+Modulus.UI.DataTableModel.Rows.get -> Microsoft.AspNetCore.Html.IHtmlContent!
+Modulus.UI.DataTableModel.Rows.init -> void
+Modulus.UI.DataTableModel.Source.get -> string?
+Modulus.UI.DataTableModel.Source.init -> void
+Modulus.UI.DataTableTagHelper
+Modulus.UI.DataTableTagHelper.DataTableTagHelper() -> void
+Modulus.UI.DataTableTagHelper.EmptyMessage.get -> string?
+Modulus.UI.DataTableTagHelper.EmptyMessage.set -> void
+Modulus.UI.DataTableTagHelper.Entity.get -> string?
+Modulus.UI.DataTableTagHelper.Entity.set -> void
+Modulus.UI.DataTableTagHelper.HasNext.get -> bool
+Modulus.UI.DataTableTagHelper.HasNext.set -> void
+Modulus.UI.DataTableTagHelper.HasPrevious.get -> bool
+Modulus.UI.DataTableTagHelper.HasPrevious.set -> void
+Modulus.UI.DataTableTagHelper.Id.get -> string?
+Modulus.UI.DataTableTagHelper.Id.set -> void
+Modulus.UI.DataTableTagHelper.IsEmpty.get -> bool
+Modulus.UI.DataTableTagHelper.IsEmpty.set -> void
+Modulus.UI.DataTableTagHelper.Page.get -> int?
+Modulus.UI.DataTableTagHelper.Page.set -> void
+Modulus.UI.DataTableTagHelper.PageLabel.get -> string!
+Modulus.UI.DataTableTagHelper.PageLabel.set -> void
+Modulus.UI.DataTableTagHelper.PageParam.get -> string!
+Modulus.UI.DataTableTagHelper.PageParam.set -> void
+Modulus.UI.DataTableTagHelper.RefreshOn.get -> string?
+Modulus.UI.DataTableTagHelper.RefreshOn.set -> void
+Modulus.UI.DataTableTagHelper.RouteValues.get -> System.Collections.Generic.IDictionary<string!, string?>!
+Modulus.UI.DataTableTagHelper.RouteValues.set -> void
+Modulus.UI.DataTableTagHelper.Source.get -> string?
+Modulus.UI.DataTableTagHelper.Source.set -> void
+Modulus.UI.DetailItem
+Modulus.UI.DetailItem.<Clone>$() -> Modulus.UI.DetailItem!
+Modulus.UI.DetailItem.Deconstruct(out string? Label, out Microsoft.AspNetCore.Html.IHtmlContent! Value, out bool IsEmpty) -> void
+Modulus.UI.DetailItem.DetailItem(string? Label, Microsoft.AspNetCore.Html.IHtmlContent! Value, bool IsEmpty) -> void
+Modulus.UI.DetailItem.Equals(Modulus.UI.DetailItem? other) -> bool
+Modulus.UI.DetailItem.IsEmpty.get -> bool
+Modulus.UI.DetailItem.IsEmpty.init -> void
+Modulus.UI.DetailItem.Label.get -> string?
+Modulus.UI.DetailItem.Label.init -> void
+Modulus.UI.DetailItem.Value.get -> Microsoft.AspNetCore.Html.IHtmlContent!
+Modulus.UI.DetailItem.Value.init -> void
+Modulus.UI.DetailListModel
+Modulus.UI.DetailListModel.<Clone>$() -> Modulus.UI.DetailListModel!
+Modulus.UI.DetailListModel.Deconstruct(out System.Collections.Generic.IReadOnlyList<Modulus.UI.DetailItem!>! Items) -> void
+Modulus.UI.DetailListModel.DetailListModel(System.Collections.Generic.IReadOnlyList<Modulus.UI.DetailItem!>! Items) -> void
+Modulus.UI.DetailListModel.Equals(Modulus.UI.DetailListModel? other) -> bool
+Modulus.UI.DetailListModel.Items.get -> System.Collections.Generic.IReadOnlyList<Modulus.UI.DetailItem!>!
+Modulus.UI.DetailListModel.Items.init -> void
+Modulus.UI.DetailListTagHelper
+Modulus.UI.DetailListTagHelper.DetailListTagHelper() -> void
+Modulus.UI.DetailTagHelper
+Modulus.UI.DetailTagHelper.DetailTagHelper() -> void
+Modulus.UI.DetailTagHelper.Label.get -> string?
+Modulus.UI.DetailTagHelper.Label.set -> void
+Modulus.UI.DetailTagHelper.Value.get -> string?
+Modulus.UI.DetailTagHelper.Value.set -> void
+Modulus.UI.EmptyStateModel
+Modulus.UI.EmptyStateModel.<Clone>$() -> Modulus.UI.EmptyStateModel!
+Modulus.UI.EmptyStateModel.Actions.get -> Microsoft.AspNetCore.Html.IHtmlContent?
+Modulus.UI.EmptyStateModel.Actions.init -> void
+Modulus.UI.EmptyStateModel.Deconstruct(out string? Title, out string? Message, out string? Icon, out Microsoft.AspNetCore.Html.IHtmlContent? Actions) -> void
+Modulus.UI.EmptyStateModel.EmptyStateModel(string? Title, string? Message, string? Icon, Microsoft.AspNetCore.Html.IHtmlContent? Actions) -> void
+Modulus.UI.EmptyStateModel.Equals(Modulus.UI.EmptyStateModel? other) -> bool
+Modulus.UI.EmptyStateModel.Icon.get -> string?
+Modulus.UI.EmptyStateModel.Icon.init -> void
+Modulus.UI.EmptyStateModel.Message.get -> string?
+Modulus.UI.EmptyStateModel.Message.init -> void
+Modulus.UI.EmptyStateModel.Title.get -> string?
+Modulus.UI.EmptyStateModel.Title.init -> void
+Modulus.UI.EmptyStateTagHelper
+Modulus.UI.EmptyStateTagHelper.EmptyStateTagHelper() -> void
+Modulus.UI.EmptyStateTagHelper.Icon.get -> string?
+Modulus.UI.EmptyStateTagHelper.Icon.set -> void
+Modulus.UI.EmptyStateTagHelper.Message.get -> string?
+Modulus.UI.EmptyStateTagHelper.Message.set -> void
+Modulus.UI.EmptyStateTagHelper.Title.get -> string?
+Modulus.UI.EmptyStateTagHelper.Title.set -> void
+Modulus.UI.EntityAction
+Modulus.UI.EntityAction.CssClass.get -> string?
+Modulus.UI.EntityAction.EntityAction(string! id, string! label, string? url = null, string? hxGet = null, string? hxPost = null, Modulus.UI.EntityActionTarget target = Modulus.UI.EntityActionTarget.Modal, string? requiredPermission = null, int order = 100, string? cssClass = null) -> void
+Modulus.UI.EntityAction.HxGet.get -> string?
+Modulus.UI.EntityAction.HxPost.get -> string?
+Modulus.UI.EntityAction.Id.get -> string!
+Modulus.UI.EntityAction.Label.get -> string!
+Modulus.UI.EntityAction.Order.get -> int
+Modulus.UI.EntityAction.RequiredPermission.get -> string?
+Modulus.UI.EntityAction.Target.get -> Modulus.UI.EntityActionTarget
+Modulus.UI.EntityAction.Url.get -> string?
+Modulus.UI.EntityActionLink
+Modulus.UI.EntityActionLink.<Clone>$() -> Modulus.UI.EntityActionLink!
+Modulus.UI.EntityActionLink.Css.get -> string!
+Modulus.UI.EntityActionLink.Css.init -> void
+Modulus.UI.EntityActionLink.Deconstruct(out string! Label, out string! Css, out string? Url, out string? HxGet, out string? HxPost, out string! HxTarget, out string! HxSwap) -> void
+Modulus.UI.EntityActionLink.EntityActionLink(string! Label, string! Css, string? Url, string? HxGet, string? HxPost, string! HxTarget, string! HxSwap) -> void
+Modulus.UI.EntityActionLink.Equals(Modulus.UI.EntityActionLink? other) -> bool
+Modulus.UI.EntityActionLink.HxGet.get -> string?
+Modulus.UI.EntityActionLink.HxGet.init -> void
+Modulus.UI.EntityActionLink.HxPost.get -> string?
+Modulus.UI.EntityActionLink.HxPost.init -> void
+Modulus.UI.EntityActionLink.HxSwap.get -> string!
+Modulus.UI.EntityActionLink.HxSwap.init -> void
+Modulus.UI.EntityActionLink.HxTarget.get -> string!
+Modulus.UI.EntityActionLink.HxTarget.init -> void
+Modulus.UI.EntityActionLink.Label.get -> string!
+Modulus.UI.EntityActionLink.Label.init -> void
+Modulus.UI.EntityActionLink.Url.get -> string?
+Modulus.UI.EntityActionLink.Url.init -> void
+Modulus.UI.EntityActionsModel
+Modulus.UI.EntityActionsModel.<Clone>$() -> Modulus.UI.EntityActionsModel!
+Modulus.UI.EntityActionsModel.Actions.get -> System.Collections.Generic.IReadOnlyList<Modulus.UI.EntityActionLink!>!
+Modulus.UI.EntityActionsModel.Actions.init -> void
+Modulus.UI.EntityActionsModel.Deconstruct(out System.Collections.Generic.IReadOnlyList<Modulus.UI.EntityActionLink!>! Actions) -> void
+Modulus.UI.EntityActionsModel.EntityActionsModel(System.Collections.Generic.IReadOnlyList<Modulus.UI.EntityActionLink!>! Actions) -> void
+Modulus.UI.EntityActionsModel.Equals(Modulus.UI.EntityActionsModel? other) -> bool
+Modulus.UI.EntityActionsTagHelper
+Modulus.UI.EntityActionsTagHelper.Entity.get -> string?
+Modulus.UI.EntityActionsTagHelper.Entity.set -> void
+Modulus.UI.EntityActionsTagHelper.EntityActionsTagHelper() -> void
+Modulus.UI.EntityActionsTagHelper.RowId.get -> string?
+Modulus.UI.EntityActionsTagHelper.RowId.set -> void
+Modulus.UI.EntityActionTarget
+Modulus.UI.EntityActionTarget.Modal = 0 -> Modulus.UI.EntityActionTarget
+Modulus.UI.EntityActionTarget.Row = 1 -> Modulus.UI.EntityActionTarget
+Modulus.UI.EntityApiFields
+Modulus.UI.EntityCell
+Modulus.UI.EntityCell.<Clone>$() -> Modulus.UI.EntityCell!
+Modulus.UI.EntityCell.Class.get -> string?
+Modulus.UI.EntityCell.Class.init -> void
+Modulus.UI.EntityCell.Deconstruct(out string? Text, out string? Class) -> void
+Modulus.UI.EntityCell.EntityCell(string? Text, string? Class) -> void
+Modulus.UI.EntityCell.Equals(Modulus.UI.EntityCell? other) -> bool
+Modulus.UI.EntityCell.Text.get -> string?
+Modulus.UI.EntityCell.Text.init -> void
+Modulus.UI.EntityCellsModel
+Modulus.UI.EntityCellsModel.<Clone>$() -> Modulus.UI.EntityCellsModel!
+Modulus.UI.EntityCellsModel.Cells.get -> System.Collections.Generic.IReadOnlyList<Modulus.UI.EntityCell!>!
+Modulus.UI.EntityCellsModel.Cells.init -> void
+Modulus.UI.EntityCellsModel.Deconstruct(out System.Collections.Generic.IReadOnlyList<Modulus.UI.EntityCell!>! Cells) -> void
+Modulus.UI.EntityCellsModel.EntityCellsModel(System.Collections.Generic.IReadOnlyList<Modulus.UI.EntityCell!>! Cells) -> void
+Modulus.UI.EntityCellsModel.Equals(Modulus.UI.EntityCellsModel? other) -> bool
+Modulus.UI.EntityCellsTagHelper
+Modulus.UI.EntityCellsTagHelper.Entity.get -> string?
+Modulus.UI.EntityCellsTagHelper.Entity.set -> void
+Modulus.UI.EntityCellsTagHelper.EntityCellsTagHelper() -> void
+Modulus.UI.EntityCellsTagHelper.RowId.get -> string?
+Modulus.UI.EntityCellsTagHelper.RowId.set -> void
+Modulus.UI.EntityCellsTagHelper.Values.get -> Modulus.UI.EntityColumnValues?
+Modulus.UI.EntityCellsTagHelper.Values.set -> void
+Modulus.UI.EntityColumn
+Modulus.UI.EntityColumn.CssClass.get -> string?
+Modulus.UI.EntityColumn.EntityColumn(string! name, string! label, System.Type! valueProvider, int order = 100, string? requiredPermission = null, string? cssClass = null) -> void
+Modulus.UI.EntityColumn.Label.get -> string!
+Modulus.UI.EntityColumn.Name.get -> string!
+Modulus.UI.EntityColumn.Order.get -> int
+Modulus.UI.EntityColumn.RequiredPermission.get -> string?
+Modulus.UI.EntityColumn.ValueProvider.get -> System.Type!
+Modulus.UI.EntityColumnLoader
+Modulus.UI.EntityColumnValues
+Modulus.UI.EntityColumnValues.Get(string! column, string! rowId) -> string?
+Modulus.UI.EntityContributions<T>
+Modulus.UI.EntityContributions<T>.Add(T! item) -> Modulus.UI.EntityContributions<T!>!
+Modulus.UI.EntityContributions<T>.Count.get -> int
+Modulus.UI.EntityContributions<T>.GetEnumerator() -> System.Collections.Generic.IEnumerator<T!>!
+Modulus.UI.EntityContributions<T>.Remove(string! key) -> bool
+Modulus.UI.EntityField
+Modulus.UI.EntityField.ClrType.get -> System.Type!
+Modulus.UI.EntityField.EntityField(string! name, System.Type! clrType, string! label, string? tab = null, int order = 100, System.Collections.Generic.IReadOnlyList<System.ComponentModel.DataAnnotations.ValidationAttribute!>? validators = null, string? requiredPermission = null, string? hint = null, string? placeholder = null, string? inputType = null) -> void
+Modulus.UI.EntityField.Hint.get -> string?
+Modulus.UI.EntityField.InputType.get -> string!
+Modulus.UI.EntityField.IsRequired.get -> bool
+Modulus.UI.EntityField.Label.get -> string!
+Modulus.UI.EntityField.Name.get -> string!
+Modulus.UI.EntityField.Order.get -> int
+Modulus.UI.EntityField.Placeholder.get -> string?
+Modulus.UI.EntityField.RequiredPermission.get -> string?
+Modulus.UI.EntityField.Step.get -> string?
+Modulus.UI.EntityField.Tab.get -> string?
+Modulus.UI.EntityField.ToText(object? value) -> string?
+Modulus.UI.EntityField.TryConvert(string? raw, out object? value) -> bool
+Modulus.UI.EntityField.Validate(string? raw) -> System.Collections.Generic.IReadOnlyList<string!>!
+Modulus.UI.EntityField.Validators.get -> System.Collections.Generic.IReadOnlyList<System.ComponentModel.DataAnnotations.ValidationAttribute!>!
+Modulus.UI.EntityFieldsModel
+Modulus.UI.EntityFieldsModel.<Clone>$() -> Modulus.UI.EntityFieldsModel!
+Modulus.UI.EntityFieldsModel.Deconstruct(out string! Entity, out System.Collections.Generic.IReadOnlyList<Microsoft.AspNetCore.Html.IHtmlContent!>! Fields) -> void
+Modulus.UI.EntityFieldsModel.Entity.get -> string!
+Modulus.UI.EntityFieldsModel.Entity.init -> void
+Modulus.UI.EntityFieldsModel.EntityFieldsModel(string! Entity, System.Collections.Generic.IReadOnlyList<Microsoft.AspNetCore.Html.IHtmlContent!>! Fields) -> void
+Modulus.UI.EntityFieldsModel.Equals(Modulus.UI.EntityFieldsModel? other) -> bool
+Modulus.UI.EntityFieldsModel.Fields.get -> System.Collections.Generic.IReadOnlyList<Microsoft.AspNetCore.Html.IHtmlContent!>!
+Modulus.UI.EntityFieldsModel.Fields.init -> void
+Modulus.UI.EntityFieldValues
+Modulus.UI.EntityUiBuilder
+Modulus.UI.EntityUiBuilder.Actions.get -> Modulus.UI.EntityContributions<Modulus.UI.EntityAction!>!
+Modulus.UI.EntityUiBuilder.Columns.get -> Modulus.UI.EntityContributions<Modulus.UI.EntityColumn!>!
+Modulus.UI.EntityUiBuilder.Entity.get -> string!
+Modulus.UI.EntityUiBuilder.EntityUiBuilder(string! entity) -> void
+Modulus.UI.EntityUiBuilder.Fields.get -> Modulus.UI.EntityContributions<Modulus.UI.EntityField!>!
+Modulus.UI.EntityUiOptions
+Modulus.UI.EntityUiOptions.Add(string! entity, System.Action<Modulus.UI.EntityUiBuilder!>! configure) -> Modulus.UI.EntityUiOptions!
+Modulus.UI.EntityUiOptions.EntityUiOptions() -> void
+Modulus.UI.EntityUiRegistry
+Modulus.UI.EntityUiRegistry.EntityUiRegistry(Microsoft.Extensions.Options.IOptions<Modulus.UI.EntityUiOptions!>! options) -> void
+Modulus.UI.EntityUiRegistry.GetFields(string! entity) -> System.Collections.Generic.IReadOnlyList<Modulus.UI.EntityField!>!
+Modulus.UI.EntityUiRegistry.GetVisibleActions(string! entity, Modulus.Core.Abstractions.ICurrentUser! user) -> System.Collections.Generic.IReadOnlyList<Modulus.UI.EntityAction!>!
+Modulus.UI.EntityUiRegistry.GetVisibleColumns(string! entity, Modulus.Core.Abstractions.ICurrentUser! user) -> System.Collections.Generic.IReadOnlyList<Modulus.UI.EntityColumn!>!
+Modulus.UI.EntityUiRegistry.GetVisibleFields(string! entity, Modulus.Core.Abstractions.ICurrentUser! user) -> System.Collections.Generic.IReadOnlyList<Modulus.UI.EntityField!>!
+Modulus.UI.EntityUiServiceCollectionExtensions
+Modulus.UI.FieldModel
+Modulus.UI.FieldModel.<Clone>$() -> Modulus.UI.FieldModel!
+Modulus.UI.FieldModel.Accept.get -> string?
+Modulus.UI.FieldModel.Accept.init -> void
+Modulus.UI.FieldModel.Autocomplete.get -> string?
+Modulus.UI.FieldModel.Autocomplete.init -> void
+Modulus.UI.FieldModel.Checked.get -> bool
+Modulus.UI.FieldModel.Deconstruct(out string! Id, out string! Name, out string! Label, out string! Type, out string! Value, out bool Required, out System.Collections.Generic.IReadOnlyList<string!>! Errors) -> void
+Modulus.UI.FieldModel.Disabled.get -> bool
+Modulus.UI.FieldModel.Disabled.init -> void
+Modulus.UI.FieldModel.Equals(Modulus.UI.FieldModel? other) -> bool
+Modulus.UI.FieldModel.Errors.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Modulus.UI.FieldModel.Errors.init -> void
+Modulus.UI.FieldModel.FieldModel(string! Id, string! Name, string! Label, string! Type, string! Value, bool Required, System.Collections.Generic.IReadOnlyList<string!>! Errors) -> void
+Modulus.UI.FieldModel.HasErrors.get -> bool
+Modulus.UI.FieldModel.Hint.get -> string?
+Modulus.UI.FieldModel.Hint.init -> void
+Modulus.UI.FieldModel.Id.get -> string!
+Modulus.UI.FieldModel.Id.init -> void
+Modulus.UI.FieldModel.Label.get -> string!
+Modulus.UI.FieldModel.Label.init -> void
+Modulus.UI.FieldModel.Max.get -> string?
+Modulus.UI.FieldModel.Max.init -> void
+Modulus.UI.FieldModel.Min.get -> string?
+Modulus.UI.FieldModel.Min.init -> void
+Modulus.UI.FieldModel.Multiple.get -> bool
+Modulus.UI.FieldModel.Multiple.init -> void
+Modulus.UI.FieldModel.Name.get -> string!
+Modulus.UI.FieldModel.Name.init -> void
+Modulus.UI.FieldModel.Options.get -> System.Collections.Generic.IReadOnlyList<Modulus.UI.SelectOption!>!
+Modulus.UI.FieldModel.Options.init -> void
+Modulus.UI.FieldModel.Placeholder.get -> string?
+Modulus.UI.FieldModel.Placeholder.init -> void
+Modulus.UI.FieldModel.ReadOnly.get -> bool
+Modulus.UI.FieldModel.ReadOnly.init -> void
+Modulus.UI.FieldModel.Required.get -> bool
+Modulus.UI.FieldModel.Required.init -> void
+Modulus.UI.FieldModel.Rows.get -> int?
+Modulus.UI.FieldModel.Rows.init -> void
+Modulus.UI.FieldModel.Step.get -> string?
+Modulus.UI.FieldModel.Step.init -> void
+Modulus.UI.FieldModel.Type.get -> string!
+Modulus.UI.FieldModel.Type.init -> void
+Modulus.UI.FieldModel.Value.get -> string!
+Modulus.UI.FieldModel.Value.init -> void
+Modulus.UI.FieldTagHelperBase
+Modulus.UI.FieldTagHelperBase.Build(string! type) -> Modulus.UI.FieldModel!
+Modulus.UI.FieldTagHelperBase.Disabled.get -> bool
+Modulus.UI.FieldTagHelperBase.Disabled.set -> void
+Modulus.UI.FieldTagHelperBase.FieldTagHelperBase() -> void
+Modulus.UI.FieldTagHelperBase.For.get -> Microsoft.AspNetCore.Mvc.ViewFeatures.ModelExpression?
+Modulus.UI.FieldTagHelperBase.For.set -> void
+Modulus.UI.FieldTagHelperBase.Hint.get -> string?
+Modulus.UI.FieldTagHelperBase.Hint.set -> void
+Modulus.UI.FieldTagHelperBase.Label.get -> string?
+Modulus.UI.FieldTagHelperBase.Label.set -> void
+Modulus.UI.FieldTagHelperBase.Placeholder.get -> string?
+Modulus.UI.FieldTagHelperBase.Placeholder.set -> void
+Modulus.UI.FieldTagHelperBase.ReadOnly.get -> bool
+Modulus.UI.FieldTagHelperBase.ReadOnly.set -> void
+Modulus.UI.FieldTagHelperBase.Required.get -> bool?
+Modulus.UI.FieldTagHelperBase.Required.set -> void
+Modulus.UI.FormModel
+Modulus.UI.FormModel.<Clone>$() -> Modulus.UI.FormModel!
+Modulus.UI.FormModel.Action.get -> string?
+Modulus.UI.FormModel.Action.init -> void
+Modulus.UI.FormModel.Body.get -> Microsoft.AspNetCore.Html.IHtmlContent!
+Modulus.UI.FormModel.Body.init -> void
+Modulus.UI.FormModel.Class.get -> string?
+Modulus.UI.FormModel.Class.init -> void
+Modulus.UI.FormModel.Deconstruct(out string? Action, out string? HxTarget, out string! HxSwap, out bool ShowSummary, out string? Class, out Microsoft.AspNetCore.Html.IHtmlContent! Body) -> void
+Modulus.UI.FormModel.Equals(Modulus.UI.FormModel? other) -> bool
+Modulus.UI.FormModel.FormModel(string? Action, string? HxTarget, string! HxSwap, bool ShowSummary, string? Class, Microsoft.AspNetCore.Html.IHtmlContent! Body) -> void
+Modulus.UI.FormModel.HxSwap.get -> string!
+Modulus.UI.FormModel.HxSwap.init -> void
+Modulus.UI.FormModel.HxTarget.get -> string?
+Modulus.UI.FormModel.HxTarget.init -> void
+Modulus.UI.FormModel.Multipart.get -> bool
+Modulus.UI.FormModel.Multipart.init -> void
+Modulus.UI.FormModel.ShowSummary.get -> bool
+Modulus.UI.FormModel.ShowSummary.init -> void
+Modulus.UI.HtmxCookieAuthExtensions
+Modulus.UI.HtmxPageModel
+Modulus.UI.HtmxPageModel.HandleAsync(System.Func<System.Threading.Tasks.Task!>! action, string! formPartial, object? model, System.Func<Microsoft.AspNetCore.Mvc.IActionResult!>! onSuccess) -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Mvc.IActionResult!>!
+Modulus.UI.HtmxPageModel.HandleAsync(System.Func<System.Threading.Tasks.Task!>! action, string! formPartial, System.Func<Microsoft.AspNetCore.Mvc.IActionResult!>! onSuccess) -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Mvc.IActionResult!>!
+Modulus.UI.HtmxPageModel.Htmx.get -> Modulus.UI.HtmxResponse!
+Modulus.UI.HtmxPageModel.HtmxEmpty() -> Microsoft.AspNetCore.Mvc.ContentResult!
+Modulus.UI.HtmxPageModel.HtmxPageModel() -> void
+Modulus.UI.HtmxPageModel.HtmxPartial(string! viewName, object? model) -> Microsoft.AspNetCore.Mvc.PartialViewResult!
+Modulus.UI.HtmxPageModel.HtmxRedirect(string! url) -> Microsoft.AspNetCore.Mvc.ContentResult!
+Modulus.UI.HtmxPageModel.HtmxToast(string! message, string! type = "success") -> void
+Modulus.UI.HtmxPageModel.HtmxTrigger(string! name, object? detail = null) -> void
+Modulus.UI.HtmxPageModel.IsHtmxFragment.get -> bool
+Modulus.UI.HtmxPageModel.IsHtmxRequest.get -> bool
+Modulus.UI.HtmxPageModel.PageOrPartial(string! partialName, object? model = null) -> Microsoft.AspNetCore.Mvc.IActionResult!
+Modulus.UI.HtmxRequestExtensions
+Modulus.UI.HtmxResponse
+Modulus.UI.HtmxResponse.CloseModal() -> Modulus.UI.HtmxResponse!
+Modulus.UI.HtmxResponse.HtmxResponse(Microsoft.AspNetCore.Http.IHttpContextAccessor! accessor) -> void
+Modulus.UI.HtmxResponse.NotifyChanged(string! entityEvent) -> Modulus.UI.HtmxResponse!
+Modulus.UI.HtmxResponse.PushUrl(string! url) -> Modulus.UI.HtmxResponse!
+Modulus.UI.HtmxResponse.Redirect(string! url) -> Modulus.UI.HtmxResponse!
+Modulus.UI.HtmxResponse.Refresh() -> Modulus.UI.HtmxResponse!
+Modulus.UI.HtmxResponse.Reswap(string! swap) -> Modulus.UI.HtmxResponse!
+Modulus.UI.HtmxResponse.Retarget(string! selector) -> Modulus.UI.HtmxResponse!
+Modulus.UI.HtmxResponse.Toast(string! message, string! type = "success") -> Modulus.UI.HtmxResponse!
+Modulus.UI.HtmxResponse.Trigger(string! name, object? detail = null) -> Modulus.UI.HtmxResponse!
+Modulus.UI.IBreadcrumbContributor
+Modulus.UI.IBreadcrumbContributor.ConfigureAsync(Modulus.UI.BreadcrumbContext! context, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask
+Modulus.UI.IBreadcrumbProvider
+Modulus.UI.IBreadcrumbProvider.GetItems(string! pageId) -> System.Collections.Generic.IReadOnlyList<Modulus.UI.BreadcrumbItem!>!
+Modulus.UI.IEntityColumnValueProvider
+Modulus.UI.IEntityColumnValueProvider.LoadAsync(System.Collections.Generic.IReadOnlyCollection<string!>! rowIds, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyDictionary<string!, string?>!>!
+Modulus.UI.IEntityUiRegistry
+Modulus.UI.IEntityUiRegistry.GetFields(string! entity) -> System.Collections.Generic.IReadOnlyList<Modulus.UI.EntityField!>!
+Modulus.UI.IEntityUiRegistry.GetVisibleActions(string! entity, Modulus.Core.Abstractions.ICurrentUser! user) -> System.Collections.Generic.IReadOnlyList<Modulus.UI.EntityAction!>!
+Modulus.UI.IEntityUiRegistry.GetVisibleColumns(string! entity, Modulus.Core.Abstractions.ICurrentUser! user) -> System.Collections.Generic.IReadOnlyList<Modulus.UI.EntityColumn!>!
+Modulus.UI.IEntityUiRegistry.GetVisibleFields(string! entity, Modulus.Core.Abstractions.ICurrentUser! user) -> System.Collections.Generic.IReadOnlyList<Modulus.UI.EntityField!>!
+Modulus.UI.IMenuContributor
+Modulus.UI.IMenuContributor.ConfigureAsync(Modulus.UI.MenuConfigurationContext! context, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask
+Modulus.UI.IModulusViewResolver
+Modulus.UI.IModulusViewResolver.Resolve(string! componentName, string! viewName) -> string!
+Modulus.UI.IModulusViewResolver.TryResolve(string! componentName, string! viewName, out string! path) -> bool
+Modulus.UI.ISlotContributor
+Modulus.UI.ISlotContributor.Order.get -> int
+Modulus.UI.ISlotContributor.RenderAsync(Modulus.UI.SlotContext! context, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<Microsoft.AspNetCore.Html.IHtmlContent?>
+Modulus.UI.ISlotContributor.RequiredPermission.get -> string?
+Modulus.UI.ISlotContributor.Slot.get -> string!
+Modulus.UI.ISlotRenderer
+Modulus.UI.ISlotRenderer.RenderAsync(string! slot, Microsoft.AspNetCore.Mvc.Rendering.ViewContext! viewContext, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<Microsoft.AspNetCore.Html.IHtmlContent?>
+Modulus.UI.IThemeAccessor
+Modulus.UI.IThemeAccessor.Current.get -> Modulus.UI.Theming.ITheme!
+Modulus.UI.IToolbarContributor
+Modulus.UI.IToolbarContributor.ConfigureAsync(Modulus.UI.ToolbarContext! context, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask
+Modulus.UI.IToolbarProvider
+Modulus.UI.IToolbarProvider.GetItems(string! pageId) -> System.Collections.Generic.IReadOnlyList<Modulus.UI.ToolbarItem!>!
+Modulus.UI.IUiMenuProvider
+Modulus.UI.IUiMenuProvider.GetMenu() -> System.Collections.Generic.IReadOnlyList<Modulus.UI.UiMenuItem!>!
+Modulus.UI.IUiModule
+Modulus.UI.IUiModule.ConfigureNavigation(Modulus.UI.UiNavigationBuilder! navigation) -> void
+Modulus.UI.IUiModule.Manifest.get -> Modulus.UI.ModuleManifest!
+Modulus.UI.IUiNavigationRegistry
+Modulus.UI.IUiNavigationRegistry.GetMenu() -> System.Collections.Generic.IReadOnlyList<Modulus.UI.UiMenuItem!>!
+Modulus.UI.IUiNavigationRegistry.GetModules() -> System.Collections.Generic.IReadOnlyList<Modulus.UI.ModuleManifest!>!
+Modulus.UI.LineItemRow
+Modulus.UI.LineItemRow.<Clone>$() -> Modulus.UI.LineItemRow!
+Modulus.UI.LineItemRow.Content.get -> Microsoft.AspNetCore.Html.IHtmlContent!
+Modulus.UI.LineItemRow.Content.init -> void
+Modulus.UI.LineItemRow.Deconstruct(out int Index, out Microsoft.AspNetCore.Html.IHtmlContent! Content) -> void
+Modulus.UI.LineItemRow.Equals(Modulus.UI.LineItemRow? other) -> bool
+Modulus.UI.LineItemRow.Index.get -> int
+Modulus.UI.LineItemRow.Index.init -> void
+Modulus.UI.LineItemRow.LineItemRow(int Index, Microsoft.AspNetCore.Html.IHtmlContent! Content) -> void
+Modulus.UI.LineItemsModel
+Modulus.UI.LineItemsModel.<Clone>$() -> Modulus.UI.LineItemsModel!
+Modulus.UI.LineItemsModel.AddLabel.get -> string!
+Modulus.UI.LineItemsModel.AddLabel.init -> void
+Modulus.UI.LineItemsModel.Deconstruct(out string! NamePrefix, out string! IdPrefix, out string! Label, out System.Collections.Generic.IReadOnlyList<Modulus.UI.LineItemRow!>! Rows, out Microsoft.AspNetCore.Html.IHtmlContent! Template, out System.Collections.Generic.IReadOnlyList<string!>! Errors) -> void
+Modulus.UI.LineItemsModel.Equals(Modulus.UI.LineItemsModel? other) -> bool
+Modulus.UI.LineItemsModel.Errors.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Modulus.UI.LineItemsModel.Errors.init -> void
+Modulus.UI.LineItemsModel.HasErrors.get -> bool
+Modulus.UI.LineItemsModel.Hint.get -> string?
+Modulus.UI.LineItemsModel.Hint.init -> void
+Modulus.UI.LineItemsModel.IdPrefix.get -> string!
+Modulus.UI.LineItemsModel.IdPrefix.init -> void
+Modulus.UI.LineItemsModel.Label.get -> string!
+Modulus.UI.LineItemsModel.Label.init -> void
+Modulus.UI.LineItemsModel.LineItemsModel(string! NamePrefix, string! IdPrefix, string! Label, System.Collections.Generic.IReadOnlyList<Modulus.UI.LineItemRow!>! Rows, Microsoft.AspNetCore.Html.IHtmlContent! Template, System.Collections.Generic.IReadOnlyList<string!>! Errors) -> void
+Modulus.UI.LineItemsModel.NamePrefix.get -> string!
+Modulus.UI.LineItemsModel.NamePrefix.init -> void
+Modulus.UI.LineItemsModel.RemoveLabel.get -> string!
+Modulus.UI.LineItemsModel.RemoveLabel.init -> void
+Modulus.UI.LineItemsModel.Rows.get -> System.Collections.Generic.IReadOnlyList<Modulus.UI.LineItemRow!>!
+Modulus.UI.LineItemsModel.Rows.init -> void
+Modulus.UI.LineItemsModel.Template.get -> Microsoft.AspNetCore.Html.IHtmlContent!
+Modulus.UI.LineItemsModel.Template.init -> void
+Modulus.UI.MenuConfigurationContext
+Modulus.UI.MenuConfigurationContext.Main.get -> Modulus.UI.UiNavigationBuilder!
+Modulus.UI.MenuConfigurationContext.MenuConfigurationContext(Modulus.UI.UiNavigationBuilder! main) -> void
+Modulus.UI.ModalFooterTagHelper
+Modulus.UI.ModalFooterTagHelper.ModalFooterTagHelper() -> void
+Modulus.UI.ModalModel
+Modulus.UI.ModalModel.<Clone>$() -> Modulus.UI.ModalModel!
+Modulus.UI.ModalModel.Body.get -> Microsoft.AspNetCore.Html.IHtmlContent!
+Modulus.UI.ModalModel.Body.init -> void
+Modulus.UI.ModalModel.Deconstruct(out string? Title, out bool Dismissible, out Microsoft.AspNetCore.Html.IHtmlContent! Body, out Microsoft.AspNetCore.Html.IHtmlContent? Footer) -> void
+Modulus.UI.ModalModel.Dismissible.get -> bool
+Modulus.UI.ModalModel.Dismissible.init -> void
+Modulus.UI.ModalModel.Equals(Modulus.UI.ModalModel? other) -> bool
+Modulus.UI.ModalModel.Footer.get -> Microsoft.AspNetCore.Html.IHtmlContent?
+Modulus.UI.ModalModel.Footer.init -> void
+Modulus.UI.ModalModel.ModalModel(string? Title, bool Dismissible, Microsoft.AspNetCore.Html.IHtmlContent! Body, Microsoft.AspNetCore.Html.IHtmlContent? Footer) -> void
+Modulus.UI.ModalModel.Title.get -> string?
+Modulus.UI.ModalModel.Title.init -> void
+Modulus.UI.ModalTagHelper
+Modulus.UI.ModalTagHelper.Dismissible.get -> bool
+Modulus.UI.ModalTagHelper.Dismissible.set -> void
+Modulus.UI.ModalTagHelper.ModalTagHelper() -> void
+Modulus.UI.ModalTagHelper.Title.get -> string?
+Modulus.UI.ModalTagHelper.Title.set -> void
+Modulus.UI.ModuleManifest
+Modulus.UI.ModuleManifest.<Clone>$() -> Modulus.UI.ModuleManifest!
+Modulus.UI.ModuleManifest.Deconstruct(out string! Id, out string! Name, out string! Version, out string![]! Dependencies, out string![]! Features) -> void
+Modulus.UI.ModuleManifest.Dependencies.get -> string![]!
+Modulus.UI.ModuleManifest.Dependencies.init -> void
+Modulus.UI.ModuleManifest.Equals(Modulus.UI.ModuleManifest? other) -> bool
+Modulus.UI.ModuleManifest.Features.get -> string![]!
+Modulus.UI.ModuleManifest.Features.init -> void
+Modulus.UI.ModuleManifest.Id.get -> string!
+Modulus.UI.ModuleManifest.Id.init -> void
+Modulus.UI.ModuleManifest.ModuleManifest(string! Id, string! Name, string! Version, string![]! Dependencies, string![]! Features) -> void
+Modulus.UI.ModuleManifest.Name.get -> string!
+Modulus.UI.ModuleManifest.Name.init -> void
+Modulus.UI.ModuleManifest.Version.get -> string!
+Modulus.UI.ModuleManifest.Version.init -> void
+Modulus.UI.ModulusFieldsTagHelper
+Modulus.UI.ModulusFieldsTagHelper.Entity.get -> string?
+Modulus.UI.ModulusFieldsTagHelper.Entity.set -> void
+Modulus.UI.ModulusFieldsTagHelper.For.get -> Microsoft.AspNetCore.Mvc.ViewFeatures.ModelExpression?
+Modulus.UI.ModulusFieldsTagHelper.For.set -> void
+Modulus.UI.ModulusFieldsTagHelper.ModulusFieldsTagHelper() -> void
+Modulus.UI.ModulusFieldsTagHelper.Tab.get -> string?
+Modulus.UI.ModulusFieldsTagHelper.Tab.set -> void
+Modulus.UI.ModulusFileTagHelper
+Modulus.UI.ModulusFileTagHelper.Accept.get -> string?
+Modulus.UI.ModulusFileTagHelper.Accept.set -> void
+Modulus.UI.ModulusFileTagHelper.ModulusFileTagHelper() -> void
+Modulus.UI.ModulusFileTagHelper.Multiple.get -> bool
+Modulus.UI.ModulusFileTagHelper.Multiple.set -> void
+Modulus.UI.ModulusFileTagHelper.Name.get -> string?
+Modulus.UI.ModulusFileTagHelper.Name.set -> void
+Modulus.UI.ModulusFormTagHelper
+Modulus.UI.ModulusFormTagHelper.Action.get -> string?
+Modulus.UI.ModulusFormTagHelper.Action.set -> void
+Modulus.UI.ModulusFormTagHelper.Class.get -> string?
+Modulus.UI.ModulusFormTagHelper.Class.set -> void
+Modulus.UI.ModulusFormTagHelper.Handler.get -> string?
+Modulus.UI.ModulusFormTagHelper.Handler.set -> void
+Modulus.UI.ModulusFormTagHelper.Modal.get -> bool
+Modulus.UI.ModulusFormTagHelper.Modal.set -> void
+Modulus.UI.ModulusFormTagHelper.ModulusFormTagHelper() -> void
+Modulus.UI.ModulusFormTagHelper.Multipart.get -> bool
+Modulus.UI.ModulusFormTagHelper.Multipart.set -> void
+Modulus.UI.ModulusFormTagHelper.Page.get -> string?
+Modulus.UI.ModulusFormTagHelper.Page.set -> void
+Modulus.UI.ModulusFormTagHelper.RouteValues.get -> System.Collections.Generic.IDictionary<string!, string?>!
+Modulus.UI.ModulusFormTagHelper.RouteValues.set -> void
+Modulus.UI.ModulusFormTagHelper.Summary.get -> bool
+Modulus.UI.ModulusFormTagHelper.Summary.set -> void
+Modulus.UI.ModulusFormTagHelper.Swap.get -> string!
+Modulus.UI.ModulusFormTagHelper.Swap.set -> void
+Modulus.UI.ModulusFormTagHelper.Target.get -> string?
+Modulus.UI.ModulusFormTagHelper.Target.set -> void
+Modulus.UI.ModulusInputTagHelper
+Modulus.UI.ModulusInputTagHelper.Autocomplete.get -> string?
+Modulus.UI.ModulusInputTagHelper.Autocomplete.set -> void
+Modulus.UI.ModulusInputTagHelper.Max.get -> string?
+Modulus.UI.ModulusInputTagHelper.Max.set -> void
+Modulus.UI.ModulusInputTagHelper.Min.get -> string?
+Modulus.UI.ModulusInputTagHelper.Min.set -> void
+Modulus.UI.ModulusInputTagHelper.ModulusInputTagHelper() -> void
+Modulus.UI.ModulusInputTagHelper.Rows.get -> int?
+Modulus.UI.ModulusInputTagHelper.Rows.set -> void
+Modulus.UI.ModulusInputTagHelper.Step.get -> string?
+Modulus.UI.ModulusInputTagHelper.Step.set -> void
+Modulus.UI.ModulusInputTagHelper.Type.get -> string!
+Modulus.UI.ModulusInputTagHelper.Type.set -> void
+Modulus.UI.ModulusLineItemsTagHelper
+Modulus.UI.ModulusLineItemsTagHelper.AddLabel.get -> string!
+Modulus.UI.ModulusLineItemsTagHelper.AddLabel.set -> void
+Modulus.UI.ModulusLineItemsTagHelper.For.get -> Microsoft.AspNetCore.Mvc.ViewFeatures.ModelExpression?
+Modulus.UI.ModulusLineItemsTagHelper.For.set -> void
+Modulus.UI.ModulusLineItemsTagHelper.Hint.get -> string?
+Modulus.UI.ModulusLineItemsTagHelper.Hint.set -> void
+Modulus.UI.ModulusLineItemsTagHelper.Label.get -> string?
+Modulus.UI.ModulusLineItemsTagHelper.Label.set -> void
+Modulus.UI.ModulusLineItemsTagHelper.ModulusLineItemsTagHelper() -> void
+Modulus.UI.ModulusLineItemsTagHelper.RemoveLabel.get -> string!
+Modulus.UI.ModulusLineItemsTagHelper.RemoveLabel.set -> void
+Modulus.UI.ModulusLineItemsTagHelper.RowPartial.get -> string?
+Modulus.UI.ModulusLineItemsTagHelper.RowPartial.set -> void
+Modulus.UI.ModulusSelectTagHelper
+Modulus.UI.ModulusSelectTagHelper.Items.get -> System.Collections.Generic.IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem!>?
+Modulus.UI.ModulusSelectTagHelper.Items.set -> void
+Modulus.UI.ModulusSelectTagHelper.ModulusSelectTagHelper() -> void
+Modulus.UI.ModulusSmartAuthExtensions
+Modulus.UI.ModulusUiOptions
+Modulus.UI.ModulusUiOptions.AppName.get -> string!
+Modulus.UI.ModulusUiOptions.AppName.set -> void
+Modulus.UI.ModulusUiOptions.BrandHref.get -> string!
+Modulus.UI.ModulusUiOptions.BrandHref.set -> void
+Modulus.UI.ModulusUiOptions.FooterText.get -> string?
+Modulus.UI.ModulusUiOptions.FooterText.set -> void
+Modulus.UI.ModulusUiOptions.ModulusUiOptions() -> void
+Modulus.UI.ModulusViewResolver
+Modulus.UI.ModulusViewResolver.ModulusViewResolver(Microsoft.AspNetCore.Mvc.Razor.IRazorViewEngine! viewEngine, Microsoft.Extensions.Caching.Memory.IMemoryCache! cache, Microsoft.Extensions.Options.IOptions<Modulus.UI.Theming.ThemeOptions!>! options) -> void
+Modulus.UI.ModulusViewResolver.Resolve(string! componentName, string! viewName) -> string!
+Modulus.UI.ModulusViewResolver.TryResolve(string! componentName, string! viewName, out string! path) -> bool
+Modulus.UI.PageHeaderTagHelper
+Modulus.UI.PageHeaderTagHelper.PageHeaderTagHelper() -> void
+Modulus.UI.PageHeaderTagHelper.PageId.get -> string?
+Modulus.UI.PageHeaderTagHelper.PageId.set -> void
+Modulus.UI.PageHeaderTagHelper.Subtitle.get -> string?
+Modulus.UI.PageHeaderTagHelper.Subtitle.set -> void
+Modulus.UI.PageHeaderTagHelper.Title.get -> string?
+Modulus.UI.PageHeaderTagHelper.Title.set -> void
+Modulus.UI.PageHeaderTagHelper.ViewContext.get -> Microsoft.AspNetCore.Mvc.Rendering.ViewContext?
+Modulus.UI.PageHeaderTagHelper.ViewContext.set -> void
+Modulus.UI.PaginationModel
+Modulus.UI.PaginationModel.<Clone>$() -> Modulus.UI.PaginationModel!
+Modulus.UI.PaginationModel.Deconstruct(out string! Label, out int Page, out string? PreviousUrl, out string? NextUrl) -> void
+Modulus.UI.PaginationModel.Equals(Modulus.UI.PaginationModel? other) -> bool
+Modulus.UI.PaginationModel.Label.get -> string!
+Modulus.UI.PaginationModel.Label.init -> void
+Modulus.UI.PaginationModel.NextUrl.get -> string?
+Modulus.UI.PaginationModel.NextUrl.init -> void
+Modulus.UI.PaginationModel.Page.get -> int
+Modulus.UI.PaginationModel.Page.init -> void
+Modulus.UI.PaginationModel.PaginationModel(string! Label, int Page, string? PreviousUrl, string? NextUrl) -> void
+Modulus.UI.PaginationModel.PreviousUrl.get -> string?
+Modulus.UI.PaginationModel.PreviousUrl.init -> void
+Modulus.UI.PaginationTagHelper
+Modulus.UI.PaginationTagHelper.HasNext.get -> bool
+Modulus.UI.PaginationTagHelper.HasNext.set -> void
+Modulus.UI.PaginationTagHelper.HasPrevious.get -> bool
+Modulus.UI.PaginationTagHelper.HasPrevious.set -> void
+Modulus.UI.PaginationTagHelper.Label.get -> string!
+Modulus.UI.PaginationTagHelper.Label.set -> void
+Modulus.UI.PaginationTagHelper.Page.get -> int
+Modulus.UI.PaginationTagHelper.Page.set -> void
+Modulus.UI.PaginationTagHelper.PageParam.get -> string!
+Modulus.UI.PaginationTagHelper.PageParam.set -> void
+Modulus.UI.PaginationTagHelper.PaginationTagHelper() -> void
+Modulus.UI.PaginationTagHelper.RouteValues.get -> System.Collections.Generic.IDictionary<string!, string?>!
+Modulus.UI.PaginationTagHelper.RouteValues.set -> void
+Modulus.UI.PaginationUrls
+Modulus.UI.PermissionTagHelper
+Modulus.UI.PermissionTagHelper.Name.get -> string?
+Modulus.UI.PermissionTagHelper.Name.set -> void
+Modulus.UI.PermissionTagHelper.PermissionTagHelper(Modulus.Core.Abstractions.ICurrentUser! currentUser) -> void
+Modulus.UI.SelectOption
+Modulus.UI.SelectOption.<Clone>$() -> Modulus.UI.SelectOption!
+Modulus.UI.SelectOption.Deconstruct(out string! Value, out string! Text, out bool Selected) -> void
+Modulus.UI.SelectOption.Equals(Modulus.UI.SelectOption? other) -> bool
+Modulus.UI.SelectOption.Selected.get -> bool
+Modulus.UI.SelectOption.Selected.init -> void
+Modulus.UI.SelectOption.SelectOption(string! Value, string! Text, bool Selected) -> void
+Modulus.UI.SelectOption.Text.get -> string!
+Modulus.UI.SelectOption.Text.init -> void
+Modulus.UI.SelectOption.Value.get -> string!
+Modulus.UI.SelectOption.Value.init -> void
+Modulus.UI.SlotContext
+Modulus.UI.SlotContext.Services.get -> System.IServiceProvider!
+Modulus.UI.SlotContext.SlotContext(Microsoft.AspNetCore.Mvc.Rendering.ViewContext! viewContext) -> void
+Modulus.UI.SlotContext.ViewComponentAsync(string! componentName, object? arguments = null) -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Html.IHtmlContent!>!
+Modulus.UI.SlotContext.ViewContext.get -> Microsoft.AspNetCore.Mvc.Rendering.ViewContext!
+Modulus.UI.SlotRenderer
+Modulus.UI.SlotRenderer.RenderAsync(string! slot, Microsoft.AspNetCore.Mvc.Rendering.ViewContext! viewContext, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<Microsoft.AspNetCore.Html.IHtmlContent?>
+Modulus.UI.SlotRenderer.SlotRenderer(System.Collections.Generic.IEnumerable<Modulus.UI.ISlotContributor!>! contributors, Modulus.Core.Abstractions.ICurrentUser! currentUser) -> void
+Modulus.UI.SlotRendererHtmlExtensions
+Modulus.UI.StatModel
+Modulus.UI.StatModel.<Clone>$() -> Modulus.UI.StatModel!
+Modulus.UI.StatModel.Deconstruct(out string? Label, out string? Value, out string? Delta, out string! Tone, out string? Hint) -> void
+Modulus.UI.StatModel.Delta.get -> string?
+Modulus.UI.StatModel.Delta.init -> void
+Modulus.UI.StatModel.Equals(Modulus.UI.StatModel? other) -> bool
+Modulus.UI.StatModel.Hint.get -> string?
+Modulus.UI.StatModel.Hint.init -> void
+Modulus.UI.StatModel.Label.get -> string?
+Modulus.UI.StatModel.Label.init -> void
+Modulus.UI.StatModel.StatModel(string? Label, string? Value, string? Delta, string! Tone, string? Hint) -> void
+Modulus.UI.StatModel.Tone.get -> string!
+Modulus.UI.StatModel.Tone.init -> void
+Modulus.UI.StatModel.Value.get -> string?
+Modulus.UI.StatModel.Value.init -> void
+Modulus.UI.StatTagHelper
+Modulus.UI.StatTagHelper.Delta.get -> string?
+Modulus.UI.StatTagHelper.Delta.set -> void
+Modulus.UI.StatTagHelper.Hint.get -> string?
+Modulus.UI.StatTagHelper.Hint.set -> void
+Modulus.UI.StatTagHelper.Label.get -> string?
+Modulus.UI.StatTagHelper.Label.set -> void
+Modulus.UI.StatTagHelper.StatTagHelper() -> void
+Modulus.UI.StatTagHelper.Tone.get -> string!
+Modulus.UI.StatTagHelper.Tone.set -> void
+Modulus.UI.StatTagHelper.Value.get -> string?
+Modulus.UI.StatTagHelper.Value.set -> void
+Modulus.UI.TabModel
+Modulus.UI.TabModel.<Clone>$() -> Modulus.UI.TabModel!
+Modulus.UI.TabModel.Active.get -> bool
+Modulus.UI.TabModel.Active.init -> void
+Modulus.UI.TabModel.Body.get -> Microsoft.AspNetCore.Html.IHtmlContent!
+Modulus.UI.TabModel.Body.init -> void
+Modulus.UI.TabModel.Deconstruct(out string! PaneId, out string! Title, out bool Active, out string? Source, out Microsoft.AspNetCore.Html.IHtmlContent! Body) -> void
+Modulus.UI.TabModel.Equals(Modulus.UI.TabModel? other) -> bool
+Modulus.UI.TabModel.PaneId.get -> string!
+Modulus.UI.TabModel.PaneId.init -> void
+Modulus.UI.TabModel.Source.get -> string?
+Modulus.UI.TabModel.Source.init -> void
+Modulus.UI.TabModel.TabModel(string! PaneId, string! Title, bool Active, string? Source, Microsoft.AspNetCore.Html.IHtmlContent! Body) -> void
+Modulus.UI.TabModel.Title.get -> string!
+Modulus.UI.TabModel.Title.init -> void
+Modulus.UI.TabsModel
+Modulus.UI.TabsModel.<Clone>$() -> Modulus.UI.TabsModel!
+Modulus.UI.TabsModel.Deconstruct(out string! Id, out System.Collections.Generic.IReadOnlyList<Modulus.UI.TabModel!>! Tabs) -> void
+Modulus.UI.TabsModel.Equals(Modulus.UI.TabsModel? other) -> bool
+Modulus.UI.TabsModel.Id.get -> string!
+Modulus.UI.TabsModel.Id.init -> void
+Modulus.UI.TabsModel.Tabs.get -> System.Collections.Generic.IReadOnlyList<Modulus.UI.TabModel!>!
+Modulus.UI.TabsModel.Tabs.init -> void
+Modulus.UI.TabsModel.TabsModel(string! Id, System.Collections.Generic.IReadOnlyList<Modulus.UI.TabModel!>! Tabs) -> void
+Modulus.UI.TabsTagHelper
+Modulus.UI.TabsTagHelper.Id.get -> string!
+Modulus.UI.TabsTagHelper.Id.set -> void
+Modulus.UI.TabsTagHelper.TabsTagHelper() -> void
+Modulus.UI.TabTagHelper
+Modulus.UI.TabTagHelper.Active.get -> bool
+Modulus.UI.TabTagHelper.Active.set -> void
+Modulus.UI.TabTagHelper.Id.get -> string?
+Modulus.UI.TabTagHelper.Id.set -> void
+Modulus.UI.TabTagHelper.Source.get -> string?
+Modulus.UI.TabTagHelper.Source.set -> void
+Modulus.UI.TabTagHelper.TabTagHelper() -> void
+Modulus.UI.TabTagHelper.Title.get -> string?
+Modulus.UI.TabTagHelper.Title.set -> void
+Modulus.UI.ThemeAccessor
+Modulus.UI.ThemeAccessor.Current.get -> Modulus.UI.Theming.ITheme!
+Modulus.UI.ThemeAccessor.ThemeAccessor(System.IServiceProvider! serviceProvider, Microsoft.Extensions.Options.IOptions<Modulus.UI.Theming.ThemeOptions!>! options) -> void
+Modulus.UI.ThemeLayoutExtensions
+Modulus.UI.TimelineItem
+Modulus.UI.TimelineItem.<Clone>$() -> Modulus.UI.TimelineItem!
+Modulus.UI.TimelineItem.Body.get -> Microsoft.AspNetCore.Html.IHtmlContent?
+Modulus.UI.TimelineItem.Body.init -> void
+Modulus.UI.TimelineItem.Deconstruct(out string? Title, out string? Time, out string! Tone, out Microsoft.AspNetCore.Html.IHtmlContent? Body) -> void
+Modulus.UI.TimelineItem.Equals(Modulus.UI.TimelineItem? other) -> bool
+Modulus.UI.TimelineItem.Time.get -> string?
+Modulus.UI.TimelineItem.Time.init -> void
+Modulus.UI.TimelineItem.TimelineItem(string? Title, string? Time, string! Tone, Microsoft.AspNetCore.Html.IHtmlContent? Body) -> void
+Modulus.UI.TimelineItem.Title.get -> string?
+Modulus.UI.TimelineItem.Title.init -> void
+Modulus.UI.TimelineItem.Tone.get -> string!
+Modulus.UI.TimelineItem.Tone.init -> void
+Modulus.UI.TimelineItemTagHelper
+Modulus.UI.TimelineItemTagHelper.Time.get -> string?
+Modulus.UI.TimelineItemTagHelper.Time.set -> void
+Modulus.UI.TimelineItemTagHelper.TimelineItemTagHelper() -> void
+Modulus.UI.TimelineItemTagHelper.Title.get -> string?
+Modulus.UI.TimelineItemTagHelper.Title.set -> void
+Modulus.UI.TimelineItemTagHelper.Tone.get -> string!
+Modulus.UI.TimelineItemTagHelper.Tone.set -> void
+Modulus.UI.TimelineModel
+Modulus.UI.TimelineModel.<Clone>$() -> Modulus.UI.TimelineModel!
+Modulus.UI.TimelineModel.Deconstruct(out System.Collections.Generic.IReadOnlyList<Modulus.UI.TimelineItem!>! Items) -> void
+Modulus.UI.TimelineModel.Equals(Modulus.UI.TimelineModel? other) -> bool
+Modulus.UI.TimelineModel.Items.get -> System.Collections.Generic.IReadOnlyList<Modulus.UI.TimelineItem!>!
+Modulus.UI.TimelineModel.Items.init -> void
+Modulus.UI.TimelineModel.TimelineModel(System.Collections.Generic.IReadOnlyList<Modulus.UI.TimelineItem!>! Items) -> void
+Modulus.UI.TimelineTagHelper
+Modulus.UI.TimelineTagHelper.TimelineTagHelper() -> void
+Modulus.UI.ToolbarContext
+Modulus.UI.ToolbarContext.Add(Modulus.UI.ToolbarItem! item) -> Modulus.UI.ToolbarContext!
+Modulus.UI.ToolbarContext.Items.get -> System.Collections.Generic.IList<Modulus.UI.ToolbarItem!>!
+Modulus.UI.ToolbarContext.PageId.get -> string!
+Modulus.UI.ToolbarContext.ToolbarContext(string! pageId) -> void
+Modulus.UI.ToolbarItem
+Modulus.UI.ToolbarItem.<Clone>$() -> Modulus.UI.ToolbarItem!
+Modulus.UI.ToolbarItem.CssClass.get -> string?
+Modulus.UI.ToolbarItem.CssClass.init -> void
+Modulus.UI.ToolbarItem.Deconstruct(out string! Id, out string! Title, out string? Url, out string? HxGet, out string? HxPost, out string? Icon, out string? RequiredPermission, out int Order, out string? CssClass, out string? Target) -> void
+Modulus.UI.ToolbarItem.Equals(Modulus.UI.ToolbarItem? other) -> bool
+Modulus.UI.ToolbarItem.HxGet.get -> string?
+Modulus.UI.ToolbarItem.HxGet.init -> void
+Modulus.UI.ToolbarItem.HxPost.get -> string?
+Modulus.UI.ToolbarItem.HxPost.init -> void
+Modulus.UI.ToolbarItem.Icon.get -> string?
+Modulus.UI.ToolbarItem.Icon.init -> void
+Modulus.UI.ToolbarItem.Id.get -> string!
+Modulus.UI.ToolbarItem.Id.init -> void
+Modulus.UI.ToolbarItem.Order.get -> int
+Modulus.UI.ToolbarItem.Order.init -> void
+Modulus.UI.ToolbarItem.RequiredPermission.get -> string?
+Modulus.UI.ToolbarItem.RequiredPermission.init -> void
+Modulus.UI.ToolbarItem.Target.get -> string?
+Modulus.UI.ToolbarItem.Target.init -> void
+Modulus.UI.ToolbarItem.Title.get -> string!
+Modulus.UI.ToolbarItem.Title.init -> void
+Modulus.UI.ToolbarItem.ToolbarItem(string! Id, string! Title, string? Url = null, string? HxGet = null, string? HxPost = null, string? Icon = null, string? RequiredPermission = null, int Order = 100, string? CssClass = null, string? Target = null) -> void
+Modulus.UI.ToolbarItem.Url.get -> string?
+Modulus.UI.ToolbarItem.Url.init -> void
+Modulus.UI.ToolbarModel
+Modulus.UI.ToolbarModel.<Clone>$() -> Modulus.UI.ToolbarModel!
+Modulus.UI.ToolbarModel.Deconstruct(out System.Collections.Generic.IReadOnlyList<Modulus.UI.ToolbarItem!>! Items) -> void
+Modulus.UI.ToolbarModel.Equals(Modulus.UI.ToolbarModel? other) -> bool
+Modulus.UI.ToolbarModel.Items.get -> System.Collections.Generic.IReadOnlyList<Modulus.UI.ToolbarItem!>!
+Modulus.UI.ToolbarModel.Items.init -> void
+Modulus.UI.ToolbarModel.ToolbarModel(System.Collections.Generic.IReadOnlyList<Modulus.UI.ToolbarItem!>! Items) -> void
+Modulus.UI.ToolbarProvider
+Modulus.UI.ToolbarProvider.GetItems(string! pageId) -> System.Collections.Generic.IReadOnlyList<Modulus.UI.ToolbarItem!>!
+Modulus.UI.ToolbarProvider.ToolbarProvider(System.Collections.Generic.IEnumerable<Modulus.UI.IToolbarContributor!>! contributors, Modulus.Core.Abstractions.ICurrentUser! currentUser) -> void
+Modulus.UI.ToolbarTagHelper
+Modulus.UI.ToolbarTagHelper.PageId.get -> string?
+Modulus.UI.ToolbarTagHelper.PageId.set -> void
+Modulus.UI.ToolbarTagHelper.ToolbarTagHelper() -> void
+Modulus.UI.UiAlert
+Modulus.UI.UiAlert.<Clone>$() -> Modulus.UI.UiAlert!
+Modulus.UI.UiAlert.Deconstruct(out string! Type, out string! Message) -> void
+Modulus.UI.UiAlert.Equals(Modulus.UI.UiAlert? other) -> bool
+Modulus.UI.UiAlert.Message.get -> string!
+Modulus.UI.UiAlert.Message.init -> void
+Modulus.UI.UiAlert.Type.get -> string!
+Modulus.UI.UiAlert.Type.init -> void
+Modulus.UI.UiAlert.UiAlert(string! Type, string! Message) -> void
+Modulus.UI.UiAssets
+Modulus.UI.UiEndpointRouteBuilderExtensions
+Modulus.UI.UiErrorPagesExtensions
+Modulus.UI.UiErrorViewModel
+Modulus.UI.UiErrorViewModel.<Clone>$() -> Modulus.UI.UiErrorViewModel!
+Modulus.UI.UiErrorViewModel.Deconstruct(out int StatusCode, out string? Message) -> void
+Modulus.UI.UiErrorViewModel.Equals(Modulus.UI.UiErrorViewModel? other) -> bool
+Modulus.UI.UiErrorViewModel.Message.get -> string?
+Modulus.UI.UiErrorViewModel.Message.init -> void
+Modulus.UI.UiErrorViewModel.StatusCode.get -> int
+Modulus.UI.UiErrorViewModel.StatusCode.init -> void
+Modulus.UI.UiErrorViewModel.UiErrorViewModel(int StatusCode, string? Message) -> void
+Modulus.UI.UiFeatureOptions
+Modulus.UI.UiFeatureOptions.Boost.get -> bool
+Modulus.UI.UiFeatureOptions.Boost.set -> void
+Modulus.UI.UiFeatureOptions.Breadcrumbs.get -> bool
+Modulus.UI.UiFeatureOptions.Breadcrumbs.set -> void
+Modulus.UI.UiFeatureOptions.GlobalSearch.get -> bool
+Modulus.UI.UiFeatureOptions.GlobalSearch.set -> void
+Modulus.UI.UiFeatureOptions.Morph.get -> bool
+Modulus.UI.UiFeatureOptions.Morph.set -> void
+Modulus.UI.UiFeatureOptions.UiFeatureOptions() -> void
+Modulus.UI.UiFeatureOptions.UserThemeSwitch.get -> bool
+Modulus.UI.UiFeatureOptions.UserThemeSwitch.set -> void
+Modulus.UI.UiIcons
+Modulus.UI.UiMenuFilter
+Modulus.UI.UiMenuItem
+Modulus.UI.UiMenuItem.<Clone>$() -> Modulus.UI.UiMenuItem!
+Modulus.UI.UiMenuItem.Children.get -> System.Collections.Generic.IReadOnlyList<Modulus.UI.UiMenuItem!>?
+Modulus.UI.UiMenuItem.Children.init -> void
+Modulus.UI.UiMenuItem.Deconstruct(out string! Id, out string! Title, out string! Url, out string? Icon, out string? RequiredPermission, out int Order, out System.Collections.Generic.IReadOnlyList<Modulus.UI.UiMenuItem!>? Children) -> void
+Modulus.UI.UiMenuItem.Equals(Modulus.UI.UiMenuItem? other) -> bool
+Modulus.UI.UiMenuItem.Icon.get -> string?
+Modulus.UI.UiMenuItem.Icon.init -> void
+Modulus.UI.UiMenuItem.Id.get -> string!
+Modulus.UI.UiMenuItem.Id.init -> void
+Modulus.UI.UiMenuItem.Order.get -> int
+Modulus.UI.UiMenuItem.Order.init -> void
+Modulus.UI.UiMenuItem.RequiredPermission.get -> string?
+Modulus.UI.UiMenuItem.RequiredPermission.init -> void
+Modulus.UI.UiMenuItem.Title.get -> string!
+Modulus.UI.UiMenuItem.Title.init -> void
+Modulus.UI.UiMenuItem.UiMenuItem(string! Id, string! Title, string! Url, string? Icon = null, string? RequiredPermission = null, int Order = 100, System.Collections.Generic.IReadOnlyList<Modulus.UI.UiMenuItem!>? Children = null) -> void
+Modulus.UI.UiMenuItem.Url.get -> string!
+Modulus.UI.UiMenuItem.Url.init -> void
+Modulus.UI.UiMenuProvider
+Modulus.UI.UiMenuProvider.GetMenu() -> System.Collections.Generic.IReadOnlyList<Modulus.UI.UiMenuItem!>!
+Modulus.UI.UiMenuProvider.UiMenuProvider(Modulus.UI.IUiNavigationRegistry! registry, Modulus.Core.Abstractions.ICurrentUser! currentUser) -> void
+Modulus.UI.UiModule
+Modulus.UI.UiModule.UiModule() -> void
+Modulus.UI.UiNavigationBuilder
+Modulus.UI.UiNavigationBuilder.AddGroup(string! id, string! title, string? icon = null, string? requiredPermission = null, int order = 100) -> Modulus.UI.UiNavigationBuilder!
+Modulus.UI.UiNavigationBuilder.AddItem(string! id, string! title, string! url, string? groupId = null, string? icon = null, string? requiredPermission = null, int order = 100) -> Modulus.UI.UiNavigationBuilder!
+Modulus.UI.UiNavigationBuilder.Build() -> System.Collections.Generic.IReadOnlyList<Modulus.UI.UiMenuItem!>!
+Modulus.UI.UiNavigationBuilder.Find(string! id) -> Modulus.UI.UiMenuItem?
+Modulus.UI.UiNavigationBuilder.MoveTo(string! id, string! groupId, int? order = null) -> Modulus.UI.UiNavigationBuilder!
+Modulus.UI.UiNavigationBuilder.Remove(string! id) -> bool
+Modulus.UI.UiNavigationBuilder.SetOrder(string! id, int order) -> Modulus.UI.UiNavigationBuilder!
+Modulus.UI.UiNavigationBuilder.UiNavigationBuilder() -> void
+Modulus.UI.UiNavigationRegistry
+Modulus.UI.UiNavigationRegistry.GetMenu() -> System.Collections.Generic.IReadOnlyList<Modulus.UI.UiMenuItem!>!
+Modulus.UI.UiNavigationRegistry.GetModules() -> System.Collections.Generic.IReadOnlyList<Modulus.UI.ModuleManifest!>!
+Modulus.UI.UiNavigationRegistry.UiNavigationRegistry(System.Collections.Generic.IEnumerable<Modulus.UI.IUiModule!>! modules, System.Collections.Generic.IEnumerable<Modulus.UI.IMenuContributor!>? contributors = null) -> void
+Modulus.UI.UiOptions
+Modulus.UI.UiOptions.Branding.get -> Modulus.UI.BrandingOptions!
+Modulus.UI.UiOptions.Branding.set -> void
+Modulus.UI.UiOptions.Features.get -> Modulus.UI.UiFeatureOptions!
+Modulus.UI.UiOptions.Features.set -> void
+Modulus.UI.UiOptions.UiOptions() -> void
+Modulus.UI.UiServiceCollectionExtensions
+Modulus.UI.UiThemeServiceCollectionExtensions
+Modulus.UI.UiViewDataExtensions
+override Modulus.UI.BreadcrumbItem.Equals(object? obj) -> bool
+override Modulus.UI.BreadcrumbItem.GetHashCode() -> int
+override Modulus.UI.BreadcrumbItem.ToString() -> string!
+override Modulus.UI.BreadcrumbsModel.Equals(object? obj) -> bool
+override Modulus.UI.BreadcrumbsModel.GetHashCode() -> int
+override Modulus.UI.BreadcrumbsModel.ToString() -> string!
+override Modulus.UI.BreadcrumbsTagHelper.ProcessAsync(Microsoft.AspNetCore.Razor.TagHelpers.TagHelperContext! context, Microsoft.AspNetCore.Razor.TagHelpers.TagHelperOutput! output) -> System.Threading.Tasks.Task!
+override Modulus.UI.CardModel.Equals(object? obj) -> bool
+override Modulus.UI.CardModel.GetHashCode() -> int
+override Modulus.UI.CardModel.ToString() -> string!
+override Modulus.UI.CardTagHelper.ProcessAsync(Microsoft.AspNetCore.Razor.TagHelpers.TagHelperContext! context, Microsoft.AspNetCore.Razor.TagHelpers.TagHelperOutput! output) -> System.Threading.Tasks.Task!
+override Modulus.UI.ConfirmModel.Equals(object? obj) -> bool
+override Modulus.UI.ConfirmModel.GetHashCode() -> int
+override Modulus.UI.ConfirmModel.ToString() -> string!
+override Modulus.UI.ConfirmTagHelper.ProcessAsync(Microsoft.AspNetCore.Razor.TagHelpers.TagHelperContext! context, Microsoft.AspNetCore.Razor.TagHelpers.TagHelperOutput! output) -> System.Threading.Tasks.Task!
+override Modulus.UI.CustomUiModule.ConfigureNavigation(Modulus.UI.UiNavigationBuilder! navigation) -> void
+override Modulus.UI.CustomUiModule.Manifest.get -> Modulus.UI.ModuleManifest!
+override Modulus.UI.DataTableColumn.Equals(object? obj) -> bool
+override Modulus.UI.DataTableColumn.GetHashCode() -> int
+override Modulus.UI.DataTableColumn.ToString() -> string!
+override Modulus.UI.DataTableColumnTagHelper.ProcessAsync(Microsoft.AspNetCore.Razor.TagHelpers.TagHelperContext! context, Microsoft.AspNetCore.Razor.TagHelpers.TagHelperOutput! output) -> System.Threading.Tasks.Task!
+override Modulus.UI.DataTableEntityColumnsTagHelper.Process(Microsoft.AspNetCore.Razor.TagHelpers.TagHelperContext! context, Microsoft.AspNetCore.Razor.TagHelpers.TagHelperOutput! output) -> void
+override Modulus.UI.DataTableModel.Equals(object? obj) -> bool
+override Modulus.UI.DataTableModel.GetHashCode() -> int
+override Modulus.UI.DataTableModel.ToString() -> string!
+override Modulus.UI.DataTableTagHelper.Init(Microsoft.AspNetCore.Razor.TagHelpers.TagHelperContext! context) -> void
+override Modulus.UI.DataTableTagHelper.ProcessAsync(Microsoft.AspNetCore.Razor.TagHelpers.TagHelperContext! context, Microsoft.AspNetCore.Razor.TagHelpers.TagHelperOutput! output) -> System.Threading.Tasks.Task!
+override Modulus.UI.DetailItem.Equals(object? obj) -> bool
+override Modulus.UI.DetailItem.GetHashCode() -> int
+override Modulus.UI.DetailItem.ToString() -> string!
+override Modulus.UI.DetailListModel.Equals(object? obj) -> bool
+override Modulus.UI.DetailListModel.GetHashCode() -> int
+override Modulus.UI.DetailListModel.ToString() -> string!
+override Modulus.UI.DetailListTagHelper.Init(Microsoft.AspNetCore.Razor.TagHelpers.TagHelperContext! context) -> void
+override Modulus.UI.DetailListTagHelper.ProcessAsync(Microsoft.AspNetCore.Razor.TagHelpers.TagHelperContext! context, Microsoft.AspNetCore.Razor.TagHelpers.TagHelperOutput! output) -> System.Threading.Tasks.Task!
+override Modulus.UI.DetailTagHelper.ProcessAsync(Microsoft.AspNetCore.Razor.TagHelpers.TagHelperContext! context, Microsoft.AspNetCore.Razor.TagHelpers.TagHelperOutput! output) -> System.Threading.Tasks.Task!
+override Modulus.UI.EmptyStateModel.Equals(object? obj) -> bool
+override Modulus.UI.EmptyStateModel.GetHashCode() -> int
+override Modulus.UI.EmptyStateModel.ToString() -> string!
+override Modulus.UI.EmptyStateTagHelper.ProcessAsync(Microsoft.AspNetCore.Razor.TagHelpers.TagHelperContext! context, Microsoft.AspNetCore.Razor.TagHelpers.TagHelperOutput! output) -> System.Threading.Tasks.Task!
+override Modulus.UI.EntityActionLink.Equals(object? obj) -> bool
+override Modulus.UI.EntityActionLink.GetHashCode() -> int
+override Modulus.UI.EntityActionLink.ToString() -> string!
+override Modulus.UI.EntityActionsModel.Equals(object? obj) -> bool
+override Modulus.UI.EntityActionsModel.GetHashCode() -> int
+override Modulus.UI.EntityActionsModel.ToString() -> string!
+override Modulus.UI.EntityActionsTagHelper.ProcessAsync(Microsoft.AspNetCore.Razor.TagHelpers.TagHelperContext! context, Microsoft.AspNetCore.Razor.TagHelpers.TagHelperOutput! output) -> System.Threading.Tasks.Task!
+override Modulus.UI.EntityCell.Equals(object? obj) -> bool
+override Modulus.UI.EntityCell.GetHashCode() -> int
+override Modulus.UI.EntityCell.ToString() -> string!
+override Modulus.UI.EntityCellsModel.Equals(object? obj) -> bool
+override Modulus.UI.EntityCellsModel.GetHashCode() -> int
+override Modulus.UI.EntityCellsModel.ToString() -> string!
+override Modulus.UI.EntityCellsTagHelper.ProcessAsync(Microsoft.AspNetCore.Razor.TagHelpers.TagHelperContext! context, Microsoft.AspNetCore.Razor.TagHelpers.TagHelperOutput! output) -> System.Threading.Tasks.Task!
+override Modulus.UI.EntityFieldsModel.Equals(object? obj) -> bool
+override Modulus.UI.EntityFieldsModel.GetHashCode() -> int
+override Modulus.UI.EntityFieldsModel.ToString() -> string!
+override Modulus.UI.FieldModel.Equals(object? obj) -> bool
+override Modulus.UI.FieldModel.GetHashCode() -> int
+override Modulus.UI.FieldModel.ToString() -> string!
+override Modulus.UI.FormModel.Equals(object? obj) -> bool
+override Modulus.UI.FormModel.GetHashCode() -> int
+override Modulus.UI.FormModel.ToString() -> string!
+override Modulus.UI.LineItemRow.Equals(object? obj) -> bool
+override Modulus.UI.LineItemRow.GetHashCode() -> int
+override Modulus.UI.LineItemRow.ToString() -> string!
+override Modulus.UI.LineItemsModel.Equals(object? obj) -> bool
+override Modulus.UI.LineItemsModel.GetHashCode() -> int
+override Modulus.UI.LineItemsModel.ToString() -> string!
+override Modulus.UI.ModalFooterTagHelper.ProcessAsync(Microsoft.AspNetCore.Razor.TagHelpers.TagHelperContext! context, Microsoft.AspNetCore.Razor.TagHelpers.TagHelperOutput! output) -> System.Threading.Tasks.Task!
+override Modulus.UI.ModalModel.Equals(object? obj) -> bool
+override Modulus.UI.ModalModel.GetHashCode() -> int
+override Modulus.UI.ModalModel.ToString() -> string!
+override Modulus.UI.ModalTagHelper.Init(Microsoft.AspNetCore.Razor.TagHelpers.TagHelperContext! context) -> void
+override Modulus.UI.ModalTagHelper.ProcessAsync(Microsoft.AspNetCore.Razor.TagHelpers.TagHelperContext! context, Microsoft.AspNetCore.Razor.TagHelpers.TagHelperOutput! output) -> System.Threading.Tasks.Task!
+override Modulus.UI.ModuleManifest.Equals(object? obj) -> bool
+override Modulus.UI.ModuleManifest.GetHashCode() -> int
+override Modulus.UI.ModuleManifest.ToString() -> string!
+override Modulus.UI.ModulusFieldsTagHelper.ProcessAsync(Microsoft.AspNetCore.Razor.TagHelpers.TagHelperContext! context, Microsoft.AspNetCore.Razor.TagHelpers.TagHelperOutput! output) -> System.Threading.Tasks.Task!
+override Modulus.UI.ModulusFileTagHelper.ProcessAsync(Microsoft.AspNetCore.Razor.TagHelpers.TagHelperContext! context, Microsoft.AspNetCore.Razor.TagHelpers.TagHelperOutput! output) -> System.Threading.Tasks.Task!
+override Modulus.UI.ModulusFormTagHelper.ProcessAsync(Microsoft.AspNetCore.Razor.TagHelpers.TagHelperContext! context, Microsoft.AspNetCore.Razor.TagHelpers.TagHelperOutput! output) -> System.Threading.Tasks.Task!
+override Modulus.UI.ModulusInputTagHelper.ProcessAsync(Microsoft.AspNetCore.Razor.TagHelpers.TagHelperContext! context, Microsoft.AspNetCore.Razor.TagHelpers.TagHelperOutput! output) -> System.Threading.Tasks.Task!
+override Modulus.UI.ModulusLineItemsTagHelper.ProcessAsync(Microsoft.AspNetCore.Razor.TagHelpers.TagHelperContext! context, Microsoft.AspNetCore.Razor.TagHelpers.TagHelperOutput! output) -> System.Threading.Tasks.Task!
+override Modulus.UI.ModulusSelectTagHelper.ProcessAsync(Microsoft.AspNetCore.Razor.TagHelpers.TagHelperContext! context, Microsoft.AspNetCore.Razor.TagHelpers.TagHelperOutput! output) -> System.Threading.Tasks.Task!
+override Modulus.UI.PageHeaderTagHelper.ProcessAsync(Microsoft.AspNetCore.Razor.TagHelpers.TagHelperContext! context, Microsoft.AspNetCore.Razor.TagHelpers.TagHelperOutput! output) -> System.Threading.Tasks.Task!
+override Modulus.UI.PaginationModel.Equals(object? obj) -> bool
+override Modulus.UI.PaginationModel.GetHashCode() -> int
+override Modulus.UI.PaginationModel.ToString() -> string!
+override Modulus.UI.PaginationTagHelper.ProcessAsync(Microsoft.AspNetCore.Razor.TagHelpers.TagHelperContext! context, Microsoft.AspNetCore.Razor.TagHelpers.TagHelperOutput! output) -> System.Threading.Tasks.Task!
+override Modulus.UI.PermissionTagHelper.ProcessAsync(Microsoft.AspNetCore.Razor.TagHelpers.TagHelperContext! context, Microsoft.AspNetCore.Razor.TagHelpers.TagHelperOutput! output) -> System.Threading.Tasks.Task!
+override Modulus.UI.SelectOption.Equals(object? obj) -> bool
+override Modulus.UI.SelectOption.GetHashCode() -> int
+override Modulus.UI.SelectOption.ToString() -> string!
+override Modulus.UI.StatModel.Equals(object? obj) -> bool
+override Modulus.UI.StatModel.GetHashCode() -> int
+override Modulus.UI.StatModel.ToString() -> string!
+override Modulus.UI.StatTagHelper.ProcessAsync(Microsoft.AspNetCore.Razor.TagHelpers.TagHelperContext! context, Microsoft.AspNetCore.Razor.TagHelpers.TagHelperOutput! output) -> System.Threading.Tasks.Task!
+override Modulus.UI.TabModel.Equals(object? obj) -> bool
+override Modulus.UI.TabModel.GetHashCode() -> int
+override Modulus.UI.TabModel.ToString() -> string!
+override Modulus.UI.TabsModel.Equals(object? obj) -> bool
+override Modulus.UI.TabsModel.GetHashCode() -> int
+override Modulus.UI.TabsModel.ToString() -> string!
+override Modulus.UI.TabsTagHelper.Init(Microsoft.AspNetCore.Razor.TagHelpers.TagHelperContext! context) -> void
+override Modulus.UI.TabsTagHelper.ProcessAsync(Microsoft.AspNetCore.Razor.TagHelpers.TagHelperContext! context, Microsoft.AspNetCore.Razor.TagHelpers.TagHelperOutput! output) -> System.Threading.Tasks.Task!
+override Modulus.UI.TabTagHelper.ProcessAsync(Microsoft.AspNetCore.Razor.TagHelpers.TagHelperContext! context, Microsoft.AspNetCore.Razor.TagHelpers.TagHelperOutput! output) -> System.Threading.Tasks.Task!
+override Modulus.UI.TimelineItem.Equals(object? obj) -> bool
+override Modulus.UI.TimelineItem.GetHashCode() -> int
+override Modulus.UI.TimelineItem.ToString() -> string!
+override Modulus.UI.TimelineItemTagHelper.ProcessAsync(Microsoft.AspNetCore.Razor.TagHelpers.TagHelperContext! context, Microsoft.AspNetCore.Razor.TagHelpers.TagHelperOutput! output) -> System.Threading.Tasks.Task!
+override Modulus.UI.TimelineModel.Equals(object? obj) -> bool
+override Modulus.UI.TimelineModel.GetHashCode() -> int
+override Modulus.UI.TimelineModel.ToString() -> string!
+override Modulus.UI.TimelineTagHelper.Init(Microsoft.AspNetCore.Razor.TagHelpers.TagHelperContext! context) -> void
+override Modulus.UI.TimelineTagHelper.ProcessAsync(Microsoft.AspNetCore.Razor.TagHelpers.TagHelperContext! context, Microsoft.AspNetCore.Razor.TagHelpers.TagHelperOutput! output) -> System.Threading.Tasks.Task!
+override Modulus.UI.ToolbarItem.Equals(object? obj) -> bool
+override Modulus.UI.ToolbarItem.GetHashCode() -> int
+override Modulus.UI.ToolbarItem.ToString() -> string!
+override Modulus.UI.ToolbarModel.Equals(object? obj) -> bool
+override Modulus.UI.ToolbarModel.GetHashCode() -> int
+override Modulus.UI.ToolbarModel.ToString() -> string!
+override Modulus.UI.ToolbarTagHelper.ProcessAsync(Microsoft.AspNetCore.Razor.TagHelpers.TagHelperContext! context, Microsoft.AspNetCore.Razor.TagHelpers.TagHelperOutput! output) -> System.Threading.Tasks.Task!
+override Modulus.UI.UiAlert.Equals(object? obj) -> bool
+override Modulus.UI.UiAlert.GetHashCode() -> int
+override Modulus.UI.UiAlert.ToString() -> string!
+override Modulus.UI.UiErrorViewModel.Equals(object? obj) -> bool
+override Modulus.UI.UiErrorViewModel.GetHashCode() -> int
+override Modulus.UI.UiErrorViewModel.ToString() -> string!
+override Modulus.UI.UiMenuItem.Equals(object? obj) -> bool
+override Modulus.UI.UiMenuItem.GetHashCode() -> int
+override Modulus.UI.UiMenuItem.ToString() -> string!
+static Modulus.UI.BreadcrumbItem.operator !=(Modulus.UI.BreadcrumbItem? left, Modulus.UI.BreadcrumbItem? right) -> bool
+static Modulus.UI.BreadcrumbItem.operator ==(Modulus.UI.BreadcrumbItem? left, Modulus.UI.BreadcrumbItem? right) -> bool
+static Modulus.UI.BreadcrumbsModel.operator !=(Modulus.UI.BreadcrumbsModel? left, Modulus.UI.BreadcrumbsModel? right) -> bool
+static Modulus.UI.BreadcrumbsModel.operator ==(Modulus.UI.BreadcrumbsModel? left, Modulus.UI.BreadcrumbsModel? right) -> bool
+static Modulus.UI.CardModel.operator !=(Modulus.UI.CardModel? left, Modulus.UI.CardModel? right) -> bool
+static Modulus.UI.CardModel.operator ==(Modulus.UI.CardModel? left, Modulus.UI.CardModel? right) -> bool
+static Modulus.UI.ComponentRenderer.RenderAsync(Microsoft.AspNetCore.Mvc.Rendering.ViewContext! viewContext, string! component, object! model, string! view = "Default") -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Html.IHtmlContent!>!
+static Modulus.UI.ConfirmModel.operator !=(Modulus.UI.ConfirmModel? left, Modulus.UI.ConfirmModel? right) -> bool
+static Modulus.UI.ConfirmModel.operator ==(Modulus.UI.ConfirmModel? left, Modulus.UI.ConfirmModel? right) -> bool
+static Modulus.UI.DataTableColumn.operator !=(Modulus.UI.DataTableColumn? left, Modulus.UI.DataTableColumn? right) -> bool
+static Modulus.UI.DataTableColumn.operator ==(Modulus.UI.DataTableColumn? left, Modulus.UI.DataTableColumn? right) -> bool
+static Modulus.UI.DataTableModel.operator !=(Modulus.UI.DataTableModel? left, Modulus.UI.DataTableModel? right) -> bool
+static Modulus.UI.DataTableModel.operator ==(Modulus.UI.DataTableModel? left, Modulus.UI.DataTableModel? right) -> bool
+static Modulus.UI.DetailItem.operator !=(Modulus.UI.DetailItem? left, Modulus.UI.DetailItem? right) -> bool
+static Modulus.UI.DetailItem.operator ==(Modulus.UI.DetailItem? left, Modulus.UI.DetailItem? right) -> bool
+static Modulus.UI.DetailListModel.operator !=(Modulus.UI.DetailListModel? left, Modulus.UI.DetailListModel? right) -> bool
+static Modulus.UI.DetailListModel.operator ==(Modulus.UI.DetailListModel? left, Modulus.UI.DetailListModel? right) -> bool
+static Modulus.UI.EmptyStateModel.operator !=(Modulus.UI.EmptyStateModel? left, Modulus.UI.EmptyStateModel? right) -> bool
+static Modulus.UI.EmptyStateModel.operator ==(Modulus.UI.EmptyStateModel? left, Modulus.UI.EmptyStateModel? right) -> bool
+static Modulus.UI.EntityActionLink.operator !=(Modulus.UI.EntityActionLink? left, Modulus.UI.EntityActionLink? right) -> bool
+static Modulus.UI.EntityActionLink.operator ==(Modulus.UI.EntityActionLink? left, Modulus.UI.EntityActionLink? right) -> bool
+static Modulus.UI.EntityActionsModel.operator !=(Modulus.UI.EntityActionsModel? left, Modulus.UI.EntityActionsModel? right) -> bool
+static Modulus.UI.EntityActionsModel.operator ==(Modulus.UI.EntityActionsModel? left, Modulus.UI.EntityActionsModel? right) -> bool
+static Modulus.UI.EntityApiFields.ReadSubmittedEntityFieldText(this Modulus.UI.IEntityUiRegistry! registry, string! entity, Modulus.Core.Abstractions.ICurrentUser! user, System.Collections.Generic.IReadOnlyDictionary<string!, string?>? values) -> System.Collections.Generic.IReadOnlyDictionary<string!, string?>!
+static Modulus.UI.EntityApiFields.ValidateEntityFieldsForApi(this Modulus.UI.IEntityUiRegistry! registry, string! entity, Modulus.Core.Abstractions.ICurrentUser! user, System.Collections.Generic.IReadOnlyDictionary<string!, string?>? values, bool partial) -> System.Collections.Generic.IReadOnlyList<string!>!
+static Modulus.UI.EntityApiFields.VisibleExtraProperties(this Modulus.UI.IEntityUiRegistry! registry, string! entity, Modulus.Core.Abstractions.ICurrentUser! user, System.Collections.Generic.IReadOnlyDictionary<string!, string?>? stored) -> System.Collections.Generic.IReadOnlyDictionary<string!, string?>!
+static Modulus.UI.EntityCell.operator !=(Modulus.UI.EntityCell? left, Modulus.UI.EntityCell? right) -> bool
+static Modulus.UI.EntityCell.operator ==(Modulus.UI.EntityCell? left, Modulus.UI.EntityCell? right) -> bool
+static Modulus.UI.EntityCellsModel.operator !=(Modulus.UI.EntityCellsModel? left, Modulus.UI.EntityCellsModel? right) -> bool
+static Modulus.UI.EntityCellsModel.operator ==(Modulus.UI.EntityCellsModel? left, Modulus.UI.EntityCellsModel? right) -> bool
+static Modulus.UI.EntityColumnLoader.LoadEntityColumnsAsync(this Modulus.UI.IEntityUiRegistry! registry, System.IServiceProvider! services, string! entity, Modulus.Core.Abstractions.ICurrentUser! user, System.Collections.Generic.IEnumerable<string!>! rowIds, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.UI.EntityColumnValues!>!
+static Modulus.UI.EntityColumnValues.Empty.get -> Modulus.UI.EntityColumnValues!
+static Modulus.UI.EntityFieldsModel.operator !=(Modulus.UI.EntityFieldsModel? left, Modulus.UI.EntityFieldsModel? right) -> bool
+static Modulus.UI.EntityFieldsModel.operator ==(Modulus.UI.EntityFieldsModel? left, Modulus.UI.EntityFieldsModel? right) -> bool
+static Modulus.UI.EntityFieldValues.ReadEntityFields(this Modulus.UI.IEntityUiRegistry! registry, string! entity, Modulus.Core.Abstractions.ICurrentUser! user, System.Collections.Generic.IReadOnlyDictionary<string!, string?>? values) -> System.Collections.Generic.IReadOnlyDictionary<string!, object?>!
+static Modulus.UI.EntityFieldValues.ReadEntityFieldText(this Modulus.UI.IEntityUiRegistry! registry, string! entity, Modulus.Core.Abstractions.ICurrentUser! user, System.Collections.Generic.IReadOnlyDictionary<string!, string?>? values) -> System.Collections.Generic.IReadOnlyDictionary<string!, string?>!
+static Modulus.UI.EntityFieldValues.ValidateEntityFields(this Modulus.UI.IEntityUiRegistry! registry, string! entity, Modulus.Core.Abstractions.ICurrentUser! user, System.Collections.Generic.IReadOnlyDictionary<string!, string?>? values, Microsoft.AspNetCore.Mvc.ModelBinding.ModelStateDictionary! modelState, string! prefix) -> bool
+static Modulus.UI.EntityUiServiceCollectionExtensions.ConfigureEntityUi(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, string! entity, System.Action<Modulus.UI.EntityUiBuilder!>! configure) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.UI.FieldModel.operator !=(Modulus.UI.FieldModel? left, Modulus.UI.FieldModel? right) -> bool
+static Modulus.UI.FieldModel.operator ==(Modulus.UI.FieldModel? left, Modulus.UI.FieldModel? right) -> bool
+static Modulus.UI.FormModel.operator !=(Modulus.UI.FormModel? left, Modulus.UI.FormModel? right) -> bool
+static Modulus.UI.FormModel.operator ==(Modulus.UI.FormModel? left, Modulus.UI.FormModel? right) -> bool
+static Modulus.UI.HtmxCookieAuthExtensions.UseModulusHtmxRedirects(this Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationOptions! options) -> Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationOptions!
+static Modulus.UI.HtmxRequestExtensions.HtmxTarget(this Microsoft.AspNetCore.Http.HttpRequest! request) -> string?
+static Modulus.UI.HtmxRequestExtensions.IsHtmx(this Microsoft.AspNetCore.Http.HttpRequest! request) -> bool
+static Modulus.UI.HtmxRequestExtensions.IsHtmxBoosted(this Microsoft.AspNetCore.Http.HttpRequest! request) -> bool
+static Modulus.UI.HtmxRequestExtensions.IsHtmxFragment(this Microsoft.AspNetCore.Http.HttpRequest! request) -> bool
+static Modulus.UI.LineItemRow.operator !=(Modulus.UI.LineItemRow? left, Modulus.UI.LineItemRow? right) -> bool
+static Modulus.UI.LineItemRow.operator ==(Modulus.UI.LineItemRow? left, Modulus.UI.LineItemRow? right) -> bool
+static Modulus.UI.LineItemsModel.operator !=(Modulus.UI.LineItemsModel? left, Modulus.UI.LineItemsModel? right) -> bool
+static Modulus.UI.LineItemsModel.operator ==(Modulus.UI.LineItemsModel? left, Modulus.UI.LineItemsModel? right) -> bool
+static Modulus.UI.ModalModel.operator !=(Modulus.UI.ModalModel? left, Modulus.UI.ModalModel? right) -> bool
+static Modulus.UI.ModalModel.operator ==(Modulus.UI.ModalModel? left, Modulus.UI.ModalModel? right) -> bool
+static Modulus.UI.ModuleManifest.operator !=(Modulus.UI.ModuleManifest? left, Modulus.UI.ModuleManifest? right) -> bool
+static Modulus.UI.ModuleManifest.operator ==(Modulus.UI.ModuleManifest? left, Modulus.UI.ModuleManifest? right) -> bool
+static Modulus.UI.ModulusSmartAuthExtensions.AddModulusPageAuthorization(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, params string![]! anonymousFolders) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.UI.ModulusSmartAuthExtensions.AddModulusSmartAuth(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, string! bearerScheme = "OpenIddict.Validation.AspNetCore", string! cookieScheme = "Identity.Application", string! smartScheme = "Modulus.Smart") -> Microsoft.AspNetCore.Authentication.AuthenticationBuilder!
+static Modulus.UI.PaginationModel.operator !=(Modulus.UI.PaginationModel? left, Modulus.UI.PaginationModel? right) -> bool
+static Modulus.UI.PaginationModel.operator ==(Modulus.UI.PaginationModel? left, Modulus.UI.PaginationModel? right) -> bool
+static Modulus.UI.PaginationTagHelper.Create(Microsoft.AspNetCore.Http.HttpRequest! request, string! label, int page, bool hasPrevious, bool hasNext, string! pageParam, System.Collections.Generic.IDictionary<string!, string?>! routeValues) -> Modulus.UI.PaginationModel!
+static Modulus.UI.PaginationUrls.Build(Microsoft.AspNetCore.Http.HttpRequest! request, string! pageParam, int page, System.Collections.Generic.IReadOnlyDictionary<string!, string?>? overrides = null) -> string!
+static Modulus.UI.SelectOption.operator !=(Modulus.UI.SelectOption? left, Modulus.UI.SelectOption? right) -> bool
+static Modulus.UI.SelectOption.operator ==(Modulus.UI.SelectOption? left, Modulus.UI.SelectOption? right) -> bool
+static Modulus.UI.SlotRendererHtmlExtensions.ModulusSlotAsync(this Microsoft.AspNetCore.Mvc.Rendering.IHtmlHelper! htmlHelper, string! slot, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Html.IHtmlContent!>!
+static Modulus.UI.StatModel.operator !=(Modulus.UI.StatModel? left, Modulus.UI.StatModel? right) -> bool
+static Modulus.UI.StatModel.operator ==(Modulus.UI.StatModel? left, Modulus.UI.StatModel? right) -> bool
+static Modulus.UI.TabModel.operator !=(Modulus.UI.TabModel? left, Modulus.UI.TabModel? right) -> bool
+static Modulus.UI.TabModel.operator ==(Modulus.UI.TabModel? left, Modulus.UI.TabModel? right) -> bool
+static Modulus.UI.TabsModel.operator !=(Modulus.UI.TabsModel? left, Modulus.UI.TabsModel? right) -> bool
+static Modulus.UI.TabsModel.operator ==(Modulus.UI.TabsModel? left, Modulus.UI.TabsModel? right) -> bool
+static Modulus.UI.ThemeLayoutExtensions.GetThemeLayout(this Microsoft.AspNetCore.Http.HttpContext! http, string! layoutName = "Application") -> string?
+static Modulus.UI.TimelineItem.operator !=(Modulus.UI.TimelineItem? left, Modulus.UI.TimelineItem? right) -> bool
+static Modulus.UI.TimelineItem.operator ==(Modulus.UI.TimelineItem? left, Modulus.UI.TimelineItem? right) -> bool
+static Modulus.UI.TimelineModel.operator !=(Modulus.UI.TimelineModel? left, Modulus.UI.TimelineModel? right) -> bool
+static Modulus.UI.TimelineModel.operator ==(Modulus.UI.TimelineModel? left, Modulus.UI.TimelineModel? right) -> bool
+static Modulus.UI.ToolbarItem.operator !=(Modulus.UI.ToolbarItem? left, Modulus.UI.ToolbarItem? right) -> bool
+static Modulus.UI.ToolbarItem.operator ==(Modulus.UI.ToolbarItem? left, Modulus.UI.ToolbarItem? right) -> bool
+static Modulus.UI.ToolbarModel.operator !=(Modulus.UI.ToolbarModel? left, Modulus.UI.ToolbarModel? right) -> bool
+static Modulus.UI.ToolbarModel.operator ==(Modulus.UI.ToolbarModel? left, Modulus.UI.ToolbarModel? right) -> bool
+static Modulus.UI.UiAlert.Danger(string! message) -> Modulus.UI.UiAlert!
+static Modulus.UI.UiAlert.Info(string! message) -> Modulus.UI.UiAlert!
+static Modulus.UI.UiAlert.operator !=(Modulus.UI.UiAlert? left, Modulus.UI.UiAlert? right) -> bool
+static Modulus.UI.UiAlert.operator ==(Modulus.UI.UiAlert? left, Modulus.UI.UiAlert? right) -> bool
+static Modulus.UI.UiAlert.Success(string! message) -> Modulus.UI.UiAlert!
+static Modulus.UI.UiAlert.Warning(string! message) -> Modulus.UI.UiAlert!
+static Modulus.UI.UiAssets.ContentBase(Microsoft.AspNetCore.Hosting.IWebHostEnvironment! environment) -> string!
+static Modulus.UI.UiAssets.ContentBase(Microsoft.Extensions.FileProviders.IFileProvider! webRootFiles) -> string!
+static Modulus.UI.UiEndpointRouteBuilderExtensions.MapModulusUiMenu(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! prefix = "/_ui") -> Microsoft.AspNetCore.Routing.RouteGroupBuilder!
+static Modulus.UI.UiErrorPagesExtensions.MapModulusErrorPages(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! basePath = "/_error") -> Microsoft.AspNetCore.Routing.IEndpointRouteBuilder!
+static Modulus.UI.UiErrorPagesExtensions.UseModulusErrorPages(this Microsoft.AspNetCore.Builder.IApplicationBuilder! app, string! basePath = "/_error") -> Microsoft.AspNetCore.Builder.IApplicationBuilder!
+static Modulus.UI.UiErrorViewModel.operator !=(Modulus.UI.UiErrorViewModel? left, Modulus.UI.UiErrorViewModel? right) -> bool
+static Modulus.UI.UiErrorViewModel.operator ==(Modulus.UI.UiErrorViewModel? left, Modulus.UI.UiErrorViewModel? right) -> bool
+static Modulus.UI.UiIcons.GetInnerSvg(string? name) -> string!
+static Modulus.UI.UiIcons.Known.get -> System.Collections.Generic.IReadOnlyCollection<string!>!
+static Modulus.UI.UiMenuFilter.Apply(System.Collections.Generic.IEnumerable<Modulus.UI.UiMenuItem!>! menu, System.Func<string!, bool>! isGranted) -> System.Collections.Generic.IReadOnlyList<Modulus.UI.UiMenuItem!>!
+static Modulus.UI.UiMenuItem.operator !=(Modulus.UI.UiMenuItem? left, Modulus.UI.UiMenuItem? right) -> bool
+static Modulus.UI.UiMenuItem.operator ==(Modulus.UI.UiMenuItem? left, Modulus.UI.UiMenuItem? right) -> bool
+static Modulus.UI.UiServiceCollectionExtensions.AddModulusUi(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.UI.UiServiceCollectionExtensions.AddModulusUi(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.UI.UiServiceCollectionExtensions.AddUiModule(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Modulus.UI.IUiModule! module) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.UI.UiServiceCollectionExtensions.AddUiModule<TUiModule>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.UI.UiThemeServiceCollectionExtensions.AddBreadcrumbContributor<TContributor>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.UI.UiThemeServiceCollectionExtensions.AddMenuContributor<TContributor>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.UI.UiThemeServiceCollectionExtensions.AddModulusTheme<TTheme>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.UI.UiThemeServiceCollectionExtensions.AddModulusTheme<TTheme>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.UI.UiThemeServiceCollectionExtensions.AddSlotContributor<TContributor>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.UI.UiThemeServiceCollectionExtensions.AddToolbarContributor<TContributor>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.UI.UiViewDataExtensions.GetBreadcrumbs(this Microsoft.AspNetCore.Mvc.ViewFeatures.ViewDataDictionary! viewData) -> System.Collections.Generic.IReadOnlyList<Modulus.UI.BreadcrumbItem!>?
+static Modulus.UI.UiViewDataExtensions.GetPageId(this Microsoft.AspNetCore.Mvc.ViewFeatures.ViewDataDictionary! viewData) -> string?
+static Modulus.UI.UiViewDataExtensions.SetBreadcrumbs(this Microsoft.AspNetCore.Mvc.ViewFeatures.ViewDataDictionary! viewData, params Modulus.UI.BreadcrumbItem![]! items) -> void
+static Modulus.UI.UiViewDataExtensions.SetPageId(this Microsoft.AspNetCore.Mvc.ViewFeatures.ViewDataDictionary! viewData, string! pageId) -> void
+virtual Modulus.UI.FieldTagHelperBase.ExplicitName.get -> string?
+virtual Modulus.UI.UiModule.ConfigureNavigation(Modulus.UI.UiNavigationBuilder! navigation) -> void

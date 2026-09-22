@@ -1,0 +1,33 @@
+#nullable enable
+Modulus.Inbox.MongoDB.Extensions.InboxMongoExtensions
+Modulus.Inbox.MongoDB.MongoInboxMessage
+Modulus.Inbox.MongoDB.MongoInboxMessage.ClaimedAt.get -> System.DateTime?
+Modulus.Inbox.MongoDB.MongoInboxMessage.ClaimedAt.set -> void
+Modulus.Inbox.MongoDB.MongoInboxMessage.CorrelationId.get -> string?
+Modulus.Inbox.MongoDB.MongoInboxMessage.CorrelationId.init -> void
+Modulus.Inbox.MongoDB.MongoInboxMessage.Error.get -> string?
+Modulus.Inbox.MongoDB.MongoInboxMessage.Error.set -> void
+Modulus.Inbox.MongoDB.MongoInboxMessage.EventId.get -> System.Guid
+Modulus.Inbox.MongoDB.MongoInboxMessage.EventId.init -> void
+Modulus.Inbox.MongoDB.MongoInboxMessage.HandlerName.get -> string?
+Modulus.Inbox.MongoDB.MongoInboxMessage.HandlerName.set -> void
+Modulus.Inbox.MongoDB.MongoInboxMessage.Id.get -> System.Guid
+Modulus.Inbox.MongoDB.MongoInboxMessage.Id.init -> void
+Modulus.Inbox.MongoDB.MongoInboxMessage.MessageType.get -> string!
+Modulus.Inbox.MongoDB.MongoInboxMessage.MessageType.init -> void
+Modulus.Inbox.MongoDB.MongoInboxMessage.ModuleName.get -> string!
+Modulus.Inbox.MongoDB.MongoInboxMessage.ModuleName.init -> void
+Modulus.Inbox.MongoDB.MongoInboxMessage.MongoInboxMessage() -> void
+Modulus.Inbox.MongoDB.MongoInboxMessage.Payload.get -> string!
+Modulus.Inbox.MongoDB.MongoInboxMessage.Payload.init -> void
+Modulus.Inbox.MongoDB.MongoInboxMessage.ProcessedAt.get -> System.DateTime?
+Modulus.Inbox.MongoDB.MongoInboxMessage.ProcessedAt.set -> void
+Modulus.Inbox.MongoDB.MongoInboxMessage.ReceivedAt.get -> System.DateTime
+Modulus.Inbox.MongoDB.MongoInboxMessage.ReceivedAt.init -> void
+Modulus.Inbox.MongoDB.MongoInboxMessage.RetryCount.get -> int
+Modulus.Inbox.MongoDB.MongoInboxMessage.RetryCount.set -> void
+Modulus.Inbox.MongoDB.MongoInboxMessage.Status.get -> Modulus.Inbox.Abstractions.InboxStatus
+Modulus.Inbox.MongoDB.MongoInboxMessage.Status.set -> void
+Modulus.Inbox.MongoDB.MongoInboxMessage.TenantId.get -> System.Guid
+Modulus.Inbox.MongoDB.MongoInboxMessage.TenantId.init -> void
+static Modulus.Inbox.MongoDB.Extensions.InboxMongoExtensions.AddMongoInbox(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, string! collectionName = "inbox", System.Action<Modulus.Inbox.Abstractions.InboxOptions!>? configure = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!

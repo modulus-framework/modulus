@@ -1,0 +1,119 @@
+#nullable enable
+const Modulus.Outbox.Management.OutboxManagementExtensions.ManagePermission = "messaging:manage" -> string!
+Modulus.Outbox.Management.OutboxDeadLetterDetail
+Modulus.Outbox.Management.OutboxDeadLetterDetail.<Clone>$() -> Modulus.Outbox.Management.OutboxDeadLetterDetail!
+Modulus.Outbox.Management.OutboxDeadLetterDetail.CausationId.get -> string?
+Modulus.Outbox.Management.OutboxDeadLetterDetail.CausationId.init -> void
+Modulus.Outbox.Management.OutboxDeadLetterDetail.CorrelationId.get -> string?
+Modulus.Outbox.Management.OutboxDeadLetterDetail.CorrelationId.init -> void
+Modulus.Outbox.Management.OutboxDeadLetterDetail.CreatedAt.get -> System.DateTime
+Modulus.Outbox.Management.OutboxDeadLetterDetail.CreatedAt.init -> void
+Modulus.Outbox.Management.OutboxDeadLetterDetail.Deconstruct(out System.Guid Id, out string! MessageType, out string! Payload, out string! ModuleName, out System.Guid TenantId, out System.DateTime CreatedAt, out int RetryCount, out string? Error, out string? CorrelationId, out string? CausationId) -> void
+Modulus.Outbox.Management.OutboxDeadLetterDetail.Equals(Modulus.Outbox.Management.OutboxDeadLetterDetail? other) -> bool
+Modulus.Outbox.Management.OutboxDeadLetterDetail.Error.get -> string?
+Modulus.Outbox.Management.OutboxDeadLetterDetail.Error.init -> void
+Modulus.Outbox.Management.OutboxDeadLetterDetail.Id.get -> System.Guid
+Modulus.Outbox.Management.OutboxDeadLetterDetail.Id.init -> void
+Modulus.Outbox.Management.OutboxDeadLetterDetail.MessageType.get -> string!
+Modulus.Outbox.Management.OutboxDeadLetterDetail.MessageType.init -> void
+Modulus.Outbox.Management.OutboxDeadLetterDetail.ModuleName.get -> string!
+Modulus.Outbox.Management.OutboxDeadLetterDetail.ModuleName.init -> void
+Modulus.Outbox.Management.OutboxDeadLetterDetail.OutboxDeadLetterDetail(System.Guid Id, string! MessageType, string! Payload, string! ModuleName, System.Guid TenantId, System.DateTime CreatedAt, int RetryCount, string? Error, string? CorrelationId, string? CausationId) -> void
+Modulus.Outbox.Management.OutboxDeadLetterDetail.Payload.get -> string!
+Modulus.Outbox.Management.OutboxDeadLetterDetail.Payload.init -> void
+Modulus.Outbox.Management.OutboxDeadLetterDetail.RetryCount.get -> int
+Modulus.Outbox.Management.OutboxDeadLetterDetail.RetryCount.init -> void
+Modulus.Outbox.Management.OutboxDeadLetterDetail.TenantId.get -> System.Guid
+Modulus.Outbox.Management.OutboxDeadLetterDetail.TenantId.init -> void
+Modulus.Outbox.Management.OutboxDeadLetterListItem
+Modulus.Outbox.Management.OutboxDeadLetterListItem.<Clone>$() -> Modulus.Outbox.Management.OutboxDeadLetterListItem!
+Modulus.Outbox.Management.OutboxDeadLetterListItem.CreatedAt.get -> System.DateTime
+Modulus.Outbox.Management.OutboxDeadLetterListItem.CreatedAt.init -> void
+Modulus.Outbox.Management.OutboxDeadLetterListItem.Deconstruct(out System.Guid Id, out string! MessageType, out string! ModuleName, out System.Guid TenantId, out System.DateTime CreatedAt, out int RetryCount, out string? Error) -> void
+Modulus.Outbox.Management.OutboxDeadLetterListItem.Equals(Modulus.Outbox.Management.OutboxDeadLetterListItem? other) -> bool
+Modulus.Outbox.Management.OutboxDeadLetterListItem.Error.get -> string?
+Modulus.Outbox.Management.OutboxDeadLetterListItem.Error.init -> void
+Modulus.Outbox.Management.OutboxDeadLetterListItem.Id.get -> System.Guid
+Modulus.Outbox.Management.OutboxDeadLetterListItem.Id.init -> void
+Modulus.Outbox.Management.OutboxDeadLetterListItem.MessageType.get -> string!
+Modulus.Outbox.Management.OutboxDeadLetterListItem.MessageType.init -> void
+Modulus.Outbox.Management.OutboxDeadLetterListItem.ModuleName.get -> string!
+Modulus.Outbox.Management.OutboxDeadLetterListItem.ModuleName.init -> void
+Modulus.Outbox.Management.OutboxDeadLetterListItem.OutboxDeadLetterListItem(System.Guid Id, string! MessageType, string! ModuleName, System.Guid TenantId, System.DateTime CreatedAt, int RetryCount, string? Error) -> void
+Modulus.Outbox.Management.OutboxDeadLetterListItem.RetryCount.get -> int
+Modulus.Outbox.Management.OutboxDeadLetterListItem.RetryCount.init -> void
+Modulus.Outbox.Management.OutboxDeadLetterListItem.TenantId.get -> System.Guid
+Modulus.Outbox.Management.OutboxDeadLetterListItem.TenantId.init -> void
+Modulus.Outbox.Management.OutboxManagementExtensions
+Modulus.Outbox.Management.OutboxPurgeResponse
+Modulus.Outbox.Management.OutboxPurgeResponse.<Clone>$() -> Modulus.Outbox.Management.OutboxPurgeResponse!
+Modulus.Outbox.Management.OutboxPurgeResponse.Deconstruct(out int PurgedCount) -> void
+Modulus.Outbox.Management.OutboxPurgeResponse.Equals(Modulus.Outbox.Management.OutboxPurgeResponse? other) -> bool
+Modulus.Outbox.Management.OutboxPurgeResponse.OutboxPurgeResponse(int PurgedCount) -> void
+Modulus.Outbox.Management.OutboxPurgeResponse.PurgedCount.get -> int
+Modulus.Outbox.Management.OutboxPurgeResponse.PurgedCount.init -> void
+Modulus.Outbox.Management.OutboxReplayRequest
+Modulus.Outbox.Management.OutboxReplayRequest.<Clone>$() -> Modulus.Outbox.Management.OutboxReplayRequest!
+Modulus.Outbox.Management.OutboxReplayRequest.Deconstruct(out System.Guid[]! MessageIds) -> void
+Modulus.Outbox.Management.OutboxReplayRequest.Equals(Modulus.Outbox.Management.OutboxReplayRequest? other) -> bool
+Modulus.Outbox.Management.OutboxReplayRequest.MessageIds.get -> System.Guid[]!
+Modulus.Outbox.Management.OutboxReplayRequest.MessageIds.init -> void
+Modulus.Outbox.Management.OutboxReplayRequest.OutboxReplayRequest(System.Guid[]! MessageIds) -> void
+Modulus.Outbox.Management.OutboxReplayResponse
+Modulus.Outbox.Management.OutboxReplayResponse.<Clone>$() -> Modulus.Outbox.Management.OutboxReplayResponse!
+Modulus.Outbox.Management.OutboxReplayResponse.Deconstruct(out int ReplayedCount, out int NotFoundCount, out int FailedCount, out System.Collections.Generic.IReadOnlyList<string!>! Failures) -> void
+Modulus.Outbox.Management.OutboxReplayResponse.Equals(Modulus.Outbox.Management.OutboxReplayResponse? other) -> bool
+Modulus.Outbox.Management.OutboxReplayResponse.FailedCount.get -> int
+Modulus.Outbox.Management.OutboxReplayResponse.FailedCount.init -> void
+Modulus.Outbox.Management.OutboxReplayResponse.Failures.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Modulus.Outbox.Management.OutboxReplayResponse.Failures.init -> void
+Modulus.Outbox.Management.OutboxReplayResponse.NotFoundCount.get -> int
+Modulus.Outbox.Management.OutboxReplayResponse.NotFoundCount.init -> void
+Modulus.Outbox.Management.OutboxReplayResponse.OutboxReplayResponse(int ReplayedCount, int NotFoundCount, int FailedCount, System.Collections.Generic.IReadOnlyList<string!>! Failures) -> void
+Modulus.Outbox.Management.OutboxReplayResponse.ReplayedCount.get -> int
+Modulus.Outbox.Management.OutboxReplayResponse.ReplayedCount.init -> void
+Modulus.Outbox.Management.PaginatedResponse<T>
+Modulus.Outbox.Management.PaginatedResponse<T>.<Clone>$() -> Modulus.Outbox.Management.PaginatedResponse<T>!
+Modulus.Outbox.Management.PaginatedResponse<T>.Deconstruct(out System.Collections.Generic.IReadOnlyList<T>! Items, out int Total, out int Page, out int PageSize) -> void
+Modulus.Outbox.Management.PaginatedResponse<T>.Equals(Modulus.Outbox.Management.PaginatedResponse<T>? other) -> bool
+Modulus.Outbox.Management.PaginatedResponse<T>.Items.get -> System.Collections.Generic.IReadOnlyList<T>!
+Modulus.Outbox.Management.PaginatedResponse<T>.Items.init -> void
+Modulus.Outbox.Management.PaginatedResponse<T>.Page.get -> int
+Modulus.Outbox.Management.PaginatedResponse<T>.Page.init -> void
+Modulus.Outbox.Management.PaginatedResponse<T>.PageSize.get -> int
+Modulus.Outbox.Management.PaginatedResponse<T>.PageSize.init -> void
+Modulus.Outbox.Management.PaginatedResponse<T>.PaginatedResponse(System.Collections.Generic.IReadOnlyList<T>! Items, int Total, int Page, int PageSize) -> void
+Modulus.Outbox.Management.PaginatedResponse<T>.Total.get -> int
+Modulus.Outbox.Management.PaginatedResponse<T>.Total.init -> void
+override Modulus.Outbox.Management.OutboxDeadLetterDetail.Equals(object? obj) -> bool
+override Modulus.Outbox.Management.OutboxDeadLetterDetail.GetHashCode() -> int
+override Modulus.Outbox.Management.OutboxDeadLetterDetail.ToString() -> string!
+override Modulus.Outbox.Management.OutboxDeadLetterListItem.Equals(object? obj) -> bool
+override Modulus.Outbox.Management.OutboxDeadLetterListItem.GetHashCode() -> int
+override Modulus.Outbox.Management.OutboxDeadLetterListItem.ToString() -> string!
+override Modulus.Outbox.Management.OutboxPurgeResponse.Equals(object? obj) -> bool
+override Modulus.Outbox.Management.OutboxPurgeResponse.GetHashCode() -> int
+override Modulus.Outbox.Management.OutboxPurgeResponse.ToString() -> string!
+override Modulus.Outbox.Management.OutboxReplayRequest.Equals(object? obj) -> bool
+override Modulus.Outbox.Management.OutboxReplayRequest.GetHashCode() -> int
+override Modulus.Outbox.Management.OutboxReplayRequest.ToString() -> string!
+override Modulus.Outbox.Management.OutboxReplayResponse.Equals(object? obj) -> bool
+override Modulus.Outbox.Management.OutboxReplayResponse.GetHashCode() -> int
+override Modulus.Outbox.Management.OutboxReplayResponse.ToString() -> string!
+override Modulus.Outbox.Management.PaginatedResponse<T>.Equals(object? obj) -> bool
+override Modulus.Outbox.Management.PaginatedResponse<T>.GetHashCode() -> int
+override Modulus.Outbox.Management.PaginatedResponse<T>.ToString() -> string!
+static Modulus.Outbox.Management.OutboxDeadLetterDetail.operator !=(Modulus.Outbox.Management.OutboxDeadLetterDetail? left, Modulus.Outbox.Management.OutboxDeadLetterDetail? right) -> bool
+static Modulus.Outbox.Management.OutboxDeadLetterDetail.operator ==(Modulus.Outbox.Management.OutboxDeadLetterDetail? left, Modulus.Outbox.Management.OutboxDeadLetterDetail? right) -> bool
+static Modulus.Outbox.Management.OutboxDeadLetterListItem.operator !=(Modulus.Outbox.Management.OutboxDeadLetterListItem? left, Modulus.Outbox.Management.OutboxDeadLetterListItem? right) -> bool
+static Modulus.Outbox.Management.OutboxDeadLetterListItem.operator ==(Modulus.Outbox.Management.OutboxDeadLetterListItem? left, Modulus.Outbox.Management.OutboxDeadLetterListItem? right) -> bool
+static Modulus.Outbox.Management.OutboxManagementExtensions.AddModulusOutboxManagement(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.Outbox.Management.OutboxManagementExtensions.MapModulusOutboxManagement(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! prefix = "/outbox") -> Microsoft.AspNetCore.Routing.RouteGroupBuilder!
+static Modulus.Outbox.Management.OutboxPurgeResponse.operator !=(Modulus.Outbox.Management.OutboxPurgeResponse? left, Modulus.Outbox.Management.OutboxPurgeResponse? right) -> bool
+static Modulus.Outbox.Management.OutboxPurgeResponse.operator ==(Modulus.Outbox.Management.OutboxPurgeResponse? left, Modulus.Outbox.Management.OutboxPurgeResponse? right) -> bool
+static Modulus.Outbox.Management.OutboxReplayRequest.operator !=(Modulus.Outbox.Management.OutboxReplayRequest? left, Modulus.Outbox.Management.OutboxReplayRequest? right) -> bool
+static Modulus.Outbox.Management.OutboxReplayRequest.operator ==(Modulus.Outbox.Management.OutboxReplayRequest? left, Modulus.Outbox.Management.OutboxReplayRequest? right) -> bool
+static Modulus.Outbox.Management.OutboxReplayResponse.operator !=(Modulus.Outbox.Management.OutboxReplayResponse? left, Modulus.Outbox.Management.OutboxReplayResponse? right) -> bool
+static Modulus.Outbox.Management.OutboxReplayResponse.operator ==(Modulus.Outbox.Management.OutboxReplayResponse? left, Modulus.Outbox.Management.OutboxReplayResponse? right) -> bool
+static Modulus.Outbox.Management.PaginatedResponse<T>.operator !=(Modulus.Outbox.Management.PaginatedResponse<T>? left, Modulus.Outbox.Management.PaginatedResponse<T>? right) -> bool
+static Modulus.Outbox.Management.PaginatedResponse<T>.operator ==(Modulus.Outbox.Management.PaginatedResponse<T>? left, Modulus.Outbox.Management.PaginatedResponse<T>? right) -> bool

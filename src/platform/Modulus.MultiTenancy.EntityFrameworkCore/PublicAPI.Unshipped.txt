@@ -1,0 +1,36 @@
+#nullable enable
+Modulus.MultiTenancy.EntityFrameworkCore.EfTenantStore
+Modulus.MultiTenancy.EntityFrameworkCore.EfTenantStore.EfTenantStore(Modulus.MultiTenancy.EntityFrameworkCore.TenantStoreDbContext! db) -> void
+Modulus.MultiTenancy.EntityFrameworkCore.EfTenantStore.FindByIdAsync(System.Guid id, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Modulus.Core.Abstractions.TenantInfo?>!
+Modulus.MultiTenancy.EntityFrameworkCore.EfTenantStore.FindBySlugAsync(string! slug, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Modulus.Core.Abstractions.TenantInfo?>!
+Modulus.MultiTenancy.EntityFrameworkCore.EfTenantStore.ListAsync(System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Core.Abstractions.TenantInfo!>!>!
+Modulus.MultiTenancy.EntityFrameworkCore.EfTenantStoreExtensions
+Modulus.MultiTenancy.EntityFrameworkCore.ScopedTenantStoreBridge
+Modulus.MultiTenancy.EntityFrameworkCore.ScopedTenantStoreBridge.FindByIdAsync(System.Guid id, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Modulus.Core.Abstractions.TenantInfo?>!
+Modulus.MultiTenancy.EntityFrameworkCore.ScopedTenantStoreBridge.FindBySlugAsync(string! slug, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Modulus.Core.Abstractions.TenantInfo?>!
+Modulus.MultiTenancy.EntityFrameworkCore.ScopedTenantStoreBridge.ListAsync(System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Core.Abstractions.TenantInfo!>!>!
+Modulus.MultiTenancy.EntityFrameworkCore.ScopedTenantStoreBridge.ScopedTenantStoreBridge(Microsoft.Extensions.DependencyInjection.IServiceScopeFactory! scopeFactory) -> void
+Modulus.MultiTenancy.EntityFrameworkCore.TenantDatabaseMigrationExtensions
+Modulus.MultiTenancy.EntityFrameworkCore.TenantEntity
+Modulus.MultiTenancy.EntityFrameworkCore.TenantEntity.CreatedAtUtc.get -> System.DateTimeOffset
+Modulus.MultiTenancy.EntityFrameworkCore.TenantEntity.CreatedAtUtc.set -> void
+Modulus.MultiTenancy.EntityFrameworkCore.TenantEntity.DisplayName.get -> string?
+Modulus.MultiTenancy.EntityFrameworkCore.TenantEntity.DisplayName.set -> void
+Modulus.MultiTenancy.EntityFrameworkCore.TenantEntity.Id.get -> System.Guid
+Modulus.MultiTenancy.EntityFrameworkCore.TenantEntity.Id.set -> void
+Modulus.MultiTenancy.EntityFrameworkCore.TenantEntity.IsActive.get -> bool
+Modulus.MultiTenancy.EntityFrameworkCore.TenantEntity.IsActive.set -> void
+Modulus.MultiTenancy.EntityFrameworkCore.TenantEntity.Slug.get -> string!
+Modulus.MultiTenancy.EntityFrameworkCore.TenantEntity.Slug.set -> void
+Modulus.MultiTenancy.EntityFrameworkCore.TenantEntity.TenantEntity() -> void
+Modulus.MultiTenancy.EntityFrameworkCore.TenantManager
+Modulus.MultiTenancy.EntityFrameworkCore.TenantManager.CreateAsync(string! slug, string? displayName = null, System.Guid? id = null, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Core.Abstractions.TenantInfo!>!
+Modulus.MultiTenancy.EntityFrameworkCore.TenantManager.SetActiveAsync(System.Guid id, bool isActive, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.MultiTenancy.EntityFrameworkCore.TenantManager.TenantManager(Modulus.MultiTenancy.EntityFrameworkCore.TenantStoreDbContext! db) -> void
+Modulus.MultiTenancy.EntityFrameworkCore.TenantStoreDbContext
+Modulus.MultiTenancy.EntityFrameworkCore.TenantStoreDbContext.Tenants.get -> Microsoft.EntityFrameworkCore.DbSet<Modulus.MultiTenancy.EntityFrameworkCore.TenantEntity!>!
+Modulus.MultiTenancy.EntityFrameworkCore.TenantStoreDbContext.TenantStoreDbContext(Microsoft.EntityFrameworkCore.DbContextOptions<Modulus.MultiTenancy.EntityFrameworkCore.TenantStoreDbContext!>! options) -> void
+override Modulus.MultiTenancy.EntityFrameworkCore.TenantStoreDbContext.OnModelCreating(Microsoft.EntityFrameworkCore.ModelBuilder! modelBuilder) -> void
+static Modulus.MultiTenancy.EntityFrameworkCore.EfTenantStoreExtensions.AddEfCoreTenantStore(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<Microsoft.EntityFrameworkCore.DbContextOptionsBuilder!>! configure) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.MultiTenancy.EntityFrameworkCore.EfTenantStoreExtensions.MigrateTenantStoreAsync(this System.IServiceProvider! services, bool ensureCreatedIfNoMigrations = false, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+static Modulus.MultiTenancy.EntityFrameworkCore.TenantDatabaseMigrationExtensions.MigrateModulusDatabasesForTenantsAsync(this System.IServiceProvider! services, Modulus.EntityFrameworkCore.Extensions.DatabaseInitializationMode mode = Modulus.EntityFrameworkCore.Extensions.DatabaseInitializationMode.Migrate, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!

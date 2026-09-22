@@ -1,0 +1,6 @@
+#nullable enable
+Modulus.Testing.Architecture.ModuleBoundaryRules
+static Modulus.Testing.Architecture.ModuleBoundaryRules.FindCrossModuleDbContextUsage() -> System.Collections.Generic.IReadOnlyList<(System.Type! ViolatingType, System.Type! DbContextType)>!
+static Modulus.Testing.Architecture.ModuleBoundaryRules.FindCrossModuleDomainTypeUsage() -> System.Collections.Generic.IReadOnlyList<(System.Type! ViolatingType, System.Type! DomainType)>!
+static Modulus.Testing.Architecture.ModuleBoundaryRules.FindModuleTypes() -> System.Collections.Generic.IReadOnlyList<System.Type!>!
+static Modulus.Testing.Architecture.ModuleBoundaryRules.FindUnnamedIntegrationEvents() -> System.Collections.Generic.IReadOnlyList<System.Type!>!

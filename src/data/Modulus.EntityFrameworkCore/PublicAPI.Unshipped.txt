@@ -1,0 +1,101 @@
+#nullable enable
+abstract Modulus.EntityFrameworkCore.ModuleDbContext.TablePrefix.get -> string!
+Modulus.EntityFrameworkCore.Abstractions.IUnitOfWork
+Modulus.EntityFrameworkCore.Abstractions.IUnitOfWork.CommitAsync(System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<int>!
+Modulus.EntityFrameworkCore.ChangeHistory.AuditedAttribute
+Modulus.EntityFrameworkCore.ChangeHistory.AuditedAttribute.AuditedAttribute() -> void
+Modulus.EntityFrameworkCore.ChangeHistory.EntityChange
+Modulus.EntityFrameworkCore.ChangeHistory.EntityChange.ChangedAt.get -> System.DateTime
+Modulus.EntityFrameworkCore.ChangeHistory.EntityChange.ChangedAt.init -> void
+Modulus.EntityFrameworkCore.ChangeHistory.EntityChange.ChangedBy.get -> string!
+Modulus.EntityFrameworkCore.ChangeHistory.EntityChange.ChangedBy.init -> void
+Modulus.EntityFrameworkCore.ChangeHistory.EntityChange.CorrelationId.get -> string?
+Modulus.EntityFrameworkCore.ChangeHistory.EntityChange.CorrelationId.init -> void
+Modulus.EntityFrameworkCore.ChangeHistory.EntityChange.EntityChange() -> void
+Modulus.EntityFrameworkCore.ChangeHistory.EntityChange.EntityKey.get -> string!
+Modulus.EntityFrameworkCore.ChangeHistory.EntityChange.EntityKey.init -> void
+Modulus.EntityFrameworkCore.ChangeHistory.EntityChange.EntityName.get -> string!
+Modulus.EntityFrameworkCore.ChangeHistory.EntityChange.EntityName.init -> void
+Modulus.EntityFrameworkCore.ChangeHistory.EntityChange.Id.get -> System.Guid
+Modulus.EntityFrameworkCore.ChangeHistory.EntityChange.Id.init -> void
+Modulus.EntityFrameworkCore.ChangeHistory.EntityChange.NewValue.get -> string?
+Modulus.EntityFrameworkCore.ChangeHistory.EntityChange.NewValue.init -> void
+Modulus.EntityFrameworkCore.ChangeHistory.EntityChange.Operation.get -> string!
+Modulus.EntityFrameworkCore.ChangeHistory.EntityChange.Operation.init -> void
+Modulus.EntityFrameworkCore.ChangeHistory.EntityChange.OriginalValue.get -> string?
+Modulus.EntityFrameworkCore.ChangeHistory.EntityChange.OriginalValue.init -> void
+Modulus.EntityFrameworkCore.ChangeHistory.EntityChange.PropertyName.get -> string!
+Modulus.EntityFrameworkCore.ChangeHistory.EntityChange.PropertyName.init -> void
+Modulus.EntityFrameworkCore.ChangeHistory.EntityChange.TenantId.get -> System.Guid
+Modulus.EntityFrameworkCore.ChangeHistory.EntityChange.TenantId.init -> void
+Modulus.EntityFrameworkCore.ChangeHistory.EntityChangeHistoryExtensions
+Modulus.EntityFrameworkCore.ChangeHistory.IEntityChangeHistoryWriter
+Modulus.EntityFrameworkCore.ChangeHistory.IEntityChangeHistoryWriter.CaptureChanges(Microsoft.EntityFrameworkCore.DbContext! context, System.Collections.Generic.IEnumerable<Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry!>! entries, string! changedBy, string? correlationId = null) -> void
+Modulus.EntityFrameworkCore.DataProtection.PersonalDataModelBuilderExtensions
+Modulus.EntityFrameworkCore.Design.DesignTimeContext
+Modulus.EntityFrameworkCore.EfReadRepository<T>
+Modulus.EntityFrameworkCore.EfReadRepository<T>.AnyAsync(Modulus.Data.Abstractions.ISpecification<T!>! spec, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<bool>!
+Modulus.EntityFrameworkCore.EfReadRepository<T>.EfReadRepository(System.IServiceProvider! sp) -> void
+Modulus.EntityFrameworkCore.EfReadRepository<T>.ListPagedAsync<TResult>(Modulus.Data.Abstractions.ISpecification<T!>! spec, System.Linq.Expressions.Expression<System.Func<T!, TResult>!>! selector, int page, int size, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Modulus.Core.Abstractions.Common.PagedList<TResult>!>!
+Modulus.EntityFrameworkCore.EfRepository<T>
+Modulus.EntityFrameworkCore.EfRepository<T>.AddAsync(T! entity, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
+Modulus.EntityFrameworkCore.EfRepository<T>.AddRangeAsync(System.Collections.Generic.IEnumerable<T!>! entities, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
+Modulus.EntityFrameworkCore.EfRepository<T>.AsAsyncEnumerable(Modulus.Data.Abstractions.ISpecification<T!>! spec) -> System.Collections.Generic.IAsyncEnumerable<T!>!
+Modulus.EntityFrameworkCore.EfRepository<T>.CountAsync(Modulus.Data.Abstractions.ISpecification<T!>! spec, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<int>!
+Modulus.EntityFrameworkCore.EfRepository<T>.Db.get -> Microsoft.EntityFrameworkCore.DbContext!
+Modulus.EntityFrameworkCore.EfRepository<T>.DeleteAsync(T! entity, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
+Modulus.EntityFrameworkCore.EfRepository<T>.DeleteRangeAsync(Modulus.Data.Abstractions.ISpecification<T!>! spec, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
+Modulus.EntityFrameworkCore.EfRepository<T>.EfRepository(System.IServiceProvider! sp) -> void
+Modulus.EntityFrameworkCore.EfRepository<T>.FirstOrDefaultAsync(Modulus.Data.Abstractions.ISpecification<T!>! spec, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<T?>!
+Modulus.EntityFrameworkCore.EfRepository<T>.GetByIdAsync(object! id, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<T?>!
+Modulus.EntityFrameworkCore.EfRepository<T>.ListAsync(Modulus.Data.Abstractions.ISpecification<T!>! spec, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<T!>!>!
+Modulus.EntityFrameworkCore.EfRepository<T>.Set.get -> Microsoft.EntityFrameworkCore.DbSet<T!>!
+Modulus.EntityFrameworkCore.EfRepository<T>.SingleAsync(Modulus.Data.Abstractions.ISpecification<T!>! spec, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<T!>!
+Modulus.EntityFrameworkCore.EfRepository<T>.SingleOrDefaultAsync(Modulus.Data.Abstractions.ISpecification<T!>! spec, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<T?>!
+Modulus.EntityFrameworkCore.EfRepository<T>.UpdateAsync(T! entity, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
+Modulus.EntityFrameworkCore.Extensions.DatabaseInitializationMode
+Modulus.EntityFrameworkCore.Extensions.DatabaseInitializationMode.EnsureCreated = 2 -> Modulus.EntityFrameworkCore.Extensions.DatabaseInitializationMode
+Modulus.EntityFrameworkCore.Extensions.DatabaseInitializationMode.Migrate = 1 -> Modulus.EntityFrameworkCore.Extensions.DatabaseInitializationMode
+Modulus.EntityFrameworkCore.Extensions.DatabaseInitializationMode.MigrateOrCreate = 0 -> Modulus.EntityFrameworkCore.Extensions.DatabaseInitializationMode
+Modulus.EntityFrameworkCore.Extensions.DatabaseMigrationExtensions
+Modulus.EntityFrameworkCore.Extensions.EFCoreServiceCollectionExtensions
+Modulus.EntityFrameworkCore.Extensions.IModuleMigrationRegistry
+Modulus.EntityFrameworkCore.Extensions.IModuleMigrationRegistry.IsExternallyManaged(System.Type! contextType) -> bool
+Modulus.EntityFrameworkCore.Extensions.ModuleMigrationServiceExtensions
+Modulus.EntityFrameworkCore.Extensions.SeederFailedException
+Modulus.EntityFrameworkCore.Extensions.SeederFailedException.SeederFailedException(string! seederName, System.Exception! inner) -> void
+Modulus.EntityFrameworkCore.Extensions.SeederFailedException.SeederName.get -> string!
+Modulus.EntityFrameworkCore.Health.RelationalDatabaseHealthCheck<TContext>
+Modulus.EntityFrameworkCore.Health.RelationalDatabaseHealthCheck<TContext>.CheckAsync(System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Modulus.Core.Abstractions.ModuleHealthResult!>!
+Modulus.EntityFrameworkCore.Health.RelationalDatabaseHealthCheck<TContext>.RelationalDatabaseHealthCheck(TContext! db, string! providerTag) -> void
+Modulus.EntityFrameworkCore.IEntityContextMap
+Modulus.EntityFrameworkCore.IEntityContextMap.Resolve(System.Type! entityType) -> System.Type?
+Modulus.EntityFrameworkCore.ModelBuilding.ExtraPropertiesModelBuilderExtensions
+Modulus.EntityFrameworkCore.ModelBuilding.IModuleModelContributor
+Modulus.EntityFrameworkCore.ModelBuilding.IModuleModelContributor.Contribute(Microsoft.EntityFrameworkCore.ModelBuilder! modelBuilder) -> void
+Modulus.EntityFrameworkCore.ModuleDbContext
+Modulus.EntityFrameworkCore.ModuleDbContext.CommitAsync(System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<int>!
+Modulus.EntityFrameworkCore.ModuleDbContext.ModuleDbContext(Microsoft.EntityFrameworkCore.DbContextOptions! options, Modulus.Core.Abstractions.ICurrentTenant! currentTenant, Modulus.Core.Abstractions.ICurrentUser! currentUser, Modulus.Events.DomainEventDispatcher! dispatcher, System.IServiceProvider! sp, System.TimeProvider? time = null) -> void
+Modulus.EntityFrameworkCore.Transactions.DeferredDomainEventTransactionInterceptor
+override Modulus.EntityFrameworkCore.ModuleDbContext.OnModelCreating(Microsoft.EntityFrameworkCore.ModelBuilder! mb) -> void
+override Modulus.EntityFrameworkCore.ModuleDbContext.SaveChanges() -> int
+override Modulus.EntityFrameworkCore.ModuleDbContext.SaveChanges(bool acceptAllChangesOnSuccess) -> int
+override Modulus.EntityFrameworkCore.ModuleDbContext.SaveChangesAsync(bool acceptAllChangesOnSuccess, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<int>!
+override Modulus.EntityFrameworkCore.Transactions.DeferredDomainEventTransactionInterceptor.TransactionCommitted(System.Data.Common.DbTransaction! transaction, Microsoft.EntityFrameworkCore.Diagnostics.TransactionEndEventData! eventData) -> void
+override Modulus.EntityFrameworkCore.Transactions.DeferredDomainEventTransactionInterceptor.TransactionCommittedAsync(System.Data.Common.DbTransaction! transaction, Microsoft.EntityFrameworkCore.Diagnostics.TransactionEndEventData! eventData, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+override Modulus.EntityFrameworkCore.Transactions.DeferredDomainEventTransactionInterceptor.TransactionRolledBack(System.Data.Common.DbTransaction! transaction, Microsoft.EntityFrameworkCore.Diagnostics.TransactionEndEventData! eventData) -> void
+override Modulus.EntityFrameworkCore.Transactions.DeferredDomainEventTransactionInterceptor.TransactionRolledBackAsync(System.Data.Common.DbTransaction! transaction, Microsoft.EntityFrameworkCore.Diagnostics.TransactionEndEventData! eventData, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+static Modulus.EntityFrameworkCore.ChangeHistory.EntityChangeHistoryExtensions.AddEntityChangeHistory(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.EntityFrameworkCore.DataProtection.PersonalDataModelBuilderExtensions.UseModulusPersonalDataEncryption(this Microsoft.EntityFrameworkCore.ModelBuilder! modelBuilder, Modulus.Core.Abstractions.DataProtection.IPersonalDataProtector! protector) -> Microsoft.EntityFrameworkCore.ModelBuilder!
+static Modulus.EntityFrameworkCore.Design.DesignTimeContext.Dispatcher.get -> Modulus.Events.DomainEventDispatcher!
+static Modulus.EntityFrameworkCore.Design.DesignTimeContext.Services.get -> System.IServiceProvider!
+static Modulus.EntityFrameworkCore.Design.DesignTimeContext.Tenant.get -> Modulus.Core.Abstractions.ICurrentTenant!
+static Modulus.EntityFrameworkCore.Design.DesignTimeContext.User.get -> Modulus.Core.Abstractions.ICurrentUser!
+static Modulus.EntityFrameworkCore.EfRepository<T>.ApplySpec(System.Linq.IQueryable<T!>! query, Modulus.Data.Abstractions.ISpecification<T!>! spec, bool applyPaging = true) -> System.Linq.IQueryable<T!>!
+static Modulus.EntityFrameworkCore.Extensions.DatabaseMigrationExtensions.MigrateModulusDatabasesAsync(this System.IServiceProvider! services, Modulus.EntityFrameworkCore.Extensions.DatabaseInitializationMode mode = Modulus.EntityFrameworkCore.Extensions.DatabaseInitializationMode.Migrate, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+static Modulus.EntityFrameworkCore.Extensions.DatabaseMigrationExtensions.SeedModulusDataAsync(this System.IServiceProvider! services, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken), bool throwOnFailure = true) -> System.Threading.Tasks.Task!
+static Modulus.EntityFrameworkCore.Extensions.EFCoreServiceCollectionExtensions.AddModuleDatabase<TContext>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<Microsoft.EntityFrameworkCore.DbContextOptionsBuilder!>! configure) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.EntityFrameworkCore.Extensions.EFCoreServiceCollectionExtensions.AddModuleDatabase<TContext>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Func<System.IServiceProvider!, string!>! resolveConnectionString, System.Action<Microsoft.EntityFrameworkCore.DbContextOptionsBuilder!, string!>? configure = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.EntityFrameworkCore.Extensions.ModuleMigrationServiceExtensions.ExternallyManaged<TContext>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.EntityFrameworkCore.ModelBuilding.ExtraPropertiesModelBuilderExtensions.UseModulusExtraProperties(this Microsoft.EntityFrameworkCore.ModelBuilder! modelBuilder) -> Microsoft.EntityFrameworkCore.ModelBuilder!
+static readonly Modulus.EntityFrameworkCore.Transactions.DeferredDomainEventTransactionInterceptor.Instance -> Modulus.EntityFrameworkCore.Transactions.DeferredDomainEventTransactionInterceptor!

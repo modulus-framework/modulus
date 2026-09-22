@@ -1,0 +1,3 @@
+#nullable enable
+Modulus.Data.SqlServer.SqlServerExtensions
+static Modulus.Data.SqlServer.SqlServerExtensions.AddSqlServerDatabase<TContext>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, string! connectionString, System.Action<Microsoft.EntityFrameworkCore.Infrastructure.SqlServerDbContextOptionsBuilder!>? configure = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!

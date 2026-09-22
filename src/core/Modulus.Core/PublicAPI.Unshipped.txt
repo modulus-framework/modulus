@@ -1,0 +1,364 @@
+#nullable enable
+abstract Modulus.Core.Abstractions.Domain.DomainEventBase.<Clone>$() -> Modulus.Core.Abstractions.Domain.DomainEventBase!
+abstract Modulus.Core.Abstractions.Domain.ValueObject.GetEqualityComponents() -> System.Collections.Generic.IEnumerable<object?>!
+const Modulus.Core.Abstractions.CorrelationHeaders.Default = "X-Correlation-ID" -> string!
+Modulus.Core.Abstractions.Common.PagedList<T>
+Modulus.Core.Abstractions.Common.PagedList<T>.<Clone>$() -> Modulus.Core.Abstractions.Common.PagedList<T>!
+Modulus.Core.Abstractions.Common.PagedList<T>.Equals(Modulus.Core.Abstractions.Common.PagedList<T>? other) -> bool
+Modulus.Core.Abstractions.Common.PagedList<T>.HasNextPage.get -> bool
+Modulus.Core.Abstractions.Common.PagedList<T>.HasPreviousPage.get -> bool
+Modulus.Core.Abstractions.Common.PagedList<T>.Items.get -> System.Collections.Generic.IReadOnlyList<T>!
+Modulus.Core.Abstractions.Common.PagedList<T>.Items.init -> void
+Modulus.Core.Abstractions.Common.PagedList<T>.Map<TResult>(System.Func<T, TResult>! selector) -> Modulus.Core.Abstractions.Common.PagedList<TResult>!
+Modulus.Core.Abstractions.Common.PagedList<T>.Page.get -> int
+Modulus.Core.Abstractions.Common.PagedList<T>.Page.init -> void
+Modulus.Core.Abstractions.Common.PagedList<T>.PagedList() -> void
+Modulus.Core.Abstractions.Common.PagedList<T>.PageSize.get -> int
+Modulus.Core.Abstractions.Common.PagedList<T>.PageSize.init -> void
+Modulus.Core.Abstractions.Common.PagedList<T>.TotalCount.get -> int
+Modulus.Core.Abstractions.Common.PagedList<T>.TotalCount.init -> void
+Modulus.Core.Abstractions.Common.PagedList<T>.TotalPages.get -> int
+Modulus.Core.Abstractions.Common.Unit
+Modulus.Core.Abstractions.Common.Unit.Equals(Modulus.Core.Abstractions.Common.Unit other) -> bool
+Modulus.Core.Abstractions.Common.Unit.Unit() -> void
+Modulus.Core.Abstractions.CorrelationHeaders
+Modulus.Core.Abstractions.DataProtection.IPersonalDataProtector
+Modulus.Core.Abstractions.DataProtection.IPersonalDataProtector.Hash(string! value) -> string!
+Modulus.Core.Abstractions.DataProtection.IPersonalDataProtector.Protect(string! plaintext) -> string!
+Modulus.Core.Abstractions.DataProtection.IPersonalDataProtector.Unprotect(string! ciphertext) -> string!
+Modulus.Core.Abstractions.DataProtection.ProtectedPersonalDataAttribute
+Modulus.Core.Abstractions.DataProtection.ProtectedPersonalDataAttribute.ProtectedPersonalDataAttribute() -> void
+Modulus.Core.Abstractions.Domain.AggregateRoot
+Modulus.Core.Abstractions.Domain.AggregateRoot.AggregateRoot() -> void
+Modulus.Core.Abstractions.Domain.AggregateRoot<TId>
+Modulus.Core.Abstractions.Domain.AggregateRoot<TId>.AddDomainEvent(Modulus.Core.Abstractions.Domain.IDomainEvent! domainEvent) -> void
+Modulus.Core.Abstractions.Domain.AggregateRoot<TId>.AggregateRoot() -> void
+Modulus.Core.Abstractions.Domain.AggregateRoot<TId>.ClearDomainEvents() -> void
+Modulus.Core.Abstractions.Domain.AggregateRoot<TId>.DomainEvents.get -> System.Collections.Generic.IReadOnlyList<Modulus.Core.Abstractions.Domain.IDomainEvent!>!
+Modulus.Core.Abstractions.Domain.AggregateRoot<TId>.Id.get -> TId
+Modulus.Core.Abstractions.Domain.AggregateRoot<TId>.Id.set -> void
+Modulus.Core.Abstractions.Domain.AutoValueObject
+Modulus.Core.Abstractions.Domain.AutoValueObject.AutoValueObject() -> void
+Modulus.Core.Abstractions.Domain.DomainEventBase
+Modulus.Core.Abstractions.Domain.DomainEventBase.DomainEventBase() -> void
+Modulus.Core.Abstractions.Domain.DomainEventBase.DomainEventBase(Modulus.Core.Abstractions.Domain.DomainEventBase! original) -> void
+Modulus.Core.Abstractions.Domain.DomainEventBase.EventId.get -> System.Guid
+Modulus.Core.Abstractions.Domain.DomainEventBase.OccurredAt.get -> System.DateTime
+Modulus.Core.Abstractions.Domain.IAggregateRoot
+Modulus.Core.Abstractions.Domain.IAggregateRoot.ClearDomainEvents() -> void
+Modulus.Core.Abstractions.Domain.IAggregateRoot.DomainEvents.get -> System.Collections.Generic.IReadOnlyList<Modulus.Core.Abstractions.Domain.IDomainEvent!>!
+Modulus.Core.Abstractions.Domain.IDomainEvent
+Modulus.Core.Abstractions.Domain.IDomainEvent.EventId.get -> System.Guid
+Modulus.Core.Abstractions.Domain.IDomainEvent.OccurredAt.get -> System.DateTime
+Modulus.Core.Abstractions.Domain.ValueObject
+Modulus.Core.Abstractions.Domain.ValueObject.ValueObject() -> void
+Modulus.Core.Abstractions.Entities.ClassifiedAttribute
+Modulus.Core.Abstractions.Entities.ClassifiedAttribute.Classification.get -> Modulus.Core.Abstractions.Entities.FieldClassification
+Modulus.Core.Abstractions.Entities.ClassifiedAttribute.ClassifiedAttribute(Modulus.Core.Abstractions.Entities.FieldClassification classification) -> void
+Modulus.Core.Abstractions.Entities.ExtraPropertiesExtensions
+Modulus.Core.Abstractions.Entities.FieldClassification
+Modulus.Core.Abstractions.Entities.FieldClassification.Confidential = 2 -> Modulus.Core.Abstractions.Entities.FieldClassification
+Modulus.Core.Abstractions.Entities.FieldClassification.Internal = 1 -> Modulus.Core.Abstractions.Entities.FieldClassification
+Modulus.Core.Abstractions.Entities.FieldClassification.Public = 0 -> Modulus.Core.Abstractions.Entities.FieldClassification
+Modulus.Core.Abstractions.Entities.FieldClassification.Restricted = 3 -> Modulus.Core.Abstractions.Entities.FieldClassification
+Modulus.Core.Abstractions.Entities.IAuditableEntity
+Modulus.Core.Abstractions.Entities.IAuditableEntity.CreatedAt.get -> System.DateTime
+Modulus.Core.Abstractions.Entities.IAuditableEntity.CreatedAt.set -> void
+Modulus.Core.Abstractions.Entities.IAuditableEntity.CreatedBy.get -> string?
+Modulus.Core.Abstractions.Entities.IAuditableEntity.CreatedBy.set -> void
+Modulus.Core.Abstractions.Entities.IAuditableEntity.UpdatedAt.get -> System.DateTime?
+Modulus.Core.Abstractions.Entities.IAuditableEntity.UpdatedAt.set -> void
+Modulus.Core.Abstractions.Entities.IAuditableEntity.UpdatedBy.get -> string?
+Modulus.Core.Abstractions.Entities.IAuditableEntity.UpdatedBy.set -> void
+Modulus.Core.Abstractions.Entities.IHasExtraProperties
+Modulus.Core.Abstractions.Entities.IHasExtraProperties.ExtraProperties.get -> System.Collections.Generic.Dictionary<string!, string?>!
+Modulus.Core.Abstractions.Entities.IHasExtraProperties.ExtraProperties.set -> void
+Modulus.Core.Abstractions.Entities.IHasOrgUnit
+Modulus.Core.Abstractions.Entities.IHasOrgUnit.OrgUnitId.get -> System.Guid
+Modulus.Core.Abstractions.Entities.IHasOwner
+Modulus.Core.Abstractions.Entities.IHasOwner.OwnerId.get -> System.Guid
+Modulus.Core.Abstractions.Entities.IHasTenantId
+Modulus.Core.Abstractions.Entities.IHasTenantId.TenantId.get -> System.Guid
+Modulus.Core.Abstractions.Entities.IHasTenantId.TenantId.set -> void
+Modulus.Core.Abstractions.Entities.IHasWorkflowState
+Modulus.Core.Abstractions.Entities.IHasWorkflowState.WorkflowState.get -> string!
+Modulus.Core.Abstractions.Entities.ISoftDelete
+Modulus.Core.Abstractions.Entities.ISoftDelete.DeletedAt.get -> System.DateTime?
+Modulus.Core.Abstractions.Entities.ISoftDelete.DeletedAt.set -> void
+Modulus.Core.Abstractions.Entities.ISoftDelete.DeletedBy.get -> string?
+Modulus.Core.Abstractions.Entities.ISoftDelete.DeletedBy.set -> void
+Modulus.Core.Abstractions.Entities.ISoftDelete.IsDeleted.get -> bool
+Modulus.Core.Abstractions.Entities.ISoftDelete.IsDeleted.set -> void
+Modulus.Core.Abstractions.Exceptions.ConflictException
+Modulus.Core.Abstractions.Exceptions.ConflictException.ConflictException(string! message) -> void
+Modulus.Core.Abstractions.Exceptions.FeatureDisabledException
+Modulus.Core.Abstractions.Exceptions.FeatureDisabledException.Feature.get -> string!
+Modulus.Core.Abstractions.Exceptions.FeatureDisabledException.FeatureDisabledException(string! feature) -> void
+Modulus.Core.Abstractions.Exceptions.ForbiddenException
+Modulus.Core.Abstractions.Exceptions.ForbiddenException.ForbiddenException(string! permission) -> void
+Modulus.Core.Abstractions.Exceptions.ModulusException
+Modulus.Core.Abstractions.Exceptions.ModulusException.ModulusException(string! message, System.Exception? inner = null) -> void
+Modulus.Core.Abstractions.Exceptions.NotFoundException
+Modulus.Core.Abstractions.Exceptions.NotFoundException.NotFoundException(string! message) -> void
+Modulus.Core.Abstractions.Exceptions.UnauthorizedException
+Modulus.Core.Abstractions.Exceptions.UnauthorizedException.UnauthorizedException() -> void
+Modulus.Core.Abstractions.Exceptions.ValidationException
+Modulus.Core.Abstractions.Exceptions.ValidationException.Errors.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Modulus.Core.Abstractions.Exceptions.ValidationException.ValidationException(System.Collections.Generic.IEnumerable<string!>! errors) -> void
+Modulus.Core.Abstractions.HealthStatus
+Modulus.Core.Abstractions.HealthStatus.Degraded = 1 -> Modulus.Core.Abstractions.HealthStatus
+Modulus.Core.Abstractions.HealthStatus.Healthy = 0 -> Modulus.Core.Abstractions.HealthStatus
+Modulus.Core.Abstractions.HealthStatus.Unhealthy = 2 -> Modulus.Core.Abstractions.HealthStatus
+Modulus.Core.Abstractions.ICausationIdContext
+Modulus.Core.Abstractions.ICausationIdContext.BeginScope(string! causationId) -> System.IDisposable!
+Modulus.Core.Abstractions.ICausationIdContext.CausationId.get -> string?
+Modulus.Core.Abstractions.ICausationIdContext.IsSet.get -> bool
+Modulus.Core.Abstractions.ICorrelationContext
+Modulus.Core.Abstractions.ICorrelationContext.BeginScope(string! correlationId) -> System.IDisposable!
+Modulus.Core.Abstractions.ICorrelationContext.CorrelationId.get -> string?
+Modulus.Core.Abstractions.ICorrelationContext.IsSet.get -> bool
+Modulus.Core.Abstractions.ICurrentDataScope
+Modulus.Core.Abstractions.ICurrentDataScope.IsUnrestricted.get -> bool
+Modulus.Core.Abstractions.ICurrentDataScope.OrgUnitIds.get -> System.Collections.Generic.IReadOnlyCollection<System.Guid>!
+Modulus.Core.Abstractions.ICurrentTenant
+Modulus.Core.Abstractions.ICurrentTenant.Change(Modulus.Core.Abstractions.TenantInfo? tenant) -> System.IDisposable!
+Modulus.Core.Abstractions.ICurrentTenant.IsAvailable.get -> bool
+Modulus.Core.Abstractions.ICurrentTenant.IsHost.get -> bool
+Modulus.Core.Abstractions.ICurrentTenant.TenantId.get -> System.Guid?
+Modulus.Core.Abstractions.ICurrentTenant.TenantSlug.get -> string?
+Modulus.Core.Abstractions.ICurrentUser
+Modulus.Core.Abstractions.ICurrentUser.Email.get -> string?
+Modulus.Core.Abstractions.ICurrentUser.HasPermission(string! permission) -> bool
+Modulus.Core.Abstractions.ICurrentUser.IsAuthenticated.get -> bool
+Modulus.Core.Abstractions.ICurrentUser.IsInRole(string! role) -> bool
+Modulus.Core.Abstractions.ICurrentUser.Permissions.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Modulus.Core.Abstractions.ICurrentUser.UserId.get -> System.Guid?
+Modulus.Core.Abstractions.ICurrentUser.UserName.get -> string?
+Modulus.Core.Abstractions.IDataSeeder
+Modulus.Core.Abstractions.IDataSeeder.SeedAsync(System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Core.Abstractions.IDistributedLease
+Modulus.Core.Abstractions.IDistributedLock
+Modulus.Core.Abstractions.IDistributedLock.TryAcquireAsync(string! key, System.TimeSpan duration, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.IAsyncDisposable?>!
+Modulus.Core.Abstractions.IFeatureGate
+Modulus.Core.Abstractions.IFeatureGate.IsEnabled(string! feature) -> bool
+Modulus.Core.Abstractions.IHasConcurrencyStamp
+Modulus.Core.Abstractions.IHasConcurrencyStamp.ConcurrencyStamp.get -> string!
+Modulus.Core.Abstractions.IHasConcurrencyStamp.ConcurrencyStamp.set -> void
+Modulus.Core.Abstractions.IModule
+Modulus.Core.Abstractions.IModule.ConfigureServices(Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> void
+Modulus.Core.Abstractions.IModule.InitializeAsync(Modulus.Core.Abstractions.ModuleContext! context, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Core.Abstractions.IModule.PostConfigureServices(Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> void
+Modulus.Core.Abstractions.IModule.PreConfigureServices(Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> void
+Modulus.Core.Abstractions.IModule.ShutdownAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Core.Abstractions.IModuleHealthCheck
+Modulus.Core.Abstractions.IModuleHealthCheck.CheckAsync(System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Core.Abstractions.ModuleHealthResult!>!
+Modulus.Core.Abstractions.IPermissionRegistry
+Modulus.Core.Abstractions.IPermissionRegistry.Add(string! permission, string! description, string![]? requires = null) -> void
+Modulus.Core.Abstractions.IPermissionRegistry.Exists(string! permission) -> bool
+Modulus.Core.Abstractions.IPermissionRegistry.Freeze() -> void
+Modulus.Core.Abstractions.IPermissionRegistry.GetAll() -> System.Collections.Generic.IReadOnlyList<Modulus.Core.Abstractions.PermissionDefinition!>!
+Modulus.Core.Abstractions.IPermissionRegistry.GetByModule(string! moduleName) -> System.Collections.Generic.IReadOnlyList<Modulus.Core.Abstractions.PermissionDefinition!>!
+Modulus.Core.Abstractions.ModuleContext
+Modulus.Core.Abstractions.ModuleContext.Configuration.get -> Microsoft.Extensions.Configuration.IConfiguration!
+Modulus.Core.Abstractions.ModuleContext.Configuration.init -> void
+Modulus.Core.Abstractions.ModuleContext.Descriptor.get -> Modulus.Core.Abstractions.ModuleDescriptor!
+Modulus.Core.Abstractions.ModuleContext.Descriptor.init -> void
+Modulus.Core.Abstractions.ModuleContext.Logger.get -> Microsoft.Extensions.Logging.ILogger!
+Modulus.Core.Abstractions.ModuleContext.Logger.init -> void
+Modulus.Core.Abstractions.ModuleContext.ModuleContext() -> void
+Modulus.Core.Abstractions.ModuleContext.ServiceProvider.get -> System.IServiceProvider!
+Modulus.Core.Abstractions.ModuleContext.ServiceProvider.init -> void
+Modulus.Core.Abstractions.ModuleDescriptor
+Modulus.Core.Abstractions.ModuleDescriptor.InitOrder.get -> int
+Modulus.Core.Abstractions.ModuleDescriptor.InitOrder.init -> void
+Modulus.Core.Abstractions.ModuleDescriptor.ModuleDescriptor() -> void
+Modulus.Core.Abstractions.ModuleDescriptor.ModuleType.get -> System.Type!
+Modulus.Core.Abstractions.ModuleDescriptor.ModuleType.init -> void
+Modulus.Core.Abstractions.ModuleDescriptor.Name.get -> string!
+Modulus.Core.Abstractions.ModuleDescriptor.Name.init -> void
+Modulus.Core.Abstractions.ModuleHealthCheckRunner
+Modulus.Core.Abstractions.ModuleHealthResult
+Modulus.Core.Abstractions.ModuleHealthResult.<Clone>$() -> Modulus.Core.Abstractions.ModuleHealthResult!
+Modulus.Core.Abstractions.ModuleHealthResult.CheckDuration.get -> System.TimeSpan
+Modulus.Core.Abstractions.ModuleHealthResult.CheckDuration.init -> void
+Modulus.Core.Abstractions.ModuleHealthResult.Data.get -> System.Collections.Generic.Dictionary<string!, object!>?
+Modulus.Core.Abstractions.ModuleHealthResult.Data.init -> void
+Modulus.Core.Abstractions.ModuleHealthResult.Deconstruct(out string! ModuleName, out Modulus.Core.Abstractions.HealthStatus Status, out string! Description, out System.TimeSpan CheckDuration, out System.Collections.Generic.Dictionary<string!, object!>? Data) -> void
+Modulus.Core.Abstractions.ModuleHealthResult.Description.get -> string!
+Modulus.Core.Abstractions.ModuleHealthResult.Description.init -> void
+Modulus.Core.Abstractions.ModuleHealthResult.Equals(Modulus.Core.Abstractions.ModuleHealthResult? other) -> bool
+Modulus.Core.Abstractions.ModuleHealthResult.ModuleHealthResult(string! ModuleName, Modulus.Core.Abstractions.HealthStatus Status, string! Description, System.TimeSpan CheckDuration, System.Collections.Generic.Dictionary<string!, object!>? Data = null) -> void
+Modulus.Core.Abstractions.ModuleHealthResult.ModuleName.get -> string!
+Modulus.Core.Abstractions.ModuleHealthResult.ModuleName.init -> void
+Modulus.Core.Abstractions.ModuleHealthResult.Status.get -> Modulus.Core.Abstractions.HealthStatus
+Modulus.Core.Abstractions.ModuleHealthResult.Status.init -> void
+Modulus.Core.Abstractions.ModulusModule
+Modulus.Core.Abstractions.ModulusModule.ModulusModule() -> void
+Modulus.Core.Abstractions.PermissionDefinition
+Modulus.Core.Abstractions.PermissionDefinition.<Clone>$() -> Modulus.Core.Abstractions.PermissionDefinition!
+Modulus.Core.Abstractions.PermissionDefinition.Deconstruct(out string! Permission, out string! Description, out string![]! Requires) -> void
+Modulus.Core.Abstractions.PermissionDefinition.Description.get -> string!
+Modulus.Core.Abstractions.PermissionDefinition.Description.init -> void
+Modulus.Core.Abstractions.PermissionDefinition.Equals(Modulus.Core.Abstractions.PermissionDefinition? other) -> bool
+Modulus.Core.Abstractions.PermissionDefinition.Permission.get -> string!
+Modulus.Core.Abstractions.PermissionDefinition.Permission.init -> void
+Modulus.Core.Abstractions.PermissionDefinition.PermissionDefinition(string! Permission, string! Description, string![]! Requires) -> void
+Modulus.Core.Abstractions.PermissionDefinition.Requires.get -> string![]!
+Modulus.Core.Abstractions.PermissionDefinition.Requires.init -> void
+Modulus.Core.Abstractions.TenantInfo
+Modulus.Core.Abstractions.TenantInfo.<Clone>$() -> Modulus.Core.Abstractions.TenantInfo!
+Modulus.Core.Abstractions.TenantInfo.ConnectionString.get -> string?
+Modulus.Core.Abstractions.TenantInfo.ConnectionString.init -> void
+Modulus.Core.Abstractions.TenantInfo.Deconstruct(out System.Guid TenantId, out string! TenantSlug, out string? DisplayName, out string? ConnectionString) -> void
+Modulus.Core.Abstractions.TenantInfo.DisplayName.get -> string?
+Modulus.Core.Abstractions.TenantInfo.DisplayName.init -> void
+Modulus.Core.Abstractions.TenantInfo.Equals(Modulus.Core.Abstractions.TenantInfo? other) -> bool
+Modulus.Core.Abstractions.TenantInfo.TenantId.get -> System.Guid
+Modulus.Core.Abstractions.TenantInfo.TenantId.init -> void
+Modulus.Core.Abstractions.TenantInfo.TenantInfo(System.Guid TenantId, string! TenantSlug, string? DisplayName = null, string? ConnectionString = null) -> void
+Modulus.Core.Abstractions.TenantInfo.TenantSlug.get -> string!
+Modulus.Core.Abstractions.TenantInfo.TenantSlug.init -> void
+Modulus.Core.Correlation.CausationIdContext
+Modulus.Core.Correlation.CausationIdContext.BeginScope(string! causationId) -> System.IDisposable!
+Modulus.Core.Correlation.CausationIdContext.CausationId.get -> string?
+Modulus.Core.Correlation.CausationIdContext.CausationIdContext() -> void
+Modulus.Core.Correlation.CausationIdContext.IsSet.get -> bool
+Modulus.Core.Correlation.CorrelationContext
+Modulus.Core.Correlation.CorrelationContext.BeginScope(string! correlationId) -> System.IDisposable!
+Modulus.Core.Correlation.CorrelationContext.CorrelationContext() -> void
+Modulus.Core.Correlation.CorrelationContext.CorrelationId.get -> string?
+Modulus.Core.Correlation.CorrelationContext.IsSet.get -> bool
+Modulus.Core.Http.CorrelationIdPropagationHandler
+Modulus.Core.Http.CorrelationIdPropagationHandler.CorrelationIdPropagationHandler(Modulus.Core.Abstractions.ICorrelationContext! correlation, string! headerName = "X-Correlation-ID") -> void
+Modulus.Core.IModuleLoader
+Modulus.Core.IModuleLoader.GetDescriptors() -> System.Collections.Generic.IReadOnlyList<Modulus.Core.Abstractions.ModuleDescriptor!>!
+Modulus.Core.IModuleLoader.InitializeAllAsync(System.IServiceProvider! serviceProvider, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Core.IModuleLoader.ShutdownAllAsync(System.IServiceProvider! serviceProvider, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Core.ModuleInitializationException
+Modulus.Core.ModuleInitializationException.ModuleInitializationException(string! moduleName, System.Exception! inner) -> void
+Modulus.Core.ModuleInitializationException.ModuleName.get -> string!
+Modulus.Core.ModuleLoader
+Modulus.Core.ModuleLoader.GetDescriptors() -> System.Collections.Generic.IReadOnlyList<Modulus.Core.Abstractions.ModuleDescriptor!>!
+Modulus.Core.ModuleLoader.InitializeAllAsync(System.IServiceProvider! sp, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Core.ModuleLoader.ModuleLoader(System.Collections.Generic.IEnumerable<Modulus.Core.Abstractions.IModule!>! modules) -> void
+Modulus.Core.ModuleLoader.ShutdownAllAsync(System.IServiceProvider! sp, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Core.ModulusBuilder
+Modulus.Core.ModulusBuilder.AddModule(System.Type! moduleType) -> Modulus.Core.ModulusBuilder!
+Modulus.Core.ModulusBuilder.AddModule<TModule>() -> Modulus.Core.ModulusBuilder!
+Modulus.Core.ModulusBuilder.Complete() -> Modulus.Core.IModuleLoader!
+Modulus.Core.ModulusBuilder.ModulusBuilder(Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> void
+Modulus.Core.Null.NullCurrentDataScope
+Modulus.Core.Null.NullCurrentDataScope.IsUnrestricted.get -> bool
+Modulus.Core.Null.NullCurrentDataScope.NullCurrentDataScope() -> void
+Modulus.Core.Null.NullCurrentDataScope.OrgUnitIds.get -> System.Collections.Generic.IReadOnlyCollection<System.Guid>!
+Modulus.Core.Null.NullCurrentTenant
+Modulus.Core.Null.NullCurrentTenant.Change(Modulus.Core.Abstractions.TenantInfo? tenant) -> System.IDisposable!
+Modulus.Core.Null.NullCurrentTenant.IsAvailable.get -> bool
+Modulus.Core.Null.NullCurrentTenant.IsHost.get -> bool
+Modulus.Core.Null.NullCurrentTenant.NullCurrentTenant() -> void
+Modulus.Core.Null.NullCurrentTenant.TenantId.get -> System.Guid?
+Modulus.Core.Null.NullCurrentTenant.TenantSlug.get -> string?
+Modulus.Core.Null.NullCurrentUser
+Modulus.Core.Null.NullCurrentUser.Email.get -> string?
+Modulus.Core.Null.NullCurrentUser.HasPermission(string! permission) -> bool
+Modulus.Core.Null.NullCurrentUser.IsAuthenticated.get -> bool
+Modulus.Core.Null.NullCurrentUser.IsInRole(string! role) -> bool
+Modulus.Core.Null.NullCurrentUser.NullCurrentUser() -> void
+Modulus.Core.Null.NullCurrentUser.Permissions.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Modulus.Core.Null.NullCurrentUser.UserId.get -> System.Guid?
+Modulus.Core.Null.NullCurrentUser.UserName.get -> string?
+Modulus.Core.Null.NullFeatureGate
+Modulus.Core.Null.NullFeatureGate.IsEnabled(string! feature) -> bool
+Modulus.Core.Null.NullFeatureGate.NullFeatureGate() -> void
+Modulus.Core.Null.NullPermissionRegistry
+Modulus.Core.Null.NullPermissionRegistry.Add(string! permission, string! description, string![]? requires = null) -> void
+Modulus.Core.Null.NullPermissionRegistry.Exists(string! permission) -> bool
+Modulus.Core.Null.NullPermissionRegistry.Freeze() -> void
+Modulus.Core.Null.NullPermissionRegistry.GetAll() -> System.Collections.Generic.IReadOnlyList<Modulus.Core.Abstractions.PermissionDefinition!>!
+Modulus.Core.Null.NullPermissionRegistry.GetByModule(string! _) -> System.Collections.Generic.IReadOnlyList<Modulus.Core.Abstractions.PermissionDefinition!>!
+Modulus.Core.Null.NullPermissionRegistry.NullPermissionRegistry() -> void
+Modulus.Observability.ModulusMeters
+override Modulus.Core.Abstractions.Common.PagedList<T>.Equals(object? obj) -> bool
+override Modulus.Core.Abstractions.Common.PagedList<T>.GetHashCode() -> int
+override Modulus.Core.Abstractions.Common.PagedList<T>.ToString() -> string!
+override Modulus.Core.Abstractions.Common.Unit.Equals(object? obj) -> bool
+override Modulus.Core.Abstractions.Common.Unit.GetHashCode() -> int
+override Modulus.Core.Abstractions.Common.Unit.ToString() -> string!
+override Modulus.Core.Abstractions.Domain.AutoValueObject.GetEqualityComponents() -> System.Collections.Generic.IEnumerable<object?>!
+override Modulus.Core.Abstractions.Domain.DomainEventBase.Equals(object? obj) -> bool
+override Modulus.Core.Abstractions.Domain.DomainEventBase.GetHashCode() -> int
+override Modulus.Core.Abstractions.Domain.DomainEventBase.ToString() -> string!
+override Modulus.Core.Abstractions.Domain.ValueObject.Equals(object? obj) -> bool
+override Modulus.Core.Abstractions.Domain.ValueObject.GetHashCode() -> int
+override Modulus.Core.Abstractions.ModuleHealthResult.Equals(object? obj) -> bool
+override Modulus.Core.Abstractions.ModuleHealthResult.GetHashCode() -> int
+override Modulus.Core.Abstractions.ModuleHealthResult.ToString() -> string!
+override Modulus.Core.Abstractions.PermissionDefinition.Equals(object? obj) -> bool
+override Modulus.Core.Abstractions.PermissionDefinition.GetHashCode() -> int
+override Modulus.Core.Abstractions.PermissionDefinition.ToString() -> string!
+override Modulus.Core.Abstractions.TenantInfo.Equals(object? obj) -> bool
+override Modulus.Core.Abstractions.TenantInfo.GetHashCode() -> int
+override Modulus.Core.Abstractions.TenantInfo.ToString() -> string!
+static Modulus.Core.Abstractions.Common.PagedList<T>.operator !=(Modulus.Core.Abstractions.Common.PagedList<T>? left, Modulus.Core.Abstractions.Common.PagedList<T>? right) -> bool
+static Modulus.Core.Abstractions.Common.PagedList<T>.operator ==(Modulus.Core.Abstractions.Common.PagedList<T>? left, Modulus.Core.Abstractions.Common.PagedList<T>? right) -> bool
+static Modulus.Core.Abstractions.Common.Unit.operator !=(Modulus.Core.Abstractions.Common.Unit left, Modulus.Core.Abstractions.Common.Unit right) -> bool
+static Modulus.Core.Abstractions.Common.Unit.operator ==(Modulus.Core.Abstractions.Common.Unit left, Modulus.Core.Abstractions.Common.Unit right) -> bool
+static Modulus.Core.Abstractions.Domain.DomainEventBase.operator !=(Modulus.Core.Abstractions.Domain.DomainEventBase? left, Modulus.Core.Abstractions.Domain.DomainEventBase? right) -> bool
+static Modulus.Core.Abstractions.Domain.DomainEventBase.operator ==(Modulus.Core.Abstractions.Domain.DomainEventBase? left, Modulus.Core.Abstractions.Domain.DomainEventBase? right) -> bool
+static Modulus.Core.Abstractions.Domain.ValueObject.operator !=(Modulus.Core.Abstractions.Domain.ValueObject? left, Modulus.Core.Abstractions.Domain.ValueObject? right) -> bool
+static Modulus.Core.Abstractions.Domain.ValueObject.operator ==(Modulus.Core.Abstractions.Domain.ValueObject? left, Modulus.Core.Abstractions.Domain.ValueObject? right) -> bool
+static Modulus.Core.Abstractions.Entities.ExtraPropertiesExtensions.GetExtraProperty(this Modulus.Core.Abstractions.Entities.IHasExtraProperties! entity, string! name) -> string?
+static Modulus.Core.Abstractions.Entities.ExtraPropertiesExtensions.SetExtraProperties(this Modulus.Core.Abstractions.Entities.IHasExtraProperties! entity, System.Collections.Generic.IReadOnlyDictionary<string!, string?>! values) -> void
+static Modulus.Core.Abstractions.ModuleHealthCheckRunner.RunIsolatedAsync(Modulus.Core.Abstractions.IModuleHealthCheck! check, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Modulus.Core.Abstractions.ModuleHealthResult!>!
+static Modulus.Core.Abstractions.ModuleHealthResult.operator !=(Modulus.Core.Abstractions.ModuleHealthResult? left, Modulus.Core.Abstractions.ModuleHealthResult? right) -> bool
+static Modulus.Core.Abstractions.ModuleHealthResult.operator ==(Modulus.Core.Abstractions.ModuleHealthResult? left, Modulus.Core.Abstractions.ModuleHealthResult? right) -> bool
+static Modulus.Core.Abstractions.PermissionDefinition.operator !=(Modulus.Core.Abstractions.PermissionDefinition? left, Modulus.Core.Abstractions.PermissionDefinition? right) -> bool
+static Modulus.Core.Abstractions.PermissionDefinition.operator ==(Modulus.Core.Abstractions.PermissionDefinition? left, Modulus.Core.Abstractions.PermissionDefinition? right) -> bool
+static Modulus.Core.Abstractions.TenantInfo.operator !=(Modulus.Core.Abstractions.TenantInfo? left, Modulus.Core.Abstractions.TenantInfo? right) -> bool
+static Modulus.Core.Abstractions.TenantInfo.operator ==(Modulus.Core.Abstractions.TenantInfo? left, Modulus.Core.Abstractions.TenantInfo? right) -> bool
+static readonly Modulus.Core.Abstractions.Common.Unit.Value -> Modulus.Core.Abstractions.Common.Unit
+static readonly Modulus.Core.Null.NullCurrentDataScope.Instance -> Modulus.Core.Null.NullCurrentDataScope!
+static readonly Modulus.Core.Null.NullFeatureGate.Instance -> Modulus.Core.Null.NullFeatureGate!
+static readonly Modulus.Observability.ModulusMeters.AllMeters -> string![]!
+static readonly Modulus.Observability.ModulusMeters.Authorization -> System.Diagnostics.Metrics.Meter!
+static readonly Modulus.Observability.ModulusMeters.AuthorizationAllowed -> System.Diagnostics.Metrics.Counter<long>!
+static readonly Modulus.Observability.ModulusMeters.AuthorizationDecisionDuration -> System.Diagnostics.Metrics.Histogram<double>!
+static readonly Modulus.Observability.ModulusMeters.AuthorizationDenied -> System.Diagnostics.Metrics.Counter<long>!
+static readonly Modulus.Observability.ModulusMeters.BackgroundJobs -> System.Diagnostics.Metrics.Meter!
+static readonly Modulus.Observability.ModulusMeters.CacheHits -> System.Diagnostics.Metrics.Counter<long>!
+static readonly Modulus.Observability.ModulusMeters.CacheLookupDuration -> System.Diagnostics.Metrics.Histogram<double>!
+static readonly Modulus.Observability.ModulusMeters.CacheMisses -> System.Diagnostics.Metrics.Counter<long>!
+static readonly Modulus.Observability.ModulusMeters.Caching -> System.Diagnostics.Metrics.Meter!
+static readonly Modulus.Observability.ModulusMeters.Events -> System.Diagnostics.Metrics.Meter!
+static readonly Modulus.Observability.ModulusMeters.EventsPublishDuration -> System.Diagnostics.Metrics.Histogram<double>!
+static readonly Modulus.Observability.ModulusMeters.EventsUnroutable -> System.Diagnostics.Metrics.Counter<long>!
+static readonly Modulus.Observability.ModulusMeters.Inbox -> System.Diagnostics.Metrics.Meter!
+static readonly Modulus.Observability.ModulusMeters.InboxDeadLettered -> System.Diagnostics.Metrics.Counter<long>!
+static readonly Modulus.Observability.ModulusMeters.InboxDedupHits -> System.Diagnostics.Metrics.Counter<long>!
+static readonly Modulus.Observability.ModulusMeters.JobsCompleted -> System.Diagnostics.Metrics.Counter<long>!
+static readonly Modulus.Observability.ModulusMeters.JobsFailed -> System.Diagnostics.Metrics.Counter<long>!
+static readonly Modulus.Observability.ModulusMeters.JobsQueueDepth -> System.Diagnostics.Metrics.UpDownCounter<long>!
+static readonly Modulus.Observability.ModulusMeters.JobsStarted -> System.Diagnostics.Metrics.Counter<long>!
+static readonly Modulus.Observability.ModulusMeters.Mediator -> System.Diagnostics.Metrics.Meter!
+static readonly Modulus.Observability.ModulusMeters.MediatorHandlerDuration -> System.Diagnostics.Metrics.Histogram<double>!
+static readonly Modulus.Observability.ModulusMeters.ModuleInitDuration -> System.Diagnostics.Metrics.Histogram<double>!
+static readonly Modulus.Observability.ModulusMeters.MultiTenancy -> System.Diagnostics.Metrics.Meter!
+static readonly Modulus.Observability.ModulusMeters.Outbox -> System.Diagnostics.Metrics.Meter!
+static readonly Modulus.Observability.ModulusMeters.OutboxDeadLettered -> System.Diagnostics.Metrics.Counter<long>!
+static readonly Modulus.Observability.ModulusMeters.OutboxDeferred -> System.Diagnostics.Metrics.Counter<long>!
+static readonly Modulus.Observability.ModulusMeters.OutboxDepth -> System.Diagnostics.Metrics.UpDownCounter<long>!
+static readonly Modulus.Observability.ModulusMeters.OutboxDispatched -> System.Diagnostics.Metrics.Counter<long>!
+static readonly Modulus.Observability.ModulusMeters.OutboxDispatchLag -> System.Diagnostics.Metrics.Histogram<double>!
+static readonly Modulus.Observability.ModulusMeters.RateLimiting -> System.Diagnostics.Metrics.Meter!
+static readonly Modulus.Observability.ModulusMeters.RateLimitPartitions -> System.Diagnostics.Metrics.UpDownCounter<long>!
+static readonly Modulus.Observability.ModulusMeters.RateLimitRejected -> System.Diagnostics.Metrics.Counter<long>!
+static readonly Modulus.Observability.ModulusMeters.RecurringJobCount -> System.Diagnostics.Metrics.UpDownCounter<long>!
+static readonly Modulus.Observability.ModulusMeters.UnresolvedTenant -> System.Diagnostics.Metrics.Counter<long>!
+virtual Modulus.Core.Abstractions.Domain.DomainEventBase.EqualityContract.get -> System.Type!
+virtual Modulus.Core.Abstractions.Domain.DomainEventBase.Equals(Modulus.Core.Abstractions.Domain.DomainEventBase? other) -> bool
+virtual Modulus.Core.Abstractions.Domain.DomainEventBase.PrintMembers(System.Text.StringBuilder! builder) -> bool
+virtual Modulus.Core.Abstractions.ModulusModule.ConfigureServices(Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> void
+virtual Modulus.Core.Abstractions.ModulusModule.InitializeAsync(Modulus.Core.Abstractions.ModuleContext! context, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+virtual Modulus.Core.Abstractions.ModulusModule.PostConfigureServices(Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> void
+virtual Modulus.Core.Abstractions.ModulusModule.PreConfigureServices(Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> void
+virtual Modulus.Core.Abstractions.ModulusModule.ShutdownAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!

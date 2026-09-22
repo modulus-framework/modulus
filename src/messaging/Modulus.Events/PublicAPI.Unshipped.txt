@@ -1,0 +1,100 @@
+#nullable enable
+abstract Modulus.Events.Abstractions.IntegrationEventBase.<Clone>$() -> Modulus.Events.Abstractions.IntegrationEventBase!
+Modulus.Events.Abstractions.DomainEventDispatchMode
+Modulus.Events.Abstractions.DomainEventDispatchMode.AfterSave = 1 -> Modulus.Events.Abstractions.DomainEventDispatchMode
+Modulus.Events.Abstractions.DomainEventDispatchMode.BeforeSave = 0 -> Modulus.Events.Abstractions.DomainEventDispatchMode
+Modulus.Events.Abstractions.IDeferredDomainEventQueue
+Modulus.Events.Abstractions.IDeferredDomainEventQueue.DequeueAll() -> System.Collections.Generic.IReadOnlyList<Modulus.Core.Abstractions.Domain.IDomainEvent!>!
+Modulus.Events.Abstractions.IDeferredDomainEventQueue.Enqueue(System.Collections.Generic.IEnumerable<Modulus.Core.Abstractions.Domain.IDomainEvent!>! events) -> void
+Modulus.Events.Abstractions.IDomainEventHandler<TEvent>
+Modulus.Events.Abstractions.IDomainEventHandler<TEvent>.HandleAsync(TEvent domainEvent, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
+Modulus.Events.Abstractions.IIntegrationEvent
+Modulus.Events.Abstractions.IIntegrationEvent.EventId.get -> System.Guid
+Modulus.Events.Abstractions.IIntegrationEvent.EventType.get -> string!
+Modulus.Events.Abstractions.IIntegrationEvent.OccurredAt.get -> System.DateTime
+Modulus.Events.Abstractions.IIntegrationEventHandler<TEvent>
+Modulus.Events.Abstractions.IIntegrationEventHandler<TEvent>.HandleAsync(TEvent event, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
+Modulus.Events.Abstractions.IIntegrationEventHandlerDecorator
+Modulus.Events.Abstractions.IIntegrationEventHandlerDecorator.Decorate(System.IServiceProvider! services, System.Type! eventType, object! handler) -> object!
+Modulus.Events.Abstractions.IIntegrationEventRegistry
+Modulus.Events.Abstractions.IIntegrationEventRegistry.GetRoutingKeys() -> System.Collections.Generic.IReadOnlyCollection<string!>!
+Modulus.Events.Abstractions.IIntegrationEventRegistry.Register(System.Type! eventType) -> void
+Modulus.Events.Abstractions.IIntegrationEventRegistry.TryGetType(string! routingKey, out System.Type? eventType) -> bool
+Modulus.Events.Abstractions.IMessageSerializer
+Modulus.Events.Abstractions.IMessageSerializer.Deserialize(string! json, System.Type! type) -> object?
+Modulus.Events.Abstractions.IMessageSerializer.Serialize(object! payload, System.Type! type) -> string!
+Modulus.Events.Abstractions.IModuleBus
+Modulus.Events.Abstractions.IModuleBus.PublishAsync<TEvent>(TEvent event, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Events.Abstractions.IntegrationEventBase
+Modulus.Events.Abstractions.IntegrationEventBase.Deconstruct(out string! EventType) -> void
+Modulus.Events.Abstractions.IntegrationEventBase.EventId.get -> System.Guid
+Modulus.Events.Abstractions.IntegrationEventBase.EventId.init -> void
+Modulus.Events.Abstractions.IntegrationEventBase.EventType.get -> string!
+Modulus.Events.Abstractions.IntegrationEventBase.EventType.init -> void
+Modulus.Events.Abstractions.IntegrationEventBase.IntegrationEventBase(Modulus.Events.Abstractions.IntegrationEventBase! original) -> void
+Modulus.Events.Abstractions.IntegrationEventBase.IntegrationEventBase(string! EventType) -> void
+Modulus.Events.Abstractions.IntegrationEventBase.OccurredAt.get -> System.DateTime
+Modulus.Events.Abstractions.IntegrationEventBase.OccurredAt.init -> void
+Modulus.Events.Abstractions.IntegrationEventEnvelope
+Modulus.Events.Abstractions.IntegrationEventEnvelope.CorrelationId.get -> string?
+Modulus.Events.Abstractions.IntegrationEventEnvelope.CorrelationId.init -> void
+Modulus.Events.Abstractions.IntegrationEventEnvelope.EventId.get -> System.Guid
+Modulus.Events.Abstractions.IntegrationEventEnvelope.EventId.init -> void
+Modulus.Events.Abstractions.IntegrationEventEnvelope.IntegrationEventEnvelope() -> void
+Modulus.Events.Abstractions.IntegrationEventEnvelope.OccurredAt.get -> System.DateTime
+Modulus.Events.Abstractions.IntegrationEventEnvelope.OccurredAt.init -> void
+Modulus.Events.Abstractions.IntegrationEventEnvelope.Payload.get -> string!
+Modulus.Events.Abstractions.IntegrationEventEnvelope.Payload.init -> void
+Modulus.Events.Abstractions.IntegrationEventEnvelope.RoutingKey.get -> string!
+Modulus.Events.Abstractions.IntegrationEventEnvelope.RoutingKey.init -> void
+Modulus.Events.Abstractions.IntegrationEventEnvelope.SchemaVersion.get -> int?
+Modulus.Events.Abstractions.IntegrationEventEnvelope.SchemaVersion.init -> void
+Modulus.Events.Abstractions.IntegrationEventEnvelope.TenantId.get -> System.Guid?
+Modulus.Events.Abstractions.IntegrationEventEnvelope.TenantId.init -> void
+Modulus.Events.Abstractions.IntegrationEventEnvelope.TraceParent.get -> string?
+Modulus.Events.Abstractions.IntegrationEventEnvelope.TraceParent.init -> void
+Modulus.Events.Abstractions.IntegrationEventEnvelope.TraceState.get -> string?
+Modulus.Events.Abstractions.IntegrationEventEnvelope.TraceState.init -> void
+Modulus.Events.Abstractions.IntegrationEventEnvelope.TypeName.get -> string!
+Modulus.Events.Abstractions.IntegrationEventEnvelope.TypeName.init -> void
+Modulus.Events.Abstractions.IntegrationEventNameAttribute
+Modulus.Events.Abstractions.IntegrationEventNameAttribute.IntegrationEventNameAttribute(string! name) -> void
+Modulus.Events.Abstractions.IntegrationEventNameAttribute.Name.get -> string!
+Modulus.Events.Abstractions.IntegrationEventNaming
+Modulus.Events.DeferredDomainEventQueue
+Modulus.Events.DeferredDomainEventQueue.DeferredDomainEventQueue() -> void
+Modulus.Events.DeferredDomainEventQueue.DequeueAll() -> System.Collections.Generic.IReadOnlyList<Modulus.Core.Abstractions.Domain.IDomainEvent!>!
+Modulus.Events.DeferredDomainEventQueue.Enqueue(System.Collections.Generic.IEnumerable<Modulus.Core.Abstractions.Domain.IDomainEvent!>! events) -> void
+Modulus.Events.DomainEventDispatcher
+Modulus.Events.DomainEventDispatcher.DispatchAsync(System.Collections.Generic.IEnumerable<Modulus.Core.Abstractions.Domain.IDomainEvent!>! events, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Events.DomainEventDispatcher.DomainEventDispatcher(System.IServiceProvider! sp) -> void
+Modulus.Events.EnvelopeAmbientScope
+Modulus.Events.EnvelopeAmbientScope.Dispose() -> void
+Modulus.Events.Extensions.EventBusRegistrationHelper
+Modulus.Events.Extensions.EventsServiceCollectionExtensions
+Modulus.Events.Extensions.InMemoryEventBusExtensions
+Modulus.Events.IntegrationEventDispatcher
+Modulus.Events.IntegrationEventDispatcher.DispatchAsync(Modulus.Events.Abstractions.IntegrationEventEnvelope! envelope, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.Events.IntegrationEventDispatcher.IntegrationEventDispatcher(Microsoft.Extensions.DependencyInjection.IServiceScopeFactory! scopeFactory, Modulus.Events.Abstractions.IIntegrationEventRegistry! registry, Modulus.Events.Abstractions.IMessageSerializer! serializer) -> void
+Modulus.Events.IntegrationEventRegistry
+Modulus.Events.IntegrationEventRegistry.GetRoutingKeys() -> System.Collections.Generic.IReadOnlyCollection<string!>!
+Modulus.Events.IntegrationEventRegistry.IntegrationEventRegistry() -> void
+Modulus.Events.IntegrationEventRegistry.Register(System.Type! eventType) -> void
+Modulus.Events.IntegrationEventRegistry.TryGetType(string! routingKey, out System.Type? eventType) -> bool
+Modulus.Events.SystemTextJsonMessageSerializer
+Modulus.Events.SystemTextJsonMessageSerializer.Deserialize(string! json, System.Type! type) -> object?
+Modulus.Events.SystemTextJsonMessageSerializer.Serialize(object! payload, System.Type! type) -> string!
+Modulus.Events.SystemTextJsonMessageSerializer.SystemTextJsonMessageSerializer() -> void
+override Modulus.Events.Abstractions.IntegrationEventBase.Equals(object? obj) -> bool
+override Modulus.Events.Abstractions.IntegrationEventBase.GetHashCode() -> int
+override Modulus.Events.Abstractions.IntegrationEventBase.ToString() -> string!
+static Modulus.Events.Abstractions.IntegrationEventBase.operator !=(Modulus.Events.Abstractions.IntegrationEventBase? left, Modulus.Events.Abstractions.IntegrationEventBase? right) -> bool
+static Modulus.Events.Abstractions.IntegrationEventBase.operator ==(Modulus.Events.Abstractions.IntegrationEventBase? left, Modulus.Events.Abstractions.IntegrationEventBase? right) -> bool
+static Modulus.Events.Abstractions.IntegrationEventNaming.GetName(System.Type! eventType) -> string!
+static Modulus.Events.EnvelopeAmbientScope.Restore(Modulus.Events.Abstractions.IntegrationEventEnvelope! envelope, System.IServiceProvider! services) -> Modulus.Events.EnvelopeAmbientScope!
+static Modulus.Events.Extensions.EventBusRegistrationHelper.RemoveIModuleBusRegistrations(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> void
+static Modulus.Events.Extensions.EventsServiceCollectionExtensions.AddModulusEvents(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, params System.Reflection.Assembly![]! assemblies) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.Events.Extensions.InMemoryEventBusExtensions.AddInMemoryEventBus(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+virtual Modulus.Events.Abstractions.IntegrationEventBase.EqualityContract.get -> System.Type!
+virtual Modulus.Events.Abstractions.IntegrationEventBase.Equals(Modulus.Events.Abstractions.IntegrationEventBase? other) -> bool
+virtual Modulus.Events.Abstractions.IntegrationEventBase.PrintMembers(System.Text.StringBuilder! builder) -> bool

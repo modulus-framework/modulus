@@ -1,0 +1,42 @@
+#nullable enable
+const Modulus.UI.AuditLogging.AuditLoggingUiLocalization.ResourceName = "Modulus.AuditLogging" -> string!
+const Modulus.UI.AuditLogging.AuditLoggingUiOptions.SectionName = "AuditLoggingUi" -> string!
+const Modulus.UI.AuditLogging.AuditLoggingUiPermissions.View = "audit:view" -> string!
+Modulus.UI.AuditLogging.AuditLoggingUiExtensions
+Modulus.UI.AuditLogging.AuditLoggingUiLocalization
+Modulus.UI.AuditLogging.AuditLoggingUiModule
+Modulus.UI.AuditLogging.AuditLoggingUiModule.AuditLoggingUiModule() -> void
+Modulus.UI.AuditLogging.AuditLoggingUiOptions
+Modulus.UI.AuditLogging.AuditLoggingUiOptions.AuditLoggingUiOptions() -> void
+Modulus.UI.AuditLogging.AuditLoggingUiOptions.DefaultPageSize.get -> int
+Modulus.UI.AuditLogging.AuditLoggingUiOptions.DefaultPageSize.set -> void
+Modulus.UI.AuditLogging.AuditLoggingUiOptions.RequirePermission.get -> string?
+Modulus.UI.AuditLogging.AuditLoggingUiOptions.RequirePermission.set -> void
+Modulus.UI.AuditLogging.AuditLoggingUiPermissions
+Modulus.UI.AuditLogging.Pages.AuditLogs.DetailsModel
+Modulus.UI.AuditLogging.Pages.AuditLogs.DetailsModel.DetailsModel(Modulus.AuditLogging.IAuditLogStore! store, Modulus.Core.Abstractions.ICurrentTenant! currentTenant, Modulus.Localization.IModulusLocalizer! localizer) -> void
+Modulus.UI.AuditLogging.Pages.AuditLogs.DetailsModel.Entry.get -> Modulus.AuditLogging.AuditLogEntry?
+Modulus.UI.AuditLogging.Pages.AuditLogs.DetailsModel.OnGetAsync(System.Guid id, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Mvc.IActionResult!>!
+Modulus.UI.AuditLogging.Pages.AuditLogs.DetailsModel.TextAsync(string! key) -> System.Threading.Tasks.Task<string!>!
+Modulus.UI.AuditLogging.Pages.AuditLogs.IndexModel
+Modulus.UI.AuditLogging.Pages.AuditLogs.IndexModel.Action.get -> string?
+Modulus.UI.AuditLogging.Pages.AuditLogs.IndexModel.Action.set -> void
+Modulus.UI.AuditLogging.Pages.AuditLogs.IndexModel.From.get -> System.DateTimeOffset?
+Modulus.UI.AuditLogging.Pages.AuditLogs.IndexModel.From.set -> void
+Modulus.UI.AuditLogging.Pages.AuditLogs.IndexModel.IndexModel(Modulus.AuditLogging.IAuditLogStore! store, Modulus.Core.Abstractions.ICurrentTenant! currentTenant, Microsoft.Extensions.Options.IOptions<Modulus.UI.AuditLogging.AuditLoggingUiOptions!>! options, Modulus.Localization.IModulusLocalizer! localizer) -> void
+Modulus.UI.AuditLogging.Pages.AuditLogs.IndexModel.OnGetAsync(System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
+Modulus.UI.AuditLogging.Pages.AuditLogs.IndexModel.PageNumber.get -> int
+Modulus.UI.AuditLogging.Pages.AuditLogs.IndexModel.PageNumber.set -> void
+Modulus.UI.AuditLogging.Pages.AuditLogs.IndexModel.Resource.get -> string?
+Modulus.UI.AuditLogging.Pages.AuditLogs.IndexModel.Resource.set -> void
+Modulus.UI.AuditLogging.Pages.AuditLogs.IndexModel.Result.get -> Modulus.Core.Abstractions.Common.PagedList<Modulus.AuditLogging.AuditLogEntry!>!
+Modulus.UI.AuditLogging.Pages.AuditLogs.IndexModel.TextAsync(string! key) -> System.Threading.Tasks.Task<string!>!
+Modulus.UI.AuditLogging.Pages.AuditLogs.IndexModel.To.get -> System.DateTimeOffset?
+Modulus.UI.AuditLogging.Pages.AuditLogs.IndexModel.To.set -> void
+Modulus.UI.AuditLogging.Pages.AuditLogs.IndexModel.UserId.get -> string?
+Modulus.UI.AuditLogging.Pages.AuditLogs.IndexModel.UserId.set -> void
+override Modulus.UI.AuditLogging.AuditLoggingUiModule.ConfigureNavigation(Modulus.UI.UiNavigationBuilder! navigation) -> void
+override Modulus.UI.AuditLogging.AuditLoggingUiModule.Manifest.get -> Modulus.UI.ModuleManifest!
+static Modulus.UI.AuditLogging.AuditLoggingUiExtensions.AddModulusAuditLoggingUi(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration? configuration = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.UI.AuditLogging.AuditLoggingUiExtensions.MapModulusAuditLoggingUi(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints) -> Microsoft.AspNetCore.Routing.IEndpointRouteBuilder!
+static Modulus.UI.AuditLogging.AuditLoggingUiLocalization.Seed(Modulus.Localization.ILocalizationStore! store) -> void

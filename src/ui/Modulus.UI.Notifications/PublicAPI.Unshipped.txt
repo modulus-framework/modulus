@@ -1,0 +1,64 @@
+#nullable enable
+const Modulus.UI.Notifications.NotificationsUiLocalization.ResourceName = "Modulus.Notifications" -> string!
+const Modulus.UI.Notifications.NotificationsUiOptions.SectionName = "NotificationsUi" -> string!
+const Modulus.UI.Notifications.NotificationsUiPermissions.View = "notifications:view" -> string!
+Modulus.UI.Notifications.NotificationsUiExtensions
+Modulus.UI.Notifications.NotificationsUiLocalization
+Modulus.UI.Notifications.NotificationsUiModule
+Modulus.UI.Notifications.NotificationsUiModule.NotificationsUiModule() -> void
+Modulus.UI.Notifications.NotificationsUiOptions
+Modulus.UI.Notifications.NotificationsUiOptions.DefaultPageSize.get -> int
+Modulus.UI.Notifications.NotificationsUiOptions.DefaultPageSize.set -> void
+Modulus.UI.Notifications.NotificationsUiOptions.NotificationsUiOptions() -> void
+Modulus.UI.Notifications.NotificationsUiOptions.RequirePermission.get -> string?
+Modulus.UI.Notifications.NotificationsUiOptions.RequirePermission.set -> void
+Modulus.UI.Notifications.NotificationsUiPermissions
+Modulus.UI.Notifications.Pages.Notifications.IndexModel
+Modulus.UI.Notifications.Pages.Notifications.IndexModel.IndexModel(Modulus.Notifications.INotificationStore! store, Modulus.Core.Abstractions.ICurrentUser! currentUser, Modulus.Core.Abstractions.ICurrentTenant! currentTenant, Microsoft.Extensions.Options.IOptions<Modulus.UI.Notifications.NotificationsUiOptions!>! options, Modulus.Localization.IModulusLocalizer! localizer) -> void
+Modulus.UI.Notifications.Pages.Notifications.IndexModel.ListView() -> Modulus.UI.Notifications.Pages.Notifications.NotificationListView!
+Modulus.UI.Notifications.Pages.Notifications.IndexModel.OnGetAsync(System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
+Modulus.UI.Notifications.Pages.Notifications.IndexModel.OnPostDeleteAsync(System.Guid id, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Mvc.IActionResult!>!
+Modulus.UI.Notifications.Pages.Notifications.IndexModel.OnPostMarkAllReadAsync(System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Mvc.IActionResult!>!
+Modulus.UI.Notifications.Pages.Notifications.IndexModel.OnPostMarkReadAsync(System.Guid id, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Mvc.IActionResult!>!
+Modulus.UI.Notifications.Pages.Notifications.IndexModel.PageNumber.get -> int
+Modulus.UI.Notifications.Pages.Notifications.IndexModel.PageNumber.set -> void
+Modulus.UI.Notifications.Pages.Notifications.IndexModel.Result.get -> Modulus.Core.Abstractions.Common.PagedList<Modulus.Notifications.UserNotification!>!
+Modulus.UI.Notifications.Pages.Notifications.IndexModel.RowView(Modulus.Notifications.UserNotification! item) -> Modulus.UI.Notifications.Pages.Notifications.NotificationRowView!
+Modulus.UI.Notifications.Pages.Notifications.IndexModel.TextAsync(string! key) -> System.Threading.Tasks.Task<string!>!
+Modulus.UI.Notifications.Pages.Notifications.IndexModel.UnreadOnly.get -> bool
+Modulus.UI.Notifications.Pages.Notifications.IndexModel.UnreadOnly.set -> void
+Modulus.UI.Notifications.Pages.Notifications.NotificationListView
+Modulus.UI.Notifications.Pages.Notifications.NotificationListView.<Clone>$() -> Modulus.UI.Notifications.Pages.Notifications.NotificationListView!
+Modulus.UI.Notifications.Pages.Notifications.NotificationListView.Deconstruct(out Modulus.Core.Abstractions.Common.PagedList<Modulus.Notifications.UserNotification!>! Result, out bool UnreadOnly) -> void
+Modulus.UI.Notifications.Pages.Notifications.NotificationListView.Equals(Modulus.UI.Notifications.Pages.Notifications.NotificationListView? other) -> bool
+Modulus.UI.Notifications.Pages.Notifications.NotificationListView.NotificationListView(Modulus.Core.Abstractions.Common.PagedList<Modulus.Notifications.UserNotification!>! Result, bool UnreadOnly) -> void
+Modulus.UI.Notifications.Pages.Notifications.NotificationListView.Result.get -> Modulus.Core.Abstractions.Common.PagedList<Modulus.Notifications.UserNotification!>!
+Modulus.UI.Notifications.Pages.Notifications.NotificationListView.Result.init -> void
+Modulus.UI.Notifications.Pages.Notifications.NotificationListView.UnreadOnly.get -> bool
+Modulus.UI.Notifications.Pages.Notifications.NotificationListView.UnreadOnly.init -> void
+Modulus.UI.Notifications.Pages.Notifications.NotificationRowView
+Modulus.UI.Notifications.Pages.Notifications.NotificationRowView.<Clone>$() -> Modulus.UI.Notifications.Pages.Notifications.NotificationRowView!
+Modulus.UI.Notifications.Pages.Notifications.NotificationRowView.Deconstruct(out Modulus.Notifications.UserNotification! Item, out bool UnreadOnly, out int PageNumber) -> void
+Modulus.UI.Notifications.Pages.Notifications.NotificationRowView.Equals(Modulus.UI.Notifications.Pages.Notifications.NotificationRowView? other) -> bool
+Modulus.UI.Notifications.Pages.Notifications.NotificationRowView.Item.get -> Modulus.Notifications.UserNotification!
+Modulus.UI.Notifications.Pages.Notifications.NotificationRowView.Item.init -> void
+Modulus.UI.Notifications.Pages.Notifications.NotificationRowView.NotificationRowView(Modulus.Notifications.UserNotification! Item, bool UnreadOnly, int PageNumber) -> void
+Modulus.UI.Notifications.Pages.Notifications.NotificationRowView.PageNumber.get -> int
+Modulus.UI.Notifications.Pages.Notifications.NotificationRowView.PageNumber.init -> void
+Modulus.UI.Notifications.Pages.Notifications.NotificationRowView.UnreadOnly.get -> bool
+Modulus.UI.Notifications.Pages.Notifications.NotificationRowView.UnreadOnly.init -> void
+override Modulus.UI.Notifications.NotificationsUiModule.ConfigureNavigation(Modulus.UI.UiNavigationBuilder! navigation) -> void
+override Modulus.UI.Notifications.NotificationsUiModule.Manifest.get -> Modulus.UI.ModuleManifest!
+override Modulus.UI.Notifications.Pages.Notifications.NotificationListView.Equals(object? obj) -> bool
+override Modulus.UI.Notifications.Pages.Notifications.NotificationListView.GetHashCode() -> int
+override Modulus.UI.Notifications.Pages.Notifications.NotificationListView.ToString() -> string!
+override Modulus.UI.Notifications.Pages.Notifications.NotificationRowView.Equals(object? obj) -> bool
+override Modulus.UI.Notifications.Pages.Notifications.NotificationRowView.GetHashCode() -> int
+override Modulus.UI.Notifications.Pages.Notifications.NotificationRowView.ToString() -> string!
+static Modulus.UI.Notifications.NotificationsUiExtensions.AddModulusNotificationsUi(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration? configuration = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.UI.Notifications.NotificationsUiExtensions.MapModulusNotificationsUi(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints) -> Microsoft.AspNetCore.Routing.IEndpointRouteBuilder!
+static Modulus.UI.Notifications.NotificationsUiLocalization.Seed(Modulus.Localization.ILocalizationStore! store) -> void
+static Modulus.UI.Notifications.Pages.Notifications.NotificationListView.operator !=(Modulus.UI.Notifications.Pages.Notifications.NotificationListView? left, Modulus.UI.Notifications.Pages.Notifications.NotificationListView? right) -> bool
+static Modulus.UI.Notifications.Pages.Notifications.NotificationListView.operator ==(Modulus.UI.Notifications.Pages.Notifications.NotificationListView? left, Modulus.UI.Notifications.Pages.Notifications.NotificationListView? right) -> bool
+static Modulus.UI.Notifications.Pages.Notifications.NotificationRowView.operator !=(Modulus.UI.Notifications.Pages.Notifications.NotificationRowView? left, Modulus.UI.Notifications.Pages.Notifications.NotificationRowView? right) -> bool
+static Modulus.UI.Notifications.Pages.Notifications.NotificationRowView.operator ==(Modulus.UI.Notifications.Pages.Notifications.NotificationRowView? left, Modulus.UI.Notifications.Pages.Notifications.NotificationRowView? right) -> bool

@@ -1,0 +1,13 @@
+#nullable enable
+Modulus.AspNetCore.Redis.Idempotency.RedisIdempotencyExtensions
+Modulus.AspNetCore.Redis.Idempotency.RedisIdempotencyStore
+Modulus.AspNetCore.Redis.Idempotency.RedisIdempotencyStore.AbandonAsync(string! key, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
+Modulus.AspNetCore.Redis.Idempotency.RedisIdempotencyStore.CompleteAsync(string! key, Modulus.AspNetCore.Idempotency.CachedResponse! response, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
+Modulus.AspNetCore.Redis.Idempotency.RedisIdempotencyStore.RedisIdempotencyStore(StackExchange.Redis.IConnectionMultiplexer! redis, Microsoft.Extensions.Options.IOptions<Modulus.AspNetCore.Idempotency.IdempotencyOptions!>! options, Modulus.AspNetCore.Redis.Idempotency.RedisIdempotencyStoreOptions! storeOptions) -> void
+Modulus.AspNetCore.Redis.Idempotency.RedisIdempotencyStore.TryBeginAsync(string! key, string! fingerprint, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Modulus.AspNetCore.Idempotency.IdempotencyResult!>!
+Modulus.AspNetCore.Redis.Idempotency.RedisIdempotencyStoreOptions
+Modulus.AspNetCore.Redis.Idempotency.RedisIdempotencyStoreOptions.KeyPrefix.get -> string!
+Modulus.AspNetCore.Redis.Idempotency.RedisIdempotencyStoreOptions.KeyPrefix.set -> void
+Modulus.AspNetCore.Redis.Idempotency.RedisIdempotencyStoreOptions.RedisIdempotencyStoreOptions() -> void
+static Modulus.AspNetCore.Redis.Idempotency.RedisIdempotencyExtensions.AddRedisIdempotencyStore(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, string! connectionString, System.Action<Modulus.AspNetCore.Redis.Idempotency.RedisIdempotencyStoreOptions!>? configure = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.AspNetCore.Redis.Idempotency.RedisIdempotencyExtensions.AddRedisIdempotencyStore(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<Modulus.AspNetCore.Redis.Idempotency.RedisIdempotencyStoreOptions!>? configure = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!

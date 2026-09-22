@@ -1,0 +1,19 @@
+#nullable enable
+Modulus.Diagnostics.Extensions.DiagnosticsExtensions
+Modulus.Observability.ModulusOpenTelemetrySetup
+Modulus.OpenTelemetry.Extensions.OpenTelemetryExtensions
+Modulus.OpenTelemetry.ModulusActivitySources
+Modulus.OpenTelemetry.TracingBehavior<TRequest, TResponse>
+Modulus.OpenTelemetry.TracingBehavior<TRequest, TResponse>.HandleAsync(TRequest request, Modulus.Mediator.Abstractions.RequestHandlerDelegate<TResponse>! next, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<TResponse>!
+Modulus.OpenTelemetry.TracingBehavior<TRequest, TResponse>.TracingBehavior(Modulus.Core.Abstractions.ICurrentTenant! tenant, Modulus.Core.Abstractions.ICurrentUser! user) -> void
+static Modulus.Diagnostics.Extensions.DiagnosticsExtensions.AddModuleDiagnostics(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, params System.Reflection.Assembly![]! assemblies) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.Diagnostics.Extensions.DiagnosticsExtensions.MapModulusDiagnostics(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! app) -> Microsoft.AspNetCore.Routing.IEndpointRouteBuilder!
+static Modulus.Observability.ModulusOpenTelemetrySetup.AddModulusOpenTelemetry(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration, Microsoft.Extensions.Hosting.IHostEnvironment! environment) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.OpenTelemetry.Extensions.OpenTelemetryExtensions.AddModulusObservability(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.OpenTelemetry.Extensions.OpenTelemetryExtensions.UseModulusLogging(this OpenTelemetry.Logs.LoggerProviderBuilder! builder) -> OpenTelemetry.Logs.LoggerProviderBuilder!
+static Modulus.OpenTelemetry.Extensions.OpenTelemetryExtensions.UseModulusMetrics(this OpenTelemetry.Metrics.MeterProviderBuilder! builder) -> OpenTelemetry.Metrics.MeterProviderBuilder!
+static Modulus.OpenTelemetry.Extensions.OpenTelemetryExtensions.UseModulusTracing(this OpenTelemetry.Trace.TracerProviderBuilder! builder) -> OpenTelemetry.Trace.TracerProviderBuilder!
+static readonly Modulus.OpenTelemetry.ModulusActivitySources.All -> string![]!
+static readonly Modulus.OpenTelemetry.ModulusActivitySources.BackgroundJobs -> System.Diagnostics.ActivitySource!
+static readonly Modulus.OpenTelemetry.ModulusActivitySources.Events -> System.Diagnostics.ActivitySource!
+static readonly Modulus.OpenTelemetry.ModulusActivitySources.Mediator -> System.Diagnostics.ActivitySource!

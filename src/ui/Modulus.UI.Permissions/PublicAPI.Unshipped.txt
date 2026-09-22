@@ -1,0 +1,54 @@
+#nullable enable
+const Modulus.UI.Permissions.PermissionsUiLocalization.ResourceName = "Modulus.Permissions" -> string!
+const Modulus.UI.Permissions.PermissionsUiOptions.SectionName = "PermissionsUi" -> string!
+const Modulus.UI.Permissions.PermissionsUiPermissions.View = "permissions:view" -> string!
+Modulus.UI.Permissions.Pages.Permissions.HolderModel
+Modulus.UI.Permissions.Pages.Permissions.HolderModel.HolderModel(Modulus.Authorization.Grants.IPermissionGrantStore! grants, Modulus.Localization.IModulusLocalizer! localizer) -> void
+Modulus.UI.Permissions.Pages.Permissions.HolderModel.OnGet() -> void
+Modulus.UI.Permissions.Pages.Permissions.HolderModel.OnPostAsync() -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Mvc.IActionResult!>!
+Modulus.UI.Permissions.Pages.Permissions.HolderModel.Query.get -> Modulus.UI.Permissions.Pages.Permissions.HolderModel.QueryModel!
+Modulus.UI.Permissions.Pages.Permissions.HolderModel.Query.set -> void
+Modulus.UI.Permissions.Pages.Permissions.HolderModel.QueryModel
+Modulus.UI.Permissions.Pages.Permissions.HolderModel.QueryModel.Holder.get -> string!
+Modulus.UI.Permissions.Pages.Permissions.HolderModel.QueryModel.Holder.set -> void
+Modulus.UI.Permissions.Pages.Permissions.HolderModel.QueryModel.HolderType.get -> string!
+Modulus.UI.Permissions.Pages.Permissions.HolderModel.QueryModel.HolderType.set -> void
+Modulus.UI.Permissions.Pages.Permissions.HolderModel.QueryModel.QueryModel() -> void
+Modulus.UI.Permissions.Pages.Permissions.HolderModel.QueryModel.Roles.get -> string?
+Modulus.UI.Permissions.Pages.Permissions.HolderModel.QueryModel.Roles.set -> void
+Modulus.UI.Permissions.Pages.Permissions.HolderModel.Result.get -> System.Collections.Generic.IReadOnlyCollection<Modulus.Authorization.Grants.PermissionGrant!>!
+Modulus.UI.Permissions.Pages.Permissions.HolderModel.Searched.get -> bool
+Modulus.UI.Permissions.Pages.Permissions.HolderModel.TextAsync(string! key) -> System.Threading.Tasks.Task<string!>!
+Modulus.UI.Permissions.Pages.Permissions.IndexModel
+Modulus.UI.Permissions.Pages.Permissions.IndexModel.Groups.get -> System.Collections.Generic.IReadOnlyList<Modulus.UI.Permissions.Pages.Permissions.IndexModel.PermissionGroup!>!
+Modulus.UI.Permissions.Pages.Permissions.IndexModel.IndexModel(Modulus.Core.Abstractions.IPermissionRegistry! registry, Modulus.Localization.IModulusLocalizer! localizer) -> void
+Modulus.UI.Permissions.Pages.Permissions.IndexModel.OnGet() -> void
+Modulus.UI.Permissions.Pages.Permissions.IndexModel.PermissionGroup
+Modulus.UI.Permissions.Pages.Permissions.IndexModel.PermissionGroup.<Clone>$() -> Modulus.UI.Permissions.Pages.Permissions.IndexModel.PermissionGroup!
+Modulus.UI.Permissions.Pages.Permissions.IndexModel.PermissionGroup.Deconstruct(out string! Module, out System.Collections.Generic.IReadOnlyList<Modulus.Core.Abstractions.PermissionDefinition!>! Permissions) -> void
+Modulus.UI.Permissions.Pages.Permissions.IndexModel.PermissionGroup.Equals(Modulus.UI.Permissions.Pages.Permissions.IndexModel.PermissionGroup? other) -> bool
+Modulus.UI.Permissions.Pages.Permissions.IndexModel.PermissionGroup.Module.get -> string!
+Modulus.UI.Permissions.Pages.Permissions.IndexModel.PermissionGroup.Module.init -> void
+Modulus.UI.Permissions.Pages.Permissions.IndexModel.PermissionGroup.PermissionGroup(string! Module, System.Collections.Generic.IReadOnlyList<Modulus.Core.Abstractions.PermissionDefinition!>! Permissions) -> void
+Modulus.UI.Permissions.Pages.Permissions.IndexModel.PermissionGroup.Permissions.get -> System.Collections.Generic.IReadOnlyList<Modulus.Core.Abstractions.PermissionDefinition!>!
+Modulus.UI.Permissions.Pages.Permissions.IndexModel.PermissionGroup.Permissions.init -> void
+Modulus.UI.Permissions.Pages.Permissions.IndexModel.TextAsync(string! key) -> System.Threading.Tasks.Task<string!>!
+Modulus.UI.Permissions.PermissionsUiExtensions
+Modulus.UI.Permissions.PermissionsUiLocalization
+Modulus.UI.Permissions.PermissionsUiModule
+Modulus.UI.Permissions.PermissionsUiModule.PermissionsUiModule() -> void
+Modulus.UI.Permissions.PermissionsUiOptions
+Modulus.UI.Permissions.PermissionsUiOptions.PermissionsUiOptions() -> void
+Modulus.UI.Permissions.PermissionsUiOptions.RequirePermission.get -> string?
+Modulus.UI.Permissions.PermissionsUiOptions.RequirePermission.set -> void
+Modulus.UI.Permissions.PermissionsUiPermissions
+override Modulus.UI.Permissions.Pages.Permissions.IndexModel.PermissionGroup.Equals(object? obj) -> bool
+override Modulus.UI.Permissions.Pages.Permissions.IndexModel.PermissionGroup.GetHashCode() -> int
+override Modulus.UI.Permissions.Pages.Permissions.IndexModel.PermissionGroup.ToString() -> string!
+override Modulus.UI.Permissions.PermissionsUiModule.ConfigureNavigation(Modulus.UI.UiNavigationBuilder! navigation) -> void
+override Modulus.UI.Permissions.PermissionsUiModule.Manifest.get -> Modulus.UI.ModuleManifest!
+static Modulus.UI.Permissions.Pages.Permissions.IndexModel.PermissionGroup.operator !=(Modulus.UI.Permissions.Pages.Permissions.IndexModel.PermissionGroup? left, Modulus.UI.Permissions.Pages.Permissions.IndexModel.PermissionGroup? right) -> bool
+static Modulus.UI.Permissions.Pages.Permissions.IndexModel.PermissionGroup.operator ==(Modulus.UI.Permissions.Pages.Permissions.IndexModel.PermissionGroup? left, Modulus.UI.Permissions.Pages.Permissions.IndexModel.PermissionGroup? right) -> bool
+static Modulus.UI.Permissions.PermissionsUiExtensions.AddModulusPermissionsUi(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration? configuration = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.UI.Permissions.PermissionsUiExtensions.MapModulusPermissionsUi(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints) -> Microsoft.AspNetCore.Routing.IEndpointRouteBuilder!
+static Modulus.UI.Permissions.PermissionsUiLocalization.Seed(Modulus.Localization.ILocalizationStore! store) -> void

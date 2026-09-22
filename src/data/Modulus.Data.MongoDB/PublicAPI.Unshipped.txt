@@ -1,0 +1,44 @@
+#nullable enable
+abstract Modulus.Data.MongoDB.MongoRepository<T, TDoc>.ToDocument(T! entity) -> TDoc!
+abstract Modulus.Data.MongoDB.MongoRepository<T, TDoc>.ToDomain(TDoc! doc) -> T!
+Modulus.Data.MongoDB.Extensions.MongoServiceCollectionExtensions
+Modulus.Data.MongoDB.ModuleMongoContext
+Modulus.Data.MongoDB.ModuleMongoContext.GetCollection<T>(string! name) -> MongoDB.Driver.IMongoCollection<T>!
+Modulus.Data.MongoDB.ModuleMongoContext.ModuleMongoContext(MongoDB.Driver.IMongoDatabase! database, Microsoft.Extensions.Options.IOptions<Modulus.Data.MongoDB.MongoOptions!>! opts) -> void
+Modulus.Data.MongoDB.MongoHealthCheck
+Modulus.Data.MongoDB.MongoHealthCheck.CheckAsync(System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Modulus.Core.Abstractions.ModuleHealthResult!>!
+Modulus.Data.MongoDB.MongoHealthCheck.MongoHealthCheck(MongoDB.Driver.IMongoDatabase! db) -> void
+Modulus.Data.MongoDB.MongoOptions
+Modulus.Data.MongoDB.MongoOptions.CollectionPrefix.get -> string!
+Modulus.Data.MongoDB.MongoOptions.CollectionPrefix.set -> void
+Modulus.Data.MongoDB.MongoOptions.ConnectionString.get -> string!
+Modulus.Data.MongoDB.MongoOptions.ConnectionString.set -> void
+Modulus.Data.MongoDB.MongoOptions.DatabaseName.get -> string!
+Modulus.Data.MongoDB.MongoOptions.DatabaseName.set -> void
+Modulus.Data.MongoDB.MongoOptions.MongoOptions() -> void
+Modulus.Data.MongoDB.MongoRepository<T, TDoc>
+Modulus.Data.MongoDB.MongoRepository<T, TDoc>.AddAsync(T! entity, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
+Modulus.Data.MongoDB.MongoRepository<T, TDoc>.AddRangeAsync(System.Collections.Generic.IEnumerable<T!>! entities, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
+Modulus.Data.MongoDB.MongoRepository<T, TDoc>.AsAsyncEnumerable(Modulus.Data.Abstractions.ISpecification<T!>! spec) -> System.Collections.Generic.IAsyncEnumerable<T!>!
+Modulus.Data.MongoDB.MongoRepository<T, TDoc>.CountAsync(Modulus.Data.Abstractions.ISpecification<T!>! spec, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<int>!
+Modulus.Data.MongoDB.MongoRepository<T, TDoc>.DeleteAsync(T! entity, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
+Modulus.Data.MongoDB.MongoRepository<T, TDoc>.DeleteRangeAsync(Modulus.Data.Abstractions.ISpecification<T!>! spec, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
+Modulus.Data.MongoDB.MongoRepository<T, TDoc>.FirstOrDefaultAsync(Modulus.Data.Abstractions.ISpecification<T!>! spec, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<T?>!
+Modulus.Data.MongoDB.MongoRepository<T, TDoc>.GetByIdAsync(object! id, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<T?>!
+Modulus.Data.MongoDB.MongoRepository<T, TDoc>.ListAsync(Modulus.Data.Abstractions.ISpecification<T!>! spec, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<T!>!>!
+Modulus.Data.MongoDB.MongoRepository<T, TDoc>.MongoRepository(MongoDB.Driver.IMongoCollection<TDoc!>! collection, Modulus.Core.Abstractions.ICurrentTenant! tenant) -> void
+Modulus.Data.MongoDB.MongoRepository<T, TDoc>.SingleAsync(Modulus.Data.Abstractions.ISpecification<T!>! spec, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<T!>!
+Modulus.Data.MongoDB.MongoRepository<T, TDoc>.SingleOrDefaultAsync(Modulus.Data.Abstractions.ISpecification<T!>! spec, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<T?>!
+Modulus.Data.MongoDB.MongoRepository<T, TDoc>.TenantFilter.get -> MongoDB.Driver.FilterDefinition<TDoc!>!
+Modulus.Data.MongoDB.MongoRepository<T, TDoc>.UpdateAsync(T! entity, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
+Modulus.Data.MongoDB.MongoTenantFilter
+readonly Modulus.Data.MongoDB.ModuleMongoContext.Database -> MongoDB.Driver.IMongoDatabase!
+readonly Modulus.Data.MongoDB.ModuleMongoContext.Prefix -> string!
+readonly Modulus.Data.MongoDB.MongoRepository<T, TDoc>.Collection -> MongoDB.Driver.IMongoCollection<TDoc!>!
+readonly Modulus.Data.MongoDB.MongoRepository<T, TDoc>.Tenant -> Modulus.Core.Abstractions.ICurrentTenant!
+static Modulus.Data.MongoDB.Extensions.MongoServiceCollectionExtensions.AddMongoDatabase(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<Modulus.Data.MongoDB.MongoOptions!>! configure) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.Data.MongoDB.MongoTenantFilter.And<T>(Modulus.Core.Abstractions.ICurrentTenant! tenant, MongoDB.Driver.FilterDefinition<T>! additional) -> MongoDB.Driver.FilterDefinition<T>!
+static Modulus.Data.MongoDB.MongoTenantFilter.For<T>(Modulus.Core.Abstractions.ICurrentTenant! tenant) -> MongoDB.Driver.FilterDefinition<T>!
+virtual Modulus.Data.MongoDB.ModuleMongoContext.EnsureIndexesAsync(System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+virtual Modulus.Data.MongoDB.MongoRepository<T, TDoc>.BuildDocumentFilter(Modulus.Data.Abstractions.ISpecification<T!>! spec) -> MongoDB.Driver.FilterDefinition<TDoc!>?
+virtual Modulus.Data.MongoDB.MongoRepository<T, TDoc>.BuildDocumentSort(Modulus.Data.Abstractions.ISpecification<T!>! spec) -> MongoDB.Driver.SortDefinition<TDoc!>?

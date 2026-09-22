@@ -1,22 +1,16 @@
 <Project>
 
   <!-- ════════════════════════════════════════════════════════════════
-       src/Directory.Build.props
+       cli/Directory.Build.props
 
-       Chains to the root Directory.Build.props (which imports
-       build/Modulus.Common.props and build/Modulus.Packaging.props),
-       then marks every src/ project as a packable framework library and
-       wires in build/Modulus.PublicApi.props (PublicAPI.Shipped/Unshipped
-       tracking). Test projects override <IsPackable> via
-       tests/Directory.Build.props and do not import PublicApi.props.
+       Chains to the root Directory.Build.props, then wires in
+       build/Modulus.PublicApi.props (PublicAPI.Shipped/Unshipped
+       tracking) — the CLI is packed as a dotnet tool (PackAsTool, set
+       in Modulus.Cli.csproj) and ships a public API contract of its
+       own, same as every src/ framework library.
        ════════════════════════════════════════════════════════════════ -->
 
   <Import Project="$(MSBuildThisFileDirectory)..\Directory.Build.props" />
   <Import Project="$(MSBuildThisFileDirectory)..\build\Modulus.PublicApi.props" />
-
-  <PropertyGroup>
-    <IsPackable>true</IsPackable>
-    <IsPackFrameworkLibrary>true</IsPackFrameworkLibrary>
-  </PropertyGroup>
 
 </Project>

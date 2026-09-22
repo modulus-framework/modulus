@@ -1,0 +1,66 @@
+#nullable enable
+Modulus.Inbox.Abstractions.IInboxStore
+Modulus.Inbox.Abstractions.IInboxStore.MarkFailedAsync(System.Guid eventId, string! handlerName, string! error, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
+Modulus.Inbox.Abstractions.IInboxStore.MarkProcessedAsync(System.Guid eventId, string! handlerName, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
+Modulus.Inbox.Abstractions.IInboxStore.TryClaimAsync(System.Guid eventId, string! handlerName, string! messageType, string! payload, int maxRetries, System.TimeSpan claimTimeout, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Modulus.Inbox.Abstractions.InboxMessage?>!
+Modulus.Inbox.Abstractions.InboxDeferralException
+Modulus.Inbox.Abstractions.InboxDeferralException.InboxDeferralException(string! message, System.Exception? inner = null) -> void
+Modulus.Inbox.Abstractions.InboxMessage
+Modulus.Inbox.Abstractions.InboxMessage.ClaimedAt.get -> System.DateTime?
+Modulus.Inbox.Abstractions.InboxMessage.ClaimedAt.set -> void
+Modulus.Inbox.Abstractions.InboxMessage.CorrelationId.get -> string?
+Modulus.Inbox.Abstractions.InboxMessage.CorrelationId.init -> void
+Modulus.Inbox.Abstractions.InboxMessage.Error.get -> string?
+Modulus.Inbox.Abstractions.InboxMessage.Error.set -> void
+Modulus.Inbox.Abstractions.InboxMessage.HandlerName.get -> string!
+Modulus.Inbox.Abstractions.InboxMessage.HandlerName.init -> void
+Modulus.Inbox.Abstractions.InboxMessage.Id.get -> System.Guid
+Modulus.Inbox.Abstractions.InboxMessage.Id.init -> void
+Modulus.Inbox.Abstractions.InboxMessage.InboxMessage() -> void
+Modulus.Inbox.Abstractions.InboxMessage.MessageType.get -> string!
+Modulus.Inbox.Abstractions.InboxMessage.MessageType.init -> void
+Modulus.Inbox.Abstractions.InboxMessage.ModuleName.get -> string!
+Modulus.Inbox.Abstractions.InboxMessage.ModuleName.init -> void
+Modulus.Inbox.Abstractions.InboxMessage.Payload.get -> string!
+Modulus.Inbox.Abstractions.InboxMessage.Payload.init -> void
+Modulus.Inbox.Abstractions.InboxMessage.ProcessedAt.get -> System.DateTime?
+Modulus.Inbox.Abstractions.InboxMessage.ProcessedAt.set -> void
+Modulus.Inbox.Abstractions.InboxMessage.ReceivedAt.get -> System.DateTime
+Modulus.Inbox.Abstractions.InboxMessage.ReceivedAt.init -> void
+Modulus.Inbox.Abstractions.InboxMessage.RetryCount.get -> int
+Modulus.Inbox.Abstractions.InboxMessage.RetryCount.set -> void
+Modulus.Inbox.Abstractions.InboxMessage.Status.get -> Modulus.Inbox.Abstractions.InboxStatus
+Modulus.Inbox.Abstractions.InboxMessage.Status.set -> void
+Modulus.Inbox.Abstractions.InboxMessage.TenantId.get -> System.Guid
+Modulus.Inbox.Abstractions.InboxMessage.TenantId.init -> void
+Modulus.Inbox.Abstractions.InboxOptions
+Modulus.Inbox.Abstractions.InboxOptions.ClaimTimeoutSeconds.get -> int
+Modulus.Inbox.Abstractions.InboxOptions.ClaimTimeoutSeconds.set -> void
+Modulus.Inbox.Abstractions.InboxOptions.HandlerRetryBaseDelaySec.get -> double
+Modulus.Inbox.Abstractions.InboxOptions.HandlerRetryBaseDelaySec.set -> void
+Modulus.Inbox.Abstractions.InboxOptions.HandlerRetryCount.get -> int
+Modulus.Inbox.Abstractions.InboxOptions.HandlerRetryCount.set -> void
+Modulus.Inbox.Abstractions.InboxOptions.HandlerRetryExponential.get -> bool
+Modulus.Inbox.Abstractions.InboxOptions.HandlerRetryExponential.set -> void
+Modulus.Inbox.Abstractions.InboxOptions.HandlerRetryJitter.get -> bool
+Modulus.Inbox.Abstractions.InboxOptions.HandlerRetryJitter.set -> void
+Modulus.Inbox.Abstractions.InboxOptions.InboxOptions() -> void
+Modulus.Inbox.Abstractions.InboxOptions.MaxRetries.get -> int
+Modulus.Inbox.Abstractions.InboxOptions.MaxRetries.set -> void
+Modulus.Inbox.Abstractions.InboxStatus
+Modulus.Inbox.Abstractions.InboxStatus.Failed = 3 -> Modulus.Inbox.Abstractions.InboxStatus
+Modulus.Inbox.Abstractions.InboxStatus.Pending = 0 -> Modulus.Inbox.Abstractions.InboxStatus
+Modulus.Inbox.Abstractions.InboxStatus.Processed = 2 -> Modulus.Inbox.Abstractions.InboxStatus
+Modulus.Inbox.Abstractions.InboxStatus.Processing = 1 -> Modulus.Inbox.Abstractions.InboxStatus
+Modulus.Inbox.Configurations.InboxMessageConfiguration
+Modulus.Inbox.Configurations.InboxMessageConfiguration.Configure(Microsoft.EntityFrameworkCore.Metadata.Builders.EntityTypeBuilder<Modulus.Inbox.Abstractions.InboxMessage!>! b) -> void
+Modulus.Inbox.Configurations.InboxMessageConfiguration.InboxMessageConfiguration() -> void
+Modulus.Inbox.Extensions.InboxServiceCollectionExtensions
+Modulus.Inbox.IdempotentIntegrationEventHandler<TEvent>
+Modulus.Inbox.IdempotentIntegrationEventHandler<TEvent>.HandleAsync(TEvent event, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
+Modulus.Inbox.IdempotentIntegrationEventHandler<TEvent>.IdempotentIntegrationEventHandler(Modulus.Events.Abstractions.IIntegrationEventHandler<TEvent>! inner, Modulus.Inbox.Abstractions.IInboxStore! store, Microsoft.Extensions.Options.IOptions<Modulus.Inbox.Abstractions.InboxOptions!>! opts, Microsoft.Extensions.Logging.ILogger<Modulus.Inbox.IdempotentIntegrationEventHandler<TEvent>!>! logger) -> void
+static Modulus.Inbox.Extensions.InboxServiceCollectionExtensions.AddInbox<TContext>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, params System.Reflection.Assembly![]! handlerAssemblies) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.Inbox.Extensions.InboxServiceCollectionExtensions.AddInbox<TContext>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<Modulus.Inbox.Abstractions.InboxOptions!>! configure, params System.Reflection.Assembly![]! handlerAssemblies) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.Inbox.Extensions.InboxServiceCollectionExtensions.AddInbox<TContext>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<Modulus.Inbox.Abstractions.InboxOptions!>! configure, System.Collections.Generic.IEnumerable<System.Type!>! handlerImplementationTypes) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.Inbox.Extensions.InboxServiceCollectionExtensions.AddInbox<TContext>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Collections.Generic.IEnumerable<System.Type!>! handlerImplementationTypes) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.Inbox.Extensions.InboxServiceCollectionExtensions.DecorateIntegrationEventHandlers(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!

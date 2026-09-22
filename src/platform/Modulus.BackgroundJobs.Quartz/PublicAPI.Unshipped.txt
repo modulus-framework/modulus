@@ -1,0 +1,12 @@
+#nullable enable
+Modulus.BackgroundJobs.Quartz.QuartzExtensions
+Modulus.BackgroundJobs.Quartz.QuartzJobAdapter<TJob, TArgs>
+Modulus.BackgroundJobs.Quartz.QuartzJobAdapter<TJob, TArgs>.Execute(Quartz.IJobExecutionContext! context) -> System.Threading.Tasks.Task!
+Modulus.BackgroundJobs.Quartz.QuartzJobAdapter<TJob, TArgs>.QuartzJobAdapter(System.IServiceProvider! serviceProvider) -> void
+Modulus.BackgroundJobs.Quartz.QuartzJobScheduler
+Modulus.BackgroundJobs.Quartz.QuartzJobScheduler.AddRecurring<TJob, TArgs>(string! jobId, string! cronExpression, TArgs args) -> void
+Modulus.BackgroundJobs.Quartz.QuartzJobScheduler.EnqueueAsync<TJob, TArgs>(TArgs args, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.BackgroundJobs.Quartz.QuartzJobScheduler.QuartzJobScheduler(Quartz.ISchedulerFactory! schedulerFactory, System.IServiceProvider! serviceProvider, Microsoft.Extensions.Logging.ILogger<Modulus.BackgroundJobs.Quartz.QuartzJobScheduler!>! logger) -> void
+Modulus.BackgroundJobs.Quartz.QuartzJobScheduler.RemoveRecurring(string! jobId) -> void
+Modulus.BackgroundJobs.Quartz.QuartzJobScheduler.ScheduleAsync<TJob, TArgs>(TArgs args, System.TimeSpan delay, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+static Modulus.BackgroundJobs.Quartz.QuartzExtensions.AddQuartzJobScheduler(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<Quartz.IServiceCollectionQuartzConfigurator!>? configureQuartz = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!

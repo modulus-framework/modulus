@@ -1,0 +1,304 @@
+#nullable enable
+abstract Modulus.AspNetCore.Endpoints.Endpoint<TRequest, TResponse>.HandleAsync(TRequest! req, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
+abstract Modulus.AspNetCore.Endpoints.Endpoint<TRequest>.HandleAsync(TRequest! req, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
+abstract Modulus.AspNetCore.Endpoints.EndpointBase.Configure() -> void
+abstract Modulus.AspNetCore.Endpoints.EndpointWithoutRequest<TResponse>.HandleAsync(System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
+const Modulus.AspNetCore.Configuration.SecretsGuardOptions.SectionName = "SecretsGuard" -> string!
+const Modulus.AspNetCore.Correlation.CorrelationOptions.SectionName = "Correlation" -> string!
+const Modulus.AspNetCore.Cors.CorsExtensions.PolicyName = "ModulusCors" -> string!
+const Modulus.AspNetCore.Cors.ModulusCorsOptions.SectionName = "Cors" -> string!
+const Modulus.AspNetCore.DataProtection.PersonalDataProtectionOptions.SectionName = "PersonalDataProtection" -> string!
+const Modulus.AspNetCore.FeatureFlags.FeatureFlagsExtensions.SectionName = "FeatureManagement" -> string!
+const Modulus.AspNetCore.HealthChecks.HealthCheckExtensions.LivenessPath = "/health/live" -> string!
+const Modulus.AspNetCore.HealthChecks.HealthCheckExtensions.ReadinessPath = "/health/ready" -> string!
+const Modulus.AspNetCore.Idempotency.IdempotencyOptions.MinResponseBytes = 1 -> int
+const Modulus.AspNetCore.Idempotency.IdempotencyOptions.SectionName = "Idempotency" -> string!
+const Modulus.AspNetCore.OpenApi.ModulusOpenApiOptions.SectionName = "OpenApi" -> string!
+const Modulus.AspNetCore.RateLimiting.RateLimitingOptions.SectionName = "RateLimiting" -> string!
+const Modulus.AspNetCore.Security.SecurityHeadersOptions.SectionName = "SecurityHeaders" -> string!
+const Modulus.AspNetCore.Versioning.ModulusApiVersioningOptions.SectionName = "ApiVersioning" -> string!
+Modulus.AspNetCore.Configuration.SecretsGuardExtensions
+Modulus.AspNetCore.Configuration.SecretsGuardOptions
+Modulus.AspNetCore.Configuration.SecretsGuardOptions.Enabled.get -> bool
+Modulus.AspNetCore.Configuration.SecretsGuardOptions.Enabled.set -> void
+Modulus.AspNetCore.Configuration.SecretsGuardOptions.Environments.get -> string![]!
+Modulus.AspNetCore.Configuration.SecretsGuardOptions.Environments.set -> void
+Modulus.AspNetCore.Configuration.SecretsGuardOptions.FailOnViolation.get -> bool
+Modulus.AspNetCore.Configuration.SecretsGuardOptions.FailOnViolation.set -> void
+Modulus.AspNetCore.Configuration.SecretsGuardOptions.SecretsGuardOptions() -> void
+Modulus.AspNetCore.Configuration.SecretsGuardOptions.SensitiveKeyPatterns.get -> string![]!
+Modulus.AspNetCore.Configuration.SecretsGuardOptions.SensitiveKeyPatterns.set -> void
+Modulus.AspNetCore.Configuration.ValidatedOptionsExtensions
+Modulus.AspNetCore.Correlation.CorrelationExtensions
+Modulus.AspNetCore.Correlation.CorrelationIdMiddleware
+Modulus.AspNetCore.Correlation.CorrelationIdMiddleware.CorrelationIdMiddleware(Microsoft.AspNetCore.Http.RequestDelegate! next, Modulus.Core.Abstractions.ICorrelationContext! correlation, Microsoft.Extensions.Options.IOptions<Modulus.AspNetCore.Correlation.CorrelationOptions!>! options) -> void
+Modulus.AspNetCore.Correlation.CorrelationIdMiddleware.InvokeAsync(Microsoft.AspNetCore.Http.HttpContext! context) -> System.Threading.Tasks.Task!
+Modulus.AspNetCore.Correlation.CorrelationOptions
+Modulus.AspNetCore.Correlation.CorrelationOptions.CorrelationOptions() -> void
+Modulus.AspNetCore.Correlation.CorrelationOptions.HeaderName.get -> string!
+Modulus.AspNetCore.Correlation.CorrelationOptions.HeaderName.set -> void
+Modulus.AspNetCore.Correlation.CorrelationOptions.IncludeInResponse.get -> bool
+Modulus.AspNetCore.Correlation.CorrelationOptions.IncludeInResponse.set -> void
+Modulus.AspNetCore.Correlation.CorrelationOptions.UseTraceIdWhenMissing.get -> bool
+Modulus.AspNetCore.Correlation.CorrelationOptions.UseTraceIdWhenMissing.set -> void
+Modulus.AspNetCore.Cors.CorsExtensions
+Modulus.AspNetCore.Cors.ModulusCorsOptions
+Modulus.AspNetCore.Cors.ModulusCorsOptions.AllowCredentials.get -> bool
+Modulus.AspNetCore.Cors.ModulusCorsOptions.AllowCredentials.set -> void
+Modulus.AspNetCore.Cors.ModulusCorsOptions.AllowedHeaders.get -> string![]!
+Modulus.AspNetCore.Cors.ModulusCorsOptions.AllowedHeaders.set -> void
+Modulus.AspNetCore.Cors.ModulusCorsOptions.AllowedMethods.get -> string![]!
+Modulus.AspNetCore.Cors.ModulusCorsOptions.AllowedMethods.set -> void
+Modulus.AspNetCore.Cors.ModulusCorsOptions.AllowedOrigins.get -> string![]!
+Modulus.AspNetCore.Cors.ModulusCorsOptions.AllowedOrigins.set -> void
+Modulus.AspNetCore.Cors.ModulusCorsOptions.ExposedHeaders.get -> string![]!
+Modulus.AspNetCore.Cors.ModulusCorsOptions.ExposedHeaders.set -> void
+Modulus.AspNetCore.Cors.ModulusCorsOptions.ModulusCorsOptions() -> void
+Modulus.AspNetCore.Cors.ModulusCorsOptions.PreflightMaxAgeSeconds.get -> int
+Modulus.AspNetCore.Cors.ModulusCorsOptions.PreflightMaxAgeSeconds.set -> void
+Modulus.AspNetCore.DataProtection.PersonalDataProtectionExtensions
+Modulus.AspNetCore.DataProtection.PersonalDataProtectionOptions
+Modulus.AspNetCore.DataProtection.PersonalDataProtectionOptions.ApplicationName.get -> string!
+Modulus.AspNetCore.DataProtection.PersonalDataProtectionOptions.ApplicationName.set -> void
+Modulus.AspNetCore.DataProtection.PersonalDataProtectionOptions.Enabled.get -> bool
+Modulus.AspNetCore.DataProtection.PersonalDataProtectionOptions.Enabled.set -> void
+Modulus.AspNetCore.DataProtection.PersonalDataProtectionOptions.KeyRingDirectory.get -> string?
+Modulus.AspNetCore.DataProtection.PersonalDataProtectionOptions.KeyRingDirectory.set -> void
+Modulus.AspNetCore.DataProtection.PersonalDataProtectionOptions.PersonalDataProtectionOptions() -> void
+Modulus.AspNetCore.DataProtection.PersonalDataProtectionOptions.Purpose.get -> string!
+Modulus.AspNetCore.DataProtection.PersonalDataProtectionOptions.Purpose.set -> void
+Modulus.AspNetCore.DataProtection.PersonalDataProtectionOptions.SearchHashKey.get -> string?
+Modulus.AspNetCore.DataProtection.PersonalDataProtectionOptions.SearchHashKey.set -> void
+Modulus.AspNetCore.Endpoints.EmptyRequest
+Modulus.AspNetCore.Endpoints.EmptyRequest.EmptyRequest() -> void
+Modulus.AspNetCore.Endpoints.Endpoint<TRequest, TResponse>
+Modulus.AspNetCore.Endpoints.Endpoint<TRequest, TResponse>.Endpoint() -> void
+Modulus.AspNetCore.Endpoints.Endpoint<TRequest, TResponse>.SendAsync(TResponse response, int statusCode, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.AspNetCore.Endpoints.Endpoint<TRequest, TResponse>.SendCreatedAsync(TResponse response, string? location = null, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.AspNetCore.Endpoints.Endpoint<TRequest, TResponse>.SendOkAsync(TResponse response, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.AspNetCore.Endpoints.Endpoint<TRequest>
+Modulus.AspNetCore.Endpoints.Endpoint<TRequest>.Endpoint() -> void
+Modulus.AspNetCore.Endpoints.EndpointBase
+Modulus.AspNetCore.Endpoints.EndpointBase.AllowAnonymous() -> void
+Modulus.AspNetCore.Endpoints.EndpointBase.CancellationToken.get -> System.Threading.CancellationToken
+Modulus.AspNetCore.Endpoints.EndpointBase.Delete(string! route) -> void
+Modulus.AspNetCore.Endpoints.EndpointBase.Deprecated() -> void
+Modulus.AspNetCore.Endpoints.EndpointBase.DontWrapResponse() -> void
+Modulus.AspNetCore.Endpoints.EndpointBase.EndpointBase() -> void
+Modulus.AspNetCore.Endpoints.EndpointBase.Get(string! route) -> void
+Modulus.AspNetCore.Endpoints.EndpointBase.Head(string! route) -> void
+Modulus.AspNetCore.Endpoints.EndpointBase.HttpContext.get -> Microsoft.AspNetCore.Http.HttpContext!
+Modulus.AspNetCore.Endpoints.EndpointBase.Options(string! route) -> void
+Modulus.AspNetCore.Endpoints.EndpointBase.Patch(string! route) -> void
+Modulus.AspNetCore.Endpoints.EndpointBase.Permissions(params string![]! perms) -> void
+Modulus.AspNetCore.Endpoints.EndpointBase.Policies(params string![]! policies) -> void
+Modulus.AspNetCore.Endpoints.EndpointBase.Post(string! route) -> void
+Modulus.AspNetCore.Endpoints.EndpointBase.Put(string! route) -> void
+Modulus.AspNetCore.Endpoints.EndpointBase.Roles(params string![]! roles) -> void
+Modulus.AspNetCore.Endpoints.EndpointBase.SendErrorAsync(int statusCode, string! message, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.AspNetCore.Endpoints.EndpointBase.SendForbiddenAsync(System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.AspNetCore.Endpoints.EndpointBase.SendNoContentAsync(System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.AspNetCore.Endpoints.EndpointBase.SendNotFoundAsync(System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.AspNetCore.Endpoints.EndpointBase.SendUnauthorizedAsync(System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.AspNetCore.Endpoints.EndpointBase.Services.get -> System.IServiceProvider!
+Modulus.AspNetCore.Endpoints.EndpointBase.Summary(string! summary) -> void
+Modulus.AspNetCore.Endpoints.EndpointBase.Tag(string! tag) -> void
+Modulus.AspNetCore.Endpoints.EndpointBase.Versions(params int[]! versions) -> void
+Modulus.AspNetCore.Endpoints.EndpointBase.WrapResponse() -> void
+Modulus.AspNetCore.Endpoints.EndpointDiscovery
+Modulus.AspNetCore.Endpoints.EndpointExtensions
+Modulus.AspNetCore.Endpoints.EndpointWithoutRequest<TResponse>
+Modulus.AspNetCore.Endpoints.EndpointWithoutRequest<TResponse>.EndpointWithoutRequest() -> void
+Modulus.AspNetCore.Endpoints.HttpResponseException
+Modulus.AspNetCore.Endpoints.HttpResponseException.HttpResponseException(int statusCode, string! message) -> void
+Modulus.AspNetCore.Endpoints.HttpResponseException.StatusCode.get -> int
+Modulus.AspNetCore.Endpoints.IEndpoint
+Modulus.AspNetCore.Endpoints.IEndpoint.MapEndpoint(Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! app) -> void
+Modulus.AspNetCore.Endpoints.IEndpointHandler<TRequest>
+Modulus.AspNetCore.Endpoints.IEndpointHandler<TRequest>.HandleAsync(TRequest! req, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
+Modulus.AspNetCore.Endpoints.IMinimalEndpoint
+Modulus.AspNetCore.Endpoints.IModulusEndpoint
+Modulus.AspNetCore.Endpoints.IModulusEndpoint.Configure() -> void
+Modulus.AspNetCore.Extensions.ModulusServiceCollectionExtensions
+Modulus.AspNetCore.Extensions.ModulusWebApplicationExtensions
+Modulus.AspNetCore.FeatureFlags.FeatureFlagsExtensions
+Modulus.AspNetCore.FeatureFlags.RequireFeatureExtensions
+Modulus.AspNetCore.HealthChecks.HealthCheckExtensions
+Modulus.AspNetCore.Http.ApiResponse
+Modulus.AspNetCore.Http.ApiResponse<T>
+Modulus.AspNetCore.Http.ApiResponse<T>.ApiResponse() -> void
+Modulus.AspNetCore.Http.ApiResponse<T>.Data.get -> T?
+Modulus.AspNetCore.Http.ApiResponse<T>.Data.init -> void
+Modulus.AspNetCore.Http.ApiResponse<T>.Message.get -> string?
+Modulus.AspNetCore.Http.ApiResponse<T>.Message.init -> void
+Modulus.AspNetCore.Http.ApiResponse<T>.Success.get -> bool
+Modulus.AspNetCore.Http.ApiResponse<T>.Success.init -> void
+Modulus.AspNetCore.Http.ApiResults
+Modulus.AspNetCore.Idempotency.CachedResponse
+Modulus.AspNetCore.Idempotency.CachedResponse.<Clone>$() -> Modulus.AspNetCore.Idempotency.CachedResponse!
+Modulus.AspNetCore.Idempotency.CachedResponse.Body.get -> byte[]!
+Modulus.AspNetCore.Idempotency.CachedResponse.Body.init -> void
+Modulus.AspNetCore.Idempotency.CachedResponse.CachedResponse(int StatusCode, System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Headers, byte[]! Body) -> void
+Modulus.AspNetCore.Idempotency.CachedResponse.Deconstruct(out int StatusCode, out System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Headers, out byte[]! Body) -> void
+Modulus.AspNetCore.Idempotency.CachedResponse.Equals(Modulus.AspNetCore.Idempotency.CachedResponse? other) -> bool
+Modulus.AspNetCore.Idempotency.CachedResponse.Headers.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+Modulus.AspNetCore.Idempotency.CachedResponse.Headers.init -> void
+Modulus.AspNetCore.Idempotency.CachedResponse.StatusCode.get -> int
+Modulus.AspNetCore.Idempotency.CachedResponse.StatusCode.init -> void
+Modulus.AspNetCore.Idempotency.IdempotencyExtensions
+Modulus.AspNetCore.Idempotency.IdempotencyMiddleware
+Modulus.AspNetCore.Idempotency.IdempotencyMiddleware.IdempotencyMiddleware(Microsoft.AspNetCore.Http.RequestDelegate! next, Microsoft.Extensions.Options.IOptions<Modulus.AspNetCore.Idempotency.IdempotencyOptions!>! options, Microsoft.Extensions.Logging.ILogger<Modulus.AspNetCore.Idempotency.IdempotencyMiddleware!>! logger) -> void
+Modulus.AspNetCore.Idempotency.IdempotencyMiddleware.InvokeAsync(Microsoft.AspNetCore.Http.HttpContext! context, Modulus.AspNetCore.Idempotency.IIdempotencyStore! store) -> System.Threading.Tasks.Task!
+Modulus.AspNetCore.Idempotency.IdempotencyOptions
+Modulus.AspNetCore.Idempotency.IdempotencyOptions.HeaderName.get -> string!
+Modulus.AspNetCore.Idempotency.IdempotencyOptions.HeaderName.set -> void
+Modulus.AspNetCore.Idempotency.IdempotencyOptions.IdempotencyOptions() -> void
+Modulus.AspNetCore.Idempotency.IdempotencyOptions.MaxKeyLength.get -> int
+Modulus.AspNetCore.Idempotency.IdempotencyOptions.MaxKeyLength.set -> void
+Modulus.AspNetCore.Idempotency.IdempotencyOptions.MaxResponseBytes.get -> int
+Modulus.AspNetCore.Idempotency.IdempotencyOptions.MaxResponseBytes.set -> void
+Modulus.AspNetCore.Idempotency.IdempotencyOptions.Methods.get -> string![]!
+Modulus.AspNetCore.Idempotency.IdempotencyOptions.Methods.set -> void
+Modulus.AspNetCore.Idempotency.IdempotencyOptions.ReplayHeaderName.get -> string!
+Modulus.AspNetCore.Idempotency.IdempotencyOptions.ReplayHeaderName.set -> void
+Modulus.AspNetCore.Idempotency.IdempotencyOptions.RequireKey.get -> bool
+Modulus.AspNetCore.Idempotency.IdempotencyOptions.RequireKey.set -> void
+Modulus.AspNetCore.Idempotency.IdempotencyOptions.RetentionSeconds.get -> int
+Modulus.AspNetCore.Idempotency.IdempotencyOptions.RetentionSeconds.set -> void
+Modulus.AspNetCore.Idempotency.IdempotencyOptions.ValidateRequestMatch.get -> bool
+Modulus.AspNetCore.Idempotency.IdempotencyOptions.ValidateRequestMatch.set -> void
+Modulus.AspNetCore.Idempotency.IdempotencyResult
+Modulus.AspNetCore.Idempotency.IdempotencyResult.Fingerprint.get -> string?
+Modulus.AspNetCore.Idempotency.IdempotencyResult.Response.get -> Modulus.AspNetCore.Idempotency.CachedResponse?
+Modulus.AspNetCore.Idempotency.IdempotencyResult.Status.get -> Modulus.AspNetCore.Idempotency.IdempotencyStatus
+Modulus.AspNetCore.Idempotency.IdempotencyStatus
+Modulus.AspNetCore.Idempotency.IdempotencyStatus.Completed = 2 -> Modulus.AspNetCore.Idempotency.IdempotencyStatus
+Modulus.AspNetCore.Idempotency.IdempotencyStatus.InProgress = 1 -> Modulus.AspNetCore.Idempotency.IdempotencyStatus
+Modulus.AspNetCore.Idempotency.IdempotencyStatus.Started = 0 -> Modulus.AspNetCore.Idempotency.IdempotencyStatus
+Modulus.AspNetCore.Idempotency.IIdempotencyStore
+Modulus.AspNetCore.Idempotency.IIdempotencyStore.AbandonAsync(string! key, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
+Modulus.AspNetCore.Idempotency.IIdempotencyStore.CompleteAsync(string! key, Modulus.AspNetCore.Idempotency.CachedResponse! response, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
+Modulus.AspNetCore.Idempotency.IIdempotencyStore.PurgeExpiredAsync(System.DateTimeOffset cutoff, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
+Modulus.AspNetCore.Idempotency.IIdempotencyStore.TryBeginAsync(string! key, string! fingerprint, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Modulus.AspNetCore.Idempotency.IdempotencyResult!>!
+Modulus.AspNetCore.OpenApi.ModulusOpenApiOptions
+Modulus.AspNetCore.OpenApi.ModulusOpenApiOptions.ContactEmail.get -> string?
+Modulus.AspNetCore.OpenApi.ModulusOpenApiOptions.ContactEmail.set -> void
+Modulus.AspNetCore.OpenApi.ModulusOpenApiOptions.ContactName.get -> string?
+Modulus.AspNetCore.OpenApi.ModulusOpenApiOptions.ContactName.set -> void
+Modulus.AspNetCore.OpenApi.ModulusOpenApiOptions.ContactUrl.get -> string?
+Modulus.AspNetCore.OpenApi.ModulusOpenApiOptions.ContactUrl.set -> void
+Modulus.AspNetCore.OpenApi.ModulusOpenApiOptions.Description.get -> string?
+Modulus.AspNetCore.OpenApi.ModulusOpenApiOptions.Description.set -> void
+Modulus.AspNetCore.OpenApi.ModulusOpenApiOptions.DocumentName.get -> string!
+Modulus.AspNetCore.OpenApi.ModulusOpenApiOptions.DocumentName.set -> void
+Modulus.AspNetCore.OpenApi.ModulusOpenApiOptions.IncludeBearerSecurity.get -> bool
+Modulus.AspNetCore.OpenApi.ModulusOpenApiOptions.IncludeBearerSecurity.set -> void
+Modulus.AspNetCore.OpenApi.ModulusOpenApiOptions.LicenseName.get -> string?
+Modulus.AspNetCore.OpenApi.ModulusOpenApiOptions.LicenseName.set -> void
+Modulus.AspNetCore.OpenApi.ModulusOpenApiOptions.LicenseUrl.get -> string?
+Modulus.AspNetCore.OpenApi.ModulusOpenApiOptions.LicenseUrl.set -> void
+Modulus.AspNetCore.OpenApi.ModulusOpenApiOptions.ModulusOpenApiOptions() -> void
+Modulus.AspNetCore.OpenApi.ModulusOpenApiOptions.Title.get -> string!
+Modulus.AspNetCore.OpenApi.ModulusOpenApiOptions.Title.set -> void
+Modulus.AspNetCore.OpenApi.ModulusOpenApiOptions.Version.get -> string!
+Modulus.AspNetCore.OpenApi.ModulusOpenApiOptions.Version.set -> void
+Modulus.AspNetCore.OpenApi.OpenApiExtensions
+Modulus.AspNetCore.RateLimiting.RateLimitingExtensions
+Modulus.AspNetCore.RateLimiting.RateLimitingOptions
+Modulus.AspNetCore.RateLimiting.RateLimitingOptions.Enabled.get -> bool
+Modulus.AspNetCore.RateLimiting.RateLimitingOptions.Enabled.set -> void
+Modulus.AspNetCore.RateLimiting.RateLimitingOptions.Partition.get -> Modulus.AspNetCore.RateLimiting.RateLimitPartitionStrategy
+Modulus.AspNetCore.RateLimiting.RateLimitingOptions.Partition.set -> void
+Modulus.AspNetCore.RateLimiting.RateLimitingOptions.PermitLimit.get -> int
+Modulus.AspNetCore.RateLimiting.RateLimitingOptions.PermitLimit.set -> void
+Modulus.AspNetCore.RateLimiting.RateLimitingOptions.QueueLimit.get -> int
+Modulus.AspNetCore.RateLimiting.RateLimitingOptions.QueueLimit.set -> void
+Modulus.AspNetCore.RateLimiting.RateLimitingOptions.RateLimitingOptions() -> void
+Modulus.AspNetCore.RateLimiting.RateLimitingOptions.RejectionStatusCode.get -> int
+Modulus.AspNetCore.RateLimiting.RateLimitingOptions.RejectionStatusCode.set -> void
+Modulus.AspNetCore.RateLimiting.RateLimitingOptions.WindowSeconds.get -> int
+Modulus.AspNetCore.RateLimiting.RateLimitingOptions.WindowSeconds.set -> void
+Modulus.AspNetCore.RateLimiting.RateLimitPartitionStrategy
+Modulus.AspNetCore.RateLimiting.RateLimitPartitionStrategy.Global = 0 -> Modulus.AspNetCore.RateLimiting.RateLimitPartitionStrategy
+Modulus.AspNetCore.RateLimiting.RateLimitPartitionStrategy.IpAddress = 1 -> Modulus.AspNetCore.RateLimiting.RateLimitPartitionStrategy
+Modulus.AspNetCore.RateLimiting.RateLimitPartitionStrategy.Tenant = 3 -> Modulus.AspNetCore.RateLimiting.RateLimitPartitionStrategy
+Modulus.AspNetCore.RateLimiting.RateLimitPartitionStrategy.User = 2 -> Modulus.AspNetCore.RateLimiting.RateLimitPartitionStrategy
+Modulus.AspNetCore.Security.SecurityHeadersExtensions
+Modulus.AspNetCore.Security.SecurityHeadersOptions
+Modulus.AspNetCore.Security.SecurityHeadersOptions.ContentSecurityPolicy.get -> string!
+Modulus.AspNetCore.Security.SecurityHeadersOptions.ContentSecurityPolicy.set -> void
+Modulus.AspNetCore.Security.SecurityHeadersOptions.ContentTypeOptions.get -> bool
+Modulus.AspNetCore.Security.SecurityHeadersOptions.ContentTypeOptions.set -> void
+Modulus.AspNetCore.Security.SecurityHeadersOptions.EnableHsts.get -> bool
+Modulus.AspNetCore.Security.SecurityHeadersOptions.EnableHsts.set -> void
+Modulus.AspNetCore.Security.SecurityHeadersOptions.FrameOptions.get -> string!
+Modulus.AspNetCore.Security.SecurityHeadersOptions.FrameOptions.set -> void
+Modulus.AspNetCore.Security.SecurityHeadersOptions.HstsIncludeSubDomains.get -> bool
+Modulus.AspNetCore.Security.SecurityHeadersOptions.HstsIncludeSubDomains.set -> void
+Modulus.AspNetCore.Security.SecurityHeadersOptions.HstsMaxAgeSeconds.get -> int
+Modulus.AspNetCore.Security.SecurityHeadersOptions.HstsMaxAgeSeconds.set -> void
+Modulus.AspNetCore.Security.SecurityHeadersOptions.PermissionsPolicy.get -> string!
+Modulus.AspNetCore.Security.SecurityHeadersOptions.PermissionsPolicy.set -> void
+Modulus.AspNetCore.Security.SecurityHeadersOptions.ReferrerPolicy.get -> string!
+Modulus.AspNetCore.Security.SecurityHeadersOptions.ReferrerPolicy.set -> void
+Modulus.AspNetCore.Security.SecurityHeadersOptions.RemoveServerHeader.get -> bool
+Modulus.AspNetCore.Security.SecurityHeadersOptions.RemoveServerHeader.set -> void
+Modulus.AspNetCore.Security.SecurityHeadersOptions.SecurityHeadersOptions() -> void
+Modulus.AspNetCore.Versioning.ApiVersioningExtensions
+Modulus.AspNetCore.Versioning.ModulusApiVersioningOptions
+Modulus.AspNetCore.Versioning.ModulusApiVersioningOptions.AssumeDefaultVersionWhenUnspecified.get -> bool
+Modulus.AspNetCore.Versioning.ModulusApiVersioningOptions.AssumeDefaultVersionWhenUnspecified.set -> void
+Modulus.AspNetCore.Versioning.ModulusApiVersioningOptions.DefaultVersion.get -> string!
+Modulus.AspNetCore.Versioning.ModulusApiVersioningOptions.DefaultVersion.set -> void
+Modulus.AspNetCore.Versioning.ModulusApiVersioningOptions.HeaderName.get -> string!
+Modulus.AspNetCore.Versioning.ModulusApiVersioningOptions.HeaderName.set -> void
+Modulus.AspNetCore.Versioning.ModulusApiVersioningOptions.ModulusApiVersioningOptions() -> void
+Modulus.AspNetCore.Versioning.ModulusApiVersioningOptions.QueryStringParameter.get -> string!
+Modulus.AspNetCore.Versioning.ModulusApiVersioningOptions.QueryStringParameter.set -> void
+Modulus.AspNetCore.Versioning.ModulusApiVersioningOptions.ReadFromHeader.get -> bool
+Modulus.AspNetCore.Versioning.ModulusApiVersioningOptions.ReadFromHeader.set -> void
+Modulus.AspNetCore.Versioning.ModulusApiVersioningOptions.ReadFromQueryString.get -> bool
+Modulus.AspNetCore.Versioning.ModulusApiVersioningOptions.ReadFromQueryString.set -> void
+Modulus.AspNetCore.Versioning.ModulusApiVersioningOptions.ReadFromUrlSegment.get -> bool
+Modulus.AspNetCore.Versioning.ModulusApiVersioningOptions.ReadFromUrlSegment.set -> void
+Modulus.AspNetCore.Versioning.ModulusApiVersioningOptions.ReportApiVersions.get -> bool
+Modulus.AspNetCore.Versioning.ModulusApiVersioningOptions.ReportApiVersions.set -> void
+override Modulus.AspNetCore.Idempotency.CachedResponse.Equals(object? obj) -> bool
+override Modulus.AspNetCore.Idempotency.CachedResponse.GetHashCode() -> int
+override Modulus.AspNetCore.Idempotency.CachedResponse.ToString() -> string!
+override sealed Modulus.AspNetCore.Endpoints.EndpointWithoutRequest<TResponse>.HandleAsync(Modulus.AspNetCore.Endpoints.EmptyRequest! req, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
+static Modulus.AspNetCore.Configuration.SecretsGuardExtensions.AddModulusSecretsGuard(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration, System.Action<Modulus.AspNetCore.Configuration.SecretsGuardOptions!>? configure = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.AspNetCore.Configuration.ValidatedOptionsExtensions.AddValidatedOptions<TOptions>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration, string! sectionName, System.Action<TOptions!>? configure = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.AspNetCore.Configuration.ValidatedOptionsExtensions.AddValidatedOptions<TOptions>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration, string! sectionName, System.Func<TOptions!, bool>! validate, string! failureMessage) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.AspNetCore.Correlation.CorrelationExtensions.AddModulusCorrelation(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.AspNetCore.Correlation.CorrelationExtensions.UseModulusCorrelation(this Microsoft.AspNetCore.Builder.IApplicationBuilder! app) -> Microsoft.AspNetCore.Builder.IApplicationBuilder!
+static Modulus.AspNetCore.Cors.CorsExtensions.AddModulusCors(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration, System.Action<Modulus.AspNetCore.Cors.ModulusCorsOptions!>? configure = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.AspNetCore.Cors.CorsExtensions.UseModulusCors(this Microsoft.AspNetCore.Builder.IApplicationBuilder! app) -> Microsoft.AspNetCore.Builder.IApplicationBuilder!
+static Modulus.AspNetCore.DataProtection.PersonalDataProtectionExtensions.AddModulusPersonalDataProtection(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration, System.Action<Modulus.AspNetCore.DataProtection.PersonalDataProtectionOptions!>? configure = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.AspNetCore.Endpoints.EndpointBase.ThrowError(int statusCode, string! message) -> Modulus.AspNetCore.Endpoints.HttpResponseException!
+static Modulus.AspNetCore.Endpoints.EndpointDiscovery.MapModulusEndpoints(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! app, params System.Reflection.Assembly![]! assemblies) -> Microsoft.AspNetCore.Routing.IEndpointRouteBuilder!
+static Modulus.AspNetCore.Endpoints.EndpointExtensions.AddEndpoints(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, params System.Reflection.Assembly![]! assemblies) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.AspNetCore.Endpoints.EndpointExtensions.MapEndpoints(this Microsoft.AspNetCore.Builder.WebApplication! app, Microsoft.AspNetCore.Routing.RouteGroupBuilder? routeGroup = null) -> Microsoft.AspNetCore.Builder.WebApplication!
+static Modulus.AspNetCore.Extensions.ModulusServiceCollectionExtensions.AddModulus(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration, System.Action<Modulus.Core.ModulusBuilder!>! configure) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.AspNetCore.Extensions.ModulusServiceCollectionExtensions.AddModulusExceptionHandling(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.AspNetCore.Extensions.ModulusWebApplicationExtensions.UseModulus(this Microsoft.AspNetCore.Builder.WebApplication! app) -> Microsoft.AspNetCore.Builder.WebApplication!
+static Modulus.AspNetCore.FeatureFlags.FeatureFlagsExtensions.AddModulusFeatureFlags(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.AspNetCore.FeatureFlags.RequireFeatureExtensions.RequireFeature<TBuilder>(this TBuilder builder, params string![]! features) -> TBuilder
+static Modulus.AspNetCore.HealthChecks.HealthCheckExtensions.AddModulusHealthChecks(this Microsoft.Extensions.DependencyInjection.IHealthChecksBuilder! builder) -> Microsoft.Extensions.DependencyInjection.IHealthChecksBuilder!
+static Modulus.AspNetCore.HealthChecks.HealthCheckExtensions.MapModulusHealthChecks(this Microsoft.AspNetCore.Builder.WebApplication! app, string! livenessPath = "/health/live", string! readinessPath = "/health/ready") -> Microsoft.AspNetCore.Builder.WebApplication!
+static Modulus.AspNetCore.Http.ApiResponse.Ok<T>(T data, string? message = null) -> Modulus.AspNetCore.Http.ApiResponse<T>!
+static Modulus.AspNetCore.Http.ApiResponse<T>.Ok(T data, string? message = null) -> Modulus.AspNetCore.Http.ApiResponse<T>!
+static Modulus.AspNetCore.Http.ApiResults.Problem<T>(ErrorOr.ErrorOr<T> result) -> Microsoft.AspNetCore.Http.IResult!
+static Modulus.AspNetCore.Idempotency.CachedResponse.operator !=(Modulus.AspNetCore.Idempotency.CachedResponse? left, Modulus.AspNetCore.Idempotency.CachedResponse? right) -> bool
+static Modulus.AspNetCore.Idempotency.CachedResponse.operator ==(Modulus.AspNetCore.Idempotency.CachedResponse? left, Modulus.AspNetCore.Idempotency.CachedResponse? right) -> bool
+static Modulus.AspNetCore.Idempotency.IdempotencyExtensions.AddModulusIdempotency(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration, System.Action<Modulus.AspNetCore.Idempotency.IdempotencyOptions!>? configure = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.AspNetCore.Idempotency.IdempotencyExtensions.UseModulusIdempotency(this Microsoft.AspNetCore.Builder.IApplicationBuilder! app) -> Microsoft.AspNetCore.Builder.IApplicationBuilder!
+static Modulus.AspNetCore.Idempotency.IdempotencyResult.Completed(Modulus.AspNetCore.Idempotency.CachedResponse! response, string? fingerprint) -> Modulus.AspNetCore.Idempotency.IdempotencyResult!
+static Modulus.AspNetCore.Idempotency.IdempotencyResult.InProgress(string? fingerprint) -> Modulus.AspNetCore.Idempotency.IdempotencyResult!
+static Modulus.AspNetCore.Idempotency.IdempotencyResult.Started() -> Modulus.AspNetCore.Idempotency.IdempotencyResult!
+static Modulus.AspNetCore.OpenApi.OpenApiExtensions.AddModulusOpenApi(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration, System.Action<Modulus.AspNetCore.OpenApi.ModulusOpenApiOptions!>? configure = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.AspNetCore.RateLimiting.RateLimitingExtensions.AddModulusRateLimiting(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration, System.Action<Modulus.AspNetCore.RateLimiting.RateLimitingOptions!>? configure = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.AspNetCore.RateLimiting.RateLimitingExtensions.UseModulusRateLimiting(this Microsoft.AspNetCore.Builder.WebApplication! app) -> Microsoft.AspNetCore.Builder.IApplicationBuilder!
+static Modulus.AspNetCore.Security.SecurityHeadersExtensions.AddModulusSecurityHeaders(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration, System.Action<Modulus.AspNetCore.Security.SecurityHeadersOptions!>? configure = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.AspNetCore.Security.SecurityHeadersExtensions.UseModulusSecurityHeaders(this Microsoft.AspNetCore.Builder.IApplicationBuilder! app) -> Microsoft.AspNetCore.Builder.IApplicationBuilder!
+static Modulus.AspNetCore.Versioning.ApiVersioningExtensions.AddModulusApiVersioning(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration, System.Action<Modulus.AspNetCore.Versioning.ModulusApiVersioningOptions!>? configure = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!

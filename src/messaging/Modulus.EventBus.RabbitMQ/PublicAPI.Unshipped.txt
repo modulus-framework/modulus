@@ -1,0 +1,42 @@
+#nullable enable
+Modulus.EventBus.RabbitMQ.Extensions.RabbitMqEventBusExtensions
+Modulus.EventBus.RabbitMQ.RabbitMqHealthCheck
+Modulus.EventBus.RabbitMQ.RabbitMqHealthCheck.CheckAsync(System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Core.Abstractions.ModuleHealthResult!>!
+Modulus.EventBus.RabbitMQ.RabbitMqHealthCheck.RabbitMqHealthCheck(Microsoft.Extensions.Options.IOptions<Modulus.EventBus.RabbitMQ.RabbitMqOptions!>! options, Microsoft.Extensions.Logging.ILogger<Modulus.EventBus.RabbitMQ.RabbitMqHealthCheck!>! logger) -> void
+Modulus.EventBus.RabbitMQ.RabbitMqOptions
+Modulus.EventBus.RabbitMQ.RabbitMqOptions.AutoAck.get -> bool
+Modulus.EventBus.RabbitMQ.RabbitMqOptions.AutoAck.set -> void
+Modulus.EventBus.RabbitMQ.RabbitMqOptions.AutoDelete.get -> bool
+Modulus.EventBus.RabbitMQ.RabbitMqOptions.AutoDelete.set -> void
+Modulus.EventBus.RabbitMQ.RabbitMqOptions.DeadLetterExchange.get -> string?
+Modulus.EventBus.RabbitMQ.RabbitMqOptions.DeadLetterExchange.set -> void
+Modulus.EventBus.RabbitMQ.RabbitMqOptions.Durable.get -> bool
+Modulus.EventBus.RabbitMQ.RabbitMqOptions.Durable.set -> void
+Modulus.EventBus.RabbitMQ.RabbitMqOptions.ExchangeName.get -> string!
+Modulus.EventBus.RabbitMQ.RabbitMqOptions.ExchangeName.set -> void
+Modulus.EventBus.RabbitMQ.RabbitMqOptions.ExchangeType.get -> string!
+Modulus.EventBus.RabbitMQ.RabbitMqOptions.ExchangeType.set -> void
+Modulus.EventBus.RabbitMQ.RabbitMqOptions.HostName.get -> string!
+Modulus.EventBus.RabbitMQ.RabbitMqOptions.HostName.set -> void
+Modulus.EventBus.RabbitMQ.RabbitMqOptions.MaxDeliveryAttempts.get -> int?
+Modulus.EventBus.RabbitMQ.RabbitMqOptions.MaxDeliveryAttempts.set -> void
+Modulus.EventBus.RabbitMQ.RabbitMqOptions.MessageTtlMs.get -> int?
+Modulus.EventBus.RabbitMQ.RabbitMqOptions.MessageTtlMs.set -> void
+Modulus.EventBus.RabbitMQ.RabbitMqOptions.Password.get -> string!
+Modulus.EventBus.RabbitMQ.RabbitMqOptions.Password.set -> void
+Modulus.EventBus.RabbitMQ.RabbitMqOptions.Port.get -> int
+Modulus.EventBus.RabbitMQ.RabbitMqOptions.Port.set -> void
+Modulus.EventBus.RabbitMQ.RabbitMqOptions.PrefetchCount.get -> int
+Modulus.EventBus.RabbitMQ.RabbitMqOptions.PrefetchCount.set -> void
+Modulus.EventBus.RabbitMQ.RabbitMqOptions.PublisherConfirms.get -> bool
+Modulus.EventBus.RabbitMQ.RabbitMqOptions.PublisherConfirms.set -> void
+Modulus.EventBus.RabbitMQ.RabbitMqOptions.QueueName.get -> string!
+Modulus.EventBus.RabbitMQ.RabbitMqOptions.QueueName.set -> void
+Modulus.EventBus.RabbitMQ.RabbitMqOptions.RabbitMqOptions() -> void
+Modulus.EventBus.RabbitMQ.RabbitMqOptions.ReconnectDelayMs.get -> int
+Modulus.EventBus.RabbitMQ.RabbitMqOptions.ReconnectDelayMs.set -> void
+Modulus.EventBus.RabbitMQ.RabbitMqOptions.UserName.get -> string!
+Modulus.EventBus.RabbitMQ.RabbitMqOptions.UserName.set -> void
+Modulus.EventBus.RabbitMQ.RabbitMqOptions.VirtualHost.get -> string!
+Modulus.EventBus.RabbitMQ.RabbitMqOptions.VirtualHost.set -> void
+static Modulus.EventBus.RabbitMQ.Extensions.RabbitMqEventBusExtensions.AddRabbitMqEventBus(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<Modulus.EventBus.RabbitMQ.RabbitMqOptions!>? configure = null, string! sectionName = "EventBus:RabbitMq") -> Microsoft.Extensions.DependencyInjection.IServiceCollection!

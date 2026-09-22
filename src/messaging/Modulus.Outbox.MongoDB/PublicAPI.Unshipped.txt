@@ -1,0 +1,46 @@
+#nullable enable
+Modulus.Outbox.MongoDB.Extensions.OutboxMongoExtensions
+Modulus.Outbox.MongoDB.IMongoOutboxSessionProvider
+Modulus.Outbox.MongoDB.IMongoOutboxSessionProvider.CurrentSession.get -> MongoDB.Driver.IClientSessionHandle?
+Modulus.Outbox.MongoDB.MongoOutboxManagementExtensions
+Modulus.Outbox.MongoDB.MongoOutboxMessage
+Modulus.Outbox.MongoDB.MongoOutboxMessage.CausationId.get -> string?
+Modulus.Outbox.MongoDB.MongoOutboxMessage.CausationId.init -> void
+Modulus.Outbox.MongoDB.MongoOutboxMessage.CorrelationId.get -> string?
+Modulus.Outbox.MongoDB.MongoOutboxMessage.CorrelationId.init -> void
+Modulus.Outbox.MongoDB.MongoOutboxMessage.CreatedAt.get -> System.DateTime
+Modulus.Outbox.MongoDB.MongoOutboxMessage.CreatedAt.init -> void
+Modulus.Outbox.MongoDB.MongoOutboxMessage.Error.get -> string?
+Modulus.Outbox.MongoDB.MongoOutboxMessage.Error.set -> void
+Modulus.Outbox.MongoDB.MongoOutboxMessage.Id.get -> System.Guid
+Modulus.Outbox.MongoDB.MongoOutboxMessage.Id.init -> void
+Modulus.Outbox.MongoDB.MongoOutboxMessage.LockedBy.get -> string?
+Modulus.Outbox.MongoDB.MongoOutboxMessage.LockedBy.set -> void
+Modulus.Outbox.MongoDB.MongoOutboxMessage.LockedUntil.get -> System.DateTime?
+Modulus.Outbox.MongoDB.MongoOutboxMessage.LockedUntil.set -> void
+Modulus.Outbox.MongoDB.MongoOutboxMessage.MessageType.get -> string!
+Modulus.Outbox.MongoDB.MongoOutboxMessage.MessageType.init -> void
+Modulus.Outbox.MongoDB.MongoOutboxMessage.ModuleName.get -> string!
+Modulus.Outbox.MongoDB.MongoOutboxMessage.ModuleName.init -> void
+Modulus.Outbox.MongoDB.MongoOutboxMessage.MongoOutboxMessage() -> void
+Modulus.Outbox.MongoDB.MongoOutboxMessage.NextAttemptAt.get -> System.DateTime?
+Modulus.Outbox.MongoDB.MongoOutboxMessage.NextAttemptAt.set -> void
+Modulus.Outbox.MongoDB.MongoOutboxMessage.Payload.get -> string!
+Modulus.Outbox.MongoDB.MongoOutboxMessage.Payload.init -> void
+Modulus.Outbox.MongoDB.MongoOutboxMessage.ProcessedAt.get -> System.DateTime?
+Modulus.Outbox.MongoDB.MongoOutboxMessage.ProcessedAt.set -> void
+Modulus.Outbox.MongoDB.MongoOutboxMessage.RetryCount.get -> int
+Modulus.Outbox.MongoDB.MongoOutboxMessage.RetryCount.set -> void
+Modulus.Outbox.MongoDB.MongoOutboxMessage.SchemaVersion.get -> int?
+Modulus.Outbox.MongoDB.MongoOutboxMessage.SchemaVersion.init -> void
+Modulus.Outbox.MongoDB.MongoOutboxMessage.TenantId.get -> System.Guid
+Modulus.Outbox.MongoDB.MongoOutboxMessage.TenantId.init -> void
+Modulus.Outbox.MongoDB.MongoOutboxMessage.TraceParent.get -> string?
+Modulus.Outbox.MongoDB.MongoOutboxMessage.TraceParent.init -> void
+Modulus.Outbox.MongoDB.MongoOutboxMessage.TraceState.get -> string?
+Modulus.Outbox.MongoDB.MongoOutboxMessage.TraceState.init -> void
+Modulus.Outbox.MongoDB.MongoOutboxProcessor
+Modulus.Outbox.MongoDB.MongoOutboxProcessor.MongoOutboxProcessor(MongoDB.Driver.IMongoCollection<Modulus.Outbox.MongoDB.MongoOutboxMessage!>! collection, System.IServiceProvider! sp, Microsoft.Extensions.Options.IOptions<Modulus.Outbox.Abstractions.OutboxOptions!>! opts, Microsoft.Extensions.Logging.ILogger<Modulus.Outbox.MongoDB.MongoOutboxProcessor!>! logger) -> void
+Modulus.Outbox.MongoDB.MongoOutboxProcessor.ProcessAsync(System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+static Modulus.Outbox.MongoDB.Extensions.OutboxMongoExtensions.AddMongoOutbox(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, string! collectionName = "outbox", System.Action<Modulus.Outbox.Abstractions.OutboxOptions!>? configure = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.Outbox.MongoDB.MongoOutboxManagementExtensions.MapModulusMongoOutboxManagement(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! prefix = "/outbox") -> Microsoft.AspNetCore.Routing.RouteGroupBuilder!

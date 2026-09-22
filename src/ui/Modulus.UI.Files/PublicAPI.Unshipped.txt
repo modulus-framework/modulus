@@ -1,0 +1,45 @@
+#nullable enable
+const Modulus.UI.Files.FilesUiLocalization.ResourceName = "Modulus.Files" -> string!
+const Modulus.UI.Files.FilesUiOptions.SectionName = "FilesUi" -> string!
+const Modulus.UI.Files.FilesUiPermissions.Manage = "files:manage" -> string!
+Modulus.UI.Files.FilesUiExtensions
+Modulus.UI.Files.FilesUiLocalization
+Modulus.UI.Files.FilesUiModule
+Modulus.UI.Files.FilesUiModule.FilesUiModule() -> void
+Modulus.UI.Files.FilesUiOptions
+Modulus.UI.Files.FilesUiOptions.FilesUiOptions() -> void
+Modulus.UI.Files.FilesUiOptions.MaxUploadBytes.get -> long
+Modulus.UI.Files.FilesUiOptions.MaxUploadBytes.set -> void
+Modulus.UI.Files.FilesUiOptions.RequirePermission.get -> string?
+Modulus.UI.Files.FilesUiOptions.RequirePermission.set -> void
+Modulus.UI.Files.FilesUiPermissions
+Modulus.UI.Files.Pages.Files.FileResultView
+Modulus.UI.Files.Pages.Files.FileResultView.<Clone>$() -> Modulus.UI.Files.Pages.Files.FileResultView!
+Modulus.UI.Files.Pages.Files.FileResultView.Deconstruct(out string! Path, out bool? Exists) -> void
+Modulus.UI.Files.Pages.Files.FileResultView.Equals(Modulus.UI.Files.Pages.Files.FileResultView? other) -> bool
+Modulus.UI.Files.Pages.Files.FileResultView.Exists.get -> bool?
+Modulus.UI.Files.Pages.Files.FileResultView.Exists.init -> void
+Modulus.UI.Files.Pages.Files.FileResultView.FileResultView(string! Path, bool? Exists) -> void
+Modulus.UI.Files.Pages.Files.FileResultView.Path.get -> string!
+Modulus.UI.Files.Pages.Files.FileResultView.Path.init -> void
+Modulus.UI.Files.Pages.Files.IndexModel
+Modulus.UI.Files.Pages.Files.IndexModel.Exists.get -> bool?
+Modulus.UI.Files.Pages.Files.IndexModel.IndexModel(Modulus.Storage.IFileStorage! storage, Microsoft.Extensions.Options.IOptions<Modulus.UI.Files.FilesUiOptions!>! options, Modulus.Localization.IModulusLocalizer! localizer) -> void
+Modulus.UI.Files.Pages.Files.IndexModel.OnGetAsync(System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
+Modulus.UI.Files.Pages.Files.IndexModel.OnGetDownloadAsync(string! path, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Mvc.IActionResult!>!
+Modulus.UI.Files.Pages.Files.IndexModel.OnPostDeleteAsync(string! path, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Mvc.IActionResult!>!
+Modulus.UI.Files.Pages.Files.IndexModel.OnPostUploadAsync(Microsoft.AspNetCore.Http.IFormFile? file, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Mvc.IActionResult!>!
+Modulus.UI.Files.Pages.Files.IndexModel.Path.get -> string?
+Modulus.UI.Files.Pages.Files.IndexModel.Path.set -> void
+Modulus.UI.Files.Pages.Files.IndexModel.ResultView() -> Modulus.UI.Files.Pages.Files.FileResultView!
+Modulus.UI.Files.Pages.Files.IndexModel.TextAsync(string! key) -> System.Threading.Tasks.Task<string!>!
+override Modulus.UI.Files.FilesUiModule.ConfigureNavigation(Modulus.UI.UiNavigationBuilder! navigation) -> void
+override Modulus.UI.Files.FilesUiModule.Manifest.get -> Modulus.UI.ModuleManifest!
+override Modulus.UI.Files.Pages.Files.FileResultView.Equals(object? obj) -> bool
+override Modulus.UI.Files.Pages.Files.FileResultView.GetHashCode() -> int
+override Modulus.UI.Files.Pages.Files.FileResultView.ToString() -> string!
+static Modulus.UI.Files.FilesUiExtensions.AddModulusFilesUi(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration? configuration = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.UI.Files.FilesUiExtensions.MapModulusFilesUi(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints) -> Microsoft.AspNetCore.Routing.IEndpointRouteBuilder!
+static Modulus.UI.Files.FilesUiLocalization.Seed(Modulus.Localization.ILocalizationStore! store) -> void
+static Modulus.UI.Files.Pages.Files.FileResultView.operator !=(Modulus.UI.Files.Pages.Files.FileResultView? left, Modulus.UI.Files.Pages.Files.FileResultView? right) -> bool
+static Modulus.UI.Files.Pages.Files.FileResultView.operator ==(Modulus.UI.Files.Pages.Files.FileResultView? left, Modulus.UI.Files.Pages.Files.FileResultView? right) -> bool

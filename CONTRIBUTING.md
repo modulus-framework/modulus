@@ -34,6 +34,36 @@ Thank you for your interest in contributing to Modulus Framework! This document 
 4. Squash your commits
 5. Open a pull request with a clear description
 
+## Public API & Breaking Changes
+
+Every packable project under `src/` (and the CLI) tracks its public surface
+with [`Microsoft.CodeAnalysis.PublicApiAnalyzers`](https://github.com/dotnet/roslyn-analyzers/blob/main/src/PublicApiAnalyzers/PublicApiAnalyzers.Help.md):
+a `PublicAPI.Shipped.txt` and `PublicAPI.Unshipped.txt` sit next to each
+`.csproj`, and the build fails (`RS0016`/`RS0017`, errors under
+`TreatWarningsAsErrors`) if a public member is added or removed without a
+matching entry. This is enforcement, not paperwork — a "1.4.0" that claims
+SemVer needs *something* stopping a public signature from changing silently
+behind it, and this is that something.
+
+- **Adding public API**: build the project — the analyzer reports the new
+  member as undeclared. Add it to `PublicAPI.Unshipped.txt` yourself, or let
+  the codefix do it: `dotnet format analyzers <project>.csproj --diagnostics RS0016 --severity info`.
+- **Removing or changing public API**: same mechanism catches it (`RS0017`
+  for a removed member); update the file to match. Think about whether the
+  change is source- and binary-compatible before you do — if it isn't, it's
+  a breaking change (see below), not a routine edit.
+- **Cutting a release**: everything in every project's `Unshipped.txt` moves
+  to `Shipped.txt` as part of tagging that version — that file is the
+  permanent record of what a given package version actually shipped.
+
+**Breaking changes** (removing a public member, changing a signature in an
+incompatible way, tightening a previously-loose contract) require a major
+version bump per SemVer and must be called out explicitly in `CHANGELOG.md`,
+not folded quietly into a minor/patch entry. Prefer not to ship one at all:
+mark the old member `[Obsolete("...", error: false)]` pointing at its
+replacement for at least one minor version before removing it, so consumers
+get a compile-time warning instead of a broken build on upgrade.
+
 ## Branching Strategy
 
 - `main` — stable release branch

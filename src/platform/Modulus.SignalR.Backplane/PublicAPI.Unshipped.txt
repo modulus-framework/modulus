@@ -1,0 +1,4 @@
+#nullable enable
+Modulus.SignalR.SignalRBackplaneExtensions
+static Modulus.SignalR.SignalRBackplaneExtensions.AddAzureBackplane(this Microsoft.AspNetCore.SignalR.ISignalRServerBuilder! builder, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> Microsoft.AspNetCore.SignalR.ISignalRServerBuilder!
+static Modulus.SignalR.SignalRBackplaneExtensions.AddRedisBackplane(this Microsoft.AspNetCore.SignalR.ISignalRServerBuilder! builder, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> Microsoft.AspNetCore.SignalR.ISignalRServerBuilder!

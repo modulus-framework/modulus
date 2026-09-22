@@ -1,0 +1,74 @@
+#nullable enable
+const Modulus.UI.Users.UsersUiLocalization.ResourceName = "Modulus.Users" -> string!
+const Modulus.UI.Users.UsersUiOptions.SectionName = "UsersUi" -> string!
+const Modulus.UI.Users.UsersUiPermissions.Manage = "users:manage" -> string!
+Modulus.UI.Users.Pages.Roles.IndexModel
+Modulus.UI.Users.Pages.Roles.IndexModel.IndexModel(Microsoft.AspNetCore.Identity.RoleManager<Modulus.Identity.Abstractions.ModulusRole!>! roles, Microsoft.Extensions.Options.IOptions<Modulus.UI.Users.UsersUiOptions!>! options, Modulus.Localization.IModulusLocalizer! localizer) -> void
+Modulus.UI.Users.Pages.Roles.IndexModel.OnGetAsync(System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
+Modulus.UI.Users.Pages.Roles.IndexModel.OnPostCreateAsync(string? name) -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Mvc.IActionResult!>!
+Modulus.UI.Users.Pages.Roles.IndexModel.OnPostDeleteAsync(System.Guid id) -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Mvc.IActionResult!>!
+Modulus.UI.Users.Pages.Roles.IndexModel.Rows.get -> System.Collections.Generic.IReadOnlyList<Modulus.Identity.Abstractions.ModulusRole!>!
+Modulus.UI.Users.Pages.Roles.IndexModel.TextAsync(string! key) -> System.Threading.Tasks.Task<string!>!
+Modulus.UI.Users.Pages.Users.CreateModel
+Modulus.UI.Users.Pages.Users.CreateModel.CreateModel(Microsoft.AspNetCore.Identity.UserManager<Modulus.Identity.Abstractions.ModulusUser!>! users, Modulus.Localization.IModulusLocalizer! localizer) -> void
+Modulus.UI.Users.Pages.Users.CreateModel.Input.get -> Modulus.UI.Users.Pages.Users.CreateModel.InputModel!
+Modulus.UI.Users.Pages.Users.CreateModel.Input.set -> void
+Modulus.UI.Users.Pages.Users.CreateModel.InputModel
+Modulus.UI.Users.Pages.Users.CreateModel.InputModel.Email.get -> string?
+Modulus.UI.Users.Pages.Users.CreateModel.InputModel.Email.set -> void
+Modulus.UI.Users.Pages.Users.CreateModel.InputModel.InputModel() -> void
+Modulus.UI.Users.Pages.Users.CreateModel.InputModel.Password.get -> string?
+Modulus.UI.Users.Pages.Users.CreateModel.InputModel.Password.set -> void
+Modulus.UI.Users.Pages.Users.CreateModel.InputModel.UserName.get -> string?
+Modulus.UI.Users.Pages.Users.CreateModel.InputModel.UserName.set -> void
+Modulus.UI.Users.Pages.Users.CreateModel.OnGet() -> void
+Modulus.UI.Users.Pages.Users.CreateModel.OnPostAsync() -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Mvc.IActionResult!>!
+Modulus.UI.Users.Pages.Users.CreateModel.TextAsync(string! key) -> System.Threading.Tasks.Task<string!>!
+Modulus.UI.Users.Pages.Users.DetailsModel
+Modulus.UI.Users.Pages.Users.DetailsModel.Account.get -> Modulus.Identity.Abstractions.ModulusUser?
+Modulus.UI.Users.Pages.Users.DetailsModel.AssignedRoles.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Modulus.UI.Users.Pages.Users.DetailsModel.AvailableRoles.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Modulus.UI.Users.Pages.Users.DetailsModel.DetailsModel(Microsoft.AspNetCore.Identity.UserManager<Modulus.Identity.Abstractions.ModulusUser!>! users, Microsoft.AspNetCore.Identity.RoleManager<Modulus.Identity.Abstractions.ModulusRole!>! roles, Modulus.Localization.IModulusLocalizer! localizer) -> void
+Modulus.UI.Users.Pages.Users.DetailsModel.LockedOut.get -> bool
+Modulus.UI.Users.Pages.Users.DetailsModel.OnGetAsync(System.Guid id, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Mvc.IActionResult!>!
+Modulus.UI.Users.Pages.Users.DetailsModel.OnPostAddRoleAsync(System.Guid id, string? roleName) -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Mvc.IActionResult!>!
+Modulus.UI.Users.Pages.Users.DetailsModel.OnPostLockAsync(System.Guid id) -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Mvc.IActionResult!>!
+Modulus.UI.Users.Pages.Users.DetailsModel.OnPostRemoveRoleAsync(System.Guid id, string! roleName) -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Mvc.IActionResult!>!
+Modulus.UI.Users.Pages.Users.DetailsModel.OnPostToggleActiveAsync(System.Guid id) -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Mvc.IActionResult!>!
+Modulus.UI.Users.Pages.Users.DetailsModel.OnPostUnlockAsync(System.Guid id) -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Mvc.IActionResult!>!
+Modulus.UI.Users.Pages.Users.DetailsModel.TextAsync(string! key) -> System.Threading.Tasks.Task<string!>!
+Modulus.UI.Users.Pages.Users.IndexModel
+Modulus.UI.Users.Pages.Users.IndexModel.IndexModel(Microsoft.AspNetCore.Identity.UserManager<Modulus.Identity.Abstractions.ModulusUser!>! users, Microsoft.Extensions.Options.IOptions<Modulus.UI.Users.UsersUiOptions!>! options, Modulus.Localization.IModulusLocalizer! localizer) -> void
+Modulus.UI.Users.Pages.Users.IndexModel.OnGetAsync(System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
+Modulus.UI.Users.Pages.Users.IndexModel.Rows.get -> System.Collections.Generic.IReadOnlyList<Modulus.UI.Users.Pages.Users.IndexModel.UserRow!>!
+Modulus.UI.Users.Pages.Users.IndexModel.TextAsync(string! key) -> System.Threading.Tasks.Task<string!>!
+Modulus.UI.Users.Pages.Users.IndexModel.UserRow
+Modulus.UI.Users.Pages.Users.IndexModel.UserRow.<Clone>$() -> Modulus.UI.Users.Pages.Users.IndexModel.UserRow!
+Modulus.UI.Users.Pages.Users.IndexModel.UserRow.Deconstruct(out Modulus.Identity.Abstractions.ModulusUser! User, out bool LockedOut) -> void
+Modulus.UI.Users.Pages.Users.IndexModel.UserRow.Equals(Modulus.UI.Users.Pages.Users.IndexModel.UserRow? other) -> bool
+Modulus.UI.Users.Pages.Users.IndexModel.UserRow.LockedOut.get -> bool
+Modulus.UI.Users.Pages.Users.IndexModel.UserRow.LockedOut.init -> void
+Modulus.UI.Users.Pages.Users.IndexModel.UserRow.User.get -> Modulus.Identity.Abstractions.ModulusUser!
+Modulus.UI.Users.Pages.Users.IndexModel.UserRow.User.init -> void
+Modulus.UI.Users.Pages.Users.IndexModel.UserRow.UserRow(Modulus.Identity.Abstractions.ModulusUser! User, bool LockedOut) -> void
+Modulus.UI.Users.UsersUiExtensions
+Modulus.UI.Users.UsersUiLocalization
+Modulus.UI.Users.UsersUiModule
+Modulus.UI.Users.UsersUiModule.UsersUiModule() -> void
+Modulus.UI.Users.UsersUiOptions
+Modulus.UI.Users.UsersUiOptions.ListLimit.get -> int
+Modulus.UI.Users.UsersUiOptions.ListLimit.set -> void
+Modulus.UI.Users.UsersUiOptions.RequirePermission.get -> string?
+Modulus.UI.Users.UsersUiOptions.RequirePermission.set -> void
+Modulus.UI.Users.UsersUiOptions.UsersUiOptions() -> void
+Modulus.UI.Users.UsersUiPermissions
+override Modulus.UI.Users.Pages.Users.IndexModel.UserRow.Equals(object? obj) -> bool
+override Modulus.UI.Users.Pages.Users.IndexModel.UserRow.GetHashCode() -> int
+override Modulus.UI.Users.Pages.Users.IndexModel.UserRow.ToString() -> string!
+override Modulus.UI.Users.UsersUiModule.ConfigureNavigation(Modulus.UI.UiNavigationBuilder! navigation) -> void
+override Modulus.UI.Users.UsersUiModule.Manifest.get -> Modulus.UI.ModuleManifest!
+static Modulus.UI.Users.Pages.Users.IndexModel.UserRow.operator !=(Modulus.UI.Users.Pages.Users.IndexModel.UserRow? left, Modulus.UI.Users.Pages.Users.IndexModel.UserRow? right) -> bool
+static Modulus.UI.Users.Pages.Users.IndexModel.UserRow.operator ==(Modulus.UI.Users.Pages.Users.IndexModel.UserRow? left, Modulus.UI.Users.Pages.Users.IndexModel.UserRow? right) -> bool
+static Modulus.UI.Users.UsersUiExtensions.AddModulusUsersUi(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration? configuration = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.UI.Users.UsersUiExtensions.MapModulusUsersUi(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints) -> Microsoft.AspNetCore.Routing.IEndpointRouteBuilder!
+static Modulus.UI.Users.UsersUiLocalization.Seed(Modulus.Localization.ILocalizationStore! store) -> void

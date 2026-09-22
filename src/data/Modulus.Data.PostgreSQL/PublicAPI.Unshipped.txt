@@ -1,0 +1,3 @@
+#nullable enable
+Modulus.Data.PostgreSQL.PostgreSQLExtensions
+static Modulus.Data.PostgreSQL.PostgreSQLExtensions.AddPostgreSQLDatabase<TContext>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, string! connectionString, System.Action<Npgsql.EntityFrameworkCore.PostgreSQL.Infrastructure.NpgsqlDbContextOptionsBuilder!>? configure = null, bool useSnakeCaseNaming = true) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!

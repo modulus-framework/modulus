@@ -1,0 +1,366 @@
+#nullable enable
+Modulus.Identity.Abstractions.ExternalProviderOptions
+Modulus.Identity.Abstractions.ExternalProviderOptions.Audience.get -> string?
+Modulus.Identity.Abstractions.ExternalProviderOptions.Audience.set -> void
+Modulus.Identity.Abstractions.ExternalProviderOptions.Authority.get -> string!
+Modulus.Identity.Abstractions.ExternalProviderOptions.Authority.set -> void
+Modulus.Identity.Abstractions.ExternalProviderOptions.ClientId.get -> string!
+Modulus.Identity.Abstractions.ExternalProviderOptions.ClientId.set -> void
+Modulus.Identity.Abstractions.ExternalProviderOptions.ClientSecret.get -> string!
+Modulus.Identity.Abstractions.ExternalProviderOptions.ClientSecret.set -> void
+Modulus.Identity.Abstractions.ExternalProviderOptions.ExternalProviderOptions() -> void
+Modulus.Identity.Abstractions.ExternalProviderOptions.Scope.get -> string!
+Modulus.Identity.Abstractions.ExternalProviderOptions.Scope.set -> void
+Modulus.Identity.Abstractions.ExternalProviderOptions.ValidateIssuer.get -> bool
+Modulus.Identity.Abstractions.ExternalProviderOptions.ValidateIssuer.set -> void
+Modulus.Identity.Abstractions.ExternalTokenValidator
+Modulus.Identity.Abstractions.ExternalUserInfo
+Modulus.Identity.Abstractions.ExternalUserInfo.<Clone>$() -> Modulus.Identity.Abstractions.ExternalUserInfo!
+Modulus.Identity.Abstractions.ExternalUserInfo.AvatarUrl.get -> string?
+Modulus.Identity.Abstractions.ExternalUserInfo.AvatarUrl.init -> void
+Modulus.Identity.Abstractions.ExternalUserInfo.Claims.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+Modulus.Identity.Abstractions.ExternalUserInfo.Claims.init -> void
+Modulus.Identity.Abstractions.ExternalUserInfo.Deconstruct(out string! Subject, out string? Email, out string? UserName, out string? FirstName, out string? LastName, out string? AvatarUrl, out System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Claims) -> void
+Modulus.Identity.Abstractions.ExternalUserInfo.Email.get -> string?
+Modulus.Identity.Abstractions.ExternalUserInfo.Email.init -> void
+Modulus.Identity.Abstractions.ExternalUserInfo.Equals(Modulus.Identity.Abstractions.ExternalUserInfo? other) -> bool
+Modulus.Identity.Abstractions.ExternalUserInfo.ExternalUserInfo(string! Subject, string? Email, string? UserName, string? FirstName, string? LastName, string? AvatarUrl, System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Claims) -> void
+Modulus.Identity.Abstractions.ExternalUserInfo.FirstName.get -> string?
+Modulus.Identity.Abstractions.ExternalUserInfo.FirstName.init -> void
+Modulus.Identity.Abstractions.ExternalUserInfo.LastName.get -> string?
+Modulus.Identity.Abstractions.ExternalUserInfo.LastName.init -> void
+Modulus.Identity.Abstractions.ExternalUserInfo.Subject.get -> string!
+Modulus.Identity.Abstractions.ExternalUserInfo.Subject.init -> void
+Modulus.Identity.Abstractions.ExternalUserInfo.UserName.get -> string?
+Modulus.Identity.Abstractions.ExternalUserInfo.UserName.init -> void
+Modulus.Identity.Abstractions.IExternalIdentityProvider
+Modulus.Identity.Abstractions.IExternalIdentityProvider.DisplayName.get -> string!
+Modulus.Identity.Abstractions.IExternalIdentityProvider.Name.get -> string!
+Modulus.Identity.Abstractions.IExternalIdentityProvider.ValidateTokenAsync(string! token, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.Identity.Abstractions.IExternalIdentityProviderWithProfileFetch
+Modulus.Identity.Abstractions.IExternalIdentityProviderWithProfileFetch.GetUserBySubjectAsync(string! subject, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Identity.Abstractions.ExternalUserInfo?>!
+Modulus.Identity.Abstractions.IIdentityEmailSender
+Modulus.Identity.Abstractions.IIdentityEmailSender.SendEmailConfirmationEmailAsync(string! email, string! confirmationToken, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Identity.Abstractions.IIdentityEmailSender.SendPasswordResetEmailAsync(string! email, string! resetToken, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Identity.Abstractions.IIdentitySeeder
+Modulus.Identity.Abstractions.IIdentitySeeder.EnsureRoleAsync(string! roleName, string? displayName = null, bool isDefault = false, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Identity.Abstractions.IIdentitySeeder.GrantPermissionToRoleAsync(string! roleName, string! permission, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Identity.Abstractions.IIdentitySeeder.SeedAsync(System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Identity.Abstractions.IModulusUserStore
+Modulus.Identity.Abstractions.IModulusUserStore.FindByEmailAsync(string! email, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Modulus.Identity.Abstractions.ModulusUser?>!
+Modulus.Identity.Abstractions.IModulusUserStore.FindByExternalLoginAsync(string! provider, string! subject, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Modulus.Identity.Abstractions.ModulusUser?>!
+Modulus.Identity.Abstractions.IModulusUserStore.GetPermissionClaimsAsync(System.Guid userId, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<string!>!>!
+Modulus.Identity.Abstractions.IModulusUserStore.GetRoleNamesAsync(System.Guid userId, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<string!>!>!
+Modulus.Identity.Abstractions.IPasswordGrantCredentialValidator
+Modulus.Identity.Abstractions.IPasswordGrantCredentialValidator.ValidateAsync(string! username, string! password, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Identity.Abstractions.PasswordGrantResult!>!
+Modulus.Identity.Abstractions.ModulusIdentityOptions
+Modulus.Identity.Abstractions.ModulusIdentityOptions.AccessTokenLifetimeMin.get -> int
+Modulus.Identity.Abstractions.ModulusIdentityOptions.AccessTokenLifetimeMin.set -> void
+Modulus.Identity.Abstractions.ModulusIdentityOptions.AllowAuthorizationCodeFlow.get -> bool
+Modulus.Identity.Abstractions.ModulusIdentityOptions.AllowAuthorizationCodeFlow.set -> void
+Modulus.Identity.Abstractions.ModulusIdentityOptions.AllowedPostLogoutRedirectUris.get -> System.Collections.Generic.List<string!>!
+Modulus.Identity.Abstractions.ModulusIdentityOptions.AllowedPostLogoutRedirectUris.set -> void
+Modulus.Identity.Abstractions.ModulusIdentityOptions.AllowMultipleExternalProviders.get -> bool
+Modulus.Identity.Abstractions.ModulusIdentityOptions.AllowMultipleExternalProviders.set -> void
+Modulus.Identity.Abstractions.ModulusIdentityOptions.AllowPasswordFlow.get -> bool
+Modulus.Identity.Abstractions.ModulusIdentityOptions.AllowPasswordFlow.set -> void
+Modulus.Identity.Abstractions.ModulusIdentityOptions.EnableRefreshToken.get -> bool
+Modulus.Identity.Abstractions.ModulusIdentityOptions.EnableRefreshToken.set -> void
+Modulus.Identity.Abstractions.ModulusIdentityOptions.ExternalProviders.get -> System.Collections.Generic.Dictionary<string!, Modulus.Identity.Abstractions.ExternalProviderOptions!>!
+Modulus.Identity.Abstractions.ModulusIdentityOptions.ExternalProviders.set -> void
+Modulus.Identity.Abstractions.ModulusIdentityOptions.IntrospectionClientId.get -> string?
+Modulus.Identity.Abstractions.ModulusIdentityOptions.IntrospectionClientId.set -> void
+Modulus.Identity.Abstractions.ModulusIdentityOptions.IntrospectionClientSecret.get -> string?
+Modulus.Identity.Abstractions.ModulusIdentityOptions.IntrospectionClientSecret.set -> void
+Modulus.Identity.Abstractions.ModulusIdentityOptions.ModulusIdentityOptions() -> void
+Modulus.Identity.Abstractions.ModulusIdentityOptions.RefreshTokenLifetimeDays.get -> int
+Modulus.Identity.Abstractions.ModulusIdentityOptions.RefreshTokenLifetimeDays.set -> void
+Modulus.Identity.Abstractions.ModulusIdentityOptions.RequireConfirmedEmail.get -> bool
+Modulus.Identity.Abstractions.ModulusIdentityOptions.RequireConfirmedEmail.set -> void
+Modulus.Identity.Abstractions.ModulusIdentityOptions.UseDevelopmentCertificates.get -> bool
+Modulus.Identity.Abstractions.ModulusIdentityOptions.UseDevelopmentCertificates.set -> void
+Modulus.Identity.Abstractions.ModulusRole
+Modulus.Identity.Abstractions.ModulusRole.DisplayName.get -> string?
+Modulus.Identity.Abstractions.ModulusRole.DisplayName.set -> void
+Modulus.Identity.Abstractions.ModulusRole.IsDefault.get -> bool
+Modulus.Identity.Abstractions.ModulusRole.IsDefault.set -> void
+Modulus.Identity.Abstractions.ModulusRole.ModulusRole() -> void
+Modulus.Identity.Abstractions.ModulusRole.TenantId.get -> System.Guid?
+Modulus.Identity.Abstractions.ModulusRole.TenantId.set -> void
+Modulus.Identity.Abstractions.ModulusUser
+Modulus.Identity.Abstractions.ModulusUser.AvatarUrl.get -> string?
+Modulus.Identity.Abstractions.ModulusUser.AvatarUrl.set -> void
+Modulus.Identity.Abstractions.ModulusUser.FirstName.get -> string?
+Modulus.Identity.Abstractions.ModulusUser.FirstName.set -> void
+Modulus.Identity.Abstractions.ModulusUser.FullName.get -> string!
+Modulus.Identity.Abstractions.ModulusUser.IsActive.get -> bool
+Modulus.Identity.Abstractions.ModulusUser.IsActive.set -> void
+Modulus.Identity.Abstractions.ModulusUser.LastName.get -> string?
+Modulus.Identity.Abstractions.ModulusUser.LastName.set -> void
+Modulus.Identity.Abstractions.ModulusUser.ModulusUser() -> void
+Modulus.Identity.Abstractions.ModulusUser.TenantId.get -> System.Guid?
+Modulus.Identity.Abstractions.ModulusUser.TenantId.set -> void
+Modulus.Identity.Abstractions.ModulusUserTypeDescriptor
+Modulus.Identity.Abstractions.ModulusUserTypeDescriptor.ModulusUserTypeDescriptor(System.Type! userType) -> void
+Modulus.Identity.Abstractions.ModulusUserTypeDescriptor.UserType.get -> System.Type!
+Modulus.Identity.Abstractions.NoopIdentityEmailSender
+Modulus.Identity.Abstractions.NoopIdentityEmailSender.NoopIdentityEmailSender() -> void
+Modulus.Identity.Abstractions.NoopIdentityEmailSender.SendEmailConfirmationEmailAsync(string! email, string! confirmationToken, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Identity.Abstractions.NoopIdentityEmailSender.SendPasswordResetEmailAsync(string! email, string! resetToken, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Identity.Abstractions.NullPasswordGrantCredentialValidator
+Modulus.Identity.Abstractions.NullPasswordGrantCredentialValidator.NullPasswordGrantCredentialValidator() -> void
+Modulus.Identity.Abstractions.NullPasswordGrantCredentialValidator.ValidateAsync(string! username, string! password, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Identity.Abstractions.PasswordGrantResult!>!
+Modulus.Identity.Abstractions.OidcDiscoveryValidator
+Modulus.Identity.Abstractions.OidcDiscoveryValidator.OidcDiscoveryValidator(string! metadataAddress, System.Collections.Generic.IEnumerable<string!>? validAudiences = null, System.Net.Http.HttpClient? httpClient = null) -> void
+Modulus.Identity.Abstractions.OidcDiscoveryValidator.ValidateAsync(string! token, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.Identity.Abstractions.OidcDiscoveryValidatorCache
+Modulus.Identity.Abstractions.PasswordGrant
+Modulus.Identity.Abstractions.PasswordGrantResult
+Modulus.Identity.Abstractions.PasswordGrantResult.<Clone>$() -> Modulus.Identity.Abstractions.PasswordGrantResult!
+Modulus.Identity.Abstractions.PasswordGrantResult.Email.get -> string?
+Modulus.Identity.Abstractions.PasswordGrantResult.Email.init -> void
+Modulus.Identity.Abstractions.PasswordGrantResult.Equals(Modulus.Identity.Abstractions.PasswordGrantResult? other) -> bool
+Modulus.Identity.Abstractions.PasswordGrantResult.Error.get -> string!
+Modulus.Identity.Abstractions.PasswordGrantResult.Error.init -> void
+Modulus.Identity.Abstractions.PasswordGrantResult.PasswordGrantResult() -> void
+Modulus.Identity.Abstractions.PasswordGrantResult.Roles.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Modulus.Identity.Abstractions.PasswordGrantResult.Roles.init -> void
+Modulus.Identity.Abstractions.PasswordGrantResult.SecurityStamp.get -> string?
+Modulus.Identity.Abstractions.PasswordGrantResult.SecurityStamp.init -> void
+Modulus.Identity.Abstractions.PasswordGrantResult.Subject.get -> string?
+Modulus.Identity.Abstractions.PasswordGrantResult.Subject.init -> void
+Modulus.Identity.Abstractions.PasswordGrantResult.Success.get -> bool
+Modulus.Identity.Abstractions.PasswordGrantResult.Success.init -> void
+Modulus.Identity.Abstractions.PasswordGrantResult.UserName.get -> string?
+Modulus.Identity.Abstractions.PasswordGrantResult.UserName.init -> void
+Modulus.Identity.AccountController<TUser>
+Modulus.Identity.AccountController<TUser>.AccountController(Microsoft.AspNetCore.Identity.UserManager<TUser!>! userManager, Microsoft.AspNetCore.Identity.SignInManager<TUser!>! signInManager, Modulus.Identity.Abstractions.IIdentityEmailSender! emailSender) -> void
+Modulus.Identity.AccountController<TUser>.ConfirmEmailAsync(Modulus.Identity.ConfirmEmailRequest! request) -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Mvc.IActionResult!>!
+Modulus.Identity.AccountController<TUser>.ForgotPasswordAsync(string! email) -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Mvc.IActionResult!>!
+Modulus.Identity.AccountController<TUser>.LogoutAsync() -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Mvc.IActionResult!>!
+Modulus.Identity.AccountController<TUser>.ResetPasswordAsync(Modulus.Identity.ResetPasswordRequest! request) -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Mvc.IActionResult!>!
+Modulus.Identity.AccountController<TUser>.SendConfirmationEmailAsync(string! email) -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Mvc.IActionResult!>!
+Modulus.Identity.Auth0.Auth0Extensions
+Modulus.Identity.Auth0.Auth0IdentityProvider
+Modulus.Identity.Auth0.Auth0IdentityProvider.Auth0IdentityProvider(System.Net.Http.HttpClient! http, Modulus.Identity.Auth0.Auth0Options! opts) -> void
+Modulus.Identity.Auth0.Auth0IdentityProvider.DisplayName.get -> string!
+Modulus.Identity.Auth0.Auth0IdentityProvider.GetUserBySubjectAsync(string! subject, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Identity.Abstractions.ExternalUserInfo?>!
+Modulus.Identity.Auth0.Auth0IdentityProvider.Name.get -> string!
+Modulus.Identity.Auth0.Auth0IdentityProvider.ValidateTokenAsync(string! token, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.Identity.Auth0.Auth0Options
+Modulus.Identity.Auth0.Auth0Options.Audience.get -> string?
+Modulus.Identity.Auth0.Auth0Options.Audience.set -> void
+Modulus.Identity.Auth0.Auth0Options.Auth0Options() -> void
+Modulus.Identity.Auth0.Auth0Options.Authority.get -> string!
+Modulus.Identity.Auth0.Auth0Options.Authority.set -> void
+Modulus.Identity.Auth0.Auth0Options.ClientId.get -> string!
+Modulus.Identity.Auth0.Auth0Options.ClientId.set -> void
+Modulus.Identity.Auth0.Auth0Options.ClientSecret.get -> string!
+Modulus.Identity.Auth0.Auth0Options.ClientSecret.set -> void
+Modulus.Identity.Auth0.Auth0Options.ManagementToken.get -> string?
+Modulus.Identity.Auth0.Auth0Options.ManagementToken.set -> void
+Modulus.Identity.Auth0.Auth0Options.Scope.get -> string!
+Modulus.Identity.Auth0.Auth0Options.Scope.set -> void
+Modulus.Identity.Authentik.AuthentikExtensions
+Modulus.Identity.Authentik.AuthentikIdentityProvider
+Modulus.Identity.Authentik.AuthentikIdentityProvider.AuthentikIdentityProvider(System.Net.Http.HttpClient! http, Modulus.Identity.Authentik.AuthentikOptions! opts) -> void
+Modulus.Identity.Authentik.AuthentikIdentityProvider.DisplayName.get -> string!
+Modulus.Identity.Authentik.AuthentikIdentityProvider.GetUserBySubjectAsync(string! subject, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Identity.Abstractions.ExternalUserInfo?>!
+Modulus.Identity.Authentik.AuthentikIdentityProvider.Name.get -> string!
+Modulus.Identity.Authentik.AuthentikIdentityProvider.ValidateTokenAsync(string! token, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.Identity.Authentik.AuthentikOptions
+Modulus.Identity.Authentik.AuthentikOptions.ApiToken.get -> string?
+Modulus.Identity.Authentik.AuthentikOptions.ApiToken.set -> void
+Modulus.Identity.Authentik.AuthentikOptions.Audience.get -> string?
+Modulus.Identity.Authentik.AuthentikOptions.Audience.set -> void
+Modulus.Identity.Authentik.AuthentikOptions.AuthentikOptions() -> void
+Modulus.Identity.Authentik.AuthentikOptions.Authority.get -> string!
+Modulus.Identity.Authentik.AuthentikOptions.Authority.set -> void
+Modulus.Identity.Authentik.AuthentikOptions.ClientId.get -> string!
+Modulus.Identity.Authentik.AuthentikOptions.ClientId.set -> void
+Modulus.Identity.Authentik.AuthentikOptions.ClientSecret.get -> string!
+Modulus.Identity.Authentik.AuthentikOptions.ClientSecret.set -> void
+Modulus.Identity.Authentik.AuthentikOptions.Scope.get -> string!
+Modulus.Identity.Authentik.AuthentikOptions.Scope.set -> void
+Modulus.Identity.AzureAd.AzureAdExtensions
+Modulus.Identity.AzureAd.AzureAdIdentityProvider
+Modulus.Identity.AzureAd.AzureAdIdentityProvider.AzureAdIdentityProvider(System.Net.Http.HttpClient! http, Modulus.Identity.AzureAd.AzureAdOptions! opts) -> void
+Modulus.Identity.AzureAd.AzureAdIdentityProvider.DisplayName.get -> string!
+Modulus.Identity.AzureAd.AzureAdIdentityProvider.GetUserBySubjectAsync(string! subject, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Identity.Abstractions.ExternalUserInfo?>!
+Modulus.Identity.AzureAd.AzureAdIdentityProvider.Name.get -> string!
+Modulus.Identity.AzureAd.AzureAdIdentityProvider.ValidateTokenAsync(string! token, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.Identity.AzureAd.AzureAdOptions
+Modulus.Identity.AzureAd.AzureAdOptions.Audience.get -> string?
+Modulus.Identity.AzureAd.AzureAdOptions.Audience.set -> void
+Modulus.Identity.AzureAd.AzureAdOptions.Authority.get -> string!
+Modulus.Identity.AzureAd.AzureAdOptions.AzureAdOptions() -> void
+Modulus.Identity.AzureAd.AzureAdOptions.ClientId.get -> string!
+Modulus.Identity.AzureAd.AzureAdOptions.ClientId.set -> void
+Modulus.Identity.AzureAd.AzureAdOptions.ClientSecret.get -> string!
+Modulus.Identity.AzureAd.AzureAdOptions.ClientSecret.set -> void
+Modulus.Identity.AzureAd.AzureAdOptions.GraphApiBaseUrl.get -> string!
+Modulus.Identity.AzureAd.AzureAdOptions.GraphApiBaseUrl.set -> void
+Modulus.Identity.AzureAd.AzureAdOptions.Instance.get -> string!
+Modulus.Identity.AzureAd.AzureAdOptions.Instance.set -> void
+Modulus.Identity.AzureAd.AzureAdOptions.Scope.get -> string!
+Modulus.Identity.AzureAd.AzureAdOptions.Scope.set -> void
+Modulus.Identity.AzureAd.AzureAdOptions.TenantId.get -> string!
+Modulus.Identity.AzureAd.AzureAdOptions.TenantId.set -> void
+Modulus.Identity.ConfirmEmailRequest
+Modulus.Identity.ConfirmEmailRequest.ConfirmEmailRequest() -> void
+Modulus.Identity.ConfirmEmailRequest.Email.get -> string!
+Modulus.Identity.ConfirmEmailRequest.Email.set -> void
+Modulus.Identity.ConfirmEmailRequest.Token.get -> string!
+Modulus.Identity.ConfirmEmailRequest.Token.set -> void
+Modulus.Identity.Duende.DuendeExtensions
+Modulus.Identity.Duende.DuendeIdentityProvider
+Modulus.Identity.Duende.DuendeIdentityProvider.DisplayName.get -> string!
+Modulus.Identity.Duende.DuendeIdentityProvider.DuendeIdentityProvider(System.Net.Http.HttpClient! http, Modulus.Identity.Duende.DuendeOptions! opts) -> void
+Modulus.Identity.Duende.DuendeIdentityProvider.GetUserBySubjectAsync(string! subject, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Identity.Abstractions.ExternalUserInfo?>!
+Modulus.Identity.Duende.DuendeIdentityProvider.Name.get -> string!
+Modulus.Identity.Duende.DuendeIdentityProvider.ValidateTokenAsync(string! token, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.Identity.Duende.DuendeOptions
+Modulus.Identity.Duende.DuendeOptions.ApiName.get -> string!
+Modulus.Identity.Duende.DuendeOptions.ApiName.set -> void
+Modulus.Identity.Duende.DuendeOptions.Audience.get -> string?
+Modulus.Identity.Duende.DuendeOptions.Audience.set -> void
+Modulus.Identity.Duende.DuendeOptions.Authority.get -> string!
+Modulus.Identity.Duende.DuendeOptions.Authority.set -> void
+Modulus.Identity.Duende.DuendeOptions.ClientId.get -> string!
+Modulus.Identity.Duende.DuendeOptions.ClientId.set -> void
+Modulus.Identity.Duende.DuendeOptions.ClientSecret.get -> string!
+Modulus.Identity.Duende.DuendeOptions.ClientSecret.set -> void
+Modulus.Identity.Duende.DuendeOptions.DuendeOptions() -> void
+Modulus.Identity.Duende.DuendeOptions.Scope.get -> string!
+Modulus.Identity.Duende.DuendeOptions.Scope.set -> void
+Modulus.Identity.EntityFrameworkCore.Extensions.IdentityEntityFrameworkExtensions
+Modulus.Identity.EntityFrameworkCore.ModulusIdentityDbContext
+Modulus.Identity.EntityFrameworkCore.ModulusIdentityDbContext.ModulusIdentityDbContext(Microsoft.EntityFrameworkCore.DbContextOptions! options, Modulus.Core.Abstractions.ICurrentTenant! currentTenant) -> void
+Modulus.Identity.EntityFrameworkCore.ModulusIdentityDbContext<TUser, TRole>
+Modulus.Identity.EntityFrameworkCore.ModulusIdentityDbContext<TUser, TRole>.ModulusIdentityDbContext(Microsoft.EntityFrameworkCore.DbContextOptions! options, Modulus.Core.Abstractions.ICurrentTenant! currentTenant) -> void
+Modulus.Identity.Extensions.IdentityExtensions
+Modulus.Identity.IPermissionChecker
+Modulus.Identity.IPermissionChecker.GetEffectivePermissions() -> System.Collections.Generic.IReadOnlyCollection<string!>!
+Modulus.Identity.IPermissionChecker.HasPermission(string! permission) -> bool
+Modulus.Identity.Keycloak.KeycloakExtensions
+Modulus.Identity.Keycloak.KeycloakIdentityProvider
+Modulus.Identity.Keycloak.KeycloakIdentityProvider.DisplayName.get -> string!
+Modulus.Identity.Keycloak.KeycloakIdentityProvider.GetUserBySubjectAsync(string! subject, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Identity.Abstractions.ExternalUserInfo?>!
+Modulus.Identity.Keycloak.KeycloakIdentityProvider.KeycloakIdentityProvider(System.Net.Http.HttpClient! http, Modulus.Identity.Keycloak.KeycloakOptions! opts) -> void
+Modulus.Identity.Keycloak.KeycloakIdentityProvider.Name.get -> string!
+Modulus.Identity.Keycloak.KeycloakIdentityProvider.ValidateTokenAsync(string! token, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.Identity.Keycloak.KeycloakOptions
+Modulus.Identity.Keycloak.KeycloakOptions.AdminClientId.get -> string?
+Modulus.Identity.Keycloak.KeycloakOptions.AdminClientId.set -> void
+Modulus.Identity.Keycloak.KeycloakOptions.AdminClientSecret.get -> string?
+Modulus.Identity.Keycloak.KeycloakOptions.AdminClientSecret.set -> void
+Modulus.Identity.Keycloak.KeycloakOptions.Authority.get -> string!
+Modulus.Identity.Keycloak.KeycloakOptions.Authority.set -> void
+Modulus.Identity.Keycloak.KeycloakOptions.ClientId.get -> string!
+Modulus.Identity.Keycloak.KeycloakOptions.ClientId.set -> void
+Modulus.Identity.Keycloak.KeycloakOptions.ClientSecret.get -> string!
+Modulus.Identity.Keycloak.KeycloakOptions.ClientSecret.set -> void
+Modulus.Identity.Keycloak.KeycloakOptions.FullAuthority.get -> string!
+Modulus.Identity.Keycloak.KeycloakOptions.KeycloakOptions() -> void
+Modulus.Identity.Keycloak.KeycloakOptions.Realm.get -> string!
+Modulus.Identity.Keycloak.KeycloakOptions.Realm.set -> void
+Modulus.Identity.Keycloak.KeycloakOptions.Scope.get -> string!
+Modulus.Identity.Keycloak.KeycloakOptions.Scope.set -> void
+Modulus.Identity.ModulusAuthorizeController
+Modulus.Identity.ModulusAuthorizeController.Authorize() -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Mvc.IActionResult!>!
+Modulus.Identity.ModulusAuthorizeController.ModulusAuthorizeController() -> void
+Modulus.Identity.ModulusEndSessionController
+Modulus.Identity.ModulusEndSessionController.EndSessionAsync(string? post_logout_redirect_uri) -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Mvc.IActionResult!>!
+Modulus.Identity.ModulusEndSessionController.ModulusEndSessionController(Microsoft.Extensions.Options.IOptions<Modulus.Identity.Abstractions.ModulusIdentityOptions!>! identityOptions) -> void
+Modulus.Identity.ModulusIntrospectionController
+Modulus.Identity.ModulusIntrospectionController.Introspect(string? token) -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Mvc.IActionResult!>!
+Modulus.Identity.ModulusIntrospectionController.ModulusIntrospectionController(Microsoft.Extensions.Options.IOptions<OpenIddict.Server.OpenIddictServerOptions!>! serverOptions, Microsoft.Extensions.Options.IOptions<Modulus.Identity.Abstractions.ModulusIdentityOptions!>! identityOptions) -> void
+Modulus.Identity.ModulusRoleSeed
+Modulus.Identity.ModulusRoleSeed.<Clone>$() -> Modulus.Identity.ModulusRoleSeed!
+Modulus.Identity.ModulusRoleSeed.Deconstruct(out string! Name, out string? DisplayName, out bool IsDefault, out string![]! Permissions) -> void
+Modulus.Identity.ModulusRoleSeed.DisplayName.get -> string?
+Modulus.Identity.ModulusRoleSeed.DisplayName.init -> void
+Modulus.Identity.ModulusRoleSeed.Equals(Modulus.Identity.ModulusRoleSeed? other) -> bool
+Modulus.Identity.ModulusRoleSeed.IsDefault.get -> bool
+Modulus.Identity.ModulusRoleSeed.IsDefault.init -> void
+Modulus.Identity.ModulusRoleSeed.ModulusRoleSeed(string! Name, string? DisplayName, bool IsDefault, string![]! Permissions) -> void
+Modulus.Identity.ModulusRoleSeed.Name.get -> string!
+Modulus.Identity.ModulusRoleSeed.Name.init -> void
+Modulus.Identity.ModulusRoleSeed.Permissions.get -> string![]!
+Modulus.Identity.ModulusRoleSeed.Permissions.init -> void
+Modulus.Identity.ModulusTokenController
+Modulus.Identity.ModulusTokenController.Exchange() -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Mvc.IActionResult!>!
+Modulus.Identity.ModulusTokenController.ModulusTokenController(Modulus.Identity.Abstractions.IPasswordGrantCredentialValidator! credentialValidator, Modulus.Identity.Abstractions.ModulusUserTypeDescriptor? userTypeDescriptor = null) -> void
+Modulus.Identity.ModulusUserInfoController
+Modulus.Identity.ModulusUserInfoController.ModulusUserInfoController() -> void
+Modulus.Identity.ModulusUserInfoController.UserInfo() -> Microsoft.AspNetCore.Mvc.IActionResult!
+Modulus.Identity.Okta.OktaExtensions
+Modulus.Identity.Okta.OktaIdentityProvider
+Modulus.Identity.Okta.OktaIdentityProvider.DisplayName.get -> string!
+Modulus.Identity.Okta.OktaIdentityProvider.GetUserBySubjectAsync(string! subject, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Identity.Abstractions.ExternalUserInfo?>!
+Modulus.Identity.Okta.OktaIdentityProvider.Name.get -> string!
+Modulus.Identity.Okta.OktaIdentityProvider.OktaIdentityProvider(System.Net.Http.HttpClient! http, Modulus.Identity.Okta.OktaOptions! opts) -> void
+Modulus.Identity.Okta.OktaIdentityProvider.ValidateTokenAsync(string! token, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.Identity.Okta.OktaOptions
+Modulus.Identity.Okta.OktaOptions.ApiToken.get -> string?
+Modulus.Identity.Okta.OktaOptions.ApiToken.set -> void
+Modulus.Identity.Okta.OktaOptions.Audience.get -> string?
+Modulus.Identity.Okta.OktaOptions.Audience.set -> void
+Modulus.Identity.Okta.OktaOptions.Authority.get -> string!
+Modulus.Identity.Okta.OktaOptions.Authority.set -> void
+Modulus.Identity.Okta.OktaOptions.AuthorizationServerId.get -> string!
+Modulus.Identity.Okta.OktaOptions.AuthorizationServerId.set -> void
+Modulus.Identity.Okta.OktaOptions.ClientId.get -> string!
+Modulus.Identity.Okta.OktaOptions.ClientId.set -> void
+Modulus.Identity.Okta.OktaOptions.ClientSecret.get -> string!
+Modulus.Identity.Okta.OktaOptions.ClientSecret.set -> void
+Modulus.Identity.Okta.OktaOptions.OktaOptions() -> void
+Modulus.Identity.Okta.OktaOptions.Scope.get -> string!
+Modulus.Identity.Okta.OktaOptions.Scope.set -> void
+Modulus.Identity.ResetPasswordRequest
+Modulus.Identity.ResetPasswordRequest.Email.get -> string!
+Modulus.Identity.ResetPasswordRequest.Email.set -> void
+Modulus.Identity.ResetPasswordRequest.NewPassword.get -> string!
+Modulus.Identity.ResetPasswordRequest.NewPassword.set -> void
+Modulus.Identity.ResetPasswordRequest.ResetPasswordRequest() -> void
+Modulus.Identity.ResetPasswordRequest.Token.get -> string!
+Modulus.Identity.ResetPasswordRequest.Token.set -> void
+override Modulus.Identity.Abstractions.ExternalUserInfo.Equals(object? obj) -> bool
+override Modulus.Identity.Abstractions.ExternalUserInfo.GetHashCode() -> int
+override Modulus.Identity.Abstractions.ExternalUserInfo.ToString() -> string!
+override Modulus.Identity.Abstractions.PasswordGrantResult.Equals(object? obj) -> bool
+override Modulus.Identity.Abstractions.PasswordGrantResult.GetHashCode() -> int
+override Modulus.Identity.Abstractions.PasswordGrantResult.ToString() -> string!
+override Modulus.Identity.EntityFrameworkCore.ModulusIdentityDbContext<TUser, TRole>.OnModelCreating(Microsoft.EntityFrameworkCore.ModelBuilder! builder) -> void
+override Modulus.Identity.ModulusRoleSeed.Equals(object? obj) -> bool
+override Modulus.Identity.ModulusRoleSeed.GetHashCode() -> int
+override Modulus.Identity.ModulusRoleSeed.ToString() -> string!
+static Modulus.Identity.Abstractions.ExternalTokenValidator.ValidateJwtAsync(string! token, Microsoft.IdentityModel.Tokens.TokenValidationParameters! parameters) -> System.Threading.Tasks.Task<bool>!
+static Modulus.Identity.Abstractions.ExternalUserInfo.operator !=(Modulus.Identity.Abstractions.ExternalUserInfo? left, Modulus.Identity.Abstractions.ExternalUserInfo? right) -> bool
+static Modulus.Identity.Abstractions.ExternalUserInfo.operator ==(Modulus.Identity.Abstractions.ExternalUserInfo? left, Modulus.Identity.Abstractions.ExternalUserInfo? right) -> bool
+static Modulus.Identity.Abstractions.OidcDiscoveryValidatorCache.GetOrCreate(string! metadataAddress, System.Collections.Generic.IEnumerable<string!>? validAudiences = null) -> Modulus.Identity.Abstractions.OidcDiscoveryValidator!
+static Modulus.Identity.Abstractions.PasswordGrant.AuthorizeScopes(System.Collections.Generic.IEnumerable<string!>! requested, System.Collections.Generic.IReadOnlySet<string!>! allowed) -> System.Collections.Generic.IReadOnlyList<string!>!
+static Modulus.Identity.Abstractions.PasswordGrantResult.Denied(string! error = "invalid_grant") -> Modulus.Identity.Abstractions.PasswordGrantResult!
+static Modulus.Identity.Abstractions.PasswordGrantResult.operator !=(Modulus.Identity.Abstractions.PasswordGrantResult? left, Modulus.Identity.Abstractions.PasswordGrantResult? right) -> bool
+static Modulus.Identity.Abstractions.PasswordGrantResult.operator ==(Modulus.Identity.Abstractions.PasswordGrantResult? left, Modulus.Identity.Abstractions.PasswordGrantResult? right) -> bool
+static Modulus.Identity.Auth0.Auth0Extensions.AddAuth0(this Microsoft.AspNetCore.Authentication.AuthenticationBuilder! builder, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> Microsoft.AspNetCore.Authentication.AuthenticationBuilder!
+static Modulus.Identity.Auth0.Auth0Extensions.AddAuth0WithProfileFetch(this Microsoft.AspNetCore.Authentication.AuthenticationBuilder! builder, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> Microsoft.AspNetCore.Authentication.AuthenticationBuilder!
+static Modulus.Identity.Authentik.AuthentikExtensions.AddAuthentik(this Microsoft.AspNetCore.Authentication.AuthenticationBuilder! builder, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> Microsoft.AspNetCore.Authentication.AuthenticationBuilder!
+static Modulus.Identity.Authentik.AuthentikExtensions.AddAuthentikWithProfileFetch(this Microsoft.AspNetCore.Authentication.AuthenticationBuilder! builder, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> Microsoft.AspNetCore.Authentication.AuthenticationBuilder!
+static Modulus.Identity.AzureAd.AzureAdExtensions.AddAzureAd(this Microsoft.AspNetCore.Authentication.AuthenticationBuilder! builder, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> Microsoft.AspNetCore.Authentication.AuthenticationBuilder!
+static Modulus.Identity.AzureAd.AzureAdExtensions.AddAzureAdWithProfileFetch(this Microsoft.AspNetCore.Authentication.AuthenticationBuilder! builder, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> Microsoft.AspNetCore.Authentication.AuthenticationBuilder!
+static Modulus.Identity.Duende.DuendeExtensions.AddDuendeIdentityServer(this Microsoft.AspNetCore.Authentication.AuthenticationBuilder! builder, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> Microsoft.AspNetCore.Authentication.AuthenticationBuilder!
+static Modulus.Identity.Duende.DuendeExtensions.AddDuendeIdentityServerWithProfileFetch(this Microsoft.AspNetCore.Authentication.AuthenticationBuilder! builder, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> Microsoft.AspNetCore.Authentication.AuthenticationBuilder!
+static Modulus.Identity.EntityFrameworkCore.Extensions.IdentityEntityFrameworkExtensions.AddModulusIdentityStore<TContext>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.Identity.EntityFrameworkCore.Extensions.IdentityEntityFrameworkExtensions.EnsureIdentityCreatedAsync<TContext>(this System.IServiceProvider! sp, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+static Modulus.Identity.Extensions.IdentityExtensions.AddGrantStorePermissionChecker(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.Identity.Extensions.IdentityExtensions.AddIdentitySeeder(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, params Modulus.Identity.ModulusRoleSeed![]! roleSeeds) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.Identity.Extensions.IdentityExtensions.AddIdentitySeeder<TUser, TRole>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, params Modulus.Identity.ModulusRoleSeed![]! roleSeeds) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.Identity.Extensions.IdentityExtensions.AddModulusIdentity<TContext, TUser, TRole>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration, System.Action<Microsoft.AspNetCore.Identity.IdentityOptions!>? configureIdentity = null) -> Microsoft.AspNetCore.Identity.IdentityBuilder!
+static Modulus.Identity.Extensions.IdentityExtensions.AddModulusOpenIddict(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration, System.Action<Microsoft.Extensions.DependencyInjection.OpenIddictServerBuilder!>? configure = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.Identity.Keycloak.KeycloakExtensions.AddKeycloak(this Microsoft.AspNetCore.Authentication.AuthenticationBuilder! builder, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> Microsoft.AspNetCore.Authentication.AuthenticationBuilder!
+static Modulus.Identity.Keycloak.KeycloakExtensions.AddKeycloakWithProfileFetch(this Microsoft.AspNetCore.Authentication.AuthenticationBuilder! builder, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> Microsoft.AspNetCore.Authentication.AuthenticationBuilder!
+static Modulus.Identity.ModulusRoleSeed.operator !=(Modulus.Identity.ModulusRoleSeed? left, Modulus.Identity.ModulusRoleSeed? right) -> bool
+static Modulus.Identity.ModulusRoleSeed.operator ==(Modulus.Identity.ModulusRoleSeed? left, Modulus.Identity.ModulusRoleSeed? right) -> bool
+static Modulus.Identity.Okta.OktaExtensions.AddOkta(this Microsoft.AspNetCore.Authentication.AuthenticationBuilder! builder, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> Microsoft.AspNetCore.Authentication.AuthenticationBuilder!
+static Modulus.Identity.Okta.OktaExtensions.AddOktaWithProfileFetch(this Microsoft.AspNetCore.Authentication.AuthenticationBuilder! builder, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> Microsoft.AspNetCore.Authentication.AuthenticationBuilder!

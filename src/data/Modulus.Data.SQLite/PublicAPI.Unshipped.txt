@@ -1,0 +1,4 @@
+#nullable enable
+Modulus.Data.SQLite.SQLiteExtensions
+static Modulus.Data.SQLite.SQLiteExtensions.AddSQLiteDatabase<TContext>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, string! dataSource = "./dev.db") -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.Data.SQLite.SQLiteExtensions.AddSQLiteInMemory<TContext>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!

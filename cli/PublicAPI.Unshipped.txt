@@ -1,0 +1,3 @@
+#nullable enable
+Modulus.Cli.Program
+static Modulus.Cli.Program.Main(string![]! args) -> int
