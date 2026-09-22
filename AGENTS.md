@@ -1087,6 +1087,13 @@ Modulus, never the reverse; feature UIs depend on `Theme.Abstractions`, never on
   `IUserUiPreferenceStore`; tiered mode is a later phase. `ui eject` copies views only (a page's handlers/PageModel stay in the package), and static assets
   are customized through the `--m-*` tokens or a same-path file in the app's `wwwroot`. Legacy `_UiLayout` is not ejectable and still ships Core's standard Alpine
   build plus an inline `<style>`.
+- **Planned work.** A three-way app-kind split (`api` / `webapp` / `webapp+api` as two separately
+  deployable, HTTP-connected projects) and closing module UI customizability gaps across every
+  prebuilt feature UI (not just Identity — Users shares the same gap; AuditLogging is missing
+  column-extension wiring; Tenancy/Permissions/Settings/Notifications/Files were audited and are
+  intentionally N/A by data shape; CLI `generate-crud --with-ui` was audited and already works
+  end-to-end) are planned but not started; see
+  [`docs/APP_KIND_SPLIT_AND_IDENTITY_UI_PLAN.md`](docs/APP_KIND_SPLIT_AND_IDENTITY_UI_PLAN.md).
 
 ## Testing notes
 
