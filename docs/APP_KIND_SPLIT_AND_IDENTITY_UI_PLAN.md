@@ -72,21 +72,18 @@ significantly shrinks the scope of Phase B1 below.
       `WebAppApi`. `Names = ["api", "webapp", "webapp+api"]`.
 - [x] A0.2. Keep `Parse` accepting the legacy `"web"` as a **deprecated alias** mapping to
       `WebApp` (backward compat, see A4).
-- [ ] A0.3. `cli/Services/ModuleDiscovery.cs` — `AppInventory` currently exposes one
-      `ApiProjectPath`/`ProgramCsPath` (`Inventory()` hard-codes
-      `Directory.EnumerateFiles(apiDir, "*.Api.csproj", ...)`). Add a parallel
-      `WebProjectPath`/`WebProgramCsPath` (nullable).
-- [ ] A0.4. Add a convenience property so most call sites migrate with a one-line swap:
-      ```csharp
-      public string? UiProjectPath => Kind == AppKind.WebAppApi ? WebProjectPath : ApiProjectPath;
-      public string? UiProgramCsPath => Kind == AppKind.WebAppApi ? WebProgramCsPath : ApiProgramCsPath;
-      ```
-- [ ] A0.5. For `webapp+api`, read `Kind` from the API csproj (source of truth) — the Web csproj
-      carries a matching `<ModulusAppKind>` for self-description only, never authoritative.
-- [ ] A0.6. Before touching call sites: `grep -rn "ApiProjectPath\|ProgramCsPath" cli/` to produce
-      the full call-site list (roughly a dozen across `cli/Commands/*.cs`) so A3 isn't a surprise.
-- [ ] A0.7. Add a third fixture tree (webapp+api) to the existing `ModuleDiscovery.Inventory` unit
-      tests, alongside the existing api-only/webapp-only fixtures.
+- [x] A0.3. `cli/Services/ModuleDiscovery.cs` — `AppInventory` currently exposes one
+      `ApiProjectPath`/`ProgramCsPath`. Added parallel `WebProjectPath`/`WebProgramCsPath` (nullable).
+- [x] A0.4. Added convenience properties so call sites can migrate with a one-line swap:
+      - `UiProjectPath => Kind == AppKind.WebAppApi ? WebProjectPath : ApiProjectPath`
+      - `UiProgramCsPath => Kind == AppKind.WebAppApi ? WebProgramCsPath : ProgramCsPath`
+- [x] A0.5. For `webapp+api`, Kind is read from the API csproj (source of truth); Web csproj
+      carries matching `<ModulusAppKind>` for self-description only (Phase A2 will populate).
+- [x] A0.6. Audited call sites: ~25 references across GenerateCrudCommand, DoctorCommand,
+      InfoCommand, UiEject, UiAddCommand, UiInfoCommand, UiUpdateCommand, UiRemoveCommand,
+      UiSearchCommand, UiListCommand. All use ApiProjectPath/ProgramCsPath; migration follows A1.
+- [x] A0.7. Added webapp+api fixture test to AppKindTests verifying convenience properties fallback
+      correctly when WebProjectPath is not yet populated.
 
 ### A1. `api` / `webapp` kinds (single project, smallest delta)
 
