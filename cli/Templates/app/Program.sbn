@@ -1,7 +1,7 @@
 {{ if !no_example }}using {{ root_namespace }}.Modules.{{ example_module }}.Infrastructure;
 {{ end }}using System.Reflection;
-using Modulus.AspNetCore.Endpoints;
-using Modulus.AspNetCore.Extensions;
+{{ if expose_api }}using Modulus.AspNetCore.Endpoints;
+{{ end }}using Modulus.AspNetCore.Extensions;
 using Modulus.AspNetCore.Configuration;
 using Modulus.AspNetCore.Cors;
 using Modulus.AspNetCore.Correlation;
@@ -9,11 +9,11 @@ using Modulus.AspNetCore.DataProtection;
 using Modulus.AspNetCore.FeatureFlags;
 using Modulus.AspNetCore.HealthChecks;
 using Modulus.AspNetCore.Idempotency;
-using Modulus.AspNetCore.OpenApi;
-using Modulus.AspNetCore.RateLimiting;
+{{ if expose_api }}using Modulus.AspNetCore.OpenApi;
+{{ end }}using Modulus.AspNetCore.RateLimiting;
 using Modulus.AspNetCore.Security;
-using Modulus.AspNetCore.Versioning;
-{{ if example_permission }}using Modulus.Authorization.Extensions;
+{{ if expose_api }}using Modulus.AspNetCore.Versioning;
+{{ end }}{{ if example_permission }}using Modulus.Authorization.Extensions;
 {{ end }}using Modulus.EntityFrameworkCore.Extensions;
 using Modulus.Events.Extensions;
 using Modulus.Mediator.Extensions;
@@ -58,14 +58,14 @@ builder.Services.AddModulus(builder.Configuration, modules =>
 {{ end }}});
 builder.Services.AddModulusExceptionHandling();
 
-// ── API cross-cutting concerns (config-bound; see appsettings.json) ─
+{{ if expose_api }}// ── API cross-cutting concerns (config-bound; see appsettings.json) ─
 {{ if enable_correlation }}builder.Services.AddModulusCorrelation(builder.Configuration);
 {{ end }}{{ if enable_idempotency }}builder.Services.AddModulusIdempotency(builder.Configuration);
 {{ end }}{{ if enable_api_versioning }}builder.Services.AddModulusApiVersioning(builder.Configuration);
 {{ end }}{{ if enable_rate_limiting }}builder.Services.AddModulusRateLimiting(builder.Configuration);
 {{ end }}{{ if enable_cors }}builder.Services.AddModulusCors(builder.Configuration);
 {{ end }}{{ if enable_security_headers }}builder.Services.AddModulusSecurityHeaders(builder.Configuration);
-{{ end }}
+{{ end }}{{ end }}
 {{ if enable_feature_flags }}// Runtime feature flags bound to the "FeatureManagement" section. Gate a minimal-API
 // endpoint with .RequireFeature("Flag"); MVC actions can use [FeatureGate("Flag")].
 builder.Services.AddModulusFeatureFlags(builder.Configuration);
@@ -107,8 +107,11 @@ builder.Services.AddModulusEvents(typeof(Program).Assembly);
 // handlers + its own DbContext + IUnitOfWork in its Module composition root.
 builder.Services.AddMediator();
 
-// ── MVC controllers (module Presentation assemblies) ───────────
+{{ if expose_api }}// ── MVC controllers (module Presentation assemblies) ───────────
 builder.Services.AddControllers();
+{{ end }}{{ if use_ui }}// ── Razor Pages (web app UI) ───────────────────────
+builder.Services.AddRazorPages();
+{{ end }}
 {{ if auth == "none" }}
 // ── Authentication ─────────────────────────────────────────────
 // None is registered. Endpoints require an authenticated user by default, so until you
@@ -147,11 +150,11 @@ builder.Services.AddPermissionGrants(grants => grants.GrantToRole("{{ admin_role
 //   dotnet user-secrets set "{{ external_provider_config_key }}:ClientSecret" "your-secret"
 builder.Services.AddAuthentication()
     .{{ external_provider_add_method }}(builder.Configuration);
-{{ end }}{{ end }}
-// ── OpenAPI ────────────────────────────────────────────────────
+{{ end }}{{ end }}{{ if expose_api }}// ── OpenAPI ────────────────────────────────────────────────────
 // Hardened document: metadata from the OpenApi config section + a JWT Bearer
 // security scheme, with a padlock on operations that require authorization.
 builder.Services.AddModulusOpenApi(builder.Configuration);
+{{ end }}
 
 var app = builder.Build();
 
@@ -178,18 +181,18 @@ await app.Services.SeedIdentityAsync(app.Environment);
 // real client IP/scheme), then correlation (so every log line, span, and error
 // carries the id), then security headers on every response, then error
 // handling, CORS before auth, rate limiting after auth/tenant, then the module
-// pipeline. Idempotency runs after UseModulus so the tenant is resolved before
-// keys are scoped, and still wraps the controller so responses can be replayed.
+// pipeline{{ if expose_api }}. Idempotency runs after UseModulus so the tenant is resolved before
+// keys are scoped, and still wraps the controller so responses can be replayed{{ end }}.
 app.UseForwardedHeaders();
 {{ if enable_correlation }}app.UseModulusCorrelation();
 {{ end }}{{ if enable_security_headers }}app.UseModulusSecurityHeaders();
 {{ end }}app.UseExceptionHandler();
-{{ if enable_cors }}app.UseModulusCors();
-{{ end }}{{ if auth != "none" }}app.UseAuthentication();
+{{ if expose_api }}{{ if enable_cors }}app.UseModulusCors();
+{{ end }}{{ end }}{{ if auth != "none" }}app.UseAuthentication();
 app.UseAuthorization();
-{{ end }}{{ if enable_rate_limiting }}app.UseModulusRateLimiting();
-{{ end }}app.UseModulus();
-{{ if enable_idempotency }}app.UseModulusIdempotency();
+{{ end }}{{ if expose_api }}{{ if enable_rate_limiting }}app.UseModulusRateLimiting();
+{{ end }}{{ end }}app.UseModulus();
+{{ if expose_api }}{{ if enable_idempotency }}app.UseModulusIdempotency();
 {{ end }}
 app.MapControllers();
 
@@ -201,12 +204,13 @@ app.MapModulusEndpoints(
     Directory.GetFiles(AppContext.BaseDirectory, "{{ root_namespace }}.Modules.*.Presentation.dll")
         .Select(Assembly.LoadFrom)
         .ToArray());
-
-{{ if enable_health_checks }}app.MapModulusHealthChecks();
+{{ end }}{{ if use_ui }}app.MapRazorPages();
+{{ end }}{{ if enable_health_checks }}app.MapModulusHealthChecks();
 {{ end }}
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+{{ if expose_api }}    app.MapOpenApi();
+{{ end }}
 }
 
 app.Run();

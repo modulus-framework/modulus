@@ -135,6 +135,9 @@ internal sealed class AppModel
     /// <summary>True for a web app: it gets the UI foundation (and the theme), whatever feature modules are chosen.</summary>
     public bool UseUi => Kind is AppKind.WebApp or AppKind.WebAppApi;
 
+    /// <summary>True when the app exposes API endpoints to external callers (api and webapp+api kinds). False for webapp kind (internal IMediator only).</summary>
+    public bool ExposeApi => Kind is AppKind.Api or AppKind.WebAppApi;
+
     /// <summary>Install the Tabler theme next to the UI modules (default; <c>--no-theme</c> turns it off).</summary>
     public bool UseTablerTheme { get; set; }
 
