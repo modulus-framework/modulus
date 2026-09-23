@@ -68,9 +68,9 @@ significantly shrinks the scope of Phase B1 below.
 
 ### A0. `AppKind` model + inventory rework (foundation)
 
-- [ ] A0.1. `cli/Services/AppKind.cs` — replace the 2-value enum with 3: `Api`, `WebApp`,
+- [x] A0.1. `cli/Services/AppKind.cs` — replace the 2-value enum with 3: `Api`, `WebApp`,
       `WebAppApi`. `Names = ["api", "webapp", "webapp+api"]`.
-- [ ] A0.2. Keep `Parse` accepting the legacy `"web"` as a **deprecated alias** mapping to
+- [x] A0.2. Keep `Parse` accepting the legacy `"web"` as a **deprecated alias** mapping to
       `WebApp` (backward compat, see A4).
 - [ ] A0.3. `cli/Services/ModuleDiscovery.cs` — `AppInventory` currently exposes one
       `ApiProjectPath`/`ProgramCsPath` (`Inventory()` hard-codes
