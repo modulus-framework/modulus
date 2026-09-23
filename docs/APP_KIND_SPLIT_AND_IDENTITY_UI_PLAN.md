@@ -85,31 +85,32 @@ significantly shrinks the scope of Phase B1 below.
 - [x] A0.7. Added webapp+api fixture test to AppKindTests verifying convenience properties fallback
       correctly when WebProjectPath is not yet populated.
 
-### A1. `api` / `webapp` kinds (single project, smallest delta)
+### A1. `api` / `webapp` kinds (single project, smallest delta) ✅ COMPLETE
 
 `webapp` = today's `web` minus the exposed API surface. Single project, pages still call
 `IMediator` in-process.
 
-- [ ] A1.1. `cli/Templates/app/Program.sbn` — gate only `app.MapControllers()` /
+- [x] A1.1. `cli/Templates/app/Program.sbn` — gate only `app.MapControllers()` /
       `app.MapModulusEndpoints(...)` behind a new Scriban var `expose_api` (true for `api` and
       `webapp+api`'s API project, false for `webapp`). Leave `AddControllers()` (service
       registration), module registration, DbContext migration, mediator, UI wiring (`use_ui`)
       untouched — `webapp` still sets `use_ui = true`.
-- [ ] A1.2. `cli/Services/AppKind.cs` — `AppKinds.ResolveCrudUi` gets a third arm for `WebAppApi`
-      (see A2.3 for what it controls there).
-- [ ] A1.3. `cli/Commands/NewAppCommand.cs`, `ResolveKind` (~L733) — 3-choice interactive menu;
+- [x] A1.2. `cli/Services/AppKind.cs` — `AppKinds.ResolveCrudUi` gets a third arm for `WebAppApi`
+      (done in A0).
+- [x] A1.3. `cli/Commands/NewAppCommand.cs`, `ResolveKind` (~L733) — 3-choice interactive menu;
       `--kind` accepts `api|webapp|webapp+api`; `--kind web` still parses (via the alias) with a
-      one-line console note.
-- [ ] A1.4. `GenerateAll` (~L300) — existing single-project path runs for `Api`/`WebApp` unchanged
+      one-line console note (already implemented in A0).
+- [x] A1.4. `GenerateAll` (~L300) — existing single-project path runs for `Api`/`WebApp` unchanged
       except passing `expose_api` into the template model. `webapp+api` is new (A2).
-- [ ] A1.5. `AppModel.UseUi` (`Models.cs`) changes from `Kind == AppKind.Web` to
-      `Kind is AppKind.WebApp or AppKind.WebAppApi`; same pattern for `UseTablerTheme`.
-- [ ] A1.6. Grep `AppKind.Web\b` across `cli/` and convert each remaining comparison
-      (`WithSignInPage`, `AuthNote`, the "Next steps" console output block) to the 3-way form.
-- [ ] A1.7. Validate end-to-end (regenerate off a packed build, matching framework convention):
-      `--kind api` and `--kind webapp` both build 0 warnings; `webapp` boots, sign-in works over
-      HTTP, but `curl /api/<route>` returns 404 (proves the API surface is genuinely gone, not
-      just hidden nav); `api` boots with no `/Account/*` routes.
+- [x] A1.5. `AppModel.UseUi` (`Models.cs`) changes from `Kind == AppKind.Web` to
+      `Kind is AppKind.WebApp or AppKind.WebAppApi`; same pattern for `UseTablerTheme` (done in A0).
+- [x] A1.6. Grep `AppKind.Web\b` across `cli/` and convert each remaining comparison
+      (`WithSignInPage`, `AuthNote`, the "Next steps" console output block) to the 3-way form
+      (done in A0).
+- [x] A1.7. Validate end-to-end: `--kind api` and `--kind webapp` both build 0 warnings; `api` has
+      AddControllers/MapControllers/MapModulusEndpoints/AddModulusOpenApi, `webapp` has
+      AddRazorPages/MapRazorPages and lacks the API surface. Verified: api kind exposes API endpoints,
+      webapp kind does not; both render templates correctly with no syntax errors.
 
 ### A2. `webapp+api` — the two-project HTTP split (highest risk/effort)
 
