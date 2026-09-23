@@ -62,7 +62,7 @@ public sealed class ApiPermissionTests
     public void A_host_with_the_identity_seeder_or_the_sign_in_has_an_admin_role()
     {
         var api = _engine.Render("app/Program", App(kind: AppKind.Api));
-        var web = _engine.Render("app/Program", App(kind: AppKind.Web));
+        var web = _engine.Render("app/Program", App(kind: AppKind.WebApp));
 
         UiAccessGates.HasAdminRole(api).Should().BeTrue("an api app has no pages but seeds the Admin role");
         UiAccessGates.HasAdminRole(web).Should().BeTrue();
@@ -83,7 +83,7 @@ public sealed class ApiPermissionTests
     [InlineData(true)]
     public void The_example_app_grants_its_permission_to_the_admin_role(bool web)
     {
-        var model = App(kind: web ? AppKind.Web : AppKind.Api);
+        var model = App(kind: web ? AppKind.WebApp : AppKind.Api);
         var program = _engine.Render("app/Program", model);
 
         model.ExamplePermission.Should().Be("catalog:products:manage");
@@ -100,7 +100,7 @@ public sealed class ApiPermissionTests
     public void A_second_generate_crud_finds_the_example_permission_already_wired()
     {
         // generate-crud Product on a fresh web app must not add the same lines again.
-        var program = _engine.Render("app/Program", App(kind: AppKind.Web));
+        var program = _engine.Render("app/Program", App(kind: AppKind.WebApp));
 
         UiCrudWiring.EnsurePagePermission(program, "Catalog", "catalog:products:manage", "Manage Products.")
             .Should().Be(program);

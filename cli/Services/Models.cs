@@ -133,7 +133,7 @@ internal sealed class AppModel
     public string KindName => Kind.Name();
 
     /// <summary>True for a web app: it gets the UI foundation (and the theme), whatever feature modules are chosen.</summary>
-    public bool UseUi => Kind == AppKind.Web;
+    public bool UseUi => Kind is AppKind.WebApp or AppKind.WebAppApi;
 
     /// <summary>Install the Tabler theme next to the UI modules (default; <c>--no-theme</c> turns it off).</summary>
     public bool UseTablerTheme { get; set; }

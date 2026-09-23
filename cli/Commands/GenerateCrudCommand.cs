@@ -400,7 +400,7 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
     internal static bool ExposesExtraFieldsInApi(
         AppKind? kind, string domainDir, string appDir, string presDir, string entity, string plural)
     {
-        if (kind != AppKind.Web)
+        if (kind is not (AppKind.WebApp or AppKind.WebAppApi))
         {
             return false;
         }

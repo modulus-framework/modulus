@@ -157,7 +157,7 @@ public sealed class IdentityBackendTests : IDisposable
     [Fact]
     public void A_web_app_uses_the_smart_scheme_and_an_api_app_makes_the_bearer_scheme_the_default()
     {
-        var web = Render("app/Program", Model(kind: AppKind.Web));
+        var web = Render("app/Program", Model(kind: AppKind.WebApp));
         var api = Render("app/Program", Model(kind: AppKind.Api));
 
         web.Should().Contain("AddModulusSmartAuth();").And.Contain("using Modulus.UI;")
@@ -168,7 +168,7 @@ public sealed class IdentityBackendTests : IDisposable
     [Fact]
     public void A_web_app_keeps_its_pages_behind_a_sign_in_and_an_api_app_has_no_pages_to_protect()
     {
-        Render("app/Program", Model(kind: AppKind.Web)).Should().Contain("builder.Services.AddModulusPageAuthorization();");
+        Render("app/Program", Model(kind: AppKind.WebApp)).Should().Contain("builder.Services.AddModulusPageAuthorization();");
         Render("app/Program", Model(kind: AppKind.Api)).Should().NotContain("PageAuthorization");
     }
 

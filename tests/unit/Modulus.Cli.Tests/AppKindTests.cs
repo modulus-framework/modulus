@@ -6,8 +6,9 @@ using Xunit;
 namespace Modulus.Cli.Tests;
 
 /// <summary>
-/// The app kind (<c>api</c> = no UI, <c>web</c> = web app + the API for external clients): how <c>modulus app</c> picks
-/// it, how it is recorded in the host project, and what <c>generate-crud</c>, <c>ui add</c> and <c>ui eject</c> do with it.
+/// The app kind (<c>api</c> = no UI, <c>webapp</c> = web app only, <c>webapp+api</c> = separate API + web projects):
+/// how <c>modulus app</c> picks it, how it is recorded in the host project, and what <c>generate-crud</c>, <c>ui add</c>
+/// and <c>ui eject</c> do with it.
 /// </summary>
 [Trait("Category", "Unit")]
 public sealed class AppKindTests : IDisposable
@@ -32,8 +33,13 @@ public sealed class AppKindTests : IDisposable
     [Theory]
     [InlineData("api", "Api")]
     [InlineData("API", "Api")]
-    [InlineData(" Web ", "Web")]
-    public void Parse_accepts_api_and_web_in_any_case(string value, string expected)
+    [InlineData("webapp", "WebApp")]
+    [InlineData("WebApp", "WebApp")]
+    [InlineData("webapp+api", "WebAppApi")]
+    [InlineData("WEBAPP+API", "WebAppApi")]
+    [InlineData("web", "WebApp")] // Legacy alias
+    [InlineData(" Web ", "WebApp")] // Legacy alias
+    public void Parse_accepts_all_kinds_in_any_case_and_legacy_web_alias(string value, string expected)
         => AppKinds.Parse(value).ToString().Should().Be(expected);
 
     [Fact]
@@ -41,14 +47,15 @@ public sealed class AppKindTests : IDisposable
     {
         var act = () => AppKinds.Parse("desktop");
 
-        act.Should().Throw<ArgumentException>().WithMessage("*Unknown app kind 'desktop'*api, web*");
+        act.Should().Throw<ArgumentException>().WithMessage("*Unknown app kind 'desktop'*api, webapp, webapp+api*legacy 'web'*");
     }
 
     [Fact]
     public void The_kind_is_read_from_the_host_project()
     {
-        AppKinds.Read(WriteApp("web")).Should().Be(AppKind.Web);
+        AppKinds.Read(WriteApp("webapp")).Should().Be(AppKind.WebApp);
         AppKinds.Read(WriteApp("api")).Should().Be(AppKind.Api);
+        AppKinds.Read(WriteApp("webapp+api")).Should().Be(AppKind.WebAppApi);
     }
 
     [Fact]
@@ -62,8 +69,8 @@ public sealed class AppKindTests : IDisposable
     [Fact]
     public void Inventory_carries_the_kind_and_survives_an_app_with_no_host_folder()
     {
-        WriteApp("web");
-        ModuleDiscovery.Inventory(_root)!.Kind.Should().Be(AppKind.Web);
+        WriteApp("webapp");
+        ModuleDiscovery.Inventory(_root)!.Kind.Should().Be(AppKind.WebApp);
 
         Directory.Delete(Path.Combine(_root, "src"), recursive: true);
         var inventory = ModuleDiscovery.Inventory(_root);
@@ -77,12 +84,13 @@ public sealed class AppKindTests : IDisposable
 
     [Theory]
     [InlineData("api", null, "Api")]
-    [InlineData("web", null, "Web")]
-    [InlineData("web", "none", "Web")]
+    [InlineData("webapp", null, "WebApp")]
+    [InlineData("webapp+api", null, "WebAppApi")]
+    [InlineData("webapp", "none", "WebApp")]
     [InlineData("api", "none", "Api")]
-    [InlineData("web", "identity,users", "Web")]
-    [InlineData(null, "identity", "Web")]
-    [InlineData(null, "full", "Web")]
+    [InlineData("webapp", "identity,users", "WebApp")]
+    [InlineData(null, "identity", "WebApp")]
+    [InlineData(null, "full", "WebApp")]
     public void The_kind_is_explicit_or_implied_by_the_ui_modules(string? kind, string? uiModules, string expected)
         => NewAppCommand.ResolveKind(kind, uiModules).ToString().Should().Be(expected);
 
@@ -104,8 +112,9 @@ public sealed class AppKindTests : IDisposable
 
     [Theory]
     [InlineData("api", false)]
-    [InlineData("web", true)]
-    public void The_host_project_records_the_kind_and_only_a_web_app_uses_the_ui(string recorded, bool useUi)
+    [InlineData("webapp", true)]
+    [InlineData("webapp+api", true)]
+    public void The_host_project_records_the_kind_and_web_apps_use_the_ui(string recorded, bool useUi)
     {
         var model = new AppModel { Kind = AppKinds.Parse(recorded), RootNamespace = "Shop", AppName = "Shop" };
 
@@ -125,14 +134,16 @@ public sealed class AppKindTests : IDisposable
     // ── Auth: what a fresh app cannot do yet ─────────────────────
 
     [Fact]
-    public void Auth_none_says_the_api_fails_until_a_scheme_is_registered_and_a_web_app_mentions_external_clients()
+    public void Auth_none_says_the_api_fails_until_a_scheme_is_registered_and_web_apps_mention_external_clients_or_standalone_ui()
     {
         var api = NewAppCommand.AuthNote("none", AppKind.Api);
-        var web = NewAppCommand.AuthNote("none", AppKind.Web);
+        var webapp = NewAppCommand.AuthNote("none", AppKind.WebApp);
+        var webappApi = NewAppCommand.AuthNote("none", AppKind.WebAppApi);
 
         api.Should().Contain("no authentication scheme").And.Contain("answers 500").And.Contain("AllowAnonymous()");
         api.Should().NotContain("external clients");
-        web.Should().StartWith("The API is also for external clients").And.Contain("answers 500");
+        webapp.Should().NotContain("external clients", "a webapp has no API surface");
+        webappApi.Should().Contain("external clients");
     }
 
     [Fact]
@@ -142,8 +153,9 @@ public sealed class AppKindTests : IDisposable
 
         note.Should().Contain("Identity module").And.Contain("password grant").And.Contain("migrate add InitialCreate --module Identity")
             .And.Contain("Identity:AllowPasswordFlow").And.NotContain("PKCE", "an api app has no login page for the flow");
-        NewAppCommand.AuthNote("openiddict", AppKind.Web).Should().Contain("authorization-code + PKCE").And.Contain("Identity:Seed:RedirectUris");
-        NewAppCommand.AuthNote("keycloak", AppKind.Web).Should().BeNull();
+        NewAppCommand.AuthNote("openiddict", AppKind.WebApp).Should().NotContain("authorization-code", "a webapp has no separate API");
+        NewAppCommand.AuthNote("openiddict", AppKind.WebAppApi).Should().Contain("authorization-code + PKCE").And.Contain("Identity:Seed:RedirectUris");
+        NewAppCommand.AuthNote("keycloak", AppKind.WebApp).Should().BeNull();
     }
 
     [Theory]
@@ -162,12 +174,14 @@ public sealed class AppKindTests : IDisposable
     // ── generate-crud ────────────────────────────────────────────
 
     [Theory]
-    [InlineData("web", false, false, true)]   // a web app gets the admin page by default
-    [InlineData("web", true, false, true)]
-    [InlineData("web", false, true, false)]   // --no-ui: API side only
-    [InlineData("api", false, false, false)]  // an API host never has one
+    [InlineData("webapp", false, false, true)]        // a webapp gets the admin page by default
+    [InlineData("webapp", true, false, true)]
+    [InlineData("webapp", false, true, false)]        // --no-ui: no UI scaffolded
+    [InlineData("webapp+api", false, false, true)]    // a webapp+api also gets the admin page by default
+    [InlineData("webapp+api", false, true, false)]
+    [InlineData("api", false, false, false)]          // an API host never has one
     [InlineData("api", false, true, false)]
-    [InlineData(null, false, false, false)]         // a host from before app kinds keeps the opt-in --with-ui
+    [InlineData(null, false, false, false)]           // a host from before app kinds keeps the opt-in --with-ui
     [InlineData(null, true, false, true)]
     [InlineData(null, false, true, false)]
     public void Generate_crud_scaffolds_the_ui_by_kind(string? kind, bool withUi, bool noUi, bool expected)
@@ -192,14 +206,14 @@ public sealed class AppKindTests : IDisposable
     // ── ui eject / diff ──────────────────────────────────────────
 
     [Fact]
-    public void Ui_eject_and_diff_refuse_an_api_host_but_work_on_web_and_unmarked_hosts()
+    public void Ui_eject_and_diff_refuse_an_api_host_but_work_on_web_apps_and_unmarked_hosts()
     {
         WriteApp("api");
         var act = () => UiEject.ResolveApiDir(_root);
         act.Should().Throw<InvalidOperationException>().WithMessage("*API-only*");
 
         File.Delete(Path.Combine(_root, "src", "API", "Shop.Api", "Shop.Api.csproj"));
-        WriteApp("web");
+        WriteApp("webapp");
         UiEject.ResolveApiDir(_root).Should().EndWith("Shop.Api");
 
         WriteApp(null);

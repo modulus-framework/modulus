@@ -177,8 +177,8 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
 
         var migrationEngine = ResolveMigrationEngine(s.MigrationEngine);
 
-        // UI modules only exist in a web app; an API host is never asked.
-        var uiModules = kind == AppKind.Web ? ResolveUiModules(s.UiModules) : [];
+        // UI modules only exist in web apps; an API host is never asked.
+        var uiModules = kind is AppKind.WebApp or AppKind.WebAppApi ? ResolveUiModules(s.UiModules) : [];
         if (WithSignInPage(kind, auth, uiModules) is { } withSignIn && withSignIn.Count != uiModules.Count)
         {
             AnsiConsole.MarkupLine("[grey]  A web app with the local token server also gets the Identity UI: it is the sign-in page.[/]");
@@ -242,7 +242,7 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
             MigrationEngine = migrationEngine,
             Kind = kind,
             UiModules = uiModules,
-            UseTablerTheme = kind == AppKind.Web && !s.NoTheme,
+            UseTablerTheme = (kind is AppKind.WebApp or AppKind.WebAppApi) && !s.NoTheme,
             LocalPackageSource = s.PackageSource,
         };
 
@@ -277,10 +277,10 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         AnsiConsole.WriteLine();
         AnsiConsole.MarkupLine("[grey]Then try:[/]");
         AnsiConsole.MarkupLine("  [grey]modulus add-module[/] Orders");
-        AnsiConsole.MarkupLine(kind == AppKind.Web
+        AnsiConsole.MarkupLine((kind is AppKind.WebApp or AppKind.WebAppApi)
             ? "  [grey]modulus generate-crud[/] Order --module Orders  [grey]# API endpoints + an admin page (--no-ui: API only)[/]"
             : "  [grey]modulus generate-crud[/] Order --module Orders  [grey]# API endpoints; this app has no UI[/]");
-        if (kind == AppKind.Web && !noExample)
+        if ((kind is AppKind.WebApp or AppKind.WebAppApi) && !noExample)
             AnsiConsole.MarkupLine("  [grey]modulus generate-crud[/] {0} --module {1}  [grey]# add the example module's admin page[/]",
                 model.ExampleEntity, model.ExampleModule);
         AnsiConsole.MarkupLine("  [grey]modulus list[/]  [grey]# see what's in this app[/]");
@@ -698,11 +698,11 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
     /// Endpoints require an authenticated user by default (the framework is secure by default), so an app with no
     /// authentication scheme answers every API call with a 500 (<c>none</c>: a warning). <c>openiddict</c> comes with
     /// an Identity module, so it works out of the box in Development; the note says what to do before production.
-    /// A web app's API is also meant for external clients, which is why it matters most there.
+    /// A web app + API's API is also meant for external clients, which is why it matters most there.
     /// </summary>
     internal static string? AuthNote(string auth, AppKind kind)
     {
-        var clients = kind == AppKind.Web ? "The API is also for external clients (mobile, desktop), which need a way to sign in. " : "";
+        var clients = kind == AppKind.WebAppApi ? "The API is also for external clients (mobile, desktop), which need a way to sign in. " : "";
         return auth switch
         {
             "none" => clients +
@@ -712,7 +712,7 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
             "openiddict" =>
                 "Auth is 'openiddict': an Identity module (users, roles, token store) was generated. In Development it creates an admin " +
                 "(random password, logged once) and turns the password grant on, so a client can POST /connect/token and call the API with the " +
-                "bearer token." + (kind == AppKind.Web
+                "bearer token." + (kind == AppKind.WebAppApi
                     ? " The web app also serves the authorization-code + PKCE flow (/connect/authorize, signing in through the Identity UI) " +
                       "for mobile, desktop and single-page clients; the redirect URIs they may use are Identity:Seed:RedirectUris."
                     : string.Empty) +
@@ -723,7 +723,7 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
     }
 
     private const string ApiChoice = "API: an API host, no UI";
-    private const string WebChoice = "Web app + API: a UI, plus the API for external clients (mobile, desktop, other systems)";
+    private const string WebChoice = "Web app: a UI with no external API surface";
 
     /// <summary>
     /// Resolves the app kind. An explicit <c>--kind</c> wins (and cannot be <c>api</c> together with UI modules);
@@ -740,15 +740,15 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
             var parsed = AppKinds.Parse(kind);
             if (parsed == AppKind.Api && wantsUi)
                 throw new ArgumentException(
-                    "--ui-modules needs a web app: an API host creates no UI. Use --kind web, or drop --ui-modules.");
+                    "--ui-modules needs a web app: an API host creates no UI. Use --kind webapp, or drop --ui-modules.");
             return parsed;
         }
 
         if (wantsUi)
-            return AppKind.Web;
+            return AppKind.WebApp;
 
         return Ux.SelectOrFallback("Application type?", [ApiChoice, WebChoice], ApiChoice) == WebChoice
-            ? AppKind.Web
+            ? AppKind.WebApp
             : AppKind.Api;
     }
 
@@ -760,7 +760,7 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
     internal static IReadOnlyList<string> WithSignInPage(AppKind kind, string auth, IReadOnlyList<string> uiModules)
     {
         ArgumentNullException.ThrowIfNull(uiModules);
-        if (kind != AppKind.Web
+        if ((kind is not (AppKind.WebApp or AppKind.WebAppApi))
             || !string.Equals(auth, "openiddict", StringComparison.OrdinalIgnoreCase)
             || uiModules.Contains("identity", StringComparer.OrdinalIgnoreCase))
         {

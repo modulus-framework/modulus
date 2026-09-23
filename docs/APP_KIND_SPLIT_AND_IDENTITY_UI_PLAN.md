@@ -30,6 +30,20 @@ other 7 prebuilt feature UI packages plus CLI `generate-crud --with-ui` output, 
 customizability gap is **not** confined to Identity — see the summary table under Phase B. Both
 audits read actual source (PageModels, `.cshtml`, entities, DbContexts), not just AGENTS.md prose.
 
+### Non-goal: no full microservices scaffolding
+
+Cross-checked the three-way split against a generic "modular monolith → BFF split → microservices"
+progression (Razor Pages monolith / separate API+Web / per-service-DB microservices behind a
+gateway). `webapp` maps to the first, `webapp+api` maps to the second. The third — per-module
+independently deployable services, each with its own database and `.sln`, wired through an API
+gateway (YARP/Ocelot) and async messaging across process/repo boundaries — is **explicitly not a
+target of this plan or of `modulus app`**. Modulus is a modular-monolith framework by design
+(AGENTS.md, "Project"); it already ships the building blocks a team would hand-assemble to go that
+far itself (`Modulus.Sagas`, `Modulus.Outbox`/`Modulus.Inbox`, `EventBus.RabbitMQ`/`EventBus.Kafka`,
+per-module `DbContext`s that are already schema-isolated), but generating a gateway, per-service
+solutions, or k8s manifests is out of scope. Recorded here so a future planning pass doesn't
+re-propose a fourth `AppKind` for it without first re-deriving this boundary.
+
 Key correction found during planning: `ModulusAccountController`
 (`src/identity/Modulus.Identity/ModulusAccountController.cs`) **already exposes**
 `POST /account/forgot-password`, `/reset-password`, `/confirm-email` server-side, with correct
@@ -109,7 +123,9 @@ significantly shrinks the scope of Phase B1 below.
       theme — **no module Infrastructure/Presentation references at all**.
 - [ ] A2.1.2. Check whether `Shared.Application` is already dependency-free enough to share DTOs
       from; if it references `Modulus.Mediator`/`Modulus.EntityFrameworkCore`, create a new
-      lightweight `{App}.Shared.Contracts` project instead and share DTOs through that.
+      lightweight `{App}.Shared.Contracts` project instead and share DTOs through that (matches the
+      standard "shared versioned Contracts project between API and Web" convention used by
+      comparable separate-API-plus-Web layouts — confirms this design choice, not a new idea).
 - [ ] A2.1.3. New `cli/Templates/app/Program.WebApp.sbn`: Razor Pages + typed clients + auth only,
       no `AddModulus(...)`, no DbContext/migration code.
 - [ ] A2.1.4. The API project for this kind never gets `AddModulusUi`/`AddRazorPages`/theme
@@ -144,7 +160,12 @@ significantly shrinks the scope of Phase B1 below.
 
 - [ ] A2.3.1. One typed client per module (`{Module}ApiClient`, mirrors the existing
       one-`{Module}Module`-per-module convention), registered via
-      `AddHttpClient<{Module}ApiClient>()`.
+      `AddModulusHttpClient<{Module}ApiClient>()` (`Modulus.Platform`, already referenced per
+      A2.1.1) — **not** a plain `AddHttpClient<T>()`. This reuses the framework's existing
+      standard-resilience handler (retry w/ jittered back-off, circuit breaker, timeout,
+      concurrency limiter — Tier 2 "Microservice hardening" in AGENTS.md) instead of hand-rolling a
+      second Polly policy set for the Web→API hop; `TokenRelayHandler` (A2.2.4) is added as the
+      outer handler alongside the builder's existing correlation handler.
 - [ ] A2.3.2. `GenerateCrudCommand.GenerateUiCompanion` (~L283) — add a kind-aware branch: for
       `webapp+api`, write pages into the Web project.
 - [ ] A2.3.3. New `ui/CrudIndexPageModel.Http.sbn` template whose PageModel calls
@@ -485,3 +506,138 @@ HTTP):
 - **B5**: app-added sibling pages under at least two different prebuilt packages' routes resolve
   alongside each package's own pages.
 - **B6**: path-conditional slot markup appears only on the targeted page.
+
+---
+
+## Appendix: reference architectures considered
+
+Three generic "professional enterprise .NET repo" layouts were reviewed while designing the
+three-way `AppKind` split, to check Modulus's target shape against common practice. `webapp` maps
+to Reference 1, `webapp+api` maps to Reference 2. Reference 3 (microservices) does **not** map to
+anything in this plan — see the Non-goal note above; kept here only so the boundary is legible
+without re-deriving it from scratch.
+
+### Reference 1 — Razor Pages modular monolith, no external API (→ `webapp`)
+
+```
+MyApp/
+├── .github/workflows/{build-and-test,deploy}.yml
+├── build/{Directory.Build.props,Directory.Packages.props,common.props}
+├── docs/architecture/{module-boundaries.md,adr/0001-modular-monolith.md}
+├── docker/{Dockerfile,docker-compose.yml,docker-compose.override.yml}
+├── src/
+│   ├── Host/MyApp.Web/                       # composition root only
+│   │   ├── Program.cs, appsettings.*.json, wwwroot/
+│   │   ├── Pages/{Shared/_Layout.cshtml, Index.cshtml, Error.cshtml}
+│   │   ├── HealthChecks/ModuleHealthCheck.cs
+│   │   └── Middleware/{ExceptionHandlingMiddleware,RequestLoggingMiddleware}.cs
+│   ├── Modules/
+│   │   ├── Orders/
+│   │   │   ├── MyApp.Modules.Orders/                # Pages + composition (OrdersModule.cs)
+│   │   │   ├── MyApp.Modules.Orders.Domain/          # Entities, ValueObjects, Enums, Exceptions
+│   │   │   ├── MyApp.Modules.Orders.Application/     # Commands, Queries, Validators, Mappings
+│   │   │   ├── MyApp.Modules.Orders.Infrastructure/  # DbContext, Configurations, Migrations, Repos
+│   │   │   └── MyApp.Modules.Orders.Contracts/       # Dtos, Events, IOrdersModuleApi.cs
+│   │   ├── Inventory/  (same 5-project pattern)
+│   │   └── Users/      (same 5-project pattern)
+│   └── Shared/
+│       ├── MyApp.SharedKernel/            # IModule, IEntity, IAggregateRoot, IEventBus, Result
+│       └── MyApp.SharedInfrastructure/    # Logging, Caching, Security, ModuleDbContextBase
+├── tests/{UnitTests,IntegrationTests,ArchitectureTests}/   # ArchitectureTests enforces module boundaries (NetArchTest)
+├── .editorconfig, .gitignore, Directory.Build.props, global.json, NuGet.Config, MyApp.sln
+```
+
+Professional touches: architecture tests enforcing module isolation, 5-layer-per-module split
+(adds a `Contracts` project), ADRs, central package management, health checks, per-environment
+configs. Modulus's own module template already covers the 4-layer core of this (Domain/
+Application/Infrastructure/Presentation collapsed the separate Contracts/IntegrationEvents/Tests
+projects on purpose — see "CLI 4-layer rewrite" in AGENTS.md); `Modulus.Testing.Architecture`
+already plays the role of `MyApp.ArchitectureTests` here.
+
+### Reference 2 — separate API (modular monolith) + Web app (→ `webapp+api`)
+
+```
+MyApp/
+├── .github/workflows/{api-build-deploy,web-build-deploy}.yml
+├── build/{Directory.Build.props,Directory.Packages.props}
+├── docs/{architecture/,api/openapi.yaml}
+├── docker/{api/Dockerfile, web/Dockerfile, docker-compose.yml}
+├── src/
+│   ├── Web/MyApp.Web/                        # consumer only, NO DB access
+│   │   ├── Program.cs, appsettings.*.json, wwwroot/
+│   │   ├── Pages/{Shared/_Layout.cshtml, Orders/, Inventory/, Users/}
+│   │   ├── ApiClients/
+│   │   │   ├── Abstractions/{IOrdersApiClient,IInventoryApiClient}.cs
+│   │   │   ├── OrdersApiClient.cs, InventoryApiClient.cs
+│   │   │   └── Policies/RetryPolicyFactory.cs        # Polly resilience
+│   │   ├── Models/ViewModels/
+│   │   └── Authentication/TokenForwardingHandler.cs
+│   ├── Api/MyApp.Api/                        # composition root for the API
+│   │   ├── Program.cs, appsettings.*.json
+│   │   ├── Modules/
+│   │   │   ├── Orders/
+│   │   │   │   ├── MyApp.Modules.Orders.Api/          # Endpoints (OrdersModule.cs, OrdersEndpoints.cs)
+│   │   │   │   ├── MyApp.Modules.Orders.Domain/
+│   │   │   │   ├── MyApp.Modules.Orders.Application/
+│   │   │   │   ├── MyApp.Modules.Orders.Infrastructure/
+│   │   │   │   └── MyApp.Modules.Orders.Contracts/
+│   │   │   ├── Inventory/ (same pattern)
+│   │   │   └── Users/     (same pattern)
+│   │   ├── Middleware/{ExceptionHandlingMiddleware,ApiKeyMiddleware}.cs
+│   │   └── HealthChecks/
+│   └── Shared/
+│       ├── MyApp.SharedKernel/, MyApp.SharedInfrastructure/
+│       └── MyApp.Contracts/                  # DTOs shared between Api & Web (NuGet-able)
+├── tests/{Api.Modules.Orders.UnitTests, Api.IntegrationTests, Web.UnitTests, ArchitectureTests}/
+├── .editorconfig, .gitignore, global.json, MyApp.sln
+```
+
+Professional touches: Polly resilience policies on the Web→API `HttpClient`s, a `TokenForwardingHandler`,
+a shared versioned `Contracts` project instead of duplicated DTOs, an OpenAPI spec tracked in
+`docs/api/`, separate Dockerfiles per deployable. This is the direct model for Phase A2:
+`RetryPolicyFactory`/Polly ↔ `AddModulusHttpClient<T>()`'s standard resilience handler (A2.3.1),
+`TokenForwardingHandler` ↔ `TokenRelayHandler` (A2.2.4), `MyApp.Contracts` ↔ `{App}.Shared.Contracts`
+(A2.1.2).
+
+### Reference 3 — microservices (informational only — not a target, see Non-goal above)
+
+```
+MyApp/
+├── .github/workflows/  (one CI per service + web + gateway)
+├── docs/architecture/{service-map.md, event-catalog.md}, docs/adr/
+├── deploy/
+│   ├── docker-compose.yml (+ .override.yml)
+│   └── k8s/{namespaces/, orders-service/{deployment,service,hpa}.yaml, inventory-service/,
+│            users-service/, gateway/, infra/{rabbitmq,redis,sql-servers}.yaml}
+├── src/
+│   ├── ApiGateway/MyApp.Gateway/            # YARP or Ocelot reverse proxy
+│   ├── Services/
+│   │   ├── Orders/MyApp.OrdersService/      # fully independent .NET solution, own repo-able
+│   │   │   ├── src/MyApp.OrdersService.{Api,Domain,Application}/
+│   │   │   ├── src/MyApp.OrdersService.Infrastructure/
+│   │   │   │   ├── Persistence/{OrdersDbContext.cs, Migrations/}     # OWN database
+│   │   │   │   └── Messaging/{Publishers/OrderCreatedPublisher.cs, Consumers/InventoryReservedConsumer.cs}
+│   │   │   ├── src/MyApp.OrdersService.Contracts/Events/OrderCreatedEvent.cs
+│   │   │   ├── tests/{UnitTests,IntegrationTests}/, Dockerfile, MyApp.OrdersService.sln
+│   │   ├── Inventory/MyApp.InventoryService/ (identical internal structure, own DB, own solution)
+│   │   └── Users/MyApp.UsersService/         (identical internal structure, own DB, own solution)
+│   ├── Web/MyApp.Web/                        # Razor Pages BFF, talks to the Gateway only
+│   └── Shared/
+│       ├── MyApp.EventBus.Contracts/         # shared event schema library (versioned NuGet)
+│       └── MyApp.BuildingBlocks/{Observability,Resilience,Security}/
+├── infra/terraform/{modules/,environments/{dev,prod}/}, infra/monitoring/{grafana,prometheus}/
+```
+
+| Aspect | Modular Monolith (Refs 1–2) | Microservices (Ref 3) |
+|---|---|---|
+| Deployment | One process/container per host project | One container per service |
+| Database | Shared DB (schema-per-module) | DB-per-service, no cross-service joins |
+| Communication | In-process calls, or one HTTP hop to a sibling process | HTTP via Gateway + async messaging |
+| Solution file | One `.sln` | One `.sln` per service, each independently repo-able |
+| Shared code | `SharedKernel`/`Contracts` referenced directly or via a shared project | Only versioned NuGet packages — no shared runtime code |
+| Scaling | Scale the whole app (or the one extra Web process) | Scale each service independently |
+
+Modulus already has the primitives Reference 3 would need if a team chose to go there by hand
+(`Modulus.Sagas`, `Modulus.Outbox`/`Inbox`, `EventBus.RabbitMQ`/`EventBus.Kafka`, per-module
+`DbContext` schema isolation) — what it deliberately does not do, and what this plan does not add,
+is generate the gateway/`deploy/k8s`/per-service-repo scaffolding itself.

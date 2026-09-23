@@ -124,10 +124,10 @@ public sealed class ApiExtraFieldsTests : IDisposable
     [Fact]
     public void A_generated_web_apps_example_module_gets_the_registry_reference_and_an_api_apps_does_not()
     {
-        foreach (var (kind, expected) in new[] { (AppKind.Web, true), (AppKind.Api, false) })
+        foreach (var (kind, expected) in new[] { (AppKind.WebApp, true), (AppKind.Api, false) })
         {
             var dir = Path.Combine(_root, kind.ToString());
-            var model = Model(kind == AppKind.Web);
+            var model = Model(kind == AppKind.WebApp);
 
             new NewAppCommand().GenerateModule(dir, model);
 
@@ -153,7 +153,7 @@ public sealed class ApiExtraFieldsTests : IDisposable
     {
         var (domain, app, pres) = Layers();
 
-        GenerateCrudCommand.ExposesExtraFieldsInApi(AppKind.Web, domain, app, pres, "Product", "Products").Should().BeTrue();
+        GenerateCrudCommand.ExposesExtraFieldsInApi(AppKind.WebApp, domain, app, pres, "Product", "Products").Should().BeTrue();
         GenerateCrudCommand.ExposesExtraFieldsInApi(AppKind.Api, domain, app, pres, "Product", "Products").Should().BeFalse();
         GenerateCrudCommand.ExposesExtraFieldsInApi(null, domain, app, pres, "Product", "Products").Should().BeFalse(
             "a host from before app kinds has no recorded intent to expose an API for external clients");
@@ -171,7 +171,7 @@ public sealed class ApiExtraFieldsTests : IDisposable
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         File.WriteAllText(path, "// generated earlier");
 
-        GenerateCrudCommand.ExposesExtraFieldsInApi(AppKind.Web, domain, app, pres, "Product", "Products").Should().BeFalse(
+        GenerateCrudCommand.ExposesExtraFieldsInApi(AppKind.WebApp, domain, app, pres, "Product", "Products").Should().BeFalse(
             "files are never overwritten, so a new endpoint would not match an older DTO");
     }
 
@@ -181,6 +181,6 @@ public sealed class ApiExtraFieldsTests : IDisposable
         var (domain, app, pres) = Layers();
         File.WriteAllText(Path.Combine(domain, "Product.cs"), "public class Product { }");
 
-        GenerateCrudCommand.ExposesExtraFieldsInApi(AppKind.Web, domain, app, pres, "Product", "Products").Should().BeFalse();
+        GenerateCrudCommand.ExposesExtraFieldsInApi(AppKind.WebApp, domain, app, pres, "Product", "Products").Should().BeFalse();
     }
 }
