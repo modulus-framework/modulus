@@ -81,10 +81,10 @@ internal sealed class UiAddCommand : Command<UiAddCommand.Settings>
     private static HashSet<string> GetInstalledUiModules(ModuleDiscovery.AppInventory inventory)
     {
         var installed = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var apiProject = inventory.ApiProjectPath;
-        if (apiProject.Length > 0 && File.Exists(apiProject))
+        var uiProject = inventory.UiProjectPath;
+        if (uiProject.Length > 0 && File.Exists(uiProject))
         {
-            var refs = ProjectFileService.ParseCsprojPackageReferences(apiProject);
+            var refs = ProjectFileService.ParseCsprojPackageReferences(uiProject);
             foreach (var kvp in refs)
             {
                 if (kvp.Key.StartsWith("Cobytelabs.Modulus.UI.", StringComparison.OrdinalIgnoreCase))
@@ -96,13 +96,13 @@ internal sealed class UiAddCommand : Command<UiAddCommand.Settings>
 
     private static void AddPackageReference(ModuleDiscovery.AppInventory inventory, UiModuleDefinition module)
     {
-        var apiProject = inventory.ApiProjectPath;
-        if (apiProject.Length == 0 || !File.Exists(apiProject))
-            throw new InvalidOperationException("API project not found. Cannot add package reference.");
+        var uiProject = inventory.UiProjectPath;
+        if (uiProject.Length == 0 || !File.Exists(uiProject))
+            throw new InvalidOperationException("UI project not found. Cannot add package reference.");
 
         Ux.Status($"Adding package reference: {module.PackageId}@{module.Version}", () =>
         {
-            var command = $"dotnet add \"{apiProject}\" package \"{module.PackageId}\" --version {module.Version}";
+            var command = $"dotnet add \"{uiProject}\" package \"{module.PackageId}\" --version {module.Version}";
             if (Ux.DryRun)
             {
                 Ux.DryRunNote($"would run: {command}");
@@ -111,7 +111,7 @@ internal sealed class UiAddCommand : Command<UiAddCommand.Settings>
 
             var psi = new System.Diagnostics.ProcessStartInfo("dotnet", command)
             {
-                WorkingDirectory = Path.GetDirectoryName(apiProject),
+                WorkingDirectory = Path.GetDirectoryName(uiProject),
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
@@ -131,7 +131,7 @@ internal sealed class UiAddCommand : Command<UiAddCommand.Settings>
 
     private static void WireModule(ModuleDiscovery.AppInventory inventory, UiModuleDefinition module)
     {
-        var programCs = inventory.ProgramCsPath;
+        var programCs = inventory.UiProgramCsPath;
         if (programCs.Length == 0 || !File.Exists(programCs))
             throw new InvalidOperationException("Program.cs not found. Cannot wire UI module.");
 

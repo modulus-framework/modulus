@@ -94,10 +94,10 @@ internal sealed class UiListCommand : Command<UiListCommand.Settings>
     private static HashSet<string> GetInstalledUiModules(ModuleDiscovery.AppInventory inventory)
     {
         var installed = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var apiProject = inventory.ApiProjectPath;
-        if (apiProject.Length > 0 && File.Exists(apiProject))
+        var uiProject = inventory.UiProjectPath;
+        if (uiProject.Length > 0 && File.Exists(uiProject))
         {
-            var refs = ProjectFileService.ParseCsprojPackageReferences(apiProject);
+            var refs = ProjectFileService.ParseCsprojPackageReferences(uiProject);
             foreach (var kvp in refs)
             {
                 if (kvp.Key.StartsWith("Cobytelabs.Modulus.UI.", StringComparison.OrdinalIgnoreCase))

@@ -33,7 +33,7 @@ internal static class UiEject
 
     private const string CorePackage = "Cobytelabs.Modulus.UI.Core";
 
-    /// <summary>The host API project's directory for the app containing <paramref name="startDir"/> (where <c>Views/</c>, <c>Pages/</c> and <c>Themes/</c> live).</summary>
+    /// <summary>The UI project's directory for the app containing <paramref name="startDir"/> (where <c>Views/</c>, <c>Pages/</c> and <c>Themes/</c> live).</summary>
     public static string ResolveApiDir(string startDir)
     {
         var inventory = ModuleDiscovery.Inventory(startDir)
@@ -44,9 +44,9 @@ internal static class UiEject
             throw new InvalidOperationException(
                 $"This app is API-only ({AppKinds.Property}=api), so it has no UI views to override.");
 
-        return inventory.ApiProjectPath is { Length: > 0 } project && File.Exists(project)
+        return inventory.UiProjectPath is { Length: > 0 } project && File.Exists(project)
             ? Path.GetDirectoryName(project)!
-            : throw new InvalidOperationException("The app has no host API project (*.Api.csproj) to hold the view overrides.");
+            : throw new InvalidOperationException("The app has no UI project (*.Api.csproj or *.Web.csproj) to hold the view overrides.");
     }
 
     /// <summary>The folder that holds an app's component overrides.</summary>

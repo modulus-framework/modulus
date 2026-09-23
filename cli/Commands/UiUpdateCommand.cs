@@ -106,10 +106,10 @@ internal sealed class UiUpdateCommand : Command<UiUpdateCommand.Settings>
     private static HashSet<string> GetInstalledUiModules(ModuleDiscovery.AppInventory inventory)
     {
         var installed = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var apiProject = inventory.ApiProjectPath;
-        if (apiProject.Length > 0 && File.Exists(apiProject))
+        var uiProject = inventory.UiProjectPath;
+        if (uiProject.Length > 0 && File.Exists(uiProject))
         {
-            var refs = ProjectFileService.ParseCsprojPackageReferences(apiProject);
+            var refs = ProjectFileService.ParseCsprojPackageReferences(uiProject);
             foreach (var kvp in refs)
             {
                 if (kvp.Key.StartsWith("Cobytelabs.Modulus.UI.", StringComparison.OrdinalIgnoreCase))
@@ -121,10 +121,10 @@ internal sealed class UiUpdateCommand : Command<UiUpdateCommand.Settings>
 
     private static string GetCurrentVersion(ModuleDiscovery.AppInventory inventory, string packageId)
     {
-        var apiProject = inventory.ApiProjectPath;
-        if (apiProject.Length > 0 && File.Exists(apiProject))
+        var uiProject = inventory.UiProjectPath;
+        if (uiProject.Length > 0 && File.Exists(uiProject))
         {
-            var refs = ProjectFileService.ParseCsprojPackageReferences(apiProject);
+            var refs = ProjectFileService.ParseCsprojPackageReferences(uiProject);
             if (refs.TryGetValue(packageId, out var version))
                 return version;
         }
@@ -133,13 +133,13 @@ internal sealed class UiUpdateCommand : Command<UiUpdateCommand.Settings>
 
     private static void UpdatePackageReference(ModuleDiscovery.AppInventory inventory, UiModuleDefinition module)
     {
-        var apiProject = inventory.ApiProjectPath;
-        if (apiProject.Length == 0 || !File.Exists(apiProject))
-            throw new InvalidOperationException("API project not found. Cannot update package reference.");
+        var uiProject = inventory.UiProjectPath;
+        if (uiProject.Length == 0 || !File.Exists(uiProject))
+            throw new InvalidOperationException("UI project not found. Cannot update package reference.");
 
         Ux.Status($"Updating {module.PackageId} to {module.Version}", () =>
         {
-            var command = $"dotnet add \"{apiProject}\" package \"{module.PackageId}\" --version {module.Version}";
+            var command = $"dotnet add \"{uiProject}\" package \"{module.PackageId}\" --version {module.Version}";
             if (Ux.DryRun)
             {
                 Ux.DryRunNote($"would run: {command}");
@@ -148,7 +148,7 @@ internal sealed class UiUpdateCommand : Command<UiUpdateCommand.Settings>
 
             var psi = new System.Diagnostics.ProcessStartInfo("dotnet", command)
             {
-                WorkingDirectory = Path.GetDirectoryName(apiProject),
+                WorkingDirectory = Path.GetDirectoryName(uiProject),
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
