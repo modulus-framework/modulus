@@ -16,11 +16,34 @@ internal static partial class ModuleDiscovery
         public string SolutionPath { get; init; } = "";
         public string SolutionDir { get; init; } = "";
         public string RootNamespace { get; init; } = "";
+
+        /// <summary>Path to the API host project (*.Api.csproj), always the authoritative host for app kind detection.</summary>
         public string ApiProjectPath { get; init; } = "";
+
+        /// <summary>Path to Program.cs in the API host.</summary>
         public string ProgramCsPath { get; init; } = "";
+
+        /// <summary>
+        /// Path to the separate web app project (*.Web.csproj) when Kind is WebAppApi; null or empty otherwise.
+        /// </summary>
+        public string? WebProjectPath { get; init; }
+
+        /// <summary>Path to Program.cs in the separate web app project; null or empty when WebProjectPath is null.</summary>
+        public string? WebProgramCsPath { get; init; }
 
         /// <summary>The app kind recorded in the host project; null for a host generated before app kinds existed.</summary>
         public AppKind? Kind { get; init; }
+
+        /// <summary>
+        /// Convenience: the project path where UI wiring happens (Web project for webapp+api, API project for others).
+        /// Simplifies migration of call sites from single-project to two-project layouts during A0 rework.
+        /// </summary>
+        public string UiProjectPath => Kind == AppKind.WebAppApi && !string.IsNullOrEmpty(WebProjectPath) ? WebProjectPath : ApiProjectPath;
+
+        /// <summary>
+        /// Convenience: the Program.cs where UI wiring happens (Web project for webapp+api, API project for others).
+        /// </summary>
+        public string UiProgramCsPath => Kind == AppKind.WebAppApi && !string.IsNullOrEmpty(WebProgramCsPath) ? WebProgramCsPath : ProgramCsPath;
 
         public IReadOnlyList<ModuleSummary> Modules { get; init; } = [];
     }

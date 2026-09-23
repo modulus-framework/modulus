@@ -80,6 +80,31 @@ public sealed class AppKindTests : IDisposable
         inventory.ApiProjectPath.Should().BeEmpty();
     }
 
+    [Fact]
+    public void Inventory_convenience_properties_route_to_the_right_project_by_kind()
+    {
+        // For api and webapp, UiProjectPath/UiProgramCsPath point to the API project
+        WriteApp("api");
+        var apiInventory = ModuleDiscovery.Inventory(_root)!;
+        apiInventory.UiProjectPath.Should().Be(apiInventory.ApiProjectPath);
+        apiInventory.UiProgramCsPath.Should().Be(apiInventory.ProgramCsPath);
+
+        // For webapp, same (single-project)
+        File.Delete(Path.Combine(_root, "src", "API", "Shop.Api", "Shop.Api.csproj"));
+        WriteApp("webapp");
+        var webappInventory = ModuleDiscovery.Inventory(_root)!;
+        webappInventory.UiProjectPath.Should().Be(webappInventory.ApiProjectPath);
+        webappInventory.UiProgramCsPath.Should().Be(webappInventory.ProgramCsPath);
+
+        // For webapp+api, would route to Web project (when WebProjectPath is set in Phase A2)
+        File.Delete(Path.Combine(_root, "src", "API", "Shop.Api", "Shop.Api.csproj"));
+        WriteApp("webapp+api");
+        var webappApiInventory = ModuleDiscovery.Inventory(_root)!;
+        // For now, Web project is not discovered, so it falls back to API project
+        webappApiInventory.WebProjectPath.Should().BeNullOrEmpty("Phase A2 implements web project discovery");
+        webappApiInventory.UiProjectPath.Should().Be(webappApiInventory.ApiProjectPath, "fallback when no web project");
+    }
+
     // ── modulus app ──────────────────────────────────────────────
 
     [Theory]
@@ -198,7 +223,7 @@ public sealed class AppKindTests : IDisposable
     [Fact]
     public void With_ui_and_no_ui_together_are_contradictory()
     {
-        var act = () => AppKinds.ResolveCrudUi(AppKind.Web, withUi: true, noUi: true);
+        var act = () => AppKinds.ResolveCrudUi(AppKind.WebApp, withUi: true, noUi: true);
 
         act.Should().Throw<ArgumentException>().WithMessage("*cannot be combined*");
     }
