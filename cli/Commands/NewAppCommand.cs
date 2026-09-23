@@ -266,7 +266,17 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         if (!Ux.DryRun)
         {
             AnsiConsole.MarkupLine("  [grey]dotnet restore[/]");
-            AnsiConsole.MarkupLine("  [grey]dotnet run --project[/] src/API/{0}.Api", rootNs);
+            if (kind == AppKind.WebAppApi)
+            {
+                AnsiConsole.MarkupLine("  [grey]# Start the API:[/]");
+                AnsiConsole.MarkupLine("  [grey]dotnet run --project[/] src/API/{0}.Api", rootNs);
+                AnsiConsole.MarkupLine("  [grey]# In another terminal, start the Web app:[/]");
+                AnsiConsole.MarkupLine("  [grey]dotnet run --project[/] src/Web/{0}.Web", rootNs);
+            }
+            else
+            {
+                AnsiConsole.MarkupLine("  [grey]dotnet run --project[/] src/API/{0}.Api", rootNs);
+            }
             if (string.IsNullOrWhiteSpace(s.PackageSource))
             {
                 AnsiConsole.MarkupLine(
@@ -771,7 +781,8 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
     }
 
     private const string ApiChoice = "API: an API host, no UI";
-    private const string WebChoice = "Web app: a UI with no external API surface";
+    private const string WebAppChoice = "Web app: a UI with no external API surface";
+    private const string WebAppApiChoice = "Web app + API: separate deployable Web UI + API backend (HTTP calls, token relay)";
 
     /// <summary>
     /// Resolves the app kind. An explicit <c>--kind</c> wins (and cannot be <c>api</c> together with UI modules);
@@ -788,16 +799,20 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
             var parsed = AppKinds.Parse(kind);
             if (parsed == AppKind.Api && wantsUi)
                 throw new ArgumentException(
-                    "--ui-modules needs a web app: an API host creates no UI. Use --kind webapp, or drop --ui-modules.");
+                    "--ui-modules needs a web app: an API host creates no UI. Use --kind webapp or --kind webapp+api, or drop --ui-modules.");
             return parsed;
         }
 
         if (wantsUi)
             return AppKind.WebApp;
 
-        return Ux.SelectOrFallback("Application type?", [ApiChoice, WebChoice], ApiChoice) == WebChoice
-            ? AppKind.WebApp
-            : AppKind.Api;
+        var choice = Ux.SelectOrFallback("Application type?", [ApiChoice, WebAppChoice, WebAppApiChoice], ApiChoice);
+        return choice switch
+        {
+            WebAppChoice => AppKind.WebApp,
+            WebAppApiChoice => AppKind.WebAppApi,
+            _ => AppKind.Api,
+        };
     }
 
     /// <summary>
