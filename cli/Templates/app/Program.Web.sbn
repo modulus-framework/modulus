@@ -46,6 +46,11 @@ builder.Services.AddHttpContextAccessor();
 // This is registered as a transient handler and added to all named HttpClients.
 builder.Services.AddTransient<TokenRelayHandler>();
 
+// Register module API clients (typed HttpClient for each module).
+// Call AddModulusHttpClient<{Module}ApiClient>() for each module in your app.
+// See ApiClientExtensions.Web.cs for the helper method.
+builder.Services.AddModuleApiClients();
+
 {{ else }}// No authentication configured. Add auth manually if needed (e.g., AddAuthentication().AddCookie(...)).
 {{ end }}// ── Correlation & observability ──────────────────────────────────
 {{ if enableCorrelation }}builder.Services.AddModulusCorrelation(builder.Configuration);

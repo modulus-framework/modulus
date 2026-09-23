@@ -1,0 +1,73 @@
+namespace {{ module_namespace }};
+
+using System.Net.Http.Json;
+using {{ root_namespace }}.Shared.Application.Dtos.{{ module_name }};
+
+/// <summary>
+/// HTTP client for the {{ module_name }} module API. Used by the Web project in a webapp+api split
+/// to call the API over HTTP instead of using IMediator in-process.
+///
+/// This client is registered via <c>AddModulusHttpClient&lt;{{ module_name }}ApiClient&gt;()</c>
+/// in Program.cs, which wires the standard resilience handler (retry, circuit breaker, timeout)
+/// and the TokenRelayHandler (automatic bearer token injection). Every method call automatically
+/// includes the current user's token and honors the configured resilience policies.
+/// </summary>
+public sealed class {{ module_name }}ApiClient
+{
+    private readonly HttpClient _httpClient;
+    private const string BaseRoute = "/api/{{ route_name_lower }}";
+
+    public {{ module_name }}ApiClient(HttpClient httpClient)
+    {
+        _httpClient = httpClient;
+    }
+
+    /// <summary>List all {{ entity_name_lower }} (paginated).</summary>
+    public async Task<IEnumerable<{{ entity_name }}Dto>> GetAsync(int? page = null, int? pageSize = null, CancellationToken ct = default)
+    {
+        var url = $"{BaseRoute}";
+        if (page.HasValue)
+            url += $"?page={page}&pageSize={pageSize ?? 10}";
+
+        var response = await _httpClient.GetAsync(url, HttpCompletionOption.ResponseContentRead, ct);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<IEnumerable<{{ entity_name }}Dto>>(cancellationToken: ct)
+            ?? Enumerable.Empty<{{ entity_name }}Dto>();
+    }
+
+    /// <summary>Get a single {{ entity_name_lower }} by ID.</summary>
+    public async Task<{{ entity_name }}Dto?> GetByIdAsync(Guid id, CancellationToken ct = default)
+    {
+        var response = await _httpClient.GetAsync($"{BaseRoute}/{id}", HttpCompletionOption.ResponseContentRead, ct);
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            return null;
+
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<{{ entity_name }}Dto>(cancellationToken: ct);
+    }
+
+    /// <summary>Create a new {{ entity_name_lower }}.</summary>
+    public async Task<{{ entity_name }}Dto> CreateAsync(Create{{ entity_name }}Dto dto, CancellationToken ct = default)
+    {
+        var response = await _httpClient.PostAsJsonAsync(BaseRoute, dto, cancellationToken: ct);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<{{ entity_name }}Dto>(cancellationToken: ct)
+            ?? throw new InvalidOperationException("Failed to deserialize created entity from API response.");
+    }
+
+    /// <summary>Update an existing {{ entity_name_lower }}.</summary>
+    public async Task<{{ entity_name }}Dto> UpdateAsync(Guid id, Update{{ entity_name }}Dto dto, CancellationToken ct = default)
+    {
+        var response = await _httpClient.PutAsJsonAsync($"{BaseRoute}/{id}", dto, cancellationToken: ct);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<{{ entity_name }}Dto>(cancellationToken: ct)
+            ?? throw new InvalidOperationException("Failed to deserialize updated entity from API response.");
+    }
+
+    /// <summary>Delete a {{ entity_name_lower }}.</summary>
+    public async Task DeleteAsync(Guid id, CancellationToken ct = default)
+    {
+        var response = await _httpClient.DeleteAsync($"{BaseRoute}/{id}", ct);
+        response.EnsureSuccessStatusCode();
+    }
+}

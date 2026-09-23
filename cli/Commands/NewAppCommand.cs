@@ -449,6 +449,10 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
                 Path.Combine(accountDir, "Login.cshtml.cs"));
             _templates.RenderToFile("app/Login.Web.cshtml", model,
                 Path.Combine(accountDir, "Login.cshtml"));
+
+            // API client registration helper (A2.3.1)
+            _templates.RenderToFile("app/ApiClientExtensions.Web", model,
+                Path.Combine(webDir, "ApiClientExtensions.cs"));
         }
 
         projects.Add($"src/Web/{rootNs}.Web/{rootNs}.Web.csproj");
