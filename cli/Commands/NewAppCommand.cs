@@ -303,27 +303,13 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         var projects = new List<string>();
 
         // ── Host / API project ─────────────────────────────────────
-        var apiDir = Path.Combine(projectDir, "src", "API", $"{rootNs}.Api");
-        _templates.RenderToFile("app/api.csproj", model,
-            Path.Combine(apiDir, $"{rootNs}.Api.csproj"));
-        _templates.RenderToFile("app/Program", model,
-            Path.Combine(apiDir, "Program.cs"));
-        _templates.RenderToFile("app/appsettings.json", model,
-            Path.Combine(apiDir, "appsettings.json"));
-        _templates.RenderToFile("app/appsettings.Development.json", model,
-            Path.Combine(apiDir, "appsettings.Development.json"));
-        // The integration tests boot the host in the Testing environment, where the token server needs the same throwaway
-        // certificates Development uses (its base settings register none, on purpose).
-        if (model.UseOpenIddict)
-            _templates.RenderToFile("app/appsettings.Testing.json", model,
-                Path.Combine(apiDir, "appsettings.Testing.json"));
-        // Without launchSettings.json, `dotnet run` defaults to the Production
-        // environment, which switches the database initialisation to Migrate mode
-        // (throws on an empty schema). The Development profile keeps the default
-        // dev experience working out of the box.
-        _templates.RenderToFile("app/launchSettings.json", model,
-            Path.Combine(apiDir, "Properties", "launchSettings.json"));
-        projects.Add($"src/API/{rootNs}.Api/{rootNs}.Api.csproj");
+        GenerateApiHost(projectDir, model, projects);
+
+        // ── Web project (webapp+api only) ──────────────────────────
+        if (model.Kind == AppKind.WebAppApi)
+        {
+            GenerateWebHost(projectDir, model, projects);
+        }
 
         // ── Shared kernel ─────────────────────────────────────────
         GenerateShared(Path.Combine(projectDir, "src", "Shared"), model, projects);
@@ -403,6 +389,45 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         }
     }
 
+    /// <summary>Generates the API host project for this app (single-project api/webapp, or the API component of webapp+api).</summary>
+    private void GenerateApiHost(string projectDir, AppModel model, List<string> projects)
+    {
+        var rootNs = model.RootNamespace;
+        var apiDir = Path.Combine(projectDir, "src", "API", $"{rootNs}.Api");
+        _templates.RenderToFile("app/api.csproj", model,
+            Path.Combine(apiDir, $"{rootNs}.Api.csproj"));
+        _templates.RenderToFile("app/Program", model,
+            Path.Combine(apiDir, "Program.cs"));
+        _templates.RenderToFile("app/appsettings.json", model,
+            Path.Combine(apiDir, "appsettings.json"));
+        _templates.RenderToFile("app/appsettings.Development.json", model,
+            Path.Combine(apiDir, "appsettings.Development.json"));
+        if (model.UseOpenIddict)
+            _templates.RenderToFile("app/appsettings.Testing.json", model,
+                Path.Combine(apiDir, "appsettings.Testing.json"));
+        _templates.RenderToFile("app/launchSettings.json", model,
+            Path.Combine(apiDir, "Properties", "launchSettings.json"));
+        projects.Add($"src/API/{rootNs}.Api/{rootNs}.Api.csproj");
+    }
+
+    /// <summary>Generates the Web project for webapp+api kind (Razor Pages UI, no DB access, all calls over HTTP to the API).</summary>
+    private void GenerateWebHost(string projectDir, AppModel model, List<string> projects)
+    {
+        var rootNs = model.RootNamespace;
+        var webDir = Path.Combine(projectDir, "src", "Web", $"{rootNs}.Web");
+        _templates.RenderToFile("app/web.csproj", model,
+            Path.Combine(webDir, $"{rootNs}.Web.csproj"));
+        _templates.RenderToFile("app/Program.Web", model,
+            Path.Combine(webDir, "Program.cs"));
+        _templates.RenderToFile("app/appsettings.json", model,
+            Path.Combine(webDir, "appsettings.json"));
+        _templates.RenderToFile("app/appsettings.Development.json", model,
+            Path.Combine(webDir, "appsettings.Development.json"));
+        _templates.RenderToFile("app/launchSettings.json", model,
+            Path.Combine(webDir, "Properties", "launchSettings.json"));
+        projects.Add($"src/Web/{rootNs}.Web/{rootNs}.Web.csproj");
+    }
+
     /// <summary>The identity module's project in the <c>.slnx</c> (it has an Infrastructure project only).</summary>
     internal static string IdentityProjectPath(AppModel model)
         => $"src/Modules/{model.IdentityNamespace}/{model.IdentityNamespace}.Infrastructure/{model.IdentityNamespace}.Infrastructure.csproj";
@@ -429,26 +454,29 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
 
     private void WireUiModules(string projectDir, AppModel model)
     {
-        var apiProject = Path.Combine(projectDir, "src", "API", $"{model.RootNamespace}.Api", $"{model.RootNamespace}.Api.csproj");
-        var programCs = Path.Combine(projectDir, "src", "API", $"{model.RootNamespace}.Api", "Program.cs");
+        // For webapp+api, UI modules go into the Web project. Otherwise (api/webapp single-project),
+        // they go into the API project.
+        var (hostProject, programCs) = model.Kind == AppKind.WebAppApi
+            ? GetWebHostPaths(projectDir, model)
+            : GetApiHostPaths(projectDir, model);
 
-        if (!File.Exists(apiProject) || !File.Exists(programCs))
+        if (!File.Exists(hostProject) || !File.Exists(programCs))
             return;
 
         // The localization services the UI foundation registers live in Platform (feature UI packages bring it
         // themselves, but a web app with no feature module has only UI.Core).
         ProjectFileService.EnsureCsprojPackageReference(
-            apiProject, "Cobytelabs.Modulus.Platform", model.FrameworkVersion, Ux.DryRun);
+            hostProject, "Cobytelabs.Modulus.Platform", model.FrameworkVersion, Ux.DryRun);
 
         foreach (var module in ResolveWebInstall(model.UiModules, model.UseTablerTheme))
         {
             // Add package reference
-            var command = $"dotnet add \"{apiProject}\" package \"{module.PackageId}\" --version {module.Version}";
+            var command = $"dotnet add \"{hostProject}\" package \"{module.PackageId}\" --version {module.Version}";
             if (!Ux.DryRun)
             {
                 var psi = new System.Diagnostics.ProcessStartInfo("dotnet", command)
                 {
-                    WorkingDirectory = Path.GetDirectoryName(apiProject),
+                    WorkingDirectory = Path.GetDirectoryName(hostProject),
                     UseShellExecute = false,
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
@@ -485,6 +513,26 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
             restoreProc.Start();
             restoreProc.WaitForExit();
         }
+    }
+
+    private static (string Project, string ProgramCs) GetApiHostPaths(string projectDir, AppModel model)
+    {
+        var rootNs = model.RootNamespace;
+        var apiDir = Path.Combine(projectDir, "src", "API", $"{rootNs}.Api");
+        return (
+            Path.Combine(apiDir, $"{rootNs}.Api.csproj"),
+            Path.Combine(apiDir, "Program.cs")
+        );
+    }
+
+    private static (string Project, string ProgramCs) GetWebHostPaths(string projectDir, AppModel model)
+    {
+        var rootNs = model.RootNamespace;
+        var webDir = Path.Combine(projectDir, "src", "Web", $"{rootNs}.Web");
+        return (
+            Path.Combine(webDir, $"{rootNs}.Web.csproj"),
+            Path.Combine(webDir, "Program.cs")
+        );
     }
 
     /// <summary>

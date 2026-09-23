@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <!-- This is the Web project in a webapp+api split. It serves Razor Pages UI only;
+         all data operations go over HTTP to the API project. No DbContext references. -->
+    <ModulusAppKind>webapp+api-web</ModulusAppKind>
+    <!-- Home for developer secrets in Development. -->
+    <UserSecretsId>{{ user_secrets_id }}-web</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Cobytelabs.Modulus.AspNetCore" Version="{{ framework_version }}" />
+    <PackageReference Include="Cobytelabs.Modulus.Core" Version="{{ framework_version }}" />
+    <PackageReference Include="Cobytelabs.Modulus.Platform" Version="{{ framework_version }}" />
+    <PackageReference Include="Cobytelabs.Modulus.UI.Core" Version="{{ framework_version }}" />
+{{ if useTablerTheme }}    <PackageReference Include="Cobytelabs.Modulus.UI.Theme.Tabler" Version="{{ framework_version }}" />
+{{ end }}{{ if auth != "none" }}    <!-- Identity is needed only for ASP.NET Core Identity abstractions; the actual
+         token server runs in the API project. -->
+    <PackageReference Include="Cobytelabs.Modulus.Identity" Version="{{ framework_version }}" />
+{{ end }}  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../Shared/{{ root_namespace }}.Shared.Application/{{ root_namespace }}.Shared.Application.csproj" />
+    <ProjectReference Include="../../Shared/{{ root_namespace }}.Shared.Presentation/{{ root_namespace }}.Shared.Presentation.csproj" />
+  </ItemGroup>
+
+</Project>

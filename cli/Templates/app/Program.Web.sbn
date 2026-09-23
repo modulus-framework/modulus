@@ -1,0 +1,74 @@
+using System.Reflection;
+using Modulus.AspNetCore.Extensions;
+using Modulus.AspNetCore.Configuration;
+using Modulus.AspNetCore.Correlation;
+using Modulus.AspNetCore.HealthChecks;
+using Modulus.AspNetCore.Security;
+using Modulus.AspNetCore.FeatureFlags;
+{{ if useTablerTheme }}using Modulus.UI.Theming.Tabler;
+{{ end }}using Modulus.UI;
+{{ if useAuth }}using Modulus.AspNetCore.SmartAuth;
+{{ end }}using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.Extensions.DependencyInjection;
+
+var builder = WebApplication.CreateBuilder(args);
+
+// ── Razor Pages UI (no database access; all business logic over HTTP to the API) ───
+builder.Services.AddRazorPages();
+
+// ── Modulus UI framework ───────────────────────────────────────────
+// Core theme support and component library (m-card, m-form, m-datatable, etc.).
+builder.Services.AddModulusUi();
+{{ if useTablerTheme }}// Use the Tabler theme (responsive, light/dark mode, vendored assets).
+builder.Services.AddTablerTheme(builder.Configuration);
+{{ end }}// ── Authentication & Authorization ─────────────────────────────
+{{ if useAuth }}// The Web project doesn't run the token server (that's the API project).
+// Instead, it receives a bearer token from the user's login POST to the API's /connect/token,
+// stores it in an auth cookie, and uses SmartAuth to send it on every API request.
+// SmartAuth routes: bearer (Authorization header) for /api/*, cookie auth for pages.
+builder.Services.AddModulusSmartAuth(builder.Configuration);
+{{ else }}// No authentication configured. Add auth manually if needed (e.g., AddAuthentication().AddCookie(...)).
+{{ end }}// ── Correlation & observability ──────────────────────────────────
+{{ if enableCorrelation }}builder.Services.AddModulusCorrelation(builder.Configuration);
+{{ end }}// ── Health checks ────────────────────────────────────────────────
+builder.Services.AddHealthChecks();
+
+{{ if enableFeatureFlags }}// Runtime feature flags (see "FeatureManagement" in appsettings.json).
+builder.Services.AddModulusFeatureFlags(builder.Configuration);
+{{ end }}{{ if enableSecretsGuard }}// Guard rail: fails startup if secrets are committed to appsettings*.json.
+builder.Services.AddModulusSecretsGuard(builder.Configuration);
+{{ end }}// ── Forwarded headers ──────────────────────────────────────────
+// Required when behind a reverse proxy so the app sees real client IPs.
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownIPNetworks.Clear();
+    options.KnownProxies.Clear();
+});
+
+// ── Exception handling ────────────────────────────────────────────
+builder.Services.AddModulusExceptionHandling();
+
+var app = builder.Build();
+
+// ── Pipeline ────────────────────────────────────────────────────
+if (!app.Environment.IsDevelopment())
+{
+    app.UseExceptionHandler("/Error");
+    app.UseHsts();
+}
+
+app.UseForwardedHeaders();
+app.UseHttpsRedirection();
+{{ if enableCorrelation }}app.UseModulusCorrelation();
+{{ end }}app.UseStaticFiles();
+
+app.UseRouting();
+
+{{ if useAuth }}app.UseAuthentication();
+app.UseAuthorization();
+{{ end }}app.MapRazorPages();
+{{ if enableHealthChecks }}app.MapHealthChecks("/health/live");
+{{ end }}await app.RunAsync();
+
+public partial class Program;
