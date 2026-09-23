@@ -1,0 +1,48 @@
+using System.Net;
+using System.Net.Http.Headers;
+using Microsoft.AspNetCore.Authentication;
+
+namespace {{ root_namespace }}.Web;
+
+/// <summary>
+/// Relay the bearer token from the auth cookie to typed HTTP clients calling the API.
+/// This handler is the outer handler for all {Module}ApiClient registrations,
+/// so every call to the API includes the current user's token automatically.
+/// </summary>
+internal sealed class TokenRelayHandler : DelegatingHandler
+{
+    private readonly IHttpContextAccessor _httpContextAccessor;
+
+    public TokenRelayHandler(IHttpContextAccessor httpContextAccessor)
+    {
+        _httpContextAccessor = httpContextAccessor;
+    }
+
+    protected override async Task<HttpResponseMessage> SendAsync(
+        HttpRequestMessage request, CancellationToken cancellationToken)
+    {
+        var context = _httpContextAccessor.HttpContext;
+        if (context != null)
+        {
+            // The auth cookie carried the access token when the user signed in.
+            // Refresh it if it's about to expire, then relay it on the outbound request.
+            var token = await context.GetAccessTokenAsync("access_token");
+            if (!string.IsNullOrEmpty(token))
+            {
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            }
+        }
+
+        var response = await base.SendAsync(request, cancellationToken);
+
+        // If the API responds with 401 Unauthorized, the token may have expired and
+        // couldn't be refreshed (revoked, etc.). Sign the user out.
+        // (Future: automatic refresh-grant retry here, if the refresh token is also stale.)
+        if (response.StatusCode == HttpStatusCode.Unauthorized && context != null)
+        {
+            await context.SignOutAsync();
+        }
+
+        return response;
+    }
+}

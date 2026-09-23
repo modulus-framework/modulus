@@ -7,14 +7,20 @@ using Modulus.AspNetCore.Security;
 using Modulus.AspNetCore.FeatureFlags;
 {{ if useTablerTheme }}using Modulus.UI.Theming.Tabler;
 {{ end }}using Modulus.UI;
-{{ if useAuth }}using Modulus.AspNetCore.SmartAuth;
+{{ if useAuth }}using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 {{ end }}using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.DependencyInjection;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // ── Razor Pages UI (no database access; all business logic over HTTP to the API) ───
-builder.Services.AddRazorPages();
+builder.Services.AddRazorPages(options =>
+{
+{{ if useAuth }}    // All pages require sign-in by default; [AllowAnonymous] opens individual pages/folders.
+    options.Conventions.AuthorizeFolder("/");
+    options.Conventions.AllowAnonymousToFolder("/Account");
+{{ end }}});
 
 // ── Modulus UI framework ───────────────────────────────────────────
 // Core theme support and component library (m-card, m-form, m-datatable, etc.).
@@ -24,9 +30,22 @@ builder.Services.AddTablerTheme(builder.Configuration);
 {{ end }}// ── Authentication & Authorization ─────────────────────────────
 {{ if useAuth }}// The Web project doesn't run the token server (that's the API project).
 // Instead, it receives a bearer token from the user's login POST to the API's /connect/token,
-// stores it in an auth cookie, and uses SmartAuth to send it on every API request.
-// SmartAuth routes: bearer (Authorization header) for /api/*, cookie auth for pages.
-builder.Services.AddModulusSmartAuth(builder.Configuration);
+// stores it in an auth cookie, and automatically relays it on every API call via TokenRelayHandler.
+builder.Services
+    .AddAuthentication(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        options.LoginPath = "/Account/Login";
+        options.LogoutPath = "/Account/Logout";
+        options.AccessDeniedPath = "/Account/AccessDenied";
+    });
+
+builder.Services.AddHttpContextAccessor();
+
+// Register the TokenRelayHandler that injects the current user's bearer token on every API call.
+// This is registered as a transient handler and added to all named HttpClients.
+builder.Services.AddTransient<TokenRelayHandler>();
+
 {{ else }}// No authentication configured. Add auth manually if needed (e.g., AddAuthentication().AddCookie(...)).
 {{ end }}// ── Correlation & observability ──────────────────────────────────
 {{ if enableCorrelation }}builder.Services.AddModulusCorrelation(builder.Configuration);

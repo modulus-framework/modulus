@@ -435,6 +435,22 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
             Path.Combine(webDir, "appsettings.Development.json"));
         _templates.RenderToFile("app/launchSettings.json", model,
             Path.Combine(webDir, "Properties", "launchSettings.json"));
+
+        // ── Authentication & token relay (A2.2) ──────────────────
+        if (model.UseAuth)
+        {
+            // TokenRelayHandler: automatically includes bearer token on API calls
+            _templates.RenderToFile("app/TokenRelayHandler", model,
+                Path.Combine(webDir, "TokenRelayHandler.cs"));
+
+            // Login page: POSTs credentials to API's /connect/token endpoint
+            var accountDir = Path.Combine(webDir, "Pages", "Account");
+            _templates.RenderToFile("app/Login.Web.cshtml.cs", model,
+                Path.Combine(accountDir, "Login.cshtml.cs"));
+            _templates.RenderToFile("app/Login.Web.cshtml", model,
+                Path.Combine(accountDir, "Login.cshtml"));
+        }
+
         projects.Add($"src/Web/{rootNs}.Web/{rootNs}.Web.csproj");
     }
 
