@@ -1186,3 +1186,49 @@ static Modulus.UI.UiViewDataExtensions.SetBreadcrumbs(this Microsoft.AspNetCore.
 static Modulus.UI.UiViewDataExtensions.SetPageId(this Microsoft.AspNetCore.Mvc.ViewFeatures.ViewDataDictionary! viewData, string! pageId) -> void
 virtual Modulus.UI.FieldTagHelperBase.ExplicitName.get -> string?
 virtual Modulus.UI.UiModule.ConfigureNavigation(Modulus.UI.UiNavigationBuilder! navigation) -> void
+Modulus.UI.EntityUiSchema
+Modulus.UI.EntityUiSchema.<Clone>$() -> Modulus.UI.EntityUiSchema!
+Modulus.UI.EntityUiSchema.Deconstruct(out string! Entity, out System.Collections.Generic.IReadOnlyList<Modulus.UI.EntityUiSchemaField!>! Fields) -> void
+Modulus.UI.EntityUiSchema.Entity.get -> string!
+Modulus.UI.EntityUiSchema.Entity.init -> void
+Modulus.UI.EntityUiSchema.EntityUiSchema(string! Entity, System.Collections.Generic.IReadOnlyList<Modulus.UI.EntityUiSchemaField!>! Fields) -> void
+Modulus.UI.EntityUiSchema.Equals(Modulus.UI.EntityUiSchema? other) -> bool
+Modulus.UI.EntityUiSchema.Fields.get -> System.Collections.Generic.IReadOnlyList<Modulus.UI.EntityUiSchemaField!>!
+Modulus.UI.EntityUiSchema.Fields.init -> void
+Modulus.UI.EntityUiSchemaField
+Modulus.UI.EntityUiSchemaField.<Clone>$() -> Modulus.UI.EntityUiSchemaField!
+Modulus.UI.EntityUiSchemaField.Deconstruct(out string! Name, out string! Label, out string! InputType, out bool Required, out string? Tab, out string? Hint, out string? Placeholder, out string? Step) -> void
+Modulus.UI.EntityUiSchemaField.EntityUiSchemaField(string! Name, string! Label, string! InputType, bool Required, string? Tab, string? Hint, string? Placeholder, string? Step) -> void
+Modulus.UI.EntityUiSchemaField.Equals(Modulus.UI.EntityUiSchemaField? other) -> bool
+Modulus.UI.EntityUiSchemaField.Hint.get -> string?
+Modulus.UI.EntityUiSchemaField.Hint.init -> void
+Modulus.UI.EntityUiSchemaField.InputType.get -> string!
+Modulus.UI.EntityUiSchemaField.InputType.init -> void
+Modulus.UI.EntityUiSchemaField.Label.get -> string!
+Modulus.UI.EntityUiSchemaField.Label.init -> void
+Modulus.UI.EntityUiSchemaField.Name.get -> string!
+Modulus.UI.EntityUiSchemaField.Name.init -> void
+Modulus.UI.EntityUiSchemaField.Placeholder.get -> string?
+Modulus.UI.EntityUiSchemaField.Placeholder.init -> void
+Modulus.UI.EntityUiSchemaField.Required.get -> bool
+Modulus.UI.EntityUiSchemaField.Required.init -> void
+Modulus.UI.EntityUiSchemaField.Step.get -> string?
+Modulus.UI.EntityUiSchemaField.Step.init -> void
+Modulus.UI.EntityUiSchemaField.Tab.get -> string?
+Modulus.UI.EntityUiSchemaField.Tab.init -> void
+static Modulus.UI.EntityUiSchema.operator !=(Modulus.UI.EntityUiSchema? left, Modulus.UI.EntityUiSchema? right) -> bool
+static Modulus.UI.EntityUiSchema.operator ==(Modulus.UI.EntityUiSchema? left, Modulus.UI.EntityUiSchema? right) -> bool
+static Modulus.UI.EntityUiSchemaField.operator !=(Modulus.UI.EntityUiSchemaField? left, Modulus.UI.EntityUiSchemaField? right) -> bool
+static Modulus.UI.EntityUiSchemaField.operator ==(Modulus.UI.EntityUiSchemaField? left, Modulus.UI.EntityUiSchemaField? right) -> bool
+static Modulus.UI.EntityUiSchemaExtensions.ToUiSchema(this Modulus.UI.IEntityUiRegistry! registry, string! entity, Modulus.Core.Abstractions.ICurrentUser! user) -> Modulus.UI.EntityUiSchema!
+Modulus.UI.EntityUiSchemaExtensions
+Modulus.UI.ModulusFieldsTagHelper.Schema.get -> Modulus.UI.EntityUiSchema?
+Modulus.UI.ModulusFieldsTagHelper.Schema.set -> void
+Modulus.UI.ApiError
+static Modulus.UI.ApiError.FromAsync(System.Net.Http.HttpResponseMessage! response, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Exception!>!
+override Modulus.UI.EntityUiSchemaField.Equals(object? obj) -> bool
+override Modulus.UI.EntityUiSchemaField.GetHashCode() -> int
+override Modulus.UI.EntityUiSchemaField.ToString() -> string!
+override Modulus.UI.EntityUiSchema.Equals(object? obj) -> bool
+override Modulus.UI.EntityUiSchema.GetHashCode() -> int
+override Modulus.UI.EntityUiSchema.ToString() -> string!

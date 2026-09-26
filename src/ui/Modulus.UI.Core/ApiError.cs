@@ -7,11 +7,10 @@ namespace Modulus.UI;
 /// Maps a failed API response onto the exception the page pipeline already understands, so a
 /// split (webapp+api) page's form behaves like an in-process one: a validation-failure answer
 /// (the ProblemDetails the framework's <c>GlobalExceptionHandler</c> writes, carrying an
-/// <c>errors</c> list) becomes a <see cref="ValidationException"/> — which
-/// <see cref="HtmxPageModel.HandleAsync"/> files into ModelState and re-renders the form with
-/// 422 — and any other failure becomes an <see cref="HttpRequestException"/> carrying the status
-/// code. Generated typed clients call this instead of <c>EnsureSuccessStatusCode</c>, which
-/// would drop the error body.
+/// <c>errors</c> list) becomes a <see cref="ValidationException"/> — which the form handler
+/// files into ModelState and re-renders the form with 422 — and any other failure becomes an
+/// <see cref="HttpRequestException"/> carrying the status code. Generated typed clients call this
+/// instead of <c>EnsureSuccessStatusCode</c>, which would drop the error body.
 /// </summary>
 public static class ApiError
 {

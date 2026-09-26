@@ -23,3 +23,5 @@ override Modulus.Testing.ModulusWebAppFactory<TEntryPoint>.Dispose(bool disposin
 static Modulus.Testing.Assertions.EventAssertions.CountPublished<TEvent>(this Modulus.Testing.Fakes.RecordingModuleBus! bus, System.Func<TEvent, bool>? predicate = null) -> int
 static Modulus.Testing.Assertions.EventAssertions.GetPublishedEvents<TEvent>(this Modulus.Testing.Fakes.RecordingModuleBus! bus) -> System.Collections.Generic.IReadOnlyList<TEvent>!
 static Modulus.Testing.Assertions.EventAssertions.HasPublished<TEvent>(this Modulus.Testing.Fakes.RecordingModuleBus! bus, System.Func<TEvent, bool>! predicate) -> bool
+Modulus.Testing.TestServerPairing
+static Modulus.Testing.TestServerPairing.PairedWith<TWeb, TApi>(this Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory<TWeb!>! webFactory, Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory<TApi!>! apiFactory) -> Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory<TWeb!>!
