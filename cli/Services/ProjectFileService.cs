@@ -258,6 +258,62 @@ internal static class ProjectFileService
     }
 
     /// <summary>
+    /// Ensures a <c>&lt;ProjectReference&gt;</c> exists in a <c>.csproj</c> file,
+    /// appending it to the first <c>ItemGroup</c> that already holds project
+    /// references (or a new trailing <c>ItemGroup</c> when none does). Idempotent:
+    /// returns <c>false</c> and touches nothing when the reference already exists
+    /// (slash separators normalised). Used by the webapp+api split, whose Web
+    /// project must reference each module's Application layer for the DTOs its
+    /// admin pages and typed API clients bind.
+    /// </summary>
+    /// <returns>True when the reference was missing (added, or would be added under <paramref name="dryRun"/>).</returns>
+    public static bool EnsureCsprojProjectReference(
+        string csprojPath,
+        string projectPath,
+        bool dryRun = false)
+    {
+        if (!File.Exists(csprojPath))
+            throw new FileNotFoundException($"Project file not found: {csprojPath}");
+
+        // Keep the file's own whitespace (same reasoning as EnsureCsprojPackageReference).
+        var doc = XDocument.Load(csprojPath, LoadOptions.PreserveWhitespace);
+        var includePath = Path.GetRelativePath(
+                Path.GetDirectoryName(Path.GetFullPath(csprojPath))!, Path.GetFullPath(projectPath))
+            .Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
+        var existing = doc.Descendants("ProjectReference").FirstOrDefault(e =>
+            string.Equals(
+                e.Attribute("Include")?.Value.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar),
+                includePath,
+                StringComparison.OrdinalIgnoreCase));
+        if (existing is not null)
+            return false;
+
+        if (!dryRun)
+        {
+            var reference = new XElement("ProjectReference",
+                new XAttribute("Include", includePath));
+
+            var group = doc.Descendants("ItemGroup")
+                .FirstOrDefault(g => g.Elements("ProjectReference").Any());
+            if (group is not null)
+            {
+                var last = group.Elements("ProjectReference").Last();
+                var indent = (last.PreviousNode as XText)?.Value ?? "\n    ";
+                last.AddAfterSelf(new XText(indent), reference);
+            }
+            else
+            {
+                doc.Root!.Add(
+                    new XElement("ItemGroup", new XText("\n    "), reference, new XText("\n  ")));
+            }
+
+            File.WriteAllText(csprojPath, doc.ToString());
+        }
+
+        return true;
+    }
+
+    /// <summary>
     /// Creates a backup of a file before modification.
     /// Returns the backup path.
     /// </summary>

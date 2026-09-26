@@ -1,4 +1,4 @@
-@model {{ api_namespace }}.Pages.{{ module_name }}.{{ entity_plural }}.IndexModel
+@model {{ ui_namespace }}.Pages.{{ module_name }}.{{ entity_plural }}.IndexModel
 @* Edit modal: loaded into #m-modal-container by the row's Edit button. A failed post (422) re-renders it in place;
    a successful one swaps the refreshed table into #{{ entity_name_lower }}-table and closes the modal (see OnPostUpdateAsync). *@
 <m-modal title="Edit {{ entity_name_lower }}">

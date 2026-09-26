@@ -1,0 +1,62 @@
+using System.Security.Claims;
+using Modulus.Core.Abstractions;
+using Modulus.Identity;
+
+namespace {{ root_namespace }}.Web.Security;
+
+/// <summary>
+/// ICurrentUser over the signed-in principal (the auth cookie the login page
+/// issues after the password grant). Mirrors the framework's own claim
+/// mapping; permissions resolve through the registered IPermissionChecker
+/// (the Admin-role grants the API host seeds) with a claim fallback, so menus,
+/// contributed entity fields and page guards behave like the API side.
+/// </summary>
+internal sealed class PrincipalCurrentUser(
+    IHttpContextAccessor httpContextAccessor,
+    IPermissionChecker? permissionChecker = null)
+    : ICurrentUser
+{
+    private ClaimsPrincipal? Principal => httpContextAccessor.HttpContext?.User;
+
+    public Guid? UserId
+    {
+        get
+        {
+            var sub = Principal?.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                   ?? Principal?.FindFirst("sub")?.Value;
+            return Guid.TryParse(sub, out var id) ? id : null;
+        }
+    }
+
+    public string? UserName =>
+        Principal?.Identity?.Name
+        ?? Principal?.FindFirst("preferred_username")?.Value;
+
+    public string? Email =>
+        Principal?.FindFirst(ClaimTypes.Email)?.Value
+        ?? Principal?.FindFirst("email")?.Value;
+
+    public bool IsAuthenticated =>
+        Principal?.Identity?.IsAuthenticated ?? false;
+
+    public bool IsInRole(string role) =>
+        Principal?.IsInRole(role) ?? false;
+
+    public bool HasPermission(string permission)
+    {
+        if (permissionChecker is not null)
+            return permissionChecker.HasPermission(permission);
+
+        // Fallback: honour the "permission" claims the sign-in copied from the
+        // access token, so permissions resolve even without a grant store.
+        return Principal?.HasClaim("permission", permission) ?? false;
+    }
+
+    public IReadOnlyList<string> Permissions =>
+        permissionChecker is not null
+            ? permissionChecker.GetEffectivePermissions().ToList()
+            : Principal?.FindAll("permission")
+                .Select(c => c.Value)
+                .ToList()
+            ?? (IReadOnlyList<string>)[];
+}

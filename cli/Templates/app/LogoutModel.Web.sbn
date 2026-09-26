@@ -1,0 +1,21 @@
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
+
+namespace {{ root_namespace }}.Web.Pages.Account;
+
+/// <summary>
+/// Signs the browser out by removing the auth cookie (the token server side
+/// is untouched — the API host's revocation endpoint is what would invalidate
+/// the token pair itself).
+/// </summary>
+public class LogoutModel : PageModel
+{
+    public async Task<IActionResult> OnGetAsync()
+    {
+        if (User.Identity?.IsAuthenticated == true)
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+        return LocalRedirect("/Account/Login");
+    }
+}

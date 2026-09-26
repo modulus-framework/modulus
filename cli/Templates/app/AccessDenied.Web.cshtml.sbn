@@ -1,0 +1,17 @@
+@page
+@model {{ root_namespace }}.Web.Pages.Account.AccessDeniedModel
+@{
+    ViewData["Title"] = "Access denied";
+}
+
+<div class="page page-center">
+    <div class="container container-tight py-4">
+        <div class="card card-md">
+            <div class="card-body text-center">
+                <h1 class="h2">Access denied</h1>
+                <p class="text-secondary">Your account does not have permission to open this page.</p>
+                <a class="btn btn-primary" href="/">Back to home</a>
+            </div>
+        </div>
+    </div>
+</div>

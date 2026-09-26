@@ -1,4 +1,4 @@
-@model {{ api_namespace }}.Pages.{{ module_name }}.{{ entity_plural }}.IndexModel
+@model {{ ui_namespace }}.Pages.{{ module_name }}.{{ entity_plural }}.IndexModel
 <div class="card mb-3">
     <div class="card-header">
         <h3 class="card-title">New {{ entity_name_lower }}</h3>

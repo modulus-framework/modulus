@@ -1,0 +1,14 @@
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc.RazorPages;
+
+namespace {{ root_namespace }}.Web.Pages;
+
+/// <summary>Landing page. Requires a signed-in user (the whole app except
+/// /Account does) — it is where the login page redirects after sign-in.</summary>
+[Authorize]
+public class IndexModel : PageModel
+{
+    public void OnGet()
+    {
+    }
+}

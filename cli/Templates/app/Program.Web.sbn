@@ -1,36 +1,39 @@
-using System.Reflection;
-using Modulus.AspNetCore.Extensions;
 using Modulus.AspNetCore.Configuration;
 using Modulus.AspNetCore.Correlation;
-using Modulus.AspNetCore.HealthChecks;
-using Modulus.AspNetCore.Security;
+using Modulus.AspNetCore.Extensions;
 using Modulus.AspNetCore.FeatureFlags;
-{{ if useTablerTheme }}using Modulus.UI.Theming.Tabler;
+using Modulus.AspNetCore.Security;
+{{ if use_tabler_theme }}using Modulus.UI.Theming.Tabler;
 {{ end }}using Modulus.UI;
-{{ if useAuth }}using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
+using Modulus.Core.Abstractions;
+using {{ root_namespace }}.Web;
+{{ if use_auth }}using {{ root_namespace }}.Web.Security;
 {{ end }}using Microsoft.AspNetCore.HttpOverrides;
-using Microsoft.Extensions.DependencyInjection;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ── Razor Pages UI (no database access; all business logic over HTTP to the API) ───
-builder.Services.AddRazorPages(options =>
-{
-{{ if useAuth }}    // All pages require sign-in by default; [AllowAnonymous] opens individual pages/folders.
-    options.Conventions.AuthorizeFolder("/");
-    options.Conventions.AllowAnonymousToFolder("/Account");
-{{ end }}});
+// ── Razor Pages UI ─────────────────────────────────────────────
+// This project is only the presentation shell: pages call the API project over
+// HTTP (typed clients, see ApiClientExtensions.cs) — no DbContext, no modules.
+builder.Services.AddRazorPages();
 
-// ── Modulus UI framework ───────────────────────────────────────────
-// Core theme support and component library (m-card, m-form, m-datatable, etc.).
+// ── Modulus UI framework ───────────────────────────────────────
+// Core theme support and component library (m-card, m-form, m-datatable, …).
 builder.Services.AddModulusUi();
-{{ if useTablerTheme }}// Use the Tabler theme (responsive, light/dark mode, vendored assets).
+{{ if use_tabler_theme }}// Use the Tabler theme (responsive, light/dark mode, vendored assets).
 builder.Services.AddTablerTheme(builder.Configuration);
-{{ end }}// ── Authentication & Authorization ─────────────────────────────
-{{ if useAuth }}// The Web project doesn't run the token server (that's the API project).
-// Instead, it receives a bearer token from the user's login POST to the API's /connect/token,
-// stores it in an auth cookie, and automatically relays it on every API call via TokenRelayHandler.
+{{ end }}// ── Typed API clients ──────────────────────────────────────────
+// One typed HttpClient per module (resilience + correlation wired in
+// AddModulusHttpClient). With auth on, every call relays the signed-in
+// user's bearer token and refreshes it on 401 (TokenRelayHandler); without
+// auth the clients still work, they just call the API anonymously.
+builder.Services.AddModuleApiClients();
+{{ if use_auth }}
+// ── Authentication ─────────────────────────────────────────────
+// The token server lives in the API project. The sign-in page POSTs the user's
+// credentials to the API's /connect/token (password grant), stores the tokens
+// in an auth cookie, and TokenRelayHandler relays the access token on every
+// API call (refreshing it from the refresh token when it nears expiry).
 builder.Services
     .AddAuthentication(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
@@ -40,28 +43,34 @@ builder.Services
         options.AccessDeniedPath = "/Account/AccessDenied";
     });
 
-builder.Services.AddHttpContextAccessor();
+// ICurrentUser for menus, contributed entity fields and page guards: read from
+// the signed-in principal, with permissions resolved from the same Admin-role
+// grants the API host seeds (in-memory; point both hosts at the EF grant store
+// to edit grants at run time).
+builder.Services.AddScoped<ICurrentUser, PrincipalCurrentUser>();
 
-// Register the TokenRelayHandler that injects the current user's bearer token on every API call.
-// This is registered as a transient handler and added to all named HttpClients.
-builder.Services.AddTransient<TokenRelayHandler>();
-
-// Register module API clients (typed HttpClient for each module).
-// Call AddModulusHttpClient<{Module}ApiClient>() for each module in your app.
-// See ApiClientExtensions.Web.cs for the helper method.
-builder.Services.AddModuleApiClients();
-
-{{ else }}// No authentication configured. Add auth manually if needed (e.g., AddAuthentication().AddCookie(...)).
-{{ end }}// ── Correlation & observability ──────────────────────────────────
-{{ if enableCorrelation }}builder.Services.AddModulusCorrelation(builder.Configuration);
-{{ end }}// ── Health checks ────────────────────────────────────────────────
+// Pages require a signed-in user (only /Account is open). Add a folder to the
+// call to make it public, and set a feature UI's RequirePermission to also
+// gate it by permission.
+builder.Services.AddModulusPageAuthorization();
+{{ else }}
+// No authentication configured. Pages are public; add auth manually
+// (AddAuthentication().AddCookie(...)) and a sign-in flow when you need one.
+{{ end }}
+{{ if enable_correlation }}// ── Correlation ────────────────────────────────────────────────
+// Every log line carries the X-Correlation-ID (adopted from the API's response
+// header or derived here), so a request can be traced across both hosts.
+builder.Services.AddModulusCorrelation(builder.Configuration);
+{{ end }}
+// ── Health checks ──────────────────────────────────────────────
 builder.Services.AddHealthChecks();
 
-{{ if enableFeatureFlags }}// Runtime feature flags (see "FeatureManagement" in appsettings.json).
+{{ if enable_feature_flags }}// Runtime feature flags (see "FeatureManagement" in appsettings.json).
 builder.Services.AddModulusFeatureFlags(builder.Configuration);
-{{ end }}{{ if enableSecretsGuard }}// Guard rail: fails startup if secrets are committed to appsettings*.json.
+{{ end }}{{ if enable_secrets_guard }}// Guard rail: fails startup if secrets are committed to appsettings*.json.
 builder.Services.AddModulusSecretsGuard(builder.Configuration);
-{{ end }}// ── Forwarded headers ──────────────────────────────────────────
+{{ end }}
+// ── Forwarded headers ──────────────────────────────────────────
 // Required when behind a reverse proxy so the app sees real client IPs.
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
@@ -70,29 +79,34 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
     options.KnownProxies.Clear();
 });
 
-// ── Exception handling ────────────────────────────────────────────
+// ── Exception handling ─────────────────────────────────────────
 builder.Services.AddModulusExceptionHandling();
 
 var app = builder.Build();
 
-// ── Pipeline ────────────────────────────────────────────────────
-if (!app.Environment.IsDevelopment())
-{
-    app.UseExceptionHandler("/Error");
-    app.UseHsts();
-}
-
+// ── Pipeline ───────────────────────────────────────────────────
 app.UseForwardedHeaders();
-app.UseHttpsRedirection();
-{{ if enableCorrelation }}app.UseModulusCorrelation();
+{{ if enable_security_headers }}app.UseModulusSecurityHeaders();
+{{ end }}app.UseExceptionHandler();
+{{ if enable_correlation }}app.UseModulusCorrelation();
 {{ end }}app.UseStaticFiles();
-
+// 403/404 render the theme's error pages (no /Error page to maintain).
+app.UseModulusErrorPages();
 app.UseRouting();
-
-{{ if useAuth }}app.UseAuthentication();
+{{ if use_auth }}app.UseAuthentication();
 app.UseAuthorization();
 {{ end }}app.MapRazorPages();
-{{ if enableHealthChecks }}app.MapHealthChecks("/health/live");
-{{ end }}await app.RunAsync();
+app.MapModulusErrorPages();
+{{ if enable_health_checks }}app.MapHealthChecks("/health/live");
+{{ end }}
+app.Run();
 
-public partial class Program;
+// The entry point stays in the global namespace (top-level statements); this
+// namespaced marker gives the integration tests an unambiguous generic
+// argument for booting this host: ModulusWebAppFactory<{{ root_namespace }}.Web.WebEntryPoint>
+// (the API host's Program is also global — two global Programs cannot be
+// named together in one test project).
+namespace {{ root_namespace }}.Web
+{
+    public sealed class WebEntryPoint;
+}

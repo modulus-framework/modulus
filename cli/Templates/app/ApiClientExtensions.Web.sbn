@@ -1,47 +1,32 @@
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Modulus.Platform.Http;
+using {{ root_namespace }}.Web.ApiClients;
+using {{ root_namespace }}.Web.Security;
+
 namespace {{ root_namespace }}.Web;
 
-using Modulus.Platform.Extensions;
-
 /// <summary>
-/// Extension methods for registering module API clients in the Web project.
-/// Call these in Program.cs to wire the typed clients that replace IMediator calls.
-///
-/// Each registered client automatically gets:
-/// - Standard resilience handler (retry w/ jitter, circuit breaker, timeout, concurrency limit)
-/// - TokenRelayHandler (automatic bearer token injection from auth cookie)
-/// - Correlation ID propagation (if enabled)
+/// Typed clients for the API project's module endpoints, one per module.
+/// Each gets the standard resilience pipeline (retry, circuit breaker,
+/// timeouts) and the correlation handler from <see cref="HttpClientExtensions.AddModulusHttpClient"/>,
+/// plus the token relay that carries the signed-in user's access token and
+/// refreshes it on 401. Without authentication configured the relay simply
+/// passes through and the clients call the API anonymously.
 /// </summary>
 public static class ApiClientExtensions
 {
-    /// <summary>
-    /// Register all module API clients for the Web project.
-    /// Call this in Program.cs after adding the Web project's services.
-    /// </summary>
-    public static IServiceCollection AddModuleApiClients(this IServiceCollection services, string apiBaseUrl = "https://localhost:5000")
+    public static IServiceCollection AddModuleApiClients(this IServiceCollection services)
     {
-        // Example: register the Catalog module API client
-        // services.AddModulusHttpClient<CatalogApiClient>(apiBaseUrl);
-
-        // Add more module clients as you generate CRUD sets:
-        // services.AddModulusHttpClient<OrdersApiClient>(apiBaseUrl);
-
+        // Shared by every client: reads the signed-in user's token from the
+        // auth cookie. Program.cs registers it when auth is on; this no-ops then.
+        services.TryAddTransient<TokenRelayHandler>();
+        services.AddHttpContextAccessor();
+        services.AddHttpClient(TokenRelayHandler.RefreshClientName);
+{{ if !no_example }}
+        services.AddModulusHttpClient<{{ example_module }}ApiClient>()
+            .AddHttpMessageHandler<TokenRelayHandler>();
+{{ end }}
         return services;
-    }
-}
-
-internal static class HttpClientBuilderExtensions
-{
-    /// <summary>
-    /// Register a module's API client with standard resilience + token relay.
-    /// The TokenRelayHandler is added as the outer handler so every call includes the bearer token.
-    /// </summary>
-    private static IHttpClientBuilder AddModulusHttpClient<TClient>(
-        this IServiceCollection services, string apiBaseUrl)
-        where TClient : class
-    {
-        return services
-            .AddHttpClient<TClient>(client => client.BaseAddress = new Uri(apiBaseUrl))
-            .AddStandardResilienceHandler()  // Built-in retry, circuit breaker, timeout, concurrency limit
-            .AddHttpMessageHandler<TokenRelayHandler>();  // Outer handler: automatic bearer token injection
     }
 }

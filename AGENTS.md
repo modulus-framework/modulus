@@ -936,11 +936,13 @@ Modulus, never the reverse; feature UIs depend on `Theme.Abstractions`, never on
 - **CSP rules for views.** Framework views load nothing from a CDN and use no inline event handlers
   (`onchange=`/`onclick=`): use a vendored asset or an Alpine component (`mAutoSubmit` submits its
   `<form>` on change; Identity relies on server-side validation only). `AlpineCspSafetyTests` fails on either.
-- **App kind (`api` vs `web`).** Product rule: an **API** app creates no UI at all; a **web** app (`--kind web`) creates the web UI **and** keeps the API,
-  so the same modules serve the UI and external clients (mobile, desktop, other systems). All UI, prebuilt feature UIs included (Identity, Users, ...), must
+- **App kinds (`api` / `web` / `webapp+api`).** Product rule (three-way split, as-built): an **`api`** app creates no UI at all; a **`web`** app is UI-only —
+  Razor Pages call `IMediator` in-process and no API surface is mapped (`expose_api` gates `AddModulusOpenApi`/`MapControllers`/`MapModulusEndpoints`/`MapOpenApi`,
+  so `/api/*` 404s; `AddControllers` stays registered, harmless); **`webapp+api`** generates two separately deployable projects (see "App-kind split" below).
+  `--kind web` is a deprecated alias for the UI-only single host. All UI, prebuilt feature UIs included (Identity, Users, ...), must
   stay customizable by the app. The kind lives in the host csproj as `<ModulusAppKind>` (`AppKinds.Read`, `ModuleDiscovery.AppInventory.Kind`); a host
   without it predates app kinds and is unconstrained (`null`, so the old opt-in `--with-ui` keeps working). `modulus app` resolves it in `NewAppCommand.ResolveKind`
-  (explicit `--kind`; `--ui-modules` alone implies `web`; `--kind api` with UI modules is an error; prompt, else `api` when non-interactive). A web app installs
+  (explicit `--kind api|web|webapp+api`; `--ui-modules` alone implies `web`; `--kind api` with UI modules is an error; prompt, else `api` when non-interactive). A web app installs
   `NewAppCommand.ResolveWebInstall`: `UI.Core` foundation, the chosen modules, then the Tabler theme (`--no-theme` opts out), plus `Platform`, even with no prebuilt module.
   `AppKinds.ResolveCrudUi` decides `generate-crud`: `web` scaffolds the admin page by default (`--no-ui` = API side only), `api` refuses `--with-ui`, unmarked = opt-in
   `--with-ui`. `ui add`, `ui eject` and `ui diff` refuse an `api` host. Covered by `AppKindTests`. **Identity backend (`--auth openiddict`).** A local token server needs users, so `modulus app --auth openiddict` (either kind) also generates
@@ -982,7 +984,8 @@ Modulus, never the reverse; feature UIs depend on `Theme.Abstractions`, never on
   message whether it does not exist or is gated, so the response never reveals a hidden field) and `ReadSubmittedEntityFieldText(entity, user, values)` (canonical text of only the visible
   fields the caller sent; an empty value maps to null, which removes the key; unsent fields stay untouched). They differ from `EntityFieldValues` (the form's helpers) on purpose: a form
   always posts every field so an empty one means "clear", an API caller sends only what it changes. Generated for a **fresh** set in a web app (`ModuleModel.HasApiExtraFields`,
-  `GenerateCrudCommand.ExposesExtraFieldsInApi`: kind is `web`, none of the DTO/query-handler/endpoint files exist yet, and the entity and both commands carry the marker; files are never
+  `GenerateCrudCommand.ExposesExtraFieldsInApi`: kind is `web` — a pre-split rule; under the three-way model only `webapp+api` maps an API surface, so for a `web` host this currently
+  emits dead-but-harmless endpoint code and should be retargeted to `webapp+api` (tracked in the split plan, A2.3.8); none of the DTO/query-handler/endpoint files exist yet, and the entity and both commands carry the marker; files are never
   overwritten, so an older set keeps its API as it was; the example module of `modulus app --kind web` gets it too): the DTO becomes a `record` with an `ExtraProperties` bag that the
   query handlers fill with the **unfiltered** stored copy (an endpoint must filter it), the create and update requests take `extraProperties`, the endpoints inject
   `IEntityUiRegistry` + `ICurrentUser`, reject with `ValidationException` (400 with an `errors` list) and pass only `ReadSubmittedEntityFieldText(...)` to the command, whose handler already
@@ -1087,13 +1090,61 @@ Modulus, never the reverse; feature UIs depend on `Theme.Abstractions`, never on
   `IUserUiPreferenceStore`; tiered mode is a later phase. `ui eject` copies views only (a page's handlers/PageModel stay in the package), and static assets
   are customized through the `--m-*` tokens or a same-path file in the app's `wwwroot`. Legacy `_UiLayout` is not ejectable and still ships Core's standard Alpine
   build plus an inline `<style>`.
-- **Planned work.** A three-way app-kind split (`api` / `webapp` / `webapp+api` as two separately
-  deployable, HTTP-connected projects) and closing module UI customizability gaps across every
-  prebuilt feature UI (not just Identity — Users shares the same gap; AuditLogging is missing
-  column-extension wiring; Tenancy/Permissions/Settings/Notifications/Files were audited and are
-  intentionally N/A by data shape; CLI `generate-crud --with-ui` was audited and already works
-  end-to-end) are planned but not started; see
-  [`docs/APP_KIND_SPLIT_AND_IDENTITY_UI_PLAN.md`](docs/APP_KIND_SPLIT_AND_IDENTITY_UI_PLAN.md).
+- **Planned work.** Closing module UI customizability gaps across every prebuilt feature UI
+  (not just Identity — Users shares the same gap; AuditLogging is missing column-extension
+  wiring; Tenancy/Permissions/Settings/Notifications/Files were audited and are intentionally
+  N/A by data shape; CLI `generate-crud --with-ui` was audited and already works end-to-end),
+  plus the split follow-ups in the plan (ui-schema endpoint design sign-off, Web-factory
+  TestServer pairing + the login→page-create→API-visible round-trip, kill-the-API check,
+  `doctor`'s Web-project invariant warning) are not started; see
+  [`docs/APP_KIND_SPLIT_AND_IDENTITY_UI_PLAN.md`](docs/APP_KIND_SPLIT_AND_IDENTITY_UI_PLAN.md)
+  (Phase A there is complete).
+
+## App-kind split (`webapp+api`, as-built)
+
+Phase A of the split plan is complete: `AppKind` is a 3-value model (`Api`, `WebApp`,
+`WebAppApi`; `--kind web` is a deprecated alias for `WebApp`). All three kinds build 0 warnings
+and pass their generated test suites off the current CLI (`webapp+api` 9/9, `api` 6/6,
+`webapp` 3/3).
+
+- **Single-host kinds (`api`, `web`).** Same layout as before; the only delta for `web` is
+  `expose_api` (false): no `AddModulusOpenApi`, `MapControllers`, `MapModulusEndpoints` or
+  `MapOpenApi` (`AddControllers` stays registered, harmless), so `/api/*` 404s. Cross-cutting
+  services (correlation, security headers) register on every host shape — the template used to
+  gate the service block on `expose_api` while the pipeline calls weren't, so a UI-only host
+  called `UseModulusCorrelation()` with no `ICorrelationContext` registered and every request
+  500'd.
+- **Two-project split.** `src/API/{App}.Api` is the unchanged API host (modules, DbContexts,
+  OpenIddict token server, the Identity module + seeding). `src/Web/{App}.Web`
+  (`NewAppCommand.GenerateWebHost`) is a presentation shell: Razor Pages (Index, Account
+  Login/Logout/AccessDenied), `Security/TokenRelayHandler.cs` + `PrincipalCurrentUser.cs`,
+  `ApiClients/{Module}ApiClient.cs` + `ApiClientExtensions.AddModuleApiClients`. It references
+  **no** module Infrastructure/Presentation — only the `Modulus.UI.Core`/theme/`Platform`/
+  `Identity` packages, the `{App}.Api` project (for `AddModuleApiClients`) and each module's
+  `.Application` project for commands/queries/DTOs (no separate Contracts project; revisit if
+  an Application layer grows Infrastructure-facing dependencies). `WireUiModules` installs UI
+  packages into the Web project via `AppInventory.UiProjectPath`; the split drops the
+  `identity`/`users` UI modules (their pages drive an in-process user store).
+- **Auth across the split.** The API stays the token server. The Web login page
+  (`LoginModel.Web.sbn`) POSTs credentials to `/connect/token` (password grant), stores the
+  access/refresh tokens in the Web host's own auth cookie, and every generated typed client
+  carries `TokenRelayHandler` as its outer handler (relay + refresh near expiry via a named
+  `TokenRefresh` client; resilience + correlation come from `AddModulusHttpClient`'s standard
+  chain). Handler gotchas fixed during validation: sync `Dispose()` (the handler factory calls
+  it synchronously) and options copied via `new HttpRequestOptionsKey<object?>(key)` (string
+  keys throw). Register/Forgot-over-HTTP is a fast-follow after Phase B1.
+- **`generate-crud` on a split app** writes UI into the Web project (`UiNamespace =
+  {Root}.Web`): `ui/CrudIndexPageModel.Http.sbn` calls `{Module}ApiClient` (non-2xx →
+  `ModelState`), `ui/ModuleApiClient.sbn` emits the per-module client. The split's API host
+  calls `AddModulusUi()` (services only, no theme) because generated endpoints resolve
+  `IEntityUiRegistry` to permission-filter extension fields.
+- **Tests.** Generated tests use entry-point markers (`ApiEntryPoint` in the API host,
+  `WebEntryPoint` in the Web host) — `ModulusWebAppFactory<Program>` would be ambiguous with
+  both hosts in one solution. `AppTests.sbn` emits `ApiIntegrationTests` only when the host
+  exposes an API, and the page-level `WebAppSmokeTest` for both web kinds over the matching
+  marker. The two factories are standalone (page tests make no API calls), so the Web→API hop
+  is not yet asserted in tests — TestServer pairing, the kill-the-API check and a full
+  login→page-create→visible-through-API round-trip are the tracked follow-ups.
 
 ## Testing notes
 

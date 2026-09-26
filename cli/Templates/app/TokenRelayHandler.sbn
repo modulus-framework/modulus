@@ -1,48 +1,169 @@
 using System.Net;
 using System.Net.Http.Headers;
+using System.Net.Http.Json;
+using System.Security.Claims;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 
-namespace {{ root_namespace }}.Web;
+namespace {{ root_namespace }}.Web.Security;
 
 /// <summary>
-/// Relay the bearer token from the auth cookie to typed HTTP clients calling the API.
-/// This handler is the outer handler for all {Module}ApiClient registrations,
-/// so every call to the API includes the current user's token automatically.
+/// Relays the signed-in user's bearer token onto every API call. The access
+/// token (and its refresh token) live in the auth cookie — stored by the login
+/// page via AuthenticationProperties.StoreTokens. When the API answers 401 the
+/// handler redeems the refresh token at the token endpoint once, re-issues the
+/// cookie with the fresh pair and replays the request; when the refresh grant
+/// is refused the session is over, so the browser is signed out.
 /// </summary>
-internal sealed class TokenRelayHandler : DelegatingHandler
+public sealed class TokenRelayHandler(IHttpContextAccessor httpContextAccessor)
+    : DelegatingHandler
 {
-    private readonly IHttpContextAccessor _httpContextAccessor;
+    /// <summary>Registered in Program.cs: a handler-free client the refresh flow uses
+    /// (the typed module clients all carry this handler — it must not call itself).</summary>
+    public const string RefreshClientName = "TokenRefresh";
 
-    public TokenRelayHandler(IHttpContextAccessor httpContextAccessor)
-    {
-        _httpContextAccessor = httpContextAccessor;
-    }
+    public const string AccessTokenName = "access_token";
+    public const string RefreshTokenName = "refresh_token";
+    private const int CookieLifetimeDays = 14;
 
     protected override async Task<HttpResponseMessage> SendAsync(
         HttpRequestMessage request, CancellationToken cancellationToken)
     {
-        var context = _httpContextAccessor.HttpContext;
-        if (context != null)
-        {
-            // The auth cookie carried the access token when the user signed in.
-            // Refresh it if it's about to expire, then relay it on the outbound request.
-            var token = await context.GetAccessTokenAsync("access_token");
-            if (!string.IsNullOrEmpty(token))
-            {
-                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-            }
-        }
+        var token = await GetAccessTokenAsync();
+        if (!string.IsNullOrEmpty(token))
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         var response = await base.SendAsync(request, cancellationToken);
+        if (response.StatusCode != HttpStatusCode.Unauthorized)
+            return response;
 
-        // If the API responds with 401 Unauthorized, the token may have expired and
-        // couldn't be refreshed (revoked, etc.). Sign the user out.
-        // (Future: automatic refresh-grant retry here, if the refresh token is also stale.)
-        if (response.StatusCode == HttpStatusCode.Unauthorized && context != null)
+        var refreshed = await TryRefreshAsync(cancellationToken);
+        if (refreshed is null)
         {
-            await context.SignOutAsync();
+            await SignOutAsync();
+            return response;
         }
 
+        // The first send consumed the request content: replay a buffered clone.
+        using var retry = await CloneAsync(request);
+        response.Dispose();
+        retry.Headers.Authorization = new AuthenticationHeaderValue("Bearer", refreshed);
+        response = await base.SendAsync(retry, cancellationToken);
+        if (response.StatusCode == HttpStatusCode.Unauthorized)
+            await SignOutAsync();
         return response;
     }
+
+    /// <summary>Exchanges the cookie's refresh token for a fresh token pair and
+    /// re-issues the auth cookie, so the browser session outlives the access
+    /// token. Returns the new access token, or null when the grant is refused.</summary>
+    private async Task<string?> TryRefreshAsync(CancellationToken cancellationToken)
+    {
+        var http = httpContextAccessor.HttpContext;
+        if (http is null)
+            return null;
+
+        var refreshToken = await http.GetTokenAsync(
+            CookieAuthenticationDefaults.AuthenticationScheme,
+            RefreshTokenName);
+        if (string.IsNullOrEmpty(refreshToken))
+            return null;
+
+        var configuration = http.RequestServices.GetRequiredService<IConfiguration>();
+        var authority = configuration["Api:BaseUrl"] ?? "http://localhost:5180";
+        var clientId = configuration["Api:ClientId"] ?? "web";
+
+        var clientFactory = http.RequestServices.GetRequiredService<IHttpClientFactory>();
+        using var client = clientFactory.CreateClient(RefreshClientName);
+        using var body = new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["grant_type"] = "refresh_token",
+            ["refresh_token"] = refreshToken,
+            ["client_id"] = clientId,
+        });
+        using var tokenResponse = await client.PostAsync(
+            new Uri(new Uri(authority), "/connect/token"), body, cancellationToken);
+        if (!tokenResponse.IsSuccessStatusCode)
+            return null;
+
+        var tokens = await tokenResponse.Content
+            .ReadFromJsonAsync<TokenResponse>(cancellationToken: cancellationToken);
+        if (tokens is null || string.IsNullOrEmpty(tokens.AccessToken))
+            return null;
+
+        // Refresh token rotation: persist the new pair so the next refresh
+        // uses the replacement, not the (now revoked) original.
+        await SignInAsync(http, http.User, tokens.AccessToken,
+            string.IsNullOrEmpty(tokens.RefreshToken) ? refreshToken : tokens.RefreshToken);
+        return tokens.AccessToken;
+    }
+
+    private async Task<string?> GetAccessTokenAsync()
+    {
+        var http = httpContextAccessor.HttpContext;
+        if (http is null)
+            return null;
+        return await http.GetTokenAsync(
+            CookieAuthenticationDefaults.AuthenticationScheme,
+            AccessTokenName);
+    }
+
+    private async Task SignOutAsync()
+    {
+        var http = httpContextAccessor.HttpContext;
+        if (http?.User.Identity?.IsAuthenticated == true)
+            await http.SignOutAsync(
+                CookieAuthenticationDefaults.AuthenticationScheme);
+    }
+
+    /// <summary>Issues the auth cookie the login page and the refresh flow share:
+    /// same principal, same lifetime, tokens stored for TokenRelayHandler.</summary>
+    internal static async Task SignInAsync(HttpContext http, ClaimsPrincipal principal,
+        string accessToken, string refreshToken, DateTimeOffset? expiresUtc = null)
+    {
+        var properties = new AuthenticationProperties
+        {
+            IsPersistent = true,
+            ExpiresUtc = expiresUtc ?? DateTimeOffset.UtcNow.AddDays(CookieLifetimeDays),
+        };
+        properties.StoreTokens(
+        [
+            new AuthenticationToken { Name = AccessTokenName, Value = accessToken },
+            new AuthenticationToken { Name = RefreshTokenName, Value = refreshToken },
+        ]);
+        await http.SignInAsync(
+            CookieAuthenticationDefaults.AuthenticationScheme,
+            principal, properties);
+    }
+
+    private static async Task<HttpRequestMessage> CloneAsync(HttpRequestMessage request)
+    {
+        var clone = new HttpRequestMessage(request.Method, request.RequestUri)
+        {
+            Version = request.Version,
+        };
+        if (request.Content is not null)
+        {
+            var buffered = new MemoryStream();
+            await request.Content.CopyToAsync(buffered);
+            buffered.Position = 0;
+            clone.Content = new StreamContent(buffered);
+            foreach (var header in request.Content.Headers)
+                clone.Content.Headers.TryAddWithoutValidation(header.Key, header.Value);
+        }
+        foreach (var header in request.Headers)
+            clone.Headers.TryAddWithoutValidation(header.Key, header.Value);
+        foreach (var option in request.Options)
+            clone.Options.Set(new HttpRequestOptionsKey<object?>(option.Key), option.Value);
+        return clone;
+    }
+
+    internal sealed record TokenResponse(
+        [property: JsonPropertyName("access_token")] string? AccessToken,
+        [property: JsonPropertyName("refresh_token")] string? RefreshToken,
+        [property: JsonPropertyName("error")] string? Error);
 }

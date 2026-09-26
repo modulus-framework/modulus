@@ -21,7 +21,7 @@ using Modulus.Mediator.Extensions;
 using Modulus.Identity.Extensions;
 using OpenIddict.Server.AspNetCore;
 using OpenIddict.Validation.AspNetCore;
-{{ if use_ui }}using Modulus.UI;
+{{ if ui_in_api_host || kind_name == "webapp+api" }}using Modulus.UI;
 {{ end }}{{ end }}{{ if use_external_provider }}using {{ external_provider_namespace }};
 {{ end }}using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.DependencyInjection;
@@ -58,14 +58,14 @@ builder.Services.AddModulus(builder.Configuration, modules =>
 {{ end }}});
 builder.Services.AddModulusExceptionHandling();
 
-{{ if expose_api }}// ── API cross-cutting concerns (config-bound; see appsettings.json) ─
+// ── Cross-cutting concerns (config-bound; see appsettings.json) ──────
 {{ if enable_correlation }}builder.Services.AddModulusCorrelation(builder.Configuration);
-{{ end }}{{ if enable_idempotency }}builder.Services.AddModulusIdempotency(builder.Configuration);
-{{ end }}{{ if enable_api_versioning }}builder.Services.AddModulusApiVersioning(builder.Configuration);
-{{ end }}{{ if enable_rate_limiting }}builder.Services.AddModulusRateLimiting(builder.Configuration);
-{{ end }}{{ if enable_cors }}builder.Services.AddModulusCors(builder.Configuration);
+{{ end }}{{ if expose_api && enable_idempotency }}builder.Services.AddModulusIdempotency(builder.Configuration);
+{{ end }}{{ if expose_api && enable_api_versioning }}builder.Services.AddModulusApiVersioning(builder.Configuration);
+{{ end }}{{ if expose_api && enable_rate_limiting }}builder.Services.AddModulusRateLimiting(builder.Configuration);
+{{ end }}{{ if expose_api && enable_cors }}builder.Services.AddModulusCors(builder.Configuration);
 {{ end }}{{ if enable_security_headers }}builder.Services.AddModulusSecurityHeaders(builder.Configuration);
-{{ end }}{{ end }}
+{{ end }}
 {{ if enable_feature_flags }}// Runtime feature flags bound to the "FeatureManagement" section. Gate a minimal-API
 // endpoint with .RequireFeature("Flag"); MVC actions can use [FeatureGate("Flag")].
 builder.Services.AddModulusFeatureFlags(builder.Configuration);
@@ -109,8 +109,14 @@ builder.Services.AddMediator();
 
 {{ if expose_api }}// ── MVC controllers (module Presentation assemblies) ───────────
 builder.Services.AddControllers();
-{{ end }}{{ if use_ui }}// ── Razor Pages (web app UI) ───────────────────────
+{{ end }}{{ if ui_in_api_host }}// ── Razor Pages (web app UI) ───────────────────────
 builder.Services.AddRazorPages();
+{{ end }}{{ if kind_name == "webapp+api" }}
+// ── Modulus UI foundation (API side) ──────────────────────────
+// The browser UI lives in the Web project. This host needs only the UI
+// foundation's services: generated endpoints expose an entity's extension
+// fields through IEntityUiRegistry, filtered per caller by permission.
+builder.Services.AddModulusUi();
 {{ end }}
 {{ if auth == "none" }}
 // ── Authentication ─────────────────────────────────────────────
@@ -121,7 +127,7 @@ builder.Services.AddRazorPages();
 // or an external provider, or call AllowAnonymous() in an endpoint's Configure().
 {{ end }}{{ if auth != "none" }}
 // ── Authentication & Authorization ──────────────────────────────
-{{ if auth == "openiddict" }}{{ if use_ui }}// One host, two kinds of caller: API callers (bearer token) and browsers (the Identity cookie).
+{{ if auth == "openiddict" }}{{ if ui_in_api_host }}// One host, two kinds of caller: API callers (bearer token) and browsers (the Identity cookie).
 builder.Services.AddModulusSmartAuth();
 // Pages require a signed-in user (only /Account, the sign-in pages, is open). Add a folder to the call to make it public,
 // and set a feature UI's RequirePermission to also gate it by permission.
@@ -134,7 +140,7 @@ builder.Services.AddAuthentication(options =>
     options.DefaultChallengeScheme = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme;
 });
 {{ end }}{{ if example_permission }}
-// The example API{{ if use_ui }} and its admin page need{{ else }} needs{{ end }} a permission, and the Admin role (seeded below) holds it: a signed-in caller without it gets 403.
+// The example API{{ if ui_in_api_host }} and its admin page need{{ else }} needs{{ end }} a permission, and the Admin role (seeded below) holds it: a signed-in caller without it gets 403.
 // AddModulusAuthorization turns a "module:thing:action" name into a permission check, resolved from the grants of the caller's roles.
 // The grants below are an in-memory seed: to edit them at run time (Permissions UI or API), keep them in the database with
 // AddEfCoreAuthorizationStores (Modulus.Authorization.EntityFrameworkCore) instead.
@@ -204,7 +210,7 @@ app.MapModulusEndpoints(
     Directory.GetFiles(AppContext.BaseDirectory, "{{ root_namespace }}.Modules.*.Presentation.dll")
         .Select(Assembly.LoadFrom)
         .ToArray());
-{{ end }}{{ if use_ui }}app.MapRazorPages();
+{{ end }}{{ if ui_in_api_host }}app.MapRazorPages();
 {{ end }}{{ if enable_health_checks }}app.MapModulusHealthChecks();
 {{ end }}
 if (app.Environment.IsDevelopment())
@@ -218,3 +224,12 @@ app.Run();
 // Exposes the implicit Program class so integration tests can boot this exact
 // host via Modulus.Testing's ModulusWebAppFactory<Program>.
 public partial class Program;
+
+// Namespaced entry-point marker for the integration tests: in a webapp+api app
+// both hosts expose a global Program, so the test project's
+// ModulusWebAppFactory<TEntryPoint> generic argument is ambiguous — each host
+// gets a namespaced marker instead (the Web host's is WebEntryPoint).
+namespace {{ root_namespace }}.Api
+{
+    public sealed class ApiEntryPoint;
+}

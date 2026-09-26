@@ -1,0 +1,13 @@
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
+
+namespace {{ root_namespace }}.Web.Pages.Account;
+
+/// <summary>Shown when a signed-in user opens a page their role or permissions
+/// do not cover (the cookie handler's AccessDeniedPath).</summary>
+public class AccessDeniedModel : PageModel
+{
+    public void OnGet()
+    {
+    }
+}

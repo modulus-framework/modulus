@@ -1,0 +1,31 @@
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "Api": {
+    "BaseUrl": "http://localhost:5180",
+    "ClientId": "{{ app_name_lower }}"
+  },
+{{ if enable_correlation }}  "Correlation": {
+    "HeaderName": "X-Correlation-ID",
+    "IncludeInResponse": true,
+    "UseTraceIdWhenMissing": true
+  },
+{{ end }}{{ if enable_security_headers }}  "SecurityHeaders": {
+    "ContentTypeOptions": true,
+    "FrameOptions": "DENY",
+    "ReferrerPolicy": "strict-origin-when-cross-origin",
+    "EnableHsts": true
+  },
+{{ end }}  "FeatureManagement": {
+    "SampleFeature": false
+  },
+{{ if enable_secrets_guard }}  "SecretsGuard": {
+    "Enabled": true,
+    "FailOnViolation": true
+  },
+{{ end }}  "AllowedHosts": "*"
+}

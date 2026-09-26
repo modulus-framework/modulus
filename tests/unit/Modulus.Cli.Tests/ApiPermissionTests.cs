@@ -38,13 +38,14 @@ public sealed class ApiPermissionTests
     // ── Endpoints ────────────────────────────────────────────────
 
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void Every_endpoint_declares_the_permission(bool apiExtra)
+    [InlineData(false, 6)]
+    [InlineData(true, 7)]
+    public void Every_endpoint_declares_the_permission(bool apiExtra, int expectedSplitLength)
     {
         var endpoints = _engine.Render("module/Presentation/Endpoint", Crud("catalog:products:manage", apiExtra));
 
-        endpoints.Split("Permissions(\"catalog:products:manage\");").Length.Should().Be(6, "list, get, create, update and delete each declare it");
+        endpoints.Split("Permissions(\"catalog:products:manage\");").Length.Should().Be(expectedSplitLength,
+            "list, get, create, update and delete each declare it (plus ui-schema when api extra fields are exposed)");
         endpoints.Should().Contain("Every endpoint below needs the \"catalog:products:manage\" permission");
     }
 

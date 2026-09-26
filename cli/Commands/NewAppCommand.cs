@@ -1,4 +1,4 @@
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using Modulus.Cli.Services;
 using Spectre.Console;
 using Spectre.Console.Cli;
@@ -142,9 +142,9 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
     private int ExecuteCore(CommandContext ctx, Settings s)
     {
         if (Ux.IsInteractive && !Ux.Quiet)
-            AnsiConsole.Write(new Rule("[cyan]Modulus — create a new application[/]") { Border = BoxBorder.Rounded });
+            AnsiConsole.Write(new Rule("[cyan]Modulus â€” create a new application[/]") { Border = BoxBorder.Rounded });
 
-        // ── Resolve args (interactive when missing, TTY-aware) ──────────
+        // â”€â”€ Resolve args (interactive when missing, TTY-aware) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         var name = s.Name;
         if (string.IsNullOrWhiteSpace(name))
             name = Ux.AskRequired("App name [grey](e.g. MyApp or MyCompany.MyApp)[/]:",
@@ -185,7 +185,7 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
             uiModules = withSignIn;
         }
 
-        // NoExample is tri-state: null = unspecified → prompt (interactive)
+        // NoExample is tri-state: null = unspecified â†’ prompt (interactive)
         // or default to include (CI). True/False are explicit user choices.
         bool noExample;
         if (s.NoExample is { } noExampleFlag)
@@ -207,7 +207,7 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         var outputDir = Path.GetFullPath(s.Output ?? "./");
         var projectDir = Path.Combine(outputDir, appName);
 
-        // ── Target directory conflict ───────────────────────────────────
+        // â”€â”€ Target directory conflict â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         if (Directory.Exists(projectDir) && Directory.EnumerateFileSystemEntries(projectDir).Any())
         {
             if (!Ux.Confirm($"Directory [cyan]{projectDir}[/] is not empty. Continue and overwrite?", nonInteractiveDefault: false))
@@ -248,7 +248,7 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
 
         Ux.Status($"Scaffolding {appName}...", () => GenerateAll(projectDir, model));
 
-        // ── Summary ────────────────────────────────────────────────────
+        // â”€â”€ Summary â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         AnsiConsole.WriteLine();
         Ux.Success($"Created [cyan]{appName}[/] ({kind.Label()}) at [grey]{projectDir}[/]");
         if (Ux.DryRun)
@@ -280,7 +280,7 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
             if (string.IsNullOrWhiteSpace(s.PackageSource))
             {
                 AnsiConsole.MarkupLine(
-                    "[yellow]Note:[/] Cobytelabs.Modulus.* packages are not on nuget.org yet — " +
+                    "[yellow]Note:[/] Cobytelabs.Modulus.* packages are not on nuget.org yet â€” " +
                     "wire a local feed in NuGet.config or re-run with [grey]--package-source[/].");
             }
         }
@@ -312,26 +312,32 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         var rootNs = model.RootNamespace;
         var projects = new List<string>();
 
-        // ── Host / API project ─────────────────────────────────────
+        // The UI host project's namespace (pages, typed clients, generated CRUD
+        // page models): the Web project for the split, the API host otherwise.
+        model.UiNamespace = model.Kind == AppKind.WebAppApi
+            ? $"{rootNs}.Web"
+            : $"{rootNs}.Api";
+
+        // â”€â”€ Host / API project â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         GenerateApiHost(projectDir, model, projects);
 
-        // ── Web project (webapp+api only) ──────────────────────────
+        // â”€â”€ Web project (webapp+api only) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         if (model.Kind == AppKind.WebAppApi)
         {
             GenerateWebHost(projectDir, model, projects);
         }
 
-        // ── Shared kernel ─────────────────────────────────────────
+        // â”€â”€ Shared kernel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         GenerateShared(Path.Combine(projectDir, "src", "Shared"), model, projects);
 
-        // ── Identity backend (local token server needs users) ──────
+        // â”€â”€ Identity backend (local token server needs users) â”€â”€â”€â”€â”€â”€
         if (model.UseOpenIddict)
         {
             GenerateIdentityModule(Path.Combine(projectDir, "src", "Modules", model.IdentityNamespace), model);
             projects.Add(IdentityProjectPath(model));
         }
 
-        // ── Example Catalog module ─────────────────────────────────
+        // â”€â”€ Example Catalog module â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         if (!model.NoExample)
         {
             var modNs = $"{rootNs}.Modules.{model.ExampleModule}";
@@ -355,7 +361,7 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
             projects.AddRange(ModuleProjectPaths(rootNs, model.ExampleModule));
         }
 
-        // ── Top-level test project ────────────────────────────────
+        // â”€â”€ Top-level test project â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         var testDir = Path.Combine(projectDir, "tests", $"{rootNs}.Tests");
         _templates.RenderToFile("app/tests.csproj", model,
             Path.Combine(testDir, $"{rootNs}.Tests.csproj"));
@@ -363,16 +369,16 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
             Path.Combine(testDir, "ModulePipelineSmokeTest.cs"));
         projects.Add($"tests/{rootNs}.Tests/{rootNs}.Tests.csproj");
 
-        // ── Solution file ─────────────────────────────────────────
+        // â”€â”€ Solution file â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         SolutionHelper.Create(
             Path.Combine(projectDir, $"{model.AppName}.slnx"),
             model.AppName, projects);
 
-        // ── Directory.Build.props ─────────────────────────────────
+        // â”€â”€ Directory.Build.props â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         _templates.RenderToFile("app/Directory.Build.props", model,
             Path.Combine(projectDir, "Directory.Build.props"));
 
-        // ── Directory.Packages.props ──────────────────────────────
+        // â”€â”€ Directory.Packages.props â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         // Disables CPM in the generated app and prevents inheriting a
         // parent repo's Directory.Packages.props (the SDK walks up the
         // tree to find one).  Generated csproj files use explicit
@@ -380,19 +386,19 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         _templates.RenderToFile("app/Directory.Packages.props", model,
             Path.Combine(projectDir, "Directory.Packages.props"));
 
-        // ── .editorconfig ─────────────────────────────────────────
+        // â”€â”€ .editorconfig â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         _templates.RenderToFile("app/editorconfig", model,
             Path.Combine(projectDir, ".editorconfig"));
 
-        // ── NuGet.config ──────────────────────────────────────────
+        // â”€â”€ NuGet.config â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         _templates.RenderToFile("app/NuGet.config", model,
             Path.Combine(projectDir, "NuGet.config"));
 
-        // ── .gitignore ────────────────────────────────────────────
+        // â”€â”€ .gitignore â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         _templates.RenderToFile("app/gitignore", model,
             Path.Combine(projectDir, ".gitignore"));
 
-        // ── UI Modules ───────────────────────────────────────────────
+        // â”€â”€ UI Modules â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         if (model.UseUi)
         {
             WireUiModules(projectDir, model);
@@ -429,30 +435,63 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
             Path.Combine(webDir, $"{rootNs}.Web.csproj"));
         _templates.RenderToFile("app/Program.Web", model,
             Path.Combine(webDir, "Program.cs"));
-        _templates.RenderToFile("app/appsettings.json", model,
+
+        // The Web project has its own configuration: it connects to nothing but
+        // the API host ("Api:BaseUrl"), so it must not share the API's
+        // appsettings (connection strings, OpenIddict server options) â€” and it
+        // needs its own launchSettings so both hosts can run side by side.
+        _templates.RenderToFile("app/appsettings.Web.json", model,
             Path.Combine(webDir, "appsettings.json"));
-        _templates.RenderToFile("app/appsettings.Development.json", model,
+        _templates.RenderToFile("app/appsettings.Web.Development.json", model,
             Path.Combine(webDir, "appsettings.Development.json"));
-        _templates.RenderToFile("app/launchSettings.json", model,
+        _templates.RenderToFile("app/launchSettings.Web.json", model,
             Path.Combine(webDir, "Properties", "launchSettings.json"));
 
-        // ── Authentication & token relay (A2.2) ──────────────────
+        // Razor Pages plumbing: tag helpers (m-*) and the theme's layouts.
+        _templates.RenderToFile("app/WebPagesViewImports", model,
+            Path.Combine(webDir, "Pages", "_ViewImports.cshtml"));
+        _templates.RenderToFile("app/WebPagesViewStart", model,
+            Path.Combine(webDir, "Pages", "_ViewStart.cshtml"));
+
+        // Landing page â€” where the sign-in flow redirects after login.
+        _templates.RenderToFile("app/IndexModel.Web", model,
+            Path.Combine(webDir, "Pages", "Index.cshtml.cs"));
+        _templates.RenderToFile("app/Index.Web.cshtml", model,
+            Path.Combine(webDir, "Pages", "Index.cshtml"));
+
+        // Typed API clients: always generated. With auth off they still work â€”
+        // TokenRelayHandler passes through and the calls go out anonymously.
+        _templates.RenderToFile("app/ApiClientExtensions.Web", model,
+            Path.Combine(webDir, "ApiClientExtensions.cs"));
+        if (!model.NoExample)
+        {
+            _templates.RenderToFile("ui/ModuleApiClient", model,
+                Path.Combine(webDir, "ApiClients", $"{model.ExampleModule}ApiClient.cs"));
+        }
+
+        // â”€â”€ Authentication (A2.2): password-grant sign-in + token relay â”€â”€
         if (model.UseAuth)
         {
-            // TokenRelayHandler: automatically includes bearer token on API calls
+            _templates.RenderToFile("app/PrincipalCurrentUser", model,
+                Path.Combine(webDir, "Security", "PrincipalCurrentUser.cs"));
             _templates.RenderToFile("app/TokenRelayHandler", model,
-                Path.Combine(webDir, "TokenRelayHandler.cs"));
+                Path.Combine(webDir, "Security", "TokenRelayHandler.cs"));
 
-            // Login page: POSTs credentials to API's /connect/token endpoint
             var accountDir = Path.Combine(webDir, "Pages", "Account");
-            _templates.RenderToFile("app/Login.Web.cshtml.cs", model,
+            _templates.RenderToFile("app/WebAccountViewStart", model,
+                Path.Combine(accountDir, "_ViewStart.cshtml"));
+            _templates.RenderToFile("app/LoginModel.Web", model,
                 Path.Combine(accountDir, "Login.cshtml.cs"));
             _templates.RenderToFile("app/Login.Web.cshtml", model,
                 Path.Combine(accountDir, "Login.cshtml"));
-
-            // API client registration helper (A2.3.1)
-            _templates.RenderToFile("app/ApiClientExtensions.Web", model,
-                Path.Combine(webDir, "ApiClientExtensions.cs"));
+            _templates.RenderToFile("app/LogoutModel.Web", model,
+                Path.Combine(accountDir, "Logout.cshtml.cs"));
+            _templates.RenderToFile("app/Logout.Web.cshtml", model,
+                Path.Combine(accountDir, "Logout.cshtml"));
+            _templates.RenderToFile("app/AccessDeniedModel.Web", model,
+                Path.Combine(accountDir, "AccessDenied.cshtml.cs"));
+            _templates.RenderToFile("app/AccessDenied.Web.cshtml", model,
+                Path.Combine(accountDir, "AccessDenied.cshtml"));
         }
 
         projects.Add($"src/Web/{rootNs}.Web/{rootNs}.Web.csproj");
@@ -498,7 +537,15 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         ProjectFileService.EnsureCsprojPackageReference(
             hostProject, "Cobytelabs.Modulus.Platform", model.FrameworkVersion, Ux.DryRun);
 
-        foreach (var module in ResolveWebInstall(model.UiModules, model.UseTablerTheme))
+        foreach (var id in model.UiModules.Where(IsUnhostableBySplit))
+        {
+            AnsiConsole.MarkupLine(
+                "[grey]Note: UI module '{0}' is not installed on the split Web project â€” its pages drive user stores " +
+                "that only exist in the API host. Serve those screens from a single-project web app instead.[/]",
+                id.EscapeMarkup());
+        }
+
+        foreach (var module in ResolveWebInstall(model.UiModules, model.UseTablerTheme, model.Kind))
         {
             // Add package reference
             var command = $"dotnet add \"{hostProject}\" package \"{module.PackageId}\" --version {module.Version}";
@@ -570,16 +617,40 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
     /// prebuilt module still has its Razor Pages, menu and layout), the chosen UI modules, then the Tabler theme when
     /// requested. Resolves through <see cref="UiModuleCatalog.Find"/> (ids like <c>identity</c> match the module name);
     /// the previous inline lookup compared against the catalog id (<c>Modulus.Identity</c>), never matched, and
-    /// silently wired nothing.
+    /// silently wired nothing. The webapp+api split drops <c>identity</c> and <c>users</c> (their pages drive user
+    /// stores directly, and nothing in the split's Web process can satisfy them â€” the page would 500 on first use);
+    /// the caller reports what was skipped.
     /// </summary>
-    internal static IReadOnlyList<UiModuleDefinition> ResolveWebInstall(IEnumerable<string> uiModuleIds, bool withTheme)
+    internal static IReadOnlyList<UiModuleDefinition> ResolveWebInstall(
+        IEnumerable<string> uiModuleIds, bool withTheme, AppKind kind = AppKind.WebApp)
     {
-        var modules = uiModuleIds.Select(UiModuleCatalog.Find).ToList();
+        var ids = uiModuleIds as IReadOnlyList<string> ?? uiModuleIds.ToList();
+        if (kind == AppKind.WebAppApi && ids.Count > 0)
+        {
+            var kept = new List<string>();
+            foreach (var id in ids)
+            {
+                if (id.Equals("identity", StringComparison.OrdinalIgnoreCase) ||
+                    id.Equals("users", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+                kept.Add(id);
+            }
+            ids = kept;
+        }
+
+        var modules = ids.Select(UiModuleCatalog.Find).ToList();
         modules.Insert(0, UiModuleCatalog.Find("Modulus.UI.Core"));
         if (withTheme)
             modules.Add(UiModuleCatalog.Find(UiCrudWiring.TablerThemeId));
         return modules;
     }
+
+    /// <summary>The UI module ids a webapp+api Web project cannot host (reported when skipped).</summary>
+    internal static bool IsUnhostableBySplit(string uiModuleId) =>
+        uiModuleId.Equals("identity", StringComparison.OrdinalIgnoreCase) ||
+        uiModuleId.Equals("users", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
     /// Validates + normalises a CLI-supplied choice against
@@ -788,11 +859,12 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
                 "until you register one (AddAuthentication().AddJwtBearer(...)) or re-run with --auth openiddict or an external provider. " +
                 "Call AllowAnonymous() in an endpoint's Configure() to open it.",
             "openiddict" =>
-                "Auth is 'openiddict': an Identity module (users, roles, token store) was generated. In Development it creates an admin " +
+                " Auth is 'openiddict': an Identity module (users, roles, token store) was generated. In Development it creates an admin " +
                 "(random password, logged once) and turns the password grant on, so a client can POST /connect/token and call the API with the " +
                 "bearer token." + (kind == AppKind.WebAppApi
-                    ? " The web app also serves the authorization-code + PKCE flow (/connect/authorize, signing in through the Identity UI) " +
-                      "for mobile, desktop and single-page clients; the redirect URIs they may use are Identity:Seed:RedirectUris."
+                    ? " The API host answers bearer tokens only (no login page); the Web project signs users in over the password grant " +
+                      "and relays the token on every page's API call. External clients (mobile, desktop, SPA) do the same; the split's API " +
+                      "has no page to sign users in through, so no code flow is served."
                     : string.Empty) +
                 " Before production: modulus migrate add InitialCreate --module Identity, real signing certificates, " +
                 "Identity:Seed:AdminEmail/AdminPassword from secrets, and Identity:AllowPasswordFlow only for trusted first-party clients.",
@@ -836,14 +908,16 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
     }
 
     /// <summary>
-    /// A web app that signs users in with the local token server needs somewhere to do it: every page is behind the sign-in
-    /// (<c>AddModulusPageAuthorization</c>) and the authorization-code flow sends users to the same page, so the Identity UI is
-    /// part of the app. Returns <paramref name="uiModules"/> with <c>identity</c> added when it is missing.
+    /// A single-project web app that signs users in with the local token server needs somewhere to do it: every page is behind
+    /// the sign-in (<c>AddModulusPageAuthorization</c>) and the authorization-code flow sends users to the same page, so the
+    /// Identity UI is part of the app. The webapp+api split does not need it â€” its Web project carries its own login page (the
+    /// password grant), so installing the Identity UI there would render the framework's account pages on the API host for
+    /// nothing. Returns <paramref name="uiModules"/> with <c>identity</c> added when it is missing.
     /// </summary>
     internal static IReadOnlyList<string> WithSignInPage(AppKind kind, string auth, IReadOnlyList<string> uiModules)
     {
         ArgumentNullException.ThrowIfNull(uiModules);
-        if ((kind is not (AppKind.WebApp or AppKind.WebAppApi))
+        if (kind is not AppKind.WebApp
             || !string.Equals(auth, "openiddict", StringComparison.OrdinalIgnoreCase)
             || uiModules.Contains("identity", StringComparer.OrdinalIgnoreCase))
         {
@@ -943,7 +1017,7 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
 
     /// <summary>
     /// Generates a 4-layer module (Domain, Application, Infrastructure,
-    /// Presentation) — each its own .csproj. DTOs live under
+    /// Presentation) â€” each its own .csproj. DTOs live under
     /// <c>Application/Dtos</c> and integration events under
     /// <c>Application/IntegrationEvents</c>; there are no separate
     /// Contracts / IntegrationEvents / Tests projects. Pass a
@@ -957,7 +1031,7 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         var entityName = m.EntityName ?? "";
         var hasEntity = !string.IsNullOrWhiteSpace(entityName);
 
-        // ── Domain layer ──────────────────────────────────────────
+        // â”€â”€ Domain layer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         var domainDir = Path.Combine(modDir, m.DomainProject);
         _templates.RenderToFile("module/domain.csproj", m,
             Path.Combine(domainDir, $"{m.DomainProject}.csproj"));
@@ -969,7 +1043,7 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
                 Path.Combine(domainDir, $"I{entityName}Repository.cs"));
         }
 
-        // ── Application layer (commands/handlers/queries/DTOs/events) ──
+        // â”€â”€ Application layer (commands/handlers/queries/DTOs/events) â”€â”€
         var appDir = Path.Combine(modDir, m.ApplicationProject);
         _templates.RenderToFile("module/application.csproj", m,
             Path.Combine(appDir, $"{m.ApplicationProject}.csproj"));
@@ -1008,7 +1082,7 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
                 Path.Combine(appDir, "IntegrationEvents", $"{entityName}CreatedIntegrationEvent.cs"));
         }
 
-        // ── Infrastructure layer (composition root) ───────────────
+        // â”€â”€ Infrastructure layer (composition root) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         var infraDir = Path.Combine(modDir, m.InfrastructureProject);
         _templates.RenderToFile("module/infrastructure.csproj", m,
             Path.Combine(infraDir, $"{m.InfrastructureProject}.csproj"));
@@ -1019,7 +1093,7 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
 
         // EF Core: design-time factory so `dotnet ef` / `modulus migrate` can
         // construct the context without the app's DI container. Rendered for
-        // dbsh modules too — `dotnet ef migrations script` is the quickest way
+        // dbsh modules too â€” `dotnet ef migrations script` is the quickest way
         // to bootstrap the initial schema SQL to paste into a V001 migration.
         _templates.RenderToFile("module/Infrastructure/DbContextFactory", m,
             Path.Combine(infraDir, $"{m.ModuleName}DbContextFactory.cs"));
@@ -1044,7 +1118,7 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         _templates.RenderToFile("module/Infrastructure/Module", m,
             Path.Combine(infraDir, $"{m.ModuleName}Module.cs"));
 
-        // ── Presentation layer ────────────────────────────────────
+        // â”€â”€ Presentation layer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         var presDir = Path.Combine(modDir, m.PresentationProject);
         _templates.RenderToFile("module/presentation.csproj", m,
             Path.Combine(presDir, $"{m.PresentationProject}.csproj"));

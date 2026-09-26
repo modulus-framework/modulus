@@ -1,6 +1,6 @@
 using Modulus.UI;
 
-namespace {{ api_namespace }}.Ui;
+namespace {{ ui_namespace }}.Ui;
 
 /// <summary>
 /// App-owned UI sidecar for the {{ module_name }} module: contributes the

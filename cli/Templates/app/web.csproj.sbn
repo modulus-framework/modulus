@@ -4,10 +4,11 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <!-- This is the Web project in a webapp+api split. It serves Razor Pages UI only;
-         all data operations go over HTTP to the API project. No DbContext references. -->
-    <ModulusAppKind>webapp+api-web</ModulusAppKind>
-    <!-- Home for developer secrets in Development. -->
+    <RootNamespace>{{ root_namespace }}.Web</RootNamespace>
+    <!-- Two hosts, one solution: the API project serves the modules and data; this project is the
+         browser-facing presentation host. The kind also lets `modulus ui add` / `modulus add-module`
+         wire this project instead of the API one. -->
+    <ModulusAppKind>webapp+api</ModulusAppKind>
     <UserSecretsId>{{ user_secrets_id }}-web</UserSecretsId>
   </PropertyGroup>
 
@@ -16,15 +17,16 @@
     <PackageReference Include="Cobytelabs.Modulus.Core" Version="{{ framework_version }}" />
     <PackageReference Include="Cobytelabs.Modulus.Platform" Version="{{ framework_version }}" />
     <PackageReference Include="Cobytelabs.Modulus.UI.Core" Version="{{ framework_version }}" />
-{{ if useTablerTheme }}    <PackageReference Include="Cobytelabs.Modulus.UI.Theme.Tabler" Version="{{ framework_version }}" />
-{{ end }}{{ if auth != "none" }}    <!-- Identity is needed only for ASP.NET Core Identity abstractions; the actual
-         token server runs in the API project. -->
+    {{ if use_tabler_theme }}<PackageReference Include="Cobytelabs.Modulus.UI.Theme.Tabler" Version="{{ framework_version }}" />
+    {{ end }}{{ if auth != "none" }}<!-- Permission checks behind the page guards and admin menus (ICurrentUser.HasPermission
+         / the grant store) — no OpenIddict here: the token server lives in the API host. -->
     <PackageReference Include="Cobytelabs.Modulus.Identity" Version="{{ framework_version }}" />
-{{ end }}  </ItemGroup>
+    {{ end }}</ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../../Shared/{{ root_namespace }}.Shared.Application/{{ root_namespace }}.Shared.Application.csproj" />
-    <ProjectReference Include="../../Shared/{{ root_namespace }}.Shared.Presentation/{{ root_namespace }}.Shared.Presentation.csproj" />
-  </ItemGroup>
+    <ProjectReference Include="../../API/{{ root_namespace }}.Api/{{ root_namespace }}.Api.csproj" />
+{{ if !no_example }}    <!-- DTOs the admin pages bind (the typed clients live in this project's ApiClients/). -->
+    <ProjectReference Include="../../Modules/{{ root_namespace }}.Modules.{{ example_module }}/{{ root_namespace }}.Modules.{{ example_module }}.Application/{{ root_namespace }}.Modules.{{ example_module }}.Application.csproj" />
+{{ end }}  </ItemGroup>
 
 </Project>

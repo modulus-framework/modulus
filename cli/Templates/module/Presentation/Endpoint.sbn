@@ -1,8 +1,9 @@
 using Modulus.AspNetCore.Endpoints;
 {{ if has_api_extra_fields }}using Modulus.Core.Abstractions;
 using Modulus.Core.Abstractions.Exceptions;
-{{ end }}using Modulus.Mediator.Abstractions;
-{{ if has_api_extra_fields }}using Modulus.UI;
+using Modulus.Mediator.Abstractions;
+using Modulus.UI;
+{{ else }}using Modulus.Mediator.Abstractions;
 {{ end }}using {{ module_namespace }}.Application;
 using {{ module_namespace }}.Application.Dtos;
 
@@ -90,7 +91,7 @@ public sealed class Create{{ entity_name }}Endpoint(IMediator mediator{{ if has_
 
         var extra = registry.ReadSubmittedEntityFieldText({{ entity_name }}ExtraProperties.Entity, user, req.ExtraProperties);
         var id = await mediator.SendAsync(new Create{{ entity_name }}Command(req.Name, extra), ct);
-{{ else }}        var id = await mediator.SendAsync(new Create{{ entity_name }}Command(req.Name), ct);
+{{ else }}        var id = await mediator.SendAsync(new Create{{ entity_name }}Command(req.Name{{ if has_api_extra_fields }}, req.ExtraProperties{{ end }}), ct);
 {{ end }}        await SendCreatedAsync(id, $"/api/{{ module_name_lower }}/{{ route_name }}/{id}", ct);
     }
 }
@@ -124,7 +125,7 @@ public sealed class Update{{ entity_name }}Endpoint(IMediator mediator{{ if has_
 
         var extra = registry.ReadSubmittedEntityFieldText({{ entity_name }}ExtraProperties.Entity, user, req.ExtraProperties);
         var result = await mediator.SendAsync(new Update{{ entity_name }}Command(req.Id, req.Name, extra), ct);
-{{ else }}        var result = await mediator.SendAsync(new Update{{ entity_name }}Command(req.Id, req.Name), ct);
+{{ else }}        var result = await mediator.SendAsync(new Update{{ entity_name }}Command(req.Id, req.Name{{ if has_api_extra_fields }}, req.ExtraProperties{{ end }}), ct);
 {{ end }}        await SendOkAsync(result, ct);
     }
 }
@@ -149,3 +150,23 @@ public sealed class Delete{{ entity_name }}Endpoint(IMediator mediator) : Endpoi
         await SendNoContentAsync(ct);
     }
 }
+{{ if has_api_extra_fields }}
+/// <summary>
+/// Describes the {{ entity_name_lower }} form's extension fields the current caller may see (a UI schema, not data):
+/// what a split web app's pages — which cannot read this host's <c>IEntityUiRegistry</c> — render their forms
+/// from, and what external clients may send in <c>extraProperties</c>. The server has already filtered the fields
+/// by permission, so the schema never names a field the caller must not see; it is empty when nothing is contributed.
+/// </summary>
+public sealed class Get{{ entity_name }}UiSchemaEndpoint(IEntityUiRegistry registry, ICurrentUser user) : EndpointWithoutRequest<EntityUiSchema>
+{
+    public override void Configure()
+    {
+        Get("/api/{{ module_name_lower }}/{{ route_name }}/ui-schema");
+        Summary("The {{ entity_name_lower }} form fields (extension fields) the current caller may see");
+{{ if required_permission }}        Permissions("{{ required_permission }}");
+{{ end }}    }
+
+    protected override async Task HandleAsync(CancellationToken ct)
+        => await SendOkAsync(registry.ToUiSchema({{ entity_name }}ExtraProperties.Entity, user), ct);
+}
+{{ end }}

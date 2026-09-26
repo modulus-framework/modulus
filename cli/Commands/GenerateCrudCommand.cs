@@ -79,6 +79,8 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
             EntityName = entity,
             EntityNameLower = entityLower,
             RouteName = routeName,
+            // For webapp+api kind, the UI pages live in the Web project; otherwise in the API project.
+            UiNamespace = kind == AppKind.WebAppApi ? $"{module.RootNamespace}.Web" : $"{module.RootNamespace}.Api",
         };
         model.HasApiExtraFields = ExposesExtraFieldsInApi(kind, domainDir, appDir, presDir, entity, plural);
 
@@ -169,7 +171,7 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
 
         // ── Host UI companion (default for a web app, opt-in for an unmarked host) ──
         if (withUi)
-            GenerateUiCompanion(module, model, host, withTheme: !s.NoTheme, generated, skipped);
+            GenerateUiCompanion(module, model, host, kind, withTheme: !s.NoTheme, generated, skipped);
         else if (model.RequiredPermission is not null)
             EnsureApiPermission(module, model, host, generated);
 
@@ -219,24 +221,47 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
 
     /// <summary>
     /// Prefers the discovered host paths (custom layouts); falls back to the generated-app convention when there is no
-    /// <c>.slnx</c> (e.g. tests).
+    /// <c>.slnx</c> (e.g. tests). For webapp+api kind, routes to the Web project; for others, routes to the API project.
     /// </summary>
     private static HostFiles ResolveHost(CodeGen.ModuleInfo module)
     {
         var inventory = ModuleDiscovery.Inventory(Environment.CurrentDirectory);
-        var apiDir = inventory?.ApiProjectPath is { Length: > 0 } apiProject
-                && File.Exists(apiProject)
-            ? Path.GetDirectoryName(apiProject)!
-            : Path.Combine(Environment.CurrentDirectory, "src", "API", $"{module.RootNamespace}.Api");
-        var apiCsproj = inventory?.ApiProjectPath is { Length: > 0 } project
-                && File.Exists(project)
-            ? project
-            : Path.Combine(apiDir, $"{module.RootNamespace}.Api.csproj");
-        var programCs = inventory?.ProgramCsPath is { Length: > 0 } program
-                && File.Exists(program)
-            ? program
-            : Path.Combine(apiDir, "Program.cs");
-        return new HostFiles(apiDir, apiCsproj, programCs);
+        var kind = inventory?.Kind;
+
+        // For webapp+api, generate the UI in the Web project; for all other kinds (api, webapp, or unmarked), use the API project.
+        var isWebProjectHost = kind == AppKind.WebAppApi;
+
+        var hostDir = isWebProjectHost && inventory?.WebProjectPath is { Length: > 0 } wp1
+                && File.Exists(wp1)
+            ? Path.GetDirectoryName(wp1)!
+            : isWebProjectHost && !string.IsNullOrEmpty(inventory?.WebProjectPath)
+            ? Path.GetDirectoryName(inventory.WebProjectPath)!
+            : inventory?.ApiProjectPath is { Length: > 0 } ap1
+                && File.Exists(ap1)
+            ? Path.GetDirectoryName(ap1)!
+            : Path.Combine(Environment.CurrentDirectory, "src", isWebProjectHost ? "Web" : "API", $"{module.RootNamespace}.{(isWebProjectHost ? "Web" : "Api")}");
+
+        var hostCsproj = isWebProjectHost && inventory?.WebProjectPath is { Length: > 0 } wp2
+                && File.Exists(wp2)
+            ? wp2
+            : isWebProjectHost && !string.IsNullOrEmpty(inventory?.WebProjectPath)
+            ? inventory.WebProjectPath!
+            : inventory?.ApiProjectPath is { Length: > 0 } ap2
+                && File.Exists(ap2)
+            ? ap2
+            : Path.Combine(hostDir, $"{module.RootNamespace}.{(isWebProjectHost ? "Web" : "Api")}.csproj");
+
+        var programCs = isWebProjectHost && inventory?.WebProgramCsPath is { Length: > 0 } wp3
+                && File.Exists(wp3)
+            ? wp3
+            : isWebProjectHost && !string.IsNullOrEmpty(inventory?.WebProgramCsPath)
+            ? inventory.WebProgramCsPath!
+            : inventory?.ProgramCsPath is { Length: > 0 } ap3
+                && File.Exists(ap3)
+            ? ap3
+            : Path.Combine(hostDir, "Program.cs");
+
+        return new HostFiles(hostDir, hostCsproj, programCs);
     }
 
     /// <summary>
@@ -262,11 +287,11 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
 
     /// <summary>
     /// Scaffolds the HTMX admin page + sidebar entry for the entity in the
-    /// host API project (Web SDK compiles <c>Pages/</c> with no csproj SDK
+    /// host project (Web SDK compiles <c>Pages/</c> with no csproj SDK
     /// changes; no new projects, so the <c>.slnx</c> is untouched):
     /// <list type="bullet">
     /// <item><c>Pages/{module}/{route}/Index.cshtml(.cs)</c> + table/form
-    /// partials driving the module's mediator handlers;</item>
+    /// partials driving the module's mediator handlers (API project) or typed HTTP clients (Web project);</item>
     /// <item><c>Pages/_ViewImports.cshtml</c> + <c>_ViewStart.cshtml</c> shell
     /// chrome (once per host, mirroring the sidecar <c>Pages/</c> convention);</item>
     /// <item><c>Ui/{Module}UiModule.cs</c>, a <c>CustomUiModule</c> nav sidecar
@@ -284,6 +309,7 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
         CodeGen.ModuleInfo module,
         ModuleModel model,
         HostFiles host,
+        AppKind? kind,
         bool withTheme,
         List<string> generated,
         List<string> skipped)
@@ -319,9 +345,12 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
 
         // ── Razor Pages (route: /{module}/{route}) ────────────────
         var pageDir = Path.Combine(apiDir, "Pages", model.ModuleNameLower, route);
+        var isWebProject = kind == AppKind.WebAppApi;
+        var pageModelTemplate = isWebProject ? "ui/CrudIndexPageModel.Http" : "ui/CrudIndexPageModel";
+
         WriteIfMissing("ui/CrudIndexCshtml", model,
             Path.Combine(pageDir, "Index.cshtml"), generated, skipped);
-        WriteIfMissing("ui/CrudIndexPageModel", model,
+        WriteIfMissing(pageModelTemplate, model,
             Path.Combine(pageDir, "Index.cshtml.cs"), generated, skipped);
         WriteIfMissing("ui/CrudFormPartial", model,
             Path.Combine(pageDir, "_CreateForm.cshtml"), generated, skipped);
@@ -368,14 +397,23 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
         if (uiCoreAdded || platformAdded || themeAdded)
             generated.Add(CodeGen.Rel(apiDir, $"{module.RootNamespace}.Api.csproj (updated)"));
 
+        // ── webapp+api split: the Web project talks to the module over HTTP ──
+        if (isWebProject)
+        {
+            EnsureWebApiClient(module, model, apiDir, apiCsproj, generated, skipped);
+        }
+
         // ── Host wiring ───────────────────────────────────────────
         if (!File.Exists(programCs))
             throw new InvalidOperationException(
                 $"The admin UI needs Program.cs at '{programCs}' to register the UI module.");
 
         var original = File.ReadAllText(programCs);
+        // The namespace the wiring's usings/registrations anchor to is the UI
+        // host's root namespace: the Web project for the split, the API host
+        // otherwise.
         var wired = UiCrudWiring.EnsureHostWiring(
-            original, model.ApiNamespace, module.Name, withTheme, model.RequiredPermission,
+            original, model.UiNamespace, module.Name, withTheme, model.RequiredPermission,
             UiAccessGates.CrudPermissionDescription(model.EntityPlural ?? module.Name));
 
         if (wired != original)
@@ -390,6 +428,55 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
         AnsiConsole.MarkupLine(withTheme
             ? "[grey]  Theme: Tabler (AddTablerTheme). Pass --no-theme to keep Core's built-in layout.[/]"
             : "[grey]  Theme: none installed (--no-theme); pages use Core's built-in layout unless you register an ITheme.[/]");
+    }
+
+    /// <summary>
+    /// webapp+api only: the Web project's typed client for this module's API endpoints
+    /// (<c>ApiClients/{module_name}ApiClient.cs</c>), the module Application-project reference
+    /// its page models compile against (they bind the module's DTOs), and the client's
+    /// registration inside the Web project's <c>AddModuleApiClients</c>. Idempotent like
+    /// everything else here: the client file is never overwritten and the other two steps
+    /// no-op when already present.
+    /// </summary>
+    private void EnsureWebApiClient(
+        CodeGen.ModuleInfo module,
+        ModuleModel model,
+        string webDir,
+        string webCsproj,
+        List<string> generated,
+        List<string> skipped)
+    {
+        WriteIfMissing("ui/ModuleApiClient", model,
+            Path.Combine(webDir, "ApiClients", $"{module.Name}ApiClient.cs"), generated, skipped);
+
+        var applicationCsproj = Path.Combine(
+            CodeGen.LayerDir(module.Directory, module.Namespace, "Application"),
+            $"{module.Namespace}.Application.csproj");
+        if (File.Exists(applicationCsproj) &&
+            ProjectFileService.EnsureCsprojProjectReference(webCsproj, applicationCsproj, Ux.DryRun))
+        {
+            generated.Add(CodeGen.Rel(webDir, $"{Path.GetFileName(webCsproj)} (updated)"));
+        }
+
+        var apiClientExtensions = Path.Combine(webDir, "ApiClientExtensions.cs");
+        if (!File.Exists(apiClientExtensions))
+            return;
+
+        UpdateExisting(apiClientExtensions, webDir, generated, text =>
+        {
+            if (text.Contains($"<{module.Name}ApiClient>", StringComparison.Ordinal))
+                return text;
+
+            var registration =
+                $"        services.AddModulusHttpClient<{module.Name}ApiClient>()\n" +
+                "            .AddHttpMessageHandler<TokenRelayHandler>();\n";
+            var anchor = "        return services;";
+            var index = text.IndexOf(anchor, StringComparison.Ordinal);
+            if (index < 0)
+                return text;
+
+            return text[..index] + registration + "\n" + text[index..];
+        });
     }
 
     /// <summary>

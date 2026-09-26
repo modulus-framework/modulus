@@ -1,17 +1,17 @@
 {{ if required_permission }}using Microsoft.AspNetCore.Authorization;
 {{ end }}using Microsoft.AspNetCore.Mvc;
 using Modulus.Core.Abstractions;
-using Modulus.Mediator.Abstractions;
 using Modulus.UI;
-using {{ module_namespace }}.Application;
 using {{ module_namespace }}.Application.Dtos;
+using {{ module_namespace }};
+using {{ ui_namespace }}.ApiClients;
 
 namespace {{ ui_namespace }}.Pages.{{ module_name }}.{{ entity_plural }};
 
 /// <summary>
 /// {{ entity_plural }} admin page (<c>/{{ module_name_lower }}/{{ route_name }}</c>):
-/// list + inline create + row delete over the {{ module_name }} mediator
-/// handlers. Mutations keep the classic redirect flow for non-JS callers and
+/// list + inline create + row delete over HTTP to the {{ module_name }} API.
+/// Mutations keep the classic redirect flow for non-JS callers and
 /// swap the table fragment with a toast for HTMX callers; validation failures
 /// re-render the create form with a 422 (see <c>modulus-ui.js</c>). Columns and row
 /// actions other modules contribute to <see cref="EntityKey"/> through
@@ -21,9 +21,9 @@ namespace {{ ui_namespace }}.Pages.{{ module_name }}.{{ entity_plural }};
 {{- if required_permission }}
 [Authorize(Policy = "{{ required_permission }}")]
 {{- end }}
-public sealed class IndexModel(IMediator mediator, IEntityUiRegistry entityUi, ICurrentUser currentUser) : HtmxPageModel
+public sealed class IndexModel({{ module_name }}ApiClient apiClient, IEntityUiRegistry entityUi, ICurrentUser currentUser) : HtmxPageModel
 {
-    private readonly IMediator _mediator = mediator;
+    private readonly {{ module_name }}ApiClient _apiClient = apiClient;
     private readonly IEntityUiRegistry _entityUi = entityUi;
     private readonly ICurrentUser _currentUser = currentUser;
 
@@ -50,12 +50,15 @@ public sealed class IndexModel(IMediator mediator, IEntityUiRegistry entityUi, I
     /// <summary>Loads the edit modal for one row, pre-filled with the stored values (including extension fields).</summary>
     public async Task<IActionResult> OnGetEditAsync(Guid id, CancellationToken ct)
     {
-        var item = await _mediator.QueryAsync(new Get{{ entity_name }}ForEditQuery(id), ct);
+        var item = await _apiClient.GetByIdAsync(id, ct);
+        if (item is null)
+            return NotFound();
+
         Edit = new EditInput
         {
             Id = item.Id,
             Name = item.Name,
-            Extra = new Dictionary<string, string?>(item.ExtraProperties),
+            Extra = new Dictionary<string, string?>({{ if has_api_extra_fields }}item.ExtraProperties ?? []{{ else }}[]{{ end }}),
         };
         return HtmxPartial("_EditForm", this);
     }
@@ -74,7 +77,7 @@ public sealed class IndexModel(IMediator mediator, IEntityUiRegistry entityUi, I
         return await HandleAsync(
             async () =>
             {
-                await _mediator.SendAsync(new Update{{ entity_name }}Command(Edit.Id, Edit.Name, extra), ct);
+                await _apiClient.UpdateAsync(Edit.Id, new Update{{ entity_name }}Dto { Name = Edit.Name, ExtraProperties = extra }, ct);
                 await LoadAsync(ct);
             },
             "_EditForm",
@@ -109,7 +112,7 @@ public sealed class IndexModel(IMediator mediator, IEntityUiRegistry entityUi, I
         return await HandleAsync(
             async () =>
             {
-                await _mediator.SendAsync(new Create{{ entity_name }}Command(Input.Name{{ if has_extra_fields }}, extra{{ end }}), ct);
+                await _apiClient.CreateAsync(new Create{{ entity_name }}Dto { Name = Input.Name{{ if has_extra_fields }}, ExtraProperties = extra{{ end }} }, ct);
                 await LoadAsync(ct);
             },
             "_CreateForm",
@@ -125,7 +128,7 @@ public sealed class IndexModel(IMediator mediator, IEntityUiRegistry entityUi, I
 
     public async Task<IActionResult> OnPostDeleteAsync(Guid id, CancellationToken ct)
     {
-        await _mediator.SendAsync(new Delete{{ entity_name }}Command(id), ct);
+        await _apiClient.DeleteAsync(id, ct);
         await LoadAsync(ct);
 
         if (!IsHtmxRequest)
@@ -137,7 +140,7 @@ public sealed class IndexModel(IMediator mediator, IEntityUiRegistry entityUi, I
 
     private async Task LoadAsync(CancellationToken ct)
     {
-        Items = await _mediator.QueryAsync(new Get{{ entity_plural }}Query(), ct);
+        Items = await _apiClient.GetAsync(cancellationToken: ct);
         ColumnValues = await _entityUi.LoadEntityColumnsAsync(
             HttpContext.RequestServices, EntityKey, _currentUser, Items.Select(i => i.Id.ToString()), ct);
     }

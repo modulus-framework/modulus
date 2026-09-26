@@ -1,5 +1,6 @@
-@namespace {{ ui_namespace }}.Pages
-@using {{ ui_namespace }}.Pages
+@using {{ root_namespace }}.Web
 @using Modulus.UI
+@using Modulus.UI.Theming
+@namespace {{ root_namespace }}.Web.Pages
 @addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
 @addTagHelper *, Modulus.UI.Core

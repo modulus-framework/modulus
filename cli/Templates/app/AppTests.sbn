@@ -13,6 +13,8 @@ using Modulus.Testing.Assertions;
 using Modulus.Testing.Architecture;
 using Modulus.Testing.Fakes;
 {{ if !no_example }}using {{ root_namespace }}.Modules.{{ example_module }}.Infrastructure;
+{{ end }}using ApiEntryPoint = {{ root_namespace }}.Api.ApiEntryPoint;
+{{ if kind_name == "webapp+api" }}using WebEntryPoint = {{ root_namespace }}.Web.WebEntryPoint;
 {{ end }}
 namespace {{ root_namespace }}.Tests;
 
@@ -33,7 +35,7 @@ public sealed class AppSmokeTest
 {{ if !no_example }}            modules.AddModule<{{ example_module }}Module>();
 {{ end }}        });
         builder.Services.AddMediator();
-        builder.Services.AddModulusEvents(typeof(Program).Assembly);
+        builder.Services.AddModulusEvents(typeof(ApiEntryPoint).Assembly);
 
         using var host = builder.Build();
         using var scope = host.Services.CreateScope();
@@ -49,14 +51,14 @@ public sealed class AppSmokeTest
 {{ end }}    }
 }
 
-/// <summary>
+{{ if expose_api }}/// <summary>
 /// HTTP integration tests that drive the real host through
 /// <see cref="ModulusWebAppFactory{TEntryPoint}"/>: the full middleware
 /// pipeline (correlation, idempotency, …) is active and every module DbContext
 /// runs against an isolated in-memory SQLite database — no real database needed.
 /// </summary>
-public sealed class ApiIntegrationTests(ModulusWebAppFactory<Program> factory)
-    : IClassFixture<ModulusWebAppFactory<Program>>
+public sealed class ApiIntegrationTests(ModulusWebAppFactory<ApiEntryPoint> factory)
+    : IClassFixture<ModulusWebAppFactory<ApiEntryPoint>>
 {
     [Fact]
     public async Task Health_Live_ReturnsOk()
@@ -96,7 +98,50 @@ public sealed class ApiIntegrationTests(ModulusWebAppFactory<Program> factory)
     }
 {{ end }}{{ end }}
 }
+{{ end }}
 
+{{ if kind_name == "webapp+api" || kind_name == "web" }}{{ web_entry = kind_name == "webapp+api" }}/// <summary>
+/// Boots the{{ if web_entry }} split's Web host — a presentation shell only (no DbContexts, no
+/// modules; pages call the API over HTTP){{ else }} web host{{ end }}. The assertions are adjusted for
+/// the test harness: <see cref="ModulusWebAppFactory{TEntryPoint}"/> forces its
+/// test scheme as the default challenge, so an anonymous hit on a protected
+/// page comes back 401 (challenge happened) rather than the cookie scheme's
+/// redirect — the redirect itself is exercised by the login flow in a browser.
+/// </summary>
+public sealed class WebAppSmokeTest(ModulusWebAppFactory<{{ if web_entry }}WebEntryPoint{{ else }}ApiEntryPoint{{ end }}> factory)
+    : IClassFixture<ModulusWebAppFactory<{{ if web_entry }}WebEntryPoint{{ else }}ApiEntryPoint{{ end }}>>
+{
+    [Fact]
+    public async Task Root_ChallengesAnonymousCallers()
+    {
+        var client = factory.CreateClient();
+
+        var response = await client.GetAsync("/");
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task LoginPage_IsAnonymous()
+    {
+        var client = factory.CreateClient();
+
+        var response = await client.GetAsync("/Account/Login");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task SignedInUser_ReachesTheLandingPage()
+    {
+        var client = factory.CreateAuthenticatedClient();
+
+        var response = await client.GetAsync("/");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+}
+{{ end }}
 /// <summary>
 /// Architecture tests that enforce module boundaries. These verify that your
 /// modular monolith respects the module system: every integration event has a

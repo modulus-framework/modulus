@@ -1,5 +1,5 @@
 @page
-@model {{ api_namespace }}.Pages.{{ module_name }}.{{ entity_plural }}.IndexModel
+@model {{ ui_namespace }}.Pages.{{ module_name }}.{{ entity_plural }}.IndexModel
 @{
     ViewData["Title"] = "{{ entity_plural }}";
     // HTMX fragment callers swap the inner content; full navigations get the

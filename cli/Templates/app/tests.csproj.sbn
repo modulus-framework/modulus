@@ -10,7 +10,8 @@
 
   <ItemGroup>
     <ProjectReference Include="../../src/API/{{ root_namespace }}.Api/{{ root_namespace }}.Api.csproj" />
-  </ItemGroup>
+{{ if kind_name == "webapp+api" }}    <ProjectReference Include="../../src/Web/{{ root_namespace }}.Web/{{ root_namespace }}.Web.csproj" />
+{{ end }}  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.6.0" />

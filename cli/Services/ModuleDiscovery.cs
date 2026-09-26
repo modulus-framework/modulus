@@ -81,6 +81,16 @@ internal static partial class ModuleDiscovery
             ? Path.Combine(Path.GetDirectoryName(apiCsproj)!, "Program.cs")
             : "";
 
+        // The split's second project: src/Web/{RootNs}.Web. Discovered whenever it exists (the csproj's
+        // ModulusAppKind is the authoritative kind, read from the API project above).
+        var webDir = Path.Combine(solutionDir, "src", "Web");
+        var webCsproj = Directory.Exists(webDir)
+            ? Directory.EnumerateFiles(webDir, "*.Web.csproj", SearchOption.AllDirectories).FirstOrDefault()
+            : null;
+        var webProgramCs = webCsproj is not null
+            ? Path.Combine(Path.GetDirectoryName(webCsproj)!, "Program.cs")
+            : null;
+
         return new AppInventory
         {
             SolutionPath = slnx,
@@ -88,6 +98,8 @@ internal static partial class ModuleDiscovery
             RootNamespace = rootNs,
             ApiProjectPath = apiCsproj ?? "",
             ProgramCsPath = programCs,
+            WebProjectPath = webCsproj,
+            WebProgramCsPath = webProgramCs,
             Kind = AppKinds.Read(apiCsproj),
             Modules = FindModules(solutionDir, rootNs),
         };

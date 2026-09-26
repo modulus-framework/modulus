@@ -96,13 +96,25 @@ public sealed class AppKindTests : IDisposable
         webappInventory.UiProjectPath.Should().Be(webappInventory.ApiProjectPath);
         webappInventory.UiProgramCsPath.Should().Be(webappInventory.ProgramCsPath);
 
-        // For webapp+api, would route to Web project (when WebProjectPath is set in Phase A2)
+        // For webapp+api with a Web project on disk, they route to the Web project
         File.Delete(Path.Combine(_root, "src", "API", "Shop.Api", "Shop.Api.csproj"));
         WriteApp("webapp+api");
+        WriteWebProject();
         var webappApiInventory = ModuleDiscovery.Inventory(_root)!;
-        // For now, Web project is not discovered, so it falls back to API project
-        webappApiInventory.WebProjectPath.Should().BeNullOrEmpty("Phase A2 implements web project discovery");
-        webappApiInventory.UiProjectPath.Should().Be(webappApiInventory.ApiProjectPath, "fallback when no web project");
+        webappApiInventory.WebProjectPath.Should().EndWith("Shop.Web.csproj");
+        webappApiInventory.WebProgramCsPath.Should().EndWith("Program.cs");
+        webappApiInventory.UiProjectPath.Should().Be(webappApiInventory.WebProjectPath);
+        webappApiInventory.UiProgramCsPath.Should().Be(webappApiInventory.WebProgramCsPath);
+    }
+
+    private string WriteWebProject()
+    {
+        var webDir = Path.Combine(_root, "src", "Web", "Shop.Web");
+        Directory.CreateDirectory(webDir);
+        var csproj = Path.Combine(webDir, "Shop.Web.csproj");
+        File.WriteAllText(csproj, "<Project Sdk=\"Microsoft.NET.Sdk.Web\"></Project>");
+        File.WriteAllText(Path.Combine(webDir, "Program.cs"), "var app = WebApplication.Create();");
+        return csproj;
     }
 
     // ── modulus app ──────────────────────────────────────────────
@@ -179,8 +191,56 @@ public sealed class AppKindTests : IDisposable
         note.Should().Contain("Identity module").And.Contain("password grant").And.Contain("migrate add InitialCreate --module Identity")
             .And.Contain("Identity:AllowPasswordFlow").And.NotContain("PKCE", "an api app has no login page for the flow");
         NewAppCommand.AuthNote("openiddict", AppKind.WebApp).Should().NotContain("authorization-code", "a webapp has no separate API");
-        NewAppCommand.AuthNote("openiddict", AppKind.WebAppApi).Should().Contain("authorization-code + PKCE").And.Contain("Identity:Seed:RedirectUris");
+        NewAppCommand.AuthNote("openiddict", AppKind.WebAppApi).Should().Contain("bearer tokens only").And.Contain("password grant")
+            .And.NotContain("authorization-code", "the split's API host has no login page to drive the flow");
         NewAppCommand.AuthNote("keycloak", AppKind.WebApp).Should().BeNull();
+    }
+
+    // ── webapp+api: what the split can host ──────────────────────
+
+    [Fact]
+    public void The_split_web_project_installs_the_ui_foundation_but_skips_identity_and_users()
+    {
+        var split = NewAppCommand.ResolveWebInstall(
+            ["identity", "users", "settings"], withTheme: false, AppKind.WebAppApi);
+        var single = NewAppCommand.ResolveWebInstall(
+            ["identity", "users", "settings"], withTheme: false, AppKind.WebApp);
+
+        split.Select(m => m.Id).Should().BeEquivalentTo(
+            ["Modulus.UI.Core", "Modulus.Settings"],
+            "the split's pages drive the API over HTTP, so no user-store UI can run in-process");
+        single.Select(m => m.Id).Should().BeEquivalentTo(
+            ["Modulus.UI.Core", "Modulus.Identity", "Modulus.Users", "Modulus.Settings"]);
+    }
+
+    [Fact]
+    public void The_split_web_project_installs_the_theme_last_and_the_foundation_first()
+    {
+        var modules = NewAppCommand.ResolveWebInstall(["settings"], withTheme: true, AppKind.WebAppApi);
+
+        modules.First().Id.Should().Be("Modulus.UI.Core");
+        modules.Last().Id.Should().Be("Modulus.Theme.Tabler");
+    }
+
+    [Theory]
+    [InlineData("identity", true)]
+    [InlineData("users", true)]
+    [InlineData("Identity", true)]
+    [InlineData("settings", false)]
+    [InlineData("tenancy", false)]
+    public void Only_identity_and_users_are_unhostable_by_the_split(string id, bool unhostable)
+        => NewAppCommand.IsUnhostableBySplit(id).Should().Be(unhostable);
+
+    [Fact]
+    public void Only_a_single_web_app_gets_the_identity_ui_added_for_the_sign_in_page()
+    {
+        // The split's Web project carries its own password-grant login page.
+        NewAppCommand.WithSignInPage(AppKind.WebApp, "openiddict", []).Should().Equal("identity");
+        NewAppCommand.WithSignInPage(AppKind.WebAppApi, "openiddict", []).Should().BeEmpty();
+        NewAppCommand.WithSignInPage(AppKind.Api, "openiddict", []).Should().BeEmpty();
+        NewAppCommand.WithSignInPage(AppKind.WebApp, "keycloak", []).Should().BeEmpty();
+        NewAppCommand.WithSignInPage(AppKind.WebApp, "openiddict", ["identity"])
+            .Should().ContainSingle("already present, so not duplicated").Which.Should().Be("identity");
     }
 
     [Theory]
@@ -240,6 +300,11 @@ public sealed class AppKindTests : IDisposable
         File.Delete(Path.Combine(_root, "src", "API", "Shop.Api", "Shop.Api.csproj"));
         WriteApp("webapp");
         UiEject.ResolveApiDir(_root).Should().EndWith("Shop.Api");
+
+        File.Delete(Path.Combine(_root, "src", "API", "Shop.Api", "Shop.Api.csproj"));
+        WriteApp("webapp+api");
+        WriteWebProject();
+        UiEject.ResolveApiDir(_root).Should().EndWith("Shop.Web", "the split's view overrides live in the Web project");
 
         WriteApp(null);
         UiEject.ResolveApiDir(_root).Should().EndWith("Shop.Api");

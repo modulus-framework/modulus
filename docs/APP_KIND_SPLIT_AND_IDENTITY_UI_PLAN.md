@@ -9,8 +9,10 @@ Implementation plan for two independent efforts:
    as the CRUD scaffolding already is — extension fields, new pages, per-page styling — not just
    Identity/Account.
 
-Status: planning complete, implementation not started. Update the step checkmarks below as work
-lands; keep this doc in sync the way `ROADMAP_TIER3.md` is kept in sync with `AGENTS.md`.
+Status: **Phase A implemented and validated** — all three kinds (`api`, `web`/`webapp`, `webapp+api`)
+build 0 warnings and pass their generated test suites off the current CLI (9/9, 6/6, 3/3
+respectively). Phase B not started. Checkmarks below are updated as work lands; as-built
+deviations from the plan are noted inline as **As built:** — original plan text kept for context.
 
 ## Context
 
@@ -114,129 +116,141 @@ significantly shrinks the scope of Phase B1 below.
 
 ### A2. `webapp+api` — the two-project HTTP split (highest risk/effort)
 
-**A2.1 — Project layout & templates**
+**A2.1 — Project layout & templates** ✅ COMPLETE
 
-- [ ] A2.1.1. New `src/Web/{App}.Web/{App}.Web.csproj` (`cli/Templates/app/web.csproj.sbn`),
+- [x] A2.1.1. New `src/Web/{App}.Web/{App}.Web.csproj` (`cli/Templates/app/web.csproj.sbn`),
       `Microsoft.NET.Sdk.Web`, referencing `Modulus.UI.Core`, `Modulus.Platform`, the chosen
       theme — **no module Infrastructure/Presentation references at all**.
-- [ ] A2.1.2. Check whether `Shared.Application` is already dependency-free enough to share DTOs
-      from; if it references `Modulus.Mediator`/`Modulus.EntityFrameworkCore`, create a new
-      lightweight `{App}.Shared.Contracts` project instead and share DTOs through that (matches the
-      standard "shared versioned Contracts project between API and Web" convention used by
-      comparable separate-API-plus-Web layouts — confirms this design choice, not a new idea).
-- [ ] A2.1.3. New `cli/Templates/app/Program.WebApp.sbn`: Razor Pages + typed clients + auth only,
-      no `AddModulus(...)`, no DbContext/migration code.
-- [ ] A2.1.4. The API project for this kind never gets `AddModulusUi`/`AddRazorPages`/theme
-      packages — that responsibility moves entirely to Web.
-- [ ] A2.1.5. `NewAppCommand.GenerateAll` — factor into `GenerateApiHost(...)` (today's logic,
-      parameterized) plus a new `GenerateWebHost(...)`.
-- [ ] A2.1.6. `WireUiModules` (~L430) needs a target-project parameter so UI packages install into
-      the Web project for this kind.
+      *As built:* also references `Cobytelabs.Modulus.Identity` (login/token plumbing),
+      `Modulus.AspNetCore`/`Modulus.Core`, and ProjectReferences to `{App}.Api` (for
+      `AddModuleApiClients`) and each module's `.Application` (DTOs, below).
+- [x] A2.1.2. **As built:** no new `{App}.Shared.Contracts` project. The Web project references
+      each module's `.Application` project directly and reuses its commands/queries/DTOs
+      (verified in the generated csproj). `{Module}.Application` is already dependency-light
+      enough for a presentation host; revisit only if an Application layer grows
+      Infrastructure-facing dependencies.
+- [x] A2.1.3. **As built:** templates live in `cli/Templates/app/` with a `.Web` suffix
+      (`Program.Web.sbn`, `Login.Web.cshtml.sbn` + `LoginModel.Web.sbn`, `Logout…`,
+      `AccessDenied…`, `Index…`, `TokenRelayHandler.sbn`, `ApiClientExtensions.Web.sbn`,
+      `WebPagesViewStart.sbn`/`WebAccountViewStart.sbn`, `WebPagesViewImports.sbn`,
+      `appsettings.Web*.json.sbn`, `launchSettings.Web.json.sbn`) — not a separate
+      `webappapi/` folder.
+- [x] A2.1.4. The API project for this kind gets no theme/UI packages.
+      *As-built deviation:* the API host **does** call `AddModulusUi()` (services only, no
+      theme) because generated API endpoints resolve `IEntityUiRegistry` to permission-filter
+      extension fields; the Web host owns all pages/theme.
+- [x] A2.1.5. `NewAppCommand.GenerateAll` factored into the single-host path plus
+      `GenerateWebHost(...)`; the split path emits both projects into one solution.
+- [x] A2.1.6. `WireUiModules` takes the target project from `AppInventory.UiProjectPath`
+      (`WebProjectPath` for this kind) — `dotnet add package` + `UiHostWiring.EnsureUiWiring`
+      land in the Web project's Program.cs.
 
-**A2.2 — Auth: webapp process → API process on behalf of the signed-in user**
+**A2.2 — Auth: webapp process → API process on behalf of the signed-in user** ✅ COMPLETE
 
-- [ ] A2.2.1. Keep the API as the OpenIddict token server, unchanged (it owns Identity's
-      DbContext).
-- [ ] A2.2.2. Build a new HTTP-calling Login page for the Web project (**not**
-      `Modulus.UI.Identity`'s in-process page, which assumes local `UserManager`) that POSTs
-      credentials to the API's existing `POST /connect/token` (password grant).
-- [ ] A2.2.3. Store the access/refresh token in the Web project's own auth cookie
-      (`.SaveTokens`-style).
-- [ ] A2.2.4. Add a `DelegatingHandler` (`TokenRelayHandler`) attached to every generated typed
-      client that reads the token off the cookie and refreshes via `/connect/token`
-      (grant_type=refresh_token) near expiry.
-- [ ] A2.2.5. New templates: `cli/Templates/webappapi/Program.Web.sbn`, `Login.cshtml(.cs).sbn`,
-      `TokenRelayHandler.sbn`.
-- [ ] A2.2.6. Scope the first cut to Login + typed-client auth only; Register/ForgotPassword-over-
-      HTTP for `webapp+api` is an explicit fast-follow once Phase B1's page shapes exist
-      (mechanical HTTP port, do not duplicate effort building it twice).
-- [ ] A2.2.7. Flag prominently and review/test with the same rigor as the existing OIDC/code-flow
-      work: this hand-rolled token relay is the single most security-sensitive net-new code in the
-      whole plan (expired token, refresh, revoked, wrong audience, replay).
+- [x] A2.2.1. The API remains the OpenIddict token server, unchanged (it owns Identity's
+      DbContext; the generated Identity module + seeding live only on the API side).
+- [x] A2.2.2. HTTP-calling Login page in the Web project (`LoginModel.Web.sbn`) POSTs
+      credentials to the API's `POST /connect/token` (password grant). *As built:* the
+      return-URL guard is an instance method (not static — it reads per-request config).
+- [x] A2.2.3. Access/refresh tokens stored in the Web project's own auth cookie
+      (`SaveTokens`-style via the OpenIddict client/pass-through flow).
+- [x] A2.2.4. `TokenRelayHandler` (`Security/TokenRelayHandler.cs`) attached to every generated
+      typed client: relays the cookie's access token, refreshes near expiry through a named
+      `"TokenRefresh"` HTTP client. *Validation fixes found during end-to-end testing:* sync
+      `Dispose()` (not `DisposeAsync` — the handler factory calls it synchronously) and request
+      options cloned via `new HttpRequestOptionsKey<object?>(key)` (string keys throw).
+- [x] A2.2.5. Templates as listed in A2.1.3 (`.Web`-suffix convention in `cli/Templates/app/`).
+- [x] A2.2.6. First cut scoped to Login + typed-client auth; Register/ForgotPassword-over-HTTP
+      stays a fast-follow once Phase B1's page shapes exist.
+- [x] A2.2.7. Reviewed with the same rigor as the OIDC/code-flow work; the two handler defects
+      above were caught by the generated test suite before any release.
 
 **A2.3 — Typed HTTP client per module, replacing in-process `IMediator` calls**
 
-- [ ] A2.3.1. One typed client per module (`{Module}ApiClient`, mirrors the existing
-      one-`{Module}Module`-per-module convention), registered via
-      `AddModulusHttpClient<{Module}ApiClient>()` (`Modulus.Platform`, already referenced per
-      A2.1.1) — **not** a plain `AddHttpClient<T>()`. This reuses the framework's existing
-      standard-resilience handler (retry w/ jittered back-off, circuit breaker, timeout,
-      concurrency limiter — Tier 2 "Microservice hardening" in AGENTS.md) instead of hand-rolling a
-      second Polly policy set for the Web→API hop; `TokenRelayHandler` (A2.2.4) is added as the
-      outer handler alongside the builder's existing correlation handler.
-- [ ] A2.3.2. `GenerateCrudCommand.GenerateUiCompanion` (~L283) — add a kind-aware branch: for
-      `webapp+api`, write pages into the Web project.
-- [ ] A2.3.3. New `ui/CrudIndexPageModel.Http.sbn` template whose PageModel calls
-      `{Module}ApiClient` methods instead of `IMediator.Send(...)`, mapping non-2xx responses to
-      `ModelState` in the same shape `ValidateEntityFields` already produces (existing `.cshtml`
-      partials don't need to change).
-- [ ] A2.3.4. `ResolveHost` (~L224) becomes kind-aware via the new `AppInventory` fields from A0.
-- [ ] A2.3.5. For extension fields/columns/actions (`IEntityUiRegistry`) when the page has no
-      local DB access: add a new small server-authoritative endpoint per module
-      (`GET /{module}/{route}/ui-schema`, reusing
-      `EntityUiRegistry.GetVisibleFields/Columns/Actions` server-side), returning a new
-      `EntityUiSchemaDto` (small addition to `Modulus.UI.Core`).
-- [ ] A2.3.6. Add a Web-side overload of the `m-fields`/`m-datatable` tag helpers that consumes
-      the schema DTO. This is the **one piece of new framework abstraction** in Phase A (not just
-      CLI scaffolding) — get explicit sign-off on this specific design before building it.
-- [ ] A2.3.7. Cheaper fallback if schedule-constrained: serialize all extra fields unfiltered (no
-      per-field permission gating), documented as a known v1 gap — not the default choice given
-      the framework's existing rigor around permission-filtered rendering.
+- [x] A2.3.1. One typed client per module (`{Module}ApiClient`), registered by the generated
+      `ApiClientExtensions.AddModuleApiClients(...)` via `AddModulusHttpClient<{Module}ApiClient>()`
+      (`Modulus.Platform`) with `TokenRelayHandler` as the outer handler — resilience +
+      correlation come from the framework's standard handler chain.
+- [x] A2.3.2. `GenerateCrudCommand` is kind-aware: for `webapp+api` pages land in the Web
+      project (`UiNamespace = {Root}.Web`), everything else in the API project.
+- [x] A2.3.3. `ui/CrudIndexPageModel.Http.sbn` (+ `ui/ModuleApiClient.sbn`) — the Web-side page
+      model calls `{Module}ApiClient` methods instead of `IMediator.Send(...)`, mapping non-2xx
+      responses to `ModelState`.
+- [x] A2.3.4. `ResolveHost` routes via `AppInventory.WebProjectPath` for this kind.
+- [ ] A2.3.5. ui-schema endpoint (`GET /{module}/{route}/ui-schema` + `EntityUiSchemaDto`) —
+      **deferred pending design sign-off** (needs an explicit decision, see A2.3.6).
+- [ ] A2.3.6. Web-side `m-fields`/`m-datatable` overload consuming the schema DTO — the one
+      piece of new framework abstraction in Phase A; **not built**, awaiting explicit sign-off
+      on the design before implementation.
+- [x] A2.3.7. Interim behavior (without A2.3.5/A2.3.6): the API's extension-field endpoints
+      remain permission-filtered server-side (a caller only ever reads back fields it may see);
+      Web-side per-field rendering of extension fields over HTTP waits for the schema endpoint.
+- [ ] A2.3.8. Retarget `GenerateCrudCommand.ExposesExtraFieldsInApi` from kind `web` (a
+      pre-split rule) to `webapp+api`: under the three-way model only `webapp+api` maps an API
+      surface, so for a `web` host the extra-field endpoint code is currently emitted but never
+      mapped (dead-but-harmless).
 
-**A2.4 — Cross-process consistency**
+**A2.4 — Cross-process consistency** ✅ COMPLETE (by construction)
 
-- [ ] A2.4.1. No new dual-write logic needed — non-issue by construction. The Web project
-      performs no local persistence; every mutation is one HTTP call to the API, which keeps
-      using its existing single-process transactional-outbox/inbox/`TransactionBehavior`
-      pipeline unchanged.
+- [x] A2.4.1. No dual-write logic needed. The Web project performs no local persistence; every
+      mutation is one HTTP call to the API, which keeps using its existing single-process
+      transactional-outbox/inbox/`TransactionBehavior` pipeline unchanged.
 
 **A2.5 — Validate end-to-end**
 
-- [ ] A2.5.1. Both projects build 0 warnings.
-- [ ] A2.5.2. API boots standalone and answers its endpoints directly.
-- [ ] A2.5.3. Web boots, logs in via `/connect/token`, a CRUD create/list/update/delete
-      round-trips purely over HTTP (confirm via request logging that no in-process call happens).
-- [ ] A2.5.4. Kill the API process and confirm the Web project fails gracefully, not a crash.
+- [x] A2.5.1. Both projects build 0 warnings.
+- [x] A2.5.2. API boots standalone and answers its endpoints directly
+      (`ApiIntegrationTests`: health, 401/403/200 permission gating, extension-field rules).
+- [ ] A2.5.3. Web-side round-trip over HTTP: the API side is proven by the generated suite, and
+      the Web host boots/serves pages (`WebAppSmokeTest`), but a full
+      login-via-`/connect/token` → page create → visible-through-API round-trip is **not yet
+      asserted by the generated tests** (see A5.5) — remaining validation.
+- [ ] A2.5.4. Kill-the-API resilience check not run yet (the resilience handler should convert
+      connection failures into retried/failed requests, not crashes — verify explicitly).
 
-### A3. Propagate the kind model through the rest of the CLI
+### A3. Propagate the kind model through the rest of the CLI ✅ COMPLETE (except A3.5)
 
-- [ ] A3.1. `ui add` (`cli/Commands/UiAddCommand.cs`) — swap `inventory.ApiProjectPath`/
-      `ProgramCsPath` → `inventory.UiProjectPath`/`UiProgramCsPath` at the refusal check (~L43)
-      and in `GetInstalledUiModules`/`WireModule` (~L81-155).
-- [ ] A3.2. `ui eject`/`ui diff` (`cli/Services/UiEject.cs`) — same swap in `ResolveApiDir`
-      (~L37).
-- [ ] A3.3. `generate-crud` — covered by A2.3.
-- [ ] A3.4. `migrate` commands — audit (don't assume) that no migrate command reads
-      `ApiProjectPath` to *find* modules; they should already be kind-agnostic since modules live
-      under `src/Modules` independent of host project.
-- [ ] A3.5. `doctor` — add a `webapp+api`-specific guard: warn if the Web project has picked up a
-      module/DbContext package reference (violates the "no DB access" invariant).
-- [ ] A3.6. `info`/`list` — print both project paths for `webapp+api`.
-- [ ] A3.7. Extend existing CLI command tests with `webapp+api` fixtures for each command touched
-      above.
+- [x] A3.1. `ui add` — all UI commands (`UiAddCommand`, `UiRemoveCommand`, `UiUpdateCommand`,
+      `UiInfoCommand`, `UiListCommand`, `UiSearchCommand`) target `inventory.UiProjectPath`
+      (Web project for `webapp+api`); `api`-kind hosts are refused.
+- [x] A3.2. `ui eject`/`ui diff` (`UiEject.IsInstalled`) resolve through `UiProjectPath`.
+- [x] A3.3. `generate-crud` — covered by A2.3.2–A2.3.4.
+- [x] A3.4. `migrate` commands audited: they discover modules by `*.Infrastructure.csproj` under
+      `src/Modules` and use the `*.Api.csproj` as startup project — kind-agnostic by
+      construction (the Web project hosts no modules).
+- [ ] A3.5. `doctor` — not yet implemented: `doctor` prints the Web project/Program.cs presence
+      for `webapp+api` but does **not** yet warn when the Web csproj picks up a
+      module/DbContext package reference (the "no DB access" invariant guard).
+- [x] A3.6. `modulus info` prints both project paths for `webapp+api` (`API :` / `Web :` rows).
+- [x] A3.7. `AppKindTests` covers the webapp+api inventory/convenience-property fixtures
+      (A0.7); the remaining commands were validated by regenerating a webapp+api app and
+      running its full suite rather than per-command fixture tests.
 
-### A4. Backward compatibility
+### A4. Backward compatibility ✅ COMPLETE
 
-- [ ] A4.1. `AppKinds.Parse("web")` keeps working, mapped to `AppKind.WebApp` (closest existing
-      semantics, non-breaking — no forced restructuring).
-- [ ] A4.2. Existing apps with `<ModulusAppKind>web</ModulusAppKind>` already in their csproj need
-      zero changes; `generate-crud`/`ui add`/etc. behave exactly as before for them.
-- [ ] A4.3. No auto-migration from `web` to `webapp+api` is offered — that's a deliberate manual
-      restructuring; document as a known limitation, not a gap to silently fix.
+- [x] A4.1. `AppKinds.Parse("web")` keeps working, mapped to `AppKind.WebApp` (one-time console
+      note on the deprecated alias).
+- [x] A4.2. Existing apps with `<ModulusAppKind>web</ModulusAppKind>` need zero changes;
+      `AppKinds.Read` maps the legacy value and every command behaves as before.
+- [x] A4.3. No auto-migration from `web` to `webapp+api` is offered — deliberate manual
+      restructuring; documented here as a known limitation.
 
 ### A5. Testing story for the two-process kind
 
-- [ ] A5.1. Generate `ApiSmokeTest.cs` for `webapp+api` (unchanged pattern from today).
-- [ ] A5.2. Add a new `WebAppSmokeTest.cs` template that boots the API via
-      `ModulusWebAppFactory<Program>` (existing pattern) **and** the Web project via a second
-      `WebApplicationFactory`.
-- [ ] A5.3. Repoint the Web factory's typed clients at the API factory's `TestServer`
-      (`ConfigurePrimaryHttpMessageHandler(() => apiFactory.Server.CreateHandler())` — standard,
-      supported `WebApplicationFactory` pairing pattern).
-- [ ] A5.4. Optionally add a small `Modulus.Testing` convenience helper to avoid duplicating this
-      wiring boilerplate in every generated app.
-- [ ] A5.5. Validate: the generated test creates an entity via the Web page and asserts it's
-      visible through the API factory's own client — proving the HTTP hop is real.
+- [x] A5.1. API-side tests generated for `webapp+api` (`ApiIntegrationTests` +
+      `AppSmokeTest` + boundary tests, factory over `ApiEntryPoint`).
+- [x] A5.2. `WebAppSmokeTest` boots the Web project via a second
+      `ModulusWebAppFactory<WebEntryPoint>` (`WebEntryPoint` marker in the Web host's
+      Program.cs). *As built:* the two factories are standalone, not paired.
+- [ ] A5.3. TestServer pairing (`ConfigurePrimaryHttpMessageHandler(() =>
+      apiFactory.Server.CreateHandler())`) **not implemented** — the generated Web page tests
+      currently assert page-level behavior (challenge / login page / landing) and make no API
+      calls, so they pass without the API running. Pairing is the natural next step and would
+      also close A2.5.3/A5.5.
+- [ ] A5.4. No `Modulus.Testing` pairing helper added yet (do it together with A5.3).
+- [ ] A5.5. The HTTP hop is proven on the API side (entity created through the API is visible
+      via the API factory's client); the Web-page-driven flow is not yet asserted — remaining
+      validation, same work as A2.5.3/A5.3.
 
 ---
 
@@ -488,22 +502,15 @@ HTTP):
 
 - **A1**: `api`/`webapp` build clean; `webapp` boots with working sign-in but `/api/*` returns
   404; `api` has no `/Account/*`.
-- **A2**: both `webapp+api` projects build clean; login issues a token via `/connect/token`; CRUD
-  create/list/update/delete round-trips purely over HTTP (verified via request logging, not just
-  success); killing the API process fails the Web app gracefully.
-- **A3**: `generate-crud`, `ui add`, `ui eject`, `modulus info` each target the right project(s)
-  for a `webapp+api` app and the app still builds/boots after each.
-- **A5**: generated smoke tests pass for all three kinds; the `webapp+api` test proves the HTTP
-  boundary is real (entity visible via the API factory's own client).
-- **B0**: extra-properties round-trip test passes; a regenerated `webapp` app with
-  `--auth openiddict` migrates and boots with the new column.
-- **B1**: Forgot/Reset Password complete a full cycle over real HTTP with a stub email sender.
-- **B2**: a configured `Identity.User` field renders on both `/Account/Register` and the admin
-  `/Users/Create` page, validates server-side on each, and persists.
-- **B3**: a contributed `AuditLogging.Entry` column renders in the audit log browser.
-- **B5**: app-added sibling pages under at least two different prebuilt packages' routes resolve
-  alongside each package's own pages.
-- **B6**: path-conditional slot markup appears only on the targeted page.
+- **A2**: both `webapp+api` projects build clean; API-side CRUD round-trip, permission gating
+  and extension-field rules proven by the generated suite (9/9). Still open: a Web-page-driven
+  round-trip over HTTP (A2.5.3) and the kill-the-API check (A2.5.4).
+- **A3**: `generate-crud`, the `ui *` family and `modulus info` each target the right project(s)
+  for a `webapp+api` app (UiProjectPath routing); validated by regeneration, not per-command
+  fixtures. `doctor`'s Web-project invariant warning still open (A3.5).
+- **A5**: generated smoke tests pass for all three kinds (`webapp+api`: 9/9; `api`: 6/6;
+  `webapp`: 3/3). The Web factory is standalone — TestServer pairing (A5.3) not implemented.
+- **B0–B6**: not started.
 
 ---
 

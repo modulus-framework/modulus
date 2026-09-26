@@ -77,6 +77,24 @@ internal sealed class DoctorCommand : Command<DoctorCommand.Settings>
                 inventory.ProgramCsPath,
                 inventory.SolutionDir));
 
+            if (inventory.Kind == AppKind.WebAppApi)
+            {
+                // The split kind's second project must exist and boot its own
+                // Program: `modulus add-module` wires module Infrastructure
+                // references into the API host only — the Web project's UI
+                // compiles against each module's Application layer, so a
+                // missing Web project means the kind marker is stale.
+                checks.Add(CheckResult.Pass("App kind", "webapp+api (API host + Web project)"));
+                checks.Add(CheckFile(
+                    "Web project exists",
+                    inventory.WebProjectPath ?? "",
+                    inventory.SolutionDir));
+                checks.Add(CheckFile(
+                    "Web Program.cs exists",
+                    inventory.WebProgramCsPath ?? "",
+                    inventory.SolutionDir));
+            }
+
             checks.Add(CheckFile(
                 "NuGet.config present",
                 Path.Combine(inventory.SolutionDir, "NuGet.config"),

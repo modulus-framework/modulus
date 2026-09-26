@@ -1,0 +1,83 @@
+using System.Net;
+using System.Net.Http.Json;
+using Microsoft.Extensions.Configuration;
+using {{ module_namespace }}.Application.Dtos;
+
+namespace {{ ui_namespace }}.ApiClients;
+
+/// <summary>
+/// Typed client for the {{ module_name }} module's {{ entity_name }} API, served by
+/// the API host at <c>/api/{{ module_name_lower }}/{{ route_name }}</c>. Carries the
+/// signed-in user's bearer token (TokenRelayHandler — with refresh and sign-out
+/// on expiry) and the standard resilience pipeline. The base address comes from
+/// <c>Api:BaseUrl</c>, so the same client works in front of a remote API.
+/// </summary>
+public sealed class {{ module_name }}ApiClient(HttpClient http, IConfiguration configuration)
+{
+    private readonly HttpClient _http = Configure(http, configuration);
+
+    public async Task<IReadOnlyList<{{ entity_name }}Dto>> GetAsync(CancellationToken ct = default)
+    {
+        var items = await _http.GetFromJsonAsync<IReadOnlyList<{{ entity_name }}Dto>>(
+            "api/{{ module_name_lower }}/{{ route_name }}", ct);
+        return items ?? [];
+    }
+
+    /// <summary>Fetches one {{ entity_name }}; null when the API answers 404.</summary>
+    public async Task<{{ entity_name }}Dto?> GetByIdAsync(Guid id, CancellationToken ct = default)
+    {
+        var response = await _http.GetAsync($"api/{{ module_name_lower }}/{{ route_name }}/{id}", ct);
+        if (response.StatusCode == HttpStatusCode.NotFound)
+            return null;
+        return await response.Content.ReadFromJsonAsync<{{ entity_name }}Dto>(ct);
+    }
+
+    public async Task<Guid> CreateAsync(Create{{ entity_name }}Dto request, CancellationToken ct = default)
+    {
+        var response = await _http.PostAsJsonAsync("api/{{ module_name_lower }}/{{ route_name }}", request, ct);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<Guid>(ct);
+    }
+
+    public async Task<bool> UpdateAsync(Guid id, Update{{ entity_name }}Dto request, CancellationToken ct = default)
+    {
+        var response = await _http.PutAsJsonAsync($"api/{{ module_name_lower }}/{{ route_name }}/{id}", request, ct);
+        return response.IsSuccessStatusCode;
+    }
+
+    public async Task<bool> DeleteAsync(Guid id, CancellationToken ct = default)
+    {
+        var response = await _http.DeleteAsync($"api/{{ module_name_lower }}/{{ route_name }}/{id}", ct);
+        return response.IsSuccessStatusCode;
+    }
+
+    /// <summary>All clients point at the same configured API host, so setting the
+    /// shared HttpClient's base address from each typed client's constructor is an
+    /// idempotent write of the same value (the factory creates clients per handler
+    /// lifetime, not per request).</summary>
+    private static HttpClient Configure(HttpClient http, IConfiguration configuration)
+    {
+        var baseUrl = configuration["Api:BaseUrl"] ?? "http://localhost:5180";
+        http.BaseAddress = new Uri($"{baseUrl.TrimEnd('/')}/");
+        return http;
+    }
+}
+
+/// <summary>Request body for creating a {{ entity_name }} (binds the API's
+/// Create{{ entity_name }}Command; extension values ride in ExtraProperties when the
+/// API exposes the entity's contributed fields).</summary>
+public sealed class Create{{ entity_name }}Dto
+{
+    public string Name { get; set; } = string.Empty;
+
+    public IReadOnlyDictionary<string, string?>? ExtraProperties { get; set; }
+}
+
+/// <summary>Request body for updating a {{ entity_name }} (binds the API's
+/// Update{{ entity_name }}Command).</summary>
+public sealed class Update{{ entity_name }}Dto
+{
+    public string Name { get; set; } = string.Empty;
+
+    public IReadOnlyDictionary<string, string?>? ExtraProperties { get; set; }
+}

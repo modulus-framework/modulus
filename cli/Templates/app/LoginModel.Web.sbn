@@ -1,0 +1,159 @@
+using System.Buffers.Text;
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
+using System.Security.Claims;
+using System.Text.Json;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
+using {{ root_namespace }}.Web.Security;
+
+namespace {{ root_namespace }}.Web.Pages.Account;
+
+/// <summary>
+/// Signs the user in by presenting the credentials to the API host's token
+/// endpoint (the OpenIddict password grant — enabled by default in
+/// development; see Identity:AllowPasswordFlow). The returned token pair is
+/// stored in an auth cookie that outlives the short-lived access token:
+/// TokenRelayHandler relays and refreshes it on every API call.
+/// </summary>
+public class LoginModel(IHttpClientFactory httpClientFactory, IConfiguration configuration) : PageModel
+{
+    private static readonly string[] RequestedScopes =
+    [
+        "offline_access", "profile", "roles", "email", "modulus",
+    ];
+
+    [BindProperty]
+    public string UserName { get; set; } = "";
+
+    [BindProperty]
+    public string Password { get; set; } = "";
+
+    public string? Error { get; private set; }
+
+    public string? ReturnUrl { get; private set; }
+
+    public void OnGet(string? returnUrl = null)
+    {
+        ReturnUrl = SafeReturnUrl(returnUrl);
+    }
+
+    public async Task<IActionResult> OnPostAsync(string? returnUrl = null)
+    {
+        ReturnUrl = SafeReturnUrl(returnUrl);
+
+        var authority = configuration["Api:BaseUrl"] ?? "http://localhost:5180";
+        var clientId = configuration["Api:ClientId"] ?? "web";
+
+        using var client = httpClientFactory.CreateClient(TokenRelayHandler.RefreshClientName);
+        using var response = await client.PostAsync(
+            new Uri(new Uri(authority), "/connect/token"),
+            new FormUrlEncodedContent(new Dictionary<string, string>
+            {
+                ["grant_type"] = "password",
+                ["client_id"] = clientId,
+                ["username"] = UserName,
+                ["password"] = Password,
+                ["scope"] = string.Join(' ', RequestedScopes),
+            }));
+        if (!response.IsSuccessStatusCode)
+        {
+            Error = "Invalid user name or password.";
+            return Page();
+        }
+
+        var tokens = await response.Content.ReadFromJsonAsync<TokenRelayHandler.TokenResponse>();
+        if (tokens?.AccessToken is null)
+        {
+            Error = "The token endpoint returned no access token.";
+            return Page();
+        }
+
+        // The claims come straight from the access token's payload (both the
+        // short and the long claim-type forms are mirrored, so role checks,
+        // ICurrentUser and the permission-driven menus all see the same view
+        // of the user the API does). The cookie outlives the access token:
+        // the refresh flow keeps the session alive for its lifetime.
+        var principal = BuildPrincipal(tokens.AccessToken);
+        await TokenRelayHandler.SignInAsync(
+            HttpContext, principal, tokens.AccessToken, tokens.RefreshToken ?? "");
+        return LocalRedirect(ReturnUrl ?? "/");
+    }
+
+    private ClaimsPrincipal BuildPrincipal(string accessToken)
+    {
+        var claims = ParseJwtClaims(accessToken).ToList();
+
+        // Mirror known claim types between their short (JWT) and long (WIF)
+        // forms, so ClaimsPrincipal.IsInRole, ClaimsIdentity.Name and the
+        // framework's ICurrentUser mapping work with either representation.
+        foreach (var claim in claims)
+        {
+            var mirror = MirrorClaimType(claim.Type);
+            if (mirror is not null && !claims.Any(c => c.Type == mirror && c.Value == claim.Value))
+                claims.Add(new Claim(mirror, claim.Value, claim.ValueType, claim.Issuer));
+        }
+
+        var identity = new ClaimsIdentity(
+            claims, authenticationType: "PasswordGrant",
+            nameType: ClaimTypes.Name, roleType: ClaimTypes.Role);
+        return new ClaimsPrincipal(identity);
+    }
+
+    private static string? MirrorClaimType(string type) => type switch
+    {
+        ClaimTypes.Name => "name",
+        "name" => ClaimTypes.Name,
+        ClaimTypes.Role => "role",
+        "role" => ClaimTypes.Role,
+        ClaimTypes.NameIdentifier => "sub",
+        "sub" => ClaimTypes.NameIdentifier,
+        ClaimTypes.Email => "email",
+        "email" => ClaimTypes.Email,
+        _ => null,
+    };
+
+    private static IEnumerable<Claim> ParseJwtClaims(string accessToken)
+    {
+        var segments = accessToken.Split('.');
+        if (segments.Length < 2)
+            yield break;
+
+        byte[] payload;
+        try
+        {
+            payload = Base64Url.DecodeFromChars(segments[1]);
+        }
+        catch (FormatException)
+        {
+            yield break;
+        }
+
+        using var document = JsonDocument.Parse(payload);
+        foreach (var property in document.RootElement.EnumerateObject())
+        {
+            switch (property.Value.ValueKind)
+            {
+                case JsonValueKind.Array:
+                    foreach (var item in property.Value.EnumerateArray())
+                    {
+                        if (item.ValueKind == JsonValueKind.String)
+                            yield return new Claim(property.Name, item.GetString()!);
+                    }
+                    break;
+                case JsonValueKind.String:
+                    yield return new Claim(property.Name, property.Value.GetString()!);
+                    break;
+                case JsonValueKind.Number:
+                case JsonValueKind.True:
+                case JsonValueKind.False:
+                    yield return new Claim(property.Name, property.Value.GetRawText());
+                    break;
+            }
+        }
+    }
+
+    private string? SafeReturnUrl(string? returnUrl) =>
+        Url.IsLocalUrl(returnUrl) ? returnUrl : null;
+}

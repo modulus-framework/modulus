@@ -135,11 +135,32 @@ internal sealed class AppModel
     /// <summary>True for a web app: it gets the UI foundation (and the theme), whatever feature modules are chosen.</summary>
     public bool UseUi => Kind is AppKind.WebApp or AppKind.WebAppApi;
 
+    /// <summary>
+    /// True when the project rendered from the host templates (the API project) itself serves the UI: the single-project
+    /// web kinds only. The webapp+api split's API host never does — its pages live in the separate Web project — so it
+    /// renders with <c>use_ui</c> off: no Razor Pages, no <c>AddModulusSmartAuth</c> (bearer is the default scheme), no
+    /// authorization-code flow (there is no login page on the API to sign users in through).
+    /// </summary>
+    public bool UiInApiHost => UseUi && Kind != AppKind.WebAppApi;
+
     /// <summary>True when the app exposes API endpoints to external callers (api and webapp+api kinds). False for webapp kind (internal IMediator only).</summary>
     public bool ExposeApi => Kind is AppKind.Api or AppKind.WebAppApi;
 
     /// <summary>Install the Tabler theme next to the UI modules (default; <c>--no-theme</c> turns it off).</summary>
     public bool UseTablerTheme { get; set; }
+
+    /// <summary>
+    /// The UI host project's namespace (<c>{Root}.Web</c> for the webapp+api split, <c>{Root}.Api</c> otherwise).
+    /// Set by <c>GenerateAll</c>; defaults so every template that renders <c>{{ ui_namespace }}</c> (the example
+    /// <c>ModuleApiClient</c> when <c>modulus app</c> generates a Web project) gets a valid namespace.
+    /// </summary>
+    public string UiNamespace
+    {
+        get => string.IsNullOrEmpty(_uiNamespace) ? $"{RootNamespace}.Api" : _uiNamespace;
+        set => _uiNamespace = value;
+    }
+
+    private string? _uiNamespace;
 
     /// <summary>
     /// Auth provider key: "none" (default), "openiddict", or one of the six
@@ -217,6 +238,31 @@ internal sealed class AppModel
     public string ExampleRoute =>
         CodeGen.Pluralize(ExampleEntity).ToLowerInvariant();
 
+    // ── Module-level aliases ───────────────────────────────────────
+    // The ui/* module templates (CrudIndexPageModel.Http, ModuleApiClient, ...)
+    // are rendered against ModuleModel by `generate-crud`, with variables like
+    // `module_name` / `module_namespace` / `entity_name` / `route_name`. At
+    // `modulus app` time the app model renders the same templates for the
+    // example module — these aliases supply the same names.
+
+    /// <summary>Alias of <see cref="ExampleModule"/>: the module-level template variable name.</summary>
+    public string ModuleName => ExampleModule;
+
+    /// <summary>Lower-cased module name for route prefixes.</summary>
+    public string ModuleNameLower => ExampleModuleLower;
+
+    /// <summary>The example module's root namespace (e.g. "MyApp.Modules.Catalog").</summary>
+    public string ModuleNamespace => $"{RootNamespace}.Modules.{ExampleModule}";
+
+    /// <summary>Alias of <see cref="ExampleEntity"/>.</summary>
+    public string EntityName => ExampleEntity;
+
+    /// <summary>Lower-cased example entity name.</summary>
+    public string EntityNameLower => ExampleEntity.ToLowerInvariant();
+
+    /// <summary>Alias of <see cref="ExampleRoute"/>.</summary>
+    public string RouteName => ExampleRoute;
+
     /// <summary>
     /// The permission that guards the example entity's API (and its admin page), when the app has the identity backend whose
     /// <c>Admin</c> role holds it; null otherwise. The same <c>{module}:{route}:manage</c> a later <c>generate-crud</c> would pick.
@@ -226,10 +272,11 @@ internal sealed class AppModel
 
     /// <summary>
     /// True when the app serves the authorization-code flow with PKCE (<c>/connect/authorize</c>): a web app with the local token
-    /// server, because that flow signs the user in through the app's own login page (the Identity UI). An API host has no page to
-    /// sign in with, so its clients use the password grant while it is on, then refresh tokens.
+    /// server whose API project itself hosts the login page (the Identity UI), because that flow signs the user in through the app's
+    /// own page. The webapp+api split's API has no page to sign in with — its Web project signs users in over the password grant —
+    /// so there the code flow stays off and its clients use the password grant while it is on, then refresh tokens.
     /// </summary>
-    public bool UseCodeFlow => UseOpenIddict && UseUi;
+    public bool UseCodeFlow => UseOpenIddict && UiInApiHost;
 
     /// <summary>Redirect URIs the seeded first-party client is registered with in Development: a native app's custom scheme and a local SPA dev server.</summary>
     public IReadOnlyList<string> DevRedirectUris => [$"{AppNameLower}://callback", "http://localhost:5173/callback"];
@@ -395,6 +442,21 @@ internal sealed class ModuleModel
     /// compiles <c>Pages/</c> with no csproj changes).
     /// </summary>
     public string ApiNamespace => $"{RootNamespace}.Api";
+
+    /// <summary>
+    /// The UI host project's root namespace. For webapp+api kind, this is the Web project
+    /// (e.g. <c>MyApp.Web</c>); for other kinds, it defaults to <see cref="ApiNamespace"/>.
+    /// Used in generated CRUD page namespaces. Defaults to <see cref="ApiNamespace"/> when unset,
+    /// so every template that renders <c>{{ ui_namespace }}</c> gets a valid namespace even on a
+    /// path that never chose a UI host.
+    /// </summary>
+    public string UiNamespace
+    {
+        get => string.IsNullOrEmpty(_uiNamespace) ? ApiNamespace : _uiNamespace;
+        set => _uiNamespace = value;
+    }
+
+    private string? _uiNamespace;
 
     // ── Entity being scaffolded (null when generating a blank module) ──
     // Scriban treats "" as truthy, so blank modules must leave these null.

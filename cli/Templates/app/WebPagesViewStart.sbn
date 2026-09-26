@@ -1,0 +1,5 @@
+@{
+    // The active theme's application layout (falls back to the UI framework's
+    // shell when no theme is installed; null for htmx fragment requests).
+    Layout = Context.GetThemeLayout(StandardLayouts.Application);
+}
