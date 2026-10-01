@@ -163,6 +163,8 @@ Modulus.AspNetCore.Idempotency.IdempotencyOptions.ReplayHeaderName.get -> string
 Modulus.AspNetCore.Idempotency.IdempotencyOptions.ReplayHeaderName.set -> void
 Modulus.AspNetCore.Idempotency.IdempotencyOptions.RequireKey.get -> bool
 Modulus.AspNetCore.Idempotency.IdempotencyOptions.RequireKey.set -> void
+Modulus.AspNetCore.Idempotency.IdempotencyOptions.InProgressLeaseSeconds.get -> int
+Modulus.AspNetCore.Idempotency.IdempotencyOptions.InProgressLeaseSeconds.set -> void
 Modulus.AspNetCore.Idempotency.IdempotencyOptions.RetentionSeconds.get -> int
 Modulus.AspNetCore.Idempotency.IdempotencyOptions.RetentionSeconds.set -> void
 Modulus.AspNetCore.Idempotency.IdempotencyOptions.ValidateRequestMatch.get -> bool

@@ -157,6 +157,77 @@ public sealed class OutboxProcessorTests
         stored.RetryCount.Should().Be(2); // unchanged — not reprocessed
     }
 
+    [Fact]
+    public async Task ProcessAsync_PersistsEachMessageBeforeDispatchingTheNext()
+    {
+        // Bookkeeping used to be saved once per batch, so a crash mid-batch
+        // redelivered every message already dispatched in it. By the time the
+        // second message is dispatched, the first must already be committed.
+        DateTime? firstProcessedAtWhenSecondDispatched = null;
+        TestHarness? harness = null;
+        await using var h = harness = await BuildAsync(onDispatch: async m =>
+        {
+            if (m.Payload != "{\"n\":2}")
+                return;
+            await using var scope = harness!.Services.CreateAsyncScope();
+            var fresh = scope.ServiceProvider.GetRequiredService<TestOutboxDbContext>();
+            firstProcessedAtWhenSecondDispatched = await fresh.Set<OutboxMessage>().AsNoTracking()
+                .Where(x => x.Payload == "{\"n\":1}")
+                .Select(x => x.ProcessedAt)
+                .SingleAsync();
+        });
+        h.Seed("{\"n\":1}", DateTime.UtcNow.AddSeconds(-2));
+        h.Seed("{\"n\":2}", DateTime.UtcNow.AddSeconds(-1));
+        await h.SaveChangesAsync();
+
+        await h.Processor.ProcessAsync();
+
+        h.Dispatcher.Calls.Should().Be(2);
+        firstProcessedAtWhenSecondDispatched.Should().NotBeNull(
+            "the first message's ProcessedAt must be committed before the next dispatch");
+    }
+
+    [Fact]
+    public async Task ProcessAsync_StopsBeforeTheClaimExpires_AndReleasesTheRest()
+    {
+        // A batch that outlives its claim would race a peer that reclaims the
+        // expired rows (duplicate dispatch). With a 1s claim, a first dispatch
+        // that takes longer than the claim's safety margin must end the batch
+        // and hand the remaining rows back unlocked.
+        await using var h = await BuildAsync(
+            options: new OutboxOptions { LockTimeoutSec = 1 },
+            onDispatch: m => m.Payload == "{\"n\":1}" ? Task.Delay(1100) : Task.CompletedTask);
+        h.Seed("{\"n\":1}", DateTime.UtcNow.AddSeconds(-3));
+        h.Seed("{\"n\":2}", DateTime.UtcNow.AddSeconds(-2));
+        h.Seed("{\"n\":3}", DateTime.UtcNow.AddSeconds(-1));
+        await h.SaveChangesAsync();
+
+        await h.Processor.ProcessAsync();
+
+        h.Dispatcher.Calls.Should().Be(1, "the claim was about to expire after the first dispatch");
+        var rows = await h.ReadAllAsync();
+        rows.Single(r => r.Payload == "{\"n\":1}").ProcessedAt.Should().NotBeNull();
+        rows.Where(r => r.Payload != "{\"n\":1}").Should().AllSatisfy(r =>
+        {
+            r.ProcessedAt.Should().BeNull();
+            r.RetryCount.Should().Be(0, "an undispatched message burns no retry budget");
+            r.LockedBy.Should().BeNull();
+            r.LockedUntil.Should().BeNull();
+        });
+    }
+
+    [Fact]
+    public async Task ProcessAsync_NonPositiveLockTimeout_StillDispatches()
+    {
+        await using var h = await BuildAsync(options: new OutboxOptions { LockTimeoutSec = 0 });
+        h.Seed();
+        await h.SaveChangesAsync();
+
+        await h.Processor.ProcessAsync();
+
+        h.Dispatcher.Calls.Should().Be(1);
+    }
+
     // ── Test doubles ─────────────────────────────────────────────
     internal sealed class TestOutboxDbContext(
         DbContextOptions<TestOutboxDbContext> opts) : DbContext(opts)
@@ -203,13 +274,16 @@ public sealed class OutboxProcessorTests
         public TestOutboxDbContext Db => db;
         public FakeDispatcher Dispatcher => dispatcher;
 
-        public OutboxMessage Seed() => db.Set<OutboxMessage>().Add(new OutboxMessage
-        {
-            MessageType = "Modulus.Outbox.Tests.TestEvent, Modulus.Outbox.Tests",
-            Payload = "{}",
-            ModuleName = "Test",
-            CreatedAt = DateTime.UtcNow,
-        }).Entity;
+        public ServiceProvider Services => sp;
+
+        public OutboxMessage Seed(string payload = "{}", DateTime? createdAt = null)
+            => db.Set<OutboxMessage>().Add(new OutboxMessage
+            {
+                MessageType = "Modulus.Outbox.Tests.TestEvent, Modulus.Outbox.Tests",
+                Payload = payload,
+                ModuleName = "Test",
+                CreatedAt = createdAt ?? DateTime.UtcNow,
+            }).Entity;
 
         public Task<int> SaveChangesAsync() => db.SaveChangesAsync();
 
@@ -224,6 +298,14 @@ public sealed class OutboxProcessorTests
             var fresh = scope.ServiceProvider
                                       .GetRequiredService<TestOutboxDbContext>();
             return await fresh.Set<OutboxMessage>().AsNoTracking().SingleAsync();
+        }
+
+        public async Task<List<OutboxMessage>> ReadAllAsync()
+        {
+            await using var scope = sp.CreateAsyncScope();
+            var fresh = scope.ServiceProvider
+                                      .GetRequiredService<TestOutboxDbContext>();
+            return await fresh.Set<OutboxMessage>().AsNoTracking().ToListAsync();
         }
 
         public async ValueTask DisposeAsync()

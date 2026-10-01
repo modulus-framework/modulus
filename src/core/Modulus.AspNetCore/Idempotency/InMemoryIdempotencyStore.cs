@@ -5,9 +5,10 @@ using Microsoft.Extensions.Options;
 
 /// <summary>
 /// Default <see cref="IIdempotencyStore"/> — an in-process, TTL-bounded map.
-/// Claims are atomic within a single node; entries expire after
-/// <see cref="IdempotencyOptions.RetentionSeconds"/> and are evicted lazily on
-/// access. Not shared across instances: register a distributed store for
+/// Claims are atomic within a single node; an in-progress claim expires after
+/// <see cref="IdempotencyOptions.InProgressLeaseSeconds"/>, a completed response
+/// after <see cref="IdempotencyOptions.RetentionSeconds"/>, and entries are
+/// evicted lazily on access. Not shared across instances: register a distributed store for
 /// multi-node deployments (see the interface remarks).
 /// </summary>
 internal sealed class InMemoryIdempotencyStore : IIdempotencyStore
@@ -15,17 +16,19 @@ internal sealed class InMemoryIdempotencyStore : IIdempotencyStore
     private readonly ConcurrentDictionary<string, Entry> _entries = new(StringComparer.Ordinal);
     private readonly TimeProvider _clock;
     private readonly TimeSpan _ttl;
+    private readonly TimeSpan _lease;
 
     public InMemoryIdempotencyStore(IOptions<IdempotencyOptions> options, TimeProvider? clock = null)
     {
         _clock = clock ?? TimeProvider.System;
         _ttl = TimeSpan.FromSeconds(options.Value.RetentionSeconds);
+        _lease = options.Value.InProgressLease;
     }
 
     public Task<IdempotencyResult> TryBeginAsync(string key, string fingerprint, CancellationToken ct)
     {
         var now = _clock.GetUtcNow();
-        var candidate = new Entry(fingerprint, now + _ttl);
+        var candidate = new Entry(fingerprint, now + _lease);
 
         while (true)
         {

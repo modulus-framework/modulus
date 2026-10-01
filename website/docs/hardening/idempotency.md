@@ -55,6 +55,7 @@ app.UseModulusIdempotency();
     "ValidateRequestMatch": true,
     "MaxKeyLength": 255,
     "RetentionSeconds": 86400,
+    "InProgressLeaseSeconds": 300,
     "MaxResponseBytes": 1048576
   }
 }
@@ -67,10 +68,17 @@ app.UseModulusIdempotency();
 | First request | Process normally, cache response |
 | Duplicate (completed) | Replay cached response with `Idempotency-Replayed: true` |
 | Concurrent duplicate | **409 Conflict** while processing |
+| Retry after a crash mid-request | **409** until `InProgressLeaseSeconds` runs out, then re-runs |
 | Different payload with same key | **422 Unprocessable Entity** |
 | Missing/overlong key with `RequireKey` | **400 Bad Request** |
 | 5xx error | Release key (allows retry) |
 | Response over `MaxResponseBytes` | Not cached — still runs; retry re-runs |
+
+`RetentionSeconds` is how long a completed response is kept for replay;
+`InProgressLeaseSeconds` is how long a request that is still running holds its
+key. Keep the lease above your slowest guarded request: a request still running
+when its lease expires can be started a second time by a retry. The lease is
+capped at `RetentionSeconds`.
 
 ## Store
 

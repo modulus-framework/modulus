@@ -1,11 +1,13 @@
 namespace Modulus.AspNetCore.DataProtection;
 
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.DataProtection.KeyManagement;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Modulus.Core.Abstractions.DataProtection;
 
 /// <summary>
@@ -49,19 +51,9 @@ public static class PersonalDataProtectionExtensions
         if (!string.IsNullOrWhiteSpace(options.KeyRingDirectory))
             dp.PersistKeysToFileSystem(new DirectoryInfo(options.KeyRingDirectory!));
 
-        if (string.IsNullOrWhiteSpace(options.KeyRingDirectory))
-        {
-            // Fail fast in Production: an ephemeral ring loses PII on restart/scale-out.
-            // In Development the ephemeral ring is convenient; warn once instead.
-            var env = configuration.GetValue<string>("Environment")
-                ?? Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")
-                ?? Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT");
-            if (string.Equals(env, Environments.Production, StringComparison.OrdinalIgnoreCase))
-                throw new InvalidOperationException(
-                    "PersonalDataProtection is enabled in Production but no KeyRingDirectory is configured. " +
-                    "Persist the Data Protection ring (KeyRingDirectory or PersistKeysTo* in code) or data becomes undecryptable on restart/scale-out.");
-            services.AddHostedService<EphemeralKeyRingWarning>();
-        }
+        // Checked at startup, not here: a ring persisted in code (PersistKeysToDbContext,
+        // PersistKeysToStackExchangeRedis, ...) is only visible once options are built.
+        services.AddHostedService<KeyRingPersistenceGuard>();
 
         // Swappable: a user registration made before this call wins.
         services.TryAddSingleton<IPersonalDataProtector, DataProtectionPersonalDataProtector>();
@@ -69,15 +61,28 @@ public static class PersonalDataProtectionExtensions
     }
 
     /// <summary>
-    /// Startup warning when the key ring is ephemeral (non-Production only;
-    /// Production throws above). Ephemeral rings lose PII on restart/scale-out.
+    /// Fails startup in Production when the Data Protection key ring is not persisted (no
+    /// <see cref="KeyManagementOptions.XmlRepository"/>, from <see cref="PersonalDataProtectionOptions.KeyRingDirectory"/>
+    /// or a <c>PersistKeysTo*</c> call); elsewhere it warns. An unpersisted ring is lost on restart and differs
+    /// per replica, so encrypted columns become undecryptable.
     /// </summary>
-    private sealed class EphemeralKeyRingWarning(ILogger<EphemeralKeyRingWarning> logger) : IHostedService
+    private sealed class KeyRingPersistenceGuard(
+        IOptions<KeyManagementOptions> keyManagement,
+        IHostEnvironment environment,
+        ILogger<KeyRingPersistenceGuard> logger) : IHostedService
     {
         public Task StartAsync(CancellationToken ct)
         {
+            if (keyManagement.Value.XmlRepository is not null)
+                return Task.CompletedTask;
+
+            if (environment.IsProduction())
+                throw new InvalidOperationException(
+                    "PersonalDataProtection is enabled in Production but the Data Protection key ring is not persisted. " +
+                    "Set PersonalDataProtection:KeyRingDirectory or call a PersistKeysTo* method, or encrypted data becomes undecryptable on restart/scale-out.");
+
             logger.LogWarning(
-                "PersonalDataProtection uses an ephemeral Data Protection key ring (no KeyRingDirectory). " +
+                "PersonalDataProtection uses an unpersisted Data Protection key ring. " +
                 "Persist the ring before Production or encrypted columns become undecryptable on restart/scale-out.");
             return Task.CompletedTask;
         }

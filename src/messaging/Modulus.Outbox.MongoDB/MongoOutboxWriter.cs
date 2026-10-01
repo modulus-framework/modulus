@@ -1,6 +1,8 @@
 namespace Modulus.Outbox.MongoDB;
 
 using System.Diagnostics;
+using global::MongoDB.Bson;
+using global::MongoDB.Bson.Serialization.Attributes;
 using global::MongoDB.Driver;
 using Microsoft.Extensions.DependencyInjection;
 using Modulus.Core.Abstractions;
@@ -12,9 +14,11 @@ using Modulus.Outbox.Abstractions;
 /// </summary>
 public sealed class MongoOutboxMessage
 {
+    [BsonGuidRepresentation(GuidRepresentation.Standard)]
     public Guid Id { get; init; } = Guid.NewGuid();
     public string MessageType { get; init; } = default!;
     public string Payload { get; init; } = default!;
+    [BsonGuidRepresentation(GuidRepresentation.Standard)]
     public Guid TenantId { get; init; }
     public string ModuleName { get; init; } = default!;
     public DateTime CreatedAt { get; init; } = DateTime.UtcNow;

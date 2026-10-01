@@ -1,7 +1,10 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Modulus.Core.Abstractions;
+using Modulus.MultiTenancy.Extensions;
 using Modulus.MultiTenancy.Resolvers;
 
 namespace Modulus.MultiTenancy;
@@ -43,6 +46,19 @@ public sealed class TenantMiddleware(
             if (claimResolver is not null)
             {
                 var claimed = await claimResolver.ResolveAsync(ctx, ctx.RequestAborted);
+
+                // A token bound to a tenant the store no longer resolves (deactivated or
+                // deleted) must not fall through to an unchecked header: the caller would
+                // otherwise pick any tenant with X-Tenant-Id. A token with no tenant claim
+                // (a host-level account) is not affected.
+                if (claimed is null && claimResolver.HasClaim(ctx))
+                {
+                    logger.LogWarning(
+                        "Rejected request: the authenticated principal's tenant claim does not resolve to an active tenant.");
+                    ctx.Response.StatusCode = StatusCodes.Status403Forbidden;
+                    return;
+                }
+
                 if (claimed is not null && info is not null && claimed.TenantId != info.TenantId)
                 {
                     logger.LogWarning(
@@ -52,6 +68,20 @@ public sealed class TenantMiddleware(
                     return;
                 }
             }
+
+            // A host-level account (no tenant claim) selects a tenant through another resolver,
+            // e.g. X-Tenant-Id. Open by default (the usual host-administrator model); with
+            // RequireHostTenantAccessPolicy the account must also satisfy that policy.
+            if (info is not null
+                && claimResolver?.HasClaim(ctx) != true
+                && !await CanHostAccountEnterAsync(ctx))
+            {
+                logger.LogWarning(
+                    "Rejected request: a host-level account selected tenant {Resolved} without satisfying the host tenant access policy.",
+                    info.TenantSlug);
+                ctx.Response.StatusCode = StatusCodes.Status403Forbidden;
+                return;
+            }
         }
 
         if (info is not null)
@@ -60,5 +90,15 @@ public sealed class TenantMiddleware(
         }
 
         await next(ctx);
+    }
+
+    private static async Task<bool> CanHostAccountEnterAsync(HttpContext ctx)
+    {
+        var policy = ctx.RequestServices.GetService<IOptions<TenantAccessOptions>>()?.Value.HostTenantAccessPolicy;
+        if (policy is null)
+            return true;
+
+        var authorization = ctx.RequestServices.GetRequiredService<IAuthorizationService>();
+        return (await authorization.AuthorizeAsync(ctx.User, policy)).Succeeded;
     }
 }

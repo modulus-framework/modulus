@@ -66,6 +66,21 @@ check only fires when both a `JwtClaimTenantResolver` is registered *and* the
 caller is authenticated with that claim present; a purely header-driven,
 trusted-edge deployment with no JWT resolver configured is unaffected.
 
+A token whose tenant claim no longer resolves (the tenant was deactivated or
+deleted) is also rejected with 403, rather than falling back to the header.
+
+A signed-in account **without** a tenant claim (a host-level account) may pick
+any tenant through the header or subdomain. To restrict that to host
+administrators, name an authorization policy; any other host account then gets
+403 when it selects a tenant:
+
+```csharp
+builder.Services.AddMultiTenancy(t => t
+    .UseJwtClaimResolver()
+    .UseHeaderResolver()
+    .RequireHostTenantAccessPolicy("tenancy:switch")); // a permission, with AddModulusAuthorization
+```
+
 ## ICurrentTenant
 
 ```csharp

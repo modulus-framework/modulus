@@ -11,8 +11,15 @@ public sealed class InMemoryIdempotencyStoreTests
     private static readonly CachedResponse SampleResponse =
         new(200, new Dictionary<string, string> { ["Content-Type"] = "application/json" }, [1, 2, 3]);
 
-    private static InMemoryIdempotencyStore NewStore(int retentionSeconds = 3600, TimeProvider? clock = null)
-        => new(Options.Create(new IdempotencyOptions { RetentionSeconds = retentionSeconds }), clock);
+    private static InMemoryIdempotencyStore NewStore(
+        int retentionSeconds = 3600, TimeProvider? clock = null, int leaseSeconds = 300)
+        => new(
+            Options.Create(new IdempotencyOptions
+            {
+                RetentionSeconds = retentionSeconds,
+                InProgressLeaseSeconds = leaseSeconds,
+            }),
+            clock);
 
     [Fact]
     public async Task FirstClaim_Starts()
@@ -75,6 +82,47 @@ public sealed class InMemoryIdempotencyStoreTests
         var result = await store.TryBeginAsync("k", "fp", default);
 
         result.Status.Should().Be(IdempotencyStatus.Started); // stale entry evicted, not replayed
+    }
+
+    [Fact]
+    public async Task InProgressClaim_ExpiresAfterTheLease_NotTheRetention()
+    {
+        // A node that crashed mid-request used to hold its key for the whole
+        // retention period (409 on every retry for a day).
+        var clock = new FakeClock(DateTimeOffset.UnixEpoch);
+        var store = NewStore(retentionSeconds: 86_400, clock: clock, leaseSeconds: 60);
+        await store.TryBeginAsync("k", "fp", default);
+
+        clock.Advance(TimeSpan.FromSeconds(59));
+        (await store.TryBeginAsync("k", "fp", default)).Status.Should().Be(IdempotencyStatus.InProgress);
+
+        clock.Advance(TimeSpan.FromSeconds(2));
+        (await store.TryBeginAsync("k", "fp", default)).Status.Should().Be(IdempotencyStatus.Started);
+    }
+
+    [Fact]
+    public async Task CompletedResponse_OutlivesTheLease_ForTheRetention()
+    {
+        var clock = new FakeClock(DateTimeOffset.UnixEpoch);
+        var store = NewStore(retentionSeconds: 3600, clock: clock, leaseSeconds: 60);
+        await store.TryBeginAsync("k", "fp", default);
+        await store.CompleteAsync("k", SampleResponse, default);
+
+        clock.Advance(TimeSpan.FromSeconds(600));
+
+        (await store.TryBeginAsync("k", "fp", default)).Status.Should().Be(IdempotencyStatus.Completed);
+    }
+
+    [Fact]
+    public async Task Lease_IsCappedAtTheRetention()
+    {
+        var clock = new FakeClock(DateTimeOffset.UnixEpoch);
+        var store = NewStore(retentionSeconds: 30, clock: clock, leaseSeconds: 300);
+        await store.TryBeginAsync("k", "fp", default);
+
+        clock.Advance(TimeSpan.FromSeconds(31));
+
+        (await store.TryBeginAsync("k", "fp", default)).Status.Should().Be(IdempotencyStatus.Started);
     }
 
     private sealed class FakeClock(DateTimeOffset now) : TimeProvider

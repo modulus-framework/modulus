@@ -7,6 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — token re-verification, tenant claim and outbox batches (Modulus.Identity, Modulus.Outbox, Modulus.Outbox.MongoDB)
+- **Security:** the refresh and authorization-code grants re-issued tokens without any check for an app with its own user type
+  (`AddModulusIdentity<TContext, AppUser, TRole>`): `UserManager<AppUser>` was cast to `UserManager<ModulusUser>`, which is always null
+  (classes are invariant), so disabled, locked-out and password-changed users kept refreshing with their old roles. Re-verification now
+  runs through `TokenPrincipalFactory` for the registered user type. Apps using `ModulusUser` itself were not affected.
+- Tokens now carry the user's tenant in a `tid` claim (host-level accounts get none), so `UseJwtClaimResolver()` can bind a caller to its
+  tenant and reject a spoofed `X-Tenant-Id`. `PasswordGrantResult` gains `TenantId`; a custom `IPasswordGrantCredentialValidator` should set it.
+- The `name` claim is the user name for every grant. The password grant used the display name (`FullName`) and a refresh the user name, so
+  `ICurrentUser.UserName` and the `CreatedBy`/`UpdatedBy` audit columns changed with the token's age.
+- `OutboxProcessor` saves each message's bookkeeping as soon as it is dispatched instead of once per batch (a crash mid-batch redelivered the
+  whole batch), and both outbox processors stop a batch before its claim expires and release the rest, so a slow batch no longer races a peer
+  that reclaims its rows. Lock expiry in the claim is compared against the application clock that wrote it, not the database's.
+- HTTP idempotency: a claim for a request that is still running now holds its key for `Idempotency:InProgressLeaseSeconds` (default
+  300, capped at `RetentionSeconds`) instead of the full retention period, so a node that crashed mid-request no longer answers every
+  retry with 409 for a day. Completed responses are still kept for `RetentionSeconds`. `RedisIdempotencyStore` also no longer reports an
+  empty fingerprint for a response completed after its claim expired, which made the middleware answer legitimate retries with 422.
+- The password grant spends one password hash on every denial. An unknown user name, and an inactive, unconfirmed or locked-out account,
+  used to be refused without hashing, so response times revealed which user names exist.
+- Modules now shut down (`IModule.ShutdownAsync`) after every hosted service has stopped, as documented, instead of before: they released
+  resources while the server was still draining requests and background workers such as the outbox poller were still running.
+- **Security:** `TenantMiddleware` rejects (403) an authenticated caller whose token names a tenant the store no longer resolves (deactivated
+  or deleted). The cross-check against the header used to be skipped in that case, so such a caller could pick any tenant with `X-Tenant-Id`.
+  A token without a tenant claim (a host-level account) still selects a tenant by header, as before.
+- The outbox processors restore a message's tenant with an empty slug, like the job queue and message consumers, instead of passing the
+  tenant id as the slug.
+- **MongoDB outbox and inbox could not write at all** with MongoDB.Driver 3.x unless the app registered a global Guid serializer: the
+  driver refuses a `Guid` whose representation is unspecified. `MongoOutboxMessage` and `MongoInboxMessage` now store their Guid fields as
+  standard UUIDs (`BsonGuidRepresentation(Standard)`). An app that registered `GuidRepresentation.CSharpLegacy` globally and has existing
+  inbox rows keeps them readable only by migrating them to the standard representation.
+- `AddModulusPersonalDataProtection` no longer fails a Production boot when the key ring is persisted in code (`PersistKeysToDbContext`,
+  `PersistKeysToStackExchangeRedis`, ...) rather than through `KeyRingDirectory`. The check now runs at startup against the built Data
+  Protection options and the host environment instead of reading `ASPNETCORE_ENVIRONMENT` while services are registered.
+
+### Added — host tenant access policy (Modulus.Platform)
+- `AddMultiTenancy(t => t.RequireHostTenantAccessPolicy("tenancy:switch"))`: a signed-in account without a tenant claim (a host-level
+  account) must satisfy the named authorization policy before it may select a tenant through the header or subdomain, otherwise 403.
+  Without the call, host accounts may act in any tenant, as before.
+
 ### Added — authorization-code + PKCE flow (Modulus.Identity, Modulus.Cli)
 - `Identity:AllowAuthorizationCodeFlow` now works: `ModulusAuthorizeController` serves `/connect/authorize`, signs the user in through the app's own Identity cookie login (`/account/login`, returning to the
   same request; `prompt=login` and `max_age` force a new sign-in, `prompt=none` answers `login_required`) and issues a one-time code, which `/connect/token` redeems (`ModulusTokenController` routes the

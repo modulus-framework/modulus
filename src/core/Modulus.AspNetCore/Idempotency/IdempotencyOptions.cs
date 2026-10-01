@@ -42,6 +42,23 @@ public sealed class IdempotencyOptions
     public int RetentionSeconds { get; set; } = 86_400;
 
     /// <summary>
+    /// How long a claim for a request that is still running holds its key, in
+    /// seconds; while it holds, duplicates are answered 409. Defaults to 5
+    /// minutes. Only the <b>completed</b> response is kept for
+    /// <see cref="RetentionSeconds"/>: an in-progress claim used to live that
+    /// long too, so a node that crashed mid-request locked its key out (409 on
+    /// every retry) for a whole day. Set it above the longest guarded request
+    /// takes: a request still running when its lease runs out can be started
+    /// a second time by a retry. Capped at <see cref="RetentionSeconds"/>.
+    /// </summary>
+    [Range(1, int.MaxValue)]
+    public int InProgressLeaseSeconds { get; set; } = 300;
+
+    /// <summary>The claim lifetime actually used: <see cref="InProgressLeaseSeconds"/>, capped at <see cref="RetentionSeconds"/>.</summary>
+    internal TimeSpan InProgressLease
+        => TimeSpan.FromSeconds(Math.Min(InProgressLeaseSeconds, RetentionSeconds));
+
+    /// <summary>
     /// Largest response body cached for replay, in bytes. Responses larger
     /// than this are NOT cached (the request still runs; a retry re-runs it).
     /// Caps per-key memory pressure in the in-memory store. Defaults to

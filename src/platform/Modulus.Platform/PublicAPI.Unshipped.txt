@@ -610,6 +610,7 @@ Modulus.MultiTenancy.CurrentTenant.TenantId.get -> System.Guid?
 Modulus.MultiTenancy.CurrentTenant.TenantSlug.get -> string?
 Modulus.MultiTenancy.Extensions.MultiTenancyBuilder
 Modulus.MultiTenancy.Extensions.MultiTenancyBuilder.MultiTenancyBuilder(Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> void
+Modulus.MultiTenancy.Extensions.MultiTenancyBuilder.RequireHostTenantAccessPolicy(string! policy) -> Modulus.MultiTenancy.Extensions.MultiTenancyBuilder!
 Modulus.MultiTenancy.Extensions.MultiTenancyBuilder.UseHeaderResolver(string! headerName = "X-Tenant-Id") -> Modulus.MultiTenancy.Extensions.MultiTenancyBuilder!
 Modulus.MultiTenancy.Extensions.MultiTenancyBuilder.UseJwtClaimResolver(string! claimType = "tid") -> Modulus.MultiTenancy.Extensions.MultiTenancyBuilder!
 Modulus.MultiTenancy.Extensions.MultiTenancyBuilder.UseSubdomainResolver(string! baseDomain) -> Modulus.MultiTenancy.Extensions.MultiTenancyBuilder!

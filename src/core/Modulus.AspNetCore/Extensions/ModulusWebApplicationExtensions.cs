@@ -66,8 +66,14 @@ internal sealed class ModuleLifecycleHostedService(
 
     public Task StartedAsync(CancellationToken ct) => Task.CompletedTask;
     public Task StartAsync(CancellationToken ct) => Task.CompletedTask;
+    public Task StoppingAsync(CancellationToken ct) => Task.CompletedTask;
+    public Task StopAsync(CancellationToken ct) => Task.CompletedTask;
 
-    public async Task StoppingAsync(CancellationToken ct)
+    // StoppedAsync, not StoppingAsync: StoppingAsync runs before any hosted
+    // service stops, so modules released their resources while the server was
+    // still draining in-flight requests and background workers (the outbox
+    // poller, job queues) were still running on them.
+    public async Task StoppedAsync(CancellationToken ct)
     {
         var loader = sp.GetRequiredService<IModuleLoader>();
 
@@ -82,6 +88,4 @@ internal sealed class ModuleLifecycleHostedService(
         }
     }
 
-    public Task StopAsync(CancellationToken ct) => Task.CompletedTask;
-    public Task StoppedAsync(CancellationToken ct) => Task.CompletedTask;
 }

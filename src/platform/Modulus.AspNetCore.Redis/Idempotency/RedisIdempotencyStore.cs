@@ -10,15 +10,16 @@ namespace Modulus.AspNetCore.Redis.Idempotency;
 /// multi-instance deployment needs so a client retry that lands on another node
 /// still deduplicates. Two keys per idempotency key: a <c>:claim</c> string
 /// written with <c>SET NX</c> (the atomic first-caller-wins claim, holding the
-/// request fingerprint) and a <c>:data</c> string holding the completed response
-/// for replay. Both expire after
+/// request fingerprint), which expires after
+/// <see cref="IdempotencyOptions.InProgressLeaseSeconds"/>, and a <c>:data</c>
+/// string holding the completed response for replay, which expires after
 /// <see cref="IdempotencyOptions.RetentionSeconds"/>.
 /// </summary>
 /// <remarks>
 /// Failure semantics match the in-memory default: a node that crashes
-/// mid-request leaves its claim in place until the retention TTL expires, so
-/// retries in that window are answered 409 rather than double-executed —
-/// idempotency fails closed.
+/// mid-request leaves its claim in place until the lease expires, so retries
+/// in that window are answered 409 rather than double-executed (idempotency
+/// fails closed), and a retry after it re-runs the request.
 /// </remarks>
 public sealed class RedisIdempotencyStore(
     IConnectionMultiplexer redis,
@@ -31,6 +32,8 @@ public sealed class RedisIdempotencyStore(
     private sealed record StoredEntry(string Fingerprint, CachedResponse Response);
 
     private TimeSpan Ttl => TimeSpan.FromSeconds(options.Value.RetentionSeconds);
+    private TimeSpan Lease => TimeSpan.FromSeconds(
+        Math.Min(options.Value.InProgressLeaseSeconds, options.Value.RetentionSeconds));
 
     private string ClaimKey(string key) => storeOptions.KeyPrefix + key + ":claim";
     private string DataKey(string key) => storeOptions.KeyPrefix + key + ":data";
@@ -45,18 +48,18 @@ public sealed class RedisIdempotencyStore(
         // when the claim key has expired ahead of the data key.
         var data = await db.StringGetAsync(DataKey(key));
         if (data.HasValue && Deserialize(data) is { } completed)
-            return IdempotencyResult.Completed(completed.Response, completed.Fingerprint);
+            return IdempotencyResult.Completed(completed.Response, KnownFingerprint(completed));
 
         // Atomic claim: SET NX — exactly one concurrent caller wins.
         var claimed = await db.StringSetAsync(
-            ClaimKey(key), fingerprint, Ttl, keepTtl: false, When.NotExists);
+            ClaimKey(key), fingerprint, Lease, keepTtl: false, When.NotExists);
         if (claimed)
             return IdempotencyResult.Started();
 
         // Lost the claim. The winner may have completed between our two reads.
         data = await db.StringGetAsync(DataKey(key));
         if (data.HasValue && Deserialize(data) is { } justCompleted)
-            return IdempotencyResult.Completed(justCompleted.Response, justCompleted.Fingerprint);
+            return IdempotencyResult.Completed(justCompleted.Response, KnownFingerprint(justCompleted));
 
         var storedFingerprint = await db.StringGetAsync(ClaimKey(key));
         return IdempotencyResult.InProgress(
@@ -85,6 +88,15 @@ public sealed class RedisIdempotencyStore(
         var db = redis.GetDatabase();
         await db.KeyDeleteAsync(ClaimKey(key));
     }
+
+    /// <summary>
+    /// The request fingerprint a completed entry was stored with, or null when
+    /// it is unknown: a request that outlived its lease completes after its
+    /// claim (and so the fingerprint) expired, and an empty fingerprint would
+    /// make every legitimate retry look like a reused key (422).
+    /// </summary>
+    private static string? KnownFingerprint(StoredEntry entry)
+        => string.IsNullOrEmpty(entry.Fingerprint) ? null : entry.Fingerprint;
 
     private static StoredEntry? Deserialize(RedisValue value)
     {

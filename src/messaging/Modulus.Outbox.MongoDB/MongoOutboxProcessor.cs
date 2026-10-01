@@ -113,9 +113,32 @@ public sealed class MongoOutboxProcessor(
         if (messages.Count == 0) return;
 
         // 4. Dispatch each. Dispatch is an irreversible side effect, so we
-        //    mark ProcessedAt only AFTER success.
+        //    mark ProcessedAt only AFTER success. The claim is exclusive only
+        //    until lockUntil: once it is about to expire a peer may reclaim the
+        //    documents, so stop (with a safety margin for the dispatch itself)
+        //    and release the rest for the next cycle instead of racing it
+        //    (mirrors OutboxProcessor).
+        var stopAt = options.LockTimeoutSec > 0
+            ? lockUntil - TimeSpan.FromSeconds(options.LockTimeoutSec / 5.0)
+            : DateTime.MaxValue;
         foreach (var message in messages)
         {
+            if (DateTime.UtcNow >= stopAt)
+            {
+                var releaseFilter = Builders<MongoOutboxMessage>.Filter.And(
+                    ownedFilter,
+                    Builders<MongoOutboxMessage>.Filter.In(
+                        m => m.Id, messages.SkipWhile(m => m.Id != message.Id).Select(m => m.Id)));
+                var releaseUpdate = Builders<MongoOutboxMessage>.Update
+                    .Set(m => m.LockedBy, (string?)null)
+                    .Set(m => m.LockedUntil, (DateTime?)null);
+                await collection.UpdateManyAsync(releaseFilter, releaseUpdate, cancellationToken: CancellationToken.None);
+                logger.LogWarning(
+                    "Mongo outbox batch stopped before its {LockTimeout}s claim expired; released the undispatched messages for the next cycle. Consider a smaller BatchSize or a longer LockTimeoutSec.",
+                    options.LockTimeoutSec);
+                break;
+            }
+
             // Restore the tenant context captured when the outbox row was
             // written so downstream handlers see the correct tenant. A row
             // written in the host context (TenantId == Guid.Empty) dispatches
@@ -125,7 +148,7 @@ public sealed class MongoOutboxProcessor(
                 ? null
                 : currentTenant.Change(message.TenantId == Guid.Empty
                     ? null
-                    : new TenantInfo(message.TenantId, message.TenantId.ToString("N")));
+                    : new TenantInfo(message.TenantId, string.Empty));
 
             // Restore the originating correlation id so it flows into the
             // in-process handlers and onto the broker envelope for cross-service

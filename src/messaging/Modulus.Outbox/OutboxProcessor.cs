@@ -116,11 +116,16 @@ public sealed class OutboxProcessor(
         //    provider-agnostic equivalent of SELECT ... FOR UPDATE SKIP LOCKED.
         //    LockUntil is computed fresh here (not from the stale `now`) so the
         //    full LockTimeoutSec is available from the moment of claiming.
-        var lockUntil = DateTime.UtcNow.AddSeconds(options.LockTimeoutSec);
+        //    The expiry check compares against a parameter taken from the SAME
+        //    clock that wrote LockedUntil (the app's), never the database's
+        //    DateTime.UtcNow translation: skew between the app and DB clocks
+        //    would otherwise shorten or stretch every lock.
+        var claimedAt = DateTime.UtcNow;
+        var lockUntil = claimedAt.AddSeconds(options.LockTimeoutSec);
         await db.Set<OutboxMessage>()
             .Where(m => candidateIds.Contains(m.Id)
                      && m.ProcessedAt == null
-                     && (m.LockedUntil == null || m.LockedUntil < DateTime.UtcNow))
+                     && (m.LockedUntil == null || m.LockedUntil < claimedAt))
             .ExecuteUpdateAsync(
                 s => s.SetProperty(m => m.LockedBy, _instanceId)
                       .SetProperty(m => m.LockedUntil, lockUntil),
@@ -140,14 +145,43 @@ public sealed class OutboxProcessor(
         if (messages.Count == 0) return pendingCount;
 
         // 4. Dispatch each. Dispatch is an irreversible side effect, so we mark
-        //    ProcessedAt only AFTER success. If the process crashes between a
-        //    successful dispatch and SaveChanges, the LockTimeout will expire
-        //    the claim and the message is redelivered (at-least-once) —
-        //    consumers MUST dedup via the inbox.
+        //    ProcessedAt only AFTER success, and persist that bookkeeping after
+        //    EVERY message: saving once per batch meant a crash (or a lock that
+        //    expired mid-batch) redelivered every message already dispatched in
+        //    it. What remains is the inherent at-least-once window of a single
+        //    message (crash between its dispatch and its save), which consumers
+        //    MUST dedup via the inbox.
+        //
+        //    The claim is only exclusive until lockUntil. Once it is about to
+        //    expire another instance may reclaim the rows, so stop dispatching
+        //    (with a safety margin for the dispatch itself) and release the rest
+        //    for the next cycle instead of racing a peer for them.
+        //    (A non-positive LockTimeoutSec disables the claim window, and so
+        //    this cut-off, rather than stopping every batch before it starts.)
+        var stopAt = options.LockTimeoutSec > 0
+            ? lockUntil - TimeSpan.FromSeconds(options.LockTimeoutSec / 5.0)
+            : DateTime.MaxValue;
         var currentTenant = ssp.GetService<ICurrentTenant>();
         var correlation = ssp.GetService<ICorrelationContext>();
-        foreach (var message in messages)
+        for (var i = 0; i < messages.Count; i++)
         {
+            var message = messages[i];
+            if (DateTime.UtcNow >= stopAt)
+            {
+                var unsent = messages.Count - i;
+                foreach (var pending in messages.Skip(i))
+                {
+                    pending.LockedBy = null;
+                    pending.LockedUntil = null;
+                }
+
+                await db.SaveChangesAsync(CancellationToken.None);
+                logger.LogWarning(
+                    "Outbox batch for {Context} stopped before its {LockTimeout}s claim expired; released {Unsent} undispatched message(s) for the next cycle. Consider a smaller BatchSize or a longer LockTimeoutSec.",
+                    db.GetType().Name, options.LockTimeoutSec, unsent);
+                break;
+            }
+
             // Restore the tenant context captured when the outbox row was
             // written so downstream handlers (query filters, etc.) see the
             // correct tenant. A row written in the host context (TenantId ==
@@ -158,7 +192,7 @@ public sealed class OutboxProcessor(
                 ? null
                 : currentTenant.Change(message.TenantId == Guid.Empty
                     ? null
-                    : new TenantInfo(message.TenantId, message.TenantId.ToString("N")));
+                    : new TenantInfo(message.TenantId, string.Empty));
 
             // Restore the originating correlation id so it flows into the
             // in-process handlers and onto the broker envelope for cross-service
@@ -221,16 +255,16 @@ public sealed class OutboxProcessor(
                 correlationScope?.Dispose();
                 tenantScope?.Dispose();
             }
+
+            // CancellationToken.None, deliberately not `ct`: the message has
+            // already had its (irreversible) side effect — a broker publish, an
+            // inbox claim, a handler's own writes. A graceful shutdown
+            // cancelling THIS save would lose its ProcessedAt/RetryCount/lock
+            // release after the real work already occurred, so the next poll
+            // would redispatch a message the outside world already saw.
+            await db.SaveChangesAsync(CancellationToken.None);
         }
 
-        // CancellationToken.None, deliberately not `ct`: every message above
-        // that reached DispatchAsync already had its (irreversible) side
-        // effect happen — a broker publish, an inbox claim, a handler's own
-        // writes. A graceful shutdown cancelling THIS save would lose the
-        // ProcessedAt/RetryCount/lock-release bookkeeping for all of them
-        // after the real work already occurred, so the next poll would
-        // redispatch messages the outside world already saw.
-        await db.SaveChangesAsync(CancellationToken.None);
         return pendingCount;
     }
 

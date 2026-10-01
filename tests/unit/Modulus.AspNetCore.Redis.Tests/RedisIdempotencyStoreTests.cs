@@ -166,6 +166,44 @@ public sealed class RedisIdempotencyStoreTests
     }
 
     [Fact]
+    public async Task The_claim_expires_after_the_in_progress_lease_not_the_retention()
+    {
+        // A node that crashed mid-request used to hold its claim for the whole
+        // retention period, answering every retry 409 for a day.
+        var mux = Substitute.For<IConnectionMultiplexer>();
+        mux.GetDatabase().Returns(_db);
+        var store = new RedisIdempotencyStore(
+            mux,
+            Options.Create(new IdempotencyOptions { RetentionSeconds = 86_400, InProgressLeaseSeconds = 45 }),
+            new RedisIdempotencyStoreOptions());
+
+        await store.TryBeginAsync("k1", "fp", CancellationToken.None);
+
+        await _db.Received(1).StringSetAsync(
+            Arg.Is<RedisKey>(k => k == Prefix + "k1:claim"),
+            Arg.Is<RedisValue>(v => v == "fp"),
+            TimeSpan.FromSeconds(45),
+            false,
+            When.NotExists,
+            Arg.Any<CommandFlags>());
+    }
+
+    [Fact]
+    public async Task A_response_completed_after_its_claim_expired_replays_without_a_false_reuse_conflict()
+    {
+        // The request outlived its lease, so CompleteAsync found no claim and
+        // stored an empty fingerprint. Reporting "" would make the middleware
+        // answer every legitimate retry 422 (key reused with another payload).
+        _db.StringGetAsync(Prefix + "k1:data", Arg.Any<CommandFlags>())
+            .Returns((RedisValue)StoredJson(fingerprint: ""));
+
+        var result = await _store.TryBeginAsync("k1", "fp", CancellationToken.None);
+
+        result.Status.Should().Be(IdempotencyStatus.Completed);
+        result.Fingerprint.Should().BeNull();
+    }
+
+    [Fact]
     public async Task Abandon_deletes_only_the_claim_key()
     {
         await _store.AbandonAsync("k1", CancellationToken.None);

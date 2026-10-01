@@ -446,11 +446,13 @@ but for synchronous HTTP callers/retries rather than integration events.
 - **Store abstraction** — `IIdempotencyStore` (atomic `TryBeginAsync` →
   Started/InProgress/Completed, plus `CompleteAsync`/`AbandonAsync`). Default
   `InMemoryIdempotencyStore` is **per-instance, TTL-bounded**
-  (`RetentionSeconds`, default 24h) — fine for a single node/dev/tests. Multi-node
+  (`RetentionSeconds`, default 24h, for completed responses; an in-progress claim
+  holds its key only for `InProgressLeaseSeconds`, default 5 min, so a node that
+  crashes mid-request no longer locks the key out for a day) — fine for a single node/dev/tests. Multi-node
   deployments register their own `IIdempotencyStore` (Redis/EF) **before**
   `AddModulusIdempotency` (`TryAdd` leaves it in place). Config section
   `Idempotency` (`HeaderName`/`Methods`/`RequireKey`/`ValidateRequestMatch`/
-  `MaxKeyLength`/`RetentionSeconds`). Covered by `Modulus.AspNetCore.Tests`
+  `MaxKeyLength`/`RetentionSeconds`/`InProgressLeaseSeconds`). Covered by `Modulus.AspNetCore.Tests`
   (13 tests: store claim/expiry/replay state machine + middleware
   passthrough/replay/409/422/400/5xx-not-cached).
 - **OpenAPI hardening** (`Modulus.AspNetCore`) — `AddModulusOpenApi(config)`

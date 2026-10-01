@@ -38,6 +38,12 @@ public sealed record PasswordGrantResult
     /// <summary>Email copied into the <c>email</c> claim when granted.</summary>
     public string? Email { get; init; }
 
+    /// <summary>
+    /// The tenant the user belongs to, copied into the <c>tid</c> claim (what <c>UseJwtClaimResolver()</c> reads, so a
+    /// caller cannot switch tenants with a spoofed header). Null for a host-level account.
+    /// </summary>
+    public Guid? TenantId { get; init; }
+
     /// <summary>Role names copied into the <c>role</c> claim when granted.</summary>
     public IReadOnlyList<string> Roles { get; init; } = [];
 

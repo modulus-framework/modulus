@@ -1,5 +1,7 @@
 namespace Modulus.Inbox.MongoDB;
 
+using global::MongoDB.Bson;
+using global::MongoDB.Bson.Serialization.Attributes;
 using global::MongoDB.Driver;
 using Modulus.Inbox.Abstractions;
 
@@ -21,7 +23,10 @@ public sealed class MongoInboxMessage
     /// and adopts them. See <see cref="Modulus.Inbox.Abstractions.InboxMessage.HandlerName"/>.
     /// </para>
     /// </summary>
+    [BsonGuidRepresentation(GuidRepresentation.Standard)]
     public Guid Id { get; init; }
+
+    [BsonGuidRepresentation(GuidRepresentation.Standard)]
 
     public Guid EventId { get; init; }
 
@@ -30,6 +35,7 @@ public sealed class MongoInboxMessage
 
     public string MessageType { get; init; } = default!;
     public string Payload { get; init; } = default!;
+    [BsonGuidRepresentation(GuidRepresentation.Standard)]
     public Guid TenantId { get; init; }
     public string ModuleName { get; init; } = default!;
     public DateTime ReceivedAt { get; init; } = DateTime.UtcNow;

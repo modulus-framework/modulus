@@ -8,6 +8,9 @@ public sealed class JwtClaimTenantResolver(
     string claimType = "tid")
     : ITenantResolver
 {
+    /// <summary>Whether the authenticated principal carries a tenant claim at all, resolvable or not.</summary>
+    internal bool HasClaim(HttpContext ctx) => ctx.User.FindFirst(claimType) is not null;
+
     public Task<TenantInfo?> ResolveAsync(
         HttpContext ctx, CancellationToken ct)
     {

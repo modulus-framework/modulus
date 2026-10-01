@@ -20,7 +20,8 @@
     "Methods": [ "POST", "PATCH" ],
     "RequireKey": false,
     "ValidateRequestMatch": true,
-    "RetentionSeconds": 86400
+    "RetentionSeconds": 86400,
+    "InProgressLeaseSeconds": 300
   },
 {{ end }}  "OpenApi": {
     "Title": "{{ app_name }} API",

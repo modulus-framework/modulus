@@ -112,27 +112,13 @@ public class ModulusTokenController(
             return Forbid(properties, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
         }
 
-        var identity = new ClaimsIdentity(
-            authenticationType: "OpenIddict",
-            nameType: OpenIddictConstants.Claims.Name,
-            roleType: OpenIddictConstants.Claims.Role);
-
-        identity.AddClaim(new Claim(OpenIddictConstants.Claims.Subject, result.Subject!));
-        if (!string.IsNullOrWhiteSpace(result.UserName))
-            identity.AddClaim(new Claim(OpenIddictConstants.Claims.Name, result.UserName));
-        if (!string.IsNullOrWhiteSpace(result.Email))
-            identity.AddClaim(new Claim(OpenIddictConstants.Claims.Email, result.Email));
-        foreach (var role in result.Roles)
-            identity.AddClaim(new Claim(OpenIddictConstants.Claims.Role, role));
-
-        // Embed the security stamp so the refresh handler can detect
-        // password changes / security invalidations without a DB round-trip
-        // on every access-token use. The claim is only in the access token
-        // (not the identity token) and is validated on refresh.
-        if (!string.IsNullOrWhiteSpace(result.SecurityStamp))
-            identity.AddClaim(new Claim("security_stamp", result.SecurityStamp));
-
-        var principal = new ClaimsPrincipal(identity);
+        var principal = TokenPrincipalFactory.Create(
+            result.Subject!,
+            result.UserName,
+            result.Email,
+            result.TenantId,
+            result.Roles,
+            result.SecurityStamp);
 
         // Grant only scopes that are both requested and explicitly allowed.
         var scopes = PasswordGrant.AuthorizeScopes(request.GetScopes(), AllowedGrantScopes);
@@ -151,60 +137,22 @@ public class ModulusTokenController(
         if (!info.Succeeded || info.Principal is null)
             return InvalidRefreshGrant();
 
-        // Resolve the UserManager for the concrete user type registered by
-        // AddModulusIdentity<TUser>.  GetService<UserManager<ModulusUser>>
-        // returns null for derived types (e.g. AppUser : ModulusUser), which
-        // caused the controller to silently skip ALL security checks
-        // (IsActive, roles, security stamp, lockout).
-        var rawUserManager = ResolveUserManagerRaw();
-        var userManager = rawUserManager as UserManager<ModulusUser>;
-
+        // Re-verify against the store for the concrete user type registered by AddModulusIdentity<TUser>. The manager
+        // is kept untyped: UserManager<AppUser> is not a UserManager<ModulusUser>, so casting it made every derived user
+        // type skip the active, lock-out and security-stamp checks and keep its stale claims.
         ClaimsPrincipal principal;
-
-        if (userManager is not null)
+        if (ResolveUserManager() is { } userManager)
         {
-            // Re-verify the subject is still present and active before
-            // re-issuing tokens. A refresh token can outlive a disabled/
-            // deleted account, so we must not blindly mint a new access token
-            // for a stale subject.
-            var subject = info.Principal.GetClaim(OpenIddictConstants.Claims.Subject);
-            var user = string.IsNullOrWhiteSpace(subject)
-                ? null
-                : await userManager.FindByIdAsync(subject);
-
-            if (user is not { IsActive: true })
+            var refreshed = await TokenPrincipalFactory.RevalidateAsync(userManager, info.Principal);
+            if (refreshed is null)
                 return InvalidRefreshGrant();
 
-            // Lock-out check: a locked-out user must not be able to refresh.
-            // This mirrors the sign-in flow's lock-out policy.
-            if (await userManager.IsLockedOutAsync(user))
-                return InvalidRefreshGrant();
-
-            // Security-stamp check: if the stamp stored in the refresh token
-            // differs from the user's current stamp, the user changed their
-            // password or was otherwise security-invalidated. Reject the
-            // refresh so the user must re-authenticate. This mirrors
-            // SignInManager's ValidateSecurityStampAsync for opaque tokens.
-            var storedStamp = info.Principal.FindFirstValue("security_stamp");
-            var currentStamp = await userManager.GetSecurityStampAsync(user);
-            if (!string.IsNullOrWhiteSpace(storedStamp) &&
-                !string.Equals(storedStamp, currentStamp, StringComparison.Ordinal))
-            {
-                return InvalidRefreshGrant();
-            }
-
-            // Rebuild the dynamic claims (name/email/roles) from the CURRENT
-            // store state: minting from the refresh principal's frozen claims
-            // would keep a role change, demotion, or profile edit invisible
-            // until the user logs in again. The subject travels with the
-            // refresh token itself, so only volatile claims are refreshed.
-            principal = await BuildPrincipalAsync(user, rawUserManager!);
+            principal = refreshed;
             principal.SetScopes(info.Principal.GetScopes());
         }
         else
         {
-            // No Identity user store configured for ModulusUser — nothing to
-            // re-verify or refresh beyond the (already server-validated)
+            // No Identity user store configured — nothing to re-verify or refresh beyond the (already server-validated)
             // refresh token; honour its claims as-is.
             principal = info.Principal;
         }
@@ -215,80 +163,14 @@ public class ModulusTokenController(
     }
 
     /// <summary>
-    /// Builds a fresh ClaimsPrincipal from the current store state. Uses
-    /// reflection to invoke UserManager methods on the concrete user type
-    /// so derived <c>TUser</c> types are handled correctly — a
-    /// <c>UserManager&lt;DerivedUser&gt;</c> is NOT covariant with
-    /// <c>UserManager&lt;ModulusUser&gt;</c>, so casting fails at runtime.
+    /// Resolves the <c>UserManager&lt;TUser&gt;</c> for the user type registered by <c>AddModulusIdentity&lt;TUser&gt;</c>
+    /// (the per-host <see cref="ModulusUserTypeDescriptor"/>; without it the base <see cref="ModulusUser"/>, so the
+    /// controller stays directly constructible). Null when no Identity store is registered.
     /// </summary>
-    private static async Task<ClaimsPrincipal> BuildPrincipalAsync(
-        ModulusUser user, object userManager)
+    private object? ResolveUserManager()
     {
-        var userType = userManager.GetType().GetGenericArguments()[0];
-        var userManagerType = typeof(UserManager<>).MakeGenericType(userType);
-
-        var identity = new ClaimsIdentity(
-            authenticationType: "OpenIddict",
-            nameType: OpenIddictConstants.Claims.Name,
-            roleType: OpenIddictConstants.Claims.Role);
-
-        identity.AddClaim(new Claim(OpenIddictConstants.Claims.Subject, user.Id.ToString()));
-        if (!string.IsNullOrWhiteSpace(user.UserName))
-            identity.AddClaim(new Claim(OpenIddictConstants.Claims.Name, user.UserName));
-        if (!string.IsNullOrWhiteSpace(user.Email))
-            identity.AddClaim(new Claim(OpenIddictConstants.Claims.Email, user.Email));
-
-        var getRoles = userManagerType.GetMethod(nameof(UserManager<ModulusUser>.GetRolesAsync))
-            ?? throw new InvalidOperationException("GetRolesAsync method not found on UserManager.");
-        // UserManager<T>.GetRolesAsync returns Task<IList<string>>; Task<T> is
-        // invariant, so the await must be typed Task<IList<string>> — a cast to
-        // Task<IReadOnlyList<string>> would throw InvalidCastException on every
-        // refresh grant. IList<string> IS assignable to IReadOnlyList<string>.
-        var roles = (IReadOnlyList<string>)await (Task<IList<string>>)getRoles.Invoke(userManager, [user])!;
-
-        foreach (var role in roles)
-            identity.AddClaim(new Claim(OpenIddictConstants.Claims.Role, role));
-
-        var getStamp = userManagerType.GetMethod(nameof(UserManager<ModulusUser>.GetSecurityStampAsync))
-            ?? throw new InvalidOperationException("GetSecurityStampAsync method not found on UserManager.");
-        var stamp = (string?)await (Task<string>)getStamp.Invoke(userManager, [user])!;
-
-        if (!string.IsNullOrWhiteSpace(stamp))
-            identity.AddClaim(new Claim("security_stamp", stamp));
-
-        return new ClaimsPrincipal(identity);
-    }
-
-    /// <summary>
-    /// Resolves <c>UserManager&lt;TConcreteUser&gt;</c> from DI using the
-    /// actual user type registered by <c>AddModulusIdentity&lt;TUser&gt;</c>.
-    /// </summary>
-    /// <remarks>
-    /// The previous code resolved <c>UserManager&lt;ModulusUser&gt;</c>, which
-    /// returns <c>null</c> when a derived <c>TUser</c> is registered — causing
-    /// the refresh handler to silently skip the IsActive check, role/claim
-    /// rebuild, security-stamp verification, and lock-out validation.  This
-    /// method resolves the correct concrete <c>UserManager&lt;T&gt;</c> using
-    /// the per-host <see cref="ModulusUserTypeDescriptor"/> at runtime.
-    /// </remarks>
-    private UserManager<ModulusUser>? ResolveUserManager()
-        => ResolveUserManagerRaw() as UserManager<ModulusUser>;
-
-    /// <summary>
-    /// Resolves the raw <c>UserManager&lt;TConcreteUser&gt;</c> object from
-    /// DI without casting — used by <see cref="BuildPrincipalAsync"/> which
-    /// invokes methods via reflection (to support derived user types where
-    /// the concrete <c>UserManager&lt;DerivedUser&gt;</c> is NOT covariant
-    /// with <c>UserManager&lt;ModulusUser&gt;</c>).
-    /// </summary>
-    private object? ResolveUserManagerRaw()
-    {
-        // The descriptor is optional so the controller stays directly
-        // constructible (tests, custom wiring); without it the base
-        // ModulusUser type is used.
         var userType = userTypeDescriptor?.UserType ?? typeof(ModulusUser);
-        var userManagerType = typeof(UserManager<>).MakeGenericType(userType);
-        return HttpContext.RequestServices.GetService(userManagerType);
+        return HttpContext.RequestServices.GetService(typeof(UserManager<>).MakeGenericType(userType));
     }
 
     private ForbidResult InvalidRefreshGrant()

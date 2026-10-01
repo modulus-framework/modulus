@@ -32,7 +32,8 @@ a minimal app contains just `ConnectionStrings`, `Logging`, `OpenApi`,
     "Methods": ["POST", "PATCH"],
     "RequireKey": false,
     "ValidateRequestMatch": true,
-    "RetentionSeconds": 86400
+    "RetentionSeconds": 86400,
+    "InProgressLeaseSeconds": 300
   },
   "OpenApi": {
     "Title": "MyApp API",

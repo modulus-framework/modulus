@@ -54,6 +54,22 @@ public sealed class MultiTenancyBuilder(IServiceCollection services)
         return this;
     }
 
+    /// <summary>
+    /// Requires an authenticated account without a tenant claim (a host-level account) to satisfy
+    /// <paramref name="policy"/> before it may select a tenant through another resolver (for example
+    /// the <c>X-Tenant-Id</c> header); otherwise the request gets 403. Without this call such an
+    /// account may act in any tenant. Accounts that carry a tenant claim are always held to it, and
+    /// anonymous requests are unaffected. The policy is evaluated with <c>IAuthorizationService</c>,
+    /// so a Modulus permission name (<c>tenancy:switch</c>) works once <c>AddModulusAuthorization</c>
+    /// is registered.
+    /// </summary>
+    public MultiTenancyBuilder RequireHostTenantAccessPolicy(string policy)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(policy);
+        services.Configure<TenantAccessOptions>(o => o.HostTenantAccessPolicy = policy);
+        return this;
+    }
+
     public MultiTenancyBuilder UseSubdomainResolver(
         string baseDomain)
     {
@@ -62,4 +78,9 @@ public sealed class MultiTenancyBuilder(IServiceCollection services)
                 sp.GetRequiredService<ITenantStore>(), baseDomain));
         return this;
     }
+}
+
+internal sealed class TenantAccessOptions
+{
+    public string? HostTenantAccessPolicy { get; set; }
 }

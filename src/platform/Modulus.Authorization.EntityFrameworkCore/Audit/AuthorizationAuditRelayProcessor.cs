@@ -93,7 +93,7 @@ public sealed class AuthorizationAuditRelayProcessor(
                 ? null
                 : currentTenant.Change(message.TenantId == Guid.Empty
                     ? null
-                    : new TenantInfo(message.TenantId, message.TenantId.ToString("N")));
+                    : new TenantInfo(message.TenantId, string.Empty));
 
             IDisposable? correlationScope =
                 correlation is not null && !string.IsNullOrEmpty(message.CorrelationId)

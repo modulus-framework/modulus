@@ -125,6 +125,8 @@ Modulus.Identity.Abstractions.PasswordGrantResult.Error.init -> void
 Modulus.Identity.Abstractions.PasswordGrantResult.PasswordGrantResult() -> void
 Modulus.Identity.Abstractions.PasswordGrantResult.Roles.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Modulus.Identity.Abstractions.PasswordGrantResult.Roles.init -> void
+Modulus.Identity.Abstractions.PasswordGrantResult.TenantId.get -> System.Guid?
+Modulus.Identity.Abstractions.PasswordGrantResult.TenantId.init -> void
 Modulus.Identity.Abstractions.PasswordGrantResult.SecurityStamp.get -> string?
 Modulus.Identity.Abstractions.PasswordGrantResult.SecurityStamp.init -> void
 Modulus.Identity.Abstractions.PasswordGrantResult.Subject.get -> string?

@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Modulus.Core.Abstractions;
+using Modulus.MultiTenancy.Extensions;
 using Modulus.MultiTenancy.Resolvers;
 using Xunit;
 
@@ -114,6 +115,106 @@ public sealed class TenantMiddlewareTests
         seenByNext.Should().Be(TenantB.TenantId);
     }
 
+    [Fact]
+    public async Task Authenticated_caller_whose_tenant_no_longer_resolves_cannot_fall_back_to_the_header()
+    {
+        // The token names a tenant the store no longer returns (deactivated or deleted);
+        // the cross-check used to be skipped, so the header picked any tenant.
+        var store = new FakeStore(TenantB);
+        var reached = false;
+        var ctx = BuildContext(
+            store,
+            headerTenantId: TenantB.TenantId,
+            claimTenantId: TenantA.TenantId,
+            authenticated: true);
+
+        await InvokeAsync(ctx, store, next: _ => { reached = true; return Task.CompletedTask; });
+
+        ctx.Response.StatusCode.Should().Be(StatusCodes.Status403Forbidden);
+        reached.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Authenticated_host_account_without_a_tenant_claim_still_selects_a_tenant_by_header()
+    {
+        var store = new FakeStore(TenantA, TenantB);
+        Guid? seenByNext = null;
+        var ctx = BuildContext(
+            store,
+            headerTenantId: TenantB.TenantId,
+            claimTenantId: null,
+            authenticated: true);
+
+        await InvokeAsync(
+            ctx, store,
+            next: c => { seenByNext = c.RequestServices.GetRequiredService<CurrentTenant>().TenantId; return Task.CompletedTask; });
+
+        seenByNext.Should().Be(TenantB.TenantId);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task Host_tenant_access_policy_gates_a_host_account_selecting_a_tenant_by_header(bool holdsPolicy)
+    {
+        var store = new FakeStore(TenantA, TenantB);
+        var reached = false;
+        var ctx = BuildContext(
+            store,
+            headerTenantId: TenantB.TenantId,
+            claimTenantId: null,
+            authenticated: true,
+            configureServices: RequireHostAdmin,
+            roles: holdsPolicy ? ["HostAdmin"] : []);
+
+        await InvokeAsync(ctx, store, next: _ => { reached = true; return Task.CompletedTask; });
+
+        reached.Should().Be(holdsPolicy);
+        if (!holdsPolicy)
+            ctx.Response.StatusCode.Should().Be(StatusCodes.Status403Forbidden);
+    }
+
+    [Fact]
+    public async Task Host_tenant_access_policy_does_not_apply_to_a_tenant_account_in_its_own_tenant()
+    {
+        var store = new FakeStore(TenantA, TenantB);
+        var reached = false;
+        var ctx = BuildContext(
+            store,
+            headerTenantId: TenantA.TenantId,
+            claimTenantId: TenantA.TenantId,
+            authenticated: true,
+            configureServices: RequireHostAdmin);
+
+        await InvokeAsync(ctx, store, next: _ => { reached = true; return Task.CompletedTask; });
+
+        reached.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Host_tenant_access_policy_does_not_apply_to_anonymous_requests()
+    {
+        var store = new FakeStore(TenantA, TenantB);
+        var reached = false;
+        var ctx = BuildContext(
+            store,
+            headerTenantId: TenantB.TenantId,
+            claimTenantId: null,
+            authenticated: false,
+            configureServices: RequireHostAdmin);
+
+        await InvokeAsync(ctx, store, next: _ => { reached = true; return Task.CompletedTask; });
+
+        reached.Should().BeTrue();
+    }
+
+    private static void RequireHostAdmin(IServiceCollection services)
+    {
+        services.AddLogging();
+        services.AddAuthorization(o => o.AddPolicy("TenantSwitch", p => p.RequireRole("HostAdmin")));
+        services.AddMultiTenancy(t => t.RequireHostTenantAccessPolicy("TenantSwitch"));
+    }
+
     // ── Helpers ──────────────────────────────────────────────────────
 
     private static Task InvokeAsync(
@@ -132,10 +233,13 @@ public sealed class TenantMiddlewareTests
         Guid? headerTenantId,
         Guid? claimTenantId,
         bool authenticated,
-        bool includeJwtResolver = true)
+        bool includeJwtResolver = true,
+        Action<IServiceCollection>? configureServices = null,
+        params string[] roles)
     {
         var services = new ServiceCollection();
         services.AddSingleton<CurrentTenant>();
+        configureServices?.Invoke(services);
         var ctx = new DefaultHttpContext { RequestServices = services.BuildServiceProvider() };
 
         if (headerTenantId is not null)
@@ -148,6 +252,8 @@ public sealed class TenantMiddlewareTests
         {
             claims.Add(new Claim("tid", claimTenantId.ToString()!));
         }
+
+        claims.AddRange(roles.Select(r => new Claim(ClaimTypes.Role, r)));
 
         ctx.User = authenticated
             ? new ClaimsPrincipal(new ClaimsIdentity(claims, "test"))

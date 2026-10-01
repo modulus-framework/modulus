@@ -26,9 +26,11 @@ services.AddModulusPersonalDataProtection(config);
 }
 ```
 
-`KeyRingDirectory` is required in Production — without key-ring persistence
-every restart/replica mints a fresh ring and old ciphertext becomes
-undecryptable. `ApplicationName` isolates the ring when several apps share a
+The key ring must be persisted in Production — without it every
+restart/replica mints a fresh ring and old ciphertext becomes undecryptable.
+Set `KeyRingDirectory`, or persist the ring in code
+(`services.AddDataProtection().PersistKeysToDbContext<...>()`, Redis, Azure
+Blob, ...); startup fails in Production when neither is configured. `ApplicationName` isolates the ring when several apps share a
 folder.
 
 ## Marking Fields
