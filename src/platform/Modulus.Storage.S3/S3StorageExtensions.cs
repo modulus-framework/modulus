@@ -45,8 +45,7 @@ public static class S3StorageExtensions
                 new BasicAWSCredentials(options.AccessKey, options.SecretKey), config);
 
         services.AddSingleton<IAmazonS3>(client);
-        services.RemoveAll<IFileStorage>();
-        services.AddSingleton<IFileStorage, S3FileStorage>();
+        services.UseFileStorageProvider<S3FileStorage>();
         return services;
     }
 }

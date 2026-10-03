@@ -99,13 +99,19 @@ public class ModulusWebAppFactory<TEntryPoint> : WebApplicationFactory<TEntryPoi
     /// <param name="permissions">Optional permissions (each becomes a <c>permission</c> claim).</param>
     /// <param name="tenantId">Optional tenant id, sent as the <c>X-Tenant-Id</c>
     /// header; requires the app's tenant store to resolve it.</param>
+    /// <param name="pinTenant">When <see langword="true"/> (and <paramref name="tenantId"/> is set), the
+    /// principal also carries a <c>tid</c> claim for that tenant, like a tenant-bound token. When
+    /// <see langword="false"/> it is a host account selecting the tenant by header, which
+    /// <c>RequireMembership()</c> admits only with a membership (seed one through
+    /// <c>InMemoryTenantMembershipStore</c> or the EF <c>TenantManager.AddMemberAsync</c>).</param>
     public HttpClient CreateAuthenticatedClient(
         Guid? userId = null,
         string? userName = null,
         string? email = null,
         IEnumerable<string>? roles = null,
         IEnumerable<string>? permissions = null,
-        Guid? tenantId = null)
+        Guid? tenantId = null,
+        bool pinTenant = false)
     {
         var client = CreateClient();
         var headers = client.DefaultRequestHeaders;
@@ -120,7 +126,11 @@ public class ModulusWebAppFactory<TEntryPoint> : WebApplicationFactory<TEntryPoi
         if (permissions is not null)
             headers.Add(TestAuthDefaults.PermissionsHeader, string.Join(',', permissions));
         if (tenantId is not null)
+        {
             headers.Add("X-Tenant-Id", tenantId.Value.ToString());
+            if (pinTenant)
+                headers.Add(TestAuthDefaults.TenantIdHeader, tenantId.Value.ToString());
+        }
 
         return client;
     }

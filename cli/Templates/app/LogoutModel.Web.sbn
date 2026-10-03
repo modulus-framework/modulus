@@ -1,21 +1,19 @@
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Modulus.Bff.Tokens;
 
 namespace {{ root_namespace }}.Web.Pages.Account;
 
 /// <summary>
-/// Signs the browser out by removing the auth cookie (the token server side
-/// is untouched — the API host's revocation endpoint is what would invalidate
-/// the token pair itself).
+/// Ends the BFF web session: revokes the refresh and access tokens at the auth server (when it has a revocation
+/// endpoint), removes them from the server-side store and deletes the cookie. With an OIDC login the browser then
+/// visits the auth server's end-session page, so the user is signed out there too.
 /// </summary>
-public class LogoutModel : PageModel
+public class LogoutModel(IBffSessionService session) : PageModel
 {
     public async Task<IActionResult> OnGetAsync()
     {
-        if (User.Identity?.IsAuthenticated == true)
-            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-        return LocalRedirect("/Account/Login");
+        var endSessionUrl = await session.SignOutAsync(HttpContext, LoginModel.Client, "/Account/Login", HttpContext.RequestAborted);
+        return endSessionUrl is null ? LocalRedirect("/Account/Login") : Redirect(endSessionUrl);
     }
 }

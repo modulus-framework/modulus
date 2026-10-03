@@ -24,6 +24,9 @@ public sealed class CurrentTenant : ICurrentTenant
     public string? TenantSlug => _current.Value?.Tenant?.TenantSlug;
     public bool IsAvailable => _current.Value?.Tenant is not null;
 
+    /// <summary>The full metadata of the ambient tenant (group, display name), when one is resolved.</summary>
+    public TenantInfo? Tenant => _current.Value?.Tenant;
+
     /// <summary>
     /// True only in an <b>explicit</b> host scope (<c>Change(null)</c>). An
     /// unresolved tenant is not host — it is fail-closed. See

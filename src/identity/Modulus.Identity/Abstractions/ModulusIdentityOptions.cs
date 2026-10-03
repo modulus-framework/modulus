@@ -89,6 +89,30 @@ public sealed class ModulusIdentityOptions
     public bool AllowAuthorizationCodeFlow { get; set; }
 
     /// <summary>
+    /// Enables the OAuth 2.0 client credentials grant for machine-to-machine callers (a partner integration, a backend
+    /// service, a BFF calling on its own behalf). The client must be a confidential client registered with the token
+    /// endpoint and the client-credentials grant; the issued token's subject is the client id and it carries no user.
+    /// <b>Off by default.</b>
+    /// </summary>
+    public bool AllowClientCredentialsFlow { get; set; }
+
+    /// <summary>
+    /// The token server's fixed issuer (e.g. <c>https://id.example.com/</c>). When null, OpenIddict uses the address of
+    /// each request, so a host listening on more than one endpoint (HTTP plus an HTTP/2-only gRPC endpoint, or an internal
+    /// address next to the public one) rejects tokens issued on the other endpoint. Set it whenever the host has several.
+    /// </summary>
+    public string? Issuer { get; set; }
+
+    /// <summary>
+    /// Encrypts access tokens (OpenIddict's default), so only this server can read them: other services must validate
+    /// them through the introspection endpoint. Set to <c>false</c> to issue signed (not encrypted) JWT access tokens
+    /// (RFC 9068) that any service, BFF or microservice can validate locally against the published signing keys
+    /// (<c>/.well-known/jwks</c>) without a call back to this server. <b>On by default.</b> Turning it off exposes the
+    /// token's claims to whoever holds the token, so keep secrets out of access-token claims.
+    /// </summary>
+    public bool EncryptAccessTokens { get; set; } = true;
+
+    /// <summary>
     /// Client id that authorizes callers of the RFC 7662 introspection endpoint
     /// (<c>/connect/introspect</c>) — i.e. the protected resources (API gateways)
     /// allowed to ask "is this token active?". <b>Unset by default, which shuts

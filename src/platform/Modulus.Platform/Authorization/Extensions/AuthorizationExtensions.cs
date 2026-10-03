@@ -13,6 +13,7 @@ namespace Modulus.Authorization.Extensions;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 
 public static class AuthorizationExtensions
 {
@@ -23,10 +24,29 @@ public static class AuthorizationExtensions
     /// (empty and therefore fail-closed until grants are seeded via
     /// <see cref="AddPermissionGrants"/>). The grant store is wrapped with
     /// request-scoped caching to memoize GetGrants() per principal.
+    /// <para>
+    /// Secure by default: it also sets the <b>fallback policy</b> to "a signed-in user", so an endpoint
+    /// with no authorization data of its own is closed rather than open. Endpoints meant for anonymous
+    /// callers say so with <c>.Loosen(reason)</c> / <c>AllowAnonymous(reason)</c>. A fallback policy the
+    /// app set itself is kept; <see cref="ModulusAuthorizationOptions.RequireAuthenticatedUserByDefault"/>
+    /// = <see langword="false"/> opts out.
+    /// </para>
     /// </summary>
     public static IServiceCollection AddModulusAuthorization(
-        this IServiceCollection services)
+        this IServiceCollection services,
+        Action<ModulusAuthorizationOptions>? configure = null)
     {
+        ArgumentNullException.ThrowIfNull(services);
+
+        var modulusOptions = services.AddOptions<ModulusAuthorizationOptions>();
+        if (configure is not null)
+            modulusOptions.Configure(configure);
+        if (!services.Any(d => d.ServiceType == typeof(IConfigureOptions<AuthorizationOptions>)
+                               && d.ImplementationType == typeof(FallbackPolicySetup)))
+        {
+            services.AddSingleton<IConfigureOptions<AuthorizationOptions>, FallbackPolicySetup>();
+        }
+
         services.AddSingleton<IPermissionRegistry, PermissionRegistry>();
         services.AddSingleton<IAuthorizationPolicyProvider,
             ModulusPermissionPolicyProvider>();

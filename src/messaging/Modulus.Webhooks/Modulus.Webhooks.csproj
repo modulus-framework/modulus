@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <Description>Outgoing webhooks for Modulus: integration events fanned out to tenant-scoped subscriptions, Standard Webhooks signing (with secret rotation), durable delivery with retries, lease claiming and leader election, SSRF-guarded HTTP, and a management API behind webhooks:manage.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <ProjectReference Include="../../core/Modulus.Core/Modulus.Core.csproj" />
+    <ProjectReference Include="../../platform/Modulus.Platform/Modulus.Platform.csproj" />
+    <ProjectReference Include="../Modulus.Events/Modulus.Events.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" />
+    <PackageReference Include="Microsoft.Extensions.Http" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Modulus.Webhooks.Tests" />
+  </ItemGroup>
+
+</Project>

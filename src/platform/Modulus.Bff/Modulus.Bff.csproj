@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <Description>Backends for Frontends for Modulus: one edge per client type (web SPA, mobile app, partner), each with its own authentication, token handling, CSRF, rate limits, response aggregation and YARP passthrough to the API host or to individual microservices.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <ProjectReference Include="../../core/Modulus.Core/Modulus.Core.csproj" />
+    <ProjectReference Include="../../core/Modulus.AspNetCore/Modulus.AspNetCore.csproj" />
+    <ProjectReference Include="../Modulus.Platform/Modulus.Platform.csproj" />
+    <ProjectReference Include="../Modulus.Grpc/Modulus.Grpc.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Yarp.ReverseProxy" />
+    <PackageReference Include="Microsoft.Extensions.ServiceDiscovery" />
+    <PackageReference Include="Microsoft.Extensions.ServiceDiscovery.Yarp" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" />
+    <!-- Lifts JwtBearer's transitive 8.0.x floor to the solution's pinned version. -->
+    <PackageReference Include="Microsoft.IdentityModel.Protocols.OpenIdConnect" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Modulus.Bff.Tests" />
+  </ItemGroup>
+
+</Project>

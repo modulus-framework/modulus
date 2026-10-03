@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using Microsoft.Extensions.Configuration;
+using Modulus.AspNetCore.Http;
 using {{ module_namespace }}.Application.Dtos;
 
 namespace {{ ui_namespace }}.ApiClients;
@@ -8,9 +9,11 @@ namespace {{ ui_namespace }}.ApiClients;
 /// <summary>
 /// Typed client for the {{ module_name }} module's {{ entity_name }} API, served by
 /// the API host at <c>/api/{{ module_name_lower }}/{{ route_name }}</c>. Carries the
-/// signed-in user's bearer token (TokenRelayHandler — with refresh and sign-out
-/// on expiry) and the standard resilience pipeline. The base address comes from
-/// <c>Api:BaseUrl</c>, so the same client works in front of a remote API.
+/// signed-in user's bearer token when the host has a sign-in (registered in
+/// ApiClientExtensions.cs) and the standard resilience pipeline. The base address comes from
+/// <c>Api:BaseUrl</c>, so the same client works in front of a remote API. Successful
+/// responses arrive in the API's <c>ApiResponse</c> envelope (<c>{ success, data }</c>);
+/// errors are RFC 7807 problem details.
 /// </summary>
 public sealed class {{ module_name }}ApiClient(HttpClient http, IConfiguration configuration)
 {
@@ -18,9 +21,9 @@ public sealed class {{ module_name }}ApiClient(HttpClient http, IConfiguration c
 
     public async Task<IReadOnlyList<{{ entity_name }}Dto>> GetAsync(CancellationToken ct = default)
     {
-        var items = await _http.GetFromJsonAsync<IReadOnlyList<{{ entity_name }}Dto>>(
+        var items = await _http.GetFromJsonAsync<ApiResponse<IReadOnlyList<{{ entity_name }}Dto>>>(
             "api/{{ module_name_lower }}/{{ route_name }}", ct);
-        return items ?? [];
+        return items?.Data ?? [];
     }
 
     /// <summary>Fetches one {{ entity_name }}; null when the API answers 404.</summary>
@@ -29,14 +32,15 @@ public sealed class {{ module_name }}ApiClient(HttpClient http, IConfiguration c
         var response = await _http.GetAsync($"api/{{ module_name_lower }}/{{ route_name }}/{id}", ct);
         if (response.StatusCode == HttpStatusCode.NotFound)
             return null;
-        return await response.Content.ReadFromJsonAsync<{{ entity_name }}Dto>(ct);
+        response.EnsureSuccessStatusCode();
+        return (await response.Content.ReadFromJsonAsync<ApiResponse<{{ entity_name }}Dto>>(ct))?.Data;
     }
 
     public async Task<Guid> CreateAsync(Create{{ entity_name }}Dto request, CancellationToken ct = default)
     {
         var response = await _http.PostAsJsonAsync("api/{{ module_name_lower }}/{{ route_name }}", request, ct);
         response.EnsureSuccessStatusCode();
-        return await response.Content.ReadFromJsonAsync<Guid>(ct);
+        return (await response.Content.ReadFromJsonAsync<ApiResponse<Guid>>(ct))?.Data ?? Guid.Empty;
     }
 
     public async Task<bool> UpdateAsync(Guid id, Update{{ entity_name }}Dto request, CancellationToken ct = default)

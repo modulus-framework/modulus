@@ -82,6 +82,12 @@ internal static partial class CodeGen
         => char.ToLowerInvariant(s[0]) + s[1..];
 
     /// <summary>
+    /// Kebab-cases a PascalCase name, e.g. <c>OrderSummary</c> → <c>order-summary</c>.
+    /// </summary>
+    public static string ToKebabCase(string s)
+        => string.Concat(s.Select((c, i) => char.IsUpper(c) && i > 0 ? "-" + char.ToLowerInvariant(c) : char.ToLowerInvariant(c).ToString()));
+
+    /// <summary>
     /// Validates that a name is a usable C# identifier (PascalCase expected).
     /// Throws <see cref="ArgumentException"/> with a clear message otherwise.
     /// </summary>

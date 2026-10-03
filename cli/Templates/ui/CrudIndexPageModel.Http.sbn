@@ -140,7 +140,7 @@ public sealed class IndexModel({{ module_name }}ApiClient apiClient, IEntityUiRe
 
     private async Task LoadAsync(CancellationToken ct)
     {
-        Items = await _apiClient.GetAsync(cancellationToken: ct);
+        Items = await _apiClient.GetAsync(ct);
         ColumnValues = await _entityUi.LoadEntityColumnsAsync(
             HttpContext.RequestServices, EntityKey, _currentUser, Items.Select(i => i.Id.ToString()), ct);
     }

@@ -2,8 +2,12 @@
 
   <ItemGroup>
     <ProjectReference Include="../../../src/data/Modulus.Data.PostgreSQL/Modulus.Data.PostgreSQL.csproj" />
+    <ProjectReference Include="../../../src/data/Modulus.Data.SqlServer/Modulus.Data.SqlServer.csproj" />
+    <ProjectReference Include="../../../src/data/Modulus.Data.MySQL/Modulus.Data.MySQL.csproj" />
     <ProjectReference Include="../../../src/data/Modulus.EntityFrameworkCore/Modulus.EntityFrameworkCore.csproj" />
     <PackageReference Include="Testcontainers.PostgreSql" />
+    <PackageReference Include="Testcontainers.MsSql" />
+    <PackageReference Include="Testcontainers.MySql" />
   </ItemGroup>
 
 </Project>

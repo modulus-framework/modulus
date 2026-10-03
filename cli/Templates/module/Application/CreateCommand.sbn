@@ -9,5 +9,6 @@ namespace {{ module_namespace }}.Application;
 /// validated by the caller; null when there are none.
 /// </param>
 [Transactional(typeof(IUnitOfWork))]
+[InvalidatesCache("{{ module_name_lower }}:{{ route_name }}")]
 public sealed record Create{{ entity_name }}Command(string Name, IReadOnlyDictionary<string, string?>? ExtraProperties = null)
     : ICommand<Guid>;

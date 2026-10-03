@@ -55,7 +55,21 @@ public sealed class UiEndpointAuthTests
         response.StatusCode.Should().Be(System.Net.HttpStatusCode.OK);
     }
 
-    private static async Task<TestHostHandle> StartAsync()
+    [Fact]
+    public async Task Menu_endpoint_declares_its_anonymous_access_even_under_a_fallback_policy()
+    {
+        // A host with "signed-in by default" (AddModulusAuthorization) used to 401 the menu, and a host without a
+        // fallback policy refused to start under the security guard (an unpoliced endpoint). It is a reasoned
+        // framework loosening now.
+        await using var host = await StartAsync(fallback: true);
+
+        (await host.Client.GetAsync("/_ui/menu")).StatusCode.Should().Be(System.Net.HttpStatusCode.OK);
+        var endpoint = host.App.Services.GetRequiredService<Microsoft.AspNetCore.Routing.EndpointDataSource>().Endpoints
+            .Single(e => e.DisplayName?.Contains("/_ui/menu", StringComparison.Ordinal) == true);
+        endpoint.Metadata.GetMetadata<Modulus.Core.Abstractions.Security.LoosenedAttribute>()!.Framework.Should().BeTrue();
+    }
+
+    private static async Task<TestHostHandle> StartAsync(bool fallback = false)
     {
         var builder = WebApplication.CreateBuilder(new WebApplicationOptions
         {
@@ -65,7 +79,11 @@ public sealed class UiEndpointAuthTests
 
         builder.Services.AddRazorPages();
         builder.Services.AddModulusUi();
-        builder.Services.AddAuthorization();
+        builder.Services.AddAuthorization(o =>
+        {
+            if (fallback)
+                o.FallbackPolicy = new Microsoft.AspNetCore.Authorization.AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build();
+        });
         builder.Services.AddAuthentication(TestAuthHandler.SchemeName)
             .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(TestAuthHandler.SchemeName, _ => { });
 
@@ -80,13 +98,15 @@ public sealed class UiEndpointAuthTests
 
     private sealed class TestHostHandle(WebApplication app) : IAsyncDisposable
     {
+        public WebApplication App { get; } = app;
+
         public HttpClient Client { get; } = app.GetTestClient();
 
         public async ValueTask DisposeAsync()
         {
             Client.Dispose();
-            await app.StopAsync();
-            await app.DisposeAsync();
+            await App.StopAsync();
+            await App.DisposeAsync();
         }
     }
 

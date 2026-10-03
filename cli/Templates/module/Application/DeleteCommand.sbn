@@ -5,4 +5,5 @@ using Modulus.Core.Abstractions.Common;
 namespace {{ module_namespace }}.Application;
 
 [Transactional(typeof(IUnitOfWork))]
+[InvalidatesCache("{{ module_name_lower }}:{{ route_name }}")]
 public sealed record Delete{{ entity_name }}Command(Guid Id) : ICommand<Unit>;

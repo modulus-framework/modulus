@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
 
 namespace Modulus.Identity;
@@ -11,6 +12,7 @@ using Microsoft.Extensions.Primitives;
 using Modulus.Identity.Abstractions;
 using OpenIddict.Abstractions;
 using OpenIddict.Server.AspNetCore;
+using Modulus.Core.Abstractions.Security;
 
 /// <summary>
 /// The authorization endpoint (<c>/connect/authorize</c>) of the authorization-code flow with PKCE: the way a mobile,
@@ -41,6 +43,8 @@ public class ModulusAuthorizeController : Controller
     [HttpGet("~/connect/authorize")]
     [HttpPost("~/connect/authorize")]
     [IgnoreAntiforgeryToken]
+    [AllowAnonymous]
+    [Loosened("OIDC authorization endpoint: signs the user in through the Identity cookie itself", Framework = true)]
     public async Task<IActionResult> Authorize()
     {
         var request = HttpContext.GetOpenIddictServerRequest() ??

@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Modulus.Identity.Abstractions;
 using Modulus.Localization;
+using Modulus.Core.Abstractions.Security;
 
 /// <summary>
 /// Cookie sign-in form (<c>/Account/Login</c> — matches the cookie
@@ -22,6 +23,7 @@ using Modulus.Localization;
 /// </para>
 /// </summary>
 [AllowAnonymous]
+[Loosened("Sign-in page: the visitor has no session yet", Framework = true)]
 public sealed class LoginModel(
     SignInManager<ModulusUser> signInManager,
     UserManager<ModulusUser> userManager,

@@ -27,6 +27,8 @@ public static class ModulusServiceCollectionExtensions
         services.TryAddScoped<ICurrentUser, NullCurrentUser>();
         services.TryAddSingleton<ICurrentTenant, NullCurrentTenant>();
         services.TryAddScoped<ICurrentDataScope, NullCurrentDataScope>();
+        services.TryAddScoped<ISecurityContext, NullSecurityContext>();
+        services.TryAddSingleton<ISecurityAuditLog>(NullSecurityAuditLog.Instance);
 
         // TimeProvider — allows tests (and libraries) to freeze the clock via
         // a single seam instead of shimming DateTime.UtcNow at every callsite.

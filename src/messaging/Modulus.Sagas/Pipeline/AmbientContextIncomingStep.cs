@@ -15,7 +15,8 @@ using Rebus.Pipeline;
 /// </summary>
 public sealed class AmbientContextIncomingStep(
     ICurrentTenant? currentTenant,
-    ICorrelationContext? correlationContext) : IIncomingStep
+    ICorrelationContext? correlationContext,
+    ITenantContextRestorer? tenantRestorer = null) : IIncomingStep
 {
     /// <summary>Restores and maintains ambient context for the handler.</summary>
     /// <remarks>
@@ -36,9 +37,13 @@ public sealed class AmbientContextIncomingStep(
 
         var (tenantId, correlationId) = AmbientContextHeaders.Read(headers);
 
-        using var tenantScope = tenantId.HasValue && currentTenant is not null
-            ? currentTenant.Change(new TenantInfo(tenantId.Value, string.Empty))
-            : null;
+        // The tenant id is verified when multi-tenancy is registered: an unknown or deactivated
+        // tenant throws TenantContextRejectedException and the message ends in the error queue.
+        using var tenantScope = tenantId is not { } id || currentTenant is null
+            ? null
+            : tenantRestorer is not null
+                ? currentTenant.Change(await tenantRestorer.VerifyAsync(id))
+                : currentTenant.Change(new TenantInfo(id, string.Empty));
 
         using var correlationScope = !string.IsNullOrEmpty(correlationId)
                                      && correlationContext is not null

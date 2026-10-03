@@ -1,0 +1,10 @@
+// Anonymous endpoints this app opened on purpose. At startup the security guard (settings: Security:Guard)
+// refuses to start outside Development when an endpoint opened with .Loosen(reason) or AllowAnonymous(reason)
+// is missing here. Framework endpoints (sign-in pages, error pages, BFF session endpoints) carry reviewed
+// reasons and need no entry. "route" is the mapped route pattern; a trailing * covers a prefix; without
+// "methods" an entry covers every method. Review every change to this file like a change to the auth model.
+{
+  "endpoints": [
+{{ if enable_health_checks }}    { "route": "/health/live", "reason": "Liveness probe for orchestrators and load balancers" }
+{{ end }}  ]
+}

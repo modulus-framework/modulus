@@ -3,6 +3,7 @@ namespace Modulus.Inbox.MongoDB;
 using global::MongoDB.Bson;
 using global::MongoDB.Bson.Serialization.Attributes;
 using global::MongoDB.Driver;
+using Modulus.Core.Abstractions;
 using Modulus.Inbox.Abstractions;
 
 /// <summary>
@@ -55,7 +56,8 @@ public sealed class MongoInboxMessage
 /// <c>DuplicateKey</c> write error.
 /// </summary>
 internal sealed class MongoInboxStore(
-    IMongoCollection<MongoInboxMessage> collection) : IInboxStore
+    IMongoCollection<MongoInboxMessage> collection,
+    ICurrentTenant? currentTenant = null) : IInboxStore
 {
     public async Task<InboxMessage?> TryClaimAsync(
         Guid eventId,
@@ -174,6 +176,8 @@ internal sealed class MongoInboxStore(
                 MessageType = messageType,
                 Payload = payload,
                 ModuleName = collection.CollectionNamespace.CollectionName,
+                // The (verified) tenant the event was restored into, for inspection and purges.
+                TenantId = currentTenant?.TenantId ?? Guid.Empty,
                 ReceivedAt = now,
                 Status = InboxStatus.Processing,
                 ClaimedAt = now,

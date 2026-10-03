@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.DependencyInjection;
+using Modulus.Core.Abstractions.Security;
 
 namespace Modulus.UI;
 
@@ -87,6 +88,8 @@ public static class ModulusSmartAuthExtensions
             foreach (var folder in open)
             {
                 o.Conventions.AllowAnonymousToFolder(folder);
+                o.Conventions.AddFolderApplicationModelConvention(folder, page =>
+                    page.EndpointMetadata.Add(new LoosenedAttribute($"Pages under {folder} open by AddModulusPageAuthorization (sign-in)") { Framework = string.Equals(folder, DefaultAnonymousFolder, StringComparison.OrdinalIgnoreCase) }));
             }
         });
     }

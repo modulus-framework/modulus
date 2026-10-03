@@ -13,7 +13,6 @@ Modulus.Sagas.Extensions.SagaConfigurationBuilder.ReplaceOutboxDispatcher() -> M
 Modulus.Sagas.Extensions.SagaConfigurationBuilder.SagaConfigurationBuilder() -> void
 Modulus.Sagas.Extensions.SagaServiceCollectionExtensions
 Modulus.Sagas.Pipeline.AmbientContextIncomingStep
-Modulus.Sagas.Pipeline.AmbientContextIncomingStep.AmbientContextIncomingStep(Modulus.Core.Abstractions.ICurrentTenant? currentTenant, Modulus.Core.Abstractions.ICorrelationContext? correlationContext) -> void
 Modulus.Sagas.Pipeline.AmbientContextIncomingStep.Process(Rebus.Pipeline.IncomingStepContext! context, System.Func<System.Threading.Tasks.Task!>! next) -> System.Threading.Tasks.Task!
 Modulus.Sagas.PollyRetry
 Modulus.Sagas.PollyRetryOptions
@@ -47,3 +46,4 @@ static Modulus.Sagas.Extensions.SagaServiceCollectionExtensions.AddModulusSagas(
 static Modulus.Sagas.PollyRetry.Default() -> Modulus.Sagas.PollyRetryOptions!
 static Modulus.Sagas.PollyRetry.None() -> Modulus.Sagas.PollyRetryOptions!
 static Modulus.Sagas.Resilience.PollyPipelineFactory.Create(Modulus.Sagas.PollyRetryOptions! options) -> Polly.ResiliencePipeline!
+Modulus.Sagas.Pipeline.AmbientContextIncomingStep.AmbientContextIncomingStep(Modulus.Core.Abstractions.ICurrentTenant? currentTenant, Modulus.Core.Abstractions.ICorrelationContext? correlationContext, Modulus.Core.Abstractions.ITenantContextRestorer? tenantRestorer = null) -> void

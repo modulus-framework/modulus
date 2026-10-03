@@ -57,8 +57,14 @@ public static class MediatorServiceCollectionExtensions
         }
 
         if (opts.EnableCaching)
+        {
             services.AddScoped(typeof(IPipelineBehavior<,>),
                 typeof(CachingBehavior<,>));
+            // Outside TransactionBehavior (registered next): evicts tagged
+            // query results only after the command's transaction committed.
+            services.AddScoped(typeof(IPipelineBehavior<,>),
+                typeof(CacheInvalidationBehavior<,>));
+        }
 
         if (opts.EnableTransaction)
             services.AddScoped(typeof(IPipelineBehavior<,>),

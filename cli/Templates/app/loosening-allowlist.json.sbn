@@ -1,0 +1,10 @@
+// Anonymous endpoints this app opened on purpose. At startup the security guard (settings: Security:Guard)
+// refuses to start outside Development when an endpoint opened with .Loosen(reason) or AllowAnonymous(reason)
+// is missing here. Framework endpoints (health probes, sign-in pages, OpenID Connect) carry reviewed reasons
+// and need no entry. "route" is the mapped route pattern; a trailing * covers a prefix; without "methods"
+// an entry covers every method. Review every change to this file like a change to the auth model.
+{
+  "endpoints": [
+{{ if expose_api }}    { "route": "/openapi/{documentName}.json", "methods": ["GET"], "reason": "OpenAPI document, mapped in Development only" }
+{{ end }}  ]
+}

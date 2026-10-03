@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Modulus.Identity.Abstractions;
+using Modulus.Core.Abstractions.Security;
 
 /// <summary>
 /// Account management endpoints: password reset, email confirmation, and logout.
@@ -51,6 +52,7 @@ public class AccountController<TUser>(
     /// </remarks>
     [HttpPost("forgot-password")]
     [AllowAnonymous]
+    [Loosened("Password reset request: the user cannot sign in", Framework = true)]
     public async Task<IActionResult> ForgotPasswordAsync([FromQuery] string email)
     {
         if (string.IsNullOrWhiteSpace(email))
@@ -72,6 +74,7 @@ public class AccountController<TUser>(
     /// </summary>
     [HttpPost("reset-password")]
     [AllowAnonymous]
+    [Loosened("Password reset with an emailed token: the user cannot sign in", Framework = true)]
     public async Task<IActionResult> ResetPasswordAsync(
         [FromBody] ResetPasswordRequest request)
     {
@@ -99,6 +102,7 @@ public class AccountController<TUser>(
     /// </summary>
     [HttpPost("confirm-email")]
     [AllowAnonymous]
+    [Loosened("Email confirmation link from the confirmation email", Framework = true)]
     public async Task<IActionResult> ConfirmEmailAsync(
         [FromBody] ConfirmEmailRequest request)
     {
@@ -128,6 +132,7 @@ public class AccountController<TUser>(
     /// </summary>
     [HttpPost("send-confirmation-email")]
     [AllowAnonymous]
+    [Loosened("Resends the confirmation email before the first sign-in", Framework = true)]
     public async Task<IActionResult> SendConfirmationEmailAsync([FromQuery] string email)
     {
         if (string.IsNullOrWhiteSpace(email))

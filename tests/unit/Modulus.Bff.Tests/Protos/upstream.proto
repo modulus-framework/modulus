@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+option csharp_namespace = "Modulus.Bff.Tests.Protos";
+
+package modulus.bff.tests;
+
+service Upstream {
+  rpc Whoami (WhoamiRequest) returns (WhoamiReply);
+}
+
+message WhoamiRequest {}
+
+message WhoamiReply {
+  string authorization = 1;
+  string client_app = 2;
+}

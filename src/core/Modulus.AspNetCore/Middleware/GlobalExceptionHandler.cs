@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 namespace Modulus.AspNetCore.Middleware;
 
 using Microsoft.AspNetCore.Diagnostics;
+using Modulus.Core.Abstractions;
 using Modulus.Core.Abstractions.Exceptions;
 
 internal sealed class GlobalExceptionHandler(
@@ -26,6 +27,7 @@ internal sealed class GlobalExceptionHandler(
             NotFoundException => (StatusCodes.Status404NotFound, "Resource not found", true),
             UnauthorizedException => (StatusCodes.Status401Unauthorized, "Unauthorized", true),
             ForbiddenException => (StatusCodes.Status403Forbidden, "Forbidden", true),
+            CrossTenantWriteException => (StatusCodes.Status403Forbidden, "Forbidden", true),
             ConflictException => (StatusCodes.Status409Conflict, "Conflict", true),
             FeatureDisabledException => (StatusCodes.Status404NotFound, "Feature not available", true),
             _ when IsDbUpdateConcurrencyException(exception) => (StatusCodes.Status409Conflict, "Concurrent update conflict", true),

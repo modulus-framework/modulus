@@ -178,7 +178,8 @@ internal sealed class InboxStoreRegistry
     private static IInboxStore CreateStore(IServiceProvider services, Registration registration)
         => new EfInboxStore(
             (DbContext)services.GetRequiredService(registration.ContextType),
-            services.GetService<Microsoft.Extensions.Logging.ILogger<EfInboxStore>>());
+            services.GetService<Microsoft.Extensions.Logging.ILogger<EfInboxStore>>(),
+            services.GetService<Modulus.Core.Abstractions.ICurrentTenant>());
 
     private sealed record Registration(Type ContextType, Assembly[] HandlerAssemblies, Type[] HandlerTypes);
 }

@@ -77,9 +77,15 @@ internal static class UiHostWiring
         if (!content.Contains("MapRazorPages", StringComparison.OrdinalIgnoreCase))
             content = InsertBefore(content, "app.Run();", "app.MapRazorPages();");
 
+        // Before authentication: a fallback authorization policy (AddModulusAuthorization) also covers requests that
+        // match no endpoint, so static files served after UseAuthorization would answer 401 to an anonymous visitor
+        // (the sign-in page without its stylesheet).
         if (!content.Contains("UseStaticFiles", StringComparison.OrdinalIgnoreCase))
-            content = InsertBefore(content, "app.MapRazorPages", "app.UseStaticFiles();",
-                fallbackAnchor: "app.Run();");
+        {
+            content = content.Contains("app.UseAuthentication();", StringComparison.Ordinal)
+                ? InsertBefore(content, "app.UseAuthentication();", "app.UseStaticFiles();", fallbackAnchor: "app.Run();")
+                : InsertBefore(content, "app.MapRazorPages", "app.UseStaticFiles();", fallbackAnchor: "app.Run();");
+        }
 
         if (!module.IsCore && module.HasEndpoints)
         {

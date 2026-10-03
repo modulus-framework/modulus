@@ -106,3 +106,23 @@ public static class PasswordGrant
         return granted;
     }
 }
+
+/// <summary>
+/// Pure helpers for the client credentials grant (machine-to-machine).
+/// </summary>
+public static class ClientCredentialsGrant
+{
+    /// <summary>
+    /// Like <see cref="PasswordGrant.AuthorizeScopes"/>, minus the user-centric scopes a client-only token cannot
+    /// carry: <c>openid</c> (there is no user to issue an identity token for) and <c>offline_access</c> (the grant
+    /// issues no refresh token; the client simply asks again).
+    /// </summary>
+    public static IReadOnlyList<string> AuthorizeScopes(
+        IEnumerable<string> requested,
+        IReadOnlySet<string> allowed)
+    {
+        return PasswordGrant.AuthorizeScopes(requested, allowed)
+            .Where(s => s is not ("openid" or "offline_access"))
+            .ToList();
+    }
+}

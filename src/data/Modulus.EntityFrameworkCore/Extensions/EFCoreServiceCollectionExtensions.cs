@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Modulus.Data.Abstractions;
 using Modulus.EntityFrameworkCore.Abstractions;
+using Modulus.EntityFrameworkCore.Isolation;
 using Modulus.EntityFrameworkCore.Transactions;
 
 public static class EFCoreServiceCollectionExtensions
@@ -38,7 +39,7 @@ public static class EFCoreServiceCollectionExtensions
         where TContext : ModuleDbContext
     {
         ThrowIfPooled(services);
-        services.AddDbContext<TContext>(options =>
+        services.AddDbContext<TContext>((sp, options) =>
         {
             configure(options);
 
@@ -47,6 +48,7 @@ public static class EFCoreServiceCollectionExtensions
             // Without this, events saved inside a *manual* transaction are
             // queued by ModuleDbContext and never drained.
             options.AddInterceptors(DeferredDomainEventTransactionInterceptor.Instance);
+            AddIsolationInterceptors<TContext>(sp, options);
         });
 
         // Also register as DbContext so TransactionBehavior (which resolves
@@ -94,6 +96,7 @@ public static class EFCoreServiceCollectionExtensions
 
                 // Same deferred-event drain/clear wiring as the simple overload.
                 options.AddInterceptors(DeferredDomainEventTransactionInterceptor.Instance);
+                AddIsolationInterceptors<TContext>(sp, options);
             },
             optionsLifetime: ServiceLifetime.Scoped);
 
@@ -102,6 +105,22 @@ public static class EFCoreServiceCollectionExtensions
         services.AddScoped(typeof(IRepository<>), typeof(EfRepository<>));
         services.AddScoped(typeof(IReadRepository<>), typeof(EfReadRepository<>));
         return services;
+    }
+
+    /// <summary>
+    /// Adds the raw-SQL tenant guard to every module context, and the session interceptor of a context declared
+    /// with row-level security (<see cref="DataIsolationExtensions.AddTenantSessionContext{TContext}"/>). Read when
+    /// the options are built, so the declaration may come before or after <c>AddModuleDatabase</c>.
+    /// </summary>
+    internal static void AddIsolationInterceptors<TContext>(IServiceProvider sp, DbContextOptionsBuilder options)
+        where TContext : ModuleDbContext
+    {
+        options.AddInterceptors(TenantSqlGuardInterceptor.Instance);
+        foreach (var isolation in sp.GetServices<ModuleDbContextIsolation>())
+        {
+            if (isolation.ContextType == typeof(TContext) && isolation.SessionInterceptor is { } session)
+                options.AddInterceptors(session);
+        }
     }
 
     /// <summary>

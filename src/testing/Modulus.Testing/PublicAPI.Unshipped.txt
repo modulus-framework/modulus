@@ -13,7 +13,7 @@ Modulus.Testing.Fakes.RecordingModuleBus.PublishAsync<TEvent>(TEvent event, Syst
 Modulus.Testing.Fakes.RecordingModuleBus.PublishedEvents<TEvent>() -> System.Collections.Generic.IReadOnlyList<TEvent>!
 Modulus.Testing.Fakes.RecordingModuleBus.RecordingModuleBus() -> void
 Modulus.Testing.ModulusWebAppFactory<TEntryPoint>
-Modulus.Testing.ModulusWebAppFactory<TEntryPoint>.CreateAuthenticatedClient(System.Guid? userId = null, string? userName = null, string? email = null, System.Collections.Generic.IEnumerable<string!>? roles = null, System.Collections.Generic.IEnumerable<string!>? permissions = null, System.Guid? tenantId = null) -> System.Net.Http.HttpClient!
+Modulus.Testing.ModulusWebAppFactory<TEntryPoint>.CreateAuthenticatedClient(System.Guid? userId = null, string? userName = null, string? email = null, System.Collections.Generic.IEnumerable<string!>? roles = null, System.Collections.Generic.IEnumerable<string!>? permissions = null, System.Guid? tenantId = null, bool pinTenant = false) -> System.Net.Http.HttpClient!
 Modulus.Testing.ModulusWebAppFactory<TEntryPoint>.ModulusWebAppFactory() -> void
 Modulus.Testing.TestAuthDefaults
 Modulus.Testing.TestAuthHandler
@@ -25,3 +25,76 @@ static Modulus.Testing.Assertions.EventAssertions.GetPublishedEvents<TEvent>(thi
 static Modulus.Testing.Assertions.EventAssertions.HasPublished<TEvent>(this Modulus.Testing.Fakes.RecordingModuleBus! bus, System.Func<TEvent, bool>! predicate) -> bool
 Modulus.Testing.TestServerPairing
 static Modulus.Testing.TestServerPairing.PairedWith<TWeb, TApi>(this Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory<TWeb!>! webFactory, Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory<TApi!>! apiFactory) -> Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory<TWeb!>!
+const Modulus.Testing.TestAuthDefaults.TenantIdClaimType = "tid" -> string!
+const Modulus.Testing.TestAuthDefaults.TenantIdHeader = "X-Test-TenantId" -> string!
+Modulus.Testing.Security.SecurityProbe
+Modulus.Testing.Security.SecurityProbe.Anonymous = 0 -> Modulus.Testing.Security.SecurityProbe
+Modulus.Testing.Security.SecurityProbe.ForeignTenant = 2 -> Modulus.Testing.Security.SecurityProbe
+Modulus.Testing.Security.SecurityProbe.NoPermission = 1 -> Modulus.Testing.Security.SecurityProbe
+Modulus.Testing.Security.SecurityProbeException
+Modulus.Testing.Security.SecurityProbeException.Failures.get -> System.Collections.Generic.IReadOnlyList<Modulus.Testing.Security.SecurityProbeResult!>!
+Modulus.Testing.Security.SecurityProbeException.SecurityProbeException(System.Collections.Generic.IReadOnlyList<Modulus.Testing.Security.SecurityProbeResult!>! failures) -> void
+Modulus.Testing.Security.SecurityProbeOptions
+Modulus.Testing.Security.SecurityProbeOptions.ForeignTenantId.get -> System.Guid?
+Modulus.Testing.Security.SecurityProbeOptions.ForeignTenantId.set -> void
+Modulus.Testing.Security.SecurityProbeOptions.LoginPathFragment.get -> string?
+Modulus.Testing.Security.SecurityProbeOptions.LoginPathFragment.set -> void
+Modulus.Testing.Security.SecurityProbeOptions.RequestTimeout.get -> System.TimeSpan
+Modulus.Testing.Security.SecurityProbeOptions.RequestTimeout.set -> void
+Modulus.Testing.Security.SecurityProbeOptions.RouteValue.get -> System.Func<Microsoft.AspNetCore.Routing.Patterns.RoutePatternParameterPart!, string!>!
+Modulus.Testing.Security.SecurityProbeOptions.RouteValue.set -> void
+Modulus.Testing.Security.SecurityProbeOptions.SecurityProbeOptions() -> void
+Modulus.Testing.Security.SecurityProbeOptions.Skip.get -> System.Func<Microsoft.AspNetCore.Routing.RouteEndpoint!, bool>?
+Modulus.Testing.Security.SecurityProbeOptions.Skip.set -> void
+Modulus.Testing.Security.SecurityProbeReport
+Modulus.Testing.Security.SecurityProbeReport.<Clone>$() -> Modulus.Testing.Security.SecurityProbeReport!
+Modulus.Testing.Security.SecurityProbeReport.Deconstruct(out System.Collections.Generic.IReadOnlyList<Modulus.Testing.Security.SecurityProbeResult!>! Results, out System.Collections.Generic.IReadOnlyList<string!>! Loosened) -> void
+Modulus.Testing.Security.SecurityProbeReport.EnsureNoFailures() -> void
+Modulus.Testing.Security.SecurityProbeReport.Equals(Modulus.Testing.Security.SecurityProbeReport? other) -> bool
+Modulus.Testing.Security.SecurityProbeReport.Failures.get -> System.Collections.Generic.IEnumerable<Modulus.Testing.Security.SecurityProbeResult!>!
+Modulus.Testing.Security.SecurityProbeReport.Loosened.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Modulus.Testing.Security.SecurityProbeReport.Loosened.init -> void
+Modulus.Testing.Security.SecurityProbeReport.Results.get -> System.Collections.Generic.IReadOnlyList<Modulus.Testing.Security.SecurityProbeResult!>!
+Modulus.Testing.Security.SecurityProbeReport.Results.init -> void
+Modulus.Testing.Security.SecurityProbeReport.SecurityProbeReport(System.Collections.Generic.IReadOnlyList<Modulus.Testing.Security.SecurityProbeResult!>! Results, System.Collections.Generic.IReadOnlyList<string!>! Loosened) -> void
+Modulus.Testing.Security.SecurityProbeResult
+Modulus.Testing.Security.SecurityProbeResult.<Clone>$() -> Modulus.Testing.Security.SecurityProbeResult!
+Modulus.Testing.Security.SecurityProbeResult.Actual.get -> int
+Modulus.Testing.Security.SecurityProbeResult.Actual.init -> void
+Modulus.Testing.Security.SecurityProbeResult.Deconstruct(out string! Method, out string! Route, out string! Url, out Modulus.Testing.Security.SecurityProbe Probe, out string! Expected, out int Actual, out bool Passed) -> void
+Modulus.Testing.Security.SecurityProbeResult.Equals(Modulus.Testing.Security.SecurityProbeResult? other) -> bool
+Modulus.Testing.Security.SecurityProbeResult.Expected.get -> string!
+Modulus.Testing.Security.SecurityProbeResult.Expected.init -> void
+Modulus.Testing.Security.SecurityProbeResult.Method.get -> string!
+Modulus.Testing.Security.SecurityProbeResult.Method.init -> void
+Modulus.Testing.Security.SecurityProbeResult.Passed.get -> bool
+Modulus.Testing.Security.SecurityProbeResult.Passed.init -> void
+Modulus.Testing.Security.SecurityProbeResult.Probe.get -> Modulus.Testing.Security.SecurityProbe
+Modulus.Testing.Security.SecurityProbeResult.Probe.init -> void
+Modulus.Testing.Security.SecurityProbeResult.Route.get -> string!
+Modulus.Testing.Security.SecurityProbeResult.Route.init -> void
+Modulus.Testing.Security.SecurityProbeResult.SecurityProbeResult(string! Method, string! Route, string! Url, Modulus.Testing.Security.SecurityProbe Probe, string! Expected, int Actual, bool Passed) -> void
+Modulus.Testing.Security.SecurityProbeResult.Url.get -> string!
+Modulus.Testing.Security.SecurityProbeResult.Url.init -> void
+Modulus.Testing.Security.SecurityProbeSuite
+Modulus.Testing.Security.TenantIsolationAssertions
+Modulus.Testing.Security.TenantIsolationException
+Modulus.Testing.Security.TenantIsolationException.TenantIsolationException(string! message) -> void
+override Modulus.Testing.Security.SecurityProbeReport.Equals(object? obj) -> bool
+override Modulus.Testing.Security.SecurityProbeReport.GetHashCode() -> int
+override Modulus.Testing.Security.SecurityProbeReport.ToString() -> string!
+override Modulus.Testing.Security.SecurityProbeResult.Equals(object? obj) -> bool
+override Modulus.Testing.Security.SecurityProbeResult.GetHashCode() -> int
+override Modulus.Testing.Security.SecurityProbeResult.ToString() -> string!
+static Modulus.Testing.Security.SecurityProbeReport.operator !=(Modulus.Testing.Security.SecurityProbeReport? left, Modulus.Testing.Security.SecurityProbeReport? right) -> bool
+static Modulus.Testing.Security.SecurityProbeReport.operator ==(Modulus.Testing.Security.SecurityProbeReport? left, Modulus.Testing.Security.SecurityProbeReport? right) -> bool
+static Modulus.Testing.Security.SecurityProbeResult.operator !=(Modulus.Testing.Security.SecurityProbeResult? left, Modulus.Testing.Security.SecurityProbeResult? right) -> bool
+static Modulus.Testing.Security.SecurityProbeResult.operator ==(Modulus.Testing.Security.SecurityProbeResult? left, Modulus.Testing.Security.SecurityProbeResult? right) -> bool
+static Modulus.Testing.Security.SecurityProbeSuite.DefaultRouteValue(Microsoft.AspNetCore.Routing.Patterns.RoutePatternParameterPart! parameter) -> string!
+static Modulus.Testing.Security.SecurityProbeSuite.RunAsync<TEntryPoint>(Modulus.Testing.ModulusWebAppFactory<TEntryPoint!>! factory, Modulus.Testing.Security.SecurityProbeOptions? options = null, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Testing.Security.SecurityProbeReport!>!
+static Modulus.Testing.Security.TenantIsolationAssertions.AssertCrossTenantReadIsDeniedAsync(System.Net.Http.HttpClient! companyA, System.Net.Http.HttpClient! companyB, System.Func<System.Net.Http.HttpClient!, System.Threading.Tasks.Task<string!>!>! create, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+static Modulus.Testing.Security.TenantIsolationAssertions.AssertTenantIsolationAsync<TContext, TEntity>(this System.IServiceProvider! services, TEntity! entity, System.Guid owner, System.Guid other, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Testing.Security.SecurityProbeOptions.TenantHeader.get -> string!
+Modulus.Testing.Security.SecurityProbeOptions.TenantHeader.set -> void
+static Modulus.Testing.Security.SecurityProbeSuite.RunAsync(System.IServiceProvider! services, System.Net.Http.HttpClient! client, Modulus.Testing.Security.SecurityProbeOptions? options = null, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Testing.Security.SecurityProbeReport!>!
+Modulus.Testing.Security.SecurityProbeOptions.AnonymousStatusOverrides.get -> System.Collections.Generic.IDictionary<string!, int[]!>!

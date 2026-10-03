@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>{{ project_name }}</RootNamespace>
+    <!-- A Backend for Frontend: the {{ client_name }} client's own edge. It holds no database and loads no
+         modules; it reaches the API (or each microservice) over HTTP. The modulus CLI reads the kind. -->
+    <ModulusAppKind>bff-{{ client_name }}</ModulusAppKind>
+    <UserSecretsId>{{ user_secrets_id }}-bff-{{ client_name }}</UserSecretsId>
+    <InterceptorsNamespaces>$(InterceptorsNamespaces);Microsoft.AspNetCore.OpenApi.Generated</InterceptorsNamespaces>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Cobytelabs.Modulus.Bff" Version="{{ framework_version }}" />
+    <PackageReference Include="Cobytelabs.Modulus.AspNetCore" Version="{{ framework_version }}" />
+    <PackageReference Include="Cobytelabs.Modulus.Core" Version="{{ framework_version }}" />
+    <PackageReference Include="Cobytelabs.Modulus.Platform" Version="{{ framework_version }}" />
+{{ if use_redis_cache }}    <PackageReference Include="Cobytelabs.Modulus.Caching.Redis" Version="{{ framework_version }}" />
+{{ end }}    <!-- Transitive pin: AspNetCore.OpenApi floats to Microsoft.OpenApi 2.0.0 (GHSA-v5pm-xwqc-g5wc). -->
+    <PackageReference Include="Microsoft.OpenApi" Version="2.9.0" />
+  </ItemGroup>
+
+</Project>

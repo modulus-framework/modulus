@@ -287,12 +287,24 @@ public sealed class ChannelJobQueue(
             // Restore the ambient tenant/correlation captured at enqueue.
             // The accessors are stateless AsyncLocal wrappers, so resolving
             // them here (outside the job's scope) sets the flow the job then
-            // runs on. TenantSlug is not carried across the boundary — jobs
-            // that need it should re-resolve from the store.
-            using var tenantScope = envelope.TenantId is { } tenantId
-                && sp.GetService<ICurrentTenant>() is { } tenant
-                    ? tenant.Change(new TenantInfo(tenantId, string.Empty))
+            // runs on. The tenant id is verified (ITenantContextRestorer): a job
+            // queued for a tenant that has since been deactivated or deleted does
+            // not run in its scope.
+            IDisposable? tenantScope;
+            try
+            {
+                tenantScope = envelope.TenantId is { } tenantId
+                    ? sp.EnterTenant(await sp.VerifyTenantAsync(tenantId, ct))
                     : null;
+            }
+            catch (TenantContextRejectedException ex)
+            {
+                ModulusMeters.JobsFailed.Add(1);
+                logger.LogError(ex, "Job {Type} dropped: its tenant context was rejected.", envelope.JobType.Name);
+                continue;
+            }
+
+            using var _ = tenantScope;
             using var correlationScope = envelope.CorrelationId is { } correlationId
                 && sp.GetService<ICorrelationContext>() is { } correlation
                     ? correlation.BeginScope(correlationId)

@@ -42,7 +42,6 @@ Modulus.Mediator.Behaviors.AuthorizationBehavior<TRequest, TResponse>
 Modulus.Mediator.Behaviors.AuthorizationBehavior<TRequest, TResponse>.AuthorizationBehavior(Modulus.Core.Abstractions.ICurrentUser! currentUser) -> void
 Modulus.Mediator.Behaviors.AuthorizationBehavior<TRequest, TResponse>.HandleAsync(TRequest request, Modulus.Mediator.Abstractions.RequestHandlerDelegate<TResponse>! next, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<TResponse>!
 Modulus.Mediator.Behaviors.CachingBehavior<TRequest, TResponse>
-Modulus.Mediator.Behaviors.CachingBehavior<TRequest, TResponse>.CachingBehavior(Microsoft.Extensions.Caching.Memory.IMemoryCache! cache, Modulus.Core.Abstractions.ICurrentTenant? currentTenant = null, Modulus.Core.Abstractions.ICurrentUser? currentUser = null) -> void
 Modulus.Mediator.Behaviors.CachingBehavior<TRequest, TResponse>.HandleAsync(TRequest request, Modulus.Mediator.Abstractions.RequestHandlerDelegate<TResponse>! next, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<TResponse>!
 Modulus.Mediator.Behaviors.FeatureGateBehavior<TRequest, TResponse>
 Modulus.Mediator.Behaviors.FeatureGateBehavior<TRequest, TResponse>.FeatureGateBehavior(Modulus.Core.Abstractions.IFeatureGate! featureGate) -> void
@@ -81,3 +80,12 @@ static Modulus.Mediator.Abstractions.Attributes.TransactionRuntimeOptions.operat
 static Modulus.Mediator.Extensions.MediatorServiceCollectionExtensions.AddMediator(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<Modulus.Mediator.Extensions.MediatorOptions!>? configure = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static Modulus.Mediator.Extensions.MediatorServiceCollectionExtensions.AddMediatorHandlers(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, params System.Reflection.Assembly![]! assemblies) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 virtual Modulus.Mediator.Abstractions.RequestHandlerDelegate<TResponse>.Invoke() -> System.Threading.Tasks.Task<TResponse>!
+Modulus.Mediator.Abstractions.Attributes.CacheForAttribute.Tags.get -> string![]!
+Modulus.Mediator.Abstractions.Attributes.CacheForAttribute.Tags.set -> void
+Modulus.Mediator.Abstractions.Attributes.InvalidatesCacheAttribute
+Modulus.Mediator.Abstractions.Attributes.InvalidatesCacheAttribute.InvalidatesCacheAttribute(params string![]! tags) -> void
+Modulus.Mediator.Abstractions.Attributes.InvalidatesCacheAttribute.Tags.get -> string![]!
+Modulus.Mediator.Behaviors.CacheInvalidationBehavior<TRequest, TResponse>
+Modulus.Mediator.Behaviors.CacheInvalidationBehavior<TRequest, TResponse>.CacheInvalidationBehavior(Microsoft.Extensions.Caching.Hybrid.HybridCache? hybridCache = null, Modulus.Core.Abstractions.ICurrentTenant? currentTenant = null) -> void
+Modulus.Mediator.Behaviors.CacheInvalidationBehavior<TRequest, TResponse>.HandleAsync(TRequest request, Modulus.Mediator.Abstractions.RequestHandlerDelegate<TResponse>! next, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<TResponse>!
+Modulus.Mediator.Behaviors.CachingBehavior<TRequest, TResponse>.CachingBehavior(Microsoft.Extensions.Caching.Memory.IMemoryCache! cache, Modulus.Core.Abstractions.ICurrentTenant? currentTenant = null, Modulus.Core.Abstractions.ICurrentUser? currentUser = null, Microsoft.Extensions.Caching.Hybrid.HybridCache? hybridCache = null) -> void

@@ -103,6 +103,21 @@ public class UiHostWiringTests
     }
 
     [Fact]
+    public void StaticFiles_GoBeforeAuthentication_SoTheFallbackPolicyDoesNotCoverThem()
+    {
+        // A fallback authorization policy also covers requests that match no endpoint: static files served
+        // after UseAuthorization would answer 401 to an anonymous visitor of the sign-in page.
+        var program = MinimalProgram.Replace(
+            "app.MapControllers();", "app.UseAuthentication();\napp.UseAuthorization();\napp.MapControllers();");
+
+        var output = UiHostWiring.EnsureUiWiring(program, UiModuleCatalog.Find("Identity"));
+
+        output.IndexOf("app.UseStaticFiles();", StringComparison.Ordinal)
+            .Should().BeLessThan(output.IndexOf("app.UseAuthentication();", StringComparison.Ordinal));
+        Count(output, "UseStaticFiles").Should().Be(1);
+    }
+
+    [Fact]
     public void TablerTheme_IsFoundByShortNameIdAndPackage_AndInstallsAfterCore()
     {
         foreach (var query in new[] { "Tabler", "Theme.Tabler", "Modulus.Theme.Tabler", "Modulus.UI.Theme.Tabler", "Cobytelabs.Modulus.UI.Theme.Tabler" })

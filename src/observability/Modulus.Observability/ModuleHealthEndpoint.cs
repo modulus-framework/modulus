@@ -6,13 +6,15 @@ namespace Modulus.Diagnostics.Endpoints;
 
 using Modulus.AspNetCore.Endpoints;
 using Modulus.Core.Abstractions;
+using Modulus.AspNetCore.Security.Policy;
+using Modulus.Core.Abstractions.Security;
 
 internal sealed class ModuleHealthEndpoint : IMinimalEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
         => app.MapGet("/health/modules", HandleAsync)
                .WithTags("Health")
-               .AllowAnonymous();
+               .Loosen(new LoosenedAttribute("Diagnostics: per-module health status for operators and probes") { Framework = true });
 
     private static async Task<IResult> HandleAsync(
         IEnumerable<IModuleHealthCheck> checks,

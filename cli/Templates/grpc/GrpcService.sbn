@@ -1,0 +1,54 @@
+using Google.Protobuf.WellKnownTypes;
+using Grpc.Core;
+using Microsoft.AspNetCore.Authorization;
+using Modulus.Core.Abstractions.Exceptions;
+using Modulus.Mediator.Abstractions;
+using {{ module_namespace }}.Application;
+
+namespace {{ module_namespace }}.Presentation.Grpc;
+
+/// <summary>
+/// The {{ entity_name_lower }} API over gRPC (<c>Protos/{{ proto_file }}</c>), sending the same commands and queries as the
+/// HTTP endpoints. The host maps it with <c>MapModulusGrpc</c>; domain exceptions become gRPC status codes
+/// (validation → <c>InvalidArgument</c>, not found → <c>NotFound</c>, ...). Extension fields are not exposed here.
+/// </summary>
+{{ if required_permission }}// Needs the "{{ required_permission }}" permission, like the HTTP endpoints (the Admin role holds it).
+[Authorize(Policy = "{{ required_permission }}")]
+{{ else }}[Authorize]
+{{ end }}public sealed class {{ entity_name }}GrpcService(IMediator mediator) : {{ entity_name }}Service.{{ entity_name }}ServiceBase
+{
+    public override async Task<List{{ entity_plural }}Response> List{{ entity_plural }}(List{{ entity_plural }}Request request, ServerCallContext context)
+    {
+        var items = await mediator.QueryAsync(new Get{{ entity_plural }}Query(), context.CancellationToken);
+        var response = new List{{ entity_plural }}Response();
+        response.Items.AddRange(items.Select(i => new {{ entity_name }}Message { Id = i.Id.ToString(), Name = i.Name }));
+        return response;
+    }
+
+    public override async Task<{{ entity_name }}Message> Get{{ entity_name }}(Get{{ entity_name }}Request request, ServerCallContext context)
+    {
+        var item = await mediator.QueryAsync(new Get{{ entity_name }}ByIdQuery(ParseId(request.Id)), context.CancellationToken);
+        return new {{ entity_name }}Message { Id = item.Id.ToString(), Name = item.Name };
+    }
+
+    public override async Task<Create{{ entity_name }}Response> Create{{ entity_name }}(Create{{ entity_name }}Request request, ServerCallContext context)
+    {
+        var id = await mediator.SendAsync(new Create{{ entity_name }}Command(request.Name), context.CancellationToken);
+        return new Create{{ entity_name }}Response { Id = id.ToString() };
+    }
+
+    public override async Task<Empty> Update{{ entity_name }}(Update{{ entity_name }}Request request, ServerCallContext context)
+    {
+        await mediator.SendAsync(new Update{{ entity_name }}Command(ParseId(request.Id), request.Name), context.CancellationToken);
+        return new Empty();
+    }
+
+    public override async Task<Empty> Delete{{ entity_name }}(Delete{{ entity_name }}Request request, ServerCallContext context)
+    {
+        await mediator.SendAsync(new Delete{{ entity_name }}Command(ParseId(request.Id)), context.CancellationToken);
+        return new Empty();
+    }
+
+    private static Guid ParseId(string id)
+        => Guid.TryParse(id, out var value) ? value : throw new ValidationException(["Id: must be a GUID"]);
+}

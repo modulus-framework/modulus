@@ -1,32 +1,28 @@
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
-using Modulus.Platform.Http;
+{{ if use_auth }}using Modulus.Bff;
+{{ end }}using Modulus.Platform.Http;
 using {{ root_namespace }}.Web.ApiClients;
-using {{ root_namespace }}.Web.Security;
 
 namespace {{ root_namespace }}.Web;
 
 /// <summary>
 /// Typed clients for the API project's module endpoints, one per module.
 /// Each gets the standard resilience pipeline (retry, circuit breaker,
-/// timeouts) and the correlation handler from <see cref="HttpClientExtensions.AddModulusHttpClient"/>,
-/// plus the token relay that carries the signed-in user's access token and
-/// refreshes it on 401. Without authentication configured the relay simply
-/// passes through and the clients call the API anonymously.
+/// timeouts) and the correlation handler from <see cref="HttpClientExtensions.AddModulusHttpClient"/>{{ if use_auth }},
+/// plus the signed-in user's access token from the BFF web session
+/// (<c>AddBffUserAccessToken</c>: refreshed before it expires, one refresh per
+/// session at a time, refreshed and replayed once on a 401){{ else }}.
+/// No authentication is configured, so the clients call the API anonymously{{ end }}.
 /// </summary>
 public static class ApiClientExtensions
 {
     public static IServiceCollection AddModuleApiClients(this IServiceCollection services)
     {
-        // Shared by every client: reads the signed-in user's token from the
-        // auth cookie. Program.cs registers it when auth is on; this no-ops then.
-        services.TryAddTransient<TokenRelayHandler>();
-        services.AddHttpContextAccessor();
-        services.AddHttpClient(TokenRelayHandler.RefreshClientName);
-{{ if !no_example }}
-        services.AddModulusHttpClient<{{ example_module }}ApiClient>()
-            .AddHttpMessageHandler<TokenRelayHandler>();
-{{ end }}
+{{~ if !no_example ~}}
+        services.AddModulusHttpClient<{{ example_module }}ApiClient>(){{ if use_auth }}
+            .AddBffUserAccessToken(){{ end }};
+{{~ end ~}}
+
         return services;
     }
 }

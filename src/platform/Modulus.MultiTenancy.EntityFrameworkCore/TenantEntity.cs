@@ -18,6 +18,9 @@ public class TenantEntity
     /// </summary>
     public string Slug { get; set; } = default!;
 
+    /// <summary>The group of companies this tenant belongs to; null when it stands alone.</summary>
+    public Guid? GroupId { get; set; }
+
     /// <summary>Optional display name shown in admin UIs.</summary>
     public string? DisplayName { get; set; }
 

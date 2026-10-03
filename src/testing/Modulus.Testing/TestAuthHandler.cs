@@ -31,6 +31,15 @@ public static class TestAuthDefaults
 
     /// <summary>Header carrying comma-separated permissions (each mapped to a <c>permission</c> claim).</summary>
     public const string PermissionsHeader = "X-Test-Permissions";
+
+    /// <summary>
+    /// Header carrying a tenant id that is emitted as the <c>tid</c> claim, pinning the principal to
+    /// that tenant exactly like a tenant-bound token (the tenant middleware rejects any other tenant).
+    /// </summary>
+    public const string TenantIdHeader = "X-Test-TenantId";
+
+    /// <summary>Claim type the pinned tenant is emitted as (the multi-tenancy default).</summary>
+    public const string TenantIdClaimType = "tid";
 }
 
 /// <summary>
@@ -63,6 +72,7 @@ public sealed class TestAuthHandler(
         Add(claims, ClaimTypes.Email, TestAuthDefaults.EmailHeader);
         AddMany(claims, ClaimTypes.Role, TestAuthDefaults.RolesHeader);
         AddMany(claims, "permission", TestAuthDefaults.PermissionsHeader);
+        Add(claims, TestAuthDefaults.TenantIdClaimType, TestAuthDefaults.TenantIdHeader);
 
         var identity = new ClaimsIdentity(
             claims, TestAuthDefaults.SchemeName, ClaimTypes.Name, ClaimTypes.Role);

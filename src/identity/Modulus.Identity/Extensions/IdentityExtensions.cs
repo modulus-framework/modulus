@@ -136,6 +136,9 @@ public static class IdentityExtensions
                 // Token storage is required for revocation (RFC 7009): the server
                 // must be able to look up and mark tokens as revoked. The EF Core
                 // store is configured by AddModulusIdentityStore.
+                if (!string.IsNullOrWhiteSpace(identityOptions.Issuer))
+                    options.SetIssuer(new Uri(identityOptions.Issuer, UriKind.Absolute));
+
                 options.SetTokenEndpointUris("/connect/token")
                        .SetAuthorizationEndpointUris("/connect/authorize")
                        .SetUserInfoEndpointUris("/connect/userinfo")
@@ -163,6 +166,18 @@ public static class IdentityExtensions
                 // trusted first-party clients via Identity:AllowPasswordFlow.
                 if (identityOptions.AllowPasswordFlow)
                     options.AllowPasswordFlow();
+
+                // Machine-to-machine callers (partners, services, a BFF acting on
+                // its own behalf). Off by default; ModulusTokenController issues a
+                // client-only token (subject = client id, no user claims).
+                if (identityOptions.AllowClientCredentialsFlow)
+                    options.AllowClientCredentialsFlow();
+
+                // Signed-only JWT access tokens let a BFF or another microservice
+                // validate them locally against the JWKS; encrypted ones (the
+                // default) can only be read here or through introspection.
+                if (!identityOptions.EncryptAccessTokens)
+                    options.DisableAccessTokenEncryption();
 
                 // Must include the scopes the token endpoint's allow-list can
                 // grant: without `openid` every scope request is rejected with

@@ -1,3 +1,4 @@
+using Modulus.Core.Abstractions;
 namespace Modulus.EventBus.RabbitMQ;
 
 using System.Collections.Concurrent;
@@ -181,8 +182,24 @@ internal sealed class RabbitMqEventConsumer : BackgroundService
             // handler invocation — otherwise handlers run in host scope where
             // tenant query filters match everything and writes stamp TenantId
             // as empty.
-            using var ambient = EnvelopeAmbientScope.Restore(
-                envelope, scope.ServiceProvider);
+            EnvelopeAmbientScope ambient;
+            try
+            {
+                ambient = EnvelopeAmbientScope.Restore(
+                    envelope, scope.ServiceProvider,
+                    await EnvelopeAmbientScope.VerifyTenantAsync(envelope, scope.ServiceProvider));
+            }
+            catch (TenantContextRejectedException ex)
+            {
+                // Unknown or deactivated tenant: redelivery cannot fix it, dead-letter now.
+                _logger.LogError(ex,
+                    "Rejected tenant context on routing key '{RoutingKey}'; nacking to DLX",
+                    envelope.RoutingKey);
+                await channel.BasicNackAsync(ea.DeliveryTag, multiple: false, requeue: false);
+                return;
+            }
+
+            using var ambientScope = ambient;
 
             var handled = await dispatcher.DispatchAsync(envelope);
 

@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
+using Modulus.Core.Abstractions.Security;
 
 namespace Modulus.UI;
 
@@ -44,7 +45,9 @@ public static class UiErrorPagesExtensions
         ArgumentNullException.ThrowIfNull(endpoints);
         ArgumentException.ThrowIfNullOrWhiteSpace(basePath);
 
-        var group = endpoints.MapGroup(basePath.TrimEnd('/'));
+        var group = endpoints.MapGroup(basePath.TrimEnd('/'))
+            .AllowAnonymous()
+            .WithMetadata(new LoosenedAttribute("Error pages are re-executed for every visitor, signed in or not") { Framework = true });
         group.MapGet("/{code:int}", (HttpContext http, int code, IModulusViewResolver views) =>
         {
             if (!views.TryResolve(ErrorComponent, $"_{code}", out var path))

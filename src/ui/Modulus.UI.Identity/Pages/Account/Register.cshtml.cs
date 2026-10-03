@@ -10,6 +10,7 @@ using Microsoft.Extensions.Options;
 using Modulus.Core.Abstractions;
 using Modulus.Identity.Abstractions;
 using Modulus.Localization;
+using Modulus.Core.Abstractions.Security;
 
 /// <summary>
 /// Self-registration form (<c>/Account/Register</c>). Gated by
@@ -18,6 +19,7 @@ using Modulus.Localization;
 /// creates tenant members, not host users.
 /// </summary>
 [AllowAnonymous]
+[Loosened("Self-registration page: the visitor has no account yet", Framework = true)]
 public sealed class RegisterModel(
     UserManager<ModulusUser> userManager,
     SignInManager<ModulusUser> signInManager,

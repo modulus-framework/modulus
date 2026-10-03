@@ -33,7 +33,7 @@ public sealed class InMemoryNotificationStore : INotificationStore
 
         var filtered = _notifications.Values
             .Where(n => n.UserId == userId)
-            .Where(n => tenantId is null || n.TenantId == tenantId)
+            .Where(n => n.TenantId == tenantId)
             .Where(n => !unreadOnly || !n.IsRead)
             .OrderByDescending(n => n.CreatedAt)
             .ToList();
@@ -69,7 +69,7 @@ public sealed class InMemoryNotificationStore : INotificationStore
         {
             if (current.UserId != userId || current.IsRead)
                 continue;
-            if (tenantId.HasValue && current.TenantId != tenantId)
+            if (current.TenantId != tenantId)
                 continue;
 
             if (_notifications.TryUpdate(id, current with { ReadAt = now }, current))

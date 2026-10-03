@@ -1,0 +1,59 @@
+using GraphQL;
+using GraphQL.Types;
+using Modulus.GraphQL;
+using {{ module_namespace }}.Application;
+
+namespace {{ module_namespace }}.Presentation.GraphQL;
+
+/// <summary>
+/// The {{ entity_name_lower }} API over GraphQL (modulus generate-graphql): the same commands and queries as the HTTP
+/// endpoints, through the mediator (validation, transactions, the query cache). The host finds this class in the
+/// module's Presentation assembly (AddModulusGraphQL); domain exceptions become error codes (VALIDATION_FAILED,
+/// NOT_FOUND, ...). Extension fields are not exposed here.
+/// </summary>
+public sealed class {{ entity_name }}GraphQL : IGraphQLContributor
+{
+{{ if required_permission }}    // The permission of the HTTP endpoints (the Admin role holds it).
+    private const string Permission = "{{ required_permission }}";
+
+{{ end }}    public void ConfigureQuery(ObjectGraphType query)
+    {
+        query.Field<NonNullGraphType<ListGraphType<NonNullGraphType<{{ entity_name }}GraphType>>>>("{{ entity_plural_camel }}")
+            .Description("Every {{ entity_name_lower }}.")
+            {{ authorize }}
+            .ResolveAsync(async context => await context.QueryAsync(new Get{{ entity_plural }}Query()));
+
+        query.Field<{{ entity_name }}GraphType>("{{ entity_name_camel }}")
+            .Description("One {{ entity_name_lower }}, by id.")
+            .Argument<NonNullGraphType<IdGraphType>>("id")
+            {{ authorize }}
+            .ResolveAsync(async context => await context.QueryAsync(new Get{{ entity_name }}ByIdQuery(context.GetGuidArgument("id"))));
+    }
+
+    public void ConfigureMutation(ObjectGraphType mutation)
+    {
+        mutation.Field<NonNullGraphType<IdGraphType>>("create{{ entity_name }}")
+            .Description("Creates a {{ entity_name_lower }} and returns its id.")
+            .Argument<NonNullGraphType<StringGraphType>>("name")
+            {{ authorize }}
+            .ResolveAsync(async context => await context.SendAsync(new Create{{ entity_name }}Command(context.GetArgument<string>("name"))));
+
+        mutation.Field<NonNullGraphType<IdGraphType>>("update{{ entity_name }}")
+            .Description("Renames a {{ entity_name_lower }} and returns its id.")
+            .Argument<NonNullGraphType<IdGraphType>>("id")
+            .Argument<NonNullGraphType<StringGraphType>>("name")
+            {{ authorize }}
+            .ResolveAsync(async context => (await context.SendAsync(
+                new Update{{ entity_name }}Command(context.GetGuidArgument("id"), context.GetArgument<string>("name")))).Id);
+
+        mutation.Field<NonNullGraphType<BooleanGraphType>>("delete{{ entity_name }}")
+            .Description("Deletes a {{ entity_name_lower }}.")
+            .Argument<NonNullGraphType<IdGraphType>>("id")
+            {{ authorize }}
+            .ResolveAsync(async context =>
+            {
+                await context.SendAsync(new Delete{{ entity_name }}Command(context.GetGuidArgument("id")));
+                return true;
+            });
+    }
+}

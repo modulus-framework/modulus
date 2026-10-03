@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
@@ -17,6 +18,8 @@ using Modulus.Identity.Abstractions;
 using OpenIddict.Abstractions;
 using OpenIddict.Server;
 using OpenIddict.Server.AspNetCore;
+using Modulus.Core.Abstractions;
+using Modulus.Core.Abstractions.Security;
 
 /// <summary>
 /// Minimal OpenIddict token endpoint supporting the password, refresh and authorization-code flows.
@@ -78,6 +81,8 @@ public class ModulusTokenController(
 
     [HttpPost("~/connect/token")]
     [IgnoreAntiforgeryToken]
+    [AllowAnonymous]
+    [Loosened("OAuth token endpoint: OpenIddict authenticates the client and the grant", Framework = true)]
     public async Task<IActionResult> Exchange()
     {
         var request = HttpContext.GetOpenIddictServerRequest() ??
@@ -92,7 +97,33 @@ public class ModulusTokenController(
         if (request.IsRefreshTokenGrantType() || request.IsAuthorizationCodeGrantType())
             return await HandleRefreshTokenGrantAsync();
 
+        if (request.IsClientCredentialsGrantType())
+            return HandleClientCredentialsGrant(request);
+
         return BadRequest(new { error = "unsupported_grant_type" });
+    }
+
+    /// <summary>
+    /// Client credentials grant (enabled by <c>Identity:AllowClientCredentialsFlow</c>). OpenIddict has already
+    /// authenticated the confidential client and checked its grant and scope permissions; the token represents the
+    /// client itself, so its subject is the client id and it carries no user, roles or refresh token.
+    /// </summary>
+    private IActionResult HandleClientCredentialsGrant(OpenIddictRequest request)
+    {
+        var clientId = request.ClientId!;
+        var identity = new ClaimsIdentity(
+            OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
+            OpenIddictConstants.Claims.Name,
+            OpenIddictConstants.Claims.Role);
+        identity.AddClaim(new Claim(OpenIddictConstants.Claims.Subject, clientId));
+        identity.AddClaim(new Claim(OpenIddictConstants.Claims.Name, clientId));
+
+        var principal = new ClaimsPrincipal(identity);
+        principal.SetScopes(Abstractions.ClientCredentialsGrant.AuthorizeScopes(request.GetScopes(), AllowedGrantScopes));
+        ApplyDestinations(principal);
+        Audit("token.client-credentials", SecurityAuditOutcomes.Success, clientId, tenantId: null);
+
+        return SignIn(principal, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
     }
 
     private async Task<IActionResult> HandlePasswordGrantAsync(OpenIddictRequest request)
@@ -102,6 +133,8 @@ public class ModulusTokenController(
 
         if (!result.Success)
         {
+            // The validator records why (it knows the account); a custom validator gets this record at least.
+            Audit("token.password", SecurityAuditOutcomes.Denied, actor: null, tenantId: null, request.ClientId);
             var properties = new AuthenticationProperties(new Dictionary<string, string?>
             {
                 [OpenIddictServerAspNetCoreConstants.Properties.Error] = OpenIddictConstants.Errors.InvalidGrant,
@@ -125,6 +158,7 @@ public class ModulusTokenController(
         principal.SetScopes(scopes);
 
         ApplyDestinations(principal);
+        Audit("token.password", SecurityAuditOutcomes.Success, result.Subject, result.TenantId, request.ClientId);
 
         return SignIn(principal, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
     }
@@ -134,8 +168,12 @@ public class ModulusTokenController(
         var info = await HttpContext.AuthenticateAsync(
             OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
 
+        var grant = HttpContext.GetOpenIddictServerRequest()?.IsAuthorizationCodeGrantType() == true ? "token.authorization-code" : "token.refresh";
         if (!info.Succeeded || info.Principal is null)
+        {
+            Audit(grant, SecurityAuditOutcomes.Denied, actor: null, tenantId: null);
             return InvalidRefreshGrant();
+        }
 
         // Re-verify against the store for the concrete user type registered by AddModulusIdentity<TUser>. The manager
         // is kept untyped: UserManager<AppUser> is not a UserManager<ModulusUser>, so casting it made every derived user
@@ -145,7 +183,11 @@ public class ModulusTokenController(
         {
             var refreshed = await TokenPrincipalFactory.RevalidateAsync(userManager, info.Principal);
             if (refreshed is null)
+            {
+                // Inactive, locked out, or the security stamp changed (password reset, sign-out everywhere).
+                Audit(grant, SecurityAuditOutcomes.Denied, info.Principal.GetClaim(OpenIddictConstants.Claims.Subject), TenantOf(info.Principal));
                 return InvalidRefreshGrant();
+            }
 
             principal = refreshed;
             principal.SetScopes(info.Principal.GetScopes());
@@ -158,9 +200,25 @@ public class ModulusTokenController(
         }
 
         ApplyDestinations(principal);
+        Audit(grant, SecurityAuditOutcomes.Success, principal.GetClaim(OpenIddictConstants.Claims.Subject), TenantOf(principal));
 
         return SignIn(principal, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
     }
+
+    private static Guid? TenantOf(ClaimsPrincipal principal)
+        => Guid.TryParse(principal.GetClaim("tid"), out var tenantId) ? tenantId : null;
+
+    /// <summary>Records a token decision in the security audit (no user names, passwords or tokens).</summary>
+    private void Audit(string action, string outcome, string? actor, Guid? tenantId, string? clientId = null)
+        => HttpContext.RequestServices.GetService<ISecurityAuditLog>()?.Record(new SecurityAuditEvent
+        {
+            Category = SecurityAuditCategories.Identity,
+            Action = action,
+            Outcome = outcome,
+            Actor = actor,
+            TenantId = tenantId,
+            Details = new Dictionary<string, string?> { ["client"] = clientId ?? HttpContext.GetOpenIddictServerRequest()?.ClientId },
+        });
 
     /// <summary>
     /// Resolves the <c>UserManager&lt;TUser&gt;</c> for the user type registered by <c>AddModulusIdentity&lt;TUser&gt;</c>
@@ -192,6 +250,7 @@ public class ModulusUserInfoController : ControllerBase
 {
     [HttpGet("~/connect/userinfo")]
     [HttpPost("~/connect/userinfo")]
+    [Authorize]
     public IActionResult UserInfo()
     {
         if (User.Identity?.IsAuthenticated != true)
@@ -227,6 +286,8 @@ public class ModulusIntrospectionController(
 {
     [HttpPost("~/connect/introspect")]
     [IgnoreAntiforgeryToken]
+    [AllowAnonymous]
+    [Loosened("RFC 7662 introspection: the action authenticates the calling resource server's client credentials", Framework = true)]
     public async Task<IActionResult> Introspect([FromForm] string? token)
     {
         if (!IsCallerAuthorized())
@@ -409,6 +470,8 @@ public class ModulusEndSessionController(
 {
     [HttpGet("~/connect/end-session")]
     [HttpPost("~/connect/end-session")]
+    [AllowAnonymous]
+    [Loosened("RP-initiated logout must work after the session expired", Framework = true)]
     public async Task<IActionResult> EndSessionAsync(
         [FromQuery] string? post_logout_redirect_uri)
     {

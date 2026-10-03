@@ -5,6 +5,10 @@
     <Project Path="src/core/Modulus.Core/Modulus.Core.csproj" />
     <Project Path="src/core/Modulus.AspNetCore/Modulus.AspNetCore.csproj" />
   </Folder>
+  <!-- ── Analyzers (shipped inside Modulus.AspNetCore) ───────────── -->
+  <Folder Name="/src/analyzers/">
+    <Project Path="src/analyzers/Modulus.Analyzers/Modulus.Analyzers.csproj" />
+  </Folder>
   <!-- ── Data ────────────────────────────────────────────────────── -->
   <Folder Name="/src/data/">
     <Project Path="src/data/Modulus.Data.Abstractions/Modulus.Data.Abstractions.csproj" />
@@ -28,6 +32,9 @@
     <Project Path="src/messaging/Modulus.EventBus.RabbitMQ/Modulus.EventBus.RabbitMQ.csproj" />
     <Project Path="src/messaging/Modulus.EventBus.Kafka/Modulus.EventBus.Kafka.csproj" />
     <Project Path="src/messaging/Modulus.Sagas/Modulus.Sagas.csproj" />
+    <Project Path="src/messaging/Modulus.Webhooks/Modulus.Webhooks.csproj" />
+    <Project Path="src/messaging/Modulus.Realtime/Modulus.Realtime.csproj" />
+    <Project Path="src/messaging/Modulus.Realtime.Redis/Modulus.Realtime.Redis.csproj" />
   </Folder>
   <!-- ── Identity ────────────────────────────────────────────────── -->
   <Folder Name="/src/identity/">
@@ -43,8 +50,12 @@
     <Project Path="src/platform/Modulus.SignalR.Backplane/Modulus.SignalR.Backplane.csproj" />
     <Project Path="src/platform/Modulus.MultiTenancy.EntityFrameworkCore/Modulus.MultiTenancy.EntityFrameworkCore.csproj" />
     <Project Path="src/platform/Modulus.Authorization.EntityFrameworkCore/Modulus.Authorization.EntityFrameworkCore.csproj" />
+    <Project Path="src/platform/Modulus.AuditLogging.EntityFrameworkCore/Modulus.AuditLogging.EntityFrameworkCore.csproj" />
     <Project Path="src/platform/Modulus.AspNetCore.Redis/Modulus.AspNetCore.Redis.csproj" />
     <Project Path="src/platform/Modulus.Authorization.Management/Modulus.Authorization.Management.csproj" />
+    <Project Path="src/platform/Modulus.Bff/Modulus.Bff.csproj" />
+    <Project Path="src/platform/Modulus.Grpc/Modulus.Grpc.csproj" />
+    <Project Path="src/platform/Modulus.GraphQL/Modulus.GraphQL.csproj" />
   </Folder>
   <!-- ── Observability ───────────────────────────────────────────── -->
   <Folder Name="/src/observability/">
@@ -77,19 +88,27 @@
   <Folder Name="/tests/unit/">
     <Project Path="tests/unit/Modulus.Core.Tests/Modulus.Core.Tests.csproj" />
     <Project Path="tests/unit/Modulus.AspNetCore.Tests/Modulus.AspNetCore.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.Analyzers.Tests/Modulus.Analyzers.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.Bff.Tests/Modulus.Bff.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.Grpc.Tests/Modulus.Grpc.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.GraphQL.Tests/Modulus.GraphQL.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Mediator.Tests/Modulus.Mediator.Tests.csproj" />
     <Project Path="tests/unit/Modulus.EntityFrameworkCore.Tests/Modulus.EntityFrameworkCore.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Inbox.MongoDB.Tests/Modulus.Inbox.MongoDB.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Inbox.Tests/Modulus.Inbox.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Outbox.MongoDB.Tests/Modulus.Outbox.MongoDB.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.Data.MongoDB.Tests/Modulus.Data.MongoDB.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Outbox.Tests/Modulus.Outbox.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Sagas.Tests/Modulus.Sagas.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.Webhooks.Tests/Modulus.Webhooks.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.Realtime.Tests/Modulus.Realtime.Tests.csproj" />
     <Project Path="tests/unit/Modulus.EventBus.Kafka.Tests/Modulus.EventBus.Kafka.Tests.csproj" />
     <Project Path="tests/unit/Modulus.EventBus.RabbitMQ.Tests/Modulus.EventBus.RabbitMQ.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Events.Tests/Modulus.Events.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Identity.Tests/Modulus.Identity.Tests.csproj" />
     <Project Path="tests/unit/Modulus.MultiTenancy.Tests/Modulus.MultiTenancy.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Platform.Tests/Modulus.Platform.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.AuditLogging.EntityFrameworkCore.Tests/Modulus.AuditLogging.EntityFrameworkCore.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Authorization.EntityFrameworkCore.Tests/Modulus.Authorization.EntityFrameworkCore.Tests.csproj" />
     <Project Path="tests/unit/Modulus.AspNetCore.Redis.Tests/Modulus.AspNetCore.Redis.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Authorization.Management.Tests/Modulus.Authorization.Management.Tests.csproj" />

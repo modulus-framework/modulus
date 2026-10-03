@@ -26,4 +26,12 @@
     <PackageReference Include="Microsoft.OpenApi" />
   </ItemGroup>
 
+  <!-- MOD0001 ships inside this package: every app that maps Modulus endpoints gets it, no extra reference. -->
+  <ItemGroup>
+    <ProjectReference Include="../../analyzers/Modulus.Analyzers/Modulus.Analyzers.csproj"
+                      ReferenceOutputAssembly="false" PrivateAssets="all" />
+    <None Include="../../analyzers/Modulus.Analyzers/bin/$(Configuration)/netstandard2.0/Modulus.Analyzers.dll"
+          Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+  </ItemGroup>
+
 </Project>

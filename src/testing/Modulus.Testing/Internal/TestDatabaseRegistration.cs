@@ -4,6 +4,9 @@ using System.Reflection;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Modulus.EntityFrameworkCore;
+using Modulus.EntityFrameworkCore.Isolation;
+using Modulus.EntityFrameworkCore.Transactions;
 
 /// <summary>
 /// Records what the SQLite swap discovered, so the keep-alive hosted service
@@ -175,6 +178,11 @@ internal static class TestDatabaseRegistration
                 if (registry is not null && connectionString.Contains("Mode=Memory", StringComparison.OrdinalIgnoreCase))
                     registry.KeepAlive(connectionString);
                 options.UseSqlite(connectionString);
+
+                // The swap replaces the module's options, interceptors included: put back the framework's
+                // tenant raw-SQL guard and deferred domain-event drain so tests run what production runs.
+                if (typeof(ModuleDbContext).IsAssignableFrom(contextType))
+                    options.AddInterceptors(TenantSqlGuardInterceptor.Instance, DeferredDomainEventTransactionInterceptor.Instance);
             };
             if (factoryContexts.Contains(contextType))
                 AddDbContextFactory

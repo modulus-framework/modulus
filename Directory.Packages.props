@@ -32,6 +32,11 @@
   <ItemGroup Label="NoSQL">
     <PackageVersion Include="MongoDB.Driver"                            Version="3.9.0" />
     <PackageVersion Include="StackExchange.Redis"                       Version="3.0.0" />
+    <!-- Hybrid cache (L1 memory + L2 distributed + backplane). MIT. -->
+    <PackageVersion Include="ZiggyCreatures.FusionCache"                                  Version="2.9.0" />
+    <PackageVersion Include="ZiggyCreatures.FusionCache.Serialization.SystemTextJson"     Version="2.9.0" />
+    <PackageVersion Include="ZiggyCreatures.FusionCache.Backplane.StackExchangeRedis"     Version="2.9.0" />
+    <PackageVersion Include="ZiggyCreatures.FusionCache.OpenTelemetry"                    Version="2.9.0" />
   </ItemGroup>
   <ItemGroup Label="Microsoft.Extensions">
     <PackageVersion Include="Microsoft.Extensions.Configuration.Abstractions"          Version="10.0.9" />
@@ -46,13 +51,39 @@
     <PackageVersion Include="Microsoft.Extensions.Options.ConfigurationExtensions"    Version="10.0.9" />
     <PackageVersion Include="Microsoft.Extensions.Http"                               Version="10.0.9" />
     <PackageVersion Include="Microsoft.Extensions.Caching.Memory"                      Version="10.0.9" />
+    <PackageVersion Include="Microsoft.Extensions.Caching.StackExchangeRedis"          Version="10.0.9" />
     <PackageVersion Include="Microsoft.Extensions.Hosting.Abstractions"                Version="10.0.9" />
     <PackageVersion Include="Microsoft.Extensions.Hosting"                            Version="10.0.9" />
   </ItemGroup>
   <ItemGroup Label="Security">
     <PackageVersion Include="Microsoft.IdentityModel.Protocols.OpenIdConnect"         Version="8.12.1" />
     <PackageVersion Include="Microsoft.AspNetCore.Authentication.OpenIdConnect"       Version="10.0.9" />
+    <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer"           Version="10.0.9" />
+    <!-- BFF edge: reverse proxy + service discovery (both MIT). ServiceDiscovery stays on
+         10.7.x, the line that depends on Microsoft.Extensions.Http 10.0.9 like the rest. -->
+    <PackageVersion Include="Yarp.ReverseProxy"                                        Version="2.3.0" />
+    <PackageVersion Include="Microsoft.Extensions.ServiceDiscovery"                    Version="10.7.0" />
+    <PackageVersion Include="Microsoft.Extensions.ServiceDiscovery.Yarp"               Version="10.7.0" />
     <PackageVersion Include="System.IdentityModel.Tokens.Jwt"                         Version="8.12.1" />
+  </ItemGroup>
+  <ItemGroup Label="gRPC">
+    <!-- gRPC for .NET (Apache-2.0). Grpc.Tools is build-time only (protoc codegen). -->
+    <PackageVersion Include="Grpc.AspNetCore.Server"                    Version="2.84.0" />
+    <PackageVersion Include="Grpc.AspNetCore.Server.ClientFactory"      Version="2.84.0" />
+    <PackageVersion Include="Grpc.AspNetCore.Server.Reflection"         Version="2.84.0" />
+    <PackageVersion Include="Grpc.AspNetCore.HealthChecks"              Version="2.84.0" />
+    <PackageVersion Include="Grpc.Net.ClientFactory"                    Version="2.84.0" />
+    <PackageVersion Include="Grpc.StatusProto"                          Version="2.84.0" />
+    <PackageVersion Include="Grpc.Tools"                                Version="2.84.0" />
+    <PackageVersion Include="Google.Protobuf"                           Version="3.36.2" />
+    <!-- GraphQL.NET (MIT). HotChocolate is not used: HotChocolate.AspNetCore (15 and 16) depends on
+         ChilliCream.Nitro.App, which ships under the source-available ChilliCream License, not an OSI license. -->
+    <PackageVersion Include="GraphQL"                                   Version="8.8.5" />
+    <PackageVersion Include="GraphQL.SystemTextJson"                    Version="8.8.5" />
+    <PackageVersion Include="GraphQL.DataLoader"                        Version="8.8.5" />
+    <PackageVersion Include="GraphQL.MicrosoftDI"                       Version="8.8.5" />
+    <PackageVersion Include="GraphQL.Server.Transports.AspNetCore"      Version="8.3.3" />
+    <PackageVersion Include="GraphQL.Server.Ui.GraphiQL"                Version="8.3.3" />
   </ItemGroup>
   <ItemGroup Label="Validation">
     <PackageVersion Include="FluentValidation"                          Version="12.1.1" />
@@ -93,6 +124,10 @@
     <PackageVersion Include="Microsoft.VisualStudio.Threading.Analyzers" Version="17.13.2" />
     <PackageVersion Include="Roslynator.Analyzers" Version="4.13.1" />
     <PackageVersion Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" Version="5.6.0" />
+    <!-- Modulus.Analyzers (MOD0001). 5.0.0 = the Roslyn of the .NET 10 SDK (the minimum the framework supports), and the
+         version EF Core Design already brings in transitively (central pinning would otherwise report a downgrade). -->
+    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="5.0.0" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0" />
   </ItemGroup>
   <ItemGroup Label="CLI Tooling">
     <PackageVersion Include="Spectre.Console.Cli" Version="0.51.0" />
@@ -106,13 +141,18 @@
     <PackageVersion Include="Microsoft.NET.Test.Sdk"                    Version="18.6.0" />
     <PackageVersion Include="xunit"                                     Version="2.9.3" />
     <PackageVersion Include="xunit.runner.visualstudio"                Version="3.1.5" />
+    <!-- Keep FluentAssertions on 7.x: 8.0+ ships under a commercial license
+         (open-source dependency policy, see AGENTS.md). -->
     <PackageVersion Include="FluentAssertions"                          Version="7.2.0" />
     <PackageVersion Include="NSubstitute"                               Version="5.3.0" />
     <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing"          Version="10.0.9" />
+    <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client"       Version="10.0.9" />
     <PackageVersion Include="Testcontainers.PostgreSql"                 Version="4.12.0" />
     <PackageVersion Include="Testcontainers.RabbitMq"                   Version="4.12.0" />
     <PackageVersion Include="Testcontainers.Kafka"                      Version="4.12.0" />
     <PackageVersion Include="Testcontainers.MongoDb"                    Version="4.12.0" />
+    <PackageVersion Include="Testcontainers.MsSql"                      Version="4.12.0" />
+    <PackageVersion Include="Testcontainers.MySql"                      Version="4.12.0" />
     <PackageVersion Include="Testcontainers.Redis"                      Version="4.12.0" />
     <!-- Transitive pin (via Testcontainers): CVE-2026-48798 / GHSA-q939-rpr3-3284 -->
     <PackageVersion Include="SSH.NET"                                   Version="2026.0.0" />

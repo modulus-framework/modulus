@@ -46,6 +46,9 @@ internal static partial class ModuleDiscovery
         public string UiProgramCsPath => Kind == AppKind.WebAppApi && !string.IsNullOrEmpty(WebProgramCsPath) ? WebProgramCsPath : ProgramCsPath;
 
         public IReadOnlyList<ModuleSummary> Modules { get; init; } = [];
+
+        /// <summary>The BFF projects under <c>src/Bff</c> (<c>&lt;ModulusAppKind&gt;bff-{client}&lt;/ModulusAppKind&gt;</c>).</summary>
+        public IReadOnlyList<BffApiClients.BffProject> Bffs { get; init; } = [];
     }
 
     /// <summary>One business module with its layer projects + entities.</summary>
@@ -102,6 +105,7 @@ internal static partial class ModuleDiscovery
             WebProgramCsPath = webProgramCs,
             Kind = AppKinds.Read(apiCsproj),
             Modules = FindModules(solutionDir, rootNs),
+            Bffs = BffApiClients.Discover(solutionDir),
         };
     }
 

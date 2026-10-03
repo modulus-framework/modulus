@@ -1,0 +1,29 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Design;
+
+namespace {{ webhooks_namespace }}.Infrastructure;
+
+/// <summary>
+/// Design-time factory used by the EF Core tools (<c>dotnet ef</c> / <c>modulus migrate</c>) to
+/// construct <see cref="AppWebhooksDbContext"/> without the application's DI container.
+/// </summary>
+/// <remarks>
+/// The connection string is read from the <c>WEBHOOKS_CONNECTION</c> environment variable when
+/// set (so CI/CD can point migrations at the real database), otherwise it falls back to the
+/// default development connection string.
+/// </remarks>
+public sealed class AppWebhooksDbContextFactory : IDesignTimeDbContextFactory<AppWebhooksDbContext>
+{
+    public AppWebhooksDbContext CreateDbContext(string[] args)
+    {
+        var connectionString =
+            Environment.GetEnvironmentVariable("WEBHOOKS_CONNECTION")
+            ?? "{{ webhooks_connection_string }}";
+
+        var options = new DbContextOptionsBuilder<AppWebhooksDbContext>()
+            .{{ use_db_method }}(connectionString)
+            .Options;
+
+        return new AppWebhooksDbContext(options);
+    }
+}

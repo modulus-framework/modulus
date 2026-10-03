@@ -114,8 +114,10 @@ public sealed class ApiPermissionTests
 
         var wired = UiCrudWiring.EnsurePagePermission(program, "Orders", "orders:orders:manage", "Manage Orders.");
 
+        // The template already registers AddModulusAuthorization (the security guard's fallback policy), so it is
+        // not added a second time.
+        wired.Split("builder.Services.AddModulusAuthorization();").Should().HaveCount(2);
         wired.ReplaceLineEndings("\n").Should().Contain(
-            "builder.Services.AddModulusAuthorization();\n" +
             "builder.Services.AddGrantStorePermissionChecker();\n" +
             "builder.Services.AddPermissions(\"orders\", permissions => permissions.Add(\"orders:orders:manage\", \"Manage Orders.\"));\n" +
             "builder.Services.AddPermissionGrants(grants => grants.GrantToRole(\"Admin\", \"orders:orders:manage\"));\n" +

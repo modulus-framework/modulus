@@ -8,6 +8,8 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Modulus.Core.Abstractions;
 using ModulusHealthStatus = Modulus.Core.Abstractions.HealthStatus;
 using StandardHealthStatus = Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus;
+using Modulus.AspNetCore.Security.Policy;
+using Modulus.Core.Abstractions.Security;
 
 /// <summary>
 /// Modulus health-check integration bridging custom <see cref="IModuleHealthCheck"/>
@@ -36,6 +38,12 @@ public static class HealthCheckExtensions
     public static IHealthChecksBuilder AddModulusHealthChecks(
         this IHealthChecksBuilder builder)
     {
+        // Idempotent: the gRPC health service adds the bridge too, and a second
+        // registration under the same name fails every health probe at run time.
+        if (builder.Services.Any(d => d.ServiceType == typeof(ModuleHealthCheckBridgeMarker)))
+            return builder;
+        builder.Services.AddSingleton<ModuleHealthCheckBridgeMarker>();
+
         // Resolve IModuleHealthCheck instances lazily at check time via a single
         // aggregate bridge, so late-registered checks are discovered and we avoid
         // building a throwaway IServiceProvider during container configuration.
@@ -54,12 +62,12 @@ public static class HealthCheckExtensions
     {
         app.MapGet(livenessPath, () => Results.Ok(new { status = nameof(ModulusHealthStatus.Healthy) }))
             .WithTags("Health")
-            .AllowAnonymous()
+            .Loosen(new LoosenedAttribute("Liveness probe for orchestrators and load balancers; returns no data") { Framework = true })
             .WithName("HealthLive");
 
         app.MapGet(readinessPath, HandleReadinessAsync)
             .WithTags("Health")
-            .AllowAnonymous()
+            .Loosen(new LoosenedAttribute("Readiness probe for orchestrators and load balancers; returns check status only") { Framework = true })
             .WithName("HealthReady");
 
         return app;
@@ -99,3 +107,6 @@ public static class HealthCheckExtensions
             : Results.Ok(payload);
     }
 }
+
+/// <summary>Marks that <see cref="HealthCheckExtensions.AddModulusHealthChecks"/> already ran.</summary>
+internal sealed class ModuleHealthCheckBridgeMarker;

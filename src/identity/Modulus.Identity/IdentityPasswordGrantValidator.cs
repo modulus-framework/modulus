@@ -1,6 +1,7 @@
 namespace Modulus.Identity;
 
 using Microsoft.AspNetCore.Identity;
+using Modulus.Core.Abstractions;
 using Modulus.Identity.Abstractions;
 
 /// <summary>
@@ -13,10 +14,15 @@ using Modulus.Identity.Abstractions;
 /// an inactive, unconfirmed or locked-out account) was refused before any hash
 /// ran, so the response time told a caller which user names exist.
 /// </para>
+/// <para>
+/// Every denial is recorded in the security audit (the user's company chain, or the host chain when the user name is
+/// unknown) without the user name or password: the chain is append-only.
+/// </para>
 /// </summary>
 internal sealed class IdentityPasswordGrantValidator<TUser>(
     SignInManager<TUser> signInManager,
-    UserManager<TUser> userManager)
+    UserManager<TUser> userManager,
+    ISecurityAuditLog? audit = null)
     : IPasswordGrantCredentialValidator
     where TUser : ModulusUser, new()
 {
@@ -38,11 +44,13 @@ internal sealed class IdentityPasswordGrantValidator<TUser>(
         var user = await userManager.FindByNameAsync(username);
         if (user is null)
         {
+            Denied(null, "unknown-user");
             return DenyAfterHashing(password);
         }
 
         if (!user.IsActive)
         {
+            Denied(user, "account-disabled");
             return DenyAfterHashing(password, "account_disabled");
         }
 
@@ -53,6 +61,7 @@ internal sealed class IdentityPasswordGrantValidator<TUser>(
         // when Identity:RequireConfirmedEmail=true.
         if (!await signInManager.CanSignInAsync(user))
         {
+            Denied(user, "sign-in-not-allowed");
             return DenyAfterHashing(password);
         }
 
@@ -62,6 +71,7 @@ internal sealed class IdentityPasswordGrantValidator<TUser>(
         if (!check.Succeeded)
         {
             // A locked-out account is refused before its password is checked.
+            Denied(user, check.IsLockedOut ? "locked-out" : "wrong-password");
             return check.IsLockedOut
                 ? DenyAfterHashing(password)
                 : PasswordGrantResult.Denied();
@@ -83,6 +93,17 @@ internal sealed class IdentityPasswordGrantValidator<TUser>(
             SecurityStamp = securityStamp,
         };
     }
+
+    private void Denied(TUser? user, string reason)
+        => audit?.Record(new SecurityAuditEvent
+        {
+            Category = SecurityAuditCategories.Identity,
+            Action = "signin.password",
+            Outcome = SecurityAuditOutcomes.Denied,
+            TenantId = user?.TenantId,
+            Actor = user?.Id.ToString(),
+            Details = new Dictionary<string, string?> { ["reason"] = reason },
+        });
 
     private PasswordGrantResult DenyAfterHashing(string password, string error = "invalid_grant")
     {

@@ -49,6 +49,15 @@ public abstract class ModuleDbContext(
     private ICurrentDataScope DataScope
         => _dataScope ??= sp.GetService<ICurrentDataScope>() ?? NullCurrentDataScope.Instance;
 
+    /// <summary>
+    /// The ambient tenant as the database session should see it, read by the isolation interceptors
+    /// (session context, raw-SQL guard) at the moment a connection opens or a command runs.
+    /// </summary>
+    internal Isolation.TenantSession TenantSession => Isolation.TenantSession.From(currentTenant);
+
+    /// <summary>The request container this context was created in.</summary>
+    internal IServiceProvider ContextServices => sp;
+
     // ── IUnitOfWork ───────────────────────────────────────────────
     public Task<int> CommitAsync(CancellationToken ct = default)
         => SaveChangesAsync(ct);
@@ -459,6 +468,40 @@ public abstract class ModuleDbContext(
             {
                 entry.Entity.TenantId = tenantId;
             }
+        }
+
+        GuardCrossTenantWrites();
+    }
+
+    /// <summary>
+    /// Write-side twin of the tenant query filter. Outside the host context a unit of work may
+    /// only insert, update or delete rows of the ambient tenant: an insert stamped with another
+    /// tenant's id, a change to an existing row's <c>TenantId</c>, or an update/delete of a row
+    /// carrying another tenant's id throws <see cref="CrossTenantWriteException"/>. With no tenant
+    /// resolved, only rows without a tenant (<see cref="Guid.Empty"/>) may be written.
+    /// </summary>
+    private void GuardCrossTenantWrites()
+    {
+        if (currentTenant.IsHost)
+            return;
+
+        var current = currentTenant.TenantId;
+        foreach (var entry in ChangeTracker.Entries<IHasTenantId>())
+        {
+            if (entry.State is not (EntityState.Added or EntityState.Modified or EntityState.Deleted))
+                continue;
+
+            var owner = entry.Entity.TenantId;
+            if (entry.State != EntityState.Added)
+            {
+                // The row's stored tenant is the original value; a changed TenantId is a move.
+                var original = entry.Property(nameof(IHasTenantId.TenantId)).OriginalValue is Guid o ? o : owner;
+                if (original != owner)
+                    throw new CrossTenantWriteException(entry.Metadata.ClrType.Name, original, current);
+            }
+
+            if (owner != Guid.Empty && owner != current)
+                throw new CrossTenantWriteException(entry.Metadata.ClrType.Name, owner, current);
         }
     }
 

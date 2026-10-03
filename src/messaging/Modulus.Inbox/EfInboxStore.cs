@@ -2,6 +2,7 @@ namespace Modulus.Inbox;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Modulus.Core.Abstractions;
 using Modulus.Inbox.Abstractions;
 
 /// <summary>
@@ -10,7 +11,10 @@ using Modulus.Inbox.Abstractions;
 /// claim semantics: concurrent inserts race on a single INSERT, the loser gets
 /// a <see cref="DbUpdateException"/> and defers.
 /// </summary>
-internal sealed class EfInboxStore(DbContext db, ILogger<EfInboxStore>? logger = null) : IInboxStore
+internal sealed class EfInboxStore(
+    DbContext db,
+    ILogger<EfInboxStore>? logger = null,
+    ICurrentTenant? currentTenant = null) : IInboxStore
 {
     public async Task<InboxMessage?> TryClaimAsync(
         Guid eventId,
@@ -124,6 +128,8 @@ internal sealed class EfInboxStore(DbContext db, ILogger<EfInboxStore>? logger =
                 MessageType = messageType,
                 Payload = payload,
                 ModuleName = db.GetType().Name.Replace("DbContext", string.Empty),
+                // The (verified) tenant the event was restored into, for inspection and purges.
+                TenantId = currentTenant?.TenantId ?? Guid.Empty,
                 Status = InboxStatus.Processing,
                 ClaimedAt = now,
             };

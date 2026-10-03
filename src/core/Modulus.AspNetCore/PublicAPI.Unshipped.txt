@@ -31,7 +31,6 @@ Modulus.AspNetCore.Configuration.SecretsGuardOptions.SensitiveKeyPatterns.set ->
 Modulus.AspNetCore.Configuration.ValidatedOptionsExtensions
 Modulus.AspNetCore.Correlation.CorrelationExtensions
 Modulus.AspNetCore.Correlation.CorrelationIdMiddleware
-Modulus.AspNetCore.Correlation.CorrelationIdMiddleware.CorrelationIdMiddleware(Microsoft.AspNetCore.Http.RequestDelegate! next, Modulus.Core.Abstractions.ICorrelationContext! correlation, Microsoft.Extensions.Options.IOptions<Modulus.AspNetCore.Correlation.CorrelationOptions!>! options) -> void
 Modulus.AspNetCore.Correlation.CorrelationIdMiddleware.InvokeAsync(Microsoft.AspNetCore.Http.HttpContext! context) -> System.Threading.Tasks.Task!
 Modulus.AspNetCore.Correlation.CorrelationOptions
 Modulus.AspNetCore.Correlation.CorrelationOptions.CorrelationOptions() -> void
@@ -304,3 +303,119 @@ static Modulus.AspNetCore.RateLimiting.RateLimitingExtensions.UseModulusRateLimi
 static Modulus.AspNetCore.Security.SecurityHeadersExtensions.AddModulusSecurityHeaders(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration, System.Action<Modulus.AspNetCore.Security.SecurityHeadersOptions!>? configure = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static Modulus.AspNetCore.Security.SecurityHeadersExtensions.UseModulusSecurityHeaders(this Microsoft.AspNetCore.Builder.IApplicationBuilder! app) -> Microsoft.AspNetCore.Builder.IApplicationBuilder!
 static Modulus.AspNetCore.Versioning.ApiVersioningExtensions.AddModulusApiVersioning(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration, System.Action<Modulus.AspNetCore.Versioning.ModulusApiVersioningOptions!>? configure = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.AspNetCore.OpenApi.OpenApiExtensions.AddModulusOpenApiDocument(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration, string! documentName, System.Action<Microsoft.AspNetCore.OpenApi.OpenApiOptions!>? configureDocument = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+Modulus.AspNetCore.Endpoints.EndpointBase.AllowAnonymous(string! reason, string? ticket = null) -> void
+Modulus.AspNetCore.Endpoints.EndpointBase.Classification(Modulus.Core.Abstractions.Security.DataClassification classification, Modulus.Core.Abstractions.Security.NetworkRequirement network = Modulus.Core.Abstractions.Security.NetworkRequirement.Any) -> void
+Modulus.AspNetCore.Security.Policy.EndpointAccess
+Modulus.AspNetCore.Security.Policy.EndpointAccess.Fallback = 1 -> Modulus.AspNetCore.Security.Policy.EndpointAccess
+Modulus.AspNetCore.Security.Policy.EndpointAccess.Loosened = 2 -> Modulus.AspNetCore.Security.Policy.EndpointAccess
+Modulus.AspNetCore.Security.Policy.EndpointAccess.Policed = 0 -> Modulus.AspNetCore.Security.Policy.EndpointAccess
+Modulus.AspNetCore.Security.Policy.EndpointAccess.Unpoliced = 3 -> Modulus.AspNetCore.Security.Policy.EndpointAccess
+Modulus.AspNetCore.Security.Policy.EndpointSecurityAnalyzer
+Modulus.AspNetCore.Security.Policy.EndpointSecurityEntry
+Modulus.AspNetCore.Security.Policy.EndpointSecurityEntry.<Clone>$() -> Modulus.AspNetCore.Security.Policy.EndpointSecurityEntry!
+Modulus.AspNetCore.Security.Policy.EndpointSecurityEntry.Access.get -> Modulus.AspNetCore.Security.Policy.EndpointAccess
+Modulus.AspNetCore.Security.Policy.EndpointSecurityEntry.Access.init -> void
+Modulus.AspNetCore.Security.Policy.EndpointSecurityEntry.AllowListed.get -> bool
+Modulus.AspNetCore.Security.Policy.EndpointSecurityEntry.AllowListed.init -> void
+Modulus.AspNetCore.Security.Policy.EndpointSecurityEntry.Classification.get -> Modulus.Core.Abstractions.Security.DataClassification
+Modulus.AspNetCore.Security.Policy.EndpointSecurityEntry.Classification.init -> void
+Modulus.AspNetCore.Security.Policy.EndpointSecurityEntry.Deconstruct(out string! Route, out System.Collections.Generic.IReadOnlyList<string!>! Methods, out string? DisplayName, out Modulus.AspNetCore.Security.Policy.EndpointAccess Access, out System.Collections.Generic.IReadOnlyList<string!>! Policies, out string? LooseningReason, out string? Ticket, out bool AllowListed, out Modulus.Core.Abstractions.Security.DataClassification Classification, out Modulus.Core.Abstractions.Security.NetworkRequirement Network) -> void
+Modulus.AspNetCore.Security.Policy.EndpointSecurityEntry.DisplayName.get -> string?
+Modulus.AspNetCore.Security.Policy.EndpointSecurityEntry.DisplayName.init -> void
+Modulus.AspNetCore.Security.Policy.EndpointSecurityEntry.EndpointSecurityEntry(string! Route, System.Collections.Generic.IReadOnlyList<string!>! Methods, string? DisplayName, Modulus.AspNetCore.Security.Policy.EndpointAccess Access, System.Collections.Generic.IReadOnlyList<string!>! Policies, string? LooseningReason, string? Ticket, bool AllowListed, Modulus.Core.Abstractions.Security.DataClassification Classification, Modulus.Core.Abstractions.Security.NetworkRequirement Network) -> void
+Modulus.AspNetCore.Security.Policy.EndpointSecurityEntry.Equals(Modulus.AspNetCore.Security.Policy.EndpointSecurityEntry? other) -> bool
+Modulus.AspNetCore.Security.Policy.EndpointSecurityEntry.LooseningReason.get -> string?
+Modulus.AspNetCore.Security.Policy.EndpointSecurityEntry.LooseningReason.init -> void
+Modulus.AspNetCore.Security.Policy.EndpointSecurityEntry.Methods.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Modulus.AspNetCore.Security.Policy.EndpointSecurityEntry.Methods.init -> void
+Modulus.AspNetCore.Security.Policy.EndpointSecurityEntry.Network.get -> Modulus.Core.Abstractions.Security.NetworkRequirement
+Modulus.AspNetCore.Security.Policy.EndpointSecurityEntry.Network.init -> void
+Modulus.AspNetCore.Security.Policy.EndpointSecurityEntry.Policies.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Modulus.AspNetCore.Security.Policy.EndpointSecurityEntry.Policies.init -> void
+Modulus.AspNetCore.Security.Policy.EndpointSecurityEntry.Route.get -> string!
+Modulus.AspNetCore.Security.Policy.EndpointSecurityEntry.Route.init -> void
+Modulus.AspNetCore.Security.Policy.EndpointSecurityEntry.Ticket.get -> string?
+Modulus.AspNetCore.Security.Policy.EndpointSecurityEntry.Ticket.init -> void
+Modulus.AspNetCore.Security.Policy.EndpointSecurityExtensions
+Modulus.AspNetCore.Security.Policy.LooseningAllowList
+Modulus.AspNetCore.Security.Policy.LooseningAllowList.Endpoints.get -> System.Collections.Generic.IList<Modulus.AspNetCore.Security.Policy.LooseningAllowListEntry!>!
+Modulus.AspNetCore.Security.Policy.LooseningAllowList.Endpoints.init -> void
+Modulus.AspNetCore.Security.Policy.LooseningAllowList.Find(string! route, System.Collections.Generic.IReadOnlyCollection<string!>! methods) -> Modulus.AspNetCore.Security.Policy.LooseningAllowListEntry?
+Modulus.AspNetCore.Security.Policy.LooseningAllowList.LooseningAllowList() -> void
+Modulus.AspNetCore.Security.Policy.LooseningAllowListEntry
+Modulus.AspNetCore.Security.Policy.LooseningAllowListEntry.LooseningAllowListEntry() -> void
+Modulus.AspNetCore.Security.Policy.LooseningAllowListEntry.Methods.get -> System.Collections.Generic.IList<string!>!
+Modulus.AspNetCore.Security.Policy.LooseningAllowListEntry.Methods.init -> void
+Modulus.AspNetCore.Security.Policy.LooseningAllowListEntry.Reason.get -> string?
+Modulus.AspNetCore.Security.Policy.LooseningAllowListEntry.Reason.init -> void
+Modulus.AspNetCore.Security.Policy.LooseningAllowListEntry.Route.get -> string!
+Modulus.AspNetCore.Security.Policy.LooseningAllowListEntry.Route.init -> void
+Modulus.AspNetCore.Security.Policy.LooseningAllowListEntry.Ticket.get -> string?
+Modulus.AspNetCore.Security.Policy.LooseningAllowListEntry.Ticket.init -> void
+Modulus.AspNetCore.Security.Policy.SecurityGuardException
+Modulus.AspNetCore.Security.Policy.SecurityGuardException.Findings.get -> System.Collections.Generic.IReadOnlyList<Modulus.AspNetCore.Security.Policy.SecurityGuardFinding!>!
+Modulus.AspNetCore.Security.Policy.SecurityGuardException.SecurityGuardException(System.Collections.Generic.IReadOnlyList<Modulus.AspNetCore.Security.Policy.SecurityGuardFinding!>! findings) -> void
+Modulus.AspNetCore.Security.Policy.SecurityGuardExtensions
+Modulus.AspNetCore.Security.Policy.SecurityGuardFinding
+Modulus.AspNetCore.Security.Policy.SecurityGuardFinding.<Clone>$() -> Modulus.AspNetCore.Security.Policy.SecurityGuardFinding!
+Modulus.AspNetCore.Security.Policy.SecurityGuardFinding.Code.get -> string!
+Modulus.AspNetCore.Security.Policy.SecurityGuardFinding.Code.init -> void
+Modulus.AspNetCore.Security.Policy.SecurityGuardFinding.Deconstruct(out Modulus.AspNetCore.Security.Policy.SecurityGuardSeverity Severity, out string! Code, out string! Route, out string! Message) -> void
+Modulus.AspNetCore.Security.Policy.SecurityGuardFinding.Equals(Modulus.AspNetCore.Security.Policy.SecurityGuardFinding? other) -> bool
+Modulus.AspNetCore.Security.Policy.SecurityGuardFinding.Message.get -> string!
+Modulus.AspNetCore.Security.Policy.SecurityGuardFinding.Message.init -> void
+Modulus.AspNetCore.Security.Policy.SecurityGuardFinding.Route.get -> string!
+Modulus.AspNetCore.Security.Policy.SecurityGuardFinding.Route.init -> void
+Modulus.AspNetCore.Security.Policy.SecurityGuardFinding.SecurityGuardFinding(Modulus.AspNetCore.Security.Policy.SecurityGuardSeverity Severity, string! Code, string! Route, string! Message) -> void
+Modulus.AspNetCore.Security.Policy.SecurityGuardFinding.Severity.get -> Modulus.AspNetCore.Security.Policy.SecurityGuardSeverity
+Modulus.AspNetCore.Security.Policy.SecurityGuardFinding.Severity.init -> void
+Modulus.AspNetCore.Security.Policy.SecurityGuardOptions
+Modulus.AspNetCore.Security.Policy.SecurityGuardOptions.AllowListPath.get -> string!
+Modulus.AspNetCore.Security.Policy.SecurityGuardOptions.AllowListPath.set -> void
+Modulus.AspNetCore.Security.Policy.SecurityGuardOptions.Enabled.get -> bool
+Modulus.AspNetCore.Security.Policy.SecurityGuardOptions.Enabled.set -> void
+Modulus.AspNetCore.Security.Policy.SecurityGuardOptions.FailOnUnlistedInDevelopment.get -> bool
+Modulus.AspNetCore.Security.Policy.SecurityGuardOptions.FailOnUnlistedInDevelopment.set -> void
+Modulus.AspNetCore.Security.Policy.SecurityGuardOptions.SecurityGuardOptions() -> void
+Modulus.AspNetCore.Security.Policy.SecurityGuardReport
+Modulus.AspNetCore.Security.Policy.SecurityGuardReport.<Clone>$() -> Modulus.AspNetCore.Security.Policy.SecurityGuardReport!
+Modulus.AspNetCore.Security.Policy.SecurityGuardReport.Deconstruct(out System.Collections.Generic.IReadOnlyList<Modulus.AspNetCore.Security.Policy.EndpointSecurityEntry!>! Endpoints, out System.Collections.Generic.IReadOnlyList<Modulus.AspNetCore.Security.Policy.SecurityGuardFinding!>! Findings) -> void
+Modulus.AspNetCore.Security.Policy.SecurityGuardReport.Endpoints.get -> System.Collections.Generic.IReadOnlyList<Modulus.AspNetCore.Security.Policy.EndpointSecurityEntry!>!
+Modulus.AspNetCore.Security.Policy.SecurityGuardReport.Endpoints.init -> void
+Modulus.AspNetCore.Security.Policy.SecurityGuardReport.Equals(Modulus.AspNetCore.Security.Policy.SecurityGuardReport? other) -> bool
+Modulus.AspNetCore.Security.Policy.SecurityGuardReport.Findings.get -> System.Collections.Generic.IReadOnlyList<Modulus.AspNetCore.Security.Policy.SecurityGuardFinding!>!
+Modulus.AspNetCore.Security.Policy.SecurityGuardReport.Findings.init -> void
+Modulus.AspNetCore.Security.Policy.SecurityGuardReport.Loosened.get -> System.Collections.Generic.IEnumerable<Modulus.AspNetCore.Security.Policy.EndpointSecurityEntry!>!
+Modulus.AspNetCore.Security.Policy.SecurityGuardReport.SecurityGuardReport(System.Collections.Generic.IReadOnlyList<Modulus.AspNetCore.Security.Policy.EndpointSecurityEntry!>! Endpoints, System.Collections.Generic.IReadOnlyList<Modulus.AspNetCore.Security.Policy.SecurityGuardFinding!>! Findings) -> void
+Modulus.AspNetCore.Security.Policy.SecurityGuardSeverity
+Modulus.AspNetCore.Security.Policy.SecurityGuardSeverity.Error = 0 -> Modulus.AspNetCore.Security.Policy.SecurityGuardSeverity
+Modulus.AspNetCore.Security.Policy.SecurityGuardSeverity.Unlisted = 1 -> Modulus.AspNetCore.Security.Policy.SecurityGuardSeverity
+Modulus.AspNetCore.Security.Policy.SecurityGuardState
+Modulus.AspNetCore.Security.Policy.SecurityGuardState.Report.get -> Modulus.AspNetCore.Security.Policy.SecurityGuardReport!
+Modulus.AspNetCore.Security.Policy.SecurityGuardState.SecurityGuardState() -> void
+const Modulus.AspNetCore.Security.Policy.SecurityGuardOptions.SectionName = "Security:Guard" -> string!
+override Modulus.AspNetCore.Security.Policy.EndpointSecurityEntry.Equals(object? obj) -> bool
+override Modulus.AspNetCore.Security.Policy.EndpointSecurityEntry.GetHashCode() -> int
+override Modulus.AspNetCore.Security.Policy.EndpointSecurityEntry.ToString() -> string!
+override Modulus.AspNetCore.Security.Policy.SecurityGuardFinding.Equals(object? obj) -> bool
+override Modulus.AspNetCore.Security.Policy.SecurityGuardFinding.GetHashCode() -> int
+override Modulus.AspNetCore.Security.Policy.SecurityGuardFinding.ToString() -> string!
+override Modulus.AspNetCore.Security.Policy.SecurityGuardReport.Equals(object? obj) -> bool
+override Modulus.AspNetCore.Security.Policy.SecurityGuardReport.GetHashCode() -> int
+override Modulus.AspNetCore.Security.Policy.SecurityGuardReport.ToString() -> string!
+static Modulus.AspNetCore.Security.Policy.EndpointSecurityAnalyzer.Analyze(System.Collections.Generic.IEnumerable<Microsoft.AspNetCore.Http.Endpoint!>! endpoints, bool hasFallbackPolicy, Modulus.AspNetCore.Security.Policy.LooseningAllowList! allowList) -> Modulus.AspNetCore.Security.Policy.SecurityGuardReport!
+static Modulus.AspNetCore.Security.Policy.EndpointSecurityEntry.operator !=(Modulus.AspNetCore.Security.Policy.EndpointSecurityEntry? left, Modulus.AspNetCore.Security.Policy.EndpointSecurityEntry? right) -> bool
+static Modulus.AspNetCore.Security.Policy.EndpointSecurityEntry.operator ==(Modulus.AspNetCore.Security.Policy.EndpointSecurityEntry? left, Modulus.AspNetCore.Security.Policy.EndpointSecurityEntry? right) -> bool
+static Modulus.AspNetCore.Security.Policy.EndpointSecurityExtensions.Loosen<TBuilder>(this TBuilder builder, string! reason, string? ticket = null) -> TBuilder
+static Modulus.AspNetCore.Security.Policy.EndpointSecurityExtensions.WithSecurityPolicy<TBuilder>(this TBuilder builder, Modulus.Core.Abstractions.Security.DataClassification classification, Modulus.Core.Abstractions.Security.NetworkRequirement network = Modulus.Core.Abstractions.Security.NetworkRequirement.Any) -> TBuilder
+static Modulus.AspNetCore.Security.Policy.LooseningAllowList.Empty.get -> Modulus.AspNetCore.Security.Policy.LooseningAllowList!
+static Modulus.AspNetCore.Security.Policy.LooseningAllowList.Load(string! path) -> Modulus.AspNetCore.Security.Policy.LooseningAllowList!
+static Modulus.AspNetCore.Security.Policy.SecurityGuardExtensions.AddModulusSecurityGuard(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration, System.Action<Modulus.AspNetCore.Security.Policy.SecurityGuardOptions!>? configure = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.AspNetCore.Security.Policy.SecurityGuardFinding.operator !=(Modulus.AspNetCore.Security.Policy.SecurityGuardFinding? left, Modulus.AspNetCore.Security.Policy.SecurityGuardFinding? right) -> bool
+static Modulus.AspNetCore.Security.Policy.SecurityGuardFinding.operator ==(Modulus.AspNetCore.Security.Policy.SecurityGuardFinding? left, Modulus.AspNetCore.Security.Policy.SecurityGuardFinding? right) -> bool
+static Modulus.AspNetCore.Security.Policy.SecurityGuardReport.Empty.get -> Modulus.AspNetCore.Security.Policy.SecurityGuardReport!
+static Modulus.AspNetCore.Security.Policy.SecurityGuardReport.operator !=(Modulus.AspNetCore.Security.Policy.SecurityGuardReport? left, Modulus.AspNetCore.Security.Policy.SecurityGuardReport? right) -> bool
+static Modulus.AspNetCore.Security.Policy.SecurityGuardReport.operator ==(Modulus.AspNetCore.Security.Policy.SecurityGuardReport? left, Modulus.AspNetCore.Security.Policy.SecurityGuardReport? right) -> bool
+static Modulus.AspNetCore.Security.Policy.EndpointSecurityExtensions.Loosen<TBuilder>(this TBuilder builder, Modulus.Core.Abstractions.Security.LoosenedAttribute! loosening) -> TBuilder
+Modulus.AspNetCore.Correlation.CorrelationIdMiddleware.CorrelationIdMiddleware(Microsoft.AspNetCore.Http.RequestDelegate! next, Modulus.Core.Abstractions.ICorrelationContext! correlation, Microsoft.Extensions.Options.IOptions<Modulus.AspNetCore.Correlation.CorrelationOptions!>! options, Microsoft.Extensions.Logging.ILogger<Modulus.AspNetCore.Correlation.CorrelationIdMiddleware!>! logger) -> void

@@ -34,27 +34,42 @@ public sealed class EnvelopeAmbientScope : IDisposable
     }
 
     /// <summary>
-    /// Resolves <see cref="ICurrentTenant"/>, <see cref="ICorrelationContext"/>,
-    /// and <see cref="ICausationIdContext"/> from the consumer's DI scope and
-    /// enters matching scopes for the values carried on the envelope. All are
-    /// optional: absent registrations or envelope values simply produce no scope,
-    /// mirroring the Rebus step.
+    /// Verifies the tenant carried on <paramref name="envelope"/> through
+    /// <see cref="ITenantContextRestorer"/> (null when the envelope has none). An unknown or
+    /// deactivated tenant throws <see cref="TenantContextRejectedException"/>; consumers dead-letter
+    /// the message. Pass the result to <see cref="Restore"/>.
     /// </summary>
-    public static EnvelopeAmbientScope Restore(
+    public static async ValueTask<TenantInfo?> VerifyTenantAsync(
         IntegrationEventEnvelope envelope,
-        IServiceProvider services)
+        IServiceProvider services,
+        CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(envelope);
         ArgumentNullException.ThrowIfNull(services);
 
-        var currentTenant = services.GetService<ICurrentTenant>();
+        return envelope.TenantId is { } tenantId
+            ? await services.VerifyTenantAsync(tenantId, ct).ConfigureAwait(false)
+            : null;
+    }
+
+    /// <summary>
+    /// Restores <paramref name="verifiedTenant"/> (from <see cref="VerifyTenantAsync"/>) and the
+    /// correlation and causation carried on <paramref name="envelope"/>. Synchronous on purpose: call
+    /// it in the method that dispatches, since ambient values set inside an <c>async</c> method do
+    /// not flow back to its caller.
+    /// </summary>
+    public static EnvelopeAmbientScope Restore(
+        IntegrationEventEnvelope envelope,
+        IServiceProvider services,
+        TenantInfo? verifiedTenant)
+    {
+        ArgumentNullException.ThrowIfNull(envelope);
+        ArgumentNullException.ThrowIfNull(services);
+
         var correlationContext = services.GetService<ICorrelationContext>();
         var causationContext = services.GetService<ICausationIdContext>();
 
-        var tenantScope =
-            envelope.TenantId is { } tenantId && currentTenant is not null
-                ? currentTenant.Change(new TenantInfo(tenantId, string.Empty))
-                : null;
+        var tenantScope = verifiedTenant is not null ? services.EnterTenant(verifiedTenant) : null;
 
         var correlationScope =
             !string.IsNullOrEmpty(envelope.CorrelationId)
@@ -70,7 +85,6 @@ public sealed class EnvelopeAmbientScope : IDisposable
         return new EnvelopeAmbientScope(tenantScope, correlationScope, causationScope);
     }
 
-    /// <inheritdoc />
     public void Dispose()
     {
         _tenant?.Dispose();

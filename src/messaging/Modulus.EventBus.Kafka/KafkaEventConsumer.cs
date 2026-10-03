@@ -1,3 +1,4 @@
+using Modulus.Core.Abstractions;
 namespace Modulus.EventBus.Kafka;
 
 using Confluent.Kafka;
@@ -125,8 +126,26 @@ internal sealed class KafkaEventConsumer : BackgroundService
                 // handler invocation — otherwise handlers run in host scope
                 // where tenant query filters match everything and writes stamp
                 // TenantId as empty.
+                EnvelopeAmbientScope ambient;
+                try
+                {
+                    ambient = EnvelopeAmbientScope.Restore(
+                        envelope, scope.ServiceProvider,
+                        await EnvelopeAmbientScope.VerifyTenantAsync(envelope, scope.ServiceProvider, ct));
+                }
+                catch (TenantContextRejectedException ex)
+                {
+                    // Unknown or deactivated tenant: redelivery cannot fix it, dead-letter now.
+                    _logger.LogError(ex,
+                        "Rejected tenant context from {Topic}[{Partition}]@{Offset}; routing to DLQ",
+                        result.Topic, result.Partition.Value, result.Offset.Value);
+                    await DeadLetterAsync(result.Topic, result, result.Message.Value, "tenant-rejected", ct);
+                    consumer.Commit(result);
+                    continue;
+                }
+
                 bool handled;
-                using (EnvelopeAmbientScope.Restore(envelope, scope.ServiceProvider))
+                using (ambient)
                     handled = await dispatcher.DispatchAsync(envelope, ct);
 
                 if (!handled)

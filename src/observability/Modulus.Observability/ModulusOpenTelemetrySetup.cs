@@ -15,7 +15,10 @@ using global::OpenTelemetry.Trace;
 /// shape the TradeFlow sample used — and wires ASP.NET Core + HttpClient +
 /// Runtime instrumentation plus the Modulus sources/meters. Exporters are only
 /// added when explicitly enabled and (for OTLP) when an endpoint is configured,
-/// so a default app boots with no export overhead.
+/// so a default app boots with no export overhead. FusionCache (the hybrid
+/// cache) traces and metrics are included unless
+/// <c>OpenTelemetry:Instrumentation:FusionCache</c> is false; they cost nothing
+/// when the app does not use FusionCache.
 /// </summary>
 public static class ModulusOpenTelemetrySetup
 {
@@ -34,6 +37,7 @@ public static class ModulusOpenTelemetrySetup
         var otlpEndpoint = otlp["Endpoint"];
         var exportTraces = otlp.GetValue("ExportTraces", true);
         var exportMetrics = otlp.GetValue("ExportMetrics", true);
+        var fusionCache = section.GetValue("Instrumentation:FusionCache", true);
 
         Uri? endpoint = null;
         if (string.IsNullOrWhiteSpace(otlpEndpoint))
@@ -53,6 +57,8 @@ public static class ModulusOpenTelemetrySetup
                 tracing.AddAspNetCoreInstrumentation()
                     .AddHttpClientInstrumentation()
                     .UseModulusTracing();
+                if (fusionCache)
+                    tracing.AddFusionCacheInstrumentation();
                 if (enableConsole)
                     tracing.AddConsoleExporter();
                 if (exportTraces && endpoint is not null)
@@ -64,6 +70,8 @@ public static class ModulusOpenTelemetrySetup
                     .AddHttpClientInstrumentation()
                     .AddRuntimeInstrumentation()
                     .UseModulusMetrics();
+                if (fusionCache)
+                    metrics.AddFusionCacheInstrumentation();
                 if (enableConsole)
                     metrics.AddConsoleExporter();
                 if (exportMetrics && endpoint is not null)

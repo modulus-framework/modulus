@@ -4,7 +4,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <Description>Platform services for Modulus: multi-tenancy, authorization, background jobs, in-memory caching, local file storage, SignalR integration, settings, audit logging, notifications, and localization.</Description>
+    <Description>Platform services for Modulus: multi-tenancy, authorization, background jobs, in-memory and hybrid (FusionCache) caching, local file storage, SignalR integration, settings, audit logging, notifications, and localization.</Description>
   </PropertyGroup>
 
   <ItemGroup>
@@ -17,6 +17,8 @@
     <PackageReference Include="Cronos" />
     <PackageReference Include="Microsoft.Extensions.Http.Resilience" />
     <PackageReference Include="Microsoft.Extensions.Caching.Memory" />
+    <PackageReference Include="ZiggyCreatures.FusionCache" />
+    <PackageReference Include="ZiggyCreatures.FusionCache.Serialization.SystemTextJson" />
     <ProjectReference Include="../../messaging/Modulus.Events/Modulus.Events.csproj" />
   </ItemGroup>
 

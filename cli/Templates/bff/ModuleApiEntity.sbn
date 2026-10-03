@@ -1,0 +1,7 @@
+    /// <summary>All {{ plural }} (<c>GET api/{{ module_lower }}/{{ route_name }}</c>).</summary>
+    public async Task<JsonElement> Get{{ plural }}Async(CancellationToken ct = default)
+        => (await http.GetFromJsonAsync<ApiResponse<JsonElement>>("api/{{ module_lower }}/{{ route_name }}", ct))?.Data ?? default;
+
+    /// <summary>One {{ entity_name }} (<c>GET api/{{ module_lower }}/{{ route_name }}/{id}</c>).</summary>
+    public async Task<JsonElement> Get{{ entity_name }}Async(Guid id, CancellationToken ct = default)
+        => (await http.GetFromJsonAsync<ApiResponse<JsonElement>>($"api/{{ module_lower }}/{{ route_name }}/{id}", ct))?.Data ?? default;

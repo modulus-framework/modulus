@@ -22,23 +22,13 @@ public sealed class MemoryCacheService(IMemoryCache cache, IServiceProvider serv
     // safe and always observes the ambient async flow, whether or not
     // multi-tenancy is registered.
     private string TagKey(string tag)
-    {
-        var tenant = services.GetService<ICurrentTenant>();
-        return tenant is { IsHost: false, TenantId: { } tenantId }
-            ? $"modulus:tag:{tenantId:N}:{tag}"
-            : $"modulus:tag:{tag}";
-    }
+        => CacheKeys.Tag(services.GetService<ICurrentTenant>(), tag);
 
     // Entry keys get the same tenant scoping as tags (see TagKey): without
     // it, GetAsync/SetAsync used the caller's raw key verbatim, so
     // cache.SetAsync("products", ...) in tenant A was readable by tenant B.
     private string EntryKey(string key)
-    {
-        var tenant = services.GetService<ICurrentTenant>();
-        return tenant is { IsHost: false, TenantId: { } tenantId }
-            ? $"modulus:entry:{tenantId:N}:{key}"
-            : $"modulus:entry:{key}";
-    }
+        => CacheKeys.Entry(services.GetService<ICurrentTenant>(), key);
 
     public Task<T?> GetAsync<T>(string key, CancellationToken ct = default)
     {

@@ -1,0 +1,155 @@
+#nullable enable
+Modulus.Realtime.IRealtimeBackplane
+Modulus.Realtime.IRealtimeBackplane.PublishAsync(Modulus.Realtime.RealtimeMessage! message, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Realtime.IRealtimeDispatcher
+Modulus.Realtime.IRealtimeDispatcher.DispatchAsync(Modulus.Realtime.RealtimeMessage! message, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Realtime.IRealtimePublisher
+Modulus.Realtime.IRealtimePublisher.PublishAsync(string! type, object? data, Modulus.Realtime.RealtimeAudience! audience, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Realtime.IRealtimeTopicAuthorizer
+Modulus.Realtime.IRealtimeTopicAuthorizer.AuthorizeAsync(System.Security.Claims.ClaimsPrincipal! user, string! topic, System.IServiceProvider! services, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<Modulus.Realtime.RealtimeTopicDecision>
+Modulus.Realtime.ModulusRealtimeOptions
+Modulus.Realtime.ModulusRealtimeOptions.CloseAtTokenExpiry.get -> bool
+Modulus.Realtime.ModulusRealtimeOptions.CloseAtTokenExpiry.set -> void
+Modulus.Realtime.ModulusRealtimeOptions.MaxConnectionsPerUser.get -> int
+Modulus.Realtime.ModulusRealtimeOptions.MaxConnectionsPerUser.set -> void
+Modulus.Realtime.ModulusRealtimeOptions.MaxQueuedMessagesPerConnection.get -> int
+Modulus.Realtime.ModulusRealtimeOptions.MaxQueuedMessagesPerConnection.set -> void
+Modulus.Realtime.ModulusRealtimeOptions.MaxTopicsPerConnection.get -> int
+Modulus.Realtime.ModulusRealtimeOptions.MaxTopicsPerConnection.set -> void
+Modulus.Realtime.ModulusRealtimeOptions.ModulusRealtimeOptions() -> void
+Modulus.Realtime.ModulusRealtimeOptions.Path.get -> string!
+Modulus.Realtime.ModulusRealtimeOptions.Path.set -> void
+Modulus.Realtime.ModulusRealtimeOptions.PermissionRecheckInterval.get -> System.TimeSpan
+Modulus.Realtime.ModulusRealtimeOptions.PermissionRecheckInterval.set -> void
+Modulus.Realtime.ModulusRealtimeOptions.ReplayBufferSize.get -> int
+Modulus.Realtime.ModulusRealtimeOptions.ReplayBufferSize.set -> void
+Modulus.Realtime.ModulusRealtimeOptions.ReplayWindow.get -> System.TimeSpan
+Modulus.Realtime.ModulusRealtimeOptions.ReplayWindow.set -> void
+Modulus.Realtime.ModulusRealtimeOptions.RequireAuthenticatedUser.get -> bool
+Modulus.Realtime.ModulusRealtimeOptions.RequireAuthenticatedUser.set -> void
+Modulus.Realtime.ModulusRealtimeOptions.SignalR.get -> Modulus.Realtime.RealtimeSignalROptions!
+Modulus.Realtime.ModulusRealtimeOptions.SignalR.set -> void
+Modulus.Realtime.ModulusRealtimeOptions.Sse.get -> Modulus.Realtime.RealtimeSseOptions!
+Modulus.Realtime.ModulusRealtimeOptions.Sse.set -> void
+Modulus.Realtime.RealtimeAudience
+Modulus.Realtime.RealtimeAudience.<Clone>$() -> Modulus.Realtime.RealtimeAudience!
+Modulus.Realtime.RealtimeAudience.Equals(Modulus.Realtime.RealtimeAudience? other) -> bool
+Modulus.Realtime.RealtimeAudience.RequirePermission(string! permission) -> Modulus.Realtime.RealtimeAudience!
+Modulus.Realtime.RealtimeAudience.RequiredPermission.get -> string?
+Modulus.Realtime.RealtimeAudience.Topic.get -> string?
+Modulus.Realtime.RealtimeAudience.Users.get -> System.Collections.Generic.IReadOnlyList<string!>?
+Modulus.Realtime.RealtimeBuilder
+Modulus.Realtime.RealtimeBuilder.AddEvent<TEvent>(System.Func<TEvent!, Modulus.Realtime.RealtimeAudience!>! audience, System.Func<TEvent!, object?>? payload = null) -> Modulus.Realtime.RealtimeBuilder!
+Modulus.Realtime.RealtimeBuilder.AddTopic(string! pattern, string? permission = null, System.Func<Modulus.Realtime.RealtimeTopicContext!, System.Threading.Tasks.ValueTask<bool>>? authorize = null) -> Modulus.Realtime.RealtimeBuilder!
+Modulus.Realtime.RealtimeBuilder.Services.get -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+Modulus.Realtime.RealtimeEndpointExtensions
+Modulus.Realtime.RealtimeEnvelope
+Modulus.Realtime.RealtimeEnvelope.<Clone>$() -> Modulus.Realtime.RealtimeEnvelope!
+Modulus.Realtime.RealtimeEnvelope.Data.get -> System.Text.Json.JsonElement
+Modulus.Realtime.RealtimeEnvelope.Data.init -> void
+Modulus.Realtime.RealtimeEnvelope.Deconstruct(out string! Id, out string! Type, out System.Text.Json.JsonElement Data, out string? Topic, out System.DateTimeOffset Timestamp) -> void
+Modulus.Realtime.RealtimeEnvelope.Equals(Modulus.Realtime.RealtimeEnvelope? other) -> bool
+Modulus.Realtime.RealtimeEnvelope.Id.get -> string!
+Modulus.Realtime.RealtimeEnvelope.Id.init -> void
+Modulus.Realtime.RealtimeEnvelope.RealtimeEnvelope(string! Id, string! Type, System.Text.Json.JsonElement Data, string? Topic, System.DateTimeOffset Timestamp) -> void
+Modulus.Realtime.RealtimeEnvelope.Timestamp.get -> System.DateTimeOffset
+Modulus.Realtime.RealtimeEnvelope.Timestamp.init -> void
+Modulus.Realtime.RealtimeEnvelope.Topic.get -> string?
+Modulus.Realtime.RealtimeEnvelope.Topic.init -> void
+Modulus.Realtime.RealtimeEnvelope.Type.get -> string!
+Modulus.Realtime.RealtimeEnvelope.Type.init -> void
+Modulus.Realtime.RealtimeEvents
+Modulus.Realtime.RealtimeHub
+Modulus.Realtime.RealtimeHub.RealtimeHub() -> void
+Modulus.Realtime.RealtimeMessage
+Modulus.Realtime.RealtimeMessage.<Clone>$() -> Modulus.Realtime.RealtimeMessage!
+Modulus.Realtime.RealtimeMessage.Data.get -> string!
+Modulus.Realtime.RealtimeMessage.Data.init -> void
+Modulus.Realtime.RealtimeMessage.Deconstruct(out string! Id, out string! Type, out string! Data, out System.Guid? TenantId, out System.Collections.Generic.IReadOnlyList<string!>? Users, out string? Topic, out string? Permission, out System.DateTimeOffset Timestamp) -> void
+Modulus.Realtime.RealtimeMessage.Equals(Modulus.Realtime.RealtimeMessage? other) -> bool
+Modulus.Realtime.RealtimeMessage.Id.get -> string!
+Modulus.Realtime.RealtimeMessage.Id.init -> void
+Modulus.Realtime.RealtimeMessage.Permission.get -> string?
+Modulus.Realtime.RealtimeMessage.Permission.init -> void
+Modulus.Realtime.RealtimeMessage.RealtimeMessage(string! Id, string! Type, string! Data, System.Guid? TenantId, System.Collections.Generic.IReadOnlyList<string!>? Users, string? Topic, string? Permission, System.DateTimeOffset Timestamp) -> void
+Modulus.Realtime.RealtimeMessage.TenantId.get -> System.Guid?
+Modulus.Realtime.RealtimeMessage.TenantId.init -> void
+Modulus.Realtime.RealtimeMessage.Timestamp.get -> System.DateTimeOffset
+Modulus.Realtime.RealtimeMessage.Timestamp.init -> void
+Modulus.Realtime.RealtimeMessage.ToJson() -> string!
+Modulus.Realtime.RealtimeMessage.Topic.get -> string?
+Modulus.Realtime.RealtimeMessage.Topic.init -> void
+Modulus.Realtime.RealtimeMessage.Type.get -> string!
+Modulus.Realtime.RealtimeMessage.Type.init -> void
+Modulus.Realtime.RealtimeMessage.Users.get -> System.Collections.Generic.IReadOnlyList<string!>?
+Modulus.Realtime.RealtimeMessage.Users.init -> void
+Modulus.Realtime.RealtimeServiceCollectionExtensions
+Modulus.Realtime.RealtimeSignalROptions
+Modulus.Realtime.RealtimeSignalROptions.Enabled.get -> bool
+Modulus.Realtime.RealtimeSignalROptions.Enabled.set -> void
+Modulus.Realtime.RealtimeSignalROptions.RealtimeSignalROptions() -> void
+Modulus.Realtime.RealtimeSseOptions
+Modulus.Realtime.RealtimeSseOptions.Enabled.get -> bool
+Modulus.Realtime.RealtimeSseOptions.Enabled.set -> void
+Modulus.Realtime.RealtimeSseOptions.HeartbeatInterval.get -> System.TimeSpan
+Modulus.Realtime.RealtimeSseOptions.HeartbeatInterval.set -> void
+Modulus.Realtime.RealtimeSseOptions.RealtimeSseOptions() -> void
+Modulus.Realtime.RealtimeSseOptions.RetryInterval.get -> System.TimeSpan
+Modulus.Realtime.RealtimeSseOptions.RetryInterval.set -> void
+Modulus.Realtime.RealtimeTopicContext
+Modulus.Realtime.RealtimeTopicContext.<Clone>$() -> Modulus.Realtime.RealtimeTopicContext!
+Modulus.Realtime.RealtimeTopicContext.Deconstruct(out System.Security.Claims.ClaimsPrincipal! User, out string! Topic, out System.IServiceProvider! Services) -> void
+Modulus.Realtime.RealtimeTopicContext.Equals(Modulus.Realtime.RealtimeTopicContext? other) -> bool
+Modulus.Realtime.RealtimeTopicContext.Key.get -> string!
+Modulus.Realtime.RealtimeTopicContext.Key.init -> void
+Modulus.Realtime.RealtimeTopicContext.RealtimeTopicContext(System.Security.Claims.ClaimsPrincipal! User, string! Topic, System.IServiceProvider! Services) -> void
+Modulus.Realtime.RealtimeTopicContext.Services.get -> System.IServiceProvider!
+Modulus.Realtime.RealtimeTopicContext.Services.init -> void
+Modulus.Realtime.RealtimeTopicContext.Topic.get -> string!
+Modulus.Realtime.RealtimeTopicContext.Topic.init -> void
+Modulus.Realtime.RealtimeTopicContext.User.get -> System.Security.Claims.ClaimsPrincipal!
+Modulus.Realtime.RealtimeTopicContext.User.init -> void
+Modulus.Realtime.RealtimeTopicDecision
+Modulus.Realtime.RealtimeTopicDecision.Allowed = 0 -> Modulus.Realtime.RealtimeTopicDecision
+Modulus.Realtime.RealtimeTopicDecision.Denied = 2 -> Modulus.Realtime.RealtimeTopicDecision
+Modulus.Realtime.RealtimeTopicDecision.Unknown = 1 -> Modulus.Realtime.RealtimeTopicDecision
+const Modulus.Realtime.ModulusRealtimeOptions.SectionName = "Realtime" -> string!
+const Modulus.Realtime.RealtimeEvents.Ready = "modulus.ready" -> string!
+const Modulus.Realtime.RealtimeEvents.ReservedPrefix = "modulus." -> string!
+const Modulus.Realtime.RealtimeEvents.Reset = "modulus.reset" -> string!
+const Modulus.Realtime.RealtimeHub.ClientMethod = "event" -> string!
+override Modulus.Realtime.RealtimeAudience.Equals(object? obj) -> bool
+override Modulus.Realtime.RealtimeAudience.GetHashCode() -> int
+override Modulus.Realtime.RealtimeAudience.ToString() -> string!
+override Modulus.Realtime.RealtimeEnvelope.Equals(object? obj) -> bool
+override Modulus.Realtime.RealtimeEnvelope.GetHashCode() -> int
+override Modulus.Realtime.RealtimeEnvelope.ToString() -> string!
+override Modulus.Realtime.RealtimeHub.OnConnectedAsync() -> System.Threading.Tasks.Task!
+override Modulus.Realtime.RealtimeHub.OnDisconnectedAsync(System.Exception? exception) -> System.Threading.Tasks.Task!
+override Modulus.Realtime.RealtimeMessage.Equals(object? obj) -> bool
+override Modulus.Realtime.RealtimeMessage.GetHashCode() -> int
+override Modulus.Realtime.RealtimeMessage.ToString() -> string!
+override Modulus.Realtime.RealtimeTopicContext.Equals(object? obj) -> bool
+override Modulus.Realtime.RealtimeTopicContext.GetHashCode() -> int
+override Modulus.Realtime.RealtimeTopicContext.ToString() -> string!
+static Modulus.Realtime.RealtimeAudience.ForTopic(string! topic) -> Modulus.Realtime.RealtimeAudience!
+static Modulus.Realtime.RealtimeAudience.ForUsers(System.Collections.Generic.IEnumerable<string!>! userIds) -> Modulus.Realtime.RealtimeAudience!
+static Modulus.Realtime.RealtimeAudience.Permission(string! permission) -> Modulus.Realtime.RealtimeAudience!
+static Modulus.Realtime.RealtimeAudience.Tenant.get -> Modulus.Realtime.RealtimeAudience!
+static Modulus.Realtime.RealtimeAudience.User(System.Guid userId) -> Modulus.Realtime.RealtimeAudience!
+static Modulus.Realtime.RealtimeAudience.User(string! userId) -> Modulus.Realtime.RealtimeAudience!
+static Modulus.Realtime.RealtimeAudience.operator !=(Modulus.Realtime.RealtimeAudience? left, Modulus.Realtime.RealtimeAudience? right) -> bool
+static Modulus.Realtime.RealtimeAudience.operator ==(Modulus.Realtime.RealtimeAudience? left, Modulus.Realtime.RealtimeAudience? right) -> bool
+static Modulus.Realtime.RealtimeEndpointExtensions.MapModulusRealtime(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string? path = null) -> Microsoft.AspNetCore.Routing.RouteGroupBuilder!
+static Modulus.Realtime.RealtimeEndpointExtensions.MapModulusRealtime<THub>(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string? path = null) -> Microsoft.AspNetCore.Routing.RouteGroupBuilder!
+static Modulus.Realtime.RealtimeEnvelope.operator !=(Modulus.Realtime.RealtimeEnvelope? left, Modulus.Realtime.RealtimeEnvelope? right) -> bool
+static Modulus.Realtime.RealtimeEnvelope.operator ==(Modulus.Realtime.RealtimeEnvelope? left, Modulus.Realtime.RealtimeEnvelope? right) -> bool
+static Modulus.Realtime.RealtimeMessage.FromJson(string! json) -> Modulus.Realtime.RealtimeMessage?
+static Modulus.Realtime.RealtimeMessage.operator !=(Modulus.Realtime.RealtimeMessage? left, Modulus.Realtime.RealtimeMessage? right) -> bool
+static Modulus.Realtime.RealtimeMessage.operator ==(Modulus.Realtime.RealtimeMessage? left, Modulus.Realtime.RealtimeMessage? right) -> bool
+static Modulus.Realtime.RealtimeServiceCollectionExtensions.AddModulusRealtime(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration, System.Action<Modulus.Realtime.RealtimeBuilder!>? configure = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.Realtime.RealtimeTopicContext.operator !=(Modulus.Realtime.RealtimeTopicContext? left, Modulus.Realtime.RealtimeTopicContext? right) -> bool
+static Modulus.Realtime.RealtimeTopicContext.operator ==(Modulus.Realtime.RealtimeTopicContext? left, Modulus.Realtime.RealtimeTopicContext? right) -> bool
+virtual Modulus.Realtime.RealtimeHub.Resume(string! lastEventId) -> System.Threading.Tasks.Task<bool>!
+virtual Modulus.Realtime.RealtimeHub.Subscribe(string! topic) -> System.Threading.Tasks.Task!
+virtual Modulus.Realtime.RealtimeHub.Unsubscribe(string! topic) -> System.Threading.Tasks.Task!

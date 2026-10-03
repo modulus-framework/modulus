@@ -1,0 +1,381 @@
+#nullable enable
+Modulus.Bff.Authentication.BffAuthServerEndpoints
+Modulus.Bff.Authentication.BffAuthServerEndpoints.<Clone>$() -> Modulus.Bff.Authentication.BffAuthServerEndpoints!
+Modulus.Bff.Authentication.BffAuthServerEndpoints.BffAuthServerEndpoints(string? Issuer, string? TokenEndpoint, string? RevocationEndpoint, string? UserInfoEndpoint, string? IntrospectionEndpoint, string? EndSessionEndpoint) -> void
+Modulus.Bff.Authentication.BffAuthServerEndpoints.Deconstruct(out string? Issuer, out string? TokenEndpoint, out string? RevocationEndpoint, out string? UserInfoEndpoint, out string? IntrospectionEndpoint, out string? EndSessionEndpoint) -> void
+Modulus.Bff.Authentication.BffAuthServerEndpoints.EndSessionEndpoint.get -> string?
+Modulus.Bff.Authentication.BffAuthServerEndpoints.EndSessionEndpoint.init -> void
+Modulus.Bff.Authentication.BffAuthServerEndpoints.Equals(Modulus.Bff.Authentication.BffAuthServerEndpoints? other) -> bool
+Modulus.Bff.Authentication.BffAuthServerEndpoints.IntrospectionEndpoint.get -> string?
+Modulus.Bff.Authentication.BffAuthServerEndpoints.IntrospectionEndpoint.init -> void
+Modulus.Bff.Authentication.BffAuthServerEndpoints.Issuer.get -> string?
+Modulus.Bff.Authentication.BffAuthServerEndpoints.Issuer.init -> void
+Modulus.Bff.Authentication.BffAuthServerEndpoints.RevocationEndpoint.get -> string?
+Modulus.Bff.Authentication.BffAuthServerEndpoints.RevocationEndpoint.init -> void
+Modulus.Bff.Authentication.BffAuthServerEndpoints.TokenEndpoint.get -> string?
+Modulus.Bff.Authentication.BffAuthServerEndpoints.TokenEndpoint.init -> void
+Modulus.Bff.Authentication.BffAuthServerEndpoints.UserInfoEndpoint.get -> string?
+Modulus.Bff.Authentication.BffAuthServerEndpoints.UserInfoEndpoint.init -> void
+Modulus.Bff.Authentication.BffClaims
+Modulus.Bff.Authentication.BffClientRequirement
+Modulus.Bff.Authentication.BffClientRequirement.BffClientRequirement(string! client) -> void
+Modulus.Bff.Authentication.BffClientRequirement.Client.get -> string!
+Modulus.Bff.Authentication.BffIntrospectionHandler
+Modulus.Bff.Authentication.BffIntrospectionHandler.BffIntrospectionHandler(Microsoft.Extensions.Options.IOptionsMonitor<Modulus.Bff.Authentication.BffIntrospectionOptions!>! options, Microsoft.Extensions.Logging.ILoggerFactory! loggerFactory, System.Text.Encodings.Web.UrlEncoder! encoder, System.Net.Http.IHttpClientFactory! httpClientFactory, Modulus.Bff.Authentication.IBffDiscovery! discovery, Microsoft.Extensions.Options.IOptionsMonitor<Modulus.Bff.BffClientOptions!>! clients, Microsoft.Extensions.Options.IOptions<Modulus.Bff.BffOptions!>! bff, Modulus.Caching.ICacheService! cache, System.TimeProvider! clock) -> void
+Modulus.Bff.Authentication.BffIntrospectionOptions
+Modulus.Bff.Authentication.BffIntrospectionOptions.BffIntrospectionOptions() -> void
+Modulus.Bff.Authentication.BffIntrospectionOptions.Client.get -> string!
+Modulus.Bff.Authentication.BffIntrospectionOptions.Client.set -> void
+Modulus.Bff.Authentication.IBffDiscovery
+Modulus.Bff.Authentication.IBffDiscovery.GetEndpointsAsync(System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Bff.Authentication.BffAuthServerEndpoints!>!
+Modulus.Bff.BffAuthServer
+Modulus.Bff.BffAuthServer.Auth0 = 3 -> Modulus.Bff.BffAuthServer
+Modulus.Bff.BffAuthServer.Authentik = 7 -> Modulus.Bff.BffAuthServer
+Modulus.Bff.BffAuthServer.AzureAd = 5 -> Modulus.Bff.BffAuthServer
+Modulus.Bff.BffAuthServer.Duende = 6 -> Modulus.Bff.BffAuthServer
+Modulus.Bff.BffAuthServer.Generic = 0 -> Modulus.Bff.BffAuthServer
+Modulus.Bff.BffAuthServer.Keycloak = 2 -> Modulus.Bff.BffAuthServer
+Modulus.Bff.BffAuthServer.Okta = 4 -> Modulus.Bff.BffAuthServer
+Modulus.Bff.BffAuthServer.OpenIddict = 1 -> Modulus.Bff.BffAuthServer
+Modulus.Bff.BffBuilder
+Modulus.Bff.BffBuilder.AddClient(string! name, Modulus.Bff.BffClientKind kind, System.Action<Modulus.Bff.BffClientOptions!>? configure = null) -> Modulus.Bff.BffBuilder!
+Modulus.Bff.BffBuilder.AddMobileClient(string! name = "mobile", System.Action<Modulus.Bff.BffClientOptions!>? configure = null) -> Modulus.Bff.BffBuilder!
+Modulus.Bff.BffBuilder.AddOpenApi() -> Modulus.Bff.BffBuilder!
+Modulus.Bff.BffBuilder.AddPartnerClient(string! name = "partner", System.Action<Modulus.Bff.BffClientOptions!>? configure = null) -> Modulus.Bff.BffBuilder!
+Modulus.Bff.BffBuilder.AddWebClient(string! name = "web", System.Action<Modulus.Bff.BffClientOptions!>? configure = null) -> Modulus.Bff.BffBuilder!
+Modulus.Bff.BffBuilder.Services.get -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+Modulus.Bff.BffClientKind
+Modulus.Bff.BffClientKind.Mobile = 1 -> Modulus.Bff.BffClientKind
+Modulus.Bff.BffClientKind.Partner = 2 -> Modulus.Bff.BffClientKind
+Modulus.Bff.BffClientKind.Web = 0 -> Modulus.Bff.BffClientKind
+Modulus.Bff.BffClientMetadata
+Modulus.Bff.BffClientMetadata.<Clone>$() -> Modulus.Bff.BffClientMetadata!
+Modulus.Bff.BffClientMetadata.BffClientMetadata(string! Name, Modulus.Bff.BffClientKind Kind) -> void
+Modulus.Bff.BffClientMetadata.Deconstruct(out string! Name, out Modulus.Bff.BffClientKind Kind) -> void
+Modulus.Bff.BffClientMetadata.Equals(Modulus.Bff.BffClientMetadata? other) -> bool
+Modulus.Bff.BffClientMetadata.Kind.get -> Modulus.Bff.BffClientKind
+Modulus.Bff.BffClientMetadata.Kind.init -> void
+Modulus.Bff.BffClientMetadata.Name.get -> string!
+Modulus.Bff.BffClientMetadata.Name.init -> void
+Modulus.Bff.BffClientOptions
+Modulus.Bff.BffClientOptions.AllowedClientIds.get -> System.Collections.Generic.List<string!>!
+Modulus.Bff.BffClientOptions.AllowedClientIds.set -> void
+Modulus.Bff.BffClientOptions.Audiences.get -> System.Collections.Generic.List<string!>!
+Modulus.Bff.BffClientOptions.Audiences.set -> void
+Modulus.Bff.BffClientOptions.AuthorizationParameters.get -> System.Collections.Generic.Dictionary<string!, string!>!
+Modulus.Bff.BffClientOptions.AuthorizationParameters.set -> void
+Modulus.Bff.BffClientOptions.BffClientOptions() -> void
+Modulus.Bff.BffClientOptions.ClientId.get -> string?
+Modulus.Bff.BffClientOptions.ClientId.set -> void
+Modulus.Bff.BffClientOptions.ClientSecret.get -> string?
+Modulus.Bff.BffClientOptions.ClientSecret.set -> void
+Modulus.Bff.BffClientOptions.CsrfHeaderName.get -> string!
+Modulus.Bff.BffClientOptions.CsrfHeaderName.set -> void
+Modulus.Bff.BffClientOptions.CsrfHeaderValue.get -> string!
+Modulus.Bff.BffClientOptions.CsrfHeaderValue.set -> void
+Modulus.Bff.BffClientOptions.EnableETags.get -> bool
+Modulus.Bff.BffClientOptions.EnableETags.set -> void
+Modulus.Bff.BffClientOptions.IdempotencyHeaderName.get -> string!
+Modulus.Bff.BffClientOptions.IdempotencyHeaderName.set -> void
+Modulus.Bff.BffClientOptions.IntrospectionCacheDuration.get -> System.TimeSpan
+Modulus.Bff.BffClientOptions.IntrospectionCacheDuration.set -> void
+Modulus.Bff.BffClientOptions.IntrospectionClientId.get -> string?
+Modulus.Bff.BffClientOptions.IntrospectionClientId.set -> void
+Modulus.Bff.BffClientOptions.IntrospectionClientSecret.get -> string?
+Modulus.Bff.BffClientOptions.IntrospectionClientSecret.set -> void
+Modulus.Bff.BffClientOptions.Kind.get -> Modulus.Bff.BffClientKind
+Modulus.Bff.BffClientOptions.Kind.set -> void
+Modulus.Bff.BffClientOptions.LoginMode.get -> Modulus.Bff.BffLoginMode
+Modulus.Bff.BffClientOptions.LoginMode.set -> void
+Modulus.Bff.BffClientOptions.MinimumAppVersion.get -> string?
+Modulus.Bff.BffClientOptions.MinimumAppVersion.set -> void
+Modulus.Bff.BffClientOptions.MinimumAppVersionByPlatform.get -> System.Collections.Generic.Dictionary<string!, string!>!
+Modulus.Bff.BffClientOptions.MinimumAppVersionByPlatform.set -> void
+Modulus.Bff.BffClientOptions.PathPrefix.get -> string!
+Modulus.Bff.BffClientOptions.PathPrefix.set -> void
+Modulus.Bff.BffClientOptions.RateLimit.get -> Modulus.Bff.BffRateLimitOptions?
+Modulus.Bff.BffClientOptions.RateLimit.set -> void
+Modulus.Bff.BffClientOptions.RefreshBeforeExpiry.get -> System.TimeSpan
+Modulus.Bff.BffClientOptions.RefreshBeforeExpiry.set -> void
+Modulus.Bff.BffClientOptions.RemoteApis.get -> System.Collections.Generic.List<Modulus.Bff.BffRemoteApiOptions!>!
+Modulus.Bff.BffClientOptions.RemoteApis.set -> void
+Modulus.Bff.BffClientOptions.RequireAppVersion.get -> bool
+Modulus.Bff.BffClientOptions.RequireAppVersion.set -> void
+Modulus.Bff.BffClientOptions.RequireIdempotencyKey.get -> bool
+Modulus.Bff.BffClientOptions.RequireIdempotencyKey.set -> void
+Modulus.Bff.BffClientOptions.RequiredScopes.get -> System.Collections.Generic.List<string!>!
+Modulus.Bff.BffClientOptions.RequiredScopes.set -> void
+Modulus.Bff.BffClientOptions.Scopes.get -> System.Collections.Generic.List<string!>!
+Modulus.Bff.BffClientOptions.Scopes.set -> void
+Modulus.Bff.BffClientOptions.SessionLifetime.get -> System.TimeSpan
+Modulus.Bff.BffClientOptions.SessionLifetime.set -> void
+Modulus.Bff.BffClientOptions.TokenStorage.get -> Modulus.Bff.BffTokenStorage
+Modulus.Bff.BffClientOptions.TokenStorage.set -> void
+Modulus.Bff.BffClientOptions.TokenValidation.get -> Modulus.Bff.BffTokenValidation
+Modulus.Bff.BffClientOptions.TokenValidation.set -> void
+Modulus.Bff.BffComposer
+Modulus.Bff.BffComposer.Begin(System.TimeSpan? defaultTimeout = null) -> Modulus.Bff.BffComposition!
+Modulus.Bff.BffComposer.BffComposer(System.IServiceProvider! services, Modulus.Bff.IBffClientContext! client, Microsoft.AspNetCore.Http.IHttpContextAccessor! accessor, Microsoft.Extensions.Logging.ILogger<Modulus.Bff.BffComposer!>! logger) -> void
+Modulus.Bff.BffComposition
+Modulus.Bff.BffComposition.Degraded.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Modulus.Bff.BffComposition.ExecuteAsync(System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Bff.BffComposition.ExecuteAsync<TResult>(System.Func<TResult>! shape, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Bff.BffResponse<TResult>!>!
+Modulus.Bff.BffComposition.Optional<T>(string! name, System.Func<System.Threading.CancellationToken, System.Threading.Tasks.Task<T>!>! factory, Modulus.Bff.BffSectionOptions? options = null) -> Modulus.Bff.BffSection<T>!
+Modulus.Bff.BffComposition.Required<T>(string! name, System.Func<System.Threading.CancellationToken, System.Threading.Tasks.Task<T>!>! factory, Modulus.Bff.BffSectionOptions? options = null) -> Modulus.Bff.BffSection<T>!
+Modulus.Bff.BffDefaults
+Modulus.Bff.BffEndpointRouteBuilderExtensions
+Modulus.Bff.BffHttpClientExtensions
+Modulus.Bff.BffLoginMode
+Modulus.Bff.BffLoginMode.Oidc = 0 -> Modulus.Bff.BffLoginMode
+Modulus.Bff.BffLoginMode.Password = 1 -> Modulus.Bff.BffLoginMode
+Modulus.Bff.BffLoginRequest
+Modulus.Bff.BffLoginRequest.<Clone>$() -> Modulus.Bff.BffLoginRequest!
+Modulus.Bff.BffLoginRequest.BffLoginRequest(string! UserName, string! Password, bool RememberMe = false) -> void
+Modulus.Bff.BffLoginRequest.Deconstruct(out string! UserName, out string! Password, out bool RememberMe) -> void
+Modulus.Bff.BffLoginRequest.Equals(Modulus.Bff.BffLoginRequest? other) -> bool
+Modulus.Bff.BffLoginRequest.Password.get -> string!
+Modulus.Bff.BffLoginRequest.Password.init -> void
+Modulus.Bff.BffLoginRequest.RememberMe.get -> bool
+Modulus.Bff.BffLoginRequest.RememberMe.init -> void
+Modulus.Bff.BffLoginRequest.UserName.get -> string!
+Modulus.Bff.BffLoginRequest.UserName.init -> void
+Modulus.Bff.BffOptions
+Modulus.Bff.BffOptions.AuthServer.get -> Modulus.Bff.BffAuthServer
+Modulus.Bff.BffOptions.AuthServer.set -> void
+Modulus.Bff.BffOptions.Authority.get -> string?
+Modulus.Bff.BffOptions.Authority.set -> void
+Modulus.Bff.BffOptions.BffOptions() -> void
+Modulus.Bff.BffOptions.EndSessionEndpoint.get -> string?
+Modulus.Bff.BffOptions.EndSessionEndpoint.set -> void
+Modulus.Bff.BffOptions.GetServiceAddress(string! service) -> string?
+Modulus.Bff.BffOptions.IntrospectionEndpoint.get -> string?
+Modulus.Bff.BffOptions.IntrospectionEndpoint.set -> void
+Modulus.Bff.BffOptions.RequireHttpsMetadata.get -> bool
+Modulus.Bff.BffOptions.RequireHttpsMetadata.set -> void
+Modulus.Bff.BffOptions.ResolveAuthority() -> string?
+Modulus.Bff.BffOptions.RevocationEndpoint.get -> string?
+Modulus.Bff.BffOptions.RevocationEndpoint.set -> void
+Modulus.Bff.BffOptions.RoleClaimTypes.get -> System.Collections.Generic.List<string!>!
+Modulus.Bff.BffOptions.RoleClaimTypes.set -> void
+Modulus.Bff.BffOptions.Services.get -> System.Collections.Generic.Dictionary<string!, Modulus.Bff.BffServiceOptions!>!
+Modulus.Bff.BffOptions.Services.set -> void
+Modulus.Bff.BffOptions.TokenEndpoint.get -> string?
+Modulus.Bff.BffOptions.TokenEndpoint.set -> void
+Modulus.Bff.BffOptions.UseServiceDiscovery.get -> bool
+Modulus.Bff.BffOptions.UseServiceDiscovery.set -> void
+Modulus.Bff.BffOptions.UserInfoEndpoint.get -> string?
+Modulus.Bff.BffOptions.UserInfoEndpoint.set -> void
+Modulus.Bff.BffRateLimitOptions
+Modulus.Bff.BffRateLimitOptions.BffRateLimitOptions() -> void
+Modulus.Bff.BffRateLimitOptions.PermitLimit.get -> int
+Modulus.Bff.BffRateLimitOptions.PermitLimit.set -> void
+Modulus.Bff.BffRateLimitOptions.QueueLimit.get -> int
+Modulus.Bff.BffRateLimitOptions.QueueLimit.set -> void
+Modulus.Bff.BffRateLimitOptions.Window.get -> System.TimeSpan
+Modulus.Bff.BffRateLimitOptions.Window.set -> void
+Modulus.Bff.BffRemoteApiOptions
+Modulus.Bff.BffRemoteApiOptions.BffRemoteApiOptions() -> void
+Modulus.Bff.BffRemoteApiOptions.LocalPath.get -> string!
+Modulus.Bff.BffRemoteApiOptions.LocalPath.set -> void
+Modulus.Bff.BffRemoteApiOptions.RemotePath.get -> string?
+Modulus.Bff.BffRemoteApiOptions.RemotePath.set -> void
+Modulus.Bff.BffRemoteApiOptions.RequireAuthentication.get -> bool
+Modulus.Bff.BffRemoteApiOptions.RequireAuthentication.set -> void
+Modulus.Bff.BffRemoteApiOptions.Service.get -> string!
+Modulus.Bff.BffRemoteApiOptions.Service.set -> void
+Modulus.Bff.BffResponse<T>
+Modulus.Bff.BffResponse<T>.<Clone>$() -> Modulus.Bff.BffResponse<T>!
+Modulus.Bff.BffResponse<T>.BffResponse(T Data, System.Collections.Generic.IReadOnlyList<string!>! Degraded) -> void
+Modulus.Bff.BffResponse<T>.Data.get -> T
+Modulus.Bff.BffResponse<T>.Data.init -> void
+Modulus.Bff.BffResponse<T>.Deconstruct(out T Data, out System.Collections.Generic.IReadOnlyList<string!>! Degraded) -> void
+Modulus.Bff.BffResponse<T>.Degraded.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Modulus.Bff.BffResponse<T>.Degraded.init -> void
+Modulus.Bff.BffResponse<T>.Equals(Modulus.Bff.BffResponse<T>? other) -> bool
+Modulus.Bff.BffSection<T>
+Modulus.Bff.BffSection<T>.Name.get -> string!
+Modulus.Bff.BffSection<T>.Required.get -> bool
+Modulus.Bff.BffSection<T>.Succeeded.get -> bool
+Modulus.Bff.BffSection<T>.Value.get -> T?
+Modulus.Bff.BffSectionFailedException
+Modulus.Bff.BffSectionFailedException.BffSectionFailedException(string! section, System.Exception! inner) -> void
+Modulus.Bff.BffSectionFailedException.Section.get -> string!
+Modulus.Bff.BffSectionOptions
+Modulus.Bff.BffSectionOptions.BffSectionOptions() -> void
+Modulus.Bff.BffSectionOptions.CacheDuration.get -> System.TimeSpan?
+Modulus.Bff.BffSectionOptions.CacheDuration.set -> void
+Modulus.Bff.BffSectionOptions.CacheKey.get -> string?
+Modulus.Bff.BffSectionOptions.CacheKey.set -> void
+Modulus.Bff.BffSectionOptions.CachePerUser.get -> bool
+Modulus.Bff.BffSectionOptions.CachePerUser.set -> void
+Modulus.Bff.BffSectionOptions.CacheTags.get -> string![]?
+Modulus.Bff.BffSectionOptions.CacheTags.set -> void
+Modulus.Bff.BffSectionOptions.Timeout.get -> System.TimeSpan?
+Modulus.Bff.BffSectionOptions.Timeout.set -> void
+Modulus.Bff.BffServiceCollectionExtensions
+Modulus.Bff.BffServiceOptions
+Modulus.Bff.BffServiceOptions.Address.get -> string?
+Modulus.Bff.BffServiceOptions.Address.set -> void
+Modulus.Bff.BffServiceOptions.BffServiceOptions() -> void
+Modulus.Bff.BffSkipCsrfMetadata
+Modulus.Bff.BffSkipCsrfMetadata.BffSkipCsrfMetadata() -> void
+Modulus.Bff.BffTokenStorage
+Modulus.Bff.BffTokenStorage.Cookie = 1 -> Modulus.Bff.BffTokenStorage
+Modulus.Bff.BffTokenStorage.ServerSide = 0 -> Modulus.Bff.BffTokenStorage
+Modulus.Bff.BffTokenValidation
+Modulus.Bff.BffTokenValidation.Introspection = 1 -> Modulus.Bff.BffTokenValidation
+Modulus.Bff.BffTokenValidation.Jwt = 0 -> Modulus.Bff.BffTokenValidation
+Modulus.Bff.BffUserClaim
+Modulus.Bff.BffUserClaim.<Clone>$() -> Modulus.Bff.BffUserClaim!
+Modulus.Bff.BffUserClaim.BffUserClaim(string! Type, string! Value) -> void
+Modulus.Bff.BffUserClaim.Deconstruct(out string! Type, out string! Value) -> void
+Modulus.Bff.BffUserClaim.Equals(Modulus.Bff.BffUserClaim? other) -> bool
+Modulus.Bff.BffUserClaim.Type.get -> string!
+Modulus.Bff.BffUserClaim.Type.init -> void
+Modulus.Bff.BffUserClaim.Value.get -> string!
+Modulus.Bff.BffUserClaim.Value.init -> void
+Modulus.Bff.Http.BffClientHeaderHandler
+Modulus.Bff.Http.UserAccessTokenHandler
+Modulus.Bff.IBffClientContext
+Modulus.Bff.IBffClientContext.Kind.get -> Modulus.Bff.BffClientKind?
+Modulus.Bff.IBffClientContext.Name.get -> string?
+Modulus.Bff.IBffClientContext.Options.get -> Modulus.Bff.BffClientOptions?
+Modulus.Bff.Tokens.BffTokenResult
+Modulus.Bff.Tokens.BffTokenResult.<Clone>$() -> Modulus.Bff.Tokens.BffTokenResult!
+Modulus.Bff.Tokens.BffTokenResult.BffTokenResult(Modulus.Bff.Tokens.BffUserTokens? Tokens, string? Error, string? ErrorDescription) -> void
+Modulus.Bff.Tokens.BffTokenResult.Deconstruct(out Modulus.Bff.Tokens.BffUserTokens? Tokens, out string? Error, out string? ErrorDescription) -> void
+Modulus.Bff.Tokens.BffTokenResult.Equals(Modulus.Bff.Tokens.BffTokenResult? other) -> bool
+Modulus.Bff.Tokens.BffTokenResult.Error.get -> string?
+Modulus.Bff.Tokens.BffTokenResult.Error.init -> void
+Modulus.Bff.Tokens.BffTokenResult.ErrorDescription.get -> string?
+Modulus.Bff.Tokens.BffTokenResult.ErrorDescription.init -> void
+Modulus.Bff.Tokens.BffTokenResult.Succeeded.get -> bool
+Modulus.Bff.Tokens.BffTokenResult.Tokens.get -> Modulus.Bff.Tokens.BffUserTokens?
+Modulus.Bff.Tokens.BffTokenResult.Tokens.init -> void
+Modulus.Bff.Tokens.BffUserTokens
+Modulus.Bff.Tokens.BffUserTokens.<Clone>$() -> Modulus.Bff.Tokens.BffUserTokens!
+Modulus.Bff.Tokens.BffUserTokens.AccessToken.get -> string!
+Modulus.Bff.Tokens.BffUserTokens.AccessToken.init -> void
+Modulus.Bff.Tokens.BffUserTokens.BffUserTokens(string! AccessToken, string? RefreshToken, System.DateTimeOffset ExpiresAt, string? IdToken = null) -> void
+Modulus.Bff.Tokens.BffUserTokens.Deconstruct(out string! AccessToken, out string? RefreshToken, out System.DateTimeOffset ExpiresAt, out string? IdToken) -> void
+Modulus.Bff.Tokens.BffUserTokens.Equals(Modulus.Bff.Tokens.BffUserTokens? other) -> bool
+Modulus.Bff.Tokens.BffUserTokens.ExpiresAt.get -> System.DateTimeOffset
+Modulus.Bff.Tokens.BffUserTokens.ExpiresAt.init -> void
+Modulus.Bff.Tokens.BffUserTokens.IdToken.get -> string?
+Modulus.Bff.Tokens.BffUserTokens.IdToken.init -> void
+Modulus.Bff.Tokens.BffUserTokens.RefreshToken.get -> string?
+Modulus.Bff.Tokens.BffUserTokens.RefreshToken.init -> void
+Modulus.Bff.Tokens.IBffAccessTokenService
+Modulus.Bff.Tokens.IBffAccessTokenService.GetAccessTokenAsync(Microsoft.AspNetCore.Http.HttpContext! context, string! client, bool forceRefresh = false, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<string?>!
+Modulus.Bff.Tokens.IBffTokenClient
+Modulus.Bff.Tokens.IBffTokenClient.GetUserInfoAsync(string! accessToken, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<System.Security.Claims.Claim!>!>!
+Modulus.Bff.Tokens.IBffTokenClient.PasswordAsync(string! client, string! userName, string! password, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Bff.Tokens.BffTokenResult!>!
+Modulus.Bff.Tokens.IBffTokenClient.RefreshAsync(string! client, string! refreshToken, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Bff.Tokens.BffTokenResult!>!
+Modulus.Bff.Tokens.IBffTokenClient.RevokeAsync(string! client, string! token, string! tokenTypeHint, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Bff.Tokens.IUserTokenStore
+Modulus.Bff.Tokens.IUserTokenStore.GetAsync(string! client, System.Security.Claims.ClaimsPrincipal! user, Microsoft.AspNetCore.Authentication.AuthenticationProperties? properties, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Bff.Tokens.BffUserTokens?>!
+Modulus.Bff.Tokens.IUserTokenStore.RemoveAsync(string! client, System.Security.Claims.ClaimsPrincipal! user, Microsoft.AspNetCore.Authentication.AuthenticationProperties? properties, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Bff.Tokens.IUserTokenStore.StoreAsync(string! client, System.Security.Claims.ClaimsPrincipal! user, Microsoft.AspNetCore.Authentication.AuthenticationProperties! properties, Modulus.Bff.Tokens.BffUserTokens! tokens, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Bff.Tokens.IUserTokenStore.StoresInCookie.get -> bool
+const Modulus.Bff.Authentication.BffClaims.Name = "name" -> string!
+const Modulus.Bff.Authentication.BffClaims.Role = "role" -> string!
+const Modulus.Bff.BffDefaults.AppPlatformHeader = "X-App-Platform" -> string!
+const Modulus.Bff.BffDefaults.AppVersionHeader = "X-App-Version" -> string!
+const Modulus.Bff.BffDefaults.AuthorityHttpClient = "modulus-bff-authority" -> string!
+const Modulus.Bff.BffDefaults.ClientAppHeader = "X-Client-App" -> string!
+const Modulus.Bff.BffDefaults.DeviceIdHeader = "X-Device-Id" -> string!
+const Modulus.Bff.BffDefaults.SessionIdClaim = "bff_sid" -> string!
+const Modulus.Bff.BffOptions.DefaultService = "api" -> string!
+const Modulus.Bff.BffOptions.SectionName = "Bff" -> string!
+override Modulus.Bff.Authentication.BffAuthServerEndpoints.Equals(object? obj) -> bool
+override Modulus.Bff.Authentication.BffAuthServerEndpoints.GetHashCode() -> int
+override Modulus.Bff.Authentication.BffAuthServerEndpoints.ToString() -> string!
+override Modulus.Bff.BffClientMetadata.Equals(object? obj) -> bool
+override Modulus.Bff.BffClientMetadata.GetHashCode() -> int
+override Modulus.Bff.BffClientMetadata.ToString() -> string!
+override Modulus.Bff.BffLoginRequest.Equals(object? obj) -> bool
+override Modulus.Bff.BffLoginRequest.GetHashCode() -> int
+override Modulus.Bff.BffLoginRequest.ToString() -> string!
+override Modulus.Bff.BffResponse<T>.Equals(object? obj) -> bool
+override Modulus.Bff.BffResponse<T>.GetHashCode() -> int
+override Modulus.Bff.BffResponse<T>.ToString() -> string!
+override Modulus.Bff.BffUserClaim.Equals(object? obj) -> bool
+override Modulus.Bff.BffUserClaim.GetHashCode() -> int
+override Modulus.Bff.BffUserClaim.ToString() -> string!
+override Modulus.Bff.Tokens.BffTokenResult.Equals(object? obj) -> bool
+override Modulus.Bff.Tokens.BffTokenResult.GetHashCode() -> int
+override Modulus.Bff.Tokens.BffTokenResult.ToString() -> string!
+override Modulus.Bff.Tokens.BffUserTokens.Equals(object? obj) -> bool
+override Modulus.Bff.Tokens.BffUserTokens.GetHashCode() -> int
+override Modulus.Bff.Tokens.BffUserTokens.ToString() -> string!
+static Modulus.Bff.Authentication.BffAuthServerEndpoints.operator !=(Modulus.Bff.Authentication.BffAuthServerEndpoints? left, Modulus.Bff.Authentication.BffAuthServerEndpoints? right) -> bool
+static Modulus.Bff.Authentication.BffAuthServerEndpoints.operator ==(Modulus.Bff.Authentication.BffAuthServerEndpoints? left, Modulus.Bff.Authentication.BffAuthServerEndpoints? right) -> bool
+static Modulus.Bff.Authentication.BffClaims.DefaultRoleClaimTypes(Modulus.Bff.BffAuthServer server) -> System.Collections.Generic.IReadOnlyList<string!>!
+static Modulus.Bff.Authentication.BffClaims.GetClientId(System.Security.Claims.ClaimsPrincipal! principal) -> string?
+static Modulus.Bff.Authentication.BffClaims.GetScopes(System.Security.Claims.ClaimsPrincipal! principal) -> System.Collections.Generic.IReadOnlySet<string!>!
+static Modulus.Bff.Authentication.BffClaims.Normalize(System.Security.Claims.ClaimsPrincipal! principal, System.Collections.Generic.IEnumerable<string!>! roleClaimTypes, string! authenticationType) -> System.Security.Claims.ClaimsPrincipal!
+static Modulus.Bff.BffClientMetadata.operator !=(Modulus.Bff.BffClientMetadata? left, Modulus.Bff.BffClientMetadata? right) -> bool
+static Modulus.Bff.BffClientMetadata.operator ==(Modulus.Bff.BffClientMetadata? left, Modulus.Bff.BffClientMetadata? right) -> bool
+static Modulus.Bff.BffDefaults.OidcScheme(string! client) -> string!
+static Modulus.Bff.BffDefaults.Policy(string! client) -> string!
+static Modulus.Bff.BffDefaults.RateLimitPolicy(string! client) -> string!
+static Modulus.Bff.BffDefaults.Scheme(string! client) -> string!
+static Modulus.Bff.BffEndpointRouteBuilderExtensions.MapBffClient(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! name) -> Microsoft.AspNetCore.Routing.RouteGroupBuilder!
+static Modulus.Bff.BffEndpointRouteBuilderExtensions.MapModulusBff(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints) -> Microsoft.AspNetCore.Routing.IEndpointRouteBuilder!
+static Modulus.Bff.BffEndpointRouteBuilderExtensions.UseModulusBff(this Microsoft.AspNetCore.Builder.IApplicationBuilder! app) -> Microsoft.AspNetCore.Builder.IApplicationBuilder!
+static Modulus.Bff.BffHttpClientExtensions.AddBffApiClient<TClient>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, string! service = "api") -> Microsoft.Extensions.DependencyInjection.IHttpClientBuilder!
+static Modulus.Bff.BffLoginRequest.operator !=(Modulus.Bff.BffLoginRequest? left, Modulus.Bff.BffLoginRequest? right) -> bool
+static Modulus.Bff.BffLoginRequest.operator ==(Modulus.Bff.BffLoginRequest? left, Modulus.Bff.BffLoginRequest? right) -> bool
+static Modulus.Bff.BffResponse<T>.operator !=(Modulus.Bff.BffResponse<T>? left, Modulus.Bff.BffResponse<T>? right) -> bool
+static Modulus.Bff.BffResponse<T>.operator ==(Modulus.Bff.BffResponse<T>? left, Modulus.Bff.BffResponse<T>? right) -> bool
+static Modulus.Bff.BffServiceCollectionExtensions.AddModulusBff(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration, System.Action<Modulus.Bff.BffBuilder!>! configure) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.Bff.BffUserClaim.operator !=(Modulus.Bff.BffUserClaim? left, Modulus.Bff.BffUserClaim? right) -> bool
+static Modulus.Bff.BffUserClaim.operator ==(Modulus.Bff.BffUserClaim? left, Modulus.Bff.BffUserClaim? right) -> bool
+static Modulus.Bff.Tokens.BffTokenResult.operator !=(Modulus.Bff.Tokens.BffTokenResult? left, Modulus.Bff.Tokens.BffTokenResult? right) -> bool
+static Modulus.Bff.Tokens.BffTokenResult.operator ==(Modulus.Bff.Tokens.BffTokenResult? left, Modulus.Bff.Tokens.BffTokenResult? right) -> bool
+static Modulus.Bff.Tokens.BffUserTokens.operator !=(Modulus.Bff.Tokens.BffUserTokens? left, Modulus.Bff.Tokens.BffUserTokens? right) -> bool
+static Modulus.Bff.Tokens.BffUserTokens.operator ==(Modulus.Bff.Tokens.BffUserTokens? left, Modulus.Bff.Tokens.BffUserTokens? right) -> bool
+static readonly Modulus.Bff.BffSkipCsrfMetadata.Instance -> Modulus.Bff.BffSkipCsrfMetadata!
+Modulus.Bff.BffBuilder.SetDefaultClient(string! name) -> Modulus.Bff.BffBuilder!
+Modulus.Bff.BffClientOptions.AccessDeniedPath.get -> string?
+Modulus.Bff.BffClientOptions.AccessDeniedPath.set -> void
+Modulus.Bff.BffClientOptions.LoginPath.get -> string?
+Modulus.Bff.BffClientOptions.LoginPath.set -> void
+Modulus.Bff.Http.BffClientHeaderHandler.BffClientHeaderHandler(Modulus.Bff.IBffClientContext! clientContext) -> void
+Modulus.Bff.Http.UserAccessTokenHandler.UserAccessTokenHandler(Microsoft.AspNetCore.Http.IHttpContextAccessor! accessor, Modulus.Bff.Tokens.IBffAccessTokenService! tokens, Modulus.Bff.IBffClientContext! clientContext) -> void
+Modulus.Bff.Tokens.BffSignInResult
+Modulus.Bff.Tokens.BffSignInResult.<Clone>$() -> Modulus.Bff.Tokens.BffSignInResult!
+Modulus.Bff.Tokens.BffSignInResult.BffSignInResult(System.Security.Claims.ClaimsPrincipal? Principal, string? Error = null, string? ErrorDescription = null) -> void
+Modulus.Bff.Tokens.BffSignInResult.Deconstruct(out System.Security.Claims.ClaimsPrincipal? Principal, out string? Error, out string? ErrorDescription) -> void
+Modulus.Bff.Tokens.BffSignInResult.Equals(Modulus.Bff.Tokens.BffSignInResult? other) -> bool
+Modulus.Bff.Tokens.BffSignInResult.Error.get -> string?
+Modulus.Bff.Tokens.BffSignInResult.Error.init -> void
+Modulus.Bff.Tokens.BffSignInResult.ErrorDescription.get -> string?
+Modulus.Bff.Tokens.BffSignInResult.ErrorDescription.init -> void
+Modulus.Bff.Tokens.BffSignInResult.Principal.get -> System.Security.Claims.ClaimsPrincipal?
+Modulus.Bff.Tokens.BffSignInResult.Principal.init -> void
+Modulus.Bff.Tokens.BffSignInResult.Succeeded.get -> bool
+Modulus.Bff.Tokens.IBffSessionService
+Modulus.Bff.Tokens.IBffSessionService.SignInWithPasswordAsync(Microsoft.AspNetCore.Http.HttpContext! context, string! client, string! userName, string! password, bool rememberMe = false, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Bff.Tokens.BffSignInResult!>!
+Modulus.Bff.Tokens.IBffSessionService.SignOutAsync(Microsoft.AspNetCore.Http.HttpContext! context, string! client, string? returnUrl = null, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<string?>!
+override Modulus.Bff.Tokens.BffSignInResult.Equals(object? obj) -> bool
+override Modulus.Bff.Tokens.BffSignInResult.GetHashCode() -> int
+override Modulus.Bff.Tokens.BffSignInResult.ToString() -> string!
+static Modulus.Bff.BffHttpClientExtensions.AddBffUserAccessToken(this Microsoft.Extensions.DependencyInjection.IHttpClientBuilder! builder) -> Microsoft.Extensions.DependencyInjection.IHttpClientBuilder!
+static Modulus.Bff.Tokens.BffSignInResult.operator !=(Modulus.Bff.Tokens.BffSignInResult? left, Modulus.Bff.Tokens.BffSignInResult? right) -> bool
+static Modulus.Bff.Tokens.BffSignInResult.operator ==(Modulus.Bff.Tokens.BffSignInResult? left, Modulus.Bff.Tokens.BffSignInResult? right) -> bool
+Modulus.Bff.BffGrpcClientExtensions
+static Modulus.Bff.BffGrpcClientExtensions.AddBffGrpcClient<TClient>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, string! service = "api") -> Microsoft.Extensions.DependencyInjection.IHttpClientBuilder!
+Modulus.Bff.BffOptions.GetGrpcServiceAddress(string! service) -> string?
+Modulus.Bff.BffServiceOptions.GrpcAddress.get -> string?
+Modulus.Bff.BffServiceOptions.GrpcAddress.set -> void
+Modulus.Bff.BffEventStreamMetadata
+Modulus.Bff.BffEventStreamMetadata.BffEventStreamMetadata() -> void
+Modulus.Bff.BffRemoteApiOptions.EventStream.get -> bool
+Modulus.Bff.BffRemoteApiOptions.EventStream.set -> void
+static readonly Modulus.Bff.BffEventStreamMetadata.Instance -> Modulus.Bff.BffEventStreamMetadata!
+Modulus.Bff.BffOptions.TenantHeader.get -> string!
+Modulus.Bff.BffOptions.TenantHeader.set -> void
+Modulus.Bff.Http.BffTenantHeaderHandler
+Modulus.Bff.Http.BffTenantHeaderHandler.BffTenantHeaderHandler(Microsoft.AspNetCore.Http.IHttpContextAccessor! accessor, Microsoft.Extensions.Options.IOptions<Modulus.Bff.BffOptions!>! options) -> void
+const Modulus.Bff.BffDefaults.TenantHeader = "X-Tenant-Id" -> string!

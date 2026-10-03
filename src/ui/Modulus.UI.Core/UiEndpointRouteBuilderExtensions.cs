@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using Modulus.Core.Abstractions.Security;
 
 namespace Modulus.UI;
 
@@ -25,8 +26,12 @@ public static class UiEndpointRouteBuilderExtensions
         ArgumentNullException.ThrowIfNull(endpoints);
         var group = endpoints.MapGroup(prefix);
 
+        // Anonymous by design and declared as such, so the startup security guard accepts it on a host without a
+        // fallback policy: the tree is filtered per caller and an anonymous caller gets an empty one.
         group.MapGet("/menu", (IUiMenuProvider menu) =>
-            Results.Ok(menu.GetMenu()));
+            Results.Ok(menu.GetMenu()))
+            .AllowAnonymous()
+            .WithMetadata(new LoosenedAttribute("Navigation tree filtered per caller; anonymous callers get an empty tree") { Framework = true });
 
         // Unlike /menu (already filtered per-caller by IUiMenuProvider, so an
         // anonymous caller just sees an empty tree via the fail-closed

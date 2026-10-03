@@ -34,6 +34,28 @@ public static class Program
                 .WithDescription("Add a business module to an existing application.")
                 .WithExample("add-module", "Orders");
 
+            config.AddCommand<Commands.AddBffCommand>("add-bff")
+                .WithDescription("Add a Backend for Frontend (web, mobile or partner) to an existing application.")
+                .WithExample("add-bff", "mobile");
+            config.AddCommand<Commands.GenerateBffEndpointCommand>("generate-bff-endpoint")
+                .WithDescription("Scaffold an aggregate endpoint in a BFF that composes several modules' data for one screen.")
+                .WithExample("generate-bff-endpoint", "Dashboard", "--bff", "mobile", "--modules", "Catalog,Orders");
+            config.AddCommand<Commands.GenerateGrpcCommand>("generate-grpc")
+                .WithDescription("Expose an entity's CRUD commands and queries over gRPC (contract, service, host wiring, optional BFF clients).")
+                .WithExample("generate-grpc", "Product", "--module", "Catalog", "--bff", "mobile");
+            config.AddCommand<Commands.GenerateGraphQLCommand>("generate-graphql")
+                .WithDescription("Expose an entity's CRUD commands and queries over GraphQL (graph type, module fields, host wiring, optional BFF route).")
+                .WithExample("generate-graphql", "Product", "--module", "Catalog", "--bff", "mobile");
+            config.AddCommand<Commands.AddWebhooksCommand>("add-webhooks")
+                .WithDescription("Add outgoing webhooks: integration events delivered, signed, to tenant subscriptions (store module, host wiring, management API).")
+                .WithExample("add-webhooks")
+                .WithExample("add-webhooks", "--events", "catalog.product-created.v1");
+            config.AddCommand<Commands.AddRealtimeCommand>("add-realtime")
+                .WithDescription("Push integration events to connected clients over SSE (and SignalR with --signalr), filtered by tenant and permission; relays /realtime through BFFs.")
+                .WithExample("add-realtime")
+                .WithExample("add-realtime", "--bff", "web,mobile")
+                .WithExample("add-realtime", "--signalr");
+
             // ── Code generation ────────────────────────────────────────
             config.AddCommand<Commands.GenerateCrudCommand>("generate-crud")
                 .WithDescription("Generate CRUD endpoints, handlers, and entity for a domain object.")

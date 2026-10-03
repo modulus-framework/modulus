@@ -366,3 +366,11 @@ static Modulus.Identity.ModulusRoleSeed.operator !=(Modulus.Identity.ModulusRole
 static Modulus.Identity.ModulusRoleSeed.operator ==(Modulus.Identity.ModulusRoleSeed? left, Modulus.Identity.ModulusRoleSeed? right) -> bool
 static Modulus.Identity.Okta.OktaExtensions.AddOkta(this Microsoft.AspNetCore.Authentication.AuthenticationBuilder! builder, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> Microsoft.AspNetCore.Authentication.AuthenticationBuilder!
 static Modulus.Identity.Okta.OktaExtensions.AddOktaWithProfileFetch(this Microsoft.AspNetCore.Authentication.AuthenticationBuilder! builder, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> Microsoft.AspNetCore.Authentication.AuthenticationBuilder!
+Modulus.Identity.Abstractions.ClientCredentialsGrant
+Modulus.Identity.Abstractions.ModulusIdentityOptions.AllowClientCredentialsFlow.get -> bool
+Modulus.Identity.Abstractions.ModulusIdentityOptions.AllowClientCredentialsFlow.set -> void
+Modulus.Identity.Abstractions.ModulusIdentityOptions.EncryptAccessTokens.get -> bool
+Modulus.Identity.Abstractions.ModulusIdentityOptions.EncryptAccessTokens.set -> void
+static Modulus.Identity.Abstractions.ClientCredentialsGrant.AuthorizeScopes(System.Collections.Generic.IEnumerable<string!>! requested, System.Collections.Generic.IReadOnlySet<string!>! allowed) -> System.Collections.Generic.IReadOnlyList<string!>!
+Modulus.Identity.Abstractions.ModulusIdentityOptions.Issuer.get -> string?
+Modulus.Identity.Abstractions.ModulusIdentityOptions.Issuer.set -> void

@@ -91,10 +91,11 @@ override Modulus.Events.Abstractions.IntegrationEventBase.ToString() -> string!
 static Modulus.Events.Abstractions.IntegrationEventBase.operator !=(Modulus.Events.Abstractions.IntegrationEventBase? left, Modulus.Events.Abstractions.IntegrationEventBase? right) -> bool
 static Modulus.Events.Abstractions.IntegrationEventBase.operator ==(Modulus.Events.Abstractions.IntegrationEventBase? left, Modulus.Events.Abstractions.IntegrationEventBase? right) -> bool
 static Modulus.Events.Abstractions.IntegrationEventNaming.GetName(System.Type! eventType) -> string!
-static Modulus.Events.EnvelopeAmbientScope.Restore(Modulus.Events.Abstractions.IntegrationEventEnvelope! envelope, System.IServiceProvider! services) -> Modulus.Events.EnvelopeAmbientScope!
 static Modulus.Events.Extensions.EventBusRegistrationHelper.RemoveIModuleBusRegistrations(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> void
 static Modulus.Events.Extensions.EventsServiceCollectionExtensions.AddModulusEvents(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, params System.Reflection.Assembly![]! assemblies) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static Modulus.Events.Extensions.InMemoryEventBusExtensions.AddInMemoryEventBus(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 virtual Modulus.Events.Abstractions.IntegrationEventBase.EqualityContract.get -> System.Type!
 virtual Modulus.Events.Abstractions.IntegrationEventBase.Equals(Modulus.Events.Abstractions.IntegrationEventBase? other) -> bool
 virtual Modulus.Events.Abstractions.IntegrationEventBase.PrintMembers(System.Text.StringBuilder! builder) -> bool
+static Modulus.Events.EnvelopeAmbientScope.Restore(Modulus.Events.Abstractions.IntegrationEventEnvelope! envelope, System.IServiceProvider! services, Modulus.Core.Abstractions.TenantInfo? verifiedTenant) -> Modulus.Events.EnvelopeAmbientScope!
+static Modulus.Events.EnvelopeAmbientScope.VerifyTenantAsync(Modulus.Events.Abstractions.IntegrationEventEnvelope! envelope, System.IServiceProvider! services, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<Modulus.Core.Abstractions.TenantInfo?>

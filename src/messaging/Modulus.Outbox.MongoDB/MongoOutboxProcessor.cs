@@ -144,11 +144,25 @@ public sealed class MongoOutboxProcessor(
             // written in the host context (TenantId == Guid.Empty) dispatches
             // under an explicit host scope (Change(null)) so fail-closed tenant
             // filters don't hide the host's own data from the handler.
-            IDisposable? tenantScope = currentTenant is null
-                ? null
-                : currentTenant.Change(message.TenantId == Guid.Empty
-                    ? null
-                    : new TenantInfo(message.TenantId, string.Empty));
+            // A tenant id is verified (ITenantContextRestorer); a row whose tenant is unknown or
+            // deactivated is dead-lettered below rather than dispatched in an unchecked scope.
+            IDisposable? tenantScope = null;
+            TenantContextRejectedException? rejected = null;
+            if (message.TenantId == Guid.Empty)
+            {
+                tenantScope = currentTenant?.Change(null);
+            }
+            else
+            {
+                try
+                {
+                    tenantScope = ssp.EnterTenant(await ssp.VerifyTenantAsync(message.TenantId, ct));
+                }
+                catch (TenantContextRejectedException ex)
+                {
+                    rejected = ex;
+                }
+            }
 
             // Restore the originating correlation id so it flows into the
             // in-process handlers and onto the broker envelope for cross-service
@@ -160,6 +174,9 @@ public sealed class MongoOutboxProcessor(
 
             try
             {
+                if (rejected is not null)
+                    throw rejected;
+
                 await dispatcher.DispatchAsync(ToOutboxMessage(message), ct);
 
                 var doneFilter = Builders<MongoOutboxMessage>.Filter.And(
@@ -192,7 +209,10 @@ public sealed class MongoOutboxProcessor(
             }
             catch (Exception ex)
             {
-                var newRetry = message.RetryCount + 1;
+                // Redelivery cannot fix an unknown or deactivated tenant: dead-letter now.
+                var newRetry = ex is TenantContextRejectedException
+                    ? Math.Max(message.RetryCount + 1, options.MaxRetries)
+                    : message.RetryCount + 1;
                 var nextAttempt = DateTime.UtcNow.AddSeconds(
                     Math.Min(options.InitialBackoffSec
                               * Math.Pow(2, newRetry), 3600));

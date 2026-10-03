@@ -43,7 +43,9 @@ public static class IdentitySeeding
         var users = provider.GetRequiredService<UserManager<ModulusUser>>();
         var configuration = provider.GetRequiredService<IConfiguration>();
 
-        await EnsureClientAsync(provider.GetRequiredService<IOpenIddictApplicationManager>(), configuration, ct);
+        var applications = provider.GetRequiredService<IOpenIddictApplicationManager>();
+        await EnsureClientAsync(applications, configuration, ct);
+        await EnsureBffClientsAsync(applications, configuration, logger, ct);
 
         if (!await roles.RoleExistsAsync(AdminRole))
         {
@@ -135,6 +137,79 @@ public static class IdentitySeeding
         else if (changed)
         {
             await applications.UpdateAsync(existing, descriptor, ct);
+        }
+    }
+
+    // The clients of the app's BFFs (Identity:Seed:Clients:{web|mobile|partner}): ClientId, an optional ClientSecret
+    // (User Secrets or an environment variable, never a committed file) and, for the code flow, RedirectUris.
+    // web / mobile: public without a secret (PKCE / password grant), confidential with one.
+    // partner: client credentials only, so it is created only once a secret is configured.
+    // Like the first-party client, each is brought in line with the configuration on every start.
+    private static async Task EnsureBffClientsAsync(
+        IOpenIddictApplicationManager applications, IConfiguration configuration, ILogger logger, CancellationToken ct)
+    {
+        foreach (var section in configuration.GetSection("Identity:Seed:Clients").GetChildren())
+        {
+            var kind = section.Key.ToLowerInvariant();
+            var clientId = section["ClientId"];
+            if (string.IsNullOrWhiteSpace(clientId))
+            {
+                continue;
+            }
+
+            var secret = section["ClientSecret"];
+            if (kind == "partner" && string.IsNullOrWhiteSpace(secret))
+            {
+                logger.LogWarning(
+                    "BFF client {ClientId} (partner) needs Identity:Seed:Clients:partner:ClientSecret; it was not registered.", clientId);
+                continue;
+            }
+
+            var redirectUris = (section.GetSection("RedirectUris").Get<string[]>() ?? [])
+                .Where(u => Uri.TryCreate(u, UriKind.Absolute, out _))
+                .Select(u => new Uri(u, UriKind.Absolute))
+                .ToArray();
+
+            var descriptor = new OpenIddictApplicationDescriptor
+            {
+                ClientId = clientId,
+                ClientType = string.IsNullOrWhiteSpace(secret) ? ClientTypes.Public : ClientTypes.Confidential,
+                ClientSecret = string.IsNullOrWhiteSpace(secret) ? null : secret,
+                DisplayName = $"{{ app_name }} BFF ({kind})",
+            };
+
+            if (kind == "partner")
+            {
+                descriptor.Permissions.Add(Permissions.Endpoints.Token);
+                descriptor.Permissions.Add(Permissions.GrantTypes.ClientCredentials);
+                descriptor.Permissions.Add(Permissions.Prefixes.Scope + "modulus");
+            }
+            else
+            {
+                foreach (var permission in RequiredPermissions(redirectUris.Length > 0))
+                {
+                    descriptor.Permissions.Add(permission);
+                }
+
+                if (redirectUris.Length > 0)
+                {
+                    descriptor.Requirements.Add(Requirements.Features.ProofKeyForCodeExchange);
+                    foreach (var uri in redirectUris)
+                    {
+                        descriptor.RedirectUris.Add(uri);
+                    }
+                }
+            }
+
+            var existing = await applications.FindByClientIdAsync(clientId, ct);
+            if (existing is null)
+            {
+                await applications.CreateAsync(descriptor, ct);
+            }
+            else
+            {
+                await applications.UpdateAsync(existing, descriptor, ct);
+            }
         }
     }
 

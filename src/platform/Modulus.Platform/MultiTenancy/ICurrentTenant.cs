@@ -25,4 +25,11 @@ public interface ITenantStore
     /// Default returns empty; implement when per-tenant databases are used.
     /// </summary>
     Task<IReadOnlyList<TenantInfo>> ListAsync(CancellationToken ct) => Task.FromResult<IReadOnlyList<TenantInfo>>([]);
+
+    /// <summary>
+    /// Lists the active tenants (companies) of a group. Default filters <see cref="ListAsync"/>
+    /// by <see cref="TenantInfo.GroupId"/>; stores override it to query directly.
+    /// </summary>
+    async Task<IReadOnlyList<TenantInfo>> ListByGroupAsync(Guid groupId, CancellationToken ct)
+        => [.. (await ListAsync(ct)).Where(t => t.GroupId == groupId)];
 }

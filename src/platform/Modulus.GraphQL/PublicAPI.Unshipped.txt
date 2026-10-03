@@ -1,0 +1,61 @@
+#nullable enable
+Modulus.GraphQL.GraphQLEndpointExtensions
+Modulus.GraphQL.GraphQLExceptionMapper
+Modulus.GraphQL.GraphQLExceptionMapper.MappedError
+Modulus.GraphQL.GraphQLExceptionMapper.MappedError.<Clone>$() -> Modulus.GraphQL.GraphQLExceptionMapper.MappedError!
+Modulus.GraphQL.GraphQLExceptionMapper.MappedError.Code.get -> string!
+Modulus.GraphQL.GraphQLExceptionMapper.MappedError.Code.init -> void
+Modulus.GraphQL.GraphQLExceptionMapper.MappedError.Deconstruct(out string! Message, out string! Code, out bool IsClientError, out System.Collections.Generic.IReadOnlyDictionary<string!, object?>! Extensions) -> void
+Modulus.GraphQL.GraphQLExceptionMapper.MappedError.Equals(Modulus.GraphQL.GraphQLExceptionMapper.MappedError? other) -> bool
+Modulus.GraphQL.GraphQLExceptionMapper.MappedError.Extensions.get -> System.Collections.Generic.IReadOnlyDictionary<string!, object?>!
+Modulus.GraphQL.GraphQLExceptionMapper.MappedError.Extensions.init -> void
+Modulus.GraphQL.GraphQLExceptionMapper.MappedError.IsClientError.get -> bool
+Modulus.GraphQL.GraphQLExceptionMapper.MappedError.IsClientError.init -> void
+Modulus.GraphQL.GraphQLExceptionMapper.MappedError.MappedError(string! Message, string! Code, bool IsClientError, System.Collections.Generic.IReadOnlyDictionary<string!, object?>! Extensions) -> void
+Modulus.GraphQL.GraphQLExceptionMapper.MappedError.Message.get -> string!
+Modulus.GraphQL.GraphQLExceptionMapper.MappedError.Message.init -> void
+Modulus.GraphQL.GraphQLResolveContextExtensions
+Modulus.GraphQL.GraphQLServiceCollectionExtensions
+Modulus.GraphQL.IGraphQLContributor
+Modulus.GraphQL.IGraphQLContributor.ConfigureMutation(GraphQL.Types.ObjectGraphType! mutation) -> void
+Modulus.GraphQL.IGraphQLContributor.ConfigureQuery(GraphQL.Types.ObjectGraphType! query) -> void
+Modulus.GraphQL.ModulusGraphQLOptions
+Modulus.GraphQL.ModulusGraphQLOptions.EnableBatchedRequests.get -> bool
+Modulus.GraphQL.ModulusGraphQLOptions.EnableBatchedRequests.set -> void
+Modulus.GraphQL.ModulusGraphQLOptions.EnableIntrospection.get -> bool
+Modulus.GraphQL.ModulusGraphQLOptions.EnableIntrospection.set -> void
+Modulus.GraphQL.ModulusGraphQLOptions.EnableUi.get -> bool
+Modulus.GraphQL.ModulusGraphQLOptions.EnableUi.set -> void
+Modulus.GraphQL.ModulusGraphQLOptions.ExposeExceptionDetails.get -> bool
+Modulus.GraphQL.ModulusGraphQLOptions.ExposeExceptionDetails.set -> void
+Modulus.GraphQL.ModulusGraphQLOptions.ListSizeEstimate.get -> double
+Modulus.GraphQL.ModulusGraphQLOptions.ListSizeEstimate.set -> void
+Modulus.GraphQL.ModulusGraphQLOptions.MaxComplexity.get -> int?
+Modulus.GraphQL.ModulusGraphQLOptions.MaxComplexity.set -> void
+Modulus.GraphQL.ModulusGraphQLOptions.MaxDepth.get -> int?
+Modulus.GraphQL.ModulusGraphQLOptions.MaxDepth.set -> void
+Modulus.GraphQL.ModulusGraphQLOptions.ModulusGraphQLOptions() -> void
+Modulus.GraphQL.ModulusGraphQLOptions.ParallelQueryExecution.get -> bool
+Modulus.GraphQL.ModulusGraphQLOptions.ParallelQueryExecution.set -> void
+Modulus.GraphQL.ModulusGraphQLOptions.Path.get -> string!
+Modulus.GraphQL.ModulusGraphQLOptions.Path.set -> void
+Modulus.GraphQL.ModulusGraphQLOptions.RequireAuthenticatedUser.get -> bool
+Modulus.GraphQL.ModulusGraphQLOptions.RequireAuthenticatedUser.set -> void
+Modulus.GraphQL.ModulusSchema
+Modulus.GraphQL.ModulusSchema.ModulusSchema(System.IServiceProvider! services) -> void
+const Modulus.GraphQL.ModulusGraphQLOptions.SectionName = "GraphQL" -> string!
+override Modulus.GraphQL.GraphQLExceptionMapper.MappedError.Equals(object? obj) -> bool
+override Modulus.GraphQL.GraphQLExceptionMapper.MappedError.GetHashCode() -> int
+override Modulus.GraphQL.GraphQLExceptionMapper.MappedError.ToString() -> string!
+static Modulus.GraphQL.GraphQLEndpointExtensions.MapModulusGraphQL(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string? path = null) -> Microsoft.AspNetCore.Builder.IEndpointConventionBuilder!
+static Modulus.GraphQL.GraphQLExceptionMapper.Map(System.Exception! exception) -> Modulus.GraphQL.GraphQLExceptionMapper.MappedError!
+static Modulus.GraphQL.GraphQLExceptionMapper.MappedError.operator !=(Modulus.GraphQL.GraphQLExceptionMapper.MappedError? left, Modulus.GraphQL.GraphQLExceptionMapper.MappedError? right) -> bool
+static Modulus.GraphQL.GraphQLExceptionMapper.MappedError.operator ==(Modulus.GraphQL.GraphQLExceptionMapper.MappedError? left, Modulus.GraphQL.GraphQLExceptionMapper.MappedError? right) -> bool
+static Modulus.GraphQL.GraphQLResolveContextExtensions.GetGuidArgument(this GraphQL.IResolveFieldContext! context, string! name) -> System.Guid
+static Modulus.GraphQL.GraphQLResolveContextExtensions.LoadBatch<TKey, TValue>(this GraphQL.IResolveFieldContext! context, string! loaderName, TKey key, System.Func<System.Collections.Generic.IReadOnlyList<TKey>!, System.IServiceProvider!, System.Threading.CancellationToken, System.Threading.Tasks.Task<System.Collections.Generic.IDictionary<TKey, TValue>!>!>! fetch) -> GraphQL.DataLoader.IDataLoaderResult<TValue>!
+static Modulus.GraphQL.GraphQLResolveContextExtensions.QueryAsync<TResult>(this GraphQL.IResolveFieldContext! context, Modulus.Mediator.Abstractions.IQuery<TResult>! query) -> System.Threading.Tasks.Task<TResult>!
+static Modulus.GraphQL.GraphQLResolveContextExtensions.SendAsync<TResult>(this GraphQL.IResolveFieldContext! context, Modulus.Mediator.Abstractions.ICommand<TResult>! command) -> System.Threading.Tasks.Task<TResult>!
+static Modulus.GraphQL.GraphQLServiceCollectionExtensions.AddGraphQLContributor<TContributor>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.GraphQL.GraphQLServiceCollectionExtensions.AddModulusGraphQL(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration, System.Action<GraphQL.DI.IGraphQLBuilder!>? configure, params System.Reflection.Assembly![]! assemblies) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.GraphQL.GraphQLServiceCollectionExtensions.AddModulusGraphQL(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration, params System.Reflection.Assembly![]! assemblies) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.GraphQL.GraphQLServiceCollectionExtensions.ExtendGraphType<TGraphType>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<TGraphType!>! extend) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!

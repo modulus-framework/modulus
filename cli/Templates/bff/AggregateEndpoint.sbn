@@ -1,0 +1,34 @@
+using Modulus.Bff;
+using {{ project_name }}.ApiClients;
+
+namespace {{ project_name }}.Endpoints;
+
+/// <summary>
+/// <c>GET {{ route }}</c> for the {{ client_name }} client: one call that fans out to the upstream services concurrently and
+/// returns a payload shaped for the client's screen. Each section is optional, so a failing or slow upstream (timeout:
+/// 3 s) is listed under <c>"degraded"</c> instead of failing the response; make one <c>Required</c> when the screen
+/// cannot render without it (its failure answers 502). Pass <c>new BffSectionOptions { CacheDuration = ... }</c> to
+/// cache a section per user in FusionCache.
+/// </summary>
+public static class {{ name }}Endpoints
+{
+    public static IEndpointRouteBuilder Map{{ name }}Endpoints(this IEndpointRouteBuilder endpoints)
+    {
+        endpoints.MapBffClient("{{ client_name }}")
+            .MapGet("{{ route }}", async ({{ for m in modules }}{{ m.module_name }}Api {{ m.variable }}, {{ end }}BffComposer composer, CancellationToken ct) =>
+            {
+                var composition = composer.Begin(defaultTimeout: TimeSpan.FromSeconds(3));
+{{~ for x in sections ~}}
+                var {{ x.variable }} = composition.Optional("{{ x.key }}", {{ x.client_variable }}.Get{{ x.plural }}Async);
+{{~ end ~}}
+                return await composition.ExecuteAsync(() => new
+                {
+{{~ for x in sections ~}}
+                    {{ x.variable }} = {{ x.variable }}.Value,
+{{~ end ~}}
+                }, ct);
+            })
+            .WithName("{{ client_pascal }}{{ name }}");
+        return endpoints;
+    }
+}

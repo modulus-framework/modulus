@@ -1,0 +1,78 @@
+using FluentAssertions;
+using Grpc.Core;
+using Grpc.Net.Client;
+using Modulus.Grpc;
+using Modulus.Testing;
+using Xunit;
+using {{ module_namespace }}.Presentation.Grpc;
+using ApiEntryPoint = {{ root_namespace }}.Api.ApiEntryPoint;
+
+namespace {{ root_namespace }}.Tests;
+
+/// <summary>
+/// The {{ entity_name_lower }} gRPC service (modulus generate-grpc) on the in-memory test host: the same
+/// commands and queries as the HTTP endpoints, the same sign-in{{ if required_permission }} and permission{{ end }},
+/// domain exceptions as gRPC status codes.
+/// </summary>
+public sealed class {{ entity_name }}GrpcTests(ModulusWebAppFactory<ApiEntryPoint> factory)
+    : IClassFixture<ModulusWebAppFactory<ApiEntryPoint>>
+{
+    [Fact]
+    public async Task Create_get_and_list_round_trip()
+    {
+        var client = Client(factory.CreateAuthenticatedClient({{ if required_permission }}roles: ["{{ admin_role }}"]{{ end }}));
+
+        var created = await client.Create{{ entity_name }}Async(new Create{{ entity_name }}Request { Name = "From gRPC" });
+        var item = await client.Get{{ entity_name }}Async(new Get{{ entity_name }}Request { Id = created.Id });
+        var list = await client.List{{ entity_plural }}Async(new List{{ entity_plural }}Request());
+
+        item.Name.Should().Be("From gRPC");
+        list.Items.Should().Contain(i => i.Id == created.Id);
+    }
+
+    [Fact]
+    public async Task An_anonymous_call_is_unauthenticated()
+    {
+        var client = Client(factory.CreateClient());
+
+        var call = () => client.List{{ entity_plural }}Async(new List{{ entity_plural }}Request()).ResponseAsync;
+
+        (await call.Should().ThrowAsync<RpcException>()).Which.StatusCode.Should().Be(StatusCode.Unauthenticated);
+    }
+{{ if required_permission }}
+    [Fact]
+    public async Task A_caller_without_the_permission_is_denied()
+    {
+        var client = Client(factory.CreateAuthenticatedClient());
+
+        var call = () => client.List{{ entity_plural }}Async(new List{{ entity_plural }}Request()).ResponseAsync;
+
+        (await call.Should().ThrowAsync<RpcException>()).Which.StatusCode.Should().Be(StatusCode.PermissionDenied);
+    }
+{{ end }}
+    [Fact]
+    public async Task A_malformed_id_is_an_invalid_argument()
+    {
+        var client = Client(factory.CreateAuthenticatedClient({{ if required_permission }}roles: ["{{ admin_role }}"]{{ end }}));
+
+        var call = () => client.Get{{ entity_name }}Async(new Get{{ entity_name }}Request { Id = "not-a-guid" }).ResponseAsync;
+
+        var error = (await call.Should().ThrowAsync<RpcException>()).Which;
+        error.StatusCode.Should().Be(StatusCode.InvalidArgument);
+        error.GetValidationErrors().Should().ContainSingle(e => e.StartsWith("Id:", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task An_unknown_id_is_not_found()
+    {
+        var client = Client(factory.CreateAuthenticatedClient({{ if required_permission }}roles: ["{{ admin_role }}"]{{ end }}));
+
+        var call = () => client.Get{{ entity_name }}Async(new Get{{ entity_name }}Request { Id = Guid.NewGuid().ToString() }).ResponseAsync;
+
+        (await call.Should().ThrowAsync<RpcException>()).Which.StatusCode.Should().Be(StatusCode.NotFound);
+    }
+
+    // The test server speaks HTTP/2 to gRPC through the factory's own HttpClient (its test sign-in headers included).
+    private static {{ entity_name }}Service.{{ entity_name }}ServiceClient Client(HttpClient http)
+        => new(GrpcChannel.ForAddress(http.BaseAddress!, new GrpcChannelOptions { HttpClient = http }));
+}

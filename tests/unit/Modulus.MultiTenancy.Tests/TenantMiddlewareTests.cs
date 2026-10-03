@@ -215,6 +215,185 @@ public sealed class TenantMiddlewareTests
         services.AddMultiTenancy(t => t.RequireHostTenantAccessPolicy("TenantSwitch"));
     }
 
+    // ── Membership (company = tenant, one login across companies) ─────────
+
+    private static readonly Guid UserId = Guid.NewGuid();
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task With_membership_required_an_account_without_a_tenant_claim_enters_only_its_member_tenants(bool isMember)
+    {
+        var store = new FakeStore(TenantA, TenantB);
+        var memberships = new InMemoryTenantMembershipStore();
+        if (isMember)
+            memberships.Add(UserId, TenantB.TenantId);
+        memberships.Add(UserId, TenantA.TenantId);
+        var reached = false;
+        var ctx = BuildContext(
+            store,
+            headerTenantId: TenantB.TenantId,
+            claimTenantId: null,
+            authenticated: true,
+            configureServices: s => RequireMembership(s, memberships),
+            userId: UserId);
+
+        await InvokeAsync(ctx, store, next: _ => { reached = true; return Task.CompletedTask; });
+
+        reached.Should().Be(isMember);
+        if (!isMember)
+            ctx.Response.StatusCode.Should().Be(StatusCodes.Status403Forbidden);
+    }
+
+    [Fact]
+    public async Task With_membership_required_an_account_without_a_user_id_is_rejected()
+    {
+        var store = new FakeStore(TenantA);
+        var reached = false;
+        var ctx = BuildContext(
+            store,
+            headerTenantId: TenantA.TenantId,
+            claimTenantId: null,
+            authenticated: true,
+            configureServices: s => RequireMembership(s, new InMemoryTenantMembershipStore()));
+
+        await InvokeAsync(ctx, store, next: _ => { reached = true; return Task.CompletedTask; });
+
+        reached.Should().BeFalse();
+        ctx.Response.StatusCode.Should().Be(StatusCodes.Status403Forbidden);
+    }
+
+    [Fact]
+    public async Task With_membership_required_a_revoked_membership_closes_entry_on_the_next_request()
+    {
+        var store = new FakeStore(TenantA);
+        var memberships = new InMemoryTenantMembershipStore();
+        memberships.Add(UserId, TenantA.TenantId);
+        memberships.Remove(UserId, TenantA.TenantId);
+        var reached = false;
+        var ctx = BuildContext(
+            store,
+            headerTenantId: TenantA.TenantId,
+            claimTenantId: null,
+            authenticated: true,
+            configureServices: s => RequireMembership(s, memberships),
+            userId: UserId);
+
+        await InvokeAsync(ctx, store, next: _ => { reached = true; return Task.CompletedTask; });
+
+        reached.Should().BeFalse();
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task With_membership_required_the_host_policy_is_the_break_glass_for_a_non_member(bool holdsPolicy)
+    {
+        var store = new FakeStore(TenantA);
+        var reached = false;
+        var ctx = BuildContext(
+            store,
+            headerTenantId: TenantA.TenantId,
+            claimTenantId: null,
+            authenticated: true,
+            configureServices: s =>
+            {
+                RequireMembership(s, new InMemoryTenantMembershipStore());
+                s.AddAuthorization(o => o.AddPolicy("TenantSwitch", p => p.RequireRole("HostAdmin")));
+                s.AddMultiTenancy(t => t.RequireHostTenantAccessPolicy("TenantSwitch"));
+            },
+            userId: UserId,
+            roles: holdsPolicy ? ["HostAdmin"] : []);
+
+        await InvokeAsync(ctx, store, next: _ => { reached = true; return Task.CompletedTask; });
+
+        reached.Should().Be(holdsPolicy);
+    }
+
+    [Fact]
+    public async Task With_membership_required_a_tenant_claim_still_pins_the_token()
+    {
+        // A member of B whose token is pinned to A cannot use the header to reach B.
+        var store = new FakeStore(TenantA, TenantB);
+        var memberships = new InMemoryTenantMembershipStore();
+        memberships.Add(UserId, TenantB.TenantId);
+        var reached = false;
+        var ctx = BuildContext(
+            store,
+            headerTenantId: TenantB.TenantId,
+            claimTenantId: TenantA.TenantId,
+            authenticated: true,
+            configureServices: s => RequireMembership(s, memberships),
+            userId: UserId);
+
+        await InvokeAsync(ctx, store, next: _ => { reached = true; return Task.CompletedTask; });
+
+        reached.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task With_membership_required_anonymous_requests_are_unaffected()
+    {
+        var store = new FakeStore(TenantA);
+        var reached = false;
+        var ctx = BuildContext(
+            store,
+            headerTenantId: TenantA.TenantId,
+            claimTenantId: null,
+            authenticated: false,
+            configureServices: s => RequireMembership(s, new InMemoryTenantMembershipStore()));
+
+        await InvokeAsync(ctx, store, next: _ => { reached = true; return Task.CompletedTask; });
+
+        reached.Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData(false, "tenant.not-a-member", SecurityAuditOutcomes.Denied)]
+    [InlineData(true, "tenant.break-glass", SecurityAuditOutcomes.Overridden)]
+    public async Task Rejections_and_break_glass_entries_are_recorded_in_the_tenants_security_audit(
+        bool holdsPolicy, string action, string outcome)
+    {
+        var store = new FakeStore(TenantA);
+        var audit = new RecordingAuditLog();
+        var ctx = BuildContext(
+            store,
+            headerTenantId: TenantA.TenantId,
+            claimTenantId: null,
+            authenticated: true,
+            configureServices: s =>
+            {
+                RequireMembership(s, new InMemoryTenantMembershipStore());
+                s.AddSingleton<ISecurityAuditLog>(audit);
+                s.AddAuthorization(o => o.AddPolicy("TenantSwitch", p => p.RequireRole("HostAdmin")));
+                s.AddMultiTenancy(t => t.RequireHostTenantAccessPolicy("TenantSwitch"));
+            },
+            userId: UserId,
+            roles: holdsPolicy ? ["HostAdmin"] : []);
+
+        await InvokeAsync(ctx, store, next: _ => Task.CompletedTask);
+
+        var recorded = audit.Events.Should().ContainSingle().Subject;
+        recorded.Action.Should().Be(action);
+        recorded.Outcome.Should().Be(outcome);
+        recorded.TenantId.Should().Be(TenantA.TenantId, "the company that was reached keeps the record");
+        recorded.Actor.Should().Be(UserId.ToString());
+    }
+
+    private sealed class RecordingAuditLog : ISecurityAuditLog
+    {
+        public List<SecurityAuditEvent> Events { get; } = [];
+
+        public void Record(SecurityAuditEvent auditEvent) => Events.Add(auditEvent);
+    }
+
+    private static void RequireMembership(IServiceCollection services, InMemoryTenantMembershipStore memberships)
+    {
+        services.AddLogging();
+        services.AddSingleton(memberships);
+        services.AddMultiTenancy(t => t.RequireMembership());
+    }
+
     // ── Helpers ──────────────────────────────────────────────────────
 
     private static Task InvokeAsync(
@@ -235,6 +414,7 @@ public sealed class TenantMiddlewareTests
         bool authenticated,
         bool includeJwtResolver = true,
         Action<IServiceCollection>? configureServices = null,
+        Guid? userId = null,
         params string[] roles)
     {
         var services = new ServiceCollection();
@@ -251,6 +431,11 @@ public sealed class TenantMiddlewareTests
         if (claimTenantId is not null)
         {
             claims.Add(new Claim("tid", claimTenantId.ToString()!));
+        }
+
+        if (userId is not null)
+        {
+            claims.Add(new Claim(ClaimTypes.NameIdentifier, userId.ToString()!));
         }
 
         claims.AddRange(roles.Select(r => new Claim(ClaimTypes.Role, r)));

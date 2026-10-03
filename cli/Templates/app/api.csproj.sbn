@@ -19,7 +19,10 @@
     <PackageReference Include="Cobytelabs.Modulus.Core" Version="{{ framework_version }}" />
     <PackageReference Include="Cobytelabs.Modulus.Mediator" Version="{{ framework_version }}" />
     <PackageReference Include="Cobytelabs.Modulus.EntityFrameworkCore" Version="{{ framework_version }}" />
-{{ if auth != "none" }}    <PackageReference Include="Cobytelabs.Modulus.Identity" Version="{{ framework_version }}" />
+    <!-- Hybrid cache (FusionCache), plus the platform services. -->
+    <PackageReference Include="Cobytelabs.Modulus.Platform" Version="{{ framework_version }}" />
+{{ if use_redis_cache }}    <PackageReference Include="Cobytelabs.Modulus.Caching.Redis" Version="{{ framework_version }}" />
+{{ end }}{{ if auth != "none" }}    <PackageReference Include="Cobytelabs.Modulus.Identity" Version="{{ framework_version }}" />
 {{ end }}    <!-- Transitive pin: AspNetCore.OpenApi floats to Microsoft.OpenApi 2.0.0,
           which has a high-severity advisory (GHSA-v5pm-xwqc-g5wc). Pin to latest 2.x.
           Source of truth: Directory.Packages.props (Microsoft.OpenApi 2.9.0,

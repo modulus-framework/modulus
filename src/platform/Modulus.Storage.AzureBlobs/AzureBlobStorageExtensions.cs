@@ -30,8 +30,7 @@ public static class AzureBlobStorageExtensions
                 "Storage:ConnectionString is required for Azure Blob storage.");
 
         services.AddSingleton(new BlobServiceClient(connStr));
-        services.RemoveAll<IFileStorage>();
-        services.AddSingleton<IFileStorage, AzureBlobFileStorage>();
+        services.UseFileStorageProvider<AzureBlobFileStorage>();
         return services;
     }
 }

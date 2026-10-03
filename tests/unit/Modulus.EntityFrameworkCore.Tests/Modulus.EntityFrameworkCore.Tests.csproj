@@ -2,8 +2,13 @@
 
   <ItemGroup>
     <ProjectReference Include="../../../src/data/Modulus.EntityFrameworkCore/Modulus.EntityFrameworkCore.csproj" />
+    <!-- Provider packages: row-level security scripts are built from a real provider model (no server needed). -->
+    <ProjectReference Include="../../../src/data/Modulus.Data.PostgreSQL/Modulus.Data.PostgreSQL.csproj" />
+    <ProjectReference Include="../../../src/data/Modulus.Data.SqlServer/Modulus.Data.SqlServer.csproj" />
+    <ProjectReference Include="../../../src/data/Modulus.Data.SQLite/Modulus.Data.SQLite.csproj" />
     <!-- SQLite for exercising real ModuleDbContext SaveChangesAsync (no Docker). -->
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" />
   </ItemGroup>
 
 </Project>

@@ -10,6 +10,19 @@
       "Microsoft.EntityFrameworkCore": "Warning"
     }
   },
+  "Caching": {
+    "Fusion": {
+      "CacheName": "{{ app_name_lower }}",
+      "DefaultDuration": "00:05:00",
+      "FailSafeEnabled": true,
+      "FailSafeMaxDuration": "02:00:00",
+      "FactorySoftTimeout": "00:00:00.500",
+      "EagerRefreshThreshold": 0.9
+    }{{ if use_redis_cache }},
+    "Redis": {
+      "ConnectionString": "localhost:6379"
+    }{{ end }}
+  },
 {{ if enable_correlation }}  "Correlation": {
     "HeaderName": "X-Correlation-ID",
     "IncludeInResponse": true,
@@ -67,6 +80,13 @@
     "UseDevelopmentCertificates": false,
     "AllowPasswordFlow": false,
 {{ if use_code_flow }}    "AllowAuthorizationCodeFlow": true,
+{{ end }}{{ if has_bearer_bff }}    "EncryptAccessTokens": false,
+{{ end }}{{ if has_partner_bff }}    "AllowClientCredentialsFlow": true,
+{{ end }}{{ if has_bff }}    "Seed": {
+      "Clients": {
+{{ for c in bff_client_models }}        "{{ c.name }}": { "ClientId": "{{ c.client_id }}", "ClientSecret": "" }{{ if !for.last }},{{ end }}
+{{ end }}      }
+    },
 {{ end }}    "AccessTokenLifetimeMin": 15,
     "RefreshTokenLifetimeDays": 7
   },

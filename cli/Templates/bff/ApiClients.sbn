@@ -1,0 +1,18 @@
+using Modulus.Bff;
+
+namespace {{ project_name }}.ApiClients;
+
+/// <summary>
+/// Registers one typed client per module (AddBffApiClient: the module's upstream service, the caller's token,
+/// resilience and correlation). <c>modulus generate-crud</c> and <c>modulus generate-bff-endpoint</c> add new modules here.
+/// </summary>
+public static class ApiClientRegistration
+{
+    public static IServiceCollection AddModuleApiClients(this IServiceCollection services)
+    {
+{{~ for m in modules ~}}
+        services.AddBffApiClient<{{ m.module_name }}Api>("{{ m.service }}");
+{{~ end ~}}
+        return services;
+    }
+}

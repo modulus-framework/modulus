@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+option csharp_namespace = "Modulus.Grpc.Tests.Protos";
+
+package modulus.tests;
+
+service Probe {
+  rpc Echo (EchoRequest) returns (EchoReply);
+  rpc Fail (FailRequest) returns (EchoReply);
+  rpc Slow (EchoRequest) returns (EchoReply);
+  rpc Flaky (EchoRequest) returns (EchoReply);
+  rpc Count (stream EchoRequest) returns (EchoReply);
+}
+
+service Guarded {
+  rpc Echo (EchoRequest) returns (EchoReply);
+}
+
+message EchoRequest {
+  string text = 1;
+}
+
+message FailRequest {
+  string kind = 1;
+}
+
+message EchoReply {
+  string text = 1;
+  string correlation_id = 2;
+  string tenant = 3;
+  int32 attempts = 4;
+  string authorization = 5;
+}

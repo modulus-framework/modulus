@@ -278,6 +278,63 @@ internal sealed class AppModel
     /// </summary>
     public bool UseCodeFlow => UseOpenIddict && UiInApiHost;
 
+    /// <summary>
+    /// True when the host wires the startup security guard (<c>AddModulusSecurityGuard</c>): every endpoint must resolve to a
+    /// policy and every anonymous one needs a reason and an allow-list entry. Needs a sign-in to enforce anything, so not with
+    /// <c>--auth none</c>, nor for a web app on an external provider (its pages have no cookie sign-in yet, so they could only be
+    /// left open or locked).
+    /// </summary>
+    public bool UseSecurityGuard => UseAuth && !(UiInApiHost && UseExternalProvider);
+
+    /// <summary>
+    /// True when the API host calls <c>AddModulusAuthorization</c> only for its fallback policy (endpoints closed by default):
+    /// the guard is on and no example permission already registers it.
+    /// </summary>
+    public bool NeedsFallbackAuthorization => UseSecurityGuard && ExamplePermission is null;
+
+    /// <summary>BFF clients to generate (<c>--bff web,mobile,partner</c>), each its own project under <c>src/Bff</c>.</summary>
+    public IReadOnlyList<string> Bff { get; set; } = [];
+
+    /// <summary>True when the app has at least one BFF.</summary>
+    public bool HasBff => Bff.Count > 0;
+
+    /// <summary>Upstream services besides <c>api</c> the BFFs proxy to and call (<c>--services catalog=http://...,orders</c>).</summary>
+    public IReadOnlyList<BffServiceModel> BffServices { get; set; } = [];
+
+    /// <summary>
+    /// True when a BFF validates bearer tokens itself (mobile, partner): the local token server then issues signed,
+    /// unencrypted JWT access tokens (<c>Identity:EncryptAccessTokens=false</c>) so they can be checked against its JWKS.
+    /// </summary>
+    public bool HasBearerBff => Bff.Any(c => c is "mobile" or "partner");
+
+    /// <summary>True when a partner BFF exists: the token server then allows the client-credentials grant.</summary>
+    public bool HasPartnerBff => Bff.Contains("partner");
+
+    /// <summary>The BFF clients as the API's identity seeding registers them (client ids, Development redirect URIs).</summary>
+    public IReadOnlyList<BffClientModel> BffClientModels => Bff.Select((client, i) =>
+    {
+        var port = BffClients.FirstPort + i;
+        IReadOnlyList<string> redirects = !UseCodeFlow ? [] : client switch
+        {
+            "web" => [$"http://localhost:{port}/signin-oidc"],
+            "mobile" => [$"{AppNameLower}://callback"],
+            _ => [],
+        };
+        return new BffClientModel { Name = client, ClientId = $"{AppNameLower}-{client}", Port = port, DevRedirectUris = redirects };
+    }).ToList();
+
+    /// <summary>
+    /// How the <c>webapp+api</c> Web host signs users in through its BFF web session: the password grant against the local
+    /// OpenIddict server (the API host has no login page), else the external provider's own login page (code + PKCE).
+    /// </summary>
+    public string WebLoginMode => UseOpenIddict ? "Password" : "Oidc";
+
+    /// <summary>The Web host's <c>Bff:AuthServer</c>.</summary>
+    public string WebAuthServer => BffClients.AuthServer(Auth);
+
+    /// <summary>The Web host's <c>Bff:Authority</c>: empty for OpenIddict (the API host, <c>Api:BaseUrl</c>), else the provider's issuer.</summary>
+    public string WebAuthority => UseOpenIddict ? "" : BffClients.Authority(Auth, AppNameLower);
+
     /// <summary>Redirect URIs the seeded first-party client is registered with in Development: a native app's custom scheme and a local SPA dev server.</summary>
     public IReadOnlyList<string> DevRedirectUris => [$"{AppNameLower}://callback", "http://localhost:5173/callback"];
 

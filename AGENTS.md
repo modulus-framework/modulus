@@ -5,7 +5,7 @@ Guidance for AI agents (and humans) working on the Modulus framework.
 ## Project
 
 Modulus is a modular-monolith framework for **.NET 10** (`net10.0`). It is a
-multi-project solution made of **31 libraries** under `src/` (core, data,
+multi-project solution made of **40 libraries** under `src/` (core, data,
 identity, messaging, platform, observability, testing) plus the optional,
 server-rendered **UI framework** under `src/ui/` (see *Modulus.UI* below),
 unit/integration tests under `tests/` and a **CLI tool** (`Modulus.Cli`) for
@@ -64,6 +64,7 @@ All commands are run from the repository root (`E:\Personal\framework\modulus`).
 ```
 src/
   core/          Modulus.Core (abstractions+impl merged), Modulus.AspNetCore
+  analyzers/     Modulus.Analyzers (Roslyn, MOD0001; packed inside Modulus.AspNetCore, not its own package)
   data/          Modulus.Data.Abstractions, Modulus.EntityFrameworkCore,
                  EF Core providers (SqlServer, PostgreSQL, MySQL, SQLite, MongoDB)
   identity/      Modulus.Identity (OpenIddict server + 6 IdP adapters +
@@ -72,7 +73,10 @@ src/
                  (abstractions merged), Modulus.Inbox, Modulus.Outbox,
                  Modulus.Outbox.Abstractions (kept — circular-dep seam),
                  Inbox/Outbox.MongoDB, EventBus.RabbitMQ, EventBus.Kafka,
-                 Modulus.Sagas (Rebus saga orchestration)
+                 Modulus.Sagas (Rebus saga orchestration),
+                 Modulus.Webhooks (signed outgoing webhooks for integration events),
+                 Modulus.Realtime (SSE / SignalR push of integration events) +
+                 Modulus.Realtime.Redis (multi-node backplane)
   platform/      Modulus.Platform (MultiTenancy + Authorization +
                  BackgroundJobs + in-memory Caching + local Storage +
                  in-process SignalR — NO heavy cloud SDKs). Cloud providers are
@@ -84,7 +88,14 @@ src/
                  — keeps EF Core out of Modulus.Platform),
                  Modulus.Authorization.EntityFrameworkCore (EF permission grant
                  store) + Modulus.Authorization.Management (admin API),
-                 Modulus.AspNetCore.Redis (distributed idempotency store).
+                 Modulus.AuditLogging.EntityFrameworkCore (EF business audit log +
+                 hash-chained security audit store),
+                 Modulus.AspNetCore.Redis (distributed idempotency store),
+                 Modulus.Bff (Backends for Frontends: per-client edges on YARP),
+                 Modulus.Grpc (gRPC server/client wiring: status mapping, health,
+                 resilient clients),
+                 Modulus.GraphQL (one GraphQL.NET schema built from module
+                 contributors, resolvers through the mediator).
   observability/ Modulus.Observability (Diagnostics + OpenTelemetry merged)
   testing/       Modulus.Testing (WebApplicationFactory harness, RecordingModuleBus,
                  event assertions), Modulus.Testing.Architecture (module boundary
@@ -144,6 +155,12 @@ large DDD/CQRS modular monoliths.
 | Command | Description |
 |---------|-------------|
 | `modulus app <name>` | Creates a solution: `src/API/{App}.Api` host + `src/Shared/{App}.Shared.*` kernel (4 projects) + example `Catalog` module (4 projects) + top-level tests. `--migration-engine dbsh` uses SQL-first migrations. `--kind api\|web` picks the **app kind** (see below). |
+| `modulus add-bff <client>` | Adds a `web`, `mobile` or `partner` BFF host (`src/Bff/{App}.Bff.{Client}`) to an existing app; `modulus app --bff web,mobile,partner [--services catalog=...]` generates them up front. See *BFF (per client)*. |
+| `modulus generate-bff-endpoint <Name>` | Scaffolds an aggregate endpoint in a BFF (`--bff`, `--modules`, `--route`) composing the modules' typed clients. |
+| `modulus generate-grpc <Entity>` | Exposes an entity's CRUD commands/queries over gRPC: `.proto` + service in the module's Presentation layer, API host wiring, a test class; `--bff mobile\|all` adds the contract to BFFs as a client. See *gRPC*. |
+| `modulus generate-graphql <Entity>` | Exposes an entity's CRUD commands/queries over GraphQL: graph type + contributor in the module's Presentation layer, API host wiring (`AddModulusGraphQL`/`MapModulusGraphQL`, `GraphQL` settings), a test class; `--bff mobile\|all` routes `/graphql` through BFFs. See *GraphQL*. |
+| `modulus add-webhooks [--events a,b]` | Adds outgoing webhooks: the `{App}.Modules.Webhooks.Infrastructure` store module, API host wiring (one `AddEvent` per `[IntegrationEventName]` event, Admin grant, `MapModulusWebhooks`), settings and a test class. Re-run to add new events. See *Webhooks*. |
+| `modulus add-realtime [--events a,b] [--bff ...] [--signalr]` | Pushes integration events to connected clients: API host wiring (`AddModulusRealtime` with one `AddEvent` per event, audience = the entity's permission; `MapModulusRealtime`), settings, a test class; `--bff` relays `/realtime` as an event stream; `--signalr` turns the hub on (SSE is the default). See *Realtime*. |
 | `modulus module <name>` | Creates a blank 4-layer business module |
 | `modulus add-module <name>` | Adds a module to an existing app + wires Program.cs registration + Host `ProjectReference`s. `--migration-engine` defaults to `dbsh` when all existing modules use dbsh. |
 | `modulus generate-crud <Entity>` | Generates entity, repo, DTOs, command/query handlers across the module's layers |
@@ -1119,7 +1136,7 @@ and pass their generated test suites off the current CLI (`webapp+api` 9/9, `api
 - **Two-project split.** `src/API/{App}.Api` is the unchanged API host (modules, DbContexts,
   OpenIddict token server, the Identity module + seeding). `src/Web/{App}.Web`
   (`NewAppCommand.GenerateWebHost`) is a presentation shell: Razor Pages (Index, Account
-  Login/Logout/AccessDenied), `Security/TokenRelayHandler.cs` + `PrincipalCurrentUser.cs`,
+  Login/Logout/AccessDenied), `Security/PrincipalCurrentUser.cs`,
   `ApiClients/{Module}ApiClient.cs` + `ApiClientExtensions.AddModuleApiClients`. It references
   **no** module Infrastructure/Presentation — only the `Modulus.UI.Core`/theme/`Platform`/
   `Identity` packages, the `{App}.Api` project (for `AddModuleApiClients`) and each module's
@@ -1127,14 +1144,26 @@ and pass their generated test suites off the current CLI (`webapp+api` 9/9, `api
   an Application layer grows Infrastructure-facing dependencies). `WireUiModules` installs UI
   packages into the Web project via `AppInventory.UiProjectPath`; the split drops the
   `identity`/`users` UI modules (their pages drive an in-process user store).
-- **Auth across the split.** The API stays the token server. The Web login page
-  (`LoginModel.Web.sbn`) POSTs credentials to `/connect/token` (password grant), stores the
-  access/refresh tokens in the Web host's own auth cookie, and every generated typed client
-  carries `TokenRelayHandler` as its outer handler (relay + refresh near expiry via a named
-  `TokenRefresh` client; resilience + correlation come from `AddModulusHttpClient`'s standard
-  chain). Handler gotchas fixed during validation: sync `Dispose()` (the handler factory calls
-  it synchronously) and options copied via `new HttpRequestOptionsKey<object?>(key)` (string
-  keys throw). Register/Forgot-over-HTTP is a fast-follow after Phase B1.
+- **Auth across the split: a BFF web session.** The API (or the external provider) stays the token server; the Web
+  host is the `web` client of `Modulus.Bff` (`AddModulusBff(..., bff => bff.AddWebClient("web").SetDefaultClient("web"))`,
+  settings `Bff:Clients:web`). With the local OpenIddict server the login page calls
+  `IBffSessionService.SignInWithPasswordAsync` (password grant against the seeded first-party client); with an external
+  provider it challenges the OIDC scheme (`LoginMode: Oidc`, code + PKCE at the provider's login page). Tokens stay
+  server-side (FusionCache, Data Protection encrypted; the `.bff.web` cookie only names the session), typed clients get
+  `.AddBffUserAccessToken()` (refresh ahead of expiry under a per-session lock, refresh + replay once on `401`), and the
+  logout page calls `SignOutAsync` (revokes both tokens; redirects to the provider's end-session URL in OIDC mode).
+  `LoginPath`/`AccessDeniedPath` make the cookie redirect pages to the sign-in/denied pages while BFF endpoints keep
+  answering `401`/`403`. The generated `TokenRelayHandler` (tokens in the cookie, refresh only after a `401`, no lock)
+  is gone from new apps; `modulus doctor` warns when a Web host still has `Security/TokenRelayHandler.cs`, and
+  `generate-crud` keeps registering new clients the way the host's `ApiClientExtensions.cs` already does. Verified end
+  to end on a generated `webapp+api` app: anonymous page `302` to login, wrong password re-renders, login `302` with a
+  582-byte cookie, the admin page lists through the API, a product created on the page is visible through the API, a
+  Web restart (empty token store) ends the session, logout revokes both tokens and even the pre-logout cookie gets
+  `302`. Fixed on the way: the split API host now calls `AddMvcCore().AddRazorViewEngine()` (`AddModulusUi()`'s view
+  resolver needs it; without it the host failed to start in Development), the Web typed client unwraps the API's
+  `ApiResponse` envelope (`{ success, data }`; it deserialized the envelope as the list and every page 500'd), and the
+  CRUD page called `GetAsync(cancellationToken:)` on a client whose parameter is `ct` (did not compile).
+  Register/Forgot-over-HTTP is a fast-follow after Phase B1.
 - **`generate-crud` on a split app** writes UI into the Web project (`UiNamespace =
   {Root}.Web`): `ui/CrudIndexPageModel.Http.sbn` calls `{Module}ApiClient` (non-2xx →
   `ModelState`), `ui/ModuleApiClient.sbn` emits the per-module client. The split's API host
@@ -1147,6 +1176,456 @@ and pass their generated test suites off the current CLI (`webapp+api` 9/9, `api
   marker. The two factories are standalone (page tests make no API calls), so the Web→API hop
   is not yet asserted in tests — TestServer pairing, the kill-the-API check and a full
   login→page-create→visible-through-API round-trip are the tracked follow-ups.
+
+## Security model (Company = Tenant)
+
+Roadmap and as-built notes: [`docs/SECURITY_STAGE2_PLAN.md`](docs/SECURITY_STAGE2_PLAN.md) (ERP guideline v2, stage 2).
+A **company is a Modulus tenant** (`ICurrentTenant`, `TenantInfo`). **Branches and locations are org units**
+(`IOrgHierarchy`, `ICurrentDataScope`), and a **group** is a set of tenants (`TenantInfo.GroupId`), used only for
+federated reads. Phases 1–5 are built (tenancy foundation, endpoint policy model + startup guard, per-database
+isolation, hash-chained security audit, probe suite). Deferred: the UI pieces (Files UI tenant roots, Security tab in
+`Modulus.UI.AuditLogging`), log redaction, and the CLI pieces that need a `modulus app --multi-tenancy` option.
+
+- **Membership.** One login reaches several companies. With `AddMultiTenancy(b => b.RequireMembership())`, a caller
+  without a `tid` claim may enter the selected tenant only with an active membership (`ITenantMembershipStore`:
+  in-memory default, which is empty and so fails closed; `EfTenantMembershipStore` via `AddEfCoreTenantStore`;
+  `TenantManager.AddMemberAsync` / `RemoveMemberAsync`). Otherwise `403`. `HostTenantAccessPolicy` is the break-glass
+  override. A `tid` claim still pins a token to one tenant. The library default is off for now and the CLI does not wire
+  it yet (generated apps have no multi-tenancy option).
+- **`ISecurityContext`** (Core; `AddModulusSecurityContext()` + `UseModulusSecurityContext()` in Platform) composes
+  user, company, group, branch (`X-Branch-Id`, `403` outside the caller's org scope), correlation, and reserved
+  network/agent slots.
+- **Verified tenant restore.** Messages and jobs carry a tenant id. `ITenantContextRestorer` verifies it against the
+  tenant store (`AddMultiTenancy` registers `VerifiedTenantContextRestorer`), and an unknown or inactive tenant
+  dead-letters the outbox row or broker message, or drops the job. **Enter the verified tenant in the frame that runs the
+  work** (`using var t = sp.EnterTenant(await sp.VerifyTenantAsync(id, ct));`): an `AsyncLocal` set inside an `async`
+  helper does not flow back to its caller. The inbox stamps `InboxMessage.TenantId`.
+- **Write guard.** Outside the host context `ModuleDbContext.SaveChangesAsync` throws `CrossTenantWriteException`
+  (`403`) for a foreign-stamped insert, a changed `TenantId`, or an update/delete of another tenant's row.
+- **Storage.** `Storage:IsolateTenants` wraps every provider (`UseFileStorageProvider<T>`) in
+  `TenantScopedFileStorage`: `tenants/{id:N}/…` (host `host/…`), with `..` and rooted paths rejected and no tenant
+  failing closed.
+- **Tests.** `CreateAuthenticatedClient(..., tenantId, pinTenant: true)` adds a `tid` claim (`X-Test-TenantId`).
+- **Closed by default.** `AddModulusAuthorization` sets the fallback policy to "a signed-in user"
+  (`RequireAuthenticatedUserByDefault = false` opts out). It also covers requests that match no endpoint, so serve
+  static files **before** `UseAuthentication`/`UseAuthorization` (the CLI's UI wiring does).
+- **Opening an endpoint is a reviewed decision.** `.Loosen(reason, ticket)` (minimal API), `AllowAnonymous(reason)`
+  (REPR) or `[AllowAnonymous, Loosened(reason)]` (controllers, pages). `LoosenedAttribute` and
+  `EndpointSecurityPolicyAttribute` (classification, network) live in Core. Framework endpoints set `Framework = true`.
+  Never put endpoint-level `AllowAnonymous` on something that may be mapped inside another group (a BFF client): it
+  overrides the group's policy.
+- **Startup guard.** `AddModulusSecurityGuard(configuration)` (`Security:Guard`) checks every endpoint when the host has
+  started (`IHostedLifecycleService.StartedAsync`; earlier, routing has no endpoints yet) and refuses to start on an
+  unpoliced endpoint (no auth, no fallback), anonymous without a reason, anonymous Confidential/Restricted data, or a
+  network requirement (not enforced yet); an app loosening missing from `security/loosening-allowlist.json` fails
+  outside Development. The report is in `SecurityGuardState`. Generated hosts with a sign-in wire it and ship the file.
+- **MOD0001** (`src/analyzers/Modulus.Analyzers`, packed into `Cobytelabs.Modulus.AspNetCore`) warns at build time on
+  anonymous without a reason. Tests drive it with stub sources (`Modulus.Analyzers.Tests`).
+  `/_ui/menu` is a framework loosening (filtered per caller); before, the guard refused the split Web host for it.
+- **Database isolation (phase 3).** The EF filter and the write guard stay in front everywhere; underneath, each
+  provider gets the strongest control it supports:
+
+  | Provider | Shared database | Database per tenant |
+  |---|---|---|
+  | PostgreSQL | RLS: `AddPostgreSqlRowLevelSecurity<TContext>()` (`set_config`) + `EnableTenantRowLevelSecurity(table)` in a migration or `PostgreSqlRowLevelSecurity.EnsureAsync(db)` (`ENABLE` + `FORCE`, policy `modulus_tenant`) | `AddModuleDatabasePerTenant` |
+  | SQL Server | RLS: `AddSqlServerRowLevelSecurity<TContext>()` (`sp_set_session_context`) + `EnableTenantRowLevelSecurity(table)` / `EnsureAsync` (`[modulus].[fn_tenant_predicate]`, filter + block predicates) | `AddModuleDatabasePerTenant` |
+  | MySQL | raw-SQL guard only (no RLS) | `AddMySQLPerTenantDatabase` (recommended) |
+  | SQLite | development only (guard applies) | `AddSQLitePerTenantDatabase` (`tenants/{id:N}.db`) |
+  | MongoDB | `GetTenantCollection<T>()` → `TenantScopedCollection<T>` (scoped filters, stamped inserts, tenant field immutable, `$match` on aggregates) | not built |
+
+  - `TenantSessionInterceptor` writes the session on open and again before a command when the ambient tenant changed,
+    and forgets it after a rollback; only for contexts that declared it.
+  - `TenantSqlGuardInterceptor` is on every module context. It refuses raw SQL and `IgnoreQueryFilters()` on tenant
+    tables inside a tenant or with no tenant (`CrossTenantSqlException`), unless the code runs inside
+    `using (CrossTenantSql.Allow(reason))`. Queries are tagged at compile time, so the decision is made per execution.
+  - `AddModulusDataIsolationCheck(configuration)` (`Security:DataIsolation:Tier`: `Shared` / `DatabasePerTenant`) checks the
+    registrations at startup. Per-tenant resolution with no tenant throws rather than falling back.
+  - Database roles: [`docs/security/database-roles.md`](docs/security/database-roles.md). The app must never connect as the
+    schema owner.
+  - The Testcontainers tests (`TenantIsolationIntegrationTests`, `TenantScopedCollectionIntegrationTests`) need Docker
+    and were not run on the machine that built them.
+- **Other stores (3b).**
+  - The BFF composer cache key includes the selected company (`BffOptions.TenantHeader`), and `BffTenantHeaderHandler`
+    forwards it upstream.
+  - Notifications match the tenant exactly (null = tenant-less only).
+  - SignalR tenant groups refuse a caller with no company.
+  - `CorrelationIdMiddleware` / `TenantMiddleware` open `CorrelationId` / `TenantId` + `UserId` log scopes. There is no
+    redaction yet.
+- **Security audit (phase 4).**
+  - `ISecurityAuditLog.Record(SecurityAuditEvent)` (Core, never blocks or throws; `NullSecurityAuditLog` by default).
+  - `AddModulusSecurityAudit(configuration)` (Platform, `Security:Audit`) queues events to `SecurityAuditWriter`. It
+    writes them as **one SHA-256 hash chain per company** (host chain = `Guid.Empty`; canonical JSON, millisecond UTC).
+  - `store.VerifyChainAsync(tenantId, anchor?)` checks it. `AuditAnchorService` writes the heads to `IAuditAnchorSink`s
+    (`Security:Audit:AnchorFile`).
+  - Durable store: `Modulus.AuditLogging.EntityFrameworkCore`, which provides `AddModulusAuditStore<TContext>()` with
+    `TContext : ModulusAuditDbContext`. Its business log goes to `modulus_audit_logs`, and the chain to
+    `modulus_security_audit` (PK `(ChainId, Sequence)`; a concurrent append from another replica retries).
+    `SecurityAuditDatabaseScripts` makes the table append-only.
+  - Sources:
+    - tenant rejections and break-glass (`TenantMiddleware`);
+    - membership and activation (`TenantManager`);
+    - relayed authorization admin and decision events;
+    - password sign-in denials, and token issue and refusal;
+    - cross-tenant SQL rejections and opt-ins;
+    - the startup loosening report (with a fingerprint).
+
+    Nothing records user names, passwords, tokens or SQL text. Queued events can be lost in a crash.
+- **Probe suite (phase 5).** `SecurityProbeSuite.RunAsync(factory, options)` (`Modulus.Testing.Security`) checks every
+  non-loosened endpoint:
+  - anonymous gets `401` (or a login redirect);
+  - signed in without the endpoint's policy, permission or role gets `403`;
+  - with `ForeignTenantId`, a non-member selecting that company gets `403`.
+
+  `AnonymousStatusOverrides` holds exact by-design exceptions; the default is OpenIddict's `/connect/userinfo` → `400`.
+  `TenantIsolationAssertions.AssertTenantIsolationAsync<TContext,TEntity>` and `AssertCrossTenantReadIsDeniedAsync` check
+  tenant isolation. Generated API hosts with the guard ship `SecurityProbeTests`, verified on generated `api`
+  (openiddict, keycloak), `webapp+api` and `web` apps.
+
+## Open-source dependency policy
+
+Every dependency must be fully open source (MIT / Apache-2.0 / BSD; no commercial license or paid tier to
+run), and among those pick the most capable one. Check the license before adding a `<PackageVersion>`.
+
+| Need | Package (license) | Not used |
+|------|-------------------|----------|
+| Hybrid cache | `ZiggyCreatures.FusionCache` + `.Serialization.SystemTextJson`, `.Backplane.StackExchangeRedis`, `.OpenTelemetry` (MIT) | `Microsoft.Extensions.Caching.Hybrid` alone (no backplane, fail-safe or eager refresh) |
+| Redis L2 | `Microsoft.Extensions.Caching.StackExchangeRedis` (MIT) | |
+| BFF proxy | `Yarp.ReverseProxy` (MIT) | Duende.BFF (commercial) |
+| Service discovery | `Microsoft.Extensions.ServiceDiscovery` + `.Yarp` (MIT) | |
+| gRPC | `Grpc.AspNetCore`, `Grpc.Net.ClientFactory`, `Grpc.HealthCheck`, `Grpc.Tools` (Apache-2.0) | |
+| GraphQL | GraphQL.NET: `GraphQL`, `.SystemTextJson`, `.DataLoader`, `.MicrosoftDI`, `GraphQL.Server.Transports.AspNetCore`, `.Ui.GraphiQL` (MIT) | HotChocolate 15/16 (`HotChocolate.AspNetCore` pulls in `ChilliCream.Nitro.App`, ChilliCream License 1.0) |
+| Token validation | `Microsoft.AspNetCore.Authentication.JwtBearer` / `.OpenIdConnect` (MIT) | Duende IdentityServer (commercial) |
+| Realtime | SSE (`TypedResults.ServerSentEvents`) and SignalR from the shared framework; `StackExchange.Redis` backplane (MIT); `Microsoft.AspNetCore.SignalR.Client` in tests (MIT) | |
+| Tests | `FluentAssertions` pinned to **7.x** | FluentAssertions 8+ (commercial) |
+
+Also excluded: MediatR 13+, AutoMapper 15+, MassTransit 9+ (commercial licenses).
+
+## Hybrid cache (FusionCache)
+
+`Modulus.Platform` registers FusionCache as the hybrid cache; `Modulus.Caching.Redis` adds the distributed
+layer. Every generated API host wires it (`--caching inmemory|redis`).
+
+- **Registration.** `AddModulusFusionCache(configuration)` binds `Caching:Fusion` (`ModulusFusionCacheOptions`:
+  `CacheName`, `DefaultDuration`, fail-safe, factory soft/hard timeouts, eager refresh, jitter, distributed-cache
+  timeouts), registers FusionCache, exposes it as `Microsoft.Extensions.Caching.Hybrid.HybridCache`
+  (`AsHybridCache()`) and replaces `ICacheService` with `FusionCacheService`. Calling it twice only applies the
+  second `configure` callback. Without Redis it is L1 (memory) only.
+- **Redis.** `AddRedisFusionCache(configuration)` (`Caching:Redis:ConnectionString`) adds the Redis L2 and the
+  Redis **backplane** (other nodes' L1 copies are evicted on every write/remove), both on one
+  `IConnectionMultiplexer` (`AbortOnConnectFail=false`, so a Redis outage degrades to L1 instead of failing
+  startup). The legacy `RedisCacheService` / `RedisCacheBackplane` stay for existing apps.
+- **Keys.** `CacheKeys.Entry/Tag` (`Modulus.Core`) is the one tenant-scoped key scheme
+  (`modulus:entry:{tenant:N}:{key}`), shared by the memory, Redis and Fusion services and the mediator behaviour.
+  `CacheName` prefixes every key, so microservices sharing one Redis never collide; cross-service invalidation
+  goes through integration events, not shared keys.
+- **`ICacheService.GetOrCreateAsync`** is a default interface method (plain get-then-set); `FusionCacheService`
+  overrides it with stampede protection (one factory run per key per node), fail-safe and eager refresh. An entry
+  that outlives `FailSafeMaxDuration` lifts the ceiling to its own duration.
+- **Mediator.** `[CacheFor(seconds, Tags = ["catalog:products"])]` caches a query through `HybridCache` when one is
+  registered (the `IMemoryCache` path is the fallback); `[InvalidatesCache("catalog:products")]` on a command
+  removes the tags after the handler succeeds. `CacheInvalidationBehavior` is registered outside
+  `TransactionBehavior`, so eviction happens after the commit; a failed command evicts nothing. `generate-crud`
+  emits both attributes.
+- **Domain errors are cached outcomes, not failures.** With fail-safe on, `RemoveByTag` *expires* entries instead of
+  removing them, so a handler's `NotFoundException` after a delete used to trigger fail-safe and serve the deleted
+  entity. The hybrid path caches a `CachedOutcome<TResponse>` (keys prefixed `outcome:`): the value, or a captured
+  `NotFound`/`Validation`/`Unauthorized`/`Forbidden`/`FeatureDisabled`/`Conflict` exception that is rethrown to every
+  caller until the tag is invalidated. Only other exceptions (database down, timeouts) fall back to fail-safe.
+  `ForbiddenException.Permission` exposes the denied permission so it survives the round trip.
+- **Observability.** `AddModulusOpenTelemetry` adds FusionCache traces and metrics
+  (`OpenTelemetry:Instrumentation:FusionCache`, on by default).
+- **Tests.** `FusionCacheServiceTests` (unit) and `RedisFusionCacheTests` (Testcontainers Redis: shared L2,
+  backplane eviction, cache-name isolation; needs Docker).
+
+## BFF (per client)
+
+`Modulus.Bff` gives each client type its **own backend** (plan and status:
+[`docs/ADVANCED_FEATURES_PLAN.md`](docs/ADVANCED_FEATURES_PLAN.md)): `web` (browser SPA), `mobile` (native app) and
+`partner` (machine to machine). Each authenticates its callers its own way, applies its own edge rules, proxies
+`/api/**` to the upstream services with YARP and hosts client-shaped aggregate endpoints. A BFF holds no
+database and loads no modules.
+
+```csharp
+builder.Services.AddModulusBff(builder.Configuration, bff => bff.AddMobileClient().AddOpenApi());
+...
+app.UseAuthentication();
+app.UseModulusBff();        // per-client edge rules
+app.UseAuthorization();
+app.UseRateLimiter();
+app.MapModulusBff();        // session endpoints + YARP routes of every client
+app.MapBffClient("mobile").MapGet("/home", ...);   // aggregators behind the client's policy
+```
+
+- **Settings.** `Bff` (`BffOptions`): `Authority` (default: the `api` service), `AuthServer`, `Services:{name}:Address`
+  (`Api:BaseUrl` is the fallback for `api`), `UseServiceDiscovery`, endpoint overrides. `Bff:Clients:{name}`
+  (`BffClientOptions`): `PathPrefix` (empty for a dedicated host; `/web`, `/mobile` when clients share a gateway
+  host, and then they **must** differ: `MapModulusBff` throws otherwise), `ClientId`/`ClientSecret`, `Scopes`,
+  `RequiredScopes`, `AllowedClientIds`, `Audiences`, `AuthorizationParameters`, `LoginMode`, `TokenStorage`,
+  `TokenValidation`, `RefreshBeforeExpiry`, `SessionLifetime`, `RateLimit`, app-version and ETag settings,
+  `RequireIdempotencyKey`, `RemoteApis` (`LocalPath`/`Service`/`RemotePath`/`RequireAuthentication`).
+- **Every supported auth server.** Endpoints come from OIDC discovery (`.well-known/openid-configuration`); none
+  are hard-coded. `BffAuthServer` (`OpenIddict`, `Keycloak`, `Auth0`, `Okta`, `AzureAd`, `Duende`, `Authentik`,
+  `Generic`) only picks claim defaults. `BffClaims` normalizes what the servers spell differently: client id
+  (`client_id`, `azp`, `cid`, `appid`), scopes (`scope`/`scp`, string or array) and roles (`role`, `roles`, `groups`,
+  Keycloak's `realm_access.roles`, plus `Bff:RoleClaimTypes`) into `role`. Auth0 needs its API identifier in
+  `AuthorizationParameters:audience`. Entra ID has no revocation or introspection endpoint: logout skips revocation and
+  `TokenValidation=Introspection` is refused.
+- **Web client.** A cookie session (`.bff.{name}`, HttpOnly, SameSite=Lax; `401`/`403` instead of redirects). Sign-in
+  is either OIDC code + PKCE (`GET /bff/login?returnUrl=`, local return URLs only) or the password grant
+  (`POST /bff/login`). Tokens never reach the browser: `ServerSideUserTokenStore` keeps them in `ICacheService`,
+  Data Protection-encrypted and keyed by the session's `bff_sid` claim. With more than one replica, add Redis
+  and a shared key ring. `CookieUserTokenStore` keeps them in the cookie (no shared state, but concurrent requests
+  across a rotation can race). `IBffAccessTokenService` refreshes `RefreshBeforeExpiry` ahead of expiry, under a striped
+  per-session lock that re-reads after waiting, so concurrent requests share one refresh. A refused refresh ends the
+  session, and evicted tokens end it on the next request. `/bff/user` returns the claims. `POST /bff/logout`
+  revokes both tokens, clears the store and signs out, and returns `endSessionUrl` when the server supports
+  RP-initiated logout. Every web endpoint (proxy included) requires `X-CSRF: 1`, else `401`.
+- **Mobile / partner clients.** Bearer tokens are validated either with JwtBearer against the authority's JWKS
+  (`TokenValidation=Jwt`, which needs unencrypted access tokens) or with RFC 7662 introspection (results cached by token
+  hash, capped at `exp`). The policy `bff:{name}` requires the client's own scheme, an allowed client id and the
+  required scopes, so one client's token or cookie never passes another client's policy. Mobile: `X-App-Version` /
+  `X-App-Platform` gate (`426` with the minimum version), weak ETags + `304` on JSON GETs, rate-limit partition by
+  `X-Device-Id`. Partner: unsafe methods without `Idempotency-Key` get `400`; the API's idempotency middleware does
+  the deduplication. `/bff/me` returns the claims.
+- **Proxy.** One YARP cluster per upstream service and one route per remote API, carrying the client's policy and rate
+  limit. Transforms strip `Cookie`, set `X-Client-App` and the correlation id, and swap in the web session's token
+  (mobile/partner keep their own bearer). `UseServiceDiscovery` resolves logical addresses (`https+http://catalog`).
+- **Aggregation.** `BffComposer.Begin(timeout)` then `.Required/.Optional(name, factory, BffSectionOptions)` then
+  `ExecuteAsync(shape)` returns `BffResponse<T>(Data, Degraded)`. Sections run concurrently, each with its own timeout
+  and optional FusionCache caching (per user and client, with tags). A failed optional section is listed in `degraded`;
+  a failed required one gives `502`. Typed clients: `AddBffApiClient<T>(service)` uses the resilient pipeline, the
+  caller's token and `X-Client-App`.
+- **OpenAPI.** `bff.AddOpenApi()` publishes `/openapi/{client}.json` per client
+  (`AddModulusOpenApiDocument` in `Modulus.AspNetCore`).
+- **Topologies.** In a modular monolith there is one upstream (`api`). With microservices, each service is a
+  `Bff:Services` entry or a discovery name, and aggregators fan out across them.
+- **Identity options it relies on** (`ModulusIdentityOptions`): `EncryptAccessTokens` (default `true`; set
+  `false` so bearer BFFs and services can validate JWTs against the JWKS), `AllowClientCredentialsFlow` (partner
+  clients; the token controller issues a client principal, `sub` = client id, with `openid`/`offline_access`
+  dropped).
+- **CLI.** `modulus app ... --bff web,mobile,partner` (needs an `--auth` provider) generates
+  `src/Bff/{App}.Bff.{Client}` per client: marker `<ModulusAppKind>bff-{client}</ModulusAppKind>`, ports 5190+, an
+  example `/home` aggregator and the `{Module}Api` typed client. With the local OpenIddict server, the API gets
+  `Identity:Seed:Clients:{client}` (seeded by `IdentitySeeding.EnsureBffClientsAsync`). Web and mobile are public
+  without a secret and confidential with one. Partner is client credentials only, created once
+  `Identity:Seed:Clients:partner:ClientSecret` is set through user secrets or the environment. Bearer BFFs also get
+  `EncryptAccessTokens: false`, and partner gets `AllowClientCredentialsFlow: true`. The web BFF uses the code flow
+  wherever the auth server has a login page (every external provider, or a `webapp` host), else the password grant.
+  Development settings register the redirect URIs.
+  `modulus add-bff web|mobile|partner [--auth X] [--services ...]` adds one BFF to an existing app: it reads the auth
+  provider (`AddModulusOpenIddict(`, `AddKeycloak(`, ...), caching provider and correlation/security-header/secrets-guard
+  wiring from the API host, takes the port after the existing BFFs' (`launchSettings.json`), reuses their upstream
+  services unless `--services` is given, generates a typed client for every module with entities, adds the project to
+  the `.slnx` and prints the API settings to add (seed client, `EncryptAccessTokens`, `AllowClientCredentialsFlow`). It
+  does not edit the API's settings. Running it again for an existing client does nothing.
+  **Typed clients per module** (`BffApiClients`): `ApiClients/{Module}Api.cs` holds `Get{Entities}Async()` and
+  `Get{Entity}Async(id)` per entity (they unwrap the API's `ApiResponse` envelope and return the `data` as
+  `JsonElement`, so a BFF never references module assemblies), registered in `ApiClients/ApiClientRegistration.cs`
+  (`AddModuleApiClients()`, called from `Program.cs`). A module's client uses its own service when `Bff:Services` has
+  one named after the module, else `api`. `AppInventory.Bffs` lists the BFF projects (by the `bff-{client}` marker),
+  and `generate-crud` adds the new entity's methods (and the module's client when missing) to every BFF.
+  **Microservices:** `modulus app --bff ... --services catalog=http://localhost:5201,orders` adds upstream services
+  besides `api` (named after their modules; no address = `https+http://{name}` through service discovery, which turns
+  `UseServiceDiscovery` on) and one passthrough route per service (`/api/{name}` → that service, `/api` → `api`).
+  **`modulus generate-bff-endpoint <Name> [--bff mobile] [--modules Catalog,Orders] [--route /x]`** scaffolds
+  `Endpoints/{Name}Endpoints.cs`: `GET /{name-in-kebab-case}` behind the client's policy, one optional `BffComposer`
+  section per entity list of the chosen modules (default: every module with entities), mapped in `Program.cs` after
+  `MapModulusBff()`; `--bff` is required when the app has more than one BFF, missing module clients are generated, and
+  an existing endpoint file is never overwritten.
+- **Verified end to end** on a generated `--kind api --auth openiddict --bff web,mobile,partner` app. Web: login
+  `200` with a 560-byte cookie and no token, no CSRF header `401`, proxied POST/GET `201`/`200`, `/home` aggregated,
+  logout `204` followed by `401`. Mobile: JWT accepted; proxy, `/home`, `426` and `304` all work; a first-party token
+  gets `403` and a mobile token on the web BFF `401`. Partner: client credentials token, no idempotency key `400`, a
+  wrong secret `401`. Also built: a `webapp` + OIDC variant and a Keycloak variant. Covered by `Modulus.Bff.Tests`
+  (63: web, bearer, gateway, protocol, composition, claims, edge rules, server-rendered hosts), `BffTemplateTests`,
+  `WebHostBffSessionTests` and `BffCommandTests` (add-bff, generate-bff-endpoint, generate-crud reaching every BFF,
+  doctor), which generate real apps on disk.
+- **Server-rendered hosts.** `BffBuilder.SetDefaultClient(name)` makes a whole host one web client: its scheme becomes
+  the default, and `IBffClientContext` (so the token and `X-Client-App` handlers, and the composer) falls back to it
+  outside BFF endpoints. `IBffSessionService` (`SignInWithPasswordAsync` / `SignOutAsync`) backs `/bff/login` and
+  `/bff/logout` and is public for a host's own pages; `IHttpClientBuilder.AddBffUserAccessToken()` adds the token
+  handlers to a typed client that keeps its own base address. Covered by `ServerRenderedHostTests`.
+- **CLI verified end to end** on a generated `--kind api --auth openiddict --bff web,mobile --services catalog=...`
+  app: `generate-crud Category` updated both BFFs' `CatalogApi`, `generate-bff-endpoint Dashboard --bff mobile` and
+  `add-bff partner` (port 5192, catalog service reused; second run a no-op) built with 0 warnings, and the mobile
+  BFF's `/dashboard` returned both entity lists with `degraded: []` after a create through its proxy.
+- **gRPC upstreams.** `AddBffGrpcClient<T>(service)` registers a `protoc` client against
+  `Bff:Services:{service}:GrpcAddress` (else `Address`) with the caller's token and `X-Client-App`, like
+  `AddBffApiClient<T>`; a gRPC call is never replayed after a `401` (its body is a stream). See *gRPC*.
+- **Event streams.** A `RemoteApis` entry with `"EventStream": true` (`/realtime`, see *Realtime*) lets the web
+  client's `GET` with `Accept: text/event-stream` through without `X-CSRF` (`EventSource` cannot send headers); other
+  methods on the route still need it. YARP streams the response; mobile ETags skip event streams.
+- **Not built yet:** mobile push notifications (APNs/FCM).
+
+## gRPC (`Modulus.Grpc`)
+
+Opt-in package (`Grpc.AspNetCore`, `Grpc.Net.ClientFactory`, `Grpc.HealthCheck`, Apache-2.0); works for a modular
+monolith (an optional second API surface) and microservices (service-to-service calls). Plan and as-built notes:
+[`docs/ADVANCED_FEATURES_PLAN.md`](docs/ADVANCED_FEATURES_PLAN.md), phase 2.
+
+- **Server.** `AddModulusGrpc(configuration)` binds `Grpc` (`ModulusGrpcOptions`: `EnableDetailedErrors`,
+  `EnableReflection` (off by default; it describes every service), `EnableHealthChecks`, message sizes), adds
+  `GrpcExceptionInterceptor`, reflection and `grpc.health.v1` backed by the registered health checks (every
+  `IModuleHealthCheck`). `MapModulusGrpc(assemblies)` maps every service deriving from a generated `…Base`, then
+  health and reflection (both anonymous); the returned builder applies conventions to the services only. A gRPC call
+  runs through the normal pipeline, so correlation, tenant resolution, authentication and `:` permission policies
+  apply unchanged.
+- **Errors.** `GrpcExceptionMapper`: `ValidationException` → `InvalidArgument` + `google.rpc.BadRequest`,
+  `NotFoundException` → `NotFound`, `UnauthorizedException` / `ForbiddenException` → `Unauthenticated` /
+  `PermissionDenied`, `ConflictException` and EF concurrency → `Aborted`, `FeatureDisabledException` → `NotFound`,
+  cancellation → `Cancelled`, anything else → `Internal` (no exception text unless detailed errors are on). Every
+  status carries a `google.rpc.ErrorInfo` (`domain` = `modulus`); clients use `GetValidationErrors()`,
+  `GetErrorReason()`, `GetErrorMetadata()` on `RpcException`.
+- **Client.** `AddModulusGrpcClient<T>(address)` (`Grpc:Client`, `ModulusGrpcClientOptions`): gRPC's own retry policy
+  on `Unavailable` only (`MaxAttempts` 3, jittered back-off), call-context propagation inside a service (deadline,
+  cancellation), a default unary deadline (30 s) and `X-Correlation-ID`. `.PropagateTenant()` and
+  `.ForwardAccessToken()` are opt-in.
+- **Ports.** Kestrel cannot serve h2c (HTTP/2 without TLS) on an `Http1AndHttp2` endpoint, so a plain-HTTP host needs a
+  separate `Http2` endpoint for gRPC (Development: `Kestrel:Endpoints:Grpc` on `http://localhost:5189`). With TLS one
+  endpoint serves both.
+- **`Identity:Issuer`** (`ModulusIdentityOptions.Issuer`). OpenIddict otherwise takes each request's address as the
+  issuer, so on a host with two endpoints a token issued on one is rejected on the other (`ID2088`). Pin it to the
+  public URL on any host reachable under more than one address (gRPC port, proxy, internal + external name).
+- **CLI.** `modulus generate-grpc <Entity> [--module M] [--bff a,b|all]` (refuses a `webapp` host; the entity's
+  CRUD set must exist) writes `Protos/{entity}.proto` (package `{root}.{module}.v1`) and
+  `Grpc/{Entity}GrpcService.cs` (calls `IMediator`, same `Permissions(...)` as the HTTP endpoints) in the
+  Presentation project (`<Protobuf GrpcServices="Both">`, so tests get client stubs), and
+  `tests/{App}.Tests/{Entity}GrpcTests.cs` (round trip, `Unauthenticated`, `PermissionDenied`, `InvalidArgument`,
+  `NotFound`). It wires the API host (package reference, `AddModulusGrpc` + `MapModulusGrpc`, `Grpc` settings;
+  Development: the HTTP/2 endpoint and, with the local OpenIddict server, `Identity:Issuer`). With `--bff` it links the
+  proto into each BFF as a client, registers `AddBffGrpcClient` and sets the `api` service's `GrpcAddress`. Existing
+  files are never overwritten; a second run changes nothing. Templates: `cli/Templates/grpc/`; wiring:
+  `GrpcWiring`.
+- **Verified end to end** on a generated `--kind api --auth openiddict --bff web,mobile` app: builds with 0 warnings,
+  11/11 tests (5 gRPC), health over h2c, anonymous `Unauthenticated`, and a mobile token on the BFF reaching the API
+  over gRPC. Covered by `Modulus.Grpc.Tests` (22), `GrpcCommandTests`, `IdentityIssuerTests`.
+
+## GraphQL (`Modulus.GraphQL`)
+
+Opt-in package on **GraphQL.NET** (MIT); HotChocolate is excluded (its ASP.NET Core package depends on Nitro, under the
+ChilliCream License). Works for a modular monolith (one schema in the API host) and microservices (a schema per
+service, or behind a BFF). Plan and as-built notes: [`docs/ADVANCED_FEATURES_PLAN.md`](docs/ADVANCED_FEATURES_PLAN.md),
+phase 4.
+
+- **Schema.** `AddModulusGraphQL(configuration, assemblies)` (settings `GraphQL`, `ModulusGraphQLOptions`) builds one
+  `ModulusSchema` from every `IGraphQLContributor` (`ConfigureQuery` / `ConfigureMutation`) in registration order,
+  registering public contributors and graph types found in the assemblies; `AddGraphQLContributor<T>()` adds one
+  explicitly. A duplicate field name or an empty `Query` fails at startup; `Mutation` is omitted when nobody adds one.
+  `ExtendGraphType<TGraphType>(t => ...)` lets another module add fields to a type it does not own.
+- **Resolvers.** `ctx.QueryAsync(query)` / `ctx.SendAsync(command)` go through the request's `IMediator` (validation,
+  `[CacheFor]`, transactions apply). `ctx.LoadBatch(loaderName, key, fetch)` batches an extension field per request
+  (DataLoader). `ctx.GetGuidArgument(name)` turns a malformed id into `VALIDATION_FAILED`.
+- **Auth.** `MapModulusGraphQL(path?)` requires a signed-in user unless `RequireAuthenticatedUser: false`; fields use
+  `.AuthorizeWithPolicy("catalog:products:manage")` (the endpoints' `:` permission policies). Works on route groups,
+  so a BFF client group can host it.
+- **Errors.** `extensions.code` matches the gRPC reasons: `VALIDATION_FAILED` (+ `extensions.errors`), `NOT_FOUND`,
+  `UNAUTHENTICATED`, `PERMISSION_DENIED`, `CONFLICT`, `CONCURRENCY_CONFLICT`, `FEATURE_DISABLED` (+ `feature`),
+  `CANCELLED`, `INTERNAL`; messages are `GlobalExceptionHandler`'s titles; exception details only with
+  `ExposeExceptionDetails`.
+- **Defaults.** `MaxDepth` 15, `MaxComplexity` 1000 (`ListSizeEstimate` 5), introspection and GraphiQL (`{path}/ui`) off,
+  CSRF protection on, no form posts or WebSockets, `EnableBatchedRequests` off. Queries run **serially** unless
+  `ParallelQueryExecution` (resolvers share the request's scoped `DbContext`).
+- **CLI.** `modulus generate-graphql <Entity> [--module M] [--bff a,b|all]` (not for `webapp`; the CRUD set must exist)
+  writes `GraphQL/{Entity}GraphType.cs` + `GraphQL/{Entity}GraphQL.cs` into the Presentation project (package
+  reference added), wires the API host (`AddModulusGraphQL` over `{Root}.Modules.*.Presentation.dll`,
+  `MapModulusGraphQL()` after the endpoints, `GraphQL` settings; Development turns introspection, the UI and details
+  on), writes `tests/{App}.Tests/{Entity}GraphQLTests.cs`, and with `--bff` adds `{ "LocalPath": "/graphql",
+  "Service": "api" }` to each BFF's `RemoteApis`. Idempotent. Templates `cli/Templates/graphql/`; wiring
+  `GraphQLWiring`.
+- **Verified end to end** on a generated `--kind api --auth openiddict --bff mobile` app (0 warnings, 10/10 tests):
+  CRUD, `401`, `NOT_FOUND`, introspection and GraphiQL in Development on the API; through the mobile BFF, a mobile token
+  works, `426` on an old app version, `403` for a first-party token. Covered by `Modulus.GraphQL.Tests` (28) and
+  `GraphQLCommandTests` (11).
+- **Not built:** subscriptions, persisted queries, pagination/filtering conventions.
+
+## Realtime (`Modulus.Realtime`)
+
+Opt-in package that pushes integration events (and any app message) to connected clients. **SSE is the default
+transport** (one-way pushes: works through the BFFs' proxy and cookie session, `EventSource` reconnects and resumes on
+its own); **SignalR is opt-in** (`Realtime:SignalR:Enabled`) for what needs two-way calls: topic subscribe/unsubscribe
+while connected, `Resume` on a live connection, app hub methods. Both share one delivery pipeline. No new runtime NuGet
+dependency (SSE and SignalR are in the shared framework). Plan and as-built notes:
+[`docs/ADVANCED_FEATURES_PLAN.md`](docs/ADVANCED_FEATURES_PLAN.md), phase 5.
+
+- **Registration.** `AddModulusRealtime(configuration, r => r.AddEvent<TEvent>(e => audience, payload?).AddTopic(pattern,
+  permission?, authorize?))` (settings `Realtime`, `ModulusRealtimeOptions`) and `MapModulusRealtime(path?)` /
+  `MapModulusRealtime<THub>()` (a `RealtimeHub` subclass). `AddEvent` registers `RealtimeEventHandler<TEvent>` as an
+  `IIntegrationEventHandler<TEvent>` (module bus, outbox relay or broker), pushed under its `[IntegrationEventName]`;
+  `modulus.*` names are reserved (`RealtimeEvents.Ready`/`Reset`). `MapModulusRealtime` requires a signed-in user unless
+  `RequireAuthenticatedUser: false`, and works on a route group.
+- **Publishing.** `IRealtimePublisher.PublishAsync(type, data, audience)` (scoped; tenant from `ICurrentTenant`; ids
+  `Guid.CreateVersion7` "N"). `RealtimeAudience.Tenant` / `.Permission(p)` / `.User(id)` / `.ForUsers(ids)` /
+  `.ForTopic(t)`, plus `.RequirePermission(p)`; always within the publishing tenant (an empty user list sends nothing).
+- **Delivery.** `IRealtimeBackplane` → each node's `IRealtimeDispatcher` → per-connection bounded queue
+  (`MaxQueuedMessagesPerConnection`; overflow disconnects, the client resumes). Replay buffer (`ReplayBufferSize`,
+  `ReplayWindow`) for `Last-Event-ID`; register/buffer/replay share one lock (`FirstLiveId`), so a resume is exactly
+  once; an evicted id gets `modulus.reset`; redeliveries are dropped by id. Permissions go through the `:` policies in
+  the connection's tenant (claim fallback), cached per connection for `PermissionRecheckInterval`.
+- **SSE** `GET {Path}/events[?types=a,b.*&topics=x&lastEventId=]`: `modulus.ready` (`connectionId`, `retry`) first;
+  heartbeats are `event: modulus.heartbeat` with empty data (not dispatched by `EventSource`); the stream closes at the
+  token's expiry (`CloseAtTokenExpiry`); unknown topic `400`, denied `403`, `MaxConnectionsPerUser` `429`.
+- **SignalR** `{Path}/hub`: client method `event` (`RealtimeEnvelope`), hub methods `Subscribe`/`Unsubscribe`/`Resume`,
+  `CloseOnAuthenticationExpiration`. Enabling it in config without `AddSignalR` (done by `AddModulusRealtime` when the
+  setting is on) throws at mapping.
+- **Multi-node.** `Modulus.Realtime.Redis`: `AddRedisRealtimeBackplane(configuration)` (`Realtime:Redis:ConnectionString`,
+  else `Caching:Redis:ConnectionString`; `Channel`, default `modulus:realtime`, one per service). Ordered pub/sub; Redis
+  down → local delivery only.
+- **BFFs.** `RemoteApis` entry `"EventStream": true` lets the web client's `GET` + `Accept: text/event-stream` through
+  without `X-CSRF`; mobile ETags skip event streams.
+- **CLI.** `modulus add-realtime [--events a,b] [--bff web,mobile|all] [--signalr]` (not for `webapp`): package
+  reference, `AddModulusRealtime` with one `AddEvent` per event (audience = the entity's CRUD permission from
+  `{Entities}Endpoint.cs`, else the tenant), `MapModulusRealtime()` after the endpoints, `Realtime` settings,
+  `tests/{App}.Tests/RealtimeTests.cs`, and `/realtime` as an event stream in each chosen BFF. Idempotent. Templates
+  `cli/Templates/realtime/`; wiring `RealtimeWiring`.
+- **Gap.** As for webhooks, generated CRUD never publishes `{Entity}CreatedIntegrationEvent`; publish it for clients to
+  receive anything. Not built: mobile push notifications (APNs/FCM), presence.
+- **Verified end to end** on a generated `--kind api --auth openiddict --bff web,mobile` app (9/9 tests): API stream,
+  mobile BFF (`426` gate, events), web BFF (cookie-only stream, CSRF still required elsewhere, `Last-Event-ID` replay),
+  hub negotiate `200`/`401`. Covered by `Modulus.Realtime.Tests` (31 unit; the Redis two-node tests are
+  `Category=Integration` and need Docker) and `RealtimeCommandTests` (9).
+
+## Webhooks (`Modulus.Webhooks`)
+
+Opt-in package that delivers integration events to external HTTP endpoints, signed per
+[Standard Webhooks](https://www.standardwebhooks.com/). No new NuGet dependency. Plan and as-built notes:
+[`docs/ADVANCED_FEATURES_PLAN.md`](docs/ADVANCED_FEATURES_PLAN.md), phase 3.
+
+- **Registration.** `AddModulusWebhooks(configuration, w => w.AddEvent<TEvent>(description?, payload?))` (settings
+  `Webhooks`, `ModulusWebhooksOptions`) plus `AddModulusWebhooksStore<TContext>()` (`TContext : ModulusWebhooksDbContext`,
+  registered by the app; also registered as `DbContext` so `MigrateModulusDatabasesAsync` migrates it) and
+  `MapModulusWebhooks("/api/webhooks")`. An event is exposed under its `[IntegrationEventName]` (`webhook.test` is
+  reserved; no `,`/`*`); `payload` maps the body's `data` when the event carries fields that must not leave the system.
+- **Fan-out.** `AddEvent` registers `WebhookFanOutHandler<TEvent> : IIntegrationEventHandler<TEvent>`, so it runs on
+  the module bus, the outbox relay or a broker consumer (`AddEvent` adds the type to the shared
+  `IntegrationEventRegistry`). It writes one delivery row per matching subscription of the event's tenant (`Guid.Empty`
+  = host); a unique (SubscriptionId, EventId) index makes redelivery a no-op. Filters: exact name or `prefix.*`.
+- **Signing.** `webhook-id` = `msg_{deliveryId:N}` (stable across retries), `webhook-timestamp`, `webhook-signature`
+  `v1,<base64 HMAC-SHA256>`; secrets `whsec_…`, encrypted with ASP.NET Data Protection (persist and share the key ring
+  in production, or stored secrets become unreadable). `rotate-secret` keeps the previous secret signing for
+  `SecretRotationOverlap`. `StandardWebhooks.Sign/Verify/GenerateSecret` are public.
+- **Delivery.** `WebhookDeliveryService` (hosted, `EnableDelivery`) runs the processor every `PollingInterval`:
+  `ExecuteUpdate` lease claim (multi-replica safe), `MaxConcurrency` parallel sends, the Standard Webhooks retry
+  schedule (`RetrySchedule` overrides; a longer `Retry-After` wins, capped at a day), dead-letter after the last
+  attempt, `410` or `DisableAfterFailingFor` disables the subscription, purge after `PurgeAfter`; optional
+  `EnableLeaderElection` (`IDistributedLock` `modulus:webhooks:leader`). Meter `Modulus.Webhooks`.
+- **SSRF.** URLs are validated on save (https unless `AllowHttp`; no credentials/fragment; no loopback/private/reserved
+  unless `AllowPrivateNetworks`) and the HTTP handler's connect callback re-resolves DNS and connects only to public
+  addresses, with redirects and proxy off. Development settings allow http and private networks; production must not.
+- **Management API** (policy `webhooks:manage`, tenant-scoped): event types, subscription CRUD (the secret is returned
+  on create and rotate only), `rotate-secret`, `test`, deliveries by status, delivery detail with payload, `retry`.
+  `MaxSubscriptionsPerTenant` caps creation. Without `AddModulusAuthorization` the policy falls back to a `permission`
+  claim.
+- **CLI.** `modulus add-webhooks [--events a,b]` (not for `webapp`): store module
+  `src/Modules/{App}.Modules.Webhooks/{App}.Modules.Webhooks.Infrastructure` (context, design-time factory with
+  `WEBHOOKS_CONNECTION`, `WebhooksModule`), Program.cs wiring, `ConnectionStrings:Webhooks` + `Webhooks` settings
+  (Testing: `EnableDelivery: false`), `tests/{App}.Tests/WebhookTests.cs`. Idempotent; re-run to add events. Templates:
+  `cli/Templates/webhooks/`; wiring: `WebhooksWiring`. An event counts as registered only by a `webhooks.AddEvent<T>`
+  line, so a realtime `AddEvent<T>` for the same event does not hide it.
+- **Gap.** Generated CRUD declares `{Entity}CreatedIntegrationEvent` but never publishes it; publish it
+  (`IModuleBus.PublishAsync` or via the outbox) for subscribers to receive anything.
+- **Verified end to end** on a generated `--kind api --auth openiddict` app (11/11 tests, 5 webhooks): test and real
+  events received with valid signatures and marked `Delivered`; receiver down → `Pending` with a 5 s retry; `retry`
+  delivered it. Covered by `Modulus.Webhooks.Tests` (84) and `WebhooksCommandTests` (13).
 
 ## Testing notes
 

@@ -21,6 +21,8 @@
     {{ end }}{{ if auth != "none" }}<!-- Permission checks behind the page guards and admin menus (ICurrentUser.HasPermission
          / the grant store) — no OpenIddict here: the token server lives in the API host. -->
     <PackageReference Include="Cobytelabs.Modulus.Identity" Version="{{ framework_version }}" />
+    <!-- The BFF web session: sign-in, server-side tokens, refresh and the typed clients' token handler. -->
+    <PackageReference Include="Cobytelabs.Modulus.Bff" Version="{{ framework_version }}" />
     {{ end }}</ItemGroup>
 
   <ItemGroup>

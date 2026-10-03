@@ -18,7 +18,11 @@ public sealed class UnauthorizedException()
     : ModulusException("Authentication required.");
 
 public sealed class ForbiddenException(string permission)
-    : ModulusException($"Access denied. Required permission: {permission}");
+    : ModulusException($"Access denied. Required permission: {permission}")
+{
+    /// <summary>The permission the caller lacks.</summary>
+    public string Permission { get; } = permission;
+}
 
 public sealed class FeatureDisabledException(string feature)
     : ModulusException($"Feature not available for this tenant: {feature}")

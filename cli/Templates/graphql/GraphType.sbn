@@ -1,0 +1,18 @@
+using GraphQL.Types;
+using {{ module_namespace }}.Application.Dtos;
+
+namespace {{ module_namespace }}.Presentation.GraphQL;
+
+/// <summary>
+/// The GraphQL shape of a {{ entity_name_lower }} ({{ entity_name }}Dto). Add a <c>Field(...)</c> here to expose more of the DTO;
+/// another module can add fields to it with <c>services.ExtendGraphType&lt;{{ entity_name }}GraphType&gt;(...)</c>.
+/// </summary>
+public sealed class {{ entity_name }}GraphType : ObjectGraphType<{{ entity_name }}Dto>
+{
+    public {{ entity_name }}GraphType()
+    {
+        Name = "{{ entity_name }}";
+        Field(x => x.Id, type: typeof(NonNullGraphType<IdGraphType>));
+        Field(x => x.Name);
+    }
+}

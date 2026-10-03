@@ -3,11 +3,14 @@ using Modulus.AspNetCore.Correlation;
 using Modulus.AspNetCore.Extensions;
 using Modulus.AspNetCore.FeatureFlags;
 using Modulus.AspNetCore.Security;
-{{ if use_tabler_theme }}using Modulus.UI.Theming.Tabler;
+{{ if use_auth }}using Modulus.AspNetCore.Security.Policy;
+{{ end }}{{ if use_tabler_theme }}using Modulus.UI.Theming.Tabler;
 {{ end }}using Modulus.UI;
 using Modulus.Core.Abstractions;
 using {{ root_namespace }}.Web;
-{{ if use_auth }}using {{ root_namespace }}.Web.Security;
+{{ if use_auth }}using Modulus.Bff;
+using {{ root_namespace }}.Web.Security;
+using Login = {{ root_namespace }}.Web.Pages.Account.LoginModel;
 {{ end }}using Microsoft.AspNetCore.HttpOverrides;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -24,24 +27,21 @@ builder.Services.AddModulusUi();
 builder.Services.AddTablerTheme(builder.Configuration);
 {{ end }}// ── Typed API clients ──────────────────────────────────────────
 // One typed HttpClient per module (resilience + correlation wired in
-// AddModulusHttpClient). With auth on, every call relays the signed-in
-// user's bearer token and refreshes it on 401 (TokenRelayHandler); without
-// auth the clients still work, they just call the API anonymously.
+// AddModulusHttpClient). {{ if use_auth }}Every call carries the signed-in user's access token from
+// the BFF web session (see Authentication below).{{ else }}Without auth the clients call the API anonymously.{{ end }}
 builder.Services.AddModuleApiClients();
 {{ if use_auth }}
-// ── Authentication ─────────────────────────────────────────────
-// The token server lives in the API project. The sign-in page POSTs the user's
-// credentials to the API's /connect/token (password grant), stores the tokens
-// in an auth cookie, and TokenRelayHandler relays the access token on every
-// API call (refreshing it from the refresh token when it nears expiry).
-builder.Services
-    .AddAuthentication(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme)
-    .AddCookie(options =>
-    {
-        options.LoginPath = "/Account/Login";
-        options.LogoutPath = "/Account/Logout";
-        options.AccessDeniedPath = "/Account/AccessDenied";
-    });
+// ── Authentication: a BFF web session (Modulus.Bff) ────────────
+// The token server is {{ if use_open_iddict }}the API project{{ else }}the external provider{{ end }}. This host is the "web" client of
+// "Bff:Clients:web" (appsettings.json): {{ if web_login_mode == "Password" }}the sign-in page presents the credentials
+// to the API's token endpoint (password grant){{ else }}the sign-in page sends the browser to the provider's
+// login page (OIDC code + PKCE){{ end }}, the tokens stay on the server (FusionCache,
+// Data Protection encrypted; the cookie only names the session) and are refreshed
+// before they expire, one refresh per session at a time. With more than one
+// replica, register AddRedisFusionCache and a shared Data Protection key ring.
+builder.Services.AddModulusBff(builder.Configuration, bff => bff
+    .AddWebClient(Login.Client)
+    .SetDefaultClient(Login.Client));
 
 // ICurrentUser for menus, contributed entity fields and page guards: read from
 // the signed-in principal, with permissions resolved from the same Admin-role
@@ -53,6 +53,11 @@ builder.Services.AddScoped<ICurrentUser, PrincipalCurrentUser>();
 // call to make it public, and set a feature UI's RequirePermission to also
 // gate it by permission.
 builder.Services.AddModulusPageAuthorization();
+
+// At startup every endpoint must resolve to a policy. An anonymous endpoint needs a reason (.Loosen(reason)) and,
+// outside Development, an entry in security/loosening-allowlist.json; otherwise the app refuses to start
+// (settings: Security:Guard).
+builder.Services.AddModulusSecurityGuard(builder.Configuration);
 {{ else }}
 // No authentication configured. Pages are public; add auth manually
 // (AddAuthentication().AddCookie(...)) and a sign-in flow when you need one.
@@ -97,7 +102,7 @@ app.UseRouting();
 app.UseAuthorization();
 {{ end }}app.MapRazorPages();
 app.MapModulusErrorPages();
-{{ if enable_health_checks }}app.MapHealthChecks("/health/live");
+{{ if enable_health_checks }}app.MapHealthChecks("/health/live"){{ if use_auth }}.Loosen("Liveness probe for orchestrators and load balancers"){{ end }};
 {{ end }}
 app.Run();
 

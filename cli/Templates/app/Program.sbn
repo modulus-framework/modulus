@@ -12,9 +12,11 @@ using Modulus.AspNetCore.Idempotency;
 {{ if expose_api }}using Modulus.AspNetCore.OpenApi;
 {{ end }}using Modulus.AspNetCore.RateLimiting;
 using Modulus.AspNetCore.Security;
-{{ if expose_api }}using Modulus.AspNetCore.Versioning;
-{{ end }}{{ if example_permission }}using Modulus.Authorization.Extensions;
-{{ end }}using Modulus.EntityFrameworkCore.Extensions;
+{{ if use_security_guard }}using Modulus.AspNetCore.Security.Policy;
+{{ end }}{{ if expose_api }}using Modulus.AspNetCore.Versioning;
+{{ end }}{{ if example_permission || needs_fallback_authorization }}using Modulus.Authorization.Extensions;
+{{ end }}using Modulus.Caching;
+using Modulus.EntityFrameworkCore.Extensions;
 using Modulus.Events.Extensions;
 using Modulus.Mediator.Extensions;
 {{ if auth == "openiddict" }}using {{ identity_namespace }}.Infrastructure;
@@ -102,6 +104,17 @@ builder.Services.AddModulusPersonalDataProtection(builder.Configuration);
 // Each module can call AddModulusEvents() with its own assemblies too.
 builder.Services.AddModulusEvents(typeof(Program).Assembly);
 
+// ── Hybrid cache (FusionCache) ─────────────────────────────────
+// ICacheService plus the [CacheFor] query cache: in-memory L1 per node,
+// stampede protection, fail-safe and tag invalidation ([InvalidatesCache] on
+// commands). Settings live under "Caching:Fusion"; give each service its own
+// CacheName when several share one Redis.
+{{ if use_redis_cache }}// Redis is the shared L2 and the backplane that keeps every replica's L1 in sync.
+builder.Services.AddRedisFusionCache(builder.Configuration);
+{{ else }}// Single node: L1 only. Re-run with '--caching redis' (or call AddRedisFusionCache
+// from Modulus.Caching.Redis) once you run more than one replica.
+builder.Services.AddModulusFusionCache(builder.Configuration);
+{{ end }}
 // ── CQRS pipeline ──────────────────────────────────────────────
 // Behaviours are registered once here; each module registers its own
 // handlers + its own DbContext + IUnitOfWork in its Module composition root.
@@ -117,6 +130,9 @@ builder.Services.AddRazorPages();
 // foundation's services: generated endpoints expose an entity's extension
 // fields through IEntityUiRegistry, filtered per caller by permission.
 builder.Services.AddModulusUi();
+// AddModulusUi also registers the component view resolver, which needs Razor's view engine
+// (no pages here, so only the engine; without it the host fails to start in Development).
+builder.Services.AddMvcCore().AddRazorViewEngine();
 {{ end }}
 {{ if auth == "none" }}
 // ── Authentication ─────────────────────────────────────────────
@@ -156,7 +172,17 @@ builder.Services.AddPermissionGrants(grants => grants.GrantToRole("{{ admin_role
 //   dotnet user-secrets set "{{ external_provider_config_key }}:ClientSecret" "your-secret"
 builder.Services.AddAuthentication()
     .{{ external_provider_add_method }}(builder.Configuration);
-{{ end }}{{ end }}{{ if expose_api }}// ── OpenAPI ────────────────────────────────────────────────────
+{{ end }}{{ end }}{{ if use_security_guard }}
+// ── Security guard ─────────────────────────────────────────────
+{{ if needs_fallback_authorization }}// Closed by default: AddModulusAuthorization makes "a signed-in user" the fallback policy, so an endpoint that
+// declares no policy of its own is not open.
+builder.Services.AddModulusAuthorization();
+{{ end }}// At startup every endpoint must resolve to a policy. An anonymous endpoint needs a reason (.Loosen(reason) on a
+// minimal API, AllowAnonymous(reason) in an endpoint's Configure()) and, outside Development, an entry in
+// security/loosening-allowlist.json; otherwise the app refuses to start (settings: Security:Guard).
+builder.Services.AddModulusSecurityGuard(builder.Configuration);
+
+{{ end }}{{ if expose_api }}// ── OpenAPI ────────────────────────────────────────────────────
 // Hardened document: metadata from the OpenApi config section + a JWT Bearer
 // security scheme, with a padlock on operations that require authorization.
 builder.Services.AddModulusOpenApi(builder.Configuration);
@@ -215,7 +241,7 @@ app.MapModulusEndpoints(
 {{ end }}
 if (app.Environment.IsDevelopment())
 {
-{{ if expose_api }}    app.MapOpenApi();
+{{ if expose_api }}    app.MapOpenApi(){{ if use_security_guard }}.Loosen("OpenAPI document, mapped in Development only"){{ end }};
 {{ end }}
 }
 

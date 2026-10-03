@@ -24,6 +24,17 @@ public static class MultiTenancyExtensions
         services.TryAddSingleton<ICurrentTenant>(
             sp => sp.GetRequiredService<CurrentTenant>());
 
+        // Empty until seeded: with RequireMembership() on and no real store, nobody without a
+        // tenant claim can enter a tenant (fail-closed). AddEfCoreTenantStore replaces it.
+        services.TryAddSingleton<InMemoryTenantMembershipStore>();
+        services.TryAddSingleton<ITenantMembershipStore>(
+            sp => sp.GetRequiredService<InMemoryTenantMembershipStore>());
+
+        // Messages and jobs restore their tenant through the store: an unknown or deactivated
+        // tenant id is rejected instead of becoming a data scope. Replaces the unverified default.
+        services.RemoveAll<ITenantContextRestorer>();
+        services.AddSingleton<ITenantContextRestorer, VerifiedTenantContextRestorer>();
+
         var builder = new MultiTenancyBuilder(services);
         configure?.Invoke(builder);
         return services;
@@ -70,6 +81,21 @@ public sealed class MultiTenancyBuilder(IServiceCollection services)
         return this;
     }
 
+    /// <summary>
+    /// Company = tenant, one login across companies: an authenticated account without a tenant
+    /// claim may enter the tenant a request selects (header, subdomain) only when it holds an
+    /// active membership in it (<see cref="ITenantMembershipStore"/>); otherwise the request gets
+    /// 403. A tenant claim (<c>tid</c>) still pins the token to its own tenant, and anonymous
+    /// requests are unaffected. The policy set with <see cref="RequireHostTenantAccessPolicy"/>
+    /// becomes the break-glass override for a non-member (logged as a warning). The membership is
+    /// read on every request, so revoking it takes effect immediately.
+    /// </summary>
+    public MultiTenancyBuilder RequireMembership()
+    {
+        services.Configure<TenantAccessOptions>(o => o.RequireMembership = true);
+        return this;
+    }
+
     public MultiTenancyBuilder UseSubdomainResolver(
         string baseDomain)
     {
@@ -83,4 +109,6 @@ public sealed class MultiTenancyBuilder(IServiceCollection services)
 internal sealed class TenantAccessOptions
 {
     public string? HostTenantAccessPolicy { get; set; }
+
+    public bool RequireMembership { get; set; }
 }

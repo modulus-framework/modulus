@@ -128,7 +128,63 @@ public sealed class EfTenantStoreTests : IDisposable
         (await WithStore(s => s.ListAsync(default))).Should().BeEmpty();
     }
 
+    [Fact]
+    public async Task ListByGroup_ReturnsOnlyActiveTenantsOfThatGroup()
+    {
+        var group = Guid.NewGuid();
+        await WithManager(m => m.CreateAsync("north", null, null, group));
+        var south = await WithManager(m => m.CreateAsync("south", null, null, group));
+        await WithManager(m => m.CreateAsync("other", null, null, Guid.NewGuid()));
+        await WithManager(m => m.SetActiveAsync(south.TenantId, false));
+
+        var list = await WithStore(s => s.ListByGroupAsync(group, default));
+
+        list.Select(t => t.TenantSlug).Should().Equal("north");
+        list[0].GroupId.Should().Be(group);
+    }
+
+    [Fact]
+    public async Task Membership_GrantsOnlyItsTenant_AndRevokeTakesEffect()
+    {
+        var user = Guid.NewGuid();
+        var a = await WithManager(m => m.CreateAsync("a"));
+        var b = await WithManager(m => m.CreateAsync("b"));
+        (await WithManager(m => m.AddMemberAsync(user, a.TenantId))).Should().BeTrue();
+
+        (await WithMemberships(s => s.IsMemberAsync(user, a.TenantId))).Should().BeTrue();
+        (await WithMemberships(s => s.IsMemberAsync(user, b.TenantId))).Should().BeFalse();
+        (await WithMemberships(s => s.ListTenantIdsAsync(user))).Should().Equal(a.TenantId);
+
+        (await WithManager(m => m.RemoveMemberAsync(user, a.TenantId))).Should().BeTrue();
+        (await WithMemberships(s => s.IsMemberAsync(user, a.TenantId))).Should().BeFalse();
+
+        (await WithManager(m => m.AddMemberAsync(user, a.TenantId))).Should().BeTrue();
+        (await WithMemberships(s => s.IsMemberAsync(user, a.TenantId))).Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Membership_InADeactivatedTenant_GrantsNothing()
+    {
+        var user = Guid.NewGuid();
+        var a = await WithManager(m => m.CreateAsync("a"));
+        await WithManager(m => m.AddMemberAsync(user, a.TenantId));
+        await WithManager(m => m.SetActiveAsync(a.TenantId, false));
+
+        (await WithMemberships(s => s.IsMemberAsync(user, a.TenantId))).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task AddMember_UnknownTenant_ReturnsFalse()
+    {
+        (await WithManager(m => m.AddMemberAsync(Guid.NewGuid(), Guid.NewGuid()))).Should().BeFalse();
+    }
+
     // ── Scope helpers ─────────────────────────────────────────────
+    private async Task<T> WithMemberships<T>(Func<ITenantMembershipStore, Task<T>> act)
+    {
+        using var scope = _provider.CreateScope();
+        return await act(scope.ServiceProvider.GetRequiredService<ITenantMembershipStore>());
+    }
     private async Task<T> WithStore<T>(Func<ITenantStore, Task<T>> act)
     {
         using var scope = _provider.CreateScope();

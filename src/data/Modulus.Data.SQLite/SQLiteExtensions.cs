@@ -9,6 +9,7 @@ using Modulus.Core.Abstractions;
 using Modulus.EntityFrameworkCore;
 using Modulus.EntityFrameworkCore.Extensions;
 using Modulus.EntityFrameworkCore.Health;
+using Modulus.EntityFrameworkCore.Isolation;
 
 public static class SQLiteExtensions
 {
@@ -30,6 +31,32 @@ public static class SQLiteExtensions
                     sp.GetRequiredService<TContext>(), "sqlite")));
 
         return services;
+    }
+
+    /// <summary>
+    /// One SQLite file per tenant: <c>{directory}/{tenantId:N}.db</c>, and <c>{directory}/host.db</c> for the host
+    /// context. SQLite has no row-level security, so separate files are its only database-enforced company
+    /// boundary. With no tenant in scope the context refuses to open rather than falling back to the host file.
+    /// Create each file's schema with <c>MigrateModulusDatabasesForTenantsAsync</c>.
+    /// </summary>
+    /// <remarks>No readiness check is registered: a probe request carries no tenant to pick a file with.</remarks>
+    /// <typeparam name="TContext">The module context.</typeparam>
+    /// <param name="services">The service collection.</param>
+    /// <param name="directory">The folder holding the database files (created when missing).</param>
+    public static IServiceCollection AddSQLitePerTenantDatabase<TContext>(
+        this IServiceCollection services,
+        string directory = "./tenants")
+        where TContext : ModuleDbContext
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(directory);
+        return services.AddModuleDatabasePerTenant<TContext>(
+            $"Data Source={Path.Combine(directory, "host.db")}",
+            tenantId => $"Data Source={Path.Combine(directory, $"{tenantId:N}.db")}",
+            (opts, connectionString) =>
+            {
+                Directory.CreateDirectory(directory);
+                opts.UseSqlite(connectionString);
+            });
     }
 
     /// <summary>

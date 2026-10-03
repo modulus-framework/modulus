@@ -1,0 +1,12 @@
+using Microsoft.EntityFrameworkCore;
+using Modulus.Webhooks;
+
+namespace {{ webhooks_namespace }}.Infrastructure;
+
+/// <summary>
+/// The app's webhook store: subscriptions and the deliveries waiting to go out (tables
+/// <c>webhook_subscriptions</c> and <c>webhook_deliveries</c>). Its migrations live here:
+/// <c>modulus migrate add InitialCreate --module Webhooks</c>.
+/// </summary>
+public sealed class AppWebhooksDbContext(DbContextOptions<AppWebhooksDbContext> options)
+    : ModulusWebhooksDbContext(options);

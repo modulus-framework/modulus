@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
@@ -55,6 +56,7 @@ public sealed class TenantMiddleware(
                 {
                     logger.LogWarning(
                         "Rejected request: the authenticated principal's tenant claim does not resolve to an active tenant.");
+                    Audit(ctx, "tenant.claim-unresolved", SecurityAuditOutcomes.Denied, null, ctx.User.FindFirst("tid")?.Value);
                     ctx.Response.StatusCode = StatusCodes.Status403Forbidden;
                     return;
                 }
@@ -64,21 +66,24 @@ public sealed class TenantMiddleware(
                     logger.LogWarning(
                         "Rejected request: resolved tenant {Resolved} does not match the authenticated principal's own tenant claim {Claimed}.",
                         info.TenantSlug, claimed.TenantSlug);
+                    Audit(ctx, "tenant.claim-mismatch", SecurityAuditOutcomes.Denied, claimed.TenantId, $"tenant:{info.TenantId}");
                     ctx.Response.StatusCode = StatusCodes.Status403Forbidden;
                     return;
                 }
             }
 
-            // A host-level account (no tenant claim) selects a tenant through another resolver,
-            // e.g. X-Tenant-Id. Open by default (the usual host-administrator model); with
-            // RequireHostTenantAccessPolicy the account must also satisfy that policy.
+            // An account without a tenant claim selects a tenant through another resolver, e.g.
+            // X-Tenant-Id. With RequireMembership it must be a member of that tenant (one login
+            // across companies); otherwise it is the host-administrator model, open by default
+            // and gated by RequireHostTenantAccessPolicy when set.
             if (info is not null
                 && claimResolver?.HasClaim(ctx) != true
-                && !await CanHostAccountEnterAsync(ctx))
+                && !await CanEnterSelectedTenantAsync(ctx, info))
             {
                 logger.LogWarning(
-                    "Rejected request: a host-level account selected tenant {Resolved} without satisfying the host tenant access policy.",
+                    "Rejected request: an account without a tenant claim selected tenant {Resolved} without a membership or the host tenant access policy.",
                     info.TenantSlug);
+                Audit(ctx, "tenant.not-a-member", SecurityAuditOutcomes.Denied, info.TenantId, $"tenant:{info.TenantId}");
                 ctx.Response.StatusCode = StatusCodes.Status403Forbidden;
                 return;
             }
@@ -89,16 +94,66 @@ public sealed class TenantMiddleware(
             tenant.Set(info);
         }
 
+        // Every log line of the request carries the company and the caller (never their name or e-mail).
+        using var scope = logger.BeginScope(new Dictionary<string, object?>
+        {
+            ["TenantId"] = info?.TenantId,
+            ["UserId"] = ctx.User.Identity?.IsAuthenticated == true && TryGetUserId(ctx.User, out var userId) ? userId : null,
+        });
+
         await next(ctx);
     }
 
-    private static async Task<bool> CanHostAccountEnterAsync(HttpContext ctx)
+    private static void Audit(HttpContext ctx, string action, string outcome, Guid? tenantId, string? target)
+        => ctx.RequestServices.GetService<ISecurityAuditLog>()?.Record(new SecurityAuditEvent
+        {
+            Category = SecurityAuditCategories.Tenancy,
+            Action = action,
+            Outcome = outcome,
+            TenantId = tenantId,
+            Actor = ctx.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? ctx.User.FindFirst("sub")?.Value,
+            Target = target,
+            Details = new Dictionary<string, string?> { ["path"] = ctx.Request.Path.Value },
+        });
+
+    private async Task<bool> CanEnterSelectedTenantAsync(HttpContext ctx, TenantInfo info)
     {
-        var policy = ctx.RequestServices.GetService<IOptions<TenantAccessOptions>>()?.Value.HostTenantAccessPolicy;
-        if (policy is null)
+        var options = ctx.RequestServices.GetService<IOptions<TenantAccessOptions>>()?.Value;
+        if (options?.RequireMembership != true)
+            return await SatisfiesPolicyAsync(ctx, options?.HostTenantAccessPolicy, whenUnset: true);
+
+        if (TryGetUserId(ctx.User, out var userId)
+            && ctx.RequestServices.GetService<ITenantMembershipStore>() is { } memberships
+            && await memberships.IsMemberAsync(userId, info.TenantId, ctx.RequestAborted))
+        {
             return true;
+        }
+
+        // Break-glass: a non-member may enter only through the explicit host policy.
+        if (await SatisfiesPolicyAsync(ctx, options.HostTenantAccessPolicy, whenUnset: false))
+        {
+            logger.LogWarning(
+                "Host tenant access policy used to enter tenant {Tenant} without a membership.",
+                info.TenantSlug);
+            Audit(ctx, "tenant.break-glass", SecurityAuditOutcomes.Overridden, info.TenantId, $"tenant:{info.TenantId}");
+            return true;
+        }
+
+        return false;
+    }
+
+    private static async Task<bool> SatisfiesPolicyAsync(HttpContext ctx, string? policy, bool whenUnset)
+    {
+        if (policy is null)
+            return whenUnset;
 
         var authorization = ctx.RequestServices.GetRequiredService<IAuthorizationService>();
         return (await authorization.AuthorizeAsync(ctx.User, policy)).Succeeded;
+    }
+
+    private static bool TryGetUserId(ClaimsPrincipal user, out Guid userId)
+    {
+        var value = user.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? user.FindFirst("sub")?.Value;
+        return Guid.TryParse(value, out userId);
     }
 }

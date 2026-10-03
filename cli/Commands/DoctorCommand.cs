@@ -93,6 +93,8 @@ internal sealed class DoctorCommand : Command<DoctorCommand.Settings>
                     "Web Program.cs exists",
                     inventory.WebProgramCsPath ?? "",
                     inventory.SolutionDir));
+                if (CheckWebTokenHandling(inventory.WebProjectPath) is { } tokens)
+                    checks.Add(tokens);
             }
 
             checks.Add(CheckFile(
@@ -222,6 +224,31 @@ internal sealed class DoctorCommand : Command<DoctorCommand.Settings>
     }
 
     /// <summary>
+    /// A Web host generated before the BFF web session carries <c>Security/TokenRelayHandler.cs</c>: tokens in the browser
+    /// cookie, refresh only after a 401 and no refresh lock (rotating refresh tokens can race). Warns with the way out.
+    /// Null when the host has no sign-in.
+    /// </summary>
+    internal static CheckResult? CheckWebTokenHandling(string? webProjectPath)
+    {
+        if (string.IsNullOrEmpty(webProjectPath) || Path.GetDirectoryName(webProjectPath) is not { } webDir)
+            return null;
+        if (File.Exists(Path.Combine(webDir, "Security", "TokenRelayHandler.cs")))
+        {
+            return CheckResult.Warn(
+                "Web sign-in",
+                "Uses the generated TokenRelayHandler (tokens in the browser cookie, refresh only after a 401, no refresh lock). " +
+                "Move to the BFF web session: reference Cobytelabs.Modulus.Bff, call AddModulusBff(..., bff => bff.AddWebClient(\"web\").SetDefaultClient(\"web\")), " +
+                "sign in/out with IBffSessionService, replace .AddHttpMessageHandler<TokenRelayHandler>() with .AddBffUserAccessToken() " +
+                "and delete Security/TokenRelayHandler.cs (see docs/ADVANCED_FEATURES_PLAN.md).");
+        }
+
+        var csproj = File.Exists(webProjectPath) ? File.ReadAllText(webProjectPath) : "";
+        return csproj.Contains("Cobytelabs.Modulus.Bff", StringComparison.Ordinal)
+            ? CheckResult.Pass("Web sign-in", "BFF web session (server-side tokens)")
+            : null;
+    }
+
+    /// <summary>
     /// dbsh is only required when at least one module manages its schema with
     /// SQL migrations (dbsh engine) — checked against <c>dbsh --version</c>.
     /// </summary>
@@ -330,8 +357,8 @@ internal sealed class DoctorCommand : Command<DoctorCommand.Settings>
         return (proc.ExitCode, stdout.Result);
     }
 
-    private enum CheckKind { Pass, Warn, Fail }
-    private sealed record CheckResult(CheckKind Kind, string Name, string Detail)
+    internal enum CheckKind { Pass, Warn, Fail }
+    internal sealed record CheckResult(CheckKind Kind, string Name, string Detail)
     {
         public static CheckResult Pass(string name, string detail) => new(CheckKind.Pass, name, detail);
         public static CheckResult Warn(string name, string detail) => new(CheckKind.Warn, name, detail);

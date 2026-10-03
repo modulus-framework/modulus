@@ -1,0 +1,16 @@
+using System.Text.Json;
+using Modulus.AspNetCore.Http;
+
+namespace {{ project_name }}.ApiClients;
+
+/// <summary>
+/// Typed client for the {{ module_name }} module's API, on the <c>{{ service }}</c> service (Bff:Services:{{ service }}): with
+/// microservices, give the module its own service entry and point this client at it. Calls carry the caller's
+/// token, <c>X-Client-App</c>, the correlation id and the resilience pipeline (AddBffApiClient). The methods unwrap the
+/// API's <c>ApiResponse</c> envelope and return the <c>data</c> as <see cref="JsonElement"/>, so the BFF does not depend on
+/// the module's assemblies; shape it in the endpoint.
+/// <c>modulus generate-crud</c> adds the methods of each new entity.
+/// </summary>
+public sealed class {{ module_name }}Api(HttpClient http)
+{
+{{ entity_methods }}}

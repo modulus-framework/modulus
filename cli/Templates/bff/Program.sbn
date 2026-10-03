@@ -1,0 +1,62 @@
+using Modulus.AspNetCore.Configuration;
+using Modulus.AspNetCore.Correlation;
+using Modulus.AspNetCore.HealthChecks;
+using Modulus.AspNetCore.Security;
+using Modulus.Bff;
+using Modulus.Caching;
+using {{ project_name }}.ApiClients;
+{{ if has_example }}using {{ project_name }}.Endpoints;
+{{ end }}using Microsoft.AspNetCore.HttpOverrides;
+
+// {{ client_pascal }} BFF: the backend for the {{ client_name }} client. It authenticates {{ if is_web }}browser sessions
+// (cookie; the browser never sees a token){{ else if is_mobile }}the app's bearer tokens{{ else }}partners' client-credentials tokens{{ end }}
+// against the auth server, applies the client's edge rules, proxies /api/** to the API with YARP and hosts
+// client-shaped aggregate endpoints. Settings: the "Bff" section of appsettings.json.
+var builder = WebApplication.CreateBuilder(args);
+
+// ── Hybrid cache (FusionCache) ─────────────────────────────────────
+// {{ if is_web }}Holds the server-side session tokens, so with more than one replica it needs Redis (L2 + backplane)
+// and a shared Data Protection key ring.{{ else }}Caches aggregate sections (and introspection results when enabled).{{ end }}
+{{ if use_redis_cache }}builder.Services.AddRedisFusionCache(builder.Configuration);
+{{ else }}builder.Services.AddModulusFusionCache(builder.Configuration);
+{{ end }}
+{{ if enable_correlation }}builder.Services.AddModulusCorrelation(builder.Configuration);
+{{ end }}{{ if enable_security_headers }}builder.Services.AddModulusSecurityHeaders(builder.Configuration);
+{{ end }}{{ if enable_secrets_guard }}builder.Services.AddModulusSecretsGuard(builder.Configuration);
+{{ end }}builder.Services.AddHealthChecks();
+
+builder.Services.AddModulusBff(builder.Configuration, bff => bff
+    .Add{{ client_pascal }}Client("{{ client_name }}")
+    .AddOpenApi());
+// One typed client per module (ApiClients/), each on its upstream service.
+builder.Services.AddModuleApiClients();
+
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownIPNetworks.Clear();
+    options.KnownProxies.Clear();
+});
+
+var app = builder.Build();
+
+app.UseForwardedHeaders();
+{{ if enable_correlation }}app.UseModulusCorrelation();
+{{ end }}{{ if enable_security_headers }}app.UseModulusSecurityHeaders();
+{{ end }}app.UseAuthentication();
+app.UseModulusBff();
+app.UseAuthorization();
+app.UseRateLimiter();
+
+app.MapModulusBff();
+{{ if has_example }}app.MapHomeEndpoints();
+{{ end }}app.MapModulusHealthChecks();
+if (app.Environment.IsDevelopment())
+{
+    // The {{ client_name }} client's contract: /openapi/{{ client_name }}.json
+    app.MapOpenApi();
+}
+
+app.Run();
+
+public partial class Program;

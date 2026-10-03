@@ -1,0 +1,25 @@
+using Modulus.Bff;
+using {{ project_name }}.ApiClients;
+
+namespace {{ project_name }}.Endpoints;
+
+/// <summary>
+/// An example aggregate endpoint: one call from the {{ client_name }} client, shaped for its screen, fanned out to
+/// the upstream services concurrently. A failing optional section degrades the response (<c>"degraded": [...]</c>)
+/// instead of failing it, which matters most when each section is a separate microservice.
+/// </summary>
+public static class HomeEndpoints
+{
+    public static IEndpointRouteBuilder MapHomeEndpoints(this IEndpointRouteBuilder endpoints)
+    {
+        endpoints.MapBffClient("{{ client_name }}")
+            .MapGet("/home", async ({{ example_module }}Api {{ example_module_camel }}, BffComposer composer, CancellationToken ct) =>
+            {
+                var composition = composer.Begin(defaultTimeout: TimeSpan.FromSeconds(3));
+                var {{ example_route }} = composition.Optional("{{ example_route }}", {{ example_module_camel }}.Get{{ example_route_pascal }}Async);
+                return await composition.ExecuteAsync(() => new { {{ example_route }} = {{ example_route }}.Value }, ct);
+            })
+            .WithName("{{ client_pascal }}Home");
+        return endpoints;
+    }
+}

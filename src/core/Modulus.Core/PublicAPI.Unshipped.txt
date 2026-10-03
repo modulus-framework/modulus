@@ -209,13 +209,15 @@ Modulus.Core.Abstractions.TenantInfo
 Modulus.Core.Abstractions.TenantInfo.<Clone>$() -> Modulus.Core.Abstractions.TenantInfo!
 Modulus.Core.Abstractions.TenantInfo.ConnectionString.get -> string?
 Modulus.Core.Abstractions.TenantInfo.ConnectionString.init -> void
-Modulus.Core.Abstractions.TenantInfo.Deconstruct(out System.Guid TenantId, out string! TenantSlug, out string? DisplayName, out string? ConnectionString) -> void
+Modulus.Core.Abstractions.TenantInfo.Deconstruct(out System.Guid TenantId, out string! TenantSlug, out string? DisplayName, out string? ConnectionString, out System.Guid? GroupId) -> void
+Modulus.Core.Abstractions.TenantInfo.GroupId.get -> System.Guid?
+Modulus.Core.Abstractions.TenantInfo.GroupId.init -> void
 Modulus.Core.Abstractions.TenantInfo.DisplayName.get -> string?
 Modulus.Core.Abstractions.TenantInfo.DisplayName.init -> void
 Modulus.Core.Abstractions.TenantInfo.Equals(Modulus.Core.Abstractions.TenantInfo? other) -> bool
 Modulus.Core.Abstractions.TenantInfo.TenantId.get -> System.Guid
 Modulus.Core.Abstractions.TenantInfo.TenantId.init -> void
-Modulus.Core.Abstractions.TenantInfo.TenantInfo(System.Guid TenantId, string! TenantSlug, string? DisplayName = null, string? ConnectionString = null) -> void
+Modulus.Core.Abstractions.TenantInfo.TenantInfo(System.Guid TenantId, string! TenantSlug, string? DisplayName = null, string? ConnectionString = null, System.Guid? GroupId = null) -> void
 Modulus.Core.Abstractions.TenantInfo.TenantSlug.get -> string!
 Modulus.Core.Abstractions.TenantInfo.TenantSlug.init -> void
 Modulus.Core.Correlation.CausationIdContext
@@ -362,3 +364,144 @@ virtual Modulus.Core.Abstractions.ModulusModule.InitializeAsync(Modulus.Core.Abs
 virtual Modulus.Core.Abstractions.ModulusModule.PostConfigureServices(Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> void
 virtual Modulus.Core.Abstractions.ModulusModule.PreConfigureServices(Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> void
 virtual Modulus.Core.Abstractions.ModulusModule.ShutdownAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Caching.CacheKeys
+static Modulus.Caching.CacheKeys.Entry(Modulus.Core.Abstractions.ICurrentTenant? tenant, string! key) -> string!
+static Modulus.Caching.CacheKeys.Tag(Modulus.Core.Abstractions.ICurrentTenant? tenant, string! tag) -> string!
+Modulus.Core.Abstractions.Exceptions.ForbiddenException.Permission.get -> string!
+Modulus.Core.Abstractions.AgentContext
+Modulus.Core.Abstractions.AgentContext.<Clone>$() -> Modulus.Core.Abstractions.AgentContext!
+Modulus.Core.Abstractions.AgentContext.AgentContext(string! AgentId, string? ToolName = null) -> void
+Modulus.Core.Abstractions.AgentContext.AgentId.get -> string!
+Modulus.Core.Abstractions.AgentContext.AgentId.init -> void
+Modulus.Core.Abstractions.AgentContext.Deconstruct(out string! AgentId, out string? ToolName) -> void
+Modulus.Core.Abstractions.AgentContext.Equals(Modulus.Core.Abstractions.AgentContext? other) -> bool
+Modulus.Core.Abstractions.AgentContext.ToolName.get -> string?
+Modulus.Core.Abstractions.AgentContext.ToolName.init -> void
+Modulus.Core.Abstractions.ISecurityContext
+Modulus.Core.Abstractions.ISecurityContext.Agent.get -> Modulus.Core.Abstractions.AgentContext?
+Modulus.Core.Abstractions.ISecurityContext.BranchId.get -> System.Guid?
+Modulus.Core.Abstractions.ISecurityContext.CompanyId.get -> System.Guid?
+Modulus.Core.Abstractions.ISecurityContext.CorrelationId.get -> string?
+Modulus.Core.Abstractions.ISecurityContext.GroupId.get -> System.Guid?
+Modulus.Core.Abstractions.ISecurityContext.Kind.get -> Modulus.Core.Abstractions.SecurityPrincipalKind
+Modulus.Core.Abstractions.ISecurityContext.Network.get -> Modulus.Core.Abstractions.NetworkContext!
+Modulus.Core.Abstractions.ISecurityContext.User.get -> Modulus.Core.Abstractions.ICurrentUser!
+Modulus.Core.Abstractions.NetworkContext
+Modulus.Core.Abstractions.NetworkContext.<Clone>$() -> Modulus.Core.Abstractions.NetworkContext!
+Modulus.Core.Abstractions.NetworkContext.Deconstruct(out Modulus.Core.Abstractions.NetworkTrust Trust, out string? GatewayId) -> void
+Modulus.Core.Abstractions.NetworkContext.Equals(Modulus.Core.Abstractions.NetworkContext? other) -> bool
+Modulus.Core.Abstractions.NetworkContext.GatewayId.get -> string?
+Modulus.Core.Abstractions.NetworkContext.GatewayId.init -> void
+Modulus.Core.Abstractions.NetworkContext.NetworkContext(Modulus.Core.Abstractions.NetworkTrust Trust, string? GatewayId = null) -> void
+Modulus.Core.Abstractions.NetworkContext.Trust.get -> Modulus.Core.Abstractions.NetworkTrust
+Modulus.Core.Abstractions.NetworkContext.Trust.init -> void
+Modulus.Core.Abstractions.NetworkTrust
+Modulus.Core.Abstractions.NetworkTrust.BranchNetwork = 2 -> Modulus.Core.Abstractions.NetworkTrust
+Modulus.Core.Abstractions.NetworkTrust.CompanyNetwork = 1 -> Modulus.Core.Abstractions.NetworkTrust
+Modulus.Core.Abstractions.NetworkTrust.Internal = 3 -> Modulus.Core.Abstractions.NetworkTrust
+Modulus.Core.Abstractions.NetworkTrust.Unverified = 0 -> Modulus.Core.Abstractions.NetworkTrust
+Modulus.Core.Abstractions.SecurityPrincipalKind
+Modulus.Core.Abstractions.SecurityPrincipalKind.Anonymous = 0 -> Modulus.Core.Abstractions.SecurityPrincipalKind
+Modulus.Core.Abstractions.SecurityPrincipalKind.Host = 2 -> Modulus.Core.Abstractions.SecurityPrincipalKind
+Modulus.Core.Abstractions.SecurityPrincipalKind.System = 3 -> Modulus.Core.Abstractions.SecurityPrincipalKind
+Modulus.Core.Abstractions.SecurityPrincipalKind.User = 1 -> Modulus.Core.Abstractions.SecurityPrincipalKind
+Modulus.Core.Null.NullSecurityContext
+Modulus.Core.Null.NullSecurityContext.Agent.get -> Modulus.Core.Abstractions.AgentContext?
+Modulus.Core.Null.NullSecurityContext.BranchId.get -> System.Guid?
+Modulus.Core.Null.NullSecurityContext.CompanyId.get -> System.Guid?
+Modulus.Core.Null.NullSecurityContext.CorrelationId.get -> string?
+Modulus.Core.Null.NullSecurityContext.GroupId.get -> System.Guid?
+Modulus.Core.Null.NullSecurityContext.Kind.get -> Modulus.Core.Abstractions.SecurityPrincipalKind
+Modulus.Core.Null.NullSecurityContext.Network.get -> Modulus.Core.Abstractions.NetworkContext!
+Modulus.Core.Null.NullSecurityContext.NullSecurityContext(Modulus.Core.Abstractions.ICurrentUser! user, Modulus.Core.Abstractions.ICurrentTenant! tenant, Modulus.Core.Abstractions.ICorrelationContext? correlation = null) -> void
+Modulus.Core.Null.NullSecurityContext.User.get -> Modulus.Core.Abstractions.ICurrentUser!
+override Modulus.Core.Abstractions.AgentContext.Equals(object? obj) -> bool
+override Modulus.Core.Abstractions.AgentContext.GetHashCode() -> int
+override Modulus.Core.Abstractions.AgentContext.ToString() -> string!
+override Modulus.Core.Abstractions.NetworkContext.Equals(object? obj) -> bool
+override Modulus.Core.Abstractions.NetworkContext.GetHashCode() -> int
+override Modulus.Core.Abstractions.NetworkContext.ToString() -> string!
+static Modulus.Core.Abstractions.AgentContext.operator !=(Modulus.Core.Abstractions.AgentContext? left, Modulus.Core.Abstractions.AgentContext? right) -> bool
+static Modulus.Core.Abstractions.AgentContext.operator ==(Modulus.Core.Abstractions.AgentContext? left, Modulus.Core.Abstractions.AgentContext? right) -> bool
+static Modulus.Core.Abstractions.NetworkContext.Unverified.get -> Modulus.Core.Abstractions.NetworkContext!
+static Modulus.Core.Abstractions.NetworkContext.operator !=(Modulus.Core.Abstractions.NetworkContext? left, Modulus.Core.Abstractions.NetworkContext? right) -> bool
+static Modulus.Core.Abstractions.NetworkContext.operator ==(Modulus.Core.Abstractions.NetworkContext? left, Modulus.Core.Abstractions.NetworkContext? right) -> bool
+Modulus.Core.Abstractions.CrossTenantWriteException
+Modulus.Core.Abstractions.CrossTenantWriteException.CrossTenantWriteException(string! entityType, System.Guid entityTenantId, System.Guid? currentTenantId) -> void
+Modulus.Core.Abstractions.CrossTenantWriteException.CurrentTenantId.get -> System.Guid?
+Modulus.Core.Abstractions.CrossTenantWriteException.EntityTenantId.get -> System.Guid
+Modulus.Core.Abstractions.CrossTenantWriteException.EntityType.get -> string!
+Modulus.Core.Abstractions.ITenantContextRestorer
+Modulus.Core.Abstractions.TenantContextRejectedException
+Modulus.Core.Abstractions.TenantContextRejectedException.TenantContextRejectedException(System.Guid tenantId) -> void
+Modulus.Core.Abstractions.TenantContextRejectedException.TenantId.get -> System.Guid
+Modulus.Core.Abstractions.TenantContextRestorerExtensions
+Modulus.Core.Abstractions.ITenantContextRestorer.VerifyAsync(System.Guid tenantId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<Modulus.Core.Abstractions.TenantInfo!>
+static Modulus.Core.Abstractions.TenantContextRestorerExtensions.EnterTenant(this System.IServiceProvider! services, Modulus.Core.Abstractions.TenantInfo! tenant) -> System.IDisposable?
+static Modulus.Core.Abstractions.TenantContextRestorerExtensions.VerifyTenantAsync(this System.IServiceProvider! services, System.Guid tenantId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<Modulus.Core.Abstractions.TenantInfo!>
+Modulus.Core.Abstractions.Security.DataClassification
+Modulus.Core.Abstractions.Security.DataClassification.Confidential = 3 -> Modulus.Core.Abstractions.Security.DataClassification
+Modulus.Core.Abstractions.Security.DataClassification.Internal = 2 -> Modulus.Core.Abstractions.Security.DataClassification
+Modulus.Core.Abstractions.Security.DataClassification.Public = 1 -> Modulus.Core.Abstractions.Security.DataClassification
+Modulus.Core.Abstractions.Security.DataClassification.Restricted = 4 -> Modulus.Core.Abstractions.Security.DataClassification
+Modulus.Core.Abstractions.Security.DataClassification.Unspecified = 0 -> Modulus.Core.Abstractions.Security.DataClassification
+Modulus.Core.Abstractions.Security.EndpointSecurityPolicyAttribute
+Modulus.Core.Abstractions.Security.EndpointSecurityPolicyAttribute.Classification.get -> Modulus.Core.Abstractions.Security.DataClassification
+Modulus.Core.Abstractions.Security.EndpointSecurityPolicyAttribute.Classification.set -> void
+Modulus.Core.Abstractions.Security.EndpointSecurityPolicyAttribute.EndpointSecurityPolicyAttribute() -> void
+Modulus.Core.Abstractions.Security.EndpointSecurityPolicyAttribute.Network.get -> Modulus.Core.Abstractions.Security.NetworkRequirement
+Modulus.Core.Abstractions.Security.EndpointSecurityPolicyAttribute.Network.set -> void
+Modulus.Core.Abstractions.Security.LoosenedAttribute
+Modulus.Core.Abstractions.Security.LoosenedAttribute.LoosenedAttribute(string! reason) -> void
+Modulus.Core.Abstractions.Security.LoosenedAttribute.Reason.get -> string!
+Modulus.Core.Abstractions.Security.LoosenedAttribute.Ticket.get -> string?
+Modulus.Core.Abstractions.Security.LoosenedAttribute.Ticket.set -> void
+Modulus.Core.Abstractions.Security.NetworkRequirement
+Modulus.Core.Abstractions.Security.NetworkRequirement.Any = 0 -> Modulus.Core.Abstractions.Security.NetworkRequirement
+Modulus.Core.Abstractions.Security.NetworkRequirement.BranchNetwork = 2 -> Modulus.Core.Abstractions.Security.NetworkRequirement
+Modulus.Core.Abstractions.Security.NetworkRequirement.CompanyNetwork = 1 -> Modulus.Core.Abstractions.Security.NetworkRequirement
+Modulus.Core.Abstractions.Security.NetworkRequirement.Internal = 3 -> Modulus.Core.Abstractions.Security.NetworkRequirement
+Modulus.Core.Abstractions.Security.LoosenedAttribute.Framework.get -> bool
+Modulus.Core.Abstractions.Security.LoosenedAttribute.Framework.set -> void
+Modulus.Core.Abstractions.ISecurityAuditLog
+Modulus.Core.Abstractions.ISecurityAuditLog.Record(Modulus.Core.Abstractions.SecurityAuditEvent! auditEvent) -> void
+Modulus.Core.Abstractions.NullSecurityAuditLog
+Modulus.Core.Abstractions.NullSecurityAuditLog.Record(Modulus.Core.Abstractions.SecurityAuditEvent! auditEvent) -> void
+Modulus.Core.Abstractions.SecurityAuditCategories
+Modulus.Core.Abstractions.SecurityAuditEvent
+Modulus.Core.Abstractions.SecurityAuditEvent.<Clone>$() -> Modulus.Core.Abstractions.SecurityAuditEvent!
+Modulus.Core.Abstractions.SecurityAuditEvent.Action.get -> string!
+Modulus.Core.Abstractions.SecurityAuditEvent.Action.init -> void
+Modulus.Core.Abstractions.SecurityAuditEvent.Actor.get -> string?
+Modulus.Core.Abstractions.SecurityAuditEvent.Actor.init -> void
+Modulus.Core.Abstractions.SecurityAuditEvent.Category.get -> string!
+Modulus.Core.Abstractions.SecurityAuditEvent.Category.init -> void
+Modulus.Core.Abstractions.SecurityAuditEvent.CorrelationId.get -> string?
+Modulus.Core.Abstractions.SecurityAuditEvent.CorrelationId.init -> void
+Modulus.Core.Abstractions.SecurityAuditEvent.Details.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string?>!
+Modulus.Core.Abstractions.SecurityAuditEvent.Details.init -> void
+Modulus.Core.Abstractions.SecurityAuditEvent.Equals(Modulus.Core.Abstractions.SecurityAuditEvent? other) -> bool
+Modulus.Core.Abstractions.SecurityAuditEvent.OccurredAt.get -> System.DateTimeOffset?
+Modulus.Core.Abstractions.SecurityAuditEvent.OccurredAt.init -> void
+Modulus.Core.Abstractions.SecurityAuditEvent.Outcome.get -> string!
+Modulus.Core.Abstractions.SecurityAuditEvent.Outcome.init -> void
+Modulus.Core.Abstractions.SecurityAuditEvent.SecurityAuditEvent() -> void
+Modulus.Core.Abstractions.SecurityAuditEvent.Target.get -> string?
+Modulus.Core.Abstractions.SecurityAuditEvent.Target.init -> void
+Modulus.Core.Abstractions.SecurityAuditEvent.TenantId.get -> System.Guid?
+Modulus.Core.Abstractions.SecurityAuditEvent.TenantId.init -> void
+Modulus.Core.Abstractions.SecurityAuditOutcomes
+const Modulus.Core.Abstractions.SecurityAuditCategories.Authorization = "authorization" -> string!
+const Modulus.Core.Abstractions.SecurityAuditCategories.Configuration = "configuration" -> string!
+const Modulus.Core.Abstractions.SecurityAuditCategories.Data = "data" -> string!
+const Modulus.Core.Abstractions.SecurityAuditCategories.Identity = "identity" -> string!
+const Modulus.Core.Abstractions.SecurityAuditCategories.Tenancy = "tenancy" -> string!
+const Modulus.Core.Abstractions.SecurityAuditOutcomes.Denied = "denied" -> string!
+const Modulus.Core.Abstractions.SecurityAuditOutcomes.Overridden = "overridden" -> string!
+const Modulus.Core.Abstractions.SecurityAuditOutcomes.Success = "success" -> string!
+override Modulus.Core.Abstractions.SecurityAuditEvent.Equals(object? obj) -> bool
+override Modulus.Core.Abstractions.SecurityAuditEvent.GetHashCode() -> int
+override Modulus.Core.Abstractions.SecurityAuditEvent.ToString() -> string!
+static Modulus.Core.Abstractions.NullSecurityAuditLog.Instance.get -> Modulus.Core.Abstractions.NullSecurityAuditLog!
+static Modulus.Core.Abstractions.SecurityAuditEvent.operator !=(Modulus.Core.Abstractions.SecurityAuditEvent? left, Modulus.Core.Abstractions.SecurityAuditEvent? right) -> bool
+static Modulus.Core.Abstractions.SecurityAuditEvent.operator ==(Modulus.Core.Abstractions.SecurityAuditEvent? left, Modulus.Core.Abstractions.SecurityAuditEvent? right) -> bool

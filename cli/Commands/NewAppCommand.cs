@@ -103,6 +103,14 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         [DefaultValue(false)]
         public bool NoTheme { get; init; }
 
+        [Description("Backends for Frontends to generate, one deployable per client: web, mobile, partner (comma-separated), or none. Each is src/Bff/{App}.Bff.{Client}, proxies /api to the API and works with every supported auth server.")]
+        [CommandOption("--bff")]
+        public string? Bff { get; init; }
+
+        [Description("Microservices: upstream services the BFFs call besides the API host, named after their modules (catalog=http://localhost:5201,orders). A name without an address is resolved through service discovery (https+http://orders). Needs --bff.")]
+        [CommandOption("--services")]
+        public string? Services { get; init; }
+
         [Description("Path to a local NuGet feed containing the Cobytelabs.Modulus.* packages (written as an active 'modulus-local' source in NuGet.config). Omit to leave only nuget.org configured.")]
         [CommandOption("--package-source")]
         public string? PackageSource { get; init; }
@@ -177,6 +185,13 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
 
         var migrationEngine = ResolveMigrationEngine(s.MigrationEngine);
 
+        var bff = BffClients.Parse(s.Bff);
+        if (bff.Count > 0 && auth == "none")
+            throw new ArgumentException("--bff needs an auth server (--auth openiddict, keycloak, auth0, okta, azuread, duende or authentik): a BFF authenticates its clients.");
+        var bffServices = BffClients.ParseServices(s.Services);
+        if (bffServices.Count > 0 && bff.Count == 0)
+            throw new ArgumentException("--services lists the BFFs' upstream services; add --bff web,mobile,partner.");
+
         // UI modules only exist in web apps; an API host is never asked.
         var uiModules = kind is AppKind.WebApp or AppKind.WebAppApi ? ResolveUiModules(s.UiModules) : [];
         if (WithSignInPage(kind, auth, uiModules) is { } withSignIn && withSignIn.Count != uiModules.Count)
@@ -244,6 +259,8 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
             UiModules = uiModules,
             UseTablerTheme = (kind is AppKind.WebApp or AppKind.WebAppApi) && !s.NoTheme,
             LocalPackageSource = s.PackageSource,
+            Bff = bff,
+            BffServices = bffServices,
         };
 
         Ux.Status($"Scaffolding {appName}...", () => GenerateAll(projectDir, model));
@@ -277,6 +294,11 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
             {
                 AnsiConsole.MarkupLine("  [grey]dotnet run --project[/] src/API/{0}.Api", rootNs);
             }
+            foreach (var client in model.BffClientModels)
+            {
+                AnsiConsole.MarkupLine("  [grey]# {0} BFF (http://localhost:{1}):[/] [grey]dotnet run --project[/] src/Bff/{2}.Bff.{3}",
+                    client.Name, client.Port, rootNs, char.ToUpperInvariant(client.Name[0]) + client.Name[1..]);
+            }
             if (string.IsNullOrWhiteSpace(s.PackageSource))
             {
                 AnsiConsole.MarkupLine(
@@ -307,7 +329,7 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         return 0;
     }
 
-    private void GenerateAll(string projectDir, AppModel model)
+    internal void GenerateAll(string projectDir, AppModel model)
     {
         var rootNs = model.RootNamespace;
         var projects = new List<string>();
@@ -325,6 +347,12 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         if (model.Kind == AppKind.WebAppApi)
         {
             GenerateWebHost(projectDir, model, projects);
+        }
+
+        // Backends for Frontends (--bff): one deployable per client type.
+        for (var i = 0; i < model.Bff.Count; i++)
+        {
+            GenerateBffHost(projectDir, BffHostModel.For(model, model.Bff[i], i), projects);
         }
 
         // â”€â”€ Shared kernel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -423,6 +451,9 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
                 Path.Combine(apiDir, "appsettings.Testing.json"));
         _templates.RenderToFile("app/launchSettings.json", model,
             Path.Combine(apiDir, "Properties", "launchSettings.json"));
+        if (model.UseSecurityGuard)
+            _templates.RenderToFile("app/loosening-allowlist.json", model,
+                Path.Combine(apiDir, "security", "loosening-allowlist.json"));
         projects.Add($"src/API/{rootNs}.Api/{rootNs}.Api.csproj");
     }
 
@@ -459,8 +490,8 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         _templates.RenderToFile("app/Index.Web.cshtml", model,
             Path.Combine(webDir, "Pages", "Index.cshtml"));
 
-        // Typed API clients: always generated. With auth off they still work â€”
-        // TokenRelayHandler passes through and the calls go out anonymously.
+        // Typed API clients: always generated. With auth on they carry the BFF web session's token
+        // (AddBffUserAccessToken); with auth off they call the API anonymously.
         _templates.RenderToFile("app/ApiClientExtensions.Web", model,
             Path.Combine(webDir, "ApiClientExtensions.cs"));
         if (!model.NoExample)
@@ -469,13 +500,13 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
                 Path.Combine(webDir, "ApiClients", $"{model.ExampleModule}ApiClient.cs"));
         }
 
-        // â”€â”€ Authentication (A2.2): password-grant sign-in + token relay â”€â”€
+        // â”€â”€ Authentication: a BFF web session (Modulus.Bff) behind the sign-in pages â”€â”€
         if (model.UseAuth)
         {
+            _templates.RenderToFile("app/loosening-allowlist.Web.json", model,
+                Path.Combine(webDir, "security", "loosening-allowlist.json"));
             _templates.RenderToFile("app/PrincipalCurrentUser", model,
                 Path.Combine(webDir, "Security", "PrincipalCurrentUser.cs"));
-            _templates.RenderToFile("app/TokenRelayHandler", model,
-                Path.Combine(webDir, "Security", "TokenRelayHandler.cs"));
 
             var accountDir = Path.Combine(webDir, "Pages", "Account");
             _templates.RenderToFile("app/WebAccountViewStart", model,
@@ -495,6 +526,26 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         }
 
         projects.Add($"src/Web/{rootNs}.Web/{rootNs}.Web.csproj");
+    }
+
+    /// <summary>
+    /// Generates one BFF host (<c>src/Bff/{App}.Bff.{Client}</c>): the client's own edge with its authentication, edge rules,
+    /// YARP passthrough of <c>/api</c> to the API and, with the example module, an aggregate <c>/home</c> endpoint.
+    /// </summary>
+    internal void GenerateBffHost(string projectDir, BffHostModel bff, List<string> projects)
+    {
+        var dir = Path.Combine(projectDir, "src", "Bff", bff.ProjectName);
+        _templates.RenderToFile("bff/bff.csproj", bff, Path.Combine(dir, $"{bff.ProjectName}.csproj"));
+        _templates.RenderToFile("bff/Program", bff, Path.Combine(dir, "Program.cs"));
+        _templates.RenderToFile("bff/appsettings.json", bff, Path.Combine(dir, "appsettings.json"));
+        _templates.RenderToFile("bff/appsettings.Development.json", bff, Path.Combine(dir, "appsettings.Development.json"));
+        _templates.RenderToFile("bff/launchSettings.json", bff, Path.Combine(dir, "Properties", "launchSettings.json"));
+        _templates.RenderToFile("bff/ApiClients", bff, Path.Combine(dir, "ApiClients", "ApiClientRegistration.cs"));
+        foreach (var module in bff.Modules)
+            Ux.WriteFile(Path.Combine(dir, "ApiClients", $"{module.ModuleName}Api.cs"), BffApiClients.RenderModule(_templates, module));
+        if (bff.HasExample)
+            _templates.RenderToFile("bff/HomeEndpoints", bff, Path.Combine(dir, "Endpoints", "HomeEndpoints.cs"));
+        projects.Add(bff.SolutionPath);
     }
 
     /// <summary>The identity module's project in the <c>.slnx</c> (it has an Infrastructure project only).</summary>

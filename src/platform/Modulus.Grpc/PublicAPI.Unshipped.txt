@@ -1,0 +1,40 @@
+#nullable enable
+Modulus.Grpc.GrpcClientExtensions
+Modulus.Grpc.GrpcExceptionMapper
+Modulus.Grpc.GrpcServerExtensions
+Modulus.Grpc.ModulusGrpcClientOptions
+Modulus.Grpc.ModulusGrpcClientOptions.DefaultDeadline.get -> System.TimeSpan?
+Modulus.Grpc.ModulusGrpcClientOptions.DefaultDeadline.set -> void
+Modulus.Grpc.ModulusGrpcClientOptions.InitialBackoff.get -> System.TimeSpan
+Modulus.Grpc.ModulusGrpcClientOptions.InitialBackoff.set -> void
+Modulus.Grpc.ModulusGrpcClientOptions.MaxAttempts.get -> int
+Modulus.Grpc.ModulusGrpcClientOptions.MaxAttempts.set -> void
+Modulus.Grpc.ModulusGrpcClientOptions.MaxBackoff.get -> System.TimeSpan
+Modulus.Grpc.ModulusGrpcClientOptions.MaxBackoff.set -> void
+Modulus.Grpc.ModulusGrpcClientOptions.ModulusGrpcClientOptions() -> void
+Modulus.Grpc.ModulusGrpcOptions
+Modulus.Grpc.ModulusGrpcOptions.EnableDetailedErrors.get -> bool
+Modulus.Grpc.ModulusGrpcOptions.EnableDetailedErrors.set -> void
+Modulus.Grpc.ModulusGrpcOptions.EnableHealthChecks.get -> bool
+Modulus.Grpc.ModulusGrpcOptions.EnableHealthChecks.set -> void
+Modulus.Grpc.ModulusGrpcOptions.EnableReflection.get -> bool
+Modulus.Grpc.ModulusGrpcOptions.EnableReflection.set -> void
+Modulus.Grpc.ModulusGrpcOptions.MaxReceiveMessageSize.get -> int?
+Modulus.Grpc.ModulusGrpcOptions.MaxReceiveMessageSize.set -> void
+Modulus.Grpc.ModulusGrpcOptions.MaxSendMessageSize.get -> int?
+Modulus.Grpc.ModulusGrpcOptions.MaxSendMessageSize.set -> void
+Modulus.Grpc.ModulusGrpcOptions.ModulusGrpcOptions() -> void
+Modulus.Grpc.ModulusRpcExceptionExtensions
+const Modulus.Grpc.GrpcExceptionMapper.ErrorDomain = "modulus" -> string!
+const Modulus.Grpc.ModulusGrpcClientOptions.SectionName = "Grpc:Client" -> string!
+const Modulus.Grpc.ModulusGrpcOptions.SectionName = "Grpc" -> string!
+static Modulus.Grpc.GrpcClientExtensions.AddModulusGrpcClient<TClient>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<System.IServiceProvider!, Grpc.Net.ClientFactory.GrpcClientFactoryOptions!>! configure) -> Microsoft.Extensions.DependencyInjection.IHttpClientBuilder!
+static Modulus.Grpc.GrpcClientExtensions.AddModulusGrpcClient<TClient>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Uri! address) -> Microsoft.Extensions.DependencyInjection.IHttpClientBuilder!
+static Modulus.Grpc.GrpcClientExtensions.ForwardAccessToken(this Microsoft.Extensions.DependencyInjection.IHttpClientBuilder! builder) -> Microsoft.Extensions.DependencyInjection.IHttpClientBuilder!
+static Modulus.Grpc.GrpcClientExtensions.PropagateTenant(this Microsoft.Extensions.DependencyInjection.IHttpClientBuilder! builder, string! headerName = "X-Tenant-Id") -> Microsoft.Extensions.DependencyInjection.IHttpClientBuilder!
+static Modulus.Grpc.GrpcExceptionMapper.ToRpcException(System.Exception! exception, bool includeExceptionDetails = false) -> Grpc.Core.RpcException!
+static Modulus.Grpc.GrpcServerExtensions.AddModulusGrpc(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration, System.Action<Grpc.AspNetCore.Server.GrpcServiceOptions!>? configure = null) -> Grpc.AspNetCore.Server.IGrpcServerBuilder!
+static Modulus.Grpc.GrpcServerExtensions.MapModulusGrpc(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, params System.Reflection.Assembly![]! assemblies) -> Microsoft.AspNetCore.Builder.IEndpointConventionBuilder!
+static Modulus.Grpc.ModulusRpcExceptionExtensions.GetErrorMetadata(this Grpc.Core.RpcException! exception) -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+static Modulus.Grpc.ModulusRpcExceptionExtensions.GetErrorReason(this Grpc.Core.RpcException! exception) -> string?
+static Modulus.Grpc.ModulusRpcExceptionExtensions.GetValidationErrors(this Grpc.Core.RpcException! exception) -> System.Collections.Generic.IReadOnlyList<string!>!

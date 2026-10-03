@@ -1,5 +1,6 @@
 namespace Modulus.AspNetCore.OpenApi;
 
+using Microsoft.AspNetCore.OpenApi;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -27,14 +28,40 @@ public static class OpenApiExtensions
 
         var options = section.Get<ModulusOpenApiOptions>() ?? new ModulusOpenApiOptions();
         configure?.Invoke(options);
-
-        services.AddOpenApi(options.DocumentName, openApi =>
-        {
-            openApi.AddDocumentTransformer<ModulusOpenApiDocumentTransformer>();
-            if (options.IncludeBearerSecurity)
-                openApi.AddOperationTransformer<AuthorizeCheckOperationTransformer>();
-        });
+        AddDocument(services, options.DocumentName, options.IncludeBearerSecurity, configureDocument: null);
 
         return services;
     }
+
+    /// <summary>
+    /// Adds one more OpenAPI document (served at <c>/openapi/{documentName}.json</c>) with the
+    /// Modulus info/security transformers, e.g. one document per BFF client. Selects the
+    /// document's operations with <paramref name="configureDocument"/>
+    /// (<see cref="OpenApiOptions.ShouldInclude"/>).
+    /// </summary>
+    public static IServiceCollection AddModulusOpenApiDocument(
+        this IServiceCollection services,
+        IConfiguration configuration,
+        string documentName,
+        Action<OpenApiOptions>? configureDocument = null)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(configuration);
+        ArgumentException.ThrowIfNullOrEmpty(documentName);
+
+        var section = configuration.GetSection(ModulusOpenApiOptions.SectionName);
+        services.AddOptions<ModulusOpenApiOptions>().Bind(section);
+        var options = section.Get<ModulusOpenApiOptions>() ?? new ModulusOpenApiOptions();
+        AddDocument(services, documentName, options.IncludeBearerSecurity, configureDocument);
+        return services;
+    }
+
+    private static void AddDocument(IServiceCollection services, string documentName, bool includeBearer, Action<OpenApiOptions>? configureDocument)
+        => services.AddOpenApi(documentName, openApi =>
+        {
+            openApi.AddDocumentTransformer<ModulusOpenApiDocumentTransformer>();
+            if (includeBearer)
+                openApi.AddOperationTransformer<AuthorizeCheckOperationTransformer>();
+            configureDocument?.Invoke(openApi);
+        });
 }

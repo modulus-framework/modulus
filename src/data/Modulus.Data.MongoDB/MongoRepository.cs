@@ -138,19 +138,28 @@ public abstract class MongoRepository<T, TDoc>(
         return docs.Select(ToDomain).Count(compiled);
     }
 
+    // Writes stamp the ambient tenant on the document and reject one carrying another tenant, the
+    // same rule ModuleDbContext applies on SaveChanges.
     public Task AddAsync(T entity, CancellationToken ct)
-        => Collection.InsertOneAsync(ToDocument(entity), null, ct);
+        => Collection.InsertOneAsync(Stamped(entity), null, ct);
 
     public async Task AddRangeAsync(IEnumerable<T> entities, CancellationToken ct)
         => await Collection.InsertManyAsync(
-            entities.Select(ToDocument), null, ct);
+            entities.Select(Stamped).ToList(), null, ct);
 
     public Task UpdateAsync(T entity, CancellationToken ct)
         => Collection.ReplaceOneAsync(
             MongoTenantFilter.And<TDoc>(Tenant,
                 Builders<TDoc>.Filter.Eq("_id", entity.Id)),
-            ToDocument(entity),
+            Stamped(entity),
             new ReplaceOptions { IsUpsert = false }, ct);
+
+    private TDoc Stamped(T entity)
+    {
+        var document = ToDocument(entity);
+        MongoTenantGuard.Stamp(document, Tenant);
+        return document;
+    }
 
     public Task DeleteAsync(T entity, CancellationToken ct)
         => Collection.DeleteOneAsync(

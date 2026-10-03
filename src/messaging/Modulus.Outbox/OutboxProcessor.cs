@@ -188,11 +188,25 @@ public sealed class OutboxProcessor(
             // Guid.Empty) is dispatched under an explicit host scope
             // (Change(null)); without it, fail-closed tenant filters would hide
             // the host's own data from the handler.
-            IDisposable? tenantScope = currentTenant is null
-                ? null
-                : currentTenant.Change(message.TenantId == Guid.Empty
-                    ? null
-                    : new TenantInfo(message.TenantId, string.Empty));
+            // A tenant id is verified (ITenantContextRestorer); a row whose tenant is unknown or
+            // deactivated is dead-lettered below rather than dispatched in an unchecked scope.
+            IDisposable? tenantScope = null;
+            TenantContextRejectedException? rejected = null;
+            if (message.TenantId == Guid.Empty)
+            {
+                tenantScope = currentTenant?.Change(null);
+            }
+            else
+            {
+                try
+                {
+                    tenantScope = ssp.EnterTenant(await ssp.VerifyTenantAsync(message.TenantId, ct));
+                }
+                catch (TenantContextRejectedException ex)
+                {
+                    rejected = ex;
+                }
+            }
 
             // Restore the originating correlation id so it flows into the
             // in-process handlers and onto the broker envelope for cross-service
@@ -204,6 +218,9 @@ public sealed class OutboxProcessor(
 
             try
             {
+                if (rejected is not null)
+                    throw rejected;
+
                 await dispatcher.DispatchAsync(message, ct);
                 message.ProcessedAt = DateTime.UtcNow;
                 message.LockedBy = null;
@@ -224,6 +241,18 @@ public sealed class OutboxProcessor(
                 logger.LogDebug(dex,
                     "Outbox message {Id} deferred (inbox contention); next attempt at {Next}.",
                     message.Id, message.NextAttemptAt);
+            }
+            catch (TenantContextRejectedException ex)
+            {
+                // Redelivery cannot fix an unknown or deactivated tenant: dead-letter now.
+                message.RetryCount = Math.Max(message.RetryCount + 1, options.MaxRetries);
+                message.Error = ex.Message;
+                message.LockedBy = null;
+                message.LockedUntil = null;
+                ModulusMeters.OutboxDeadLettered.Add(1);
+                logger.LogError(ex,
+                    "Outbox message {Id} ({Type}) dead-lettered: its tenant context was rejected.",
+                    message.Id, message.MessageType);
             }
             catch (Exception ex)
             {

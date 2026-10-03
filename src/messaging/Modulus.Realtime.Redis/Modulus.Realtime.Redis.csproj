@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <Description>Redis backplane for Modulus.Realtime: every node receives every realtime message (ordered Redis pub/sub) and delivers it to its own SSE and SignalR connections; a Redis outage degrades to delivering on the publishing node.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Modulus.Realtime/Modulus.Realtime.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="StackExchange.Redis" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Modulus.Realtime.Tests" />
+  </ItemGroup>
+
+</Project>

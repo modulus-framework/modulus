@@ -1,0 +1,130 @@
+using System.Net;
+using System.Net.Http.Headers;
+using FluentAssertions;
+using Microsoft.Extensions.DependencyInjection;
+using Modulus.Events.Abstractions;
+using Modulus.Realtime;
+using Modulus.Testing;
+using Xunit;
+{{~ if has_test_event ~}}
+using {{ test_event_namespace }};
+{{~ end ~}}
+using ApiEntryPoint = {{ root_namespace }}.Api.ApiEntryPoint;
+
+namespace {{ root_namespace }}.Tests;
+
+/// <summary>
+/// The realtime SSE stream (modulus add-realtime) on the in-memory test host: who may connect, and what reaches whom.
+/// </summary>
+public sealed class RealtimeTests(ModulusWebAppFactory<ApiEntryPoint> factory)
+    : IClassFixture<ModulusWebAppFactory<ApiEntryPoint>>
+{
+    [Fact]
+    public async Task Anonymous_callers_are_rejected()
+    {
+        using var request = Stream();
+
+        using var response = await factory.CreateClient().SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task A_signed_in_caller_receives_messages_for_the_tenant()
+    {
+        using var client = factory.CreateAuthenticatedClient();
+        await using var events = await OpenAsync(client);
+
+        await PublishAsync("test.hello", RealtimeAudience.Tenant);
+
+        var message = await events.NextAsync();
+        message.Event.Should().Be("test.hello");
+        message.Id.Should().NotBeNullOrEmpty();
+    }
+{{~ if has_test_event ~}}
+
+    [Fact]
+    public async Task {{ test_event_type }}_reaches_only_holders_of_the_permission()
+    {
+        using var manager = {{ if has_admin_role }}factory.CreateAuthenticatedClient(roles: ["{{ admin_role }}"]){{ else }}factory.CreateAuthenticatedClient(permissions: ["{{ test_event_permission }}"]){{ end }};
+        using var other = factory.CreateAuthenticatedClient();
+        await using var managerEvents = await OpenAsync(manager);
+        await using var otherEvents = await OpenAsync(other);
+        var id = Guid.NewGuid();
+
+        using (var scope = factory.Services.CreateScope())
+            await scope.ServiceProvider.GetRequiredService<IModuleBus>().PublishAsync(new {{ test_event_type }}(id));
+        await PublishAsync("test.everyone", RealtimeAudience.Tenant);
+
+        var pushed = await managerEvents.NextAsync();
+        pushed.Event.Should().Be("{{ test_event_name }}");
+        pushed.Data.Should().Contain(id.ToString());
+        (await otherEvents.NextAsync()).Event.Should().Be("test.everyone", "a caller without {{ test_event_permission }} is skipped");
+    }
+{{~ end ~}}
+
+    private static HttpRequestMessage Stream()
+    {
+        var request = new HttpRequestMessage(HttpMethod.Get, "/realtime/events");
+        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/event-stream"));
+        return request;
+    }
+
+    private async Task PublishAsync(string type, RealtimeAudience audience)
+    {
+        using var scope = factory.Services.CreateScope();
+        await scope.ServiceProvider.GetRequiredService<IRealtimePublisher>().PublishAsync(type, new { type }, audience);
+    }
+
+    /// <summary>Opens the stream and reads its first event (modulus.ready), after which messages reach it.</summary>
+    private static async Task<EventStream> OpenAsync(HttpClient client)
+    {
+        using var request = Stream();
+        var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var stream = new EventStream(response);
+        (await stream.NextAsync()).Event.Should().Be(RealtimeEvents.Ready);
+        return stream;
+    }
+
+    private sealed record SseEvent(string? Id, string? Event, string? Data);
+
+    /// <summary>Reads SSE events (id / event / data), skipping heartbeats.</summary>
+    private sealed class EventStream(HttpResponseMessage response) : IAsyncDisposable
+    {
+        private readonly StreamReader _reader = new(response.Content.ReadAsStream());
+
+        public async Task<SseEvent> NextAsync()
+        {
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+            string? id = null, type = null, data = null;
+            while (true)
+            {
+                var line = await _reader.ReadLineAsync(timeout.Token) ?? throw new EndOfStreamException();
+                if (line.Length == 0)
+                {
+                    if (data is not null)
+                        return new SseEvent(id, type, data);
+                    (id, type) = (null, null);
+                    continue;
+                }
+
+                var colon = line.IndexOf(':');
+                var value = colon < 0 ? "" : line[(colon + 1)..].TrimStart(' ');
+                switch (colon < 0 ? line : line[..colon])
+                {
+                    case "id": id = value; break;
+                    case "event": type = value; break;
+                    case "data": data = value.Length == 0 ? null : value; break;
+                }
+            }
+        }
+
+        public ValueTask DisposeAsync()
+        {
+            _reader.Dispose();
+            response.Dispose();
+            return ValueTask.CompletedTask;
+        }
+    }
+}

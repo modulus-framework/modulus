@@ -7,6 +7,8 @@ namespace Modulus.Diagnostics.Endpoints;
 using Modulus.AspNetCore.Endpoints;
 using Modulus.Core;
 using Modulus.Core.Abstractions;
+using Modulus.AspNetCore.Security.Policy;
+using Modulus.Core.Abstractions.Security;
 
 /// <summary>
 /// Maps <c>GET /health/graph</c>: the loaded-module inventory in registration
@@ -19,7 +21,7 @@ internal sealed class ModuleGraphEndpoint : IMinimalEndpoint
     public void MapEndpoint(IEndpointRouteBuilder app)
         => app.MapGet("/health/graph", Handle)
                .WithTags("Health")
-               .AllowAnonymous();
+               .Loosen(new LoosenedAttribute("Diagnostics: loaded-module inventory for operators and probes") { Framework = true });
 
     private static IResult Handle(IModuleLoader loader)
     {

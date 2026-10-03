@@ -1,3 +1,15 @@
 #nullable enable
 Modulus.Data.PostgreSQL.PostgreSQLExtensions
 static Modulus.Data.PostgreSQL.PostgreSQLExtensions.AddPostgreSQLDatabase<TContext>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, string! connectionString, System.Action<Npgsql.EntityFrameworkCore.PostgreSQL.Infrastructure.NpgsqlDbContextOptionsBuilder!>? configure = null, bool useSnakeCaseNaming = true) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+Modulus.Data.PostgreSQL.PostgreSqlRowLevelSecurity
+const Modulus.Data.PostgreSQL.PostgreSqlRowLevelSecurity.HostSetting = "modulus.is_host" -> string!
+const Modulus.Data.PostgreSQL.PostgreSqlRowLevelSecurity.PolicyName = "modulus_tenant" -> string!
+const Modulus.Data.PostgreSQL.PostgreSqlRowLevelSecurity.TenantSetting = "modulus.tenant_id" -> string!
+static Modulus.Data.PostgreSQL.PostgreSqlRowLevelSecurity.AddPostgreSqlRowLevelSecurity<TContext>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.Data.PostgreSQL.PostgreSqlRowLevelSecurity.DisableScript(string! table, string? schema = null) -> string!
+static Modulus.Data.PostgreSQL.PostgreSqlRowLevelSecurity.DisableTenantRowLevelSecurity(this Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder! migrationBuilder, string! table, string? schema = null) -> Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder!
+static Modulus.Data.PostgreSQL.PostgreSqlRowLevelSecurity.EnableScript(string! table, string! tenantColumn = "tenant_id", string? schema = null) -> string!
+static Modulus.Data.PostgreSQL.PostgreSqlRowLevelSecurity.EnableTenantRowLevelSecurity(this Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder! migrationBuilder, string! table, string! tenantColumn = "tenant_id", string? schema = null) -> Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder!
+static Modulus.Data.PostgreSQL.PostgreSqlRowLevelSecurity.EnsureAsync(Microsoft.EntityFrameworkCore.DbContext! context, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+static Modulus.Data.PostgreSQL.PostgreSqlRowLevelSecurity.Interceptor.get -> Modulus.EntityFrameworkCore.Isolation.TenantSessionInterceptor!
+static Modulus.Data.PostgreSQL.PostgreSqlRowLevelSecurity.Script(Microsoft.EntityFrameworkCore.Metadata.IModel! model) -> string!

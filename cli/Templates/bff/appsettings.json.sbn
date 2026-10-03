@@ -1,0 +1,73 @@
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning",
+      "Yarp": "Warning"
+    }
+  },
+  "Bff": {
+    "AuthServer": "{{ auth_server }}",
+    "Authority": "{{ authority }}",
+    "Services": {
+      "api": { "Address": "{{ api_base_url }}" }{{ for svc in upstream_services }},
+      "{{ svc.name }}": { "Address": "{{ svc.address }}" }{{ end }}
+    },
+    "UseServiceDiscovery": {{ if use_service_discovery }}true{{ else }}false{{ end }},
+    "Clients": {
+      "{{ client_name }}": {
+        "ClientId": "{{ client_id }}",
+        "ClientSecret": "",
+{{ if is_web }}        "LoginMode": "{{ login_mode }}",
+        "TokenStorage": "ServerSide",
+        "RefreshBeforeExpiry": "00:01:00",
+        "SessionLifetime": "08:00:00",
+{{ else if is_mobile }}        "TokenValidation": "Jwt",
+        "MinimumAppVersion": "1.0.0",
+        "MinimumAppVersionByPlatform": {},
+        "EnableETags": true,
+        "RateLimit": { "PermitLimit": 120, "Window": "00:01:00" },
+{{ else }}        "TokenValidation": "Jwt",
+        "RequireIdempotencyKey": true,
+        "RateLimit": { "PermitLimit": 600, "Window": "00:01:00" },
+{{ end }}        "RemoteApis": [
+{{~ for svc in upstream_services ~}}
+          { "LocalPath": "/api/{{ svc.name }}", "Service": "{{ svc.name }}" },
+{{~ end ~}}
+          { "LocalPath": "/api", "Service": "api" }
+        ]
+      }
+    }
+  },
+  "Caching": {
+    "Fusion": {
+      "CacheName": "{{ app_name_lower }}-bff-{{ client_name }}",
+      "DefaultDuration": "00:05:00",
+      "FailSafeEnabled": true
+    }{{ if use_redis_cache }},
+    "Redis": {
+      "ConnectionString": "localhost:6379"
+    }{{ end }}
+  },
+{{ if enable_correlation }}  "Correlation": {
+    "HeaderName": "X-Correlation-ID",
+    "IncludeInResponse": true,
+    "UseTraceIdWhenMissing": true
+  },
+{{ end }}{{ if enable_security_headers }}  "SecurityHeaders": {
+    "ContentTypeOptions": true,
+    "FrameOptions": "DENY",
+    "ReferrerPolicy": "strict-origin-when-cross-origin",
+    "EnableHsts": true
+  },
+{{ end }}  "OpenApi": {
+    "Title": "{{ app_name }} {{ client_pascal }} BFF",
+    "Version": "v1"{{ if is_web }},
+    "IncludeBearerSecurity": false{{ end }}
+  },
+{{ if enable_secrets_guard }}  "SecretsGuard": {
+    "Enabled": true,
+    "FailOnViolation": true
+  },
+{{ end }}  "AllowedHosts": "*"
+}

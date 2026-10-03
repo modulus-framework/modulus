@@ -193,8 +193,13 @@ public static class EndpointDiscovery
     private static void ApplyAuthorization(
         IEndpointConventionBuilder builder, EndpointConfig config)
     {
+        if (config.SecurityPolicy is not null)
+            builder.WithMetadata(config.SecurityPolicy);
+
         if (config.AllowAnonymous)
         {
+            if (config.Loosening is not null)
+                builder.WithMetadata(config.Loosening);
             builder.AllowAnonymous();
             return;
         }

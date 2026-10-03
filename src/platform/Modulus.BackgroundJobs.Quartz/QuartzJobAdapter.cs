@@ -28,22 +28,22 @@ public sealed class QuartzJobAdapter<TJob, TArgs> : IJob
         var jobDataMap = context.JobDetail.JobDataMap;
 
         // ── Restore ambient context ────────────────────────────────
-        TenantInfo? tenantInfo = null;
-        if (jobDataMap.ContainsKey("tenantId"))
+        // The tenant id is verified (ITenantContextRestorer): a job scheduled for a tenant that
+        // has since been deactivated or deleted fails instead of running in an unchecked scope.
+        Guid? tenantId = null;
+        if (jobDataMap.ContainsKey("tenantId")
+            && Guid.TryParse(jobDataMap.GetString("tenantId"), out var parsed))
         {
-            var tenantIdStr = jobDataMap.GetString("tenantId");
-            if (!string.IsNullOrEmpty(tenantIdStr) && Guid.TryParse(tenantIdStr, out var tenantId))
-                tenantInfo = new TenantInfo(tenantId, string.Empty);
+            tenantId = parsed;
         }
 
         var correlationId = jobDataMap.ContainsKey("correlationId")
             ? jobDataMap.GetString("correlationId") ?? string.Empty
             : string.Empty;
 
-        using var tenantScope = tenantInfo is { } ti
-            && _serviceProvider.GetService<ICurrentTenant>() is { } tenant
-                ? tenant.Change(ti)
-                : null;
+        using var tenantScope = tenantId is { } id
+            ? _serviceProvider.EnterTenant(await _serviceProvider.VerifyTenantAsync(id, context.CancellationToken))
+            : null;
         using var correlationScope = !string.IsNullOrEmpty(correlationId)
             && _serviceProvider.GetService<ICorrelationContext>() is { } correlation
                 ? correlation.BeginScope(correlationId)

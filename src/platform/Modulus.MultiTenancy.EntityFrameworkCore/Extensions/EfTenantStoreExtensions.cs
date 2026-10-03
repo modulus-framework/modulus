@@ -40,6 +40,13 @@ public static class EfTenantStoreExtensions
         services.AddSingleton<ITenantStore>(
             sp => new ScopedTenantStoreBridge(
                 sp.GetRequiredService<IServiceScopeFactory>()));
+
+        // Memberships live in the same context (one login across companies).
+        services.RemoveAll<ITenantMembershipStore>();
+        services.AddScoped<EfTenantMembershipStore>();
+        services.AddSingleton<ITenantMembershipStore>(
+            sp => new ScopedTenantMembershipStoreBridge(
+                sp.GetRequiredService<IServiceScopeFactory>()));
         return services;
     }
 

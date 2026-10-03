@@ -99,3 +99,80 @@ static Modulus.EntityFrameworkCore.Extensions.EFCoreServiceCollectionExtensions.
 static Modulus.EntityFrameworkCore.Extensions.ModuleMigrationServiceExtensions.ExternallyManaged<TContext>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static Modulus.EntityFrameworkCore.ModelBuilding.ExtraPropertiesModelBuilderExtensions.UseModulusExtraProperties(this Microsoft.EntityFrameworkCore.ModelBuilder! modelBuilder) -> Microsoft.EntityFrameworkCore.ModelBuilder!
 static readonly Modulus.EntityFrameworkCore.Transactions.DeferredDomainEventTransactionInterceptor.Instance -> Modulus.EntityFrameworkCore.Transactions.DeferredDomainEventTransactionInterceptor!
+Modulus.EntityFrameworkCore.Isolation.CrossTenantSql
+Modulus.EntityFrameworkCore.Isolation.CrossTenantSqlException
+Modulus.EntityFrameworkCore.Isolation.CrossTenantSqlException.CrossTenantSqlException(System.Collections.Generic.IReadOnlyList<string!>! tables, string! origin) -> void
+Modulus.EntityFrameworkCore.Isolation.CrossTenantSqlException.Origin.get -> string!
+Modulus.EntityFrameworkCore.Isolation.CrossTenantSqlException.Tables.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Modulus.EntityFrameworkCore.Isolation.DataIsolationExtensions
+Modulus.EntityFrameworkCore.Isolation.DataIsolationTier
+Modulus.EntityFrameworkCore.Isolation.DataIsolationTier.DatabasePerTenant = 1 -> Modulus.EntityFrameworkCore.Isolation.DataIsolationTier
+Modulus.EntityFrameworkCore.Isolation.DataIsolationTier.Shared = 0 -> Modulus.EntityFrameworkCore.Isolation.DataIsolationTier
+Modulus.EntityFrameworkCore.Isolation.ModuleDbContextIsolation
+Modulus.EntityFrameworkCore.Isolation.ModuleDbContextIsolation.<Clone>$() -> Modulus.EntityFrameworkCore.Isolation.ModuleDbContextIsolation!
+Modulus.EntityFrameworkCore.Isolation.ModuleDbContextIsolation.ContextType.get -> System.Type!
+Modulus.EntityFrameworkCore.Isolation.ModuleDbContextIsolation.ContextType.init -> void
+Modulus.EntityFrameworkCore.Isolation.ModuleDbContextIsolation.Deconstruct(out System.Type! ContextType, out Modulus.EntityFrameworkCore.Isolation.TenantIsolationMode Mode, out Modulus.EntityFrameworkCore.Isolation.TenantSessionInterceptor? SessionInterceptor) -> void
+Modulus.EntityFrameworkCore.Isolation.ModuleDbContextIsolation.Equals(Modulus.EntityFrameworkCore.Isolation.ModuleDbContextIsolation? other) -> bool
+Modulus.EntityFrameworkCore.Isolation.ModuleDbContextIsolation.Mode.get -> Modulus.EntityFrameworkCore.Isolation.TenantIsolationMode
+Modulus.EntityFrameworkCore.Isolation.ModuleDbContextIsolation.Mode.init -> void
+Modulus.EntityFrameworkCore.Isolation.ModuleDbContextIsolation.ModuleDbContextIsolation(System.Type! ContextType, Modulus.EntityFrameworkCore.Isolation.TenantIsolationMode Mode, Modulus.EntityFrameworkCore.Isolation.TenantSessionInterceptor? SessionInterceptor = null) -> void
+Modulus.EntityFrameworkCore.Isolation.ModuleDbContextIsolation.SessionInterceptor.get -> Modulus.EntityFrameworkCore.Isolation.TenantSessionInterceptor?
+Modulus.EntityFrameworkCore.Isolation.ModuleDbContextIsolation.SessionInterceptor.init -> void
+Modulus.EntityFrameworkCore.Isolation.TenantIsolationMode
+Modulus.EntityFrameworkCore.Isolation.TenantIsolationMode.DatabasePerTenant = 2 -> Modulus.EntityFrameworkCore.Isolation.TenantIsolationMode
+Modulus.EntityFrameworkCore.Isolation.TenantIsolationMode.QueryFilter = 0 -> Modulus.EntityFrameworkCore.Isolation.TenantIsolationMode
+Modulus.EntityFrameworkCore.Isolation.TenantIsolationMode.RowLevelSecurity = 1 -> Modulus.EntityFrameworkCore.Isolation.TenantIsolationMode
+Modulus.EntityFrameworkCore.Isolation.TenantSession
+Modulus.EntityFrameworkCore.Isolation.TenantSession.Deconstruct(out System.Guid? TenantId, out bool IsHost) -> void
+Modulus.EntityFrameworkCore.Isolation.TenantSession.Equals(Modulus.EntityFrameworkCore.Isolation.TenantSession other) -> bool
+Modulus.EntityFrameworkCore.Isolation.TenantSession.IsHost.get -> bool
+Modulus.EntityFrameworkCore.Isolation.TenantSession.IsHost.init -> void
+Modulus.EntityFrameworkCore.Isolation.TenantSession.TenantId.get -> System.Guid?
+Modulus.EntityFrameworkCore.Isolation.TenantSession.TenantId.init -> void
+Modulus.EntityFrameworkCore.Isolation.TenantSession.TenantSession() -> void
+Modulus.EntityFrameworkCore.Isolation.TenantSession.TenantSession(System.Guid? TenantId, bool IsHost) -> void
+Modulus.EntityFrameworkCore.Isolation.TenantSessionInterceptor
+Modulus.EntityFrameworkCore.Isolation.TenantSessionInterceptor.NonQueryExecuting(System.Data.Common.DbCommand! command, Microsoft.EntityFrameworkCore.Diagnostics.CommandEventData! eventData, Microsoft.EntityFrameworkCore.Diagnostics.InterceptionResult<int> result) -> Microsoft.EntityFrameworkCore.Diagnostics.InterceptionResult<int>
+Modulus.EntityFrameworkCore.Isolation.TenantSessionInterceptor.NonQueryExecutingAsync(System.Data.Common.DbCommand! command, Microsoft.EntityFrameworkCore.Diagnostics.CommandEventData! eventData, Microsoft.EntityFrameworkCore.Diagnostics.InterceptionResult<int> result, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<Microsoft.EntityFrameworkCore.Diagnostics.InterceptionResult<int>>
+Modulus.EntityFrameworkCore.Isolation.TenantSessionInterceptor.ReaderExecuting(System.Data.Common.DbCommand! command, Microsoft.EntityFrameworkCore.Diagnostics.CommandEventData! eventData, Microsoft.EntityFrameworkCore.Diagnostics.InterceptionResult<System.Data.Common.DbDataReader!> result) -> Microsoft.EntityFrameworkCore.Diagnostics.InterceptionResult<System.Data.Common.DbDataReader!>
+Modulus.EntityFrameworkCore.Isolation.TenantSessionInterceptor.ReaderExecutingAsync(System.Data.Common.DbCommand! command, Microsoft.EntityFrameworkCore.Diagnostics.CommandEventData! eventData, Microsoft.EntityFrameworkCore.Diagnostics.InterceptionResult<System.Data.Common.DbDataReader!> result, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<Microsoft.EntityFrameworkCore.Diagnostics.InterceptionResult<System.Data.Common.DbDataReader!>>
+Modulus.EntityFrameworkCore.Isolation.TenantSessionInterceptor.ScalarExecuting(System.Data.Common.DbCommand! command, Microsoft.EntityFrameworkCore.Diagnostics.CommandEventData! eventData, Microsoft.EntityFrameworkCore.Diagnostics.InterceptionResult<object!> result) -> Microsoft.EntityFrameworkCore.Diagnostics.InterceptionResult<object!>
+Modulus.EntityFrameworkCore.Isolation.TenantSessionInterceptor.ScalarExecutingAsync(System.Data.Common.DbCommand! command, Microsoft.EntityFrameworkCore.Diagnostics.CommandEventData! eventData, Microsoft.EntityFrameworkCore.Diagnostics.InterceptionResult<object!> result, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<Microsoft.EntityFrameworkCore.Diagnostics.InterceptionResult<object!>>
+Modulus.EntityFrameworkCore.Isolation.TenantSessionInterceptor.TenantSessionInterceptor() -> void
+Modulus.EntityFrameworkCore.Isolation.TenantSessionInterceptor.TransactionRolledBack(System.Data.Common.DbTransaction! transaction, Microsoft.EntityFrameworkCore.Diagnostics.TransactionEndEventData! eventData) -> void
+Modulus.EntityFrameworkCore.Isolation.TenantSessionInterceptor.TransactionRolledBackAsync(System.Data.Common.DbTransaction! transaction, Microsoft.EntityFrameworkCore.Diagnostics.TransactionEndEventData! eventData, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.EntityFrameworkCore.Isolation.TenantSqlGuardInterceptor
+Modulus.EntityFrameworkCore.Isolation.TenantSqlGuardInterceptor.QueryCompilationStarting(System.Linq.Expressions.Expression! queryExpression, Microsoft.EntityFrameworkCore.Diagnostics.QueryExpressionEventData! eventData) -> System.Linq.Expressions.Expression!
+abstract Modulus.EntityFrameworkCore.Isolation.TenantSessionInterceptor.Configure(System.Data.Common.DbCommand! command, Modulus.EntityFrameworkCore.Isolation.TenantSession session) -> void
+abstract Modulus.EntityFrameworkCore.Isolation.TenantSessionInterceptor.Supports(System.Data.Common.DbConnection! connection) -> bool
+const Modulus.EntityFrameworkCore.Isolation.TenantSqlGuardInterceptor.UnfilteredQueryTag = "modulus:unfiltered" -> string!
+override Modulus.EntityFrameworkCore.Isolation.ModuleDbContextIsolation.Equals(object? obj) -> bool
+override Modulus.EntityFrameworkCore.Isolation.ModuleDbContextIsolation.GetHashCode() -> int
+override Modulus.EntityFrameworkCore.Isolation.ModuleDbContextIsolation.ToString() -> string!
+override Modulus.EntityFrameworkCore.Isolation.TenantSession.GetHashCode() -> int
+override Modulus.EntityFrameworkCore.Isolation.TenantSessionInterceptor.ConnectionClosed(System.Data.Common.DbConnection! connection, Microsoft.EntityFrameworkCore.Diagnostics.ConnectionEndEventData! eventData) -> void
+override Modulus.EntityFrameworkCore.Isolation.TenantSessionInterceptor.ConnectionClosedAsync(System.Data.Common.DbConnection! connection, Microsoft.EntityFrameworkCore.Diagnostics.ConnectionEndEventData! eventData) -> System.Threading.Tasks.Task!
+override Modulus.EntityFrameworkCore.Isolation.TenantSessionInterceptor.ConnectionOpened(System.Data.Common.DbConnection! connection, Microsoft.EntityFrameworkCore.Diagnostics.ConnectionEndEventData! eventData) -> void
+override Modulus.EntityFrameworkCore.Isolation.TenantSessionInterceptor.ConnectionOpenedAsync(System.Data.Common.DbConnection! connection, Microsoft.EntityFrameworkCore.Diagnostics.ConnectionEndEventData! eventData, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+override Modulus.EntityFrameworkCore.Isolation.TenantSqlGuardInterceptor.NonQueryExecuting(System.Data.Common.DbCommand! command, Microsoft.EntityFrameworkCore.Diagnostics.CommandEventData! eventData, Microsoft.EntityFrameworkCore.Diagnostics.InterceptionResult<int> result) -> Microsoft.EntityFrameworkCore.Diagnostics.InterceptionResult<int>
+override Modulus.EntityFrameworkCore.Isolation.TenantSqlGuardInterceptor.NonQueryExecutingAsync(System.Data.Common.DbCommand! command, Microsoft.EntityFrameworkCore.Diagnostics.CommandEventData! eventData, Microsoft.EntityFrameworkCore.Diagnostics.InterceptionResult<int> result, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<Microsoft.EntityFrameworkCore.Diagnostics.InterceptionResult<int>>
+override Modulus.EntityFrameworkCore.Isolation.TenantSqlGuardInterceptor.ReaderExecuting(System.Data.Common.DbCommand! command, Microsoft.EntityFrameworkCore.Diagnostics.CommandEventData! eventData, Microsoft.EntityFrameworkCore.Diagnostics.InterceptionResult<System.Data.Common.DbDataReader!> result) -> Microsoft.EntityFrameworkCore.Diagnostics.InterceptionResult<System.Data.Common.DbDataReader!>
+override Modulus.EntityFrameworkCore.Isolation.TenantSqlGuardInterceptor.ReaderExecutingAsync(System.Data.Common.DbCommand! command, Microsoft.EntityFrameworkCore.Diagnostics.CommandEventData! eventData, Microsoft.EntityFrameworkCore.Diagnostics.InterceptionResult<System.Data.Common.DbDataReader!> result, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<Microsoft.EntityFrameworkCore.Diagnostics.InterceptionResult<System.Data.Common.DbDataReader!>>
+override Modulus.EntityFrameworkCore.Isolation.TenantSqlGuardInterceptor.ScalarExecuting(System.Data.Common.DbCommand! command, Microsoft.EntityFrameworkCore.Diagnostics.CommandEventData! eventData, Microsoft.EntityFrameworkCore.Diagnostics.InterceptionResult<object!> result) -> Microsoft.EntityFrameworkCore.Diagnostics.InterceptionResult<object!>
+override Modulus.EntityFrameworkCore.Isolation.TenantSqlGuardInterceptor.ScalarExecutingAsync(System.Data.Common.DbCommand! command, Microsoft.EntityFrameworkCore.Diagnostics.CommandEventData! eventData, Microsoft.EntityFrameworkCore.Diagnostics.InterceptionResult<object!> result, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<Microsoft.EntityFrameworkCore.Diagnostics.InterceptionResult<object!>>
+static Modulus.EntityFrameworkCore.Isolation.CrossTenantSql.Allow(string! reason) -> System.IDisposable!
+static Modulus.EntityFrameworkCore.Isolation.CrossTenantSql.CurrentReason.get -> string?
+static Modulus.EntityFrameworkCore.Isolation.DataIsolationExtensions.AddModuleDatabasePerTenant<TContext>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, string! hostConnectionString, System.Func<System.Guid, string!>! tenantConnectionString, System.Action<Microsoft.EntityFrameworkCore.DbContextOptionsBuilder!, string!>! configure) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.EntityFrameworkCore.Isolation.DataIsolationExtensions.AddModulusDataIsolationCheck(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.EntityFrameworkCore.Isolation.DataIsolationExtensions.AddTenantSessionContext<TContext>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Modulus.EntityFrameworkCore.Isolation.TenantSessionInterceptor! interceptor) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.EntityFrameworkCore.Isolation.ModuleDbContextIsolation.operator !=(Modulus.EntityFrameworkCore.Isolation.ModuleDbContextIsolation? left, Modulus.EntityFrameworkCore.Isolation.ModuleDbContextIsolation? right) -> bool
+static Modulus.EntityFrameworkCore.Isolation.ModuleDbContextIsolation.operator ==(Modulus.EntityFrameworkCore.Isolation.ModuleDbContextIsolation? left, Modulus.EntityFrameworkCore.Isolation.ModuleDbContextIsolation? right) -> bool
+static Modulus.EntityFrameworkCore.Isolation.TenantSession.From(Modulus.Core.Abstractions.ICurrentTenant! tenant) -> Modulus.EntityFrameworkCore.Isolation.TenantSession
+static Modulus.EntityFrameworkCore.Isolation.TenantSession.None.get -> Modulus.EntityFrameworkCore.Isolation.TenantSession
+static Modulus.EntityFrameworkCore.Isolation.TenantSession.operator !=(Modulus.EntityFrameworkCore.Isolation.TenantSession left, Modulus.EntityFrameworkCore.Isolation.TenantSession right) -> bool
+static Modulus.EntityFrameworkCore.Isolation.TenantSession.operator ==(Modulus.EntityFrameworkCore.Isolation.TenantSession left, Modulus.EntityFrameworkCore.Isolation.TenantSession right) -> bool
+static Modulus.EntityFrameworkCore.Isolation.TenantSqlGuardInterceptor.Instance.get -> Modulus.EntityFrameworkCore.Isolation.TenantSqlGuardInterceptor!
+~override Modulus.EntityFrameworkCore.Isolation.TenantSession.Equals(object obj) -> bool
+~override Modulus.EntityFrameworkCore.Isolation.TenantSession.ToString() -> string
+const Modulus.EntityFrameworkCore.Isolation.TenantSqlGuardInterceptor.RawSqlQueryTag = "modulus:raw-sql" -> string!

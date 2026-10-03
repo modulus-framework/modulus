@@ -8,19 +8,30 @@ namespace Modulus.MultiTenancy.EntityFrameworkCore;
 /// their active state. Registered as a scoped service by
 /// <c>AddEfCoreTenantStore</c>. Reads go through <see cref="ITenantStore"/> /
 /// <see cref="EfTenantStore"/>; this is the write side, used by admin endpoints or
-/// seed code.
+/// seed code. Membership and activation changes are recorded in the tenant's security audit chain.
 /// </summary>
-public sealed class TenantManager(TenantStoreDbContext db)
+public sealed class TenantManager(TenantStoreDbContext db, ISecurityAuditLog? audit = null, ICurrentUser? actor = null)
 {
     /// <summary>
     /// Creates a new active tenant. Throws
     /// <see cref="InvalidOperationException"/> if <paramref name="slug"/> is already
     /// taken (also enforced by a unique index at the database level).
     /// </summary>
-    public async Task<TenantInfo> CreateAsync(
+    public Task<TenantInfo> CreateAsync(
         string slug,
         string? displayName = null,
         Guid? id = null,
+        CancellationToken ct = default)
+        => CreateAsync(slug, displayName, id, groupId: null, ct);
+
+    /// <summary>
+    /// Creates a new active tenant in the group of companies <paramref name="groupId"/>.
+    /// </summary>
+    public async Task<TenantInfo> CreateAsync(
+        string slug,
+        string? displayName,
+        Guid? id,
+        Guid? groupId,
         CancellationToken ct = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(slug);
@@ -34,13 +45,14 @@ public sealed class TenantManager(TenantStoreDbContext db)
             Id = id ?? Guid.NewGuid(),
             Slug = slug,
             DisplayName = displayName,
+            GroupId = groupId,
             IsActive = true,
             CreatedAtUtc = DateTimeOffset.UtcNow,
         };
 
         db.Tenants.Add(entity);
         await db.SaveChangesAsync(ct);
-        return new TenantInfo(entity.Id, entity.Slug, entity.DisplayName);
+        return new TenantInfo(entity.Id, entity.Slug, entity.DisplayName, GroupId: entity.GroupId);
     }
 
     /// <summary>
@@ -58,6 +70,66 @@ public sealed class TenantManager(TenantStoreDbContext db)
 
         entity.IsActive = isActive;
         await db.SaveChangesAsync(ct);
+        Audit(isActive ? "tenant.activated" : "tenant.deactivated", id, $"tenant:{id}");
         return true;
     }
+
+    /// <summary>
+    /// Grants <paramref name="userId"/> membership in <paramref name="tenantId"/> (one login across
+    /// companies), or re-activates a revoked one. Returns <see langword="false"/> when the tenant
+    /// does not exist.
+    /// </summary>
+    public async Task<bool> AddMemberAsync(Guid userId, Guid tenantId, CancellationToken ct = default)
+    {
+        if (!await db.Tenants.AnyAsync(t => t.Id == tenantId, ct))
+            return false;
+
+        var existing = await db.TenantMemberships
+            .FirstOrDefaultAsync(m => m.UserId == userId && m.TenantId == tenantId, ct);
+        if (existing is null)
+        {
+            db.TenantMemberships.Add(new TenantMembershipEntity
+            {
+                UserId = userId,
+                TenantId = tenantId,
+                IsActive = true,
+                CreatedAtUtc = DateTimeOffset.UtcNow,
+            });
+        }
+        else
+        {
+            existing.IsActive = true;
+        }
+
+        await db.SaveChangesAsync(ct);
+        Audit("membership.added", tenantId, $"user:{userId}");
+        return true;
+    }
+
+    /// <summary>
+    /// Revokes a membership (the row is kept, inactive). Takes effect on the user's next request.
+    /// Returns <see langword="false"/> when no such membership exists.
+    /// </summary>
+    public async Task<bool> RemoveMemberAsync(Guid userId, Guid tenantId, CancellationToken ct = default)
+    {
+        var existing = await db.TenantMemberships
+            .FirstOrDefaultAsync(m => m.UserId == userId && m.TenantId == tenantId, ct);
+        if (existing is null)
+            return false;
+
+        existing.IsActive = false;
+        await db.SaveChangesAsync(ct);
+        Audit("membership.removed", tenantId, $"user:{userId}");
+        return true;
+    }
+
+    private void Audit(string action, Guid tenantId, string target)
+        => audit?.Record(new SecurityAuditEvent
+        {
+            Category = SecurityAuditCategories.Tenancy,
+            Action = action,
+            TenantId = tenantId,
+            Actor = actor?.UserId?.ToString(),
+            Target = target,
+        });
 }

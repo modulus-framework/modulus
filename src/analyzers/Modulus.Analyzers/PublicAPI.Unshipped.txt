@@ -1,0 +1,6 @@
+#nullable enable
+Modulus.Analyzers.AnonymousEndpointAnalyzer
+Modulus.Analyzers.AnonymousEndpointAnalyzer.AnonymousEndpointAnalyzer() -> void
+const Modulus.Analyzers.AnonymousEndpointAnalyzer.DiagnosticId = "MOD0001" -> string!
+override Modulus.Analyzers.AnonymousEndpointAnalyzer.Initialize(Microsoft.CodeAnalysis.Diagnostics.AnalysisContext! context) -> void
+override Modulus.Analyzers.AnonymousEndpointAnalyzer.SupportedDiagnostics.get -> System.Collections.Immutable.ImmutableArray<Microsoft.CodeAnalysis.DiagnosticDescriptor!>

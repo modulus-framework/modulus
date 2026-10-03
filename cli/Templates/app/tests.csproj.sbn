@@ -25,7 +25,7 @@
     <PackageReference Include="Cobytelabs.Modulus.Testing" Version="{{ framework_version }}" />
     <!-- Module boundary rules and architecture verification. -->
     <PackageReference Include="Cobytelabs.Modulus.Testing.Architecture" Version="{{ framework_version }}" />
-{{ if auth == "openiddict" }}    <!-- Transitive advisory pin: OpenIddict's DataProtection integration pulls
+{{ if auth != "none" }}    <!-- Transitive advisory pin: OpenIddict's DataProtection integration (in Modulus.Identity, so every auth provider) pulls
          System.Security.Cryptography.Xml 10.0.7 (multiple high-severity advisories) into a project
          that, unlike the web host, does not get it from the shared framework. -->
     <PackageReference Include="System.Security.Cryptography.Xml" Version="10.0.10" />

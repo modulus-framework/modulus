@@ -1,0 +1,10 @@
+#nullable enable
+Modulus.Realtime.Redis.RealtimeRedisOptions
+Modulus.Realtime.Redis.RealtimeRedisOptions.Channel.get -> string!
+Modulus.Realtime.Redis.RealtimeRedisOptions.Channel.set -> void
+Modulus.Realtime.Redis.RealtimeRedisOptions.ConnectionString.get -> string?
+Modulus.Realtime.Redis.RealtimeRedisOptions.ConnectionString.set -> void
+Modulus.Realtime.Redis.RealtimeRedisOptions.RealtimeRedisOptions() -> void
+Modulus.Realtime.Redis.RedisRealtimeExtensions
+const Modulus.Realtime.Redis.RealtimeRedisOptions.SectionName = "Realtime:Redis" -> string!
+static Modulus.Realtime.Redis.RedisRealtimeExtensions.AddRedisRealtimeBackplane(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!

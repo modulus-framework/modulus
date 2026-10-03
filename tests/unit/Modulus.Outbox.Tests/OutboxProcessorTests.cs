@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+using Modulus.Core.Abstractions;
 using Modulus.Outbox;
 using Modulus.Outbox.Abstractions;
 using Xunit;
@@ -21,7 +22,8 @@ public sealed class OutboxProcessorTests
     /// </summary>
     private static async Task<TestHarness> BuildAsync(
         OutboxOptions? options = null,
-        Func<OutboxMessage, Task>? onDispatch = null)
+        Func<OutboxMessage, Task>? onDispatch = null,
+        Action<IServiceCollection>? configure = null)
     {
         var conn = new SqliteConnection("DataSource=:memory:");
         await conn.OpenAsync();
@@ -34,6 +36,7 @@ public sealed class OutboxProcessorTests
         var opts = options ?? new OutboxOptions();
         var dispatcher = new FakeDispatcher(onDispatch);
         services.AddSingleton<IOutboxDispatcher>(dispatcher);
+        configure?.Invoke(services);
 
         var sp = services.BuildServiceProvider();
         var db = sp.GetRequiredService<TestOutboxDbContext>();
@@ -217,6 +220,91 @@ public sealed class OutboxProcessorTests
     }
 
     [Fact]
+    public async Task ProcessAsync_RejectedTenant_DeadLettersWithoutDispatching()
+    {
+        // The row names a tenant the store no longer resolves (deleted / deactivated): it must not
+        // be dispatched in an unchecked scope, and retrying cannot fix it.
+        await using var h = await BuildAsync(
+            options: new OutboxOptions { MaxRetries = 5 },
+            configure: s => s.AddSingleton<ITenantContextRestorer>(new RejectingRestorer()));
+        h.Seed(tenantId: Guid.NewGuid());
+        await h.SaveChangesAsync();
+
+        await h.Processor.ProcessAsync();
+
+        h.Dispatcher.Calls.Should().Be(0);
+        var stored = await h.ReadSingleAsync();
+        stored.ProcessedAt.Should().BeNull();
+        stored.RetryCount.Should().Be(5);
+        stored.Error.Should().Contain("Tenant context rejected");
+        stored.LockedBy.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task ProcessAsync_VerifiedTenant_IsAmbientDuringDispatch()
+    {
+        // A real AsyncLocal tenant: the dispatcher must observe the verified tenant, which only
+        // holds when the processor enters it in its own frame (an AsyncLocal set inside an async
+        // helper does not flow back to the caller).
+        var tenantId = Guid.NewGuid();
+        var current = new AsyncLocalTenant();
+        TenantInfo? seen = null;
+        await using var h = await BuildAsync(
+            onDispatch: _ => { seen = current.Tenant; return Task.CompletedTask; },
+            configure: s => s
+                .AddSingleton<ICurrentTenant>(current)
+                .AddSingleton<ITenantContextRestorer>(new VerifyingRestorer()));
+        h.Seed(tenantId: tenantId);
+        await h.SaveChangesAsync();
+
+        await h.Processor.ProcessAsync();
+
+        seen.Should().NotBeNull();
+        seen!.TenantId.Should().Be(tenantId);
+        seen.TenantSlug.Should().Be("verified", "the dispatcher sees the store's tenant, not the raw id");
+        current.Tenant.Should().BeNull("the scope ends after dispatch");
+        (await h.ReadSingleAsync()).ProcessedAt.Should().NotBeNull();
+    }
+
+    private sealed class RejectingRestorer : ITenantContextRestorer
+    {
+        public ValueTask<TenantInfo> VerifyAsync(Guid tenantId, CancellationToken ct = default)
+            => throw new TenantContextRejectedException(tenantId);
+    }
+
+    private sealed class VerifyingRestorer : ITenantContextRestorer
+    {
+        public async ValueTask<TenantInfo> VerifyAsync(Guid tenantId, CancellationToken ct = default)
+        {
+            await Task.Yield();
+            return new TenantInfo(tenantId, "verified");
+        }
+    }
+
+    private sealed class AsyncLocalTenant : ICurrentTenant
+    {
+        private static readonly AsyncLocal<TenantInfo?> s_current = new();
+
+        public TenantInfo? Tenant => s_current.Value;
+        public Guid? TenantId => s_current.Value?.TenantId;
+        public string? TenantSlug => s_current.Value?.TenantSlug;
+        public bool IsAvailable => s_current.Value is not null;
+        public bool IsHost => false;
+
+        public IDisposable Change(TenantInfo? tenant)
+        {
+            var previous = s_current.Value;
+            s_current.Value = tenant;
+            return new Release(() => s_current.Value = previous);
+        }
+
+        private sealed class Release(Action onDispose) : IDisposable
+        {
+            public void Dispose() => onDispose();
+        }
+    }
+
+    [Fact]
     public async Task ProcessAsync_NonPositiveLockTimeout_StillDispatches()
     {
         await using var h = await BuildAsync(options: new OutboxOptions { LockTimeoutSec = 0 });
@@ -276,9 +364,10 @@ public sealed class OutboxProcessorTests
 
         public ServiceProvider Services => sp;
 
-        public OutboxMessage Seed(string payload = "{}", DateTime? createdAt = null)
+        public OutboxMessage Seed(string payload = "{}", DateTime? createdAt = null, Guid tenantId = default)
             => db.Set<OutboxMessage>().Add(new OutboxMessage
             {
+                TenantId = tenantId,
                 MessageType = "Modulus.Outbox.Tests.TestEvent, Modulus.Outbox.Tests",
                 Payload = payload,
                 ModuleName = "Test",

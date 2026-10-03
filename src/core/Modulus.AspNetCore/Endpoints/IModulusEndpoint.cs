@@ -40,6 +40,8 @@ internal sealed class EndpointConfig
     public string[] Roles { get; set; } = [];
     public string[] Policies { get; set; } = [];
     public bool AllowAnonymous { get; set; }
+    public Modulus.Core.Abstractions.Security.LoosenedAttribute? Loosening { get; set; }
+    public Modulus.Core.Abstractions.Security.EndpointSecurityPolicyAttribute? SecurityPolicy { get; set; }
     public string? Tag { get; set; }
     public string? Summary { get; set; }
     public bool Deprecated { get; set; }

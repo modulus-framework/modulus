@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Http.HttpResults;
 namespace Modulus.AspNetCore.Endpoints;
 
 using Modulus.AspNetCore.Http;
+using Modulus.Core.Abstractions.Security;
 
 /// <summary>
 /// Shared base for all REPR endpoints providing configuration DSL,
@@ -57,7 +58,25 @@ public abstract class EndpointBase : IModulusEndpoint
     protected void Permissions(params string[] perms) => Config.Permissions = perms;
     protected void Roles(params string[] roles) => Config.Roles = roles;
     protected void Policies(params string[] policies) => Config.Policies = policies;
+    /// <summary>
+    /// Opens the endpoint to anonymous callers without a reason. The startup security guard rejects
+    /// that; prefer <see cref="AllowAnonymous(string, string?)"/>.
+    /// </summary>
     protected void AllowAnonymous() => Config.AllowAnonymous = true;
+
+    /// <summary>
+    /// Opens the endpoint to anonymous callers and records why (and the approving ticket), for the
+    /// startup security guard's loosening report and allow-list check.
+    /// </summary>
+    protected void AllowAnonymous(string reason, string? ticket = null)
+    {
+        Config.AllowAnonymous = true;
+        Config.Loosening = new LoosenedAttribute(reason) { Ticket = ticket };
+    }
+
+    /// <summary>Declares the data classification (and network requirement) of the endpoint.</summary>
+    protected void Classification(DataClassification classification, NetworkRequirement network = NetworkRequirement.Any)
+        => Config.SecurityPolicy = new EndpointSecurityPolicyAttribute { Classification = classification, Network = network };
     protected void Tag(string tag) => Config.Tag = tag;
     protected void Summary(string summary) => Config.Summary = summary;
     protected void Deprecated() => Config.Deprecated = true;

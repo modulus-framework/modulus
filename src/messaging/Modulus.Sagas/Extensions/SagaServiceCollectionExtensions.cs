@@ -91,7 +91,8 @@ public static class SagaServiceCollectionExtensions
                     var inner = c.Get<IPipeline>();
                     var step = new AmbientContextIncomingStep(
                         ResolveOrNull<ICurrentTenant>(c),
-                        ResolveOrNull<ICorrelationContext>(c));
+                        ResolveOrNull<ICorrelationContext>(c),
+                        ResolveOrNull<ITenantContextRestorer>(c));
                     return new PipelineStepInjector(inner)
                         .OnReceive(step, PipelineRelativePosition.Before,
                             typeof(ActivateHandlersStep));

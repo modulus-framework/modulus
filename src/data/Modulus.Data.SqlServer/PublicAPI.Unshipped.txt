@@ -1,3 +1,17 @@
 #nullable enable
 Modulus.Data.SqlServer.SqlServerExtensions
 static Modulus.Data.SqlServer.SqlServerExtensions.AddSqlServerDatabase<TContext>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, string! connectionString, System.Action<Microsoft.EntityFrameworkCore.Infrastructure.SqlServerDbContextOptionsBuilder!>? configure = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+Modulus.Data.SqlServer.SqlServerRowLevelSecurity
+const Modulus.Data.SqlServer.SqlServerRowLevelSecurity.HostKey = "modulus.is_host" -> string!
+const Modulus.Data.SqlServer.SqlServerRowLevelSecurity.PredicateFunction = "fn_tenant_predicate" -> string!
+const Modulus.Data.SqlServer.SqlServerRowLevelSecurity.Schema = "modulus" -> string!
+const Modulus.Data.SqlServer.SqlServerRowLevelSecurity.TenantKey = "modulus.tenant_id" -> string!
+static Modulus.Data.SqlServer.SqlServerRowLevelSecurity.AddSqlServerRowLevelSecurity<TContext>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.Data.SqlServer.SqlServerRowLevelSecurity.CreatePolicyStatement(string! table, string! tenantColumn = "TenantId", string! schema = "dbo") -> string!
+static Modulus.Data.SqlServer.SqlServerRowLevelSecurity.DisableTenantRowLevelSecurity(this Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder! migrationBuilder, string! table, string! schema = "dbo") -> Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder!
+static Modulus.Data.SqlServer.SqlServerRowLevelSecurity.DropPolicyStatement(string! table, string! schema = "dbo") -> string!
+static Modulus.Data.SqlServer.SqlServerRowLevelSecurity.EnableTenantRowLevelSecurity(this Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder! migrationBuilder, string! table, string! tenantColumn = "TenantId", string! schema = "dbo") -> Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder!
+static Modulus.Data.SqlServer.SqlServerRowLevelSecurity.EnsureAsync(Microsoft.EntityFrameworkCore.DbContext! context, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+static Modulus.Data.SqlServer.SqlServerRowLevelSecurity.FunctionStatements() -> System.Collections.Generic.IReadOnlyList<string!>!
+static Modulus.Data.SqlServer.SqlServerRowLevelSecurity.Interceptor.get -> Modulus.EntityFrameworkCore.Isolation.TenantSessionInterceptor!
+static Modulus.Data.SqlServer.SqlServerRowLevelSecurity.Statements(Microsoft.EntityFrameworkCore.Metadata.IModel! model) -> System.Collections.Generic.IReadOnlyList<string!>!

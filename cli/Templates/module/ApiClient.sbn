@@ -9,7 +9,7 @@ using {{ root_namespace }}.Shared.Application.Dtos.{{ module_name }};
 ///
 /// This client is registered via <c>AddModulusHttpClient&lt;{{ module_name }}ApiClient&gt;()</c>
 /// in Program.cs, which wires the standard resilience handler (retry, circuit breaker, timeout)
-/// and the TokenRelayHandler (automatic bearer token injection). Every method call automatically
+/// and, with a sign-in, the BFF web session's token (AddBffUserAccessToken). Every method call automatically
 /// includes the current user's token and honors the configured resilience policies.
 /// </summary>
 public sealed class {{ module_name }}ApiClient

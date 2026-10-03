@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <Description>Realtime push for Modulus: integration events and app messages delivered to clients over Server-Sent Events (the default; resumable with Last-Event-ID, works through BFFs) or SignalR (topic subscriptions and two-way hubs), filtered by tenant, user, topic and permission, with a pluggable backplane for multiple replicas.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <ProjectReference Include="../../core/Modulus.Core/Modulus.Core.csproj" />
+    <ProjectReference Include="../Modulus.Events/Modulus.Events.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Modulus.Realtime.Tests" />
+  </ItemGroup>
+
+</Project>

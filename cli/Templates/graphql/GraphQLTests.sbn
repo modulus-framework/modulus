@@ -1,0 +1,82 @@
+using System.Net;
+using System.Net.Http.Json;
+using System.Text.Json;
+using FluentAssertions;
+using Modulus.Testing;
+using Xunit;
+using ApiEntryPoint = {{ root_namespace }}.Api.ApiEntryPoint;
+
+namespace {{ root_namespace }}.Tests;
+
+/// <summary>
+/// The {{ entity_name_lower }} GraphQL fields (modulus generate-graphql) on the in-memory test host: the same commands and
+/// queries as the HTTP endpoints, the same sign-in{{ if required_permission }} and permission{{ end }}, domain exceptions as error codes.
+/// </summary>
+public sealed class {{ entity_name }}GraphQLTests(ModulusWebAppFactory<ApiEntryPoint> factory)
+    : IClassFixture<ModulusWebAppFactory<ApiEntryPoint>>
+{
+    [Fact]
+    public async Task Create_read_update_and_delete_round_trip()
+    {
+        var client = Manager();
+
+        var (_, created) = await PostAsync(client, "mutation($name: String!) { create{{ entity_name }}(name: $name) }", new { name = "From GraphQL" });
+        var id = Data(created).GetProperty("create{{ entity_name }}").GetString();
+
+        var (_, one) = await PostAsync(client, "query($id: ID!) { {{ entity_name_camel }}(id: $id) { id name } }", new { id });
+        Data(one).GetProperty("{{ entity_name_camel }}").GetProperty("name").GetString().Should().Be("From GraphQL");
+
+        await PostAsync(client, "mutation($id: ID!) { update{{ entity_name }}(id: $id, name: \"Renamed\") }", new { id });
+        var (_, list) = await PostAsync(client, "{ {{ entity_plural_camel }} { id name } }");
+        Data(list).GetProperty("{{ entity_plural_camel }}").EnumerateArray()
+            .Should().Contain(i => i.GetProperty("id").GetString() == id && i.GetProperty("name").GetString() == "Renamed");
+
+        var (_, deleted) = await PostAsync(client, "mutation($id: ID!) { delete{{ entity_name }}(id: $id) }", new { id });
+        Data(deleted).GetProperty("delete{{ entity_name }}").GetBoolean().Should().BeTrue();
+        var (_, gone) = await PostAsync(client, "query($id: ID!) { {{ entity_name_camel }}(id: $id) { id } }", new { id });
+        Code(gone).Should().Be("NOT_FOUND");
+    }
+
+    [Fact]
+    public async Task An_anonymous_request_is_unauthorized()
+    {
+        var (status, _) = await PostAsync(factory.CreateClient(), "{ {{ entity_plural_camel }} { id } }");
+
+        status.Should().Be(HttpStatusCode.Unauthorized);
+    }
+{{ if required_permission }}
+    [Fact]
+    public async Task A_caller_without_the_permission_is_denied()
+    {
+        var (status, body) = await PostAsync(factory.CreateAuthenticatedClient(), "{ {{ entity_plural_camel }} { id } }");
+
+        status.Should().Be(HttpStatusCode.Forbidden);
+        Code(body).Should().Be("PERMISSION_DENIED");
+    }
+{{ end }}
+    [Fact]
+    public async Task A_malformed_id_is_a_validation_error()
+    {
+        var (_, body) = await PostAsync(Manager(), "{ {{ entity_name_camel }}(id: \"not-a-guid\") { id } }");
+
+        Code(body).Should().Be("VALIDATION_FAILED");
+    }
+
+    private HttpClient Manager() => factory.CreateAuthenticatedClient({{ if required_permission }}roles: ["{{ admin_role }}"]{{ end }});
+
+    private static async Task<(HttpStatusCode Status, JsonElement Body)> PostAsync(HttpClient client, string query, object? variables = null)
+    {
+        using var response = await client.PostAsJsonAsync("/graphql", new { query, variables });
+        var text = await response.Content.ReadAsStringAsync();
+        return (response.StatusCode, text.Length == 0 ? default : JsonDocument.Parse(text).RootElement.Clone());
+    }
+
+    private static JsonElement Data(JsonElement body)
+    {
+        body.TryGetProperty("errors", out var errors).Should().BeFalse(errors.ToString());
+        return body.GetProperty("data");
+    }
+
+    private static string? Code(JsonElement body)
+        => body.GetProperty("errors")[0].GetProperty("extensions").GetProperty("code").GetString();
+}

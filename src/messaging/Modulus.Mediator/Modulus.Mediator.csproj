@@ -16,4 +16,8 @@
     <PackageReference Include="Microsoft.Extensions.Caching.Memory" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Modulus.Mediator.Tests" />
+  </ItemGroup>
+
 </Project>

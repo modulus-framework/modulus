@@ -53,10 +53,43 @@ public enum TransactionMode
 /// </summary>
 public sealed record TransactionRuntimeOptions(TransactionMode Mode);
 
+/// <summary>
+/// Caches a query's result for <see cref="Seconds"/>, partitioned by tenant and
+/// user. With a hybrid cache registered (<c>AddModulusFusionCache</c>) the entry
+/// is shared through L2, protected against stampedes and carries
+/// <see cref="Tags"/>, so a command marked <see cref="InvalidatesCacheAttribute"/>
+/// with the same tag evicts it.
+/// <code>
+/// [CacheFor(60, Tags = ["catalog:products"])]
+/// public sealed record ListProductsQuery(int Page) : IQuery&lt;PagedList&lt;ProductDto&gt;&gt;;
+/// </code>
+/// </summary>
 [AttributeUsage(AttributeTargets.Class)]
 public sealed class CacheForAttribute(int seconds) : Attribute
 {
     public int Seconds { get; } = seconds;
+
+    /// <summary>
+    /// Invalidation tags (tenant-scoped). Honoured by the hybrid cache only: the
+    /// plain in-memory fallback has no tag index and entries simply expire.
+    /// </summary>
+    public string[] Tags { get; set; } = [];
+}
+
+/// <summary>
+/// After the command succeeds (and its transaction has committed), evicts every
+/// cached query result tagged with one of <see cref="Tags"/> in the current
+/// tenant. Requires a hybrid cache (<c>AddModulusFusionCache</c>); without one
+/// this is a no-op.
+/// <code>
+/// [InvalidatesCache("catalog:products")]
+/// public sealed record CreateProductCommand(string Name) : ICommand&lt;Guid&gt;;
+/// </code>
+/// </summary>
+[AttributeUsage(AttributeTargets.Class)]
+public sealed class InvalidatesCacheAttribute(params string[] tags) : Attribute
+{
+    public string[] Tags { get; } = tags;
 }
 
 [AttributeUsage(AttributeTargets.Class)]

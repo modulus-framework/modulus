@@ -1,0 +1,51 @@
+// The {{ entity_name }} contract of the {{ module_name }} module (modulus generate-grpc).
+// The service compiles from this file (Grpc.Tools); BFFs and other services link the
+// same file to generate their clients, so change it here and keep field numbers stable.
+syntax = "proto3";
+
+option csharp_namespace = "{{ module_namespace }}.Presentation.Grpc";
+
+package {{ proto_package }};
+
+import "google/protobuf/empty.proto";
+
+service {{ entity_name }}Service {
+  rpc List{{ entity_plural }} (List{{ entity_plural }}Request) returns (List{{ entity_plural }}Response);
+  rpc Get{{ entity_name }} (Get{{ entity_name }}Request) returns ({{ entity_name }}Message);
+  rpc Create{{ entity_name }} (Create{{ entity_name }}Request) returns (Create{{ entity_name }}Response);
+  rpc Update{{ entity_name }} (Update{{ entity_name }}Request) returns (google.protobuf.Empty);
+  rpc Delete{{ entity_name }} (Delete{{ entity_name }}Request) returns (google.protobuf.Empty);
+}
+
+// Ids are GUIDs in their standard text form.
+message {{ entity_name }}Message {
+  string id = 1;
+  string name = 2;
+}
+
+message List{{ entity_plural }}Request {}
+
+message List{{ entity_plural }}Response {
+  repeated {{ entity_name }}Message items = 1;
+}
+
+message Get{{ entity_name }}Request {
+  string id = 1;
+}
+
+message Create{{ entity_name }}Request {
+  string name = 1;
+}
+
+message Create{{ entity_name }}Response {
+  string id = 1;
+}
+
+message Update{{ entity_name }}Request {
+  string id = 1;
+  string name = 2;
+}
+
+message Delete{{ entity_name }}Request {
+  string id = 1;
+}

@@ -31,6 +31,9 @@ internal static class ThirdPartyPackages
 
             // OpenApi
             ["Microsoft.OpenApi"] = "2.9.0",
+
+            // gRPC (modulus generate-grpc): protoc code generation, build time only
+            ["Grpc.Tools"] = "2.84.0",
         };
 
     /// <summary>Framework package prefix — all packages starting with this are first-party.</summary>

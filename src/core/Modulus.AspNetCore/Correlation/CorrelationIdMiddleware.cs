@@ -2,6 +2,7 @@ namespace Modulus.AspNetCore.Correlation;
 
 using System.Diagnostics;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Modulus.Core.Abstractions;
 
@@ -12,12 +13,14 @@ using Modulus.Core.Abstractions;
 /// or GUID). The id is pushed into
 /// <see cref="ICorrelationContext"/> for the request's async flow, tagged onto
 /// the current <see cref="Activity"/> for trace visibility, and echoed on the
-/// response so callers can record it.
+/// response so callers can record it. Every log line written during the request carries it as
+/// <c>CorrelationId</c> (a logging scope).
 /// </summary>
 public sealed class CorrelationIdMiddleware(
     RequestDelegate next,
     ICorrelationContext correlation,
-    IOptions<CorrelationOptions> options)
+    IOptions<CorrelationOptions> options,
+    ILogger<CorrelationIdMiddleware> logger)
 {
     private readonly CorrelationOptions _options = options.Value;
 
@@ -53,6 +56,7 @@ public sealed class CorrelationIdMiddleware(
                 : Guid.NewGuid().ToString("N");
 
         using var _ = correlation.BeginScope(id);
+        using var logScope = logger.BeginScope(new Dictionary<string, object> { ["CorrelationId"] = id });
         Activity.Current?.SetTag("correlation.id", id);
 
         if (_options.IncludeInResponse)

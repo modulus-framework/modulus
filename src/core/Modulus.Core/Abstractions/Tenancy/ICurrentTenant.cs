@@ -43,9 +43,14 @@ public interface ICurrentTenant
     IDisposable Change(TenantInfo? tenant);
 }
 
-/// <summary>Resolved tenant metadata.</summary>
+/// <summary>
+/// Resolved tenant metadata. A tenant is a company; <paramref name="GroupId"/> names the group of
+/// companies it belongs to (null when it stands alone). Group membership never widens data access:
+/// group-level views go through a federated read path, not a cross-tenant query.
+/// </summary>
 public sealed record TenantInfo(
     Guid TenantId,
     string TenantSlug,
     string? DisplayName = null,
-    string? ConnectionString = null);
+    string? ConnectionString = null,
+    Guid? GroupId = null);

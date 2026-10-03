@@ -12,6 +12,7 @@ using Modulus.Testing;
 using Modulus.Testing.Assertions;
 using Modulus.Testing.Architecture;
 using Modulus.Testing.Fakes;
+using Modulus.Testing.Security;
 {{ if !no_example }}using {{ root_namespace }}.Modules.{{ example_module }}.Infrastructure;
 {{ end }}using ApiEntryPoint = {{ root_namespace }}.Api.ApiEntryPoint;
 {{ if kind_name == "webapp+api" }}using WebEntryPoint = {{ root_namespace }}.Web.WebEntryPoint;
@@ -99,7 +100,24 @@ public sealed class ApiIntegrationTests(ModulusWebAppFactory<ApiEntryPoint> fact
 {{ end }}{{ end }}
 }
 {{ end }}
+{{ if expose_api && use_security_guard }}
+/// <summary>
+/// Probes every endpoint of the API host: anonymous callers get 401, signed-in callers without the endpoint's
+/// permission get 403. A new endpoint that forgets its policy fails this test (loosened endpoints are reviewed by
+/// the startup guard and security/loosening-allowlist.json instead).
+/// </summary>
+public sealed class SecurityProbeTests(ModulusWebAppFactory<ApiEntryPoint> factory)
+    : IClassFixture<ModulusWebAppFactory<ApiEntryPoint>>
+{
+    [Fact]
+    public async Task Every_endpoint_rejects_callers_without_access()
+    {
+        var report = await SecurityProbeSuite.RunAsync(factory);
 
+        report.EnsureNoFailures();
+    }
+}
+{{ end }}
 {{ if kind_name == "webapp+api" || kind_name == "web" }}{{ web_entry = kind_name == "webapp+api" }}/// <summary>
 /// Boots the{{ if web_entry }} split's Web host — a presentation shell only (no DbContexts, no
 /// modules; pages call the API over HTTP){{ else }} web host{{ end }}. The assertions are adjusted for

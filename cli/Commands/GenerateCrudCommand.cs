@@ -175,6 +175,16 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
         else if (model.RequiredPermission is not null)
             EnsureApiPermission(module, model, host, generated);
 
+        // ── BFFs: every BFF gets the module's typed client with this entity's read methods ──
+        if (ModuleDiscovery.Inventory(Environment.CurrentDirectory) is { Bffs.Count: > 0 } app)
+        {
+            foreach (var bff in app.Bffs)
+            {
+                foreach (var file in BffApiClients.EnsureModule(_templates, bff, module.Name, [entity]))
+                    generated.Add($"src/Bff/{bff.ProjectName}/{file}");
+            }
+        }
+
         // ── Summary ───────────────────────────────────────────────
         AnsiConsole.MarkupLine("[green]✓[/] Generated CRUD for [cyan]{0}[/] in [grey]{1}[/]",
             entity, module.Name);
@@ -467,9 +477,7 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
             if (text.Contains($"<{module.Name}ApiClient>", StringComparison.Ordinal))
                 return text;
 
-            var registration =
-                $"        services.AddModulusHttpClient<{module.Name}ApiClient>()\n" +
-                "            .AddHttpMessageHandler<TokenRelayHandler>();\n";
+            var registration = WebApiClientRegistration(text, module.Name);
             var anchor = "        return services;";
             var index = text.IndexOf(anchor, StringComparison.Ordinal);
             if (index < 0)
@@ -477,6 +485,21 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
 
             return text[..index] + registration + "\n" + text[index..];
         });
+    }
+
+    /// <summary>
+    /// The typed client's registration line in the Web host's <c>ApiClientExtensions.cs</c>, matching how the file already
+    /// authenticates: the BFF web session's token (<c>AddBffUserAccessToken</c>), the token relay of a Web host generated
+    /// before the BFF (<c>TokenRelayHandler</c>), or anonymous when the host has no sign-in.
+    /// </summary>
+    internal static string WebApiClientRegistration(string extensions, string module)
+    {
+        var line = $"        services.AddModulusHttpClient<{module}ApiClient>()";
+        if (extensions.Contains("AddBffUserAccessToken()", StringComparison.Ordinal))
+            return line + "\n            .AddBffUserAccessToken();\n";
+        if (extensions.Contains("TokenRelayHandler", StringComparison.Ordinal))
+            return line + "\n            .AddHttpMessageHandler<TokenRelayHandler>();\n";
+        return line + ";\n";
     }
 
     /// <summary>

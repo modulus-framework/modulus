@@ -1,0 +1,283 @@
+#nullable enable
+Modulus.Webhooks.IWebhookEventCatalog
+Modulus.Webhooks.IWebhookEventCatalog.Events.get -> System.Collections.Generic.IReadOnlyList<Modulus.Webhooks.WebhookEventDescriptor!>!
+Modulus.Webhooks.IWebhookEventCatalog.TryGet(string! name, out Modulus.Webhooks.WebhookEventDescriptor? descriptor) -> bool
+Modulus.Webhooks.ModulusWebhooksDbContext
+Modulus.Webhooks.ModulusWebhooksDbContext.ModulusWebhooksDbContext(Microsoft.EntityFrameworkCore.DbContextOptions! options) -> void
+Modulus.Webhooks.ModulusWebhooksDbContext.WebhookDeliveries.get -> Microsoft.EntityFrameworkCore.DbSet<Modulus.Webhooks.WebhookDelivery!>!
+Modulus.Webhooks.ModulusWebhooksDbContext.WebhookSubscriptions.get -> Microsoft.EntityFrameworkCore.DbSet<Modulus.Webhooks.WebhookSubscription!>!
+Modulus.Webhooks.ModulusWebhooksOptions
+Modulus.Webhooks.ModulusWebhooksOptions.AllowHttp.get -> bool
+Modulus.Webhooks.ModulusWebhooksOptions.AllowHttp.set -> void
+Modulus.Webhooks.ModulusWebhooksOptions.AllowPrivateNetworks.get -> bool
+Modulus.Webhooks.ModulusWebhooksOptions.AllowPrivateNetworks.set -> void
+Modulus.Webhooks.ModulusWebhooksOptions.BatchSize.get -> int
+Modulus.Webhooks.ModulusWebhooksOptions.BatchSize.set -> void
+Modulus.Webhooks.ModulusWebhooksOptions.DisableAfterFailingFor.get -> System.TimeSpan?
+Modulus.Webhooks.ModulusWebhooksOptions.DisableAfterFailingFor.set -> void
+Modulus.Webhooks.ModulusWebhooksOptions.EnableDelivery.get -> bool
+Modulus.Webhooks.ModulusWebhooksOptions.EnableDelivery.set -> void
+Modulus.Webhooks.ModulusWebhooksOptions.EnableLeaderElection.get -> bool
+Modulus.Webhooks.ModulusWebhooksOptions.EnableLeaderElection.set -> void
+Modulus.Webhooks.ModulusWebhooksOptions.LockDuration.get -> System.TimeSpan
+Modulus.Webhooks.ModulusWebhooksOptions.LockDuration.set -> void
+Modulus.Webhooks.ModulusWebhooksOptions.MaxConcurrency.get -> int
+Modulus.Webhooks.ModulusWebhooksOptions.MaxConcurrency.set -> void
+Modulus.Webhooks.ModulusWebhooksOptions.MaxStoredResponseLength.get -> int
+Modulus.Webhooks.ModulusWebhooksOptions.MaxStoredResponseLength.set -> void
+Modulus.Webhooks.ModulusWebhooksOptions.MaxSubscriptionsPerTenant.get -> int
+Modulus.Webhooks.ModulusWebhooksOptions.MaxSubscriptionsPerTenant.set -> void
+Modulus.Webhooks.ModulusWebhooksOptions.ModulusWebhooksOptions() -> void
+Modulus.Webhooks.ModulusWebhooksOptions.PollingInterval.get -> System.TimeSpan
+Modulus.Webhooks.ModulusWebhooksOptions.PollingInterval.set -> void
+Modulus.Webhooks.ModulusWebhooksOptions.PurgeAfter.get -> System.TimeSpan?
+Modulus.Webhooks.ModulusWebhooksOptions.PurgeAfter.set -> void
+Modulus.Webhooks.ModulusWebhooksOptions.RequestTimeout.get -> System.TimeSpan
+Modulus.Webhooks.ModulusWebhooksOptions.RequestTimeout.set -> void
+Modulus.Webhooks.ModulusWebhooksOptions.RetrySchedule.get -> System.Collections.Generic.IList<System.TimeSpan>?
+Modulus.Webhooks.ModulusWebhooksOptions.RetrySchedule.set -> void
+Modulus.Webhooks.ModulusWebhooksOptions.SecretRotationOverlap.get -> System.TimeSpan
+Modulus.Webhooks.ModulusWebhooksOptions.SecretRotationOverlap.set -> void
+Modulus.Webhooks.ModulusWebhooksOptions.UserAgent.get -> string!
+Modulus.Webhooks.ModulusWebhooksOptions.UserAgent.set -> void
+Modulus.Webhooks.StandardWebhooks
+Modulus.Webhooks.WebhookAddressRejectedException
+Modulus.Webhooks.WebhookAddressRejectedException.WebhookAddressRejectedException(string! host) -> void
+Modulus.Webhooks.WebhookDelivery
+Modulus.Webhooks.WebhookDelivery.AttemptCount.get -> int
+Modulus.Webhooks.WebhookDelivery.AttemptCount.set -> void
+Modulus.Webhooks.WebhookDelivery.CorrelationId.get -> string?
+Modulus.Webhooks.WebhookDelivery.CorrelationId.init -> void
+Modulus.Webhooks.WebhookDelivery.CreatedAt.get -> System.DateTime
+Modulus.Webhooks.WebhookDelivery.CreatedAt.init -> void
+Modulus.Webhooks.WebhookDelivery.DeadLetteredAt.get -> System.DateTime?
+Modulus.Webhooks.WebhookDelivery.DeadLetteredAt.set -> void
+Modulus.Webhooks.WebhookDelivery.DeliveredAt.get -> System.DateTime?
+Modulus.Webhooks.WebhookDelivery.DeliveredAt.set -> void
+Modulus.Webhooks.WebhookDelivery.EventId.get -> System.Guid
+Modulus.Webhooks.WebhookDelivery.EventId.init -> void
+Modulus.Webhooks.WebhookDelivery.EventType.get -> string!
+Modulus.Webhooks.WebhookDelivery.EventType.init -> void
+Modulus.Webhooks.WebhookDelivery.Id.get -> System.Guid
+Modulus.Webhooks.WebhookDelivery.Id.init -> void
+Modulus.Webhooks.WebhookDelivery.LastAttemptAt.get -> System.DateTime?
+Modulus.Webhooks.WebhookDelivery.LastAttemptAt.set -> void
+Modulus.Webhooks.WebhookDelivery.LastError.get -> string?
+Modulus.Webhooks.WebhookDelivery.LastError.set -> void
+Modulus.Webhooks.WebhookDelivery.LastStatusCode.get -> int?
+Modulus.Webhooks.WebhookDelivery.LastStatusCode.set -> void
+Modulus.Webhooks.WebhookDelivery.LockedBy.get -> string?
+Modulus.Webhooks.WebhookDelivery.LockedBy.set -> void
+Modulus.Webhooks.WebhookDelivery.LockedUntil.get -> System.DateTime?
+Modulus.Webhooks.WebhookDelivery.LockedUntil.set -> void
+Modulus.Webhooks.WebhookDelivery.MessageId.get -> string!
+Modulus.Webhooks.WebhookDelivery.NextAttemptAt.get -> System.DateTime?
+Modulus.Webhooks.WebhookDelivery.NextAttemptAt.set -> void
+Modulus.Webhooks.WebhookDelivery.Payload.get -> string!
+Modulus.Webhooks.WebhookDelivery.Payload.init -> void
+Modulus.Webhooks.WebhookDelivery.Status.get -> Modulus.Webhooks.WebhookDeliveryStatus
+Modulus.Webhooks.WebhookDelivery.SubscriptionId.get -> System.Guid
+Modulus.Webhooks.WebhookDelivery.SubscriptionId.init -> void
+Modulus.Webhooks.WebhookDelivery.TenantId.get -> System.Guid
+Modulus.Webhooks.WebhookDelivery.TenantId.init -> void
+Modulus.Webhooks.WebhookDelivery.WebhookDelivery() -> void
+Modulus.Webhooks.WebhookDeliveryResponse
+Modulus.Webhooks.WebhookDeliveryResponse.<Clone>$() -> Modulus.Webhooks.WebhookDeliveryResponse!
+Modulus.Webhooks.WebhookDeliveryResponse.AttemptCount.get -> int
+Modulus.Webhooks.WebhookDeliveryResponse.AttemptCount.init -> void
+Modulus.Webhooks.WebhookDeliveryResponse.CreatedAt.get -> System.DateTime
+Modulus.Webhooks.WebhookDeliveryResponse.CreatedAt.init -> void
+Modulus.Webhooks.WebhookDeliveryResponse.Deconstruct(out System.Guid Id, out System.Guid SubscriptionId, out string! MessageId, out System.Guid EventId, out string! EventType, out Modulus.Webhooks.WebhookDeliveryStatus Status, out int AttemptCount, out System.DateTime CreatedAt, out System.DateTime? DeliveredAt, out System.DateTime? NextAttemptAt, out System.DateTime? LastAttemptAt, out int? LastStatusCode, out string? LastError, out string? Payload) -> void
+Modulus.Webhooks.WebhookDeliveryResponse.DeliveredAt.get -> System.DateTime?
+Modulus.Webhooks.WebhookDeliveryResponse.DeliveredAt.init -> void
+Modulus.Webhooks.WebhookDeliveryResponse.Equals(Modulus.Webhooks.WebhookDeliveryResponse? other) -> bool
+Modulus.Webhooks.WebhookDeliveryResponse.EventId.get -> System.Guid
+Modulus.Webhooks.WebhookDeliveryResponse.EventId.init -> void
+Modulus.Webhooks.WebhookDeliveryResponse.EventType.get -> string!
+Modulus.Webhooks.WebhookDeliveryResponse.EventType.init -> void
+Modulus.Webhooks.WebhookDeliveryResponse.Id.get -> System.Guid
+Modulus.Webhooks.WebhookDeliveryResponse.Id.init -> void
+Modulus.Webhooks.WebhookDeliveryResponse.LastAttemptAt.get -> System.DateTime?
+Modulus.Webhooks.WebhookDeliveryResponse.LastAttemptAt.init -> void
+Modulus.Webhooks.WebhookDeliveryResponse.LastError.get -> string?
+Modulus.Webhooks.WebhookDeliveryResponse.LastError.init -> void
+Modulus.Webhooks.WebhookDeliveryResponse.LastStatusCode.get -> int?
+Modulus.Webhooks.WebhookDeliveryResponse.LastStatusCode.init -> void
+Modulus.Webhooks.WebhookDeliveryResponse.MessageId.get -> string!
+Modulus.Webhooks.WebhookDeliveryResponse.MessageId.init -> void
+Modulus.Webhooks.WebhookDeliveryResponse.NextAttemptAt.get -> System.DateTime?
+Modulus.Webhooks.WebhookDeliveryResponse.NextAttemptAt.init -> void
+Modulus.Webhooks.WebhookDeliveryResponse.Payload.get -> string?
+Modulus.Webhooks.WebhookDeliveryResponse.Payload.init -> void
+Modulus.Webhooks.WebhookDeliveryResponse.Status.get -> Modulus.Webhooks.WebhookDeliveryStatus
+Modulus.Webhooks.WebhookDeliveryResponse.Status.init -> void
+Modulus.Webhooks.WebhookDeliveryResponse.SubscriptionId.get -> System.Guid
+Modulus.Webhooks.WebhookDeliveryResponse.SubscriptionId.init -> void
+Modulus.Webhooks.WebhookDeliveryResponse.WebhookDeliveryResponse(System.Guid Id, System.Guid SubscriptionId, string! MessageId, System.Guid EventId, string! EventType, Modulus.Webhooks.WebhookDeliveryStatus Status, int AttemptCount, System.DateTime CreatedAt, System.DateTime? DeliveredAt, System.DateTime? NextAttemptAt, System.DateTime? LastAttemptAt, int? LastStatusCode, string? LastError, string? Payload = null) -> void
+Modulus.Webhooks.WebhookDeliveryStatus
+Modulus.Webhooks.WebhookDeliveryStatus.Delivered = 1 -> Modulus.Webhooks.WebhookDeliveryStatus
+Modulus.Webhooks.WebhookDeliveryStatus.Failed = 2 -> Modulus.Webhooks.WebhookDeliveryStatus
+Modulus.Webhooks.WebhookDeliveryStatus.Pending = 0 -> Modulus.Webhooks.WebhookDeliveryStatus
+Modulus.Webhooks.WebhookEventDescriptor
+Modulus.Webhooks.WebhookEventDescriptor.<Clone>$() -> Modulus.Webhooks.WebhookEventDescriptor!
+Modulus.Webhooks.WebhookEventDescriptor.Deconstruct(out string! Name, out System.Type! EventType, out string? Description) -> void
+Modulus.Webhooks.WebhookEventDescriptor.Description.get -> string?
+Modulus.Webhooks.WebhookEventDescriptor.Description.init -> void
+Modulus.Webhooks.WebhookEventDescriptor.Equals(Modulus.Webhooks.WebhookEventDescriptor? other) -> bool
+Modulus.Webhooks.WebhookEventDescriptor.EventType.get -> System.Type!
+Modulus.Webhooks.WebhookEventDescriptor.EventType.init -> void
+Modulus.Webhooks.WebhookEventDescriptor.Name.get -> string!
+Modulus.Webhooks.WebhookEventDescriptor.Name.init -> void
+Modulus.Webhooks.WebhookEventDescriptor.WebhookEventDescriptor(string! Name, System.Type! EventType, string? Description) -> void
+Modulus.Webhooks.WebhookEventFilter
+Modulus.Webhooks.WebhookEventTypeResponse
+Modulus.Webhooks.WebhookEventTypeResponse.<Clone>$() -> Modulus.Webhooks.WebhookEventTypeResponse!
+Modulus.Webhooks.WebhookEventTypeResponse.Deconstruct(out string! Name, out string? Description) -> void
+Modulus.Webhooks.WebhookEventTypeResponse.Description.get -> string?
+Modulus.Webhooks.WebhookEventTypeResponse.Description.init -> void
+Modulus.Webhooks.WebhookEventTypeResponse.Equals(Modulus.Webhooks.WebhookEventTypeResponse? other) -> bool
+Modulus.Webhooks.WebhookEventTypeResponse.Name.get -> string!
+Modulus.Webhooks.WebhookEventTypeResponse.Name.init -> void
+Modulus.Webhooks.WebhookEventTypeResponse.WebhookEventTypeResponse(string! Name, string? Description) -> void
+Modulus.Webhooks.WebhookManagementEndpoints
+Modulus.Webhooks.WebhookPage<T>
+Modulus.Webhooks.WebhookPage<T>.<Clone>$() -> Modulus.Webhooks.WebhookPage<T>!
+Modulus.Webhooks.WebhookPage<T>.Deconstruct(out System.Collections.Generic.IReadOnlyList<T>! Items, out int Page, out int PageSize, out int TotalCount) -> void
+Modulus.Webhooks.WebhookPage<T>.Equals(Modulus.Webhooks.WebhookPage<T>? other) -> bool
+Modulus.Webhooks.WebhookPage<T>.Items.get -> System.Collections.Generic.IReadOnlyList<T>!
+Modulus.Webhooks.WebhookPage<T>.Items.init -> void
+Modulus.Webhooks.WebhookPage<T>.Page.get -> int
+Modulus.Webhooks.WebhookPage<T>.Page.init -> void
+Modulus.Webhooks.WebhookPage<T>.PageSize.get -> int
+Modulus.Webhooks.WebhookPage<T>.PageSize.init -> void
+Modulus.Webhooks.WebhookPage<T>.TotalCount.get -> int
+Modulus.Webhooks.WebhookPage<T>.TotalCount.init -> void
+Modulus.Webhooks.WebhookPage<T>.WebhookPage(System.Collections.Generic.IReadOnlyList<T>! Items, int Page, int PageSize, int TotalCount) -> void
+Modulus.Webhooks.WebhookPermissions
+Modulus.Webhooks.WebhookSubscription
+Modulus.Webhooks.WebhookSubscription.CreatedAt.get -> System.DateTime
+Modulus.Webhooks.WebhookSubscription.CreatedAt.init -> void
+Modulus.Webhooks.WebhookSubscription.Description.get -> string?
+Modulus.Webhooks.WebhookSubscription.Description.set -> void
+Modulus.Webhooks.WebhookSubscription.DisabledReason.get -> string?
+Modulus.Webhooks.WebhookSubscription.DisabledReason.set -> void
+Modulus.Webhooks.WebhookSubscription.EventTypes.get -> System.Collections.Generic.List<string!>!
+Modulus.Webhooks.WebhookSubscription.EventTypes.set -> void
+Modulus.Webhooks.WebhookSubscription.FailingSince.get -> System.DateTime?
+Modulus.Webhooks.WebhookSubscription.FailingSince.set -> void
+Modulus.Webhooks.WebhookSubscription.Id.get -> System.Guid
+Modulus.Webhooks.WebhookSubscription.Id.init -> void
+Modulus.Webhooks.WebhookSubscription.IsEnabled.get -> bool
+Modulus.Webhooks.WebhookSubscription.IsEnabled.set -> void
+Modulus.Webhooks.WebhookSubscription.Matches(string! eventType) -> bool
+Modulus.Webhooks.WebhookSubscription.PreviousSecretExpiresAt.get -> System.DateTime?
+Modulus.Webhooks.WebhookSubscription.PreviousSecretExpiresAt.set -> void
+Modulus.Webhooks.WebhookSubscription.ProtectedPreviousSecret.get -> string?
+Modulus.Webhooks.WebhookSubscription.ProtectedPreviousSecret.set -> void
+Modulus.Webhooks.WebhookSubscription.ProtectedSecret.get -> string!
+Modulus.Webhooks.WebhookSubscription.ProtectedSecret.set -> void
+Modulus.Webhooks.WebhookSubscription.TenantId.get -> System.Guid
+Modulus.Webhooks.WebhookSubscription.TenantId.init -> void
+Modulus.Webhooks.WebhookSubscription.UpdatedAt.get -> System.DateTime
+Modulus.Webhooks.WebhookSubscription.UpdatedAt.set -> void
+Modulus.Webhooks.WebhookSubscription.Url.get -> string!
+Modulus.Webhooks.WebhookSubscription.Url.set -> void
+Modulus.Webhooks.WebhookSubscription.WebhookSubscription() -> void
+Modulus.Webhooks.WebhookSubscriptionRequest
+Modulus.Webhooks.WebhookSubscriptionRequest.<Clone>$() -> Modulus.Webhooks.WebhookSubscriptionRequest!
+Modulus.Webhooks.WebhookSubscriptionRequest.Deconstruct(out string? Url, out System.Collections.Generic.IReadOnlyList<string!>? EventTypes, out string? Description, out bool? IsEnabled, out string? Secret) -> void
+Modulus.Webhooks.WebhookSubscriptionRequest.Description.get -> string?
+Modulus.Webhooks.WebhookSubscriptionRequest.Description.init -> void
+Modulus.Webhooks.WebhookSubscriptionRequest.Equals(Modulus.Webhooks.WebhookSubscriptionRequest? other) -> bool
+Modulus.Webhooks.WebhookSubscriptionRequest.EventTypes.get -> System.Collections.Generic.IReadOnlyList<string!>?
+Modulus.Webhooks.WebhookSubscriptionRequest.EventTypes.init -> void
+Modulus.Webhooks.WebhookSubscriptionRequest.IsEnabled.get -> bool?
+Modulus.Webhooks.WebhookSubscriptionRequest.IsEnabled.init -> void
+Modulus.Webhooks.WebhookSubscriptionRequest.Secret.get -> string?
+Modulus.Webhooks.WebhookSubscriptionRequest.Secret.init -> void
+Modulus.Webhooks.WebhookSubscriptionRequest.Url.get -> string?
+Modulus.Webhooks.WebhookSubscriptionRequest.Url.init -> void
+Modulus.Webhooks.WebhookSubscriptionRequest.WebhookSubscriptionRequest(string? Url, System.Collections.Generic.IReadOnlyList<string!>? EventTypes, string? Description = null, bool? IsEnabled = null, string? Secret = null) -> void
+Modulus.Webhooks.WebhookSubscriptionResponse
+Modulus.Webhooks.WebhookSubscriptionResponse.<Clone>$() -> Modulus.Webhooks.WebhookSubscriptionResponse!
+Modulus.Webhooks.WebhookSubscriptionResponse.CreatedAt.get -> System.DateTime
+Modulus.Webhooks.WebhookSubscriptionResponse.CreatedAt.init -> void
+Modulus.Webhooks.WebhookSubscriptionResponse.Deconstruct(out System.Guid Id, out string! Url, out System.Collections.Generic.IReadOnlyList<string!>! EventTypes, out string? Description, out bool IsEnabled, out string? DisabledReason, out System.DateTime? FailingSince, out System.DateTime CreatedAt, out System.DateTime UpdatedAt, out string? Secret) -> void
+Modulus.Webhooks.WebhookSubscriptionResponse.Description.get -> string?
+Modulus.Webhooks.WebhookSubscriptionResponse.Description.init -> void
+Modulus.Webhooks.WebhookSubscriptionResponse.DisabledReason.get -> string?
+Modulus.Webhooks.WebhookSubscriptionResponse.DisabledReason.init -> void
+Modulus.Webhooks.WebhookSubscriptionResponse.Equals(Modulus.Webhooks.WebhookSubscriptionResponse? other) -> bool
+Modulus.Webhooks.WebhookSubscriptionResponse.EventTypes.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Modulus.Webhooks.WebhookSubscriptionResponse.EventTypes.init -> void
+Modulus.Webhooks.WebhookSubscriptionResponse.FailingSince.get -> System.DateTime?
+Modulus.Webhooks.WebhookSubscriptionResponse.FailingSince.init -> void
+Modulus.Webhooks.WebhookSubscriptionResponse.Id.get -> System.Guid
+Modulus.Webhooks.WebhookSubscriptionResponse.Id.init -> void
+Modulus.Webhooks.WebhookSubscriptionResponse.IsEnabled.get -> bool
+Modulus.Webhooks.WebhookSubscriptionResponse.IsEnabled.init -> void
+Modulus.Webhooks.WebhookSubscriptionResponse.Secret.get -> string?
+Modulus.Webhooks.WebhookSubscriptionResponse.Secret.init -> void
+Modulus.Webhooks.WebhookSubscriptionResponse.UpdatedAt.get -> System.DateTime
+Modulus.Webhooks.WebhookSubscriptionResponse.UpdatedAt.init -> void
+Modulus.Webhooks.WebhookSubscriptionResponse.Url.get -> string!
+Modulus.Webhooks.WebhookSubscriptionResponse.Url.init -> void
+Modulus.Webhooks.WebhookSubscriptionResponse.WebhookSubscriptionResponse(System.Guid Id, string! Url, System.Collections.Generic.IReadOnlyList<string!>! EventTypes, string? Description, bool IsEnabled, string? DisabledReason, System.DateTime? FailingSince, System.DateTime CreatedAt, System.DateTime UpdatedAt, string? Secret = null) -> void
+Modulus.Webhooks.WebhookVerificationResult
+Modulus.Webhooks.WebhookVerificationResult.InvalidSignature = 3 -> Modulus.Webhooks.WebhookVerificationResult
+Modulus.Webhooks.WebhookVerificationResult.InvalidTimestamp = 2 -> Modulus.Webhooks.WebhookVerificationResult
+Modulus.Webhooks.WebhookVerificationResult.MissingHeaders = 1 -> Modulus.Webhooks.WebhookVerificationResult
+Modulus.Webhooks.WebhookVerificationResult.Valid = 0 -> Modulus.Webhooks.WebhookVerificationResult
+Modulus.Webhooks.WebhooksBuilder
+Modulus.Webhooks.WebhooksBuilder.AddEvent<TEvent>(string? description = null, System.Func<TEvent!, object?>? payload = null) -> Modulus.Webhooks.WebhooksBuilder!
+Modulus.Webhooks.WebhooksBuilder.Services.get -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+Modulus.Webhooks.WebhooksServiceCollectionExtensions
+const Modulus.Webhooks.ModulusWebhooksOptions.SectionName = "Webhooks" -> string!
+const Modulus.Webhooks.StandardWebhooks.IdHeader = "webhook-id" -> string!
+const Modulus.Webhooks.StandardWebhooks.SecretPrefix = "whsec_" -> string!
+const Modulus.Webhooks.StandardWebhooks.SignatureHeader = "webhook-signature" -> string!
+const Modulus.Webhooks.StandardWebhooks.TimestampHeader = "webhook-timestamp" -> string!
+const Modulus.Webhooks.WebhookEventFilter.All = "*" -> string!
+const Modulus.Webhooks.WebhookPermissions.Manage = "webhooks:manage" -> string!
+override Modulus.Webhooks.ModulusWebhooksDbContext.OnModelCreating(Microsoft.EntityFrameworkCore.ModelBuilder! modelBuilder) -> void
+override Modulus.Webhooks.WebhookDeliveryResponse.Equals(object? obj) -> bool
+override Modulus.Webhooks.WebhookDeliveryResponse.GetHashCode() -> int
+override Modulus.Webhooks.WebhookDeliveryResponse.ToString() -> string!
+override Modulus.Webhooks.WebhookEventDescriptor.Equals(object? obj) -> bool
+override Modulus.Webhooks.WebhookEventDescriptor.GetHashCode() -> int
+override Modulus.Webhooks.WebhookEventDescriptor.ToString() -> string!
+override Modulus.Webhooks.WebhookEventTypeResponse.Equals(object? obj) -> bool
+override Modulus.Webhooks.WebhookEventTypeResponse.GetHashCode() -> int
+override Modulus.Webhooks.WebhookEventTypeResponse.ToString() -> string!
+override Modulus.Webhooks.WebhookPage<T>.Equals(object? obj) -> bool
+override Modulus.Webhooks.WebhookPage<T>.GetHashCode() -> int
+override Modulus.Webhooks.WebhookPage<T>.ToString() -> string!
+override Modulus.Webhooks.WebhookSubscriptionRequest.Equals(object? obj) -> bool
+override Modulus.Webhooks.WebhookSubscriptionRequest.GetHashCode() -> int
+override Modulus.Webhooks.WebhookSubscriptionRequest.ToString() -> string!
+override Modulus.Webhooks.WebhookSubscriptionResponse.Equals(object? obj) -> bool
+override Modulus.Webhooks.WebhookSubscriptionResponse.GetHashCode() -> int
+override Modulus.Webhooks.WebhookSubscriptionResponse.ToString() -> string!
+static Modulus.Webhooks.ModulusWebhooksDbContext.ConfigureWebhooks(Microsoft.EntityFrameworkCore.ModelBuilder! modelBuilder) -> void
+static Modulus.Webhooks.ModulusWebhooksOptions.DefaultRetrySchedule.get -> System.Collections.Generic.IReadOnlyList<System.TimeSpan>!
+static Modulus.Webhooks.StandardWebhooks.GenerateSecret() -> string!
+static Modulus.Webhooks.StandardWebhooks.IsValidSecret(string? secret) -> bool
+static Modulus.Webhooks.StandardWebhooks.Sign(string! secret, string! messageId, System.DateTimeOffset timestamp, string! body) -> string!
+static Modulus.Webhooks.StandardWebhooks.Verify(System.Collections.Generic.IEnumerable<string!>! secrets, string? messageId, string? timestamp, string? signatureHeader, string! body, System.DateTimeOffset now, System.TimeSpan? tolerance = null) -> Modulus.Webhooks.WebhookVerificationResult
+static Modulus.Webhooks.WebhookDeliveryResponse.operator !=(Modulus.Webhooks.WebhookDeliveryResponse? left, Modulus.Webhooks.WebhookDeliveryResponse? right) -> bool
+static Modulus.Webhooks.WebhookDeliveryResponse.operator ==(Modulus.Webhooks.WebhookDeliveryResponse? left, Modulus.Webhooks.WebhookDeliveryResponse? right) -> bool
+static Modulus.Webhooks.WebhookEventDescriptor.operator !=(Modulus.Webhooks.WebhookEventDescriptor? left, Modulus.Webhooks.WebhookEventDescriptor? right) -> bool
+static Modulus.Webhooks.WebhookEventDescriptor.operator ==(Modulus.Webhooks.WebhookEventDescriptor? left, Modulus.Webhooks.WebhookEventDescriptor? right) -> bool
+static Modulus.Webhooks.WebhookEventFilter.IsValid(string! pattern, System.Collections.Generic.IEnumerable<string!>! knownEvents) -> bool
+static Modulus.Webhooks.WebhookEventFilter.Matches(System.Collections.Generic.IEnumerable<string!>! patterns, string! eventType) -> bool
+static Modulus.Webhooks.WebhookEventTypeResponse.operator !=(Modulus.Webhooks.WebhookEventTypeResponse? left, Modulus.Webhooks.WebhookEventTypeResponse? right) -> bool
+static Modulus.Webhooks.WebhookEventTypeResponse.operator ==(Modulus.Webhooks.WebhookEventTypeResponse? left, Modulus.Webhooks.WebhookEventTypeResponse? right) -> bool
+static Modulus.Webhooks.WebhookManagementEndpoints.MapModulusWebhooks(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! prefix = "/api/webhooks") -> Microsoft.AspNetCore.Routing.RouteGroupBuilder!
+static Modulus.Webhooks.WebhookPage<T>.operator !=(Modulus.Webhooks.WebhookPage<T>? left, Modulus.Webhooks.WebhookPage<T>? right) -> bool
+static Modulus.Webhooks.WebhookPage<T>.operator ==(Modulus.Webhooks.WebhookPage<T>? left, Modulus.Webhooks.WebhookPage<T>? right) -> bool
+static Modulus.Webhooks.WebhookSubscriptionRequest.operator !=(Modulus.Webhooks.WebhookSubscriptionRequest? left, Modulus.Webhooks.WebhookSubscriptionRequest? right) -> bool
+static Modulus.Webhooks.WebhookSubscriptionRequest.operator ==(Modulus.Webhooks.WebhookSubscriptionRequest? left, Modulus.Webhooks.WebhookSubscriptionRequest? right) -> bool
+static Modulus.Webhooks.WebhookSubscriptionResponse.operator !=(Modulus.Webhooks.WebhookSubscriptionResponse? left, Modulus.Webhooks.WebhookSubscriptionResponse? right) -> bool
+static Modulus.Webhooks.WebhookSubscriptionResponse.operator ==(Modulus.Webhooks.WebhookSubscriptionResponse? left, Modulus.Webhooks.WebhookSubscriptionResponse? right) -> bool
+static Modulus.Webhooks.WebhooksServiceCollectionExtensions.AddModulusWebhooks(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration, System.Action<Modulus.Webhooks.WebhooksBuilder!>? configure = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.Webhooks.WebhooksServiceCollectionExtensions.AddModulusWebhooksStore<TContext>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!

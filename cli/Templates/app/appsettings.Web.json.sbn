@@ -9,7 +9,29 @@
     "BaseUrl": "http://localhost:5180",
     "ClientId": "{{ app_name_lower }}"
   },
-{{ if enable_correlation }}  "Correlation": {
+{{ if use_auth }}  "Bff": {
+    "AuthServer": "{{ web_auth_server }}",
+{{ if web_authority != "" }}    "Authority": "{{ web_authority }}",
+{{ end }}    "Clients": {
+      "web": {
+        "ClientId": "{{ app_name_lower }}",
+        "ClientSecret": "",
+        "LoginMode": "{{ web_login_mode }}",
+        "Scopes": [ "openid", "profile", "email", "roles", "offline_access"{{ if use_open_iddict }}, "modulus"{{ end }} ],
+        "TokenStorage": "ServerSide",
+        "RefreshBeforeExpiry": "00:01:00",
+        "SessionLifetime": "14.00:00:00",
+        "LoginPath": "/Account/Login",
+        "AccessDeniedPath": "/Account/AccessDenied"
+      }
+    }
+  },
+  "Caching": {
+    "Fusion": {
+      "CacheName": "{{ app_name_lower }}-web"
+    }
+  },
+{{ end }}{{ if enable_correlation }}  "Correlation": {
     "HeaderName": "X-Correlation-ID",
     "IncludeInResponse": true,
     "UseTraceIdWhenMissing": true
