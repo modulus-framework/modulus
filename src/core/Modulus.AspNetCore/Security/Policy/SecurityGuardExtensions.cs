@@ -12,6 +12,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Modulus.AspNetCore.Configuration;
 using Modulus.Core.Abstractions;
 using Modulus.Core.Abstractions.Security;
 
@@ -23,7 +24,8 @@ public static class SecurityGuardExtensions
     /// endpoint is mapped, it resolves each endpoint's policy, logs the loosening report, and refuses to
     /// start on an unpoliced endpoint, an anonymous one without a reason, a classified anonymous one or an
     /// unenforceable network requirement, and (outside Development) a loosening missing from the
-    /// allow-list. The last report is available from <see cref="SecurityGuardState"/>.
+    /// allow-list. The last report is available from <see cref="SecurityGuardState"/>. It also adds the in-memory
+    /// store check (<see cref="InMemoryStoreCheckExtensions.AddModulusInMemoryStoreCheck"/>).
     /// </summary>
     public static IServiceCollection AddModulusSecurityGuard(
         this IServiceCollection services,
@@ -38,6 +40,7 @@ public static class SecurityGuardExtensions
         if (configure is not null)
             options.Configure(configure);
 
+        services.AddModulusInMemoryStoreCheck(configuration);
         services.TryAddSingleton<SecurityGuardState>();
         if (!services.Any(d => d.ImplementationType == typeof(SecurityGuardHostedService)))
             services.AddHostedService<SecurityGuardHostedService>();

@@ -433,3 +433,16 @@ Modulus.AspNetCore.Logging.ModulusRedactionOptions.HmacKey.set -> void
 Modulus.AspNetCore.Logging.ModulusRedactionOptions.HmacKeyId.get -> int?
 Modulus.AspNetCore.Logging.ModulusRedactionOptions.HmacKeyId.set -> void
 Modulus.AspNetCore.Logging.ModulusRedactionOptions.Enabled.get -> bool
+Modulus.AspNetCore.Configuration.InMemoryStoreCheckExtensions
+static Modulus.AspNetCore.Configuration.InMemoryStoreCheckExtensions.AddModulusInMemoryStoreCheck(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+Modulus.AspNetCore.Configuration.InMemoryStoreCheckMode
+Modulus.AspNetCore.Configuration.InMemoryStoreCheckMode.Warn = 0 -> Modulus.AspNetCore.Configuration.InMemoryStoreCheckMode
+Modulus.AspNetCore.Configuration.InMemoryStoreCheckMode.Fail = 1 -> Modulus.AspNetCore.Configuration.InMemoryStoreCheckMode
+Modulus.AspNetCore.Configuration.InMemoryStoreCheckMode.Off = 2 -> Modulus.AspNetCore.Configuration.InMemoryStoreCheckMode
+Modulus.AspNetCore.Configuration.InMemoryStoreCheckOptions
+Modulus.AspNetCore.Configuration.InMemoryStoreCheckOptions.InMemoryStoreCheckOptions() -> void
+Modulus.AspNetCore.Configuration.InMemoryStoreCheckOptions.Mode.get -> Modulus.AspNetCore.Configuration.InMemoryStoreCheckMode
+Modulus.AspNetCore.Configuration.InMemoryStoreCheckOptions.Mode.set -> void
+Modulus.AspNetCore.Configuration.InMemoryStoreCheckOptions.Allow.get -> string![]!
+Modulus.AspNetCore.Configuration.InMemoryStoreCheckOptions.Allow.set -> void
+const Modulus.AspNetCore.Configuration.InMemoryStoreCheckOptions.SectionName = "Security:InMemoryStores" -> string!

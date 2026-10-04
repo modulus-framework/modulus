@@ -1249,6 +1249,12 @@ roots, Security tab in `Modulus.UI.AuditLogging`).
   `SecurityGuardReport.Surfaces` lists what one endpoint carries, from each `ISecuritySurfaceContributor` (Core):
   GraphQL root fields and realtime topics (`Policed` / `Inherited` / `Anonymous`); anonymous ones are logged and join the
   audited loosening fingerprint, but never fail startup.
+- **In-memory store check.** `AddModulusSecurityGuard` also calls `AddModulusInMemoryStoreCheck(configuration)`
+  (`Security:InMemoryStores`, `Modulus.AspNetCore.Configuration`). Outside Development it lists the framework stores whose
+  effective registration (last one per contract) is still a framework `InMemory*` type (grants, memberships, settings,
+  idempotency, ...): `Mode: Warn` (default) logs one warning, `Fail` refuses to start unless the contract is in `Allow`
+  (simple name, e.g. `IIdempotencyStore`), `Off` skips it. A factory registration is resolved only for a `Modulus.*`
+  contract named `*Store`. Covered by `InMemoryStoreCheckTests`.
 - **MOD0001** (`src/analyzers/Modulus.Analyzers`, packed into `Cobytelabs.Modulus.AspNetCore`) warns at build time on
   anonymous without a reason. **MOD0002** (same package) warns when a classified property, field or parameter (any
   `DataClassificationAttribute`, `[ProtectedPersonalData]` included; not `[InternalData]`) is passed to an ordinary `ILogger`

@@ -111,9 +111,8 @@ public sealed class RabbitMqEventBusTests : IClassFixture<RabbitMqFixture>, IAsy
         TestHandler.Received.Clear();
 
         var provider = await StartAsync(exchange, queue);
-        // Give the consumer's background loop a moment to declare the
-        // exchange/queue and start consuming before we publish.
-        await Task.Delay(1000);
+        // A message published before the consumer has bound its queue is dropped by the exchange.
+        await WaitForConsumerAsync(queue);
 
         var bus = provider.GetRequiredService<IModuleBus>();
         var @event = new TestEvent();
@@ -145,7 +144,7 @@ public sealed class RabbitMqEventBusTests : IClassFixture<RabbitMqFixture>, IAsy
         await DeclareDeadLetterTopologyAsync(dlx, dlQueue);
 
         var provider = await StartAsync(exchange, queue, dlx);
-        await Task.Delay(1000);
+        await WaitForConsumerAsync(queue);
 
         var bus = provider.GetRequiredService<IModuleBus>();
         var @event = new ThrowingTestEvent();
@@ -161,6 +160,39 @@ public sealed class RabbitMqEventBusTests : IClassFixture<RabbitMqFixture>, IAsy
         // Give a further (absent) retry a chance to prove the cap holds.
         await Task.Delay(2000);
         ThrowingHandler.CallCount.Should().Be(3, "the default cap is three delivery attempts");
+    }
+
+    // The consumer declares and binds its queue in the background; a fixed delay was too short under parallel load.
+    private async Task WaitForConsumerAsync(string queue)
+    {
+        var factory = new ConnectionFactory
+        {
+            HostName = _fixture.HostName,
+            Port = _fixture.Port,
+            UserName = RabbitMqFixture.UserName,
+            Password = RabbitMqFixture.Password,
+        };
+        await using var connection = await factory.CreateConnectionAsync();
+        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(30);
+        while (DateTime.UtcNow < deadline)
+        {
+            // A passive declare of a missing queue closes the channel, so use a fresh one per attempt.
+            await using var channel = await connection.CreateChannelAsync();
+            try
+            {
+                var ok = await channel.QueueDeclarePassiveAsync(queue);
+                if (ok.ConsumerCount > 0)
+                    return;
+            }
+            catch (global::RabbitMQ.Client.Exceptions.OperationInterruptedException)
+            {
+                // Not declared yet.
+            }
+
+            await Task.Delay(100);
+        }
+
+        throw new TimeoutException($"No consumer on queue '{queue}' within 30 seconds.");
     }
 
     private async Task DeclareDeadLetterTopologyAsync(string dlx, string dlQueue)

@@ -44,7 +44,15 @@ public sealed class RabbitMqConsumerTests : IAsyncLifetime
 
         await channel.BasicPublishAsync(exchange, string.Empty, body: "hello"u8.ToArray());
 
-        var result = await channel.BasicGetAsync(queue, autoAck: true);
+        // Routing is asynchronous: an immediate get can run before the message reaches the queue.
+        BasicGetResult? result = null;
+        for (var i = 0; i < 50 && result is null; i++)
+        {
+            result = await channel.BasicGetAsync(queue, autoAck: true);
+            if (result is null)
+                await Task.Delay(100);
+        }
+
         result.Should().NotBeNull();
         System.Text.Encoding.UTF8.GetString(result!.Body.Span).Should().Be("hello");
     }

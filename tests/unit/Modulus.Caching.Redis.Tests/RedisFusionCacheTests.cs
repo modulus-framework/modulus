@@ -62,8 +62,8 @@ public sealed class RedisFusionCacheTests : IAsyncLifetime
 
         await a.GetRequiredService<ICacheService>().SetAsync("greeting", "hello");
 
-        (await b.GetRequiredService<ICacheService>().GetAsync<string>("greeting"))
-            .Should().Be("hello");
+        // The L2 write runs in the background, so wait for it rather than reading once.
+        await Eventually(async () => await b.GetRequiredService<ICacheService>().GetAsync<string>("greeting") == "hello");
     }
 
     [Fact]
@@ -77,7 +77,7 @@ public sealed class RedisFusionCacheTests : IAsyncLifetime
         // B subscribes to the backplane asynchronously; under load a removal published before that is never seen.
         // Repeat a throwaway removal until B observes one, so the assertion below tests eviction, not start-up timing.
         await cacheA.SetAsync("warm-up", "w");
-        (await cacheB.GetAsync<string>("warm-up")).Should().Be("w");
+        await Eventually(async () => await cacheB.GetAsync<string>("warm-up") == "w");
         await Eventually(async () =>
         {
             await cacheA.RemoveAsync("warm-up");
@@ -86,7 +86,8 @@ public sealed class RedisFusionCacheTests : IAsyncLifetime
         });
 
         await cacheA.SetAsync("product:1", "v1", null, ["products"]);
-        (await cacheB.GetAsync<string>("product:1")).Should().Be("v1"); // now in B's L1
+        // L2 writes run in the background (AllowBackgroundDistributedCacheOperations), so B may miss right after A's write.
+        await Eventually(async () => await cacheB.GetAsync<string>("product:1") == "v1"); // now in B's L1
 
         await cacheA.RemoveByTagAsync("products");
 
