@@ -22,6 +22,7 @@
   <ItemGroup>
     <InternalsVisibleTo Include="Modulus.AI.Connector.Tests" />
     <InternalsVisibleTo Include="Modulus.AI.Connector.EntityFrameworkCore" />
+    <InternalsVisibleTo Include="Modulus.AI.Connector.Testing" />
   </ItemGroup>
 
 </Project>

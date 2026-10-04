@@ -140,6 +140,7 @@ internal static class UiEject
 
     private static void Write(string path, UiView view, string frameworkVersion)
     {
+        Ux.RecordWrite(path);
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         File.WriteAllText(path, UiViewMarker.Build(view, frameworkVersion) + view.Source, new UTF8Encoding(false));
     }
@@ -153,6 +154,7 @@ internal static class UiEject
             return false;
         }
 
+        Ux.RecordWrite(path);
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         File.WriteAllText(path, ViewImports, new UTF8Encoding(false));
         return true;

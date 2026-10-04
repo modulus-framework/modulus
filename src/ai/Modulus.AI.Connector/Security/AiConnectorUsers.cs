@@ -1,6 +1,7 @@
 namespace Modulus.AI.Connector;
 
 using Microsoft.AspNetCore.Identity;
+using Modulus.Core.Abstractions;
 
 /// <summary>
 /// Finds the Modulus account the platform's envelope names. Return null for an unknown, disabled or locked-out
@@ -35,15 +36,20 @@ internal sealed class DenyAllAiConnectorUserResolver : IAiConnectorUserResolver
 
 /// <summary>
 /// Resolves accounts through ASP.NET Core Identity's <see cref="UserManager{TUser}"/>: by id, e-mail or user name;
-/// a locked-out account, or one <c>isActive</c> rejects, is refused.
+/// a locked-out account, or one <c>isActive</c> rejects, is refused. The lookup runs in the host context: the identity
+/// store's tenant filter shows host-level accounts only to the host, and the connector authenticates before any company
+/// is entered (it enters the instance's company afterwards, and checks the membership).
 /// </summary>
-internal sealed class IdentityAiConnectorUserResolver<TUser>(UserManager<TUser> users, Func<TUser, bool>? isActive)
+internal sealed class IdentityAiConnectorUserResolver<TUser>(UserManager<TUser> users, Func<TUser, bool>? isActive, ICurrentTenant? currentTenant = null)
     : IAiConnectorUserResolver
     where TUser : IdentityUser<Guid>
 {
     public async Task<AiConnectorUser?> ResolveAsync(AiUserLookup lookup, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(lookup);
+
+        // Set in this frame, so the AsyncLocal reaches every awaited store call below.
+        using var host = currentTenant?.Change(null);
         var user = lookup.MatchBy switch
         {
             AiUserMatch.Id => Guid.TryParse(lookup.Value, out var id) ? await users.FindByIdAsync(id.ToString()) : null,

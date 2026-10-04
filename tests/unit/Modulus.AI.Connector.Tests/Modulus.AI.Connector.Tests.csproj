@@ -3,6 +3,7 @@
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <ProjectReference Include="../../../src/ai/Modulus.AI.Connector/Modulus.AI.Connector.csproj" />
+    <ProjectReference Include="../../../src/ai/Modulus.AI.Connector.Testing/Modulus.AI.Connector.Testing.csproj" />
   </ItemGroup>
 
   <ItemGroup>

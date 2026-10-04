@@ -77,7 +77,7 @@ OpenIddict-shaped servers and the BFF has to work with every supported auth serv
 | 3 | `Modulus.Webhooks` (integration events → signed HTTP callbacks) | **done** |
 | 4 | `Modulus.GraphQL` (GraphQL.NET) | **done** |
 | 5 | `Modulus.Realtime` (integration events → SSE by default, SignalR opt-in) | **done** |
-| 6 | AI platform integration: `Modulus.AI.Connector` (wire contract v1 inside the app) and `Modulus.UI.AI` (embedded assistant); read-only, no LLM code | planned |
+| 6 | AI platform integration: `Modulus.AI.Connector` (wire contract v1 inside the app) and `Modulus.UI.AI` (embedded assistant); read-only, no LLM code | **6a–6d done** (connector, index, CLI, conformance kit); `Modulus.UI.AI` deferred; see *Remaining work (phase 6)* |
 
 ---
 
@@ -651,7 +651,7 @@ Known limits of 6a (follow-ups):
   envelope's ~60 s.
 - Not hooked yet: Identity account disable / lock-out and role membership changes (`UserManager`), and grant-store
   writes made outside the admin API.
-- `SecurityProbeSuite` does not cover `/_ai/connector/*` yet (it signs in with its own test scheme).
+- ~~`SecurityProbeSuite` does not cover `/_ai/connector/*`~~: done in 6c (`ProbeScheme`; API-key endpoints expect `401`, or `403` on a multi-tenant host).
 - No OpenAPI spec of the contract exists yet; the wire shapes in `Contract/WireContract.cs` follow Architecture
   §4/§19 and should be regenerated from `Integrations.Contracts` when it is published (6d).
 
@@ -792,7 +792,8 @@ Known limits of 6b (follow-ups):
 
 #### 6c: Host integration, UI and CLI
 
-- [ ] **`Modulus.UI.AI`.**
+- [ ] **`Modulus.UI.AI` (deferred).** Not built: the UI is going to change, so the assistant host waits for it.
+  The design stays:
   - `POST /ai/session` (behind the sign-in) mints the platform session token with the **host API key**, which is
     held server-side only (`Ai:Host:ApiKey`, user secrets or a vault; covered by the secrets guard).
   - An `ISlotContributor` renders the SDK's assistant view component, permission-gated (`ai:use`) and
@@ -804,24 +805,102 @@ Known limits of 6b (follow-ups):
     session.
   - In a `webapp+api` split, the session endpoint and the assistant live in the Web host, and the connector lives
     in the API host.
-- [ ] **CLI.**
-  - `modulus add-ai [--connector] [--host]` adds `Modulus.AI.Connector` to the API host (endpoints, API-key
-    scheme, envelope keys URL, tenant mapping, revocation relay) and/or `Modulus.UI.AI` to the UI host, plus
-    settings and a test class.
-  - `generate-crud --ai` marks the generated queries `[AiCapability]` and the entity `[AiQueryable]` /
-    `[AiIndexed]`, and writes `{Entity}AiCapabilityTests`.
-  - `modulus describe --json` and `--json` output on the generators let a separate developer-AI tool drive the
-    CLI.
+- [x] **CLI (connector side).**
+  - `modulus add-ai` (`AddAiCommand`, wiring in `AiWiring`; refuses a `webapp` host):
+    - adds `Cobytelabs.Modulus.AI.Connector` and `.EntityFrameworkCore` to the API host;
+    - wires `AddModulusAiConnector(..., ai => ai.UseIdentityUsers<ModulusUser>(user => user.IsActive).UseEntityFrameworkCore())`
+      (no user resolver when the host has no local accounts; it warns) and `MapModulusAiConnector()` after the
+      endpoints;
+    - writes `Ai:Connector` to `appsettings.json` with `Enabled: false`, so validation is skipped and nothing can call
+      the connector until the app is registered with the platform;
+    - writes `appsettings.Testing.json` with a test key hash, a throwaway platform (`.invalid`) and one instance
+      (`test-instance`);
+    - writes `tests/{App}.Tests/AiConnectorTests.cs`: no key `401`, a signed-in user `401`, a key sent with `Origin`
+      `401`, and the platform reads the manifest.
+    - It is idempotent. The `--connector` / `--host` switches were dropped with the UI package.
+  - `generate-crud <Entity> --ai`:
+    - the entity gets `[AiIndexed("Module.Entity")]` and `[AiQueryable(..., Fields = [scalar properties])]`;
+    - `Get{Entities}Query` gets `[AiCapability("{App}.Module.Entity.List", ...)]`;
+    - `Get{Entity}ByIdQuery` gets `[AiResource(..., TitleField = first string property)]`;
+    - both queries get `[RequirePermission]` with the CRUD permission when the host has permissions, because a
+      capability runs through the mediator, not behind the HTTP endpoint;
+    - Program.cs grants the permission to the `AiIndexer` role;
+    - with `AiConnectorTests.cs` present it writes `{Entity}AiCapabilityTests` (manifest entries; a created record
+      appears in `/extract` when the entity is not tenant-owned and has a `Name`; an unknown instance gets `403`);
+    - it warns when the connector is not wired yet.
+  - **`modulus describe [--json]`**: the app's name, kind, hosts, modules (provider, migration engine, migrations,
+    entities), BFFs and wired features.
+  - **Global `--json`**: the human output is silenced and prompts are off. The command ends with one JSON document on
+    stdout: `success`, `exitCode`, `dryRun`, `files` (`path`, `action`: created/updated; csproj edits and ejected
+    views included), `error`, `result`. Together with `--dry-run`, this lets a developer-AI tool plan and run the
+    generators instead of re-implementing the templates.
+  - **Probe suite.** `SecurityProbeSuite` now expects `401` on the signed-in probes for an endpoint whose policies
+    accept only other authentication schemes (the connector's API-key endpoints): the test user cannot authenticate
+    there at all. `SecurityProbeOptions.ProbeScheme` names the test scheme.
+  - Verified end to end on a generated `--kind api --auth openiddict` app, built from freshly packed packages:
+    `add-ai` then `generate-crud Product --module Catalog --ai`. It built with 0 warnings and 14/14 tests passed
+    (SecurityProbeTests included). An `add-ai --json` rerun reported `files: []`. Covered by `AiWiringTests` and
+    `AiCommandTests`.
+  - Known limits:
+    - `generate-crud --ai` marks only what it finds on disk (an older CRUD set is marked too).
+    - The `ai_changes` journal needs a migration (`modulus migrate add AiChanges`); `add-ai` says so.
 
 #### 6d: Conformance
 
-- [ ] **Inside Modulus.** Contract tests against a fake platform (signs envelopes, receives revocations) and the
-  OpenAPI spec (response shapes, typed errors) run in the Modulus test suite, with no platform package involved.
-  Generated apps ship a `ConnectorContractTests` class built the same way.
+- [x] **Inside Modulus (built).** The kit is the package `Modulus.AI.Connector.Testing` (no platform package). It has
+  two parts:
+  - `AiFakePlatform` is the fake platform. It signs envelopes with its own RSA key. A `signedByStranger` envelope and
+    an unsigned one are also available. It receives revocation signals on the connector's internal HTTP clients and
+    records every call, and `FailNext` makes it refuse to test retries. `platform.Configure(services)` points the
+    connector at it. That covers the API-key hash, issuer, keys, base URL, two instances (one per company), no settle
+    delay and no change hints.
+  - `AiConnectorConformance.RunAsync(services, client, platform, options)` runs the platform's categories
+    (Architecture §9.3, Integration Guide §14.1) and returns an `AiConformanceReport` (`EnsurePassed()` throws with
+    every failure). The categories are:
+    - **health**;
+    - **authentication**: a valid envelope is accepted, and each of these is denied: no API key, an unknown key, a
+      browser origin, no envelope, unsigned, signed by an unknown key, expired, another issuer, a lifetime that is
+      too long, no `jti`, an unknown user and a replay;
+    - **tenant isolation**: denied for an instance the app does not serve, an instance paired with another platform
+      tenant, an envelope addressed to another instance, and extraction for an unknown instance. The scope is the
+      envelope's instance and company for at most five minutes, and another instance never gets this company;
+    - **manifest**: contract version, unique names, schemas, sensitivity;
+    - **deny paths**: an unknown capability or resource type is `NOT_FOUND`, a malformed body or non-object
+      arguments are `INVALID_REQUEST`, and a missing record is never returned;
+    - **query injection (FR-26a)**: undeclared arguments are `400`, and SQL/DAX/comment/wildcard values come back as
+      data or a typed refusal, never a `5xx`;
+    - **field security**: capability results and records hold only declared fields the user may read, and field
+      checks return only the requested fields, consistent with the scope;
+    - **batch authorization**: order kept, empty batch, oversized batch is `400`;
+    - **extraction**: paging without repeats, invalid cursor/type/limit, change-feed cursor resumes, tombstones
+      well-formed;
+    - **revocation (AD-12)**: a simulated access change reaches `/revocations/scope` with the scope's key, and
+      retries resend the same payload;
+    - **no adapter-side caching (AD-13)**: the scope after `ChangeUserAccess` differs, or the user is refused;
+    - **typed errors**: every refusal carries a typed code.
+
+    Checks that need a user report `NotApplicable` without `AiConformanceOptions.User`.
+- In-repo coverage: `ConformanceTests` in `Modulus.AI.Connector.Tests`. A correct connector passes every category,
+  and the suite catches each planted defect: no revocation observer, a caching user resolver, and a search that
+  breaks on a quote.
+- Generated coverage: `modulus add-ai` also writes `AiConformanceTests`, and the test project references the package.
+  The test creates a local account (`Admin` when the host has it) and, on a multi-tenant host, a company with that
+  account as a member. The access change removes the role, or deactivates the account.
+- **Defects the suite found on generated apps (fixed):**
+  - `IdentityAiConnectorUserResolver` looked accounts up outside the host context. The identity store's tenant
+    filter then hid every account, so on a `--multi-tenancy` host every user call was refused. It now enters the
+    host context for the lookup.
+  - The EF change feed returned an empty cursor for an empty journal. It now always returns an encoded position
+    (`e30`).
+  - `SecurityProbeSuite`'s foreign-tenant probe expected `401` on the connector's API-key endpoints. A multi-tenant
+    host's tenant middleware answers `403` first, and both are now accepted.
+- Verified end to end from freshly packed packages: `--kind api --auth openiddict` passed 15/15, and the same with
+  `--multi-tenancy` passed 16/16, both after `add-ai` and `generate-crud Product --ai`.
+- Not covered generically: timeout-as-deny (needs a slow capability in the app), and response shapes against the
+  platform's published OpenAPI spec (not yet published).
 - [ ] **Against the real platform.** Run the platform's `AiPlatform.Integrations.Conformance` suite against a
-  generated app, in the platform's or the app's CI, before a connector is activated. It covers deny paths, field
-  filtering, fail-closed behaviour, tombstones, and a simulated permission change that must trigger
-  `/revocations/scope`.
+  generated app, in the platform's or the app's CI, before a connector is activated. The in-repo kit mirrors its
+  categories but does not replace it.
 
 #### 6e: Waiting on platform decisions (not designed here)
 
@@ -838,6 +917,37 @@ These need a platform BRS decision first (Architecture §20). Modulus will follo
   authority).
 - **MCP or other agent access.** Excluded by AD-19 for the platform. A separate MCP adapter for other agents is
   not planned.
+
+#### Remaining work (phase 6)
+
+Everything still open, by owner. 6a–6d are built (2026-10-04). The items below are not started.
+
+**Waiting on the UI change**
+- [ ] `Modulus.UI.AI`: the assistant host, as designed under 6c (session endpoint, slot contributor, `ai:use`
+  gate, `Ai` feature flag, a CLI wiring step).
+- [ ] Verification step 3: a web app shows the assistant, and its session endpoint refuses anonymous callers.
+
+**Waiting on the platform**
+- [ ] Run the platform's `AiPlatform.Integrations.Conformance` suite against a generated app before activation (6d).
+- [ ] Regenerate the wire shapes (`Contract/WireContract.cs`) from the published `Integrations.Contracts` /
+  OpenAPI spec, and add response-shape checks to the conformance kit.
+- [ ] Every 6e item: write actions (proposal → user confirms → Modulus executes), proactive insights, document
+  extraction, host page/record context.
+
+**Modulus-side follow-ups (no blocker; pick up when needed)**
+- [ ] Access-change hooks for Identity: account disable / lock-out and role membership changes (`UserManager`),
+  and grant-store writes made outside the admin API. Today only `TenantManager` and the authorization admin API
+  call `NotifyAccessChangedAsync`, so these changes reach the platform only at its 5-minute scope expiry.
+- [ ] Durable revocation queue: move pending signals to the outbox so a shutdown cannot lose them.
+- [ ] Shared envelope replay cache (distributed cache) for hosts with several replicas.
+- [ ] Batch record lookup for `/extract` and `/changes`, which today cost N+1 queries per page.
+- [ ] `Search` over extension fields (`ExtraProperties`) and an `ISearchContributor` for cross-entity search.
+- [ ] Per-user masking of `[PersonalInformation]` fields (today: declared `Restricted`; add `[Classified]` to mask).
+- [ ] Store-generated and composite keys for `[AiIndexed]` entities.
+- [ ] At-least-once change hints (today at most once; `/changes` polling is the safety net).
+- [ ] Aggregate query shapes run in CI on PostgreSQL, SQL Server and MySQL (only SQLite today).
+- [ ] A timeout-as-deny check in the conformance kit (needs a deliberately slow capability).
+- [ ] `generate-crud --ai` on an older CRUD set and the `ai_changes` migration stay manual steps (`add-ai` prints them).
 
 #### Critical files
 
@@ -871,10 +981,11 @@ These need a platform BRS decision first (Architecture §20). Modulus will follo
 
 #### Verification
 
-1. Generate an app: `modulus app --kind api --auth openiddict`, then `add-ai --connector`, then
-   `generate-crud Product --ai`. It must build with 0 warnings and the generated tests must pass.
-2. The platform's conformance suite (or a fake platform that signs envelopes) passes against it.
-3. A web app (`add-ai --host`) shows the assistant to a signed-in user with `ai:use`, and its session endpoint
+1. Generate an app: `modulus app --kind api --auth openiddict`, then `add-ai`, then
+   `generate-crud Product --ai`. It must build with 0 warnings and the generated tests must pass (done).
+2. The conformance kit (`AiConformanceTests`, fake platform) passes against it (done: 15/15, and 16/16 with
+   `--multi-tenancy`). The platform's own suite is still to run.
+3. (Deferred with `Modulus.UI.AI`.) A web app shows the assistant to a signed-in user with `ai:use`, and its session endpoint
    refuses anonymous callers.
 
 ## Verification checklist (every phase)

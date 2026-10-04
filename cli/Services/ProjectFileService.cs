@@ -156,6 +156,7 @@ internal static class ProjectFileService
         {
             // Preserve the original formatting (indentation).
             var content = doc.ToString();
+            Ux.RecordWrite(packagesPropsPath);
             File.WriteAllText(packagesPropsPath, content);
         }
 
@@ -197,6 +198,7 @@ internal static class ProjectFileService
 
         if (modified && !dryRun)
         {
+            Ux.RecordWrite(csprojPath);
             File.WriteAllText(csprojPath, doc.ToString());
         }
 
@@ -251,6 +253,7 @@ internal static class ProjectFileService
                     new XElement("ItemGroup", new XText("\n    "), reference, new XText("\n  ")));
             }
 
+            Ux.RecordWrite(csprojPath);
             File.WriteAllText(csprojPath, doc.ToString());
         }
 
@@ -307,6 +310,7 @@ internal static class ProjectFileService
                     new XElement("ItemGroup", new XText("\n    "), reference, new XText("\n  ")));
             }
 
+            Ux.RecordWrite(csprojPath);
             File.WriteAllText(csprojPath, doc.ToString());
         }
 

@@ -32,6 +32,11 @@ internal abstract class ModulusSettings : CommandSettings
     [DefaultValue(false)]
     public bool Verbose { get; init; }
 
+    [Description("Machine-readable output: no prompts, no console text, one JSON document on stdout (outcome, files written, any result such as describe's inventory).")]
+    [CommandOption("--json")]
+    [DefaultValue(false)]
+    public bool Json { get; init; }
+
     [Description("Suppress everything but errors and the final summary.")]
     [CommandOption("-q|--quiet")]
     [DefaultValue(false)]
@@ -47,6 +52,7 @@ internal abstract class ModulusSettings : CommandSettings
         Ux.DryRun = DryRun;
         Ux.Force = Force;
         Ux.Verbose = Verbose;
-        Ux.Quiet = Quiet;
+        Ux.Quiet = Quiet || Json;
+        Ux.SetJson(Json);
     }
 }

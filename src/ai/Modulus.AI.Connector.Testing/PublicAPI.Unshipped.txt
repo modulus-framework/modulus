@@ -1,0 +1,111 @@
+#nullable enable
+Modulus.AI.Connector.Testing.AiConformanceCategory
+Modulus.AI.Connector.Testing.AiConformanceCategory.Authentication = 1 -> Modulus.AI.Connector.Testing.AiConformanceCategory
+Modulus.AI.Connector.Testing.AiConformanceCategory.Authorization = 7 -> Modulus.AI.Connector.Testing.AiConformanceCategory
+Modulus.AI.Connector.Testing.AiConformanceCategory.DenyPaths = 4 -> Modulus.AI.Connector.Testing.AiConformanceCategory
+Modulus.AI.Connector.Testing.AiConformanceCategory.Extraction = 8 -> Modulus.AI.Connector.Testing.AiConformanceCategory
+Modulus.AI.Connector.Testing.AiConformanceCategory.FieldSecurity = 6 -> Modulus.AI.Connector.Testing.AiConformanceCategory
+Modulus.AI.Connector.Testing.AiConformanceCategory.Health = 0 -> Modulus.AI.Connector.Testing.AiConformanceCategory
+Modulus.AI.Connector.Testing.AiConformanceCategory.Manifest = 3 -> Modulus.AI.Connector.Testing.AiConformanceCategory
+Modulus.AI.Connector.Testing.AiConformanceCategory.NoAdapterCaching = 10 -> Modulus.AI.Connector.Testing.AiConformanceCategory
+Modulus.AI.Connector.Testing.AiConformanceCategory.QueryInjection = 5 -> Modulus.AI.Connector.Testing.AiConformanceCategory
+Modulus.AI.Connector.Testing.AiConformanceCategory.Revocation = 9 -> Modulus.AI.Connector.Testing.AiConformanceCategory
+Modulus.AI.Connector.Testing.AiConformanceCategory.TenantIsolation = 2 -> Modulus.AI.Connector.Testing.AiConformanceCategory
+Modulus.AI.Connector.Testing.AiConformanceException
+Modulus.AI.Connector.Testing.AiConformanceException.AiConformanceException(Modulus.AI.Connector.Testing.AiConformanceReport! report) -> void
+Modulus.AI.Connector.Testing.AiConformanceException.Report.get -> Modulus.AI.Connector.Testing.AiConformanceReport!
+Modulus.AI.Connector.Testing.AiConformanceOptions
+Modulus.AI.Connector.Testing.AiConformanceOptions.AiConformanceOptions() -> void
+Modulus.AI.Connector.Testing.AiConformanceOptions.ChangeUserAccess.get -> System.Func<System.IServiceProvider!, System.Threading.CancellationToken, System.Threading.Tasks.Task!>?
+Modulus.AI.Connector.Testing.AiConformanceOptions.ChangeUserAccess.set -> void
+Modulus.AI.Connector.Testing.AiConformanceOptions.ExtractPageSize.get -> int
+Modulus.AI.Connector.Testing.AiConformanceOptions.ExtractPageSize.set -> void
+Modulus.AI.Connector.Testing.AiConformanceOptions.MaxExtractPages.get -> int
+Modulus.AI.Connector.Testing.AiConformanceOptions.MaxExtractPages.set -> void
+Modulus.AI.Connector.Testing.AiConformanceOptions.RevocationTimeout.get -> System.TimeSpan
+Modulus.AI.Connector.Testing.AiConformanceOptions.RevocationTimeout.set -> void
+Modulus.AI.Connector.Testing.AiConformanceOptions.TriggerAccessChange.get -> System.Func<System.IServiceProvider!, System.Threading.CancellationToken, System.Threading.Tasks.Task!>?
+Modulus.AI.Connector.Testing.AiConformanceOptions.TriggerAccessChange.set -> void
+Modulus.AI.Connector.Testing.AiConformanceOptions.User.get -> string?
+Modulus.AI.Connector.Testing.AiConformanceOptions.User.set -> void
+Modulus.AI.Connector.Testing.AiConformanceOutcome
+Modulus.AI.Connector.Testing.AiConformanceOutcome.Failed = 1 -> Modulus.AI.Connector.Testing.AiConformanceOutcome
+Modulus.AI.Connector.Testing.AiConformanceOutcome.NotApplicable = 2 -> Modulus.AI.Connector.Testing.AiConformanceOutcome
+Modulus.AI.Connector.Testing.AiConformanceOutcome.Passed = 0 -> Modulus.AI.Connector.Testing.AiConformanceOutcome
+Modulus.AI.Connector.Testing.AiConformanceReport
+Modulus.AI.Connector.Testing.AiConformanceReport.AiConformanceReport(System.Collections.Generic.IReadOnlyList<Modulus.AI.Connector.Testing.AiConformanceResult!>! results) -> void
+Modulus.AI.Connector.Testing.AiConformanceReport.EnsurePassed() -> void
+Modulus.AI.Connector.Testing.AiConformanceReport.Failures.get -> System.Collections.Generic.IReadOnlyList<Modulus.AI.Connector.Testing.AiConformanceResult!>!
+Modulus.AI.Connector.Testing.AiConformanceReport.Passed(Modulus.AI.Connector.Testing.AiConformanceCategory category) -> bool
+Modulus.AI.Connector.Testing.AiConformanceReport.Results.get -> System.Collections.Generic.IReadOnlyList<Modulus.AI.Connector.Testing.AiConformanceResult!>!
+Modulus.AI.Connector.Testing.AiConformanceResult
+Modulus.AI.Connector.Testing.AiConformanceResult.<Clone>$() -> Modulus.AI.Connector.Testing.AiConformanceResult!
+Modulus.AI.Connector.Testing.AiConformanceResult.AiConformanceResult(Modulus.AI.Connector.Testing.AiConformanceCategory Category, string! Check, Modulus.AI.Connector.Testing.AiConformanceOutcome Outcome, string? Detail = null) -> void
+Modulus.AI.Connector.Testing.AiConformanceResult.Category.get -> Modulus.AI.Connector.Testing.AiConformanceCategory
+Modulus.AI.Connector.Testing.AiConformanceResult.Category.init -> void
+Modulus.AI.Connector.Testing.AiConformanceResult.Check.get -> string!
+Modulus.AI.Connector.Testing.AiConformanceResult.Check.init -> void
+Modulus.AI.Connector.Testing.AiConformanceResult.Deconstruct(out Modulus.AI.Connector.Testing.AiConformanceCategory Category, out string! Check, out Modulus.AI.Connector.Testing.AiConformanceOutcome Outcome, out string? Detail) -> void
+Modulus.AI.Connector.Testing.AiConformanceResult.Detail.get -> string?
+Modulus.AI.Connector.Testing.AiConformanceResult.Detail.init -> void
+Modulus.AI.Connector.Testing.AiConformanceResult.Equals(Modulus.AI.Connector.Testing.AiConformanceResult? other) -> bool
+Modulus.AI.Connector.Testing.AiConformanceResult.Outcome.get -> Modulus.AI.Connector.Testing.AiConformanceOutcome
+Modulus.AI.Connector.Testing.AiConformanceResult.Outcome.init -> void
+Modulus.AI.Connector.Testing.AiConnectorConformance
+Modulus.AI.Connector.Testing.AiFakePlatform
+Modulus.AI.Connector.Testing.AiFakePlatform.AiFakePlatform() -> void
+Modulus.AI.Connector.Testing.AiFakePlatform.ApiKey.get -> string!
+Modulus.AI.Connector.Testing.AiFakePlatform.AppInstanceId.get -> string!
+Modulus.AI.Connector.Testing.AiFakePlatform.AppInstanceId.init -> void
+Modulus.AI.Connector.Testing.AiFakePlatform.BaseUrl.get -> string!
+Modulus.AI.Connector.Testing.AiFakePlatform.BaseUrl.init -> void
+Modulus.AI.Connector.Testing.AiFakePlatform.Calls.get -> System.Collections.Generic.IReadOnlyList<Modulus.AI.Connector.Testing.AiPlatformCall!>!
+Modulus.AI.Connector.Testing.AiFakePlatform.CompanyId.get -> System.Guid?
+Modulus.AI.Connector.Testing.AiFakePlatform.CompanyId.set -> void
+Modulus.AI.Connector.Testing.AiFakePlatform.Configure(Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> void
+Modulus.AI.Connector.Testing.AiFakePlatform.ConnectorApiKey.get -> string!
+Modulus.AI.Connector.Testing.AiFakePlatform.Dispose() -> void
+Modulus.AI.Connector.Testing.AiFakePlatform.Envelope(string! user, string? appInstanceId = null, string? platformTenantId = null, string! userClaim = "sub", System.Action<Microsoft.IdentityModel.Tokens.SecurityTokenDescriptor!>? tweak = null, bool signedByStranger = false) -> string!
+Modulus.AI.Connector.Testing.AiFakePlatform.FailNext(int count, System.Net.HttpStatusCode status = System.Net.HttpStatusCode.ServiceUnavailable) -> void
+Modulus.AI.Connector.Testing.AiFakePlatform.Issuer.get -> string!
+Modulus.AI.Connector.Testing.AiFakePlatform.Issuer.init -> void
+Modulus.AI.Connector.Testing.AiFakePlatform.OtherAppInstanceId.get -> string!
+Modulus.AI.Connector.Testing.AiFakePlatform.OtherAppInstanceId.init -> void
+Modulus.AI.Connector.Testing.AiFakePlatform.OtherPlatformTenantId.get -> string!
+Modulus.AI.Connector.Testing.AiFakePlatform.OtherPlatformTenantId.init -> void
+Modulus.AI.Connector.Testing.AiFakePlatform.PlatformTenantId.get -> string!
+Modulus.AI.Connector.Testing.AiFakePlatform.PlatformTenantId.init -> void
+Modulus.AI.Connector.Testing.AiFakePlatform.Request(System.Net.Http.HttpMethod! method, string! path, string? envelope = null, string? json = null, string? apiKey = null, string! pathPrefix = "/_ai/connector") -> System.Net.Http.HttpRequestMessage!
+Modulus.AI.Connector.Testing.AiFakePlatform.Revocations.get -> System.Collections.Generic.IReadOnlyList<Modulus.AI.Connector.Contract.RevocationSignal!>!
+Modulus.AI.Connector.Testing.AiFakePlatform.SigningKeys.get -> string!
+Modulus.AI.Connector.Testing.AiFakePlatform.UnsignedEnvelope(string! user) -> string!
+Modulus.AI.Connector.Testing.AiFakePlatform.WaitForAsync(System.Func<System.Collections.Generic.IReadOnlyList<Modulus.AI.Connector.Testing.AiPlatformCall!>!, bool>! condition, System.TimeSpan timeout, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.AI.Connector.Testing.AiPlatformCall
+Modulus.AI.Connector.Testing.AiPlatformCall.<Clone>$() -> Modulus.AI.Connector.Testing.AiPlatformCall!
+Modulus.AI.Connector.Testing.AiPlatformCall.AiPlatformCall(string! Method, string! Path, string? Authorization, string! Body, int Status) -> void
+Modulus.AI.Connector.Testing.AiPlatformCall.Authorization.get -> string?
+Modulus.AI.Connector.Testing.AiPlatformCall.Authorization.init -> void
+Modulus.AI.Connector.Testing.AiPlatformCall.Body.get -> string!
+Modulus.AI.Connector.Testing.AiPlatformCall.Body.init -> void
+Modulus.AI.Connector.Testing.AiPlatformCall.Deconstruct(out string! Method, out string! Path, out string? Authorization, out string! Body, out int Status) -> void
+Modulus.AI.Connector.Testing.AiPlatformCall.Equals(Modulus.AI.Connector.Testing.AiPlatformCall? other) -> bool
+Modulus.AI.Connector.Testing.AiPlatformCall.Method.get -> string!
+Modulus.AI.Connector.Testing.AiPlatformCall.Method.init -> void
+Modulus.AI.Connector.Testing.AiPlatformCall.Path.get -> string!
+Modulus.AI.Connector.Testing.AiPlatformCall.Path.init -> void
+Modulus.AI.Connector.Testing.AiPlatformCall.Status.get -> int
+Modulus.AI.Connector.Testing.AiPlatformCall.Status.init -> void
+const Modulus.AI.Connector.Testing.AiConnectorConformance.ContractVersion = "1" -> string!
+const Modulus.AI.Connector.Testing.AiFakePlatform.DefaultBaseUrl = "https://ai-platform.conformance.invalid" -> string!
+override Modulus.AI.Connector.Testing.AiConformanceReport.ToString() -> string!
+override Modulus.AI.Connector.Testing.AiConformanceResult.Equals(object? obj) -> bool
+override Modulus.AI.Connector.Testing.AiConformanceResult.GetHashCode() -> int
+override Modulus.AI.Connector.Testing.AiConformanceResult.ToString() -> string!
+override Modulus.AI.Connector.Testing.AiPlatformCall.Equals(object? obj) -> bool
+override Modulus.AI.Connector.Testing.AiPlatformCall.GetHashCode() -> int
+override Modulus.AI.Connector.Testing.AiPlatformCall.ToString() -> string!
+static Modulus.AI.Connector.Testing.AiConformanceResult.operator !=(Modulus.AI.Connector.Testing.AiConformanceResult? left, Modulus.AI.Connector.Testing.AiConformanceResult? right) -> bool
+static Modulus.AI.Connector.Testing.AiConformanceResult.operator ==(Modulus.AI.Connector.Testing.AiConformanceResult? left, Modulus.AI.Connector.Testing.AiConformanceResult? right) -> bool
+static Modulus.AI.Connector.Testing.AiConnectorConformance.RunAsync(System.IServiceProvider! services, System.Net.Http.HttpClient! client, Modulus.AI.Connector.Testing.AiFakePlatform! platform, Modulus.AI.Connector.Testing.AiConformanceOptions? options = null, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.AI.Connector.Testing.AiConformanceReport!>!
+static Modulus.AI.Connector.Testing.AiPlatformCall.operator !=(Modulus.AI.Connector.Testing.AiPlatformCall? left, Modulus.AI.Connector.Testing.AiPlatformCall? right) -> bool
+static Modulus.AI.Connector.Testing.AiPlatformCall.operator ==(Modulus.AI.Connector.Testing.AiPlatformCall? left, Modulus.AI.Connector.Testing.AiPlatformCall? right) -> bool

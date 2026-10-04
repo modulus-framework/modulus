@@ -20,6 +20,8 @@ using Microsoft.Extensions.DependencyInjection;
 /// <item><b>foreign-tenant</b> (when <see cref="SecurityProbeOptions.ForeignTenantId"/> is set): a caller holding
 /// the endpoint's permissions but no membership in that company gets <c>403</c> when selecting it.</item>
 /// </list>
+/// An endpoint whose policies accept only other authentication schemes (an API-key scheme such as the AI
+/// connector's) never authenticates the probe's signed-in caller, so both caller probes expect <c>401</c> there.
 /// </summary>
 /// <remarks>
 /// Route parameters are filled with placeholders (<see cref="SecurityProbeOptions.RouteValue"/>), and unsafe
@@ -52,7 +54,7 @@ public static class SecurityProbeSuite
 
         var results = new List<SecurityProbeResult>();
         var loosened = new List<string>();
-        foreach (var target in Discover(services, options))
+        foreach (var target in await DiscoverAsync(services, options).ConfigureAwait(false))
         {
             if (target.Anonymous)
             {
@@ -65,16 +67,20 @@ public static class SecurityProbeSuite
             results.Add(Result(target, SecurityProbe.Anonymous, string.Join('/', accepted), status,
                 accepted.Contains((int)status.Code) || options.IsLoginRedirect(status)));
 
-            if (target.RequiresMoreThanSignIn)
+            if (target.RequiresMoreThanSignIn || target.OtherSchemesOnly)
             {
                 status = await SendAsync(client, target, new Caller([], [], null), options, ct).ConfigureAwait(false);
-                results.Add(Result(target, SecurityProbe.NoPermission, "403", status, status.Code == HttpStatusCode.Forbidden));
+                var denied = target.OtherSchemesOnly ? HttpStatusCode.Unauthorized : HttpStatusCode.Forbidden;
+                results.Add(Result(target, SecurityProbe.NoPermission, ((int)denied).ToString(CultureInfo.InvariantCulture), status, status.Code == denied));
             }
 
             if (options.ForeignTenantId is { } foreign)
             {
                 status = await SendAsync(client, target, new Caller(target.Roles, target.Policies, foreign), options, ct).ConfigureAwait(false);
-                var refused = options.ForeignTenantStatusOverrides.TryGetValue(target.Route, out var foreignCodes) ? foreignCodes : [403];
+                // Behind another scheme the test user is not authenticated at all (401), unless tenant resolution refuses
+                // the foreign company first (403): either way the caller is refused.
+                var refused = options.ForeignTenantStatusOverrides.TryGetValue(target.Route, out var foreignCodes) ? foreignCodes
+                    : target.OtherSchemesOnly ? [401, 403] : [403];
                 results.Add(Result(target, SecurityProbe.ForeignTenant, string.Join('/', refused), status, refused.Contains((int)status.Code)));
             }
         }
@@ -111,9 +117,10 @@ public static class SecurityProbeSuite
         return new ProbeStatus(response.StatusCode, response.Headers.Location?.ToString());
     }
 
-    private static List<ProbeTarget> Discover(IServiceProvider services, SecurityProbeOptions options)
+    private static async Task<List<ProbeTarget>> DiscoverAsync(IServiceProvider services, SecurityProbeOptions options)
     {
         var targets = new List<ProbeTarget>();
+        var policyProvider = services.GetService<IAuthorizationPolicyProvider>();
         var sources = services.GetServices<EndpointDataSource>();
         foreach (var endpoint in sources.SelectMany(s => s.Endpoints).OfType<RouteEndpoint>().Distinct())
         {
@@ -134,11 +141,13 @@ public static class SecurityProbeSuite
                 || endpoint.Metadata.GetOrderedMetadata<AuthorizationPolicy>()
                     .Any(p => p.Requirements.Any(r => r is not Microsoft.AspNetCore.Authorization.Infrastructure.DenyAnonymousAuthorizationRequirement));
             var anonymous = endpoint.Metadata.GetMetadata<IAllowAnonymous>() is not null;
+            var schemes = await SchemesAsync(endpoint, authorize, policies, policyProvider).ConfigureAwait(false);
+            var otherSchemesOnly = schemes.Count > 0 && !schemes.Contains(options.ProbeScheme);
             var route = "/" + (endpoint.RoutePattern.RawText ?? string.Empty).TrimStart('/');
             var url = BuildUrl(endpoint.RoutePattern, options);
 
             foreach (var method in methods)
-                targets.Add(new ProbeTarget(method, route, url, anonymous, requiresMore, policies, roles));
+                targets.Add(new ProbeTarget(method, route, url, anonymous, requiresMore, otherSchemesOnly, policies, roles));
         }
 
         return targets
@@ -146,6 +155,32 @@ public static class SecurityProbeSuite
             .OrderBy(t => t.Route, StringComparer.Ordinal)
             .ThenBy(t => t.Method, StringComparer.Ordinal)
             .ToList();
+    }
+
+    // The authentication schemes the endpoint's authorization accepts; empty = the default scheme.
+    private static async Task<HashSet<string>> SchemesAsync(
+        Endpoint endpoint, IReadOnlyList<IAuthorizeData> authorize, string[] policies, IAuthorizationPolicyProvider? provider)
+    {
+        var schemes = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var data in authorize)
+        {
+            foreach (var scheme in (data.AuthenticationSchemes ?? string.Empty).Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                schemes.Add(scheme);
+        }
+
+        foreach (var policy in endpoint.Metadata.GetOrderedMetadata<AuthorizationPolicy>())
+            schemes.UnionWith(policy.AuthenticationSchemes);
+
+        if (provider is not null)
+        {
+            foreach (var name in policies)
+            {
+                if (await provider.GetPolicyAsync(name).ConfigureAwait(false) is { } policy)
+                    schemes.UnionWith(policy.AuthenticationSchemes);
+            }
+        }
+
+        return schemes;
     }
 
     private static string BuildUrl(RoutePattern pattern, SecurityProbeOptions options)
@@ -172,7 +207,7 @@ public static class SecurityProbeSuite
     }
 
     private sealed record ProbeTarget(
-        string Method, string Route, string Url, bool Anonymous, bool RequiresMoreThanSignIn, string[] Policies, string[] Roles);
+        string Method, string Route, string Url, bool Anonymous, bool RequiresMoreThanSignIn, bool OtherSchemesOnly, string[] Policies, string[] Roles);
 
     private readonly record struct ProbeStatus(HttpStatusCode Code, string? Location);
 
@@ -248,6 +283,12 @@ public sealed class SecurityProbeOptions
 
     /// <summary>The header that selects a company (the multi-tenancy default <c>X-Tenant-Id</c>).</summary>
     public string TenantHeader { get; set; } = "X-Tenant-Id";
+
+    /// <summary>
+    /// The scheme the probe's signed-in callers authenticate with. An endpoint whose policies name only other schemes
+    /// cannot authenticate them, so its caller probes expect <c>401</c>.
+    /// </summary>
+    public string ProbeScheme { get; set; } = TestAuthDefaults.SchemeName;
 
     /// <summary>Time allowed per request (default 15 seconds).</summary>
     public TimeSpan RequestTimeout { get; set; } = TimeSpan.FromSeconds(15);

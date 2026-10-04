@@ -101,6 +101,7 @@ src/
                  contract v1: read-only capabilities, envelope auth, revocation, extract/changes,
                  generated Search/Calculate, audit capabilities) + Modulus.AI.Connector.EntityFrameworkCore
                  (ai_changes journal, change feed, entity source, entity-history capability)
+                 + Modulus.AI.Connector.Testing (fake platform + conformance suite)
   testing/       Modulus.Testing (WebApplicationFactory harness, RecordingModuleBus,
                  event assertions), Modulus.Testing.Architecture (module boundary
                  rules: integration event naming, cross-module reference detection)
@@ -166,6 +167,8 @@ large DDD/CQRS modular monoliths.
 | `modulus add-webhooks [--events a,b]` | Adds outgoing webhooks: the `{App}.Modules.Webhooks.Infrastructure` store module, API host wiring (one `AddEvent` per `[IntegrationEventName]` event, Admin grant, `MapModulusWebhooks`), settings and a test class. Re-run to add new events. See *Webhooks*. |
 | `modulus add-audit-store` | Keeps the business audit log and the hash-chained security audit in a database: the `{App}.Modules.Audit.Infrastructure` store module (`AppAuditDbContext`, `AuditModule` with `AddModulusAuditStore`), API host wiring (`AddModulusSecurityAudit` when missing), the `Audit` connection string and a Development anchor file. Idempotent. See *Security model*. |
 | `modulus add-realtime [--events a,b] [--bff ...] [--signalr]` | Pushes integration events to connected clients: API host wiring (`AddModulusRealtime` with one `AddEvent` per event, audience = the entity's permission; `MapModulusRealtime`), settings, a test class; `--bff` relays `/realtime` as an event stream; `--signalr` turns the hub on (SSE is the default). See *Realtime*. |
+| `modulus add-ai` | Hosts the AI platform's connector (`Modulus.AI.Connector` + EF journal) in the API host: `AddModulusAiConnector`/`MapModulusAiConnector`, `Ai:Connector` settings (off until registered with the platform), test settings with a hashed test key, `AiConnectorTests` and `AiConformanceTests` (package `Modulus.AI.Connector.Testing`). Idempotent; not for `webapp`. `generate-crud <Entity> --ai` then marks the entity `[AiIndexed]`/`[AiQueryable]`, the list query `[AiCapability]`, the lookup `[AiResource]` (with `[RequirePermission]`), grants the `AiIndexer` role and writes `{Entity}AiCapabilityTests`. See *AI connector*. |
+| `modulus describe [--json]` | Prints the app's kind, hosts, modules + entities, BFFs and wired features. The global `--json` option (any command) silences the human output and ends with one JSON document (`success`, `exitCode`, `dryRun`, `files` written with `created`/`updated`, `error`, `result`), so a developer tool can drive the generators (with `--dry-run`). |
 | `modulus module <name>` | Creates a blank 4-layer business module |
 | `modulus add-module <name>` | Adds a module to an existing app + wires Program.cs registration + Host `ProjectReference`s. `--migration-engine` defaults to `dbsh` when all existing modules use dbsh. |
 | `modulus generate-crud <Entity>` | Generates entity, repo, DTOs, command/query handlers across the module's layers |
@@ -1738,6 +1741,19 @@ platform package; the platform is read-only, so only queries are exposed.
   - In the history, values of secret, unknown and unreadable classified fields are null.
 - **Personal data.** Capability results mask `[Classified]` fields per user. `[PersonalInformation]` fields are only
   declared `Restricted` in the manifest; add `[Classified]` when some users must not see one.
+- **CLI (6c).** `modulus add-ai` and `generate-crud --ai` (see the CLI table). `Modulus.UI.AI` (the assistant host) is
+  deferred until the UI changes land. `SecurityProbeSuite` expects `401` on the signed-in probes for an endpoint whose
+  policies accept only other schemes (the connector's API-key endpoints); `SecurityProbeOptions.ProbeScheme` names the
+  test scheme.
+- **Conformance (6d).** `Modulus.AI.Connector.Testing`: `AiFakePlatform` (signs envelopes, receives revocations,
+  `FailNext` for retries; `platform.Configure(services)` points the connector at it) and
+  `AiConnectorConformance.RunAsync(services, client, platform, options)`, which runs the platform's categories (health,
+  authentication, tenant isolation, manifest, deny paths, query injection, field security, batch authorization,
+  extraction, revocation, no adapter-side caching, typed errors) and returns a report (`EnsurePassed()`). Checks that
+  run as a user need `AiConformanceOptions.User` (else `NotApplicable`); `ChangeUserAccess` is the access change the
+  next scope must show. Generated apps run it in `AiConformanceTests`. It found two fixed defects: `UseIdentityUsers`
+  now looks accounts up in the host context (on a multi-tenant host every user call was refused), and the EF change
+  feed never returns an empty cursor. The real platform's suite still runs before activation.
 
 ## Testing notes
 

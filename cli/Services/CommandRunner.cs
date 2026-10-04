@@ -1,3 +1,5 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using Spectre.Console;
 
 namespace Modulus.Cli.Services;
@@ -13,7 +15,7 @@ internal static class CommandRunner
     {
         try
         {
-            return action();
+            return Report(action(), null);
         }
         catch (Exception ex) when (ex is
             ArgumentException or
@@ -23,7 +25,7 @@ internal static class CommandRunner
             DirectoryNotFoundException)
         {
             AnsiConsole.MarkupLine("[red]Error:[/] {0}", Markup.Escape(ex.Message));
-            return 1;
+            return Report(1, ex.Message);
         }
     }
 
@@ -31,7 +33,7 @@ internal static class CommandRunner
     {
         try
         {
-            return action().GetAwaiter().GetResult();
+            return Report(action().GetAwaiter().GetResult(), null);
         }
         catch (AggregateException agg) when (agg.InnerException is Exception inner)
         {
@@ -53,10 +55,39 @@ internal static class CommandRunner
             DirectoryNotFoundException)
         {
             AnsiConsole.MarkupLine("[red]Error:[/] {0}", Markup.Escape(ex.Message));
-            return 1;
+            return Report(1, ex.Message);
         }
 
         AnsiConsole.MarkupLine("[red]Unexpected error:[/] {0}", Markup.Escape(ex.Message));
-        return 1;
+        return Report(1, ex.Message);
+    }
+
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+        WriteIndented = true,
+    };
+
+    /// <summary>
+    /// Under <c>--json</c>, writes the command's outcome to stdout: <c>success</c>, <c>exitCode</c>, <c>dryRun</c>, the files
+    /// written (<c>path</c>, <c>action</c>: created/updated), the error message when it failed, and any <c>result</c>.
+    /// </summary>
+    private static int Report(int exitCode, string? error)
+    {
+        if (!Ux.Json)
+            return exitCode;
+
+        var document = new
+        {
+            success = exitCode == 0,
+            exitCode,
+            dryRun = Ux.DryRun,
+            files = Ux.Changes.Select(c => new { path = c.Path, action = c.Action }).ToList(),
+            error,
+            result = Ux.Result,
+        };
+        Console.Out.WriteLine(JsonSerializer.Serialize(document, JsonOptions));
+        return exitCode;
     }
 }

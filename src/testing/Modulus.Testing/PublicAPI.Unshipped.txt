@@ -96,6 +96,8 @@ static Modulus.Testing.Security.TenantIsolationAssertions.AssertCrossTenantReadI
 static Modulus.Testing.Security.TenantIsolationAssertions.AssertTenantIsolationAsync<TContext, TEntity>(this System.IServiceProvider! services, TEntity! entity, System.Guid owner, System.Guid other, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
 Modulus.Testing.Security.SecurityProbeOptions.TenantHeader.get -> string!
 Modulus.Testing.Security.SecurityProbeOptions.TenantHeader.set -> void
+Modulus.Testing.Security.SecurityProbeOptions.ProbeScheme.get -> string!
+Modulus.Testing.Security.SecurityProbeOptions.ProbeScheme.set -> void
 static Modulus.Testing.Security.SecurityProbeSuite.RunAsync(System.IServiceProvider! services, System.Net.Http.HttpClient! client, Modulus.Testing.Security.SecurityProbeOptions? options = null, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Testing.Security.SecurityProbeReport!>!
 Modulus.Testing.Security.SecurityProbeOptions.AnonymousStatusOverrides.get -> System.Collections.Generic.IDictionary<string!, int[]!>!
 Modulus.Testing.Security.SecurityProbeOptions.ForeignTenantStatusOverrides.get -> System.Collections.Generic.IDictionary<string!, int[]!>!

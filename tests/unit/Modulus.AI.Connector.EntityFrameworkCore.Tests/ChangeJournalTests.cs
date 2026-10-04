@@ -161,8 +161,8 @@ public sealed class ChangeJournalTests : IAsyncLifetime
         await AddAsync(JournalTestHost.CompanyB, "Other company");
         var unchanged = await feed();
 
-        empty.Should().BeEmpty();
-        first.Should().NotBeEmpty();
+        EfAiChangeFeed.Decode(empty).Should().BeEmpty();
+        first.Should().NotBe(empty);
         unchanged.Should().Be(first);
     }
 
@@ -178,7 +178,8 @@ public sealed class ChangeJournalTests : IAsyncLifetime
         var positions = new Dictionary<string, long> { ["ShopDbContext"] = 4, ["SalesDbContext"] = 9 };
 
         EfAiChangeFeed.Decode(EfAiChangeFeed.Encode(positions)).Should().BeEquivalentTo(positions);
-        EfAiChangeFeed.Encode([]).Should().BeEmpty();
+        EfAiChangeFeed.Encode([]).Should().NotBeEmpty("an empty journal still has a position to resume from");
+        EfAiChangeFeed.Decode(EfAiChangeFeed.Encode([])).Should().BeEmpty();
         EfAiChangeFeed.Decode(null).Should().BeEmpty();
     }
 

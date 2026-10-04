@@ -58,6 +58,9 @@ public static class Program
                 .WithExample("add-realtime")
                 .WithExample("add-realtime", "--bff", "web,mobile")
                 .WithExample("add-realtime", "--signalr");
+            config.AddCommand<Commands.AddAiCommand>("add-ai")
+                .WithDescription("Host the AI platform's connector (wire contract v1) in the API host: read-only capabilities, record lookups, extraction and the change feed, behind the platform's API key and signed user envelope.")
+                .WithExample("add-ai");
 
             // ── Code generation ────────────────────────────────────────
             config.AddCommand<Commands.GenerateCrudCommand>("generate-crud")
@@ -93,6 +96,10 @@ public static class Program
             config.AddCommand<Commands.ListCommand>("list")
                 .WithDescription("List every business module in this app (provider, entities, migrations).")
                 .WithExample("list");
+            config.AddCommand<Commands.DescribeCommand>("describe")
+                .WithDescription("Describe the app (kind, hosts, modules and entities, BFFs, wired features); with --json, for tools that drive the CLI.")
+                .WithExample("describe")
+                .WithExample("describe", "--json");
 
             config.AddCommand<Commands.InfoCommand>("info")
                 .WithDescription("Show an overview of this Modulus app (host, features, modules).")

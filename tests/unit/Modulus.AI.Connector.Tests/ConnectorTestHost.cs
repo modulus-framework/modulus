@@ -61,11 +61,24 @@ public sealed record GetProduct(Guid Id) : IQuery<ProductDto>;
 [AiCapability("Test.Catalog.Product.Count", "Counts the products.")]
 public sealed record CountProducts : IQuery<int>;
 
-public sealed class SearchProductsHandler : IQueryHandler<SearchProducts, IReadOnlyList<ProductDto>>
+public sealed class SearchProductsHandler(SearchProductsFault? fault = null) : IQueryHandler<SearchProducts, IReadOnlyList<ProductDto>>
 {
     public Task<IReadOnlyList<ProductDto>> HandleAsync(SearchProducts query, CancellationToken ct)
-        => Task.FromResult<IReadOnlyList<ProductDto>>(
+    {
+        fault?.Throw(query.Text);
+        return Task.FromResult<IReadOnlyList<ProductDto>>(
             [.. Catalog.Products.Where(p => query.Text is null || p.Name.Contains(query.Text, StringComparison.OrdinalIgnoreCase))]);
+    }
+}
+
+/// <summary>Makes <see cref="SearchProductsHandler"/> fail on some input (registered only by tests that want a broken search).</summary>
+public sealed class SearchProductsFault(Func<string?, Exception?> fault)
+{
+    public void Throw(string? text)
+    {
+        if (fault(text) is { } exception)
+            throw exception;
+    }
 }
 
 public sealed class GetProductHandler : IQueryHandler<GetProduct, ProductDto>

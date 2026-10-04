@@ -72,8 +72,10 @@ internal sealed class EfAiChangeFeed(IEnumerable<DbContext> contexts) : IAiChang
 
     private static string NameOf(DbContext context) => context.GetType().Name;
 
+    // Never empty, even before the first change: the platform stores the cursor and sends it back as since=, and an
+    // empty value would read as "no cursor".
     internal static string Encode(Dictionary<string, long> positions)
-        => positions.Count == 0 ? "" : Base64Url.EncodeToString(JsonSerializer.SerializeToUtf8Bytes(positions));
+        => Base64Url.EncodeToString(JsonSerializer.SerializeToUtf8Bytes(positions));
 
     internal static Dictionary<string, long> Decode(string? cursor)
     {

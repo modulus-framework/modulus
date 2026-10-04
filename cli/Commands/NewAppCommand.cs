@@ -664,6 +664,7 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
 
             if (!Ux.DryRun)
             {
+                Ux.RecordWrite(programCs);
                 File.WriteAllText(programCs, content);
 
                 // Admin UIs (Users, Settings, ...) require their permission, which the Admin role is granted.

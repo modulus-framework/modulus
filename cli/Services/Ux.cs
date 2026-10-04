@@ -23,6 +23,57 @@ internal static class Ux
     public static bool Quiet { get; set; }
 
     /// <summary>
+    /// <c>--json</c>: the human output is silenced, prompts never fire, and the command ends with one JSON document on
+    /// stdout (<see cref="CommandRunner"/>) listing what it wrote, so another tool can drive the CLI.
+    /// </summary>
+    public static bool Json { get; private set; }
+
+    /// <summary>A file the command created or updated (or, under <c>--dry-run</c>, would have).</summary>
+    internal sealed record FileChange(string Path, string Action);
+
+    private static readonly List<FileChange> s_changes = [];
+    private static IAnsiConsole? s_console;
+
+    /// <summary>The files written by the current command, in order (each path once).</summary>
+    public static IReadOnlyList<FileChange> Changes => s_changes;
+
+    /// <summary>A command-specific result for the <c>--json</c> document (e.g. <c>describe</c>'s inventory).</summary>
+    public static object? Result { get; set; }
+
+    /// <summary>Turns <c>--json</c> on or off for the current command.</summary>
+    public static void SetJson(bool json)
+    {
+        Json = json;
+        if (json)
+        {
+            s_console ??= AnsiConsole.Console;
+            AnsiConsole.Console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(TextWriter.Null),
+                Interactive = InteractionSupport.No,
+                Ansi = AnsiSupport.No,
+            });
+        }
+        else if (s_console is not null)
+        {
+            AnsiConsole.Console = s_console;
+            s_console = null;
+        }
+    }
+
+    /// <summary>
+    /// Records a write (call before writing, so "created" vs "updated" is known); <see cref="WriteFile"/> does it itself,
+    /// other writers (csproj edits, ejected views) call it.
+    /// </summary>
+    public static void RecordWrite(string path)
+    {
+        var full = System.IO.Path.GetFullPath(path);
+        if (s_changes.Any(c => string.Equals(c.Path, full, StringComparison.OrdinalIgnoreCase)))
+            return;
+        s_changes.Add(new FileChange(full, File.Exists(full) ? "updated" : "created"));
+    }
+
+    /// <summary>
     /// Resets all global flags. Each command sets its own at start; this
     /// keeps state from leaking between invocations in the same process
     /// (the test harness, future REPL, etc.).
@@ -33,13 +84,16 @@ internal static class Ux
         Force = false;
         Verbose = false;
         Quiet = false;
+        s_changes.Clear();
+        Result = null;
+        SetJson(false);
     }
 
     /// <summary>
     /// True when stdin is attached to a real terminal (we may prompt).
     /// False when stdin is a pipe/redirect (CI, scripts) — must not block.
     /// </summary>
-    public static bool IsInteractive => !Console.IsInputRedirected;
+    public static bool IsInteractive => !Json && !Console.IsInputRedirected;
 
     // ── Output ────────────────────────────────────────────────────────
     public static void Info(string message, string? detail = null)
@@ -189,6 +243,7 @@ internal static class Ux
     /// </summary>
     public static void WriteFile(string path, string content)
     {
+        RecordWrite(path);
         if (DryRun)
         {
             DryRunNote($"would write [cyan]{path}[/]");

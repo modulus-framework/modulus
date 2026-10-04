@@ -55,14 +55,15 @@ public sealed class AiConnectorBuilder
     /// <summary>
     /// Finds the envelope's user among ASP.NET Core Identity accounts (by id, e-mail or user name, per
     /// <see cref="ModulusAiConnectorOptions.Users"/>); a locked-out account, or one <paramref name="isActive"/> rejects,
-    /// is refused.
+    /// is refused. Accounts are looked up in the host context (they belong to no company; with multi-tenancy on, a
+    /// request that has not selected one would otherwise see none), and the call then enters the instance's company.
     /// </summary>
     public AiConnectorBuilder UseIdentityUsers<TUser>(Func<TUser, bool>? isActive = null)
         where TUser : IdentityUser<Guid>
     {
         Services.RemoveAll<IAiConnectorUserResolver>();
         Services.AddScoped<IAiConnectorUserResolver>(sp =>
-            new IdentityAiConnectorUserResolver<TUser>(sp.GetRequiredService<UserManager<TUser>>(), isActive));
+            new IdentityAiConnectorUserResolver<TUser>(sp.GetRequiredService<UserManager<TUser>>(), isActive, sp.GetService<ICurrentTenant>()));
         return this;
     }
 }

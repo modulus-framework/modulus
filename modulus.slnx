@@ -79,6 +79,7 @@
   <Folder Name="/src/ai/">
     <Project Path="src/ai/Modulus.AI.Connector/Modulus.AI.Connector.csproj" />
     <Project Path="src/ai/Modulus.AI.Connector.EntityFrameworkCore/Modulus.AI.Connector.EntityFrameworkCore.csproj" />
+    <Project Path="src/ai/Modulus.AI.Connector.Testing/Modulus.AI.Connector.Testing.csproj" />
   </Folder>
   <!-- ── Testing ─────────────────────────────────────────────────── -->
   <Folder Name="/src/testing/">

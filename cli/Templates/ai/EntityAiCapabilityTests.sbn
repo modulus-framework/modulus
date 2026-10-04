@@ -1,0 +1,58 @@
+using System.Net;
+using System.Net.Http.Json;
+using System.Text.Json;
+using FluentAssertions;
+using Modulus.Testing;
+using Xunit;
+using ApiEntryPoint = {{ root_namespace }}.Api.ApiEntryPoint;
+
+namespace {{ root_namespace }}.Tests;
+
+/// <summary>
+/// {{ entity_name }} through the AI connector (modulus generate-crud {{ entity_name }} --ai): the capabilities it declares and,
+/// for the platform's index, its records extracted as the indexing identity.
+/// </summary>
+public sealed class {{ entity_name }}AiCapabilityTests(ModulusWebAppFactory<ApiEntryPoint> factory)
+    : IClassFixture<ModulusWebAppFactory<ApiEntryPoint>>
+{
+    [Fact]
+    public async Task The_manifest_declares_the_entitys_capabilities()
+    {
+        using var client = AiConnectorTests.Platform(factory);
+
+        var manifest = await client.GetFromJsonAsync<JsonElement>(new Uri("/_ai/connector/manifest", UriKind.Relative));
+
+        manifest.GetProperty("capabilities").EnumerateArray().Select(c => c.GetProperty("name").GetString())
+            .Should().Contain(["{{ list_capability }}", "{{ search_capability }}", "{{ calculate_capability }}"]);
+        var resource = manifest.GetProperty("resourceTypes").EnumerateArray()
+            .Single(r => r.GetProperty("type").GetString() == "{{ resource_type }}");
+        resource.GetProperty("indexed").GetBoolean().Should().BeTrue();
+    }
+{{ if can_extract }}
+    [Fact]
+    public async Task A_created_record_is_extracted_for_the_index()
+    {
+        var created = await factory.CreateAuthenticatedClient(roles: ["{{ admin_role }}"])
+            .PostAsJsonAsync("/api/{{ module_lower }}/{{ route_name }}", new { name = "ai-indexed" });
+        created.StatusCode.Should().Be(HttpStatusCode.Created);
+        var id = created.Headers.Location!.ToString().Split('/')[^1];
+
+        using var client = AiConnectorTests.Platform(factory);
+        var page = await client.GetFromJsonAsync<JsonElement>(new Uri(
+            "/_ai/connector/extract?appInstanceId={{ test_instance }}&resourceType={{ resource_type }}&limit=100", UriKind.Relative));
+
+        page.GetProperty("resources").EnumerateArray()
+            .Select(r => r.GetProperty("reference").GetProperty("resourceId").GetString())
+            .Should().Contain(id);
+    }
+
+    [Fact]
+    public async Task Extraction_for_an_unknown_instance_is_refused()
+    {
+        using var client = AiConnectorTests.Platform(factory);
+
+        var response = await client.GetAsync(new Uri("/_ai/connector/extract?appInstanceId=nope&resourceType={{ resource_type }}", UriKind.Relative));
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+{{ end }}}

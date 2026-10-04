@@ -1,0 +1,100 @@
+using Microsoft.AspNetCore.TestHost;
+using Microsoft.Extensions.DependencyInjection;
+using Modulus.AI.Connector.Testing;
+{{~ if has_local_accounts ~}}
+using FluentAssertions;
+using Microsoft.AspNetCore.Identity;
+using Modulus.Core.Abstractions;
+using Modulus.Identity.Abstractions;
+{{~ end ~}}
+{{~ if multi_tenant && has_local_accounts ~}}
+using Modulus.MultiTenancy.EntityFrameworkCore;
+{{~ end ~}}
+using Modulus.Testing;
+using Xunit;
+using ApiEntryPoint = {{ root_namespace }}.Api.ApiEntryPoint;
+
+namespace {{ root_namespace }}.Tests;
+
+/// <summary>
+/// The AI platform's connector conformance suite (modulus add-ai), run against this app with a fake platform that signs
+/// envelopes and receives revocation signals: authentication, tenant isolation, manifest, deny paths, query injection,
+/// field security, batch authorization, extraction and change tracking, revocation and no adapter-side caching. The real
+/// platform runs the same categories before it activates the connector.
+/// </summary>
+public sealed class AiConformanceTests
+{
+    [Fact]
+    public async Task The_connector_passes_the_platform_conformance_suite()
+    {
+        using var platform = new AiFakePlatform();
+        await using var factory = new ModulusWebAppFactory<ApiEntryPoint>();
+        await using var host = factory.WithWebHostBuilder(b => b.ConfigureTestServices(platform.Configure));
+        using var client = host.CreateClient();
+{{~ if has_local_accounts ~}}
+        var account = await CreateAccountAsync(host.Services);
+{{~ if multi_tenant ~}}
+        platform.CompanyId = await CreateCompanyWithMemberAsync(host.Services, account);
+{{~ end ~}}
+        var options = new AiConformanceOptions
+        {
+            User = account.ToString(),
+            ChangeUserAccess = (services, _) => ChangeAccessAsync(services, account),
+        };
+{{~ else ~}}
+
+        // No local accounts: register an IAiConnectorUserResolver and set AiConformanceOptions.User to an account it
+        // resolves, so the checks that run as a user apply too.
+        var options = new AiConformanceOptions();
+{{~ end ~}}
+
+        var report = await AiConnectorConformance.RunAsync(host.Services, client, platform, options);
+
+        report.EnsurePassed();
+    }
+{{~ if has_local_accounts ~}}
+
+    // An account the connector resolves by id{{ if has_admin_role }}, holding the {{ admin_role }} role{{ end }}. Accounts belong to no company: the host context.
+    private static async Task<Guid> CreateAccountAsync(IServiceProvider services)
+    {
+        using var hostContext = services.GetRequiredService<ICurrentTenant>().Change(null);
+        await using var scope = services.CreateAsyncScope();
+        var users = scope.ServiceProvider.GetRequiredService<UserManager<ModulusUser>>();
+        var name = $"ai-conformance-{Guid.NewGuid():N}";
+        var account = new ModulusUser { UserName = name, Email = $"{name}@example.com", EmailConfirmed = true };
+        (await users.CreateAsync(account)).Succeeded.Should().BeTrue();
+{{~ if has_admin_role ~}}
+        (await users.AddToRoleAsync(account, "{{ admin_role }}")).Succeeded.Should().BeTrue();
+{{~ end ~}}
+        return account.Id;
+    }
+
+    // The access change the suite must see on the next scope call (the platform caches scopes, the app never does).
+    private static async Task ChangeAccessAsync(IServiceProvider services, Guid accountId)
+    {
+        using var hostContext = services.GetRequiredService<ICurrentTenant>().Change(null);
+        await using var scope = services.CreateAsyncScope();
+        var users = scope.ServiceProvider.GetRequiredService<UserManager<ModulusUser>>();
+        var account = await users.FindByIdAsync(accountId.ToString());
+{{~ if has_admin_role ~}}
+        (await users.RemoveFromRoleAsync(account!, "{{ admin_role }}")).Succeeded.Should().BeTrue();
+{{~ else ~}}
+        account!.IsActive = false;
+        (await users.UpdateAsync(account)).Succeeded.Should().BeTrue();
+{{~ end ~}}
+    }
+{{~ if multi_tenant ~}}
+
+    // The app instance reads one company; the account must be a member of it.
+    private static async Task<Guid> CreateCompanyWithMemberAsync(IServiceProvider services, Guid accountId)
+    {
+        using var hostContext = services.GetRequiredService<ICurrentTenant>().Change(null);
+        await using var scope = services.CreateAsyncScope();
+        var tenants = scope.ServiceProvider.GetRequiredService<TenantManager>();
+        var company = (await tenants.CreateAsync($"ai-{Guid.NewGuid():N}", "AI conformance")).TenantId;
+        (await tenants.AddMemberAsync(accountId, company)).Should().BeTrue();
+        return company;
+    }
+{{~ end ~}}
+{{~ end ~}}
+}

@@ -33,6 +33,11 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
         [DefaultValue(false)]
         public bool NoUi { get; init; }
 
+        [CommandOption("--ai")]
+        [DefaultValue(false)]
+        [Description("Expose the entity to the AI platform: [AiIndexed]/[AiQueryable] on the entity, [AiCapability] on the list query, [AiResource] on the lookup query, the indexing grant and a test class. Re-run on an existing entity to mark it. Needs modulus add-ai.")]
+        public bool Ai { get; init; }
+
         [Description("When scaffolding the UI: do not install the Tabler theme (keep Core's built-in layout or bring your own ITheme).")]
         [CommandOption("--no-theme")]
         [DefaultValue(false)]
@@ -173,6 +178,10 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
             generated.Add(CodeGen.Rel(presDir, $"{module.Namespace}.Presentation.csproj (updated)"));
         }
 
+        // ── AI connector surface (opt-in; marks files that already exist too) ──
+        if (s.Ai)
+            MarkForAi(module, model, host, inventory, domainDir, appDir, generated, skipped);
+
         // ── Host UI companion (default for a web app, opt-in for an unmarked host) ──
         if (withUi)
             GenerateUiCompanion(module, model, host, kind, withTheme: !s.NoTheme, generated, skipped);
@@ -224,6 +233,69 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
         }
 
         return 0;
+    }
+
+    /// <summary>
+    /// <c>--ai</c>: the entity joins the platform's index and gets generated Search/Calculate, the list query becomes a capability,
+    /// the lookup query the record source, both checking the CRUD permission in the mediator (capabilities run as the platform's
+    /// user, not behind the HTTP endpoint), the indexing role may read it, and a test class proves the manifest and extraction.
+    /// </summary>
+    private void MarkForAi(
+        CodeGen.ModuleInfo module, ModuleModel model, HostFiles host, ModuleDiscovery.AppInventory? inventory,
+        string domainDir, string appDir, List<string> generated, List<string> skipped)
+    {
+        var entity = model.EntityName!;
+        var plural = CodeGen.Pluralize(entity);
+        var permission = model.RequiredPermission ?? UiAccessGates.CrudPermission(module.Name, model.RouteName!);
+        var names = AiWiring.NamesFor(module.RootNamespace, module.Name, entity, permission);
+        var checksPermission = model.RequiredPermission is not null;
+
+        var entityFile = Path.Combine(domainDir, $"{entity}.cs");
+        var entitySource = File.Exists(entityFile) ? File.ReadAllText(entityFile) : string.Empty;
+        UpdateExisting(entityFile, domainDir, generated, t => AiWiring.MarkEntity(t, entity, names));
+        UpdateExisting(Path.Combine(appDir, $"Get{plural}Query.cs"), appDir, generated,
+            t => AiWiring.MarkListQuery(t, $"Get{plural}Query", plural, names, checksPermission));
+        UpdateExisting(Path.Combine(appDir, $"Get{entity}ByIdQuery.cs"), appDir, generated,
+            t => AiWiring.MarkLookupQuery(t, $"Get{entity}ByIdQuery", entity, AiWiring.TitleField(entitySource), names, checksPermission));
+
+        var program = File.Exists(host.ProgramCs) ? File.ReadAllText(host.ProgramCs) : string.Empty;
+        if (checksPermission)
+            UpdateExisting(host.ProgramCs, host.ApiDir, generated, t => AiWiring.EnsureIndexerGrant(t, permission));
+        else
+            AnsiConsole.MarkupLine("[yellow]![/] The host declares no permissions: the AI queries check none in the mediator, so any platform user the connector resolves may run them. Grant the indexing role ({0}) read access yourself.", AiWiring.IndexerRole);
+
+        if (!AiWiring.HasConnector(program))
+        {
+            AnsiConsole.MarkupLine("[yellow]![/] The host does not run the AI connector yet: run [cyan]modulus add-ai[/] (the attributes do nothing until then).");
+            return;
+        }
+
+        var testsDir = inventory is null ? null : Path.Combine(inventory.SolutionDir, "tests", $"{inventory.RootNamespace}.Tests");
+        if (testsDir is null || !File.Exists(Path.Combine(testsDir, "AiConnectorTests.cs")))
+            return;
+
+        var testModel = new
+        {
+            RootNamespace = module.RootNamespace,
+            EntityName = entity,
+            ModuleLower = module.Name.ToLowerInvariant(),
+            model.RouteName,
+            ListCapability = names.ListCapability,
+            SearchCapability = names.SearchCapability,
+            CalculateCapability = names.CalculateCapability,
+            names.ResourceType,
+            AdminRole = UiAccessGates.AdminRole,
+            TestInstance = AiWiring.TestInstance,
+            // Extraction needs a record the test can create (the generated create request takes a name) and an instance without a company.
+            CanExtract = checksPermission && !model.MultiTenant && AiWiring.TitleField(entitySource) == "Name",
+        };
+        if (File.Exists(Path.Combine(testsDir, $"{entity}AiCapabilityTests.cs")))
+            skipped.Add($"tests/{entity}AiCapabilityTests.cs");
+        else
+        {
+            _templates.RenderToFile("ai/EntityAiCapabilityTests", testModel, Path.Combine(testsDir, $"{entity}AiCapabilityTests.cs"));
+            generated.Add($"tests/{entity}AiCapabilityTests.cs");
+        }
     }
 
     /// <summary>Rewrites an existing file through <paramref name="update"/> and lists it as updated when that changed it.</summary>

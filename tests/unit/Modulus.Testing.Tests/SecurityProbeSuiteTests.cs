@@ -136,6 +136,41 @@ public sealed class SecurityProbeSuiteTests
     }
 
     [Fact]
+    public async Task An_endpoint_behind_another_scheme_answers_the_signed_in_probes_with_401()
+    {
+        var builder = WebApplication.CreateBuilder();
+        builder.WebHost.UseTestServer();
+        builder.Services.AddAuthentication(TestAuthDefaults.SchemeName)
+            .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(TestAuthDefaults.SchemeName, _ => { })
+            .AddScheme<AuthenticationSchemeOptions, NeverAuthenticates>("ApiKey", _ => { });
+        builder.Services.AddAuthorization(o => o.AddPolicy("service", p => p.AddAuthenticationSchemes("ApiKey").RequireAuthenticatedUser()));
+        await using var app = builder.Build();
+        app.UseAuthentication();
+        app.UseAuthorization();
+        app.MapGet("/_ai/connector/manifest", () => "manifest").RequireAuthorization("service");
+        await app.StartAsync();
+
+        var report = await SecurityProbeSuite.RunAsync(app.Services, app.GetTestClient(), new SecurityProbeOptions { ForeignTenantId = Foreign });
+
+        report.Results.Select(r => (r.Probe, r.Expected)).Should().BeEquivalentTo(new[]
+        {
+            (SecurityProbe.Anonymous, "401"),
+            (SecurityProbe.NoPermission, "401"),
+            (SecurityProbe.ForeignTenant, "401/403"),
+        });
+        report.EnsureNoFailures();
+    }
+
+    private sealed class NeverAuthenticates(
+        Microsoft.Extensions.Options.IOptionsMonitor<AuthenticationSchemeOptions> options,
+        Microsoft.Extensions.Logging.ILoggerFactory logger,
+        System.Text.Encodings.Web.UrlEncoder encoder)
+        : AuthenticationHandler<AuthenticationSchemeOptions>(options, logger, encoder)
+    {
+        protected override Task<AuthenticateResult> HandleAuthenticateAsync() => Task.FromResult(AuthenticateResult.NoResult());
+    }
+
+    [Fact]
     public async Task An_endpoint_without_a_policy_fails_the_suite()
     {
         await using var app = await HostAsync(withLeak: true);
