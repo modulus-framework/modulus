@@ -18,7 +18,7 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 /// <para>
 /// Only <see cref="ModuleDbContext"/> instances are handled. Connections used outside EF Core
 /// (<c>Database.GetDbConnection()</c> handed to Dapper) carry whatever the last EF command or open wrote, so
-/// open them through the context (<c>Database.OpenConnectionAsync()</c>) before use.
+/// get them from <see cref="TenantConnectionExtensions.OpenTenantConnectionAsync"/>, which writes the session first.
 /// </para>
 /// </remarks>
 public abstract class TenantSessionInterceptor : DbConnectionInterceptor, IDbCommandInterceptor, IDbTransactionInterceptor
@@ -135,6 +135,20 @@ public abstract class TenantSessionInterceptor : DbConnectionInterceptor, IDbCom
     {
         if (command.Connection is { } connection && Stale(connection, eventData) is { } session)
             await ApplyAsync(connection, command.Transaction, session, ct).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Writes the context's tenant into an open connection's session unless it already carries it; used by
+    /// <see cref="TenantConnectionExtensions.OpenTenantConnectionAsync"/> for commands EF does not execute.
+    /// </summary>
+    internal async Task EnsureSessionAsync(
+        DbConnection connection, DbTransaction? transaction, ModuleDbContext context, CancellationToken ct)
+    {
+        if (Resolve(connection, context) is not { } session)
+            return;
+        if (_applied.TryGetValue(connection, out var box) && box.Value == session)
+            return;
+        await ApplyAsync(connection, transaction, session, ct).ConfigureAwait(false);
     }
 
     private TenantSession? Stale(DbConnection connection, CommandEventData eventData)

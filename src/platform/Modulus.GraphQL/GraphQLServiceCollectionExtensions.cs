@@ -51,6 +51,7 @@ public static class GraphQLServiceCollectionExtensions
         if (services.Any(d => d.ServiceType == typeof(GraphQLMarker)))
             return services;
         services.AddSingleton<GraphQLMarker>();
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<Modulus.Core.Abstractions.Security.ISecuritySurfaceContributor, GraphQLSecuritySurface>());
 
         services.AddOptions<ModulusGraphQLOptions>()
             .Bind(configuration.GetSection(ModulusGraphQLOptions.SectionName))

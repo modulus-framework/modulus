@@ -81,6 +81,9 @@ public static class SecurityAuditCategories
 
     /// <summary>Security configuration at startup (the loosening report).</summary>
     public const string Configuration = "configuration";
+
+    /// <summary>Calls from an external AI platform (the AI connector): authentication, capabilities, lookups, checks.</summary>
+    public const string Ai = "ai";
 }
 
 /// <summary>Built-in <see cref="SecurityAuditEvent.Outcome"/> values.</summary>

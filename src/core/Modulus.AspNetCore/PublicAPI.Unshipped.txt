@@ -419,3 +419,17 @@ static Modulus.AspNetCore.Security.Policy.SecurityGuardReport.operator !=(Modulu
 static Modulus.AspNetCore.Security.Policy.SecurityGuardReport.operator ==(Modulus.AspNetCore.Security.Policy.SecurityGuardReport? left, Modulus.AspNetCore.Security.Policy.SecurityGuardReport? right) -> bool
 static Modulus.AspNetCore.Security.Policy.EndpointSecurityExtensions.Loosen<TBuilder>(this TBuilder builder, Modulus.Core.Abstractions.Security.LoosenedAttribute! loosening) -> TBuilder
 Modulus.AspNetCore.Correlation.CorrelationIdMiddleware.CorrelationIdMiddleware(Microsoft.AspNetCore.Http.RequestDelegate! next, Modulus.Core.Abstractions.ICorrelationContext! correlation, Microsoft.Extensions.Options.IOptions<Modulus.AspNetCore.Correlation.CorrelationOptions!>! options, Microsoft.Extensions.Logging.ILogger<Modulus.AspNetCore.Correlation.CorrelationIdMiddleware!>! logger) -> void
+Modulus.AspNetCore.Security.Policy.SecurityGuardReport.Surfaces.get -> System.Collections.Generic.IReadOnlyList<Modulus.Core.Abstractions.Security.SecuritySurfaceEntry!>!
+Modulus.AspNetCore.Security.Policy.SecurityGuardReport.Surfaces.init -> void
+const Modulus.AspNetCore.Logging.ModulusRedactionOptions.SectionName = "Security:Redaction" -> string!
+Modulus.AspNetCore.Logging.ModulusRedactionOptions
+Modulus.AspNetCore.Logging.ModulusRedactionOptions.ModulusRedactionOptions() -> void
+Modulus.AspNetCore.Logging.RedactionExtensions
+const Modulus.AspNetCore.Logging.RedactionExtensions.MinimumHmacKeyBytes = 32 -> int
+static Modulus.AspNetCore.Logging.RedactionExtensions.AddModulusRedaction(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration, System.Action<Modulus.AspNetCore.Logging.ModulusRedactionOptions!>? configure = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+Modulus.AspNetCore.Logging.ModulusRedactionOptions.Enabled.set -> void
+Modulus.AspNetCore.Logging.ModulusRedactionOptions.HmacKey.get -> string?
+Modulus.AspNetCore.Logging.ModulusRedactionOptions.HmacKey.set -> void
+Modulus.AspNetCore.Logging.ModulusRedactionOptions.HmacKeyId.get -> int?
+Modulus.AspNetCore.Logging.ModulusRedactionOptions.HmacKeyId.set -> void
+Modulus.AspNetCore.Logging.ModulusRedactionOptions.Enabled.get -> bool

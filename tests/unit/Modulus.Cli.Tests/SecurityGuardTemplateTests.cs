@@ -34,7 +34,9 @@ public sealed class SecurityGuardTemplateTests
 
         model.UseSecurityGuard.Should().BeTrue();
         program.Should().Contain("builder.Services.AddModulusSecurityGuard(builder.Configuration);")
+            .And.Contain("builder.Services.AddModulusSecurityAudit(builder.Configuration);")
             .And.Contain("using Modulus.AspNetCore.Security.Policy;")
+            .And.Contain("using Modulus.AuditLogging.Security;")
             .And.Contain("using Modulus.Authorization.Extensions;");
         if (model.ExposeApi)
             program.Should().Contain("app.MapOpenApi().Loosen(\"OpenAPI document, mapped in Development only\");");
@@ -69,7 +71,8 @@ public sealed class SecurityGuardTemplateTests
         var model = Model(auth, Kind(kind));
 
         model.UseSecurityGuard.Should().BeFalse();
-        _engine.Render("app/Program", model).Should().NotContain("AddModulusSecurityGuard").And.NotContain(".Loosen(");
+        _engine.Render("app/Program", model).Should().NotContain("AddModulusSecurityGuard").And.NotContain(".Loosen(")
+            .And.NotContain("AddModulusSecurityAudit");
     }
 
     [Fact]

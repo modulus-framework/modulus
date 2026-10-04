@@ -13,6 +13,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- The logging source generator that honours data-classification attributes ([PersonalInformation],
+         [ProtectedPersonalData], ...) on [LoggerMessage] parameters; the built-in generator ignores them, so a
+         classified value would be logged as is. -->
+    <PackageReference Include="Microsoft.Extensions.Telemetry.Abstractions" Version="{{ telemetry_abstractions_version }}" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Using Include="Microsoft.Extensions.Configuration" />
     <Using Include="Microsoft.Extensions.DependencyInjection" />
     <Using Include="Microsoft.Extensions.DependencyInjection.Extensions" />

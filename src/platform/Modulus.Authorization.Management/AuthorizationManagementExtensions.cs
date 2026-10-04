@@ -90,7 +90,7 @@ public static class AuthorizationManagementExtensions
 
         group.MapPost("/grants", async (
             GrantWriteRequest request,
-            EfPermissionGrantStore store, IAuthorizationAuditWriter auditWriter,
+            EfPermissionGrantStore store, IAuthorizationAuditWriter auditWriter, IEnumerable<IAccessChangeObserver> observers,
             ICurrentUser currentUser, ISodPolicy sodPolicy,
             IEffectiveAccessService? effectiveAccessService, CancellationToken ct) =>
         {
@@ -147,7 +147,7 @@ public static class AuthorizationManagementExtensions
                     ? store.GrantToUserAsync(ParseUser(request.Holder), request.Permissions, ct)
                     : store.DenyToUserAsync(ParseUser(request.Holder), request.Permissions, ct));
 
-            await EmitAuditAsync(auditWriter, currentUser, "Grant", allow ? "Granted" : "Denied",
+            await EmitAuditAsync(auditWriter, observers, currentUser, "Grant", allow ? "Granted" : "Denied",
                 $"{holderType}:{request.Holder}",
                 new Dictionary<string, string> { ["permissions"] = string.Join(",", request.Permissions) }, ct);
 
@@ -156,7 +156,7 @@ public static class AuthorizationManagementExtensions
 
         group.MapDelete("/grants/{holderType}/{holder}/{permission}", async (
             string holderType, string holder, string permission,
-            EfPermissionGrantStore store, IAuthorizationAuditWriter auditWriter,
+            EfPermissionGrantStore store, IAuthorizationAuditWriter auditWriter, IEnumerable<IAccessChangeObserver> observers,
             ICurrentUser currentUser, CancellationToken ct) =>
         {
             if (!Enum.TryParse<GrantHolderType>(holderType, ignoreCase: true, out var type))
@@ -167,7 +167,7 @@ public static class AuthorizationManagementExtensions
             else
                 await store.RevokeFromUserAsync(ParseUser(holder), permission, ct);
 
-            await EmitAuditAsync(auditWriter, currentUser, "Grant", "Revoked",
+            await EmitAuditAsync(auditWriter, observers, currentUser, "Grant", "Revoked",
                 $"{holderType}:{holder}",
                 new Dictionary<string, string> { ["permission"] = permission }, ct);
 
@@ -181,12 +181,12 @@ public static class AuthorizationManagementExtensions
     {
         group.MapPost("/org/units", async (
             OrgUnitWriteRequest request,
-            EfOrgHierarchy hierarchy, IAuthorizationAuditWriter auditWriter,
+            EfOrgHierarchy hierarchy, IAuthorizationAuditWriter auditWriter, IEnumerable<IAccessChangeObserver> observers,
             ICurrentUser currentUser, CancellationToken ct) =>
         {
             await hierarchy.AddUnitAsync(request.Id, request.Parents ?? [], ct);
 
-            await EmitAuditAsync(auditWriter, currentUser, "OrgUnit", "Created",
+            await EmitAuditAsync(auditWriter, observers, currentUser, "OrgUnit", "Created",
                 $"unit:{request.Id}",
                 new Dictionary<string, string> { ["parents"] = string.Join(",", request.Parents ?? []) }, ct);
 
@@ -195,12 +195,12 @@ public static class AuthorizationManagementExtensions
 
         group.MapPut("/org/units/{id:guid}/parents", async (
             Guid id, OrgUnitParentsRequest request,
-            EfOrgHierarchy hierarchy, IAuthorizationAuditWriter auditWriter,
+            EfOrgHierarchy hierarchy, IAuthorizationAuditWriter auditWriter, IEnumerable<IAccessChangeObserver> observers,
             ICurrentUser currentUser, CancellationToken ct) =>
         {
             await hierarchy.MoveUnitAsync(id, request.Parents, ct);
 
-            await EmitAuditAsync(auditWriter, currentUser, "OrgUnit", "Reparented",
+            await EmitAuditAsync(auditWriter, observers, currentUser, "OrgUnit", "Reparented",
                 $"unit:{id}",
                 new Dictionary<string, string> { ["parents"] = string.Join(",", request.Parents) }, ct);
 
@@ -213,7 +213,7 @@ public static class AuthorizationManagementExtensions
 
         group.MapPost("/org/placements", async (
             PlacementWriteRequest request,
-            EfOrgPlacementStore store, IAuthorizationAuditWriter auditWriter,
+            EfOrgPlacementStore store, IAuthorizationAuditWriter auditWriter, IEnumerable<IAccessChangeObserver> observers,
             ICurrentUser currentUser, CancellationToken ct) =>
         {
             var modeToken = request.Mode ?? nameof(OrgScopeMode.UnitAndDescendants);
@@ -222,7 +222,7 @@ public static class AuthorizationManagementExtensions
 
             await store.PlaceAsync(request.UserId, request.OrgUnitId, mode, ct);
 
-            await EmitAuditAsync(auditWriter, currentUser, "OrgPlacement", "Placed",
+            await EmitAuditAsync(auditWriter, observers, currentUser, "OrgPlacement", "Placed",
                 $"user:{request.UserId} -> unit:{request.OrgUnitId}",
                 new Dictionary<string, string> { ["mode"] = mode.ToString() }, ct);
 
@@ -231,12 +231,12 @@ public static class AuthorizationManagementExtensions
 
         group.MapDelete("/org/placements/{userId:guid}/{orgUnitId:guid}", async (
             Guid userId, Guid orgUnitId,
-            EfOrgPlacementStore store, IAuthorizationAuditWriter auditWriter,
+            EfOrgPlacementStore store, IAuthorizationAuditWriter auditWriter, IEnumerable<IAccessChangeObserver> observers,
             ICurrentUser currentUser, CancellationToken ct) =>
         {
             await store.RemoveAsync(userId, orgUnitId, ct);
 
-            await EmitAuditAsync(auditWriter, currentUser, "OrgPlacement", "Removed",
+            await EmitAuditAsync(auditWriter, observers, currentUser, "OrgPlacement", "Removed",
                 $"user:{userId} -> unit:{orgUnitId}",
                 new Dictionary<string, string>(), ct);
 
@@ -254,12 +254,12 @@ public static class AuthorizationManagementExtensions
 
         group.MapPut("/features/plans/{plan}", async (
             string plan, PlanDefinitionRequest request,
-            EfFeatureEntitlementStore store, IAuthorizationAuditWriter auditWriter,
+            EfFeatureEntitlementStore store, IAuthorizationAuditWriter auditWriter, IEnumerable<IAccessChangeObserver> observers,
             ICurrentUser currentUser, CancellationToken ct) =>
         {
             await store.DefinePlanAsync(plan, request.Features, ct);
 
-            await EmitAuditAsync(auditWriter, currentUser, "FeatureEntitlement", "PlanDefined",
+            await EmitAuditAsync(auditWriter, observers, currentUser, "FeatureEntitlement", "PlanDefined",
                 $"plan:{plan}",
                 new Dictionary<string, string> { ["features"] = string.Join(",", request.Features) }, ct);
 
@@ -268,12 +268,12 @@ public static class AuthorizationManagementExtensions
 
         group.MapPut("/features/tenants/{tenantId:guid}/plan", async (
             Guid tenantId, PlanAssignmentRequest request,
-            EfFeatureEntitlementStore store, IAuthorizationAuditWriter auditWriter,
+            EfFeatureEntitlementStore store, IAuthorizationAuditWriter auditWriter, IEnumerable<IAccessChangeObserver> observers,
             ICurrentUser currentUser, CancellationToken ct) =>
         {
             await store.AssignPlanAsync(tenantId, request.Plan, ct);
 
-            await EmitAuditAsync(auditWriter, currentUser, "FeatureEntitlement", "PlanAssigned",
+            await EmitAuditAsync(auditWriter, observers, currentUser, "FeatureEntitlement", "PlanAssigned",
                 $"tenant:{tenantId}",
                 new Dictionary<string, string> { ["plan"] = request.Plan }, ct);
 
@@ -282,7 +282,7 @@ public static class AuthorizationManagementExtensions
 
         group.MapPut("/features/tenants/{tenantId:guid}/overrides/{feature}", async (
             Guid tenantId, string feature, OverrideWriteRequest request,
-            EfFeatureEntitlementStore store, IAuthorizationAuditWriter auditWriter,
+            EfFeatureEntitlementStore store, IAuthorizationAuditWriter auditWriter, IEnumerable<IAccessChangeObserver> observers,
             ICurrentUser currentUser, CancellationToken ct) =>
         {
             if (request.Enabled)
@@ -290,7 +290,7 @@ public static class AuthorizationManagementExtensions
             else
                 await store.DisableAsync(tenantId, feature, ct);
 
-            await EmitAuditAsync(auditWriter, currentUser, "FeatureEntitlement", "OverrideSet",
+            await EmitAuditAsync(auditWriter, observers, currentUser, "FeatureEntitlement", "OverrideSet",
                 $"tenant:{tenantId}",
                 new Dictionary<string, string> { ["feature"] = feature, ["enabled"] = request.Enabled.ToString() }, ct);
 
@@ -299,12 +299,12 @@ public static class AuthorizationManagementExtensions
 
         group.MapDelete("/features/tenants/{tenantId:guid}/overrides/{feature}", async (
             Guid tenantId, string feature,
-            EfFeatureEntitlementStore store, IAuthorizationAuditWriter auditWriter,
+            EfFeatureEntitlementStore store, IAuthorizationAuditWriter auditWriter, IEnumerable<IAccessChangeObserver> observers,
             ICurrentUser currentUser, CancellationToken ct) =>
         {
             await store.ClearOverrideAsync(tenantId, feature, ct);
 
-            await EmitAuditAsync(auditWriter, currentUser, "FeatureEntitlement", "OverrideCleared",
+            await EmitAuditAsync(auditWriter, observers, currentUser, "FeatureEntitlement", "OverrideCleared",
                 $"tenant:{tenantId}",
                 new Dictionary<string, string> { ["feature"] = feature }, ct);
 
@@ -322,7 +322,7 @@ public static class AuthorizationManagementExtensions
 
         group.MapPost("/delegations", async (
             DelegationWriteRequest request,
-            EfDelegationStore store, IAuthorizationAuditWriter auditWriter,
+            EfDelegationStore store, IAuthorizationAuditWriter auditWriter, IEnumerable<IAccessChangeObserver> observers,
             ICurrentUser currentUser, CancellationToken ct) =>
         {
             if (request.Permissions is not { Length: > 0 })
@@ -347,7 +347,7 @@ public static class AuthorizationManagementExtensions
                 request.FromUserId, request.FromRoles, request.ToUserId,
                 request.Permissions, request.NotBefore, request.NotAfter, ct);
 
-            await EmitAuditAsync(auditWriter, currentUser, "Delegation", "Created",
+            await EmitAuditAsync(auditWriter, observers, currentUser, "Delegation", "Created",
                 $"from:{request.FromUserId} -> to:{request.ToUserId}",
                 new Dictionary<string, string>
                 {
@@ -360,7 +360,7 @@ public static class AuthorizationManagementExtensions
         });
 
         group.MapDelete("/delegations/{id:guid}", async (
-            Guid id, EfDelegationStore store, IAuthorizationAuditWriter auditWriter,
+            Guid id, EfDelegationStore store, IAuthorizationAuditWriter auditWriter, IEnumerable<IAccessChangeObserver> observers,
             ICurrentUser currentUser, CancellationToken ct) =>
         {
             if (!await store.RevokeAsync(id, ct))
@@ -368,7 +368,7 @@ public static class AuthorizationManagementExtensions
                     detail: "Delegation not found or already revoked.",
                     statusCode: StatusCodes.Status404NotFound);
 
-            await EmitAuditAsync(auditWriter, currentUser, "Delegation", "Revoked",
+            await EmitAuditAsync(auditWriter, observers, currentUser, "Delegation", "Revoked",
                 $"delegation:{id}", new Dictionary<string, string>(), ct);
 
             return Results.NoContent();
@@ -384,18 +384,35 @@ public static class AuthorizationManagementExtensions
     /// only: a failed store write never reaches this call, so there is no audit
     /// record for a change that didn't happen.
     /// </summary>
-    private static Task EmitAuditAsync(
-        IAuthorizationAuditWriter auditWriter,
+    private static async Task EmitAuditAsync(
+        IAuthorizationAuditWriter auditWriter, IEnumerable<IAccessChangeObserver> observers,
         ICurrentUser currentUser,
         string category,
         string action,
         string targetDescription,
         IReadOnlyDictionary<string, string> details,
         CancellationToken ct)
-        => auditWriter.WriteAsync(
+    {
+        await auditWriter.WriteAsync(
             new AuthorizationAdministrativeChangeEvent(
                 category, action, currentUser.UserId?.ToString(), targetDescription, details),
             ct);
+
+        // Systems that cache access outside this process (the AI connector) must drop it.
+        await observers.NotifyAccessChangedAsync(
+            new AccessChange
+            {
+                Kind = category switch
+                {
+                    "OrgUnit" or "OrgPlacement" => AccessChangeKinds.Organization,
+                    "FeatureEntitlement" => AccessChangeKinds.Feature,
+                    "Delegation" => AccessChangeKinds.Delegation,
+                    _ => AccessChangeKinds.Grant,
+                },
+                Reason = $"{category}.{action}".ToLowerInvariant(),
+            },
+            ct: ct);
+    }
 
     // ── Governance ───────────────────────────────────────────────
 
@@ -541,7 +558,7 @@ public static class AuthorizationManagementExtensions
             IEffectiveAccessService? effectiveAccessService,
             IRecertificationCampaignStore? store,
             ICurrentUser currentUser,
-            IAuthorizationAuditWriter auditWriter,
+            IAuthorizationAuditWriter auditWriter, IEnumerable<IAccessChangeObserver> observers,
             CancellationToken ct) =>
         {
             if (effectiveAccessService is null)
@@ -568,7 +585,7 @@ public static class AuthorizationManagementExtensions
             var campaignId = await store.CreateAsync(request.Name,
                 campaign.Items.ToList(), createdBy, ct);
 
-            await EmitAuditAsync(auditWriter, currentUser, "Recertification", "Created",
+            await EmitAuditAsync(auditWriter, observers, currentUser, "Recertification", "Created",
                 $"campaign:{campaignId}",
                 new Dictionary<string, string> { ["itemCount"] = campaign.Items.Count.ToString() }, ct);
 
@@ -584,7 +601,7 @@ public static class AuthorizationManagementExtensions
             RecertificationReviewRequest request,
             IRecertificationCampaignStore? store,
             ICurrentUser currentUser,
-            IAuthorizationAuditWriter auditWriter,
+            IAuthorizationAuditWriter auditWriter, IEnumerable<IAccessChangeObserver> observers,
             CancellationToken ct) =>
         {
             if (store is null)
@@ -604,7 +621,7 @@ public static class AuthorizationManagementExtensions
             await store.UpdateDecisionAsync(campaignId, request.UserId, request.Permission,
                 decision, reviewedBy, ct);
 
-            await EmitAuditAsync(auditWriter, currentUser, "Recertification", "Reviewed",
+            await EmitAuditAsync(auditWriter, observers, currentUser, "Recertification", "Reviewed",
                 $"campaign:{campaignId}",
                 new Dictionary<string, string>
                 {
@@ -623,7 +640,7 @@ public static class AuthorizationManagementExtensions
             Guid campaignId,
             IRecertificationCampaignStore? store,
             ICurrentUser currentUser,
-            IAuthorizationAuditWriter auditWriter,
+            IAuthorizationAuditWriter auditWriter, IEnumerable<IAccessChangeObserver> observers,
             CancellationToken ct) =>
         {
             if (store is null)
@@ -638,7 +655,7 @@ public static class AuthorizationManagementExtensions
 
             await store.CompleteAsync(campaignId, ct);
 
-            await EmitAuditAsync(auditWriter, currentUser, "Recertification", "Completed",
+            await EmitAuditAsync(auditWriter, observers, currentUser, "Recertification", "Completed",
                 $"campaign:{campaignId}",
                 new Dictionary<string, string>
                 {

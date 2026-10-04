@@ -9,5 +9,6 @@
     <ProjectReference Include="../../../src/data/Modulus.Data.MongoDB/Modulus.Data.MongoDB.csproj" />
     <PackageReference Include="Testcontainers.MongoDb" />
     <PackageReference Include="MongoDB.Driver" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
   </ItemGroup>
 </Project>

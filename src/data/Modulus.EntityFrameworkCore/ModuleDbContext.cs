@@ -98,6 +98,10 @@ public abstract class ModuleDbContext(
         // update instead of slipping past the concurrency check.
         ApplyConcurrencyStamps();
 
+        // Feature packages add their own rows (journals, feeds) to this unit of work, so they commit with the writes.
+        foreach (var contributor in sp.GetServices<Saving.IModuleSaveContributor>())
+            contributor.OnSaving(this, currentTenant.IsHost ? null : currentTenant.TenantId);
+
         var domainEvents = CollectDomainEvents();
 
         // Enqueue integration events to this context's outbox table BEFORE

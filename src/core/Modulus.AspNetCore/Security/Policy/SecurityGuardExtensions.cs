@@ -13,6 +13,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Modulus.Core.Abstractions;
+using Modulus.Core.Abstractions.Security;
 
 /// <summary>Registers the startup security guard.</summary>
 public static class SecurityGuardExtensions
@@ -75,12 +76,28 @@ internal sealed partial class SecurityGuardHostedService(
         var fallback = services.GetService<IAuthorizationPolicyProvider>() is { } provider
             && await provider.GetFallbackPolicyAsync().ConfigureAwait(false) is not null;
 
-        var report = EndpointSecurityAnalyzer.Analyze(dataSource.Endpoints, fallback, allowList);
+        var report = EndpointSecurityAnalyzer.Analyze(dataSource.Endpoints, fallback, allowList) with
+        {
+            Surfaces = services.GetServices<ISecuritySurfaceContributor>()
+                .SelectMany(c => c.Describe(services))
+                .OrderBy(e => e.Surface, StringComparer.Ordinal)
+                .ThenBy(e => e.Name, StringComparer.Ordinal)
+                .ToList(),
+        };
         state.Report = report;
 
         foreach (var entry in report.Loosened)
             LogLoosened(entry.Methods.Count > 0 ? string.Join(',', entry.Methods) : "*", entry.Route, entry.LooseningReason, entry.Ticket ?? "-");
+        foreach (var item in report.Surfaces.Where(e => e.Access == SecuritySurfaceAccess.Anonymous))
+            LogAnonymousSurface(item.Surface, item.Name);
         LogSummary(report.Endpoints.Count, report.Loosened.Count(), report.Findings.Count);
+        if (report.Surfaces.Count > 0)
+        {
+            LogSurfaceSummary(
+                report.Surfaces.Count,
+                report.Surfaces.Count(e => e.Access == SecuritySurfaceAccess.Policed),
+                report.Surfaces.Count(e => e.Access == SecuritySurfaceAccess.Anonymous));
+        }
 
         var development = environment?.IsDevelopment() == true;
         var failing = report.Findings
@@ -107,6 +124,7 @@ internal sealed partial class SecurityGuardHostedService(
 
         var loosened = report.Loosened
             .Select(e => $"{(e.Methods.Count > 0 ? string.Join(',', e.Methods) : "*")} {e.Route}")
+            .Concat(report.Surfaces.Where(e => e.Access == SecuritySurfaceAccess.Anonymous).Select(e => $"{e.Surface} {e.Name}"))
             .Order(StringComparer.Ordinal)
             .ToList();
         audit.Record(new SecurityAuditEvent
@@ -134,6 +152,12 @@ internal sealed partial class SecurityGuardHostedService(
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Security guard: {Endpoints} endpoints checked, {Loosened} anonymous, {Findings} findings")]
     private partial void LogSummary(int endpoints, int loosened, int findings);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Security guard: anonymous {Surface} {Name}")]
+    private partial void LogAnonymousSurface(string surface, string name);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Security guard: {Items} GraphQL fields / realtime topics, {Policed} with their own policy, {Anonymous} anonymous")]
+    private partial void LogSurfaceSummary(int items, int policed, int anonymous);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Security guard [{Code}] {Route}: {Message} (allowed in Development)")]
     private partial void LogWarning(string code, string route, string message);

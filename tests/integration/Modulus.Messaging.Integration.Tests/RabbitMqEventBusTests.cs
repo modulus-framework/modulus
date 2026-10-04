@@ -127,12 +127,11 @@ public sealed class RabbitMqEventBusTests : IClassFixture<RabbitMqFixture>, IAsy
     }
 
     [Fact]
-    public async Task PublishAsync_HandlerThrows_MessageDeadLettered_NotRetried()
+    public async Task PublishAsync_HandlerThrows_RetriedBoundedThenDeadLettered()
     {
-        // Documents the CURRENT behaviour (an H-finding, tracked for a future
-        // fix): the RabbitMQ consumer nacks requeue:false on the FIRST
-        // exception — no bounded retry with backoff like the Kafka consumer
-        // or the outbox. A handler failure goes straight to the DLX.
+        // The consumer requeues a failed delivery with backoff and nacks it to
+        // the DLX once RabbitMqOptions.MaxDeliveryAttempts (default 3) is
+        // reached, like the Kafka consumer and the outbox.
         var exchange = "test.ex." + Guid.NewGuid().ToString("N");
         var queue = "test.q." + Guid.NewGuid().ToString("N");
         var dlx = "test.dlx." + Guid.NewGuid().ToString("N");
@@ -152,18 +151,16 @@ public sealed class RabbitMqEventBusTests : IClassFixture<RabbitMqFixture>, IAsy
         var @event = new ThrowingTestEvent();
         await bus.PublishAsync(@event);
 
-        // Consumed once from the main queue (and throws) — never redelivered
-        // there, because the nack does not requeue.
-        await WaitUntilAsync(() => ThrowingHandler.CallCount >= 1, TimeSpan.FromSeconds(15));
+        // Consumed from the main queue three times (each throws), then dead-lettered.
+        await WaitUntilAsync(() => ThrowingHandler.CallCount >= 3, TimeSpan.FromSeconds(15));
 
         var deadLettered = await TryConsumeOneAsync(dlQueue, TimeSpan.FromSeconds(10));
         deadLettered.Should().NotBeNull("the failed message must land on the dead-letter queue");
         deadLettered!.Should().Contain(@event.EventId.ToString());
 
-        // Give any (absent) retry a chance to prove it really doesn't happen.
+        // Give a further (absent) retry a chance to prove the cap holds.
         await Task.Delay(2000);
-        ThrowingHandler.CallCount.Should().Be(1,
-            "no bounded retry exists yet on this path — first failure dead-letters immediately");
+        ThrowingHandler.CallCount.Should().Be(3, "the default cap is three delivery attempts");
     }
 
     private async Task DeclareDeadLetterTopologyAsync(string dlx, string dlQueue)

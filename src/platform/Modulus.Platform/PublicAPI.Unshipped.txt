@@ -1172,3 +1172,6 @@ static Modulus.AuditLogging.Security.SecurityAuditStoreExtensions.VerifyChainAsy
 static Modulus.AuditLogging.Security.SecurityAuditVerification.operator !=(Modulus.AuditLogging.Security.SecurityAuditVerification? left, Modulus.AuditLogging.Security.SecurityAuditVerification? right) -> bool
 static Modulus.AuditLogging.Security.SecurityAuditVerification.operator ==(Modulus.AuditLogging.Security.SecurityAuditVerification? left, Modulus.AuditLogging.Security.SecurityAuditVerification? right) -> bool
 static readonly Modulus.AuditLogging.Security.SecurityAuditChain.GenesisHash -> string!
+Modulus.AuditLogging.Security.SecurityAuditLog.Dispose() -> void
+Modulus.AuditLogging.Security.SecurityAuditOptions.SpoolFile.get -> string?
+Modulus.AuditLogging.Security.SecurityAuditOptions.SpoolFile.set -> void

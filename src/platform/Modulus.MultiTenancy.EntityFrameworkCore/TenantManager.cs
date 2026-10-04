@@ -8,9 +8,14 @@ namespace Modulus.MultiTenancy.EntityFrameworkCore;
 /// their active state. Registered as a scoped service by
 /// <c>AddEfCoreTenantStore</c>. Reads go through <see cref="ITenantStore"/> /
 /// <see cref="EfTenantStore"/>; this is the write side, used by admin endpoints or
-/// seed code. Membership and activation changes are recorded in the tenant's security audit chain.
+/// seed code. Membership and activation changes are recorded in the tenant's security audit chain and reported
+/// to every <see cref="IAccessChangeObserver"/> (systems that cache access, such as the AI connector).
 /// </summary>
-public sealed class TenantManager(TenantStoreDbContext db, ISecurityAuditLog? audit = null, ICurrentUser? actor = null)
+public sealed class TenantManager(
+    TenantStoreDbContext db,
+    ISecurityAuditLog? audit = null,
+    ICurrentUser? actor = null,
+    IEnumerable<IAccessChangeObserver>? observers = null)
 {
     /// <summary>
     /// Creates a new active tenant. Throws
@@ -71,6 +76,7 @@ public sealed class TenantManager(TenantStoreDbContext db, ISecurityAuditLog? au
         entity.IsActive = isActive;
         await db.SaveChangesAsync(ct);
         Audit(isActive ? "tenant.activated" : "tenant.deactivated", id, $"tenant:{id}");
+        await NotifyAsync(AccessChangeKinds.Tenant, isActive ? "tenant.activated" : "tenant.deactivated", id, null, ct);
         return true;
     }
 
@@ -103,6 +109,7 @@ public sealed class TenantManager(TenantStoreDbContext db, ISecurityAuditLog? au
 
         await db.SaveChangesAsync(ct);
         Audit("membership.added", tenantId, $"user:{userId}");
+        await NotifyAsync(AccessChangeKinds.Membership, "membership.added", tenantId, userId, ct);
         return true;
     }
 
@@ -120,8 +127,15 @@ public sealed class TenantManager(TenantStoreDbContext db, ISecurityAuditLog? au
         existing.IsActive = false;
         await db.SaveChangesAsync(ct);
         Audit("membership.removed", tenantId, $"user:{userId}");
+        await NotifyAsync(AccessChangeKinds.Membership, "membership.removed", tenantId, userId, ct);
         return true;
     }
+
+    private ValueTask NotifyAsync(string kind, string reason, Guid tenantId, Guid? userId, CancellationToken ct)
+        => observers is null
+            ? ValueTask.CompletedTask
+            : observers.NotifyAccessChangedAsync(
+                new AccessChange { Kind = kind, Reason = reason, TenantId = tenantId, UserId = userId }, ct: ct);
 
     private void Audit(string action, Guid tenantId, string target)
         => audit?.Record(new SecurityAuditEvent

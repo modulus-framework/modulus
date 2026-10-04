@@ -505,3 +505,103 @@ override Modulus.Core.Abstractions.SecurityAuditEvent.ToString() -> string!
 static Modulus.Core.Abstractions.NullSecurityAuditLog.Instance.get -> Modulus.Core.Abstractions.NullSecurityAuditLog!
 static Modulus.Core.Abstractions.SecurityAuditEvent.operator !=(Modulus.Core.Abstractions.SecurityAuditEvent? left, Modulus.Core.Abstractions.SecurityAuditEvent? right) -> bool
 static Modulus.Core.Abstractions.SecurityAuditEvent.operator ==(Modulus.Core.Abstractions.SecurityAuditEvent? left, Modulus.Core.Abstractions.SecurityAuditEvent? right) -> bool
+Modulus.Core.Abstractions.Security.ISecuritySurfaceContributor
+Modulus.Core.Abstractions.Security.ISecuritySurfaceContributor.Describe(System.IServiceProvider! services) -> System.Collections.Generic.IEnumerable<Modulus.Core.Abstractions.Security.SecuritySurfaceEntry!>!
+Modulus.Core.Abstractions.Security.SecuritySurfaceAccess
+Modulus.Core.Abstractions.Security.SecuritySurfaceAccess.Anonymous = 2 -> Modulus.Core.Abstractions.Security.SecuritySurfaceAccess
+Modulus.Core.Abstractions.Security.SecuritySurfaceAccess.Inherited = 1 -> Modulus.Core.Abstractions.Security.SecuritySurfaceAccess
+Modulus.Core.Abstractions.Security.SecuritySurfaceAccess.Policed = 0 -> Modulus.Core.Abstractions.Security.SecuritySurfaceAccess
+Modulus.Core.Abstractions.Security.SecuritySurfaceEntry
+Modulus.Core.Abstractions.Security.SecuritySurfaceEntry.<Clone>$() -> Modulus.Core.Abstractions.Security.SecuritySurfaceEntry!
+Modulus.Core.Abstractions.Security.SecuritySurfaceEntry.Access.get -> Modulus.Core.Abstractions.Security.SecuritySurfaceAccess
+Modulus.Core.Abstractions.Security.SecuritySurfaceEntry.Access.init -> void
+Modulus.Core.Abstractions.Security.SecuritySurfaceEntry.Deconstruct(out string! Surface, out string! Name, out Modulus.Core.Abstractions.Security.SecuritySurfaceAccess Access, out System.Collections.Generic.IReadOnlyList<string!>! Policies) -> void
+Modulus.Core.Abstractions.Security.SecuritySurfaceEntry.Equals(Modulus.Core.Abstractions.Security.SecuritySurfaceEntry? other) -> bool
+Modulus.Core.Abstractions.Security.SecuritySurfaceEntry.Name.get -> string!
+Modulus.Core.Abstractions.Security.SecuritySurfaceEntry.Name.init -> void
+Modulus.Core.Abstractions.Security.SecuritySurfaceEntry.Policies.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Modulus.Core.Abstractions.Security.SecuritySurfaceEntry.Policies.init -> void
+Modulus.Core.Abstractions.Security.SecuritySurfaceEntry.SecuritySurfaceEntry(string! Surface, string! Name, Modulus.Core.Abstractions.Security.SecuritySurfaceAccess Access, System.Collections.Generic.IReadOnlyList<string!>! Policies) -> void
+Modulus.Core.Abstractions.Security.SecuritySurfaceEntry.Surface.get -> string!
+Modulus.Core.Abstractions.Security.SecuritySurfaceEntry.Surface.init -> void
+override Modulus.Core.Abstractions.Security.SecuritySurfaceEntry.Equals(object? obj) -> bool
+override Modulus.Core.Abstractions.Security.SecuritySurfaceEntry.GetHashCode() -> int
+override Modulus.Core.Abstractions.Security.SecuritySurfaceEntry.ToString() -> string!
+static Modulus.Core.Abstractions.Security.SecuritySurfaceEntry.operator !=(Modulus.Core.Abstractions.Security.SecuritySurfaceEntry? left, Modulus.Core.Abstractions.Security.SecuritySurfaceEntry? right) -> bool
+static Modulus.Core.Abstractions.Security.SecuritySurfaceEntry.operator ==(Modulus.Core.Abstractions.Security.SecuritySurfaceEntry? left, Modulus.Core.Abstractions.Security.SecuritySurfaceEntry? right) -> bool
+Modulus.Core.Abstractions.Compliance.ModulusTaxonomy
+const Modulus.Core.Abstractions.Compliance.ModulusTaxonomy.Name = "Modulus" -> string!
+Modulus.Core.Abstractions.Compliance.ConfidentialDataAttribute
+Modulus.Core.Abstractions.Compliance.PersonalInformationAttribute
+Modulus.Core.Abstractions.Compliance.SecretDataAttribute
+Modulus.Core.Abstractions.Compliance.RestrictedDataAttribute
+Modulus.Core.Abstractions.Compliance.InternalDataAttribute
+Modulus.Core.Abstractions.Compliance.SecretDataAttribute.SecretDataAttribute() -> void
+Modulus.Core.Abstractions.Compliance.PersonalInformationAttribute.PersonalInformationAttribute() -> void
+Modulus.Core.Abstractions.Compliance.RestrictedDataAttribute.RestrictedDataAttribute() -> void
+Modulus.Core.Abstractions.Compliance.ConfidentialDataAttribute.ConfidentialDataAttribute() -> void
+Modulus.Core.Abstractions.Compliance.InternalDataAttribute.InternalDataAttribute() -> void
+static Modulus.Core.Abstractions.Compliance.ModulusTaxonomy.Internal.get -> Microsoft.Extensions.Compliance.Classification.DataClassification
+static Modulus.Core.Abstractions.Compliance.ModulusTaxonomy.Confidential.get -> Microsoft.Extensions.Compliance.Classification.DataClassification
+static Modulus.Core.Abstractions.Compliance.ModulusTaxonomy.Restricted.get -> Microsoft.Extensions.Compliance.Classification.DataClassification
+static Modulus.Core.Abstractions.Compliance.ModulusTaxonomy.Secret.get -> Microsoft.Extensions.Compliance.Classification.DataClassification
+static Modulus.Core.Abstractions.Compliance.ModulusTaxonomy.Personal.get -> Microsoft.Extensions.Compliance.Classification.DataClassification
+static Modulus.Core.Abstractions.Compliance.ModulusTaxonomy.All.get -> System.Collections.Generic.IReadOnlyList<Microsoft.Extensions.Compliance.Classification.DataClassification>!
+static Modulus.Core.Abstractions.Compliance.ModulusTaxonomy.For(Modulus.Core.Abstractions.Security.DataClassification level) -> Microsoft.Extensions.Compliance.Classification.DataClassification
+Modulus.Core.Abstractions.AccessChange
+Modulus.Core.Abstractions.AccessChange.<Clone>$() -> Modulus.Core.Abstractions.AccessChange!
+Modulus.Core.Abstractions.AccessChange.AccessChange() -> void
+Modulus.Core.Abstractions.AccessChange.Equals(Modulus.Core.Abstractions.AccessChange? other) -> bool
+Modulus.Core.Abstractions.AccessChange.Kind.get -> string!
+Modulus.Core.Abstractions.AccessChange.Kind.init -> void
+Modulus.Core.Abstractions.AccessChange.OccurredAt.get -> System.DateTimeOffset
+Modulus.Core.Abstractions.AccessChange.OccurredAt.init -> void
+Modulus.Core.Abstractions.AccessChange.Reason.get -> string!
+Modulus.Core.Abstractions.AccessChange.Reason.init -> void
+Modulus.Core.Abstractions.AccessChange.TenantId.get -> System.Guid?
+Modulus.Core.Abstractions.AccessChange.TenantId.init -> void
+Modulus.Core.Abstractions.AccessChange.UserId.get -> System.Guid?
+Modulus.Core.Abstractions.AccessChange.UserId.init -> void
+Modulus.Core.Abstractions.AccessChangeKinds
+Modulus.Core.Abstractions.AccessChangeNotifications
+Modulus.Core.Abstractions.Ai.AiCapabilityAttribute
+Modulus.Core.Abstractions.Ai.AiCapabilityAttribute.AiCapabilityAttribute(string! name, string! description) -> void
+Modulus.Core.Abstractions.Ai.AiCapabilityAttribute.Description.get -> string!
+Modulus.Core.Abstractions.Ai.AiCapabilityAttribute.Name.get -> string!
+Modulus.Core.Abstractions.Ai.AiCapabilityAttribute.ResourceType.get -> string?
+Modulus.Core.Abstractions.Ai.AiCapabilityAttribute.ResourceType.set -> void
+Modulus.Core.Abstractions.Ai.AiResourceAttribute
+Modulus.Core.Abstractions.Ai.AiResourceAttribute.AiResourceAttribute(string! resourceType, string! description) -> void
+Modulus.Core.Abstractions.Ai.AiResourceAttribute.DeepLink.get -> string?
+Modulus.Core.Abstractions.Ai.AiResourceAttribute.DeepLink.set -> void
+Modulus.Core.Abstractions.Ai.AiResourceAttribute.Description.get -> string!
+Modulus.Core.Abstractions.Ai.AiResourceAttribute.ResourceType.get -> string!
+Modulus.Core.Abstractions.Ai.AiResourceAttribute.TitleField.get -> string?
+Modulus.Core.Abstractions.Ai.AiResourceAttribute.TitleField.set -> void
+Modulus.Core.Abstractions.IAccessChangeObserver
+Modulus.Core.Abstractions.IAccessChangeObserver.OnAccessChangedAsync(Modulus.Core.Abstractions.AccessChange! change, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask
+const Modulus.Core.Abstractions.AccessChangeKinds.Account = "account" -> string!
+const Modulus.Core.Abstractions.AccessChangeKinds.Delegation = "delegation" -> string!
+const Modulus.Core.Abstractions.AccessChangeKinds.Feature = "feature" -> string!
+const Modulus.Core.Abstractions.AccessChangeKinds.Grant = "grant" -> string!
+const Modulus.Core.Abstractions.AccessChangeKinds.Membership = "membership" -> string!
+const Modulus.Core.Abstractions.AccessChangeKinds.Organization = "organization" -> string!
+const Modulus.Core.Abstractions.AccessChangeKinds.Role = "role" -> string!
+const Modulus.Core.Abstractions.AccessChangeKinds.Tenant = "tenant" -> string!
+const Modulus.Core.Abstractions.SecurityAuditCategories.Ai = "ai" -> string!
+override Modulus.Core.Abstractions.AccessChange.Equals(object? obj) -> bool
+override Modulus.Core.Abstractions.AccessChange.GetHashCode() -> int
+override Modulus.Core.Abstractions.AccessChange.ToString() -> string!
+static Modulus.Core.Abstractions.AccessChange.operator !=(Modulus.Core.Abstractions.AccessChange? left, Modulus.Core.Abstractions.AccessChange? right) -> bool
+static Modulus.Core.Abstractions.AccessChange.operator ==(Modulus.Core.Abstractions.AccessChange? left, Modulus.Core.Abstractions.AccessChange? right) -> bool
+static Modulus.Core.Abstractions.AccessChangeNotifications.NotifyAccessChangedAsync(this System.Collections.Generic.IEnumerable<Modulus.Core.Abstractions.IAccessChangeObserver!>! observers, Modulus.Core.Abstractions.AccessChange! change, Microsoft.Extensions.Logging.ILogger? logger = null, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask
+Modulus.Core.Abstractions.Ai.AiIndexedAttribute
+Modulus.Core.Abstractions.Ai.AiIndexedAttribute.AiIndexedAttribute(string! resourceType) -> void
+Modulus.Core.Abstractions.Ai.AiIndexedAttribute.ResourceType.get -> string!
+Modulus.Core.Abstractions.Ai.AiQueryableAttribute
+Modulus.Core.Abstractions.Ai.AiQueryableAttribute.AiQueryableAttribute(string! resourceType, string! description, string! permission) -> void
+Modulus.Core.Abstractions.Ai.AiQueryableAttribute.Description.get -> string!
+Modulus.Core.Abstractions.Ai.AiQueryableAttribute.Fields.get -> string![]!
+Modulus.Core.Abstractions.Ai.AiQueryableAttribute.Fields.set -> void
+Modulus.Core.Abstractions.Ai.AiQueryableAttribute.Permission.get -> string!
+Modulus.Core.Abstractions.Ai.AiQueryableAttribute.ResourceType.get -> string!

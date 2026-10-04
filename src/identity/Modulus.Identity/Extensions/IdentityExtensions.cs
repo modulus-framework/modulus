@@ -213,6 +213,10 @@ public static class IdentityExtensions
                        .EnableAuthorizationEndpointPassthrough()
                        .EnableUserInfoEndpointPassthrough();
 
+                // /connect/revoke has no passthrough controller, so its outcome
+                // reaches the security audit through server event handlers.
+                RevocationSecurityAudit.Register(options);
+
                 configure?.Invoke(options);
             })
             .AddValidation(options =>

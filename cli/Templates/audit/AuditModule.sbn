@@ -1,0 +1,25 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Modulus.AuditLogging.EntityFrameworkCore;
+using Modulus.Core.Abstractions;
+
+namespace {{ audit_namespace }}.Infrastructure;
+
+/// <summary>
+/// Composition root of the audit store: <see cref="AppAuditDbContext"/>, migrated with the other modules, replaces the
+/// in-memory business audit log and security audit chains. What is recorded is chosen in Program.cs
+/// (<c>AddModulusSecurityAudit</c>); keep this database on its own connection string so the application's own
+/// database role never reaches it.
+/// </summary>
+public sealed class AuditModule : ModulusModule
+{
+    public override void ConfigureServices(IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddDbContext<AppAuditDbContext>(options =>
+            options.{{ use_db_method }}(configuration.GetConnectionString("Audit")
+                ?? "{{ audit_connection_string }}"));
+
+        services.AddModulusAuditStore<AppAuditDbContext>();
+    }
+}

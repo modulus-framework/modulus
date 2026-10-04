@@ -1,0 +1,72 @@
+#nullable enable
+Modulus.AI.Connector.EntityFrameworkCore.AiChangeJournalOptions
+Modulus.AI.Connector.EntityFrameworkCore.AiChangeJournalOptions.AiChangeJournalOptions() -> void
+Modulus.AI.Connector.EntityFrameworkCore.AiChangeJournalOptions.PurgeInterval.get -> System.TimeSpan
+Modulus.AI.Connector.EntityFrameworkCore.AiChangeJournalOptions.PurgeInterval.set -> void
+Modulus.AI.Connector.EntityFrameworkCore.AiChangeJournalOptions.Retention.get -> System.TimeSpan
+Modulus.AI.Connector.EntityFrameworkCore.AiChangeJournalOptions.Retention.set -> void
+Modulus.AI.Connector.EntityFrameworkCore.AiChangeRecord
+Modulus.AI.Connector.EntityFrameworkCore.AiChangeRecord.AiChangeRecord() -> void
+Modulus.AI.Connector.EntityFrameworkCore.AiChangeRecord.Kind.get -> Modulus.AI.Connector.Data.AiChangeKind
+Modulus.AI.Connector.EntityFrameworkCore.AiChangeRecord.Kind.set -> void
+Modulus.AI.Connector.EntityFrameworkCore.AiChangeRecord.OccurredAt.get -> System.DateTime
+Modulus.AI.Connector.EntityFrameworkCore.AiChangeRecord.OccurredAt.set -> void
+Modulus.AI.Connector.EntityFrameworkCore.AiChangeRecord.ResourceId.get -> string!
+Modulus.AI.Connector.EntityFrameworkCore.AiChangeRecord.ResourceId.set -> void
+Modulus.AI.Connector.EntityFrameworkCore.AiChangeRecord.ResourceType.get -> string!
+Modulus.AI.Connector.EntityFrameworkCore.AiChangeRecord.ResourceType.set -> void
+Modulus.AI.Connector.EntityFrameworkCore.AiChangeRecord.Sequence.get -> long
+Modulus.AI.Connector.EntityFrameworkCore.AiChangeRecord.Sequence.set -> void
+Modulus.AI.Connector.EntityFrameworkCore.AiChangeRecord.TenantId.get -> System.Guid
+Modulus.AI.Connector.EntityFrameworkCore.AiChangeRecord.TenantId.set -> void
+Modulus.AI.Connector.EntityFrameworkCore.AiConnectorEfExtensions
+Modulus.AI.Connector.EntityFrameworkCore.EntityChangeRecord
+Modulus.AI.Connector.EntityFrameworkCore.EntityChangeRecord.<Clone>$() -> Modulus.AI.Connector.EntityFrameworkCore.EntityChangeRecord!
+Modulus.AI.Connector.EntityFrameworkCore.EntityChangeRecord.ChangedAt.get -> System.DateTimeOffset
+Modulus.AI.Connector.EntityFrameworkCore.EntityChangeRecord.ChangedAt.init -> void
+Modulus.AI.Connector.EntityFrameworkCore.EntityChangeRecord.ChangedBy.get -> string!
+Modulus.AI.Connector.EntityFrameworkCore.EntityChangeRecord.ChangedBy.init -> void
+Modulus.AI.Connector.EntityFrameworkCore.EntityChangeRecord.CorrelationId.get -> string?
+Modulus.AI.Connector.EntityFrameworkCore.EntityChangeRecord.CorrelationId.init -> void
+Modulus.AI.Connector.EntityFrameworkCore.EntityChangeRecord.EntityChangeRecord() -> void
+Modulus.AI.Connector.EntityFrameworkCore.EntityChangeRecord.Equals(Modulus.AI.Connector.EntityFrameworkCore.EntityChangeRecord? other) -> bool
+Modulus.AI.Connector.EntityFrameworkCore.EntityChangeRecord.Field.get -> string!
+Modulus.AI.Connector.EntityFrameworkCore.EntityChangeRecord.Field.init -> void
+Modulus.AI.Connector.EntityFrameworkCore.EntityChangeRecord.NewValue.get -> string?
+Modulus.AI.Connector.EntityFrameworkCore.EntityChangeRecord.NewValue.init -> void
+Modulus.AI.Connector.EntityFrameworkCore.EntityChangeRecord.OldValue.get -> string?
+Modulus.AI.Connector.EntityFrameworkCore.EntityChangeRecord.OldValue.init -> void
+Modulus.AI.Connector.EntityFrameworkCore.EntityChangeRecord.Operation.get -> string!
+Modulus.AI.Connector.EntityFrameworkCore.EntityChangeRecord.Operation.init -> void
+Modulus.AI.Connector.EntityFrameworkCore.EntityChangeRecord.ResourceId.get -> string!
+Modulus.AI.Connector.EntityFrameworkCore.EntityChangeRecord.ResourceId.init -> void
+Modulus.AI.Connector.EntityFrameworkCore.ListEntityChanges
+Modulus.AI.Connector.EntityFrameworkCore.ListEntityChanges.<Clone>$() -> Modulus.AI.Connector.EntityFrameworkCore.ListEntityChanges!
+Modulus.AI.Connector.EntityFrameworkCore.ListEntityChanges.Deconstruct(out string! ResourceType, out string? ResourceId, out string? Field, out System.DateTimeOffset? From, out System.DateTimeOffset? To, out int? Take) -> void
+Modulus.AI.Connector.EntityFrameworkCore.ListEntityChanges.Equals(Modulus.AI.Connector.EntityFrameworkCore.ListEntityChanges? other) -> bool
+Modulus.AI.Connector.EntityFrameworkCore.ListEntityChanges.Field.get -> string?
+Modulus.AI.Connector.EntityFrameworkCore.ListEntityChanges.Field.init -> void
+Modulus.AI.Connector.EntityFrameworkCore.ListEntityChanges.From.get -> System.DateTimeOffset?
+Modulus.AI.Connector.EntityFrameworkCore.ListEntityChanges.From.init -> void
+Modulus.AI.Connector.EntityFrameworkCore.ListEntityChanges.ListEntityChanges(string! ResourceType, string? ResourceId = null, string? Field = null, System.DateTimeOffset? From = null, System.DateTimeOffset? To = null, int? Take = null) -> void
+Modulus.AI.Connector.EntityFrameworkCore.ListEntityChanges.ResourceId.get -> string?
+Modulus.AI.Connector.EntityFrameworkCore.ListEntityChanges.ResourceId.init -> void
+Modulus.AI.Connector.EntityFrameworkCore.ListEntityChanges.ResourceType.get -> string!
+Modulus.AI.Connector.EntityFrameworkCore.ListEntityChanges.ResourceType.init -> void
+Modulus.AI.Connector.EntityFrameworkCore.ListEntityChanges.Take.get -> int?
+Modulus.AI.Connector.EntityFrameworkCore.ListEntityChanges.Take.init -> void
+Modulus.AI.Connector.EntityFrameworkCore.ListEntityChanges.To.get -> System.DateTimeOffset?
+Modulus.AI.Connector.EntityFrameworkCore.ListEntityChanges.To.init -> void
+const Modulus.AI.Connector.EntityFrameworkCore.ListEntityChanges.Name = "Modulus.Audit.EntityChange.List" -> string!
+override Modulus.AI.Connector.EntityFrameworkCore.EntityChangeRecord.Equals(object? obj) -> bool
+override Modulus.AI.Connector.EntityFrameworkCore.EntityChangeRecord.GetHashCode() -> int
+override Modulus.AI.Connector.EntityFrameworkCore.EntityChangeRecord.ToString() -> string!
+override Modulus.AI.Connector.EntityFrameworkCore.ListEntityChanges.Equals(object? obj) -> bool
+override Modulus.AI.Connector.EntityFrameworkCore.ListEntityChanges.GetHashCode() -> int
+override Modulus.AI.Connector.EntityFrameworkCore.ListEntityChanges.ToString() -> string!
+static Modulus.AI.Connector.EntityFrameworkCore.AiConnectorEfExtensions.AddEntityChangeHistoryCapability(this Modulus.AI.Connector.AiConnectorBuilder! builder) -> Modulus.AI.Connector.AiConnectorBuilder!
+static Modulus.AI.Connector.EntityFrameworkCore.AiConnectorEfExtensions.UseEntityFrameworkCore(this Modulus.AI.Connector.AiConnectorBuilder! builder, System.Action<Modulus.AI.Connector.EntityFrameworkCore.AiChangeJournalOptions!>? configure = null) -> Modulus.AI.Connector.AiConnectorBuilder!
+static Modulus.AI.Connector.EntityFrameworkCore.EntityChangeRecord.operator !=(Modulus.AI.Connector.EntityFrameworkCore.EntityChangeRecord? left, Modulus.AI.Connector.EntityFrameworkCore.EntityChangeRecord? right) -> bool
+static Modulus.AI.Connector.EntityFrameworkCore.EntityChangeRecord.operator ==(Modulus.AI.Connector.EntityFrameworkCore.EntityChangeRecord? left, Modulus.AI.Connector.EntityFrameworkCore.EntityChangeRecord? right) -> bool
+static Modulus.AI.Connector.EntityFrameworkCore.ListEntityChanges.operator !=(Modulus.AI.Connector.EntityFrameworkCore.ListEntityChanges? left, Modulus.AI.Connector.EntityFrameworkCore.ListEntityChanges? right) -> bool
+static Modulus.AI.Connector.EntityFrameworkCore.ListEntityChanges.operator ==(Modulus.AI.Connector.EntityFrameworkCore.ListEntityChanges? left, Modulus.AI.Connector.EntityFrameworkCore.ListEntityChanges? right) -> bool

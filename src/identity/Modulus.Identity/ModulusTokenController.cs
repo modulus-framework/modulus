@@ -29,6 +29,7 @@ using Modulus.Core.Abstractions.Security;
 /// every request, so tokens are never minted without a real credential check.
 /// Override or extend for custom grant types.
 /// </summary>
+[HostTenantContext]
 public class ModulusTokenController(
     IPasswordGrantCredentialValidator credentialValidator,
     ModulusUserTypeDescriptor? userTypeDescriptor = null)
@@ -465,6 +466,7 @@ public class ModulusIntrospectionController(
 /// (<c>AddModulusIdentityStore</c>) and the <c>/connect/revoke</c> endpoint —
 /// this endpoint always terminates the cookie session.
 /// </remarks>
+[HostTenantContext]
 public class ModulusEndSessionController(
     IOptions<ModulusIdentityOptions> identityOptions) : ControllerBase
 {

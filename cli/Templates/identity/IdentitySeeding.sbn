@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Modulus.Core.Abstractions;
 using Modulus.Identity.Abstractions;
 using OpenIddict.Abstractions;
 
@@ -36,6 +37,9 @@ public static class IdentitySeeding
     public static async Task SeedIdentityAsync(
         this IServiceProvider services, IHostEnvironment environment, CancellationToken ct = default)
     {
+        // Seeding is a host operation: accounts, roles and companies belong to no company, and with multi-tenancy on
+        // a context without a company sees none of them.
+        using var hostContext = services.GetRequiredService<ICurrentTenant>().Change(null);
         await using var scope = services.CreateAsyncScope();
         var provider = scope.ServiceProvider;
         var logger = provider.GetRequiredService<ILoggerFactory>().CreateLogger("Identity.Seeding");

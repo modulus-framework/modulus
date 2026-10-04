@@ -1,0 +1,35 @@
+using Microsoft.Extensions.DependencyInjection;
+using Modulus.MultiTenancy.EntityFrameworkCore;
+using Modulus.Testing;
+using Modulus.Testing.Security;
+using Xunit;
+using {{ module_namespace }}.Domain;
+using {{ module_namespace }}.Infrastructure;
+using ApiEntryPoint = {{ root_namespace }}.Api.ApiEntryPoint;
+
+namespace {{ root_namespace }}.Tests;
+
+/// <summary>
+/// Company = tenant (modulus generate-crud on a multi-tenant host): a {{ entity_name_lower }} written in one company is
+/// not found by key, not listed and not reachable through IgnoreQueryFilters() from another.
+/// </summary>
+public sealed class {{ entity_name }}TenantIsolationTests(ModulusWebAppFactory<ApiEntryPoint> factory)
+    : IClassFixture<ModulusWebAppFactory<ApiEntryPoint>>
+{
+    [Fact]
+    public async Task {{ entity_name }}_rows_stay_in_their_company()
+    {
+        var owner = await CreateCompanyAsync("owner");
+        var other = await CreateCompanyAsync("other");
+
+        await factory.Services.AssertTenantIsolationAsync<{{ module_name }}DbContext, {{ entity_name }}>(
+            new {{ entity_name }} { Name = "isolation" }, owner, other);
+    }
+
+    private async Task<Guid> CreateCompanyAsync(string name)
+    {
+        await using var scope = factory.Services.CreateAsyncScope();
+        var tenants = scope.ServiceProvider.GetRequiredService<TenantManager>();
+        return (await tenants.CreateAsync($"{name}-{Guid.NewGuid():N}", name)).TenantId;
+    }
+}

@@ -91,6 +91,10 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
             ? UiAccessGates.CrudPermission(module.Name, routeName)
             : null;
 
+        // A multi-tenant host (modulus app --multi-tenancy) keeps companies apart: the entity is tenant-owned and gets a test.
+        var inventory = ModuleDiscovery.Inventory(Environment.CurrentDirectory);
+        model.MultiTenant = IsMultiTenantHost(inventory?.ProgramCsPath);
+
         var generated = new List<string>();
         var skipped = new List<string>();
 
@@ -175,6 +179,17 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
         else if (model.RequiredPermission is not null)
             EnsureApiPermission(module, model, host, generated);
 
+        // ── Tenant isolation test (multi-tenant hosts) ──
+        if (model.MultiTenant && inventory is not null)
+        {
+            var testsDir = Path.Combine(inventory.SolutionDir, "tests", $"{inventory.RootNamespace}.Tests");
+            if (Directory.Exists(testsDir))
+            {
+                WriteIfMissing("module/Tests/TenantIsolationTests", model,
+                    Path.Combine(testsDir, $"{entity}TenantIsolationTests.cs"), generated, skipped);
+            }
+        }
+
         // ── BFFs: every BFF gets the module's typed client with this entity's read methods ──
         if (ModuleDiscovery.Inventory(Environment.CurrentDirectory) is { Bffs.Count: > 0 } app)
         {
@@ -227,6 +242,11 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
     }
 
     /// <summary>The host project's files a CRUD set touches.</summary>
+    /// <summary>The API host resolves companies (<c>AddMultiTenancy(</c> in its Program.cs).</summary>
+    internal static bool IsMultiTenantHost(string? programCs)
+        => !string.IsNullOrEmpty(programCs) && File.Exists(programCs)
+            && File.ReadAllText(programCs).Contains("AddMultiTenancy(", StringComparison.Ordinal);
+
     private sealed record HostFiles(string ApiDir, string ApiCsproj, string ProgramCs);
 
     /// <summary>

@@ -1,0 +1,31 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Design;
+using Modulus.MultiTenancy.EntityFrameworkCore;
+
+namespace {{ tenancy_namespace }}.Infrastructure;
+
+/// <summary>
+/// Design-time factory used by the EF Core tools (<c>dotnet ef</c> / <c>modulus migrate</c>) to
+/// construct the tenant store's <see cref="TenantStoreDbContext"/> without the application's DI container,
+/// with its migrations in this project.
+/// </summary>
+/// <remarks>
+/// The connection string is read from the <c>TENANCY_CONNECTION</c> environment variable when
+/// set (so CI/CD can point migrations at the real database), otherwise it falls back to the
+/// default development connection string.
+/// </remarks>
+public sealed class TenantStoreDbContextFactory : IDesignTimeDbContextFactory<TenantStoreDbContext>
+{
+    public TenantStoreDbContext CreateDbContext(string[] args)
+    {
+        var connectionString =
+            Environment.GetEnvironmentVariable("TENANCY_CONNECTION")
+            ?? "{{ tenancy_connection_string }}";
+
+        var options = new DbContextOptionsBuilder<TenantStoreDbContext>()
+            .{{ use_db_method }}(connectionString, db => db.MigrationsAssembly(typeof(TenantStoreDbContextFactory).Assembly.GetName().Name))
+            .Options;
+
+        return new TenantStoreDbContext(options);
+    }
+}

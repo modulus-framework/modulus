@@ -9,10 +9,12 @@ using Modulus.AspNetCore.DataProtection;
 using Modulus.AspNetCore.FeatureFlags;
 using Modulus.AspNetCore.HealthChecks;
 using Modulus.AspNetCore.Idempotency;
+using Modulus.AspNetCore.Logging;
 {{ if expose_api }}using Modulus.AspNetCore.OpenApi;
 {{ end }}using Modulus.AspNetCore.RateLimiting;
 using Modulus.AspNetCore.Security;
 {{ if use_security_guard }}using Modulus.AspNetCore.Security.Policy;
+using Modulus.AuditLogging.Security;
 {{ end }}{{ if expose_api }}using Modulus.AspNetCore.Versioning;
 {{ end }}{{ if example_permission || needs_fallback_authorization }}using Modulus.Authorization.Extensions;
 {{ end }}using Modulus.Caching;
@@ -20,7 +22,11 @@ using Modulus.EntityFrameworkCore.Extensions;
 using Modulus.Events.Extensions;
 using Modulus.Mediator.Extensions;
 {{ if auth == "openiddict" }}using {{ identity_namespace }}.Infrastructure;
-using Modulus.Identity.Extensions;
+{{ if multi_tenancy }}using {{ tenancy_namespace }}.Infrastructure;
+using Modulus.MultiTenancy.EntityFrameworkCore;
+using Modulus.MultiTenancy.Extensions;
+using Modulus.Security;
+{{ end }}using Modulus.Identity.Extensions;
 using OpenIddict.Server.AspNetCore;
 using OpenIddict.Validation.AspNetCore;
 {{ if ui_in_api_host || kind_name == "webapp+api" }}using Modulus.UI;
@@ -56,6 +62,7 @@ builder.Services.AddModulusOpenIddict(builder.Configuration, options =>
 builder.Services.AddModulus(builder.Configuration, modules =>
 {
 {{ if auth == "openiddict" }}    modules.AddModule<IdentityModule>();
+{{ end }}{{ if multi_tenancy }}    modules.AddModule<TenancyModule>();
 {{ end }}{{ if !no_example }}    modules.AddModule<{{ example_module }}Module>();
 {{ end }}});
 builder.Services.AddModulusExceptionHandling();
@@ -76,6 +83,13 @@ builder.Services.AddModulusFeatureFlags(builder.Configuration);
 // variables, User Secrets, or a vault. Excludes Production to avoid false positives.
 builder.Services.AddModulusSecretsGuard(builder.Configuration);
 {{ end }}
+// ── Log redaction ──────────────────────────────────────────────
+// Values classified with [PersonalInformation], [ProtectedPersonalData], [ConfidentialData], [RestrictedData] or
+// [SecretData] are redacted in source-generated logs ([LoggerMessage]); settings: Security:Redaction (the HMAC key that
+// pseudonymizes personal data comes from user secrets or the environment). Analyzer MOD0002 flags a classified value
+// passed to an ordinary LogInformation(...) call.
+builder.Services.AddModulusRedaction(builder.Configuration);
+
 // ── Forwarded headers ──────────────────────────────────────────
 // Required when behind a reverse proxy / load balancer so the app sees real
 // client IPs and the correct scheme (https). Trusting all proxies is safe in
@@ -182,6 +196,23 @@ builder.Services.AddModulusAuthorization();
 // security/loosening-allowlist.json; otherwise the app refuses to start (settings: Security:Guard).
 builder.Services.AddModulusSecurityGuard(builder.Configuration);
 
+// ── Security audit ─────────────────────────────────────────────
+// Security decisions (refused sign-ins, issued, refused and revoked tokens, tenant rejections, cross-tenant SQL, the
+// startup loosening report) are recorded as one tamper-evident hash chain per company. The chain lives in memory
+// until a durable store is added (modulus add-audit-store); settings: Security:Audit.
+builder.Services.AddModulusSecurityAudit(builder.Configuration);
+
+{{ end }}{{ if multi_tenancy }}// ── Multi-tenancy (company = tenant) ───────────────────────────
+// A token with a "tid" claim stays pinned to its company; a login without one selects a company with the X-Tenant-Id
+// header (id or slug) and needs an active membership in it (TenantManager.AddMemberAsync / RemoveMemberAsync; the
+// companies and memberships live in TenancyModule's database). No company selected = no tenant data (fail-closed).
+builder.Services.AddMultiTenancy(tenancy => tenancy
+    .UseJwtClaimResolver()
+    .UseHeaderResolver()
+    .RequireMembership());
+// One view of who is calling, for which company and branch (X-Branch-Id, checked against the caller's org scope).
+builder.Services.AddModulusSecurityContext();
+
 {{ end }}{{ if expose_api }}// ── OpenAPI ────────────────────────────────────────────────────
 // Hardened document: metadata from the OpenApi config section + a JWT Bearer
 // security scheme, with a padlock on operations that require authorization.
@@ -200,13 +231,17 @@ var app = builder.Build();
 // registered via .ExternallyManaged<TContext>()) are skipped here; apply theirs
 // with `modulus migrate update`.
 // Author the first migration with:  modulus migrate add <Name> --module <Module>
-await app.Services.MigrateModulusDatabasesAsync(
+{{ if multi_tenancy }}// The tenant store (companies, memberships) is not a module context: it is migrated on its own, first.
+await app.Services.MigrateTenantStoreAsync(ensureCreatedIfNoMigrations: !app.Environment.IsProduction());
+{{ end }}await app.Services.MigrateModulusDatabasesAsync(
     app.Environment.IsProduction()
         ? DatabaseInitializationMode.Migrate
         : DatabaseInitializationMode.MigrateOrCreate);
 {{ if auth == "openiddict" }}
 // Roles, and the first administrator where that is safe (see IdentitySeeding).
 await app.Services.SeedIdentityAsync(app.Environment);
+{{ end }}{{ if multi_tenancy }}// The default company and the administrators' memberships in it (see TenancySeeding).
+await app.Services.SeedTenancyAsync(app.Environment);
 {{ end }}
 // ── Middleware ─────────────────────────────────────────────────
 // Order matters: forwarded headers first (so everything downstream sees the
@@ -221,7 +256,10 @@ app.UseForwardedHeaders();
 {{ end }}app.UseExceptionHandler();
 {{ if expose_api }}{{ if enable_cors }}app.UseModulusCors();
 {{ end }}{{ end }}{{ if auth != "none" }}app.UseAuthentication();
-app.UseAuthorization();
+{{ if multi_tenancy }}// The company is resolved (and the membership checked) once the caller is known, before authorization.
+app.UseMultiTenancy();
+app.UseModulusSecurityContext();
+{{ end }}app.UseAuthorization();
 {{ end }}{{ if expose_api }}{{ if enable_rate_limiting }}app.UseModulusRateLimiting();
 {{ end }}{{ end }}app.UseModulus();
 {{ if expose_api }}{{ if enable_idempotency }}app.UseModulusIdempotency();

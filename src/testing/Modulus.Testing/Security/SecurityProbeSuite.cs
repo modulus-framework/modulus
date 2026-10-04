@@ -74,7 +74,8 @@ public static class SecurityProbeSuite
             if (options.ForeignTenantId is { } foreign)
             {
                 status = await SendAsync(client, target, new Caller(target.Roles, target.Policies, foreign), options, ct).ConfigureAwait(false);
-                results.Add(Result(target, SecurityProbe.ForeignTenant, "403", status, status.Code == HttpStatusCode.Forbidden));
+                var refused = options.ForeignTenantStatusOverrides.TryGetValue(target.Route, out var foreignCodes) ? foreignCodes : [403];
+                results.Add(Result(target, SecurityProbe.ForeignTenant, string.Join('/', refused), status, refused.Contains((int)status.Code)));
             }
         }
 
@@ -232,6 +233,17 @@ public sealed class SecurityProbeOptions
     public IDictionary<string, int[]> AnonymousStatusOverrides { get; } = new Dictionary<string, int[]>(StringComparer.OrdinalIgnoreCase)
     {
         ["/connect/userinfo"] = [400, 401],
+    };
+
+    /// <summary>
+    /// Routes whose answer to the foreign-tenant probe is not <c>403</c> by design, with the status codes that count as
+    /// refused. The default covers OpenIddict's userinfo endpoint: the token server handles it during authentication,
+    /// before the tenant is resolved, refuses the probe's caller (no real access token) with <c>400</c>, and only ever
+    /// returns the token's own claims. Keep the list short and exact.
+    /// </summary>
+    public IDictionary<string, int[]> ForeignTenantStatusOverrides { get; } = new Dictionary<string, int[]>(StringComparer.OrdinalIgnoreCase)
+    {
+        ["/connect/userinfo"] = [400, 403],
     };
 
     /// <summary>The header that selects a company (the multi-tenancy default <c>X-Tenant-Id</c>).</summary>

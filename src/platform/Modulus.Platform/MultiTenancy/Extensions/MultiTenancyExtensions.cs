@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Modulus.Core.Abstractions;
+using Modulus.Core.Null;
 
 namespace Modulus.MultiTenancy.Extensions;
 
@@ -21,8 +22,7 @@ public static class MultiTenancyExtensions
         // queues, bus ambient restores) under scope validation, for no
         // benefit: the AsyncLocal already isolates concurrent flows.
         services.TryAddSingleton<CurrentTenant>();
-        services.TryAddSingleton<ICurrentTenant>(
-            sp => sp.GetRequiredService<CurrentTenant>());
+        UseAmbientCurrentTenant(services);
 
         // Empty until seeded: with RequireMembership() on and no real store, nobody without a
         // tenant claim can enter a tenant (fail-closed). AddEfCoreTenantStore replaces it.
@@ -39,6 +39,27 @@ public static class MultiTenancyExtensions
         configure?.Invoke(builder);
         return services;
     }
+
+    /// <summary>
+    /// Makes <see cref="CurrentTenant"/> the <see cref="ICurrentTenant"/> unless the app registered its own. <c>AddModulus</c>,
+    /// <c>AddModulusUi</c> and the EF authorization store <c>TryAdd</c> <see cref="NullCurrentTenant"/> (always the host), and one
+    /// registered first made a plain <c>TryAdd</c> here a no-op: every query saw every company and nothing was stamped. Only
+    /// that default is replaced; a custom implementation registered earlier is kept.
+    /// </summary>
+    private static void UseAmbientCurrentTenant(IServiceCollection services)
+    {
+        var registered = services.Where(d => d.ServiceType == typeof(ICurrentTenant)).ToList();
+        if (registered.Count > 0 && !registered.TrueForAll(IsNullDefault))
+            return;
+
+        services.RemoveAll<ICurrentTenant>();
+        services.AddSingleton<ICurrentTenant>(sp => sp.GetRequiredService<CurrentTenant>());
+    }
+
+    private static bool IsNullDefault(ServiceDescriptor descriptor)
+        => !descriptor.IsKeyedService
+            && (descriptor.ImplementationType == typeof(NullCurrentTenant)
+                || descriptor.ImplementationInstance is NullCurrentTenant);
 }
 
 public sealed class MultiTenancyBuilder(IServiceCollection services)

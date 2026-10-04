@@ -195,7 +195,7 @@ internal static partial class WebhooksWiring
         return EnsureTopLevelSection(text, "Webhooks", body);
     }
 
-    private static string EnsureConnectionString(string json, string name, string value)
+    internal static string EnsureConnectionString(string json, string name, string value)
     {
         var match = ConnectionStringsSection().Match(json);
         if (!match.Success || HasConnectionString(json, name))

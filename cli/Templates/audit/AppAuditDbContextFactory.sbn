@@ -1,0 +1,29 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Design;
+
+namespace {{ audit_namespace }}.Infrastructure;
+
+/// <summary>
+/// Design-time factory used by the EF Core tools (<c>dotnet ef</c> / <c>modulus migrate</c>) to
+/// construct <see cref="AppAuditDbContext"/> without the application's DI container.
+/// </summary>
+/// <remarks>
+/// The connection string is read from the <c>AUDIT_CONNECTION</c> environment variable when
+/// set (so CI/CD can point migrations at the real database), otherwise it falls back to the
+/// default development connection string.
+/// </remarks>
+public sealed class AppAuditDbContextFactory : IDesignTimeDbContextFactory<AppAuditDbContext>
+{
+    public AppAuditDbContext CreateDbContext(string[] args)
+    {
+        var connectionString =
+            Environment.GetEnvironmentVariable("AUDIT_CONNECTION")
+            ?? "{{ audit_connection_string }}";
+
+        var options = new DbContextOptionsBuilder<AppAuditDbContext>()
+            .{{ use_db_method }}(connectionString)
+            .Options;
+
+        return new AppAuditDbContext(options);
+    }
+}

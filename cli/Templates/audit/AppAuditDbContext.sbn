@@ -1,0 +1,13 @@
+using Microsoft.EntityFrameworkCore;
+using Modulus.AuditLogging.EntityFrameworkCore;
+
+namespace {{ audit_namespace }}.Infrastructure;
+
+/// <summary>
+/// The app's audit store: the business audit log (<c>modulus_audit_logs</c>) and the hash-chained security audit
+/// (<c>modulus_security_audit</c>, one chain per company). Its migrations live here:
+/// <c>modulus migrate add InitialCreate --module Audit</c>. Make the security table append-only for the application's
+/// database role with <c>SecurityAuditDatabaseScripts</c> (run as the migration role).
+/// </summary>
+public sealed class AppAuditDbContext(DbContextOptions<AppAuditDbContext> options)
+    : ModulusAuditDbContext(options);

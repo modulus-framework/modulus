@@ -97,6 +97,10 @@ src/
                  Modulus.GraphQL (one GraphQL.NET schema built from module
                  contributors, resolvers through the mediator).
   observability/ Modulus.Observability (Diagnostics + OpenTelemetry merged)
+  ai/            Modulus.AI.Connector (hosts the external AI platform's connector wire
+                 contract v1: read-only capabilities, envelope auth, revocation, extract/changes,
+                 generated Search/Calculate, audit capabilities) + Modulus.AI.Connector.EntityFrameworkCore
+                 (ai_changes journal, change feed, entity source, entity-history capability)
   testing/       Modulus.Testing (WebApplicationFactory harness, RecordingModuleBus,
                  event assertions), Modulus.Testing.Architecture (module boundary
                  rules: integration event naming, cross-module reference detection)
@@ -154,12 +158,13 @@ large DDD/CQRS modular monoliths.
 
 | Command | Description |
 |---------|-------------|
-| `modulus app <name>` | Creates a solution: `src/API/{App}.Api` host + `src/Shared/{App}.Shared.*` kernel (4 projects) + example `Catalog` module (4 projects) + top-level tests. `--migration-engine dbsh` uses SQL-first migrations. `--kind api\|web` picks the **app kind** (see below). |
+| `modulus app <name>` | Creates a solution: `src/API/{App}.Api` host + `src/Shared/{App}.Shared.*` kernel (4 projects) + example `Catalog` module (4 projects) + top-level tests. `--migration-engine dbsh` uses SQL-first migrations. `--kind api\|web` picks the **app kind** (see below). `--multi-tenancy` (with `--kind api --auth openiddict`) makes companies tenants: membership-checked resolution, a tenant store module, tenant-owned entities, isolation tests (see *Security model*). |
 | `modulus add-bff <client>` | Adds a `web`, `mobile` or `partner` BFF host (`src/Bff/{App}.Bff.{Client}`) to an existing app; `modulus app --bff web,mobile,partner [--services catalog=...]` generates them up front. See *BFF (per client)*. |
 | `modulus generate-bff-endpoint <Name>` | Scaffolds an aggregate endpoint in a BFF (`--bff`, `--modules`, `--route`) composing the modules' typed clients. |
 | `modulus generate-grpc <Entity>` | Exposes an entity's CRUD commands/queries over gRPC: `.proto` + service in the module's Presentation layer, API host wiring, a test class; `--bff mobile\|all` adds the contract to BFFs as a client. See *gRPC*. |
 | `modulus generate-graphql <Entity>` | Exposes an entity's CRUD commands/queries over GraphQL: graph type + contributor in the module's Presentation layer, API host wiring (`AddModulusGraphQL`/`MapModulusGraphQL`, `GraphQL` settings), a test class; `--bff mobile\|all` routes `/graphql` through BFFs. See *GraphQL*. |
 | `modulus add-webhooks [--events a,b]` | Adds outgoing webhooks: the `{App}.Modules.Webhooks.Infrastructure` store module, API host wiring (one `AddEvent` per `[IntegrationEventName]` event, Admin grant, `MapModulusWebhooks`), settings and a test class. Re-run to add new events. See *Webhooks*. |
+| `modulus add-audit-store` | Keeps the business audit log and the hash-chained security audit in a database: the `{App}.Modules.Audit.Infrastructure` store module (`AppAuditDbContext`, `AuditModule` with `AddModulusAuditStore`), API host wiring (`AddModulusSecurityAudit` when missing), the `Audit` connection string and a Development anchor file. Idempotent. See *Security model*. |
 | `modulus add-realtime [--events a,b] [--bff ...] [--signalr]` | Pushes integration events to connected clients: API host wiring (`AddModulusRealtime` with one `AddEvent` per event, audience = the entity's permission; `MapModulusRealtime`), settings, a test class; `--bff` relays `/realtime` as an event stream; `--signalr` turns the hub on (SSE is the default). See *Realtime*. |
 | `modulus module <name>` | Creates a blank 4-layer business module |
 | `modulus add-module <name>` | Adds a module to an existing app + wires Program.cs registration + Host `ProjectReference`s. `--migration-engine` defaults to `dbsh` when all existing modules use dbsh. |
@@ -535,7 +540,7 @@ but for synchronous HTTP callers/retries rather than integration events.
   are flagged only when they carry a credential (`Password=`/`AccountKey=`…) and
   don't point at a local host, so a SQLite/localhost dev string never trips it.
   Config lives under `SecretsGuard` (`Enabled`, `FailOnViolation`, `Environments`,
-  `SensitiveKeyPatterns`). No new NuGet dependency. Template hygiene: the host
+  `SensitiveKeyPatterns`; the defaults include `*HmacKey` / `*HashKey`, i.e. the redaction and search-hash keys). No new NuGet dependency. Template hygiene: the host
   `.csproj` now carries a `<UserSecretsId>` (a home for dev secrets), generated apps
   ship a `.gitignore` covering `secrets.json` / `appsettings.*.json` / SQLite files,
   and `appsettings.json` seeds a `SecretsGuard` block. Covered by 7 scanner unit
@@ -560,8 +565,8 @@ but for synchronous HTTP callers/retries rather than integration events.
   re-encrypt. Because `Protect` is non-deterministic, encrypted columns can't be queried
   by equality; `IPersonalDataProtector.Hash` gives a deterministic HMAC-SHA256 (keyed by
   `PersonalDataProtection:SearchHashKey`, supplied out-of-band — never committed) to
-  populate a companion hash column for lookups. Placement keeps `Modulus.Core` dep-free
-  and `Modulus.EntityFrameworkCore` dep-light (both depend only on the `IPersonalDataProtector`
+  populate a companion hash column for lookups. Placement keeps `Modulus.Core` dep-light (its only package is
+  `Microsoft.Extensions.Compliance.Abstractions`, for the log-redaction taxonomy) and `Modulus.EntityFrameworkCore` dep-light (both depend only on the `IPersonalDataProtector`
   abstraction); the DataProtection types come from the ASP.NET shared framework, so **no
   new NuGet dependency**. Config lives under `PersonalDataProtection` (`Enabled`,
   `Purpose`, `SearchHashKey`); `Enabled: false` registers nothing (columns stay
@@ -1183,15 +1188,34 @@ Roadmap and as-built notes: [`docs/SECURITY_STAGE2_PLAN.md`](docs/SECURITY_STAGE
 A **company is a Modulus tenant** (`ICurrentTenant`, `TenantInfo`). **Branches and locations are org units**
 (`IOrgHierarchy`, `ICurrentDataScope`), and a **group** is a set of tenants (`TenantInfo.GroupId`), used only for
 federated reads. Phases 1–5 are built (tenancy foundation, endpoint policy model + startup guard, per-database
-isolation, hash-chained security audit, probe suite). Deferred: the UI pieces (Files UI tenant roots, Security tab in
-`Modulus.UI.AuditLogging`), log redaction, and the CLI pieces that need a `modulus app --multi-tenancy` option.
+isolation, hash-chained security audit, probe suite), and the provider integration tests pass against real databases.
+`modulus app --multi-tenancy` wires them into generated API hosts (below). Deferred: the UI pieces (Files UI tenant
+roots, Security tab in `Modulus.UI.AuditLogging`).
 
 - **Membership.** One login reaches several companies. With `AddMultiTenancy(b => b.RequireMembership())`, a caller
   without a `tid` claim may enter the selected tenant only with an active membership (`ITenantMembershipStore`:
   in-memory default, which is empty and so fails closed; `EfTenantMembershipStore` via `AddEfCoreTenantStore`;
   `TenantManager.AddMemberAsync` / `RemoveMemberAsync`). Otherwise `403`. `HostTenantAccessPolicy` is the break-glass
-  override. A `tid` claim still pins a token to one tenant. The library default is off for now and the CLI does not wire
-  it yet (generated apps have no multi-tenancy option).
+  override. A `tid` claim still pins a token to one tenant. The library default is off; `modulus app --multi-tenancy`
+  turns it on.
+- **Registration order.** `AddMultiTenancy` replaces the `NullCurrentTenant` default that `AddModulus` / `AddModulusUi` /
+  the EF authorization store `TryAdd` (always the host: before this fix, `AddModulus` then `AddMultiTenancy` left every
+  query seeing every company); a custom `ICurrentTenant` registered earlier is kept.
+- **Token server in the host context.** The Identity user/role filters stay fail-closed (only the host sees host-level
+  accounts), so the token server's own controllers (token, authorize, account, end-session) run in the host context
+  (`HostTenantContextAttribute`): a token request selects no company, and a multi-company account has no `TenantId`.
+  Seeders that touch accounts or companies enter the host too (`ICurrentTenant.Change(null)`).
+- **`modulus app --multi-tenancy`** (needs `--kind api --auth openiddict`; pages have no company switcher yet and external
+  users are not local): `AddMultiTenancy(t => t.UseJwtClaimResolver().UseHeaderResolver().RequireMembership())` +
+  `AddModulusSecurityContext()`, `UseMultiTenancy()` / `UseModulusSecurityContext()` right after `UseAuthentication()`, the
+  infrastructure-only `{App}.Modules.Tenancy.Infrastructure` (`TenancyModule` with `AddEfCoreTenantStore` on
+  `ConnectionStrings:Tenancy`, a `TenantStoreDbContext` design-time factory with `TENANCY_CONNECTION`, `TenancySeeding`),
+  `MigrateTenantStoreAsync` before the module migrations, `SeedTenancyAsync` after `SeedIdentityAsync` (default company
+  `Tenancy:Seed:DefaultTenant` = `default`, every `Admin` user a member: call the API with `X-Tenant-Id: default`),
+  `Storage:IsolateTenants`, tenant-owned (`IHasTenantId`) example entity, and tests: round trip through a client pinned to
+  a company, `SecurityProbeSuite` with `ForeignTenantId`, `TenantIsolationTests`. `generate-crud` on such a host
+  (`AddMultiTenancy(` in Program.cs) makes the entity `IHasTenantId` and writes `{Entity}TenantIsolationTests.cs`.
+  Verified end to end (9/9, then 10/10 after `generate-crud`; live sign-in, company-scoped create/list).
 - **`ISecurityContext`** (Core; `AddModulusSecurityContext()` + `UseModulusSecurityContext()` in Platform) composes
   user, company, group, branch (`X-Branch-Id`, `403` outside the caller's org scope), correlation, and reserved
   network/agent slots.
@@ -1219,8 +1243,14 @@ isolation, hash-chained security audit, probe suite). Deferred: the UI pieces (F
   unpoliced endpoint (no auth, no fallback), anonymous without a reason, anonymous Confidential/Restricted data, or a
   network requirement (not enforced yet); an app loosening missing from `security/loosening-allowlist.json` fails
   outside Development. The report is in `SecurityGuardState`. Generated hosts with a sign-in wire it and ship the file.
+  `SecurityGuardReport.Surfaces` lists what one endpoint carries, from each `ISecuritySurfaceContributor` (Core):
+  GraphQL root fields and realtime topics (`Policed` / `Inherited` / `Anonymous`); anonymous ones are logged and join the
+  audited loosening fingerprint, but never fail startup.
 - **MOD0001** (`src/analyzers/Modulus.Analyzers`, packed into `Cobytelabs.Modulus.AspNetCore`) warns at build time on
-  anonymous without a reason. Tests drive it with stub sources (`Modulus.Analyzers.Tests`).
+  anonymous without a reason. **MOD0002** (same package) warns when a classified property, field or parameter (any
+  `DataClassificationAttribute`, `[ProtectedPersonalData]` included; not `[InternalData]`) is passed to an ordinary `ILogger`
+  extension (`LogInformation`, `BeginScope`, ..., also inside an interpolated string). Tests drive both with stub sources
+  (`Modulus.Analyzers.Tests`).
   `/_ui/menu` is a framework loosening (filtered per caller); before, the guard refused the split Web host for it.
 - **Database isolation (phase 3).** The EF filter and the write guard stay in front everywhere; underneath, each
   provider gets the strongest control it supports:
@@ -1231,30 +1261,56 @@ isolation, hash-chained security audit, probe suite). Deferred: the UI pieces (F
   | SQL Server | RLS: `AddSqlServerRowLevelSecurity<TContext>()` (`sp_set_session_context`) + `EnableTenantRowLevelSecurity(table)` / `EnsureAsync` (`[modulus].[fn_tenant_predicate]`, filter + block predicates) | `AddModuleDatabasePerTenant` |
   | MySQL | raw-SQL guard only (no RLS) | `AddMySQLPerTenantDatabase` (recommended) |
   | SQLite | development only (guard applies) | `AddSQLitePerTenantDatabase` (`tenants/{id:N}.db`) |
-  | MongoDB | `GetTenantCollection<T>()` → `TenantScopedCollection<T>` (scoped filters, stamped inserts, tenant field immutable, `$match` on aggregates) | not built |
+  | MongoDB | `GetTenantCollection<T>()` → `TenantScopedCollection<T>` (scoped filters, stamped inserts, tenant field immutable, `$match` on aggregates) | `AddMongoDatabasePerTenant` (contexts take `ITenantMongoDatabase`) |
 
   - `TenantSessionInterceptor` writes the session on open and again before a command when the ambient tenant changed,
     and forgets it after a rollback; only for contexts that declared it.
   - `TenantSqlGuardInterceptor` is on every module context. It refuses raw SQL and `IgnoreQueryFilters()` on tenant
     tables inside a tenant or with no tenant (`CrossTenantSqlException`), unless the code runs inside
     `using (CrossTenantSql.Allow(reason))`. Queries are tagged at compile time, so the decision is made per execution.
+  - Dapper / read models: `await using var lease = await db.OpenTenantConnectionAsync(ct)` (`Connection` + the current
+    `Transaction`). It writes the RLS session first (even on a connection already open for another tenant) and refuses
+    a database shared without RLS inside a tenant unless `CrossTenantSql.Allow(reason)` is open (audited). Never hand
+    `Database.GetDbConnection()` to Dapper directly.
+  - MongoDB per tenant: `AddMongoDatabasePerTenant(o => ..., id => $"shop_{id:N}")`; a context built on
+    `ITenantMongoDatabase` gets the tenant's database (host database in the host context, no tenant throws) and runs
+    unchanged on `AddMongoDatabase` (shared). `IMongoDatabase` stays the host database (outbox, inbox, health).
+    `TenantScopedCollection.Unscoped(reason)` is audited (`mongo.unscoped`) when the collection has an audit log.
   - `AddModulusDataIsolationCheck(configuration)` (`Security:DataIsolation:Tier`: `Shared` / `DatabasePerTenant`) checks the
     registrations at startup. Per-tenant resolution with no tenant throws rather than falling back.
   - Database roles: [`docs/security/database-roles.md`](docs/security/database-roles.md). The app must never connect as the
     schema owner.
-  - The Testcontainers tests (`TenantIsolationIntegrationTests`, `TenantScopedCollectionIntegrationTests`) need Docker
-    and were not run on the machine that built them.
+  - The Testcontainers tests (`PostgreSqlRowLevelSecurityTests`, `SqlServerRowLevelSecurityTests`,
+    `MySqlDatabasePerTenantTests`, `TenantScopedCollectionIntegrationTests`, `TenantMongoDatabaseIntegrationTests`) need
+    Docker; they pass (run 2026-10-03).
 - **Other stores (3b).**
   - The BFF composer cache key includes the selected company (`BffOptions.TenantHeader`), and `BffTenantHeaderHandler`
     forwards it upstream.
   - Notifications match the tenant exactly (null = tenant-less only).
   - SignalR tenant groups refuse a caller with no company.
-  - `CorrelationIdMiddleware` / `TenantMiddleware` open `CorrelationId` / `TenantId` + `UserId` log scopes. There is no
-    redaction yet.
+  - `CorrelationIdMiddleware` / `TenantMiddleware` open `CorrelationId` / `TenantId` + `UserId` log scopes (ids only).
+- **Log redaction.** Taxonomy `Modulus` (`ModulusTaxonomy`, `Modulus.Core.Abstractions.Compliance`) on
+  `Microsoft.Extensions.Compliance.*` (MIT): `Internal` (kept), `Confidential` / `Restricted` (erased), `Personal`
+  (HMAC-SHA256 with `Security:Redaction:HmacKey`, base64 ≥ 32 bytes, else erased) and `Secret` (always erased, also with
+  `Enabled: false`); `ModulusTaxonomy.For(level)` maps the endpoint `DataClassification`. Attributes `[InternalData]`,
+  `[ConfidentialData]`, `[RestrictedData]`, `[PersonalInformation]` (not `PersonalData`: Identity has one), `[SecretData]`;
+  `[ProtectedPersonalData]` is a `Personal` classification too. `AddModulusRedaction(configuration)` (Modulus.AspNetCore,
+  `Modulus.AspNetCore.Logging`) registers the redactors and `EnableRedaction()`. It covers **source-generated logging only**
+  (`[LoggerMessage]` parameters, `[LogProperties]` members), and only in a project that references
+  `Microsoft.Extensions.Telemetry.Abstractions` directly (its generator honours the attributes; the built-in one ignores
+  them, and analyzers do not flow transitively); MOD0002 covers ordinary log calls. `Modulus.Core` now depends on
+  `Microsoft.Extensions.Compliance.Abstractions` (DI.Abstractions + ObjectPool): the generator recognises a classification
+  by its base type, and entities reference Core only. Generated hosts (API, Web, BFF) call `AddModulusRedaction` and seed
+  `Security:Redaction:Enabled`; the generated `Directory.Build.props` references `Microsoft.Extensions.Telemetry.Abstractions`
+  (`FrameworkVersion.TelemetryAbstractions`, kept equal to `Directory.Packages.props` by `RedactionTemplateTests`). The
+  secrets guard's default patterns now include `*HmacKey` and `*HashKey`. Design: the plan's "Log redaction" section.
 - **Security audit (phase 4).**
   - `ISecurityAuditLog.Record(SecurityAuditEvent)` (Core, never blocks or throws; `NullSecurityAuditLog` by default).
   - `AddModulusSecurityAudit(configuration)` (Platform, `Security:Audit`) queues events to `SecurityAuditWriter`. It
     writes them as **one SHA-256 hash chain per company** (host chain = `Guid.Empty`; canonical JSON, millisecond UTC).
+    `Security:Audit:SpoolFile` journals each event before queueing it (at-least-once across a crash or a refusing store;
+    truncated when nothing is outstanding; one file per process). Generated guarded hosts call it; `modulus add-audit-store`
+    adds the durable store.
   - `store.VerifyChainAsync(tenantId, anchor?)` checks it. `AuditAnchorService` writes the heads to `IAuditAnchorSink`s
     (`Security:Audit:AnchorFile`).
   - Durable store: `Modulus.AuditLogging.EntityFrameworkCore`, which provides `AddModulusAuditStore<TContext>()` with
@@ -1265,18 +1321,20 @@ isolation, hash-chained security audit, probe suite). Deferred: the UI pieces (F
     - tenant rejections and break-glass (`TenantMiddleware`);
     - membership and activation (`TenantManager`);
     - relayed authorization admin and decision events;
-    - password sign-in denials, and token issue and refusal;
-    - cross-tenant SQL rejections and opt-ins;
+    - password sign-in denials, token issue and refusal, and `/connect/revoke` (`RevocationSecurityAudit`, OpenIddict
+      server event handlers);
+    - cross-tenant SQL rejections and opt-ins (also through `OpenTenantConnectionAsync`), and Mongo `Unscoped` calls;
     - the startup loosening report (with a fingerprint).
 
-    Nothing records user names, passwords, tokens or SQL text. Queued events can be lost in a crash.
+    Nothing records user names, passwords, tokens or SQL text. Without a spool file, queued events can be lost in a crash.
 - **Probe suite (phase 5).** `SecurityProbeSuite.RunAsync(factory, options)` (`Modulus.Testing.Security`) checks every
   non-loosened endpoint:
   - anonymous gets `401` (or a login redirect);
   - signed in without the endpoint's policy, permission or role gets `403`;
   - with `ForeignTenantId`, a non-member selecting that company gets `403`.
 
-  `AnonymousStatusOverrides` holds exact by-design exceptions; the default is OpenIddict's `/connect/userinfo` → `400`.
+  `AnonymousStatusOverrides` / `ForeignTenantStatusOverrides` hold exact by-design exceptions; the default for both is
+  OpenIddict's `/connect/userinfo` (`400`), which the token server answers before tenancy or authorization runs.
   `TenantIsolationAssertions.AssertTenantIsolationAsync<TContext,TEntity>` and `AssertCrossTenantReadIsDeniedAsync` check
   tenant isolation. Generated API hosts with the guard ship `SecurityProbeTests`, verified on generated `api`
   (openiddict, keycloak), `webapp+api` and `web` apps.
@@ -1626,6 +1684,60 @@ Opt-in package that delivers integration events to external HTTP endpoints, sign
 - **Verified end to end** on a generated `--kind api --auth openiddict` app (11/11 tests, 5 webhooks): test and real
   events received with valid signatures and marked `Delivered`; receiver down → `Pending` with a 5 s retry; `retry`
   delivered it. Covered by `Modulus.Webhooks.Tests` (84) and `WebhooksCommandTests` (13).
+
+## AI connector (`Modulus.AI.Connector`)
+
+Hosts the external AI platform's connector wire contract v1 inside an app (plan and as-built notes:
+[`docs/ADVANCED_FEATURES_PLAN.md`](docs/ADVANCED_FEATURES_PLAN.md), phases 6a and 6b). Modulus holds no LLM code, no MCP and no
+platform package; the platform is read-only, so only queries are exposed.
+
+- `AddModulusAiConnector(configuration, ai => ai.UseIdentityUsers<TUser>())` (settings `Ai:Connector`) +
+  `MapModulusAiConnector()` (`/_ai/connector/*`, after `UseAuthentication`/`UseAuthorization`). Without a user resolver
+  every user call is refused.
+- `[AiCapability("App.Module.Entity.Verb", "...")]` on an `IQuery<T>` (an annotated command fails startup) and
+  `[AiResource("Module.Entity", "...", DeepLink = "/x/{id}")]` on a single-id lookup query (both in
+  `Modulus.Core.Abstractions.Ai`). Calls run through the mediator **as the envelope's user** in the instance's company.
+- `[SecretData]` fields never leave; classified fields follow `IFieldAuthorizer` (fail closed without one); unclassified
+  fields are declared `Confidential` to the platform.
+- Access changes go through `IAccessChangeObserver` (Core). `TenantManager` and the authorization admin API notify it;
+  call `NotifyAccessChangedAsync` from any new code that changes grants, roles, memberships or accounts, or the
+  platform keeps a stale scope for up to 5 minutes.
+- API keys are stored as hashes (`AiApiKeys.Hash`); `Platform:ApiKey` is a secret (user secrets / environment).
+- **Index (6b).**
+  - Endpoints: `GET /extract` and `GET /changes`. The platform calls them with its **API key only**, plus
+    `?appInstanceId=`, which must be a configured instance (otherwise `403`).
+  - They run as the indexing identity: the roles in `Ai:Connector:Indexing:Roles` (default `AiIndexer`), in that
+    instance's company. Grant those roles the read permissions of the indexed entities. A type the identity cannot
+    read fails `/extract` with `DENIED`.
+  - Opt an entity in with `[AiIndexed("Module.Entity")]`. It needs:
+    - an `[AiResource]` lookup of that type, which serves every record;
+    - a matching `Id` type;
+    - a **client-generated key**.
+  - `UseEntityFrameworkCore()` (package `Modulus.AI.Connector.EntityFrameworkCore`) adds:
+    - the `{prefix}ai_changes` journal, mapped into every `ModuleDbContext` (**needs a migration**) and written in the
+      same `SaveChanges` through the new `IModuleSaveContributor` seam (`Modulus.EntityFrameworkCore.Saving`);
+    - `IAiChangeFeed`, with a per-context cursor and a `ChangesSettleDelay` cut;
+    - `IAiEntitySource`;
+    - a purge (`AiChangeJournalOptions.Retention`, 30 days).
+  - Deletes, soft deletes and records the indexer can no longer see become tombstones.
+- **Change hints.** Turn them on with `Ai:Connector:Indexing:ChangeHints:Enabled` and
+  `Platform:WebhookSecret` (`whsec_…`, a secret).
+  - The connector polls the journal head and posts a signed `{ appInstanceId, eventId, occurredAt }`. It never sends
+    data.
+  - Signing follows Standard Webhooks.
+  - A hint is sent at most once; the platform still polls `/changes`.
+- **Generated capabilities.** `[AiQueryable("Module.Entity", description, permission, Fields = [...])]` generates
+  `{Type}.Search` and `{Type}.Calculate`.
+  - Typed filters, sort, `count`/`sum`/`average`/`min`/`max` and group-by work on the listed fields only.
+  - Each filter becomes an expression with values bound as parameters; there is never SQL text.
+  - Filtering, sorting or grouping on a field the caller cannot read is `DENIED`.
+- **Audit capabilities** (`audit:view`, page 1–100):
+  - `ai.AddAuditCapabilities()` adds `Modulus.Audit.Log.Search` over `IAuditLogStore`, in the call's company.
+  - `ai.AddEntityChangeHistoryCapability()` adds `Modulus.Audit.EntityChange.List`. It needs
+    `services.AddEntityChangeHistory()`, which now also registers `IEntityChangeHistoryReader`.
+  - In the history, values of secret, unknown and unreadable classified fields are null.
+- **Personal data.** Capability results mask `[Classified]` fields per user. `[PersonalInformation]` fields are only
+  declared `Restricted` in the manifest; add `[Classified]` when some users must not see one.
 
 ## Testing notes
 

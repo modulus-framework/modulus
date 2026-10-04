@@ -35,6 +35,7 @@ using Modulus.Core.Abstractions.Security;
 /// (<c>/account/login</c>, the Identity UI's page) that returns to <c>ReturnUrl</c> after signing in.
 /// </para>
 /// </remarks>
+[HostTenantContext]
 public class ModulusAuthorizeController : Controller
 {
     /// <summary>The claim ASP.NET Core Identity puts the security stamp in.</summary>

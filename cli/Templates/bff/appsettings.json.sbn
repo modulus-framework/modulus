@@ -69,5 +69,10 @@
     "Enabled": true,
     "FailOnViolation": true
   },
-{{ end }}  "AllowedHosts": "*"
+{{ end }}  "Security": {
+    "Redaction": {
+      "Enabled": true
+    }
+  },
+  "AllowedHosts": "*"
 }

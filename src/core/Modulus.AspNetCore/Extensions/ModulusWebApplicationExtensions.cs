@@ -75,12 +75,17 @@ internal sealed class ModuleLifecycleHostedService(
     // poller, job queues) were still running on them.
     public async Task StoppedAsync(CancellationToken ct)
     {
-        var loader = sp.GetRequiredService<IModuleLoader>();
-
         try
         {
+            var loader = sp.GetRequiredService<IModuleLoader>();
             logger.LogInformation("[Modulus] Shutting down modules...");
             await loader.ShutdownAllAsync(sp, ct);
+        }
+        catch (ObjectDisposedException)
+        {
+            // The container is already gone (a minimal-hosting Program disposes the app while a test host is still
+            // stopping it): nothing is left to release.
+            logger.LogDebug("[Modulus] Service provider already disposed; module shutdown skipped.");
         }
         catch (Exception ex)
         {

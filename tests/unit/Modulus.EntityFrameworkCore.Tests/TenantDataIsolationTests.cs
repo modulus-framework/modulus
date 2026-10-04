@@ -5,6 +5,7 @@ using FluentAssertions;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -253,6 +254,76 @@ public sealed class TenantDataIsolationTests : IAsyncLifetime
         scope.ServiceProvider.GetRequiredService<OtherDbContext>().GetService<IDbContextOptions>()
             .Extensions.OfType<CoreOptionsExtension>().Single()
             .Interceptors.Should().Contain(TenantSqlGuardInterceptor.Instance).And.NotContain(_session);
+    }
+
+    // ── Raw connections (Dapper, read models) ─────────────────────
+
+    [Fact]
+    public async Task A_tenant_connection_carries_the_ambient_tenant_even_when_already_open_for_another()
+    {
+        using var scope = _root.CreateScope();
+        var db = Context(scope);
+        _tenant.Set(TenantA);
+        await db.Database.OpenConnectionAsync();
+        _tenant.Set(TenantB);
+
+        await using (var lease = await db.OpenTenantConnectionAsync())
+        {
+            lease.Connection.State.Should().Be(System.Data.ConnectionState.Open);
+            await using (var again = await db.OpenTenantConnectionAsync())
+            {
+                // Already carries B: not written twice.
+            }
+        }
+
+        _session.Written.Should().Equal(new TenantSession(TenantA, false), new TenantSession(TenantB, false));
+        db.Database.GetDbConnection().State.Should().Be(System.Data.ConnectionState.Open, "EF's own open is kept");
+        await db.Database.CloseConnectionAsync();
+        db.Database.GetDbConnection().State.Should().Be(System.Data.ConnectionState.Closed);
+    }
+
+    [Fact]
+    public async Task A_tenant_connection_joins_the_current_transaction()
+    {
+        _tenant.Set(TenantA);
+        using var scope = _root.CreateScope();
+        var db = Context(scope);
+        await using var tx = await db.Database.BeginTransactionAsync();
+
+        await using var lease = await db.OpenTenantConnectionAsync();
+
+        lease.Transaction.Should().BeSameAs(tx.GetDbTransaction());
+    }
+
+    [Fact]
+    public async Task A_raw_connection_on_a_shared_database_without_RLS_is_refused_inside_a_tenant()
+    {
+        var services = Base(_tenant);
+        services.AddSingleton<ISecurityAuditLog>(_audit);
+        services.AddModuleDatabase<ShopDbContext>(o => o.UseSqlite(_connectionString));
+        await using var sp = services.BuildServiceProvider();
+        using var scope = sp.CreateScope();
+        var db = Context(scope);
+
+        _tenant.Set(TenantA);
+        await db.Invoking(d => d.OpenTenantConnectionAsync()).Should().ThrowAsync<CrossTenantSqlException>();
+        _tenant.SetNone();
+        await db.Invoking(d => d.OpenTenantConnectionAsync()).Should().ThrowAsync<CrossTenantSqlException>();
+        db.Database.GetDbConnection().State.Should().Be(System.Data.ConnectionState.Closed);
+
+        _tenant.Set(TenantA);
+        using (CrossTenantSql.Allow("reviewed report"))
+        {
+            await using var allowed = await db.OpenTenantConnectionAsync();
+        }
+
+        _tenant.SetHost();
+        await using (var host = await db.OpenTenantConnectionAsync())
+        {
+        }
+
+        _audit.Events.Select(e => e.Outcome).Should().Equal(
+            SecurityAuditOutcomes.Denied, SecurityAuditOutcomes.Denied, SecurityAuditOutcomes.Overridden);
     }
 
     // ── Database per tenant ───────────────────────────────────────

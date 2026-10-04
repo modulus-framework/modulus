@@ -314,6 +314,24 @@ public sealed class GraphQLServerTests
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
+    [Theory]
+    [InlineData(true, "Inherited")]
+    [InlineData(false, "Anonymous")]
+    public async Task Root_fields_are_described_for_the_security_guard(bool signedIn, string unpoliced)
+    {
+        await using var host = await StartAsync(o => o.RequireAuthenticatedUser = signedIn);
+
+        var entries = host.App.Services.GetServices<Modulus.Core.Abstractions.Security.ISecuritySurfaceContributor>()
+            .SelectMany(c => c.Describe(host.App.Services))
+            .ToDictionary(e => e.Name);
+
+        entries["Query.products"].Access.Should().Be(Modulus.Core.Abstractions.Security.SecuritySurfaceAccess.Policed);
+        entries["Query.products"].Policies.Should().Equal(GraphQLTestHost.ReadPolicy);
+        entries["Mutation.createProduct"].Policies.Should().Equal(GraphQLTestHost.ManagePolicy);
+        entries["Query.fail"].Access.ToString().Should().Be(unpoliced);
+        entries.Values.Should().OnlyContain(e => e.Surface == "graphql");
+    }
+
     private static string? Code(JsonElement body)
         => body.GetProperty("errors")[0].GetProperty("extensions").GetProperty("code").GetString();
 

@@ -10,12 +10,19 @@ namespace {{ module_namespace }}.Domain;
 /// (<c>services.ConfigureEntityUi("{{ module_name }}.{{ entity_name }}", e => e.Fields.Add(...))</c>); their values are kept
 /// in one JSON column, so no schema change is needed per field. Remove the marker (and the column) if this entity
 /// should not be extensible.
-/// </para>
+/// </para>{{ if multi_tenant }}
+/// <para>
+/// <see cref="IHasTenantId"/> keeps each company's rows apart: the module context stamps the current company on insert,
+/// filters every query by it and refuses writes to another company's rows.
+/// </para>{{ end }}
 /// </summary>
-public sealed class {{ entity_name }} : AggregateRoot<Guid>, IHasExtraProperties
+public sealed class {{ entity_name }} : AggregateRoot<Guid>, IHasExtraProperties{{ if multi_tenant }}, IHasTenantId{{ end }}
 {
     public string Name { get; set; } = string.Empty;
 
     /// <inheritdoc />
-    public Dictionary<string, string?> ExtraProperties { get; set; } = [];
+    public Dictionary<string, string?> ExtraProperties { get; set; } = [];{{ if multi_tenant }}
+
+    /// <inheritdoc />
+    public Guid TenantId { get; set; }{{ end }}
 }

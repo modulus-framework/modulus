@@ -1,6 +1,7 @@
 {
   "ConnectionStrings": {
-{{ if auth == "openiddict" }}    "Identity": "{{ identity_connection_string }}"{{ if !no_example }},{{ end }}
+{{ if auth == "openiddict" }}    "Identity": "{{ identity_connection_string }}"{{ if multi_tenancy || !no_example }},{{ end }}
+{{ end }}{{ if multi_tenancy }}    "Tenancy": "{{ tenancy_connection_string }}"{{ if !no_example }},{{ end }}
 {{ end }}{{ if !no_example }}    "{{ example_module }}": "{{ connection_string }}"
 {{ end }}  },
   "Logging": {
@@ -65,6 +66,14 @@
     "ReferrerPolicy": "strict-origin-when-cross-origin",
     "EnableHsts": true
   },
+{{ end }}{{ if multi_tenancy }}  "Tenancy": {
+    "Seed": {
+      "DefaultTenant": "default"
+    }
+  },
+  "Storage": {
+    "IsolateTenants": true
+  },
 {{ end }}  "FeatureManagement": {
     "SampleFeature": false
   },
@@ -72,7 +81,12 @@
     "Enabled": true,
     "FailOnViolation": true
   },
-{{ end }}{{ if enable_personal_data_protection }}  "PersonalDataProtection": {
+{{ end }}  "Security": {
+    "Redaction": {
+      "Enabled": true
+    }
+  },
+{{ if enable_personal_data_protection }}  "PersonalDataProtection": {
     "Enabled": true,
     "Purpose": "Modulus.PersonalData.Protector.v1"
   },

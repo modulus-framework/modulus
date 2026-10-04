@@ -1,6 +1,7 @@
 using Modulus.AspNetCore.Configuration;
 using Modulus.AspNetCore.Correlation;
 using Modulus.AspNetCore.HealthChecks;
+using Modulus.AspNetCore.Logging;
 using Modulus.AspNetCore.Security;
 using Modulus.Bff;
 using Modulus.Caching;
@@ -23,7 +24,9 @@ var builder = WebApplication.CreateBuilder(args);
 {{ if enable_correlation }}builder.Services.AddModulusCorrelation(builder.Configuration);
 {{ end }}{{ if enable_security_headers }}builder.Services.AddModulusSecurityHeaders(builder.Configuration);
 {{ end }}{{ if enable_secrets_guard }}builder.Services.AddModulusSecretsGuard(builder.Configuration);
-{{ end }}builder.Services.AddHealthChecks();
+{{ end }}// Log redaction for classified values ([PersonalInformation], [SecretData], ...); settings: Security:Redaction.
+builder.Services.AddModulusRedaction(builder.Configuration);
+builder.Services.AddHealthChecks();
 
 builder.Services.AddModulusBff(builder.Configuration, bff => bff
     .Add{{ client_pascal }}Client("{{ client_name }}")

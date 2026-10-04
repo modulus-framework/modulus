@@ -2,6 +2,7 @@ using Modulus.AspNetCore.Configuration;
 using Modulus.AspNetCore.Correlation;
 using Modulus.AspNetCore.Extensions;
 using Modulus.AspNetCore.FeatureFlags;
+using Modulus.AspNetCore.Logging;
 using Modulus.AspNetCore.Security;
 {{ if use_auth }}using Modulus.AspNetCore.Security.Policy;
 {{ end }}{{ if use_tabler_theme }}using Modulus.UI.Theming.Tabler;
@@ -75,6 +76,13 @@ builder.Services.AddModulusFeatureFlags(builder.Configuration);
 {{ end }}{{ if enable_secrets_guard }}// Guard rail: fails startup if secrets are committed to appsettings*.json.
 builder.Services.AddModulusSecretsGuard(builder.Configuration);
 {{ end }}
+// ── Log redaction ──────────────────────────────────────────────
+// Values classified with [PersonalInformation], [ProtectedPersonalData], [ConfidentialData], [RestrictedData] or
+// [SecretData] are redacted in source-generated logs ([LoggerMessage]); settings: Security:Redaction (the HMAC key that
+// pseudonymizes personal data comes from user secrets or the environment). Analyzer MOD0002 flags a classified value
+// passed to an ordinary LogInformation(...) call.
+builder.Services.AddModulusRedaction(builder.Configuration);
+
 // ── Forwarded headers ──────────────────────────────────────────
 // Required when behind a reverse proxy so the app sees real client IPs.
 builder.Services.Configure<ForwardedHeadersOptions>(options =>

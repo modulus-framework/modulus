@@ -14,6 +14,8 @@ using Modulus.Testing.Architecture;
 using Modulus.Testing.Fakes;
 using Modulus.Testing.Security;
 {{ if !no_example }}using {{ root_namespace }}.Modules.{{ example_module }}.Infrastructure;
+{{ end }}{{ if multi_tenancy }}{{ if !no_example }}using {{ root_namespace }}.Modules.{{ example_module }}.Domain;
+{{ end }}using Modulus.MultiTenancy.EntityFrameworkCore;
 {{ end }}using ApiEntryPoint = {{ root_namespace }}.Api.ApiEntryPoint;
 {{ if kind_name == "webapp+api" }}using WebEntryPoint = {{ root_namespace }}.Web.WebEntryPoint;
 {{ end }}
@@ -74,8 +76,11 @@ public sealed class ApiIntegrationTests(ModulusWebAppFactory<ApiEntryPoint> fact
     [Fact]
     public async Task Create{{ example_entity }}_ThenList_RoundTripsThroughTheHost()
     {
-        // The endpoints need a signed-in caller{{ if example_permission }} holding "{{ example_permission }}", which the {{ admin_role }} role is granted in Program.cs{{ end }}.
-        var client = factory.CreateAuthenticatedClient({{ if example_permission }}roles: ["{{ admin_role }}"]{{ end }});
+        // The endpoints need a signed-in caller{{ if example_permission }} holding "{{ example_permission }}", which the {{ admin_role }} role is granted in Program.cs{{ end }}.{{ if multi_tenancy }}
+        // Rows belong to a company: the client acts in one (a token pinned to it with the "tid" claim).
+        var company = await Companies.CreateAsync(factory.Services, "round-trip");
+        var client = factory.CreateAuthenticatedClient({{ if example_permission }}roles: ["{{ admin_role }}"], {{ end }}tenantId: company, pinTenant: true);{{ else }}
+        var client = factory.CreateAuthenticatedClient({{ if example_permission }}roles: ["{{ admin_role }}"]{{ end }});{{ end }}
 
         // POST creates a row in the (swapped) in-memory database…
         var created = await client.PostAsJsonAsync(
@@ -112,9 +117,53 @@ public sealed class SecurityProbeTests(ModulusWebAppFactory<ApiEntryPoint> facto
     [Fact]
     public async Task Every_endpoint_rejects_callers_without_access()
     {
-        var report = await SecurityProbeSuite.RunAsync(factory);
-
+{{ if multi_tenancy }}        // A caller that selects a company it is not a member of gets 403 too.
+        var foreign = await Companies.CreateAsync(factory.Services, "foreign");
+        var report = await SecurityProbeSuite.RunAsync(factory, new SecurityProbeOptions { ForeignTenantId = foreign });
+{{ else }}        var report = await SecurityProbeSuite.RunAsync(factory);
+{{ end }}
         report.EnsureNoFailures();
+    }
+}
+{{ end }}{{ if multi_tenancy }}
+/// <summary>
+/// Company = tenant: a row written in one company is invisible to another (not found by key, not listed, and an
+/// IgnoreQueryFilters() query is refused). <c>modulus generate-crud</c> adds a test per entity to this project.
+/// </summary>
+public sealed class TenantIsolationTests(ModulusWebAppFactory<ApiEntryPoint> factory)
+    : IClassFixture<ModulusWebAppFactory<ApiEntryPoint>>
+{
+{{ if !no_example }}    [Fact]
+    public async Task {{ example_entity }}_rows_stay_in_their_company()
+    {
+        var owner = await Companies.CreateAsync(factory.Services, "owner");
+        var other = await Companies.CreateAsync(factory.Services, "other");
+
+        await factory.Services.AssertTenantIsolationAsync<{{ example_module }}DbContext, {{ example_entity }}>(
+            new {{ example_entity }} { Name = "isolation" }, owner, other);
+    }
+{{ end }}
+    [Fact]
+    public async Task A_member_of_one_company_cannot_select_another()
+    {
+        var company = await Companies.CreateAsync(factory.Services, "members-only");
+        var client = factory.CreateAuthenticatedClient(tenantId: company);
+
+        var response = await client.GetAsync("/health/live");
+
+        // The probe is anonymous-friendly; the tenant check applies to every request that selects a company.
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+}
+
+/// <summary>Creates companies through the app's own tenant store (unique slugs, so tests never collide).</summary>
+internal static class Companies
+{
+    public static async Task<Guid> CreateAsync(IServiceProvider services, string name)
+    {
+        await using var scope = services.CreateAsyncScope();
+        var tenants = scope.ServiceProvider.GetRequiredService<TenantManager>();
+        return (await tenants.CreateAsync($"{name}-{Guid.NewGuid():N}", name)).TenantId;
     }
 }
 {{ end }}

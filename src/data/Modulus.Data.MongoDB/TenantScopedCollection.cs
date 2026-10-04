@@ -24,15 +24,18 @@ public sealed class TenantScopedCollection<T>
 {
     private readonly IMongoCollection<T> _inner;
     private readonly ICurrentTenant _tenant;
+    private readonly ISecurityAuditLog? _audit;
     private readonly string _tenantField;
 
     /// <summary>Wraps <paramref name="inner"/> for the ambient tenant of <paramref name="tenant"/>.</summary>
     /// <param name="inner">The raw collection.</param>
     /// <param name="tenant">The ambient tenant, read on every call.</param>
-    public TenantScopedCollection(IMongoCollection<T> inner, ICurrentTenant tenant)
+    /// <param name="audit">Records each <see cref="Unscoped"/> use in the security audit; null records nothing.</param>
+    public TenantScopedCollection(IMongoCollection<T> inner, ICurrentTenant tenant, ISecurityAuditLog? audit = null)
     {
         _inner = inner ?? throw new ArgumentNullException(nameof(inner));
         _tenant = tenant ?? throw new ArgumentNullException(nameof(tenant));
+        _audit = audit;
         _tenantField = inner.DocumentSerializer is IBsonDocumentSerializer serializer
             && serializer.TryGetMemberSerializationInfo(nameof(IHasTenantId.TenantId), out var info)
                 ? info.ElementName
@@ -49,12 +52,22 @@ public sealed class TenantScopedCollection<T>
 
     /// <summary>
     /// The raw collection, outside tenant enforcement. For reviewed host or maintenance work only (index creation,
-    /// migrations); the reason documents the decision at the call site.
+    /// migrations); the reason documents the decision at the call site, and every call is recorded in the security
+    /// audit (<c>mongo.unscoped</c>, outcome <c>overridden</c>) when the collection was given an audit log.
     /// </summary>
     /// <param name="reason">Why the tenant scope must be bypassed.</param>
     public IMongoCollection<T> Unscoped(string reason)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(reason);
+        _audit?.Record(new SecurityAuditEvent
+        {
+            Category = SecurityAuditCategories.Data,
+            Action = "mongo.unscoped",
+            Outcome = SecurityAuditOutcomes.Overridden,
+            TenantId = _tenant.TenantId,
+            Target = CollectionName,
+            Details = new Dictionary<string, string?> { ["reason"] = reason },
+        });
         return _inner;
     }
 

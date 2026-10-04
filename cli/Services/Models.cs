@@ -10,6 +10,10 @@ internal static class FrameworkVersion
     // Keep in sync with <VersionPrefix> in build/Modulus.Packaging.props —
     // generated apps pin Cobytelabs.Modulus.* packages at this version.
     public const string Current = "1.4.0";
+
+    // Keep in sync with Microsoft.Extensions.Telemetry.Abstractions in Directory.Packages.props: every project of a generated
+    // app references it so classified [LoggerMessage] parameters are redacted (RedactionTemplateTests checks it).
+    public const string TelemetryAbstractions = "10.7.0";
 }
 
 /// <summary>
@@ -83,6 +87,9 @@ internal sealed class AppModel
 
     /// <summary>Framework NuGet package version stamped into generated csproj files.</summary>
     public string FrameworkVersion => Services.FrameworkVersion.Current;
+
+    /// <summary>The logging generator package that honours classification attributes (generated Directory.Build.props).</summary>
+    public string TelemetryAbstractionsVersion => Services.FrameworkVersion.TelemetryAbstractions;
 
     /// <summary>Last segment of the namespace, e.g. "MyApp".</summary>
     public string AppName { get; set; } = "";
@@ -185,6 +192,19 @@ internal sealed class AppModel
 
     /// <summary>Connection string for the identity database (its own database, like every module).</summary>
     public string IdentityConnectionString => DbProviderInfo.ConnectionString(DbProvider, "Identity");
+
+    /// <summary>
+    /// Company = tenant (<c>--multi-tenancy</c>): tenant resolution with membership, the tenant store module
+    /// (<see cref="TenancyNamespace"/>), tenant-owned business entities and isolation tests. API hosts with the local
+    /// token server only (see <c>NewAppCommand.ResolveMultiTenancy</c>).
+    /// </summary>
+    public bool MultiTenancy { get; set; }
+
+    /// <summary>Namespace of the generated tenant store module (<c>{Root}.Modules.Tenancy</c>).</summary>
+    public string TenancyNamespace => $"{RootNamespace}.Modules.Tenancy";
+
+    /// <summary>Connection string for the tenant store (companies and memberships).</summary>
+    public string TenancyConnectionString => DbProviderInfo.ConnectionString(DbProvider, "Tenancy");
 
     /// <summary>True when an external identity provider is selected.</summary>
     public bool UseExternalProvider => AuthProviders.IsExternalProvider(Auth);
@@ -550,6 +570,12 @@ internal sealed class ModuleModel
     /// <see cref="UiAccessGates.CrudPermission"/>.
     /// </summary>
     public string? RequiredPermission { get; set; }
+
+    /// <summary>
+    /// The host keeps companies apart (<c>modulus app --multi-tenancy</c>, detected by <c>AddMultiTenancy(</c> in Program.cs):
+    /// the entity implements <c>IHasTenantId</c> and gets a tenant-isolation test.
+    /// </summary>
+    public bool MultiTenant { get; set; }
 
     /// <summary>Pascal-case plural of <see cref="EntityName"/> (e.g. "Products").</summary>
     public string? EntityPlural => string.IsNullOrEmpty(EntityName)

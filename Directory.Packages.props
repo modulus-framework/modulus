@@ -65,6 +65,8 @@
     <PackageVersion Include="Microsoft.Extensions.ServiceDiscovery"                    Version="10.7.0" />
     <PackageVersion Include="Microsoft.Extensions.ServiceDiscovery.Yarp"               Version="10.7.0" />
     <PackageVersion Include="System.IdentityModel.Tokens.Jwt"                         Version="8.12.1" />
+    <!-- AI connector: verifies the AI platform's signed user envelope (JWS). MIT. 8.16.0 = what OpenIddict 7.5 already requires (transitive pinning would otherwise downgrade it). -->
+    <PackageVersion Include="Microsoft.IdentityModel.JsonWebTokens"                   Version="8.16.0" />
   </ItemGroup>
   <ItemGroup Label="gRPC">
     <!-- gRPC for .NET (Apache-2.0). Grpc.Tools is build-time only (protoc codegen). -->
@@ -119,6 +121,11 @@
     <PackageVersion Include="Rebus.Microsoft.Extensions.Logging"        Version="5.2.0" />
     <PackageVersion Include="Polly"                                     Version="8.7.0" />
     <PackageVersion Include="Microsoft.Extensions.Http.Resilience"       Version="10.7.0" />
+    <!-- Log redaction (dotnet/extensions, MIT): the Modulus classification taxonomy, redactors, redacting logger. -->
+    <PackageVersion Include="Microsoft.Extensions.Compliance.Abstractions" Version="10.7.0" />
+    <PackageVersion Include="Microsoft.Extensions.Compliance.Redaction"    Version="10.7.0" />
+    <PackageVersion Include="Microsoft.Extensions.Telemetry"               Version="10.7.0" />
+    <PackageVersion Include="Microsoft.Extensions.Telemetry.Abstractions"  Version="10.7.0" />
   </ItemGroup>
   <ItemGroup Label="Analyzers">
     <PackageVersion Include="Microsoft.VisualStudio.Threading.Analyzers" Version="17.13.2" />

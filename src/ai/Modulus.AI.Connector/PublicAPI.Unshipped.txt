@@ -1,0 +1,756 @@
+#nullable enable
+Modulus.AI.Connector.AiApiKeys
+Modulus.AI.Connector.AiAppInstanceOptions
+Modulus.AI.Connector.AiAppInstanceOptions.AiAppInstanceOptions() -> void
+Modulus.AI.Connector.AiAppInstanceOptions.AppInstanceId.get -> string!
+Modulus.AI.Connector.AiAppInstanceOptions.AppInstanceId.set -> void
+Modulus.AI.Connector.AiAppInstanceOptions.PlatformTenantId.get -> string!
+Modulus.AI.Connector.AiAppInstanceOptions.PlatformTenantId.set -> void
+Modulus.AI.Connector.AiAppInstanceOptions.TenantId.get -> System.Guid?
+Modulus.AI.Connector.AiAppInstanceOptions.TenantId.set -> void
+Modulus.AI.Connector.AiConnectorBuilder
+Modulus.AI.Connector.AiConnectorBuilder.AddCapabilitiesFrom(params System.Reflection.Assembly![]! assemblies) -> Modulus.AI.Connector.AiConnectorBuilder!
+Modulus.AI.Connector.AiConnectorBuilder.AddCapability<TQuery>() -> Modulus.AI.Connector.AiConnectorBuilder!
+Modulus.AI.Connector.AiConnectorBuilder.Services.get -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+Modulus.AI.Connector.AiConnectorBuilder.UseIdentityUsers<TUser>(System.Func<TUser!, bool>? isActive = null) -> Modulus.AI.Connector.AiConnectorBuilder!
+Modulus.AI.Connector.AiConnectorBuilder.UseUserResolver<TResolver>() -> Modulus.AI.Connector.AiConnectorBuilder!
+Modulus.AI.Connector.AiConnectorDefaults
+Modulus.AI.Connector.AiConnectorEndpointExtensions
+Modulus.AI.Connector.AiConnectorServiceCollectionExtensions
+Modulus.AI.Connector.AiConnectorUser
+Modulus.AI.Connector.AiConnectorUser.<Clone>$() -> Modulus.AI.Connector.AiConnectorUser!
+Modulus.AI.Connector.AiConnectorUser.AiConnectorUser(System.Guid UserId, string? UserName, string? Email, System.Collections.Generic.IReadOnlyList<string!>! Roles) -> void
+Modulus.AI.Connector.AiConnectorUser.Deconstruct(out System.Guid UserId, out string? UserName, out string? Email, out System.Collections.Generic.IReadOnlyList<string!>! Roles) -> void
+Modulus.AI.Connector.AiConnectorUser.Email.get -> string?
+Modulus.AI.Connector.AiConnectorUser.Email.init -> void
+Modulus.AI.Connector.AiConnectorUser.Equals(Modulus.AI.Connector.AiConnectorUser? other) -> bool
+Modulus.AI.Connector.AiConnectorUser.Roles.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Modulus.AI.Connector.AiConnectorUser.Roles.init -> void
+Modulus.AI.Connector.AiConnectorUser.UserId.get -> System.Guid
+Modulus.AI.Connector.AiConnectorUser.UserId.init -> void
+Modulus.AI.Connector.AiConnectorUser.UserName.get -> string?
+Modulus.AI.Connector.AiConnectorUser.UserName.init -> void
+Modulus.AI.Connector.AiDataClass
+Modulus.AI.Connector.AiDataClass.Confidential = 2 -> Modulus.AI.Connector.AiDataClass
+Modulus.AI.Connector.AiDataClass.Internal = 1 -> Modulus.AI.Connector.AiDataClass
+Modulus.AI.Connector.AiDataClass.Public = 0 -> Modulus.AI.Connector.AiDataClass
+Modulus.AI.Connector.AiDataClass.Restricted = 3 -> Modulus.AI.Connector.AiDataClass
+Modulus.AI.Connector.AiEnvelopeClaims
+Modulus.AI.Connector.AiPlatformOptions
+Modulus.AI.Connector.AiPlatformOptions.AiPlatformOptions() -> void
+Modulus.AI.Connector.AiPlatformOptions.ApiKey.get -> string?
+Modulus.AI.Connector.AiPlatformOptions.ApiKey.set -> void
+Modulus.AI.Connector.AiPlatformOptions.BaseUrl.get -> string?
+Modulus.AI.Connector.AiPlatformOptions.BaseUrl.set -> void
+Modulus.AI.Connector.AiPlatformOptions.ClockSkew.get -> System.TimeSpan
+Modulus.AI.Connector.AiPlatformOptions.ClockSkew.set -> void
+Modulus.AI.Connector.AiPlatformOptions.EnvelopeHeader.get -> string!
+Modulus.AI.Connector.AiPlatformOptions.EnvelopeHeader.set -> void
+Modulus.AI.Connector.AiPlatformOptions.Issuer.get -> string?
+Modulus.AI.Connector.AiPlatformOptions.Issuer.set -> void
+Modulus.AI.Connector.AiPlatformOptions.JwksUrl.get -> string?
+Modulus.AI.Connector.AiPlatformOptions.JwksUrl.set -> void
+Modulus.AI.Connector.AiPlatformOptions.KeyRefreshInterval.get -> System.TimeSpan
+Modulus.AI.Connector.AiPlatformOptions.KeyRefreshInterval.set -> void
+Modulus.AI.Connector.AiPlatformOptions.MaxEnvelopeLifetime.get -> System.TimeSpan
+Modulus.AI.Connector.AiPlatformOptions.MaxEnvelopeLifetime.set -> void
+Modulus.AI.Connector.AiPlatformOptions.RevocationMaxBackoff.get -> System.TimeSpan
+Modulus.AI.Connector.AiPlatformOptions.RevocationMaxBackoff.set -> void
+Modulus.AI.Connector.AiPlatformOptions.SigningKeys.get -> string?
+Modulus.AI.Connector.AiPlatformOptions.SigningKeys.set -> void
+Modulus.AI.Connector.AiUserLookup
+Modulus.AI.Connector.AiUserLookup.<Clone>$() -> Modulus.AI.Connector.AiUserLookup!
+Modulus.AI.Connector.AiUserLookup.AiUserLookup(string! Value, Modulus.AI.Connector.AiUserMatch MatchBy, System.Collections.Generic.IReadOnlyDictionary<string!, string!>! EnvelopeClaims) -> void
+Modulus.AI.Connector.AiUserLookup.Deconstruct(out string! Value, out Modulus.AI.Connector.AiUserMatch MatchBy, out System.Collections.Generic.IReadOnlyDictionary<string!, string!>! EnvelopeClaims) -> void
+Modulus.AI.Connector.AiUserLookup.EnvelopeClaims.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+Modulus.AI.Connector.AiUserLookup.EnvelopeClaims.init -> void
+Modulus.AI.Connector.AiUserLookup.Equals(Modulus.AI.Connector.AiUserLookup? other) -> bool
+Modulus.AI.Connector.AiUserLookup.MatchBy.get -> Modulus.AI.Connector.AiUserMatch
+Modulus.AI.Connector.AiUserLookup.MatchBy.init -> void
+Modulus.AI.Connector.AiUserLookup.Value.get -> string!
+Modulus.AI.Connector.AiUserLookup.Value.init -> void
+Modulus.AI.Connector.AiUserMatch
+Modulus.AI.Connector.AiUserMatch.Email = 1 -> Modulus.AI.Connector.AiUserMatch
+Modulus.AI.Connector.AiUserMatch.Id = 0 -> Modulus.AI.Connector.AiUserMatch
+Modulus.AI.Connector.AiUserMatch.UserName = 2 -> Modulus.AI.Connector.AiUserMatch
+Modulus.AI.Connector.AiUserMatchOptions
+Modulus.AI.Connector.AiUserMatchOptions.AiUserMatchOptions() -> void
+Modulus.AI.Connector.AiUserMatchOptions.Claim.get -> string!
+Modulus.AI.Connector.AiUserMatchOptions.Claim.set -> void
+Modulus.AI.Connector.AiUserMatchOptions.MatchBy.get -> Modulus.AI.Connector.AiUserMatch
+Modulus.AI.Connector.AiUserMatchOptions.MatchBy.set -> void
+Modulus.AI.Connector.Contract.AccessScope
+Modulus.AI.Connector.Contract.AccessScope.<Clone>$() -> Modulus.AI.Connector.Contract.AccessScope!
+Modulus.AI.Connector.Contract.AccessScope.AccessScope(string! AppInstanceId, System.Collections.Generic.IReadOnlyList<string!>! Roles, System.Collections.Generic.IReadOnlyList<string!>! Permissions, System.Collections.Generic.IReadOnlyDictionary<string!, string![]!>! DataScopes, System.Collections.Generic.IReadOnlyDictionary<string!, Modulus.AI.Connector.Contract.FieldAccessPolicy>! FieldPolicies, int TtlSeconds, string! RevocationKey) -> void
+Modulus.AI.Connector.Contract.AccessScope.AppInstanceId.get -> string!
+Modulus.AI.Connector.Contract.AccessScope.AppInstanceId.init -> void
+Modulus.AI.Connector.Contract.AccessScope.DataScopes.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string![]!>!
+Modulus.AI.Connector.Contract.AccessScope.DataScopes.init -> void
+Modulus.AI.Connector.Contract.AccessScope.Deconstruct(out string! AppInstanceId, out System.Collections.Generic.IReadOnlyList<string!>! Roles, out System.Collections.Generic.IReadOnlyList<string!>! Permissions, out System.Collections.Generic.IReadOnlyDictionary<string!, string![]!>! DataScopes, out System.Collections.Generic.IReadOnlyDictionary<string!, Modulus.AI.Connector.Contract.FieldAccessPolicy>! FieldPolicies, out int TtlSeconds, out string! RevocationKey) -> void
+Modulus.AI.Connector.Contract.AccessScope.Equals(Modulus.AI.Connector.Contract.AccessScope? other) -> bool
+Modulus.AI.Connector.Contract.AccessScope.FieldPolicies.get -> System.Collections.Generic.IReadOnlyDictionary<string!, Modulus.AI.Connector.Contract.FieldAccessPolicy>!
+Modulus.AI.Connector.Contract.AccessScope.FieldPolicies.init -> void
+Modulus.AI.Connector.Contract.AccessScope.Permissions.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Modulus.AI.Connector.Contract.AccessScope.Permissions.init -> void
+Modulus.AI.Connector.Contract.AccessScope.RevocationKey.get -> string!
+Modulus.AI.Connector.Contract.AccessScope.RevocationKey.init -> void
+Modulus.AI.Connector.Contract.AccessScope.Roles.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Modulus.AI.Connector.Contract.AccessScope.Roles.init -> void
+Modulus.AI.Connector.Contract.AccessScope.TtlSeconds.get -> int
+Modulus.AI.Connector.Contract.AccessScope.TtlSeconds.init -> void
+Modulus.AI.Connector.Contract.AppResource
+Modulus.AI.Connector.Contract.AppResource.<Clone>$() -> Modulus.AI.Connector.Contract.AppResource!
+Modulus.AI.Connector.Contract.AppResource.AppResource(Modulus.AI.Connector.Contract.ResourceReference? Reference, System.Collections.Generic.IReadOnlyDictionary<string!, System.Text.Json.JsonElement>! Fields, string? DeepLink) -> void
+Modulus.AI.Connector.Contract.AppResource.Deconstruct(out Modulus.AI.Connector.Contract.ResourceReference? Reference, out System.Collections.Generic.IReadOnlyDictionary<string!, System.Text.Json.JsonElement>! Fields, out string? DeepLink) -> void
+Modulus.AI.Connector.Contract.AppResource.DeepLink.get -> string?
+Modulus.AI.Connector.Contract.AppResource.DeepLink.init -> void
+Modulus.AI.Connector.Contract.AppResource.Equals(Modulus.AI.Connector.Contract.AppResource? other) -> bool
+Modulus.AI.Connector.Contract.AppResource.Fields.get -> System.Collections.Generic.IReadOnlyDictionary<string!, System.Text.Json.JsonElement>!
+Modulus.AI.Connector.Contract.AppResource.Fields.init -> void
+Modulus.AI.Connector.Contract.AppResource.Reference.get -> Modulus.AI.Connector.Contract.ResourceReference?
+Modulus.AI.Connector.Contract.AppResource.Reference.init -> void
+Modulus.AI.Connector.Contract.CapabilityExecuteRequest
+Modulus.AI.Connector.Contract.CapabilityExecuteRequest.<Clone>$() -> Modulus.AI.Connector.Contract.CapabilityExecuteRequest!
+Modulus.AI.Connector.Contract.CapabilityExecuteRequest.Args.get -> System.Text.Json.JsonElement?
+Modulus.AI.Connector.Contract.CapabilityExecuteRequest.Args.init -> void
+Modulus.AI.Connector.Contract.CapabilityExecuteRequest.CapabilityExecuteRequest(System.Text.Json.JsonElement? Args) -> void
+Modulus.AI.Connector.Contract.CapabilityExecuteRequest.Deconstruct(out System.Text.Json.JsonElement? Args) -> void
+Modulus.AI.Connector.Contract.CapabilityExecuteRequest.Equals(Modulus.AI.Connector.Contract.CapabilityExecuteRequest? other) -> bool
+Modulus.AI.Connector.Contract.CapabilityResult
+Modulus.AI.Connector.Contract.CapabilityResult.<Clone>$() -> Modulus.AI.Connector.Contract.CapabilityResult!
+Modulus.AI.Connector.Contract.CapabilityResult.CapabilityResult(System.Collections.Generic.IReadOnlyList<Modulus.AI.Connector.Contract.AppResource!>! Resources, bool Truncated) -> void
+Modulus.AI.Connector.Contract.CapabilityResult.Deconstruct(out System.Collections.Generic.IReadOnlyList<Modulus.AI.Connector.Contract.AppResource!>! Resources, out bool Truncated) -> void
+Modulus.AI.Connector.Contract.CapabilityResult.Equals(Modulus.AI.Connector.Contract.CapabilityResult? other) -> bool
+Modulus.AI.Connector.Contract.CapabilityResult.Resources.get -> System.Collections.Generic.IReadOnlyList<Modulus.AI.Connector.Contract.AppResource!>!
+Modulus.AI.Connector.Contract.CapabilityResult.Resources.init -> void
+Modulus.AI.Connector.Contract.CapabilityResult.Truncated.get -> bool
+Modulus.AI.Connector.Contract.CapabilityResult.Truncated.init -> void
+Modulus.AI.Connector.Contract.ConnectorError
+Modulus.AI.Connector.Contract.ConnectorError.<Clone>$() -> Modulus.AI.Connector.Contract.ConnectorError!
+Modulus.AI.Connector.Contract.ConnectorError.Code.get -> string!
+Modulus.AI.Connector.Contract.ConnectorError.Code.init -> void
+Modulus.AI.Connector.Contract.ConnectorError.ConnectorError(string! Code, string! Message) -> void
+Modulus.AI.Connector.Contract.ConnectorError.Deconstruct(out string! Code, out string! Message) -> void
+Modulus.AI.Connector.Contract.ConnectorError.Equals(Modulus.AI.Connector.Contract.ConnectorError? other) -> bool
+Modulus.AI.Connector.Contract.ConnectorError.Message.get -> string!
+Modulus.AI.Connector.Contract.ConnectorError.Message.init -> void
+Modulus.AI.Connector.Contract.ConnectorErrorCodes
+Modulus.AI.Connector.Contract.ConnectorHealth
+Modulus.AI.Connector.Contract.ConnectorHealth.<Clone>$() -> Modulus.AI.Connector.Contract.ConnectorHealth!
+Modulus.AI.Connector.Contract.ConnectorHealth.ConnectorHealth(string! Status, string! ContractVersion) -> void
+Modulus.AI.Connector.Contract.ConnectorHealth.ContractVersion.get -> string!
+Modulus.AI.Connector.Contract.ConnectorHealth.ContractVersion.init -> void
+Modulus.AI.Connector.Contract.ConnectorHealth.Deconstruct(out string! Status, out string! ContractVersion) -> void
+Modulus.AI.Connector.Contract.ConnectorHealth.Equals(Modulus.AI.Connector.Contract.ConnectorHealth? other) -> bool
+Modulus.AI.Connector.Contract.ConnectorHealth.Status.get -> string!
+Modulus.AI.Connector.Contract.ConnectorHealth.Status.init -> void
+Modulus.AI.Connector.Contract.ConnectorJson
+Modulus.AI.Connector.Contract.ConnectorManifest
+Modulus.AI.Connector.Contract.ConnectorManifest.<Clone>$() -> Modulus.AI.Connector.Contract.ConnectorManifest!
+Modulus.AI.Connector.Contract.ConnectorManifest.AppName.get -> string?
+Modulus.AI.Connector.Contract.ConnectorManifest.AppName.init -> void
+Modulus.AI.Connector.Contract.ConnectorManifest.AppType.get -> string!
+Modulus.AI.Connector.Contract.ConnectorManifest.AppType.init -> void
+Modulus.AI.Connector.Contract.ConnectorManifest.Capabilities.get -> System.Collections.Generic.IReadOnlyList<Modulus.AI.Connector.Contract.ManifestCapability!>!
+Modulus.AI.Connector.Contract.ConnectorManifest.Capabilities.init -> void
+Modulus.AI.Connector.Contract.ConnectorManifest.ConnectorManifest(string! ContractVersion, string! AppType, string? AppName, string! Fingerprint, System.Collections.Generic.IReadOnlyList<Modulus.AI.Connector.Contract.ManifestCapability!>! Capabilities, System.Collections.Generic.IReadOnlyList<Modulus.AI.Connector.Contract.ManifestResourceType!>! ResourceTypes) -> void
+Modulus.AI.Connector.Contract.ConnectorManifest.ContractVersion.get -> string!
+Modulus.AI.Connector.Contract.ConnectorManifest.ContractVersion.init -> void
+Modulus.AI.Connector.Contract.ConnectorManifest.Deconstruct(out string! ContractVersion, out string! AppType, out string? AppName, out string! Fingerprint, out System.Collections.Generic.IReadOnlyList<Modulus.AI.Connector.Contract.ManifestCapability!>! Capabilities, out System.Collections.Generic.IReadOnlyList<Modulus.AI.Connector.Contract.ManifestResourceType!>! ResourceTypes) -> void
+Modulus.AI.Connector.Contract.ConnectorManifest.Equals(Modulus.AI.Connector.Contract.ConnectorManifest? other) -> bool
+Modulus.AI.Connector.Contract.ConnectorManifest.Fingerprint.get -> string!
+Modulus.AI.Connector.Contract.ConnectorManifest.Fingerprint.init -> void
+Modulus.AI.Connector.Contract.ConnectorManifest.ResourceTypes.get -> System.Collections.Generic.IReadOnlyList<Modulus.AI.Connector.Contract.ManifestResourceType!>!
+Modulus.AI.Connector.Contract.ConnectorManifest.ResourceTypes.init -> void
+Modulus.AI.Connector.Contract.FieldAccessPolicy
+Modulus.AI.Connector.Contract.FieldAccessPolicy.Allow = 0 -> Modulus.AI.Connector.Contract.FieldAccessPolicy
+Modulus.AI.Connector.Contract.FieldAccessPolicy.Deny = 1 -> Modulus.AI.Connector.Contract.FieldAccessPolicy
+Modulus.AI.Connector.Contract.FieldsCheckRequest
+Modulus.AI.Connector.Contract.FieldsCheckRequest.<Clone>$() -> Modulus.AI.Connector.Contract.FieldsCheckRequest!
+Modulus.AI.Connector.Contract.FieldsCheckRequest.Deconstruct(out Modulus.AI.Connector.Contract.ResourceReference! Resource, out System.Collections.Generic.IReadOnlyList<string!>! Fields) -> void
+Modulus.AI.Connector.Contract.FieldsCheckRequest.Equals(Modulus.AI.Connector.Contract.FieldsCheckRequest? other) -> bool
+Modulus.AI.Connector.Contract.FieldsCheckRequest.Fields.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Modulus.AI.Connector.Contract.FieldsCheckRequest.Fields.init -> void
+Modulus.AI.Connector.Contract.FieldsCheckRequest.FieldsCheckRequest(Modulus.AI.Connector.Contract.ResourceReference! Resource, System.Collections.Generic.IReadOnlyList<string!>! Fields) -> void
+Modulus.AI.Connector.Contract.FieldsCheckRequest.Resource.get -> Modulus.AI.Connector.Contract.ResourceReference!
+Modulus.AI.Connector.Contract.FieldsCheckRequest.Resource.init -> void
+Modulus.AI.Connector.Contract.FieldsCheckResult
+Modulus.AI.Connector.Contract.FieldsCheckResult.<Clone>$() -> Modulus.AI.Connector.Contract.FieldsCheckResult!
+Modulus.AI.Connector.Contract.FieldsCheckResult.AllowedFields.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Modulus.AI.Connector.Contract.FieldsCheckResult.AllowedFields.init -> void
+Modulus.AI.Connector.Contract.FieldsCheckResult.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>! AllowedFields) -> void
+Modulus.AI.Connector.Contract.FieldsCheckResult.Equals(Modulus.AI.Connector.Contract.FieldsCheckResult? other) -> bool
+Modulus.AI.Connector.Contract.FieldsCheckResult.FieldsCheckResult(System.Collections.Generic.IReadOnlyList<string!>! AllowedFields) -> void
+Modulus.AI.Connector.Contract.ManifestCapability
+Modulus.AI.Connector.Contract.ManifestCapability.<Clone>$() -> Modulus.AI.Connector.Contract.ManifestCapability!
+Modulus.AI.Connector.Contract.ManifestCapability.Deconstruct(out string! Name, out string! Description, out bool ReadOnly, out System.Text.Json.Nodes.JsonNode! InputSchema, out System.Collections.Generic.IReadOnlyList<string!>! RequiredPermissions, out string? ResourceType, out System.Collections.Generic.IReadOnlyList<Modulus.AI.Connector.Contract.ManifestField!>! OutputFields) -> void
+Modulus.AI.Connector.Contract.ManifestCapability.Description.get -> string!
+Modulus.AI.Connector.Contract.ManifestCapability.Description.init -> void
+Modulus.AI.Connector.Contract.ManifestCapability.Equals(Modulus.AI.Connector.Contract.ManifestCapability? other) -> bool
+Modulus.AI.Connector.Contract.ManifestCapability.InputSchema.get -> System.Text.Json.Nodes.JsonNode!
+Modulus.AI.Connector.Contract.ManifestCapability.InputSchema.init -> void
+Modulus.AI.Connector.Contract.ManifestCapability.ManifestCapability(string! Name, string! Description, bool ReadOnly, System.Text.Json.Nodes.JsonNode! InputSchema, System.Collections.Generic.IReadOnlyList<string!>! RequiredPermissions, string? ResourceType, System.Collections.Generic.IReadOnlyList<Modulus.AI.Connector.Contract.ManifestField!>! OutputFields) -> void
+Modulus.AI.Connector.Contract.ManifestCapability.Name.get -> string!
+Modulus.AI.Connector.Contract.ManifestCapability.Name.init -> void
+Modulus.AI.Connector.Contract.ManifestCapability.OutputFields.get -> System.Collections.Generic.IReadOnlyList<Modulus.AI.Connector.Contract.ManifestField!>!
+Modulus.AI.Connector.Contract.ManifestCapability.OutputFields.init -> void
+Modulus.AI.Connector.Contract.ManifestCapability.ReadOnly.get -> bool
+Modulus.AI.Connector.Contract.ManifestCapability.ReadOnly.init -> void
+Modulus.AI.Connector.Contract.ManifestCapability.RequiredPermissions.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Modulus.AI.Connector.Contract.ManifestCapability.RequiredPermissions.init -> void
+Modulus.AI.Connector.Contract.ManifestCapability.ResourceType.get -> string?
+Modulus.AI.Connector.Contract.ManifestCapability.ResourceType.init -> void
+Modulus.AI.Connector.Contract.ManifestField
+Modulus.AI.Connector.Contract.ManifestField.<Clone>$() -> Modulus.AI.Connector.Contract.ManifestField!
+Modulus.AI.Connector.Contract.ManifestField.Classification.get -> Modulus.AI.Connector.AiDataClass
+Modulus.AI.Connector.Contract.ManifestField.Classification.init -> void
+Modulus.AI.Connector.Contract.ManifestField.Deconstruct(out string! Name, out string! Type, out Modulus.AI.Connector.AiDataClass Classification) -> void
+Modulus.AI.Connector.Contract.ManifestField.Equals(Modulus.AI.Connector.Contract.ManifestField? other) -> bool
+Modulus.AI.Connector.Contract.ManifestField.ManifestField(string! Name, string! Type, Modulus.AI.Connector.AiDataClass Classification) -> void
+Modulus.AI.Connector.Contract.ManifestField.Name.get -> string!
+Modulus.AI.Connector.Contract.ManifestField.Name.init -> void
+Modulus.AI.Connector.Contract.ManifestField.Type.get -> string!
+Modulus.AI.Connector.Contract.ManifestField.Type.init -> void
+Modulus.AI.Connector.Contract.ManifestResourceType
+Modulus.AI.Connector.Contract.ManifestResourceType.<Clone>$() -> Modulus.AI.Connector.Contract.ManifestResourceType!
+Modulus.AI.Connector.Contract.ManifestResourceType.DeepLink.get -> string?
+Modulus.AI.Connector.Contract.ManifestResourceType.DeepLink.init -> void
+Modulus.AI.Connector.Contract.ManifestResourceType.Description.get -> string!
+Modulus.AI.Connector.Contract.ManifestResourceType.Description.init -> void
+Modulus.AI.Connector.Contract.ManifestResourceType.Equals(Modulus.AI.Connector.Contract.ManifestResourceType? other) -> bool
+Modulus.AI.Connector.Contract.ManifestResourceType.Fields.get -> System.Collections.Generic.IReadOnlyList<Modulus.AI.Connector.Contract.ManifestField!>!
+Modulus.AI.Connector.Contract.ManifestResourceType.Fields.init -> void
+Modulus.AI.Connector.Contract.ManifestResourceType.TitleField.get -> string?
+Modulus.AI.Connector.Contract.ManifestResourceType.TitleField.init -> void
+Modulus.AI.Connector.Contract.ManifestResourceType.Type.get -> string!
+Modulus.AI.Connector.Contract.ManifestResourceType.Type.init -> void
+Modulus.AI.Connector.Contract.ResourceDecision
+Modulus.AI.Connector.Contract.ResourceDecision.<Clone>$() -> Modulus.AI.Connector.Contract.ResourceDecision!
+Modulus.AI.Connector.Contract.ResourceDecision.Allowed.get -> bool
+Modulus.AI.Connector.Contract.ResourceDecision.Allowed.init -> void
+Modulus.AI.Connector.Contract.ResourceDecision.Deconstruct(out Modulus.AI.Connector.Contract.ResourceReference! Reference, out bool Allowed) -> void
+Modulus.AI.Connector.Contract.ResourceDecision.Equals(Modulus.AI.Connector.Contract.ResourceDecision? other) -> bool
+Modulus.AI.Connector.Contract.ResourceDecision.Reference.get -> Modulus.AI.Connector.Contract.ResourceReference!
+Modulus.AI.Connector.Contract.ResourceDecision.Reference.init -> void
+Modulus.AI.Connector.Contract.ResourceDecision.ResourceDecision(Modulus.AI.Connector.Contract.ResourceReference! Reference, bool Allowed) -> void
+Modulus.AI.Connector.Contract.ResourceGetRequest
+Modulus.AI.Connector.Contract.ResourceGetRequest.<Clone>$() -> Modulus.AI.Connector.Contract.ResourceGetRequest!
+Modulus.AI.Connector.Contract.ResourceGetRequest.Deconstruct(out string! ResourceType, out string! ResourceId) -> void
+Modulus.AI.Connector.Contract.ResourceGetRequest.Equals(Modulus.AI.Connector.Contract.ResourceGetRequest? other) -> bool
+Modulus.AI.Connector.Contract.ResourceGetRequest.ResourceGetRequest(string! ResourceType, string! ResourceId) -> void
+Modulus.AI.Connector.Contract.ResourceGetRequest.ResourceId.get -> string!
+Modulus.AI.Connector.Contract.ResourceGetRequest.ResourceId.init -> void
+Modulus.AI.Connector.Contract.ResourceGetRequest.ResourceType.get -> string!
+Modulus.AI.Connector.Contract.ResourceGetRequest.ResourceType.init -> void
+Modulus.AI.Connector.Contract.ResourceReference
+Modulus.AI.Connector.Contract.ResourceReference.<Clone>$() -> Modulus.AI.Connector.Contract.ResourceReference!
+Modulus.AI.Connector.Contract.ResourceReference.Deconstruct(out string! ResourceType, out string! ResourceId, out string? Namespace) -> void
+Modulus.AI.Connector.Contract.ResourceReference.Equals(Modulus.AI.Connector.Contract.ResourceReference? other) -> bool
+Modulus.AI.Connector.Contract.ResourceReference.Namespace.get -> string?
+Modulus.AI.Connector.Contract.ResourceReference.Namespace.init -> void
+Modulus.AI.Connector.Contract.ResourceReference.ResourceId.get -> string!
+Modulus.AI.Connector.Contract.ResourceReference.ResourceId.init -> void
+Modulus.AI.Connector.Contract.ResourceReference.ResourceReference(string! ResourceType, string! ResourceId, string? Namespace = null) -> void
+Modulus.AI.Connector.Contract.ResourceReference.ResourceType.get -> string!
+Modulus.AI.Connector.Contract.ResourceReference.ResourceType.init -> void
+Modulus.AI.Connector.Contract.ResourcesCheckRequest
+Modulus.AI.Connector.Contract.ResourcesCheckRequest.<Clone>$() -> Modulus.AI.Connector.Contract.ResourcesCheckRequest!
+Modulus.AI.Connector.Contract.ResourcesCheckRequest.Deconstruct(out System.Collections.Generic.IReadOnlyList<Modulus.AI.Connector.Contract.ResourceReference!>! Resources) -> void
+Modulus.AI.Connector.Contract.ResourcesCheckRequest.Equals(Modulus.AI.Connector.Contract.ResourcesCheckRequest? other) -> bool
+Modulus.AI.Connector.Contract.ResourcesCheckRequest.Resources.get -> System.Collections.Generic.IReadOnlyList<Modulus.AI.Connector.Contract.ResourceReference!>!
+Modulus.AI.Connector.Contract.ResourcesCheckRequest.Resources.init -> void
+Modulus.AI.Connector.Contract.ResourcesCheckRequest.ResourcesCheckRequest(System.Collections.Generic.IReadOnlyList<Modulus.AI.Connector.Contract.ResourceReference!>! Resources) -> void
+Modulus.AI.Connector.Contract.ResourcesCheckResult
+Modulus.AI.Connector.Contract.ResourcesCheckResult.<Clone>$() -> Modulus.AI.Connector.Contract.ResourcesCheckResult!
+Modulus.AI.Connector.Contract.ResourcesCheckResult.Decisions.get -> System.Collections.Generic.IReadOnlyList<Modulus.AI.Connector.Contract.ResourceDecision!>!
+Modulus.AI.Connector.Contract.ResourcesCheckResult.Decisions.init -> void
+Modulus.AI.Connector.Contract.ResourcesCheckResult.Deconstruct(out System.Collections.Generic.IReadOnlyList<Modulus.AI.Connector.Contract.ResourceDecision!>! Decisions) -> void
+Modulus.AI.Connector.Contract.ResourcesCheckResult.Equals(Modulus.AI.Connector.Contract.ResourcesCheckResult? other) -> bool
+Modulus.AI.Connector.Contract.ResourcesCheckResult.ResourcesCheckResult(System.Collections.Generic.IReadOnlyList<Modulus.AI.Connector.Contract.ResourceDecision!>! Decisions) -> void
+Modulus.AI.Connector.Contract.RevocationSignal
+Modulus.AI.Connector.Contract.RevocationSignal.<Clone>$() -> Modulus.AI.Connector.Contract.RevocationSignal!
+Modulus.AI.Connector.Contract.RevocationSignal.AppInstanceId.get -> string!
+Modulus.AI.Connector.Contract.RevocationSignal.AppInstanceId.init -> void
+Modulus.AI.Connector.Contract.RevocationSignal.Deconstruct(out string! RevocationKey, out string! AppInstanceId, out string! Reason, out System.DateTimeOffset OccurredAt) -> void
+Modulus.AI.Connector.Contract.RevocationSignal.Equals(Modulus.AI.Connector.Contract.RevocationSignal? other) -> bool
+Modulus.AI.Connector.Contract.RevocationSignal.OccurredAt.get -> System.DateTimeOffset
+Modulus.AI.Connector.Contract.RevocationSignal.OccurredAt.init -> void
+Modulus.AI.Connector.Contract.RevocationSignal.Reason.get -> string!
+Modulus.AI.Connector.Contract.RevocationSignal.Reason.init -> void
+Modulus.AI.Connector.Contract.RevocationSignal.RevocationKey.get -> string!
+Modulus.AI.Connector.Contract.RevocationSignal.RevocationKey.init -> void
+Modulus.AI.Connector.Contract.RevocationSignal.RevocationSignal(string! RevocationKey, string! AppInstanceId, string! Reason, System.DateTimeOffset OccurredAt) -> void
+Modulus.AI.Connector.Contract.ScopeRequest
+Modulus.AI.Connector.Contract.ScopeRequest.<Clone>$() -> Modulus.AI.Connector.Contract.ScopeRequest!
+Modulus.AI.Connector.Contract.ScopeRequest.AppInstanceId.get -> string?
+Modulus.AI.Connector.Contract.ScopeRequest.AppInstanceId.init -> void
+Modulus.AI.Connector.Contract.ScopeRequest.Deconstruct(out string? AppInstanceId) -> void
+Modulus.AI.Connector.Contract.ScopeRequest.Equals(Modulus.AI.Connector.Contract.ScopeRequest? other) -> bool
+Modulus.AI.Connector.Contract.ScopeRequest.ScopeRequest(string? AppInstanceId = null) -> void
+Modulus.AI.Connector.IAiConnectorUserResolver
+Modulus.AI.Connector.IAiConnectorUserResolver.ResolveAsync(Modulus.AI.Connector.AiUserLookup! lookup, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.AI.Connector.AiConnectorUser?>!
+Modulus.AI.Connector.ModulusAiConnectorOptions
+Modulus.AI.Connector.ModulusAiConnectorOptions.ApiKeyHashes.get -> System.Collections.Generic.List<string!>!
+Modulus.AI.Connector.ModulusAiConnectorOptions.ApiKeyHashes.set -> void
+Modulus.AI.Connector.ModulusAiConnectorOptions.AppName.get -> string?
+Modulus.AI.Connector.ModulusAiConnectorOptions.AppName.set -> void
+Modulus.AI.Connector.ModulusAiConnectorOptions.AppType.get -> string!
+Modulus.AI.Connector.ModulusAiConnectorOptions.AppType.set -> void
+Modulus.AI.Connector.ModulusAiConnectorOptions.CallTimeout.get -> System.TimeSpan
+Modulus.AI.Connector.ModulusAiConnectorOptions.CallTimeout.set -> void
+Modulus.AI.Connector.ModulusAiConnectorOptions.ContractVersion.get -> string!
+Modulus.AI.Connector.ModulusAiConnectorOptions.ContractVersion.set -> void
+Modulus.AI.Connector.ModulusAiConnectorOptions.DefaultClassification.get -> Modulus.AI.Connector.AiDataClass
+Modulus.AI.Connector.ModulusAiConnectorOptions.DefaultClassification.set -> void
+Modulus.AI.Connector.ModulusAiConnectorOptions.Enabled.get -> bool
+Modulus.AI.Connector.ModulusAiConnectorOptions.Enabled.set -> void
+Modulus.AI.Connector.ModulusAiConnectorOptions.Instances.get -> System.Collections.Generic.List<Modulus.AI.Connector.AiAppInstanceOptions!>!
+Modulus.AI.Connector.ModulusAiConnectorOptions.Instances.set -> void
+Modulus.AI.Connector.ModulusAiConnectorOptions.MaxBatchSize.get -> int
+Modulus.AI.Connector.ModulusAiConnectorOptions.MaxBatchSize.set -> void
+Modulus.AI.Connector.ModulusAiConnectorOptions.MaxDescriptionLength.get -> int
+Modulus.AI.Connector.ModulusAiConnectorOptions.MaxDescriptionLength.set -> void
+Modulus.AI.Connector.ModulusAiConnectorOptions.MaxResults.get -> int
+Modulus.AI.Connector.ModulusAiConnectorOptions.MaxResults.set -> void
+Modulus.AI.Connector.ModulusAiConnectorOptions.ModulusAiConnectorOptions() -> void
+Modulus.AI.Connector.ModulusAiConnectorOptions.PathPrefix.get -> string!
+Modulus.AI.Connector.ModulusAiConnectorOptions.PathPrefix.set -> void
+Modulus.AI.Connector.ModulusAiConnectorOptions.Platform.get -> Modulus.AI.Connector.AiPlatformOptions!
+Modulus.AI.Connector.ModulusAiConnectorOptions.Platform.set -> void
+Modulus.AI.Connector.ModulusAiConnectorOptions.PublicBaseUrl.get -> string?
+Modulus.AI.Connector.ModulusAiConnectorOptions.PublicBaseUrl.set -> void
+Modulus.AI.Connector.ModulusAiConnectorOptions.RequireMembership.get -> bool
+Modulus.AI.Connector.ModulusAiConnectorOptions.RequireMembership.set -> void
+Modulus.AI.Connector.ModulusAiConnectorOptions.ScopeTtl.get -> System.TimeSpan
+Modulus.AI.Connector.ModulusAiConnectorOptions.ScopeTtl.set -> void
+Modulus.AI.Connector.ModulusAiConnectorOptions.Users.get -> Modulus.AI.Connector.AiUserMatchOptions!
+Modulus.AI.Connector.ModulusAiConnectorOptions.Users.set -> void
+const Modulus.AI.Connector.AiConnectorDefaults.AppInstanceClaim = "ai_app_instance" -> string!
+const Modulus.AI.Connector.AiConnectorDefaults.AuthenticationScheme = "ModulusAiConnector" -> string!
+const Modulus.AI.Connector.AiConnectorDefaults.EnvelopeClaim = "ai_envelope" -> string!
+const Modulus.AI.Connector.AiConnectorDefaults.PlatformTenantClaim = "ai_platform_tenant" -> string!
+const Modulus.AI.Connector.AiConnectorDefaults.Policy = "ModulusAiConnector" -> string!
+const Modulus.AI.Connector.AiConnectorDefaults.ServiceAuthenticationScheme = "ModulusAiConnector.Service" -> string!
+const Modulus.AI.Connector.AiConnectorDefaults.ServiceClaim = "ai_service" -> string!
+const Modulus.AI.Connector.AiConnectorDefaults.ServicePolicy = "ModulusAiConnector.Service" -> string!
+const Modulus.AI.Connector.AiConnectorDefaults.TenantClaim = "tid" -> string!
+const Modulus.AI.Connector.AiEnvelopeClaims.AppInstanceId = "app_instance_id" -> string!
+const Modulus.AI.Connector.AiEnvelopeClaims.CorrelationId = "correlation_id" -> string!
+const Modulus.AI.Connector.AiEnvelopeClaims.Email = "email" -> string!
+const Modulus.AI.Connector.AiEnvelopeClaims.Subject = "sub" -> string!
+const Modulus.AI.Connector.AiEnvelopeClaims.TenantId = "tenant_id" -> string!
+const Modulus.AI.Connector.Contract.ConnectorErrorCodes.Denied = "DENIED" -> string!
+const Modulus.AI.Connector.Contract.ConnectorErrorCodes.InvalidRequest = "INVALID_REQUEST" -> string!
+const Modulus.AI.Connector.Contract.ConnectorErrorCodes.NotFound = "NOT_FOUND" -> string!
+const Modulus.AI.Connector.Contract.ConnectorErrorCodes.RateLimited = "RATE_LIMITED" -> string!
+const Modulus.AI.Connector.Contract.ConnectorErrorCodes.Unavailable = "UNAVAILABLE" -> string!
+const Modulus.AI.Connector.ModulusAiConnectorOptions.SectionName = "Ai:Connector" -> string!
+override Modulus.AI.Connector.AiConnectorUser.Equals(object? obj) -> bool
+override Modulus.AI.Connector.AiConnectorUser.GetHashCode() -> int
+override Modulus.AI.Connector.AiConnectorUser.ToString() -> string!
+override Modulus.AI.Connector.AiUserLookup.Equals(object? obj) -> bool
+override Modulus.AI.Connector.AiUserLookup.GetHashCode() -> int
+override Modulus.AI.Connector.AiUserLookup.ToString() -> string!
+override Modulus.AI.Connector.Contract.AccessScope.Equals(object? obj) -> bool
+override Modulus.AI.Connector.Contract.AccessScope.GetHashCode() -> int
+override Modulus.AI.Connector.Contract.AccessScope.ToString() -> string!
+override Modulus.AI.Connector.Contract.AppResource.Equals(object? obj) -> bool
+override Modulus.AI.Connector.Contract.AppResource.GetHashCode() -> int
+override Modulus.AI.Connector.Contract.AppResource.ToString() -> string!
+override Modulus.AI.Connector.Contract.CapabilityExecuteRequest.Equals(object? obj) -> bool
+override Modulus.AI.Connector.Contract.CapabilityExecuteRequest.GetHashCode() -> int
+override Modulus.AI.Connector.Contract.CapabilityExecuteRequest.ToString() -> string!
+override Modulus.AI.Connector.Contract.CapabilityResult.Equals(object? obj) -> bool
+override Modulus.AI.Connector.Contract.CapabilityResult.GetHashCode() -> int
+override Modulus.AI.Connector.Contract.CapabilityResult.ToString() -> string!
+override Modulus.AI.Connector.Contract.ConnectorError.Equals(object? obj) -> bool
+override Modulus.AI.Connector.Contract.ConnectorError.GetHashCode() -> int
+override Modulus.AI.Connector.Contract.ConnectorError.ToString() -> string!
+override Modulus.AI.Connector.Contract.ConnectorHealth.Equals(object? obj) -> bool
+override Modulus.AI.Connector.Contract.ConnectorHealth.GetHashCode() -> int
+override Modulus.AI.Connector.Contract.ConnectorHealth.ToString() -> string!
+override Modulus.AI.Connector.Contract.ConnectorManifest.Equals(object? obj) -> bool
+override Modulus.AI.Connector.Contract.ConnectorManifest.GetHashCode() -> int
+override Modulus.AI.Connector.Contract.ConnectorManifest.ToString() -> string!
+override Modulus.AI.Connector.Contract.FieldsCheckRequest.Equals(object? obj) -> bool
+override Modulus.AI.Connector.Contract.FieldsCheckRequest.GetHashCode() -> int
+override Modulus.AI.Connector.Contract.FieldsCheckRequest.ToString() -> string!
+override Modulus.AI.Connector.Contract.FieldsCheckResult.Equals(object? obj) -> bool
+override Modulus.AI.Connector.Contract.FieldsCheckResult.GetHashCode() -> int
+override Modulus.AI.Connector.Contract.FieldsCheckResult.ToString() -> string!
+override Modulus.AI.Connector.Contract.ManifestCapability.Equals(object? obj) -> bool
+override Modulus.AI.Connector.Contract.ManifestCapability.GetHashCode() -> int
+override Modulus.AI.Connector.Contract.ManifestCapability.ToString() -> string!
+override Modulus.AI.Connector.Contract.ManifestField.Equals(object? obj) -> bool
+override Modulus.AI.Connector.Contract.ManifestField.GetHashCode() -> int
+override Modulus.AI.Connector.Contract.ManifestField.ToString() -> string!
+override Modulus.AI.Connector.Contract.ManifestResourceType.Equals(object? obj) -> bool
+override Modulus.AI.Connector.Contract.ManifestResourceType.GetHashCode() -> int
+override Modulus.AI.Connector.Contract.ManifestResourceType.ToString() -> string!
+override Modulus.AI.Connector.Contract.ResourceDecision.Equals(object? obj) -> bool
+override Modulus.AI.Connector.Contract.ResourceDecision.GetHashCode() -> int
+override Modulus.AI.Connector.Contract.ResourceDecision.ToString() -> string!
+override Modulus.AI.Connector.Contract.ResourceGetRequest.Equals(object? obj) -> bool
+override Modulus.AI.Connector.Contract.ResourceGetRequest.GetHashCode() -> int
+override Modulus.AI.Connector.Contract.ResourceGetRequest.ToString() -> string!
+override Modulus.AI.Connector.Contract.ResourceReference.Equals(object? obj) -> bool
+override Modulus.AI.Connector.Contract.ResourceReference.GetHashCode() -> int
+override Modulus.AI.Connector.Contract.ResourceReference.ToString() -> string!
+override Modulus.AI.Connector.Contract.ResourcesCheckRequest.Equals(object? obj) -> bool
+override Modulus.AI.Connector.Contract.ResourcesCheckRequest.GetHashCode() -> int
+override Modulus.AI.Connector.Contract.ResourcesCheckRequest.ToString() -> string!
+override Modulus.AI.Connector.Contract.ResourcesCheckResult.Equals(object? obj) -> bool
+override Modulus.AI.Connector.Contract.ResourcesCheckResult.GetHashCode() -> int
+override Modulus.AI.Connector.Contract.ResourcesCheckResult.ToString() -> string!
+override Modulus.AI.Connector.Contract.RevocationSignal.Equals(object? obj) -> bool
+override Modulus.AI.Connector.Contract.RevocationSignal.GetHashCode() -> int
+override Modulus.AI.Connector.Contract.RevocationSignal.ToString() -> string!
+override Modulus.AI.Connector.Contract.ScopeRequest.Equals(object? obj) -> bool
+override Modulus.AI.Connector.Contract.ScopeRequest.GetHashCode() -> int
+override Modulus.AI.Connector.Contract.ScopeRequest.ToString() -> string!
+static Modulus.AI.Connector.AiApiKeys.Hash(string! apiKey) -> string!
+static Modulus.AI.Connector.AiApiKeys.Matches(string! apiKey, System.Collections.Generic.IEnumerable<string!>! hashes) -> bool
+static Modulus.AI.Connector.AiConnectorEndpointExtensions.MapModulusAiConnector(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints) -> Microsoft.AspNetCore.Routing.RouteGroupBuilder!
+static Modulus.AI.Connector.AiConnectorServiceCollectionExtensions.AddModulusAiConnector(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration, System.Action<Modulus.AI.Connector.AiConnectorBuilder!>? configure = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.AI.Connector.AiConnectorUser.operator !=(Modulus.AI.Connector.AiConnectorUser? left, Modulus.AI.Connector.AiConnectorUser? right) -> bool
+static Modulus.AI.Connector.AiConnectorUser.operator ==(Modulus.AI.Connector.AiConnectorUser? left, Modulus.AI.Connector.AiConnectorUser? right) -> bool
+static Modulus.AI.Connector.AiUserLookup.operator !=(Modulus.AI.Connector.AiUserLookup? left, Modulus.AI.Connector.AiUserLookup? right) -> bool
+static Modulus.AI.Connector.AiUserLookup.operator ==(Modulus.AI.Connector.AiUserLookup? left, Modulus.AI.Connector.AiUserLookup? right) -> bool
+static Modulus.AI.Connector.Contract.AccessScope.operator !=(Modulus.AI.Connector.Contract.AccessScope? left, Modulus.AI.Connector.Contract.AccessScope? right) -> bool
+static Modulus.AI.Connector.Contract.AccessScope.operator ==(Modulus.AI.Connector.Contract.AccessScope? left, Modulus.AI.Connector.Contract.AccessScope? right) -> bool
+static Modulus.AI.Connector.Contract.AppResource.operator !=(Modulus.AI.Connector.Contract.AppResource? left, Modulus.AI.Connector.Contract.AppResource? right) -> bool
+static Modulus.AI.Connector.Contract.AppResource.operator ==(Modulus.AI.Connector.Contract.AppResource? left, Modulus.AI.Connector.Contract.AppResource? right) -> bool
+static Modulus.AI.Connector.Contract.CapabilityExecuteRequest.operator !=(Modulus.AI.Connector.Contract.CapabilityExecuteRequest? left, Modulus.AI.Connector.Contract.CapabilityExecuteRequest? right) -> bool
+static Modulus.AI.Connector.Contract.CapabilityExecuteRequest.operator ==(Modulus.AI.Connector.Contract.CapabilityExecuteRequest? left, Modulus.AI.Connector.Contract.CapabilityExecuteRequest? right) -> bool
+static Modulus.AI.Connector.Contract.CapabilityResult.operator !=(Modulus.AI.Connector.Contract.CapabilityResult? left, Modulus.AI.Connector.Contract.CapabilityResult? right) -> bool
+static Modulus.AI.Connector.Contract.CapabilityResult.operator ==(Modulus.AI.Connector.Contract.CapabilityResult? left, Modulus.AI.Connector.Contract.CapabilityResult? right) -> bool
+static Modulus.AI.Connector.Contract.ConnectorError.operator !=(Modulus.AI.Connector.Contract.ConnectorError? left, Modulus.AI.Connector.Contract.ConnectorError? right) -> bool
+static Modulus.AI.Connector.Contract.ConnectorError.operator ==(Modulus.AI.Connector.Contract.ConnectorError? left, Modulus.AI.Connector.Contract.ConnectorError? right) -> bool
+static Modulus.AI.Connector.Contract.ConnectorHealth.operator !=(Modulus.AI.Connector.Contract.ConnectorHealth? left, Modulus.AI.Connector.Contract.ConnectorHealth? right) -> bool
+static Modulus.AI.Connector.Contract.ConnectorHealth.operator ==(Modulus.AI.Connector.Contract.ConnectorHealth? left, Modulus.AI.Connector.Contract.ConnectorHealth? right) -> bool
+static Modulus.AI.Connector.Contract.ConnectorJson.Arguments.get -> System.Text.Json.JsonSerializerOptions!
+static Modulus.AI.Connector.Contract.ConnectorJson.Options.get -> System.Text.Json.JsonSerializerOptions!
+static Modulus.AI.Connector.Contract.ConnectorManifest.operator !=(Modulus.AI.Connector.Contract.ConnectorManifest? left, Modulus.AI.Connector.Contract.ConnectorManifest? right) -> bool
+static Modulus.AI.Connector.Contract.ConnectorManifest.operator ==(Modulus.AI.Connector.Contract.ConnectorManifest? left, Modulus.AI.Connector.Contract.ConnectorManifest? right) -> bool
+static Modulus.AI.Connector.Contract.FieldsCheckRequest.operator !=(Modulus.AI.Connector.Contract.FieldsCheckRequest? left, Modulus.AI.Connector.Contract.FieldsCheckRequest? right) -> bool
+static Modulus.AI.Connector.Contract.FieldsCheckRequest.operator ==(Modulus.AI.Connector.Contract.FieldsCheckRequest? left, Modulus.AI.Connector.Contract.FieldsCheckRequest? right) -> bool
+static Modulus.AI.Connector.Contract.FieldsCheckResult.operator !=(Modulus.AI.Connector.Contract.FieldsCheckResult? left, Modulus.AI.Connector.Contract.FieldsCheckResult? right) -> bool
+static Modulus.AI.Connector.Contract.FieldsCheckResult.operator ==(Modulus.AI.Connector.Contract.FieldsCheckResult? left, Modulus.AI.Connector.Contract.FieldsCheckResult? right) -> bool
+static Modulus.AI.Connector.Contract.ManifestCapability.operator !=(Modulus.AI.Connector.Contract.ManifestCapability? left, Modulus.AI.Connector.Contract.ManifestCapability? right) -> bool
+static Modulus.AI.Connector.Contract.ManifestCapability.operator ==(Modulus.AI.Connector.Contract.ManifestCapability? left, Modulus.AI.Connector.Contract.ManifestCapability? right) -> bool
+static Modulus.AI.Connector.Contract.ManifestField.operator !=(Modulus.AI.Connector.Contract.ManifestField? left, Modulus.AI.Connector.Contract.ManifestField? right) -> bool
+static Modulus.AI.Connector.Contract.ManifestField.operator ==(Modulus.AI.Connector.Contract.ManifestField? left, Modulus.AI.Connector.Contract.ManifestField? right) -> bool
+static Modulus.AI.Connector.Contract.ManifestResourceType.operator !=(Modulus.AI.Connector.Contract.ManifestResourceType? left, Modulus.AI.Connector.Contract.ManifestResourceType? right) -> bool
+static Modulus.AI.Connector.Contract.ManifestResourceType.operator ==(Modulus.AI.Connector.Contract.ManifestResourceType? left, Modulus.AI.Connector.Contract.ManifestResourceType? right) -> bool
+static Modulus.AI.Connector.Contract.ResourceDecision.operator !=(Modulus.AI.Connector.Contract.ResourceDecision? left, Modulus.AI.Connector.Contract.ResourceDecision? right) -> bool
+static Modulus.AI.Connector.Contract.ResourceDecision.operator ==(Modulus.AI.Connector.Contract.ResourceDecision? left, Modulus.AI.Connector.Contract.ResourceDecision? right) -> bool
+static Modulus.AI.Connector.Contract.ResourceGetRequest.operator !=(Modulus.AI.Connector.Contract.ResourceGetRequest? left, Modulus.AI.Connector.Contract.ResourceGetRequest? right) -> bool
+static Modulus.AI.Connector.Contract.ResourceGetRequest.operator ==(Modulus.AI.Connector.Contract.ResourceGetRequest? left, Modulus.AI.Connector.Contract.ResourceGetRequest? right) -> bool
+static Modulus.AI.Connector.Contract.ResourceReference.operator !=(Modulus.AI.Connector.Contract.ResourceReference? left, Modulus.AI.Connector.Contract.ResourceReference? right) -> bool
+static Modulus.AI.Connector.Contract.ResourceReference.operator ==(Modulus.AI.Connector.Contract.ResourceReference? left, Modulus.AI.Connector.Contract.ResourceReference? right) -> bool
+static Modulus.AI.Connector.Contract.ResourcesCheckRequest.operator !=(Modulus.AI.Connector.Contract.ResourcesCheckRequest? left, Modulus.AI.Connector.Contract.ResourcesCheckRequest? right) -> bool
+static Modulus.AI.Connector.Contract.ResourcesCheckRequest.operator ==(Modulus.AI.Connector.Contract.ResourcesCheckRequest? left, Modulus.AI.Connector.Contract.ResourcesCheckRequest? right) -> bool
+static Modulus.AI.Connector.Contract.ResourcesCheckResult.operator !=(Modulus.AI.Connector.Contract.ResourcesCheckResult? left, Modulus.AI.Connector.Contract.ResourcesCheckResult? right) -> bool
+static Modulus.AI.Connector.Contract.ResourcesCheckResult.operator ==(Modulus.AI.Connector.Contract.ResourcesCheckResult? left, Modulus.AI.Connector.Contract.ResourcesCheckResult? right) -> bool
+static Modulus.AI.Connector.Contract.RevocationSignal.operator !=(Modulus.AI.Connector.Contract.RevocationSignal? left, Modulus.AI.Connector.Contract.RevocationSignal? right) -> bool
+static Modulus.AI.Connector.Contract.RevocationSignal.operator ==(Modulus.AI.Connector.Contract.RevocationSignal? left, Modulus.AI.Connector.Contract.RevocationSignal? right) -> bool
+static Modulus.AI.Connector.Contract.ScopeRequest.operator !=(Modulus.AI.Connector.Contract.ScopeRequest? left, Modulus.AI.Connector.Contract.ScopeRequest? right) -> bool
+static Modulus.AI.Connector.Contract.ScopeRequest.operator ==(Modulus.AI.Connector.Contract.ScopeRequest? left, Modulus.AI.Connector.Contract.ScopeRequest? right) -> bool
+Modulus.AI.Connector.AiChangeHintOptions
+Modulus.AI.Connector.AiChangeHintOptions.AiChangeHintOptions() -> void
+Modulus.AI.Connector.AiChangeHintOptions.Enabled.get -> bool
+Modulus.AI.Connector.AiChangeHintOptions.Enabled.set -> void
+Modulus.AI.Connector.AiChangeHintOptions.Interval.get -> System.TimeSpan
+Modulus.AI.Connector.AiChangeHintOptions.Interval.set -> void
+Modulus.AI.Connector.AiChangeHintOptions.Path.get -> string!
+Modulus.AI.Connector.AiChangeHintOptions.Path.set -> void
+Modulus.AI.Connector.AiIndexingOptions
+Modulus.AI.Connector.AiIndexingOptions.AiIndexingOptions() -> void
+Modulus.AI.Connector.AiIndexingOptions.ChangeHints.get -> Modulus.AI.Connector.AiChangeHintOptions!
+Modulus.AI.Connector.AiIndexingOptions.ChangeHints.set -> void
+Modulus.AI.Connector.AiIndexingOptions.ChangesSettleDelay.get -> System.TimeSpan
+Modulus.AI.Connector.AiIndexingOptions.ChangesSettleDelay.set -> void
+Modulus.AI.Connector.AiIndexingOptions.PageSize.get -> int
+Modulus.AI.Connector.AiIndexingOptions.PageSize.set -> void
+Modulus.AI.Connector.AiIndexingOptions.Roles.get -> System.Collections.Generic.List<string!>!
+Modulus.AI.Connector.AiIndexingOptions.Roles.set -> void
+Modulus.AI.Connector.AiIndexingOptions.ServiceUserId.get -> System.Guid?
+Modulus.AI.Connector.AiIndexingOptions.ServiceUserId.set -> void
+Modulus.AI.Connector.AiPlatformOptions.WebhookSecret.get -> string?
+Modulus.AI.Connector.AiPlatformOptions.WebhookSecret.set -> void
+Modulus.AI.Connector.Contract.ChangeHint
+Modulus.AI.Connector.Contract.ChangeHint.<Clone>$() -> Modulus.AI.Connector.Contract.ChangeHint!
+Modulus.AI.Connector.Contract.ChangeHint.AppInstanceId.get -> string!
+Modulus.AI.Connector.Contract.ChangeHint.AppInstanceId.init -> void
+Modulus.AI.Connector.Contract.ChangeHint.ChangeHint(string! AppInstanceId, string! EventId, System.DateTimeOffset OccurredAt) -> void
+Modulus.AI.Connector.Contract.ChangeHint.Deconstruct(out string! AppInstanceId, out string! EventId, out System.DateTimeOffset OccurredAt) -> void
+Modulus.AI.Connector.Contract.ChangeHint.Equals(Modulus.AI.Connector.Contract.ChangeHint? other) -> bool
+Modulus.AI.Connector.Contract.ChangeHint.EventId.get -> string!
+Modulus.AI.Connector.Contract.ChangeHint.EventId.init -> void
+Modulus.AI.Connector.Contract.ChangeHint.OccurredAt.get -> System.DateTimeOffset
+Modulus.AI.Connector.Contract.ChangeHint.OccurredAt.init -> void
+Modulus.AI.Connector.Contract.ChangesPage
+Modulus.AI.Connector.Contract.ChangesPage.<Clone>$() -> Modulus.AI.Connector.Contract.ChangesPage!
+Modulus.AI.Connector.Contract.ChangesPage.Changes.get -> System.Collections.Generic.IReadOnlyList<Modulus.AI.Connector.Contract.ResourceChange!>!
+Modulus.AI.Connector.Contract.ChangesPage.Changes.init -> void
+Modulus.AI.Connector.Contract.ChangesPage.ChangesPage(System.Collections.Generic.IReadOnlyList<Modulus.AI.Connector.Contract.ResourceChange!>! Changes, string! Cursor, bool HasMore) -> void
+Modulus.AI.Connector.Contract.ChangesPage.Cursor.get -> string!
+Modulus.AI.Connector.Contract.ChangesPage.Cursor.init -> void
+Modulus.AI.Connector.Contract.ChangesPage.Deconstruct(out System.Collections.Generic.IReadOnlyList<Modulus.AI.Connector.Contract.ResourceChange!>! Changes, out string! Cursor, out bool HasMore) -> void
+Modulus.AI.Connector.Contract.ChangesPage.Equals(Modulus.AI.Connector.Contract.ChangesPage? other) -> bool
+Modulus.AI.Connector.Contract.ChangesPage.HasMore.get -> bool
+Modulus.AI.Connector.Contract.ChangesPage.HasMore.init -> void
+Modulus.AI.Connector.Contract.ExtractPage
+Modulus.AI.Connector.Contract.ExtractPage.<Clone>$() -> Modulus.AI.Connector.Contract.ExtractPage!
+Modulus.AI.Connector.Contract.ExtractPage.Deconstruct(out System.Collections.Generic.IReadOnlyList<Modulus.AI.Connector.Contract.IndexedResource!>! Resources, out string? NextCursor) -> void
+Modulus.AI.Connector.Contract.ExtractPage.Equals(Modulus.AI.Connector.Contract.ExtractPage? other) -> bool
+Modulus.AI.Connector.Contract.ExtractPage.ExtractPage(System.Collections.Generic.IReadOnlyList<Modulus.AI.Connector.Contract.IndexedResource!>! Resources, string? NextCursor) -> void
+Modulus.AI.Connector.Contract.ExtractPage.NextCursor.get -> string?
+Modulus.AI.Connector.Contract.ExtractPage.NextCursor.init -> void
+Modulus.AI.Connector.Contract.ExtractPage.Resources.get -> System.Collections.Generic.IReadOnlyList<Modulus.AI.Connector.Contract.IndexedResource!>!
+Modulus.AI.Connector.Contract.ExtractPage.Resources.init -> void
+Modulus.AI.Connector.Contract.IndexedResource
+Modulus.AI.Connector.Contract.IndexedResource.<Clone>$() -> Modulus.AI.Connector.Contract.IndexedResource!
+Modulus.AI.Connector.Contract.IndexedResource.Access.get -> Modulus.AI.Connector.Contract.ResourceAccess!
+Modulus.AI.Connector.Contract.IndexedResource.Access.init -> void
+Modulus.AI.Connector.Contract.IndexedResource.Deconstruct(out Modulus.AI.Connector.Contract.ResourceReference! Reference, out System.Collections.Generic.IReadOnlyDictionary<string!, System.Text.Json.JsonElement>! Fields, out string? DeepLink, out Modulus.AI.Connector.Contract.ResourceAccess! Access) -> void
+Modulus.AI.Connector.Contract.IndexedResource.DeepLink.get -> string?
+Modulus.AI.Connector.Contract.IndexedResource.DeepLink.init -> void
+Modulus.AI.Connector.Contract.IndexedResource.Equals(Modulus.AI.Connector.Contract.IndexedResource? other) -> bool
+Modulus.AI.Connector.Contract.IndexedResource.Fields.get -> System.Collections.Generic.IReadOnlyDictionary<string!, System.Text.Json.JsonElement>!
+Modulus.AI.Connector.Contract.IndexedResource.Fields.init -> void
+Modulus.AI.Connector.Contract.IndexedResource.IndexedResource(Modulus.AI.Connector.Contract.ResourceReference! Reference, System.Collections.Generic.IReadOnlyDictionary<string!, System.Text.Json.JsonElement>! Fields, string? DeepLink, Modulus.AI.Connector.Contract.ResourceAccess! Access) -> void
+Modulus.AI.Connector.Contract.IndexedResource.Reference.get -> Modulus.AI.Connector.Contract.ResourceReference!
+Modulus.AI.Connector.Contract.IndexedResource.Reference.init -> void
+Modulus.AI.Connector.Contract.ManifestResourceType.Deconstruct(out string! Type, out string! Description, out string? DeepLink, out string? TitleField, out bool Indexed, out System.Collections.Generic.IReadOnlyList<Modulus.AI.Connector.Contract.ManifestField!>! Fields) -> void
+Modulus.AI.Connector.Contract.ManifestResourceType.Indexed.get -> bool
+Modulus.AI.Connector.Contract.ManifestResourceType.Indexed.init -> void
+Modulus.AI.Connector.Contract.ManifestResourceType.ManifestResourceType(string! Type, string! Description, string? DeepLink, string? TitleField, bool Indexed, System.Collections.Generic.IReadOnlyList<Modulus.AI.Connector.Contract.ManifestField!>! Fields) -> void
+Modulus.AI.Connector.Contract.ResourceAccess
+Modulus.AI.Connector.Contract.ResourceAccess.<Clone>$() -> Modulus.AI.Connector.Contract.ResourceAccess!
+Modulus.AI.Connector.Contract.ResourceAccess.DataScopes.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string![]!>!
+Modulus.AI.Connector.Contract.ResourceAccess.DataScopes.init -> void
+Modulus.AI.Connector.Contract.ResourceAccess.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>! RequiredPermissions, out System.Collections.Generic.IReadOnlyDictionary<string!, string![]!>! DataScopes) -> void
+Modulus.AI.Connector.Contract.ResourceAccess.Equals(Modulus.AI.Connector.Contract.ResourceAccess? other) -> bool
+Modulus.AI.Connector.Contract.ResourceAccess.RequiredPermissions.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Modulus.AI.Connector.Contract.ResourceAccess.RequiredPermissions.init -> void
+Modulus.AI.Connector.Contract.ResourceAccess.ResourceAccess(System.Collections.Generic.IReadOnlyList<string!>! RequiredPermissions, System.Collections.Generic.IReadOnlyDictionary<string!, string![]!>! DataScopes) -> void
+Modulus.AI.Connector.Contract.ResourceChange
+Modulus.AI.Connector.Contract.ResourceChange.<Clone>$() -> Modulus.AI.Connector.Contract.ResourceChange!
+Modulus.AI.Connector.Contract.ResourceChange.Deconstruct(out Modulus.AI.Connector.Contract.ResourceChangeKind Kind, out Modulus.AI.Connector.Contract.ResourceReference! Reference, out Modulus.AI.Connector.Contract.IndexedResource? Resource, out System.DateTimeOffset OccurredAt) -> void
+Modulus.AI.Connector.Contract.ResourceChange.Equals(Modulus.AI.Connector.Contract.ResourceChange? other) -> bool
+Modulus.AI.Connector.Contract.ResourceChange.Kind.get -> Modulus.AI.Connector.Contract.ResourceChangeKind
+Modulus.AI.Connector.Contract.ResourceChange.Kind.init -> void
+Modulus.AI.Connector.Contract.ResourceChange.OccurredAt.get -> System.DateTimeOffset
+Modulus.AI.Connector.Contract.ResourceChange.OccurredAt.init -> void
+Modulus.AI.Connector.Contract.ResourceChange.Reference.get -> Modulus.AI.Connector.Contract.ResourceReference!
+Modulus.AI.Connector.Contract.ResourceChange.Reference.init -> void
+Modulus.AI.Connector.Contract.ResourceChange.Resource.get -> Modulus.AI.Connector.Contract.IndexedResource?
+Modulus.AI.Connector.Contract.ResourceChange.Resource.init -> void
+Modulus.AI.Connector.Contract.ResourceChange.ResourceChange(Modulus.AI.Connector.Contract.ResourceChangeKind Kind, Modulus.AI.Connector.Contract.ResourceReference! Reference, Modulus.AI.Connector.Contract.IndexedResource? Resource, System.DateTimeOffset OccurredAt) -> void
+Modulus.AI.Connector.Contract.ResourceChangeKind
+Modulus.AI.Connector.Contract.ResourceChangeKind.Tombstone = 1 -> Modulus.AI.Connector.Contract.ResourceChangeKind
+Modulus.AI.Connector.Contract.ResourceChangeKind.Upsert = 0 -> Modulus.AI.Connector.Contract.ResourceChangeKind
+Modulus.AI.Connector.Data.AiAggregate
+Modulus.AI.Connector.Data.AiAggregate.Average = 2 -> Modulus.AI.Connector.Data.AiAggregate
+Modulus.AI.Connector.Data.AiAggregate.Count = 0 -> Modulus.AI.Connector.Data.AiAggregate
+Modulus.AI.Connector.Data.AiAggregate.Max = 4 -> Modulus.AI.Connector.Data.AiAggregate
+Modulus.AI.Connector.Data.AiAggregate.Min = 3 -> Modulus.AI.Connector.Data.AiAggregate
+Modulus.AI.Connector.Data.AiAggregate.Sum = 1 -> Modulus.AI.Connector.Data.AiAggregate
+Modulus.AI.Connector.Data.AiAggregateQuery
+Modulus.AI.Connector.Data.AiAggregateQuery.<Clone>$() -> Modulus.AI.Connector.Data.AiAggregateQuery!
+Modulus.AI.Connector.Data.AiAggregateQuery.Aggregate.get -> Modulus.AI.Connector.Data.AiAggregate
+Modulus.AI.Connector.Data.AiAggregateQuery.Aggregate.init -> void
+Modulus.AI.Connector.Data.AiAggregateQuery.AiAggregateQuery(System.Linq.Expressions.LambdaExpression? Filter, System.Linq.Expressions.LambdaExpression? GroupBy, Modulus.AI.Connector.Data.AiAggregate Aggregate, System.Linq.Expressions.LambdaExpression? Field, int MaxGroups) -> void
+Modulus.AI.Connector.Data.AiAggregateQuery.Deconstruct(out System.Linq.Expressions.LambdaExpression? Filter, out System.Linq.Expressions.LambdaExpression? GroupBy, out Modulus.AI.Connector.Data.AiAggregate Aggregate, out System.Linq.Expressions.LambdaExpression? Field, out int MaxGroups) -> void
+Modulus.AI.Connector.Data.AiAggregateQuery.Equals(Modulus.AI.Connector.Data.AiAggregateQuery? other) -> bool
+Modulus.AI.Connector.Data.AiAggregateQuery.Field.get -> System.Linq.Expressions.LambdaExpression?
+Modulus.AI.Connector.Data.AiAggregateQuery.Field.init -> void
+Modulus.AI.Connector.Data.AiAggregateQuery.Filter.get -> System.Linq.Expressions.LambdaExpression?
+Modulus.AI.Connector.Data.AiAggregateQuery.Filter.init -> void
+Modulus.AI.Connector.Data.AiAggregateQuery.GroupBy.get -> System.Linq.Expressions.LambdaExpression?
+Modulus.AI.Connector.Data.AiAggregateQuery.GroupBy.init -> void
+Modulus.AI.Connector.Data.AiAggregateQuery.MaxGroups.get -> int
+Modulus.AI.Connector.Data.AiAggregateQuery.MaxGroups.init -> void
+Modulus.AI.Connector.Data.AiAggregateRow
+Modulus.AI.Connector.Data.AiAggregateRow.<Clone>$() -> Modulus.AI.Connector.Data.AiAggregateRow!
+Modulus.AI.Connector.Data.AiAggregateRow.AiAggregateRow(object? Group, object? Value) -> void
+Modulus.AI.Connector.Data.AiAggregateRow.Deconstruct(out object? Group, out object? Value) -> void
+Modulus.AI.Connector.Data.AiAggregateRow.Equals(Modulus.AI.Connector.Data.AiAggregateRow? other) -> bool
+Modulus.AI.Connector.Data.AiAggregateRow.Group.get -> object?
+Modulus.AI.Connector.Data.AiAggregateRow.Group.init -> void
+Modulus.AI.Connector.Data.AiAggregateRow.Value.get -> object?
+Modulus.AI.Connector.Data.AiAggregateRow.Value.init -> void
+Modulus.AI.Connector.Data.AiChangeKind
+Modulus.AI.Connector.Data.AiChangeKind.Delete = 1 -> Modulus.AI.Connector.Data.AiChangeKind
+Modulus.AI.Connector.Data.AiChangeKind.Upsert = 0 -> Modulus.AI.Connector.Data.AiChangeKind
+Modulus.AI.Connector.Data.AiEntityQuery
+Modulus.AI.Connector.Data.AiEntityQuery.<Clone>$() -> Modulus.AI.Connector.Data.AiEntityQuery!
+Modulus.AI.Connector.Data.AiEntityQuery.AiEntityQuery(System.Linq.Expressions.LambdaExpression? Filter, System.Collections.Generic.IReadOnlyList<Modulus.AI.Connector.Data.AiEntitySort!>! Sort, int Take) -> void
+Modulus.AI.Connector.Data.AiEntityQuery.Deconstruct(out System.Linq.Expressions.LambdaExpression? Filter, out System.Collections.Generic.IReadOnlyList<Modulus.AI.Connector.Data.AiEntitySort!>! Sort, out int Take) -> void
+Modulus.AI.Connector.Data.AiEntityQuery.Equals(Modulus.AI.Connector.Data.AiEntityQuery? other) -> bool
+Modulus.AI.Connector.Data.AiEntityQuery.Filter.get -> System.Linq.Expressions.LambdaExpression?
+Modulus.AI.Connector.Data.AiEntityQuery.Filter.init -> void
+Modulus.AI.Connector.Data.AiEntityQuery.Sort.get -> System.Collections.Generic.IReadOnlyList<Modulus.AI.Connector.Data.AiEntitySort!>!
+Modulus.AI.Connector.Data.AiEntityQuery.Sort.init -> void
+Modulus.AI.Connector.Data.AiEntityQuery.Take.get -> int
+Modulus.AI.Connector.Data.AiEntityQuery.Take.init -> void
+Modulus.AI.Connector.Data.AiEntitySort
+Modulus.AI.Connector.Data.AiEntitySort.<Clone>$() -> Modulus.AI.Connector.Data.AiEntitySort!
+Modulus.AI.Connector.Data.AiEntitySort.AiEntitySort(System.Linq.Expressions.LambdaExpression! Key, bool Descending) -> void
+Modulus.AI.Connector.Data.AiEntitySort.Deconstruct(out System.Linq.Expressions.LambdaExpression! Key, out bool Descending) -> void
+Modulus.AI.Connector.Data.AiEntitySort.Descending.get -> bool
+Modulus.AI.Connector.Data.AiEntitySort.Descending.init -> void
+Modulus.AI.Connector.Data.AiEntitySort.Equals(Modulus.AI.Connector.Data.AiEntitySort? other) -> bool
+Modulus.AI.Connector.Data.AiEntitySort.Key.get -> System.Linq.Expressions.LambdaExpression!
+Modulus.AI.Connector.Data.AiEntitySort.Key.init -> void
+Modulus.AI.Connector.Data.AiJournalChange
+Modulus.AI.Connector.Data.AiJournalChange.<Clone>$() -> Modulus.AI.Connector.Data.AiJournalChange!
+Modulus.AI.Connector.Data.AiJournalChange.AiJournalChange(string! ResourceType, string! ResourceId, Modulus.AI.Connector.Data.AiChangeKind Kind, System.DateTimeOffset OccurredAt) -> void
+Modulus.AI.Connector.Data.AiJournalChange.Deconstruct(out string! ResourceType, out string! ResourceId, out Modulus.AI.Connector.Data.AiChangeKind Kind, out System.DateTimeOffset OccurredAt) -> void
+Modulus.AI.Connector.Data.AiJournalChange.Equals(Modulus.AI.Connector.Data.AiJournalChange? other) -> bool
+Modulus.AI.Connector.Data.AiJournalChange.Kind.get -> Modulus.AI.Connector.Data.AiChangeKind
+Modulus.AI.Connector.Data.AiJournalChange.Kind.init -> void
+Modulus.AI.Connector.Data.AiJournalChange.OccurredAt.get -> System.DateTimeOffset
+Modulus.AI.Connector.Data.AiJournalChange.OccurredAt.init -> void
+Modulus.AI.Connector.Data.AiJournalChange.ResourceId.get -> string!
+Modulus.AI.Connector.Data.AiJournalChange.ResourceId.init -> void
+Modulus.AI.Connector.Data.AiJournalChange.ResourceType.get -> string!
+Modulus.AI.Connector.Data.AiJournalChange.ResourceType.init -> void
+Modulus.AI.Connector.Data.AiJournalPage
+Modulus.AI.Connector.Data.AiJournalPage.<Clone>$() -> Modulus.AI.Connector.Data.AiJournalPage!
+Modulus.AI.Connector.Data.AiJournalPage.AiJournalPage(System.Collections.Generic.IReadOnlyList<Modulus.AI.Connector.Data.AiJournalChange!>! Changes, string! Cursor, bool HasMore) -> void
+Modulus.AI.Connector.Data.AiJournalPage.Changes.get -> System.Collections.Generic.IReadOnlyList<Modulus.AI.Connector.Data.AiJournalChange!>!
+Modulus.AI.Connector.Data.AiJournalPage.Changes.init -> void
+Modulus.AI.Connector.Data.AiJournalPage.Cursor.get -> string!
+Modulus.AI.Connector.Data.AiJournalPage.Cursor.init -> void
+Modulus.AI.Connector.Data.AiJournalPage.Deconstruct(out System.Collections.Generic.IReadOnlyList<Modulus.AI.Connector.Data.AiJournalChange!>! Changes, out string! Cursor, out bool HasMore) -> void
+Modulus.AI.Connector.Data.AiJournalPage.Equals(Modulus.AI.Connector.Data.AiJournalPage? other) -> bool
+Modulus.AI.Connector.Data.AiJournalPage.HasMore.get -> bool
+Modulus.AI.Connector.Data.AiJournalPage.HasMore.init -> void
+Modulus.AI.Connector.Data.IAiChangeFeed
+Modulus.AI.Connector.Data.IAiChangeFeed.GetHeadAsync(System.Guid tenantId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<string!>!
+Modulus.AI.Connector.Data.IAiChangeFeed.ReadAsync(System.Guid tenantId, string? cursor, int max, System.DateTimeOffset settledBefore, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.AI.Connector.Data.AiJournalPage!>!
+Modulus.AI.Connector.Data.IAiEntitySource
+Modulus.AI.Connector.Data.IAiEntitySource.AggregateAsync(System.Type! entityType, Modulus.AI.Connector.Data.AiAggregateQuery! query, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.AI.Connector.Data.AiAggregateRow!>!>!
+Modulus.AI.Connector.Data.IAiEntitySource.EntityTypes.get -> System.Collections.Generic.IReadOnlyList<System.Type!>!
+Modulus.AI.Connector.Data.IAiEntitySource.ListAsync(System.Type! entityType, Modulus.AI.Connector.Data.AiEntityQuery! query, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<object!>!>!
+Modulus.AI.Connector.Data.IAiEntitySource.ListKeysAsync(System.Type! entityType, string? after, int take, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<string!>!>!
+Modulus.AI.Connector.ModulusAiConnectorOptions.Indexing.get -> Modulus.AI.Connector.AiIndexingOptions!
+Modulus.AI.Connector.ModulusAiConnectorOptions.Indexing.set -> void
+Modulus.AI.Connector.ModulusAiConnectorOptions.MaxFilters.get -> int
+Modulus.AI.Connector.ModulusAiConnectorOptions.MaxFilters.set -> void
+Modulus.AI.Connector.ModulusAiConnectorOptions.MaxGroups.get -> int
+Modulus.AI.Connector.ModulusAiConnectorOptions.MaxGroups.set -> void
+override Modulus.AI.Connector.Contract.ChangeHint.Equals(object? obj) -> bool
+override Modulus.AI.Connector.Contract.ChangeHint.GetHashCode() -> int
+override Modulus.AI.Connector.Contract.ChangeHint.ToString() -> string!
+override Modulus.AI.Connector.Contract.ChangesPage.Equals(object? obj) -> bool
+override Modulus.AI.Connector.Contract.ChangesPage.GetHashCode() -> int
+override Modulus.AI.Connector.Contract.ChangesPage.ToString() -> string!
+override Modulus.AI.Connector.Contract.ExtractPage.Equals(object? obj) -> bool
+override Modulus.AI.Connector.Contract.ExtractPage.GetHashCode() -> int
+override Modulus.AI.Connector.Contract.ExtractPage.ToString() -> string!
+override Modulus.AI.Connector.Contract.IndexedResource.Equals(object? obj) -> bool
+override Modulus.AI.Connector.Contract.IndexedResource.GetHashCode() -> int
+override Modulus.AI.Connector.Contract.IndexedResource.ToString() -> string!
+override Modulus.AI.Connector.Contract.ResourceAccess.Equals(object? obj) -> bool
+override Modulus.AI.Connector.Contract.ResourceAccess.GetHashCode() -> int
+override Modulus.AI.Connector.Contract.ResourceAccess.ToString() -> string!
+override Modulus.AI.Connector.Contract.ResourceChange.Equals(object? obj) -> bool
+override Modulus.AI.Connector.Contract.ResourceChange.GetHashCode() -> int
+override Modulus.AI.Connector.Contract.ResourceChange.ToString() -> string!
+override Modulus.AI.Connector.Data.AiAggregateQuery.Equals(object? obj) -> bool
+override Modulus.AI.Connector.Data.AiAggregateQuery.GetHashCode() -> int
+override Modulus.AI.Connector.Data.AiAggregateQuery.ToString() -> string!
+override Modulus.AI.Connector.Data.AiAggregateRow.Equals(object? obj) -> bool
+override Modulus.AI.Connector.Data.AiAggregateRow.GetHashCode() -> int
+override Modulus.AI.Connector.Data.AiAggregateRow.ToString() -> string!
+override Modulus.AI.Connector.Data.AiEntityQuery.Equals(object? obj) -> bool
+override Modulus.AI.Connector.Data.AiEntityQuery.GetHashCode() -> int
+override Modulus.AI.Connector.Data.AiEntityQuery.ToString() -> string!
+override Modulus.AI.Connector.Data.AiEntitySort.Equals(object? obj) -> bool
+override Modulus.AI.Connector.Data.AiEntitySort.GetHashCode() -> int
+override Modulus.AI.Connector.Data.AiEntitySort.ToString() -> string!
+override Modulus.AI.Connector.Data.AiJournalChange.Equals(object? obj) -> bool
+override Modulus.AI.Connector.Data.AiJournalChange.GetHashCode() -> int
+override Modulus.AI.Connector.Data.AiJournalChange.ToString() -> string!
+override Modulus.AI.Connector.Data.AiJournalPage.Equals(object? obj) -> bool
+override Modulus.AI.Connector.Data.AiJournalPage.GetHashCode() -> int
+override Modulus.AI.Connector.Data.AiJournalPage.ToString() -> string!
+static Modulus.AI.Connector.Contract.ChangeHint.operator !=(Modulus.AI.Connector.Contract.ChangeHint? left, Modulus.AI.Connector.Contract.ChangeHint? right) -> bool
+static Modulus.AI.Connector.Contract.ChangeHint.operator ==(Modulus.AI.Connector.Contract.ChangeHint? left, Modulus.AI.Connector.Contract.ChangeHint? right) -> bool
+static Modulus.AI.Connector.Contract.ChangesPage.operator !=(Modulus.AI.Connector.Contract.ChangesPage? left, Modulus.AI.Connector.Contract.ChangesPage? right) -> bool
+static Modulus.AI.Connector.Contract.ChangesPage.operator ==(Modulus.AI.Connector.Contract.ChangesPage? left, Modulus.AI.Connector.Contract.ChangesPage? right) -> bool
+static Modulus.AI.Connector.Contract.ExtractPage.operator !=(Modulus.AI.Connector.Contract.ExtractPage? left, Modulus.AI.Connector.Contract.ExtractPage? right) -> bool
+static Modulus.AI.Connector.Contract.ExtractPage.operator ==(Modulus.AI.Connector.Contract.ExtractPage? left, Modulus.AI.Connector.Contract.ExtractPage? right) -> bool
+static Modulus.AI.Connector.Contract.IndexedResource.operator !=(Modulus.AI.Connector.Contract.IndexedResource? left, Modulus.AI.Connector.Contract.IndexedResource? right) -> bool
+static Modulus.AI.Connector.Contract.IndexedResource.operator ==(Modulus.AI.Connector.Contract.IndexedResource? left, Modulus.AI.Connector.Contract.IndexedResource? right) -> bool
+static Modulus.AI.Connector.Contract.ResourceAccess.operator !=(Modulus.AI.Connector.Contract.ResourceAccess? left, Modulus.AI.Connector.Contract.ResourceAccess? right) -> bool
+static Modulus.AI.Connector.Contract.ResourceAccess.operator ==(Modulus.AI.Connector.Contract.ResourceAccess? left, Modulus.AI.Connector.Contract.ResourceAccess? right) -> bool
+static Modulus.AI.Connector.Contract.ResourceChange.operator !=(Modulus.AI.Connector.Contract.ResourceChange? left, Modulus.AI.Connector.Contract.ResourceChange? right) -> bool
+static Modulus.AI.Connector.Contract.ResourceChange.operator ==(Modulus.AI.Connector.Contract.ResourceChange? left, Modulus.AI.Connector.Contract.ResourceChange? right) -> bool
+static Modulus.AI.Connector.Data.AiAggregateQuery.operator !=(Modulus.AI.Connector.Data.AiAggregateQuery? left, Modulus.AI.Connector.Data.AiAggregateQuery? right) -> bool
+static Modulus.AI.Connector.Data.AiAggregateQuery.operator ==(Modulus.AI.Connector.Data.AiAggregateQuery? left, Modulus.AI.Connector.Data.AiAggregateQuery? right) -> bool
+static Modulus.AI.Connector.Data.AiAggregateRow.operator !=(Modulus.AI.Connector.Data.AiAggregateRow? left, Modulus.AI.Connector.Data.AiAggregateRow? right) -> bool
+static Modulus.AI.Connector.Data.AiAggregateRow.operator ==(Modulus.AI.Connector.Data.AiAggregateRow? left, Modulus.AI.Connector.Data.AiAggregateRow? right) -> bool
+static Modulus.AI.Connector.Data.AiEntityQuery.operator !=(Modulus.AI.Connector.Data.AiEntityQuery? left, Modulus.AI.Connector.Data.AiEntityQuery? right) -> bool
+static Modulus.AI.Connector.Data.AiEntityQuery.operator ==(Modulus.AI.Connector.Data.AiEntityQuery? left, Modulus.AI.Connector.Data.AiEntityQuery? right) -> bool
+static Modulus.AI.Connector.Data.AiEntitySort.operator !=(Modulus.AI.Connector.Data.AiEntitySort? left, Modulus.AI.Connector.Data.AiEntitySort? right) -> bool
+static Modulus.AI.Connector.Data.AiEntitySort.operator ==(Modulus.AI.Connector.Data.AiEntitySort? left, Modulus.AI.Connector.Data.AiEntitySort? right) -> bool
+static Modulus.AI.Connector.Data.AiJournalChange.operator !=(Modulus.AI.Connector.Data.AiJournalChange? left, Modulus.AI.Connector.Data.AiJournalChange? right) -> bool
+static Modulus.AI.Connector.Data.AiJournalChange.operator ==(Modulus.AI.Connector.Data.AiJournalChange? left, Modulus.AI.Connector.Data.AiJournalChange? right) -> bool
+static Modulus.AI.Connector.Data.AiJournalPage.operator !=(Modulus.AI.Connector.Data.AiJournalPage? left, Modulus.AI.Connector.Data.AiJournalPage? right) -> bool
+static Modulus.AI.Connector.Data.AiJournalPage.operator ==(Modulus.AI.Connector.Data.AiJournalPage? left, Modulus.AI.Connector.Data.AiJournalPage? right) -> bool
+Modulus.AI.Connector.Audit.AiAuditCapabilities
+Modulus.AI.Connector.Audit.AuditLogRecord
+Modulus.AI.Connector.Audit.AuditLogRecord.<Clone>$() -> Modulus.AI.Connector.Audit.AuditLogRecord!
+Modulus.AI.Connector.Audit.AuditLogRecord.Action.get -> string!
+Modulus.AI.Connector.Audit.AuditLogRecord.Action.init -> void
+Modulus.AI.Connector.Audit.AuditLogRecord.AuditLogRecord() -> void
+Modulus.AI.Connector.Audit.AuditLogRecord.Detail.get -> string?
+Modulus.AI.Connector.Audit.AuditLogRecord.Detail.init -> void
+Modulus.AI.Connector.Audit.AuditLogRecord.Equals(Modulus.AI.Connector.Audit.AuditLogRecord? other) -> bool
+Modulus.AI.Connector.Audit.AuditLogRecord.Id.get -> System.Guid
+Modulus.AI.Connector.Audit.AuditLogRecord.Id.init -> void
+Modulus.AI.Connector.Audit.AuditLogRecord.OccurredAt.get -> System.DateTimeOffset
+Modulus.AI.Connector.Audit.AuditLogRecord.OccurredAt.init -> void
+Modulus.AI.Connector.Audit.AuditLogRecord.Resource.get -> string?
+Modulus.AI.Connector.Audit.AuditLogRecord.Resource.init -> void
+Modulus.AI.Connector.Audit.AuditLogRecord.ResourceId.get -> string?
+Modulus.AI.Connector.Audit.AuditLogRecord.ResourceId.init -> void
+Modulus.AI.Connector.Audit.AuditLogRecord.UserId.get -> System.Guid?
+Modulus.AI.Connector.Audit.AuditLogRecord.UserId.init -> void
+Modulus.AI.Connector.Audit.AuditLogRecord.UserName.get -> string?
+Modulus.AI.Connector.Audit.AuditLogRecord.UserName.init -> void
+Modulus.AI.Connector.Audit.SearchAuditLog
+Modulus.AI.Connector.Audit.SearchAuditLog.<Clone>$() -> Modulus.AI.Connector.Audit.SearchAuditLog!
+Modulus.AI.Connector.Audit.SearchAuditLog.Action.get -> string?
+Modulus.AI.Connector.Audit.SearchAuditLog.Action.init -> void
+Modulus.AI.Connector.Audit.SearchAuditLog.Deconstruct(out System.DateTimeOffset? From, out System.DateTimeOffset? To, out System.Guid? UserId, out string? Action, out string? Resource, out int? Take) -> void
+Modulus.AI.Connector.Audit.SearchAuditLog.Equals(Modulus.AI.Connector.Audit.SearchAuditLog? other) -> bool
+Modulus.AI.Connector.Audit.SearchAuditLog.From.get -> System.DateTimeOffset?
+Modulus.AI.Connector.Audit.SearchAuditLog.From.init -> void
+Modulus.AI.Connector.Audit.SearchAuditLog.Resource.get -> string?
+Modulus.AI.Connector.Audit.SearchAuditLog.Resource.init -> void
+Modulus.AI.Connector.Audit.SearchAuditLog.SearchAuditLog(System.DateTimeOffset? From = null, System.DateTimeOffset? To = null, System.Guid? UserId = null, string? Action = null, string? Resource = null, int? Take = null) -> void
+Modulus.AI.Connector.Audit.SearchAuditLog.Take.get -> int?
+Modulus.AI.Connector.Audit.SearchAuditLog.Take.init -> void
+Modulus.AI.Connector.Audit.SearchAuditLog.To.get -> System.DateTimeOffset?
+Modulus.AI.Connector.Audit.SearchAuditLog.To.init -> void
+Modulus.AI.Connector.Audit.SearchAuditLog.UserId.get -> System.Guid?
+Modulus.AI.Connector.Audit.SearchAuditLog.UserId.init -> void
+const Modulus.AI.Connector.Audit.AiAuditCapabilities.MaxTake = 100 -> int
+const Modulus.AI.Connector.Audit.AiAuditCapabilities.Permission = "audit:view" -> string!
+const Modulus.AI.Connector.Audit.SearchAuditLog.Name = "Modulus.Audit.Log.Search" -> string!
+override Modulus.AI.Connector.Audit.AuditLogRecord.Equals(object? obj) -> bool
+override Modulus.AI.Connector.Audit.AuditLogRecord.GetHashCode() -> int
+override Modulus.AI.Connector.Audit.AuditLogRecord.ToString() -> string!
+override Modulus.AI.Connector.Audit.SearchAuditLog.Equals(object? obj) -> bool
+override Modulus.AI.Connector.Audit.SearchAuditLog.GetHashCode() -> int
+override Modulus.AI.Connector.Audit.SearchAuditLog.ToString() -> string!
+static Modulus.AI.Connector.Audit.AiAuditCapabilities.AddAuditCapabilities(this Modulus.AI.Connector.AiConnectorBuilder! builder) -> Modulus.AI.Connector.AiConnectorBuilder!
+static Modulus.AI.Connector.Audit.AuditLogRecord.operator !=(Modulus.AI.Connector.Audit.AuditLogRecord? left, Modulus.AI.Connector.Audit.AuditLogRecord? right) -> bool
+static Modulus.AI.Connector.Audit.AuditLogRecord.operator ==(Modulus.AI.Connector.Audit.AuditLogRecord? left, Modulus.AI.Connector.Audit.AuditLogRecord? right) -> bool
+static Modulus.AI.Connector.Audit.SearchAuditLog.operator !=(Modulus.AI.Connector.Audit.SearchAuditLog? left, Modulus.AI.Connector.Audit.SearchAuditLog? right) -> bool
+static Modulus.AI.Connector.Audit.SearchAuditLog.operator ==(Modulus.AI.Connector.Audit.SearchAuditLog? left, Modulus.AI.Connector.Audit.SearchAuditLog? right) -> bool

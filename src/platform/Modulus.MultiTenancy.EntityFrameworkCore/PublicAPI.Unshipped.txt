@@ -59,4 +59,4 @@ Modulus.MultiTenancy.EntityFrameworkCore.TenantMembershipEntity.TenantMembership
 Modulus.MultiTenancy.EntityFrameworkCore.TenantMembershipEntity.UserId.get -> System.Guid
 Modulus.MultiTenancy.EntityFrameworkCore.TenantMembershipEntity.UserId.set -> void
 Modulus.MultiTenancy.EntityFrameworkCore.TenantStoreDbContext.TenantMemberships.get -> Microsoft.EntityFrameworkCore.DbSet<Modulus.MultiTenancy.EntityFrameworkCore.TenantMembershipEntity!>!
-Modulus.MultiTenancy.EntityFrameworkCore.TenantManager.TenantManager(Modulus.MultiTenancy.EntityFrameworkCore.TenantStoreDbContext! db, Modulus.Core.Abstractions.ISecurityAuditLog? audit = null, Modulus.Core.Abstractions.ICurrentUser? actor = null) -> void
+Modulus.MultiTenancy.EntityFrameworkCore.TenantManager.TenantManager(Modulus.MultiTenancy.EntityFrameworkCore.TenantStoreDbContext! db, Modulus.Core.Abstractions.ISecurityAuditLog? audit = null, Modulus.Core.Abstractions.ICurrentUser? actor = null, System.Collections.Generic.IEnumerable<Modulus.Core.Abstractions.IAccessChangeObserver!>? observers = null) -> void

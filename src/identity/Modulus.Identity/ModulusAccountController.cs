@@ -23,7 +23,8 @@ using Modulus.Core.Abstractions.Security;
 /// flows unusable (fail-closed) rather than insecure.
 /// </remarks>
 [ApiController]
-[Route("[controller]")]
+[Route("account")]
+[HostTenantContext]
 public class AccountController<TUser>(
     UserManager<TUser> userManager,
     SignInManager<TUser> signInManager,

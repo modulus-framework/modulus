@@ -1,0 +1,25 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Modulus.Core.Abstractions;
+using Modulus.MultiTenancy.EntityFrameworkCore;
+
+namespace {{ tenancy_namespace }}.Infrastructure;
+
+/// <summary>
+/// Composition root of the tenant store: the companies (tenants) and who may enter each one (memberships), in their own
+/// database. Tenant resolution itself is configured in Program.cs (<c>AddMultiTenancy</c>), where the resolvers and the
+/// membership requirement are visible. Grant or revoke access with <c>TenantManager.AddMemberAsync</c> /
+/// <c>RemoveMemberAsync</c>; a revoked membership takes effect on the next request.
+/// </summary>
+public sealed class TenancyModule : ModulusModule
+{
+    public override void ConfigureServices(IServiceCollection services, IConfiguration configuration)
+    {
+        var connectionString = configuration.GetConnectionString("Tenancy") ?? "{{ tenancy_connection_string }}";
+
+        // The tenant store's migrations live in this project (modulus migrate add InitialCreate --module Tenancy).
+        services.AddEfCoreTenantStore(options => options.{{ use_db_method }}(
+            connectionString, db => db.MigrationsAssembly(typeof(TenancyModule).Assembly.GetName().Name)));
+    }
+}

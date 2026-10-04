@@ -46,6 +46,24 @@ public sealed class TenantScopedCollectionTests
         => filter.Render(new RenderArgs<Invoice>(BsonSerializer.LookupSerializer<Invoice>(), BsonSerializer.SerializerRegistry));
 
     [Fact]
+    public void Unscoped_access_requires_a_reason_and_is_recorded_as_overridden()
+    {
+        var audit = Substitute.For<ISecurityAuditLog>();
+        var collection = new TenantScopedCollection<Invoice>(_inner, _tenant, audit);
+
+        collection.Invoking(c => c.Unscoped(" ")).Should().Throw<ArgumentException>();
+        collection.Unscoped("index rebuild").Should().BeSameAs(_inner);
+
+        audit.Received(1).Record(Arg.Is<SecurityAuditEvent>(e =>
+            e.Category == SecurityAuditCategories.Data
+            && e.Action == "mongo.unscoped"
+            && e.Outcome == SecurityAuditOutcomes.Overridden
+            && e.TenantId == TenantA
+            && e.Target == "invoices"
+            && e.Details!["reason"] == "index rebuild"));
+    }
+
+    [Fact]
     public async Task Deletes_and_counts_are_limited_to_the_ambient_tenant()
     {
         FilterDefinition<Invoice>? deleted = null, counted = null;

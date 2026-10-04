@@ -1,11 +1,12 @@
-# Advanced features: hybrid cache, per-client BFFs, gRPC, webhooks, GraphQL, realtime, MCP
+# Advanced features: hybrid cache, per-client BFFs, gRPC, webhooks, GraphQL, realtime, AI platform integration
 
 Roadmap for the advanced features Modulus lacked: a hybrid cache, a Backend for Frontend per client type,
-gRPC, webhooks, GraphQL, realtime push and MCP.
+gRPC, webhooks, GraphQL, realtime push and integration with a separately built AI platform.
 
 Status: **Phase 1a (FusionCache) and phase 1b (`Modulus.Bff`, follow-ups included) are implemented and validated.**
 The full solution builds with 0 warnings, every `Category=Unit` suite passes (`Modulus.Bff.Tests` 58,
-`Modulus.Cli.Tests` 481) and `dotnet format --verify-no-changes` is clean. Phases 2 to 6 are not started.
+`Modulus.Cli.Tests` 481) and `dotnet format --verify-no-changes` is clean. Phases 2 to 5 are done (see each
+phase); phase 6 (AI platform integration) is planned, not started.
 Checkboxes are updated as work lands; where the build differs from the plan, the original text is kept and
 the difference is noted inline as **As built:**.
 
@@ -76,7 +77,7 @@ OpenIddict-shaped servers and the BFF has to work with every supported auth serv
 | 3 | `Modulus.Webhooks` (integration events → signed HTTP callbacks) | **done** |
 | 4 | `Modulus.GraphQL` (GraphQL.NET) | **done** |
 | 5 | `Modulus.Realtime` (integration events → SSE by default, SignalR opt-in) | **done** |
-| 6 | `Modulus.Mcp` (commands and queries as AI tools) | later |
+| 6 | AI platform integration: `Modulus.AI.Connector` (wire contract v1 inside the app) and `Modulus.UI.AI` (embedded assistant); read-only, no LLM code | planned |
 
 ---
 
@@ -483,10 +484,398 @@ channel isolation) need Docker. **Not built:** mobile push notifications (APNs/F
 backplane for the hub's own group features (not used: delivery goes through the realtime backplane), presence.
 **Gap:** generated CRUD declares `{Entity}CreatedIntegrationEvent` but does not publish it, as for webhooks.
 
-### Phase 6: MCP (`Modulus.Mcp`)
+### Phase 6: AI platform integration (`Modulus.AI.*`)
 
-- [ ] Commands and queries marked `[McpTool]` become MCP tools, called through `IMediator` with bearer tokens and
-  permission checks.
+Replaces the earlier one-line "MCP" phase.
+
+#### Context
+
+The AI platform is a **separate product** with its own document set (`E:\Personal\framework\ai-platform`, v6.5:
+01 BRS, 02 Architecture, 03 Integration Guide, ADRs AD-01 to AD-28). It owns:
+
+- LLMs, model routing, the planner, the Policy Enforcement Point (PEP), RAG and `pgvector`, the grounding
+  validator, conversations and metering;
+- the UI SDKs.
+
+It stays application-agnostic (AD-01). So Modulus holds **no LLM code, prompts or provider SDKs**. Its job is to
+make any Modulus app a first-class participant in the platform's published **wire contract v1** (BRS §7.2,
+Integration Guide §9), in both directions:
+
+- **Data source:** a Modulus app hosts the connector endpoints *inside the app* and passes the platform's
+  conformance suite like any connector (AD-02: no privileged path).
+- **Host:** a Modulus UI embeds the assistant through `AiPlatform.Sdk.AspNetCore` and mints session tokens
+  server-side (Integration Guide §7).
+
+Rule: **AI proposes and orchestrates; Modulus validates, authorizes and executes.**
+
+Platform rules this phase must follow, and how they change the first draft of this plan:
+
+| Platform rule | Consequence for Modulus |
+|---|---|
+| Read-only; writes have no design (BRS §1.4, Architecture §20) | Only `IQuery<T>` requests become capabilities. Commands, proposals and confirmations wait for the platform's write decision (6e). |
+| Models hold no tools or MCP (AD-19, FR-18b) | No MCP server. Capabilities go into the manifest, and the platform's planner and executor call them. |
+| API keys between app and platform, plus a platform-signed envelope for the user (AD-25, FR-27, FR-39a) | No token exchange. Modulus checks the API key the platform presents, verifies the JWS envelope (~60 s) and runs the request **as the asserted user**, with that user's own Modulus permissions. |
+| Webhooks are hints, never data (AD-27, SEC-16) | Change notifications carry ids only. Data always flows through `/changes` and `/resources:get`. |
+| Scope caching only in the platform; revocation is mandatory (AD-12, AD-13, FR-17, FR-19a) | The authorization adapter never caches. Every permission change calls `POST /revocations/scope` at least once. |
+| Classification from the manifest: Public / Internal / Confidential / Restricted (BRS §6.2) | Map `ModulusTaxonomy` onto it (6a). `Secret` never appears in the manifest. |
+| Authoritative figures come from a deterministic app query (FR-04, AD-11) | Totals and counts are `Calculate`-style capabilities backed by queries, never by text the model reads. |
+| No direct database access or free-form SQL (FR-20) | No SQL tool. Everything goes through mediator queries and the repository. |
+
+What already exists in Modulus and is reused:
+
+- mediator queries and their pipeline (`[RequirePermission]`, `[RequireFeature]`, validation, caching);
+- `IPermissionRegistry`, `IPermissionChecker.GetEffectivePermissions()` and the grant store;
+- field masking (`Authorization/Fields`) and the `ModulusTaxonomy` attributes;
+- `ISecurityAuditLog`, the outbox (at-least-once), and `Modulus.Webhooks` signing (HMAC-SHA256);
+- `ISlotContributor`, `ViewData.SetPageId`, the resilient HTTP client, and `SecurityProbeSuite`.
+
+Gaps:
+
+- There is no registry of request types.
+- `EntityUiSchema` covers extension fields only.
+- `EntityChange` has no query API.
+- Nothing calls an external endpoint when a grant, role or membership changes.
+
+#### Split of responsibility (the AI vision against the two products)
+
+| Vision item | Lives in | Modulus work |
+|---|---|---|
+| Chat, planner, LLMs, RAG, embeddings, grounding, citations, conversation state, SDK UI, settings components, metering | AI platform | none |
+| Assistant, NL search, NL report, global search, "everything about PO-123" | platform (planning) + Modulus (data) | capabilities, manifest, extraction and authorization endpoints (6a, 6b) |
+| Context awareness, ERP help | platform | manifest descriptions and deep links (6b); open question for the platform: page/record context from the host (6e) |
+| Audit assistant, root-cause evidence chain | platform + Modulus | history and audit capabilities (6b) |
+| Embedding the assistant in Modulus pages | platform SDK + Modulus | `Modulus.UI.AI` (6c) |
+| NL → ERP action, form assist, procurement/BOM suggestions | **not yet**: the platform is read-only | 6e, after the platform's write decision |
+| Anomalies, forecasts, proactive notifications | **not yet**: no request-less actions in the platform | 6e |
+| Document/invoice extraction (OCR) | **not yet**: not in the platform's scope | 6e |
+| SQL assistant | **never against the database** (FR-20) | none |
+| AI CRUD / module generator (developer AI) | a separate developer tool, not the platform | `modulus describe --json` and `--json` on the generators (6c) |
+| AI report / workflow / form / permission designers | prerequisite | Modulus has no report, workflow or form engine; build those first. **Out of scope.** |
+
+#### Packages
+
+- **`Modulus.AI.Connector`**: wire contract v1 hosted inside a Modulus app. It holds the capability registry,
+  manifest, endpoints, authorization adapter, envelope verification and revocation client.
+  **Decision:** it implements wire contract v1 from the platform's published OpenAPI spec (`Integrations.Contracts`)
+  and takes **no package dependency on the platform**. That keeps the open-source dependency policy intact
+  whatever the platform's packages are licensed under. It also means neither product's release cycle blocks the
+  other: the contract is versioned by major (AD-10), and Modulus declares which majors it supports.
+  Compatibility is proven by the platform's conformance suite (6d), not by sharing code.
+- **`Modulus.UI.AI`**: also has no platform package dependency. It provides the session-token endpoint (a resilient
+  `HttpClient` call to the platform's `/v1/session-tokens`) and a slot that renders the SDK's framework-agnostic
+  `<ai-assistant>` web component. The app supplies the SDK script: vendored or self-hosted, so the CSP stays clean.
+  An app that prefers the platform's `AiPlatform.Sdk.AspNetCore` can use it directly instead.
+
+#### 6a: Connector foundation
+
+**Built** (2026-10-03): `src/ai/Modulus.AI.Connector`, tests in `tests/unit/Modulus.AI.Connector.Tests` (47). Wiring:
+
+```csharp
+builder.Services.AddModulusAiConnector(builder.Configuration, ai => ai.UseIdentityUsers<AppUser>(u => u.IsActive));
+...
+app.UseAuthentication();
+app.UseAuthorization();
+app.MapModulusAiConnector();   // /_ai/connector/*, excluded from OpenAPI
+```
+
+- [x] **Capability registry** (`Capabilities/AiCapabilityRegistry.cs`).
+  - `[AiCapability(name, description, ResourceType = ...)]` and `[AiResource(type, description, DeepLink, TitleField)]`
+    live in Core (`Modulus.Core.Abstractions.Ai`), so modules need no connector reference. Opt-in only.
+  - Candidates: the request types of every registered `IQueryHandler<,>` / `ICommandHandler<,>` (so whatever
+    `AddMediatorHandlers` registered), plus `AddCapability<T>()` / `AddCapabilitiesFrom(assemblies)`. Read when the
+    registry is first resolved; a startup check builds it and the manifest, so a bad declaration stops the host.
+  - Refused at startup: an annotated command (the platform is read-only), a type that is not an `IQuery<T>`, a name
+    not shaped `A.B.C[.D...]`, a duplicate, a description over `MaxDescriptionLength`, a capability `ResourceType`
+    with no lookup, a lookup without a single `Guid`/`string`/`int`/`long` constructor, a missing `TitleField`.
+  - Input schema: .NET 10 `JsonSchemaExporter` (`[Description]` honoured), **no new dependency** instead of
+    `Microsoft.Extensions.AI.Abstractions`. Unknown argument members are refused (`INVALID_REQUEST`).
+- [x] **Manifest** (`GET /manifest`, API key only). Capabilities (all `readOnly`), required permissions, resource types
+  (deep-link template, title field) and the output fields of each result type with their class. Fingerprint =
+  first 32 hex chars of SHA-256 over the manifest JSON, so it only changes when the manifest does.
+  - Classification mapping as in the table above, plus `[Classified(FieldClassification)]` (the field-masking
+    attribute); the strictest attribute wins. `[SecretData]` fields are absent from the manifest and every answer.
+  - **Changed from the plan:** fields come from the query's result type (DTO), not from a new
+    `IEntityMetadataRegistry`. The DTO is what is actually served, so the manifest cannot list a field the app never
+    returns. Extension fields (`ExtraProperties`) are not merged yet.
+- [x] **Execution** (`POST /capabilities/{name}:execute`, `POST /resources:get`).
+  - Runs through `IMediator` as the envelope's user, inside the instance's company (`VerifyTenantAsync` +
+    `EnterTenant` in the same frame; never the host context), under `CallTimeout`.
+  - Fields the user may not read (`IFieldAuthorizer`; without one, a fail-closed authorizer with an empty registry)
+    are dropped before serialization, at every nesting level. `MaxResults` caps a result (`truncated: true`).
+    Deep links get `PublicBaseUrl` when relative.
+  - Errors: `DENIED` (403; also unauthenticated 401), `NOT_FOUND` (404), `UNAVAILABLE` (503, timeouts and unexpected
+    failures, no exception text), and **`INVALID_REQUEST`** (400, malformed body or arguments). `INVALID_REQUEST` is
+    not in the platform's list: raise it with the platform contract (or map it to `DENIED`). `RATE_LIMITED` is left
+    to the app's rate limiter.
+- [x] **Identity** (`Security/`).
+  - Two schemes: `ModulusAiConnector.Service` (API key only: manifest, health) and `ModulusAiConnector` (API key +
+    envelope: everything else), each with its own policy (no `:`, so not a permission policy).
+  - API key: `Authorization: ApiKey <key>`, compared in constant time against 1–2 SHA-256 hashes
+    (`AiApiKeys.Hash`); a request with a browser `Origin` is refused.
+  - Envelope (`AiPlatform-Envelope` header, `Microsoft.IdentityModel.JsonWebTokens`, MIT; pinned 8.16.0, the
+    version OpenIddict already pulls): RS/PS/ES signature against an inline JWKS and/or a JWKS URL (refreshed hourly,
+    forced at most once a minute on an unknown key id), issuer, audience = a configured instance, lifetime + skew,
+    `exp - iat` ≤ `MaxEnvelopeLifetime`, `jti` and `iat` required, `tenant_id` + `app_instance_id` claims, replay
+    refused.
+  - Instance mapping: `Ai:Connector:Instances` (`AppInstanceId`, `PlatformTenantId`, `TenantId` = the company),
+    instead of the planned `Ai:Connector:Tenants`.
+  - User: `IAiConnectorUserResolver` (`UseIdentityUsers<TUser>(isActive)` by id/e-mail/user name with a lock-out
+    check, or `UseUserResolver<T>`). The default refuses everyone and logs a startup warning. The principal carries
+    `sub`, NameIdentifier, `role`s, `tid` and the `ai_*` claims, so the app's own `ICurrentUser` and grant-store
+    checker answer for it unchanged. Membership is checked (`RequireMembership`, default on).
+  - Every refusal is `401 DENIED`; the reason goes to the security audit only.
+- [x] **Authorization adapter** (`POST /authz/scope`, `/authz/resources:check`, `/authz/fields:check`).
+  - Scope: roles, `ICurrentUser.Permissions`, data scopes (`company`, `orgUnits` from `ICurrentDataScope`), field
+    policies (`{resourceType or capability}.{field}`: Allow/Deny, secret fields absent), `ScopeTtl` (≤ 5 min) and
+    the revocation key. Nothing is cached (AD-13).
+  - Resources check runs each record's lookup as the user (≤ `MaxBatchSize`); denied or missing = `false`.
+- [x] **Revocation client** (`Revocation/AiRevocation.cs`).
+  - New Core hook `IAccessChangeObserver` (`AccessChange`: kind, reason, company, user), called by `TenantManager`
+    (membership added/removed, company activated/deactivated) and by the authorization admin API (grants, roles, org
+    units, placements, feature entitlements, delegations) after their audit event.
+  - The connector's observer queues one signal per affected instance; `AiRevocationDispatcher` posts
+    `{ revocationKey, appInstanceId, reason, occurredAt }` to `{Platform:BaseUrl}/revocations/scope` with
+    `Platform:ApiKey`, retrying the same payload with jittered exponential back-off (cap `RevocationMaxBackoff`)
+    until a 2xx (AD-12).
+  - The revocation key is per instance (`modulus:{appInstanceId}`), deliberately coarse: a role grant reaches users
+    no per-user key would name.
+- [x] **Audit and guard.** Every call is recorded (category `ai`; actor, instance, envelope id, capability or
+  target, outcome, error code, correlation id; never data). Every route carries a policy, so the startup guard sees
+  them as policed.
+
+Known limits of 6a (follow-ups):
+
+- The revocation queue is **in memory**: a signal pending at shutdown is lost (bounded by the platform's 5-minute
+  scope TTL). Moving it to the outbox needs an outbox-capable store in the host.
+- The envelope replay cache is **per process**; with several replicas a replay could reach another node within the
+  envelope's ~60 s.
+- Not hooked yet: Identity account disable / lock-out and role membership changes (`UserManager`), and grant-store
+  writes made outside the admin API.
+- `SecurityProbeSuite` does not cover `/_ai/connector/*` yet (it signs in with its own test scheme).
+- No OpenAPI spec of the contract exists yet; the wire shapes in `Contract/WireContract.cs` follow Architecture
+  §4/§19 and should be regenerated from `Integrations.Contracts` when it is published (6d).
+
+#### 6b: Data for answers and the index
+
+**Built** (2026-10-04):
+- The connector parts are in `src/ai/Modulus.AI.Connector`, with 98 tests in `tests/unit/Modulus.AI.Connector.Tests`.
+- The new package is `src/ai/Modulus.AI.Connector.EntityFrameworkCore`, with 28 SQLite tests in
+  `tests/unit/Modulus.AI.Connector.EntityFrameworkCore.Tests`.
+
+Wiring:
+
+```csharp
+builder.Services.AddEntityChangeHistory();                 // only for the history capability
+builder.Services.AddModulusAiConnector(builder.Configuration, ai => ai
+    .UseIdentityUsers<AppUser>(u => u.IsActive)
+    .UseEntityFrameworkCore()                              // journal, change feed, entity source, purge
+    .AddAuditCapabilities()                                // Modulus.Audit.Log.Search (needs an IAuditLogStore)
+    .AddEntityChangeHistoryCapability());                  // Modulus.Audit.EntityChange.List
+```
+
+- [x] **Extraction** (`GET /extract?appInstanceId=&resourceType=&cursor=&limit=`, `GET /changes?appInstanceId=&since=&limit=`).
+  - **Opting in.** Put `[AiIndexed("Module.Entity")]` (from Core) on an entity. The startup check refuses the entity
+    unless both hold:
+    - the resource type has an `[AiResource]` lookup;
+    - the entity's `Id` type matches the lookup's id type.
+  - **Who reads.** Ingestion has no user.
+    - The platform authenticates with its API key only and names the instance in `appInstanceId`. That instance must
+      be configured, or the call gets `403` and is audited.
+    - The connector then runs as the **indexing identity** (`AiIndexer`) in the instance's company. Its roles are
+      `Ai:Connector:Indexing:Roles` (default `AiIndexer`), optionally with a `ServiceUserId`.
+    - The app's grant store decides what the index may hold, so grant that role the entities' read permissions.
+  - **Extract.**
+    - Indexed types come in name order and keys in key order. Paging is keyset; the cursor is base64url
+      `{type, last key}`.
+    - Each key is read through the type's lookup as the indexing identity. Masks, the company filter and soft delete
+      therefore apply exactly as they do for a user call.
+    - A record the identity cannot see is skipped.
+    - A type it may not read at all fails the call with `DENIED`. That way a missing grant is noticed, rather than
+      silently producing an empty index.
+    - Each record carries `access`: the lookup's permission and the `company` data scope.
+  - **Journal.**
+    - `UseEntityFrameworkCore()` maps `{prefix}ai_changes` into **every** `ModuleDbContext` through the new
+      `IModuleModelContributor` seam. Each row (`AiChangeRecord`) holds a sequence, tenant, resource type, id, kind
+      and time.
+    - A new `IModuleSaveContributor` seam runs in `ModuleDbContext.SaveChangesAsync`: after audit fields and
+      soft-delete conversion, before the outbox.
+    - The contributor adds one row per added, modified or deleted indexed entity **in the same `SaveChanges`**, so the
+      row commits or rolls back with the entity.
+    - A soft delete is journaled as a delete.
+    - The tenant comes from `IHasTenantId`, else the ambient company, else `Guid.Empty`.
+  - **Changes.**
+    - Each context numbers its own rows, so the cursor holds one sequence per context: base64url JSON, keyed by the
+      context's type name.
+    - For each context, the feed reads up to `limit + 1` rows of the instance's company.
+    - It cuts them at the first row newer than `now − ChangesSettleDelay` (default 5 s), because a lower sequence may
+      still be committing.
+    - It merges the contexts oldest first and returns only the last change of each record.
+    - An upsert is re-read through the lookup. A record the indexing identity can no longer see becomes a
+      **tombstone**.
+    - A foreign cursor gets `INVALID_REQUEST`.
+  - **Retention.**
+    - `AiChangeJournalPurgeService` deletes rows older than `AiChangeJournalOptions.Retention` (30 days), every
+      `PurgeInterval` (hourly), in the host context.
+    - The platform must read `/changes` more often than the retention period, or re-extract.
+    - The page of `/changes` and `/extract` is capped by `Indexing:PageSize` (100). An unsettled row does not set
+      `hasMore`, so the platform does not poll in a loop.
+- [x] **Change hints.**
+  - Settings live in `Ai:Connector:Indexing:ChangeHints`: `Enabled`, `Interval` (30 s) and `Path`
+    (`/webhooks/app-changes`).
+  - The secret is `Ai:Connector:Platform:WebhookSecret`: `whsec_` plus base64 of at least 16 bytes. It is checked at
+    startup when hints are on.
+  - `AiChangeHintService` polls each instance's journal head. When the head moves, it posts
+    `{ appInstanceId, eventId, occurredAt }` (no data, AD-27).
+  - Each post carries the platform API key and the Standard Webhooks headers:
+    - `webhook-id`: `hint_…`
+    - `webhook-timestamp`
+    - `webhook-signature`: `v1,<HMAC-SHA256 of id.ts.body>`
+  - **Changed from the plan:**
+    - It uses its own signer of a few lines. `Modulus.Webhooks` is a store-backed delivery system the connector should
+      not depend on.
+    - It polls the head rather than using a save hook, so a hint never sits inside a transaction.
+- [x] **Search capabilities.**
+  - Put `[AiQueryable("Module.Entity", description, permission, Fields = [...])]` (from Core) on an entity. That
+    generates `{ResourceType}.Search` and `{ResourceType}.Calculate`, both requiring `permission`.
+  - Only the listed scalar properties (never `[SecretData]`) can be filtered, sorted, grouped or aggregated. Only they,
+    plus the key, are returned.
+  - Operators are `eq ne gt ge lt le contains startsWith in isNull isNotNull`, each checked against the field's type.
+  - Limits:
+    - at most `MaxFilters` filters;
+    - at most 3 sort keys;
+    - at most 100 `in` values;
+    - 1 to 200 characters for `contains` and `startsWith`.
+  - **Changed from the plan:** filters are built directly as `Expression<Func<T,bool>>`, not as `ISpecification<T>`.
+    Each value is bound through a closure member, so it is sent as a query parameter. There is no SQL or LINQ text.
+  - A filter, sort or group on a field the caller cannot read gets `DENIED`, because filtering on a masked field would
+    reveal it.
+  - Results go through the same projector as other capabilities: masks, `MaxResults` and `truncated`.
+  - `Calculate`:
+    - supports `count`, `sum`, `average`, `min` and `max`;
+    - can group by one field;
+    - returns rows `{ group, value }`, largest first, capped at `MaxGroups`.
+  - `EfAiEntitySource` runs these queries through the module context that maps the entity, untracked, with its query
+    filters (company, soft delete). It also serves the keyset reads of `/extract`.
+- [x] **History and audit capabilities.** Both are gated by `audit:view` and return pages of 1 to 100 rows (default 20).
+  - **`Modulus.Audit.Log.Search`** (`AddAuditCapabilities`) runs over `IAuditLogStore`. It always searches the call's
+    own company. With no company in scope, it returns nothing.
+  - **`Modulus.Audit.EntityChange.List`** (`AddEntityChangeHistoryCapability`) uses the new
+    `IEntityChangeHistoryReader.QueryAsync(EntityChangeQuery)`, registered by `AddEntityChangeHistory()`.
+    - The reader reads every context that maps `EntityChange`, newest first, in the current company.
+    - Only `[AiIndexed]` and `[AiQueryable]` entities are reachable.
+    - A value is null when its property is unknown or `[SecretData]`.
+    - A value is also null when it is classified (`[Classified]` or a compliance attribute) and the caller's field mask
+      cannot read it.
+    - Without an `IFieldAuthorizer`, every classified value is hidden.
+    - A bug found while testing is fixed: values of `[Classified]` properties used to be returned to any `audit:view`
+      caller.
+
+Known limits of 6b (follow-ups):
+
+- **N+1 reads.** `/extract` and `/changes` read each record through its lookup query, so each page costs N+1 queries.
+  `Indexing:PageSize` (default 100) bounds this. A batch lookup would need a second attribute shape.
+- **Keys.** `[AiIndexed]` entities need a **client-generated key** (`Guid.CreateVersion7()`). A store-generated key
+  fails the save with a clear message, rather than journaling a wrong id. Composite keys are not supported.
+- **Migration.** `ai_changes` is a new table in every module context. **Add a migration**
+  (`modulus migrate add AiChanges`), or rely on `EnsureCreated` in development.
+- **Hint delivery.** Hints are sent **at most once** per head move, and are lost while the platform is down. The
+  platform's own `/changes` schedule is the safety net.
+- **Personal data.** `[PersonalInformation]` fields are **not masked per user** in capability results.
+  - Masking follows `[Classified]` through `IFieldAuthorizer`.
+  - Personal fields are declared `Restricted` in the manifest, so the platform keeps them out of embedded text
+    (AD-06).
+  - If some users must not see a personal field, classify it with `[Classified]` too.
+- **Aggregates.** An ungrouped aggregate groups by a constant, so there is one query shape. The SQLite tests cover
+  decimal and double sums and averages. Other providers are not run in CI for these shapes.
+- **Not built.** There is no `Search` for extension fields (`ExtraProperties`), and no `ISearchContributor` for
+  cross-entity search.
+
+#### 6c: Host integration, UI and CLI
+
+- [ ] **`Modulus.UI.AI`.**
+  - `POST /ai/session` (behind the sign-in) mints the platform session token with the **host API key**, which is
+    held server-side only (`Ai:Host:ApiKey`, user secrets or a vault; covered by the secrets guard).
+  - An `ISlotContributor` renders the SDK's assistant view component, permission-gated (`ai:use`) and
+    feature-gated (`Ai`).
+  - The SDK talks to the platform gateway directly with its DPoP-bound short-lived token. It does **not** go
+    through the BFF, and it stores nothing in the browser (FR-41a).
+  - The SDK assets are vendored or self-hosted so the CSP stays clean. Settings components for tenant admins
+    (FR-40c) mount on an admin page. They need the platform's separate tenant-admin token, never the end-user
+    session.
+  - In a `webapp+api` split, the session endpoint and the assistant live in the Web host, and the connector lives
+    in the API host.
+- [ ] **CLI.**
+  - `modulus add-ai [--connector] [--host]` adds `Modulus.AI.Connector` to the API host (endpoints, API-key
+    scheme, envelope keys URL, tenant mapping, revocation relay) and/or `Modulus.UI.AI` to the UI host, plus
+    settings and a test class.
+  - `generate-crud --ai` marks the generated queries `[AiCapability]` and the entity `[AiQueryable]` /
+    `[AiIndexed]`, and writes `{Entity}AiCapabilityTests`.
+  - `modulus describe --json` and `--json` output on the generators let a separate developer-AI tool drive the
+    CLI.
+
+#### 6d: Conformance
+
+- [ ] **Inside Modulus.** Contract tests against a fake platform (signs envelopes, receives revocations) and the
+  OpenAPI spec (response shapes, typed errors) run in the Modulus test suite, with no platform package involved.
+  Generated apps ship a `ConnectorContractTests` class built the same way.
+- [ ] **Against the real platform.** Run the platform's `AiPlatform.Integrations.Conformance` suite against a
+  generated app, in the platform's or the app's CI, before a connector is activated. It covers deny paths, field
+  filtering, fail-closed behaviour, tombstones, and a simulated permission change that must trigger
+  `/revocations/scope`.
+
+#### 6e: Waiting on platform decisions (not designed here)
+
+These need a platform BRS decision first (Architecture §20). Modulus will follow, not lead:
+
+- **Write actions.** If writes come, the likely shape is: the platform returns a proposal, and the **user confirms
+  and Modulus executes** the `ICommand` under the user's own session (preview → confirm → execute → verify →
+  audit). That shape enables NL → action, form assist, and draft requisitions and BOMs.
+- **Proactive insights** (anomalies, forecasts, alerts without a user request). If the platform adds them,
+  Modulus would receive them as notifications (`INotificationPublisher`, Realtime).
+- **Document extraction (OCR).** If the platform adds it, Modulus would provide files through presigned URLs and
+  take the extracted data back as a write proposal.
+- **Host context.** The current page, entity and record passed from the SDK to the planner as a hint (never as
+  authority).
+- **MCP or other agent access.** Excluded by AD-19 for the platform. A separate MCP adapter for other agents is
+  not planned.
+
+#### Critical files
+
+- `src/messaging/Modulus.Mediator/Attributes/PipelineAttributes.cs`,
+  `src/messaging/Modulus.Mediator/Extensions/MediatorServiceCollectionExtensions.cs`
+- `src/core/Modulus.Core/Abstractions/Permissions/IPermissionRegistry.cs`,
+  `src/platform/Modulus.Platform/Authorization/` (`Grants/`, `Fields/`, `Governance/Delegation.cs`)
+- `src/core/Modulus.Core/Abstractions/Compliance/ModulusTaxonomy.cs`
+- `src/core/Modulus.Core/Abstractions/Security/SecurityAudit.cs`
+- `src/data/Modulus.EntityFrameworkCore/` (`ModuleDbContext` save hook, `ChangeHistory/`)
+- `src/platform/Modulus.Platform/AuditLogging/IAuditLogStore.cs`
+- `src/platform/Modulus.Platform/MultiTenancy/` (`TenantManager`)
+- `src/messaging/Modulus.Outbox/`, `src/messaging/Modulus.Webhooks/` (signing)
+- `src/ui/Modulus.UI.Core/Entities/EntityUiSchema.cs`, `src/ui/Modulus.UI.Core/Contributors/Slots.cs`
+- `src/testing/Modulus.Testing/` (`SecurityProbeSuite`)
+
+#### Tests
+
+- **Registry.** Only `[AiCapability]` queries are exposed, a command is refused, and the schemas and manifest
+  classifications match the mapping table (`Secret` is absent).
+- **Envelope.** A bad signature, an expired envelope, a replay, a wrong audience or app instance, an unknown user,
+  and a company without membership are all refused.
+- **Execution.** A user without the permission gets `DENIED`, masked fields are absent from the JSON, and the
+  tenant filter holds.
+- **Authorization adapter.** Answers match the grant store, nothing is cached, and a timeout gives `UNAVAILABLE`.
+- **Revocation.** A grant change produces exactly one acknowledged call after retries (fake platform), and the call
+  is idempotent.
+- **Extraction.** The cursor resumes, tombstones appear for deletes, and the journal is written in the same
+  transaction (6b: `IndexingAndQueryTests`, `ChangeJournalTests`, `EntitySourceTests`,
+  `EntityHistoryCapabilityTests`, `AuditCapabilityTests`).
+
+#### Verification
+
+1. Generate an app: `modulus app --kind api --auth openiddict`, then `add-ai --connector`, then
+   `generate-crud Product --ai`. It must build with 0 warnings and the generated tests must pass.
+2. The platform's conformance suite (or a fake platform that signs envelopes) passes against it.
+3. A web app (`add-ai --host`) shows the assistant to a signed-in user with `ai:use`, and its session endpoint
+   refuses anonymous callers.
 
 ## Verification checklist (every phase)
 

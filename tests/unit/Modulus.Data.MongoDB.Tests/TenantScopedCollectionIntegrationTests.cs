@@ -56,7 +56,8 @@ public sealed class TenantScopedCollectionIntegrationTests : IAsyncLifetime
     {
         await _invoices.UpdateOneAsync(
             Builders<Invoice>.Filter.Eq(i => i.Number, "new"),
-            Builders<Invoice>.Update.Set(i => i.Number, "new"),
+            // The model's Guid id is set on insert; a server-generated ObjectId would not deserialize into it.
+            Builders<Invoice>.Update.Set(i => i.Number, "new").SetOnInsert(i => i.Id, Guid.NewGuid()),
             new UpdateOptions { IsUpsert = true });
 
         (await _raw.Find(i => i.Number == "new").SingleAsync()).TenantId.Should().Be(TenantB);

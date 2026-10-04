@@ -129,6 +129,30 @@ public sealed class RealtimeDeliveryTests
         reserved.Should().Throw<InvalidOperationException>().WithMessage("*reserved*");
     }
 
+    [Theory]
+    [InlineData("true", "Inherited")]
+    [InlineData("false", "Anonymous")]
+    public void Topics_are_described_for_the_security_guard(string signedIn, string open)
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?> { ["Realtime:RequireAuthenticatedUser"] = signedIn })
+            .Build();
+        services.AddModulusRealtime(configuration, r => r
+            .AddTopic("news")
+            .AddTopic("orders:*", "orders:read", _ => ValueTask.FromResult(true)));
+        using var provider = services.BuildServiceProvider();
+
+        var entries = provider.GetServices<Modulus.Core.Abstractions.Security.ISecuritySurfaceContributor>()
+            .SelectMany(c => c.Describe(provider))
+            .ToDictionary(e => e.Name);
+
+        entries["topic orders:*"].Policies.Should().Equal("orders:read", "(callback)");
+        entries["topic orders:*"].Access.Should().Be(Modulus.Core.Abstractions.Security.SecuritySurfaceAccess.Policed);
+        entries["topic news"].Access.ToString().Should().Be(open);
+    }
+
     [Fact]
     public async Task Publishing_to_an_empty_user_list_sends_nothing()
     {

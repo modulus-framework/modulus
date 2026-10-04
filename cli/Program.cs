@@ -50,6 +50,9 @@ public static class Program
                 .WithDescription("Add outgoing webhooks: integration events delivered, signed, to tenant subscriptions (store module, host wiring, management API).")
                 .WithExample("add-webhooks")
                 .WithExample("add-webhooks", "--events", "catalog.product-created.v1");
+            config.AddCommand<Commands.AddAuditStoreCommand>("add-audit-store")
+                .WithDescription("Keep the business audit log and the hash-chained security audit in a database (store module, host wiring, settings).")
+                .WithExample("add-audit-store");
             config.AddCommand<Commands.AddRealtimeCommand>("add-realtime")
                 .WithDescription("Push integration events to connected clients over SSE (and SignalR with --signalr), filtered by tenant and permission; relays /realtime through BFFs.")
                 .WithExample("add-realtime")

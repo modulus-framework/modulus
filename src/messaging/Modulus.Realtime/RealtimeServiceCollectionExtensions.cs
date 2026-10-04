@@ -3,6 +3,7 @@ namespace Modulus.Realtime;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Modulus.Core.Abstractions.Security;
 using Modulus.Events;
 using Modulus.Events.Abstractions;
 using Modulus.Realtime.Delivery;
@@ -113,6 +114,7 @@ public static class RealtimeServiceCollectionExtensions
             services.TryAddSingleton<IRealtimeBackplane, InProcessRealtimeBackplane>();
             services.TryAddScoped<IRealtimePublisher, RealtimePublisher>();
             services.TryAddSingleton<IRealtimeTopicAuthorizer, RealtimeTopicAuthorizer>();
+            services.TryAddEnumerable(ServiceDescriptor.Singleton<ISecuritySurfaceContributor, RealtimeSecuritySurface>());
             services.AddAuthorization();
 
             var signalR = configuration.GetSection(ModulusRealtimeOptions.SectionName).Get<ModulusRealtimeOptions>()?.SignalR.Enabled ?? false;

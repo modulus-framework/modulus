@@ -15,6 +15,7 @@ public abstract class ModuleMongoContext
     protected readonly IMongoDatabase Database;
     protected readonly string Prefix;
     private readonly ICurrentTenant? _tenant;
+    private readonly ISecurityAuditLog? _audit;
 
     protected ModuleMongoContext(
         IMongoDatabase database,
@@ -30,13 +31,33 @@ public abstract class ModuleMongoContext
     /// <param name="database">The module database.</param>
     /// <param name="opts">Mongo options (collection prefix).</param>
     /// <param name="tenant">The ambient tenant.</param>
+    /// <param name="audit">Records <see cref="TenantScopedCollection{T}.Unscoped"/> uses in the security audit.</param>
     protected ModuleMongoContext(
         IMongoDatabase database,
         IOptions<MongoOptions> opts,
-        ICurrentTenant tenant)
+        ICurrentTenant tenant,
+        ISecurityAuditLog? audit = null)
         : this(database, opts)
     {
         _tenant = tenant ?? throw new ArgumentNullException(nameof(tenant));
+        _audit = audit;
+    }
+
+    /// <summary>
+    /// A context on the ambient tenant's database (<see cref="ITenantMongoDatabase"/>), so the module runs unchanged on a
+    /// shared database (<c>AddMongoDatabase</c>) or one database per tenant (<c>AddMongoDatabasePerTenant</c>).
+    /// </summary>
+    /// <param name="database">The ambient tenant's database.</param>
+    /// <param name="opts">Mongo options (collection prefix).</param>
+    /// <param name="tenant">The ambient tenant.</param>
+    /// <param name="audit">Records <see cref="TenantScopedCollection{T}.Unscoped"/> uses in the security audit.</param>
+    protected ModuleMongoContext(
+        ITenantMongoDatabase database,
+        IOptions<MongoOptions> opts,
+        ICurrentTenant tenant,
+        ISecurityAuditLog? audit = null)
+        : this((database ?? throw new ArgumentNullException(nameof(database))).Database, opts, tenant, audit)
+    {
     }
 
     /// <summary>
@@ -54,7 +75,7 @@ public abstract class ModuleMongoContext
     protected TenantScopedCollection<T> GetTenantCollection<T>(string name)
         where T : IHasTenantId
         => new(GetCollection<T>(name), _tenant ?? throw new InvalidOperationException(
-            $"{GetType().Name} must pass ICurrentTenant to the ModuleMongoContext constructor to use tenant collections."));
+            $"{GetType().Name} must pass ICurrentTenant to the ModuleMongoContext constructor to use tenant collections."), _audit);
 
     /// <summary>
     /// Override to create indexes. Called from module InitializeAsync.

@@ -19,6 +19,7 @@ public static class EntityChangeHistoryExtensions
         this IServiceCollection services)
     {
         services.AddScoped<IEntityChangeHistoryWriter, EntityChangeHistoryWriter>();
+        services.AddScoped<IEntityChangeHistoryReader, EntityChangeHistoryReader>();
         return services;
     }
 }

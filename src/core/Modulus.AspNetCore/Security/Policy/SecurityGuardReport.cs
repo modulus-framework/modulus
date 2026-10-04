@@ -71,6 +71,12 @@ public sealed record SecurityGuardReport(
 
     /// <summary>The anonymous endpoints, for the loosening report.</summary>
     public IEnumerable<EndpointSecurityEntry> Loosened => Endpoints.Where(e => e.Access == EndpointAccess.Loosened);
+
+    /// <summary>
+    /// GraphQL fields, realtime topics and other items carried by one endpoint, from every registered
+    /// <see cref="ISecuritySurfaceContributor"/>. Reported, not judged: each item sits behind an endpoint the guard checked.
+    /// </summary>
+    public IReadOnlyList<SecuritySurfaceEntry> Surfaces { get; init; } = [];
 }
 
 /// <summary>Holds the report of the last guard run (for diagnostics, the security audit and tests).</summary>

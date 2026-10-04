@@ -74,6 +74,17 @@ public sealed class RedisFusionCacheTests : IAsyncLifetime
         var cacheA = a.GetRequiredService<ICacheService>();
         var cacheB = b.GetRequiredService<ICacheService>();
 
+        // B subscribes to the backplane asynchronously; under load a removal published before that is never seen.
+        // Repeat a throwaway removal until B observes one, so the assertion below tests eviction, not start-up timing.
+        await cacheA.SetAsync("warm-up", "w");
+        (await cacheB.GetAsync<string>("warm-up")).Should().Be("w");
+        await Eventually(async () =>
+        {
+            await cacheA.RemoveAsync("warm-up");
+            await Task.Delay(50);
+            return await cacheB.GetAsync<string>("warm-up") is null;
+        });
+
         await cacheA.SetAsync("product:1", "v1", null, ["products"]);
         (await cacheB.GetAsync<string>("product:1")).Should().Be("v1"); // now in B's L1
 

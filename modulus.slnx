@@ -75,6 +75,11 @@
     <Project Path="src/ui/Modulus.UI.Files/Modulus.UI.Files.csproj" />
     <Project Path="src/ui/Modulus.UI.Users/Modulus.UI.Users.csproj" />
   </Folder>
+  <!-- ── AI ──────────────────────────────────────────────────────── -->
+  <Folder Name="/src/ai/">
+    <Project Path="src/ai/Modulus.AI.Connector/Modulus.AI.Connector.csproj" />
+    <Project Path="src/ai/Modulus.AI.Connector.EntityFrameworkCore/Modulus.AI.Connector.EntityFrameworkCore.csproj" />
+  </Folder>
   <!-- ── Testing ─────────────────────────────────────────────────── -->
   <Folder Name="/src/testing/">
     <Project Path="src/testing/Modulus.Testing.Architecture/Modulus.Testing.Architecture.csproj" />
@@ -101,6 +106,8 @@
     <Project Path="tests/unit/Modulus.Outbox.Tests/Modulus.Outbox.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Sagas.Tests/Modulus.Sagas.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Webhooks.Tests/Modulus.Webhooks.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.AI.Connector.Tests/Modulus.AI.Connector.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.AI.Connector.EntityFrameworkCore.Tests/Modulus.AI.Connector.EntityFrameworkCore.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Realtime.Tests/Modulus.Realtime.Tests.csproj" />
     <Project Path="tests/unit/Modulus.EventBus.Kafka.Tests/Modulus.EventBus.Kafka.Tests.csproj" />
     <Project Path="tests/unit/Modulus.EventBus.RabbitMQ.Tests/Modulus.EventBus.RabbitMQ.Tests.csproj" />

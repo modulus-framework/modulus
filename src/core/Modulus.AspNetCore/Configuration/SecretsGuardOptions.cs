@@ -43,6 +43,8 @@ public sealed class SecretsGuardOptions
         "*AccessKey",
         "*SecretKey",
         "*PrivateKey",
+        "*HmacKey",
+        "*HashKey",
         "*Token",
     ];
 }

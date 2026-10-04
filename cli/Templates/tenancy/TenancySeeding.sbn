@@ -1,0 +1,59 @@
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using Modulus.Core.Abstractions;
+using Modulus.Identity.Abstractions;
+using Modulus.MultiTenancy.EntityFrameworkCore;
+
+namespace {{ tenancy_namespace }}.Infrastructure;
+
+/// <summary>
+/// Seeds the tenant store on startup (call <c>SeedTenancyAsync</c> after the identity seeding): it ensures the default
+/// company (<c>Tenancy:Seed:DefaultTenant</c>, slug <c>default</c> unless configured) and an active membership in it for
+/// every user in the <c>Admin</c> role, so the administrator can call the API right away with
+/// <c>X-Tenant-Id: default</c>. Idempotent: it runs at every start and only adds what never existed (a revoked
+/// membership stays revoked).
+/// </summary>
+/// <remarks>
+/// A token carrying a <c>tid</c> claim is pinned to that company; an account without one selects a company with the
+/// <c>X-Tenant-Id</c> header (id or slug) and needs an active membership in it (<c>RequireMembership()</c> in Program.cs).
+/// Create more companies and grant access with <see cref="TenantManager"/>.
+/// </remarks>
+public static class TenancySeeding
+{
+    public const string AdminRole = "Admin";
+
+    public static async Task SeedTenancyAsync(
+        this IServiceProvider services, IHostEnvironment environment, CancellationToken ct = default)
+    {
+        // Seeding is a host operation: accounts, roles and companies belong to no company, and with multi-tenancy on
+        // a context without a company sees none of them.
+        using var hostContext = services.GetRequiredService<ICurrentTenant>().Change(null);
+        await using var scope = services.CreateAsyncScope();
+        var provider = scope.ServiceProvider;
+        var logger = provider.GetRequiredService<ILoggerFactory>().CreateLogger("Tenancy.Seeding");
+        var configuration = provider.GetRequiredService<IConfiguration>();
+        var tenants = provider.GetRequiredService<TenantManager>();
+        var store = provider.GetRequiredService<TenantStoreDbContext>();
+        var users = provider.GetRequiredService<UserManager<ModulusUser>>();
+
+        var slug = configuration["Tenancy:Seed:DefaultTenant"] is { Length: > 0 } configured ? configured : "default";
+        var tenant = await store.Tenants.AsNoTracking().FirstOrDefaultAsync(t => t.Slug == slug, ct);
+        var tenantId = tenant?.Id ?? (await tenants.CreateAsync(slug, "{{ app_name }}", ct: ct)).TenantId;
+
+        foreach (var admin in await users.GetUsersInRoleAsync(AdminRole))
+        {
+            // Only a membership that never existed: a revoked one (kept, inactive) stays revoked.
+            if (await store.TenantMemberships.AnyAsync(m => m.UserId == admin.Id && m.TenantId == tenantId, ct))
+                continue;
+            if (await tenants.AddMemberAsync(admin.Id, tenantId, ct))
+                logger.LogInformation("{User} is a member of company '{Slug}'.", admin.UserName, slug);
+        }
+
+        if (environment.IsDevelopment())
+            logger.LogInformation("Default company '{Slug}' ({TenantId}): send X-Tenant-Id: {Slug} with API calls.", slug, tenantId, slug);
+    }
+}

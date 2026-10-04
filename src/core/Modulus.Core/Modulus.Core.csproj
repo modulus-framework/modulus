@@ -8,6 +8,9 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- The data-classification base type: the logging source generator recognises a classification only by it, and
+         domain entities (which reference Core only) must be able to carry one. DI.Abstractions + ObjectPool only. -->
+    <PackageReference Include="Microsoft.Extensions.Compliance.Abstractions" />
   </ItemGroup>
 
   <ItemGroup>

@@ -151,7 +151,7 @@ public sealed class TenantSqlGuardInterceptor : DbCommandInterceptor, IQueryExpr
     }
 
     // The statement text is never recorded: it may carry literal values (personal data, secrets).
-    private static void Audit(
+    internal static void Audit(
         ISecurityAuditLog? audit, ModuleDbContext context, string outcome, IReadOnlyList<string> tables, string origin, string? reason)
     {
         if (audit is null)

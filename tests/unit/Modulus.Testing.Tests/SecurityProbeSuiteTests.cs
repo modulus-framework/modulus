@@ -89,6 +89,53 @@ public sealed class SecurityProbeSuiteTests
     }
 
     [Fact]
+    public async Task The_token_servers_userinfo_endpoint_may_refuse_a_foreign_company_with_400()
+    {
+        var builder = WebApplication.CreateBuilder();
+        builder.WebHost.UseTestServer();
+        builder.Services.AddAuthentication(TestAuthDefaults.SchemeName)
+            .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(TestAuthDefaults.SchemeName, _ => { });
+        builder.Services.AddAuthorization();
+        await using var app = builder.Build();
+
+        // Like OpenIddict: the token server answers userinfo during authentication, before the tenant is resolved.
+        app.Use(async (context, next) =>
+        {
+            if (context.Request.Path == "/connect/userinfo")
+            {
+                context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                return;
+            }
+
+            await next(context);
+        });
+        app.UseAuthentication();
+        app.Use(async (context, next) =>
+        {
+            if (context.Request.Headers.ContainsKey("X-Tenant-Id"))
+            {
+                context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                return;
+            }
+
+            await next(context);
+        });
+        app.UseAuthorization();
+        app.MapGet("/connect/userinfo", () => "claims").RequireAuthorization();
+        await app.StartAsync();
+
+        var report = await SecurityProbeSuite.RunAsync(app.Services, app.GetTestClient(), new SecurityProbeOptions { ForeignTenantId = Foreign });
+
+        report.Results.Single(r => r.Probe == SecurityProbe.ForeignTenant).Expected.Should().Be("400/403");
+        report.EnsureNoFailures();
+
+        var strict = new SecurityProbeOptions { ForeignTenantId = Foreign };
+        strict.ForeignTenantStatusOverrides.Clear();
+        (await SecurityProbeSuite.RunAsync(app.Services, app.GetTestClient(), strict)).Failures
+            .Should().ContainSingle(r => r.Probe == SecurityProbe.ForeignTenant && r.Actual == 400);
+    }
+
+    [Fact]
     public async Task An_endpoint_without_a_policy_fails_the_suite()
     {
         await using var app = await HostAsync(withLeak: true);

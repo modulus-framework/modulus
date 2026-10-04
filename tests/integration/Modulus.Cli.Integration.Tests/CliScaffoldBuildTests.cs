@@ -34,6 +34,10 @@ public sealed class CliScaffoldBuildTests
             var nupkgDir = Path.Combine(work.FullName, "nupkg");
             var cliBinDir = Path.Combine(work.FullName, "cli-bin");
             var outputDir = Path.Combine(work.FullName, "output");
+            // The packed version number does not change between runs, so a machine-wide package cache would serve the
+            // Cobytelabs.Modulus.* packages of an earlier pack (and hide every framework change since). The generated
+            // app restores into its own cache instead.
+            var isolatedCache = new Dictionary<string, string> { ["NUGET_PACKAGES"] = Path.Combine(work.FullName, "packages") };
             Directory.CreateDirectory(nupkgDir);
             Directory.CreateDirectory(outputDir);
 
@@ -73,14 +77,14 @@ public sealed class CliScaffoldBuildTests
                 "--migration-engine", "efcore",
                 "--package-source", $"\"{nupkgDir}\"",
                 "-o", $"\"{outputDir}\"");
-            await RunAsync("dotnet", $"\"{cliDll}\" {scaffoldArgs}", work.FullName);
+            await RunAsync("dotnet", $"\"{cliDll}\" {scaffoldArgs}", work.FullName, isolatedCache);
 
             var appSlnx = Path.Combine(outputDir, "TestApp", "TestApp.slnx");
             File.Exists(appSlnx).Should().BeTrue($"the CLI should have scaffolded {appSlnx}");
 
             // 4. Build what the CLI generated. This is the actual claim
             // under test: "modulus app gives you a working solution."
-            await RunAsync("dotnet", $"build \"{appSlnx}\" -c Release --nologo", Path.Combine(outputDir, "TestApp"));
+            await RunAsync("dotnet", $"build \"{appSlnx}\" -c Release --nologo", Path.Combine(outputDir, "TestApp"), isolatedCache);
         }
         finally
         {
@@ -102,7 +106,8 @@ public sealed class CliScaffoldBuildTests
             $"Could not locate modulus.slnx by walking up from {AppContext.BaseDirectory}");
     }
 
-    private static async Task RunAsync(string fileName, string arguments, string workingDirectory)
+    private static async Task RunAsync(
+        string fileName, string arguments, string workingDirectory, IReadOnlyDictionary<string, string>? environment = null)
     {
         var psi = new ProcessStartInfo(fileName, arguments)
         {
@@ -112,6 +117,8 @@ public sealed class CliScaffoldBuildTests
             RedirectStandardError = true,
             UseShellExecute = false,
         };
+        foreach (var (name, value) in environment ?? new Dictionary<string, string>())
+            psi.Environment[name] = value;
 
         using var process = new Process { StartInfo = psi };
         var stdout = new StringBuilder();

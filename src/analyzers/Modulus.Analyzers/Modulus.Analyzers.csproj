@@ -10,7 +10,7 @@
     <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
     <IsPackable>false</IsPackable>
     <IsPackFrameworkLibrary>false</IsPackFrameworkLibrary>
-    <Description>Roslyn analyzers for Modulus (MOD0001: anonymous endpoint without a reason).</Description>
+    <Description>Roslyn analyzers for Modulus (MOD0001: anonymous endpoint without a reason; MOD0002: classified value in an unredacted log call).</Description>
   </PropertyGroup>
 
   <ItemGroup>

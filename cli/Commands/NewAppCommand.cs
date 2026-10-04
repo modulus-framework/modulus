@@ -111,6 +111,11 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         [CommandOption("--services")]
         public string? Services { get; init; }
 
+        [Description("Company = tenant: tenant resolution with membership checks, a tenant store module, tenant-owned entities and isolation tests. Needs --kind api and --auth openiddict.")]
+        [CommandOption("--multi-tenancy")]
+        [DefaultValue(false)]
+        public bool MultiTenancy { get; init; }
+
         [Description("Path to a local NuGet feed containing the Cobytelabs.Modulus.* packages (written as an active 'modulus-local' source in NuGet.config). Omit to leave only nuget.org configured.")]
         [CommandOption("--package-source")]
         public string? PackageSource { get; init; }
@@ -164,6 +169,7 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         var database = ResolveDatabase(s.Database);
 
         var auth = ResolveAuth(s.Auth);
+        var multiTenancy = ResolveMultiTenancy(s.MultiTenancy, kind, auth);
 
         // Resolve infrastructure options
         var messageBroker = ResolveMessageBroker(s.MessageBroker);
@@ -261,6 +267,7 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
             LocalPackageSource = s.PackageSource,
             Bff = bff,
             BffServices = bffServices,
+            MultiTenancy = multiTenancy,
         };
 
         Ux.Status($"Scaffolding {appName}...", () => GenerateAll(projectDir, model));
@@ -365,6 +372,13 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
             projects.Add(IdentityProjectPath(model));
         }
 
+        // Tenant store (companies and memberships) for --multi-tenancy.
+        if (model.MultiTenancy)
+        {
+            GenerateTenancyModule(Path.Combine(projectDir, "src", "Modules", model.TenancyNamespace), model);
+            projects.Add(TenancyProjectPath(model));
+        }
+
         // â”€â”€ Example Catalog module â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         if (!model.NoExample)
         {
@@ -384,6 +398,7 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
                 HasApiExtraFields = model.UseUi,
                 // With the identity backend the example API needs the permission the Admin role holds (see Program.cs).
                 RequiredPermission = model.ExamplePermission,
+                MultiTenant = model.MultiTenancy,
             };
             GenerateModule(modDir, modModel);
             projects.AddRange(ModuleProjectPaths(rootNs, model.ExampleModule));
@@ -557,6 +572,35 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
     /// only (no Domain/Application/Presentation, nothing to put there), so <c>modulus migrate</c> finds its
     /// context like any module's, while <c>generate-crud</c> never mistakes it for a business module.
     /// </summary>
+    internal static string TenancyProjectPath(AppModel model)
+        => $"src/Modules/{model.TenancyNamespace}/{model.TenancyNamespace}.Infrastructure/{model.TenancyNamespace}.Infrastructure.csproj";
+
+    /// <summary>The tenant store module of <c>--multi-tenancy</c>: companies and memberships, its design-time factory and seeding.</summary>
+    internal void GenerateTenancyModule(string moduleDir, AppModel model)
+    {
+        var infraDir = Path.Combine(moduleDir, $"{model.TenancyNamespace}.Infrastructure");
+        _templates.RenderToFile("tenancy/infrastructure.csproj", model,
+            Path.Combine(infraDir, $"{model.TenancyNamespace}.Infrastructure.csproj"));
+        _templates.RenderToFile("tenancy/TenancyModule", model, Path.Combine(infraDir, "TenancyModule.cs"));
+        _templates.RenderToFile("tenancy/TenantStoreDbContextFactory", model, Path.Combine(infraDir, "TenantStoreDbContextFactory.cs"));
+        _templates.RenderToFile("tenancy/TenancySeeding", model, Path.Combine(infraDir, "TenancySeeding.cs"));
+    }
+
+    /// <summary>
+    /// <c>--multi-tenancy</c> is for an API host with the local token server: pages have no company switcher yet (a browser
+    /// sends no <c>X-Tenant-Id</c>), and an external provider has no local users whose memberships could be seeded.
+    /// </summary>
+    internal static bool ResolveMultiTenancy(bool requested, AppKind kind, string auth)
+    {
+        if (!requested)
+            return false;
+        if (kind != AppKind.Api)
+            throw new ArgumentException("--multi-tenancy needs --kind api: web pages have no company switcher yet, so a browser could not select a company.");
+        if (auth != "openiddict")
+            throw new ArgumentException("--multi-tenancy needs --auth openiddict: memberships are seeded for the local users (an external provider's users are not local).");
+        return true;
+    }
+
     internal void GenerateIdentityModule(string moduleDir, AppModel model)
     {
         var infraDir = Path.Combine(moduleDir, $"{model.IdentityNamespace}.Infrastructure");

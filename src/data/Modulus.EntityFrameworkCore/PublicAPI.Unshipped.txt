@@ -176,3 +176,35 @@ static Modulus.EntityFrameworkCore.Isolation.TenantSqlGuardInterceptor.Instance.
 ~override Modulus.EntityFrameworkCore.Isolation.TenantSession.Equals(object obj) -> bool
 ~override Modulus.EntityFrameworkCore.Isolation.TenantSession.ToString() -> string
 const Modulus.EntityFrameworkCore.Isolation.TenantSqlGuardInterceptor.RawSqlQueryTag = "modulus:raw-sql" -> string!
+Modulus.EntityFrameworkCore.Isolation.TenantConnection
+Modulus.EntityFrameworkCore.Isolation.TenantConnection.Connection.get -> System.Data.Common.DbConnection!
+Modulus.EntityFrameworkCore.Isolation.TenantConnection.Transaction.get -> System.Data.Common.DbTransaction?
+Modulus.EntityFrameworkCore.Isolation.TenantConnection.DisposeAsync() -> System.Threading.Tasks.ValueTask
+Modulus.EntityFrameworkCore.Isolation.TenantConnection.Dispose() -> void
+Modulus.EntityFrameworkCore.Isolation.TenantConnectionExtensions
+static Modulus.EntityFrameworkCore.Isolation.TenantConnectionExtensions.OpenTenantConnectionAsync(this Modulus.EntityFrameworkCore.ModuleDbContext! context, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.EntityFrameworkCore.Isolation.TenantConnection!>!
+Modulus.EntityFrameworkCore.ChangeHistory.EntityChangeQuery
+Modulus.EntityFrameworkCore.ChangeHistory.EntityChangeQuery.<Clone>$() -> Modulus.EntityFrameworkCore.ChangeHistory.EntityChangeQuery!
+Modulus.EntityFrameworkCore.ChangeHistory.EntityChangeQuery.EntityChangeQuery() -> void
+Modulus.EntityFrameworkCore.ChangeHistory.EntityChangeQuery.EntityKey.get -> string?
+Modulus.EntityFrameworkCore.ChangeHistory.EntityChangeQuery.EntityKey.init -> void
+Modulus.EntityFrameworkCore.ChangeHistory.EntityChangeQuery.EntityName.get -> string!
+Modulus.EntityFrameworkCore.ChangeHistory.EntityChangeQuery.EntityName.init -> void
+Modulus.EntityFrameworkCore.ChangeHistory.EntityChangeQuery.Equals(Modulus.EntityFrameworkCore.ChangeHistory.EntityChangeQuery? other) -> bool
+Modulus.EntityFrameworkCore.ChangeHistory.EntityChangeQuery.From.get -> System.DateTimeOffset?
+Modulus.EntityFrameworkCore.ChangeHistory.EntityChangeQuery.From.init -> void
+Modulus.EntityFrameworkCore.ChangeHistory.EntityChangeQuery.PropertyName.get -> string?
+Modulus.EntityFrameworkCore.ChangeHistory.EntityChangeQuery.PropertyName.init -> void
+Modulus.EntityFrameworkCore.ChangeHistory.EntityChangeQuery.Take.get -> int
+Modulus.EntityFrameworkCore.ChangeHistory.EntityChangeQuery.Take.init -> void
+Modulus.EntityFrameworkCore.ChangeHistory.EntityChangeQuery.To.get -> System.DateTimeOffset?
+Modulus.EntityFrameworkCore.ChangeHistory.EntityChangeQuery.To.init -> void
+Modulus.EntityFrameworkCore.ChangeHistory.IEntityChangeHistoryReader
+Modulus.EntityFrameworkCore.ChangeHistory.IEntityChangeHistoryReader.QueryAsync(Modulus.EntityFrameworkCore.ChangeHistory.EntityChangeQuery! query, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.EntityFrameworkCore.ChangeHistory.EntityChange!>!>!
+Modulus.EntityFrameworkCore.Saving.IModuleSaveContributor
+Modulus.EntityFrameworkCore.Saving.IModuleSaveContributor.OnSaving(Microsoft.EntityFrameworkCore.DbContext! context, System.Guid? tenantId) -> void
+override Modulus.EntityFrameworkCore.ChangeHistory.EntityChangeQuery.Equals(object? obj) -> bool
+override Modulus.EntityFrameworkCore.ChangeHistory.EntityChangeQuery.GetHashCode() -> int
+override Modulus.EntityFrameworkCore.ChangeHistory.EntityChangeQuery.ToString() -> string!
+static Modulus.EntityFrameworkCore.ChangeHistory.EntityChangeQuery.operator !=(Modulus.EntityFrameworkCore.ChangeHistory.EntityChangeQuery? left, Modulus.EntityFrameworkCore.ChangeHistory.EntityChangeQuery? right) -> bool
+static Modulus.EntityFrameworkCore.ChangeHistory.EntityChangeQuery.operator ==(Modulus.EntityFrameworkCore.ChangeHistory.EntityChangeQuery? left, Modulus.EntityFrameworkCore.ChangeHistory.EntityChangeQuery? right) -> bool

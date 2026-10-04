@@ -33,7 +33,8 @@ public sealed class SecurityGuardTests : IDisposable
         Action<WebApplication> map,
         string environment = "Production",
         bool fallback = false,
-        string? allowList = null)
+        string? allowList = null,
+        Action<IServiceCollection>? services = null)
     {
         if (allowList is not null)
         {
@@ -55,6 +56,7 @@ public sealed class SecurityGuardTests : IDisposable
                 o.FallbackPolicy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build();
         });
         builder.Services.AddModulusSecurityGuard(builder.Configuration);
+        services?.Invoke(builder.Services);
 
         var app = builder.Build();
         app.UseAuthentication();
@@ -72,6 +74,41 @@ public sealed class SecurityGuardTests : IDisposable
         }
 
         return app;
+    }
+
+    [Fact]
+    public async Task GraphQL_fields_and_realtime_topics_are_reported_and_anonymous_ones_reach_the_audit_fingerprint()
+    {
+        var audit = new RecordingAuditLog();
+        await using var app = await StartAsync(
+            a => a.MapGet("/graphql", () => "x").RequireAuthorization(),
+            services: s =>
+            {
+                s.AddSingleton<ISecuritySurfaceContributor>(new FixedSurface(
+                    new SecuritySurfaceEntry("graphql", "Query.products", SecuritySurfaceAccess.Policed, ["catalog:products:manage"]),
+                    new SecuritySurfaceEntry("graphql", "Query.prices", SecuritySurfaceAccess.Anonymous, []),
+                    new SecuritySurfaceEntry("realtime", "topic news", SecuritySurfaceAccess.Inherited, [])));
+                s.AddSingleton<Modulus.Core.Abstractions.ISecurityAuditLog>(audit);
+            });
+
+        var surfaces = app.Services.GetRequiredService<SecurityGuardState>().Report.Surfaces;
+
+        surfaces.Select(e => e.Name).Should().Equal("Query.prices", "Query.products", "topic news");
+        var report = audit.Events.Single(e => e.Action == "startup.loosening-report");
+        report.Details!["routes"].Should().Be("graphql Query.prices");
+        report.Details["anonymous"].Should().Be("1");
+    }
+
+    private sealed class FixedSurface(params SecuritySurfaceEntry[] entries) : ISecuritySurfaceContributor
+    {
+        public IEnumerable<SecuritySurfaceEntry> Describe(IServiceProvider services) => entries;
+    }
+
+    private sealed class RecordingAuditLog : Modulus.Core.Abstractions.ISecurityAuditLog
+    {
+        public List<Modulus.Core.Abstractions.SecurityAuditEvent> Events { get; } = [];
+
+        public void Record(Modulus.Core.Abstractions.SecurityAuditEvent auditEvent) => Events.Add(auditEvent);
     }
 
     [Fact]

@@ -1,5 +1,8 @@
 namespace Modulus.Core.Abstractions.DataProtection;
 
+using Microsoft.Extensions.Compliance.Classification;
+using Modulus.Core.Abstractions.Compliance;
+
 /// <summary>
 /// Marks a <see cref="string"/> property as personal data that must be encrypted
 /// at rest. A module's <c>ModuleDbContext</c> applies a value converter to every
@@ -14,6 +17,10 @@ namespace Modulus.Core.Abstractions.DataProtection;
 /// <see cref="IPersonalDataProtector.Hash(string)"/> and search on that instead.
 /// Only <see cref="string"/> properties are supported; the attribute is ignored on
 /// any other type.
+/// <para>
+/// It is also a <see cref="ModulusTaxonomy.Personal"/> classification, so the value is pseudonymized when the entity is
+/// logged through <c>[LogProperties]</c> (see <c>AddModulusRedaction</c>).
+/// </para>
 /// </remarks>
 [AttributeUsage(AttributeTargets.Property, AllowMultiple = false, Inherited = true)]
-public sealed class ProtectedPersonalDataAttribute : Attribute;
+public sealed class ProtectedPersonalDataAttribute() : DataClassificationAttribute(ModulusTaxonomy.Personal);
