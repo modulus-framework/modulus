@@ -43,6 +43,21 @@ public sealed class PermissionPolicyTests
     }
 
     [Fact]
+    public async Task A_permission_claim_confers_access_only_while_claims_are_trusted()
+    {
+        var principal = Authenticated(new Claim("permission", "orders:read"));
+
+        using var trusting = BuildProvider();
+        (await AuthorizeAsync(trusting, principal, "orders:read")).Succeeded.Should().BeTrue();
+
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddModulusAuthorization(o => o.TrustPermissionClaims = false);
+        using var storeOnly = services.BuildServiceProvider();
+        (await AuthorizeAsync(storeOnly, principal, "orders:read")).Succeeded.Should().BeFalse();
+    }
+
+    [Fact]
     public async Task Role_grant_in_the_store_satisfies_the_permission_policy()
     {
         using var provider = BuildProvider(s => s.GrantToRole("clerk", "orders:read"));

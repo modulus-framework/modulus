@@ -13,6 +13,7 @@ using Modulus.Authorization.Extensions;
 using Modulus.Authorization.Governance;
 using Modulus.Authorization.Grants;
 using Modulus.Authorization.Organization;
+using Modulus.Authorization.Resources;
 using Modulus.Authorization.Scopes;
 using Modulus.Core.Abstractions;
 using Modulus.Core.Null;
@@ -102,6 +103,58 @@ public static class AuthorizationManagementExtensions
         MapEntitlements(group);
         MapDelegations(group);
         MapGovernance(group);
+        return group;
+    }
+
+    /// <summary>
+    /// Maps per-record authorization questions under <paramref name="prefix"/> (default <c>/authorization/resources</c>):
+    /// <c>GET {type}/{id}/actions</c> (any signed-in caller: what may I do to this record now?) and
+    /// <c>GET {type}/{id}/explain?action=</c> (<see cref="ManagePermission"/>: which policy rules matched, evaluated as the
+    /// caller). Types come from <c>AddResourceLocator</c>; an unknown type or id is a <c>404</c> either way.
+    /// </summary>
+    public static RouteGroupBuilder MapModulusResourceAuthorization(
+        this IEndpointRouteBuilder endpoints,
+        string prefix = "/authorization/resources")
+    {
+        var group = endpoints.MapGroup(prefix).RequireAuthorization();
+
+        group.MapGet("/{resourceType}/{id}/actions", async (
+            string resourceType, string id,
+            IResourceLocator locator, IResourceAuthorizer authorizer, IResourcePolicyRegistry registry,
+            CancellationToken ct) =>
+        {
+            var record = await locator.FindAsync(resourceType, id, ct);
+            if (record is null)
+                return Results.NotFound();
+
+            return Results.Ok(new { actions = await authorizer.GetAvailableActionsAsync(registry, record, ct) });
+        });
+
+        group.MapGet("/{resourceType}/{id}/explain", async (
+            string resourceType, string id, string action,
+            IResourceLocator locator, IServiceProvider services, CancellationToken ct) =>
+        {
+            var record = await locator.FindAsync(resourceType, id, ct);
+            if (record is null)
+                return Results.NotFound();
+
+            var explanation = ActivatorUtilities.CreateInstance<ResourceAuthorizer>(services).Explain(record, action);
+            return Results.Ok(new
+            {
+                allowed = explanation.Decision.IsAllowed,
+                code = explanation.Decision.Code,
+                reason = explanation.Decision.Reason,
+                rules = explanation.Rules.Select(r => new
+                {
+                    r.Index,
+                    effect = r.Effect.ToString(),
+                    r.Action,
+                    r.Matched,
+                    r.Faulted,
+                }),
+            });
+        }).RequireAuthorization(ManagePermission);
+
         return group;
     }
 

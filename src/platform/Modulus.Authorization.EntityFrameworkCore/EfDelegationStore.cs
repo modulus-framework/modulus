@@ -95,6 +95,27 @@ public sealed class EfDelegationStore(
         return affected > 0;
     }
 
+    /// <summary>Non-revoked delegations that have not ended, for the role refresher.</summary>
+    internal IReadOnlyCollection<Delegation> Live(DateTimeOffset now)
+    {
+        using var db = factory.CreateDbContext();
+        return db.Delegations.AsNoTracking()
+            .Where(d => !d.Revoked)
+            .AsEnumerable()
+            .Select(ToDelegation)
+            .Where(d => d.NotAfter > now)
+            .ToList();
+    }
+
+    /// <summary>Replaces the delegator's role snapshot on one delegation (the cap is recomputed from it at every decision).</summary>
+    internal async Task SetFromRolesAsync(Guid id, IReadOnlyCollection<string> roles, CancellationToken ct = default)
+    {
+        var json = JsonSerializer.Serialize(roles.Order(StringComparer.Ordinal).ToArray());
+        await using var db = await factory.CreateDbContextAsync(ct);
+        await db.Delegations.Where(d => d.Id == id && !d.Revoked)
+            .ExecuteUpdateAsync(s => s.SetProperty(d => d.FromRolesJson, json), ct);
+    }
+
     private static Delegation ToDelegation(DelegationRow row)
         => new(
             row.Id,

@@ -1402,3 +1402,23 @@ static Modulus.Authorization.Resources.PolicyExplanation.operator ==(Modulus.Aut
 static Modulus.Authorization.Resources.ResourceAuthorizerExtensions.GetAvailableActionsAsync(this Modulus.Authorization.Resources.IResourceAuthorizer! authorizer, Modulus.Authorization.Resources.IResourcePolicyRegistry! registry, object! resource, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<string!>!>!
 static Modulus.Authorization.Resources.RuleOutcome.operator !=(Modulus.Authorization.Resources.RuleOutcome? left, Modulus.Authorization.Resources.RuleOutcome? right) -> bool
 static Modulus.Authorization.Resources.RuleOutcome.operator ==(Modulus.Authorization.Resources.RuleOutcome? left, Modulus.Authorization.Resources.RuleOutcome? right) -> bool
+Modulus.Authorization.ModulusAuthorizationOptions.TrustPermissionClaims.get -> bool
+Modulus.Authorization.ModulusAuthorizationOptions.TrustPermissionClaims.set -> void
+Modulus.Authorization.Resources.IResourceLocator
+Modulus.Authorization.Resources.IResourceLocator.FindAsync(string! resourceType, string! id, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<object?>
+Modulus.Authorization.Resources.ResourceLocatorExtensions
+Modulus.Authorization.Resources.ResourceLocatorRegistration
+Modulus.Authorization.Resources.ResourceLocatorRegistration.<Clone>$() -> Modulus.Authorization.Resources.ResourceLocatorRegistration!
+Modulus.Authorization.Resources.ResourceLocatorRegistration.Deconstruct(out string! Name, out System.Func<System.IServiceProvider!, string!, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<object?>>! Load) -> void
+Modulus.Authorization.Resources.ResourceLocatorRegistration.Equals(Modulus.Authorization.Resources.ResourceLocatorRegistration? other) -> bool
+Modulus.Authorization.Resources.ResourceLocatorRegistration.Load.get -> System.Func<System.IServiceProvider!, string!, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<object?>>!
+Modulus.Authorization.Resources.ResourceLocatorRegistration.Load.init -> void
+Modulus.Authorization.Resources.ResourceLocatorRegistration.Name.get -> string!
+Modulus.Authorization.Resources.ResourceLocatorRegistration.Name.init -> void
+Modulus.Authorization.Resources.ResourceLocatorRegistration.ResourceLocatorRegistration(string! Name, System.Func<System.IServiceProvider!, string!, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<object?>>! Load) -> void
+override Modulus.Authorization.Resources.ResourceLocatorRegistration.Equals(object? obj) -> bool
+override Modulus.Authorization.Resources.ResourceLocatorRegistration.GetHashCode() -> int
+override Modulus.Authorization.Resources.ResourceLocatorRegistration.ToString() -> string!
+static Modulus.Authorization.Resources.ResourceLocatorExtensions.AddResourceLocator(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, string! name, System.Func<System.IServiceProvider!, string!, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<object?>>! load) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.Authorization.Resources.ResourceLocatorRegistration.operator !=(Modulus.Authorization.Resources.ResourceLocatorRegistration? left, Modulus.Authorization.Resources.ResourceLocatorRegistration? right) -> bool
+static Modulus.Authorization.Resources.ResourceLocatorRegistration.operator ==(Modulus.Authorization.Resources.ResourceLocatorRegistration? left, Modulus.Authorization.Resources.ResourceLocatorRegistration? right) -> bool

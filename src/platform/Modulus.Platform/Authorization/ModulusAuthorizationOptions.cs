@@ -11,6 +11,14 @@ public sealed class ModulusAuthorizationOptions
     /// endpoints without authorization data are closed. Default <see langword="true"/>.
     /// </summary>
     public bool RequireAuthenticatedUserByDefault { get; set; } = true;
+
+    /// <summary>
+    /// Honours <c>permission</c> claims in the signed-in principal as a grant (a store-level deny still wins over them).
+    /// Default <see langword="true"/> for hosts whose token issuer or seeder mints fine-grained claims. Set
+    /// <see langword="false"/> to make the grant store the only source of permissions, so a claim in a token can never
+    /// confer access the store does not.
+    /// </summary>
+    public bool TrustPermissionClaims { get; set; } = true;
 }
 
 /// <summary>Applies <see cref="ModulusAuthorizationOptions.RequireAuthenticatedUserByDefault"/>.</summary>

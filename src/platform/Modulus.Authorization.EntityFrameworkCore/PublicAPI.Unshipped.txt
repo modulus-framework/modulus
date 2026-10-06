@@ -148,3 +148,15 @@ static Modulus.Authorization.EntityFrameworkCore.EfAuthorizationStoreExtensions.
 static Modulus.Authorization.EntityFrameworkCore.EfAuthorizationStoreExtensions.MigrateAuthorizationStoreAsync(this System.IServiceProvider! services, bool ensureCreatedIfNoMigrations = false, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
 static Modulus.Authorization.EntityFrameworkCore.EfPermissionGrantStore.ScopedGrantRecord.operator !=(Modulus.Authorization.EntityFrameworkCore.EfPermissionGrantStore.ScopedGrantRecord? left, Modulus.Authorization.EntityFrameworkCore.EfPermissionGrantStore.ScopedGrantRecord? right) -> bool
 static Modulus.Authorization.EntityFrameworkCore.EfPermissionGrantStore.ScopedGrantRecord.operator ==(Modulus.Authorization.EntityFrameworkCore.EfPermissionGrantStore.ScopedGrantRecord? left, Modulus.Authorization.EntityFrameworkCore.EfPermissionGrantStore.ScopedGrantRecord? right) -> bool
+Modulus.Authorization.EntityFrameworkCore.DelegationRoleRefreshObserver
+Modulus.Authorization.EntityFrameworkCore.DelegationRoleRefreshObserver.DelegationRoleRefreshObserver(Modulus.Authorization.EntityFrameworkCore.DelegationRoleRefresher! refresher) -> void
+Modulus.Authorization.EntityFrameworkCore.DelegationRoleRefreshObserver.OnAccessChangedAsync(Modulus.Core.Abstractions.AccessChange! change, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask
+Modulus.Authorization.EntityFrameworkCore.DelegationRoleRefreshOptions
+Modulus.Authorization.EntityFrameworkCore.DelegationRoleRefreshOptions.DelegationRoleRefreshOptions() -> void
+Modulus.Authorization.EntityFrameworkCore.DelegationRoleRefreshOptions.Interval.get -> System.TimeSpan
+Modulus.Authorization.EntityFrameworkCore.DelegationRoleRefreshOptions.Interval.set -> void
+Modulus.Authorization.EntityFrameworkCore.DelegationRoleRefreshService
+Modulus.Authorization.EntityFrameworkCore.DelegationRoleRefreshService.DelegationRoleRefreshService(Modulus.Authorization.EntityFrameworkCore.DelegationRoleRefresher! refresher, Microsoft.Extensions.Options.IOptions<Modulus.Authorization.EntityFrameworkCore.DelegationRoleRefreshOptions!>! options, Microsoft.Extensions.Logging.ILogger<Modulus.Authorization.EntityFrameworkCore.DelegationRoleRefreshService!>! logger) -> void
+Modulus.Authorization.EntityFrameworkCore.DelegationRoleRefresher
+Modulus.Authorization.EntityFrameworkCore.DelegationRoleRefresher.DelegationRoleRefresher(Microsoft.Extensions.DependencyInjection.IServiceScopeFactory! scopes, Modulus.Authorization.EntityFrameworkCore.EfDelegationStore! store, System.TimeProvider! clock) -> void
+Modulus.Authorization.EntityFrameworkCore.DelegationRoleRefresher.RefreshAsync(System.Guid? delegatorId = null, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<int>!

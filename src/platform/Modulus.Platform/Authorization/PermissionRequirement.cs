@@ -47,10 +47,12 @@ public sealed class PermissionRequirement : IAuthorizationRequirement
 /// services).
 /// </summary>
 internal sealed class PermissionRequirementHandler(
-    IPermissionResolver resolver, IPermissionGrantStore grantStore, TimeProvider? clock = null)
+    IPermissionResolver resolver, IPermissionGrantStore grantStore, TimeProvider? clock = null,
+    Microsoft.Extensions.Options.IOptions<ModulusAuthorizationOptions>? options = null)
     : AuthorizationHandler<PermissionRequirement>
 {
     private readonly TimeProvider _clock = clock ?? TimeProvider.System;
+    private readonly bool _trustClaims = options?.Value.TrustPermissionClaims ?? true;
 
     private const string WildcardSuffix = ":*";
 
@@ -78,7 +80,7 @@ internal sealed class PermissionRequirementHandler(
         if (IsExplicitlyDenied(grants, requirement.Permission))
             return Task.CompletedTask;
 
-        if (principal.HasClaim("permission", requirement.Permission)
+        if ((_trustClaims && principal.HasClaim("permission", requirement.Permission))
             || resolver.Resolve(query, grants).Contains(requirement.Permission))
         {
             context.Succeed(requirement);

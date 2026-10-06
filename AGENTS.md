@@ -1384,10 +1384,16 @@ roots, Security tab in `Modulus.UI.AuditLogging`).
 - **Per-record questions.** `ResourcePolicy.Actions`, `authorizer.GetAvailableActionsAsync(registry, record)` (what the caller may do now),
   `ResourceAuthorizer.Explain(record, action)` / `ResourcePolicy.Explain(request)` (which rules matched; admin/diagnostic use, not audited).
   A policy rule that throws denies with `EVALUATION_ERROR` instead of propagating.
-- **Known gaps (open).** A delegation re-checks the delegator's roles from a snapshot taken at creation (creation is capped by the
-  delegator's live authority and a maximum duration); the `permission` claim in a server-issued token is still honoured as a fallback
-  (the grant store's deny always wins over it); there is no HTTP endpoint for `Explain`/available actions yet; and the UI for all of this
-  is not done.
+- **Delegation caps follow live roles.** `DelegationRoleRefresher` (EF authorization package; a timer, `DelegationRoleRefreshOptions.Interval`,
+  default 1 minute, plus an immediate refresh through `IAccessChangeObserver`) rewrites each live delegation's snapshot of the delegator's roles from
+  `IUserRoleDirectory`; a delegator the identity store no longer knows keeps no roles. Staleness is bounded by the interval, and the decision path stays synchronous.
+- **Per-record questions over HTTP.** `services.AddResourceLocator("invoices", (sp, id, ct) => ...)` exposes a record type;
+  `MapModulusResourceAuthorization()` maps `GET /authorization/resources/{type}/{id}/actions` (any signed-in caller) and `.../explain?action=`
+  (`authorization:manage`; evaluated as the caller). Unknown type or id is `404`. Needs `ICurrentUser` and `ICurrentDataScope` registered.
+- **Strict permission source.** `AddModulusAuthorization(o => o.TrustPermissionClaims = false)` makes the grant store the only source: a `permission`
+  claim in a token no longer confers access (default `true`; a store-level deny wins over claims either way).
+- **Known gaps (open).** `Explain` and available actions are evaluated as the calling user, so "why can't *Bob* do this" needs Bob's own session
+  (effective-access reports cover him at the permission level); and the UI for all of this is not done.
 
 ## Open-source dependency policy
 
