@@ -9,3 +9,8 @@ override Modulus.Analyzers.ClassifiedLogArgumentAnalyzer.SupportedDiagnostics.ge
 override Modulus.Analyzers.ClassifiedLogArgumentAnalyzer.Initialize(Microsoft.CodeAnalysis.Diagnostics.AnalysisContext! context) -> void
 Modulus.Analyzers.ClassifiedLogArgumentAnalyzer
 Modulus.Analyzers.ClassifiedLogArgumentAnalyzer.ClassifiedLogArgumentAnalyzer() -> void
+const Modulus.Analyzers.IntegrationEventNameAnalyzer.DiagnosticId = "MOD0003" -> string!
+Modulus.Analyzers.IntegrationEventNameAnalyzer
+Modulus.Analyzers.IntegrationEventNameAnalyzer.IntegrationEventNameAnalyzer() -> void
+override Modulus.Analyzers.IntegrationEventNameAnalyzer.Initialize(Microsoft.CodeAnalysis.Diagnostics.AnalysisContext! context) -> void
+override Modulus.Analyzers.IntegrationEventNameAnalyzer.SupportedDiagnostics.get -> System.Collections.Immutable.ImmutableArray<Microsoft.CodeAnalysis.DiagnosticDescriptor!>

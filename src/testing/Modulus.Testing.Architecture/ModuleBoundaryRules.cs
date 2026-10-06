@@ -39,6 +39,34 @@ public static class ModuleBoundaryRules
     }
 
     /// <summary>
+    /// Integration events whose declared name is not <c>module.event.vN</c> (lower-case kebab parts).
+    /// </summary>
+    public static IReadOnlyList<(Type Type, string Name)> FindMalformedIntegrationEventNames()
+        => GetNamedIntegrationEvents()
+            .Where(e => !System.Text.RegularExpressions.Regex.IsMatch(e.Name, @"^[a-z0-9-]+\.[a-z0-9-]+\.v[1-9][0-9]*$"))
+            .ToList()
+            .AsReadOnly();
+
+    /// <summary>
+    /// Integration events that share a declared name. Two types under one name would collide in the
+    /// registry and on the broker, so the later registration would silently shadow the earlier.
+    /// </summary>
+    public static IReadOnlyList<(string Name, IReadOnlyList<Type> Types)> FindDuplicateIntegrationEventNames()
+        => GetNamedIntegrationEvents()
+            .GroupBy(e => e.Name, StringComparer.Ordinal)
+            .Where(g => g.Count() > 1)
+            .Select(g => (g.Key, (IReadOnlyList<Type>)g.Select(e => e.Type).ToList()))
+            .ToList()
+            .AsReadOnly();
+
+    private static IEnumerable<(Type Type, string Name)> GetNamedIntegrationEvents()
+        => GetScannableTypes()
+            .Where(t => typeof(IIntegrationEvent).IsAssignableFrom(t) && !t.IsInterface && !t.IsAbstract)
+            .Select(t => (Type: t, Attribute: t.GetCustomAttribute<IntegrationEventNameAttribute>()))
+            .Where(e => e.Attribute is not null)
+            .Select(e => (e.Type, e.Attribute!.Name));
+
+    /// <summary>
     /// Enforces that all concrete <see cref="IModule"/> implementations can be
     /// discovered (and therefore instantiated by the host's explicit
     /// registration without instantiating them here).

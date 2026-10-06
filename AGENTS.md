@@ -1372,7 +1372,9 @@ roots, Security tab in `Modulus.UI.AuditLogging`).
 - **Integration event names are declared once.** `[IntegrationEventName("payments", "subscription-purchased", version: 2)]`
   builds and validates `payments.subscription-purchased.v2` (lower-case kebab parts); `record X(...) : IntegrationEventBase;`
   (no constructor argument) reads `EventType` from the attribute, so the dotted string is no longer repeated. The
-  single-string attribute and `IntegrationEventBase("...")` forms still work. `generate-crud`'s event template uses the new form.
+  single-string attribute and `IntegrationEventBase("...")` forms still work. `generate-crud`'s event template uses the new form. Enforcement: analyzer **MOD0003** (missing name, name repeated in the base
+  constructor, malformed single-string name), and `ModuleBoundaryRules.FindMalformedIntegrationEventNames` / `FindDuplicateIntegrationEventNames`
+  (generated apps assert them next to `FindUnnamedIntegrationEvents`).
 - **Known gaps (open).** Revoked access tokens are still accepted until expiry (no OpenIddict token-entry validation);
   delegation re-checks the delegator's roles from a snapshot taken at creation; `permission`/role claims in a token are
   still trusted by `PermissionRequirementHandler`/`ClaimsPrincipalCurrentUser`; no "why was this denied" explainer or
