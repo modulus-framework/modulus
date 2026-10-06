@@ -7,6 +7,7 @@ using Modulus.Authorization.Governance;
 using Modulus.Authorization.Grants;
 using Modulus.Authorization.Organization;
 using Modulus.Authorization.Resources;
+using Modulus.Authorization.Scopes;
 using Modulus.Core.Abstractions;
 
 namespace Modulus.Authorization.Extensions;
@@ -92,6 +93,17 @@ public static class AuthorizationExtensions
         // cache that serves stale grants until restart.
         services.TryAddScoped<PermissionResolver>();
         services.TryAddScoped<IPermissionResolver>(sp => sp.GetRequiredService<PermissionResolver>());
+
+        // Scopes: what a permission covers ("same permission, different data"). Empty until grants carry scopes or
+        // assignments are added, so a grant without a scope keeps meaning "the whole company".
+        services.AddHttpContextAccessor();
+        services.TryAddSingleton<InMemoryAssignmentStore>();
+        services.TryAddSingleton<IAssignmentStore>(sp => sp.GetRequiredService<InMemoryAssignmentStore>());
+        services.TryAddSingleton<IScopeMapRegistry, ScopeMapRegistry>();
+        services.TryAddScoped<IPrincipalGrantQuerySource, HttpPrincipalGrantQuerySource>();
+        services.TryAddScoped<IPermissionScopeResolver, PermissionScopeResolver>();
+        services.TryAddScoped<IScopeSubject, ScopeSubject>();
+        services.TryAddScoped<IScopeEnforcer, ScopeEnforcer>();
 
         // Organizational scope: hierarchy + placements + scope resolver. TryAdd so
         // an EF-backed store can supersede the in-memory defaults by registering
@@ -405,6 +417,20 @@ public static class AuthorizationExtensions
     {
         ArgumentNullException.ThrowIfNull(constraints);
         services.Replace(ServiceDescriptor.Singleton<ISodPolicy>(new SodPolicy(constraints)));
+        return services;
+    }
+
+    /// <summary>
+    /// Declares how <typeparamref name="T"/> maps to the keys scopes are checked against (owner, org unit, assignable objects).
+    /// Optional for a type implementing <c>IHasOwner</c> / <c>IHasOrgUnit</c>: those get their map from the interfaces.
+    /// </summary>
+    public static IServiceCollection AddScopeMap<T>(this IServiceCollection services, Action<ScopeMapBuilder<T>> configure)
+        where T : class
+    {
+        ArgumentNullException.ThrowIfNull(configure);
+        var builder = new ScopeMapBuilder<T>();
+        configure(builder);
+        services.AddSingleton<ScopeMap>(builder.Build());
         return services;
     }
 

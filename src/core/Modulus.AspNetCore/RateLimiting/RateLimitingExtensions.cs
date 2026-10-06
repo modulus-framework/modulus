@@ -56,12 +56,39 @@ public static class RateLimitingExtensions
             idleThreshold,
             sweepInterval);
         services.AddSingleton(evictor);
+
+        // A much tighter, IP-keyed budget for the endpoints password guessing and token spraying go through. It runs first,
+        // so rejected sign-in attempts do not also burn the caller's general allowance.
+        PartitionedRateLimiter<HttpContext> global = evictor;
+        if (options.SensitivePermitLimit > 0 && options.SensitivePaths.Length > 0)
+        {
+            var sensitiveWindow = TimeSpan.FromSeconds(Math.Max(1, options.SensitiveWindowSeconds));
+            var prefixes = options.SensitivePaths
+                .Where(p => !string.IsNullOrWhiteSpace(p))
+                .Select(p => new PathString(p.StartsWith('/') ? p : "/" + p))
+                .ToArray();
+            var sensitive = new EvictableFixedWindowLimiter(
+                IpKey,
+                () => new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = options.SensitivePermitLimit,
+                    Window = sensitiveWindow,
+                    QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                    QueueLimit = 0,
+                },
+                TimeSpan.FromTicks(sensitiveWindow.Ticks * 4),
+                sensitiveWindow > TimeSpan.FromSeconds(15) ? sensitiveWindow : TimeSpan.FromSeconds(15),
+                context => prefixes.Any(prefix => context.Request.Path.StartsWithSegments(prefix, StringComparison.OrdinalIgnoreCase)));
+            services.AddSingleton(sensitive);
+            global = PartitionedRateLimiter.CreateChained(sensitive, evictor);
+        }
+
         services.AddHostedService<RateLimitPartitionSweeper>();
 
         services.AddRateLimiter(limiter =>
         {
             limiter.RejectionStatusCode = options.RejectionStatusCode;
-            limiter.GlobalLimiter = evictor;
+            limiter.GlobalLimiter = global;
         });
 
         return services;

@@ -1348,6 +1348,32 @@ roots, Security tab in `Modulus.UI.AuditLogging`).
   tenant isolation. Generated API hosts with the guard ship `SecurityProbeTests`, verified on generated `api`
   (openiddict, keycloak), `webapp+api` and `web` apps.
 
+## Security hardening round 2 (authorization BRS gap work)
+
+- **Trusted proxies.** `options.ApplyModulusTrustedProxies(configuration)` (section `ForwardedHeaders`: `KnownProxies`,
+  `KnownNetworks`, `ForwardLimit`) replaces trust-everything forwarded headers; the CLI templates call it.
+- **Rate limits.** Sensitive routes (token, login, password reset) get a second, stricter chained limiter
+  (`RateLimiting` `Sensitive*` options). The mobile BFF partitions by `sub ?? client_id ?? ip`, never `X-Device-Id`.
+- **Tenant membership is required by default** (`TenantAccessOptions.RequireMembership = true`);
+  `AllowUnrestrictedTenantSelection()` opts out. `TenantId` is an EF concurrency token, so UPDATE/DELETE
+  carry the tenant in their `WHERE`; a non-Added entry with an empty owner is refused by the write guard.
+- **Roles never come from request bodies.** `IUserRoleDirectory` (Core; `IdentityUserRoleDirectory`) supplies a user's
+  roles to the management API (grants, delegations, effective access, SoD scan). Grants are capped by the grantor's own
+  authority (`authorization:grant-any` lifts it); delegations are capped by the delegator and a maximum duration.
+  Password-reset/confirmation mail is queued (`IIdentityEmailQueue`) so account existence is not a timing oracle.
+- **Scoped grants.** Tables `ModulusScopedGrants` and `ModulusAssignments` (new in `AuthorizationStoreDbContext`: existing
+  deployments need a migration). A grant has `Scope` (Own/Assigned/OrgUnit/Tenant), `ValidFrom/ValidUntil`, and a
+  `Restrict` type narrows scope. `IPermissionScopeResolver`/`IScopeEnforcer`/`AddScopeMap<T>` turn the scope into a query
+  filter and a record probe (`ResourceRequest.InScopeOf(permission)`). Endpoints: `scoped-grants`, `assignments`.
+- **Reason codes.** `AccessDecision.Code` uses `AccessReasonCodes` (BRS Appendix B); no policy for a type = `METADATA_MISSING`.
+- **Sensitivity.** `PermissionSensitivity` (Normal/Sensitive/Critical) on `PermissionDefinition`; `registry.Add(..., sensitivity)`.
+  A wildcard grant never confers a Critical permission (a wildcard deny still removes it); Critical is not delegable.
+  `authorization:manage`, `authorization:grant-any` and the entitlements permission are Critical.
+- **Known gaps (open).** Revoked access tokens are still accepted until expiry (no OpenIddict token-entry validation);
+  delegation re-checks the delegator's roles from a snapshot taken at creation; `permission`/role claims in a token are
+  still trusted by `PermissionRequirementHandler`/`ClaimsPrincipalCurrentUser`; no "why was this denied" explainer or
+  per-record available-actions API yet; UI work for all of this is not done.
+
 ## Open-source dependency policy
 
 Every dependency must be fully open source (MIT / Apache-2.0 / BSD; no commercial license or paid tier to
@@ -1451,8 +1477,8 @@ app.MapBffClient("mobile").MapGet("/home", ...);   // aggregators behind the cli
   (`TokenValidation=Jwt`, which needs unencrypted access tokens) or with RFC 7662 introspection (results cached by token
   hash, capped at `exp`). The policy `bff:{name}` requires the client's own scheme, an allowed client id and the
   required scopes, so one client's token or cookie never passes another client's policy. Mobile: `X-App-Version` /
-  `X-App-Platform` gate (`426` with the minimum version), weak ETags + `304` on JSON GETs, rate-limit partition by
-  `X-Device-Id`. Partner: unsafe methods without `Idempotency-Key` get `400`; the API's idempotency middleware does
+  `X-App-Platform` gate (`426` with the minimum version), weak ETags + `304` on JSON GETs, rate-limit partition by the token subject (never by
+  a caller-chosen header). Partner: unsafe methods without `Idempotency-Key` get `400`; the API's idempotency middleware does
   the deduplication. `/bff/me` returns the claims.
 - **Proxy.** One YARP cluster per upstream service and one route per remote API, carrying the client's policy and rate
   limit. Transforms strip `Cookie`, set `X-Client-App` and the correlation id, and swap in the web session's token

@@ -387,6 +387,52 @@ public sealed class TenantMiddlewareTests
         public void Record(SecurityAuditEvent auditEvent) => Events.Add(auditEvent);
     }
 
+    [Fact]
+    public async Task By_default_an_account_without_a_tenant_claim_cannot_select_a_tenant_it_is_not_a_member_of()
+    {
+        // No RequireMembership() call: membership is the default, so a header alone never opens another company.
+        var store = new FakeStore(TenantA, TenantB);
+        var reached = false;
+        var ctx = BuildContext(
+            store,
+            headerTenantId: TenantB.TenantId,
+            claimTenantId: null,
+            authenticated: true,
+            configureServices: s =>
+            {
+                s.AddLogging();
+                s.AddMultiTenancy();
+            },
+            userId: UserId);
+
+        await InvokeAsync(ctx, store, next: _ => { reached = true; return Task.CompletedTask; });
+
+        reached.Should().BeFalse();
+        ctx.Response.StatusCode.Should().Be(StatusCodes.Status403Forbidden);
+    }
+
+    [Fact]
+    public async Task Unrestricted_tenant_selection_is_an_explicit_opt_out()
+    {
+        var store = new FakeStore(TenantA, TenantB);
+        var reached = false;
+        var ctx = BuildContext(
+            store,
+            headerTenantId: TenantB.TenantId,
+            claimTenantId: null,
+            authenticated: true,
+            configureServices: s =>
+            {
+                s.AddLogging();
+                s.AddMultiTenancy(t => t.AllowUnrestrictedTenantSelection());
+            },
+            userId: UserId);
+
+        await InvokeAsync(ctx, store, next: _ => { reached = true; return Task.CompletedTask; });
+
+        reached.Should().BeTrue();
+    }
+
     private static void RequireMembership(IServiceCollection services, InMemoryTenantMembershipStore memberships)
     {
         services.AddLogging();

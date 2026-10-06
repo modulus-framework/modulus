@@ -123,7 +123,7 @@ public sealed class BearerClientTests
     }
 
     [Fact]
-    public async Task Device_rate_limit_answers_429()
+    public async Task Rate_limit_answers_429_and_cannot_be_escaped_by_rotating_the_device_header()
     {
         await using var host = await StartAsync(new()
         {
@@ -142,7 +142,8 @@ public sealed class BearerClientTests
         (await Call("phone-a")).Should().Be(HttpStatusCode.OK);
         (await Call("phone-a")).Should().Be(HttpStatusCode.OK);
         (await Call("phone-a")).Should().Be(HttpStatusCode.TooManyRequests);
-        (await Call("phone-b")).Should().Be(HttpStatusCode.OK, "each device has its own partition");
+        (await Call("phone-b")).Should().Be(HttpStatusCode.TooManyRequests, "the caller chooses X-Device-Id, so it cannot pick the partition");
+        (await Call(Guid.NewGuid().ToString())).Should().Be(HttpStatusCode.TooManyRequests);
     }
 
     [Fact]

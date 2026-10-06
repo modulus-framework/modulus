@@ -1,14 +1,19 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Options;
 using Modulus.Authorization.Audit;
 using Modulus.Authorization.EntityFrameworkCore;
 using Modulus.Authorization.Extensions;
 using Modulus.Authorization.Governance;
 using Modulus.Authorization.Grants;
 using Modulus.Authorization.Organization;
+using Modulus.Authorization.Scopes;
 using Modulus.Core.Abstractions;
 using Modulus.Core.Null;
 
@@ -27,6 +32,18 @@ public static class AuthorizationManagementExtensions
     public const string ManagePermission = "authorization:manage";
 
     /// <summary>
+    /// Lets the holder grant permissions they do not hold themselves (BR-012). Without it an administrator can grant
+    /// only what they hold, so security administration never doubles as business authority.
+    /// </summary>
+    public const string GrantAnyPermission = "authorization:grant-any";
+
+    /// <summary>
+    /// Guards the platform-wide entitlement endpoints (plans, per-company feature overrides). Held by host operators
+    /// only: a company administrator holds <see cref="ManagePermission"/> but must never reach other companies' plans.
+    /// </summary>
+    public const string EntitlementsPermission = "authorization:entitlements:manage";
+
+    /// <summary>
     /// Declares the <see cref="ManagePermission"/> permission in the registry.
     /// Requires <c>AddModulusAuthorization()</c> and
     /// <c>AddEfCoreAuthorizationStores(...)</c> — the endpoints operate on the
@@ -39,6 +56,7 @@ public static class AuthorizationManagementExtensions
         // full AddAuthorization registration (AddModulusAuthorization only adds
         // AddAuthorizationCore). Idempotent if the host already called it.
         services.AddAuthorization();
+        services.AddOptions<AuthorizationManagementOptions>();
 
         // Every mutating endpoint resolves ICurrentUser to attribute the audit
         // event (blueprint §5.14/§16). Normally registered by AddModulus/
@@ -48,9 +66,23 @@ public static class AuthorizationManagementExtensions
         services.TryAddScoped<ICurrentUser, NullCurrentUser>();
 
         return services.AddPermissions("Modulus.Authorization", registry =>
+        {
             registry.Add(
                 ManagePermission,
-                "Manage authorization data: grants, org structure, feature entitlements, and delegations."));
+                "Manage authorization data: grants, org structure and delegations of the current company.",
+                null,
+                PermissionSensitivity.Critical);
+            registry.Add(
+                GrantAnyPermission,
+                "Grant permissions the administrator does not hold themselves.",
+                null,
+                PermissionSensitivity.Critical);
+            registry.Add(
+                EntitlementsPermission,
+                "Manage platform-wide feature plans and per-company overrides (host operators only).",
+                null,
+                PermissionSensitivity.Critical);
+        });
     }
 
     /// <summary>
@@ -65,6 +97,7 @@ public static class AuthorizationManagementExtensions
         var group = endpoints.MapGroup(prefix).RequireAuthorization(ManagePermission);
 
         MapGrants(group);
+        MapScopedGrants(group);
         MapOrganization(group);
         MapEntitlements(group);
         MapDelegations(group);
@@ -89,10 +122,11 @@ public static class AuthorizationManagementExtensions
         });
 
         group.MapPost("/grants", async (
-            GrantWriteRequest request,
-            EfPermissionGrantStore store, IAuthorizationAuditWriter auditWriter, IEnumerable<IAccessChangeObserver> observers,
-            ICurrentUser currentUser, ISodPolicy sodPolicy,
-            IEffectiveAccessService? effectiveAccessService, CancellationToken ct) =>
+            GrantWriteRequest request, ClaimsPrincipal caller,
+            EfPermissionGrantStore store, IPermissionRegistry registry, IAuthorizationService authorization,
+            IAuthorizationAuditWriter auditWriter, IEnumerable<IAccessChangeObserver> observers,
+            ICurrentUser currentUser, ISodPolicy sodPolicy, PermissionResolver resolver,
+            [FromServices] IUserRoleDirectory? roleDirectory, IEffectiveAccessService? effectiveAccessService, CancellationToken ct) =>
         {
             if (!Enum.TryParse<GrantHolderType>(request.HolderType, ignoreCase: true, out var holderType))
                 return InvalidEnum("holderType", request.HolderType, typeof(GrantHolderType));
@@ -105,35 +139,43 @@ public static class AuthorizationManagementExtensions
                     ["permissions"] = ["At least one permission is required."],
                 });
 
-            // For Allow grants, check for SoD violations before applying
+            // Only permissions modules declared in code can be granted or denied (C-2): administrators grant, never invent.
+            var expanded = GrantGuards.Expand(registry, request.Permissions, out var unknown);
+            if (unknown.Count > 0)
+                return GrantGuards.Unknown(unknown);
+
             var allow = grantType is PermissionGrantType.Allow;
-            if (allow && effectiveAccessService is not null && holderType is GrantHolderType.User)
+            var target = $"{holderType}:{request.Holder}";
+            if (allow)
             {
-                var userId = ParseUser(request.Holder);
-                // Role membership comes from the caller (the store cannot know
-                // Identity membership): without it the simulation covers
-                // direct grants only and role-delivered halves of toxic
-                // combinations would slip through.
-                var currentReport = effectiveAccessService.Report(
-                    new PrincipalGrantQuery(userId, request.HolderRoles ?? []));
+                // BR-011: nobody widens their own access, not even through a role they already hold.
+                if (GrantGuards.TargetsCaller(caller, holderType, request.Holder))
+                    return await RefuseAsync(auditWriter, currentUser, "Grant", target,
+                        "self-grant", "You cannot grant permissions to yourself or to a role you hold.", ct);
 
-                // Simulate adding the new permissions and check for violations
-                var proposedPermissions = new HashSet<string>(currentReport.AllPermissions, StringComparer.OrdinalIgnoreCase);
-                foreach (var perm in request.Permissions)
-                    proposedPermissions.Add(perm);
+                // BR-012: an administrator grants only what they hold, unless they carry the grant-any permission.
+                var notHeld = await GrantGuards.NotHeldAsync(caller, authorization, expanded);
+                if (notHeld.Count > 0)
+                    return await RefuseAsync(auditWriter, currentUser, "Grant", target,
+                        "above-ceiling", $"You cannot grant permissions you do not hold: {string.Join(", ", notHeld)}.", ct);
 
-                var violations = sodPolicy.Evaluate(proposedPermissions);
+                // FR-WFL-004: a grant must not complete a toxic combination. Roles come from the identity store, never the request.
+                var proposed = await ProposedPermissionsAsync(
+                    holderType, request.Holder, request.HolderRoles, expanded, store, roleDirectory, effectiveAccessService, ct);
+                if (proposed.Unknown)
+                    return Results.Problem(detail: "The user is unknown, so their role memberships cannot be checked.",
+                        statusCode: StatusCodes.Status404NotFound);
+
+                var violations = sodPolicy.Evaluate(proposed.Permissions);
                 if (violations.Count > 0)
                 {
-                    var violationDetails = violations
-                        .Select(v => new { constraint = v.Constraint.Name, held = v.HeldPermissions })
-                        .ToList();
-
                     return Results.Conflict(new
                     {
                         error = "SoD violation",
                         message = "Granting these permissions would create segregation-of-duties violations.",
-                        violations = violationDetails,
+                        violations = violations
+                            .Select(v => new { constraint = v.Constraint.Name, held = v.HeldPermissions })
+                            .ToList(),
                     });
                 }
             }
@@ -148,19 +190,29 @@ public static class AuthorizationManagementExtensions
                     : store.DenyToUserAsync(ParseUser(request.Holder), request.Permissions, ct));
 
             await EmitAuditAsync(auditWriter, observers, currentUser, "Grant", allow ? "Granted" : "Denied",
-                $"{holderType}:{request.Holder}",
+                target,
                 new Dictionary<string, string> { ["permissions"] = string.Join(",", request.Permissions) }, ct);
 
             return Results.NoContent();
         });
 
         group.MapDelete("/grants/{holderType}/{holder}/{permission}", async (
-            string holderType, string holder, string permission,
+            string holderType, string holder, string permission, ClaimsPrincipal caller,
             EfPermissionGrantStore store, IAuthorizationAuditWriter auditWriter, IEnumerable<IAccessChangeObserver> observers,
             ICurrentUser currentUser, CancellationToken ct) =>
         {
             if (!Enum.TryParse<GrantHolderType>(holderType, ignoreCase: true, out var type))
                 return InvalidEnum("holderType", holderType, typeof(GrantHolderType));
+
+            // BR-011: removing a deny that applies to yourself widens your own access just like a grant does.
+            if (GrantGuards.TargetsCaller(caller, type, holder))
+            {
+                var own = await store.GetGrantsForHolderAsync(type, holder, ct);
+                if (own.Any(g => g.Type is PermissionGrantType.Deny
+                        && string.Equals(g.Permission, permission, StringComparison.OrdinalIgnoreCase)))
+                    return await RefuseAsync(auditWriter, currentUser, "Grant", $"{type}:{holder}",
+                        "self-grant", "You cannot lift a denial that applies to yourself.", ct);
+            }
 
             if (type is GrantHolderType.Role)
                 await store.RevokeFromRoleAsync(holder, permission, ct);
@@ -174,6 +226,259 @@ public static class AuthorizationManagementExtensions
             return Results.NoContent();
         });
     }
+
+    /// <summary>The permissions the holder would effectively have after the grant, for the SoD simulation.</summary>
+    private static async Task<(bool Unknown, HashSet<string> Permissions)> ProposedPermissionsAsync(
+        GrantHolderType holderType, string holder, string[]? holderRoles, List<string> granted,
+        EfPermissionGrantStore store, [FromServices] IUserRoleDirectory? roleDirectory,
+        IEffectiveAccessService? effectiveAccessService, CancellationToken ct)
+    {
+        var proposed = new HashSet<string>(granted, StringComparer.OrdinalIgnoreCase);
+
+        if (holderType is GrantHolderType.Role)
+        {
+            // A role's own grants must stay free of toxic pairs, whoever ends up holding the role.
+            foreach (var existing in await store.GetGrantsForHolderAsync(holderType, holder, ct))
+            {
+                if (existing.Type is PermissionGrantType.Allow)
+                    proposed.Add(existing.Permission);
+            }
+
+            // Scoped and temporary grants count too: a toxic pair split across scopes is still a toxic pair.
+            foreach (var existing in await store.GetScopedGrantsForHolderAsync(holderType, holder, ct))
+            {
+                if (existing.Grant.Type is PermissionGrantType.Allow)
+                    proposed.Add(existing.Grant.Permission);
+            }
+
+            return (false, proposed);
+        }
+
+        if (effectiveAccessService is null)
+            return (false, proposed);
+
+        var userId = ParseUser(holder);
+        IReadOnlyCollection<string> roles;
+        if (roleDirectory is not null)
+        {
+            if (await roleDirectory.GetRolesAsync(userId, ct) is not { } known)
+                return (true, proposed);
+            roles = known;
+        }
+        else
+        {
+            // Without an identity store the caller's list is all there is; it can only make the check stricter or looser,
+            // so register an IUserRoleDirectory (AddModulusIdentity does) for an authoritative answer.
+            roles = holderRoles ?? [];
+        }
+
+        var report = effectiveAccessService.Report(new PrincipalGrantQuery(userId, roles));
+        proposed.UnionWith(report.AllPermissions);
+        return (false, proposed);
+    }
+
+    private static async Task<IResult> RefuseAsync(
+        IAuthorizationAuditWriter auditWriter, ICurrentUser currentUser,
+        string category, string target, string reason, string detail, CancellationToken ct)
+    {
+        // A refused administrative change is evidence too (FR-AUD-003): record who tried what.
+        await auditWriter.WriteAsync(
+            new AuthorizationAdministrativeChangeEvent(
+                category, "Refused", currentUser.UserId?.ToString(), target,
+                new Dictionary<string, string> { ["reason"] = reason }),
+            ct);
+        return GrantGuards.Refused(detail);
+    }
+
+
+    // ── Scoped, temporary and restricting grants; assignments ───────
+
+    private static void MapScopedGrants(RouteGroupBuilder group)
+    {
+        group.MapGet("/scoped-grants/{holderType}/{holder}", async (
+            string holderType, string holder, EfPermissionGrantStore store, CancellationToken ct) =>
+        {
+            if (!Enum.TryParse<GrantHolderType>(holderType, ignoreCase: true, out var type))
+                return InvalidEnum("holderType", holderType, typeof(GrantHolderType));
+
+            return Results.Ok((await store.GetScopedGrantsForHolderAsync(type, holder, ct)).Select(ToResponse));
+        });
+
+        group.MapPost("/scoped-grants", async (
+            ScopedGrantWriteRequest request, ClaimsPrincipal caller,
+            EfPermissionGrantStore store, IPermissionRegistry registry, IAuthorizationService authorization,
+            IAuthorizationAuditWriter auditWriter, IEnumerable<IAccessChangeObserver> observers,
+            ICurrentUser currentUser, ISodPolicy sodPolicy, IOrgHierarchy hierarchy,
+            [FromServices] IUserRoleDirectory? roleDirectory, IEffectiveAccessService? effectiveAccessService,
+            IOptions<AuthorizationManagementOptions> limits, TimeProvider clock, CancellationToken ct) =>
+        {
+            if (!Enum.TryParse<GrantHolderType>(request.HolderType, ignoreCase: true, out var holderType))
+                return InvalidEnum("holderType", request.HolderType, typeof(GrantHolderType));
+            var typeToken = request.Type ?? nameof(PermissionGrantType.Allow);
+            if (!Enum.TryParse<PermissionGrantType>(typeToken, ignoreCase: true, out var grantType))
+                return InvalidEnum("type", typeToken, typeof(PermissionGrantType));
+
+            var scope = PermissionScope.Tenant;
+            if (request.Scope is not null && !PermissionScope.TryParse(request.Scope, out scope))
+                return Results.ValidationProblem(new Dictionary<string, string[]>
+                {
+                    ["scope"] = ["Use tenant, own, org, org:{unitId} or assigned:{type}."],
+                });
+            if (scope.OrgUnitId is { } unit && !hierarchy.Contains(unit))
+                return Results.ValidationProblem(new Dictionary<string, string[]>
+                {
+                    ["scope"] = [$"Unknown org unit {unit}."],
+                });
+
+            if (request.Permission is null || request.Permission.EndsWith(":*", StringComparison.Ordinal))
+                return Results.ValidationProblem(new Dictionary<string, string[]>
+                {
+                    ["permission"] = ["Name one registered permission; wildcards belong in role definitions, not in scoped or temporary grants."],
+                });
+            _ = GrantGuards.Expand(registry, [request.Permission], out var unknown);
+            if (unknown.Count > 0)
+                return GrantGuards.Unknown(unknown);
+
+            var now = clock.GetUtcNow();
+            if (request.ValidFrom is { } from && request.ValidUntil is { } until && until <= from)
+                return Results.ValidationProblem(new Dictionary<string, string[]> { ["validUntil"] = ["A grant must end after it begins."] });
+            if (request.ValidUntil is { } ends)
+            {
+                if (ends <= now)
+                    return Results.ValidationProblem(new Dictionary<string, string[]> { ["validUntil"] = ["A temporary grant must end in the future."] });
+                if (ends - (request.ValidFrom ?? now) > limits.Value.MaxTemporaryGrantDuration)
+                    return Results.ValidationProblem(new Dictionary<string, string[]>
+                    {
+                        ["validUntil"] = [$"A temporary grant may last at most {limits.Value.MaxTemporaryGrantDuration.TotalDays:0.#} days."],
+                    });
+                if (string.IsNullOrWhiteSpace(request.Reason))
+                    return Results.ValidationProblem(new Dictionary<string, string[]> { ["reason"] = ["A temporary grant needs a reason (it is kept for review)."] });
+            }
+
+            if (grantType is PermissionGrantType.Deny && scope.Kind is not ScopeKind.Tenant)
+                return Results.ValidationProblem(new Dictionary<string, string[]>
+                {
+                    ["scope"] = ["A deny removes the permission and takes no scope; use type Restrict to narrow it."],
+                });
+            if (grantType is PermissionGrantType.Restrict && scope.Kind is ScopeKind.Tenant)
+                return Results.ValidationProblem(new Dictionary<string, string[]>
+                {
+                    ["scope"] = ["A restriction needs a scope narrower than the whole company."],
+                });
+
+            var target = $"{holderType}:{request.Holder}";
+            if (grantType is PermissionGrantType.Allow)
+            {
+                if (GrantGuards.TargetsCaller(caller, holderType, request.Holder))
+                    return await RefuseAsync(auditWriter, currentUser, "Grant", target,
+                        "self-grant", "You cannot grant permissions to yourself or to a role you hold.", ct);
+
+                var notHeld = await GrantGuards.NotHeldAsync(caller, authorization, [request.Permission]);
+                if (notHeld.Count > 0)
+                    return await RefuseAsync(auditWriter, currentUser, "Grant", target,
+                        "above-ceiling", $"You cannot grant permissions you do not hold: {string.Join(", ", notHeld)}.", ct);
+
+                var proposed = await ProposedPermissionsAsync(
+                    holderType, request.Holder, null, [request.Permission], store, roleDirectory, effectiveAccessService, ct);
+                if (proposed.Unknown)
+                    return Results.Problem(detail: "The user is unknown, so their role memberships cannot be checked.",
+                        statusCode: StatusCodes.Status404NotFound);
+                var violations = sodPolicy.Evaluate(proposed.Permissions);
+                if (violations.Count > 0)
+                {
+                    return Results.Conflict(new
+                    {
+                        error = "SoD violation",
+                        message = "Granting this permission would create a segregation-of-duties violation.",
+                        violations = violations.Select(v => new { constraint = v.Constraint.Name, held = v.HeldPermissions }).ToList(),
+                    });
+                }
+            }
+
+            var saved = await store.AddScopedGrantAsync(
+                new PermissionGrant(holderType, request.Holder, request.Permission, grantType, scope,
+                    request.ValidFrom, request.ValidUntil, request.Reason?.Trim()),
+                GrantGuards.UserIdOf(caller), now, ct);
+
+            await EmitAuditAsync(auditWriter, observers, currentUser, "Grant", $"Scoped{grantType}", target,
+                new Dictionary<string, string>
+                {
+                    ["permission"] = request.Permission,
+                    ["scope"] = scope.Format(),
+                    ["validFrom"] = request.ValidFrom?.ToString("O") ?? "",
+                    ["validUntil"] = request.ValidUntil?.ToString("O") ?? "",
+                    ["reason"] = request.Reason ?? "",
+                }, ct);
+
+            return Results.Created($"scoped-grants/{holderType}/{request.Holder}", ToResponse(saved));
+        });
+
+        group.MapDelete("/scoped-grants/{id:guid}", async (
+            Guid id, ClaimsPrincipal caller, EfPermissionGrantStore store,
+            IAuthorizationAuditWriter auditWriter, IEnumerable<IAccessChangeObserver> observers,
+            ICurrentUser currentUser, CancellationToken ct) =>
+        {
+            if (await store.GetScopedGrantAsync(id, ct) is not { } existing)
+                return Results.Problem(detail: "Scoped grant not found.", statusCode: StatusCodes.Status404NotFound);
+
+            var grant = existing.Grant;
+            // BR-011: lifting a restriction or deny that applies to yourself widens your own access.
+            if (grant.Type is not PermissionGrantType.Allow && GrantGuards.TargetsCaller(caller, grant.HolderType, grant.Holder))
+                return await RefuseAsync(auditWriter, currentUser, "Grant", $"{grant.HolderType}:{grant.Holder}",
+                    "self-grant", "You cannot lift a restriction or denial that applies to yourself.", ct);
+
+            await store.RemoveScopedGrantAsync(id, ct);
+            await EmitAuditAsync(auditWriter, observers, currentUser, "Grant", "ScopedRevoked",
+                $"{grant.HolderType}:{grant.Holder}",
+                new Dictionary<string, string> { ["permission"] = grant.Permission, ["scope"] = grant.EffectiveScope.Format() }, ct);
+            return Results.NoContent();
+        });
+
+        group.MapGet("/assignments/{userId:guid}", async (Guid userId, EfAssignmentStore store, CancellationToken ct) =>
+            Results.Ok(await store.ListAsync(userId, ct)));
+
+        group.MapPost("/assignments", async (
+            AssignmentWriteRequest request, EfAssignmentStore store,
+            [FromServices] IUserRoleDirectory? roleDirectory,
+            IAuthorizationAuditWriter auditWriter, IEnumerable<IAccessChangeObserver> observers,
+            ICurrentUser currentUser, CancellationToken ct) =>
+        {
+            if (string.IsNullOrWhiteSpace(request.AssignmentType))
+                return Results.ValidationProblem(new Dictionary<string, string[]> { ["assignmentType"] = ["An assignment type is required."] });
+            if (request is { ValidFrom: { } from, ValidUntil: { } until } && until <= from)
+                return Results.ValidationProblem(new Dictionary<string, string[]> { ["validUntil"] = ["An assignment must end after it begins."] });
+            if (roleDirectory is not null && await roleDirectory.GetRolesAsync(request.UserId, ct) is null)
+                return Results.Problem(detail: "The user is unknown.", statusCode: StatusCodes.Status404NotFound);
+
+            await store.AssignAsync(new Assignment(request.UserId, request.AssignmentType, request.TargetId, request.ValidFrom, request.ValidUntil), ct);
+            await EmitAuditAsync(auditWriter, observers, currentUser, "Assignment", "Assigned",
+                $"user:{request.UserId} -> {request.AssignmentType.Trim().ToLowerInvariant()}:{request.TargetId}",
+                new Dictionary<string, string>
+                {
+                    ["validFrom"] = request.ValidFrom?.ToString("O") ?? "",
+                    ["validUntil"] = request.ValidUntil?.ToString("O") ?? "",
+                }, ct);
+            return Results.NoContent();
+        });
+
+        group.MapDelete("/assignments/{userId:guid}/{assignmentType}/{targetId:guid}", async (
+            Guid userId, string assignmentType, Guid targetId, EfAssignmentStore store,
+            IAuthorizationAuditWriter auditWriter, IEnumerable<IAccessChangeObserver> observers,
+            ICurrentUser currentUser, CancellationToken ct) =>
+        {
+            if (!await store.UnassignAsync(userId, assignmentType, targetId, ct))
+                return Results.Problem(detail: "Assignment not found.", statusCode: StatusCodes.Status404NotFound);
+
+            await EmitAuditAsync(auditWriter, observers, currentUser, "Assignment", "Unassigned",
+                $"user:{userId} -> {assignmentType.Trim().ToLowerInvariant()}:{targetId}", new Dictionary<string, string>(), ct);
+            return Results.NoContent();
+        });
+    }
+
+    private static ScopedGrantResponse ToResponse(EfPermissionGrantStore.ScopedGrantRecord record)
+        => new(record.Id, record.Grant.HolderType.ToString(), record.Grant.Holder, record.Grant.Permission,
+            record.Grant.Type.ToString(), record.Grant.EffectiveScope.Format(), record.Grant.ValidFrom,
+            record.Grant.ValidUntil, record.Grant.Reason, record.CreatedBy, record.CreatedAt);
 
     // ── Organization ───────────────────────────────────────────────
 
@@ -246,13 +551,19 @@ public static class AuthorizationManagementExtensions
 
     // ── Feature entitlements ───────────────────────────────────────
 
-    private static void MapEntitlements(RouteGroupBuilder group)
+    private static void MapEntitlements(RouteGroupBuilder parent)
     {
-        group.MapGet("/features/plans/{plan}", (
+        // Plans and per-company overrides are platform-wide data. A company administrator holds authorization:manage too,
+        // so these routes also need the host-level permission AND a request made outside any company.
+        var group = parent.MapGroup("/features")
+            .RequireAuthorization(EntitlementsPermission)
+            .AddEndpointFilter(HostOnlyAsync);
+
+        group.MapGet("/plans/{plan}", (
             string plan, EfFeatureEntitlementStore store) =>
             Results.Ok(store.PlanFeatures(plan)));
 
-        group.MapPut("/features/plans/{plan}", async (
+        group.MapPut("/plans/{plan}", async (
             string plan, PlanDefinitionRequest request,
             EfFeatureEntitlementStore store, IAuthorizationAuditWriter auditWriter, IEnumerable<IAccessChangeObserver> observers,
             ICurrentUser currentUser, CancellationToken ct) =>
@@ -266,7 +577,7 @@ public static class AuthorizationManagementExtensions
             return Results.NoContent();
         });
 
-        group.MapPut("/features/tenants/{tenantId:guid}/plan", async (
+        group.MapPut("/tenants/{tenantId:guid}/plan", async (
             Guid tenantId, PlanAssignmentRequest request,
             EfFeatureEntitlementStore store, IAuthorizationAuditWriter auditWriter, IEnumerable<IAccessChangeObserver> observers,
             ICurrentUser currentUser, CancellationToken ct) =>
@@ -280,7 +591,7 @@ public static class AuthorizationManagementExtensions
             return Results.NoContent();
         });
 
-        group.MapPut("/features/tenants/{tenantId:guid}/overrides/{feature}", async (
+        group.MapPut("/tenants/{tenantId:guid}/overrides/{feature}", async (
             Guid tenantId, string feature, OverrideWriteRequest request,
             EfFeatureEntitlementStore store, IAuthorizationAuditWriter auditWriter, IEnumerable<IAccessChangeObserver> observers,
             ICurrentUser currentUser, CancellationToken ct) =>
@@ -297,7 +608,7 @@ public static class AuthorizationManagementExtensions
             return Results.NoContent();
         });
 
-        group.MapDelete("/features/tenants/{tenantId:guid}/overrides/{feature}", async (
+        group.MapDelete("/tenants/{tenantId:guid}/overrides/{feature}", async (
             Guid tenantId, string feature,
             EfFeatureEntitlementStore store, IAuthorizationAuditWriter auditWriter, IEnumerable<IAccessChangeObserver> observers,
             ICurrentUser currentUser, CancellationToken ct) =>
@@ -322,7 +633,9 @@ public static class AuthorizationManagementExtensions
 
         group.MapPost("/delegations", async (
             DelegationWriteRequest request,
-            EfDelegationStore store, IAuthorizationAuditWriter auditWriter, IEnumerable<IAccessChangeObserver> observers,
+            EfDelegationStore store, IPermissionRegistry registry, PermissionResolver resolver,
+            [FromServices] IUserRoleDirectory? roleDirectory, IOptions<AuthorizationManagementOptions> limits, TimeProvider clock,
+            IAuthorizationAuditWriter auditWriter, IEnumerable<IAccessChangeObserver> observers,
             ICurrentUser currentUser, CancellationToken ct) =>
         {
             if (request.Permissions is not { Length: > 0 })
@@ -343,8 +656,65 @@ public static class AuthorizationManagementExtensions
                     ["notAfter"] = ["A delegation window must end after it begins."],
                 });
 
+            var options = limits.Value;
+            if (request.NotAfter - request.NotBefore > options.MaxDelegationDuration)
+                return Results.ValidationProblem(new Dictionary<string, string[]>
+                {
+                    ["notAfter"] = [$"A delegation may cover at most {options.MaxDelegationDuration.TotalDays:0.#} days."],
+                });
+
+            if (request.NotAfter <= clock.GetUtcNow())
+                return Results.ValidationProblem(new Dictionary<string, string[]>
+                {
+                    ["notAfter"] = ["A delegation must end in the future."],
+                });
+
+            // Only permissions modules declared; wildcards are not delegable (a delegation names exactly what it lends).
+            if (request.Permissions.Any(p => p.EndsWith(":*", StringComparison.Ordinal)))
+                return Results.ValidationProblem(new Dictionary<string, string[]>
+                {
+                    ["permissions"] = ["Wildcards cannot be delegated; name each permission."],
+                });
+            _ = GrantGuards.Expand(registry, request.Permissions, out var unknown);
+            if (unknown.Count > 0)
+                return GrantGuards.Unknown(unknown);
+
+            var blocked = request.Permissions
+                .Where(p => options.NonDelegablePrefixes.Any(prefix => p.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)))
+                .ToList();
+            blocked.AddRange(request.Permissions.Where(p => !blocked.Contains(p)
+                && registry.GetAll().Any(d => d.Sensitivity is PermissionSensitivity.Critical
+                                              && string.Equals(d.Permission, p, StringComparison.OrdinalIgnoreCase))));
+            if (blocked.Count > 0)
+                return Results.ValidationProblem(new Dictionary<string, string[]>
+                {
+                    ["permissions"] = [$"Not delegable: {string.Join(", ", blocked)}."],
+                });
+
+            // The delegator's roles come from the identity store, never from the request: a caller-supplied list would let
+            // anyone invent the authority the delegation is capped by (BR-006). Without a directory the cap falls back to
+            // the delegator's direct grants only, which can only be stricter.
+            IReadOnlyCollection<string> delegatorRoles = [];
+            if (roleDirectory is not null)
+            {
+                if (await roleDirectory.GetRolesAsync(request.FromUserId, ct) is not { } roles)
+                    return Results.Problem(detail: "The delegator is unknown.", statusCode: StatusCodes.Status404NotFound);
+                if (await roleDirectory.GetRolesAsync(request.ToUserId, ct) is null)
+                    return Results.Problem(detail: "The delegate is unknown.", statusCode: StatusCodes.Status404NotFound);
+                delegatorRoles = roles;
+            }
+
+            // You cannot lend what you do not hold (FR-GRT-005): checked now, and again at every decision.
+            var held = resolver.Resolve(new PrincipalGrantQuery(request.FromUserId, delegatorRoles));
+            var notHeld = request.Permissions.Where(p => !held.Contains(p)).ToList();
+            if (notHeld.Count > 0)
+                return Results.ValidationProblem(new Dictionary<string, string[]>
+                {
+                    ["permissions"] = [$"The delegator does not hold: {string.Join(", ", notHeld)}."],
+                });
+
             var delegation = await store.DelegateAsync(
-                request.FromUserId, request.FromRoles, request.ToUserId,
+                request.FromUserId, delegatorRoles, request.ToUserId,
                 request.Permissions, request.NotBefore, request.NotAfter, ct);
 
             await EmitAuditAsync(auditWriter, observers, currentUser, "Delegation", "Created",
@@ -377,6 +747,16 @@ public static class AuthorizationManagementExtensions
 
     // ── Helpers ────────────────────────────────────────────────────
 
+    /// <summary>Refuses a request made inside a company: platform-wide data is for host operators only.</summary>
+    private static async ValueTask<object?> HostOnlyAsync(EndpointFilterInvocationContext context, EndpointFilterDelegate next)
+    {
+        var tenant = context.HttpContext.RequestServices.GetRequiredService<ICurrentTenant>();
+        if (!tenant.IsHost && tenant.TenantId is not null)
+            return GrantGuards.Refused("This resource is managed by the platform operator, not from inside a company.");
+
+        return await next(context);
+    }
+
     /// <summary>
     /// Emits an <see cref="AuthorizationAdministrativeChangeEvent"/> after a
     /// management-store write has already succeeded (auth blueprint §5.14/§16 —
@@ -404,7 +784,7 @@ public static class AuthorizationManagementExtensions
             {
                 Kind = category switch
                 {
-                    "OrgUnit" or "OrgPlacement" => AccessChangeKinds.Organization,
+                    "OrgUnit" or "OrgPlacement" or "Assignment" => AccessChangeKinds.Organization,
                     "FeatureEntitlement" => AccessChangeKinds.Feature,
                     "Delegation" => AccessChangeKinds.Delegation,
                     _ => AccessChangeKinds.Grant,
@@ -422,15 +802,25 @@ public static class AuthorizationManagementExtensions
         // Optional ?roles=r1&r2 supplies the user's role memberships (the
         // store cannot know Identity membership); without them the report
         // covers direct grants and delegations only.
-        group.MapGet("/effective-access/{userId:guid}", (
+        group.MapGet("/effective-access/{userId:guid}", async (
             Guid userId,
             string[]? roles,
-            IEffectiveAccessService? effectiveAccessService) =>
+            IEffectiveAccessService? effectiveAccessService,
+            [FromServices] IUserRoleDirectory? roleDirectory, CancellationToken ct) =>
         {
             if (effectiveAccessService is null)
                 return Results.NotFound("Effective access service not registered.");
 
-            var report = effectiveAccessService.Report(new PrincipalGrantQuery(userId, roles ?? []));
+            // The identity store is authoritative; ?roles= is only a what-if when no directory is registered.
+            IReadOnlyCollection<string> effectiveRoles = roles ?? [];
+            if (roleDirectory is not null)
+            {
+                if (await roleDirectory.GetRolesAsync(userId, ct) is not { } known)
+                    return Results.NotFound("Unknown user.");
+                effectiveRoles = known;
+            }
+
+            var report = effectiveAccessService.Report(new PrincipalGrantQuery(userId, effectiveRoles));
             return Results.Ok(new
             {
                 userId = report.UserId,
@@ -454,14 +844,14 @@ public static class AuthorizationManagementExtensions
         .WithName("GetEffectiveAccess");
 
         // POST /authorization/sod-violations/scan — who's violating SoD?
-        // Bulk scan: no caller supplies role membership here, so reports cover
-        // direct grants and delegations only — role-delivered halves of toxic
-        // combinations are invisible to this scan. Use the per-user
-        // effective-access endpoint (with ?roles=) for a complete picture.
+        // Bulk scan: role membership comes from the IUserRoleDirectory when one is
+        // registered; without it the scan covers direct grants and delegations only
+        // and role-delivered halves of toxic combinations are invisible to it.
         group.MapPost("/sod-violations/scan", async (
             EfPermissionGrantStore store,
             IEffectiveAccessService? effectiveAccessService,
             ISodPolicy sodPolicy,
+            [FromServices] IUserRoleDirectory? roleDirectory,
             CancellationToken ct) =>
         {
             if (effectiveAccessService is null)
@@ -473,7 +863,10 @@ public static class AuthorizationManagementExtensions
 
             foreach (var userId in allUsers)
             {
-                var report = effectiveAccessService.Report(new PrincipalGrantQuery(userId, []));
+                IReadOnlyCollection<string> userRoles = roleDirectory is null
+                    ? []
+                    : await roleDirectory.GetRolesAsync(userId, ct) ?? [];
+                var report = effectiveAccessService.Report(new PrincipalGrantQuery(userId, userRoles));
                 if (report.SodViolations.Count > 0)
                 {
                     violations.Add(new

@@ -44,6 +44,7 @@ public sealed class ResourcePolicy
 
             if (rule.Effect == PolicyEffect.Deny)
                 return AccessDecision.Deny(
+                    AccessReasonCodes.PolicyViolation,
                     $"action '{request.Action}' is denied by policy on this resource");
 
             matchedAllow = true;
@@ -51,6 +52,6 @@ public sealed class ResourcePolicy
 
         return matchedAllow
             ? AccessDecision.Allow()
-            : AccessDecision.Deny($"no policy rule grants action '{request.Action}' on this resource");
+            : AccessDecision.Deny(AccessReasonCodes.PolicyViolation, $"no policy rule grants action '{request.Action}' on this resource");
     }
 }

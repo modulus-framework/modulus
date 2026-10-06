@@ -5,6 +5,7 @@ using Modulus.Authorization.Features;
 using Modulus.Authorization.Governance;
 using Modulus.Authorization.Grants;
 using Modulus.Authorization.Organization;
+using Modulus.Authorization.Scopes;
 using Modulus.Core.Abstractions;
 using Modulus.Core.Null;
 
@@ -86,6 +87,11 @@ public static class EfAuthorizationStoreExtensions
         services.RemoveAll<IDelegationStore>();
         services.AddSingleton<IDelegationStore>(
             sp => sp.GetRequiredService<EfDelegationStore>());
+
+        services.TryAddSingleton<EfAssignmentStore>();
+        services.RemoveAll<IAssignmentStore>();
+        services.AddSingleton<IAssignmentStore>(
+            sp => sp.GetRequiredService<EfAssignmentStore>());
 
         services.TryAddSingleton<EfRecertificationCampaignStore>();
         services.RemoveAll<IRecertificationCampaignStore>();

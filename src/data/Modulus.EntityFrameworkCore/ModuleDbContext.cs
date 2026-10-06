@@ -276,6 +276,17 @@ public abstract class ModuleDbContext(
             if (property is not null)
                 property.IsConcurrencyToken = true;
         }
+
+        // The company id is a concurrency token too, so every UPDATE and DELETE of a tenant-owned row carries
+        // "AND TenantId = @original" in its WHERE clause. An entity attached by id (new Note { Id = x, TenantId = mine }
+        // with State = Modified) can then only ever touch a row that really belongs to that company: a foreign row matches
+        // nothing and the save fails with a concurrency exception instead of overwriting or re-stamping it. No schema change.
+        foreach (var entity in mb.Model.GetEntityTypes())
+        {
+            if (entity.BaseType is null && typeof(IHasTenantId).IsAssignableFrom(entity.ClrType)
+                && entity.FindProperty(nameof(IHasTenantId.TenantId)) is { } tenantId)
+                tenantId.IsConcurrencyToken = true;
+        }
     }
 
     private void ApplyTablePrefix(ModelBuilder mb)
@@ -505,6 +516,11 @@ public abstract class ModuleDbContext(
             }
 
             if (owner != Guid.Empty && owner != current)
+                throw new CrossTenantWriteException(entry.Metadata.ClrType.Name, owner, current);
+
+            // A tenant-less owner on an existing row inside a company can only be an entity attached by id: rows loaded
+            // through the tenant filter carry their company's id. Its UPDATE/DELETE would be keyed on the id alone.
+            if (entry.State != EntityState.Added && owner == Guid.Empty && current is not null)
                 throw new CrossTenantWriteException(entry.Metadata.ClrType.Name, owner, current);
         }
     }

@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Modulus.Authorization.Grants;
+using Modulus.Authorization.Scopes;
 
 namespace Modulus.Authorization.EntityFrameworkCore;
 
@@ -48,9 +49,105 @@ public sealed class EfPermissionGrantStore(
                     && g.Holder.ToLower() == lowerUser))
             .ToList();
 
-        return grantRows
+        var result = grantRows
             .Select(g => new PermissionGrant(g.HolderType, g.Holder, g.Permission, g.Type))
             .ToList();
+
+        var scopedRows = db.ScopedGrants.AsNoTracking()
+            .Where(g =>
+                (g.HolderType == GrantHolderType.Role && lowerRoles.Contains(g.Holder.ToLower()))
+                || (lowerUser != null
+                    && g.HolderType == GrantHolderType.User
+                    && g.Holder.ToLower() == lowerUser))
+            .ToList();
+        result.AddRange(scopedRows.Select(ToGrant).OfType<PermissionGrant>());
+        return result;
+    }
+
+    // A stored scope that no longer parses is dropped, never widened to "the whole company".
+    private static PermissionGrant? ToGrant(ScopedGrantRow row)
+        => PermissionScope.TryParse(row.Scope, out var scope)
+            ? new PermissionGrant(row.HolderType, row.Holder, row.Permission, row.Type, scope, row.ValidFrom, row.ValidUntil, row.Reason)
+            : null;
+
+    /// <summary>A scoped, temporary or restricting grant as stored, with the id used to remove it.</summary>
+    /// <param name="Id">The row id.</param>
+    /// <param name="Grant">The grant.</param>
+    /// <param name="CreatedBy">The administrator who made it, when known.</param>
+    /// <param name="CreatedAt">When it was made.</param>
+    public sealed record ScopedGrantRecord(Guid Id, PermissionGrant Grant, Guid? CreatedBy, DateTimeOffset CreatedAt);
+
+    /// <summary>
+    /// Adds (or replaces, for the same holder, permission, effect and scope) a grant that carries a scope, a validity window
+    /// or a restriction. A <c>Deny</c> may carry a window (a temporary block) but never a scope: it removes the permission.
+    /// </summary>
+    public async Task<ScopedGrantRecord> AddScopedGrantAsync(
+        PermissionGrant grant, Guid? createdBy, DateTimeOffset now, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(grant);
+        ArgumentException.ThrowIfNullOrWhiteSpace(grant.Holder);
+        ArgumentException.ThrowIfNullOrWhiteSpace(grant.Permission);
+        if (grant.Type is PermissionGrantType.Deny && grant.Scope is { Kind: not ScopeKind.Tenant })
+            throw new ArgumentException("A deny removes the permission; it cannot carry a scope. Use a restriction to narrow one.", nameof(grant));
+        if (grant.Type is PermissionGrantType.Restrict && grant.Scope is null or { Kind: ScopeKind.Tenant })
+            throw new ArgumentException("A restriction needs a scope narrower than the whole company.", nameof(grant));
+        if (grant is { ValidFrom: { } from, ValidUntil: { } until } && until <= from)
+            throw new ArgumentException("A grant must end after it begins.", nameof(grant));
+
+        var scope = grant.EffectiveScope.Format();
+        await using var db = await factory.CreateDbContextAsync(ct);
+        var row = await db.ScopedGrants.SingleOrDefaultAsync(
+            g => g.HolderType == grant.HolderType && g.Holder == grant.Holder && g.Permission == grant.Permission
+                 && g.Type == grant.Type && g.Scope == scope, ct);
+        if (row is null)
+        {
+            row = new ScopedGrantRow
+            {
+                Id = Guid.NewGuid(),
+                HolderType = grant.HolderType,
+                Holder = grant.Holder,
+                Permission = grant.Permission,
+                Type = grant.Type,
+                Scope = scope,
+                CreatedBy = createdBy,
+                CreatedAt = now,
+            };
+            db.ScopedGrants.Add(row);
+        }
+
+        row.ValidFrom = grant.ValidFrom;
+        row.ValidUntil = grant.ValidUntil;
+        row.Reason = grant.Reason;
+        await db.SaveChangesAsync(ct);
+        return new ScopedGrantRecord(row.Id, ToGrant(row)!, row.CreatedBy, row.CreatedAt);
+    }
+
+    /// <summary>Removes a scoped grant by id; false when there is no such grant.</summary>
+    public async Task<bool> RemoveScopedGrantAsync(Guid id, CancellationToken ct = default)
+    {
+        await using var db = await factory.CreateDbContextAsync(ct);
+        return await db.ScopedGrants.Where(g => g.Id == id).ExecuteDeleteAsync(ct) > 0;
+    }
+
+    /// <summary>One scoped grant by id, or null.</summary>
+    public async Task<ScopedGrantRecord?> GetScopedGrantAsync(Guid id, CancellationToken ct = default)
+    {
+        await using var db = await factory.CreateDbContextAsync(ct);
+        var row = await db.ScopedGrants.AsNoTracking().SingleOrDefaultAsync(g => g.Id == id, ct);
+        return row is null || ToGrant(row) is not { } grant ? null : new ScopedGrantRecord(row.Id, grant, row.CreatedBy, row.CreatedAt);
+    }
+
+    /// <summary>Every scoped grant of one holder (expired ones included, for review).</summary>
+    public async Task<IReadOnlyCollection<ScopedGrantRecord>> GetScopedGrantsForHolderAsync(
+        GrantHolderType holderType, string holder, CancellationToken ct = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(holder);
+        await using var db = await factory.CreateDbContextAsync(ct);
+        var rows = await db.ScopedGrants.AsNoTracking()
+            .Where(g => g.HolderType == holderType && g.Holder == holder)
+            .OrderBy(g => g.Permission).ThenBy(g => g.Scope)
+            .ToListAsync(ct);
+        return [.. rows.Select(r => ToGrant(r) is { } g ? new ScopedGrantRecord(r.Id, g, r.CreatedBy, r.CreatedAt) : null).OfType<ScopedGrantRecord>()];
     }
 
     /// <summary>Every grant attached to one holder — the admin/review read,

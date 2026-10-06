@@ -337,14 +337,13 @@ public sealed class BffBuilder
         if (client.RateLimit is not { PermitLimit: > 0 } limit)
             return RateLimitPartition.GetNoLimiter("none");
 
+        // The partition must come from something the caller cannot choose. A header such as X-Device-Id is picked by the
+        // client, so keying on it let anyone escape the limit (and grow the limiter table) by sending a new value per request.
         var user = context.User;
         var key = client.Kind switch
         {
-            BffClientKind.Mobile => context.Request.Headers[BffDefaults.DeviceIdHeader].ToString() is { Length: > 0 } device
-                ? "device:" + device
-                : Subject(user),
             BffClientKind.Partner => BffClaims.GetClientId(user) is { } clientId ? "client:" + clientId : null,
-            _ => Subject(user),
+            _ => Subject(user) ?? (BffClaims.GetClientId(user) is { } app ? "client:" + app : null),
         } ?? "ip:" + context.Connection.RemoteIpAddress;
 
         return RateLimitPartition.GetFixedWindowLimiter(key, _ => new FixedWindowRateLimiterOptions

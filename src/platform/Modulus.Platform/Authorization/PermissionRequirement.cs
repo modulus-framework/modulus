@@ -47,9 +47,11 @@ public sealed class PermissionRequirement : IAuthorizationRequirement
 /// services).
 /// </summary>
 internal sealed class PermissionRequirementHandler(
-    IPermissionResolver resolver, IPermissionGrantStore grantStore)
+    IPermissionResolver resolver, IPermissionGrantStore grantStore, TimeProvider? clock = null)
     : AuthorizationHandler<PermissionRequirement>
 {
+    private readonly TimeProvider _clock = clock ?? TimeProvider.System;
+
     private const string WildcardSuffix = ":*";
 
     protected override Task HandleRequirementAsync(
@@ -87,9 +89,10 @@ internal sealed class PermissionRequirementHandler(
 
     private bool IsExplicitlyDenied(IReadOnlyCollection<PermissionGrant> grants, string permission)
     {
+        var now = _clock.GetUtcNow();
         foreach (var grant in grants)
         {
-            if (grant.Type != PermissionGrantType.Deny)
+            if (grant.Type != PermissionGrantType.Deny || !grant.IsValidAt(now))
                 continue;
 
             if (string.Equals(grant.Permission, permission, StringComparison.OrdinalIgnoreCase))

@@ -1,6 +1,23 @@
 #nullable enable
 const Modulus.Authorization.Management.AuthorizationManagementExtensions.ManagePermission = "authorization:manage" -> string!
+Modulus.Authorization.Management.AssignmentWriteRequest
+Modulus.Authorization.Management.AssignmentWriteRequest.<Clone>$() -> Modulus.Authorization.Management.AssignmentWriteRequest!
+Modulus.Authorization.Management.AssignmentWriteRequest.AssignmentType.get -> string!
+Modulus.Authorization.Management.AssignmentWriteRequest.AssignmentType.init -> void
+Modulus.Authorization.Management.AssignmentWriteRequest.AssignmentWriteRequest(System.Guid UserId, string! AssignmentType, System.Guid TargetId, System.DateTimeOffset? ValidFrom, System.DateTimeOffset? ValidUntil) -> void
+Modulus.Authorization.Management.AssignmentWriteRequest.Deconstruct(out System.Guid UserId, out string! AssignmentType, out System.Guid TargetId, out System.DateTimeOffset? ValidFrom, out System.DateTimeOffset? ValidUntil) -> void
+Modulus.Authorization.Management.AssignmentWriteRequest.Equals(Modulus.Authorization.Management.AssignmentWriteRequest? other) -> bool
+Modulus.Authorization.Management.AssignmentWriteRequest.TargetId.get -> System.Guid
+Modulus.Authorization.Management.AssignmentWriteRequest.TargetId.init -> void
+Modulus.Authorization.Management.AssignmentWriteRequest.UserId.get -> System.Guid
+Modulus.Authorization.Management.AssignmentWriteRequest.UserId.init -> void
+Modulus.Authorization.Management.AssignmentWriteRequest.ValidFrom.get -> System.DateTimeOffset?
+Modulus.Authorization.Management.AssignmentWriteRequest.ValidFrom.init -> void
+Modulus.Authorization.Management.AssignmentWriteRequest.ValidUntil.get -> System.DateTimeOffset?
+Modulus.Authorization.Management.AssignmentWriteRequest.ValidUntil.init -> void
 Modulus.Authorization.Management.AuthorizationManagementExtensions
+Modulus.Authorization.Management.AuthorizationManagementOptions.MaxTemporaryGrantDuration.get -> System.TimeSpan
+Modulus.Authorization.Management.AuthorizationManagementOptions.MaxTemporaryGrantDuration.set -> void
 Modulus.Authorization.Management.DelegationWriteRequest
 Modulus.Authorization.Management.DelegationWriteRequest.<Clone>$() -> Modulus.Authorization.Management.DelegationWriteRequest!
 Modulus.Authorization.Management.DelegationWriteRequest.Deconstruct(out System.Guid FromUserId, out string![]! FromRoles, out System.Guid ToUserId, out string![]! Permissions, out System.DateTimeOffset NotBefore, out System.DateTimeOffset NotAfter) -> void
@@ -94,6 +111,57 @@ Modulus.Authorization.Management.PlanDefinitionRequest.Equals(Modulus.Authorizat
 Modulus.Authorization.Management.PlanDefinitionRequest.Features.get -> string![]!
 Modulus.Authorization.Management.PlanDefinitionRequest.Features.init -> void
 Modulus.Authorization.Management.PlanDefinitionRequest.PlanDefinitionRequest(string![]! Features) -> void
+Modulus.Authorization.Management.ScopedGrantResponse
+Modulus.Authorization.Management.ScopedGrantResponse.<Clone>$() -> Modulus.Authorization.Management.ScopedGrantResponse!
+Modulus.Authorization.Management.ScopedGrantResponse.CreatedAt.get -> System.DateTimeOffset
+Modulus.Authorization.Management.ScopedGrantResponse.CreatedAt.init -> void
+Modulus.Authorization.Management.ScopedGrantResponse.CreatedBy.get -> System.Guid?
+Modulus.Authorization.Management.ScopedGrantResponse.CreatedBy.init -> void
+Modulus.Authorization.Management.ScopedGrantResponse.Deconstruct(out System.Guid Id, out string! HolderType, out string! Holder, out string! Permission, out string! Type, out string! Scope, out System.DateTimeOffset? ValidFrom, out System.DateTimeOffset? ValidUntil, out string? Reason, out System.Guid? CreatedBy, out System.DateTimeOffset CreatedAt) -> void
+Modulus.Authorization.Management.ScopedGrantResponse.Equals(Modulus.Authorization.Management.ScopedGrantResponse? other) -> bool
+Modulus.Authorization.Management.ScopedGrantResponse.Holder.get -> string!
+Modulus.Authorization.Management.ScopedGrantResponse.Holder.init -> void
+Modulus.Authorization.Management.ScopedGrantResponse.HolderType.get -> string!
+Modulus.Authorization.Management.ScopedGrantResponse.HolderType.init -> void
+Modulus.Authorization.Management.ScopedGrantResponse.Id.get -> System.Guid
+Modulus.Authorization.Management.ScopedGrantResponse.Id.init -> void
+Modulus.Authorization.Management.ScopedGrantResponse.Permission.get -> string!
+Modulus.Authorization.Management.ScopedGrantResponse.Permission.init -> void
+Modulus.Authorization.Management.ScopedGrantResponse.Reason.get -> string?
+Modulus.Authorization.Management.ScopedGrantResponse.Reason.init -> void
+Modulus.Authorization.Management.ScopedGrantResponse.Scope.get -> string!
+Modulus.Authorization.Management.ScopedGrantResponse.Scope.init -> void
+Modulus.Authorization.Management.ScopedGrantResponse.ScopedGrantResponse(System.Guid Id, string! HolderType, string! Holder, string! Permission, string! Type, string! Scope, System.DateTimeOffset? ValidFrom, System.DateTimeOffset? ValidUntil, string? Reason, System.Guid? CreatedBy, System.DateTimeOffset CreatedAt) -> void
+Modulus.Authorization.Management.ScopedGrantResponse.Type.get -> string!
+Modulus.Authorization.Management.ScopedGrantResponse.Type.init -> void
+Modulus.Authorization.Management.ScopedGrantResponse.ValidFrom.get -> System.DateTimeOffset?
+Modulus.Authorization.Management.ScopedGrantResponse.ValidFrom.init -> void
+Modulus.Authorization.Management.ScopedGrantResponse.ValidUntil.get -> System.DateTimeOffset?
+Modulus.Authorization.Management.ScopedGrantResponse.ValidUntil.init -> void
+Modulus.Authorization.Management.ScopedGrantWriteRequest
+Modulus.Authorization.Management.ScopedGrantWriteRequest.<Clone>$() -> Modulus.Authorization.Management.ScopedGrantWriteRequest!
+Modulus.Authorization.Management.ScopedGrantWriteRequest.Deconstruct(out string! HolderType, out string! Holder, out string! Permission, out string? Type, out string? Scope, out System.DateTimeOffset? ValidFrom, out System.DateTimeOffset? ValidUntil, out string? Reason) -> void
+Modulus.Authorization.Management.ScopedGrantWriteRequest.Equals(Modulus.Authorization.Management.ScopedGrantWriteRequest? other) -> bool
+Modulus.Authorization.Management.ScopedGrantWriteRequest.Holder.get -> string!
+Modulus.Authorization.Management.ScopedGrantWriteRequest.Holder.init -> void
+Modulus.Authorization.Management.ScopedGrantWriteRequest.HolderType.get -> string!
+Modulus.Authorization.Management.ScopedGrantWriteRequest.HolderType.init -> void
+Modulus.Authorization.Management.ScopedGrantWriteRequest.Permission.get -> string!
+Modulus.Authorization.Management.ScopedGrantWriteRequest.Permission.init -> void
+Modulus.Authorization.Management.ScopedGrantWriteRequest.Reason.get -> string?
+Modulus.Authorization.Management.ScopedGrantWriteRequest.Reason.init -> void
+Modulus.Authorization.Management.ScopedGrantWriteRequest.Scope.get -> string?
+Modulus.Authorization.Management.ScopedGrantWriteRequest.Scope.init -> void
+Modulus.Authorization.Management.ScopedGrantWriteRequest.ScopedGrantWriteRequest(string! HolderType, string! Holder, string! Permission, string? Type, string? Scope, System.DateTimeOffset? ValidFrom, System.DateTimeOffset? ValidUntil, string? Reason) -> void
+Modulus.Authorization.Management.ScopedGrantWriteRequest.Type.get -> string?
+Modulus.Authorization.Management.ScopedGrantWriteRequest.Type.init -> void
+Modulus.Authorization.Management.ScopedGrantWriteRequest.ValidFrom.get -> System.DateTimeOffset?
+Modulus.Authorization.Management.ScopedGrantWriteRequest.ValidFrom.init -> void
+Modulus.Authorization.Management.ScopedGrantWriteRequest.ValidUntil.get -> System.DateTimeOffset?
+Modulus.Authorization.Management.ScopedGrantWriteRequest.ValidUntil.init -> void
+override Modulus.Authorization.Management.AssignmentWriteRequest.Equals(object? obj) -> bool
+override Modulus.Authorization.Management.AssignmentWriteRequest.GetHashCode() -> int
+override Modulus.Authorization.Management.AssignmentWriteRequest.ToString() -> string!
 override Modulus.Authorization.Management.DelegationWriteRequest.Equals(object? obj) -> bool
 override Modulus.Authorization.Management.DelegationWriteRequest.GetHashCode() -> int
 override Modulus.Authorization.Management.DelegationWriteRequest.ToString() -> string!
@@ -121,6 +189,14 @@ override Modulus.Authorization.Management.PlanAssignmentRequest.ToString() -> st
 override Modulus.Authorization.Management.PlanDefinitionRequest.Equals(object? obj) -> bool
 override Modulus.Authorization.Management.PlanDefinitionRequest.GetHashCode() -> int
 override Modulus.Authorization.Management.PlanDefinitionRequest.ToString() -> string!
+override Modulus.Authorization.Management.ScopedGrantResponse.Equals(object? obj) -> bool
+override Modulus.Authorization.Management.ScopedGrantResponse.GetHashCode() -> int
+override Modulus.Authorization.Management.ScopedGrantResponse.ToString() -> string!
+override Modulus.Authorization.Management.ScopedGrantWriteRequest.Equals(object? obj) -> bool
+override Modulus.Authorization.Management.ScopedGrantWriteRequest.GetHashCode() -> int
+override Modulus.Authorization.Management.ScopedGrantWriteRequest.ToString() -> string!
+static Modulus.Authorization.Management.AssignmentWriteRequest.operator !=(Modulus.Authorization.Management.AssignmentWriteRequest? left, Modulus.Authorization.Management.AssignmentWriteRequest? right) -> bool
+static Modulus.Authorization.Management.AssignmentWriteRequest.operator ==(Modulus.Authorization.Management.AssignmentWriteRequest? left, Modulus.Authorization.Management.AssignmentWriteRequest? right) -> bool
 static Modulus.Authorization.Management.AuthorizationManagementExtensions.AddModulusAuthorizationManagement(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static Modulus.Authorization.Management.AuthorizationManagementExtensions.MapModulusAuthorizationManagement(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! prefix = "/authorization") -> Microsoft.AspNetCore.Routing.RouteGroupBuilder!
 static Modulus.Authorization.Management.DelegationWriteRequest.operator !=(Modulus.Authorization.Management.DelegationWriteRequest? left, Modulus.Authorization.Management.DelegationWriteRequest? right) -> bool
@@ -141,3 +217,14 @@ static Modulus.Authorization.Management.PlanAssignmentRequest.operator !=(Modulu
 static Modulus.Authorization.Management.PlanAssignmentRequest.operator ==(Modulus.Authorization.Management.PlanAssignmentRequest? left, Modulus.Authorization.Management.PlanAssignmentRequest? right) -> bool
 static Modulus.Authorization.Management.PlanDefinitionRequest.operator !=(Modulus.Authorization.Management.PlanDefinitionRequest? left, Modulus.Authorization.Management.PlanDefinitionRequest? right) -> bool
 static Modulus.Authorization.Management.PlanDefinitionRequest.operator ==(Modulus.Authorization.Management.PlanDefinitionRequest? left, Modulus.Authorization.Management.PlanDefinitionRequest? right) -> bool
+const Modulus.Authorization.Management.AuthorizationManagementExtensions.EntitlementsPermission = "authorization:entitlements:manage" -> string!
+const Modulus.Authorization.Management.AuthorizationManagementExtensions.GrantAnyPermission = "authorization:grant-any" -> string!
+Modulus.Authorization.Management.AuthorizationManagementOptions
+Modulus.Authorization.Management.AuthorizationManagementOptions.AuthorizationManagementOptions() -> void
+Modulus.Authorization.Management.AuthorizationManagementOptions.MaxDelegationDuration.get -> System.TimeSpan
+Modulus.Authorization.Management.AuthorizationManagementOptions.MaxDelegationDuration.set -> void
+Modulus.Authorization.Management.AuthorizationManagementOptions.NonDelegablePrefixes.get -> System.Collections.Generic.IList<string!>!
+static Modulus.Authorization.Management.ScopedGrantResponse.operator !=(Modulus.Authorization.Management.ScopedGrantResponse? left, Modulus.Authorization.Management.ScopedGrantResponse? right) -> bool
+static Modulus.Authorization.Management.ScopedGrantResponse.operator ==(Modulus.Authorization.Management.ScopedGrantResponse? left, Modulus.Authorization.Management.ScopedGrantResponse? right) -> bool
+static Modulus.Authorization.Management.ScopedGrantWriteRequest.operator !=(Modulus.Authorization.Management.ScopedGrantWriteRequest? left, Modulus.Authorization.Management.ScopedGrantWriteRequest? right) -> bool
+static Modulus.Authorization.Management.ScopedGrantWriteRequest.operator ==(Modulus.Authorization.Management.ScopedGrantWriteRequest? left, Modulus.Authorization.Management.ScopedGrantWriteRequest? right) -> bool

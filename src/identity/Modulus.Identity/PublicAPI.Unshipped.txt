@@ -136,7 +136,7 @@ Modulus.Identity.Abstractions.PasswordGrantResult.Success.init -> void
 Modulus.Identity.Abstractions.PasswordGrantResult.UserName.get -> string?
 Modulus.Identity.Abstractions.PasswordGrantResult.UserName.init -> void
 Modulus.Identity.AccountController<TUser>
-Modulus.Identity.AccountController<TUser>.AccountController(Microsoft.AspNetCore.Identity.UserManager<TUser!>! userManager, Microsoft.AspNetCore.Identity.SignInManager<TUser!>! signInManager, Modulus.Identity.Abstractions.IIdentityEmailSender! emailSender) -> void
+Modulus.Identity.AccountController<TUser>.AccountController(Microsoft.AspNetCore.Identity.UserManager<TUser!>! userManager, Microsoft.AspNetCore.Identity.SignInManager<TUser!>! signInManager, Modulus.Identity.IIdentityEmailQueue! emailQueue) -> void
 Modulus.Identity.AccountController<TUser>.ConfirmEmailAsync(Modulus.Identity.ConfirmEmailRequest! request) -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Mvc.IActionResult!>!
 Modulus.Identity.AccountController<TUser>.ForgotPasswordAsync(string! email) -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Mvc.IActionResult!>!
 Modulus.Identity.AccountController<TUser>.LogoutAsync() -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Mvc.IActionResult!>!
@@ -374,3 +374,6 @@ Modulus.Identity.Abstractions.ModulusIdentityOptions.EncryptAccessTokens.set -> 
 static Modulus.Identity.Abstractions.ClientCredentialsGrant.AuthorizeScopes(System.Collections.Generic.IEnumerable<string!>! requested, System.Collections.Generic.IReadOnlySet<string!>! allowed) -> System.Collections.Generic.IReadOnlyList<string!>!
 Modulus.Identity.Abstractions.ModulusIdentityOptions.Issuer.get -> string?
 Modulus.Identity.Abstractions.ModulusIdentityOptions.Issuer.set -> void
+Modulus.Identity.IIdentityEmailQueue
+Modulus.Identity.IIdentityEmailQueue.EnqueueEmailConfirmation(System.Guid userId, string! email) -> bool
+Modulus.Identity.IIdentityEmailQueue.EnqueuePasswordReset(System.Guid userId, string! email) -> bool

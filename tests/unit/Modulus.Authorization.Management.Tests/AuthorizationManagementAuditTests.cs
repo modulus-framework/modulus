@@ -31,6 +31,22 @@ public sealed class AuthorizationManagementAuditTests : IAsyncLifetime
     private SqliteConnection _connection = null!;
     private WebApplication _app = null!;
     private HttpClient _client = null!;
+    private readonly KnownUsers _directory = new();
+
+    private sealed class KnownUsers : IUserRoleDirectory
+    {
+        private readonly HashSet<Guid> _known = [];
+
+        public Guid Add()
+        {
+            var id = Guid.NewGuid();
+            _known.Add(id);
+            return id;
+        }
+
+        public ValueTask<IReadOnlyCollection<string>?> GetRolesAsync(Guid userId, CancellationToken ct = default)
+            => ValueTask.FromResult<IReadOnlyCollection<string>?>(_known.Contains(userId) ? [] : null);
+    }
 
     public async Task InitializeAsync()
     {
@@ -48,6 +64,12 @@ public sealed class AuthorizationManagementAuditTests : IAsyncLifetime
         builder.Services.AddEfCoreAuthorizationStores(o => o.UseSqlite(_connection));
         builder.Services.AddEfCoreAuthorizationAudit();
         builder.Services.AddModulusAuthorizationManagement();
+        builder.Services.AddPermissions("Orders", registry =>
+        {
+            registry.Add("orders:read", "Read orders.");
+            registry.Add("orders:approve", "Approve orders.");
+        });
+        builder.Services.AddSingleton<IUserRoleDirectory>(_directory);
 
         // The management package's own TryAdd only guarantees SOME ICurrentUser
         // is resolvable (NullCurrentUser) — bridging HttpContext.User claims to
@@ -107,10 +129,13 @@ public sealed class AuthorizationManagementAuditTests : IAsyncLifetime
             if (!Request.Headers.ContainsKey("X-Test-Authenticated"))
                 return Task.FromResult(AuthenticateResult.NoResult());
 
+            var userId = Request.Headers["X-Test-UserId"].ToString();
             var claims = new List<Claim>
             {
-                new(ClaimTypes.NameIdentifier, Guid.NewGuid().ToString()),
+                new(ClaimTypes.NameIdentifier, userId.Length > 0 ? userId : Guid.NewGuid().ToString()),
                 new("permission", AuthorizationManagementExtensions.ManagePermission),
+                new("permission", "orders:read"),
+                new("permission", "orders:approve"),
             };
             var identity = new ClaimsIdentity(claims, Scheme.Name);
             return Task.FromResult(AuthenticateResult.Success(
@@ -185,12 +210,13 @@ public sealed class AuthorizationManagementAuditTests : IAsyncLifetime
     public async Task Delegation_creation_is_audited()
     {
         var now = DateTimeOffset.UtcNow;
-        var (from, to) = (Guid.NewGuid(), Guid.NewGuid());
+        var (from, to) = (_directory.Add(), _directory.Add());
+        await _app.Services.GetRequiredService<EfPermissionGrantStore>()
+            .GrantToUserAsync(from, ["orders:approve"], CancellationToken.None);
 
         (await _client.PostAsJsonAsync("/authorization/delegations", new
         {
             fromUserId = from,
-            fromRoles = new[] { "manager" },
             toUserId = to,
             permissions = new[] { "orders:approve" },
             notBefore = now,
@@ -204,6 +230,29 @@ public sealed class AuthorizationManagementAuditTests : IAsyncLifetime
         payload.RootElement.GetProperty("action").GetString().Should().Be("Created");
         payload.RootElement.GetProperty("targetDescription").GetString()
             .Should().Be($"from:{from} -> to:{to}");
+    }
+
+    [Fact]
+    public async Task A_refused_self_grant_is_audited_as_refused()
+    {
+        var me = Guid.NewGuid();
+        using var admin = _app.GetTestClient();
+        admin.DefaultRequestHeaders.Add("X-Test-Authenticated", "yes");
+        admin.DefaultRequestHeaders.Add("X-Test-UserId", me.ToString());
+
+        var response = await admin.PostAsJsonAsync("/authorization/grants", new
+        {
+            holderType = "User",
+            holder = me.ToString(),
+            permissions = new[] { "orders:read" },
+        });
+
+        response.StatusCode.Should().Be(System.Net.HttpStatusCode.Forbidden);
+        var rows = await ReadAuditRowsAsync();
+        rows.Should().ContainSingle();
+        using var payload = JsonDocument.Parse(rows[0].Payload);
+        payload.RootElement.GetProperty("action").GetString().Should().Be("Refused");
+        payload.RootElement.GetProperty("details").GetProperty("reason").GetString().Should().Be("self-grant");
     }
 
     [Fact]

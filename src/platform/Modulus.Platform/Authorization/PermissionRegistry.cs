@@ -13,13 +13,23 @@ public sealed class PermissionRegistry : IPermissionRegistry
         string permission,
         string description,
         string[]? requires = null)
+        => Add(permission, description, requires, PermissionSensitivity.Normal);
+
+    public void Add(
+        string permission,
+        string description,
+        string[]? requires,
+        PermissionSensitivity sensitivity)
     {
         if (_frozen)
             throw new InvalidOperationException(
                 "PermissionRegistry is frozen. Declarations must happen in ConfigureServices.");
 
         _permissions[permission] = new PermissionDefinition(
-            permission, description, requires ?? []);
+            permission, description, requires ?? [])
+        {
+            Sensitivity = sensitivity,
+        };
     }
 
     public IReadOnlyList<PermissionDefinition> GetAll()

@@ -154,6 +154,7 @@ Modulus.Core.Abstractions.IModuleHealthCheck
 Modulus.Core.Abstractions.IModuleHealthCheck.CheckAsync(System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Core.Abstractions.ModuleHealthResult!>!
 Modulus.Core.Abstractions.IPermissionRegistry
 Modulus.Core.Abstractions.IPermissionRegistry.Add(string! permission, string! description, string![]? requires = null) -> void
+Modulus.Core.Abstractions.IPermissionRegistry.Add(string! permission, string! description, string![]? requires, Modulus.Core.Abstractions.PermissionSensitivity sensitivity) -> void
 Modulus.Core.Abstractions.IPermissionRegistry.Exists(string! permission) -> bool
 Modulus.Core.Abstractions.IPermissionRegistry.Freeze() -> void
 Modulus.Core.Abstractions.IPermissionRegistry.GetAll() -> System.Collections.Generic.IReadOnlyList<Modulus.Core.Abstractions.PermissionDefinition!>!
@@ -195,16 +196,19 @@ Modulus.Core.Abstractions.ModuleHealthResult.Status.init -> void
 Modulus.Core.Abstractions.ModulusModule
 Modulus.Core.Abstractions.ModulusModule.ModulusModule() -> void
 Modulus.Core.Abstractions.PermissionDefinition
-Modulus.Core.Abstractions.PermissionDefinition.<Clone>$() -> Modulus.Core.Abstractions.PermissionDefinition!
-Modulus.Core.Abstractions.PermissionDefinition.Deconstruct(out string! Permission, out string! Description, out string![]! Requires) -> void
 Modulus.Core.Abstractions.PermissionDefinition.Description.get -> string!
 Modulus.Core.Abstractions.PermissionDefinition.Description.init -> void
-Modulus.Core.Abstractions.PermissionDefinition.Equals(Modulus.Core.Abstractions.PermissionDefinition? other) -> bool
 Modulus.Core.Abstractions.PermissionDefinition.Permission.get -> string!
 Modulus.Core.Abstractions.PermissionDefinition.Permission.init -> void
 Modulus.Core.Abstractions.PermissionDefinition.PermissionDefinition(string! Permission, string! Description, string![]! Requires) -> void
 Modulus.Core.Abstractions.PermissionDefinition.Requires.get -> string![]!
 Modulus.Core.Abstractions.PermissionDefinition.Requires.init -> void
+Modulus.Core.Abstractions.PermissionDefinition.Sensitivity.get -> Modulus.Core.Abstractions.PermissionSensitivity
+Modulus.Core.Abstractions.PermissionDefinition.Sensitivity.init -> void
+Modulus.Core.Abstractions.PermissionSensitivity
+Modulus.Core.Abstractions.PermissionSensitivity.Critical = 2 -> Modulus.Core.Abstractions.PermissionSensitivity
+Modulus.Core.Abstractions.PermissionSensitivity.Normal = 0 -> Modulus.Core.Abstractions.PermissionSensitivity
+Modulus.Core.Abstractions.PermissionSensitivity.Sensitive = 1 -> Modulus.Core.Abstractions.PermissionSensitivity
 Modulus.Core.Abstractions.TenantInfo
 Modulus.Core.Abstractions.TenantInfo.<Clone>$() -> Modulus.Core.Abstractions.TenantInfo!
 Modulus.Core.Abstractions.TenantInfo.ConnectionString.get -> string?
@@ -295,9 +299,6 @@ override Modulus.Core.Abstractions.Domain.ValueObject.GetHashCode() -> int
 override Modulus.Core.Abstractions.ModuleHealthResult.Equals(object? obj) -> bool
 override Modulus.Core.Abstractions.ModuleHealthResult.GetHashCode() -> int
 override Modulus.Core.Abstractions.ModuleHealthResult.ToString() -> string!
-override Modulus.Core.Abstractions.PermissionDefinition.Equals(object? obj) -> bool
-override Modulus.Core.Abstractions.PermissionDefinition.GetHashCode() -> int
-override Modulus.Core.Abstractions.PermissionDefinition.ToString() -> string!
 override Modulus.Core.Abstractions.TenantInfo.Equals(object? obj) -> bool
 override Modulus.Core.Abstractions.TenantInfo.GetHashCode() -> int
 override Modulus.Core.Abstractions.TenantInfo.ToString() -> string!
@@ -314,8 +315,6 @@ static Modulus.Core.Abstractions.Entities.ExtraPropertiesExtensions.SetExtraProp
 static Modulus.Core.Abstractions.ModuleHealthCheckRunner.RunIsolatedAsync(Modulus.Core.Abstractions.IModuleHealthCheck! check, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Modulus.Core.Abstractions.ModuleHealthResult!>!
 static Modulus.Core.Abstractions.ModuleHealthResult.operator !=(Modulus.Core.Abstractions.ModuleHealthResult? left, Modulus.Core.Abstractions.ModuleHealthResult? right) -> bool
 static Modulus.Core.Abstractions.ModuleHealthResult.operator ==(Modulus.Core.Abstractions.ModuleHealthResult? left, Modulus.Core.Abstractions.ModuleHealthResult? right) -> bool
-static Modulus.Core.Abstractions.PermissionDefinition.operator !=(Modulus.Core.Abstractions.PermissionDefinition? left, Modulus.Core.Abstractions.PermissionDefinition? right) -> bool
-static Modulus.Core.Abstractions.PermissionDefinition.operator ==(Modulus.Core.Abstractions.PermissionDefinition? left, Modulus.Core.Abstractions.PermissionDefinition? right) -> bool
 static Modulus.Core.Abstractions.TenantInfo.operator !=(Modulus.Core.Abstractions.TenantInfo? left, Modulus.Core.Abstractions.TenantInfo? right) -> bool
 static Modulus.Core.Abstractions.TenantInfo.operator ==(Modulus.Core.Abstractions.TenantInfo? left, Modulus.Core.Abstractions.TenantInfo? right) -> bool
 static readonly Modulus.Core.Abstractions.Common.Unit.Value -> Modulus.Core.Abstractions.Common.Unit
@@ -605,3 +604,13 @@ Modulus.Core.Abstractions.Ai.AiQueryableAttribute.Fields.get -> string![]!
 Modulus.Core.Abstractions.Ai.AiQueryableAttribute.Fields.set -> void
 Modulus.Core.Abstractions.Ai.AiQueryableAttribute.Permission.get -> string!
 Modulus.Core.Abstractions.Ai.AiQueryableAttribute.ResourceType.get -> string!
+Modulus.Core.Abstractions.IUserRoleDirectory
+Modulus.Core.Abstractions.IUserRoleDirectory.GetRolesAsync(System.Guid userId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyCollection<string!>?>
+Modulus.Core.Abstractions.PermissionDefinition.<Clone>$() -> Modulus.Core.Abstractions.PermissionDefinition!
+Modulus.Core.Abstractions.PermissionDefinition.Deconstruct(out string! Permission, out string! Description, out string![]! Requires) -> void
+Modulus.Core.Abstractions.PermissionDefinition.Equals(Modulus.Core.Abstractions.PermissionDefinition? other) -> bool
+override Modulus.Core.Abstractions.PermissionDefinition.Equals(object? obj) -> bool
+override Modulus.Core.Abstractions.PermissionDefinition.GetHashCode() -> int
+override Modulus.Core.Abstractions.PermissionDefinition.ToString() -> string!
+static Modulus.Core.Abstractions.PermissionDefinition.operator !=(Modulus.Core.Abstractions.PermissionDefinition? left, Modulus.Core.Abstractions.PermissionDefinition? right) -> bool
+static Modulus.Core.Abstractions.PermissionDefinition.operator ==(Modulus.Core.Abstractions.PermissionDefinition? left, Modulus.Core.Abstractions.PermissionDefinition? right) -> bool

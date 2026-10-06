@@ -108,6 +108,65 @@ public sealed class CrossTenantWriteGuardTests : IAsyncDisposable
         await act.Should().ThrowAsync<CrossTenantWriteException>();
     }
 
+    [Theory]
+    [InlineData(EntityState.Modified)]
+    [InlineData(EntityState.Deleted)]
+    public async Task RowAttachedByIdWithoutATenant_InsideACompany_Throws(EntityState state)
+    {
+        var id = await SeedAsync(TenantB);
+        _tenant.Set(TenantA);
+        using var scope = _root.CreateScope();
+        var ctx = scope.ServiceProvider.GetRequiredService<NotesDbContext>();
+        // new Note { Id = id } carries no company: its UPDATE would be keyed on the id alone.
+        ctx.Entry(new Note { Id = id, Text = "hijack" }).State = state;
+
+        var act = () => ctx.SaveChangesAsync();
+
+        await act.Should().ThrowAsync<CrossTenantWriteException>();
+        (await StoredAsync(id)).Should().BeEquivalentTo(new { TenantId = TenantB, Text = "" });
+    }
+
+    [Theory]
+    [InlineData(EntityState.Modified)]
+    [InlineData(EntityState.Deleted)]
+    public async Task ForeignRowAttachedByIdWithMyTenantStamp_IsNotWritten(EntityState state)
+    {
+        // The guard cannot see the stored owner of an attached row, so the database does: TenantId is part of the
+        // UPDATE/DELETE predicate and a foreign row matches nothing.
+        var id = await SeedAsync(TenantB);
+        _tenant.Set(TenantA);
+        using var scope = _root.CreateScope();
+        var ctx = scope.ServiceProvider.GetRequiredService<NotesDbContext>();
+        ctx.Entry(new Note { Id = id, TenantId = TenantA, Text = "hijack" }).State = state;
+
+        var act = () => ctx.SaveChangesAsync();
+
+        await act.Should().ThrowAsync<DbUpdateConcurrencyException>();
+        (await StoredAsync(id)).Should().BeEquivalentTo(new { TenantId = TenantB, Text = "" });
+    }
+
+    [Fact]
+    public async Task OwnRowAttachedByIdWithMyTenantStamp_IsStillWritable()
+    {
+        var id = await SeedAsync(TenantA);
+        _tenant.Set(TenantA);
+        using var scope = _root.CreateScope();
+        var ctx = scope.ServiceProvider.GetRequiredService<NotesDbContext>();
+        ctx.Entry(new Note { Id = id, TenantId = TenantA, Text = "edited" }).State = EntityState.Modified;
+
+        await ctx.SaveChangesAsync();
+
+        (await StoredAsync(id)).Should().BeEquivalentTo(new { TenantId = TenantA, Text = "edited" });
+    }
+
+    private async Task<Note> StoredAsync(Guid id)
+    {
+        _tenant.SetHost();
+        using var scope = _root.CreateScope();
+        var ctx = scope.ServiceProvider.GetRequiredService<NotesDbContext>();
+        return await ctx.Notes.AsNoTracking().SingleAsync(n => n.Id == id);
+    }
+
     [Fact]
     public async Task NoTenantResolved_ForeignStampedInsert_Throws()
     {

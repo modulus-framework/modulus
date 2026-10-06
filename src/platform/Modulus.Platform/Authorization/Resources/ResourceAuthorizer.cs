@@ -34,7 +34,8 @@ public interface IResourceAuthorizer
 public sealed class ResourceAuthorizer(
     ICurrentUser currentUser,
     ICurrentDataScope dataScope,
-    IResourcePolicyRegistry registry) : IResourceAuthorizer
+    IResourcePolicyRegistry registry,
+    Scopes.IScopeEnforcer? scopes = null) : IResourceAuthorizer
 {
     public Task<AccessDecision> AuthorizeAsync(
         object resource, string action, CancellationToken ct = default)
@@ -45,6 +46,7 @@ public sealed class ResourceAuthorizer(
         var policy = registry.Find(resource.GetType());
         if (policy is null)
             return Task.FromResult(AccessDecision.Deny(
+                AccessReasonCodes.MetadataMissing,
                 $"no resource policy is registered for '{resource.GetType().Name}'"));
 
         var request = new ResourceRequest(
@@ -53,7 +55,10 @@ public sealed class ResourceAuthorizer(
             unit => dataScope.IsUnrestricted
                     || (unit is { } u && dataScope.OrgUnitIds.Contains(u)),
             ResourceAttributes.From(resource),
-            action);
+            action,
+            scopes is null
+                ? null
+                : permission => scopes.IsInScope(resource, permission));
 
         return Task.FromResult(policy.Evaluate(request));
     }
