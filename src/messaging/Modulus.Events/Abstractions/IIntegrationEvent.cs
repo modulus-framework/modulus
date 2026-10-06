@@ -24,9 +24,30 @@ public interface IIntegrationEvent
 /// different id each time and is processed again).
 /// </para>
 /// </summary>
-public abstract record IntegrationEventBase(string EventType)
+public abstract record IntegrationEventBase(string? EventType)
     : IIntegrationEvent
 {
+    private readonly string? _eventType = EventType;
+
+    /// <summary>
+    /// Declares the event with no name argument: <see cref="EventType"/> is read from the
+    /// type's <see cref="IntegrationEventNameAttribute"/>, so the name is written exactly once.
+    /// </summary>
+    protected IntegrationEventBase()
+        : this((string?)null)
+    {
+    }
+
+    /// <summary>
+    /// The stable transport name: the explicitly passed value, else the one declared by
+    /// <see cref="IntegrationEventNameAttribute"/> on the concrete type.
+    /// </summary>
+    public string EventType
+    {
+        get => _eventType ?? IntegrationEventNaming.GetName(GetType());
+        init => _eventType = value;
+    }
+
     public Guid EventId { get; init; } = Guid.NewGuid();
     public DateTime OccurredAt { get; init; } = DateTime.UtcNow;
 }

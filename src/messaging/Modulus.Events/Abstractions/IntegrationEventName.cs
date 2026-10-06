@@ -7,9 +7,12 @@ using System.Reflection;
 /// the wire/persistence identity from the CLR type. This is the contract other
 /// services and stored outbox rows depend on, so it must not change once shipped.
 /// <code>
-/// [IntegrationEventName("catalog.product-created.v1")]
-/// public sealed record ProductCreated(Guid Id) : IntegrationEventBase("catalog.product-created.v1");
+/// [IntegrationEventName("catalog", "product-created")]            // → "catalog.product-created.v1"
+/// public sealed record ProductCreated(Guid Id) : IntegrationEventBase;
 /// </code>
+/// The name is declared once, as parts (module, event, version), so it is validated and
+/// versioned by the framework instead of being a hand-typed dotted string repeated in the
+/// attribute and the base constructor. The single-string form remains for legacy names.
 /// </summary>
 /// <remarks>
 /// Without this attribute the stable name falls back to the type's
@@ -20,9 +23,41 @@ using System.Reflection;
 /// messages or unprocessed outbox rows.
 /// </remarks>
 [AttributeUsage(AttributeTargets.Class, Inherited = false)]
-public sealed class IntegrationEventNameAttribute(string name) : Attribute
+public sealed class IntegrationEventNameAttribute : Attribute
 {
-    public string Name { get; } = name;
+    /// <summary>Uses <paramref name="name"/> verbatim (legacy form; prefer the structured constructor).</summary>
+    public IntegrationEventNameAttribute(string name)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(name);
+        Name = name;
+    }
+
+    /// <summary>
+    /// Builds <c>{module}.{eventName}.v{version}</c>. <paramref name="module"/> and
+    /// <paramref name="eventName"/> must be lower-case kebab-case (letters, digits, hyphens),
+    /// so every event name has one consistent, routable shape.
+    /// </summary>
+    public IntegrationEventNameAttribute(string module, string eventName, int version = 1)
+    {
+        Require(module, nameof(module));
+        Require(eventName, nameof(eventName));
+        ArgumentOutOfRangeException.ThrowIfLessThan(version, 1);
+        Name = $"{module}.{eventName}.v{version}";
+    }
+
+    /// <summary>The stable transport name.</summary>
+    public string Name { get; }
+
+    private static void Require(string part, string parameter)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(part, parameter);
+        foreach (var c in part)
+        {
+            if (!(c is >= 'a' and <= 'z' || c is >= '0' and <= '9' || c == '-'))
+                throw new ArgumentException(
+                    $"'{part}' must be lower-case kebab-case (a-z, 0-9, '-').", parameter);
+        }
+    }
 }
 
 /// <summary>

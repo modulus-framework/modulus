@@ -4,7 +4,7 @@ namespace {{ module_namespace }}.Application.IntegrationEvents;
 
 /// <summary>
 /// Sample integration event published when a {{ entity_name_lower }} is created.
+/// Its stable name ("{{ module_name_lower }}.{{ entity_name_lower }}-created.v1") is declared once, on the attribute.
 /// </summary>
-[IntegrationEventName("{{ module_name_lower }}.{{ entity_name_lower }}-created.v1")]
-public sealed record {{ entity_name }}CreatedIntegrationEvent(Guid Id)
-    : IntegrationEventBase("{{ module_name_lower }}.{{ entity_name_lower }}-created.v1");
+[IntegrationEventName("{{ module_name_lower }}", "{{ entity_name_lower }}-created")]
+public sealed record {{ entity_name }}CreatedIntegrationEvent(Guid Id) : IntegrationEventBase;

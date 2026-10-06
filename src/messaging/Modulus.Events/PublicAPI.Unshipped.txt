@@ -26,13 +26,13 @@ Modulus.Events.Abstractions.IMessageSerializer.Serialize(object! payload, System
 Modulus.Events.Abstractions.IModuleBus
 Modulus.Events.Abstractions.IModuleBus.PublishAsync<TEvent>(TEvent event, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
 Modulus.Events.Abstractions.IntegrationEventBase
-Modulus.Events.Abstractions.IntegrationEventBase.Deconstruct(out string! EventType) -> void
+Modulus.Events.Abstractions.IntegrationEventBase.Deconstruct(out string? EventType) -> void
 Modulus.Events.Abstractions.IntegrationEventBase.EventId.get -> System.Guid
 Modulus.Events.Abstractions.IntegrationEventBase.EventId.init -> void
 Modulus.Events.Abstractions.IntegrationEventBase.EventType.get -> string!
 Modulus.Events.Abstractions.IntegrationEventBase.EventType.init -> void
 Modulus.Events.Abstractions.IntegrationEventBase.IntegrationEventBase(Modulus.Events.Abstractions.IntegrationEventBase! original) -> void
-Modulus.Events.Abstractions.IntegrationEventBase.IntegrationEventBase(string! EventType) -> void
+Modulus.Events.Abstractions.IntegrationEventBase.IntegrationEventBase(string? EventType) -> void
 Modulus.Events.Abstractions.IntegrationEventBase.OccurredAt.get -> System.DateTime
 Modulus.Events.Abstractions.IntegrationEventBase.OccurredAt.init -> void
 Modulus.Events.Abstractions.IntegrationEventEnvelope
@@ -99,3 +99,5 @@ virtual Modulus.Events.Abstractions.IntegrationEventBase.Equals(Modulus.Events.A
 virtual Modulus.Events.Abstractions.IntegrationEventBase.PrintMembers(System.Text.StringBuilder! builder) -> bool
 static Modulus.Events.EnvelopeAmbientScope.Restore(Modulus.Events.Abstractions.IntegrationEventEnvelope! envelope, System.IServiceProvider! services, Modulus.Core.Abstractions.TenantInfo? verifiedTenant) -> Modulus.Events.EnvelopeAmbientScope!
 static Modulus.Events.EnvelopeAmbientScope.VerifyTenantAsync(Modulus.Events.Abstractions.IntegrationEventEnvelope! envelope, System.IServiceProvider! services, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<Modulus.Core.Abstractions.TenantInfo?>
+Modulus.Events.Abstractions.IntegrationEventBase.IntegrationEventBase() -> void
+Modulus.Events.Abstractions.IntegrationEventNameAttribute.IntegrationEventNameAttribute(string! module, string! eventName, int version = 1) -> void

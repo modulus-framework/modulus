@@ -36,11 +36,11 @@ using Modulus.Events.Abstractions;
 /// names granted, the org-unit id, the plan name) — the "deciding factor"
 /// context an auditor needs beyond category/action/target.
 /// </param>
-[IntegrationEventName("authorization.administrative-change.v1")]
+[IntegrationEventName("authorization", "administrative-change")]
 public sealed record AuthorizationAdministrativeChangeEvent(
     string Category,
     string Action,
     string? ActorUserId,
     string TargetDescription,
     IReadOnlyDictionary<string, string> Details)
-    : IntegrationEventBase("authorization.administrative-change.v1");
+    : IntegrationEventBase;
