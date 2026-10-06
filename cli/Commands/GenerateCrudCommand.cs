@@ -139,6 +139,9 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
             Path.Combine(appDir, $"Delete{entity}Handler.cs"), generated, skipped);
 
         // ── Integration event (Application layer) ──────────────────
+        WriteIfMissing("module/Application/ModuleArea", model,
+            Path.Combine(appDir, "IntegrationEvents", $"{model.ModuleName}Area.cs"),
+            generated, skipped);
         WriteIfMissing("module/Application/IntegrationEvent", model,
             Path.Combine(appDir, "IntegrationEvents", $"{entity}CreatedIntegrationEvent.cs"),
             generated, skipped);

@@ -46,31 +46,52 @@ public sealed class IntegrationEventNamingTests
 }
 
 [Trait("Category", "Unit")]
-public sealed class StructuredEventNameTests
+public sealed class DerivedEventNameTests
 {
-    [IntegrationEventName("payments", "subscription-purchased")]
-    private sealed record Purchased(Guid Id) : IntegrationEventBase;
+    private sealed class PaymentsArea;
 
-    [IntegrationEventName("payments", "subscription-purchased", version: 2)]
-    private sealed record PurchasedV2(Guid Id) : IntegrationEventBase;
+    [IntegrationEvent<PaymentsArea>]
+    private sealed record SubscriptionPurchased(Guid Id) : IntegrationEventBase;
+
+    [IntegrationEvent<PaymentsArea>(Version = 2)]
+    private sealed record SubscriptionPurchasedIntegrationEvent(Guid Id) : IntegrationEventBase;
 
     [Fact]
-    public void Name_is_declared_once_and_flows_to_EventType()
+    public void Name_is_derived_from_the_types_with_no_string_literal()
     {
-        IntegrationEventNaming.GetName(typeof(Purchased)).Should().Be("payments.subscription-purchased.v1");
-        new Purchased(Guid.NewGuid()).EventType.Should().Be("payments.subscription-purchased.v1");
-        new PurchasedV2(Guid.NewGuid()).EventType.Should().Be("payments.subscription-purchased.v2");
+        IntegrationEventNaming.GetName(typeof(SubscriptionPurchased)).Should().Be("payments.subscription-purchased.v1");
+        new SubscriptionPurchased(Guid.NewGuid()).EventType.Should().Be("payments.subscription-purchased.v1");
     }
 
+    [Fact]
+    public void Version_and_the_IntegrationEvent_suffix_are_handled()
+        => IntegrationEventNaming.GetName(typeof(SubscriptionPurchasedIntegrationEvent))
+            .Should().Be("payments.subscription-purchased.v2");
+
     [Theory]
-    [InlineData("Payments", "x")]
-    [InlineData("payments", "Sub Purchased")]
-    [InlineData("pay.ments", "x")]
-    [InlineData("", "x")]
-    public void Malformed_parts_are_rejected(string module, string name)
-        => ((Action)(() => _ = new IntegrationEventNameAttribute(module, name))).Should().Throw<ArgumentException>();
+    [InlineData("SubscriptionPurchased", "subscription-purchased")]
+    [InlineData("HTTPServerError", "http-server-error")]
+    [InlineData("Order2Placed", "order2-placed")]
+    [InlineData("A", "a")]
+    public void Kebab_converts_pascal_case(string input, string expected)
+        => IntegrationEventNaming.Kebab(input).Should().Be(expected);
+
+    [Theory]
+    [InlineData("PaymentsModule", "ProductCreatedIntegrationEvent", "payments.product-created.v1")]
+    [InlineData("CatalogArea", "ProductCreatedEvent", "catalog.product-created.v1")]
+    [InlineData("Billing", "Event", "billing.event.v1")]
+    public void Suffixes_are_dropped_only_when_something_remains(string module, string eventType, string expected)
+        => IntegrationEventNaming.Derive(module, eventType).Should().Be(expected);
 
     [Fact]
     public void Version_must_be_positive()
-        => ((Action)(() => _ = new IntegrationEventNameAttribute("a", "b", 0))).Should().Throw<ArgumentOutOfRangeException>();
+        => ((Action)(() => _ = new IntegrationEventAttribute<PaymentsArea> { Version = 0 }))
+            .Should().Throw<ArgumentOutOfRangeException>();
+
+    [Fact]
+    public void HasDeclaredName_covers_both_attributes_and_rejects_neither()
+    {
+        IntegrationEventNaming.HasDeclaredName(typeof(SubscriptionPurchased)).Should().BeTrue();
+        IntegrationEventNaming.HasDeclaredName(typeof(IntegrationEventNamingTests)).Should().BeFalse();
+    }
 }

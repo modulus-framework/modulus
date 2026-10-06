@@ -22,7 +22,7 @@ using Modulus.Events.Abstractions;
 /// on allow.
 /// </param>
 /// <param name="ActorUserId">Who the decision was evaluated for.</param>
-[IntegrationEventName("authorization", "access-decision")]
+[IntegrationEventName("authorization.access-decision.v1")]
 public sealed record AccessDecisionAuditEvent(
     string ResourceType,
     string Action,

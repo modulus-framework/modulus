@@ -18,8 +18,10 @@ public sealed class IntegrationEventNameAnalyzerTests
             public sealed class IntegrationEventNameAttribute : System.Attribute
             {
                 public IntegrationEventNameAttribute(string name) { }
-                public IntegrationEventNameAttribute(string module, string eventName, int version = 1) { }
             }
+            [System.AttributeUsage(System.AttributeTargets.Class)]
+            public abstract class IntegrationEventAttributeBase : System.Attribute { public int Version { get; init; } = 1; }
+            public sealed class IntegrationEventAttribute<TModule> : IntegrationEventAttributeBase { }
         }
         using Modulus.Events.Abstractions;
         """;
@@ -40,10 +42,12 @@ public sealed class IntegrationEventNameAnalyzerTests
     }
 
     [Fact]
-    public async Task A_structured_name_with_a_parameterless_base_is_clean()
+    public async Task A_derived_name_with_a_parameterless_base_is_clean()
     {
         var diagnostics = await AnalyzeAsync("""
-            [IntegrationEventName("payments", "subscription-purchased")]
+            public sealed class PaymentsArea;
+
+            [IntegrationEvent<PaymentsArea>]
             public sealed record Purchased(System.Guid Id) : IntegrationEventBase;
             """);
 
@@ -62,7 +66,9 @@ public sealed class IntegrationEventNameAnalyzerTests
     public async Task A_name_repeated_in_the_base_constructor_is_reported()
     {
         var diagnostics = await AnalyzeAsync("""
-            [IntegrationEventName("payments.purchased.v1")]
+            public sealed class PaymentsArea;
+
+            [IntegrationEvent<PaymentsArea>]
             public sealed record Purchased(System.Guid Id) : IntegrationEventBase("payments.purchased.v1");
             """);
 

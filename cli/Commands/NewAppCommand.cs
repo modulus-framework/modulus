@@ -1174,6 +1174,8 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
             _templates.RenderToFile("module/Application/DeleteHandler", m,
                 Path.Combine(appDir, $"Delete{entityName}Handler.cs"));
 
+            _templates.RenderToFile("module/Application/ModuleArea", m,
+                Path.Combine(appDir, "IntegrationEvents", $"{m.ModuleName}Area.cs"));
             _templates.RenderToFile("module/Application/IntegrationEvent", m,
                 Path.Combine(appDir, "IntegrationEvents", $"{entityName}CreatedIntegrationEvent.cs"));
         }

@@ -246,6 +246,27 @@ public sealed class ModuleBoundaryTests
     }
 
     [Fact]
+    public void IntegrationEventContract_IsNotBroken(
+        [System.Runtime.CompilerServices.CallerFilePath] string? thisFile = null)
+    {
+        // The wire name of an event is derived from its type name. Renaming the type (or dropping the event) would orphan
+        // stored outbox rows and subscribers, so a name that disappears fails here. New events are recorded automatically;
+        // set MODULUS_ACCEPT_EVENT_CONTRACT=1 to accept a deliberate removal.
+        var file = Path.Combine(Path.GetDirectoryName(thisFile ?? Directory.GetCurrentDirectory())!, "integration-events.contract");
+        var changes = ModuleBoundaryRules.FindIntegrationEventContractChanges(file);
+        var accept = Environment.GetEnvironmentVariable("MODULUS_ACCEPT_EVENT_CONTRACT") == "1";
+
+        if (!accept)
+        {
+            changes.Where(c => c.StartsWith("REMOVED", StringComparison.Ordinal)).Should().BeEmpty(
+                because: "an event name that disappears breaks stored messages and subscribers");
+        }
+
+        if (changes.Count > 0)
+            ModuleBoundaryRules.WriteIntegrationEventContract(file);
+    }
+
+    [Fact]
     public void AllModules_CanBeInstantiated()
     {
         // Verifies all IModule implementations can be instantiated without

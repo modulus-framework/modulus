@@ -46,10 +46,10 @@ internal static partial class WebhooksWiring
             yield break;
         foreach (Match m in NamedEvent().Matches(source))
         {
-            var typeName = m.Groups[5].Value;
+            var typeName = m.Groups[4].Value;
             var name = m.Groups[1].Success
                 ? m.Groups[1].Value
-                : $"{m.Groups[2].Value}.{m.Groups[3].Value}.v{(m.Groups[4].Success ? m.Groups[4].Value : "1")}";
+                : IntegrationEventNames.Derive(m.Groups[2].Value, typeName, m.Groups[3].Success ? int.Parse(m.Groups[3].Value, System.Globalization.CultureInfo.InvariantCulture) : 1);
             var idOnly = Regex.IsMatch(source, $@"\b{typeName}\(\s*Guid\s+Id\s*\)");
             yield return new IntegrationEventInfo(name, typeName, ns.Groups[1].Value, idOnly);
         }
@@ -310,7 +310,7 @@ internal static partial class WebhooksWiring
     [GeneratedRegex(@"^namespace\s+([\w.]+)\s*;", RegexOptions.Multiline)]
     private static partial Regex FileNamespace();
 
-    [GeneratedRegex(@"\[IntegrationEventName\((?:""([^""]+)""|""([^""]+)""\s*,\s*""([^""]+)""(?:\s*,\s*(?:version\s*:\s*)?(\d+))?)\)\]\s*(?:\[[^\]]*\]\s*)*public\s+(?:sealed\s+)?(?:partial\s+)?(?:record|class)\s+(\w+)")]
+    [GeneratedRegex(@"\[(?:IntegrationEventName\(""([^""]+)""\)|IntegrationEvent<(\w+)>(?:\(\s*Version\s*=\s*(\d+)\s*\))?)\]\s*(?:\[[^\]]*\]\s*)*public\s+(?:sealed\s+)?(?:partial\s+)?(?:record|class)\s+(\w+)")]
     private static partial Regex NamedEvent();
 
     [GeneratedRegex(@"^  ""ConnectionStrings""\s*:\s*\{[ \t]*$", RegexOptions.Multiline)]

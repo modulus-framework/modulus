@@ -186,7 +186,7 @@ public sealed class ApiPermissionTests
     public void The_example_integration_event_carries_its_stable_name()
     {
         _engine.Render("module/Application/IntegrationEvent", Crud(null))
-            .Should().Contain("[IntegrationEventName(\"catalog\", \"product-created\")]")
+            .Should().Contain("[IntegrationEvent<CatalogArea>]")
             .And.Contain(": IntegrationEventBase;");
     }
 }

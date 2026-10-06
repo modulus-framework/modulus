@@ -8,13 +8,15 @@ namespace Modulus.Testing.Tests;
 [Trait("Category", "Unit")]
 public sealed class IntegrationEventNameRulesTests
 {
-    [IntegrationEventName("rules", "first-event")]
-    private sealed record First(Guid Id) : IntegrationEventBase;
+    private sealed class RulesArea;
 
-    [IntegrationEventName("rules", "duplicate-event")]
+    [IntegrationEvent<RulesArea>]
+    private sealed record FirstEvent(Guid Id) : IntegrationEventBase;
+
+    [IntegrationEventName("rules.duplicate-event.v1")]
     private sealed record DuplicateA(Guid Id) : IntegrationEventBase;
 
-    [IntegrationEventName("rules", "duplicate-event")]
+    [IntegrationEventName("rules.duplicate-event.v1")]
     private sealed record DuplicateB(Guid Id) : IntegrationEventBase;
 
     [IntegrationEventName("Bad Name")]
@@ -36,6 +38,28 @@ public sealed class IntegrationEventNameRulesTests
         var malformed = ModuleBoundaryRules.FindMalformedIntegrationEventNames();
 
         malformed.Should().Contain(m => m.Type == typeof(Malformed));
-        malformed.Should().NotContain(m => m.Type == typeof(First));
+        malformed.Should().NotContain(m => m.Type == typeof(FirstEvent));
+    }
+
+    [Fact]
+    public void Contract_file_reports_new_and_removed_names_and_round_trips()
+    {
+        var file = Path.Combine(Path.GetTempPath(), $"contract-{Guid.NewGuid():N}.txt");
+        try
+        {
+            ModuleBoundaryRules.FindIntegrationEventContractChanges(file)
+                .Should().Contain("NEW, not in the contract file: rules.first.v1");
+
+            ModuleBoundaryRules.WriteIntegrationEventContract(file);
+            ModuleBoundaryRules.FindIntegrationEventContractChanges(file).Should().BeEmpty();
+
+            File.AppendAllText(file, "rules.renamed-away.v1" + Environment.NewLine);
+            ModuleBoundaryRules.FindIntegrationEventContractChanges(file)
+                .Should().ContainSingle().Which.Should().Be("REMOVED or renamed: rules.renamed-away.v1");
+        }
+        finally
+        {
+            File.Delete(file);
+        }
     }
 }

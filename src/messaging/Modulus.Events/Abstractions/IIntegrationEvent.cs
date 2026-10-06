@@ -31,7 +31,7 @@ public abstract record IntegrationEventBase(string? EventType)
 
     /// <summary>
     /// Declares the event with no name argument: <see cref="EventType"/> is read from the
-    /// type's <see cref="IntegrationEventNameAttribute"/>, so the name is written exactly once.
+    /// type's <see cref="IntegrationEventAttribute{TModule}"/>, so the name is derived once and never retyped.
     /// </summary>
     protected IntegrationEventBase()
         : this((string?)null)
@@ -40,7 +40,7 @@ public abstract record IntegrationEventBase(string? EventType)
 
     /// <summary>
     /// The stable transport name: the explicitly passed value, else the one declared by
-    /// <see cref="IntegrationEventNameAttribute"/> on the concrete type.
+    /// <see cref="IntegrationEventAttribute{TModule}"/> (or the legacy <see cref="IntegrationEventNameAttribute"/>) on the concrete type.
     /// </summary>
     public string EventType
     {

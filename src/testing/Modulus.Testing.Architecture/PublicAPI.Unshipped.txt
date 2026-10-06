@@ -6,3 +6,5 @@ static Modulus.Testing.Architecture.ModuleBoundaryRules.FindModuleTypes() -> Sys
 static Modulus.Testing.Architecture.ModuleBoundaryRules.FindUnnamedIntegrationEvents() -> System.Collections.Generic.IReadOnlyList<System.Type!>!
 static Modulus.Testing.Architecture.ModuleBoundaryRules.FindMalformedIntegrationEventNames() -> System.Collections.Generic.IReadOnlyList<(System.Type! Type, string! Name)>!
 static Modulus.Testing.Architecture.ModuleBoundaryRules.FindDuplicateIntegrationEventNames() -> System.Collections.Generic.IReadOnlyList<(string! Name, System.Collections.Generic.IReadOnlyList<System.Type!>! Types)>!
+static Modulus.Testing.Architecture.ModuleBoundaryRules.FindIntegrationEventContractChanges(string! contractFile) -> System.Collections.Generic.IReadOnlyList<string!>!
+static Modulus.Testing.Architecture.ModuleBoundaryRules.WriteIntegrationEventContract(string! contractFile) -> void

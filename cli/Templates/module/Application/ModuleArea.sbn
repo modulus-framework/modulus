@@ -1,0 +1,7 @@
+namespace {{ module_namespace }}.Application.IntegrationEvents;
+
+/// <summary>
+/// Marks the {{ module_name }} module as the owner of its integration events: <c>[IntegrationEvent&lt;{{ module_name }}Area&gt;]</c>
+/// derives the wire name "{{ module_name }}" part from this type, so no event names the module as a string.
+/// </summary>
+public sealed class {{ module_name }}Area;

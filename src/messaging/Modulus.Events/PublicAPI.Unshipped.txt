@@ -100,4 +100,13 @@ virtual Modulus.Events.Abstractions.IntegrationEventBase.PrintMembers(System.Tex
 static Modulus.Events.EnvelopeAmbientScope.Restore(Modulus.Events.Abstractions.IntegrationEventEnvelope! envelope, System.IServiceProvider! services, Modulus.Core.Abstractions.TenantInfo? verifiedTenant) -> Modulus.Events.EnvelopeAmbientScope!
 static Modulus.Events.EnvelopeAmbientScope.VerifyTenantAsync(Modulus.Events.Abstractions.IntegrationEventEnvelope! envelope, System.IServiceProvider! services, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<Modulus.Core.Abstractions.TenantInfo?>
 Modulus.Events.Abstractions.IntegrationEventBase.IntegrationEventBase() -> void
-Modulus.Events.Abstractions.IntegrationEventNameAttribute.IntegrationEventNameAttribute(string! module, string! eventName, int version = 1) -> void
+Modulus.Events.Abstractions.IntegrationEventAttribute<TModule>
+Modulus.Events.Abstractions.IntegrationEventAttribute<TModule>.IntegrationEventAttribute() -> void
+Modulus.Events.Abstractions.IntegrationEventAttributeBase
+Modulus.Events.Abstractions.IntegrationEventAttributeBase.Version.get -> int
+Modulus.Events.Abstractions.IntegrationEventAttributeBase.Version.init -> void
+abstract Modulus.Events.Abstractions.IntegrationEventAttributeBase.ModuleType.get -> System.Type!
+override Modulus.Events.Abstractions.IntegrationEventAttribute<TModule>.ModuleType.get -> System.Type!
+static Modulus.Events.Abstractions.IntegrationEventNaming.Derive(string! moduleTypeName, string! eventTypeName, int version = 1) -> string!
+static Modulus.Events.Abstractions.IntegrationEventNaming.HasDeclaredName(System.Type! eventType) -> bool
+static Modulus.Events.Abstractions.IntegrationEventNaming.Kebab(string! pascal) -> string!

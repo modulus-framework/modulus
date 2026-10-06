@@ -1369,12 +1369,16 @@ roots, Security tab in `Modulus.UI.AuditLogging`).
 - **Sensitivity.** `PermissionSensitivity` (Normal/Sensitive/Critical) on `PermissionDefinition`; `registry.Add(..., sensitivity)`.
   A wildcard grant never confers a Critical permission (a wildcard deny still removes it); Critical is not delegable.
   `authorization:manage`, `authorization:grant-any` and the entitlements permission are Critical.
-- **Integration event names are declared once.** `[IntegrationEventName("payments", "subscription-purchased", version: 2)]`
-  builds and validates `payments.subscription-purchased.v2` (lower-case kebab parts); `record X(...) : IntegrationEventBase;`
-  (no constructor argument) reads `EventType` from the attribute, so the dotted string is no longer repeated. The
-  single-string attribute and `IntegrationEventBase("...")` forms still work. `generate-crud`'s event template uses the new form. Enforcement: analyzer **MOD0003** (missing name, name repeated in the base
-  constructor, malformed single-string name), and `ModuleBoundaryRules.FindMalformedIntegrationEventNames` / `FindDuplicateIntegrationEventNames`
-  (generated apps assert them next to `FindUnnamedIntegrationEvents`).
+- **Integration event names have no string literal.** Declare a marker type once per module (`public sealed class PaymentsArea;`)
+  and put `[IntegrationEvent<PaymentsArea>]` (optionally `Version = 2`) on `record SubscriptionPurchased(...) : IntegrationEventBase;`:
+  the wire name `payments.subscription-purchased.v1` is derived from the two type names (kebab-case; a trailing `Module`/`Area`/`Marker`
+  on the marker and `IntegrationEvent`/`Event` on the event are dropped; `IntegrationEventNaming.Derive`). `IntegrationEventBase` with no
+  argument reads `EventType` from the attribute. The single-string `[IntegrationEventName("module.event.vN")]` remains only for names that are
+  already persisted or consumed (the two authorization audit events keep theirs). Because renaming the event type changes the wire name:
+  analyzer **MOD0003** (no name, name repeated in the base constructor, malformed legacy name), `ModuleBoundaryRules.FindMalformed/Duplicate...`
+  and the **contract snapshot** `FindIntegrationEventContractChanges(file)` (generated apps keep `tests/{App}.Tests/integration-events.contract`;
+  a name that disappears fails the test, new names are recorded automatically, `MODULUS_ACCEPT_EVENT_CONTRACT=1` accepts a removal).
+  `generate-crud` writes `{Module}Area` and the sample event in this form; the CLI mirrors the derivation (`IntegrationEventNames`), pinned by a test.
 - **Known gaps (open).** Revoked access tokens are still accepted until expiry (no OpenIddict token-entry validation);
   delegation re-checks the delegator's roles from a snapshot taken at creation; `permission`/role claims in a token are
   still trusted by `PermissionRequirementHandler`/`ClaimsPrincipalCurrentUser`; no "why was this denied" explainer or

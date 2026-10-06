@@ -10,11 +10,11 @@ namespace Modulus.Analyzers;
 
 /// <summary>
 /// MOD0003: an integration event's stable name must be declared once, in a well-formed
-/// <c>[IntegrationEventName]</c>:
+/// <c>[IntegrationEvent&lt;TModule&gt;]</c> (or the legacy <c>[IntegrationEventName]</c>):
 /// <list type="bullet">
 /// <item>a concrete event type with no <c>[IntegrationEventName]</c> falls back to its CLR name, which a rename orphans;</item>
 /// <item>a hand-typed name repeated in <c>IntegrationEventBase("...")</c> can drift from the attribute (inherit <c>IntegrationEventBase</c> with no argument);</item>
-/// <item>a single-string name must read <c>module.event.vN</c> (lower-case kebab parts); prefer <c>[IntegrationEventName("module", "event")]</c>.</item>
+/// <item>a legacy single-string name must read <c>module.event.vN</c> (lower-case kebab parts); prefer <c>[IntegrationEvent&lt;TModule&gt;]</c>, which has no literal.</item>
 /// </list>
 /// Only active in projects that reference <c>Modulus.Events</c>.
 /// </summary>
@@ -26,6 +26,7 @@ public sealed class IntegrationEventNameAnalyzer : DiagnosticAnalyzer
 
     private const string BaseTypeName = "Modulus.Events.Abstractions.IntegrationEventBase";
     private const string AttributeTypeName = "Modulus.Events.Abstractions.IntegrationEventNameAttribute";
+    private const string DerivedAttributeTypeName = "Modulus.Events.Abstractions.IntegrationEventAttributeBase";
 
     private static readonly Regex s_wellFormed = new(@"^[a-z0-9-]+\.[a-z0-9-]+\.v[1-9][0-9]*$", RegexOptions.Compiled);
 
@@ -37,7 +38,7 @@ public sealed class IntegrationEventNameAnalyzer : DiagnosticAnalyzer
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true,
         description: "The event name is the wire and outbox contract. Declare it once with " +
-                     "[IntegrationEventName(\"module\", \"event\", version)] and inherit IntegrationEventBase without an argument.");
+                     "[IntegrationEvent<TModule>] (derived from types, no string literal) and inherit IntegrationEventBase without an argument.");
 
     /// <inheritdoc />
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => [s_rule];
@@ -51,26 +52,31 @@ public sealed class IntegrationEventNameAnalyzer : DiagnosticAnalyzer
         {
             var eventBase = start.Compilation.GetTypeByMetadataName(BaseTypeName);
             var attribute = start.Compilation.GetTypeByMetadataName(AttributeTypeName);
-            if (eventBase is null || attribute is null)
+            var derivedAttribute = start.Compilation.GetTypeByMetadataName(DerivedAttributeTypeName);
+            if (eventBase is null || attribute is null || derivedAttribute is null)
                 return;
 
-            start.RegisterSymbolAction(ctx => AnalyzeType(ctx, eventBase, attribute), SymbolKind.NamedType);
+            start.RegisterSymbolAction(ctx => AnalyzeType(ctx, eventBase, attribute, derivedAttribute), SymbolKind.NamedType);
             start.RegisterSyntaxNodeAction(ctx => AnalyzeBaseArgument(ctx, eventBase), SyntaxKind.PrimaryConstructorBaseType);
         });
     }
 
-    private static void AnalyzeType(SymbolAnalysisContext context, INamedTypeSymbol eventBase, INamedTypeSymbol attribute)
+    private static void AnalyzeType(
+        SymbolAnalysisContext context, INamedTypeSymbol eventBase, INamedTypeSymbol attribute, INamedTypeSymbol derivedAttribute)
     {
         var type = (INamedTypeSymbol)context.Symbol;
         if (type.IsAbstract || type.TypeKind is not (TypeKind.Class) || !DerivesFrom(type, eventBase))
             return;
 
-        var declared = type.GetAttributes()
-            .FirstOrDefault(a => SymbolEqualityComparer.Default.Equals(a.AttributeClass, attribute));
+        var attributes = type.GetAttributes();
+        if (attributes.Any(a => a.AttributeClass is { } c && DerivesFrom(c, derivedAttribute)))
+            return;
+
+        var declared = attributes.FirstOrDefault(a => SymbolEqualityComparer.Default.Equals(a.AttributeClass, attribute));
         if (declared is null)
         {
             Report(context, type.Locations.FirstOrDefault(),
-                $"'{type.Name}' is an integration event with no [IntegrationEventName]; its name would fall back to the CLR type name and break on a rename");
+                $"'{type.Name}' is an integration event with no [IntegrationEvent<TModule>] (or legacy [IntegrationEventName]); its name would fall back to the CLR type name and break on a rename");
             return;
         }
 
@@ -81,7 +87,7 @@ public sealed class IntegrationEventNameAnalyzer : DiagnosticAnalyzer
             var location = declared.ApplicationSyntaxReference?.GetSyntax(context.CancellationToken).GetLocation()
                            ?? type.Locations.FirstOrDefault();
             Report(context, location,
-                $"Event name '{legacy}' must read module.event.vN (lower-case kebab parts); prefer [IntegrationEventName(\"module\", \"event\")]");
+                $"Event name '{legacy}' must read module.event.vN (lower-case kebab parts); prefer [IntegrationEvent<YourModuleArea>], which derives the name from types");
         }
     }
 
@@ -97,7 +103,7 @@ public sealed class IntegrationEventNameAnalyzer : DiagnosticAnalyzer
             return;
 
         Report(context.ReportDiagnostic, node.ArgumentList.GetLocation(),
-            "Do not repeat the event name in IntegrationEventBase(...); declare it on [IntegrationEventName] and inherit IntegrationEventBase with no argument");
+            "Do not repeat the event name in IntegrationEventBase(...); declare it on [IntegrationEvent<TModule>] and inherit IntegrationEventBase with no argument");
     }
 
     private static void Report(SymbolAnalysisContext context, Location? location, string message)
