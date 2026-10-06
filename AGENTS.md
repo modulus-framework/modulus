@@ -1698,7 +1698,9 @@ Opt-in package that delivers integration events to external HTTP endpoints, sign
 
 Hosts the external AI platform's connector wire contract v1 inside an app (plan and as-built notes:
 [`docs/ADVANCED_FEATURES_PLAN.md`](docs/ADVANCED_FEATURES_PLAN.md), phases 6a and 6b). Modulus holds no LLM code, no MCP and no
-platform package; the platform is read-only, so only queries are exposed.
+platform package; the platform is read-only, so only queries are exposed. The platform-neutral contract (so non-Modulus apps can implement
+  it too) is written up in [`docs/AI_CONNECTOR_CONTRACT.md`](docs/AI_CONNECTOR_CONTRACT.md); keep it in step with
+  `Contract/WireContract.cs`.
 
 - `AddModulusAiConnector(configuration, ai => ai.UseIdentityUsers<TUser>())` (settings `Ai:Connector`) +
   `MapModulusAiConnector()` (`/_ai/connector/*`, after `UseAuthentication`/`UseAuthorization`). Without a user resolver
