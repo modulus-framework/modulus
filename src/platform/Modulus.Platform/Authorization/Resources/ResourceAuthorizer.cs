@@ -22,6 +22,36 @@ public interface IResourceAuthorizer
         object resource, string action, CancellationToken ct = default);
 }
 
+/// <summary>Per-record questions built on <see cref="IResourceAuthorizer"/>: what may the caller do here, and why not.</summary>
+public static class ResourceAuthorizerExtensions
+{
+    /// <summary>
+    /// The actions of the record's policy the current principal may perform right now, in policy order — what a client
+    /// shows as buttons. Each action goes through the same <see cref="IResourceAuthorizer"/> (and so the same audit
+    /// decorator) as a real attempt. A resource type with no policy has none.
+    /// </summary>
+    public static async Task<IReadOnlyList<string>> GetAvailableActionsAsync(
+        this IResourceAuthorizer authorizer, IResourcePolicyRegistry registry, object resource, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(authorizer);
+        ArgumentNullException.ThrowIfNull(registry);
+        ArgumentNullException.ThrowIfNull(resource);
+
+        var policy = registry.Find(resource.GetType());
+        if (policy is null)
+            return [];
+
+        var available = new List<string>();
+        foreach (var action in policy.Actions)
+        {
+            if ((await authorizer.AuthorizeAsync(resource, action, ct).ConfigureAwait(false)).IsAllowed)
+                available.Add(action);
+        }
+
+        return available;
+    }
+}
+
 /// <summary>
 /// Bridges <see cref="IResourceAuthorizer"/> to the current request: builds a
 /// <see cref="ResourceRequest"/> from the principal's <em>identity</em>
@@ -37,6 +67,27 @@ public sealed class ResourceAuthorizer(
     IResourcePolicyRegistry registry,
     Scopes.IScopeEnforcer? scopes = null) : IResourceAuthorizer
 {
+    /// <summary>
+    /// Explains the decision for <paramref name="action"/> on <paramref name="resource"/>: the decision plus which
+    /// rules matched. For diagnostics and support tooling; it does not audit, so expose it only to administrators.
+    /// </summary>
+    public PolicyExplanation Explain(object resource, string action)
+    {
+        ArgumentNullException.ThrowIfNull(resource);
+        ArgumentException.ThrowIfNullOrWhiteSpace(action);
+
+        var policy = registry.Find(resource.GetType());
+        if (policy is null)
+        {
+            return new PolicyExplanation(
+                AccessDecision.Deny(AccessReasonCodes.MetadataMissing,
+                    $"no resource policy is registered for '{resource.GetType().Name}'"),
+                []);
+        }
+
+        return policy.Explain(BuildRequest(resource, action));
+    }
+
     public Task<AccessDecision> AuthorizeAsync(
         object resource, string action, CancellationToken ct = default)
     {
@@ -49,7 +100,11 @@ public sealed class ResourceAuthorizer(
                 AccessReasonCodes.MetadataMissing,
                 $"no resource policy is registered for '{resource.GetType().Name}'"));
 
-        var request = new ResourceRequest(
+        return Task.FromResult(policy.Evaluate(BuildRequest(resource, action)));
+    }
+
+    private ResourceRequest BuildRequest(object resource, string action)
+        => new(
             currentUser.UserId,
             currentUser.HasPermission,
             unit => dataScope.IsUnrestricted
@@ -59,7 +114,4 @@ public sealed class ResourceAuthorizer(
             scopes is null
                 ? null
                 : permission => scopes.IsInScope(resource, permission));
-
-        return Task.FromResult(policy.Evaluate(request));
-    }
 }

@@ -377,3 +377,5 @@ Modulus.Identity.Abstractions.ModulusIdentityOptions.Issuer.set -> void
 Modulus.Identity.IIdentityEmailQueue
 Modulus.Identity.IIdentityEmailQueue.EnqueueEmailConfirmation(System.Guid userId, string! email) -> bool
 Modulus.Identity.IIdentityEmailQueue.EnqueuePasswordReset(System.Guid userId, string! email) -> bool
+Modulus.Identity.Abstractions.ModulusIdentityOptions.ValidateTokenEntries.get -> bool
+Modulus.Identity.Abstractions.ModulusIdentityOptions.ValidateTokenEntries.set -> void

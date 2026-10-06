@@ -1363,3 +1363,42 @@ override Modulus.Authorization.Resources.AccessDecision.ToString() -> string!
 static Modulus.Authorization.Resources.AccessDecision.operator !=(Modulus.Authorization.Resources.AccessDecision? left, Modulus.Authorization.Resources.AccessDecision? right) -> bool
 static Modulus.Authorization.Resources.AccessDecision.operator ==(Modulus.Authorization.Resources.AccessDecision? left, Modulus.Authorization.Resources.AccessDecision? right) -> bool
 Modulus.Authorization.PermissionRegistry.Add(string! permission, string! description, string![]? requires, Modulus.Core.Abstractions.PermissionSensitivity sensitivity) -> void
+Modulus.Authorization.Resources.PolicyExplanation
+Modulus.Authorization.Resources.PolicyExplanation.<Clone>$() -> Modulus.Authorization.Resources.PolicyExplanation!
+Modulus.Authorization.Resources.PolicyExplanation.Decision.get -> Modulus.Authorization.Resources.AccessDecision!
+Modulus.Authorization.Resources.PolicyExplanation.Decision.init -> void
+Modulus.Authorization.Resources.PolicyExplanation.Deconstruct(out Modulus.Authorization.Resources.AccessDecision! Decision, out System.Collections.Generic.IReadOnlyList<Modulus.Authorization.Resources.RuleOutcome!>! Rules) -> void
+Modulus.Authorization.Resources.PolicyExplanation.Equals(Modulus.Authorization.Resources.PolicyExplanation? other) -> bool
+Modulus.Authorization.Resources.PolicyExplanation.PolicyExplanation(Modulus.Authorization.Resources.AccessDecision! Decision, System.Collections.Generic.IReadOnlyList<Modulus.Authorization.Resources.RuleOutcome!>! Rules) -> void
+Modulus.Authorization.Resources.PolicyExplanation.Rules.get -> System.Collections.Generic.IReadOnlyList<Modulus.Authorization.Resources.RuleOutcome!>!
+Modulus.Authorization.Resources.PolicyExplanation.Rules.init -> void
+Modulus.Authorization.Resources.ResourceAuthorizer.Explain(object! resource, string! action) -> Modulus.Authorization.Resources.PolicyExplanation!
+Modulus.Authorization.Resources.ResourceAuthorizerExtensions
+Modulus.Authorization.Resources.ResourcePolicy.Actions.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Modulus.Authorization.Resources.ResourcePolicy.Explain(Modulus.Authorization.Resources.ResourceRequest! request) -> Modulus.Authorization.Resources.PolicyExplanation!
+Modulus.Authorization.Resources.RuleOutcome
+Modulus.Authorization.Resources.RuleOutcome.<Clone>$() -> Modulus.Authorization.Resources.RuleOutcome!
+Modulus.Authorization.Resources.RuleOutcome.Action.get -> string!
+Modulus.Authorization.Resources.RuleOutcome.Action.init -> void
+Modulus.Authorization.Resources.RuleOutcome.Deconstruct(out int Index, out Modulus.Authorization.Resources.PolicyEffect Effect, out string! Action, out bool Matched, out bool Faulted) -> void
+Modulus.Authorization.Resources.RuleOutcome.Effect.get -> Modulus.Authorization.Resources.PolicyEffect
+Modulus.Authorization.Resources.RuleOutcome.Effect.init -> void
+Modulus.Authorization.Resources.RuleOutcome.Equals(Modulus.Authorization.Resources.RuleOutcome? other) -> bool
+Modulus.Authorization.Resources.RuleOutcome.Faulted.get -> bool
+Modulus.Authorization.Resources.RuleOutcome.Faulted.init -> void
+Modulus.Authorization.Resources.RuleOutcome.Index.get -> int
+Modulus.Authorization.Resources.RuleOutcome.Index.init -> void
+Modulus.Authorization.Resources.RuleOutcome.Matched.get -> bool
+Modulus.Authorization.Resources.RuleOutcome.Matched.init -> void
+Modulus.Authorization.Resources.RuleOutcome.RuleOutcome(int Index, Modulus.Authorization.Resources.PolicyEffect Effect, string! Action, bool Matched, bool Faulted) -> void
+override Modulus.Authorization.Resources.PolicyExplanation.Equals(object? obj) -> bool
+override Modulus.Authorization.Resources.PolicyExplanation.GetHashCode() -> int
+override Modulus.Authorization.Resources.PolicyExplanation.ToString() -> string!
+override Modulus.Authorization.Resources.RuleOutcome.Equals(object? obj) -> bool
+override Modulus.Authorization.Resources.RuleOutcome.GetHashCode() -> int
+override Modulus.Authorization.Resources.RuleOutcome.ToString() -> string!
+static Modulus.Authorization.Resources.PolicyExplanation.operator !=(Modulus.Authorization.Resources.PolicyExplanation? left, Modulus.Authorization.Resources.PolicyExplanation? right) -> bool
+static Modulus.Authorization.Resources.PolicyExplanation.operator ==(Modulus.Authorization.Resources.PolicyExplanation? left, Modulus.Authorization.Resources.PolicyExplanation? right) -> bool
+static Modulus.Authorization.Resources.ResourceAuthorizerExtensions.GetAvailableActionsAsync(this Modulus.Authorization.Resources.IResourceAuthorizer! authorizer, Modulus.Authorization.Resources.IResourcePolicyRegistry! registry, object! resource, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<string!>!>!
+static Modulus.Authorization.Resources.RuleOutcome.operator !=(Modulus.Authorization.Resources.RuleOutcome? left, Modulus.Authorization.Resources.RuleOutcome? right) -> bool
+static Modulus.Authorization.Resources.RuleOutcome.operator ==(Modulus.Authorization.Resources.RuleOutcome? left, Modulus.Authorization.Resources.RuleOutcome? right) -> bool

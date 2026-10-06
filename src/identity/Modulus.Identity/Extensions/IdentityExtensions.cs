@@ -231,6 +231,10 @@ public static class IdentityExtensions
             {
                 options.UseLocalServer();
                 options.UseAspNetCore();
+
+                // A revoked access token must stop working immediately, not at expiry: check each one against its stored entry.
+                if (identityOptions.ValidateTokenEntries)
+                    options.EnableTokenEntryValidation();
             });
 
         return services;

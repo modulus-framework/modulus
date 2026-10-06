@@ -1379,10 +1379,15 @@ roots, Security tab in `Modulus.UI.AuditLogging`).
   and the **contract snapshot** `FindIntegrationEventContractChanges(file)` (generated apps keep `tests/{App}.Tests/integration-events.contract`;
   a name that disappears fails the test, new names are recorded automatically, `MODULUS_ACCEPT_EVENT_CONTRACT=1` accepts a removal).
   `generate-crud` writes `{Module}Area` and the sample event in this form; the CLI mirrors the derivation (`IntegrationEventNames`), pinned by a test.
-- **Known gaps (open).** Revoked access tokens are still accepted until expiry (no OpenIddict token-entry validation);
-  delegation re-checks the delegator's roles from a snapshot taken at creation; `permission`/role claims in a token are
-  still trusted by `PermissionRequirementHandler`/`ClaimsPrincipalCurrentUser`; no "why was this denied" explainer or
-  per-record available-actions API yet; UI work for all of this is not done.
+- **Revocation.** `Identity:ValidateTokenEntries` (default `true`) makes the validation scheme check every access token against its
+  stored OpenIddict entry (needs `AddModulusIdentityStore`), so a revoked token stops working at once instead of at expiry.
+- **Per-record questions.** `ResourcePolicy.Actions`, `authorizer.GetAvailableActionsAsync(registry, record)` (what the caller may do now),
+  `ResourceAuthorizer.Explain(record, action)` / `ResourcePolicy.Explain(request)` (which rules matched; admin/diagnostic use, not audited).
+  A policy rule that throws denies with `EVALUATION_ERROR` instead of propagating.
+- **Known gaps (open).** A delegation re-checks the delegator's roles from a snapshot taken at creation (creation is capped by the
+  delegator's live authority and a maximum duration); the `permission` claim in a server-issued token is still honoured as a fallback
+  (the grant store's deny always wins over it); there is no HTTP endpoint for `Explain`/available actions yet; and the UI for all of this
+  is not done.
 
 ## Open-source dependency policy
 

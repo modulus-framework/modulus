@@ -77,6 +77,44 @@ public sealed class ResourceAuthorizerTests
             .AuthorizeAsync(doc, "read")).IsAllowed.Should().BeFalse();
     }
 
+    [Fact]
+    public async Task AvailableActions_lists_only_what_the_caller_may_do_to_this_record()
+    {
+        var registry = new StubRegistry(DocPolicy);
+        var authorizer = new ResourceAuthorizer(new StubUser(Owner), Unrestricted, registry);
+        var draft = new Doc { OwnerId = Owner, WorkflowState = "Draft", OrgUnitId = Unit };
+
+        (await authorizer.GetAvailableActionsAsync(registry, draft)).Should().Equal("edit", "read");
+
+        var submitted = new Doc { OwnerId = Owner, WorkflowState = "Submitted", OrgUnitId = Unit };
+        (await authorizer.GetAvailableActionsAsync(registry, submitted)).Should().Equal("read");
+
+        (await new ResourceAuthorizer(new StubUser(Owner), Unrestricted, new StubRegistry(policy: null))
+            .GetAvailableActionsAsync(new StubRegistry(policy: null), draft)).Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Explain_shows_which_rules_matched_and_keeps_the_decision_authoritative()
+    {
+        var authorizer = new ResourceAuthorizer(new StubUser(Guid.NewGuid()), Unrestricted, new StubRegistry(DocPolicy));
+
+        var explanation = authorizer.Explain(new Doc { OwnerId = Owner, WorkflowState = "Draft" }, "edit");
+
+        explanation.Decision.IsAllowed.Should().BeFalse();
+        explanation.Decision.Code.Should().Be(AccessReasonCodes.PolicyViolation);
+        explanation.Rules.Should().ContainSingle().Which.Matched.Should().BeFalse();
+    }
+
+    [Fact]
+    public void A_rule_that_throws_denies_with_EVALUATION_ERROR_and_is_flagged()
+    {
+        var policy = ResourcePolicy.Define(p => p.Allow("edit", _ => throw new InvalidOperationException("boom")));
+        var request = new ResourceRequest(Owner, _ => true, _ => true, new ResourceAttributes(Owner, null, null), "edit");
+
+        policy.Evaluate(request).Code.Should().Be(AccessReasonCodes.EvaluationError);
+        policy.Explain(request).Rules.Should().ContainSingle().Which.Faulted.Should().BeTrue();
+    }
+
     private static StubScope Unrestricted => new(unrestricted: true);
 
     private sealed class Doc : Modulus.Core.Abstractions.Entities.IHasOwner,

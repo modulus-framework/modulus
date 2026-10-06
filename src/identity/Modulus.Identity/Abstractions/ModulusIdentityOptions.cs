@@ -26,6 +26,14 @@ public sealed class ModulusIdentityOptions
     /// </summary>
     public bool RequireConfirmedEmail { get; set; } = false;
     public int AccessTokenLifetimeMin { get; set; } = 15;
+
+    /// <summary>
+    /// Checks every access token against its stored token entry, so a token revoked through
+    /// <c>/connect/revoke</c> (or by a replayed refresh/authorization code) stops working at once instead of
+    /// at expiry. Needs the OpenIddict token store (<c>AddModulusIdentityStore</c>) and costs one lookup per
+    /// request; default <c>true</c>. Set <c>false</c> only for stateless hosts that accept expiry-bound tokens.
+    /// </summary>
+    public bool ValidateTokenEntries { get; set; } = true;
     public int RefreshTokenLifetimeDays { get; set; } = 7;
 
     /// <summary>
