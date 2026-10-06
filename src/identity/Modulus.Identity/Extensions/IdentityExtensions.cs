@@ -43,6 +43,11 @@ public static class IdentityExtensions
         // returning tokens in API responses.
         services.TryAddScoped<IIdentityEmailSender, NoopIdentityEmailSender>();
 
+        // Reset / confirmation mails are produced off the request (see IdentityEmailQueue).
+        services.TryAddSingleton<IdentityEmailQueue<TUser>>();
+        services.TryAddSingleton<IIdentityEmailQueue>(sp => sp.GetRequiredService<IdentityEmailQueue<TUser>>());
+        services.AddHostedService(sp => sp.GetRequiredService<IdentityEmailQueue<TUser>>());
+
         // Make the closed-generic AccountController<TUser> discoverable by
         // MVC — the default controller feature provider rejects generic
         // controller types, leaving every /account/* route unreachable.
@@ -70,6 +75,9 @@ public static class IdentityExtensions
 
         builder.AddEntityFrameworkStores<TContext>()
                .AddDefaultTokenProviders();
+
+        // Authorization administration resolves roles here instead of trusting role names in a request body.
+        services.TryAddScoped<IUserRoleDirectory, IdentityUserRoleDirectory<TUser>>();
 
         // Replace the deny-default validator (registered by AddModulusOpenIddict)
         // with the SignInManager-backed implementation so the password grant
@@ -223,6 +231,10 @@ public static class IdentityExtensions
             {
                 options.UseLocalServer();
                 options.UseAspNetCore();
+
+                // A revoked access token must stop working immediately, not at expiry: check each one against its stored entry.
+                if (identityOptions.ValidateTokenEntries)
+                    options.EnableTokenEntryValidation();
             });
 
         return services;

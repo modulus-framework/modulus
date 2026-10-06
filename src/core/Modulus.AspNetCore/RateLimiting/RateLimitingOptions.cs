@@ -44,4 +44,25 @@ public sealed class RateLimitingOptions
 
     /// <summary>HTTP status returned when a request is rejected. Defaults to 429.</summary>
     public int RejectionStatusCode { get; set; } = 429;
+
+    /// <summary>
+    /// How many requests one client address may make to the <see cref="SensitivePaths"/> per
+    /// <see cref="SensitiveWindowSeconds"/> (default 10). These are the endpoints a password-guessing or token-spraying
+    /// attack uses, so they get a much tighter budget than the rest of the API, keyed by IP address whatever
+    /// <see cref="Partition"/> says (the caller is usually anonymous there). Zero or less turns the stricter limit off.
+    /// </summary>
+    public int SensitivePermitLimit { get; set; } = 10;
+
+    /// <summary>The window of <see cref="SensitivePermitLimit"/>, in seconds (default 60).</summary>
+    public int SensitiveWindowSeconds { get; set; } = 60;
+
+    /// <summary>Path prefixes the stricter limit applies to (case-insensitive).</summary>
+    public string[] SensitivePaths { get; set; } =
+    [
+        "/connect/token",
+        "/connect/authorize",
+        "/connect/revoke",
+        "/account",
+        "/bff/login",
+    ];
 }

@@ -24,7 +24,8 @@ internal sealed class EvictableFixedWindowLimiter(
     Func<HttpContext, string> partitionKey,
     Func<FixedWindowRateLimiterOptions> optionsFactory,
     TimeSpan idleThreshold,
-    TimeSpan sweepInterval)
+    TimeSpan sweepInterval,
+    Func<HttpContext, bool>? appliesTo = null)
     : PartitionedRateLimiter<HttpContext>
 {
     private readonly ConcurrentDictionary<string, RateLimiter> _partitions = new();
@@ -59,6 +60,9 @@ internal sealed class EvictableFixedWindowLimiter(
     protected override async ValueTask<RateLimitLease> AcquireAsyncCore(
         HttpContext resource, int permitCount, CancellationToken cancellationToken)
     {
+        if (appliesTo is not null && !appliesTo(resource))
+            return UnlimitedLease.Instance;
+
         var key = partitionKey(resource);
         var isNew = !_partitions.ContainsKey(key);
         var limiter = _partitions.GetOrAdd(
@@ -78,6 +82,9 @@ internal sealed class EvictableFixedWindowLimiter(
     protected override RateLimitLease AttemptAcquireCore(
         HttpContext resource, int permitCount)
     {
+        if (appliesTo is not null && !appliesTo(resource))
+            return UnlimitedLease.Instance;
+
         var key = partitionKey(resource);
         var isNew = !_partitions.ContainsKey(key);
         var limiter = _partitions.GetOrAdd(
@@ -95,7 +102,7 @@ internal sealed class EvictableFixedWindowLimiter(
 
     /// <inheritdoc />
     public override RateLimiterStatistics? GetStatistics(HttpContext resource)
-        => _partitions.TryGetValue(partitionKey(resource), out var limiter)
+        => (appliesTo is null || appliesTo(resource)) && _partitions.TryGetValue(partitionKey(resource), out var limiter)
             ? limiter.GetStatistics()
             : null;
 
@@ -116,17 +123,21 @@ internal sealed class EvictableFixedWindowLimiter(
 /// Background sweep of idle rate-limit partitions off the request path.
 /// </summary>
 internal sealed class RateLimitPartitionSweeper(
-    EvictableFixedWindowLimiter limiter,
+    IEnumerable<EvictableFixedWindowLimiter> limiters,
     ILogger<RateLimitPartitionSweeper> logger) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        using var timer = new PeriodicTimer(limiter.SweepInterval);
+        var all = limiters.ToArray();
+        if (all.Length == 0)
+            return;
+
+        using var timer = new PeriodicTimer(all.Min(l => l.SweepInterval));
         try
         {
             while (await timer.WaitForNextTickAsync(stoppingToken))
             {
-                var removed = limiter.EvictIdlePartitions();
+                var removed = all.Sum(l => l.EvictIdlePartitions());
                 if (removed > 0)
                     logger.LogDebug(
                         "Evicted {Count} idle rate-limit partition(s)", removed);
@@ -136,5 +147,21 @@ internal sealed class RateLimitPartitionSweeper(
         {
             // Graceful shutdown — expected.
         }
+    }
+}
+
+/// <summary>The lease of a request a limiter does not apply to.</summary>
+internal sealed class UnlimitedLease : RateLimitLease
+{
+    public static readonly UnlimitedLease Instance = new();
+
+    public override bool IsAcquired => true;
+
+    public override IEnumerable<string> MetadataNames => [];
+
+    public override bool TryGetMetadata(string metadataName, out object? metadata)
+    {
+        metadata = null;
+        return false;
     }
 }

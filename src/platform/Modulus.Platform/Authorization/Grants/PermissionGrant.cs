@@ -1,3 +1,5 @@
+using Modulus.Authorization.Scopes;
+
 namespace Modulus.Authorization.Grants;
 
 /// <summary>
@@ -9,6 +11,13 @@ public enum PermissionGrantType
 {
     Allow = 0,
     Deny = 1,
+
+    /// <summary>
+    /// Narrows what the permission covers without removing it: the holder keeps the permission but only over the grant's
+    /// <see cref="PermissionGrant.Scope"/> (a role gives Tenant, this restricts the user to their Department). It never makes
+    /// a permission effective by itself.
+    /// </summary>
+    Restrict = 2,
 }
 
 /// <summary>
@@ -28,11 +37,31 @@ public enum GrantHolderType
 /// A permission name ending in <c>:*</c> is a wildcard covering every registered
 /// permission under that prefix.
 /// </summary>
+/// <param name="HolderType">Whether the holder is a role or a user.</param>
+/// <param name="Holder">The role name, or the user id.</param>
+/// <param name="Permission">The permission (or a <c>module:group:*</c> wildcard).</param>
+/// <param name="Type">Allow, Deny or Restrict.</param>
+/// <param name="Scope">The data the grant covers; null means the whole company (every grant made before scopes existed).</param>
+/// <param name="ValidFrom">The grant applies from this instant on; null means from the start.</param>
+/// <param name="ValidUntil">The grant stops applying at this instant, with no administrator action; null means it never expires.</param>
+/// <param name="Reason">Why a temporary or scoped grant was made (kept for review and audit).</param>
 public sealed record PermissionGrant(
     GrantHolderType HolderType,
     string Holder,
     string Permission,
-    PermissionGrantType Type);
+    PermissionGrantType Type,
+    PermissionScope? Scope = null,
+    DateTimeOffset? ValidFrom = null,
+    DateTimeOffset? ValidUntil = null,
+    string? Reason = null)
+{
+    /// <summary>Whether the grant applies at <paramref name="now"/>; evaluated at decision time, never by a cleanup job (BR-005).</summary>
+    public bool IsValidAt(DateTimeOffset now)
+        => (ValidFrom is null || now >= ValidFrom) && (ValidUntil is null || now < ValidUntil);
+
+    /// <summary>The scope that applies: the grant's own, or the whole company.</summary>
+    public PermissionScope EffectiveScope => Scope ?? PermissionScope.Tenant;
+}
 
 /// <summary>
 /// Identifies the principal an authorization decision is being resolved for:

@@ -29,4 +29,4 @@ public sealed record AccessDecisionAuditEvent(
     bool IsAllowed,
     string? Reason,
     string? ActorUserId)
-    : IntegrationEventBase("authorization.access-decision.v1");
+    : IntegrationEventBase;

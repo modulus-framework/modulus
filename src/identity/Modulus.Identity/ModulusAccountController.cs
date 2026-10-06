@@ -28,7 +28,7 @@ using Modulus.Core.Abstractions.Security;
 public class AccountController<TUser>(
     UserManager<TUser> userManager,
     SignInManager<TUser> signInManager,
-    IIdentityEmailSender emailSender)
+    IIdentityEmailQueue emailQueue)
     : ControllerBase
     where TUser : ModulusUser, new()
 {
@@ -59,13 +59,11 @@ public class AccountController<TUser>(
         if (string.IsNullOrWhiteSpace(email))
             return BadRequest(new { error = "Email is required" });
 
+        // Look-up only: the token and the mail are produced off the request, so a known and an unknown address take
+        // the same time to answer.
         var user = await userManager.FindByEmailAsync(email);
         if (user is not null && user.IsActive)
-        {
-            var token = await userManager.GeneratePasswordResetTokenAsync(user);
-            await emailSender.SendPasswordResetEmailAsync(
-                email, token, HttpContext.RequestAborted);
-        }
+            emailQueue.EnqueuePasswordReset(user.Id, email);
 
         return Ok(new { message = NonCommittalMessage });
     }
@@ -140,14 +138,8 @@ public class AccountController<TUser>(
             return BadRequest(new { error = "Email is required" });
 
         var user = await userManager.FindByEmailAsync(email);
-        if (user is not null
-            && user.IsActive
-            && !await userManager.IsEmailConfirmedAsync(user))
-        {
-            var token = await userManager.GenerateEmailConfirmationTokenAsync(user);
-            await emailSender.SendEmailConfirmationEmailAsync(
-                email, token, HttpContext.RequestAborted);
-        }
+        if (user is not null && user.IsActive)
+            emailQueue.EnqueueEmailConfirmation(user.Id, email);
 
         return Ok(new { message = NonCommittalMessage });
     }

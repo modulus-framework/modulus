@@ -1348,6 +1348,53 @@ roots, Security tab in `Modulus.UI.AuditLogging`).
   tenant isolation. Generated API hosts with the guard ship `SecurityProbeTests`, verified on generated `api`
   (openiddict, keycloak), `webapp+api` and `web` apps.
 
+## Security hardening round 2 (authorization BRS gap work)
+
+- **Trusted proxies.** `options.ApplyModulusTrustedProxies(configuration)` (section `ForwardedHeaders`: `KnownProxies`,
+  `KnownNetworks`, `ForwardLimit`) replaces trust-everything forwarded headers; the CLI templates call it.
+- **Rate limits.** Sensitive routes (token, login, password reset) get a second, stricter chained limiter
+  (`RateLimiting` `Sensitive*` options). The mobile BFF partitions by `sub ?? client_id ?? ip`, never `X-Device-Id`.
+- **Tenant membership is required by default** (`TenantAccessOptions.RequireMembership = true`);
+  `AllowUnrestrictedTenantSelection()` opts out. `TenantId` is an EF concurrency token, so UPDATE/DELETE
+  carry the tenant in their `WHERE`; a non-Added entry with an empty owner is refused by the write guard.
+- **Roles never come from request bodies.** `IUserRoleDirectory` (Core; `IdentityUserRoleDirectory`) supplies a user's
+  roles to the management API (grants, delegations, effective access, SoD scan). Grants are capped by the grantor's own
+  authority (`authorization:grant-any` lifts it); delegations are capped by the delegator and a maximum duration.
+  Password-reset/confirmation mail is queued (`IIdentityEmailQueue`) so account existence is not a timing oracle.
+- **Scoped grants.** Tables `ModulusScopedGrants` and `ModulusAssignments` (new in `AuthorizationStoreDbContext`: existing
+  deployments need a migration). A grant has `Scope` (Own/Assigned/OrgUnit/Tenant), `ValidFrom/ValidUntil`, and a
+  `Restrict` type narrows scope. `IPermissionScopeResolver`/`IScopeEnforcer`/`AddScopeMap<T>` turn the scope into a query
+  filter and a record probe (`ResourceRequest.InScopeOf(permission)`). Endpoints: `scoped-grants`, `assignments`.
+- **Reason codes.** `AccessDecision.Code` uses `AccessReasonCodes` (BRS Appendix B); no policy for a type = `METADATA_MISSING`.
+- **Sensitivity.** `PermissionSensitivity` (Normal/Sensitive/Critical) on `PermissionDefinition`; `registry.Add(..., sensitivity)`.
+  A wildcard grant never confers a Critical permission (a wildcard deny still removes it); Critical is not delegable.
+  `authorization:manage`, `authorization:grant-any` and the entitlements permission are Critical.
+- **Integration event names have no string literal.** Declare a marker type once per module (`public sealed class PaymentsArea;`)
+  and put `[IntegrationEvent<PaymentsArea>]` (optionally `Version = 2`) on `record SubscriptionPurchased(...) : IntegrationEventBase;`:
+  the wire name `payments.subscription-purchased.v1` is derived from the two type names (kebab-case; a trailing `Module`/`Area`/`Marker`
+  on the marker and `IntegrationEvent`/`Event` on the event are dropped; `IntegrationEventNaming.Derive`). `IntegrationEventBase` with no
+  argument reads `EventType` from the attribute. The single-string `[IntegrationEventName("module.event.vN")]` remains only for names that are
+  already persisted or consumed (the two authorization audit events keep theirs). Because renaming the event type changes the wire name:
+  analyzer **MOD0003** (no name, name repeated in the base constructor, malformed legacy name), `ModuleBoundaryRules.FindMalformed/Duplicate...`
+  and the **contract snapshot** `FindIntegrationEventContractChanges(file)` (generated apps keep `tests/{App}.Tests/integration-events.contract`;
+  a name that disappears fails the test, new names are recorded automatically, `MODULUS_ACCEPT_EVENT_CONTRACT=1` accepts a removal).
+  `generate-crud` writes `{Module}Area` and the sample event in this form; the CLI mirrors the derivation (`IntegrationEventNames`), pinned by a test.
+- **Revocation.** `Identity:ValidateTokenEntries` (default `true`) makes the validation scheme check every access token against its
+  stored OpenIddict entry (needs `AddModulusIdentityStore`), so a revoked token stops working at once instead of at expiry.
+- **Per-record questions.** `ResourcePolicy.Actions`, `authorizer.GetAvailableActionsAsync(registry, record)` (what the caller may do now),
+  `ResourceAuthorizer.Explain(record, action)` / `ResourcePolicy.Explain(request)` (which rules matched; admin/diagnostic use, not audited).
+  A policy rule that throws denies with `EVALUATION_ERROR` instead of propagating.
+- **Delegation caps follow live roles.** `DelegationRoleRefresher` (EF authorization package; a timer, `DelegationRoleRefreshOptions.Interval`,
+  default 1 minute, plus an immediate refresh through `IAccessChangeObserver`) rewrites each live delegation's snapshot of the delegator's roles from
+  `IUserRoleDirectory`; a delegator the identity store no longer knows keeps no roles. Staleness is bounded by the interval, and the decision path stays synchronous.
+- **Per-record questions over HTTP.** `services.AddResourceLocator("invoices", (sp, id, ct) => ...)` exposes a record type;
+  `MapModulusResourceAuthorization()` maps `GET /authorization/resources/{type}/{id}/actions` (any signed-in caller) and `.../explain?action=`
+  (`authorization:manage`; evaluated as the caller). Unknown type or id is `404`. Needs `ICurrentUser` and `ICurrentDataScope` registered.
+- **Strict permission source.** `AddModulusAuthorization(o => o.TrustPermissionClaims = false)` makes the grant store the only source: a `permission`
+  claim in a token no longer confers access (default `true`; a store-level deny wins over claims either way).
+- **Known gaps (open).** `Explain` and available actions are evaluated as the calling user, so "why can't *Bob* do this" needs Bob's own session
+  (effective-access reports cover him at the permission level); and the UI for all of this is not done.
+
 ## Open-source dependency policy
 
 Every dependency must be fully open source (MIT / Apache-2.0 / BSD; no commercial license or paid tier to
@@ -1451,8 +1498,8 @@ app.MapBffClient("mobile").MapGet("/home", ...);   // aggregators behind the cli
   (`TokenValidation=Jwt`, which needs unencrypted access tokens) or with RFC 7662 introspection (results cached by token
   hash, capped at `exp`). The policy `bff:{name}` requires the client's own scheme, an allowed client id and the
   required scopes, so one client's token or cookie never passes another client's policy. Mobile: `X-App-Version` /
-  `X-App-Platform` gate (`426` with the minimum version), weak ETags + `304` on JSON GETs, rate-limit partition by
-  `X-Device-Id`. Partner: unsafe methods without `Idempotency-Key` get `400`; the API's idempotency middleware does
+  `X-App-Platform` gate (`426` with the minimum version), weak ETags + `304` on JSON GETs, rate-limit partition by the token subject (never by
+  a caller-chosen header). Partner: unsafe methods without `Idempotency-Key` get `400`; the API's idempotency middleware does
   the deduplication. `/bff/me` returns the claims.
 - **Proxy.** One YARP cluster per upstream service and one route per remote API, carrying the client's policy and rate
   limit. Transforms strip `Cookie`, set `X-Client-App` and the correlation id, and swap in the web session's token

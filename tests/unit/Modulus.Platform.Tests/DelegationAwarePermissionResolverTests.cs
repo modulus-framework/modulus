@@ -66,4 +66,38 @@ public sealed class DelegationAwarePermissionResolverTests
         resolver.Resolve(PrincipalGrantQuery.Anonymous)
             .Should().BeEmpty("delegation is keyed to a user id; an anonymous principal has none");
     }
+
+    [Fact]
+    public void ExplicitDeny_BeatsDelegatedAuthority()
+    {
+        var grants = new InMemoryPermissionGrantStore()
+            .GrantToUser(Deputy, "orders:read")
+            .DenyToUser(Deputy, "orders:approve");
+        var direct = new PermissionResolver(grants, Registry("orders:read", "orders:approve"));
+        var resolver = new DelegationAwarePermissionResolver(direct, new StubDelegations("orders:approve"));
+
+        resolver.Resolve(new PrincipalGrantQuery(Deputy, []))
+            .Should().BeEquivalentTo(["orders:read"], "a deny wins over a delegation");
+    }
+
+    [Fact]
+    public void WildcardDeny_BeatsDelegatedAuthority_OnTheGrantsOverload()
+    {
+        var grants = new InMemoryPermissionGrantStore().DenyToUser(Deputy, "orders:*");
+        var direct = new PermissionResolver(grants, Registry("orders:read", "orders:approve"));
+        var resolver = new DelegationAwarePermissionResolver(direct, new StubDelegations("orders:approve"));
+        var query = new PrincipalGrantQuery(Deputy, []);
+
+        resolver.Resolve(query, grants.GetGrants(query)).Should().BeEmpty();
+    }
+
+    [Fact]
+    public void DenyOnARole_BeatsDelegatedAuthority()
+    {
+        var grants = new InMemoryPermissionGrantStore().DenyToRole("Clerk", "orders:approve");
+        var direct = new PermissionResolver(grants, Registry("orders:approve"));
+        var resolver = new DelegationAwarePermissionResolver(direct, new StubDelegations("orders:approve"));
+
+        resolver.Resolve(new PrincipalGrantQuery(Deputy, ["Clerk"])).Should().BeEmpty();
+    }
 }

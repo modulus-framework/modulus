@@ -1,8 +1,26 @@
 #nullable enable
+abstract Modulus.Authorization.Scopes.ScopeMap.EntityType.get -> System.Type!
+abstract Modulus.Authorization.Scopes.ScopeMap.FactsOf(object! record) -> Modulus.Authorization.Scopes.ScopeFacts!
 const Modulus.AuditLogging.InMemoryAuditLogStore.MaxEntries = 10000 -> int
 const Modulus.AuditLogging.InMemoryAuditLogStore.MaxPageSize = 200 -> int
 const Modulus.Authorization.Audit.AuditableActions.FieldWrite = "FieldWrite" -> string!
 const Modulus.Authorization.Organization.CurrentDataScope.BypassPermission = "data:scope:bypass" -> string!
+const Modulus.Authorization.Resources.AccessReasonCodes.Allowed = "ALLOWED" -> string!
+const Modulus.Authorization.Resources.AccessReasonCodes.DelegationInvalid = "DELEGATION_INVALID" -> string!
+const Modulus.Authorization.Resources.AccessReasonCodes.EvaluationError = "EVALUATION_ERROR" -> string!
+const Modulus.Authorization.Resources.AccessReasonCodes.ExplicitDeny = "EXPLICIT_DENY" -> string!
+const Modulus.Authorization.Resources.AccessReasonCodes.FieldProtected = "FIELD_PROTECTED" -> string!
+const Modulus.Authorization.Resources.AccessReasonCodes.GrantExpired = "GRANT_EXPIRED" -> string!
+const Modulus.Authorization.Resources.AccessReasonCodes.InvalidState = "INVALID_STATE" -> string!
+const Modulus.Authorization.Resources.AccessReasonCodes.MetadataMissing = "METADATA_MISSING" -> string!
+const Modulus.Authorization.Resources.AccessReasonCodes.NotAssigned = "NOT_ASSIGNED" -> string!
+const Modulus.Authorization.Resources.AccessReasonCodes.NotOwner = "NOT_OWNER" -> string!
+const Modulus.Authorization.Resources.AccessReasonCodes.OutOfScope = "OUT_OF_SCOPE" -> string!
+const Modulus.Authorization.Resources.AccessReasonCodes.PermissionNotGranted = "PERMISSION_NOT_GRANTED" -> string!
+const Modulus.Authorization.Resources.AccessReasonCodes.PolicyViolation = "POLICY_VIOLATION" -> string!
+const Modulus.Authorization.Resources.AccessReasonCodes.ScopeRestricted = "SCOPE_RESTRICTED" -> string!
+const Modulus.Authorization.Resources.AccessReasonCodes.SoDConflict = "SOD_CONFLICT" -> string!
+const Modulus.Authorization.Resources.AccessReasonCodes.TenantMismatch = "TENANT_MISMATCH" -> string!
 const Modulus.Authorization.Resources.ResourceRule.AnyAction = "*" -> string!
 const Modulus.Localization.LocalizationOptions.SectionName = "Localization" -> string!
 const Modulus.Notifications.InMemoryNotificationStore.MaxPageSize = 100 -> int
@@ -354,6 +372,7 @@ Modulus.Authorization.Grants.GrantHolderType
 Modulus.Authorization.Grants.GrantHolderType.Role = 0 -> Modulus.Authorization.Grants.GrantHolderType
 Modulus.Authorization.Grants.GrantHolderType.User = 1 -> Modulus.Authorization.Grants.GrantHolderType
 Modulus.Authorization.Grants.InMemoryPermissionGrantStore
+Modulus.Authorization.Grants.InMemoryPermissionGrantStore.Add(Modulus.Authorization.Grants.PermissionGrant! grant) -> Modulus.Authorization.Grants.InMemoryPermissionGrantStore!
 Modulus.Authorization.Grants.InMemoryPermissionGrantStore.DenyToRole(string! role, params string![]! permissions) -> Modulus.Authorization.Grants.InMemoryPermissionGrantStore!
 Modulus.Authorization.Grants.InMemoryPermissionGrantStore.DenyToUser(System.Guid userId, params string![]! permissions) -> Modulus.Authorization.Grants.InMemoryPermissionGrantStore!
 Modulus.Authorization.Grants.InMemoryPermissionGrantStore.GetGrants(Modulus.Authorization.Grants.PrincipalGrantQuery! principal) -> System.Collections.Generic.IReadOnlyCollection<Modulus.Authorization.Grants.PermissionGrant!>!
@@ -371,22 +390,32 @@ Modulus.Authorization.Grants.IPermissionResolver.Resolve(Modulus.Authorization.G
 Modulus.Authorization.Grants.IPermissionResolver.Resolve(Modulus.Authorization.Grants.PrincipalGrantQuery! principal) -> System.Collections.Generic.IReadOnlySet<string!>!
 Modulus.Authorization.Grants.PermissionGrant
 Modulus.Authorization.Grants.PermissionGrant.<Clone>$() -> Modulus.Authorization.Grants.PermissionGrant!
-Modulus.Authorization.Grants.PermissionGrant.Deconstruct(out Modulus.Authorization.Grants.GrantHolderType HolderType, out string! Holder, out string! Permission, out Modulus.Authorization.Grants.PermissionGrantType Type) -> void
+Modulus.Authorization.Grants.PermissionGrant.EffectiveScope.get -> Modulus.Authorization.Scopes.PermissionScope!
 Modulus.Authorization.Grants.PermissionGrant.Equals(Modulus.Authorization.Grants.PermissionGrant? other) -> bool
 Modulus.Authorization.Grants.PermissionGrant.Holder.get -> string!
 Modulus.Authorization.Grants.PermissionGrant.Holder.init -> void
 Modulus.Authorization.Grants.PermissionGrant.HolderType.get -> Modulus.Authorization.Grants.GrantHolderType
 Modulus.Authorization.Grants.PermissionGrant.HolderType.init -> void
+Modulus.Authorization.Grants.PermissionGrant.IsValidAt(System.DateTimeOffset now) -> bool
 Modulus.Authorization.Grants.PermissionGrant.Permission.get -> string!
-Modulus.Authorization.Grants.PermissionGrant.PermissionGrant(Modulus.Authorization.Grants.GrantHolderType HolderType, string! Holder, string! Permission, Modulus.Authorization.Grants.PermissionGrantType Type) -> void
 Modulus.Authorization.Grants.PermissionGrant.Permission.init -> void
+Modulus.Authorization.Grants.PermissionGrant.PermissionGrant(Modulus.Authorization.Grants.GrantHolderType HolderType, string! Holder, string! Permission, Modulus.Authorization.Grants.PermissionGrantType Type, Modulus.Authorization.Scopes.PermissionScope? Scope = null, System.DateTimeOffset? ValidFrom = null, System.DateTimeOffset? ValidUntil = null, string? Reason = null) -> void
+Modulus.Authorization.Grants.PermissionGrant.Reason.get -> string?
+Modulus.Authorization.Grants.PermissionGrant.Reason.init -> void
+Modulus.Authorization.Grants.PermissionGrant.Scope.get -> Modulus.Authorization.Scopes.PermissionScope?
+Modulus.Authorization.Grants.PermissionGrant.Scope.init -> void
+Modulus.Authorization.Grants.PermissionGrant.ValidFrom.get -> System.DateTimeOffset?
+Modulus.Authorization.Grants.PermissionGrant.ValidFrom.init -> void
+Modulus.Authorization.Grants.PermissionGrant.ValidUntil.get -> System.DateTimeOffset?
+Modulus.Authorization.Grants.PermissionGrant.ValidUntil.init -> void
 Modulus.Authorization.Grants.PermissionGrantType
 Modulus.Authorization.Grants.PermissionGrantType.Allow = 0 -> Modulus.Authorization.Grants.PermissionGrantType
 Modulus.Authorization.Grants.PermissionGrantType.Deny = 1 -> Modulus.Authorization.Grants.PermissionGrantType
 Modulus.Authorization.Grants.PermissionGrant.Type.get -> Modulus.Authorization.Grants.PermissionGrantType
 Modulus.Authorization.Grants.PermissionGrant.Type.init -> void
+Modulus.Authorization.Grants.PermissionGrantType.Restrict = 2 -> Modulus.Authorization.Grants.PermissionGrantType
 Modulus.Authorization.Grants.PermissionResolver
-Modulus.Authorization.Grants.PermissionResolver.PermissionResolver(Modulus.Authorization.Grants.IPermissionGrantStore! grantStore, Modulus.Core.Abstractions.IPermissionRegistry! registry) -> void
+Modulus.Authorization.Grants.PermissionResolver.PermissionResolver(Modulus.Authorization.Grants.IPermissionGrantStore! grantStore, Modulus.Core.Abstractions.IPermissionRegistry! registry, System.TimeProvider? clock = null) -> void
 Modulus.Authorization.Grants.PermissionResolver.Resolve(Modulus.Authorization.Grants.PrincipalGrantQuery! principal, System.Collections.Generic.IReadOnlyCollection<Modulus.Authorization.Grants.PermissionGrant!>! grants) -> System.Collections.Generic.IReadOnlySet<string!>!
 Modulus.Authorization.Grants.PermissionResolver.Resolve(Modulus.Authorization.Grants.PrincipalGrantQuery! principal) -> System.Collections.Generic.IReadOnlySet<string!>!
 Modulus.Authorization.Grants.PrincipalGrantQuery
@@ -477,14 +506,15 @@ Modulus.Authorization.PermissionRequirement
 Modulus.Authorization.PermissionRequirement.Permission.get -> string!
 Modulus.Authorization.PermissionRequirement.PermissionRequirement(string! permission) -> void
 Modulus.Authorization.Resources.AccessDecision
-Modulus.Authorization.Resources.AccessDecision.AccessDecision(bool IsAllowed, string? Reason) -> void
-Modulus.Authorization.Resources.AccessDecision.<Clone>$() -> Modulus.Authorization.Resources.AccessDecision!
-Modulus.Authorization.Resources.AccessDecision.Deconstruct(out bool IsAllowed, out string? Reason) -> void
-Modulus.Authorization.Resources.AccessDecision.Equals(Modulus.Authorization.Resources.AccessDecision? other) -> bool
+Modulus.Authorization.Resources.AccessDecision.AccessDecision(bool IsAllowed, string? Reason, string? Code = null) -> void
+Modulus.Authorization.Resources.AccessDecision.Code.get -> string?
+Modulus.Authorization.Resources.AccessDecision.Code.init -> void
+Modulus.Authorization.Resources.AccessDecision.Deconstruct(out bool IsAllowed, out string? Reason, out string? Code) -> void
 Modulus.Authorization.Resources.AccessDecision.IsAllowed.get -> bool
 Modulus.Authorization.Resources.AccessDecision.IsAllowed.init -> void
 Modulus.Authorization.Resources.AccessDecision.Reason.get -> string?
 Modulus.Authorization.Resources.AccessDecision.Reason.init -> void
+Modulus.Authorization.Resources.AccessReasonCodes
 Modulus.Authorization.Resources.IResourceAuthorizer
 Modulus.Authorization.Resources.IResourceAuthorizer.AuthorizeAsync(object! resource, string! action, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Authorization.Resources.AccessDecision!>!
 Modulus.Authorization.Resources.IResourcePolicyRegistry
@@ -505,7 +535,7 @@ Modulus.Authorization.Resources.ResourceAttributes.State.get -> string?
 Modulus.Authorization.Resources.ResourceAttributes.State.init -> void
 Modulus.Authorization.Resources.ResourceAuthorizer
 Modulus.Authorization.Resources.ResourceAuthorizer.AuthorizeAsync(object! resource, string! action, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Authorization.Resources.AccessDecision!>!
-Modulus.Authorization.Resources.ResourceAuthorizer.ResourceAuthorizer(Modulus.Core.Abstractions.ICurrentUser! currentUser, Modulus.Core.Abstractions.ICurrentDataScope! dataScope, Modulus.Authorization.Resources.IResourcePolicyRegistry! registry) -> void
+Modulus.Authorization.Resources.ResourceAuthorizer.ResourceAuthorizer(Modulus.Core.Abstractions.ICurrentUser! currentUser, Modulus.Core.Abstractions.ICurrentDataScope! dataScope, Modulus.Authorization.Resources.IResourcePolicyRegistry! registry, Modulus.Authorization.Scopes.IScopeEnforcer? scopes = null) -> void
 Modulus.Authorization.Resources.ResourcePolicy
 Modulus.Authorization.Resources.ResourcePolicyBuilder
 Modulus.Authorization.Resources.ResourcePolicyBuilder.Allow(string! action, System.Func<Modulus.Authorization.Resources.ResourceRequest!, bool>! requirement) -> Modulus.Authorization.Resources.ResourcePolicyBuilder!
@@ -529,10 +559,11 @@ Modulus.Authorization.Resources.ResourceRequest.Action.get -> string!
 Modulus.Authorization.Resources.ResourceRequest.CallerHasPermission(string! permission) -> bool
 Modulus.Authorization.Resources.ResourceRequest.CallerId.get -> System.Guid?
 Modulus.Authorization.Resources.ResourceRequest.InCallerScope() -> bool
+Modulus.Authorization.Resources.ResourceRequest.InScopeOf(string! permission) -> bool
 Modulus.Authorization.Resources.ResourceRequest.InState(params string![]! states) -> bool
 Modulus.Authorization.Resources.ResourceRequest.OwnedByCaller() -> bool
 Modulus.Authorization.Resources.ResourceRequest.Resource.get -> Modulus.Authorization.Resources.ResourceAttributes!
-Modulus.Authorization.Resources.ResourceRequest.ResourceRequest(System.Guid? callerId, System.Func<string!, bool>! hasPermission, System.Func<System.Guid?, bool>! inScope, Modulus.Authorization.Resources.ResourceAttributes! resource, string! action) -> void
+Modulus.Authorization.Resources.ResourceRequest.ResourceRequest(System.Guid? callerId, System.Func<string!, bool>! hasPermission, System.Func<System.Guid?, bool>! inScope, Modulus.Authorization.Resources.ResourceAttributes! resource, string! action, System.Func<string!, bool>? inScopeOf = null) -> void
 Modulus.Authorization.Resources.ResourceRule
 Modulus.Authorization.Resources.ResourceRule.Action.get -> string!
 Modulus.Authorization.Resources.ResourceRule.Action.init -> void
@@ -547,6 +578,119 @@ Modulus.Authorization.Resources.ResourceRule.Requirement.init -> void
 Modulus.Authorization.Resources.ResourceRule.ResourceRule(Modulus.Authorization.Resources.PolicyEffect Effect, string! Action, System.Func<Modulus.Authorization.Resources.ResourceRequest!, bool>! Requirement, string? ToState = null) -> void
 Modulus.Authorization.Resources.ResourceRule.ToState.get -> string?
 Modulus.Authorization.Resources.ResourceRule.ToState.init -> void
+Modulus.Authorization.Scopes.Assignment
+Modulus.Authorization.Scopes.Assignment.<Clone>$() -> Modulus.Authorization.Scopes.Assignment!
+Modulus.Authorization.Scopes.Assignment.Assignment(System.Guid UserId, string! AssignmentType, System.Guid TargetId, System.DateTimeOffset? ValidFrom = null, System.DateTimeOffset? ValidUntil = null) -> void
+Modulus.Authorization.Scopes.Assignment.AssignmentType.get -> string!
+Modulus.Authorization.Scopes.Assignment.AssignmentType.init -> void
+Modulus.Authorization.Scopes.Assignment.Deconstruct(out System.Guid UserId, out string! AssignmentType, out System.Guid TargetId, out System.DateTimeOffset? ValidFrom, out System.DateTimeOffset? ValidUntil) -> void
+Modulus.Authorization.Scopes.Assignment.Equals(Modulus.Authorization.Scopes.Assignment? other) -> bool
+Modulus.Authorization.Scopes.Assignment.IsActiveAt(System.DateTimeOffset now) -> bool
+Modulus.Authorization.Scopes.Assignment.TargetId.get -> System.Guid
+Modulus.Authorization.Scopes.Assignment.TargetId.init -> void
+Modulus.Authorization.Scopes.Assignment.UserId.get -> System.Guid
+Modulus.Authorization.Scopes.Assignment.UserId.init -> void
+Modulus.Authorization.Scopes.Assignment.ValidFrom.get -> System.DateTimeOffset?
+Modulus.Authorization.Scopes.Assignment.ValidFrom.init -> void
+Modulus.Authorization.Scopes.Assignment.ValidUntil.get -> System.DateTimeOffset?
+Modulus.Authorization.Scopes.Assignment.ValidUntil.init -> void
+Modulus.Authorization.Scopes.IAssignmentStore
+Modulus.Authorization.Scopes.IAssignmentStore.TargetsFor(System.Guid userId, string! assignmentType, System.DateTimeOffset now) -> System.Collections.Generic.IReadOnlySet<System.Guid>!
+Modulus.Authorization.Scopes.InMemoryAssignmentStore
+Modulus.Authorization.Scopes.InMemoryAssignmentStore.Assign(Modulus.Authorization.Scopes.Assignment! assignment) -> Modulus.Authorization.Scopes.InMemoryAssignmentStore!
+Modulus.Authorization.Scopes.InMemoryAssignmentStore.Assign(System.Guid userId, string! assignmentType, System.Guid targetId) -> Modulus.Authorization.Scopes.InMemoryAssignmentStore!
+Modulus.Authorization.Scopes.InMemoryAssignmentStore.InMemoryAssignmentStore() -> void
+Modulus.Authorization.Scopes.InMemoryAssignmentStore.TargetsFor(System.Guid userId, string! assignmentType, System.DateTimeOffset now) -> System.Collections.Generic.IReadOnlySet<System.Guid>!
+Modulus.Authorization.Scopes.InMemoryAssignmentStore.Unassign(System.Guid userId, string! assignmentType, System.Guid targetId) -> Modulus.Authorization.Scopes.InMemoryAssignmentStore!
+Modulus.Authorization.Scopes.IPermissionScopeResolver
+Modulus.Authorization.Scopes.IPermissionScopeResolver.Resolve(Modulus.Authorization.Grants.PrincipalGrantQuery! principal, string! permission) -> Modulus.Authorization.Scopes.ResolvedScope!
+Modulus.Authorization.Scopes.IPermissionScopeResolver.Resolve(string! permission) -> Modulus.Authorization.Scopes.ResolvedScope!
+Modulus.Authorization.Scopes.IPrincipalGrantQuerySource
+Modulus.Authorization.Scopes.IPrincipalGrantQuerySource.Current.get -> Modulus.Authorization.Grants.PrincipalGrantQuery!
+Modulus.Authorization.Scopes.IScopeEnforcer
+Modulus.Authorization.Scopes.IScopeEnforcer.Apply<T>(System.Linq.IQueryable<T!>! source, string! permission) -> System.Linq.IQueryable<T!>!
+Modulus.Authorization.Scopes.IScopeEnforcer.Describe(string! permission) -> Modulus.Authorization.Scopes.ResolvedScope!
+Modulus.Authorization.Scopes.IScopeEnforcer.IsInScope(object! record, string! permission) -> bool
+Modulus.Authorization.Scopes.IScopeMapRegistry
+Modulus.Authorization.Scopes.IScopeMapRegistry.Find(System.Type! recordType) -> Modulus.Authorization.Scopes.ScopeMap?
+Modulus.Authorization.Scopes.IScopeSubject
+Modulus.Authorization.Scopes.IScopeSubject.AssignedTargets(string! assignmentType) -> System.Collections.Generic.IReadOnlySet<System.Guid>!
+Modulus.Authorization.Scopes.IScopeSubject.IsOrgUnrestricted.get -> bool
+Modulus.Authorization.Scopes.IScopeSubject.OrgSubtree(System.Guid unit) -> System.Collections.Generic.IReadOnlySet<System.Guid>!
+Modulus.Authorization.Scopes.IScopeSubject.OrgUnits.get -> System.Collections.Generic.IReadOnlySet<System.Guid>!
+Modulus.Authorization.Scopes.IScopeSubject.UserId.get -> System.Guid?
+Modulus.Authorization.Scopes.PermissionScope
+Modulus.Authorization.Scopes.PermissionScope.<Clone>$() -> Modulus.Authorization.Scopes.PermissionScope!
+Modulus.Authorization.Scopes.PermissionScope.Equals(Modulus.Authorization.Scopes.PermissionScope? other) -> bool
+Modulus.Authorization.Scopes.PermissionScope.Format() -> string!
+Modulus.Authorization.Scopes.PermissionScope.Kind.get -> Modulus.Authorization.Scopes.ScopeKind
+Modulus.Authorization.Scopes.PermissionScope.OrgUnitId.get -> System.Guid?
+Modulus.Authorization.Scopes.PermissionScope.PermissionScope(Modulus.Authorization.Scopes.ScopeKind kind, string? value = null) -> void
+Modulus.Authorization.Scopes.PermissionScope.Value.get -> string?
+Modulus.Authorization.Scopes.PermissionScopeResolver
+Modulus.Authorization.Scopes.PermissionScopeResolver.PermissionScopeResolver(Modulus.Authorization.Scopes.IPrincipalGrantQuerySource! principal, Modulus.Authorization.Grants.IPermissionGrantStore! grants, Modulus.Core.Abstractions.IPermissionRegistry! registry, System.IServiceProvider! services, System.TimeProvider? clock = null) -> void
+Modulus.Authorization.Scopes.PermissionScopeResolver.Resolve(Modulus.Authorization.Grants.PrincipalGrantQuery! query, string! permission) -> Modulus.Authorization.Scopes.ResolvedScope!
+Modulus.Authorization.Scopes.PermissionScopeResolver.Resolve(string! permission) -> Modulus.Authorization.Scopes.ResolvedScope!
+Modulus.Authorization.Scopes.ResolvedScope
+Modulus.Authorization.Scopes.ResolvedScope.AnyOf.get -> System.Collections.Generic.IReadOnlyList<Modulus.Authorization.Scopes.ScopeClause!>!
+Modulus.Authorization.Scopes.ResolvedScope.IsNone.get -> bool
+Modulus.Authorization.Scopes.ResolvedScope.IsTenantWide.get -> bool
+Modulus.Authorization.Scopes.ResolvedScope.Restrict(Modulus.Authorization.Scopes.PermissionScope! restriction) -> Modulus.Authorization.Scopes.ResolvedScope!
+Modulus.Authorization.Scopes.ResolvedScope.Union(Modulus.Authorization.Scopes.ResolvedScope! other) -> Modulus.Authorization.Scopes.ResolvedScope!
+Modulus.Authorization.Scopes.ScopeClause
+Modulus.Authorization.Scopes.ScopeClause.<Clone>$() -> Modulus.Authorization.Scopes.ScopeClause!
+Modulus.Authorization.Scopes.ScopeClause.Constraints.get -> System.Collections.Generic.IReadOnlyList<Modulus.Authorization.Scopes.PermissionScope!>!
+Modulus.Authorization.Scopes.ScopeClause.Constraints.init -> void
+Modulus.Authorization.Scopes.ScopeClause.Deconstruct(out System.Collections.Generic.IReadOnlyList<Modulus.Authorization.Scopes.PermissionScope!>! Constraints) -> void
+Modulus.Authorization.Scopes.ScopeClause.Equals(Modulus.Authorization.Scopes.ScopeClause? other) -> bool
+Modulus.Authorization.Scopes.ScopeClause.ScopeClause(System.Collections.Generic.IReadOnlyList<Modulus.Authorization.Scopes.PermissionScope!>! Constraints) -> void
+Modulus.Authorization.Scopes.ScopeEnforcer
+Modulus.Authorization.Scopes.ScopeEnforcer.Apply<T>(System.Linq.IQueryable<T!>! source, string! permission) -> System.Linq.IQueryable<T!>!
+Modulus.Authorization.Scopes.ScopeEnforcer.Describe(string! permission) -> Modulus.Authorization.Scopes.ResolvedScope!
+Modulus.Authorization.Scopes.ScopeEnforcer.IsInScope(object! record, string! permission) -> bool
+Modulus.Authorization.Scopes.ScopeEnforcer.ScopeEnforcer(Modulus.Authorization.Scopes.IPermissionScopeResolver! resolver, Modulus.Authorization.Scopes.IScopeMapRegistry! maps, Modulus.Authorization.Scopes.IScopeSubject! subject) -> void
+Modulus.Authorization.Scopes.ScopeEvaluator
+Modulus.Authorization.Scopes.ScopeFacts
+Modulus.Authorization.Scopes.ScopeFacts.<Clone>$() -> Modulus.Authorization.Scopes.ScopeFacts!
+Modulus.Authorization.Scopes.ScopeFacts.AccessKeys.get -> System.Collections.Generic.IReadOnlyDictionary<string!, System.Guid?>?
+Modulus.Authorization.Scopes.ScopeFacts.AccessKeys.init -> void
+Modulus.Authorization.Scopes.ScopeFacts.Deconstruct(out System.Guid? OwnerId, out System.Guid? OrgUnitId, out System.Collections.Generic.IReadOnlyDictionary<string!, System.Guid?>? AccessKeys) -> void
+Modulus.Authorization.Scopes.ScopeFacts.Equals(Modulus.Authorization.Scopes.ScopeFacts? other) -> bool
+Modulus.Authorization.Scopes.ScopeFacts.OrgUnitId.get -> System.Guid?
+Modulus.Authorization.Scopes.ScopeFacts.OrgUnitId.init -> void
+Modulus.Authorization.Scopes.ScopeFacts.OwnerId.get -> System.Guid?
+Modulus.Authorization.Scopes.ScopeFacts.OwnerId.init -> void
+Modulus.Authorization.Scopes.ScopeFacts.ScopeFacts(System.Guid? OwnerId, System.Guid? OrgUnitId, System.Collections.Generic.IReadOnlyDictionary<string!, System.Guid?>? AccessKeys = null) -> void
+Modulus.Authorization.Scopes.ScopeKind
+Modulus.Authorization.Scopes.ScopeKind.Assigned = 3 -> Modulus.Authorization.Scopes.ScopeKind
+Modulus.Authorization.Scopes.ScopeKind.OrgUnit = 1 -> Modulus.Authorization.Scopes.ScopeKind
+Modulus.Authorization.Scopes.ScopeKind.Own = 2 -> Modulus.Authorization.Scopes.ScopeKind
+Modulus.Authorization.Scopes.ScopeKind.Tenant = 0 -> Modulus.Authorization.Scopes.ScopeKind
+Modulus.Authorization.Scopes.ScopeMap
+Modulus.Authorization.Scopes.ScopeMap.ScopeMap() -> void
+Modulus.Authorization.Scopes.ScopeMap<T>
+Modulus.Authorization.Scopes.ScopeMap<T>.AccessKeys.get -> System.Collections.Generic.IReadOnlyDictionary<string!, System.Linq.Expressions.Expression<System.Func<T!, System.Guid?>!>!>!
+Modulus.Authorization.Scopes.ScopeMap<T>.OrgUnit.get -> System.Linq.Expressions.Expression<System.Func<T!, System.Guid?>!>?
+Modulus.Authorization.Scopes.ScopeMap<T>.Owner.get -> System.Linq.Expressions.Expression<System.Func<T!, System.Guid?>!>?
+Modulus.Authorization.Scopes.ScopeMapBuilder<T>
+Modulus.Authorization.Scopes.ScopeMapBuilder<T>.AssignedKey(string! assignmentType, System.Linq.Expressions.Expression<System.Func<T!, System.Guid>!>! selector) -> Modulus.Authorization.Scopes.ScopeMapBuilder<T!>!
+Modulus.Authorization.Scopes.ScopeMapBuilder<T>.AssignedKey(string! assignmentType, System.Linq.Expressions.Expression<System.Func<T!, System.Guid?>!>! selector) -> Modulus.Authorization.Scopes.ScopeMapBuilder<T!>!
+Modulus.Authorization.Scopes.ScopeMapBuilder<T>.Build() -> Modulus.Authorization.Scopes.ScopeMap<T!>!
+Modulus.Authorization.Scopes.ScopeMapBuilder<T>.OrgUnit(System.Linq.Expressions.Expression<System.Func<T!, System.Guid>!>! selector) -> Modulus.Authorization.Scopes.ScopeMapBuilder<T!>!
+Modulus.Authorization.Scopes.ScopeMapBuilder<T>.OrgUnit(System.Linq.Expressions.Expression<System.Func<T!, System.Guid?>!>! selector) -> Modulus.Authorization.Scopes.ScopeMapBuilder<T!>!
+Modulus.Authorization.Scopes.ScopeMapBuilder<T>.Owner(System.Linq.Expressions.Expression<System.Func<T!, System.Guid>!>! selector) -> Modulus.Authorization.Scopes.ScopeMapBuilder<T!>!
+Modulus.Authorization.Scopes.ScopeMapBuilder<T>.Owner(System.Linq.Expressions.Expression<System.Func<T!, System.Guid?>!>! selector) -> Modulus.Authorization.Scopes.ScopeMapBuilder<T!>!
+Modulus.Authorization.Scopes.ScopeMapBuilder<T>.ScopeMapBuilder() -> void
+Modulus.Authorization.Scopes.ScopeMapRegistry
+Modulus.Authorization.Scopes.ScopeMapRegistry.Find(System.Type! recordType) -> Modulus.Authorization.Scopes.ScopeMap?
+Modulus.Authorization.Scopes.ScopeMapRegistry.ScopeMapRegistry(System.Collections.Generic.IEnumerable<Modulus.Authorization.Scopes.ScopeMap!>! declared) -> void
+Modulus.Authorization.Scopes.ScopeSubject
+Modulus.Authorization.Scopes.ScopeSubject.AssignedTargets(string! assignmentType) -> System.Collections.Generic.IReadOnlySet<System.Guid>!
+Modulus.Authorization.Scopes.ScopeSubject.IsOrgUnrestricted.get -> bool
+Modulus.Authorization.Scopes.ScopeSubject.OrgSubtree(System.Guid unit) -> System.Collections.Generic.IReadOnlySet<System.Guid>!
+Modulus.Authorization.Scopes.ScopeSubject.OrgUnits.get -> System.Collections.Generic.IReadOnlySet<System.Guid>!
+Modulus.Authorization.Scopes.ScopeSubject.ScopeSubject(Modulus.Core.Abstractions.ICurrentUser! user, Modulus.Authorization.Organization.IOrgHierarchy! hierarchy, Modulus.Authorization.Scopes.IAssignmentStore! assignments, Modulus.Core.Abstractions.ICurrentDataScope? dataScope = null, System.TimeProvider? clock = null) -> void
+Modulus.Authorization.Scopes.ScopeSubject.UserId.get -> System.Guid?
 Modulus.BackgroundJobs.ChannelJobQueue
 Modulus.BackgroundJobs.ChannelJobQueue.AddRecurring<TJob, TArgs>(string! jobId, string! cronExpression, TArgs args) -> void
 Modulus.BackgroundJobs.ChannelJobQueue.ChannelJobQueue(System.IServiceProvider! sp, Microsoft.Extensions.Logging.ILogger<Modulus.BackgroundJobs.ChannelJobQueue!>! logger) -> void
@@ -810,6 +954,48 @@ override Modulus.Authorization.Features.FeatureDefinition.ToString() -> string!
 override Modulus.Authorization.Fields.FieldAccess.Equals(object? obj) -> bool
 override Modulus.Authorization.Fields.FieldAccess.GetHashCode() -> int
 override Modulus.Authorization.Fields.FieldAccess.ToString() -> string!
+override Modulus.Authorization.Grants.PermissionGrant.Equals(object? obj) -> bool
+override Modulus.Authorization.Grants.PermissionGrant.GetHashCode() -> int
+override Modulus.Authorization.Grants.PermissionGrant.ToString() -> string!
+override Modulus.Authorization.Scopes.Assignment.Equals(object? obj) -> bool
+override Modulus.Authorization.Scopes.Assignment.GetHashCode() -> int
+override Modulus.Authorization.Scopes.Assignment.ToString() -> string!
+override Modulus.Authorization.Scopes.PermissionScope.Equals(object? obj) -> bool
+override Modulus.Authorization.Scopes.PermissionScope.GetHashCode() -> int
+override Modulus.Authorization.Scopes.PermissionScope.ToString() -> string!
+override Modulus.Authorization.Scopes.ResolvedScope.ToString() -> string!
+override Modulus.Authorization.Scopes.ScopeClause.Equals(object? obj) -> bool
+override Modulus.Authorization.Scopes.ScopeClause.GetHashCode() -> int
+override Modulus.Authorization.Scopes.ScopeClause.ToString() -> string!
+override Modulus.Authorization.Scopes.ScopeFacts.Equals(object? obj) -> bool
+override Modulus.Authorization.Scopes.ScopeFacts.GetHashCode() -> int
+override Modulus.Authorization.Scopes.ScopeFacts.ToString() -> string!
+override Modulus.Authorization.Scopes.ScopeMap<T>.EntityType.get -> System.Type!
+override Modulus.Authorization.Scopes.ScopeMap<T>.FactsOf(object! record) -> Modulus.Authorization.Scopes.ScopeFacts!
+static Modulus.Authorization.Extensions.AuthorizationExtensions.AddScopeMap<T>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<Modulus.Authorization.Scopes.ScopeMapBuilder<T!>!>! configure) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.Authorization.Grants.PermissionGrant.operator !=(Modulus.Authorization.Grants.PermissionGrant? left, Modulus.Authorization.Grants.PermissionGrant? right) -> bool
+static Modulus.Authorization.Grants.PermissionGrant.operator ==(Modulus.Authorization.Grants.PermissionGrant? left, Modulus.Authorization.Grants.PermissionGrant? right) -> bool
+static Modulus.Authorization.Resources.AccessDecision.Deny(string! code, string! reason) -> Modulus.Authorization.Resources.AccessDecision!
+static Modulus.Authorization.Scopes.Assignment.operator !=(Modulus.Authorization.Scopes.Assignment? left, Modulus.Authorization.Scopes.Assignment? right) -> bool
+static Modulus.Authorization.Scopes.Assignment.operator ==(Modulus.Authorization.Scopes.Assignment? left, Modulus.Authorization.Scopes.Assignment? right) -> bool
+static Modulus.Authorization.Scopes.PermissionScope.Assigned(string! assignmentType) -> Modulus.Authorization.Scopes.PermissionScope!
+static Modulus.Authorization.Scopes.PermissionScope.MyOrgUnits.get -> Modulus.Authorization.Scopes.PermissionScope!
+static Modulus.Authorization.Scopes.PermissionScope.operator !=(Modulus.Authorization.Scopes.PermissionScope? left, Modulus.Authorization.Scopes.PermissionScope? right) -> bool
+static Modulus.Authorization.Scopes.PermissionScope.operator ==(Modulus.Authorization.Scopes.PermissionScope? left, Modulus.Authorization.Scopes.PermissionScope? right) -> bool
+static Modulus.Authorization.Scopes.PermissionScope.OrgUnit(System.Guid unit) -> Modulus.Authorization.Scopes.PermissionScope!
+static Modulus.Authorization.Scopes.PermissionScope.Own.get -> Modulus.Authorization.Scopes.PermissionScope!
+static Modulus.Authorization.Scopes.PermissionScope.Tenant.get -> Modulus.Authorization.Scopes.PermissionScope!
+static Modulus.Authorization.Scopes.PermissionScope.TryParse(string? text, out Modulus.Authorization.Scopes.PermissionScope! scope) -> bool
+static Modulus.Authorization.Scopes.ResolvedScope.None.get -> Modulus.Authorization.Scopes.ResolvedScope!
+static Modulus.Authorization.Scopes.ResolvedScope.Of(System.Collections.Generic.IEnumerable<Modulus.Authorization.Scopes.ScopeClause!>! clauses) -> Modulus.Authorization.Scopes.ResolvedScope!
+static Modulus.Authorization.Scopes.ResolvedScope.TenantWide.get -> Modulus.Authorization.Scopes.ResolvedScope!
+static Modulus.Authorization.Scopes.ScopeClause.Everything.get -> Modulus.Authorization.Scopes.ScopeClause!
+static Modulus.Authorization.Scopes.ScopeClause.operator !=(Modulus.Authorization.Scopes.ScopeClause? left, Modulus.Authorization.Scopes.ScopeClause? right) -> bool
+static Modulus.Authorization.Scopes.ScopeClause.operator ==(Modulus.Authorization.Scopes.ScopeClause? left, Modulus.Authorization.Scopes.ScopeClause? right) -> bool
+static Modulus.Authorization.Scopes.ScopeEvaluator.Allows(Modulus.Authorization.Scopes.ResolvedScope! scope, Modulus.Authorization.Scopes.ScopeFacts! facts, Modulus.Authorization.Scopes.IScopeSubject! subject) -> bool
+static Modulus.Authorization.Scopes.ScopeFacts.operator !=(Modulus.Authorization.Scopes.ScopeFacts? left, Modulus.Authorization.Scopes.ScopeFacts? right) -> bool
+static Modulus.Authorization.Scopes.ScopeFacts.operator ==(Modulus.Authorization.Scopes.ScopeFacts? left, Modulus.Authorization.Scopes.ScopeFacts? right) -> bool
+static Modulus.Authorization.Scopes.ScopeMap<T>.FromMarkers() -> Modulus.Authorization.Scopes.ScopeMap<T!>?
 ~override Modulus.Authorization.Fields.FieldRequirement.Equals(object obj) -> bool
 override Modulus.Authorization.Fields.FieldRequirement.GetHashCode() -> int
 ~override Modulus.Authorization.Fields.FieldRequirement.ToString() -> string
@@ -831,9 +1017,6 @@ override Modulus.Authorization.Governance.SodConstraint.ToString() -> string!
 override Modulus.Authorization.Governance.SodViolation.Equals(object? obj) -> bool
 override Modulus.Authorization.Governance.SodViolation.GetHashCode() -> int
 override Modulus.Authorization.Governance.SodViolation.ToString() -> string!
-override Modulus.Authorization.Grants.PermissionGrant.Equals(object? obj) -> bool
-override Modulus.Authorization.Grants.PermissionGrant.GetHashCode() -> int
-override Modulus.Authorization.Grants.PermissionGrant.ToString() -> string!
 override Modulus.Authorization.Grants.PrincipalGrantQuery.Equals(object? obj) -> bool
 override Modulus.Authorization.Grants.PrincipalGrantQuery.GetHashCode() -> int
 override Modulus.Authorization.Grants.PrincipalGrantQuery.ToString() -> string!
@@ -843,9 +1026,6 @@ override Modulus.Authorization.Organization.OrgPlacement.ToString() -> string!
 override Modulus.Authorization.Organization.OrgUnit.Equals(object? obj) -> bool
 override Modulus.Authorization.Organization.OrgUnit.GetHashCode() -> int
 override Modulus.Authorization.Organization.OrgUnit.ToString() -> string!
-override Modulus.Authorization.Resources.AccessDecision.Equals(object? obj) -> bool
-override Modulus.Authorization.Resources.AccessDecision.GetHashCode() -> int
-override Modulus.Authorization.Resources.AccessDecision.ToString() -> string!
 override Modulus.Authorization.Resources.ResourceAttributes.Equals(object? obj) -> bool
 override Modulus.Authorization.Resources.ResourceAttributes.GetHashCode() -> int
 override Modulus.Authorization.Resources.ResourceAttributes.ToString() -> string!
@@ -907,8 +1087,6 @@ static Modulus.Authorization.Governance.SodConstraint.operator !=(Modulus.Author
 static Modulus.Authorization.Governance.SodConstraint.operator ==(Modulus.Authorization.Governance.SodConstraint? left, Modulus.Authorization.Governance.SodConstraint? right) -> bool
 static Modulus.Authorization.Governance.SodViolation.operator !=(Modulus.Authorization.Governance.SodViolation? left, Modulus.Authorization.Governance.SodViolation? right) -> bool
 static Modulus.Authorization.Governance.SodViolation.operator ==(Modulus.Authorization.Governance.SodViolation? left, Modulus.Authorization.Governance.SodViolation? right) -> bool
-static Modulus.Authorization.Grants.PermissionGrant.operator !=(Modulus.Authorization.Grants.PermissionGrant? left, Modulus.Authorization.Grants.PermissionGrant? right) -> bool
-static Modulus.Authorization.Grants.PermissionGrant.operator ==(Modulus.Authorization.Grants.PermissionGrant? left, Modulus.Authorization.Grants.PermissionGrant? right) -> bool
 static Modulus.Authorization.Grants.PrincipalGrantQuery.operator !=(Modulus.Authorization.Grants.PrincipalGrantQuery? left, Modulus.Authorization.Grants.PrincipalGrantQuery? right) -> bool
 static Modulus.Authorization.Grants.PrincipalGrantQuery.operator ==(Modulus.Authorization.Grants.PrincipalGrantQuery? left, Modulus.Authorization.Grants.PrincipalGrantQuery? right) -> bool
 static Modulus.Authorization.Organization.OrgPlacement.operator !=(Modulus.Authorization.Organization.OrgPlacement? left, Modulus.Authorization.Organization.OrgPlacement? right) -> bool
@@ -918,8 +1096,6 @@ static Modulus.Authorization.Organization.OrgUnit.operator !=(Modulus.Authorizat
 static Modulus.Authorization.Organization.OrgUnit.operator ==(Modulus.Authorization.Organization.OrgUnit? left, Modulus.Authorization.Organization.OrgUnit? right) -> bool
 static Modulus.Authorization.Resources.AccessDecision.Allow() -> Modulus.Authorization.Resources.AccessDecision!
 static Modulus.Authorization.Resources.AccessDecision.Deny(string! reason) -> Modulus.Authorization.Resources.AccessDecision!
-static Modulus.Authorization.Resources.AccessDecision.operator !=(Modulus.Authorization.Resources.AccessDecision? left, Modulus.Authorization.Resources.AccessDecision? right) -> bool
-static Modulus.Authorization.Resources.AccessDecision.operator ==(Modulus.Authorization.Resources.AccessDecision? left, Modulus.Authorization.Resources.AccessDecision? right) -> bool
 static Modulus.Authorization.Resources.ResourceAttributes.From(object! resource) -> Modulus.Authorization.Resources.ResourceAttributes!
 static Modulus.Authorization.Resources.ResourceAttributes.operator !=(Modulus.Authorization.Resources.ResourceAttributes? left, Modulus.Authorization.Resources.ResourceAttributes? right) -> bool
 static Modulus.Authorization.Resources.ResourceAttributes.operator ==(Modulus.Authorization.Resources.ResourceAttributes? left, Modulus.Authorization.Resources.ResourceAttributes? right) -> bool
@@ -1175,3 +1351,74 @@ static readonly Modulus.AuditLogging.Security.SecurityAuditChain.GenesisHash -> 
 Modulus.AuditLogging.Security.SecurityAuditLog.Dispose() -> void
 Modulus.AuditLogging.Security.SecurityAuditOptions.SpoolFile.get -> string?
 Modulus.AuditLogging.Security.SecurityAuditOptions.SpoolFile.set -> void
+Modulus.Authorization.Grants.PermissionResolver.ResolveDenied(Modulus.Authorization.Grants.PrincipalGrantQuery! principal) -> System.Collections.Generic.IReadOnlySet<string!>!
+Modulus.Authorization.Grants.PermissionResolver.ResolveDenied(System.Collections.Generic.IReadOnlyCollection<Modulus.Authorization.Grants.PermissionGrant!>! grants) -> System.Collections.Generic.IReadOnlySet<string!>!
+Modulus.MultiTenancy.Extensions.MultiTenancyBuilder.AllowUnrestrictedTenantSelection() -> Modulus.MultiTenancy.Extensions.MultiTenancyBuilder!
+Modulus.Authorization.Grants.PermissionGrant.Deconstruct(out Modulus.Authorization.Grants.GrantHolderType HolderType, out string! Holder, out string! Permission, out Modulus.Authorization.Grants.PermissionGrantType Type, out Modulus.Authorization.Scopes.PermissionScope? Scope, out System.DateTimeOffset? ValidFrom, out System.DateTimeOffset? ValidUntil, out string? Reason) -> void
+Modulus.Authorization.Resources.AccessDecision.<Clone>$() -> Modulus.Authorization.Resources.AccessDecision!
+Modulus.Authorization.Resources.AccessDecision.Equals(Modulus.Authorization.Resources.AccessDecision? other) -> bool
+override Modulus.Authorization.Resources.AccessDecision.Equals(object? obj) -> bool
+override Modulus.Authorization.Resources.AccessDecision.GetHashCode() -> int
+override Modulus.Authorization.Resources.AccessDecision.ToString() -> string!
+static Modulus.Authorization.Resources.AccessDecision.operator !=(Modulus.Authorization.Resources.AccessDecision? left, Modulus.Authorization.Resources.AccessDecision? right) -> bool
+static Modulus.Authorization.Resources.AccessDecision.operator ==(Modulus.Authorization.Resources.AccessDecision? left, Modulus.Authorization.Resources.AccessDecision? right) -> bool
+Modulus.Authorization.PermissionRegistry.Add(string! permission, string! description, string![]? requires, Modulus.Core.Abstractions.PermissionSensitivity sensitivity) -> void
+Modulus.Authorization.Resources.PolicyExplanation
+Modulus.Authorization.Resources.PolicyExplanation.<Clone>$() -> Modulus.Authorization.Resources.PolicyExplanation!
+Modulus.Authorization.Resources.PolicyExplanation.Decision.get -> Modulus.Authorization.Resources.AccessDecision!
+Modulus.Authorization.Resources.PolicyExplanation.Decision.init -> void
+Modulus.Authorization.Resources.PolicyExplanation.Deconstruct(out Modulus.Authorization.Resources.AccessDecision! Decision, out System.Collections.Generic.IReadOnlyList<Modulus.Authorization.Resources.RuleOutcome!>! Rules) -> void
+Modulus.Authorization.Resources.PolicyExplanation.Equals(Modulus.Authorization.Resources.PolicyExplanation? other) -> bool
+Modulus.Authorization.Resources.PolicyExplanation.PolicyExplanation(Modulus.Authorization.Resources.AccessDecision! Decision, System.Collections.Generic.IReadOnlyList<Modulus.Authorization.Resources.RuleOutcome!>! Rules) -> void
+Modulus.Authorization.Resources.PolicyExplanation.Rules.get -> System.Collections.Generic.IReadOnlyList<Modulus.Authorization.Resources.RuleOutcome!>!
+Modulus.Authorization.Resources.PolicyExplanation.Rules.init -> void
+Modulus.Authorization.Resources.ResourceAuthorizer.Explain(object! resource, string! action) -> Modulus.Authorization.Resources.PolicyExplanation!
+Modulus.Authorization.Resources.ResourceAuthorizerExtensions
+Modulus.Authorization.Resources.ResourcePolicy.Actions.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Modulus.Authorization.Resources.ResourcePolicy.Explain(Modulus.Authorization.Resources.ResourceRequest! request) -> Modulus.Authorization.Resources.PolicyExplanation!
+Modulus.Authorization.Resources.RuleOutcome
+Modulus.Authorization.Resources.RuleOutcome.<Clone>$() -> Modulus.Authorization.Resources.RuleOutcome!
+Modulus.Authorization.Resources.RuleOutcome.Action.get -> string!
+Modulus.Authorization.Resources.RuleOutcome.Action.init -> void
+Modulus.Authorization.Resources.RuleOutcome.Deconstruct(out int Index, out Modulus.Authorization.Resources.PolicyEffect Effect, out string! Action, out bool Matched, out bool Faulted) -> void
+Modulus.Authorization.Resources.RuleOutcome.Effect.get -> Modulus.Authorization.Resources.PolicyEffect
+Modulus.Authorization.Resources.RuleOutcome.Effect.init -> void
+Modulus.Authorization.Resources.RuleOutcome.Equals(Modulus.Authorization.Resources.RuleOutcome? other) -> bool
+Modulus.Authorization.Resources.RuleOutcome.Faulted.get -> bool
+Modulus.Authorization.Resources.RuleOutcome.Faulted.init -> void
+Modulus.Authorization.Resources.RuleOutcome.Index.get -> int
+Modulus.Authorization.Resources.RuleOutcome.Index.init -> void
+Modulus.Authorization.Resources.RuleOutcome.Matched.get -> bool
+Modulus.Authorization.Resources.RuleOutcome.Matched.init -> void
+Modulus.Authorization.Resources.RuleOutcome.RuleOutcome(int Index, Modulus.Authorization.Resources.PolicyEffect Effect, string! Action, bool Matched, bool Faulted) -> void
+override Modulus.Authorization.Resources.PolicyExplanation.Equals(object? obj) -> bool
+override Modulus.Authorization.Resources.PolicyExplanation.GetHashCode() -> int
+override Modulus.Authorization.Resources.PolicyExplanation.ToString() -> string!
+override Modulus.Authorization.Resources.RuleOutcome.Equals(object? obj) -> bool
+override Modulus.Authorization.Resources.RuleOutcome.GetHashCode() -> int
+override Modulus.Authorization.Resources.RuleOutcome.ToString() -> string!
+static Modulus.Authorization.Resources.PolicyExplanation.operator !=(Modulus.Authorization.Resources.PolicyExplanation? left, Modulus.Authorization.Resources.PolicyExplanation? right) -> bool
+static Modulus.Authorization.Resources.PolicyExplanation.operator ==(Modulus.Authorization.Resources.PolicyExplanation? left, Modulus.Authorization.Resources.PolicyExplanation? right) -> bool
+static Modulus.Authorization.Resources.ResourceAuthorizerExtensions.GetAvailableActionsAsync(this Modulus.Authorization.Resources.IResourceAuthorizer! authorizer, Modulus.Authorization.Resources.IResourcePolicyRegistry! registry, object! resource, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<string!>!>!
+static Modulus.Authorization.Resources.RuleOutcome.operator !=(Modulus.Authorization.Resources.RuleOutcome? left, Modulus.Authorization.Resources.RuleOutcome? right) -> bool
+static Modulus.Authorization.Resources.RuleOutcome.operator ==(Modulus.Authorization.Resources.RuleOutcome? left, Modulus.Authorization.Resources.RuleOutcome? right) -> bool
+Modulus.Authorization.ModulusAuthorizationOptions.TrustPermissionClaims.get -> bool
+Modulus.Authorization.ModulusAuthorizationOptions.TrustPermissionClaims.set -> void
+Modulus.Authorization.Resources.IResourceLocator
+Modulus.Authorization.Resources.IResourceLocator.FindAsync(string! resourceType, string! id, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<object?>
+Modulus.Authorization.Resources.ResourceLocatorExtensions
+Modulus.Authorization.Resources.ResourceLocatorRegistration
+Modulus.Authorization.Resources.ResourceLocatorRegistration.<Clone>$() -> Modulus.Authorization.Resources.ResourceLocatorRegistration!
+Modulus.Authorization.Resources.ResourceLocatorRegistration.Deconstruct(out string! Name, out System.Func<System.IServiceProvider!, string!, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<object?>>! Load) -> void
+Modulus.Authorization.Resources.ResourceLocatorRegistration.Equals(Modulus.Authorization.Resources.ResourceLocatorRegistration? other) -> bool
+Modulus.Authorization.Resources.ResourceLocatorRegistration.Load.get -> System.Func<System.IServiceProvider!, string!, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<object?>>!
+Modulus.Authorization.Resources.ResourceLocatorRegistration.Load.init -> void
+Modulus.Authorization.Resources.ResourceLocatorRegistration.Name.get -> string!
+Modulus.Authorization.Resources.ResourceLocatorRegistration.Name.init -> void
+Modulus.Authorization.Resources.ResourceLocatorRegistration.ResourceLocatorRegistration(string! Name, System.Func<System.IServiceProvider!, string!, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<object?>>! Load) -> void
+override Modulus.Authorization.Resources.ResourceLocatorRegistration.Equals(object? obj) -> bool
+override Modulus.Authorization.Resources.ResourceLocatorRegistration.GetHashCode() -> int
+override Modulus.Authorization.Resources.ResourceLocatorRegistration.ToString() -> string!
+static Modulus.Authorization.Resources.ResourceLocatorExtensions.AddResourceLocator(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, string! name, System.Func<System.IServiceProvider!, string!, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<object?>>! load) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.Authorization.Resources.ResourceLocatorRegistration.operator !=(Modulus.Authorization.Resources.ResourceLocatorRegistration? left, Modulus.Authorization.Resources.ResourceLocatorRegistration? right) -> bool
+static Modulus.Authorization.Resources.ResourceLocatorRegistration.operator ==(Modulus.Authorization.Resources.ResourceLocatorRegistration? left, Modulus.Authorization.Resources.ResourceLocatorRegistration? right) -> bool

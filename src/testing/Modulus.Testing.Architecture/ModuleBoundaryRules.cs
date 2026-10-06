@@ -17,7 +17,7 @@ public static class ModuleBoundaryRules
 {
     /// <summary>
     /// Enforces that every concrete <see cref="IIntegrationEvent"/> implementation
-    /// is decorated with <see cref="IntegrationEventNameAttribute"/>. Abstract base
+    /// declares its name (<see cref="IntegrationEventAttribute{TModule}"/> or <see cref="IntegrationEventNameAttribute"/>). Abstract base
     /// classes and interfaces are skipped.
     /// </summary>
     public static IReadOnlyList<Type> FindUnnamedIntegrationEvents()
@@ -29,7 +29,7 @@ public static class ModuleBoundaryRules
             if (typeof(IIntegrationEvent).IsAssignableFrom(type) &&
                 !type.IsInterface &&
                 !type.IsAbstract &&
-                type.GetCustomAttribute<IntegrationEventNameAttribute>() is null)
+                !IntegrationEventNaming.HasDeclaredName(type))
             {
                 unnamed.Add(type);
             }
@@ -37,6 +37,63 @@ public static class ModuleBoundaryRules
 
         return unnamed.AsReadOnly();
     }
+
+    /// <summary>
+    /// Integration events whose declared name is not <c>module.event.vN</c> (lower-case kebab parts).
+    /// </summary>
+    public static IReadOnlyList<(Type Type, string Name)> FindMalformedIntegrationEventNames()
+        => GetNamedIntegrationEvents()
+            .Where(e => !System.Text.RegularExpressions.Regex.IsMatch(e.Name, @"^[a-z0-9-]+\.[a-z0-9-]+\.v[1-9][0-9]*$"))
+            .ToList()
+            .AsReadOnly();
+
+    /// <summary>
+    /// Integration events that share a declared name. Two types under one name would collide in the
+    /// registry and on the broker, so the later registration would silently shadow the earlier.
+    /// </summary>
+    public static IReadOnlyList<(string Name, IReadOnlyList<Type> Types)> FindDuplicateIntegrationEventNames()
+        => GetNamedIntegrationEvents()
+            .GroupBy(e => e.Name, StringComparer.Ordinal)
+            .Where(g => g.Count() > 1)
+            .Select(g => (g.Key, (IReadOnlyList<Type>)g.Select(e => e.Type).ToList()))
+            .ToList()
+            .AsReadOnly();
+
+    /// <summary>
+    /// Compares the declared integration event names with a committed contract file (one name per line,
+    /// <c>#</c> comments allowed) and returns every difference: a recorded name that no event declares any
+    /// more (a rename or removal would orphan stored outbox rows and subscribers) and a declared name that
+    /// is not recorded yet. Empty means the wire contract is unchanged.
+    /// </summary>
+    public static IReadOnlyList<string> FindIntegrationEventContractChanges(string contractFile)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(contractFile);
+        var recorded = File.Exists(contractFile)
+            ? File.ReadAllLines(contractFile).Select(l => l.Trim()).Where(l => l.Length > 0 && l[0] != '#').ToHashSet(StringComparer.Ordinal)
+            : [];
+        var current = GetNamedIntegrationEvents().Select(e => e.Name).ToHashSet(StringComparer.Ordinal);
+
+        return
+        [
+            .. recorded.Except(current).Order(StringComparer.Ordinal).Select(n => $"REMOVED or renamed: {n}"),
+            .. current.Except(recorded).Order(StringComparer.Ordinal).Select(n => $"NEW, not in the contract file: {n}"),
+        ];
+    }
+
+    /// <summary>Writes the declared integration event names to <paramref name="contractFile"/>, replacing it.</summary>
+    public static void WriteIntegrationEventContract(string contractFile)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(contractFile);
+        var lines = new List<string> { "# Integration event wire names. Removing or renaming one breaks stored messages; review before changing." };
+        lines.AddRange(GetNamedIntegrationEvents().Select(e => e.Name).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal));
+        File.WriteAllLines(contractFile, lines);
+    }
+
+    private static IEnumerable<(Type Type, string Name)> GetNamedIntegrationEvents()
+        => GetScannableTypes()
+            .Where(t => typeof(IIntegrationEvent).IsAssignableFrom(t) && !t.IsInterface && !t.IsAbstract)
+            .Where(IntegrationEventNaming.HasDeclaredName)
+            .Select(t => (Type: t, Name: IntegrationEventNaming.GetName(t)));
 
     /// <summary>
     /// Enforces that all concrete <see cref="IModule"/> implementations can be

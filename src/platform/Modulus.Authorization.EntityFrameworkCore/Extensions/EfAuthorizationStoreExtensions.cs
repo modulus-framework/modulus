@@ -5,6 +5,7 @@ using Modulus.Authorization.Features;
 using Modulus.Authorization.Governance;
 using Modulus.Authorization.Grants;
 using Modulus.Authorization.Organization;
+using Modulus.Authorization.Scopes;
 using Modulus.Core.Abstractions;
 using Modulus.Core.Null;
 
@@ -83,9 +84,23 @@ public static class EfAuthorizationStoreExtensions
             sp => sp.GetRequiredService<EfFeatureEntitlementStore>());
 
         services.TryAddSingleton<EfDelegationStore>();
+
+        // Delegation caps follow the delegator's live roles: a timer plus an immediate refresh on access changes.
+        services.AddOptions<DelegationRoleRefreshOptions>();
+        services.TryAddSingleton(sp => new DelegationRoleRefresher(
+            sp.GetRequiredService<IServiceScopeFactory>(),
+            sp.GetRequiredService<EfDelegationStore>(),
+            sp.GetService<TimeProvider>() ?? TimeProvider.System));
+        services.AddHostedService<DelegationRoleRefreshService>();
+        services.AddSingleton<IAccessChangeObserver, DelegationRoleRefreshObserver>();
         services.RemoveAll<IDelegationStore>();
         services.AddSingleton<IDelegationStore>(
             sp => sp.GetRequiredService<EfDelegationStore>());
+
+        services.TryAddSingleton<EfAssignmentStore>();
+        services.RemoveAll<IAssignmentStore>();
+        services.AddSingleton<IAssignmentStore>(
+            sp => sp.GetRequiredService<EfAssignmentStore>());
 
         services.TryAddSingleton<EfRecertificationCampaignStore>();
         services.RemoveAll<IRecertificationCampaignStore>();

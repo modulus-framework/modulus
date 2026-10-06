@@ -446,3 +446,12 @@ Modulus.AspNetCore.Configuration.InMemoryStoreCheckOptions.Mode.set -> void
 Modulus.AspNetCore.Configuration.InMemoryStoreCheckOptions.Allow.get -> string![]!
 Modulus.AspNetCore.Configuration.InMemoryStoreCheckOptions.Allow.set -> void
 const Modulus.AspNetCore.Configuration.InMemoryStoreCheckOptions.SectionName = "Security:InMemoryStores" -> string!
+const Modulus.AspNetCore.Security.TrustedProxiesExtensions.SectionName = "ForwardedHeaders" -> string!
+Modulus.AspNetCore.Security.TrustedProxiesExtensions
+static Modulus.AspNetCore.Security.TrustedProxiesExtensions.ApplyModulusTrustedProxies(this Microsoft.AspNetCore.Builder.ForwardedHeadersOptions! options, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> Microsoft.AspNetCore.Builder.ForwardedHeadersOptions!
+Modulus.AspNetCore.RateLimiting.RateLimitingOptions.SensitivePaths.get -> string![]!
+Modulus.AspNetCore.RateLimiting.RateLimitingOptions.SensitivePaths.set -> void
+Modulus.AspNetCore.RateLimiting.RateLimitingOptions.SensitivePermitLimit.get -> int
+Modulus.AspNetCore.RateLimiting.RateLimitingOptions.SensitivePermitLimit.set -> void
+Modulus.AspNetCore.RateLimiting.RateLimitingOptions.SensitiveWindowSeconds.get -> int
+Modulus.AspNetCore.RateLimiting.RateLimitingOptions.SensitiveWindowSeconds.set -> void

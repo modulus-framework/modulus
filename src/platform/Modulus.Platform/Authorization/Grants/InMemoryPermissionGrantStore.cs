@@ -42,6 +42,24 @@ public sealed class InMemoryPermissionGrantStore : IPermissionGrantStore
     public InMemoryPermissionGrantStore RevokeFromUser(Guid userId, string permission)
         => Remove(GrantHolderType.User, userId.ToString(), permission);
 
+    /// <summary>
+    /// Adds a grant that carries a scope and/or a validity window (a scoped, temporary or restricting grant). Unlike the
+    /// plain methods it does not replace an existing grant of the same permission: one holder can hold the permission over
+    /// several scopes at once (Own and Assigned), each its own entry.
+    /// </summary>
+    public InMemoryPermissionGrantStore Add(PermissionGrant grant)
+    {
+        ArgumentNullException.ThrowIfNull(grant);
+        ArgumentException.ThrowIfNullOrWhiteSpace(grant.Holder);
+        ArgumentException.ThrowIfNullOrWhiteSpace(grant.Permission);
+
+        var bucket = _grants.GetOrAdd(
+            Key(grant.HolderType, grant.Holder),
+            _ => new ConcurrentDictionary<string, PermissionGrant>(StringComparer.OrdinalIgnoreCase));
+        bucket[$"{grant.Permission}#{grant.Type}#{grant.Scope?.Format()}"] = grant;
+        return this;
+    }
+
     public IReadOnlyCollection<PermissionGrant> GetGrants(PrincipalGrantQuery principal)
     {
         ArgumentNullException.ThrowIfNull(principal);

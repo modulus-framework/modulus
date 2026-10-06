@@ -14,6 +14,7 @@ public sealed class ResourceRequest
 {
     private readonly Func<string, bool> _hasPermission;
     private readonly Func<Guid?, bool> _inScope;
+    private readonly Func<string, bool>? _inScopeOf;
 
     /// <summary>Creates a request context for evaluating one action on one resource.</summary>
     /// <param name="callerId">The calling principal's user id, or <see langword="null"/> if anonymous.</param>
@@ -21,13 +22,16 @@ public sealed class ResourceRequest
     /// <param name="inScope">Probe for whether an org unit is within the caller's data scope.</param>
     /// <param name="resource">The target resource's authorization attributes.</param>
     /// <param name="action">The action being attempted (e.g. <c>edit</c>, <c>approve</c>, <c>submit</c>).</param>
+    /// <param name="inScopeOf">Probe for whether the record is within the caller's granted scope for a permission.</param>
     public ResourceRequest(
         Guid? callerId,
         Func<string, bool> hasPermission,
         Func<Guid?, bool> inScope,
         ResourceAttributes resource,
-        string action)
+        string action,
+        Func<string, bool>? inScopeOf = null)
     {
+        _inScopeOf = inScopeOf;
         CallerId = callerId;
         _hasPermission = hasPermission ?? throw new ArgumentNullException(nameof(hasPermission));
         _inScope = inScope ?? throw new ArgumentNullException(nameof(inScope));
@@ -62,6 +66,14 @@ public sealed class ResourceRequest
     public bool InState(params string[] states)
         => Resource.State is { } s
            && Array.Exists(states, x => string.Equals(x, s, StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>
+    /// True when the record is within the scope the caller was granted for
+    /// <paramref name="permission"/> (Own/Assigned/OrgUnit/Tenant). Fail-closed: with no
+    /// scope enforcer wired this is false.
+    /// </summary>
+    public bool InScopeOf(string permission)
+        => _inScopeOf is { } probe && probe(permission);
 
     /// <summary>
     /// True when the resource's org unit falls within the caller's data scope — the

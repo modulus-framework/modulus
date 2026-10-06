@@ -33,6 +33,38 @@ public sealed class WebhooksWiringTests
     }
 
     [Fact]
+    public void Parses_events_whose_name_is_derived_from_types()
+    {
+        const string source =
+            "using Modulus.Events.Abstractions;\n\nnamespace Shop.Modules.Catalog.Application.IntegrationEvents;\n\n" +
+            "[IntegrationEvent<CatalogArea>]\npublic sealed record ProductCreatedIntegrationEvent(Guid Id) : IntegrationEventBase;\n\n" +
+            "[IntegrationEvent<CatalogArea>(Version = 2)]\npublic sealed record PriceChanged(Guid Id, decimal Price) : IntegrationEventBase;\n";
+
+        WebhooksWiring.ParseIntegrationEvents(source).Select(e => (e.Name, e.TypeName, e.IdOnly))
+            .Should().Equal(("catalog.product-created.v1", "ProductCreatedIntegrationEvent", true),
+                ("catalog.price-changed.v2", "PriceChanged", false));
+    }
+
+    [Theory]
+    [InlineData("SubscriptionPurchased", "subscription-purchased")]
+    [InlineData("HTTPServerError", "http-server-error")]
+    [InlineData("Order2Placed", "order2-placed")]
+    [InlineData("A", "a")]
+    public void The_cli_kebab_matches_the_frameworks(string input, string expected)
+    {
+        IntegrationEventNames.Kebab(input).Should().Be(expected);
+        Modulus.Events.Abstractions.IntegrationEventNaming.Kebab(input).Should().Be(expected);
+    }
+
+    [Theory]
+    [InlineData("PaymentsModule", "ProductCreatedIntegrationEvent", 1)]
+    [InlineData("CatalogArea", "ProductCreatedEvent", 2)]
+    [InlineData("Billing", "Event", 1)]
+    public void The_cli_derivation_matches_the_frameworks(string module, string eventType, int version)
+        => IntegrationEventNames.Derive(module, eventType, version)
+            .Should().Be(Modulus.Events.Abstractions.IntegrationEventNaming.Derive(module, eventType, version));
+
+    [Fact]
     public void Program_registers_the_module_events_grant_and_map_once()
     {
         var once = WebhooksWiring.EnsureApiProgram(Program, "Shop.Modules.Webhooks", [Product], "Admin");

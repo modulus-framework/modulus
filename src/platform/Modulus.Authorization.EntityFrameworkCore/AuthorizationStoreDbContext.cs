@@ -29,6 +29,8 @@ public class AuthorizationStoreDbContext(
     internal DbSet<TenantPlanRow> TenantPlans => Set<TenantPlanRow>();
     internal DbSet<FeatureOverrideRow> FeatureOverrides => Set<FeatureOverrideRow>();
     internal DbSet<DelegationRow> Delegations => Set<DelegationRow>();
+    internal DbSet<ScopedGrantRow> ScopedGrants => Set<ScopedGrantRow>();
+    internal DbSet<AssignmentRow> Assignments => Set<AssignmentRow>();
 
     /// <summary>
     /// Durable audit-event outbox (auth blueprint §5.14/§16), written by
@@ -135,6 +137,22 @@ public class AuthorizationStoreDbContext(
         delegation.HasKey(d => d.Id);
         delegation.HasIndex(d => new { d.TenantId, d.ToUserId });
 
+        // Grants that carry a scope, a validity window or a restriction live beside the plain grants: the plain table's key
+        // (tenant, holder, permission) allows one row per permission, and widening it would break every existing database.
+        var scoped = modelBuilder.Entity<ScopedGrantRow>();
+        scoped.ToTable("ModulusScopedGrants");
+        scoped.HasKey(g => g.Id);
+        scoped.Property(g => g.Holder).HasMaxLength(256);
+        scoped.Property(g => g.Permission).HasMaxLength(256);
+        scoped.Property(g => g.Scope).HasMaxLength(300);
+        scoped.Property(g => g.Reason).HasMaxLength(1000);
+        scoped.HasIndex(g => new { g.TenantId, g.HolderType, g.Holder, g.Permission, g.Type, g.Scope }).IsUnique();
+
+        var assignment = modelBuilder.Entity<AssignmentRow>();
+        assignment.ToTable("ModulusAssignments");
+        assignment.HasKey(a => new { a.TenantId, a.UserId, a.AssignmentType, a.TargetId });
+        assignment.Property(a => a.AssignmentType).HasMaxLength(128);
+
         var auditOutbox = modelBuilder.Entity<OutboxMessage>();
         auditOutbox.ToTable("ModulusAuthorizationAuditOutbox");
         auditOutbox.HasKey(m => m.Id);
@@ -185,7 +203,43 @@ public class AuthorizationStoreDbContext(
         mb.Entity<DelegationRow>().HasQueryFilter(e =>
             currentTenant.IsHost
             || (currentTenant.TenantId != null && e.TenantId == currentTenant.TenantId));
+        mb.Entity<ScopedGrantRow>().HasQueryFilter(e =>
+            currentTenant.IsHost
+            || (currentTenant.TenantId != null && e.TenantId == currentTenant.TenantId));
+        mb.Entity<AssignmentRow>().HasQueryFilter(e =>
+            currentTenant.IsHost
+            || (currentTenant.TenantId != null && e.TenantId == currentTenant.TenantId));
     }
+}
+
+/// <summary>Row backing a scoped, temporary or restricting <see cref="PermissionGrant"/>.</summary>
+internal sealed class ScopedGrantRow : IHasTenantId
+{
+    public Guid Id { get; set; }
+    public Guid TenantId { get; set; }
+    public GrantHolderType HolderType { get; set; }
+    public string Holder { get; set; } = null!;
+    public string Permission { get; set; } = null!;
+    public PermissionGrantType Type { get; set; }
+
+    /// <summary><see cref="Modulus.Authorization.Scopes.PermissionScope.Format"/>; never null (tenant-wide is <c>tenant</c>).</summary>
+    public string Scope { get; set; } = "tenant";
+    public DateTimeOffset? ValidFrom { get; set; }
+    public DateTimeOffset? ValidUntil { get; set; }
+    public string? Reason { get; set; }
+    public Guid? CreatedBy { get; set; }
+    public DateTimeOffset CreatedAt { get; set; }
+}
+
+/// <summary>Row backing an <see cref="Modulus.Authorization.Scopes.Assignment"/>.</summary>
+internal sealed class AssignmentRow : IHasTenantId
+{
+    public Guid TenantId { get; set; }
+    public Guid UserId { get; set; }
+    public string AssignmentType { get; set; } = null!;
+    public Guid TargetId { get; set; }
+    public DateTimeOffset? ValidFrom { get; set; }
+    public DateTimeOffset? ValidUntil { get; set; }
 }
 
 /// <summary>Row backing a <see cref="PermissionGrant"/>.</summary>

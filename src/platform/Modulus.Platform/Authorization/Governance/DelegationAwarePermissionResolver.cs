@@ -33,7 +33,7 @@ public sealed class DelegationAwarePermissionResolver(
         if (delegated.Count == 0)
             return effective;
 
-        return Union(effective, delegated);
+        return Union(effective, delegated, directAuthority.ResolveDenied(principal));
     }
 
     /// <inheritdoc />
@@ -53,17 +53,20 @@ public sealed class DelegationAwarePermissionResolver(
         if (delegated.Count == 0)
             return effective;
 
-        return Union(effective, delegated);
+        return Union(effective, delegated, directAuthority.ResolveDenied(grants));
     }
 
+    // Deny wins over every source: a permission explicitly denied to the delegate is not restored by a delegation.
     private static IReadOnlySet<string> Union(
         IReadOnlySet<string> effective,
-        IReadOnlyCollection<DelegatedPermission> delegated)
+        IReadOnlyCollection<DelegatedPermission> delegated,
+        IReadOnlySet<string> denied)
     {
         var combined = new HashSet<string>(effective, StringComparer.OrdinalIgnoreCase);
         foreach (var permission in delegated)
             combined.Add(permission.Permission);
 
+        combined.ExceptWith(denied);
         return combined;
     }
 }

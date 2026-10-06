@@ -43,4 +43,4 @@ public sealed record AuthorizationAdministrativeChangeEvent(
     string? ActorUserId,
     string TargetDescription,
     IReadOnlyDictionary<string, string> Details)
-    : IntegrationEventBase("authorization.administrative-change.v1");
+    : IntegrationEventBase;

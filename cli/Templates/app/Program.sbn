@@ -92,15 +92,16 @@ builder.Services.AddModulusRedaction(builder.Configuration);
 
 // ── Forwarded headers ──────────────────────────────────────────
 // Required when behind a reverse proxy / load balancer so the app sees real
-// client IPs and the correct scheme (https). Trusting all proxies is safe in
-// containerised deployments where the network is controlled; tighten the
-// KnownNetworks/KnownProxies lists if the app is reachable from untrusted
-// networks directly.
+// client IPs and the correct scheme (https). Only the proxies you name are trusted:
+// set ForwardedHeaders:KnownNetworks (e.g. "10.0.0.0/8") or KnownProxies to your load
+// balancer. Trusting every sender would let any caller choose the address the
+// per-IP rate limiter and the audit trail see.
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
     options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
-    options.KnownIPNetworks.Clear();
-    options.KnownProxies.Clear();
+    // Trust only the proxies named in ForwardedHeaders:KnownProxies / KnownNetworks (appsettings or the environment).
+    // With none configured only loopback is trusted, so a client cannot choose the address the rate limiter and audit see.
+    options.ApplyModulusTrustedProxies(builder.Configuration);
 });
 
 {{ if enable_personal_data_protection }}// Transparent at-rest encryption for [ProtectedPersonalData] string properties.

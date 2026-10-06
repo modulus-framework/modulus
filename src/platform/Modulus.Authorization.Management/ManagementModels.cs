@@ -5,10 +5,8 @@ namespace Modulus.Authorization.Management;
 /// <param name="Holder">Role name, or the user id for user grants.</param>
 /// <param name="Permissions">Permission names to grant or deny.</param>
 /// <param name="Type"><c>Allow</c> (default when omitted) or <c>Deny</c>.</param>
-/// <param name="HolderRoles">For user holders: the user's current role memberships,
-/// used by the pre-grant SoD simulation — the grant store cannot know Identity
-/// role membership, so without this the simulation sees direct grants only and
-/// role-delivered halves of toxic combinations slip through. Omit when unknown.</param>
+/// <param name="HolderRoles">For user holders: the user's role memberships for the pre-grant SoD simulation. Used only when no
+/// <c>IUserRoleDirectory</c> is registered; otherwise the identity store answers and this is ignored.</param>
 public sealed record GrantWriteRequest(
     string HolderType, string Holder, string[] Permissions, string? Type, string[]? HolderRoles = null);
 
@@ -50,7 +48,8 @@ public sealed record OverrideWriteRequest(bool Enabled);
 
 /// <summary>Creates a delegation of authority.</summary>
 /// <param name="FromUserId">The delegator whose authority is lent.</param>
-/// <param name="FromRoles">The delegator's roles, snapshotted for capping.</param>
+/// <param name="FromRoles">Ignored. The server reads the delegator's roles from the identity store; a caller-supplied list
+/// would let anyone invent the authority the delegation is capped by. Kept so existing clients still bind.</param>
 /// <param name="ToUserId">The delegate.</param>
 /// <param name="Permissions">The permissions delegated.</param>
 /// <param name="NotBefore">Inclusive window start.</param>
@@ -62,3 +61,30 @@ public sealed record DelegationWriteRequest(
     string[] Permissions,
     DateTimeOffset NotBefore,
     DateTimeOffset NotAfter);
+
+/// <summary>Creates a grant that carries a scope, a validity window or a restriction.</summary>
+/// <param name="HolderType"><c>Role</c> or <c>User</c>.</param>
+/// <param name="Holder">Role name, or the user id for user grants.</param>
+/// <param name="Permission">One registered permission (no wildcards).</param>
+/// <param name="Type"><c>Allow</c> (default), <c>Restrict</c> (narrows what the holder's other grants cover) or <c>Deny</c> (a temporary block when it has a window).</param>
+/// <param name="Scope"><c>tenant</c> (default), <c>own</c>, <c>org</c>, <c>org:{unitId}</c> or <c>assigned:{type}</c>. A restriction needs a narrower scope; a deny takes none.</param>
+/// <param name="ValidFrom">The grant applies from this instant.</param>
+/// <param name="ValidUntil">The grant stops applying at this instant, with no further action. Required to be accompanied by a reason.</param>
+/// <param name="Reason">Why the grant was made; required for a temporary grant.</param>
+public sealed record ScopedGrantWriteRequest(
+    string HolderType, string Holder, string Permission, string? Type, string? Scope,
+    DateTimeOffset? ValidFrom, DateTimeOffset? ValidUntil, string? Reason);
+
+/// <summary>A scoped grant as returned by the management API.</summary>
+public sealed record ScopedGrantResponse(
+    Guid Id, string HolderType, string Holder, string Permission, string Type, string Scope,
+    DateTimeOffset? ValidFrom, DateTimeOffset? ValidUntil, string? Reason, Guid? CreatedBy, DateTimeOffset CreatedAt);
+
+/// <summary>Links a user to a business object, with an optional effective window.</summary>
+/// <param name="UserId">The assigned user.</param>
+/// <param name="AssignmentType">The kind of object (<c>customer</c>, <c>warehouse</c>, ...), as named by the module that scopes on it.</param>
+/// <param name="TargetId">The object.</param>
+/// <param name="ValidFrom">Effective from this instant.</param>
+/// <param name="ValidUntil">Effective until this instant.</param>
+public sealed record AssignmentWriteRequest(
+    Guid UserId, string AssignmentType, Guid TargetId, DateTimeOffset? ValidFrom, DateTimeOffset? ValidUntil);

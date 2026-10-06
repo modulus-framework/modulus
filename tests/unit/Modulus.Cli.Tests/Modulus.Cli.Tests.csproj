@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../../../cli/Modulus.Cli.csproj" />
+    <ProjectReference Include="../../../src/messaging/Modulus.Events/Modulus.Events.csproj" />
   </ItemGroup>
 
 </Project>

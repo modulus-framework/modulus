@@ -145,7 +145,7 @@ partner     ──bearer──▶ Bff.Partner ─┘
 | Tokens upstream | Server-side store, never in the browser | Caller's bearer forwarded after client-id and scope checks | Forwarded |
 | CSRF | `X-CSRF: 1` required, else `401` | none | none |
 | Session endpoints | `GET /bff/login` (OIDC) or `POST /bff/login` (password), `/bff/user`, `POST /bff/logout` | `/bff/me` | `/bff/me` |
-| Edge rules | — | `X-App-Version`/`X-App-Platform` gate (`426`), weak ETag + `304`, rate limit per `X-Device-Id` | `Idempotency-Key` required on writes (`400`), rate limit |
+| Edge rules | — | `X-App-Version`/`X-App-Platform` gate (`426`), weak ETag + `304`, rate limit per caller (user, else client id; never a client-chosen header) | `Idempotency-Key` required on writes (`400`), rate limit |
 
 ### Components (`src/platform/Modulus.Bff`)
 
