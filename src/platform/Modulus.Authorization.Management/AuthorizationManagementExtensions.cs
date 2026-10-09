@@ -363,7 +363,7 @@ public static class AuthorizationManagementExtensions
             ScopedGrantWriteRequest request, ClaimsPrincipal caller,
             EfPermissionGrantStore store, IPermissionRegistry registry, IAuthorizationService authorization,
             IAuthorizationAuditWriter auditWriter, IEnumerable<IAccessChangeObserver> observers,
-            ICurrentUser currentUser, ISodPolicy sodPolicy, IOrgHierarchy hierarchy,
+            ICurrentUser currentUser, ISodPolicy sodPolicy, IOrgHierarchy hierarchy, IScopeMapRegistry scopeMaps,
             [FromServices] IUserRoleDirectory? roleDirectory, IEffectiveAccessService? effectiveAccessService,
             IOptions<AuthorizationManagementOptions> limits, TimeProvider clock, CancellationToken ct) =>
         {
@@ -384,6 +384,8 @@ public static class AuthorizationManagementExtensions
                 {
                     ["scope"] = [$"Unknown org unit {unit}."],
                 });
+            if (scope.Kind is ScopeKind.Assigned && UnknownAssignmentType(scopeMaps, scope.Value) is { } unknownType)
+                return unknownType;
 
             if (request.Permission is null || request.Permission.EndsWith(":*", StringComparison.Ordinal))
                 return Results.ValidationProblem(new Dictionary<string, string[]>
@@ -489,17 +491,22 @@ public static class AuthorizationManagementExtensions
             return Results.NoContent();
         });
 
+        // The vocabulary of "Assigned" scopes: the access keys the scope maps declare.
+        group.MapGet("/assignment-types", (IScopeMapRegistry scopeMaps) => Results.Ok(scopeMaps.AssignmentTypes.Order(StringComparer.OrdinalIgnoreCase)));
+
         group.MapGet("/assignments/{userId:guid}", async (Guid userId, EfAssignmentStore store, CancellationToken ct) =>
             Results.Ok(await store.ListAsync(userId, ct)));
 
         group.MapPost("/assignments", async (
-            AssignmentWriteRequest request, EfAssignmentStore store,
+            AssignmentWriteRequest request, EfAssignmentStore store, IScopeMapRegistry scopeMaps,
             [FromServices] IUserRoleDirectory? roleDirectory,
             IAuthorizationAuditWriter auditWriter, IEnumerable<IAccessChangeObserver> observers,
             ICurrentUser currentUser, CancellationToken ct) =>
         {
             if (string.IsNullOrWhiteSpace(request.AssignmentType))
                 return Results.ValidationProblem(new Dictionary<string, string[]> { ["assignmentType"] = ["An assignment type is required."] });
+            if (UnknownAssignmentType(scopeMaps, request.AssignmentType) is { } unknownType)
+                return unknownType;
             if (request is { ValidFrom: { } from, ValidUntil: { } until } && until <= from)
                 return Results.ValidationProblem(new Dictionary<string, string[]> { ["validUntil"] = ["An assignment must end after it begins."] });
             if (roleDirectory is not null && await roleDirectory.GetRolesAsync(request.UserId, ct) is null)
@@ -620,6 +627,19 @@ public static class AuthorizationManagementExtensions
                     ["maxAmount"] = existing.Authority.MaxAmount.ToString(System.Globalization.CultureInfo.InvariantCulture),
                 }, ct);
             return Results.NoContent();
+        });
+    }
+
+    // A typo would sit in the table matching nothing: when scope maps declare assignment types, only those are accepted.
+    private static IResult? UnknownAssignmentType(IScopeMapRegistry scopeMaps, string? assignmentType)
+    {
+        var declared = scopeMaps.AssignmentTypes;
+        if (declared.Count == 0 || string.IsNullOrWhiteSpace(assignmentType) || declared.Contains(assignmentType.Trim()))
+            return null;
+
+        return Results.ValidationProblem(new Dictionary<string, string[]>
+        {
+            ["assignmentType"] = [$"Not a declared assignment type: {assignmentType.Trim()}. Declared: {string.Join(", ", declared.Order(StringComparer.OrdinalIgnoreCase))}."],
         });
     }
 

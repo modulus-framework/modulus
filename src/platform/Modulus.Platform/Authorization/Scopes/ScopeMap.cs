@@ -12,6 +12,9 @@ public abstract class ScopeMap
 
     /// <summary>The keys of one record.</summary>
     public abstract ScopeFacts FactsOf(object record);
+
+    /// <summary>The assignment types this map declares as access keys.</summary>
+    public abstract IReadOnlyCollection<string> AssignmentTypes { get; }
 }
 
 /// <summary>
@@ -49,6 +52,9 @@ public sealed class ScopeMap<T> : ScopeMap where T : class
 
     /// <inheritdoc />
     public override Type EntityType => typeof(T);
+
+    /// <inheritdoc />
+    public override IReadOnlyCollection<string> AssignmentTypes => [.. AccessKeys.Keys];
 
     /// <inheritdoc />
     public override ScopeFacts FactsOf(object record)
@@ -127,6 +133,12 @@ public interface IScopeMapRegistry
 {
     /// <summary>The map declared for <paramref name="recordType"/>, else the one its marker interfaces imply, else null.</summary>
     ScopeMap? Find(Type recordType);
+
+    /// <summary>
+    /// The assignment types (<c>customer</c>, <c>warehouse</c>, <c>buyer</c>, ...) that declared maps use as access keys: the
+    /// vocabulary of "Assigned" scopes. Empty when no map declares one, in which case any name is accepted.
+    /// </summary>
+    IReadOnlySet<string> AssignmentTypes => new HashSet<string>();
 }
 
 /// <summary>The default <see cref="IScopeMapRegistry"/>: declared maps first, then the ones marker interfaces imply.</summary>
@@ -134,6 +146,11 @@ public sealed class ScopeMapRegistry(IEnumerable<ScopeMap> declared) : IScopeMap
 {
     private readonly Dictionary<Type, ScopeMap> _declared = declared.ToDictionary(m => m.EntityType);
     private readonly System.Collections.Concurrent.ConcurrentDictionary<Type, ScopeMap?> _implied = new();
+    private readonly Lazy<IReadOnlySet<string>> _assignmentTypes = new(() =>
+        declared.SelectMany(m => m.AssignmentTypes).ToHashSet(StringComparer.OrdinalIgnoreCase));
+
+    /// <inheritdoc />
+    public IReadOnlySet<string> AssignmentTypes => _assignmentTypes.Value;
 
     /// <inheritdoc />
     public ScopeMap? Find(Type recordType)

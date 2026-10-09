@@ -50,6 +50,11 @@ public sealed class AuthorizationManagementApiTests : IAsyncLifetime
             => ValueTask.FromResult<IReadOnlyCollection<string>?>(_users.TryGetValue(userId, out var roles) ? roles : null);
     }
 
+    private sealed class SalesOrder
+    {
+        public Guid CustomerId { get; init; }
+    }
+
     private sealed class FakeTenant : ICurrentTenant
     {
         public Guid? TenantId { get; set; }
@@ -83,6 +88,7 @@ public sealed class AuthorizationManagementApiTests : IAsyncLifetime
         });
         builder.Services.AddSegregationOfDuties(new SodConstraint(
             "maker-checker", ["orders:create", "orders:approve"], "Whoever creates an order must not approve it."));
+        builder.Services.AddScopeMap<SalesOrder>(m => m.AssignedKey("customer", o => o.CustomerId));
         builder.Services.AddSingleton(_directory);
         builder.Services.AddSingleton<IUserRoleDirectory>(_directory);
         builder.Services.AddSingleton<ICurrentTenant>(_tenant);
@@ -833,5 +839,21 @@ public sealed class AuthorizationManagementApiTests : IAsyncLifetime
         (await admin.PostAsJsonAsync("/authorization/approval-authorities",
             new { holderType = "User", holder = me.ToString(), permission = "orders:approve", maxAmount = 1m }))
             .StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task Only_assignment_types_a_scope_map_declares_are_accepted()
+    {
+        var user = _directory.AddUser();
+        (await _client.GetFromJsonAsync<string[]>("/authorization/assignment-types")).Should().Equal("customer");
+
+        (await _client.PostAsJsonAsync("/authorization/assignments", new { userId = user, assignmentType = "custmer", targetId = Guid.NewGuid() }))
+            .StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await _client.PostAsJsonAsync("/authorization/scoped-grants",
+            new { holderType = "Role", holder = "Sales", permission = "orders:read", scope = "assigned:custmer" }))
+            .StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await _client.PostAsJsonAsync("/authorization/scoped-grants",
+            new { holderType = "Role", holder = "Sales", permission = "orders:read", scope = "assigned:Customer" }))
+            .StatusCode.Should().Be(HttpStatusCode.Created);
     }
 }

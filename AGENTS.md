@@ -1372,6 +1372,9 @@ roots, Security tab in `Modulus.UI.AuditLogging`).
   use the delegator's limits, never more), `NotOwnedByCaller()` (requester cannot approve) and `NotActedOnByCaller()` (one person, one step). The admin API
   refuses a limit above the caller's own (unless `authorization:grant-any`) and a limit set for oneself. Reason codes `NO_APPROVAL_AUTHORITY` /
   `APPROVAL_LIMIT_EXCEEDED` come from `IApprovalAuthorityEvaluator.Check`. Semantics of every layer: [`docs/security/policy-combination.md`](docs/security/policy-combination.md).
+- **Assignment-type vocabulary.** The assignment types of "Assigned" scopes are the access keys scope maps declare (`AddScopeMap<T>(m => m.AssignedKey("customer", ...))`);
+  `IScopeMapRegistry.AssignmentTypes` lists them and `GET assignment-types` serves them. When any map declares one, the admin API refuses `assignments` and
+  `assigned:{type}` grants naming another type (typo guard); with none declared any name is accepted.
 - **Reason codes.** `AccessDecision.Code` uses `AccessReasonCodes` (BRS Appendix B); no policy for a type = `METADATA_MISSING`.
 - **Sensitivity.** `PermissionSensitivity` (Normal/Sensitive/Critical) on `PermissionDefinition`; `registry.Add(..., sensitivity)`.
   A wildcard grant never confers a Critical permission (a wildcard deny still removes it); Critical is not delegable.

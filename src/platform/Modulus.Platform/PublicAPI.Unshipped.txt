@@ -1504,3 +1504,7 @@ static Modulus.Authorization.Approval.ApprovalCheck.operator ==(Modulus.Authoriz
 static Modulus.Authorization.Approval.ApprovalContext.From(object! resource) -> Modulus.Authorization.Approval.ApprovalContext?
 static Modulus.Authorization.Approval.ApprovalContext.operator !=(Modulus.Authorization.Approval.ApprovalContext? left, Modulus.Authorization.Approval.ApprovalContext? right) -> bool
 static Modulus.Authorization.Approval.ApprovalContext.operator ==(Modulus.Authorization.Approval.ApprovalContext? left, Modulus.Authorization.Approval.ApprovalContext? right) -> bool
+Modulus.Authorization.Scopes.IScopeMapRegistry.AssignmentTypes.get -> System.Collections.Generic.IReadOnlySet<string!>!
+Modulus.Authorization.Scopes.ScopeMapRegistry.AssignmentTypes.get -> System.Collections.Generic.IReadOnlySet<string!>!
+abstract Modulus.Authorization.Scopes.ScopeMap.AssignmentTypes.get -> System.Collections.Generic.IReadOnlyCollection<string!>!
+override Modulus.Authorization.Scopes.ScopeMap<T>.AssignmentTypes.get -> System.Collections.Generic.IReadOnlyCollection<string!>!
