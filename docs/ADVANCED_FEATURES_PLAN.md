@@ -938,8 +938,8 @@ Everything still open, by owner. 6a–6d are built (2026-10-04). The items below
 - [x] Access-change hooks for Identity: `ModulusUserManager<TUser>` (registered by `AddModulusIdentity`) notifies on role
   add/remove, lock-out, disable and delete (`UserManagerAccessChangeTests`).
 - [ ] Access-change hook for grant-store writes made outside the admin API.
-- [ ] Durable revocation queue: move pending signals to the outbox so a shutdown cannot lose them.
-- [ ] Shared envelope replay cache (distributed cache) for hosts with several replicas.
+- [x] Durable revocation queue: `Ai:Connector:Platform:RevocationSpoolFile` journals pending signals and resends them after a restart (a file, not the outbox; one per process).
+- [x] Shared envelope replay cache: with an `IDistributedLock` registered (Redis) the first node to see an envelope id takes a lease that lasts until it expires.
 - [ ] Batch record lookup for `/extract` and `/changes`, which today cost N+1 queries per page.
 - [ ] `Search` over extension fields (`ExtraProperties`) and an `ISearchContributor` for cross-entity search.
 - [ ] Per-user masking of `[PersonalInformation]` fields (today: declared `Restricted`; add `[Classified]` to mask).

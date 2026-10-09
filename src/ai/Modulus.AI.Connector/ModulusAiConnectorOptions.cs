@@ -173,6 +173,13 @@ public sealed class AiPlatformOptions
 
     /// <summary>The longest wait between two attempts to deliver one revocation signal.</summary>
     public TimeSpan RevocationMaxBackoff { get; set; } = TimeSpan.FromMinutes(5);
+
+    /// <summary>
+    /// A file that journals the revocation signals not yet acknowledged, so a restart or crash does not lose them (they are
+    /// sent again on the next start). One file per process; null keeps the signals in memory only, where the platform's
+    /// five-minute scope expiry bounds the effect of a lost one.
+    /// </summary>
+    public string? RevocationSpoolFile { get; set; }
 }
 
 /// <summary>One platform app instance served by this app.</summary>

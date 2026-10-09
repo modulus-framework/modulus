@@ -13,11 +13,36 @@ using Modulus.Core.Abstractions;
 /// replaces the older one (the platform drops every cached scope of the key either way).
 /// </summary>
 /// <remarks>
-/// In memory: signals still pending when the process stops are lost. The platform also expires every cached scope
-/// after at most five minutes (FR-17), which bounds the effect of a lost signal.
+/// In memory unless <see cref="AiPlatformOptions.RevocationSpoolFile"/> is set: then every change to the pending set is
+/// written to that file (replaced atomically) and read back at start, so signals pending when the process stops are sent
+/// after the restart. Without it they are lost; the platform also expires every cached scope after at most five minutes
+/// (FR-17), which bounds the effect.
 /// </remarks>
 internal sealed class AiRevocationQueue
 {
+    private readonly string? _spoolFile;
+    private readonly object _spoolGate = new();
+
+    public AiRevocationQueue(IOptions<ModulusAiConnectorOptions>? options = null)
+    {
+        _spoolFile = options?.Value.Platform.RevocationSpoolFile;
+        if (string.IsNullOrWhiteSpace(_spoolFile) || !File.Exists(_spoolFile))
+            return;
+
+        try
+        {
+            var saved = System.Text.Json.JsonSerializer.Deserialize<RevocationSignal[]>(File.ReadAllText(_spoolFile), ConnectorJson.Options);
+            foreach (var signal in saved ?? [])
+                _pending[signal.RevocationKey] = signal;
+            if (!_pending.IsEmpty)
+                _wake.Writer.TryWrite(true);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Text.Json.JsonException)
+        {
+            // An unreadable spool is treated as empty; the platform's scope expiry covers what it held.
+        }
+    }
+
     private readonly ConcurrentDictionary<string, RevocationSignal> _pending = new(StringComparer.Ordinal);
     private readonly Channel<bool> _wake = Channel.CreateBounded<bool>(
         new BoundedChannelOptions(1) { FullMode = BoundedChannelFullMode.DropWrite });
@@ -28,6 +53,7 @@ internal sealed class AiRevocationQueue
     public void Enqueue(RevocationSignal signal)
     {
         _pending[signal.RevocationKey] = signal;
+        Persist();
         _wake.Writer.TryWrite(true);
     }
 
@@ -40,7 +66,36 @@ internal sealed class AiRevocationQueue
 
     /// <summary>Removes <paramref name="signal"/> unless a newer one replaced it meanwhile.</summary>
     public void Acknowledge(RevocationSignal signal)
-        => _pending.TryRemove(new KeyValuePair<string, RevocationSignal>(signal.RevocationKey, signal));
+    {
+        if (_pending.TryRemove(new KeyValuePair<string, RevocationSignal>(signal.RevocationKey, signal)))
+            Persist();
+    }
+
+    private void Persist()
+    {
+        if (string.IsNullOrWhiteSpace(_spoolFile))
+            return;
+
+        lock (_spoolGate)
+        {
+            try
+            {
+                if (_pending.IsEmpty)
+                {
+                    File.Delete(_spoolFile);
+                    return;
+                }
+
+                var temp = _spoolFile + ".tmp";
+                File.WriteAllText(temp, System.Text.Json.JsonSerializer.Serialize(_pending.Values.ToArray(), ConnectorJson.Options));
+                File.Move(temp, _spoolFile, overwrite: true);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                // The journal is best effort: the in-memory queue still delivers while the process lives.
+            }
+        }
+    }
 
     public ValueTask<bool> WaitAsync(CancellationToken ct) => _wake.Reader.ReadAsync(ct);
 }

@@ -1804,6 +1804,7 @@ platform package; the platform is read-only, so only queries are exposed. The pl
 - Access changes go through `IAccessChangeObserver` (Core). `TenantManager`, the authorization admin API and Identity's `ModulusUserManager` (roles, lock-out, disable, delete) notify it;
   call `NotifyAccessChangedAsync` from any new code that changes grants, roles, memberships or accounts, or the
   platform keeps a stale scope for up to 5 minutes.
+- `Platform:RevocationSpoolFile` journals unacknowledged revocation signals across restarts; with an `IDistributedLock` registered (Redis) envelope replays are refused cluster-wide.
 - API keys are stored as hashes (`AiApiKeys.Hash`); `Platform:ApiKey` is a secret (user secrets / environment).
 - **Index (6b).**
   - Endpoints: `GET /extract` and `GET /changes`. The platform calls them with its **API key only**, plus

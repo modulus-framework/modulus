@@ -1,3 +1,4 @@
+using Modulus.Core.Abstractions;
 namespace Modulus.AI.Connector;
 
 using System.Collections.Concurrent;
@@ -142,14 +143,32 @@ internal sealed class AiPlatformKeyProvider(
 }
 
 /// <summary>Envelope ids already accepted, kept until they expire, so a captured envelope cannot be replayed.</summary>
-/// <remarks>Per process: with several replicas a replay could reach another node within the envelope's lifetime (~60 s).</remarks>
-internal sealed class AiEnvelopeReplayCache(TimeProvider clock)
+/// <remarks>
+/// Per process, plus a cluster-wide check when an <see cref="IDistributedLock"/> is registered (Redis): the first node to
+/// see an id takes a lease on it that is never released, so it stays taken until the envelope has expired and a replay on
+/// another replica is refused. Without one, a replay could reach another node within the envelope's lifetime (~60 s).
+/// </remarks>
+internal sealed class AiEnvelopeReplayCache(TimeProvider clock, IDistributedLock? shared = null)
 {
     private readonly ConcurrentDictionary<string, DateTimeOffset> _seen = new(StringComparer.Ordinal);
     private int _adds;
 
     /// <summary>Records <paramref name="id"/>; false when it was already seen.</summary>
-    public bool TryRecord(string id, DateTimeOffset expiresAt)
+    public async ValueTask<bool> TryRecordAsync(string id, DateTimeOffset expiresAt, CancellationToken ct = default)
+    {
+        if (!TryRecordLocal(id, expiresAt))
+            return false;
+        if (shared is null)
+            return true;
+
+        // Held until it lapses: the lease is deliberately not disposed.
+        var lifetime = expiresAt - clock.GetUtcNow();
+        if (lifetime < TimeSpan.FromSeconds(1))
+            lifetime = TimeSpan.FromSeconds(1);
+        return await shared.TryAcquireAsync("modulus:ai:envelope:" + id, lifetime, ct).ConfigureAwait(false) is not null;
+    }
+
+    private bool TryRecordLocal(string id, DateTimeOffset expiresAt)
     {
         if (Interlocked.Increment(ref _adds) % 256 == 0)
         {
@@ -214,7 +233,7 @@ internal sealed class AiEnvelopeValidator(
             return AiEnvelopeResult.Fail("envelope audience is not its app instance");
 
         var expiresAt = new DateTimeOffset(jwt.ValidTo, TimeSpan.Zero);
-        if (!replays.TryRecord(jwt.Id, expiresAt + connector.Platform.ClockSkew))
+        if (!await replays.TryRecordAsync(jwt.Id, expiresAt + connector.Platform.ClockSkew, ct).ConfigureAwait(false))
             return AiEnvelopeResult.Fail("envelope replayed");
 
         var claims = jwt.Claims
