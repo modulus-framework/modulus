@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Modulus.Authorization.Grants;
 using Modulus.Authorization.Scopes;
+using Modulus.Core.Abstractions;
 
 namespace Modulus.Authorization.EntityFrameworkCore;
 
@@ -19,9 +21,22 @@ namespace Modulus.Authorization.EntityFrameworkCore;
 /// treat role names and permission strings the same way regardless of casing.
 /// </remarks>
 public sealed class EfPermissionGrantStore(
-    IDbContextFactory<AuthorizationStoreDbContext> factory)
+    IDbContextFactory<AuthorizationStoreDbContext> factory,
+    IServiceScopeFactory? scopes = null)
     : IPermissionGrantStore
 {
+    // Every write tells the access-change observers (the AI platform drops its cached scope), so a grant made by a seeder,
+    // a job or app code is not left stale for minutes. Observers can be scoped, so they are resolved in a short scope; the
+    // admin API reports the same change again, which only repeats an idempotent signal.
+    private async Task NotifyAsync(string reason, CancellationToken ct)
+    {
+        if (scopes is null)
+            return;
+        await using var scope = scopes.CreateAsyncScope();
+        await scope.ServiceProvider.GetServices<IAccessChangeObserver>().NotifyAccessChangedAsync(
+            new AccessChange { Kind = AccessChangeKinds.Grant, Reason = reason }, ct: ct);
+    }
+
     /// <inheritdoc />
     public IReadOnlyCollection<PermissionGrant> GetGrants(PrincipalGrantQuery principal)
     {
@@ -119,6 +134,7 @@ public sealed class EfPermissionGrantStore(
         row.ValidUntil = grant.ValidUntil;
         row.Reason = grant.Reason;
         await db.SaveChangesAsync(ct);
+        await NotifyAsync("grant.scoped-saved", ct);
         return new ScopedGrantRecord(row.Id, ToGrant(row)!, row.CreatedBy, row.CreatedAt);
     }
 
@@ -126,7 +142,10 @@ public sealed class EfPermissionGrantStore(
     public async Task<bool> RemoveScopedGrantAsync(Guid id, CancellationToken ct = default)
     {
         await using var db = await factory.CreateDbContextAsync(ct);
-        return await db.ScopedGrants.Where(g => g.Id == id).ExecuteDeleteAsync(ct) > 0;
+        var removed = await db.ScopedGrants.Where(g => g.Id == id).ExecuteDeleteAsync(ct) > 0;
+        if (removed)
+            await NotifyAsync("grant.scoped-removed", ct);
+        return removed;
     }
 
     /// <summary>One scoped grant by id, or null.</summary>
@@ -235,16 +254,19 @@ public sealed class EfPermissionGrantStore(
         }
 
         await db.SaveChangesAsync(ct);
+        await NotifyAsync("grant.saved", ct);
     }
 
     private async Task RemoveAsync(
         GrantHolderType holderType, string holder, string permission, CancellationToken ct)
     {
         await using var db = await factory.CreateDbContextAsync(ct);
-        await db.Grants
+        var removed = await db.Grants
             .Where(g => g.HolderType == holderType
                      && g.Holder == holder
                      && g.Permission == permission)
             .ExecuteDeleteAsync(ct);
+        if (removed > 0)
+            await NotifyAsync("grant.removed", ct);
     }
 }
