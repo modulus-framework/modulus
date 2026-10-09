@@ -74,6 +74,7 @@ public static class IdentityExtensions
         });
 
         builder.AddEntityFrameworkStores<TContext>()
+               .AddUserManager<ModulusUserManager<TUser>>()
                .AddDefaultTokenProviders();
 
         // Authorization administration resolves roles here instead of trusting role names in a request body.

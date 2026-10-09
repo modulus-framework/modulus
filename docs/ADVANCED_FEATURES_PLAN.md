@@ -649,8 +649,8 @@ Known limits of 6a (follow-ups):
   scope TTL). Moving it to the outbox needs an outbox-capable store in the host.
 - The envelope replay cache is **per process**; with several replicas a replay could reach another node within the
   envelope's ~60 s.
-- Not hooked yet: Identity account disable / lock-out and role membership changes (`UserManager`), and grant-store
-  writes made outside the admin API.
+- Identity (`ModulusUserManager`: role add/remove, lock-out, disable, delete) now notifies observers. Not hooked yet:
+  grant-store writes made outside the admin API.
 - ~~`SecurityProbeSuite` does not cover `/_ai/connector/*`~~: done in 6c (`ProbeScheme`; API-key endpoints expect `401`, or `403` on a multi-tenant host).
 - No OpenAPI spec of the contract exists yet; the wire shapes in `Contract/WireContract.cs` follow Architecture
   §4/§19 and should be regenerated from `Integrations.Contracts` when it is published (6d).
@@ -935,9 +935,9 @@ Everything still open, by owner. 6a–6d are built (2026-10-04). The items below
   extraction, host page/record context.
 
 **Modulus-side follow-ups (no blocker; pick up when needed)**
-- [ ] Access-change hooks for Identity: account disable / lock-out and role membership changes (`UserManager`),
-  and grant-store writes made outside the admin API. Today only `TenantManager` and the authorization admin API
-  call `NotifyAccessChangedAsync`, so these changes reach the platform only at its 5-minute scope expiry.
+- [x] Access-change hooks for Identity: `ModulusUserManager<TUser>` (registered by `AddModulusIdentity`) notifies on role
+  add/remove, lock-out, disable and delete (`UserManagerAccessChangeTests`).
+- [ ] Access-change hook for grant-store writes made outside the admin API.
 - [ ] Durable revocation queue: move pending signals to the outbox so a shutdown cannot lose them.
 - [ ] Shared envelope replay cache (distributed cache) for hosts with several replicas.
 - [ ] Batch record lookup for `/extract` and `/changes`, which today cost N+1 queries per page.

@@ -1801,7 +1801,7 @@ platform package; the platform is read-only, so only queries are exposed. The pl
   `Modulus.Core.Abstractions.Ai`). Calls run through the mediator **as the envelope's user** in the instance's company.
 - `[SecretData]` fields never leave; classified fields follow `IFieldAuthorizer` (fail closed without one); unclassified
   fields are declared `Confidential` to the platform.
-- Access changes go through `IAccessChangeObserver` (Core). `TenantManager` and the authorization admin API notify it;
+- Access changes go through `IAccessChangeObserver` (Core). `TenantManager`, the authorization admin API and Identity's `ModulusUserManager` (roles, lock-out, disable, delete) notify it;
   call `NotifyAccessChangedAsync` from any new code that changes grants, roles, memberships or accounts, or the
   platform keeps a stale scope for up to 5 minutes.
 - API keys are stored as hashes (`AiApiKeys.Hash`); `Platform:ApiKey` is a secret (user secrets / environment).
