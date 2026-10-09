@@ -45,3 +45,6 @@ Modulus.Grpc.ModulusGrpcClientOptions.KeepAlivePingTimeout.set -> void
 Modulus.Grpc.ModulusGrpcOptions.ResponseCompressionAlgorithm.get -> string?
 Modulus.Grpc.ModulusGrpcOptions.ResponseCompressionAlgorithm.set -> void
 static Modulus.Grpc.GrpcExceptionMapper.ToRpcException(System.Exception! exception, bool includeExceptionDetails, string? requestId) -> Grpc.Core.RpcException!
+Modulus.Grpc.ModulusGrpcOptions.EnableGrpcWeb.get -> bool
+Modulus.Grpc.ModulusGrpcOptions.EnableGrpcWeb.set -> void
+static Modulus.Grpc.GrpcServerExtensions.UseModulusGrpcWeb(this Microsoft.AspNetCore.Builder.IApplicationBuilder! app) -> Microsoft.AspNetCore.Builder.IApplicationBuilder!

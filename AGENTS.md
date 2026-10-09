@@ -1428,7 +1428,7 @@ roots, Security tab in `Modulus.UI.AuditLogging`).
   with 2+ cores per replica, keep `DOTNET_TieredPGO=1` (default), and prefer `InvariantGlobalization` only when no culture-specific
   formatting is needed (the UI uses invariant-culture text for extension fields, but pages may format by culture). Enable response
   compression at the proxy when one exists, else `AddModulusResponseCompression`.
-- **Still open:** `Modulus.UI.AI`; GraphQL subscriptions/persisted queries; grpc-web; AOT annotations.
+- **Still open:** `Modulus.UI.AI`; GraphQL subscriptions/persisted queries; AOT annotations.
 
 ## Open-source dependency policy
 
@@ -1629,6 +1629,9 @@ monolith (an optional second API surface) and microservices (service-to-service 
   on `Unavailable` only (`MaxAttempts` 3, jittered back-off), call-context propagation inside a service (deadline,
   cancellation), a default unary deadline (30 s) and `X-Correlation-ID`. `.PropagateTenant()` and
   `.ForwardAccessToken()` are opt-in.
+- **grpc-web.** `Grpc:EnableGrpcWeb` plus `app.UseModulusGrpcWeb()` (after `UseRouting` when present, before CORS/authentication; `Grpc.AspNetCore.Web`,
+  Apache-2.0) lets browsers call the services. The CORS policy must allow `x-grpc-web`, `x-user-agent`, `grpc-timeout` and expose `grpc-status`,
+  `grpc-message`, `grpc-status-details-bin`. Not wired by the generator.
 - **Ports.** Kestrel cannot serve h2c (HTTP/2 without TLS) on an `Http1AndHttp2` endpoint, so a plain-HTTP host needs a
   separate `Http2` endpoint for gRPC (Development: `Kestrel:Endpoints:Grpc` on `http://localhost:5189`). With TLS one
   endpoint serves both.

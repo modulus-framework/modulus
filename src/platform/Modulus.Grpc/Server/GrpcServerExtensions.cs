@@ -2,6 +2,7 @@ namespace Modulus.Grpc;
 
 using System.Reflection;
 using global::Grpc.AspNetCore.Server;
+using global::Grpc.AspNetCore.Web;
 using global::Grpc.Core;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
@@ -20,6 +21,17 @@ using Modulus.Core.Abstractions.Security;
 /// </summary>
 public static class GrpcServerExtensions
 {
+    /// <summary>
+    /// Adds grpc-web support when <see cref="ModulusGrpcOptions.EnableGrpcWeb"/> is on. Call after <c>UseRouting</c> and
+    /// before authentication, CORS and endpoints.
+    /// </summary>
+    public static IApplicationBuilder UseModulusGrpcWeb(this IApplicationBuilder app)
+    {
+        ArgumentNullException.ThrowIfNull(app);
+        var options = app.ApplicationServices.GetRequiredService<IOptions<ModulusGrpcOptions>>().Value;
+        return options.EnableGrpcWeb ? app.UseGrpcWeb(new GrpcWebOptions { DefaultEnabled = true }) : app;
+    }
+
     /// <summary>
     /// Registers the gRPC server (settings from the <c>Grpc</c> section, <see cref="ModulusGrpcOptions"/>) with
     /// exceptions mapped to status codes (<see cref="GrpcExceptionMapper"/>), the <c>grpc.health.v1</c> service

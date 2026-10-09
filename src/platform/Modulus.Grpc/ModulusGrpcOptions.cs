@@ -18,6 +18,13 @@ public sealed class ModulusGrpcOptions
     /// </summary>
     public bool EnableReflection { get; set; }
 
+    /// <summary>
+    /// Lets browsers call the services with grpc-web (<c>UseModulusGrpcWeb</c> translates the requests). Off by default.
+    /// The CORS policy must allow the <c>x-grpc-web</c>, <c>x-user-agent</c> and <c>grpc-timeout</c> request headers and expose
+    /// <c>grpc-status</c>, <c>grpc-message</c> and <c>grpc-status-details-bin</c>.
+    /// </summary>
+    public bool EnableGrpcWeb { get; set; }
+
     /// <summary>Maps <c>grpc.health.v1.Health</c>, backed by the registered health checks (module checks included).</summary>
     public bool EnableHealthChecks { get; set; } = true;
 

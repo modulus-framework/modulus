@@ -45,6 +45,7 @@ internal sealed class GrpcTestHost : IAsyncDisposable
         builder.Services.AddAuthorization();
 
         var app = builder.Build();
+        app.UseModulusGrpcWeb();
         app.UseModulusCorrelation();
         app.UseAuthentication();
         app.UseAuthorization();
