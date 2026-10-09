@@ -27,6 +27,20 @@ namespace {{ module_namespace }}.Presentation.Grpc;
         return response;
     }
 
+    public override async Task Stream{{ entity_plural }}(
+        Stream{{ entity_plural }}Request request, IServerStreamWriter<{{ entity_name }}Message> responseStream, ServerCallContext context)
+    {
+        const int pageSize = 200;
+        for (var page = 1; ; page++)
+        {
+            var items = await mediator.QueryAsync(new Get{{ entity_plural }}Query(page, pageSize), context.CancellationToken);
+            foreach (var item in items)
+                await responseStream.WriteAsync(new {{ entity_name }}Message { Id = item.Id.ToString(), Name = item.Name }, context.CancellationToken);
+            if (items.Count < pageSize)
+                return;
+        }
+    }
+
     public override async Task<{{ entity_name }}Message> Get{{ entity_name }}(Get{{ entity_name }}Request request, ServerCallContext context)
     {
         var item = await mediator.QueryAsync(new Get{{ entity_name }}ByIdQuery(ParseId(request.Id)), context.CancellationToken);

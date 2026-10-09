@@ -1648,6 +1648,7 @@ monolith (an optional second API surface) and microservices (service-to-service 
   proto into each BFF as a client, registers `AddBffGrpcClient` and sets the `api` service's `GrpcAddress`. Existing
   files are never overwritten; a second run changes nothing. Templates: `cli/Templates/grpc/`; wiring:
   `GrpcWiring`.
+- **Streaming.** The generated service also has `Stream{Entities}` (server streaming: every row, read 200 at a time).
 - **Verified end to end** on a generated `--kind api --auth openiddict --bff web,mobile` app: builds with 0 warnings,
   11/11 tests (5 gRPC), health over h2c, anonymous `Unauthenticated`, and a mobile token on the BFF reaching the API
   over gRPC. Covered by `Modulus.Grpc.Tests` (22), `GrpcCommandTests`, `IdentityIssuerTests`.

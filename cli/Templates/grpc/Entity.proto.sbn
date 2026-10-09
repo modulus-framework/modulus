@@ -11,6 +11,8 @@ import "google/protobuf/empty.proto";
 
 service {{ entity_name }}Service {
   rpc List{{ entity_plural }} (List{{ entity_plural }}Request) returns (List{{ entity_plural }}Response);
+  // Server streaming: every row, one message at a time, read a page at a time (no 500-row cap).
+  rpc Stream{{ entity_plural }} (Stream{{ entity_plural }}Request) returns (stream {{ entity_name }}Message);
   rpc Get{{ entity_name }} (Get{{ entity_name }}Request) returns ({{ entity_name }}Message);
   rpc Create{{ entity_name }} (Create{{ entity_name }}Request) returns (Create{{ entity_name }}Response);
   rpc Update{{ entity_name }} (Update{{ entity_name }}Request) returns (google.protobuf.Empty);
@@ -32,6 +34,8 @@ message List{{ entity_plural }}Request {
 message List{{ entity_plural }}Response {
   repeated {{ entity_name }}Message items = 1;
 }
+
+message Stream{{ entity_plural }}Request {}
 
 message Get{{ entity_name }}Request {
   string id = 1;

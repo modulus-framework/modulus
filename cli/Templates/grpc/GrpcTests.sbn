@@ -31,6 +31,20 @@ public sealed class {{ entity_name }}GrpcTests(ModulusWebAppFactory<ApiEntryPoin
     }
 
     [Fact]
+    public async Task Stream_returns_the_rows_one_message_at_a_time()
+    {
+        var client = Client(factory.CreateAuthenticatedClient({{ if required_permission }}roles: ["{{ admin_role }}"]{{ end }}));
+        var created = await client.Create{{ entity_name }}Async(new Create{{ entity_name }}Request { Name = "Streamed" });
+
+        using var call = client.Stream{{ entity_plural }}(new Stream{{ entity_plural }}Request());
+        var ids = new List<string>();
+        await foreach (var item in call.ResponseStream.ReadAllAsync())
+            ids.Add(item.Id);
+
+        ids.Should().Contain(created.Id);
+    }
+
+    [Fact]
     public async Task An_anonymous_call_is_unauthenticated()
     {
         var client = Client(factory.CreateClient());
