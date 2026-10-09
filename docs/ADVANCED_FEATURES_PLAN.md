@@ -946,7 +946,7 @@ Everything still open, by owner. 6a–6d are built (2026-10-04). The items below
 - [x] Composite keys for `[AiIndexed]` entities (`AiCompositeKey`; up to 4 columns). Store-generated keys stay unsupported by design: the id is unknown when the journal row is written in the same save, so keys are generated on the client.
 - [x] At-least-once change hints while the process lives (a refused hint is resent on the next check; `/changes` polling remains the safety net across restarts).
 - [~] Aggregate, search, date-filter, keyset-paging and composite-key shapes on PostgreSQL, SQL Server and MySQL: `AiEntitySourceProviderTests` (`tests/integration/Modulus.EFCore.Integration.Tests`, `Category=Integration`) is written and compiles, but has **not been run yet** (no working container runtime when it was written); run it with `DOCKER_HOST=... dotnet test --filter AiEntitySource` and fix any provider-specific translation failure it finds.
-- [ ] A timeout-as-deny check in the conformance kit (needs a deliberately slow capability).
+- [x] A timeout-as-deny check in the conformance kit (`AiConformanceOptions.SlowCapability`, category `TimeoutIsDeny`).
 - [ ] `generate-crud --ai` on an older CRUD set and the `ai_changes` migration stay manual steps (`add-ai` prints them).
 
 #### Critical files

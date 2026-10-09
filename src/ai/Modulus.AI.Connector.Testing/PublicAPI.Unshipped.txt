@@ -7,7 +7,6 @@ Modulus.AI.Connector.Testing.AiConformanceCategory.Extraction = 8 -> Modulus.AI.
 Modulus.AI.Connector.Testing.AiConformanceCategory.FieldSecurity = 6 -> Modulus.AI.Connector.Testing.AiConformanceCategory
 Modulus.AI.Connector.Testing.AiConformanceCategory.Health = 0 -> Modulus.AI.Connector.Testing.AiConformanceCategory
 Modulus.AI.Connector.Testing.AiConformanceCategory.Manifest = 3 -> Modulus.AI.Connector.Testing.AiConformanceCategory
-Modulus.AI.Connector.Testing.AiConformanceCategory.NoAdapterCaching = 10 -> Modulus.AI.Connector.Testing.AiConformanceCategory
 Modulus.AI.Connector.Testing.AiConformanceCategory.QueryInjection = 5 -> Modulus.AI.Connector.Testing.AiConformanceCategory
 Modulus.AI.Connector.Testing.AiConformanceCategory.Revocation = 9 -> Modulus.AI.Connector.Testing.AiConformanceCategory
 Modulus.AI.Connector.Testing.AiConformanceCategory.TenantIsolation = 2 -> Modulus.AI.Connector.Testing.AiConformanceCategory
@@ -109,3 +108,7 @@ static Modulus.AI.Connector.Testing.AiConformanceResult.operator ==(Modulus.AI.C
 static Modulus.AI.Connector.Testing.AiConnectorConformance.RunAsync(System.IServiceProvider! services, System.Net.Http.HttpClient! client, Modulus.AI.Connector.Testing.AiFakePlatform! platform, Modulus.AI.Connector.Testing.AiConformanceOptions? options = null, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.AI.Connector.Testing.AiConformanceReport!>!
 static Modulus.AI.Connector.Testing.AiPlatformCall.operator !=(Modulus.AI.Connector.Testing.AiPlatformCall? left, Modulus.AI.Connector.Testing.AiPlatformCall? right) -> bool
 static Modulus.AI.Connector.Testing.AiPlatformCall.operator ==(Modulus.AI.Connector.Testing.AiPlatformCall? left, Modulus.AI.Connector.Testing.AiPlatformCall? right) -> bool
+Modulus.AI.Connector.Testing.AiConformanceOptions.SlowCapability.get -> string?
+Modulus.AI.Connector.Testing.AiConformanceOptions.SlowCapability.set -> void
+Modulus.AI.Connector.Testing.AiConformanceCategory.NoAdapterCaching = 10 -> Modulus.AI.Connector.Testing.AiConformanceCategory
+Modulus.AI.Connector.Testing.AiConformanceCategory.TimeoutIsDeny = 11 -> Modulus.AI.Connector.Testing.AiConformanceCategory

@@ -109,6 +109,7 @@ internal sealed class ConformanceRun(
         await AuthorizationAsync().ConfigureAwait(false);
         await ExtractionAsync().ConfigureAwait(false);
         await RevocationAsync().ConfigureAwait(false);
+        await TimeoutIsDenyAsync().ConfigureAwait(false);
         await NoAdapterCachingAsync().ConfigureAwait(false);
 
         Check(AiConformanceCategory.DenyPaths, "every refusal is a typed error", () =>
@@ -714,6 +715,19 @@ internal sealed class ConformanceRun(
         => JsonSerializer.Deserialize<RevocationSignal>(call.Body, ConnectorJson.Options)
             ?? throw new CheckFailedException("an empty revocation signal");
 
+    // ── Timeout is deny ─────────────────────────────────────────────
+
+    private Task TimeoutIsDenyAsync()
+        => CheckAsync(AiConformanceCategory.TimeoutIsDeny, "a call that outlives the timeout fails with a typed error and no data", async () =>
+        {
+            var slow = options.SlowCapability ?? throw new NotApplicableException("no slow capability (AiConformanceOptions.SlowCapability)");
+            var answer = await Execute(slow, "{}").ConfigureAwait(false);
+
+            Require(answer.Status >= 400, $"the slow capability answered {answer.Status} (it should have timed out; is Ai:Connector:CallTimeout shorter than it?)");
+            Require(answer.Error is not null, "the timeout was not a typed error");
+            Require(answer.Error!.Code == ConnectorErrorCodes.Unavailable, $"the timeout was answered '{answer.Error.Code}', expected {ConnectorErrorCodes.Unavailable}");
+        });
+
     // ── No adapter-side caching ─────────────────────────────────────
 
     private Task NoAdapterCachingAsync()
@@ -740,7 +754,8 @@ internal sealed class ConformanceRun(
     private IEnumerable<ManifestCapability> Usable()
     {
         var permissions = Scope.Permissions.ToHashSet(StringComparer.Ordinal);
-        return Manifest.Capabilities.Where(c => c.RequiredPermissions.All(permissions.Contains));
+        // The slow capability is only for the timeout check: calling it elsewhere would just wait for the timeout.
+        return Manifest.Capabilities.Where(c => c.RequiredPermissions.All(permissions.Contains) && c.Name != options.SlowCapability);
     }
 
     private static JsonObject? Properties(ManifestCapability capability) => capability.InputSchema["properties"] as JsonObject;

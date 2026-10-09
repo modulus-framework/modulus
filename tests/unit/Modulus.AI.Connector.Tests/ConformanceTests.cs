@@ -22,7 +22,7 @@ public sealed class ConformanceTests
     {
         var platform = new AiFakePlatform();
         var users = new AccountsInMemory();
-        var host = await ConnectorTestHost.StartAsync(configure: services =>
+        var host = await ConnectorTestHost.StartAsync(settings: values => values["Ai:Connector:CallTimeout"] = "00:00:01", configure: services =>
         {
             services.AddSingleton<IAiEntitySource, FakeEntitySource>();
             services.AddSingleton<IAiChangeFeed>(new CursorChangeFeed());
@@ -37,6 +37,7 @@ public sealed class ConformanceTests
     private static AiConformanceOptions Options(AccountsInMemory users) => new()
     {
         User = TestUsers.Reader.ToString(),
+        SlowCapability = "Test.Catalog.Slow.Run",
         ChangeUserAccess = (_, _) =>
         {
             users.Roles = [];
@@ -72,10 +73,25 @@ public sealed class ConformanceTests
 
         report.Failures.Should().BeEmpty(report.ToString());
         report.Results.Where(r => r.Outcome == AiConformanceOutcome.NotApplicable).Select(r => r.Category).Distinct()
-            .Should().Contain([AiConformanceCategory.FieldSecurity, AiConformanceCategory.QueryInjection, AiConformanceCategory.NoAdapterCaching]);
+            .Should().Contain([AiConformanceCategory.FieldSecurity, AiConformanceCategory.QueryInjection, AiConformanceCategory.NoAdapterCaching, AiConformanceCategory.TimeoutIsDeny]);
         report.Passed(AiConformanceCategory.Manifest).Should().BeTrue();
         report.Passed(AiConformanceCategory.Revocation).Should().BeTrue();
         report.Passed(AiConformanceCategory.Extraction).Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task A_slow_capability_that_answers_with_data_fails_the_timeout_check()
+    {
+        var (host, platform, users) = await StartAsync();
+        await using var _ = host;
+        using var __ = platform;
+        var options = Options(users);
+        options.SlowCapability = "Test.Catalog.Product.Count"; // answers at once, so it never times out
+
+        var report = await AiConnectorConformance.RunAsync(host.Services, host.Client, platform, options);
+
+        report.Failures.Should().ContainSingle(f => f.Category == AiConformanceCategory.TimeoutIsDeny)
+            .Which.Detail.Should().Contain("answered 200");
     }
 
     [Fact]

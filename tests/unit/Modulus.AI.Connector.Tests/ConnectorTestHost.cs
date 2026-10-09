@@ -73,6 +73,19 @@ public sealed class LookupLog
 [AiCapability("Test.Catalog.Product.Count", "Counts the products.")]
 public sealed record CountProducts : IQuery<int>;
 
+/// <summary>Never answers (waits for the connector's call timeout): the conformance kit's slow capability.</summary>
+[AiCapability("Test.Catalog.Slow.Run", "A deliberately slow query.")]
+public sealed record SlowThing : IQuery<int>;
+
+public sealed class SlowThingHandler : IQueryHandler<SlowThing, int>
+{
+    public async Task<int> HandleAsync(SlowThing query, CancellationToken ct)
+    {
+        await Task.Delay(Timeout.Infinite, ct);
+        return 0;
+    }
+}
+
 public sealed class SearchProductsHandler(SearchProductsFault? fault = null) : IQueryHandler<SearchProducts, IReadOnlyList<ProductDto>>
 {
     public Task<IReadOnlyList<ProductDto>> HandleAsync(SearchProducts query, CancellationToken ct)

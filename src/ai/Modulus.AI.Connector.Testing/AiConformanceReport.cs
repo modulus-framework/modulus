@@ -40,6 +40,9 @@ public enum AiConformanceCategory
 
     /// <summary>A permission change shows on the next scope call (AD-13).</summary>
     NoAdapterCaching,
+
+    /// <summary>A call that outlives the app's call timeout fails with a typed error and never returns data, so the platform treats it as a deny.</summary>
+    TimeoutIsDeny,
 }
 
 /// <summary>The outcome of one check.</summary>
@@ -146,6 +149,13 @@ public sealed class AiConformanceOptions
     /// <c>IAccessChangeObserver</c> is told of a simulated grant change, as the platform's suite simulates one.
     /// </summary>
     public Func<IServiceProvider, CancellationToken, Task>? TriggerAccessChange { get; set; }
+
+    /// <summary>
+    /// The name of a capability that takes longer than the connector's <c>CallTimeout</c> (a deliberately slow query, registered only in tests;
+    /// use a short <c>Ai:Connector:CallTimeout</c> in the test settings). The run then checks that the call ends in a typed error and never in data
+    /// (a timeout is a deny for the platform). Without it, that check is not applicable.
+    /// </summary>
+    public string? SlowCapability { get; set; }
 
     /// <summary>How long to wait for revocation signals.</summary>
     public TimeSpan RevocationTimeout { get; set; } = TimeSpan.FromSeconds(10);

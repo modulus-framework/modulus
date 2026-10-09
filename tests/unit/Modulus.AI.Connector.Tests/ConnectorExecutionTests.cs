@@ -25,7 +25,7 @@ public sealed class ConnectorExecutionTests
         manifest.GetProperty("fingerprint").GetString().Should().HaveLength(32);
         var capabilities = manifest.GetProperty("capabilities").EnumerateArray().ToList();
         capabilities.Select(c => c.GetProperty("name").GetString())
-            .Should().Equal("Test.Catalog.Product.Count", "Test.Catalog.Product.Search");
+            .Should().Equal("Test.Catalog.Product.Count", "Test.Catalog.Product.Search", "Test.Catalog.Slow.Run");
 
         var search = capabilities.Single(c => c.GetProperty("name").GetString() == "Test.Catalog.Product.Search");
         search.GetProperty("readOnly").GetBoolean().Should().BeTrue();
