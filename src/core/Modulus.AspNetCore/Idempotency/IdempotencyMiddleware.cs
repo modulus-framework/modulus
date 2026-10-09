@@ -32,12 +32,16 @@ public sealed class IdempotencyMiddleware(
             "Transfer-Encoding", "Content-Length", "Date", "Set-Cookie",
         };
 
+    // Marks a stored entry whose request completed but whose response was too large to keep. A retry gets a 409
+    // instead of running the side effect a second time. Carried as a header so custom stores need no new field.
+    internal const string UncacheableMarker = "X-Modulus-Idempotency-Uncacheable";
+
     private readonly IdempotencyOptions _options = options.Value;
     private readonly ILogger<IdempotencyMiddleware> _logger = logger;
 
     public async Task InvokeAsync(HttpContext context, IIdempotencyStore store)
     {
-        if (!IsGuardedMethod(context.Request.Method))
+        if (!IsGuardedMethod(context.Request.Method) || IsExcluded(context.Request))
         {
             await next(context);
             return;
@@ -67,7 +71,7 @@ public sealed class IdempotencyMiddleware(
         }
 
         var scopedKey = BuildScopedKey(context, key);
-        var fingerprint = await ComputeFingerprintAsync(context);
+        var fingerprint = await ComputeFingerprintAsync(context, context.RequestAborted);
         var result = await store.TryBeginAsync(scopedKey, fingerprint, context.RequestAborted);
 
         switch (result.Status)
@@ -76,6 +80,14 @@ public sealed class IdempotencyMiddleware(
                 if (IsFingerprintMismatch(result.Fingerprint, fingerprint))
                 {
                     await WriteReuseConflictAsync(context);
+                    return;
+                }
+
+                if (result.Response!.Headers.ContainsKey(UncacheableMarker))
+                {
+                    await WriteProblemAsync(context, StatusCodes.Status409Conflict,
+                        "Response not replayable",
+                        "A request with this idempotency key already completed, but its response was too large to keep.");
                     return;
                 }
 
@@ -128,13 +140,27 @@ public sealed class IdempotencyMiddleware(
 
         if (buffer.Overflow)
         {
-            // Already streamed to the client in full — nothing to cache. Release
-            // the claim so a retry re-runs the request instead of being served
-            // from an unbounded store.
+            // Already streamed to the client in full — nothing to replay. The request DID run, so releasing
+            // the claim would let a retry repeat its side effect, which is what the key exists to prevent.
+            // Record the completion without a body instead: a retry is answered 409.
             _logger.LogWarning(
-                "Idempotency response for key '{Key}' exceeded MaxResponseBytes {Cap}; not caching — retries will re-execute.",
+                "Idempotency response for key '{Key}' exceeded MaxResponseBytes {Cap}; it cannot be replayed, retries are answered 409.",
                 scopedKey, cap);
-            await store.AbandonAsync(scopedKey, CancellationToken.None);
+            if (IsCacheable(context.Response.StatusCode))
+            {
+                await store.CompleteAsync(
+                    scopedKey,
+                    new CachedResponse(
+                        context.Response.StatusCode,
+                        new Dictionary<string, string> { [UncacheableMarker] = "1" },
+                        []),
+                    CancellationToken.None);
+            }
+            else
+            {
+                await store.AbandonAsync(scopedKey, CancellationToken.None);
+            }
+
             return;
         }
 
@@ -172,6 +198,18 @@ public sealed class IdempotencyMiddleware(
         return false;
     }
 
+    private bool IsExcluded(HttpRequest request)
+    {
+        // gRPC (every call is a POST) and the configured prefixes bring their own retry and caching semantics.
+        if (request.ContentType?.StartsWith("application/grpc", StringComparison.OrdinalIgnoreCase) == true)
+            return true;
+
+        foreach (var prefix in _options.ExcludedPaths)
+            if (request.Path.StartsWithSegments(prefix, StringComparison.OrdinalIgnoreCase))
+                return true;
+        return false;
+    }
+
     private bool IsFingerprintMismatch(string? stored, string current)
         => _options.ValidateRequestMatch && stored is not null && stored != current;
 
@@ -184,7 +222,9 @@ public sealed class IdempotencyMiddleware(
         // another caller in the same tenant who replays a captured key
         // receives the original caller's response.
         var tenant = context.RequestServices.GetService<ICurrentTenant>()?.TenantId;
-        var user = GetCallerId(context);
+        // Anonymous callers are scoped by remote address so two of them cannot share (and replay) one entry.
+        var user = GetCallerId(context)
+            ?? (context.Connection.RemoteIpAddress is { } ip ? $"anon-{ip}" : null);
 
         var scoped = tenant is { } id ? $"{id}" : "";
         if (!string.IsNullOrEmpty(user))
@@ -202,7 +242,7 @@ public sealed class IdempotencyMiddleware(
             ?? principal.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
     }
 
-    private static async Task<string> ComputeFingerprintAsync(HttpContext context)
+    private static async Task<string> ComputeFingerprintAsync(HttpContext context, CancellationToken ct)
     {
         var request = context.Request;
         request.EnableBuffering();
@@ -218,10 +258,18 @@ public sealed class IdempotencyMiddleware(
             $"{request.ContentType}\n"));
 
         request.Body.Position = 0;
-        var rented = new byte[8192];
-        int read;
-        while ((read = await request.Body.ReadAsync(rented)) > 0)
-            hasher.AppendData(rented.AsSpan(0, read));
+        var rented = System.Buffers.ArrayPool<byte>.Shared.Rent(8192);
+        try
+        {
+            int read;
+            while ((read = await request.Body.ReadAsync(rented.AsMemory(), ct)) > 0)
+                hasher.AppendData(rented.AsSpan(0, read));
+        }
+        finally
+        {
+            System.Buffers.ArrayPool<byte>.Shared.Return(rented);
+        }
+
         request.Body.Position = 0;
 
         return Convert.ToHexString(hasher.GetHashAndReset());
@@ -275,6 +323,11 @@ public sealed class IdempotencyMiddleware(
                 await _buffer.WriteAsync(buffer, cancellationToken);
         }
 
+        // Without this the base Stream.WriteAsync(byte[],...) falls back to the synchronous Write, which Kestrel
+        // refuses (AllowSynchronousIO is off) once the response has overflowed into pass-through.
+        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            => WriteAsync(buffer.AsMemory(offset, count), cancellationToken).AsTask();
+
         public override void Write(byte[] buffer, int offset, int count)
         {
             if (!_overflow && _buffer.Length + count > maxBytes)
@@ -325,5 +378,10 @@ public sealed class IdempotencyMiddleware(
             "This idempotency key was already used with a different request.");
 
     private static Task WriteProblemAsync(HttpContext context, int status, string title, string detail)
-        => Results.Problem(title: title, detail: detail, statusCode: status).ExecuteAsync(context);
+        => Results.Problem(
+                title: title,
+                detail: detail,
+                statusCode: status,
+                extensions: new Dictionary<string, object?> { ["traceId"] = Http.ProblemResponses.TraceId(context) })
+            .ExecuteAsync(context);
 }

@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../../src/messaging/Modulus.Mediator/Modulus.Mediator.csproj" />
+    <ProjectReference Include="../../../src/core/Modulus.Core/Modulus.Core.csproj" />
+    <ProjectReference Include="../../../src/core/Modulus.AspNetCore/Modulus.AspNetCore.csproj" />
+    <PackageReference Include="BenchmarkDotNet" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory" />
+  </ItemGroup>
+
+</Project>

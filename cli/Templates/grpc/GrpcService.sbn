@@ -19,7 +19,9 @@ namespace {{ module_namespace }}.Presentation.Grpc;
 {
     public override async Task<List{{ entity_plural }}Response> List{{ entity_plural }}(List{{ entity_plural }}Request request, ServerCallContext context)
     {
-        var items = await mediator.QueryAsync(new Get{{ entity_plural }}Query(), context.CancellationToken);
+        var items = await mediator.QueryAsync(request.Page > 0 && request.PageSize > 0
+            ? new Get{{ entity_plural }}Query(request.Page, request.PageSize)
+            : new Get{{ entity_plural }}Query(Math.Max(1, request.Page)), context.CancellationToken);
         var response = new List{{ entity_plural }}Response();
         response.Items.AddRange(items.Select(i => new {{ entity_name }}Message { Id = i.Id.ToString(), Name = i.Name }));
         return response;

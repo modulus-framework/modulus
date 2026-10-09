@@ -95,6 +95,8 @@ internal sealed class DoctorCommand : Command<DoctorCommand.Settings>
                     inventory.SolutionDir));
                 if (CheckWebTokenHandling(inventory.WebProjectPath) is { } tokens)
                     checks.Add(tokens);
+                if (CheckWebInvariant(inventory.WebProjectPath) is { } invariant)
+                    checks.Add(invariant);
             }
 
             checks.Add(CheckFile(
@@ -246,6 +248,26 @@ internal sealed class DoctorCommand : Command<DoctorCommand.Settings>
         return csproj.Contains("Cobytelabs.Modulus.Bff", StringComparison.Ordinal)
             ? CheckResult.Pass("Web sign-in", "BFF web session (server-side tokens)")
             : null;
+    }
+
+    /// <summary>
+    /// A Web host is a presentation shell: it must reach data through the API, so a reference to a module's Infrastructure
+    /// project (its DbContext) breaks the split. Null when the host has no such reference.
+    /// </summary>
+    internal static CheckResult? CheckWebInvariant(string? webProjectPath)
+    {
+        if (string.IsNullOrEmpty(webProjectPath) || !File.Exists(webProjectPath))
+            return null;
+
+        var offenders = System.Text.RegularExpressions.Regex
+            .Matches(File.ReadAllText(webProjectPath), "<ProjectReference\\s+Include=\"([^\"]*\\.Infrastructure\\.csproj)\"")
+            .Select(m => Path.GetFileNameWithoutExtension(m.Groups[1].Value.Replace('\\', '/')))
+            .ToList();
+        return offenders.Count == 0
+            ? null
+            : CheckResult.Warn(
+                "Web host isolation",
+                $"References {string.Join(", ", offenders)}: a Web host should call the API, not load module Infrastructure/DbContexts.");
     }
 
     /// <summary>

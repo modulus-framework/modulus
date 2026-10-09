@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Http;
 namespace Modulus.AspNetCore.Endpoints;
 
 /// <summary>
@@ -46,6 +47,9 @@ internal sealed class EndpointConfig
     public string? Summary { get; set; }
     public bool Deprecated { get; set; }
     public bool WrapResponse { get; set; } = true;
+
+    /// <summary>The status the success path answers with, as documented in OpenAPI (200, or 201 after <c>Created()</c>).</summary>
+    public int SuccessStatusCode { get; set; } = StatusCodes.Status200OK;
 
     public Type RequestType { get; set; } = null!;
     public Type? ResponseType { get; set; }

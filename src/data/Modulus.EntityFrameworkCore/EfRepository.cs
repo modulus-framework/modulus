@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 namespace Modulus.EntityFrameworkCore;
 
 using System.Linq.Expressions;
@@ -114,8 +115,12 @@ public class EfRepository<T>(IServiceProvider sp)
                 efProperty.MakeGenericMethod(property.ClrType),
                 parameter,
                 Expression.Constant(property.Name));
-            var converted = Expression.Constant(
-                CoerceKeyValue(keyValues[i], property.ClrType), property.ClrType);
+            // The value sits in a box field, not a constant: EF turns a closure member access into a query
+            // parameter, so every id shares one compiled query instead of adding a cache entry per id.
+            var box = Activator.CreateInstance(typeof(StrongBox<>).MakeGenericType(property.ClrType))!;
+            box.GetType().GetField(nameof(StrongBox<int>.Value))!
+                .SetValue(box, CoerceKeyValue(keyValues[i], property.ClrType));
+            var converted = Expression.Field(Expression.Constant(box), nameof(StrongBox<int>.Value));
             var equals = Expression.Equal(propertyExpr, converted);
             body = body is null ? equals : Expression.AndAlso(body, equals);
         }

@@ -51,6 +51,24 @@ public class ModuleDatabaseRegistrationTests
             .Should().Be(1, "OrderTicket was routed to OrdersTestDbContext");
     }
 
+    [Fact]
+    public async Task GetByIdAsync_FindsEachRow_AndReturnsNullForUnknownId()
+    {
+        await using var fixture = new TwoModuleFixture();
+        await fixture.EnsureSchemasAsync();
+
+        using var scope = fixture.CreateScope();
+        var repo = scope.ServiceProvider.GetRequiredService<IRepository<CatalogItem>>();
+        var items = Enumerable.Range(0, 5).Select(i => new CatalogItem { Id = Guid.NewGuid(), Name = $"n{i}" }).ToList();
+        await repo.AddRangeAsync(items, default);
+        await scope.ServiceProvider.GetRequiredService<CatalogTestDbContext>().SaveChangesAsync();
+
+        foreach (var item in items)
+            (await repo.GetByIdAsync(item.Id, default))!.Name.Should().Be(item.Name);
+
+        (await repo.GetByIdAsync(Guid.NewGuid(), default)).Should().BeNull();
+    }
+
     /// <summary>
     /// <see cref="EFCoreServiceCollectionExtensions.AddModuleDatabase{TContext}"/>
     /// must NOT register <see cref="IUnitOfWork"/>. In a modular monolith each

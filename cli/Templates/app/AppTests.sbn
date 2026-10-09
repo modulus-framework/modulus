@@ -245,14 +245,17 @@ public sealed class ModuleBoundaryTests
             because: "two events under one name would shadow each other on the broker and in the outbox");
     }
 
+    // The caller-file attribute lives on a helper: xUnit1001 forbids parameters on a [Fact].
+    private static string ContractFile([System.Runtime.CompilerServices.CallerFilePath] string? thisFile = null)
+        => Path.Combine(Path.GetDirectoryName(thisFile ?? Directory.GetCurrentDirectory())!, "integration-events.contract");
+
     [Fact]
-    public void IntegrationEventContract_IsNotBroken(
-        [System.Runtime.CompilerServices.CallerFilePath] string? thisFile = null)
+    public void IntegrationEventContract_IsNotBroken()
     {
         // The wire name of an event is derived from its type name. Renaming the type (or dropping the event) would orphan
         // stored outbox rows and subscribers, so a name that disappears fails here. New events are recorded automatically;
         // set MODULUS_ACCEPT_EVENT_CONTRACT=1 to accept a deliberate removal.
-        var file = Path.Combine(Path.GetDirectoryName(thisFile ?? Directory.GetCurrentDirectory())!, "integration-events.contract");
+        var file = ContractFile();
         var changes = ModuleBoundaryRules.FindIntegrationEventContractChanges(file);
         var accept = Environment.GetEnvironmentVariable("MODULUS_ACCEPT_EVENT_CONTRACT") == "1";
 

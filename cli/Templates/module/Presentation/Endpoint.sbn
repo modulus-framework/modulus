@@ -24,18 +24,27 @@ internal static class {{ entity_name }}ExtraProperties
     public const string Entity = "{{ module_name }}.{{ entity_name }}";
 }
 {{ end }}
-public sealed class Get{{ entity_plural }}Endpoint(IMediator mediator{{ if has_api_extra_fields }}, IEntityUiRegistry registry, ICurrentUser user{{ end }}) : EndpointWithoutRequest<IReadOnlyList<{{ entity_name }}Dto>>
+public sealed class Get{{ entity_plural }}Request
+{
+    /// <summary>1-based page number.</summary>
+    public int Page { get; set; } = 1;
+
+    /// <summary>Rows per page (at most <see cref="Get{{ entity_plural }}Query.MaxPageSize"/>).</summary>
+    public int PageSize { get; set; } = Get{{ entity_plural }}Query.DefaultPageSize;
+}
+
+public sealed class Get{{ entity_plural }}Endpoint(IMediator mediator{{ if has_api_extra_fields }}, IEntityUiRegistry registry, ICurrentUser user{{ end }}) : Endpoint<Get{{ entity_plural }}Request, IReadOnlyList<{{ entity_name }}Dto>>
 {
     public override void Configure()
     {
         Get("/api/{{ module_name_lower }}/{{ route_name }}");
-        Summary("Get all {{ entity_name_lower }}s");
+        Summary("Get a page of {{ entity_name_lower }}s (?page=1&pageSize=100)");
 {{ if required_permission }}        Permissions("{{ required_permission }}");
 {{ end }}    }
 
-    protected override async Task HandleAsync(CancellationToken ct)
+    public override async Task HandleAsync(Get{{ entity_plural }}Request req, CancellationToken ct)
     {
-        var items = await mediator.QueryAsync(new Get{{ entity_plural }}Query(), ct);
+        var items = await mediator.QueryAsync(new Get{{ entity_plural }}Query(req.Page, req.PageSize), ct);
 {{ if has_api_extra_fields }}        await SendOkAsync(items
             .Select(i => i with { ExtraProperties = registry.VisibleExtraProperties({{ entity_name }}ExtraProperties.Entity, user, i.ExtraProperties) })
             .ToList(), ct);
@@ -80,6 +89,7 @@ public sealed class Create{{ entity_name }}Endpoint(IMediator mediator{{ if has_
     {
         Post("/api/{{ module_name_lower }}/{{ route_name }}");
         Summary("Create a new {{ entity_name_lower }}");
+        Created();
 {{ if required_permission }}        Permissions("{{ required_permission }}");
 {{ end }}    }
 

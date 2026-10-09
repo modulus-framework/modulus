@@ -84,3 +84,4 @@ logs/
 ## Docusaurus build cache
 website/.docusaurus/
 website/build/
+BenchmarkDotNet.Artifacts/

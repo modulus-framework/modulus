@@ -8,7 +8,8 @@ using Modulus.AspNetCore.Correlation;
 using Modulus.AspNetCore.DataProtection;
 using Modulus.AspNetCore.FeatureFlags;
 using Modulus.AspNetCore.HealthChecks;
-using Modulus.AspNetCore.Idempotency;
+{{ if expose_api }}using Modulus.AspNetCore.Http;
+{{ end }}using Modulus.AspNetCore.Idempotency;
 using Modulus.AspNetCore.Logging;
 {{ if expose_api }}using Modulus.AspNetCore.OpenApi;
 {{ end }}using Modulus.AspNetCore.RateLimiting;
@@ -74,6 +75,8 @@ builder.Services.AddModulusExceptionHandling();
 {{ end }}{{ if expose_api && enable_rate_limiting }}builder.Services.AddModulusRateLimiting(builder.Configuration);
 {{ end }}{{ if expose_api && enable_cors }}builder.Services.AddModulusCors(builder.Configuration);
 {{ end }}{{ if enable_security_headers }}builder.Services.AddModulusSecurityHeaders(builder.Configuration);
+{{ end }}{{ if expose_api }}// Brotli/gzip for API responses ("ResponseCompression" section; off over HTTPS unless EnableForHttps, see BREACH).
+builder.Services.AddModulusResponseCompression(builder.Configuration);
 {{ end }}
 {{ if enable_feature_flags }}// Runtime feature flags bound to the "FeatureManagement" section. Gate a minimal-API
 // endpoint with .RequireFeature("Flag"); MVC actions can use [FeatureGate("Flag")].
@@ -252,7 +255,8 @@ await app.Services.SeedTenancyAsync(app.Environment);
 // pipeline{{ if expose_api }}. Idempotency runs after UseModulus so the tenant is resolved before
 // keys are scoped, and still wraps the controller so responses can be replayed{{ end }}.
 app.UseForwardedHeaders();
-{{ if enable_correlation }}app.UseModulusCorrelation();
+{{ if expose_api }}app.UseModulusResponseCompression();
+{{ end }}{{ if enable_correlation }}app.UseModulusCorrelation();
 {{ end }}{{ if enable_security_headers }}app.UseModulusSecurityHeaders();
 {{ end }}app.UseExceptionHandler();
 {{ if expose_api }}{{ if enable_cors }}app.UseModulusCors();

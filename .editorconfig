@@ -66,3 +66,21 @@ dotnet_diagnostic.VSTHRD200.severity = suggestion
 # ── Code-quality analyzers kept at error (fail the build) ──────
 # (TreatWarningsAsErrors turns warnings into errors automatically;
 #  the rules below are explicitly confirmed as errors.)
+
+# ── Performance rules (library code only) ──
+[src/**.cs]
+dotnet_diagnostic.CA1869.severity = warning
+dotnet_diagnostic.CA1860.severity = warning
+dotnet_diagnostic.CA1854.severity = warning
+dotnet_diagnostic.CA1851.severity = warning
+dotnet_diagnostic.CA2016.severity = warning
+dotnet_diagnostic.CA1827.severity = warning
+dotnet_diagnostic.CA1829.severity = warning
+dotnet_diagnostic.CA1830.severity = warning
+dotnet_diagnostic.CA1845.severity = warning
+dotnet_diagnostic.CA1846.severity = warning
+dotnet_diagnostic.CA1847.severity = warning
+dotnet_diagnostic.CA1855.severity = warning
+dotnet_diagnostic.CA1861.severity = warning
+dotnet_diagnostic.CA1868.severity = warning
+dotnet_diagnostic.CA1872.severity = warning

@@ -105,7 +105,10 @@ public class TemplateRenderingTests
         output.Should().Contain("class CreateProductEndpoint");
         output.Should().Contain("class UpdateProductEndpoint");
         output.Should().Contain("class DeleteProductEndpoint");
-        output.Should().Contain("EndpointWithoutRequest<IReadOnlyList<ProductDto>>");
+        // The list endpoint is bounded: it takes page / pageSize rather than returning every row.
+        output.Should().Contain("Endpoint<GetProductsRequest, IReadOnlyList<ProductDto>>");
+        output.Should().Contain("new GetProductsQuery(req.Page, req.PageSize)");
+        output.Should().Contain("Created();");
         output.Should().Contain("Endpoint<GetProductByIdRequest, ProductDto>");
         output.Should().Contain("Endpoint<CreateProductRequest, Guid>");
         output.Should().NotContain("{{");

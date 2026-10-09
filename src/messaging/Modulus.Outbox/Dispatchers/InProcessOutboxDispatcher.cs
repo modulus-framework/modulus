@@ -1,5 +1,6 @@
 namespace Modulus.Outbox.Dispatchers;
 
+using Modulus.Events;
 using Modulus.Events.Abstractions;
 using Modulus.Outbox.Abstractions;
 
@@ -32,6 +33,6 @@ internal sealed class InProcessOutboxDispatcher(
             ?? throw new InvalidOperationException(
                 $"Failed to deserialise outbox payload for '{message.MessageType}'.");
 
-        await bus.PublishAsync((dynamic)@event, ct);
+        await bus.PublishBoxedAsync(@event, ct);
     }
 }

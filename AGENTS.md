@@ -1395,6 +1395,35 @@ roots, Security tab in `Modulus.UI.AuditLogging`).
 - **Known gaps (open).** `Explain` and available actions are evaluated as the calling user, so "why can't *Bob* do this" needs Bob's own session
   (effective-access reports cover him at the permission level); and the UI for all of this is not done.
 
+## Cross-surface errors, REST completeness, performance (audit remediation)
+
+- **One error catalog.** `ModulusErrorCatalog.Classify(Exception)` (Core) is the single exception → kind/code table used by
+  `GlobalExceptionHandler` (HTTP), `GrpcExceptionMapper` and `GraphQLExceptionMapper`, so the same exception gives the same
+  `code` everywhere (`CrossTenantWriteException` → `PERMISSION_DENIED` / 403 / `PermissionDenied`). `ValidationException.FieldErrors`
+  carries per-field messages: REST `errors` dictionary, gRPC `BadRequest` field violations (proto snake_case paths), GraphQL
+  `extensions.errors` as `[{field, message}]`. Problem bodies always carry `code` and `traceId`; `Send{NotFound,Unauthorized,Forbidden}Async`
+  write problem bodies.
+- **Protocol-aware middleware.** Idempotency skips gRPC and `Idempotency:ExcludedPaths` (default `/graphql`), scopes anonymous callers by
+  IP, and answers a retry of an oversized (uncacheable) response with 409 instead of re-running it. A rejected rate-limit request gets
+  `Retry-After` and a problem body (gRPC: trailers-only `ResourceExhausted`).
+- **REPR.** `Versions(...)` maps one route per declared version (`/api/v{n}/...`) unless the route already starts with `/api/`;
+  `Deprecated()` marks the operation obsolete. OpenAPI shows the real success status and 401/403/500 problem responses.
+  `Created()` sets 201; `SendOkAsync(response, etag)` / `CheckIfMatchAsync` give ETag + `If-None-Match` (304) / `If-Match` (412).
+  Repeated query keys bind to array/`List<T>` properties. `AddModulusResponseCompression(config)` / `UseModulusResponseCompression()`
+  (Brotli + Gzip, off for HTTPS by default) are wired in the generated host. Output caching is deliberately not provided
+  (caching authenticated responses is a footgun). Generated list endpoints, gRPC `List` and GraphQL list fields page (`Page`/`PageSize`,
+  default 100, max 500).
+- **gRPC / GraphQL.** gRPC: response compression option, client keepalive, reflection only when `Grpc:EnableReflection`, a
+  `RequestInfo` detail with the correlation id. GraphQL: `MaxDocumentLength`, `MaxAliases`, `ExecutionTimeout`, and a
+  `Modulus.GraphQL` activity per operation.
+- **Performance.** `GetByIdAsync` parameterizes the key (one compiled query); `SaveChangesAsync` detects changes once; the outbox
+  poller loops at once when a batch was full; outbox dispatchers no longer use `dynamic`; mediator caches its closed types and
+  `ValidationBehavior` its attribute lookup; REPR binding caches per-type binders; change history caches audited properties; the
+  inbox reads its row and a legacy row in one query. Perf analyzers (CA1869, CA1851, CA2016, CA1845/46/47, ...) are warnings in
+  `src/**`. Benchmarks: `dotnet run -c Release --project tests/benchmarks/Modulus.Benchmarks -- --filter "*"`.
+- **Still open:** generated CRUD does not publish `{Entity}CreatedIntegrationEvent` (the event would need to be a domain event on the
+  aggregate; layering needs a design decision); `Modulus.UI.AI`; GraphQL subscriptions/persisted queries; grpc-web; AOT annotations.
+
 ## Open-source dependency policy
 
 Every dependency must be fully open source (MIT / Apache-2.0 / BSD; no commercial license or paid tier to

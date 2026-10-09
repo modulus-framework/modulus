@@ -80,6 +80,9 @@ public abstract class EndpointBase : IModulusEndpoint
     protected void Tag(string tag) => Config.Tag = tag;
     protected void Summary(string summary) => Config.Summary = summary;
     protected void Deprecated() => Config.Deprecated = true;
+
+    /// <summary>Documents the success response as <c>201 Created</c> (for endpoints that end with <c>SendCreatedAsync</c>).</summary>
+    protected void Created() => Config.SuccessStatusCode = StatusCodes.Status201Created;
     protected void WrapResponse() => Config.WrapResponse = true;
     protected void DontWrapResponse() => Config.WrapResponse = false;
 
@@ -92,21 +95,32 @@ public abstract class EndpointBase : IModulusEndpoint
     }
 
     protected Task SendNotFoundAsync(CancellationToken ct = default)
-    {
-        HttpContext.Response.StatusCode = StatusCodes.Status404NotFound;
-        return Task.CompletedTask;
-    }
+        => ProblemResponses.WriteAsync(
+            HttpContext, StatusCodes.Status404NotFound, "Resource not found", "NOT_FOUND");
 
     protected Task SendUnauthorizedAsync(CancellationToken ct = default)
-    {
-        HttpContext.Response.StatusCode = StatusCodes.Status401Unauthorized;
-        return Task.CompletedTask;
-    }
+        => ProblemResponses.WriteAsync(
+            HttpContext, StatusCodes.Status401Unauthorized, "Unauthorized", "UNAUTHENTICATED");
 
     protected Task SendForbiddenAsync(CancellationToken ct = default)
+        => ProblemResponses.WriteAsync(
+            HttpContext, StatusCodes.Status403Forbidden, "Forbidden", "PERMISSION_DENIED");
+
+    /// <summary>
+    /// Optimistic-concurrency guard for an update or delete: when the caller sent <c>If-Match</c> and it does not name
+    /// <paramref name="currentEtag"/>, writes <c>412 Precondition Failed</c> and returns false (stop handling). A request
+    /// without <c>If-Match</c> passes, so existing clients keep working.
+    /// </summary>
+    protected async Task<bool> CheckIfMatchAsync(string currentEtag, CancellationToken ct = default)
     {
-        HttpContext.Response.StatusCode = StatusCodes.Status403Forbidden;
-        return Task.CompletedTask;
+        var ifMatch = HttpContext.Request.Headers.IfMatch;
+        if (ifMatch.Count == 0 || ETags.IfMatchSatisfied(ifMatch, currentEtag))
+            return true;
+
+        HttpContext.Response.Headers.ETag = ETags.Format(currentEtag);
+        await ProblemResponses.WriteAsync(
+            HttpContext, StatusCodes.Status412PreconditionFailed, "Precondition failed", "PRECONDITION_FAILED");
+        return false;
     }
 
     /// <summary>Writes an RFC 7807 problem response — the same error contract

@@ -1,0 +1,11 @@
+<Project>
+
+  <!-- Benchmarks are tooling, not tests: no xUnit, never packed, excluded from the Category filters. -->
+  <Import Project="$(MSBuildThisFileDirectory)..\..\Directory.Build.props" />
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+  </PropertyGroup>
+
+</Project>

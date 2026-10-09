@@ -25,6 +25,7 @@ public sealed class OutboxPollingService(
 
         while (!stoppingToken.IsCancellationRequested)
         {
+            var drainAgain = false;
             try
             {
                 // When leader election is enabled, only the replica that holds
@@ -60,6 +61,7 @@ public sealed class OutboxPollingService(
                     var processor = scope.ServiceProvider
                         .GetRequiredService<OutboxProcessor>();
                     await processor.ProcessAsync(stoppingToken);
+                    drainAgain = processor.HasMoreWork;
                 }
                 finally
                 {
@@ -78,7 +80,10 @@ public sealed class OutboxPollingService(
                     "Outbox processing iteration failed; will retry on next interval.");
             }
 
-            await Task.Delay(interval, stoppingToken);
+            // A full batch means a backlog: go straight back for the next one rather than capping
+            // throughput at BatchSize per interval.
+            if (!drainAgain)
+                await Task.Delay(interval, stoppingToken);
         }
     }
 }

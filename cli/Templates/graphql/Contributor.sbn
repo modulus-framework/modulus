@@ -19,9 +19,13 @@ public sealed class {{ entity_name }}GraphQL : IGraphQLContributor
 {{ end }}    public void ConfigureQuery(ObjectGraphType query)
     {
         query.Field<NonNullGraphType<ListGraphType<NonNullGraphType<{{ entity_name }}GraphType>>>>("{{ entity_plural_camel }}")
-            .Description("Every {{ entity_name_lower }}.")
+            .Description("A page of {{ entity_name_lower }}s (default 100, at most 500).")
+            .Argument<IntGraphType>("page")
+            .Argument<IntGraphType>("pageSize")
             {{ authorize }}
-            .ResolveAsync(async context => await context.QueryAsync(new Get{{ entity_plural }}Query()));
+            .ResolveAsync(async context => await context.QueryAsync(new Get{{ entity_plural }}Query(
+                context.GetArgument<int?>("page") ?? 1,
+                context.GetArgument<int?>("pageSize") ?? Get{{ entity_plural }}Query.DefaultPageSize)));
 
         query.Field<{{ entity_name }}GraphType>("{{ entity_name_camel }}")
             .Description("One {{ entity_name_lower }}, by id.")

@@ -38,3 +38,10 @@ static Modulus.Grpc.GrpcServerExtensions.MapModulusGrpc(this Microsoft.AspNetCor
 static Modulus.Grpc.ModulusRpcExceptionExtensions.GetErrorMetadata(this Grpc.Core.RpcException! exception) -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
 static Modulus.Grpc.ModulusRpcExceptionExtensions.GetErrorReason(this Grpc.Core.RpcException! exception) -> string?
 static Modulus.Grpc.ModulusRpcExceptionExtensions.GetValidationErrors(this Grpc.Core.RpcException! exception) -> System.Collections.Generic.IReadOnlyList<string!>!
+Modulus.Grpc.ModulusGrpcClientOptions.KeepAlivePingDelay.get -> System.TimeSpan?
+Modulus.Grpc.ModulusGrpcClientOptions.KeepAlivePingDelay.set -> void
+Modulus.Grpc.ModulusGrpcClientOptions.KeepAlivePingTimeout.get -> System.TimeSpan
+Modulus.Grpc.ModulusGrpcClientOptions.KeepAlivePingTimeout.set -> void
+Modulus.Grpc.ModulusGrpcOptions.ResponseCompressionAlgorithm.get -> string?
+Modulus.Grpc.ModulusGrpcOptions.ResponseCompressionAlgorithm.set -> void
+static Modulus.Grpc.GrpcExceptionMapper.ToRpcException(System.Exception! exception, bool includeExceptionDetails, string? requestId) -> Grpc.Core.RpcException!

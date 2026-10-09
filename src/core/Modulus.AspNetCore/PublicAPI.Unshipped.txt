@@ -455,3 +455,24 @@ Modulus.AspNetCore.RateLimiting.RateLimitingOptions.SensitivePermitLimit.get -> 
 Modulus.AspNetCore.RateLimiting.RateLimitingOptions.SensitivePermitLimit.set -> void
 Modulus.AspNetCore.RateLimiting.RateLimitingOptions.SensitiveWindowSeconds.get -> int
 Modulus.AspNetCore.RateLimiting.RateLimitingOptions.SensitiveWindowSeconds.set -> void
+Modulus.AspNetCore.Idempotency.IdempotencyOptions.ExcludedPaths.get -> string![]!
+Modulus.AspNetCore.Idempotency.IdempotencyOptions.ExcludedPaths.set -> void
+Modulus.AspNetCore.Endpoints.EndpointBase.Created() -> void
+const Modulus.AspNetCore.Http.ModulusResponseCompressionOptions.SectionName = "ResponseCompression" -> string!
+Modulus.AspNetCore.Endpoints.EndpointBase.CheckIfMatchAsync(string! currentEtag, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.AspNetCore.Endpoints.Endpoint<TRequest, TResponse>.SendOkAsync(TResponse response, string! etag, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.AspNetCore.Http.ETags
+Modulus.AspNetCore.Http.ModulusResponseCompressionOptions
+Modulus.AspNetCore.Http.ModulusResponseCompressionOptions.AdditionalMimeTypes.get -> string![]!
+Modulus.AspNetCore.Http.ModulusResponseCompressionOptions.AdditionalMimeTypes.set -> void
+Modulus.AspNetCore.Http.ModulusResponseCompressionOptions.Enabled.get -> bool
+Modulus.AspNetCore.Http.ModulusResponseCompressionOptions.Enabled.set -> void
+Modulus.AspNetCore.Http.ModulusResponseCompressionOptions.EnableForHttps.get -> bool
+Modulus.AspNetCore.Http.ModulusResponseCompressionOptions.EnableForHttps.set -> void
+Modulus.AspNetCore.Http.ModulusResponseCompressionOptions.ModulusResponseCompressionOptions() -> void
+Modulus.AspNetCore.Http.ResponseCompressionExtensions
+static Modulus.AspNetCore.Http.ETags.Format(string! value) -> string!
+static Modulus.AspNetCore.Http.ETags.IfMatchSatisfied(Microsoft.Extensions.Primitives.StringValues ifMatch, string! etag) -> bool
+static Modulus.AspNetCore.Http.ETags.NoneMatchSatisfied(Microsoft.Extensions.Primitives.StringValues ifNoneMatch, string! etag) -> bool
+static Modulus.AspNetCore.Http.ResponseCompressionExtensions.AddModulusResponseCompression(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration, System.Action<Modulus.AspNetCore.Http.ModulusResponseCompressionOptions!>? configure = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.AspNetCore.Http.ResponseCompressionExtensions.UseModulusResponseCompression(this Microsoft.AspNetCore.Builder.IApplicationBuilder! app) -> Microsoft.AspNetCore.Builder.IApplicationBuilder!

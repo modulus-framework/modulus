@@ -25,8 +25,11 @@ internal sealed class EfInboxStore(
         TimeSpan claimTimeout,
         CancellationToken ct)
     {
-        var existing = await db.Set<InboxMessage>()
-            .FirstOrDefaultAsync(m => m.Id == eventId && m.HandlerName == handlerName, ct);
+        // One round trip for both the handler's own row and a legacy ("" handler) row of the same event.
+        var rows = await db.Set<InboxMessage>()
+            .Where(m => m.Id == eventId && (m.HandlerName == handlerName || m.HandlerName == string.Empty))
+            .ToListAsync(ct);
+        var existing = rows.FirstOrDefault(m => m.HandlerName == handlerName);
 
         var now = DateTime.UtcNow;
 
@@ -38,8 +41,7 @@ internal sealed class EfInboxStore(
             // and must be honoured for every handler so an in-flight upgrade
             // neither reprocesses an already-handled event nor drops one still
             // mid-flight.
-            var legacy = await db.Set<InboxMessage>()
-                .FirstOrDefaultAsync(m => m.Id == eventId && m.HandlerName == string.Empty, ct);
+            var legacy = rows.FirstOrDefault(m => m.HandlerName == string.Empty);
 
             if (legacy is { Status: InboxStatus.Processed })
                 return null;

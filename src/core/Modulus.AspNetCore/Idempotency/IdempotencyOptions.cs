@@ -22,6 +22,13 @@ public sealed class IdempotencyOptions
     /// (GET/HEAD) are never guarded. Defaults to POST and PATCH.</summary>
     public string[] Methods { get; set; } = ["POST", "PATCH"];
 
+    /// <summary>
+    /// Path prefixes the middleware never guards. Defaults to <c>/graphql</c>: GraphQL sends queries and mutations through
+    /// one POST endpoint, so a required key would reject every read and a supplied one would replay a stale query.
+    /// gRPC calls (<c>application/grpc</c>) are always skipped; a gRPC client retries with its own policy.
+    /// </summary>
+    public string[] ExcludedPaths { get; set; } = ["/graphql"];
+
     /// <summary>When true, a guarded request without an idempotency key is rejected
     /// with 400. When false (default), keyless requests pass through untouched.</summary>
     public bool RequireKey { get; set; }

@@ -91,6 +91,9 @@
     <Project Path="cli/Modulus.Cli.csproj" />
   </Folder>
   <!-- ── Tests · Unit ────────────────────────────────────────────── -->
+  <Folder Name="/tests/benchmarks/">
+    <Project Path="tests/benchmarks/Modulus.Benchmarks/Modulus.Benchmarks.csproj" />
+  </Folder>
   <Folder Name="/tests/unit/">
     <Project Path="tests/unit/Modulus.Core.Tests/Modulus.Core.Tests.csproj" />
     <Project Path="tests/unit/Modulus.AspNetCore.Tests/Modulus.AspNetCore.Tests.csproj" />

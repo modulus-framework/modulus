@@ -149,11 +149,13 @@ public sealed class ApiExtraFieldsTests : IDisposable
     }
 
     [Fact]
-    public void A_fresh_set_in_a_web_app_exposes_the_bag_and_an_api_or_unmarked_app_does_not()
+    public void A_fresh_set_in_a_webapp_api_host_exposes_the_bag_and_other_kinds_do_not()
     {
         var (domain, app, pres) = Layers();
 
-        GenerateCrudCommand.ExposesExtraFieldsInApi(AppKind.WebApp, domain, app, pres, "Product", "Products").Should().BeTrue();
+        GenerateCrudCommand.ExposesExtraFieldsInApi(AppKind.WebAppApi, domain, app, pres, "Product", "Products").Should().BeTrue();
+        GenerateCrudCommand.ExposesExtraFieldsInApi(AppKind.WebApp, domain, app, pres, "Product", "Products").Should().BeFalse(
+            "a UI-only web app maps no API surface");
         GenerateCrudCommand.ExposesExtraFieldsInApi(AppKind.Api, domain, app, pres, "Product", "Products").Should().BeFalse();
         GenerateCrudCommand.ExposesExtraFieldsInApi(null, domain, app, pres, "Product", "Products").Should().BeFalse(
             "a host from before app kinds has no recorded intent to expose an API for external clients");
@@ -171,7 +173,7 @@ public sealed class ApiExtraFieldsTests : IDisposable
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         File.WriteAllText(path, "// generated earlier");
 
-        GenerateCrudCommand.ExposesExtraFieldsInApi(AppKind.WebApp, domain, app, pres, "Product", "Products").Should().BeFalse(
+        GenerateCrudCommand.ExposesExtraFieldsInApi(AppKind.WebAppApi, domain, app, pres, "Product", "Products").Should().BeFalse(
             "files are never overwritten, so a new endpoint would not match an older DTO");
     }
 

@@ -30,24 +30,22 @@ public static class GraphQLExceptionMapper
     public static MappedError Map(Exception exception)
     {
         ArgumentNullException.ThrowIfNull(exception);
-        var none = new Dictionary<string, object?>();
-        return exception switch
+        var error = ModulusErrorCatalog.Classify(exception);
+        var extensions = new Dictionary<string, object?>();
+        switch (exception)
         {
-            ValidationException ve => new("Validation failed", "VALIDATION_FAILED", true, new Dictionary<string, object?> { ["errors"] = ve.Errors.ToList() }),
-            NotFoundException => new("Resource not found", "NOT_FOUND", true, none),
-            UnauthorizedException => new("Unauthorized", "UNAUTHENTICATED", true, none),
-            ForbiddenException => new("Forbidden", "PERMISSION_DENIED", true, none),
-            ConflictException => new("Conflict", "CONFLICT", true, none),
-            FeatureDisabledException fe => new("Feature not available", "FEATURE_DISABLED", true, new Dictionary<string, object?> { ["feature"] = fe.Feature }),
-            OperationCanceledException => new("The request was cancelled", "CANCELLED", true, none),
-            _ when IsDbUpdateConcurrencyException(exception) => new("Concurrent update conflict", "CONCURRENCY_CONFLICT", true, none),
-            _ => new("An unexpected error occurred", "INTERNAL", false, none),
-        };
-    }
+            case ValidationException ve:
+                extensions["errors"] = ve.FieldErrors
+                    .SelectMany(e => e.Value.Select(message => new Dictionary<string, object?> { ["field"] = e.Key, ["message"] = message }))
+                    .ToList();
+                break;
+            case FeatureDisabledException fe:
+                extensions["feature"] = fe.Feature;
+                break;
+        }
 
-    // Matches EF Core's DbUpdateConcurrencyException without referencing EF Core (as GlobalExceptionHandler does).
-    private static bool IsDbUpdateConcurrencyException(Exception exception)
-        => string.Equals(exception.GetType().FullName, "Microsoft.EntityFrameworkCore.DbUpdateConcurrencyException", StringComparison.Ordinal);
+        return new(error.Title, error.Code, error.IsClientError, extensions);
+    }
 }
 
 /// <summary>

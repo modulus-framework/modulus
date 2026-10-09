@@ -27,7 +27,8 @@ public sealed class GrpcServerTests
         ex.StatusCode.Should().Be(StatusCode.InvalidArgument);
         ex.Status.Detail.Should().Be("Validation failed");
         ex.GetErrorReason().Should().Be("VALIDATION_FAILED");
-        ex.GetValidationErrors().Should().Equal("Name: must not be empty", "price is too low");
+        // Field paths are the proto field names (snake_case), not the C# property names.
+        ex.GetValidationErrors().Should().Equal("name: must not be empty", "price is too low");
     }
 
     [Theory]

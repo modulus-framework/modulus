@@ -58,6 +58,11 @@ internal sealed class InMemoryIdempotencyStore : IIdempotencyStore
         {
             lock (entry.SyncRoot)
             {
+                // A late completer (its lease ran out and another request took the key over) must not overwrite
+                // the response that request already stored; the Redis store does the same with SET NX.
+                if (entry.Completed)
+                    return Task.CompletedTask;
+
                 entry.Completed = true;
                 entry.Response = response;
                 entry.ExpiresAt = _clock.GetUtcNow() + _ttl;

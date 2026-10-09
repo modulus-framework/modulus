@@ -23,7 +23,11 @@ message {{ entity_name }}Message {
   string name = 2;
 }
 
-message List{{ entity_plural }}Request {}
+message List{{ entity_plural }}Request {
+  // 1-based page number and rows per page; 0 means the default (the server caps page_size).
+  int32 page = 1;
+  int32 page_size = 2;
+}
 
 message List{{ entity_plural }}Response {
   repeated {{ entity_name }}Message items = 1;

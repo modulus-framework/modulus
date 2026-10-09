@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
+using Modulus.AspNetCore.Http;
 
 namespace Modulus.AspNetCore.Middleware;
 
@@ -21,50 +22,47 @@ internal sealed class GlobalExceptionHandler(
         if (exception is OperationCanceledException)
             return false;
 
-        var (status, title, isClientError) = exception switch
+        // A request the server refused to read (body too large, malformed) is the caller's fault, not a 500.
+        if (exception is BadHttpRequestException bad)
         {
-            ValidationException => (StatusCodes.Status400BadRequest, "Validation failed", true),
-            NotFoundException => (StatusCodes.Status404NotFound, "Resource not found", true),
-            UnauthorizedException => (StatusCodes.Status401Unauthorized, "Unauthorized", true),
-            ForbiddenException => (StatusCodes.Status403Forbidden, "Forbidden", true),
-            CrossTenantWriteException => (StatusCodes.Status403Forbidden, "Forbidden", true),
-            ConflictException => (StatusCodes.Status409Conflict, "Conflict", true),
-            FeatureDisabledException => (StatusCodes.Status404NotFound, "Feature not available", true),
-            _ when IsDbUpdateConcurrencyException(exception) => (StatusCodes.Status409Conflict, "Concurrent update conflict", true),
-            _ => (StatusCodes.Status500InternalServerError, "An unexpected error occurred", false),
+            logger.LogWarning("Handled client error: {Type}: {Message}", exception.GetType().Name, exception.Message);
+            await ProblemResponses.WriteAsync(ctx, bad.StatusCode, "Bad request", "BAD_REQUEST");
+            return true;
+        }
+
+        var error = ModulusErrorCatalog.Classify(exception);
+        var status = error.Kind switch
+        {
+            ModulusErrorKind.Validation => StatusCodes.Status400BadRequest,
+            ModulusErrorKind.NotFound or ModulusErrorKind.FeatureDisabled => StatusCodes.Status404NotFound,
+            ModulusErrorKind.Unauthenticated => StatusCodes.Status401Unauthorized,
+            ModulusErrorKind.PermissionDenied => StatusCodes.Status403Forbidden,
+            ModulusErrorKind.Conflict or ModulusErrorKind.ConcurrencyConflict => StatusCodes.Status409Conflict,
+            _ => StatusCodes.Status500InternalServerError,
         };
 
         // 4xx are client errors — log at Warning to avoid flooding alerting.
         // 5xx are genuine server faults — log at Error.
-        if (isClientError)
+        if (error.IsClientError)
             logger.LogWarning("Handled client error: {Type}: {Message}",
                 exception.GetType().Name, exception.Message);
         else
             logger.LogError(exception, "Unhandled exception: {Type}",
                 exception.GetType().Name);
 
-        Dictionary<string, object?>? extensions = null;
         if (exception is ValidationException ve)
-            extensions = new() { ["errors"] = ve.Errors };
-        else if (exception is FeatureDisabledException fe)
-            extensions = new() { ["feature"] = fe.Feature };
+        {
+            // Same dictionary shape the endpoint validators answer with.
+            await ProblemResponses.WriteValidationAsync(
+                ctx, ve.FieldErrors.ToDictionary(e => e.Key, e => e.Value), error.Title, error.Code);
+            return true;
+        }
 
-        await Results.Problem(
-                title: title,
-                statusCode: status,
-                extensions: extensions)
-            .ExecuteAsync(ctx);
+        Dictionary<string, object?>? extra = exception is FeatureDisabledException fe
+            ? new() { ["feature"] = fe.Feature }
+            : null;
+        await ProblemResponses.WriteAsync(ctx, status, error.Title, error.Code, extra);
 
         return true;
     }
-
-    /// <summary>
-    /// Matches EF Core's DbUpdateConcurrencyException without a hard dependency
-    /// on the EntityFrameworkCore assembly (Modulus.AspNetCore does not reference it).
-    /// </summary>
-    private static bool IsDbUpdateConcurrencyException(Exception ex)
-        => string.Equals(
-            ex.GetType().FullName,
-            "Microsoft.EntityFrameworkCore.DbUpdateConcurrencyException",
-            StringComparison.Ordinal);
 }

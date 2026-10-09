@@ -121,7 +121,7 @@ public sealed class IdempotencyMiddlewareTests
     }
 
     [Fact]
-    public async Task OversizedResponse_StreamsThroughUncached_AndRetryReprocesses()
+    public async Task OversizedResponse_StreamsThroughUncached_AndRetryIsRefusedNotRerun()
     {
         var (mw, store, calls) = Build(
             o => o.MaxResponseBytes = 16,
@@ -134,11 +134,65 @@ public sealed class IdempotencyMiddlewareTests
         var first = await InvokeAsync(mw, store, "POST", key: "k", body: "payload");
         var second = await InvokeAsync(mw, store, "POST", key: "k", body: "payload");
 
-        calls.Count.Should().Be(2); // oversized response was not cached — retry re-ran
+        calls.Count.Should().Be(1); // the side effect ran once; the retry must not repeat it
         first.Response.StatusCode.Should().Be(200);
         ReadBody(first).Should().HaveLength(100); // full body still reached the client
-        ReadBody(second).Should().HaveLength(100);
+        second.Response.StatusCode.Should().Be(409); // completed, but the response cannot be replayed
         first.Response.Headers.ContainsKey("Idempotency-Replayed").Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task GrpcCalls_AreNeverGuarded()
+    {
+        var (mw, store, calls) = Build(o => o.RequireKey = true);
+
+        var ctx = await InvokeAsync(mw, store, "POST", key: null, contentType: "application/grpc");
+
+        calls.Count.Should().Be(1); // not rejected for the missing key
+        ctx.Response.StatusCode.Should().Be(200);
+    }
+
+    [Fact]
+    public async Task ExcludedPaths_AreNeverGuarded()
+    {
+        var (mw, store, calls) = Build(o => o.RequireKey = true);
+
+        await InvokeAsync(mw, store, "POST", key: null, path: "/graphql");
+        await InvokeAsync(mw, store, "POST", key: null, path: "/GraphQL/ui");
+
+        calls.Count.Should().Be(2);
+    }
+
+    [Fact]
+    public async Task AnonymousCallers_DoNotShareAnEntry()
+    {
+        var (mw, store, calls) = Build();
+
+        await InvokeAsync(mw, store, "POST", key: "k", body: "payload", remoteIp: "10.0.0.1");
+        var other = await InvokeAsync(mw, store, "POST", key: "k", body: "payload", remoteIp: "10.0.0.2");
+
+        calls.Count.Should().Be(2); // the second caller was not served the first caller's response
+        other.Response.Headers.ContainsKey("Idempotency-Replayed").Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task ALateCompleter_DoesNotOverwriteAStoredResponse()
+    {
+        var store = new InMemoryIdempotencyStoreProbe().Create();
+        await store.TryBeginAsync("k", "f", default);
+        await store.CompleteAsync("k", new CachedResponse(201, new Dictionary<string, string>(), [1]), default);
+
+        await store.CompleteAsync("k", new CachedResponse(500, new Dictionary<string, string>(), [2]), default);
+
+        var result = await store.TryBeginAsync("k", "f", default);
+        result.Response!.StatusCode.Should().Be(201);
+    }
+
+    private sealed class InMemoryIdempotencyStoreProbe
+    {
+        public IIdempotencyStore Create() => (IIdempotencyStore)Activator.CreateInstance(
+            typeof(IdempotencyOptions).Assembly.GetType("Modulus.AspNetCore.Idempotency.InMemoryIdempotencyStore")!,
+            Options.Create(new IdempotencyOptions()), null)!;
     }
 
     // ── helpers ────────────────────────────────────────────────────
@@ -167,7 +221,8 @@ public sealed class IdempotencyMiddlewareTests
     }
 
     private static async Task<HttpContext> InvokeAsync(
-        IdempotencyMiddleware mw, IIdempotencyStore store, string method, string? key, string body = "")
+        IdempotencyMiddleware mw, IIdempotencyStore store, string method, string? key, string body = "",
+        string? contentType = null, string path = "/orders", string? remoteIp = null)
     {
         var ctx = new DefaultHttpContext
         {
@@ -175,7 +230,10 @@ public sealed class IdempotencyMiddlewareTests
             RequestServices = new ServiceCollection().AddLogging().BuildServiceProvider(),
         };
         ctx.Request.Method = method;
-        ctx.Request.Path = "/orders";
+        ctx.Request.Path = path;
+        ctx.Request.ContentType = contentType;
+        if (remoteIp is not null)
+            ctx.Connection.RemoteIpAddress = System.Net.IPAddress.Parse(remoteIp);
         ctx.Request.Body = new MemoryStream(Encoding.UTF8.GetBytes(body));
         if (key is not null)
             ctx.Request.Headers["Idempotency-Key"] = key;

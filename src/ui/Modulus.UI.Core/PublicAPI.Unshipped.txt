@@ -1232,3 +1232,5 @@ override Modulus.UI.EntityUiSchemaField.ToString() -> string!
 override Modulus.UI.EntityUiSchema.Equals(object? obj) -> bool
 override Modulus.UI.EntityUiSchema.GetHashCode() -> int
 override Modulus.UI.EntityUiSchema.ToString() -> string!
+Modulus.UI.HtmxResponse.Retarget(string! selector, string! swap) -> Modulus.UI.HtmxResponse!
+Modulus.UI.HtmxResponse.Noop() -> Modulus.UI.HtmxResponse!

@@ -10,7 +10,10 @@ using Microsoft.Extensions.Options;
 /// exception handler does: client errors at Warning, server faults at Error. A call the client cancelled is left to
 /// gRPC (it is not a server fault).
 /// </summary>
-internal sealed class GrpcExceptionInterceptor(ILogger<GrpcExceptionInterceptor> logger, IOptions<ModulusGrpcOptions> options) : Interceptor
+internal sealed class GrpcExceptionInterceptor(
+    ILogger<GrpcExceptionInterceptor> logger,
+    IOptions<ModulusGrpcOptions> options,
+    Modulus.Core.Abstractions.ICorrelationContext? correlation = null) : Interceptor
 {
     public override async Task<TResponse> UnaryServerHandler<TRequest, TResponse>(
         TRequest request, ServerCallContext context, UnaryServerMethod<TRequest, TResponse> continuation)
@@ -73,7 +76,9 @@ internal sealed class GrpcExceptionInterceptor(ILogger<GrpcExceptionInterceptor>
 
     private RpcException Translate(Exception exception, ServerCallContext context)
     {
-        var (rpc, isClientError) = GrpcExceptionMapper.Map(exception, options.Value.EnableDetailedErrors);
+        var (rpc, isClientError) = GrpcExceptionMapper.Map(
+            exception, options.Value.EnableDetailedErrors,
+            correlation?.CorrelationId ?? System.Diagnostics.Activity.Current?.TraceId.ToString());
         if (isClientError)
         {
             logger.LogWarning("gRPC {Method} answered {Status}: {Type}: {Message}",

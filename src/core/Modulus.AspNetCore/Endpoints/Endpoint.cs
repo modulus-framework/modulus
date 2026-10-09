@@ -58,6 +58,32 @@ public abstract class Endpoint<TRequest, TResponse> : EndpointBase, IEndpointHan
         return HttpContext.Response.WriteAsJsonAsync(payload, ct);
     }
 
+    /// <summary>
+    /// Sends <paramref name="response"/> with a strong <c>ETag</c>, or an empty <c>304 Not Modified</c> when the caller's
+    /// <c>If-None-Match</c> already names it (GET and HEAD; any other method answers <c>412</c>). Derive <paramref name="etag"/>
+    /// from the data the response is built from (a concurrency stamp, a row version, a timestamp), not from the body.
+    /// </summary>
+    protected Task SendOkAsync(TResponse response, string etag, CancellationToken ct = default)
+    {
+        var tag = ETags.Format(etag);
+        HttpContext.Response.Headers.ETag = tag;
+
+        var conditional = HttpContext.Request.Headers.IfNoneMatch;
+        if (conditional.Count > 0 && ETags.NoneMatchSatisfied(conditional, tag))
+        {
+            if (HttpMethods.IsGet(HttpContext.Request.Method) || HttpMethods.IsHead(HttpContext.Request.Method))
+            {
+                HttpContext.Response.StatusCode = StatusCodes.Status304NotModified;
+                return Task.CompletedTask;
+            }
+
+            return ProblemResponses.WriteAsync(
+                HttpContext, StatusCodes.Status412PreconditionFailed, "Precondition failed", "PRECONDITION_FAILED");
+        }
+
+        return SendOkAsync(response, ct);
+    }
+
     protected Task SendCreatedAsync(TResponse response, string? location = null, CancellationToken ct = default)
     {
         HttpContext.Response.StatusCode = StatusCodes.Status201Created;
@@ -73,7 +99,13 @@ public abstract class Endpoint<TRequest, TResponse> : EndpointBase, IEndpointHan
     protected Task SendAsync(TResponse response, int statusCode, CancellationToken ct = default)
     {
         HttpContext.Response.StatusCode = statusCode;
-        return HttpContext.Response.WriteAsJsonAsync(response, ct);
+
+        // A success payload is wrapped like SendOkAsync / SendCreatedAsync would; any other status carries the
+        // caller's payload as given.
+        var payload = Config.WrapResponse && statusCode is >= 200 and <= 299
+            ? (object)ApiResponse<TResponse>.Ok(response)
+            : response;
+        return HttpContext.Response.WriteAsJsonAsync(payload, ct);
     }
 }
 

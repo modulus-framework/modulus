@@ -26,6 +26,13 @@ public sealed class ModulusGrpcOptions
 
     /// <summary>The largest message the server sends, in bytes. Null means no limit (gRPC's default).</summary>
     public int? MaxSendMessageSize { get; set; }
+
+    /// <summary>
+    /// Compresses responses with this algorithm (<c>gzip</c> is built in) for clients that accept it. Null leaves
+    /// responses uncompressed, gRPC's default. Worth it for large list messages over a slow link; skip it between
+    /// services on one network.
+    /// </summary>
+    public string? ResponseCompressionAlgorithm { get; set; }
 }
 
 /// <summary>
@@ -54,4 +61,13 @@ public sealed class ModulusGrpcClientOptions
     /// propagated first, so a shorter one wins.
     /// </summary>
     public TimeSpan? DefaultDeadline { get; set; } = TimeSpan.FromSeconds(30);
+
+    /// <summary>
+    /// How often an HTTP/2 PING is sent while a call is active, so a dead connection (a load balancer that silently
+    /// dropped it) is noticed instead of the call hanging until its deadline. Null turns pings off.
+    /// </summary>
+    public TimeSpan? KeepAlivePingDelay { get; set; } = TimeSpan.FromSeconds(60);
+
+    /// <summary>How long to wait for the answer to a keep-alive PING before the connection is closed.</summary>
+    public TimeSpan KeepAlivePingTimeout { get; set; } = TimeSpan.FromSeconds(30);
 }

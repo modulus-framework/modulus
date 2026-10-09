@@ -17,5 +17,6 @@ public static class ModulusActivitySources
         Mediator.Name,
         Events.Name,
         BackgroundJobs.Name,
+        "Modulus.GraphQL", // Modulus.GraphQL's own source; named here so this package need not reference it
     ];
 }

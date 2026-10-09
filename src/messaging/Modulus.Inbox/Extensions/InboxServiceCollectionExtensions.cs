@@ -197,6 +197,11 @@ internal sealed class InboxHandlerDecorator : IIntegrationEventHandlerDecorator
         var store = registry is null
             ? services.GetRequiredService<IInboxStore>()
             : registry.Resolve(services, handler.GetType());
-        return ActivatorUtilities.CreateInstance(services, decoratorType, handler, store);
+        var factory = s_factories.GetOrAdd((decoratorType, handler.GetType(), store.GetType()),
+            static key => ActivatorUtilities.CreateFactory(key.Item1, [key.Item2, key.Item3]));
+        return factory(services, [handler, store]);
     }
+
+    // Constructor lookup is reflection-heavy; do it once per decorator/handler/store combination.
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<(Type, Type, Type), ObjectFactory> s_factories = new();
 }

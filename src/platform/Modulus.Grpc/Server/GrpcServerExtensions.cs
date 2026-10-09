@@ -42,6 +42,11 @@ public static class GrpcServerExtensions
                 grpc.MaxReceiveMessageSize = receive;
             if (settings.MaxSendMessageSize is { } send)
                 grpc.MaxSendMessageSize = send;
+            if (!string.IsNullOrWhiteSpace(settings.ResponseCompressionAlgorithm))
+            {
+                grpc.ResponseCompressionAlgorithm = settings.ResponseCompressionAlgorithm;
+                grpc.ResponseCompressionLevel = System.IO.Compression.CompressionLevel.Fastest;
+            }
         });
 
         var builder = services.AddGrpc(grpc =>
@@ -51,7 +56,9 @@ public static class GrpcServerExtensions
             configure?.Invoke(grpc);
         });
 
-        services.AddGrpcReflection();
+        // The reflection service describes every service and message, so it is only registered when it is switched on.
+        if (configuration.GetSection(ModulusGrpcOptions.SectionName).Get<ModulusGrpcOptions>()?.EnableReflection == true)
+            services.AddGrpcReflection();
         services.AddGrpcHealthChecks().AddModulusHealthChecks();
         return builder;
     }

@@ -13,6 +13,28 @@ internal sealed class Mediator(IServiceProvider sp) : IMediator
     // Cached behavior delegates: (behaviorType, requestType, responseType) → compiled invoke
     private static readonly ConcurrentDictionary<(Type, Type, Type), Delegate> s_behaviorDelegates = new();
 
+    // Closed generic service types per (requestType, responseType): MakeGenericType is far too slow to repeat per send.
+    private static readonly ConcurrentDictionary<(Type, Type), PipelineTypes> s_pipelineTypes = new();
+
+    private sealed record PipelineTypes(Type HandlerType, Type BehaviorsType);
+
+    private static PipelineTypes CreatePipelineTypes<TResponse>(Type requestType)
+    {
+        Type handlerType;
+        if (typeof(ICommand<TResponse>).IsAssignableFrom(requestType))
+            handlerType = typeof(ICommandHandler<,>).MakeGenericType(requestType, typeof(TResponse));
+        else if (typeof(IQuery<TResponse>).IsAssignableFrom(requestType))
+            handlerType = typeof(IQueryHandler<,>).MakeGenericType(requestType, typeof(TResponse));
+        else
+            throw new InvalidOperationException(
+                $"Request type {requestType.Name} implements neither " +
+                $"ICommand<{typeof(TResponse).Name}> nor IQuery<{typeof(TResponse).Name}>.");
+
+        var behaviors = typeof(IEnumerable<>).MakeGenericType(
+            typeof(IPipelineBehavior<,>).MakeGenericType(requestType, typeof(TResponse)));
+        return new PipelineTypes(handlerType, behaviors);
+    }
+
     public Task<TResponse> SendAsync<TResponse>(
         ICommand<TResponse> command, CancellationToken ct)
         => DispatchAsync<TResponse>(command, ct);
@@ -25,39 +47,24 @@ internal sealed class Mediator(IServiceProvider sp) : IMediator
         object request, CancellationToken ct)
     {
         var requestType = request.GetType();
+        var types = s_pipelineTypes.GetOrAdd((requestType, typeof(TResponse)),
+            static key => CreatePipelineTypes<TResponse>(key.Item1));
 
         // Build innermost handler delegate using compiled expression tree
         RequestHandlerDelegate<TResponse> handler = () =>
         {
-            Type handlerType;
-            if (request is ICommand<TResponse>)
-                handlerType = typeof(ICommandHandler<,>).MakeGenericType(requestType, typeof(TResponse));
-            else if (request is IQuery<TResponse>)
-                handlerType = typeof(IQueryHandler<,>).MakeGenericType(requestType, typeof(TResponse));
-            else
-                throw new InvalidOperationException(
-                    $"Request type {requestType.Name} implements neither " +
-                    $"ICommand<{typeof(TResponse).Name}> nor IQuery<{typeof(TResponse).Name}>.");
-
-            var h = sp.GetRequiredService(handlerType);
+            var h = sp.GetRequiredService(types.HandlerType);
             var invoke = (Func<object, object, CancellationToken, Task<TResponse>>)
-                s_handlerDelegates.GetOrAdd(handlerType,
+                s_handlerDelegates.GetOrAdd(types.HandlerType,
                     static t => CompileHandlerDelegate<TResponse>(t));
             return invoke(h, request, ct);
         };
 
-        // Resolve behaviors for the ACTUAL request type
-        var behaviorInterface = typeof(IPipelineBehavior<,>)
-            .MakeGenericType(requestType, typeof(TResponse));
-
-        var behaviors = ((IEnumerable<object>?)
-            sp.GetService(typeof(IEnumerable<>).MakeGenericType(behaviorInterface))
-            ?? [])
-            .Reverse()
-            .ToList();
+        // Behaviors registered for the ACTUAL request type (innermost last, so wrap from the end).
+        var behaviors = (IEnumerable<object>?)sp.GetService(types.BehaviorsType) ?? [];
 
         // Wrap with behaviors (reverse order = outermost first at execution)
-        foreach (var behavior in behaviors)
+        foreach (var behavior in behaviors.Reverse())
         {
             var next = handler;
             var bType = behavior.GetType();

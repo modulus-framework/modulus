@@ -58,6 +58,9 @@ public static class GraphQLServiceCollectionExtensions
             .Validate(o => o.Path.StartsWith('/'), "GraphQL:Path must start with '/'.")
             .Validate(o => o.MaxDepth is null or > 0 && o.MaxComplexity is null or > 0 && o.ListSizeEstimate >= 1,
                 "GraphQL:MaxDepth and GraphQL:MaxComplexity must be positive, GraphQL:ListSizeEstimate at least 1.")
+            .Validate(o => o.MaxDocumentLength is null or > 0 && o.MaxAliases is null or > 0
+                    && (o.ExecutionTimeout is null || o.ExecutionTimeout > TimeSpan.Zero),
+                "GraphQL:MaxDocumentLength and GraphQL:MaxAliases must be positive, GraphQL:ExecutionTimeout greater than zero.")
             .ValidateOnStart();
 
         services.AddGraphQL(graphql =>
@@ -80,6 +83,33 @@ public static class GraphQLServiceCollectionExtensions
                     complexity.DefaultListImpactMultiplier = options.ListSizeEstimate;
                 })
                 .AddValidationRule<IntrospectionGateRule>()
+                .AddValidationRule<RequestLimitsRule>()
+                .ConfigureExecution(async (executionOptions, next) =>
+                {
+                    var settings = Options(executionOptions.RequestServices ?? throw new InvalidOperationException("GraphQL needs request services."));
+                    using var activity = GraphQLTelemetry.Source.StartActivity("graphql.execute");
+                    activity?.SetTag("graphql.operation.name", executionOptions.OperationName);
+
+                    // Cancel the resolvers (they receive this token) when the request outlives the limit.
+                    using var timeout = CancellationTokenSource.CreateLinkedTokenSource(executionOptions.CancellationToken);
+                    if (settings.ExecutionTimeout is { } limit)
+                    {
+                        timeout.CancelAfter(limit);
+                        executionOptions.CancellationToken = timeout.Token;
+                    }
+
+                    var result = await next(executionOptions);
+                    if (activity is not null)
+                    {
+                        activity.SetTag("graphql.operation.type", result.Operation?.Operation.ToString().ToLowerInvariant());
+                        var errors = result.Executed ? result.Errors?.Count ?? 0 : 0;
+                        activity.SetTag("graphql.errors", errors);
+                        if (errors > 0)
+                            activity.SetStatus(System.Diagnostics.ActivityStatusCode.Error);
+                    }
+
+                    return result;
+                })
                 .AddExecutionStrategy<IExecutionStrategy>(
                     sp => Options(sp).ParallelQueryExecution ? ParallelExecutionStrategy.Instance : SerialExecutionStrategy.Instance,
                     OperationType.Query);
@@ -184,4 +214,36 @@ internal sealed class IntrospectionGateRule(IOptions<ModulusGraphQLOptions> opti
 {
     public override ValueTask<INodeVisitor?> GetPreNodeVisitorAsync(ValidationContext context)
         => options.Value.EnableIntrospection ? default : NoIntrospectionValidationRule.Instance.GetPreNodeVisitorAsync(context);
+}
+
+/// <summary>The activity source for GraphQL operations (<c>Modulus.GraphQL</c>), listened to by the Modulus OpenTelemetry setup.</summary>
+internal static class GraphQLTelemetry
+{
+    public static readonly System.Diagnostics.ActivitySource Source = new("Modulus.GraphQL", "1.0.0");
+}
+
+/// <summary>Rejects a document longer than <see cref="ModulusGraphQLOptions.MaxDocumentLength"/> or with more aliases than <see cref="ModulusGraphQLOptions.MaxAliases"/>.</summary>
+internal sealed class RequestLimitsRule(IOptions<ModulusGraphQLOptions> options) : ValidationRuleBase
+{
+    public override ValueTask<INodeVisitor?> GetPreNodeVisitorAsync(ValidationContext context)
+    {
+        var settings = options.Value;
+        if (settings.MaxDocumentLength is { } maxLength && context.Document.Source.Length > maxLength)
+        {
+            context.ReportError(new ValidationError(
+                context.Document.Source, "limits", $"The query is longer than the {maxLength} characters allowed."));
+            return default;
+        }
+
+        if (settings.MaxAliases is not { } maxAliases)
+            return default;
+
+        var aliases = 0;
+        return new ValueTask<INodeVisitor?>(new MatchingNodeVisitor<GraphQLField>((field, ctx) =>
+        {
+            if (field.Alias is not null && ++aliases == maxAliases + 1)
+                ctx.ReportError(new ValidationError(
+                    ctx.Document.Source, "limits", $"The query uses more than the {maxAliases} aliases allowed.", field));
+        }));
+    }
 }

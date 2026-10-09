@@ -59,7 +59,7 @@ public sealed class {{ entity_name }}GrpcTests(ModulusWebAppFactory<ApiEntryPoin
 
         var error = (await call.Should().ThrowAsync<RpcException>()).Which;
         error.StatusCode.Should().Be(StatusCode.InvalidArgument);
-        error.GetValidationErrors().Should().ContainSingle(e => e.StartsWith("Id:", StringComparison.Ordinal));
+        error.GetValidationErrors().Should().ContainSingle(e => e.StartsWith("id:", StringComparison.Ordinal));
     }
 
     [Fact]

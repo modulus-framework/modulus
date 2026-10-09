@@ -73,13 +73,16 @@ public static class SecurityHeadersExtensions
         // HSTS is only meaningful (and only honoured) over HTTPS.
         if (options.EnableHsts && response.HttpContext.Request.IsHttps)
         {
-            var value = $"max-age={options.HstsMaxAgeSeconds}";
-            if (options.HstsIncludeSubDomains)
-                value += "; includeSubDomains";
-            headers["Strict-Transport-Security"] = value;
+            headers["Strict-Transport-Security"] = HstsValue(options);
         }
 
         if (options.RemoveServerHeader)
             headers.Remove("Server");
     }
+
+    // Options are fixed after startup, so the header value is built once per options instance, not per response.
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<SecurityHeadersOptions, string> s_hsts = new();
+
+    private static string HstsValue(SecurityHeadersOptions options)
+        => s_hsts.GetValue(options, static o => $"max-age={o.HstsMaxAgeSeconds}" + (o.HstsIncludeSubDomains ? "; includeSubDomains" : ""));
 }

@@ -45,10 +45,11 @@ public static class ApiVersioningExtensions
 
     private static ApiVersion ParseVersion(string value)
     {
-        // Accept "1", "1.0", "2.1" — fall back to 1.0 rather than throwing at boot
-        // on a malformed config value the operator can fix without a redeploy loop.
-        if (double.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out var d))
-            return new ApiVersion(d);
+        // Accept "1", "1.0", "2.1", "1.10" — fall back to 1.0 rather than throwing at boot on a malformed config
+        // value the operator can fix without a redeploy loop. Parsed as major.minor, never as a double ("1.10" is
+        // minor 10, not 1.1).
+        if (ApiVersionParser.Default.TryParse(value, out var parsed))
+            return parsed;
 
         var parts = value.Split('.', 2);
         if (int.TryParse(parts[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out var major))

@@ -6,6 +6,7 @@ using System.Security.Claims;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -89,6 +90,7 @@ public static class RateLimitingExtensions
         {
             limiter.RejectionStatusCode = options.RejectionStatusCode;
             limiter.GlobalLimiter = global;
+            limiter.OnRejected = (rejected, ct) => WriteRejectionAsync(rejected, options, ct);
         });
 
         return services;
@@ -104,6 +106,30 @@ public static class RateLimitingExtensions
         var options = app.Services
             .GetRequiredService<IOptions<RateLimitingOptions>>().Value;
         return options.Enabled ? app.UseRateLimiter() : app;
+    }
+
+    // Tells the caller when to come back, in the form its protocol understands. A gRPC client reads the status from a
+    // trailers-only response: a bare 429 would reach it as Unavailable, which its retry policy then hammers.
+    private static async ValueTask WriteRejectionAsync(
+        OnRejectedContext rejected, RateLimitingOptions options, CancellationToken ct)
+    {
+        var http = rejected.HttpContext;
+        var retryAfter = rejected.Lease.TryGetMetadata(MetadataName.RetryAfter, out var wait)
+            ? Math.Max(1, (int)Math.Ceiling(wait.TotalSeconds))
+            : Math.Max(1, options.WindowSeconds);
+        http.Response.Headers.RetryAfter = retryAfter.ToString(System.Globalization.CultureInfo.InvariantCulture);
+
+        if (http.Request.ContentType?.StartsWith("application/grpc", StringComparison.OrdinalIgnoreCase) == true)
+        {
+            http.Response.StatusCode = StatusCodes.Status200OK;
+            http.Response.ContentType = "application/grpc";
+            http.Response.Headers["grpc-status"] = "8"; // ResourceExhausted
+            http.Response.Headers["grpc-message"] = "Rate limit exceeded";
+            return;
+        }
+
+        await Http.ProblemResponses.WriteAsync(
+            http, http.Response.StatusCode, "Too many requests", "RATE_LIMITED");
     }
 
     private static string ResolvePartitionKey(HttpContext context, RateLimitPartitionStrategy partition)

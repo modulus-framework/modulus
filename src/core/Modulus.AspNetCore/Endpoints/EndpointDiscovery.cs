@@ -176,18 +176,25 @@ public static class EndpointDiscovery
             }
         };
 
-        // Auto-prepend API version prefix unless the route already has one
-        var route = config.Route;
-        if (config.Versions.Length > 0
-            && !route.StartsWith("/api/", StringComparison.OrdinalIgnoreCase))
+        // One route per declared version (Versions(1, 2) → /api/v1/x and /api/v2/x). A route that already starts with
+        // "/api/" carries its own version and is mapped as written.
+        foreach (var route in VersionedRoutes(config))
         {
-            route = $"/api/v{config.Versions[0]}{route}";
+            var builder = app.MapMethods(route, [verb], handler);
+
+            ApplyAuthorization(builder, config);
+            ApplyOpenApi(builder, endpointType, config, bindsRequest);
         }
+    }
 
-        var builder = app.MapMethods(route, [verb], handler);
+    /// <summary>The route(s) an endpoint is mapped at: one per declared API version unless the route is already under <c>/api/</c>.</summary>
+    internal static IReadOnlyList<string> VersionedRoutes(EndpointConfig config)
+    {
+        var route = config.Route;
+        if (config.Versions.Length == 0 || route.StartsWith("/api/", StringComparison.OrdinalIgnoreCase))
+            return [route];
 
-        ApplyAuthorization(builder, config);
-        ApplyOpenApi(builder, endpointType, config, bindsRequest);
+        return config.Versions.Distinct().Select(version => $"/api/v{version}{route}").ToArray();
     }
 
     private static void ApplyAuthorization(
@@ -240,7 +247,11 @@ public static class EndpointDiscovery
             builder.WithSummary(config.Summary);
 
         if (config.Deprecated)
+        {
             builder.WithDescription("[DEPRECATED] " + (config.Summary ?? ""));
+            // The OpenAPI generator reads ObsoleteAttribute metadata to emit "deprecated": true on the operation.
+            builder.WithMetadata(new ObsoleteAttribute("Deprecated endpoint."));
+        }
 
         // Request/response shapes for OpenAPI. The response type reflects the
         // conventional success path: the (optionally wrapped) payload for
@@ -258,11 +269,20 @@ public static class EndpointDiscovery
             var responseType = config.WrapResponse
                 ? typeof(ApiResponse<>).MakeGenericType(config.ResponseType)
                 : config.ResponseType;
-            builder.Produces(StatusCodes.Status200OK, responseType);
+            builder.Produces(config.SuccessStatusCode, responseType);
         }
 
         if (bindsRequest)
             builder.ProducesValidationProblem();
+
+        // The error contract every framework error path emits (application/problem+json, see ProblemResponses).
+        if (!config.AllowAnonymous)
+        {
+            builder.ProducesProblem(StatusCodes.Status401Unauthorized);
+            builder.ProducesProblem(StatusCodes.Status403Forbidden);
+        }
+
+        builder.ProducesProblem(StatusCodes.Status500InternalServerError);
 
         static bool verbHasBody(string verb) => IsBodyMethod(verb);
     }
@@ -329,7 +349,8 @@ public static class EndpointDiscovery
             }
         }
 
-        request ??= Activator.CreateInstance(requestType)!;
+        var binder = s_binders.GetOrAdd(requestType, static t => new RequestBinder(t));
+        request ??= binder.Create();
 
         // Collect every conversion failure so the client sees all bad
         // parameters at once, mirroring validation-problem semantics.
@@ -339,7 +360,7 @@ public static class EndpointDiscovery
         foreach (var (key, value) in ctx.GetRouteData().Values)
         {
             if (value is not null)
-                BindProperty(request, key, value.ToString()!, ref errors);
+                BindProperty(binder, request, key, value.ToString()!, ref errors);
         }
 
         // Query binding for non-body methods
@@ -348,7 +369,7 @@ public static class EndpointDiscovery
             foreach (var (key, values) in ctx.Request.Query)
             {
                 if (values.Count > 0)
-                    BindProperty(request, key, values.ToString(), ref errors);
+                    BindQueryProperty(binder, request, key, values, ref errors);
             }
         }
 
@@ -365,17 +386,39 @@ public static class EndpointDiscovery
     private static bool IsBodyMethod(string verb)
         => verb is "POST" or "PUT" or "PATCH";
 
+    // Per request type, once: the parameterless constructor and the writable public properties by (case-insensitive) name.
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<Type, RequestBinder> s_binders = new();
+
+    private sealed class RequestBinder
+    {
+        private readonly Func<object> _create;
+
+        public RequestBinder(Type requestType)
+        {
+            var ctor = requestType.GetConstructor(Type.EmptyTypes);
+            _create = ctor is null
+                ? () => Activator.CreateInstance(requestType)!
+                : System.Linq.Expressions.Expression.Lambda<Func<object>>(
+                    System.Linq.Expressions.Expression.New(ctor)).Compile();
+
+            Properties = requestType.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                .Where(p => p.CanWrite)
+                .GroupBy(p => p.Name, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
+        }
+
+        public Dictionary<string, PropertyInfo> Properties { get; }
+
+        public object Create() => _create();
+    }
+
     private static void BindProperty(
-        object target, string key, string value,
+        RequestBinder binder, object target, string key, string value,
         ref Dictionary<string, string[]>? errors)
     {
-        var prop = target.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance)
-            .FirstOrDefault(p => string.Equals(p.Name, key, StringComparison.OrdinalIgnoreCase)
-                                 && p.CanWrite);
-
         // Unknown route/query keys are simply not bound — extra query
         // parameters (tracking params etc.) are not a client error.
-        if (prop is null)
+        if (!binder.Properties.TryGetValue(key, out var prop))
             return;
 
         if (TryConvertValue(value, prop.PropertyType, out var converted))
@@ -389,6 +432,76 @@ public static class EndpointDiscovery
             errors[prop.Name] =
                 [$"The value '{value}' is not valid for {prop.Name}."];
         }
+    }
+
+    // A repeated or comma-free query key (?ids=1&ids=2) binds to an array or list property, one conversion per value;
+    // everything else keeps the single-value rule (several values join with commas, as StringValues.ToString does).
+    private static void BindQueryProperty(
+        RequestBinder binder, object target, string key, Microsoft.Extensions.Primitives.StringValues values,
+        ref Dictionary<string, string[]>? errors)
+    {
+        if (binder.Properties.TryGetValue(key, out var prop)
+            && TryGetCollectionElementType(prop.PropertyType, out var element, out var asArray))
+        {
+            var list = (System.Collections.IList)Activator.CreateInstance(typeof(List<>).MakeGenericType(element))!;
+            foreach (var item in values)
+            {
+                if (item is null)
+                    continue;
+                if (!TryConvertValue(item, element, out var converted) || converted is null)
+                {
+                    errors ??= new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase);
+                    errors[prop.Name] = [$"The value '{item}' is not valid for {prop.Name}."];
+                    return;
+                }
+
+                list.Add(converted);
+            }
+
+            if (asArray)
+            {
+                var array = Array.CreateInstance(element, list.Count);
+                list.CopyTo(array, 0);
+                prop.SetValue(target, array);
+            }
+            else
+            {
+                prop.SetValue(target, list);
+            }
+
+            return;
+        }
+
+        BindProperty(binder, target, key, values.ToString(), ref errors);
+    }
+
+    private static bool TryGetCollectionElementType(Type type, out Type element, out bool asArray)
+    {
+        element = typeof(object);
+        asArray = false;
+        if (type == typeof(string))
+            return false;
+
+        if (type.IsArray && type.GetArrayRank() == 1)
+        {
+            element = type.GetElementType()!;
+            asArray = true;
+            return true;
+        }
+
+        if (type.IsGenericType)
+        {
+            var definition = type.GetGenericTypeDefinition();
+            if (definition == typeof(List<>) || definition == typeof(IList<>) || definition == typeof(ICollection<>)
+                || definition == typeof(IEnumerable<>) || definition == typeof(IReadOnlyList<>)
+                || definition == typeof(IReadOnlyCollection<>))
+            {
+                element = type.GetGenericArguments()[0];
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static bool TryConvertValue(
@@ -486,6 +599,9 @@ public static class EndpointDiscovery
 
     // ── Validation ────────────────────────────────────────────────
 
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<Type, (Type Validator, Type Context)>
+        s_validationTypes = new();
+
     private static async Task<bool> ValidateAsync(
         IServiceProvider sp,
         Type requestType,
@@ -493,13 +609,14 @@ public static class EndpointDiscovery
         HttpContext ctx,
         CancellationToken ct)
     {
-        var validatorInterface = typeof(IValidator<>).MakeGenericType(requestType);
+        var types = s_validationTypes.GetOrAdd(requestType, static t => (
+            typeof(IValidator<>).MakeGenericType(t),
+            typeof(ValidationContext<>).MakeGenericType(t)));
 
-        if (sp.GetService(validatorInterface) is not IValidator validator)
+        if (sp.GetService(types.Validator) is not IValidator validator)
             return true;
 
-        var contextType = typeof(ValidationContext<>).MakeGenericType(requestType);
-        var context = (IValidationContext)Activator.CreateInstance(contextType, request)!;
+        var context = (IValidationContext)Activator.CreateInstance(types.Context, request)!;
 
         var result = await validator.ValidateAsync(context, ct);
 

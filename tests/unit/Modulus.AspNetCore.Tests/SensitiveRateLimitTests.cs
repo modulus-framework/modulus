@@ -56,6 +56,42 @@ public sealed class SensitiveRateLimitTests
     }
 
     [Fact]
+    public async Task A_rejected_request_gets_Retry_After_and_a_problem_body()
+    {
+        await using var app = await StartAsync();
+        var client = app.GetTestClient();
+        for (var i = 0; i < 3; i++)
+            await SendAsync(client, HttpMethod.Post, "/connect/token", "203.0.113.9");
+
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/connect/token");
+        request.Headers.Add("X-Test-Ip", "203.0.113.9");
+        var response = await client.SendAsync(request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
+        response.Headers.RetryAfter.Should().NotBeNull();
+        response.Content.Headers.ContentType!.MediaType.Should().Be("application/problem+json");
+        (await response.Content.ReadAsStringAsync()).Should().Contain("RATE_LIMITED");
+    }
+
+    [Fact]
+    public async Task A_rejected_grpc_call_gets_resource_exhausted_trailers_not_a_bare_429()
+    {
+        await using var app = await StartAsync();
+        var client = app.GetTestClient();
+        for (var i = 0; i < 3; i++)
+            await SendAsync(client, HttpMethod.Post, "/connect/token", "203.0.113.10");
+
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/connect/token") { Content = new ByteArrayContent([]) };
+        request.Content.Headers.ContentType = new("application/grpc");
+        request.Headers.Add("X-Test-Ip", "203.0.113.10");
+        var response = await client.SendAsync(request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Headers.GetValues("grpc-status").Should().Equal("8");
+        response.Headers.RetryAfter.Should().NotBeNull();
+    }
+
+    [Fact]
     public async Task The_sign_in_endpoint_is_cut_off_after_its_small_budget()
     {
         await using var app = await StartAsync();

@@ -251,7 +251,7 @@ internal sealed class RabbitMqEventConsumer : BackgroundService
             _logger.LogError(ex,
                 "RabbitMQ message (routing key '{RoutingKey}') could not be identified; nacking to DLX",
                 routingKey);
-            await channel.BasicNackAsync(deliveryTag, multiple: false, requeue: false);
+            await channel.BasicNackAsync(deliveryTag, multiple: false, requeue: false, CancellationToken.None);
             return;
         }
 
@@ -264,7 +264,7 @@ internal sealed class RabbitMqEventConsumer : BackgroundService
             _logger.LogError(ex,
                 "RabbitMQ message (routing key '{RoutingKey}', event {EventId}) failed after {Attempts} delivery attempts; nacking to DLX",
                 routingKey, eventId, attempt);
-            await channel.BasicNackAsync(deliveryTag, multiple: false, requeue: false);
+            await channel.BasicNackAsync(deliveryTag, multiple: false, requeue: false, CancellationToken.None);
             return;
         }
 

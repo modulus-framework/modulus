@@ -11,7 +11,9 @@ public sealed class Get{{ entity_plural }}Handler(I{{ entity_name }}Repository r
         Get{{ entity_plural }}Query query,
         CancellationToken ct)
     {
-        var entities = await repo.GetAllAsync(ct);
+        var size = Math.Clamp(query.PageSize, 1, Get{{ entity_plural }}Query.MaxPageSize);
+        var page = Math.Max(1, query.Page);
+        var entities = await repo.GetPageAsync((page - 1) * size, size, ct);
         return entities
             .Select(e => new {{ entity_name }}Dto
             {

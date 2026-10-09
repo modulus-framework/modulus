@@ -31,45 +31,97 @@ public static class GrpcExceptionMapper
     public static RpcException ToRpcException(Exception exception, bool includeExceptionDetails = false)
         => Map(exception, includeExceptionDetails).Exception;
 
-    internal static (RpcException Exception, bool IsClientError) Map(Exception exception, bool includeExceptionDetails)
+    /// <summary>
+    /// Maps <paramref name="exception"/> and, when <paramref name="requestId"/> is given, adds a
+    /// <c>google.rpc.RequestInfo</c> detail with it, so a client can quote the id to support.
+    /// </summary>
+    public static RpcException ToRpcException(Exception exception, bool includeExceptionDetails, string? requestId)
+        => Map(exception, includeExceptionDetails, requestId).Exception;
+
+    internal static (RpcException Exception, bool IsClientError) Map(
+        Exception exception, bool includeExceptionDetails, string? requestId = null)
     {
         ArgumentNullException.ThrowIfNull(exception);
         if (exception is RpcException rpc)
             return (rpc, rpc.StatusCode != StatusCode.Internal && rpc.StatusCode != StatusCode.Unknown);
 
-        return exception switch
+        var (mapped, isClientError) = MapCore(exception, includeExceptionDetails);
+        return (requestId is null ? mapped : WithRequestInfo(mapped, requestId), isClientError);
+    }
+
+    private static RpcException WithRequestInfo(RpcException exception, string requestId)
+    {
+        var status = exception.GetRpcStatus();
+        if (status is null)
+            return exception;
+
+        status.Details.Add(Any.Pack(new RequestInfo { RequestId = requestId }));
+        return status.ToRpcException();
+    }
+
+    private static (RpcException Exception, bool IsClientError) MapCore(Exception exception, bool includeExceptionDetails)
+    {
+        var error = ModulusErrorCatalog.Classify(exception);
+        return error.Kind switch
         {
-            ValidationException ve => (Validation(ve), true),
-            NotFoundException => (Build(StatusCode.NotFound, "Resource not found", "NOT_FOUND"), true),
-            UnauthorizedException => (Build(StatusCode.Unauthenticated, "Unauthorized", "UNAUTHENTICATED"), true),
-            ForbiddenException => (Build(StatusCode.PermissionDenied, "Forbidden", "PERMISSION_DENIED"), true),
-            ConflictException => (Build(StatusCode.Aborted, "Conflict", "CONFLICT"), true),
-            FeatureDisabledException fe => (Build(StatusCode.NotFound, "Feature not available", "FEATURE_DISABLED",
-                new Dictionary<string, string> { ["feature"] = fe.Feature }), true),
-            OperationCanceledException => (Build(StatusCode.Cancelled, "The call was cancelled", "CANCELLED"), true),
-            _ when IsDbUpdateConcurrencyException(exception)
-                => (Build(StatusCode.Aborted, "Concurrent update conflict", "CONCURRENCY_CONFLICT"), true),
+            ModulusErrorKind.Validation => (Validation((ValidationException)exception), true),
+            ModulusErrorKind.NotFound => (Build(StatusCode.NotFound, error.Title, error.Code), true),
+            ModulusErrorKind.Unauthenticated => (Build(StatusCode.Unauthenticated, error.Title, error.Code), true),
+            ModulusErrorKind.PermissionDenied => (Build(StatusCode.PermissionDenied, error.Title, error.Code), true),
+            ModulusErrorKind.Conflict or ModulusErrorKind.ConcurrencyConflict
+                => (Build(StatusCode.Aborted, error.Title, error.Code), true),
+            ModulusErrorKind.FeatureDisabled => (Build(StatusCode.NotFound, error.Title, error.Code,
+                new Dictionary<string, string> { ["feature"] = ((FeatureDisabledException)exception).Feature }), true),
+            ModulusErrorKind.Cancelled => (Build(StatusCode.Cancelled, "The call was cancelled", error.Code), true),
             _ => (Build(StatusCode.Internal,
-                includeExceptionDetails ? exception.ToString() : "An unexpected error occurred", "INTERNAL"), false),
+                includeExceptionDetails ? exception.ToString() : error.Title, error.Code), false),
         };
     }
 
     private static RpcException Validation(ValidationException exception)
     {
         var badRequest = new BadRequest();
-        foreach (var error in exception.Errors)
+        foreach (var (field, messages) in exception.FieldErrors)
         {
-            // The mediator's validation behaviour writes "Property: message"; anything else has no field.
-            var separator = error.IndexOf(": ", StringComparison.Ordinal);
-            var field = separator > 0 && !error[..separator].Contains(' ', StringComparison.Ordinal) ? error[..separator] : "";
-            badRequest.FieldViolations.Add(new BadRequest.Types.FieldViolation
+            foreach (var message in messages)
             {
-                Field = field,
-                Description = field.Length > 0 ? error[(separator + 2)..] : error,
-            });
+                badRequest.FieldViolations.Add(new BadRequest.Types.FieldViolation
+                {
+                    // google.rpc field paths follow the proto field names (snake_case), not the C# property names.
+                    Field = ToProtoFieldPath(field),
+                    Description = message,
+                });
+            }
         }
 
         return Build(StatusCode.InvalidArgument, "Validation failed", "VALIDATION_FAILED", details: badRequest);
+    }
+
+    // "UnitPrice" -> "unit_price"; nested paths ("Address.PostalCode" -> "address.postal_code") convert per segment.
+    internal static string ToProtoFieldPath(string property)
+    {
+        if (property.Length == 0)
+            return property;
+
+        var builder = new System.Text.StringBuilder(property.Length + 4);
+        for (var i = 0; i < property.Length; i++)
+        {
+            var c = property[i];
+            if (char.IsUpper(c))
+            {
+                var startsWord = i > 0 && property[i - 1] != '.' && property[i - 1] != '_'
+                    && (!char.IsUpper(property[i - 1]) || (i + 1 < property.Length && char.IsLower(property[i + 1])));
+                if (startsWord)
+                    builder.Append('_');
+                builder.Append(char.ToLowerInvariant(c));
+            }
+            else
+            {
+                builder.Append(c);
+            }
+        }
+
+        return builder.ToString();
     }
 
     private static RpcException Build(
@@ -89,8 +141,4 @@ public static class GrpcExceptionMapper
             status.Details.Add(Any.Pack(details));
         return status.ToRpcException();
     }
-
-    // Matches EF Core's DbUpdateConcurrencyException without referencing EF Core (as GlobalExceptionHandler does).
-    private static bool IsDbUpdateConcurrencyException(Exception exception)
-        => string.Equals(exception.GetType().FullName, "Microsoft.EntityFrameworkCore.DbUpdateConcurrencyException", StringComparison.Ordinal);
 }

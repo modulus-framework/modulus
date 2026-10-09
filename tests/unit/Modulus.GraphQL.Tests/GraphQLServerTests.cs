@@ -94,7 +94,9 @@ public sealed class GraphQLServerTests
         var error = body.GetProperty("errors")[0];
         error.GetProperty("message").GetString().Should().Be("Validation failed");
         error.GetProperty("extensions").GetProperty("code").GetString().Should().Be("VALIDATION_FAILED");
-        error.GetProperty("extensions").GetProperty("errors")[0].GetString().Should().Be("Name: must not be empty");
+        var first = error.GetProperty("extensions").GetProperty("errors")[0];
+        first.GetProperty("field").GetString().Should().Be("Name");
+        first.GetProperty("message").GetString().Should().Be("must not be empty");
     }
 
     [Fact]
@@ -170,6 +172,25 @@ public sealed class GraphQLServerTests
 
         var (_, flat) = await PostAsync(host.Client(Read), "{ a: first b: first c: first d: first }");
         flat.GetProperty("errors")[0].GetProperty("message").GetString().Should().ContainEquivalentOf("complex");
+    }
+
+    [Fact]
+    public async Task Aliases_and_document_length_are_limited()
+    {
+        await using var host = await StartAsync(o =>
+        {
+            o.MaxAliases = 2;
+            o.MaxDocumentLength = 200;
+        });
+
+        var (_, aliased) = await PostAsync(host.Client(Read), "{ a: first b: first c: first }");
+        aliased.GetProperty("errors")[0].GetProperty("message").GetString().Should().ContainEquivalentOf("aliases");
+
+        var (_, ok) = await PostAsync(host.Client(Read), "{ a: first b: first }");
+        ok.TryGetProperty("errors", out _).Should().BeFalse(ok.GetRawText());
+
+        var (_, long_) = await PostAsync(host.Client(Read), "{ first " + new string(' ', 300) + " }");
+        long_.GetProperty("errors")[0].GetProperty("message").GetString().Should().ContainEquivalentOf("longer");
     }
 
     [Fact]

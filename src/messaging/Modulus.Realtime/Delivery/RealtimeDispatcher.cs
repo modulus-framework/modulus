@@ -103,7 +103,7 @@ internal sealed class RealtimeDispatcher(
             await using var scope = scopes.CreateAsyncScope();
             foreach (var message in candidates)
             {
-                if (await IsForAsync(connection, message, scope.ServiceProvider, ct).ConfigureAwait(false))
+                if (await IsForAsync(connection, message, message.Users is { } u ? new HashSet<string>(u, StringComparer.Ordinal) : null, scope.ServiceProvider, ct).ConfigureAwait(false))
                     visible.Add(message);
             }
         }
@@ -132,12 +132,14 @@ internal sealed class RealtimeDispatcher(
         if (targets.Length == 0)
             return;
 
+        // Built once per message: the audience check runs per connection and must not rescan the list each time.
+        var users = message.Users is { } list ? new HashSet<string>(list, StringComparer.Ordinal) : null;
         await using var scope = scopes.CreateAsyncScope();
         foreach (var connection in targets)
         {
             try
             {
-                if (!await IsForAsync(connection, message, scope.ServiceProvider, ct).ConfigureAwait(false))
+                if (!await IsForAsync(connection, message, users, scope.ServiceProvider, ct).ConfigureAwait(false))
                     continue;
                 if (connection.TryEnqueue(message))
                 {
@@ -158,11 +160,11 @@ internal sealed class RealtimeDispatcher(
         }
     }
 
-    private async Task<bool> IsForAsync(RealtimeConnection connection, RealtimeMessage message, IServiceProvider services, CancellationToken ct)
+    private async Task<bool> IsForAsync(RealtimeConnection connection, RealtimeMessage message, HashSet<string>? users, IServiceProvider services, CancellationToken ct)
     {
         if (connection.IsClosed || connection.TenantId != message.TenantId || !connection.WantsType(message.Type))
             return false;
-        if (message.Users is { } users && (connection.UserId is null || !users.Contains(connection.UserId, StringComparer.Ordinal)))
+        if (users is not null && (connection.UserId is null || !users.Contains(connection.UserId)))
             return false;
         if (message.Topic is { } topic && !connection.Follows(topic))
             return false;

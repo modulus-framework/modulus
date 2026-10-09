@@ -5,4 +5,13 @@ using {{ module_namespace }}.Application.Dtos;
 namespace {{ module_namespace }}.Application;
 
 [CacheFor(30, Tags = ["{{ module_name_lower }}:{{ route_name }}"])]
-public sealed record Get{{ entity_plural }}Query : IQuery<IReadOnlyList<{{ entity_name }}Dto>>;
+/// <summary>
+/// One page of {{ entity_name_lower }}s. The result is bounded: <see cref="PageSize"/> is clamped to
+/// <see cref="MaxPageSize"/> by the handler, so no caller (REST, gRPC, GraphQL, the admin page) can ask for every row.
+/// </summary>
+public sealed record Get{{ entity_plural }}Query(int Page = 1, int PageSize = Get{{ entity_plural }}Query.DefaultPageSize)
+    : IQuery<IReadOnlyList<{{ entity_name }}Dto>>
+{
+    public const int DefaultPageSize = 100;
+    public const int MaxPageSize = 500;
+}

@@ -97,7 +97,9 @@ public sealed class CachingBehavior<TRequest, TResponse>(
         var type = typeof(TRequest).FullName ?? typeof(TRequest).Name;
         // Use JSON to serialise the request — ensures different parameter
         // values produce different keys.
-        var payload = JsonSerializer.Serialize(request);
+        // Hashed, so a large request does not become a large key held for the life of the entry.
+        var payload = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(
+            JsonSerializer.SerializeToUtf8Bytes(request)));
 
         var tenantPart = currentTenant switch
         {

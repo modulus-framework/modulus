@@ -21,6 +21,12 @@ public sealed class OutboxProcessor(
 
     private const int PurgeBatchSize = 1000;
 
+    /// <summary>
+    /// True when the last <see cref="ProcessAsync"/> filled a whole batch for some context, i.e. more rows are probably
+    /// waiting and the caller should run again at once instead of sleeping a full polling interval.
+    /// </summary>
+    public bool HasMoreWork { get; private set; }
+
     // Last cycle's total pending depth. OutboxDepth is an UpDownCounter (a
     // cumulative instrument), so each cycle records the DELTA against this —
     // Add(absolute) on every poll would grow the metric without bound.
@@ -44,6 +50,7 @@ public sealed class OutboxProcessor(
             .ToList();
         if (contexts.Count == 0) return;
 
+        HasMoreWork = false;
         var totalDepth = 0;
         foreach (var db in contexts)
         {
@@ -108,6 +115,8 @@ public sealed class OutboxProcessor(
             .ToListAsync(ct);
 
         if (candidateIds.Count == 0) return pendingCount;
+        if (candidateIds.Count >= options.BatchSize)
+            HasMoreWork = true;
 
         // 2. Atomically claim those rows for this instance. The WHERE re-check
         //    on LockedUntil is evaluated server-side, so two instances that

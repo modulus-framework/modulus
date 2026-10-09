@@ -26,6 +26,12 @@ public sealed class EndpointBindingTests
         public string? Search { get; set; }
     }
 
+    private sealed class ListOrdersRequest
+    {
+        public int[] Ids { get; set; } = [];
+        public List<string>? Tags { get; set; }
+    }
+
     private sealed class CreateOrderRequest
     {
         public string Name { get; set; } = string.Empty;
@@ -68,6 +74,36 @@ public sealed class EndpointBindingTests
         typed.Page.Should().Be(3);
         typed.IncludeArchived.Should().BeTrue();
         typed.Search.Should().Be("abc");
+    }
+
+    [Fact]
+    public async Task Repeated_query_keys_bind_to_array_and_list_properties()
+    {
+        var ctx = NewContext();
+        ctx.Request.Method = "GET";
+        ctx.Request.QueryString = new QueryString("?ids=1&ids=2&ids=3&tags=a&tags=b");
+
+        var (request, succeeded) = await EndpointDiscovery.BindRequestAsync(
+            typeof(ListOrdersRequest), ctx, "GET", CancellationToken.None);
+
+        succeeded.Should().BeTrue();
+        var typed = request.Should().BeOfType<ListOrdersRequest>().Subject;
+        typed.Ids.Should().Equal(1, 2, 3);
+        typed.Tags.Should().Equal("a", "b");
+    }
+
+    [Fact]
+    public async Task A_bad_element_in_a_query_array_is_a_400_problem()
+    {
+        var ctx = NewContext();
+        ctx.Request.Method = "GET";
+        ctx.Request.QueryString = new QueryString("?ids=1&ids=x");
+
+        var (_, succeeded) = await EndpointDiscovery.BindRequestAsync(
+            typeof(ListOrdersRequest), ctx, "GET", CancellationToken.None);
+
+        succeeded.Should().BeFalse();
+        ReadProblem(ctx).GetProperty("errors").GetProperty("Ids")[0].GetString().Should().Contain("'x'");
     }
 
     [Fact]

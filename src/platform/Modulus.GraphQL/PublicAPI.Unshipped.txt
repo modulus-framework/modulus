@@ -59,3 +59,9 @@ static Modulus.GraphQL.GraphQLServiceCollectionExtensions.AddGraphQLContributor<
 static Modulus.GraphQL.GraphQLServiceCollectionExtensions.AddModulusGraphQL(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration, System.Action<GraphQL.DI.IGraphQLBuilder!>? configure, params System.Reflection.Assembly![]! assemblies) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static Modulus.GraphQL.GraphQLServiceCollectionExtensions.AddModulusGraphQL(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration, params System.Reflection.Assembly![]! assemblies) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static Modulus.GraphQL.GraphQLServiceCollectionExtensions.ExtendGraphType<TGraphType>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<TGraphType!>! extend) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+Modulus.GraphQL.ModulusGraphQLOptions.ExecutionTimeout.get -> System.TimeSpan?
+Modulus.GraphQL.ModulusGraphQLOptions.ExecutionTimeout.set -> void
+Modulus.GraphQL.ModulusGraphQLOptions.MaxAliases.get -> int?
+Modulus.GraphQL.ModulusGraphQLOptions.MaxAliases.set -> void
+Modulus.GraphQL.ModulusGraphQLOptions.MaxDocumentLength.get -> int?
+Modulus.GraphQL.ModulusGraphQLOptions.MaxDocumentLength.set -> void

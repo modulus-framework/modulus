@@ -61,6 +61,21 @@ public static class GrpcClientExtensions
                 var options = sp.GetRequiredService<IOptions<ModulusGrpcClientOptions>>().Value;
                 channel.ServiceConfig ??= RetryOn(options);
             })
+            // Keep-alive pings notice a connection a load balancer dropped silently; extra HTTP/2 connections stop one
+            // connection's 100-stream limit from queueing calls. A later ConfigurePrimaryHttpMessageHandler replaces this.
+            .ConfigurePrimaryHttpMessageHandler(sp =>
+            {
+                var options = sp.GetRequiredService<IOptions<ModulusGrpcClientOptions>>().Value;
+                var handler = new SocketsHttpHandler { EnableMultipleHttp2Connections = true };
+                if (options.KeepAlivePingDelay is { } delay)
+                {
+                    handler.KeepAlivePingDelay = delay;
+                    handler.KeepAlivePingTimeout = options.KeepAlivePingTimeout;
+                    handler.KeepAlivePingPolicy = HttpKeepAlivePingPolicy.WithActiveRequests;
+                }
+
+                return handler;
+            })
             // Order matters: the incoming call's deadline is applied first, the default only fills a gap.
             .EnableCallContextPropagation(o => o.SuppressContextNotFoundErrors = true)
             .AddInterceptor(sp => new DefaultDeadlineInterceptor(

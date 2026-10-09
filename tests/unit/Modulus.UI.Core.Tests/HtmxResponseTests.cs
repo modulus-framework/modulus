@@ -32,6 +32,19 @@ public sealed class HtmxResponseTests
     }
 
     [Fact]
+    public void Retarget_with_a_swap_sets_both_headers_and_Noop_swaps_nothing()
+    {
+        var (htmx, response) = New();
+
+        htmx.Retarget("#table", "innerHTML");
+        response.Headers["HX-Retarget"].ToString().Should().Be("#table");
+        response.Headers["HX-Reswap"].ToString().Should().Be("innerHTML");
+
+        htmx.Noop();
+        response.Headers["HX-Reswap"].ToString().Should().Be("none");
+    }
+
+    [Fact]
     public void Toast_defaults_to_success()
     {
         var (htmx, response) = New();

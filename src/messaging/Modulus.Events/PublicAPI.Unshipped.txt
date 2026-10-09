@@ -110,3 +110,5 @@ override Modulus.Events.Abstractions.IntegrationEventAttribute<TModule>.ModuleTy
 static Modulus.Events.Abstractions.IntegrationEventNaming.Derive(string! moduleTypeName, string! eventTypeName, int version = 1) -> string!
 static Modulus.Events.Abstractions.IntegrationEventNaming.HasDeclaredName(System.Type! eventType) -> bool
 static Modulus.Events.Abstractions.IntegrationEventNaming.Kebab(string! pascal) -> string!
+Modulus.Events.ModuleBusExtensions
+static Modulus.Events.ModuleBusExtensions.PublishBoxedAsync(this Modulus.Events.Abstractions.IModuleBus! bus, Modulus.Events.Abstractions.IIntegrationEvent! event, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!

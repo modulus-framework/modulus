@@ -4,9 +4,9 @@ Roadmap for the advanced features Modulus lacked: a hybrid cache, a Backend for 
 gRPC, webhooks, GraphQL, realtime push and integration with a separately built AI platform.
 
 Status: **Phase 1a (FusionCache) and phase 1b (`Modulus.Bff`, follow-ups included) are implemented and validated.**
-The full solution builds with 0 warnings, every `Category=Unit` suite passes (`Modulus.Bff.Tests` 58,
-`Modulus.Cli.Tests` 481) and `dotnet format --verify-no-changes` is clean. Phases 2 to 5 are done (see each
-phase); phase 6 (AI platform integration) is planned, not started.
+The full solution builds with 0 warnings, every `Category=Unit` suite passes (`Modulus.Bff.Tests` 65,
+`Modulus.Cli.Tests` 593) and `dotnet format --verify-no-changes` is clean. Phases 2 to 5 are done (see each
+phase); phase 6 (AI platform integration) is built except `Modulus.UI.AI` (6a–6d done).
 Checkboxes are updated as work lands; where the build differs from the plan, the original text is kept and
 the difference is noted inline as **As built:**.
 

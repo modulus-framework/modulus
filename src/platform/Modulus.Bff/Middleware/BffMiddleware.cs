@@ -108,7 +108,7 @@ internal sealed class BffMiddleware(RequestDelegate next, IOptionsMonitor<BffCli
     private async Task WithETagAsync(HttpContext context)
     {
         var original = context.Response.Body;
-        await using var buffer = new MemoryStream();
+        await using var buffer = new SpillingBuffer(original, MaxETagBufferBytes);
         context.Response.Body = buffer;
         try
         {
@@ -118,6 +118,10 @@ internal sealed class BffMiddleware(RequestDelegate next, IOptionsMonitor<BffCli
         {
             context.Response.Body = original;
         }
+
+        // A body larger than the cap was already streamed through unchanged: no ETag, nothing left to send.
+        if (buffer.Spilled)
+            return;
 
         var response = context.Response;
         var isJson = response.ContentType?.Contains("json", StringComparison.OrdinalIgnoreCase) == true;
@@ -140,6 +144,37 @@ internal sealed class BffMiddleware(RequestDelegate next, IOptionsMonitor<BffCli
 
         buffer.Position = 0;
         await buffer.CopyToAsync(original, context.RequestAborted).ConfigureAwait(false);
+    }
+
+    // ETags need the whole body; past this size the response streams straight through instead of being held in memory.
+    private const int MaxETagBufferBytes = 1024 * 1024;
+
+    private sealed class SpillingBuffer(Stream target, int limit) : MemoryStream
+    {
+        public bool Spilled { get; private set; }
+
+        public override async ValueTask WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default)
+        {
+            if (Spilled)
+            {
+                await target.WriteAsync(source, cancellationToken).ConfigureAwait(false);
+                return;
+            }
+
+            if (Length + source.Length > limit)
+            {
+                Spilled = true;
+                await target.WriteAsync(GetBuffer().AsMemory(0, (int)Length), cancellationToken).ConfigureAwait(false);
+                SetLength(0);
+                await target.WriteAsync(source, cancellationToken).ConfigureAwait(false);
+                return;
+            }
+
+            await base.WriteAsync(source, cancellationToken).ConfigureAwait(false);
+        }
+
+        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            => WriteAsync(buffer.AsMemory(offset, count), cancellationToken).AsTask();
     }
 
     private static bool Matches(Microsoft.Extensions.Primitives.StringValues ifNoneMatch, string etag)

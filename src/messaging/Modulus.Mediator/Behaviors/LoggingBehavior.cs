@@ -13,20 +13,34 @@ public sealed class LoggingBehavior<TRequest, TResponse>(
         RequestHandlerDelegate<TResponse> next,
         CancellationToken ct)
     {
-        var name = typeof(TRequest).Name;
-        var sw = System.Diagnostics.Stopwatch.StartNew();
-        logger.LogDebug("Handling {Request}", name);
+        var name = RequestName;
+        var start = System.Diagnostics.Stopwatch.GetTimestamp();
+        MediatorLog.Handling(logger, name, null);
         try
         {
             var result = await next();
-            logger.LogDebug("Handled {Request} in {Ms}ms", name, sw.ElapsedMilliseconds);
+            if (logger.IsEnabled(LogLevel.Debug))
+                MediatorLog.Handled(logger, name, (long)System.Diagnostics.Stopwatch.GetElapsedTime(start).TotalMilliseconds, null);
             return result;
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error handling {Request} after {Ms}ms",
-                name, sw.ElapsedMilliseconds);
+            MediatorLog.Failed(logger, name, (long)System.Diagnostics.Stopwatch.GetElapsedTime(start).TotalMilliseconds, ex);
             throw;
         }
     }
+
+    private static readonly string RequestName = typeof(TRequest).Name;
+}
+
+internal static class MediatorLog
+{
+    public static readonly Action<ILogger, string, Exception?> Handling =
+        LoggerMessage.Define<string>(LogLevel.Debug, new EventId(1, nameof(Handling)), "Handling {Request}");
+
+    public static readonly Action<ILogger, string, long, Exception?> Handled =
+        LoggerMessage.Define<string, long>(LogLevel.Debug, new EventId(2, nameof(Handled)), "Handled {Request} in {Ms}ms");
+
+    public static readonly Action<ILogger, string, long, Exception?> Failed =
+        LoggerMessage.Define<string, long>(LogLevel.Error, new EventId(3, nameof(Failed)), "Error handling {Request} after {Ms}ms");
 }

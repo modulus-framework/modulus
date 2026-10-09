@@ -41,7 +41,9 @@ internal sealed class IdempotencyStoreSweeper(
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        var sweepInterval = TimeSpan.FromSeconds(Math.Max(30, options.Value.RetentionSeconds / 2));
+        // Half the retention, but never longer than 5 minutes: with the 24 h default that was a 12 h gap, during which
+        // expired entries (and their response bodies) piled up in memory.
+        var sweepInterval = TimeSpan.FromSeconds(Math.Clamp(options.Value.RetentionSeconds / 2, 30, 300));
 
         while (!stoppingToken.IsCancellationRequested)
         {

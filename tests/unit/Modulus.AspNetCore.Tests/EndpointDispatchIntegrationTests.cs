@@ -144,6 +144,85 @@ public sealed class EndpointDispatchIntegrationTests : IAsyncLifetime
         (await response.Content.ReadAsStringAsync()).Should().Contain("Malformed JSON body");
     }
 
+    [Fact]
+    public async Task Non_json_body_is_a_415_problem_not_a_500()
+    {
+        using var content = new StringContent("name=Widget", Encoding.UTF8, "text/plain");
+
+        var response = await _client.PostAsync("/api/v1/widgets", content);
+
+        // Refused by routing (the endpoint declares it accepts application/json) before the handler runs.
+        response.StatusCode.Should().Be(HttpStatusCode.UnsupportedMediaType);
+    }
+
+    // ── Versioning ────────────────────────────────────────────────────
+
+    [Theory]
+    [InlineData("/api/v1/versioned")]
+    [InlineData("/api/v2/versioned")]
+    public async Task Every_declared_version_is_mapped(string path)
+    {
+        var response = await _client.GetAsync(path);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task An_undeclared_version_is_not_mapped()
+    {
+        var response = await _client.GetAsync("/api/v3/versioned");
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    // ── Conditional requests ──────────────────────────────────────────
+
+    [Fact]
+    public async Task A_matching_If_None_Match_answers_304_without_a_body()
+    {
+        var first = await _client.GetAsync("/api/v1/tagged");
+        first.StatusCode.Should().Be(HttpStatusCode.OK);
+        var etag = first.Headers.ETag!.Tag;
+        etag.Should().Be("\"v7\"");
+
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/api/v1/tagged");
+        request.Headers.TryAddWithoutValidation("If-None-Match", etag);
+        var second = await _client.SendAsync(request);
+
+        second.StatusCode.Should().Be(HttpStatusCode.NotModified);
+        (await second.Content.ReadAsStringAsync()).Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task A_stale_If_Match_is_a_412_problem_and_a_missing_one_passes()
+    {
+        using var stale = new HttpRequestMessage(HttpMethod.Put, "/api/v1/tagged");
+        stale.Headers.TryAddWithoutValidation("If-Match", "\"v1\"");
+        var rejected = await _client.SendAsync(stale);
+        rejected.StatusCode.Should().Be(HttpStatusCode.PreconditionFailed);
+        (await rejected.Content.ReadAsStringAsync()).Should().Contain("PRECONDITION_FAILED");
+
+        using var current = new HttpRequestMessage(HttpMethod.Put, "/api/v1/tagged");
+        current.Headers.TryAddWithoutValidation("If-Match", "\"v7\"");
+        (await _client.SendAsync(current)).StatusCode.Should().Be(HttpStatusCode.OK);
+
+        using var none = new HttpRequestMessage(HttpMethod.Put, "/api/v1/tagged");
+        (await _client.SendAsync(none)).StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    // ── Error helpers write the problem contract ───────────────────────
+
+    [Fact]
+    public async Task SendNotFound_writes_a_problem_body_with_the_shared_code()
+    {
+        var response = await _client.GetAsync("/api/v1/missing");
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        response.Content.Headers.ContentType!.MediaType.Should().Be("application/problem+json");
+        var body = await response.Content.ReadAsStringAsync();
+        body.Should().Contain("\"code\":\"NOT_FOUND\"").And.Contain("traceId");
+    }
+
     // ── HttpResponseException short-circuit ─────────────────────────
 
     [Fact]
@@ -292,4 +371,55 @@ public sealed class PlainTextEndpoint : EndpointWithoutRequest<string>
     }
 
     protected override Task HandleAsync(CancellationToken ct) => SendOkAsync("raw", ct);
+}
+
+public sealed class VersionedEndpoint : EndpointWithoutRequest<string>
+{
+    public override void Configure()
+    {
+        Get("/versioned");
+        Versions(1, 2);
+        AllowAnonymous();
+    }
+
+    protected override Task HandleAsync(CancellationToken ct) => SendOkAsync("ok", ct);
+}
+
+public sealed class MissingEndpoint : EndpointWithoutRequest<string>
+{
+    public override void Configure()
+    {
+        Get("/api/v1/missing");
+        AllowAnonymous();
+    }
+
+    protected override Task HandleAsync(CancellationToken ct) => SendNotFoundAsync(ct);
+}
+
+public sealed class TaggedEndpoint : Endpoint<EmptyRequest, string>
+{
+    public override void Configure()
+    {
+        Get("/api/v1/tagged");
+        AllowAnonymous();
+    }
+
+    public override Task HandleAsync(EmptyRequest req, CancellationToken ct) => SendOkAsync("data", "v7", ct);
+}
+
+public sealed class TaggedUpdateEndpoint : Endpoint<EmptyRequest, string>
+{
+    public override void Configure()
+    {
+        Put("/api/v1/tagged");
+        AllowAnonymous();
+    }
+
+    public override async Task HandleAsync(EmptyRequest req, CancellationToken ct)
+    {
+        if (!await CheckIfMatchAsync("v7", ct))
+            return;
+
+        await SendOkAsync("updated", ct);
+    }
 }

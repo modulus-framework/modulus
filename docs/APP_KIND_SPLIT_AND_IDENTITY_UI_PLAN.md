@@ -185,7 +185,7 @@ significantly shrinks the scope of Phase B1 below.
 - [x] A2.3.7. Interim behavior (without A2.3.5/A2.3.6): the API's extension-field endpoints
       remain permission-filtered server-side (a caller only ever reads back fields it may see);
       Web-side per-field rendering of extension fields over HTTP waits for the schema endpoint.
-- [ ] A2.3.8. Retarget `GenerateCrudCommand.ExposesExtraFieldsInApi` from kind `web` (a
+- [x] A2.3.8. Retarget `GenerateCrudCommand.ExposesExtraFieldsInApi` from kind `web` (a
       pre-split rule) to `webapp+api`: under the three-way model only `webapp+api` maps an API
       surface, so for a `web` host the extra-field endpoint code is currently emitted but never
       mapped (dead-but-harmless).

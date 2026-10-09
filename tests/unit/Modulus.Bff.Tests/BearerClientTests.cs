@@ -123,6 +123,20 @@ public sealed class BearerClientTests
     }
 
     [Fact]
+    public async Task A_response_past_the_buffer_cap_streams_through_without_an_etag()
+    {
+        await using var host = await StartAsync();
+        var token = BffTestHost.CreateJwt("shop-mobile");
+
+        // The stub upstream echoes the request path, so a long query makes a body above the 1 MiB ETag buffer.
+        var response = await host.Client().SendAsync(Get("/api/catalog/items?pad=" + new string('x', 1_200_000), token));
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Headers.ETag.Should().BeNull();
+        (await response.Content.ReadAsStringAsync()).Length.Should().BeGreaterThan(1_100_000);
+    }
+
+    [Fact]
     public async Task Rate_limit_answers_429_and_cannot_be_escaped_by_rotating_the_device_header()
     {
         await using var host = await StartAsync(new()

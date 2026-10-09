@@ -91,43 +91,57 @@ public abstract class ModuleDbContext(
         bool acceptAllChangesOnSuccess,
         CancellationToken ct = default)
     {
-        ApplyAuditFields();
-
-        // After ApplyAuditFields: soft-deletes have been converted Deleted →
-        // Modified by then, so a soft-delete rotates the stamp like any other
-        // update instead of slipping past the concurrency check.
-        ApplyConcurrencyStamps();
-
-        // Feature packages add their own rows (journals, feeds) to this unit of work, so they commit with the writes.
-        foreach (var contributor in sp.GetServices<Saving.IModuleSaveContributor>())
-            contributor.OnSaving(this, currentTenant.IsHost ? null : currentTenant.TenantId);
-
-        var domainEvents = CollectDomainEvents();
-
-        // Enqueue integration events to this context's outbox table BEFORE
-        // SaveChanges so the outbox row(s) participate in the same DB
-        // transaction as the domain writes — closing the dual-write gap.
-        // We add directly to THIS context's Set<OutboxMessage>() so rows are
-        // always written by the context that owns the domain data (never a
-        // last-registered context in multi-module apps). The outbox is
-        // opt-in: only enqueue when AddOutbox was called (IOutboxWriter is
-        // registered).
-        if (sp.GetService<IOutboxWriter>() is not null)
+        // Every ChangeTracker.Entries() call below would otherwise run change detection again (about seven passes per
+        // save). Detect once, work from that snapshot, and let the base SaveChanges detect the edits made meanwhile.
+        ChangeTracker.DetectChanges();
+        var autoDetect = ChangeTracker.AutoDetectChangesEnabled;
+        ChangeTracker.AutoDetectChangesEnabled = false;
+        IReadOnlyList<IDomainEvent> domainEvents;
+        try
         {
-            var correlationId = sp.GetService<ICorrelationContext>()?.CorrelationId;
-            var causationId = sp.GetService<ICausationIdContext>()?.CausationId;
-            var serializer = sp.GetRequiredService<IMessageSerializer>();
-            foreach (var integrationEvent in domainEvents
-                         .OfType<IIntegrationEvent>())
+            ApplyAuditFields();
+
+            // After ApplyAuditFields: soft-deletes have been converted Deleted →
+            // Modified by then, so a soft-delete rotates the stamp like any other
+            // update instead of slipping past the concurrency check.
+            ApplyConcurrencyStamps();
+
+            // Feature packages add their own rows (journals, feeds) to this unit of work, so they commit with the writes.
+            foreach (var contributor in sp.GetServices<Saving.IModuleSaveContributor>())
+                contributor.OnSaving(this, currentTenant.IsHost ? null : currentTenant.TenantId);
+
+            domainEvents = CollectDomainEvents();
+
+            // Enqueue integration events to this context's outbox table BEFORE
+            // SaveChanges so the outbox row(s) participate in the same DB
+            // transaction as the domain writes — closing the dual-write gap.
+            // We add directly to THIS context's Set<OutboxMessage>() so rows are
+            // always written by the context that owns the domain data (never a
+            // last-registered context in multi-module apps). The outbox is
+            // opt-in: only enqueue when AddOutbox was called (IOutboxWriter is
+            // registered).
+            if (sp.GetService<IOutboxWriter>() is not null)
             {
-                Set<OutboxMessage>().Add(OutboxRowFactory.Create(
-                    integrationEvent,
-                    currentTenant.TenantId ?? Guid.Empty,
-                    GetType().Name.Replace("DbContext", string.Empty),
-                    correlationId,
-                    serializer,
-                    causationId));
+                var correlationId = sp.GetService<ICorrelationContext>()?.CorrelationId;
+                var causationId = sp.GetService<ICausationIdContext>()?.CausationId;
+                var serializer = sp.GetRequiredService<IMessageSerializer>();
+                foreach (var integrationEvent in domainEvents
+                             .OfType<IIntegrationEvent>())
+                {
+                    Set<OutboxMessage>().Add(OutboxRowFactory.Create(
+                        integrationEvent,
+                        currentTenant.TenantId ?? Guid.Empty,
+                        GetType().Name.Replace("DbContext", string.Empty),
+                        correlationId,
+                        serializer,
+                        causationId));
+                }
             }
+
+        }
+        finally
+        {
+            ChangeTracker.AutoDetectChangesEnabled = autoDetect;
         }
 
         var result = await base.SaveChangesAsync(acceptAllChangesOnSuccess, ct);

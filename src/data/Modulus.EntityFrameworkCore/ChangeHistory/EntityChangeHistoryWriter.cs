@@ -23,7 +23,9 @@ internal sealed class EntityChangeHistoryWriter(ICurrentTenant? currentTenant)
     {
         var changes = new List<EntityChange>();
 
-        foreach (var entry in entries.Where(e => e.Entity is IAuditableEntity))
+        // Unchanged/Detached entries never produce a change row, so don't pay to inspect them.
+        foreach (var entry in entries.Where(e => e.Entity is IAuditableEntity
+                                                 && e.State is EntityState.Added or EntityState.Modified or EntityState.Deleted))
         {
             var entityName = entry.Entity.GetType().Name;
             var entityKey = GetEntityKey(entry);
@@ -38,30 +40,11 @@ internal sealed class EntityChangeHistoryWriter(ICurrentTenant? currentTenant)
                 _ => "Unknown",
             };
 
-            // Class-level [Audited] is computed once per entry (it cannot vary
-            // per property).
-            var classAudited = entry.Entity.GetType()
-                .GetCustomAttributes(typeof(AuditedAttribute), false)
-                .Any();
-
-            // Enumerate MAPPED SCALAR properties only. Reflecting over CLR
-            // properties would also hit navigations and [NotMapped] members,
-            // and reading OriginalValues for a non-scalar throws — failing
-            // every SaveChanges of a class-audited entity with navigations.
-            foreach (var property in entry.Metadata.GetProperties())
+            // Which properties are audited depends only on the entity type: reflect once, not once per entry per save.
+            // Enumerates MAPPED SCALAR properties only. Reflecting over CLR properties would also hit navigations and
+            // [NotMapped] members, and reading OriginalValues for a non-scalar throws.
+            foreach (var property in AuditedProperties(entry.Metadata))
             {
-                // Check if the property or class is marked [Audited]
-                var propertyAudited = property.PropertyInfo?
-                    .GetCustomAttributes(typeof(AuditedAttribute), false)
-                    .Any() == true;
-
-                if (!classAudited && !propertyAudited)
-                    continue;
-
-                // Skip audit fields themselves (CreatedBy, UpdatedAt, etc.)
-                if (IsAuditField(property.Name))
-                    continue;
-
                 var propertyEntry = entry.Property(property.Name);
 
                 // Capture the change
@@ -106,6 +89,19 @@ internal sealed class EntityChangeHistoryWriter(ICurrentTenant? currentTenant)
         if (changes.Count > 0)
             context.Set<EntityChange>().AddRange(changes);
     }
+
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<Type, IReadOnlyList<Microsoft.EntityFrameworkCore.Metadata.IProperty>> s_auditedProperties = new();
+
+    private static IReadOnlyList<Microsoft.EntityFrameworkCore.Metadata.IProperty> AuditedProperties(
+        Microsoft.EntityFrameworkCore.Metadata.IEntityType entityType)
+        => s_auditedProperties.GetOrAdd(entityType.ClrType, _ =>
+        {
+            var classAudited = entityType.ClrType.GetCustomAttributes(typeof(AuditedAttribute), false).Length > 0;
+            return entityType.GetProperties()
+                .Where(p => !IsAuditField(p.Name)
+                            && (classAudited || p.PropertyInfo?.GetCustomAttributes(typeof(AuditedAttribute), false).Length > 0))
+                .ToArray();
+        });
 
     private static string GetEntityKey(EntityEntry entry)
     {

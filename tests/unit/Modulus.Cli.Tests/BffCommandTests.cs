@@ -213,6 +213,20 @@ public sealed class BffCommandTests : IDisposable
         check.Detail.Should().Contain("AddBffUserAccessToken");
     }
 
+    [Fact]
+    public void Doctor_warns_when_a_web_host_references_module_infrastructure()
+    {
+        GenerateApp(kind: AppKind.WebAppApi, bff: []);
+        var web = ModuleDiscovery.Inventory(AppDir)!.WebProjectPath!;
+        DoctorCommand.CheckWebInvariant(web).Should().BeNull();
+
+        File.WriteAllText(web, File.ReadAllText(web).Replace("</Project>",
+            "  <ItemGroup><ProjectReference Include=\"..\\..\\Modules\\X\\X.Infrastructure\\X.Infrastructure.csproj\" /></ItemGroup>\n</Project>"));
+        var check = DoctorCommand.CheckWebInvariant(web)!;
+        check.Kind.Should().Be(DoctorCommand.CheckKind.Warn);
+        check.Detail.Should().Contain("X.Infrastructure");
+    }
+
     public void Dispose()
     {
         Ux.Quiet = false;

@@ -103,6 +103,12 @@ public sealed class HtmxResponse
         return this;
     }
 
+    /// <summary>Overrides the target and the swap strategy together (<c>HX-Retarget</c> + <c>HX-Reswap</c>).</summary>
+    public HtmxResponse Retarget(string selector, string swap) => Retarget(selector).Reswap(swap);
+
+    /// <summary>Tells htmx to swap nothing for this response (<c>HX-Reswap: none</c>), e.g. after an action that only toasts.</summary>
+    public HtmxResponse Noop() => Reswap("none");
+
     /// <summary>Overrides the <c>hx-swap</c> strategy for this response.</summary>
     public HtmxResponse Reswap(string swap)
     {

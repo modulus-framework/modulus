@@ -33,6 +33,24 @@ public sealed class ModulusGraphQLOptions
     /// </summary>
     public int? MaxComplexity { get; set; } = 1000;
 
+    /// <summary>
+    /// The longest query document accepted, in characters; a longer one is rejected before it is validated further.
+    /// Complexity and depth do not bound how large the text itself is. Null means no limit.
+    /// </summary>
+    public int? MaxDocumentLength { get; set; } = 20_000;
+
+    /// <summary>
+    /// The most aliased fields one request may use (<c>a: product(id: 1) b: product(id: 2) ...</c>). Aliases let a single
+    /// request run the same expensive field many times, which depth and complexity limits can miss. Null means no limit.
+    /// </summary>
+    public int? MaxAliases { get; set; } = 20;
+
+    /// <summary>
+    /// How long one request may execute before it is cancelled (its resolvers see the cancellation token). Null means no
+    /// limit beyond the server's own request timeout.
+    /// </summary>
+    public TimeSpan? ExecutionTimeout { get; set; } = TimeSpan.FromSeconds(30);
+
     /// <summary>The average list length the complexity estimate assumes.</summary>
     public double ListSizeEstimate { get; set; } = 5;
 

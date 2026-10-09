@@ -614,3 +614,34 @@ override Modulus.Core.Abstractions.PermissionDefinition.GetHashCode() -> int
 override Modulus.Core.Abstractions.PermissionDefinition.ToString() -> string!
 static Modulus.Core.Abstractions.PermissionDefinition.operator !=(Modulus.Core.Abstractions.PermissionDefinition? left, Modulus.Core.Abstractions.PermissionDefinition? right) -> bool
 static Modulus.Core.Abstractions.PermissionDefinition.operator ==(Modulus.Core.Abstractions.PermissionDefinition? left, Modulus.Core.Abstractions.PermissionDefinition? right) -> bool
+Modulus.Core.Abstractions.Exceptions.ModulusError
+Modulus.Core.Abstractions.Exceptions.ModulusErrorCatalog
+Modulus.Core.Abstractions.Exceptions.ModulusError.<Clone>$() -> Modulus.Core.Abstractions.Exceptions.ModulusError!
+Modulus.Core.Abstractions.Exceptions.ModulusError.Code.get -> string!
+Modulus.Core.Abstractions.Exceptions.ModulusError.Code.init -> void
+Modulus.Core.Abstractions.Exceptions.ModulusError.Deconstruct(out Modulus.Core.Abstractions.Exceptions.ModulusErrorKind Kind, out string! Code, out string! Title, out bool IsClientError) -> void
+Modulus.Core.Abstractions.Exceptions.ModulusError.Equals(Modulus.Core.Abstractions.Exceptions.ModulusError? other) -> bool
+Modulus.Core.Abstractions.Exceptions.ModulusError.IsClientError.get -> bool
+Modulus.Core.Abstractions.Exceptions.ModulusError.IsClientError.init -> void
+Modulus.Core.Abstractions.Exceptions.ModulusErrorKind
+Modulus.Core.Abstractions.Exceptions.ModulusErrorKind.Cancelled = 7 -> Modulus.Core.Abstractions.Exceptions.ModulusErrorKind
+Modulus.Core.Abstractions.Exceptions.ModulusErrorKind.ConcurrencyConflict = 5 -> Modulus.Core.Abstractions.Exceptions.ModulusErrorKind
+Modulus.Core.Abstractions.Exceptions.ModulusErrorKind.Conflict = 4 -> Modulus.Core.Abstractions.Exceptions.ModulusErrorKind
+Modulus.Core.Abstractions.Exceptions.ModulusErrorKind.FeatureDisabled = 6 -> Modulus.Core.Abstractions.Exceptions.ModulusErrorKind
+Modulus.Core.Abstractions.Exceptions.ModulusError.Kind.get -> Modulus.Core.Abstractions.Exceptions.ModulusErrorKind
+Modulus.Core.Abstractions.Exceptions.ModulusError.Kind.init -> void
+Modulus.Core.Abstractions.Exceptions.ModulusErrorKind.Internal = 8 -> Modulus.Core.Abstractions.Exceptions.ModulusErrorKind
+Modulus.Core.Abstractions.Exceptions.ModulusErrorKind.NotFound = 1 -> Modulus.Core.Abstractions.Exceptions.ModulusErrorKind
+Modulus.Core.Abstractions.Exceptions.ModulusErrorKind.PermissionDenied = 3 -> Modulus.Core.Abstractions.Exceptions.ModulusErrorKind
+Modulus.Core.Abstractions.Exceptions.ModulusErrorKind.Unauthenticated = 2 -> Modulus.Core.Abstractions.Exceptions.ModulusErrorKind
+Modulus.Core.Abstractions.Exceptions.ModulusErrorKind.Validation = 0 -> Modulus.Core.Abstractions.Exceptions.ModulusErrorKind
+Modulus.Core.Abstractions.Exceptions.ModulusError.ModulusError(Modulus.Core.Abstractions.Exceptions.ModulusErrorKind Kind, string! Code, string! Title, bool IsClientError) -> void
+Modulus.Core.Abstractions.Exceptions.ModulusError.Title.get -> string!
+Modulus.Core.Abstractions.Exceptions.ModulusError.Title.init -> void
+Modulus.Core.Abstractions.Exceptions.ValidationException.FieldErrors.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string![]!>!
+override Modulus.Core.Abstractions.Exceptions.ModulusError.Equals(object? obj) -> bool
+override Modulus.Core.Abstractions.Exceptions.ModulusError.GetHashCode() -> int
+override Modulus.Core.Abstractions.Exceptions.ModulusError.ToString() -> string!
+static Modulus.Core.Abstractions.Exceptions.ModulusErrorCatalog.Classify(System.Exception! exception) -> Modulus.Core.Abstractions.Exceptions.ModulusError!
+static Modulus.Core.Abstractions.Exceptions.ModulusError.operator !=(Modulus.Core.Abstractions.Exceptions.ModulusError? left, Modulus.Core.Abstractions.Exceptions.ModulusError? right) -> bool
+static Modulus.Core.Abstractions.Exceptions.ModulusError.operator ==(Modulus.Core.Abstractions.Exceptions.ModulusError? left, Modulus.Core.Abstractions.Exceptions.ModulusError? right) -> bool
