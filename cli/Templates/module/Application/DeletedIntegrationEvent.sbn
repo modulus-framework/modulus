@@ -1,0 +1,7 @@
+using Modulus.Events.Abstractions;
+
+namespace {{ module_namespace }}.Application.IntegrationEvents;
+
+/// <summary>Integration event published when a {{ entity_name_lower }} is deleted.</summary>
+[IntegrationEvent<{{ module_name }}Area>]
+public sealed record {{ entity_name }}DeletedIntegrationEvent(Guid Id) : IntegrationEventBase;

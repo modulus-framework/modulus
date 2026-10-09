@@ -1178,6 +1178,10 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
                 Path.Combine(appDir, "IntegrationEvents", $"{m.ModuleName}Area.cs"));
             _templates.RenderToFile("module/Application/IntegrationEvent", m,
                 Path.Combine(appDir, "IntegrationEvents", $"{entityName}CreatedIntegrationEvent.cs"));
+            _templates.RenderToFile("module/Application/UpdatedIntegrationEvent", m,
+                Path.Combine(appDir, "IntegrationEvents", $"{entityName}UpdatedIntegrationEvent.cs"));
+            _templates.RenderToFile("module/Application/DeletedIntegrationEvent", m,
+                Path.Combine(appDir, "IntegrationEvents", $"{entityName}DeletedIntegrationEvent.cs"));
         }
 
         // â”€â”€ Infrastructure layer (composition root) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

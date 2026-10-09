@@ -1,13 +1,16 @@
+using Modulus.Events.Abstractions;
 using Modulus.Mediator.Abstractions;
 using Modulus.Core.Abstractions.Common;
 using Modulus.Core.Abstractions.Exceptions;
+using {{ module_namespace }}.Application.IntegrationEvents;
 using {{ module_namespace }}.Domain;
 
 namespace {{ module_namespace }}.Application;
 
 public sealed class Delete{{ entity_name }}Handler(
     I{{ entity_name }}Repository repo,
-    IUnitOfWork unitOfWork)
+    IUnitOfWork unitOfWork,
+    IModuleBus bus)
     : ICommandHandler<Delete{{ entity_name }}Command, Unit>
 {
     public async Task<Unit> HandleAsync(
@@ -20,6 +23,7 @@ public sealed class Delete{{ entity_name }}Handler(
 
         await repo.DeleteAsync(entity, ct);
         await unitOfWork.CommitAsync(ct);
+        await bus.PublishAsync(new {{ entity_name }}DeletedIntegrationEvent(entity.Id), ct);
 
         return Unit.Value;
     }

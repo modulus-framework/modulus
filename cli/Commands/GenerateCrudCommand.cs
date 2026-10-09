@@ -145,6 +145,12 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
         WriteIfMissing("module/Application/IntegrationEvent", model,
             Path.Combine(appDir, "IntegrationEvents", $"{entity}CreatedIntegrationEvent.cs"),
             generated, skipped);
+        WriteIfMissing("module/Application/UpdatedIntegrationEvent", model,
+            Path.Combine(appDir, "IntegrationEvents", $"{entity}UpdatedIntegrationEvent.cs"),
+            generated, skipped);
+        WriteIfMissing("module/Application/DeletedIntegrationEvent", model,
+            Path.Combine(appDir, "IntegrationEvents", $"{entity}DeletedIntegrationEvent.cs"),
+            generated, skipped);
 
         // ── Infrastructure layer ──────────────────────────────────
         WriteIfMissing("module/Infrastructure/Repository", model,

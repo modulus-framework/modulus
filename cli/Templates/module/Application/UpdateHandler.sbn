@@ -1,13 +1,16 @@
+using Modulus.Events.Abstractions;
 using Modulus.Mediator.Abstractions;
 using Modulus.Core.Abstractions.Entities;
 using Modulus.Core.Abstractions.Exceptions;
+using {{ module_namespace }}.Application.IntegrationEvents;
 using {{ module_namespace }}.Domain;
 
 namespace {{ module_namespace }}.Application;
 
 public sealed class Update{{ entity_name }}Handler(
     I{{ entity_name }}Repository repo,
-    IUnitOfWork unitOfWork)
+    IUnitOfWork unitOfWork,
+    IModuleBus bus)
     : ICommandHandler<Update{{ entity_name }}Command, Update{{ entity_name }}Result>
 {
     public async Task<Update{{ entity_name }}Result> HandleAsync(
@@ -24,6 +27,7 @@ public sealed class Update{{ entity_name }}Handler(
 
         await repo.UpdateAsync(entity, ct);
         await unitOfWork.CommitAsync(ct);
+        await bus.PublishAsync(new {{ entity_name }}UpdatedIntegrationEvent(entity.Id), ct);
 
         return new Update{{ entity_name }}Result(entity.Id);
     }
