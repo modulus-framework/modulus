@@ -48,14 +48,14 @@ public sealed record RealtimeMessage(
     };
 
     /// <summary>Serializes the message for a backplane.</summary>
-    public string ToJson() => JsonSerializer.Serialize(this, JsonOptions);
+    public string ToJson() => JsonSerializer.Serialize(this, RealtimeJsonContext.Default.RealtimeMessage);
 
     /// <summary>Reads a message a backplane received; null when the text is not one.</summary>
     public static RealtimeMessage? FromJson(string json)
     {
         try
         {
-            var message = JsonSerializer.Deserialize<RealtimeMessage>(json, JsonOptions);
+            var message = JsonSerializer.Deserialize(json, RealtimeJsonContext.Default.RealtimeMessage);
             return message is { Id.Length: > 0, Type.Length: > 0, Data.Length: > 0 } ? message : null;
         }
         catch (JsonException)
@@ -72,3 +72,8 @@ public sealed record RealtimeMessage(
 /// <param name="Topic">The topic it was addressed to, if any.</param>
 /// <param name="Timestamp">When it was published.</param>
 public sealed record RealtimeEnvelope(string Id, string Type, JsonElement Data, string? Topic, DateTimeOffset Timestamp);
+
+/// <summary>Source-generated serialization for the backplane message: no reflection on the per-message path.</summary>
+[JsonSourceGenerationOptions(JsonSerializerDefaults.Web)]
+[JsonSerializable(typeof(RealtimeMessage))]
+internal sealed partial class RealtimeJsonContext : JsonSerializerContext;
