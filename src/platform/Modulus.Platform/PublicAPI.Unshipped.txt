@@ -107,7 +107,7 @@ Modulus.Authorization.Audit.AuditingFieldAuthorizer.AuthorizeWriteAsync(System.T
 Modulus.Authorization.Audit.AuditingFieldAuthorizer.MaskFor(System.Type! type) -> Modulus.Authorization.Fields.FieldMask!
 Modulus.Authorization.Audit.AuditingFieldAuthorizer.Redact<T>(T projection) -> T
 Modulus.Authorization.Audit.AuditingResourceAuthorizer
-Modulus.Authorization.Audit.AuditingResourceAuthorizer.AuditingResourceAuthorizer(Modulus.Authorization.Resources.IResourceAuthorizer! inner, Modulus.Authorization.Audit.IAuditableActionRegistry! registry, Modulus.Authorization.Audit.IAuthorizationAuditWriter! auditWriter, Modulus.Core.Abstractions.ICurrentUser! currentUser) -> void
+Modulus.Authorization.Audit.AuditingResourceAuthorizer.AuditingResourceAuthorizer(Modulus.Authorization.Resources.IResourceAuthorizer! inner, Modulus.Authorization.Audit.IAuditableActionRegistry! registry, Modulus.Authorization.Audit.IAuthorizationAuditWriter! auditWriter, Modulus.Core.Abstractions.ICurrentUser! currentUser, Modulus.Authorization.Resources.IResourcePolicyRegistry? policies = null) -> void
 Modulus.Authorization.Audit.AuditingResourceAuthorizer.AuthorizeAsync(object! resource, string! action, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Authorization.Resources.AccessDecision!>!
 Modulus.Authorization.Audit.AuthorizationAdministrativeChangeEvent
 Modulus.Authorization.Audit.AuthorizationAdministrativeChangeEvent.Action.get -> string!
@@ -1540,3 +1540,12 @@ override Modulus.AuditLogging.Security.SecurityAuditQuery.ToString() -> string!
 static Modulus.AuditLogging.Security.SecurityAuditQuery.operator !=(Modulus.AuditLogging.Security.SecurityAuditQuery? left, Modulus.AuditLogging.Security.SecurityAuditQuery? right) -> bool
 static Modulus.AuditLogging.Security.SecurityAuditQuery.operator ==(Modulus.AuditLogging.Security.SecurityAuditQuery? left, Modulus.AuditLogging.Security.SecurityAuditQuery? right) -> bool
 static Modulus.Authorization.Resources.ResourceAuthorizerExtensions.EnsureAllowedAsync(this Modulus.Authorization.Resources.IResourceAuthorizer! authorizer, object! resource, string! action, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Authorization.Audit.AccessDecisionAuditEvent.PolicyVersion.get -> string?
+Modulus.Authorization.Audit.AccessDecisionAuditEvent.PolicyVersion.init -> void
+Modulus.Authorization.Audit.AccessDecisionAuditEvent.PolicyFingerprint.get -> string?
+Modulus.Authorization.Audit.AccessDecisionAuditEvent.PolicyFingerprint.init -> void
+Modulus.Authorization.Resources.PolicyFingerprints
+static Modulus.Authorization.Resources.PolicyFingerprints.IsCurrent(Modulus.Authorization.Audit.AccessDecisionAuditEvent! decision, Modulus.Authorization.Resources.IResourcePolicyRegistry! registry, System.Type! resourceType) -> bool
+Modulus.Authorization.Resources.ResourcePolicyBuilder.Version(string! version) -> Modulus.Authorization.Resources.ResourcePolicyBuilder!
+Modulus.Authorization.Resources.ResourcePolicy.Version.get -> string?
+Modulus.Authorization.Resources.ResourcePolicy.Fingerprint.get -> string!

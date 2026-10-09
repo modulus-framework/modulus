@@ -94,3 +94,12 @@ Two requests racing for the same document therefore cannot both pass: the second
 
 `ResourcePolicy.Explain`, `ResourceAuthorizer.Explain` and the `/authorization/resources/{type}/{id}/explain` endpoint list
 which rules matched, for administrators; `AccessReasonCodes` names the outcome in audit events and API errors.
+
+## Policy versions and decision replay
+
+Requirements are compiled code, so a past decision cannot be re-executed later; what Modulus keeps is enough to tell whether it *could* be reproduced.
+`ResourcePolicy.Define(p => p.Version("2026-10").Allow(...))` labels a revision (bump it whenever a requirement changes), and `ResourcePolicy.Fingerprint`
+hashes the version plus every rule's position, effect, action and target state. An audited resource decision (`AccessDecisionAuditEvent`) records both
+(`PolicyVersion`, `PolicyFingerprint`), and `PolicyFingerprints.IsCurrent(decision, registry, type)` answers whether the policy in force is still the one that
+decided. `false` means the rules changed (or are gone): read the decision as a record, and use the version label to find the code revision that produced it.
+Not built: storing per-rule evidence with each decision, or a policy store that keeps old revisions executable.

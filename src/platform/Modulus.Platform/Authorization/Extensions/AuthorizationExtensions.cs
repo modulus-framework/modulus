@@ -301,7 +301,8 @@ public static class AuthorizationExtensions
                 sp.GetRequiredService<ResourceAuthorizer>(),
                 sp.GetRequiredService<IAuditableActionRegistry>(),
                 sp.GetRequiredService<IAuthorizationAuditWriter>(),
-                sp.GetRequiredService<ICurrentUser>())));
+                sp.GetRequiredService<ICurrentUser>(),
+                sp.GetService<IResourcePolicyRegistry>())));
 
         services.TryAddScoped<FieldAuthorizer>();
         services.Replace(ServiceDescriptor.Scoped<IFieldAuthorizer>(sp =>

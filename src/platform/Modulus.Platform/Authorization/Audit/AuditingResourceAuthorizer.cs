@@ -16,7 +16,8 @@ public sealed class AuditingResourceAuthorizer(
     IResourceAuthorizer inner,
     IAuditableActionRegistry registry,
     IAuthorizationAuditWriter auditWriter,
-    ICurrentUser currentUser)
+    ICurrentUser currentUser,
+    IResourcePolicyRegistry? policies = null)
     : IResourceAuthorizer
 {
     public async Task<AccessDecision> AuthorizeAsync(
@@ -28,13 +29,18 @@ public sealed class AuditingResourceAuthorizer(
 
         if (registry.IsAuditWorthy(resource.GetType(), action))
         {
+            var policy = policies?.Find(resource.GetType());
             await auditWriter.WriteAsync(
                 new AccessDecisionAuditEvent(
                     resource.GetType().Name,
                     action,
                     decision.IsAllowed,
                     decision.Reason,
-                    currentUser.UserId?.ToString()),
+                    currentUser.UserId?.ToString())
+                {
+                    PolicyVersion = policy?.Version,
+                    PolicyFingerprint = policy?.Fingerprint,
+                },
                 ct);
         }
 

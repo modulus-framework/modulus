@@ -1442,6 +1442,9 @@ roots, Security tab in `Modulus.UI.AuditLogging`).
   (`authorization:manage`; evaluated as the caller). Unknown type or id is `404`. Needs `ICurrentUser` and `ICurrentDataScope` registered.
 - **Strict permission source.** `AddModulusAuthorization(o => o.TrustPermissionClaims = false)` makes the grant store the only source: a `permission`
   claim in a token no longer confers access (default `true`; a store-level deny wins over claims either way).
+- **Policy versions.** `ResourcePolicyBuilder.Version(label)` and `ResourcePolicy.Fingerprint` (hash of version + rule shapes) are stamped on audited resource decisions
+  (`AccessDecisionAuditEvent.PolicyVersion` / `PolicyFingerprint`); `PolicyFingerprints.IsCurrent` tells whether the deciding policy is still in force. Rules are code, so decisions are
+  not re-executed (see `policy-combination.md`).
 - **Known gaps (open).** `Explain` and available actions are evaluated as the calling user, so "why can't *Bob* do this" needs Bob's own session
   (effective-access reports cover him at the permission level); and the UI for all of this is not done.
 

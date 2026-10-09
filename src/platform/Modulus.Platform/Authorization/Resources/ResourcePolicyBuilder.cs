@@ -16,6 +16,15 @@ namespace Modulus.Authorization.Resources;
 public sealed class ResourcePolicyBuilder
 {
     private readonly List<ResourceRule> _rules = [];
+    private string? _version;
+
+    /// <summary>Labels this revision of the policy; audited decisions carry it. Change it whenever a requirement changes.</summary>
+    public ResourcePolicyBuilder Version(string version)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(version);
+        _version = version;
+        return this;
+    }
 
     /// <summary>Permits <paramref name="action"/> when <paramref name="requirement"/> holds.</summary>
     public ResourcePolicyBuilder Allow(string action, Func<ResourceRequest, bool> requirement)
@@ -60,7 +69,7 @@ public sealed class ResourcePolicyBuilder
     public ResourcePolicyBuilder Transition(string transition, string[] from, string to)
         => Transition(transition, from, to, static _ => true);
 
-    internal ResourcePolicy Build() => new(_rules);
+    internal ResourcePolicy Build() => new(_rules, _version);
 
     private static string Require(string action)
     {

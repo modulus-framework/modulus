@@ -14,7 +14,32 @@ public sealed class ResourcePolicy
 {
     private readonly IReadOnlyList<ResourceRule> _rules;
 
-    internal ResourcePolicy(IReadOnlyList<ResourceRule> rules) => _rules = rules;
+    private string? _fingerprint;
+
+    internal ResourcePolicy(IReadOnlyList<ResourceRule> rules, string? version = null)
+    {
+        _rules = rules;
+        Version = version;
+    }
+
+    /// <summary>
+    /// The label the policy's author gave this revision (<see cref="ResourcePolicyBuilder.Version"/>), or <see langword="null"/>.
+    /// Requirements are code, so bump it whenever one changes; the fingerprint only sees the rule shape.
+    /// </summary>
+    public string? Version { get; }
+
+    /// <summary>
+    /// A stable hash of the version and every rule's position, effect, action and target state. Audited decisions carry it, so a reviewer can tell
+    /// whether the policy that decided is still the one in force (<see cref="PolicyFingerprints.IsCurrent"/>).
+    /// </summary>
+    public string Fingerprint => _fingerprint ??= ComputeFingerprint();
+
+    private string ComputeFingerprint()
+    {
+        var text = string.Join('\n', _rules.Select((r, i) =>
+            $"{i}|{r.Effect}|{r.Action.ToLowerInvariant()}|{r.ToState}").Prepend($"v:{Version}"));
+        return Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(text))).ToLowerInvariant()[..16];
+    }
 
     /// <summary>Builds a policy from a fluent rule declaration.</summary>
     public static ResourcePolicy Define(Action<ResourcePolicyBuilder> configure)

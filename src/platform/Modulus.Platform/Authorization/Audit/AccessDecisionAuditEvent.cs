@@ -29,4 +29,11 @@ public sealed record AccessDecisionAuditEvent(
     bool IsAllowed,
     string? Reason,
     string? ActorUserId)
-    : IntegrationEventBase;
+    : IntegrationEventBase
+{
+    /// <summary>The deciding policy's <c>Version</c> label, when it has one (resource decisions only).</summary>
+    public string? PolicyVersion { get; init; }
+
+    /// <summary>The deciding policy's fingerprint at decision time (resource decisions only).</summary>
+    public string? PolicyFingerprint { get; init; }
+}
