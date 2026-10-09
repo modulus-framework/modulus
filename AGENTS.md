@@ -13,7 +13,8 @@ scaffolding.
 
 ## Prerequisites
 
-- .NET SDK **10.0.109** or newer (`dotnet --version`)
+- .NET SDK **10.0.109** or newer (`dotnet --version`). `global.json` rolls forward to the newest installed 10.0.x; SDK 10.0.400's Razor compiler
+  rejects a tag-helper-only `<div asp-validation-summary="All"></div>` (error CS1010/CS1001), so give such a div another attribute (`class="mb-0"`).
 - Docker (only for the Testcontainers-based integration tests under
   `tests/integration/`)
 
@@ -1481,7 +1482,7 @@ roots, Security tab in `Modulus.UI.AuditLogging`).
   with 2+ cores per replica, keep `DOTNET_TieredPGO=1` (default), and prefer `InvariantGlobalization` only when no culture-specific
   formatting is needed (the UI uses invariant-culture text for extension fields, but pages may format by culture). Enable response
   compression at the proxy when one exists, else `AddModulusResponseCompression`.
-- **Still open:** `Modulus.UI.AI`.
+- **Still open:** `Modulus.UI.AI`, and the provider integration tests (PostgreSQL/SQL Server/MySQL/Mongo, incl. `AiEntitySourceProviderTests`), which need a working container runtime.
 - **Decided not to build:**
   - **AOT beyond `Modulus.Core` and `Modulus.Outbox.Abstractions`** (the only packages with `IsAotCompatible`). `Modulus.Mediator` closes generic handler and behavior types at runtime (open-generic `IPipelineBehavior<,>` through DI) and its behaviors use EF Core and reflection. A source generator would not fix that, and EF Core model building, MVC and OpenIddict are not AOT-ready either. Probed 2026-10-09: 10 IL2026/IL3050 errors in the mediator alone.
   - **GraphQL subscriptions.** They need WebSockets (off on purpose); Realtime (SSE / SignalR) already pushes integration events with the same auth and tenant rules.
