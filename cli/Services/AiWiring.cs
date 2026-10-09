@@ -246,12 +246,46 @@ internal static partial class AiWiring
             "[AiCapability(");
 
     /// <summary>The lookup query becomes the resource type's record source (citations, authorization checks, extraction).</summary>
-    public static string MarkLookupQuery(string source, string queryType, string entity, string? titleField, AiNames names, bool requirePermission)
+    public static string MarkLookupQuery(
+        string source, string queryType, string entity, string? titleField, AiNames names, bool requirePermission, string? batchQuery = null)
     {
         var title = titleField is null ? string.Empty : $", TitleField = \"{titleField}\"";
-        return MarkQuery(source, queryType, requirePermission ? names.Permission : null,
-            $"[AiResource(\"{names.ResourceType}\", \"One {entity.ToLowerInvariant()} of the {names.ResourceType.Split('.')[0]} module, by id.\"{title})]",
+        var batch = batchQuery is null ? string.Empty : $", BatchLookup = typeof({batchQuery})";
+        var marked = MarkQuery(source, queryType, requirePermission ? names.Permission : null,
+            $"[AiResource(\"{names.ResourceType}\", \"One {entity.ToLowerInvariant()} of the {names.ResourceType.Split('.')[0]} module, by id.\"{title}{batch})]",
             "[AiResource(");
+        return batchQuery is null ? marked : EnsureBatchLookup(marked, batchQuery);
+    }
+
+    /// <summary>An <c>[AiResource]</c> marked before batch lookups existed gets <c>BatchLookup = typeof(...)</c>.</summary>
+    internal static string EnsureBatchLookup(string source, string batchQuery)
+    {
+        var attribute = System.Text.RegularExpressions.Regex.Match(source, @"\[AiResource\((?<args>[^\]]*)\)\]");
+        if (!attribute.Success || attribute.Groups["args"].Value.Contains("BatchLookup", StringComparison.Ordinal))
+            return source;
+
+        var args = attribute.Groups["args"];
+        return source.Insert(args.Index + args.Length, $", BatchLookup = typeof({batchQuery})");
+    }
+
+    /// <summary>Adds <c>GetByIdsAsync</c> to a repository interface or implementation that predates it; unchanged when it has it or has an unknown shape.</summary>
+    internal static string EnsureRepositoryByIds(string source, string entity, bool implementation)
+    {
+        if (source.Contains("GetByIdsAsync", StringComparison.Ordinal))
+            return source;
+
+        var nl = WebhooksWiring.NewLine(source);
+        var last = source.LastIndexOf('}');
+        if (last < 0)
+            return source;
+
+        var member = implementation
+            ? $"{nl}    public async Task<IReadOnlyList<{entity}>> GetByIdsAsync(IReadOnlyCollection<Guid> ids, CancellationToken ct){nl}        => await _dbSet.AsNoTracking().Where(e => ids.Contains(e.Id)).ToListAsync(ct);{nl}"
+            : $"{nl}    /// <summary>The {entity.ToLowerInvariant()}s with these ids, in one query.</summary>{nl}    Task<IReadOnlyList<{entity}>> GetByIdsAsync(IReadOnlyCollection<Guid> ids, CancellationToken ct);{nl}";
+        // An implementation must have the _dbSet field the template declares, or the member would not compile.
+        if (implementation && !source.Contains("_dbSet", StringComparison.Ordinal))
+            return source;
+        return source.Insert(last, member);
     }
 
     private static string MarkQuery(string source, string queryType, string? permission, string attribute, string marker)

@@ -940,7 +940,7 @@ Everything still open, by owner. 6a–6d are built (2026-10-04). The items below
 - [ ] Access-change hook for grant-store writes made outside the admin API.
 - [x] Durable revocation queue: `Ai:Connector:Platform:RevocationSpoolFile` journals pending signals and resends them after a restart (a file, not the outbox; one per process).
 - [x] Shared envelope replay cache: with an `IDistributedLock` registered (Redis) the first node to see an envelope id takes a lease that lasts until it expires.
-- [ ] Batch record lookup for `/extract` and `/changes`, which today cost N+1 queries per page.
+- [x] Batch record lookup for `/extract` and `/changes`: optional `[AiResource(BatchLookup = typeof(...))]`, one query per page (`generate-crud --ai` emits it).
 - [ ] `Search` over extension fields (`ExtraProperties`) and an `ISearchContributor` for cross-entity search.
 - [ ] Per-user masking of `[PersonalInformation]` fields (today: declared `Restricted`; add `[Classified]` to mask).
 - [ ] Store-generated and composite keys for `[AiIndexed]` entities.

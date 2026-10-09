@@ -1,0 +1,24 @@
+using Modulus.Mediator.Abstractions;
+using {{ module_namespace }}.Domain;
+using {{ module_namespace }}.Application.Dtos;
+
+namespace {{ module_namespace }}.Application;
+
+public sealed class Get{{ entity_plural }}ByIdsHandler(I{{ entity_name }}Repository repo)
+    : IQueryHandler<Get{{ entity_plural }}ByIdsQuery, IReadOnlyList<{{ entity_name }}Dto>>
+{
+    public async Task<IReadOnlyList<{{ entity_name }}Dto>> HandleAsync(
+        Get{{ entity_plural }}ByIdsQuery query,
+        CancellationToken ct)
+    {
+        var entities = await repo.GetByIdsAsync(query.Ids, ct);
+        return entities
+            .Select(entity => new {{ entity_name }}Dto
+            {
+                Id = entity.Id,
+                Name = entity.Name,
+{{ if has_api_extra_fields }}                ExtraProperties = new Dictionary<string, string?>(entity.ExtraProperties),
+{{ end }}            })
+            .ToList();
+    }
+}

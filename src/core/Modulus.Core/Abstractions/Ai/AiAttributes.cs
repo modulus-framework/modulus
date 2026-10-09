@@ -77,6 +77,15 @@ public sealed class AiResourceAttribute : Attribute
 
     /// <summary>The result property that names the record (shown as its title).</summary>
     public string? TitleField { get; set; }
+
+    /// <summary>
+    /// An optional batch version of the lookup, used by <c>GET /extract</c> and <c>GET /changes</c> to read a page of records in one
+    /// query instead of one query each: an <c>IQuery&lt;T&gt;</c> whose single public constructor takes the ids (an array,
+    /// <c>IReadOnlyCollection&lt;T&gt;</c>, <c>IReadOnlyList&lt;T&gt;</c>, <c>IEnumerable&lt;T&gt;</c> or <c>List&lt;T&gt;</c> of the lookup's
+    /// id type) and that returns the same record type, each carrying its <c>Id</c>. It runs through the mediator as the indexing identity
+    /// exactly like the single lookup (permission, filters, soft-delete); an id it does not return is treated as not found.
+    /// </summary>
+    public Type? BatchLookup { get; set; }
 }
 
 /// <summary>

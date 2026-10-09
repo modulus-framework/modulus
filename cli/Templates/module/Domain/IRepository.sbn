@@ -8,4 +8,7 @@ public interface I{{ entity_name }}Repository : IRepository<{{ entity_name }}>
 
     /// <summary>One page of {{ entity_name_lower }}s in a stable (Id) order; <paramref name="skip"/> and <paramref name="take"/> are applied in the database.</summary>
     Task<IReadOnlyList<{{ entity_name }}>> GetPageAsync(int skip, int take, CancellationToken ct);
+
+    /// <summary>The {{ entity_name_lower }}s with these ids, in one query (the query filters apply, so another company's or a deleted record is absent).</summary>
+    Task<IReadOnlyList<{{ entity_name }}>> GetByIdsAsync(IReadOnlyCollection<Guid> ids, CancellationToken ct);
 }

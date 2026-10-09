@@ -66,7 +66,15 @@ internal sealed record AiResourceDescriptor(
     Type IdType,
     string? RequiredPermission,
     string? DeepLink,
-    string? TitleField);
+    string? TitleField,
+    AiBatchLookup? Batch = null);
+
+/// <summary>The batch version of a resource lookup: one query for many ids (see <see cref="AiResourceAttribute.BatchLookup"/>).</summary>
+/// <param name="Constructor">The query's constructor, taking the ids.</param>
+/// <param name="ResponseType">The query's response type.</param>
+/// <param name="ListType">How the constructor takes the ids.</param>
+/// <param name="IdProperty">The <c>Id</c> property of a returned record.</param>
+internal sealed record AiBatchLookup(ConstructorInfo Constructor, Type ResponseType, Type ListType, PropertyInfo IdProperty);
 
 /// <summary>
 /// Every capability and resource type of the app, read from <see cref="AiCapabilityAttribute"/> and
@@ -77,6 +85,34 @@ internal sealed record AiResourceDescriptor(
 internal sealed partial class AiCapabilityRegistry
 {
     private static readonly Type[] IdTypes = [typeof(Guid), typeof(string), typeof(int), typeof(long)];
+
+    private static AiBatchLookup BatchOf(Type batchType, string resourceType, Type idType, Type itemType)
+    {
+        Check(!IsCommand(batchType), $"The batch lookup '{batchType.FullName}' of '{resourceType}' is a command: only queries can be AI lookups.");
+        var response = QueryResponseType(batchType);
+        Check(response is not null, $"The batch lookup '{batchType.FullName}' of '{resourceType}' is not an IQuery<T>.");
+
+        var constructors = batchType.GetConstructors();
+        var parameters = constructors.Length == 1 ? constructors[0].GetParameters() : [];
+        var listType = parameters.Length == 1 ? parameters[0].ParameterType : null;
+        var accepted = new[]
+        {
+            idType.MakeArrayType(),
+            typeof(IReadOnlyCollection<>).MakeGenericType(idType),
+            typeof(IReadOnlyList<>).MakeGenericType(idType),
+            typeof(IEnumerable<>).MakeGenericType(idType),
+            typeof(List<>).MakeGenericType(idType),
+        };
+        Check(listType is not null && accepted.Contains(listType),
+            $"The batch lookup '{batchType.FullName}' of '{resourceType}' needs one public constructor taking the ids " +
+            $"(an array, IReadOnlyCollection, IReadOnlyList, IEnumerable or List of {idType.Name}).");
+
+        var batchItem = AiFieldCatalog.ItemType(response!);
+        var id = batchItem.GetProperty("Id");
+        Check(batchItem == itemType && id is not null && id.PropertyType == idType,
+            $"The batch lookup '{batchType.FullName}' of '{resourceType}' must return the same record type as the single lookup ('{itemType.Name}'), each with a {idType.Name} Id.");
+        return new AiBatchLookup(constructors[0], response!, listType!, id!);
+    }
 
     private readonly Dictionary<string, AiCapabilityDescriptor> _capabilities;
     private readonly Dictionary<string, AiResourceDescriptor> _resources;
@@ -200,6 +236,10 @@ internal sealed partial class AiCapabilityRegistry
                     Check(AiFieldCatalog.For(itemType).Any(f => f.Property?.Name == resource.TitleField),
                         $"AI resource type '{resource.ResourceType}' names title field '{resource.TitleField}', which '{itemType.Name}' does not have.");
 
+                var batch = resource.BatchLookup is { } batchType
+                    ? BatchOf(batchType, resource.ResourceType, parameters.Length == 1 ? parameters[0].ParameterType : typeof(Guid), itemType)
+                    : null;
+
                 resources[resource.ResourceType] = new AiResourceDescriptor(
                     resource.ResourceType,
                     resource.Description,
@@ -210,7 +250,8 @@ internal sealed partial class AiCapabilityRegistry
                     parameters[0].ParameterType,
                     permission,
                     resource.DeepLink,
-                    resource.TitleField);
+                    resource.TitleField,
+                    batch);
             }
         }
 

@@ -1,0 +1,12 @@
+using Modulus.Mediator.Abstractions;
+{{ if required_permission }}using Modulus.Mediator.Abstractions.Attributes;
+{{ end }}using {{ module_namespace }}.Application.Dtos;
+
+namespace {{ module_namespace }}.Application;
+
+/// <summary>
+/// Reads many {{ entity_name_lower }}s in one query: the AI connector's batch lookup (<c>[AiResource(BatchLookup = ...)]</c> on
+/// Get{{ entity_name }}ByIdQuery), so a page of the index costs one query instead of one per record. An id that does not exist is simply absent.
+/// </summary>
+{{ if required_permission }}[RequirePermission("{{ required_permission }}")]
+{{ end }}public sealed record Get{{ entity_plural }}ByIdsQuery(IReadOnlyCollection<Guid> Ids) : IQuery<IReadOnlyList<{{ entity_name }}Dto>>;

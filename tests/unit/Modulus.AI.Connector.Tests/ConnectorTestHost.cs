@@ -54,9 +54,21 @@ public sealed class ProductDto
 [RequirePermission("catalog:read")]
 public sealed record SearchProducts(string? Text = null) : IQuery<IReadOnlyList<ProductDto>>;
 
-[AiResource("Catalog.Product", "A product in the catalog.", DeepLink = "/products/{id}", TitleField = "Name")]
+[AiResource("Catalog.Product", "A product in the catalog.", DeepLink = "/products/{id}", TitleField = "Name", BatchLookup = typeof(GetProductsByIds))]
 [RequirePermission("catalog:read")]
 public sealed record GetProduct(Guid Id) : IQuery<ProductDto>;
+
+/// <summary>The batch version of <see cref="GetProduct"/> (one query for a page of the index).</summary>
+[RequirePermission("catalog:read")]
+public sealed record GetProductsByIds(IReadOnlyCollection<Guid> Ids) : IQuery<IReadOnlyList<ProductDto>>;
+
+/// <summary>Counts how the product lookups were run (registered only by tests that look).</summary>
+public sealed class LookupLog
+{
+    public int Single;
+    public int Batch;
+    public List<int> BatchSizes { get; } = [];
+}
 
 [AiCapability("Test.Catalog.Product.Count", "Counts the products.")]
 public sealed record CountProducts : IQuery<int>;
@@ -81,11 +93,30 @@ public sealed class SearchProductsFault(Func<string?, Exception?> fault)
     }
 }
 
-public sealed class GetProductHandler : IQueryHandler<GetProduct, ProductDto>
+public sealed class GetProductHandler(LookupLog? log = null) : IQueryHandler<GetProduct, ProductDto>
 {
     public Task<ProductDto> HandleAsync(GetProduct query, CancellationToken ct)
-        => Task.FromResult(Catalog.Products.FirstOrDefault(p => p.Id == query.Id)
+    {
+        if (log is not null)
+            Interlocked.Increment(ref log.Single);
+        return Task.FromResult(Catalog.Products.FirstOrDefault(p => p.Id == query.Id)
             ?? throw new NotFoundException($"Product {query.Id} not found."));
+    }
+}
+
+public sealed class GetProductsByIdsHandler(LookupLog? log = null) : IQueryHandler<GetProductsByIds, IReadOnlyList<ProductDto>>
+{
+    public Task<IReadOnlyList<ProductDto>> HandleAsync(GetProductsByIds query, CancellationToken ct)
+    {
+        if (log is not null)
+        {
+            Interlocked.Increment(ref log.Batch);
+            lock (log.BatchSizes)
+                log.BatchSizes.Add(query.Ids.Count);
+        }
+
+        return Task.FromResult<IReadOnlyList<ProductDto>>([.. Catalog.Products.Where(p => query.Ids.Contains(p.Id))]);
+    }
 }
 
 public sealed class CountProductsHandler : IQueryHandler<CountProducts, int>

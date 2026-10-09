@@ -124,7 +124,47 @@ public sealed class IndexingAndQueryTests
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
+    [Fact]
+    public async Task Extract_reads_a_page_through_the_batch_lookup_in_one_query()
+    {
+        var log = new LookupLog();
+        await using var host = await StartAsync(configure: services => services.AddSingleton(log));
+
+        var response = await GetAsync(host, $"/extract?appInstanceId={ConnectorTestHost.CompanyInstance}&limit=50");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        (await JsonOf(response)).GetProperty("resources").GetArrayLength().Should().Be(2);
+        log.Batch.Should().Be(1, "the whole page is one query");
+        log.BatchSizes.Should().Equal(2);
+        log.Single.Should().Be(0, "no record is read on its own");
+    }
+
     // --- /changes ---------------------------------------------------------------------------------------------------
+
+    [Fact]
+    public async Task Changes_read_all_upserts_of_a_type_through_one_batch_query()
+    {
+        var feed = new FakeChangeFeed();
+        var at = new DateTimeOffset(2026, 10, 1, 8, 0, 0, TimeSpan.Zero);
+        var missing = Guid.NewGuid().ToString("D");
+        feed.Changes.AddRange(
+        [
+            new("Catalog.Product", Catalog.WidgetId.ToString("D"), AiChangeKind.Upsert, at),
+            new("Catalog.Product", Catalog.GadgetId.ToString("D"), AiChangeKind.Upsert, at.AddSeconds(1)),
+            new("Catalog.Product", missing, AiChangeKind.Upsert, at.AddSeconds(2)),
+            new("Catalog.Product", "not-a-guid", AiChangeKind.Upsert, at.AddSeconds(3)),
+        ]);
+        var log = new LookupLog();
+        await using var host = await StartAsync(feed, services => services.AddSingleton(log));
+
+        var page = await JsonOf(await GetAsync(host, $"/changes?appInstanceId={ConnectorTestHost.CompanyInstance}&limit=50"));
+
+        page.GetProperty("changes").EnumerateArray().Select(c => c.GetProperty("kind").GetString())
+            .Should().Equal("Upsert", "Upsert", "Tombstone", "Tombstone");
+        log.Batch.Should().Be(1);
+        log.BatchSizes.Should().Equal(new[] { 3 }, "the malformed id never reaches the query");
+        log.Single.Should().Be(0);
+    }
 
     [Fact]
     public async Task Changes_keep_the_last_change_per_record_and_tombstone_what_is_gone()

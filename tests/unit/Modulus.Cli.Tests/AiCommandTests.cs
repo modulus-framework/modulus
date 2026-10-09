@@ -140,6 +140,36 @@ public sealed class AiWiringTests
     }
 
     [Fact]
+    public void The_lookup_gets_a_batch_lookup_even_when_it_was_marked_before_batches_existed()
+    {
+        var older = AiWiring.MarkLookupQuery(LookupQuery, "GetProductByIdQuery", "Product", "Name", Names, requirePermission: true);
+
+        var upgraded = AiWiring.MarkLookupQuery(older, "GetProductByIdQuery", "Product", "Name", Names, requirePermission: true, "GetProductsByIdsQuery");
+        var fresh = AiWiring.MarkLookupQuery(LookupQuery, "GetProductByIdQuery", "Product", "Name", Names, requirePermission: true, "GetProductsByIdsQuery");
+
+        upgraded.Should().Contain("TitleField = \"Name\", BatchLookup = typeof(GetProductsByIdsQuery))]");
+        fresh.Should().Contain("TitleField = \"Name\", BatchLookup = typeof(GetProductsByIdsQuery))]");
+        AiWiring.MarkLookupQuery(upgraded, "GetProductByIdQuery", "Product", "Name", Names, requirePermission: true, "GetProductsByIdsQuery")
+            .Should().Be(upgraded, "a second run changes nothing");
+    }
+
+    [Fact]
+    public void An_older_repository_gets_the_ids_method_and_a_changed_one_is_left_alone()
+    {
+        const string contract = "public interface IProductRepository : IRepository<Product>\n{\n    Task<IReadOnlyList<Product>> GetAllAsync(CancellationToken ct);\n}\n";
+        const string implementation = "public sealed class ProductRepository(CatalogDbContext context)\n{\n    private readonly DbSet<Product> _dbSet = context.Set<Product>();\n}\n";
+
+        var contractAfter = AiWiring.EnsureRepositoryByIds(contract, "Product", implementation: false);
+        var implementationAfter = AiWiring.EnsureRepositoryByIds(implementation, "Product", implementation: true);
+
+        contractAfter.Should().Contain("Task<IReadOnlyList<Product>> GetByIdsAsync(IReadOnlyCollection<Guid> ids, CancellationToken ct);");
+        implementationAfter.Should().Contain("_dbSet.AsNoTracking().Where(e => ids.Contains(e.Id)).ToListAsync(ct);");
+        AiWiring.EnsureRepositoryByIds(contractAfter, "Product", false).Should().Be(contractAfter);
+        AiWiring.EnsureRepositoryByIds("public sealed class ProductRepository { }\n", "Product", implementation: true)
+            .Should().NotContain("GetByIdsAsync", "without the template's _dbSet field the member would not compile");
+    }
+
+    [Fact]
     public void Without_permissions_the_queries_are_marked_but_check_nothing()
     {
         var list = AiWiring.MarkListQuery(ListQuery, "GetProductsQuery", "Products", Names, requirePermission: false);

@@ -28,6 +28,16 @@ public sealed record NoIdLookup(Guid A, Guid B) : IQuery<ProductDto>;
 [AiResource("Test.Thing", "A thing.", TitleField = "Missing")]
 public sealed record MissingTitleField(Guid Id) : IQuery<ProductDto>;
 
+public sealed record BatchWithWrongConstructor(Guid Id) : IQuery<IReadOnlyList<ProductDto>>;
+
+public sealed record BatchOfAnotherType(IReadOnlyCollection<Guid> Ids) : IQuery<IReadOnlyList<string>>;
+
+[AiResource("Test.WrongBatch", "A thing whose batch lookup takes one id.", BatchLookup = typeof(BatchWithWrongConstructor))]
+public sealed record WrongBatchLookup(Guid Id) : IQuery<ProductDto>;
+
+[AiResource("Test.OtherBatch", "A thing whose batch lookup returns another type.", BatchLookup = typeof(BatchOfAnotherType))]
+public sealed record OtherBatchLookup(Guid Id) : IQuery<ProductDto>;
+
 [AiCapability("Test.Not.A.Request", "Not a mediator request.")]
 public sealed class NotARequest;
 
@@ -57,6 +67,8 @@ public sealed class RegistryAndRevocationTests
     [InlineData(typeof(NoIdLookup), "constructor")]
     [InlineData(typeof(MissingTitleField), "Missing")]
     [InlineData(typeof(NotARequest), "IQuery")]
+    [InlineData(typeof(WrongBatchLookup), "taking the ids")]
+    [InlineData(typeof(OtherBatchLookup), "same record type")]
     public void Malformed_declarations_fail_at_startup(Type type, string mentions)
     {
         var act = () => Build(typeof(SearchProducts), typeof(GetProduct), type);

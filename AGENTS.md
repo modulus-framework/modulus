@@ -1874,6 +1874,11 @@ platform package; the platform is read-only, so only queries are exposed. The pl
     - `IAiEntitySource`;
     - a purge (`AiChangeJournalOptions.Retention`, 30 days).
   - Deletes, soft deletes and records the indexer can no longer see become tombstones.
+- **Batch lookup.** `[AiResource(..., BatchLookup = typeof(GetProductsByIdsQuery))]` names an optional query for many ids (one public constructor taking the ids as an array, `IReadOnlyCollection`,
+  `IReadOnlyList`, `IEnumerable` or `List`; the same record type as the single lookup, each with its `Id`): `/extract` and `/changes` then read a page, or all upserts of a type, in **one
+  query** instead of one per record. It runs through the mediator as the indexing identity (give it the same `[RequirePermission]`); an id it does not return counts as not found;
+  without `BatchLookup` the old one-by-one lookup runs. `generate-crud --ai` emits `Get{Entities}ByIdsQuery`/handler, adds `GetByIdsAsync` to the repository (also to an older one) and
+  sets `BatchLookup`. Search and masking are unaffected.
 - **Change hints.** Turn them on with `Ai:Connector:Indexing:ChangeHints:Enabled` and
   `Platform:WebhookSecret` (`whsec_…`, a secret).
   - The connector polls the journal head and posts a signed `{ appInstanceId, eventId, occurredAt }`. It never sends

@@ -264,8 +264,33 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
         UpdateExisting(entityFile, domainDir, generated, t => AiWiring.MarkEntity(t, entity, names));
         UpdateExisting(Path.Combine(appDir, $"Get{plural}Query.cs"), appDir, generated,
             t => AiWiring.MarkListQuery(t, $"Get{plural}Query", plural, names, checksPermission));
+
+        // The batch lookup: a page of the index in one query. Needs the repository method, the query and its handler.
+        var infraDir = CodeGen.LayerDir(module.Directory, module.Namespace, "Infrastructure");
+        UpdateExisting(Path.Combine(domainDir, $"I{entity}Repository.cs"), domainDir, generated, t => AiWiring.EnsureRepositoryByIds(t, entity, implementation: false));
+        UpdateExisting(Path.Combine(infraDir, $"{entity}Repository.cs"), infraDir, generated, t => AiWiring.EnsureRepositoryByIds(t, entity, implementation: true));
+        var repositoryHasByIds = File.Exists(Path.Combine(domainDir, $"I{entity}Repository.cs"))
+            && File.ReadAllText(Path.Combine(domainDir, $"I{entity}Repository.cs")).Contains("GetByIdsAsync", StringComparison.Ordinal)
+            && File.Exists(Path.Combine(infraDir, $"{entity}Repository.cs"))
+            && File.ReadAllText(Path.Combine(infraDir, $"{entity}Repository.cs")).Contains("GetByIdsAsync", StringComparison.Ordinal);
+        var batchQuery = repositoryHasByIds ? $"Get{plural}ByIdsQuery" : null;
+        if (batchQuery is not null)
+        {
+            foreach (var (template, file) in new[] { ("ai/GetByIdsQuery", $"Get{plural}ByIdsQuery.cs"), ("ai/GetByIdsHandler", $"Get{plural}ByIdsHandler.cs") })
+            {
+                if (File.Exists(Path.Combine(appDir, file)))
+                {
+                    skipped.Add(CodeGen.Rel(appDir, file));
+                    continue;
+                }
+
+                _templates.RenderToFile(template, model, Path.Combine(appDir, file));
+                generated.Add(CodeGen.Rel(appDir, file));
+            }
+        }
+
         UpdateExisting(Path.Combine(appDir, $"Get{entity}ByIdQuery.cs"), appDir, generated,
-            t => AiWiring.MarkLookupQuery(t, $"Get{entity}ByIdQuery", entity, AiWiring.TitleField(entitySource), names, checksPermission));
+            t => AiWiring.MarkLookupQuery(t, $"Get{entity}ByIdQuery", entity, AiWiring.TitleField(entitySource), names, checksPermission, batchQuery));
 
         var program = File.Exists(host.ProgramCs) ? File.ReadAllText(host.ProgramCs) : string.Empty;
         if (checksPermission)

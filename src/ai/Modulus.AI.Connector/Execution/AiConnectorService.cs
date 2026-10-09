@@ -167,9 +167,10 @@ internal sealed partial class AiConnectorService(
                 var type = types[index];
                 var keys = await source.ListKeysAsync(type.EntityType, after, budget, ct);
                 budget -= keys.Count;
+                var found = await LookupManyAsync(type.Resource, keys, ct);
                 foreach (var key in keys)
                 {
-                    if (await LookupOrNullAsync(type.Resource, key, ct) is { } item)
+                    if (found.TryGetValue(key, out var item) && item is not null)
                         records.Add(projector.Index(item, key, type.Resource, Access(instance, type.Resource)));
                 }
 
@@ -214,6 +215,16 @@ internal sealed partial class AiConnectorService(
                 latest[(change.ResourceType, change.ResourceId)] = change;
             }
 
+            // One read per resource type for all of its upserts (a batch lookup when the type has one).
+            var reads = new Dictionary<(string Type, string Id), object?>();
+            foreach (var group in latest.Values.Where(c => c.Kind != AiChangeKind.Delete).GroupBy(c => c.ResourceType))
+            {
+                if (!registry.TryGetIndexed(group.Key, out var groupType))
+                    continue;
+                foreach (var (id, item) in await LookupManyAsync(groupType.Resource, [.. group.Select(c => c.ResourceId)], ct))
+                    reads[(group.Key, id)] = item;
+            }
+
             var changes = new List<ResourceChange>(latest.Count);
             foreach (var change in latest.Values.OrderBy(c => c.OccurredAt))
             {
@@ -221,7 +232,7 @@ internal sealed partial class AiConnectorService(
                     continue;
 
                 var reference = new ResourceReference(change.ResourceType, change.ResourceId);
-                var item = change.Kind == AiChangeKind.Delete ? null : await LookupOrNullAsync(type.Resource, change.ResourceId, ct);
+                var item = change.Kind == AiChangeKind.Delete ? null : reads.GetValueOrDefault((change.ResourceType, change.ResourceId));
                 changes.Add(item is null
                     ? new ResourceChange(ResourceChangeKind.Tombstone, reference, null, change.OccurredAt)
                     : new ResourceChange(
@@ -339,6 +350,76 @@ internal sealed partial class AiConnectorService(
         foreach (var field in fields.Where(f => !f.IsSecret))
             policies[$"{prefix}.{field.Name}"] = projector.CanRead(field) ? FieldAccessPolicy.Allow : FieldAccessPolicy.Deny;
     }
+
+    // Reads many records of one resource type: one query through the type's batch lookup when it declares one, else one lookup each.
+    // The result maps each requested id (as given) to its record; an id that is not found or not visible is absent.
+    private async Task<IReadOnlyDictionary<string, object?>> LookupManyAsync(
+        AiResourceDescriptor resource, IReadOnlyList<string> ids, CancellationToken ct)
+    {
+        var found = new Dictionary<string, object?>(StringComparer.Ordinal);
+        if (ids.Count == 0)
+            return found;
+
+        if (resource.Batch is not { } batch)
+        {
+            foreach (var id in ids)
+            {
+                if (await LookupOrNullAsync(resource, id, ct) is { } item)
+                    found[id] = item;
+            }
+
+            return found;
+        }
+
+        var typed = new Dictionary<string, object>(StringComparer.Ordinal);
+        foreach (var id in ids)
+        {
+            if (ParseKey(resource.IdType, id) is { } key)
+                typed[id] = key;
+        }
+
+        if (typed.Count == 0)
+            return found;
+
+        var distinct = typed.Values.Distinct().ToList();
+        var list = Array.CreateInstance(resource.IdType, distinct.Count);
+        for (var i = 0; i < distinct.Count; i++)
+            list.SetValue(distinct[i], i);
+        var argument = batch.ListType.IsArray || batch.ListType.IsAssignableFrom(list.GetType())
+            ? list
+            : Activator.CreateInstance(batch.ListType, list)!;
+
+        object? response;
+        try
+        {
+            response = await QueryAsync(batch.Constructor.Invoke([argument]), batch.ResponseType, ct);
+        }
+        catch (NotFoundException)
+        {
+            return found;
+        }
+
+        var byKey = new Dictionary<object, object>();
+        foreach (var item in AiFieldCatalog.Items(response))
+        {
+            if (item is not null && batch.IdProperty.GetValue(item) is { } key)
+                byKey[key] = item;
+        }
+
+        foreach (var (id, key) in typed)
+        {
+            if (byKey.TryGetValue(key, out var item))
+                found[id] = item;
+        }
+
+        return found;
+    }
+
+    private static object? ParseKey(Type idType, string id)
+        => idType == typeof(string) ? id
+            : idType == typeof(Guid) ? (Guid.TryParse(id, out var guid) ? guid : null)
+            : idType == typeof(int) ? (int.TryParse(id, System.Globalization.CultureInfo.InvariantCulture, out var i) ? i : null)
+            : long.TryParse(id, System.Globalization.CultureInfo.InvariantCulture, out var l) ? l : null;
 
     private async Task<object?> LookupAsync(AiResourceDescriptor resource, string id, CancellationToken ct)
     {

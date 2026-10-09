@@ -658,3 +658,5 @@ Modulus.Core.Abstractions.TenantStatus.Closed = 3 -> Modulus.Core.Abstractions.T
 Modulus.Core.Abstractions.TenantStatus.Suspended = 2 -> Modulus.Core.Abstractions.TenantStatus
 Modulus.Core.Abstractions.TenantStatus.Trial = 0 -> Modulus.Core.Abstractions.TenantStatus
 Modulus.Core.Abstractions.Exceptions.ForbiddenException.ForbiddenException(string! permission, string? detail = null) -> void
+Modulus.Core.Abstractions.Ai.AiResourceAttribute.BatchLookup.get -> System.Type?
+Modulus.Core.Abstractions.Ai.AiResourceAttribute.BatchLookup.set -> void
