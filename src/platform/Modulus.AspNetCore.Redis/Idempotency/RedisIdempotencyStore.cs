@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Microsoft.Extensions.Options;
 using Modulus.AspNetCore.Idempotency;
 using StackExchange.Redis;
@@ -29,7 +30,7 @@ public sealed class RedisIdempotencyStore(
 {
     // Fingerprint travels inside the stored payload so replay and reuse
     // detection survive the round-trip across nodes.
-    private sealed record StoredEntry(string Fingerprint, CachedResponse Response);
+    internal sealed record StoredEntry(string Fingerprint, CachedResponse Response);
 
     private TimeSpan Ttl => TimeSpan.FromSeconds(options.Value.RetentionSeconds);
     private TimeSpan Lease => TimeSpan.FromSeconds(
@@ -79,7 +80,7 @@ public sealed class RedisIdempotencyStore(
         // completer must not clobber the current owner's stored response
         // (which TryBeginAsync would otherwise replay to other callers).
         await db.StringSetAsync(
-            DataKey(key), JsonSerializer.Serialize(entry), Ttl, keepTtl: false, When.NotExists);
+            DataKey(key), JsonSerializer.Serialize(entry, RedisIdempotencyJsonContext.Default.StoredEntry), Ttl, keepTtl: false, When.NotExists);
     }
 
     /// <inheritdoc />
@@ -102,7 +103,7 @@ public sealed class RedisIdempotencyStore(
     {
         try
         {
-            return JsonSerializer.Deserialize<StoredEntry>(value.ToString());
+            return JsonSerializer.Deserialize(value.ToString(), RedisIdempotencyJsonContext.Default.StoredEntry);
         }
         catch (JsonException)
         {
@@ -119,3 +120,7 @@ public sealed class RedisIdempotencyStoreOptions
     /// <summary>Prefix applied to every Redis key. Defaults to <c>modulus:idem:</c>.</summary>
     public string KeyPrefix { get; set; } = "modulus:idem:";
 }
+
+/// <summary>Source-generated serialization for the stored entry: no reflection per request.</summary>
+[JsonSerializable(typeof(RedisIdempotencyStore.StoredEntry))]
+internal sealed partial class RedisIdempotencyJsonContext : JsonSerializerContext;

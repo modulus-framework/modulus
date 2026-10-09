@@ -2,6 +2,7 @@ namespace Modulus.Bff.Tokens;
 
 using System.Security.Claims;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.DataProtection;
 using Modulus.Caching;
@@ -44,7 +45,7 @@ internal sealed class ServerSideUserTokenStore(ICacheService cache, IDataProtect
             return null;
         try
         {
-            return JsonSerializer.Deserialize<BffUserTokens>(_protector.Unprotect(protectedValue));
+            return JsonSerializer.Deserialize(_protector.Unprotect(protectedValue), BffTokenJsonContext.Default.BffUserTokens);
         }
         catch (System.Security.Cryptography.CryptographicException)
         {
@@ -55,7 +56,7 @@ internal sealed class ServerSideUserTokenStore(ICacheService cache, IDataProtect
     public Task StoreAsync(string client, ClaimsPrincipal user, AuthenticationProperties properties, BffUserTokens tokens, CancellationToken ct = default)
     {
         var key = Key(client, user) ?? throw new InvalidOperationException($"The session has no '{BffDefaults.SessionIdClaim}' claim.");
-        var value = _protector.Protect(JsonSerializer.Serialize(tokens));
+        var value = _protector.Protect(JsonSerializer.Serialize(tokens, BffTokenJsonContext.Default.BffUserTokens));
         return cache.SetAsync(key, value, clients.Get(client).SessionLifetime, ct);
     }
 
@@ -111,3 +112,7 @@ internal sealed class CookieUserTokenStore : IUserTokenStore
         return Task.CompletedTask;
     }
 }
+
+/// <summary>Source-generated serialization for the session tokens.</summary>
+[JsonSerializable(typeof(BffUserTokens))]
+internal sealed partial class BffTokenJsonContext : JsonSerializerContext;
