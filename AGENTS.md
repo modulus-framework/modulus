@@ -1375,6 +1375,9 @@ roots, Security tab in `Modulus.UI.AuditLogging`).
 - **Assignment-type vocabulary.** The assignment types of "Assigned" scopes are the access keys scope maps declare (`AddScopeMap<T>(m => m.AssignedKey("customer", ...))`);
   `IScopeMapRegistry.AssignmentTypes` lists them and `GET assignment-types` serves them. When any map declares one, the admin API refuses `assignments` and
   `assigned:{type}` grants naming another type (typo guard); with none declared any name is accepted.
+- **Exports and bulk actions.** `scopes.ForExport(query, "orders:export", "orders:read")` needs both permissions and returns only the rows both cover (an export reaches no
+  further than reading); `scopes.EnsureAllInScope(records, permission)` / `OutOfScope(...)` make a bulk action all-or-nothing (`ForbiddenException`). A route that returns the same data as a
+  scoped list (by id, export, report, bulk) must go through the same scope.
 - **Reason codes.** `AccessDecision.Code` uses `AccessReasonCodes` (BRS Appendix B); no policy for a type = `METADATA_MISSING`.
 - **Sensitivity.** `PermissionSensitivity` (Normal/Sensitive/Critical) on `PermissionDefinition`; `registry.Add(..., sensitivity)`.
   A wildcard grant never confers a Critical permission (a wildcard deny still removes it); Critical is not delegable.

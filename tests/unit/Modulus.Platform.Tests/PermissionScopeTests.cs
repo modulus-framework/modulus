@@ -6,6 +6,7 @@ using Modulus.Authorization.Organization;
 using Modulus.Authorization.Scopes;
 using Modulus.Core.Abstractions;
 using Modulus.Core.Abstractions.Entities;
+using Modulus.Core.Abstractions.Exceptions;
 using Xunit;
 
 namespace Modulus.Platform.Tests;
@@ -81,6 +82,7 @@ public sealed class PermissionScopeTests
             registry.Add("orders:read", "Read orders.");
             registry.Add("orders:edit", "Edit orders.", ["orders:read"]);
             registry.Add("orders:approve", "Approve orders.");
+            registry.Add("orders:export", "Export orders.");
             registry.Add("billing:read", "Read invoices.");
             registry.Freeze();
             Registry = registry;
@@ -414,5 +416,54 @@ public sealed class PermissionScopeTests
         var builder = new ScopeMapBuilder<Order>();
         builder.Owner(o => o.OwnerId).OrgUnit(o => o.OrgUnitId).AssignedKey("customer", o => o.CustomerId);
         return builder.Build();
+    }
+
+    // ── Exports and bulk actions ──
+
+    [Fact]
+    public void An_export_reaches_no_further_than_reading_or_the_export_grant()
+    {
+        var h = new Harness();
+        h.Grants.Add(new PermissionGrant(GrantHolderType.User, Bob.ToString(), "orders:read", PermissionGrantType.Allow));
+        h.Grants.Add(new PermissionGrant(GrantHolderType.User, Bob.ToString(), "orders:export", PermissionGrantType.Allow, PermissionScope.Own));
+        var enforcer = h.As(Bob);
+
+        Names(enforcer.ForExport(Orders.AsQueryable(), "orders:export", "orders:read"))
+            .Should().Equal("bob-finance-acme", "bob-sales-globex");
+
+        var narrowRead = new Harness();
+        narrowRead.Grants.Add(new PermissionGrant(GrantHolderType.User, Bob.ToString(), "orders:read", PermissionGrantType.Allow, PermissionScope.Assigned("customer")));
+        narrowRead.Grants.Add(new PermissionGrant(GrantHolderType.User, Bob.ToString(), "orders:export", PermissionGrantType.Allow));
+        narrowRead.Assignments.Assign(Bob, "customer", Acme);
+        Names(narrowRead.As(Bob).ForExport(Orders.AsQueryable(), "orders:export", "orders:read"))
+            .Should().Equal("alice-sales-acme", "bob-finance-acme");
+    }
+
+    [Fact]
+    public void An_export_needs_both_permissions()
+    {
+        var readOnly = new Harness();
+        readOnly.Grants.Add(new PermissionGrant(GrantHolderType.User, Bob.ToString(), "orders:read", PermissionGrantType.Allow));
+        var exportOnly = new Harness();
+        exportOnly.Grants.Add(new PermissionGrant(GrantHolderType.User, Bob.ToString(), "orders:export", PermissionGrantType.Allow));
+
+        var noExport = () => readOnly.As(Bob).ForExport(Orders.AsQueryable(), "orders:export", "orders:read");
+        var noRead = () => exportOnly.As(Bob).ForExport(Orders.AsQueryable(), "orders:export", "orders:read");
+
+        noExport.Should().Throw<ForbiddenException>().Which.Permission.Should().Be("orders:export");
+        noRead.Should().Throw<ForbiddenException>().Which.Permission.Should().Be("orders:read");
+    }
+
+    [Fact]
+    public void A_bulk_action_is_all_or_nothing()
+    {
+        var h = new Harness();
+        h.Grants.Add(new PermissionGrant(GrantHolderType.User, Bob.ToString(), "orders:approve", PermissionGrantType.Allow, PermissionScope.Own));
+        var enforcer = h.As(Bob);
+
+        enforcer.OutOfScope(Orders, "orders:approve").Select(o => o.Name).Should().Equal("alice-sales-acme");
+        enforcer.EnsureAllInScope(Orders.Where(o => o.OwnerId == Bob), "orders:approve");
+        var act = () => enforcer.EnsureAllInScope(Orders, "orders:approve");
+        act.Should().Throw<ForbiddenException>();
     }
 }

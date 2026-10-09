@@ -1508,3 +1508,7 @@ Modulus.Authorization.Scopes.IScopeMapRegistry.AssignmentTypes.get -> System.Col
 Modulus.Authorization.Scopes.ScopeMapRegistry.AssignmentTypes.get -> System.Collections.Generic.IReadOnlySet<string!>!
 abstract Modulus.Authorization.Scopes.ScopeMap.AssignmentTypes.get -> System.Collections.Generic.IReadOnlyCollection<string!>!
 override Modulus.Authorization.Scopes.ScopeMap<T>.AssignmentTypes.get -> System.Collections.Generic.IReadOnlyCollection<string!>!
+Modulus.Authorization.Scopes.ScopeEnforcerExtensions
+static Modulus.Authorization.Scopes.ScopeEnforcerExtensions.EnsureAllInScope<T>(this Modulus.Authorization.Scopes.IScopeEnforcer! scopes, System.Collections.Generic.IEnumerable<T!>! records, string! permission) -> void
+static Modulus.Authorization.Scopes.ScopeEnforcerExtensions.ForExport<T>(this Modulus.Authorization.Scopes.IScopeEnforcer! scopes, System.Linq.IQueryable<T!>! source, string! exportPermission, string! readPermission) -> System.Linq.IQueryable<T!>!
+static Modulus.Authorization.Scopes.ScopeEnforcerExtensions.OutOfScope<T>(this Modulus.Authorization.Scopes.IScopeEnforcer! scopes, System.Collections.Generic.IEnumerable<T!>! records, string! permission) -> System.Collections.Generic.IReadOnlyList<T!>!
