@@ -28,7 +28,7 @@ namespace Modulus.Authorization.Management;
 /// Every endpoint requires the <see cref="ManagePermission"/> permission via the
 /// framework's <c>:</c>-policy convention.
 /// </summary>
-public static class AuthorizationManagementExtensions
+public static partial class AuthorizationManagementExtensions
 {
     /// <summary>The permission guarding every management endpoint.</summary>
     public const string ManagePermission = "authorization:manage";
@@ -44,6 +44,12 @@ public static class AuthorizationManagementExtensions
     /// only: a company administrator holds <see cref="ManagePermission"/> but must never reach other companies' plans.
     /// </summary>
     public const string EntitlementsPermission = "authorization:entitlements:manage";
+
+    /// <summary>
+    /// Lets the holder activate emergency access from a configured profile (<see cref="AuthorizationManagementOptions.BreakGlassProfiles"/>).
+    /// Held by few people; every use is audited and needs a later review.
+    /// </summary>
+    public const string BreakGlassPermission = "authorization:break-glass";
 
     /// <summary>
     /// Declares the <see cref="ManagePermission"/> permission in the registry.
@@ -77,6 +83,11 @@ public static class AuthorizationManagementExtensions
             registry.Add(
                 GrantAnyPermission,
                 "Grant permissions the administrator does not hold themselves.",
+                null,
+                PermissionSensitivity.Critical);
+            registry.Add(
+                BreakGlassPermission,
+                "Activate emergency access from a configured break-glass profile (audited, reviewed afterwards).",
                 null,
                 PermissionSensitivity.Critical);
             registry.Add(

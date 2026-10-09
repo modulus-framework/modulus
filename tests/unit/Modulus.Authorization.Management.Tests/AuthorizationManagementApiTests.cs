@@ -88,6 +88,8 @@ public sealed class AuthorizationManagementApiTests : IAsyncLifetime
         });
         builder.Services.AddSegregationOfDuties(new SodConstraint(
             "maker-checker", ["orders:create", "orders:approve"], "Whoever creates an order must not approve it."));
+        builder.Services.Configure<AuthorizationManagementOptions>(o =>
+            o.BreakGlassProfiles["emergency"] = new BreakGlassProfile(["orders:update"], MaxHours: 2));
         builder.Services.AddScopeMap<SalesOrder>(m => m.AssignedKey("customer", o => o.CustomerId));
         builder.Services.AddSingleton(_directory);
         builder.Services.AddSingleton<IUserRoleDirectory>(_directory);
@@ -97,6 +99,7 @@ public sealed class AuthorizationManagementApiTests : IAsyncLifetime
         _app.UseAuthentication();
         _app.UseAuthorization();
         _app.MapModulusAuthorizationManagement();
+        _app.MapModulusAccessRequests();
 
         using (var db = _app.Services
                    .GetRequiredService<IDbContextFactory<AuthorizationStoreDbContext>>()
@@ -927,5 +930,115 @@ public sealed class AuthorizationManagementApiTests : IAsyncLifetime
         (await _client.PostAsync($"/authorization/org/units/{factory}/reopen", null)).StatusCode.Should().Be(HttpStatusCode.NoContent);
         (await _client.PostAsync($"/authorization/org/units/{line}/reopen", null)).StatusCode.Should().Be(HttpStatusCode.NoContent);
         (await _client.PostAsync($"/authorization/org/units/{Guid.NewGuid()}/close", null)).StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    // ── Access requests and break-glass ──
+
+    private sealed record RequestView(Guid Id, string Kind, Guid RequesterId, string[] Permissions, string Status, DateTimeOffset? AccessEndsAt);
+
+    private async Task<RequestView> AskAsync(Guid user, string permission = "orders:update", int hours = 2)
+    {
+        using var asker = As("orders:read", user);
+        var response = await asker.PostAsJsonAsync("/authorization/access-requests",
+            new { permissions = new[] { permission }, reason = "Month-end close", hours });
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        return (await response.Content.ReadFromJsonAsync<RequestView>())!;
+    }
+
+    [Fact]
+    public async Task An_approved_request_becomes_a_temporary_grant_that_cannot_be_decided_twice()
+    {
+        var user = _directory.AddUser();
+        var request = await AskAsync(user);
+        using var approver = As("authorization:manage,orders:update", Guid.NewGuid());
+
+        (await approver.GetFromJsonAsync<RequestView[]>("/authorization/access-requests/pending")).Should().ContainSingle(r => r.Id == request.Id);
+        (await approver.PostAsJsonAsync($"/authorization/access-requests/{request.Id}/approve", new { note = "ok" })).StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        var grants = _app.Services.GetRequiredService<EfPermissionGrantStore>();
+        var scoped = (await grants.GetScopedGrantsForHolderAsync(GrantHolderType.User, user.ToString())).Should().ContainSingle().Which.Grant;
+        scoped.Permission.Should().Be("orders:update");
+        scoped.ValidUntil.Should().NotBeNull().And.Subject.Should().BeAfter(DateTimeOffset.UtcNow);
+        using var asker = As("orders:read", user);
+        (await asker.GetFromJsonAsync<RequestView[]>("/authorization/access-requests/mine")).Should().ContainSingle().Which.Status.Should().Be("Approved");
+        (await approver.PostAsJsonAsync($"/authorization/access-requests/{request.Id}/approve", new { })).StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task Nobody_approves_their_own_request_or_grants_what_they_do_not_hold()
+    {
+        var user = _directory.AddUser();
+        var request = await AskAsync(user);
+
+        using var self = As("authorization:manage,orders:update", user);
+        (await self.PostAsJsonAsync($"/authorization/access-requests/{request.Id}/approve", new { })).StatusCode.Should().Be(HttpStatusCode.Forbidden);
+
+        using var withoutIt = As("authorization:manage", Guid.NewGuid());
+        (await withoutIt.PostAsJsonAsync($"/authorization/access-requests/{request.Id}/approve", new { })).StatusCode.Should().Be(HttpStatusCode.Forbidden);
+
+        using var ordinary = As("orders:read", Guid.NewGuid());
+        (await ordinary.PostAsJsonAsync($"/authorization/access-requests/{request.Id}/approve", new { })).StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        (await _app.Services.GetRequiredService<EfPermissionGrantStore>().GetScopedGrantsForHolderAsync(GrantHolderType.User, user.ToString())).Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task A_request_can_be_denied_or_cancelled_and_must_be_well_formed()
+    {
+        var user = _directory.AddUser();
+        var toDeny = await AskAsync(user);
+        var toCancel = await AskAsync(user);
+        using var approver = As("authorization:manage,orders:update", Guid.NewGuid());
+        using var asker = As("orders:read", user);
+        using var stranger = As("orders:read", Guid.NewGuid());
+
+        (await approver.PostAsJsonAsync($"/authorization/access-requests/{toDeny.Id}/deny", new { note = "no" })).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await stranger.DeleteAsync($"/authorization/access-requests/{toCancel.Id}")).StatusCode.Should().Be(HttpStatusCode.NotFound);
+        (await asker.DeleteAsync($"/authorization/access-requests/{toCancel.Id}")).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await asker.DeleteAsync($"/authorization/access-requests/{toCancel.Id}")).StatusCode.Should().Be(HttpStatusCode.Conflict);
+
+        foreach (var body in new object[]
+        {
+            new { permissions = new[] { "orders:update" }, reason = " ", hours = 2 },
+            new { permissions = new[] { "orders:*" }, reason = "x", hours = 2 },
+            new { permissions = new[] { "orders:nope" }, reason = "x", hours = 2 },
+            new { permissions = new[] { "orders:update" }, reason = "x", hours = 0 },
+            new { permissions = new[] { "orders:update" }, reason = "x", hours = 24 * 365 },
+        })
+        {
+            (await asker.PostAsJsonAsync("/authorization/access-requests", body)).StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        }
+    }
+
+    [Fact]
+    public async Task Break_glass_gives_profile_access_at_once_and_waits_for_a_review_by_someone_else()
+    {
+        var user = _directory.AddUser();
+        using var holder = As("authorization:break-glass", user);
+
+        (await holder.PostAsJsonAsync("/authorization/access-requests/break-glass", new { profile = "nope", reason = "Payment run is blocked" }))
+            .StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await holder.PostAsJsonAsync("/authorization/access-requests/break-glass", new { profile = "emergency", reason = "short" }))
+            .StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await holder.PostAsJsonAsync("/authorization/access-requests/break-glass", new { profile = "emergency", reason = "Payment run is blocked", hours = 3 }))
+            .StatusCode.Should().Be(HttpStatusCode.BadRequest, "the profile allows 2 hours");
+
+        var created = await holder.PostAsJsonAsync("/authorization/access-requests/break-glass", new { profile = "emergency", reason = "Payment run is blocked" });
+        created.StatusCode.Should().Be(HttpStatusCode.Created);
+        var use = (await created.Content.ReadFromJsonAsync<RequestView>())!;
+        use.Status.Should().Be("Activated");
+        (await _app.Services.GetRequiredService<EfPermissionGrantStore>().GetScopedGrantsForHolderAsync(GrantHolderType.User, user.ToString()))
+            .Should().ContainSingle(g => g.Grant.Permission == "orders:update" && g.Grant.ValidUntil != null);
+
+        using var ordinary = As("orders:read", Guid.NewGuid());
+        (await ordinary.PostAsJsonAsync("/authorization/access-requests/break-glass", new { profile = "emergency", reason = "Payment run is blocked" }))
+            .StatusCode.Should().Be(HttpStatusCode.Forbidden);
+
+        using var reviewer = As("authorization:manage", Guid.NewGuid());
+        (await reviewer.GetFromJsonAsync<RequestView[]>("/authorization/access-requests/break-glass/unreviewed")).Should().ContainSingle(r => r.Id == use.Id);
+        using var self = As("authorization:manage,authorization:break-glass", user);
+        (await self.PostAsJsonAsync($"/authorization/access-requests/{use.Id}/review", new { note = "fine" })).StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        (await reviewer.PostAsJsonAsync($"/authorization/access-requests/{use.Id}/review", new { note = "fine" })).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await reviewer.PostAsJsonAsync($"/authorization/access-requests/{use.Id}/review", new { })).StatusCode.Should().Be(HttpStatusCode.Conflict);
+        (await reviewer.GetFromJsonAsync<RequestView[]>("/authorization/access-requests/break-glass/unreviewed")).Should().BeEmpty();
     }
 }

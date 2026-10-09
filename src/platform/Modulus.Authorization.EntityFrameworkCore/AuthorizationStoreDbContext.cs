@@ -32,6 +32,7 @@ public class AuthorizationStoreDbContext(
     internal DbSet<ScopedGrantRow> ScopedGrants => Set<ScopedGrantRow>();
     internal DbSet<AssignmentRow> Assignments => Set<AssignmentRow>();
     internal DbSet<ApprovalAuthorityRow> ApprovalAuthorities => Set<ApprovalAuthorityRow>();
+    internal DbSet<AccessRequestRow> AccessRequests => Set<AccessRequestRow>();
     internal DbSet<OrgUnitProfileRow> OrgUnitProfiles => Set<OrgUnitProfileRow>();
     internal DbSet<CompanyProfileRow> CompanyProfiles => Set<CompanyProfileRow>();
 
@@ -166,6 +167,14 @@ public class AuthorizationStoreDbContext(
         approval.Property(a => a.DocumentType).HasMaxLength(256);
         approval.HasIndex(a => new { a.TenantId, a.Permission, a.HolderType, a.Holder });
 
+        var accessRequest = modelBuilder.Entity<AccessRequestRow>();
+        accessRequest.ToTable("ModulusAccessRequests");
+        accessRequest.HasKey(r => r.Id);
+        accessRequest.Property(r => r.Permissions).HasMaxLength(4000);
+        accessRequest.Property(r => r.Reason).HasMaxLength(2000);
+        accessRequest.Property(r => r.Note).HasMaxLength(2000);
+        accessRequest.HasIndex(r => new { r.TenantId, r.Status, r.RequesterId });
+
         var unitProfile = modelBuilder.Entity<OrgUnitProfileRow>();
         unitProfile.ToTable("ModulusOrgUnitProfiles");
         unitProfile.HasKey(p => new { p.TenantId, p.UnitId });
@@ -247,6 +256,9 @@ public class AuthorizationStoreDbContext(
         mb.Entity<ApprovalAuthorityRow>().HasQueryFilter(e =>
             currentTenant.IsHost
             || (currentTenant.TenantId != null && e.TenantId == currentTenant.TenantId));
+        mb.Entity<AccessRequestRow>().HasQueryFilter(e =>
+            currentTenant.IsHost
+            || (currentTenant.TenantId != null && e.TenantId == currentTenant.TenantId));
         mb.Entity<OrgUnitProfileRow>().HasQueryFilter(e =>
             currentTenant.IsHost
             || (currentTenant.TenantId != null && e.TenantId == currentTenant.TenantId));
@@ -302,6 +314,26 @@ internal sealed class ApprovalAuthorityRow : IHasTenantId
     public DateTimeOffset? ValidUntil { get; set; }
     public Guid? CreatedBy { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
+}
+
+/// <summary>Row backing an <see cref="AccessRequest"/>.</summary>
+internal sealed class AccessRequestRow : IHasTenantId
+{
+    public Guid Id { get; set; }
+    public Guid TenantId { get; set; }
+    public AccessRequestKind Kind { get; set; }
+    public Guid RequesterId { get; set; }
+    public string Permissions { get; set; } = "[]";
+    public string Reason { get; set; } = null!;
+    public int Hours { get; set; }
+    public AccessRequestStatus Status { get; set; }
+    public DateTimeOffset CreatedAt { get; set; }
+    public Guid? DecidedBy { get; set; }
+    public DateTimeOffset? DecidedAt { get; set; }
+    public string? Note { get; set; }
+    public DateTimeOffset? AccessEndsAt { get; set; }
+    public Guid? ReviewedBy { get; set; }
+    public DateTimeOffset? ReviewedAt { get; set; }
 }
 
 /// <summary>Row backing an <see cref="OrgUnitProfile"/>.</summary>

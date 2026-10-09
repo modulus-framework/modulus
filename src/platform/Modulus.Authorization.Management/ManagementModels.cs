@@ -123,3 +123,23 @@ public sealed record OrgUnitProfileResponse(
 public sealed record CompanyProfileRequest(
     string LegalName, string? TradeName, string? RegistrationNumber, string? TaxId, string? Address, string? Country,
     string? Currency, int? FiscalYearStartMonth, string? TimeZone, string? Language);
+
+/// <summary>Asks for temporary access.</summary>
+/// <param name="Permissions">The registered permissions needed (no wildcards).</param>
+/// <param name="Reason">Why; the approver reads it.</param>
+/// <param name="Hours">How long the access should last once approved.</param>
+public sealed record AccessRequestWriteRequest(string[]? Permissions, string? Reason, int Hours);
+
+/// <summary>An approver's or reviewer's note.</summary>
+public sealed record AccessRequestDecisionRequest(string? Note);
+
+/// <summary>Activates emergency access.</summary>
+/// <param name="Profile">The break-glass profile name.</param>
+/// <param name="Reason">Why (at least 10 characters); reviewed afterwards.</param>
+/// <param name="Hours">How long; defaults to the profile's maximum.</param>
+public sealed record BreakGlassWriteRequest(string? Profile, string? Reason, int? Hours);
+
+/// <summary>An access request or break-glass use.</summary>
+public sealed record AccessRequestResponse(
+    Guid Id, string Kind, Guid RequesterId, IReadOnlyList<string> Permissions, string Reason, int Hours, string Status, DateTimeOffset CreatedAt,
+    Guid? DecidedBy, DateTimeOffset? DecidedAt, string? Note, DateTimeOffset? AccessEndsAt, Guid? ReviewedBy, DateTimeOffset? ReviewedAt);

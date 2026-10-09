@@ -1404,6 +1404,13 @@ roots, Security tab in `Modulus.UI.AuditLogging`).
 - **Login history.** `ILoginHistoryService.GetAsync(userId, take)` reads the account's identity events (sign-in refusals with the reason, token issue/refresh, 2FA changes) from the security audit
   (`ISecurityAuditStore.QueryAsync(SecurityAuditQuery)`: filter by category, actor, action prefix, outcome, time; newest first; the EF store filters in the database, other stores scan the chain)
   and serves `GET account/login-history` to the caller. Needs a security audit store (`AddModulusSecurityAudit`). Not built: suspicious-sign-in detection, phone verification.
+- **Access requests and break-glass.** `MapModulusAccessRequests()` (`/authorization/access-requests`; table `ModulusAccessRequests`, existing deployments need a migration). Any signed-in user
+  asks for temporary access (`POST`: registered permissions, a reason, hours up to `MaxTemporaryGrantDuration`; at most `MaxPendingAccessRequests` waiting; `GET mine`, `DELETE {id}` to cancel);
+  `authorization:manage` approves or denies (`GET pending`, `POST {id}/approve|deny`). Approval refuses the requester themself, permissions the approver does not hold (`authorization:grant-any`
+  lifts it) and a segregation-of-duties violation, decides in one conditional update (two approvers cannot both win) and writes **temporary grants that end by themselves**. **Break-glass:** the app names
+  profiles in `AuthorizationManagementOptions.BreakGlassProfiles` (permissions + max hours; empty = off); a holder of `authorization:break-glass` (Critical) activates one (`POST break-glass`, reason of
+  10+ characters) and gets the temporary grants at once; it is recorded as `Overridden` in the security audit and listed in `GET break-glass/unreviewed` until someone other than the user reviews it
+  (`POST {id}/review`). Not built: auto-expiring pending requests, notifications to approvers, per-profile approver lists.
 - **Reason codes.** `AccessDecision.Code` uses `AccessReasonCodes` (BRS Appendix B); no policy for a type = `METADATA_MISSING`.
 - **Sensitivity.** `PermissionSensitivity` (Normal/Sensitive/Critical) on `PermissionDefinition`; `registry.Add(..., sensitivity)`.
   A wildcard grant never confers a Critical permission (a wildcard deny still removes it); Critical is not delegable.

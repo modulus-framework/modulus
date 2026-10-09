@@ -103,6 +103,7 @@ public static class EfAuthorizationStoreExtensions
         services.AddSingleton<IAssignmentStore>(
             sp => sp.GetRequiredService<EfAssignmentStore>());
 
+        services.TryAddSingleton<EfAccessRequestStore>();
         services.TryAddSingleton<EfOrganizationProfileStore>();
         services.TryAddSingleton<EfApprovalAuthorityStore>();
         services.RemoveAll<IApprovalAuthorityStore>();

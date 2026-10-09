@@ -254,3 +254,59 @@ static Modulus.Authorization.EntityFrameworkCore.CompanyProfile.operator !=(Modu
 static Modulus.Authorization.EntityFrameworkCore.CompanyProfile.operator ==(Modulus.Authorization.EntityFrameworkCore.CompanyProfile? left, Modulus.Authorization.EntityFrameworkCore.CompanyProfile? right) -> bool
 static Modulus.Authorization.EntityFrameworkCore.OrgUnitProfile.operator !=(Modulus.Authorization.EntityFrameworkCore.OrgUnitProfile? left, Modulus.Authorization.EntityFrameworkCore.OrgUnitProfile? right) -> bool
 static Modulus.Authorization.EntityFrameworkCore.OrgUnitProfile.operator ==(Modulus.Authorization.EntityFrameworkCore.OrgUnitProfile? left, Modulus.Authorization.EntityFrameworkCore.OrgUnitProfile? right) -> bool
+Modulus.Authorization.EntityFrameworkCore.AccessRequest
+Modulus.Authorization.EntityFrameworkCore.AccessRequest.<Clone>$() -> Modulus.Authorization.EntityFrameworkCore.AccessRequest!
+Modulus.Authorization.EntityFrameworkCore.AccessRequest.AccessEndsAt.get -> System.DateTimeOffset?
+Modulus.Authorization.EntityFrameworkCore.AccessRequest.AccessEndsAt.init -> void
+Modulus.Authorization.EntityFrameworkCore.AccessRequest.AccessRequest(System.Guid Id, Modulus.Authorization.EntityFrameworkCore.AccessRequestKind Kind, System.Guid RequesterId, System.Collections.Generic.IReadOnlyList<string!>! Permissions, string! Reason, int Hours, Modulus.Authorization.EntityFrameworkCore.AccessRequestStatus Status, System.DateTimeOffset CreatedAt, System.Guid? DecidedBy = null, System.DateTimeOffset? DecidedAt = null, string? Note = null, System.DateTimeOffset? AccessEndsAt = null, System.Guid? ReviewedBy = null, System.DateTimeOffset? ReviewedAt = null) -> void
+Modulus.Authorization.EntityFrameworkCore.AccessRequest.CreatedAt.get -> System.DateTimeOffset
+Modulus.Authorization.EntityFrameworkCore.AccessRequest.CreatedAt.init -> void
+Modulus.Authorization.EntityFrameworkCore.AccessRequest.DecidedAt.get -> System.DateTimeOffset?
+Modulus.Authorization.EntityFrameworkCore.AccessRequest.DecidedAt.init -> void
+Modulus.Authorization.EntityFrameworkCore.AccessRequest.DecidedBy.get -> System.Guid?
+Modulus.Authorization.EntityFrameworkCore.AccessRequest.DecidedBy.init -> void
+Modulus.Authorization.EntityFrameworkCore.AccessRequest.Deconstruct(out System.Guid Id, out Modulus.Authorization.EntityFrameworkCore.AccessRequestKind Kind, out System.Guid RequesterId, out System.Collections.Generic.IReadOnlyList<string!>! Permissions, out string! Reason, out int Hours, out Modulus.Authorization.EntityFrameworkCore.AccessRequestStatus Status, out System.DateTimeOffset CreatedAt, out System.Guid? DecidedBy, out System.DateTimeOffset? DecidedAt, out string? Note, out System.DateTimeOffset? AccessEndsAt, out System.Guid? ReviewedBy, out System.DateTimeOffset? ReviewedAt) -> void
+Modulus.Authorization.EntityFrameworkCore.AccessRequest.Equals(Modulus.Authorization.EntityFrameworkCore.AccessRequest? other) -> bool
+Modulus.Authorization.EntityFrameworkCore.AccessRequest.Hours.get -> int
+Modulus.Authorization.EntityFrameworkCore.AccessRequest.Hours.init -> void
+Modulus.Authorization.EntityFrameworkCore.AccessRequest.Id.get -> System.Guid
+Modulus.Authorization.EntityFrameworkCore.AccessRequest.Id.init -> void
+Modulus.Authorization.EntityFrameworkCore.AccessRequest.Kind.get -> Modulus.Authorization.EntityFrameworkCore.AccessRequestKind
+Modulus.Authorization.EntityFrameworkCore.AccessRequest.Kind.init -> void
+Modulus.Authorization.EntityFrameworkCore.AccessRequest.Note.get -> string?
+Modulus.Authorization.EntityFrameworkCore.AccessRequest.Note.init -> void
+Modulus.Authorization.EntityFrameworkCore.AccessRequest.Permissions.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Modulus.Authorization.EntityFrameworkCore.AccessRequest.Permissions.init -> void
+Modulus.Authorization.EntityFrameworkCore.AccessRequest.Reason.get -> string!
+Modulus.Authorization.EntityFrameworkCore.AccessRequest.Reason.init -> void
+Modulus.Authorization.EntityFrameworkCore.AccessRequest.RequesterId.get -> System.Guid
+Modulus.Authorization.EntityFrameworkCore.AccessRequest.RequesterId.init -> void
+Modulus.Authorization.EntityFrameworkCore.AccessRequest.ReviewedAt.get -> System.DateTimeOffset?
+Modulus.Authorization.EntityFrameworkCore.AccessRequest.ReviewedAt.init -> void
+Modulus.Authorization.EntityFrameworkCore.AccessRequest.ReviewedBy.get -> System.Guid?
+Modulus.Authorization.EntityFrameworkCore.AccessRequest.ReviewedBy.init -> void
+Modulus.Authorization.EntityFrameworkCore.AccessRequest.Status.get -> Modulus.Authorization.EntityFrameworkCore.AccessRequestStatus
+Modulus.Authorization.EntityFrameworkCore.AccessRequest.Status.init -> void
+Modulus.Authorization.EntityFrameworkCore.AccessRequestKind
+Modulus.Authorization.EntityFrameworkCore.AccessRequestKind.BreakGlass = 1 -> Modulus.Authorization.EntityFrameworkCore.AccessRequestKind
+Modulus.Authorization.EntityFrameworkCore.AccessRequestKind.Request = 0 -> Modulus.Authorization.EntityFrameworkCore.AccessRequestKind
+Modulus.Authorization.EntityFrameworkCore.AccessRequestStatus
+Modulus.Authorization.EntityFrameworkCore.AccessRequestStatus.Activated = 4 -> Modulus.Authorization.EntityFrameworkCore.AccessRequestStatus
+Modulus.Authorization.EntityFrameworkCore.AccessRequestStatus.Approved = 1 -> Modulus.Authorization.EntityFrameworkCore.AccessRequestStatus
+Modulus.Authorization.EntityFrameworkCore.AccessRequestStatus.Cancelled = 3 -> Modulus.Authorization.EntityFrameworkCore.AccessRequestStatus
+Modulus.Authorization.EntityFrameworkCore.AccessRequestStatus.Denied = 2 -> Modulus.Authorization.EntityFrameworkCore.AccessRequestStatus
+Modulus.Authorization.EntityFrameworkCore.AccessRequestStatus.Pending = 0 -> Modulus.Authorization.EntityFrameworkCore.AccessRequestStatus
+Modulus.Authorization.EntityFrameworkCore.EfAccessRequestStore
+Modulus.Authorization.EntityFrameworkCore.EfAccessRequestStore.CountPendingAsync(System.Guid requesterId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<int>!
+Modulus.Authorization.EntityFrameworkCore.EfAccessRequestStore.CreateAsync(Modulus.Authorization.EntityFrameworkCore.AccessRequest! request, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Authorization.EntityFrameworkCore.AccessRequest!>!
+Modulus.Authorization.EntityFrameworkCore.EfAccessRequestStore.DecideAsync(System.Guid id, Modulus.Authorization.EntityFrameworkCore.AccessRequestStatus expected, Modulus.Authorization.EntityFrameworkCore.AccessRequestStatus next, System.Guid? decidedBy, System.DateTimeOffset now, string? note, System.DateTimeOffset? accessEndsAt, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.Authorization.EntityFrameworkCore.EfAccessRequestStore.EfAccessRequestStore(Microsoft.EntityFrameworkCore.IDbContextFactory<Modulus.Authorization.EntityFrameworkCore.AuthorizationStoreDbContext!>! factory) -> void
+Modulus.Authorization.EntityFrameworkCore.EfAccessRequestStore.GetAsync(System.Guid id, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Authorization.EntityFrameworkCore.AccessRequest?>!
+Modulus.Authorization.EntityFrameworkCore.EfAccessRequestStore.ListAsync(Modulus.Authorization.EntityFrameworkCore.AccessRequestStatus status, Modulus.Authorization.EntityFrameworkCore.AccessRequestKind? kind = null, bool unreviewedOnly = false, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Authorization.EntityFrameworkCore.AccessRequest!>!>!
+Modulus.Authorization.EntityFrameworkCore.EfAccessRequestStore.ListForRequesterAsync(System.Guid requesterId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Authorization.EntityFrameworkCore.AccessRequest!>!>!
+Modulus.Authorization.EntityFrameworkCore.EfAccessRequestStore.ReviewAsync(System.Guid id, System.Guid? reviewer, System.DateTimeOffset now, string? note, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+override Modulus.Authorization.EntityFrameworkCore.AccessRequest.Equals(object? obj) -> bool
+override Modulus.Authorization.EntityFrameworkCore.AccessRequest.GetHashCode() -> int
+override Modulus.Authorization.EntityFrameworkCore.AccessRequest.ToString() -> string!
+static Modulus.Authorization.EntityFrameworkCore.AccessRequest.operator !=(Modulus.Authorization.EntityFrameworkCore.AccessRequest? left, Modulus.Authorization.EntityFrameworkCore.AccessRequest? right) -> bool
+static Modulus.Authorization.EntityFrameworkCore.AccessRequest.operator ==(Modulus.Authorization.EntityFrameworkCore.AccessRequest? left, Modulus.Authorization.EntityFrameworkCore.AccessRequest? right) -> bool

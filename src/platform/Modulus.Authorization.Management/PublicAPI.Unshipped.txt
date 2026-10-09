@@ -363,3 +363,104 @@ static Modulus.Authorization.Management.OrgUnitProfileRequest.operator !=(Modulu
 static Modulus.Authorization.Management.OrgUnitProfileRequest.operator ==(Modulus.Authorization.Management.OrgUnitProfileRequest? left, Modulus.Authorization.Management.OrgUnitProfileRequest? right) -> bool
 static Modulus.Authorization.Management.OrgUnitProfileResponse.operator !=(Modulus.Authorization.Management.OrgUnitProfileResponse? left, Modulus.Authorization.Management.OrgUnitProfileResponse? right) -> bool
 static Modulus.Authorization.Management.OrgUnitProfileResponse.operator ==(Modulus.Authorization.Management.OrgUnitProfileResponse? left, Modulus.Authorization.Management.OrgUnitProfileResponse? right) -> bool
+Modulus.Authorization.Management.AccessRequestDecisionRequest
+Modulus.Authorization.Management.AccessRequestDecisionRequest.<Clone>$() -> Modulus.Authorization.Management.AccessRequestDecisionRequest!
+Modulus.Authorization.Management.AccessRequestDecisionRequest.AccessRequestDecisionRequest(string? Note) -> void
+Modulus.Authorization.Management.AccessRequestDecisionRequest.Deconstruct(out string? Note) -> void
+Modulus.Authorization.Management.AccessRequestDecisionRequest.Equals(Modulus.Authorization.Management.AccessRequestDecisionRequest? other) -> bool
+Modulus.Authorization.Management.AccessRequestDecisionRequest.Note.get -> string?
+Modulus.Authorization.Management.AccessRequestDecisionRequest.Note.init -> void
+Modulus.Authorization.Management.AccessRequestResponse
+Modulus.Authorization.Management.AccessRequestResponse.<Clone>$() -> Modulus.Authorization.Management.AccessRequestResponse!
+Modulus.Authorization.Management.AccessRequestResponse.AccessEndsAt.get -> System.DateTimeOffset?
+Modulus.Authorization.Management.AccessRequestResponse.AccessEndsAt.init -> void
+Modulus.Authorization.Management.AccessRequestResponse.AccessRequestResponse(System.Guid Id, string! Kind, System.Guid RequesterId, System.Collections.Generic.IReadOnlyList<string!>! Permissions, string! Reason, int Hours, string! Status, System.DateTimeOffset CreatedAt, System.Guid? DecidedBy, System.DateTimeOffset? DecidedAt, string? Note, System.DateTimeOffset? AccessEndsAt, System.Guid? ReviewedBy, System.DateTimeOffset? ReviewedAt) -> void
+Modulus.Authorization.Management.AccessRequestResponse.CreatedAt.get -> System.DateTimeOffset
+Modulus.Authorization.Management.AccessRequestResponse.CreatedAt.init -> void
+Modulus.Authorization.Management.AccessRequestResponse.DecidedAt.get -> System.DateTimeOffset?
+Modulus.Authorization.Management.AccessRequestResponse.DecidedAt.init -> void
+Modulus.Authorization.Management.AccessRequestResponse.DecidedBy.get -> System.Guid?
+Modulus.Authorization.Management.AccessRequestResponse.DecidedBy.init -> void
+Modulus.Authorization.Management.AccessRequestResponse.Deconstruct(out System.Guid Id, out string! Kind, out System.Guid RequesterId, out System.Collections.Generic.IReadOnlyList<string!>! Permissions, out string! Reason, out int Hours, out string! Status, out System.DateTimeOffset CreatedAt, out System.Guid? DecidedBy, out System.DateTimeOffset? DecidedAt, out string? Note, out System.DateTimeOffset? AccessEndsAt, out System.Guid? ReviewedBy, out System.DateTimeOffset? ReviewedAt) -> void
+Modulus.Authorization.Management.AccessRequestResponse.Equals(Modulus.Authorization.Management.AccessRequestResponse? other) -> bool
+Modulus.Authorization.Management.AccessRequestResponse.Hours.get -> int
+Modulus.Authorization.Management.AccessRequestResponse.Hours.init -> void
+Modulus.Authorization.Management.AccessRequestResponse.Id.get -> System.Guid
+Modulus.Authorization.Management.AccessRequestResponse.Id.init -> void
+Modulus.Authorization.Management.AccessRequestResponse.Kind.get -> string!
+Modulus.Authorization.Management.AccessRequestResponse.Kind.init -> void
+Modulus.Authorization.Management.AccessRequestResponse.Note.get -> string?
+Modulus.Authorization.Management.AccessRequestResponse.Note.init -> void
+Modulus.Authorization.Management.AccessRequestResponse.Permissions.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Modulus.Authorization.Management.AccessRequestResponse.Permissions.init -> void
+Modulus.Authorization.Management.AccessRequestResponse.Reason.get -> string!
+Modulus.Authorization.Management.AccessRequestResponse.Reason.init -> void
+Modulus.Authorization.Management.AccessRequestResponse.RequesterId.get -> System.Guid
+Modulus.Authorization.Management.AccessRequestResponse.RequesterId.init -> void
+Modulus.Authorization.Management.AccessRequestResponse.ReviewedAt.get -> System.DateTimeOffset?
+Modulus.Authorization.Management.AccessRequestResponse.ReviewedAt.init -> void
+Modulus.Authorization.Management.AccessRequestResponse.ReviewedBy.get -> System.Guid?
+Modulus.Authorization.Management.AccessRequestResponse.ReviewedBy.init -> void
+Modulus.Authorization.Management.AccessRequestResponse.Status.get -> string!
+Modulus.Authorization.Management.AccessRequestResponse.Status.init -> void
+Modulus.Authorization.Management.AccessRequestWriteRequest
+Modulus.Authorization.Management.AccessRequestWriteRequest.<Clone>$() -> Modulus.Authorization.Management.AccessRequestWriteRequest!
+Modulus.Authorization.Management.AccessRequestWriteRequest.AccessRequestWriteRequest(string![]? Permissions, string? Reason, int Hours) -> void
+Modulus.Authorization.Management.AccessRequestWriteRequest.Deconstruct(out string![]? Permissions, out string? Reason, out int Hours) -> void
+Modulus.Authorization.Management.AccessRequestWriteRequest.Equals(Modulus.Authorization.Management.AccessRequestWriteRequest? other) -> bool
+Modulus.Authorization.Management.AccessRequestWriteRequest.Hours.get -> int
+Modulus.Authorization.Management.AccessRequestWriteRequest.Hours.init -> void
+Modulus.Authorization.Management.AccessRequestWriteRequest.Permissions.get -> string![]?
+Modulus.Authorization.Management.AccessRequestWriteRequest.Permissions.init -> void
+Modulus.Authorization.Management.AccessRequestWriteRequest.Reason.get -> string?
+Modulus.Authorization.Management.AccessRequestWriteRequest.Reason.init -> void
+Modulus.Authorization.Management.AuthorizationManagementOptions.BreakGlassProfiles.get -> System.Collections.Generic.IDictionary<string!, Modulus.Authorization.Management.BreakGlassProfile!>!
+Modulus.Authorization.Management.AuthorizationManagementOptions.MaxPendingAccessRequests.get -> int
+Modulus.Authorization.Management.AuthorizationManagementOptions.MaxPendingAccessRequests.set -> void
+Modulus.Authorization.Management.BreakGlassProfile
+Modulus.Authorization.Management.BreakGlassProfile.<Clone>$() -> Modulus.Authorization.Management.BreakGlassProfile!
+Modulus.Authorization.Management.BreakGlassProfile.BreakGlassProfile(System.Collections.Generic.IReadOnlyList<string!>! Permissions, int MaxHours = 4) -> void
+Modulus.Authorization.Management.BreakGlassProfile.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>! Permissions, out int MaxHours) -> void
+Modulus.Authorization.Management.BreakGlassProfile.Equals(Modulus.Authorization.Management.BreakGlassProfile? other) -> bool
+Modulus.Authorization.Management.BreakGlassProfile.MaxHours.get -> int
+Modulus.Authorization.Management.BreakGlassProfile.MaxHours.init -> void
+Modulus.Authorization.Management.BreakGlassProfile.Permissions.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Modulus.Authorization.Management.BreakGlassProfile.Permissions.init -> void
+Modulus.Authorization.Management.BreakGlassWriteRequest
+Modulus.Authorization.Management.BreakGlassWriteRequest.<Clone>$() -> Modulus.Authorization.Management.BreakGlassWriteRequest!
+Modulus.Authorization.Management.BreakGlassWriteRequest.BreakGlassWriteRequest(string? Profile, string? Reason, int? Hours) -> void
+Modulus.Authorization.Management.BreakGlassWriteRequest.Deconstruct(out string? Profile, out string? Reason, out int? Hours) -> void
+Modulus.Authorization.Management.BreakGlassWriteRequest.Equals(Modulus.Authorization.Management.BreakGlassWriteRequest? other) -> bool
+Modulus.Authorization.Management.BreakGlassWriteRequest.Hours.get -> int?
+Modulus.Authorization.Management.BreakGlassWriteRequest.Hours.init -> void
+Modulus.Authorization.Management.BreakGlassWriteRequest.Profile.get -> string?
+Modulus.Authorization.Management.BreakGlassWriteRequest.Profile.init -> void
+Modulus.Authorization.Management.BreakGlassWriteRequest.Reason.get -> string?
+Modulus.Authorization.Management.BreakGlassWriteRequest.Reason.init -> void
+const Modulus.Authorization.Management.AuthorizationManagementExtensions.BreakGlassPermission = "authorization:break-glass" -> string!
+override Modulus.Authorization.Management.AccessRequestDecisionRequest.Equals(object? obj) -> bool
+override Modulus.Authorization.Management.AccessRequestDecisionRequest.GetHashCode() -> int
+override Modulus.Authorization.Management.AccessRequestDecisionRequest.ToString() -> string!
+override Modulus.Authorization.Management.AccessRequestResponse.Equals(object? obj) -> bool
+override Modulus.Authorization.Management.AccessRequestResponse.GetHashCode() -> int
+override Modulus.Authorization.Management.AccessRequestResponse.ToString() -> string!
+override Modulus.Authorization.Management.AccessRequestWriteRequest.Equals(object? obj) -> bool
+override Modulus.Authorization.Management.AccessRequestWriteRequest.GetHashCode() -> int
+override Modulus.Authorization.Management.AccessRequestWriteRequest.ToString() -> string!
+override Modulus.Authorization.Management.BreakGlassProfile.Equals(object? obj) -> bool
+override Modulus.Authorization.Management.BreakGlassProfile.GetHashCode() -> int
+override Modulus.Authorization.Management.BreakGlassProfile.ToString() -> string!
+override Modulus.Authorization.Management.BreakGlassWriteRequest.Equals(object? obj) -> bool
+override Modulus.Authorization.Management.BreakGlassWriteRequest.GetHashCode() -> int
+override Modulus.Authorization.Management.BreakGlassWriteRequest.ToString() -> string!
+static Modulus.Authorization.Management.AccessRequestDecisionRequest.operator !=(Modulus.Authorization.Management.AccessRequestDecisionRequest? left, Modulus.Authorization.Management.AccessRequestDecisionRequest? right) -> bool
+static Modulus.Authorization.Management.AccessRequestDecisionRequest.operator ==(Modulus.Authorization.Management.AccessRequestDecisionRequest? left, Modulus.Authorization.Management.AccessRequestDecisionRequest? right) -> bool
+static Modulus.Authorization.Management.AccessRequestResponse.operator !=(Modulus.Authorization.Management.AccessRequestResponse? left, Modulus.Authorization.Management.AccessRequestResponse? right) -> bool
+static Modulus.Authorization.Management.AccessRequestResponse.operator ==(Modulus.Authorization.Management.AccessRequestResponse? left, Modulus.Authorization.Management.AccessRequestResponse? right) -> bool
+static Modulus.Authorization.Management.AccessRequestWriteRequest.operator !=(Modulus.Authorization.Management.AccessRequestWriteRequest? left, Modulus.Authorization.Management.AccessRequestWriteRequest? right) -> bool
+static Modulus.Authorization.Management.AccessRequestWriteRequest.operator ==(Modulus.Authorization.Management.AccessRequestWriteRequest? left, Modulus.Authorization.Management.AccessRequestWriteRequest? right) -> bool
+static Modulus.Authorization.Management.AuthorizationManagementExtensions.MapModulusAccessRequests(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! prefix = "/authorization/access-requests") -> Microsoft.AspNetCore.Routing.RouteGroupBuilder!
+static Modulus.Authorization.Management.BreakGlassProfile.operator !=(Modulus.Authorization.Management.BreakGlassProfile? left, Modulus.Authorization.Management.BreakGlassProfile? right) -> bool
+static Modulus.Authorization.Management.BreakGlassProfile.operator ==(Modulus.Authorization.Management.BreakGlassProfile? left, Modulus.Authorization.Management.BreakGlassProfile? right) -> bool
+static Modulus.Authorization.Management.BreakGlassWriteRequest.operator !=(Modulus.Authorization.Management.BreakGlassWriteRequest? left, Modulus.Authorization.Management.BreakGlassWriteRequest? right) -> bool
+static Modulus.Authorization.Management.BreakGlassWriteRequest.operator ==(Modulus.Authorization.Management.BreakGlassWriteRequest? left, Modulus.Authorization.Management.BreakGlassWriteRequest? right) -> bool
