@@ -46,7 +46,7 @@ public sealed class EfApprovalAuthorityStore(IDbContextFactory<AuthorizationStor
 
         var row = new ApprovalAuthorityRow
         {
-            Id = Guid.CreateVersion7(),
+            Id = global::Modulus.GuidV7.Create(),
             HolderType = authority.HolderType,
             Holder = authority.Holder.Trim(),
             Permission = authority.Permission.Trim(),

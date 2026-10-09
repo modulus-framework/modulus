@@ -75,7 +75,7 @@ internal sealed class EfAiChangeFeed(IEnumerable<DbContext> contexts) : IAiChang
     // Never empty, even before the first change: the platform stores the cursor and sends it back as since=, and an
     // empty value would read as "no cursor".
     internal static string Encode(Dictionary<string, long> positions)
-        => Base64Url.EncodeToString(JsonSerializer.SerializeToUtf8Bytes(positions));
+        => global::Modulus.Base64UrlCompat.Encode(JsonSerializer.SerializeToUtf8Bytes(positions));
 
     internal static Dictionary<string, long> Decode(string? cursor)
     {
@@ -83,7 +83,7 @@ internal sealed class EfAiChangeFeed(IEnumerable<DbContext> contexts) : IAiChang
             return new(StringComparer.Ordinal);
         try
         {
-            var positions = JsonSerializer.Deserialize<Dictionary<string, long>>(Base64Url.DecodeFromChars(cursor))
+            var positions = JsonSerializer.Deserialize<Dictionary<string, long>>(global::Modulus.Base64UrlCompat.Decode(cursor))
                 ?? throw new FormatException("Invalid cursor.");
             return new(positions, StringComparer.Ordinal);
         }

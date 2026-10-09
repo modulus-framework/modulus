@@ -52,6 +52,11 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
   </ItemGroup>
 
+  <!-- stand-ins for newer BCL types on net8.0 (System.Threading.Lock, Guid.CreateVersion7); src libraries only -->
+  <ItemGroup Condition="'$(IsPackFrameworkLibrary)' == 'true'">
+    <Compile Include="$(MSBuildThisFileDirectory)Polyfills\*.cs" Visible="false" />
+  </ItemGroup>
+
   <!-- ── Code-quality analyzers (every project) ─────────────────── -->
   <ItemGroup>
     <PackageReference Include="Roslynator.Analyzers" PrivateAssets="All" />

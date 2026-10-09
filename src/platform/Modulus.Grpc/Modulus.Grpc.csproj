@@ -1,7 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFramework />
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <Description>gRPC for Modulus: module gRPC services discovered from Presentation assemblies, domain exceptions mapped to gRPC status codes with rich error details, gRPC health backed by module health checks, and hardened gRPC clients (retry policy, default deadline, correlation, tenant and token propagation).</Description>

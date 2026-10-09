@@ -35,9 +35,16 @@ public static class TrustedProxiesExtensions
 
         foreach (var network in section.GetSection("KnownNetworks").Get<string[]>() ?? [])
         {
+#if NET10_0_OR_GREATER
             if (!IPNetwork.TryParse(network, out var parsed))
                 throw new InvalidOperationException($"{SectionName}:KnownNetworks contains '{network}', which is not a CIDR network such as 10.0.0.0/8.");
             options.KnownIPNetworks.Add(parsed);
+#else
+            var slash = network.IndexOf('/', StringComparison.Ordinal);
+            if (slash <= 0 || !IPAddress.TryParse(network[..slash], out var prefix) || !int.TryParse(network[(slash + 1)..], out var length))
+                throw new InvalidOperationException($"{SectionName}:KnownNetworks contains '{network}', which is not a CIDR network such as 10.0.0.0/8.");
+            options.KnownNetworks.Add(new Microsoft.AspNetCore.HttpOverrides.IPNetwork(prefix, length));
+#endif
         }
 
         options.ForwardLimit = section.GetValue("ForwardLimit", 1);

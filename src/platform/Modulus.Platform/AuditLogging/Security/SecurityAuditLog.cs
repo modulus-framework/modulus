@@ -61,7 +61,7 @@ public sealed class SecurityAuditLog : ISecurityAuditLog, IDisposable
             OccurredAt = auditEvent.OccurredAt ?? _clock.GetUtcNow(),
             CorrelationId = auditEvent.CorrelationId ?? (_correlation is { IsSet: true } ? _correlation.CorrelationId : null),
         };
-        var id = Guid.CreateVersion7();
+        var id = global::Modulus.GuidV7.Create();
         var spooled = _spool?.TryAppend(id, stamped) ?? false;
         if (_spool is not null && !spooled)
             _logger.LogError("Security audit spool could not be written; {Category}/{Action} is queued in memory only", stamped.Category, stamped.Action);

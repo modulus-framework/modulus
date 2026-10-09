@@ -1,3 +1,4 @@
+#if NET9_0_OR_GREATER
 namespace Modulus.AspNetCore.OpenApi;
 
 /// <summary>
@@ -39,3 +40,4 @@ public sealed class ModulusOpenApiOptions
     /// <summary>Optional license URL shown in the document info.</summary>
     public string? LicenseUrl { get; set; }
 }
+#endif

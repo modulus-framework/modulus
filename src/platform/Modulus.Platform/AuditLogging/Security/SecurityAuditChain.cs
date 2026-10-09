@@ -77,7 +77,7 @@ public static class SecurityAuditChain
             json.WriteEndObject();
         }
 
-        return Convert.ToHexStringLower(SHA256.HashData(buffer.ToArray()));
+        return Convert.ToHexString(SHA256.HashData(buffer.ToArray())).ToLowerInvariant();
     }
 
     /// <summary>

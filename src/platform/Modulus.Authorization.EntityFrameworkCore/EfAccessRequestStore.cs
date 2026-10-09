@@ -61,7 +61,7 @@ public sealed class EfAccessRequestStore(IDbContextFactory<AuthorizationStoreDbC
         ArgumentNullException.ThrowIfNull(request);
         var row = new AccessRequestRow
         {
-            Id = request.Id == Guid.Empty ? Guid.CreateVersion7() : request.Id,
+            Id = request.Id == Guid.Empty ? global::Modulus.GuidV7.Create() : request.Id,
             Kind = request.Kind,
             RequesterId = request.RequesterId,
             Permissions = JsonSerializer.Serialize(request.Permissions),

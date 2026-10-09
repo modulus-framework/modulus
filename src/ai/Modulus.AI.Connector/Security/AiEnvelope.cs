@@ -33,7 +33,7 @@ public static class AiApiKeys
     public static string Hash(string apiKey)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(apiKey);
-        return Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(apiKey)));
+        return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(apiKey))).ToLowerInvariant();
     }
 
     /// <summary>Whether <paramref name="apiKey"/> hashes to one of <paramref name="hashes"/> (constant-time per hash).</summary>

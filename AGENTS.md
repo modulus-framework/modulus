@@ -1483,6 +1483,22 @@ roots, Security tab in `Modulus.UI.AuditLogging`).
   - **AOT beyond `Modulus.Core` and `Modulus.Outbox.Abstractions`** (the only packages with `IsAotCompatible`). `Modulus.Mediator` closes generic handler and behavior types at runtime (open-generic `IPipelineBehavior<,>` through DI) and its behaviors use EF Core and reflection. A source generator would not fix that, and EF Core model building, MVC and OpenIddict are not AOT-ready either. Probed 2026-10-09: 10 IL2026/IL3050 errors in the mediator alone.
   - **GraphQL subscriptions.** They need WebSockets (off on purpose); Realtime (SSE / SignalR) already pushes integration events with the same auth and tenant rules.
 
+## Dual targeting (`net8.0` + `net10.0`)
+
+Every library under `src/` except the UI packages, `Modulus.Realtime` (+ `.Redis`: SSE needs `System.Net.ServerSentEvents`, .NET 9+) and the analyzer
+project multi-targets `net8.0;net10.0` (`<TargetFramework />` clears the default from `Modulus.Common.props`, then `<TargetFrameworks>`). The CLI and generated apps stay `net10.0`.
+
+- **Package versions** are per TFM in `Directory.Packages.props` (`Condition="'$(TargetFramework)' == 'net8.0'"`): ASP.NET Core / EF Core / providers use their 8.x line on net8
+  (`Microsoft.Extensions.*` stay on 10.x, which supports net8 and is what FusionCache needs).
+- **Polyfills** live in `build/Polyfills/` and are compiled into every `src` library: `System.Threading.Lock`, `Modulus.GuidV7` (use it instead of `Guid.CreateVersion7`),
+  `Modulus.Base64UrlCompat` (instead of `System.Buffers.Text.Base64Url`). Use `Convert.ToHexString(x).ToLowerInvariant()`, not `ToHexStringLower`.
+  Friend assemblies each carry a copy, so `CS0436` is suppressed for `src`.
+- **net8 gaps:** `AddModulusOpenApi*` and the BFF OpenAPI documents are compiled out (the built-in OpenAPI is .NET 9+; `BffBuilder.AddOpenApi` throws on net8);
+  `ForwardedHeadersOptions.KnownNetworks` replaces `KnownIPNetworks`; the logging generator of `Logging.Abstractions` is dropped in `Modulus.AspNetCore` (Telemetry's one stays).
+  PublicAPI checks (`RS0016/17`) run on net10 only: new public API goes in the unshipped file, net10 is the reference surface.
+- **Testing a target:** `dotnet restore tests/unit/X -p:ModulusTestTfm=net8.0 && dotnet test tests/unit/X --no-restore -p:ModulusTestTfm=net8.0` (a few tests are skipped on net8:
+  EF 8's SQLite cannot sum decimals; `System.Uri` limit). Not every test project can run on net8 (UI, CLI, Realtime). Provider/Testcontainers tests were not run on net8.
+
 ## Open-source dependency policy
 
 Every dependency must be fully open source (MIT / Apache-2.0 / BSD; no commercial license or paid tier to

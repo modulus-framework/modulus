@@ -112,7 +112,7 @@ internal sealed class AiChangeHintService(
     private async Task<bool> SendAsync(ModulusAiConnectorOptions settings, byte[] key, string appInstanceId, CancellationToken ct)
     {
         var now = time.GetUtcNow();
-        var id = "hint_" + Guid.CreateVersion7(now).ToString("N");
+        var id = "hint_" + global::Modulus.GuidV7.Create(now).ToString("N");
         var body = JsonSerializer.Serialize(new ChangeHint(appInstanceId, id, now), ConnectorJson.Options);
         var timestamp = now.ToUnixTimeSeconds();
 

@@ -20,7 +20,7 @@ public sealed class TrustedProxiesTests
 
         // The framework default (loopback only) stays: a header from anywhere else is ignored.
         options.KnownProxies.Should().BeEquivalentTo([IPAddress.IPv6Loopback]);
-        options.KnownIPNetworks.Select(n => n.ToString()).Should().BeEquivalentTo(["127.0.0.0/8"]);
+        Networks(options).Should().BeEquivalentTo(["127.0.0.0/8"]);
         options.ForwardLimit.Should().Be(1);
     }
 
@@ -33,7 +33,7 @@ public sealed class TrustedProxiesTests
             ("ForwardedHeaders:ForwardLimit", "2")));
 
         options.KnownProxies.Should().Contain(IPAddress.Parse("203.0.113.7"));
-        options.KnownIPNetworks.Select(n => n.ToString()).Should().Contain("10.0.0.0/8");
+        Networks(options).Should().Contain("10.0.0.0/8");
         options.ForwardLimit.Should().Be(2);
     }
 
@@ -46,4 +46,11 @@ public sealed class TrustedProxiesTests
 
         apply.Should().Throw<InvalidOperationException>().WithMessage("*ForwardedHeaders*");
     }
+
+    private static IEnumerable<string> Networks(ForwardedHeadersOptions options)
+#if NET10_0_OR_GREATER
+        => options.KnownIPNetworks.Select(n => n.ToString());
+#else
+        => options.KnownNetworks.Select(n => $"{n.Prefix}/{n.PrefixLength}".Replace("127.0.0.1/", "127.0.0.0/", StringComparison.Ordinal));
+#endif
 }

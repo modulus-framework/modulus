@@ -138,7 +138,13 @@ public sealed class SecurityAuditSpoolTests : IDisposable
             => throw new InvalidOperationException("database down");
 
         public IAsyncEnumerable<SecurityAuditRecord> ReadAsync(Guid chainId, long fromSequence = 1, CancellationToken ct = default)
-            => AsyncEnumerable.Empty<SecurityAuditRecord>();
+            => Empty();
+
+        private static async IAsyncEnumerable<SecurityAuditRecord> Empty()
+        {
+            await Task.CompletedTask;
+            yield break;
+        }
 
         public Task<IReadOnlyList<SecurityAuditHead>> GetHeadsAsync(CancellationToken ct = default)
             => Task.FromResult<IReadOnlyList<SecurityAuditHead>>([]);

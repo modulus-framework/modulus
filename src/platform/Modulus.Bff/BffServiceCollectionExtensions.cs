@@ -95,9 +95,13 @@ public static class BffServiceCollectionExtensions
     }
 
     private static void AddModulusBffOpenApi(this IServiceCollection services, IConfiguration configuration, string client)
+#if NET9_0_OR_GREATER
         => Modulus.AspNetCore.OpenApi.OpenApiExtensions.AddModulusOpenApiDocument(services, configuration, client, openApi =>
             openApi.ShouldInclude = description =>
                 description.ActionDescriptor.EndpointMetadata.OfType<BffClientMetadata>().Any(m => string.Equals(m.Name, client, StringComparison.OrdinalIgnoreCase)));
+#else
+        => throw new NotSupportedException("BFF OpenAPI documents need net9.0 or later (Microsoft.AspNetCore.OpenApi).");
+#endif
 }
 
 /// <summary>Registers BFF clients. Each binds <c>Bff:Clients:{name}</c>.</summary>

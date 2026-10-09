@@ -28,7 +28,11 @@ public sealed class UserAccessTokenHandler(IHttpContextAccessor accessor, IBffAc
         // call is never replayed; it still gets a token refreshed ahead of expiry.
         var replayable = kind == BffClientKind.Web && !IsGrpc(request);
         if (replayable && request.Content is not null)
+#if NET9_0_OR_GREATER
             await request.Content.LoadIntoBufferAsync(cancellationToken).ConfigureAwait(false);
+#else
+            await request.Content.LoadIntoBufferAsync().ConfigureAwait(false);
+#endif
 
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
         var response = await base.SendAsync(request, cancellationToken).ConfigureAwait(false);

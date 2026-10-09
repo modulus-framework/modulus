@@ -163,7 +163,11 @@ public sealed class EntitySourceTests : IAsyncLifetime
         rows.Should().ContainSingle().Which.Value.Should().Be(2L);
     }
 
+#if NET8_0
+    [Fact(Skip = "EF Core 8's SQLite provider cannot Sum/Average decimal columns; the other providers can.")]
+#else
     [Fact]
+#endif
     public async Task Decimal_and_double_aggregates_translate()
     {
         Expression<Func<Product, bool>> tools = p => p.Category == "Tools";
@@ -183,7 +187,11 @@ public sealed class EntitySourceTests : IAsyncLifetime
         ((double)weights!).Should().BeApproximately(2.3, 1e-9);
     }
 
+#if NET8_0
+    [Fact(Skip = "EF Core 8's SQLite provider cannot Sum/Average decimal columns; the other providers can.")]
+#else
     [Fact]
+#endif
     public async Task An_aggregate_over_no_rows_answers_zero_or_null()
     {
         Expression<Func<Product, bool>> nothing = p => p.Quantity > 1_000_000;

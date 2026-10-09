@@ -545,7 +545,7 @@ internal sealed partial class AiConnectorService(
 internal static class ExtractCursor
 {
     public static string Encode(string resourceType, string? afterKey)
-        => System.Buffers.Text.Base64Url.EncodeToString(JsonSerializer.SerializeToUtf8Bytes(new Position(resourceType, afterKey)));
+        => global::Modulus.Base64UrlCompat.Encode(JsonSerializer.SerializeToUtf8Bytes(new Position(resourceType, afterKey)));
 
     /// <summary>Reads a cursor; null or empty starts at the beginning.</summary>
     /// <exception cref="FormatException">Not a cursor this connector issued.</exception>
@@ -555,7 +555,7 @@ internal static class ExtractCursor
             return (null, null);
         try
         {
-            var position = JsonSerializer.Deserialize<Position>(System.Buffers.Text.Base64Url.DecodeFromChars(cursor));
+            var position = JsonSerializer.Deserialize<Position>(global::Modulus.Base64UrlCompat.Decode(cursor));
             return position is { T.Length: > 0 } ? (position.T, position.K) : throw new FormatException("Invalid cursor.");
         }
         catch (Exception ex) when (ex is JsonException or FormatException)

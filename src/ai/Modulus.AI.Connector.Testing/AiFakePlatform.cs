@@ -44,8 +44,8 @@ public sealed class AiFakePlatform : IDisposable
     /// <summary>Creates a platform with fresh keys.</summary>
     public AiFakePlatform()
     {
-        ApiKey = "conformance-platform-" + Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(16));
-        ConnectorApiKey = "conformance-connector-" + Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(16));
+        ApiKey = "conformance-platform-" + Convert.ToHexString(RandomNumberGenerator.GetBytes(16)).ToLowerInvariant();
+        ConnectorApiKey = "conformance-connector-" + Convert.ToHexString(RandomNumberGenerator.GetBytes(16)).ToLowerInvariant();
         var parameters = _key.ExportParameters(false);
         SigningKeys = JsonSerializer.Serialize(new
         {

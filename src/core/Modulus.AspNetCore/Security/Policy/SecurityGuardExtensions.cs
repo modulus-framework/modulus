@@ -141,7 +141,7 @@ internal sealed partial class SecurityGuardHostedService(
                 ["endpoints"] = report.Endpoints.Count.ToString(CultureInfo.InvariantCulture),
                 ["anonymous"] = loosened.Count.ToString(CultureInfo.InvariantCulture),
                 ["findings"] = report.Findings.Count.ToString(CultureInfo.InvariantCulture),
-                ["fingerprint"] = Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(string.Join('\n', loosened)))),
+                ["fingerprint"] = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(string.Join('\n', loosened)))).ToLowerInvariant(),
                 ["routes"] = string.Join("; ", loosened),
             },
         });

@@ -1,3 +1,4 @@
+#if NET9_0_OR_GREATER
 #if NET10_0_OR_GREATER
 namespace Modulus.AspNetCore.OpenApi;
 
@@ -36,4 +37,5 @@ internal sealed class AuthorizeCheckOperationTransformer : IOpenApiOperationTran
         return Task.CompletedTask;
     }
 }
+#endif
 #endif

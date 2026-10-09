@@ -1,6 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <TargetFramework />
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
     <Description>Integration-test harness for Modulus applications: a WebApplicationFactory that boots the fully composed host and swaps every module DbContext to an isolated in-memory SQLite database, plus authenticated test clients.</Description>
   </PropertyGroup>
 

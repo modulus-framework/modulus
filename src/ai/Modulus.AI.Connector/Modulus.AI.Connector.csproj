@@ -1,7 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFramework />
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <Description>Hosts an AI platform's connector wire contract (v1) inside a Modulus app: opt-in read-only capabilities from mediator queries, a manifest with classified fields, record lookups, authorization checks, API-key plus signed-envelope authentication that runs every call as the asserted user, and revocation signals when access changes. No LLM code and no dependency on the platform's packages.</Description>

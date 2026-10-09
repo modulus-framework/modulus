@@ -43,7 +43,7 @@ internal sealed class AiManifestBuilder(AiCapabilityRegistry registry, IOptions<
         var unsigned = new ConnectorManifest(
             options.ContractVersion, options.AppType, options.AppName, string.Empty, capabilities, resources);
         var bytes = JsonSerializer.SerializeToUtf8Bytes(unsigned, ConnectorJson.Options);
-        var fingerprint = Convert.ToHexStringLower(SHA256.HashData(bytes))[..32];
+        var fingerprint = Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant()[..32];
         return unsigned with { Fingerprint = fingerprint };
     }
 

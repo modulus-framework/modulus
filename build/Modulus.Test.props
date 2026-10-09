@@ -9,6 +9,8 @@
        ════════════════════════════════════════════════════════════════ -->
 
   <PropertyGroup>
+    <!-- Run the suite against another target of the multi-targeted libraries: dotnet test -p:ModulusTestTfm=net8.0 (restore with it too). -->
+    <TargetFramework Condition="'$(ModulusTestTfm)' != ''">$(ModulusTestTfm)</TargetFramework>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>

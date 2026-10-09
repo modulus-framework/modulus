@@ -17,6 +17,8 @@
   <PropertyGroup>
     <IsPackable>true</IsPackable>
     <IsPackFrameworkLibrary>true</IsPackFrameworkLibrary>
+    <!-- CS0436: a friend assembly (InternalsVisibleTo) carries its own internal copy of the build/Polyfills; the local one wins. -->
+    <NoWarn>$(NoWarn);CS0436</NoWarn>
   </PropertyGroup>
 
 </Project>

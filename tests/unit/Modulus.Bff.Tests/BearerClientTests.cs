@@ -122,7 +122,11 @@ public sealed class BearerClientTests
         (await second.Content.ReadAsByteArrayAsync()).Should().BeEmpty();
     }
 
+#if NET8_0
+    [Fact(Skip = "System.Uri on .NET 8 rejects a 1.2 MB URI; the test needs the .NET 9+ limit.")]
+#else
     [Fact]
+#endif
     public async Task A_response_past_the_buffer_cap_streams_through_without_an_etag()
     {
         await using var host = await StartAsync();

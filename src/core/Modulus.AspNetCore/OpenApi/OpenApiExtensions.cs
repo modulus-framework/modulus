@@ -1,3 +1,4 @@
+#if NET9_0_OR_GREATER
 namespace Modulus.AspNetCore.OpenApi;
 
 using Microsoft.AspNetCore.OpenApi;
@@ -65,3 +66,4 @@ public static class OpenApiExtensions
             configureDocument?.Invoke(openApi);
         });
 }
+#endif

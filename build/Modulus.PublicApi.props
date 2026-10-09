@@ -20,6 +20,12 @@
        only needs the PackageReference.
        ════════════════════════════════════════════════════════════════ -->
 
+  <!-- net10.0 is the reference API surface; net8.0 builds expose a subset (types that need newer BCL/ASP.NET APIs are
+       compiled out), so the "declared but missing" checks only make sense on the newest target. -->
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net8.0'">
+    <NoWarn>$(NoWarn);RS0016;RS0017;RS0036;RS0037</NoWarn>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" PrivateAssets="All" />
   </ItemGroup>

@@ -1,7 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFramework />
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <Description>ASP.NET Core integration for Modulus: middleware pipeline, API versioning, health checks, CORS, security headers, OpenAPI, idempotency, feature flags, and rate limiting.</Description>
@@ -24,8 +25,8 @@
     <PackageReference Include="Microsoft.Extensions.Compliance.Redaction" />
     <PackageReference Include="Microsoft.Extensions.Telemetry" />
     <!-- Built-in OpenApi with IOpenApiDocumentTransformer -->
-    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
-    <PackageReference Include="Microsoft.OpenApi" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Condition="'$(TargetFramework)' != 'net8.0'" />
+    <PackageReference Include="Microsoft.OpenApi" Condition="'$(TargetFramework)' != 'net8.0'" />
   </ItemGroup>
 
   <!-- MOD0001 ships inside this package: every app that maps Modulus endpoints gets it, no extra reference. -->
@@ -35,5 +36,13 @@
     <None Include="../../analyzers/Modulus.Analyzers/bin/$(Configuration)/netstandard2.0/Modulus.Analyzers.dll"
           Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
   </ItemGroup>
+
+  <!-- On net8.0 both logging source generators (Logging.Abstractions' and Telemetry's) would emit the same [LoggerMessage]
+       methods; keep the Telemetry one, which also honours data classification and primary-constructor loggers. -->
+  <Target Name="DropDuplicateLoggerGenerator" BeforeTargets="CoreCompile" Condition="'$(TargetFramework)' == 'net8.0'">
+    <ItemGroup>
+      <Analyzer Remove="@(Analyzer)" Condition="'%(Filename)' == 'Microsoft.Extensions.Logging.Generators'" />
+    </ItemGroup>
+  </Target>
 
 </Project>

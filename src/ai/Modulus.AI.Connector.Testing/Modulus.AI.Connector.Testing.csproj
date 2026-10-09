@@ -1,7 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFramework />
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <Description>Conformance kit for an app hosting the AI platform's connector wire contract (Modulus.AI.Connector): a fake platform that signs envelopes and receives revocation signals, and a suite that checks every certification category (authentication, tenant isolation, manifest, deny paths, query injection, field security, batch authorization, extraction, revocation, no adapter-side caching) against a running host. Test-framework neutral.</Description>

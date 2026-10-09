@@ -56,7 +56,7 @@ public static class PersistedQueryHash
     public static string Of(string query)
     {
         ArgumentNullException.ThrowIfNull(query);
-        return Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(query)));
+        return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(query))).ToLowerInvariant();
     }
 }
 
