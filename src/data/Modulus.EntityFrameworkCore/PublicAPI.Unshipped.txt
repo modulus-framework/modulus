@@ -208,3 +208,4 @@ override Modulus.EntityFrameworkCore.ChangeHistory.EntityChangeQuery.GetHashCode
 override Modulus.EntityFrameworkCore.ChangeHistory.EntityChangeQuery.ToString() -> string!
 static Modulus.EntityFrameworkCore.ChangeHistory.EntityChangeQuery.operator !=(Modulus.EntityFrameworkCore.ChangeHistory.EntityChangeQuery? left, Modulus.EntityFrameworkCore.ChangeHistory.EntityChangeQuery? right) -> bool
 static Modulus.EntityFrameworkCore.ChangeHistory.EntityChangeQuery.operator ==(Modulus.EntityFrameworkCore.ChangeHistory.EntityChangeQuery? left, Modulus.EntityFrameworkCore.ChangeHistory.EntityChangeQuery? right) -> bool
+static Modulus.EntityFrameworkCore.Design.DesignTimeContext.ServicesWith(params Modulus.EntityFrameworkCore.ModelBuilding.IModuleModelContributor![]! contributors) -> System.IServiceProvider!

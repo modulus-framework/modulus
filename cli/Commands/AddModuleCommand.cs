@@ -81,6 +81,7 @@ internal sealed class AddModuleCommand : Command<AddModuleCommand.Settings>
             ModuleNamespace = moduleNs,
             DbProvider = database,
             MigrationEngine = migrationEngine,
+            AiJournal = AiWiring.JournalWired(projectDir),
         };
 
         // Generate the layered module skeleton.

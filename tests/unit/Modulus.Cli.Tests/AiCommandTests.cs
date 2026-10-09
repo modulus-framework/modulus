@@ -154,6 +154,20 @@ public sealed class AiWiringTests
     }
 
     [Fact]
+    public void The_design_time_factory_passes_the_journal_contributor_so_migrations_include_the_table()
+    {
+        const string factory = "using Modulus.EntityFrameworkCore.Design;\n\nreturn new CatalogDbContext(\n    options,\n    DesignTimeContext.Tenant,\n    DesignTimeContext.Dispatcher,\n    DesignTimeContext.Services);\n";
+
+        var wired = AiWiring.EnsureDesignTimeJournal(factory);
+
+        wired.Should().Contain("DesignTimeContext.ServicesWith(new AiChangeModelContributor())")
+            .And.Contain("using Modulus.AI.Connector.EntityFrameworkCore;")
+            .And.NotContain("DesignTimeContext.Services)");
+        AiWiring.EnsureDesignTimeJournal(wired).Should().Be(wired, "a second run changes nothing");
+        AiWiring.EnsureDesignTimeJournal("public sealed class Other { }").Should().Be("public sealed class Other { }");
+    }
+
+    [Fact]
     public void An_older_repository_gets_the_ids_method_and_a_changed_one_is_left_alone()
     {
         const string contract = "public interface IProductRepository : IRepository<Product>\n{\n    Task<IReadOnlyList<Product>> GetAllAsync(CancellationToken ct);\n}\n";

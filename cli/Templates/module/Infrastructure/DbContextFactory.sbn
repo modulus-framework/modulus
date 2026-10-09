@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
-using Modulus.EntityFrameworkCore.Design;
+{{ if ai_journal }}using Modulus.AI.Connector.EntityFrameworkCore;
+{{ end }}using Modulus.EntityFrameworkCore.Design;
 
 namespace {{ module_namespace }}.Infrastructure;
 
@@ -37,6 +38,6 @@ public sealed class {{ module_name }}DbContextFactory
             DesignTimeContext.Tenant,
             DesignTimeContext.User,
             DesignTimeContext.Dispatcher,
-            DesignTimeContext.Services);
+            DesignTimeContext.Services{{ if ai_journal }}With(new AiChangeModelContributor()){{ end }});
     }
 }

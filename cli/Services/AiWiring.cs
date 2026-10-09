@@ -1,3 +1,4 @@
+using Modulus.Cli.Commands;
 using System.Text.RegularExpressions;
 
 namespace Modulus.Cli.Services;
@@ -256,6 +257,43 @@ internal static partial class AiWiring
             "[AiResource(");
         return batchQuery is null ? marked : EnsureBatchLookup(marked, batchQuery);
     }
+
+    /// <summary>
+    /// A module's design-time factory passes the journal's model contributor to <c>DesignTimeContext.ServicesWith</c>, so the migrations the EF tools
+    /// scaffold include the <c>ai_changes</c> table (the tools never run the app's DI, where <c>UseEntityFrameworkCore()</c> registers it). Without
+    /// this the migration omits the table and the app fails at startup with a pending-model-changes error. Unchanged when already wired or the
+    /// factory has another shape.
+    /// </summary>
+    internal static string EnsureDesignTimeJournal(string factorySource)
+    {
+        if (factorySource.Contains("AiChangeModelContributor", StringComparison.Ordinal))
+            return factorySource;
+
+        var services = System.Text.RegularExpressions.Regex.Match(factorySource, @"DesignTimeContext\.Services\b(?!With)");
+        if (!services.Success)
+            return factorySource;
+
+        var text = factorySource.Remove(services.Index, services.Length)
+            .Insert(services.Index, "DesignTimeContext.ServicesWith(new AiChangeModelContributor())");
+        return WebhooksWiring.EnsureUsing(text, "using Modulus.AI.Connector.EntityFrameworkCore;");
+    }
+
+    /// <summary>Whether the app that contains <paramref name="dir"/> hosts the AI connector (its API host calls <c>AddModulusAiConnector</c>).</summary>
+    internal static bool JournalWired(string dir)
+        => ModuleDiscovery.Inventory(dir) is { } app && File.Exists(app.ProgramCsPath) && HasConnector(File.ReadAllText(app.ProgramCsPath));
+
+    /// <summary>The module projects whose context is a <c>ModuleDbContext</c> (the ones that get the journal table) with their design-time factory.</summary>
+    internal static IReadOnlyList<(string Name, string InfrastructureCsproj, string Factory)> JournalModules(string root)
+        => [.. MigrateSupport.FindModuleProjects(root, null)
+            .Select(m =>
+            {
+                var infra = Path.GetDirectoryName(m.InfrastructureCsproj)!;
+                var context = Path.Combine(infra, $"{m.Name}DbContext.cs");
+                return (m.Name, m.InfrastructureCsproj, Factory: Path.Combine(infra, $"{m.Name}DbContextFactory.cs"), Context: context);
+            })
+            .Where(m => File.Exists(m.Context) && File.Exists(m.Factory)
+                        && File.ReadAllText(m.Context).Contains(": ModuleDbContext", StringComparison.Ordinal))
+            .Select(m => (m.Name, m.InfrastructureCsproj, m.Factory))];
 
     /// <summary>An <c>[AiResource]</c> marked before batch lookups existed gets <c>BatchLookup = typeof(...)</c>.</summary>
     internal static string EnsureBatchLookup(string source, string batchQuery)

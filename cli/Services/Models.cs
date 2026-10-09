@@ -461,6 +461,9 @@ internal sealed class ModuleModel
     /// <summary>"SQLite", "SqlServer", "PostgreSQL", or "MySQL".</summary>
     public string DbProvider { get; set; } = "SQLite";
 
+    /// <summary>The host runs the AI connector, so the module's design-time factory passes the change-journal contributor (migrations then include <c>ai_changes</c>).</summary>
+    public bool AiJournal { get; set; }
+
     /// <summary>EF Core DbContextOptions extension method name.</summary>
     public string UseDbMethod => DbProviderInfo.UseMethod(DbProvider);
 

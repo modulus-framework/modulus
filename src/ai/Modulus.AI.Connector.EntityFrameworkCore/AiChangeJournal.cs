@@ -36,8 +36,11 @@ public sealed class AiChangeRecord
     public DateTime OccurredAt { get; set; }
 }
 
-/// <summary>Maps <see cref="AiChangeRecord"/> into every module context (table <c>{prefix}ai_changes</c>).</summary>
-internal sealed class AiChangeModelContributor : IModuleModelContributor
+/// <summary>
+/// Maps <see cref="AiChangeRecord"/> into every module context (table <c>{prefix}ai_changes</c>). <c>UseEntityFrameworkCore()</c> registers it; a
+/// module's design-time factory passes it to <c>DesignTimeContext.ServicesWith</c> so migrations include the table (<c>modulus add-ai</c> does that).
+/// </summary>
+public sealed class AiChangeModelContributor : IModuleModelContributor
 {
     public const string Table = "ai_changes";
 

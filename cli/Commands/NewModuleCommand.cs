@@ -78,6 +78,7 @@ internal sealed class NewModuleCommand : Command<NewModuleCommand.Settings>
             ModuleNamespace = moduleNs,
             DbProvider = database,
             MigrationEngine = migrationEngine,
+            AiJournal = AiWiring.JournalWired(projectDir),
         };
 
         // Generate a blank layered module skeleton (no entity yet).

@@ -18,15 +18,18 @@ internal sealed class AddAiCommand : Command<AddAiCommand.Settings>
 
     internal sealed class Settings : ModulusSettings
     {
+        [System.ComponentModel.Description("Also scaffold the migration that adds the ai_changes journal table to every module (modulus migrate add AddAiChanges). Needs the dotnet-ef tool.")]
+        [CommandOption("--migrate")]
+        public bool Migrate { get; init; }
     }
 
     public override int Execute(CommandContext ctx, Settings s)
     {
         s.Apply();
-        return CommandRunner.Run(() => new AddAiCommand().ExecuteCore(Environment.CurrentDirectory));
+        return CommandRunner.Run(() => new AddAiCommand().ExecuteCore(Environment.CurrentDirectory, s.Migrate));
     }
 
-    internal int ExecuteCore(string startDir)
+    internal int ExecuteCore(string startDir, bool migrate = false)
     {
         var app = ModuleDiscovery.Inventory(startDir)
             ?? throw new InvalidOperationException("No .slnx file found in the current directory tree. Run this command from within a Modulus application.");
@@ -46,6 +49,16 @@ internal sealed class AddAiCommand : Command<AddAiCommand.Settings>
         }
 
         Edit(app.ProgramCsPath, AiWiring.EnsureConnectorProgram, written, app);
+
+        // The journal table must reach the migrations the EF tools scaffold: each module's design-time factory passes the contributor.
+        var journalModules = AiWiring.JournalModules(app.SolutionDir);
+        foreach (var module in journalModules)
+        {
+            if (ProjectFileService.EnsureCsprojPackageReference(module.InfrastructureCsproj, AiWiring.ConnectorEfPackageId, FrameworkVersion.Current, Ux.DryRun))
+                written.Add(Path.GetRelativePath(app.SolutionDir, module.InfrastructureCsproj).Replace('\\', '/') + " (updated)");
+            Edit(module.Factory, AiWiring.EnsureDesignTimeJournal, written, app);
+        }
+
         Edit(Path.Combine(apiDir, "appsettings.json"), t => AiWiring.EnsureConnectorSettings(t, app.RootNamespace), written, app);
 
         var testsDir = Path.Combine(app.SolutionDir, "tests", $"{app.RootNamespace}.Tests");
@@ -78,8 +91,15 @@ internal sealed class AddAiCommand : Command<AddAiCommand.Settings>
         AnsiConsole.MarkupLine("  [grey]Expose data: modulus generate-crud <Entity> --ai (capabilities, record lookups, the index).[/]");
         AnsiConsole.MarkupLine("  [grey]Register the app with the platform, then set Ai:Connector:Instances, Platform:Issuer/JwksUrl/BaseUrl and the hash of the platform's key[/]");
         AnsiConsole.MarkupLine("  [grey](AiApiKeys.Hash); the platform's own key for revocations (Ai:Connector:Platform:ApiKey) goes in user secrets or a vault.[/]");
-        AnsiConsole.MarkupLine("  [grey]The ai_changes journal is a new table in every module database: modulus migrate add AiChanges.[/]");
-        return 0;
+        if (!migrate)
+        {
+            AnsiConsole.MarkupLine("  [grey]The ai_changes journal is a new table in every module database: modulus add-ai --migrate (or migrate add AddAiChanges).[/]");
+            return 0;
+        }
+
+        // The journal table joins every module's model: scaffold the migration now (needs the project to build and dotnet-ef).
+        var journalNames = journalModules.Select(m => m.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        return MigrateAddCommand.Run(new MigrateAddCommand.Settings { Name = "AddAiChanges", Output = app.SolutionDir }, m => journalNames.Contains(m.Name));
     }
 
     internal static AiTestModel Model(ModuleDiscovery.AppInventory app, string program) => new()

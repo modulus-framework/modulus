@@ -37,6 +37,18 @@ public static class DesignTimeContext
     /// <summary>An empty <see cref="IServiceProvider"/> that resolves nothing.</summary>
     public static IServiceProvider Services { get; } = new EmptyServiceProvider();
 
+    /// <summary>
+    /// A provider like <see cref="Services"/> that also resolves <paramref name="contributors"/> as the
+    /// <see cref="ModelBuilding.IModuleModelContributor"/>s of the model. The tools never run the app's DI, so a feature that maps its own
+    /// tables into every module context (the inbox, the AI change journal) is invisible to a migration unless the design-time factory
+    /// passes its contributor here; without it <c>migrate add</c> omits the table and the app fails at startup with a pending-model-changes error.
+    /// </summary>
+    public static IServiceProvider ServicesWith(params ModelBuilding.IModuleModelContributor[] contributors)
+    {
+        ArgumentNullException.ThrowIfNull(contributors);
+        return new ContributorServiceProvider(contributors);
+    }
+
     /// <summary>Host (no-tenant) context — query filters degrade to match-all.</summary>
     public static ICurrentTenant Tenant { get; } = new NullCurrentTenant();
 
@@ -55,6 +67,14 @@ public static class DesignTimeContext
     /// null), so <c>GetServices&lt;IModuleModelContributor&gt;()</c> and similar
     /// seams work without a real container. Everything else resolves to null.
     /// </summary>
+    private sealed class ContributorServiceProvider(ModelBuilding.IModuleModelContributor[] contributors) : IServiceProvider
+    {
+        public object? GetService(Type serviceType)
+            => serviceType == typeof(IEnumerable<ModelBuilding.IModuleModelContributor>)
+                ? contributors
+                : Services.GetService(serviceType);
+    }
+
     private sealed class EmptyServiceProvider : IServiceProvider
     {
         public object? GetService(Type serviceType)

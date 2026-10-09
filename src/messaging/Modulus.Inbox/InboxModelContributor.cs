@@ -9,9 +9,9 @@ using Modulus.Inbox.Configurations;
 /// every module context, so <c>AddInbox&lt;TContext&gt;</c> works without the
 /// app hand-wiring <see cref="InboxMessageConfiguration"/>. Without this
 /// contributor the EF inbox could not persist claims — the entity had no
-/// table.
+/// table. A module's design-time factory passes it to <c>DesignTimeContext.ServicesWith</c> so migrations include the inbox table.
 /// </summary>
-internal sealed class InboxModelContributor : IModuleModelContributor
+public sealed class InboxModelContributor : IModuleModelContributor
 {
     public void Contribute(ModelBuilder modelBuilder)
         => modelBuilder.ApplyConfiguration(new InboxMessageConfiguration());

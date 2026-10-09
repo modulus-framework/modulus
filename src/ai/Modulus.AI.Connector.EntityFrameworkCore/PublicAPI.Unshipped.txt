@@ -70,3 +70,7 @@ static Modulus.AI.Connector.EntityFrameworkCore.EntityChangeRecord.operator !=(M
 static Modulus.AI.Connector.EntityFrameworkCore.EntityChangeRecord.operator ==(Modulus.AI.Connector.EntityFrameworkCore.EntityChangeRecord? left, Modulus.AI.Connector.EntityFrameworkCore.EntityChangeRecord? right) -> bool
 static Modulus.AI.Connector.EntityFrameworkCore.ListEntityChanges.operator !=(Modulus.AI.Connector.EntityFrameworkCore.ListEntityChanges? left, Modulus.AI.Connector.EntityFrameworkCore.ListEntityChanges? right) -> bool
 static Modulus.AI.Connector.EntityFrameworkCore.ListEntityChanges.operator ==(Modulus.AI.Connector.EntityFrameworkCore.ListEntityChanges? left, Modulus.AI.Connector.EntityFrameworkCore.ListEntityChanges? right) -> bool
+Modulus.AI.Connector.EntityFrameworkCore.AiChangeModelContributor
+Modulus.AI.Connector.EntityFrameworkCore.AiChangeModelContributor.AiChangeModelContributor() -> void
+Modulus.AI.Connector.EntityFrameworkCore.AiChangeModelContributor.Contribute(Microsoft.EntityFrameworkCore.ModelBuilder! modelBuilder) -> void
+const Modulus.AI.Connector.EntityFrameworkCore.AiChangeModelContributor.Table = "ai_changes" -> string!

@@ -12,7 +12,8 @@
     <PackageReference Include="Cobytelabs.Modulus.Events" Version="{{ framework_version }}" />
     <PackageReference Include="Cobytelabs.Modulus.Data.Abstractions" Version="{{ framework_version }}" />
     <PackageReference Include="{{ ef_provider_package }}" Version="{{ ef_provider_version }}" />
-{{ if db_provider == "SQLite" }}    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.3" />
+{{ if ai_journal }}    <PackageReference Include="Cobytelabs.Modulus.AI.Connector.EntityFrameworkCore" Version="{{ framework_version }}" />
+{{ end }}{{ if db_provider == "SQLite" }}    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.3" />
 {{ end }}    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.9" />
   </ItemGroup>
 

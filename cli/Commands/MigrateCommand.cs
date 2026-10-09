@@ -138,78 +138,81 @@ internal sealed class MigrateAddCommand : Command<MigrateAddCommand.Settings>
     public override int Execute(CommandContext ctx, Settings s)
     {
         s.Apply();
-        return CommandRunner.Run(() =>
+        return CommandRunner.Run(() => Run(s));
+    }
+
+    /// <summary>Scaffolds the migration (shared with <c>add-ai --migrate</c>).</summary>
+    internal static int Run(Settings s, Func<MigrateSupport.ModuleProject, bool>? only = null)
+    {
+        if (!MigrateSupport.TryResolve(s.Output, out var root, out _, out var startupRel))
+            return 1;
+
+        // Validate migration name against a safe pattern to prevent
+        // argument injection via unquoted shell metacharacters.
+        if (!System.Text.RegularExpressions.Regex.IsMatch(s.Name, @"^[A-Za-z0-9_]+$"))
         {
-            if (!MigrateSupport.TryResolve(s.Output, out var root, out _, out var startupRel))
-                return 1;
+            Ux.Error($"Invalid migration name '[cyan]{s.Name}[/]'. " +
+                "Use only letters, digits, and underscores (e.g. InitialCreate, AddOrderTotals).");
+            return 1;
+        }
 
-            // Validate migration name against a safe pattern to prevent
-            // argument injection via unquoted shell metacharacters.
-            if (!System.Text.RegularExpressions.Regex.IsMatch(s.Name, @"^[A-Za-z0-9_]+$"))
+        var modules = MigrateSupport.FindModuleProjects(root, s.Module).Where(m => only?.Invoke(m) ?? true).ToList();
+        if (modules.Count == 0)
+        {
+            Ux.Error($"No module Infrastructure projects found" +
+                (s.Module is null ? "." : $" for module '{s.Module}'."));
+            return 1;
+        }
+
+        Ux.Info($"Scaffolding migration [cyan]{s.Name}[/] in [grey]{modules.Count}[/] module(s)…");
+
+        var failed = 0;
+        foreach (var m in modules)
+        {
+            var projRel = Path.GetRelativePath(root, m.InfrastructureCsproj);
+            var infraDir = Path.GetDirectoryName(m.InfrastructureCsproj)!;
+            var isDbsh = MigrateSupport.IsDbshModule(infraDir);
+
+            if (Ux.DryRun)
+                Ux.DryRunNote($"would scaffold [cyan]{s.Name}[/] in {m.Name} ({(isDbsh ? "dbsh" : "efcore")})");
+            else
+                Ux.Info($"  [grey]›[/] {m.Name} ({(isDbsh ? "dbsh" : "efcore")})");
+
+            int code;
+            if (isDbsh)
             {
-                Ux.Error($"Invalid migration name '[cyan]{s.Name}[/]'. " +
-                    "Use only letters, digits, and underscores (e.g. InitialCreate, AddOrderTotals).");
-                return 1;
+                // Run from the module's Infrastructure dir so dbsh discovers
+                // its per-module Database/Config/migration.json natively.
+                code = Ux.RunProcess("dbsh",
+                    $"create --name {MigrateSupport.Quote(s.Name)} --type schema --module {MigrateSupport.Quote(m.Name)}",
+                    infraDir, dryRunLabel: "");
+            }
+            else
+            {
+                code = MigrateSupport.RunDotnetEf(root,
+                    "migrations", "add", s.Name,
+                    "--project", projRel,
+                    "--startup-project", startupRel,
+                    "--output-dir", "Migrations");
             }
 
-            var modules = MigrateSupport.FindModuleProjects(root, s.Module);
-            if (modules.Count == 0)
+            if (code != 0)
             {
-                Ux.Error($"No module Infrastructure projects found" +
-                    (s.Module is null ? "." : $" for module '{s.Module}'."));
-                return 1;
+                Ux.Error($"Migration failed for {m.Name}");
+                failed++;
             }
+        }
 
-            Ux.Info($"Scaffolding migration [cyan]{s.Name}[/] in [grey]{modules.Count}[/] module(s)…");
-
-            var failed = 0;
-            foreach (var m in modules)
-            {
-                var projRel = Path.GetRelativePath(root, m.InfrastructureCsproj);
-                var infraDir = Path.GetDirectoryName(m.InfrastructureCsproj)!;
-                var isDbsh = MigrateSupport.IsDbshModule(infraDir);
-
-                if (Ux.DryRun)
-                    Ux.DryRunNote($"would scaffold [cyan]{s.Name}[/] in {m.Name} ({(isDbsh ? "dbsh" : "efcore")})");
-                else
-                    Ux.Info($"  [grey]›[/] {m.Name} ({(isDbsh ? "dbsh" : "efcore")})");
-
-                int code;
-                if (isDbsh)
-                {
-                    // Run from the module's Infrastructure dir so dbsh discovers
-                    // its per-module Database/Config/migration.json natively.
-                    code = Ux.RunProcess("dbsh",
-                        $"create --name {MigrateSupport.Quote(s.Name)} --type schema --module {MigrateSupport.Quote(m.Name)}",
-                        infraDir, dryRunLabel: "");
-                }
-                else
-                {
-                    code = MigrateSupport.RunDotnetEf(root,
-                        "migrations", "add", s.Name,
-                        "--project", projRel,
-                        "--startup-project", startupRel,
-                        "--output-dir", "Migrations");
-                }
-
-                if (code != 0)
-                {
-                    Ux.Error($"Migration failed for {m.Name}");
-                    failed++;
-                }
-            }
-
-            if (failed == 0)
-            {
-                if (Ux.DryRun)
-                    Ux.Success($"Would add migration to {modules.Count} module(s).",
-                        "Apply with: modulus migrate update");
-                else
-                    Ux.Success($"Added migration to {modules.Count} module(s).",
-                        "Apply with: modulus migrate update");
-            }
-            return failed == 0 ? 0 : 1;
-        });
+        if (failed == 0)
+        {
+            if (Ux.DryRun)
+                Ux.Success($"Would add migration to {modules.Count} module(s).",
+                    "Apply with: modulus migrate update");
+            else
+                Ux.Success($"Added migration to {modules.Count} module(s).",
+                    "Apply with: modulus migrate update");
+        }
+        return failed == 0 ? 0 : 1;
     }
 }
 

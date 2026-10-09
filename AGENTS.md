@@ -1905,6 +1905,7 @@ platform package; the platform is read-only, so only queries are exposed. The pl
   deferred until the UI changes land. `SecurityProbeSuite` expects `401` on the signed-in probes for an endpoint whose
   policies accept only other schemes (the connector's API-key endpoints); `SecurityProbeOptions.ProbeScheme` names the
   test scheme.
+- **Migrations include the journal.** `DesignTimeContext.ServicesWith(new AiChangeModelContributor())` (used by the generated `{Module}DbContextFactory`) hands model contributors to the design-time context, otherwise `dotnet ef` scaffolds a migration without `ai_changes` and the app starts with `PendingModelChangesWarning`. `modulus add-ai --migrate` patches existing modules (package ref + factory) and scaffolds `AddAiChanges`; new modules get it from `ModuleModel.AiJournal`.
 - **Timeout is deny.** `AiConformanceOptions.SlowCapability` names a deliberately slow capability (register it only in tests; give the test host a short `Ai:Connector:CallTimeout`): the `TimeoutIsDeny` category checks that the call ends in a typed `UNAVAILABLE` error and never in data, so the platform treats it as a deny. Without it the check is not applicable; the kit never calls that capability elsewhere.
 - **Conformance (6d).** `Modulus.AI.Connector.Testing`: `AiFakePlatform` (signs envelopes, receives revocations,
   `FailNext` for retries; `platform.Configure(services)` points the connector at it) and

@@ -64,3 +64,6 @@ static Modulus.Inbox.Extensions.InboxServiceCollectionExtensions.AddInbox<TConte
 static Modulus.Inbox.Extensions.InboxServiceCollectionExtensions.AddInbox<TContext>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<Modulus.Inbox.Abstractions.InboxOptions!>! configure, System.Collections.Generic.IEnumerable<System.Type!>! handlerImplementationTypes) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static Modulus.Inbox.Extensions.InboxServiceCollectionExtensions.AddInbox<TContext>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Collections.Generic.IEnumerable<System.Type!>! handlerImplementationTypes) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static Modulus.Inbox.Extensions.InboxServiceCollectionExtensions.DecorateIntegrationEventHandlers(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+Modulus.Inbox.InboxModelContributor
+Modulus.Inbox.InboxModelContributor.Contribute(Microsoft.EntityFrameworkCore.ModelBuilder! modelBuilder) -> void
+Modulus.Inbox.InboxModelContributor.InboxModelContributor() -> void
