@@ -26,6 +26,26 @@ public interface IResourceAuthorizer
 public static class ResourceAuthorizerExtensions
 {
     /// <summary>
+    /// Checks the caller's authority <b>now</b>, on the record as it is now, and throws <see cref="Core.Abstractions.Exceptions.ForbiddenException"/>
+    /// (403, the reason code in the message) when it is not allowed. Call it inside the command handler, after loading the record and
+    /// before changing it, in the same transaction and with the record's concurrency stamp (<c>IHasConcurrencyStamp</c>), so another request
+    /// cannot change the document or the caller's authority between the check and the change. A check made when the page loaded proves nothing
+    /// at the moment of posting.
+    /// </summary>
+    public static async Task EnsureAllowedAsync(
+        this IResourceAuthorizer authorizer, object resource, string action, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(authorizer);
+        var decision = await authorizer.AuthorizeAsync(resource, action, ct).ConfigureAwait(false);
+        if (!decision.IsAllowed)
+        {
+            throw new Core.Abstractions.Exceptions.ForbiddenException(
+                $"{resource.GetType().Name}:{action}",
+                $"Not allowed to {action} this {resource.GetType().Name}: {decision.Code} ({decision.Reason}).");
+        }
+    }
+
+    /// <summary>
     /// The actions of the record's policy the current principal may perform right now, in policy order — what a client
     /// shows as buttons. Each action goes through the same <see cref="IResourceAuthorizer"/> (and so the same audit
     /// decorator) as a real attempt. A resource type with no policy has none.

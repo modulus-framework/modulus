@@ -95,7 +95,6 @@ Modulus.Core.Abstractions.Exceptions.FeatureDisabledException
 Modulus.Core.Abstractions.Exceptions.FeatureDisabledException.Feature.get -> string!
 Modulus.Core.Abstractions.Exceptions.FeatureDisabledException.FeatureDisabledException(string! feature) -> void
 Modulus.Core.Abstractions.Exceptions.ForbiddenException
-Modulus.Core.Abstractions.Exceptions.ForbiddenException.ForbiddenException(string! permission) -> void
 Modulus.Core.Abstractions.Exceptions.ModulusException
 Modulus.Core.Abstractions.Exceptions.ModulusException.ModulusException(string! message, System.Exception? inner = null) -> void
 Modulus.Core.Abstractions.Exceptions.NotFoundException
@@ -658,3 +657,4 @@ Modulus.Core.Abstractions.TenantStatus.Active = 1 -> Modulus.Core.Abstractions.T
 Modulus.Core.Abstractions.TenantStatus.Closed = 3 -> Modulus.Core.Abstractions.TenantStatus
 Modulus.Core.Abstractions.TenantStatus.Suspended = 2 -> Modulus.Core.Abstractions.TenantStatus
 Modulus.Core.Abstractions.TenantStatus.Trial = 0 -> Modulus.Core.Abstractions.TenantStatus
+Modulus.Core.Abstractions.Exceptions.ForbiddenException.ForbiddenException(string! permission, string? detail = null) -> void

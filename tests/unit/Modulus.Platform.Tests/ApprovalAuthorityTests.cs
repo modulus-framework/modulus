@@ -6,6 +6,7 @@ using Modulus.Authorization.Organization;
 using Modulus.Authorization.Resources;
 using Modulus.Authorization.Scopes;
 using Modulus.Core.Abstractions.Entities;
+using Modulus.Core.Abstractions.Exceptions;
 using Xunit;
 
 namespace Modulus.Platform.Tests;
@@ -171,5 +172,23 @@ public sealed class ApprovalAuthorityTests
 
         request.NotOwnedByCaller().Should().BeFalse();
         request.NotActedOnByCaller().Should().BeFalse();
+    }
+
+    private sealed class FixedAuthorizer(AccessDecision decision) : IResourceAuthorizer
+    {
+        public Task<AccessDecision> AuthorizeAsync(object resource, string action, CancellationToken ct = default) => Task.FromResult(decision);
+    }
+
+    [Fact]
+    public async Task EnsureAllowed_passes_an_allowed_action_and_throws_forbidden_with_the_reason_code_otherwise()
+    {
+        await new FixedAuthorizer(AccessDecision.Allowed).EnsureAllowedAsync(new PurchaseOrder(), "approve");
+
+        var act = () => new FixedAuthorizer(AccessDecision.Deny(AccessReasonCodes.ApprovalLimitExceeded, "over the limit"))
+            .EnsureAllowedAsync(new PurchaseOrder(), "approve");
+
+        var thrown = (await act.Should().ThrowAsync<ForbiddenException>()).Which;
+        thrown.Message.Should().Contain("approve").And.Contain("APPROVAL_LIMIT_EXCEEDED").And.Contain("over the limit");
+        thrown.Permission.Should().Be("PurchaseOrder:approve");
     }
 }

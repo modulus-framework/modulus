@@ -1371,7 +1371,7 @@ roots, Security tab in `Modulus.UI.AuditLogging`).
   `WithinApprovalAuthority(permission)` (largest applicable limit; no limit, another currency or a document without an amount is refused; a delegate may
   use the delegator's limits, never more), `NotOwnedByCaller()` (requester cannot approve) and `NotActedOnByCaller()` (one person, one step). The admin API
   refuses a limit above the caller's own (unless `authorization:grant-any`) and a limit set for oneself. Reason codes `NO_APPROVAL_AUTHORITY` /
-  `APPROVAL_LIMIT_EXCEEDED` come from `IApprovalAuthorityEvaluator.Check`. Semantics of every layer: [`docs/security/policy-combination.md`](docs/security/policy-combination.md).
+  `APPROVAL_LIMIT_EXCEEDED` come from `IApprovalAuthorityEvaluator.Check`. In a handler, `await authorizer.EnsureAllowedAsync(record, "approve")` re-checks authority on the loaded record inside the transaction (403 with the reason code), then save with the concurrency stamp. Semantics of every layer: [`docs/security/policy-combination.md`](docs/security/policy-combination.md).
 - **Assignment-type vocabulary.** The assignment types of "Assigned" scopes are the access keys scope maps declare (`AddScopeMap<T>(m => m.AssignedKey("customer", ...))`);
   `IScopeMapRegistry.AssignmentTypes` lists them and `GET assignment-types` serves them. When any map declares one, the admin API refuses `assignments` and
   `assigned:{type}` grants naming another type (typo guard); with none declared any name is accepted.

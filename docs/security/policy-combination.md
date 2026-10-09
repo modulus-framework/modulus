@@ -78,6 +78,18 @@ approval limit applies on the **next request**, on every node. The places where 
 Rule for new code: anything that changes grants, roles, memberships, accounts or limits calls
 `NotifyAccessChangedAsync`. A mandatory dependency that cannot be read fails the request; it never falls back to a stale grant.
 
+## Authority at the moment of the action (time of check, time of use)
+
+A screen that showed an Approve button minutes ago proves nothing at the moment of posting. In every sensitive handler:
+
+1. load the record inside the command's transaction (the mediator's `[Transactional]` wraps it);
+2. `await authorizer.EnsureAllowedAsync(record, "approve")` (current permissions, scope, state, limits, separation of duties; `403` with the
+   reason code when refused);
+3. change the record and save with its concurrency stamp (`IHasConcurrencyStamp`; a concurrent change is a `409`), and persist who acted
+   (`IHasApprovalTrail`) so the next step's separation-of-duties check has it.
+
+Two requests racing for the same document therefore cannot both pass: the second sees the new state or fails the stamp.
+
 ## Explaining a decision
 
 `ResourcePolicy.Explain`, `ResourceAuthorizer.Explain` and the `/authorization/resources/{type}/{id}/explain` endpoint list

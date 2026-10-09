@@ -1539,3 +1539,4 @@ override Modulus.AuditLogging.Security.SecurityAuditQuery.GetHashCode() -> int
 override Modulus.AuditLogging.Security.SecurityAuditQuery.ToString() -> string!
 static Modulus.AuditLogging.Security.SecurityAuditQuery.operator !=(Modulus.AuditLogging.Security.SecurityAuditQuery? left, Modulus.AuditLogging.Security.SecurityAuditQuery? right) -> bool
 static Modulus.AuditLogging.Security.SecurityAuditQuery.operator ==(Modulus.AuditLogging.Security.SecurityAuditQuery? left, Modulus.AuditLogging.Security.SecurityAuditQuery? right) -> bool
+static Modulus.Authorization.Resources.ResourceAuthorizerExtensions.EnsureAllowedAsync(this Modulus.Authorization.Resources.IResourceAuthorizer! authorizer, object! resource, string! action, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
