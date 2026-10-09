@@ -124,7 +124,11 @@ public sealed class EfSecurityAuditStoreTests : IAsyncLifetime
         {
             await store.AppendAsync(new SecurityAuditEvent
             {
-                Category = SecurityAuditCategories.Identity, Action = action, Outcome = outcome, Actor = actor, TenantId = tenant,
+                Category = SecurityAuditCategories.Identity,
+                Action = action,
+                Outcome = outcome,
+                Actor = actor,
+                TenantId = tenant,
             });
         }
 

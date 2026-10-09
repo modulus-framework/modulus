@@ -130,7 +130,10 @@ public sealed class UserSessionServiceTests
         async Task Add(Guid user, string action, string outcome, string? reason = null)
             => await store.AppendAsync(new SecurityAuditEvent
             {
-                Category = SecurityAuditCategories.Identity, Action = action, Outcome = outcome, Actor = user.ToString(),
+                Category = SecurityAuditCategories.Identity,
+                Action = action,
+                Outcome = outcome,
+                Actor = user.ToString(),
                 Details = new Dictionary<string, string?> { ["reason"] = reason, ["client"] = "web" },
             });
         await Add(ann.Id, "signin.password", SecurityAuditOutcomes.Denied, "wrong-password");
@@ -165,8 +168,11 @@ public sealed class UserSessionServiceTests
         var tokens = scope.ServiceProvider.GetRequiredService<IOpenIddictTokenManager>();
         await tokens.CreateAsync(new OpenIddictTokenDescriptor
         {
-            Subject = "partner-x", Type = OpenIddictConstants.TokenTypeHints.AccessToken, Status = OpenIddictConstants.Statuses.Valid,
-            CreationDate = DateTimeOffset.UtcNow, ExpirationDate = DateTimeOffset.UtcNow.AddHours(1),
+            Subject = "partner-x",
+            Type = OpenIddictConstants.TokenTypeHints.AccessToken,
+            Status = OpenIddictConstants.Statuses.Valid,
+            CreationDate = DateTimeOffset.UtcNow,
+            ExpirationDate = DateTimeOffset.UtcNow.AddHours(1),
         });
         var directory = scope.ServiceProvider.GetRequiredService<IIntegrationClientDirectory>();
         var company = Guid.NewGuid();
