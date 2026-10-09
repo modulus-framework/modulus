@@ -90,7 +90,7 @@ public sealed class QuartzJobScheduler(
         TArgs args)
         where TJob : IBackgroundJob<TArgs>
     {
-        _ = Task.Run(() => AddRecurringAsync<TJob, TArgs>(jobId, cronExpression, args));
+        _ = AddRecurringAsync<TJob, TArgs>(jobId, cronExpression, args);
     }
 
     private async Task AddRecurringAsync<TJob, TArgs>(
@@ -131,7 +131,7 @@ public sealed class QuartzJobScheduler(
 
     public void RemoveRecurring(string jobId)
     {
-        _ = Task.Run(() => RemoveRecurringAsync(jobId));
+        _ = RemoveRecurringAsync(jobId);
     }
 
     private async Task RemoveRecurringAsync(string jobId)

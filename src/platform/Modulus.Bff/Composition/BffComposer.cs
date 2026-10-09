@@ -85,7 +85,32 @@ public sealed class BffComposition
 
     /// <summary>Runs every section concurrently.</summary>
     public async Task ExecuteAsync(CancellationToken ct = default)
-        => await Task.WhenAll(_runs.Select(run => run(ct))).ConfigureAwait(false);
+    {
+        // A failed required section cancels its siblings: the response is a 502 anyway, so they
+        // should stop spending upstream calls.
+        using var failFast = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        BffSectionFailedException? failure = null;
+        var tasks = _runs.Select(async run =>
+        {
+            try
+            {
+                await run(failFast.Token).ConfigureAwait(false);
+            }
+            catch (BffSectionFailedException ex)
+            {
+                Interlocked.CompareExchange(ref failure, ex, null);
+                await failFast.CancelAsync().ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (failure is not null && !ct.IsCancellationRequested)
+            {
+                // cancelled because a required sibling failed
+            }
+        }).ToArray();
+
+        await Task.WhenAll(tasks).ConfigureAwait(false);
+        if (failure is not null)
+            throw failure;
+    }
 
     /// <summary>Runs every section, then shapes the response with <paramref name="shape"/>.</summary>
     public async Task<BffResponse<TResult>> ExecuteAsync<TResult>(Func<TResult> shape, CancellationToken ct = default)

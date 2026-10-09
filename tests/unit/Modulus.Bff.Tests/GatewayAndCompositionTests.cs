@@ -170,6 +170,36 @@ public sealed class CompositionTests
     }
 
     [Fact]
+    public async Task Failing_required_section_cancels_its_siblings()
+    {
+        var composition = Begin();
+        var siblingCancelled = false;
+        composition.Optional("slow", async ct =>
+        {
+            try
+            {
+                await Task.Delay(TimeSpan.FromSeconds(10), ct);
+            }
+            catch (OperationCanceledException)
+            {
+                siblingCancelled = true;
+                throw;
+            }
+
+            return 1;
+        });
+        composition.Required<int>("catalog", async _ =>
+        {
+            await Task.Delay(50);
+            throw new HttpRequestException("down");
+        });
+
+        var act = () => composition.ExecuteAsync();
+        (await act.Should().ThrowAsync<BffSectionFailedException>()).Which.Section.Should().Be("catalog");
+        siblingCancelled.Should().BeTrue();
+    }
+
+    [Fact]
     public async Task Cached_sections_are_kept_apart_per_selected_company()
     {
         var services = new ServiceCollection();
