@@ -1011,8 +1011,7 @@ Modulus, never the reverse; feature UIs depend on `Theme.Abstractions`, never on
   message whether it does not exist or is gated, so the response never reveals a hidden field) and `ReadSubmittedEntityFieldText(entity, user, values)` (canonical text of only the visible
   fields the caller sent; an empty value maps to null, which removes the key; unsent fields stay untouched). They differ from `EntityFieldValues` (the form's helpers) on purpose: a form
   always posts every field so an empty one means "clear", an API caller sends only what it changes. Generated for a **fresh** set in a web app (`ModuleModel.HasApiExtraFields`,
-  `GenerateCrudCommand.ExposesExtraFieldsInApi`: kind is `web` — a pre-split rule; under the three-way model only `webapp+api` maps an API surface, so for a `web` host this currently
-  emits dead-but-harmless endpoint code and should be retargeted to `webapp+api` (tracked in the split plan, A2.3.8); none of the DTO/query-handler/endpoint files exist yet, and the entity and both commands carry the marker; files are never
+  `GenerateCrudCommand.ExposesExtraFieldsInApi`: kind is `webapp+api`, the only kind that maps an API surface alongside the registry; none of the DTO/query-handler/endpoint files exist yet, and the entity and both commands carry the marker; files are never
   overwritten, so an older set keeps its API as it was; the example module of `modulus app --kind web` gets it too): the DTO becomes a `record` with an `ExtraProperties` bag that the
   query handlers fill with the **unfiltered** stored copy (an endpoint must filter it), the create and update requests take `extraProperties`, the endpoints inject
   `IEntityUiRegistry` + `ICurrentUser`, reject with `ValidationException` (400 with an `errors` list) and pass only `ReadSubmittedEntityFieldText(...)` to the command, whose handler already
@@ -1123,7 +1122,7 @@ Modulus, never the reverse; feature UIs depend on `Theme.Abstractions`, never on
   N/A by data shape; CLI `generate-crud --with-ui` was audited and already works end-to-end),
   plus the split follow-ups in the plan (ui-schema endpoint design sign-off, Web-factory
   TestServer pairing + the login→page-create→API-visible round-trip, kill-the-API check,
-  `doctor`'s Web-project invariant warning) are not started; see
+  `doctor`'s Web-project invariant warning is done) are not started; see
   [`docs/APP_KIND_SPLIT_AND_IDENTITY_UI_PLAN.md`](docs/APP_KIND_SPLIT_AND_IDENTITY_UI_PLAN.md)
   (Phase A there is complete).
 
@@ -1182,7 +1181,7 @@ and pass their generated test suites off the current CLI (`webapp+api` 9/9, `api
   both hosts in one solution. `AppTests.sbn` emits `ApiIntegrationTests` only when the host
   exposes an API, and the page-level `WebAppSmokeTest` for both web kinds over the matching
   marker. The two factories are standalone (page tests make no API calls), so the Web→API hop
-  is not yet asserted in tests — TestServer pairing, the kill-the-API check and a full
+  is asserted only for sign-in (`WebToApiLoginTests`: Web factory paired to the API's TestServer, wrong and right password); the kill-the-API check and a full
   login→page-create→visible-through-API round-trip are the tracked follow-ups.
 
 ## Security model (Company = Tenant)

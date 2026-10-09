@@ -208,7 +208,55 @@ public sealed class WebAppSmokeTest(ModulusWebAppFactory<{{ if web_entry }}WebEn
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 }
-{{ end }}
+{{ if kind_name == "webapp+api" && web_login_mode == "Password" }}
+/// <summary>
+/// The Web→API hop. The Web factory is paired with an API factory (<see cref="TestServerPairing"/>), so the Web host's
+/// outbound HTTP (the BFF session's password grant against the token server) reaches the API host's TestServer instead of
+/// the network. A wrong password is refused by the API and the login page re-renders; the right one signs in and redirects.
+/// </summary>
+public sealed class WebToApiLoginTests
+{
+    private const string AdminEmail = "web-test-admin@example.test";
+    private const string AdminPassword = "Web-Test-Passw0rd!42";
+
+    [Fact]
+    public async Task LoginPage_SignsInThroughTheApi()
+    {
+        await using var api = new ModulusWebAppFactory<ApiEntryPoint>().WithWebHostBuilder(builder =>
+        {
+            builder.UseSetting("Identity:Seed:AdminEmail", AdminEmail);
+            builder.UseSetting("Identity:Seed:AdminPassword", AdminPassword);
+        });
+        // OpenIddict refuses plain HTTP; the paired handler ignores the host, so https://localhost reaches the TestServer.
+        await using var web = new ModulusWebAppFactory<WebEntryPoint>().WithWebHostBuilder(builder =>
+        {
+            builder.UseSetting("Api:BaseUrl", "https://localhost");
+            builder.UseSetting("Bff:Authority", "https://localhost");
+        }).PairedWith(api);
+        var client = web.CreateClient(new Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+
+        var rejected = await SubmitLoginAsync(client, AdminEmail, "not-the-password");
+        Assert.Equal(HttpStatusCode.OK, rejected.StatusCode);
+        Assert.Contains("Invalid user name or password", await rejected.Content.ReadAsStringAsync());
+
+        var accepted = await SubmitLoginAsync(client, AdminEmail, AdminPassword);
+        Assert.Equal(HttpStatusCode.Redirect, accepted.StatusCode);
+    }
+
+    private static async Task<HttpResponseMessage> SubmitLoginAsync(HttpClient client, string user, string password)
+    {
+        var page = await client.GetStringAsync("/Account/Login");
+        var token = System.Text.RegularExpressions.Regex
+            .Match(page, "name=\"__RequestVerificationToken\"[^>]*value=\"([^\"]+)\"").Groups[1].Value;
+        return await client.PostAsync("/Account/Login", new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["UserName"] = user,
+            ["Password"] = password,
+            ["__RequestVerificationToken"] = token,
+        }));
+    }
+}
+{{ end }}{{ end }}
 /// <summary>
 /// Architecture tests that enforce module boundaries. These verify that your
 /// modular monolith respects the module system: every integration event has a

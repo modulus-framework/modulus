@@ -208,7 +208,7 @@ significantly shrinks the scope of Phase B1 below.
 - [ ] A2.5.4. Kill-the-API resilience check not run yet (the resilience handler should convert
       connection failures into retried/failed requests, not crashes — verify explicitly).
 
-### A3. Propagate the kind model through the rest of the CLI ✅ COMPLETE (except A3.5)
+### A3. Propagate the kind model through the rest of the CLI ✅ COMPLETE
 
 - [x] A3.1. `ui add` — all UI commands (`UiAddCommand`, `UiRemoveCommand`, `UiUpdateCommand`,
       `UiInfoCommand`, `UiListCommand`, `UiSearchCommand`) target `inventory.UiProjectPath`
@@ -218,9 +218,8 @@ significantly shrinks the scope of Phase B1 below.
 - [x] A3.4. `migrate` commands audited: they discover modules by `*.Infrastructure.csproj` under
       `src/Modules` and use the `*.Api.csproj` as startup project — kind-agnostic by
       construction (the Web project hosts no modules).
-- [ ] A3.5. `doctor` — not yet implemented: `doctor` prints the Web project/Program.cs presence
-      for `webapp+api` but does **not** yet warn when the Web csproj picks up a
-      module/DbContext package reference (the "no DB access" invariant guard).
+- [x] A3.5. `doctor` warns when the Web csproj references a module `*.Infrastructure` project
+      (`DoctorCommand.CheckWebInvariant`, covered in `BffCommandTests`).
 - [x] A3.6. `modulus info` prints both project paths for `webapp+api` (`API :` / `Web :` rows).
 - [x] A3.7. `AppKindTests` covers the webapp+api inventory/convenience-property fixtures
       (A0.7); the remaining commands were validated by regenerating a webapp+api app and
@@ -242,12 +241,12 @@ significantly shrinks the scope of Phase B1 below.
 - [x] A5.2. `WebAppSmokeTest` boots the Web project via a second
       `ModulusWebAppFactory<WebEntryPoint>` (`WebEntryPoint` marker in the Web host's
       Program.cs). *As built:* the two factories are standalone, not paired.
-- [ ] A5.3. TestServer pairing (`ConfigurePrimaryHttpMessageHandler(() =>
+- [x] A5.3. (login hop done: `WebToApiLoginTests` pairs the Web and API factories; a page-create round-trip is still open) TestServer pairing (`ConfigurePrimaryHttpMessageHandler(() =>
       apiFactory.Server.CreateHandler())`) **not implemented** — the generated Web page tests
       currently assert page-level behavior (challenge / login page / landing) and make no API
       calls, so they pass without the API running. Pairing is the natural next step and would
       also close A2.5.3/A5.5.
-- [x] A5.4. `Modulus.Testing.TestServerPairing` exists; generated Web tests do not use it yet (A5.3).
+- [x] A5.4. `Modulus.Testing.TestServerPairing` exists; the generated `WebToApiLoginTests` uses it (login through the API's token endpoint).
 - [ ] A5.5. The HTTP hop is proven on the API side (entity created through the API is visible
       via the API factory's client); the Web-page-driven flow is not yet asserted — remaining
       validation, same work as A2.5.3/A5.3.
@@ -507,9 +506,9 @@ HTTP):
   round-trip over HTTP (A2.5.3) and the kill-the-API check (A2.5.4).
 - **A3**: `generate-crud`, the `ui *` family and `modulus info` each target the right project(s)
   for a `webapp+api` app (UiProjectPath routing); validated by regeneration, not per-command
-  fixtures. `doctor`'s Web-project invariant warning still open (A3.5).
+  fixtures. `doctor`'s Web-project invariant warning is done (A3.5).
 - **A5**: generated smoke tests pass for all three kinds (`webapp+api`: 9/9; `api`: 6/6;
-  `webapp`: 3/3). The Web factory is standalone — TestServer pairing (A5.3) not implemented.
+  `webapp`: 3/3). The generated `WebToApiLoginTests` pairs the Web factory with the API's TestServer (A5.3); page-create round-trip still open.
 - **B0–B6**: not started.
 
 ---
