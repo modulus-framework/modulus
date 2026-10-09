@@ -787,8 +787,14 @@ Known limits of 6b (follow-ups):
   - If some users must not see a personal field, classify it with `[Classified]` too.
 - **Aggregates.** An ungrouped aggregate groups by a constant, so there is one query shape. The SQLite tests cover
   decimal and double sums and averages. Other providers are not run in CI for these shapes.
-- **Not built.** There is no `Search` for extension fields (`ExtraProperties`), and no `ISearchContributor` for
-  cross-entity search.
+- **Decided not to build (2026-10-09).** `Search` over extension fields (`ExtraProperties`) and `ISearchContributor`.
+  - `ExtraProperties` is a `Dictionary` value-converted to JSON text. A provider-agnostic filter would need `EF.Functions.Like` on the serialized
+    text, but EF cannot apply a string function to a converted property, and the JSON operators differ per provider. A correct version needs a schema
+    change (a generated search column, or a JSON-mapped column per provider), which is a migration for every existing deployment.
+  - The extension-field definitions and their per-field permissions live in `Modulus.UI.Core`, which the connector cannot reference.
+  - Filtering in memory after a bounded fetch would give wrong, truncated answers, so it is not offered.
+  - Cross-entity search has no consumer yet; the platform already searches per type through `{Type}.Search`.
+  - Revisit when a deployment needs it: add a searchable column per declared key, not a JSON scan.
 
 #### 6c: Host integration, UI and CLI
 
@@ -941,7 +947,7 @@ Everything still open, by owner. 6a–6d are built (2026-10-04). The items below
 - [x] Durable revocation queue: `Ai:Connector:Platform:RevocationSpoolFile` journals pending signals and resends them after a restart (a file, not the outbox; one per process).
 - [x] Shared envelope replay cache: with an `IDistributedLock` registered (Redis) the first node to see an envelope id takes a lease that lasts until it expires.
 - [x] Batch record lookup for `/extract` and `/changes`: optional `[AiResource(BatchLookup = typeof(...))]`, one query per page (`generate-crud --ai` emits it).
-- [ ] `Search` over extension fields (`ExtraProperties`) and an `ISearchContributor` for cross-entity search.
+- [x] `Search` over extension fields (`ExtraProperties`) and an `ISearchContributor`: decided not to build (see 6b notes).
 - [x] Per-user masking of `[PersonalInformation]`/`[ProtectedPersonalData]` fields: opt in with `Ai:Connector:MaskPersonalInformation` (Restricted clearance of the field-security profile; fail closed without one).
 - [x] Composite keys for `[AiIndexed]` entities (`AiCompositeKey`; up to 4 columns). Store-generated keys stay unsupported by design: the id is unknown when the journal row is written in the same save, so keys are generated on the client.
 - [x] At-least-once change hints while the process lives (a refused hint is resent on the next check; `/changes` polling remains the safety net across restarts).
