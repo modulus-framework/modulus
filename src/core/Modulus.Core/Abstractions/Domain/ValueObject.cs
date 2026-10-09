@@ -43,6 +43,8 @@ public abstract class ValueObject
 /// </summary>
 public abstract class AutoValueObject : ValueObject
 {
+    [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2075",
+        Justification = "Reads the public properties of the value object's own runtime type; a type used as a value object is rooted by its callers.")]
     protected override IEnumerable<object?> GetEqualityComponents()
     {
         foreach (var prop in GetType().GetProperties())

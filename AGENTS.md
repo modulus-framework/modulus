@@ -1428,7 +1428,7 @@ roots, Security tab in `Modulus.UI.AuditLogging`).
   with 2+ cores per replica, keep `DOTNET_TieredPGO=1` (default), and prefer `InvariantGlobalization` only when no culture-specific
   formatting is needed (the UI uses invariant-culture text for extension fields, but pages may format by culture). Enable response
   compression at the proxy when one exists, else `AddModulusResponseCompression`.
-- **Still open:** `Modulus.UI.AI`; GraphQL subscriptions/persisted queries; AOT annotations.
+- **Still open:** `Modulus.UI.AI`; GraphQL subscriptions/persisted queries; AOT for the other packages (`IsAotCompatible` is on for `Modulus.Core` and `Modulus.Outbox.Abstractions` only).
 
 ## Open-source dependency policy
 

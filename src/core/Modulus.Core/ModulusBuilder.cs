@@ -1,5 +1,6 @@
 namespace Modulus.Core;
 
+using System.Diagnostics.CodeAnalysis;
 using Modulus.Core.Abstractions;
 
 /// <summary>
@@ -58,7 +59,7 @@ public sealed class ModulusBuilder
     /// <see cref="IModule.PostConfigureServices"/> phases do not run here — they run
     /// batched across all modules in <see cref="Complete"/>.
     /// </summary>
-    public ModulusBuilder AddModule(Type moduleType)
+    public ModulusBuilder AddModule([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type moduleType)
     {
         if (!typeof(IModule).IsAssignableFrom(moduleType))
             throw new InvalidOperationException(
@@ -108,7 +109,7 @@ public sealed class ModulusBuilder
     /// <summary>
     /// Returns (and caches) the single instance for <paramref name="moduleType"/>.
     /// </summary>
-    private IModule GetOrCreate(Type moduleType)
+    private IModule GetOrCreate([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type moduleType)
     {
         if (_instances.TryGetValue(moduleType, out var existing))
             return existing;
