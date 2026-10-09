@@ -944,7 +944,7 @@ Everything still open, by owner. 6a–6d are built (2026-10-04). The items below
 - [ ] `Search` over extension fields (`ExtraProperties`) and an `ISearchContributor` for cross-entity search.
 - [ ] Per-user masking of `[PersonalInformation]` fields (today: declared `Restricted`; add `[Classified]` to mask).
 - [ ] Store-generated and composite keys for `[AiIndexed]` entities.
-- [ ] At-least-once change hints (today at most once; `/changes` polling is the safety net).
+- [x] At-least-once change hints while the process lives (a refused hint is resent on the next check; `/changes` polling remains the safety net across restarts).
 - [ ] Aggregate query shapes run in CI on PostgreSQL, SQL Server and MySQL (only SQLite today).
 - [ ] A timeout-as-deny check in the conformance kit (needs a deliberately slow capability).
 - [ ] `generate-crud --ai` on an older CRUD set and the `ai_changes` migration stay manual steps (`add-ai` prints them).

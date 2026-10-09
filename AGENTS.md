@@ -1828,7 +1828,7 @@ platform package; the platform is read-only, so only queries are exposed. The pl
   - The connector polls the journal head and posts a signed `{ appInstanceId, eventId, occurredAt }`. It never sends
     data.
   - Signing follows Standard Webhooks.
-  - A hint is sent at most once; the platform still polls `/changes`.
+  - A hint the platform refuses is resent on the next check; the platform still polls `/changes`.
 - **Generated capabilities.** `[AiQueryable("Module.Entity", description, permission, Fields = [...])]` generates
   `{Type}.Search` and `{Type}.Calculate`.
   - Typed filters, sort, `count`/`sum`/`average`/`min`/`max` and group-by work on the listed fields only.

@@ -48,8 +48,9 @@ internal static class AiChangeHintSigner
 /// <summary>
 /// Tells the platform when an app instance has new changes (<see cref="AiChangeHintOptions"/>): every
 /// <see cref="AiChangeHintOptions.Interval"/> it reads the journal head of each instance's company and, when it moved,
-/// posts a signed <see cref="ChangeHint"/> (ids only, never data, AD-27). One attempt per change of head: a lost hint
-/// only delays indexing until the platform's own schedule calls <c>/changes</c>.
+/// posts a signed <see cref="ChangeHint"/> (ids only, never data, AD-27). A hint the platform did not accept is sent again
+/// on the next check until it is (at least once while the process lives; a hint lost to a restart only delays indexing until
+/// the platform's own schedule calls <c>/changes</c>).
 /// </summary>
 internal sealed class AiChangeHintService(
     IServiceScopeFactory scopes,
@@ -62,6 +63,7 @@ internal sealed class AiChangeHintService(
     public const string HttpClientName = "Modulus.AI.Connector.ChangeHints";
 
     private readonly Dictionary<string, string> _heads = new(StringComparer.Ordinal);
+    private readonly HashSet<string> _unsent = new(StringComparer.Ordinal);
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -97,12 +99,17 @@ internal sealed class AiChangeHintService(
             var head = await feed.GetHeadAsync(instance.TenantId ?? Guid.Empty, ct);
             var moved = _heads.TryGetValue(instance.AppInstanceId, out var previous) && previous != head;
             _heads[instance.AppInstanceId] = head;
-            if (moved)
-                await SendAsync(settings, key, instance.AppInstanceId, ct);
+            if (moved || _unsent.Contains(instance.AppInstanceId))
+            {
+                if (await SendAsync(settings, key, instance.AppInstanceId, ct))
+                    _unsent.Remove(instance.AppInstanceId);
+                else
+                    _unsent.Add(instance.AppInstanceId);
+            }
         }
     }
 
-    private async Task SendAsync(ModulusAiConnectorOptions settings, byte[] key, string appInstanceId, CancellationToken ct)
+    private async Task<bool> SendAsync(ModulusAiConnectorOptions settings, byte[] key, string appInstanceId, CancellationToken ct)
     {
         var now = time.GetUtcNow();
         var id = "hint_" + Guid.CreateVersion7(now).ToString("N");
@@ -121,13 +128,16 @@ internal sealed class AiChangeHintService(
         try
         {
             using var response = await httpClients.CreateClient(HttpClientName).SendAsync(request, ct);
-            if (!response.IsSuccessStatusCode)
-                logger.LogWarning("AI connector: the platform answered {Status} to a change hint for {AppInstance}.",
-                    (int)response.StatusCode, appInstanceId);
+            if (response.IsSuccessStatusCode)
+                return true;
+            logger.LogWarning("AI connector: the platform answered {Status} to a change hint for {AppInstance}; it is sent again.",
+                (int)response.StatusCode, appInstanceId);
         }
         catch (HttpRequestException ex)
         {
-            logger.LogWarning(ex, "AI connector: a change hint for {AppInstance} could not be sent.", appInstanceId);
+            logger.LogWarning(ex, "AI connector: a change hint for {AppInstance} could not be sent; it is sent again.", appInstanceId);
         }
+
+        return false;
     }
 }

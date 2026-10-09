@@ -429,6 +429,25 @@ public sealed class IndexingAndQueryTests
     }
 
     [Fact]
+    public async Task A_hint_the_platform_refused_is_sent_again_on_the_next_check()
+    {
+        var feed = new FakeChangeFeed();
+        await using var host = await StartAsync(feed);
+        var service = host.Services.GetServices<IHostedService>().OfType<AiChangeHintService>().Single();
+        var settings = host.Services.GetRequiredService<IOptions<ModulusAiConnectorOptions>>().Value;
+        await service.CheckAsync(settings, new byte[32], CancellationToken.None);
+        var before = host.Platform.Received.Count(r => r.Path == "/webhooks/app-changes");
+
+        feed.Head = "h1";
+        host.Platform.Enqueue(System.Net.HttpStatusCode.ServiceUnavailable, System.Net.HttpStatusCode.ServiceUnavailable);
+        await service.CheckAsync(settings, new byte[32], CancellationToken.None); // both hints refused
+        await service.CheckAsync(settings, new byte[32], CancellationToken.None); // head unchanged, still owed
+        await service.CheckAsync(settings, new byte[32], CancellationToken.None); // delivered: nothing more owed
+
+        (host.Platform.Received.Count(r => r.Path == "/webhooks/app-changes") - before).Should().Be(4);
+    }
+
+    [Fact]
     public async Task Hints_without_a_valid_secret_fail_startup()
     {
         var start = () => StartAsync(settings: s => s["Ai:Connector:Indexing:ChangeHints:Enabled"] = "true");
