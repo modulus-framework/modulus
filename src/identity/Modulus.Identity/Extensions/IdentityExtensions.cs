@@ -81,6 +81,7 @@ public static class IdentityExtensions
         services.TryAddScoped<IUserSessionService, UserSessionService<TUser>>();
         services.TryAddScoped<IUserTwoFactorService, UserTwoFactorService<TUser>>();
         services.TryAddScoped<IUserInvitationService, UserInvitationService<TUser>>();
+        services.TryAddScoped<ILoginHistoryService, LoginHistoryService<TUser>>();
 
         // Authorization administration resolves roles here instead of trusting role names in a request body.
         services.TryAddScoped<IUserRoleDirectory, IdentityUserRoleDirectory<TUser>>();

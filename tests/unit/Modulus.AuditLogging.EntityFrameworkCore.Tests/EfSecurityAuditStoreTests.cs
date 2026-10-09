@@ -110,6 +110,34 @@ public sealed class EfSecurityAuditStoreTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task A_query_filters_in_the_database_and_returns_the_newest_first()
+    {
+        var store = Node().GetRequiredService<ISecurityAuditStore>();
+        foreach (var (action, actor, outcome, tenant) in new[]
+        {
+            ("signin.password", "u1", SecurityAuditOutcomes.Denied, CompanyA),
+            ("token.password", "u1", SecurityAuditOutcomes.Success, CompanyA),
+            ("token.password", "u2", SecurityAuditOutcomes.Success, CompanyA),
+            ("token.refresh", "u1", SecurityAuditOutcomes.Success, CompanyA),
+            ("token.password", "u1", SecurityAuditOutcomes.Success, CompanyB),
+        })
+        {
+            await store.AppendAsync(new SecurityAuditEvent
+            {
+                Category = SecurityAuditCategories.Identity, Action = action, Outcome = outcome, Actor = actor, TenantId = tenant,
+            });
+        }
+
+        var mine = await store.QueryAsync(new SecurityAuditQuery(CompanyA, SecurityAuditCategories.Identity, Actor: "u1"));
+        mine.Select(r => r.Action).Should().Equal("token.refresh", "token.password", "signin.password");
+
+        (await store.QueryAsync(new SecurityAuditQuery(CompanyA, Actor: "u1", ActionPrefix: "token."))).Should().HaveCount(2);
+        (await store.QueryAsync(new SecurityAuditQuery(CompanyA, Outcome: SecurityAuditOutcomes.Denied))).Should().ContainSingle();
+        (await store.QueryAsync(new SecurityAuditQuery(CompanyA, Actor: "u1", Take: 1))).Should().ContainSingle();
+        (await store.QueryAsync(new SecurityAuditQuery(CompanyA, Since: DateTimeOffset.UtcNow.AddMinutes(1)))).Should().BeEmpty();
+    }
+
+    [Fact]
     public async Task The_business_log_is_stored_and_queried()
     {
         var node = Node();

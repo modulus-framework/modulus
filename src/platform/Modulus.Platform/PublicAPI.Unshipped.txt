@@ -1512,3 +1512,30 @@ Modulus.Authorization.Scopes.ScopeEnforcerExtensions
 static Modulus.Authorization.Scopes.ScopeEnforcerExtensions.EnsureAllInScope<T>(this Modulus.Authorization.Scopes.IScopeEnforcer! scopes, System.Collections.Generic.IEnumerable<T!>! records, string! permission) -> void
 static Modulus.Authorization.Scopes.ScopeEnforcerExtensions.ForExport<T>(this Modulus.Authorization.Scopes.IScopeEnforcer! scopes, System.Linq.IQueryable<T!>! source, string! exportPermission, string! readPermission) -> System.Linq.IQueryable<T!>!
 static Modulus.Authorization.Scopes.ScopeEnforcerExtensions.OutOfScope<T>(this Modulus.Authorization.Scopes.IScopeEnforcer! scopes, System.Collections.Generic.IEnumerable<T!>! records, string! permission) -> System.Collections.Generic.IReadOnlyList<T!>!
+Modulus.AuditLogging.Security.ISecurityAuditStore.QueryAsync(Modulus.AuditLogging.Security.SecurityAuditQuery! query, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.AuditLogging.Security.SecurityAuditRecord!>!>!
+Modulus.AuditLogging.Security.SecurityAuditQuery
+Modulus.AuditLogging.Security.SecurityAuditQuery.<Clone>$() -> Modulus.AuditLogging.Security.SecurityAuditQuery!
+Modulus.AuditLogging.Security.SecurityAuditQuery.ActionPrefix.get -> string?
+Modulus.AuditLogging.Security.SecurityAuditQuery.ActionPrefix.init -> void
+Modulus.AuditLogging.Security.SecurityAuditQuery.Actor.get -> string?
+Modulus.AuditLogging.Security.SecurityAuditQuery.Actor.init -> void
+Modulus.AuditLogging.Security.SecurityAuditQuery.Category.get -> string?
+Modulus.AuditLogging.Security.SecurityAuditQuery.Category.init -> void
+Modulus.AuditLogging.Security.SecurityAuditQuery.ChainId.get -> System.Guid
+Modulus.AuditLogging.Security.SecurityAuditQuery.ChainId.init -> void
+Modulus.AuditLogging.Security.SecurityAuditQuery.Deconstruct(out System.Guid ChainId, out string? Category, out string? Actor, out string? ActionPrefix, out string? Outcome, out System.DateTimeOffset? Since, out int Take) -> void
+Modulus.AuditLogging.Security.SecurityAuditQuery.Equals(Modulus.AuditLogging.Security.SecurityAuditQuery? other) -> bool
+Modulus.AuditLogging.Security.SecurityAuditQuery.Limit.get -> int
+Modulus.AuditLogging.Security.SecurityAuditQuery.Matches(Modulus.AuditLogging.Security.SecurityAuditRecord! record) -> bool
+Modulus.AuditLogging.Security.SecurityAuditQuery.Outcome.get -> string?
+Modulus.AuditLogging.Security.SecurityAuditQuery.Outcome.init -> void
+Modulus.AuditLogging.Security.SecurityAuditQuery.SecurityAuditQuery(System.Guid ChainId, string? Category = null, string? Actor = null, string? ActionPrefix = null, string? Outcome = null, System.DateTimeOffset? Since = null, int Take = 100) -> void
+Modulus.AuditLogging.Security.SecurityAuditQuery.Since.get -> System.DateTimeOffset?
+Modulus.AuditLogging.Security.SecurityAuditQuery.Since.init -> void
+Modulus.AuditLogging.Security.SecurityAuditQuery.Take.get -> int
+Modulus.AuditLogging.Security.SecurityAuditQuery.Take.init -> void
+override Modulus.AuditLogging.Security.SecurityAuditQuery.Equals(object? obj) -> bool
+override Modulus.AuditLogging.Security.SecurityAuditQuery.GetHashCode() -> int
+override Modulus.AuditLogging.Security.SecurityAuditQuery.ToString() -> string!
+static Modulus.AuditLogging.Security.SecurityAuditQuery.operator !=(Modulus.AuditLogging.Security.SecurityAuditQuery? left, Modulus.AuditLogging.Security.SecurityAuditQuery? right) -> bool
+static Modulus.AuditLogging.Security.SecurityAuditQuery.operator ==(Modulus.AuditLogging.Security.SecurityAuditQuery? left, Modulus.AuditLogging.Security.SecurityAuditQuery? right) -> bool

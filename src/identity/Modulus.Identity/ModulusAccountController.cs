@@ -30,7 +30,8 @@ public class AccountController<TUser>(
     SignInManager<TUser> signInManager,
     IIdentityEmailQueue emailQueue,
     IUserSessionService sessions,
-    IUserTwoFactorService twoFactor)
+    IUserTwoFactorService twoFactor,
+    ILoginHistoryService loginHistory)
     : ControllerBase
     where TUser : ModulusUser, new()
 {
@@ -218,6 +219,12 @@ public class AccountController<TUser>(
         await signInManager.SignOutAsync();
         return NoContent();
     }
+
+    /// <summary>The caller's recent sign-ins and refused attempts, newest first (<c>?take=</c>, default 50).</summary>
+    [HttpGet("login-history")]
+    [Authorize]
+    public async Task<IActionResult> LoginHistoryAsync([FromQuery] int take = 50, CancellationToken ct = default)
+        => CallerId() is { } id ? Ok(await loginHistory.GetAsync(id, take, ct)) : Unauthorized();
 
     /// <summary>Starts adding an authenticator app: returns the key and the <c>otpauth://</c> URI (a QR code). Enforced only after <c>2fa/enable</c>.</summary>
     [HttpPost("2fa/setup")]

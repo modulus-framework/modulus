@@ -171,6 +171,28 @@ public sealed class EfSecurityAuditStore(IServiceScopeFactory scopes, TimeProvid
     }
 
     /// <inheritdoc />
+    public async Task<IReadOnlyList<SecurityAuditRecord>> QueryAsync(SecurityAuditQuery query, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        await using var scope = scopes.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<ModulusAuditDbContext>();
+        var rows = db.SecurityAuditEntries.AsNoTracking().Where(r => r.ChainId == query.ChainId);
+        if (query.Category is { } category)
+            rows = rows.Where(r => r.Category == category);
+        if (query.Actor is { } actor)
+            rows = rows.Where(r => r.Actor == actor);
+        if (query.ActionPrefix is { } prefix)
+            rows = rows.Where(r => r.Action.StartsWith(prefix));
+        if (query.Outcome is { } outcome)
+            rows = rows.Where(r => r.Outcome == outcome);
+        if (query.Since is { } since)
+            rows = rows.Where(r => r.OccurredAt >= since);
+
+        var found = await rows.OrderByDescending(r => r.Sequence).Take(query.Limit).ToListAsync(ct).ConfigureAwait(false);
+        return [.. found.Select(ToRecord)];
+    }
+
+    /// <inheritdoc />
     public async Task<IReadOnlyList<SecurityAuditHead>> GetHeadsAsync(CancellationToken ct = default)
     {
         await using var scope = scopes.CreateAsyncScope();

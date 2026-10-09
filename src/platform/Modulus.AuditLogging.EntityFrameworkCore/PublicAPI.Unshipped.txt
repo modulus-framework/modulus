@@ -71,3 +71,4 @@ static Modulus.AuditLogging.EntityFrameworkCore.ModulusAuditDbContext.ConfigureA
 static Modulus.AuditLogging.EntityFrameworkCore.SecurityAuditDatabaseScripts.MySql(string! applicationUser, string! database, string! host = "%") -> string![]!
 static Modulus.AuditLogging.EntityFrameworkCore.SecurityAuditDatabaseScripts.PostgreSql(string! applicationRole, string! schema = "public") -> string!
 static Modulus.AuditLogging.EntityFrameworkCore.SecurityAuditDatabaseScripts.SqlServer(string! applicationUser, string! schema = "dbo") -> string![]!
+Modulus.AuditLogging.EntityFrameworkCore.EfSecurityAuditStore.QueryAsync(Modulus.AuditLogging.Security.SecurityAuditQuery! query, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.AuditLogging.Security.SecurityAuditRecord!>!>!

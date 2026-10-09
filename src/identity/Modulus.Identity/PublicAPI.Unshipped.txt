@@ -416,7 +416,6 @@ Modulus.Identity.AcceptInvitationRequest.NewPassword.set -> void
 Modulus.Identity.AcceptInvitationRequest.Token.get -> string!
 Modulus.Identity.AcceptInvitationRequest.Token.set -> void
 Modulus.Identity.AccountController<TUser>.AcceptInvitationAsync(Modulus.Identity.AcceptInvitationRequest! request) -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Mvc.IActionResult!>!
-Modulus.Identity.AccountController<TUser>.AccountController(Microsoft.AspNetCore.Identity.UserManager<TUser!>! userManager, Microsoft.AspNetCore.Identity.SignInManager<TUser!>! signInManager, Modulus.Identity.IIdentityEmailQueue! emailQueue, Modulus.Identity.IUserSessionService! sessions, Modulus.Identity.IUserTwoFactorService! twoFactor) -> void
 Modulus.Identity.AccountController<TUser>.DisableTwoFactorAsync(Modulus.Identity.TwoFactorDisableRequest! request, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Mvc.IActionResult!>!
 Modulus.Identity.AccountController<TUser>.EnableTwoFactorAsync(Modulus.Identity.TwoFactorCodeRequest! request, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Mvc.IActionResult!>!
 Modulus.Identity.AccountController<TUser>.SetUpTwoFactorAsync(System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Mvc.IActionResult!>!
@@ -491,3 +490,27 @@ static Modulus.Identity.TwoFactorSetup.operator !=(Modulus.Identity.TwoFactorSet
 static Modulus.Identity.TwoFactorSetup.operator ==(Modulus.Identity.TwoFactorSetup? left, Modulus.Identity.TwoFactorSetup? right) -> bool
 static Modulus.Identity.UserInvitation.operator !=(Modulus.Identity.UserInvitation? left, Modulus.Identity.UserInvitation? right) -> bool
 static Modulus.Identity.UserInvitation.operator ==(Modulus.Identity.UserInvitation? left, Modulus.Identity.UserInvitation? right) -> bool
+Modulus.Identity.AccountController<TUser>.AccountController(Microsoft.AspNetCore.Identity.UserManager<TUser!>! userManager, Microsoft.AspNetCore.Identity.SignInManager<TUser!>! signInManager, Modulus.Identity.IIdentityEmailQueue! emailQueue, Modulus.Identity.IUserSessionService! sessions, Modulus.Identity.IUserTwoFactorService! twoFactor, Modulus.Identity.ILoginHistoryService! loginHistory) -> void
+Modulus.Identity.AccountController<TUser>.LoginHistoryAsync(int take = 50, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Mvc.IActionResult!>!
+Modulus.Identity.ILoginHistoryService
+Modulus.Identity.ILoginHistoryService.GetAsync(System.Guid userId, int take = 50, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Identity.LoginEvent!>!>!
+Modulus.Identity.LoginEvent
+Modulus.Identity.LoginEvent.<Clone>$() -> Modulus.Identity.LoginEvent!
+Modulus.Identity.LoginEvent.Action.get -> string!
+Modulus.Identity.LoginEvent.Action.init -> void
+Modulus.Identity.LoginEvent.ClientId.get -> string?
+Modulus.Identity.LoginEvent.ClientId.init -> void
+Modulus.Identity.LoginEvent.Deconstruct(out System.DateTimeOffset OccurredAt, out string! Action, out bool Succeeded, out string? Reason, out string? ClientId) -> void
+Modulus.Identity.LoginEvent.Equals(Modulus.Identity.LoginEvent? other) -> bool
+Modulus.Identity.LoginEvent.LoginEvent(System.DateTimeOffset OccurredAt, string! Action, bool Succeeded, string? Reason, string? ClientId) -> void
+Modulus.Identity.LoginEvent.OccurredAt.get -> System.DateTimeOffset
+Modulus.Identity.LoginEvent.OccurredAt.init -> void
+Modulus.Identity.LoginEvent.Reason.get -> string?
+Modulus.Identity.LoginEvent.Reason.init -> void
+Modulus.Identity.LoginEvent.Succeeded.get -> bool
+Modulus.Identity.LoginEvent.Succeeded.init -> void
+override Modulus.Identity.LoginEvent.Equals(object? obj) -> bool
+override Modulus.Identity.LoginEvent.GetHashCode() -> int
+override Modulus.Identity.LoginEvent.ToString() -> string!
+static Modulus.Identity.LoginEvent.operator !=(Modulus.Identity.LoginEvent? left, Modulus.Identity.LoginEvent? right) -> bool
+static Modulus.Identity.LoginEvent.operator ==(Modulus.Identity.LoginEvent? left, Modulus.Identity.LoginEvent? right) -> bool

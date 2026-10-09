@@ -4,6 +4,7 @@ using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Modulus.AuditLogging.Security;
 using Modulus.Core.Abstractions;
 using Modulus.Identity.Abstractions;
 using Modulus.Identity.EntityFrameworkCore;
@@ -114,5 +115,41 @@ public sealed class UserSessionServiceTests
         (await sessions.ListAsync(user.Id)).Should().BeEmpty();
         recorder.Changes.Should().ContainSingle(c => c.Reason == "sessions.revoked" && c.UserId == user.Id);
         (await sessions.RevokeAllAsync(Guid.NewGuid(), "unknown")).Should().Be(-1);
+    }
+
+    [Fact]
+    public async Task Login_history_shows_the_users_own_identity_events_newest_first()
+    {
+        var (provider, _, connection) = await CreateAsync();
+        await using var _ = provider;
+        await using var __ = connection;
+        using var scope = provider.CreateScope();
+        var ann = await AddUserAsync(scope.ServiceProvider, "ann");
+        var bob = await AddUserAsync(scope.ServiceProvider, "bob");
+        var store = new InMemorySecurityAuditStore(TimeProvider.System);
+        async Task Add(Guid user, string action, string outcome, string? reason = null)
+            => await store.AppendAsync(new SecurityAuditEvent
+            {
+                Category = SecurityAuditCategories.Identity, Action = action, Outcome = outcome, Actor = user.ToString(),
+                Details = new Dictionary<string, string?> { ["reason"] = reason, ["client"] = "web" },
+            });
+        await Add(ann.Id, "signin.password", SecurityAuditOutcomes.Denied, "wrong-password");
+        await Add(bob.Id, "token.password", SecurityAuditOutcomes.Success);
+        await Add(ann.Id, "token.password", SecurityAuditOutcomes.Success);
+        var history = new LoginHistoryService<ModulusUser>(
+            scope.ServiceProvider.GetRequiredService<UserManager<ModulusUser>>(),
+            new SingleService<ISecurityAuditStore>(store));
+
+        var events = await history.GetAsync(ann.Id);
+
+        events.Select(e => (e.Action, e.Succeeded, e.Reason)).Should().Equal(
+            ("token.password", true, null), ("signin.password", false, "wrong-password"));
+        events.Should().OnlyContain(e => e.ClientId == "web");
+        (await history.GetAsync(Guid.NewGuid())).Should().BeEmpty();
+    }
+
+    private sealed class SingleService<T>(T service) : IServiceProvider
+    {
+        public object? GetService(Type serviceType) => serviceType == typeof(T) ? service : null;
     }
 }

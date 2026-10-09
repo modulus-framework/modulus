@@ -1400,7 +1400,10 @@ roots, Security tab in `Modulus.UI.AuditLogging`).
   codes, shown once), `DisableAsync` (ends the other sessions). Endpoints `POST account/2fa/setup|enable|disable` (disable needs the password). **Enforcement is in the password grant:** an account with
   two-factor gets `invalid_grant` + "send it as mfa_code" (`PasswordGrantResult.MfaRequired`) when the password is right and `mfa_code` is missing; a wrong code counts toward lock-out; a recovery code
   works once. A custom `IPasswordGrantCredentialValidator` gets the code through `ValidateWithSecondFactorAsync` (default ignores it). The cookie login page (`SignInManager.PasswordSignInAsync`) reports
-  `RequiresTwoFactor`, which the UI treats as a failed sign-in (fail closed); a code-entry step in the UI is not built. Not built: suspicious-sign-in detection, login history view, phone verification.
+  `RequiresTwoFactor`, which the UI treats as a failed sign-in (fail closed); a code-entry step in the UI is not built.
+- **Login history.** `ILoginHistoryService.GetAsync(userId, take)` reads the account's identity events (sign-in refusals with the reason, token issue/refresh, 2FA changes) from the security audit
+  (`ISecurityAuditStore.QueryAsync(SecurityAuditQuery)`: filter by category, actor, action prefix, outcome, time; newest first; the EF store filters in the database, other stores scan the chain)
+  and serves `GET account/login-history` to the caller. Needs a security audit store (`AddModulusSecurityAudit`). Not built: suspicious-sign-in detection, phone verification.
 - **Reason codes.** `AccessDecision.Code` uses `AccessReasonCodes` (BRS Appendix B); no policy for a type = `METADATA_MISSING`.
 - **Sensitivity.** `PermissionSensitivity` (Normal/Sensitive/Critical) on `PermissionDefinition`; `registry.Add(..., sensitivity)`.
   A wildcard grant never confers a Critical permission (a wildcard deny still removes it); Critical is not delegable.
