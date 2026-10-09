@@ -756,3 +756,5 @@ static Modulus.AI.Connector.Audit.SearchAuditLog.operator !=(Modulus.AI.Connecto
 static Modulus.AI.Connector.Audit.SearchAuditLog.operator ==(Modulus.AI.Connector.Audit.SearchAuditLog? left, Modulus.AI.Connector.Audit.SearchAuditLog? right) -> bool
 Modulus.AI.Connector.AiPlatformOptions.RevocationSpoolFile.get -> string?
 Modulus.AI.Connector.AiPlatformOptions.RevocationSpoolFile.set -> void
+Modulus.AI.Connector.ModulusAiConnectorOptions.MaskPersonalInformation.get -> bool
+Modulus.AI.Connector.ModulusAiConnectorOptions.MaskPersonalInformation.set -> void

@@ -6,6 +6,9 @@ using System.Text.Json;
 using Modulus.AI.Connector.Contract;
 using Modulus.Authorization.Fields;
 using Modulus.Core.Abstractions;
+using Modulus.Core.Abstractions.Compliance;
+using Modulus.Core.Abstractions.DataProtection;
+using Modulus.Core.Abstractions.Entities;
 
 /// <summary>
 /// Turns a query result into wire records for the asserted user: secret fields are dropped, fields the user may not
@@ -17,10 +20,14 @@ internal sealed class AiResultProjector
     private const int MaxDepth = 8;
 
     private readonly IFieldAuthorizer _fields;
+    private readonly IFieldSecurityRegistry _profiles;
+    private readonly ICurrentUser _currentUser;
     private readonly ModulusAiConnectorOptions _options;
 
     public AiResultProjector(IServiceProvider services, ICurrentUser currentUser, IOptions<ModulusAiConnectorOptions> options)
     {
+        _currentUser = currentUser;
+        _profiles = services.GetService<IFieldSecurityRegistry>() ?? EmptyFieldSecurityRegistry.Instance;
         // Without registered field security, classified fields still fail closed: an empty registry opens nothing
         // above Public.
         _fields = services.GetService<IFieldAuthorizer>() ?? new FieldAuthorizer(currentUser, EmptyFieldSecurityRegistry.Instance);
@@ -29,7 +36,23 @@ internal sealed class AiResultProjector
 
     /// <summary>Whether the user may see field <paramref name="field"/>.</summary>
     public bool CanRead(AiField field)
-        => !field.IsSecret && (field.Property is null || _fields.MaskFor(field.Property.DeclaringType!).CanRead(field.Property.Name));
+        => !field.IsSecret
+           && (field.Property is null
+               || (_fields.MaskFor(field.Property.DeclaringType!).CanRead(field.Property.Name) && MayReadPersonal(field.Property)));
+
+    // Opt-in (MaskPersonalInformation): personal-information fields need the Restricted clearance of the type's field-security profile.
+    private bool MayReadPersonal(System.Reflection.PropertyInfo property)
+    {
+        if (!_options.MaskPersonalInformation || !IsPersonal(property))
+            return true;
+
+        var profile = _profiles.Find(property.DeclaringType!) ?? FieldSecurityProfile.Empty;
+        return profile.ReadRequirement(property.Name, FieldClassification.Restricted).IsSatisfiedBy(_currentUser.HasPermission);
+    }
+
+    private static bool IsPersonal(System.Reflection.PropertyInfo property)
+        => property.IsDefined(typeof(PersonalInformationAttribute), inherit: true)
+           || property.IsDefined(typeof(ProtectedPersonalDataAttribute), inherit: true);
 
     /// <summary>The records of <paramref name="response"/>, at most <paramref name="max"/>.</summary>
     public CapabilityResult Project(object? response, Type itemType, AiResourceDescriptor? resource, int max)

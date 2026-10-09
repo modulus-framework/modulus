@@ -88,6 +88,14 @@ public sealed class ModulusAiConnectorOptions
 
     /// <summary>Extraction, the change feed and change hints (<c>/extract</c>, <c>/changes</c>).</summary>
     public AiIndexingOptions Indexing { get; set; } = new();
+
+    /// <summary>
+    /// When true, a field marked <c>[PersonalInformation]</c> or <c>[ProtectedPersonalData]</c> is treated like a Restricted field for
+    /// whoever the platform asks as: only a user holding the clearance the entity's field-security profile requires for
+    /// <c>Restricted</c> (or for that field) receives it, and without a profile it is withheld from everyone (fail closed).
+    /// Filtering or sorting on a withheld field is refused. Default false: such fields are only declared <c>Restricted</c> in the manifest.
+    /// </summary>
+    public bool MaskPersonalInformation { get; set; }
 }
 
 /// <summary>

@@ -1895,8 +1895,9 @@ platform package; the platform is read-only, so only queries are exposed. The pl
   - `ai.AddEntityChangeHistoryCapability()` adds `Modulus.Audit.EntityChange.List`. It needs
     `services.AddEntityChangeHistory()`, which now also registers `IEntityChangeHistoryReader`.
   - In the history, values of secret, unknown and unreadable classified fields are null.
-- **Personal data.** Capability results mask `[Classified]` fields per user. `[PersonalInformation]` fields are only
-  declared `Restricted` in the manifest; add `[Classified]` when some users must not see one.
+- **Personal data.** Capability results mask `[Classified]` fields per user. `[PersonalInformation]` and `[ProtectedPersonalData]` fields are only
+  declared `Restricted` in the manifest, unless `Ai:Connector:MaskPersonalInformation` is `true`: then they need the clearance the entity's field-security profile
+  names for `Restricted` (or for that field), are withheld from everyone when there is no profile, and cannot be filtered or sorted on. Add `[Classified]` for finer control.
 - **CLI (6c).** `modulus add-ai` and `generate-crud --ai` (see the CLI table). `Modulus.UI.AI` (the assistant host) is
   deferred until the UI changes land. `SecurityProbeSuite` expects `401` on the signed-in probes for an endpoint whose
   policies accept only other schemes (the connector's API-key endpoints); `SecurityProbeOptions.ProbeScheme` names the

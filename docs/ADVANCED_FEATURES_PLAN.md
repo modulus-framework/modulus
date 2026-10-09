@@ -942,7 +942,7 @@ Everything still open, by owner. 6a–6d are built (2026-10-04). The items below
 - [x] Shared envelope replay cache: with an `IDistributedLock` registered (Redis) the first node to see an envelope id takes a lease that lasts until it expires.
 - [x] Batch record lookup for `/extract` and `/changes`: optional `[AiResource(BatchLookup = typeof(...))]`, one query per page (`generate-crud --ai` emits it).
 - [ ] `Search` over extension fields (`ExtraProperties`) and an `ISearchContributor` for cross-entity search.
-- [ ] Per-user masking of `[PersonalInformation]` fields (today: declared `Restricted`; add `[Classified]` to mask).
+- [x] Per-user masking of `[PersonalInformation]`/`[ProtectedPersonalData]` fields: opt in with `Ai:Connector:MaskPersonalInformation` (Restricted clearance of the field-security profile; fail closed without one).
 - [ ] Store-generated and composite keys for `[AiIndexed]` entities.
 - [x] At-least-once change hints while the process lives (a refused hint is resent on the next check; `/changes` polling remains the safety net across restarts).
 - [ ] Aggregate query shapes run in CI on PostgreSQL, SQL Server and MySQL (only SQLite today).
