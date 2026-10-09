@@ -1,6 +1,5 @@
 #nullable enable
 Modulus.MultiTenancy.EntityFrameworkCore.EfTenantStore
-Modulus.MultiTenancy.EntityFrameworkCore.EfTenantStore.EfTenantStore(Modulus.MultiTenancy.EntityFrameworkCore.TenantStoreDbContext! db) -> void
 Modulus.MultiTenancy.EntityFrameworkCore.EfTenantStore.FindByIdAsync(System.Guid id, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Modulus.Core.Abstractions.TenantInfo?>!
 Modulus.MultiTenancy.EntityFrameworkCore.EfTenantStore.FindBySlugAsync(string! slug, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Modulus.Core.Abstractions.TenantInfo?>!
 Modulus.MultiTenancy.EntityFrameworkCore.EfTenantStore.ListAsync(System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Core.Abstractions.TenantInfo!>!>!
@@ -60,3 +59,12 @@ Modulus.MultiTenancy.EntityFrameworkCore.TenantMembershipEntity.UserId.get -> Sy
 Modulus.MultiTenancy.EntityFrameworkCore.TenantMembershipEntity.UserId.set -> void
 Modulus.MultiTenancy.EntityFrameworkCore.TenantStoreDbContext.TenantMemberships.get -> Microsoft.EntityFrameworkCore.DbSet<Modulus.MultiTenancy.EntityFrameworkCore.TenantMembershipEntity!>!
 Modulus.MultiTenancy.EntityFrameworkCore.TenantManager.TenantManager(Modulus.MultiTenancy.EntityFrameworkCore.TenantStoreDbContext! db, Modulus.Core.Abstractions.ISecurityAuditLog? audit = null, Modulus.Core.Abstractions.ICurrentUser? actor = null, System.Collections.Generic.IEnumerable<Modulus.Core.Abstractions.IAccessChangeObserver!>? observers = null) -> void
+Modulus.MultiTenancy.EntityFrameworkCore.EfTenantStore.EfTenantStore(Modulus.MultiTenancy.EntityFrameworkCore.TenantStoreDbContext! db, System.TimeProvider? clock = null) -> void
+Modulus.MultiTenancy.EntityFrameworkCore.TenantEntity.MaxUsers.get -> int?
+Modulus.MultiTenancy.EntityFrameworkCore.TenantEntity.MaxUsers.set -> void
+Modulus.MultiTenancy.EntityFrameworkCore.TenantEntity.Status.get -> Modulus.Core.Abstractions.TenantStatus
+Modulus.MultiTenancy.EntityFrameworkCore.TenantEntity.Status.set -> void
+Modulus.MultiTenancy.EntityFrameworkCore.TenantEntity.TrialEndsAt.get -> System.DateTimeOffset?
+Modulus.MultiTenancy.EntityFrameworkCore.TenantEntity.TrialEndsAt.set -> void
+Modulus.MultiTenancy.EntityFrameworkCore.TenantManager.SetMaxUsersAsync(System.Guid id, int? maxUsers, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.MultiTenancy.EntityFrameworkCore.TenantManager.SetStatusAsync(System.Guid id, Modulus.Core.Abstractions.TenantStatus status, System.DateTimeOffset? trialEndsAt = null, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!

@@ -53,4 +53,25 @@ public sealed record TenantInfo(
     string TenantSlug,
     string? DisplayName = null,
     string? ConnectionString = null,
-    Guid? GroupId = null);
+    Guid? GroupId = null,
+    TenantStatus Status = TenantStatus.Active)
+{
+    /// <summary>Whether the company only allows reads right now (it is suspended or its trial ended).</summary>
+    public bool IsReadOnly => Status is TenantStatus.Suspended;
+}
+
+/// <summary>Where a company is in its life with the platform.</summary>
+public enum TenantStatus
+{
+    /// <summary>On a trial: fully usable until the trial ends, then read-only.</summary>
+    Trial = 0,
+
+    /// <summary>In normal use.</summary>
+    Active = 1,
+
+    /// <summary>Suspended (unpaid, under review): the company resolves and can be read, but writes are refused.</summary>
+    Suspended = 2,
+
+    /// <summary>Closed (offboarded): it no longer resolves and nothing can be reached; data is kept until it is removed.</summary>
+    Closed = 3,
+}

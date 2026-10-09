@@ -213,7 +213,6 @@ Modulus.Core.Abstractions.TenantInfo
 Modulus.Core.Abstractions.TenantInfo.<Clone>$() -> Modulus.Core.Abstractions.TenantInfo!
 Modulus.Core.Abstractions.TenantInfo.ConnectionString.get -> string?
 Modulus.Core.Abstractions.TenantInfo.ConnectionString.init -> void
-Modulus.Core.Abstractions.TenantInfo.Deconstruct(out System.Guid TenantId, out string! TenantSlug, out string? DisplayName, out string? ConnectionString, out System.Guid? GroupId) -> void
 Modulus.Core.Abstractions.TenantInfo.GroupId.get -> System.Guid?
 Modulus.Core.Abstractions.TenantInfo.GroupId.init -> void
 Modulus.Core.Abstractions.TenantInfo.DisplayName.get -> string?
@@ -221,7 +220,6 @@ Modulus.Core.Abstractions.TenantInfo.DisplayName.init -> void
 Modulus.Core.Abstractions.TenantInfo.Equals(Modulus.Core.Abstractions.TenantInfo? other) -> bool
 Modulus.Core.Abstractions.TenantInfo.TenantId.get -> System.Guid
 Modulus.Core.Abstractions.TenantInfo.TenantId.init -> void
-Modulus.Core.Abstractions.TenantInfo.TenantInfo(System.Guid TenantId, string! TenantSlug, string? DisplayName = null, string? ConnectionString = null, System.Guid? GroupId = null) -> void
 Modulus.Core.Abstractions.TenantInfo.TenantSlug.get -> string!
 Modulus.Core.Abstractions.TenantInfo.TenantSlug.init -> void
 Modulus.Core.Correlation.CausationIdContext
@@ -650,3 +648,13 @@ Modulus.Core.Abstractions.Entities.IHasApprovalAmount.ApprovalAmount.get -> deci
 Modulus.Core.Abstractions.Entities.IHasApprovalAmount.ApprovalCurrency.get -> string?
 Modulus.Core.Abstractions.Entities.IHasApprovalTrail
 Modulus.Core.Abstractions.Entities.IHasApprovalTrail.ActedByUserIds.get -> System.Collections.Generic.IReadOnlyCollection<System.Guid>!
+Modulus.Core.Abstractions.TenantInfo.Deconstruct(out System.Guid TenantId, out string! TenantSlug, out string? DisplayName, out string? ConnectionString, out System.Guid? GroupId, out Modulus.Core.Abstractions.TenantStatus Status) -> void
+Modulus.Core.Abstractions.TenantInfo.IsReadOnly.get -> bool
+Modulus.Core.Abstractions.TenantInfo.Status.get -> Modulus.Core.Abstractions.TenantStatus
+Modulus.Core.Abstractions.TenantInfo.Status.init -> void
+Modulus.Core.Abstractions.TenantInfo.TenantInfo(System.Guid TenantId, string! TenantSlug, string? DisplayName = null, string? ConnectionString = null, System.Guid? GroupId = null, Modulus.Core.Abstractions.TenantStatus Status = Modulus.Core.Abstractions.TenantStatus.Active) -> void
+Modulus.Core.Abstractions.TenantStatus
+Modulus.Core.Abstractions.TenantStatus.Active = 1 -> Modulus.Core.Abstractions.TenantStatus
+Modulus.Core.Abstractions.TenantStatus.Closed = 3 -> Modulus.Core.Abstractions.TenantStatus
+Modulus.Core.Abstractions.TenantStatus.Suspended = 2 -> Modulus.Core.Abstractions.TenantStatus
+Modulus.Core.Abstractions.TenantStatus.Trial = 0 -> Modulus.Core.Abstractions.TenantStatus

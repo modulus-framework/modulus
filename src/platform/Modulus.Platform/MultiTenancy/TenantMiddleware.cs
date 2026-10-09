@@ -89,6 +89,19 @@ public sealed class TenantMiddleware(
             }
         }
 
+        // A suspended company (or one whose trial ended) can be read but not changed.
+        if (info is { IsReadOnly: true } && !HttpMethods.IsGet(ctx.Request.Method) && !HttpMethods.IsHead(ctx.Request.Method)
+            && !HttpMethods.IsOptions(ctx.Request.Method))
+        {
+            Audit(ctx, "tenant.read-only-write-refused", SecurityAuditOutcomes.Denied, info.TenantId, $"tenant:{info.TenantId}");
+            ctx.Response.StatusCode = StatusCodes.Status423Locked;
+            ctx.Response.ContentType = "application/problem+json";
+            await ctx.Response.WriteAsync(
+                "{\"title\":\"Company suspended\",\"status\":423,\"code\":\"TENANT_SUSPENDED\","
+                + "\"detail\":\"This company is read-only right now; changes are refused.\"}", ctx.RequestAborted);
+            return;
+        }
+
         if (info is not null)
         {
             tenant.Set(info);

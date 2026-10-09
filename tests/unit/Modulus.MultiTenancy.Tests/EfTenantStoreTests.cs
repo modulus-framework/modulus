@@ -179,6 +179,56 @@ public sealed class EfTenantStoreTests : IDisposable
         (await WithManager(m => m.AddMemberAsync(Guid.NewGuid(), Guid.NewGuid()))).Should().BeFalse();
     }
 
+    [Fact]
+    public async Task A_suspended_company_still_resolves_but_is_read_only_and_a_closed_one_does_not_resolve()
+    {
+        var a = await WithManager(m => m.CreateAsync("a"));
+
+        await WithManager(m => m.SetStatusAsync(a.TenantId, TenantStatus.Suspended));
+        var suspended = await WithStore(s => s.FindByIdAsync(a.TenantId, default));
+        suspended!.Status.Should().Be(TenantStatus.Suspended);
+        suspended.IsReadOnly.Should().BeTrue();
+
+        await WithManager(m => m.SetStatusAsync(a.TenantId, TenantStatus.Closed));
+        (await WithStore(s => s.FindByIdAsync(a.TenantId, default))).Should().BeNull();
+
+        await WithManager(m => m.SetStatusAsync(a.TenantId, TenantStatus.Active));
+        (await WithStore(s => s.FindByIdAsync(a.TenantId, default)))!.IsReadOnly.Should().BeFalse();
+        (await WithManager(m => m.SetStatusAsync(Guid.NewGuid(), TenantStatus.Active))).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task A_trial_is_usable_until_it_ends_and_read_only_after()
+    {
+        var a = await WithManager(m => m.CreateAsync("a"));
+        var act = () => WithManager(m => m.SetStatusAsync(a.TenantId, TenantStatus.Trial));
+        await act.Should().ThrowAsync<ArgumentException>("a trial needs an end date");
+
+        await WithManager(m => m.SetStatusAsync(a.TenantId, TenantStatus.Trial, DateTimeOffset.UtcNow.AddDays(10)));
+        (await WithStore(s => s.FindByIdAsync(a.TenantId, default)))!.IsReadOnly.Should().BeFalse();
+
+        await WithManager(m => m.SetStatusAsync(a.TenantId, TenantStatus.Trial, DateTimeOffset.UtcNow.AddSeconds(-1)));
+        (await WithStore(s => s.FindByIdAsync(a.TenantId, default)))!.IsReadOnly.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task The_user_limit_refuses_new_members_but_not_returning_ones()
+    {
+        var a = await WithManager(m => m.CreateAsync("a"));
+        var (one, two) = (Guid.NewGuid(), Guid.NewGuid());
+        await WithManager(m => m.SetMaxUsersAsync(a.TenantId, 1));
+
+        (await WithManager(m => m.AddMemberAsync(one, a.TenantId))).Should().BeTrue();
+        var over = () => WithManager(m => m.AddMemberAsync(two, a.TenantId));
+        await over.Should().ThrowAsync<Modulus.Core.Abstractions.Exceptions.ConflictException>().WithMessage("*limit of 1*");
+        (await WithManager(m => m.AddMemberAsync(one, a.TenantId))).Should().BeTrue("an existing member is not a new one");
+
+        await WithManager(m => m.RemoveMemberAsync(one, a.TenantId));
+        (await WithManager(m => m.AddMemberAsync(two, a.TenantId))).Should().BeTrue("the removed member freed a seat");
+        await WithManager(m => m.SetMaxUsersAsync(a.TenantId, null));
+        (await WithManager(m => m.AddMemberAsync(one, a.TenantId))).Should().BeTrue();
+    }
+
     // ── Scope helpers ─────────────────────────────────────────────
     private async Task<T> WithMemberships<T>(Func<ITenantMembershipStore, Task<T>> act)
     {

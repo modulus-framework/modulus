@@ -1,3 +1,5 @@
+using Modulus.Core.Abstractions;
+
 namespace Modulus.MultiTenancy.EntityFrameworkCore;
 
 /// <summary>
@@ -30,6 +32,18 @@ public class TenantEntity
     /// closed (no request can resolve into it) without deleting its data.
     /// </summary>
     public bool IsActive { get; set; } = true;
+
+    /// <summary>
+    /// Where the company is in its life. <see cref="IsActive"/> follows it: only <see cref="TenantStatus.Closed"/> is inactive.
+    /// A suspended company resolves but is read-only.
+    /// </summary>
+    public TenantStatus Status { get; set; } = TenantStatus.Active;
+
+    /// <summary>When a <see cref="TenantStatus.Trial"/> ends; after it the company is read-only. Null for no end.</summary>
+    public DateTimeOffset? TrialEndsAt { get; set; }
+
+    /// <summary>The most active members the company may have; null for no limit.</summary>
+    public int? MaxUsers { get; set; }
 
     /// <summary>Creation timestamp (UTC), set by <see cref="TenantManager"/>.</summary>
     public DateTimeOffset CreatedAtUtc { get; set; }

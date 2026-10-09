@@ -92,6 +92,27 @@ public sealed class TenantMiddlewareTests
         seenByNext.Should().Be(TenantB.TenantId);
     }
 
+    [Theory]
+    [InlineData("GET", true)]
+    [InlineData("HEAD", true)]
+    [InlineData("OPTIONS", true)]
+    [InlineData("POST", false)]
+    [InlineData("PUT", false)]
+    [InlineData("DELETE", false)]
+    public async Task A_suspended_company_can_be_read_but_not_changed(string method, bool reaches)
+    {
+        var suspended = new TenantInfo(Guid.NewGuid(), "suspended", Status: TenantStatus.Suspended);
+        var store = new FakeStore(suspended);
+        var reached = false;
+        var ctx = BuildContext(store, headerTenantId: suspended.TenantId, claimTenantId: null, authenticated: false);
+        ctx.Request.Method = method;
+
+        await InvokeAsync(ctx, store, next: _ => { reached = true; return Task.CompletedTask; });
+
+        reached.Should().Be(reaches);
+        ctx.Response.StatusCode.Should().Be(reaches ? StatusCodes.Status200OK : StatusCodes.Status423Locked);
+    }
+
     [Fact]
     public async Task Without_a_jwt_claim_resolver_configured_there_is_nothing_to_cross_check_against()
     {

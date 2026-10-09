@@ -1383,6 +1383,11 @@ roots, Security tab in `Modulus.UI.AuditLogging`).
   (`EfOrganizationProfileStore`: `ModulusOrgUnitProfiles` with code unique per company, name, kind, manager, closed state; `ModulusCompanyProfiles` with legal/trade name,
   registration and tax ids, address, country, functional currency, fiscal-year start, time zone, language; existing deployments need a migration) and the admin API serves them:
   `org/company-profile`, `org/units`, `org/units/{id}/profile`, `.../close` (refused while units below still operate) and `.../reopen` (refused below a closed unit).
+- **Company lifecycle and seats.** `TenantInfo.Status` (`TenantStatus`: Trial, Active, Suspended, Closed) comes from the tenant store; `TenantManager.SetStatusAsync(id, status, trialEndsAt)`
+  moves a company (audited, observers notified; `ModulusTenants` gains `Status`, `TrialEndsAt`, `MaxUsers`: existing deployments need a migration). **Suspended** (and a trial past its end,
+  decided at resolve time) is read-only: `TenantMiddleware` answers `423` + `TENANT_SUSPENDED` to any method but GET/HEAD/OPTIONS before the request reaches the app. **Closed** no longer resolves.
+  `SetMaxUsersAsync` limits active members; `AddMemberAsync` for a new member over the limit throws `ConflictException` (409), a returning member never counts as new. Storage quotas, offboarding
+  export and retention are not built.
 - **Reason codes.** `AccessDecision.Code` uses `AccessReasonCodes` (BRS Appendix B); no policy for a type = `METADATA_MISSING`.
 - **Sensitivity.** `PermissionSensitivity` (Normal/Sensitive/Critical) on `PermissionDefinition`; `registry.Add(..., sensitivity)`.
   A wildcard grant never confers a Critical permission (a wildcard deny still removes it); Critical is not delegable.

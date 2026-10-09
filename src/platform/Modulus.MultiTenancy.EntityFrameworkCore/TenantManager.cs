@@ -81,17 +81,68 @@ public sealed class TenantManager(
     }
 
     /// <summary>
+    /// Moves a company through its life: <see cref="TenantStatus.Trial"/> (until <paramref name="trialEndsAt"/>),
+    /// <see cref="TenantStatus.Active"/>, <see cref="TenantStatus.Suspended"/> (read-only) or <see cref="TenantStatus.Closed"/>
+    /// (no longer resolves). Takes effect on the next request. Returns <see langword="false"/> if no tenant has the id.
+    /// </summary>
+    public async Task<bool> SetStatusAsync(Guid id, TenantStatus status, DateTimeOffset? trialEndsAt = null, CancellationToken ct = default)
+    {
+        if (!Enum.IsDefined(status))
+            throw new ArgumentOutOfRangeException(nameof(status));
+        if (status is TenantStatus.Trial && trialEndsAt is null)
+            throw new ArgumentException("A trial needs an end date.", nameof(trialEndsAt));
+
+        var entity = await db.Tenants.FirstOrDefaultAsync(t => t.Id == id, ct);
+        if (entity is null) return false;
+
+        entity.Status = status;
+        entity.IsActive = status is not TenantStatus.Closed;
+        entity.TrialEndsAt = status is TenantStatus.Trial ? trialEndsAt : null;
+        await db.SaveChangesAsync(ct);
+        Audit("tenant.status-changed", id, $"tenant:{id} -> {status}");
+        await NotifyAsync(AccessChangeKinds.Tenant, $"tenant.{status.ToString().ToLowerInvariant()}", id, null, ct);
+        return true;
+    }
+
+    /// <summary>
+    /// Limits how many active members the company may have (null removes the limit). Lowering it below the current
+    /// count removes nobody; it only refuses new members. Returns <see langword="false"/> if no tenant has the id.
+    /// </summary>
+    public async Task<bool> SetMaxUsersAsync(Guid id, int? maxUsers, CancellationToken ct = default)
+    {
+        if (maxUsers is < 0)
+            throw new ArgumentOutOfRangeException(nameof(maxUsers));
+
+        var entity = await db.Tenants.FirstOrDefaultAsync(t => t.Id == id, ct);
+        if (entity is null) return false;
+
+        entity.MaxUsers = maxUsers;
+        await db.SaveChangesAsync(ct);
+        Audit("tenant.limit-changed", id, $"tenant:{id} maxUsers={maxUsers?.ToString() ?? "none"}");
+        return true;
+    }
+
+    /// <summary>
     /// Grants <paramref name="userId"/> membership in <paramref name="tenantId"/> (one login across
     /// companies), or re-activates a revoked one. Returns <see langword="false"/> when the tenant
     /// does not exist.
     /// </summary>
     public async Task<bool> AddMemberAsync(Guid userId, Guid tenantId, CancellationToken ct = default)
     {
-        if (!await db.Tenants.AnyAsync(t => t.Id == tenantId, ct))
+        var maxUsers = await db.Tenants.Where(t => t.Id == tenantId).Select(t => new { t.MaxUsers }).FirstOrDefaultAsync(ct);
+        if (maxUsers is null)
             return false;
 
         var existing = await db.TenantMemberships
             .FirstOrDefaultAsync(m => m.UserId == userId && m.TenantId == tenantId, ct);
+        if (existing is not { IsActive: true } && maxUsers.MaxUsers is { } limit
+            && await db.TenantMemberships.CountAsync(m => m.TenantId == tenantId && m.IsActive, ct) >= limit)
+        {
+            Audit("membership.limit-reached", tenantId, $"user:{userId}");
+            throw new Modulus.Core.Abstractions.Exceptions.ConflictException(
+                $"The company has reached its limit of {limit} users.");
+        }
+
         if (existing is null)
         {
             db.TenantMemberships.Add(new TenantMembershipEntity
