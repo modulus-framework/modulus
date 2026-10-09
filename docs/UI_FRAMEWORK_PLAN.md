@@ -62,8 +62,10 @@ scaffold a companion Razor page + nav contribution.
 
 ## 4. Milestones
 
+_Superseded by `UI_FRAMEWORK_GUIDELINE.md` (v2); the code for M2–M5 has landed._
+
 - [x] M1: UI.Core (navigation, manifest, menu endpoints, tests).
-- [ ] M2: Phase 0 backend contracts (settings/audit/notifications/localization).
-- [ ] M3: UI.Identity + UI.Permissions + UI.Tenancy RCLs.
-- [ ] M4: CLI manifest + ui commands.
-- [ ] M5: One vertical slice (Catalog API + UI, HTML + JSON, menu-gated).
+- [x] M2: Phase 0 backend contracts (settings/audit/notifications/localization).
+- [x] M3: UI.Identity + UI.Permissions + UI.Tenancy RCLs.
+- [x] M4: CLI manifest + ui commands.
+- [x] M5: One vertical slice (Catalog API + UI, HTML + JSON, menu-gated).

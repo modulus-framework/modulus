@@ -154,7 +154,7 @@ significantly shrinks the scope of Phase B1 below.
       return-URL guard is an instance method (not static — it reads per-request config).
 - [x] A2.2.3. Access/refresh tokens stored in the Web project's own auth cookie
       (`SaveTokens`-style via the OpenIddict client/pass-through flow).
-- [x] A2.2.4. `TokenRelayHandler` (`Security/TokenRelayHandler.cs`) attached to every generated
+- [x] A2.2.4. *(Superseded: new apps use the `Modulus.Bff` web session, see AGENTS.md "App-kind split"; `modulus doctor` warns when a Web host still has the handler.)* `TokenRelayHandler` (`Security/TokenRelayHandler.cs`) attached to every generated
       typed client: relays the cookie's access token, refreshes near expiry through a named
       `"TokenRefresh"` HTTP client. *Validation fixes found during end-to-end testing:* sync
       `Dispose()` (not `DisposeAsync` — the handler factory calls it synchronously) and request
@@ -178,7 +178,7 @@ significantly shrinks the scope of Phase B1 below.
       responses to `ModelState`.
 - [x] A2.3.4. `ResolveHost` routes via `AppInventory.WebProjectPath` for this kind.
 - [ ] A2.3.5. ui-schema endpoint (`GET /{module}/{route}/ui-schema` + `EntityUiSchemaDto`) —
-      **deferred pending design sign-off** (needs an explicit decision, see A2.3.6).
+      the schema model exists (`EntityUiSchema`, `EntityUiSchemaTests`) and `Endpoint.sbn` references it, but it is **not wired as a documented endpoint; deferred pending design sign-off** (needs an explicit decision, see A2.3.6).
 - [ ] A2.3.6. Web-side `m-fields`/`m-datatable` overload consuming the schema DTO — the one
       piece of new framework abstraction in Phase A; **not built**, awaiting explicit sign-off
       on the design before implementation.
@@ -247,7 +247,7 @@ significantly shrinks the scope of Phase B1 below.
       currently assert page-level behavior (challenge / login page / landing) and make no API
       calls, so they pass without the API running. Pairing is the natural next step and would
       also close A2.5.3/A5.5.
-- [ ] A5.4. No `Modulus.Testing` pairing helper added yet (do it together with A5.3).
+- [x] A5.4. `Modulus.Testing.TestServerPairing` exists; generated Web tests do not use it yet (A5.3).
 - [ ] A5.5. The HTTP hop is proven on the API side (entity created through the API is visible
       via the API factory's client); the Web-page-driven flow is not yet asserted — remaining
       validation, same work as A2.5.3/A5.3.
