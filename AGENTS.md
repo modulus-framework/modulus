@@ -1861,5 +1861,8 @@ platform package; the platform is read-only, so only queries are exposed. The pl
   `"Integration"`. Keep this convention so the `--filter` above keeps working.
 - CLI tests that scaffold files (they write through `Ux.WriteFile`, which honours the static `Ux.DryRun`) or flip `Ux.DryRun`/`Force`/`Quiet`
   belong to the `[Collection(UxStateCollection.Name)]` collection (runs alone), or they race `UxTests` and fail randomly.
+- `tests/integration/Modulus.Outbox.Integration.Tests` runs the outbox claim race (two processors, one set of rows, each dispatched once),
+  expired-lock reclaim and the inbox concurrent claim (one winner, losers get `InboxDeferralException`) against real PostgreSQL.
+- Without Docker, Podman works: `DOCKER_HOST=unix:///run/user/$UID/podman/podman.sock TESTCONTAINERS_RYUK_DISABLED=true dotnet test ...`.
 - Integration tests spin up real containers; prefer `IClassFixture`/collection
   fixtures rather than a container-per-test.
