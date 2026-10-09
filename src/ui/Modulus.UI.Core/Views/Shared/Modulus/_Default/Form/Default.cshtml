@@ -12,7 +12,7 @@
     @if (Model.ShowSummary && !ViewData.ModelState.IsValid)
     {
         <div class="alert alert-danger mb-3" role="alert">
-            <div asp-validation-summary="All"></div>
+            <div asp-validation-summary="All" class="mb-0"></div>
         </div>
     }
     @Model.Body
