@@ -46,6 +46,8 @@ internal sealed class FakeAuthServer : IAsyncDisposable
 
         App.MapPost("/connect/token", async (HttpRequest request) =>
         {
+            if (Down)
+                return Results.StatusCode(503);
             var form = await request.ReadFormAsync();
             LastTokenForm = form.ToDictionary(f => f.Key, f => f.Value.ToString());
             LastTokenAuthorization = request.Headers.Authorization.ToString();
@@ -93,6 +95,9 @@ internal sealed class FakeAuthServer : IAsyncDisposable
     public int ExpiresIn { get; set; } = 3600;
 
     public bool RefuseRefresh { get; set; }
+
+    /// <summary>The token endpoint answers 503 without a body.</summary>
+    public bool Down { get; set; }
 
     public int IntrospectionCalls { get; private set; }
 

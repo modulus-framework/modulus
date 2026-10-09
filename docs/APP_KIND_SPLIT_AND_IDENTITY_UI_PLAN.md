@@ -205,7 +205,7 @@ significantly shrinks the scope of Phase B1 below.
       the Web host boots/serves pages (`WebAppSmokeTest`), but a full
       login-via-`/connect/token` → page create → visible-through-API round-trip is **not yet
       asserted by the generated tests** (see A5.5) — remaining validation.
-- [ ] A2.5.4. Kill-the-API resilience check not run yet (the resilience handler should convert
+- [x] A2.5.4. (done: `LoginPage_ExplainsWhenTheApiIsDown` in the generated tests; the BFF session returns `temporarily_unavailable` instead of a 500) Kill-the-API resilience check not run yet (the resilience handler should convert
       connection failures into retried/failed requests, not crashes — verify explicitly).
 
 ### A3. Propagate the kind model through the rest of the CLI ✅ COMPLETE

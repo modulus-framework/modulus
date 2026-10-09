@@ -121,6 +121,19 @@ public sealed class ServerRenderedHostTests
     }
 
     [Fact]
+    public async Task Sign_in_reports_an_unreachable_auth_server_instead_of_failing()
+    {
+        await using var host = await StartAsync();
+        host.Auth.Down = true;
+
+        var login = await new Browser(host.Client()).SendAsync(HttpMethod.Post, "/Account/Login",
+            new FormUrlEncodedContent(new Dictionary<string, string> { ["user"] = "alice", ["password"] = "pw" }), withCsrf: false);
+
+        login.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await login.Content.ReadAsStringAsync()).Should().Contain("temporarily_unavailable");
+    }
+
+    [Fact]
     public async Task Default_client_must_be_registered()
     {
         var act = () => BffTestHost.StartAsync([], bff => bff.AddMobileClient().SetDefaultClient("web"));

@@ -46,7 +46,9 @@ public class LoginModel{{ if web_login_mode == "Password" }}(IBffSessionService 
         var result = await session.SignInWithPasswordAsync(HttpContext, Client, UserName, Password, rememberMe: true, HttpContext.RequestAborted);
         if (!result.Succeeded)
         {
-            Error = "Invalid user name or password.";
+            Error = result.Error == "temporarily_unavailable"
+                ? "The sign-in service is not available right now. Try again in a moment."
+                : "Invalid user name or password.";
             return Page();
         }
 

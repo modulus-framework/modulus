@@ -243,6 +243,23 @@ public sealed class WebToApiLoginTests
         Assert.Equal(HttpStatusCode.Redirect, accepted.StatusCode);
     }
 
+    [Fact]
+    public async Task LoginPage_ExplainsWhenTheApiIsDown()
+    {
+        // Not paired: the authority points at a port nothing listens on, i.e. the API is down.
+        await using var web = new ModulusWebAppFactory<WebEntryPoint>().WithWebHostBuilder(builder =>
+        {
+            builder.UseSetting("Api:BaseUrl", "https://127.0.0.1:1");
+            builder.UseSetting("Bff:Authority", "https://127.0.0.1:1");
+        });
+        var client = web.CreateClient(new Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+
+        var response = await SubmitLoginAsync(client, AdminEmail, AdminPassword);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Contains("not available", await response.Content.ReadAsStringAsync());
+    }
+
     private static async Task<HttpResponseMessage> SubmitLoginAsync(HttpClient client, string user, string password)
     {
         var page = await client.GetStringAsync("/Account/Login");

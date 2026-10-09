@@ -117,6 +117,8 @@ public static class BffEndpointRouteBuilderExtensions
     {
         var result = await context.RequestServices.GetRequiredService<IBffSessionService>()
             .SignInWithPasswordAsync(context, name, request.UserName, request.Password, request.RememberMe, ct).ConfigureAwait(false);
+        if (result.Error == BffSessionService.TemporarilyUnavailable)
+            return Results.Json(new { error = result.Error, error_description = result.ErrorDescription }, statusCode: StatusCodes.Status503ServiceUnavailable);
         return result.Succeeded
             ? Results.Ok(Claims(result.Principal!))
             : Results.BadRequest(new { error = result.Error, error_description = result.ErrorDescription });

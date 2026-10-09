@@ -41,6 +41,9 @@ internal sealed class BffSessionService(
     IOptionsMonitor<BffClientOptions> clients,
     IOptions<BffOptions> bff) : IBffSessionService
 {
+    /// <summary>The <see cref="BffSignInResult.Error"/> when the auth server could not be reached (RFC 6749 §4.1.2.1 code).</summary>
+    internal const string TemporarilyUnavailable = "temporarily_unavailable";
+
     public async Task<BffSignInResult> SignInWithPasswordAsync(
         HttpContext context, string client, string userName, string password, bool rememberMe = false, CancellationToken ct = default)
     {
@@ -49,9 +52,23 @@ internal sealed class BffSessionService(
         if (string.IsNullOrWhiteSpace(userName) || string.IsNullOrEmpty(password))
             return new BffSignInResult(null, "invalid_request");
 
-        var result = await tokenClient.PasswordAsync(client, userName, password, ct).ConfigureAwait(false);
+        BffTokenResult result;
+        try
+        {
+            result = await tokenClient.PasswordAsync(client, userName, password, ct).ConfigureAwait(false);
+        }
+        catch (HttpRequestException)
+        {
+            // The auth server (or its discovery document) could not be reached: say so instead of failing the request.
+            return new BffSignInResult(null, TemporarilyUnavailable, "The sign-in service is not reachable.");
+        }
+
         if (!result.Succeeded)
-            return new BffSignInResult(null, result.Error, result.ErrorDescription);
+        {
+            // "server_error": the token endpoint answered without a usable OAuth body (a 5xx, a proxy error page).
+            var unavailable = result.Error == "server_error";
+            return new BffSignInResult(null, unavailable ? TemporarilyUnavailable : result.Error, unavailable ? "The sign-in service is not available." : result.ErrorDescription);
+        }
 
         var tokens = result.Tokens!;
         var claims = (await tokenClient.GetUserInfoAsync(tokens.AccessToken, ct).ConfigureAwait(false)).ToList();

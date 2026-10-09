@@ -1181,7 +1181,7 @@ and pass their generated test suites off the current CLI (`webapp+api` 9/9, `api
   both hosts in one solution. `AppTests.sbn` emits `ApiIntegrationTests` only when the host
   exposes an API, and the page-level `WebAppSmokeTest` for both web kinds over the matching
   marker. The two factories are standalone (page tests make no API calls), so the Web→API hop
-  is asserted only for sign-in (`WebToApiLoginTests`: Web factory paired to the API's TestServer, wrong and right password); the kill-the-API check and a full
+  is asserted for sign-in and an unreachable API (`WebToApiLoginTests`: Web factory paired to the API TestServer, wrong and right password, API down); a full
   login→page-create→visible-through-API round-trip are the tracked follow-ups.
 
 ## Security model (Company = Tenant)
