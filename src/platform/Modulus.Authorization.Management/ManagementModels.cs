@@ -88,3 +88,22 @@ public sealed record ScopedGrantResponse(
 /// <param name="ValidUntil">Effective until this instant.</param>
 public sealed record AssignmentWriteRequest(
     Guid UserId, string AssignmentType, Guid TargetId, DateTimeOffset? ValidFrom, DateTimeOffset? ValidUntil);
+
+/// <summary>An approval limit to add ("this holder may use this permission on documents up to this amount").</summary>
+/// <param name="HolderType"><c>Role</c> or <c>User</c>.</param>
+/// <param name="Holder">Role name, or the user id for a user limit.</param>
+/// <param name="Permission">One registered permission (no wildcards).</param>
+/// <param name="MaxAmount">The largest document value the holder may act on (zero or more).</param>
+/// <param name="Currency">The currency of the limit; omit for documents without a currency.</param>
+/// <param name="DocumentType">The document type (the resource's type name); omit for every type.</param>
+/// <param name="OrgUnitId">Limits the authority to this org unit and its descendants; omit for any.</param>
+/// <param name="ValidFrom">Effective from this instant.</param>
+/// <param name="ValidUntil">Effective until this instant.</param>
+public sealed record ApprovalAuthorityWriteRequest(
+    string HolderType, string Holder, string Permission, decimal MaxAmount, string? Currency, string? DocumentType,
+    Guid? OrgUnitId, DateTimeOffset? ValidFrom, DateTimeOffset? ValidUntil);
+
+/// <summary>A stored approval limit.</summary>
+public sealed record ApprovalAuthorityResponse(
+    Guid Id, string HolderType, string Holder, string Permission, decimal MaxAmount, string? Currency, string? DocumentType,
+    Guid? OrgUnitId, DateTimeOffset? ValidFrom, DateTimeOffset? ValidUntil, Guid? CreatedBy, DateTimeOffset CreatedAt);

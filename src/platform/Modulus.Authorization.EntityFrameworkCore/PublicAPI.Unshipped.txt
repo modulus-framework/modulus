@@ -160,3 +160,28 @@ Modulus.Authorization.EntityFrameworkCore.DelegationRoleRefreshService.Delegatio
 Modulus.Authorization.EntityFrameworkCore.DelegationRoleRefresher
 Modulus.Authorization.EntityFrameworkCore.DelegationRoleRefresher.DelegationRoleRefresher(Microsoft.Extensions.DependencyInjection.IServiceScopeFactory! scopes, Modulus.Authorization.EntityFrameworkCore.EfDelegationStore! store, System.TimeProvider! clock) -> void
 Modulus.Authorization.EntityFrameworkCore.DelegationRoleRefresher.RefreshAsync(System.Guid? delegatorId = null, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<int>!
+Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore
+Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore.AddAsync(Modulus.Authorization.Approval.ApprovalAuthority! authority, System.Guid? createdBy, System.DateTimeOffset now, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore.Stored!>!
+Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore.EfApprovalAuthorityStore(Microsoft.EntityFrameworkCore.IDbContextFactory<Modulus.Authorization.EntityFrameworkCore.AuthorizationStoreDbContext!>! factory) -> void
+Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore.GetAsync(System.Guid id, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore.Stored?>!
+Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore.GetAuthorities(Modulus.Authorization.Grants.PrincipalGrantQuery! principal, string! permission) -> System.Collections.Generic.IReadOnlyCollection<Modulus.Authorization.Approval.ApprovalAuthority!>!
+Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore.ListAsync(Modulus.Authorization.Grants.GrantHolderType holderType, string! holder, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyCollection<Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore.Stored!>!>!
+Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore.RemoveAsync(System.Guid id, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore.Stored
+Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore.Stored.<Clone>$() -> Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore.Stored!
+Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore.Stored.Authority.get -> Modulus.Authorization.Approval.ApprovalAuthority!
+Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore.Stored.Authority.init -> void
+Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore.Stored.CreatedAt.get -> System.DateTimeOffset
+Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore.Stored.CreatedAt.init -> void
+Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore.Stored.CreatedBy.get -> System.Guid?
+Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore.Stored.CreatedBy.init -> void
+Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore.Stored.Deconstruct(out System.Guid Id, out Modulus.Authorization.Approval.ApprovalAuthority! Authority, out System.Guid? CreatedBy, out System.DateTimeOffset CreatedAt) -> void
+Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore.Stored.Equals(Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore.Stored? other) -> bool
+Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore.Stored.Id.get -> System.Guid
+Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore.Stored.Id.init -> void
+Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore.Stored.Stored(System.Guid Id, Modulus.Authorization.Approval.ApprovalAuthority! Authority, System.Guid? CreatedBy, System.DateTimeOffset CreatedAt) -> void
+override Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore.Stored.Equals(object? obj) -> bool
+override Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore.Stored.GetHashCode() -> int
+override Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore.Stored.ToString() -> string!
+static Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore.Stored.operator !=(Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore.Stored? left, Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore.Stored? right) -> bool
+static Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore.Stored.operator ==(Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore.Stored? left, Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore.Stored? right) -> bool

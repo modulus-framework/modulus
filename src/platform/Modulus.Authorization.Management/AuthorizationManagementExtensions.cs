@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
+using Modulus.Authorization.Approval;
 using Modulus.Authorization.Audit;
 using Modulus.Authorization.EntityFrameworkCore;
 using Modulus.Authorization.Extensions;
@@ -99,6 +100,7 @@ public static class AuthorizationManagementExtensions
 
         MapGrants(group);
         MapScopedGrants(group);
+        MapApprovalAuthorities(group);
         MapOrganization(group);
         MapEntitlements(group);
         MapDelegations(group);
@@ -527,6 +529,104 @@ public static class AuthorizationManagementExtensions
             return Results.NoContent();
         });
     }
+
+    // ── Approval limits ("up to this amount") ───────────────────────
+
+    private static void MapApprovalAuthorities(RouteGroupBuilder group)
+    {
+        group.MapGet("/approval-authorities/{holderType}/{holder}", async (
+            string holderType, string holder, EfApprovalAuthorityStore store, CancellationToken ct) =>
+        {
+            if (!Enum.TryParse<GrantHolderType>(holderType, ignoreCase: true, out var type))
+                return InvalidEnum("holderType", holderType, typeof(GrantHolderType));
+
+            return Results.Ok((await store.ListAsync(type, holder, ct)).Select(ToResponse));
+        });
+
+        group.MapPost("/approval-authorities", async (
+            ApprovalAuthorityWriteRequest request, ClaimsPrincipal caller,
+            EfApprovalAuthorityStore store, IPermissionRegistry registry, IAuthorizationService authorization,
+            IApprovalAuthorityEvaluator evaluator, IPrincipalGrantQuerySource callerQuery, IOrgHierarchy hierarchy,
+            IAuthorizationAuditWriter auditWriter, IEnumerable<IAccessChangeObserver> observers,
+            ICurrentUser currentUser, TimeProvider clock, CancellationToken ct) =>
+        {
+            if (!Enum.TryParse<GrantHolderType>(request.HolderType, ignoreCase: true, out var holderType))
+                return InvalidEnum("holderType", request.HolderType, typeof(GrantHolderType));
+            if (string.IsNullOrWhiteSpace(request.Holder))
+                return Results.ValidationProblem(new Dictionary<string, string[]> { ["holder"] = ["A holder is required."] });
+            if (holderType is GrantHolderType.User && !Guid.TryParse(request.Holder, out _))
+                return Results.ValidationProblem(new Dictionary<string, string[]> { ["holder"] = ["A user limit takes the user id."] });
+            if (request.Permission is null || request.Permission.EndsWith(":*", StringComparison.Ordinal))
+                return Results.ValidationProblem(new Dictionary<string, string[]> { ["permission"] = ["Name one registered permission."] });
+            _ = GrantGuards.Expand(registry, [request.Permission], out var unknown);
+            if (unknown.Count > 0)
+                return GrantGuards.Unknown(unknown);
+            if (request.MaxAmount < 0)
+                return Results.ValidationProblem(new Dictionary<string, string[]> { ["maxAmount"] = ["A limit cannot be negative."] });
+            if (request is { ValidFrom: { } from, ValidUntil: { } until } && until <= from)
+                return Results.ValidationProblem(new Dictionary<string, string[]> { ["validUntil"] = ["A limit must end after it begins."] });
+            if (request.OrgUnitId is { } unit && !hierarchy.Contains(unit))
+                return Results.ValidationProblem(new Dictionary<string, string[]> { ["orgUnitId"] = [$"Unknown org unit {unit}."] });
+
+            var target = $"{holderType}:{request.Holder}";
+            if (GrantGuards.TargetsCaller(caller, holderType, request.Holder))
+                return await RefuseAsync(auditWriter, currentUser, "ApprovalAuthority", target,
+                    "self-grant", "You cannot set an approval limit for yourself or for a role you hold.", ct);
+
+            // A limit is authority you hand on: you cannot give more than you hold (grant-any lifts the ceiling).
+            if (!(await authorization.AuthorizeAsync(caller, GrantAnyPermission)).Succeeded)
+            {
+                var own = evaluator.Check(callerQuery.Current, request.Permission,
+                    new ApprovalContext(request.MaxAmount, request.Currency, request.DocumentType, request.OrgUnitId));
+                if (!own.IsWithinAuthority)
+                    return await RefuseAsync(auditWriter, currentUser, "ApprovalAuthority", target,
+                        "above-ceiling", "You cannot give an approval limit above your own.", ct);
+            }
+
+            var saved = await store.AddAsync(
+                new ApprovalAuthority(holderType, request.Holder, request.Permission, request.MaxAmount, request.Currency,
+                    request.DocumentType, request.OrgUnitId, request.ValidFrom, request.ValidUntil),
+                GrantGuards.UserIdOf(caller), clock.GetUtcNow(), ct);
+
+            await EmitAuditAsync(auditWriter, observers, currentUser, "ApprovalAuthority", "Set", target,
+                new Dictionary<string, string>
+                {
+                    ["permission"] = request.Permission,
+                    ["maxAmount"] = request.MaxAmount.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                    ["currency"] = request.Currency ?? "",
+                    ["documentType"] = request.DocumentType ?? "",
+                    ["orgUnitId"] = request.OrgUnitId?.ToString() ?? "",
+                    ["validFrom"] = request.ValidFrom?.ToString("O") ?? "",
+                    ["validUntil"] = request.ValidUntil?.ToString("O") ?? "",
+                }, ct);
+
+            return Results.Created($"approval-authorities/{holderType}/{request.Holder}", ToResponse(saved));
+        });
+
+        group.MapDelete("/approval-authorities/{id:guid}", async (
+            Guid id, ClaimsPrincipal caller, EfApprovalAuthorityStore store,
+            IAuthorizationAuditWriter auditWriter, IEnumerable<IAccessChangeObserver> observers,
+            ICurrentUser currentUser, CancellationToken ct) =>
+        {
+            if (await store.GetAsync(id, ct) is not { } existing)
+                return Results.Problem(detail: "Approval limit not found.", statusCode: StatusCodes.Status404NotFound);
+
+            await store.RemoveAsync(id, ct);
+            await EmitAuditAsync(auditWriter, observers, currentUser, "ApprovalAuthority", "Removed",
+                $"{existing.Authority.HolderType}:{existing.Authority.Holder}",
+                new Dictionary<string, string>
+                {
+                    ["permission"] = existing.Authority.Permission,
+                    ["maxAmount"] = existing.Authority.MaxAmount.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                }, ct);
+            return Results.NoContent();
+        });
+    }
+
+    private static ApprovalAuthorityResponse ToResponse(EfApprovalAuthorityStore.Stored s)
+        => new(s.Id, s.Authority.HolderType.ToString(), s.Authority.Holder, s.Authority.Permission, s.Authority.MaxAmount,
+            s.Authority.Currency, s.Authority.DocumentType, s.Authority.OrgUnitId, s.Authority.ValidFrom, s.Authority.ValidUntil,
+            s.CreatedBy, s.CreatedAt);
 
     private static ScopedGrantResponse ToResponse(EfPermissionGrantStore.ScopedGrantRecord record)
         => new(record.Id, record.Grant.HolderType.ToString(), record.Grant.Holder, record.Grant.Permission,

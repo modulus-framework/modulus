@@ -15,6 +15,8 @@ public sealed class ResourceRequest
     private readonly Func<string, bool> _hasPermission;
     private readonly Func<Guid?, bool> _inScope;
     private readonly Func<string, bool>? _inScopeOf;
+    private readonly Func<string, bool>? _withinAuthority;
+    private readonly IReadOnlyCollection<Guid>? _priorActors;
 
     /// <summary>Creates a request context for evaluating one action on one resource.</summary>
     /// <param name="callerId">The calling principal's user id, or <see langword="null"/> if anonymous.</param>
@@ -23,15 +25,21 @@ public sealed class ResourceRequest
     /// <param name="resource">The target resource's authorization attributes.</param>
     /// <param name="action">The action being attempted (e.g. <c>edit</c>, <c>approve</c>, <c>submit</c>).</param>
     /// <param name="inScopeOf">Probe for whether the record is within the caller's granted scope for a permission.</param>
+    /// <param name="withinAuthority">Probe for whether the document's value is within the caller's approval limit for a permission.</param>
+    /// <param name="priorActors">The users who already acted on the document (its approval trail).</param>
     public ResourceRequest(
         Guid? callerId,
         Func<string, bool> hasPermission,
         Func<Guid?, bool> inScope,
         ResourceAttributes resource,
         string action,
-        Func<string, bool>? inScopeOf = null)
+        Func<string, bool>? inScopeOf = null,
+        Func<string, bool>? withinAuthority = null,
+        IReadOnlyCollection<Guid>? priorActors = null)
     {
         _inScopeOf = inScopeOf;
+        _withinAuthority = withinAuthority;
+        _priorActors = priorActors;
         CallerId = callerId;
         _hasPermission = hasPermission ?? throw new ArgumentNullException(nameof(hasPermission));
         _inScope = inScope ?? throw new ArgumentNullException(nameof(inScope));
@@ -54,6 +62,27 @@ public sealed class ResourceRequest
     /// </summary>
     public bool OwnedByCaller()
         => CallerId is { } id && Resource.OwnerId == id;
+
+    /// <summary>
+    /// True when the caller is a known user who is not the resource's owner (the requester cannot approve their own document).
+    /// Fail-closed: an anonymous caller is never allowed.
+    /// </summary>
+    public bool NotOwnedByCaller()
+        => CallerId is not null && !OwnedByCaller();
+
+    /// <summary>
+    /// True when the caller has not yet acted on the document (prepared, verified, approved, ...): one person cannot hold two steps.
+    /// A document that records no trail has no prior actors. Fail-closed: an anonymous caller is never allowed.
+    /// </summary>
+    public bool NotActedOnByCaller()
+        => CallerId is { } id && _priorActors?.Contains(id) != true;
+
+    /// <summary>
+    /// True when the document's value is within the caller's approval limit for <paramref name="permission"/>
+    /// (<c>IApprovalAuthorityEvaluator</c>). Fail-closed: with no evaluator wired this is false.
+    /// </summary>
+    public bool WithinApprovalAuthority(string permission)
+        => _withinAuthority is { } probe && probe(permission);
 
     /// <summary>True when the caller holds <paramref name="permission"/> (server-resolved).</summary>
     public bool CallerHasPermission(string permission)

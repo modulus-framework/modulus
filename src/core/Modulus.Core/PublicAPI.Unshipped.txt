@@ -645,3 +645,8 @@ override Modulus.Core.Abstractions.Exceptions.ModulusError.ToString() -> string!
 static Modulus.Core.Abstractions.Exceptions.ModulusErrorCatalog.Classify(System.Exception! exception) -> Modulus.Core.Abstractions.Exceptions.ModulusError!
 static Modulus.Core.Abstractions.Exceptions.ModulusError.operator !=(Modulus.Core.Abstractions.Exceptions.ModulusError? left, Modulus.Core.Abstractions.Exceptions.ModulusError? right) -> bool
 static Modulus.Core.Abstractions.Exceptions.ModulusError.operator ==(Modulus.Core.Abstractions.Exceptions.ModulusError? left, Modulus.Core.Abstractions.Exceptions.ModulusError? right) -> bool
+Modulus.Core.Abstractions.Entities.IHasApprovalAmount
+Modulus.Core.Abstractions.Entities.IHasApprovalAmount.ApprovalAmount.get -> decimal
+Modulus.Core.Abstractions.Entities.IHasApprovalAmount.ApprovalCurrency.get -> string?
+Modulus.Core.Abstractions.Entities.IHasApprovalTrail
+Modulus.Core.Abstractions.Entities.IHasApprovalTrail.ActedByUserIds.get -> System.Collections.Generic.IReadOnlyCollection<System.Guid>!

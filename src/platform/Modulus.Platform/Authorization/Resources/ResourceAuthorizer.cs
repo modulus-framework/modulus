@@ -65,7 +65,8 @@ public sealed class ResourceAuthorizer(
     ICurrentUser currentUser,
     ICurrentDataScope dataScope,
     IResourcePolicyRegistry registry,
-    Scopes.IScopeEnforcer? scopes = null) : IResourceAuthorizer
+    Scopes.IScopeEnforcer? scopes = null,
+    Approval.IApprovalAuthorityEvaluator? approvals = null) : IResourceAuthorizer
 {
     /// <summary>
     /// Explains the decision for <paramref name="action"/> on <paramref name="resource"/>: the decision plus which
@@ -113,5 +114,9 @@ public sealed class ResourceAuthorizer(
             action,
             scopes is null
                 ? null
-                : permission => scopes.IsInScope(resource, permission));
+                : permission => scopes.IsInScope(resource, permission),
+            approvals is null
+                ? null
+                : permission => approvals.Check(permission, resource).IsWithinAuthority,
+            (resource as Core.Abstractions.Entities.IHasApprovalTrail)?.ActedByUserIds);
 }

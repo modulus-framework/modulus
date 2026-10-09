@@ -1364,6 +1364,14 @@ roots, Security tab in `Modulus.UI.AuditLogging`).
   deployments need a migration). A grant has `Scope` (Own/Assigned/OrgUnit/Tenant), `ValidFrom/ValidUntil`, and a
   `Restrict` type narrows scope. `IPermissionScopeResolver`/`IScopeEnforcer`/`AddScopeMap<T>` turn the scope into a query
   filter and a record probe (`ResourceRequest.InScopeOf(permission)`). Endpoints: `scoped-grants`, `assignments`.
+- **Approval authority ("up to this amount").** `ApprovalAuthority(holder, permission, MaxAmount, Currency, DocumentType, OrgUnitId, validity)` is
+  configurable data (`IApprovalAuthorityStore`: in-memory default, `EfApprovalAuthorityStore` with table `ModulusApprovalAuthorities`: existing
+  deployments need a migration; admin API `approval-authorities`). A document opts in with `IHasApprovalAmount` (amount + currency) and, for separation of
+  duties, `IHasApprovalTrail` (users who already acted; persist them on the server at each step). Rules read it through `ResourceRequest`:
+  `WithinApprovalAuthority(permission)` (largest applicable limit; no limit, another currency or a document without an amount is refused; a delegate may
+  use the delegator's limits, never more), `NotOwnedByCaller()` (requester cannot approve) and `NotActedOnByCaller()` (one person, one step). The admin API
+  refuses a limit above the caller's own (unless `authorization:grant-any`) and a limit set for oneself. Reason codes `NO_APPROVAL_AUTHORITY` /
+  `APPROVAL_LIMIT_EXCEEDED` come from `IApprovalAuthorityEvaluator.Check`. Semantics of every layer: [`docs/security/policy-combination.md`](docs/security/policy-combination.md).
 - **Reason codes.** `AccessDecision.Code` uses `AccessReasonCodes` (BRS Appendix B); no policy for a type = `METADATA_MISSING`.
 - **Sensitivity.** `PermissionSensitivity` (Normal/Sensitive/Critical) on `PermissionDefinition`; `registry.Add(..., sensitivity)`.
   A wildcard grant never confers a Critical permission (a wildcard deny still removes it); Critical is not delegable.

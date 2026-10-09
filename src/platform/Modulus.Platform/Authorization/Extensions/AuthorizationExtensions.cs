@@ -4,6 +4,7 @@ using Modulus.Authorization.Audit;
 using Modulus.Authorization.Features;
 using Modulus.Authorization.Fields;
 using Modulus.Authorization.Governance;
+using Modulus.Authorization.Approval;
 using Modulus.Authorization.Grants;
 using Modulus.Authorization.Organization;
 using Modulus.Authorization.Resources;
@@ -104,6 +105,11 @@ public static class AuthorizationExtensions
         services.TryAddScoped<IPermissionScopeResolver, PermissionScopeResolver>();
         services.TryAddScoped<IScopeSubject, ScopeSubject>();
         services.TryAddScoped<IScopeEnforcer, ScopeEnforcer>();
+
+        // Approval limits ("up to this amount"): empty until limits are added, so nobody has authority by default.
+        services.TryAddSingleton<InMemoryApprovalAuthorityStore>();
+        services.TryAddSingleton<IApprovalAuthorityStore>(sp => sp.GetRequiredService<InMemoryApprovalAuthorityStore>());
+        services.TryAddScoped<IApprovalAuthorityEvaluator, ApprovalAuthorityEvaluator>();
 
         // Organizational scope: hierarchy + placements + scope resolver. TryAdd so
         // an EF-backed store can supersede the in-memory defaults by registering

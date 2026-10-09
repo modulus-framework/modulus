@@ -535,7 +535,6 @@ Modulus.Authorization.Resources.ResourceAttributes.State.get -> string?
 Modulus.Authorization.Resources.ResourceAttributes.State.init -> void
 Modulus.Authorization.Resources.ResourceAuthorizer
 Modulus.Authorization.Resources.ResourceAuthorizer.AuthorizeAsync(object! resource, string! action, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Authorization.Resources.AccessDecision!>!
-Modulus.Authorization.Resources.ResourceAuthorizer.ResourceAuthorizer(Modulus.Core.Abstractions.ICurrentUser! currentUser, Modulus.Core.Abstractions.ICurrentDataScope! dataScope, Modulus.Authorization.Resources.IResourcePolicyRegistry! registry, Modulus.Authorization.Scopes.IScopeEnforcer? scopes = null) -> void
 Modulus.Authorization.Resources.ResourcePolicy
 Modulus.Authorization.Resources.ResourcePolicyBuilder
 Modulus.Authorization.Resources.ResourcePolicyBuilder.Allow(string! action, System.Func<Modulus.Authorization.Resources.ResourceRequest!, bool>! requirement) -> Modulus.Authorization.Resources.ResourcePolicyBuilder!
@@ -563,7 +562,6 @@ Modulus.Authorization.Resources.ResourceRequest.InScopeOf(string! permission) ->
 Modulus.Authorization.Resources.ResourceRequest.InState(params string![]! states) -> bool
 Modulus.Authorization.Resources.ResourceRequest.OwnedByCaller() -> bool
 Modulus.Authorization.Resources.ResourceRequest.Resource.get -> Modulus.Authorization.Resources.ResourceAttributes!
-Modulus.Authorization.Resources.ResourceRequest.ResourceRequest(System.Guid? callerId, System.Func<string!, bool>! hasPermission, System.Func<System.Guid?, bool>! inScope, Modulus.Authorization.Resources.ResourceAttributes! resource, string! action, System.Func<string!, bool>? inScopeOf = null) -> void
 Modulus.Authorization.Resources.ResourceRule
 Modulus.Authorization.Resources.ResourceRule.Action.get -> string!
 Modulus.Authorization.Resources.ResourceRule.Action.init -> void
@@ -1422,3 +1420,87 @@ override Modulus.Authorization.Resources.ResourceLocatorRegistration.ToString() 
 static Modulus.Authorization.Resources.ResourceLocatorExtensions.AddResourceLocator(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, string! name, System.Func<System.IServiceProvider!, string!, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<object?>>! load) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static Modulus.Authorization.Resources.ResourceLocatorRegistration.operator !=(Modulus.Authorization.Resources.ResourceLocatorRegistration? left, Modulus.Authorization.Resources.ResourceLocatorRegistration? right) -> bool
 static Modulus.Authorization.Resources.ResourceLocatorRegistration.operator ==(Modulus.Authorization.Resources.ResourceLocatorRegistration? left, Modulus.Authorization.Resources.ResourceLocatorRegistration? right) -> bool
+Modulus.Authorization.Approval.ApprovalAuthority
+Modulus.Authorization.Approval.ApprovalAuthority.<Clone>$() -> Modulus.Authorization.Approval.ApprovalAuthority!
+Modulus.Authorization.Approval.ApprovalAuthority.ApprovalAuthority(Modulus.Authorization.Grants.GrantHolderType HolderType, string! Holder, string! Permission, decimal MaxAmount, string? Currency = null, string? DocumentType = null, System.Guid? OrgUnitId = null, System.DateTimeOffset? ValidFrom = null, System.DateTimeOffset? ValidUntil = null) -> void
+Modulus.Authorization.Approval.ApprovalAuthority.Currency.get -> string?
+Modulus.Authorization.Approval.ApprovalAuthority.Currency.init -> void
+Modulus.Authorization.Approval.ApprovalAuthority.Deconstruct(out Modulus.Authorization.Grants.GrantHolderType HolderType, out string! Holder, out string! Permission, out decimal MaxAmount, out string? Currency, out string? DocumentType, out System.Guid? OrgUnitId, out System.DateTimeOffset? ValidFrom, out System.DateTimeOffset? ValidUntil) -> void
+Modulus.Authorization.Approval.ApprovalAuthority.DocumentType.get -> string?
+Modulus.Authorization.Approval.ApprovalAuthority.DocumentType.init -> void
+Modulus.Authorization.Approval.ApprovalAuthority.Equals(Modulus.Authorization.Approval.ApprovalAuthority? other) -> bool
+Modulus.Authorization.Approval.ApprovalAuthority.Holder.get -> string!
+Modulus.Authorization.Approval.ApprovalAuthority.Holder.init -> void
+Modulus.Authorization.Approval.ApprovalAuthority.HolderType.get -> Modulus.Authorization.Grants.GrantHolderType
+Modulus.Authorization.Approval.ApprovalAuthority.HolderType.init -> void
+Modulus.Authorization.Approval.ApprovalAuthority.IsValidAt(System.DateTimeOffset now) -> bool
+Modulus.Authorization.Approval.ApprovalAuthority.MaxAmount.get -> decimal
+Modulus.Authorization.Approval.ApprovalAuthority.MaxAmount.init -> void
+Modulus.Authorization.Approval.ApprovalAuthority.OrgUnitId.get -> System.Guid?
+Modulus.Authorization.Approval.ApprovalAuthority.OrgUnitId.init -> void
+Modulus.Authorization.Approval.ApprovalAuthority.Permission.get -> string!
+Modulus.Authorization.Approval.ApprovalAuthority.Permission.init -> void
+Modulus.Authorization.Approval.ApprovalAuthority.ValidFrom.get -> System.DateTimeOffset?
+Modulus.Authorization.Approval.ApprovalAuthority.ValidFrom.init -> void
+Modulus.Authorization.Approval.ApprovalAuthority.ValidUntil.get -> System.DateTimeOffset?
+Modulus.Authorization.Approval.ApprovalAuthority.ValidUntil.init -> void
+Modulus.Authorization.Approval.ApprovalAuthorityEvaluator
+Modulus.Authorization.Approval.ApprovalAuthorityEvaluator.ApprovalAuthorityEvaluator(Modulus.Authorization.Approval.IApprovalAuthorityStore! store, Modulus.Authorization.Scopes.IPrincipalGrantQuerySource! principal, Modulus.Authorization.Organization.IOrgHierarchy? hierarchy = null, Modulus.Authorization.Governance.IDelegationStore? delegations = null, System.TimeProvider? clock = null) -> void
+Modulus.Authorization.Approval.ApprovalAuthorityEvaluator.Check(Modulus.Authorization.Grants.PrincipalGrantQuery! who, string! permission, Modulus.Authorization.Approval.ApprovalContext! context) -> Modulus.Authorization.Approval.ApprovalCheck!
+Modulus.Authorization.Approval.ApprovalAuthorityEvaluator.Check(string! permission, object! resource) -> Modulus.Authorization.Approval.ApprovalCheck!
+Modulus.Authorization.Approval.ApprovalCheck
+Modulus.Authorization.Approval.ApprovalCheck.<Clone>$() -> Modulus.Authorization.Approval.ApprovalCheck!
+Modulus.Authorization.Approval.ApprovalCheck.ApprovalCheck(bool IsWithinAuthority, string! ReasonCode, decimal? Limit) -> void
+Modulus.Authorization.Approval.ApprovalCheck.Deconstruct(out bool IsWithinAuthority, out string! ReasonCode, out decimal? Limit) -> void
+Modulus.Authorization.Approval.ApprovalCheck.Equals(Modulus.Authorization.Approval.ApprovalCheck? other) -> bool
+Modulus.Authorization.Approval.ApprovalCheck.IsWithinAuthority.get -> bool
+Modulus.Authorization.Approval.ApprovalCheck.IsWithinAuthority.init -> void
+Modulus.Authorization.Approval.ApprovalCheck.Limit.get -> decimal?
+Modulus.Authorization.Approval.ApprovalCheck.Limit.init -> void
+Modulus.Authorization.Approval.ApprovalCheck.ReasonCode.get -> string!
+Modulus.Authorization.Approval.ApprovalCheck.ReasonCode.init -> void
+Modulus.Authorization.Approval.ApprovalContext
+Modulus.Authorization.Approval.ApprovalContext.<Clone>$() -> Modulus.Authorization.Approval.ApprovalContext!
+Modulus.Authorization.Approval.ApprovalContext.Amount.get -> decimal
+Modulus.Authorization.Approval.ApprovalContext.Amount.init -> void
+Modulus.Authorization.Approval.ApprovalContext.ApprovalContext(decimal Amount, string? Currency, string? DocumentType, System.Guid? OrgUnitId) -> void
+Modulus.Authorization.Approval.ApprovalContext.Currency.get -> string?
+Modulus.Authorization.Approval.ApprovalContext.Currency.init -> void
+Modulus.Authorization.Approval.ApprovalContext.Deconstruct(out decimal Amount, out string? Currency, out string? DocumentType, out System.Guid? OrgUnitId) -> void
+Modulus.Authorization.Approval.ApprovalContext.DocumentType.get -> string?
+Modulus.Authorization.Approval.ApprovalContext.DocumentType.init -> void
+Modulus.Authorization.Approval.ApprovalContext.Equals(Modulus.Authorization.Approval.ApprovalContext? other) -> bool
+Modulus.Authorization.Approval.ApprovalContext.OrgUnitId.get -> System.Guid?
+Modulus.Authorization.Approval.ApprovalContext.OrgUnitId.init -> void
+Modulus.Authorization.Approval.IApprovalAuthorityEvaluator
+Modulus.Authorization.Approval.IApprovalAuthorityEvaluator.Check(Modulus.Authorization.Grants.PrincipalGrantQuery! principal, string! permission, Modulus.Authorization.Approval.ApprovalContext! context) -> Modulus.Authorization.Approval.ApprovalCheck!
+Modulus.Authorization.Approval.IApprovalAuthorityEvaluator.Check(string! permission, object! resource) -> Modulus.Authorization.Approval.ApprovalCheck!
+Modulus.Authorization.Approval.IApprovalAuthorityStore
+Modulus.Authorization.Approval.IApprovalAuthorityStore.GetAuthorities(Modulus.Authorization.Grants.PrincipalGrantQuery! principal, string! permission) -> System.Collections.Generic.IReadOnlyCollection<Modulus.Authorization.Approval.ApprovalAuthority!>!
+Modulus.Authorization.Approval.InMemoryApprovalAuthorityStore
+Modulus.Authorization.Approval.InMemoryApprovalAuthorityStore.Add(Modulus.Authorization.Approval.ApprovalAuthority! authority) -> Modulus.Authorization.Approval.InMemoryApprovalAuthorityStore!
+Modulus.Authorization.Approval.InMemoryApprovalAuthorityStore.GetAuthorities(Modulus.Authorization.Grants.PrincipalGrantQuery! principal, string! permission) -> System.Collections.Generic.IReadOnlyCollection<Modulus.Authorization.Approval.ApprovalAuthority!>!
+Modulus.Authorization.Approval.InMemoryApprovalAuthorityStore.InMemoryApprovalAuthorityStore() -> void
+Modulus.Authorization.Resources.ResourceAuthorizer.ResourceAuthorizer(Modulus.Core.Abstractions.ICurrentUser! currentUser, Modulus.Core.Abstractions.ICurrentDataScope! dataScope, Modulus.Authorization.Resources.IResourcePolicyRegistry! registry, Modulus.Authorization.Scopes.IScopeEnforcer? scopes = null, Modulus.Authorization.Approval.IApprovalAuthorityEvaluator? approvals = null) -> void
+Modulus.Authorization.Resources.ResourceRequest.NotActedOnByCaller() -> bool
+Modulus.Authorization.Resources.ResourceRequest.NotOwnedByCaller() -> bool
+Modulus.Authorization.Resources.ResourceRequest.ResourceRequest(System.Guid? callerId, System.Func<string!, bool>! hasPermission, System.Func<System.Guid?, bool>! inScope, Modulus.Authorization.Resources.ResourceAttributes! resource, string! action, System.Func<string!, bool>? inScopeOf = null, System.Func<string!, bool>? withinAuthority = null, System.Collections.Generic.IReadOnlyCollection<System.Guid>? priorActors = null) -> void
+Modulus.Authorization.Resources.ResourceRequest.WithinApprovalAuthority(string! permission) -> bool
+const Modulus.Authorization.Resources.AccessReasonCodes.ApprovalLimitExceeded = "APPROVAL_LIMIT_EXCEEDED" -> string!
+const Modulus.Authorization.Resources.AccessReasonCodes.NoApprovalAuthority = "NO_APPROVAL_AUTHORITY" -> string!
+override Modulus.Authorization.Approval.ApprovalAuthority.Equals(object? obj) -> bool
+override Modulus.Authorization.Approval.ApprovalAuthority.GetHashCode() -> int
+override Modulus.Authorization.Approval.ApprovalAuthority.ToString() -> string!
+override Modulus.Authorization.Approval.ApprovalCheck.Equals(object? obj) -> bool
+override Modulus.Authorization.Approval.ApprovalCheck.GetHashCode() -> int
+override Modulus.Authorization.Approval.ApprovalCheck.ToString() -> string!
+override Modulus.Authorization.Approval.ApprovalContext.Equals(object? obj) -> bool
+override Modulus.Authorization.Approval.ApprovalContext.GetHashCode() -> int
+override Modulus.Authorization.Approval.ApprovalContext.ToString() -> string!
+static Modulus.Authorization.Approval.ApprovalAuthority.operator !=(Modulus.Authorization.Approval.ApprovalAuthority? left, Modulus.Authorization.Approval.ApprovalAuthority? right) -> bool
+static Modulus.Authorization.Approval.ApprovalAuthority.operator ==(Modulus.Authorization.Approval.ApprovalAuthority? left, Modulus.Authorization.Approval.ApprovalAuthority? right) -> bool
+static Modulus.Authorization.Approval.ApprovalCheck.operator !=(Modulus.Authorization.Approval.ApprovalCheck? left, Modulus.Authorization.Approval.ApprovalCheck? right) -> bool
+static Modulus.Authorization.Approval.ApprovalCheck.operator ==(Modulus.Authorization.Approval.ApprovalCheck? left, Modulus.Authorization.Approval.ApprovalCheck? right) -> bool
+static Modulus.Authorization.Approval.ApprovalContext.From(object! resource) -> Modulus.Authorization.Approval.ApprovalContext?
+static Modulus.Authorization.Approval.ApprovalContext.operator !=(Modulus.Authorization.Approval.ApprovalContext? left, Modulus.Authorization.Approval.ApprovalContext? right) -> bool
+static Modulus.Authorization.Approval.ApprovalContext.operator ==(Modulus.Authorization.Approval.ApprovalContext? left, Modulus.Authorization.Approval.ApprovalContext? right) -> bool

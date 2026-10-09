@@ -31,6 +31,7 @@ public class AuthorizationStoreDbContext(
     internal DbSet<DelegationRow> Delegations => Set<DelegationRow>();
     internal DbSet<ScopedGrantRow> ScopedGrants => Set<ScopedGrantRow>();
     internal DbSet<AssignmentRow> Assignments => Set<AssignmentRow>();
+    internal DbSet<ApprovalAuthorityRow> ApprovalAuthorities => Set<ApprovalAuthorityRow>();
 
     /// <summary>
     /// Durable audit-event outbox (auth blueprint §5.14/§16), written by
@@ -153,6 +154,16 @@ public class AuthorizationStoreDbContext(
         assignment.HasKey(a => new { a.TenantId, a.UserId, a.AssignmentType, a.TargetId });
         assignment.Property(a => a.AssignmentType).HasMaxLength(128);
 
+        var approval = modelBuilder.Entity<ApprovalAuthorityRow>();
+        approval.ToTable("ModulusApprovalAuthorities");
+        approval.HasKey(a => a.Id);
+        approval.Property(a => a.Holder).HasMaxLength(256);
+        approval.Property(a => a.Permission).HasMaxLength(256);
+        approval.Property(a => a.MaxAmount).HasPrecision(18, 4);
+        approval.Property(a => a.Currency).HasMaxLength(8);
+        approval.Property(a => a.DocumentType).HasMaxLength(256);
+        approval.HasIndex(a => new { a.TenantId, a.Permission, a.HolderType, a.Holder });
+
         var auditOutbox = modelBuilder.Entity<OutboxMessage>();
         auditOutbox.ToTable("ModulusAuthorizationAuditOutbox");
         auditOutbox.HasKey(m => m.Id);
@@ -209,6 +220,9 @@ public class AuthorizationStoreDbContext(
         mb.Entity<AssignmentRow>().HasQueryFilter(e =>
             currentTenant.IsHost
             || (currentTenant.TenantId != null && e.TenantId == currentTenant.TenantId));
+        mb.Entity<ApprovalAuthorityRow>().HasQueryFilter(e =>
+            currentTenant.IsHost
+            || (currentTenant.TenantId != null && e.TenantId == currentTenant.TenantId));
     }
 }
 
@@ -240,6 +254,24 @@ internal sealed class AssignmentRow : IHasTenantId
     public Guid TargetId { get; set; }
     public DateTimeOffset? ValidFrom { get; set; }
     public DateTimeOffset? ValidUntil { get; set; }
+}
+
+/// <summary>Row backing an <see cref="Modulus.Authorization.Approval.ApprovalAuthority"/>.</summary>
+internal sealed class ApprovalAuthorityRow : IHasTenantId
+{
+    public Guid Id { get; set; }
+    public Guid TenantId { get; set; }
+    public GrantHolderType HolderType { get; set; }
+    public string Holder { get; set; } = null!;
+    public string Permission { get; set; } = null!;
+    public decimal MaxAmount { get; set; }
+    public string? Currency { get; set; }
+    public string? DocumentType { get; set; }
+    public Guid? OrgUnitId { get; set; }
+    public DateTimeOffset? ValidFrom { get; set; }
+    public DateTimeOffset? ValidUntil { get; set; }
+    public Guid? CreatedBy { get; set; }
+    public DateTimeOffset CreatedAt { get; set; }
 }
 
 /// <summary>Row backing a <see cref="PermissionGrant"/>.</summary>

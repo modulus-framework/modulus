@@ -67,6 +67,12 @@ public static class AccessReasonCodes
     /// <summary>A segregation-of-duties constraint is violated.</summary>
     public const string SoDConflict = "SOD_CONFLICT";
 
+    /// <summary>The caller holds no approval limit that covers the document.</summary>
+    public const string NoApprovalAuthority = "NO_APPROVAL_AUTHORITY";
+
+    /// <summary>The document is worth more than the caller's approval limit.</summary>
+    public const string ApprovalLimitExceeded = "APPROVAL_LIMIT_EXCEEDED";
+
     /// <summary>The field is protected from the caller.</summary>
     public const string FieldProtected = "FIELD_PROTECTED";
 

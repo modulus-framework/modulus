@@ -1,3 +1,4 @@
+using Modulus.Authorization.Approval;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -101,6 +102,11 @@ public static class EfAuthorizationStoreExtensions
         services.RemoveAll<IAssignmentStore>();
         services.AddSingleton<IAssignmentStore>(
             sp => sp.GetRequiredService<EfAssignmentStore>());
+
+        services.TryAddSingleton<EfApprovalAuthorityStore>();
+        services.RemoveAll<IApprovalAuthorityStore>();
+        services.AddSingleton<IApprovalAuthorityStore>(
+            sp => sp.GetRequiredService<EfApprovalAuthorityStore>());
 
         services.TryAddSingleton<EfRecertificationCampaignStore>();
         services.RemoveAll<IRecertificationCampaignStore>();

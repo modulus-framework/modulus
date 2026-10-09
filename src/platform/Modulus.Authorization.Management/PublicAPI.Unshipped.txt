@@ -229,3 +229,65 @@ static Modulus.Authorization.Management.ScopedGrantResponse.operator ==(Modulus.
 static Modulus.Authorization.Management.ScopedGrantWriteRequest.operator !=(Modulus.Authorization.Management.ScopedGrantWriteRequest? left, Modulus.Authorization.Management.ScopedGrantWriteRequest? right) -> bool
 static Modulus.Authorization.Management.ScopedGrantWriteRequest.operator ==(Modulus.Authorization.Management.ScopedGrantWriteRequest? left, Modulus.Authorization.Management.ScopedGrantWriteRequest? right) -> bool
 static Modulus.Authorization.Management.AuthorizationManagementExtensions.MapModulusResourceAuthorization(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! prefix = "/authorization/resources") -> Microsoft.AspNetCore.Routing.RouteGroupBuilder!
+Modulus.Authorization.Management.ApprovalAuthorityResponse
+Modulus.Authorization.Management.ApprovalAuthorityResponse.<Clone>$() -> Modulus.Authorization.Management.ApprovalAuthorityResponse!
+Modulus.Authorization.Management.ApprovalAuthorityResponse.ApprovalAuthorityResponse(System.Guid Id, string! HolderType, string! Holder, string! Permission, decimal MaxAmount, string? Currency, string? DocumentType, System.Guid? OrgUnitId, System.DateTimeOffset? ValidFrom, System.DateTimeOffset? ValidUntil, System.Guid? CreatedBy, System.DateTimeOffset CreatedAt) -> void
+Modulus.Authorization.Management.ApprovalAuthorityResponse.CreatedAt.get -> System.DateTimeOffset
+Modulus.Authorization.Management.ApprovalAuthorityResponse.CreatedAt.init -> void
+Modulus.Authorization.Management.ApprovalAuthorityResponse.CreatedBy.get -> System.Guid?
+Modulus.Authorization.Management.ApprovalAuthorityResponse.CreatedBy.init -> void
+Modulus.Authorization.Management.ApprovalAuthorityResponse.Currency.get -> string?
+Modulus.Authorization.Management.ApprovalAuthorityResponse.Currency.init -> void
+Modulus.Authorization.Management.ApprovalAuthorityResponse.Deconstruct(out System.Guid Id, out string! HolderType, out string! Holder, out string! Permission, out decimal MaxAmount, out string? Currency, out string? DocumentType, out System.Guid? OrgUnitId, out System.DateTimeOffset? ValidFrom, out System.DateTimeOffset? ValidUntil, out System.Guid? CreatedBy, out System.DateTimeOffset CreatedAt) -> void
+Modulus.Authorization.Management.ApprovalAuthorityResponse.DocumentType.get -> string?
+Modulus.Authorization.Management.ApprovalAuthorityResponse.DocumentType.init -> void
+Modulus.Authorization.Management.ApprovalAuthorityResponse.Equals(Modulus.Authorization.Management.ApprovalAuthorityResponse? other) -> bool
+Modulus.Authorization.Management.ApprovalAuthorityResponse.Holder.get -> string!
+Modulus.Authorization.Management.ApprovalAuthorityResponse.Holder.init -> void
+Modulus.Authorization.Management.ApprovalAuthorityResponse.HolderType.get -> string!
+Modulus.Authorization.Management.ApprovalAuthorityResponse.HolderType.init -> void
+Modulus.Authorization.Management.ApprovalAuthorityResponse.Id.get -> System.Guid
+Modulus.Authorization.Management.ApprovalAuthorityResponse.Id.init -> void
+Modulus.Authorization.Management.ApprovalAuthorityResponse.MaxAmount.get -> decimal
+Modulus.Authorization.Management.ApprovalAuthorityResponse.MaxAmount.init -> void
+Modulus.Authorization.Management.ApprovalAuthorityResponse.OrgUnitId.get -> System.Guid?
+Modulus.Authorization.Management.ApprovalAuthorityResponse.OrgUnitId.init -> void
+Modulus.Authorization.Management.ApprovalAuthorityResponse.Permission.get -> string!
+Modulus.Authorization.Management.ApprovalAuthorityResponse.Permission.init -> void
+Modulus.Authorization.Management.ApprovalAuthorityResponse.ValidFrom.get -> System.DateTimeOffset?
+Modulus.Authorization.Management.ApprovalAuthorityResponse.ValidFrom.init -> void
+Modulus.Authorization.Management.ApprovalAuthorityResponse.ValidUntil.get -> System.DateTimeOffset?
+Modulus.Authorization.Management.ApprovalAuthorityResponse.ValidUntil.init -> void
+Modulus.Authorization.Management.ApprovalAuthorityWriteRequest
+Modulus.Authorization.Management.ApprovalAuthorityWriteRequest.<Clone>$() -> Modulus.Authorization.Management.ApprovalAuthorityWriteRequest!
+Modulus.Authorization.Management.ApprovalAuthorityWriteRequest.ApprovalAuthorityWriteRequest(string! HolderType, string! Holder, string! Permission, decimal MaxAmount, string? Currency, string? DocumentType, System.Guid? OrgUnitId, System.DateTimeOffset? ValidFrom, System.DateTimeOffset? ValidUntil) -> void
+Modulus.Authorization.Management.ApprovalAuthorityWriteRequest.Currency.get -> string?
+Modulus.Authorization.Management.ApprovalAuthorityWriteRequest.Currency.init -> void
+Modulus.Authorization.Management.ApprovalAuthorityWriteRequest.Deconstruct(out string! HolderType, out string! Holder, out string! Permission, out decimal MaxAmount, out string? Currency, out string? DocumentType, out System.Guid? OrgUnitId, out System.DateTimeOffset? ValidFrom, out System.DateTimeOffset? ValidUntil) -> void
+Modulus.Authorization.Management.ApprovalAuthorityWriteRequest.DocumentType.get -> string?
+Modulus.Authorization.Management.ApprovalAuthorityWriteRequest.DocumentType.init -> void
+Modulus.Authorization.Management.ApprovalAuthorityWriteRequest.Equals(Modulus.Authorization.Management.ApprovalAuthorityWriteRequest? other) -> bool
+Modulus.Authorization.Management.ApprovalAuthorityWriteRequest.Holder.get -> string!
+Modulus.Authorization.Management.ApprovalAuthorityWriteRequest.Holder.init -> void
+Modulus.Authorization.Management.ApprovalAuthorityWriteRequest.HolderType.get -> string!
+Modulus.Authorization.Management.ApprovalAuthorityWriteRequest.HolderType.init -> void
+Modulus.Authorization.Management.ApprovalAuthorityWriteRequest.MaxAmount.get -> decimal
+Modulus.Authorization.Management.ApprovalAuthorityWriteRequest.MaxAmount.init -> void
+Modulus.Authorization.Management.ApprovalAuthorityWriteRequest.OrgUnitId.get -> System.Guid?
+Modulus.Authorization.Management.ApprovalAuthorityWriteRequest.OrgUnitId.init -> void
+Modulus.Authorization.Management.ApprovalAuthorityWriteRequest.Permission.get -> string!
+Modulus.Authorization.Management.ApprovalAuthorityWriteRequest.Permission.init -> void
+Modulus.Authorization.Management.ApprovalAuthorityWriteRequest.ValidFrom.get -> System.DateTimeOffset?
+Modulus.Authorization.Management.ApprovalAuthorityWriteRequest.ValidFrom.init -> void
+Modulus.Authorization.Management.ApprovalAuthorityWriteRequest.ValidUntil.get -> System.DateTimeOffset?
+Modulus.Authorization.Management.ApprovalAuthorityWriteRequest.ValidUntil.init -> void
+override Modulus.Authorization.Management.ApprovalAuthorityResponse.Equals(object? obj) -> bool
+override Modulus.Authorization.Management.ApprovalAuthorityResponse.GetHashCode() -> int
+override Modulus.Authorization.Management.ApprovalAuthorityResponse.ToString() -> string!
+override Modulus.Authorization.Management.ApprovalAuthorityWriteRequest.Equals(object? obj) -> bool
+override Modulus.Authorization.Management.ApprovalAuthorityWriteRequest.GetHashCode() -> int
+override Modulus.Authorization.Management.ApprovalAuthorityWriteRequest.ToString() -> string!
+static Modulus.Authorization.Management.ApprovalAuthorityResponse.operator !=(Modulus.Authorization.Management.ApprovalAuthorityResponse? left, Modulus.Authorization.Management.ApprovalAuthorityResponse? right) -> bool
+static Modulus.Authorization.Management.ApprovalAuthorityResponse.operator ==(Modulus.Authorization.Management.ApprovalAuthorityResponse? left, Modulus.Authorization.Management.ApprovalAuthorityResponse? right) -> bool
+static Modulus.Authorization.Management.ApprovalAuthorityWriteRequest.operator !=(Modulus.Authorization.Management.ApprovalAuthorityWriteRequest? left, Modulus.Authorization.Management.ApprovalAuthorityWriteRequest? right) -> bool
+static Modulus.Authorization.Management.ApprovalAuthorityWriteRequest.operator ==(Modulus.Authorization.Management.ApprovalAuthorityWriteRequest? left, Modulus.Authorization.Management.ApprovalAuthorityWriteRequest? right) -> bool

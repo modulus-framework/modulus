@@ -772,4 +772,66 @@ public sealed class AuthorizationManagementApiTests : IAsyncLifetime
         (await _client.DeleteAsync($"/authorization/assignments/{user}/customer/{target}")).StatusCode.Should().Be(HttpStatusCode.NoContent);
         (await _client.DeleteAsync($"/authorization/assignments/{user}/customer/{target}")).StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
+
+    // ── Approval limits ──
+
+    private sealed record LimitView(Guid Id, string HolderType, string Holder, string Permission, decimal MaxAmount, string? Currency);
+
+    [Fact]
+    public async Task Approval_limits_round_trip_and_reach_the_store()
+    {
+        using var admin = As("authorization:manage,authorization:grant-any");
+
+        var created = await admin.PostAsJsonAsync("/authorization/approval-authorities",
+            new { holderType = "Role", holder = "Manager", permission = "orders:approve", maxAmount = 10_000m, currency = "usd" });
+        created.StatusCode.Should().Be(HttpStatusCode.Created);
+        var limit = (await created.Content.ReadFromJsonAsync<LimitView>())!;
+        limit.Currency.Should().Be("USD");
+
+        (await admin.GetFromJsonAsync<LimitView[]>("/authorization/approval-authorities/Role/Manager"))
+            .Should().ContainSingle().Which.MaxAmount.Should().Be(10_000m);
+        _app.Services.GetRequiredService<Modulus.Authorization.Approval.IApprovalAuthorityStore>()
+            .GetAuthorities(new PrincipalGrantQuery(null, ["Manager"]), "orders:approve")
+            .Should().ContainSingle();
+
+        (await admin.DeleteAsync($"/authorization/approval-authorities/{limit.Id}")).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await admin.DeleteAsync($"/authorization/approval-authorities/{limit.Id}")).StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task Approval_limits_reject_unknown_permissions_wildcards_and_negative_amounts()
+    {
+        using var admin = As("authorization:manage,authorization:grant-any");
+
+        foreach (var body in new object[]
+        {
+            new { holderType = "Role", holder = "Manager", permission = "orders:nope", maxAmount = 1m },
+            new { holderType = "Role", holder = "Manager", permission = "orders:*", maxAmount = 1m },
+            new { holderType = "Role", holder = "Manager", permission = "orders:approve", maxAmount = -1m },
+            new { holderType = "User", holder = "not-a-guid", permission = "orders:approve", maxAmount = 1m },
+        })
+        {
+            (await admin.PostAsJsonAsync("/authorization/approval-authorities", body)).StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        }
+    }
+
+    [Fact]
+    public async Task An_administrator_cannot_give_a_limit_above_their_own_or_to_themselves()
+    {
+        var me = Guid.NewGuid();
+        var store = _app.Services.GetRequiredService<EfApprovalAuthorityStore>();
+        await store.AddAsync(new Modulus.Authorization.Approval.ApprovalAuthority(
+            GrantHolderType.User, me.ToString(), "orders:approve", 5_000m), null, DateTimeOffset.UtcNow);
+        using var admin = As("authorization:manage", me);
+
+        (await admin.PostAsJsonAsync("/authorization/approval-authorities",
+            new { holderType = "Role", holder = "Clerk", permission = "orders:approve", maxAmount = 5_001m }))
+            .StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        (await admin.PostAsJsonAsync("/authorization/approval-authorities",
+            new { holderType = "Role", holder = "Clerk", permission = "orders:approve", maxAmount = 5_000m }))
+            .StatusCode.Should().Be(HttpStatusCode.Created);
+        (await admin.PostAsJsonAsync("/authorization/approval-authorities",
+            new { holderType = "User", holder = me.ToString(), permission = "orders:approve", maxAmount = 1m }))
+            .StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
 }
