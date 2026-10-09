@@ -1421,8 +1421,9 @@ roots, Security tab in `Modulus.UI.AuditLogging`).
   `ValidationBehavior` its attribute lookup; REPR binding caches per-type binders; change history caches audited properties; the
   inbox reads its row and a legacy row in one query. Perf analyzers (CA1869, CA1851, CA2016, CA1845/46/47, ...) are warnings in
   `src/**`. Benchmarks: `dotnet run -c Release --project tests/benchmarks/Modulus.Benchmarks -- --filter "*"`.
-- **Still open:** generated CRUD does not publish `{Entity}CreatedIntegrationEvent` (the event would need to be a domain event on the
-  aggregate; layering needs a design decision); `Modulus.UI.AI`; GraphQL subscriptions/persisted queries; grpc-web; AOT annotations.
+- **Created event.** The generated Create handler publishes `{Entity}CreatedIntegrationEvent` through `IModuleBus` after the commit
+  (in-process, not transactional; an outbox-backed bus gives at-least-once). Update/Delete events are not generated.
+- **Still open:** `Modulus.UI.AI`; GraphQL subscriptions/persisted queries; grpc-web; AOT annotations.
 
 ## Open-source dependency policy
 
@@ -1720,8 +1721,7 @@ dependency (SSE and SignalR are in the shared framework). Plan and as-built note
   `{Entities}Endpoint.cs`, else the tenant), `MapModulusRealtime()` after the endpoints, `Realtime` settings,
   `tests/{App}.Tests/RealtimeTests.cs`, and `/realtime` as an event stream in each chosen BFF. Idempotent. Templates
   `cli/Templates/realtime/`; wiring `RealtimeWiring`.
-- **Gap.** As for webhooks, generated CRUD never publishes `{Entity}CreatedIntegrationEvent`; publish it for clients to
-  receive anything. Not built: mobile push notifications (APNs/FCM), presence.
+- **Note.** Generated Create handlers publish `{Entity}CreatedIntegrationEvent`, so clients receive it. Not built: mobile push notifications (APNs/FCM), presence.
 - **Verified end to end** on a generated `--kind api --auth openiddict --bff web,mobile` app (9/9 tests): API stream,
   mobile BFF (`426` gate, events), web BFF (cookie-only stream, CSRF still required elsewhere, `Last-Event-ID` replay),
   hub negotiate `200`/`401`. Covered by `Modulus.Realtime.Tests` (31 unit; the Redis two-node tests are
@@ -1764,8 +1764,7 @@ Opt-in package that delivers integration events to external HTTP endpoints, sign
   (Testing: `EnableDelivery: false`), `tests/{App}.Tests/WebhookTests.cs`. Idempotent; re-run to add events. Templates:
   `cli/Templates/webhooks/`; wiring: `WebhooksWiring`. An event counts as registered only by a `webhooks.AddEvent<T>`
   line, so a realtime `AddEvent<T>` for the same event does not hide it.
-- **Gap.** Generated CRUD declares `{Entity}CreatedIntegrationEvent` but never publishes it; publish it
-  (`IModuleBus.PublishAsync` or via the outbox) for subscribers to receive anything.
+- **Note.** Generated Create handlers publish `{Entity}CreatedIntegrationEvent` (`IModuleBus`), so subscribers receive it.
 - **Verified end to end** on a generated `--kind api --auth openiddict` app (11/11 tests, 5 webhooks): test and real
   events received with valid signatures and marked `Delivered`; receiver down → `Pending` with a 5 s retry; `retry`
   delivered it. Covered by `Modulus.Webhooks.Tests` (84) and `WebhooksCommandTests` (13).

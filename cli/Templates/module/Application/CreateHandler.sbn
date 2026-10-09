@@ -1,12 +1,15 @@
 using Modulus.Core.Abstractions.Entities;
+using Modulus.Events.Abstractions;
 using Modulus.Mediator.Abstractions;
+using {{ module_namespace }}.Application.IntegrationEvents;
 using {{ module_namespace }}.Domain;
 
 namespace {{ module_namespace }}.Application;
 
 public sealed class Create{{ entity_name }}Handler(
     I{{ entity_name }}Repository repo,
-    IUnitOfWork unitOfWork)
+    IUnitOfWork unitOfWork,
+    IModuleBus bus)
     : ICommandHandler<Create{{ entity_name }}Command, Guid>
 {
     public async Task<Guid> HandleAsync(
@@ -19,6 +22,9 @@ public sealed class Create{{ entity_name }}Handler(
 
         await repo.AddAsync(entity, ct);
         await unitOfWork.CommitAsync(ct);
+
+        // Announce the new row to subscribers (webhooks, realtime, other modules). Published after the commit.
+        await bus.PublishAsync(new {{ entity_name }}CreatedIntegrationEvent(entity.Id), ct);
         return entity.Id;
     }
 }
