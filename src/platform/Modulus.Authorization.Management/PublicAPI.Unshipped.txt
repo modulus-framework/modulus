@@ -291,3 +291,75 @@ static Modulus.Authorization.Management.ApprovalAuthorityResponse.operator !=(Mo
 static Modulus.Authorization.Management.ApprovalAuthorityResponse.operator ==(Modulus.Authorization.Management.ApprovalAuthorityResponse? left, Modulus.Authorization.Management.ApprovalAuthorityResponse? right) -> bool
 static Modulus.Authorization.Management.ApprovalAuthorityWriteRequest.operator !=(Modulus.Authorization.Management.ApprovalAuthorityWriteRequest? left, Modulus.Authorization.Management.ApprovalAuthorityWriteRequest? right) -> bool
 static Modulus.Authorization.Management.ApprovalAuthorityWriteRequest.operator ==(Modulus.Authorization.Management.ApprovalAuthorityWriteRequest? left, Modulus.Authorization.Management.ApprovalAuthorityWriteRequest? right) -> bool
+Modulus.Authorization.Management.CompanyProfileRequest
+Modulus.Authorization.Management.CompanyProfileRequest.<Clone>$() -> Modulus.Authorization.Management.CompanyProfileRequest!
+Modulus.Authorization.Management.CompanyProfileRequest.Address.get -> string?
+Modulus.Authorization.Management.CompanyProfileRequest.Address.init -> void
+Modulus.Authorization.Management.CompanyProfileRequest.CompanyProfileRequest(string! LegalName, string? TradeName, string? RegistrationNumber, string? TaxId, string? Address, string? Country, string? Currency, int? FiscalYearStartMonth, string? TimeZone, string? Language) -> void
+Modulus.Authorization.Management.CompanyProfileRequest.Country.get -> string?
+Modulus.Authorization.Management.CompanyProfileRequest.Country.init -> void
+Modulus.Authorization.Management.CompanyProfileRequest.Currency.get -> string?
+Modulus.Authorization.Management.CompanyProfileRequest.Currency.init -> void
+Modulus.Authorization.Management.CompanyProfileRequest.Deconstruct(out string! LegalName, out string? TradeName, out string? RegistrationNumber, out string? TaxId, out string? Address, out string? Country, out string? Currency, out int? FiscalYearStartMonth, out string? TimeZone, out string? Language) -> void
+Modulus.Authorization.Management.CompanyProfileRequest.Equals(Modulus.Authorization.Management.CompanyProfileRequest? other) -> bool
+Modulus.Authorization.Management.CompanyProfileRequest.FiscalYearStartMonth.get -> int?
+Modulus.Authorization.Management.CompanyProfileRequest.FiscalYearStartMonth.init -> void
+Modulus.Authorization.Management.CompanyProfileRequest.Language.get -> string?
+Modulus.Authorization.Management.CompanyProfileRequest.Language.init -> void
+Modulus.Authorization.Management.CompanyProfileRequest.LegalName.get -> string!
+Modulus.Authorization.Management.CompanyProfileRequest.LegalName.init -> void
+Modulus.Authorization.Management.CompanyProfileRequest.RegistrationNumber.get -> string?
+Modulus.Authorization.Management.CompanyProfileRequest.RegistrationNumber.init -> void
+Modulus.Authorization.Management.CompanyProfileRequest.TaxId.get -> string?
+Modulus.Authorization.Management.CompanyProfileRequest.TaxId.init -> void
+Modulus.Authorization.Management.CompanyProfileRequest.TimeZone.get -> string?
+Modulus.Authorization.Management.CompanyProfileRequest.TimeZone.init -> void
+Modulus.Authorization.Management.CompanyProfileRequest.TradeName.get -> string?
+Modulus.Authorization.Management.CompanyProfileRequest.TradeName.init -> void
+Modulus.Authorization.Management.OrgUnitProfileRequest
+Modulus.Authorization.Management.OrgUnitProfileRequest.<Clone>$() -> Modulus.Authorization.Management.OrgUnitProfileRequest!
+Modulus.Authorization.Management.OrgUnitProfileRequest.Code.get -> string!
+Modulus.Authorization.Management.OrgUnitProfileRequest.Code.init -> void
+Modulus.Authorization.Management.OrgUnitProfileRequest.Deconstruct(out string! Code, out string! Name, out string! Kind, out System.Guid? ManagerUserId) -> void
+Modulus.Authorization.Management.OrgUnitProfileRequest.Equals(Modulus.Authorization.Management.OrgUnitProfileRequest? other) -> bool
+Modulus.Authorization.Management.OrgUnitProfileRequest.Kind.get -> string!
+Modulus.Authorization.Management.OrgUnitProfileRequest.Kind.init -> void
+Modulus.Authorization.Management.OrgUnitProfileRequest.ManagerUserId.get -> System.Guid?
+Modulus.Authorization.Management.OrgUnitProfileRequest.ManagerUserId.init -> void
+Modulus.Authorization.Management.OrgUnitProfileRequest.Name.get -> string!
+Modulus.Authorization.Management.OrgUnitProfileRequest.Name.init -> void
+Modulus.Authorization.Management.OrgUnitProfileRequest.OrgUnitProfileRequest(string! Code, string! Name, string! Kind, System.Guid? ManagerUserId) -> void
+Modulus.Authorization.Management.OrgUnitProfileResponse
+Modulus.Authorization.Management.OrgUnitProfileResponse.<Clone>$() -> Modulus.Authorization.Management.OrgUnitProfileResponse!
+Modulus.Authorization.Management.OrgUnitProfileResponse.ClosedAt.get -> System.DateTimeOffset?
+Modulus.Authorization.Management.OrgUnitProfileResponse.ClosedAt.init -> void
+Modulus.Authorization.Management.OrgUnitProfileResponse.Code.get -> string!
+Modulus.Authorization.Management.OrgUnitProfileResponse.Code.init -> void
+Modulus.Authorization.Management.OrgUnitProfileResponse.Deconstruct(out System.Guid UnitId, out string! Code, out string! Name, out string! Kind, out bool IsClosed, out System.Guid? ManagerUserId, out System.DateTimeOffset? ClosedAt) -> void
+Modulus.Authorization.Management.OrgUnitProfileResponse.Equals(Modulus.Authorization.Management.OrgUnitProfileResponse? other) -> bool
+Modulus.Authorization.Management.OrgUnitProfileResponse.IsClosed.get -> bool
+Modulus.Authorization.Management.OrgUnitProfileResponse.IsClosed.init -> void
+Modulus.Authorization.Management.OrgUnitProfileResponse.Kind.get -> string!
+Modulus.Authorization.Management.OrgUnitProfileResponse.Kind.init -> void
+Modulus.Authorization.Management.OrgUnitProfileResponse.ManagerUserId.get -> System.Guid?
+Modulus.Authorization.Management.OrgUnitProfileResponse.ManagerUserId.init -> void
+Modulus.Authorization.Management.OrgUnitProfileResponse.Name.get -> string!
+Modulus.Authorization.Management.OrgUnitProfileResponse.Name.init -> void
+Modulus.Authorization.Management.OrgUnitProfileResponse.OrgUnitProfileResponse(System.Guid UnitId, string! Code, string! Name, string! Kind, bool IsClosed, System.Guid? ManagerUserId, System.DateTimeOffset? ClosedAt) -> void
+Modulus.Authorization.Management.OrgUnitProfileResponse.UnitId.get -> System.Guid
+Modulus.Authorization.Management.OrgUnitProfileResponse.UnitId.init -> void
+override Modulus.Authorization.Management.CompanyProfileRequest.Equals(object? obj) -> bool
+override Modulus.Authorization.Management.CompanyProfileRequest.GetHashCode() -> int
+override Modulus.Authorization.Management.CompanyProfileRequest.ToString() -> string!
+override Modulus.Authorization.Management.OrgUnitProfileRequest.Equals(object? obj) -> bool
+override Modulus.Authorization.Management.OrgUnitProfileRequest.GetHashCode() -> int
+override Modulus.Authorization.Management.OrgUnitProfileRequest.ToString() -> string!
+override Modulus.Authorization.Management.OrgUnitProfileResponse.Equals(object? obj) -> bool
+override Modulus.Authorization.Management.OrgUnitProfileResponse.GetHashCode() -> int
+override Modulus.Authorization.Management.OrgUnitProfileResponse.ToString() -> string!
+static Modulus.Authorization.Management.CompanyProfileRequest.operator !=(Modulus.Authorization.Management.CompanyProfileRequest? left, Modulus.Authorization.Management.CompanyProfileRequest? right) -> bool
+static Modulus.Authorization.Management.CompanyProfileRequest.operator ==(Modulus.Authorization.Management.CompanyProfileRequest? left, Modulus.Authorization.Management.CompanyProfileRequest? right) -> bool
+static Modulus.Authorization.Management.OrgUnitProfileRequest.operator !=(Modulus.Authorization.Management.OrgUnitProfileRequest? left, Modulus.Authorization.Management.OrgUnitProfileRequest? right) -> bool
+static Modulus.Authorization.Management.OrgUnitProfileRequest.operator ==(Modulus.Authorization.Management.OrgUnitProfileRequest? left, Modulus.Authorization.Management.OrgUnitProfileRequest? right) -> bool
+static Modulus.Authorization.Management.OrgUnitProfileResponse.operator !=(Modulus.Authorization.Management.OrgUnitProfileResponse? left, Modulus.Authorization.Management.OrgUnitProfileResponse? right) -> bool
+static Modulus.Authorization.Management.OrgUnitProfileResponse.operator ==(Modulus.Authorization.Management.OrgUnitProfileResponse? left, Modulus.Authorization.Management.OrgUnitProfileResponse? right) -> bool

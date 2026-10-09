@@ -32,6 +32,8 @@ public class AuthorizationStoreDbContext(
     internal DbSet<ScopedGrantRow> ScopedGrants => Set<ScopedGrantRow>();
     internal DbSet<AssignmentRow> Assignments => Set<AssignmentRow>();
     internal DbSet<ApprovalAuthorityRow> ApprovalAuthorities => Set<ApprovalAuthorityRow>();
+    internal DbSet<OrgUnitProfileRow> OrgUnitProfiles => Set<OrgUnitProfileRow>();
+    internal DbSet<CompanyProfileRow> CompanyProfiles => Set<CompanyProfileRow>();
 
     /// <summary>
     /// Durable audit-event outbox (auth blueprint §5.14/§16), written by
@@ -164,6 +166,28 @@ public class AuthorizationStoreDbContext(
         approval.Property(a => a.DocumentType).HasMaxLength(256);
         approval.HasIndex(a => new { a.TenantId, a.Permission, a.HolderType, a.Holder });
 
+        var unitProfile = modelBuilder.Entity<OrgUnitProfileRow>();
+        unitProfile.ToTable("ModulusOrgUnitProfiles");
+        unitProfile.HasKey(p => new { p.TenantId, p.UnitId });
+        unitProfile.Property(p => p.Code).HasMaxLength(64);
+        unitProfile.Property(p => p.NormalizedCode).HasMaxLength(64);
+        unitProfile.Property(p => p.Name).HasMaxLength(256);
+        unitProfile.Property(p => p.Kind).HasMaxLength(64);
+        unitProfile.HasIndex(p => new { p.TenantId, p.NormalizedCode }).IsUnique();
+
+        var company = modelBuilder.Entity<CompanyProfileRow>();
+        company.ToTable("ModulusCompanyProfiles");
+        company.HasKey(c => c.TenantId);
+        company.Property(c => c.LegalName).HasMaxLength(256);
+        company.Property(c => c.TradeName).HasMaxLength(256);
+        company.Property(c => c.RegistrationNumber).HasMaxLength(64);
+        company.Property(c => c.TaxId).HasMaxLength(64);
+        company.Property(c => c.Address).HasMaxLength(1000);
+        company.Property(c => c.Country).HasMaxLength(2);
+        company.Property(c => c.Currency).HasMaxLength(3);
+        company.Property(c => c.TimeZone).HasMaxLength(64);
+        company.Property(c => c.Language).HasMaxLength(16);
+
         var auditOutbox = modelBuilder.Entity<OutboxMessage>();
         auditOutbox.ToTable("ModulusAuthorizationAuditOutbox");
         auditOutbox.HasKey(m => m.Id);
@@ -223,6 +247,12 @@ public class AuthorizationStoreDbContext(
         mb.Entity<ApprovalAuthorityRow>().HasQueryFilter(e =>
             currentTenant.IsHost
             || (currentTenant.TenantId != null && e.TenantId == currentTenant.TenantId));
+        mb.Entity<OrgUnitProfileRow>().HasQueryFilter(e =>
+            currentTenant.IsHost
+            || (currentTenant.TenantId != null && e.TenantId == currentTenant.TenantId));
+        mb.Entity<CompanyProfileRow>().HasQueryFilter(e =>
+            currentTenant.IsHost
+            || (currentTenant.TenantId != null && e.TenantId == currentTenant.TenantId));
     }
 }
 
@@ -272,6 +302,38 @@ internal sealed class ApprovalAuthorityRow : IHasTenantId
     public DateTimeOffset? ValidUntil { get; set; }
     public Guid? CreatedBy { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
+}
+
+/// <summary>Row backing an <see cref="OrgUnitProfile"/>.</summary>
+internal sealed class OrgUnitProfileRow : IHasTenantId
+{
+    public Guid TenantId { get; set; }
+    public Guid UnitId { get; set; }
+    public string Code { get; set; } = null!;
+    public string NormalizedCode { get; set; } = null!;
+    public string Name { get; set; } = null!;
+    public string Kind { get; set; } = null!;
+    public bool IsClosed { get; set; }
+    public Guid? ManagerUserId { get; set; }
+    public DateTimeOffset? ClosedAt { get; set; }
+    public DateTimeOffset UpdatedAt { get; set; }
+}
+
+/// <summary>Row backing a <see cref="CompanyProfile"/>; one per company.</summary>
+internal sealed class CompanyProfileRow : IHasTenantId
+{
+    public Guid TenantId { get; set; }
+    public string LegalName { get; set; } = null!;
+    public string? TradeName { get; set; }
+    public string? RegistrationNumber { get; set; }
+    public string? TaxId { get; set; }
+    public string? Address { get; set; }
+    public string? Country { get; set; }
+    public string? Currency { get; set; }
+    public int FiscalYearStartMonth { get; set; } = 1;
+    public string? TimeZone { get; set; }
+    public string? Language { get; set; }
+    public DateTimeOffset UpdatedAt { get; set; }
 }
 
 /// <summary>Row backing a <see cref="PermissionGrant"/>.</summary>

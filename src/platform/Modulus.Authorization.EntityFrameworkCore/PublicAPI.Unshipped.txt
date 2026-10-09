@@ -185,3 +185,72 @@ override Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore.Stor
 override Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore.Stored.ToString() -> string!
 static Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore.Stored.operator !=(Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore.Stored? left, Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore.Stored? right) -> bool
 static Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore.Stored.operator ==(Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore.Stored? left, Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore.Stored? right) -> bool
+Modulus.Authorization.EntityFrameworkCore.CompanyProfile
+Modulus.Authorization.EntityFrameworkCore.CompanyProfile.<Clone>$() -> Modulus.Authorization.EntityFrameworkCore.CompanyProfile!
+Modulus.Authorization.EntityFrameworkCore.CompanyProfile.Address.get -> string?
+Modulus.Authorization.EntityFrameworkCore.CompanyProfile.Address.init -> void
+Modulus.Authorization.EntityFrameworkCore.CompanyProfile.CompanyProfile(string! LegalName, string? TradeName = null, string? RegistrationNumber = null, string? TaxId = null, string? Address = null, string? Country = null, string? Currency = null, int FiscalYearStartMonth = 1, string? TimeZone = null, string? Language = null) -> void
+Modulus.Authorization.EntityFrameworkCore.CompanyProfile.Country.get -> string?
+Modulus.Authorization.EntityFrameworkCore.CompanyProfile.Country.init -> void
+Modulus.Authorization.EntityFrameworkCore.CompanyProfile.Currency.get -> string?
+Modulus.Authorization.EntityFrameworkCore.CompanyProfile.Currency.init -> void
+Modulus.Authorization.EntityFrameworkCore.CompanyProfile.Deconstruct(out string! LegalName, out string? TradeName, out string? RegistrationNumber, out string? TaxId, out string? Address, out string? Country, out string? Currency, out int FiscalYearStartMonth, out string? TimeZone, out string? Language) -> void
+Modulus.Authorization.EntityFrameworkCore.CompanyProfile.Equals(Modulus.Authorization.EntityFrameworkCore.CompanyProfile? other) -> bool
+Modulus.Authorization.EntityFrameworkCore.CompanyProfile.FiscalYearStartMonth.get -> int
+Modulus.Authorization.EntityFrameworkCore.CompanyProfile.FiscalYearStartMonth.init -> void
+Modulus.Authorization.EntityFrameworkCore.CompanyProfile.Language.get -> string?
+Modulus.Authorization.EntityFrameworkCore.CompanyProfile.Language.init -> void
+Modulus.Authorization.EntityFrameworkCore.CompanyProfile.LegalName.get -> string!
+Modulus.Authorization.EntityFrameworkCore.CompanyProfile.LegalName.init -> void
+Modulus.Authorization.EntityFrameworkCore.CompanyProfile.RegistrationNumber.get -> string?
+Modulus.Authorization.EntityFrameworkCore.CompanyProfile.RegistrationNumber.init -> void
+Modulus.Authorization.EntityFrameworkCore.CompanyProfile.TaxId.get -> string?
+Modulus.Authorization.EntityFrameworkCore.CompanyProfile.TaxId.init -> void
+Modulus.Authorization.EntityFrameworkCore.CompanyProfile.TimeZone.get -> string?
+Modulus.Authorization.EntityFrameworkCore.CompanyProfile.TimeZone.init -> void
+Modulus.Authorization.EntityFrameworkCore.CompanyProfile.TradeName.get -> string?
+Modulus.Authorization.EntityFrameworkCore.CompanyProfile.TradeName.init -> void
+Modulus.Authorization.EntityFrameworkCore.EfOrganizationProfileStore
+Modulus.Authorization.EntityFrameworkCore.EfOrganizationProfileStore.EfOrganizationProfileStore(Microsoft.EntityFrameworkCore.IDbContextFactory<Modulus.Authorization.EntityFrameworkCore.AuthorizationStoreDbContext!>! factory) -> void
+Modulus.Authorization.EntityFrameworkCore.EfOrganizationProfileStore.GetCompanyAsync(System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Authorization.EntityFrameworkCore.CompanyProfile?>!
+Modulus.Authorization.EntityFrameworkCore.EfOrganizationProfileStore.GetUnitAsync(System.Guid unitId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Authorization.EntityFrameworkCore.OrgUnitProfile?>!
+Modulus.Authorization.EntityFrameworkCore.EfOrganizationProfileStore.ListUnitsAsync(System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Authorization.EntityFrameworkCore.OrgUnitProfile!>!>!
+Modulus.Authorization.EntityFrameworkCore.EfOrganizationProfileStore.SaveCompanyAsync(Modulus.Authorization.EntityFrameworkCore.CompanyProfile! profile, System.DateTimeOffset now, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Authorization.EntityFrameworkCore.EfOrganizationProfileStore.SaveUnitAsync(Modulus.Authorization.EntityFrameworkCore.OrgUnitProfile! profile, System.DateTimeOffset now, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.Authorization.EntityFrameworkCore.EfOrganizationProfileStore.SetClosedAsync(System.Guid unitId, bool closed, System.DateTimeOffset now, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.Authorization.EntityFrameworkCore.OrgUnitKinds
+Modulus.Authorization.EntityFrameworkCore.OrgUnitProfile
+Modulus.Authorization.EntityFrameworkCore.OrgUnitProfile.<Clone>$() -> Modulus.Authorization.EntityFrameworkCore.OrgUnitProfile!
+Modulus.Authorization.EntityFrameworkCore.OrgUnitProfile.ClosedAt.get -> System.DateTimeOffset?
+Modulus.Authorization.EntityFrameworkCore.OrgUnitProfile.ClosedAt.init -> void
+Modulus.Authorization.EntityFrameworkCore.OrgUnitProfile.Code.get -> string!
+Modulus.Authorization.EntityFrameworkCore.OrgUnitProfile.Code.init -> void
+Modulus.Authorization.EntityFrameworkCore.OrgUnitProfile.Deconstruct(out System.Guid UnitId, out string! Code, out string! Name, out string! Kind, out bool IsClosed, out System.Guid? ManagerUserId, out System.DateTimeOffset? ClosedAt) -> void
+Modulus.Authorization.EntityFrameworkCore.OrgUnitProfile.Equals(Modulus.Authorization.EntityFrameworkCore.OrgUnitProfile? other) -> bool
+Modulus.Authorization.EntityFrameworkCore.OrgUnitProfile.IsClosed.get -> bool
+Modulus.Authorization.EntityFrameworkCore.OrgUnitProfile.IsClosed.init -> void
+Modulus.Authorization.EntityFrameworkCore.OrgUnitProfile.Kind.get -> string!
+Modulus.Authorization.EntityFrameworkCore.OrgUnitProfile.Kind.init -> void
+Modulus.Authorization.EntityFrameworkCore.OrgUnitProfile.ManagerUserId.get -> System.Guid?
+Modulus.Authorization.EntityFrameworkCore.OrgUnitProfile.ManagerUserId.init -> void
+Modulus.Authorization.EntityFrameworkCore.OrgUnitProfile.Name.get -> string!
+Modulus.Authorization.EntityFrameworkCore.OrgUnitProfile.Name.init -> void
+Modulus.Authorization.EntityFrameworkCore.OrgUnitProfile.OrgUnitProfile(System.Guid UnitId, string! Code, string! Name, string! Kind, bool IsClosed = false, System.Guid? ManagerUserId = null, System.DateTimeOffset? ClosedAt = null) -> void
+Modulus.Authorization.EntityFrameworkCore.OrgUnitProfile.UnitId.get -> System.Guid
+Modulus.Authorization.EntityFrameworkCore.OrgUnitProfile.UnitId.init -> void
+const Modulus.Authorization.EntityFrameworkCore.OrgUnitKinds.Branch = "branch" -> string!
+const Modulus.Authorization.EntityFrameworkCore.OrgUnitKinds.Department = "department" -> string!
+const Modulus.Authorization.EntityFrameworkCore.OrgUnitKinds.Factory = "factory" -> string!
+const Modulus.Authorization.EntityFrameworkCore.OrgUnitKinds.Office = "office" -> string!
+const Modulus.Authorization.EntityFrameworkCore.OrgUnitKinds.Team = "team" -> string!
+const Modulus.Authorization.EntityFrameworkCore.OrgUnitKinds.Warehouse = "warehouse" -> string!
+override Modulus.Authorization.EntityFrameworkCore.CompanyProfile.Equals(object? obj) -> bool
+override Modulus.Authorization.EntityFrameworkCore.CompanyProfile.GetHashCode() -> int
+override Modulus.Authorization.EntityFrameworkCore.CompanyProfile.ToString() -> string!
+override Modulus.Authorization.EntityFrameworkCore.OrgUnitProfile.Equals(object? obj) -> bool
+override Modulus.Authorization.EntityFrameworkCore.OrgUnitProfile.GetHashCode() -> int
+override Modulus.Authorization.EntityFrameworkCore.OrgUnitProfile.ToString() -> string!
+static Modulus.Authorization.EntityFrameworkCore.CompanyProfile.operator !=(Modulus.Authorization.EntityFrameworkCore.CompanyProfile? left, Modulus.Authorization.EntityFrameworkCore.CompanyProfile? right) -> bool
+static Modulus.Authorization.EntityFrameworkCore.CompanyProfile.operator ==(Modulus.Authorization.EntityFrameworkCore.CompanyProfile? left, Modulus.Authorization.EntityFrameworkCore.CompanyProfile? right) -> bool
+static Modulus.Authorization.EntityFrameworkCore.OrgUnitProfile.operator !=(Modulus.Authorization.EntityFrameworkCore.OrgUnitProfile? left, Modulus.Authorization.EntityFrameworkCore.OrgUnitProfile? right) -> bool
+static Modulus.Authorization.EntityFrameworkCore.OrgUnitProfile.operator ==(Modulus.Authorization.EntityFrameworkCore.OrgUnitProfile? left, Modulus.Authorization.EntityFrameworkCore.OrgUnitProfile? right) -> bool

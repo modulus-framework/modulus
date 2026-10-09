@@ -1378,6 +1378,11 @@ roots, Security tab in `Modulus.UI.AuditLogging`).
 - **Exports and bulk actions.** `scopes.ForExport(query, "orders:export", "orders:read")` needs both permissions and returns only the rows both cover (an export reaches no
   further than reading); `scopes.EnsureAllInScope(records, permission)` / `OutOfScope(...)` make a bulk action all-or-nothing (`ForbiddenException`). A route that returns the same data as a
   scoped list (by id, export, report, bulk) must go through the same scope.
+- **Organization master data (Company = Tenant).** A customer with several legal companies is a *group of tenants* (`TenantInfo.GroupId`); inside a company, branches,
+  factories, offices, warehouses and departments are org units. Beside the hierarchy the authorization store keeps their business details
+  (`EfOrganizationProfileStore`: `ModulusOrgUnitProfiles` with code unique per company, name, kind, manager, closed state; `ModulusCompanyProfiles` with legal/trade name,
+  registration and tax ids, address, country, functional currency, fiscal-year start, time zone, language; existing deployments need a migration) and the admin API serves them:
+  `org/company-profile`, `org/units`, `org/units/{id}/profile`, `.../close` (refused while units below still operate) and `.../reopen` (refused below a closed unit).
 - **Reason codes.** `AccessDecision.Code` uses `AccessReasonCodes` (BRS Appendix B); no policy for a type = `METADATA_MISSING`.
 - **Sensitivity.** `PermissionSensitivity` (Normal/Sensitive/Critical) on `PermissionDefinition`; `registry.Add(..., sensitivity)`.
   A wildcard grant never confers a Critical permission (a wildcard deny still removes it); Critical is not delegable.

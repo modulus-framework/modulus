@@ -107,3 +107,19 @@ public sealed record ApprovalAuthorityWriteRequest(
 public sealed record ApprovalAuthorityResponse(
     Guid Id, string HolderType, string Holder, string Permission, decimal MaxAmount, string? Currency, string? DocumentType,
     Guid? OrgUnitId, DateTimeOffset? ValidFrom, DateTimeOffset? ValidUntil, Guid? CreatedBy, DateTimeOffset CreatedAt);
+
+/// <summary>The business details of an org unit.</summary>
+/// <param name="Code">A short code, unique within the company.</param>
+/// <param name="Name">The display name.</param>
+/// <param name="Kind">What it is: branch, factory, office, warehouse, department, team, or another word.</param>
+/// <param name="ManagerUserId">The user who manages it.</param>
+public sealed record OrgUnitProfileRequest(string Code, string Name, string Kind, Guid? ManagerUserId);
+
+/// <summary>An org unit's business details.</summary>
+public sealed record OrgUnitProfileResponse(
+    Guid UnitId, string Code, string Name, string Kind, bool IsClosed, Guid? ManagerUserId, DateTimeOffset? ClosedAt);
+
+/// <summary>The legal and regional details of the company.</summary>
+public sealed record CompanyProfileRequest(
+    string LegalName, string? TradeName, string? RegistrationNumber, string? TaxId, string? Address, string? Country,
+    string? Currency, int? FiscalYearStartMonth, string? TimeZone, string? Language);

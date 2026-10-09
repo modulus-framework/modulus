@@ -856,4 +856,76 @@ public sealed class AuthorizationManagementApiTests : IAsyncLifetime
             new { holderType = "Role", holder = "Sales", permission = "orders:read", scope = "assigned:Customer" }))
             .StatusCode.Should().Be(HttpStatusCode.Created);
     }
+
+    // ── Company and unit profiles ──
+
+    private async Task<Guid> CreateUnitAsync(params Guid[] parents)
+    {
+        var id = Guid.NewGuid();
+        (await _client.PostAsJsonAsync("/authorization/org/units", new { id, parents })).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        return id;
+    }
+
+    private Task<HttpResponseMessage> ProfileAsync(Guid unit, string code, string kind = "Factory", Guid? manager = null)
+        => _client.PutAsJsonAsync($"/authorization/org/units/{unit}/profile", new { code, name = $"Unit {code}", kind, managerUserId = manager });
+
+    private sealed record UnitView(Guid UnitId, string Code, string Name, string Kind, bool IsClosed);
+
+    [Fact]
+    public async Task The_company_profile_is_validated_and_round_trips()
+    {
+        (await _client.GetAsync("/authorization/org/company-profile")).StatusCode.Should().Be(HttpStatusCode.NotFound);
+        (await _client.PutAsJsonAsync("/authorization/org/company-profile", new { legalName = " ", currency = "US", fiscalYearStartMonth = 13 }))
+            .StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        (await _client.PutAsJsonAsync("/authorization/org/company-profile",
+            new { legalName = "Acme Garments Ltd", currency = "bdt", country = "bd", fiscalYearStartMonth = 7, taxId = "TIN-1" }))
+            .StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        var profile = await _client.GetFromJsonAsync<Modulus.Authorization.EntityFrameworkCore.CompanyProfile>("/authorization/org/company-profile");
+        profile!.LegalName.Should().Be("Acme Garments Ltd");
+        profile.Currency.Should().Be("BDT");
+        profile.Country.Should().Be("BD");
+        profile.FiscalYearStartMonth.Should().Be(7);
+    }
+
+    [Fact]
+    public async Task A_unit_profile_needs_an_existing_unit_a_unique_code_and_a_known_manager()
+    {
+        var factory = await CreateUnitAsync();
+        var warehouse = await CreateUnitAsync(factory);
+
+        (await ProfileAsync(Guid.NewGuid(), "X1")).StatusCode.Should().Be(HttpStatusCode.NotFound);
+        (await ProfileAsync(factory, " ")).StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await ProfileAsync(factory, "F-01", manager: Guid.NewGuid())).StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        var manager = _directory.AddUser();
+        (await ProfileAsync(factory, "F-01", manager: manager)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await ProfileAsync(warehouse, "f-01", "warehouse")).StatusCode.Should().Be(HttpStatusCode.Conflict);
+        (await ProfileAsync(warehouse, "W-01", "warehouse")).StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        var units = (await _client.GetFromJsonAsync<UnitView[]>("/authorization/org/units"))!;
+        units.Select(u => u.Code).Should().Equal("F-01", "W-01");
+        units[0].Kind.Should().Be("factory", "kinds are stored lower-case");
+    }
+
+    [Fact]
+    public async Task A_unit_cannot_close_while_units_below_it_operate_or_reopen_below_a_closed_one()
+    {
+        var factory = await CreateUnitAsync();
+        var line = await CreateUnitAsync(factory);
+        await ProfileAsync(factory, "F-01");
+        await ProfileAsync(line, "L-01", "team");
+
+        var blocked = await _client.PostAsync($"/authorization/org/units/{factory}/close", null);
+        blocked.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        (await blocked.Content.ReadAsStringAsync()).Should().Contain("L-01");
+
+        (await _client.PostAsync($"/authorization/org/units/{line}/close", null)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await _client.PostAsync($"/authorization/org/units/{factory}/close", null)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await _client.PostAsync($"/authorization/org/units/{line}/reopen", null)).StatusCode.Should().Be(HttpStatusCode.Conflict);
+        (await _client.PostAsync($"/authorization/org/units/{factory}/reopen", null)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await _client.PostAsync($"/authorization/org/units/{line}/reopen", null)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await _client.PostAsync($"/authorization/org/units/{Guid.NewGuid()}/close", null)).StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
 }

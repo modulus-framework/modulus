@@ -643,6 +643,9 @@ public static class AuthorizationManagementExtensions
         });
     }
 
+    private static OrgUnitProfileResponse ToResponse(OrgUnitProfile p)
+        => new(p.UnitId, p.Code, p.Name, p.Kind, p.IsClosed, p.ManagerUserId, p.ClosedAt);
+
     private static ApprovalAuthorityResponse ToResponse(EfApprovalAuthorityStore.Stored s)
         => new(s.Id, s.Authority.HolderType.ToString(), s.Authority.Holder, s.Authority.Permission, s.Authority.MaxAmount,
             s.Authority.Currency, s.Authority.DocumentType, s.Authority.OrgUnitId, s.Authority.ValidFrom, s.Authority.ValidUntil,
@@ -682,6 +685,121 @@ public static class AuthorizationManagementExtensions
                 $"unit:{id}",
                 new Dictionary<string, string> { ["parents"] = string.Join(",", request.Parents) }, ct);
 
+            return Results.NoContent();
+        });
+
+        // ── Company and unit profiles (master data beside the hierarchy) ──
+
+        group.MapGet("/org/company-profile", async (EfOrganizationProfileStore profiles, CancellationToken ct) =>
+            await profiles.GetCompanyAsync(ct) is { } profile
+                ? Results.Ok(profile)
+                : Results.Problem(detail: "No company profile has been saved.", statusCode: StatusCodes.Status404NotFound));
+
+        group.MapPut("/org/company-profile", async (
+            CompanyProfileRequest request, EfOrganizationProfileStore profiles,
+            IAuthorizationAuditWriter auditWriter, IEnumerable<IAccessChangeObserver> observers,
+            ICurrentUser currentUser, TimeProvider clock, CancellationToken ct) =>
+        {
+            var errors = new Dictionary<string, string[]>();
+            if (string.IsNullOrWhiteSpace(request.LegalName))
+                errors["legalName"] = ["A legal name is required."];
+            if (request.FiscalYearStartMonth is < 1 or > 12)
+                errors["fiscalYearStartMonth"] = ["The financial year starts in month 1 to 12."];
+            if (request.Currency is { Length: > 0 } currency && currency.Trim().Length != 3)
+                errors["currency"] = ["Use a three-letter ISO 4217 code."];
+            if (request.Country is { Length: > 0 } country && country.Trim().Length != 2)
+                errors["country"] = ["Use a two-letter ISO 3166-1 code."];
+            if (errors.Count > 0)
+                return Results.ValidationProblem(errors);
+
+            await profiles.SaveCompanyAsync(
+                new CompanyProfile(request.LegalName, request.TradeName, request.RegistrationNumber, request.TaxId, request.Address,
+                    request.Country, request.Currency, request.FiscalYearStartMonth ?? 1, request.TimeZone, request.Language),
+                clock.GetUtcNow(), ct);
+            await EmitAuditAsync(auditWriter, observers, currentUser, "Company", "ProfileSaved", "company",
+                new Dictionary<string, string> { ["legalName"] = request.LegalName.Trim(), ["currency"] = request.Currency ?? "" }, ct);
+            return Results.NoContent();
+        });
+
+        group.MapGet("/org/units", async (EfOrganizationProfileStore profiles, CancellationToken ct) =>
+            Results.Ok((await profiles.ListUnitsAsync(ct)).Select(ToResponse)));
+
+        group.MapGet("/org/units/{id:guid}/profile", async (Guid id, EfOrganizationProfileStore profiles, CancellationToken ct) =>
+            await profiles.GetUnitAsync(id, ct) is { } profile
+                ? Results.Ok(ToResponse(profile))
+                : Results.Problem(detail: "No profile for this unit.", statusCode: StatusCodes.Status404NotFound));
+
+        group.MapPut("/org/units/{id:guid}/profile", async (
+            Guid id, OrgUnitProfileRequest request, EfOrganizationProfileStore profiles, EfOrgHierarchy hierarchy,
+            [FromServices] IUserRoleDirectory? roleDirectory,
+            IAuthorizationAuditWriter auditWriter, IEnumerable<IAccessChangeObserver> observers,
+            ICurrentUser currentUser, TimeProvider clock, CancellationToken ct) =>
+        {
+            var errors = new Dictionary<string, string[]>();
+            if (string.IsNullOrWhiteSpace(request.Code))
+                errors["code"] = ["A code is required."];
+            if (string.IsNullOrWhiteSpace(request.Name))
+                errors["name"] = ["A name is required."];
+            if (string.IsNullOrWhiteSpace(request.Kind))
+                errors["kind"] = ["A kind is required (branch, factory, office, warehouse, department, team, ...)."];
+            if (errors.Count > 0)
+                return Results.ValidationProblem(errors);
+            if (!hierarchy.Contains(id))
+                return Results.Problem(detail: "The unit does not exist; create it first.", statusCode: StatusCodes.Status404NotFound);
+            if (request.ManagerUserId is { } manager && roleDirectory is not null && await roleDirectory.GetRolesAsync(manager, ct) is null)
+                return Results.ValidationProblem(new Dictionary<string, string[]> { ["managerUserId"] = ["The manager is not a known user."] });
+
+            var existing = await profiles.GetUnitAsync(id, ct);
+            var saved = await profiles.SaveUnitAsync(
+                new OrgUnitProfile(id, request.Code, request.Name, request.Kind, existing?.IsClosed ?? false, request.ManagerUserId, existing?.ClosedAt),
+                clock.GetUtcNow(), ct);
+            if (!saved)
+                return Results.Conflict(new { error = "Duplicate code", message = $"Another unit already uses the code '{request.Code.Trim()}'." });
+
+            await EmitAuditAsync(auditWriter, observers, currentUser, "OrgUnit", "ProfileSaved", $"unit:{id}",
+                new Dictionary<string, string>
+                {
+                    ["code"] = request.Code.Trim(),
+                    ["kind"] = request.Kind.Trim().ToLowerInvariant(),
+                    ["manager"] = request.ManagerUserId?.ToString() ?? "",
+                }, ct);
+            return Results.NoContent();
+        });
+
+        group.MapPost("/org/units/{id:guid}/close", async (
+            Guid id, EfOrganizationProfileStore profiles, EfOrgHierarchy hierarchy,
+            IAuthorizationAuditWriter auditWriter, IEnumerable<IAccessChangeObserver> observers,
+            ICurrentUser currentUser, TimeProvider clock, CancellationToken ct) =>
+        {
+            if (await profiles.GetUnitAsync(id, ct) is null)
+                return Results.Problem(detail: "No profile for this unit.", statusCode: StatusCodes.Status404NotFound);
+
+            // A branch cannot close while something beneath it still operates.
+            var below = hierarchy.Descendants(id);
+            var open = (await profiles.ListUnitsAsync(ct)).Where(p => !p.IsClosed && p.UnitId != id && below.Contains(p.UnitId)).ToList();
+            if (open.Count > 0)
+                return Results.Conflict(new { error = "Open units below", message = "Close these units first.", units = open.Select(p => p.Code).ToList() });
+
+            await profiles.SetClosedAsync(id, true, clock.GetUtcNow(), ct);
+            await EmitAuditAsync(auditWriter, observers, currentUser, "OrgUnit", "Closed", $"unit:{id}", new Dictionary<string, string>(), ct);
+            return Results.NoContent();
+        });
+
+        group.MapPost("/org/units/{id:guid}/reopen", async (
+            Guid id, EfOrganizationProfileStore profiles, EfOrgHierarchy hierarchy,
+            IAuthorizationAuditWriter auditWriter, IEnumerable<IAccessChangeObserver> observers,
+            ICurrentUser currentUser, TimeProvider clock, CancellationToken ct) =>
+        {
+            if (await profiles.GetUnitAsync(id, ct) is null)
+                return Results.Problem(detail: "No profile for this unit.", statusCode: StatusCodes.Status404NotFound);
+
+            var above = hierarchy.Ancestors(id);
+            var closed = (await profiles.ListUnitsAsync(ct)).Where(p => p.IsClosed && above.Contains(p.UnitId)).ToList();
+            if (closed.Count > 0)
+                return Results.Conflict(new { error = "Closed units above", message = "Reopen these units first.", units = closed.Select(p => p.Code).ToList() });
+
+            await profiles.SetClosedAsync(id, false, clock.GetUtcNow(), ct);
+            await EmitAuditAsync(auditWriter, observers, currentUser, "OrgUnit", "Reopened", $"unit:{id}", new Dictionary<string, string>(), ct);
             return Results.NoContent();
         });
 
