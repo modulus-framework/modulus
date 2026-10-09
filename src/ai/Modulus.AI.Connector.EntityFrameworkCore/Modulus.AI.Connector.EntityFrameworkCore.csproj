@@ -19,6 +19,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Modulus.AI.Connector.EntityFrameworkCore.Tests" />
+    <InternalsVisibleTo Include="Modulus.EFCore.Integration.Tests" />
   </ItemGroup>
 
 </Project>

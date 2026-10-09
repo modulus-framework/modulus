@@ -5,6 +5,7 @@
     <ProjectReference Include="../../../src/data/Modulus.Data.SqlServer/Modulus.Data.SqlServer.csproj" />
     <ProjectReference Include="../../../src/data/Modulus.Data.MySQL/Modulus.Data.MySQL.csproj" />
     <ProjectReference Include="../../../src/data/Modulus.EntityFrameworkCore/Modulus.EntityFrameworkCore.csproj" />
+    <ProjectReference Include="../../../src/ai/Modulus.AI.Connector.EntityFrameworkCore/Modulus.AI.Connector.EntityFrameworkCore.csproj" />
     <PackageReference Include="Testcontainers.PostgreSql" />
     <PackageReference Include="Testcontainers.MsSql" />
     <PackageReference Include="Testcontainers.MySql" />
