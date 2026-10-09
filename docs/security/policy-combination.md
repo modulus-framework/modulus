@@ -60,13 +60,23 @@ permission does not cross a company boundary.
 The same scope that filters a list (`IScopeEnforcer.Apply`) is the one that checks a single record. A new route that returns
 the same data (by id, export, report, bulk action) must go through that scope too. [`Lists_and_single_record_checks_agree_for_every_scope_shape`]
 
-## Revocation
+## Revocation windows
 
-Grants, memberships, delegations and accounts notify `IAccessChangeObserver` after they are saved. Decisions are computed per
-request from the grant store, so a removed grant stops applying on the next request, except where a cache sits in between:
-`CachedPermissionGrantStore` is request-scoped, and delegation role snapshots follow live roles within
-`DelegationRoleRefreshOptions.Interval`. Tokens carry identity, not permissions, unless `TrustPermissionClaims` is left on;
-set it to `false` to make the grant store the only source.
+Decisions are computed per request from the grant store; nothing about grants is cached across requests
+(`CachedPermissionGrantStore` memoizes within one request only). So a removed grant, deny, scope, assignment, membership or
+approval limit applies on the **next request**, on every node. The places where state is held longer, and for how long:
+
+| State | Held for | How to tighten |
+|-------|----------|----------------|
+| Grants, scopes, assignments, memberships, approval limits | one request | n/a |
+| Delegation snapshot of the delegator's roles | `DelegationRoleRefreshOptions.Interval` (1 min), plus an immediate refresh through `IAccessChangeObserver` on the node that made the change | lower the interval |
+| Org hierarchy snapshot (`EfOrgHierarchy`) | 30 s per node; the node that edits it drops its own snapshot at once, other nodes wait for expiry | lower `CacheDuration` |
+| `permission` claims inside a token | until the token expires | `TrustPermissionClaims = false` makes the grant store the only source |
+| Access token of a disabled or deleted account | until it expires, unless `Identity:ValidateTokenEntries` (default `true`) checks the stored token entry, which revocation removes | keep it on |
+| The AI platform's cached access scope | up to 5 min, or until the connector's revocation signal is delivered (`IAccessChangeObserver`; durable with `RevocationSpoolFile`) | register observers for new code that changes access |
+
+Rule for new code: anything that changes grants, roles, memberships, accounts or limits calls
+`NotifyAccessChangedAsync`. A mandatory dependency that cannot be read fails the request; it never falls back to a stale grant.
 
 ## Explaining a decision
 
