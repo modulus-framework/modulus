@@ -1388,6 +1388,11 @@ roots, Security tab in `Modulus.UI.AuditLogging`).
   decided at resolve time) is read-only: `TenantMiddleware` answers `423` + `TENANT_SUSPENDED` to any method but GET/HEAD/OPTIONS before the request reaches the app. **Closed** no longer resolves.
   `SetMaxUsersAsync` limits active members; `AddMemberAsync` for a new member over the limit throws `ConflictException` (409), a returning member never counts as new. Storage quotas, offboarding
   export and retention are not built.
+- **Sessions ("revoke all sessions and credentials").** `AddModulusIdentity` registers `IUserSessionService`: `ListAsync(userId)` (the user's valid access and refresh tokens from the
+  OpenIddict token store: id, type, client, issued, expires), `RevokeAsync(userId, id)` and `RevokeAllAsync(userId, reason)` (new security stamp, so cookie sessions and refresh tokens
+  fail their next check, plus every stored token revoked; with `Identity:ValidateTokenEntries` access tokens stop at once). Observers (`IAccessChangeObserver`) and the security audit are told.
+  Self-service endpoints: `GET account/sessions`, `DELETE account/sessions/{id}`, `POST account/sessions/revoke-all`; an admin page calls the service for another user. Not built:
+  invitations, bulk import, MFA enrolment, suspicious-sign-in detection, login history view.
 - **Reason codes.** `AccessDecision.Code` uses `AccessReasonCodes` (BRS Appendix B); no policy for a type = `METADATA_MISSING`.
 - **Sensitivity.** `PermissionSensitivity` (Normal/Sensitive/Critical) on `PermissionDefinition`; `registry.Add(..., sensitivity)`.
   A wildcard grant never confers a Critical permission (a wildcard deny still removes it); Critical is not delegable.

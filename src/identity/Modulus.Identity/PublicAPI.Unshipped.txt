@@ -136,7 +136,6 @@ Modulus.Identity.Abstractions.PasswordGrantResult.Success.init -> void
 Modulus.Identity.Abstractions.PasswordGrantResult.UserName.get -> string?
 Modulus.Identity.Abstractions.PasswordGrantResult.UserName.init -> void
 Modulus.Identity.AccountController<TUser>
-Modulus.Identity.AccountController<TUser>.AccountController(Microsoft.AspNetCore.Identity.UserManager<TUser!>! userManager, Microsoft.AspNetCore.Identity.SignInManager<TUser!>! signInManager, Modulus.Identity.IIdentityEmailQueue! emailQueue) -> void
 Modulus.Identity.AccountController<TUser>.ConfirmEmailAsync(Modulus.Identity.ConfirmEmailRequest! request) -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Mvc.IActionResult!>!
 Modulus.Identity.AccountController<TUser>.ForgotPasswordAsync(string! email) -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Mvc.IActionResult!>!
 Modulus.Identity.AccountController<TUser>.LogoutAsync() -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Mvc.IActionResult!>!
@@ -379,3 +378,31 @@ Modulus.Identity.IIdentityEmailQueue.EnqueueEmailConfirmation(System.Guid userId
 Modulus.Identity.IIdentityEmailQueue.EnqueuePasswordReset(System.Guid userId, string! email) -> bool
 Modulus.Identity.Abstractions.ModulusIdentityOptions.ValidateTokenEntries.get -> bool
 Modulus.Identity.Abstractions.ModulusIdentityOptions.ValidateTokenEntries.set -> void
+Modulus.Identity.AccountController<TUser>.AccountController(Microsoft.AspNetCore.Identity.UserManager<TUser!>! userManager, Microsoft.AspNetCore.Identity.SignInManager<TUser!>! signInManager, Modulus.Identity.IIdentityEmailQueue! emailQueue, Modulus.Identity.IUserSessionService! sessions) -> void
+Modulus.Identity.AccountController<TUser>.ListSessionsAsync(System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Mvc.IActionResult!>!
+Modulus.Identity.AccountController<TUser>.RevokeAllSessionsAsync(System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Mvc.IActionResult!>!
+Modulus.Identity.AccountController<TUser>.RevokeSessionAsync(string! sessionId, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Mvc.IActionResult!>!
+Modulus.Identity.IUserSessionService
+Modulus.Identity.IUserSessionService.ListAsync(System.Guid userId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Identity.UserSession!>!>!
+Modulus.Identity.IUserSessionService.RevokeAllAsync(System.Guid userId, string! reason, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<int>!
+Modulus.Identity.IUserSessionService.RevokeAsync(System.Guid userId, string! sessionId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.Identity.UserSession
+Modulus.Identity.UserSession.<Clone>$() -> Modulus.Identity.UserSession!
+Modulus.Identity.UserSession.ClientId.get -> string?
+Modulus.Identity.UserSession.ClientId.init -> void
+Modulus.Identity.UserSession.CreatedAt.get -> System.DateTimeOffset?
+Modulus.Identity.UserSession.CreatedAt.init -> void
+Modulus.Identity.UserSession.Deconstruct(out string! Id, out string! Type, out string? ClientId, out System.DateTimeOffset? CreatedAt, out System.DateTimeOffset? ExpiresAt) -> void
+Modulus.Identity.UserSession.Equals(Modulus.Identity.UserSession? other) -> bool
+Modulus.Identity.UserSession.ExpiresAt.get -> System.DateTimeOffset?
+Modulus.Identity.UserSession.ExpiresAt.init -> void
+Modulus.Identity.UserSession.Id.get -> string!
+Modulus.Identity.UserSession.Id.init -> void
+Modulus.Identity.UserSession.Type.get -> string!
+Modulus.Identity.UserSession.Type.init -> void
+Modulus.Identity.UserSession.UserSession(string! Id, string! Type, string? ClientId, System.DateTimeOffset? CreatedAt, System.DateTimeOffset? ExpiresAt) -> void
+override Modulus.Identity.UserSession.Equals(object? obj) -> bool
+override Modulus.Identity.UserSession.GetHashCode() -> int
+override Modulus.Identity.UserSession.ToString() -> string!
+static Modulus.Identity.UserSession.operator !=(Modulus.Identity.UserSession? left, Modulus.Identity.UserSession? right) -> bool
+static Modulus.Identity.UserSession.operator ==(Modulus.Identity.UserSession? left, Modulus.Identity.UserSession? right) -> bool

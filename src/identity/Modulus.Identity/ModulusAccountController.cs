@@ -28,7 +28,8 @@ using Modulus.Core.Abstractions.Security;
 public class AccountController<TUser>(
     UserManager<TUser> userManager,
     SignInManager<TUser> signInManager,
-    IIdentityEmailQueue emailQueue)
+    IIdentityEmailQueue emailQueue,
+    IUserSessionService sessions)
     : ControllerBase
     where TUser : ModulusUser, new()
 {
@@ -154,6 +155,39 @@ public class AccountController<TUser>(
         await signInManager.SignOutAsync();
         return Ok(new { message = "Logged out successfully" });
     }
+
+    /// <summary>The caller's active sessions (issued tokens): where they are signed in.</summary>
+    [HttpGet("sessions")]
+    [Authorize]
+    public async Task<IActionResult> ListSessionsAsync(CancellationToken ct)
+        => CallerId() is { } id ? Ok(await sessions.ListAsync(id, ct)) : Unauthorized();
+
+    /// <summary>Ends one of the caller's sessions.</summary>
+    [HttpDelete("sessions/{sessionId}")]
+    [Authorize]
+    public async Task<IActionResult> RevokeSessionAsync(string sessionId, CancellationToken ct)
+    {
+        if (CallerId() is not { } id)
+            return Unauthorized();
+
+        return await sessions.RevokeAsync(id, sessionId, ct) ? NoContent() : NotFound();
+    }
+
+    /// <summary>Ends every session of the caller, this one included (sign out everywhere).</summary>
+    [HttpPost("sessions/revoke-all")]
+    [Authorize]
+    public async Task<IActionResult> RevokeAllSessionsAsync(CancellationToken ct)
+    {
+        if (CallerId() is not { } id)
+            return Unauthorized();
+
+        await sessions.RevokeAllAsync(id, "signed out everywhere by the account holder", ct);
+        await signInManager.SignOutAsync();
+        return NoContent();
+    }
+
+    private Guid? CallerId()
+        => Guid.TryParse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("sub")?.Value, out var id) ? id : null;
 
     /// <summary>
     /// Same body for "unknown email" and "invalid token" so the two cases are
