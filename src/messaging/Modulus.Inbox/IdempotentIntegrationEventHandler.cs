@@ -99,16 +99,16 @@ public sealed class IdempotentIntegrationEventHandler<TEvent>(
         }
         catch (InboxDeferralException)
         {
-            logger.LogDebug("Inbox: {Type} {Id} ({Handler}) in-flight elsewhere; deferring.",
-                typeof(TEvent).Name, id, _handlerName);
+            if (logger.IsEnabled(LogLevel.Debug))
+                logger.LogDebug("Inbox: {Type} {Id} ({Handler}) in-flight elsewhere; deferring.", typeof(TEvent).Name, id, _handlerName);
             throw;
         }
 
         if (claimed is null)
         {
             ModulusMeters.InboxDedupHits.Add(1);
-            logger.LogDebug("Inbox: {Type} {Id} ({Handler}) skipped (duplicate or dead-lettered).",
-                typeof(TEvent).Name, id, _handlerName);
+            if (logger.IsEnabled(LogLevel.Debug))
+                logger.LogDebug("Inbox: {Type} {Id} ({Handler}) skipped (duplicate or dead-lettered).", typeof(TEvent).Name, id, _handlerName);
             return;
         }
 

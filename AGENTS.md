@@ -1423,6 +1423,10 @@ roots, Security tab in `Modulus.UI.AuditLogging`).
   `src/**`. Benchmarks: `dotnet run -c Release --project tests/benchmarks/Modulus.Benchmarks -- --filter "*"`.
 - **Created event.** The generated Create handler publishes `{Entity}CreatedIntegrationEvent` through `IModuleBus` after the commit
   (in-process, not transactional; an outbox-backed bus gives at-least-once). Update/Delete events are not generated.
+- **Hosting guidance.** Server GC and tiered PGO are the .NET defaults for ASP.NET Core; in containers set `DOTNET_gcServer=1` only
+  with 2+ cores per replica, keep `DOTNET_TieredPGO=1` (default), and prefer `InvariantGlobalization` only when no culture-specific
+  formatting is needed (the UI uses invariant-culture text for extension fields, but pages may format by culture). Enable response
+  compression at the proxy when one exists, else `AddModulusResponseCompression`.
 - **Still open:** `Modulus.UI.AI`; GraphQL subscriptions/persisted queries; grpc-web; AOT annotations.
 
 ## Open-source dependency policy
