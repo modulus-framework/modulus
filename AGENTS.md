@@ -1428,7 +1428,10 @@ roots, Security tab in `Modulus.UI.AuditLogging`).
   with 2+ cores per replica, keep `DOTNET_TieredPGO=1` (default), and prefer `InvariantGlobalization` only when no culture-specific
   formatting is needed (the UI uses invariant-culture text for extension fields, but pages may format by culture). Enable response
   compression at the proxy when one exists, else `AddModulusResponseCompression`.
-- **Still open:** `Modulus.UI.AI`; GraphQL subscriptions; AOT for the other packages (`IsAotCompatible` is on for `Modulus.Core` and `Modulus.Outbox.Abstractions` only).
+- **Still open:** `Modulus.UI.AI`.
+- **Decided not to build:**
+  - **AOT beyond `Modulus.Core` and `Modulus.Outbox.Abstractions`** (the only packages with `IsAotCompatible`). `Modulus.Mediator` closes generic handler and behavior types at runtime (open-generic `IPipelineBehavior<,>` through DI) and its behaviors use EF Core and reflection. A source generator would not fix that, and EF Core model building, MVC and OpenIddict are not AOT-ready either. Probed 2026-10-09: 10 IL2026/IL3050 errors in the mediator alone.
+  - **GraphQL subscriptions.** They need WebSockets (off on purpose); Realtime (SSE / SignalR) already pushes integration events with the same auth and tenant rules.
 
 ## Open-source dependency policy
 
@@ -1694,7 +1697,7 @@ phase 4.
   `GraphQL:PersistedQueries:Mode` = `Allowlist` refuses everything else (`PERSISTED_QUERY_REQUIRED`; unknown hash `PERSISTED_QUERY_NOT_FOUND`);
   `Off` (default) accepts any query. A stored query still goes through validation, limits and field authorization. Custom stores implement
   `IPersistedQueryStore`. There is no automatic registration (APQ): the allowlist is closed.
-- **Not built:** subscriptions, pagination/filtering conventions.
+- **Not built:** subscriptions (use Realtime), pagination/filtering conventions.
 
 ## Realtime (`Modulus.Realtime`)
 
