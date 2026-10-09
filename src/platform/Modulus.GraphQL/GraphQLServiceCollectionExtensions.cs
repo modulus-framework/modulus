@@ -87,6 +87,9 @@ public static class GraphQLServiceCollectionExtensions
                 .ConfigureExecution(async (executionOptions, next) =>
                 {
                     var settings = Options(executionOptions.RequestServices ?? throw new InvalidOperationException("GraphQL needs request services."));
+                    if (PersistedQueryGate.Apply(executionOptions, settings, executionOptions.RequestServices.GetService<IPersistedQueryStore>()) is { } refused)
+                        return refused;
+
                     using var activity = GraphQLTelemetry.Source.StartActivity("graphql.execute");
                     activity?.SetTag("graphql.operation.name", executionOptions.OperationName);
 

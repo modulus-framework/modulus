@@ -51,6 +51,9 @@ public sealed class ModulusGraphQLOptions
     /// </summary>
     public TimeSpan? ExecutionTimeout { get; set; } = TimeSpan.FromSeconds(30);
 
+    /// <summary>Persisted query settings (<c>GraphQL:PersistedQueries</c>).</summary>
+    public PersistedQueryOptions PersistedQueries { get; set; } = new();
+
     /// <summary>The average list length the complexity estimate assumes.</summary>
     public double ListSizeEstimate { get; set; } = 5;
 
@@ -68,4 +71,14 @@ public sealed class ModulusGraphQLOptions
     /// Client errors (validation, not found, ...) carry their details either way.
     /// </summary>
     public bool ExposeExceptionDetails { get; set; }
+}
+
+/// <summary>Settings for <see cref="ModulusGraphQLOptions.PersistedQueries"/>.</summary>
+public sealed class PersistedQueryOptions
+{
+    /// <summary>
+    /// <see cref="PersistedQueryMode.Allowlist"/> accepts only registered queries (<c>AddPersistedQueries</c>), which
+    /// closes the endpoint to ad-hoc queries; <see cref="PersistedQueryMode.Off"/> (default) accepts any query.
+    /// </summary>
+    public PersistedQueryMode Mode { get; set; } = PersistedQueryMode.Off;
 }

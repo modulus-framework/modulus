@@ -1428,7 +1428,7 @@ roots, Security tab in `Modulus.UI.AuditLogging`).
   with 2+ cores per replica, keep `DOTNET_TieredPGO=1` (default), and prefer `InvariantGlobalization` only when no culture-specific
   formatting is needed (the UI uses invariant-culture text for extension fields, but pages may format by culture). Enable response
   compression at the proxy when one exists, else `AddModulusResponseCompression`.
-- **Still open:** `Modulus.UI.AI`; GraphQL subscriptions/persisted queries; AOT for the other packages (`IsAotCompatible` is on for `Modulus.Core` and `Modulus.Outbox.Abstractions` only).
+- **Still open:** `Modulus.UI.AI`; GraphQL subscriptions; AOT for the other packages (`IsAotCompatible` is on for `Modulus.Core` and `Modulus.Outbox.Abstractions` only).
 
 ## Open-source dependency policy
 
@@ -1689,7 +1689,12 @@ phase 4.
   CRUD, `401`, `NOT_FOUND`, introspection and GraphiQL in Development on the API; through the mobile BFF, a mobile token
   works, `426` on an old app version, `403` for a first-party token. Covered by `Modulus.GraphQL.Tests` (28) and
   `GraphQLCommandTests` (11).
-- **Not built:** subscriptions, persisted queries, pagination/filtering conventions.
+- **Persisted queries.** `services.AddPersistedQueries("query text", ...)` (or `AddPersistedQueriesFromFile(path)`, a JSON object of query texts)
+  registers queries clients can run by `extensions.persistedQuery.sha256Hash` (lowercase hex SHA-256 of the text, `PersistedQueryHash.Of`).
+  `GraphQL:PersistedQueries:Mode` = `Allowlist` refuses everything else (`PERSISTED_QUERY_REQUIRED`; unknown hash `PERSISTED_QUERY_NOT_FOUND`);
+  `Off` (default) accepts any query. A stored query still goes through validation, limits and field authorization. Custom stores implement
+  `IPersistedQueryStore`. There is no automatic registration (APQ): the allowlist is closed.
+- **Not built:** subscriptions, pagination/filtering conventions.
 
 ## Realtime (`Modulus.Realtime`)
 

@@ -65,3 +65,23 @@ Modulus.GraphQL.ModulusGraphQLOptions.MaxAliases.get -> int?
 Modulus.GraphQL.ModulusGraphQLOptions.MaxAliases.set -> void
 Modulus.GraphQL.ModulusGraphQLOptions.MaxDocumentLength.get -> int?
 Modulus.GraphQL.ModulusGraphQLOptions.MaxDocumentLength.set -> void
+Modulus.GraphQL.ModulusGraphQLOptions.PersistedQueries.get -> Modulus.GraphQL.PersistedQueryOptions!
+Modulus.GraphQL.ModulusGraphQLOptions.PersistedQueries.set -> void
+Modulus.GraphQL.PersistedQueryOptions
+Modulus.GraphQL.PersistedQueryOptions.PersistedQueryOptions() -> void
+Modulus.GraphQL.PersistedQueryOptions.Mode.get -> Modulus.GraphQL.PersistedQueryMode
+Modulus.GraphQL.PersistedQueryOptions.Mode.set -> void
+Modulus.GraphQL.PersistedQueryMode
+Modulus.GraphQL.PersistedQueryMode.Off = 0 -> Modulus.GraphQL.PersistedQueryMode
+Modulus.GraphQL.PersistedQueryMode.Allowlist = 1 -> Modulus.GraphQL.PersistedQueryMode
+Modulus.GraphQL.IPersistedQueryStore
+Modulus.GraphQL.IPersistedQueryStore.TryGet(string! sha256Hash, out string! query) -> bool
+Modulus.GraphQL.InMemoryPersistedQueryStore
+Modulus.GraphQL.InMemoryPersistedQueryStore.InMemoryPersistedQueryStore() -> void
+Modulus.GraphQL.InMemoryPersistedQueryStore.Add(string! query) -> string!
+Modulus.GraphQL.InMemoryPersistedQueryStore.TryGet(string! sha256Hash, out string! query) -> bool
+Modulus.GraphQL.PersistedQueryHash
+static Modulus.GraphQL.PersistedQueryHash.Of(string! query) -> string!
+Modulus.GraphQL.PersistedQueryExtensions
+static Modulus.GraphQL.PersistedQueryExtensions.AddPersistedQueries(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, params string![]! queries) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.GraphQL.PersistedQueryExtensions.AddPersistedQueriesFromFile(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, string! path) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
