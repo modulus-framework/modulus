@@ -43,6 +43,23 @@ public sealed class ChangeJournalTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task A_composite_key_is_journaled_as_one_escaped_id()
+    {
+        await _host.InAsync(null, async sp =>
+        {
+            var db = sp.GetRequiredService<SalesDbContext>();
+            db.OrderLines.Add(new OrderLine { OrderId = "SO|1\\x", LineNo = 7, Amount = 5m });
+            await db.SaveChangesAsync();
+        });
+
+        var row = (await _host.JournalAsync()).Should().ContainSingle().Which;
+
+        row.ResourceType.Should().Be("Sales.OrderLine");
+        row.ResourceId.Should().Be("SO\\|1\\\\x|7");
+        AiCompositeKey.Split(row.ResourceId).Should().Equal("SO|1\\x", "7");
+    }
+
+    [Fact]
     public async Task A_soft_delete_is_journaled_as_a_delete()
     {
         var product = new Product { Name = "Widget" };

@@ -758,3 +758,6 @@ Modulus.AI.Connector.AiPlatformOptions.RevocationSpoolFile.get -> string?
 Modulus.AI.Connector.AiPlatformOptions.RevocationSpoolFile.set -> void
 Modulus.AI.Connector.ModulusAiConnectorOptions.MaskPersonalInformation.get -> bool
 Modulus.AI.Connector.ModulusAiConnectorOptions.MaskPersonalInformation.set -> void
+Modulus.AI.Connector.Data.AiCompositeKey
+static Modulus.AI.Connector.Data.AiCompositeKey.Format(params object?[]! parts) -> string!
+static Modulus.AI.Connector.Data.AiCompositeKey.Split(string! id) -> System.Collections.Generic.IReadOnlyList<string!>!

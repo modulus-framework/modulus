@@ -1874,6 +1874,9 @@ platform package; the platform is read-only, so only queries are exposed. The pl
     - `IAiEntitySource`;
     - a purge (`AiChangeJournalOptions.Retention`, 30 days).
   - Deletes, soft deletes and records the indexer can no longer see become tombstones.
+- **Composite keys.** An `[AiIndexed]` entity may have several key columns (up to 4): the journal and `/extract` write its id as `AiCompositeKey.Format(parts...)` (parts in key order, `|`-joined,
+  `\` and `|` escaped), `/extract` pages with a keyset cursor over the columns, and its `[AiResource]` lookup takes a **string** id that the handler reads with `AiCompositeKey.Split(id)`.
+  A **store-generated** key is still unsupported on purpose (the id does not exist when the journal row is written in the same save): generate the key on the client (`Guid.CreateVersion7()`).
 - **Batch lookup.** `[AiResource(..., BatchLookup = typeof(GetProductsByIdsQuery))]` names an optional query for many ids (one public constructor taking the ids as an array, `IReadOnlyCollection`,
   `IReadOnlyList`, `IEnumerable` or `List`; the same record type as the single lookup, each with its `Id`): `/extract` and `/changes` then read a page, or all upserts of a type, in **one
   query** instead of one per record. It runs through the mediator as the indexing identity (give it the same `[RequirePermission]`); an id it does not return counts as not found;

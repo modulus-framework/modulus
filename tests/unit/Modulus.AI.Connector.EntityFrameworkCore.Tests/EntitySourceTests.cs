@@ -77,6 +77,37 @@ public sealed class EntitySourceTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Composite_keys_page_in_key_order_without_gaps_or_repeats()
+    {
+        await _host.InAsync(null, async sp =>
+        {
+            var db = sp.GetRequiredService<SalesDbContext>();
+            await db.OrderLines.AddRangeAsync(
+                new OrderLine { OrderId = "B", LineNo = 1 }, new OrderLine { OrderId = "A", LineNo = 10 },
+                new OrderLine { OrderId = "A", LineNo = 2 }, new OrderLine { OrderId = "A|x", LineNo = 1 },
+                new OrderLine { OrderId = "C", LineNo = 3 });
+            await db.SaveChangesAsync();
+        });
+
+        var keys = new List<string>();
+        string? after = null;
+        for (var i = 0; i < 10; i++)
+        {
+            var page = await _host.InAsync(null, sp => sp.GetRequiredService<EfAiEntitySource>().ListKeysAsync(typeof(OrderLine), after, 2));
+            if (page.Count == 0)
+                break;
+            keys.AddRange(page);
+            after = page[^1];
+        }
+
+        // Ordinal column order: "A" < "A|x" < "B" < "C", and within one order by line number.
+        keys.Select(AiCompositeKey.Split).Select(p => (p[0], int.Parse(p[1]))).Should().Equal(
+            ("A", 2), ("A", 10), ("A|x", 1), ("B", 1), ("C", 3));
+        var bad = () => _host.InAsync(null, sp => sp.GetRequiredService<EfAiEntitySource>().ListKeysAsync(typeof(OrderLine), "only-one-part", 2));
+        await bad.Should().ThrowAsync<FormatException>();
+    }
+
+    [Fact]
     public async Task String_keys_page_in_order()
     {
         var first = await InCompanyA(source => source.ListKeysAsync(typeof(Order), null, 2));

@@ -47,28 +47,73 @@ internal sealed class EfAiEntitySource(IEnumerable<DbContext> contexts) : IAiEnt
     private static async Task<IReadOnlyList<string>> ListKeysCoreAsync<TEntity>(DbContext context, string? after, int take, CancellationToken ct)
         where TEntity : class
     {
-        var key = KeyOf<TEntity>(context);
+        var keys = KeysOf<TEntity>(context);
         var entity = Expression.Parameter(typeof(TEntity), "e");
-        var member = Expression.Property(entity, key);
+        var members = keys.Select(k => (Expression)Expression.Property(entity, k)).ToList();
         var query = context.Set<TEntity>().AsNoTracking();
 
         if (after is not null)
         {
-            var bound = Bound(AiKeys.Parse(after, key.PropertyType), key.PropertyType);
-            Expression greater = key.PropertyType == typeof(string)
-                ? Expression.GreaterThan(Expression.Call(typeof(string).GetMethod(nameof(string.Compare), [typeof(string), typeof(string)])!, member, bound), Expression.Constant(0))
-                : key.PropertyType == typeof(Guid)
-                    ? Expression.GreaterThan(Expression.Call(member, typeof(Guid).GetMethod(nameof(Guid.CompareTo), [typeof(Guid)])!, bound), Expression.Constant(0))
-                    : Expression.GreaterThan(member, bound);
-            query = query.Where(Expression.Lambda<Func<TEntity, bool>>(greater, entity));
+            var values = ParseKey(after, keys);
+            // Keyset paging over the columns in order: (k1 > v1) OR (k1 = v1 AND k2 > v2) OR ...
+            Expression? any = null;
+            for (var i = 0; i < keys.Count; i++)
+            {
+                Expression term = Greater(members[i], Bound(values[i], keys[i].PropertyType), keys[i].PropertyType);
+                for (var j = i - 1; j >= 0; j--)
+                    term = Expression.AndAlso(Expression.Equal(members[j], Bound(values[j], keys[j].PropertyType)), term);
+                any = any is null ? term : Expression.OrElse(any, term);
+            }
+
+            query = query.Where(Expression.Lambda<Func<TEntity, bool>>(any!, entity));
         }
 
-        var keys = await Order(query, Expression.Lambda(member, entity), descending: false, first: true)
-            .Take(take)
-            .Select(Expression.Lambda<Func<TEntity, object>>(Expression.Convert(member, typeof(object)), entity))
+        var ordered = query;
+        for (var i = 0; i < keys.Count; i++)
+            ordered = Order(ordered, Expression.Lambda(members[i], entity), descending: false, first: i == 0);
+
+        if (keys.Count == 1)
+        {
+            var single = await ordered.Take(take)
+                .Select(Expression.Lambda<Func<TEntity, object>>(Expression.Convert(members[0], typeof(object)), entity))
+                .ToListAsync(ct);
+            return [.. single.Select(AiKeys.Format)];
+        }
+
+        // A composite key is projected into a Tuple (the shape EF can construct from the selected columns).
+        if (keys.Count > 4)
+            throw new NotSupportedException($"'{typeof(TEntity).Name}' has {keys.Count} key columns; at most 4 are supported.");
+        var tupleType = keys.Count switch
+        {
+            2 => typeof(Tuple<,>).MakeGenericType(keys[0].PropertyType, keys[1].PropertyType),
+            3 => typeof(Tuple<,,>).MakeGenericType(keys[0].PropertyType, keys[1].PropertyType, keys[2].PropertyType),
+            _ => typeof(Tuple<,,,>).MakeGenericType(keys[0].PropertyType, keys[1].PropertyType, keys[2].PropertyType, keys[3].PropertyType),
+        };
+        var create = Expression.New(tupleType.GetConstructors().Single(), members);
+        var rows = await ordered.Take(take)
+            .Select(Expression.Lambda<Func<TEntity, object>>(Expression.Convert(create, typeof(object)), entity))
             .ToListAsync(ct);
-        return [.. keys.Select(AiKeys.Format)];
+        return [.. rows.Select(row => AiCompositeKey.Format([.. Enumerable.Range(1, keys.Count).Select(i => row.GetType().GetProperty("Item" + i)!.GetValue(row))]))];
     }
+
+    // The parts of a cursor, one per key column, in key order.
+    private static object[] ParseKey(string after, IReadOnlyList<PropertyInfo> keys)
+    {
+        if (keys.Count == 1)
+            return [AiKeys.Parse(after, keys[0].PropertyType)];
+
+        var parts = AiCompositeKey.Split(after);
+        if (parts.Count != keys.Count)
+            throw new FormatException("The cursor does not match the entity's key.");
+        return [.. keys.Select((key, i) => AiKeys.Parse(parts[i], key.PropertyType))];
+    }
+
+    private static Expression Greater(Expression member, Expression bound, Type type)
+        => type == typeof(string)
+            ? Expression.GreaterThan(Expression.Call(typeof(string).GetMethod(nameof(string.Compare), [typeof(string), typeof(string)])!, member, bound), Expression.Constant(0))
+            : type == typeof(Guid)
+                ? Expression.GreaterThan(Expression.Call(member, typeof(Guid).GetMethod(nameof(Guid.CompareTo), [typeof(Guid)])!, bound), Expression.Constant(0))
+                : Expression.GreaterThan(member, bound);
 
     private static async Task<IReadOnlyList<object>> ListCoreAsync<TEntity>(DbContext context, AiEntityQuery query, CancellationToken ct)
         where TEntity : class
@@ -82,7 +127,12 @@ internal sealed class EfAiEntitySource(IEnumerable<DbContext> contexts) : IAiEnt
         }
 
         var entity = Expression.Parameter(typeof(TEntity), "e");
-        rows = Order(rows, Expression.Lambda(Expression.Property(entity, KeyOf<TEntity>(context)), entity), descending: false, first);
+        foreach (var key in KeysOf<TEntity>(context))
+        {
+            rows = Order(rows, Expression.Lambda(Expression.Property(entity, key), entity), descending: false, first);
+            first = false;
+        }
+
         return await rows.Take(query.Take).ToListAsync(ct);
     }
 
@@ -179,12 +229,12 @@ internal sealed class EfAiEntitySource(IEnumerable<DbContext> contexts) : IAiEnt
             Expression.Call(typeof(Queryable), method, [typeof(TEntity), key.ReturnType], rows.Expression, Expression.Quote(key)));
     }
 
-    private static PropertyInfo KeyOf<TEntity>(DbContext context)
+    private static IReadOnlyList<PropertyInfo> KeysOf<TEntity>(DbContext context)
     {
         var key = context.Model.FindEntityType(typeof(TEntity))?.FindPrimaryKey()?.Properties;
-        return key is [{ PropertyInfo: { } property }]
-            ? property
-            : throw new NotSupportedException($"'{typeof(TEntity).Name}' needs a single-column key mapped to a property.");
+        return key is { Count: >= 1 } && key.All(k => k.PropertyInfo is not null)
+            ? [.. key.Select(k => k.PropertyInfo!)]
+            : throw new NotSupportedException($"'{typeof(TEntity).Name}' needs a primary key mapped to properties.");
     }
 
     // A closure member, so the value becomes a query parameter rather than a literal.

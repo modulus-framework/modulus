@@ -12,6 +12,7 @@ using Modulus.Core.Abstractions.Entities;
 using Modulus.Core.Null;
 using Modulus.EntityFrameworkCore;
 using Modulus.EntityFrameworkCore.Extensions;
+using Modulus.AI.Connector.Data;
 using Modulus.EntityFrameworkCore.ModelBuilding;
 using Modulus.EntityFrameworkCore.Saving;
 using Modulus.Events;
@@ -75,6 +76,17 @@ public sealed class Order
     public decimal Total { get; set; }
 }
 
+/// <summary>A composite key (order id + line number): journaled and paged as an <see cref="AiCompositeKey"/> id.</summary>
+[AiIndexed("Sales.OrderLine")]
+public sealed class OrderLine
+{
+    public string OrderId { get; set; } = "";
+
+    public int LineNo { get; set; }
+
+    public decimal Amount { get; set; }
+}
+
 public sealed class ShopDbContext(
     DbContextOptions<ShopDbContext> options,
     ICurrentTenant currentTenant,
@@ -103,6 +115,14 @@ public sealed class SalesDbContext(
     protected override string TablePrefix => "sales_";
 
     public DbSet<Order> Orders => Set<Order>();
+
+    public DbSet<OrderLine> OrderLines => Set<OrderLine>();
+
+    protected override void OnModelCreating(ModelBuilder mb)
+    {
+        base.OnModelCreating(mb);
+        mb.Entity<OrderLine>().HasKey(l => new { l.OrderId, l.LineNo });
+    }
 }
 
 /// <summary>A clock the tests move by hand.</summary>

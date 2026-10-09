@@ -57,8 +57,9 @@ internal sealed class AiChangeModelContributor : IModuleModelContributor
 
 /// <summary>
 /// Journals every added, modified and deleted <see cref="AiIndexedAttribute"/> entity of the unit of work. A soft delete
-/// is journaled as a delete. The key must be known before saving (client-generated, such as <see cref="Guid"/> keys):
-/// a store-generated key has no value yet, and the save fails rather than journal a wrong id.
+/// is journaled as a delete. The key (one column, or several: a composite key is journaled as an <see cref="AiCompositeKey"/> id)
+/// must be known before saving (client-generated, such as <see cref="Guid"/> keys): a store-generated key has no value yet, and the
+/// save fails rather than journal a wrong id.
 /// </summary>
 internal sealed class AiChangeSaveContributor(TimeProvider time) : IModuleSaveContributor
 {
@@ -97,18 +98,25 @@ internal sealed class AiChangeSaveContributor(TimeProvider time) : IModuleSaveCo
     private static string KeyOf(EntityEntry entry)
     {
         var key = entry.Metadata.FindPrimaryKey()?.Properties;
-        if (key is not { Count: 1 })
-            throw new InvalidOperationException($"[AiIndexed] '{entry.Metadata.ClrType.Name}' needs a single-column key.");
+        if (key is not { Count: >= 1 })
+            throw new InvalidOperationException($"[AiIndexed] '{entry.Metadata.ClrType.Name}' needs a primary key.");
 
-        var property = entry.Property(key[0].Name);
-        if (property.IsTemporary)
+        var values = new List<object?>(key.Count);
+        foreach (var part in key)
         {
-            throw new InvalidOperationException(
-                $"[AiIndexed] '{entry.Metadata.ClrType.Name}' has a store-generated key, which is unknown until saved; " +
-                "generate the key on the client (for example Guid.CreateVersion7()).");
+            var property = entry.Property(part.Name);
+            if (property.IsTemporary)
+            {
+                throw new InvalidOperationException(
+                    $"[AiIndexed] '{entry.Metadata.ClrType.Name}' has a store-generated key, which is unknown until saved; " +
+                    "generate the key on the client (for example Guid.CreateVersion7()).");
+            }
+
+            values.Add(property.CurrentValue);
         }
 
-        return AiKeys.Format(property.CurrentValue);
+        // One column: the plain value. Several: a composite id (AiCompositeKey), which the entity's string-id lookup reads back.
+        return values.Count == 1 ? AiKeys.Format(values[0]) : AiCompositeKey.Format([.. values]);
     }
 }
 
