@@ -32,8 +32,12 @@ internal sealed class IdentityPasswordGrantValidator<TUser>(
     // use only builds it twice.
     private static string? s_dummyHash;
 
-    public async Task<PasswordGrantResult> ValidateAsync(
+    public Task<PasswordGrantResult> ValidateAsync(
         string username, string password, CancellationToken ct = default)
+        => ValidateWithSecondFactorAsync(username, password, null, ct);
+
+    public async Task<PasswordGrantResult> ValidateWithSecondFactorAsync(
+        string username, string password, string? verificationCode, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(username) ||
             string.IsNullOrWhiteSpace(password))
@@ -77,6 +81,24 @@ internal sealed class IdentityPasswordGrantValidator<TUser>(
                 : PasswordGrantResult.Denied();
         }
 
+        // Second factor: asked only after the password is right, so the answer reveals nothing about unknown accounts.
+        if (await userManager.GetTwoFactorEnabledAsync(user))
+        {
+            if (string.IsNullOrWhiteSpace(verificationCode))
+            {
+                Denied(user, "mfa-required");
+                return PasswordGrantResult.MfaRequired();
+            }
+
+            if (!await VerifySecondFactorAsync(user, verificationCode.Trim()))
+            {
+                // A wrong code counts toward lock-out like a wrong password, so codes cannot be guessed.
+                await userManager.AccessFailedAsync(user);
+                Denied(user, "wrong-second-factor");
+                return PasswordGrantResult.Denied();
+            }
+        }
+
         var roles = await userManager.GetRolesAsync(user);
         var securityStamp = await userManager.GetSecurityStampAsync(user);
 
@@ -92,6 +114,16 @@ internal sealed class IdentityPasswordGrantValidator<TUser>(
             Roles = roles.ToList(),
             SecurityStamp = securityStamp,
         };
+    }
+
+    private async Task<bool> VerifySecondFactorAsync(TUser user, string code)
+    {
+        var digits = code.Replace(" ", "", StringComparison.Ordinal).Replace("-", "", StringComparison.Ordinal);
+        if (await userManager.VerifyTwoFactorTokenAsync(user, TokenOptions.DefaultAuthenticatorProvider, digits))
+            return true;
+
+        // A recovery code is single use: redeeming it removes it.
+        return (await userManager.RedeemTwoFactorRecoveryCodeAsync(user, code)).Succeeded;
     }
 
     private void Denied(TUser? user, string reason)

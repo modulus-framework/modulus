@@ -1391,8 +1391,16 @@ roots, Security tab in `Modulus.UI.AuditLogging`).
 - **Sessions ("revoke all sessions and credentials").** `AddModulusIdentity` registers `IUserSessionService`: `ListAsync(userId)` (the user's valid access and refresh tokens from the
   OpenIddict token store: id, type, client, issued, expires), `RevokeAsync(userId, id)` and `RevokeAllAsync(userId, reason)` (new security stamp, so cookie sessions and refresh tokens
   fail their next check, plus every stored token revoked; with `Identity:ValidateTokenEntries` access tokens stop at once). Observers (`IAccessChangeObserver`) and the security audit are told.
-  Self-service endpoints: `GET account/sessions`, `DELETE account/sessions/{id}`, `POST account/sessions/revoke-all`; an admin page calls the service for another user. Not built:
-  invitations, bulk import, MFA enrolment, suspicious-sign-in detection, login history view.
+  Self-service endpoints: `GET account/sessions`, `DELETE account/sessions/{id}`, `POST account/sessions/revoke-all`; an admin page calls the service for another user.
+- **Invitations and bulk import.** `IUserInvitationService.InviteAsync(UserInvitation(email, roles, tenantId, ...))` creates the account **without a password** (it cannot sign in), adds the roles (each must
+  exist) and mails a one-time link through `IIdentityEmailSender.SendInvitationEmailAsync` (default: sent as a password-reset mail; override to word it as an invitation). The recipient posts the
+  token to `POST account/accept-invitation` (sets the first password, confirms the address; unknown, invalid and already-active answer alike). Inviting an address that has not accepted yet resends
+  a link; one that has a password is refused. `InviteManyAsync` is the bulk import engine (parse the CSV/Excel in the app; results per row, one failure does not stop the rest).
+- **Two-factor (authenticator app).** `IUserTwoFactorService`: `BeginSetupAsync` (new key + `otpauth://` URI), `EnableAsync(userId, code)` (proves the app holds the key, returns ten single-use recovery
+  codes, shown once), `DisableAsync` (ends the other sessions). Endpoints `POST account/2fa/setup|enable|disable` (disable needs the password). **Enforcement is in the password grant:** an account with
+  two-factor gets `invalid_grant` + "send it as mfa_code" (`PasswordGrantResult.MfaRequired`) when the password is right and `mfa_code` is missing; a wrong code counts toward lock-out; a recovery code
+  works once. A custom `IPasswordGrantCredentialValidator` gets the code through `ValidateWithSecondFactorAsync` (default ignores it). The cookie login page (`SignInManager.PasswordSignInAsync`) reports
+  `RequiresTwoFactor`, which the UI treats as a failed sign-in (fail closed); a code-entry step in the UI is not built. Not built: suspicious-sign-in detection, login history view, phone verification.
 - **Reason codes.** `AccessDecision.Code` uses `AccessReasonCodes` (BRS Appendix B); no policy for a type = `METADATA_MISSING`.
 - **Sensitivity.** `PermissionSensitivity` (Normal/Sensitive/Critical) on `PermissionDefinition`; `registry.Add(..., sensitivity)`.
   A wildcard grant never confers a Critical permission (a wildcard deny still removes it); Critical is not delegable.

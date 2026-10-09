@@ -79,6 +79,8 @@ public static class IdentityExtensions
 
         // Sessions of an account: list, revoke one, revoke all (admin pages and the account endpoints).
         services.TryAddScoped<IUserSessionService, UserSessionService<TUser>>();
+        services.TryAddScoped<IUserTwoFactorService, UserTwoFactorService<TUser>>();
+        services.TryAddScoped<IUserInvitationService, UserInvitationService<TUser>>();
 
         // Authorization administration resolves roles here instead of trusting role names in a request body.
         services.TryAddScoped<IUserRoleDirectory, IdentityUserRoleDirectory<TUser>>();

@@ -30,6 +30,14 @@ public interface IIdentityEmailSender
     /// </summary>
     Task SendEmailConfirmationEmailAsync(
         string email, string confirmationToken, CancellationToken ct = default);
+
+    /// <summary>
+    /// Sends an invitation: the recipient was invited to the application and sets a first password with
+    /// <paramref name="invitationToken"/> (<c>POST account/accept-invitation</c>). The default sends it as a password-reset mail,
+    /// since the token works the same way; override it to word the mail as an invitation.
+    /// </summary>
+    Task SendInvitationEmailAsync(string email, string invitationToken, CancellationToken ct = default)
+        => SendPasswordResetEmailAsync(email, invitationToken, ct);
 }
 
 /// <summary>

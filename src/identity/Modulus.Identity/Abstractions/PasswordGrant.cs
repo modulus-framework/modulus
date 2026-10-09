@@ -18,6 +18,20 @@ public interface IPasswordGrantCredentialValidator
         string username,
         string password,
         CancellationToken ct = default);
+
+    /// <summary>
+    /// Validates the credentials and, for an account with a second factor, the verification code sent as the
+    /// <c>mfa_code</c> token request parameter (an authenticator or recovery code). A validator that does not know second
+    /// factors keeps the default, which ignores the code. A validator that does returns
+    /// <see cref="PasswordGrantResult.MfaRequired"/> when the password is right and the code is missing: that answer is only
+    /// given after the password check, so it does not reveal which accounts exist.
+    /// </summary>
+    Task<PasswordGrantResult> ValidateWithSecondFactorAsync(
+        string username,
+        string password,
+        string? verificationCode,
+        CancellationToken ct = default)
+        => ValidateAsync(username, password, ct);
 }
 
 /// <summary>
@@ -57,8 +71,14 @@ public sealed record PasswordGrantResult
     /// <summary>OAuth error code (e.g. <c>invalid_grant</c>) surfaced to the client.</summary>
     public string Error { get; init; } = "invalid_grant";
 
+    /// <summary>The error code of <see cref="MfaRequired"/>.</summary>
+    public const string MfaRequiredError = "mfa_required";
+
     public static PasswordGrantResult Denied(string error = "invalid_grant") =>
         new() { Success = false, Error = error };
+
+    /// <summary>The password was right, but the account needs a verification code (<c>mfa_code</c>).</summary>
+    public static PasswordGrantResult MfaRequired() => Denied(MfaRequiredError);
 }
 
 /// <summary>

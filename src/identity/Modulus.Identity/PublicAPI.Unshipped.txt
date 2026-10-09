@@ -378,7 +378,6 @@ Modulus.Identity.IIdentityEmailQueue.EnqueueEmailConfirmation(System.Guid userId
 Modulus.Identity.IIdentityEmailQueue.EnqueuePasswordReset(System.Guid userId, string! email) -> bool
 Modulus.Identity.Abstractions.ModulusIdentityOptions.ValidateTokenEntries.get -> bool
 Modulus.Identity.Abstractions.ModulusIdentityOptions.ValidateTokenEntries.set -> void
-Modulus.Identity.AccountController<TUser>.AccountController(Microsoft.AspNetCore.Identity.UserManager<TUser!>! userManager, Microsoft.AspNetCore.Identity.SignInManager<TUser!>! signInManager, Modulus.Identity.IIdentityEmailQueue! emailQueue, Modulus.Identity.IUserSessionService! sessions) -> void
 Modulus.Identity.AccountController<TUser>.ListSessionsAsync(System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Mvc.IActionResult!>!
 Modulus.Identity.AccountController<TUser>.RevokeAllSessionsAsync(System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Mvc.IActionResult!>!
 Modulus.Identity.AccountController<TUser>.RevokeSessionAsync(string! sessionId, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Mvc.IActionResult!>!
@@ -406,3 +405,89 @@ override Modulus.Identity.UserSession.GetHashCode() -> int
 override Modulus.Identity.UserSession.ToString() -> string!
 static Modulus.Identity.UserSession.operator !=(Modulus.Identity.UserSession? left, Modulus.Identity.UserSession? right) -> bool
 static Modulus.Identity.UserSession.operator ==(Modulus.Identity.UserSession? left, Modulus.Identity.UserSession? right) -> bool
+Modulus.Identity.Abstractions.IIdentityEmailSender.SendInvitationEmailAsync(string! email, string! invitationToken, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Identity.Abstractions.IPasswordGrantCredentialValidator.ValidateWithSecondFactorAsync(string! username, string! password, string? verificationCode, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Identity.Abstractions.PasswordGrantResult!>!
+Modulus.Identity.AcceptInvitationRequest
+Modulus.Identity.AcceptInvitationRequest.AcceptInvitationRequest() -> void
+Modulus.Identity.AcceptInvitationRequest.Email.get -> string!
+Modulus.Identity.AcceptInvitationRequest.Email.set -> void
+Modulus.Identity.AcceptInvitationRequest.NewPassword.get -> string!
+Modulus.Identity.AcceptInvitationRequest.NewPassword.set -> void
+Modulus.Identity.AcceptInvitationRequest.Token.get -> string!
+Modulus.Identity.AcceptInvitationRequest.Token.set -> void
+Modulus.Identity.AccountController<TUser>.AcceptInvitationAsync(Modulus.Identity.AcceptInvitationRequest! request) -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Mvc.IActionResult!>!
+Modulus.Identity.AccountController<TUser>.AccountController(Microsoft.AspNetCore.Identity.UserManager<TUser!>! userManager, Microsoft.AspNetCore.Identity.SignInManager<TUser!>! signInManager, Modulus.Identity.IIdentityEmailQueue! emailQueue, Modulus.Identity.IUserSessionService! sessions, Modulus.Identity.IUserTwoFactorService! twoFactor) -> void
+Modulus.Identity.AccountController<TUser>.DisableTwoFactorAsync(Modulus.Identity.TwoFactorDisableRequest! request, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Mvc.IActionResult!>!
+Modulus.Identity.AccountController<TUser>.EnableTwoFactorAsync(Modulus.Identity.TwoFactorCodeRequest! request, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Mvc.IActionResult!>!
+Modulus.Identity.AccountController<TUser>.SetUpTwoFactorAsync(System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Mvc.IActionResult!>!
+Modulus.Identity.IUserInvitationService
+Modulus.Identity.IUserInvitationService.InviteAsync(Modulus.Identity.UserInvitation! invitation, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Identity.InvitationResult!>!
+Modulus.Identity.IUserInvitationService.InviteManyAsync(System.Collections.Generic.IEnumerable<Modulus.Identity.UserInvitation!>! invitations, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Identity.InvitationResult!>!>!
+Modulus.Identity.IUserTwoFactorService
+Modulus.Identity.IUserTwoFactorService.BeginSetupAsync(System.Guid userId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Identity.TwoFactorSetup?>!
+Modulus.Identity.IUserTwoFactorService.DisableAsync(System.Guid userId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.Identity.IUserTwoFactorService.EnableAsync(System.Guid userId, string! code, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<string!>?>!
+Modulus.Identity.IUserTwoFactorService.IsEnabledAsync(System.Guid userId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.Identity.InvitationResult
+Modulus.Identity.InvitationResult.<Clone>$() -> Modulus.Identity.InvitationResult!
+Modulus.Identity.InvitationResult.Deconstruct(out string! Email, out System.Guid? UserId, out string? Error) -> void
+Modulus.Identity.InvitationResult.Email.get -> string!
+Modulus.Identity.InvitationResult.Email.init -> void
+Modulus.Identity.InvitationResult.Equals(Modulus.Identity.InvitationResult? other) -> bool
+Modulus.Identity.InvitationResult.Error.get -> string?
+Modulus.Identity.InvitationResult.Error.init -> void
+Modulus.Identity.InvitationResult.InvitationResult(string! Email, System.Guid? UserId, string? Error) -> void
+Modulus.Identity.InvitationResult.Succeeded.get -> bool
+Modulus.Identity.InvitationResult.UserId.get -> System.Guid?
+Modulus.Identity.InvitationResult.UserId.init -> void
+Modulus.Identity.TwoFactorCodeRequest
+Modulus.Identity.TwoFactorCodeRequest.Code.get -> string?
+Modulus.Identity.TwoFactorCodeRequest.Code.set -> void
+Modulus.Identity.TwoFactorCodeRequest.TwoFactorCodeRequest() -> void
+Modulus.Identity.TwoFactorDisableRequest
+Modulus.Identity.TwoFactorDisableRequest.Password.get -> string?
+Modulus.Identity.TwoFactorDisableRequest.Password.set -> void
+Modulus.Identity.TwoFactorDisableRequest.TwoFactorDisableRequest() -> void
+Modulus.Identity.TwoFactorSetup
+Modulus.Identity.TwoFactorSetup.<Clone>$() -> Modulus.Identity.TwoFactorSetup!
+Modulus.Identity.TwoFactorSetup.AuthenticatorUri.get -> string!
+Modulus.Identity.TwoFactorSetup.AuthenticatorUri.init -> void
+Modulus.Identity.TwoFactorSetup.Deconstruct(out string! SharedKey, out string! AuthenticatorUri) -> void
+Modulus.Identity.TwoFactorSetup.Equals(Modulus.Identity.TwoFactorSetup? other) -> bool
+Modulus.Identity.TwoFactorSetup.SharedKey.get -> string!
+Modulus.Identity.TwoFactorSetup.SharedKey.init -> void
+Modulus.Identity.TwoFactorSetup.TwoFactorSetup(string! SharedKey, string! AuthenticatorUri) -> void
+Modulus.Identity.UserInvitation
+Modulus.Identity.UserInvitation.<Clone>$() -> Modulus.Identity.UserInvitation!
+Modulus.Identity.UserInvitation.Deconstruct(out string! Email, out System.Collections.Generic.IReadOnlyCollection<string!>? Roles, out System.Guid? TenantId, out string? FirstName, out string? LastName, out string? UserName) -> void
+Modulus.Identity.UserInvitation.Email.get -> string!
+Modulus.Identity.UserInvitation.Email.init -> void
+Modulus.Identity.UserInvitation.Equals(Modulus.Identity.UserInvitation? other) -> bool
+Modulus.Identity.UserInvitation.FirstName.get -> string?
+Modulus.Identity.UserInvitation.FirstName.init -> void
+Modulus.Identity.UserInvitation.LastName.get -> string?
+Modulus.Identity.UserInvitation.LastName.init -> void
+Modulus.Identity.UserInvitation.Roles.get -> System.Collections.Generic.IReadOnlyCollection<string!>?
+Modulus.Identity.UserInvitation.Roles.init -> void
+Modulus.Identity.UserInvitation.TenantId.get -> System.Guid?
+Modulus.Identity.UserInvitation.TenantId.init -> void
+Modulus.Identity.UserInvitation.UserInvitation(string! Email, System.Collections.Generic.IReadOnlyCollection<string!>? Roles = null, System.Guid? TenantId = null, string? FirstName = null, string? LastName = null, string? UserName = null) -> void
+Modulus.Identity.UserInvitation.UserName.get -> string?
+Modulus.Identity.UserInvitation.UserName.init -> void
+const Modulus.Identity.Abstractions.PasswordGrantResult.MfaRequiredError = "mfa_required" -> string!
+override Modulus.Identity.InvitationResult.Equals(object? obj) -> bool
+override Modulus.Identity.InvitationResult.GetHashCode() -> int
+override Modulus.Identity.InvitationResult.ToString() -> string!
+override Modulus.Identity.TwoFactorSetup.Equals(object? obj) -> bool
+override Modulus.Identity.TwoFactorSetup.GetHashCode() -> int
+override Modulus.Identity.TwoFactorSetup.ToString() -> string!
+override Modulus.Identity.UserInvitation.Equals(object? obj) -> bool
+override Modulus.Identity.UserInvitation.GetHashCode() -> int
+override Modulus.Identity.UserInvitation.ToString() -> string!
+static Modulus.Identity.Abstractions.PasswordGrantResult.MfaRequired() -> Modulus.Identity.Abstractions.PasswordGrantResult!
+static Modulus.Identity.InvitationResult.operator !=(Modulus.Identity.InvitationResult? left, Modulus.Identity.InvitationResult? right) -> bool
+static Modulus.Identity.InvitationResult.operator ==(Modulus.Identity.InvitationResult? left, Modulus.Identity.InvitationResult? right) -> bool
+static Modulus.Identity.TwoFactorSetup.operator !=(Modulus.Identity.TwoFactorSetup? left, Modulus.Identity.TwoFactorSetup? right) -> bool
+static Modulus.Identity.TwoFactorSetup.operator ==(Modulus.Identity.TwoFactorSetup? left, Modulus.Identity.TwoFactorSetup? right) -> bool
+static Modulus.Identity.UserInvitation.operator !=(Modulus.Identity.UserInvitation? left, Modulus.Identity.UserInvitation? right) -> bool
+static Modulus.Identity.UserInvitation.operator ==(Modulus.Identity.UserInvitation? left, Modulus.Identity.UserInvitation? right) -> bool

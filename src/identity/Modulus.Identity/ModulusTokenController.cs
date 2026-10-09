@@ -129,8 +129,8 @@ public class ModulusTokenController(
 
     private async Task<IActionResult> HandlePasswordGrantAsync(OpenIddictRequest request)
     {
-        var result = await credentialValidator.ValidateAsync(
-            request.Username!, request.Password!, HttpContext.RequestAborted);
+        var result = await credentialValidator.ValidateWithSecondFactorAsync(
+            request.Username!, request.Password!, request.GetParameter("mfa_code")?.ToString(), HttpContext.RequestAborted);
 
         if (!result.Success)
         {
@@ -140,7 +140,9 @@ public class ModulusTokenController(
             {
                 [OpenIddictServerAspNetCoreConstants.Properties.Error] = OpenIddictConstants.Errors.InvalidGrant,
                 [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] =
-                    "The username or password is incorrect.",
+                    result.Error == PasswordGrantResult.MfaRequiredError
+                        ? "A verification code is required: send it as mfa_code."
+                        : "The username or password is incorrect.",
             });
 
             return Forbid(properties, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);

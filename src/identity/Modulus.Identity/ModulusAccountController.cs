@@ -29,7 +29,8 @@ public class AccountController<TUser>(
     UserManager<TUser> userManager,
     SignInManager<TUser> signInManager,
     IIdentityEmailQueue emailQueue,
-    IUserSessionService sessions)
+    IUserSessionService sessions,
+    IUserTwoFactorService twoFactor)
     : ControllerBase
     where TUser : ModulusUser, new()
 {
@@ -94,6 +95,38 @@ public class AccountController<TUser>(
             return MapIdentityFailure(result);
 
         return Ok(new { message = "Password has been reset successfully" });
+    }
+
+    /// <summary>
+    /// Accepts an invitation: sets the first password with the token from the invitation mail and confirms the address (the token
+    /// proves the mailbox). Same answers as password reset, so unknown and invalid look alike.
+    /// </summary>
+    [HttpPost("accept-invitation")]
+    [AllowAnonymous]
+    [Loosened("Accepting an invitation with the emailed token: the invited user cannot sign in yet", Framework = true)]
+    public async Task<IActionResult> AcceptInvitationAsync([FromBody] AcceptInvitationRequest request)
+    {
+        if (request == null || string.IsNullOrWhiteSpace(request.Email) ||
+            string.IsNullOrWhiteSpace(request.Token) || string.IsNullOrWhiteSpace(request.NewPassword))
+        {
+            return BadRequest(new { error = "Email, token, and new password are required" });
+        }
+
+        var user = await userManager.FindByEmailAsync(request.Email);
+        if (user is null || await userManager.HasPasswordAsync(user))
+            return InvalidEmailOrToken();
+
+        var result = await userManager.ResetPasswordAsync(user, request.Token, request.NewPassword);
+        if (!result.Succeeded)
+            return MapIdentityFailure(result);
+
+        if (!user.EmailConfirmed)
+        {
+            user.EmailConfirmed = true;
+            await userManager.UpdateAsync(user);
+        }
+
+        return Ok(new { message = "Invitation accepted. You can sign in." });
     }
 
     /// <summary>
@@ -186,6 +219,39 @@ public class AccountController<TUser>(
         return NoContent();
     }
 
+    /// <summary>Starts adding an authenticator app: returns the key and the <c>otpauth://</c> URI (a QR code). Enforced only after <c>2fa/enable</c>.</summary>
+    [HttpPost("2fa/setup")]
+    [Authorize]
+    public async Task<IActionResult> SetUpTwoFactorAsync(CancellationToken ct)
+        => CallerId() is { } id && await twoFactor.BeginSetupAsync(id, ct) is { } setup ? Ok(setup) : Unauthorized();
+
+    /// <summary>Confirms the authenticator app with a current code, turns two-factor on and returns the recovery codes (shown once).</summary>
+    [HttpPost("2fa/enable")]
+    [Authorize]
+    public async Task<IActionResult> EnableTwoFactorAsync([FromBody] TwoFactorCodeRequest request, CancellationToken ct)
+    {
+        if (CallerId() is not { } id)
+            return Unauthorized();
+
+        return await twoFactor.EnableAsync(id, request.Code ?? "", ct) is { } codes
+            ? Ok(new { recoveryCodes = codes })
+            : BadRequest(new { error = "The code is not valid." });
+    }
+
+    /// <summary>Turns two-factor off. Needs the account's password (a sensitive change), and ends the other sessions.</summary>
+    [HttpPost("2fa/disable")]
+    [Authorize]
+    public async Task<IActionResult> DisableTwoFactorAsync([FromBody] TwoFactorDisableRequest request, CancellationToken ct)
+    {
+        if (CallerId() is not { } id || await userManager.FindByIdAsync(id.ToString()) is not { } user)
+            return Unauthorized();
+        if (string.IsNullOrEmpty(request.Password) || !await userManager.CheckPasswordAsync(user, request.Password))
+            return BadRequest(new { error = "The password is not correct." });
+
+        await twoFactor.DisableAsync(id, ct);
+        return NoContent();
+    }
+
     private Guid? CallerId()
         => Guid.TryParse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("sub")?.Value, out var id) ? id : null;
 
@@ -233,4 +299,31 @@ public sealed class ConfirmEmailRequest
 {
     public required string Email { get; set; }
     public required string Token { get; set; }
+}
+
+/// <summary>Request body for <c>2fa/enable</c>.</summary>
+public sealed class TwoFactorCodeRequest
+{
+    /// <summary>The current code from the authenticator app.</summary>
+    public string? Code { get; set; }
+}
+
+/// <summary>Request body for <c>2fa/disable</c>.</summary>
+public sealed class TwoFactorDisableRequest
+{
+    /// <summary>The account's password.</summary>
+    public string? Password { get; set; }
+}
+
+/// <summary>Request body for <c>accept-invitation</c>.</summary>
+public sealed class AcceptInvitationRequest
+{
+    /// <summary>The invited e-mail address.</summary>
+    public required string Email { get; set; }
+
+    /// <summary>The token from the invitation mail.</summary>
+    public required string Token { get; set; }
+
+    /// <summary>The password the new user chooses.</summary>
+    public required string NewPassword { get; set; }
 }
