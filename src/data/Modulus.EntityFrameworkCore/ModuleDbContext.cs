@@ -58,6 +58,9 @@ public abstract class ModuleDbContext(
     /// <summary>The request container this context was created in.</summary>
     internal IServiceProvider ContextServices => sp;
 
+    // Outbox rows were saved inside an explicit transaction; the poller is woken when it commits.
+    private bool _outboxSignalPending;
+
     // ── IUnitOfWork ───────────────────────────────────────────────
     public Task<int> CommitAsync(CancellationToken ct = default)
         => SaveChangesAsync(ct);
@@ -97,6 +100,7 @@ public abstract class ModuleDbContext(
         var autoDetect = ChangeTracker.AutoDetectChangesEnabled;
         ChangeTracker.AutoDetectChangesEnabled = false;
         IReadOnlyList<IDomainEvent> domainEvents;
+        var enqueuedOutbox = false;
         try
         {
             ApplyAuditFields();
@@ -128,6 +132,7 @@ public abstract class ModuleDbContext(
                 foreach (var integrationEvent in domainEvents
                              .OfType<IIntegrationEvent>())
                 {
+                    enqueuedOutbox = true;
                     Set<OutboxMessage>().Add(OutboxRowFactory.Create(
                         integrationEvent,
                         currentTenant.TenantId ?? Guid.Empty,
@@ -151,6 +156,15 @@ public abstract class ModuleDbContext(
         // documented "domain events fire after commit" semantics and prevents handlers
         // from observing or affecting uncommitted state. When no explicit transaction
         // is present, dispatch immediately (after the implicit transaction commits).
+        if (enqueuedOutbox)
+        {
+            // Wake the poller once the rows are visible: now, or when the explicit transaction commits.
+            if (Database.CurrentTransaction is null)
+                sp.GetService<IOutboxSignal>()?.Notify();
+            else
+                _outboxSignalPending = true;
+        }
+
         if (Database.CurrentTransaction is not null)
         {
             var queue = sp.GetRequiredService<IDeferredDomainEventQueue>();
@@ -177,6 +191,12 @@ public abstract class ModuleDbContext(
     /// </summary>
     internal async Task DrainDeferredDomainEventsAsync(CancellationToken ct)
     {
+        if (_outboxSignalPending)
+        {
+            _outboxSignalPending = false;
+            sp.GetService<IOutboxSignal>()?.Notify();
+        }
+
         var queue = sp.GetService<IDeferredDomainEventQueue>();
         if (queue is null) return;
 
@@ -194,7 +214,10 @@ public abstract class ModuleDbContext(
     /// shares the same DI scope.
     /// </summary>
     internal void ClearDeferredDomainEvents()
-        => sp.GetService<IDeferredDomainEventQueue>()?.DequeueAll();
+    {
+        _outboxSignalPending = false;
+        sp.GetService<IDeferredDomainEventQueue>()?.DequeueAll();
+    }
 
     // ── Model configuration ───────────────────────────────────────
     protected override void OnModelCreating(ModelBuilder mb)

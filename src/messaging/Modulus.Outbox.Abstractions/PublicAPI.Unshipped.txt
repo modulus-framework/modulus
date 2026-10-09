@@ -63,3 +63,5 @@ Modulus.Outbox.Abstractions.OutboxOptions.PurgeAfterDays.get -> int
 Modulus.Outbox.Abstractions.OutboxOptions.PurgeAfterDays.set -> void
 Modulus.Outbox.Abstractions.OutboxRowFactory
 static Modulus.Outbox.Abstractions.OutboxRowFactory.Create(Modulus.Events.Abstractions.IIntegrationEvent! event, System.Guid tenantId, string! moduleName, string? correlationId, Modulus.Events.Abstractions.IMessageSerializer! serializer, string? causationId = null) -> Modulus.Outbox.Abstractions.OutboxMessage!
+Modulus.Outbox.Abstractions.IOutboxSignal
+Modulus.Outbox.Abstractions.IOutboxSignal.Notify() -> void

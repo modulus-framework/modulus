@@ -22,6 +22,7 @@ public sealed class OutboxPollingService(
 
         var interval = TimeSpan.FromSeconds(opts.Value.PollingIntervalSec);
         var leaderElection = opts.Value.EnableLeaderElection;
+        var signal = sp.GetService<OutboxSignal>();
 
         while (!stoppingToken.IsCancellationRequested)
         {
@@ -83,7 +84,12 @@ public sealed class OutboxPollingService(
             // A full batch means a backlog: go straight back for the next one rather than capping
             // throughput at BatchSize per interval.
             if (!drainAgain)
-                await Task.Delay(interval, stoppingToken);
+            {
+                if (signal is not null)
+                    await signal.WaitAsync(interval, stoppingToken);
+                else
+                    await Task.Delay(interval, stoppingToken);
+            }
         }
     }
 }

@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Modulus.Outbox.Extensions;
@@ -31,6 +32,10 @@ public static class OutboxServiceCollectionExtensions
         // OutboxPollingService; was previously missing — the hosted service
         // could not resolve it.
         services.AddScoped<OutboxProcessor>();
+
+        // Wakes the poller right after outbox rows commit (one signal per node).
+        services.TryAddSingleton<OutboxSignal>();
+        services.TryAddSingleton<IOutboxSignal>(sp => sp.GetRequiredService<OutboxSignal>());
 
         // Polling hosted service. AddHostedService is TryAddEnumerable, so
         // multiple AddOutbox calls register it only once; DisableAutoPolling is

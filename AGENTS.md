@@ -1417,7 +1417,8 @@ roots, Security tab in `Modulus.UI.AuditLogging`).
   `RequestInfo` detail with the correlation id. GraphQL: `MaxDocumentLength`, `MaxAliases`, `ExecutionTimeout`, and a
   `Modulus.GraphQL` activity per operation.
 - **Performance.** `GetByIdAsync` parameterizes the key (one compiled query); `SaveChangesAsync` detects changes once; the outbox
-  poller loops at once when a batch was full; outbox dispatchers no longer use `dynamic`; mediator caches its closed types and
+  poller loops at once when a batch was full and is woken by `IOutboxSignal` right after outbox rows commit (after the transaction commits
+  when one is open; other replicas still poll on the interval); outbox dispatchers no longer use `dynamic`; mediator caches its closed types and
   `ValidationBehavior` its attribute lookup; REPR binding caches per-type binders; change history caches audited properties; the
   inbox reads its row and a legacy row in one query. Perf analyzers (CA1869, CA1851, CA2016, CA1845/46/47, ...) are warnings in
   `src/**`. Benchmarks: `dotnet run -c Release --project tests/benchmarks/Modulus.Benchmarks -- --filter "*"`.

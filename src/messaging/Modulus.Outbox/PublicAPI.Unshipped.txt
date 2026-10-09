@@ -7,3 +7,7 @@ Modulus.Outbox.OutboxProcessor.OutboxProcessor(System.IServiceProvider! sp, Micr
 Modulus.Outbox.OutboxProcessor.ProcessAsync(System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
 static Modulus.Outbox.Extensions.OutboxServiceCollectionExtensions.AddOutbox<TContext>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<Modulus.Outbox.Abstractions.OutboxOptions!>? configure = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 Modulus.Outbox.OutboxProcessor.HasMoreWork.get -> bool
+Modulus.Outbox.OutboxSignal
+Modulus.Outbox.OutboxSignal.Notify() -> void
+Modulus.Outbox.OutboxSignal.OutboxSignal() -> void
+Modulus.Outbox.OutboxSignal.WaitAsync(System.TimeSpan timeout, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
