@@ -79,6 +79,7 @@ public static class IdentityExtensions
 
         // Sessions of an account: list, revoke one, revoke all (admin pages and the account endpoints).
         services.TryAddScoped<IUserSessionService, UserSessionService<TUser>>();
+        services.TryAddScoped<IIntegrationClientDirectory, OpenIddictIntegrationClientDirectory>();
         services.TryAddScoped<IUserTwoFactorService, UserTwoFactorService<TUser>>();
         services.TryAddScoped<IUserInvitationService, UserInvitationService<TUser>>();
         services.TryAddScoped<ILoginHistoryService, LoginHistoryService<TUser>>();

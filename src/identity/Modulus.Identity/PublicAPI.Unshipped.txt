@@ -514,3 +514,25 @@ override Modulus.Identity.LoginEvent.GetHashCode() -> int
 override Modulus.Identity.LoginEvent.ToString() -> string!
 static Modulus.Identity.LoginEvent.operator !=(Modulus.Identity.LoginEvent? left, Modulus.Identity.LoginEvent? right) -> bool
 static Modulus.Identity.LoginEvent.operator ==(Modulus.Identity.LoginEvent? left, Modulus.Identity.LoginEvent? right) -> bool
+Modulus.Identity.IIntegrationClientDirectory
+Modulus.Identity.IIntegrationClientDirectory.BindAsync(string! clientId, System.Guid? tenantId, System.DateTimeOffset? validUntil, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.Identity.IIntegrationClientDirectory.DisableAsync(string! clientId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.Identity.IIntegrationClientDirectory.FindAsync(string! clientId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Identity.IntegrationClientBinding?>!
+Modulus.Identity.IntegrationClientBinding
+Modulus.Identity.IntegrationClientBinding.<Clone>$() -> Modulus.Identity.IntegrationClientBinding!
+Modulus.Identity.IntegrationClientBinding.ClientId.get -> string!
+Modulus.Identity.IntegrationClientBinding.ClientId.init -> void
+Modulus.Identity.IntegrationClientBinding.Deconstruct(out string! ClientId, out System.Guid? TenantId, out System.DateTimeOffset? ValidUntil) -> void
+Modulus.Identity.IntegrationClientBinding.Equals(Modulus.Identity.IntegrationClientBinding? other) -> bool
+Modulus.Identity.IntegrationClientBinding.IntegrationClientBinding(string! ClientId, System.Guid? TenantId, System.DateTimeOffset? ValidUntil) -> void
+Modulus.Identity.IntegrationClientBinding.TenantId.get -> System.Guid?
+Modulus.Identity.IntegrationClientBinding.TenantId.init -> void
+Modulus.Identity.IntegrationClientBinding.ValidUntil.get -> System.DateTimeOffset?
+Modulus.Identity.IntegrationClientBinding.ValidUntil.init -> void
+Modulus.Identity.IntegrationClients
+override Modulus.Identity.IntegrationClientBinding.Equals(object? obj) -> bool
+override Modulus.Identity.IntegrationClientBinding.GetHashCode() -> int
+override Modulus.Identity.IntegrationClientBinding.ToString() -> string!
+static Modulus.Identity.IntegrationClientBinding.operator !=(Modulus.Identity.IntegrationClientBinding? left, Modulus.Identity.IntegrationClientBinding? right) -> bool
+static Modulus.Identity.IntegrationClientBinding.operator ==(Modulus.Identity.IntegrationClientBinding? left, Modulus.Identity.IntegrationClientBinding? right) -> bool
+static Modulus.Identity.IntegrationClients.RoleFor(string! clientId) -> string!

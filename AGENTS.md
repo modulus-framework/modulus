@@ -1411,6 +1411,10 @@ roots, Security tab in `Modulus.UI.AuditLogging`).
   profiles in `AuthorizationManagementOptions.BreakGlassProfiles` (permissions + max hours; empty = off); a holder of `authorization:break-glass` (Critical) activates one (`POST break-glass`, reason of
   10+ characters) and gets the temporary grants at once; it is recorded as `Overridden` in the security audit and listed in `GET break-glass/unreviewed` until someone other than the user reviews it
   (`POST {id}/review`). Not built: auto-expiring pending requests, notifications to approvers, per-profile approver lists.
+- **Integration (machine) clients.** A client-credentials token now carries the role `integration:{clientId}` (`IntegrationClients.RoleFor`) and, when the client is bound to a company, `tid`:
+  grant that role its permissions, scopes and expiry through the ordinary grant APIs (`grants`, `scoped-grants`), so a removed grant stops working on the next request, not at token expiry.
+  `IIntegrationClientDirectory` (kept in the client's OpenIddict application properties, no new table) binds a client to one company (`BindAsync`: the token's `tid` pins it, a header cannot
+  select another) with an optional `ValidUntil` (no new tokens after it), and `DisableAsync` ends it now and revokes every token it holds. An unbound client gets the role but no company.
 - **Reason codes.** `AccessDecision.Code` uses `AccessReasonCodes` (BRS Appendix B); no policy for a type = `METADATA_MISSING`.
 - **Sensitivity.** `PermissionSensitivity` (Normal/Sensitive/Critical) on `PermissionDefinition`; `registry.Add(..., sensitivity)`.
   A wildcard grant never confers a Critical permission (a wildcard deny still removes it); Critical is not delegable.

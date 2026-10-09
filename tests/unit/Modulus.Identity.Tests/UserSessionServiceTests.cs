@@ -152,4 +152,40 @@ public sealed class UserSessionServiceTests
     {
         public object? GetService(Type serviceType) => serviceType == typeof(T) ? service : null;
     }
+
+    [Fact]
+    public async Task An_integration_client_is_bound_to_a_company_and_disabling_it_revokes_its_tokens()
+    {
+        var (provider, _, connection) = await CreateAsync();
+        await using var _ = provider;
+        await using var __ = connection;
+        using var scope = provider.CreateScope();
+        var apps = scope.ServiceProvider.GetRequiredService<IOpenIddictApplicationManager>();
+        await apps.CreateAsync(new OpenIddictApplicationDescriptor { ClientId = "partner-x", ClientSecret = "s3cret-s3cret" });
+        var tokens = scope.ServiceProvider.GetRequiredService<IOpenIddictTokenManager>();
+        await tokens.CreateAsync(new OpenIddictTokenDescriptor
+        {
+            Subject = "partner-x", Type = OpenIddictConstants.TokenTypeHints.AccessToken, Status = OpenIddictConstants.Statuses.Valid,
+            CreationDate = DateTimeOffset.UtcNow, ExpirationDate = DateTimeOffset.UtcNow.AddHours(1),
+        });
+        var directory = scope.ServiceProvider.GetRequiredService<IIntegrationClientDirectory>();
+        var company = Guid.NewGuid();
+
+        (await directory.FindAsync("nobody")).Should().BeNull();
+        (await directory.FindAsync("partner-x")).Should().Be(new IntegrationClientBinding("partner-x", null, null));
+        (await directory.BindAsync("nobody", company, null)).Should().BeFalse();
+
+        (await directory.BindAsync("partner-x", company, null)).Should().BeTrue();
+        (await directory.FindAsync("partner-x"))!.TenantId.Should().Be(company);
+        IntegrationClients.RoleFor("partner-x").Should().Be("integration:partner-x");
+
+        (await directory.DisableAsync("partner-x")).Should().BeTrue();
+        var after = (await directory.FindAsync("partner-x"))!;
+        after.TenantId.Should().Be(company, "disabling keeps the binding");
+        after.ValidUntil.Should().BeOnOrBefore(DateTimeOffset.UtcNow);
+        var remaining = 0;
+        await foreach (var token in tokens.FindBySubjectAsync("partner-x"))
+            remaining += await tokens.GetStatusAsync(token) == OpenIddictConstants.Statuses.Valid ? 1 : 0;
+        remaining.Should().Be(0);
+    }
 }

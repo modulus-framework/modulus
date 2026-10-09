@@ -99,7 +99,7 @@ public class ModulusTokenController(
             return await HandleRefreshTokenGrantAsync();
 
         if (request.IsClientCredentialsGrantType())
-            return HandleClientCredentialsGrant(request);
+            return await HandleClientCredentialsGrantAsync(request);
 
         return BadRequest(new { error = "unsupported_grant_type" });
     }
@@ -109,9 +109,26 @@ public class ModulusTokenController(
     /// authenticated the confidential client and checked its grant and scope permissions; the token represents the
     /// client itself, so its subject is the client id and it carries no user, roles or refresh token.
     /// </summary>
-    private IActionResult HandleClientCredentialsGrant(OpenIddictRequest request)
+    private async Task<IActionResult> HandleClientCredentialsGrantAsync(OpenIddictRequest request)
     {
         var clientId = request.ClientId!;
+        var binding = HttpContext.RequestServices.GetService<IIntegrationClientDirectory>() is { } directory
+            ? await directory.FindAsync(clientId, HttpContext.RequestAborted)
+            : null;
+
+        // A client with an end date (or one that was disabled, which sets it to now) gets no new tokens after it.
+        if (binding is { ValidUntil: { } until } && until <= DateTimeOffset.UtcNow)
+        {
+            Audit("token.client-credentials", SecurityAuditOutcomes.Denied, clientId, tenantId: null);
+            return Forbid(
+                new AuthenticationProperties(new Dictionary<string, string?>
+                {
+                    [OpenIddictServerAspNetCoreConstants.Properties.Error] = OpenIddictConstants.Errors.InvalidClient,
+                    [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] = "The client is no longer allowed to get tokens.",
+                }),
+                OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+        }
+
         var identity = new ClaimsIdentity(
             OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
             OpenIddictConstants.Claims.Name,
@@ -119,10 +136,19 @@ public class ModulusTokenController(
         identity.AddClaim(new Claim(OpenIddictConstants.Claims.Subject, clientId));
         identity.AddClaim(new Claim(OpenIddictConstants.Claims.Name, clientId));
 
+        // The client acts in the company it is bound to (a pinned token cannot select another with a header), and its role is the
+        // handle to grant it permissions with: what it may do lives in the grant store and changes without a new token.
+        if (binding is not null)
+        {
+            identity.AddClaim(new Claim(OpenIddictConstants.Claims.Role, IntegrationClients.RoleFor(clientId)));
+            if (binding.TenantId is { } tenantId)
+                identity.AddClaim(new Claim(TokenPrincipalFactory.TenantClaim, tenantId.ToString()));
+        }
+
         var principal = new ClaimsPrincipal(identity);
         principal.SetScopes(Abstractions.ClientCredentialsGrant.AuthorizeScopes(request.GetScopes(), AllowedGrantScopes));
         ApplyDestinations(principal);
-        Audit("token.client-credentials", SecurityAuditOutcomes.Success, clientId, tenantId: null);
+        Audit("token.client-credentials", SecurityAuditOutcomes.Success, clientId, binding?.TenantId);
 
         return SignIn(principal, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
     }
