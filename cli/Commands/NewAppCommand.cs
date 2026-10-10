@@ -273,6 +273,7 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
             UiEngine = uiEngine,
             UseTablerTheme = (kind is AppKind.WebApp or AppKind.WebAppApi) && !s.NoTheme,
             LocalPackageSource = s.PackageSource,
+            UiFeedSource = uiEngine == "none" ? null : UiFrameworkPackages.LocalFeed(),
             Bff = bff,
             BffServices = bffServices,
             MultiTenancy = multiTenancy,
@@ -453,6 +454,7 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         if (model.UseUi)
         {
             WireUiModules(projectDir, model);
+            AddUiFrameworkPackages(projectDir, model);
         }
 
         // Write .modulus.json for later CLI commands (generate-crud, etc.)
@@ -633,6 +635,27 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
             Path.Combine(infraDir, "IdentityModule.cs"));
         _templates.RenderToFile("identity/IdentitySeeding", model,
             Path.Combine(infraDir, "IdentitySeeding.cs"));
+    }
+
+    /// <summary>References the UI framework packages for the app's UI engine in the host project.</summary>
+    private static void AddUiFrameworkPackages(string projectDir, AppModel model)
+    {
+        if (model.UiEngine == "none") return;
+
+        var (hostProject, _) = model.Kind == AppKind.WebAppApi
+            ? GetWebHostPaths(projectDir, model)
+            : GetApiHostPaths(projectDir, model);
+        if (!File.Exists(hostProject)) return;
+
+        var packages = UiFrameworkPackages.For(model.UiEngine);
+        if (packages.Count == 0)
+        {
+            Ux.Warning($"UI framework packages for '{model.UiEngine}' not found (is Modulus.Ui.Templates available?); the app has no UI references yet.");
+            return;
+        }
+
+        foreach (var package in packages)
+            ProjectFileService.EnsureCsprojPackageReference(hostProject, package.Id, package.Version, Ux.DryRun);
     }
 
     private void WireUiModules(string projectDir, AppModel model)

@@ -1,0 +1,19 @@
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ViewEngines;
+
+namespace {{ namespace }};
+
+/// <summary>Serves the chart pages under Views/Charts (/charts/line, /charts/column, ...).</summary>
+public class ChartsController(ICompositeViewEngine views) : Controller
+{
+    [HttpGet("/charts/{name}")]
+    public IActionResult Show(string name)
+    {
+        // Letters only, so the name can't reach outside Views/Charts.
+        if (name.Length == 0 || !name.All(char.IsAsciiLetter))
+            return NotFound();
+
+        var path = $"~/Views/Charts/{char.ToUpperInvariant(name[0])}{name[1..].ToLowerInvariant()}.cshtml";
+        return views.GetView(null, path, isMainPage: true).Success ? View(path) : NotFound();
+    }
+}

@@ -1,0 +1,15 @@
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+
+namespace {{ namespace }};
+
+/// <summary>Serves the password recovery pages; they call the /account/* endpoints of Modulus.Identity.</summary>
+[AllowAnonymous]
+public class AuthRecoveryController : Controller
+{
+    [HttpGet("/auth/forgot-password")]
+    public IActionResult ForgotPassword() => View("~/Views/Auth/ForgotPassword.cshtml");
+
+    [HttpGet("/auth/reset-password")]
+    public IActionResult ResetPassword() => View("~/Views/Auth/ResetPassword.cshtml");
+}

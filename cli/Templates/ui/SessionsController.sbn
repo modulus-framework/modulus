@@ -1,0 +1,12 @@
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+
+namespace {{ namespace }};
+
+/// <summary>Serves the session manager page; it calls /account/sessions and /account/login-history of Modulus.Identity.</summary>
+[Authorize]
+public class SessionsController : Controller
+{
+    [HttpGet("/auth/sessions")]
+    public IActionResult Index() => View("~/Views/Auth/Sessions.cshtml");
+}

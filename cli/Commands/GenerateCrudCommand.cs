@@ -215,7 +215,9 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
                 var templatesPath = ResolveTemplatesPackage("Modulus.Ui.Templates", "0.9.0");
                 if (templatesPath != null)
                 {
-                    // Render each CRUD template
+                    // Render every CRUD template first, write only when all of them render, so a failure never leaves half a page set.
+                    var rendered = new List<(string File, string Path, string Content)>();
+                    string? renderError = null;
                     var cruds = new[] { ("crud-list", "Index"), ("crud-form", "Form"), ("crud-detail", "Details") };
                     foreach (var (crudType, suffix) in cruds)
                     {
@@ -232,10 +234,30 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
                             _ => ".cshtml"
                         };
                         var outputFile = $"{model.EntityName}{suffix}{ext}";
-                        var outputPath = Path.Combine(presDir, outputFile);
+                        try
+                        {
+                            rendered.Add((outputFile, Path.Combine(presDir, outputFile), _templates.Render(templateFile, model)));
+                        }
+                        catch (InvalidOperationException ex)
+                        {
+                            renderError = $"{templateRelPath}: {ex.Message.Split('\n')[0]}";
+                            break;
+                        }
+                    }
 
-                        _templates.RenderToFile(templateFile, model, outputPath);
-                        generated.Add(outputFile);
+                    if (renderError is null && rendered.Count > 0)
+                    {
+                        foreach (var (file, path, content) in rendered)
+                        {
+                            Ux.WriteFile(path, content);
+                            generated.Add(file);
+                        }
+                    }
+                    else
+                    {
+                        if (renderError is not null)
+                            Ux.Warning($"Package template could not be rendered ({renderError}); using the built-in UI companion.");
+                        GenerateUiCompanion(module, model, host, kind, withTheme: !s.NoTheme, generated, skipped);
                     }
                 }
                 else
@@ -881,68 +903,14 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
     private string? ResolveUiTemplatePath(string engine, string templateType) =>
         engine switch
         {
-            "mvc" => $"templates/mvc/{templateType}.cshtml.sbn",
-            "razor-pages" => $"templates/razor-pages/{templateType}.cshtml.sbn",
-            "blazor" => $"templates/blazor/{templateType}.razor.sbn",
-            "fluid" => $"templates/fluid/{templateType}.liquid.sbn",
+            "mvc" => $"mvc/{templateType}.cshtml.sbn",
+            "razor-pages" => $"razor-pages/{templateType}.cshtml.sbn",
+            "blazor" => $"blazor/{templateType}.razor.sbn",
+            "fluid" => $"fluid/{templateType}.liquid.sbn",
             _ => null
         };
 
-    /// <summary>Resolves the Modulus.Ui.Templates NuGet package and extracts templates to a local cache.</summary>
+    /// <summary>Resolves the Modulus.Ui.Templates package (cache, local feed, then nuget.org) and returns its templates folder.</summary>
     private string? ResolveTemplatesPackage(string packageId, string version)
-    {
-        try
-        {
-            // Cache directory: ~/.modulus/cache/{packageId}/{version}/templates/
-            var cacheDir = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-                ".modulus", "cache", packageId, version, "templates");
-            if (Directory.Exists(cacheDir))
-                return cacheDir;
-
-            // Try to find the .nupkg in a local feed
-            var nupkgPath = Path.Combine(Environment.CurrentDirectory, "..", "..", "nupkg", $"{packageId}.{version}.nupkg");
-            if (!File.Exists(nupkgPath))
-                return null;
-
-            // Extract templates/ folder from .nupkg (ZIP file)
-            Directory.CreateDirectory(cacheDir);
-            try
-            {
-                using (var zip = System.IO.Compression.ZipFile.OpenRead(nupkgPath))
-                {
-                    var templatesPrefix = "templates/";
-                    foreach (var entry in zip.Entries.Where(e => e.FullName.StartsWith(templatesPrefix)))
-                    {
-                        var relativePath = entry.FullName.Substring(templatesPrefix.Length);
-                        if (string.IsNullOrEmpty(relativePath)) continue;
-
-                        var targetPath = Path.Combine(cacheDir, relativePath);
-                        if (entry.FullName.EndsWith("/"))
-                        {
-                            Directory.CreateDirectory(targetPath);
-                        }
-                        else
-                        {
-                            Directory.CreateDirectory(Path.GetDirectoryName(targetPath) ?? cacheDir);
-                            using (var source = entry.Open())
-                            using (var target = File.Create(targetPath))
-                                source.CopyTo(target);
-                        }
-                    }
-                }
-                return cacheDir;
-            }
-            catch (Exception ex)
-            {
-                Ux.Warning($"Failed to extract templates: {ex.Message}");
-                return null;
-            }
-        }
-        catch (Exception ex)
-        {
-            Ux.Warning($"Failed to resolve templates package: {ex.Message}");
-            return null;
-        }
-    }
+        => UiTemplatePackage.Resolve(packageId, version);
 }

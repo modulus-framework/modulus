@@ -18,7 +18,24 @@
       <add key="modulus-local" value="../../nupkg" />
     -->
 {{ end }}
+{{ if ui_feed_source }}
+    <!-- Local feed of the Modulus UI framework packages; remove it once they are on nuget.org -->
+    <add key="modulus-ui-local" value="{{ ui_feed_source }}" />
+{{ end }}
   </packageSources>
+{{ if ui_feed_source && !local_package_source }}
+  <packageSourceMapping>
+    <packageSource key="nuget.org">
+      <package pattern="*" />
+    </packageSource>
+    <packageSource key="modulus-ui-local">
+      <package pattern="Modulus.Ui.*" />
+      <package pattern="Modulus.AspNetCore.*" />
+      <package pattern="Modulus.Blazor" />
+      <package pattern="Modulus.Documents" />
+    </packageSource>
+  </packageSourceMapping>
+{{ end }}
 {{ if local_package_source }}
   <!-- Source mapping makes the local feed authoritative for framework
        packages: published nuget.org versions with the same number can be
@@ -31,6 +48,14 @@
     <packageSource key="modulus-local">
       <package pattern="Cobytelabs.*" />
     </packageSource>
+{{ if ui_feed_source }}
+    <packageSource key="modulus-ui-local">
+      <package pattern="Modulus.Ui.*" />
+      <package pattern="Modulus.AspNetCore.*" />
+      <package pattern="Modulus.Blazor" />
+      <package pattern="Modulus.Documents" />
+    </packageSource>
+{{ end }}
   </packageSourceMapping>
 {{ end }}
 </configuration>

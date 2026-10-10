@@ -165,6 +165,58 @@ public static class Program
                     .WithExample("ui", "eject", "Users/Details", "Tabler/Layouts/Application")
                     .WithExample("ui", "eject", "DataTable", "Input", "--force");
 
+                ui.AddBranch("theme", theme =>
+                {
+                    theme.SetDescription("Create, apply, list and export app themes (Modulus:Theme values).");
+
+                    theme.AddCommand<Commands.UiThemeCreateCommand>("create")
+                        .WithDescription("Create a theme in the app's Themes folder from a base and a brand colour.")
+                        .WithExample("ui", "theme", "create", "corporate", "--colors", "blue")
+                        .WithExample("ui", "theme", "create", "mono", "--base", "minimal", "--colors", "#0b7285");
+                    theme.AddCommand<Commands.UiThemeSetCommand>("set")
+                        .WithDescription("Make a theme the app's active theme (writes Modulus:Theme in appsettings.json).")
+                        .WithExample("ui", "theme", "set", "corporate");
+                    theme.AddCommand<Commands.UiThemeListCommand>("list")
+                        .WithDescription("List the app's themes and which one is active.")
+                        .WithExample("ui", "theme", "list");
+                    theme.AddCommand<Commands.UiThemeExportCommand>("export")
+                        .WithDescription("Export a theme as CSS variables, SCSS variables, a Tailwind config or JSON.")
+                        .WithExample("ui", "theme", "export", "corporate", "--format", "tailwind");
+                });
+
+                ui.AddCommand<Commands.UiCreateDashboardCommand>("create-dashboard")
+                    .WithDescription("Scaffold a dashboard page (overview, analytics, reports, audit) from the Modulus.Ui.Templates package for the app's UI engine.")
+                    .WithExample("ui", "create-dashboard", "analytics")
+                    .WithExample("ui", "create-dashboard", "reports", "--module", "Admin", "--engine", "blazor");
+
+                ui.AddCommand<Commands.UiCreateFormFromEntityCommand>("create-form-from-entity")
+                    .WithDescription("Scaffold a create/edit form whose fields come from an entity's properties.")
+                    .WithExample("ui", "create-form-from-entity", "Order")
+                    .WithExample("ui", "create-form-from-entity", "Order", "--module", "Orders", "--engine", "blazor");
+
+                ui.AddCommand<Commands.UiAddComponentCommand>("add-component")
+                    .WithDescription("Add reusable components (alert, card, data-table, ...) to the app, for its UI engine.")
+                    .WithExample("ui", "add-component", "--list")
+                    .WithExample("ui", "add-component", "alert", "card", "data-table")
+                    .WithExample("ui", "add-component", "--all");
+
+                ui.AddCommand<Commands.UiAddAuthCommand>("add-auth")
+                    .WithDescription("Add the forgot-password and reset-password pages (they call Modulus.Identity's /account endpoints).")
+                    .WithExample("ui", "add-auth")
+                    .WithExample("ui", "add-auth", "--engine", "blazor");
+                ui.AddCommand<Commands.UiAdd2FaCommand>("add-2fa")
+                    .WithDescription("Add the two-factor page: set up an authenticator app, recovery codes, turn off.")
+                    .WithExample("ui", "add-2fa");
+
+                ui.AddCommand<Commands.UiAddSessionManagerCommand>("add-session-manager")
+                    .WithDescription("Add a page listing the signed-in user's sessions (revoke one or all) and recent sign-ins.")
+                    .WithExample("ui", "add-session-manager");
+
+                ui.AddCommand<Commands.UiAddChartCommand>("add-chart")
+                    .WithDescription("Add a chart page (line, column, donut, heatmap) built on the framework's chart components, with sample data.")
+                    .WithExample("ui", "add-chart", "--type", "donut")
+                    .WithExample("ui", "add-chart", "--type", "line", "--engine", "blazor");
+
                 ui.AddCommand<Commands.UiDiffCommand>("diff")
                     .WithDescription("Show how the app's overrides of framework views differ from the framework's current views.")
                     .WithExample("ui", "diff")
@@ -230,6 +282,18 @@ internal sealed class DefaultCommand : Command
         table.AddRow("[cyan]ui add[/] [grey]<module>[/]", "Add a UI module to the current app");
         table.AddRow("[cyan]ui remove[/] [grey]<module>[/]", "Remove a UI module from the current app");
         table.AddRow("[cyan]ui update[/] [grey][[module]][/]", "Update installed UI modules");
+        table.AddRow("[cyan]ui theme create[/] [grey]<name>[/]", "Create an app theme from a base and a brand colour");
+        table.AddRow("[cyan]ui theme set[/] [grey]<name>[/]", "Make a theme the active one (appsettings.json)");
+        table.AddRow("[cyan]ui theme list[/]", "List the app's themes");
+        table.AddRow("[cyan]ui theme export[/] [grey]<name>[/]", "Export a theme as css, scss, tailwind or json")
+;
+        table.AddRow("[cyan]ui create-dashboard[/] [grey]<template>[/]", "Scaffold an overview, analytics, reports or audit dashboard");
+        table.AddRow("[cyan]ui create-form-from-entity[/] [grey]<E>[/]", "Scaffold a form from an entity's properties");
+        table.AddRow("[cyan]ui add-component[/] [grey][[names]][/]", "Add UI components (alert, card, data-table, ...) to the app");
+        table.AddRow("[cyan]ui add-auth[/]", "Add forgot-password and reset-password pages");
+        table.AddRow("[cyan]ui add-2fa[/]", "Add the two-factor authentication page");
+        table.AddRow("[cyan]ui add-session-manager[/]", "Add the sessions and sign-in history page");
+        table.AddRow("[cyan]ui add-chart[/] [grey]--type T[/]", "Add a line, column, donut or heatmap chart page");
         table.AddRow("[cyan]describe[/]", "Show detailed info about the current app structure");
         table.AddRow("[cyan]add-bff[/] [grey]<entity>[/]", "Expose entity CRUD over BFF (Backend for Frontend)");
         table.AddRow("[cyan]generate-bff-endpoint[/] [grey]<entity>[/]", "Generate a BFF endpoint for an entity");

@@ -118,6 +118,9 @@ internal sealed class AppModel
     /// </summary>
     public string? LocalPackageSource { get; set; }
 
+    /// <summary>A local feed holding the UI framework packages (<c>Modulus.AspNetCore.Mvc</c>, ...); written to NuGet.config until they are on nuget.org.</summary>
+    public string? UiFeedSource { get; set; }
+
     /// <summary>
     /// Migration engine for generated modules: "efcore" (default, EF Core
     /// migrations) or "dbsh" (SQL-first migrations managed by the external
@@ -590,6 +593,11 @@ internal sealed class ModuleModel
     public string? EntityPlural => string.IsNullOrEmpty(EntityName)
         ? null
         : CodeGen.Pluralize(EntityName);
+
+    // Names the Modulus.Ui.Templates package uses (entity_name_plural, route_prefix, module_description).
+    public string? EntityNamePlural => EntityPlural;
+    public string? RoutePrefix => RouteName;
+    public string ModuleDescription => $"{ModuleName} module";
 }
 
 /// <summary>

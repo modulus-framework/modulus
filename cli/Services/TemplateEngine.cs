@@ -14,16 +14,27 @@ internal sealed class TemplateEngine
     private readonly Assembly _assembly = typeof(TemplateEngine).Assembly;
 
     /// <summary>
-    /// Renders a template by resource path (e.g. <c>"app/Program.cs"</c>).
+    /// Renders a template by embedded resource path (e.g. <c>"app/Program.cs"</c>), or from disk when given an absolute file path.
     /// </summary>
     public string Render(string templatePath, object model)
     {
-        var resourceName = $"Modulus.Cli.Templates.{templatePath.Replace('/', '.')}.sbn";
-        using var stream = _assembly.GetManifestResourceStream(resourceName)
-            ?? throw new FileNotFoundException(
-                $"Embedded template not found: {resourceName}");
-        using var reader = new StreamReader(stream);
-        var templateSource = reader.ReadToEnd();
+        string templateSource;
+        if (Path.IsPathRooted(templatePath))
+        {
+            // A template file from the resolved Modulus.Ui.Templates package.
+            if (!File.Exists(templatePath))
+                throw new FileNotFoundException($"Template file not found: {templatePath}");
+            templateSource = File.ReadAllText(templatePath);
+        }
+        else
+        {
+            var resourceName = $"Modulus.Cli.Templates.{templatePath.Replace('/', '.')}.sbn";
+            using var stream = _assembly.GetManifestResourceStream(resourceName)
+                ?? throw new FileNotFoundException(
+                    $"Embedded template not found: {resourceName}");
+            using var reader = new StreamReader(stream);
+            templateSource = reader.ReadToEnd();
+        }
 
         var template = Template.Parse(templateSource);
         if (template.HasErrors)

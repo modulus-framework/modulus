@@ -1,0 +1,12 @@
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+
+namespace {{ namespace }};
+
+/// <summary>Serves the two-factor page; it calls the /account/2fa/* endpoints of Modulus.Identity.</summary>
+[Authorize]
+public class TwoFactorController : Controller
+{
+    [HttpGet("/auth/two-factor")]
+    public IActionResult Index() => View("~/Views/Auth/TwoFactor.cshtml");
+}

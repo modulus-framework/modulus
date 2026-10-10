@@ -111,8 +111,12 @@ internal static class SolutionHelper
         var dir = startDir;
         while (dir is not null)
         {
-            var slnx = Directory.GetFiles(dir, "*.slnx");
-            if (slnx.Length > 0) return slnx[0];
+            // A folder that doesn't exist yet (a module about to be scaffolded) has no solution; look in its parents.
+            if (Directory.Exists(dir))
+            {
+                var slnx = Directory.GetFiles(dir, "*.slnx");
+                if (slnx.Length > 0) return slnx[0];
+            }
             dir = Directory.GetParent(dir)?.FullName;
         }
         return null;
