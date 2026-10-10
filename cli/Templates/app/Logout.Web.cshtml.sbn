@@ -4,7 +4,15 @@
     ViewData["Title"] = "Signing out";
 }
 
-<div class="page page-center">
+{{ if use_ui_framework }}<div class="m-auth-card">
+    <div class="m-auth-card-body text-center">
+        <p>Signing out…</p>
+        <div class="m-auth-actions">
+            <a class="ant-btn ant-btn-primary" href="/Account/Login">Sign in again</a>
+        </div>
+    </div>
+</div>
+{{ else }}<div class="page page-center">
     <div class="container container-tight py-4">
         <div class="card card-md">
             <div class="card-body text-center">
@@ -14,3 +22,4 @@
         </div>
     </div>
 </div>
+{{ end }}

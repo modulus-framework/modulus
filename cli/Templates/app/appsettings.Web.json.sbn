@@ -5,7 +5,12 @@
       "Microsoft.AspNetCore": "Warning"
     }
   },
-  "Api": {
+{{ if use_ui_framework }}  "Modulus": {
+    "Theme": {
+      "Title": "{{ app_name }}"
+    }
+  },
+{{ end }}  "Api": {
     "BaseUrl": "http://localhost:5180",
     "ClientId": "{{ app_name_lower }}"
   },

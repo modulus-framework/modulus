@@ -1,0 +1,23 @@
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ViewEngines;
+
+namespace {{ namespace }};
+
+/// <summary>Serves the permission matrix pages under Views/Permissions (/permissions/order, /permissions/order-item, ...).</summary>
+[Authorize]
+public class PermissionsController(ICompositeViewEngine views) : Controller
+{
+    [HttpGet("/permissions/{name}")]
+    public IActionResult Show(string name)
+    {
+        // Letters, digits and dashes only, so the name can't reach outside Views/Permissions.
+        if (name.Length == 0 || !name.All(c => char.IsAsciiLetterOrDigit(c) || c == '-'))
+            return NotFound();
+
+        var pascal = string.Concat(name.Split('-', StringSplitOptions.RemoveEmptyEntries)
+            .Select(w => char.ToUpperInvariant(w[0]) + w[1..].ToLowerInvariant()));
+        var path = $"~/Views/Permissions/{pascal}.cshtml";
+        return views.GetView(null, path, isMainPage: true).Success ? View(path) : NotFound();
+    }
+}

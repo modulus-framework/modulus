@@ -122,6 +122,13 @@ internal sealed class AppModel
     public string? UiFeedSource { get; set; }
 
     /// <summary>
+    /// True when the Web project of a <c>webapp+api</c> app runs on the Modulus UI framework (<c>Modulus.AspNetCore.Mvc</c>:
+    /// <c>AddModulusMvc</c>, the shell layout) instead of the older <c>Cobytelabs.Modulus.UI.*</c> modules and Tabler theme.
+    /// Set for the mvc and razor-pages engines; the Blazor engine needs a Blazor host, which is not generated.
+    /// </summary>
+    public bool UseUiFramework { get; set; }
+
+    /// <summary>
     /// Migration engine for generated modules: "efcore" (default, EF Core
     /// migrations) or "dbsh" (SQL-first migrations managed by the external
     /// dbsh tool). Propagates to every module the app generates.

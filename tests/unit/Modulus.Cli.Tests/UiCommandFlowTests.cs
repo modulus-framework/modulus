@@ -107,4 +107,42 @@ public sealed class UiCommandFlowTests : IDisposable
 
         Run("ui", "add-component", "alert", "--engine", "fluid").Should().Be(1);
     }
+
+    [Fact]
+    public void Add_i18n_sets_the_languages_and_wires_localization_once()
+    {
+        File.WriteAllText(P("Program.cs"), "var app = builder.Build();\napp.UseRouting();\napp.Run();\n");
+
+        Run("ui", "add-i18n", "--languages", "en,es").Should().Be(0);
+        Run("ui", "add-i18n", "--languages", "en,es,fr").Should().Be(0);
+
+        var settings = File.ReadAllText(P("appsettings.json"));
+        settings.Should().Contain("\"fr\"");
+        var program = File.ReadAllText(P("Program.cs"));
+        program.Split("UseModulusLocalization").Length.Should().Be(2, "the call is added once");
+
+        Run("ui", "add-i18n", "--languages", "xx-notreal").Should().Be(1);
+        Run("ui", "add-i18n").Should().Be(1);
+    }
+
+    [Fact]
+    public void Audit_reports_issues_writes_a_report_and_fails_only_when_asked()
+    {
+        Directory.CreateDirectory(P("Pages"));
+        File.WriteAllText(P("Pages", "Bad.cshtml"), "<img src=\"a.png\">\n<button></button>\n");
+        File.WriteAllText(P("Pages", "obj.txt"), "<img>");
+
+        Run("ui", "audit").Should().Be(0, "issues alone do not fail");
+        Run("ui", "audit", "--fail-on-issues").Should().Be(1);
+
+        var report = Path.Combine(_root, "audit.md");
+        Run("ui", "audit", "--format", "markdown", "--out-file", report).Should().Be(0);
+        File.ReadAllText(report).Should().Contain("A11Y001").And.Contain("Pages/Bad.cshtml");
+
+        Run("ui", "audit", "--level", "Z").Should().Be(1);
+        Run("ui", "audit", "--format", "pdf").Should().Be(1);
+
+        File.WriteAllText(P("Pages", "Bad.cshtml"), "<img src=\"a.png\" alt=\"\">\n<button>Go</button>\n");
+        Run("ui", "audit", "--fail-on-issues").Should().Be(0);
+    }
 }

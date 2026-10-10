@@ -1,0 +1,11 @@
+@* Sign-in frame: the brand above a narrow centred card. Nested in _BlankLayout. *@
+@inject Microsoft.Extensions.Options.IOptions<Modulus.Ui.Abstractions.Theming.ModulusThemeOptions> ThemeOptions
+@{
+    Layout = "_BlankLayout";
+}
+<main class="m-auth-page">
+    <div class="m-auth-container">
+        <div class="m-auth-brand">@Html.Raw(Modulus.Ui.Abstractions.Shell.ShellRenderer.Brand(ThemeOptions.Value))</div>
+        @RenderBody()
+    </div>
+</main>

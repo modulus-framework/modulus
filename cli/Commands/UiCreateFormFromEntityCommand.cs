@@ -41,22 +41,8 @@ internal sealed class UiCreateFormFromEntityCommand : Command<UiCreateFormFromEn
 
             var engine = UiScaffold.ResolveEngine(s.Engine, inventory.SolutionDir);
 
-            var modulesDir = Path.Combine(inventory.SolutionDir, "src", "Modules");
-            var candidates = Directory.Exists(modulesDir)
-                ? Directory.EnumerateDirectories(modulesDir)
-                    .Where(d => s.Module is null || Path.GetFileName(d).EndsWith("." + s.Module, StringComparison.OrdinalIgnoreCase))
-                    .Select(d => (Dir: d, File: EntityMetadata.FindEntityFile(d, entity)))
-                    .Where(x => x.File is not null)
-                    .ToList()
-                : [];
-            if (candidates.Count == 0)
-                throw new InvalidOperationException($"No class '{entity}' found under src/Modules" + (s.Module is null ? "." : $" for module '{s.Module}'."));
-            if (candidates.Count > 1)
-                throw new InvalidOperationException($"'{entity}' exists in several modules ({string.Join(", ", candidates.Select(c => Path.GetFileName(c.Dir)))}). Pass --module.");
-
-            var (moduleDir, entityFile) = candidates[0];
-            var moduleName = Path.GetFileName(moduleDir).Split('.').Last();
-            var fields = EntityMetadata.Parse(File.ReadAllText(entityFile!), entity);
+            var (_, moduleName, entityFile) = EntityMetadata.FindInApp(inventory.SolutionDir, entity, s.Module);
+            var fields = EntityMetadata.Parse(File.ReadAllText(entityFile), entity);
             if (fields.Count == 0)
                 throw new InvalidOperationException($"{entity} has no editable properties (public get/set) to build a form from.");
 

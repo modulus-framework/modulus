@@ -217,6 +217,20 @@ public static class Program
                     .WithExample("ui", "add-chart", "--type", "donut")
                     .WithExample("ui", "add-chart", "--type", "line", "--engine", "blazor");
 
+                ui.AddCommand<Commands.UiAddI18nCommand>("add-i18n")
+                    .WithDescription("Set the app's languages (Modulus:Theme:Cultures) and wire request localization; shows a language picker with two or more.")
+                    .WithExample("ui", "add-i18n", "--languages", "en,es,fr");
+
+                ui.AddCommand<Commands.UiAuditCommand>("audit")
+                    .WithDescription("Scan the app's Razor/HTML pages for accessibility problems (missing alt text, labels, names, lang ...).")
+                    .WithExample("ui", "audit")
+                    .WithExample("ui", "audit", "--format", "markdown", "--fail-on-issues");
+
+                ui.AddCommand<Commands.UiCreatePermissionMatrixCommand>("create-permission-matrix")
+                    .WithDescription("Scaffold a role/permission matrix for an entity: tick a box to grant, clear it to revoke (uses /authorization/grants).")
+                    .WithExample("ui", "create-permission-matrix", "Order")
+                    .WithExample("ui", "create-permission-matrix", "Order", "--roles", "Admin,Sales", "--permissions", "orders:order:manage,orders:order:export");
+
                 ui.AddCommand<Commands.UiDiffCommand>("diff")
                     .WithDescription("Show how the app's overrides of framework views differ from the framework's current views.")
                     .WithExample("ui", "diff")
@@ -294,6 +308,9 @@ internal sealed class DefaultCommand : Command
         table.AddRow("[cyan]ui add-2fa[/]", "Add the two-factor authentication page");
         table.AddRow("[cyan]ui add-session-manager[/]", "Add the sessions and sign-in history page");
         table.AddRow("[cyan]ui add-chart[/] [grey]--type T[/]", "Add a line, column, donut or heatmap chart page");
+        table.AddRow("[cyan]ui add-i18n[/] [grey]--languages L[/]", "Set the app's languages and wire request localization");
+        table.AddRow("[cyan]ui audit[/]", "Scan pages for accessibility problems (report as json, markdown or html)");
+        table.AddRow("[cyan]ui create-permission-matrix[/] [grey]<E>[/]", "Scaffold a role/permission matrix for an entity");
         table.AddRow("[cyan]describe[/]", "Show detailed info about the current app structure");
         table.AddRow("[cyan]add-bff[/] [grey]<entity>[/]", "Expose entity CRUD over BFF (Backend for Frontend)");
         table.AddRow("[cyan]generate-bff-endpoint[/] [grey]<entity>[/]", "Generate a BFF endpoint for an entity");

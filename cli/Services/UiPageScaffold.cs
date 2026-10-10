@@ -25,7 +25,7 @@ internal static class UiPageScaffold
     ];
 
     public static int Run(IReadOnlyList<UiAuthPage> pages, string controllerTemplate, string controllerFile,
-        string? engineOption, string? output, string what, string folder = "Auth", bool sharedController = false)
+        string? engineOption, string? output, string what, string folder = "Auth", bool sharedController = false, object? model = null)
     {
         var start = Path.GetFullPath(output ?? "./");
         var inventory = ModuleDiscovery.Inventory(start)
@@ -58,7 +58,7 @@ internal static class UiPageScaffold
 
         foreach (var (page, file, target) in plan)
         {
-            renderer.RenderToFile(file, new { PageName = page.PageName }, target);
+            renderer.RenderToFile(file, model ?? new { PageName = page.PageName }, target);
             Ux.Success($"{page.PageName} page added", $"{Path.GetRelativePath(start, target)}  →  {page.Route}");
         }
 

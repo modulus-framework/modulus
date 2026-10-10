@@ -16,8 +16,8 @@
     <PackageReference Include="Cobytelabs.Modulus.AspNetCore" Version="{{ framework_version }}" />
     <PackageReference Include="Cobytelabs.Modulus.Core" Version="{{ framework_version }}" />
     <PackageReference Include="Cobytelabs.Modulus.Platform" Version="{{ framework_version }}" />
-    <PackageReference Include="Cobytelabs.Modulus.UI.Core" Version="{{ framework_version }}" />
-    {{ if use_tabler_theme }}<PackageReference Include="Cobytelabs.Modulus.UI.Theme.Tabler" Version="{{ framework_version }}" />
+    {{ if !use_ui_framework }}<PackageReference Include="Cobytelabs.Modulus.UI.Core" Version="{{ framework_version }}" />
+    {{ end }}{{ if use_tabler_theme }}<PackageReference Include="Cobytelabs.Modulus.UI.Theme.Tabler" Version="{{ framework_version }}" />
     {{ end }}{{ if auth != "none" }}<!-- Permission checks behind the page guards and admin menus (ICurrentUser.HasPermission
          / the grant store) — no OpenIddict here: the token server lives in the API host. -->
     <PackageReference Include="Cobytelabs.Modulus.Identity" Version="{{ framework_version }}" />

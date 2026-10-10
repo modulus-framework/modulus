@@ -90,4 +90,24 @@ internal static partial class EntityMetadata
     }
 
     private static string Label(string name) => WordBreak().Replace(name, "$1 $2");
+
+    /// <summary>The module (under <c>src/Modules</c>) whose project holds the entity class, optionally narrowed by name.</summary>
+    public static (string ModuleDir, string ModuleName, string EntityFile) FindInApp(string solutionDir, string entity, string? module)
+    {
+        var modulesDir = Path.Combine(solutionDir, "src", "Modules");
+        var candidates = Directory.Exists(modulesDir)
+            ? Directory.EnumerateDirectories(modulesDir)
+                .Where(d => module is null || Path.GetFileName(d).EndsWith("." + module, StringComparison.OrdinalIgnoreCase))
+                .Select(d => (Dir: d, File: FindEntityFile(d, entity)))
+                .Where(x => x.File is not null)
+                .ToList()
+            : [];
+        if (candidates.Count == 0)
+            throw new InvalidOperationException($"No class '{entity}' found under src/Modules" + (module is null ? "." : $" for module '{module}'."));
+        if (candidates.Count > 1)
+            throw new InvalidOperationException($"'{entity}' exists in several modules ({string.Join(", ", candidates.Select(c => Path.GetFileName(c.Dir)))}). Pass --module.");
+
+        var (dir, file) = candidates[0];
+        return (dir, Path.GetFileName(dir).Split('.').Last(), file!);
+    }
 }

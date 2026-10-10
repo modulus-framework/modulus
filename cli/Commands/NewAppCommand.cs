@@ -175,6 +175,14 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         var database = ResolveDatabase(s.Database);
         var uiEngine = ResolveUiEngine(s.UiEngine, kind, Ux.IsInteractive);
 
+        // The Web project of a webapp+api runs on the Modulus UI framework for the Razor engines; the older UI modules
+        // (Cobytelabs.Modulus.UI.*) and the Tabler theme belong to the other app kinds.
+        var useUiFramework = UsesUiFramework(kind, uiEngine);
+        if (useUiFramework && !string.IsNullOrWhiteSpace(s.UiModules))
+            throw new ArgumentException(
+                $"--ui-modules installs the older Cobytelabs UI modules and cannot be combined with --ui-engine {uiEngine} on a webapp+api app " +
+                "(its Web project uses the Modulus UI framework). Drop --ui-modules, or use --ui-engine none.");
+
         var auth = ResolveAuth(s.Auth);
         var multiTenancy = ResolveMultiTenancy(s.MultiTenancy, kind, auth);
 
@@ -206,7 +214,7 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
             throw new ArgumentException("--services lists the BFFs' upstream services; add --bff web,mobile,partner.");
 
         // UI modules only exist in web apps; an API host is never asked.
-        var uiModules = kind is AppKind.WebApp or AppKind.WebAppApi ? ResolveUiModules(s.UiModules) : [];
+        var uiModules = useUiFramework ? [] : kind is AppKind.WebApp or AppKind.WebAppApi ? ResolveUiModules(s.UiModules) : [];
         if (WithSignInPage(kind, auth, uiModules) is { } withSignIn && withSignIn.Count != uiModules.Count)
         {
             AnsiConsole.MarkupLine("[grey]  A web app with the local token server also gets the Identity UI: it is the sign-in page.[/]");
@@ -271,7 +279,8 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
             Kind = kind,
             UiModules = uiModules,
             UiEngine = uiEngine,
-            UseTablerTheme = (kind is AppKind.WebApp or AppKind.WebAppApi) && !s.NoTheme,
+            UseTablerTheme = (kind is AppKind.WebApp or AppKind.WebAppApi) && !s.NoTheme && !useUiFramework,
+            UseUiFramework = useUiFramework,
             LocalPackageSource = s.PackageSource,
             UiFeedSource = uiEngine == "none" ? null : UiFrameworkPackages.LocalFeed(),
             Bff = bff,
@@ -453,7 +462,8 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         // â”€â”€ UI Modules â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         if (model.UseUi)
         {
-            WireUiModules(projectDir, model);
+            if (!model.UseUiFramework)
+                WireUiModules(projectDir, model);
             AddUiFrameworkPackages(projectDir, model);
         }
 
@@ -519,6 +529,15 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
             Path.Combine(webDir, "Pages", "_ViewImports.cshtml"));
         _templates.RenderToFile("app/WebPagesViewStart", model,
             Path.Combine(webDir, "Pages", "_ViewStart.cshtml"));
+
+        // The framework's shell layout comes with the package; the sign-in and status pages need a frame without it.
+        if (model.UseUiFramework)
+        {
+            _templates.RenderToFile("app/WebBlankLayout", model,
+                Path.Combine(webDir, "Pages", "Shared", "_BlankLayout.cshtml"));
+            _templates.RenderToFile("app/WebAuthLayout", model,
+                Path.Combine(webDir, "Pages", "Shared", "_AuthLayout.cshtml"));
+        }
 
         // Landing page â€” where the sign-in flow redirects after login.
         _templates.RenderToFile("app/IndexModel.Web", model,
@@ -636,6 +655,10 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         _templates.RenderToFile("identity/IdentitySeeding", model,
             Path.Combine(infraDir, "IdentitySeeding.cs"));
     }
+
+    /// <summary>Whether the Web project runs on the Modulus UI framework: a webapp+api app with the mvc or razor-pages engine.</summary>
+    internal static bool UsesUiFramework(AppKind kind, string uiEngine) =>
+        kind == AppKind.WebAppApi && (uiEngine is "mvc" or "razor-pages");
 
     /// <summary>References the UI framework packages for the app's UI engine in the host project.</summary>
     private static void AddUiFrameworkPackages(string projectDir, AppModel model)

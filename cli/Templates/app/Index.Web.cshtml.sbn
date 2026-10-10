@@ -4,7 +4,18 @@
     ViewData["Title"] = "Home";
 }
 
-<div class="page-body">
+{{ if use_ui_framework }}<app-page-header pretitle="Welcome" title="Signed in as @User.Identity?.Name" />
+
+<app-card>
+    <p>
+        This web project is the presentation host: pages call the API host over HTTP with the signed-in user's
+        bearer token. Add admin pages with <code>modulus generate-crud &lt;Entity&gt; --module &lt;Module&gt;</code>
+        and UI with <code>modulus ui add-component</code>, <code>modulus ui create-dashboard</code>
+        or <code>modulus ui add-chart</code>.
+    </p>
+    <p><a class="ant-btn ant-btn-default" href="/Account/Logout">Sign out</a></p>
+</app-card>
+{{ else }}<div class="page-body">
     <div class="container-xl">
         <div class="page-header d-print-none">
             <div class="row align-items-center">
@@ -28,3 +39,4 @@
         </div>
     </div>
 </div>
+{{ end }}

@@ -4,7 +4,29 @@
     ViewData["Title"] = "Sign in";
 }
 
-<div class="page page-center">
+{{ if use_ui_framework }}<div class="m-auth-card">
+    <div class="m-auth-card-body">
+        <h1 class="m-auth-title">Sign in</h1>
+        <p class="m-auth-hint">Use your application account to continue.</p>
+        @if (!string.IsNullOrEmpty(Model.Error))
+        {
+            <app-alert type="error" show-icon message="@Model.Error" class="m-mb-16" />
+        }
+        <form method="post" class="ant-form ant-form-vertical ant-form-hide-required-mark" novalidate>
+            <input type="hidden" name="returnUrl" value="@Model.ReturnUrl" />
+            <app-form-item asp-for="UserName" label="User name">
+                <app-input asp-for="UserName" prefix-icon="user" autocomplete="username" />
+            </app-form-item>
+            <app-form-item asp-for="Password" label="Password">
+                <app-input asp-for="Password" type="password" prefix-icon="lock" autocomplete="current-password" />
+            </app-form-item>
+            <div class="m-auth-actions">
+                <app-button type="primary" html-type="submit" block>Sign in</app-button>
+            </div>
+        </form>
+    </div>
+</div>
+{{ else }}<div class="page page-center">
     <div class="container container-tight py-4">
         <div class="text-center mb-4">
             <h1 class="text-primary">Sign in</h1>
@@ -36,3 +58,4 @@
         </div>
     </div>
 </div>
+{{ end }}
