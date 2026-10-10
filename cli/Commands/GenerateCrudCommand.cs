@@ -70,6 +70,21 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
         var kind = ModuleDiscovery.Inventory(Environment.CurrentDirectory)?.Kind;
         var withUi = AppKinds.ResolveCrudUi(kind, s.WithUi, s.NoUi);
 
+        // Read UI engine from .modulus.json (created by modulus app)
+        string uiEngine = "none";
+        var modulusJsonPath = Path.Combine(Environment.CurrentDirectory, ".modulus.json");
+        if (File.Exists(modulusJsonPath))
+        {
+            try
+            {
+                var jsonText = File.ReadAllText(modulusJsonPath);
+                using var json = System.Text.Json.JsonDocument.Parse(jsonText);
+                if (json.RootElement.TryGetProperty("ui_engine", out var engineElement))
+                    uiEngine = engineElement.GetString() ?? "none";
+            }
+            catch { /* malformed JSON, ignore */ }
+        }
+
         // Locate the layer project directories.
         var domainDir = CodeGen.LayerDir(module.Directory, module.Namespace, "Domain");
         var appDir = CodeGen.LayerDir(module.Directory, module.Namespace, "Application");
@@ -820,4 +835,15 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
         var nl = content.Contains("\r\n") ? "\r\n" : "\n";
         return content.Insert(bodyOpen + 1, nl + line);
     }
+
+    /// <summary>Resolves the template path for a given UI engine and template type.</summary>
+    private string? ResolveUiTemplatePath(string engine, string templateType) =>
+        engine switch
+        {
+            "mvc" => $"templates/mvc/{templateType}.cshtml.sbn",
+            "razor-pages" => $"templates/razor-pages/{templateType}.cshtml.sbn",
+            "blazor" => $"templates/blazor/{templateType}.razor.sbn",
+            "fluid" => $"templates/fluid/{templateType}.liquid.sbn",
+            _ => null
+        };
 }
