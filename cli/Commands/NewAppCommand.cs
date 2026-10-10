@@ -315,7 +315,7 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
             if (string.IsNullOrWhiteSpace(s.PackageSource))
             {
                 AnsiConsole.MarkupLine(
-                    "[yellow]Note:[/] Cobytelabs.Modulus.* packages are not on nuget.org yet â€” " +
+                    "[yellow]Note:[/] Cobytelabs.Modulus.* packages are part of the framework now â€” " +
                     "wire a local feed in NuGet.config or re-run with [grey]--package-source[/].");
             }
         }
