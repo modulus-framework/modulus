@@ -94,6 +94,10 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         [CommandOption("--kind")]
         public string? Kind { get; init; }
 
+
+        [Description("Web apps only: UI rendering engine: mvc, razor-pages, blazor, fluid, or none (API only). Omit to be prompted for web apps, default none for api kind.")]
+        [CommandOption("--ui-engine")]
+        public string? UiEngine { get; init; }
         [Description("Web apps only: UI modules to include: none, identity, permissions, tenancy, users, settings, auditlogging, notifications, files, or 'full' for a complete admin dashboard. Comma-separated or omit to be prompted.")]
         [CommandOption("--ui-modules")]
         public string? UiModules { get; init; }
@@ -138,6 +142,8 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
 
     /// <summary>Valid migration engine choices, in selection-menu order.</summary>
     internal static readonly string[] KnownMigrationEngines = ["efcore", "dbsh"];
+
+    internal static readonly string[] KnownUiEngines = ["mvc", "razor-pages", "blazor", "fluid", "none"];
 
     internal static readonly string[] KnownUiModules = [
         "identity", "permissions", "tenancy", "users",

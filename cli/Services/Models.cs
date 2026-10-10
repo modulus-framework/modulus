@@ -136,6 +136,12 @@ internal sealed class AppModel
     /// <summary>API only, or a web app that also exposes the API (<c>--kind</c>).</summary>
     public AppKind Kind { get; set; } = AppKind.Api;
 
+    /// <summary>UI rendering engine: "mvc", "razor-pages", "blazor", "fluid", or "none" (API only).</summary>
+    public string UiEngine { get; set; } = "none";
+
+    /// <summary>True when UI is scaffolded (not "none").</summary>
+    public bool HasUi => UiEngine != "none";
+
     /// <summary>The kind as written into the host csproj (<c>&lt;ModulusAppKind&gt;</c>).</summary>
     public string KindName => Kind.Name();
 
