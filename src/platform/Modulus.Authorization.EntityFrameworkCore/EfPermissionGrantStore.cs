@@ -52,10 +52,10 @@ public sealed class EfPermissionGrantStore(
         // EF translates string.ToLower() to the provider's LOWER(), which is
         // deterministic (invariant) casing on the ASCII role/permission names
         // this store holds. HolderType is filtered as a plain enum predicate.
-        var lowerRoles = roles.Select(r => r.ToLowerInvariant()).ToList();
+        using var db = factory.CreateDbContext();
+        var lowerRoles = EfRoleInclusionStore.Expand(db, EfPositionStore.WithPositionRoles(db, roles, principal.UserId)).Select(r => r.ToLowerInvariant()).ToList();
         var lowerUser = userKey?.ToLowerInvariant();
 
-        using var db = factory.CreateDbContext();
         var grantRows = db.Grants.AsNoTracking()
             .Where(g =>
                 (g.HolderType == GrantHolderType.Role && lowerRoles.Contains(g.Holder.ToLower()))
@@ -76,7 +76,7 @@ public sealed class EfPermissionGrantStore(
                     && g.Holder.ToLower() == lowerUser))
             .ToList();
         result.AddRange(scopedRows.Select(ToGrant).OfType<PermissionGrant>());
-        return result;
+        return EfPartyStore.ApplyCeiling(db, principal.UserId, result);
     }
 
     // A stored scope that no longer parses is dropped, never widened to "the whole company".

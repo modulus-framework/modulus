@@ -694,11 +694,14 @@ Docs site; API baselines + package validation in CI; broader test coverage
 push (regression test per fixed defect; fakes package).
 
 ## P2 / P3
-Localization, audit module, persistent scheduler (Quartz/Hangfire), distributed
-locking, cache invalidation + unified caching, convention DI registration +
-Decorate(), domain-event dispatch timing options, optimistic concurrency conventions,
-framework metrics, prune unused package pins, source-generated dispatch (AOT),
-architecture-test package.
+Done since this list was written (verified in code): localization (`Modulus.Platform/Localization`),
+audit (`Modulus.AuditLogging.EntityFrameworkCore`), persistent scheduler (`Modulus.BackgroundJobs.Quartz`),
+distributed locking (`IDistributedLock`, Redis-backed), unified caching (FusionCache), architecture tests
+(`Modulus.Testing.Architecture`).
+
+Still open: convention DI registration + Decorate(), domain-event dispatch timing options, optimistic
+concurrency conventions, framework metrics, prune unused package pins, source-generated dispatch (AOT, see
+ADVANCED_FEATURES_PLAN *Decided not to build*).
 
 ## Working agreements
 - `TreatWarningsAsErrors` is global: every step must build with 0 warnings and pass

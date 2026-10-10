@@ -824,6 +824,227 @@ public sealed class AuthorizationManagementApiTests : IAsyncLifetime
         }
     }
 
+    // ── Composite roles ──
+
+    private async Task<HttpResponseMessage> Include(HttpClient admin, string role, string includes)
+        => await admin.PostAsJsonAsync("/authorization/roles/inclusions", new { role, includes });
+
+    [Fact]
+    public async Task An_including_role_gets_the_included_roles_grants_and_limits_through_levels()
+    {
+        var store = _app.Services.GetRequiredService<EfPermissionGrantStore>();
+        await store.GrantToRoleAsync("operator", ["orders:read"], CancellationToken.None);
+        await store.GrantToRoleAsync("supervisor", ["orders:update"], CancellationToken.None);
+        var limits = _app.Services.GetRequiredService<EfApprovalAuthorityStore>();
+        await limits.AddAsync(new Modulus.Authorization.Approval.ApprovalAuthority(GrantHolderType.Role, "Operator", "orders:approve", 500m, "USD", null, null, null, null),
+            null, DateTimeOffset.UtcNow);
+        using var admin = As("authorization:manage,authorization:grant-any");
+
+        (await Include(admin, "Manager", "Supervisor")).StatusCode.Should().Be(HttpStatusCode.Created);
+        (await Include(admin, "supervisor", "OPERATOR")).StatusCode.Should().Be(HttpStatusCode.Created);
+
+        var grants = store.GetGrants(new PrincipalGrantQuery(null, ["manager"]));
+        grants.Select(g => g.Permission).Should().BeEquivalentTo("orders:read", "orders:update");
+        _app.Services.GetRequiredService<Modulus.Authorization.Approval.IApprovalAuthorityStore>()
+            .GetAuthorities(new PrincipalGrantQuery(null, ["Manager"]), "orders:approve").Should().ContainSingle();
+        store.GetGrants(new PrincipalGrantQuery(null, ["operator"])).Select(g => g.Permission).Should().BeEquivalentTo("orders:read");
+
+        (await admin.GetFromJsonAsync<string[]>("/authorization/roles/expanded?role=Manager"))!.Select(r => r.ToUpperInvariant())
+            .Should().BeEquivalentTo("MANAGER", "SUPERVISOR", "OPERATOR");
+
+        (await admin.DeleteAsync("/authorization/roles/inclusions?role=Manager&includes=Supervisor")).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        store.GetGrants(new PrincipalGrantQuery(null, ["manager"])).Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Role_inclusions_refuse_self_cycles_and_a_caller_without_grant_any()
+    {
+        using var admin = As("authorization:manage,authorization:grant-any");
+        (await Include(admin, "A", "a")).StatusCode.Should().Be(HttpStatusCode.Conflict);
+        (await Include(admin, "A", "B")).StatusCode.Should().Be(HttpStatusCode.Created);
+        (await Include(admin, "B", "C")).StatusCode.Should().Be(HttpStatusCode.Created);
+        (await Include(admin, "C", "A")).StatusCode.Should().Be(HttpStatusCode.Conflict);
+        (await Include(admin, "a", "b")).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await Include(admin, "", "b")).StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await admin.DeleteAsync("/authorization/roles/inclusions?role=Z&includes=Y")).StatusCode.Should().Be(HttpStatusCode.NotFound);
+
+        using var plain = As("authorization:manage");
+        (await Include(plain, "X", "Y")).StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    // ── Positions ──
+
+    private sealed record PositionView(Guid Id, string Code, string Name, string[] Roles, bool IsActive);
+
+    private sealed record HoldView(Guid Id, Guid PositionId, Guid UserId, DateTimeOffset? ValidUntil);
+
+    [Fact]
+    public async Task A_position_grants_its_roles_only_while_held()
+    {
+        var store = _app.Services.GetRequiredService<EfPermissionGrantStore>();
+        await store.GrantToRoleAsync("operator", ["orders:read"], CancellationToken.None);
+        await store.GrantToRoleAsync("supervisor", ["orders:update"], CancellationToken.None);
+        using var admin = As("authorization:manage,authorization:grant-any");
+        var userId = Guid.NewGuid();
+
+        var created = await admin.PostAsJsonAsync("/authorization/positions",
+            new { code = "SEW-L3-SUP", name = "Line 3 supervisor", roles = new[] { "Supervisor" } });
+        created.StatusCode.Should().Be(HttpStatusCode.Created);
+        var position = (await created.Content.ReadFromJsonAsync<PositionView>())!;
+        (await Include(admin, "Supervisor", "Operator")).StatusCode.Should().Be(HttpStatusCode.Created);
+        (await admin.PostAsJsonAsync("/authorization/positions", new { code = "sew-l3-sup", name = "dup", roles = Array.Empty<string>() }))
+            .StatusCode.Should().Be(HttpStatusCode.Conflict);
+
+        store.GetGrants(new PrincipalGrantQuery(userId, [])).Should().BeEmpty();
+
+        // Future holding: nothing yet.
+        (await admin.PostAsJsonAsync($"/authorization/positions/{position.Id}/holders",
+            new { userId, validFrom = DateTimeOffset.UtcNow.AddDays(1) })).StatusCode.Should().Be(HttpStatusCode.Created);
+        store.GetGrants(new PrincipalGrantQuery(userId, [])).Should().BeEmpty();
+
+        // Current holding: the position's role and what it includes.
+        var current = await admin.PostAsJsonAsync($"/authorization/positions/{position.Id}/holders", new { userId });
+        current.StatusCode.Should().Be(HttpStatusCode.Created);
+        var hold = (await current.Content.ReadFromJsonAsync<HoldView>())!;
+        store.GetGrants(new PrincipalGrantQuery(userId, [])).Select(g => g.Permission).Should().BeEquivalentTo("orders:update", "orders:read");
+        store.GetGrants(new PrincipalGrantQuery(Guid.NewGuid(), [])).Should().BeEmpty();
+
+        // Switched off, then back on.
+        (await admin.PutAsJsonAsync($"/authorization/positions/{position.Id}",
+            new { name = "Line 3 supervisor", roles = new[] { "Supervisor" }, isActive = false })).StatusCode.Should().Be(HttpStatusCode.OK);
+        store.GetGrants(new PrincipalGrantQuery(userId, [])).Should().BeEmpty();
+        (await admin.PutAsJsonAsync($"/authorization/positions/{position.Id}",
+            new { name = "Line 3 supervisor", roles = new[] { "Supervisor" }, isActive = true })).StatusCode.Should().Be(HttpStatusCode.OK);
+
+        // Releasing the holding takes the access away.
+        (await admin.DeleteAsync($"/authorization/positions/holders/{hold.Id}")).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        store.GetGrants(new PrincipalGrantQuery(userId, [])).Should().BeEmpty();
+        (await admin.DeleteAsync($"/authorization/positions/holders/{hold.Id}")).StatusCode.Should().Be(HttpStatusCode.NotFound);
+        (await admin.GetFromJsonAsync<HoldView[]>($"/authorization/positions/held-by/{userId}"))!.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public async Task Positions_need_grant_any_and_refuse_an_empty_period()
+    {
+        using var admin = As("authorization:manage,authorization:grant-any");
+        var created = await admin.PostAsJsonAsync("/authorization/positions", new { code = "P1", name = "P", roles = new[] { "Supervisor" } });
+        var position = (await created.Content.ReadFromJsonAsync<PositionView>())!;
+
+        var now = DateTimeOffset.UtcNow;
+        (await admin.PostAsJsonAsync($"/authorization/positions/{position.Id}/holders",
+            new { userId = Guid.NewGuid(), validFrom = now, validUntil = now.AddDays(-1) })).StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await admin.PostAsJsonAsync($"/authorization/positions/{Guid.NewGuid()}/holders", new { userId = Guid.NewGuid() }))
+            .StatusCode.Should().Be(HttpStatusCode.NotFound);
+
+        using var plain = As("authorization:manage");
+        (await plain.PostAsJsonAsync("/authorization/positions", new { code = "P2", name = "P", roles = new[] { "Supervisor" } }))
+            .StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        (await plain.PostAsJsonAsync($"/authorization/positions/{position.Id}/holders", new { userId = Guid.NewGuid() }))
+            .StatusCode.Should().Be(HttpStatusCode.Forbidden);
+
+        (await admin.DeleteAsync($"/authorization/positions/{position.Id}")).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await admin.DeleteAsync($"/authorization/positions/{position.Id}")).StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    // ── Segregation-of-duties rules as data ──
+
+    private sealed record SodRuleView(Guid? Id, string Source, string Name, string[] Permissions, string? Rationale, bool IsEnabled);
+
+    private IReadOnlyCollection<SodViolation> Violations(params string[] permissions)
+    {
+        using var scope = _app.Services.CreateScope();
+        return scope.ServiceProvider.GetRequiredService<ISodPolicy>()
+            .Evaluate(new HashSet<string>(permissions, StringComparer.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public async Task The_code_rule_is_listed_as_a_seed_and_still_enforced()
+    {
+        using var admin = As("authorization:manage");
+
+        var rules = (await admin.GetFromJsonAsync<SodRuleView[]>("/authorization/sod/rules"))!;
+
+        rules.Should().ContainSingle().Which.Should().Match<SodRuleView>(r => r.Source == "code" && r.Name == "maker-checker" && r.Id == null);
+        Violations("orders:create", "orders:approve").Should().ContainSingle();
+    }
+
+    [Fact]
+    public async Task A_stored_rule_is_enforced_on_the_next_decision_and_removed_on_delete()
+    {
+        using var admin = As("authorization:manage");
+
+        var created = await admin.PostAsJsonAsync("/authorization/sod/rules",
+            new { name = "read-update", permissions = new[] { "orders:read", "orders:update" }, rationale = "test" });
+        created.StatusCode.Should().Be(HttpStatusCode.Created);
+        var rule = (await created.Content.ReadFromJsonAsync<SodRuleView>())!;
+        rule.Source.Should().Be("stored");
+
+        Violations("orders:read", "orders:update").Should().ContainSingle().Which.Constraint.Name.Should().Be("read-update");
+        (await admin.GetFromJsonAsync<SodRuleView[]>("/authorization/sod/rules"))!.Should().HaveCount(2);
+
+        (await admin.DeleteAsync($"/authorization/sod/rules/{rule.Id}")).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await admin.DeleteAsync($"/authorization/sod/rules/{rule.Id}")).StatusCode.Should().Be(HttpStatusCode.NotFound);
+        Violations("orders:read", "orders:update").Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task A_stored_rule_with_a_seed_name_replaces_it_and_a_disabled_one_removes_it()
+    {
+        using var admin = As("authorization:manage");
+
+        var replaced = await admin.PostAsJsonAsync("/authorization/sod/rules",
+            new { name = "Maker-Checker", permissions = new[] { "orders:create", "orders:update" } });
+        replaced.StatusCode.Should().Be(HttpStatusCode.Created);
+        var rule = (await replaced.Content.ReadFromJsonAsync<SodRuleView>())!;
+
+        Violations("orders:create", "orders:approve").Should().BeEmpty();
+        Violations("orders:create", "orders:update").Should().ContainSingle();
+
+        (await admin.PutAsJsonAsync($"/authorization/sod/rules/{rule.Id}",
+            new { name = "Maker-Checker", permissions = new[] { "orders:create", "orders:update" }, isEnabled = false }))
+            .StatusCode.Should().Be(HttpStatusCode.OK);
+
+        Violations("orders:create", "orders:update").Should().BeEmpty();
+        Violations("orders:create", "orders:approve").Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task A_rule_name_is_unique_and_input_is_validated()
+    {
+        using var admin = As("authorization:manage");
+        var first = await admin.PostAsJsonAsync("/authorization/sod/rules",
+            new { name = "one", permissions = new[] { "orders:read", "orders:update" } });
+        first.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        (await admin.PostAsJsonAsync("/authorization/sod/rules",
+            new { name = "ONE", permissions = new[] { "orders:read", "orders:create" } })).StatusCode.Should().Be(HttpStatusCode.Conflict);
+
+        foreach (var body in new object[]
+        {
+            new { name = "", permissions = new[] { "orders:read", "orders:update" } },
+            new { name = "x", permissions = new[] { "orders:read" } },
+            new { name = "x", permissions = new[] { "orders:read", "orders:read" } },
+            new { name = "x", permissions = new[] { "orders:read", "orders:*" } },
+            new { name = "x", permissions = new[] { "orders:read", "orders:nope" } },
+        })
+        {
+            (await admin.PostAsJsonAsync("/authorization/sod/rules", body)).StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        }
+
+        var other = (await first.Content.ReadFromJsonAsync<SodRuleView>())!;
+        (await admin.PutAsJsonAsync($"/authorization/sod/rules/{Guid.NewGuid()}",
+            new { name = "ghost", permissions = new[] { "orders:read", "orders:update" } })).StatusCode.Should().Be(HttpStatusCode.NotFound);
+        other.Id.Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task Rules_need_the_manage_permission()
+    {
+        using var nobody = As("orders:read");
+
+        (await nobody.GetAsync("/authorization/sod/rules")).StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
     [Fact]
     public async Task An_administrator_cannot_give_a_limit_above_their_own_or_to_themselves()
     {

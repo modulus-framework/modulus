@@ -310,3 +310,141 @@ override Modulus.Authorization.EntityFrameworkCore.AccessRequest.GetHashCode() -
 override Modulus.Authorization.EntityFrameworkCore.AccessRequest.ToString() -> string!
 static Modulus.Authorization.EntityFrameworkCore.AccessRequest.operator !=(Modulus.Authorization.EntityFrameworkCore.AccessRequest? left, Modulus.Authorization.EntityFrameworkCore.AccessRequest? right) -> bool
 static Modulus.Authorization.EntityFrameworkCore.AccessRequest.operator ==(Modulus.Authorization.EntityFrameworkCore.AccessRequest? left, Modulus.Authorization.EntityFrameworkCore.AccessRequest? right) -> bool
+Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore
+Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore.EfSodRuleStore(Microsoft.EntityFrameworkCore.IDbContextFactory<Modulus.Authorization.EntityFrameworkCore.AuthorizationStoreDbContext!>! factory) -> void
+Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore.Stored
+Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore.Stored.<Clone>$() -> Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore.Stored!
+Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore.Stored.Deconstruct(out System.Guid Id, out Modulus.Authorization.Governance.SodConstraint! Constraint, out bool IsEnabled, out System.Guid? CreatedBy, out System.DateTimeOffset CreatedAt, out System.DateTimeOffset? UpdatedAt) -> void
+Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore.Stored.Equals(Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore.Stored? other) -> bool
+Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore.Stored.Stored(System.Guid Id, Modulus.Authorization.Governance.SodConstraint! Constraint, bool IsEnabled, System.Guid? CreatedBy, System.DateTimeOffset CreatedAt, System.DateTimeOffset? UpdatedAt) -> void
+override Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore.Stored.Equals(object? obj) -> bool
+override Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore.Stored.GetHashCode() -> int
+override Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore.Stored.ToString() -> string!
+static Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore.Stored.operator !=(Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore.Stored? left, Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore.Stored? right) -> bool
+static Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore.Stored.operator ==(Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore.Stored? left, Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore.Stored? right) -> bool
+Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore.Stored.UpdatedAt.get -> System.DateTimeOffset?
+Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore.Stored.UpdatedAt.init -> void
+Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore.Stored.Id.get -> System.Guid
+Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore.Stored.Id.init -> void
+Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore.Stored.Constraint.get -> Modulus.Authorization.Governance.SodConstraint!
+Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore.Stored.Constraint.init -> void
+Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore.Stored.IsEnabled.get -> bool
+Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore.Stored.IsEnabled.init -> void
+Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore.Stored.CreatedBy.get -> System.Guid?
+Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore.Stored.CreatedBy.init -> void
+Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore.Stored.CreatedAt.get -> System.DateTimeOffset
+Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore.Stored.CreatedAt.init -> void
+Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore.ListAsync(System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyCollection<Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore.Stored!>!>!
+Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore.GetAsync(System.Guid id, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore.Stored?>!
+Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore.AddAsync(Modulus.Authorization.Governance.SodConstraint! constraint, bool isEnabled, System.Guid? createdBy, System.DateTimeOffset now, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore.Stored?>!
+Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore.UpdateAsync(System.Guid id, Modulus.Authorization.Governance.SodConstraint! constraint, bool isEnabled, System.DateTimeOffset now, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore.Stored?>!
+Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore.RemoveAsync(System.Guid id, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.Authorization.EntityFrameworkCore.EfRoleInclusionStore
+Modulus.Authorization.EntityFrameworkCore.EfRoleInclusionStore.EfRoleInclusionStore(Microsoft.EntityFrameworkCore.IDbContextFactory<Modulus.Authorization.EntityFrameworkCore.AuthorizationStoreDbContext!>! factory) -> void
+const Modulus.Authorization.EntityFrameworkCore.EfRoleInclusionStore.MaxDepth = 10 -> int
+Modulus.Authorization.EntityFrameworkCore.EfRoleInclusionStore.Stored
+Modulus.Authorization.EntityFrameworkCore.EfRoleInclusionStore.Stored.<Clone>$() -> Modulus.Authorization.EntityFrameworkCore.EfRoleInclusionStore.Stored!
+Modulus.Authorization.EntityFrameworkCore.EfRoleInclusionStore.Stored.Deconstruct(out string! Role, out string! Includes, out System.Guid? CreatedBy, out System.DateTimeOffset CreatedAt) -> void
+Modulus.Authorization.EntityFrameworkCore.EfRoleInclusionStore.Stored.Equals(Modulus.Authorization.EntityFrameworkCore.EfRoleInclusionStore.Stored? other) -> bool
+Modulus.Authorization.EntityFrameworkCore.EfRoleInclusionStore.Stored.Stored(string! Role, string! Includes, System.Guid? CreatedBy, System.DateTimeOffset CreatedAt) -> void
+override Modulus.Authorization.EntityFrameworkCore.EfRoleInclusionStore.Stored.Equals(object? obj) -> bool
+override Modulus.Authorization.EntityFrameworkCore.EfRoleInclusionStore.Stored.GetHashCode() -> int
+override Modulus.Authorization.EntityFrameworkCore.EfRoleInclusionStore.Stored.ToString() -> string!
+static Modulus.Authorization.EntityFrameworkCore.EfRoleInclusionStore.Stored.operator !=(Modulus.Authorization.EntityFrameworkCore.EfRoleInclusionStore.Stored? left, Modulus.Authorization.EntityFrameworkCore.EfRoleInclusionStore.Stored? right) -> bool
+static Modulus.Authorization.EntityFrameworkCore.EfRoleInclusionStore.Stored.operator ==(Modulus.Authorization.EntityFrameworkCore.EfRoleInclusionStore.Stored? left, Modulus.Authorization.EntityFrameworkCore.EfRoleInclusionStore.Stored? right) -> bool
+Modulus.Authorization.EntityFrameworkCore.EfRoleInclusionStore.Stored.Role.get -> string!
+Modulus.Authorization.EntityFrameworkCore.EfRoleInclusionStore.Stored.Role.init -> void
+Modulus.Authorization.EntityFrameworkCore.EfRoleInclusionStore.Stored.Includes.get -> string!
+Modulus.Authorization.EntityFrameworkCore.EfRoleInclusionStore.Stored.Includes.init -> void
+Modulus.Authorization.EntityFrameworkCore.EfRoleInclusionStore.Stored.CreatedBy.get -> System.Guid?
+Modulus.Authorization.EntityFrameworkCore.EfRoleInclusionStore.Stored.CreatedBy.init -> void
+Modulus.Authorization.EntityFrameworkCore.EfRoleInclusionStore.Stored.CreatedAt.get -> System.DateTimeOffset
+Modulus.Authorization.EntityFrameworkCore.EfRoleInclusionStore.Stored.CreatedAt.init -> void
+Modulus.Authorization.EntityFrameworkCore.EfRoleInclusionStore.ListAsync(System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyCollection<Modulus.Authorization.EntityFrameworkCore.EfRoleInclusionStore.Stored!>!>!
+Modulus.Authorization.EntityFrameworkCore.EfRoleInclusionStore.AddAsync(string! role, string! includes, System.Guid? createdBy, System.DateTimeOffset now, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.Authorization.EntityFrameworkCore.EfRoleInclusionStore.RemoveAsync(string! role, string! includes, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.Authorization.EntityFrameworkCore.EfRoleInclusionStore.ExpandAsync(System.Collections.Generic.IEnumerable<string!>! roles, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyCollection<string!>!>!
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.EfPositionStore(Microsoft.EntityFrameworkCore.IDbContextFactory<Modulus.Authorization.EntityFrameworkCore.AuthorizationStoreDbContext!>! factory, System.TimeProvider? clock = null) -> void
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.EndAsync(System.Guid holdingId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.HoldingsAsync(System.Guid? positionId, System.Guid? userId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyCollection<Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Holding!>!>!
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.RolesOfAsync(System.Guid userId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyCollection<string!>!>!
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Position.Roles.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Position.Roles.init -> void
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Position.IsActive.get -> bool
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Position.IsActive.init -> void
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Position
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Position.<Clone>$() -> Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Position!
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Position.Deconstruct(out System.Guid Id, out string! Code, out string! Name, out System.Guid? OrgUnitId, out System.Collections.Generic.IReadOnlyList<string!>! Roles, out bool IsActive) -> void
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Position.Equals(Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Position? other) -> bool
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Position.Position(System.Guid Id, string! Code, string! Name, System.Guid? OrgUnitId, System.Collections.Generic.IReadOnlyList<string!>! Roles, bool IsActive) -> void
+override Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Position.Equals(object? obj) -> bool
+override Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Position.GetHashCode() -> int
+override Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Position.ToString() -> string!
+static Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Position.operator !=(Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Position? left, Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Position? right) -> bool
+static Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Position.operator ==(Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Position? left, Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Position? right) -> bool
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Position.Id.get -> System.Guid
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Position.Id.init -> void
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Position.Code.get -> string!
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Position.Code.init -> void
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Position.Name.get -> string!
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Position.Name.init -> void
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Position.OrgUnitId.get -> System.Guid?
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Position.OrgUnitId.init -> void
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Holding.ValidUntil.get -> System.DateTimeOffset?
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Holding.ValidUntil.init -> void
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Holding.CreatedBy.get -> System.Guid?
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Holding.CreatedBy.init -> void
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Holding.CreatedAt.get -> System.DateTimeOffset
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Holding.CreatedAt.init -> void
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Holding
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Holding.<Clone>$() -> Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Holding!
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Holding.Deconstruct(out System.Guid Id, out System.Guid PositionId, out System.Guid UserId, out System.DateTimeOffset ValidFrom, out System.DateTimeOffset? ValidUntil, out System.Guid? CreatedBy, out System.DateTimeOffset CreatedAt) -> void
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Holding.Equals(Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Holding? other) -> bool
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Holding.Holding(System.Guid Id, System.Guid PositionId, System.Guid UserId, System.DateTimeOffset ValidFrom, System.DateTimeOffset? ValidUntil, System.Guid? CreatedBy, System.DateTimeOffset CreatedAt) -> void
+override Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Holding.Equals(object? obj) -> bool
+override Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Holding.GetHashCode() -> int
+override Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Holding.ToString() -> string!
+static Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Holding.operator !=(Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Holding? left, Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Holding? right) -> bool
+static Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Holding.operator ==(Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Holding? left, Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Holding? right) -> bool
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Holding.Id.get -> System.Guid
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Holding.Id.init -> void
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Holding.PositionId.get -> System.Guid
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Holding.PositionId.init -> void
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Holding.UserId.get -> System.Guid
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Holding.UserId.init -> void
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Holding.ValidFrom.get -> System.DateTimeOffset
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Holding.ValidFrom.init -> void
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.ListAsync(System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyCollection<Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Position!>!>!
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.AddAsync(string! code, string! name, System.Guid? orgUnitId, System.Collections.Generic.IEnumerable<string!>! roles, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Position?>!
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.UpdateAsync(System.Guid id, string! name, System.Guid? orgUnitId, System.Collections.Generic.IEnumerable<string!>! roles, bool isActive, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Position?>!
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.RemoveAsync(System.Guid id, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.AssignAsync(System.Guid positionId, System.Guid userId, System.DateTimeOffset validFrom, System.DateTimeOffset? validUntil, System.Guid? createdBy, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Holding?>!
+Modulus.Authorization.EntityFrameworkCore.EfPartyStore.DisallowAsync(string! kind, string! permission, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.Authorization.EntityFrameworkCore.EfPartyStore
+Modulus.Authorization.EntityFrameworkCore.EfPartyStore.EfPartyStore(Microsoft.EntityFrameworkCore.IDbContextFactory<Modulus.Authorization.EntityFrameworkCore.AuthorizationStoreDbContext!>! factory) -> void
+Modulus.Authorization.EntityFrameworkCore.EfPartyStore.Link.CreatedAt.get -> System.DateTimeOffset
+Modulus.Authorization.EntityFrameworkCore.EfPartyStore.Link.CreatedAt.init -> void
+Modulus.Authorization.EntityFrameworkCore.EfPartyStore.Link
+Modulus.Authorization.EntityFrameworkCore.EfPartyStore.Link.<Clone>$() -> Modulus.Authorization.EntityFrameworkCore.EfPartyStore.Link!
+Modulus.Authorization.EntityFrameworkCore.EfPartyStore.Link.Deconstruct(out System.Guid UserId, out string! Kind, out System.Guid PartyId, out System.Guid? CreatedBy, out System.DateTimeOffset CreatedAt) -> void
+Modulus.Authorization.EntityFrameworkCore.EfPartyStore.Link.Equals(Modulus.Authorization.EntityFrameworkCore.EfPartyStore.Link? other) -> bool
+Modulus.Authorization.EntityFrameworkCore.EfPartyStore.Link.Link(System.Guid UserId, string! Kind, System.Guid PartyId, System.Guid? CreatedBy, System.DateTimeOffset CreatedAt) -> void
+override Modulus.Authorization.EntityFrameworkCore.EfPartyStore.Link.Equals(object? obj) -> bool
+override Modulus.Authorization.EntityFrameworkCore.EfPartyStore.Link.GetHashCode() -> int
+override Modulus.Authorization.EntityFrameworkCore.EfPartyStore.Link.ToString() -> string!
+static Modulus.Authorization.EntityFrameworkCore.EfPartyStore.Link.operator !=(Modulus.Authorization.EntityFrameworkCore.EfPartyStore.Link? left, Modulus.Authorization.EntityFrameworkCore.EfPartyStore.Link? right) -> bool
+static Modulus.Authorization.EntityFrameworkCore.EfPartyStore.Link.operator ==(Modulus.Authorization.EntityFrameworkCore.EfPartyStore.Link? left, Modulus.Authorization.EntityFrameworkCore.EfPartyStore.Link? right) -> bool
+Modulus.Authorization.EntityFrameworkCore.EfPartyStore.Link.UserId.get -> System.Guid
+Modulus.Authorization.EntityFrameworkCore.EfPartyStore.Link.UserId.init -> void
+Modulus.Authorization.EntityFrameworkCore.EfPartyStore.Link.Kind.get -> string!
+Modulus.Authorization.EntityFrameworkCore.EfPartyStore.Link.Kind.init -> void
+Modulus.Authorization.EntityFrameworkCore.EfPartyStore.Link.PartyId.get -> System.Guid
+Modulus.Authorization.EntityFrameworkCore.EfPartyStore.Link.PartyId.init -> void
+Modulus.Authorization.EntityFrameworkCore.EfPartyStore.Link.CreatedBy.get -> System.Guid?
+Modulus.Authorization.EntityFrameworkCore.EfPartyStore.Link.CreatedBy.init -> void
+Modulus.Authorization.EntityFrameworkCore.EfPartyStore.LinkAsync(System.Guid userId, string! kind, System.Guid partyId, System.Guid? createdBy, System.DateTimeOffset now, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Authorization.EntityFrameworkCore.EfPartyStore.Link!>!
+Modulus.Authorization.EntityFrameworkCore.EfPartyStore.UnlinkAsync(System.Guid userId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.Authorization.EntityFrameworkCore.EfPartyStore.LinksAsync(System.Guid? partyId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyCollection<Modulus.Authorization.EntityFrameworkCore.EfPartyStore.Link!>!>!
+Modulus.Authorization.EntityFrameworkCore.EfPartyStore.CeilingsAsync(System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyDictionary<string!, System.Collections.Generic.IReadOnlyList<string!>!>!>!
+Modulus.Authorization.EntityFrameworkCore.EfPartyStore.AllowAsync(string! kind, string! permission, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!

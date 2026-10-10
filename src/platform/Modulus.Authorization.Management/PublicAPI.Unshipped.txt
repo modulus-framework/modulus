@@ -464,3 +464,229 @@ static Modulus.Authorization.Management.BreakGlassProfile.operator !=(Modulus.Au
 static Modulus.Authorization.Management.BreakGlassProfile.operator ==(Modulus.Authorization.Management.BreakGlassProfile? left, Modulus.Authorization.Management.BreakGlassProfile? right) -> bool
 static Modulus.Authorization.Management.BreakGlassWriteRequest.operator !=(Modulus.Authorization.Management.BreakGlassWriteRequest? left, Modulus.Authorization.Management.BreakGlassWriteRequest? right) -> bool
 static Modulus.Authorization.Management.BreakGlassWriteRequest.operator ==(Modulus.Authorization.Management.BreakGlassWriteRequest? left, Modulus.Authorization.Management.BreakGlassWriteRequest? right) -> bool
+Modulus.Authorization.Management.SodRuleWriteRequest.Rationale.get -> string?
+Modulus.Authorization.Management.SodRuleWriteRequest.Rationale.init -> void
+Modulus.Authorization.Management.SodRuleWriteRequest.IsEnabled.get -> bool?
+Modulus.Authorization.Management.SodRuleWriteRequest.IsEnabled.init -> void
+Modulus.Authorization.Management.SodRuleWriteRequest
+Modulus.Authorization.Management.SodRuleWriteRequest.<Clone>$() -> Modulus.Authorization.Management.SodRuleWriteRequest!
+Modulus.Authorization.Management.SodRuleWriteRequest.Deconstruct(out string! Name, out System.Collections.Generic.IReadOnlyCollection<string!>! Permissions, out string? Rationale, out bool? IsEnabled) -> void
+Modulus.Authorization.Management.SodRuleWriteRequest.Equals(Modulus.Authorization.Management.SodRuleWriteRequest? other) -> bool
+Modulus.Authorization.Management.SodRuleWriteRequest.SodRuleWriteRequest(string! Name, System.Collections.Generic.IReadOnlyCollection<string!>! Permissions, string? Rationale, bool? IsEnabled) -> void
+override Modulus.Authorization.Management.SodRuleWriteRequest.Equals(object? obj) -> bool
+override Modulus.Authorization.Management.SodRuleWriteRequest.GetHashCode() -> int
+override Modulus.Authorization.Management.SodRuleWriteRequest.ToString() -> string!
+static Modulus.Authorization.Management.SodRuleWriteRequest.operator !=(Modulus.Authorization.Management.SodRuleWriteRequest? left, Modulus.Authorization.Management.SodRuleWriteRequest? right) -> bool
+static Modulus.Authorization.Management.SodRuleWriteRequest.operator ==(Modulus.Authorization.Management.SodRuleWriteRequest? left, Modulus.Authorization.Management.SodRuleWriteRequest? right) -> bool
+Modulus.Authorization.Management.SodRuleWriteRequest.Name.get -> string!
+Modulus.Authorization.Management.SodRuleWriteRequest.Name.init -> void
+Modulus.Authorization.Management.SodRuleWriteRequest.Permissions.get -> System.Collections.Generic.IReadOnlyCollection<string!>!
+Modulus.Authorization.Management.SodRuleWriteRequest.Permissions.init -> void
+Modulus.Authorization.Management.SodRuleResponse
+Modulus.Authorization.Management.SodRuleResponse.<Clone>$() -> Modulus.Authorization.Management.SodRuleResponse!
+Modulus.Authorization.Management.SodRuleResponse.Deconstruct(out System.Guid? Id, out string! Source, out string! Name, out System.Collections.Generic.IReadOnlyCollection<string!>! Permissions, out string? Rationale, out bool IsEnabled, out System.Guid? CreatedBy, out System.DateTimeOffset? CreatedAt, out System.DateTimeOffset? UpdatedAt) -> void
+Modulus.Authorization.Management.SodRuleResponse.Equals(Modulus.Authorization.Management.SodRuleResponse? other) -> bool
+Modulus.Authorization.Management.SodRuleResponse.SodRuleResponse(System.Guid? Id, string! Source, string! Name, System.Collections.Generic.IReadOnlyCollection<string!>! Permissions, string? Rationale, bool IsEnabled, System.Guid? CreatedBy, System.DateTimeOffset? CreatedAt, System.DateTimeOffset? UpdatedAt) -> void
+override Modulus.Authorization.Management.SodRuleResponse.Equals(object? obj) -> bool
+override Modulus.Authorization.Management.SodRuleResponse.GetHashCode() -> int
+override Modulus.Authorization.Management.SodRuleResponse.ToString() -> string!
+static Modulus.Authorization.Management.SodRuleResponse.operator !=(Modulus.Authorization.Management.SodRuleResponse? left, Modulus.Authorization.Management.SodRuleResponse? right) -> bool
+static Modulus.Authorization.Management.SodRuleResponse.operator ==(Modulus.Authorization.Management.SodRuleResponse? left, Modulus.Authorization.Management.SodRuleResponse? right) -> bool
+Modulus.Authorization.Management.SodRuleResponse.IsEnabled.get -> bool
+Modulus.Authorization.Management.SodRuleResponse.IsEnabled.init -> void
+Modulus.Authorization.Management.SodRuleResponse.Id.get -> System.Guid?
+Modulus.Authorization.Management.SodRuleResponse.Id.init -> void
+Modulus.Authorization.Management.SodRuleResponse.Source.get -> string!
+Modulus.Authorization.Management.SodRuleResponse.Source.init -> void
+Modulus.Authorization.Management.SodRuleResponse.Name.get -> string!
+Modulus.Authorization.Management.SodRuleResponse.Name.init -> void
+Modulus.Authorization.Management.SodRuleResponse.Permissions.get -> System.Collections.Generic.IReadOnlyCollection<string!>!
+Modulus.Authorization.Management.SodRuleResponse.Permissions.init -> void
+Modulus.Authorization.Management.SodRuleResponse.Rationale.get -> string?
+Modulus.Authorization.Management.SodRuleResponse.Rationale.init -> void
+Modulus.Authorization.Management.SodRuleResponse.CreatedBy.get -> System.Guid?
+Modulus.Authorization.Management.SodRuleResponse.CreatedBy.init -> void
+Modulus.Authorization.Management.SodRuleResponse.CreatedAt.get -> System.DateTimeOffset?
+Modulus.Authorization.Management.SodRuleResponse.CreatedAt.init -> void
+Modulus.Authorization.Management.SodRuleResponse.UpdatedAt.get -> System.DateTimeOffset?
+Modulus.Authorization.Management.SodRuleResponse.UpdatedAt.init -> void
+Modulus.Authorization.Management.RoleInclusionRequest
+Modulus.Authorization.Management.RoleInclusionRequest.<Clone>$() -> Modulus.Authorization.Management.RoleInclusionRequest!
+Modulus.Authorization.Management.RoleInclusionRequest.Deconstruct(out string! Role, out string! Includes) -> void
+Modulus.Authorization.Management.RoleInclusionRequest.Equals(Modulus.Authorization.Management.RoleInclusionRequest? other) -> bool
+Modulus.Authorization.Management.RoleInclusionRequest.RoleInclusionRequest(string! Role, string! Includes) -> void
+override Modulus.Authorization.Management.RoleInclusionRequest.Equals(object? obj) -> bool
+override Modulus.Authorization.Management.RoleInclusionRequest.GetHashCode() -> int
+override Modulus.Authorization.Management.RoleInclusionRequest.ToString() -> string!
+static Modulus.Authorization.Management.RoleInclusionRequest.operator !=(Modulus.Authorization.Management.RoleInclusionRequest? left, Modulus.Authorization.Management.RoleInclusionRequest? right) -> bool
+static Modulus.Authorization.Management.RoleInclusionRequest.operator ==(Modulus.Authorization.Management.RoleInclusionRequest? left, Modulus.Authorization.Management.RoleInclusionRequest? right) -> bool
+Modulus.Authorization.Management.RoleInclusionRequest.Role.get -> string!
+Modulus.Authorization.Management.RoleInclusionRequest.Role.init -> void
+Modulus.Authorization.Management.RoleInclusionRequest.Includes.get -> string!
+Modulus.Authorization.Management.RoleInclusionRequest.Includes.init -> void
+Modulus.Authorization.Management.RoleInclusionResponse.CreatedAt.get -> System.DateTimeOffset
+Modulus.Authorization.Management.RoleInclusionResponse.CreatedAt.init -> void
+Modulus.Authorization.Management.RoleInclusionResponse
+Modulus.Authorization.Management.RoleInclusionResponse.<Clone>$() -> Modulus.Authorization.Management.RoleInclusionResponse!
+Modulus.Authorization.Management.RoleInclusionResponse.Deconstruct(out string! Role, out string! Includes, out System.Guid? CreatedBy, out System.DateTimeOffset CreatedAt) -> void
+Modulus.Authorization.Management.RoleInclusionResponse.Equals(Modulus.Authorization.Management.RoleInclusionResponse? other) -> bool
+Modulus.Authorization.Management.RoleInclusionResponse.RoleInclusionResponse(string! Role, string! Includes, System.Guid? CreatedBy, System.DateTimeOffset CreatedAt) -> void
+override Modulus.Authorization.Management.RoleInclusionResponse.Equals(object? obj) -> bool
+override Modulus.Authorization.Management.RoleInclusionResponse.GetHashCode() -> int
+override Modulus.Authorization.Management.RoleInclusionResponse.ToString() -> string!
+static Modulus.Authorization.Management.RoleInclusionResponse.operator !=(Modulus.Authorization.Management.RoleInclusionResponse? left, Modulus.Authorization.Management.RoleInclusionResponse? right) -> bool
+static Modulus.Authorization.Management.RoleInclusionResponse.operator ==(Modulus.Authorization.Management.RoleInclusionResponse? left, Modulus.Authorization.Management.RoleInclusionResponse? right) -> bool
+Modulus.Authorization.Management.RoleInclusionResponse.Role.get -> string!
+Modulus.Authorization.Management.RoleInclusionResponse.Role.init -> void
+Modulus.Authorization.Management.RoleInclusionResponse.Includes.get -> string!
+Modulus.Authorization.Management.RoleInclusionResponse.Includes.init -> void
+Modulus.Authorization.Management.RoleInclusionResponse.CreatedBy.get -> System.Guid?
+Modulus.Authorization.Management.RoleInclusionResponse.CreatedBy.init -> void
+Modulus.Authorization.Management.PositionCreateRequest.Roles.get -> System.Collections.Generic.IReadOnlyCollection<string!>!
+Modulus.Authorization.Management.PositionCreateRequest.Roles.init -> void
+Modulus.Authorization.Management.PositionCreateRequest
+Modulus.Authorization.Management.PositionCreateRequest.<Clone>$() -> Modulus.Authorization.Management.PositionCreateRequest!
+Modulus.Authorization.Management.PositionCreateRequest.Deconstruct(out string! Code, out string! Name, out System.Guid? OrgUnitId, out System.Collections.Generic.IReadOnlyCollection<string!>! Roles) -> void
+Modulus.Authorization.Management.PositionCreateRequest.Equals(Modulus.Authorization.Management.PositionCreateRequest? other) -> bool
+Modulus.Authorization.Management.PositionCreateRequest.PositionCreateRequest(string! Code, string! Name, System.Guid? OrgUnitId, System.Collections.Generic.IReadOnlyCollection<string!>! Roles) -> void
+override Modulus.Authorization.Management.PositionCreateRequest.Equals(object? obj) -> bool
+override Modulus.Authorization.Management.PositionCreateRequest.GetHashCode() -> int
+override Modulus.Authorization.Management.PositionCreateRequest.ToString() -> string!
+static Modulus.Authorization.Management.PositionCreateRequest.operator !=(Modulus.Authorization.Management.PositionCreateRequest? left, Modulus.Authorization.Management.PositionCreateRequest? right) -> bool
+static Modulus.Authorization.Management.PositionCreateRequest.operator ==(Modulus.Authorization.Management.PositionCreateRequest? left, Modulus.Authorization.Management.PositionCreateRequest? right) -> bool
+Modulus.Authorization.Management.PositionCreateRequest.Code.get -> string!
+Modulus.Authorization.Management.PositionCreateRequest.Code.init -> void
+Modulus.Authorization.Management.PositionCreateRequest.Name.get -> string!
+Modulus.Authorization.Management.PositionCreateRequest.Name.init -> void
+Modulus.Authorization.Management.PositionCreateRequest.OrgUnitId.get -> System.Guid?
+Modulus.Authorization.Management.PositionCreateRequest.OrgUnitId.init -> void
+Modulus.Authorization.Management.PositionUpdateRequest.Roles.get -> System.Collections.Generic.IReadOnlyCollection<string!>!
+Modulus.Authorization.Management.PositionUpdateRequest.Roles.init -> void
+Modulus.Authorization.Management.PositionUpdateRequest.IsActive.get -> bool
+Modulus.Authorization.Management.PositionUpdateRequest.IsActive.init -> void
+Modulus.Authorization.Management.PositionUpdateRequest
+Modulus.Authorization.Management.PositionUpdateRequest.<Clone>$() -> Modulus.Authorization.Management.PositionUpdateRequest!
+Modulus.Authorization.Management.PositionUpdateRequest.Deconstruct(out string! Name, out System.Guid? OrgUnitId, out System.Collections.Generic.IReadOnlyCollection<string!>! Roles, out bool IsActive) -> void
+Modulus.Authorization.Management.PositionUpdateRequest.Equals(Modulus.Authorization.Management.PositionUpdateRequest? other) -> bool
+Modulus.Authorization.Management.PositionUpdateRequest.PositionUpdateRequest(string! Name, System.Guid? OrgUnitId, System.Collections.Generic.IReadOnlyCollection<string!>! Roles, bool IsActive) -> void
+override Modulus.Authorization.Management.PositionUpdateRequest.Equals(object? obj) -> bool
+override Modulus.Authorization.Management.PositionUpdateRequest.GetHashCode() -> int
+override Modulus.Authorization.Management.PositionUpdateRequest.ToString() -> string!
+static Modulus.Authorization.Management.PositionUpdateRequest.operator !=(Modulus.Authorization.Management.PositionUpdateRequest? left, Modulus.Authorization.Management.PositionUpdateRequest? right) -> bool
+static Modulus.Authorization.Management.PositionUpdateRequest.operator ==(Modulus.Authorization.Management.PositionUpdateRequest? left, Modulus.Authorization.Management.PositionUpdateRequest? right) -> bool
+Modulus.Authorization.Management.PositionUpdateRequest.Name.get -> string!
+Modulus.Authorization.Management.PositionUpdateRequest.Name.init -> void
+Modulus.Authorization.Management.PositionUpdateRequest.OrgUnitId.get -> System.Guid?
+Modulus.Authorization.Management.PositionUpdateRequest.OrgUnitId.init -> void
+Modulus.Authorization.Management.PositionResponse.Roles.get -> System.Collections.Generic.IReadOnlyCollection<string!>!
+Modulus.Authorization.Management.PositionResponse.Roles.init -> void
+Modulus.Authorization.Management.PositionResponse.IsActive.get -> bool
+Modulus.Authorization.Management.PositionResponse.IsActive.init -> void
+Modulus.Authorization.Management.PositionResponse
+Modulus.Authorization.Management.PositionResponse.<Clone>$() -> Modulus.Authorization.Management.PositionResponse!
+Modulus.Authorization.Management.PositionResponse.Deconstruct(out System.Guid Id, out string! Code, out string! Name, out System.Guid? OrgUnitId, out System.Collections.Generic.IReadOnlyCollection<string!>! Roles, out bool IsActive) -> void
+Modulus.Authorization.Management.PositionResponse.Equals(Modulus.Authorization.Management.PositionResponse? other) -> bool
+Modulus.Authorization.Management.PositionResponse.PositionResponse(System.Guid Id, string! Code, string! Name, System.Guid? OrgUnitId, System.Collections.Generic.IReadOnlyCollection<string!>! Roles, bool IsActive) -> void
+override Modulus.Authorization.Management.PositionResponse.Equals(object? obj) -> bool
+override Modulus.Authorization.Management.PositionResponse.GetHashCode() -> int
+override Modulus.Authorization.Management.PositionResponse.ToString() -> string!
+static Modulus.Authorization.Management.PositionResponse.operator !=(Modulus.Authorization.Management.PositionResponse? left, Modulus.Authorization.Management.PositionResponse? right) -> bool
+static Modulus.Authorization.Management.PositionResponse.operator ==(Modulus.Authorization.Management.PositionResponse? left, Modulus.Authorization.Management.PositionResponse? right) -> bool
+Modulus.Authorization.Management.PositionResponse.Id.get -> System.Guid
+Modulus.Authorization.Management.PositionResponse.Id.init -> void
+Modulus.Authorization.Management.PositionResponse.Code.get -> string!
+Modulus.Authorization.Management.PositionResponse.Code.init -> void
+Modulus.Authorization.Management.PositionResponse.Name.get -> string!
+Modulus.Authorization.Management.PositionResponse.Name.init -> void
+Modulus.Authorization.Management.PositionResponse.OrgUnitId.get -> System.Guid?
+Modulus.Authorization.Management.PositionResponse.OrgUnitId.init -> void
+Modulus.Authorization.Management.PositionHoldRequest
+Modulus.Authorization.Management.PositionHoldRequest.<Clone>$() -> Modulus.Authorization.Management.PositionHoldRequest!
+Modulus.Authorization.Management.PositionHoldRequest.Deconstruct(out System.Guid UserId, out System.DateTimeOffset? ValidFrom, out System.DateTimeOffset? ValidUntil) -> void
+Modulus.Authorization.Management.PositionHoldRequest.Equals(Modulus.Authorization.Management.PositionHoldRequest? other) -> bool
+Modulus.Authorization.Management.PositionHoldRequest.PositionHoldRequest(System.Guid UserId, System.DateTimeOffset? ValidFrom, System.DateTimeOffset? ValidUntil) -> void
+override Modulus.Authorization.Management.PositionHoldRequest.Equals(object? obj) -> bool
+override Modulus.Authorization.Management.PositionHoldRequest.GetHashCode() -> int
+override Modulus.Authorization.Management.PositionHoldRequest.ToString() -> string!
+static Modulus.Authorization.Management.PositionHoldRequest.operator !=(Modulus.Authorization.Management.PositionHoldRequest? left, Modulus.Authorization.Management.PositionHoldRequest? right) -> bool
+static Modulus.Authorization.Management.PositionHoldRequest.operator ==(Modulus.Authorization.Management.PositionHoldRequest? left, Modulus.Authorization.Management.PositionHoldRequest? right) -> bool
+Modulus.Authorization.Management.PositionHoldRequest.UserId.get -> System.Guid
+Modulus.Authorization.Management.PositionHoldRequest.UserId.init -> void
+Modulus.Authorization.Management.PositionHoldRequest.ValidFrom.get -> System.DateTimeOffset?
+Modulus.Authorization.Management.PositionHoldRequest.ValidFrom.init -> void
+Modulus.Authorization.Management.PositionHoldRequest.ValidUntil.get -> System.DateTimeOffset?
+Modulus.Authorization.Management.PositionHoldRequest.ValidUntil.init -> void
+Modulus.Authorization.Management.PositionHoldResponse.ValidUntil.get -> System.DateTimeOffset?
+Modulus.Authorization.Management.PositionHoldResponse.ValidUntil.init -> void
+Modulus.Authorization.Management.PositionHoldResponse.CreatedBy.get -> System.Guid?
+Modulus.Authorization.Management.PositionHoldResponse.CreatedBy.init -> void
+Modulus.Authorization.Management.PositionHoldResponse.CreatedAt.get -> System.DateTimeOffset
+Modulus.Authorization.Management.PositionHoldResponse.CreatedAt.init -> void
+Modulus.Authorization.Management.PositionHoldResponse
+Modulus.Authorization.Management.PositionHoldResponse.<Clone>$() -> Modulus.Authorization.Management.PositionHoldResponse!
+Modulus.Authorization.Management.PositionHoldResponse.Deconstruct(out System.Guid Id, out System.Guid PositionId, out System.Guid UserId, out System.DateTimeOffset ValidFrom, out System.DateTimeOffset? ValidUntil, out System.Guid? CreatedBy, out System.DateTimeOffset CreatedAt) -> void
+Modulus.Authorization.Management.PositionHoldResponse.Equals(Modulus.Authorization.Management.PositionHoldResponse? other) -> bool
+Modulus.Authorization.Management.PositionHoldResponse.PositionHoldResponse(System.Guid Id, System.Guid PositionId, System.Guid UserId, System.DateTimeOffset ValidFrom, System.DateTimeOffset? ValidUntil, System.Guid? CreatedBy, System.DateTimeOffset CreatedAt) -> void
+override Modulus.Authorization.Management.PositionHoldResponse.Equals(object? obj) -> bool
+override Modulus.Authorization.Management.PositionHoldResponse.GetHashCode() -> int
+override Modulus.Authorization.Management.PositionHoldResponse.ToString() -> string!
+static Modulus.Authorization.Management.PositionHoldResponse.operator !=(Modulus.Authorization.Management.PositionHoldResponse? left, Modulus.Authorization.Management.PositionHoldResponse? right) -> bool
+static Modulus.Authorization.Management.PositionHoldResponse.operator ==(Modulus.Authorization.Management.PositionHoldResponse? left, Modulus.Authorization.Management.PositionHoldResponse? right) -> bool
+Modulus.Authorization.Management.PositionHoldResponse.Id.get -> System.Guid
+Modulus.Authorization.Management.PositionHoldResponse.Id.init -> void
+Modulus.Authorization.Management.PositionHoldResponse.PositionId.get -> System.Guid
+Modulus.Authorization.Management.PositionHoldResponse.PositionId.init -> void
+Modulus.Authorization.Management.PositionHoldResponse.UserId.get -> System.Guid
+Modulus.Authorization.Management.PositionHoldResponse.UserId.init -> void
+Modulus.Authorization.Management.PositionHoldResponse.ValidFrom.get -> System.DateTimeOffset
+Modulus.Authorization.Management.PositionHoldResponse.ValidFrom.init -> void
+Modulus.Authorization.Management.PartyLinkRequest
+Modulus.Authorization.Management.PartyLinkRequest.<Clone>$() -> Modulus.Authorization.Management.PartyLinkRequest!
+Modulus.Authorization.Management.PartyLinkRequest.Deconstruct(out System.Guid UserId, out string! Kind, out System.Guid PartyId) -> void
+Modulus.Authorization.Management.PartyLinkRequest.Equals(Modulus.Authorization.Management.PartyLinkRequest? other) -> bool
+Modulus.Authorization.Management.PartyLinkRequest.PartyLinkRequest(System.Guid UserId, string! Kind, System.Guid PartyId) -> void
+override Modulus.Authorization.Management.PartyLinkRequest.Equals(object? obj) -> bool
+override Modulus.Authorization.Management.PartyLinkRequest.GetHashCode() -> int
+override Modulus.Authorization.Management.PartyLinkRequest.ToString() -> string!
+static Modulus.Authorization.Management.PartyLinkRequest.operator !=(Modulus.Authorization.Management.PartyLinkRequest? left, Modulus.Authorization.Management.PartyLinkRequest? right) -> bool
+static Modulus.Authorization.Management.PartyLinkRequest.operator ==(Modulus.Authorization.Management.PartyLinkRequest? left, Modulus.Authorization.Management.PartyLinkRequest? right) -> bool
+Modulus.Authorization.Management.PartyLinkRequest.UserId.get -> System.Guid
+Modulus.Authorization.Management.PartyLinkRequest.UserId.init -> void
+Modulus.Authorization.Management.PartyLinkRequest.Kind.get -> string!
+Modulus.Authorization.Management.PartyLinkRequest.Kind.init -> void
+Modulus.Authorization.Management.PartyLinkRequest.PartyId.get -> System.Guid
+Modulus.Authorization.Management.PartyLinkRequest.PartyId.init -> void
+Modulus.Authorization.Management.PartyLinkResponse.CreatedAt.get -> System.DateTimeOffset
+Modulus.Authorization.Management.PartyLinkResponse.CreatedAt.init -> void
+Modulus.Authorization.Management.PartyLinkResponse
+Modulus.Authorization.Management.PartyLinkResponse.<Clone>$() -> Modulus.Authorization.Management.PartyLinkResponse!
+Modulus.Authorization.Management.PartyLinkResponse.Deconstruct(out System.Guid UserId, out string! Kind, out System.Guid PartyId, out System.Guid? CreatedBy, out System.DateTimeOffset CreatedAt) -> void
+Modulus.Authorization.Management.PartyLinkResponse.Equals(Modulus.Authorization.Management.PartyLinkResponse? other) -> bool
+Modulus.Authorization.Management.PartyLinkResponse.PartyLinkResponse(System.Guid UserId, string! Kind, System.Guid PartyId, System.Guid? CreatedBy, System.DateTimeOffset CreatedAt) -> void
+override Modulus.Authorization.Management.PartyLinkResponse.Equals(object? obj) -> bool
+override Modulus.Authorization.Management.PartyLinkResponse.GetHashCode() -> int
+override Modulus.Authorization.Management.PartyLinkResponse.ToString() -> string!
+static Modulus.Authorization.Management.PartyLinkResponse.operator !=(Modulus.Authorization.Management.PartyLinkResponse? left, Modulus.Authorization.Management.PartyLinkResponse? right) -> bool
+static Modulus.Authorization.Management.PartyLinkResponse.operator ==(Modulus.Authorization.Management.PartyLinkResponse? left, Modulus.Authorization.Management.PartyLinkResponse? right) -> bool
+Modulus.Authorization.Management.PartyLinkResponse.UserId.get -> System.Guid
+Modulus.Authorization.Management.PartyLinkResponse.UserId.init -> void
+Modulus.Authorization.Management.PartyLinkResponse.Kind.get -> string!
+Modulus.Authorization.Management.PartyLinkResponse.Kind.init -> void
+Modulus.Authorization.Management.PartyLinkResponse.PartyId.get -> System.Guid
+Modulus.Authorization.Management.PartyLinkResponse.PartyId.init -> void
+Modulus.Authorization.Management.PartyLinkResponse.CreatedBy.get -> System.Guid?
+Modulus.Authorization.Management.PartyLinkResponse.CreatedBy.init -> void
+Modulus.Authorization.Management.PartyCeilingRequest
+Modulus.Authorization.Management.PartyCeilingRequest.<Clone>$() -> Modulus.Authorization.Management.PartyCeilingRequest!
+Modulus.Authorization.Management.PartyCeilingRequest.Deconstruct(out string! Kind, out string! Permission) -> void
+Modulus.Authorization.Management.PartyCeilingRequest.Equals(Modulus.Authorization.Management.PartyCeilingRequest? other) -> bool
+Modulus.Authorization.Management.PartyCeilingRequest.PartyCeilingRequest(string! Kind, string! Permission) -> void
+override Modulus.Authorization.Management.PartyCeilingRequest.Equals(object? obj) -> bool
+override Modulus.Authorization.Management.PartyCeilingRequest.GetHashCode() -> int
+override Modulus.Authorization.Management.PartyCeilingRequest.ToString() -> string!
+static Modulus.Authorization.Management.PartyCeilingRequest.operator !=(Modulus.Authorization.Management.PartyCeilingRequest? left, Modulus.Authorization.Management.PartyCeilingRequest? right) -> bool
+static Modulus.Authorization.Management.PartyCeilingRequest.operator ==(Modulus.Authorization.Management.PartyCeilingRequest? left, Modulus.Authorization.Management.PartyCeilingRequest? right) -> bool
+Modulus.Authorization.Management.PartyCeilingRequest.Kind.get -> string!
+Modulus.Authorization.Management.PartyCeilingRequest.Kind.init -> void
+Modulus.Authorization.Management.PartyCeilingRequest.Permission.get -> string!
+Modulus.Authorization.Management.PartyCeilingRequest.Permission.init -> void

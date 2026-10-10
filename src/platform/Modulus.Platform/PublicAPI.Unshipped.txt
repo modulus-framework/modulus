@@ -1549,3 +1549,15 @@ static Modulus.Authorization.Resources.PolicyFingerprints.IsCurrent(Modulus.Auth
 Modulus.Authorization.Resources.ResourcePolicyBuilder.Version(string! version) -> Modulus.Authorization.Resources.ResourcePolicyBuilder!
 Modulus.Authorization.Resources.ResourcePolicy.Version.get -> string?
 Modulus.Authorization.Resources.ResourcePolicy.Fingerprint.get -> string!
+Modulus.Authorization.Governance.SodSeedConstraints
+Modulus.Authorization.Governance.SodSeedConstraints.<Clone>$() -> Modulus.Authorization.Governance.SodSeedConstraints!
+Modulus.Authorization.Governance.SodSeedConstraints.Deconstruct(out System.Collections.Generic.IReadOnlyCollection<Modulus.Authorization.Governance.SodConstraint!>! Constraints) -> void
+Modulus.Authorization.Governance.SodSeedConstraints.Equals(Modulus.Authorization.Governance.SodSeedConstraints? other) -> bool
+Modulus.Authorization.Governance.SodSeedConstraints.SodSeedConstraints(System.Collections.Generic.IReadOnlyCollection<Modulus.Authorization.Governance.SodConstraint!>! Constraints) -> void
+override Modulus.Authorization.Governance.SodSeedConstraints.Equals(object? obj) -> bool
+override Modulus.Authorization.Governance.SodSeedConstraints.GetHashCode() -> int
+override Modulus.Authorization.Governance.SodSeedConstraints.ToString() -> string!
+static Modulus.Authorization.Governance.SodSeedConstraints.operator !=(Modulus.Authorization.Governance.SodSeedConstraints? left, Modulus.Authorization.Governance.SodSeedConstraints? right) -> bool
+static Modulus.Authorization.Governance.SodSeedConstraints.operator ==(Modulus.Authorization.Governance.SodSeedConstraints? left, Modulus.Authorization.Governance.SodSeedConstraints? right) -> bool
+Modulus.Authorization.Governance.SodSeedConstraints.Constraints.get -> System.Collections.Generic.IReadOnlyCollection<Modulus.Authorization.Governance.SodConstraint!>!
+Modulus.Authorization.Governance.SodSeedConstraints.Constraints.init -> void

@@ -5,7 +5,7 @@ Derived from the 2026-07-26 NuGet-packaging review. Goal: every publishable
 consumers, so the framework isn't limited to .NET 10-only apps. `cli/` is
 explicitly **out of scope** — it stays `net10.0`-only.
 
-Planning only — no implementation in this pass.
+**Status: implemented.** Every `src/` library except the UI packages, Realtime (+ Redis) and the analyzer multi-targets `net8.0;net10.0`. See `AGENTS.md` (*Dual targeting*). The CI net8 leg is tracked in `IMPROVEMENT_PLAN.md`.
 
 ## Current state
 

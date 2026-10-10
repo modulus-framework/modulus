@@ -40,7 +40,7 @@ internal sealed class FakeAuthServer : IAsyncDisposable
 
         App.MapGet("/jwks", () =>
         {
-            var jwk = JsonWebKeyConverter.ConvertFromRSASecurityKey(BffTestHost.SigningKey);
+            var jwk = BffTestHost.PublicJwk();
             return Results.Json(new { keys = new[] { new { kty = jwk.Kty, kid = jwk.Kid, use = "sig", alg = "RS256", n = jwk.N, e = jwk.E } } });
         });
 
@@ -170,14 +170,31 @@ internal sealed class BffTestHost : IAsyncDisposable
 {
     public static readonly RsaSecurityKey SigningKey = new(RSA.Create(2048)) { KeyId = "test" };
 
-    private BffTestHost(WebApplication app, FakeAuthServer auth, FakeApi api)
-        => (App, Auth, Api) = (app, auth, api);
+    // One RSA instance is shared by every test host in the process. Signing a token and exporting the
+    // public key both touch it, and under parallel test load a token occasionally came out with a
+    // signature that the same key rejected (IDX10511). Every use goes through this lock.
+    private static readonly object SigningLock = new();
+
+    /// <summary>The public half of <see cref="SigningKey"/>, exported under the lock.</summary>
+    public static JsonWebKey PublicJwk()
+    {
+        lock (SigningLock)
+            return JsonWebKeyConverter.ConvertFromRSASecurityKey(SigningKey);
+    }
+
+    private BffTestHost(WebApplication app, FakeAuthServer auth, FakeApi api, ConcurrentQueue<string> authFailures)
+        => (App, Auth, Api, _authFailures) = (app, auth, api, authFailures);
+
+    private readonly ConcurrentQueue<string> _authFailures;
 
     public WebApplication App { get; }
 
     public FakeAuthServer Auth { get; }
 
     public FakeApi Api { get; }
+
+    /// <summary>Full JwtBearer validation exceptions seen by this host, for diagnosing a failed assertion.</summary>
+    public string AuthFailures => string.Join("\n---\n", _authFailures);
 
     public TestServer Server => App.GetTestServer();
 
@@ -210,7 +227,20 @@ internal sealed class BffTestHost : IAsyncDisposable
         builder.Services.ConfigureHttpClientDefaults(http => http.ConfigurePrimaryHttpMessageHandler(() => router));
         builder.Services.RemoveAll<IForwarderHttpClientFactory>();
         builder.Services.AddSingleton<IForwarderHttpClientFactory>(new RouterForwarderFactory(router));
-        builder.Services.ConfigureAll<JwtBearerOptions>(o => o.BackchannelHttpHandler = router);
+        var authFailures = new ConcurrentQueue<string>();
+        builder.Services.ConfigureAll<JwtBearerOptions>(o =>
+        {
+            o.BackchannelHttpHandler = router;
+            // Keep the full validation exception, not just the short challenge text, so a
+            // failing run says which key or check rejected the token.
+            o.Events ??= new JwtBearerEvents();
+            var previous = o.Events.OnAuthenticationFailed;
+            o.Events.OnAuthenticationFailed = context =>
+            {
+                authFailures.Enqueue(context.Exception.ToString());
+                return previous?.Invoke(context) ?? Task.CompletedTask;
+            };
+        });
         builder.Services.ConfigureAll<Microsoft.AspNetCore.Authentication.OpenIdConnect.OpenIdConnectOptions>(o => o.BackchannelHttpHandler = router);
 
         var app = builder.Build();
@@ -221,17 +251,20 @@ internal sealed class BffTestHost : IAsyncDisposable
         map?.Invoke(app);
         app.MapModulusBff();
         await app.StartAsync();
-        return new BffTestHost(app, auth, api);
+        return new BffTestHost(app, auth, api, authFailures);
     }
 
     public static string CreateJwt(string clientId, string scope = "api", string subject = "bob")
-        => new JsonWebTokenHandler().CreateToken(new SecurityTokenDescriptor
-        {
-            Issuer = "https://auth",
-            Expires = DateTime.UtcNow.AddMinutes(10),
-            Claims = new Dictionary<string, object> { ["sub"] = subject, ["client_id"] = clientId, ["scope"] = scope },
-            SigningCredentials = new SigningCredentials(SigningKey, SecurityAlgorithms.RsaSha256),
-        });
+    {
+        lock (SigningLock)
+            return new JsonWebTokenHandler().CreateToken(new SecurityTokenDescriptor
+            {
+                Issuer = "https://auth",
+                Expires = DateTime.UtcNow.AddMinutes(10),
+                Claims = new Dictionary<string, object> { ["sub"] = subject, ["client_id"] = clientId, ["scope"] = scope },
+                SigningCredentials = new SigningCredentials(SigningKey, SecurityAlgorithms.RsaSha256),
+            });
+    }
 
     public HttpClient Client() => Server.CreateClient();
 

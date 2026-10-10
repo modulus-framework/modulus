@@ -17,6 +17,13 @@ public sealed record SodConstraint(
     string? Rationale = null);
 
 /// <summary>
+/// The constraints declared in code through <c>AddSegregationOfDuties</c>. A store-backed policy treats them as seeds: rules
+/// edited at runtime are added to them, and a stored rule with the same name replaces (or, when disabled, removes) the seed.
+/// </summary>
+/// <param name="Constraints">The in-code constraints of one <c>AddSegregationOfDuties</c> call.</param>
+public sealed record SodSeedConstraints(IReadOnlyCollection<SodConstraint> Constraints);
+
+/// <summary>
 /// A detected breach of a <see cref="SodConstraint"/>: the principal holds the listed
 /// <see cref="HeldPermissions"/>, which the constraint forbids together.
 /// </summary>

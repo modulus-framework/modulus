@@ -423,7 +423,13 @@ public static class AuthorizationExtensions
         this IServiceCollection services, params SodConstraint[] constraints)
     {
         ArgumentNullException.ThrowIfNull(constraints);
-        services.Replace(ServiceDescriptor.Singleton<ISodPolicy>(new SodPolicy(constraints)));
+
+        // The in-code rules are also kept as seeds, so a store-backed policy (EF) can merge them with the rules edited at runtime.
+        services.AddSingleton(new SodSeedConstraints(constraints));
+
+        // A store-backed (scoped) policy already in place owns the decision; do not replace it with the fixed one.
+        if (!services.Any(d => d.ServiceType == typeof(ISodPolicy) && d.Lifetime == ServiceLifetime.Scoped))
+            services.Replace(ServiceDescriptor.Singleton<ISodPolicy>(new SodPolicy(constraints)));
         return services;
     }
 

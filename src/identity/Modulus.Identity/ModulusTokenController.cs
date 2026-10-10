@@ -101,8 +101,109 @@ public class ModulusTokenController(
         if (request.IsClientCredentialsGrantType())
             return await HandleClientCredentialsGrantAsync(request);
 
+        // Federated token exchange: only registered (and allowed by OpenIddict) when Identity:FederatedLogin:Enabled is set.
+        if (request.GrantType == FederatedLoginGrant.GrantType)
+            return await HandleFederatedGrantAsync(request);
+
+        // Shop-floor PIN sign-in: only registered (and allowed by OpenIddict) when Identity:ShopFloor:Enabled is set.
+        if (request.GrantType == ShopFloorGrant.GrantType)
+            return await HandleShopFloorGrantAsync(request);
+
         return BadRequest(new { error = "unsupported_grant_type" });
     }
+
+    /// <summary>
+    /// Shop-floor sign-in (<see cref="ShopFloorGrant"/>): an employee code and PIN from a registered device. The calling
+    /// client must be bound to a company (<see cref="IIntegrationClientDirectory"/>) and still valid, and the operator must
+    /// belong to that company. The token is short-lived, has no refresh token, and carries only the configured floor roles.
+    /// </summary>
+    private async Task<IActionResult> HandleShopFloorGrantAsync(OpenIddictRequest request)
+    {
+        var services = HttpContext.RequestServices;
+        var validator = services.GetService<IShopFloorCredentialValidator>();
+        var settings = services.GetService<IOptions<ShopFloorOptions>>()?.Value;
+        var code = request.GetParameter(ShopFloorGrant.EmployeeCodeParameter)?.ToString();
+        var pin = request.GetParameter(ShopFloorGrant.PinParameter)?.ToString();
+        if (validator is null || settings is not { Enabled: true } || string.IsNullOrWhiteSpace(code) || string.IsNullOrEmpty(pin))
+            return ForbidGrant(OpenIddictConstants.Errors.InvalidRequest, "The employee code and PIN are required.");
+
+        var deviceId = request.ClientId;
+        var device = !string.IsNullOrEmpty(deviceId) && services.GetService<IIntegrationClientDirectory>() is { } directory
+            ? await directory.FindAsync(deviceId, HttpContext.RequestAborted)
+            : null;
+        if (device is not { TenantId: { } tenantId } || (device.ValidUntil is { } until && until <= DateTimeOffset.UtcNow))
+        {
+            Audit("token.shop-floor", SecurityAuditOutcomes.Denied, actor: null, tenantId: null, deviceId);
+            return ForbidGrant(OpenIddictConstants.Errors.InvalidClient, "This device is not registered for shop-floor sign-in.");
+        }
+
+        var result = await validator.ValidateAsync(tenantId, code, pin, HttpContext.RequestAborted);
+        if (!result.Success)
+        {
+            Audit("token.shop-floor", SecurityAuditOutcomes.Denied, actor: null, tenantId, deviceId);
+            return ForbidGrant(OpenIddictConstants.Errors.InvalidGrant, "The employee code or PIN is incorrect.");
+        }
+
+        var principal = TokenPrincipalFactory.Create(
+            result.Subject!,
+            result.UserName,
+            email: null,
+            result.TenantId,
+            result.Roles,
+            result.SecurityStamp);
+
+        // No refresh token: offline_access is never granted, and the operator signs in again when the token ends.
+        principal.SetScopes(PasswordGrant.AuthorizeScopes(request.GetScopes(), AllowedGrantScopes)
+            .Where(s => s != OpenIddictConstants.Scopes.OfflineAccess));
+        principal.SetAccessTokenLifetime(TimeSpan.FromMinutes(settings.AccessTokenMinutes));
+        ApplyDestinations(principal);
+        Audit("token.shop-floor", SecurityAuditOutcomes.Success, result.Subject, result.TenantId, deviceId);
+
+        return SignIn(principal, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+    }
+
+    /// <summary>
+    /// Federated token exchange (<see cref="FederatedLoginGrant"/>): the external provider's token in <c>subject_token</c>
+    /// is validated and mapped to a local account by <see cref="IFederatedLoginValidator"/>, then Modulus tokens are issued
+    /// exactly as for the password grant. Refused when the exchange is not registered.
+    /// </summary>
+    private async Task<IActionResult> HandleFederatedGrantAsync(OpenIddictRequest request)
+    {
+        var validator = HttpContext.RequestServices.GetService<IFederatedLoginValidator>();
+        var subjectToken = request.GetParameter(FederatedLoginGrant.SubjectTokenParameter)?.ToString();
+        if (validator is null || string.IsNullOrWhiteSpace(subjectToken))
+            return ForbidGrant(OpenIddictConstants.Errors.InvalidRequest, "The external sign-in token is missing.");
+
+        var result = await validator.ValidateAsync(subjectToken, HttpContext.RequestAborted);
+        if (!result.Success)
+        {
+            Audit("token.federated", SecurityAuditOutcomes.Denied, actor: null, tenantId: null, request.ClientId);
+            return ForbidGrant(OpenIddictConstants.Errors.InvalidGrant, "The external sign-in could not be accepted.");
+        }
+
+        var principal = TokenPrincipalFactory.Create(
+            result.Subject!,
+            result.UserName,
+            result.Email,
+            result.TenantId,
+            result.Roles,
+            result.SecurityStamp);
+
+        principal.SetScopes(PasswordGrant.AuthorizeScopes(request.GetScopes(), AllowedGrantScopes));
+        ApplyDestinations(principal);
+        Audit("token.federated", SecurityAuditOutcomes.Success, result.Subject, result.TenantId, request.ClientId);
+
+        return SignIn(principal, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+    }
+
+    private ForbidResult ForbidGrant(string error, string description)
+        => Forbid(
+            new AuthenticationProperties(new Dictionary<string, string?>
+            {
+                [OpenIddictServerAspNetCoreConstants.Properties.Error] = error,
+                [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] = description,
+            }),
+            OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
 
     /// <summary>
     /// Client credentials grant (enabled by <c>Identity:AllowClientCredentialsFlow</c>). OpenIddict has already
@@ -166,9 +267,12 @@ public class ModulusTokenController(
             {
                 [OpenIddictServerAspNetCoreConstants.Properties.Error] = OpenIddictConstants.Errors.InvalidGrant,
                 [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] =
-                    result.Error == PasswordGrantResult.MfaRequiredError
-                        ? "A verification code is required: send it as mfa_code."
-                        : "The username or password is incorrect.",
+                    result.Error switch
+                    {
+                        PasswordGrantResult.MfaRequiredError => "A verification code is required: send it as mfa_code.",
+                        PasswordGrantResult.PasswordExpiredError => "The password has expired and must be changed.",
+                        _ => "The username or password is incorrect.",
+                    },
             });
 
             return Forbid(properties, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);

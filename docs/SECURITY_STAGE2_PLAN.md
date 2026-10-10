@@ -163,7 +163,7 @@ The EF global filter and the write guard from 1.5 stay in front on every relatio
 | SQL Server | Native RLS: `sp_set_session_context` per connection, plus inline predicate function and `SECURITY POLICY` (filter + block predicates) | `AddModuleDatabasePerTenant` / `TenantInfo.ConnectionString` |
 | MySQL | No RLS. The raw-SQL guard rejects unfiltered and raw SQL on tenant tables. Tier S is supported only with that guard; database per tenant is recommended | `AddMySQLPerTenantDatabase` |
 | SQLite | No RLS, single file. **One file per tenant** is the boundary; a shared file is development-only (the guard still applies) | `AddSQLitePerTenantDatabase` (`tenants/{id:N}.db`) |
-| MongoDB | `TenantScopedCollection<T>`: every read, update, delete, aggregate and bulk write gets the tenant predicate, inserts are stamped and validated | Not built (see below) |
+| MongoDB | `TenantScopedCollection<T>`: every read, update, delete, aggregate and bulk write gets the tenant predicate, inserts are stamped and validated | `AddMongoDatabasePerTenant` (`ITenantMongoDatabase`), tested against real MongoDB |
 
 ### Shared
 - [x] **Session-context seam.** **As built:** an abstract `TenantSessionInterceptor` (`Modulus.EntityFrameworkCore.Isolation`; providers implement `Supports(DbConnection)` and `Configure(DbCommand, TenantSession)`) declared per context with `AddTenantSessionContext<TContext>(interceptor)`, instead of an `ITenantSessionContext` service.

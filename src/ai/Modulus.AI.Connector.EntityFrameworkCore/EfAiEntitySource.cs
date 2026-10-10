@@ -80,20 +80,12 @@ internal sealed class EfAiEntitySource(IEnumerable<DbContext> contexts) : IAiEnt
             return [.. single.Select(AiKeys.Format)];
         }
 
-        // A composite key is projected into a Tuple (the shape EF can construct from the selected columns).
+        // A composite key is read from the whole entity. Projecting a Tuple here would make the
+        // provider build a server-side row value, which Npgsql returns as a record it cannot read.
         if (keys.Count > 4)
             throw new NotSupportedException($"'{typeof(TEntity).Name}' has {keys.Count} key columns; at most 4 are supported.");
-        var tupleType = keys.Count switch
-        {
-            2 => typeof(Tuple<,>).MakeGenericType(keys[0].PropertyType, keys[1].PropertyType),
-            3 => typeof(Tuple<,,>).MakeGenericType(keys[0].PropertyType, keys[1].PropertyType, keys[2].PropertyType),
-            _ => typeof(Tuple<,,,>).MakeGenericType(keys[0].PropertyType, keys[1].PropertyType, keys[2].PropertyType, keys[3].PropertyType),
-        };
-        var create = Expression.New(tupleType.GetConstructors().Single(), members);
-        var rows = await ordered.Take(take)
-            .Select(Expression.Lambda<Func<TEntity, object>>(Expression.Convert(create, typeof(object)), entity))
-            .ToListAsync(ct);
-        return [.. rows.Select(row => AiCompositeKey.Format([.. Enumerable.Range(1, keys.Count).Select(i => row.GetType().GetProperty("Item" + i)!.GetValue(row))]))];
+        var rows = await ordered.Take(take).ToListAsync(ct);
+        return [.. rows.Select(row => AiCompositeKey.Format([.. keys.Select(k => k.GetValue(row))]))];
     }
 
     // The parts of a cursor, one per key column, in key order.

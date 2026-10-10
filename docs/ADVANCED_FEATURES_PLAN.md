@@ -414,7 +414,7 @@ update, list, delete; `NOT_FOUND` after the delete; introspection and `/graphql/
 BFF with a `gql-mobile` token: anonymous `401`, create and list `200`, `X-App-Version: 0.1.0` → `426`, a first-party
 token → `403`. Covered by `Modulus.GraphQL.Tests` (28) and `GraphQLCommandTests` (11).
 
-**Not built:** subscriptions, persisted queries, cursor pagination/filtering conventions, a FusionCache-backed
+**Not built:** subscriptions, cursor pagination/filtering conventions, a FusionCache-backed
 response cache (queries are already cached by `[CacheFor]` through the mediator).
 
 ### Phase 5: Realtime (`Modulus.Realtime`) (done)
@@ -482,7 +482,7 @@ and `RealtimeCommandTests` (9).
 **Not run here:** the Redis two-node tests (`RedisRealtimeBackplaneTests`, `Category=Integration`: order, exactly once,
 channel isolation) need Docker. **Not built:** mobile push notifications (APNs/FCM) for disconnected apps, a SignalR
 backplane for the hub's own group features (not used: delivery goes through the realtime backplane), presence.
-**Gap:** generated CRUD declares `{Entity}CreatedIntegrationEvent` but does not publish it, as for webhooks.
+**Resolved:** generated Create handlers publish `{Entity}CreatedIntegrationEvent` through `IModuleBus` after the commit (`CreateHandler.sbn`).
 
 ### Phase 6: AI platform integration (`Modulus.AI.*`)
 

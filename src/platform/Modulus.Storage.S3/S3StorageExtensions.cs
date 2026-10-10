@@ -35,6 +35,11 @@ public static class S3StorageExtensions
             config.ServiceURL = options.Endpoint;
         if (options.Region is not null)
             config.RegionEndpoint = Amazon.RegionEndpoint.GetBySystemName(options.Region);
+        else if (options.Endpoint is null && FallbackRegionFactory.GetRegionEndpoint() is null)
+            // The SDK fails with "No RegionEndpoint or ServiceURL configured" at client construction;
+            // name the setting to fix instead. AWS_REGION and the AWS profile still count (fallback).
+            throw new InvalidOperationException(
+                "Storage:Region is required for S3 storage (or set Storage:Endpoint, or the AWS_REGION environment variable).");
 
         // Create client with explicit credentials if provided, or fall back to the
         // default AWS credential chain (EC2/ECS instance roles, environment variables,

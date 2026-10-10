@@ -5,7 +5,7 @@ Guidance for AI agents (and humans) working on the Modulus framework.
 ## Project
 
 Modulus is a modular-monolith framework for **.NET 10** (`net10.0`). It is a
-multi-project solution made of **40 libraries** under `src/` (core, data,
+multi-project solution made of **45 non-UI libraries** plus **11 UI packages** under `src/` (core, data,
 identity, messaging, platform, observability, testing) plus the optional,
 server-rendered **UI framework** under `src/ui/` (see *Modulus.UI* below),
 unit/integration tests under `tests/` and a **CLI tool** (`Modulus.Cli`) for
@@ -731,7 +731,7 @@ The framework was consolidated from 55 packages to 23:
   `Modulus.Identity`.
 - **Merged observability:** `Diagnostics` + `OpenTelemetry` → `Modulus.Observability`.
 - **Dropped stubs:** Cassandra, CosmosDB, DynamoDB, Elasticsearch, Redis, Dapper,
-  ServiceBus, Sqs, SignalR.Azure/Redis, BackgroundJobs.Hangfire/Quartz,
+  ServiceBus, Sqs, SignalR.Azure/Redis, BackgroundJobs.Hangfire (Quartz was re-added as `Modulus.BackgroundJobs.Quartz`),
   Benchmarks (can be re-added as needed).
 - **Namespaces preserved:** types keep their original namespaces (e.g.
   `Modulus.Core.Abstractions.IModule`) even when compiled into a different

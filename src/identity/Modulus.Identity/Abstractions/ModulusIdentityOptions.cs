@@ -142,5 +142,62 @@ public sealed class ModulusIdentityOptions
     /// </summary>
     public string? IntrospectionClientSecret { get; set; }
 
+    /// <summary>
+    /// Password complexity rules applied to every password set through Identity (registration, reset, change, invitation).
+    /// The defaults match the framework's historical rules: at least 8 characters, one digit, one uppercase letter.
+    /// </summary>
+    public ModulusPasswordPolicyOptions Password { get; set; } = new();
+
+    /// <summary>
+    /// Account lockout after repeated failed sign-ins. The defaults match ASP.NET Core Identity's (enabled, 5 attempts, 5 minutes).
+    /// </summary>
+    public ModulusLockoutOptions Lockout { get; set; } = new();
+
     public Dictionary<string, ExternalProviderOptions> ExternalProviders { get; set; } = new();
+}
+
+/// <summary>
+/// Password complexity rules, bound from <c>Identity:Password</c>. Applied at startup by <c>AddModulusIdentity</c>.
+/// </summary>
+public sealed class ModulusPasswordPolicyOptions
+{
+    /// <summary>Minimum password length. Must be at least 1.</summary>
+    public int RequiredLength { get; set; } = 8;
+
+    /// <summary>Minimum number of distinct characters. Must be at least 1.</summary>
+    public int RequiredUniqueChars { get; set; } = 1;
+
+    public bool RequireDigit { get; set; } = true;
+    public bool RequireUppercase { get; set; } = true;
+    public bool RequireLowercase { get; set; }
+    public bool RequireNonAlphanumeric { get; set; }
+
+    /// <summary>
+    /// How many previous passwords an account may not set again (0-50). <c>0</c> (default) turns the check off. Needs the
+    /// identity database to hold the password history table (<c>ModulusPasswordHistory</c>, so a migration).
+    /// </summary>
+    public int HistoryCount { get; set; }
+
+    /// <summary>
+    /// Days a password stays valid (0 or more). <c>0</c> (default) means passwords never expire. An account whose password
+    /// is older is refused at the password grant with <c>password_expired</c> until it changes its password (a reset also
+    /// sets a new one). An account with no recorded change, such as one created before this setting, is not expired until
+    /// its next change.
+    /// </summary>
+    public int MaxAgeDays { get; set; }
+}
+
+/// <summary>
+/// Account lockout, bound from <c>Identity:Lockout</c>. Applied at startup by <c>AddModulusIdentity</c>.
+/// </summary>
+public sealed class ModulusLockoutOptions
+{
+    /// <summary>When <c>false</c>, accounts are never locked out by failed sign-ins. Default <c>true</c>.</summary>
+    public bool Enabled { get; set; } = true;
+
+    /// <summary>Failed sign-ins before the account is locked. Must be at least 1.</summary>
+    public int MaxFailedAccessAttempts { get; set; } = 5;
+
+    /// <summary>How long a lockout lasts, in minutes. Must be at least 1.</summary>
+    public int DefaultLockoutMinutes { get; set; } = 5;
 }

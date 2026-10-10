@@ -96,6 +96,10 @@
   </Folder>
   <Folder Name="/tests/unit/">
     <Project Path="tests/unit/Modulus.Core.Tests/Modulus.Core.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.Storage.S3.Tests/Modulus.Storage.S3.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.SignalR.Backplane.Tests/Modulus.SignalR.Backplane.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.Outbox.Management.Tests/Modulus.Outbox.Management.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.Storage.AzureBlobs.Tests/Modulus.Storage.AzureBlobs.Tests.csproj" />
     <Project Path="tests/unit/Modulus.AspNetCore.Tests/Modulus.AspNetCore.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Analyzers.Tests/Modulus.Analyzers.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Bff.Tests/Modulus.Bff.Tests.csproj" />

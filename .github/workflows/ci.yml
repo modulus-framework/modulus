@@ -87,3 +87,31 @@ jobs:
       # behaviour was exercised was during a release).
       - name: Test (integration)
         run: dotnet test modulus.slnx --no-build --configuration Release --filter "Category=Integration" --verbosity normal
+
+  unit-net8:
+    # The libraries multi-target net8.0 and net10.0. The shared test props honour
+    # -p:ModulusTestTfm, so each library's unit suite also runs on the .NET 8 runtime.
+    # UI, CLI and Realtime suites stay net10-only (AGENTS.md, "Dual targeting").
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            10.0.x
+      - name: Test (unit, net8.0)
+        shell: bash
+        run: |
+          fail=0
+          for dir in tests/unit/*/; do
+            name=$(basename "$dir")
+            case "$name" in
+              *UI*|*Cli*|*Realtime*) echo "skip $name (net10-only)"; continue ;;
+            esac
+            echo "::group::$name"
+            dotnet test "$dir" -p:ModulusTestTfm=net8.0 --filter "Category=Unit" --nologo || fail=1
+            echo "::endgroup::"
+          done
+          exit $fail

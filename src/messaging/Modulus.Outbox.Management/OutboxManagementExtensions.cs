@@ -79,8 +79,10 @@ public static class OutboxManagementExtensions
             string? tenantFilter,
             CancellationToken ct,
             IOptions<OutboxOptions> options,
-            params DbContext[] contexts) =>
+            IServiceProvider services) =>
         {
+            // Resolved here, not as a parameter: a params array is inferred as a request body by minimal APIs.
+            var contexts = services.GetServices<DbContext>().ToArray();
             var p = page ?? 1;
             var ps = pageSize ?? 20;
             if (p < 1) p = 1;
@@ -142,8 +144,10 @@ public static class OutboxManagementExtensions
             Guid id,
             CancellationToken ct,
             IOptions<OutboxOptions> options,
-            params DbContext[] contexts) =>
+            IServiceProvider services) =>
         {
+            // Resolved here, not as a parameter: a params array is inferred as a request body by minimal APIs.
+            var contexts = services.GetServices<DbContext>().ToArray();
             var maxRetries = options.Value.MaxRetries;
             foreach (var db in contexts)
             {
@@ -182,8 +186,10 @@ public static class OutboxManagementExtensions
             ILoggerFactory loggerFactory,
             IOptions<OutboxOptions> options,
             CancellationToken ct,
-            params DbContext[] contexts) =>
+            IServiceProvider services) =>
         {
+            // Resolved here, not as a parameter: a params array is inferred as a request body by minimal APIs.
+            var contexts = services.GetServices<DbContext>().ToArray();
             if (request.MessageIds is not { Length: > 0 })
                 return Results.BadRequest("MessageIds must be non-empty");
 
@@ -256,8 +262,10 @@ public static class OutboxManagementExtensions
             ICurrentUser currentUser,
             CancellationToken ct,
             IOptions<OutboxOptions> options,
-            params DbContext[] contexts) =>
+            IServiceProvider services) =>
         {
+            // Resolved here, not as a parameter: a params array is inferred as a request body by minimal APIs.
+            var contexts = services.GetServices<DbContext>().ToArray();
             var days = beforeDays ?? 30;
             if (days < 0) days = 0;
 

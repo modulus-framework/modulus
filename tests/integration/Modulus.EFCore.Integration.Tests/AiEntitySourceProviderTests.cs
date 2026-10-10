@@ -62,21 +62,28 @@ public abstract class AiEntitySourceProviderTests
     private static readonly Guid[] Ids =
         [.. Enumerable.Range(1, 6).Select(i => Guid.Parse($"{i:x8}-0000-4000-8000-00000000000{i}"))];
 
+    // Npgsql writes timestamptz only from UTC DateTimes, so every date in these tests is UTC.
+    private static DateTime Utc(int year, int month, int day) => new(year, month, day, 0, 0, 0, DateTimeKind.Utc);
+
     protected abstract DbContextOptions<AiProviderDbContext> Options { get; }
 
     private async Task<EfAiEntitySource> SeededAsync()
     {
         await using (var seed = new AiProviderDbContext(Options))
         {
-            await seed.Database.EnsureDeletedAsync();
+            // The schema is created once per container and emptied before each test. Dropping the
+            // database is not an option: earlier tests' pooled connections keep it open (PostgreSQL),
+            // and the SQL Server container's connection string targets master (SINGLE_USER fails).
             await seed.Database.EnsureCreatedAsync();
+            await seed.Stock.ExecuteDeleteAsync();
+            await seed.Lines.ExecuteDeleteAsync();
             await seed.Stock.AddRangeAsync(
-                new AiStock { Id = Ids[0], Sku = "W-1", Warehouse = "North", Quantity = 10, Price = 5.5m, Weight = 0.5, ReceivedAt = new(2026, 1, 5) },
-                new AiStock { Id = Ids[1], Sku = "W-2", Warehouse = "North", Quantity = 2, Price = 8m, Weight = 1.25, ReceivedAt = new(2026, 2, 1) },
-                new AiStock { Id = Ids[2], Sku = "G-1", Warehouse = "South", Quantity = 7, Price = 12.25m, Weight = 2, ReceivedAt = new(2026, 3, 9) },
-                new AiStock { Id = Ids[3], Sku = "G-2", Warehouse = null, Quantity = 1, Price = 20m, Weight = 0.75, ReceivedAt = new(2026, 3, 20) },
-                new AiStock { Id = Ids[4], Sku = "X-1", Warehouse = "South", Quantity = 4, Price = 1m, Weight = 3, ReceivedAt = new(2026, 4, 2) },
-                new AiStock { Id = Ids[5], Sku = "X-2", Warehouse = "North", Quantity = 6, Price = 3m, Weight = 4, ReceivedAt = new(2026, 4, 3) });
+                new AiStock { Id = Ids[0], Sku = "W-1", Warehouse = "North", Quantity = 10, Price = 5.5m, Weight = 0.5, ReceivedAt = Utc(2026, 1, 5) },
+                new AiStock { Id = Ids[1], Sku = "W-2", Warehouse = "North", Quantity = 2, Price = 8m, Weight = 1.25, ReceivedAt = Utc(2026, 2, 1) },
+                new AiStock { Id = Ids[2], Sku = "G-1", Warehouse = "South", Quantity = 7, Price = 12.25m, Weight = 2, ReceivedAt = Utc(2026, 3, 9) },
+                new AiStock { Id = Ids[3], Sku = "G-2", Warehouse = null, Quantity = 1, Price = 20m, Weight = 0.75, ReceivedAt = Utc(2026, 3, 20) },
+                new AiStock { Id = Ids[4], Sku = "X-1", Warehouse = "South", Quantity = 4, Price = 1m, Weight = 3, ReceivedAt = Utc(2026, 4, 2) },
+                new AiStock { Id = Ids[5], Sku = "X-2", Warehouse = "North", Quantity = 6, Price = 3m, Weight = 4, ReceivedAt = Utc(2026, 4, 3) });
             await seed.Lines.AddRangeAsync(
                 new AiOrderLine { OrderId = "B", LineNo = 1, Amount = 1m }, new AiOrderLine { OrderId = "A", LineNo = 10, Amount = 2m },
                 new AiOrderLine { OrderId = "A", LineNo = 2, Amount = 3m }, new AiOrderLine { OrderId = "C", LineNo = 3, Amount = 4m },
@@ -138,7 +145,7 @@ public abstract class AiEntitySourceProviderTests
     public async Task Date_filters_translate()
     {
         var source = await SeededAsync();
-        var from = new DateTime(2026, 3, 1);
+        var from = Utc(2026, 3, 1);
         Expression<Func<AiStock, bool>> filter = s => s.ReceivedAt >= from;
         Expression<Func<AiStock, DateTime>> byDate = s => s.ReceivedAt;
 

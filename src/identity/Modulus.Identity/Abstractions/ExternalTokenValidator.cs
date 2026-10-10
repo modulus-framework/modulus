@@ -57,6 +57,25 @@ public sealed class OidcDiscoveryValidator
     {
         if (string.IsNullOrWhiteSpace(token)) return false;
 
+        var parameters = await ParametersAsync(ct);
+        return parameters is not null && await ExternalTokenValidator.ValidateJwtAsync(token, parameters);
+    }
+
+    /// <summary>
+    /// Validates <paramref name="token"/> exactly as <see cref="ValidateAsync"/> does and returns its claims, or null when
+    /// it is refused. The federated token exchange needs the subject, email and groups.
+    /// </summary>
+    public async Task<System.Security.Claims.ClaimsPrincipal?> ReadAsync(string token, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(token)) return null;
+
+        var parameters = await ParametersAsync(ct);
+        return parameters is null ? null : await ExternalTokenValidator.ReadJwtAsync(token, parameters);
+    }
+
+    /// <summary>The validation parameters from the provider's current discovery document, or null when it is unavailable.</summary>
+    private async Task<TokenValidationParameters?> ParametersAsync(CancellationToken ct)
+    {
         OpenIdConnectConfiguration configuration;
         try
         {
@@ -65,10 +84,10 @@ public sealed class OidcDiscoveryValidator
         catch
         {
             // Discovery is unreachable or malformed — fail closed.
-            return false;
+            return null;
         }
 
-        var parameters = new TokenValidationParameters
+        return new TokenValidationParameters
         {
             ValidIssuer = configuration.Issuer,
             ValidateIssuer = true,
@@ -79,8 +98,6 @@ public sealed class OidcDiscoveryValidator
             ValidAudiences = _validateAudience ? _validAudiences : null,
             ClockSkew = TimeSpan.FromMinutes(1),
         };
-
-        return await ExternalTokenValidator.ValidateJwtAsync(token, parameters);
     }
 }
 
@@ -98,19 +115,26 @@ public static class ExternalTokenValidator
     /// </summary>
     public static async Task<bool> ValidateJwtAsync(
         string token, TokenValidationParameters parameters)
+        => await ReadJwtAsync(token, parameters) is not null;
+
+    /// <summary>
+    /// Validates <paramref name="token"/> like <see cref="ValidateJwtAsync"/> and returns its claims, or null. Never throws.
+    /// </summary>
+    public static async Task<System.Security.Claims.ClaimsPrincipal?> ReadJwtAsync(
+        string token, TokenValidationParameters parameters)
     {
         ArgumentNullException.ThrowIfNull(parameters);
-        if (string.IsNullOrWhiteSpace(token)) return false;
+        if (string.IsNullOrWhiteSpace(token)) return null;
 
         try
         {
             var result = await new JsonWebTokenHandler()
                 .ValidateTokenAsync(token, parameters);
-            return result.IsValid;
+            return result.IsValid ? new System.Security.Claims.ClaimsPrincipal(result.ClaimsIdentity) : null;
         }
         catch
         {
-            return false;
+            return null;
         }
     }
 }

@@ -77,8 +77,19 @@ public sealed class EvictableFixedWindowLimiterTests
         var freshCtx = host.ContextFor("fresh");
         await host.Limiter.AcquireAsync(freshCtx);
 
-        host.Limiter.EvictIdlePartitions().Should().BeGreaterThanOrEqualTo(1);
+        (await EvictIdleWithinAsync(host.Limiter)).Should().BeGreaterThanOrEqualTo(1);
         host.Limiter.GetStatistics(freshCtx).Should().NotBeNull();
+    }
+
+    // The idle clock is advanced by the limiter's window timer, which can run late
+    // under parallel test load, so poll until the partition has aged past the threshold.
+    private static async Task<int> EvictIdleWithinAsync(EvictableFixedWindowLimiter limiter)
+    {
+        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(5);
+        int removed;
+        while ((removed = limiter.EvictIdlePartitions()) == 0 && DateTime.UtcNow < deadline)
+            await Task.Delay(10);
+        return removed;
     }
 
     [Fact]
@@ -104,7 +115,7 @@ public sealed class EvictableFixedWindowLimiterTests
 
         await host.Limiter.AcquireAsync(host.ContextFor("reused"));
         await Task.Delay(Idle + TimeSpan.FromMilliseconds(120));
-        host.Limiter.EvictIdlePartitions().Should().BeGreaterThanOrEqualTo(1);
+        (await EvictIdleWithinAsync(host.Limiter)).Should().BeGreaterThanOrEqualTo(1);
 
         var act = async () =>
         {

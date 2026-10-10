@@ -24,12 +24,12 @@ public sealed class EfApprovalAuthorityStore(IDbContextFactory<AuthorizationStor
         ArgumentException.ThrowIfNullOrWhiteSpace(permission);
 
         var userKey = principal.UserId?.ToString();
-        var roles = principal.Roles.ToArray();
         using var db = factory.CreateDbContext();
+        var roles = EfRoleInclusionStore.Expand(db, EfPositionStore.WithPositionRoles(db, principal.Roles, principal.UserId)).Select(r => r.ToLowerInvariant()).ToArray();
         var rows = db.ApprovalAuthorities.AsNoTracking()
             .Where(a => a.Permission == permission
                         && ((a.HolderType == GrantHolderType.User && a.Holder == userKey)
-                            || (a.HolderType == GrantHolderType.Role && roles.Contains(a.Holder))))
+                            || (a.HolderType == GrantHolderType.Role && roles.Contains(a.Holder.ToLower()))))
             .ToList();
         return [.. rows.Select(ToAuthority)];
     }

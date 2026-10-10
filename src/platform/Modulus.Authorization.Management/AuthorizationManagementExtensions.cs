@@ -112,6 +112,10 @@ public static partial class AuthorizationManagementExtensions
         MapGrants(group);
         MapScopedGrants(group);
         MapApprovalAuthorities(group);
+        MapSodRules(group);
+        MapRoleInclusions(group);
+        MapPositions(group);
+        MapParties(group);
         MapOrganization(group);
         MapEntitlements(group);
         MapDelegations(group);
@@ -640,6 +644,351 @@ public static partial class AuthorizationManagementExtensions
             return Results.NoContent();
         });
     }
+
+    // ── Composite roles ("Line Supervisor includes Operator") ───────
+
+    private static void MapRoleInclusions(RouteGroupBuilder group)
+    {
+        group.MapGet("/roles/inclusions", async (EfRoleInclusionStore store, CancellationToken ct) =>
+            Results.Ok((await store.ListAsync(ct)).Select(s => new RoleInclusionResponse(s.Role, s.Includes, s.CreatedBy, s.CreatedAt))));
+
+        // The roles a holder of the given roles ends up with, for review.
+        group.MapGet("/roles/expanded", async ([Microsoft.AspNetCore.Mvc.FromQuery(Name = "role")] string[] role, EfRoleInclusionStore store, CancellationToken ct) =>
+            Results.Ok(await store.ExpandAsync(role, ct)));
+
+        group.MapPost("/roles/inclusions", async (
+            RoleInclusionRequest request, ClaimsPrincipal caller, EfRoleInclusionStore store, IAuthorizationService authorization,
+            IAuthorizationAuditWriter auditWriter, IEnumerable<IAccessChangeObserver> observers,
+            ICurrentUser currentUser, TimeProvider clock, CancellationToken ct) =>
+        {
+            if (string.IsNullOrWhiteSpace(request.Role) || string.IsNullOrWhiteSpace(request.Includes))
+                return Results.ValidationProblem(new Dictionary<string, string[]> { ["role"] = ["Name both the including role and the included role."] });
+
+            var target = $"{request.Role.Trim()} -> {request.Includes.Trim()}";
+
+            // Every holder of the role gains the included role's authority, so this is a grant of that authority.
+            if (!(await authorization.AuthorizeAsync(caller, GrantAnyPermission)).Succeeded)
+                return await RefuseAsync(auditWriter, currentUser, "RoleInclusion", target,
+                    "needs-grant-any", "Including a role hands its authority to every holder; that needs authorization:grant-any.", ct);
+
+            bool added;
+            try
+            {
+                added = await store.AddAsync(request.Role, request.Includes, GrantGuards.UserIdOf(caller), clock.GetUtcNow(), ct);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Results.Problem(detail: ex.Message, statusCode: StatusCodes.Status409Conflict);
+            }
+
+            if (!added)
+                return Results.NoContent();
+
+            await EmitAuditAsync(auditWriter, observers, currentUser, "RoleInclusion", "Added", target, new Dictionary<string, string>(), ct);
+            return Results.Created("roles/inclusions", new RoleInclusionResponse(request.Role.Trim(), request.Includes.Trim(), GrantGuards.UserIdOf(caller), clock.GetUtcNow()));
+        });
+
+        group.MapDelete("/roles/inclusions", async (
+            [Microsoft.AspNetCore.Mvc.FromQuery] string role, [Microsoft.AspNetCore.Mvc.FromQuery] string includes, EfRoleInclusionStore store,
+            IAuthorizationAuditWriter auditWriter, IEnumerable<IAccessChangeObserver> observers,
+            ICurrentUser currentUser, CancellationToken ct) =>
+        {
+            if (string.IsNullOrWhiteSpace(role) || string.IsNullOrWhiteSpace(includes))
+                return Results.ValidationProblem(new Dictionary<string, string[]> { ["role"] = ["Name both roles."] });
+            if (!await store.RemoveAsync(role, includes, ct))
+                return Results.Problem(detail: "Inclusion not found.", statusCode: StatusCodes.Status404NotFound);
+
+            await EmitAuditAsync(auditWriter, observers, currentUser, "RoleInclusion", "Removed",
+                $"{role.Trim()} -> {includes.Trim()}", new Dictionary<string, string>(), ct);
+            return Results.NoContent();
+        });
+    }
+
+    // ── External parties (buyer, supplier and subcontractor accounts) ────
+
+    private static void MapParties(RouteGroupBuilder group)
+    {
+        static PartyLinkResponse ToResponse(EfPartyStore.Link l) => new(l.UserId, l.Kind, l.PartyId, l.CreatedBy, l.CreatedAt);
+
+        group.MapGet("/parties/links", async ([Microsoft.AspNetCore.Mvc.FromQuery] Guid? partyId, EfPartyStore store, CancellationToken ct) =>
+            Results.Ok((await store.LinksAsync(partyId, ct)).Select(ToResponse)));
+
+        // Linking narrows an account (ceiling and party scope), so it needs only the manage permission.
+        group.MapPut("/parties/links", async (
+            PartyLinkRequest request, ClaimsPrincipal caller, EfPartyStore store,
+            IAuthorizationAuditWriter auditWriter, IEnumerable<IAccessChangeObserver> observers,
+            ICurrentUser currentUser, TimeProvider clock, CancellationToken ct) =>
+        {
+            if (request.UserId == Guid.Empty || request.PartyId == Guid.Empty || string.IsNullOrWhiteSpace(request.Kind))
+                return Results.ValidationProblem(new Dictionary<string, string[]> { ["kind"] = ["Name the account, its kind and the party."] });
+
+            var link = await store.LinkAsync(request.UserId, request.Kind, request.PartyId, GrantGuards.UserIdOf(caller), clock.GetUtcNow(), ct);
+            await EmitAuditAsync(auditWriter, observers, currentUser, "PartyLink", "Linked", request.UserId.ToString("N"),
+                new Dictionary<string, string> { ["kind"] = link.Kind, ["partyId"] = link.PartyId.ToString("N") }, ct);
+            return Results.Ok(ToResponse(link));
+        });
+
+        group.MapDelete("/parties/links/{userId:guid}", async (
+            Guid userId, EfPartyStore store, IAuthorizationAuditWriter auditWriter, IEnumerable<IAccessChangeObserver> observers,
+            ICurrentUser currentUser, CancellationToken ct) =>
+        {
+            if (!await store.UnlinkAsync(userId, ct))
+                return Results.Problem(detail: "The account has no party link.", statusCode: StatusCodes.Status404NotFound);
+
+            await EmitAuditAsync(auditWriter, observers, currentUser, "PartyLink", "Unlinked", userId.ToString("N"), new Dictionary<string, string>(), ct);
+            return Results.NoContent();
+        });
+
+        group.MapGet("/parties/ceilings", async (EfPartyStore store, CancellationToken ct) =>
+            Results.Ok(await store.CeilingsAsync(ct)));
+
+        // A wider ceiling lets outsiders use more, so it is a grant: it needs grant-any, and never reaches the authorization area.
+        group.MapPost("/parties/ceilings", async (
+            PartyCeilingRequest request, ClaimsPrincipal caller, EfPartyStore store, IAuthorizationService authorization,
+            IAuthorizationAuditWriter auditWriter, IEnumerable<IAccessChangeObserver> observers,
+            ICurrentUser currentUser, CancellationToken ct) =>
+        {
+            if (string.IsNullOrWhiteSpace(request.Kind) || string.IsNullOrWhiteSpace(request.Permission))
+                return Results.ValidationProblem(new Dictionary<string, string[]> { ["kind"] = ["Name the kind and the permission."] });
+
+            var target = $"{request.Kind.Trim()}: {request.Permission.Trim()}";
+            if (!(await authorization.AuthorizeAsync(caller, GrantAnyPermission)).Succeeded)
+                return await RefuseAsync(auditWriter, currentUser, "PartyCeiling", target,
+                    "needs-grant-any", "Widening what outside parties may use needs authorization:grant-any.", ct);
+            if (request.Permission.Trim() == "*" || request.Permission.Trim().StartsWith("authorization:", StringComparison.OrdinalIgnoreCase))
+                return Results.ValidationProblem(new Dictionary<string, string[]> { ["permission"] = ["Outside parties can never hold the whole set or the authorization permissions."] });
+
+            if (!await store.AllowAsync(request.Kind, request.Permission, ct))
+                return Results.NoContent();
+
+            await EmitAuditAsync(auditWriter, observers, currentUser, "PartyCeiling", "Allowed", target, new Dictionary<string, string>(), ct);
+            return Results.Created("parties/ceilings", new { kind = request.Kind.Trim().ToLowerInvariant(), permission = request.Permission.Trim() });
+        });
+
+        group.MapDelete("/parties/ceilings", async (
+            [Microsoft.AspNetCore.Mvc.FromQuery] string kind, [Microsoft.AspNetCore.Mvc.FromQuery] string permission, EfPartyStore store,
+            IAuthorizationAuditWriter auditWriter, IEnumerable<IAccessChangeObserver> observers,
+            ICurrentUser currentUser, CancellationToken ct) =>
+        {
+            if (string.IsNullOrWhiteSpace(kind) || string.IsNullOrWhiteSpace(permission))
+                return Results.ValidationProblem(new Dictionary<string, string[]> { ["kind"] = ["Name the kind and the permission."] });
+            if (!await store.DisallowAsync(kind, permission, ct))
+                return Results.Problem(detail: "Not in the ceiling.", statusCode: StatusCodes.Status404NotFound);
+
+            await EmitAuditAsync(auditWriter, observers, currentUser, "PartyCeiling", "Removed", $"{kind.Trim()}: {permission.Trim()}", new Dictionary<string, string>(), ct);
+            return Results.NoContent();
+        });
+    }
+
+    // ── Positions (a post that grants roles to whoever holds it) ────
+
+    private static PositionResponse ToResponse(EfPositionStore.Position p) => new(p.Id, p.Code, p.Name, p.OrgUnitId, p.Roles, p.IsActive);
+
+    private static PositionHoldResponse ToResponse(EfPositionStore.Holding h)
+        => new(h.Id, h.PositionId, h.UserId, h.ValidFrom, h.ValidUntil, h.CreatedBy, h.CreatedAt);
+
+    private static void MapPositions(RouteGroupBuilder group)
+    {
+        group.MapGet("/positions", async (EfPositionStore store, CancellationToken ct) =>
+            Results.Ok((await store.ListAsync(ct)).Select(ToResponse)));
+
+        // Positions hand roles to their holders, so shaping one is a grant of those roles.
+        group.MapPost("/positions", async (
+            PositionCreateRequest request, ClaimsPrincipal caller, EfPositionStore store, IAuthorizationService authorization,
+            IAuthorizationAuditWriter auditWriter, IEnumerable<IAccessChangeObserver> observers,
+            ICurrentUser currentUser, CancellationToken ct) =>
+        {
+            if (string.IsNullOrWhiteSpace(request.Code) || string.IsNullOrWhiteSpace(request.Name))
+                return Results.ValidationProblem(new Dictionary<string, string[]> { ["code"] = ["A position needs a code and a name."] });
+            if (!(await authorization.AuthorizeAsync(caller, GrantAnyPermission)).Succeeded)
+                return await RefuseAsync(auditWriter, currentUser, "Position", request.Code.Trim(),
+                    "needs-grant-any", "A position grants roles to its holders; that needs authorization:grant-any.", ct);
+
+            var created = await store.AddAsync(request.Code, request.Name, request.OrgUnitId, request.Roles ?? [], ct);
+            if (created is null)
+                return Results.Problem(detail: $"A position with code '{request.Code.Trim()}' already exists.", statusCode: StatusCodes.Status409Conflict);
+
+            await EmitAuditAsync(auditWriter, observers, currentUser, "Position", "Created", created.Code,
+                new Dictionary<string, string> { ["roles"] = string.Join(",", created.Roles) }, ct);
+            return Results.Created($"positions/{created.Id}", ToResponse(created));
+        });
+
+        group.MapPut("/positions/{id:guid}", async (
+            Guid id, PositionUpdateRequest request, ClaimsPrincipal caller, EfPositionStore store, IAuthorizationService authorization,
+            IAuthorizationAuditWriter auditWriter, IEnumerable<IAccessChangeObserver> observers,
+            ICurrentUser currentUser, CancellationToken ct) =>
+        {
+            if (string.IsNullOrWhiteSpace(request.Name))
+                return Results.ValidationProblem(new Dictionary<string, string[]> { ["name"] = ["A position needs a name."] });
+            if (!(await authorization.AuthorizeAsync(caller, GrantAnyPermission)).Succeeded)
+                return await RefuseAsync(auditWriter, currentUser, "Position", id.ToString("N"),
+                    "needs-grant-any", "A position grants roles to its holders; that needs authorization:grant-any.", ct);
+
+            var updated = await store.UpdateAsync(id, request.Name, request.OrgUnitId, request.Roles ?? [], request.IsActive, ct);
+            if (updated is null)
+                return Results.Problem(detail: "Position not found.", statusCode: StatusCodes.Status404NotFound);
+
+            await EmitAuditAsync(auditWriter, observers, currentUser, "Position", "Updated", updated.Code,
+                new Dictionary<string, string> { ["roles"] = string.Join(",", updated.Roles), ["active"] = updated.IsActive.ToString() }, ct);
+            return Results.Ok(ToResponse(updated));
+        });
+
+        group.MapDelete("/positions/{id:guid}", async (
+            Guid id, EfPositionStore store, IAuthorizationAuditWriter auditWriter, IEnumerable<IAccessChangeObserver> observers,
+            ICurrentUser currentUser, CancellationToken ct) =>
+        {
+            if (!await store.RemoveAsync(id, ct))
+                return Results.Problem(detail: "Position not found.", statusCode: StatusCodes.Status404NotFound);
+
+            await EmitAuditAsync(auditWriter, observers, currentUser, "Position", "Deleted", id.ToString("N"), new Dictionary<string, string>(), ct);
+            return Results.NoContent();
+        });
+
+        group.MapGet("/positions/{id:guid}/holders", async (Guid id, EfPositionStore store, CancellationToken ct) =>
+            Results.Ok((await store.HoldingsAsync(id, null, ct)).Select(ToResponse)));
+
+        group.MapGet("/positions/held-by/{userId:guid}", async (Guid userId, EfPositionStore store, CancellationToken ct) =>
+            Results.Ok((await store.HoldingsAsync(null, userId, ct)).Select(ToResponse)));
+
+        group.MapPost("/positions/{id:guid}/holders", async (
+            Guid id, PositionHoldRequest request, ClaimsPrincipal caller, EfPositionStore store, IAuthorizationService authorization,
+            IAuthorizationAuditWriter auditWriter, IEnumerable<IAccessChangeObserver> observers,
+            ICurrentUser currentUser, TimeProvider clock, CancellationToken ct) =>
+        {
+            // The holder gains every role of the position, so this is a grant of those roles.
+            if (!(await authorization.AuthorizeAsync(caller, GrantAnyPermission)).Succeeded)
+                return await RefuseAsync(auditWriter, currentUser, "Position", id.ToString("N"),
+                    "needs-grant-any", "Putting someone in a position grants its roles; that needs authorization:grant-any.", ct);
+
+            EfPositionStore.Holding? holding;
+            try
+            {
+                holding = await store.AssignAsync(id, request.UserId, request.ValidFrom ?? clock.GetUtcNow(), request.ValidUntil, GrantGuards.UserIdOf(caller), ct);
+            }
+            catch (ArgumentException ex)
+            {
+                return Results.ValidationProblem(new Dictionary<string, string[]> { ["validUntil"] = [ex.Message] });
+            }
+
+            if (holding is null)
+                return Results.Problem(detail: "Position not found.", statusCode: StatusCodes.Status404NotFound);
+
+            await EmitAuditAsync(auditWriter, observers, currentUser, "Position", "Assigned", id.ToString("N"),
+                new Dictionary<string, string> { ["userId"] = request.UserId.ToString("N"), ["holding"] = holding.Id.ToString("N") }, ct);
+            return Results.Created($"positions/{id}/holders", ToResponse(holding));
+        });
+
+        group.MapDelete("/positions/holders/{holdingId:guid}", async (
+            Guid holdingId, EfPositionStore store, IAuthorizationAuditWriter auditWriter, IEnumerable<IAccessChangeObserver> observers,
+            ICurrentUser currentUser, CancellationToken ct) =>
+        {
+            if (!await store.EndAsync(holdingId, ct))
+                return Results.Problem(detail: "Holding not found or already ended.", statusCode: StatusCodes.Status404NotFound);
+
+            await EmitAuditAsync(auditWriter, observers, currentUser, "Position", "Released", holdingId.ToString("N"), new Dictionary<string, string>(), ct);
+            return Results.NoContent();
+        });
+    }
+
+    // ── Segregation-of-duties rules (data, edited at runtime) ───────
+
+    private static void MapSodRules(RouteGroupBuilder group)
+    {
+        // The rules in force: the ones declared in code that no stored rule replaces, then the stored ones.
+        group.MapGet("/sod/rules", async (EfSodRuleStore store, IEnumerable<SodSeedConstraints> seeds, CancellationToken ct) =>
+        {
+            var stored = await store.ListAsync(ct);
+            var replaced = stored.Select(s => s.Constraint.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var fromCode = seeds.SelectMany(s => s.Constraints)
+                .Where(c => !replaced.Contains(c.Name))
+                .Select(c => new SodRuleResponse(null, "code", c.Name, [.. c.MutuallyExclusive], c.Rationale, true, null, null, null));
+            return Results.Ok(fromCode.Concat(stored.Select(ToResponse)));
+        });
+
+        group.MapPost("/sod/rules", async (
+            SodRuleWriteRequest request, EfSodRuleStore store, IPermissionRegistry registry, ClaimsPrincipal caller,
+            IAuthorizationAuditWriter auditWriter, IEnumerable<IAccessChangeObserver> observers,
+            ICurrentUser currentUser, TimeProvider clock, CancellationToken ct) =>
+        {
+            if (InvalidSodRule(request, registry) is { } problem)
+                return problem;
+
+            var saved = await store.AddAsync(ToConstraint(request), request.IsEnabled ?? true, GrantGuards.UserIdOf(caller), clock.GetUtcNow(), ct);
+            if (saved is null)
+                return Results.Problem(detail: $"A rule named '{request.Name.Trim()}' already exists.", statusCode: StatusCodes.Status409Conflict);
+
+            await EmitAuditAsync(auditWriter, observers, currentUser, "SodRule", "Set", request.Name.Trim(), SodDetails(saved), ct);
+            return Results.Created($"sod/rules/{saved.Id}", ToResponse(saved));
+        });
+
+        group.MapPut("/sod/rules/{id:guid}", async (
+            Guid id, SodRuleWriteRequest request, EfSodRuleStore store, IPermissionRegistry registry,
+            IAuthorizationAuditWriter auditWriter, IEnumerable<IAccessChangeObserver> observers,
+            ICurrentUser currentUser, TimeProvider clock, CancellationToken ct) =>
+        {
+            if (InvalidSodRule(request, registry) is { } problem)
+                return problem;
+
+            EfSodRuleStore.Stored? saved;
+            try
+            {
+                saved = await store.UpdateAsync(id, ToConstraint(request), request.IsEnabled ?? true, clock.GetUtcNow(), ct);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Results.Problem(detail: ex.Message, statusCode: StatusCodes.Status409Conflict);
+            }
+
+            if (saved is null)
+                return Results.Problem(detail: "Rule not found.", statusCode: StatusCodes.Status404NotFound);
+
+            await EmitAuditAsync(auditWriter, observers, currentUser, "SodRule", "Changed", saved.Constraint.Name, SodDetails(saved), ct);
+            return Results.Ok(ToResponse(saved));
+        });
+
+        group.MapDelete("/sod/rules/{id:guid}", async (
+            Guid id, EfSodRuleStore store,
+            IAuthorizationAuditWriter auditWriter, IEnumerable<IAccessChangeObserver> observers,
+            ICurrentUser currentUser, CancellationToken ct) =>
+        {
+            if (await store.GetAsync(id, ct) is not { } existing)
+                return Results.Problem(detail: "Rule not found.", statusCode: StatusCodes.Status404NotFound);
+
+            await store.RemoveAsync(id, ct);
+            await EmitAuditAsync(auditWriter, observers, currentUser, "SodRule", "Removed", existing.Constraint.Name, SodDetails(existing), ct);
+            return Results.NoContent();
+        });
+    }
+
+    private static IResult? InvalidSodRule(SodRuleWriteRequest request, IPermissionRegistry registry)
+    {
+        if (string.IsNullOrWhiteSpace(request.Name) || request.Name.Trim().Length > 200)
+            return Results.ValidationProblem(new Dictionary<string, string[]> { ["name"] = ["A rule needs a name of at most 200 characters."] });
+
+        var permissions = (request.Permissions ?? []).Where(p => !string.IsNullOrWhiteSpace(p)).Select(p => p.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        if (permissions.Count < 2)
+            return Results.ValidationProblem(new Dictionary<string, string[]> { ["permissions"] = ["Name at least two different permissions."] });
+        if (permissions.Any(p => p.EndsWith(":*", StringComparison.Ordinal)))
+            return Results.ValidationProblem(new Dictionary<string, string[]> { ["permissions"] = ["Name registered permissions, not wildcards."] });
+
+        _ = GrantGuards.Expand(registry, permissions, out var unknown);
+        return unknown.Count > 0 ? GrantGuards.Unknown(unknown) : null;
+    }
+
+    private static SodConstraint ToConstraint(SodRuleWriteRequest request)
+        => new(request.Name.Trim(), [.. request.Permissions.Where(p => !string.IsNullOrWhiteSpace(p)).Select(p => p.Trim())], request.Rationale);
+
+    private static Dictionary<string, string> SodDetails(EfSodRuleStore.Stored s)
+        => new()
+        {
+            ["permissions"] = string.Join(",", s.Constraint.MutuallyExclusive),
+            ["enabled"] = s.IsEnabled ? "true" : "false",
+        };
+
+    private static SodRuleResponse ToResponse(EfSodRuleStore.Stored s)
+        => new(s.Id, "stored", s.Constraint.Name, [.. s.Constraint.MutuallyExclusive], s.Constraint.Rationale, s.IsEnabled,
+            s.CreatedBy, s.CreatedAt, s.UpdatedAt);
 
     // A typo would sit in the table matching nothing: when scope maps declare assignment types, only those are accepted.
     private static IResult? UnknownAssignmentType(IScopeMapRegistry scopeMaps, string? assignmentType)

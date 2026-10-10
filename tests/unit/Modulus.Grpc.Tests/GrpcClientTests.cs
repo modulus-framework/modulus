@@ -62,7 +62,10 @@ public sealed class GrpcClientTests
         var started = DateTime.UtcNow;
         var call = () => provider.GetRequiredService<Probe.ProbeClient>().SlowAsync(new EchoRequest()).ResponseAsync;
 
-        (await call.Should().ThrowAsync<RpcException>()).Which.StatusCode.Should().Be(StatusCode.DeadlineExceeded);
+        // Either the client's deadline timer or the server's cancellation response can win the race
+        // under load; both mean the default deadline ended the call.
+        (await call.Should().ThrowAsync<RpcException>()).Which.StatusCode
+            .Should().BeOneOf(StatusCode.DeadlineExceeded, StatusCode.Cancelled);
         (DateTime.UtcNow - started).Should().BeLessThan(TimeSpan.FromSeconds(5));
     }
 

@@ -1,6 +1,7 @@
 namespace Modulus.Identity;
 
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Options;
 using Modulus.Core.Abstractions;
 using Modulus.Identity.Abstractions;
 
@@ -22,7 +23,9 @@ using Modulus.Identity.Abstractions;
 internal sealed class IdentityPasswordGrantValidator<TUser>(
     SignInManager<TUser> signInManager,
     UserManager<TUser> userManager,
-    ISecurityAuditLog? audit = null)
+    ISecurityAuditLog? audit = null,
+    IPasswordHistoryStore? history = null,
+    IOptions<ModulusIdentityOptions>? identityOptions = null)
     : IPasswordGrantCredentialValidator
     where TUser : ModulusUser, new()
 {
@@ -99,6 +102,13 @@ internal sealed class IdentityPasswordGrantValidator<TUser>(
             }
         }
 
+        // Asked only after the password (and any second factor) is right, so an expired password is not revealed to anyone else.
+        if (await IsPasswordExpiredAsync(user, ct))
+        {
+            Denied(user, "password-expired");
+            return PasswordGrantResult.PasswordExpired();
+        }
+
         var roles = await userManager.GetRolesAsync(user);
         var securityStamp = await userManager.GetSecurityStampAsync(user);
 
@@ -114,6 +124,16 @@ internal sealed class IdentityPasswordGrantValidator<TUser>(
             Roles = roles.ToList(),
             SecurityStamp = securityStamp,
         };
+    }
+
+    private async Task<bool> IsPasswordExpiredAsync(TUser user, CancellationToken ct)
+    {
+        var maxAgeDays = identityOptions?.Value.Password.MaxAgeDays ?? 0;
+        if (history is null || maxAgeDays <= 0)
+            return false;
+
+        var lastChangedAt = await history.GetLastChangedAsync(user.Id, ct);
+        return PasswordExpiry.IsExpired(lastChangedAt, maxAgeDays, DateTimeOffset.UtcNow);
     }
 
     private async Task<bool> VerifySecondFactorAsync(TUser user, string code)

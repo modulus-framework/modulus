@@ -105,6 +105,13 @@ public static class EfAuthorizationStoreExtensions
 
         services.TryAddSingleton<EfAccessRequestStore>();
         services.TryAddSingleton<EfOrganizationProfileStore>();
+        services.TryAddSingleton<EfSodRuleStore>();
+        services.TryAddSingleton<EfRoleInclusionStore>();
+        services.TryAddSingleton<EfPositionStore>();
+        services.TryAddSingleton<EfPartyStore>();
+        // Rules edited at runtime plus the ones declared in code (AddSegregationOfDuties); scoped, read once per request.
+        services.RemoveAll<ISodPolicy>();
+        services.AddScoped<ISodPolicy, EfSodPolicy>();
         services.TryAddSingleton<EfApprovalAuthorityStore>();
         services.RemoveAll<IApprovalAuthorityStore>();
         services.AddSingleton<IApprovalAuthorityStore>(

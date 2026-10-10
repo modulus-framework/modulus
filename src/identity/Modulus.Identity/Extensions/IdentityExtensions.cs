@@ -9,6 +9,7 @@ using Modulus.Core.Abstractions;
 using Modulus.Core.Null;
 using Modulus.Identity;
 using Modulus.Identity.Abstractions;
+using Modulus.Identity.EntityFrameworkCore;
 using Modulus.Identity.Guards;
 using OpenIddict.Abstractions;
 
@@ -62,13 +63,13 @@ public static class IdentityExtensions
         // keep their own user type.
         services.TryAddSingleton(new ModulusUserTypeDescriptor(typeof(TUser)));
 
+        ValidatePasswordAndLockout(identityOptions);
+
         var builder = services.AddIdentity<TUser, TRole>(options =>
         {
             options.SignIn.RequireConfirmedEmail = identityOptions.RequireConfirmedEmail;
-            options.Password.RequireDigit = true;
-            options.Password.RequiredLength = 8;
-            options.Password.RequireNonAlphanumeric = false;
-            options.Password.RequireUppercase = true;
+            ApplyPasswordPolicy(options.Password, identityOptions.Password);
+            ApplyLockout(options.Lockout, identityOptions.Lockout);
             options.User.RequireUniqueEmail = true;
             configureIdentity?.Invoke(options);
         });
@@ -94,6 +95,10 @@ public static class IdentityExtensions
             typeof(IPasswordGrantCredentialValidator),
             typeof(IdentityPasswordGrantValidator<>).MakeGenericType(typeof(TUser)));
 
+        // Password history (reuse check and expiry), stored over the same context as the Identity store.
+        services.TryAddScoped<IPasswordHistoryStore>(sp => new EfPasswordHistoryStore(sp.GetRequiredService<TContext>()));
+        services.AddScoped<IPasswordValidator<TUser>, PasswordHistoryValidator<TUser>>();
+
         services.ConfigureApplicationCookie(options =>
         {
             options.LoginPath = "/account/login";
@@ -111,6 +116,43 @@ public static class IdentityExtensions
         });
 
         return builder;
+    }
+
+    private static void ApplyPasswordPolicy(PasswordOptions target, ModulusPasswordPolicyOptions policy)
+    {
+        target.RequiredLength = policy.RequiredLength;
+        target.RequiredUniqueChars = policy.RequiredUniqueChars;
+        target.RequireDigit = policy.RequireDigit;
+        target.RequireUppercase = policy.RequireUppercase;
+        target.RequireLowercase = policy.RequireLowercase;
+        target.RequireNonAlphanumeric = policy.RequireNonAlphanumeric;
+    }
+
+    private static void ApplyLockout(LockoutOptions target, ModulusLockoutOptions lockout)
+    {
+        target.AllowedForNewUsers = lockout.Enabled;
+        target.MaxFailedAccessAttempts = lockout.MaxFailedAccessAttempts;
+        target.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(lockout.DefaultLockoutMinutes);
+    }
+
+    /// <summary>
+    /// Fails startup on a nonsensical password or lockout setting (for example a zero-length minimum or a
+    /// negative lockout window) instead of silently running with a policy the operator did not intend.
+    /// </summary>
+    private static void ValidatePasswordAndLockout(ModulusIdentityOptions options)
+    {
+        if (options.Password.RequiredLength < 1)
+            throw new InvalidOperationException("Identity:Password:RequiredLength must be at least 1.");
+        if (options.Password.RequiredUniqueChars < 1)
+            throw new InvalidOperationException("Identity:Password:RequiredUniqueChars must be at least 1.");
+        if (options.Password.HistoryCount is < 0 or > 50)
+            throw new InvalidOperationException("Identity:Password:HistoryCount must be between 0 and 50.");
+        if (options.Password.MaxAgeDays < 0)
+            throw new InvalidOperationException("Identity:Password:MaxAgeDays must be 0 or more.");
+        if (options.Lockout.MaxFailedAccessAttempts < 1)
+            throw new InvalidOperationException("Identity:Lockout:MaxFailedAccessAttempts must be at least 1.");
+        if (options.Lockout.DefaultLockoutMinutes < 1)
+            throw new InvalidOperationException("Identity:Lockout:DefaultLockoutMinutes must be at least 1.");
     }
 
     /// <summary>

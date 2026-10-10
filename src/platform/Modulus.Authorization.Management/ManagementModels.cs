@@ -143,3 +143,94 @@ public sealed record BreakGlassWriteRequest(string? Profile, string? Reason, int
 public sealed record AccessRequestResponse(
     Guid Id, string Kind, Guid RequesterId, IReadOnlyList<string> Permissions, string Reason, int Hours, string Status, DateTimeOffset CreatedAt,
     Guid? DecidedBy, DateTimeOffset? DecidedAt, string? Note, DateTimeOffset? AccessEndsAt, Guid? ReviewedBy, DateTimeOffset? ReviewedAt);
+
+/// <summary>A segregation-of-duties rule to store.</summary>
+/// <param name="Name">A stable name for the control. A name used by a rule declared in code replaces that rule.</param>
+/// <param name="Permissions">Two or more registered permissions (no wildcards) of which one person may hold at most one.</param>
+/// <param name="Rationale">Why the separation exists, for auditors.</param>
+/// <param name="IsEnabled">False switches the rule off (and hides a rule of the same name declared in code). Defaults to true.</param>
+public sealed record SodRuleWriteRequest(string Name, IReadOnlyCollection<string> Permissions, string? Rationale, bool? IsEnabled);
+
+/// <summary>A segregation-of-duties rule in force.</summary>
+/// <param name="Id">The stored rule's id; null for a rule declared in code.</param>
+/// <param name="Source"><c>stored</c> or <c>code</c>.</param>
+/// <param name="Name">The rule name.</param>
+/// <param name="Permissions">The mutually exclusive permissions.</param>
+/// <param name="Rationale">Why the separation exists.</param>
+/// <param name="IsEnabled">False while the rule is switched off.</param>
+/// <param name="CreatedBy">The administrator who made it, or null.</param>
+/// <param name="CreatedAt">When it was made, or null for a rule declared in code.</param>
+/// <param name="UpdatedAt">When it was last changed, or null.</param>
+public sealed record SodRuleResponse(
+    Guid? Id, string Source, string Name, IReadOnlyCollection<string> Permissions, string? Rationale, bool IsEnabled,
+    Guid? CreatedBy, DateTimeOffset? CreatedAt, DateTimeOffset? UpdatedAt);
+
+/// <summary>Makes a role include another: holders of <see cref="Role"/> also hold everything <see cref="Includes"/> holds.</summary>
+/// <param name="Role">The including role.</param>
+/// <param name="Includes">The included role.</param>
+public sealed record RoleInclusionRequest(string Role, string Includes);
+
+/// <summary>A stored role inclusion.</summary>
+/// <param name="Role">The including role.</param>
+/// <param name="Includes">The included role.</param>
+/// <param name="CreatedBy">The administrator who made it, or null.</param>
+/// <param name="CreatedAt">When it was made.</param>
+public sealed record RoleInclusionResponse(string Role, string Includes, Guid? CreatedBy, DateTimeOffset CreatedAt);
+
+/// <summary>Links an account to an external party.</summary>
+/// <param name="UserId">The account.</param>
+/// <param name="Kind">The kind, such as buyer, supplier or subcontractor.</param>
+/// <param name="PartyId">The party record the account belongs to.</param>
+public sealed record PartyLinkRequest(Guid UserId, string Kind, Guid PartyId);
+
+/// <summary>An account's link to a party.</summary>
+/// <param name="UserId">The account.</param>
+/// <param name="Kind">The kind.</param>
+/// <param name="PartyId">The party.</param>
+/// <param name="CreatedBy">The administrator who made it, or null.</param>
+/// <param name="CreatedAt">When it was made.</param>
+public sealed record PartyLinkResponse(Guid UserId, string Kind, Guid PartyId, Guid? CreatedBy, DateTimeOffset CreatedAt);
+
+/// <summary>Lets a party kind use a permission.</summary>
+/// <param name="Kind">The kind.</param>
+/// <param name="Permission">An exact permission or a prefix ending in a star, such as orders:*.</param>
+public sealed record PartyCeilingRequest(string Kind, string Permission);
+
+/// <summary>Creates a position.</summary>
+/// <param name="Code">The unique code within the company, such as "SEW-L3-SUP".</param>
+/// <param name="Name">The display name.</param>
+/// <param name="OrgUnitId">The org unit it belongs to, or null.</param>
+/// <param name="Roles">The roles whoever holds it gets.</param>
+public sealed record PositionCreateRequest(string Code, string Name, Guid? OrgUnitId, IReadOnlyCollection<string> Roles);
+
+/// <summary>Replaces a position's details.</summary>
+/// <param name="Name">The display name.</param>
+/// <param name="OrgUnitId">The org unit it belongs to, or null.</param>
+/// <param name="Roles">The roles whoever holds it gets.</param>
+/// <param name="IsActive">False while the position grants nothing.</param>
+public sealed record PositionUpdateRequest(string Name, Guid? OrgUnitId, IReadOnlyCollection<string> Roles, bool IsActive);
+
+/// <summary>A position.</summary>
+/// <param name="Id">The position id.</param>
+/// <param name="Code">The unique code.</param>
+/// <param name="Name">The display name.</param>
+/// <param name="OrgUnitId">The org unit, or null.</param>
+/// <param name="Roles">The roles it grants.</param>
+/// <param name="IsActive">False while it grants nothing.</param>
+public sealed record PositionResponse(Guid Id, string Code, string Name, Guid? OrgUnitId, IReadOnlyCollection<string> Roles, bool IsActive);
+
+/// <summary>Puts a user in a position.</summary>
+/// <param name="UserId">The holder.</param>
+/// <param name="ValidFrom">When the holding starts; defaults to now.</param>
+/// <param name="ValidUntil">When it ends, or null for open-ended.</param>
+public sealed record PositionHoldRequest(Guid UserId, DateTimeOffset? ValidFrom, DateTimeOffset? ValidUntil);
+
+/// <summary>A user's holding of a position.</summary>
+/// <param name="Id">The holding id.</param>
+/// <param name="PositionId">The position.</param>
+/// <param name="UserId">The holder.</param>
+/// <param name="ValidFrom">When it starts.</param>
+/// <param name="ValidUntil">When it ends, or null.</param>
+/// <param name="CreatedBy">The administrator who made it, or null.</param>
+/// <param name="CreatedAt">When it was made.</param>
+public sealed record PositionHoldResponse(Guid Id, Guid PositionId, Guid UserId, DateTimeOffset ValidFrom, DateTimeOffset? ValidUntil, Guid? CreatedBy, DateTimeOffset CreatedAt);

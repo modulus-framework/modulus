@@ -74,11 +74,17 @@ public sealed record PasswordGrantResult
     /// <summary>The error code of <see cref="MfaRequired"/>.</summary>
     public const string MfaRequiredError = "mfa_required";
 
+    /// <summary>The error code of <see cref="PasswordExpired"/>.</summary>
+    public const string PasswordExpiredError = "password_expired";
+
     public static PasswordGrantResult Denied(string error = "invalid_grant") =>
         new() { Success = false, Error = error };
 
     /// <summary>The password was right, but the account needs a verification code (<c>mfa_code</c>).</summary>
     public static PasswordGrantResult MfaRequired() => Denied(MfaRequiredError);
+
+    /// <summary>The password was right, but it is older than <c>Identity:Password:MaxAgeDays</c> and must be changed.</summary>
+    public static PasswordGrantResult PasswordExpired() => Denied(PasswordExpiredError);
 }
 
 /// <summary>

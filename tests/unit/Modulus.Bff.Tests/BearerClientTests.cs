@@ -101,7 +101,7 @@ public sealed class BearerClientTests
     {
         await using var host = await StartAsync();
         var response = await host.Client().SendAsync(Get("/api/catalog/items", BffTestHost.CreateJwt("shop-mobile"), version, platform));
-        response.StatusCode.Should().Be(expected);
+        response.StatusCode.Should().Be(expected, string.Join(" | ", response.Headers.WwwAuthenticate) + "\n" + host.AuthFailures);
     }
 
     [Fact]

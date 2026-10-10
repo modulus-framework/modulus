@@ -32,6 +32,12 @@ public class AuthorizationStoreDbContext(
     internal DbSet<ScopedGrantRow> ScopedGrants => Set<ScopedGrantRow>();
     internal DbSet<AssignmentRow> Assignments => Set<AssignmentRow>();
     internal DbSet<ApprovalAuthorityRow> ApprovalAuthorities => Set<ApprovalAuthorityRow>();
+    internal DbSet<SodRuleRow> SodRules => Set<SodRuleRow>();
+    internal DbSet<RoleInclusionRow> RoleInclusions => Set<RoleInclusionRow>();
+    internal DbSet<PositionRow> Positions => Set<PositionRow>();
+    internal DbSet<PartyLinkRow> PartyLinks => Set<PartyLinkRow>();
+    internal DbSet<PartyCeilingRow> PartyCeilings => Set<PartyCeilingRow>();
+    internal DbSet<PositionAssignmentRow> PositionAssignments => Set<PositionAssignmentRow>();
     internal DbSet<AccessRequestRow> AccessRequests => Set<AccessRequestRow>();
     internal DbSet<OrgUnitProfileRow> OrgUnitProfiles => Set<OrgUnitProfileRow>();
     internal DbSet<CompanyProfileRow> CompanyProfiles => Set<CompanyProfileRow>();
@@ -167,6 +173,50 @@ public class AuthorizationStoreDbContext(
         approval.Property(a => a.DocumentType).HasMaxLength(256);
         approval.HasIndex(a => new { a.TenantId, a.Permission, a.HolderType, a.Holder });
 
+        var position = modelBuilder.Entity<PositionRow>();
+        position.ToTable("ModulusPositions");
+        position.HasKey(p => p.Id);
+        position.Property(p => p.Code).HasMaxLength(100);
+        position.Property(p => p.NormalizedCode).HasMaxLength(100);
+        position.Property(p => p.Name).HasMaxLength(200);
+        position.Property(p => p.Roles).HasMaxLength(4000);
+        position.HasIndex(p => new { p.TenantId, p.NormalizedCode }).IsUnique();
+
+        var holding = modelBuilder.Entity<PositionAssignmentRow>();
+        holding.ToTable("ModulusPositionAssignments");
+        holding.HasKey(p => p.Id);
+        holding.HasIndex(p => new { p.TenantId, p.UserId });
+        holding.HasIndex(p => new { p.TenantId, p.PositionId });
+
+        var partyLink = modelBuilder.Entity<PartyLinkRow>();
+        partyLink.ToTable("ModulusPartyLinks");
+        partyLink.HasKey(p => new { p.TenantId, p.UserId });
+        partyLink.Property(p => p.Kind).HasMaxLength(64);
+        partyLink.HasIndex(p => new { p.TenantId, p.Kind, p.PartyId });
+
+        var partyCeiling = modelBuilder.Entity<PartyCeilingRow>();
+        partyCeiling.ToTable("ModulusPartyCeilings");
+        partyCeiling.HasKey(p => new { p.TenantId, p.Kind, p.Permission });
+        partyCeiling.Property(p => p.Kind).HasMaxLength(64);
+        partyCeiling.Property(p => p.Permission).HasMaxLength(256);
+
+        var inclusion = modelBuilder.Entity<RoleInclusionRow>();
+        inclusion.ToTable("ModulusRoleInclusions");
+        inclusion.HasKey(r => new { r.TenantId, r.NormalizedRole, r.NormalizedIncludes });
+        inclusion.Property(r => r.Role).HasMaxLength(256);
+        inclusion.Property(r => r.NormalizedRole).HasMaxLength(256);
+        inclusion.Property(r => r.Includes).HasMaxLength(256);
+        inclusion.Property(r => r.NormalizedIncludes).HasMaxLength(256);
+
+        var sodRule = modelBuilder.Entity<SodRuleRow>();
+        sodRule.ToTable("ModulusSodRules");
+        sodRule.HasKey(r => r.Id);
+        sodRule.Property(r => r.Name).HasMaxLength(200);
+        sodRule.Property(r => r.NormalizedName).HasMaxLength(200);
+        sodRule.Property(r => r.Permissions).HasMaxLength(4000);
+        sodRule.Property(r => r.Rationale).HasMaxLength(2000);
+        sodRule.HasIndex(r => new { r.TenantId, r.NormalizedName }).IsUnique();
+
         var accessRequest = modelBuilder.Entity<AccessRequestRow>();
         accessRequest.ToTable("ModulusAccessRequests");
         accessRequest.HasKey(r => r.Id);
@@ -254,6 +304,24 @@ public class AuthorizationStoreDbContext(
             currentTenant.IsHost
             || (currentTenant.TenantId != null && e.TenantId == currentTenant.TenantId));
         mb.Entity<ApprovalAuthorityRow>().HasQueryFilter(e =>
+            currentTenant.IsHost
+            || (currentTenant.TenantId != null && e.TenantId == currentTenant.TenantId));
+        mb.Entity<RoleInclusionRow>().HasQueryFilter(e =>
+            currentTenant.IsHost
+            || (currentTenant.TenantId != null && e.TenantId == currentTenant.TenantId));
+        mb.Entity<PartyLinkRow>().HasQueryFilter(e =>
+            currentTenant.IsHost
+            || (currentTenant.TenantId != null && e.TenantId == currentTenant.TenantId));
+        mb.Entity<PartyCeilingRow>().HasQueryFilter(e =>
+            currentTenant.IsHost
+            || (currentTenant.TenantId != null && e.TenantId == currentTenant.TenantId));
+        mb.Entity<PositionRow>().HasQueryFilter(e =>
+            currentTenant.IsHost
+            || (currentTenant.TenantId != null && e.TenantId == currentTenant.TenantId));
+        mb.Entity<PositionAssignmentRow>().HasQueryFilter(e =>
+            currentTenant.IsHost
+            || (currentTenant.TenantId != null && e.TenantId == currentTenant.TenantId));
+        mb.Entity<SodRuleRow>().HasQueryFilter(e =>
             currentTenant.IsHost
             || (currentTenant.TenantId != null && e.TenantId == currentTenant.TenantId));
         mb.Entity<AccessRequestRow>().HasQueryFilter(e =>
@@ -442,4 +510,81 @@ internal sealed class DelegationRow : IHasTenantId
     public DateTimeOffset NotBefore { get; set; }
     public DateTimeOffset NotAfter { get; set; }
     public bool Revoked { get; set; }
+}
+
+/// <summary>Row backing a role inclusion: <see cref="Role"/> holds everything <see cref="Includes"/> holds.</summary>
+internal sealed class RoleInclusionRow : IHasTenantId
+{
+    public Guid TenantId { get; set; }
+    public string Role { get; set; } = null!;
+    public string NormalizedRole { get; set; } = null!;
+    public string Includes { get; set; } = null!;
+    public string NormalizedIncludes { get; set; } = null!;
+    public Guid? CreatedBy { get; set; }
+    public DateTimeOffset CreatedAt { get; set; }
+}
+
+/// <summary>Row backing a stored <see cref="Modulus.Authorization.Governance.SodConstraint"/>.</summary>
+internal sealed class SodRuleRow : IHasTenantId
+{
+    public Guid Id { get; set; }
+    public Guid TenantId { get; set; }
+    public string Name { get; set; } = null!;
+    public string NormalizedName { get; set; } = null!;
+
+    /// <summary>The mutually exclusive permissions, as a JSON array.</summary>
+    public string Permissions { get; set; } = "[]";
+    public string? Rationale { get; set; }
+    public bool IsEnabled { get; set; } = true;
+    public Guid? CreatedBy { get; set; }
+    public DateTimeOffset CreatedAt { get; set; }
+    public DateTimeOffset? UpdatedAt { get; set; }
+}
+
+/// <summary>Row backing a position: a post (optionally in one org unit) that grants roles to whoever holds it.</summary>
+internal sealed class PositionRow : IHasTenantId
+{
+    public Guid Id { get; set; }
+    public Guid TenantId { get; set; }
+    public string Code { get; set; } = null!;
+    public string NormalizedCode { get; set; } = null!;
+    public string Name { get; set; } = null!;
+    public Guid? OrgUnitId { get; set; }
+
+    /// <summary>The roles the position grants, as a JSON array.</summary>
+    public string Roles { get; set; } = "[]";
+    public bool IsActive { get; set; } = true;
+    public DateTimeOffset CreatedAt { get; set; }
+}
+
+/// <summary>Row backing the holding of a position by a user for a period.</summary>
+internal sealed class PositionAssignmentRow : IHasTenantId
+{
+    public Guid Id { get; set; }
+    public Guid TenantId { get; set; }
+    public Guid PositionId { get; set; }
+    public Guid UserId { get; set; }
+    public DateTimeOffset ValidFrom { get; set; }
+    public DateTimeOffset? ValidUntil { get; set; }
+    public Guid? CreatedBy { get; set; }
+    public DateTimeOffset CreatedAt { get; set; }
+}
+
+/// <summary>Row linking an account to an external party (buyer, supplier, subcontractor).</summary>
+internal sealed class PartyLinkRow : IHasTenantId
+{
+    public Guid TenantId { get; set; }
+    public Guid UserId { get; set; }
+    public string Kind { get; set; } = null!;
+    public Guid PartyId { get; set; }
+    public Guid? CreatedBy { get; set; }
+    public DateTimeOffset CreatedAt { get; set; }
+}
+
+/// <summary>Row allowing a party kind to use a permission (or a prefix ending in a star).</summary>
+internal sealed class PartyCeilingRow : IHasTenantId
+{
+    public Guid TenantId { get; set; }
+    public string Kind { get; set; } = null!;
+    public string Permission { get; set; } = null!;
 }

@@ -118,7 +118,15 @@ public sealed class ProbeService(ICorrelationContext correlation, ProbeStateAcce
 
     public override async Task<EchoReply> Slow(EchoRequest request, ServerCallContext context)
     {
-        await Task.Delay(TimeSpan.FromSeconds(10), context.CancellationToken);
+        try
+        {
+            await Task.Delay(TimeSpan.FromSeconds(10), context.CancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            // Report the cancellation as a status instead of letting it surface as Unknown.
+            throw new RpcException(new Status(StatusCode.Cancelled, "cancelled by the caller"));
+        }
         return new EchoReply { Text = request.Text };
     }
 

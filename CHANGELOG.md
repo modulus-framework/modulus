@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — outbox management endpoints and S3 region (Modulus.Outbox.Management, Modulus.Storage.S3)
+- **Outbox management was unusable:** every dead-letter endpoint took a `params DbContext[]` parameter, which minimal APIs infer as a
+  request body, so each call failed with "Body was inferred but the method does not allow inferred body parameters". The handlers now
+  resolve the module contexts from the service provider. Found by the new `Modulus.Outbox.Management.Tests` (9 tests).
+- `AddS3FileStorage` throws a Modulus-specific message naming `Storage:Region` when no region, endpoint or `AWS_REGION` is available,
+  instead of the SDK's "No RegionEndpoint or ServiceURL configured".
+
+### Added — unit tests for previously untested packages
+- `Modulus.Storage.S3.Tests`, `Modulus.Storage.AzureBlobs.Tests`, `Modulus.SignalR.Backplane.Tests`, `Modulus.Outbox.Management.Tests`.
+- CI job `unit-net8` runs every library unit suite on the .NET 8 runtime (UI, CLI and Realtime stay net10-only).
+
+
 ### Fixed — token re-verification, tenant claim and outbox batches (Modulus.Identity, Modulus.Outbox, Modulus.Outbox.MongoDB)
 - **Security:** the refresh and authorization-code grants re-issued tokens without any check for an app with its own user type
   (`AddModulusIdentity<TContext, AppUser, TRole>`): `UserManager<AppUser>` was cast to `UserManager<ModulusUser>`, which is always null
