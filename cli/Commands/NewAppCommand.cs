@@ -173,6 +173,7 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         var kind = ResolveKind(s.Kind, s.UiModules);
 
         var database = ResolveDatabase(s.Database);
+        var uiEngine = ResolveUiEngine(s.UiEngine, kind, Ux.IsInteractive);
 
         var auth = ResolveAuth(s.Auth);
         var multiTenancy = ResolveMultiTenancy(s.MultiTenancy, kind, auth);
@@ -269,6 +270,7 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
             MigrationEngine = migrationEngine,
             Kind = kind,
             UiModules = uiModules,
+            UiEngine = uiEngine,
             UseTablerTheme = (kind is AppKind.WebApp or AppKind.WebAppApi) && !s.NoTheme,
             LocalPackageSource = s.PackageSource,
             Bff = bff,
@@ -315,7 +317,7 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
             if (string.IsNullOrWhiteSpace(s.PackageSource))
             {
                 AnsiConsole.MarkupLine(
-                    "[yellow]Note:[/] Cobytelabs.Modulus.* packages are part of the framework now â€” " +
+                    "[yellow]Note:[/] Cobytelabs.Modulus.* packages are not on nuget.org yet â€” " +
                     "wire a local feed in NuGet.config or re-run with [grey]--package-source[/].");
             }
         }
@@ -452,6 +454,17 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         {
             WireUiModules(projectDir, model);
         }
+
+        // Write .modulus.json for later CLI commands (generate-crud, etc.)
+        var modulusJson = new
+        {
+            version = "1.0",
+            framework_version = model.FrameworkVersion,
+            ui_engine = model.UiEngine,
+            ui_kit_version = "0.9.0"
+        };
+        var modulusJsonPath = Path.Combine(projectDir, ".modulus.json");
+        File.WriteAllText(modulusJsonPath, System.Text.Json.JsonSerializer.Serialize(modulusJson, new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
     }
 
     /// <summary>Generates the API host project for this app (single-project api/webapp, or the API component of webapp+api).</summary>
@@ -812,6 +825,39 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
                 $"Unknown auth provider '{auth}'. Valid: {string.Join(", ", AuthProviders.Keys)}.");
 
         return AuthProviders.Find(auth)!.Key;
+    }
+
+    /// <summary>Resolves the UI rendering engine: interactive selection for web apps when not supplied, validation + normalisation when passed on the command line.</summary>
+    private static string ResolveUiEngine(string? provided, AppKind kind, bool interactive)
+    {
+        // API apps never use UI
+        if (kind == AppKind.Api)
+        {
+            if (!string.IsNullOrWhiteSpace(provided) && provided != "none")
+                throw new ArgumentException(
+                    $"--ui-engine '{provided}' requires a web app: API hosts create no UI. Use --kind web or --kind webapp+api, or use --ui-engine none.");
+            return "none";
+        }
+
+        // Web apps: resolve UI engine
+        string engine;
+        if (string.IsNullOrWhiteSpace(provided))
+        {
+            engine = interactive
+                ? Ux.SelectOrFallback(
+                    "UI rendering engine?",
+                    KnownUiEngines,
+                    "mvc")
+                : throw new ArgumentException(
+                    "--ui-engine required for web apps in non-interactive mode. Valid: mvc, razor-pages, blazor, fluid, none.");
+        }
+        else
+        {
+            engine = provided;
+        }
+
+        // Validate and normalise
+        return ValidateChoice(engine, KnownUiEngines, "UI engine");
     }
 
     /// <summary>
