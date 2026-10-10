@@ -846,4 +846,62 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
             "fluid" => $"templates/fluid/{templateType}.liquid.sbn",
             _ => null
         };
+
+    /// <summary>Resolves the Modulus.Ui.Templates NuGet package and extracts templates to a local cache.</summary>
+    private string? ResolveTemplatesPackage(string packageId, string version)
+    {
+        try
+        {
+            // Cache directory: ~/.modulus/cache/{packageId}/{version}/templates/
+            var cacheDir = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+                ".modulus", "cache", packageId, version, "templates");
+            if (Directory.Exists(cacheDir))
+                return cacheDir;
+
+            // Try to find the .nupkg in a local feed
+            var nupkgPath = Path.Combine(Environment.CurrentDirectory, "..", "..", "nupkg", $"{packageId}.{version}.nupkg");
+            if (!File.Exists(nupkgPath))
+                return null;
+
+            // Extract templates/ folder from .nupkg (ZIP file)
+            Directory.CreateDirectory(cacheDir);
+            try
+            {
+                using (var zip = System.IO.Compression.ZipFile.OpenRead(nupkgPath))
+                {
+                    var templatesPrefix = "templates/";
+                    foreach (var entry in zip.Entries.Where(e => e.FullName.StartsWith(templatesPrefix)))
+                    {
+                        var relativePath = entry.FullName.Substring(templatesPrefix.Length);
+                        if (string.IsNullOrEmpty(relativePath)) continue;
+
+                        var targetPath = Path.Combine(cacheDir, relativePath);
+                        if (entry.FullName.EndsWith("/"))
+                        {
+                            Directory.CreateDirectory(targetPath);
+                        }
+                        else
+                        {
+                            Directory.CreateDirectory(Path.GetDirectoryName(targetPath) ?? cacheDir);
+                            using (var source = entry.Open())
+                            using (var target = File.Create(targetPath))
+                                source.CopyTo(target);
+                        }
+                    }
+                }
+                return cacheDir;
+            }
+            catch (Exception ex)
+            {
+                Ux.Warning($"Failed to extract templates: {ex.Message}");
+                return null;
+            }
+        }
+        catch (Exception ex)
+        {
+            Ux.Warning($"Failed to resolve templates package: {ex.Message}");
+            return null;
+        }
+    }
 }
