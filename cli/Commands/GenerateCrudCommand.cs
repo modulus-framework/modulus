@@ -208,7 +208,48 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
 
         // ── Host UI companion (default for a web app, opt-in for an unmarked host) ──
         if (withUi)
-            GenerateUiCompanion(module, model, host, kind, withTheme: !s.NoTheme, generated, skipped);
+        {
+            // Try to render templates from the resolved package
+            if (uiEngine != "none")
+            {
+                var templatesPath = ResolveTemplatesPackage("Modulus.Ui.Templates", "0.9.0");
+                if (templatesPath != null)
+                {
+                    // Render each CRUD template
+                    var cruds = new[] { ("crud-list", "Index"), ("crud-form", "Form"), ("crud-detail", "Details") };
+                    foreach (var (crudType, suffix) in cruds)
+                    {
+                        var templateRelPath = ResolveUiTemplatePath(uiEngine, crudType);
+                        if (string.IsNullOrEmpty(templateRelPath)) continue;
+
+                        var templateFile = Path.Combine(templatesPath, templateRelPath);
+                        if (!File.Exists(templateFile)) continue;
+
+                        var ext = uiEngine switch
+                        {
+                            "blazor" => ".razor",
+                            "fluid" => ".liquid",
+                            _ => ".cshtml"
+                        };
+                        var outputFile = $"{model.EntityName}{suffix}{ext}";
+                        var outputPath = Path.Combine(presDir, outputFile);
+
+                        _templates.RenderToFile(templateFile, model, outputPath);
+                        generated.Add(outputFile);
+                    }
+                }
+                else
+                {
+                    // Fallback to traditional UI companion
+                    GenerateUiCompanion(module, model, host, kind, withTheme: !s.NoTheme, generated, skipped);
+                }
+            }
+            else
+            {
+                // No UI engine specified, use traditional path
+                GenerateUiCompanion(module, model, host, kind, withTheme: !s.NoTheme, generated, skipped);
+            }
+        }
         else if (model.RequiredPermission is not null)
             EnsureApiPermission(module, model, host, generated);
 
