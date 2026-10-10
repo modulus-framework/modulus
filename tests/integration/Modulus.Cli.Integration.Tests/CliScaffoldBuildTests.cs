@@ -24,6 +24,81 @@ public sealed class CliScaffoldBuildTests
 {
     private static readonly TimeSpan ProcessTimeout = TimeSpan.FromMinutes(10);
 
+
+    [Theory]
+    [InlineData("mvc")]
+    [InlineData("razor-pages")]
+    [InlineData("blazor")]
+    [InlineData("fluid")]
+    public async Task ModulusApp_ScaffoldedWithUiEngine_BuildsSuccessfully(string uiEngine)
+    {
+        var repoRoot = FindRepoRoot();
+        var work = Directory.CreateTempSubdirectory("modulus-cli-ui-e2e-");
+        try
+        {
+            var nupkgDir = Path.Combine(work.FullName, "nupkg");
+            var cliBinDir = Path.Combine(work.FullName, "cli-bin");
+            var outputDir = Path.Combine(work.FullName, "output");
+            var isolatedCache = new Dictionary<string, string> { ["NUGET_PACKAGES"] = Path.Combine(work.FullName, "packages") };
+            Directory.CreateDirectory(nupkgDir);
+            Directory.CreateDirectory(outputDir);
+
+            // 1. Pack all Cobytelabs.Modulus.* packages
+            await RunAsync(
+                "dotnet",
+                $"pack \"{Path.Combine(repoRoot, "modulus.slnx")}\" -c Release -o \"{nupkgDir}\" --nologo",
+                repoRoot);
+
+            // 2. Build the CLI
+            await RunAsync(
+                "dotnet",
+                $"build \"{Path.Combine(repoRoot, "cli", "Modulus.Cli.csproj")}\" -c Release -o \"{cliBinDir}\" --nologo",
+                repoRoot);
+            var cliDll = Path.Combine(cliBinDir, "Modulus.Cli.dll");
+            File.Exists(cliDll).Should().BeTrue($"the CLI build should have produced {cliDll}");
+
+            // 3. Scaffold a fresh web app with UI engine
+            var appName = $"TestApp{char.ToUpper(uiEngine[0])}{uiEngine.Substring(1).Replace("-", "")}";
+            var scaffoldArgs = string.Join(' ',
+                "app", appName,
+                "--kind", "web",
+                "--ui-engine", uiEngine,
+                "--database", "SQLite",
+                "--auth", "none",
+                "--message-broker", "none",
+                "--caching", "inmemory",
+                "--storage", "local",
+                "--signalr", "none",
+                "--migration-engine", "efcore",
+                "--package-source", $"\"{nupkgDir}\"",
+                "-o", $"\"{outputDir}\"");
+            await RunAsync("dotnet", $"\"{cliDll}\" {scaffoldArgs}", work.FullName, isolatedCache);
+
+            var appSlnx = Path.Combine(outputDir, appName, $"{appName}.slnx");
+            File.Exists(appSlnx).Should().BeTrue($"the CLI should have scaffolded {appSlnx}");
+
+            // 4. Verify .modulus.json was created with UI engine
+            var modulusJson = Path.Combine(outputDir, appName, ".modulus.json");
+            File.Exists(modulusJson).Should().BeTrue($"CLI should have created {modulusJson}");
+            var jsonContent = File.ReadAllText(modulusJson);
+            jsonContent.Should().Contain($"\"ui_engine\": \"{uiEngine}\"", $".modulus.json should specify ui_engine: {uiEngine}");
+
+            // 5. Generate CRUD to test UI template integration
+            var generateCrudArgs = string.Join(' ',
+                "generate-crud", "Product",
+                "--module", "Inventory",
+                "--package-source", $"\"{nupkgDir}\"");
+            await RunAsync("dotnet", $"\"{cliDll}\" {generateCrudArgs}", Path.Combine(outputDir, appName), isolatedCache);
+
+            // 6. Build the scaffolded app with generated CRUD pages
+            await RunAsync("dotnet", $"build \"{appSlnx}\" -c Release --nologo", Path.Combine(outputDir, appName), isolatedCache);
+        }
+        finally
+        {
+            try { work.Delete(recursive: true); } catch { /* best-effort cleanup */ }
+        }
+    }
+
     [Fact]
     public async Task ModulusApp_ScaffoldedSolution_BuildsSuccessfully()
     {
@@ -149,3 +224,4 @@ public sealed class CliScaffoldBuildTests
             $"--- stdout ---\n{stdout}\n--- stderr ---\n{stderr}");
     }
 }
+
