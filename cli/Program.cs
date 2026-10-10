@@ -230,6 +230,17 @@ internal sealed class DefaultCommand : Command
         table.AddRow("[cyan]ui add[/] [grey]<module>[/]", "Add a UI module to the current app");
         table.AddRow("[cyan]ui remove[/] [grey]<module>[/]", "Remove a UI module from the current app");
         table.AddRow("[cyan]ui update[/] [grey][[module]][/]", "Update installed UI modules");
+        table.AddRow("[cyan]describe[/]", "Show detailed info about the current app structure");
+        table.AddRow("[cyan]add-bff[/] [grey]<entity>[/]", "Expose entity CRUD over BFF (Backend for Frontend)");
+        table.AddRow("[cyan]generate-bff-endpoint[/] [grey]<entity>[/]", "Generate a BFF endpoint for an entity");
+        table.AddRow("[cyan]generate-grpc[/] [grey]<service>[/]", "Generate gRPC service from domain models");
+        table.AddRow("[cyan]generate-graphql[/] [grey]<type>[/]", "Generate GraphQL types and resolvers");
+        table.AddRow("[cyan]add-webhooks[/]", "Add webhook infrastructure (outbox, dispatcher)");
+        table.AddRow("[cyan]add-audit-store[/]", "Add change auditing to entities");
+        table.AddRow("[cyan]add-realtime[/]", "Add SignalR realtime messaging");
+        table.AddRow("[cyan]add-ai[/]", "Add AI features (embedding, semantic search)");
+        table.AddRow("[cyan]ui eject[/] [grey]<module>[/]", "Extract a UI module's pages to your project");
+        table.AddRow("[cyan]ui diff[/] [grey]<module>[/]", "Show differences between your pages and the installed module");
 
         AnsiConsole.Write(table);
         AnsiConsole.WriteLine();
@@ -247,3 +258,4 @@ internal sealed class DefaultCommand : Command
         return 0;
     }
 }
+
