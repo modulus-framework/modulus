@@ -88,7 +88,7 @@ public sealed class UiPermissionMatrixTests : IDisposable
         Directory.CreateDirectory(ui);
         Directory.CreateDirectory(domain);
         File.WriteAllText(Path.Combine(_root, "Demo.slnx"), "<Solution/>");
-        File.WriteAllText(Path.Combine(ui, "Demo.Api.csproj"), "<Project Sdk=\"Microsoft.NET.Sdk.Web\"><PropertyGroup><ModulusAppKind>web</ModulusAppKind></PropertyGroup></Project>");
+        File.WriteAllText(Path.Combine(ui, "Demo.Api.csproj"), "<Project Sdk=\"Microsoft.NET.Sdk.Web\"><PropertyGroup><ModulusAppKind>webapp+api</ModulusAppKind></PropertyGroup></Project>");
         File.WriteAllText(Path.Combine(_root, ".modulus.json"), """{ "ui_engine": "razor-pages" }""");
         File.WriteAllText(Path.Combine(domain, "Order.cs"), "public sealed class Order { public string Name { get; set; } = \"\"; }");
 

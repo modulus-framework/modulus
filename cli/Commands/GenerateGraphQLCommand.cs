@@ -46,8 +46,6 @@ internal sealed partial class GenerateGraphQLCommand : Command<GenerateGraphQLCo
 
         var app = ModuleDiscovery.Inventory(startDir)
             ?? throw new InvalidOperationException("No .slnx file found in the current directory tree. Run this command from within a Modulus application.");
-        if (app.Kind == AppKind.WebApp)
-            throw new InvalidOperationException("A web app maps no API surface, so it has nowhere to serve GraphQL. Use an api or webapp+api app.");
 
         var module = GenerateGrpcCommand.FindModule(app.Modules, s.Entity, s.Module);
         var bffs = GenerateGrpcCommand.SelectBffs(app.Bffs, s.Bff);

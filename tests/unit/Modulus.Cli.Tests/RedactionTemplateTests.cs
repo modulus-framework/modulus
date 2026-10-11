@@ -32,7 +32,6 @@ public sealed class RedactionTemplateTests
 
     [Theory]
     [InlineData("app/Program", "app/appsettings.json", "api")]
-    [InlineData("app/Program", "app/appsettings.json", "webapp")]
     [InlineData("app/Program.Web", "app/appsettings.Web.json", "webapp+api")]
     public void App_hosts_wire_redaction(string program, string settings, string kind)
     {

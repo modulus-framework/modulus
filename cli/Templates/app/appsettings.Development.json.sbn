@@ -7,12 +7,6 @@
   }{{ if auth == "openiddict" }},
   "Identity": {
     "UseDevelopmentCertificates": true,
-    "AllowPasswordFlow": true{{ if use_code_flow }},
-    "Seed": {
-      "RedirectUris": [ {{ for uri in dev_redirect_uris }}"{{ uri }}"{{ if !for.last }}, {{ end }}{{ end }} ]{{ if has_bff }},
-      "Clients": {
-{{ for c in bff_client_models }}        "{{ c.name }}": { "RedirectUris": [ {{ for uri in c.dev_redirect_uris }}"{{ uri }}"{{ if !for.last }}, {{ end }}{{ end }} ] }{{ if !for.last }},{{ end }}
-{{ end }}      }{{ end }}
-    }{{ end }}
+    "AllowPasswordFlow": true
   }{{ end }}
 }

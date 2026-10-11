@@ -33,13 +33,9 @@ public sealed class AppKindTests : IDisposable
     [Theory]
     [InlineData("api", "Api")]
     [InlineData("API", "Api")]
-    [InlineData("webapp", "WebApp")]
-    [InlineData("WebApp", "WebApp")]
     [InlineData("webapp+api", "WebAppApi")]
     [InlineData("WEBAPP+API", "WebAppApi")]
-    [InlineData("web", "WebApp")] // Legacy alias
-    [InlineData(" Web ", "WebApp")] // Legacy alias
-    public void Parse_accepts_all_kinds_in_any_case_and_legacy_web_alias(string value, string expected)
+    public void Parse_accepts_all_kinds_in_any_case(string value, string expected)
         => AppKinds.Parse(value).ToString().Should().Be(expected);
 
     [Fact]
@@ -47,13 +43,13 @@ public sealed class AppKindTests : IDisposable
     {
         var act = () => AppKinds.Parse("desktop");
 
-        act.Should().Throw<ArgumentException>().WithMessage("*Unknown app kind 'desktop'*api, webapp, webapp+api*legacy 'web'*");
+        act.Should().Throw<ArgumentException>().WithMessage("*Unknown app kind 'desktop'*api, webapp+api*");
     }
 
     [Fact]
     public void The_kind_is_read_from_the_host_project()
     {
-        AppKinds.Read(WriteApp("webapp")).Should().Be(AppKind.WebApp);
+        AppKinds.Read(WriteApp("webapp")).Should().BeNull("the retired single-project kind is left unconstrained");
         AppKinds.Read(WriteApp("api")).Should().Be(AppKind.Api);
         AppKinds.Read(WriteApp("webapp+api")).Should().Be(AppKind.WebAppApi);
     }
@@ -69,8 +65,8 @@ public sealed class AppKindTests : IDisposable
     [Fact]
     public void Inventory_carries_the_kind_and_survives_an_app_with_no_host_folder()
     {
-        WriteApp("webapp");
-        ModuleDiscovery.Inventory(_root)!.Kind.Should().Be(AppKind.WebApp);
+        WriteApp("webapp+api");
+        ModuleDiscovery.Inventory(_root)!.Kind.Should().Be(AppKind.WebAppApi);
 
         Directory.Delete(Path.Combine(_root, "src"), recursive: true);
         var inventory = ModuleDiscovery.Inventory(_root);
@@ -83,21 +79,14 @@ public sealed class AppKindTests : IDisposable
     [Fact]
     public void Inventory_convenience_properties_route_to_the_right_project_by_kind()
     {
-        // For api and webapp, UiProjectPath/UiProgramCsPath point to the API project
+        // For an api app, UiProjectPath/UiProgramCsPath point to the API project
         WriteApp("api");
         var apiInventory = ModuleDiscovery.Inventory(_root)!;
         apiInventory.UiProjectPath.Should().Be(apiInventory.ApiProjectPath);
         apiInventory.UiProgramCsPath.Should().Be(apiInventory.ProgramCsPath);
 
-        // For webapp, same (single-project)
         File.Delete(Path.Combine(_root, "src", "API", "Shop.Api", "Shop.Api.csproj"));
-        WriteApp("webapp");
-        var webappInventory = ModuleDiscovery.Inventory(_root)!;
-        webappInventory.UiProjectPath.Should().Be(webappInventory.ApiProjectPath);
-        webappInventory.UiProgramCsPath.Should().Be(webappInventory.ProgramCsPath);
-
         // For webapp+api with a Web project on disk, they route to the Web project
-        File.Delete(Path.Combine(_root, "src", "API", "Shop.Api", "Shop.Api.csproj"));
         WriteApp("webapp+api");
         WriteWebProject();
         var webappApiInventory = ModuleDiscovery.Inventory(_root)!;
@@ -120,36 +109,31 @@ public sealed class AppKindTests : IDisposable
     // ── modulus app ──────────────────────────────────────────────
 
     [Theory]
-    [InlineData("api", null, "Api")]
-    [InlineData("webapp", null, "WebApp")]
-    [InlineData("webapp+api", null, "WebAppApi")]
-    [InlineData("webapp", "none", "WebApp")]
-    [InlineData("api", "none", "Api")]
-    [InlineData("webapp", "identity,users", "WebApp")]
-    [InlineData(null, "identity", "WebApp")]
-    [InlineData(null, "full", "WebApp")]
-    public void The_kind_is_explicit_or_implied_by_the_ui_modules(string? kind, string? uiModules, string expected)
-        => NewAppCommand.ResolveKind(kind, uiModules).ToString().Should().Be(expected);
+    [InlineData("api", "Api")]
+    [InlineData("webapp+api", "WebAppApi")]
+    public void The_kind_is_explicit(string kind, string expected)
+        => NewAppCommand.ResolveKind(kind).ToString().Should().Be(expected);
 
-    [Fact]
-    public void An_api_host_cannot_be_given_ui_modules()
+    [Theory]
+    [InlineData("webapp")]
+    [InlineData("web")]
+    public void The_retired_single_project_kind_says_what_to_use_instead(string kind)
     {
-        var act = () => NewAppCommand.ResolveKind("api", "identity");
+        var act = () => NewAppCommand.ResolveKind(kind);
 
-        act.Should().Throw<ArgumentException>().WithMessage("*--ui-modules needs a web app*");
+        act.Should().Throw<ArgumentException>().WithMessage("*retired*webapp+api*");
     }
 
     [Fact]
     public void An_unknown_kind_is_rejected()
     {
-        var act = () => NewAppCommand.ResolveKind("mobile", null);
+        var act = () => NewAppCommand.ResolveKind("mobile");
 
         act.Should().Throw<ArgumentException>().WithMessage("*Unknown app kind 'mobile'*");
     }
 
     [Theory]
     [InlineData("api", false)]
-    [InlineData("webapp", true)]
     [InlineData("webapp+api", true)]
     public void The_host_project_records_the_kind_and_web_apps_use_the_ui(string recorded, bool useUi)
     {
@@ -174,12 +158,10 @@ public sealed class AppKindTests : IDisposable
     public void Auth_none_says_the_api_fails_until_a_scheme_is_registered_and_web_apps_mention_external_clients_or_standalone_ui()
     {
         var api = NewAppCommand.AuthNote("none", AppKind.Api);
-        var webapp = NewAppCommand.AuthNote("none", AppKind.WebApp);
         var webappApi = NewAppCommand.AuthNote("none", AppKind.WebAppApi);
 
         api.Should().Contain("no authentication scheme").And.Contain("answers 500").And.Contain("AllowAnonymous()");
         api.Should().NotContain("external clients");
-        webapp.Should().NotContain("external clients", "a webapp has no API surface");
         webappApi.Should().Contain("external clients");
     }
 
@@ -190,57 +172,9 @@ public sealed class AppKindTests : IDisposable
 
         note.Should().Contain("Identity module").And.Contain("password grant").And.Contain("migrate add InitialCreate --module Identity")
             .And.Contain("Identity:AllowPasswordFlow").And.NotContain("PKCE", "an api app has no login page for the flow");
-        NewAppCommand.AuthNote("openiddict", AppKind.WebApp).Should().NotContain("authorization-code", "a webapp has no separate API");
         NewAppCommand.AuthNote("openiddict", AppKind.WebAppApi).Should().Contain("bearer tokens only").And.Contain("password grant")
             .And.NotContain("authorization-code", "the split's API host has no login page to drive the flow");
-        NewAppCommand.AuthNote("keycloak", AppKind.WebApp).Should().BeNull();
-    }
-
-    // ── webapp+api: what the split can host ──────────────────────
-
-    [Fact]
-    public void The_split_web_project_installs_the_ui_foundation_but_skips_identity_and_users()
-    {
-        var split = NewAppCommand.ResolveWebInstall(
-            ["identity", "users", "settings"], withTheme: false, AppKind.WebAppApi);
-        var single = NewAppCommand.ResolveWebInstall(
-            ["identity", "users", "settings"], withTheme: false, AppKind.WebApp);
-
-        split.Select(m => m.Id).Should().BeEquivalentTo(
-            ["Modulus.UI.Core", "Modulus.Settings"],
-            "the split's pages drive the API over HTTP, so no user-store UI can run in-process");
-        single.Select(m => m.Id).Should().BeEquivalentTo(
-            ["Modulus.UI.Core", "Modulus.Identity", "Modulus.Users", "Modulus.Settings"]);
-    }
-
-    [Fact]
-    public void The_split_web_project_installs_the_theme_last_and_the_foundation_first()
-    {
-        var modules = NewAppCommand.ResolveWebInstall(["settings"], withTheme: true, AppKind.WebAppApi);
-
-        modules.First().Id.Should().Be("Modulus.UI.Core");
-        modules.Last().Id.Should().Be("Modulus.Theme.Tabler");
-    }
-
-    [Theory]
-    [InlineData("identity", true)]
-    [InlineData("users", true)]
-    [InlineData("Identity", true)]
-    [InlineData("settings", false)]
-    [InlineData("tenancy", false)]
-    public void Only_identity_and_users_are_unhostable_by_the_split(string id, bool unhostable)
-        => NewAppCommand.IsUnhostableBySplit(id).Should().Be(unhostable);
-
-    [Fact]
-    public void Only_a_single_web_app_gets_the_identity_ui_added_for_the_sign_in_page()
-    {
-        // The split's Web project carries its own password-grant login page.
-        NewAppCommand.WithSignInPage(AppKind.WebApp, "openiddict", []).Should().Equal("identity");
-        NewAppCommand.WithSignInPage(AppKind.WebAppApi, "openiddict", []).Should().BeEmpty();
-        NewAppCommand.WithSignInPage(AppKind.Api, "openiddict", []).Should().BeEmpty();
-        NewAppCommand.WithSignInPage(AppKind.WebApp, "keycloak", []).Should().BeEmpty();
-        NewAppCommand.WithSignInPage(AppKind.WebApp, "openiddict", ["identity"])
-            .Should().ContainSingle("already present, so not duplicated").Which.Should().Be("identity");
+        NewAppCommand.AuthNote("keycloak", AppKind.WebAppApi).Should().BeNull();
     }
 
     [Theory]
@@ -254,59 +188,5 @@ public sealed class AppKindTests : IDisposable
         var program = new TemplateEngine().Render("app/Program", model);
 
         (program.Contains("None is registered.", StringComparison.Ordinal)).Should().Be(explained);
-    }
-
-    // ── generate-crud ────────────────────────────────────────────
-
-    [Theory]
-    [InlineData("webapp", false, false, true)]        // a webapp gets the admin page by default
-    [InlineData("webapp", true, false, true)]
-    [InlineData("webapp", false, true, false)]        // --no-ui: no UI scaffolded
-    [InlineData("webapp+api", false, false, true)]    // a webapp+api also gets the admin page by default
-    [InlineData("webapp+api", false, true, false)]
-    [InlineData("api", false, false, false)]          // an API host never has one
-    [InlineData("api", false, true, false)]
-    [InlineData(null, false, false, false)]           // a host from before app kinds keeps the opt-in --with-ui
-    [InlineData(null, true, false, true)]
-    [InlineData(null, false, true, false)]
-    public void Generate_crud_scaffolds_the_ui_by_kind(string? kind, bool withUi, bool noUi, bool expected)
-        => AppKinds.ResolveCrudUi(kind is null ? null : AppKinds.Parse(kind), withUi, noUi).Should().Be(expected);
-
-    [Fact]
-    public void Asking_an_api_host_for_a_ui_is_an_error_that_says_how_to_change_the_kind()
-    {
-        var act = () => AppKinds.ResolveCrudUi(AppKind.Api, withUi: true, noUi: false);
-
-        act.Should().Throw<InvalidOperationException>().WithMessage("*API-only*ModulusAppKind*web*");
-    }
-
-    [Fact]
-    public void With_ui_and_no_ui_together_are_contradictory()
-    {
-        var act = () => AppKinds.ResolveCrudUi(AppKind.WebApp, withUi: true, noUi: true);
-
-        act.Should().Throw<ArgumentException>().WithMessage("*cannot be combined*");
-    }
-
-    // ── ui eject / diff ──────────────────────────────────────────
-
-    [Fact]
-    public void Ui_eject_and_diff_refuse_an_api_host_but_work_on_web_apps_and_unmarked_hosts()
-    {
-        WriteApp("api");
-        var act = () => UiEject.ResolveApiDir(_root);
-        act.Should().Throw<InvalidOperationException>().WithMessage("*API-only*");
-
-        File.Delete(Path.Combine(_root, "src", "API", "Shop.Api", "Shop.Api.csproj"));
-        WriteApp("webapp");
-        UiEject.ResolveApiDir(_root).Should().EndWith("Shop.Api");
-
-        File.Delete(Path.Combine(_root, "src", "API", "Shop.Api", "Shop.Api.csproj"));
-        WriteApp("webapp+api");
-        WriteWebProject();
-        UiEject.ResolveApiDir(_root).Should().EndWith("Shop.Web", "the split's view overrides live in the Web project");
-
-        WriteApp(null);
-        UiEject.ResolveApiDir(_root).Should().EndWith("Shop.Api");
     }
 }

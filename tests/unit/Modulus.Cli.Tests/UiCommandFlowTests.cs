@@ -18,7 +18,7 @@ public sealed class UiCommandFlowTests : IDisposable
         Directory.CreateDirectory(_ui);
         File.WriteAllText(Path.Combine(_root, "Demo.slnx"), "<Solution/>");
         File.WriteAllText(Path.Combine(_ui, "Demo.Api.csproj"),
-            "<Project Sdk=\"Microsoft.NET.Sdk.Web\"><PropertyGroup><ModulusAppKind>web</ModulusAppKind></PropertyGroup></Project>");
+            "<Project Sdk=\"Microsoft.NET.Sdk.Web\"><PropertyGroup><ModulusAppKind>webapp+api</ModulusAppKind></PropertyGroup></Project>");
         File.WriteAllText(Path.Combine(_ui, "appsettings.json"), "{}");
         File.WriteAllText(Path.Combine(_root, ".modulus.json"), """{ "ui_engine": "mvc" }""");
     }

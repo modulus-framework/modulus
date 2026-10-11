@@ -287,16 +287,6 @@ public sealed class AiCommandTests : IDisposable
     }
 
     [Fact]
-    public void Refuses_a_web_app()
-    {
-        GenerateApp(AppKind.WebApp);
-
-        var run = () => new AddAiCommand().ExecuteCore(AppDir);
-
-        run.Should().Throw<InvalidOperationException>().WithMessage("*web app has no API host*");
-    }
-
-    [Fact]
     public void Describe_lists_the_modules_entities_and_features()
     {
         GenerateApp();

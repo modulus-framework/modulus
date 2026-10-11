@@ -90,7 +90,7 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         [CommandOption("--migration-engine")]
         public string? MigrationEngine { get; init; }
 
-        [Description("App kind: api (an API host, no UI is created) or web (a web app + the same API for external clients such as mobile or desktop apps). Omit to be prompted; implied web by --ui-modules, otherwise api when not interactive.")]
+        [Description("App kind: api (an API host, no UI is created) or webapp+api (a Web project on the Modulus UI framework + the API for external clients such as mobile or desktop apps). Omit to be prompted; api when not interactive.")]
         [CommandOption("--kind")]
         public string? Kind { get; init; }
 
@@ -98,15 +98,6 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         [Description("Web apps only: UI rendering engine: mvc, razor-pages, blazor, fluid, or none (API only). Omit to be prompted for web apps, default none for api kind.")]
         [CommandOption("--ui-engine")]
         public string? UiEngine { get; init; }
-        [Description("Web apps only: UI modules to include: none, identity, permissions, tenancy, users, settings, auditlogging, notifications, files, or 'full' for a complete admin dashboard. Comma-separated or omit to be prompted.")]
-        [CommandOption("--ui-modules")]
-        public string? UiModules { get; init; }
-
-        [Description("Web apps only: do not install the Tabler theme (keep Core's built-in layout or bring your own ITheme).")]
-        [CommandOption("--no-theme")]
-        [DefaultValue(false)]
-        public bool NoTheme { get; init; }
-
         [Description("Backends for Frontends to generate, one deployable per client: web, mobile, partner (comma-separated), or none. Each is src/Bff/{App}.Bff.{Client}, proxies /api to the API and works with every supported auth server.")]
         [CommandOption("--bff")]
         public string? Bff { get; init; }
@@ -145,10 +136,8 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
 
     internal static readonly string[] KnownUiEngines = ["mvc", "razor-pages", "blazor", "fluid", "none"];
 
-    internal static readonly string[] KnownUiModules = [
-        "identity", "permissions", "tenancy", "users",
-        "settings", "auditlogging", "notifications", "files"
-    ];
+    /// <summary>The engines a web app host can run on today (the Modulus UI framework's Razor hosts).</summary>
+    internal static readonly string[] HostableUiEngines = ["mvc", "razor-pages"];
 
     private readonly TemplateEngine _templates = new();
 
@@ -170,18 +159,13 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
                 ciHint: "Pass the app name, e.g. `modulus app MyApp`.");
         var rootNs = ValidateAppName(name);
 
-        var kind = ResolveKind(s.Kind, s.UiModules);
+        var kind = ResolveKind(s.Kind);
 
         var database = ResolveDatabase(s.Database);
         var uiEngine = ResolveUiEngine(s.UiEngine, kind, Ux.IsInteractive);
 
-        // The Web project of a webapp+api runs on the Modulus UI framework for the Razor engines; the older UI modules
-        // (Cobytelabs.Modulus.UI.*) and the Tabler theme belong to the other app kinds.
+        // The Web project of a webapp+api runs on the Modulus UI framework (mvc or razor-pages hosts).
         var useUiFramework = UsesUiFramework(kind, uiEngine);
-        if (useUiFramework && !string.IsNullOrWhiteSpace(s.UiModules))
-            throw new ArgumentException(
-                $"--ui-modules installs the older Cobytelabs UI modules and cannot be combined with --ui-engine {uiEngine} on a webapp+api app " +
-                "(its Web project uses the Modulus UI framework). Drop --ui-modules, or use --ui-engine none.");
 
         var auth = ResolveAuth(s.Auth);
         var multiTenancy = ResolveMultiTenancy(s.MultiTenancy, kind, auth);
@@ -212,14 +196,6 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         var bffServices = BffClients.ParseServices(s.Services);
         if (bffServices.Count > 0 && bff.Count == 0)
             throw new ArgumentException("--services lists the BFFs' upstream services; add --bff web,mobile,partner.");
-
-        // UI modules only exist in web apps; an API host is never asked.
-        var uiModules = useUiFramework ? [] : kind is AppKind.WebApp or AppKind.WebAppApi ? ResolveUiModules(s.UiModules) : [];
-        if (WithSignInPage(kind, auth, uiModules) is { } withSignIn && withSignIn.Count != uiModules.Count)
-        {
-            AnsiConsole.MarkupLine("[grey]  A web app with the local token server also gets the Identity UI: it is the sign-in page.[/]");
-            uiModules = withSignIn;
-        }
 
         // NoExample is tri-state: null = unspecified â†’ prompt (interactive)
         // or default to include (CI). True/False are explicit user choices.
@@ -277,9 +253,7 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
             EnablePersonalDataProtection = enablePersonalDataProtection,
             MigrationEngine = migrationEngine,
             Kind = kind,
-            UiModules = uiModules,
             UiEngine = uiEngine,
-            UseTablerTheme = (kind is AppKind.WebApp or AppKind.WebAppApi) && !s.NoTheme && !useUiFramework,
             UseUiFramework = useUiFramework,
             LocalPackageSource = s.PackageSource,
             UiFeedSource = uiEngine == "none" ? null : UiFrameworkPackages.LocalFeed(),
@@ -334,12 +308,9 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         AnsiConsole.WriteLine();
         AnsiConsole.MarkupLine("[grey]Then try:[/]");
         AnsiConsole.MarkupLine("  [grey]modulus add-module[/] Orders");
-        AnsiConsole.MarkupLine((kind is AppKind.WebApp or AppKind.WebAppApi)
-            ? "  [grey]modulus generate-crud[/] Order --module Orders  [grey]# API endpoints + an admin page (--no-ui: API only)[/]"
-            : "  [grey]modulus generate-crud[/] Order --module Orders  [grey]# API endpoints; this app has no UI[/]");
-        if ((kind is AppKind.WebApp or AppKind.WebAppApi) && !noExample)
-            AnsiConsole.MarkupLine("  [grey]modulus generate-crud[/] {0} --module {1}  [grey]# add the example module's admin page[/]",
-                model.ExampleEntity, model.ExampleModule);
+        AnsiConsole.MarkupLine("  [grey]modulus generate-crud[/] Order --module Orders  [grey]# API endpoints[/]");
+        if (kind is AppKind.WebAppApi)
+            AnsiConsole.MarkupLine("  [grey]modulus ui create-form-from-entity[/] Order  [grey]# a form page for an entity[/]");
         AnsiConsole.MarkupLine("  [grey]modulus list[/]  [grey]# see what's in this app[/]");
         if (model.UseDbsh)
         {
@@ -413,7 +384,6 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
                 EntityNameLower = CodeGen.ToCamelCase(model.ExampleEntity),
                 RouteName = CodeGen.Pluralize(model.ExampleEntity).ToLowerInvariant(),
                 // A web app's API exposes the entity's extension fields, filtered through the UI registry.
-                HasApiExtraFields = model.UseUi,
                 // With the identity backend the example API needs the permission the Admin role holds (see Program.cs).
                 RequiredPermission = model.ExamplePermission,
                 MultiTenant = model.MultiTenancy,
@@ -462,8 +432,6 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         // â”€â”€ UI Modules â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         if (model.UseUi)
         {
-            if (!model.UseUiFramework)
-                WireUiModules(projectDir, model);
             AddUiFrameworkPackages(projectDir, model);
         }
 
@@ -681,78 +649,6 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
             ProjectFileService.EnsureCsprojPackageReference(hostProject, package.Id, package.Version, Ux.DryRun);
     }
 
-    private void WireUiModules(string projectDir, AppModel model)
-    {
-        // For webapp+api, UI modules go into the Web project. Otherwise (api/webapp single-project),
-        // they go into the API project.
-        var (hostProject, programCs) = model.Kind == AppKind.WebAppApi
-            ? GetWebHostPaths(projectDir, model)
-            : GetApiHostPaths(projectDir, model);
-
-        if (!File.Exists(hostProject) || !File.Exists(programCs))
-            return;
-
-        // The localization services the UI foundation registers live in Platform (feature UI packages bring it
-        // themselves, but a web app with no feature module has only UI.Core).
-        ProjectFileService.EnsureCsprojPackageReference(
-            hostProject, "Cobytelabs.Modulus.Platform", model.FrameworkVersion, Ux.DryRun);
-
-        foreach (var id in model.UiModules.Where(IsUnhostableBySplit))
-        {
-            AnsiConsole.MarkupLine(
-                "[grey]Note: UI module '{0}' is not installed on the split Web project â€” its pages drive user stores " +
-                "that only exist in the API host. Serve those screens from a single-project web app instead.[/]",
-                id.EscapeMarkup());
-        }
-
-        foreach (var module in ResolveWebInstall(model.UiModules, model.UseTablerTheme, model.Kind))
-        {
-            // Add package reference
-            var command = $"dotnet add \"{hostProject}\" package \"{module.PackageId}\" --version {module.Version}";
-            if (!Ux.DryRun)
-            {
-                var psi = new System.Diagnostics.ProcessStartInfo("dotnet", command)
-                {
-                    WorkingDirectory = Path.GetDirectoryName(hostProject),
-                    UseShellExecute = false,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                };
-                using var proc = new System.Diagnostics.Process { StartInfo = psi };
-                proc.Start();
-                proc.WaitForExit();
-            }
-
-            // Wire in Program.cs (shared idempotent surgery; also adds the
-            // Razor Pages services the mapped endpoints require).
-            var content = UiHostWiring.EnsureUiWiring(File.ReadAllText(programCs), module);
-
-            if (!Ux.DryRun)
-            {
-                Ux.RecordWrite(programCs);
-                File.WriteAllText(programCs, content);
-
-                // Admin UIs (Users, Settings, ...) require their permission, which the Admin role is granted.
-                UiAccessGates.WriteSettings(programCs, module);
-            }
-        }
-
-        if (!Ux.DryRun)
-        {
-            // Restore packages
-            var restorePsi = new System.Diagnostics.ProcessStartInfo("dotnet", "restore")
-            {
-                WorkingDirectory = projectDir,
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-            };
-            using var restoreProc = new System.Diagnostics.Process { StartInfo = restorePsi };
-            restoreProc.Start();
-            restoreProc.WaitForExit();
-        }
-    }
-
     private static (string Project, string ProgramCs) GetApiHostPaths(string projectDir, AppModel model)
     {
         var rootNs = model.RootNamespace;
@@ -772,46 +668,6 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
             Path.Combine(webDir, "Program.cs")
         );
     }
-
-    /// <summary>
-    /// What a web app installs and wires, in order: the UI foundation (<c>Modulus.UI.Core</c>, so a web app with no
-    /// prebuilt module still has its Razor Pages, menu and layout), the chosen UI modules, then the Tabler theme when
-    /// requested. Resolves through <see cref="UiModuleCatalog.Find"/> (ids like <c>identity</c> match the module name);
-    /// the previous inline lookup compared against the catalog id (<c>Modulus.Identity</c>), never matched, and
-    /// silently wired nothing. The webapp+api split drops <c>identity</c> and <c>users</c> (their pages drive user
-    /// stores directly, and nothing in the split's Web process can satisfy them â€” the page would 500 on first use);
-    /// the caller reports what was skipped.
-    /// </summary>
-    internal static IReadOnlyList<UiModuleDefinition> ResolveWebInstall(
-        IEnumerable<string> uiModuleIds, bool withTheme, AppKind kind = AppKind.WebApp)
-    {
-        var ids = uiModuleIds as IReadOnlyList<string> ?? uiModuleIds.ToList();
-        if (kind == AppKind.WebAppApi && ids.Count > 0)
-        {
-            var kept = new List<string>();
-            foreach (var id in ids)
-            {
-                if (id.Equals("identity", StringComparison.OrdinalIgnoreCase) ||
-                    id.Equals("users", StringComparison.OrdinalIgnoreCase))
-                {
-                    continue;
-                }
-                kept.Add(id);
-            }
-            ids = kept;
-        }
-
-        var modules = ids.Select(UiModuleCatalog.Find).ToList();
-        modules.Insert(0, UiModuleCatalog.Find("Modulus.UI.Core"));
-        if (withTheme)
-            modules.Add(UiModuleCatalog.Find(UiCrudWiring.TablerThemeId));
-        return modules;
-    }
-
-    /// <summary>The UI module ids a webapp+api Web project cannot host (reported when skipped).</summary>
-    internal static bool IsUnhostableBySplit(string uiModuleId) =>
-        uiModuleId.Equals("identity", StringComparison.OrdinalIgnoreCase) ||
-        uiModuleId.Equals("users", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
     /// Validates + normalises a CLI-supplied choice against
@@ -881,7 +737,7 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         {
             if (!string.IsNullOrWhiteSpace(provided) && provided != "none")
                 throw new ArgumentException(
-                    $"--ui-engine '{provided}' requires a web app: API hosts create no UI. Use --kind web or --kind webapp+api, or use --ui-engine none.");
+                    $"--ui-engine '{provided}' requires a web app: API hosts create no UI. Use --kind webapp+api, or use --ui-engine none.");
             return "none";
         }
 
@@ -890,20 +746,20 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         if (string.IsNullOrWhiteSpace(provided))
         {
             engine = interactive
-                ? Ux.SelectOrFallback(
-                    "UI rendering engine?",
-                    KnownUiEngines,
-                    "mvc")
+                ? Ux.SelectOrFallback("UI rendering engine?", HostableUiEngines, "razor-pages")
                 : throw new ArgumentException(
-                    "--ui-engine required for web apps in non-interactive mode. Valid: mvc, razor-pages, blazor, fluid, none.");
+                    "--ui-engine required for web apps in non-interactive mode. Valid: " + string.Join(", ", HostableUiEngines) + ".");
         }
         else
         {
             engine = provided;
         }
 
-        // Validate and normalise
-        return ValidateChoice(engine, KnownUiEngines, "UI engine");
+        engine = ValidateChoice(engine, KnownUiEngines, "UI engine");
+        if (!HostableUiEngines.Contains(engine))
+            throw new ArgumentException(
+                $"A web app host runs on the mvc or razor-pages engine; '{engine}' has page templates (modulus ui add-component, ...) but no app host yet.");
+        return engine;
     }
 
     /// <summary>
@@ -1067,107 +923,18 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
     }
 
     private const string ApiChoice = "API: an API host, no UI";
-    private const string WebAppChoice = "Web app: a UI with no external API surface";
     private const string WebAppApiChoice = "Web app + API: separate deployable Web UI + API backend (HTTP calls, token relay)";
 
     /// <summary>
-    /// Resolves the app kind. An explicit <c>--kind</c> wins (and cannot be <c>api</c> together with UI modules);
-    /// <c>--ui-modules</c> alone implies a web app, so existing command lines keep working; otherwise the user is asked,
-    /// and a non-interactive run defaults to <c>api</c>.
+    /// Resolves the app kind. An explicit <c>--kind</c> wins; otherwise the user is asked, and a non-interactive run defaults to <c>api</c>.
     /// </summary>
-    internal static AppKind ResolveKind(string? kind, string? uiModules)
+    internal static AppKind ResolveKind(string? kind)
     {
-        var wantsUi = !string.IsNullOrWhiteSpace(uiModules)
-            && !string.Equals(uiModules.Trim(), "none", StringComparison.OrdinalIgnoreCase);
-
         if (!string.IsNullOrWhiteSpace(kind))
-        {
-            var parsed = AppKinds.Parse(kind);
-            if (parsed == AppKind.Api && wantsUi)
-                throw new ArgumentException(
-                    "--ui-modules needs a web app: an API host creates no UI. Use --kind webapp or --kind webapp+api, or drop --ui-modules.");
-            return parsed;
-        }
+            return AppKinds.Parse(kind);
 
-        if (wantsUi)
-            return AppKind.WebApp;
-
-        var choice = Ux.SelectOrFallback("Application type?", [ApiChoice, WebAppChoice, WebAppApiChoice], ApiChoice);
-        return choice switch
-        {
-            WebAppChoice => AppKind.WebApp,
-            WebAppApiChoice => AppKind.WebAppApi,
-            _ => AppKind.Api,
-        };
-    }
-
-    /// <summary>
-    /// A single-project web app that signs users in with the local token server needs somewhere to do it: every page is behind
-    /// the sign-in (<c>AddModulusPageAuthorization</c>) and the authorization-code flow sends users to the same page, so the
-    /// Identity UI is part of the app. The webapp+api split does not need it â€” its Web project carries its own login page (the
-    /// password grant), so installing the Identity UI there would render the framework's account pages on the API host for
-    /// nothing. Returns <paramref name="uiModules"/> with <c>identity</c> added when it is missing.
-    /// </summary>
-    internal static IReadOnlyList<string> WithSignInPage(AppKind kind, string auth, IReadOnlyList<string> uiModules)
-    {
-        ArgumentNullException.ThrowIfNull(uiModules);
-        if (kind is not AppKind.WebApp
-            || !string.Equals(auth, "openiddict", StringComparison.OrdinalIgnoreCase)
-            || uiModules.Contains("identity", StringComparer.OrdinalIgnoreCase))
-        {
-            return uiModules;
-        }
-
-        return ["identity", .. uiModules];
-    }
-
-    /// <summary>
-    /// Resolves the UI modules to include: interactive multi-select when not supplied,
-    /// validation + normalisation when passed on the command line.
-    /// </summary>
-    private static IReadOnlyList<string> ResolveUiModules(string? provided)
-    {
-        if (!string.IsNullOrWhiteSpace(provided))
-        {
-            var parts = provided.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-            var normalized = new List<string>();
-            foreach (var p in parts)
-            {
-                var lower = p.ToLowerInvariant();
-                if (lower == "none")
-                {
-                    continue;
-                }
-                if (lower == "full")
-                {
-                    return KnownUiModules;
-                }
-                if (KnownUiModules.Contains(lower, StringComparer.OrdinalIgnoreCase))
-                {
-                    normalized.Add(KnownUiModules.First(k => string.Equals(k, lower, StringComparison.OrdinalIgnoreCase)));
-                }
-                else
-                {
-                    throw new ArgumentException($"Unknown UI module '{p}'. Valid: {string.Join(", ", KnownUiModules)} or 'full'.");
-                }
-            }
-            return normalized;
-        }
-
-        if (Ux.IsInteractive)
-        {
-            var choices = KnownUiModules.Select(m => char.ToUpper(m[0]) + m[1..]).ToArray();
-            var picked = AnsiConsole.Prompt(
-                new MultiSelectionPrompt<string>()
-                    .Title("Prebuilt UI modules to include (space to select, enter to confirm; none is fine):")
-                    .NotRequired()
-                    .PageSize(10)
-                    .AddChoices(choices)
-                    .InstructionsText("[grey](Press [blue]space[/] to toggle, [blue]enter[/] to confirm)[/]"));
-            return picked.Select(m => m.ToLowerInvariant()).ToArray();
-        }
-
-        return [];
+        var choice = Ux.SelectOrFallback("Application type?", [ApiChoice, WebAppApiChoice], ApiChoice);
+        return choice == WebAppApiChoice ? AppKind.WebAppApi : AppKind.Api;
     }
 
     /// <summary>

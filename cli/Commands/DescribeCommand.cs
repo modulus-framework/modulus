@@ -73,7 +73,7 @@ internal sealed class DescribeCommand : Command<DescribeCommand.Settings>
                 Realtime: program.Contains("AddModulusRealtime(", StringComparison.Ordinal),
                 AuditStore: program.Contains("AddModulusAuditStore", StringComparison.Ordinal),
                 AiConnector: AiWiring.HasConnector(program),
-                Ui: uiProgram.Contains("AddModulusUi(", StringComparison.Ordinal)));
+                Ui: uiProgram.Contains("AddModulusMvc(", StringComparison.Ordinal)));
     }
 
     private static string Relative(ModuleDiscovery.AppInventory app, string path) =>

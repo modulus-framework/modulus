@@ -5,7 +5,7 @@ using Xunit;
 namespace Modulus.Cli.Tests;
 
 /// <summary>
-/// A generated CRUD set's API is guarded by the same <c>{module}:{route}:manage</c> permission as its admin page, in an app
+/// A generated CRUD set's API is guarded by the same <c>{module}:{route}:manage</c> permission, in an app
 /// whose identity backend seeds the <c>Admin</c> role that holds it. Without one the endpoints stay as open as the host.
 /// </summary>
 [Trait("Category", "Unit")]
@@ -14,7 +14,7 @@ public sealed class ApiPermissionTests
 {
     private readonly TemplateEngine _engine = new();
 
-    private static ModuleModel Crud(string? permission, bool apiExtra = false) => new()
+    private static ModuleModel Crud(string? permission) => new()
     {
         RootNamespace = "Shop",
         ModuleNamespace = "Shop.Modules.Catalog",
@@ -22,7 +22,6 @@ public sealed class ApiPermissionTests
         EntityName = "Product",
         EntityNameLower = "product",
         RouteName = "products",
-        HasApiExtraFields = apiExtra,
         RequiredPermission = permission,
     };
 
@@ -37,15 +36,12 @@ public sealed class ApiPermissionTests
 
     // ── Endpoints ────────────────────────────────────────────────
 
-    [Theory]
-    [InlineData(false, 6)]
-    [InlineData(true, 7)]
-    public void Every_endpoint_declares_the_permission(bool apiExtra, int expectedSplitLength)
+    [Fact]
+    public void Every_endpoint_declares_the_permission()
     {
-        var endpoints = _engine.Render("module/Presentation/Endpoint", Crud("catalog:products:manage", apiExtra));
+        var endpoints = _engine.Render("module/Presentation/Endpoint", Crud("catalog:products:manage"));
 
-        endpoints.Split("Permissions(\"catalog:products:manage\");").Length.Should().Be(expectedSplitLength,
-            "list, get, create, update and delete each declare it (plus ui-schema when api extra fields are exposed)");
+        endpoints.Split("Permissions(\"catalog:products:manage\");").Length.Should().Be(6, "list, get, create, update and delete each declare it");
         endpoints.Should().Contain("Every endpoint below needs the \"catalog:products:manage\" permission");
     }
 
@@ -63,7 +59,7 @@ public sealed class ApiPermissionTests
     public void A_host_with_the_identity_seeder_or_the_sign_in_has_an_admin_role()
     {
         var api = _engine.Render("app/Program", App(kind: AppKind.Api));
-        var web = _engine.Render("app/Program", App(kind: AppKind.WebApp));
+        var web = _engine.Render("app/Program", App(kind: AppKind.WebAppApi));
 
         UiAccessGates.HasAdminRole(api).Should().BeTrue("an api app has no pages but seeds the Admin role");
         UiAccessGates.HasAdminRole(web).Should().BeTrue();
@@ -84,7 +80,7 @@ public sealed class ApiPermissionTests
     [InlineData(true)]
     public void The_example_app_grants_its_permission_to_the_admin_role(bool web)
     {
-        var model = App(kind: web ? AppKind.WebApp : AppKind.Api);
+        var model = App(kind: web ? AppKind.WebAppApi : AppKind.Api);
         var program = _engine.Render("app/Program", model);
 
         model.ExamplePermission.Should().Be("catalog:products:manage");
@@ -101,9 +97,9 @@ public sealed class ApiPermissionTests
     public void A_second_generate_crud_finds_the_example_permission_already_wired()
     {
         // generate-crud Product on a fresh web app must not add the same lines again.
-        var program = _engine.Render("app/Program", App(kind: AppKind.WebApp));
+        var program = _engine.Render("app/Program", App(kind: AppKind.WebAppApi));
 
-        UiCrudWiring.EnsurePagePermission(program, "Catalog", "catalog:products:manage", "Manage Products.")
+        ApiPermissionWiring.EnsurePermission(program, "Catalog", "catalog:products:manage", "Manage Products.")
             .Should().Be(program);
     }
 
@@ -112,7 +108,7 @@ public sealed class ApiPermissionTests
     {
         var program = _engine.Render("app/Program", App(noExample: true));
 
-        var wired = UiCrudWiring.EnsurePagePermission(program, "Orders", "orders:orders:manage", "Manage Orders.");
+        var wired = ApiPermissionWiring.EnsurePermission(program, "Orders", "orders:orders:manage", "Manage Orders.");
 
         // The template already registers AddModulusAuthorization (the security guard's fallback policy), so it is
         // not added a second time.
@@ -123,7 +119,7 @@ public sealed class ApiPermissionTests
             "builder.Services.AddPermissionGrants(grants => grants.GrantToRole(\"Admin\", \"orders:orders:manage\"));\n" +
             "var app = builder.Build();",
             "top-level statements have no indentation and keep the order they were listed in");
-        UiCrudWiring.EnsurePagePermission(wired, "Orders", "orders:orders:manage", "Manage Orders.").Should().Be(wired);
+        ApiPermissionWiring.EnsurePermission(wired, "Orders", "orders:orders:manage", "Manage Orders.").Should().Be(wired);
     }
 
     [Theory]

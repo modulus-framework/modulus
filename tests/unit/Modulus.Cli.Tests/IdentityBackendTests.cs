@@ -155,24 +155,6 @@ public sealed class IdentityBackendTests : IDisposable
     }
 
     [Fact]
-    public void A_web_app_uses_the_smart_scheme_and_an_api_app_makes_the_bearer_scheme_the_default()
-    {
-        var web = Render("app/Program", Model(kind: AppKind.WebApp));
-        var api = Render("app/Program", Model(kind: AppKind.Api));
-
-        web.Should().Contain("AddModulusSmartAuth();").And.Contain("using Modulus.UI;")
-            .And.NotContain("OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme");
-        api.Should().Contain("OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme").And.NotContain("AddModulusSmartAuth");
-    }
-
-    [Fact]
-    public void A_web_app_keeps_its_pages_behind_a_sign_in_and_an_api_app_has_no_pages_to_protect()
-    {
-        Render("app/Program", Model(kind: AppKind.WebApp)).Should().Contain("builder.Services.AddModulusPageAuthorization();");
-        Render("app/Program", Model(kind: AppKind.Api)).Should().NotContain("PageAuthorization");
-    }
-
-    [Fact]
     public void Development_settings_turn_the_password_grant_on_and_the_base_settings_leave_it_off()
     {
         var development = Render("app/appsettings.Development.json", Model());

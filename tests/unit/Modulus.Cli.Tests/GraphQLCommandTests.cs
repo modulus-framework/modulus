@@ -180,16 +180,11 @@ public sealed class GraphQLCommandTests : IDisposable
     }
 
     [Fact]
-    public void Refuses_a_web_app_and_an_unknown_entity()
+    public void Refuses_an_unknown_entity()
     {
         GenerateApp();
         var unknownEntity = () => Run(AppDir, entity: "Order");
         unknownEntity.Should().Throw<ArgumentException>().WithMessage("*No module has an entity named Order*");
-
-        Directory.Delete(_dir, recursive: true);
-        GenerateApp(AppKind.WebApp);
-        var web = () => Run(AppDir);
-        web.Should().Throw<InvalidOperationException>().WithMessage("*web app maps no API surface*");
     }
 
     [Fact]

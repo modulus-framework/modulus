@@ -46,8 +46,6 @@ internal sealed partial class GenerateGrpcCommand : Command<GenerateGrpcCommand.
 
         var app = ModuleDiscovery.Inventory(startDir)
             ?? throw new InvalidOperationException("No .slnx file found in the current directory tree. Run this command from within a Modulus application.");
-        if (app.Kind == AppKind.WebApp)
-            throw new InvalidOperationException("A web app maps no API surface, so it has nowhere to serve gRPC. Use an api or webapp+api app.");
 
         var module = FindModule(app.Modules, s.Entity, s.Module);
         var bffs = SelectBffs(app.Bffs, s.Bff);

@@ -123,7 +123,7 @@ internal sealed class AppModel
 
     /// <summary>
     /// True when the Web project of a <c>webapp+api</c> app runs on the Modulus UI framework (<c>Modulus.AspNetCore.Mvc</c>:
-    /// <c>AddModulusMvc</c>, the shell layout) instead of the older <c>Cobytelabs.Modulus.UI.*</c> modules and Tabler theme.
+    /// <c>AddModulusMvc</c>, the shell layout) (<c>AddModulusMvc</c>, the shell layout).
     /// Set for the mvc and razor-pages engines; the Blazor engine needs a Blazor host, which is not generated.
     /// </summary>
     public bool UseUiFramework { get; set; }
@@ -138,11 +138,6 @@ internal sealed class AppModel
     /// <summary>True when modules manage their schema with dbsh SQL migrations.</summary>
     public bool UseDbsh => MigrationEngine == "dbsh";
 
-    /// <summary>
-    /// UI modules to include in the generated app (lower-case IDs: identity, permissions, tenancy, users, settings, auditlogging, notifications, files).
-    /// </summary>
-    public IReadOnlyList<string> UiModules { get; set; } = [];
-
     /// <summary>API only, or a web app that also exposes the API (<c>--kind</c>).</summary>
     public AppKind Kind { get; set; } = AppKind.Api;
 
@@ -156,21 +151,10 @@ internal sealed class AppModel
     public string KindName => Kind.Name();
 
     /// <summary>True for a web app: it gets the UI foundation (and the theme), whatever feature modules are chosen.</summary>
-    public bool UseUi => Kind is AppKind.WebApp or AppKind.WebAppApi;
+    public bool UseUi => Kind is AppKind.WebAppApi;
 
-    /// <summary>
-    /// True when the project rendered from the host templates (the API project) itself serves the UI: the single-project
-    /// web kinds only. The webapp+api split's API host never does — its pages live in the separate Web project — so it
-    /// renders with <c>use_ui</c> off: no Razor Pages, no <c>AddModulusSmartAuth</c> (bearer is the default scheme), no
-    /// authorization-code flow (there is no login page on the API to sign users in through).
-    /// </summary>
-    public bool UiInApiHost => UseUi && Kind != AppKind.WebAppApi;
-
-    /// <summary>True when the app exposes API endpoints to external callers (api and webapp+api kinds). False for webapp kind (internal IMediator only).</summary>
-    public bool ExposeApi => Kind is AppKind.Api or AppKind.WebAppApi;
-
-    /// <summary>Install the Tabler theme next to the UI modules (default; <c>--no-theme</c> turns it off).</summary>
-    public bool UseTablerTheme { get; set; }
+    /// <summary>True when the app exposes API endpoints to external callers (api and webapp+api kinds).</summary>
+    public bool ExposeApi => true;
 
     /// <summary>
     /// The UI host project's namespace (<c>{Root}.Web</c> for the webapp+api split, <c>{Root}.Api</c> otherwise).
@@ -300,19 +284,11 @@ internal sealed class AppModel
     public string RouteName => ExampleRoute;
 
     /// <summary>
-    /// The permission that guards the example entity's API (and its admin page), when the app has the identity backend whose
+    /// The permission that guards the example entity's API, when the app has the identity backend whose
     /// <c>Admin</c> role holds it; null otherwise. The same <c>{module}:{route}:manage</c> a later <c>generate-crud</c> would pick.
     /// </summary>
     public string? ExamplePermission =>
         UseOpenIddict && !NoExample ? UiAccessGates.CrudPermission(ExampleModule, ExampleRoute) : null;
-
-    /// <summary>
-    /// True when the app serves the authorization-code flow with PKCE (<c>/connect/authorize</c>): a web app with the local token
-    /// server whose API project itself hosts the login page (the Identity UI), because that flow signs the user in through the app's
-    /// own page. The webapp+api split's API has no page to sign in with — its Web project signs users in over the password grant —
-    /// so there the code flow stays off and its clients use the password grant while it is on, then refresh tokens.
-    /// </summary>
-    public bool UseCodeFlow => UseOpenIddict && UiInApiHost;
 
     /// <summary>
     /// True when the host wires the startup security guard (<c>AddModulusSecurityGuard</c>): every endpoint must resolve to a
@@ -320,7 +296,7 @@ internal sealed class AppModel
     /// <c>--auth none</c>, nor for a web app on an external provider (its pages have no cookie sign-in yet, so they could only be
     /// left open or locked).
     /// </summary>
-    public bool UseSecurityGuard => UseAuth && !(UiInApiHost && UseExternalProvider);
+    public bool UseSecurityGuard => UseAuth;
 
     /// <summary>
     /// True when the API host calls <c>AddModulusAuthorization</c> only for its fallback policy (endpoints closed by default):
@@ -350,13 +326,7 @@ internal sealed class AppModel
     public IReadOnlyList<BffClientModel> BffClientModels => Bff.Select((client, i) =>
     {
         var port = BffClients.FirstPort + i;
-        IReadOnlyList<string> redirects = !UseCodeFlow ? [] : client switch
-        {
-            "web" => [$"http://localhost:{port}/signin-oidc"],
-            "mobile" => [$"{AppNameLower}://callback"],
-            _ => [],
-        };
-        return new BffClientModel { Name = client, ClientId = $"{AppNameLower}-{client}", Port = port, DevRedirectUris = redirects };
+        return new BffClientModel { Name = client, ClientId = $"{AppNameLower}-{client}", Port = port };
     }).ToList();
 
     /// <summary>
@@ -370,9 +340,6 @@ internal sealed class AppModel
 
     /// <summary>The Web host's <c>Bff:Authority</c>: empty for OpenIddict (the API host, <c>Api:BaseUrl</c>), else the provider's issuer.</summary>
     public string WebAuthority => UseOpenIddict ? "" : BffClients.Authority(Auth, AppNameLower);
-
-    /// <summary>Redirect URIs the seeded first-party client is registered with in Development: a native app's custom scheme and a local SPA dev server.</summary>
-    public IReadOnlyList<string> DevRedirectUris => [$"{AppNameLower}://callback", "http://localhost:5173/callback"];
 
     /// <summary>What the example permission's registry entry says.</summary>
     public string ExamplePermissionDescription =>
@@ -532,10 +499,7 @@ internal sealed class ModuleModel
     public string ModuleNameLower => ModuleName.ToLowerInvariant();
 
     /// <summary>
-    /// The host API project's root namespace (e.g. <c>MyApp.Api</c>). Used by
-    /// <c>generate-crud --with-ui</c> for the companion Razor Pages + the
-    /// <c>CustomUiModule</c> nav sidecar, which live in the Api project (Web SDK
-    /// compiles <c>Pages/</c> with no csproj changes).
+    /// The host API project's root namespace (e.g. <c>MyApp.Api</c>).
     /// </summary>
     public string ApiNamespace => $"{RootNamespace}.Api";
 
@@ -575,16 +539,7 @@ internal sealed class ModuleModel
     public bool HasEditForm { get; set; }
 
     /// <summary>
-    /// True in a web app: the API exposes the entity's extension fields, filtered through the same registry and
-    /// per-field permissions as the form (<c>EntityApiFields</c>), so external clients (mobile, desktop, other systems)
-    /// can read and write them. The DTO carries the bag, the endpoints validate and filter it, and the Presentation
-    /// project references <c>Modulus.UI.Core</c> for the registry. False for an API-only app (there is no registry to
-    /// filter with, so the bag is never exposed) and for a CRUD set generated before extension fields existed.
-    /// </summary>
-    public bool HasApiExtraFields { get; set; }
-
-    /// <summary>
-    /// The permission (e.g. <c>catalog:products:manage</c>) the generated API endpoints and admin page require, or null when the host
+    /// The permission (e.g. <c>catalog:products:manage</c>) the generated API endpoints require, or null when the host
     /// has no identity backend whose <c>Admin</c> role could hold it (then they are as open as the rest of that host). See
     /// <see cref="UiAccessGates.CrudPermission"/>.
     /// </summary>

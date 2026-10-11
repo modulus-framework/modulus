@@ -5,10 +5,10 @@ using Modulus.AspNetCore.FeatureFlags;
 using Modulus.AspNetCore.Logging;
 using Modulus.AspNetCore.Security;
 {{ if use_auth }}using Modulus.AspNetCore.Security.Policy;
-{{ end }}{{ if use_ui_framework }}using Modulus.AspNetCore.Mvc;
-{{ else }}{{ if use_tabler_theme }}using Modulus.UI.Theming.Tabler;
-{{ end }}using Modulus.UI;
-{{ end }}using Modulus.Core.Abstractions;
+using Microsoft.AspNetCore.Mvc;
+using Modulus.Core.Abstractions.Security;
+{{ end }}using Modulus.AspNetCore.Mvc;
+using Modulus.Core.Abstractions;
 using {{ root_namespace }}.Web;
 {{ if use_auth }}using Modulus.Bff;
 using {{ root_namespace }}.Web.Security;
@@ -22,16 +22,11 @@ var builder = WebApplication.CreateBuilder(args);
 // HTTP (typed clients, see ApiClientExtensions.cs) — no DbContext, no modules.
 builder.Services.AddRazorPages();
 
-{{ if use_ui_framework }}// ── Modulus UI framework ───────────────────────────────────────
+// ── Modulus UI framework ───────────────────────────────────────
 // The shell layout (header, menu, footer, theme settings), the tag helpers (app-*) and the assets. Brand and layout
 // settings come from "Modulus:Theme" in appsettings.json; add menu entries with an IMenuContributor.
 builder.Services.AddModulusMvc(theme => builder.Configuration.GetSection("Modulus:Theme").Bind(theme));
-{{ else }}// ── Modulus UI framework ───────────────────────────────────────
-// Core theme support and component library (m-card, m-form, m-datatable, …).
-builder.Services.AddModulusUi();
-{{ if use_tabler_theme }}// Use the Tabler theme (responsive, light/dark mode, vendored assets).
-builder.Services.AddTablerTheme(builder.Configuration);
-{{ end }}{{ end }}// ── Typed API clients ──────────────────────────────────────────
+// ── Typed API clients ──────────────────────────────────────────
 // One typed HttpClient per module (resilience + correlation wired in
 // AddModulusHttpClient). {{ if use_auth }}Every call carries the signed-in user's access token from
 // the BFF web session (see Authentication below).{{ else }}Without auth the clients call the API anonymously.{{ end }}
@@ -55,10 +50,15 @@ builder.Services.AddModulusBff(builder.Configuration, bff => bff
 // to edit grants at run time).
 builder.Services.AddScoped<ICurrentUser, PrincipalCurrentUser>();
 
-// Pages require a signed-in user (only /Account is open). Add a folder to the
-// call to make it public, and set a feature UI's RequirePermission to also
-// gate it by permission.
-builder.Services.AddModulusPageAuthorization();
+// Pages require a signed-in user; only /Account (sign-in, sign-out, access denied) is open.
+// Open another folder with AllowAnonymousToFolder.
+builder.Services.PostConfigure<RazorPagesOptions>(options =>
+{
+    options.Conventions.AuthorizeFolder("/");
+    options.Conventions.AllowAnonymousToFolder("/Account");
+    options.Conventions.AddFolderApplicationModelConvention("/Account", page =>
+        page.EndpointMetadata.Add(new LoosenedAttribute("Sign-in pages under /Account are open") { Framework = true }));
+});
 
 // At startup every endpoint must resolve to a policy. An anonymous endpoint needs a reason (.Loosen(reason)) and,
 // outside Development, an entry in security/loosening-allowlist.json; otherwise the app refuses to start
@@ -108,20 +108,15 @@ app.UseForwardedHeaders();
 {{ if enable_security_headers }}app.UseModulusSecurityHeaders();
 {{ end }}app.UseExceptionHandler();
 {{ if enable_correlation }}app.UseModulusCorrelation();
-{{ end }}{{ if use_ui_framework }}// Static web assets of the UI packages (/_content/...), then the request culture from Modulus:Theme:Cultures.
+{{ end }}// Static web assets of the UI packages (/_content/...), then the request culture from Modulus:Theme:Cultures.
 app.MapStaticAssets();
 app.UseModulusLocalization();
 app.UseStatusCodePages();
-{{ else }}app.UseStaticFiles();
-// 403/404 render the theme's error pages (no /Error page to maintain).
-app.UseModulusErrorPages();
-{{ end }}app.UseRouting();
+app.UseRouting();
 {{ if use_auth }}app.UseAuthentication();
 app.UseAuthorization();
-{{ end }}{{ if use_ui_framework }}app.MapRazorPages().WithStaticAssets();
-{{ else }}app.MapRazorPages();
-app.MapModulusErrorPages();
-{{ end }}
+{{ end }}app.MapRazorPages().WithStaticAssets();
+
 {{ if enable_health_checks }}app.MapHealthChecks("/health/live"){{ if use_auth }}.Loosen("Liveness probe for orchestrators and load balancers"){{ end }};
 {{ end }}
 app.Run();

@@ -249,7 +249,7 @@ public sealed class GrpcCommandTests : IDisposable
     }
 
     [Fact]
-    public void Refuses_a_web_app_an_unknown_entity_and_an_unknown_bff()
+    public void Refuses_an_unknown_entity_and_an_unknown_bff()
     {
         GenerateApp();
         var unknownEntity = () => Run(AppDir, entity: "Order");
@@ -258,11 +258,6 @@ public sealed class GrpcCommandTests : IDisposable
         unknownBff.Should().Throw<ArgumentException>().WithMessage("*no partner BFF*");
         var noBff = () => Run(AppDir, bff: "all");
         noBff.Should().Throw<ArgumentException>().WithMessage("*no BFF*");
-
-        Directory.Delete(_dir, recursive: true);
-        GenerateApp(AppKind.WebApp);
-        var web = () => Run(AppDir);
-        web.Should().Throw<InvalidOperationException>().WithMessage("*web app maps no API surface*");
     }
 
     public void Dispose()

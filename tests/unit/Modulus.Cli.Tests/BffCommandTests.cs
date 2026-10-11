@@ -68,16 +68,6 @@ public sealed class WebHostBffSessionTests
         _engine.Render("app/ApiClientExtensions.Web", app).Should().NotContain("AddBffUserAccessToken").And.NotContain("using Modulus.Bff;");
         using var _ = JsonDocument.Parse(_engine.Render("app/appsettings.Web.json", app));
     }
-
-    [Theory]
-    [InlineData(".AddBffUserAccessToken();", "            .AddBffUserAccessToken();")]
-    [InlineData(".AddHttpMessageHandler<TokenRelayHandler>();", "            .AddHttpMessageHandler<TokenRelayHandler>();")]
-    [InlineData("", "services.AddModulusHttpClient<OrdersApiClient>();")]
-    public void Generate_crud_registers_web_clients_the_way_the_host_authenticates(string existing, string expected)
-    {
-        var extensions = $"services.AddModulusHttpClient<CatalogApiClient>()\n    {existing}\nreturn services;";
-        GenerateCrudCommand.WebApiClientRegistration(extensions, "Orders").Should().Contain(expected);
-    }
 }
 
 [Collection(UxStateCollection.Name)]

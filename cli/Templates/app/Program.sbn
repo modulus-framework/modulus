@@ -30,8 +30,7 @@ using Modulus.Security;
 {{ end }}using Modulus.Identity.Extensions;
 using OpenIddict.Server.AspNetCore;
 using OpenIddict.Validation.AspNetCore;
-{{ if ui_in_api_host || kind_name == "webapp+api" }}using Modulus.UI;
-{{ end }}{{ end }}{{ if use_external_provider }}using {{ external_provider_namespace }};
+{{ end }}{{ if use_external_provider }}using {{ external_provider_namespace }};
 {{ end }}using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -140,17 +139,6 @@ builder.Services.AddMediator();
 
 {{ if expose_api }}// ── MVC controllers (module Presentation assemblies) ───────────
 builder.Services.AddControllers();
-{{ end }}{{ if ui_in_api_host }}// ── Razor Pages (web app UI) ───────────────────────
-builder.Services.AddRazorPages();
-{{ end }}{{ if kind_name == "webapp+api" }}
-// ── Modulus UI foundation (API side) ──────────────────────────
-// The browser UI lives in the Web project. This host needs only the UI
-// foundation's services: generated endpoints expose an entity's extension
-// fields through IEntityUiRegistry, filtered per caller by permission.
-builder.Services.AddModulusUi();
-// AddModulusUi also registers the component view resolver, which needs Razor's view engine
-// (no pages here, so only the engine; without it the host fails to start in Development).
-builder.Services.AddMvcCore().AddRazorViewEngine();
 {{ end }}
 {{ if auth == "none" }}
 // ── Authentication ─────────────────────────────────────────────
@@ -161,20 +149,15 @@ builder.Services.AddMvcCore().AddRazorViewEngine();
 // or an external provider, or call AllowAnonymous() in an endpoint's Configure().
 {{ end }}{{ if auth != "none" }}
 // ── Authentication & Authorization ──────────────────────────────
-{{ if auth == "openiddict" }}{{ if ui_in_api_host }}// One host, two kinds of caller: API callers (bearer token) and browsers (the Identity cookie).
-builder.Services.AddModulusSmartAuth();
-// Pages require a signed-in user (only /Account, the sign-in pages, is open). Add a folder to the call to make it public,
-// and set a feature UI's RequirePermission to also gate it by permission.
-builder.Services.AddModulusPageAuthorization();
-{{ else }}// API only: callers present a bearer token. AddModulusIdentity would otherwise make the cookie the default.
+{{ if auth == "openiddict" }}// API only: callers present a bearer token. AddModulusIdentity would otherwise make the cookie the default.
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultScheme = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme;
     options.DefaultAuthenticateScheme = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme;
     options.DefaultChallengeScheme = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme;
 });
-{{ end }}{{ if example_permission }}
-// The example API{{ if ui_in_api_host }} and its admin page need{{ else }} needs{{ end }} a permission, and the Admin role (seeded below) holds it: a signed-in caller without it gets 403.
+{{ if example_permission }}
+// The example API needs a permission, and the Admin role (seeded below) holds it: a signed-in caller without it gets 403.
 // AddModulusAuthorization turns a "module:thing:action" name into a permission check, resolved from the grants of the caller's roles.
 // The grants below are an in-memory seed: to edit them at run time (Permissions UI or API), keep them in the database with
 // AddEfCoreAuthorizationStores (Modulus.Authorization.EntityFrameworkCore) instead.
@@ -279,7 +262,6 @@ app.MapModulusEndpoints(
     Directory.GetFiles(AppContext.BaseDirectory, "{{ root_namespace }}.Modules.*.Presentation.dll")
         .Select(Assembly.LoadFrom)
         .ToArray());
-{{ end }}{{ if ui_in_api_host }}app.MapRazorPages();
 {{ end }}{{ if enable_health_checks }}app.MapModulusHealthChecks();
 {{ end }}
 if (app.Environment.IsDevelopment())

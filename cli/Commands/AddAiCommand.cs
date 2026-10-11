@@ -33,8 +33,6 @@ internal sealed class AddAiCommand : Command<AddAiCommand.Settings>
     {
         var app = ModuleDiscovery.Inventory(startDir)
             ?? throw new InvalidOperationException("No .slnx file found in the current directory tree. Run this command from within a Modulus application.");
-        if (app.Kind == AppKind.WebApp)
-            throw new InvalidOperationException("A web app has no API host for the connector. Use an api or webapp+api app.");
         if (!File.Exists(app.ProgramCsPath))
             throw new InvalidOperationException($"Program.cs not found at {app.ProgramCsPath}.");
 

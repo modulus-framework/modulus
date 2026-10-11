@@ -4,7 +4,7 @@
     ViewData["Title"] = "Access denied";
 }
 
-{{ if use_ui_framework }}<div class="m-auth-card">
+<div class="m-auth-card">
     <div class="m-auth-card-body text-center">
         <h1 class="m-auth-title">Access denied</h1>
         <p class="m-auth-hint">Your account does not have permission to open this page.</p>
@@ -13,15 +13,4 @@
         </div>
     </div>
 </div>
-{{ else }}<div class="page page-center">
-    <div class="container container-tight py-4">
-        <div class="card card-md">
-            <div class="card-body text-center">
-                <h1 class="h2">Access denied</h1>
-                <p class="text-secondary">Your account does not have permission to open this page.</p>
-                <a class="btn btn-primary" href="/">Back to home</a>
-            </div>
-        </div>
-    </div>
-</div>
-{{ end }}
+

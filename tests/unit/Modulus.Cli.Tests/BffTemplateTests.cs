@@ -58,7 +58,6 @@ public sealed class BffTemplateTests
     [Theory]
     [InlineData("openiddict", "api", "Password")]
     [InlineData("openiddict", "webapp+api", "Password")]
-    [InlineData("openiddict", "webapp", "Oidc")]
     [InlineData("keycloak", "api", "Oidc")]
     [InlineData("azuread", "api", "Oidc")]
     public void Web_bff_signs_in_with_code_flow_wherever_the_auth_server_has_a_login_page(string auth, string kind, string mode)
@@ -186,17 +185,6 @@ public sealed class BffTemplateTests
         var identity = doc.RootElement.GetProperty("Identity");
         identity.TryGetProperty("EncryptAccessTokens", out _).Should().BeFalse();
         identity.TryGetProperty("AllowClientCredentialsFlow", out _).Should().BeFalse();
-    }
-
-    [Fact]
-    public void Code_flow_apps_register_development_redirect_uris_per_bff()
-    {
-        var app = App("openiddict", AppKind.WebApp, "web", "mobile");
-
-        using var doc = JsonDocument.Parse(_engine.Render("app/appsettings.Development.json", app));
-        var clients = doc.RootElement.GetProperty("Identity").GetProperty("Seed").GetProperty("Clients");
-        clients.GetProperty("web").GetProperty("RedirectUris")[0].GetString().Should().Be("http://localhost:5190/signin-oidc");
-        clients.GetProperty("mobile").GetProperty("RedirectUris")[0].GetString().Should().Be("shop://callback");
     }
 
     [Theory]

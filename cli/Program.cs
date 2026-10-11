@@ -19,7 +19,7 @@ public static class Program
                 .WithExample("app", "MyCompany.MyApp")
                 .WithExample("app", "MyApp", "--database", "SqlServer")
                 .WithExample("app", "MyApp", "--kind", "api")
-                .WithExample("app", "MyApp", "--kind", "web", "--ui-modules", "identity,users")
+                .WithExample("app", "MyApp", "--kind", "web")
                 .WithExample("app", "MyApp", "--no-example")
                 .WithExample("app", "MyApp", "--message-broker", "rabbitmq", "--caching", "redis")
                 .WithExample("app", "MyApp", "--storage", "s3", "--enable-feature-flags")
@@ -65,8 +65,7 @@ public static class Program
             // ── Code generation ────────────────────────────────────────
             config.AddCommand<Commands.GenerateCrudCommand>("generate-crud")
                 .WithDescription("Generate CRUD endpoints, handlers, and entity for a domain object.")
-                .WithExample("generate-crud", "Product", "--module", "Catalog")
-                .WithExample("generate-crud", "Product", "--module", "Catalog", "--no-ui");
+                .WithExample("generate-crud", "Product", "--module", "Catalog");
 
             config.AddCommand<Commands.GenerateCommandCommand>("generate-command")
                 .WithDescription("Generate a single command handler in a module.")
@@ -125,45 +124,7 @@ public static class Program
             // ── UI Modules ──────────────────────────────────────────────
             config.AddBranch("ui", ui =>
             {
-                ui.SetDescription("Manage Modulus UI modules (Razor RCLs).");
-
-                ui.AddCommand<Commands.UiListCommand>("list")
-                    .WithDescription("List all available UI modules.")
-                    .WithExample("ui", "list")
-                    .WithExample("ui", "list", "--installed");
-
-                ui.AddCommand<Commands.UiSearchCommand>("search")
-                    .WithDescription("Search UI modules by name, feature, or package.")
-                    .WithExample("ui", "search", "identity")
-                    .WithExample("ui", "search", "notifications");
-
-                ui.AddCommand<Commands.UiInfoCommand>("info")
-                    .WithDescription("Show details for a specific UI module.")
-                    .WithExample("ui", "info", "Identity");
-
-                ui.AddCommand<Commands.UiAddCommand>("add")
-                    .WithDescription("Add a UI module to the current application.")
-                    .WithExample("ui", "add", "Identity")
-                    .WithExample("ui", "add", "Permissions", "--dry-run");
-
-                ui.AddCommand<Commands.UiRemoveCommand>("remove")
-                    .WithDescription("Remove a UI module from the current application.")
-                    .WithExample("ui", "remove", "Notifications")
-                    .WithExample("ui", "remove", "Files", "--force");
-
-                ui.AddCommand<Commands.UiUpdateCommand>("update")
-                    .WithDescription("Update installed UI modules to the latest version.")
-                    .WithExample("ui", "update")
-                    .WithExample("ui", "update", "Identity")
-                    .WithExample("ui", "update", "--dry-run");
-
-                ui.AddCommand<Commands.UiEjectCommand>("eject")
-                    .WithDescription("Copy framework views (components, feature UI pages, theme layouts) into the app so they can be customized.")
-                    .WithExample("ui", "eject", "--list")
-                    .WithExample("ui", "eject", "Card")
-                    .WithExample("ui", "eject", "Users")
-                    .WithExample("ui", "eject", "Users/Details", "Tabler/Layouts/Application")
-                    .WithExample("ui", "eject", "DataTable", "Input", "--force");
+                ui.SetDescription("Scaffold pages and components on the Modulus UI framework.");
 
                 ui.AddBranch("theme", theme =>
                 {
@@ -230,13 +191,6 @@ public static class Program
                     .WithDescription("Scaffold a role/permission matrix for an entity: tick a box to grant, clear it to revoke (uses /authorization/grants).")
                     .WithExample("ui", "create-permission-matrix", "Order")
                     .WithExample("ui", "create-permission-matrix", "Order", "--roles", "Admin,Sales", "--permissions", "orders:order:manage,orders:order:export");
-
-                ui.AddCommand<Commands.UiDiffCommand>("diff")
-                    .WithDescription("Show how the app's overrides of framework views differ from the framework's current views.")
-                    .WithExample("ui", "diff")
-                    .WithExample("ui", "diff", "Card")
-                    .WithExample("ui", "diff", "Users")
-                    .WithExample("ui", "diff", "--check", "--summary");
             });
         });
 
@@ -290,12 +244,6 @@ internal sealed class DefaultCommand : Command
         table.AddRow("[cyan]doctor[/]", "Check .NET SDK / dotnet-ef / app structure");
         table.AddRow("[cyan]outdated[/]", "Show outdated packages in the current app");
         table.AddRow("[cyan]update[/]", "Update packages to latest versions");
-        table.AddRow("[cyan]ui list[/]", "List all available UI modules");
-        table.AddRow("[cyan]ui search[/] [grey]<term>[/]", "Search UI modules by name/feature/package");
-        table.AddRow("[cyan]ui info[/] [grey]<module>[/]", "Show details for a UI module");
-        table.AddRow("[cyan]ui add[/] [grey]<module>[/]", "Add a UI module to the current app");
-        table.AddRow("[cyan]ui remove[/] [grey]<module>[/]", "Remove a UI module from the current app");
-        table.AddRow("[cyan]ui update[/] [grey][[module]][/]", "Update installed UI modules");
         table.AddRow("[cyan]ui theme create[/] [grey]<name>[/]", "Create an app theme from a base and a brand colour");
         table.AddRow("[cyan]ui theme set[/] [grey]<name>[/]", "Make a theme the active one (appsettings.json)");
         table.AddRow("[cyan]ui theme list[/]", "List the app's themes");
@@ -320,8 +268,6 @@ internal sealed class DefaultCommand : Command
         table.AddRow("[cyan]add-audit-store[/]", "Add change auditing to entities");
         table.AddRow("[cyan]add-realtime[/]", "Add SignalR realtime messaging");
         table.AddRow("[cyan]add-ai[/]", "Add AI features (embedding, semantic search)");
-        table.AddRow("[cyan]ui eject[/] [grey]<module>[/]", "Extract a UI module's pages to your project");
-        table.AddRow("[cyan]ui diff[/] [grey]<module>[/]", "Show differences between your pages and the installed module");
 
         AnsiConsole.Write(table);
         AnsiConsole.WriteLine();

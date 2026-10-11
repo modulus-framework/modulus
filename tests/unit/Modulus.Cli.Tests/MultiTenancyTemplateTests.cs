@@ -28,13 +28,11 @@ public sealed class MultiTenancyTemplateTests
     public void The_option_needs_an_api_host_with_the_local_token_server()
     {
         NewAppCommand.ResolveMultiTenancy(true, AppKind.Api, "openiddict").Should().BeTrue();
-        NewAppCommand.ResolveMultiTenancy(false, AppKind.WebApp, "none").Should().BeFalse();
+        NewAppCommand.ResolveMultiTenancy(false, AppKind.WebAppApi, "none").Should().BeFalse();
 
-        var web = () => NewAppCommand.ResolveMultiTenancy(true, AppKind.WebApp, "openiddict");
         var split = () => NewAppCommand.ResolveMultiTenancy(true, AppKind.WebAppApi, "openiddict");
         var external = () => NewAppCommand.ResolveMultiTenancy(true, AppKind.Api, "keycloak");
 
-        web.Should().Throw<ArgumentException>().WithMessage("*--kind api*");
         split.Should().Throw<ArgumentException>().WithMessage("*--kind api*");
         external.Should().Throw<ArgumentException>().WithMessage("*--auth openiddict*");
     }

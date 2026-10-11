@@ -93,8 +93,7 @@
 {{ end }}{{ if auth == "openiddict" }}  "Identity": {
     "UseDevelopmentCertificates": false,
     "AllowPasswordFlow": false,
-{{ if use_code_flow }}    "AllowAuthorizationCodeFlow": true,
-{{ end }}{{ if has_bearer_bff }}    "EncryptAccessTokens": false,
+{{ if has_bearer_bff }}    "EncryptAccessTokens": false,
 {{ end }}{{ if has_partner_bff }}    "AllowClientCredentialsFlow": true,
 {{ end }}{{ if has_bff }}    "Seed": {
       "Clients": {

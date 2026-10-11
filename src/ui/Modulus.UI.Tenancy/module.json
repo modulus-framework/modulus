@@ -1,7 +1,0 @@
-{
-  "id": "Modulus.Tenancy",
-  "name": "Tenancy",
-  "version": "1.4.0",
-  "dependencies": ["Modulus.UI.Core"],
-  "features": ["Tenancy"]
-}

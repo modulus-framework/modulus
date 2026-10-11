@@ -103,8 +103,6 @@ internal sealed class BffClientModel
 
     public int Port { get; init; }
 
-    /// <summary>Redirect URIs registered for the client in Development (code + PKCE); empty when it uses the password grant.</summary>
-    public IReadOnlyList<string> DevRedirectUris { get; init; } = [];
 }
 
 /// <summary>An upstream service of the BFFs besides <c>api</c> (<c>Bff:Services:{name}</c>).</summary>
@@ -234,7 +232,7 @@ internal sealed class BffHostModel
         Authority = BffClients.Authority(app.Auth, app.AppNameLower),
         // The local token server can only run the code flow where the API hosts a login page (a webapp host);
         // every external provider has its own hosted login page.
-        LoginMode = app.UseOpenIddict && !app.UseCodeFlow ? "Password" : "Oidc",
+        LoginMode = app.UseOpenIddict ? "Password" : "Oidc",
         UseRedisCache = app.UseRedisCache,
         EnableCorrelation = app.EnableCorrelation,
         EnableSecurityHeaders = app.EnableSecurityHeaders,

@@ -20,7 +20,6 @@ public sealed class Get{{ entity_name }}ByIdHandler(I{{ entity_name }}Repository
         {
             Id = entity.Id,
             Name = entity.Name,
-{{ if has_api_extra_fields }}            ExtraProperties = new Dictionary<string, string?>(entity.ExtraProperties),
-{{ end }}        };
+        };
     }
 }

@@ -33,8 +33,6 @@ internal sealed class AddWebhooksCommand : Command<AddWebhooksCommand.Settings>
     {
         var app = ModuleDiscovery.Inventory(startDir)
             ?? throw new InvalidOperationException("No .slnx file found in the current directory tree. Run this command from within a Modulus application.");
-        if (app.Kind == AppKind.WebApp)
-            throw new InvalidOperationException("A web app maps no API surface, so it has nowhere to serve the webhook management API. Use an api or webapp+api app.");
         if (!File.Exists(app.ProgramCsPath))
             throw new InvalidOperationException($"Program.cs not found at {app.ProgramCsPath}.");
 

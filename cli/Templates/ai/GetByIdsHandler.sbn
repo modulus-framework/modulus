@@ -17,8 +17,7 @@ public sealed class Get{{ entity_plural }}ByIdsHandler(I{{ entity_name }}Reposit
             {
                 Id = entity.Id,
                 Name = entity.Name,
-{{ if has_api_extra_fields }}                ExtraProperties = new Dictionary<string, string?>(entity.ExtraProperties),
-{{ end }}            })
+            })
             .ToList();
     }
 }

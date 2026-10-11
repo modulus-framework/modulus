@@ -25,7 +25,6 @@ public sealed class SecurityGuardTemplateTests
     [Theory]
     [InlineData("openiddict", "api")]
     [InlineData("keycloak", "api")]
-    [InlineData("openiddict", "webapp")]
     [InlineData("openiddict", "webapp+api")]
     public void Hosts_with_a_sign_in_wire_the_guard_and_loosen_the_development_OpenAPI_document(string auth, string kind)
     {
@@ -65,7 +64,6 @@ public sealed class SecurityGuardTemplateTests
 
     [Theory]
     [InlineData("none", "api")]
-    [InlineData("keycloak", "webapp")]
     public void Hosts_without_an_enforceable_sign_in_get_no_guard(string auth, string kind)
     {
         var model = Model(auth, Kind(kind));
@@ -107,7 +105,6 @@ public sealed class SecurityGuardTemplateTests
     [InlineData("openiddict", "api", true)]
     [InlineData("keycloak", "api", true)]
     [InlineData("openiddict", "webapp+api", true)]
-    [InlineData("openiddict", "webapp", false)]
     [InlineData("none", "api", false)]
     public void Guarded_API_hosts_ship_the_security_probe_test(string auth, string kind, bool expected)
     {
@@ -127,7 +124,6 @@ public sealed class SecurityGuardTemplateTests
 
     private static AppKind Kind(string kind) => kind switch
     {
-        "webapp" => AppKind.WebApp,
         "webapp+api" => AppKind.WebAppApi,
         _ => AppKind.Api,
     };

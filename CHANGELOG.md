@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed — the older server-rendered UI (`Modulus.UI.*`) and its CLI support
+- Deleted `src/ui` (`Modulus.UI.Theme.Abstractions`, `Core`, `Theme.Tabler`, `Identity`, `Users`, `Tenancy`, `Permissions`, `Settings`, `AuditLogging`,
+  `Notifications`, `Files`) and their 11 test projects. The UI now lives in the separate `modulus-ui` repository (Modulus UI framework packages and the
+  `Modulus.Ui.Templates` package the CLI scaffolds from).
+- CLI: removed `ui add`, `ui remove`, `ui update`, `ui list`, `ui search`, `ui info`, `ui eject`, `ui diff`, `app --ui-modules`, `app --no-theme` and `generate-crud --with-ui/--no-ui/--no-theme`.
+  `generate-crud` now scaffolds the API side only (entity, handlers, endpoints, permission); pages come from `modulus ui ...`. Generated endpoints no longer expose
+  extension fields through the UI registry.
+- CLI: the single-project `webapp` kind (and the `web` alias) is retired. Use `--kind webapp+api`, whose Web project runs on the Modulus UI framework (`--ui-engine mvc|razor-pages`) and signs
+  users in with the BFF web session and its own login page. A host whose csproj still says `webapp` is treated as unmarked. The authorization-code sign-in page of the old Identity UI is gone with it;
+  the seeded client uses the code flow only when `Identity:Seed:RedirectUris` is configured.
+- `samples/Meetup` still references the published `Cobytelabs.Modulus.UI.*` 1.4.0 packages and is not migrated.
+
 ### Fixed — outbox management endpoints and S3 region (Modulus.Outbox.Management, Modulus.Storage.S3)
 - **Outbox management was unusable:** every dead-letter endpoint took a `params DbContext[]` parameter, which minimal APIs infer as a
   request body, so each call failed with "Body was inferred but the method does not allow inferred body parameters". The handlers now

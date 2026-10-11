@@ -248,16 +248,6 @@ public sealed class WebhooksCommandTests : IDisposable
     }
 
     [Fact]
-    public void Refuses_a_web_app()
-    {
-        GenerateApp(AppKind.WebApp);
-
-        var act = () => Run(AppDir);
-
-        act.Should().Throw<InvalidOperationException>().WithMessage("*web app*");
-    }
-
-    [Fact]
     public void Rejects_an_unknown_event()
     {
         GenerateApp();

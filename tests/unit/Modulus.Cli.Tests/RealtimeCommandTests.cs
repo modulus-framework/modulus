@@ -168,16 +168,6 @@ public sealed class RealtimeCommandTests : IDisposable
             .GetProperty("Realtime").GetProperty("SignalR").GetProperty("Enabled").GetBoolean().Should().BeTrue();
     }
 
-    [Fact]
-    public void Refuses_a_web_app()
-    {
-        GenerateApp(AppKind.WebApp);
-
-        var run = () => Run(AppDir);
-
-        run.Should().Throw<InvalidOperationException>().WithMessage("*web app maps no API surface*");
-    }
-
     public void Dispose()
     {
         Ux.Quiet = false;

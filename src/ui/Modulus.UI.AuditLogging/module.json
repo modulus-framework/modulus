@@ -1,7 +1,0 @@
-{
-  "id": "Modulus.AuditLogging",
-  "name": "AuditLogging",
-  "version": "1.4.0",
-  "dependencies": ["Modulus.UI.Core"],
-  "features": ["AuditLogs"]
-}

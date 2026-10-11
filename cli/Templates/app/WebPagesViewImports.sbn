@@ -1,11 +1,6 @@
 @using {{ root_namespace }}.Web
-{{ if use_ui_framework }}@using Modulus.Ui.Abstractions
+@using Modulus.Ui.Abstractions
 @namespace {{ root_namespace }}.Web.Pages
 @addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
 @addTagHelper *, Modulus.AspNetCore.Mvc
-{{ else }}@using Modulus.UI
-@using Modulus.UI.Theming
-@namespace {{ root_namespace }}.Web.Pages
-@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
-@addTagHelper *, Modulus.UI.Core
-{{ end }}
+
