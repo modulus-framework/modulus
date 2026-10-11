@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — `ui create-crud` and `ui add-assistant`
+- `modulus ui create-crud <Entity>`: list, edit and delete pages (Razor Pages or Blazor) over the entity's API through a typed `<Entity>ApiClient`, plus a menu entry.
+- `modulus ui add-assistant`: hosts the AI platform's embedded assistant (`POST /ai/session`, `ai:use`, `Ai:Host` settings, layout partial).
+- The UI templates (`Modulus.Ui.Templates`) are restyled on the Modulus UI framework's `m-`/`ant-` classes and `app-*` tag helpers.
+
 ### Removed — the older server-rendered UI (`Modulus.UI.*`) and its CLI support
 - Deleted `src/ui` (`Modulus.UI.Theme.Abstractions`, `Core`, `Theme.Tabler`, `Identity`, `Users`, `Tenancy`, `Permissions`, `Settings`, `AuditLogging`,
   `Notifications`, `Files`) and their 11 test projects. The UI now lives in the separate `modulus-ui` repository (Modulus UI framework packages and the
