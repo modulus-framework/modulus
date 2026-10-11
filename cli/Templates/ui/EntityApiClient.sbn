@@ -15,14 +15,15 @@ namespace {{ ui_namespace }}.ApiClients;
 /// responses arrive in the API's <c>ApiResponse</c> envelope (<c>{ success, data }</c>);
 /// errors are RFC 7807 problem details.
 /// </summary>
-public sealed class {{ module_name }}ApiClient(HttpClient http, IConfiguration configuration)
+public sealed class {{ entity_name }}ApiClient(HttpClient http, IConfiguration configuration)
 {
     private readonly HttpClient _http = Configure(http, configuration);
 
-    public async Task<IReadOnlyList<{{ entity_name }}Dto>> GetAsync(CancellationToken ct = default)
+    /// <summary>Fetches one page of {{ entity_name }}s (1-based <paramref name="page"/>).</summary>
+    public async Task<IReadOnlyList<{{ entity_name }}Dto>> GetAsync(int page = 1, int pageSize = 20, CancellationToken ct = default)
     {
         var items = await _http.GetFromJsonAsync<ApiResponse<IReadOnlyList<{{ entity_name }}Dto>>>(
-            "api/{{ module_name_lower }}/{{ route_name }}", ct);
+            $"api/{{ module_name_lower }}/{{ route_name }}?page={page}&pageSize={pageSize}", ct);
         return items?.Data ?? [];
     }
 
@@ -67,21 +68,14 @@ public sealed class {{ module_name }}ApiClient(HttpClient http, IConfiguration c
     }
 }
 
-/// <summary>Request body for creating a {{ entity_name }} (binds the API's
-/// Create{{ entity_name }}Command; extension values ride in ExtraProperties when the
-/// API exposes the entity's contributed fields).</summary>
+/// <summary>Request body for creating a {{ entity_name }} (binds the API's Create{{ entity_name }}Request).</summary>
 public sealed class Create{{ entity_name }}Dto
 {
     public string Name { get; set; } = string.Empty;
-
-    public IReadOnlyDictionary<string, string?>? ExtraProperties { get; set; }
 }
 
-/// <summary>Request body for updating a {{ entity_name }} (binds the API's
-/// Update{{ entity_name }}Command).</summary>
+/// <summary>Request body for updating a {{ entity_name }} (binds the API's Update{{ entity_name }}Request).</summary>
 public sealed class Update{{ entity_name }}Dto
 {
     public string Name { get; set; } = string.Empty;
-
-    public IReadOnlyDictionary<string, string?>? ExtraProperties { get; set; }
 }

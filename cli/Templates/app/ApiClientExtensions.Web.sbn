@@ -19,7 +19,7 @@ public static class ApiClientExtensions
     public static IServiceCollection AddModuleApiClients(this IServiceCollection services)
     {
 {{~ if !no_example ~}}
-        services.AddModulusHttpClient<{{ example_module }}ApiClient>(){{ if use_auth }}
+        services.AddModulusHttpClient<{{ example_entity }}ApiClient>(){{ if use_auth }}
             .AddBffUserAccessToken(){{ end }};
 {{~ end ~}}
 

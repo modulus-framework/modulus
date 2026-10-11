@@ -6,10 +6,8 @@ namespace {{ module_namespace }}.Domain;
 /// <summary>
 /// Sample aggregate root. Replace with your domain entity.
 /// <para>
-/// <see cref="IHasExtraProperties"/> lets other modules add their own fields to this entity's form
-/// (<c>services.ConfigureEntityUi("{{ module_name }}.{{ entity_name }}", e => e.Fields.Add(...))</c>); their values are kept
-/// in one JSON column, so no schema change is needed per field. Remove the marker (and the column) if this entity
-/// should not be extensible.
+/// <see cref="IHasExtraProperties"/> keeps extra, schema-less values of this entity in one JSON column, so adding a field
+/// needs no migration. Remove the marker (and the column) if this entity does not need them.
 /// </para>{{ if multi_tenant }}
 /// <para>
 /// <see cref="IHasTenantId"/> keeps each company's rows apart: the module context stamps the current company on insert,

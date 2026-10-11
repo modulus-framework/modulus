@@ -1,0 +1,64 @@
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
+using {{ module_namespace }}.Application.Dtos;
+using {{ ui_namespace }}.ApiClients;
+
+namespace {{ ui_namespace }}.Pages.{{ entity_name_plural }};
+
+/// <summary>Lists {{ entity_name }}s from the {{ module_name }} API, one page at a time, and deletes them.</summary>
+public class IndexModel({{ entity_name }}ApiClient api) : PageModel
+{
+    private const int PageSize = 20;
+
+    public IReadOnlyList<{{ entity_name }}Dto> Items { get; private set; } = [];
+
+    /// <summary>1-based page number (query string <c>p</c>).</summary>
+    [BindProperty(SupportsGet = true, Name = "p")]
+    public int PageNumber { get; set; } = 1;
+
+    /// <summary>A full page means there may be another one; the API does not report a total.</summary>
+    public bool HasNext { get; private set; }
+
+    public string? Message { get; private set; }
+
+    public bool Failed { get; private set; }
+
+    public async Task OnGetAsync(CancellationToken ct)
+    {
+        Message = TempData["Message"] as string;
+        Failed = TempData["Failed"] is true;
+        await LoadAsync(ct);
+    }
+
+    public async Task<IActionResult> OnPostDeleteAsync(Guid id, CancellationToken ct)
+    {
+        try
+        {
+            var deleted = await api.DeleteAsync(id, ct);
+            TempData["Message"] = deleted ? "Deleted." : "The {{ entity_name | string.downcase }} could not be deleted.";
+            TempData["Failed"] = !deleted;
+        }
+        catch (HttpRequestException)
+        {
+            TempData["Message"] = "The API could not be reached.";
+            TempData["Failed"] = true;
+        }
+
+        return RedirectToPage(new { p = PageNumber });
+    }
+
+    private async Task LoadAsync(CancellationToken ct)
+    {
+        PageNumber = Math.Max(1, PageNumber);
+        try
+        {
+            Items = await api.GetAsync(PageNumber, PageSize, ct);
+            HasNext = Items.Count == PageSize;
+        }
+        catch (HttpRequestException)
+        {
+            Message = "The API could not be reached.";
+            Failed = true;
+        }
+    }
+}

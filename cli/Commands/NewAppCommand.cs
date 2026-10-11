@@ -519,8 +519,8 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
             Path.Combine(webDir, "ApiClientExtensions.cs"));
         if (!model.NoExample)
         {
-            _templates.RenderToFile("ui/ModuleApiClient", model,
-                Path.Combine(webDir, "ApiClients", $"{model.ExampleModule}ApiClient.cs"));
+            _templates.RenderToFile("ui/EntityApiClient", model,
+                Path.Combine(webDir, "ApiClients", $"{model.ExampleEntity}ApiClient.cs"));
         }
 
         // â”€â”€ Authentication: a BFF web session (Modulus.Bff) behind the sign-in pages â”€â”€

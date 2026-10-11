@@ -53,7 +53,7 @@ public sealed class UiTemplatePackageTests
             UiTemplatePackage.Extract(nupkg, Path.Combine(dir, "templates"));
             var model = new ModuleModel { ModuleName = "Orders", EntityName = "Order", RouteName = "orders" };
 
-            var list = new TemplateEngine().Render(Path.Combine(dir, "templates", "mvc", "crud-list.cshtml.sbn"), model);
+            var list = new TemplateEngine().Render(Path.Combine(dir, "templates", "razor-pages", "crud-index.cshtml.sbn"), model);
 
             list.Should().Contain("Orders").And.NotContain("ViewData[\"Title\"] = \"\"");
         }

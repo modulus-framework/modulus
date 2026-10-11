@@ -1,0 +1,13 @@
+using Modulus.Ui.Abstractions.Navigation;
+
+namespace {{ ui_namespace }}.Menu;
+
+/// <summary>Adds the {{ entity_name_plural }} page to the main menu.</summary>
+public sealed class {{ entity_name_plural }}MenuContributor : IMenuContributor
+{
+    public Task ConfigureMenuAsync(MenuConfigurationContext context)
+    {
+        context.Add(new MenuItemDefinition("{{ route }}", "{{ entity_name_plural }}", "{{ route }}", "unordered-list"));
+        return Task.CompletedTask;
+    }
+}
