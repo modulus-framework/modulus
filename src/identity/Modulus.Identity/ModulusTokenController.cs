@@ -15,6 +15,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 using Modulus.Identity.Abstractions;
+using Modulus.Authorization;
 using OpenIddict.Abstractions;
 using OpenIddict.Server;
 using OpenIddict.Server.AspNetCore;
@@ -72,7 +73,9 @@ public class ModulusTokenController(
             {
                 OpenIddictConstants.Claims.Name or
                 OpenIddictConstants.Claims.Subject or
-                OpenIddictConstants.Claims.Email
+                OpenIddictConstants.Claims.Email or
+                TokenPrincipalFactory.SessionClaim
+                    // The session id also goes to the identity token, so an application can match a back-channel logout token's sid.
                     => [OpenIddictConstants.Destinations.AccessToken,
                         OpenIddictConstants.Destinations.IdentityToken],
                 _ => [OpenIddictConstants.Destinations.AccessToken],
@@ -95,7 +98,7 @@ public class ModulusTokenController(
 
         // A redeemed authorization code (issued by ModulusAuthorizeController) is re-verified and re-issued exactly like a
         // refresh token: OpenIddict has already validated the code, and the user must still exist, be active and unchanged.
-        if (request.IsRefreshTokenGrantType() || request.IsAuthorizationCodeGrantType())
+        if (request.IsRefreshTokenGrantType() || request.IsAuthorizationCodeGrantType() || request.IsDeviceCodeGrantType())
             return await HandleRefreshTokenGrantAsync();
 
         if (request.IsClientCredentialsGrantType())
@@ -109,7 +112,52 @@ public class ModulusTokenController(
         if (request.GrantType == ShopFloorGrant.GrantType)
             return await HandleShopFloorGrantAsync(request);
 
+        // Passkey sign-in: only registered (and allowed by OpenIddict) when Identity:Passkeys:Enabled is set.
+        if (request.GrantType == PasskeyGrant.GrantType)
+            return await HandlePasskeyGrantAsync(request);
+
         return BadRequest(new { error = "unsupported_grant_type" });
+    }
+
+    /// <summary>
+    /// Passkey sign-in (<see cref="PasskeyGrant"/>): the challenge id from <c>POST /account/passkeys/login/options</c> and the
+    /// browser's signed assertion. The token records <c>amr</c> <c>hwk</c>/<c>swk</c>, <c>user</c> and <c>mfa</c>, so it also
+    /// satisfies step-up authentication.
+    /// </summary>
+    private async Task<IActionResult> HandlePasskeyGrantAsync(OpenIddictRequest request)
+    {
+        var passkeys = HttpContext.RequestServices.GetService<IPasskeyService>();
+        var assertion = request.GetParameter(PasskeyGrant.AssertionParameter)?.ToString();
+        if (passkeys is null
+            || !Guid.TryParse(request.GetParameter(PasskeyGrant.ChallengeParameter)?.ToString(), out var challengeId)
+            || string.IsNullOrWhiteSpace(assertion))
+            return ForbidGrant(OpenIddictConstants.Errors.InvalidRequest, "The passkey challenge or assertion is missing.");
+
+        var result = await passkeys.ValidateLoginAsync(challengeId, assertion, HttpContext.RequestAborted);
+        if (!result.Success)
+        {
+            Audit("token.passkey", SecurityAuditOutcomes.Denied, actor: null, tenantId: null, request.ClientId);
+            return ForbidGrant(OpenIddictConstants.Errors.InvalidGrant, "The passkey could not be accepted.");
+        }
+
+        var principal = TokenPrincipalFactory.Create(
+            result.Subject!,
+            result.UserName,
+            result.Email,
+            result.TenantId,
+            result.Roles,
+            result.SecurityStamp,
+            result.AuthenticationMethods,
+            Now);
+
+        principal.SetScopes(PasswordGrant.AuthorizeScopes(request.GetScopes(), AllowedGrantScopes));
+        if (await AttachSessionAsync(principal, request) is { } refused)
+            return refused;
+
+        ApplyDestinations(principal);
+        Audit("token.passkey", SecurityAuditOutcomes.Success, result.Subject, result.TenantId, request.ClientId);
+
+        return SignIn(principal, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
     }
 
     /// <summary>
@@ -137,11 +185,17 @@ public class ModulusTokenController(
             return ForbidGrant(OpenIddictConstants.Errors.InvalidClient, "This device is not registered for shop-floor sign-in.");
         }
 
-        var result = await validator.ValidateAsync(tenantId, code, pin, HttpContext.RequestAborted);
+        var newPin = request.GetParameter(ShopFloorGrant.NewPinParameter)?.ToString();
+        var result = await validator.ValidateAsync(tenantId, code, pin, newPin, HttpContext.RequestAborted);
         if (!result.Success)
         {
             Audit("token.shop-floor", SecurityAuditOutcomes.Denied, actor: null, tenantId, deviceId);
-            return ForbidGrant(OpenIddictConstants.Errors.InvalidGrant, "The employee code or PIN is incorrect.");
+            return result.Error switch
+            {
+                ShopFloorGrant.PinChangeRequiredError => ForbidGrant(ShopFloorGrant.PinChangeRequiredError, "Choose your own PIN: send it as new_pin."),
+                ShopFloorGrant.InvalidNewPinError => ForbidGrant(ShopFloorGrant.InvalidNewPinError, "The new PIN is not acceptable (digits only, the allowed length, not one repeated digit, not the old PIN)."),
+                _ => ForbidGrant(OpenIddictConstants.Errors.InvalidGrant, "The employee code or PIN is incorrect."),
+            };
         }
 
         var principal = TokenPrincipalFactory.Create(
@@ -150,12 +204,17 @@ public class ModulusTokenController(
             email: null,
             result.TenantId,
             result.Roles,
-            result.SecurityStamp);
+            result.SecurityStamp,
+            ["pin"],
+            Now);
 
         // No refresh token: offline_access is never granted, and the operator signs in again when the token ends.
         principal.SetScopes(PasswordGrant.AuthorizeScopes(request.GetScopes(), AllowedGrantScopes)
             .Where(s => s != OpenIddictConstants.Scopes.OfflineAccess));
         principal.SetAccessTokenLifetime(TimeSpan.FromMinutes(settings.AccessTokenMinutes));
+        if (await AttachSessionAsync(principal, request) is { } refused)
+            return refused;
+
         ApplyDestinations(principal);
         Audit("token.shop-floor", SecurityAuditOutcomes.Success, result.Subject, result.TenantId, deviceId);
 
@@ -187,9 +246,14 @@ public class ModulusTokenController(
             result.Email,
             result.TenantId,
             result.Roles,
-            result.SecurityStamp);
+            result.SecurityStamp,
+            ["fed"],
+            Now);
 
         principal.SetScopes(PasswordGrant.AuthorizeScopes(request.GetScopes(), AllowedGrantScopes));
+        if (await AttachSessionAsync(principal, request) is { } refused)
+            return refused;
+
         ApplyDestinations(principal);
         Audit("token.federated", SecurityAuditOutcomes.Success, result.Subject, result.TenantId, request.ClientId);
 
@@ -236,6 +300,8 @@ public class ModulusTokenController(
             OpenIddictConstants.Claims.Role);
         identity.AddClaim(new Claim(OpenIddictConstants.Claims.Subject, clientId));
         identity.AddClaim(new Claim(OpenIddictConstants.Claims.Name, clientId));
+        // Lets step-up treat this token as a machine (it has no second factor). Only this grant issues the claim.
+        identity.AddClaim(new Claim(StepUpPolicy.MachineClaim, "true"));
 
         // The client acts in the company it is bound to (a pinned token cannot select another with a header), and its role is the
         // handle to grant it permissions with: what it may do lives in the grant store and changes without a new token.
@@ -284,11 +350,16 @@ public class ModulusTokenController(
             result.Email,
             result.TenantId,
             result.Roles,
-            result.SecurityStamp);
+            result.SecurityStamp,
+            TokenPrincipalFactory.PasswordMethods(result.SecondFactorVerified),
+            Now);
 
         // Grant only scopes that are both requested and explicitly allowed.
         var scopes = PasswordGrant.AuthorizeScopes(request.GetScopes(), AllowedGrantScopes);
         principal.SetScopes(scopes);
+
+        if (await AttachSessionAsync(principal, request) is { } refused)
+            return refused;
 
         ApplyDestinations(principal);
         Audit("token.password", SecurityAuditOutcomes.Success, result.Subject, result.TenantId, request.ClientId);
@@ -301,7 +372,10 @@ public class ModulusTokenController(
         var info = await HttpContext.AuthenticateAsync(
             OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
 
-        var grant = HttpContext.GetOpenIddictServerRequest()?.IsAuthorizationCodeGrantType() == true ? "token.authorization-code" : "token.refresh";
+        var current = HttpContext.GetOpenIddictServerRequest();
+        var grant = current?.IsAuthorizationCodeGrantType() == true ? "token.authorization-code"
+            : current?.IsDeviceCodeGrantType() == true ? "token.device-code"
+            : "token.refresh";
         if (!info.Succeeded || info.Principal is null)
         {
             Audit(grant, SecurityAuditOutcomes.Denied, actor: null, tenantId: null);
@@ -332,11 +406,149 @@ public class ModulusTokenController(
             principal = info.Principal;
         }
 
+        if (await ContinueSessionAsync(principal, grant) is { } sessionRefused)
+            return sessionRefused;
+
         ApplyDestinations(principal);
         Audit(grant, SecurityAuditOutcomes.Success, principal.GetClaim(OpenIddictConstants.Claims.Subject), TenantOf(principal));
 
         return SignIn(principal, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
     }
+
+    /// <summary>
+    /// Records the sign-in in the session registry (when it is on) and puts the session id in the tokens as <c>sid</c>. Returns the
+    /// refusal to send when the person is at their session limit and the limit refuses new sign-ins.
+    /// </summary>
+    private async Task<IActionResult?> AttachSessionAsync(ClaimsPrincipal principal, OpenIddictRequest request)
+    {
+        if (HttpContext.RequestServices.GetService<ISessionRegistry>() is not { } registry
+            || !Guid.TryParse(principal.GetClaim(OpenIddictConstants.Claims.Subject), out var userId))
+            return null;
+
+        var started = await registry.StartAsync(
+            new SessionStart(
+                userId, TenantOf(principal), request.ClientId, [.. principal.GetClaims(OpenIddictConstants.Claims.Role)],
+                [.. principal.GetClaims(TokenPrincipalFactory.MethodClaim)], HttpContext.Connection.RemoteIpAddress?.ToString(),
+                Request.Headers.UserAgent.ToString(), request.GetParameter("device_name")?.ToString()),
+            HttpContext.RequestAborted);
+        if (started.SessionId is not { } sessionId)
+        {
+            Audit("token.session-limit", SecurityAuditOutcomes.Denied, userId.ToString(), TenantOf(principal), request.ClientId);
+            return ForbidGrant(OpenIddictConstants.Errors.InvalidGrant, started.Refusal ?? "The session limit has been reached.");
+        }
+
+        ((ClaimsIdentity)principal.Identity!).AddClaim(new Claim(TokenPrincipalFactory.SessionClaim, sessionId.ToString()));
+        return null;
+    }
+
+    /// <summary>
+    /// A refresh continues the session its token belongs to (refused when that session ended or timed out); a token without one (an
+    /// authorization code, or a refresh token issued before sessions were switched on) starts a session now.
+    /// </summary>
+    private async Task<IActionResult?> ContinueSessionAsync(ClaimsPrincipal principal, string grant)
+    {
+        if (HttpContext.RequestServices.GetService<ISessionRegistry>() is not { } registry)
+            return null;
+
+        if (Guid.TryParse(principal.GetClaim(TokenPrincipalFactory.SessionClaim), out var sessionId))
+        {
+            var state = await registry.TouchAsync(
+                sessionId, HttpContext.Connection.RemoteIpAddress?.ToString(), Request.Headers.UserAgent.ToString(), HttpContext.RequestAborted);
+            if (state == SessionState.Active)
+                return null;
+
+            Audit(grant, SecurityAuditOutcomes.Denied, principal.GetClaim(OpenIddictConstants.Claims.Subject), TenantOf(principal));
+            return InvalidRefreshGrant();
+        }
+
+        return await AttachSessionAsync(principal, HttpContext.GetOpenIddictServerRequest()!);
+    }
+
+    /// <summary>
+    /// The approval step of the device authorization grant (<c>/connect/verify</c>, RFC 8628). The device showed a user code; a
+    /// person who is signed in elsewhere sends it here with their <b>bearer token</b> (not a cookie, so a web page cannot forge
+    /// it). <c>GET</c> says which application and scopes the code is for; <c>POST</c> with <c>decision=approve</c> or
+    /// <c>deny</c> decides. Approval needs a recent sign-in (<see cref="ModulusIdentityOptions.DeviceApprovalMaxAgeMinutes"/>), and
+    /// the device receives the approver's identity and authentication strength but a session of its own.
+    /// </summary>
+    [HttpGet("~/connect/verify")]
+    [HttpPost("~/connect/verify")]
+    [IgnoreAntiforgeryToken]
+    [Loosened("Device authorization approval: authenticates the approver itself with a bearer token and answers unauthenticated callers 401", Framework = true)]
+    [AllowAnonymous]
+    public async Task<IActionResult> Verify()
+    {
+        var request = HttpContext.GetOpenIddictServerRequest() ?? throw new InvalidOperationException("Unable to retrieve OpenIddict request.");
+        var approver = await HttpContext.AuthenticateAsync(OpenIddict.Validation.AspNetCore.OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme);
+        if (!approver.Succeeded || approver.Principal is null)
+            return Unauthorized(new { error = "login_required", error_description = "Send your own access token to approve a device." });
+
+        // The pending authorization: only a valid, unexpired, unused user code authenticates against the server scheme.
+        var pending = await HttpContext.AuthenticateAsync(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+        if (!pending.Succeeded || pending.Principal?.GetClaim(OpenIddictConstants.Claims.Private.DeviceCodeId) is not { Length: > 0 })
+        {
+            Audit("device.verify", SecurityAuditOutcomes.Denied, approver.Principal.GetClaim(OpenIddictConstants.Claims.Subject), TenantOf(approver.Principal));
+            return NotFound(new { error = "invalid_user_code", error_description = "The code is wrong, has expired or was already used." });
+        }
+
+        var clientId = request.ClientId ?? pending.Principal.GetPresenters().FirstOrDefault();
+        var scopes = PasswordGrant.AuthorizeScopes(pending.Principal.GetScopes(), AllowedGrantScopes);
+        if (Microsoft.AspNetCore.Http.HttpMethods.IsGet(Request.Method))
+            return Ok(new { client_id = clientId, scopes, user_code = request.UserCode });
+
+        var decision = (Request.HasFormContentType ? Request.Form["decision"].ToString() : Request.Query["decision"].ToString()).Trim().ToLowerInvariant();
+        var subject = approver.Principal.GetClaim(OpenIddictConstants.Claims.Subject);
+        if (decision == "deny")
+        {
+            Audit("device.verify", SecurityAuditOutcomes.Denied, subject, TenantOf(approver.Principal), clientId);
+            return Forbid(
+                new AuthenticationProperties(new Dictionary<string, string?>
+                {
+                    [OpenIddictServerAspNetCoreConstants.Properties.Error] = OpenIddictConstants.Errors.AccessDenied,
+                    [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] = "The person refused to authorize the device.",
+                }),
+                OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+        }
+
+        if (decision != "approve")
+            return BadRequest(new { error = "invalid_request", error_description = "Send decision=approve or decision=deny." });
+
+        var maxAge = TimeSpan.FromMinutes(Math.Max(1, HttpContext.RequestServices.GetService<IOptions<ModulusIdentityOptions>>()?.Value.DeviceApprovalMaxAgeMinutes ?? 15));
+        var now = Now;
+        if (!long.TryParse(approver.Principal.GetClaim(TokenPrincipalFactory.AuthTimeClaim), System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var signedInAt)
+            || now - DateTimeOffset.FromUnixTimeSeconds(signedInAt) > maxAge)
+        {
+            return Unauthorized(new { error = "recent_sign_in_required", error_description = $"Sign in again (within {maxAge.TotalMinutes:0} minutes) to approve a device." });
+        }
+
+        if (ResolveUserManager() is not { } userManager
+            || await TokenPrincipalFactory.RevalidateAsync(userManager, approver.Principal) is not { } principal)
+        {
+            Audit("device.verify", SecurityAuditOutcomes.Denied, subject, TenantOf(approver.Principal), clientId);
+            return Forbid(OpenIddictValidation());
+        }
+
+        // The device gets the person's identity and the strength of their sign-in, but never their session.
+        if (principal.FindFirst(TokenPrincipalFactory.SessionClaim) is { } sessionClaim)
+            ((ClaimsIdentity)principal.Identity!).RemoveClaim(sessionClaim);
+        principal.SetScopes(scopes);
+
+        // OpenIddict ties the approval to the pending device authorization through these internal claims.
+        foreach (var internalClaim in new[] { OpenIddictConstants.Claims.Private.DeviceCodeId })
+        {
+            if (pending.Principal.GetClaim(internalClaim) is { Length: > 0 } value)
+                principal.SetClaim(internalClaim, value);
+        }
+
+        ApplyDestinations(principal);
+        Audit("device.verify", SecurityAuditOutcomes.Success, subject, TenantOf(principal), clientId);
+        return SignIn(principal, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+
+        static string OpenIddictValidation() => OpenIddict.Validation.AspNetCore.OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme;
+    }
+
+    /// <summary>The time sign-ins are stamped with and compared against (the host's <see cref="TimeProvider"/>).</summary>
+    private DateTimeOffset Now => HttpContext.RequestServices.GetService<TimeProvider>()?.GetUtcNow() ?? DateTimeOffset.UtcNow;
 
     private static Guid? TenantOf(ClaimsPrincipal principal)
         => Guid.TryParse(principal.GetClaim("tid"), out var tenantId) ? tenantId : null;

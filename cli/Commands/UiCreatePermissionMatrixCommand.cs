@@ -63,7 +63,8 @@ internal sealed class UiCreatePermissionMatrixCommand : Command<UiCreatePermissi
                     ApiPrefix = UiPermissions.ApiPrefix,
                     Roles = roles,
                     Permissions = permissions,
-                });
+                },
+                callsApi: true);
         });
     }
 }

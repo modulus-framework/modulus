@@ -85,6 +85,7 @@ internal sealed class IdentityPasswordGrantValidator<TUser>(
         }
 
         // Second factor: asked only after the password is right, so the answer reveals nothing about unknown accounts.
+        var secondFactorVerified = false;
         if (await userManager.GetTwoFactorEnabledAsync(user))
         {
             if (string.IsNullOrWhiteSpace(verificationCode))
@@ -100,6 +101,8 @@ internal sealed class IdentityPasswordGrantValidator<TUser>(
                 Denied(user, "wrong-second-factor");
                 return PasswordGrantResult.Denied();
             }
+
+            secondFactorVerified = true;
         }
 
         // Asked only after the password (and any second factor) is right, so an expired password is not revealed to anyone else.
@@ -123,6 +126,7 @@ internal sealed class IdentityPasswordGrantValidator<TUser>(
             Email = await userManager.GetEmailAsync(user),
             Roles = roles.ToList(),
             SecurityStamp = securityStamp,
+            SecondFactorVerified = secondFactorVerified,
         };
     }
 

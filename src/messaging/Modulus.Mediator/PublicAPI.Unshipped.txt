@@ -39,7 +39,7 @@ Modulus.Mediator.Abstractions.IQueryHandler<TQuery, TResponse>
 Modulus.Mediator.Abstractions.IQueryHandler<TQuery, TResponse>.HandleAsync(TQuery query, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<TResponse>!
 Modulus.Mediator.Abstractions.RequestHandlerDelegate<TResponse>
 Modulus.Mediator.Behaviors.AuthorizationBehavior<TRequest, TResponse>
-Modulus.Mediator.Behaviors.AuthorizationBehavior<TRequest, TResponse>.AuthorizationBehavior(Modulus.Core.Abstractions.ICurrentUser! currentUser) -> void
+Modulus.Mediator.Behaviors.AuthorizationBehavior<TRequest, TResponse>.AuthorizationBehavior(Modulus.Core.Abstractions.ICurrentUser! currentUser, Modulus.Core.Abstractions.IStepUpGate? stepUp = null) -> void
 Modulus.Mediator.Behaviors.AuthorizationBehavior<TRequest, TResponse>.HandleAsync(TRequest request, Modulus.Mediator.Abstractions.RequestHandlerDelegate<TResponse>! next, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<TResponse>!
 Modulus.Mediator.Behaviors.CachingBehavior<TRequest, TResponse>
 Modulus.Mediator.Behaviors.CachingBehavior<TRequest, TResponse>.HandleAsync(TRequest request, Modulus.Mediator.Abstractions.RequestHandlerDelegate<TResponse>! next, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<TResponse>!

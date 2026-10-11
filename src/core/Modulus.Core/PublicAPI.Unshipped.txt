@@ -660,3 +660,11 @@ Modulus.Core.Abstractions.TenantStatus.Trial = 0 -> Modulus.Core.Abstractions.Te
 Modulus.Core.Abstractions.Exceptions.ForbiddenException.ForbiddenException(string! permission, string? detail = null) -> void
 Modulus.Core.Abstractions.Ai.AiResourceAttribute.BatchLookup.get -> System.Type?
 Modulus.Core.Abstractions.Ai.AiResourceAttribute.BatchLookup.set -> void
+Modulus.Core.Abstractions.Exceptions.StepUpRequiredException
+Modulus.Core.Abstractions.Exceptions.StepUpRequiredException.Permission.get -> string!
+Modulus.Core.Abstractions.Exceptions.StepUpRequiredException.StepUpRequiredException(string! permission) -> void
+Modulus.Core.Abstractions.IStepUpGate
+Modulus.Core.Abstractions.IStepUpGate.IsSatisfied(string! permission) -> bool
+Modulus.Core.Abstractions.ITenantMemberProvisioner
+Modulus.Core.Abstractions.ITenantMemberProvisioner.AddMemberAsync(System.Guid userId, System.Guid tenantId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.Core.Abstractions.ITenantMemberProvisioner.RemoveMemberAsync(System.Guid userId, System.Guid tenantId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!

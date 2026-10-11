@@ -2,6 +2,7 @@ namespace Modulus.Webhooks.Tests;
 
 using System.Net;
 using FluentAssertions;
+using Modulus.Networking;
 using Xunit;
 
 [Trait("Category", "Unit")]
@@ -100,7 +101,7 @@ public sealed class WebhookAddressGuardTests
     [InlineData("64:ff9b::a00:1", false)]
     [InlineData("2001:db8::1", false)]
     public void Tells_public_addresses_from_internal_ones(string address, bool isPublic)
-        => WebhookAddressGuard.IsPublic(IPAddress.Parse(address)).Should().Be(isPublic);
+        => OutboundAddressGuard.IsPublic(IPAddress.Parse(address)).Should().Be(isPublic);
 
     [Theory]
     [InlineData("https://hooks.example.com/in", null)]
@@ -133,7 +134,7 @@ public sealed class WebhookAddressGuardTests
         var call = () => client.PostAsync(new Uri("http://localhost:9/hook"), new StringContent("{}"));
 
         // SocketsHttpHandler wraps connect failures; the guard's exception is the inner one.
-        (await call.Should().ThrowAsync<HttpRequestException>()).WithInnerException<WebhookAddressRejectedException>();
+        (await call.Should().ThrowAsync<HttpRequestException>()).WithInnerException<OutboundAddressRejectedException>();
     }
 }
 

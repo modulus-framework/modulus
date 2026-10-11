@@ -31,11 +31,17 @@ public interface IIntegrationClientDirectory
 /// <summary>Names used for integration clients.</summary>
 public static class IntegrationClients
 {
+    /// <summary>
+    /// The prefix reserved for integration client roles. People cannot be given a role with it (the user manager refuses), so
+    /// holding one proves nothing beyond the machine marker the token server adds.
+    /// </summary>
+    internal const string RolePrefix = "integration:";
+
     /// <summary>The role claim an integration client's token carries; grant permissions to this role.</summary>
     public static string RoleFor(string clientId)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(clientId);
-        return $"integration:{clientId}";
+        return $"{RolePrefix}{clientId}";
     }
 }
 

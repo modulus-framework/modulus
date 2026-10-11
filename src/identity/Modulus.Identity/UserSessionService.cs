@@ -108,6 +108,10 @@ internal sealed class UserSessionService<TUser>(
             }
         }
 
+        // The session registry (when on) ends every sign-in too, so access tokens stop at once even without token-entry validation.
+        if (services.GetService<ISessionRegistry>() is { } registry)
+            await registry.EndAllAsync(userId, "revoked", ct);
+
         logger.LogInformation("Ended every session of user {UserId} ({Revoked} tokens revoked): {Reason}", userId, revoked, reason);
         await NotifyAsync(userId, "sessions.revoked", ct, user.TenantId);
         return revoked;

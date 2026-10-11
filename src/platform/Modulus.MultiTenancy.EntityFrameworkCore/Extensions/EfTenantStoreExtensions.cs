@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Modulus.Core.Abstractions;
 
 namespace Modulus.MultiTenancy.EntityFrameworkCore;
 
@@ -28,6 +29,7 @@ public static class EfTenantStoreExtensions
     {
         services.AddDbContext<TenantStoreDbContext>(configure);
         services.AddScoped<TenantManager>();
+        services.AddScoped<ITenantMemberProvisioner>(sp => sp.GetRequiredService<TenantManager>());
 
         // Supersede the NullTenantStore registered by AddMultiTenancy. The
         // ITenantStore facade is a SINGLETON bridge that resolves the scoped

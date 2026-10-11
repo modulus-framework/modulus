@@ -690,3 +690,64 @@ Modulus.Authorization.Management.PartyCeilingRequest.Kind.get -> string!
 Modulus.Authorization.Management.PartyCeilingRequest.Kind.init -> void
 Modulus.Authorization.Management.PartyCeilingRequest.Permission.get -> string!
 Modulus.Authorization.Management.PartyCeilingRequest.Permission.init -> void
+Modulus.Authorization.Management.ApprovalChainRequest
+Modulus.Authorization.Management.ApprovalChainRequest.ApprovalChainRequest(System.Guid? Id, string? Name, string? DocumentType, decimal? MinAmount, decimal? MaxAmount, string? Currency, Modulus.Authorization.Management.ApprovalStepModel![]? Steps, bool IsActive = true) -> void
+Modulus.Authorization.Management.ApprovalChainRequest.<Clone>$() -> Modulus.Authorization.Management.ApprovalChainRequest!
+Modulus.Authorization.Management.ApprovalChainRequest.Currency.get -> string?
+Modulus.Authorization.Management.ApprovalChainRequest.Currency.init -> void
+Modulus.Authorization.Management.ApprovalChainRequest.Deconstruct(out System.Guid? Id, out string? Name, out string? DocumentType, out decimal? MinAmount, out decimal? MaxAmount, out string? Currency, out Modulus.Authorization.Management.ApprovalStepModel![]? Steps, out bool IsActive) -> void
+Modulus.Authorization.Management.ApprovalChainRequest.DocumentType.get -> string?
+Modulus.Authorization.Management.ApprovalChainRequest.DocumentType.init -> void
+Modulus.Authorization.Management.ApprovalChainRequest.Equals(Modulus.Authorization.Management.ApprovalChainRequest? other) -> bool
+Modulus.Authorization.Management.ApprovalChainRequest.Id.get -> System.Guid?
+Modulus.Authorization.Management.ApprovalChainRequest.Id.init -> void
+Modulus.Authorization.Management.ApprovalChainRequest.IsActive.get -> bool
+Modulus.Authorization.Management.ApprovalChainRequest.IsActive.init -> void
+Modulus.Authorization.Management.ApprovalChainRequest.MaxAmount.get -> decimal?
+Modulus.Authorization.Management.ApprovalChainRequest.MaxAmount.init -> void
+Modulus.Authorization.Management.ApprovalChainRequest.MinAmount.get -> decimal?
+Modulus.Authorization.Management.ApprovalChainRequest.MinAmount.init -> void
+Modulus.Authorization.Management.ApprovalChainRequest.Name.get -> string?
+Modulus.Authorization.Management.ApprovalChainRequest.Name.init -> void
+Modulus.Authorization.Management.ApprovalChainRequest.Steps.get -> Modulus.Authorization.Management.ApprovalStepModel![]?
+Modulus.Authorization.Management.ApprovalChainRequest.Steps.init -> void
+Modulus.Authorization.Management.ApprovalCommentRequest
+Modulus.Authorization.Management.ApprovalCommentRequest.ApprovalCommentRequest(string? Comment) -> void
+Modulus.Authorization.Management.ApprovalCommentRequest.<Clone>$() -> Modulus.Authorization.Management.ApprovalCommentRequest!
+Modulus.Authorization.Management.ApprovalCommentRequest.Comment.get -> string?
+Modulus.Authorization.Management.ApprovalCommentRequest.Comment.init -> void
+Modulus.Authorization.Management.ApprovalCommentRequest.Deconstruct(out string? Comment) -> void
+Modulus.Authorization.Management.ApprovalCommentRequest.Equals(Modulus.Authorization.Management.ApprovalCommentRequest? other) -> bool
+Modulus.Authorization.Management.ApprovalStepModel
+Modulus.Authorization.Management.ApprovalStepModel.ApprovalStepModel(string? Name, string? Permission, int RequiredApprovals = 1, double? EscalateAfterMinutes = null, string? EscalationPermission = null, bool CheckAuthority = true) -> void
+Modulus.Authorization.Management.ApprovalStepModel.CheckAuthority.get -> bool
+Modulus.Authorization.Management.ApprovalStepModel.CheckAuthority.init -> void
+Modulus.Authorization.Management.ApprovalStepModel.<Clone>$() -> Modulus.Authorization.Management.ApprovalStepModel!
+Modulus.Authorization.Management.ApprovalStepModel.Deconstruct(out string? Name, out string? Permission, out int RequiredApprovals, out double? EscalateAfterMinutes, out string? EscalationPermission, out bool CheckAuthority) -> void
+Modulus.Authorization.Management.ApprovalStepModel.Equals(Modulus.Authorization.Management.ApprovalStepModel? other) -> bool
+Modulus.Authorization.Management.ApprovalStepModel.EscalateAfterMinutes.get -> double?
+Modulus.Authorization.Management.ApprovalStepModel.EscalateAfterMinutes.init -> void
+Modulus.Authorization.Management.ApprovalStepModel.EscalationPermission.get -> string?
+Modulus.Authorization.Management.ApprovalStepModel.EscalationPermission.init -> void
+Modulus.Authorization.Management.ApprovalStepModel.Name.get -> string?
+Modulus.Authorization.Management.ApprovalStepModel.Name.init -> void
+Modulus.Authorization.Management.ApprovalStepModel.Permission.get -> string?
+Modulus.Authorization.Management.ApprovalStepModel.Permission.init -> void
+Modulus.Authorization.Management.ApprovalStepModel.RequiredApprovals.get -> int
+Modulus.Authorization.Management.ApprovalStepModel.RequiredApprovals.init -> void
+override Modulus.Authorization.Management.ApprovalChainRequest.Equals(object? obj) -> bool
+override Modulus.Authorization.Management.ApprovalChainRequest.GetHashCode() -> int
+override Modulus.Authorization.Management.ApprovalChainRequest.ToString() -> string!
+override Modulus.Authorization.Management.ApprovalCommentRequest.Equals(object? obj) -> bool
+override Modulus.Authorization.Management.ApprovalCommentRequest.GetHashCode() -> int
+override Modulus.Authorization.Management.ApprovalCommentRequest.ToString() -> string!
+override Modulus.Authorization.Management.ApprovalStepModel.Equals(object? obj) -> bool
+override Modulus.Authorization.Management.ApprovalStepModel.GetHashCode() -> int
+override Modulus.Authorization.Management.ApprovalStepModel.ToString() -> string!
+static Modulus.Authorization.Management.ApprovalChainRequest.operator !=(Modulus.Authorization.Management.ApprovalChainRequest? left, Modulus.Authorization.Management.ApprovalChainRequest? right) -> bool
+static Modulus.Authorization.Management.ApprovalChainRequest.operator ==(Modulus.Authorization.Management.ApprovalChainRequest? left, Modulus.Authorization.Management.ApprovalChainRequest? right) -> bool
+static Modulus.Authorization.Management.ApprovalCommentRequest.operator !=(Modulus.Authorization.Management.ApprovalCommentRequest? left, Modulus.Authorization.Management.ApprovalCommentRequest? right) -> bool
+static Modulus.Authorization.Management.ApprovalCommentRequest.operator ==(Modulus.Authorization.Management.ApprovalCommentRequest? left, Modulus.Authorization.Management.ApprovalCommentRequest? right) -> bool
+static Modulus.Authorization.Management.ApprovalStepModel.operator !=(Modulus.Authorization.Management.ApprovalStepModel? left, Modulus.Authorization.Management.ApprovalStepModel? right) -> bool
+static Modulus.Authorization.Management.ApprovalStepModel.operator ==(Modulus.Authorization.Management.ApprovalStepModel? left, Modulus.Authorization.Management.ApprovalStepModel? right) -> bool
+static Modulus.Authorization.Management.AuthorizationManagementExtensions.MapModulusApprovalWorkflow(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! prefix = "/authorization/approvals") -> Microsoft.AspNetCore.Routing.RouteGroupBuilder!

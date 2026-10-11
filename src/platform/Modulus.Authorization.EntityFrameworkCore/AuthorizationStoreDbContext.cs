@@ -32,6 +32,8 @@ public class AuthorizationStoreDbContext(
     internal DbSet<ScopedGrantRow> ScopedGrants => Set<ScopedGrantRow>();
     internal DbSet<AssignmentRow> Assignments => Set<AssignmentRow>();
     internal DbSet<ApprovalAuthorityRow> ApprovalAuthorities => Set<ApprovalAuthorityRow>();
+    internal DbSet<ApprovalChainRow> ApprovalChains => Set<ApprovalChainRow>();
+    internal DbSet<ApprovalRequestRow> ApprovalRequests => Set<ApprovalRequestRow>();
     internal DbSet<SodRuleRow> SodRules => Set<SodRuleRow>();
     internal DbSet<RoleInclusionRow> RoleInclusions => Set<RoleInclusionRow>();
     internal DbSet<PositionRow> Positions => Set<PositionRow>();
@@ -173,6 +175,29 @@ public class AuthorizationStoreDbContext(
         approval.Property(a => a.DocumentType).HasMaxLength(256);
         approval.HasIndex(a => new { a.TenantId, a.Permission, a.HolderType, a.Holder });
 
+        var chain = modelBuilder.Entity<ApprovalChainRow>();
+        chain.ToTable("ModulusApprovalChains");
+        chain.HasKey(c => c.Id);
+        chain.Property(c => c.Name).HasMaxLength(256);
+        chain.Property(c => c.DocumentType).HasMaxLength(256);
+        chain.Property(c => c.Currency).HasMaxLength(8);
+        chain.Property(c => c.MinAmount).HasPrecision(18, 4);
+        chain.Property(c => c.MaxAmount).HasPrecision(18, 4);
+        chain.HasIndex(c => new { c.TenantId, c.DocumentType });
+
+        var approvalRequest = modelBuilder.Entity<ApprovalRequestRow>();
+        approvalRequest.ToTable("ModulusApprovalRequests");
+        approvalRequest.HasKey(r => r.Id);
+        approvalRequest.Property(r => r.DocumentType).HasMaxLength(256);
+        approvalRequest.Property(r => r.DocumentId).HasMaxLength(256);
+        approvalRequest.Property(r => r.Currency).HasMaxLength(8);
+        approvalRequest.Property(r => r.Summary).HasMaxLength(1000);
+        approvalRequest.Property(r => r.Amount).HasPrecision(18, 4);
+        approvalRequest.Property(r => r.Version).IsConcurrencyToken();
+        approvalRequest.HasIndex(r => new { r.TenantId, r.Status, r.CreatedAt });
+        approvalRequest.HasIndex(r => new { r.TenantId, r.DocumentType, r.DocumentId });
+        approvalRequest.HasIndex(r => new { r.TenantId, r.RequestedBy });
+
         var position = modelBuilder.Entity<PositionRow>();
         position.ToTable("ModulusPositions");
         position.HasKey(p => p.Id);
@@ -259,13 +284,14 @@ public class AuthorizationStoreDbContext(
         campaign.HasMany(c => c.Items)
             .WithOne(i => i.Campaign)
             .HasForeignKey(i => i.CampaignId);
-        campaign.HasIndex(c => c.CompletedAt);
+        campaign.HasIndex(c => new { c.TenantId, c.CompletedAt });
 
         var item = modelBuilder.Entity<RecertificationItemRow>();
         item.ToTable("ModulusRecertificationItems");
         item.HasKey(i => i.Id);
         item.HasIndex(i => new { i.CampaignId, i.Decision });
         item.HasIndex(i => new { i.CampaignId, i.UserId });
+        item.HasIndex(i => new { i.TenantId, i.CampaignId });
 
         ApplyTenantFilters(modelBuilder);
     }
@@ -297,6 +323,12 @@ public class AuthorizationStoreDbContext(
         mb.Entity<DelegationRow>().HasQueryFilter(e =>
             currentTenant.IsHost
             || (currentTenant.TenantId != null && e.TenantId == currentTenant.TenantId));
+        mb.Entity<RecertificationCampaignRow>().HasQueryFilter(e =>
+            currentTenant.IsHost
+            || (currentTenant.TenantId != null && e.TenantId == currentTenant.TenantId));
+        mb.Entity<RecertificationItemRow>().HasQueryFilter(e =>
+            currentTenant.IsHost
+            || (currentTenant.TenantId != null && e.TenantId == currentTenant.TenantId));
         mb.Entity<ScopedGrantRow>().HasQueryFilter(e =>
             currentTenant.IsHost
             || (currentTenant.TenantId != null && e.TenantId == currentTenant.TenantId));
@@ -322,6 +354,12 @@ public class AuthorizationStoreDbContext(
             currentTenant.IsHost
             || (currentTenant.TenantId != null && e.TenantId == currentTenant.TenantId));
         mb.Entity<SodRuleRow>().HasQueryFilter(e =>
+            currentTenant.IsHost
+            || (currentTenant.TenantId != null && e.TenantId == currentTenant.TenantId));
+        mb.Entity<ApprovalChainRow>().HasQueryFilter(e =>
+            currentTenant.IsHost
+            || (currentTenant.TenantId != null && e.TenantId == currentTenant.TenantId));
+        mb.Entity<ApprovalRequestRow>().HasQueryFilter(e =>
             currentTenant.IsHost
             || (currentTenant.TenantId != null && e.TenantId == currentTenant.TenantId));
         mb.Entity<AccessRequestRow>().HasQueryFilter(e =>
@@ -382,6 +420,44 @@ internal sealed class ApprovalAuthorityRow : IHasTenantId
     public DateTimeOffset? ValidUntil { get; set; }
     public Guid? CreatedBy { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
+}
+
+/// <summary>Row backing an approval chain; the steps are stored as JSON.</summary>
+internal sealed class ApprovalChainRow : IHasTenantId
+{
+    public Guid Id { get; set; }
+    public Guid TenantId { get; set; }
+    public string Name { get; set; } = null!;
+    public string DocumentType { get; set; } = null!;
+    public decimal? MinAmount { get; set; }
+    public decimal? MaxAmount { get; set; }
+    public string? Currency { get; set; }
+    public string Steps { get; set; } = "[]";
+    public bool IsActive { get; set; }
+}
+
+/// <summary>Row backing an approval request; steps and decisions are stored as JSON, <see cref="Version"/> guards concurrent decisions.</summary>
+internal sealed class ApprovalRequestRow : IHasTenantId
+{
+    public Guid Id { get; set; }
+    public Guid TenantId { get; set; }
+    public Guid ChainId { get; set; }
+    public string DocumentType { get; set; } = null!;
+    public string DocumentId { get; set; } = null!;
+    public decimal Amount { get; set; }
+    public string? Currency { get; set; }
+    public Guid? OrgUnitId { get; set; }
+    public Guid RequestedBy { get; set; }
+    public string? Summary { get; set; }
+    public string Steps { get; set; } = "[]";
+    public int CurrentStep { get; set; }
+    public int Status { get; set; }
+    public string Decisions { get; set; } = "[]";
+    public DateTimeOffset CreatedAt { get; set; }
+    public DateTimeOffset StepStartedAt { get; set; }
+    public bool Escalated { get; set; }
+    public long Version { get; set; }
+    public DateTimeOffset? CompletedAt { get; set; }
 }
 
 /// <summary>Row backing an <see cref="AccessRequest"/>.</summary>

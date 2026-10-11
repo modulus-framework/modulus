@@ -48,6 +48,14 @@ public sealed class ForbiddenException(string permission, string? detail = null)
     public string Permission { get; } = permission;
 }
 
+/// <summary>A permission that needs a recent multi-factor sign-in was used without one. Answered as <c>401</c> with code <c>STEP_UP_REQUIRED</c>.</summary>
+public sealed class StepUpRequiredException(string permission)
+    : ModulusException($"A recent multi-factor sign-in is required to use {permission}.")
+{
+    /// <summary>The permission that needs the sign-in.</summary>
+    public string Permission { get; } = permission;
+}
+
 public sealed class FeatureDisabledException(string feature)
     : ModulusException($"Feature not available for this tenant: {feature}")
 {

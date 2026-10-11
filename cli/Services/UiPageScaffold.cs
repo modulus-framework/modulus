@@ -25,7 +25,8 @@ internal static class UiPageScaffold
     ];
 
     public static int Run(IReadOnlyList<UiAuthPage> pages, string controllerTemplate, string controllerFile,
-        string? engineOption, string? output, string what, string folder = "Auth", bool sharedController = false, object? model = null)
+        string? engineOption, string? output, string what, string folder = "Auth", bool sharedController = false, object? model = null,
+        bool callsApi = false)
     {
         var start = Path.GetFullPath(output ?? "./");
         var inventory = ModuleDiscovery.Inventory(start)
@@ -62,14 +63,33 @@ internal static class UiPageScaffold
             Ux.Success($"{page.PageName} page added", $"{Path.GetRelativePath(start, target)}  →  {page.Route}");
         }
 
+        var rootNamespace = Path.GetFileNameWithoutExtension(inventory.UiProjectPath);
         if (controller is not null && !(sharedController && File.Exists(controller) && !Ux.Force))
         {
-            var ns = Path.GetFileNameWithoutExtension(inventory.UiProjectPath) + ".Controllers";
-            renderer.RenderToFile(controllerTemplate, new { Namespace = ns }, controller);
+            renderer.RenderToFile(controllerTemplate, new { Namespace = rootNamespace + ".Controllers" }, controller);
             Ux.Success("Controller added", Path.GetRelativePath(start, controller));
         }
 
-        Ux.Info("The pages call the Modulus.Identity /account/* endpoints on the same host (the cookie session is used for 2FA).");
+        // The pages' scripts call /account/* and /authorization/* on their own host. On a split app those endpoints are in the
+        // API host, so the Web host forwards them (with the signed-in user's token) and needs its controllers routed.
+        var programPath = Path.Combine(uiDir, "Program.cs");
+        var split = inventory.Kind == AppKind.WebAppApi && File.Exists(programPath);
+        if (split && callsApi && UiAccessGates.HasSignIn(File.ReadAllText(programPath)))
+        {
+            foreach (var change in UiHostWiring.EnsureIdentityProxy(uiDir, programPath, rootNamespace, renderer))
+                Ux.Success("Web host updated", change);
+        }
+
+        if (split && (controller is not null || callsApi) && File.Exists(programPath))
+        {
+            foreach (var change in UiHostWiring.EnsureControllerRouting(programPath))
+                Ux.Success("Web host updated", change);
+        }
+
+        if (split && callsApi && !UiAccessGates.HasSignIn(File.ReadAllText(programPath)))
+            Ux.Warning("This Web host has no sign-in, so the pages' calls to /account/* and /authorization/* have no token and will be refused. Add a sign-in first (ui add-auth needs one).");
+        else if (!split && callsApi)
+            Ux.Info("The pages call the Modulus.Identity /account/* endpoints on the same host (the cookie session is used for 2FA).");
         return 0;
     }
 }

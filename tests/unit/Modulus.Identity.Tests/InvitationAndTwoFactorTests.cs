@@ -148,7 +148,9 @@ public sealed class InvitationAndTwoFactorTests
         var twoFactor = scope.ServiceProvider.GetRequiredService<IUserTwoFactorService>();
         var validator = scope.ServiceProvider.GetRequiredService<IPasswordGrantCredentialValidator>();
 
-        (await validator.ValidateWithSecondFactorAsync("ann", "Passw0rd!x", null)).Success.Should().BeTrue("two-factor is off");
+        var plain = await validator.ValidateWithSecondFactorAsync("ann", "Passw0rd!x", null);
+        plain.Success.Should().BeTrue("two-factor is off");
+        plain.SecondFactorVerified.Should().BeFalse();
 
         var setup = (await twoFactor.BeginSetupAsync(user.Id))!;
         setup.AuthenticatorUri.Should().StartWith("otpauth://totp/Acme%20ERP:");
@@ -163,7 +165,9 @@ public sealed class InvitationAndTwoFactorTests
         missing.Error.Should().Be(PasswordGrantResult.MfaRequiredError);
         (await validator.ValidateWithSecondFactorAsync("ann", "wrong", null)).Error.Should().Be("invalid_grant", "a wrong password never reveals the second factor");
         (await validator.ValidateWithSecondFactorAsync("ann", "Passw0rd!x", "000000")).Success.Should().BeFalse();
-        (await validator.ValidateWithSecondFactorAsync("ann", "Passw0rd!x", Totp(key))).Success.Should().BeTrue();
+        var verified = await validator.ValidateWithSecondFactorAsync("ann", "Passw0rd!x", Totp(key));
+        verified.Success.Should().BeTrue();
+        verified.SecondFactorVerified.Should().BeTrue("the token then carries amr mfa");
         (await validator.ValidateWithSecondFactorAsync("ann", "Passw0rd!x", recovery[0])).Success.Should().BeTrue();
         (await validator.ValidateWithSecondFactorAsync("ann", "Passw0rd!x", recovery[0])).Success.Should().BeFalse("a recovery code is single use");
 

@@ -13,6 +13,15 @@
     <PackageVersion Include="Microsoft.Azure.SignalR"                   Version="1.33.0" />
     <PackageVersion Include="Microsoft.FeatureManagement.AspNetCore"     Version="4.6.0" />
   </ItemGroup>
+  <ItemGroup Label="Passkeys (WebAuthn, MIT)">
+    <PackageVersion Include="Fido2"                                      Version="4.2.0" />
+    <!-- SAML 2.0 service provider (BSD-3-Clause) and LDAP/AD bind (MIT). -->
+    <PackageVersion Include="ITfoxtec.Identity.Saml2"                    Version="4.21.0" />
+    <PackageVersion Include="System.DirectoryServices.Protocols"         Version="10.0.12" Condition="'$(TargetFramework)' != 'net8.0'" />
+    <PackageVersion Include="System.DirectoryServices.Protocols"         Version="8.0.1" Condition="'$(TargetFramework)' == 'net8.0'" />
+    <!-- Fido2 4.x pulls Microsoft.Bcl.Memory 9.0.0 (GHSA-73j8-2gch-69rq); pin the patched line. -->
+    <PackageVersion Include="Microsoft.Bcl.Memory"                       Version="9.0.20" />
+  </ItemGroup>
   <ItemGroup Label="EF Core">
     <PackageVersion Include="Microsoft.EntityFrameworkCore"             Version="10.0.9" Condition="'$(TargetFramework)' != 'net8.0'" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore"             Version="8.0.31" Condition="'$(TargetFramework)' == 'net8.0'" />

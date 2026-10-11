@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Mvc.RazorPages;
 using Modulus.AspNetCore.Configuration;
 using Modulus.AspNetCore.Correlation;
 using Modulus.AspNetCore.Extensions;

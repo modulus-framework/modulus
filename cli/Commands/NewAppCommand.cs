@@ -90,7 +90,7 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         [CommandOption("--migration-engine")]
         public string? MigrationEngine { get; init; }
 
-        [Description("App kind: api (an API host, no UI is created) or webapp+api (a Web project on the Modulus UI framework + the API for external clients such as mobile or desktop apps). Omit to be prompted; api when not interactive.")]
+        [Description("App kind: api (an API host, no UI is created) or webapp+api (a Web project on the Modulus UI framework + the API for external clients such as mobile or desktop apps). The single-project webapp and web kinds are retired. Omit to be prompted; api when not interactive.")]
         [CommandOption("--kind")]
         public string? Kind { get; init; }
 
@@ -430,7 +430,8 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
             Path.Combine(projectDir, ".gitignore"));
 
         // â”€â”€ UI Modules â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-        if (model.UseUi)
+        // The same predicate as the rest of the UI setup, so no package is referenced for a host that does not run on the framework.
+        if (UsesUiFramework(model.Kind, model.UiEngine))
         {
             AddUiFrameworkPackages(projectDir, model);
         }

@@ -68,7 +68,7 @@ public class ModulusAuthorizeController : Controller
                 IdentityConstants.ApplicationScheme);
         }
 
-        var principal = BuildPrincipal(signedIn.Principal!, request.GetScopes());
+        var principal = BuildPrincipal(signedIn.Principal!, request.GetScopes(), signedIn.Properties?.IssuedUtc);
         if (principal is null)
             return Rejected(OpenIddictConstants.Errors.AccessDenied, "The signed-in user could not be identified.");
 
@@ -80,7 +80,7 @@ public class ModulusAuthorizeController : Controller
     /// signed-in user's Identity cookie. Only scopes both requested and allowed are granted. Null when the cookie
     /// carries no user id.
     /// </summary>
-    internal static ClaimsPrincipal? BuildPrincipal(ClaimsPrincipal user, IEnumerable<string> requestedScopes)
+    internal static ClaimsPrincipal? BuildPrincipal(ClaimsPrincipal user, IEnumerable<string> requestedScopes, DateTimeOffset? authenticatedAt = null)
     {
         ArgumentNullException.ThrowIfNull(user);
         ArgumentNullException.ThrowIfNull(requestedScopes);
@@ -105,6 +105,16 @@ public class ModulusAuthorizeController : Controller
         // Lets the refresh handler notice a password change or another security invalidation (see ModulusTokenController).
         if (user.FindFirstValue(CookieSecurityStampClaim) is { Length: > 0 } stamp)
             identity.AddClaim(new Claim("security_stamp", stamp));
+
+        // How the person signed in: a federated sign-in (SAML) records its methods in the cookie. The password login has no
+        // second-factor step (an account with two-factor fails closed), so a cookie without them is a password sign-in.
+        var methods = user.FindAll(TokenPrincipalFactory.MethodClaim).Select(c => c.Value).Distinct(StringComparer.Ordinal).ToList();
+        foreach (var method in methods.Count > 0 ? methods : ["pwd"])
+            identity.AddClaim(new Claim(TokenPrincipalFactory.MethodClaim, method));
+        identity.AddClaim(new Claim(
+            TokenPrincipalFactory.AuthTimeClaim,
+            (authenticatedAt ?? DateTimeOffset.UtcNow).ToUnixTimeSeconds().ToString(System.Globalization.CultureInfo.InvariantCulture),
+            ClaimValueTypes.Integer64));
 
         var principal = new ClaimsPrincipal(identity);
         principal.SetScopes(PasswordGrant.AuthorizeScopes(requestedScopes, ModulusTokenController.AllowedGrantScopes));

@@ -34,7 +34,7 @@ Out of scope (deliberately not in this package):
 
 - Cloud-vendor SDKs (Microsoft Graph SDK, AWS Cognito SDK, etc.) — adapters
   hit REST endpoints directly to keep the dependency surface minimal.
-- SAML/WS-Fed — only OIDC is supported.
+- SAML/WS-Fed — only OIDC is supported. *(Changed since this review: SAML 2.0 and LDAP/AD are built, see AGENTS.md *Identity*; WS-Federation is not.)*
 - Multi-tenant isolation of the identity store itself (the framework's
   multi-tenancy applies at the data layer; the user store is shared unless
   the host partitions it).
@@ -447,8 +447,9 @@ builder.Services.AddAuthentication()
 - `tests/unit/Modulus.Identity.Tests/IdentityDefaultsTests.cs` — defaults
   of `ModulusIdentityOptions`.
 
-Integration tests for the OpenIddict token endpoint and the external OIDC
-sign-in flow are not present. Standing them up requires either Testcontainers
+Integration tests for the OpenIddict token endpoint are now present (`TokenEndpointHttpTests` runs
+every grant against an in-process OpenIddict server). The external OIDC sign-in flow still has no
+such test. Standing them up requires either Testcontainers
 against a real IdP or a mock OIDC authority (e.g. `IdentityServer8` test host).
 Recommended as a follow-up.
 

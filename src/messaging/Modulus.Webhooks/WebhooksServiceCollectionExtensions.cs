@@ -9,6 +9,7 @@ using Microsoft.Extensions.Options;
 using Modulus.Authorization.Extensions;
 using Modulus.Events;
 using Modulus.Events.Abstractions;
+using Modulus.Networking;
 
 /// <summary>The permissions of the webhook management API.</summary>
 public static class WebhookPermissions
@@ -118,7 +119,7 @@ public static class WebhooksServiceCollectionExtensions
                 {
                     // Connect only to checked addresses; a proxy would connect on our behalf, unchecked.
                     handler.UseProxy = false;
-                    handler.ConnectCallback = WebhookAddressGuard.ConnectAsync;
+                    handler.ConnectCallback = OutboundAddressGuard.ConnectAsync;
                 }
 
                 return handler;

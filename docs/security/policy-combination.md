@@ -103,3 +103,18 @@ hashes the version plus every rule's position, effect, action and target state. 
 (`PolicyVersion`, `PolicyFingerprint`), and `PolicyFingerprints.IsCurrent(decision, registry, type)` answers whether the policy in force is still the one that
 decided. `false` means the rules changed (or are gone): read the decision as a record, and use the version label to find the code revision that produced it.
 Not built: storing per-rule evidence with each decision, or a policy store that keeps old revisions executable.
+
+## Step-up, machine principals and sessions
+
+- **Step-up** (`StepUpPolicy`, `ModulusAuthorizationOptions.StepUp`). A permission that needs step-up is held only with a
+  fresh multi-factor sign-in (`amr` contains `mfa`, `auth_time` within `MaxAge`). The check runs in every path: the HTTP
+  permission handler, `AuthorizationBehavior` (mediator, through `IStepUpGate`) and resource rules (`ResourceAuthorizer`).
+  A principal is exempt only with the `modulus:machine` claim and an `integration:` role; a person given that role still
+  steps up. Outside a request there is no principal, so the permission is refused. [`StepUpTests`, `AuthorizationBehaviorTests`,
+  `ResourceAuthorizerTests`]
+- **Sessions.** A token whose session has ended is rejected at once when the session registry is on (`SessionValidationHandler`);
+  sign-out, the concurrency cap and the idle timeout all end sessions. [`SessionHttpTests`]
+- **Party ceilings.** An external-party account keeps only the grants its kind's ceiling covers; a deny always survives.
+  Scopes of kind `assigned:{kind}` see only that party. (No dedicated test yet; the ceilings are stored by `EfPartyStore`.)
+- **Machine clients** are granted through the same store as people (`integration:{clientId}` role), so removing a grant stops
+  them on the next request.

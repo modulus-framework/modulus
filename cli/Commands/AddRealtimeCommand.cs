@@ -19,7 +19,7 @@ internal sealed class AddRealtimeCommand : Command<AddRealtimeCommand.Settings>
 
     internal sealed class Settings : ModulusSettings
     {
-        [Description("Integration events to push, by event name or type name (comma-separated). Default: every [IntegrationEventName] event in the modules' Application/IntegrationEvents.")]
+        [Description("Integration events to push, by event name or type name (comma-separated). Default: every [[IntegrationEventName]] event in the modules' Application/IntegrationEvents.")]
         [CommandOption("--events")]
         public string? Events { get; init; }
 

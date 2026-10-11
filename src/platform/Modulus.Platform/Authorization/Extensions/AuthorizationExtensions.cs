@@ -64,6 +64,11 @@ public static class AuthorizationExtensions
             .Scoped<IAuthorizationHandler, PermissionRequirementHandler>());
         services.AddHostedService<PermissionInitHostedService>();
 
+        // Step-up authentication (off until StepUp options name something) and its RFC 9470 answer.
+        services.TryAddSingleton<StepUpPolicy>();
+        services.TryAddSingleton<IStepUpGate, StepUpMediatorGate>();
+        services.AddSingleton<Microsoft.AspNetCore.Authorization.IAuthorizationMiddlewareResultHandler, StepUpResultHandler>();
+
         // Grant store + resolver. Register the concrete store first (the durable
         // seam — management APIs inject it by concrete type), then expose the
         // interface as the request-scoped cache wrapper: memoizes GetGrants per

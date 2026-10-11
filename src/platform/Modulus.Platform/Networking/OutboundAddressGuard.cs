@@ -1,15 +1,16 @@
-namespace Modulus.Webhooks;
+namespace Modulus.Networking;
 
 using System.Net;
 using System.Net.Http;
 using System.Net.Sockets;
 
 /// <summary>
-/// Keeps deliveries off the server's own network (SSRF). A subscriber picks the URL, so it could otherwise point it at
-/// <c>localhost</c>, a cloud metadata endpoint or an internal service. The check runs on the resolved address at connect
-/// time, so a public name that resolves (or later re-resolves) to an internal address is refused as well.
+/// Keeps outbound calls off the server's own network (SSRF). A URL that an external party registers (a webhook subscriber, a
+/// back-channel logout address) could otherwise point at <c>localhost</c>, a cloud metadata endpoint or an internal service.
+/// The check runs on the resolved address at connect time, so a public name that resolves (or later re-resolves) to an internal
+/// address is refused as well. Used by Modulus.Webhooks and Modulus.Identity.
 /// </summary>
-internal static class WebhookAddressGuard
+public static class OutboundAddressGuard
 {
     /// <summary>Whether <paramref name="address"/> is a public unicast address.</summary>
     public static bool IsPublic(IPAddress address)
@@ -55,8 +56,21 @@ internal static class WebhookAddressGuard
     }
 
     /// <summary>
+    /// Whether a URI's host names this machine or a non-public address, judged without DNS: <c>localhost</c> and literal
+    /// private or reserved IPs. A public name passes here and is checked at connect time by <see cref="ConnectAsync"/>.
+    /// </summary>
+    public static bool IsReservedHost(Uri uri)
+    {
+        ArgumentNullException.ThrowIfNull(uri);
+        if (uri.IsLoopback || string.Equals(uri.Host, "localhost", StringComparison.OrdinalIgnoreCase)
+            || uri.Host.EndsWith(".localhost", StringComparison.OrdinalIgnoreCase))
+            return true;
+        return IPAddress.TryParse(uri.IdnHost.Trim('[', ']'), out var ip) && !IsPublic(ip);
+    }
+
+    /// <summary>
     /// A <see cref="SocketsHttpHandler.ConnectCallback"/> that resolves the host, drops non-public addresses and connects
-    /// to the remaining ones; when none is left the request fails with <see cref="WebhookAddressRejectedException"/>.
+    /// to the remaining ones; when none is left the request fails with <see cref="OutboundAddressRejectedException"/>.
     /// </summary>
     public static async ValueTask<Stream> ConnectAsync(SocketsHttpConnectionContext context, CancellationToken ct)
     {
@@ -68,7 +82,7 @@ internal static class WebhookAddressGuard
 
         var allowed = addresses.Where(IsPublic).ToArray();
         if (allowed.Length == 0)
-            throw new WebhookAddressRejectedException(endPoint.Host);
+            throw new OutboundAddressRejectedException(endPoint.Host);
 
         var socket = new Socket(SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
         try
@@ -82,36 +96,23 @@ internal static class WebhookAddressGuard
             throw;
         }
     }
+
+    /// <summary>A handler for outbound calls that must not reach private networks: no proxy (it would connect unchecked), no redirects.</summary>
+    public static SocketsHttpHandler CreateCheckedHandler() => new()
+    {
+        AllowAutoRedirect = false,
+        UseCookies = false,
+        UseProxy = false,
+        ConnectTimeout = TimeSpan.FromSeconds(10),
+        PooledConnectionLifetime = TimeSpan.FromMinutes(5),
+        ConnectCallback = ConnectAsync,
+    };
 }
 
-/// <summary>A webhook endpoint resolved only to non-public addresses (see <c>Webhooks:AllowPrivateNetworks</c>).</summary>
-public sealed class WebhookAddressRejectedException(string host)
-    : HttpRequestException($"'{host}' does not resolve to a public address; webhooks are not delivered to private networks.");
-
-/// <summary>The checks a subscription URL must pass when it is saved (the connect-time guard still applies on every delivery).</summary>
-internal static class WebhookUrlRules
+/// <summary>An outbound call whose host resolved only to non-public addresses (see <see cref="OutboundAddressGuard"/>).</summary>
+public sealed class OutboundAddressRejectedException(string host)
+    : HttpRequestException($"'{host}' does not resolve to a public address; the call is not sent to private networks.")
 {
-    public static string? Validate(string? url, ModulusWebhooksOptions options)
-    {
-        if (string.IsNullOrWhiteSpace(url) || !Uri.TryCreate(url, UriKind.Absolute, out var uri))
-            return "Must be an absolute URL.";
-        if (url.Length > 2048)
-            return "Must be at most 2048 characters.";
-        if (uri.Scheme != Uri.UriSchemeHttps && !(options.AllowHttp && uri.Scheme == Uri.UriSchemeHttp))
-            return options.AllowHttp ? "Must be an http or https URL." : "Must be an https URL.";
-        if (!string.IsNullOrEmpty(uri.UserInfo))
-            return "Must not contain credentials.";
-        if (!string.IsNullOrEmpty(uri.Fragment))
-            return "Must not contain a fragment.";
-        if (!options.AllowPrivateNetworks)
-        {
-            if (uri.IsLoopback || uri.Host.EndsWith(".localhost", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(uri.Host, "localhost", StringComparison.OrdinalIgnoreCase))
-                return "Must not point at this machine.";
-            if (System.Net.IPAddress.TryParse(uri.IdnHost.Trim('[', ']'), out var ip) && !WebhookAddressGuard.IsPublic(ip))
-                return "Must not point at a private or reserved address.";
-        }
-
-        return null;
-    }
+    /// <summary>The host that was refused.</summary>
+    public string Host { get; } = host;
 }

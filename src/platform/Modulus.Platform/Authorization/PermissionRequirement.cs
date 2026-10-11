@@ -48,7 +48,8 @@ public sealed class PermissionRequirement : IAuthorizationRequirement
 /// </summary>
 internal sealed class PermissionRequirementHandler(
     IPermissionResolver resolver, IPermissionGrantStore grantStore, TimeProvider? clock = null,
-    Microsoft.Extensions.Options.IOptions<ModulusAuthorizationOptions>? options = null)
+    Microsoft.Extensions.Options.IOptions<ModulusAuthorizationOptions>? options = null,
+    StepUpPolicy? stepUp = null)
     : AuthorizationHandler<PermissionRequirement>
 {
     private readonly TimeProvider _clock = clock ?? TimeProvider.System;
@@ -83,6 +84,13 @@ internal sealed class PermissionRequirementHandler(
         if ((_trustClaims && principal.HasClaim("permission", requirement.Permission))
             || resolver.Resolve(query, grants).Contains(requirement.Permission))
         {
+            // Holding the permission is not enough for a sensitive one: the sign-in must be recent and multi-factor.
+            if (stepUp is not null && stepUp.Requires(requirement.Permission) && !stepUp.IsSatisfiedBy(principal))
+            {
+                context.Fail(new StepUpRequiredReason(this));
+                return Task.CompletedTask;
+            }
+
             context.Succeed(requirement);
         }
 

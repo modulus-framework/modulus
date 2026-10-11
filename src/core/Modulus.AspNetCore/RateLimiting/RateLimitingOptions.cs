@@ -62,6 +62,9 @@ public sealed class RateLimitingOptions
         "/connect/token",
         "/connect/authorize",
         "/connect/revoke",
+        "/connect/device",
+        "/connect/verify",
+        "/saml",
         "/account",
         "/bff/login",
     ];

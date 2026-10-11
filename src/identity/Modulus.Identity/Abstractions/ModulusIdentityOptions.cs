@@ -105,6 +105,22 @@ public sealed class ModulusIdentityOptions
     public bool AllowClientCredentialsFlow { get; set; }
 
     /// <summary>
+    /// Enables the OAuth 2.0 device authorization grant (RFC 8628) for devices without a keyboard (a warehouse scanner, a line
+    /// tablet, a TV): the device asks <c>POST /connect/device</c> for a short user code, shows it, and polls <c>/connect/token</c>
+    /// while a person who is already signed in somewhere else approves the code with <c>POST /connect/verify</c> (a bearer call
+    /// from their own app, so there is no cookie and no cross-site request to forge). The device's tokens carry the approver's
+    /// authentication strength (<c>amr</c>), a fresh <c>auth_time</c> of the approval and a session of their own. A client must be
+    /// registered with the device authorization endpoint and the device-code grant. <b>Off by default.</b>
+    /// </summary>
+    public bool AllowDeviceCodeFlow { get; set; }
+
+    /// <summary>
+    /// How recent the approver's own sign-in must be to approve a device, in minutes (default 15): a stolen token cannot quietly
+    /// authorize an attacker's device. Only used with <see cref="AllowDeviceCodeFlow"/>.
+    /// </summary>
+    public int DeviceApprovalMaxAgeMinutes { get; set; } = 15;
+
+    /// <summary>
     /// The token server's fixed issuer (e.g. <c>https://id.example.com/</c>). When null, OpenIddict uses the address of
     /// each request, so a host listening on more than one endpoint (HTTP plus an HTTP/2-only gRPC endpoint, or an internal
     /// address next to the public one) rejects tokens issued on the other endpoint. Set it whenever the host has several.

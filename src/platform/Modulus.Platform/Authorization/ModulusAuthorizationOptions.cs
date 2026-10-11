@@ -19,6 +19,9 @@ public sealed class ModulusAuthorizationOptions
     /// confer access the store does not.
     /// </summary>
     public bool TrustPermissionClaims { get; set; } = true;
+
+    /// <summary>Step-up authentication: permissions that need a recent multi-factor sign-in.</summary>
+    public StepUpOptions StepUp { get; set; } = new();
 }
 
 /// <summary>Applies <see cref="ModulusAuthorizationOptions.RequireAuthenticatedUserByDefault"/>.</summary>

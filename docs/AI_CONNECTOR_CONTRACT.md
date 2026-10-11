@@ -37,7 +37,8 @@ Envelope rules (all must hold, else `DENIED`):
 - Signed with an asymmetric algorithm (RSA, RSA-PSS or ECDSA) against the platform's published JWKS; issuer matches.
 - `aud` contains the `app_instance_id` claim; the instance must be mapped to that `tenant_id` in the app.
 - Has `jti` and `iat`; `exp - iat` is capped (default 5 min; the platform issues about 60 s); clock skew about 30 s.
-- `jti` was not seen before (replay protection; per process in the reference implementation).
+- `jti` was not seen before (replay protection). It is checked per process by default; with an `IDistributedLock` registered
+  (Redis in a multi-replica deployment) it is checked cluster-wide.
 - Claims read: `sub` (the user, configurable), `email`, `tenant_id`, `app_instance_id`, `correlation_id`.
 - The user resolves to an active account in the app; when the instance maps to a company, the company is active and
   the user is a member.
@@ -127,7 +128,8 @@ The same payload is used on every retry. The platform must drop cached scopes fo
 ## Conformance
 
 A conformant app passes these categories: health, authentication, tenant isolation, manifest, deny paths, query
-injection, field security, batch authorization, extraction, revocation, no adapter-side caching, typed errors. In
+injection, field security, batch authorization, extraction, revocation, no adapter-side caching, typed errors, and
+timeout-as-deny (`TimeoutIsDeny`, which applies only when the app names a slow capability to test). In
 Modulus run them with `AiConnectorConformance.RunAsync` (package `Modulus.AI.Connector.Testing`). Other stacks can
 reimplement the same checks against this document.
 

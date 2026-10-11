@@ -116,7 +116,8 @@ Every phase leaves `dotnet build` at 0 warnings, `Category=Unit` green and `dotn
   - `LoosenedAttribute(reason) { Ticket, Framework }`: why an endpoint is anonymous. It works both as endpoint metadata and as an attribute next to `[AllowAnonymous]`; the attribute alone opens nothing.
   - `EndpointSecurityPolicyAttribute { Classification, Network }` with `DataClassification` (Unspecified/Public/Internal/Confidential/Restricted) and `NetworkRequirement` (Any/CompanyNetwork/BranchNetwork/Internal).
   - Permissions are not duplicated: they stay the endpoint's authorization data.
-  - **Deviation:** `RequiresApproval` is not built. There is no approval workflow to enforce it, and a declared but unenforced flag is worse than none.
+  - **Deviation:** `RequiresApproval` is not built. The approval workflow (`Modulus.Authorization.Workflow`) now exists, but it is
+    driven by code (`IApprovalWorkflow.SubmitAsync`), not by an endpoint flag. A declared flag that nothing enforces is still worse than none.
 - [x] **Fallback policy** = authenticated user. `AddModulusAuthorization(o => o.RequireAuthenticatedUserByDefault)` (default `true`) sets it unless the app set its own.
   - It also covers requests that match no endpoint, so unknown routes answer `401` to anonymous callers, and so do static files served after `UseAuthorization`. The CLI's UI wiring therefore puts `UseStaticFiles()` before `UseAuthentication()`.
 - [x] **`.Loosen(reason, ticket)`** (`Modulus.AspNetCore.Security.Policy.EndpointSecurityExtensions`, plus a `Loosen(LoosenedAttribute)` overload) and REPR `AllowAnonymous(reason, ticket)` / `Classification(...)`. `.WithSecurityPolicy(classification, network)` covers minimal APIs.
@@ -505,3 +506,6 @@ cd Demo && NUGET_PACKAGES=<fresh-cache> dotnet test
 
 Use a fresh `NUGET_PACKAGES` folder (or delete its `cobytelabs.*` entries): the version number stays at 1.4.0, so a
 cache from an earlier pack silently serves stale framework packages.
+
+## ERP identity gaps (separate plan)
+Password policy, shop-floor sign-in and bulk import, SoD rules, composite roles, positions, external-party users, SCIM, approval workflow, step-up and passkeys, sessions, device code and back-channel logout, SAML 2.0 and LDAP/AD are specified and recorded as built in [`ERP_IDENTITY_GAPS_PLAN.md`](ERP_IDENTITY_GAPS_PLAN.md).

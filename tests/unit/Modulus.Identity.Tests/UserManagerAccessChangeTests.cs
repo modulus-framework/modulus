@@ -71,6 +71,26 @@ public sealed class UserManagerAccessChangeTests
     }
 
     [Fact]
+    public async Task The_integration_role_namespace_is_reserved_for_machine_clients()
+    {
+        var (provider, recorder, connection) = await CreateAsync();
+        await using var _ = provider;
+        await using var __ = connection;
+        using var scope = provider.CreateScope();
+        var users = scope.ServiceProvider.GetRequiredService<UserManager<ModulusUser>>();
+        var user = new ModulusUser { UserName = "eve", Email = "eve@example.test" };
+        (await users.CreateAsync(user, "Passw0rd!x")).Succeeded.Should().BeTrue();
+
+        var single = await users.AddToRoleAsync(user, "integration:payments-bot");
+        single.Succeeded.Should().BeFalse();
+        single.Errors.Should().ContainSingle(e => e.Code == "ReservedRole");
+        (await users.AddToRolesAsync(user, ["Admin", "Integration:Other"])).Succeeded.Should().BeFalse();
+
+        (await users.GetRolesAsync(user)).Should().BeEmpty("a refused role is not assigned at all");
+        recorder.Changes.Should().BeEmpty("a refused assignment changes nobody's access");
+    }
+
+    [Fact]
     public async Task A_lockout_ending_or_a_plain_update_notifies_nobody()
     {
         var (provider, recorder, connection) = await CreateAsync();

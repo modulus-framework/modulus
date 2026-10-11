@@ -19,6 +19,17 @@ internal static class ShopFloorRules
             : null;
     }
 
+    /// <summary>A random PIN of the minimum length that passes <see cref="IsAcceptablePin"/>.</summary>
+    public static string GeneratePin(ShopFloorOptions options)
+    {
+        while (true)
+        {
+            var pin = string.Concat(Enumerable.Range(0, options.MinPinLength).Select(_ => (char)('0' + System.Security.Cryptography.RandomNumberGenerator.GetInt32(10))));
+            if (IsAcceptablePin(pin, options))
+                return pin;
+        }
+    }
+
     /// <summary>A PIN is digits only, within the configured length, and not one repeated digit (0000, 1111).</summary>
     public static bool IsAcceptablePin(string? pin, ShopFloorOptions options)
         => pin is { Length: > 0 }
@@ -41,7 +52,7 @@ internal sealed class ShopFloorCredentialValidator<TUser>(
 {
     private static string? s_dummyHash;
 
-    public async Task<PasswordGrantResult> ValidateAsync(Guid tenantId, string employeeCode, string pin, CancellationToken ct = default)
+    public async Task<PasswordGrantResult> ValidateAsync(Guid tenantId, string employeeCode, string pin, string? newPin = null, CancellationToken ct = default)
     {
         var code = ShopFloorRules.NormalizeCode(employeeCode);
         if (code is null || string.IsNullOrEmpty(pin))
@@ -75,7 +86,28 @@ internal sealed class ShopFloorCredentialValidator<TUser>(
         }
 
         await userManager.ResetAccessFailedCountAsync(user);
-        if (verdict == PasswordVerificationResult.SuccessRehashNeeded)
+
+        // An imported or reset PIN is known to someone else: the operator picks their own before any token is issued.
+        if (user.MustChangePin)
+        {
+            if (string.IsNullOrEmpty(newPin))
+            {
+                Denied(tenantId, user, "pin-change-required");
+                return PasswordGrantResult.Denied(ShopFloorGrant.PinChangeRequiredError);
+            }
+
+            if (!ShopFloorRules.IsAcceptablePin(newPin, options.Value) || newPin == pin)
+            {
+                Denied(tenantId, user, "new-pin-rejected");
+                return PasswordGrantResult.Denied(ShopFloorGrant.InvalidNewPinError);
+            }
+
+            user.PinHash = userManager.PasswordHasher.HashPassword(user, newPin);
+            user.MustChangePin = false;
+            await userManager.UpdateAsync(user);
+            await userManager.UpdateSecurityStampAsync(user);
+        }
+        else if (verdict == PasswordVerificationResult.SuccessRehashNeeded)
         {
             user.PinHash = userManager.PasswordHasher.HashPassword(user, pin);
             await userManager.UpdateAsync(user);
@@ -175,7 +207,7 @@ internal sealed class ShopFloorAccountService<TUser, TRole>(
         return roleList.Count == 0 ? created : await userManager.AddToRolesAsync(user, roleList);
     }
 
-    public async Task<IdentityResult> SetPinAsync(Guid userId, string pin, CancellationToken ct = default)
+    public async Task<IdentityResult> SetPinAsync(Guid userId, string pin, bool mustChange = false, CancellationToken ct = default)
     {
         if (!ShopFloorRules.IsAcceptablePin(pin, options.Value))
             return Fail("InvalidPin", PinRule());
@@ -185,6 +217,7 @@ internal sealed class ShopFloorAccountService<TUser, TRole>(
             return Fail("NotShopFloorAccount", "The account is not a shop-floor account.");
 
         user.PinHash = userManager.PasswordHasher.HashPassword(user, pin);
+        user.MustChangePin = mustChange;
         var updated = await userManager.UpdateAsync(user);
         if (!updated.Succeeded)
             return updated;
@@ -192,6 +225,30 @@ internal sealed class ShopFloorAccountService<TUser, TRole>(
         await userManager.ResetAccessFailedCountAsync(user);
         await userManager.SetLockoutEndDateAsync(user, null);
         return await userManager.UpdateSecurityStampAsync(user);
+    }
+
+    public async Task<IReadOnlyList<ShopFloorImportResult>> ImportAsync(Guid tenantId, IEnumerable<ShopFloorImportRow> rows, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(rows);
+        var results = new List<ShopFloorImportResult>();
+        foreach (var row in rows)
+        {
+            ct.ThrowIfCancellationRequested();
+            var pin = string.IsNullOrEmpty(row.InitialPin) ? ShopFloorRules.GeneratePin(options.Value) : row.InitialPin;
+            var created = await CreateAsync(tenantId, row.EmployeeCode, pin, row.FirstName, row.LastName, row.Roles, ct);
+            if (!created.Succeeded)
+            {
+                results.Add(new ShopFloorImportResult(row.EmployeeCode, null, null, string.Join(" ", created.Errors.Select(e => e.Description))));
+                continue;
+            }
+
+            var user = await userManager.Users.FirstAsync(u => u.TenantId == tenantId && u.EmployeeCode == ShopFloorRules.NormalizeCode(row.EmployeeCode), ct);
+            user.MustChangePin = true;
+            await userManager.UpdateAsync(user);
+            results.Add(new ShopFloorImportResult(row.EmployeeCode, user.Id, pin, null));
+        }
+
+        return results;
     }
 
     private string PinRule()

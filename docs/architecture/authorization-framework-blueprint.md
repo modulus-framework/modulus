@@ -1,6 +1,7 @@
 # Modulus Authorization & Access Control Framework — Architecture Blueprint
 
-> **Status:** Design specification (pre-implementation). This is a functional and
+> **Status:** Design specification. Most of what it asks for is now built; AGENTS.md (*Security model* and the
+> *Security hardening* rounds) records what was built and what is still open. This is a functional and
 > architectural blueprint — it defines *what* the authorization framework must do
 > and *why*, not *how* it is coded. Implementation increments are tracked
 > separately in `IMPROVEMENT_PLAN.md`; the first increment (the **permission grant

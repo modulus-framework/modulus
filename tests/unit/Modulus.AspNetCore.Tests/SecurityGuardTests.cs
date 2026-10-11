@@ -121,6 +121,25 @@ public sealed class SecurityGuardTests : IDisposable
     }
 
     [Fact]
+    public async Task A_static_file_fallback_is_public_by_design_and_does_not_fail_startup()
+    {
+        // MapStaticAssets registers this shape: a fallback that only ever returns files (:file), with no authorization.
+        await using var app = await StartAsync(a => a.MapFallback("{**path:file}", () => "file"));
+
+        app.Services.GetRequiredService<SecurityGuardState>().Report.Endpoints
+            .Should().NotContain(e => e.Route == "{**path:file}" && e.Access == EndpointAccess.Unpoliced);
+    }
+
+    [Fact]
+    public async Task A_fallback_for_any_path_still_fails_startup()
+    {
+        var act = () => StartAsync(a => a.MapFallback(() => "open"));
+
+        (await act.Should().ThrowAsync<SecurityGuardException>())
+            .Which.Findings.Should().Contain(f => f.Code == "unpoliced");
+    }
+
+    [Fact]
     public async Task With_a_fallback_policy_a_raw_endpoint_is_closed_and_starts()
     {
         await using var app = await StartAsync(a => a.MapGet("/raw", () => "open"), fallback: true);

@@ -1,8 +1,5 @@
 #nullable enable
 abstract Modulus.Events.Abstractions.IntegrationEventBase.<Clone>$() -> Modulus.Events.Abstractions.IntegrationEventBase!
-Modulus.Events.Abstractions.DomainEventDispatchMode
-Modulus.Events.Abstractions.DomainEventDispatchMode.AfterSave = 1 -> Modulus.Events.Abstractions.DomainEventDispatchMode
-Modulus.Events.Abstractions.DomainEventDispatchMode.BeforeSave = 0 -> Modulus.Events.Abstractions.DomainEventDispatchMode
 Modulus.Events.Abstractions.IDeferredDomainEventQueue
 Modulus.Events.Abstractions.IDeferredDomainEventQueue.DequeueAll() -> System.Collections.Generic.IReadOnlyList<Modulus.Core.Abstractions.Domain.IDomainEvent!>!
 Modulus.Events.Abstractions.IDeferredDomainEventQueue.Enqueue(System.Collections.Generic.IEnumerable<Modulus.Core.Abstractions.Domain.IDomainEvent!>! events) -> void

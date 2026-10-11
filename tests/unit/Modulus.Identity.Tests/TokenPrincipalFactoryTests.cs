@@ -51,6 +51,30 @@ public sealed class TokenPrincipalFactoryTests : IAsyncDisposable
     private UserManager<AppUser> Users => _scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
 
     [Fact]
+    public async Task A_token_records_how_and_when_the_person_signed_in_and_a_refresh_keeps_it()
+    {
+        var user = await CreateUserAsync(roles: "Editor");
+        var signedInAt = DateTimeOffset.UtcNow.AddMinutes(-40);
+        var grant = TokenPrincipalFactory.Create(
+            user.Id.ToString(), "jdoe", null, _tenantId, ["Editor"], await Users.GetSecurityStampAsync(user),
+            TokenPrincipalFactory.PasswordMethods(secondFactorVerified: true), signedInAt);
+
+        grant.GetClaims(TokenPrincipalFactory.MethodClaim).Should().BeEquivalentTo("pwd", "otp", "mfa");
+        grant.GetClaim(TokenPrincipalFactory.AuthTimeClaim).Should().Be(signedInAt.ToUnixTimeSeconds().ToString(System.Globalization.CultureInfo.InvariantCulture));
+        TokenPrincipalFactory.PasswordMethods(false).Should().Equal("pwd");
+
+        // A refresh re-issues the same sign-in, never a fresher one: an old session cannot turn into a step-up.
+        var refreshed = await TokenPrincipalFactory.RevalidateAsync(Users, grant);
+        refreshed.Should().NotBeNull();
+        refreshed!.GetClaims(TokenPrincipalFactory.MethodClaim).Should().BeEquivalentTo("pwd", "otp", "mfa");
+        refreshed!.GetClaim(TokenPrincipalFactory.AuthTimeClaim).Should().Be(grant.GetClaim(TokenPrincipalFactory.AuthTimeClaim));
+
+        // A grant without the claims (an older token) stays without them.
+        var oldGrant = await GrantForAsync(user);
+        (await TokenPrincipalFactory.RevalidateAsync(Users, oldGrant))!.HasClaim(c => c.Type == TokenPrincipalFactory.MethodClaim).Should().BeFalse();
+    }
+
+    [Fact]
     public async Task A_derived_user_type_is_rebuilt_from_the_store_with_its_current_roles_and_tenant()
     {
         var user = await CreateUserAsync(roles: "Editor");

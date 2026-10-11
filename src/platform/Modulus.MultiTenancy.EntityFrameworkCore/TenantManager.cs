@@ -15,7 +15,7 @@ public sealed class TenantManager(
     TenantStoreDbContext db,
     ISecurityAuditLog? audit = null,
     ICurrentUser? actor = null,
-    IEnumerable<IAccessChangeObserver>? observers = null)
+    IEnumerable<IAccessChangeObserver>? observers = null) : ITenantMemberProvisioner
 {
     /// <summary>
     /// Creates a new active tenant. Throws

@@ -37,12 +37,34 @@ internal sealed class ModulusUserManager<TUser> : UserManager<TUser>
     }
 
     public override async Task<IdentityResult> AddToRoleAsync(TUser user, string role)
-        => await NotifyOnSuccessAsync(await base.AddToRoleAsync(user, role).ConfigureAwait(false), user, AccessChangeKinds.Role, "role.added")
+    {
+        if (IsReserved(role))
+            return ReservedRole(role);
+        return await NotifyOnSuccessAsync(await base.AddToRoleAsync(user, role).ConfigureAwait(false), user, AccessChangeKinds.Role, "role.added")
             .ConfigureAwait(false);
+    }
 
     public override async Task<IdentityResult> AddToRolesAsync(TUser user, IEnumerable<string> roles)
-        => await NotifyOnSuccessAsync(await base.AddToRolesAsync(user, roles).ConfigureAwait(false), user, AccessChangeKinds.Role, "role.added")
+    {
+        var list = roles.ToList();
+        if (list.FirstOrDefault(IsReserved) is { } reserved)
+            return ReservedRole(reserved);
+        return await NotifyOnSuccessAsync(await base.AddToRolesAsync(user, list).ConfigureAwait(false), user, AccessChangeKinds.Role, "role.added")
             .ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// The <c>integration:</c> roles belong to machine clients (<see cref="IntegrationClients"/>). Refusing them here covers the admin
+    /// API, SCIM and the directory group mapping, which all add roles through this manager.
+    /// </summary>
+    private static bool IsReserved(string role)
+        => role.StartsWith(IntegrationClients.RolePrefix, StringComparison.OrdinalIgnoreCase);
+
+    private static IdentityResult ReservedRole(string role) => IdentityResult.Failed(new IdentityError
+    {
+        Code = "ReservedRole",
+        Description = $"The role '{role}' is reserved for integration clients and cannot be assigned to a user.",
+    });
 
     public override async Task<IdentityResult> RemoveFromRoleAsync(TUser user, string role)
         => await NotifyOnSuccessAsync(await base.RemoveFromRoleAsync(user, role).ConfigureAwait(false), user, AccessChangeKinds.Role, "role.removed")

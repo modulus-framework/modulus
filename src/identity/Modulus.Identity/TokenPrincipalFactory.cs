@@ -22,6 +22,19 @@ internal static class TokenPrincipalFactory
     /// <summary>The claim carrying the ASP.NET Core Identity security stamp (access token only).</summary>
     internal const string SecurityStampClaim = "security_stamp";
 
+    /// <summary>How the person authenticated (RFC 8176 values such as <c>pwd</c>, <c>otp</c>, <c>mfa</c>, <c>hwk</c>); access token only.</summary>
+    internal const string MethodClaim = "amr";
+
+    /// <summary>The session this token belongs to (<see cref="Modulus.Identity.Abstractions.ModulusSession"/>); a refresh keeps it.</summary>
+    internal const string SessionClaim = "sid";
+
+    /// <summary>When the person authenticated, in seconds since the Unix epoch; a refresh keeps the original value.</summary>
+    internal const string AuthTimeClaim = "auth_time";
+
+    /// <summary>The <c>amr</c> values of a password sign-in, with the second factor when one was verified.</summary>
+    internal static string[] PasswordMethods(bool secondFactorVerified)
+        => secondFactorVerified ? ["pwd", "otp", "mfa"] : ["pwd"];
+
     private static readonly MethodInfo s_revalidate = typeof(TokenPrincipalFactory)
         .GetMethod(nameof(RevalidateTypedAsync), BindingFlags.NonPublic | BindingFlags.Static)
         ?? throw new InvalidOperationException($"{nameof(RevalidateTypedAsync)} not found.");
@@ -32,7 +45,9 @@ internal static class TokenPrincipalFactory
         string? email,
         Guid? tenantId,
         IEnumerable<string> roles,
-        string? securityStamp)
+        string? securityStamp,
+        IEnumerable<string>? methods = null,
+        DateTimeOffset? authenticatedAt = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(subject);
         ArgumentNullException.ThrowIfNull(roles);
@@ -56,6 +71,17 @@ internal static class TokenPrincipalFactory
         // every access-token use; access token only (see ModulusTokenController.ApplyDestinations).
         if (!string.IsNullOrWhiteSpace(securityStamp))
             identity.AddClaim(new Claim(SecurityStampClaim, securityStamp));
+
+        // How and when the person signed in. Step-up authentication reads these from the access token.
+        if (methods is not null)
+        {
+            foreach (var method in methods.Distinct(StringComparer.Ordinal))
+                identity.AddClaim(new Claim(MethodClaim, method));
+            identity.AddClaim(new Claim(
+                AuthTimeClaim,
+                (authenticatedAt ?? DateTimeOffset.UtcNow).ToUnixTimeSeconds().ToString(System.Globalization.CultureInfo.InvariantCulture),
+                ClaimValueTypes.Integer64));
+        }
 
         return new ClaimsPrincipal(identity);
     }
@@ -119,12 +145,22 @@ internal static class TokenPrincipalFactory
 
         // Rebuild from the CURRENT store state so a role change, demotion, tenant move or profile edit takes effect at
         // the next refresh instead of the next login.
-        return Create(
+        // How and when the person signed in is carried over unchanged: a refresh must not turn an old sign-in into a fresh one.
+        var methods = grant.FindAll(MethodClaim).Select(c => c.Value).ToArray();
+        DateTimeOffset? authenticatedAt = long.TryParse(grant.FindFirstValue(AuthTimeClaim), System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var seconds)
+            ? DateTimeOffset.FromUnixTimeSeconds(seconds)
+            : null;
+        var rebuilt = Create(
             await userManager.GetUserIdAsync(user),
             await userManager.GetUserNameAsync(user),
             await userManager.GetEmailAsync(user),
             user.TenantId,
             await userManager.GetRolesAsync(user),
-            currentStamp);
+            currentStamp,
+            methods.Length > 0 ? methods : null,
+            authenticatedAt);
+        if (grant.FindFirstValue(SessionClaim) is { Length: > 0 } sessionId)
+            ((ClaimsIdentity)rebuilt.Identity!).AddClaim(new Claim(SessionClaim, sessionId));
+        return rebuilt;
     }
 }

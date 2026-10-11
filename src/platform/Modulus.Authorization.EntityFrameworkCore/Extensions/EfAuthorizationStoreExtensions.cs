@@ -1,4 +1,5 @@
 using Modulus.Authorization.Approval;
+using Modulus.Authorization.Workflow;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -116,6 +117,14 @@ public static class EfAuthorizationStoreExtensions
         services.RemoveAll<IApprovalAuthorityStore>();
         services.AddSingleton<IApprovalAuthorityStore>(
             sp => sp.GetRequiredService<EfApprovalAuthorityStore>());
+
+        // Multi-step approval chains and requests (AddApprovalWorkflow registers the engine and falls back to memory).
+        services.TryAddSingleton<EfApprovalChainStore>();
+        services.RemoveAll<IApprovalChainStore>();
+        services.AddSingleton<IApprovalChainStore>(sp => sp.GetRequiredService<EfApprovalChainStore>());
+        services.TryAddSingleton<EfApprovalRequestStore>();
+        services.RemoveAll<IApprovalRequestStore>();
+        services.AddSingleton<IApprovalRequestStore>(sp => sp.GetRequiredService<EfApprovalRequestStore>());
 
         services.TryAddSingleton<EfRecertificationCampaignStore>();
         services.RemoveAll<IRecertificationCampaignStore>();

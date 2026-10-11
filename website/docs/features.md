@@ -73,7 +73,6 @@ Events now fail independently:
 - Per-handler try/catch collection
 - One handler throwing doesn't block others
 - `AggregateException` if multiple handlers fail
-- Configurable via `DomainEventDispatchMode` (BeforeSave/AfterSave)
 
 ---
 

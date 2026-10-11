@@ -13,37 +13,42 @@ and first-class multi-tenancy.
 Modulus is designed for teams who need the architectural rigour of ABP or eShop
 without the heavyweight abstractions. It provides proven building blocks that
 compose cleanly — pick only what your application needs. The framework ships as
-**45 focused NuGet packages** (published as `Cobytelabs.Modulus.*`) plus a
-`dotnet tool` CLI for scaffolding complete solutions, modules, and CRUD code.
+**44 focused NuGet packages** (published as `Cobytelabs.Modulus.*`; the analyzer is packed
+inside `Cobytelabs.Modulus.AspNetCore`) plus a `dotnet tool` CLI for scaffolding complete
+solutions, modules, and CRUD code.
 
 ## Solution layout
 
 ```
 src/                    45 projects across:
-  core/          Modulus.Core (abstractions+impl merged), Modulus.AspNetCore,
-                 Modulus.AspNetCore.Redis (Redis-backed idempotency store)
+  core/          Modulus.Core (abstractions+impl merged), Modulus.AspNetCore
+  analyzers/     Modulus.Analyzers (Roslyn MOD0001/MOD0002/MOD0003; packed in Modulus.AspNetCore)
   data/          Modulus.Data.Abstractions, Modulus.EntityFrameworkCore,
-                 EF Core providers (SqlServer, PostgreSQL, MySQL, SQLite, MongoDB)
-  identity/      Modulus.Identity (OpenIddict server + 6 IdP adapters +
-                 EF Core mapping merged into one package)
-  messaging/     Modulus.Events (abstractions merged), Modulus.Mediator
-                 (abstractions merged), Modulus.Inbox (+ MongoDB), Modulus.Outbox,
-                 Modulus.Outbox.Abstractions (kept — circular-dep seam),
-                 Outbox.MongoDB, EventBus.RabbitMQ, EventBus.Kafka,
-                 Modulus.Sagas (Rebus-based)
-  platform/      Modulus.Platform (MultiTenancy + Authorization +
-                 BackgroundJobs + in-memory Caching + local Storage +
-                 in-process SignalR — NO heavy cloud SDKs), cloud providers
-                 opt-in: Storage.S3, Storage.AzureBlobs, Caching.Redis,
-                 SignalR.Backplane, MultiTenancy.EntityFrameworkCore,
-                 Authorization.EntityFrameworkCore + Authorization.Management
-                 (EF grant store + management API)
+                 EF Core providers (SqlServer, PostgreSQL, MySQL, SQLite), Data.MongoDB
+  identity/      Modulus.Identity (OpenIddict server, 6 IdP adapters, EF Core mapping,
+                 SAML, LDAP, passkeys, sessions, SCIM 2.0)
+  messaging/     Modulus.Events, Modulus.Mediator, Modulus.Inbox (+ MongoDB),
+                 Modulus.Outbox, Modulus.Outbox.Abstractions (kept: circular-dep seam),
+                 Modulus.Outbox.Management, Modulus.Outbox.MongoDB, EventBus.RabbitMQ,
+                 EventBus.Kafka, Modulus.Sagas (Rebus), Modulus.Webhooks (signed outgoing
+                 webhooks), Modulus.Realtime (SSE / SignalR) + Realtime.Redis
+  platform/      Modulus.Platform (MultiTenancy, Authorization, BackgroundJobs, Caching,
+                 Storage, SignalR, Networking), opt-in providers: Storage.S3,
+                 Storage.AzureBlobs, Caching.Redis, SignalR.Backplane,
+                 MultiTenancy.EntityFrameworkCore, Authorization.EntityFrameworkCore,
+                 Authorization.Management, AuditLogging.EntityFrameworkCore,
+                 AspNetCore.Redis (idempotency store), BackgroundJobs.Quartz,
+                 Bff (per-client backends on YARP), Grpc,
+                 GraphQL (GraphQL.NET)
+  ai/            Modulus.AI.Connector (external AI platform connector), .EntityFrameworkCore
+                 (change journal), .Testing (conformance kit)
   observability/ Modulus.Observability (Diagnostics + OpenTelemetry merged)
-  testing/       Modulus.Testing (WebApplicationFactory-based integration harness)
+  testing/       Modulus.Testing (WebApplicationFactory harness), Modulus.Testing.Architecture
   cli/           Modulus.Cli (Spectre.Console.Cli scaffolding tool)
-tests/                  16 projects
-  unit/          xUnit + NSubstitute + FluentAssertions
-  integration/   xUnit + Testcontainers (Docker required)
+tests/                  42 projects
+  unit/          xUnit + NSubstitute + FluentAssertions (Category=Unit)
+  integration/   xUnit + Testcontainers (Docker required; Category=Integration)
+  benchmarks/    BenchmarkDotNet (Modulus.Benchmarks)
 ```
 
 ## Getting started

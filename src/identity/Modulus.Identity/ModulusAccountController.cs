@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.DependencyInjection;
 using Modulus.Identity.Abstractions;
 using Modulus.Core.Abstractions.Security;
 
@@ -205,6 +206,47 @@ public class AccountController<TUser>(
             return Unauthorized();
 
         return await sessions.RevokeAsync(id, sessionId, ct) ? NoContent() : NotFound();
+    }
+
+    /// <summary>
+    /// The caller's sign-ins (with <c>Identity:Sessions</c> on): where from, which browser or device, when last used. The one the
+    /// request itself belongs to is marked <c>current</c>.
+    /// </summary>
+    [HttpGet("sign-ins")]
+    [Authorize]
+    public async Task<IActionResult> ListSignInsAsync(CancellationToken ct)
+    {
+        if (CallerId() is not { } id)
+            return Unauthorized();
+        if (HttpContext.RequestServices.GetService<ISessionRegistry>() is not { } registry)
+            return NotFound();
+
+        var current = User.FindFirst("sid")?.Value;
+        return Ok((await registry.ListAsync(id, ct)).Select(s => new
+        {
+            s.Id,
+            s.ClientId,
+            s.DeviceName,
+            s.UserAgent,
+            s.IpAddress,
+            s.Methods,
+            s.CreatedAt,
+            s.LastSeenAt,
+            Current = string.Equals(s.Id.ToString(), current, StringComparison.OrdinalIgnoreCase),
+        }));
+    }
+
+    /// <summary>Ends one of the caller's sign-ins; the tokens of that session stop working at once.</summary>
+    [HttpDelete("sign-ins/{sessionId:guid}")]
+    [Authorize]
+    public async Task<IActionResult> EndSignInAsync(Guid sessionId, CancellationToken ct)
+    {
+        if (CallerId() is not { } id)
+            return Unauthorized();
+        if (HttpContext.RequestServices.GetService<ISessionRegistry>() is not { } registry)
+            return NotFound();
+
+        return await registry.EndAsync(id, sessionId, "revoked", ct) ? NoContent() : NotFound();
     }
 
     /// <summary>Ends every session of the caller, this one included (sign out everywhere).</summary>

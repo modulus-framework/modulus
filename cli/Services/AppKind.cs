@@ -45,8 +45,8 @@ internal static class AppKinds
     };
 
     /// <summary>
-    /// Parses <c>api</c> / <c>webapp</c> / <c>webapp+api</c> (case-insensitive).
-    /// Also accepts the legacy <c>web</c> alias, which maps to <c>webapp</c> for backward compatibility.
+    /// Parses <c>api</c> / <c>webapp+api</c> (case-insensitive). The retired <c>webapp</c> and <c>web</c> kinds are refused
+    /// with a pointer to <c>webapp+api</c>.
     /// </summary>
     public static AppKind Parse(string value)
     {

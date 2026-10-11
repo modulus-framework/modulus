@@ -68,6 +68,19 @@ public sealed record PasswordGrantResult
     /// </summary>
     public string? SecurityStamp { get; init; }
 
+    /// <summary>
+    /// Whether a second factor (authenticator or recovery code) was verified as part of this sign-in. The token then carries
+    /// <c>amr</c> <c>otp</c> and <c>mfa</c>, which is what step-up authentication asks for.
+    /// </summary>
+    public bool SecondFactorVerified { get; init; }
+
+    /// <summary>
+    /// How the person authenticated (<c>amr</c> values such as <c>hwk</c>, <c>user</c>, <c>mfa</c>) for grants that are not a
+    /// password sign-in, such as a passkey. Empty for the password grant, which derives its methods from
+    /// <see cref="SecondFactorVerified"/>.
+    /// </summary>
+    public IReadOnlyList<string> AuthenticationMethods { get; init; } = [];
+
     /// <summary>OAuth error code (e.g. <c>invalid_grant</c>) surfaced to the client.</summary>
     public string Error { get; init; } = "invalid_grant";
 

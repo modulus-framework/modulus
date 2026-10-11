@@ -25,7 +25,7 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
 
         [CommandOption("--ai")]
         [DefaultValue(false)]
-        [Description("Expose the entity to the AI platform: [AiIndexed]/[AiQueryable] on the entity, [AiCapability] on the list query, [AiResource] on the lookup query, the indexing grant and a test class. Re-run on an existing entity to mark it. Needs modulus add-ai.")]
+        [Description("Expose the entity to the AI platform: [[AiIndexed]]/[[AiQueryable]] on the entity, [[AiCapability]] on the list query, [[AiResource]] on the lookup query, the indexing grant and a test class. Re-run on an existing entity to mark it. Needs modulus add-ai.")]
         public bool Ai { get; init; }
 
     }

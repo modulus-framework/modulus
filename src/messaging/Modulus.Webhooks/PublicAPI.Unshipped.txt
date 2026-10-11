@@ -41,8 +41,6 @@ Modulus.Webhooks.ModulusWebhooksOptions.SecretRotationOverlap.set -> void
 Modulus.Webhooks.ModulusWebhooksOptions.UserAgent.get -> string!
 Modulus.Webhooks.ModulusWebhooksOptions.UserAgent.set -> void
 Modulus.Webhooks.StandardWebhooks
-Modulus.Webhooks.WebhookAddressRejectedException
-Modulus.Webhooks.WebhookAddressRejectedException.WebhookAddressRejectedException(string! host) -> void
 Modulus.Webhooks.WebhookDelivery
 Modulus.Webhooks.WebhookDelivery.AttemptCount.get -> int
 Modulus.Webhooks.WebhookDelivery.AttemptCount.set -> void

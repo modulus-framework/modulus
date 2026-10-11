@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Modulus.Core.Abstractions;
+using Modulus.Networking;
 using Modulus.Core.Null;
 using Modulus.Identity;
 using Modulus.Identity.Abstractions;
@@ -80,6 +81,32 @@ public static class IdentityExtensions
 
         // Sessions of an account: list, revoke one, revoke all (admin pages and the account endpoints).
         services.TryAddScoped<IUserSessionService, UserSessionService<TUser>>();
+
+        // The session registry (Identity:Sessions): sign-ins with where they came from, a concurrent-session cap and idle timeouts.
+        services.AddOptions<SessionOptions>()
+            .Bind(configuration.GetSection("Identity:Sessions"))
+            .ValidateOnStart();
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<IValidateOptions<SessionOptions>, SessionOptionsValidator>());
+        if (configuration.GetValue<bool>("Identity:Sessions:Enabled"))
+        {
+            services.TryAddScoped<ISessionRegistry, SessionRegistry<TContext>>();
+
+            // Back-channel logout: a queue the registry writes to when a session ends, and a service that delivers it.
+            if (configuration.GetValue<bool>("Identity:Sessions:BackChannelLogout:Enabled"))
+            {
+                if (string.IsNullOrWhiteSpace(identityOptions.Issuer))
+                    throw new InvalidOperationException("Identity:Sessions:BackChannelLogout needs Identity:Issuer: it is the iss of every logout token.");
+
+                services.TryAddScoped<IBackChannelLogoutDirectory, OpenIddictBackChannelLogoutDirectory>();
+                services.TryAddScoped<IBackChannelLogoutQueue, BackChannelLogoutQueue<TContext>>();
+                services.AddHttpClient(BackChannelLogoutService<TContext>.HttpClientName)
+                    .ConfigurePrimaryHttpMessageHandler(sp => sp.GetRequiredService<IOptions<SessionOptions>>().Value.BackChannelLogout.AllowPrivateNetworks
+                        ? new SocketsHttpHandler { AllowAutoRedirect = false, UseCookies = false }
+                        // Connect only to public addresses, re-checked on every connection (a name can re-resolve to a private one).
+                        : OutboundAddressGuard.CreateCheckedHandler());
+                services.AddHostedService<BackChannelLogoutService<TContext>>();
+            }
+        }
         services.TryAddScoped<IIntegrationClientDirectory, OpenIddictIntegrationClientDirectory>();
         services.TryAddScoped<IUserTwoFactorService, UserTwoFactorService<TUser>>();
         services.TryAddScoped<IUserInvitationService, UserInvitationService<TUser>>();
@@ -231,6 +258,15 @@ public static class IdentityExtensions
                 if (identityOptions.AllowClientCredentialsFlow)
                     options.AllowClientCredentialsFlow();
 
+                // Devices without a keyboard (RFC 8628). OpenIddict serves /connect/device itself; the approval at /connect/verify is
+                // ModulusTokenController.Verify (passthrough), which an already signed-in person calls with a bearer token.
+                if (identityOptions.AllowDeviceCodeFlow)
+                {
+                    options.AllowDeviceAuthorizationFlow()
+                           .SetDeviceAuthorizationEndpointUris("/connect/device")
+                           .SetEndUserVerificationEndpointUris("/connect/verify");
+                }
+
                 // Signed-only JWT access tokens let a BFF or another microservice
                 // validate them locally against the JWKS; encrypted ones (the
                 // default) can only be read here or through introspection.
@@ -271,9 +307,15 @@ public static class IdentityExtensions
                        .EnableAuthorizationEndpointPassthrough()
                        .EnableUserInfoEndpointPassthrough();
 
+                if (identityOptions.AllowDeviceCodeFlow)
+                    options.UseAspNetCore().EnableEndUserVerificationEndpointPassthrough();
+
                 // /connect/revoke has no passthrough controller, so its outcome
                 // reaches the security audit through server event handlers.
                 RevocationSecurityAudit.Register(options);
+
+                if (configuration.GetValue<bool>("Identity:Sessions:BackChannelLogout:Enabled"))
+                    options.AddEventHandler(BackChannelLogoutDiscovery.Descriptor);
 
                 configure?.Invoke(options);
             })
@@ -285,6 +327,9 @@ public static class IdentityExtensions
                 // A revoked access token must stop working immediately, not at expiry: check each one against its stored entry.
                 if (identityOptions.ValidateTokenEntries)
                     options.EnableTokenEntryValidation();
+
+                // A token of a session that ended or timed out stops working at once (no-op without the session registry).
+                options.AddEventHandler(SessionValidationHandler.Descriptor);
             });
 
         return services;
@@ -353,4 +398,12 @@ public static class IdentityExtensions
                 sp.GetRequiredService<IEnumerable<ModulusRoleSeed>>())!);
         return services;
     }
+}
+
+internal sealed class SessionOptionsValidator : Microsoft.Extensions.Options.IValidateOptions<SessionOptions>
+{
+    public Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, SessionOptions options)
+        => options.IsValid(out var problem)
+            ? Microsoft.Extensions.Options.ValidateOptionsResult.Success
+            : Microsoft.Extensions.Options.ValidateOptionsResult.Fail(problem ?? "Identity:Sessions is misconfigured.");
 }

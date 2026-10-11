@@ -78,3 +78,16 @@ startup check (`Security:DataIsolation:Tier: Shared`) logs that residual risk.
 
 Development only for shared files. For tenant data use one file per tenant (`AddSQLitePerTenantDatabase`); the
 startup check refuses a shared SQLite file outside Development when `Security:DataIsolation:Tier` is set.
+
+## The security audit table
+
+`modulus_security_audit` (the hash-chained security log) must be append-only for the application. The
+`AuditStoreExtensions` helpers return the statements to run as the migrator after the table is created:
+
+- `PostgreSql(applicationRole, schema)`: the role gets `SELECT, INSERT` only, and a trigger refuses `UPDATE`, `DELETE`
+  and `TRUNCATE`.
+- `SqlServer(applicationUser, schema)`: `GRANT SELECT, INSERT`, `DENY UPDATE, DELETE`, and an `INSTEAD OF` trigger that throws.
+- `MySql(applicationUser, database, host)`: `GRANT SELECT, INSERT`, and `BEFORE UPDATE` / `BEFORE DELETE` triggers that signal an error.
+
+The append-only rule is a second line of defence. The chain verification (`VerifyChainAsync`) is what detects an edit
+that gets through, so run it on a schedule and keep the anchor file somewhere the application cannot write.

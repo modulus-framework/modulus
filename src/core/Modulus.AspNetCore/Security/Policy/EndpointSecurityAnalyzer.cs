@@ -20,6 +20,8 @@ using Modulus.Core.Abstractions.Security;
 public static class EndpointSecurityAnalyzer
 {
     private const string StaticAssetDescriptorTypeName = "Microsoft.AspNetCore.StaticAssets.StaticAssetDescriptor";
+    private const string StaticFileFallbackPattern = "{**path:file}";
+    private const string FallbackMetadataTypeName = "Microsoft.AspNetCore.Routing.FallbackMetadata";
 
     /// <summary>Analyzes <paramref name="endpoints"/>.</summary>
     /// <param name="endpoints">The app's endpoints.</param>
@@ -40,6 +42,11 @@ public static class EndpointSecurityAnalyzer
         {
             var metadata = endpoint.Metadata;
             if (metadata.Any(m => m.GetType().FullName == StaticAssetDescriptorTypeName))
+                continue;
+
+            // MapStaticAssets also registers one fallback that serves any file under the static-asset route. It carries no
+            // descriptor, and it can only return files (the :file constraint), so it is public by design and not an open route.
+            if (endpoint.RoutePattern.RawText == StaticFileFallbackPattern && metadata.Any(m => m.GetType().FullName == FallbackMetadataTypeName))
                 continue;
 
             var route = LooseningAllowList.Normalize(endpoint.RoutePattern.RawText ?? string.Empty);

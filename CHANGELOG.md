@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security — plan-doc audit remediation (round 3)
+- **Step-up cannot be bypassed by role name.** Only a client-credentials token (the `modulus:machine` claim) with an `integration:` role is exempt. The
+  `integration:` role prefix is reserved: `ModulusUserManager` refuses to assign it (`ReservedRole`), which covers the admin API, SCIM and the
+  directory group mapping.
+- **Step-up on every path.** The mediator (`AuthorizationBehavior` with `IStepUpGate`, `STEP_UP_REQUIRED` 401) and resource rules
+  (`ResourceAuthorizer`) honour step-up, not only the HTTP permission handler.
+- **SAML binds the answer to the starting browser.** `/login` sets a binding cookie; `/acs` refuses an answer without it (login CSRF).
+- **Recertification campaigns are tenant-scoped.** `RecertificationCampaignRow` and `RecertificationItemRow` carry `TenantId` and the tenant
+  query filter. **Migration:** add `TenantId` to `ModulusRecertificationCampaigns` and `ModulusRecertificationItems`.
+- **Outbound calls to registered addresses stay off the private network.** `Modulus.Networking.OutboundAddressGuard` (Platform) is shared by
+  webhooks and back-channel logout. Back-channel logout refuses private registration addresses unless `BackChannelLogout:AllowPrivateNetworks`.
+  Discovery advertises `backchannel_logout_supported`.
+- **Migration note (Identity):** apps with an existing Identity migration see `PendingModelChangesWarning` until they add one for the new
+  session, passkey, SAML, logout and PIN-change tables.
+
+### Removed — `DomainEventDispatchMode`
+- The public enum in `Modulus.Events` had no readers. Removed with its public API entries.
+
 ### Added — `ui create-crud` and `ui add-assistant`
 - `modulus ui create-crud <Entity>`: list, edit and delete pages (Razor Pages or Blazor) over the entity's API through a typed `<Entity>ApiClient`, plus a menu entry.
 - `modulus ui add-assistant`: hosts the AI platform's embedded assistant (`POST /ai/session`, `ai:use`, `Ai:Host` settings, layout partial).

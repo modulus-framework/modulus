@@ -1124,6 +1124,34 @@ isolation, hash-chained security audit, probe suite), and the provider integrati
   grant that role its permissions, scopes and expiry through the ordinary grant APIs (`grants`, `scoped-grants`), so a removed grant stops working on the next request, not at token expiry.
   `IIntegrationClientDirectory` (kept in the client's OpenIddict application properties, no new table) binds a client to one company (`BindAsync`: the token's `tid` pins it, a header cannot
   select another) with an optional `ValidUntil` (no new tokens after it), and `DisableAsync` ends it now and revokes every token it holds. An unbound client gets the role but no company.
+- **ERP identity gaps** (status and open gaps: [`docs/ERP_IDENTITY_GAPS_PLAN.md`](docs/ERP_IDENTITY_GAPS_PLAN.md)). Password/lockout policy with history and expiry; shop-floor sign-in
+  (employee code + PIN, `Identity:ShopFloor`, `IShopFloorAccountService`); SoD rules as data (`/authorization/sod/rules`, `EfSodRuleStore`); composite roles
+  (`/authorization/roles/inclusions`, `EfRoleInclusionStore`); positions (`/authorization/positions`, `EfPositionStore`: a post grants roles to whoever holds it, with validity);
+  external-party users (`/authorization/parties/*`, `EfPartyStore`): an account linked to one party (kind `buyer`/`supplier`/`subcontractor`) gets the party as its
+  assignment (so `assigned:{kind}` scopes cover only that party) and keeps only the grants its kind's **ceiling** covers (denies survive; a kind with no ceiling gets nothing;
+  widening a ceiling needs `authorization:grant-any` and never reaches `*` or `authorization:*`). Inclusions, positions and party ceilings apply only through the EF grant store.
+  New tables need a migration: `ModulusSodRules`, `ModulusRoleInclusions`, `ModulusPositions`, `ModulusPositionAssignments`, `ModulusPartyLinks`, `ModulusPartyCeilings`,
+  `ModulusPasswordHistory`, plus `EmployeeCode`/`PinHash`/`ExternalId` on the user table.
+  **SCIM 2.0** (`Modulus.Identity.Scim`): `AddModulusScim<TUser>(configuration)` + `MapModulusScim("/scim/v2")`, settings `Identity:Scim`; guarded by the Critical permission `scim:manage`
+  (grant it to `integration:{clientId}`; the client's `tid` company is the only one it sees, no company = 403). Users with filter/paging/PATCH, groups = roles listed in `ManagedRoles`
+  (empty = none), seats through `ITenantMemberProvisioner` (Core; `TenantManager` implements it), DELETE deactivates unless `DeleteRemovesAccount`. Details in the plan.
+  **Approval workflow** (`Modulus.Authorization.Workflow` in Platform; tables `ModulusApprovalChains`, `ModulusApprovalRequests`): `AddApprovalWorkflow()` + `MapModulusApprovalWorkflow()`. Chains are data per
+  document type and amount band; each step is open to holders of a permission within their approval limit; requester never approves, one person one step, races resolved by a version token, escalation after a
+  timeout. **Apps submit from code** (`IApprovalWorkflow.SubmitAsync` with the stored document's amount); there is no HTTP submit. Details in the plan.
+  **Step-up and passkeys:** tokens carry `amr`/`auth_time` (kept across refresh). `ModulusAuthorizationOptions.StepUp` (`RequireForCritical`, `Permissions`, `MaxAge`) makes sensitive permissions need a fresh `mfa`
+  sign-in (RFC 9470 `401` + `insufficient_user_authentication`; `integration:` machine roles exempt; default off). `AddModulusPasskeys<TContext,TUser>` + `MapModulusPasskeys()` (`Identity:Passkeys`, Fido2, UV required,
+  one-shot DB ceremonies, grant `urn:modulus:params:oauth:grant-type:passkey`; tables `ModulusPasskeys`, `ModulusPasskeyChallenges`). Details in the plan.
+  The token endpoint has HTTP-level tests on a real OpenIddict TestServer (`TokenEndpointHttpTests`: every grant, bearer use, step-up).
+  **Sessions** (`Identity:Sessions`, off by default; `ISessionRegistry`, table `ModulusSessions`): each sign-in gets a `sid` in its tokens with address/browser/device recorded, a concurrent cap
+  (global + per role, end the oldest or refuse), idle timeouts per role, `GET/DELETE account/sign-ins`; a validation handler rejects tokens of ended sessions at once. Details in the plan.
+  **Device code + back-channel logout:** `Identity:AllowDeviceCodeFlow` (RFC 8628; the approver confirms at `/connect/verify` with their own bearer token, the device gets their `amr` and a session of its own);
+  `Identity:Sessions:BackChannelLogout` (signed `logout_token` per ended session to the client's registered address through `IBackChannelLogoutDirectory`, queued in `ModulusLogoutNotifications` and retried; needs `Identity:Issuer`).
+  Never `ChangeTracker.Clear()` on the Identity `DbContext`: OpenIddict's token store shares it.
+  **LDAP/AD and SAML:** `AddModulusLdap<TUser>` (`Identity:Ldap`, the password grant binds as the directory user; several directories; unknown names fall back to local passwords unless `AllowLocalFallback` is off; a directory user never falls back) and
+  `AddModulusSaml<TContext,TUser>` + `MapModulusSaml()` (`Identity:Saml`, ITfoxtec, SP-initiated, pinned IdP certificates, one-shot request rows in `ModulusSamlRequests`, several providers; the Identity cookie carries `amr` `fed`). Both create accounts on first sign-in
+  through one provisioner (stable id linked via `AspNetUserLogins`, seats, roles follow `GroupRoles`). Details in the plan.
+  Shop-floor bulk import: `IShopFloorAccountService.ImportAsync` (random one-time PINs, `MustChangePin` forces the operator to send `new_pin` at the first sign-in; new column).
+  Not built: IdP-initiated SAML and single logout, a SAML button on the login page.
 - **Reason codes.** `AccessDecision.Code` uses `AccessReasonCodes` (BRS Appendix B); no policy for a type = `METADATA_MISSING`.
 - **Sensitivity.** `PermissionSensitivity` (Normal/Sensitive/Critical) on `PermissionDefinition`; `registry.Add(..., sensitivity)`.
   A wildcard grant never confers a Critical permission (a wildcard deny still removes it); Critical is not delegable.
@@ -1156,6 +1184,37 @@ isolation, hash-chained security audit, probe suite), and the provider integrati
   not re-executed (see `policy-combination.md`).
 - **Known gaps (open).** `Explain` and available actions are evaluated as the calling user, so "why can't *Bob* do this" needs Bob's own session
   (effective-access reports cover him at the permission level); and the UI for all of this is not done.
+
+## Security hardening round 3 (plan-doc audit remediation)
+
+- **Step-up needs a machine marker.** A principal is exempt from step-up only with the `modulus:machine` claim
+  (`StepUpPolicy.MachineClaim`, issued by the client-credentials grant alone) **and** an `integration:` role. A person given an
+  `integration:*` role must still step up. The `integration:` prefix is reserved: `ModulusUserManager` refuses to assign it
+  (`ReservedRole`), which covers the admin API, SCIM and the directory group mapping. Role *creation* is not refused; the assignment
+  refusal is what matters for access.
+- **Step-up on every path.** `AuthorizationBehavior` takes an optional `IStepUpGate` (Platform registers `StepUpMediatorGate`,
+  which reads the request principal): it throws `StepUpRequiredException` (401, code `STEP_UP_REQUIRED`). `ResourceAuthorizer` gates
+  the permission lookup of every resource rule through the same gate, so `EnsureAllowedAsync` and `Explain` honour it too. Outside an
+  HTTP request (jobs, consumers) a step-up permission is refused.
+- **SAML binds the answer to the starting browser.** `/login` sets the `.modulus.saml` cookie (HttpOnly, Secure, SameSite=None,
+  path = `Identity:Saml:BasePath`) holding the relay state; `/acs` refuses an answer without that cookie before checking the signature.
+- **Recertification is tenant-owned.** `RecertificationCampaignRow` and `RecertificationItemRow` implement `IHasTenantId` and carry the
+  per-tenant filter. **Upgrade note:** existing deployments need a migration adding `TenantId` to `ModulusRecertificationCampaigns`
+  and `ModulusRecertificationItems`.
+- **Outbound calls to registered addresses stay off the private network.** `Modulus.Networking.OutboundAddressGuard` (Platform) is
+  shared by webhooks and back-channel logout: it checks the resolved address at connect time. Back-channel logout also refuses a
+  registered address that names this machine or a private network at registration, unless `BackChannelLogout:AllowPrivateNetworks`
+  (development only). Discovery advertises `backchannel_logout_supported` when back-channel logout is on.
+- **Upgrade note (Identity tables).** The identity tables for sessions, passkeys, SAML requests, logout notifications and the
+  `MustChangePin` column are in the model even when their feature is off. An app that already has an Identity migration gets
+  `PendingModelChangesWarning` until it adds one: run `modulus migrate add <Name> --module Identity` (or `dotnet ef migrations add`
+  for the Identity context) and `migrate update`.
+- **Known gaps (open).**
+  - Identity tables are not opt-in, as noted above.
+  - The `ui` CLI defects below are deferred by decision.
+- **Open CLI defects in the `ui` commands (deferred):** MVC controllers are generated but never routed (`Program.Web.sbn` maps only Razor
+  Pages); auth pages call `/account/*` on the Web host, which has no Identity endpoints on `webapp+api`; `generate-crud` with
+  `--ui-engine` misplaces files; `--kind` help omits `webapp+api`.
 
 ## Cross-surface errors, REST completeness, performance (audit remediation)
 
@@ -1226,6 +1285,12 @@ run), and among those pick the most capable one. Check the license before adding
 | GraphQL | GraphQL.NET: `GraphQL`, `.SystemTextJson`, `.DataLoader`, `.MicrosoftDI`, `GraphQL.Server.Transports.AspNetCore`, `.Ui.GraphiQL` (MIT) | HotChocolate 15/16 (`HotChocolate.AspNetCore` pulls in `ChilliCream.Nitro.App`, ChilliCream License 1.0) |
 | Token validation | `Microsoft.AspNetCore.Authentication.JwtBearer` / `.OpenIdConnect` (MIT) | Duende IdentityServer (commercial) |
 | Realtime | SSE (`TypedResults.ServerSentEvents`) and SignalR from the shared framework; `StackExchange.Redis` backplane (MIT); `Microsoft.AspNetCore.SignalR.Client` in tests (MIT) | |
+| Passkeys (WebAuthn) | `Fido2` (MIT) | |
+| SAML 2.0 | `ITfoxtec.Identity.Saml2` (BSD-3-Clause) | |
+| LDAP / AD | `System.DirectoryServices.Protocols` (MIT) | |
+| Sagas | `Rebus` (MIT) | MassTransit 9+ (commercial) |
+| Quartz scheduling | `Quartz` (Apache-2.0) | |
+| Resilience | `Polly` (BSD-3-Clause), `Microsoft.Extensions.Http.Resilience` (MIT) | |
 | Tests | `FluentAssertions` pinned to **7.x** | FluentAssertions 8+ (commercial) |
 
 Also excluded: MediatR 13+, AutoMapper 15+, MassTransit 9+ (commercial licenses).

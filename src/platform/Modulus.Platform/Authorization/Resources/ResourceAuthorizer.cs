@@ -86,7 +86,8 @@ public sealed class ResourceAuthorizer(
     ICurrentDataScope dataScope,
     IResourcePolicyRegistry registry,
     Scopes.IScopeEnforcer? scopes = null,
-    Approval.IApprovalAuthorityEvaluator? approvals = null) : IResourceAuthorizer
+    Approval.IApprovalAuthorityEvaluator? approvals = null,
+    IStepUpGate? stepUp = null) : IResourceAuthorizer
 {
     /// <summary>
     /// Explains the decision for <paramref name="action"/> on <paramref name="resource"/>: the decision plus which
@@ -127,7 +128,9 @@ public sealed class ResourceAuthorizer(
     private ResourceRequest BuildRequest(object resource, string action)
         => new(
             currentUser.UserId,
-            currentUser.HasPermission,
+            // A rule that needs a step-up permission (Critical, or named in StepUp) sees it as held only after a fresh sign-in,
+            // the same rule the HTTP permission handler and the mediator apply.
+            permission => currentUser.HasPermission(permission) && (stepUp is null || stepUp.IsSatisfied(permission)),
             unit => dataScope.IsUnrestricted
                     || (unit is { } u && dataScope.OrgUnitIds.Contains(u)),
             ResourceAttributes.From(resource),

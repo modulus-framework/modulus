@@ -5,11 +5,13 @@ Derived from the 2026-07-26 NuGet-packaging review. Goal: every publishable
 consumers, so the framework isn't limited to .NET 10-only apps. `cli/` is
 explicitly **out of scope** — it stays `net10.0`-only.
 
-**Status: implemented.** Every `src/` library except the UI packages, Realtime (+ Redis) and the analyzer multi-targets `net8.0;net10.0`. See `AGENTS.md` (*Dual targeting*). The CI net8 leg is tracked in `IMPROVEMENT_PLAN.md`.
+**Status: implemented.** Every `src/` library except Realtime (+ Redis) and the analyzer multi-targets `net8.0;net10.0`. The UI packages left with the older UI (commit `44befc6`). See `AGENTS.md` (*Dual targeting*). The CI net8 leg is `unit-net8` in `.github/workflows/ci.yml`.
+
+The sections below are the plan as written before implementation, kept for the reasoning. Where they describe the current state, read the status line above.
 
 ## Current state
 
-Every `src/` project (~30 csproj files, confirmed by grep) hard-pins
+Before this work, every `src/` project (45 csproj files today) hard-pinned
 `<TargetFramework>net10.0</TargetFramework>` via `build/Modulus.Common.props`.
 `Directory.Packages.props` pins a single version — mostly `10.0.9`/`10.x` — for
 every package, including ones whose major version is locked to the runtime
@@ -104,7 +106,7 @@ restore-and-build check per package, not an assumption.
    .NET 10 SDK installed in the runner) — check current workflow file(s) for
    what needs updating.
 
-## Open questions to resolve before implementing
+## Open questions (as written before implementation)
 
 - Does the .NET 8 SDK need to be installed alongside .NET 10 in dev/CI
   environments, or does `net8.0` targeting just need the runtime pack (no

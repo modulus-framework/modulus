@@ -946,6 +946,101 @@ public sealed class AuthorizationManagementApiTests : IAsyncLifetime
         (await admin.DeleteAsync($"/authorization/positions/{position.Id}")).StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
+    // ── External-party users ──
+
+    private async Task<HttpResponseMessage> Link(HttpClient client, Guid userId, string kind, Guid partyId)
+        => await client.PutAsJsonAsync("/authorization/parties/links", new { userId, kind, partyId });
+
+    [Fact]
+    public async Task A_linked_party_account_keeps_only_what_its_kind_ceiling_covers()
+    {
+        var store = _app.Services.GetRequiredService<EfPermissionGrantStore>();
+        using var admin = As("authorization:manage,authorization:grant-any");
+        var buyer = Guid.NewGuid();
+        var other = Guid.NewGuid();
+        foreach (var user in new[] { buyer, other })
+            await store.GrantToUserAsync(user, ["orders:read", "orders:update", "costing:read"], CancellationToken.None);
+        await store.DenyToUserAsync(buyer, ["orders:delete"], CancellationToken.None);
+
+        (await admin.PostAsJsonAsync("/authorization/parties/ceilings", new { kind = "Buyer", permission = "orders:read" }))
+            .StatusCode.Should().Be(HttpStatusCode.Created);
+        (await Link(admin, buyer, "Buyer", Guid.NewGuid())).StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var grants = store.GetGrants(new PrincipalGrantQuery(buyer, []));
+        grants.Where(g => g.Type == PermissionGrantType.Allow).Select(g => g.Permission).Should().BeEquivalentTo("orders:read");
+        grants.Should().Contain(g => g.Type == PermissionGrantType.Deny && g.Permission == "orders:delete");
+
+        // An account with no link is untouched.
+        store.GetGrants(new PrincipalGrantQuery(other, [])).Select(g => g.Permission)
+            .Should().BeEquivalentTo("orders:read", "orders:update", "costing:read");
+
+        // A module prefix in the ceiling covers the module.
+        (await admin.PostAsJsonAsync("/authorization/parties/ceilings", new { kind = "buyer", permission = "orders:*" }))
+            .StatusCode.Should().Be(HttpStatusCode.Created);
+        store.GetGrants(new PrincipalGrantQuery(buyer, [])).Where(g => g.Type == PermissionGrantType.Allow)
+            .Select(g => g.Permission).Should().BeEquivalentTo("orders:read", "orders:update");
+    }
+
+    [Fact]
+    public async Task A_kind_without_a_ceiling_gets_nothing()
+    {
+        var store = _app.Services.GetRequiredService<EfPermissionGrantStore>();
+        using var admin = As("authorization:manage,authorization:grant-any");
+        var supplier = Guid.NewGuid();
+        await store.GrantToUserAsync(supplier, ["orders:read"], CancellationToken.None);
+
+        (await Link(admin, supplier, "supplier", Guid.NewGuid())).StatusCode.Should().Be(HttpStatusCode.OK);
+        store.GetGrants(new PrincipalGrantQuery(supplier, [])).Where(g => g.Type == PermissionGrantType.Allow).Should().BeEmpty();
+
+        // Unlinking returns the account to its own grants.
+        (await admin.DeleteAsync($"/authorization/parties/links/{supplier}")).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        store.GetGrants(new PrincipalGrantQuery(supplier, [])).Select(g => g.Permission).Should().BeEquivalentTo("orders:read");
+    }
+
+    [Fact]
+    public async Task Linking_writes_moves_and_removes_the_party_assignment()
+    {
+        var assignments = _app.Services.GetRequiredService<EfAssignmentStore>();
+        using var admin = As("authorization:manage");
+        var user = Guid.NewGuid();
+        var first = Guid.NewGuid();
+        var second = Guid.NewGuid();
+        var now = DateTimeOffset.UtcNow;
+
+        (await Link(admin, user, "buyer", first)).StatusCode.Should().Be(HttpStatusCode.OK);
+        assignments.TargetsFor(user, "buyer", now).Should().BeEquivalentTo([first]);
+
+        (await Link(admin, user, "buyer", second)).StatusCode.Should().Be(HttpStatusCode.OK);
+        assignments.TargetsFor(user, "buyer", now).Should().BeEquivalentTo([second]);
+
+        (await admin.DeleteAsync($"/authorization/parties/links/{user}")).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        assignments.TargetsFor(user, "buyer", now).Should().BeEmpty();
+        (await admin.DeleteAsync($"/authorization/parties/links/{user}")).StatusCode.Should().Be(HttpStatusCode.NotFound);
+
+        (await Link(admin, Guid.Empty, "buyer", first)).StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task Widening_a_party_ceiling_needs_grant_any_and_never_reaches_authorization()
+    {
+        using var admin = As("authorization:manage,authorization:grant-any");
+        (await admin.PostAsJsonAsync("/authorization/parties/ceilings", new { kind = "buyer", permission = "*" }))
+            .StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await admin.PostAsJsonAsync("/authorization/parties/ceilings", new { kind = "buyer", permission = "authorization:*" }))
+            .StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        var body = new { kind = "subcontractor", permission = "wip:read" };
+        (await admin.PostAsJsonAsync("/authorization/parties/ceilings", body)).StatusCode.Should().Be(HttpStatusCode.Created);
+        (await admin.PostAsJsonAsync("/authorization/parties/ceilings", body)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        using var plain = As("authorization:manage");
+        (await plain.PostAsJsonAsync("/authorization/parties/ceilings", new { kind = "buyer", permission = "orders:read" }))
+            .StatusCode.Should().Be(HttpStatusCode.Forbidden);
+
+        (await admin.DeleteAsync("/authorization/parties/ceilings?kind=subcontractor&permission=wip:read")).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await admin.DeleteAsync("/authorization/parties/ceilings?kind=subcontractor&permission=wip:read")).StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
     // ── Segregation-of-duties rules as data ──
 
     private sealed record SodRuleView(Guid? Id, string Source, string Name, string[] Permissions, string? Rationale, bool IsEnabled);

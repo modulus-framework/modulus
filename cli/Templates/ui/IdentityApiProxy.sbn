@@ -1,0 +1,85 @@
+using System.Net.Http;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Modulus.Bff;
+using Modulus.Core.Abstractions.Security;
+using Modulus.Platform.Http;
+
+namespace {{ namespace }};
+
+/// <summary>
+/// The pages of the Modulus UI package call the identity endpoints (<c>/account/*</c>) and the permission endpoints
+/// (<c>/authorization/*</c>) on their own host. On a split app those live in the API host, so this controller forwards
+/// the calls there with the signed-in user's token from the BFF session. The API still decides what the caller may do.
+/// Password recovery is open to anonymous callers on purpose; those two routes are listed in security/loosening-allowlist.json.
+/// The pages send no antiforgery token, so the cross-site check is the browser's Fetch Metadata header instead: a request from
+/// another site is refused, and the session cookie is SameSite=Lax.
+/// </summary>
+[Authorize]
+[IgnoreAntiforgeryToken]
+public sealed class IdentityApiProxyController(IdentityApiClient api) : Controller
+{
+    [AllowAnonymous, Loosened("Password recovery pages are open to anonymous callers; the API checks the token and the account")]
+    [HttpPost("account/forgot-password")]
+    [HttpPost("account/reset-password")]
+    public Task<IActionResult> Recovery(CancellationToken ct) => ForwardAsync(ct);
+
+    [Route("account/{**path}")]
+    [Route("authorization/{**path}")]
+    public Task<IActionResult> Forward(string path, CancellationToken ct) => ForwardAsync(ct);
+
+    private async Task<IActionResult> ForwardAsync(CancellationToken ct)
+    {
+        var site = Request.Headers["Sec-Fetch-Site"].ToString();
+        if (site is not ("" or "same-origin" or "none"))
+            return StatusCode(StatusCodes.Status403Forbidden);
+
+        using var request = new HttpRequestMessage(new HttpMethod(Request.Method), Request.Path.Value!.TrimStart('/') + Request.QueryString.Value);
+        if (Request.ContentLength is > 0)
+        {
+            using var buffer = new MemoryStream();
+            await Request.Body.CopyToAsync(buffer, ct);
+            request.Content = new ByteArrayContent(buffer.ToArray());
+            if (Request.ContentType is { } contentType)
+                request.Content.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse(contentType);
+        }
+
+        using var response = await api.SendAsync(request, ct);
+        var body = await response.Content.ReadAsByteArrayAsync(ct);
+        return new ContentResult
+        {
+            StatusCode = (int)response.StatusCode,
+            ContentType = response.Content.Headers.ContentType?.ToString(),
+            Content = System.Text.Encoding.UTF8.GetString(body),
+        };
+    }
+}
+
+/// <summary>Sends the forwarded calls to the API host (<c>Api:BaseUrl</c>), with the caller's token.</summary>
+public sealed class IdentityApiClient(HttpClient http, IConfiguration configuration)
+{
+    private readonly HttpClient _http = Configure(http, configuration);
+
+    public Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
+        => _http.SendAsync(request, ct);
+
+    private static HttpClient Configure(HttpClient http, IConfiguration configuration)
+    {
+        var baseUrl = configuration["Api:BaseUrl"] ?? "http://localhost:5180";
+        http.BaseAddress = new Uri($"{baseUrl.TrimEnd('/')}/");
+        return http;
+    }
+}
+
+/// <summary>Registers the forwarding client; add it once in Program.cs (idempotent scaffolds check for it).</summary>
+public static class IdentityApiProxyExtensions
+{
+    public static IServiceCollection AddIdentityApiProxy(this IServiceCollection services)
+    {
+        services.AddModulusHttpClient<IdentityApiClient>()
+            .AddBffUserAccessToken();
+        return services;
+    }
+}

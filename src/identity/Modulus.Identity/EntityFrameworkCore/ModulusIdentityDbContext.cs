@@ -25,6 +25,21 @@ public class ModulusIdentityDbContext<TUser, TRole>(
     /// <summary>The password hashes each account has used (see <see cref="ModulusPasswordHistoryEntry"/>).</summary>
     public DbSet<ModulusPasswordHistoryEntry> PasswordHistory => Set<ModulusPasswordHistoryEntry>();
 
+    /// <summary>The passkeys (WebAuthn credentials) of the accounts.</summary>
+    public DbSet<ModulusPasskey> Passkeys => Set<ModulusPasskey>();
+
+    /// <summary>Sign-in sessions (see <see cref="SessionOptions"/>).</summary>
+    public DbSet<ModulusSession> Sessions => Set<ModulusSession>();
+
+    /// <summary>Queued back-channel logout notifications.</summary>
+    public DbSet<ModulusLogoutNotification> LogoutNotifications => Set<ModulusLogoutNotification>();
+
+    /// <summary>Passkey ceremonies in progress.</summary>
+    public DbSet<ModulusPasskeyChallenge> PasskeyChallenges => Set<ModulusPasskeyChallenge>();
+
+    /// <summary>SAML sign-ins waiting for the identity provider's answer.</summary>
+    public DbSet<ModulusSamlRequest> SamlRequests => Set<ModulusSamlRequest>();
+
     /// <summary>
     /// The most password hashes kept per account: the largest <c>Identity:Password:HistoryCount</c> allowed. Older ones
     /// are removed when the account is saved.
@@ -127,6 +142,7 @@ public class ModulusIdentityDbContext<TUser, TRole>(
             // Shop-floor sign-in looks an operator up by company + code. Not unique here: ordinary accounts have a null code
             // and not every provider ignores nulls in a unique index; ShopFloorAccountService checks uniqueness.
             b.HasIndex(u => new { u.TenantId, u.EmployeeCode });
+            b.HasIndex(u => new { u.TenantId, u.ExternalId });
             // TenantId is nullable (a host-level account belongs to no
             // tenant), so this can't use IHasTenantId / ModuleDbContext's
             // filter (which assumes a non-nullable TenantId) as-is. Same
@@ -159,6 +175,66 @@ public class ModulusIdentityDbContext<TUser, TRole>(
              .WithMany()
              .HasForeignKey(h => h.UserId)
              .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // Passkeys: removed with their account; the credential id is unique across the database.
+        builder.Entity<ModulusPasskey>(b =>
+        {
+            b.ToTable("ModulusPasskeys");
+            b.HasKey(p => p.Id);
+            b.Property(p => p.CredentialId).HasMaxLength(512);
+            b.Property(p => p.PublicKey).HasMaxLength(2048);
+            b.Property(p => p.UserHandle).HasMaxLength(64);
+            b.Property(p => p.Name).HasMaxLength(128);
+            b.Property(p => p.Transports).HasMaxLength(128);
+            b.HasIndex(p => p.CredentialId).IsUnique();
+            b.HasIndex(p => p.UserId);
+            b.HasOne<TUser>().WithMany().HasForeignKey(p => p.UserId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<ModulusSession>(b =>
+        {
+            b.ToTable("ModulusSessions");
+            b.HasKey(x => x.Id);
+            b.Property(x => x.ClientId).HasMaxLength(128);
+            b.Property(x => x.Roles).HasMaxLength(512);
+            b.Property(x => x.Methods).HasMaxLength(64);
+            b.Property(x => x.IpAddress).HasMaxLength(64);
+            b.Property(x => x.UserAgent).HasMaxLength(256);
+            b.Property(x => x.DeviceName).HasMaxLength(128);
+            b.Property(x => x.EndReason).HasMaxLength(64);
+            b.HasIndex(x => new { x.UserId, x.EndedAt });
+            b.HasOne<TUser>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<ModulusLogoutNotification>(b =>
+        {
+            b.ToTable("ModulusLogoutNotifications");
+            b.HasKey(x => x.Id);
+            b.Property(x => x.ClientId).HasMaxLength(128);
+            b.Property(x => x.Uri).HasMaxLength(1024);
+            b.Property(x => x.LastError).HasMaxLength(512);
+            b.HasIndex(x => new { x.DeliveredAt, x.FailedAt, x.NextAttemptAt });
+            b.HasIndex(x => x.SessionId);
+        });
+
+        builder.Entity<ModulusPasskeyChallenge>(b =>
+        {
+            b.ToTable("ModulusPasskeyChallenges");
+            b.HasKey(c => c.Id);
+            b.Property(c => c.Purpose).HasMaxLength(16);
+            b.HasIndex(c => c.ExpiresAt);
+        });
+
+        builder.Entity<ModulusSamlRequest>(b =>
+        {
+            b.ToTable("ModulusSamlRequests");
+            b.HasKey(r => r.Id);
+            b.Property(r => r.Id).HasMaxLength(64);
+            b.Property(r => r.Provider).HasMaxLength(64);
+            b.Property(r => r.RequestId).HasMaxLength(128);
+            b.Property(r => r.ReturnUrl).HasMaxLength(2048);
+            b.HasIndex(r => r.ExpiresAt);
         });
 
         // Use OpenIddict EF Core tables

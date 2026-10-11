@@ -159,6 +159,62 @@ public sealed class ShopFloorTests
         new ShopFloorOptions { Enabled = true }.IsValidForTest().Should().BeTrue();
     }
 
+    [Fact]
+    public async Task An_import_creates_accounts_without_email_and_hands_out_one_time_pins()
+    {
+        await using var h = await Harness.CreateAsync();
+
+        var results = await h.Accounts.ImportAsync(Company,
+        [
+            new ShopFloorImportRow("e1", "Ann", "Lee", ["ShopFloor"]),
+            new ShopFloorImportRow("e2", InitialPin: "482913"),
+            new ShopFloorImportRow("e1"),                        // duplicate in the same file
+            new ShopFloorImportRow("e3", Roles: ["NoSuchRole"]), // bad role
+            new ShopFloorImportRow("bad code!"),
+        ]);
+
+        results.Select(r => r.Succeeded).Should().Equal(true, true, false, false, false);
+        results[0].InitialPin.Should().MatchRegex("^[0-9]{4}$");
+        results[1].InitialPin.Should().Be("482913");
+        results[2].Error.Should().Contain("already in use");
+        (await h.Users.Users.CountAsync(u => u.EmployeeCode != null)).Should().Be(2);
+        (await h.Users.Users.Where(u => u.EmployeeCode != null).AllAsync(u => u.MustChangePin)).Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task An_imported_pin_must_be_replaced_before_a_token_is_issued()
+    {
+        await using var h = await Harness.CreateAsync();
+        var initial = (await h.Accounts.ImportAsync(Company, [new ShopFloorImportRow("e1", Roles: ["ShopFloor"])]))[0].InitialPin!;
+
+        var first = await h.Validator.ValidateAsync(Company, "E1", initial);
+        first.Success.Should().BeFalse();
+        first.Error.Should().Be(ShopFloorGrant.PinChangeRequiredError);
+
+        (await h.Validator.ValidateAsync(Company, "E1", initial, newPin: initial)).Error.Should().Be(ShopFloorGrant.InvalidNewPinError, "the same PIN is no change");
+        (await h.Validator.ValidateAsync(Company, "E1", initial, newPin: "1111")).Error.Should().Be(ShopFloorGrant.InvalidNewPinError);
+        (await h.Validator.ValidateAsync(Company, "E1", "000012", newPin: "739184")).Success.Should().BeFalse("the old PIN must still be right");
+
+        (await h.Validator.ValidateAsync(Company, "E1", initial, newPin: "739184")).Success.Should().BeTrue();
+
+        // The printed PIN no longer works; the chosen one does, with no further change asked.
+        (await h.Validator.ValidateAsync(Company, "E1", initial)).Success.Should().BeFalse();
+        (await h.Validator.ValidateAsync(Company, "E1", "739184")).Success.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task An_administrator_reset_can_demand_a_new_pin_too()
+    {
+        await using var h = await Harness.CreateAsync();
+        await h.Accounts.CreateAsync(Company, "E1", "482913");
+        var user = await h.Users.Users.SingleAsync(u => u.EmployeeCode == "E1");
+
+        (await h.Validator.ValidateAsync(Company, "E1", "482913")).Success.Should().BeTrue();
+        await h.Accounts.SetPinAsync(user.Id, "7391", mustChange: true);
+
+        (await h.Validator.ValidateAsync(Company, "E1", "7391")).Error.Should().Be(ShopFloorGrant.PinChangeRequiredError);
+    }
+
     private sealed class Harness : IAsyncDisposable
     {
         private readonly SqliteConnection _connection;

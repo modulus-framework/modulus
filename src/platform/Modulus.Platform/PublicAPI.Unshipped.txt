@@ -1481,7 +1481,7 @@ Modulus.Authorization.Approval.InMemoryApprovalAuthorityStore
 Modulus.Authorization.Approval.InMemoryApprovalAuthorityStore.Add(Modulus.Authorization.Approval.ApprovalAuthority! authority) -> Modulus.Authorization.Approval.InMemoryApprovalAuthorityStore!
 Modulus.Authorization.Approval.InMemoryApprovalAuthorityStore.GetAuthorities(Modulus.Authorization.Grants.PrincipalGrantQuery! principal, string! permission) -> System.Collections.Generic.IReadOnlyCollection<Modulus.Authorization.Approval.ApprovalAuthority!>!
 Modulus.Authorization.Approval.InMemoryApprovalAuthorityStore.InMemoryApprovalAuthorityStore() -> void
-Modulus.Authorization.Resources.ResourceAuthorizer.ResourceAuthorizer(Modulus.Core.Abstractions.ICurrentUser! currentUser, Modulus.Core.Abstractions.ICurrentDataScope! dataScope, Modulus.Authorization.Resources.IResourcePolicyRegistry! registry, Modulus.Authorization.Scopes.IScopeEnforcer? scopes = null, Modulus.Authorization.Approval.IApprovalAuthorityEvaluator? approvals = null) -> void
+Modulus.Authorization.Resources.ResourceAuthorizer.ResourceAuthorizer(Modulus.Core.Abstractions.ICurrentUser! currentUser, Modulus.Core.Abstractions.ICurrentDataScope! dataScope, Modulus.Authorization.Resources.IResourcePolicyRegistry! registry, Modulus.Authorization.Scopes.IScopeEnforcer? scopes = null, Modulus.Authorization.Approval.IApprovalAuthorityEvaluator? approvals = null, Modulus.Core.Abstractions.IStepUpGate? stepUp = null) -> void
 Modulus.Authorization.Resources.ResourceRequest.NotActedOnByCaller() -> bool
 Modulus.Authorization.Resources.ResourceRequest.NotOwnedByCaller() -> bool
 Modulus.Authorization.Resources.ResourceRequest.ResourceRequest(System.Guid? callerId, System.Func<string!, bool>! hasPermission, System.Func<System.Guid?, bool>! inScope, Modulus.Authorization.Resources.ResourceAttributes! resource, string! action, System.Func<string!, bool>? inScopeOf = null, System.Func<string!, bool>? withinAuthority = null, System.Collections.Generic.IReadOnlyCollection<System.Guid>? priorActors = null) -> void
@@ -1561,3 +1561,247 @@ static Modulus.Authorization.Governance.SodSeedConstraints.operator !=(Modulus.A
 static Modulus.Authorization.Governance.SodSeedConstraints.operator ==(Modulus.Authorization.Governance.SodSeedConstraints? left, Modulus.Authorization.Governance.SodSeedConstraints? right) -> bool
 Modulus.Authorization.Governance.SodSeedConstraints.Constraints.get -> System.Collections.Generic.IReadOnlyCollection<Modulus.Authorization.Governance.SodConstraint!>!
 Modulus.Authorization.Governance.SodSeedConstraints.Constraints.init -> void
+const Modulus.Authorization.Workflow.ApprovalChanges.ApprovalRecorded = "approval-recorded" -> string!
+const Modulus.Authorization.Workflow.ApprovalChanges.Approved = "approved" -> string!
+const Modulus.Authorization.Workflow.ApprovalChanges.Cancelled = "cancelled" -> string!
+const Modulus.Authorization.Workflow.ApprovalChanges.Escalated = "escalated" -> string!
+const Modulus.Authorization.Workflow.ApprovalChanges.Rejected = "rejected" -> string!
+const Modulus.Authorization.Workflow.ApprovalChanges.StepApproved = "step-approved" -> string!
+const Modulus.Authorization.Workflow.ApprovalChanges.Submitted = "submitted" -> string!
+const Modulus.Authorization.Workflow.ApprovalReasonCodes.AlreadyActed = "ALREADY_ACTED" -> string!
+const Modulus.Authorization.Workflow.ApprovalReasonCodes.NotAnApprover = "NOT_AN_APPROVER" -> string!
+const Modulus.Authorization.Workflow.ApprovalReasonCodes.NotPending = "NOT_PENDING" -> string!
+const Modulus.Authorization.Workflow.ApprovalReasonCodes.RequesterCannotApprove = "REQUESTER_CANNOT_APPROVE" -> string!
+Modulus.Authorization.Workflow.ApprovalChain
+Modulus.Authorization.Workflow.ApprovalChain.ApprovalChain(System.Guid Id, string! Name, string! DocumentType, decimal? MinAmount, decimal? MaxAmount, string? Currency, System.Collections.Generic.IReadOnlyList<Modulus.Authorization.Workflow.ApprovalStep!>! Steps, bool IsActive = true) -> void
+Modulus.Authorization.Workflow.ApprovalChain.<Clone>$() -> Modulus.Authorization.Workflow.ApprovalChain!
+Modulus.Authorization.Workflow.ApprovalChain.Currency.get -> string?
+Modulus.Authorization.Workflow.ApprovalChain.Currency.init -> void
+Modulus.Authorization.Workflow.ApprovalChain.Deconstruct(out System.Guid Id, out string! Name, out string! DocumentType, out decimal? MinAmount, out decimal? MaxAmount, out string? Currency, out System.Collections.Generic.IReadOnlyList<Modulus.Authorization.Workflow.ApprovalStep!>! Steps, out bool IsActive) -> void
+Modulus.Authorization.Workflow.ApprovalChain.DocumentType.get -> string!
+Modulus.Authorization.Workflow.ApprovalChain.DocumentType.init -> void
+Modulus.Authorization.Workflow.ApprovalChain.Equals(Modulus.Authorization.Workflow.ApprovalChain? other) -> bool
+Modulus.Authorization.Workflow.ApprovalChain.Id.get -> System.Guid
+Modulus.Authorization.Workflow.ApprovalChain.Id.init -> void
+Modulus.Authorization.Workflow.ApprovalChain.IsActive.get -> bool
+Modulus.Authorization.Workflow.ApprovalChain.IsActive.init -> void
+Modulus.Authorization.Workflow.ApprovalChain.MaxAmount.get -> decimal?
+Modulus.Authorization.Workflow.ApprovalChain.MaxAmount.init -> void
+Modulus.Authorization.Workflow.ApprovalChain.MinAmount.get -> decimal?
+Modulus.Authorization.Workflow.ApprovalChain.MinAmount.init -> void
+Modulus.Authorization.Workflow.ApprovalChain.Name.get -> string!
+Modulus.Authorization.Workflow.ApprovalChain.Name.init -> void
+Modulus.Authorization.Workflow.ApprovalChain.Steps.get -> System.Collections.Generic.IReadOnlyList<Modulus.Authorization.Workflow.ApprovalStep!>!
+Modulus.Authorization.Workflow.ApprovalChain.Steps.init -> void
+Modulus.Authorization.Workflow.ApprovalChainValidator
+Modulus.Authorization.Workflow.ApprovalChanges
+Modulus.Authorization.Workflow.ApprovalDecision
+Modulus.Authorization.Workflow.ApprovalDecision.ApprovalDecision(int Step, System.Guid UserId, Modulus.Authorization.Workflow.ApprovalDecisionKind Kind, string? Comment, System.DateTimeOffset At, string! Permission) -> void
+Modulus.Authorization.Workflow.ApprovalDecision.At.get -> System.DateTimeOffset
+Modulus.Authorization.Workflow.ApprovalDecision.At.init -> void
+Modulus.Authorization.Workflow.ApprovalDecision.<Clone>$() -> Modulus.Authorization.Workflow.ApprovalDecision!
+Modulus.Authorization.Workflow.ApprovalDecision.Comment.get -> string?
+Modulus.Authorization.Workflow.ApprovalDecision.Comment.init -> void
+Modulus.Authorization.Workflow.ApprovalDecision.Deconstruct(out int Step, out System.Guid UserId, out Modulus.Authorization.Workflow.ApprovalDecisionKind Kind, out string? Comment, out System.DateTimeOffset At, out string! Permission) -> void
+Modulus.Authorization.Workflow.ApprovalDecision.Equals(Modulus.Authorization.Workflow.ApprovalDecision? other) -> bool
+Modulus.Authorization.Workflow.ApprovalDecisionKind
+Modulus.Authorization.Workflow.ApprovalDecisionKind.Approved = 0 -> Modulus.Authorization.Workflow.ApprovalDecisionKind
+Modulus.Authorization.Workflow.ApprovalDecision.Kind.get -> Modulus.Authorization.Workflow.ApprovalDecisionKind
+Modulus.Authorization.Workflow.ApprovalDecision.Kind.init -> void
+Modulus.Authorization.Workflow.ApprovalDecisionKind.Rejected = 1 -> Modulus.Authorization.Workflow.ApprovalDecisionKind
+Modulus.Authorization.Workflow.ApprovalDecision.Permission.get -> string!
+Modulus.Authorization.Workflow.ApprovalDecision.Permission.init -> void
+Modulus.Authorization.Workflow.ApprovalDecision.Step.get -> int
+Modulus.Authorization.Workflow.ApprovalDecision.Step.init -> void
+Modulus.Authorization.Workflow.ApprovalDecision.UserId.get -> System.Guid
+Modulus.Authorization.Workflow.ApprovalDecision.UserId.init -> void
+Modulus.Authorization.Workflow.ApprovalReasonCodes
+Modulus.Authorization.Workflow.ApprovalRequest
+Modulus.Authorization.Workflow.ApprovalRequest.Amount.get -> decimal
+Modulus.Authorization.Workflow.ApprovalRequest.Amount.init -> void
+Modulus.Authorization.Workflow.ApprovalRequest.ApprovalRequest(System.Guid Id, System.Guid? TenantId, System.Guid ChainId, string! DocumentType, string! DocumentId, decimal Amount, string? Currency, System.Guid? OrgUnitId, System.Guid RequestedBy, string? Summary, System.Collections.Generic.IReadOnlyList<Modulus.Authorization.Workflow.ApprovalStep!>! Steps, int CurrentStep, Modulus.Authorization.Workflow.ApprovalStatus Status, System.Collections.Generic.IReadOnlyList<Modulus.Authorization.Workflow.ApprovalDecision!>! Decisions, System.DateTimeOffset CreatedAt, System.DateTimeOffset StepStartedAt, bool Escalated, long Version, System.DateTimeOffset? CompletedAt = null) -> void
+Modulus.Authorization.Workflow.ApprovalRequest.ChainId.get -> System.Guid
+Modulus.Authorization.Workflow.ApprovalRequest.ChainId.init -> void
+Modulus.Authorization.Workflow.ApprovalRequest.<Clone>$() -> Modulus.Authorization.Workflow.ApprovalRequest!
+Modulus.Authorization.Workflow.ApprovalRequest.CompletedAt.get -> System.DateTimeOffset?
+Modulus.Authorization.Workflow.ApprovalRequest.CompletedAt.init -> void
+Modulus.Authorization.Workflow.ApprovalRequest.CreatedAt.get -> System.DateTimeOffset
+Modulus.Authorization.Workflow.ApprovalRequest.CreatedAt.init -> void
+Modulus.Authorization.Workflow.ApprovalRequest.Currency.get -> string?
+Modulus.Authorization.Workflow.ApprovalRequest.Currency.init -> void
+Modulus.Authorization.Workflow.ApprovalRequest.CurrentStep.get -> int
+Modulus.Authorization.Workflow.ApprovalRequest.CurrentStep.init -> void
+Modulus.Authorization.Workflow.ApprovalRequest.Decisions.get -> System.Collections.Generic.IReadOnlyList<Modulus.Authorization.Workflow.ApprovalDecision!>!
+Modulus.Authorization.Workflow.ApprovalRequest.Decisions.init -> void
+Modulus.Authorization.Workflow.ApprovalRequest.Deconstruct(out System.Guid Id, out System.Guid? TenantId, out System.Guid ChainId, out string! DocumentType, out string! DocumentId, out decimal Amount, out string? Currency, out System.Guid? OrgUnitId, out System.Guid RequestedBy, out string? Summary, out System.Collections.Generic.IReadOnlyList<Modulus.Authorization.Workflow.ApprovalStep!>! Steps, out int CurrentStep, out Modulus.Authorization.Workflow.ApprovalStatus Status, out System.Collections.Generic.IReadOnlyList<Modulus.Authorization.Workflow.ApprovalDecision!>! Decisions, out System.DateTimeOffset CreatedAt, out System.DateTimeOffset StepStartedAt, out bool Escalated, out long Version, out System.DateTimeOffset? CompletedAt) -> void
+Modulus.Authorization.Workflow.ApprovalRequest.DocumentId.get -> string!
+Modulus.Authorization.Workflow.ApprovalRequest.DocumentId.init -> void
+Modulus.Authorization.Workflow.ApprovalRequest.DocumentType.get -> string!
+Modulus.Authorization.Workflow.ApprovalRequest.DocumentType.init -> void
+Modulus.Authorization.Workflow.ApprovalRequest.Equals(Modulus.Authorization.Workflow.ApprovalRequest? other) -> bool
+Modulus.Authorization.Workflow.ApprovalRequest.Escalated.get -> bool
+Modulus.Authorization.Workflow.ApprovalRequest.Escalated.init -> void
+Modulus.Authorization.Workflow.ApprovalRequest.Id.get -> System.Guid
+Modulus.Authorization.Workflow.ApprovalRequest.Id.init -> void
+Modulus.Authorization.Workflow.ApprovalRequest.OrgUnitId.get -> System.Guid?
+Modulus.Authorization.Workflow.ApprovalRequest.OrgUnitId.init -> void
+Modulus.Authorization.Workflow.ApprovalRequest.RequestedBy.get -> System.Guid
+Modulus.Authorization.Workflow.ApprovalRequest.RequestedBy.init -> void
+Modulus.Authorization.Workflow.ApprovalRequest.Status.get -> Modulus.Authorization.Workflow.ApprovalStatus
+Modulus.Authorization.Workflow.ApprovalRequest.Status.init -> void
+Modulus.Authorization.Workflow.ApprovalRequest.Step.get -> Modulus.Authorization.Workflow.ApprovalStep?
+Modulus.Authorization.Workflow.ApprovalRequest.Steps.get -> System.Collections.Generic.IReadOnlyList<Modulus.Authorization.Workflow.ApprovalStep!>!
+Modulus.Authorization.Workflow.ApprovalRequest.Steps.init -> void
+Modulus.Authorization.Workflow.ApprovalRequest.StepStartedAt.get -> System.DateTimeOffset
+Modulus.Authorization.Workflow.ApprovalRequest.StepStartedAt.init -> void
+Modulus.Authorization.Workflow.ApprovalRequest.Summary.get -> string?
+Modulus.Authorization.Workflow.ApprovalRequest.Summary.init -> void
+Modulus.Authorization.Workflow.ApprovalRequest.TenantId.get -> System.Guid?
+Modulus.Authorization.Workflow.ApprovalRequest.TenantId.init -> void
+Modulus.Authorization.Workflow.ApprovalRequest.Version.get -> long
+Modulus.Authorization.Workflow.ApprovalRequest.Version.init -> void
+Modulus.Authorization.Workflow.ApprovalStatus
+Modulus.Authorization.Workflow.ApprovalStatus.Approved = 1 -> Modulus.Authorization.Workflow.ApprovalStatus
+Modulus.Authorization.Workflow.ApprovalStatus.Cancelled = 3 -> Modulus.Authorization.Workflow.ApprovalStatus
+Modulus.Authorization.Workflow.ApprovalStatus.Pending = 0 -> Modulus.Authorization.Workflow.ApprovalStatus
+Modulus.Authorization.Workflow.ApprovalStatus.Rejected = 2 -> Modulus.Authorization.Workflow.ApprovalStatus
+Modulus.Authorization.Workflow.ApprovalStep
+Modulus.Authorization.Workflow.ApprovalStep.ApprovalStep(string! Name, string! Permission, int RequiredApprovals = 1, System.TimeSpan? EscalateAfter = null, string? EscalationPermission = null, bool CheckAuthority = true) -> void
+Modulus.Authorization.Workflow.ApprovalStep.CheckAuthority.get -> bool
+Modulus.Authorization.Workflow.ApprovalStep.CheckAuthority.init -> void
+Modulus.Authorization.Workflow.ApprovalStep.<Clone>$() -> Modulus.Authorization.Workflow.ApprovalStep!
+Modulus.Authorization.Workflow.ApprovalStep.Deconstruct(out string! Name, out string! Permission, out int RequiredApprovals, out System.TimeSpan? EscalateAfter, out string? EscalationPermission, out bool CheckAuthority) -> void
+Modulus.Authorization.Workflow.ApprovalStep.Equals(Modulus.Authorization.Workflow.ApprovalStep? other) -> bool
+Modulus.Authorization.Workflow.ApprovalStep.EscalateAfter.get -> System.TimeSpan?
+Modulus.Authorization.Workflow.ApprovalStep.EscalateAfter.init -> void
+Modulus.Authorization.Workflow.ApprovalStep.EscalationPermission.get -> string?
+Modulus.Authorization.Workflow.ApprovalStep.EscalationPermission.init -> void
+Modulus.Authorization.Workflow.ApprovalStep.Name.get -> string!
+Modulus.Authorization.Workflow.ApprovalStep.Name.init -> void
+Modulus.Authorization.Workflow.ApprovalStep.Permission.get -> string!
+Modulus.Authorization.Workflow.ApprovalStep.Permission.init -> void
+Modulus.Authorization.Workflow.ApprovalStep.RequiredApprovals.get -> int
+Modulus.Authorization.Workflow.ApprovalStep.RequiredApprovals.init -> void
+Modulus.Authorization.Workflow.ApprovalSubmission
+Modulus.Authorization.Workflow.ApprovalSubmission.Amount.get -> decimal
+Modulus.Authorization.Workflow.ApprovalSubmission.Amount.init -> void
+Modulus.Authorization.Workflow.ApprovalSubmission.ApprovalSubmission(string! DocumentType, string! DocumentId, decimal Amount, string? Currency = null, System.Guid? OrgUnitId = null, string? Summary = null) -> void
+Modulus.Authorization.Workflow.ApprovalSubmission.<Clone>$() -> Modulus.Authorization.Workflow.ApprovalSubmission!
+Modulus.Authorization.Workflow.ApprovalSubmission.Currency.get -> string?
+Modulus.Authorization.Workflow.ApprovalSubmission.Currency.init -> void
+Modulus.Authorization.Workflow.ApprovalSubmission.Deconstruct(out string! DocumentType, out string! DocumentId, out decimal Amount, out string? Currency, out System.Guid? OrgUnitId, out string? Summary) -> void
+Modulus.Authorization.Workflow.ApprovalSubmission.DocumentId.get -> string!
+Modulus.Authorization.Workflow.ApprovalSubmission.DocumentId.init -> void
+Modulus.Authorization.Workflow.ApprovalSubmission.DocumentType.get -> string!
+Modulus.Authorization.Workflow.ApprovalSubmission.DocumentType.init -> void
+Modulus.Authorization.Workflow.ApprovalSubmission.Equals(Modulus.Authorization.Workflow.ApprovalSubmission? other) -> bool
+Modulus.Authorization.Workflow.ApprovalSubmission.OrgUnitId.get -> System.Guid?
+Modulus.Authorization.Workflow.ApprovalSubmission.OrgUnitId.init -> void
+Modulus.Authorization.Workflow.ApprovalSubmission.Summary.get -> string?
+Modulus.Authorization.Workflow.ApprovalSubmission.Summary.init -> void
+Modulus.Authorization.Workflow.ApprovalWorkflowExtensions
+Modulus.Authorization.Workflow.ApprovalWorkflowOptions
+Modulus.Authorization.Workflow.ApprovalWorkflowOptions.ApprovalWorkflowOptions() -> void
+Modulus.Authorization.Workflow.ApprovalWorkflowOptions.EnableEscalation.get -> bool
+Modulus.Authorization.Workflow.ApprovalWorkflowOptions.EnableEscalation.set -> void
+Modulus.Authorization.Workflow.ApprovalWorkflowOptions.EscalationCheckInterval.get -> System.TimeSpan
+Modulus.Authorization.Workflow.ApprovalWorkflowOptions.EscalationCheckInterval.set -> void
+Modulus.Authorization.Workflow.ApprovalWorkflowOptions.MaxSteps.get -> int
+Modulus.Authorization.Workflow.ApprovalWorkflowOptions.MaxSteps.set -> void
+Modulus.Authorization.Workflow.IApprovalChainStore
+Modulus.Authorization.Workflow.IApprovalChainStore.DeleteAsync(System.Guid id, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.Authorization.Workflow.IApprovalChainStore.GetAsync(System.Guid id, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Authorization.Workflow.ApprovalChain?>!
+Modulus.Authorization.Workflow.IApprovalChainStore.ListAsync(System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Authorization.Workflow.ApprovalChain!>!>!
+Modulus.Authorization.Workflow.IApprovalChainStore.SaveAsync(Modulus.Authorization.Workflow.ApprovalChain! chain, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Authorization.Workflow.ApprovalChain!>!
+Modulus.Authorization.Workflow.IApprovalRequestStore
+Modulus.Authorization.Workflow.IApprovalRequestStore.AddAsync(Modulus.Authorization.Workflow.ApprovalRequest! request, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Authorization.Workflow.IApprovalRequestStore.ForDocumentAsync(string! documentType, string! documentId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Authorization.Workflow.ApprovalRequest!>!>!
+Modulus.Authorization.Workflow.IApprovalRequestStore.GetAsync(System.Guid id, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Authorization.Workflow.ApprovalRequest?>!
+Modulus.Authorization.Workflow.IApprovalRequestStore.PendingAsync(System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Authorization.Workflow.ApprovalRequest!>!>!
+Modulus.Authorization.Workflow.IApprovalRequestStore.RequestedByAsync(System.Guid userId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Authorization.Workflow.ApprovalRequest!>!>!
+Modulus.Authorization.Workflow.IApprovalRequestStore.TryUpdateAsync(Modulus.Authorization.Workflow.ApprovalRequest! updated, long expectedVersion, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.Authorization.Workflow.IApprovalWorkflow
+Modulus.Authorization.Workflow.IApprovalWorkflow.ApproveAsync(System.Guid id, string? comment = null, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Authorization.Workflow.ApprovalRequest!>!
+Modulus.Authorization.Workflow.IApprovalWorkflow.CancelAsync(System.Guid id, string? comment = null, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Authorization.Workflow.ApprovalRequest!>!
+Modulus.Authorization.Workflow.IApprovalWorkflow.EscalateOverdueAsync(System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<int>!
+Modulus.Authorization.Workflow.IApprovalWorkflow.ForDocumentAsync(string! documentType, string! documentId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Authorization.Workflow.ApprovalRequest!>!>!
+Modulus.Authorization.Workflow.IApprovalWorkflow.GetAsync(System.Guid id, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Authorization.Workflow.ApprovalRequest?>!
+Modulus.Authorization.Workflow.IApprovalWorkflow.InboxAsync(System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Authorization.Workflow.ApprovalRequest!>!>!
+Modulus.Authorization.Workflow.IApprovalWorkflow.MineAsync(System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Authorization.Workflow.ApprovalRequest!>!>!
+Modulus.Authorization.Workflow.IApprovalWorkflowObserver
+Modulus.Authorization.Workflow.IApprovalWorkflowObserver.OnChangedAsync(Modulus.Authorization.Workflow.ApprovalRequest! request, string! change, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask
+Modulus.Authorization.Workflow.IApprovalWorkflow.RejectAsync(System.Guid id, string! comment, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Authorization.Workflow.ApprovalRequest!>!
+Modulus.Authorization.Workflow.IApprovalWorkflow.SubmitAsync(Modulus.Authorization.Workflow.ApprovalSubmission! submission, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Authorization.Workflow.ApprovalRequest!>!
+Modulus.Authorization.Workflow.IApprovalWorkflow.WhyNotAsync(System.Guid id, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<string?>!
+Modulus.Authorization.Workflow.InMemoryApprovalChainStore
+Modulus.Authorization.Workflow.InMemoryApprovalChainStore.DeleteAsync(System.Guid id, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.Authorization.Workflow.InMemoryApprovalChainStore.GetAsync(System.Guid id, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Authorization.Workflow.ApprovalChain?>!
+Modulus.Authorization.Workflow.InMemoryApprovalChainStore.InMemoryApprovalChainStore() -> void
+Modulus.Authorization.Workflow.InMemoryApprovalChainStore.ListAsync(System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Authorization.Workflow.ApprovalChain!>!>!
+Modulus.Authorization.Workflow.InMemoryApprovalChainStore.SaveAsync(Modulus.Authorization.Workflow.ApprovalChain! chain, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Authorization.Workflow.ApprovalChain!>!
+Modulus.Authorization.Workflow.InMemoryApprovalRequestStore
+Modulus.Authorization.Workflow.InMemoryApprovalRequestStore.AddAsync(Modulus.Authorization.Workflow.ApprovalRequest! request, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Authorization.Workflow.InMemoryApprovalRequestStore.ForDocumentAsync(string! documentType, string! documentId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Authorization.Workflow.ApprovalRequest!>!>!
+Modulus.Authorization.Workflow.InMemoryApprovalRequestStore.GetAsync(System.Guid id, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Authorization.Workflow.ApprovalRequest?>!
+Modulus.Authorization.Workflow.InMemoryApprovalRequestStore.InMemoryApprovalRequestStore() -> void
+Modulus.Authorization.Workflow.InMemoryApprovalRequestStore.PendingAsync(System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Authorization.Workflow.ApprovalRequest!>!>!
+Modulus.Authorization.Workflow.InMemoryApprovalRequestStore.RequestedByAsync(System.Guid userId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Authorization.Workflow.ApprovalRequest!>!>!
+Modulus.Authorization.Workflow.InMemoryApprovalRequestStore.TryUpdateAsync(Modulus.Authorization.Workflow.ApprovalRequest! updated, long expectedVersion, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+override Modulus.Authorization.Workflow.ApprovalChain.Equals(object? obj) -> bool
+override Modulus.Authorization.Workflow.ApprovalChain.GetHashCode() -> int
+override Modulus.Authorization.Workflow.ApprovalChain.ToString() -> string!
+override Modulus.Authorization.Workflow.ApprovalDecision.Equals(object? obj) -> bool
+override Modulus.Authorization.Workflow.ApprovalDecision.GetHashCode() -> int
+override Modulus.Authorization.Workflow.ApprovalDecision.ToString() -> string!
+override Modulus.Authorization.Workflow.ApprovalRequest.Equals(object? obj) -> bool
+override Modulus.Authorization.Workflow.ApprovalRequest.GetHashCode() -> int
+override Modulus.Authorization.Workflow.ApprovalRequest.ToString() -> string!
+override Modulus.Authorization.Workflow.ApprovalStep.Equals(object? obj) -> bool
+override Modulus.Authorization.Workflow.ApprovalStep.GetHashCode() -> int
+override Modulus.Authorization.Workflow.ApprovalStep.ToString() -> string!
+override Modulus.Authorization.Workflow.ApprovalSubmission.Equals(object? obj) -> bool
+override Modulus.Authorization.Workflow.ApprovalSubmission.GetHashCode() -> int
+override Modulus.Authorization.Workflow.ApprovalSubmission.ToString() -> string!
+static Modulus.Authorization.Workflow.ApprovalChain.operator !=(Modulus.Authorization.Workflow.ApprovalChain? left, Modulus.Authorization.Workflow.ApprovalChain? right) -> bool
+static Modulus.Authorization.Workflow.ApprovalChain.operator ==(Modulus.Authorization.Workflow.ApprovalChain? left, Modulus.Authorization.Workflow.ApprovalChain? right) -> bool
+static Modulus.Authorization.Workflow.ApprovalChainValidator.Validate(Modulus.Authorization.Workflow.ApprovalChain! chain, int maxSteps = 20) -> System.Collections.Generic.IReadOnlyList<string!>!
+static Modulus.Authorization.Workflow.ApprovalDecision.operator !=(Modulus.Authorization.Workflow.ApprovalDecision? left, Modulus.Authorization.Workflow.ApprovalDecision? right) -> bool
+static Modulus.Authorization.Workflow.ApprovalDecision.operator ==(Modulus.Authorization.Workflow.ApprovalDecision? left, Modulus.Authorization.Workflow.ApprovalDecision? right) -> bool
+static Modulus.Authorization.Workflow.ApprovalRequest.operator !=(Modulus.Authorization.Workflow.ApprovalRequest? left, Modulus.Authorization.Workflow.ApprovalRequest? right) -> bool
+static Modulus.Authorization.Workflow.ApprovalRequest.operator ==(Modulus.Authorization.Workflow.ApprovalRequest? left, Modulus.Authorization.Workflow.ApprovalRequest? right) -> bool
+static Modulus.Authorization.Workflow.ApprovalStep.operator !=(Modulus.Authorization.Workflow.ApprovalStep? left, Modulus.Authorization.Workflow.ApprovalStep? right) -> bool
+static Modulus.Authorization.Workflow.ApprovalStep.operator ==(Modulus.Authorization.Workflow.ApprovalStep? left, Modulus.Authorization.Workflow.ApprovalStep? right) -> bool
+static Modulus.Authorization.Workflow.ApprovalSubmission.operator !=(Modulus.Authorization.Workflow.ApprovalSubmission? left, Modulus.Authorization.Workflow.ApprovalSubmission? right) -> bool
+static Modulus.Authorization.Workflow.ApprovalSubmission.operator ==(Modulus.Authorization.Workflow.ApprovalSubmission? left, Modulus.Authorization.Workflow.ApprovalSubmission? right) -> bool
+static Modulus.Authorization.Workflow.ApprovalWorkflowExtensions.AddApprovalWorkflow(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<Modulus.Authorization.Workflow.ApprovalWorkflowOptions!>? configure = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+const Modulus.Authorization.StepUpPolicy.AuthTimeClaim = "auth_time" -> string!
+const Modulus.Authorization.StepUpPolicy.MachineClaim = "modulus:machine" -> string!
+const Modulus.Authorization.StepUpPolicy.MethodClaim = "amr" -> string!
+Modulus.Authorization.ModulusAuthorizationOptions.StepUp.get -> Modulus.Authorization.StepUpOptions!
+Modulus.Authorization.ModulusAuthorizationOptions.StepUp.set -> void
+Modulus.Authorization.StepUpOptions
+Modulus.Authorization.StepUpOptions.MachineRolePrefix.get -> string!
+Modulus.Authorization.StepUpOptions.MachineRolePrefix.set -> void
+Modulus.Authorization.StepUpOptions.MaxAge.get -> System.TimeSpan
+Modulus.Authorization.StepUpOptions.MaxAge.set -> void
+Modulus.Authorization.StepUpOptions.Permissions.get -> System.Collections.Generic.List<string!>!
+Modulus.Authorization.StepUpOptions.Permissions.set -> void
+Modulus.Authorization.StepUpOptions.RequiredMethod.get -> string!
+Modulus.Authorization.StepUpOptions.RequiredMethod.set -> void
+Modulus.Authorization.StepUpOptions.RequireForCritical.get -> bool
+Modulus.Authorization.StepUpOptions.RequireForCritical.set -> void
+Modulus.Authorization.StepUpOptions.StepUpOptions() -> void
+Modulus.Authorization.StepUpPolicy
+Modulus.Authorization.StepUpPolicy.IsSatisfiedBy(System.Security.Claims.ClaimsPrincipal! principal) -> bool
+Modulus.Authorization.StepUpPolicy.MaxAge.get -> System.TimeSpan
+Modulus.Authorization.StepUpPolicy.RequiredMethod.get -> string!
+Modulus.Authorization.StepUpPolicy.Requires(string! permission) -> bool
+Modulus.Authorization.StepUpPolicy.StepUpPolicy(Microsoft.Extensions.Options.IOptions<Modulus.Authorization.ModulusAuthorizationOptions!>! options, Modulus.Core.Abstractions.IPermissionRegistry? registry = null, System.TimeProvider? clock = null) -> void
+Modulus.Networking.OutboundAddressGuard
+Modulus.Networking.OutboundAddressRejectedException
+Modulus.Networking.OutboundAddressRejectedException.Host.get -> string!
+Modulus.Networking.OutboundAddressRejectedException.OutboundAddressRejectedException(string! host) -> void
+static Modulus.Networking.OutboundAddressGuard.ConnectAsync(System.Net.Http.SocketsHttpConnectionContext! context, System.Threading.CancellationToken ct) -> System.Threading.Tasks.ValueTask<System.IO.Stream!>
+static Modulus.Networking.OutboundAddressGuard.CreateCheckedHandler() -> System.Net.Http.SocketsHttpHandler!
+static Modulus.Networking.OutboundAddressGuard.IsPublic(System.Net.IPAddress! address) -> bool
+static Modulus.Networking.OutboundAddressGuard.IsReservedHost(System.Uri! uri) -> bool

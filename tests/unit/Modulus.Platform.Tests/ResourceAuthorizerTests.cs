@@ -115,6 +115,26 @@ public sealed class ResourceAuthorizerTests
         policy.Explain(request).Rules.Should().ContainSingle().Which.Faulted.Should().BeTrue();
     }
 
+    [Fact]
+    public async Task A_rule_needing_a_step_up_permission_is_refused_until_the_sign_in_is_fresh()
+    {
+        var policy = ResourcePolicy.Define(p => p.Allow("approve", r => r.CallerHasPermission("doc:approve")));
+        var doc = new Doc { OwnerId = Guid.NewGuid(), WorkflowState = "Submitted" };
+
+        var stale = new ResourceAuthorizer(
+            new StubUser(Owner, "doc:approve"), Unrestricted, new StubRegistry(policy), stepUp: new StepUpGate(satisfied: false));
+        (await stale.AuthorizeAsync(doc, "approve")).IsAllowed.Should().BeFalse("a step-up permission needs a fresh multi-factor sign-in");
+
+        var fresh = new ResourceAuthorizer(
+            new StubUser(Owner, "doc:approve"), Unrestricted, new StubRegistry(policy), stepUp: new StepUpGate(satisfied: true));
+        (await fresh.AuthorizeAsync(doc, "approve")).IsAllowed.Should().BeTrue();
+    }
+
+    private sealed class StepUpGate(bool satisfied) : IStepUpGate
+    {
+        public bool IsSatisfied(string permission) => satisfied;
+    }
+
     private static StubScope Unrestricted => new(unrestricted: true);
 
     private sealed class Doc : Modulus.Core.Abstractions.Entities.IHasOwner,

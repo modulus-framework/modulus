@@ -88,8 +88,8 @@ StackExchange.Redis + Azure SignalR into the dependency tree.
 **Decision.** Platform keeps only shared-framework-dependency features
 (MultiTenancy, Authorization, BackgroundJobs, Http resilience, memory caching,
 storage abstractions + LocalFileStorage). New packages: `Modulus.Storage.AwsS3`,
-`Modulus.Storage.AzureBlobs`, `Modulus.Storage.Minio`, `Modulus.Caching.Redis`,
-`Modulus.SignalR`. Namespaces unchanged where possible.
+`Modulus.Storage.AzureBlobs`, `Modulus.Caching.Redis`, `Modulus.SignalR.Backplane`. Namespaces unchanged where possible.
+(As built: there is no MinIO package; S3 is `Modulus.Storage.S3`, and the SignalR backplane is `Modulus.SignalR.Backplane`.)
 
 ## P1 — in progress
 
@@ -699,9 +699,10 @@ audit (`Modulus.AuditLogging.EntityFrameworkCore`), persistent scheduler (`Modul
 distributed locking (`IDistributedLock`, Redis-backed), unified caching (FusionCache), architecture tests
 (`Modulus.Testing.Architecture`).
 
-Still open: convention DI registration + Decorate(), domain-event dispatch timing options, optimistic
-concurrency conventions, framework metrics, prune unused package pins, source-generated dispatch (AOT, see
-ADVANCED_FEATURES_PLAN *Decided not to build*).
+Still open: convention DI registration + Decorate(), domain-event dispatch timing options, and framework
+metrics (the Caching, Authorization, Tenancy and RateLimit meters are defined but never recorded). Done since: optimistic
+concurrency conventions (`IHasConcurrencyStamp`) and pruning of unused package pins. AOT beyond the two packages that are
+AOT-compatible was decided against; see AGENTS.md *Decided not to build*.
 
 ## Working agreements
 - `TreatWarningsAsErrors` is global: every step must build with 0 warnings and pass

@@ -30,6 +30,7 @@ public static class ModulusErrorCatalog
     private static readonly ModulusError s_validation = new(ModulusErrorKind.Validation, "VALIDATION_FAILED", "Validation failed", true);
     private static readonly ModulusError s_notFound = new(ModulusErrorKind.NotFound, "NOT_FOUND", "Resource not found", true);
     private static readonly ModulusError s_unauthenticated = new(ModulusErrorKind.Unauthenticated, "UNAUTHENTICATED", "Unauthorized", true);
+    private static readonly ModulusError s_stepUp = new(ModulusErrorKind.Unauthenticated, "STEP_UP_REQUIRED", "Step-up authentication required", true);
     private static readonly ModulusError s_permissionDenied = new(ModulusErrorKind.PermissionDenied, "PERMISSION_DENIED", "Forbidden", true);
     private static readonly ModulusError s_conflict = new(ModulusErrorKind.Conflict, "CONFLICT", "Conflict", true);
     private static readonly ModulusError s_concurrency = new(ModulusErrorKind.ConcurrencyConflict, "CONCURRENCY_CONFLICT", "Concurrent update conflict", true);
@@ -46,6 +47,7 @@ public static class ModulusErrorCatalog
             ValidationException => s_validation,
             NotFoundException => s_notFound,
             UnauthorizedException => s_unauthenticated,
+            StepUpRequiredException => s_stepUp,
             ForbiddenException => s_permissionDenied,
             CrossTenantWriteException => s_permissionDenied,
             ConflictException => s_conflict,
