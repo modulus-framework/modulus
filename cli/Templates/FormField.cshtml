@@ -1,0 +1,170 @@
+@*
+    FormField - MVC template for individual form fields with validation
+    Usage: <partial name="FormField" model="@field" />
+*@
+
+@model dynamic
+
+@{
+    var fieldId = Model.Id ?? Model.Name;
+    var fieldName = Model.Name;
+    var fieldType = Model.Type ?? "text";
+    var fieldLabel = Model.Label ?? fieldName;
+    var fieldPlaceholder = Model.Placeholder ?? string.Empty;
+    var fieldValue = Model.Value ?? string.Empty;
+    var fieldRequired = Model.Required ?? false;
+    var fieldReadOnly = Model.ReadOnly ?? false;
+    var fieldDisabled = Model.Disabled ?? false;
+    var fieldHelpText = Model.HelpText ?? string.Empty;
+    var fieldClass = Model.Class ?? string.Empty;
+    var fieldMinLength = Model.MinLength ?? 0;
+    var fieldMaxLength = Model.MaxLength ?? 0;
+    var fieldMin = Model.Min ?? null;
+    var fieldMax = Model.Max ?? null;
+    var fieldPattern = Model.Pattern ?? string.Empty;
+    var fieldValidator = Model.Validator ?? fieldType;
+    var fieldOptions = Model.Options as List<dynamic> ?? new List<dynamic>();
+}
+
+<div class="form-group mb-3">
+    <label for="@fieldId" class="form-label">
+        @fieldLabel
+        @if (fieldRequired)
+        {
+            <span class="text-danger" title="Required">*</span>
+        }
+    </label>
+
+    @switch (fieldType)
+    {
+        case "textarea":
+            <textarea
+                id="@fieldId"
+                name="@fieldName"
+                class="form-control @fieldClass"
+                placeholder="@fieldPlaceholder"
+                data-validator="@fieldValidator"
+                @if (fieldRequired) { <text>data-required</text> }
+                @if (fieldMinLength > 0) { <text>data-min-length="@fieldMinLength"</text> }
+                @if (fieldMaxLength > 0) { <text>data-max-length="@fieldMaxLength"</text> }
+                @if (fieldPattern != string.Empty) { <text>data-pattern="@fieldPattern"</text> }
+                @if (fieldReadOnly) { <text>readonly</text> }
+                @if (fieldDisabled) { <text>disabled</text> }
+                rows="4">@fieldValue</textarea>
+            break;
+
+        case "select":
+            <select
+                id="@fieldId"
+                name="@fieldName"
+                class="form-select @fieldClass"
+                data-validator="@fieldValidator"
+                @if (fieldRequired) { <text>data-required</text> }
+                @if (fieldDisabled) { <text>disabled</text> }>
+                <option value="">-- Select @fieldLabel --</option>
+                @foreach (var option in fieldOptions)
+                {
+                    var optionText = option.Text ?? option.Value;
+                    var optionValue = option.Value;
+                    var isSelected = optionValue?.ToString() == fieldValue?.ToString();
+                    <option value="@optionValue" @if (isSelected) { <text>selected</text> }>@optionText</option>
+                }
+            </select>
+            break;
+
+        case "checkbox":
+            <div class="form-check">
+                <input
+                    type="checkbox"
+                    id="@fieldId"
+                    name="@fieldName"
+                    class="form-check-input @fieldClass"
+                    value="true"
+                    data-validator="@fieldValidator"
+                    @if (fieldRequired) { <text>data-required</text> }
+                    @if (fieldDisabled) { <text>disabled</text> }
+                    @if (fieldValue?.ToString() == "true" || fieldValue?.ToString() == "True") { <text>checked</text> } />
+                <label class="form-check-label" for="@fieldId">
+                    @fieldLabel
+                </label>
+            </div>
+            break;
+
+        case "radio":
+            @foreach (var option in fieldOptions)
+            {
+                var optionText = option.Text ?? option.Value;
+                var optionValue = option.Value;
+                var radioId = fieldId + "_" + optionValue;
+                var isSelected = optionValue?.ToString() == fieldValue?.ToString();
+                <div class="form-check">
+                    <input
+                        type="radio"
+                        id="@radioId"
+                        name="@fieldName"
+                        class="form-check-input @fieldClass"
+                        value="@optionValue"
+                        data-validator="@fieldValidator"
+                        @if (isSelected) { <text>checked</text> } />
+                    <label class="form-check-label" for="@radioId">
+                        @optionText
+                    </label>
+                </div>
+            }
+            break;
+
+        case "email":
+        case "url":
+        case "number":
+        case "decimal":
+        case "password":
+        case "date":
+        case "time":
+        case "datetime-local":
+            <input
+                type="@fieldType"
+                id="@fieldId"
+                name="@fieldName"
+                class="form-control @fieldClass"
+                placeholder="@fieldPlaceholder"
+                value="@fieldValue"
+                data-validator="@fieldValidator"
+                @if (fieldRequired) { <text>data-required</text> }
+                @if (fieldMinLength > 0) { <text>data-min-length="@fieldMinLength"</text> }
+                @if (fieldMaxLength > 0) { <text>data-max-length="@fieldMaxLength"</text> }
+                @if (fieldMin != null) { <text>data-min="@fieldMin"</text> }
+                @if (fieldMax != null) { <text>data-max="@fieldMax"</text> }
+                @if (fieldPattern != string.Empty) { <text>data-pattern="@fieldPattern"</text> }
+                @if (fieldReadOnly) { <text>readonly</text> }
+                @if (fieldDisabled) { <text>disabled</text> } />
+            break;
+
+        default:
+            <input
+                type="text"
+                id="@fieldId"
+                name="@fieldName"
+                class="form-control @fieldClass"
+                placeholder="@fieldPlaceholder"
+                value="@fieldValue"
+                data-validator="@fieldValidator"
+                @if (fieldRequired) { <text>data-required</text> }
+                @if (fieldMinLength > 0) { <text>data-min-length="@fieldMinLength"</text> }
+                @if (fieldMaxLength > 0) { <text>data-max-length="@fieldMaxLength"</text> }
+                @if (fieldPattern != string.Empty) { <text>data-pattern="@fieldPattern"</text> }
+                @if (fieldReadOnly) { <text>readonly</text> }
+                @if (fieldDisabled) { <text>disabled</text> } />
+            break;
+    }
+
+    @* Help text *@
+    @if (!string.IsNullOrEmpty(fieldHelpText))
+    {
+        <small class="form-text text-muted d-block mt-2">@fieldHelpText</small>
+    }
+
+    @* Validation feedback *@
+    <div class="invalid-feedback d-none">
+        @* This will be populated by client-side validator *@
+    </div>
+</div>

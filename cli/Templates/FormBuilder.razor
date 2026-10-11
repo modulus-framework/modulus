@@ -1,0 +1,103 @@
+@*
+    FormBuilder - Blazor component for building forms with validation
+    Usage: <FormBuilder Fields="@fields" OnSubmit="@HandleSubmit" />
+*@
+
+@typeparam TModel where TModel : class, new()
+@using System.Reflection
+
+<EditForm Model="@Model" OnValidSubmit="@OnValidSubmit" OnInvalidSubmit="@OnInvalidSubmit" class="needs-validation">
+    <DataAnnotationsValidator />
+
+    @* Validation summary *@
+    <div class="validation-summary-container">
+        <ValidationSummary />
+    </div>
+
+    @* Form fields *@
+    <div class="form-container">
+        @if (Fields != null)
+        {
+            @foreach (var field in Fields)
+            {
+                <FormField TModel="TModel" FieldInfo="@field" />
+            }
+        }
+    </div>
+
+    @* Form buttons *@
+    <div class="form-actions mt-4">
+        <button type="submit" class="btn btn-primary btn-lg">
+            <i class="bi bi-check-circle me-2"></i>
+            @SubmitButtonText
+        </button>
+
+        @if (ShowResetButton)
+        {
+            <button type="reset" class="btn btn-outline-secondary btn-lg ms-2">
+                <i class="bi bi-arrow-counterclockwise me-2"></i>
+                @ResetButtonText
+            </button>
+        }
+
+        <a href="javascript:history.back()" class="btn btn-outline-secondary btn-lg ms-2">
+            <i class="bi bi-arrow-left me-2"></i>
+            Cancel
+        </a>
+    </div>
+</EditForm>
+
+@code {
+    [Parameter]
+    public TModel? Model { get; set; }
+
+    [Parameter]
+    public List<PropertyInfo>? Fields { get; set; }
+
+    [Parameter]
+    public string SubmitButtonText { get; set; } = "Submit";
+
+    [Parameter]
+    public string ResetButtonText { get; set; } = "Reset";
+
+    [Parameter]
+    public bool ShowResetButton { get; set; } = false;
+
+    [Parameter]
+    public EventCallback<TModel> OnSubmit { get; set; }
+
+    [Parameter]
+    public EventCallback OnValidSubmit { get; set; }
+
+    [Parameter]
+    public EventCallback OnInvalidSubmit { get; set; }
+
+    protected override void OnInitialized()
+    {
+        if (Model == null)
+        {
+            Model = new TModel();
+        }
+
+        if (Fields == null)
+        {
+            Fields = typeof(TModel).GetProperties(
+                System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance
+            ).ToList();
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        if (Model != null)
+        {
+            await OnSubmit.InvokeAsync(Model);
+        }
+        await OnValidSubmit.InvokeAsync();
+    }
+
+    private async Task HandleInvalidSubmit()
+    {
+        await OnInvalidSubmit.InvokeAsync();
+    }
+}

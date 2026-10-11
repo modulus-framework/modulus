@@ -1,0 +1,192 @@
+@*
+    FormField - Blazor component for individual form fields with validation
+    Usage: <FormField TModel="@typeof(MyClass)" FieldInfo="@propertyInfo" />
+*@
+
+@typeparam TModel where TModel : class, new()
+@using System.Reflection
+@using System.ComponentModel.DataAnnotations
+@using System.Linq.Expressions
+
+@if (FieldInfo != null)
+{
+    <div class="form-group mb-3">
+        <label for="@FieldId" class="form-label">
+            @GetDisplayName()
+            @if (IsRequired())
+            {
+                <span class="text-danger" title="Required">*</span>
+            }
+        </label>
+
+        @switch (GetFieldType())
+        {
+            case "textarea":
+                <InputTextArea id="@FieldId" @bind-Value="@FieldValue"
+                    class="form-control"
+                    placeholder="@GetPlaceholder()"
+                    rows="4" />
+                break;
+
+            case "select":
+                <InputSelect id="@FieldId" @bind-Value="@FieldValue" class="form-select">
+                    <option value="">-- Select @GetDisplayName() --</option>
+                    @if (Options != null)
+                    {
+                        @foreach (var option in Options)
+                        {
+                            <option value="@option.Value">@option.Text</option>
+                        }
+                    }
+                </InputSelect>
+                break;
+
+            case "checkbox":
+                <div class="form-check">
+                    <InputCheckbox id="@FieldId" @bind-Value="@BoolFieldValue" class="form-check-input" />
+                    <label class="form-check-label" for="@FieldId">
+                        @GetDisplayName()
+                    </label>
+                </div>
+                break;
+
+            case "number":
+                <InputNumber id="@FieldId" @bind-Value="@NumericFieldValue" class="form-control" />
+                break;
+
+            case "date":
+                <InputDate id="@FieldId" @bind-Value="@DateFieldValue" class="form-control" />
+                break;
+
+            case "email":
+                <InputText id="@FieldId" @bind-Value="@FieldValue"
+                    type="email"
+                    class="form-control"
+                    placeholder="@GetPlaceholder()" />
+                break;
+
+            case "password":
+                <InputText id="@FieldId" @bind-Value="@FieldValue"
+                    type="password"
+                    class="form-control"
+                    placeholder="@GetPlaceholder()" />
+                break;
+
+            default:
+                <InputText id="@FieldId" @bind-Value="@FieldValue"
+                    class="form-control"
+                    placeholder="@GetPlaceholder()" />
+                break;
+        }
+
+        @* Help text *@
+        @if (!string.IsNullOrEmpty(HelpText))
+        {
+            <small class="form-text text-muted d-block mt-2">@HelpText</small>
+        }
+
+        @* Validation messages *@
+        <ValidationMessage For="@GetExpression()" class="invalid-feedback d-block" />
+    </div>
+}
+
+@code {
+    [Parameter]
+    public PropertyInfo? FieldInfo { get; set; }
+
+    [Parameter]
+    public string? HelpText { get; set; }
+
+    [Parameter]
+    public List<SelectOption>? Options { get; set; }
+
+    [Parameter]
+    public object? Value { get; set; }
+
+    [Parameter]
+    public EventCallback<object?> ValueChanged { get; set; }
+
+    private string FieldId => FieldInfo?.Name ?? "field";
+
+    private object? FieldValue
+    {
+        get => Value;
+        set => ValueChanged.InvokeAsync(value);
+    }
+
+    private bool BoolFieldValue
+    {
+        get => Value is bool b ? b : false;
+        set => ValueChanged.InvokeAsync(value);
+    }
+
+    private DateTime? DateFieldValue
+    {
+        get => Value is DateTime dt ? dt : null;
+        set => ValueChanged.InvokeAsync(value);
+    }
+
+    private decimal? NumericFieldValue
+    {
+        get => Value is decimal d ? d : null;
+        set => ValueChanged.InvokeAsync(value);
+    }
+
+    private string GetFieldType()
+    {
+        if (FieldInfo == null) return "text";
+
+        return FieldInfo.PropertyType.Name.ToLower() switch
+        {
+            "string" => GetStringFieldType(),
+            "boolean" => "checkbox",
+            "int32" or "int64" or "decimal" or "double" or "single" => "number",
+            "datetime" => "date",
+            _ => "text"
+        };
+    }
+
+    private string GetStringFieldType()
+    {
+        if (FieldInfo == null) return "text";
+
+        var displayAttr = FieldInfo.GetCustomAttribute<DisplayAttribute>();
+        var dataType = displayAttr?.DataType;
+
+        return dataType?.ToString() ?? "text";
+    }
+
+    private string GetDisplayName()
+    {
+        if (FieldInfo == null) return string.Empty;
+
+        var displayAttr = FieldInfo.GetCustomAttribute<DisplayAttribute>();
+        return displayAttr?.Name ?? FieldInfo.Name;
+    }
+
+    private string GetPlaceholder()
+    {
+        if (FieldInfo == null) return string.Empty;
+
+        var displayAttr = FieldInfo.GetCustomAttribute<DisplayAttribute>();
+        return displayAttr?.Prompt ?? string.Empty;
+    }
+
+    private bool IsRequired()
+    {
+        if (FieldInfo == null) return false;
+        return FieldInfo.GetCustomAttribute<RequiredAttribute>() != null;
+    }
+
+    private Expression<Func<object>>? GetExpression()
+    {
+        // This would need to be handled through proper Blazor binding
+        return null;
+    }
+
+    public class SelectOption
+    {
+        public string Text { get; set; } = string.Empty;
+        public string Value { get; set; } = string.Empty;
+    }
+}

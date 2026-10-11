@@ -1,0 +1,115 @@
+@*
+    FormBuilder - MVC template for building forms with validation
+    Usage: <partial name="FormBuilder" model="@model" />
+*@
+
+@model dynamic
+
+@{
+    var formId = ViewBag.FormId ?? "form_" + Guid.NewGuid().ToString("N");
+    var submitButtonText = ViewBag.SubmitButtonText ?? "Submit";
+    var resetButtonText = ViewBag.ResetButtonText ?? "Reset";
+    var showReset = ViewBag.ShowResetButton ?? false;
+    var validateOnBlur = ViewBag.ValidateOnBlur ?? true;
+    var validateOnChange = ViewBag.ValidateOnChange ?? false;
+    var validateOnSubmit = ViewBag.ValidateOnSubmit ?? true;
+}
+
+<form id="@formId" class="needs-validation" novalidate method="post">
+    @if (ViewBag.FormSections != null)
+    {
+        @foreach (var section in ViewBag.FormSections)
+        {
+            <fieldset class="form-section">
+                @if (!string.IsNullOrEmpty(section.Title))
+                {
+                    <legend class="form-section-title">@section.Title</legend>
+                }
+
+                @if (!string.IsNullOrEmpty(section.Description))
+                {
+                    <p class="form-section-description">@section.Description</p>
+                }
+
+                <div class="form-fields">
+                    @foreach (var field in section.Fields)
+                    {
+                        <partial name="FormField" model="@field" />
+                    }
+                </div>
+            </fieldset>
+        }
+    }
+    else
+    {
+        @* Default single section *@
+        <div class="form-fields">
+            @if (ViewBag.Fields != null)
+            {
+                @foreach (var field in ViewBag.Fields)
+                {
+                    <partial name="FormField" model="@field" />
+                }
+            }
+        </div>
+    }
+
+    @* Validation summary *@
+    @if (ViewBag.ShowValidationSummary ?? true)
+    {
+        <div id="validationSummary" class="validation-summary-container d-none">
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <h4 class="alert-heading">Please correct the following errors:</h4>
+                <ul id="validationSummaryList" class="mb-0">
+                    <!-- Errors will be populated here by client-side validator -->
+                </ul>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        </div>
+    }
+
+    @* Form buttons *@
+    <div class="form-actions mt-4">
+        <button type="submit" class="btn btn-primary btn-lg">
+            <i class="bi bi-check-circle me-2"></i>
+            @submitButtonText
+        </button>
+
+        @if (showReset)
+        {
+            <button type="reset" class="btn btn-outline-secondary btn-lg ms-2">
+                <i class="bi bi-arrow-counterclockwise me-2"></i>
+                @resetButtonText
+            </button>
+        }
+
+        <a href="javascript:history.back()" class="btn btn-outline-secondary btn-lg ms-2">
+            <i class="bi bi-arrow-left me-2"></i>
+            Cancel
+        </a>
+    </div>
+
+    @* CSRF token *@
+    @Html.AntiForgeryToken()
+</form>
+
+@section Scripts {
+    <script src="~/js/form-validator.js"></script>
+    <script src="~/js/field-validators.js"></script>
+    <script src="~/js/validation-messages.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const validator = new FormValidator('#@formId', {
+                validateOnBlur: @validateOnBlur.ToString().ToLower(),
+                validateOnChange: @validateOnChange.ToString().ToLower(),
+                validateOnSubmit: @validateOnSubmit.ToString().ToLower(),
+                showErrors: true,
+                errorClass: 'is-invalid',
+                successClass: 'is-valid'
+            });
+
+            window.formValidator = validator;
+        });
+    </script>
+}
