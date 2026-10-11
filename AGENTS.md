@@ -811,7 +811,7 @@ abstractions for apps to wire their own admin APIs.
 removed from this repository.** The UI lives in the separate `modulus-ui` repository (packages `Modulus.Ui.Abstractions`, `Modulus.Ui.Assets`,
 `Modulus.AspNetCore.Mvc`, `Modulus.AspNetCore.Hosting`, `Modulus.AspNetCore.Fluid`, `Modulus.Blazor`, `Modulus.Documents`, and the page templates in
 `Modulus.Ui.Templates`). The CLI scaffolds pages from that template package with `modulus ui ...` (`add-component`, `create-form-from-entity`,
-`create-dashboard`, `add-auth`, `add-2fa`, `add-session-manager`, `add-chart`, `add-i18n`, `create-permission-matrix`, `audit`, `theme ...`; see
+`create-dashboard`, `add-admin` (the admin dashboard starter and its menu), `add-auth`, `add-2fa`, `add-session-manager`, `add-chart`, `add-i18n`, `create-permission-matrix`, `audit`, `theme ...`; see
 `modulus-ui/docs/CLI.md`). Package templates resolve from `~/.modulus/cache`, then the local feed (`~/.modulus/feed` or `MODULUS_LOCAL_FEED`), then nuget.org.
 
 - **App kinds (`api` / `webapp+api`).** An **`api`** app creates no UI. **`webapp+api`** generates two separately deployable projects (see *App-kind split*): the API

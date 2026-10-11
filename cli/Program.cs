@@ -161,6 +161,12 @@ public static class Program
                     .WithExample("ui", "add-component", "alert", "card", "data-table")
                     .WithExample("ui", "add-component", "--all");
 
+                ui.AddCommand<Commands.UiAddAdminCommand>("add-admin")
+                    .WithDescription("Scaffold the admin dashboard starter (users, roles, tenants, notifications, audit log, settings, dashboards) and its menu for the app's UI engine.")
+                    .WithExample("ui", "add-admin")
+                    .WithExample("ui", "add-admin", "--pages", "dashboard,users,roles")
+                    .WithExample("ui", "add-admin", "--engine", "blazor", "--folder", "Backoffice");
+
                 ui.AddCommand<Commands.UiAddAuthCommand>("add-auth")
                     .WithDescription("Add the forgot-password and reset-password pages (they call Modulus.Identity's /account endpoints).")
                     .WithExample("ui", "add-auth")

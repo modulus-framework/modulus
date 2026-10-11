@@ -43,6 +43,19 @@ internal static class UiHostWiring
     }
 
     /// <summary>
+    /// Adds <paramref name="line"/> (the <c>AddModulusAdminUi</c> statement) before the app is built, so the admin pages get their menu.
+    /// Returns the line it added, or an empty list when the host already calls <c>AddModulusAdminUi</c>.
+    /// </summary>
+    public static IReadOnlyList<string> EnsureAdminMenu(string programPath, string line)
+    {
+        var text = File.ReadAllText(programPath);
+        if (text.Contains("AddModulusAdminUi(", StringComparison.Ordinal))
+            return [];
+        File.WriteAllText(programPath, InsertBefore(text, "var app = builder.Build();", line));
+        return [line];
+    }
+
+    /// <summary>
     /// Wires the forwarding controller into a split Web host: writes <see cref="ProxyControllerFile"/> into <c>Controllers/</c>,
     /// adds <c>AddIdentityApiProxy()</c> to Program.cs and opens the two anonymous recovery routes in the loosening allowlist.
     /// </summary>
