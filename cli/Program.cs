@@ -178,6 +178,10 @@ public static class Program
                     .WithExample("ui", "create-crud", "Product")
                     .WithExample("ui", "create-crud", "Product", "--module", "Catalog", "--engine", "blazor");
 
+                ui.AddCommand<Commands.UiAddAssistantCommand>("add-assistant")
+                    .WithDescription("Host the AI platform's embedded assistant: /ai/session endpoint, ai:use permission, Ai:Host settings and a layout partial. Razor Pages and MVC.")
+                    .WithExample("ui", "add-assistant");
+
                 ui.AddCommand<Commands.UiAddChartCommand>("add-chart")
                     .WithDescription("Add a chart page (line, column, donut, heatmap) built on the framework's chart components, with sample data.")
                     .WithExample("ui", "add-chart", "--type", "donut")
@@ -261,6 +265,7 @@ internal sealed class DefaultCommand : Command
         table.AddRow("[cyan]ui add-2fa[/]", "Add the two-factor authentication page");
         table.AddRow("[cyan]ui add-session-manager[/]", "Add the sessions and sign-in history page");
         table.AddRow("[cyan]ui create-crud[/] [grey]<Entity>[/]", "Create list, edit and delete pages for an entity over its API");
+        table.AddRow("[cyan]ui add-assistant[/]", "Host the AI platform's embedded assistant (session endpoint, ai:use, partial)");
         table.AddRow("[cyan]ui add-chart[/] [grey]--type T[/]", "Add a line, column, donut or heatmap chart page");
         table.AddRow("[cyan]ui add-i18n[/] [grey]--languages L[/]", "Set the app's languages and wire request localization");
         table.AddRow("[cyan]ui audit[/]", "Scan pages for accessibility problems (report as json, markdown or html)");

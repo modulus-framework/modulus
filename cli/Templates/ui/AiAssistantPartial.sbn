@@ -1,0 +1,8 @@
+@using Microsoft.Extensions.Options
+@using {{ ui_namespace }}.Ai
+@inject IOptions<AiAssistantOptions> Ai
+@if (Ai.Value.Enabled && User.Identity?.IsAuthenticated == true)
+{
+    <script src="@Ai.Value.SdkScript" defer></script>
+    <ai-assistant session-endpoint="/ai/session" gateway="@Ai.Value.BaseUrl"></ai-assistant>
+}

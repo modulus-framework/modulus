@@ -414,7 +414,8 @@ update, list, delete; `NOT_FOUND` after the delete; introspection and `/graphql/
 BFF with a `gql-mobile` token: anonymous `401`, create and list `200`, `X-App-Version: 0.1.0` → `426`, a first-party
 token → `403`. Covered by `Modulus.GraphQL.Tests` (28) and `GraphQLCommandTests` (11).
 
-**Not built:** subscriptions, cursor pagination/filtering conventions, a FusionCache-backed
+**Decided not to build:** subscriptions (they need WebSockets, which are off on purpose; Realtime pushes integration events with the
+same auth and tenant rules, see AGENTS.md). **Not built:** cursor pagination/filtering conventions, a FusionCache-backed
 response cache (queries are already cached by `[CacheFor]` through the mediator).
 
 ### Phase 5: Realtime (`Modulus.Realtime`) (done)
@@ -798,8 +799,9 @@ Known limits of 6b (follow-ups):
 
 #### 6c: Host integration, UI and CLI
 
-- [ ] **`Modulus.UI.AI` (deferred).** Not built: the UI is going to change, so the assistant host waits for it.
-  The design stays:
+- [x] **`Modulus.UI.AI`, built as `modulus ui add-assistant`** (scaffolded into the Web app, not a package: `Ai/AiAssistant.cs`,
+  `Pages/Shared/_AiAssistant.cshtml`, `Ai:Host` settings; Razor Pages and MVC layouts). The policy check runs only when the app
+  defines the `ai:use` policy; otherwise sign-in gates it. The design:
   - `POST /ai/session` (behind the sign-in) mints the platform session token with the **host API key**, which is
     held server-side only (`Ai:Host:ApiKey`, user secrets or a vault; covered by the secrets guard).
   - An `ISlotContributor` renders the SDK's assistant view component, permission-gated (`ai:use`) and
@@ -902,8 +904,9 @@ Known limits of 6b (follow-ups):
     host's tenant middleware answers `403` first, and both are now accepted.
 - Verified end to end from freshly packed packages: `--kind api --auth openiddict` passed 15/15, and the same with
   `--multi-tenancy` passed 16/16, both after `add-ai` and `generate-crud Product --ai`.
-- Not covered generically: timeout-as-deny (needs a slow capability in the app), and response shapes against the
-  platform's published OpenAPI spec (not yet published).
+- Timeout-as-deny runs only when the app names a deliberately slow capability (`AiConformanceOptions.SlowCapability`,
+  category `TimeoutIsDeny`); without one that check reports `NotApplicable`. Response shapes against the platform's
+  published OpenAPI spec are not covered (the spec is not yet published).
 - [ ] **Against the real platform.** Run the platform's `AiPlatform.Integrations.Conformance` suite against a
   generated app, in the platform's or the app's CI, before a connector is activated. The in-repo kit mirrors its
   categories but does not replace it.
