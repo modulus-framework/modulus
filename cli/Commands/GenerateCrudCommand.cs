@@ -2,6 +2,7 @@ using System.ComponentModel;
 using Modulus.Cli.Services;
 using Spectre.Console;
 using Spectre.Console.Cli;
+using System.Text.Json;
 
 namespace Modulus.Cli.Commands;
 
@@ -31,6 +32,9 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
     }
 
     private readonly TemplateEngine _templates = new();
+    private readonly ITemplatePackageResolver _resolver = new TemplatePackageResolver();
+
+    private UiFileGenerator? _uiGenerator;
 
     public override int Execute(CommandContext ctx, Settings s)
     {
@@ -184,6 +188,16 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
             }
         }
 
+
+        // ── Presentation layer UI files (Phase 3c) ────────────────
+        try
+        {
+            Task.Run(() => GenerateUiFilesAsync(entity, model, presDir)).Wait();
+        }
+        catch (Exception ex)
+        {
+            Ux.Warning($"UI generation error: {ex.Message}");
+        }
         // ── Summary ───────────────────────────────────────────────
         AnsiConsole.MarkupLine("[green]✓[/] Generated CRUD for [cyan]{0}[/] in [grey]{1}[/]",
             entity, module.Name);
@@ -515,4 +529,75 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
         var nl = content.Contains("\r\n") ? "\r\n" : "\n";
         return content.Insert(bodyOpen + 1, nl + line);
     }
+    private async Task GenerateUiFilesAsync(string entity, ModuleModel model, string presDir)
+    {
+        var uiEngine = ReadUiEngineFromConfig();
+        
+        if (string.IsNullOrEmpty(uiEngine) || uiEngine == "none")
+        {
+            Ux.Detail("UI engine not configured, skipping UI file generation");
+            return;
+        }
+
+        try
+        {
+            _uiGenerator ??= new UiFileGenerator(_resolver);
+
+            Ux.Info($"Generating UI files for {entity} with {uiEngine}...");
+
+            var generatedFiles = await _uiGenerator.GenerateAsync(
+                model, entity, uiEngine, presDir);
+
+            if (generatedFiles.Count > 0)
+            {
+                foreach (var file in generatedFiles)
+                {
+                    AnsiConsole.MarkupLine("  [green]→[/] [grey]{0}[/]", file);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Ux.Warning($"UI generation skipped: {ex.Message}");
+        }
+    }
+
+    private string? ReadUiEngineFromConfig()
+    {
+        var configPaths = new[]
+        {
+            Path.Combine(Directory.GetCurrentDirectory(), ".modulus.json"),
+            Path.Combine(Directory.GetCurrentDirectory(), "modulus.json"),
+        };
+
+        foreach (var configPath in configPaths)
+        {
+            if (!File.Exists(configPath))
+                continue;
+
+            try
+            {
+                var json = File.ReadAllText(configPath);
+                using var doc = JsonDocument.Parse(json);
+                
+                if (doc.RootElement.TryGetProperty("uiEngine", out var engine))
+                {
+                    var engineValue = engine.GetString();
+                    if (!string.IsNullOrEmpty(engineValue))
+                    {
+                        Ux.Info($"Using UI engine: {engineValue}");
+                        return engineValue;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Ux.Detail($"Failed to read UI engine config: {ex.Message}");
+            }
+        }
+
+        return null;
+    }
 }
+
+
