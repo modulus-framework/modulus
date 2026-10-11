@@ -9,7 +9,7 @@ namespace Modulus.Cli.Services;
 /// </summary>
 internal static class VersionCheckService
 {
-    private const string CliPackageId = "Cobytelabs.Modulus.Cli";
+    private const string CliPackageId = "Modulus.Cli";
 
     /// <summary>
     /// Checks if the installed <c>modulus</c> CLI tool has a newer version
@@ -76,12 +76,12 @@ internal static class VersionCheckService
 
             if (proc.ExitCode != 0) return null;
 
-            // Parse output lines looking for "Cobytelabs.Modulus.Cli" package.
+            // Parse output lines looking for "Modulus.Cli" package.
             foreach (var line in output.Split('\n'))
             {
                 if (line.Contains(CliPackageId, StringComparison.OrdinalIgnoreCase))
                 {
-                    // Typical format: "Cobytelabs.Modulus.Cli     1.2.0      ..."
+                    // Typical format: "Modulus.Cli     1.2.0      ..."
                     var parts = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
                     // The version is typically the second column.
                     if (parts.Length >= 2)

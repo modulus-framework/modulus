@@ -31,26 +31,10 @@ public static class OpenTelemetryExtensions
         => builder.AddMeter(ModulusMeters.AllMeters);
 
     /// <summary>
-    /// Enables OpenTelemetry logging so ILogger output is exported to OTLP
-    /// alongside traces and metrics. This method is a no-op placeholder;
-    /// the real configuration happens via AddOpenTelemetry().WithLogging()
-    /// in your host setup.
-    ///
-    /// Call this inside <c>services.AddOpenTelemetry().WithLogging(b => b.UseModulusLogging())</c>,
-    /// typically in the same OTel builder as <c>UseModulusTracing()</c> and
-    /// <c>UseModulusMetrics()</c>.
-    ///
-    /// Example:
-    /// <code>
-    /// services.AddOpenTelemetry()
-    ///     .WithTracing(b => b.UseModulusTracing().AddJaegerExporter())
-    ///     .WithMetrics(b => b.UseModulusMetrics().AddOtlpExporter())
-    ///     .WithLogging(b => b.UseModulusLogging().AddOtlpExporter());
-    /// </code>
-    ///
-    /// To control log levels, configure the logging builder in services.Configure&lt;LoggerFilterOptions&gt;
-    /// or via appsettings.json Logging.LogLevel settings.
+    /// Does nothing. Modulus logs need no extra setup: export them with the host's own
+    /// <c>.WithLogging(b =&gt; b.AddOtlpExporter())</c>, and set levels through <c>Logging:LogLevel</c>.
     /// </summary>
+    [Obsolete("No-op. Remove the call: the host's WithLogging(b => b.AddOtlpExporter()) already exports Modulus logs.")]
     public static LoggerProviderBuilder UseModulusLogging(
         this LoggerProviderBuilder builder)
         => builder;
@@ -78,7 +62,6 @@ public static class OpenTelemetryExtensions
     ///         .AddRuntimeInstrumentation()
     ///         .AddOtlpExporter())
     ///     .WithLogging(b => b
-    ///         .UseModulusLogging()
     ///         .AddOtlpExporter());
     /// services.AddModulusObservability();
     /// </code>

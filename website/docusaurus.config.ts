@@ -105,12 +105,12 @@ const config: Config = {
         {
           title: 'More',
           items: [
-            { label: 'NuGet', href: 'https://www.nuget.org/profiles/Cobytelabs' },
+            { label: 'NuGet', href: 'https://www.nuget.org/packages?q=Modulus' },
             { label: 'Samples', href: 'https://github.com/modulus-framework/modulus/tree/main/samples' },
           ],
         },
       ],
-      copyright: `Copyright ${new Date().getFullYear()} Cobytelabs. Built with Docusaurus.`,
+      copyright: `Copyright ${new Date().getFullYear()} Modulus. Built with Docusaurus.`,
     },
     prism: {
       theme: prismThemes.github,

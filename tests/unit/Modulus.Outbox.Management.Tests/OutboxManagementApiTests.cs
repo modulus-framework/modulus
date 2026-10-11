@@ -41,7 +41,8 @@ public sealed class OutboxManagementApiTests : IAsyncLifetime
         builder.Services
             .AddAuthentication("Test")
             .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>("Test", null);
-        builder.Services.AddModulusAuthorization();
+        // These hosts carry the caller's permissions as claims; the grant store is the source by default now.
+        builder.Services.AddModulusAuthorization(o => o.TrustPermissionClaims = true);
         builder.Services.AddDbContext<OutboxTestDb>(o => o.UseSqlite(_connection));
         builder.Services.AddScoped<DbContext>(sp => sp.GetRequiredService<OutboxTestDb>());
         builder.Services.Configure<OutboxOptions>(o => o.MaxRetries = MaxRetries);

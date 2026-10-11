@@ -401,9 +401,10 @@ public class ModulusTokenController(
         }
         else
         {
-            // No Identity user store configured — nothing to re-verify or refresh beyond the (already server-validated)
-            // refresh token; honour its claims as-is.
-            principal = info.Principal;
+            // Without a user store nothing can re-check the account (active, lock-out, security stamp), so a refresh
+            // token must not renew access: fail closed.
+            Audit(grant, SecurityAuditOutcomes.Denied, info.Principal.GetClaim(OpenIddictConstants.Claims.Subject), TenantOf(info.Principal));
+            return InvalidRefreshGrant();
         }
 
         if (await ContinueSessionAsync(principal, grant) is { } sessionRefused)
@@ -642,7 +643,7 @@ public class ModulusIntrospectionController(
             return Ok(new { active = false });
 
         var result = await ValidateTokenAsync(token);
-        if (result is null)
+        if (result is null || !await IsInForceAsync(result))
             return Ok(new { active = false });
 
         var claims = result.Claims.ToList();
@@ -666,6 +667,36 @@ public class ModulusIntrospectionController(
                 claims.Where(c => c.Type == OpenIddictConstants.Claims.Audience)
                       .Select(c => c.Value)),
         });
+    }
+
+    /// <summary>
+    /// A signed token is reported active only while the checks a resource server makes still hold: its stored entry is an
+    /// access token that is still valid (not revoked or expired), and its session has not ended.
+    /// </summary>
+    private async Task<bool> IsInForceAsync(ClaimsIdentity claims)
+    {
+        // Without a stored entry there is nothing to check revocation against, so the token is not reported active. Id tokens
+        // have no entry, and the entry records whether the token is an access token.
+        var manager = HttpContext.RequestServices.GetService<IOpenIddictTokenManager>();
+        if (manager is null || First(claims.Claims, OpenIddictConstants.Claims.Private.TokenId) is not { Length: > 0 } tokenId)
+            return false;
+        if (await manager.FindByIdAsync(tokenId) is not { } entry
+            || !IsAccessTokenEntryType(await manager.GetTypeAsync(entry))
+            || await manager.GetStatusAsync(entry) != OpenIddictConstants.Statuses.Valid)
+            return false;
+
+        if (First(claims.Claims, TokenPrincipalFactory.SessionClaim) is { Length: > 0 } sid
+            && HttpContext.RequestServices.GetService<ISessionRegistry>() is { } registry)
+        {
+            // A sid that is not a session id cannot have been issued by this server.
+            var state = Guid.TryParse(sid, out var sessionId)
+                ? await registry.TouchAsync(sessionId, ct: HttpContext.RequestAborted)
+                : SessionState.Unknown;
+            if (state != SessionState.Active)
+                return false;
+        }
+
+        return true;
     }
 
     /// <summary>
@@ -716,6 +747,13 @@ public class ModulusIntrospectionController(
         return false;
     }
 
+    /// <summary>
+    /// OpenIddict stores an access token's type as the RFC 8693 URN (<c>urn:ietf:params:oauth:token-type:access_token</c>), not
+    /// the short <c>access_token</c> hint, so both spellings are accepted.
+    /// </summary>
+    private static bool IsAccessTokenEntryType(string? type)
+        => type is OpenIddictConstants.TokenTypeHints.AccessToken or "urn:ietf:params:oauth:token-type:access_token";
+
     private static bool Matches(string? actual, string expected)
     {
         ArgumentNullException.ThrowIfNull(expected);
@@ -737,10 +775,10 @@ public class ModulusIntrospectionController(
     {
         var options = serverOptions.Value;
 
-        // The default issuer matches what OpenIddict stamps on minted tokens:
-        // the configured issuer, else the current request's base URL.
+        // The default issuer matches what OpenIddict stamps on minted tokens: the configured issuer, else the current request's
+        // base URL. OpenIddict writes the base URL with a trailing slash ("https://host/"), so the request form ends with one too.
         var issuer = options.Issuer?.AbsoluteUri
-            ?? $"{Request.Scheme}://{Request.Host.Value}{Request.PathBase.Value}";
+            ?? $"{Request.Scheme}://{Request.Host.Value}{(Request.PathBase.Value ?? "").TrimEnd('/')}/";
 
         var parameters = new TokenValidationParameters
         {

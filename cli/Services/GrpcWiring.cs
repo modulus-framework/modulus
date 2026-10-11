@@ -29,7 +29,7 @@ internal static partial class GrpcWiring
         return InsertBeforeProjectEnd(csproj,
             $"  <!-- gRPC (modulus generate-grpc): the contracts under Protos/, compiled to server stubs and clients (tests, other modules). -->{nl}" +
             $"  <ItemGroup>{nl}" +
-            $"    <PackageReference Include=\"Cobytelabs.Modulus.Grpc\" Version=\"{frameworkVersion}\" />{nl}" +
+            $"    <PackageReference Include=\"Modulus.Grpc\" Version=\"{frameworkVersion}\" />{nl}" +
             $"    <PackageReference Include=\"Grpc.Tools\" Version=\"{GrpcToolsVersion}\" PrivateAssets=\"all\" />{nl}" +
             $"    <Protobuf Include=\"Protos/**/*.proto\" GrpcServices=\"Both\" ProtoRoot=\"Protos\" />{nl}" +
             $"  </ItemGroup>{nl}");

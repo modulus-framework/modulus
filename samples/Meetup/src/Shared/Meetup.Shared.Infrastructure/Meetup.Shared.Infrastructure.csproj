@@ -7,8 +7,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Cobytelabs.Modulus.Core" Version="1.4.0" />
-    <PackageReference Include="Cobytelabs.Modulus.EntityFrameworkCore" Version="1.4.0" />
+    <PackageReference Include="Modulus.Core" Version="1.4.0" />
+    <PackageReference Include="Modulus.EntityFrameworkCore" Version="1.4.0" />
   </ItemGroup>
 
   <ItemGroup>

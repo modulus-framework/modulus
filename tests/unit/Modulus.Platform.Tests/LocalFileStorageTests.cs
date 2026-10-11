@@ -27,6 +27,31 @@ public sealed class LocalFileStorageTests
     }
 
     [Fact]
+    public async Task A_sibling_directory_differing_only_in_case_is_outside_the_root_on_a_case_sensitive_file_system()
+    {
+        // Only meaningful where "store" and "STORE" are different directories (Linux, most containers).
+        if (OperatingSystem.IsWindows())
+            return;
+        var root = Path.Combine(Path.GetTempPath(), "modulus-case-" + Guid.NewGuid().ToString("N"));
+        var store = Path.Combine(root, "store");
+        var sibling = Path.Combine(root, "STORE");
+        Directory.CreateDirectory(store);
+        Directory.CreateDirectory(sibling);
+        try
+        {
+            var storage = Create(store);
+
+            var act = () => storage.UploadAsync("../STORE/escape.txt", new MemoryStream([1]));
+
+            (await act.Should().ThrowAsync<ArgumentException>()).Which.Message.Should().Contain("escapes");
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task A_configured_base_path_round_trips_a_file()
     {
         var root = Path.Combine(Path.GetTempPath(), $"modulus-storage-{Guid.NewGuid():N}");

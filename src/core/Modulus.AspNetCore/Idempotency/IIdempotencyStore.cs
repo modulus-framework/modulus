@@ -29,6 +29,19 @@ public interface IIdempotencyStore
     Task AbandonAsync(string key, CancellationToken ct);
 
     /// <summary>
+    /// Completes the claim identified by <paramref name="claimToken"/>; a store that issues tokens refuses a completion from
+    /// a claim it no longer owns. The default ignores the token.
+    /// </summary>
+    Task CompleteAsync(string key, string? claimToken, CachedResponse response, CancellationToken ct)
+        => CompleteAsync(key, response, ct);
+
+    /// <summary>
+    /// Releases the claim identified by <paramref name="claimToken"/>, and only that claim. The default ignores the token.
+    /// </summary>
+    Task AbandonAsync(string key, string? claimToken, CancellationToken ct)
+        => AbandonAsync(key, ct);
+
+    /// <summary>
     /// Evicts expired entries from the store. Called periodically by the
     /// background sweeper to bound memory consumption. Implementations that
     /// use external persistence (Redis, EF Core) may no-op since TTL is
@@ -58,18 +71,30 @@ public enum IdempotencyStatus
 /// detection when the key already existed.</summary>
 public sealed class IdempotencyResult
 {
-    private IdempotencyResult(IdempotencyStatus status, CachedResponse? response, string? fingerprint)
+    private IdempotencyResult(IdempotencyStatus status, CachedResponse? response, string? fingerprint, string? claimToken = null)
     {
         Status = status;
         Response = response;
         Fingerprint = fingerprint;
+        ClaimToken = claimToken;
     }
 
     public IdempotencyStatus Status { get; }
     public CachedResponse? Response { get; }
     public string? Fingerprint { get; }
 
+    /// <summary>
+    /// The token of a <see cref="IdempotencyStatus.Started"/> claim. The middleware hands it back to
+    /// <see cref="IIdempotencyStore.CompleteAsync(string, string?, CachedResponse, CancellationToken)"/> and
+    /// <see cref="IIdempotencyStore.AbandonAsync(string, string?, CancellationToken)"/>, so a request whose claim was taken
+    /// over cannot complete or abandon the new owner's claim. Null for stores that do not issue tokens.
+    /// </summary>
+    public string? ClaimToken { get; }
+
     public static IdempotencyResult Started() => new(IdempotencyStatus.Started, null, null);
+
+    /// <summary>A claim won with a <paramref name="claimToken"/> the store will check on completion and abandon.</summary>
+    public static IdempotencyResult Started(string claimToken) => new(IdempotencyStatus.Started, null, null, claimToken);
 
     public static IdempotencyResult InProgress(string? fingerprint)
         => new(IdempotencyStatus.InProgress, null, fingerprint);

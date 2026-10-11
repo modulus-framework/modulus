@@ -121,6 +121,22 @@ public sealed class EfAuthorizationStoreTests : IDisposable
     }
 
     [Fact]
+    public async Task The_async_grant_read_returns_what_the_synchronous_read_returns()
+    {
+        var store = _provider.GetRequiredService<EfPermissionGrantStore>();
+        var userId = Guid.NewGuid();
+        await store.GrantToRoleAsync("manager", ["orders:read", "orders:update"]);
+        await store.DenyToRoleAsync("manager", ["orders:delete"]);
+        await store.GrantToUserAsync(userId, ["reports:view"]);
+        var query = new PrincipalGrantQuery(userId, ["manager"]);
+
+        var asyncGrants = await store.GetGrantsAsync(query);
+
+        asyncGrants.Should().BeEquivalentTo(store.GetGrants(query));
+        (await store.GetGrantsAsync(new PrincipalGrantQuery(null, []))).Should().BeEmpty();
+    }
+
+    [Fact]
     public async Task Regranting_the_same_permission_replaces_the_grant_type()
     {
         var store = _provider.GetRequiredService<EfPermissionGrantStore>();

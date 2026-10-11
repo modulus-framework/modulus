@@ -61,6 +61,16 @@ internal sealed class LdapPasswordGrantValidator<TUser>(
                 : PasswordGrantResult.Denied();
         }
 
+        // The account's local lock-out applies before the directory is asked, and a wrong directory password counts toward it.
+        // The account is found by its linked login, or by the user name for a person who has not signed in before.
+        var subject = entry.First(source.SubjectAttribute) ?? entry.DistinguishedName;
+        var local = await users.FindByLoginAsync($"ldap:{source.Name}", subject) ?? await users.FindByNameAsync(username.Trim());
+        if (local is not null && await users.IsLockedOutAsync(local))
+        {
+            Audit(source.TenantId, "locked-out");
+            return PasswordGrantResult.Denied();
+        }
+
         bool bound;
         try
         {
@@ -75,11 +85,12 @@ internal sealed class LdapPasswordGrantValidator<TUser>(
 
         if (!bound)
         {
+            if (local is not null)
+                await users.AccessFailedAsync(local);
             Audit(source.TenantId, "wrong-password");
             return PasswordGrantResult.Denied();
         }
 
-        var subject = entry.First(source.SubjectAttribute) ?? entry.DistinguishedName;
         var person = new ExternalPrincipal(
             $"ldap:{source.Name}",
             subject,
@@ -87,7 +98,9 @@ internal sealed class LdapPasswordGrantValidator<TUser>(
             entry.First(source.EmailAttribute),
             entry.First(source.FirstNameAttribute),
             entry.First(source.LastNameAttribute),
-            entry.All(source.GroupAttribute));
+            entry.All(source.GroupAttribute),
+            // The directory is the authority for its addresses (see LinkExistingByEmail).
+            EmailVerified: true);
         var rules = new ExternalProvisioningRules(source.TenantId, source.AutoProvision, source.LinkExistingByEmail, source.GroupRoles);
 
         var outcome = await provisioner.SignInAsync(person, rules, ct);

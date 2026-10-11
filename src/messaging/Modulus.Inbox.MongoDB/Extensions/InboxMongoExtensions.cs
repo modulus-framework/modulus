@@ -15,10 +15,18 @@ public static class InboxMongoExtensions
     /// idempotent decorator — providing the same dedup guarantees as the EF
     /// Core inbox.
     /// </summary>
+    /// <param name="services">The application's services.</param>
+    /// <param name="collectionName">The inbox collection.</param>
+    /// <param name="configure">Inbox options.</param>
+    /// <param name="skipIndexCreation">
+    /// Do not create the inbox indexes at startup, for deployments whose indexes are managed outside the application. The
+    /// unique (EventId, HandlerName) index must then exist, or concurrent consumers can process one event twice.
+    /// </param>
     public static IServiceCollection AddMongoInbox(
         this IServiceCollection services,
         string collectionName = "inbox",
-        Action<InboxOptions>? configure = null)
+        Action<InboxOptions>? configure = null,
+        bool skipIndexCreation = false)
     {
         services.AddOptions<InboxOptions>()
             .Configure(opts => configure?.Invoke(opts));
@@ -33,7 +41,9 @@ public static class InboxMongoExtensions
 
         // Ensure the unique compound index on (EventId, HandlerName) that
         // gives claims their atomicity — see MongoInboxStore's doc comment.
-        services.AddHostedService<InboxIndexInitializer>();
+        // Without the index, two consumers can both claim the same event, so a failure to create it stops startup.
+        if (!skipIndexCreation)
+            services.AddHostedService<InboxIndexInitializer>();
 
         // Registers the dispatch-time handler decorator — see
         // DecorateIntegrationEventHandlers' remarks (Modulus.Inbox) for why
@@ -93,7 +103,8 @@ internal sealed class InboxIndexInitializer(
         }
         catch (Exception ex)
         {
-            logger.LogWarning(ex, "Failed to create inbox indexes");
+            logger.LogError(ex, "Failed to create the inbox indexes; the host will not start without the unique claim index.");
+            throw;
         }
     }
 

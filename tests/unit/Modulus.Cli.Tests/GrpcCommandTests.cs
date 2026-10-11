@@ -17,7 +17,7 @@ public sealed class GrpcWiringTests
     {
         var once = GrpcWiring.EnsurePresentationProject(Csproj, "1.4.0");
 
-        once.Should().Contain("<PackageReference Include=\"Cobytelabs.Modulus.Grpc\" Version=\"1.4.0\" />")
+        once.Should().Contain("<PackageReference Include=\"Modulus.Grpc\" Version=\"1.4.0\" />")
             .And.Contain($"<PackageReference Include=\"Grpc.Tools\" Version=\"{GrpcWiring.GrpcToolsVersion}\" PrivateAssets=\"all\" />")
             .And.Contain("<Protobuf Include=\"Protos/**/*.proto\" GrpcServices=\"Both\" ProtoRoot=\"Protos\" />");
         once.TrimEnd().Should().EndWith("</Project>");
@@ -211,7 +211,7 @@ public sealed class GrpcCommandTests : IDisposable
             .And.Contain("public sealed class ProductGrpcService(IMediator mediator) : ProductService.ProductServiceBase");
         Read($"{Pres}/Shop.Modules.Catalog.Presentation.csproj").Should().Contain("GrpcServices=\"Both\"");
 
-        Read("src/API/Shop.Api/Shop.Api.csproj").Should().Contain("Cobytelabs.Modulus.Grpc");
+        Read("src/API/Shop.Api/Shop.Api.csproj").Should().Contain("Modulus.Grpc");
         Read("src/API/Shop.Api/Program.cs").Should().Contain("builder.Services.AddModulusGrpc(builder.Configuration);").And.Contain("app.MapModulusGrpc(");
         Read("src/API/Shop.Api/appsettings.Development.json").Should().Contain("\"Protocols\": \"Http2\"").And.Contain("\"Issuer\": \"http://localhost:5180/\"");
 

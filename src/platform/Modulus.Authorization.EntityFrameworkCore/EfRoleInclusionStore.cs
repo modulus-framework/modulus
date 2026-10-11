@@ -92,6 +92,10 @@ public sealed class EfRoleInclusionStore(IDbContextFactory<AuthorizationStoreDbC
     internal static IReadOnlyCollection<string> Expand(AuthorizationStoreDbContext db, IEnumerable<string> roles)
         => Expand(db.RoleInclusions.AsNoTracking().ToList(), roles);
 
+    /// <summary>Asynchronous expansion over an open context, for the grant read on the authorization path.</summary>
+    internal static async Task<IReadOnlyCollection<string>> ExpandAsync(AuthorizationStoreDbContext db, IEnumerable<string> roles, CancellationToken ct)
+        => Expand(await db.RoleInclusions.AsNoTracking().ToListAsync(ct), roles);
+
     private static List<string> Expand(List<RoleInclusionRow> edges, IEnumerable<string> roles)
     {
         var given = roles.ToList();

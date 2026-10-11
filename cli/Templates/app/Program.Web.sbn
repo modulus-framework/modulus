@@ -55,8 +55,8 @@ builder.Services.AddScoped<ICurrentUser, PrincipalCurrentUser>();
 // Open another folder with AllowAnonymousToFolder.
 builder.Services.PostConfigure<RazorPagesOptions>(options =>
 {
-    options.Conventions.AuthorizeFolder("/");
-    options.Conventions.AllowAnonymousToFolder("/Account");
+{{ if use_auth }}    options.Conventions.AuthorizeFolder("/");
+{{ end }}    options.Conventions.AllowAnonymousToFolder("/Account");
     options.Conventions.AddFolderApplicationModelConvention("/Account", page =>
         page.EndpointMetadata.Add(new LoosenedAttribute("Sign-in pages under /Account are open") { Framework = true }));
 });

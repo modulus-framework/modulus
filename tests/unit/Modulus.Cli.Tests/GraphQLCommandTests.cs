@@ -17,7 +17,7 @@ public sealed class GraphQLWiringTests
 
         var once = GraphQLWiring.EnsurePresentationProject(csproj, "1.4.0");
 
-        once.Should().Contain("<PackageReference Include=\"Cobytelabs.Modulus.GraphQL\" Version=\"1.4.0\" />");
+        once.Should().Contain("<PackageReference Include=\"Modulus.GraphQL\" Version=\"1.4.0\" />");
         once.TrimEnd().Should().EndWith("</Project>");
         GraphQLWiring.EnsurePresentationProject(once, "1.4.0").Should().Be(once);
     }
@@ -144,9 +144,9 @@ public sealed class GraphQLCommandTests : IDisposable
             .And.Contain("mutation.Field<NonNullGraphType<IdGraphType>>(\"createProduct\")")
             .And.Contain(".AuthorizeWithPolicy(Permission)")
             .And.NotContain(".Authorize()");
-        Read($"{Pres}/Shop.Modules.Catalog.Presentation.csproj").Should().Contain("Cobytelabs.Modulus.GraphQL");
+        Read($"{Pres}/Shop.Modules.Catalog.Presentation.csproj").Should().Contain("Modulus.GraphQL");
 
-        Read("src/API/Shop.Api/Shop.Api.csproj").Should().Contain("Cobytelabs.Modulus.GraphQL");
+        Read("src/API/Shop.Api/Shop.Api.csproj").Should().Contain("Modulus.GraphQL");
         Read("src/API/Shop.Api/Program.cs").Should().Contain("builder.Services.AddModulusGraphQL(builder.Configuration,").And.Contain("app.MapModulusGraphQL();");
         Read("src/API/Shop.Api/appsettings.Development.json").Should().Contain("\"EnableIntrospection\": true");
         Read("src/API/Shop.Api/appsettings.json").Should().Contain("\"EnableIntrospection\": false");

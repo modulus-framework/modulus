@@ -153,7 +153,8 @@ internal sealed class ShopFloorCredentialValidator<TUser>(
 internal sealed class ShopFloorAccountService<TUser, TRole>(
     UserManager<TUser> userManager,
     RoleManager<TRole> roleManager,
-    IOptions<ShopFloorOptions> options)
+    IOptions<ShopFloorOptions> options,
+    ICurrentTenant tenant)
     : IShopFloorAccountService
     where TUser : ModulusUser, new()
     where TRole : ModulusRole
@@ -214,6 +215,11 @@ internal sealed class ShopFloorAccountService<TUser, TRole>(
 
         var user = await userManager.FindByIdAsync(userId.ToString("D", CultureInfo.InvariantCulture));
         if (user is null || user.EmployeeCode is null)
+            return Fail("NotShopFloorAccount", "The account is not a shop-floor account.");
+
+        // The store's query filter already hides other companies' accounts; this check does not depend on it, so a
+        // caller that reads the account unfiltered still cannot set a PIN in another company (host context = null company).
+        if (user.TenantId != tenant.TenantId)
             return Fail("NotShopFloorAccount", "The account is not a shop-floor account.");
 
         user.PinHash = userManager.PasswordHasher.HashPassword(user, pin);

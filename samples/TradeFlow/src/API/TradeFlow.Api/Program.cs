@@ -398,11 +398,11 @@ builder.Services.AddMultiTenancy(t => t.UseHeaderResolver());
 //     options.UseNpgsql(databaseConnectionString));
 
 // Distributed caching (in-memory by default; swap to Redis for production).
-// Uncomment and add the Cobytelabs.Modulus.Caching.Redis NuGet package:
+// Uncomment and add the Modulus.Caching.Redis NuGet package:
 // builder.Services.AddRedisCacheService(redisConnectionString);
 
-// File storage (local by default; add Cobytelabs.Modulus.Storage.AzureBlobs or
-// Cobytelabs.Modulus.Storage.S3 NuGet package for cloud storage).
+// File storage (local by default; add Modulus.Storage.AzureBlobs or
+// Modulus.Storage.S3 NuGet package for cloud storage).
 builder.Services.AddFileStorage(builder.Configuration);
 // builder.Services.AddAzureBlobFileStorage(builder.Configuration);
 // builder.Services.AddS3FileStorage(builder.Configuration);

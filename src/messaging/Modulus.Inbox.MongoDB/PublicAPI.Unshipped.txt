@@ -30,4 +30,4 @@ Modulus.Inbox.MongoDB.MongoInboxMessage.Status.get -> Modulus.Inbox.Abstractions
 Modulus.Inbox.MongoDB.MongoInboxMessage.Status.set -> void
 Modulus.Inbox.MongoDB.MongoInboxMessage.TenantId.get -> System.Guid
 Modulus.Inbox.MongoDB.MongoInboxMessage.TenantId.init -> void
-static Modulus.Inbox.MongoDB.Extensions.InboxMongoExtensions.AddMongoInbox(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, string! collectionName = "inbox", System.Action<Modulus.Inbox.Abstractions.InboxOptions!>? configure = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.Inbox.MongoDB.Extensions.InboxMongoExtensions.AddMongoInbox(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, string! collectionName = "inbox", System.Action<Modulus.Inbox.Abstractions.InboxOptions!>? configure = null, bool skipIndexCreation = false) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!

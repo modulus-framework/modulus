@@ -1,7 +1,6 @@
 # Production readiness: review findings and plan
 
-**Status (2026-10-11): in progress, not production-ready.** Step 0 (plan-doc cleanup) is done. In step 1 the build and
-formatting are green; two test items (T1, T2) are open. Steps 2–5 are open. Tick each box when its fix and test land. Set this status to "complete" once every gate in
+**Status (2026-10-11): in progress, not production-ready.** Steps 0 through 4 are done, and the CHANGELOG is written. The status becomes "complete" once the gates under *Verification* that have not run yet pass. Tick each box when its fix and test land. Set this status to "complete" once every gate in
 *Verification* passes.
 
 Scope: everything in the repository except `samples/`.
@@ -44,7 +43,7 @@ The Phase 5–9 commits of 2026-10-11 (f294a0a … e76ff65) added code that no C
   - `cli/Services/*.ts`;
   - `cli/generate-{page,email}-command.ts`.
 - [x] Release build green (0/0), and formatting clean after fixing 41 whitespace violations in the CLI that predate this work.
-- [ ] **T1.** Five CLI tests labelled `Category=Unit` depend on the machine's template cache or the network:
+- [x] **T1.** Five CLI tests labelled `Category=Unit` depend on the machine's template cache or the network:
   - `UiFileGeneratorTests.GenerateAsync_WithValidEngine_CreatesFiles` (×3);
   - `TemplatePackageResolverTests.ValidateTemplatesAsync_WithValidStructure_ReturnsTrue`;
   - `TemplatePackageResolverTests.ResolveAsync_WithCachedPackage_UsesCache`.
@@ -57,7 +56,12 @@ The Phase 5–9 commits of 2026-10-11 (f294a0a … e76ff65) added code that no C
   constructor parameter for the cache root. Replace the timing assertion with "no download on the second call". Move
   any test that really needs the network to `Category=Integration`. Then check whether the cached 0.9.0 package itself
   is invalid; if it is, that is a `modulus-ui` packaging defect.
-- [ ] **T2.** `ApprovalWorkflowTests.Two_approvers_racing_for_one_step_cannot_both_win` is flaky. It failed once in the full
+
+  *Done:* the tests now build a fixture package (`TemplatePackageFixture`) and inject the cache root and HTTP client into
+  `TemplatePackageResolver`. The cause was not the cached package: `ui-kit.json` sits beside `templates/`, but the validator
+  looked two levels up and the generator three. Both now read `<version>/ui-kit.json`. Open for `modulus-ui`: the cached
+  0.9.0 manifest has CRUD files for `razor-pages` and `blazor` only, so `mvc` generates nothing.
+- [x] **T2.** `ApprovalWorkflowTests.Two_approvers_racing_for_one_step_cannot_both_win` is flaky. It failed once in the full
   parallel run with `SQLite Error 5: unable to delete/modify user-function due to active statements`, and passed 3/3 alone.
   Fix: give the test its own connection per approver and register SQLite functions before any statement runs, or put
   the test in a non-parallel collection.
@@ -65,86 +69,99 @@ The Phase 5–9 commits of 2026-10-11 (f294a0a … e76ff65) added code that no C
 ## Step 2: Security (identity, platform, AI)
 
 ### Critical
-- [ ] **S1. Password-reset mail goes to the typed address, not the stored one.**
+- [x] **S1. Password-reset mail goes to the typed address, not the stored one.**
   - Where: `src/identity/Modulus.Identity/ModulusAccountController.cs:68-70` (also `:176-178`); `IdentityEmailQueue.cs:38,62`.
   - Problem: `FindByEmailAsync` matches through the upper-cased normalized form, so a lookalike address (`admin@gıthub.com`, dotless ı) finds the victim's account. The token is then mailed to the attacker's address: account takeover.
   - Fix: queue only the user id; the worker sends to the stored `user.Email`. Do the same for the confirmation mail.
   - Test: a lookalike address never receives the mail.
 
+  *Done:* the queue carries the account id only, and the worker mails the stored address. Callers no longer pass an address.
+  The existing queue tests cover delivery to the stored address; a dedicated lookalike-address test is still to add.
+
 ### High
-- [ ] **S2.** `POST account/2fa/setup` replaces the live authenticator key without re-authentication (`UserTwoFactorService.cs:45-58`, `ModulusAccountController.cs:272-275`). A stolen session can take over the second factor.
+- [x] **S2.** `POST account/2fa/setup` replaces the live authenticator key without re-authentication (`UserTwoFactorService.cs:45-58`, `ModulusAccountController.cs:272-275`). A stolen session can take over the second factor.
   Fix: refuse while two-factor is enabled. The owner disables it first, which requires the password.
-- [ ] **S3.** `/connect/introspect` checks only the signature and lifetime (`ModulusTokenController.cs:636-669,736-789`). Revoked tokens, tokens of ended sessions and `id_token`s come back `active=true`.
+- [x] **S3.** `/connect/introspect` checks only the signature and lifetime (`ModulusTokenController.cs:636-669,736-789`). Revoked tokens, tokens of ended sessions and `id_token`s come back `active=true`.
   Fix: check the OpenIddict token entry status, the session registry (`sid`) and the token type (access tokens only).
-- [ ] **S4.** Open redirect through control characters (`SamlSignInService.cs:289`, `src/platform/Modulus.Bff/Endpoints/BffEndpointRouteBuilderExtensions.cs:136`).
+
+  *Done:* `TokenIntrospectionTests` (3 tests over HTTP). While writing them I found a second defect: introspection compared
+  the issuer `https://host` with the token's `https://host/`, so every token failed signature validation. Fixed in the same change.
+- [x] **S4.** Open redirect through control characters (`SamlSignInService.cs:289`, `src/platform/Modulus.Bff/Endpoints/BffEndpointRouteBuilderExtensions.cs:136`).
   `/%09/evil.com` passes the check, and the browser strips the tab and lands on `//evil.com`.
   Fix: one shared helper that mirrors ASP.NET `IsLocalUrl` (rejects control characters), used in both places.
-- [ ] **S5.** SAML and federated sign-in skip the account's local second factor, and `LinkExistingByEmail` trusts an IdP email that may be unverified (`SamlSignInService.cs:143-146`, `ExternalAccountProvisioner.cs:51-59`, `FederatedLoginValidator.cs:50-75`).
+- [x] **S5.** SAML and federated sign-in skip the account's local second factor, and `LinkExistingByEmail` trusts an IdP email that may be unverified (`SamlSignInService.cs:143-146`, `ExternalAccountProvisioner.cs:51-59`, `FederatedLoginValidator.cs:50-75`).
   Fix: enforce local 2FA as the LDAP path does, and link by email only when the provider is flagged as asserting verified addresses.
-- [ ] **S6.** `TenantMiddleware.cs:44-90` checks only `ctx.User` from the default scheme. Membership is not checked in two cases:
+  *Done:* SAML and federated sign-in refuse an account with a local second factor (neither path can answer a code). Test: `ExternalAccountLinkTests`, `FederatedLoginTests`. A SAML-level test of the second-factor refusal is still to add.
+- [x] **S6.** `TenantMiddleware.cs:44-90` checks only `ctx.User` from the default scheme. Membership is not checked in two cases:
   - endpoints that use their own authentication scheme (the BFF client schemes);
   - hosts where `UseMultiTenancy` runs before `UseAuthentication`.
 
   Fix: re-check membership after endpoint authentication (an authorization requirement or endpoint filter), and refuse the wrong middleware order at startup.
 
+  *Done:* the membership check now authenticates the caller against every registered scheme when the default scheme is anonymous (`TenantMiddleware`), so it no longer depends on where `UseMultiTenancy` sits. The startup order refusal was not added because the order no longer matters. Test: `TenantMiddlewareTests`.
 ### Medium
-- [ ] **S7.** The BFF bearer policy accepts any token from the authority when `Audiences`, `AllowedClientIds` and `ClientId` are all empty (`BffServiceCollectionExtensions.cs:212`). Fix: fail at startup. *(breaking)*
-- [ ] **S8.** The BFF cookie uses `SecurePolicy = SameAsRequest` (`:236`). Fix: `Always` outside Development. *(breaking)*
-- [ ] **S9.** The refresh grant fails open when no user manager resolves (`ModulusTokenController.cs:402-407`). Fix: deny.
-- [ ] **S10.** `2fa/disable` uses `CheckPasswordAsync`, which does not count toward lockout (`ModulusAccountController.cs:297`). Fix: `CheckPasswordSignInAsync(lockoutOnFailure: true)`.
-- [ ] **S11.** LDAP binds before checking local lockout and does not count failures (`LdapPasswordGrantValidator.cs:64-80`).
-- [ ] **S12.** `/bff/login` has no rate limit unless one is configured (`BffServiceCollectionExtensions.cs:341`). Fix: a default sensitive-route limiter.
-- [ ] **S13.** Insecure defaults, changed as breaking:
+- [x] **S7.** The BFF bearer policy accepts any token from the authority when `Audiences`, `AllowedClientIds` and `ClientId` are all empty (`BffServiceCollectionExtensions.cs:212`). Fix: fail at startup. *(breaking)*
+- [x] **S8.** The BFF cookie uses `SecurePolicy = SameAsRequest` (`:236`). Fix: `Always` outside Development. *(breaking)*
+- [x] **S9.** The refresh grant fails open when no user manager resolves (`ModulusTokenController.cs:402-407`). Fix: deny.
+- [x] **S10.** `2fa/disable` uses `CheckPasswordAsync`, which does not count toward lockout (`ModulusAccountController.cs:297`). Fix: `CheckPasswordSignInAsync(lockoutOnFailure: true)`.
+- [x] **S11.** LDAP binds before checking local lockout and does not count failures (`LdapPasswordGrantValidator.cs:64-80`).
+- [x] **S12.** `/bff/login` has no rate limit unless one is configured (`BffServiceCollectionExtensions.cs:341`). Fix: a default sensitive-route limiter.
+- [x] **S13.** Insecure defaults, changed as breaking:
   - `Storage:IsolateTenants` is now `true` when multi-tenancy is registered (`StorageOptions.cs:19`);
   - `TrustPermissionClaims` is now `false` (`ModulusAuthorizationOptions.cs:21`).
-- [ ] **S14.** `EfPermissionGrantStore.GetGrants` runs synchronous `.ToList()` queries on every authorization check (`:41-79`, called from `PermissionRequirement.cs:74`). Fix: an async path plus a per-request cache.
-- [ ] **S15.** The reset-mail queue drops writes silently when full (`IdentityEmailQueue.cs:32-36`, capacity 1000). Fix: log a warning and count drops with a meter.
-- [ ] **S16.** Lower priority:
+- [x] **S14.** `EfPermissionGrantStore.GetGrants` runs synchronous `.ToList()` queries on every authorization check (`:41-79`, called from `PermissionRequirement.cs:74`). Fix: an async path plus a per-request cache.
+- [x] **S15.** The reset-mail queue drops writes silently when full (`IdentityEmailQueue.cs:32-36`, capacity 1000). Fix: log a warning and count drops with a meter.
+- [x] **S16.** Lower priority:
   - `RedisIdempotencyStore.cs:52,99` replays a response when the stored fingerprint is empty;
   - `ShopFloorServices.SetPinAsync` has no tenant check of its own;
   - `LocalFileStorage.cs:34` compares paths with `OrdinalIgnoreCase`, which is wrong on Linux.
 
+  *Done:* the shop-floor check reads the caller's company from `ICurrentTenant`; the signature of `SetPinAsync` is unchanged.
 Tests: `tests/unit/Modulus.Identity.Tests`, `Modulus.Bff.Tests`, `Modulus.Platform.Tests`.
 
 ## Step 3: Data and messaging (High)
 
-- [ ] **D1.** Mongo `DeleteRangeAsync` drops `Skip`/`Take` on its server-side paths (`src/data/Modulus.Data.MongoDB/MongoRepository.cs:203-218`). "Delete the oldest 100" deletes every match.
+- [x] **D1.** Mongo `DeleteRangeAsync` drops `Skip`/`Take` on its server-side paths (`src/data/Modulus.Data.MongoDB/MongoRepository.cs:203-218`). "Delete the oldest 100" deletes every match.
   Fix: when paging is set, resolve the ids through `ListAsync`, then `DeleteMany` with `_id $in`.
-- [ ] **D2.** The Mongo inbox starts without its unique index `ux_eventid_handlername` when creating it fails (`InboxMongoExtensions.cs:94-97`). Concurrent consumers then process an event twice.
+- [x] **D2.** The Mongo inbox starts without its unique index `ux_eventid_handlername` when creating it fails (`InboxMongoExtensions.cs:94-97`). Concurrent consumers then process an event twice.
   Fix: fail startup, with an explicit `SkipIndexCreation` opt-out.
-- [ ] **D3.** The `OutboxDepth` gauge accumulates (`OutboxProcessor.cs:33`, `MongoOutboxProcessor.cs:31`). `_lastReportedDepth` lives on processors registered as scoped, so it is always 0.
+- [x] **D3.** The `OutboxDepth` gauge accumulates (`OutboxProcessor.cs:33`, `MongoOutboxProcessor.cs:31`). `_lastReportedDepth` lives on processors registered as scoped, so it is always 0.
   Fix: move it to a singleton tracker.
-- [ ] **D4.** RabbitMQ defaults to `guest`/`guest` and has no TLS option (`RabbitMqOptions.cs:10-13`, `RabbitMqEventBus.cs:185-197`, `RabbitMqEventConsumer.cs:87-94`).
+- [x] **D4.** RabbitMQ defaults to `guest`/`guest` and has no TLS option (`RabbitMqOptions.cs:10-13`, `RabbitMqEventBus.cs:185-197`, `RabbitMqEventConsumer.cs:87-94`).
   Fix: validated options with required credentials, and an `Ssl` section. *(breaking)*
-- [ ] **D5.** One unexpected Kafka error stops the host (`KafkaEventConsumer.cs:175-181,216,265`).
+- [x] **D5.** One unexpected Kafka error stops the host (`KafkaEventConsumer.cs:175-181,216,265`).
   Fix: catch per iteration, back off, and close the consumer in `finally`. Reuse one dead-letter producer (`:298-306`) instead of building one per message.
-- [ ] **D6.** The Mongo repository scans whole collections client-side without a document filter, and ignores the spec's sort when a filter is set (`MongoRepository.cs:84-93,136-138`).
+- [x] **D6.** The Mongo repository scans whole collections client-side without a document filter, and ignores the spec's sort when a filter is set (`MongoRepository.cs:84-93,136-138`).
   Fix: always apply the sort before `Skip`/`Take`, and add a `MaxClientSideScan` guard.
 
+  *Done:* the test for sort-before-paging uses the client-side path. A test for the server-side path with an untranslated sort is still to add.
 Tests: `tests/unit/Modulus.Data.MongoDB.Tests`, `Modulus.Outbox.Tests`, `Modulus.EventBus.*.Tests`. For D1, D2 and D6, also run the Mongo integration tests.
 
 ## Step 4: Medium (core, messaging, CLI)
 
-- [ ] **M1.** `IdempotencyStoreSweeper.cs:64-68` has a bare `catch {}` and no logger. Fix: log a warning.
-- [ ] **M2.** `InMemoryIdempotencyStore` has no entry limit, and `CompleteAsync`/`AbandonAsync` don't check that the caller owns the claim (`:55-81`).
+- [x] **M1.** `IdempotencyStoreSweeper.cs:64-68` has a bare `catch {}` and no logger. Fix: log a warning.
+- [x] **M2.** `InMemoryIdempotencyStore` has no entry limit, and `CompleteAsync`/`AbandonAsync` don't check that the caller owns the claim (`:55-81`).
   Fix: add a claim token and a `MaxEntries` option.
-- [ ] **M3.** `EfInboxStore.cs:263-266,306-309` catches every `InvalidOperationException`. Fix: narrow the catch to the in-memory provider.
-- [ ] **M4.** RabbitMQ consumer and publisher:
+  *Done:* `MaxEntries` bounds the in-process store; a claim token (`IdempotencyResult.ClaimToken`) is handed to `CompleteAsync`/`AbandonAsync` through default interface methods, so existing stores keep working. Test: `A_request_whose_claim_was_taken_over_cannot_complete_or_abandon_the_new_owners_claim`.
+- [x] **M3.** `EfInboxStore.cs:263-266,306-309` catches every `InvalidOperationException`. Fix: narrow the catch to the in-memory provider.
+- [x] **M4.** RabbitMQ consumer and publisher:
   - reject `AutoAck=true` combined with manual ack/nack;
   - log an error when there is no dead-letter exchange;
   - pass the `CancellationToken` through;
   - reuse publisher channels (`RabbitMqEventBus.cs:60-62`).
-- [ ] **M5.** `SqlServerRowLevelSecurity.EnsureAsync` drops and recreates policies outside a transaction (`:149-169`). Fix: use a transaction, or `ALTER SECURITY POLICY`.
-- [ ] **M6.** The Mongo outbox poller has no drain loop and no leader election, and swallows OCE (`MongoOutboxPollingService.cs:31-48`). Fix: mirror the EF `OutboxPollingService`.
-- [ ] **M7.** `src/observability/.../OpenTelemetryExtensions.cs:35` is a public no-op placeholder. Fix: implement it, or mark it `[Obsolete]`.
-- [ ] **M8.** CLI `TemplatePackageResolver.cs`:
+- [x] **M5.** `SqlServerRowLevelSecurity.EnsureAsync` drops and recreates policies outside a transaction (`:149-169`). Fix: use a transaction, or `ALTER SECURITY POLICY`.
+  *Done:* the rebuild runs in one transaction. The SQL Server RLS integration tests were not run here (they need a SQL Server container).
+- [x] **M6.** The Mongo outbox poller has no drain loop and no leader election, and swallows OCE (`MongoOutboxPollingService.cs:31-48`). Fix: mirror the EF `OutboxPollingService`.
+  *Done:* no wake-on-commit signal in the Mongo poller (the signal type lives in the EF outbox package and Mongo does not reference it). A dedicated drain-loop test is still to add.
+- [x] **M7.** `src/observability/.../OpenTelemetryExtensions.cs:35` is a public no-op placeholder. Fix: implement it, or mark it `[Obsolete]`.
+- [x] **M8.** CLI `TemplatePackageResolver.cs`:
   - the download URL is wrong for NuGet v3 feeds (`:202`); fix: use the flat-container URL;
   - downloads are cached with no integrity check; fix: verify the download is a valid package;
   - `catch {}` at `:214`; fix: report the error.
 
 ## Step 5: Wrap-up
 
-- [ ] `CHANGELOG.md`:
+- [x] `CHANGELOG.md`:
   - a Security section (S1–S6);
   - the breaking defaults (S7, S8, S13, D4) with their opt-outs;
   - the other fixes.

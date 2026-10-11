@@ -1,3 +1,4 @@
+using System.Data.Common;
 using System.Net;
 using System.Net.Http.Json;
 using System.Security.Claims;
@@ -10,6 +11,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -29,7 +31,8 @@ namespace Modulus.Authorization.Management.Tests;
 [Trait("Category", "Unit")]
 public sealed class ApprovalWorkflowTests : IAsyncLifetime
 {
-    private SqliteConnection _connection = null!;
+    // A file, not ":memory:": each request opens its own connection, and an in-memory database is private to one connection.
+    private readonly string _databasePath = Path.Combine(Path.GetTempPath(), $"modulus-approvals-{Guid.NewGuid():N}.db");
     private WebApplication _app = null!;
     private readonly ManualClock _clock = new();
     private readonly RecordingObserver _observer = new();
@@ -90,8 +93,6 @@ public sealed class ApprovalWorkflowTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _connection = new SqliteConnection("DataSource=:memory:");
-        await _connection.OpenAsync();
         var builder = WebApplication.CreateBuilder();
         builder.Logging.ClearProviders();
         builder.WebHost.UseTestServer();
@@ -99,8 +100,9 @@ public sealed class ApprovalWorkflowTests : IAsyncLifetime
         builder.Services.AddHttpContextAccessor();
         builder.Services.AddSingleton<TimeProvider>(_clock);
         builder.Services.AddScoped<ICurrentUser, HttpUser>();
-        builder.Services.AddModulusAuthorization();
-        builder.Services.AddEfCoreAuthorizationStores(o => o.UseSqlite(_connection));
+        // These hosts carry the caller's permissions as claims; the grant store is the source by default now.
+        builder.Services.AddModulusAuthorization(o => o.TrustPermissionClaims = true);
+        builder.Services.AddEfCoreAuthorizationStores(o => o.UseSqlite($"Data Source={_databasePath}").AddInterceptors(new BusyWaitInterceptor()));
         builder.Services.AddModulusAuthorizationManagement();
         builder.Services.AddApprovalWorkflow(o => o.EnableEscalation = false);
         builder.Services.AddSingleton<IApprovalWorkflowObserver>(_observer);
@@ -135,7 +137,30 @@ public sealed class ApprovalWorkflowTests : IAsyncLifetime
     public async Task DisposeAsync()
     {
         await _app.DisposeAsync();
-        _connection.Dispose();
+        SqliteConnection.ClearAllPools();
+        File.Delete(_databasePath);
+    }
+
+    /// <summary>
+    /// Two approvers can decide at the same moment. SQLite serialises their writes with a lock, and a writer that finds the
+    /// database locked waits for it instead of failing at once; the workflow's conditional update then lets only one win.
+    /// </summary>
+    private sealed class BusyWaitInterceptor : DbConnectionInterceptor
+    {
+        public override void ConnectionOpened(DbConnection connection, ConnectionEndEventData eventData) => SetBusyTimeout(connection);
+
+        public override Task ConnectionOpenedAsync(DbConnection connection, ConnectionEndEventData eventData, CancellationToken cancellationToken = default)
+        {
+            SetBusyTimeout(connection);
+            return Task.CompletedTask;
+        }
+
+        private static void SetBusyTimeout(DbConnection connection)
+        {
+            using var command = connection.CreateCommand();
+            command.CommandText = "PRAGMA busy_timeout = 10000;";
+            command.ExecuteNonQuery();
+        }
     }
 
     private sealed record SubmitBody(string DocumentType, string DocumentId, decimal Amount, string? Currency = null);

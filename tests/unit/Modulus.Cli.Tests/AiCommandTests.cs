@@ -226,7 +226,7 @@ public sealed class AiCommandTests : IDisposable
         new AddAiCommand().ExecuteCore(AppDir).Should().Be(0);
 
         Read("src/API/Shop.Api/Shop.Api.csproj").Should()
-            .Contain("Cobytelabs.Modulus.AI.Connector\"").And.Contain("Cobytelabs.Modulus.AI.Connector.EntityFrameworkCore");
+            .Contain("Modulus.AI.Connector\"").And.Contain("Modulus.AI.Connector.EntityFrameworkCore");
         Read("src/API/Shop.Api/Program.cs").Should()
             .Contain(".UseIdentityUsers<ModulusUser>(")
             .And.Contain("app.MapModulusAiConnector();");
@@ -237,7 +237,7 @@ public sealed class AiCommandTests : IDisposable
         Read("tests/Shop.Tests/AiConnectorTests.cs").Should()
             .Contain("namespace Shop.Tests")
             .And.Contain(AiWiring.TestApiKey);
-        Read("tests/Shop.Tests/Shop.Tests.csproj").Should().Contain("Cobytelabs.Modulus.AI.Connector.Testing");
+        Read("tests/Shop.Tests/Shop.Tests.csproj").Should().Contain("Modulus.AI.Connector.Testing");
         Read("tests/Shop.Tests/AiConformanceTests.cs").Should()
             .Contain("AiConnectorConformance.RunAsync(host.Services, client, platform, options)")
             .And.Contain("UserManager<ModulusUser>")

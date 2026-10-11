@@ -20,7 +20,7 @@ public interface IUserTwoFactorService
     /// <summary>Whether two-factor is on for the user; false for an unknown user.</summary>
     Task<bool> IsEnabledAsync(Guid userId, CancellationToken ct = default);
 
-    /// <summary>Starts enrolment: a (new) shared key and the URI for the authenticator app. Nothing is enforced until <see cref="EnableAsync"/>. Null for an unknown user.</summary>
+    /// <summary>Starts enrolment: a (new) shared key and the URI for the authenticator app. Nothing is enforced until <see cref="EnableAsync"/>. Null for an unknown user, or while two-factor is already on.</summary>
     Task<TwoFactorSetup?> BeginSetupAsync(Guid userId, CancellationToken ct = default);
 
     /// <summary>
@@ -45,6 +45,10 @@ internal sealed class UserTwoFactorService<TUser>(
     public async Task<TwoFactorSetup?> BeginSetupAsync(Guid userId, CancellationToken ct = default)
     {
         if (await users.FindByIdAsync(userId.ToString()) is not { } user)
+            return null;
+
+        // Never replace the key of a live second factor: the owner turns it off first (with the password).
+        if (await users.GetTwoFactorEnabledAsync(user))
             return null;
 
         // A fresh key each time: an earlier, unconfirmed enrolment can not be completed with a stale code.

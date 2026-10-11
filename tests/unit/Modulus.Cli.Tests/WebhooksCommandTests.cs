@@ -209,7 +209,7 @@ public sealed class WebhooksCommandTests : IDisposable
 
         Run(AppDir).Should().Be(0);
 
-        Read($"{Infra}/Shop.Modules.Webhooks.Infrastructure.csproj").Should().Contain("Cobytelabs.Modulus.Webhooks");
+        Read($"{Infra}/Shop.Modules.Webhooks.Infrastructure.csproj").Should().Contain("Modulus.Webhooks");
         Read($"{Infra}/AppWebhooksDbContext.cs").Should().Contain("ModulusWebhooksDbContext");
         Read($"{Infra}/AppWebhooksDbContextFactory.cs").Should().Contain("WEBHOOKS_CONNECTION");
         Read($"{Infra}/WebhooksModule.cs").Should().Contain("AddModulusWebhooksStore<AppWebhooksDbContext>()");

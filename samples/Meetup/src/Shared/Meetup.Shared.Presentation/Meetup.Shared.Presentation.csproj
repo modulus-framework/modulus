@@ -11,7 +11,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Cobytelabs.Modulus.AspNetCore" Version="1.4.0" />
+    <PackageReference Include="Modulus.AspNetCore" Version="1.4.0" />
   </ItemGroup>
 
 </Project>

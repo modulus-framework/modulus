@@ -5,6 +5,7 @@ using System.Data.Common;
 using System.Text;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Modulus.Core.Abstractions.Entities;
@@ -164,9 +165,30 @@ public static class SqlServerRowLevelSecurity
         ArgumentNullException.ThrowIfNull(context);
         using (CrossTenantSql.Allow("Applying the SQL Server tenant security policies"))
         {
-            foreach (var statement in Statements(context.Model))
-                await context.Database.ExecuteSqlRawAsync(statement, ct).ConfigureAwait(false);
+            var statements = Statements(context.Model);
+            var database = context.Database;
+
+            // Each table's policy is dropped and recreated: run the whole set as one transaction, so a failure between the
+            // drop and the create cannot leave a table without its filter. Inside a caller's transaction the caller owns it.
+            if (database.CurrentTransaction is not null)
+            {
+                await ExecuteAsync(database, statements, ct).ConfigureAwait(false);
+                return;
+            }
+
+            await database.CreateExecutionStrategy().ExecuteAsync(async () =>
+            {
+                await using var transaction = await database.BeginTransactionAsync(ct).ConfigureAwait(false);
+                await ExecuteAsync(database, statements, ct).ConfigureAwait(false);
+                await transaction.CommitAsync(ct).ConfigureAwait(false);
+            }).ConfigureAwait(false);
         }
+    }
+
+    private static async Task ExecuteAsync(DatabaseFacade database, IReadOnlyList<string> statements, CancellationToken ct)
+    {
+        foreach (var statement in statements)
+            await database.ExecuteSqlRawAsync(statement, ct).ConfigureAwait(false);
     }
 
     internal static IEnumerable<(string Table, string Schema, string Column)> TenantTables(IModel model)

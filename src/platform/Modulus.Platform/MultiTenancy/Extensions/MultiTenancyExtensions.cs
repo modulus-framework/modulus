@@ -15,6 +15,9 @@ public static class MultiTenancyExtensions
         // ITenantStore even before a real one is registered.
         services.TryAddSingleton<ITenantStore, NullTenantStore>();
 
+        // Files of a multi-tenant host are isolated by tenant unless the app opted out (StorageOptions.IsolateTenants = false).
+        services.PostConfigure<Modulus.Storage.StorageOptions>(o => o.IsolateTenants ??= true);
+
         // Singleton, not scoped: CurrentTenant is a stateless accessor over a
         // static AsyncLocal — it carries no per-scope state, so one instance
         // serves every scope and async flow. Scoped registration would break

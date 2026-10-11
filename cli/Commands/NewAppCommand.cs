@@ -111,7 +111,7 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         [DefaultValue(false)]
         public bool MultiTenancy { get; init; }
 
-        [Description("Path to a local NuGet feed containing the Cobytelabs.Modulus.* packages (written as an active 'modulus-local' source in NuGet.config). Omit to leave only nuget.org configured.")]
+        [Description("Path to a local NuGet feed containing the Modulus.* packages (written as an active 'modulus-local' source in NuGet.config). Omit to leave only nuget.org configured.")]
         [CommandOption("--package-source")]
         public string? PackageSource { get; init; }
     }
@@ -301,7 +301,7 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
             if (string.IsNullOrWhiteSpace(s.PackageSource))
             {
                 AnsiConsole.MarkupLine(
-                    "[yellow]Note:[/] Cobytelabs.Modulus.* packages are not on nuget.org yet â€” " +
+                    "[yellow]Note:[/] Modulus.* packages are not on nuget.org yet â€” " +
                     "wire a local feed in NuGet.config or re-run with [grey]--package-source[/].");
             }
         }
@@ -442,7 +442,7 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
             version = "1.0",
             framework_version = model.FrameworkVersion,
             ui_engine = model.UiEngine,
-            ui_kit_version = "0.9.0"
+            ui_kit_version = UiTemplatePackage.DefaultVersion
         };
         var modulusJsonPath = Path.Combine(projectDir, ".modulus.json");
         File.WriteAllText(modulusJsonPath, System.Text.Json.JsonSerializer.Serialize(modulusJson, new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));

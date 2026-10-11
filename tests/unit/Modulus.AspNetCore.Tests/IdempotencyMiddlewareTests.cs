@@ -188,6 +188,61 @@ public sealed class IdempotencyMiddlewareTests
         result.Response!.StatusCode.Should().Be(201);
     }
 
+    [Fact]
+    public async Task Abandoning_a_claim_never_removes_a_stored_response()
+    {
+        // A late request whose claim was taken over calls Abandon; the response the owner stored must survive it.
+        var store = new InMemoryIdempotencyStoreProbe().Create();
+        await store.TryBeginAsync("k", "f", default);
+        await store.CompleteAsync("k", new CachedResponse(201, new Dictionary<string, string>(), [1]), default);
+
+        await store.AbandonAsync("k", default);
+
+        (await store.TryBeginAsync("k", "f", default)).Response!.StatusCode.Should().Be(201);
+    }
+
+    private sealed class ManualClock(DateTimeOffset now) : TimeProvider
+    {
+        public DateTimeOffset Now { get; set; } = now;
+
+        public override DateTimeOffset GetUtcNow() => Now;
+    }
+
+    [Fact]
+    public async Task A_request_whose_claim_was_taken_over_cannot_complete_or_abandon_the_new_owners_claim()
+    {
+        var clock = new ManualClock(DateTimeOffset.UtcNow);
+        var store = (IIdempotencyStore)Activator.CreateInstance(
+            typeof(IdempotencyOptions).Assembly.GetType("Modulus.AspNetCore.Idempotency.InMemoryIdempotencyStore")!,
+            Options.Create(new IdempotencyOptions { InProgressLeaseSeconds = 10 }), clock)!;
+        var stale = (await store.TryBeginAsync("k", "f", default)).ClaimToken;
+        clock.Now += TimeSpan.FromSeconds(11);
+        var owner = (await store.TryBeginAsync("k", "f", default)).ClaimToken;
+
+        await store.CompleteAsync("k", stale, new CachedResponse(500, new Dictionary<string, string>(), []), default);
+        await store.AbandonAsync("k", stale, default);
+
+        (await store.TryBeginAsync("k", "f", default)).Status.Should().Be(IdempotencyStatus.InProgress, "the new owner still holds its claim");
+        await store.CompleteAsync("k", owner, new CachedResponse(201, new Dictionary<string, string>(), []), default);
+        (await store.TryBeginAsync("k", "f", default)).Response!.StatusCode.Should().Be(201);
+    }
+
+    [Fact]
+    public async Task A_full_store_refuses_a_new_key_instead_of_growing()
+    {
+        var store = (IIdempotencyStore)Activator.CreateInstance(
+            typeof(IdempotencyOptions).Assembly.GetType("Modulus.AspNetCore.Idempotency.InMemoryIdempotencyStore")!,
+            Options.Create(new IdempotencyOptions { MaxEntries = 2 }), null)!;
+        await store.TryBeginAsync("a", "f", default);
+        await store.TryBeginAsync("b", "f", default);
+
+        var act = () => store.TryBeginAsync("c", "f", default);
+        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("*store is full*");
+
+        // An existing key is still answered.
+        (await store.TryBeginAsync("a", "f", default)).Status.Should().Be(IdempotencyStatus.InProgress);
+    }
+
     private sealed class InMemoryIdempotencyStoreProbe
     {
         public IIdempotencyStore Create() => (IIdempotencyStore)Activator.CreateInstance(

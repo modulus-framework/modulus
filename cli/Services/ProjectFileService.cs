@@ -87,7 +87,7 @@ internal static class ProjectFileService
 
     /// <summary>
     /// Detects the current framework version by looking for the first
-    /// <c>Cobytelabs.Modulus.*</c> package reference in the solution's
+    /// <c>Modulus.*</c> package reference in the solution's
     /// <c>Directory.Packages.props</c> or any <c>.csproj</c> file.
     /// </summary>
     public static string? DetectCurrentFrameworkVersion(string appRoot)
@@ -103,7 +103,7 @@ internal static class ProjectFileService
                 return frameworkPkg.Value;
         }
 
-        // 2. Scan .csproj files for Cobytelabs.Modulus.* references
+        // 2. Scan .csproj files for Modulus.* references
         var csprojFiles = FindAllProjectFiles(appRoot);
         foreach (var csproj in csprojFiles)
         {

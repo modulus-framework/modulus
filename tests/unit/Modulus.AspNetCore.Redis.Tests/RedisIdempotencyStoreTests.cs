@@ -204,6 +204,39 @@ public sealed class RedisIdempotencyStoreTests
     }
 
     [Fact]
+    public async Task A_request_that_outlives_its_claim_still_completes_with_its_fingerprint()
+    {
+        // The claim expired during the request; the fingerprint kept for the retention period survives it.
+        _db.StringGetAsync(Prefix + "k1:fp", Arg.Any<CommandFlags>()).Returns((RedisValue)"fp-original");
+        RedisValue written = default;
+        await _db.StringSetAsync(
+            Arg.Is<RedisKey>(k => k == Prefix + "k1:data"),
+            Arg.Do<RedisValue>(v => written = v),
+            TimeSpan.FromSeconds(60),
+            false,
+            When.NotExists,
+            Arg.Any<CommandFlags>());
+
+        await _store.CompleteAsync("k1", new CachedResponse(200, new Dictionary<string, string>(), []), CancellationToken.None);
+
+        JsonDocument.Parse(written.ToString()).RootElement.GetProperty("Fingerprint").GetString().Should().Be("fp-original");
+    }
+
+    [Fact]
+    public async Task The_first_callers_fingerprint_is_kept_for_the_retention_period()
+    {
+        await _store.TryBeginAsync("k1", "fp-first", CancellationToken.None);
+
+        await _db.Received(1).StringSetAsync(
+            Arg.Is<RedisKey>(k => k == Prefix + "k1:fp"),
+            Arg.Is<RedisValue>(v => v == "fp-first"),
+            TimeSpan.FromSeconds(60),
+            false,
+            When.NotExists,
+            Arg.Any<CommandFlags>());
+    }
+
+    [Fact]
     public async Task Abandon_deletes_only_the_claim_key()
     {
         await _store.AbandonAsync("k1", CancellationToken.None);

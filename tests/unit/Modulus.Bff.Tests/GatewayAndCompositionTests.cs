@@ -303,6 +303,8 @@ public sealed class EdgeRuleTests
     [InlineData("https://evil.test", "/")]
     [InlineData("//evil.test", "/")]
     [InlineData("/\\evil.test", "/")]
+    [InlineData("/\t/evil.test", "/")]
+    [InlineData("/\r\n/evil.test", "/")]
     public void Return_urls_stay_local(string? input, string expected)
         => BffEndpointRouteBuilderExtensions.SafeReturnUrl(input).Should().Be(expected);
 

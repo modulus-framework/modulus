@@ -15,8 +15,10 @@ using Modulus.Identity.Abstractions;
 /// <param name="FirstName">Given name.</param>
 /// <param name="LastName">Surname.</param>
 /// <param name="Groups">The groups the system says the person belongs to.</param>
+/// <param name="EmailVerified">The system vouches that <paramref name="Email"/> belongs to the person; only then may it link to an existing account.</param>
 internal sealed record ExternalPrincipal(
-    string Provider, string Subject, string? UserName, string? Email, string? FirstName, string? LastName, IReadOnlyCollection<string> Groups);
+    string Provider, string Subject, string? UserName, string? Email, string? FirstName, string? LastName, IReadOnlyCollection<string> Groups,
+    bool EmailVerified = false);
 
 /// <summary>How a system's people become accounts.</summary>
 internal sealed record ExternalProvisioningRules(
@@ -48,11 +50,15 @@ internal sealed class ExternalAccountProvisioner<TUser>(
         var created = false;
         if (user is null)
         {
-            if (rules.LinkExistingByEmail && !string.IsNullOrWhiteSpace(person.Email)
-                && await users.FindByEmailAsync(person.Email) is { } byEmail
-                && byEmail.TenantId == rules.TenantId)
+            var sameAddress = string.IsNullOrWhiteSpace(person.Email) ? null : await users.FindByEmailAsync(person.Email);
+            if (sameAddress is not null)
             {
-                user = byEmail;
+                // A local account already holds this address. It is linked only when the system verified the address and the
+                // rules allow linking; otherwise the sign-in is refused rather than creating a second account for the address.
+                if (!(rules.LinkExistingByEmail && person.EmailVerified && sameAddress.TenantId == rules.TenantId))
+                    return Deny("email-in-use");
+
+                user = sameAddress;
                 var link = await users.AddLoginAsync(user, new UserLoginInfo(person.Provider, person.Subject, person.Provider));
                 if (!link.Succeeded)
                     return Deny("link-failed");

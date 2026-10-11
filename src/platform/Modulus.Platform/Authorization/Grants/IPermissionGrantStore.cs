@@ -24,4 +24,11 @@ public interface IPermissionGrantStore
     /// which resolves fail-closed to no permissions.
     /// </summary>
     IReadOnlyCollection<PermissionGrant> GetGrants(PrincipalGrantQuery principal);
+
+    /// <summary>
+    /// The same grants as <see cref="GetGrants"/>, read without blocking a thread. Authorization handlers use this path; a
+    /// store that does real I/O overrides it. The default runs the synchronous read.
+    /// </summary>
+    Task<IReadOnlyCollection<PermissionGrant>> GetGrantsAsync(PrincipalGrantQuery principal, CancellationToken ct = default)
+        => Task.FromResult(GetGrants(principal));
 }

@@ -44,3 +44,4 @@ Modulus.Outbox.MongoDB.MongoOutboxProcessor.MongoOutboxProcessor(MongoDB.Driver.
 Modulus.Outbox.MongoDB.MongoOutboxProcessor.ProcessAsync(System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
 static Modulus.Outbox.MongoDB.Extensions.OutboxMongoExtensions.AddMongoOutbox(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, string! collectionName = "outbox", System.Action<Modulus.Outbox.Abstractions.OutboxOptions!>? configure = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static Modulus.Outbox.MongoDB.MongoOutboxManagementExtensions.MapModulusMongoOutboxManagement(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! prefix = "/outbox") -> Microsoft.AspNetCore.Routing.RouteGroupBuilder!
+Modulus.Outbox.MongoDB.MongoOutboxProcessor.HasMoreWork.get -> bool

@@ -60,6 +60,10 @@ internal sealed class FederatedLoginValidator<TUser, TRole>(
         if (userManager.Options.SignIn.RequireConfirmedEmail && !await userManager.IsEmailConfirmedAsync(user))
             return Denied(user, "email-not-confirmed");
 
+        // The provider cannot answer a local second-factor challenge, so such an account must not get in through it.
+        if (await userManager.GetTwoFactorEnabledAsync(user))
+            return Denied(user, "second-factor-required");
+
         if (!await SyncRolesAsync(user, external, settings))
             return Denied(user, "role-sync-failed");
 

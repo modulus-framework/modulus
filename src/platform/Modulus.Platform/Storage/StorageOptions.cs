@@ -13,8 +13,9 @@ public sealed class StorageOptions
 
     /// <summary>
     /// Puts every file under the ambient tenant's prefix (<c>tenants/{id:N}/</c>, host: <c>host/</c>)
-    /// through <see cref="TenantScopedFileStorage"/>, for every provider. Off by default for
-    /// compatibility (existing files keep their paths); generated multi-tenant apps turn it on.
+    /// through <see cref="TenantScopedFileStorage"/>, for every provider. Unset (the default) means on once
+    /// <c>AddMultiTenancy</c> is registered and off otherwise; set <c>false</c> to keep one shared file namespace
+    /// in a multi-tenant app (existing files keep their paths, so this is a breaking change for upgrades).
     /// </summary>
-    public bool IsolateTenants { get; set; }
+    public bool? IsolateTenants { get; set; }
 }

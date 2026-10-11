@@ -47,7 +47,7 @@ public sealed class WebHostBffSessionTests
         else
             bff.GetProperty("Authority").GetString().Should().Be(authority);
 
-        _engine.Render("app/web.csproj", app).Should().Contain("Cobytelabs.Modulus.Bff");
+        _engine.Render("app/web.csproj", app).Should().Contain("Modulus.Bff");
         _engine.Render("app/ApiClientExtensions.Web", app).Should().Contain(".AddBffUserAccessToken()").And.NotContain("TokenRelayHandler");
 
         var login = _engine.Render("app/LoginModel.Web", app);
@@ -64,7 +64,7 @@ public sealed class WebHostBffSessionTests
     {
         var app = Split("none");
         _engine.Render("app/Program.Web", app).Should().NotContain("AddModulusBff");
-        _engine.Render("app/web.csproj", app).Should().NotContain("Cobytelabs.Modulus.Bff");
+        _engine.Render("app/web.csproj", app).Should().NotContain("Modulus.Bff");
         _engine.Render("app/ApiClientExtensions.Web", app).Should().NotContain("AddBffUserAccessToken").And.NotContain("using Modulus.Bff;");
         using var _ = JsonDocument.Parse(_engine.Render("app/appsettings.Web.json", app));
     }

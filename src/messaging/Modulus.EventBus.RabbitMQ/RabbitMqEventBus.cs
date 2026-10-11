@@ -15,9 +15,9 @@ using global::RabbitMQ.Client.Events;
 
 /// <summary>
 /// <see cref="IModuleBus"/> implementation that publishes integration events
-/// to a RabbitMQ topic exchange.  Each publish creates a short-lived channel
-/// from a shared <see cref="IConnection"/> (channels are not thread-safe in
-/// RabbitMQ.Client 7.x).
+/// to a RabbitMQ topic exchange. Publishes share one channel from the
+/// <see cref="IConnection"/>, one at a time (channels are not thread-safe in
+/// RabbitMQ.Client 7.x), and reopen it when the broker closes it.
 /// </summary>
 internal sealed class RabbitMqEventBus : IModuleBus, IAsyncDisposable
 {
@@ -27,6 +27,9 @@ internal sealed class RabbitMqEventBus : IModuleBus, IAsyncDisposable
     private readonly IMessageSerializer _serializer;
     private readonly SemaphoreSlim _connectionGate = new(1, 1);
     private IConnection? _connection;
+    private readonly SemaphoreSlim _publishGate = new(1, 1);
+    private readonly ConcurrentDictionary<Guid, byte> _returned = new();
+    private IChannel? _publishChannel;
 
     public RabbitMqEventBus(
         IOptions<RabbitMqOptions> options,
@@ -47,37 +50,6 @@ internal sealed class RabbitMqEventBus : IModuleBus, IAsyncDisposable
     {
         var sw = Stopwatch.StartNew();
         var connection = await EnsureConnectionAsync(ct);
-
-        // Publisher confirms: with tracking enabled the awaited publish
-        // completes only when the broker acks, and a nacked (or, on clients
-        // that surface it, returned) publish throws — so a broker restart or
-        // an unroutable routing key becomes a dispatch failure the outbox can
-        // retry instead of a silent loss reported as success.
-        var channelOptions = _opts.PublisherConfirms
-            // (publisherConfirmationsEnabled, publisherConfirmationTrackingEnabled)
-            ? new CreateChannelOptions(true, true)
-            : null;
-        await using var channel = channelOptions is null
-            ? await connection.CreateChannelAsync(cancellationToken: ct)
-            : await connection.CreateChannelAsync(channelOptions, ct);
-
-        // mandatory:true makes the broker return (basic.return) publishes that
-        // match no bound queue — without this handler those frames are dropped
-        // silently and the event is lost with no trace.
-        var returnedIds = new ConcurrentDictionary<Guid, byte>();
-        channel.BasicReturnAsync += (sender, e) =>
-        {
-            ModulusMeters.EventsUnroutable.Add(1);
-            _logger.LogWarning(
-                "Broker returned an integration event as unroutable (no queue bound for the routing key): " +
-                "exchange '{Exchange}' routing key '{RoutingKey}' — {ReplyCode} {ReplyText}. " +
-                "Bind a queue for this routing key or the event is lost.",
-                e.Exchange, e.RoutingKey, e.ReplyCode, e.ReplyText);
-            if (e.BasicProperties?.MessageId is { } mid
-                && Guid.TryParse(mid, out var returnedId))
-                returnedIds[returnedId] = 1;
-            return Task.CompletedTask;
-        };
 
         // Stable transport name uses the runtime event type, not the generic parameter.
         // When an event is published through a base-type variable (IIntegrationEvent),
@@ -124,24 +96,34 @@ internal sealed class RabbitMqEventBus : IModuleBus, IAsyncDisposable
             }
         };
 
-        await channel.BasicPublishAsync(
-            exchange: _opts.ExchangeName,
-            routingKey: routingKey,
-            mandatory: true,
-            basicProperties: props,
-            body: body,
-            cancellationToken: ct);
+        // One shared publisher channel, used one publish at a time: the confirm and the return check belong to one publish.
+        await _publishGate.WaitAsync(ct);
+        try
+        {
+            var channel = await PublisherChannelAsync(connection, ct);
+            await channel.BasicPublishAsync(
+                exchange: _opts.ExchangeName,
+                routingKey: routingKey,
+                mandatory: true,
+                basicProperties: props,
+                body: body,
+                cancellationToken: ct);
 
-        // The broker sends basic.return BEFORE the basic.ack for an unroutable
-        // mandatory publish, so by the time the confirmed publish completes
-        // any return has been recorded. Treat "acked but returned" as a
-        // failure so the outbox retries instead of marking it processed.
-        if (returnedIds.ContainsKey(envelope.EventId))
-            throw new InvalidOperationException(
-                $"RabbitMQ returned event {envelope.EventId} ({routingKey}) as " +
-                $"unroutable on exchange '{_opts.ExchangeName}' — no queue is " +
-                "bound for this routing key. Bind a consumer queue or correct " +
-                "the routing key; treating as a failed dispatch.");
+            // The broker sends basic.return BEFORE the basic.ack for an unroutable
+            // mandatory publish, so by the time the confirmed publish completes
+            // any return has been recorded. Treat "acked but returned" as a
+            // failure so the outbox retries instead of marking it processed.
+            if (_returned.TryRemove(envelope.EventId, out _))
+                throw new InvalidOperationException(
+                    $"RabbitMQ returned event {envelope.EventId} ({routingKey}) as " +
+                    $"unroutable on exchange '{_opts.ExchangeName}' — no queue is " +
+                    "bound for this routing key. Bind a consumer queue or correct " +
+                    "the routing key; treating as a failed dispatch.");
+        }
+        finally
+        {
+            _publishGate.Release();
+        }
 
         sw.Stop();
         ModulusMeters.EventsPublishDuration.Record(sw.Elapsed.TotalMilliseconds);
@@ -168,6 +150,44 @@ internal sealed class RabbitMqEventBus : IModuleBus, IAsyncDisposable
         return (tenantId, correlationId);
     }
 
+    /// <summary>The shared publisher channel, reopened when it closes. Callers hold <see cref="_publishGate"/>.</summary>
+    private async Task<IChannel> PublisherChannelAsync(IConnection connection, CancellationToken ct)
+    {
+        if (_publishChannel is { IsOpen: true } open)
+            return open;
+
+        if (_publishChannel is not null)
+            await _publishChannel.DisposeAsync();
+
+        // Publisher confirms: with tracking enabled the awaited publish completes only when the broker acks, and a nacked
+        // publish throws, so a broker restart becomes a dispatch failure the outbox can retry instead of a silent loss.
+        var channelOptions = _opts.PublisherConfirms
+            ? new CreateChannelOptions(true, true)
+            : null;
+        var channel = channelOptions is null
+            ? await connection.CreateChannelAsync(cancellationToken: ct)
+            : await connection.CreateChannelAsync(channelOptions, ct);
+
+        // mandatory:true makes the broker return (basic.return) publishes that match no bound queue; without this handler
+        // those frames are dropped silently and the event is lost with no trace.
+        channel.BasicReturnAsync += (sender, e) =>
+        {
+            ModulusMeters.EventsUnroutable.Add(1);
+            _logger.LogWarning(
+                "Broker returned an integration event as unroutable (no queue bound for the routing key): " +
+                "exchange '{Exchange}' routing key '{RoutingKey}' — {ReplyCode} {ReplyText}. " +
+                "Bind a queue for this routing key or the event is lost.",
+                e.Exchange, e.RoutingKey, e.ReplyCode, e.ReplyText);
+            if (e.BasicProperties?.MessageId is { } mid
+                && Guid.TryParse(mid, out var returnedId))
+                _returned[returnedId] = 1;
+            return Task.CompletedTask;
+        };
+
+        _publishChannel = channel;
+        return channel;
+    }
+
     private async Task<IConnection> EnsureConnectionAsync(CancellationToken ct)
     {
         if (_connection is { IsOpen: true })
@@ -182,19 +202,12 @@ internal sealed class RabbitMqEventBus : IModuleBus, IAsyncDisposable
             if (_connection is not null)
                 await _connection.DisposeAsync();
 
-            var factory = new ConnectionFactory
-            {
-                HostName = _opts.HostName,
-                Port = _opts.Port,
-                UserName = _opts.UserName,
-                Password = _opts.Password,
-                VirtualHost = _opts.VirtualHost,
-                // Automatic recovery from broker restarts and connection failures
-                AutomaticRecoveryEnabled = true,
-                NetworkRecoveryInterval = TimeSpan.FromSeconds(10),
-                // Client identification for broker logging and management UI
-                ClientProvidedName = "Modulus.EventBus.RabbitMQ",
-            };
+            var factory = RabbitMqConnectionFactory.Create(_opts);
+            // Automatic recovery from broker restarts and connection failures
+            factory.AutomaticRecoveryEnabled = true;
+            factory.NetworkRecoveryInterval = TimeSpan.FromSeconds(10);
+            // Client identification for broker logging and management UI
+            factory.ClientProvidedName = "Modulus.EventBus.RabbitMQ";
 
             _connection = await factory.CreateConnectionAsync(ct);
             return _connection;
@@ -207,6 +220,9 @@ internal sealed class RabbitMqEventBus : IModuleBus, IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
+        if (_publishChannel is not null)
+            await _publishChannel.DisposeAsync();
+        _publishGate.Dispose();
         if (_connection is not null)
             await _connection.DisposeAsync();
         _connectionGate.Dispose();

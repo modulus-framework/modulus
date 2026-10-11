@@ -140,6 +140,10 @@ internal sealed class SamlSignInService<TContext, TUser>(
         if (outcome.User is not { } user)
             return Deny(outcome.Denial ?? "denied", p.TenantId);
 
+        // This path asks for no code, so a second factor the account holds locally cannot be met here: refuse rather than skip it.
+        if (await signInManager.UserManager.GetTwoFactorEnabledAsync(user))
+            return Deny("second-factor-required", p.TenantId);
+
         var methods = new List<Claim> { new(TokenPrincipalFactory.MethodClaim, "fed") };
         if (UsedMultiFactor(p, response))
             methods.Add(new Claim(TokenPrincipalFactory.MethodClaim, "mfa"));
@@ -219,7 +223,8 @@ internal sealed class SamlSignInService<TContext, TUser>(
             email,
             First([p.FirstNameAttribute, .. s_firstNames]),
             First([p.LastNameAttribute, .. s_lastNames]),
-            groups);
+            groups,
+            EmailVerified: p.EmailAssertedVerified);
     }
 
     private static bool UsedMultiFactor(SamlProviderOptions p, Saml2AuthnResponse response)
@@ -285,8 +290,7 @@ internal sealed class SamlSignInService<TContext, TUser>(
     private string AcsUrl(SamlProviderOptions p)
         => $"{Options.BaseUrl.TrimEnd('/')}{Options.BasePath.TrimEnd('/')}/{p.Name}/acs";
 
-    internal static bool IsLocal(string url)
-        => url.Length > 0 && url[0] == '/' && (url.Length == 1 || (url[1] != '/' && url[1] != '\\'));
+    internal static bool IsLocal(string url) => Modulus.Core.Http.LocalUrl.IsLocal(url);
 
     private static string Base64Url(byte[] bytes)
         => Convert.ToBase64String(bytes).TrimEnd('=').Replace('+', '-').Replace('/', '_');

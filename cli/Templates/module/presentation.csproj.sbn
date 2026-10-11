@@ -7,9 +7,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Cobytelabs.Modulus.Core" Version="{{ framework_version }}" />
-    <PackageReference Include="Cobytelabs.Modulus.AspNetCore" Version="{{ framework_version }}" />
-    <PackageReference Include="Cobytelabs.Modulus.Mediator" Version="{{ framework_version }}" />
+    <PackageReference Include="Modulus.Core" Version="{{ framework_version }}" />
+    <PackageReference Include="Modulus.AspNetCore" Version="{{ framework_version }}" />
+    <PackageReference Include="Modulus.Mediator" Version="{{ framework_version }}" />
   </ItemGroup>
 
   <ItemGroup>

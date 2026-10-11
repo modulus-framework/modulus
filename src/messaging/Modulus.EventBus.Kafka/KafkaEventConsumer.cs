@@ -21,6 +21,9 @@ internal sealed class KafkaEventConsumer : BackgroundService
     private readonly IIntegrationEventRegistry _registry;
     private readonly IMessageSerializer _serializer;
 
+    // One dead-letter producer for the life of the consumer (the consume loop is single-threaded, so no lock is needed).
+    private IProducer<string, string>? _dlqProducer;
+
     public KafkaEventConsumer(
         IOptions<KafkaOptions> options,
         ILogger<KafkaEventConsumer> logger,
@@ -69,6 +72,21 @@ internal sealed class KafkaEventConsumer : BackgroundService
                 _logger.LogError("Kafka error: {Reason} ({Code})", e.Reason, e.Code))
             .Build();
 
+        try
+        {
+            await ConsumeAsync(consumer, topics, ct);
+        }
+        finally
+        {
+            // Leave the group cleanly on every exit (cancellation, a fault), so the partitions are reassigned at once.
+            consumer.Close();
+            _dlqProducer?.Dispose();
+            _dlqProducer = null;
+        }
+    }
+
+    private async Task ConsumeAsync(IConsumer<string, string> consumer, List<string> topics, CancellationToken ct)
+    {
         consumer.Subscribe(topics);
 
         _logger.LogInformation(
@@ -174,14 +192,19 @@ internal sealed class KafkaEventConsumer : BackgroundService
             }
             catch (Exception ex)
             {
-                if (result is null)
-                    throw;
-
-                await RedeliverOrParkAsync(consumer, result, failureAttempts, ex, ct);
+                if (result is not null)
+                {
+                    await RedeliverOrParkAsync(consumer, result, failureAttempts, ex, ct);
+                }
+                else
+                {
+                    // Not attributable to a message (the consume itself, or a fault outside dispatch). Log it and back off:
+                    // an exception here used to stop the whole host. The next Consume() retries.
+                    _logger.LogError(ex, "Kafka consumer loop failed; retrying after a back-off.");
+                    await Task.Delay(Math.Min(1000, _opts.RedeliveryMaxBackoffMs), ct);
+                }
             }
         }
-
-        consumer.Close();
     }
 
     /// <summary>
@@ -295,16 +318,8 @@ internal sealed class KafkaEventConsumer : BackgroundService
 
         try
         {
-            var producerConfig = new ProducerConfig
-            {
-                BootstrapServers = _opts.BootstrapServers,
-                Acks = ParseAcks(_opts.Acks),
-                MessageSendMaxRetries = Math.Max(1, _opts.MessageSendMaxRetries),
-            };
-            KafkaEventBus.ApplySecurity(producerConfig, _opts);
-
-            using var producer = new ProducerBuilder<string, string>(producerConfig).Build();
-            await producer.ProduceAsync(
+            _dlqProducer ??= BuildDeadLetterProducer();
+            await _dlqProducer.ProduceAsync(
                 sourceTopic + _opts.DeadLetterTopicSuffix,
                 new Message<string, string>
                 {
@@ -328,6 +343,18 @@ internal sealed class KafkaEventConsumer : BackgroundService
                 result.Topic, result.Partition.Value, result.Offset.Value);
             return false;
         }
+    }
+
+    private IProducer<string, string> BuildDeadLetterProducer()
+    {
+        var producerConfig = new ProducerConfig
+        {
+            BootstrapServers = _opts.BootstrapServers,
+            Acks = ParseAcks(_opts.Acks),
+            MessageSendMaxRetries = Math.Max(1, _opts.MessageSendMaxRetries),
+        };
+        KafkaEventBus.ApplySecurity(producerConfig, _opts);
+        return new ProducerBuilder<string, string>(producerConfig).Build();
     }
 
     private static Acks ParseAcks(string value) =>

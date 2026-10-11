@@ -27,8 +27,11 @@ public sealed class MongoOutboxProcessor(
 
     private const int PurgeBatchSize = 1000;
 
-    // OutboxDepth is an UpDownCounter — report deltas, not absolutes (mirrors EF).
-    private long _lastReportedDepth;
+    /// <summary>
+    /// True when the last <see cref="ProcessAsync"/> filled a whole batch, so more documents are probably waiting and the
+    /// poller should run again at once instead of sleeping a full interval.
+    /// </summary>
+    public bool HasMoreWork { get; private set; }
 
     public async Task ProcessAsync(CancellationToken ct = default)
     {
@@ -67,6 +70,7 @@ public sealed class MongoOutboxProcessor(
             .Project(m => m.Id)
             .ToListAsync(ct);
 
+        HasMoreWork = candidateIds.Count >= options.BatchSize;
         if (candidateIds.Count == 0) return;
 
         // Record outbox depth (pending messages not yet dispatched) as a delta.
@@ -74,8 +78,7 @@ public sealed class MongoOutboxProcessor(
             Builders<MongoOutboxMessage>.Filter.Eq(m => m.ProcessedAt, null),
             Builders<MongoOutboxMessage>.Filter.Lt(m => m.RetryCount, options.MaxRetries));
         var depth = await collection.CountDocumentsAsync(depthFilter, cancellationToken: ct);
-        ModulusMeters.OutboxDepth.Add((long)depth - _lastReportedDepth);
-        _lastReportedDepth = (long)depth;
+        ModulusMeters.ReportOutboxDepth("mongo", depth);
 
         // 2. Atomically claim those rows. The filter re-checks ProcessedAt,
         //    LockedUntil AND NextAttemptAt server-side, so backoff cannot be

@@ -43,7 +43,7 @@ public sealed class CliScaffoldBuildTests
             Directory.CreateDirectory(nupkgDir);
             Directory.CreateDirectory(outputDir);
 
-            // 1. Pack all Cobytelabs.Modulus.* packages
+            // 1. Pack all Modulus.* packages
             await RunAsync(
                 "dotnet",
                 $"pack \"{Path.Combine(repoRoot, "modulus.slnx")}\" -c Release -o \"{nupkgDir}\" --nologo",
@@ -110,13 +110,13 @@ public sealed class CliScaffoldBuildTests
             var cliBinDir = Path.Combine(work.FullName, "cli-bin");
             var outputDir = Path.Combine(work.FullName, "output");
             // The packed version number does not change between runs, so a machine-wide package cache would serve the
-            // Cobytelabs.Modulus.* packages of an earlier pack (and hide every framework change since). The generated
+            // Modulus.* packages of an earlier pack (and hide every framework change since). The generated
             // app restores into its own cache instead.
             var isolatedCache = new Dictionary<string, string> { ["NUGET_PACKAGES"] = Path.Combine(work.FullName, "packages") };
             Directory.CreateDirectory(nupkgDir);
             Directory.CreateDirectory(outputDir);
 
-            // 1. Pack every Cobytelabs.Modulus.* package into a throwaway
+            // 1. Pack every Modulus.* package into a throwaway
             // local feed. CI's `integration` job does not receive the
             // `build` job's packed artifacts (separate jobs, no shared
             // artifact download), so this test must produce its own.

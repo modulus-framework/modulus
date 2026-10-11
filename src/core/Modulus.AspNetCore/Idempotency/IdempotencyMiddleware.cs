@@ -107,12 +107,12 @@ public sealed class IdempotencyMiddleware(
                 return;
 
             default:
-                await ProcessAndCaptureAsync(context, store, scopedKey);
+                await ProcessAndCaptureAsync(context, store, scopedKey, result.ClaimToken);
                 return;
         }
     }
 
-    private async Task ProcessAndCaptureAsync(HttpContext context, IIdempotencyStore store, string scopedKey)
+    private async Task ProcessAndCaptureAsync(HttpContext context, IIdempotencyStore store, string scopedKey, string? claimToken)
     {
         // Buffer the response so it can be cached and replayed. Nothing is flushed
         // to the client until we copy the buffer back, so status/headers stay mutable.
@@ -132,7 +132,7 @@ public sealed class IdempotencyMiddleware(
         catch
         {
             context.Response.Body = originalBody;
-            await store.AbandonAsync(scopedKey, CancellationToken.None);
+            await store.AbandonAsync(scopedKey, claimToken, CancellationToken.None);
             throw;
         }
 
@@ -150,6 +150,7 @@ public sealed class IdempotencyMiddleware(
             {
                 await store.CompleteAsync(
                     scopedKey,
+                    claimToken,
                     new CachedResponse(
                         context.Response.StatusCode,
                         new Dictionary<string, string> { [UncacheableMarker] = "1" },
@@ -158,7 +159,7 @@ public sealed class IdempotencyMiddleware(
             }
             else
             {
-                await store.AbandonAsync(scopedKey, CancellationToken.None);
+                await store.AbandonAsync(scopedKey, claimToken, CancellationToken.None);
             }
 
             return;
@@ -170,12 +171,12 @@ public sealed class IdempotencyMiddleware(
                 context.Response.StatusCode,
                 SnapshotHeaders(context.Response),
                 buffer.GetBufferedBytes());
-            await store.CompleteAsync(scopedKey, cached, CancellationToken.None);
+            await store.CompleteAsync(scopedKey, claimToken, cached, CancellationToken.None);
         }
         else
         {
             // Non-cacheable outcome (e.g. 5xx) — drop the claim so a retry re-runs.
-            await store.AbandonAsync(scopedKey, CancellationToken.None);
+            await store.AbandonAsync(scopedKey, claimToken, CancellationToken.None);
         }
 
         await buffer.CopyBufferedToAsync(originalBody, context.RequestAborted);

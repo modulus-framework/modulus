@@ -88,7 +88,7 @@ public sealed class AuditStoreCommandTests : IDisposable
 
         Run(AppDir).Should().Be(0);
 
-        Read($"{Infra}/Shop.Modules.Audit.Infrastructure.csproj").Should().Contain("Cobytelabs.Modulus.AuditLogging.EntityFrameworkCore");
+        Read($"{Infra}/Shop.Modules.Audit.Infrastructure.csproj").Should().Contain("Modulus.AuditLogging.EntityFrameworkCore");
         Read($"{Infra}/AppAuditDbContext.cs").Should().Contain(": ModulusAuditDbContext(options)");
         Read($"{Infra}/AppAuditDbContextFactory.cs").Should().Contain("AUDIT_CONNECTION");
         Read($"{Infra}/AuditModule.cs").Should().Contain("AddModulusAuditStore<AppAuditDbContext>()");

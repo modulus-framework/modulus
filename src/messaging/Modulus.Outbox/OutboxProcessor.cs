@@ -27,11 +27,6 @@ public sealed class OutboxProcessor(
     /// </summary>
     public bool HasMoreWork { get; private set; }
 
-    // Last cycle's total pending depth. OutboxDepth is an UpDownCounter (a
-    // cumulative instrument), so each cycle records the DELTA against this —
-    // Add(absolute) on every poll would grow the metric without bound.
-    private long _lastReportedDepth;
-
     public async Task ProcessAsync(CancellationToken ct = default)
     {
         await using var scope = sp.CreateAsyncScope();
@@ -76,8 +71,7 @@ public sealed class OutboxProcessor(
             }
         }
 
-        ModulusMeters.OutboxDepth.Add(totalDepth - _lastReportedDepth);
-        _lastReportedDepth = totalDepth;
+        ModulusMeters.ReportOutboxDepth("ef", totalDepth);
     }
 
     private async Task<int> ProcessContextAsync(

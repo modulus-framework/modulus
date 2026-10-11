@@ -9,8 +9,11 @@ public sealed class RabbitMqOptions
 {
     public string HostName { get; set; } = "localhost";
     public int Port { get; set; } = 5672;
-    public string UserName { get; set; } = "guest";
-    public string Password { get; set; } = "guest";
+    /// <summary>Required: there is no default account (the broker's <c>guest</c> account is for its own local console only).</summary>
+    public string UserName { get; set; } = "";
+
+    /// <summary>Required with <see cref="UserName"/>; validated at startup.</summary>
+    public string Password { get; set; } = "";
     public string VirtualHost { get; set; } = "/";
     public string ExchangeName { get; set; } = "modulus.events";
     public string QueueName { get; set; } = "modulus.events.app";
@@ -53,4 +56,21 @@ public sealed class RabbitMqOptions
     /// throughput at the cost of durability.
     /// </summary>
     public bool PublisherConfirms { get; set; } = true;
+
+    /// <summary>TLS to the broker. Off by default; turn it on for any broker that is not on a private loopback.</summary>
+    public RabbitMqSslOptions Ssl { get; set; } = new();
+}
+
+/// <summary>TLS settings for the broker connection. Certificates are always validated.</summary>
+public sealed class RabbitMqSslOptions
+{
+    /// <summary>Connect over TLS (AMQPS).</summary>
+    public bool Enabled { get; set; }
+
+    /// <summary>The name the broker's certificate must match. Defaults to <see cref="RabbitMqOptions.HostName"/>.</summary>
+    public string? ServerName { get; set; }
+
+    /// <summary>The TLS protocol versions offered. Default TLS 1.2 and 1.3.</summary>
+    public System.Security.Authentication.SslProtocols Version { get; set; } =
+        System.Security.Authentication.SslProtocols.Tls12 | System.Security.Authentication.SslProtocols.Tls13;
 }

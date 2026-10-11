@@ -35,4 +35,7 @@ public static class BffDefaults
 
     /// <summary>The rate-limiter policy of client <paramref name="client"/>.</summary>
     public static string RateLimitPolicy(string client) => "bff:" + client;
+
+    /// <summary>The rate-limiter policy of the password sign-in of web client <paramref name="client"/> (always on, per address).</summary>
+    public static string LoginRateLimitPolicy(string client) => "bff-login:" + client;
 }

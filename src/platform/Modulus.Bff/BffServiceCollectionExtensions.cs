@@ -11,6 +11,8 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 using Modulus.Bff.Authentication;
 using Modulus.Bff.Http;
 using Modulus.Bff.Proxy;
@@ -179,6 +181,16 @@ public sealed class BffBuilder
         snapshot.Kind = kind;
         configure?.Invoke(snapshot);
 
+        // A bearer client with no audience, allowed client id or client id would accept any token its authority issued.
+        // Refuse to start rather than run that way.
+        if (kind != BffClientKind.Web)
+        {
+            optionsBuilder.Validate(
+                c => c.Audiences.Count > 0 || c.AllowedClientIds.Count > 0 || !string.IsNullOrEmpty(c.ClientId),
+                $"BFF client '{name}' would accept any token its authority issues: set Audiences, AllowedClientIds or ClientId.")
+                .ValidateOnStart();
+        }
+
         var scheme = BffDefaults.Scheme(name);
         if (kind == BffClientKind.Web)
             AddWebAuthentication(name, scheme, snapshot);
@@ -194,6 +206,16 @@ public sealed class BffBuilder
 
         Services.AddOptions<RateLimiterOptions>().Configure<IOptionsMonitor<BffClientOptions>>((o, clients) =>
             o.AddPolicy(BffDefaults.RateLimitPolicy(name), context => Partition(context, clients.Get(name))));
+
+        // Password sign-in is the one anonymous route that guesses passwords, so it is limited whether or not the client
+        // configures a RateLimit. It is partitioned by address: the caller has no session yet to key on.
+        if (kind == BffClientKind.Web)
+        {
+            Services.AddOptions<RateLimiterOptions>().Configure(o => o.AddPolicy(BffDefaults.LoginRateLimitPolicy(name), context =>
+                RateLimitPartition.GetFixedWindowLimiter(
+                    "ip:" + context.Connection.RemoteIpAddress,
+                    _ => new FixedWindowRateLimiterOptions { PermitLimit = 10, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 })));
+        }
 
         return this;
     }
@@ -227,13 +249,16 @@ public sealed class BffBuilder
     private void AddWebAuthentication(string name, string scheme, BffClientOptions snapshot)
     {
         _authentication.AddCookie(scheme, _ => { });
-        Services.AddOptions<CookieAuthenticationOptions>(scheme).Configure<IOptionsMonitor<BffClientOptions>>((o, clients) =>
+        Services.AddOptions<CookieAuthenticationOptions>(scheme).Configure<IOptionsMonitor<BffClientOptions>, IServiceProvider>((o, clients, services) =>
         {
             var client = clients.Get(name);
             o.Cookie.Name = ".bff." + name;
             o.Cookie.HttpOnly = true;
             o.Cookie.SameSite = SameSiteMode.Lax;
-            o.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+            // Only local development may send the session cookie over plain HTTP; every other environment requires HTTPS.
+            o.Cookie.SecurePolicy = services.GetService<IHostEnvironment>()?.IsDevelopment() == true
+                ? CookieSecurePolicy.SameAsRequest
+                : CookieSecurePolicy.Always;
             o.ExpireTimeSpan = client.SessionLifetime;
             o.SlidingExpiration = true;
             if (client.LoginPath is { Length: > 0 } loginPath)

@@ -7,13 +7,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Cobytelabs.Modulus.Core" Version="1.4.0" />
-    <PackageReference Include="Cobytelabs.Modulus.EntityFrameworkCore" Version="1.4.0" />
-    <PackageReference Include="Cobytelabs.Modulus.Events" Version="1.4.0" />
-    <PackageReference Include="Cobytelabs.Modulus.Inbox" Version="1.4.0" />
-    <PackageReference Include="Cobytelabs.Modulus.Data.Abstractions" Version="1.4.0" />
-    <PackageReference Include="Cobytelabs.Modulus.Data.PostgreSQL" Version="1.4.0" />
-    <PackageReference Include="Cobytelabs.Modulus.Outbox" Version="1.4.0" />
+    <PackageReference Include="Modulus.Core" Version="1.4.0" />
+    <PackageReference Include="Modulus.EntityFrameworkCore" Version="1.4.0" />
+    <PackageReference Include="Modulus.Events" Version="1.4.0" />
+    <PackageReference Include="Modulus.Inbox" Version="1.4.0" />
+    <PackageReference Include="Modulus.Data.Abstractions" Version="1.4.0" />
+    <PackageReference Include="Modulus.Data.PostgreSQL" Version="1.4.0" />
+    <PackageReference Include="Modulus.Outbox" Version="1.4.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.9" PrivateAssets="All" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="10.0.0" />

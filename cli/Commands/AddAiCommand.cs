@@ -6,11 +6,11 @@ namespace Modulus.Cli.Commands;
 
 /// <summary>
 /// <c>modulus add-ai</c>: hosts the AI platform's connector wire contract v1 in the API host. It adds the
-/// <c>Cobytelabs.Modulus.AI.Connector</c> packages, wires <c>AddModulusAiConnector</c> (envelope users matched to the local
+/// <c>Modulus.AI.Connector</c> packages, wires <c>AddModulusAiConnector</c> (envelope users matched to the local
 /// identity accounts when the host has them, plus the EF change journal) and <c>MapModulusAiConnector</c>, seeds the
 /// <c>Ai:Connector</c> settings (no key, no instance: nothing can call it until the platform is registered), gives the tests a
 /// hashed test key and writes <c>AiConnectorTests</c> and <c>AiConformanceTests</c> (the platform's conformance suite
-/// against a fake platform, package <c>Cobytelabs.Modulus.AI.Connector.Testing</c>). Idempotent. Mark entities with <c>generate-crud &lt;Entity&gt; --ai</c>.
+/// against a fake platform, package <c>Modulus.AI.Connector.Testing</c>). Idempotent. Mark entities with <c>generate-crud &lt;Entity&gt; --ai</c>.
 /// </summary>
 internal sealed class AddAiCommand : Command<AddAiCommand.Settings>
 {

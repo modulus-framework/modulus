@@ -85,7 +85,7 @@ public sealed class IdentityEmailQueueTests : IAsyncLifetime
     {
         var user = await AddUserAsync("alice", tenantId: Guid.NewGuid());
 
-        _queue.EnqueuePasswordReset(user.Id, user.Email!).Should().BeTrue();
+        _queue.EnqueuePasswordReset(user.Id).Should().BeTrue();
 
         (await WaitForAsync(user.Email!)).Should().NotBeNullOrWhiteSpace();
     }
@@ -96,9 +96,9 @@ public sealed class IdentityEmailQueueTests : IAsyncLifetime
         var inactive = await AddUserAsync("bob", active: false);
         var live = await AddUserAsync("carol");
 
-        _queue.EnqueuePasswordReset(inactive.Id, inactive.Email!);
-        _queue.EnqueuePasswordReset(Guid.NewGuid(), "ghost@example.test");
-        _queue.EnqueuePasswordReset(live.Id, live.Email!);
+        _queue.EnqueuePasswordReset(inactive.Id);
+        _queue.EnqueuePasswordReset(Guid.NewGuid());
+        _queue.EnqueuePasswordReset(live.Id);
 
         // Items run in order: once the last one has been mailed the earlier two have been decided.
         await WaitForAsync(live.Email!);
@@ -118,8 +118,8 @@ public sealed class IdentityEmailQueueTests : IAsyncLifetime
             (await users.ConfirmEmailAsync(user, await users.GenerateEmailConfirmationTokenAsync(user))).Succeeded.Should().BeTrue();
         }
 
-        _queue.EnqueueEmailConfirmation(confirmed.Id, confirmed.Email!);
-        _queue.EnqueueEmailConfirmation(pending.Id, pending.Email!);
+        _queue.EnqueueEmailConfirmation(confirmed.Id);
+        _queue.EnqueueEmailConfirmation(pending.Id);
 
         await WaitForAsync(pending.Email!);
         _sender.Sent.Keys.Should().BeEquivalentTo([pending.Email!]);

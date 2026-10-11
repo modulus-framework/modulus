@@ -31,7 +31,10 @@ public sealed class LocalFileStorage(IOptions<StorageOptions> options) : IFileSt
         var combined = Path.IsPathRooted(path) ? path : Path.Combine(_basePath, path);
         var full = Path.GetFullPath(combined);
 
-        if (!full.StartsWith(root, StringComparison.OrdinalIgnoreCase))
+        // Windows paths are case-insensitive; Linux paths are not, so "/data/STORE" is another directory there and must not pass as
+        // "/data/store".
+        var comparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+        if (!full.StartsWith(root, comparison))
             throw new ArgumentException(
                 $"Path '{path}' escapes the storage root '{_basePath}'.", nameof(path));
 

@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
@@ -41,6 +42,13 @@ public sealed class TenantMiddleware(
         // authenticated caller is trying to reach another tenant by
         // overriding e.g. X-Tenant-Id; reject rather than silently trust
         // whichever resolver matched first.
+        // The membership and claim checks must see the principal the endpoint will act as. An endpoint can authenticate with
+        // its own scheme (a BFF client's cookie or bearer), which the default scheme never sees, so a caller who is anonymous
+        // on the default scheme is authenticated against the other schemes here. This does not depend on where UseAuthentication
+        // sits in the pipeline.
+        if (info is not null && ctx.User.Identity?.IsAuthenticated != true)
+            ctx.User = await AuthenticateOtherSchemesAsync(ctx) ?? ctx.User;
+
         if (ctx.User.Identity?.IsAuthenticated == true)
         {
             var claimResolver = resolverList.OfType<JwtClaimTenantResolver>().FirstOrDefault();
@@ -115,6 +123,24 @@ public sealed class TenantMiddleware(
         });
 
         await next(ctx);
+    }
+
+    private static async Task<ClaimsPrincipal?> AuthenticateOtherSchemesAsync(HttpContext ctx)
+    {
+        // A host with no authentication registered has no other principal to check.
+        var authentication = ctx.RequestServices.GetService<IAuthenticationService>();
+        var schemes = ctx.RequestServices.GetService<IAuthenticationSchemeProvider>();
+        if (authentication is null || schemes is null)
+            return null;
+
+        foreach (var scheme in await schemes.GetAllSchemesAsync())
+        {
+            var result = await authentication.AuthenticateAsync(ctx, scheme.Name);
+            if (result.Succeeded && result.Principal?.Identity?.IsAuthenticated == true)
+                return result.Principal;
+        }
+
+        return null;
     }
 
     private static void Audit(HttpContext ctx, string action, string outcome, Guid? tenantId, string? target)

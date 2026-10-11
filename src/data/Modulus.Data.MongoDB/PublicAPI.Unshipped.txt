@@ -66,3 +66,4 @@ Modulus.Data.MongoDB.ITenantMongoDatabase
 Modulus.Data.MongoDB.ITenantMongoDatabase.Database.get -> MongoDB.Driver.IMongoDatabase!
 Modulus.Data.MongoDB.ModuleMongoContext.ModuleMongoContext(Modulus.Data.MongoDB.ITenantMongoDatabase! database, Microsoft.Extensions.Options.IOptions<Modulus.Data.MongoDB.MongoOptions!>! opts, Modulus.Core.Abstractions.ICurrentTenant! tenant, Modulus.Core.Abstractions.ISecurityAuditLog? audit = null) -> void
 static Modulus.Data.MongoDB.Extensions.MongoServiceCollectionExtensions.AddMongoDatabasePerTenant(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<Modulus.Data.MongoDB.MongoOptions!>! configure, System.Func<System.Guid, string!>! tenantDatabaseName) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+virtual Modulus.Data.MongoDB.MongoRepository<T, TDoc>.MaxClientSideScan.get -> int

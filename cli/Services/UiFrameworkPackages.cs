@@ -39,7 +39,10 @@ internal static class UiFrameworkPackages
     {
         using var doc = JsonDocument.Parse(manifestJson);
         var root = doc.RootElement;
-        var version = root.TryGetProperty("version", out var v) ? v.GetString() : null;
+        // MODULUS_UI_VERSION overrides the manifest's version so the references match a local pack.
+        var version = Environment.GetEnvironmentVariable("MODULUS_UI_VERSION") is { Length: > 0 } ov
+            ? ov
+            : root.TryGetProperty("version", out var v) ? v.GetString() : null;
         if (version is null
             || !root.TryGetProperty("features", out var features)
             || !features.TryGetProperty("shell", out var shell)

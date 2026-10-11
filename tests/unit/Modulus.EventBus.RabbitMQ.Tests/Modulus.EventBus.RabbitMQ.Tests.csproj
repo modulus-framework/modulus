@@ -9,5 +9,8 @@
     <ProjectReference Include="../../../src/messaging/Modulus.EventBus.RabbitMQ/Modulus.EventBus.RabbitMQ.csproj" />
     <PackageReference Include="Testcontainers.RabbitMq" />
     <PackageReference Include="RabbitMQ.Client" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <PackageReference Include="Microsoft.Extensions.Logging" />
   </ItemGroup>
 </Project>

@@ -10,18 +10,18 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Cobytelabs.Modulus.AspNetCore" Version="1.4.0" />
-    <PackageReference Include="Cobytelabs.Modulus.Core" Version="1.4.0" />
-    <PackageReference Include="Cobytelabs.Modulus.EntityFrameworkCore" Version="1.4.0" />
-    <PackageReference Include="Cobytelabs.Modulus.Events" Version="1.4.0" />
-    <PackageReference Include="Cobytelabs.Modulus.Identity" Version="1.4.0" />
-    <PackageReference Include="Cobytelabs.Modulus.Mediator" Version="1.4.0" />
-    <PackageReference Include="Cobytelabs.Modulus.Platform" Version="1.4.0" />
-    <PackageReference Include="Cobytelabs.Modulus.UI.Core" Version="1.4.0" />
-    <PackageReference Include="Cobytelabs.Modulus.UI.Identity" Version="1.4.0" />
-    <PackageReference Include="Cobytelabs.Modulus.UI.Permissions" Version="1.4.0" />
-    <PackageReference Include="Cobytelabs.Modulus.UI.Users" Version="1.4.0" />
-    <PackageReference Include="Cobytelabs.Modulus.UI.Tenancy" Version="1.4.0" />
+    <PackageReference Include="Modulus.AspNetCore" Version="1.4.0" />
+    <PackageReference Include="Modulus.Core" Version="1.4.0" />
+    <PackageReference Include="Modulus.EntityFrameworkCore" Version="1.4.0" />
+    <PackageReference Include="Modulus.Events" Version="1.4.0" />
+    <PackageReference Include="Modulus.Identity" Version="1.4.0" />
+    <PackageReference Include="Modulus.Mediator" Version="1.4.0" />
+    <PackageReference Include="Modulus.Platform" Version="1.4.0" />
+    <PackageReference Include="Modulus.UI.Core" Version="1.4.0" />
+    <PackageReference Include="Modulus.UI.Identity" Version="1.4.0" />
+    <PackageReference Include="Modulus.UI.Permissions" Version="1.4.0" />
+    <PackageReference Include="Modulus.UI.Users" Version="1.4.0" />
+    <PackageReference Include="Modulus.UI.Tenancy" Version="1.4.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.9" />
     <PackageReference Include="FluentValidation" Version="12.1.1" />
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />

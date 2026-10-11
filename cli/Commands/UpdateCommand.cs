@@ -19,7 +19,7 @@ internal sealed class UpdateCommand : Command<UpdateCommand.Settings>
         [CommandOption("-o|--output")]
         public string? Output { get; init; }
 
-        [Description("Only update Cobytelabs.Modulus.* framework packages")]
+        [Description("Only update Modulus.* framework packages")]
         [CommandOption("--framework-only")]
         public bool FrameworkOnly { get; init; }
     }
@@ -74,7 +74,7 @@ internal sealed class UpdateCommand : Command<UpdateCommand.Settings>
                 }
             }
 
-            // Filter to only Cobytelabs.Modulus.* packages if framework-only mode.
+            // Filter to only Modulus.* packages if framework-only mode.
             var packagesToCheck = s.FrameworkOnly
                 ? currentVersions.Where(kvp => ThirdPartyPackages.IsFrameworkPackage(kvp.Key))
                     .ToDictionary(kvp => kvp.Key, kvp => kvp.Value)

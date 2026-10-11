@@ -1,5 +1,6 @@
 namespace Modulus.Data.MongoDB;
 
+using global::MongoDB.Bson;
 using global::MongoDB.Driver;
 using Modulus.Core.Abstractions;
 using Modulus.Core.Abstractions.Domain;
@@ -50,6 +51,12 @@ public abstract class MongoRepository<T, TDoc>(
     protected virtual SortDefinition<TDoc>? BuildDocumentSort(
         ISpecification<T> spec) => null;
 
+    /// <summary>
+    /// The most documents one client-side query may load before it is refused. A query that falls back to client-side
+    /// filtering or sorting reads every matching document, so this bounds memory instead of letting a large collection load whole.
+    /// </summary>
+    protected virtual int MaxClientSideScan => 10_000;
+
     public async Task<T?> GetByIdAsync(object id, CancellationToken ct)
     {
         // Accept both Guid and string ids.
@@ -81,7 +88,10 @@ public abstract class MongoRepository<T, TDoc>(
         // Apply server-side pagination when a server-side filter is available
         // (so we know the ordering is stable). Fall back to client-side pagination
         // when only the tenant filter is applied and the domain ordering may differ.
-        if (docFilter is not null)
+        // Server-side paging is only correct when the order is applied on the server too: a sort the repository could not
+        // translate must be applied before Skip/Take, so that case pages client-side below.
+        var sortedOnServer = docSort is not null || spec.OrderByClauses is not { Count: > 0 };
+        if (docFilter is not null && sortedOnServer)
         {
             if (spec.Skip.HasValue) findFluent = findFluent.Skip(spec.Skip.Value);
             if (spec.Take.HasValue) findFluent = findFluent.Limit(spec.Take.Value);
@@ -89,8 +99,15 @@ public abstract class MongoRepository<T, TDoc>(
             return docs.Select(ToDomain).ToList();
         }
 
-        // Client-side fallback: fetch all tenant docs, map, then filter/sort/page.
-        IEnumerable<T> domain = (await findFluent.ToListAsync(ct)).Select(ToDomain);
+        // Client-side fallback: fetch the matching tenant docs (bounded by MaxClientSideScan), map, then filter/sort/page.
+        var scanned = await findFluent.ToListAsync(ct);
+        if (scanned.Count > MaxClientSideScan)
+        {
+            throw new InvalidOperationException(
+                $"The query for {typeof(T).Name} matched {scanned.Count} documents, more than MaxClientSideScan ({MaxClientSideScan}). " +
+                "Translate the filter and sort with BuildDocumentFilter/BuildDocumentSort, or raise MaxClientSideScan.");
+        }
+        IEnumerable<T> domain = scanned.Select(ToDomain);
         if (spec.Filter is not null) domain = domain.Where(spec.Filter.Compile());
 
         // Apply ordering: OrderBy, then ThenBy for each subsequent clause
@@ -202,6 +219,14 @@ public abstract class MongoRepository<T, TDoc>(
 
     public async Task DeleteRangeAsync(ISpecification<T> spec, CancellationToken ct)
     {
+        // A page cannot be deleted by filter: DeleteMany ignores Skip/Take and would take every match. Resolve the ids of
+        // exactly that page (ListAsync applies the sort, Skip and Take) and delete those.
+        if (spec.Skip.HasValue || spec.Take.HasValue)
+        {
+            await DeleteIdsAsync(spec, ct);
+            return;
+        }
+
         var docFilter = BuildDocumentFilter(spec);
         if (docFilter is not null)
         {
@@ -222,11 +247,17 @@ public abstract class MongoRepository<T, TDoc>(
         // matching ids first (ListAsync already applies the tenant filter,
         // domain filter and ordering), then delete exactly those ids —
         // again tenant-scoped. Never falls back to an unscoped DeleteMany.
+        await DeleteIdsAsync(spec, ct);
+    }
+
+    private async Task DeleteIdsAsync(ISpecification<T> spec, CancellationToken ct)
+    {
         var ids = (await ListAsync(spec, ct)).Select(e => e.Id).ToList();
         if (ids.Count == 0)
             return;
 
-        var idFilter = Builders<TDoc>.Filter.In("_id", ids);
+        // Guid ids are sent in the Standard representation the documents are stored with; a raw Guid has no serializer here.
+        var idFilter = Builders<TDoc>.Filter.In("_id", ids.Select(id => (BsonValue)new BsonBinaryData(id, GuidRepresentation.Standard)));
         await Collection.DeleteManyAsync(
             MongoTenantFilter.And<TDoc>(Tenant, idFilter), ct);
     }

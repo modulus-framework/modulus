@@ -67,7 +67,7 @@ public class AccountController<TUser>(
         // the same time to answer.
         var user = await userManager.FindByEmailAsync(email);
         if (user is not null && user.IsActive)
-            emailQueue.EnqueuePasswordReset(user.Id, email);
+            emailQueue.EnqueuePasswordReset(user.Id);
 
         return Ok(new { message = NonCommittalMessage });
     }
@@ -175,7 +175,7 @@ public class AccountController<TUser>(
 
         var user = await userManager.FindByEmailAsync(email);
         if (user is not null && user.IsActive)
-            emailQueue.EnqueueEmailConfirmation(user.Id, email);
+            emailQueue.EnqueueEmailConfirmation(user.Id);
 
         return Ok(new { message = NonCommittalMessage });
     }
@@ -272,7 +272,17 @@ public class AccountController<TUser>(
     [HttpPost("2fa/setup")]
     [Authorize]
     public async Task<IActionResult> SetUpTwoFactorAsync(CancellationToken ct)
-        => CallerId() is { } id && await twoFactor.BeginSetupAsync(id, ct) is { } setup ? Ok(setup) : Unauthorized();
+    {
+        if (CallerId() is not { } id)
+            return Unauthorized();
+
+        // Replacing the key of an enabled account would let a stolen session take over the second factor: the owner
+        // disables it first, which needs the password.
+        if (await twoFactor.IsEnabledAsync(id, ct))
+            return Conflict(new { error = "Two-factor is already on. Turn it off before setting up a new authenticator app." });
+
+        return await twoFactor.BeginSetupAsync(id, ct) is { } setup ? Ok(setup) : Unauthorized();
+    }
 
     /// <summary>Confirms the authenticator app with a current code, turns two-factor on and returns the recovery codes (shown once).</summary>
     [HttpPost("2fa/enable")]
@@ -294,7 +304,9 @@ public class AccountController<TUser>(
     {
         if (CallerId() is not { } id || await userManager.FindByIdAsync(id.ToString()) is not { } user)
             return Unauthorized();
-        if (string.IsNullOrEmpty(request.Password) || !await userManager.CheckPasswordAsync(user, request.Password))
+        // CheckPasswordSignInAsync counts a wrong password toward lock-out (CheckPasswordAsync does not) and refuses a locked account.
+        if (string.IsNullOrEmpty(request.Password) ||
+            !(await signInManager.CheckPasswordSignInAsync(user, request.Password, lockoutOnFailure: true)).Succeeded)
             return BadRequest(new { error = "The password is not correct." });
 
         await twoFactor.DisableAsync(id, ct);

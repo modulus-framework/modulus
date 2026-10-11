@@ -319,6 +319,7 @@ static Modulus.Bff.BffClientMetadata.operator ==(Modulus.Bff.BffClientMetadata? 
 static Modulus.Bff.BffDefaults.OidcScheme(string! client) -> string!
 static Modulus.Bff.BffDefaults.Policy(string! client) -> string!
 static Modulus.Bff.BffDefaults.RateLimitPolicy(string! client) -> string!
+static Modulus.Bff.BffDefaults.LoginRateLimitPolicy(string! client) -> string!
 static Modulus.Bff.BffDefaults.Scheme(string! client) -> string!
 static Modulus.Bff.BffEndpointRouteBuilderExtensions.MapBffClient(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! name) -> Microsoft.AspNetCore.Routing.RouteGroupBuilder!
 static Modulus.Bff.BffEndpointRouteBuilderExtensions.MapModulusBff(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints) -> Microsoft.AspNetCore.Routing.IEndpointRouteBuilder!

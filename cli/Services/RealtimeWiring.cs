@@ -9,7 +9,7 @@ namespace Modulus.Cli.Services;
 /// </summary>
 internal static partial class RealtimeWiring
 {
-    public const string PackageId = "Cobytelabs.Modulus.Realtime";
+    public const string PackageId = "Modulus.Realtime";
 
     /// <summary>An integration event to push, and the permission its recipients need (null: everyone in the tenant).</summary>
     internal sealed record RealtimeEventInfo(WebhooksWiring.IntegrationEventInfo Event, string? Permission)
@@ -58,7 +58,7 @@ internal static partial class RealtimeWiring
                 "// created since), each to the audience it names, within the event's tenant. Clients read the SSE" + nl +
                 "// stream GET /realtime/events (EventSource; resumes with Last-Event-ID); SignalR (/realtime/hub, for" + nl +
                 "// topic subscriptions and two-way calls) is on when \"Realtime:SignalR:Enabled\". With more than one" + nl +
-                "// replica, add the Redis backplane (Cobytelabs.Modulus.Realtime.Redis: AddRedisRealtimeBackplane)." + nl +
+                "// replica, add the Redis backplane (Modulus.Realtime.Redis: AddRedisRealtimeBackplane)." + nl +
                 "builder.Services.AddModulusRealtime(builder.Configuration, realtime =>" + nl +
                 "{" + nl +
                 "});" + nl + nl +

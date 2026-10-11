@@ -159,6 +159,8 @@ public sealed class InvitationAndTwoFactorTests
         var key = setup.SharedKey.Replace(" ", "", StringComparison.Ordinal);
         var recovery = (await twoFactor.EnableAsync(user.Id, Totp(key)))!;
         recovery.Should().HaveCount(10);
+        (await twoFactor.BeginSetupAsync(user.Id)).Should().BeNull("a live second factor is never replaced by a new key");
+        (await twoFactor.IsEnabledAsync(user.Id)).Should().BeTrue();
 
         var missing = await validator.ValidateWithSecondFactorAsync("ann", "Passw0rd!x", null);
         missing.Success.Should().BeFalse();

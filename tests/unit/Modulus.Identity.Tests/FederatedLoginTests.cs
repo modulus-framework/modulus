@@ -300,6 +300,18 @@ public sealed class FederatedLoginValidatorTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task An_account_with_a_local_second_factor_is_not_let_in_by_the_provider_alone()
+    {
+        _reader.Add("first", Token("sub-hana", "hana@contoso.test", verified: true));
+        (await Validator().ValidateAsync("first")).Success.Should().BeTrue();
+        var hana = await Users.FindByLoginAsync("federated", "sub-hana");
+        (await Users.SetTwoFactorEnabledAsync(hana!, true)).Succeeded.Should().BeTrue();
+
+        _reader.Add("second", Token("sub-hana", "hana@contoso.test", verified: true));
+        (await Validator().ValidateAsync("second")).Success.Should().BeFalse("the provider cannot answer the local second factor");
+    }
+
+    [Fact]
     public async Task An_unknown_or_forged_token_is_refused()
     {
         (await Validator().ValidateAsync("never-issued")).Success.Should().BeFalse();

@@ -84,14 +84,7 @@ internal sealed class RabbitMqEventConsumer : BackgroundService
         // connection and channel.
         await CleanupAsync();
 
-        var factory = new ConnectionFactory
-        {
-            HostName = _opts.HostName,
-            Port = _opts.Port,
-            UserName = _opts.UserName,
-            Password = _opts.Password,
-            VirtualHost = _opts.VirtualHost,
-        };
+        var factory = RabbitMqConnectionFactory.Create(_opts);
 
         _connection = await factory.CreateConnectionAsync(ct);
         _channel = await _connection.CreateChannelAsync(cancellationToken: ct);
@@ -134,6 +127,15 @@ internal sealed class RabbitMqEventConsumer : BackgroundService
         }
 
         await _channel.BasicQosAsync(0, (ushort)_opts.PrefetchCount, false, ct);
+
+        if (string.IsNullOrEmpty(_opts.DeadLetterExchange))
+        {
+            // Without a DLX a rejected or exhausted message is dropped by the broker, with no trace of the event.
+            _logger.LogError(
+                "Queue '{Queue}' has no dead-letter exchange: messages that fail or exhaust their retries are dropped. " +
+                "Set EventBus:RabbitMq:DeadLetterExchange to keep them.",
+                _opts.QueueName);
+        }
 
         var consumer = new AsyncEventingBasicConsumer(_channel);
         consumer.ReceivedAsync += OnMessageReceivedAsync;
@@ -251,7 +253,7 @@ internal sealed class RabbitMqEventConsumer : BackgroundService
             _logger.LogError(ex,
                 "RabbitMQ message (routing key '{RoutingKey}') could not be identified; nacking to DLX",
                 routingKey);
-            await channel.BasicNackAsync(deliveryTag, multiple: false, requeue: false, CancellationToken.None);
+            await channel.BasicNackAsync(deliveryTag, multiple: false, requeue: false, ct);
             return;
         }
 
@@ -264,7 +266,7 @@ internal sealed class RabbitMqEventConsumer : BackgroundService
             _logger.LogError(ex,
                 "RabbitMQ message (routing key '{RoutingKey}', event {EventId}) failed after {Attempts} delivery attempts; nacking to DLX",
                 routingKey, eventId, attempt);
-            await channel.BasicNackAsync(deliveryTag, multiple: false, requeue: false, CancellationToken.None);
+            await channel.BasicNackAsync(deliveryTag, multiple: false, requeue: false, ct);
             return;
         }
 

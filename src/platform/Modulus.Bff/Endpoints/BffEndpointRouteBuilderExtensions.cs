@@ -106,7 +106,8 @@ public static class BffEndpointRouteBuilderExtensions
         else
         {
             bff.MapPost("/login", (BffLoginRequest request, HttpContext context, CancellationToken ct) => PasswordLoginAsync(context, name, request, ct))
-                .Loosen(new LoosenedAttribute("Password sign-in: creates the session, so there is none yet") { Framework = true });
+                .Loosen(new LoosenedAttribute("Password sign-in: creates the session, so there is none yet") { Framework = true })
+                .RequireRateLimiting(BffDefaults.LoginRateLimitPolicy(name));
         }
 
         bff.MapPost("/logout", (HttpContext context, string? returnUrl, CancellationToken ct) => LogoutAsync(context, name, returnUrl, ct))
@@ -131,11 +132,9 @@ public static class BffEndpointRouteBuilderExtensions
         return endSessionUrl is null ? Results.NoContent() : Results.Ok(new { endSessionUrl });
     }
 
-    /// <summary>Only local paths: <c>/x</c>, never <c>//host</c> or <c>/\host</c> (open-redirect guard).</summary>
+    /// <summary>Only local paths: <c>/x</c>, never <c>//host</c>, <c>/\host</c> or a control character (open-redirect guard).</summary>
     internal static string SafeReturnUrl(string? returnUrl)
-        => returnUrl is { Length: > 0 } url && url[0] == '/' && (url.Length == 1 || (url[1] != '/' && url[1] != '\\'))
-            ? url
-            : "/";
+        => Modulus.Core.Http.LocalUrl.IsLocal(returnUrl) ? returnUrl! : "/";
 
     private static BffUserClaim[] Claims(ClaimsPrincipal user)
         => user.Claims.Where(c => c.Type != BffDefaults.SessionIdClaim).Select(c => new BffUserClaim(c.Type, c.Value)).ToArray();

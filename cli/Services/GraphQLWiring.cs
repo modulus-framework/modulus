@@ -11,7 +11,7 @@ namespace Modulus.Cli.Services;
 /// </summary>
 internal static partial class GraphQLWiring
 {
-    public const string PackageId = "Cobytelabs.Modulus.GraphQL";
+    public const string PackageId = "Modulus.GraphQL";
 
     /// <summary>The Presentation project references Modulus.GraphQL (GraphQL.NET comes with it).</summary>
     public static string EnsurePresentationProject(string csproj, string frameworkVersion)

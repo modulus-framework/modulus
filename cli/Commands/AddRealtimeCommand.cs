@@ -102,7 +102,7 @@ internal sealed class AddRealtimeCommand : Command<AddRealtimeCommand.Settings>
             AnsiConsole.MarkupLine("  [yellow]![/] No [[IntegrationEventName]] event found: push app messages with IRealtimePublisher, or declare an event and run modulus add-realtime again.");
         AnsiConsole.MarkupLine("  [grey]An event reaches clients once a module publishes it (IModuleBus, or the outbox); IRealtimePublisher pushes anything else.[/]");
         AnsiConsole.MarkupLine("  [grey]Browser: new EventSource(\"/realtime/events\") through the web BFF (same origin, session cookie); listen with addEventListener(\"<event name>\", ...).[/]");
-        AnsiConsole.MarkupLine("  [grey]More than one API replica: add Cobytelabs.Modulus.Realtime.Redis and builder.Services.AddRedisRealtimeBackplane(builder.Configuration).[/]");
+        AnsiConsole.MarkupLine("  [grey]More than one API replica: add Modulus.Realtime.Redis and builder.Services.AddRedisRealtimeBackplane(builder.Configuration).[/]");
         return 0;
     }
 

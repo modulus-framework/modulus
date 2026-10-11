@@ -80,7 +80,8 @@ public sealed class ResourceAuthorizationEndpointTests : IAsyncLifetime
         builder.Services.AddHttpContextAccessor();
         builder.Services.AddScoped<ICurrentUser, HttpUser>();
         builder.Services.AddScoped<ICurrentDataScope, Modulus.Core.Null.NullCurrentDataScope>();
-        builder.Services.AddModulusAuthorization();
+        // These hosts carry the caller's permissions as claims; the grant store is the source by default now.
+        builder.Services.AddModulusAuthorization(o => o.TrustPermissionClaims = true);
         builder.Services.AddEfCoreAuthorizationStores(o => o.UseSqlite(_connection));
         builder.Services.AddModulusAuthorizationManagement();
         builder.Services.AddResourcePolicy<Invoice>(ResourcePolicy.Define(p => p

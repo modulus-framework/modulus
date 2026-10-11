@@ -79,6 +79,45 @@ public sealed class EfPermissionGrantStore(
         return EfPartyStore.ApplyCeiling(db, principal.UserId, result);
     }
 
+    /// <inheritdoc />
+    public async Task<IReadOnlyCollection<PermissionGrant>> GetGrantsAsync(PrincipalGrantQuery principal, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(principal);
+
+        var roles = principal.Roles.ToList();
+        var userKey = principal.UserId?.ToString();
+        if (roles.Count == 0 && userKey is null)
+            return [];
+
+        // The same query as GetGrants, awaited: the authorization path must not block a thread on the database.
+        await using var db = await factory.CreateDbContextAsync(ct);
+        var lowerRoles = (await EfRoleInclusionStore.ExpandAsync(db, await EfPositionStore.WithPositionRolesAsync(db, roles, principal.UserId, ct), ct))
+            .Select(r => r.ToLowerInvariant()).ToList();
+        var lowerUser = userKey?.ToLowerInvariant();
+
+        var grantRows = await db.Grants.AsNoTracking()
+            .Where(g =>
+                (g.HolderType == GrantHolderType.Role && lowerRoles.Contains(g.Holder.ToLower()))
+                || (lowerUser != null
+                    && g.HolderType == GrantHolderType.User
+                    && g.Holder.ToLower() == lowerUser))
+            .ToListAsync(ct);
+
+        var result = grantRows
+            .Select(g => new PermissionGrant(g.HolderType, g.Holder, g.Permission, g.Type))
+            .ToList();
+
+        var scopedRows = await db.ScopedGrants.AsNoTracking()
+            .Where(g =>
+                (g.HolderType == GrantHolderType.Role && lowerRoles.Contains(g.Holder.ToLower()))
+                || (lowerUser != null
+                    && g.HolderType == GrantHolderType.User
+                    && g.Holder.ToLower() == lowerUser))
+            .ToListAsync(ct);
+        result.AddRange(scopedRows.Select(ToGrant).OfType<PermissionGrant>());
+        return await EfPartyStore.ApplyCeilingAsync(db, principal.UserId, result, ct);
+    }
+
     // A stored scope that no longer parses is dropped, never widened to "the whole company".
     private static PermissionGrant? ToGrant(ScopedGrantRow row)
         => PermissionScope.TryParse(row.Scope, out var scope)

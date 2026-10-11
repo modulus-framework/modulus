@@ -130,7 +130,7 @@ public sealed class RealtimeCommandTests : IDisposable
 
         Run(AppDir).Should().Be(0);
 
-        Read("src/API/Shop.Api/Shop.Api.csproj").Should().Contain("Cobytelabs.Modulus.Realtime");
+        Read("src/API/Shop.Api/Shop.Api.csproj").Should().Contain("Modulus.Realtime");
         Read("src/API/Shop.Api/Program.cs").Should()
             .Contain("realtime.AddEvent<ProductCreatedIntegrationEvent>(_ => RealtimeAudience.Permission(\"catalog:products:manage\"));")
             .And.Contain("app.MapModulusRealtime();");

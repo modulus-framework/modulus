@@ -40,3 +40,13 @@ Modulus.EventBus.RabbitMQ.RabbitMqOptions.UserName.set -> void
 Modulus.EventBus.RabbitMQ.RabbitMqOptions.VirtualHost.get -> string!
 Modulus.EventBus.RabbitMQ.RabbitMqOptions.VirtualHost.set -> void
 static Modulus.EventBus.RabbitMQ.Extensions.RabbitMqEventBusExtensions.AddRabbitMqEventBus(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<Modulus.EventBus.RabbitMQ.RabbitMqOptions!>? configure = null, string! sectionName = "EventBus:RabbitMq") -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+Modulus.EventBus.RabbitMQ.RabbitMqOptions.Ssl.get -> Modulus.EventBus.RabbitMQ.RabbitMqSslOptions!
+Modulus.EventBus.RabbitMQ.RabbitMqOptions.Ssl.set -> void
+Modulus.EventBus.RabbitMQ.RabbitMqSslOptions
+Modulus.EventBus.RabbitMQ.RabbitMqSslOptions.Enabled.get -> bool
+Modulus.EventBus.RabbitMQ.RabbitMqSslOptions.Enabled.set -> void
+Modulus.EventBus.RabbitMQ.RabbitMqSslOptions.RabbitMqSslOptions() -> void
+Modulus.EventBus.RabbitMQ.RabbitMqSslOptions.ServerName.get -> string?
+Modulus.EventBus.RabbitMQ.RabbitMqSslOptions.ServerName.set -> void
+Modulus.EventBus.RabbitMQ.RabbitMqSslOptions.Version.get -> System.Security.Authentication.SslProtocols
+Modulus.EventBus.RabbitMQ.RabbitMqSslOptions.Version.set -> void

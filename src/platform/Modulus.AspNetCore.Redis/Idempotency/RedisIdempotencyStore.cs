@@ -39,6 +39,10 @@ public sealed class RedisIdempotencyStore(
     private string ClaimKey(string key) => storeOptions.KeyPrefix + key + ":claim";
     private string DataKey(string key) => storeOptions.KeyPrefix + key + ":data";
 
+    // The request fingerprint lives on its own key for the retention period, not on the claim: a claim expires after the
+    // lease, and a request that outlives it used to complete with no fingerprint, so a retry with a different body was replayed.
+    private string FingerprintKey(string key) => storeOptions.KeyPrefix + key + ":fp";
+
     /// <inheritdoc />
     public async Task<IdempotencyResult> TryBeginAsync(
         string key, string fingerprint, CancellationToken ct)
@@ -50,6 +54,9 @@ public sealed class RedisIdempotencyStore(
         var data = await db.StringGetAsync(DataKey(key));
         if (data.HasValue && Deserialize(data) is { } completed)
             return IdempotencyResult.Completed(completed.Response, KnownFingerprint(completed));
+
+        // The first caller's fingerprint is kept for the retention period (SET NX: a later caller never replaces it).
+        await db.StringSetAsync(FingerprintKey(key), fingerprint, Ttl, keepTtl: false, When.NotExists);
 
         // Atomic claim: SET NX — exactly one concurrent caller wins.
         var claimed = await db.StringSetAsync(
@@ -71,10 +78,10 @@ public sealed class RedisIdempotencyStore(
     public async Task CompleteAsync(string key, CachedResponse response, CancellationToken ct)
     {
         var db = redis.GetDatabase();
-        var claimFingerprint = await db.StringGetAsync(ClaimKey(key));
-        var entry = new StoredEntry(
-            claimFingerprint.HasValue ? claimFingerprint.ToString() : string.Empty,
-            response);
+        var stored = await db.StringGetAsync(FingerprintKey(key));
+        if (!stored.HasValue)
+            stored = await db.StringGetAsync(ClaimKey(key));
+        var entry = new StoredEntry(stored.HasValue ? stored.ToString() : string.Empty, response);
         // When.NotExists: if our claim expired and another node re-claimed and
         // is (or was) processing this key, its completion wins — a late
         // completer must not clobber the current owner's stored response

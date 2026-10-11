@@ -79,7 +79,7 @@ public sealed class BffTemplateTests
 
         var csproj = _engine.Render("bff/bff.csproj", model);
         csproj.Should().Contain($"<ModulusAppKind>bff-{client}</ModulusAppKind>");
-        csproj.Should().Contain("Cobytelabs.Modulus.Bff");
+        csproj.Should().Contain("Modulus.Bff");
 
         var program = _engine.Render("bff/Program", model);
         program.Should().Contain($".Add{pascal}Client(\"{client}\")");

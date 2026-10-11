@@ -7,6 +7,57 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security — production readiness review (2026-10-11)
+- **Password-reset and confirmation mail go to the stored address.** The queue carries the account id only. A lookalike address
+  (for example one that normalizes to the victim's address) no longer receives the token. Tests: `AccountMailLookalikeTests`.
+- **Two-factor setup is refused while two-factor is enabled** (409). The owner disables it first, which needs the password. The
+  password-checked disable now counts toward lock-out.
+- **Introspection reports only live access tokens.** A token counts only with a valid stored entry of access-token type and, when it
+  carries `sid`, an active session. Before, revoked tokens, ended sessions and id tokens were reported active. The issuer also matched
+  the token's trailing slash, which had made every token inactive.
+- **Open redirects through control characters are refused** (`Modulus.Core.Http.LocalUrl`), in SAML and the BFF.
+- **External sign-in cannot take over a local account.** A directory or SAML address links to an existing account only when the
+  provider asserts it verified and linking is on (`SamlProviderOptions.EmailAssertedVerified`; LDAP directories are trusted for their
+  addresses). An unverified match is refused (`email-in-use`). SAML and federated sign-in refuse an account with a local second factor,
+  because neither path can answer a code challenge. LDAP keeps asking for the code.
+- **LDAP lock-out applies before the directory is asked**, and a wrong directory password counts toward it.
+- **The token refresh grant fails closed** when no user store resolves.
+- **Tenant membership is checked for every authentication scheme**, not only the default one, so a BFF client's caller cannot select a
+  company they are not a member of.
+- **Password sign-in on a web BFF client is rate limited by default** (10 per minute per address), with or without a `RateLimit`.
+- **The grant read on the authorization path is asynchronous** (`IPermissionGrantStore.GetGrantsAsync`); the EF store awaits its queries.
+- **The Redis idempotency store keeps the request fingerprint for the retention period**, so a request that outlives its claim is still
+  checked for reuse. The in-memory store refuses new keys when full (`Idempotency:MaxEntries`) and never drops a stored response on abandon.
+- **The shop-floor PIN is refused for an account of another company**, independent of the store's query filter.
+- **Local file storage compares paths case-sensitively on Linux**, so `../STORE` is no longer accepted as inside `store`.
+
+**Breaking defaults (secure by default):**
+- `Storage:IsolateTenants` is on once multi-tenancy is registered. **Opt out:** `Storage:IsolateTenants = false`. Existing files keep their
+  paths, so enabling it on an upgraded multi-tenant app moves tenant reads to `tenants/{id}/`.
+- `TrustPermissionClaims` defaults to `false`: the grant store is the only source of permissions. **Opt out:**
+  `AddModulusAuthorization(o => o.TrustPermissionClaims = true)`, only for an issuer you trust to mint fine-grained claims.
+- A BFF bearer client with no `Audiences`, `AllowedClientIds` or `ClientId` refuses to start. **Opt out:** set one of them.
+- The BFF web session cookie is `Secure` outside Development (`SecurePolicy = Always`).
+- RabbitMQ has no default account: `UserName` and `Password` are required, and `AutoAck` is refused. **Opt in to TLS:** `EventBus:RabbitMq:Ssl:Enabled`.
+
+### Changed — data and messaging
+- **Mongo range deletes honour paging.** `DeleteRangeAsync` with `Skip`/`Take` deletes exactly that page. A listing sorts before it pages
+  when the sort is not translated to the server, and a client-side scan is bounded by `MaxClientSideScan` (10 000).
+- **The Mongo inbox refuses to start without its unique claim index.** `AddMongoInbox(..., skipIndexCreation: true)` opts out.
+- **The Mongo outbox poller** drains a backlog without sleeping and honours leader election, as the EF poller does. It no longer swallows
+  cancellations that were not a shutdown.
+- **Kafka's consume loop survives unexpected errors** (logs, backs off, keeps consuming), closes the consumer on every exit, and reuses one
+  dead-letter producer.
+- **RabbitMQ publishes share one publisher channel**, reopened when the broker closes it. Nacks pass the cancellation token. A queue with no
+  dead-letter exchange logs an error at startup.
+- **SQL Server row-level security policies are rebuilt in one transaction**, so a failure cannot leave a table without its filter.
+- **`OutboxDepth` reports deltas per source** (`ReportOutboxDepth`), so a gauge no longer accumulates across processors.
+- **The template CLI** downloads packages from the NuGet flat container (not `/download/`), reads local feeds, refuses a download that is not
+  the requested package, and reports download failures instead of hiding them.
+
+### Deprecated
+- `OpenTelemetry`: `UseModulusLogging()` is a no-op and is marked `[Obsolete]`; remove the call.
+
 ### Security — plan-doc audit remediation (round 3)
 - **Step-up cannot be bypassed by role name.** Only a client-credentials token (the `modulus:machine` claim) with an `integration:` role is exempt. The
   `integration:` role prefix is reserved: `ModulusUserManager` refuses to assign it (`ReservedRole`), which covers the admin API, SCIM and the

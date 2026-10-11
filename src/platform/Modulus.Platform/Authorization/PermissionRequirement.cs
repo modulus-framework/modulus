@@ -53,16 +53,16 @@ internal sealed class PermissionRequirementHandler(
     : AuthorizationHandler<PermissionRequirement>
 {
     private readonly TimeProvider _clock = clock ?? TimeProvider.System;
-    private readonly bool _trustClaims = options?.Value.TrustPermissionClaims ?? true;
+    private readonly bool _trustClaims = options?.Value.TrustPermissionClaims ?? false;
 
     private const string WildcardSuffix = ":*";
 
-    protected override Task HandleRequirementAsync(
+    protected override async Task HandleRequirementAsync(
         AuthorizationHandlerContext context, PermissionRequirement requirement)
     {
         var principal = context.User;
         if (principal.Identity?.IsAuthenticated != true)
-            return Task.CompletedTask;
+            return;
 
         var query = BuildQuery(principal);
 
@@ -71,7 +71,7 @@ internal sealed class PermissionRequirementHandler(
         // checks against the same principal cost ONE store read per request.
         // Never resolve this from the root provider — a root-scope cache would
         // serve stale grants until restart.
-        var grants = grantStore.GetGrants(query);
+        var grants = await grantStore.GetGrantsAsync(query).ConfigureAwait(false);
 
         // A store-level Deny for this permission always wins, even over a
         // token-embedded permission claim — otherwise a revoked grant would
@@ -79,7 +79,7 @@ internal sealed class PermissionRequirementHandler(
         // raw grants (not the resolved set) so a covering wildcard deny also
         // blocks a matching claim.
         if (IsExplicitlyDenied(grants, requirement.Permission))
-            return Task.CompletedTask;
+            return;
 
         if ((_trustClaims && principal.HasClaim("permission", requirement.Permission))
             || resolver.Resolve(query, grants).Contains(requirement.Permission))
@@ -88,13 +88,11 @@ internal sealed class PermissionRequirementHandler(
             if (stepUp is not null && stepUp.Requires(requirement.Permission) && !stepUp.IsSatisfiedBy(principal))
             {
                 context.Fail(new StepUpRequiredReason(this));
-                return Task.CompletedTask;
+                return;
             }
 
             context.Succeed(requirement);
         }
-
-        return Task.CompletedTask;
     }
 
     private bool IsExplicitlyDenied(IReadOnlyCollection<PermissionGrant> grants, string permission)

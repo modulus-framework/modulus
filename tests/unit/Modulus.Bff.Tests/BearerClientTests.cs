@@ -202,6 +202,27 @@ public sealed class BearerClientTests
     }
 
     [Fact]
+    public async Task A_bearer_client_with_no_audience_or_client_id_refuses_to_start()
+    {
+        // Without any of these the client would accept every token its authority issued (any application's).
+        var settings = Settings();
+        settings.Remove("Bff:Clients:mobile:ClientId");
+        var act = () => BffTestHost.StartAsync(settings, bff => bff.AddMobileClient());
+        (await act.Should().ThrowAsync<Microsoft.Extensions.Options.OptionsValidationException>())
+            .Which.Message.Should().Contain("would accept any token");
+    }
+
+    [Fact]
+    public async Task A_bearer_client_with_an_audience_starts()
+    {
+        var settings = Settings();
+        settings.Remove("Bff:Clients:mobile:ClientId");
+        settings["Bff:Clients:mobile:Audiences:0"] = "shop-api";
+        await using var host = await BffTestHost.StartAsync(settings, bff => bff.AddMobileClient());
+        host.Should().NotBeNull();
+    }
+
+    [Fact]
     public async Task Clients_sharing_a_host_need_distinct_prefixes()
     {
         var settings = Settings();

@@ -23,6 +23,17 @@ public sealed class CachedPermissionGrantStore : IPermissionGrantStore
     public CachedPermissionGrantStore(IPermissionGrantStore inner)
         => _inner = inner;
 
+    public async Task<IReadOnlyCollection<PermissionGrant>> GetGrantsAsync(PrincipalGrantQuery principal, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(principal);
+        var key = CacheKey(principal);
+        if (_cache.TryGetValue(key, out var cached))
+            return cached;
+        var grants = await _inner.GetGrantsAsync(principal, ct).ConfigureAwait(false);
+        _cache[key] = grants;
+        return grants;
+    }
+
     public IReadOnlyCollection<PermissionGrant> GetGrants(PrincipalGrantQuery principal)
     {
         ArgumentNullException.ThrowIfNull(principal);

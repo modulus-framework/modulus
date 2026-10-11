@@ -8,8 +8,10 @@ namespace Modulus.Cli.Services;
 internal static class FrameworkVersion
 {
     // Keep in sync with <VersionPrefix> in build/Modulus.Packaging.props —
-    // generated apps pin Cobytelabs.Modulus.* packages at this version.
-    public const string Current = "1.4.0";
+    // generated apps pin Modulus.* packages at this version.
+    // MODULUS_FRAMEWORK_VERSION points generated apps at another build, e.g. a local pack (1.4.0-dev.<sha>).
+    public static string Current { get; } =
+        Environment.GetEnvironmentVariable("MODULUS_FRAMEWORK_VERSION") is { Length: > 0 } v ? v : "1.4.0";
 
     // Keep in sync with Microsoft.Extensions.Telemetry.Abstractions in Directory.Packages.props: every project of a generated
     // app references it so classified [LoggerMessage] parameters are redacted (RedactionTemplateTests checks it).
@@ -110,7 +112,7 @@ internal sealed class AppModel
     public string DbProvider { get; set; } = "SQLite";
 
     /// <summary>
-    /// Path to a local NuGet feed containing the Cobytelabs.Modulus.* packages
+    /// Path to a local NuGet feed containing the Modulus.* packages
     /// (from <c>--package-source</c>). When set, the generated NuGet.config
     /// registers it as an ACTIVE <c>modulus-local</c> source; when null only
     /// nuget.org is configured and a restore of the framework packages will

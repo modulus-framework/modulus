@@ -266,6 +266,53 @@ public sealed class TenantMiddlewareTests
             ctx.Response.StatusCode.Should().Be(StatusCodes.Status403Forbidden);
     }
 
+    // A scheme other than the default one: an endpoint (a BFF client, say) authenticates its callers with it.
+    private sealed class ClientSchemeHandler(
+        Microsoft.Extensions.Options.IOptionsMonitor<Microsoft.AspNetCore.Authentication.AuthenticationSchemeOptions> options,
+        ILoggerFactory loggers,
+        System.Text.Encodings.Web.UrlEncoder encoder)
+        : Microsoft.AspNetCore.Authentication.AuthenticationHandler<Microsoft.AspNetCore.Authentication.AuthenticationSchemeOptions>(options, loggers, encoder)
+    {
+        public const string SchemeName = "ClientScheme";
+
+        protected override Task<Microsoft.AspNetCore.Authentication.AuthenticateResult> HandleAuthenticateAsync()
+        {
+            var identity = new ClaimsIdentity(new[] { new Claim(ClaimTypes.NameIdentifier, UserId.ToString()!) }, SchemeName);
+            var ticket = new Microsoft.AspNetCore.Authentication.AuthenticationTicket(new ClaimsPrincipal(identity), SchemeName);
+            return Task.FromResult(Microsoft.AspNetCore.Authentication.AuthenticateResult.Success(ticket));
+        }
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task With_membership_required_a_caller_authenticated_only_by_another_scheme_is_checked_too(bool isMember)
+    {
+        // The default scheme sees no one; the endpoint's own client scheme signs this member in and selects B by header.
+        var store = new FakeStore(TenantA, TenantB);
+        var memberships = new InMemoryTenantMembershipStore();
+        memberships.Add(UserId, TenantA.TenantId);
+        if (isMember)
+            memberships.Add(UserId, TenantB.TenantId);
+        var reached = false;
+        var ctx = BuildContext(
+            store,
+            headerTenantId: TenantB.TenantId,
+            claimTenantId: null,
+            authenticated: false,
+            configureServices: s =>
+            {
+                RequireMembership(s, memberships);
+                s.AddAuthentication().AddScheme<Microsoft.AspNetCore.Authentication.AuthenticationSchemeOptions, ClientSchemeHandler>(ClientSchemeHandler.SchemeName, _ => { });
+            });
+
+        await InvokeAsync(ctx, store, next: _ => { reached = true; return Task.CompletedTask; });
+
+        reached.Should().Be(isMember);
+        if (!isMember)
+            ctx.Response.StatusCode.Should().Be(StatusCodes.Status403Forbidden);
+    }
+
     [Fact]
     public async Task With_membership_required_an_account_without_a_user_id_is_rejected()
     {

@@ -166,7 +166,7 @@ type Line = {type: 'comment' | 'command'; text: string};
 
 const terminalLines: Line[] = [
   {type: 'comment', text: '# Install the CLI'},
-  {type: 'command', text: 'dotnet tool install -g --add-source ./nupkg Cobytelabs.Modulus.Cli'},
+  {type: 'command', text: 'dotnet tool install -g --add-source ./nupkg Modulus.Cli'},
   {type: 'comment', text: ''},
   {type: 'comment', text: '# Create an application'},
   {type: 'command', text: 'modulus app MyApp'},

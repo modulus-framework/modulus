@@ -7,7 +7,7 @@ namespace Modulus.Cli.Commands;
 
 /// <summary>
 /// <c>modulus outdated</c> — shows all packages that have a newer version
-/// available on NuGet. Reports framework (<c>Cobytelabs.Modulus.*</c>) and
+/// available on NuGet. Reports framework (<c>Modulus.*</c>) and
 /// third-party packages with their current vs. latest version and the
 /// severity of the version bump (patch / minor / major).
 /// </summary>
@@ -19,7 +19,7 @@ internal sealed class OutdatedCommand : Command<OutdatedCommand.Settings>
         [CommandOption("-o|--output")]
         public string? Output { get; init; }
 
-        [Description("Only check Cobytelabs.Modulus.* framework packages")]
+        [Description("Only check Modulus.* framework packages")]
         [CommandOption("--framework-only")]
         public bool FrameworkOnly { get; init; }
     }
@@ -77,7 +77,7 @@ internal sealed class OutdatedCommand : Command<OutdatedCommand.Settings>
                 return 0;
             }
 
-            // Filter to only Cobytelabs.Modulus.* packages if framework-only mode.
+            // Filter to only Modulus.* packages if framework-only mode.
             var packagesToCheck = s.FrameworkOnly
                 ? currentVersions.Where(kvp => ThirdPartyPackages.IsFrameworkPackage(kvp.Key))
                     .ToDictionary(kvp => kvp.Key, kvp => kvp.Value)

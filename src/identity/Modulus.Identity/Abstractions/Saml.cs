@@ -128,6 +128,12 @@ public sealed class SamlProviderOptions
     /// <summary>Links a first sign-in to an existing local account with the same e-mail address. Only when the identity provider is the authority for addresses. Default false.</summary>
     public bool LinkExistingByEmail { get; set; }
 
+    /// <summary>
+    /// Says the provider verifies the addresses it asserts, so a first sign-in may link one to an existing account (with
+    /// <see cref="LinkExistingByEmail"/>). Default false: an assertion's address is not proof that the person owns it.
+    /// </summary>
+    public bool EmailAssertedVerified { get; set; }
+
     /// <summary>Group → role, as for <see cref="LdapDirectoryOptions.GroupRoles"/> (the value of the group attribute is the key, case-insensitive).</summary>
     public Dictionary<string, string> GroupRoles { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 

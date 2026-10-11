@@ -35,6 +35,7 @@ internal sealed class NodeLocalIdempotencyWarning(
 internal sealed class IdempotencyStoreSweeper(
     IServiceProvider serviceProvider,
     IOptions<IdempotencyOptions> options,
+    ILogger<IdempotencyStoreSweeper> logger,
     TimeProvider? clock = null) : BackgroundService
 {
     private readonly TimeProvider _clock = clock ?? TimeProvider.System;
@@ -61,10 +62,11 @@ internal sealed class IdempotencyStoreSweeper(
             {
                 break;
             }
-            catch
+            catch (Exception ex)
             {
-                // Swallow — sweeper is best-effort; transient DI errors should
-                // not crash the host. Next cycle will retry.
+                // Best-effort: a transient error must not crash the host, and the next cycle retries. Logged so a sweeper
+                // that never succeeds is visible (expired entries would otherwise pile up unnoticed).
+                logger.LogWarning(ex, "Idempotency store sweep failed; the next cycle will retry.");
             }
         }
     }

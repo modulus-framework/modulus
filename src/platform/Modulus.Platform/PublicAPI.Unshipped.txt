@@ -1205,7 +1205,7 @@ Modulus.Security.SecurityContextOptions.SecurityContextOptions() -> void
 static Modulus.Security.SecurityContextExtensions.AddModulusSecurityContext(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<Modulus.Security.SecurityContextOptions!>? configure = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static Modulus.Security.SecurityContextExtensions.UseModulusSecurityContext(this Microsoft.AspNetCore.Builder.IApplicationBuilder! app) -> Microsoft.AspNetCore.Builder.IApplicationBuilder!
 Modulus.MultiTenancy.VerifiedTenantContextRestorer
-Modulus.Storage.StorageOptions.IsolateTenants.get -> bool
+Modulus.Storage.StorageOptions.IsolateTenants.get -> bool?
 Modulus.Storage.StorageOptions.IsolateTenants.set -> void
 Modulus.Storage.TenantScopedFileStorage
 Modulus.Storage.TenantScopedFileStorage.DeleteAsync(string! path, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
@@ -1805,3 +1805,5 @@ static Modulus.Networking.OutboundAddressGuard.ConnectAsync(System.Net.Http.Sock
 static Modulus.Networking.OutboundAddressGuard.CreateCheckedHandler() -> System.Net.Http.SocketsHttpHandler!
 static Modulus.Networking.OutboundAddressGuard.IsPublic(System.Net.IPAddress! address) -> bool
 static Modulus.Networking.OutboundAddressGuard.IsReservedHost(System.Uri! uri) -> bool
+Modulus.Authorization.Grants.CachedPermissionGrantStore.GetGrantsAsync(Modulus.Authorization.Grants.PrincipalGrantQuery! principal, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyCollection<Modulus.Authorization.Grants.PermissionGrant!>!>!
+Modulus.Authorization.Grants.IPermissionGrantStore.GetGrantsAsync(Modulus.Authorization.Grants.PrincipalGrantQuery! principal, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyCollection<Modulus.Authorization.Grants.PermissionGrant!>!>!

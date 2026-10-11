@@ -668,3 +668,6 @@ Modulus.Core.Abstractions.IStepUpGate.IsSatisfied(string! permission) -> bool
 Modulus.Core.Abstractions.ITenantMemberProvisioner
 Modulus.Core.Abstractions.ITenantMemberProvisioner.AddMemberAsync(System.Guid userId, System.Guid tenantId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
 Modulus.Core.Abstractions.ITenantMemberProvisioner.RemoveMemberAsync(System.Guid userId, System.Guid tenantId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.Core.Http.LocalUrl
+static Modulus.Core.Http.LocalUrl.IsLocal(string? url) -> bool
+static Modulus.Observability.ModulusMeters.ReportOutboxDepth(string! source, long depth) -> void

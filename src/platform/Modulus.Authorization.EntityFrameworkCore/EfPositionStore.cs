@@ -169,6 +169,35 @@ public sealed class EfPositionStore(IDbContextFactory<AuthorizationStoreDbContex
             .Distinct(StringComparer.OrdinalIgnoreCase)];
     }
 
+    /// <summary>Asynchronous lookup over an open context, for the grant read on the authorization path.</summary>
+    internal static async Task<IReadOnlyList<string>> RolesOfAsync(AuthorizationStoreDbContext db, Guid userId, DateTimeOffset now, CancellationToken ct)
+    {
+        var positionIds = (await db.PositionAssignments.AsNoTracking()
+                .Where(a => a.UserId == userId)
+                .ToListAsync(ct))
+            .Where(a => a.ValidFrom <= now && (a.ValidUntil == null || a.ValidUntil > now))
+            .Select(a => a.PositionId)
+            .ToList();
+        if (positionIds.Count == 0)
+            return [];
+
+        var positions = await db.Positions.AsNoTracking()
+            .Where(p => positionIds.Contains(p.Id) && p.IsActive)
+            .ToListAsync(ct);
+        return [.. positions.SelectMany(p => ParseRoles(p.Roles)).Distinct(StringComparer.OrdinalIgnoreCase)];
+    }
+
+    /// <summary>Asynchronous <see cref="WithPositionRoles"/> over an open context.</summary>
+    internal static async Task<IReadOnlyCollection<string>> WithPositionRolesAsync(AuthorizationStoreDbContext db, IEnumerable<string> roles, Guid? userId, CancellationToken ct)
+    {
+        var given = roles.ToList();
+        if (userId is not { } id)
+            return given;
+        var seen = new HashSet<string>(given, StringComparer.OrdinalIgnoreCase);
+        given.AddRange((await RolesOfAsync(db, id, TimeProvider.System.GetUtcNow(), ct)).Where(seen.Add));
+        return given;
+    }
+
     /// <summary>The roles presented plus those of the user's current positions.</summary>
     internal static IReadOnlyCollection<string> WithPositionRoles(AuthorizationStoreDbContext db, IEnumerable<string> roles, Guid? userId)
     {

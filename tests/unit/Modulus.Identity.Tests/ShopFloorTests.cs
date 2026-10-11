@@ -64,7 +64,8 @@ public sealed class ShopFloorTests
             await h.Validator.ValidateAsync(Company, "E1", "000012");
         var user = await h.Users.Users.SingleAsync(u => u.EmployeeCode == "E1");
 
-        (await h.Accounts.SetPinAsync(user.Id, "7391")).Succeeded.Should().BeTrue();
+        using (h.Tenant.Change(new TenantInfo(Company, "acme")))
+            (await h.Accounts.SetPinAsync(user.Id, "7391")).Succeeded.Should().BeTrue();
 
         (await h.Validator.ValidateAsync(Company, "E1", "7391")).Success.Should().BeTrue();
         (await h.Validator.ValidateAsync(Company, "E1", "482913")).Success.Should().BeFalse();
@@ -203,6 +204,19 @@ public sealed class ShopFloorTests
     }
 
     [Fact]
+    public async Task A_pin_cannot_be_set_for_an_account_of_another_company()
+    {
+        await using var h = await Harness.CreateAsync();
+        await h.Accounts.CreateAsync(Company, "E1", "482913");
+        var user = await h.Users.Users.SingleAsync(u => u.EmployeeCode == "E1");
+
+        using (h.Tenant.Change(new TenantInfo(OtherCompany, "other")))
+            (await h.Accounts.SetPinAsync(user.Id, "7391")).Succeeded.Should().BeFalse();
+
+        (await h.Validator.ValidateAsync(Company, "E1", "482913")).Success.Should().BeTrue("the PIN is unchanged");
+    }
+
+    [Fact]
     public async Task An_administrator_reset_can_demand_a_new_pin_too()
     {
         await using var h = await Harness.CreateAsync();
@@ -210,9 +224,37 @@ public sealed class ShopFloorTests
         var user = await h.Users.Users.SingleAsync(u => u.EmployeeCode == "E1");
 
         (await h.Validator.ValidateAsync(Company, "E1", "482913")).Success.Should().BeTrue();
-        await h.Accounts.SetPinAsync(user.Id, "7391", mustChange: true);
+        using (h.Tenant.Change(new TenantInfo(Company, "acme")))
+            await h.Accounts.SetPinAsync(user.Id, "7391", mustChange: true);
 
         (await h.Validator.ValidateAsync(Company, "E1", "7391")).Error.Should().Be(ShopFloorGrant.PinChangeRequiredError);
+    }
+
+    /// <summary>
+    /// The company the caller is in, for the explicit check. It is not "available" to the query filters, so the store behaves
+    /// as it does for the null tenant and the accounts stay visible; the check under test does not depend on the filter.
+    /// </summary>
+    internal sealed class SwitchableTenant : ICurrentTenant
+    {
+        public Guid? TenantId { get; private set; }
+
+        public string? TenantSlug => null;
+
+        public bool IsAvailable => false;
+
+        public bool IsHost => TenantId is null;
+
+        public IDisposable Change(TenantInfo? tenant)
+        {
+            var previous = TenantId;
+            TenantId = tenant?.TenantId;
+            return new Restore(() => TenantId = previous);
+        }
+
+        private sealed class Restore(Action undo) : IDisposable
+        {
+            public void Dispose() => undo();
+        }
     }
 
     private sealed class Harness : IAsyncDisposable
@@ -240,7 +282,8 @@ public sealed class ShopFloorTests
 
             var services = new ServiceCollection();
             services.AddLogging();
-            services.AddScoped<ICurrentTenant, Modulus.Core.Null.NullCurrentTenant>();
+            services.AddSingleton<SwitchableTenant>();
+            services.AddScoped<ICurrentTenant>(sp => sp.GetRequiredService<SwitchableTenant>());
             services.AddDbContext<ModulusIdentityDbContext>(o => o.UseSqlite(connection));
             services.AddModulusIdentity<ModulusIdentityDbContext, ModulusUser, ModulusRole>(configuration);
             services.AddModulusShopFloor<ModulusUser, ModulusRole>(configuration);
@@ -258,6 +301,8 @@ public sealed class ShopFloorTests
         public RoleManager<ModulusRole> Roles => _scope.ServiceProvider.GetRequiredService<RoleManager<ModulusRole>>();
 
         public IShopFloorAccountService Accounts => _scope.ServiceProvider.GetRequiredService<IShopFloorAccountService>();
+
+        public SwitchableTenant Tenant => _scope.ServiceProvider.GetRequiredService<SwitchableTenant>();
 
         internal IShopFloorCredentialValidator Validator => _scope.ServiceProvider.GetRequiredService<IShopFloorCredentialValidator>();
 

@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- Roslyn analyzers shipped inside the Cobytelabs.Modulus.AspNetCore package (analyzers/dotnet/cs), not on their own. -->
+  <!-- Roslyn analyzers shipped inside the Modulus.AspNetCore package (analyzers/dotnet/cs), not on their own. -->
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <LangVersion>latest</LangVersion>

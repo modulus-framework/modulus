@@ -33,7 +33,7 @@ internal class UiFileGenerator
         var generated = new List<string>();
 
         // Resolve templates package
-        var templatesPath = await _resolver.ResolveAsync("Modulus.Ui.Templates", "0.9.0");
+        var templatesPath = await _resolver.ResolveAsync("Modulus.Ui.Templates", UiTemplatePackage.DefaultVersion);
         if (templatesPath == null)
         {
             Ux.Warning("Could not resolve templates package; skipping UI generation");
@@ -43,10 +43,7 @@ internal class UiFileGenerator
         try
         {
             // Load ui-kit.json manifest
-            var manifestPath = Path.Combine(
-                Path.GetDirectoryName(templatesPath)!,
-                "..", "..", "ui-kit.json"
-            );
+            var manifestPath = Path.Combine(Path.GetDirectoryName(templatesPath)!, "ui-kit.json");
 
             if (!File.Exists(manifestPath))
             {
@@ -84,8 +81,9 @@ internal class UiFileGenerator
             // Generate each template file
             foreach (var fileElement in engineFiles.EnumerateArray())
             {
-                var pattern = fileElement.GetString();
-                if (string.IsNullOrEmpty(pattern)) continue;
+                var entry = ReadFileEntry(fileElement);
+                if (string.IsNullOrEmpty(entry.FilePath) || entry.Skip) continue;
+                var pattern = entry.FilePath;
 
                 try
                 {
@@ -94,7 +92,7 @@ internal class UiFileGenerator
                     var fullPath = Path.Combine(outputPath, outputFile);
 
                     // Determine template file name
-                    var templateFileName = GetTemplateFileName(pattern, uiEngine);
+                    var templateFileName = entry.Template ?? GetTemplateFileName(pattern, uiEngine);
                     var templatePath = Path.Combine(templatesPath, uiEngine, templateFileName);
 
                     if (!File.Exists(templatePath))
@@ -129,6 +127,32 @@ internal class UiFileGenerator
             return generated;
         }
     }
+
+    /// <summary>
+    /// Reads one manifest entry. A plain string is the legacy form, matched to a template by name. An object
+    /// <c>{ "path", "template" }</c> names its template explicitly; a null template means this path makes no file here.
+    /// </summary>
+    private static (string? FilePath, string? Template, bool Skip) ReadFileEntry(JsonElement element)
+    {
+        if (element.ValueKind == JsonValueKind.String)
+            return LegacyEntry(element.GetString());
+
+        if (element.ValueKind != JsonValueKind.Object || !element.TryGetProperty("path", out var pathElement))
+            return (null, null, true);
+
+        var path = pathElement.GetString();
+        if (!element.TryGetProperty("template", out var template))
+            return LegacyEntry(path);
+
+        return template.ValueKind == JsonValueKind.Null
+            ? (path, null, true)
+            : (path, template.GetString(), false);
+    }
+
+    // A Razor PageModel has no view template. Without this skip, the view template would be rendered into Index.cshtml.cs.
+    private static (string? FilePath, string? Template, bool Skip) LegacyEntry(string? path)
+        => (path, null, path is not null && (path.EndsWith(".cshtml.cs", StringComparison.OrdinalIgnoreCase)
+            || path.EndsWith(".razor.cs", StringComparison.OrdinalIgnoreCase)));
 
     private string SubstitutePlaceholders(string pattern, string entity, string plural)
     {

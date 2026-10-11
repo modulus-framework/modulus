@@ -109,6 +109,18 @@ public sealed class EfPartyStore(IDbContextFactory<AuthorizationStoreDbContext> 
     /// Applies the ceiling to the grants of a user: an account with no party link keeps them all; a linked one keeps its
     /// denies and the grants the kind's ceiling covers.
     /// </summary>
+    internal static async Task<List<PermissionGrant>> ApplyCeilingAsync(AuthorizationStoreDbContext db, Guid? userId, List<PermissionGrant> grants, CancellationToken ct)
+    {
+        if (userId is not { } id)
+            return grants;
+        var kind = await db.PartyLinks.AsNoTracking().Where(l => l.UserId == id).Select(l => l.Kind).FirstOrDefaultAsync(ct);
+        if (kind is null)
+            return grants;
+
+        var ceiling = await db.PartyCeilings.AsNoTracking().Where(c => c.Kind == kind).Select(c => c.Permission).ToListAsync(ct);
+        return [.. grants.Where(g => g.Type == PermissionGrantType.Deny || Covered(ceiling, g.Permission))];
+    }
+
     internal static List<PermissionGrant> ApplyCeiling(AuthorizationStoreDbContext db, Guid? userId, List<PermissionGrant> grants)
     {
         if (userId is not { } id)

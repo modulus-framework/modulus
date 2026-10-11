@@ -28,8 +28,8 @@ public sealed class HybridCacheTemplateTests
         program.Should().Contain("builder.Services.AddModulusFusionCache(builder.Configuration);");
         program.Should().NotContain("AddRedisFusionCache(builder.Configuration)");
         program.Should().Contain("using Modulus.Caching;");
-        csproj.Should().Contain("Cobytelabs.Modulus.Platform");
-        csproj.Should().NotContain("Cobytelabs.Modulus.Caching.Redis");
+        csproj.Should().Contain("Modulus.Platform");
+        csproj.Should().NotContain("Modulus.Caching.Redis");
     }
 
     [Fact]
@@ -40,7 +40,7 @@ public sealed class HybridCacheTemplateTests
 
         program.Should().Contain("builder.Services.AddRedisFusionCache(builder.Configuration);");
         program.Should().NotContain("builder.Services.AddModulusFusionCache(builder.Configuration);");
-        csproj.Should().Contain("Cobytelabs.Modulus.Caching.Redis");
+        csproj.Should().Contain("Modulus.Caching.Redis");
     }
 
     [Theory]

@@ -109,7 +109,8 @@ public sealed class ScimTests : IAsyncLifetime
         builder.WebHost.UseTestServer();
         builder.Services.AddSingleton<Microsoft.Extensions.Hosting.IHostEnvironment>(new FakeEnvironment());
         builder.Services.AddAuthentication("Test").AddScheme<AuthenticationSchemeOptions, TestAuthHandler>("Test", null);
-        builder.Services.AddModulusAuthorization();
+        // These hosts carry the caller's permissions as claims; the grant store is the source by default now.
+        builder.Services.AddModulusAuthorization(o => o.TrustPermissionClaims = true);
         builder.Services.AddHttpContextAccessor();
         builder.Services.AddScoped<ICurrentTenant, HeaderTenant>();
         builder.Services.AddSingleton<ITenantMemberProvisioner>(_seats);

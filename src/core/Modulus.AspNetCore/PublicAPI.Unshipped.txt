@@ -164,6 +164,8 @@ Modulus.AspNetCore.Idempotency.IdempotencyOptions.RequireKey.get -> bool
 Modulus.AspNetCore.Idempotency.IdempotencyOptions.RequireKey.set -> void
 Modulus.AspNetCore.Idempotency.IdempotencyOptions.InProgressLeaseSeconds.get -> int
 Modulus.AspNetCore.Idempotency.IdempotencyOptions.InProgressLeaseSeconds.set -> void
+Modulus.AspNetCore.Idempotency.IdempotencyOptions.MaxEntries.get -> int
+Modulus.AspNetCore.Idempotency.IdempotencyOptions.MaxEntries.set -> void
 Modulus.AspNetCore.Idempotency.IdempotencyOptions.RetentionSeconds.get -> int
 Modulus.AspNetCore.Idempotency.IdempotencyOptions.RetentionSeconds.set -> void
 Modulus.AspNetCore.Idempotency.IdempotencyOptions.ValidateRequestMatch.get -> bool
@@ -476,3 +478,7 @@ static Modulus.AspNetCore.Http.ETags.IfMatchSatisfied(Microsoft.Extensions.Primi
 static Modulus.AspNetCore.Http.ETags.NoneMatchSatisfied(Microsoft.Extensions.Primitives.StringValues ifNoneMatch, string! etag) -> bool
 static Modulus.AspNetCore.Http.ResponseCompressionExtensions.AddModulusResponseCompression(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration, System.Action<Modulus.AspNetCore.Http.ModulusResponseCompressionOptions!>? configure = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static Modulus.AspNetCore.Http.ResponseCompressionExtensions.UseModulusResponseCompression(this Microsoft.AspNetCore.Builder.IApplicationBuilder! app) -> Microsoft.AspNetCore.Builder.IApplicationBuilder!
+Modulus.AspNetCore.Idempotency.IdempotencyResult.ClaimToken.get -> string?
+static Modulus.AspNetCore.Idempotency.IdempotencyResult.Started(string! claimToken) -> Modulus.AspNetCore.Idempotency.IdempotencyResult!
+Modulus.AspNetCore.Idempotency.IIdempotencyStore.AbandonAsync(string! key, string? claimToken, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
+Modulus.AspNetCore.Idempotency.IIdempotencyStore.CompleteAsync(string! key, string? claimToken, Modulus.AspNetCore.Idempotency.CachedResponse! response, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!

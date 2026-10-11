@@ -763,8 +763,8 @@ Modulus.Identity.Extensions.LdapExtensions
 Modulus.Identity.Extensions.PasskeyExtensions
 Modulus.Identity.Extensions.ShopFloorExtensions
 Modulus.Identity.IIdentityEmailQueue
-Modulus.Identity.IIdentityEmailQueue.EnqueueEmailConfirmation(System.Guid userId, string! email) -> bool
-Modulus.Identity.IIdentityEmailQueue.EnqueuePasswordReset(System.Guid userId, string! email) -> bool
+Modulus.Identity.IIdentityEmailQueue.EnqueueEmailConfirmation(System.Guid userId) -> bool
+Modulus.Identity.IIdentityEmailQueue.EnqueuePasswordReset(System.Guid userId) -> bool
 Modulus.Identity.IIntegrationClientDirectory
 Modulus.Identity.IIntegrationClientDirectory.BindAsync(string! clientId, System.Guid? tenantId, System.DateTimeOffset? validUntil, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
 Modulus.Identity.IIntegrationClientDirectory.DisableAsync(string! clientId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
@@ -1157,6 +1157,8 @@ Modulus.Identity.Abstractions.SamlProviderOptions.LastNameAttribute.get -> strin
 Modulus.Identity.Abstractions.SamlProviderOptions.LastNameAttribute.set -> void
 Modulus.Identity.Abstractions.SamlProviderOptions.LinkExistingByEmail.get -> bool
 Modulus.Identity.Abstractions.SamlProviderOptions.LinkExistingByEmail.set -> void
+Modulus.Identity.Abstractions.SamlProviderOptions.EmailAssertedVerified.get -> bool
+Modulus.Identity.Abstractions.SamlProviderOptions.EmailAssertedVerified.set -> void
 Modulus.Identity.Abstractions.SamlProviderOptions.MfaAuthnContexts.get -> System.Collections.Generic.List<string!>!
 Modulus.Identity.Abstractions.SamlProviderOptions.MfaAuthnContexts.set -> void
 Modulus.Identity.Abstractions.SamlProviderOptions.Name.get -> string!

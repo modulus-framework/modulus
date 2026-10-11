@@ -57,7 +57,11 @@ public sealed class StepUpTests
         builder.Services.AddAuthentication("Test").AddScheme<AuthenticationSchemeOptions, TestAuthHandler>("Test", null);
         builder.Services.AddSingleton<TimeProvider>(new FixedClock());
         builder.Services.AddAuthorization();
-        builder.Services.AddModulusAuthorization(o => configure?.Invoke(o.StepUp));
+        builder.Services.AddModulusAuthorization(o =>
+        {
+            o.TrustPermissionClaims = true;
+            configure?.Invoke(o.StepUp);
+        });
         builder.Services.AddPermissions("Demo", registry =>
         {
             registry.Add("demo:pay", "Release a payment.", null, PermissionSensitivity.Critical);

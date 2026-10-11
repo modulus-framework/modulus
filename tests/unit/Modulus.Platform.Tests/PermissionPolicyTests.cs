@@ -47,13 +47,13 @@ public sealed class PermissionPolicyTests
     {
         var principal = Authenticated(new Claim("permission", "orders:read"));
 
-        using var trusting = BuildProvider();
+        var trustingServices = new ServiceCollection();
+        trustingServices.AddLogging();
+        trustingServices.AddModulusAuthorization(o => o.TrustPermissionClaims = true);
+        using var trusting = trustingServices.BuildServiceProvider();
         (await AuthorizeAsync(trusting, principal, "orders:read")).Succeeded.Should().BeTrue();
 
-        var services = new ServiceCollection();
-        services.AddLogging();
-        services.AddModulusAuthorization(o => o.TrustPermissionClaims = false);
-        using var storeOnly = services.BuildServiceProvider();
+        using var storeOnly = BuildProvider();
         (await AuthorizeAsync(storeOnly, principal, "orders:read")).Succeeded.Should().BeFalse();
     }
 
@@ -117,13 +117,13 @@ public sealed class PermissionPolicyTests
     }
 
     [Fact]
-    public async Task Token_permission_claim_is_honoured_without_a_store_grant()
+    public async Task Token_permission_claim_is_refused_without_a_store_grant_by_default()
     {
         using var provider = BuildProvider();
         var principal = Authenticated(new Claim("permission", "orders:read"));
 
         (await AuthorizeAsync(provider, principal, "orders:read"))
-            .Succeeded.Should().BeTrue();
+            .Succeeded.Should().BeFalse("the grant store is the only source of permissions by default");
     }
 
     [Fact]

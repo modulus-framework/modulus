@@ -5,9 +5,9 @@
     <TargetFramework>net10.0</TargetFramework>
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>modulus</ToolCommandName>
-    <PackageId>Cobytelabs.Modulus.Cli</PackageId>
+    <PackageId>Modulus.Cli</PackageId>
     <Description>
-      Command-line interface for the Cobytelabs Modulus framework.
+      Command-line interface for the Modulus framework.
       Scaffold modular-monolith applications, add modules, and generate CRUD code.
     </Description>
     <PackageTags>cobytelabs;modulus;cli;scaffolding;code-generation</PackageTags>

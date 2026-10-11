@@ -109,7 +109,7 @@ public sealed class MultiTenancyTemplateTests
         _engine.Render("tenancy/TenancySeeding", model).Should().Contain("SeedTenancyAsync")
             .And.Contain("AddMemberAsync");
         _engine.Render("tenancy/infrastructure.csproj", model).Should()
-            .Contain("Cobytelabs.Modulus.MultiTenancy.EntityFrameworkCore");
+            .Contain("Modulus.MultiTenancy.EntityFrameworkCore");
     }
 
     [Fact]

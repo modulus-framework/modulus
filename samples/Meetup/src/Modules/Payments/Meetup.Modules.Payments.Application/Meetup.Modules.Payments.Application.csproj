@@ -7,9 +7,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Cobytelabs.Modulus.Core" Version="1.4.0" />
-    <PackageReference Include="Cobytelabs.Modulus.Mediator" Version="1.4.0" />
-    <PackageReference Include="Cobytelabs.Modulus.Events" Version="1.4.0" />
+    <PackageReference Include="Modulus.Core" Version="1.4.0" />
+    <PackageReference Include="Modulus.Mediator" Version="1.4.0" />
+    <PackageReference Include="Modulus.Events" Version="1.4.0" />
     <PackageReference Include="FluentValidation" Version="12.1.1" />
   </ItemGroup>
 

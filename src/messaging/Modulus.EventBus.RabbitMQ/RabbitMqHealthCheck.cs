@@ -19,16 +19,9 @@ public sealed class RabbitMqHealthCheck(
         var sw = System.Diagnostics.Stopwatch.StartNew();
         try
         {
-            var factory = new ConnectionFactory
-            {
-                HostName = options.Value.HostName,
-                Port = options.Value.Port,
-                UserName = options.Value.UserName,
-                Password = options.Value.Password,
-                VirtualHost = options.Value.VirtualHost,
-                RequestedConnectionTimeout = TimeSpan.FromSeconds(5),
-                RequestedHeartbeat = TimeSpan.FromSeconds(10),
-            };
+            var factory = RabbitMqConnectionFactory.Create(options.Value);
+            factory.RequestedConnectionTimeout = TimeSpan.FromSeconds(5);
+            factory.RequestedHeartbeat = TimeSpan.FromSeconds(10);
 
             await using var connection = await factory.CreateConnectionAsync(ct);
             await using var channel = await connection.CreateChannelAsync(cancellationToken: ct);

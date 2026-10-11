@@ -58,6 +58,24 @@ public static class ModulusMeters
         unit: "1",
         description: "Current count of pending outbox messages");
 
+    // The last depth reported per outbox source ("ef", "mongo"). Processors are scoped, so a per-instance field always started at
+    // zero and the gauge grew by the full depth each cycle; the value has to live here, process-wide.
+    private static readonly Dictionary<string, long> s_lastOutboxDepth = [];
+
+    /// <summary>
+    /// Records an outbox's current pending depth. <see cref="OutboxDepth"/> is an up-down counter, so this adds the change since
+    /// the last report from the same <paramref name="source"/>, not the absolute depth.
+    /// </summary>
+    public static void ReportOutboxDepth(string source, long depth)
+    {
+        lock (s_lastOutboxDepth)
+        {
+            s_lastOutboxDepth.TryGetValue(source, out var previous);
+            s_lastOutboxDepth[source] = depth;
+            OutboxDepth.Add(depth - previous);
+        }
+    }
+
     /// <summary>Inbox: count of duplicate message attempts (dedup hits).</summary>
     public static readonly Counter<long> InboxDedupHits = Inbox.CreateCounter<long>(
         "modulus.inbox.dedup_hits",

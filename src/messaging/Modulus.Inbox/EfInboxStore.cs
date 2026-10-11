@@ -260,9 +260,9 @@ internal sealed class EfInboxStore(
                     eventId, handlerName);
             return;
         }
-        catch (InvalidOperationException)
+        catch (InvalidOperationException) when (IsInMemoryProvider(db))
         {
-            // Providers without ExecuteUpdate support (e.g. EF InMemory in tests).
+            // The in-memory test provider has no ExecuteUpdate. Every other provider's failure is a real one and propagates.
         }
 
         var msg = await db.Set<InboxMessage>()
@@ -303,9 +303,9 @@ internal sealed class EfInboxStore(
                     eventId, handlerName);
             return;
         }
-        catch (InvalidOperationException)
+        catch (InvalidOperationException) when (IsInMemoryProvider(db))
         {
-            // Providers without ExecuteUpdate support (e.g. EF InMemory in tests).
+            // The in-memory test provider has no ExecuteUpdate. Every other provider's failure is a real one and propagates.
         }
 
         var msg = await db.Set<InboxMessage>()
@@ -331,6 +331,9 @@ internal sealed class EfInboxStore(
     /// instance (unit tests, same-scope assertions) would stay stale. Mirror the
     /// final state onto it when present.
     /// </summary>
+    private static bool IsInMemoryProvider(DbContext db)
+        => db.Database.ProviderName == "Microsoft.EntityFrameworkCore.InMemory";
+
     private void SyncTracked(Guid eventId, string handlerName, InboxStatus? status, DateTime? processedAt, string? error, int retryIncrement)
     {
         if (status is null)

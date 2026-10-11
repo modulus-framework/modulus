@@ -239,13 +239,13 @@ internal sealed class DoctorCommand : Command<DoctorCommand.Settings>
             return CheckResult.Warn(
                 "Web sign-in",
                 "Uses the generated TokenRelayHandler (tokens in the browser cookie, refresh only after a 401, no refresh lock). " +
-                "Move to the BFF web session: reference Cobytelabs.Modulus.Bff, call AddModulusBff(..., bff => bff.AddWebClient(\"web\").SetDefaultClient(\"web\")), " +
+                "Move to the BFF web session: reference Modulus.Bff, call AddModulusBff(..., bff => bff.AddWebClient(\"web\").SetDefaultClient(\"web\")), " +
                 "sign in/out with IBffSessionService, replace .AddHttpMessageHandler<TokenRelayHandler>() with .AddBffUserAccessToken() " +
                 "and delete Security/TokenRelayHandler.cs (see docs/ADVANCED_FEATURES_PLAN.md).");
         }
 
         var csproj = File.Exists(webProjectPath) ? File.ReadAllText(webProjectPath) : "";
-        return csproj.Contains("Cobytelabs.Modulus.Bff", StringComparison.Ordinal)
+        return csproj.Contains("Modulus.Bff", StringComparison.Ordinal)
             ? CheckResult.Pass("Web sign-in", "BFF web session (server-side tokens)")
             : null;
     }
@@ -338,7 +338,7 @@ internal sealed class DoctorCommand : Command<DoctorCommand.Settings>
             if (currentVersion is null)
                 return CheckResult.Warn(
                     "Framework version",
-                    "Could not detect Cobytelabs.Modulus.* version in the project.");
+                    "Could not detect Modulus.* version in the project.");
 
             var latestVersion = await NuGetVersionService.GetLatestVersionAsync(
                 ThirdPartyPackages.FrameworkPackagePrefix + "Core");

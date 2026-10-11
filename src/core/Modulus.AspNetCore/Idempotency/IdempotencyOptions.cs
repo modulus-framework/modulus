@@ -61,6 +61,13 @@ public sealed class IdempotencyOptions
     [Range(1, int.MaxValue)]
     public int InProgressLeaseSeconds { get; set; } = 300;
 
+    /// <summary>
+    /// Most keys the in-process store holds at once (default 100 000). Expired entries are swept first; when the store is still
+    /// full a new key is refused rather than evicting a live claim or a stored response. Per node: a shared store has its own bound.
+    /// </summary>
+    [Range(1, int.MaxValue)]
+    public int MaxEntries { get; set; } = 100_000;
+
     /// <summary>The claim lifetime actually used: <see cref="InProgressLeaseSeconds"/>, capped at <see cref="RetentionSeconds"/>.</summary>
     internal TimeSpan InProgressLease
         => TimeSpan.FromSeconds(Math.Min(InProgressLeaseSeconds, RetentionSeconds));

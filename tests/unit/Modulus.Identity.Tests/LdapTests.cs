@@ -62,6 +62,25 @@ public sealed class LdapTests
     }
 
     [Fact]
+    public async Task Wrong_directory_passwords_count_toward_the_local_lockout_and_a_locked_account_is_not_asked_again()
+    {
+        await using var h = await Harness.CreateAsync();
+        h.Directory.Add("jsmith", "pw-1", subject: "guid-1", email: "j.smith@example.com");
+        (await h.Validator.ValidateAsync("jsmith", "pw-1")).Success.Should().BeTrue();
+        var attempts = h.Users.Options.Lockout.MaxFailedAccessAttempts;
+
+        for (var i = 0; i < attempts; i++)
+            (await h.Validator.ValidateAsync("jsmith", "wrong")).Success.Should().BeFalse();
+
+        var user = await h.Users.Users.SingleAsync();
+        (await h.Users.IsLockedOutAsync(user)).Should().BeTrue("the failed directory binds count toward the lock-out");
+
+        var bindsBefore = h.Directory.BindCalls;
+        (await h.Validator.ValidateAsync("jsmith", "pw-1")).Success.Should().BeFalse("a locked account is refused even with the right password");
+        h.Directory.BindCalls.Should().Be(bindsBefore, "the directory is not asked while the account is locked");
+    }
+
+    [Fact]
     public async Task An_empty_password_is_refused_without_asking_the_directory()
     {
         await using var h = await Harness.CreateAsync();

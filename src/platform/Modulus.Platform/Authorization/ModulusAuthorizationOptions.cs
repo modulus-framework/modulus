@@ -14,11 +14,11 @@ public sealed class ModulusAuthorizationOptions
 
     /// <summary>
     /// Honours <c>permission</c> claims in the signed-in principal as a grant (a store-level deny still wins over them).
-    /// Default <see langword="true"/> for hosts whose token issuer or seeder mints fine-grained claims. Set
-    /// <see langword="false"/> to make the grant store the only source of permissions, so a claim in a token can never
-    /// confer access the store does not.
+    /// Default <see langword="false"/>: the grant store is the only source of permissions, so a claim in a token can never
+    /// confer access the store does not. Set <see langword="true"/> only for a token issuer that is trusted to mint
+    /// fine-grained claims (a breaking change for hosts that relied on the old default).
     /// </summary>
-    public bool TrustPermissionClaims { get; set; } = true;
+    public bool TrustPermissionClaims { get; set; } = false;
 
     /// <summary>Step-up authentication: permissions that need a recent multi-factor sign-in.</summary>
     public StepUpOptions StepUp { get; set; } = new();

@@ -26,7 +26,14 @@ public static class RabbitMqEventBusExtensions
         services.AddOptions<RabbitMqOptions>()
             .Configure<IConfiguration>((opts, cfg) =>
                 cfg.GetSection(sectionName).Bind(opts))
-            .Configure(opts => configure?.Invoke(opts));
+            .Configure(opts => configure?.Invoke(opts))
+            // Refuse to start without credentials rather than connect with a default account.
+            .Validate(
+                o => !string.IsNullOrWhiteSpace(o.UserName) && !string.IsNullOrEmpty(o.Password),
+                $"{sectionName}: UserName and Password are required; there is no default account.")
+            // The consumer acknowledges and rejects every message itself; broker-side auto-ack would acknowledge before handling.
+            .Validate(o => !o.AutoAck, $"{sectionName}: AutoAck cannot be combined with the consumer's manual acknowledgements.")
+            .ValidateOnStart();
 
         services.RemoveIModuleBusRegistrations();
         services.AddSingleton<RabbitMqEventBus>();

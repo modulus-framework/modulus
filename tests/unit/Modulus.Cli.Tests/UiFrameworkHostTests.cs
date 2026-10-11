@@ -48,7 +48,7 @@ public sealed class UiFrameworkHostTests
     [Fact]
     public void The_project_references_no_older_ui_packages()
     {
-        _engine.Render("app/web.csproj", Model()).Should().NotContain("Cobytelabs.Modulus.UI.").And.Contain("Cobytelabs.Modulus.Bff");
+        _engine.Render("app/web.csproj", Model()).Should().NotContain("Modulus.UI.").And.Contain("Modulus.Bff");
     }
 
     [Fact]

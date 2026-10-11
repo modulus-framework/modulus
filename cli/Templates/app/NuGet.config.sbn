@@ -8,7 +8,7 @@
     <add key="modulus-local" value="{{ local_package_source }}" />
 {{ else }}
     <!--
-      To use a local feed of the Cobytelabs.Modulus.* packages (e.g. the
+      To use a local feed of the Modulus.* packages (e.g. the
       framework repo's nupkg folder after dotnet pack), pass the feed path
       via the package source option to the new app command
       (see: modulus app help).
