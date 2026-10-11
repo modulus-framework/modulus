@@ -166,8 +166,8 @@ internal static class Ux
         if (defaultValue is not null)
             text.DefaultValue(defaultValue);
         text.Validate(v => !string.IsNullOrWhiteSpace(v)
-            ? ValidationResult.Success()
-            : ValidationResult.Error("[red]Value cannot be empty.[/]"));
+            ? Spectre.Console.ValidationResult.Success()
+            : Spectre.Console.ValidationResult.Error("[red]Value cannot be empty.[/]"));
         return AnsiConsole.Prompt(text).Trim();
     }
 
