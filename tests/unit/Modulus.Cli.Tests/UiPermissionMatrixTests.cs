@@ -68,7 +68,9 @@ public sealed class UiPermissionMatrixTests : IDisposable
 
             var text = new TemplateEngine().Render(UiScaffold.TemplateFile(templates, engine, "permission-matrix")!, new
             {
-                EntityName = "Order", EntityRoute = "order", ApiPrefix = "/authorization",
+                EntityName = "Order",
+                EntityRoute = "order",
+                ApiPrefix = "/authorization",
                 Roles = new[] { "Admin", "Sales" },
                 Permissions = new[] { new MatrixPermission("orders:order:manage", "Manage") },
             });

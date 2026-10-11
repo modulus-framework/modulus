@@ -15,9 +15,9 @@ public class TemplatePackageResolverTests
     {
         var packageId = "Modulus.Ui.Templates";
         var version = "0.9.0";
-        
+
         var result = await _resolver.ResolveAsync(packageId, version);
-        
+
         result.Should().NotBeNull();
         Directory.Exists(result).Should().BeTrue();
         result.Should().Contain("templates");
@@ -28,19 +28,19 @@ public class TemplatePackageResolverTests
     {
         var packageId = "Modulus.Ui.Templates";
         var version = "0.9.0";
-        
+
         var sw = Stopwatch.StartNew();
         var result1 = await _resolver.ResolveAsync(packageId, version);
         sw.Stop();
         var time1 = sw.ElapsedMilliseconds;
-        
+
         result1.Should().NotBeNull();
-        
+
         sw.Restart();
         var result2 = await _resolver.ResolveAsync(packageId, version);
         sw.Stop();
         var time2 = sw.ElapsedMilliseconds;
-        
+
         result1.Should().Be(result2);
         time2.Should().BeLessThan(time1 / 3);
     }
@@ -51,10 +51,10 @@ public class TemplatePackageResolverTests
         var packageId = "Modulus.Ui.Templates";
         var version = "0.9.0";
         var templatesPath = await _resolver.ResolveAsync(packageId, version);
-        
+
         templatesPath.Should().NotBeNull();
         var isValid = await _resolver.ValidateTemplatesAsync(templatesPath!);
-        
+
         isValid.Should().BeTrue();
     }
 
@@ -63,9 +63,9 @@ public class TemplatePackageResolverTests
     {
         var packageId = "Modulus.Ui.Templates";
         var invalidVersion = "99.99.99";
-        
+
         var result = await _resolver.ResolveAsync(packageId, invalidVersion);
-        
+
         result.Should().BeNull();
     }
 }

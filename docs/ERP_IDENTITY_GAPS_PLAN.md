@@ -1,5 +1,8 @@
 # ERP identity gaps: plan and status
 
+> **Status: complete (2026-10-11).** Every planned item is built. The remaining "Not built" gaps are listed below.
+> Production-review fixes in this area are tracked in [`PRODUCTION_READINESS_PLAN.md`](PRODUCTION_READINESS_PLAN.md).
+
 Scope: backend and API only (UI skipped for now). Target: a garments ERP (multi-factory group, merchandisers, buyers, suppliers, shop-floor lines).
 Verdict from the analysis: authorization is enterprise grade; the gaps were in authentication plumbing, shop-floor and external-party access, and governance data that lived only in code.
 

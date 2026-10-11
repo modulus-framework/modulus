@@ -61,8 +61,13 @@ internal sealed class UiCreateDashboardCommand : Command<UiCreateDashboardComman
             new TemplateEngine().RenderToFile(file, new
             {
                 ModuleName = module,
-                TotalUsers = 0, TotalModules = 0, ActiveSessions = 0,
-                TotalReports = 0, ScheduledReports = 0, MonthlyReports = 0, AvgGenTime = "0s",
+                TotalUsers = 0,
+                TotalModules = 0,
+                ActiveSessions = 0,
+                TotalReports = 0,
+                ScheduledReports = 0,
+                MonthlyReports = 0,
+                AvgGenTime = "0s",
             }, target);
 
             Ux.Success($"{page.Title} page created", Path.GetRelativePath(start, target));

@@ -532,7 +532,7 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
     private async Task GenerateUiFilesAsync(string entity, ModuleModel model, string presDir)
     {
         var uiEngine = ReadUiEngineFromConfig();
-        
+
         if (string.IsNullOrEmpty(uiEngine) || uiEngine == "none")
         {
             Ux.Detail("UI engine not configured, skipping UI file generation");
@@ -579,7 +579,7 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
             {
                 var json = File.ReadAllText(configPath);
                 using var doc = JsonDocument.Parse(json);
-                
+
                 if (doc.RootElement.TryGetProperty("uiEngine", out var engine))
                 {
                     var engineValue = engine.GetString();

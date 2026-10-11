@@ -37,14 +37,14 @@ public class UiFileGeneratorTests
         var module = CreateTestModule();
         var entity = "Customer";
         var outputDir = Path.Combine(Path.GetTempPath(), $"ui-test-{Guid.NewGuid()}");
-        
+
         try
         {
             Directory.CreateDirectory(outputDir);
             var generated = await _generator.GenerateAsync(module, entity, engine, outputDir);
-            
+
             generated.Should().NotBeEmpty($"Should generate files for {engine}");
-            
+
             var files = Directory.GetFiles(outputDir, "*.*", SearchOption.AllDirectories);
             files.Length.Should().BeGreaterThan(0, "Files should be written to disk");
         }
@@ -61,12 +61,12 @@ public class UiFileGeneratorTests
         var module = CreateTestModule();
         var entity = "Product";
         var outputDir = Path.Combine(Path.GetTempPath(), $"ui-test-{Guid.NewGuid()}");
-        
+
         try
         {
             Directory.CreateDirectory(outputDir);
             var generated = await _generator.GenerateAsync(module, entity, "invalid-engine", outputDir);
-            
+
             generated.Should().BeEmpty();
         }
         finally

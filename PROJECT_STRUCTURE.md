@@ -20,7 +20,8 @@ modulus/
 ├── samples/                     # TradeFlow — 18-module reference app (procurement, trade finance,
 │                                 # inventory, workflow) with Dockerfile, compose, and GitHub Actions CI
 ├── docs/architecture/           # Design blueprints
-├── IMPROVEMENT_PLAN.md          # Living decision log: completed P0/P1 fixes + backlog
+├── docs/PRODUCTION_READINESS_PLAN.md  # Live checklist: production-review findings and their fixes
+├── docs/archive/                # Completed plans (IMPROVEMENT_PLAN, DUAL_TARGETING_PLAN, ROADMAP_TIER3)
 └── .github/workflows/           # ci.yml (build/format/test/pack), codeql.yml, release.yml
 ```
 
@@ -55,7 +56,7 @@ modulus/
 - **Modules**: inherit `ModulusModule`, register explicitly via
   `builder.Services.AddModulus(builder.Configuration, modules => modules.AddModule<T>()...)`
   — registration order is authoritative (no `[DependsOn]`, no startup module).
-- **Cross-cutting features** follow the shape documented in `ROADMAP_TIER3.md` →
+- **Cross-cutting features** follow the shape documented in `docs/archive/ROADMAP_TIER3.md` →
   "Shared conventions": config-bound `XxxOptions`, `AddModulusXxx`/`UseModulusXxx`,
   swappable services registered with `TryAdd`.
 - **Cross-module communication**: reference another module's `Contracts` /

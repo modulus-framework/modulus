@@ -1,5 +1,8 @@
 # Tier 3 Roadmap — Remaining API/Platform Robustness
 
+> **Status: completed (archived 2026-10-11).** Every Tier 3 item is built. The unchecked boxes further down are the
+> per-item template, not open work.
+
 Implementation guide for the **remaining** Tier 3 items. Two are already done and
 shipped (see `AGENTS.md` → "API robustness (Tier 3)"):
 

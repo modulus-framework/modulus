@@ -52,7 +52,9 @@ internal sealed class UiAuditCommand : Command<UiAuditCommand.Settings>
 
             Ux.Result = new
             {
-                level = s.Level, filesScanned = files.Count, issueCount = issues.Count,
+                level = s.Level,
+                filesScanned = files.Count,
+                issueCount = issues.Count,
                 issues = issues.Select(i => new { rule = i.Rule, file = i.File, line = i.Line, snippet = i.Snippet }),
             };
 

@@ -4,7 +4,7 @@
 > *Security hardening* rounds) records what was built and what is still open. This is a functional and
 > architectural blueprint — it defines *what* the authorization framework must do
 > and *why*, not *how* it is coded. Implementation increments are tracked
-> separately in `IMPROVEMENT_PLAN.md`; the first increment (the **permission grant
+> separately in `docs/archive/IMPROVEMENT_PLAN.md`; the first increment (the **permission grant
 > store**) is called out in §22.
 >
 > **Audience:** framework architects and module authors building on Modulus.
@@ -1064,7 +1064,7 @@ layers that build on server-resolved grants.
 7. **Delegation & temporary access**; then **governance tooling** (SoD analysis,
    recertification, effective-access reporting) atop the audit stream.
 
-Each increment obeys the working agreements in `IMPROVEMENT_PLAN.md`: builds
+Each increment obeys the working agreements in `docs/archive/IMPROVEMENT_PLAN.md`: builds
 0 warnings / 0 errors under global `TreatWarningsAsErrors`, ships a regression test
 per behavior, and preserves fail-closed semantics.
 

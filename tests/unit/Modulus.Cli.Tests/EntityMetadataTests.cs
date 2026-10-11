@@ -80,7 +80,9 @@ public sealed class EntityMetadataTests
 
             var html = new TemplateEngine().Render(file, new
             {
-                EntityName = "Order", EntityNamePlural = "Orders", ModuleName = "Orders",
+                EntityName = "Order",
+                EntityNamePlural = "Orders",
+                ModuleName = "Orders",
                 Fields = EntityMetadata.Parse(Source, "Order"),
             });
 

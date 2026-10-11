@@ -200,7 +200,9 @@ internal static partial class UiAudit
 
     public static int LevelRank(string level) => level.ToUpperInvariant() switch
     {
-        "A" => 1, "AA" => 2, "AAA" => 3,
+        "A" => 1,
+        "AA" => 2,
+        "AAA" => 3,
         _ => throw new ArgumentException($"Unknown level '{level}'. Choose A, AA or AAA."),
     };
 
@@ -225,8 +227,13 @@ internal static partial class UiAudit
             issueCount = issues.Count,
             issues = issues.Select(i => new
             {
-                rule = i.Rule, criterion = RuleOf(i.Rule).Criterion, wcagLevel = RuleOf(i.Rule).Level,
-                title = RuleOf(i.Rule).Title, file = i.File, line = i.Line, snippet = i.Snippet,
+                rule = i.Rule,
+                criterion = RuleOf(i.Rule).Criterion,
+                wcagLevel = RuleOf(i.Rule).Level,
+                title = RuleOf(i.Rule).Title,
+                file = i.File,
+                line = i.Line,
+                snippet = i.Snippet,
             }),
         }, new JsonSerializerOptions { WriteIndented = true }) + "\n";
 

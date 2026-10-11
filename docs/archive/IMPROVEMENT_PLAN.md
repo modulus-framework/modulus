@@ -1,5 +1,8 @@
 # Modulus Improvement Plan
 
+> **Status: completed (archived 2026-10-11).** All P0 items are done. This file is kept as the decision log.
+> Open work is tracked in [`../PRODUCTION_READINESS_PLAN.md`](../PRODUCTION_READINESS_PLAN.md).
+
 Derived from the 2026-07-12 architectural review. P0 items block any 1.0 / public
 NuGet release; they are ordered by execution order (cheap trust fixes first,
 restructures last). Each item records the design decision so future sessions

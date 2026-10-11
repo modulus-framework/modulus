@@ -137,8 +137,14 @@ public sealed class UiAuditTests
             const string entity = "public sealed class Order { public string Name { get; set; } = \"\"; public bool IsPaid { get; set; } public decimal Total { get; set; } }";
             var model = new
             {
-                EntityName = "Order", EntityNamePlural = "Orders", ModuleName = "Orders", ComponentName = "X", PageName = "X",
-                RoutePrefix = "orders", ModuleDescription = "Orders module", Fields = EntityMetadata.Parse(entity, "Order"),
+                EntityName = "Order",
+                EntityNamePlural = "Orders",
+                ModuleName = "Orders",
+                ComponentName = "X",
+                PageName = "X",
+                RoutePrefix = "orders",
+                ModuleDescription = "Orders module",
+                Fields = EntityMetadata.Parse(entity, "Order"),
             };
 
             var found = new List<string>();

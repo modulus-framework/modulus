@@ -254,10 +254,16 @@ sample ships a `NuGet.config` pointing at the repo's local `nupkg/` feed — run
 Templates are embedded Scriban resources under `cli/Templates/`
 (`app/`, `shared/`, `module/{Domain,Application,Infrastructure,Presentation}/`).
 
-## Known review findings (high-impact, not yet fixed)
+## Production readiness (open work)
 
-These are architectural defects that need design discussion before fixing. See
-the review notes and do not silently change them:
+The production review from 2026-10-11 found a red build, 1 critical and 11 high defects. Each finding is
+tracked as a checklist item, with file:line, fix and test, in
+[`docs/PRODUCTION_READINESS_PLAN.md`](docs/PRODUCTION_READINESS_PLAN.md). Tick an item there when its fix lands.
+Completed plans are in `docs/archive/`.
+
+## Earlier review findings (all fixed)
+
+Kept for history:
 
 - **Transactional outbox (dual-write)** — FIXED: `ModuleDbContext.SaveChangesAsync` now enqueues domain events that implement `IIntegrationEvent` directly into its own `Set<OutboxMessage>()` BEFORE calling `base.SaveChangesAsync`, so the outbox row(s) participate in the same DB transaction. Enqueue is gated on `IOutboxWriter` being registered (i.e. the app called `AddOutbox<TContext>`); rows are built through the shared `OutboxRowFactory` (Modulus.Outbox.Abstractions) so all call sites produce identical rows, including `CorrelationId` (captured from `ICorrelationContext`). The former `IIntegrationEventOutbox`/`NullIntegrationEventOutbox` seam was removed — it was dead code whose registration dance never executed at runtime (the context writes inline), and it duplicated row-building with a silent CorrelationId divergence.
 - **Inbox (MongoDB)** — FIXED: `AddMongoInbox` now calls `DecorateIntegrationEventHandlers()` (the same decorator wiring as `AddInbox<TContext>`), so all `IIntegrationEventHandler<T>` registrations are wrapped with the idempotent decorator backed by `MongoInboxStore`. The original bug: `MongoInboxStore` was registered but the handler pipeline was never decorated — `AddMongoInbox` provided zero dedup. A common `IInboxStore` interface now backs both EF Core (`EfInboxStore`) and MongoDB (`MongoInboxStore`), so the decorator logic is shared.
@@ -584,7 +590,7 @@ but for synchronous HTTP callers/retries rather than integration events.
   encryption on an existing populated column needs a one-off plaintext→ciphertext
   data-migration pass.
 
-All Tier 3 items are complete; see [`ROADMAP_TIER3.md`](ROADMAP_TIER3.md) for the
+All Tier 3 items are complete; see [`docs/archive/ROADMAP_TIER3.md`](docs/archive/ROADMAP_TIER3.md) for the
 as-built records.
 
 ## Deferred hardening (recent work)

@@ -1,5 +1,7 @@
 # Dual-Targeting Plan: net8.0 + net10.0
 
+> **Status: completed (archived 2026-10-11).** As-built notes live in AGENTS.md → "Dual targeting".
+
 Derived from the 2026-07-26 NuGet-packaging review. Goal: every publishable
 `src/` package builds and restores cleanly for **both** `net8.0` and `net10.0`
 consumers, so the framework isn't limited to .NET 10-only apps. `cli/` is

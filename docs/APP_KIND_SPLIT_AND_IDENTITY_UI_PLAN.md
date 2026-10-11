@@ -11,7 +11,9 @@ Implementation plan for two independent efforts:
 
 Status: **Phase A implemented and validated** — all three kinds (`api`, `web`/`webapp`, `webapp+api`)
 build 0 warnings and pass their generated test suites off the current CLI (9/9, 6/6, 3/3
-respectively). Phase B not started. Checkmarks below are updated as work lands; as-built
+respectively). **Phase B is superseded (2026-10-11):** the server-rendered UI it targets (`src/ui/`) was removed from
+this repository, and module UI customizability now belongs to the `modulus-ui` repository. Its open boxes are not
+tracked here any more. Checkmarks below are updated as work lands; as-built
 deviations from the plan are noted inline as **As built:** — original plan text kept for context.
 
 ## Context
