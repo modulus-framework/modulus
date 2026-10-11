@@ -1,0 +1,454 @@
+/**
+ * Tab-Stepper Styles - Multiple layout options for step navigation
+ * Supports horizontal, vertical, accordion, and carousel layouts
+ */
+
+/* Base Tab Container */
+.step-tabs {
+  margin-bottom: 2rem;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+.step-tabs.transitioning {
+  opacity: 0.8;
+  transition: opacity 0.3s ease-in-out;
+}
+
+/* Horizontal Tabs */
+.tab-list.horizontal {
+  display: flex;
+  flex-direction: row;
+  border-bottom: 2px solid #e5e7eb;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.step-tab {
+  flex: 1;
+  min-width: 120px;
+  padding: 1rem;
+  border: none;
+  background: #f3f4f6;
+  color: #6b7280;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-bottom: 3px solid transparent;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.step-tab:hover {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.step-tab.active {
+  background: white;
+  color: #2563eb;
+  border-bottom-color: #2563eb;
+}
+
+.step-tab .step-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: #d1d5db;
+  border-radius: 50%;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.step-tab.active .step-number {
+  background: #2563eb;
+  color: white;
+}
+
+.step-tab .step-title {
+  font-size: 0.875rem;
+  display: block;
+}
+
+.step-tab .step-description {
+  font-size: 0.75rem;
+  opacity: 0.7;
+  display: none;
+}
+
+/* Vertical Tabs */
+.tab-list.vertical {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border-right: 2px solid #e5e7eb;
+  padding-right: 2rem;
+  margin-right: 2rem;
+  max-width: 250px;
+}
+
+.tab-list.vertical .vertical-tab {
+  width: 100%;
+  justify-content: flex-start;
+  padding: 1rem;
+  border: none;
+  border-left: 3px solid transparent;
+  border-bottom: none;
+  text-align: left;
+  background: #f3f4f6;
+}
+
+.tab-list.vertical .vertical-tab:hover {
+  background: #e5e7eb;
+}
+
+.tab-list.vertical .vertical-tab.active {
+  background: white;
+  border-left-color: #2563eb;
+  border-right: none;
+}
+
+/* Accordion Tabs */
+.accordion-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.accordion-item {
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.accordion-item:last-child {
+  border-bottom: none;
+}
+
+.accordion-header {
+  width: 100%;
+  padding: 1.25rem;
+  background: #f9fafb;
+  border: none;
+  color: #374151;
+  font-weight: 500;
+  font-size: 0.95rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+.accordion-header:hover {
+  background: #f3f4f6;
+}
+
+.accordion-header[aria-expanded='true'] {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.accordion-content {
+  background: white;
+  padding: 1.5rem;
+  border-top: 1px solid #e5e7eb;
+  overflow: hidden;
+  max-height: 0;
+  transition: max-height 0.3s ease, padding 0.3s ease;
+}
+
+.accordion-header[aria-expanded='true'] + .accordion-content {
+  max-height: 1000px;
+  padding: 1.5rem;
+}
+
+.accordion-item .step-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: #d1d5db;
+  border-radius: 50%;
+  font-size: 0.875rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.accordion-header[aria-expanded='true'] .step-number {
+  background: #2563eb;
+  color: white;
+}
+
+/* Carousel Tabs */
+.carousel-container {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  background: white;
+}
+
+.carousel-track {
+  display: flex;
+  transition: transform 0.3s ease;
+}
+
+.carousel-slide {
+  flex: 1;
+  min-width: 100%;
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.5;
+  transition: opacity 0.3s ease;
+}
+
+.carousel-slide.active {
+  opacity: 1;
+}
+
+.carousel-label {
+  width: 100%;
+  padding: 1rem;
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+  color: #374151;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: 0.375rem;
+  transition: all 0.2s ease;
+}
+
+.carousel-label:hover {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+}
+
+.carousel-slide.active .carousel-label {
+  background: #2563eb;
+  color: white;
+  border-color: #2563eb;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .tab-list.horizontal {
+    gap: 0;
+  }
+
+  .step-tab {
+    min-width: 80px;
+    padding: 0.75rem;
+    flex: 1;
+  }
+
+  .step-tab .step-description {
+    display: none;
+  }
+
+  .tab-list.vertical {
+    flex-direction: row;
+    border-right: none;
+    border-bottom: 2px solid #e5e7eb;
+    padding-right: 0;
+    padding-bottom: 1rem;
+    margin-right: 0;
+    margin-bottom: 1rem;
+    max-width: 100%;
+  }
+
+  .tab-list.vertical .vertical-tab {
+    border-left: none;
+    border-bottom: 3px solid transparent;
+    flex: 1;
+    justify-content: center;
+  }
+
+  .tab-list.vertical .vertical-tab.active {
+    border-left: none;
+    border-bottom-color: #2563eb;
+  }
+
+  .accordion-header {
+    padding: 1rem;
+    font-size: 0.9rem;
+  }
+
+  .accordion-content {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .step-tabs {
+    margin-bottom: 1.5rem;
+  }
+
+  .step-tab {
+    min-width: 60px;
+    padding: 0.5rem;
+    font-size: 0.75rem;
+  }
+
+  .step-tab .step-number {
+    width: 24px;
+    height: 24px;
+    font-size: 0.75rem;
+  }
+
+  .step-tab .step-title {
+    font-size: 0.7rem;
+  }
+
+  .accordion-header {
+    padding: 0.75rem;
+    gap: 0.5rem;
+  }
+
+  .accordion-item .step-number {
+    width: 24px;
+    height: 24px;
+  }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+  .tab-list.horizontal {
+    border-bottom-color: #374151;
+  }
+
+  .step-tab {
+    background: #1f2937;
+    color: #d1d5db;
+  }
+
+  .step-tab:hover {
+    background: #374151;
+    color: #f3f4f6;
+  }
+
+  .step-tab.active {
+    background: #111827;
+    color: #3b82f6;
+    border-bottom-color: #3b82f6;
+  }
+
+  .step-tab .step-number {
+    background: #4b5563;
+  }
+
+  .step-tab.active .step-number {
+    background: #3b82f6;
+  }
+
+  .tab-list.vertical {
+    border-right-color: #374151;
+  }
+
+  .accordion-list {
+    border-color: #374151;
+  }
+
+  .accordion-item {
+    border-bottom-color: #374151;
+  }
+
+  .accordion-header {
+    background: #1f2937;
+    color: #e5e7eb;
+    border-bottom-color: #374151;
+  }
+
+  .accordion-header:hover {
+    background: #374151;
+  }
+
+  .accordion-header[aria-expanded='true'] {
+    background: #1e3a8a;
+    color: #60a5fa;
+  }
+
+  .accordion-content {
+    background: #111827;
+    border-top-color: #374151;
+  }
+
+  .carousel-container {
+    border-color: #374151;
+    background: #1f2937;
+  }
+
+  .carousel-label {
+    border-color: #374151;
+    background: #1f2937;
+    color: #e5e7eb;
+  }
+
+  .carousel-label:hover {
+    background: #374151;
+  }
+
+  .carousel-slide.active .carousel-label {
+    background: #3b82f6;
+    border-color: #3b82f6;
+    color: white;
+  }
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: more) {
+  .step-tab {
+    border: 2px solid #6b7280;
+  }
+
+  .step-tab.active {
+    border: 2px solid #000;
+    font-weight: 700;
+  }
+
+  .accordion-header {
+    border: 1px solid #000;
+  }
+
+  .carousel-label {
+    border: 2px solid #6b7280;
+  }
+
+  .carousel-slide.active .carousel-label {
+    border: 2px solid #000;
+  }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  .step-tabs,
+  .step-tab,
+  .accordion-content,
+  .carousel-track {
+    transition: none !important;
+  }
+}
+
+/* Print Styles */
+@media print {
+  .step-tabs {
+    page-break-inside: avoid;
+  }
+
+  .step-tab,
+  .accordion-header {
+    border: 1px solid #000;
+  }
+
+  .carousel-container {
+    display: none;
+  }
+}
