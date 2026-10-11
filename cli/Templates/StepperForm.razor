@@ -1,0 +1,233 @@
+@* Blazor Stepper Form Component *@
+@typeparam TModel where TModel : new()
+
+<div class="wizard-container">
+    <!-- Progress Bar -->
+    <div class="stepper-progress">
+        <div class="stepper-progress-bar" style="width: @ProgressPercentage%;"></div>
+    </div>
+
+    <!-- Stepper Component -->
+    <div class="stepper stepper-@Layout">
+        <ol class="stepper-steps">
+            @foreach (var (step, index) in Steps.Select((s, i) => (s, i)))
+            {
+                var isComplete = index < CurrentStepIndex;
+                var isCurrent = index == CurrentStepIndex;
+                var stepStatus = isComplete ? "complete" : (isCurrent ? "current" : "incomplete");
+
+                <li class="stepper-step stepper-step-@stepStatus" @onclick="() => GoToStep(index)">
+                    <button type="button" class="stepper-button" disabled="@(index > CurrentStepIndex)">
+                        <span class="stepper-number">@(index + 1)</span>
+                    </button>
+                    <div class="stepper-label">
+                        <div class="stepper-title">@step.Title</div>
+                        @if (!string.IsNullOrEmpty(step.Description))
+                        {
+                            <div class="stepper-description">@step.Description</div>
+                        }
+                    </div>
+                </li>
+            }
+        </ol>
+    </div>
+
+    <!-- Step Content -->
+    <div class="stepper-content">
+        @if (CurrentStepIndex >= 0 && CurrentStepIndex < Steps.Count)
+        {
+            @RenderStep(CurrentStepIndex)
+        }
+    </div>
+
+    <!-- Navigation Buttons -->
+    <div class="stepper-navigation d-flex justify-content-between">
+        <button type="button" class="btn btn-secondary"
+                @onclick="PreviousStep"
+                disabled="@(!CanMovePrevious)">
+            <i class="fas fa-chevron-left"></i> Previous
+        </button>
+
+        <div class="step-indicator">
+            <span>@(CurrentStepIndex + 1)</span> of <span>@Steps.Count</span>
+        </div>
+
+        <button type="button" class="btn btn-primary"
+                @onclick="NextStep"
+                disabled="@(!CanMoveNext)"
+                style="display: @(IsLastStep ? "none" : "block");">
+            Next <i class="fas fa-chevron-right"></i>
+        </button>
+
+        <button type="button" class="btn btn-success"
+                @onclick="OnSubmit"
+                style="display: @(IsLastStep ? "block" : "none");">
+            <i class="fas fa-check"></i> Submit
+        </button>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public List<StepDefinition> Steps { get; set; } = new();
+
+    [Parameter]
+    public RenderFragment? StepTemplate { get; set; }
+
+    [Parameter]
+    public string Layout { get; set; } = "horizontal";
+
+    [Parameter]
+    public EventCallback<int> OnStepChanged { get; set; }
+
+    [Parameter]
+    public EventCallback OnStepSubmit { get; set; }
+
+    [Parameter]
+    public Func<int, Task<bool>>? ValidateStep { get; set; }
+
+    private int CurrentStepIndex { get; set; } = 0;
+    private bool IsProcessing { get; set; } = false;
+
+    private int ProgressPercentage => (CurrentStepIndex + 1) * 100 / Steps.Count;
+    private bool CanMovePrevious => CurrentStepIndex > 0 && !IsProcessing;
+    private bool CanMoveNext => CurrentStepIndex < Steps.Count - 1 && !IsProcessing;
+    private bool IsLastStep => CurrentStepIndex == Steps.Count - 1;
+
+    private async Task PreviousStep()
+    {
+        if (!CanMovePrevious) return;
+
+        CurrentStepIndex--;
+        await OnStepChanged.InvokeAsync(CurrentStepIndex);
+    }
+
+    private async Task NextStep()
+    {
+        if (!CanMoveNext) return;
+
+        IsProcessing = true;
+
+        try
+        {
+            // Validate current step if validator provided
+            if (ValidateStep != null)
+            {
+                var isValid = await ValidateStep(CurrentStepIndex);
+                if (!isValid)
+                {
+                    return;
+                }
+            }
+
+            CurrentStepIndex++;
+            await OnStepChanged.InvokeAsync(CurrentStepIndex);
+        }
+        finally
+        {
+            IsProcessing = false;
+        }
+    }
+
+    private async Task GoToStep(int index)
+    {
+        if (index >= 0 && index < Steps.Count)
+        {
+            CurrentStepIndex = index;
+            await OnStepChanged.InvokeAsync(CurrentStepIndex);
+        }
+    }
+
+    private async Task OnSubmit()
+    {
+        if (!IsLastStep) return;
+
+        IsProcessing = true;
+
+        try
+        {
+            await OnStepSubmit.InvokeAsync();
+        }
+        finally
+        {
+            IsProcessing = false;
+        }
+    }
+
+    private RenderFragment RenderStep(int stepIndex)
+    {
+        return builder =>
+        {
+            var step = Steps[stepIndex];
+            builder.OpenElement(0, "div");
+            builder.AddAttribute(1, "class", "step-form");
+            builder.AddAttribute(2, "id", $"form-{step.Id}");
+
+            if (step.Content != null)
+            {
+                builder.AddContent(3, step.Content);
+            }
+
+            builder.CloseElement();
+        };
+    }
+
+    public class StepDefinition
+    {
+        public string Id { get; set; } = string.Empty;
+        public string Title { get; set; } = string.Empty;
+        public string? Description { get; set; }
+        public RenderFragment? Content { get; set; }
+        public bool IsOptional { get; set; } = false;
+    }
+}
+
+<style>
+    .wizard-container {
+        max-width: 900px;
+        margin: 2rem auto;
+    }
+
+    .stepper-navigation {
+        margin-top: 2rem;
+        gap: 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .step-indicator {
+        font-size: 0.875rem;
+        color: #6c757d;
+        font-weight: 500;
+    }
+
+    .stepper-navigation button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .stepper-content {
+        animation: fadeIn 0.3s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+        to {
+            opacity: 1;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .stepper-navigation {
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .stepper-navigation button {
+            flex: 1;
+        }
+    }
+</style>
