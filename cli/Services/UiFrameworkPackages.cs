@@ -12,7 +12,7 @@ internal sealed record UiPackageRef(string Id, string Version);
 internal static class UiFrameworkPackages
 {
     /// <summary>NuGet source-mapping patterns that cover every UI framework package.</summary>
-    public static readonly string[] SourcePatterns = ["Modulus.Ui.*", "Modulus.AspNetCore.*", "Modulus.Blazor", "Modulus.Documents"];
+    public static readonly string[] SourcePatterns = ["Synvro.Modulus.Ui.*", "Synvro.Modulus.AspNetCore.*", "Synvro.Modulus.Blazor", "Synvro.Modulus.Documents"];
 
     /// <summary>The local feed folder holding the UI framework packages (<c>MODULUS_LOCAL_FEED</c>, then <c>~/.modulus/feed</c>), or null.</summary>
     public static string? LocalFeed()
@@ -23,7 +23,7 @@ internal static class UiFrameworkPackages
         folders.Add(Path.Combine(UiTemplatePackage.UserRoot, "feed"));
 
         return folders.FirstOrDefault(f => Directory.Exists(f)
-            && Directory.EnumerateFiles(f, "Modulus.Ui.Abstractions.*.nupkg").Any());
+            && Directory.EnumerateFiles(f, "Synvro.Modulus.Ui.Abstractions.*.nupkg").Any());
     }
 
     /// <summary>The packages the engine's shell needs; empty when the manifest isn't available or the engine has none.</summary>

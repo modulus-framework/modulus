@@ -17,7 +17,7 @@ public sealed class GraphQLWiringTests
 
         var once = GraphQLWiring.EnsurePresentationProject(csproj, "1.4.0");
 
-        once.Should().Contain("<PackageReference Include=\"Modulus.GraphQL\" Version=\"1.4.0\" />");
+        once.Should().Contain("<PackageReference Include=\"Synvro.Modulus.GraphQL\" Version=\"1.4.0\" />");
         once.TrimEnd().Should().EndWith("</Project>");
         GraphQLWiring.EnsurePresentationProject(once, "1.4.0").Should().Be(once);
     }

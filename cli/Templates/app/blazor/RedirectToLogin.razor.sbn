@@ -1,0 +1,10 @@
+@inject NavigationManager Navigation
+
+@code {
+    // A signed-out visitor to a page that needs sign-in goes to the sign-in page, then back to the page they asked for.
+    protected override void OnInitialized()
+    {
+        var here = new Uri(Navigation.Uri).PathAndQuery;
+        Navigation.NavigateTo($"/account/login?returnUrl={Uri.EscapeDataString(here)}", forceLoad: true);
+    }
+}

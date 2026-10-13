@@ -10,11 +10,11 @@ namespace Modulus.Cli.Services;
 /// </summary>
 internal static partial class AiWiring
 {
-    public const string ConnectorPackageId = "Modulus.AI.Connector";
-    public const string ConnectorEfPackageId = "Modulus.AI.Connector.EntityFrameworkCore";
+    public const string ConnectorPackageId = "Synvro.Modulus.AI.Connector";
+    public const string ConnectorEfPackageId = "Synvro.Modulus.AI.Connector.EntityFrameworkCore";
 
     /// <summary>The conformance kit (fake platform + suite) the generated tests use.</summary>
-    public const string ConnectorTestingPackageId = "Modulus.AI.Connector.Testing";
+    public const string ConnectorTestingPackageId = "Synvro.Modulus.AI.Connector.Testing";
 
     /// <summary>The role the connector's indexing identity carries (<c>Ai:Connector:Indexing:Roles</c>).</summary>
     public const string IndexerRole = "AiIndexer";

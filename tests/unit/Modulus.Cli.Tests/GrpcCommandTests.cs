@@ -17,7 +17,7 @@ public sealed class GrpcWiringTests
     {
         var once = GrpcWiring.EnsurePresentationProject(Csproj, "1.4.0");
 
-        once.Should().Contain("<PackageReference Include=\"Modulus.Grpc\" Version=\"1.4.0\" />")
+        once.Should().Contain("<PackageReference Include=\"Synvro.Modulus.Grpc\" Version=\"1.4.0\" />")
             .And.Contain($"<PackageReference Include=\"Grpc.Tools\" Version=\"{GrpcWiring.GrpcToolsVersion}\" PrivateAssets=\"all\" />")
             .And.Contain("<Protobuf Include=\"Protos/**/*.proto\" GrpcServices=\"Both\" ProtoRoot=\"Protos\" />");
         once.TrimEnd().Should().EndWith("</Project>");

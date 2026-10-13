@@ -35,7 +35,7 @@ Modulus is a framework for building enterprise applications using a **modular-mo
 
 ```bash
 # Install the CLI tool
-dotnet tool install -g --add-source ./nupkg Cobytelabs.Modulus.Cli
+dotnet tool install -g --add-source ./nupkg Synvro.Modulus.Cli
 
 # Create a new application
 modulus app MyApp

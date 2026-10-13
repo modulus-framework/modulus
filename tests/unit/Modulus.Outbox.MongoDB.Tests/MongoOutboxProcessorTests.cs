@@ -64,6 +64,44 @@ public sealed class MongoOutboxProcessorTests : IAsyncLifetime
         });
     }
 
+    [Fact]
+    public async Task The_poller_drains_a_backlog_larger_than_one_batch_without_waiting_for_the_interval()
+    {
+        // Five messages in batches of two: a poller that sleeps the 10-minute interval after each batch would dispatch only two.
+        var dispatcher = new RecordingDispatcher(_ => Task.CompletedTask);
+        await SeedAsync(5);
+        // The processor reads its batch size from the container, so the same options must be registered there.
+        var options = Options.Create(new OutboxOptions { BatchSize = 2, PollingIntervalSec = 600 });
+        var services = new ServiceCollection()
+            .AddLogging()
+            .AddSingleton<IOptions<OutboxOptions>>(options)
+            .AddSingleton<IMongoCollection<MongoOutboxMessage>>(_collection)
+            .AddSingleton<IOutboxDispatcher>(dispatcher)
+            .AddScoped<MongoOutboxProcessor>()
+            .BuildServiceProvider();
+        var poller = new MongoOutboxPollingService(services, options, NullLogger<MongoOutboxPollingService>.Instance);
+
+        await poller.StartAsync(CancellationToken.None);
+        try
+        {
+            await WaitUntilAsync(() => dispatcher.Calls == 5, TimeSpan.FromSeconds(20));
+        }
+        finally
+        {
+            await poller.StopAsync(CancellationToken.None);
+        }
+
+        dispatcher.Calls.Should().Be(5);
+        (await ReadAllAsync()).Should().AllSatisfy(m => m.ProcessedAt.Should().NotBeNull());
+    }
+
+    private static async Task WaitUntilAsync(Func<bool> condition, TimeSpan timeout)
+    {
+        var deadline = DateTime.UtcNow + timeout;
+        while (!condition() && DateTime.UtcNow < deadline)
+            await Task.Delay(20);
+    }
+
     private MongoOutboxProcessor CreateProcessor(IOutboxDispatcher dispatcher, OutboxOptions options)
     {
         var services = new ServiceCollection()

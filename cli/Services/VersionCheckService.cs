@@ -9,7 +9,7 @@ namespace Modulus.Cli.Services;
 /// </summary>
 internal static class VersionCheckService
 {
-    private const string CliPackageId = "Modulus.Cli";
+    private const string CliPackageId = "Synvro.Modulus.Cli";
 
     /// <summary>
     /// Checks if the installed <c>modulus</c> CLI tool has a newer version

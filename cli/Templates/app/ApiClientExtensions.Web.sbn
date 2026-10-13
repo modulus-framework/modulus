@@ -1,8 +1,8 @@
 using Microsoft.Extensions.DependencyInjection;
 {{ if use_auth }}using Modulus.Bff;
 {{ end }}using Modulus.Platform.Http;
-using {{ root_namespace }}.Web.ApiClients;
-
+{{ if !no_example }}using {{ root_namespace }}.Web.ApiClients;
+{{ end }}
 namespace {{ root_namespace }}.Web;
 
 /// <summary>

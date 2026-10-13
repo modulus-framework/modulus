@@ -11,10 +11,10 @@
 
   <!-- ── Package metadata ─────────────────────────────────────────── -->
   <PropertyGroup>
-    <Authors>Modulus</Authors>
-    <Company>Modulus</Company>
+    <Authors>synvro</Authors>
+    <Company>synvro</Company>
     <Product>Modulus</Product>
-    <Copyright>Copyright (c) 2025 Modulus. All rights reserved.</Copyright>
+    <Copyright>Copyright (c) 2026 synvro. All rights reserved.</Copyright>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/modulus-framework/modulus</PackageProjectUrl>
     <RepositoryUrl>https://github.com/modulus-framework/modulus.git</RepositoryUrl>
@@ -24,7 +24,7 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon Condition="Exists('$(MSBuildThisFileDirectory)..\icon.png')">icon.png</PackageIcon>
     <NeutralLanguage>en</NeutralLanguage>
-    <PackageId>$(AssemblyName)</PackageId>
+    <PackageId>Synvro.$(AssemblyName)</PackageId>
   </PropertyGroup>
 
   <!-- ── Versioning (SemVer — override on CI with -p:VersionPrefix / VersionSuffix) ─ -->

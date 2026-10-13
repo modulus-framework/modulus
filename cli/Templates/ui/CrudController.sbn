@@ -1,0 +1,122 @@
+using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using {{ module_namespace }}.Application.Dtos;
+using {{ ui_namespace }}.ApiClients;
+
+namespace {{ ui_namespace }}.Controllers;
+
+/// <summary>Lists, creates, edits and deletes {{ entity_name }}s through the {{ module_name }} API. Views: Views/{{ entity_name_plural }}.</summary>
+{{ if use_auth }}[Authorize]
+{{ end }}public class {{ entity_name_plural }}Controller({{ entity_name }}ApiClient api) : Controller
+{
+    private const int PageSize = 20;
+
+    [HttpGet("/{{ route }}")]
+    public async Task<IActionResult> Index([FromQuery(Name = "p")] int page, CancellationToken ct)
+    {
+        var model = new IndexViewModel { PageNumber = Math.Max(1, page) };
+        model.Message = TempData["Message"] as string;
+        model.Failed = TempData["Failed"] is true;
+        try
+        {
+            model.Items = await api.GetAsync(model.PageNumber, PageSize, ct);
+            model.HasNext = model.Items.Count == PageSize;
+        }
+        catch (HttpRequestException)
+        {
+            model.Message = "The API could not be reached.";
+            model.Failed = true;
+        }
+        return View(model);
+    }
+
+    [HttpPost("/{{ route }}/delete")]
+    public async Task<IActionResult> Delete(Guid id, int p = 1, CancellationToken ct = default)
+    {
+        try
+        {
+            var deleted = await api.DeleteAsync(id, ct);
+            TempData["Message"] = deleted ? "Deleted." : "The {{ entity_name | string.downcase }} could not be deleted.";
+            TempData["Failed"] = !deleted;
+        }
+        catch (HttpRequestException)
+        {
+            TempData["Message"] = "The API could not be reached.";
+            TempData["Failed"] = true;
+        }
+
+        return Redirect($"/{{ route }}?p={Math.Max(1, p)}");
+    }
+
+    [HttpGet("/{{ route }}/edit")]
+    public async Task<IActionResult> Edit(Guid? id, CancellationToken ct)
+    {
+        if (id is null || id == Guid.Empty)
+            return View("Edit", new EditViewModel());
+
+        var existing = await api.GetByIdAsync(id.Value, ct);
+        if (existing is null)
+            return NotFound();
+
+        return View("Edit", new EditViewModel { Input = new InputModel { Id = existing.Id, Name = existing.Name } });
+    }
+
+    [HttpPost("/{{ route }}/edit")]
+    public async Task<IActionResult> Save(EditViewModel model, CancellationToken ct)
+    {
+        if (!ModelState.IsValid)
+            return View("Edit", model);
+
+        try
+        {
+            var input = model.Input;
+            var saved = model.IsNew
+                ? await api.CreateAsync(new Create{{ entity_name }}Dto { Name = input.Name }, ct) != Guid.Empty
+                : await api.UpdateAsync(input.Id, new Update{{ entity_name }}Dto { Name = input.Name }, ct);
+            if (!saved)
+            {
+                ModelState.AddModelError(string.Empty, "The API refused the change.");
+                return View("Edit", model);
+            }
+        }
+        catch (HttpRequestException)
+        {
+            ModelState.AddModelError(string.Empty, "The API could not be reached.");
+            return View("Edit", model);
+        }
+
+        TempData["Message"] = "Saved.";
+        return Redirect("/{{ route }}");
+    }
+
+    public sealed class IndexViewModel
+    {
+        public IReadOnlyList<{{ entity_name }}Dto> Items { get; set; } = [];
+
+        /// <summary>1-based page number (query string <c>p</c>).</summary>
+        public int PageNumber { get; set; } = 1;
+
+        /// <summary>A full page means there may be another one; the API does not report a total.</summary>
+        public bool HasNext { get; set; }
+
+        public string? Message { get; set; }
+
+        public bool Failed { get; set; }
+    }
+
+    public sealed class EditViewModel
+    {
+        public InputModel Input { get; set; } = new();
+
+        public bool IsNew => Input.Id == Guid.Empty;
+    }
+
+    public sealed class InputModel
+    {
+        public Guid Id { get; set; }
+
+        [Required, StringLength(200)]
+        public string Name { get; set; } = string.Empty;
+    }
+}

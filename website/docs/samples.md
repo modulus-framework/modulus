@@ -59,7 +59,7 @@ dotnet run --project src/API/TradeFlow.Api
 
 ```bash
 # Install the CLI
-dotnet tool install -g --add-source ./nupkg Cobytelabs.Modulus.Cli
+dotnet tool install -g --add-source ./nupkg Synvro.Modulus.Cli
 
 # Create a new app
 modulus app MyApp

@@ -69,14 +69,14 @@ public sealed class UiFrameworkPackagesTests
 {
     private const string Manifest = """
         { "version": "0.9.0", "features": { "shell": { "packages": {
-            "mvc": ["Modulus.AspNetCore.Mvc", "Modulus.Ui.Assets"],
+            "mvc": ["Synvro.Modulus.AspNetCore.Mvc", "Synvro.Modulus.Ui.Assets"],
             "blazor": ["Modulus.Blazor"] } } } }
         """;
 
     [Fact]
     public void Packages_come_from_the_shell_feature_of_the_manifest_at_the_manifests_version()
         => UiFrameworkPackages.Parse(Manifest, "mvc").Should().Equal(
-            new UiPackageRef("Modulus.AspNetCore.Mvc", "0.9.0"), new UiPackageRef("Modulus.Ui.Assets", "0.9.0"));
+            new UiPackageRef("Synvro.Modulus.AspNetCore.Mvc", "0.9.0"), new UiPackageRef("Synvro.Modulus.Ui.Assets", "0.9.0"));
 
     [Theory]
     [InlineData("none")]

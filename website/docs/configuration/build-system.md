@@ -45,7 +45,7 @@ global using Microsoft.Extensions.Options;
 
 | Setting | Value |
 |---------|-------|
-| Authors | Cobytelabs |
+| Authors | synvro |
 | VersionPrefix | 1.3.0 |
 | License | Apache-2.0 |
 | Source Link | GitHub |

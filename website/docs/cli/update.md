@@ -18,7 +18,7 @@ modulus update [options]
 |--------|-------------|---------|
 | `--dry-run` | Preview changes without modifying files | false |
 | `--force` | Skip confirmation prompts | false |
-| `--framework-only` | Only update `Cobytelabs.Modulus.*` packages | false |
+| `--framework-only` | Only update `Synvro.Modulus.*` packages | false |
 | `-o, --output` | App root directory | Current directory |
 
 ## What It Does
@@ -64,13 +64,13 @@ modulus update [options]
 Package                          Current    Latest     Update
 ────────────────────────────────────────────────────────────────────
 Microsoft.EntityFrameworkCore     10.0.9     10.0.11    Minor
-Cobytelabs.Modulus.Core           1.3.0      1.4.0      Minor
+Synvro.Modulus.Core           1.3.0      1.4.0      Minor
 
 Update 2 package(s)? [y/N]: y
 
 > Updating packages...
   ✓ Microsoft.EntityFrameworkCore 10.0.9 → 10.0.11
-  ✓ Cobytelabs.Modulus.Core 1.3.0 → 1.4.0
+  ✓ Synvro.Modulus.Core 1.3.0 → 1.4.0
 
 > Running dotnet restore...
   ✓ Restore successful

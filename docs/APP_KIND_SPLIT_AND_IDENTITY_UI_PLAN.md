@@ -123,7 +123,7 @@ significantly shrinks the scope of Phase B1 below.
 - [x] A2.1.1. New `src/Web/{App}.Web/{App}.Web.csproj` (`cli/Templates/app/web.csproj.sbn`),
       `Microsoft.NET.Sdk.Web`, referencing `Modulus.UI.Core`, `Modulus.Platform`, the chosen
       theme — **no module Infrastructure/Presentation references at all**.
-      *As built:* also references `Cobytelabs.Modulus.Identity` (login/token plumbing),
+      *As built:* also references `Synvro.Modulus.Identity` (login/token plumbing),
       `Modulus.AspNetCore`/`Modulus.Core`, and ProjectReferences to `{App}.Api` (for
       `AddModuleApiClients`) and each module's `.Application` (DTOs, below).
 - [x] A2.1.2. **As built:** no new `{App}.Shared.Contracts` project. The Web project references

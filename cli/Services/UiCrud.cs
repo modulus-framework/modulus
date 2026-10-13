@@ -28,7 +28,23 @@ internal static class UiCrud
 
         var nl = extensions.Contains("\r\n", StringComparison.Ordinal) ? "\r\n" : "\n";
         var registration = ClientRegistration(extensions, entity).Replace("\n", nl);
-        return extensions[..index] + registration + nl + extensions[index..];
+        var updated = extensions[..index] + registration + nl + extensions[index..];
+        return WithApiClientsUsing(updated, nl);
+    }
+
+    /// <summary>
+    /// Adds <c>using {namespace}.ApiClients;</c> before the file's namespace when it is missing. The app template leaves it out
+    /// until the first client exists (an app created with --no-example has no ApiClients namespace yet).
+    /// </summary>
+    private static string WithApiClientsUsing(string extensions, string nl)
+    {
+        var at = extensions.IndexOf("namespace ", StringComparison.Ordinal);
+        var end = at < 0 ? -1 : extensions.IndexOf(';', at);
+        if (end < 0) return extensions;
+
+        var usingLine = $"using {extensions[(at + "namespace ".Length)..end].Trim()}.ApiClients;";
+        if (extensions.Contains(usingLine, StringComparison.Ordinal)) return extensions;
+        return extensions[..at] + usingLine + nl + extensions[at..];
     }
 
     /// <summary>Returns <paramref name="program"/> with <c>AddTransient&lt;IMenuContributor, ...&gt;</c> before the host is built, plus its usings; unchanged when the contributor is already registered.</summary>

@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Packaging
+- **Package IDs are `Synvro.Modulus.*`** (was `Cobytelabs.Modulus.*`), with `Synvro` as author and company, following the
+  `<Vendor>.<Framework>.*` pattern. Breaking for anyone who referenced the old IDs. The generated apps' local-feed source mapping
+  (`NuGet.config`) matches `Synvro.Modulus.*`. Copyright is now `2026 synvro`.
+
 ### Security — production readiness review (2026-10-11)
 - **Password-reset and confirmation mail go to the stored address.** The queue carries the account id only. A lookalike address
   (for example one that normalizes to the victim's address) no longer receives the token. Tests: `AccountMailLookalikeTests`.

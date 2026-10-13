@@ -41,7 +41,7 @@ internal sealed class UiCreateFormFromEntityCommand : Command<UiCreateFormFromEn
 
             var engine = UiScaffold.ResolveEngine(s.Engine, inventory.SolutionDir);
 
-            var (_, moduleName, entityFile) = EntityMetadata.FindInApp(inventory.SolutionDir, entity, s.Module);
+            var (moduleDir, moduleName, entityFile) = EntityMetadata.FindInApp(inventory.SolutionDir, entity, s.Module);
             var fields = EntityMetadata.Parse(File.ReadAllText(entityFile), entity);
             if (fields.Count == 0)
                 throw new InvalidOperationException($"{entity} has no editable properties (public get/set) to build a form from.");
@@ -55,15 +55,30 @@ internal sealed class UiCreateFormFromEntityCommand : Command<UiCreateFormFromEn
 
             var plural = CodeGen.Pluralize(entity);
             var uiDir = Path.GetDirectoryName(inventory.UiProjectPath)!;
+            // The Blazor form saves through the entity's typed client, which create-crud generates.
+            if (engine == "blazor" && !File.Exists(Path.Combine(uiDir, "ApiClients", $"{entity}ApiClient.cs")))
+                throw new InvalidOperationException($"The Blazor form saves through the {entity} typed client, which does not exist yet. Run `modulus ui create-crud {entity} --module {moduleName}` first.");
             var target = UiScaffold.OutputPath(engine, uiDir, plural, $"{entity}Form");
             if (File.Exists(target) && !Ux.Force)
                 throw new InvalidOperationException($"{Path.GetRelativePath(start, target)} already exists. Pass --force to overwrite it.");
+
+            var moduleNamespace = Path.GetFileName(moduleDir);
+
+            // The form binds the module's DTO, so the Web project references the module's Application project (as create-crud does).
+
+            var application = Path.Combine(CodeGen.LayerDir(moduleDir, moduleNamespace, "Application"), $"{moduleNamespace}.Application.csproj");
+
+            if (File.Exists(application) && ProjectFileService.EnsureCsprojProjectReference(inventory.UiProjectPath, application, Ux.DryRun))
+
+                Ux.Success("Project reference added", Path.GetRelativePath(start, inventory.UiProjectPath));
 
             new TemplateEngine().RenderToFile(file, new
             {
                 EntityName = entity,
                 EntityNamePlural = plural,
                 ModuleName = moduleName,
+                ModuleNamespace = moduleNamespace,
+                UiNamespace = Path.GetFileNameWithoutExtension(inventory.UiProjectPath),
                 Fields = fields,
             }, target);
 

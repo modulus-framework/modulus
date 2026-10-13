@@ -80,7 +80,7 @@ var uploadUrl = await storage.GetPresignedUploadUrlAsync(
 ## S3 Storage
 
 ```bash
-dotnet add package Cobytelabs.Modulus.Storage.S3
+dotnet add package Synvro.Modulus.Storage.S3
 ```
 
 ```json
@@ -95,7 +95,7 @@ dotnet add package Cobytelabs.Modulus.Storage.S3
 ## Azure Blob Storage
 
 ```bash
-dotnet add package Cobytelabs.Modulus.Storage.AzureBlobs
+dotnet add package Synvro.Modulus.Storage.AzureBlobs
 ```
 
 ```json

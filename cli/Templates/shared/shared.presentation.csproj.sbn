@@ -7,8 +7,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Modulus.Core" Version="{{ framework_version }}" />
-    <PackageReference Include="Modulus.AspNetCore" Version="{{ framework_version }}" />
+    <PackageReference Include="Synvro.Modulus.Core" Version="{{ framework_version }}" />
+    <PackageReference Include="Synvro.Modulus.AspNetCore" Version="{{ framework_version }}" />
   </ItemGroup>
 
   <ItemGroup>

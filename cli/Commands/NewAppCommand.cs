@@ -137,7 +137,7 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
     internal static readonly string[] KnownUiEngines = ["mvc", "razor-pages", "blazor", "fluid", "none"];
 
     /// <summary>The engines a web app host can run on today (the Modulus UI framework's Razor hosts).</summary>
-    internal static readonly string[] HostableUiEngines = ["mvc", "razor-pages"];
+    internal static readonly string[] HostableUiEngines = ["mvc", "razor-pages", "blazor"];
 
     private readonly TemplateEngine _templates = new();
 
@@ -479,7 +479,7 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         var webDir = Path.Combine(projectDir, "src", "Web", $"{rootNs}.Web");
         _templates.RenderToFile("app/web.csproj", model,
             Path.Combine(webDir, $"{rootNs}.Web.csproj"));
-        _templates.RenderToFile("app/Program.Web", model,
+        _templates.RenderToFile(model.UiEngine == "blazor" ? "app/Program.Blazor" : "app/Program.Web", model,
             Path.Combine(webDir, "Program.cs"));
 
         // The Web project has its own configuration: it connects to nothing but
@@ -492,6 +492,17 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
             Path.Combine(webDir, "appsettings.Development.json"));
         _templates.RenderToFile("app/launchSettings.Web.json", model,
             Path.Combine(webDir, "Properties", "launchSettings.json"));
+
+        // The Blazor host renders components, not Razor Pages: its pages, then the same typed API clients.
+        if (model.UiEngine == "blazor")
+        {
+            GenerateBlazorWebPages(webDir, model);
+            _templates.RenderToFile("app/ApiClientExtensions.Web", model, Path.Combine(webDir, "ApiClientExtensions.cs"));
+            if (!model.NoExample)
+                _templates.RenderToFile("ui/EntityApiClient", model, Path.Combine(webDir, "ApiClients", $"{model.ExampleEntity}ApiClient.cs"));
+            projects.Add($"src/Web/{rootNs}.Web/{rootNs}.Web.csproj");
+            return;
+        }
 
         // Razor Pages plumbing: tag helpers (m-*) and the theme's layouts.
         _templates.RenderToFile("app/WebPagesViewImports", model,
@@ -550,6 +561,28 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         }
 
         projects.Add($"src/Web/{rootNs}.Web/{rootNs}.Web.csproj");
+    }
+
+    /// <summary>The Blazor host's pages: the app shell, routes, the main layout and a home page, plus the sign-in pages with --auth.</summary>
+    private void GenerateBlazorWebPages(string webDir, AppModel model)
+    {
+        var components = Path.Combine(webDir, "Components");
+        _templates.RenderToFile("app/blazor/App.razor", model, Path.Combine(components, "App.razor"));
+        _templates.RenderToFile("app/blazor/Routes.razor", model, Path.Combine(components, "Routes.razor"));
+        _templates.RenderToFile("app/blazor/_Imports.razor", model, Path.Combine(components, "_Imports.razor"));
+        _templates.RenderToFile("app/blazor/Layout/MainLayout.razor", model, Path.Combine(components, "Layout", "MainLayout.razor"));
+        _templates.RenderToFile("app/blazor/Pages/Home.razor", model, Path.Combine(components, "Pages", "Home.razor"));
+        // The static file middleware warns about a missing wwwroot folder. An empty file keeps the folder in git.
+        Ux.WriteFile(Path.Combine(webDir, "wwwroot", ".gitkeep"), "");
+        if (model.UseAuth)
+        {
+            _templates.RenderToFile("app/blazor/Layout/BlankLayout.razor", model, Path.Combine(components, "Layout", "BlankLayout.razor"));
+            _templates.RenderToFile("app/blazor/RedirectToLogin.razor", model, Path.Combine(components, "RedirectToLogin.razor"));
+            _templates.RenderToFile("app/loosening-allowlist.Web.json", model, Path.Combine(webDir, "security", "loosening-allowlist.json"));
+            _templates.RenderToFile("app/PrincipalCurrentUser", model, Path.Combine(webDir, "Security", "PrincipalCurrentUser.cs"));
+            if (model.WebLoginMode == "Password")
+                _templates.RenderToFile("app/blazor/Pages/Account/Login.razor", model, Path.Combine(components, "Pages", "Account", "Login.razor"));
+        }
     }
 
     /// <summary>
@@ -627,7 +660,7 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
 
     /// <summary>Whether the Web project runs on the Modulus UI framework: a webapp+api app with the mvc or razor-pages engine.</summary>
     internal static bool UsesUiFramework(AppKind kind, string uiEngine) =>
-        kind == AppKind.WebAppApi && (uiEngine is "mvc" or "razor-pages");
+        kind == AppKind.WebAppApi && (uiEngine is "mvc" or "razor-pages" or "blazor");
 
     /// <summary>References the UI framework packages for the app's UI engine in the host project.</summary>
     private static void AddUiFrameworkPackages(string projectDir, AppModel model)
@@ -759,7 +792,7 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         engine = ValidateChoice(engine, KnownUiEngines, "UI engine");
         if (!HostableUiEngines.Contains(engine))
             throw new ArgumentException(
-                $"A web app host runs on the mvc or razor-pages engine; '{engine}' has page templates (modulus ui add-component, ...) but no app host yet.");
+                $"A web app host runs on the mvc, razor-pages or blazor engine; '{engine}' has page templates (modulus ui add-component, ...) but no app host yet.");
         return engine;
     }
 

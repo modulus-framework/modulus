@@ -55,6 +55,18 @@ public sealed class MongoRepositoryPagingTests : IAsyncLifetime
         page.Select(t => t.Seq).Should().Equal(8, 7);
     }
 
+    [Fact]
+    public async Task Listing_sorts_before_it_pages_when_the_filter_is_translated_but_the_sort_is_not()
+    {
+        // The server path is only correct when the sort is server-side too. With the filter translated and the sort not,
+        // paging on the server would return the first two matches in natural order (2, 3) instead of (8, 7).
+        var repository = new TicketRepository(_collection, _tenant, translateFilter: true);
+
+        var page = await repository.ListAsync(new BySeq(take: 2, filterTo: 8, descending: true), CancellationToken.None);
+
+        page.Select(t => t.Seq).Should().Equal(8, 7);
+    }
+
     public sealed class TicketDocument : IHasTenantId
     {
         [BsonId(IdGenerator = typeof(GuidGenerator))]
@@ -81,22 +93,31 @@ public sealed class MongoRepositoryPagingTests : IAsyncLifetime
         public int Seq { get; }
     }
 
-    private sealed class TicketRepository(IMongoCollection<TicketDocument> collection, ICurrentTenant tenant)
+    private sealed class TicketRepository(IMongoCollection<TicketDocument> collection, ICurrentTenant tenant, bool translateFilter = false)
         : MongoRepository<Ticket, TicketDocument>(collection, tenant)
     {
         protected override Ticket ToDomain(TicketDocument doc) => new(doc.Id, doc.TenantId, doc.Seq);
 
         protected override TicketDocument ToDocument(Ticket entity) => new() { Id = entity.Id, TenantId = entity.TenantId, Seq = entity.Seq };
+
+        // The filter can be translated to the server while the sort cannot (BuildDocumentSort stays null).
+        protected override FilterDefinition<TicketDocument>? BuildDocumentFilter(ISpecification<Ticket> spec) =>
+            translateFilter && spec is BySeq { FilterTo: { } to }
+                ? Builders<TicketDocument>.Filter.Lte(d => d.Seq, to)
+                : null;
     }
 
     private sealed class BySeq : Specification<Ticket>
     {
         public BySeq(int? take = null, int? filterTo = null, bool descending = false)
         {
+            FilterTo = filterTo;
             if (filterTo is { } to)
                 Filter = t => t.Seq <= to;
             AddOrderBy(t => t.Seq, descending);
             Take = take;
         }
+
+        public int? FilterTo { get; }
     }
 }

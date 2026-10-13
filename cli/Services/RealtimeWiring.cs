@@ -9,7 +9,7 @@ namespace Modulus.Cli.Services;
 /// </summary>
 internal static partial class RealtimeWiring
 {
-    public const string PackageId = "Modulus.Realtime";
+    public const string PackageId = "Synvro.Modulus.Realtime";
 
     /// <summary>An integration event to push, and the permission its recipients need (null: everyone in the tenant).</summary>
     internal sealed record RealtimeEventInfo(WebhooksWiring.IntegrationEventInfo Event, string? Permission)

@@ -73,7 +73,6 @@ internal sealed class UiAddAdminCommand : Command<UiAddAdminCommand.Settings>
             if (existing.Count > 0 && !Ux.Force)
                 throw new InvalidOperationException(
                     $"Already present: {string.Join(", ", existing.Select(f => Path.GetRelativePath(start, f)))}. Pass --force to overwrite.");
-
             var renderer = new TemplateEngine();
             foreach (var (entry, file, target) in plan)
             {
@@ -106,8 +105,8 @@ internal sealed class UiAddAdminCommand : Command<UiAddAdminCommand.Settings>
                 Ux.Warning($"No Program.cs in {Path.GetRelativePath(start, uiDir)}; add {UiAdminScaffold.WiringLine(keys)} yourself to get the menu.");
 
             if (File.Exists(programPath) && !UiAccessGates.HasSignIn(File.ReadAllText(programPath)))
-                Ux.Warning("This Web host has no sign-in, and the admin pages require a signed-in user ([[Authorize]]), so they will be refused. " +
-                           "Create the app with --auth openiddict (or add your own authentication) before using them.");
+                Ux.Warning("This Web host has no sign-in, so the admin pages are open to anyone who can reach the host. " +
+                           "Create the app with --auth openiddict (or add your own authentication) before deploying them.");
 
             Ux.Info("The pages read their data through Modulus.Ui.Abstractions.Admin (IUserDirectory, IRoleDirectory, ITenantDirectory, INotificationCenter, IAuditTrail, IAdminSettingsStore, IMetricsSource). " +
                     "Until you register your own implementation they show sample data.");

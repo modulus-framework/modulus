@@ -7,12 +7,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Modulus.Core" Version="{{ framework_version }}" />
-    <PackageReference Include="Modulus.EntityFrameworkCore" Version="{{ framework_version }}" />
-    <PackageReference Include="Modulus.Events" Version="{{ framework_version }}" />
-    <PackageReference Include="Modulus.Data.Abstractions" Version="{{ framework_version }}" />
+    <PackageReference Include="Synvro.Modulus.Core" Version="{{ framework_version }}" />
+    <PackageReference Include="Synvro.Modulus.EntityFrameworkCore" Version="{{ framework_version }}" />
+    <PackageReference Include="Synvro.Modulus.Events" Version="{{ framework_version }}" />
+    <PackageReference Include="Synvro.Modulus.Data.Abstractions" Version="{{ framework_version }}" />
     <PackageReference Include="{{ ef_provider_package }}" Version="{{ ef_provider_version }}" />
-{{ if ai_journal }}    <PackageReference Include="Modulus.AI.Connector.EntityFrameworkCore" Version="{{ framework_version }}" />
+{{ if ai_journal }}    <PackageReference Include="Synvro.Modulus.AI.Connector.EntityFrameworkCore" Version="{{ framework_version }}" />
 {{ end }}{{ if db_provider == "SQLite" }}    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.3" />
 {{ end }}    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.9" />
   </ItemGroup>

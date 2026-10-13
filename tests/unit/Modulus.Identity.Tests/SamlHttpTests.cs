@@ -239,6 +239,26 @@ public sealed class SamlHttpTests : OidcHostTestBase
     }
 
     [Fact]
+    public async Task A_person_with_a_local_second_factor_is_refused_at_the_provider_sign_in()
+    {
+        var (_, firstRequest, firstRelay) = await BeginAsync("entra", "/");
+        var first = IdpResponse(EntraEntity, s_entraKey, firstRequest, firstRelay, AcsEntra, "e2", ("email", "fay@example.test"));
+        (await PostAsync("entra", first, firstRelay)).StatusCode.Should().Be(HttpStatusCode.Redirect);
+
+        // The account now holds a local authenticator, which this path has no way to answer.
+        using (var scope = _app.Services.CreateScope())
+        {
+            var users = scope.ServiceProvider.GetRequiredService<UserManager<ModulusUser>>();
+            var user = (await users.FindByEmailAsync("fay@example.test"))!;
+            (await users.SetTwoFactorEnabledAsync(user, true)).Succeeded.Should().BeTrue();
+        }
+
+        var (_, requestId, relay) = await BeginAsync("entra", "/");
+        var again = IdpResponse(EntraEntity, s_entraKey, requestId, relay, AcsEntra, "e2", ("email", "fay@example.test"));
+        (await PostAsync("entra", again, relay)).StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
     public async Task A_person_without_an_e_mail_address_or_provisioning_gets_nothing()
     {
         var (_, requestId, relay) = await BeginAsync("okta", "/");

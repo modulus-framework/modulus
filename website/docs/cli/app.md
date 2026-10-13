@@ -34,7 +34,7 @@ modulus app <name> [options]
 | `--enable-secrets-guard` | Enable secrets guard | `true` |
 | `--enable-personal-data-protection` | Enable personal data protection | `false` |
 | `--migration-engine` | Migration engine: `efcore`, `dbsh` | prompted |
-| `--package-source` | Path to a local NuGet feed for the `Cobytelabs.Modulus.*` packages | nuget.org only |
+| `--package-source` | Path to a local NuGet feed for the `Synvro.Modulus.*` packages | nuget.org only |
 | `-o, --output` | Output directory | current directory |
 
 Omitted options are prompted interactively (pass every flag for non-interactive/CI use).

@@ -5,6 +5,9 @@
 // "methods" an entry covers every method. Review every change to this file like a change to the auth model.
 {
   "endpoints": [
-{{ if enable_health_checks }}    { "route": "/health/live", "reason": "Liveness probe for orchestrators and load balancers" }
+{{ if ui_engine == "blazor" }}    { "route": "/account/login", "reason": "Sign-in: the API checks the credentials, or the external provider starts the sign-in" },
+    { "route": "/account/logout", "reason": "Ends the BFF session; it only removes the caller's own session cookie" },
+    { "route": "/health", "reason": "Liveness and readiness probes for orchestrators and load balancers" }
+{{ else if enable_health_checks }}    { "route": "/health/live", "reason": "Liveness probe for orchestrators and load balancers" }
 {{ end }}  ]
 }

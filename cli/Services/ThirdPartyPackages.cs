@@ -37,7 +37,7 @@ internal static class ThirdPartyPackages
         };
 
     /// <summary>Framework package prefix — all packages starting with this are first-party.</summary>
-    public const string FrameworkPackagePrefix = "Modulus.";
+    public const string FrameworkPackagePrefix = "Synvro.Modulus.";
 
     /// <summary>Returns true if the package is a Modulus framework package.</summary>
     public static bool IsFrameworkPackage(string packageId)

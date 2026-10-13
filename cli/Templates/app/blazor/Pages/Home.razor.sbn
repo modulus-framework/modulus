@@ -1,0 +1,6 @@
+@page "/"
+{{ if use_auth }}@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+{{ end }}
+
+<h1>{{ root_namespace }}</h1>
+<p>Your Modulus web app. Add pages with <code>modulus ui create-crud</code>, <code>modulus ui add-admin</code> or <code>modulus ui add-component</code>.</p>

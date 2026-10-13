@@ -9,7 +9,11 @@
        ════════════════════════════════════════════════════════════════ -->
 
   <PropertyGroup>
-    <!-- Run the suite against another target of the multi-targeted libraries: dotnet test -p:ModulusTestTfm=net8.0 (restore with it too). -->
+    <!-- Every test project runs on both supported runtimes by default (net8.0 and net10.0). To run one target only:
+         dotnet test -p:ModulusTestTfm=net8.0 (restore with it too). Projects that need a single runtime (the CLI, which
+         ships for net10.0 only) set TargetFrameworks themselves. -->
+    <TargetFramework />
+    <TargetFrameworks Condition="'$(ModulusTestTfm)' == ''">net8.0;net10.0</TargetFrameworks>
     <TargetFramework Condition="'$(ModulusTestTfm)' != ''">$(ModulusTestTfm)</TargetFramework>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>

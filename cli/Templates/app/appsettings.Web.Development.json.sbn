@@ -4,5 +4,8 @@
       "Default": "Information",
       "Microsoft.AspNetCore": "Information"
     }
-  }
+  }{{ if use_auth }},
+  "Bff": {
+    "RequireHttpsMetadata": false
+  }{{ end }}
 }

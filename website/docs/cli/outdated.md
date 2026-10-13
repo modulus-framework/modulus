@@ -16,7 +16,7 @@ modulus outdated [options]
 
 | Option | Description | Default |
 |--------|-------------|---------|
-| `--framework-only` | Only check `Cobytelabs.Modulus.*` packages | false |
+| `--framework-only` | Only check `Synvro.Modulus.*` packages | false |
 | `-o, --output` | App root directory | Current directory |
 
 ## What It Does
@@ -29,7 +29,7 @@ modulus outdated [options]
 
 | Category | Description |
 |----------|-------------|
-| **Framework** | `Cobytelabs.Modulus.*` packages |
+| **Framework** | `Synvro.Modulus.*` packages |
 | **Third-party** | Microsoft, Rebus, Serilog, etc. |
 
 ## Example Output
@@ -40,7 +40,7 @@ A 5-column table (`Package` / `Current` / `Available` / `Type` / `Update`):
 Package                          Current    Available  Type         Update
 ────────────────────────────────────────────────────────────────────────
 Microsoft.EntityFrameworkCore     10.0.9     10.0.11    Third-party  Minor
-Cobytelabs.Modulus.Core           1.3.0      1.4.0      Framework    Minor
+Synvro.Modulus.Core           1.3.0      1.4.0      Framework    Minor
 ```
 
 ## Examples

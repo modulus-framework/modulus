@@ -13,8 +13,8 @@ and first-class multi-tenancy.
 Modulus is designed for teams who need the architectural rigour of ABP or eShop
 without the heavyweight abstractions. It provides proven building blocks that
 compose cleanly — pick only what your application needs. The framework ships as
-**44 focused NuGet packages** (published as `Cobytelabs.Modulus.*`; the analyzer is packed
-inside `Cobytelabs.Modulus.AspNetCore`) plus a `dotnet tool` CLI for scaffolding complete
+**44 focused NuGet packages** (published as `Synvro.Modulus.*`; the analyzer is packed
+inside `Synvro.Modulus.AspNetCore`) plus a `dotnet tool` CLI for scaffolding complete
 solutions, modules, and CRUD code.
 
 ## Solution layout
@@ -60,7 +60,7 @@ tests/                  42 projects
 
 ### Create a new application
 
-The `Cobytelabs.Modulus.*` packages are published to nuget.org on release
+The `Synvro.Modulus.*` packages are published to nuget.org on release
 (tags `v*` via `.github/workflows/release.yml`, requires `NUGET_API_KEY`),
 but you can also use a local feed built from this repo. Pack the local
 feed first, then install the CLI tool and scaffold a complete modular-monolith
@@ -69,11 +69,11 @@ solution:
 ```bash
 # Pack and install the CLI tool
 dotnet pack modulus.slnx -c Release -o ./nupkg
-dotnet tool install -g --add-source ./nupkg Cobytelabs.Modulus.Cli
+dotnet tool install -g --add-source ./nupkg Synvro.Modulus.Cli
 
 # Generate a new application (SQLite by default) and run it.
 # --package-source wires the generated NuGet.config's modulus-local source
-# (with Cobytelabs.* source mapping) to your local feed; omit it once the
+# (with Synvro.Modulus.* source mapping) to your local feed; omit it once the
 # framework version you need is on nuget.org.
 modulus app MyApp --package-source "<abs-path-to>/nupkg"
 cd MyApp
@@ -110,7 +110,7 @@ Templates are embedded Scriban resources under `cli/Templates/`.
   demonstrating the framework's recommended shape: module system, CQRS via
   `Modulus.Mediator`, per-module EF Core persistence, Serilog, Sentry,
   multi-tenancy, and authentication. Ships a `NuGet.config` pointing at the
-  sample-local `nupkg/` feed (with `Cobytelabs.*` source mapping), so it builds
+  sample-local `nupkg/` feed (with `Synvro.Modulus.*` source mapping), so it builds
   straight after `dotnet pack modulus.slnx -c Release -o samples/TradeFlow/nupkg`.
   Also includes Dockerfile, docker-compose.yml, and GitHub Actions CI.
 

@@ -15,7 +15,10 @@ Decisions taken:
 |---|---|---|
 | `dotnet build modulus.slnx -c Release` | **FAIL**: 36× RS0016 in `cli/Services/FormStateService.cs` | **PASS**: 0 warnings, 0 errors |
 | `dotnet format modulus.slnx --verify-no-changes` | **FAIL** (same compile errors, plus 41 whitespace violations in the CLI) | **PASS** after `dotnet format whitespace` on the CLI and its tests |
-| `dotnet test modulus.slnx --filter Category=Unit` | not runnable | **1,701 passed, 6 failed**: see T1 and T2 |
+| `dotnet test modulus.slnx --filter Category=Unit` | not runnable | **1,701 passed, 6 failed**: see T1 and T2. Re-run 2026-10-12: all projects green except `EvictableFixedWindowLimiterTests.EvictIdlePartitions_RemovesOnlyIdlePartitions`, which failed once under parallel load and passes 3/3 alone (timing-based, not fixed). `Modulus.Cli.Tests` 530/530 after fixing the resolver (below) |
+| `dotnet build` (Release, 2026-10-12) | PASS | PASS: 0 warnings, 0 errors |
+| `dotnet format --verify-no-changes` (2026-10-12) | PASS | PASS (exit 0) |
+| `dotnet list package --vulnerable --include-transitive` (2026-10-12) | PASS | PASS: no vulnerable packages |
 | `dotnet list package --vulnerable --include-transitive` | PASS, none | PASS |
 | TODO / FIXME / `NotImplementedException` in `src/` | none | none |
 
@@ -76,7 +79,7 @@ The Phase 5–9 commits of 2026-10-11 (f294a0a … e76ff65) added code that no C
   - Test: a lookalike address never receives the mail.
 
   *Done:* the queue carries the account id only, and the worker mails the stored address. Callers no longer pass an address.
-  The existing queue tests cover delivery to the stored address; a dedicated lookalike-address test is still to add.
+  Test: `AccountLookalikeAddressTests`. It uses a case variant of the address (the dotless-ı lookalike does not match on this runtime's normalizer), which takes the same lookup path.
 
 ### High
 - [x] **S2.** `POST account/2fa/setup` replaces the live authenticator key without re-authentication (`UserTwoFactorService.cs:45-58`, `ModulusAccountController.cs:272-275`). A stolen session can take over the second factor.
@@ -91,7 +94,7 @@ The Phase 5–9 commits of 2026-10-11 (f294a0a … e76ff65) added code that no C
   Fix: one shared helper that mirrors ASP.NET `IsLocalUrl` (rejects control characters), used in both places.
 - [x] **S5.** SAML and federated sign-in skip the account's local second factor, and `LinkExistingByEmail` trusts an IdP email that may be unverified (`SamlSignInService.cs:143-146`, `ExternalAccountProvisioner.cs:51-59`, `FederatedLoginValidator.cs:50-75`).
   Fix: enforce local 2FA as the LDAP path does, and link by email only when the provider is flagged as asserting verified addresses.
-  *Done:* SAML and federated sign-in refuse an account with a local second factor (neither path can answer a code). Test: `ExternalAccountLinkTests`, `FederatedLoginTests`. A SAML-level test of the second-factor refusal is still to add.
+  *Done:* SAML and federated sign-in refuse an account with a local second factor (neither path can answer a code). Test: `ExternalAccountLinkTests`, `FederatedLoginTests`. Test: `SamlHttpTests.A_person_with_a_local_second_factor_is_refused_at_the_provider_sign_in`.
 - [x] **S6.** `TenantMiddleware.cs:44-90` checks only `ctx.User` from the default scheme. Membership is not checked in two cases:
   - endpoints that use their own authentication scheme (the BFF client schemes);
   - hosts where `UseMultiTenancy` runs before `UseAuthentication`.
@@ -134,7 +137,7 @@ Tests: `tests/unit/Modulus.Identity.Tests`, `Modulus.Bff.Tests`, `Modulus.Platfo
 - [x] **D6.** The Mongo repository scans whole collections client-side without a document filter, and ignores the spec's sort when a filter is set (`MongoRepository.cs:84-93,136-138`).
   Fix: always apply the sort before `Skip`/`Take`, and add a `MaxClientSideScan` guard.
 
-  *Done:* the test for sort-before-paging uses the client-side path. A test for the server-side path with an untranslated sort is still to add.
+  *Done:* the test for sort-before-paging uses the client-side path. Test for the case the fix guards: `Listing_sorts_before_it_pages_when_the_filter_is_translated_but_the_sort_is_not` (fails when the fix is removed).
 Tests: `tests/unit/Modulus.Data.MongoDB.Tests`, `Modulus.Outbox.Tests`, `Modulus.EventBus.*.Tests`. For D1, D2 and D6, also run the Mongo integration tests.
 
 ## Step 4: Medium (core, messaging, CLI)
@@ -152,7 +155,7 @@ Tests: `tests/unit/Modulus.Data.MongoDB.Tests`, `Modulus.Outbox.Tests`, `Modulus
 - [x] **M5.** `SqlServerRowLevelSecurity.EnsureAsync` drops and recreates policies outside a transaction (`:149-169`). Fix: use a transaction, or `ALTER SECURITY POLICY`.
   *Done:* the rebuild runs in one transaction. The SQL Server RLS integration tests were not run here (they need a SQL Server container).
 - [x] **M6.** The Mongo outbox poller has no drain loop and no leader election, and swallows OCE (`MongoOutboxPollingService.cs:31-48`). Fix: mirror the EF `OutboxPollingService`.
-  *Done:* no wake-on-commit signal in the Mongo poller (the signal type lives in the EF outbox package and Mongo does not reference it). A dedicated drain-loop test is still to add.
+  *Done:* no wake-on-commit signal in the Mongo poller (the signal type lives in the EF outbox package and Mongo does not reference it). Test: `The_poller_drains_a_backlog_larger_than_one_batch_without_waiting_for_the_interval` (fails when the drain-again step is removed).
 - [x] **M7.** `src/observability/.../OpenTelemetryExtensions.cs:35` is a public no-op placeholder. Fix: implement it, or mark it `[Obsolete]`.
 - [x] **M8.** CLI `TemplatePackageResolver.cs`:
   - the download URL is wrong for NuGet v3 feeds (`:202`); fix: use the flat-container URL;

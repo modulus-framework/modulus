@@ -16,7 +16,7 @@ internal sealed class TemplateEngine
     /// <summary>
     /// Renders a template by embedded resource path (e.g. <c>"app/Program.cs"</c>), or from disk when given an absolute file path.
     /// </summary>
-    public string Render(string templatePath, object model)
+    public string Render(string templatePath, object model, string? outputPath = null)
     {
         string templateSource;
         if (Path.IsPathRooted(templatePath))
@@ -49,6 +49,9 @@ internal sealed class TemplateEngine
             if (value is not null)
                 scriptObject[ToSnakeCase(prop.Name)] = value;
         }
+        // use_auth tells UI templates whether the app signs users in; the app is found from the file being written.
+        if (outputPath is not null && !scriptObject.ContainsKey("use_auth"))
+            scriptObject["use_auth"] = AppAuth.Enabled(outputPath);
         var context = new TemplateContext { TemplateLoader = new TemplateLoaderImpl(_assembly) };
         context.PushGlobal(scriptObject);
         return template.Render(context);
@@ -63,7 +66,7 @@ internal sealed class TemplateEngine
     public void RenderToFile(
         string templatePath, object model, string outputPath)
     {
-        var content = Render(templatePath, model);
+        var content = Render(templatePath, model, outputPath);
         Ux.WriteFile(outputPath, content);
     }
 

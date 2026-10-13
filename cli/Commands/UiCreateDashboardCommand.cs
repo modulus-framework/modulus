@@ -71,6 +71,34 @@ internal sealed class UiCreateDashboardCommand : Command<UiCreateDashboardComman
             }, target);
 
             Ux.Success($"{page.Title} page created", Path.GetRelativePath(start, target));
+
+            // The MVC host reaches the page through a controller action at the dashboard's route.
+            if (engine == "mvc")
+            {
+                var controller = Path.Combine(uiDir, "Controllers", $"{pageName}Controller.cs");
+                if (File.Exists(controller) && !Ux.Force)
+                    throw new InvalidOperationException($"{Path.GetRelativePath(start, controller)} already exists. Pass --force to overwrite it.");
+                var (service, variable, call) = page.Key switch
+                {
+                    "overview" => ("IMetricsSource", "metrics", "metrics.DashboardAsync()"),
+                    "analytics" => ("IMetricsSource", "metrics", "metrics.AnalyticsAsync()"),
+                    "reports" => ("IMetricsSource", "metrics", "metrics.ReportsAsync()"),
+                    _ => ("IAuditTrail", "audit", "audit.SearchAsync((string?)null)"),
+                };
+                new TemplateEngine().RenderToFile("ui/DashboardController", new
+                {
+                    Namespace = Path.GetFileNameWithoutExtension(inventory.UiProjectPath) + ".Controllers",
+                    PageName = pageName,
+                    Service = service,
+                    Variable = variable,
+                    Call = call,
+                    Route = "/" + module.ToLowerInvariant() + "/" + page.Key,
+                    ViewPath = "~/Views/" + module + "/" + pageName + ".cshtml",
+                }, controller);
+                Ux.Success("Controller added", Path.GetRelativePath(start, controller));
+                foreach (var change in UiHostWiring.EnsureControllerRouting(inventory.UiProgramCsPath))
+                    Ux.Success("Web host updated", change);
+            }
             Ux.Info(page.Description);
             return 0;
         });

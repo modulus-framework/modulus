@@ -22,9 +22,9 @@
     <PackageReference Include="coverlet.collector" Version="10.0.1" />
     <!-- Integration-test harness: boots this app's host against isolated
          in-memory SQLite. See ModulusWebAppFactory. -->
-    <PackageReference Include="Modulus.Testing" Version="{{ framework_version }}" />
+    <PackageReference Include="Synvro.Modulus.Testing" Version="{{ framework_version }}" />
     <!-- Module boundary rules and architecture verification. -->
-    <PackageReference Include="Modulus.Testing.Architecture" Version="{{ framework_version }}" />
+    <PackageReference Include="Synvro.Modulus.Testing.Architecture" Version="{{ framework_version }}" />
 {{ if auth != "none" }}    <!-- Transitive advisory pin: OpenIddict's DataProtection integration (in Modulus.Identity, so every auth provider) pulls
          System.Security.Cryptography.Xml 10.0.7 (multiple high-severity advisories) into a project
          that, unlike the web host, does not get it from the shared framework. -->

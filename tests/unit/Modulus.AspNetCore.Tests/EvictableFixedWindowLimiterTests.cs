@@ -73,23 +73,21 @@ public sealed class EvictableFixedWindowLimiterTests
         // Sleep past the idle threshold so "idle-one" becomes evictable.
         await Task.Delay(Idle + TimeSpan.FromMilliseconds(120));
 
-        // A second partition acquired NOW stays fresh while the first ages on.
+        // A second partition stays fresh: it is touched right before each eviction pass, so a late pass under
+        // parallel test load cannot age it past the threshold.
         var freshCtx = host.ContextFor("fresh");
-        await host.Limiter.AcquireAsync(freshCtx);
-
-        (await EvictIdleWithinAsync(host.Limiter)).Should().BeGreaterThanOrEqualTo(1);
-        host.Limiter.GetStatistics(freshCtx).Should().NotBeNull();
-    }
-
-    // The idle clock is advanced by the limiter's window timer, which can run late
-    // under parallel test load, so poll until the partition has aged past the threshold.
-    private static async Task<int> EvictIdleWithinAsync(EvictableFixedWindowLimiter limiter)
-    {
+        var removed = 0;
         var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(5);
-        int removed;
-        while ((removed = limiter.EvictIdlePartitions()) == 0 && DateTime.UtcNow < deadline)
-            await Task.Delay(10);
-        return removed;
+        while (removed == 0 && DateTime.UtcNow < deadline)
+        {
+            await host.Limiter.AcquireAsync(freshCtx);
+            removed = host.Limiter.EvictIdlePartitions();
+            if (removed == 0)
+                await Task.Delay(10);
+        }
+
+        removed.Should().BeGreaterThanOrEqualTo(1);
+        host.Limiter.GetStatistics(freshCtx).Should().NotBeNull();
     }
 
     [Fact]
@@ -115,7 +113,7 @@ public sealed class EvictableFixedWindowLimiterTests
 
         await host.Limiter.AcquireAsync(host.ContextFor("reused"));
         await Task.Delay(Idle + TimeSpan.FromMilliseconds(120));
-        (await EvictIdleWithinAsync(host.Limiter)).Should().BeGreaterThanOrEqualTo(1);
+        host.Limiter.EvictIdlePartitions().Should().BeGreaterThanOrEqualTo(1);
 
         var act = async () =>
         {

@@ -13,11 +13,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Modulus.Bff" Version="{{ framework_version }}" />
-    <PackageReference Include="Modulus.AspNetCore" Version="{{ framework_version }}" />
-    <PackageReference Include="Modulus.Core" Version="{{ framework_version }}" />
-    <PackageReference Include="Modulus.Platform" Version="{{ framework_version }}" />
-{{ if use_redis_cache }}    <PackageReference Include="Modulus.Caching.Redis" Version="{{ framework_version }}" />
+    <PackageReference Include="Synvro.Modulus.Bff" Version="{{ framework_version }}" />
+    <PackageReference Include="Synvro.Modulus.AspNetCore" Version="{{ framework_version }}" />
+    <PackageReference Include="Synvro.Modulus.Core" Version="{{ framework_version }}" />
+    <PackageReference Include="Synvro.Modulus.Platform" Version="{{ framework_version }}" />
+{{ if use_redis_cache }}    <PackageReference Include="Synvro.Modulus.Caching.Redis" Version="{{ framework_version }}" />
 {{ end }}    <!-- Transitive pin: AspNetCore.OpenApi floats to Microsoft.OpenApi 2.0.0 (GHSA-v5pm-xwqc-g5wc). -->
     <PackageReference Include="Microsoft.OpenApi" Version="2.9.0" />
   </ItemGroup>

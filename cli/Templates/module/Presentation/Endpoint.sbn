@@ -25,6 +25,7 @@ public sealed class Get{{ entity_plural }}Endpoint(IMediator mediator) : Endpoin
         Get("/api/{{ module_name_lower }}/{{ route_name }}");
         Summary("Get a page of {{ entity_name_lower }}s (?page=1&pageSize=100)");
 {{ if required_permission }}        Permissions("{{ required_permission }}");
+{{ else if !use_auth }}        AllowAnonymous("No sign-in is configured (--auth none), so this endpoint is open.");
 {{ end }}    }
 
     public override async Task HandleAsync(Get{{ entity_plural }}Request req, CancellationToken ct)
@@ -46,6 +47,7 @@ public sealed class Get{{ entity_name }}ByIdEndpoint(IMediator mediator) : Endpo
         Get("/api/{{ module_name_lower }}/{{ route_name }}/{id}");
         Summary("Get {{ entity_name_lower }} by ID");
 {{ if required_permission }}        Permissions("{{ required_permission }}");
+{{ else if !use_auth }}        AllowAnonymous("No sign-in is configured (--auth none), so this endpoint is open.");
 {{ end }}    }
 
     public override async Task HandleAsync(Get{{ entity_name }}ByIdRequest req, CancellationToken ct)
@@ -68,6 +70,7 @@ public sealed class Create{{ entity_name }}Endpoint(IMediator mediator) : Endpoi
         Summary("Create a new {{ entity_name_lower }}");
         Created();
 {{ if required_permission }}        Permissions("{{ required_permission }}");
+{{ else if !use_auth }}        AllowAnonymous("No sign-in is configured (--auth none), so this endpoint is open.");
 {{ end }}    }
 
     public override async Task HandleAsync(Create{{ entity_name }}Request req, CancellationToken ct)
@@ -90,6 +93,7 @@ public sealed class Update{{ entity_name }}Endpoint(IMediator mediator) : Endpoi
         Put("/api/{{ module_name_lower }}/{{ route_name }}/{id}");
         Summary("Update an existing {{ entity_name_lower }}");
 {{ if required_permission }}        Permissions("{{ required_permission }}");
+{{ else if !use_auth }}        AllowAnonymous("No sign-in is configured (--auth none), so this endpoint is open.");
 {{ end }}    }
 
     public override async Task HandleAsync(Update{{ entity_name }}Request req, CancellationToken ct)
@@ -111,6 +115,7 @@ public sealed class Delete{{ entity_name }}Endpoint(IMediator mediator) : Endpoi
         Delete("/api/{{ module_name_lower }}/{{ route_name }}/{id}");
         Summary("Delete a {{ entity_name_lower }}");
 {{ if required_permission }}        Permissions("{{ required_permission }}");
+{{ else if !use_auth }}        AllowAnonymous("No sign-in is configured (--auth none), so this endpoint is open.");
 {{ end }}    }
 
     public override async Task HandleAsync(Delete{{ entity_name }}Request req, CancellationToken ct)

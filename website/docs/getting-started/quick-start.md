@@ -7,7 +7,7 @@ sidebar_position: 2
 ## 1. Install the CLI
 
 ```bash
-dotnet tool install -g --add-source ./nupkg Cobytelabs.Modulus.Cli
+dotnet tool install -g --add-source ./nupkg Synvro.Modulus.Cli
 ```
 
 ## 2. Create an Application

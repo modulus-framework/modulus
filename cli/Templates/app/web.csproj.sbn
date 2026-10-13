@@ -13,14 +13,14 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Modulus.AspNetCore" Version="{{ framework_version }}" />
-    <PackageReference Include="Modulus.Core" Version="{{ framework_version }}" />
-    <PackageReference Include="Modulus.Platform" Version="{{ framework_version }}" />
+    <PackageReference Include="Synvro.Modulus.AspNetCore" Version="{{ framework_version }}" />
+    <PackageReference Include="Synvro.Modulus.Core" Version="{{ framework_version }}" />
+    <PackageReference Include="Synvro.Modulus.Platform" Version="{{ framework_version }}" />
     {{ if auth != "none" }}<!-- Permission checks behind the page guards and admin menus (ICurrentUser.HasPermission
          / the grant store) — no OpenIddict here: the token server lives in the API host. -->
-    <PackageReference Include="Modulus.Identity" Version="{{ framework_version }}" />
+    <PackageReference Include="Synvro.Modulus.Identity" Version="{{ framework_version }}" />
     <!-- The BFF web session: sign-in, server-side tokens, refresh and the typed clients' token handler. -->
-    <PackageReference Include="Modulus.Bff" Version="{{ framework_version }}" />
+    <PackageReference Include="Synvro.Modulus.Bff" Version="{{ framework_version }}" />
     {{ end }}</ItemGroup>
 
   <ItemGroup>

@@ -218,6 +218,13 @@ internal class TemplatePackageResolver : ITemplatePackageResolver
             if (Directory.Exists(source))
                 return CopyFromLocalFeed(source, downloadPath, packageId, version);
 
+            // A NuGet.Config entry that is neither a folder nor an absolute URL cannot be downloaded from.
+            if (!Uri.TryCreate(source, UriKind.Absolute, out _))
+            {
+                Ux.Detail($"Skipping package source {source}: it is not a folder or an absolute URL.");
+                return null;
+            }
+
             // NuGet v3 flat container: {PackageBaseAddress}/{id}/{version}/{id}.{version}.nupkg, all lower-case.
             var id = packageId.ToLowerInvariant();
             var ver = version.ToLowerInvariant();
@@ -244,7 +251,7 @@ internal class TemplatePackageResolver : ITemplatePackageResolver
             File.Move(partial, downloadPath, overwrite: true);
             return downloadPath;
         }
-        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or IOException or JsonException or InvalidDataException)
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or IOException or JsonException or InvalidDataException or InvalidOperationException)
         {
             Ux.Detail($"Could not download {packageId} {version} from {source}: {ex.Message}");
             return null;

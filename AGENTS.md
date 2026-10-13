@@ -29,7 +29,7 @@ All commands are run from the repository root (`E:\Personal\framework\modulus`).
 | Run only unit tests | `dotnet test modulus.slnx --filter "Category=Unit"` |
 | Run only integration tests | `dotnet test modulus.slnx --filter "Category=Integration"` |
 | Pack NuGet packages | `dotnet pack modulus.slnx -c Release` |
-| Install CLI tool | `dotnet tool install -g --add-source ./nupkg Cobytelabs.Modulus.Cli` |
+| Install CLI tool | `dotnet tool install -g --add-source ./nupkg Synvro.Modulus.Cli` |
 | Create new app | `modulus app MyApp` |
 | Add a module | `modulus add-module Catalog` |
 | Generate CRUD | `modulus generate-crud Product --module Catalog` |
@@ -172,7 +172,7 @@ large DDD/CQRS modular monoliths.
 | `modulus migrate add <Name>` | Scaffolds a migration in each module's Infrastructure project (or one via `--module`). Auto-detects engine: `dotnet ef` for EF Core modules, `dbsh create` for dbsh modules. |
 | `modulus migrate update` | Applies pending migrations to each module's database. Auto-detects engine: `dotnet ef database update` for EF Core, `dbsh init && dbsh migrate` for dbsh modules. |
 | `modulus doctor` | Checks environment health: .NET SDK, `dotnet-ef`, `dbsh` tool availability, dbsh config presence, CLI tool version, framework package versions. |
-| `modulus outdated` | Shows all packages with newer versions available on NuGet. `--framework-only` to check only `Cobytelabs.Modulus.*` packages. |
+| `modulus outdated` | Shows all packages with newer versions available on NuGet. `--framework-only` to check only `Synvro.Modulus.*` packages. |
 | `modulus update` | Updates packages to latest versions with backup and rollback support. `--dry-run` to preview changes, `--force` to skip prompts. |
 
 ### Generated layout
@@ -247,7 +247,7 @@ contributes its own handlers without re-registering behaviours. The generated
 and `dotnet sln list` discover all projects.
 
 A working example lives at `samples/TradeFlow` (API host + Users module,
-SQLite). Because the `Cobytelabs.Modulus.*` packages aren't on nuget.org yet, the
+SQLite). Because the `Synvro.Modulus.*` packages aren't on nuget.org yet, the
 sample ships a `NuGet.config` pointing at the repo's local `nupkg/` feed — run
 `dotnet pack modulus.slnx -c Release` first if the feed is empty.
 
@@ -840,7 +840,7 @@ removed from this repository.** The UI lives in the separate `modulus-ui` reposi
   Covered by `AppKindTests`, `ApiPermissionTests`, `IdentityBackendTests`, `SeededClientTemplateTests`, `UiFrameworkHostTests`.
 - **Known gaps.** The Blazor, Fluid and no-engine hosts for a web app are not generated (only `mvc` and `razor-pages`); there is no generated admin CRUD page or
   user/role admin screen yet (the older ones were removed, the data-bound replacements are planned in `modulus-ui/docs/roadmaps/CLI-IMPLEMENTATION.md`); the samples under
-  `samples/` still consume the published `Cobytelabs.Modulus.UI.*` 1.4.0 packages.
+  `samples/` still consume the published `Synvro.Modulus.UI.*` 1.4.0 packages.
 
 ## App-kind split (`webapp+api`, as-built)
 
@@ -969,7 +969,7 @@ isolation, hash-chained security audit, probe suite), and the provider integrati
   idempotency, ...): `Mode: Warn` (default) logs one warning, `Fail` refuses to start unless the contract is in `Allow`
   (simple name, e.g. `IIdempotencyStore`), `Off` skips it. A factory registration is resolved only for a `Modulus.*`
   contract named `*Store`. Covered by `InMemoryStoreCheckTests`.
-- **MOD0001** (`src/analyzers/Modulus.Analyzers`, packed into `Cobytelabs.Modulus.AspNetCore`) warns at build time on
+- **MOD0001** (`src/analyzers/Modulus.Analyzers`, packed into `Synvro.Modulus.AspNetCore`) warns at build time on
   anonymous without a reason. **MOD0002** (same package) warns when a classified property, field or parameter (any
   `DataClassificationAttribute`, `[ProtectedPersonalData]` included; not `[InternalData]`) is passed to an ordinary `ILogger`
   extension (`LogInformation`, `BeginScope`, ..., also inside an interpolated string). Tests drive both with stub sources
@@ -1262,8 +1262,10 @@ isolation, hash-chained security audit, probe suite), and the provider integrati
 
 ## Dual targeting (`net8.0` + `net10.0`)
 
-Every library under `src/` except the UI packages, `Modulus.Realtime` (+ `.Redis`: SSE needs `System.Net.ServerSentEvents`, .NET 9+) and the analyzer
-project multi-targets `net8.0;net10.0` (`<TargetFramework />` clears the default from `Modulus.Common.props`, then `<TargetFrameworks>`). The CLI and generated apps stay `net10.0`.
+Every library under `src/` except the UI packages and the analyzer project multi-targets `net8.0;net10.0` (`<TargetFramework />`
+clears the default from `Modulus.Common.props`, then `<TargetFrameworks>`). This includes `Modulus.Realtime` (+ `.Redis`): its SSE endpoint writes
+`text/event-stream` itself (`Transports/SseResult.cs`) instead of `TypedResults.ServerSentEvents` (.NET 10 only). Test projects run on both
+runtimes by default (`build/Modulus.Test.props`); `-p:ModulusTestTfm=net8.0` narrows a run. The CLI (`Modulus.Cli` and its tests) and generated apps stay `net10.0`.
 
 - **Package versions** are per TFM in `Directory.Packages.props` (`Condition="'$(TargetFramework)' == 'net8.0'"`): ASP.NET Core / EF Core / providers use their 8.x line on net8
   (`Microsoft.Extensions.*` stay on 10.x, which supports net8 and is what FusionCache needs).

@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="@(string.IsNullOrEmpty(System.Globalization.CultureInfo.CurrentUICulture.Name) ? "en" : System.Globalization.CultureInfo.CurrentUICulture.Name)">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <base href="/" />
+    <ResourcePreloader />
+    <ModulusHead Cookie="@(name => HttpContext.Request.Cookies[name])" />
+    <ImportMap />
+    <HeadOutlet @rendermode="PageRenderMode" />
+</head>
+
+<body>
+    <Routes @rendermode="PageRenderMode" />
+    <script src="_content/AntDesign/js/ant-design-blazor.js"></script>
+    <script src="@Assets["_framework/blazor.web.js"]"></script>
+</body>
+
+</html>
+
+@code {
+    [CascadingParameter] private HttpContext HttpContext { get; set; } = default!;
+
+    // Static SSR for the error page (it needs HttpContext); interactive everywhere else.
+    private IComponentRenderMode? PageRenderMode =>
+        HttpContext.AcceptsInteractiveRouting() ? InteractiveServer : null;
+}

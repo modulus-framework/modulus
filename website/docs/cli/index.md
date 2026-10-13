@@ -11,7 +11,7 @@ The `modulus` CLI tool generates complete solutions, modules, and CRUD code.
 ## Installation
 
 ```bash
-dotnet tool install -g --add-source ./nupkg Cobytelabs.Modulus.Cli
+dotnet tool install -g --add-source ./nupkg Synvro.Modulus.Cli
 ```
 
 ## Commands

@@ -67,7 +67,7 @@ internal sealed partial class GenerateGrpcCommand : Command<GenerateGrpcCommand.
         Edit(presCsproj, t => GrpcWiring.EnsurePresentationProject(t, FrameworkVersion.Current), written, app);
 
         // ── API host ────────────────────────────────────────────────
-        if (ProjectFileService.EnsureCsprojPackageReference(app.ApiProjectPath, "Modulus.Grpc", FrameworkVersion.Current, Ux.DryRun))
+        if (ProjectFileService.EnsureCsprojPackageReference(app.ApiProjectPath, "Synvro.Modulus.Grpc", FrameworkVersion.Current, Ux.DryRun))
             written.Add(Path.GetRelativePath(app.SolutionDir, app.ApiProjectPath) + " (updated)");
         if (!Edit(app.ProgramCsPath, t => GrpcWiring.EnsureApiProgram(t, app.RootNamespace), written, app)
             && !File.ReadAllText(app.ProgramCsPath).Contains("MapModulusGrpc(", StringComparison.Ordinal))

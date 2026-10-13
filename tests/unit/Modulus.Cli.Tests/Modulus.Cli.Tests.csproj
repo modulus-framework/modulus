@@ -1,5 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
+  <PropertyGroup>
+    <!-- The CLI is a net10.0 dotnet tool; its tests run only on net10.0. -->
+    <TargetFramework />
+    <TargetFrameworks>net10.0</TargetFrameworks>
+  </PropertyGroup>
+
   <ItemGroup>
     <ProjectReference Include="../../../cli/Modulus.Cli.csproj" />
     <ProjectReference Include="../../../src/messaging/Modulus.Events/Modulus.Events.csproj" />

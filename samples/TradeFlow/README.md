@@ -166,18 +166,18 @@ dotnet test tests/TradeFlow.IntegrationTests/TradeFlow.IntegrationTests.csproj
 ### Modulus Framework Integration
 
 This sample demonstrates integration with Modulus framework packages (all published under the
-`Cobytelabs.Modulus.*` NuGet namespace):
+`Synvro.Modulus.*` NuGet namespace):
 
-- **Module System**: `Cobytelabs.Modulus.Core` for auto-discovery and dependency management
-- **Mediator**: `Cobytelabs.Modulus.Mediator` for command/query handling
+- **Module System**: `Synvro.Modulus.Core` for auto-discovery and dependency management
+- **Mediator**: `Synvro.Modulus.Mediator` for command/query handling
 - **Data Access**: `Npgsql.EntityFrameworkCore.PostgreSQL` + EF Core, following Modulus's module-per-`DbContext` convention
-- **Identity**: `Cobytelabs.Modulus.Identity` for OpenIddict-based auth (password + authorization-code flows)
-- **Inbox/Outbox**: `Cobytelabs.Modulus.Inbox` / `Cobytelabs.Modulus.Outbox` for reliable messaging
-- **Authorization**: `Cobytelabs.Modulus.Platform` for RBAC + permission-based access control
-- **Multi-tenancy**: `Cobytelabs.Modulus.Platform` for tenant isolation
-- **Sagas**: `Cobytelabs.Modulus.Sagas` for long-running process orchestration (bring your own Rebus transport)
-- **Observability**: `Cobytelabs.Modulus.Observability` for OpenTelemetry integration
-- **API features**: `Cobytelabs.Modulus.AspNetCore` for rate limiting, security headers, idempotency
+- **Identity**: `Synvro.Modulus.Identity` for OpenIddict-based auth (password + authorization-code flows)
+- **Inbox/Outbox**: `Synvro.Modulus.Inbox` / `Synvro.Modulus.Outbox` for reliable messaging
+- **Authorization**: `Synvro.Modulus.Platform` for RBAC + permission-based access control
+- **Multi-tenancy**: `Synvro.Modulus.Platform` for tenant isolation
+- **Sagas**: `Synvro.Modulus.Sagas` for long-running process orchestration (bring your own Rebus transport)
+- **Observability**: `Synvro.Modulus.Observability` for OpenTelemetry integration
+- **API features**: `Synvro.Modulus.AspNetCore` for rate limiting, security headers, idempotency
 
 ### Production-Ready Features
 

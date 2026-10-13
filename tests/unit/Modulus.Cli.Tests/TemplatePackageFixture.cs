@@ -10,7 +10,7 @@ using Modulus.Cli.Services;
 /// </summary>
 internal sealed class TemplatePackageFixture : IDisposable
 {
-    public const string PackageId = "Modulus.Ui.Templates";
+    public const string PackageId = "Synvro.Modulus.Ui.Templates";
     public const string Version = "0.9.0";
 
     private readonly string _root = Path.Combine(Path.GetTempPath(), $"modulus-templates-{Guid.NewGuid():N}");
@@ -30,7 +30,7 @@ internal sealed class TemplatePackageFixture : IDisposable
 
     /// <summary>A resolver whose cache is the fixture and whose network answers 404, so nothing reaches a real feed.</summary>
     public TemplatePackageResolver CreateResolver() =>
-        new(CacheDir, new HttpClient(new StatusHandler(HttpStatusCode.NotFound)));
+        new(CacheDir, new HttpClient(new StatusHandler(HttpStatusCode.NotFound)), ["https://feed.invalid/v3/index.json"]);
 
     public void Dispose()
     {

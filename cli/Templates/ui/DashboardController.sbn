@@ -1,0 +1,14 @@
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Modulus.Ui.Abstractions.Admin;
+
+namespace {{ namespace }};
+
+/// <summary>Serves the {{ page_name }} dashboard (<c>{{ view_path }}</c>) at <c>{{ route }}</c>, with the figures from {{ service }}.</summary>
+{{ if use_auth }}[Authorize]
+{{ end }}public class {{ page_name }}Controller : Controller
+{
+    [HttpGet("{{ route }}")]
+    public async Task<IActionResult> Index([FromServices] {{ service }} {{ variable }}) =>
+        View("{{ view_path }}", await {{ call }});
+}

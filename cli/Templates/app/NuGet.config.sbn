@@ -29,10 +29,10 @@
       <package pattern="*" />
     </packageSource>
     <packageSource key="modulus-ui-local">
-      <package pattern="Modulus.Ui.*" />
-      <package pattern="Modulus.AspNetCore.*" />
-      <package pattern="Modulus.Blazor" />
-      <package pattern="Modulus.Documents" />
+      <package pattern="Synvro.Modulus.Ui.*" />
+      <package pattern="Synvro.Modulus.AspNetCore.*" />
+      <package pattern="Synvro.Modulus.Blazor" />
+      <package pattern="Synvro.Modulus.Documents" />
     </packageSource>
   </packageSourceMapping>
 {{ end }}
@@ -43,17 +43,17 @@
        non-deterministically. -->
   <packageSourceMapping>
     <packageSource key="nuget.org">
-      <package pattern="*" exclude="Cobytelabs.*" />
+      <package pattern="*" exclude="Synvro.Modulus.*" />
     </packageSource>
     <packageSource key="modulus-local">
-      <package pattern="Cobytelabs.*" />
+      <package pattern="Synvro.Modulus.*" />
     </packageSource>
 {{ if ui_feed_source }}
     <packageSource key="modulus-ui-local">
-      <package pattern="Modulus.Ui.*" />
-      <package pattern="Modulus.AspNetCore.*" />
-      <package pattern="Modulus.Blazor" />
-      <package pattern="Modulus.Documents" />
+      <package pattern="Synvro.Modulus.Ui.*" />
+      <package pattern="Synvro.Modulus.AspNetCore.*" />
+      <package pattern="Synvro.Modulus.Blazor" />
+      <package pattern="Synvro.Modulus.Documents" />
     </packageSource>
 {{ end }}
   </packageSourceMapping>

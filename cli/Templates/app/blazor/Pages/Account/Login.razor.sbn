@@ -1,0 +1,40 @@
+@page "/account/login"
+@attribute [ExcludeFromInteractiveRouting]
+@layout {{ root_namespace }}.Web.Components.Layout.BlankLayout
+@using Microsoft.AspNetCore.Authorization
+@using Modulus.Core.Abstractions.Security
+@attribute [AllowAnonymous]
+@attribute [Loosened("Sign-in page: it has to be reachable before a user has signed in", Framework = true)]
+
+<PageTitle>Sign in</PageTitle>
+
+<div class="m-card" style="max-width: 360px; margin: 64px auto;">
+    <div class="m-card-body">
+        <h1 class="m-page-title">Sign in</h1>
+        @if (ErrorCode is not null)
+        {
+            <p class="m-text-danger m-mb-16">Invalid user name or password.</p>
+        }
+        <form method="post" action="/account/login" class="ant-form ant-form-vertical">
+            <AntiforgeryToken />
+            <input type="hidden" name="returnUrl" value="@ReturnUrl" />
+            <div class="ant-form-item">
+                <label class="ant-form-item-required" for="userName">User name</label>
+                <input id="userName" name="userName" class="ant-input" autocomplete="username" required />
+            </div>
+            <div class="ant-form-item">
+                <label class="ant-form-item-required" for="password">Password</label>
+                <input id="password" name="password" type="password" class="ant-input" autocomplete="current-password" required />
+            </div>
+            <button type="submit" class="ant-btn ant-btn-primary"><span>Sign in</span></button>
+        </form>
+    </div>
+</div>
+
+@code {
+    [SupplyParameterFromQuery]
+    public string? ReturnUrl { get; set; }
+
+    [SupplyParameterFromQuery(Name = "error")]
+    public int? ErrorCode { get; set; }
+}

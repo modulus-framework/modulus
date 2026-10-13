@@ -1,0 +1,18 @@
+@using System.Net.Http
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.AspNetCore.Components.Routing
+@using Microsoft.AspNetCore.Components.Web
+@using static Microsoft.AspNetCore.Components.Web.RenderMode
+@using Microsoft.JSInterop
+@using AntDesign
+@using AntDesign.ProLayout
+@using Modulus.Blazor.Theming
+@using Modulus.Blazor.Shell
+@using Modulus.Ui.Abstractions
+@using Modulus.Ui.Abstractions.Theming
+@using {{ root_namespace }}.Web
+@using {{ root_namespace }}.Web.Components
+@using {{ root_namespace }}.Web.Components.Layout
+{{ if use_auth }}@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+{{ end }}

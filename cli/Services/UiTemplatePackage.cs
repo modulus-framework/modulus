@@ -10,7 +10,7 @@ namespace Modulus.Cli.Services;
 /// </summary>
 internal static class UiTemplatePackage
 {
-    public const string PackageId = "Modulus.Ui.Templates";
+    public const string PackageId = "Synvro.Modulus.Ui.Templates";
     // MODULUS_UI_VERSION points generated apps and the template lookup at another build, e.g. a local pack (0.9.0-dev.<sha>).
     public static string DefaultVersion { get; } =
         Environment.GetEnvironmentVariable("MODULUS_UI_VERSION") is { Length: > 0 } v ? v : "0.9.0";

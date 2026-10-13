@@ -24,11 +24,11 @@ public sealed class UiFrameworkHostTests
     [Theory]
     [InlineData("WebAppApi", "mvc", true)]
     [InlineData("WebAppApi", "razor-pages", true)]
-    [InlineData("WebAppApi", "blazor", false)]
+    [InlineData("WebAppApi", "blazor", true)]
     [InlineData("WebAppApi", "fluid", false)]
     [InlineData("WebAppApi", "none", false)]
     [InlineData("Api", "none", false)]
-    public void Only_the_razor_engines_of_a_split_web_app_use_the_framework(string kind, string engine, bool expected)
+    public void Only_the_ui_engines_of_a_split_web_app_use_the_framework(string kind, string engine, bool expected)
         => NewAppCommand.UsesUiFramework(Enum.Parse<AppKind>(kind), engine).Should().Be(expected);
 
     [Fact]

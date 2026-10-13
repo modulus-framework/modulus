@@ -33,7 +33,7 @@ internal class UiFileGenerator
         var generated = new List<string>();
 
         // Resolve templates package
-        var templatesPath = await _resolver.ResolveAsync("Modulus.Ui.Templates", UiTemplatePackage.DefaultVersion);
+        var templatesPath = await _resolver.ResolveAsync(UiTemplatePackage.PackageId, UiTemplatePackage.DefaultVersion);
         if (templatesPath == null)
         {
             Ux.Warning("Could not resolve templates package; skipping UI generation");

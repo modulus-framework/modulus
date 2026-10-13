@@ -136,7 +136,7 @@ Every phase leaves `dotnet build` at 0 warnings, `Category=Unit` green and `dotn
 - [x] GraphQL fields, realtime topics, jobs and consumers in the report.
   - **As built (2026-10-03, follow-up):** `ISecuritySurfaceContributor` (Core, `Modulus.Core.Abstractions.Security`) lets a package describe the items one endpoint carries; the guard puts them in `SecurityGuardReport.Surfaces` (`SecuritySurfaceEntry`: surface, name, `Policed` / `Inherited` / `Anonymous`, policies), logs the anonymous ones and adds them to the loosening fingerprint it records in the audit. `Modulus.GraphQL` lists every root field (`Query.*`, `Mutation.*`; a field with `AuthorizeWithPolicy` / roles / `Authorize` is policed, any other inherits the endpoint's sign-in, or is anonymous with `RequireAuthenticatedUser: false`), `Modulus.Realtime` every topic (permission or callback = policed).
   - **Deviation:** surfaces are reported, not judged (no finding fails startup: each item sits behind an endpoint the guard already checked). Nested GraphQL fields are not listed (they are reached through a root field), nor are pushed realtime events (their audience is computed per event, always inside the publishing tenant). Jobs and consumers have no caller to authorize; their control is the verified tenant restore (1.4).
-- [x] **Analyzer `MOD0001`** (`src/analyzers/Modulus.Analyzers`, shipped as `analyzers/dotnet/cs` inside `Cobytelabs.Modulus.AspNetCore`, Warning). It flags anonymous without a reason: a `.AllowAnonymous()` chain without `LoosenedAttribute` metadata, `[AllowAnonymous]` without `[Loosened]`, and the parameterless REPR `AllowAnonymous()`. It is active only where `LoosenedAttribute` resolves.
+- [x] **Analyzer `MOD0001`** (`src/analyzers/Modulus.Analyzers`, shipped as `analyzers/dotnet/cs` inside `Synvro.Modulus.AspNetCore`, Warning). It flags anonymous without a reason: a `.AllowAnonymous()` chain without `LoosenedAttribute` metadata, `[AllowAnonymous]` without `[Loosened]`, and the parameterless REPR `AllowAnonymous()`. It is active only where `LoosenedAttribute` resolves.
   - **Deviation:** the planned rule ("raw `Map*` outside `IEndpoint`") would flag every `Program.cs`. With the fallback policy a raw endpoint is closed rather than open, so the analyzer targets the guard's hard error instead.
 - [x] **CLI.** Hosts with a sign-in (not `--auth none`, not a web app on an external provider, whose pages have no cookie sign-in yet) call `AddModulusSecurityGuard` and ship `security/loosening-allowlist.json`.
   - API host: lists `/openapi/{documentName}.json`, loosened in Development. Without the example permission it calls `AddModulusAuthorization()` for the fallback policy.
@@ -499,7 +499,7 @@ How to re-verify end to end (what was done on 2026-10-03):
 
 ```
 dotnet pack modulus.slnx -c Release -o <feed>
-dotnet tool install Cobytelabs.Modulus.Cli --tool-path <tools> --add-source <feed> --version 1.4.0
+dotnet tool install Synvro.Modulus.Cli --tool-path <tools> --add-source <feed> --version 1.4.0
 <tools>/modulus app Demo --kind api --auth openiddict --package-source <feed>
 cd Demo && NUGET_PACKAGES=<fresh-cache> dotnet test
 ```

@@ -45,8 +45,6 @@ internal sealed class UiCreateCrudCommand : Command<UiCreateCrudCommand.Settings
                     $"CRUD pages need a web app that calls the API over HTTP (create the app with --kind webapp+api); this one is {(inventory.Kind?.Label() ?? "not marked with an app kind")}.");
 
             var engine = UiScaffold.ResolveEngine(s.Engine, inventory.SolutionDir);
-            if (engine == "mvc")
-                throw new InvalidOperationException("The MVC engine has no CRUD pages yet. Use --engine razor-pages or blazor.");
 
             var (moduleDir, moduleName, _) = EntityMetadata.FindInApp(inventory.SolutionDir, entity, s.Module);
             var moduleNamespace = Path.GetFileName(moduleDir);
@@ -83,6 +81,13 @@ internal sealed class UiCreateCrudCommand : Command<UiCreateCrudCommand.Settings
                 pages.Add((UiScaffold.TemplateFile(templates, engine, "crud-edit") ?? throw Missing(engine), Path.Combine(folder, "Edit.cshtml"), true));
                 pages.Add(("ui/CrudEditModel", Path.Combine(folder, "Edit.cshtml.cs"), false));
             }
+            else if (engine == "mvc")
+            {
+                var views = Path.Combine(uiDir, "Views", plural);
+                pages.Add((UiScaffold.TemplateFile(templates, engine, "crud-index") ?? throw Missing(engine), Path.Combine(views, "Index.cshtml"), true));
+                pages.Add((UiScaffold.TemplateFile(templates, engine, "crud-edit") ?? throw Missing(engine), Path.Combine(views, "Edit.cshtml"), true));
+                pages.Add(("ui/CrudController", Path.Combine(uiDir, "Controllers", $"{plural}Controller.cs"), false));
+            }
             else
             {
                 var folder = Path.Combine(uiDir, "Components", "Pages", plural);
@@ -111,6 +116,11 @@ internal sealed class UiCreateCrudCommand : Command<UiCreateCrudCommand.Settings
             Ux.Success("Menu entry added", Path.GetRelativePath(start, menu));
 
             WireHost(inventory, uiProject, uiDir, uiNamespace, moduleDir, moduleNamespace, entity, plural, start);
+
+            // The MVC host routes its controllers (attribute routes on the CRUD controller).
+            if (engine == "mvc" && File.Exists(inventory.UiProgramCsPath))
+                foreach (var change in UiHostWiring.EnsureControllerRouting(inventory.UiProgramCsPath))
+                    Ux.Success("Web host updated", change);
 
             Ux.Info($"The pages are at /{route}. They call /api/{moduleName.ToLowerInvariant()}/{route} on the API ({entity}'s endpoints from `modulus generate-crud`); set Api:BaseUrl in the Web project's appsettings.json.");
             return 0;

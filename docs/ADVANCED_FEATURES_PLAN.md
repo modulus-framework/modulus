@@ -292,7 +292,7 @@ Not verified: the Redis/Testcontainers integration tests (no Docker here).
   section like any other typed client.
 - [x] CLI: `modulus generate-grpc <Entity> [--module M] [--bff mobile|web,mobile|all]` writes the contract, the service
   and `tests/{App}.Tests/{Entity}GrpcTests.cs` (round trip, 401/403 as status codes, `InvalidArgument`, `NotFound`), and
-  wires the API host (`Cobytelabs.Modulus.Grpc` reference, `AddModulusGrpc` + `MapModulusGrpc`, a `Grpc` settings
+  wires the API host (`Synvro.Modulus.Grpc` reference, `AddModulusGrpc` + `MapModulusGrpc`, a `Grpc` settings
   section). With `--bff` it links the proto into each BFF as a client and registers it with `AddBffGrpcClient`.
   Idempotent: a second run changes nothing; existing files are never overwritten.
 
@@ -815,7 +815,7 @@ Known limits of 6b (follow-ups):
     in the API host.
 - [x] **CLI (connector side).**
   - `modulus add-ai` (`AddAiCommand`, wiring in `AiWiring`; refuses a `webapp` host):
-    - adds `Cobytelabs.Modulus.AI.Connector` and `.EntityFrameworkCore` to the API host;
+    - adds `Synvro.Modulus.AI.Connector` and `.EntityFrameworkCore` to the API host;
     - wires `AddModulusAiConnector(..., ai => ai.UseIdentityUsers<ModulusUser>(user => user.IsActive).UseEntityFrameworkCore())`
       (no user resolver when the host has no local accounts; it warns) and `MapModulusAiConnector()` after the
       endpoints;

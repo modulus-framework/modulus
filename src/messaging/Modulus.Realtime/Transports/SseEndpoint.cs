@@ -1,6 +1,5 @@
 namespace Modulus.Realtime.Transports;
 
-using System.Net.ServerSentEvents;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Threading.Channels;
@@ -64,10 +63,10 @@ internal static class SseEndpoint
         var expiresAt = settings.CloseAtTokenExpiry ? RealtimeConnectionFactory.TokenExpiry(context) : null;
 
         context.Response.Headers["X-Accel-Buffering"] = "no";
-        return TypedResults.ServerSentEvents(StreamAsync(connection, dispatcher, settings, lastEventId, expiresAt, clock, context.RequestAborted));
+        return new SseResult(StreamAsync(connection, dispatcher, settings, lastEventId, expiresAt, clock, context.RequestAborted));
     }
 
-    private static async IAsyncEnumerable<SseItem<string>> StreamAsync(
+    private static async IAsyncEnumerable<SseFrame> StreamAsync(
         RealtimeConnection connection,
         RealtimeDispatcher dispatcher,
         ModulusRealtimeOptions settings,
@@ -82,16 +81,16 @@ internal static class SseEndpoint
 
         try
         {
-            yield return new SseItem<string>(JsonSerializer.Serialize(new { connectionId = connection.Id }), RealtimeEvents.Ready)
+            yield return new SseFrame(JsonSerializer.Serialize(new { connectionId = connection.Id }), RealtimeEvents.Ready)
             {
-                ReconnectionInterval = settings.Sse.RetryInterval,
+                Retry = settings.Sse.RetryInterval,
             };
 
             if (lastEventId.Length > 0)
             {
                 var replay = await dispatcher.ReplayAsync(connection, lastEventId, lifetime.Token).ConfigureAwait(false);
                 if (!replay.Complete)
-                    yield return new SseItem<string>("{}", RealtimeEvents.Reset);
+                    yield return new SseFrame("{}", RealtimeEvents.Reset);
                 foreach (var message in replay.Messages)
                     yield return Item(message);
             }
@@ -104,7 +103,7 @@ internal static class SseEndpoint
                 if (outcome == Wait.Heartbeat)
                 {
                     // No data line: EventSource dispatches nothing, but proxies see traffic.
-                    yield return new SseItem<string>(string.Empty, HeartbeatEvent);
+                    yield return new SseFrame(string.Empty, HeartbeatEvent);
                     continue;
                 }
 
@@ -118,7 +117,7 @@ internal static class SseEndpoint
         }
     }
 
-    private static SseItem<string> Item(RealtimeMessage message) => new(message.Data, message.Type) { EventId = message.Id };
+    private static SseFrame Item(RealtimeMessage message) => new(message.Data, message.Type, message.Id);
 
     private enum Wait
     {
