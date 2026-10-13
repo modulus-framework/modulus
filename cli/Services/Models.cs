@@ -9,9 +9,9 @@ internal static class FrameworkVersion
 {
     // Keep in sync with <VersionPrefix> in build/Modulus.Packaging.props —
     // generated apps pin Modulus.* packages at this version.
-    // MODULUS_FRAMEWORK_VERSION points generated apps at another build, e.g. a local pack (1.4.0-dev.<sha>).
+    // MODULUS_FRAMEWORK_VERSION points generated apps at another build, e.g. a local pack (1.5.0-dev.<sha>).
     public static string Current { get; } =
-        Environment.GetEnvironmentVariable("MODULUS_FRAMEWORK_VERSION") is { Length: > 0 } v ? v : "1.4.0";
+        Environment.GetEnvironmentVariable("MODULUS_FRAMEWORK_VERSION") is { Length: > 0 } v ? v : "1.5.0";
 
     // Keep in sync with Microsoft.Extensions.Telemetry.Abstractions in Directory.Packages.props: every project of a generated
     // app references it so classified [LoggerMessage] parameters are redacted (RedactionTemplateTests checks it).

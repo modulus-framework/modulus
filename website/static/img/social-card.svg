@@ -44,7 +44,7 @@
 
   <rect x="440" y="378" width="320" height="4" rx="2" fill="url(#rule)"/>
 
-  <text x="600" y="442" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="30" font-weight="400" fill="#94A3B8">A modular-monolith framework for .NET 10</text>
+  <text x="600" y="442" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="30" font-weight="400" fill="#94A3B8">A modular-monolith framework for .NET 8 and .NET 10</text>
 
-  <text x="600" y="556" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="22" font-weight="600" fill="#64748B">github.com/cobytelabs/modulus</text>
+  <text x="600" y="556" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="22" font-weight="600" fill="#64748B">github.com/modulus-framework/modulus</text>
 </svg>

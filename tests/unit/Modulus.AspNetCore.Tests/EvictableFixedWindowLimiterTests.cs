@@ -111,7 +111,9 @@ public sealed class EvictableFixedWindowLimiterTests
         // than disposing) means re-acquisition just builds a fresh window.
         using var host = new TestHost();
 
-        await host.Limiter.AcquireAsync(host.ContextFor("reused"));
+        using (await host.Limiter.AcquireAsync(host.ContextFor("reused")))
+        {
+        }
         await Task.Delay(Idle + TimeSpan.FromMilliseconds(120));
         host.Limiter.EvictIdlePartitions().Should().BeGreaterThanOrEqualTo(1);
 

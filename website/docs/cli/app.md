@@ -4,7 +4,7 @@ sidebar_position: 2
 
 # modulus app
 
-Creates a complete modular-monolith application with interactive setup.
+Creates a complete modular-monolith application with interactive setup. With `--kind webapp+api` it also creates a web project on the Modulus UI framework.
 
 ## Usage
 
@@ -18,6 +18,8 @@ modulus app <name> [options]
 |--------|-------------|---------|
 | `-d, --database` | Database provider: `SQLite`, `SqlServer`, `PostgreSQL`, `MySQL` | prompted |
 | `--auth` | Auth provider: `none`, `openiddict`, `auth0`, `authentik`, `azuread`, `duende`, `keycloak`, `okta` | prompted |
+| `--kind` | App kind: `api` (an API host, no UI) or `webapp+api` (a web project on the Modulus UI framework plus the API) | prompted |
+| `--ui-engine` | Web apps only: `blazor`, `mvc` or `razor-pages`. Use `none` for an API. See [the UI overview](../ui/overview). | prompted for web apps |
 | `--no-example` | Skip the example Catalog module | prompted (include) |
 | `--message-broker` | Message broker: `none`, `rabbitmq`, `kafka` | prompted |
 | `--caching` | Caching provider: `inmemory`, `redis` | prompted |
@@ -44,15 +46,26 @@ Omitted options are prompted interactively (pass every flag for non-interactive/
 The CLI prompts for:
 
 1. **Database**: SQLite, SqlServer, PostgreSQL, MySQL
-2. **Authentication**: none, openiddict, auth0, authentik, azuread, duende, keycloak, okta
-3. **Message Broker**: none, rabbitmq, kafka
-4. **Caching**: inmemory, redis
-5. **Storage**: local, s3, azureblobs
-6. **SignalR Backplane**: none, redis, azure
-7. **Migration Engine**: efcore, dbsh
-8. **Production Features**: API versioning, rate limiting, health checks, CORS, security headers, idempotency, correlation, secrets guard, PII encryption, feature flags
+2. **App kind and UI**: `api`, or `webapp+api` with a UI engine (`blazor`, `mvc` or `razor-pages`)
+3. **Authentication**: none, openiddict, auth0, authentik, azuread, duende, keycloak, okta
+4. **Message Broker**: none, rabbitmq, kafka
+5. **Caching**: inmemory, redis
+6. **Storage**: local, s3, azureblobs
+7. **SignalR Backplane**: none, redis, azure
+8. **Migration Engine**: efcore, dbsh
+9. **Production Features**: API versioning, rate limiting, health checks, CORS, security headers, idempotency, correlation, secrets guard, PII encryption, feature flags
 
 ## Generated Structure
+
+The structure below is for `--kind api`. A `webapp+api` app adds a web project next to the API:
+
+```
+MyApp/src/Web/MyApp.Web/   the UI host for the chosen engine (Blazor components, or MVC / Razor Pages)
+```
+
+See [Getting started with the UI](../ui/getting-started) for that project's layout.
+
+### API structure
 
 ```
 MyApp/

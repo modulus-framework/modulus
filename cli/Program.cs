@@ -180,7 +180,7 @@ public static class Program
                     .WithExample("ui", "add-session-manager");
 
                 ui.AddCommand<Commands.UiCreateCrudCommand>("create-crud")
-                    .WithDescription("Create list, create/edit and delete pages for an entity, over its API (generate-crud) through a typed client. Razor Pages and Blazor.")
+                    .WithDescription("Create list, create/edit and delete pages for an entity, over its API (generate-crud) through a typed client. MVC, Razor Pages and Blazor.")
                     .WithExample("ui", "create-crud", "Product")
                     .WithExample("ui", "create-crud", "Product", "--module", "Catalog", "--engine", "blazor");
 

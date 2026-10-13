@@ -10,7 +10,7 @@
       Command-line interface for the Modulus framework.
       Scaffold modular-monolith applications, add modules, and generate CRUD code.
     </Description>
-    <PackageTags>cobytelabs;modulus;cli;scaffolding;code-generation</PackageTags>
+    <PackageTags>synvro;modulus;cli;scaffolding;code-generation</PackageTags>
     <NoWarn>$(NoWarn);NU1603;VSTHRD002;VSTHRD103</NoWarn>
   </PropertyGroup>
 

@@ -28,6 +28,7 @@ dotnet tool install -g --add-source ./nupkg Synvro.Modulus.Cli
 | [`modulus list`](list) | List modules and entities |
 | [`modulus info`](info) | Show app overview |
 | [`modulus doctor`](doctor) | Check environment |
+| [`modulus ui`](../ui/cli) | Scaffold pages, components and themes for the UI (`add-admin`, `create-crud`, `create-dashboard`, ...) |
 | [`modulus outdated`](outdated) | Check for package updates |
 | [`modulus update`](update) | Apply package updates |
 

@@ -25,7 +25,7 @@ modulus/
 
 | Setting | Value |
 |---------|-------|
-| TargetFramework | `net10.0` |
+| TargetFrameworks | `net8.0;net10.0` (libraries and tests; the CLI is `net10.0` only) |
 | Nullable | `enable` |
 | ImplicitUsings | `enable` |
 | TreatWarningsAsErrors | `true` |

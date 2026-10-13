@@ -8,7 +8,9 @@ sidebar_position: 1
 
 | Requirement | Version | Check |
 |-------------|---------|-------|
-| **.NET SDK** | 10.0.109+ | `dotnet --version` |
+| **.NET SDK** | 10.0.109+ (to build this repository and the CLI) | `dotnet --version` |
+
+The framework libraries run on .NET 8 and .NET 10. See [Compatibility](../compatibility.md) for the full matrix.
 | **Node.js** | 20+ | `node --version` |
 
 ## Optional
@@ -37,6 +39,6 @@ docker --version        # Optional, for integration tests
 
 Any editor with C# support works. Recommended:
 
-- **Visual Studio 2022** 17.x+ (with .NET 10 workload)
+- **Visual Studio 2022** 17.x+ (with the .NET 8 and .NET 10 SDKs)
 - **JetBrains Rider** 2025.x+
 - **VS Code** with the C# Dev Kit extension

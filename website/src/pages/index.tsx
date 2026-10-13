@@ -118,6 +118,12 @@ function HomepageHeader() {
           {siteConfig.title}
         </Heading>
         <p className={styles.heroSubtitle}>{siteConfig.tagline}</p>
+        <div className={styles.badges} aria-label="Highlights">
+          <span className={styles.badge}>.NET 8</span>
+          <span className={styles.badge}>.NET 10</span>
+          <span className={styles.badge}>45 libraries</span>
+          <span className={styles.badge}>Apache 2.0</span>
+        </div>
         <div className={styles.buttons}>
           <Link
             className={clsx('button button--lg', styles.buttonPrimary)}
@@ -166,7 +172,7 @@ type Line = {type: 'comment' | 'command'; text: string};
 
 const terminalLines: Line[] = [
   {type: 'comment', text: '# Install the CLI'},
-  {type: 'command', text: 'dotnet tool install -g --add-source ./nupkg Modulus.Cli'},
+  {type: 'command', text: 'dotnet tool install -g --add-source ./nupkg Synvro.Modulus.Cli'},
   {type: 'comment', text: ''},
   {type: 'comment', text: '# Create an application'},
   {type: 'command', text: 'modulus app MyApp'},
@@ -185,8 +191,8 @@ function CodeExample() {
     <section className={styles.codeSection}>
       <div className="container">
         <div className={styles.sectionHeading}>
-          <Heading as="h2">Build your first app in 3 commands</Heading>
-          <p>From zero to a running modular application — modules, databases, and endpoints wired for you.</p>
+          <Heading as="h2">From zero to a running app in minutes</Heading>
+          <p>Install the CLI, scaffold an application, add a module with CRUD endpoints, and run it. Modules, databases and endpoints are wired for you.</p>
         </div>
         <div className={styles.terminal}>
           <div className={styles.terminalBar}>
@@ -211,14 +217,63 @@ function CodeExample() {
   );
 }
 
+const stats = [
+  {value: '45', label: 'framework libraries'},
+  {value: '.NET 8 + 10', label: 'every package, both targets'},
+  {value: '6', label: 'external identity providers'},
+  {value: '4', label: 'layers per module (Domain to Presentation)'},
+];
+
+function StatsStrip() {
+  return (
+    <section className={styles.stats}>
+      <div className="container">
+        <div className={styles.statsGrid}>
+          {stats.map((stat) => (
+            <div key={stat.label} className={styles.stat}>
+              <div className={styles.statValue}>{stat.value}</div>
+              <div className={styles.statLabel}>{stat.label}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ClosingCta() {
+  return (
+    <section className={styles.cta}>
+      <div className="container">
+        <Heading as="h2" className={styles.ctaTitle}>
+          Ready to build a modular monolith?
+        </Heading>
+        <p className={styles.ctaText}>
+          Read the getting-started guide, check compatibility with your .NET version, or browse the API reference.
+        </p>
+        <div className={styles.buttons}>
+          <Link className={clsx('button button--lg', styles.buttonPrimary)} to="/docs/introduction">
+            Read the docs
+          </Link>
+          <Link className={clsx('button button--lg', styles.buttonGhost)} to="/docs/compatibility">
+            Compatibility
+          </Link>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export default function Home(): JSX.Element {
   const {siteConfig} = useDocusaurusContext();
   return (
     <Layout description={siteConfig.tagline}>
       <HomepageHeader />
       <main>
+        <StatsStrip />
         <FeatureSection />
         <CodeExample />
+        <ClosingCta />
       </main>
     </Layout>
   );

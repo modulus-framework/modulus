@@ -4,7 +4,7 @@ import type * as Preset from '@docusaurus/preset-classic';
 
 const config: Config = {
   title: 'Modulus Framework',
-  tagline: 'A modular-monolith framework for .NET 10',
+  tagline: 'A modular-monolith framework for .NET 8 and .NET 10',
   favicon: 'img/icon.png',
 
   url: 'https://modulus.dev',
@@ -19,6 +19,20 @@ const config: Config = {
     defaultLocale: 'en',
     locales: ['en'],
   },
+
+  themes: [
+    [
+      '@easyops-cn/docusaurus-search-local',
+      {
+        hashed: true,
+        language: ['en'],
+        docsRouteBasePath: '/docs',
+        highlightSearchTermsOnTargetPage: true,
+        explicitSearchResultPath: true,
+        indexBlog: false,
+      },
+    ],
+  ],
 
   presets: [
     [
@@ -38,13 +52,13 @@ const config: Config = {
 
   themeConfig: {
     image: 'img/social-card.png',
-    imageAlt: 'Modulus Framework — a modular-monolith framework for .NET 10',
+    imageAlt: 'Modulus Framework — a modular-monolith framework for .NET 8 and .NET 10',
     colorMode: {
       respectPrefersColorScheme: true,
     },
     metadata: [
-      { name: 'description', content: 'Modulus is a modular-monolith framework for .NET 10 — CQRS, transactional outbox, multi-tenancy, identity, and CLI scaffolding out of the box.' },
-      { name: 'keywords', content: 'modular monolith, .NET 10, CQRS, DDD, microservices, asp.net core' },
+      { name: 'description', content: 'Modulus is a modular-monolith framework for .NET 8 and .NET 10 — CQRS, transactional outbox, multi-tenancy, identity, and CLI scaffolding out of the box.' },
+      { name: 'keywords', content: 'modular monolith, .NET 8, .NET 10, CQRS, DDD, microservices, asp.net core' },
       { property: 'og:type', content: 'website' },
       { property: 'og:image', content: 'img/social-card.png' },
       { property: 'og:image:width', content: '1200' },
@@ -78,6 +92,11 @@ const config: Config = {
           label: 'API',
         },
         {
+          href: 'https://www.nuget.org/packages?q=Synvro.Modulus',
+          label: 'NuGet',
+          position: 'right',
+        },
+        {
           href: 'https://github.com/modulus-framework/modulus',
           label: 'GitHub',
           position: 'right',
@@ -93,6 +112,7 @@ const config: Config = {
             { label: 'Getting Started', to: '/docs/introduction' },
             { label: 'Architecture', to: '/docs/architecture/overview' },
             { label: 'CLI Reference', to: '/docs/cli/' },
+            { label: 'Compatibility', to: '/docs/compatibility' },
           ],
         },
         {
@@ -105,7 +125,7 @@ const config: Config = {
         {
           title: 'More',
           items: [
-            { label: 'NuGet', href: 'https://www.nuget.org/packages?q=Modulus' },
+            { label: 'NuGet packages', href: 'https://www.nuget.org/packages?q=Synvro.Modulus' },
             { label: 'Samples', href: 'https://github.com/modulus-framework/modulus/tree/main/samples' },
           ],
         },

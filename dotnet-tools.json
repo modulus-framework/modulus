@@ -2,8 +2,8 @@
   "version": 1,
   "isRoot": true,
   "tools": {
-    "cobytelabs.modulus.cli": {
-      "version": "1.3.0",
+    "synvro.modulus.cli": {
+      "version": "1.5.0",
       "commands": [
         "modulus"
       ],

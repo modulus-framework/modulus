@@ -7,7 +7,7 @@ namespace Modulus.Cli.Commands;
 
 /// <summary>
 /// <c>modulus ui create-crud &lt;Entity&gt;</c>: list, create/edit and delete pages for an entity of a module, over the module's API (the
-/// endpoints <c>generate-crud</c> writes) through a typed client in the Web project. Razor Pages and Blazor.
+/// endpoints <c>generate-crud</c> writes) through a typed client in the Web project. MVC, Razor Pages and Blazor.
 /// </summary>
 internal sealed class UiCreateCrudCommand : Command<UiCreateCrudCommand.Settings>
 {
@@ -21,7 +21,7 @@ internal sealed class UiCreateCrudCommand : Command<UiCreateCrudCommand.Settings
         [CommandOption("--module")]
         public string? Module { get; init; }
 
-        [Description("UI engine: razor-pages or blazor (default: the one recorded in .modulus.json)")]
+        [Description("UI engine: mvc, razor-pages or blazor (default: the one recorded in .modulus.json)")]
         [CommandOption("--engine")]
         public string? Engine { get; init; }
 

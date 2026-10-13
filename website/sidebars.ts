@@ -9,6 +9,7 @@ const sidebars: SidebarsConfig = {
       collapsed: false,
       items: [
         'getting-started/prerequisites',
+        'compatibility',
         'getting-started/quick-start',
         'getting-started/first-module',
       ],
@@ -54,6 +55,21 @@ const sidebars: SidebarsConfig = {
         'identity/overview',
         'identity/openiddict',
         'identity/external-providers',
+      ],
+    },
+    {
+      type: 'category',
+      label: 'UI',
+      items: [
+        'ui/overview',
+        'ui/getting-started',
+        'ui/components',
+        'ui/data-grids',
+        'ui/authentication',
+        'ui/theming',
+        'ui/hosting',
+        'ui/cli',
+        'ui/limitations',
       ],
     },
     {

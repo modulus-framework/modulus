@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-10-13
+
+### Added
+- **.NET 8 support for Realtime.** `Synvro.Modulus.Realtime` and `Synvro.Modulus.Realtime.Redis` multi-target `net8.0;net10.0`
+  like the other libraries. The SSE endpoint writes `text/event-stream` itself (`SseResult`) instead of
+  `TypedResults.ServerSentEvents`, which is .NET 10 only; the wire format is unchanged.
+
+### Changed
+- Test projects run on both `net8.0` and `net10.0` by default (`ModulusTestTfm` narrows a run). The CLI and its tests stay net10.0.
+- CI runs the unit suite on both runtimes in one job (the separate net8 job is removed).
+
+### Fixed
+- `EvictableFixedWindowLimiterTests` called a missing helper; it now calls `EvictIdlePartitions()`.
+
 ### Packaging
 - **Package IDs are `Synvro.Modulus.*`** (was `Cobytelabs.Modulus.*`), with `Synvro` as author and company, following the
   `<Vendor>.<Framework>.*` pattern. Breaking for anyone who referenced the old IDs. The generated apps' local-feed source mapping

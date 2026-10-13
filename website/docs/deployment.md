@@ -11,7 +11,7 @@ Modulus applications deploy as a single process.
 | Option | Description |
 |--------|-------------|
 | **Self-contained** | Includes .NET runtime |
-| **Framework-dependent** | Requires .NET 10 runtime |
+| **Framework-dependent** | Requires the .NET 8 or .NET 10 runtime |
 | **Docker** | Containerized deployment |
 | **Azure App Service** | Managed hosting |
 | **AWS ECS/Lambda** | Container or serverless |

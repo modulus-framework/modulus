@@ -48,9 +48,9 @@ Modulus follows a **modular-monolith** architecture — a single deployable appl
 | **Microservices** | Multiple processes | Network (HTTP/gRPC) | Database per service |
 | **Monolith** | Single process | Direct method calls | Shared database |
 
-## Package Structure (34 libraries)
+## Package Structure (45 libraries)
 
-The framework ships 34 libraries under `src/` (plus the `Modulus.Cli` tool):
+The framework ships 45 libraries under `src/` (plus the `Synvro.Modulus.Cli` tool). Each library targets `net8.0` and `net10.0`:
 
 | Package | Purpose |
 |---------|---------|
