@@ -258,8 +258,8 @@ Templates are embedded Scriban resources under `cli/Templates/`
 
 The production review from 2026-10-11 found a red build, 1 critical and 11 high defects. Each finding is
 tracked as a checklist item, with file:line, fix and test, in
-[`docs/PRODUCTION_READINESS_PLAN.md`](docs/PRODUCTION_READINESS_PLAN.md). Tick an item there when its fix lands.
-Completed plans are in `docs/archive/`.
+[`docs/DOCUMENTATION.md#production-readiness-review-findings-and-plan`](docs/DOCUMENTATION.md#production-readiness-review-findings-and-plan). Tick an item there when its fix lands.
+Completed plans are in `docs/DOCUMENTATION.md`, in the archive sections.
 
 ## Earlier review findings (all fixed)
 
@@ -590,7 +590,7 @@ but for synchronous HTTP callers/retries rather than integration events.
   encryption on an existing populated column needs a one-off plaintext→ciphertext
   data-migration pass.
 
-All Tier 3 items are complete; see [`docs/archive/ROADMAP_TIER3.md`](docs/archive/ROADMAP_TIER3.md) for the
+All Tier 3 items are complete; see [`docs/DOCUMENTATION.md#tier-3-roadmap--remaining-apiplatform-robustness`](docs/DOCUMENTATION.md#tier-3-roadmap--remaining-apiplatform-robustness) for the
 as-built records.
 
 ## Deferred hardening (recent work)
@@ -902,7 +902,7 @@ and pass their generated test suites off the current CLI (`webapp+api` 9/9, `api
 
 ## Security model (Company = Tenant)
 
-Roadmap and as-built notes: [`docs/SECURITY_STAGE2_PLAN.md`](docs/SECURITY_STAGE2_PLAN.md) (ERP guideline v2, stage 2).
+Roadmap and as-built notes: [`docs/DOCUMENTATION.md#security-stage-2-company--tenant`](docs/DOCUMENTATION.md#security-stage-2-company--tenant) (ERP guideline v2, stage 2).
 A **company is a Modulus tenant** (`ICurrentTenant`, `TenantInfo`). **Branches and locations are org units**
 (`IOrgHierarchy`, `ICurrentDataScope`), and a **group** is a set of tenants (`TenantInfo.GroupId`), used only for
 federated reads. Phases 1–5 are built (tenancy foundation, endpoint policy model + startup guard, per-database
@@ -1001,7 +1001,7 @@ isolation, hash-chained security audit, probe suite), and the provider integrati
     `TenantScopedCollection.Unscoped(reason)` is audited (`mongo.unscoped`) when the collection has an audit log.
   - `AddModulusDataIsolationCheck(configuration)` (`Security:DataIsolation:Tier`: `Shared` / `DatabasePerTenant`) checks the
     registrations at startup. Per-tenant resolution with no tenant throws rather than falling back.
-  - Database roles: [`docs/security/database-roles.md`](docs/security/database-roles.md). The app must never connect as the
+  - Database roles: [`docs/DOCUMENTATION.md#database-roles-for-tenant-isolation`](docs/DOCUMENTATION.md#database-roles-for-tenant-isolation). The app must never connect as the
     schema owner.
   - The Testcontainers tests (`PostgreSqlRowLevelSecurityTests`, `SqlServerRowLevelSecurityTests`,
     `MySqlDatabasePerTenantTests`, `TenantScopedCollectionIntegrationTests`, `TenantMongoDatabaseIntegrationTests`) need
@@ -1086,7 +1086,7 @@ isolation, hash-chained security audit, probe suite), and the provider integrati
   `WithinApprovalAuthority(permission)` (largest applicable limit; no limit, another currency or a document without an amount is refused; a delegate may
   use the delegator's limits, never more), `NotOwnedByCaller()` (requester cannot approve) and `NotActedOnByCaller()` (one person, one step). The admin API
   refuses a limit above the caller's own (unless `authorization:grant-any`) and a limit set for oneself. Reason codes `NO_APPROVAL_AUTHORITY` /
-  `APPROVAL_LIMIT_EXCEEDED` come from `IApprovalAuthorityEvaluator.Check`. In a handler, `await authorizer.EnsureAllowedAsync(record, "approve")` re-checks authority on the loaded record inside the transaction (403 with the reason code), then save with the concurrency stamp. Semantics of every layer: [`docs/security/policy-combination.md`](docs/security/policy-combination.md).
+  `APPROVAL_LIMIT_EXCEEDED` come from `IApprovalAuthorityEvaluator.Check`. In a handler, `await authorizer.EnsureAllowedAsync(record, "approve")` re-checks authority on the loaded record inside the transaction (403 with the reason code), then save with the concurrency stamp. Semantics of every layer: [`docs/DOCUMENTATION.md#authorization-policy-combination`](docs/DOCUMENTATION.md#authorization-policy-combination).
 - **Assignment-type vocabulary.** The assignment types of "Assigned" scopes are the access keys scope maps declare (`AddScopeMap<T>(m => m.AssignedKey("customer", ...))`);
   `IScopeMapRegistry.AssignmentTypes` lists them and `GET assignment-types` serves them. When any map declares one, the admin API refuses `assignments` and
   `assigned:{type}` grants naming another type (typo guard); with none declared any name is accepted.
@@ -1130,7 +1130,7 @@ isolation, hash-chained security audit, probe suite), and the provider integrati
   grant that role its permissions, scopes and expiry through the ordinary grant APIs (`grants`, `scoped-grants`), so a removed grant stops working on the next request, not at token expiry.
   `IIntegrationClientDirectory` (kept in the client's OpenIddict application properties, no new table) binds a client to one company (`BindAsync`: the token's `tid` pins it, a header cannot
   select another) with an optional `ValidUntil` (no new tokens after it), and `DisableAsync` ends it now and revokes every token it holds. An unbound client gets the role but no company.
-- **ERP identity gaps** (status and open gaps: [`docs/ERP_IDENTITY_GAPS_PLAN.md`](docs/ERP_IDENTITY_GAPS_PLAN.md)). Password/lockout policy with history and expiry; shop-floor sign-in
+- **ERP identity gaps** (status and open gaps: [`docs/DOCUMENTATION.md#erp-identity-gaps-plan-and-status`](docs/DOCUMENTATION.md#erp-identity-gaps-plan-and-status)). Password/lockout policy with history and expiry; shop-floor sign-in
   (employee code + PIN, `Identity:ShopFloor`, `IShopFloorAccountService`); SoD rules as data (`/authorization/sod/rules`, `EfSodRuleStore`); composite roles
   (`/authorization/roles/inclusions`, `EfRoleInclusionStore`); positions (`/authorization/positions`, `EfPositionStore`: a post grants roles to whoever holds it, with validity);
   external-party users (`/authorization/parties/*`, `EfPartyStore`): an account linked to one party (kind `buyer`/`supplier`/`subcontractor`) gets the party as its
@@ -1343,7 +1343,7 @@ layer. Every generated API host wires it (`--caching inmemory|redis`).
 ## BFF (per client)
 
 `Modulus.Bff` gives each client type its **own backend** (plan and status:
-[`docs/ADVANCED_FEATURES_PLAN.md`](docs/ADVANCED_FEATURES_PLAN.md)): `web` (browser SPA), `mobile` (native app) and
+[`docs/DOCUMENTATION.md#advanced-features-hybrid-cache-per-client-bffs-grpc-webhooks-graphql-realtime-ai-platform-integration`](docs/DOCUMENTATION.md#advanced-features-hybrid-cache-per-client-bffs-grpc-webhooks-graphql-realtime-ai-platform-integration)): `web` (browser SPA), `mobile` (native app) and
 `partner` (machine to machine). Each authenticates its callers its own way, applies its own edge rules, proxies
 `/api/**` to the upstream services with YARP and hosts client-shaped aggregate endpoints. A BFF holds no
 database and loads no modules.
@@ -1464,7 +1464,7 @@ app.MapBffClient("mobile").MapGet("/home", ...);   // aggregators behind the cli
 
 Opt-in package (`Grpc.AspNetCore`, `Grpc.Net.ClientFactory`, `Grpc.HealthCheck`, Apache-2.0); works for a modular
 monolith (an optional second API surface) and microservices (service-to-service calls). Plan and as-built notes:
-[`docs/ADVANCED_FEATURES_PLAN.md`](docs/ADVANCED_FEATURES_PLAN.md), phase 2.
+[`docs/DOCUMENTATION.md#advanced-features-hybrid-cache-per-client-bffs-grpc-webhooks-graphql-realtime-ai-platform-integration`](docs/DOCUMENTATION.md#advanced-features-hybrid-cache-per-client-bffs-grpc-webhooks-graphql-realtime-ai-platform-integration), phase 2.
 
 - **Server.** `AddModulusGrpc(configuration)` binds `Grpc` (`ModulusGrpcOptions`: `EnableDetailedErrors`,
   `EnableReflection` (off by default; it describes every service), `EnableHealthChecks`, message sizes), adds
@@ -1511,7 +1511,7 @@ monolith (an optional second API surface) and microservices (service-to-service 
 
 Opt-in package on **GraphQL.NET** (MIT); HotChocolate is excluded (its ASP.NET Core package depends on Nitro, under the
 ChilliCream License). Works for a modular monolith (one schema in the API host) and microservices (a schema per
-service, or behind a BFF). Plan and as-built notes: [`docs/ADVANCED_FEATURES_PLAN.md`](docs/ADVANCED_FEATURES_PLAN.md),
+service, or behind a BFF). Plan and as-built notes: [`docs/DOCUMENTATION.md#advanced-features-hybrid-cache-per-client-bffs-grpc-webhooks-graphql-realtime-ai-platform-integration`](docs/DOCUMENTATION.md#advanced-features-hybrid-cache-per-client-bffs-grpc-webhooks-graphql-realtime-ai-platform-integration),
 phase 4.
 
 - **Schema.** `AddModulusGraphQL(configuration, assemblies)` (settings `GraphQL`, `ModulusGraphQLOptions`) builds one
@@ -1557,7 +1557,7 @@ transport** (one-way pushes: works through the BFFs' proxy and cookie session, `
 its own); **SignalR is opt-in** (`Realtime:SignalR:Enabled`) for what needs two-way calls: topic subscribe/unsubscribe
 while connected, `Resume` on a live connection, app hub methods. Both share one delivery pipeline. No new runtime NuGet
 dependency (SSE and SignalR are in the shared framework). Plan and as-built notes:
-[`docs/ADVANCED_FEATURES_PLAN.md`](docs/ADVANCED_FEATURES_PLAN.md), phase 5.
+[`docs/DOCUMENTATION.md#advanced-features-hybrid-cache-per-client-bffs-grpc-webhooks-graphql-realtime-ai-platform-integration`](docs/DOCUMENTATION.md#advanced-features-hybrid-cache-per-client-bffs-grpc-webhooks-graphql-realtime-ai-platform-integration), phase 5.
 
 - **Registration.** `AddModulusRealtime(configuration, r => r.AddEvent<TEvent>(e => audience, payload?).AddTopic(pattern,
   permission?, authorize?))` (settings `Realtime`, `ModulusRealtimeOptions`) and `MapModulusRealtime(path?)` /
@@ -1599,7 +1599,7 @@ dependency (SSE and SignalR are in the shared framework). Plan and as-built note
 
 Opt-in package that delivers integration events to external HTTP endpoints, signed per
 [Standard Webhooks](https://www.standardwebhooks.com/). No new NuGet dependency. Plan and as-built notes:
-[`docs/ADVANCED_FEATURES_PLAN.md`](docs/ADVANCED_FEATURES_PLAN.md), phase 3.
+[`docs/DOCUMENTATION.md#advanced-features-hybrid-cache-per-client-bffs-grpc-webhooks-graphql-realtime-ai-platform-integration`](docs/DOCUMENTATION.md#advanced-features-hybrid-cache-per-client-bffs-grpc-webhooks-graphql-realtime-ai-platform-integration), phase 3.
 
 - **Registration.** `AddModulusWebhooks(configuration, w => w.AddEvent<TEvent>(description?, payload?))` (settings
   `Webhooks`, `ModulusWebhooksOptions`) plus `AddModulusWebhooksStore<TContext>()` (`TContext : ModulusWebhooksDbContext`,
@@ -1640,9 +1640,9 @@ Opt-in package that delivers integration events to external HTTP endpoints, sign
 ## AI connector (`Modulus.AI.Connector`)
 
 Hosts the external AI platform's connector wire contract v1 inside an app (plan and as-built notes:
-[`docs/ADVANCED_FEATURES_PLAN.md`](docs/ADVANCED_FEATURES_PLAN.md), phases 6a and 6b). Modulus holds no LLM code, no MCP and no
+[`docs/DOCUMENTATION.md#advanced-features-hybrid-cache-per-client-bffs-grpc-webhooks-graphql-realtime-ai-platform-integration`](docs/DOCUMENTATION.md#advanced-features-hybrid-cache-per-client-bffs-grpc-webhooks-graphql-realtime-ai-platform-integration), phases 6a and 6b). Modulus holds no LLM code, no MCP and no
 platform package; the platform is read-only, so only queries are exposed. The platform-neutral contract (so non-Modulus apps can implement
-  it too) is written up in [`docs/AI_CONNECTOR_CONTRACT.md`](docs/AI_CONNECTOR_CONTRACT.md); keep it in step with
+  it too) is written up in [`docs/DOCUMENTATION.md#ai-connector-wire-contract-v1-platform-neutral`](docs/DOCUMENTATION.md#ai-connector-wire-contract-v1-platform-neutral); keep it in step with
   `Contract/WireContract.cs`.
 
 - `AddModulusAiConnector(configuration, ai => ai.UseIdentityUsers<TUser>())` (settings `Ai:Connector`) +

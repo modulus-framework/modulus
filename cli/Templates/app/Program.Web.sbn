@@ -22,7 +22,9 @@ var builder = WebApplication.CreateBuilder(args);
 // This project is only the presentation shell: pages call the API project over
 // HTTP (typed clients, see ApiClientExtensions.cs) — no DbContext, no modules.
 builder.Services.AddRazorPages();
-
+{{ if ui_engine == "mvc" }}// MVC controllers and views for the landing page; the sign-in pages stay Razor Pages.
+builder.Services.AddControllersWithViews();
+{{ end }}
 // ── Modulus UI framework ───────────────────────────────────────
 // The shell layout (header, menu, footer, theme settings), the tag helpers (app-*) and the assets. Brand and layout
 // settings come from "Modulus:Theme" in appsettings.json; add menu entries with an IMenuContributor.
@@ -117,7 +119,8 @@ app.UseRouting();
 {{ if use_auth }}app.UseAuthentication();
 app.UseAuthorization();
 {{ end }}app.MapRazorPages().WithStaticAssets();
-
+{{ if ui_engine == "mvc" }}app.MapControllerRoute(name: "default", pattern: "{controller=Home}/{action=Index}/{id?}").WithStaticAssets();
+{{ end }}
 {{ if enable_health_checks }}app.MapHealthChecks("/health/live"){{ if use_auth }}.Loosen("Liveness probe for orchestrators and load balancers"){{ end }};
 {{ end }}
 app.Run();

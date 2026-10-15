@@ -298,12 +298,6 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
                 AnsiConsole.MarkupLine("  [grey]# {0} BFF (http://localhost:{1}):[/] [grey]dotnet run --project[/] src/Bff/{2}.Bff.{3}",
                     client.Name, client.Port, rootNs, char.ToUpperInvariant(client.Name[0]) + client.Name[1..]);
             }
-            if (string.IsNullOrWhiteSpace(s.PackageSource))
-            {
-                AnsiConsole.MarkupLine(
-                    "[yellow]Note:[/] Modulus.* packages are not on nuget.org yet â€” " +
-                    "wire a local feed in NuGet.config or re-run with [grey]--package-source[/].");
-            }
         }
         AnsiConsole.WriteLine();
         AnsiConsole.MarkupLine("[grey]Then try:[/]");
@@ -434,6 +428,12 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         if (UsesUiFramework(model.Kind, model.UiEngine))
         {
             AddUiFrameworkPackages(projectDir, model);
+
+            // Guidance for AI assistants: CLAUDE.md and AGENTS.md (read on every session) and a skill with the UI reference.
+            _templates.RenderToFile("app/ClaudeMd", model, Path.Combine(projectDir, "CLAUDE.md"));
+            _templates.RenderToFile("app/ClaudeMd", model, Path.Combine(projectDir, "AGENTS.md"));
+            _templates.RenderToFile("app/ModulusUiSkill", model,
+                Path.Combine(projectDir, ".claude", "skills", "modulus-ui", "SKILL.md"));
         }
 
         // Write .modulus.json for later CLI commands (generate-crud, etc.)
@@ -520,10 +520,25 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         }
 
         // Landing page â€” where the sign-in flow redirects after login.
-        _templates.RenderToFile("app/IndexModel.Web", model,
-            Path.Combine(webDir, "Pages", "Index.cshtml.cs"));
-        _templates.RenderToFile("app/Index.Web.cshtml", model,
-            Path.Combine(webDir, "Pages", "Index.cshtml"));
+        if (model.UiEngine == "mvc")
+        {
+            // MVC: the landing page is a controller action with a view. Views get their own imports and layout.
+            _templates.RenderToFile("app/WebMvcViewImports", model,
+                Path.Combine(webDir, "Views", "_ViewImports.cshtml"));
+            _templates.RenderToFile("app/WebPagesViewStart", model,
+                Path.Combine(webDir, "Views", "_ViewStart.cshtml"));
+            _templates.RenderToFile("app/HomeController.Web", model,
+                Path.Combine(webDir, "Controllers", "HomeController.cs"));
+            _templates.RenderToFile("app/Index.Mvc.cshtml", model,
+                Path.Combine(webDir, "Views", "Home", "Index.cshtml"));
+        }
+        else
+        {
+            _templates.RenderToFile("app/IndexModel.Web", model,
+                Path.Combine(webDir, "Pages", "Index.cshtml.cs"));
+            _templates.RenderToFile("app/Index.Web.cshtml", model,
+                Path.Combine(webDir, "Pages", "Index.cshtml"));
+        }
 
         // Typed API clients: always generated. With auth on they carry the BFF web session's token
         // (AddBffUserAccessToken); with auth off they call the API anonymously.

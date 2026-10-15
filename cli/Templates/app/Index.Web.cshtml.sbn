@@ -13,6 +13,29 @@
         and UI with <code>modulus ui add-component</code>, <code>modulus ui create-dashboard</code>
         or <code>modulus ui add-chart</code>.
     </p>
-    <p><a class="ant-btn ant-btn-default" href="/Account/Logout">Sign out</a></p>
+{{ if use_auth }}    <p><a class="ant-btn ant-btn-default" href="/Account/Logout">Sign out</a></p>
+{{ end }}
 </app-card>
 
+<app-card title="Interactivity: Alpine.js and htmx" style="margin-top: 16px;">
+    <p>
+        Both libraries are loaded by the layout (<code>&lt;modulus-scripts /&gt;</code>), so any page can use them.
+        Alpine toggles this panel without a request; htmx fetches the line below from the
+        <code>Greeting</code> page handler and replaces it.
+    </p>
+    <div x-data="{ open: false }">
+        <button type="button" class="ant-btn ant-btn-default" @@click="open = !open">
+            <span x-text="open ? 'Hide details' : 'Show details'">Show details</span>
+        </button>
+        <div x-show="open" style="margin-top: 12px;">
+            <p>Alpine.js state lives in the browser, so this panel needs no server round trip.</p>
+        </div>
+    </div>
+    <div style="margin-top: 12px;">
+        <button type="button" class="ant-btn ant-btn-primary"
+                hx-get="?handler=Greeting" hx-target="#greeting" hx-swap="innerHTML">
+            Load from server
+        </button>
+        <div id="greeting" style="margin-top: 12px;"></div>
+    </div>
+</app-card>

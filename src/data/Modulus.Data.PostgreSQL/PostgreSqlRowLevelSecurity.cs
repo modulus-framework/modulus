@@ -24,7 +24,7 @@ using Npgsql;
 /// <para>
 /// The application must connect as a role that does not own the tables and is not a superuser and has no
 /// <c>BYPASSRLS</c>: those skip row-level security. A separate migration role owns the schema (see
-/// <c>docs/security/database-roles.md</c>). No tenant in scope (and not the host) matches no rows.
+/// <c>docs/DOCUMENTATION.md#database-roles-for-tenant-isolation</c>). No tenant in scope (and not the host) matches no rows.
 /// </para>
 /// </remarks>
 public static class PostgreSqlRowLevelSecurity

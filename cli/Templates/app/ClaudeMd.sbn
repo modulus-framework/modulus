@@ -1,0 +1,28 @@
+# {{ app_name }} — guide for AI assistants
+
+This app is built on the Modulus framework and the Modulus UI framework (the `Synvro.Modulus.*` packages).
+Read this file first. For the UI components and patterns, read `.claude/skills/modulus-ui/SKILL.md`.
+
+## Layout
+
+- `src/API/{{ root_namespace }}.Api` — the API host: modules, data, and the endpoints.
+{{ if ui_engine == "blazor" }}- `src/Web/{{ root_namespace }}.Web` — the Blazor host: pages in `Components/Pages`, the shell in `Components/Layout`, the menu in `Menu`, the typed API clients in `ApiClients`.
+{{ else }}- `src/Web/{{ root_namespace }}.Web` — the {{ if ui_engine == "mvc" }}MVC{{ else }}Razor Pages{{ end }} host: {{ if ui_engine == "mvc" }}controllers in `Controllers`, views in `Views`{{ else }}pages in `Pages`{{ end }}, the menu in `Menu`, the typed API clients in `ApiClients`.
+{{ end }}- `.modulus.json` — written by `modulus app`; it records the UI engine (`{{ ui_engine }}`) for later `modulus` commands.
+
+## Working rules
+
+- The UI engine is **{{ ui_engine }}**. Use the components and patterns for that engine (see the skill). Do not mix engines.
+- Build and run the web host with `dotnet run --project src/Web/{{ root_namespace }}.Web`. Run the API host the same way, in another terminal. The web host calls the API over HTTP.
+- Scaffold with the CLI, not by hand, where a command exists: `modulus ui add-component`, `modulus ui create-form-from-entity`, `modulus ui create-crud`, `modulus ui create-dashboard`, `modulus ui add-chart`. Pass `--dry-run` first to see the files.
+- Menu items come from an `IMenuContributor`. Set `Href` without a leading slash (`customers`, not `/customers`).
+- Theme and layout come from `Modulus:Theme` in `appsettings.json`.
+- Keep every `Synvro.Modulus.*` package at the same version.
+{{ if use_auth }}- Pages need a signed-in user, except `/Account`. Sign-in uses the BFF session; the tokens stay on the server.
+{{ else }}- The app has no sign-in yet. Add authentication before exposing it to users.
+{{ end }}
+## Before you finish a change
+
+- `dotnet build` succeeds.
+- Run the web host and open the page you changed. Check it in both light and dark mode.
+- For a form that saves, submit it once with bad input and once with good input.

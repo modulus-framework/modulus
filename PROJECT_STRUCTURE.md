@@ -4,7 +4,7 @@ Modulus is an enterprise-grade **modular monolith framework for .NET 10**,
 shipped as focused NuGet packages plus a `dotnet tool` CLI. This document maps
 the repository so a newcomer can find the right project fast. For feature-level
 documentation see [README.md](README.md); for the authorization design see
-[docs/architecture/authorization-framework-blueprint.md](docs/architecture/authorization-framework-blueprint.md).
+[docs/DOCUMENTATION.md#modulus-authorization--access-control-framework--architecture-blueprint](docs/DOCUMENTATION.md#modulus-authorization--access-control-framework--architecture-blueprint).
 
 ## Top level
 
@@ -19,9 +19,7 @@ modulus/
 ├── tests/                       # unit/ (xUnit, Category=Unit) and integration/ (Testcontainers)
 ├── samples/                     # TradeFlow — 18-module reference app (procurement, trade finance,
 │                                 # inventory, workflow) with Dockerfile, compose, and GitHub Actions CI
-├── docs/architecture/           # Design blueprints
-├── docs/PRODUCTION_READINESS_PLAN.md  # Live checklist: production-review findings and their fixes
-├── docs/archive/                # Completed plans (IMPROVEMENT_PLAN, DUAL_TARGETING_PLAN, ROADMAP_TIER3)
+├── docs/DOCUMENTATION.md        # All project documentation: blueprints, plans, the live checklist, completed plans, security notes
 └── .github/workflows/           # ci.yml (build/format/test/pack), codeql.yml, release.yml
 ```
 
@@ -56,7 +54,7 @@ modulus/
 - **Modules**: inherit `ModulusModule`, register explicitly via
   `builder.Services.AddModulus(builder.Configuration, modules => modules.AddModule<T>()...)`
   — registration order is authoritative (no `[DependsOn]`, no startup module).
-- **Cross-cutting features** follow the shape documented in `docs/archive/ROADMAP_TIER3.md` →
+- **Cross-cutting features** follow the shape documented in `docs/DOCUMENTATION.md#tier-3-roadmap--remaining-apiplatform-robustness` →
   "Shared conventions": config-bound `XxxOptions`, `AddModulusXxx`/`UseModulusXxx`,
   swappable services registered with `TryAdd`.
 - **Cross-module communication**: reference another module's `Contracts` /

@@ -1,0 +1,16 @@
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+
+namespace {{ root_namespace }}.Web.Controllers;
+
+/// <summary>Landing page.{{ if use_auth }} Requires a signed-in user (the whole app except
+/// /Account does) — it is where the login page redirects after sign-in.{{ end }}</summary>
+{{ if use_auth }}[Authorize]
+{{ end }}public class HomeController : Controller
+{
+    public IActionResult Index() => View();
+
+    /// <summary>htmx demo: returns a fragment that replaces #greeting (GET /Home/Greeting).</summary>
+    public ContentResult Greeting() =>
+        Content($"<p>Loaded by htmx at {DateTime.UtcNow:HH:mm:ss} UTC.</p>", "text/html");
+}

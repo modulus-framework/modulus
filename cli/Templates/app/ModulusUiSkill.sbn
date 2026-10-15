@@ -1,0 +1,148 @@
+---
+name: modulus-ui
+description: Build pages, tables, forms, menus and themes for the {{ app_name }} app with the Modulus UI framework ({{ ui_engine }}). Use it for any change to the web host's UI.
+---
+
+# Modulus UI for {{ app_name }} ({{ ui_engine }})
+
+The web host is `src/Web/{{ root_namespace }}.Web`. The shell (header, sidebar, theme settings and footer) comes from the
+framework. You write the page content, the menu and the data calls.
+
+{{ if ui_engine == "blazor" }}
+## Pages and the shell
+
+- A page is a component with `@page "/route"`. Its body sits inside `<AppShell>` (set in `Components/Layout/MainLayout.razor`).
+- Put the title block at the top with `<PageHeading Pretitle="..." Title="..." Subtitle="...">` and buttons in `<Actions>`.
+- Components come from `Synvro.Modulus.Blazor`. Ant Design components are named as in Ant Design Blazor (`Button`, `Input`,
+  `FormItem`, `Switch`, `InputNumber`). The `App*` names are aliases with the same parameters (`AppButton`, `AppTable`).
+
+## Tables: `ProTable<TItem>`
+
+```razor
+<ProTable TItem="Customer" @ref="_table" HeaderTitle="All customers" RowKey="c => c.Id"
+          Request="LoadAsync" Selectable FiltersActive="!string.IsNullOrWhiteSpace(_keyword)"
+          OnClearFilters="ClearSearch">
+    <ToolBar>...</ToolBar>
+    <BatchActions Context="rows">...</BatchActions>
+    <Columns>
+        <PropertyColumn Property="c => c.Name" Sortable />
+        <ActionColumn>...</ActionColumn>
+    </Columns>
+</ProTable>
+```
+
+- `Request` is `Func<ProTableRequest, Task<ProTableResponse<TItem>>>`. The request carries the page, the page size, the
+  sort and the column searches. Apply them on the server, and return one page of rows.
+- Other parameters: `PageSize`, `Selectable`, `RowSelectable`, `BatchActions`, `RowDetail`, `Filters` (a filter row),
+  `UrlState` (keeps the page and sort in the URL), `MultiSort`, `GroupFields`, `HeaderGroups`, `Exportable`, `ColumnSettings`.
+- Call `_table.ReloadAsync(resetPage: true)` after a change.
+
+## Forms: `DrawerForm<TModel>` and `ModalForm<TModel>`
+
+```razor
+<DrawerForm TModel="CustomerInput" Title="@_title" @bind-Visible="_drawerOpen"
+            Model="_input" OnFinish="SaveAsync" SubmitText="Save">
+    <FormItem Label="Name"><Input @bind-Value="context.Name" /></FormItem>
+</DrawerForm>
+```
+
+- `OnFinish` is `Func<TModel, Task<bool>>`. Return `true` when the save worked, and the drawer closes. Return `false`
+  to keep it open.
+- Validate with data annotations on the model. The form shows the messages next to the fields.
+
+## Cards and numbers
+
+- `StatisticCard` shows a value with a title, a tooltip and an optional footer.
+- Charts: `LineChart`, `ColumnChart`, `BarChart`, `DonutChart`, `HeatmapChart`, `Sparkline`.
+
+## Menu
+
+```csharp
+public sealed class AppMenuContributor : IMenuContributor
+{
+    public Task ConfigureMenuAsync(MenuConfigurationContext context)
+    {
+        context.Add(new MenuItemDefinition("customers", "Customers", "customers", "team") { Order = 10 });
+        return Task.CompletedTask;
+    }
+}
+```
+
+Register it with `builder.Services.AddTransient<IMenuContributor, AppMenuContributor>();`.
+`Href` has no leading slash. Add `RequiredPolicy` to hide an item from users who lack the policy.
+
+{{ else }}
+## Pages and the layout
+
+- The layout `_ModulusLayout` is set in `{{ if ui_engine == "mvc" }}Views/_ViewStart.cshtml{{ else }}Pages/_ViewStart.cshtml{{ end }}`. Every page gets the header, sidebar, theme settings and footer.
+- Use the `app-*` tag helpers. The import is `@addTagHelper *, Modulus.AspNetCore.Mvc` in `{{ if ui_engine == "mvc" }}Views/_ViewImports.cshtml{{ else }}Pages/_ViewImports.cshtml{{ end }}`.
+- Start a page with the title block: `<app-page-header pretitle="..." title="..." subtitle="..."> ... </app-page-header>`.
+- A card: `<app-card title="...">...</app-card>`. Buttons: `<app-button type="primary" icon="plus">...</app-button>`.
+  `type="primary"` is the main action; leave `type` out for a secondary one. `html-type="submit"` makes it submit a form. `danger` and `loading` are attributes.
+
+## Forms
+
+- Bind controls with `asp-for`: `<app-form-item asp-for="Name" label="Contact name"><app-input asp-for="Name" /></app-form-item>`.
+  The label and the validation message come from the model's data annotations.
+- Other controls: `app-input-number`, `app-select`, `app-date-picker`, `app-switch`, `app-checkbox`, `app-textarea`.
+- Attributes that are not Modulus attributes (`placeholder`, `hx-*`, `x-*`) go to the real element.
+- Forms post normally. Keep the server-side checks: the browser checks are a convenience, not the rule.
+
+## Tables
+
+- A plain table: `<app-table>` with columns as `<thead>` and rows in `<tbody>` (see `app-table` options: `hidden-columns`, `density`, `scroll-x`).
+- A server-paged table: the table loads its rows with htmx. The container is a `div` with `hx-get` and
+  `hx-trigger="load, customers:refresh from:body"`, so it reloads when a save fires that event.
+- Pivot grid, editable grid and nested grid: `app-pivot-grid`, `app-editable-grid`, `app-nested-grid`. Read their rows with `EditableGridForm.Read` or the matching helper.
+
+## Drawers, htmx and saves
+
+The drawer is a side panel with one shared body, `#modulus-drawer-body`. The Alpine store controls it.
+
+```html
+<app-button type="primary" icon="plus"
+            x-on:click="$store.drawer.load('/Customers/Form', 'New customer')">New customer</app-button>
+```
+
+The form inside the drawer posts with htmx. On success the controller answers:
+
+```csharp
+Response.HxMessage(MessageType.Success, $"Created {customer.Name}");  // toast
+Response.HxCloseDrawer();                                             // closes the drawer
+Response.HxTrigger("customers:refresh");                              // refreshes listeners
+return NoContent();
+```
+
+`MessageType` is `Success`, `Info`, `Warning` or `Error`. Other helpers: `Response.HxNotify`, `HxCloseModal`,
+`HxRedirect`. Use `hx-confirm="Delete this customer?"` on a button to ask first.
+
+The button that opens the drawer uses the store: `x-on:click="$store.drawer.load('/Customers/Form', 'New customer')"` (or `$store.drawer.show(title)` when the body is already loaded).
+
+Alpine: `x-data="{ open: false }"`, `x-show`, `x-text`, and `@click` (write `@@click` in a `.cshtml` file, which
+Razor reads as `@click`). Alpine and htmx are loaded by the layout, so any page can use them.
+
+The layout adds the antiforgery token to every htmx request, and writes need `[ValidateAntiForgeryToken]` or a
+`POST` with the token. Do not turn it off.
+
+{{ end }}
+## Menu, theme and shell content
+
+- The menu is built from every `IMenuContributor`. Its items are `MenuItemDefinition(key, label, href, icon)`, with `Order`
+  and `RequiredPolicy`. Child items come from `Children` or `AddChild`.
+- The theme lives in `Modulus:Theme` in `appsettings.json`: `Title`, `PrimaryColor`, `DefaultMode` (`Light`, `Dark` or `System`),
+  `Layout` (`Horizontal`, `Vertical` or `Condensed`), `Direction` (`Ltr` or `Rtl`), `Cultures` (a language picker when there are two or more).
+- Users change the layout in the settings panel. Their choices are kept in the `modulus-theme` cookie.
+- The header's user, notifications, apps and tenants come from an `IShellContentProvider`.
+
+## Known limits
+
+- Interactive widgets in MVC and Razor Pages (tree, cascader, transfer, calendar, carousel and similar) need Alpine.
+- Date pickers in MVC use the browser's own calendar.
+- Icons are Ant Design icons. Use the icon name, for example `plus`, `team`, `edit`.
+- The samples' users and data are in memory. Replace them with your own store before production.
+
+## Commands that scaffold UI
+
+`modulus ui add-component <names>`, `modulus ui create-form-from-entity <Entity>`, `modulus ui create-crud <Entity> --module <Module>`,
+`modulus ui create-dashboard overview|analytics|reports|audit`, `modulus ui add-chart --type line|column|donut|heatmap`,
+`modulus ui add-admin`, `modulus ui add-i18n --languages en,es`, `modulus ui theme set <name>`. Run any command with `--dry-run` first.

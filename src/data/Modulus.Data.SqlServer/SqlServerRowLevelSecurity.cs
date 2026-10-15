@@ -28,7 +28,7 @@ using Modulus.EntityFrameworkCore.Isolation;
 /// <para>
 /// Members of <c>db_owner</c> and <c>sysadmin</c> are still filtered by a security policy, but they can alter or
 /// drop it: the application must connect as a login without <c>ALTER ANY SECURITY POLICY</c> and without
-/// ownership of the <c>modulus</c> schema (see <c>docs/security/database-roles.md</c>). No tenant in scope (and
+/// ownership of the <c>modulus</c> schema (see <c>docs/DOCUMENTATION.md#database-roles-for-tenant-isolation</c>). No tenant in scope (and
 /// not the host) matches no rows. Pooled connections are reset (<c>sp_reset_connection</c>) before reuse, which
 /// clears the session context.
 /// </para>

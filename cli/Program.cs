@@ -1,3 +1,4 @@
+using Modulus.Cli.Services;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
@@ -209,7 +210,11 @@ public static class Program
             });
         });
 
-        return app.Run(args);
+        // The update check runs alongside the command; its notice prints after the command's own output.
+        var updateCheck = CliUpdateNotifier.Start(args);
+        var exitCode = app.Run(args);
+        CliUpdateNotifier.Finish(updateCheck, args);
+        return exitCode;
     }
 }
 

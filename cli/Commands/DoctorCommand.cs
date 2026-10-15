@@ -241,7 +241,7 @@ internal sealed class DoctorCommand : Command<DoctorCommand.Settings>
                 "Uses the generated TokenRelayHandler (tokens in the browser cookie, refresh only after a 401, no refresh lock). " +
                 "Move to the BFF web session: reference Modulus.Bff, call AddModulusBff(..., bff => bff.AddWebClient(\"web\").SetDefaultClient(\"web\")), " +
                 "sign in/out with IBffSessionService, replace .AddHttpMessageHandler<TokenRelayHandler>() with .AddBffUserAccessToken() " +
-                "and delete Security/TokenRelayHandler.cs (see docs/ADVANCED_FEATURES_PLAN.md).");
+                "and delete Security/TokenRelayHandler.cs (see docs/DOCUMENTATION.md#advanced-features-hybrid-cache-per-client-bffs-grpc-webhooks-graphql-realtime-ai-platform-integration).");
         }
 
         var csproj = File.Exists(webProjectPath) ? File.ReadAllText(webProjectPath) : "";
