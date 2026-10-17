@@ -1,0 +1,24 @@
+using {{ project_name }}.Observability;
+using Modulus.Bff;
+
+namespace {{ project_name }}.Endpoints;
+
+/// <summary>
+/// Maps the {{ client_name }} BFF's session endpoints and its proxy{{ if has_example }}, the aggregate endpoints{{ end }}, the health probes and,
+/// in development, the client's OpenAPI document.
+/// </summary>
+internal static class BffEndpoints
+{
+    public static WebApplication Map{{ client_pascal }}BffEndpoints(this WebApplication app)
+    {
+        app.MapModulusBff();
+{{ if has_example }}        app.MapHomeEndpoints();
+{{ end }}        app.Map{{ client_pascal }}BffHealthChecks();
+        if (app.Environment.IsDevelopment())
+        {
+            // The {{ client_name }} client's contract: /openapi/{{ client_name }}.json
+            app.MapOpenApi();
+        }
+        return app;
+    }
+}

@@ -138,12 +138,15 @@ internal sealed class AddModuleCommand : Command<AddModuleCommand.Settings>
                 "Register the module manually with " +
                 $"modules.AddModule<{moduleName}Module>() in AddModulus(...).");
 
-        var content = File.ReadAllText(programCs);
-
-        if (content.Contains($"AddModule<{moduleName}Module>()", StringComparison.Ordinal))
+        // The registration lives in Composition/ModuleRegistration.cs (Program.cs of a host generated before the split).
+        var host = ApiHostFiles.ReadAll(programCs);
+        if (host.Contains($"AddModule<{moduleName}Module>()", StringComparison.Ordinal))
             return; // already registered (e.g. re-running add-module)
 
-        if (content.Contains("AddModulus<", StringComparison.Ordinal))
+        var target = ApiHostFiles.ModulesFile(programCs);
+        var content = File.ReadAllText(target);
+
+        if (host.Contains("AddModulus<", StringComparison.Ordinal))
             throw new InvalidOperationException(
                 "Program.cs uses the removed AddModulus<TStartupModule> API. " +
                 "Modulus modules are now registered explicitly — migrate to " +
@@ -198,7 +201,7 @@ internal sealed class AddModuleCommand : Command<AddModuleCommand.Settings>
 
         content = content.Insert(lineStart, $"{indent}modules.AddModule<{moduleName}Module>();\n");
 
-        Ux.WriteFile(programCs, content);
+        Ux.WriteFile(target, content);
     }
 
     private static void AddHostProjectReferences(string solutionDir, string rootNs, string moduleNs)

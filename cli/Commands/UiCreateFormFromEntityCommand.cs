@@ -56,9 +56,10 @@ internal sealed class UiCreateFormFromEntityCommand : Command<UiCreateFormFromEn
             var plural = CodeGen.Pluralize(entity);
             var uiDir = Path.GetDirectoryName(inventory.UiProjectPath)!;
             // The Blazor form saves through the entity's typed client, which create-crud generates.
-            if (engine == "blazor" && !File.Exists(Path.Combine(uiDir, "ApiClients", $"{entity}ApiClient.cs")))
+            if (engine == "blazor" && !File.Exists(UiLayout.ApiClientFile(uiDir, entity)))
                 throw new InvalidOperationException($"The Blazor form saves through the {entity} typed client, which does not exist yet. Run `modulus ui create-crud {entity} --module {moduleName}` first.");
-            var target = UiScaffold.OutputPath(engine, uiDir, plural, $"{entity}Form");
+            // Razor Pages and Blazor group the form with its entity's pages (Pages/{Module}/{Plural}); MVC views stay in Views/{Plural}.
+            var target = UiScaffold.OutputPath(engine, uiDir, engine == "mvc" ? plural : Path.Combine(moduleName, plural), $"{entity}Form");
             if (File.Exists(target) && !Ux.Force)
                 throw new InvalidOperationException($"{Path.GetRelativePath(start, target)} already exists. Pass --force to overwrite it.");
 

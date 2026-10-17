@@ -13,7 +13,7 @@
         <h1 class="m-page-title">Sign in</h1>
         @if (ErrorCode is not null)
         {
-            <p class="m-text-danger m-mb-16">Invalid user name or password.</p>
+            <p class="m-text-danger m-mb-16">@(ErrorCode == 2 ? "The sign-in service is not available right now. Try again in a moment." : "Invalid user name or password.")</p>
         }
         <form method="post" action="/account/login" class="ant-form ant-form-vertical">
             <AntiforgeryToken />

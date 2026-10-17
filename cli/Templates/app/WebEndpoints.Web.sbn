@@ -1,0 +1,15 @@
+using {{ root_namespace }}.Web.Observability;
+
+namespace {{ root_namespace }}.Web.Endpoints;
+
+/// <summary>Maps the Razor Pages{{ if ui_engine == "mvc" }}, the MVC landing page{{ end }} and the health probes.</summary>
+internal static class WebEndpoints
+{
+    public static WebApplication MapWebEndpoints(this WebApplication app)
+    {
+        app.MapRazorPages().WithStaticAssets();
+{{ if ui_engine == "mvc" }}        app.MapControllerRoute(name: "default", pattern: "{controller=Home}/{action=Index}/{id?}").WithStaticAssets();
+{{ end }}        app.MapWebHealthChecks();
+        return app;
+    }
+}

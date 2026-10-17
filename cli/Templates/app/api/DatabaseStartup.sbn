@@ -1,0 +1,37 @@
+using Modulus.EntityFrameworkCore.Extensions;
+{{ if auth == "openiddict" }}using {{ identity_namespace }}.Infrastructure;
+{{ end }}{{ if multi_tenancy }}using Modulus.MultiTenancy.EntityFrameworkCore;
+using {{ tenancy_namespace }}.Infrastructure;
+{{ end }}
+namespace {{ root_namespace }}.Api.Hosting;
+
+/// <summary>
+/// Brings the API's databases up to date before the first request: the tenant store, then every module's schema, then the
+/// seed data. Runs after the host is built, so migrations and seeders can resolve the application's services.
+/// </summary>
+internal static class DatabaseStartup
+{
+    /// <remarks>
+    /// Each module owns its own DbContext (registered via AddModuleDatabase in its composition root). In Production, Migrate
+    /// applies authored migrations and fails fast if a module has none: every schema change goes through a migration. Outside
+    /// Production (Development / Testing / Staging) MigrateOrCreate lets a freshly generated app, and the integration-test
+    /// harness, run before the first migration is authored. Modules whose schema is managed externally (dbsh, registered via
+    /// .ExternallyManaged&lt;TContext&gt;()) are skipped here; apply theirs with `modulus migrate update`.
+    /// Author the first migration with:  modulus migrate add &lt;Name&gt; --module &lt;Module&gt;
+    /// </remarks>
+    public static async Task InitializeApiAsync(this WebApplication app)
+    {
+{{ if multi_tenancy }}        // The tenant store (companies, memberships) is not a module context: it is migrated on its own, first.
+        await app.Services.MigrateTenantStoreAsync(ensureCreatedIfNoMigrations: !app.Environment.IsProduction());
+{{ end }}        await app.Services.MigrateModulusDatabasesAsync(
+            app.Environment.IsProduction()
+                ? DatabaseInitializationMode.Migrate
+                : DatabaseInitializationMode.MigrateOrCreate);
+{{ if auth == "openiddict" }}
+        // Roles, and the first administrator where that is safe (see IdentitySeeding).
+        await app.Services.SeedIdentityAsync(app.Environment);
+{{ end }}{{ if multi_tenancy }}
+        // The default company and the administrators' memberships in it (see TenancySeeding).
+        await app.Services.SeedTenancyAsync(app.Environment);
+{{ end }}    }
+}

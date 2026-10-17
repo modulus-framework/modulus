@@ -1,0 +1,21 @@
+using Modulus.AspNetCore.Hosting;
+using Modulus.AspNetCore.Security;
+{{ if use_auth }}using Modulus.AspNetCore.Security.Policy;
+{{ end }}using {{ root_namespace }}.Web.Components;
+
+namespace {{ root_namespace }}.Web.Endpoints;
+
+/// <summary>Maps the health probes, the static files and the Blazor components.</summary>
+internal static class WebEndpoints
+{
+    public static WebApplication MapWebEndpoints(this WebApplication app)
+    {
+        app.MapModulusHealth(){{ if use_auth }}.Loosen("Liveness and readiness probes for orchestrators and load balancers"){{ else }}.AllowAnonymous(){{ end }};
+        app.MapStaticAssets(){{ if use_auth }}.Loosen("Static files of the app and the UI packages"){{ else }}.AllowAnonymous(){{ end }};
+        app.MapRazorComponents<App>()
+            .AddInteractiveServerRenderMode(){{ if use_auth }}
+            .RequireAuthorization(){{ end }};
+
+        return app;
+    }
+}

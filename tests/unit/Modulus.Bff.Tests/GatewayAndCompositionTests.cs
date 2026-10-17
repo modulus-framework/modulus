@@ -309,6 +309,19 @@ public sealed class EdgeRuleTests
         => BffEndpointRouteBuilderExtensions.SafeReturnUrl(input).Should().Be(expected);
 
     [Theory]
+    [InlineData("http://localhost:5181/", "http://localhost:5181/")]
+    [InlineData("http://localhost:5181/Account/Login?x=1", "http://localhost:5181/Account/Login?x=1")]
+    [InlineData("HTTP://LOCALHOST:5181/", "HTTP://LOCALHOST:5181/")]
+    [InlineData("http://localhost:5182/", "/")]
+    [InlineData("https://localhost:5181/", "/")]
+    [InlineData("http://localhost:5181.evil.test/", "/")]
+    [InlineData("http://user@localhost:5181/", "/")]
+    [InlineData("http://localhost:5181@evil.test/", "/")]
+    [InlineData("/orders", "/orders")]
+    public void Return_urls_may_name_an_allowed_origin(string input, string expected)
+        => BffEndpointRouteBuilderExtensions.SafeReturnUrl(input, ["http://localhost:5181"]).Should().Be(expected);
+
+    [Theory]
     [InlineData("2", "2.0")]
     [InlineData("v2.3.1", "2.3.1")]
     [InlineData("2.3.1-beta.1+42", "2.3.1")]

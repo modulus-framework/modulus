@@ -1,0 +1,86 @@
+using System.Net;
+using System.Net.Http.Json;
+
+namespace {{ root_namespace }}.Web.Security;
+
+/// <summary>
+/// The BFF's session endpoints, called for the browser: sign-in (<c>bff/login</c>), sign-out (<c>bff/logout</c>) and the
+/// signed-in user's claims (<c>bff/user</c>). The BFF keeps the tokens; this client only carries the browser's cookie
+/// through <see cref="BffGatewayHandler"/>.
+/// </summary>
+public sealed class BffSessionClient(HttpClient http)
+{
+    /// <summary>Signs the user in at the BFF. A failed attempt says why in <see cref="BffSignInResult.Error"/>.</summary>
+    public async Task<BffSignInResult> SignInAsync(string userName, string password, bool rememberMe, CancellationToken ct = default)
+    {
+        HttpResponseMessage response;
+        try
+        {
+            response = await http.PostAsJsonAsync("bff/login", new { userName, password, rememberMe }, ct);
+        }
+        catch (HttpRequestException)
+        {
+            // The BFF is not reachable: the sign-in page says so instead of failing the request.
+            return BffSignInResult.Unavailable;
+        }
+
+        if (response.IsSuccessStatusCode)
+            return BffSignInResult.Ok;
+
+        if (response.StatusCode == HttpStatusCode.ServiceUnavailable)
+            return BffSignInResult.Unavailable;
+
+        var problem = await response.Content.ReadFromJsonAsync<BffError>(ct);
+        return new BffSignInResult(false, problem?.Error ?? "invalid_request");
+    }
+
+    /// <summary>
+    /// The BFF's sign-in URL for the browser to visit (the OIDC code flow at the auth server's login page). The BFF sends the
+    /// browser back to <paramref name="returnUrl"/>, which must be an absolute URL of an origin the BFF allows (Bff:AllowedReturnOrigins).
+    /// </summary>
+    public string SignInUrl(string returnUrl)
+    {
+        var baseAddress = http.BaseAddress ?? throw new InvalidOperationException("Bff:BaseUrl is not configured.");
+        return new Uri(baseAddress, "bff/login?returnUrl=" + Uri.EscapeDataString(returnUrl)).ToString();
+    }
+
+    /// <summary>
+    /// Ends the BFF session. Returns the auth server's end-session URL when there is one, else null. That URL sends the browser
+    /// back to <paramref name="returnUrl"/> (an absolute URL of an allowed origin) after the provider has signed it out.
+    /// </summary>
+    public async Task<string?> SignOutAsync(string? returnUrl = null, CancellationToken ct = default)
+    {
+        var path = returnUrl is null ? "bff/logout" : "bff/logout?returnUrl=" + Uri.EscapeDataString(returnUrl);
+        var response = await http.PostAsync(path, content: null, ct);
+        response.EnsureSuccessStatusCode();
+        if (response.StatusCode == HttpStatusCode.NoContent)
+            return null;
+        return (await response.Content.ReadFromJsonAsync<BffEndSession>(ct))?.EndSessionUrl;
+    }
+
+    /// <summary>The signed-in user's claims, or null when the browser has no valid BFF session.</summary>
+    public async Task<IReadOnlyList<BffClaim>?> GetUserClaimsAsync(CancellationToken ct = default)
+    {
+        var response = await http.GetAsync("bff/user", ct);
+        if (response.StatusCode == HttpStatusCode.Unauthorized)
+            return null;
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<List<BffClaim>>(ct);
+    }
+}
+
+/// <summary>The outcome of a sign-in attempt at the BFF. <see cref="Error"/> is the BFF's error code when it failed.</summary>
+public sealed record BffSignInResult(bool Succeeded, string? Error)
+{
+    public static BffSignInResult Ok { get; } = new(true, null);
+
+    /// <summary>The BFF could not reach the auth server or the API (its 503 answer).</summary>
+    public static BffSignInResult Unavailable { get; } = new(false, "temporarily_unavailable");
+}
+
+/// <summary>One claim as returned by <c>bff/user</c>.</summary>
+public sealed record BffClaim(string Type, string Value);
+
+public sealed record BffError(string? Error, string? ErrorDescription);
+
+public sealed record BffEndSession(string? EndSessionUrl);

@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using {{ module_namespace }}.Application.Dtos;
-using {{ ui_namespace }}.ApiClients;
+using {{ ui_namespace }}.Services.ApiClients;
 
-namespace {{ ui_namespace }}.Pages.{{ entity_name_plural }};
+namespace {{ ui_namespace }}.Pages.{{ module_name }}.{{ entity_name_plural }};
 
 /// <summary>Lists {{ entity_name }}s from the {{ module_name }} API, one page at a time, and deletes them.</summary>
 public class IndexModel({{ entity_name }}ApiClient api) : PageModel

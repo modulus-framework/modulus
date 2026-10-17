@@ -1,28 +1,37 @@
-{{ if web_login_mode != "Password" }}using Microsoft.AspNetCore.Authentication;
-{{ end }}using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-{{ if web_login_mode == "Password" }}using Modulus.Bff.Tokens;
-{{ else }}using Modulus.Bff;
-{{ end }}
+using Microsoft.AspNetCore.RateLimiting;
+using {{ root_namespace }}.Web.Configuration;
+using {{ root_namespace }}.Web.Security;
+
 namespace {{ root_namespace }}.Web.Pages.Account;
-
+{{ if web_login_mode == "Oidc" }}
 /// <summary>
-{{~ if web_login_mode == "Password" ~}}
-/// Signs the user in through the BFF web session (Modulus.Bff): the credentials go to the API host's token
-/// endpoint (the OpenIddict password grant, enabled in development; see Identity:AllowPasswordFlow), the tokens
-/// stay on the server (the cookie only names the session) and every typed API client carries the session's access
-/// token, refreshed before it expires. The client is "Bff:Clients:web" in appsettings.json.
-{{~ else ~}}
-/// Sends the user to the auth server's login page (OIDC code + PKCE through the BFF web session, Modulus.Bff). The
-/// tokens stay on the server (the cookie only names the session) and every typed API client carries the session's
-/// access token, refreshed before it expires. The client is "Bff:Clients:web" in appsettings.json.
-{{~ end ~}}
+/// Signs the user in at the external identity provider. The browser goes to the BFF's <c>bff/login</c>, which runs the OIDC
+/// code flow (with PKCE) at the provider's own login page and sends the browser back here with its BFF session cookie.
+/// No credentials are typed into this app; the tokens stay in the BFF.
 /// </summary>
-public class LoginModel{{ if web_login_mode == "Password" }}(IBffSessionService session){{ end }} : PageModel
+[EnableRateLimiting(RateLimitingSetup.SignInPolicy)]
+public class LoginModel(BffSessionClient session) : PageModel
 {
-    /// <summary>The BFF client this host is (Program.cs: SetDefaultClient).</summary>
-    public const string Client = "web";
+    public IActionResult OnGet(string? returnUrl = null)
+    {
+        var target = SafeReturnUrl(returnUrl) ?? "/";
+        return Redirect(session.SignInUrl($"{Request.Scheme}://{Request.Host}{target}"));
+    }
 
+    private string? SafeReturnUrl(string? returnUrl) =>
+        Url.IsLocalUrl(returnUrl) ? returnUrl : null;
+}
+{{ else }}
+/// <summary>
+/// Signs the user in through the BFF: the credentials go to the BFF's <c>bff/login</c>, which runs the password grant at the
+/// API's token endpoint (enabled in development; see Identity:AllowPasswordFlow). The tokens stay in the BFF, the browser
+/// keeps only the BFF session cookie, and every typed API client calls through the BFF with that cookie.
+/// </summary>
+[EnableRateLimiting(RateLimitingSetup.SignInPolicy)]
+public class LoginModel(BffSessionClient session) : PageModel
+{
     [BindProperty]
     public string UserName { get; set; } = "";
 
@@ -33,7 +42,6 @@ public class LoginModel{{ if web_login_mode == "Password" }}(IBffSessionService 
 
     public string? ReturnUrl { get; private set; }
 
-{{~ if web_login_mode == "Password" ~}}
     public void OnGet(string? returnUrl = null)
     {
         ReturnUrl = SafeReturnUrl(returnUrl);
@@ -43,7 +51,7 @@ public class LoginModel{{ if web_login_mode == "Password" }}(IBffSessionService 
     {
         ReturnUrl = SafeReturnUrl(returnUrl);
 
-        var result = await session.SignInWithPasswordAsync(HttpContext, Client, UserName, Password, rememberMe: true, HttpContext.RequestAborted);
+        var result = await session.SignInAsync(UserName, Password, rememberMe: true, HttpContext.RequestAborted);
         if (!result.Succeeded)
         {
             Error = result.Error == "temporarily_unavailable"
@@ -54,14 +62,8 @@ public class LoginModel{{ if web_login_mode == "Password" }}(IBffSessionService 
 
         return LocalRedirect(ReturnUrl ?? "/");
     }
-{{~ else ~}}
-    public IActionResult OnGet(string? returnUrl = null)
-    {
-        ReturnUrl = SafeReturnUrl(returnUrl);
-        return Challenge(new AuthenticationProperties { RedirectUri = ReturnUrl ?? "/" }, BffDefaults.OidcScheme(Client));
-    }
-{{~ end ~}}
 
     private string? SafeReturnUrl(string? returnUrl) =>
         Url.IsLocalUrl(returnUrl) ? returnUrl : null;
 }
+{{ end }}

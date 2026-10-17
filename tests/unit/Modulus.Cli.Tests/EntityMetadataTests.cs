@@ -66,7 +66,7 @@ public sealed class EntityMetadataTests
     [Theory]
     [InlineData("mvc", "asp-for=\"Total\"")]
     [InlineData("razor-pages", "asp-for=\"Total\"")]
-    [InlineData("blazor", "@bind-Value=\"Item.Total\"")]
+    [InlineData("blazor", "@bind-Value=\"form.Total\"")]
     public void The_form_template_renders_a_control_per_field(string engine, string expected)
     {
         var nupkg = Path.Combine(UiTemplatePackage.UserRoot, "feed", $"{UiTemplatePackage.PackageId}.{UiTemplatePackage.DefaultVersion}.nupkg");

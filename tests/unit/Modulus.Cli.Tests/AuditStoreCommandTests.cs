@@ -14,10 +14,12 @@ public sealed class AuditStoreWiringTests
         "builder.Services.AddModulus(builder.Configuration, modules =>\n{\n    modules.AddModule<CatalogModule>();\n});\n" +
         "var app = builder.Build();\napp.Run();\n";
 
+    private static string AuditHost(string text, string ns) => AuditStoreWiring.EnsureApiServices(AuditStoreWiring.EnsureApiModule(text, ns));
+
     [Fact]
     public void Program_registers_the_module_and_the_security_audit_once()
     {
-        var once = AuditStoreWiring.EnsureApiProgram(Program, "Shop.Modules.Audit");
+        var once = AuditHost(Program, "Shop.Modules.Audit");
 
         once.Should().Contain("    modules.AddModule<AuditModule>();\n});")
             .And.Contain("builder.Services.AddModulusSecurityAudit(builder.Configuration);")
@@ -25,7 +27,7 @@ public sealed class AuditStoreWiringTests
             .And.Contain("using Shop.Modules.Audit.Infrastructure;");
         once.IndexOf("AddModulusSecurityAudit(", StringComparison.Ordinal)
             .Should().BeLessThan(once.IndexOf("var app = builder.Build();", StringComparison.Ordinal));
-        AuditStoreWiring.EnsureApiProgram(once, "Shop.Modules.Audit").Should().Be(once);
+        AuditHost(once, "Shop.Modules.Audit").Should().Be(once);
     }
 
     [Fact]
@@ -33,14 +35,14 @@ public sealed class AuditStoreWiringTests
     {
         var program = Program.Replace("var app", "builder.Services.AddModulusSecurityAudit(builder.Configuration);\nvar app", StringComparison.Ordinal);
 
-        var result = AuditStoreWiring.EnsureApiProgram(program, "Shop.Modules.Audit");
+        var result = AuditHost(program, "Shop.Modules.Audit");
 
         result.Split("AddModulusSecurityAudit(").Length.Should().Be(2);
     }
 
     [Fact]
     public void Program_without_anchors_is_left_alone()
-        => AuditStoreWiring.EnsureApiProgram("var x = 1;\n", "Shop.Modules.Audit").Should().Be("var x = 1;\n");
+        => AuditHost("var x = 1;\n", "Shop.Modules.Audit").Should().Be("var x = 1;\n");
 
     [Fact]
     public void Development_settings_anchor_the_chain_heads_unless_a_security_section_exists()
@@ -95,7 +97,7 @@ public sealed class AuditStoreCommandTests : IDisposable
         Read("Shop.slnx").Should().Contain("Shop.Modules.Audit.Infrastructure.csproj");
         Read("src/API/Shop.Api/Shop.Api.csproj").Should().Contain("Shop.Modules.Audit.Infrastructure.csproj");
 
-        var program = Read("src/API/Shop.Api/Program.cs");
+        var program = ApiHostFiles.ReadAll(Path.Combine(AppDir, "src/API/Shop.Api/Program.cs"));
         program.Should().Contain("modules.AddModule<AuditModule>();");
         program.Split("AddModulusSecurityAudit(").Length.Should().Be(2, "the guarded template already records security events");
 
@@ -112,7 +114,7 @@ public sealed class AuditStoreCommandTests : IDisposable
 
         Run(AppDir).Should().Be(0);
 
-        Read("src/API/Shop.Api/Program.cs").Should().Contain("builder.Services.AddModulusSecurityAudit(builder.Configuration);");
+        ApiHostFiles.ReadAll(Path.Combine(AppDir, "src/API/Shop.Api/Program.cs")).Should().Contain("builder.Services.AddModulusSecurityAudit(builder.Configuration);");
     }
 
     [Fact]

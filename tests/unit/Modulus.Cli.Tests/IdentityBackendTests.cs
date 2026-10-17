@@ -133,7 +133,7 @@ public sealed class IdentityBackendTests : IDisposable
         var model = Model();
 
         Render("app/api.csproj", model).Should().Contain("Shop.Modules.Identity.Infrastructure.csproj");
-        var program = Render("app/Program", model);
+        var program = ApiHostSource.Render(_engine, model);
         program.Should().Contain("using Shop.Modules.Identity.Infrastructure;")
             .And.Contain("modules.AddModule<IdentityModule>();")
             .And.Contain("await app.Services.SeedIdentityAsync(app.Environment);");
@@ -148,10 +148,10 @@ public sealed class IdentityBackendTests : IDisposable
     {
         // Regression: AddModulusOpenIddict after AddModulus re-registered the deny-everything validator over the one
         // AddModulusIdentity had installed, so every password grant answered "username or password is incorrect".
-        var program = Render("app/Program", Model());
+        var program = ApiHostSource.Render(_engine, Model());
 
-        program.IndexOf("AddModulusOpenIddict(", StringComparison.Ordinal).Should()
-            .BeLessThan(program.IndexOf("builder.Services.AddModulus(", StringComparison.Ordinal));
+        program.IndexOf("builder.AddApiTokenServer();", StringComparison.Ordinal).Should()
+            .BeLessThan(program.IndexOf("builder.AddApiModules();", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -188,14 +188,14 @@ public sealed class IdentityBackendTests : IDisposable
         var model = Model(auth);
 
         Render("app/api.csproj", model).Should().NotContain("Modules.Identity");
-        Render("app/Program", model).Should().NotContain("IdentityModule").And.NotContain("SeedIdentityAsync");
+        ApiHostSource.Render(_engine, model).Should().NotContain("IdentityModule").And.NotContain("SeedIdentityAsync");
         Render("app/appsettings.json", model).Should().NotContain("\"Identity\": \"Data Source");
     }
 
     [Fact]
     public void The_test_project_pins_the_vulnerable_transitive_package_only_when_openiddict_pulls_it_in()
     {
-        Render("app/tests.csproj", Model()).Should().Contain("System.Security.Cryptography.Xml");
+        Render("app/tests.csproj", Model()).Should().Contain("System.Security.Cryptography.Xml").And.Contain("System.Security.Cryptography.Pkcs");
         Render("app/tests.csproj", Model("none")).Should().NotContain("System.Security.Cryptography.Xml");
     }
 

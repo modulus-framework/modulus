@@ -37,7 +37,13 @@ public sealed class RedactionTemplateTests
     {
         var model = App(AppKinds.Parse(kind));
 
-        _engine.Render(program, model).Should().Contain("builder.Services.AddModulusRedaction(builder.Configuration);")
+        var source = program switch
+        {
+            "app/Program.Web" => WebHostSource.Render(_engine, model),
+            "app/Program" => ApiHostSource.Render(_engine, model),
+            _ => _engine.Render(program, model),
+        };
+        source.Should().Contain("AddModulusRedaction(")
             .And.Contain("using Modulus.AspNetCore.Logging;");
         using var json = JsonDocument.Parse(_engine.Render(settings, model), s_json);
         json.RootElement.GetProperty("Security").GetProperty("Redaction").GetProperty("Enabled").GetBoolean().Should().BeTrue();
@@ -48,7 +54,7 @@ public sealed class RedactionTemplateTests
     {
         var model = BffHostModel.For(App(AppKind.Api, "openiddict", "mobile"), "mobile", 0);
 
-        _engine.Render("bff/Program", model).Should().Contain("builder.Services.AddModulusRedaction(builder.Configuration);");
+        _engine.Render("bff/BffCoreSetup", model).Should().Contain("services.AddModulusRedaction(configuration);");
         using var json = JsonDocument.Parse(_engine.Render("bff/appsettings.json", model), s_json);
         json.RootElement.GetProperty("Security").GetProperty("Redaction").GetProperty("Enabled").GetBoolean().Should().BeTrue();
     }

@@ -1,0 +1,36 @@
+using Microsoft.AspNetCore.Mvc;
+using {{ ui_namespace }}.Services.ApiClients;
+
+namespace {{ ui_namespace }}.Pages.{{ module_name }}.{{ entity_name_plural }};
+
+/// <summary>Creates a {{ entity_name | string.downcase }} through the {{ module_name }} API.</summary>
+public class CreateModel({{ entity_name }}ApiClient api) : {{ entity_name }}FormModel
+{
+    public void OnGet()
+    {
+    }
+
+    public async Task<IActionResult> OnPostAsync(CancellationToken ct)
+    {
+        if (!ModelState.IsValid)
+            return Page();
+
+        try
+        {
+            var id = await api.CreateAsync(new Create{{ entity_name }}Dto { Name = Input.Name }, ct);
+            if (id == Guid.Empty)
+            {
+                ModelState.AddModelError(string.Empty, "The API refused the change.");
+                return Page();
+            }
+        }
+        catch (HttpRequestException)
+        {
+            ModelState.AddModelError(string.Empty, "The API could not be reached.");
+            return Page();
+        }
+
+        TempData["Message"] = "Created.";
+        return RedirectToPage("Index");
+    }
+}

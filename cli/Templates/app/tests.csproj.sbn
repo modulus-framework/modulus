@@ -11,6 +11,8 @@
   <ItemGroup>
     <ProjectReference Include="../../src/API/{{ root_namespace }}.Api/{{ root_namespace }}.Api.csproj" />
 {{ if kind_name == "webapp+api" }}    <ProjectReference Include="../../src/Web/{{ root_namespace }}.Web/{{ root_namespace }}.Web.csproj" />
+{{ end }}{{ if kind_name == "webapp+api" && auth != "none" }}    <!-- The Web host signs in through its BFF (the "web" client). -->
+    <ProjectReference Include="../../src/Bff/{{ root_namespace }}.Bff.Web/{{ root_namespace }}.Bff.Web.csproj" />
 {{ end }}  </ItemGroup>
 
   <ItemGroup>
@@ -25,10 +27,11 @@
     <PackageReference Include="Synvro.Modulus.Testing" Version="{{ framework_version }}" />
     <!-- Module boundary rules and architecture verification. -->
     <PackageReference Include="Synvro.Modulus.Testing.Architecture" Version="{{ framework_version }}" />
-{{ if auth != "none" }}    <!-- Transitive advisory pin: OpenIddict's DataProtection integration (in Modulus.Identity, so every auth provider) pulls
-         System.Security.Cryptography.Xml 10.0.7 (multiple high-severity advisories) into a project
-         that, unlike the web host, does not get it from the shared framework. -->
-    <PackageReference Include="System.Security.Cryptography.Xml" Version="10.0.12" />
+{{ if auth != "none" }}    <!-- Transitive advisory pins: OpenIddict's DataProtection integration (in Modulus.Identity, so every auth provider) pulls
+         System.Security.Cryptography.Xml and System.Security.Cryptography.Pkcs (multiple high-severity advisories, vulnerable
+         up to 10.0.12) into a project that, unlike the web host, does not get them from the shared framework. -->
+    <PackageReference Include="System.Security.Cryptography.Xml" Version="10.0.13" />
+    <PackageReference Include="System.Security.Cryptography.Pkcs" Version="10.0.13" />
 {{ end }}  </ItemGroup>
 
 </Project>

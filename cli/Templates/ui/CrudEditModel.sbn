@@ -1,28 +1,21 @@
-using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.RazorPages;
-using {{ ui_namespace }}.ApiClients;
+using {{ ui_namespace }}.Services.ApiClients;
 
-namespace {{ ui_namespace }}.Pages.{{ entity_name_plural }};
+namespace {{ ui_namespace }}.Pages.{{ module_name }}.{{ entity_name_plural }};
 
-/// <summary>Creates a {{ entity_name }} (no id) or edits one (<c>?id=</c>) through the {{ module_name }} API.</summary>
-public class EditModel({{ entity_name }}ApiClient api) : PageModel
+/// <summary>Edits a {{ entity_name | string.downcase }} (<c>?id=</c>) through the {{ module_name }} API. Creating one is the Create page.</summary>
+public class EditModel({{ entity_name }}ApiClient api) : {{ entity_name }}FormModel
 {
-    [BindProperty]
-    public InputModel Input { get; set; } = new();
-
-    public bool IsNew => Input.Id == Guid.Empty;
-
     public async Task<IActionResult> OnGetAsync(Guid? id, CancellationToken ct)
     {
         if (id is null || id == Guid.Empty)
-            return Page();
+            return RedirectToPage("Create");
 
         var existing = await api.GetByIdAsync(id.Value, ct);
         if (existing is null)
             return NotFound();
 
-        Input = new InputModel { Id = existing.Id, Name = existing.Name };
+        Input = new {{ entity_name }}Input { Id = existing.Id, Name = existing.Name };
         return Page();
     }
 
@@ -33,10 +26,7 @@ public class EditModel({{ entity_name }}ApiClient api) : PageModel
 
         try
         {
-            var saved = IsNew
-                ? await api.CreateAsync(new Create{{ entity_name }}Dto { Name = Input.Name }, ct) != Guid.Empty
-                : await api.UpdateAsync(Input.Id, new Update{{ entity_name }}Dto { Name = Input.Name }, ct);
-            if (!saved)
+            if (!await api.UpdateAsync(Input.Id, new Update{{ entity_name }}Dto { Name = Input.Name }, ct))
             {
                 ModelState.AddModelError(string.Empty, "The API refused the change.");
                 return Page();
@@ -50,13 +40,5 @@ public class EditModel({{ entity_name }}ApiClient api) : PageModel
 
         TempData["Message"] = "Saved.";
         return RedirectToPage("Index");
-    }
-
-    public sealed class InputModel
-    {
-        public Guid Id { get; set; }
-
-        [Required, StringLength(200)]
-        public string Name { get; set; } = string.Empty;
     }
 }

@@ -1,0 +1,14 @@
+namespace {{ root_namespace }}.Api.Endpoints;
+
+/// <summary>
+/// The endpoints of the optional features of this API host (webhooks, realtime, GraphQL, gRPC, the AI connector). The modulus
+/// CLI adds each feature's mapping here, after the module endpoints; the matching services are in
+/// Configuration/FeatureServicesSetup.cs.
+/// </summary>
+internal static class FeatureEndpoints
+{
+    public static WebApplication MapApiFeatures(this WebApplication app)
+    {
+        return app;
+    }
+}

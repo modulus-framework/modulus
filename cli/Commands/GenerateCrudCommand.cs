@@ -61,6 +61,12 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
         var infraDir = CodeGen.LayerDir(module.Directory, module.Namespace, "Infrastructure");
         var presDir = CodeGen.LayerDir(module.Directory, module.Namespace, "Presentation");
 
+        // Modules generated before the IntegrationEvents project keep their events in Application/IntegrationEvents.
+        // The events folder sits under the project directory, so the legacy base is the Application directory.
+        var eventsProjectDir = CodeGen.LayerDir(module.Directory, module.Namespace, "IntegrationEvents");
+        var legacyEvents = !File.Exists(Path.Combine(eventsProjectDir, $"{module.Namespace}.IntegrationEvents.csproj"));
+        var eventsDir = legacyEvents ? appDir : eventsProjectDir;
+
         var model = new ModuleModel
         {
             RootNamespace = module.RootNamespace,
@@ -69,12 +75,13 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
             EntityName = entity,
             EntityNameLower = entityLower,
             RouteName = routeName,
+            LegacyIntegrationEvents = legacyEvents,
         };
 
         // A host with the identity backend guards the API endpoints with a permission the Admin role holds;
         // a host with no such role has nothing to grant it to, so its endpoints stay as open as the rest of that host.
         var host = ResolveHost(module);
-        model.RequiredPermission = File.Exists(host.ProgramCs) && UiAccessGates.HasAdminRole(File.ReadAllText(host.ProgramCs))
+        model.RequiredPermission = File.Exists(host.ProgramCs) && UiAccessGates.HasAdminRole(ApiHostFiles.ReadAll(host.ProgramCs))
             ? UiAccessGates.CrudPermission(module.Name, routeName)
             : null;
 
@@ -120,18 +127,18 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
         WriteIfMissing("module/Application/DeleteHandler", model,
             Path.Combine(appDir, $"Delete{entity}Handler.cs"), generated, skipped);
 
-        // ── Integration event (Application layer) ──────────────────
+        // ── Integration events (IntegrationEvents layer) ───────────
         WriteIfMissing("module/Application/ModuleArea", model,
-            Path.Combine(appDir, "IntegrationEvents", $"{model.ModuleName}Area.cs"),
+            Path.Combine(eventsDir, "IntegrationEvents", $"{model.ModuleName}Area.cs"),
             generated, skipped);
         WriteIfMissing("module/Application/IntegrationEvent", model,
-            Path.Combine(appDir, "IntegrationEvents", $"{entity}CreatedIntegrationEvent.cs"),
+            Path.Combine(eventsDir, "IntegrationEvents", $"{entity}CreatedIntegrationEvent.cs"),
             generated, skipped);
         WriteIfMissing("module/Application/UpdatedIntegrationEvent", model,
-            Path.Combine(appDir, "IntegrationEvents", $"{entity}UpdatedIntegrationEvent.cs"),
+            Path.Combine(eventsDir, "IntegrationEvents", $"{entity}UpdatedIntegrationEvent.cs"),
             generated, skipped);
         WriteIfMissing("module/Application/DeletedIntegrationEvent", model,
-            Path.Combine(appDir, "IntegrationEvents", $"{entity}DeletedIntegrationEvent.cs"),
+            Path.Combine(eventsDir, "IntegrationEvents", $"{entity}DeletedIntegrationEvent.cs"),
             generated, skipped);
 
         // ── Infrastructure layer ──────────────────────────────────
@@ -272,9 +279,10 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
         UpdateExisting(Path.Combine(appDir, $"Get{entity}ByIdQuery.cs"), appDir, generated,
             t => AiWiring.MarkLookupQuery(t, $"Get{entity}ByIdQuery", entity, AiWiring.TitleField(entitySource), names, checksPermission, batchQuery));
 
-        var program = File.Exists(host.ProgramCs) ? File.ReadAllText(host.ProgramCs) : string.Empty;
+        var program = File.Exists(host.ProgramCs) ? ApiHostFiles.ReadAll(host.ProgramCs) : string.Empty;
         if (checksPermission)
-            UpdateExisting(host.ProgramCs, host.ApiDir, generated, t => AiWiring.EnsureIndexerGrant(t, permission));
+            UpdateExisting(ApiHostFiles.FileWith(host.ProgramCs, "builder.Services.AddPermissionGrants("), host.ApiDir, generated,
+                t => AiWiring.EnsureIndexerGrant(t, permission));
         else
             AnsiConsole.MarkupLine("[yellow]![/] The host declares no permissions: the AI queries check none in the mediator, so any platform user the connector resolves may run them. Grant the indexing role ({0}) read access yourself.", AiWiring.IndexerRole);
 
@@ -328,10 +336,10 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
     }
 
     /// <summary>The host project's files a CRUD set touches.</summary>
-    /// <summary>The API host resolves companies (<c>AddMultiTenancy(</c> in its Program.cs).</summary>
+    /// <summary>The API host resolves companies (<c>AddMultiTenancy(</c> in its composition).</summary>
     internal static bool IsMultiTenantHost(string? programCs)
         => !string.IsNullOrEmpty(programCs) && File.Exists(programCs)
-            && File.ReadAllText(programCs).Contains("AddMultiTenancy(", StringComparison.Ordinal);
+            && ApiHostFiles.ReadAll(programCs).Contains("AddMultiTenancy(", StringComparison.Ordinal);
 
     private sealed record HostFiles(string ApiDir, string ApiCsproj, string ProgramCs);
 
@@ -365,15 +373,18 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
         if (model.RequiredPermission is not { } permission || !File.Exists(host.ProgramCs))
             return;
 
-        var original = File.ReadAllText(host.ProgramCs);
+        // The lines go to the feature services (Configuration/FeatureServicesSetup.cs), or Program.cs of an older host; the
+        // permission is looked for across the whole host, so an existing registration is never repeated.
+        var target = ApiHostFiles.FeatureServicesFile(host.ProgramCs);
+        var original = File.ReadAllText(target);
         var wired = ApiPermissionWiring.EnsurePermission(
-            original, module.Name, permission, UiAccessGates.CrudPermissionDescription(model.EntityPlural ?? module.Name));
+            original, ApiHostFiles.ReadAll(host.ProgramCs), module.Name, permission, UiAccessGates.CrudPermissionDescription(model.EntityPlural ?? module.Name));
         if (wired == original)
             return;
 
         if (!Ux.DryRun)
-            Ux.WriteFile(host.ProgramCs, wired);
-        generated.Add(CodeGen.Rel(host.ApiDir, "Program.cs (updated)"));
+            Ux.WriteFile(target, wired);
+        generated.Add(CodeGen.Rel(host.ApiDir, Path.GetRelativePath(host.ApiDir, target).Replace(Path.DirectorySeparatorChar, '/') + " (updated)"));
     }
 
     /// <summary>

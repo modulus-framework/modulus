@@ -1,0 +1,46 @@
+using Modulus.Platform.Http;
+
+namespace {{ root_namespace }}.Web.Security;
+
+/// <summary>
+/// Makes the server-side calls to the BFF on behalf of the browser. It copies the browser's cookies (the BFF session
+/// cookie) onto the outgoing request, sends the CSRF header every BFF web-client call requires, and hands the BFF's
+/// <c>Set-Cookie</c> headers (sign-in, token refresh, sign-out) back to the browser.
+/// </summary>
+/// <remarks>
+/// Set-Cookie can only be relayed before the response starts. A rotated cookie that arrives after that is dropped, and
+/// the BFF refreshes it again on the next call.
+/// </remarks>
+internal sealed class BffGatewayHandler(IHttpContextAccessor httpContextAccessor) : DelegatingHandler
+{
+    /// <summary>The header every BFF web-client call must carry (the BFF's default CSRF header and value).</summary>
+    internal const string CsrfHeader = "X-CSRF";
+    internal const string CsrfValue = "1";
+
+    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    {
+        var context = httpContextAccessor.HttpContext;
+        if (context is not null && context.Request.Headers.Cookie.Count > 0)
+            request.Headers.TryAddWithoutValidation("Cookie", context.Request.Headers.Cookie.ToString());
+        request.Headers.TryAddWithoutValidation(CsrfHeader, CsrfValue);
+
+        var response = await base.SendAsync(request, cancellationToken);
+
+        if (context is not null && !context.Response.HasStarted && response.Headers.TryGetValues("Set-Cookie", out var cookies))
+        {
+            foreach (var cookie in cookies)
+                context.Response.Headers.Append("Set-Cookie", cookie);
+        }
+
+        return response;
+    }
+}
+
+/// <summary>Registration helpers for the typed clients that reach the API through the BFF.</summary>
+internal static class BffGatewayRegistration
+{
+    /// <summary>A typed client whose calls go through the BFF's <c>/api</c> route, carrying the browser's session.</summary>
+    public static IHttpClientBuilder AddBffGatewayClient<TClient>(this IServiceCollection services)
+        where TClient : class
+        => services.AddModulusHttpClient<TClient>().AddHttpMessageHandler<BffGatewayHandler>();
+}

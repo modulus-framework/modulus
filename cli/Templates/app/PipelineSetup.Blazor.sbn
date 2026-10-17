@@ -1,0 +1,19 @@
+using Modulus.AspNetCore.Hosting;
+
+namespace {{ root_namespace }}.Web.Middleware;
+
+/// <summary>The Blazor host's request pipeline. The order is authoritative.</summary>
+internal static class PipelineSetup
+{
+    public static WebApplication UseWebPipeline(this WebApplication app)
+    {
+        app.UseModulusHardening();
+        app.UseHttpsRedirection();
+        app.UseAntiforgery();
+{{ if use_auth }}        app.UseRateLimiter();
+        app.UseAuthentication();
+        app.UseAuthorization();
+{{ end }}
+        return app;
+    }
+}

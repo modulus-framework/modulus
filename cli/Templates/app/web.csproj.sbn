@@ -25,7 +25,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../../API/{{ root_namespace }}.Api/{{ root_namespace }}.Api.csproj" />
-{{ if !no_example }}    <!-- DTOs the admin pages bind (the typed clients live in this project's ApiClients/). -->
+{{ if !no_example }}    <!-- DTOs the admin pages bind (the typed clients live in this project's Services/ApiClients/). -->
     <ProjectReference Include="../../Modules/{{ root_namespace }}.Modules.{{ example_module }}/{{ root_namespace }}.Modules.{{ example_module }}.Application/{{ root_namespace }}.Modules.{{ example_module }}.Application.csproj" />
 {{ end }}  </ItemGroup>
 

@@ -1,0 +1,21 @@
+using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
+
+namespace {{ ui_namespace }}.Pages.{{ module_name }}.{{ entity_name_plural }};
+
+/// <summary>Form values for a {{ entity_name | string.downcase }}: the same shape for create and edit.</summary>
+public sealed class {{ entity_name }}Input
+{
+    public Guid Id { get; set; }
+
+    [Required, StringLength(200)]
+    public string Name { get; set; } = string.Empty;
+}
+
+/// <summary>Base page model of the {{ entity_name | string.downcase }} create and edit pages: binds the shared form.</summary>
+public abstract class {{ entity_name }}FormModel : PageModel
+{
+    [BindProperty]
+    public {{ entity_name }}Input Input { get; set; } = new();
+}

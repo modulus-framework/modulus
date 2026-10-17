@@ -139,6 +139,14 @@ public sealed class BffOptions
     public string TenantHeader { get; set; } = BffDefaults.TenantHeader;
 
     /// <summary>
+    /// Absolute origins (<c>https://web.example.com</c>) a web client may send the browser back to after sign-in
+    /// (<c>/bff/login?returnUrl=</c>) or sign-out (<c>/bff/logout?returnUrl=</c>). A server-rendered Web host that is not
+    /// the BFF's own host lists its origin here; any other absolute return URL is refused and falls back to <c>/</c>.
+    /// Local paths are always allowed.
+    /// </summary>
+    public List<string> AllowedReturnOrigins { get; set; } = [];
+
+    /// <summary>
     /// Claim types read as roles, in addition to the auth server's defaults (<c>role</c>,
     /// <c>roles</c>, <c>groups</c>, Keycloak's <c>realm_access.roles</c>). Roles are normalized to <c>role</c>.
     /// </summary>

@@ -1,0 +1,25 @@
+using Modulus.AspNetCore.Correlation;
+using Modulus.AspNetCore.Security;
+using Modulus.Bff;
+
+namespace {{ project_name }}.Middleware;
+
+/// <summary>The {{ client_name }} BFF's request pipeline. The order is authoritative.</summary>
+internal static class PipelineSetup
+{
+    /// <remarks>
+    /// Forwarded headers first, so downstream code sees the real client address and scheme. Correlation so every log line
+    /// carries the id. Then the session: authentication, then the BFF's edge rules, then authorization and rate limiting.
+    /// </remarks>
+    public static WebApplication Use{{ client_pascal }}BffPipeline(this WebApplication app)
+    {
+        app.UseForwardedHeaders();
+{{ if enable_correlation }}        app.UseModulusCorrelation();
+{{ end }}{{ if enable_security_headers }}        app.UseModulusSecurityHeaders();
+{{ end }}        app.UseAuthentication();
+        app.UseModulusBff();
+        app.UseAuthorization();
+        app.UseRateLimiter();
+        return app;
+    }
+}

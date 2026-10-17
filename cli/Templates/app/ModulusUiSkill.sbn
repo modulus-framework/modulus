@@ -68,7 +68,8 @@ public sealed class AppMenuContributor : IMenuContributor
 }
 ```
 
-Register it with `builder.Services.AddTransient<IMenuContributor, AppMenuContributor>();`.
+Put the class in `Components/Navigation/Menu` (namespace `{{ root_namespace }}.Web.Components.Navigation.Menu`). `AddMenuContributors()`
+in `Composition/MenuRegistration.cs` registers every contributor there, so there is no line to add to `Program.cs`.
 `Href` has no leading slash. Add `RequiredPolicy` to hide an item from users who lack the policy.
 
 {{ else }}

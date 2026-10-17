@@ -20,8 +20,8 @@ public class AiGuidanceTemplateTests
 
     [Theory]
     [InlineData("blazor", "src/Web/Contoso.Web")]
-    [InlineData("mvc", "views in `Views`")]
-    [InlineData("razor-pages", "pages in `Pages`")]
+    [InlineData("mvc", "views in `Views/<Entities>`")]
+    [InlineData("razor-pages", "pages in `Pages/<Module>/<Entities>`")]
     public void Claude_md_names_the_engine_and_its_web_host(string engine, string expected)
     {
         var output = _engine.Render("app/ClaudeMd", Web(engine));

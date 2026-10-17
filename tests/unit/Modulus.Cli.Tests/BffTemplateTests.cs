@@ -81,11 +81,15 @@ public sealed class BffTemplateTests
         csproj.Should().Contain($"<ModulusAppKind>bff-{client}</ModulusAppKind>");
         csproj.Should().Contain("Modulus.Bff");
 
+        // Program.cs only composes; the client, the pipeline and the endpoints live in their setup files.
         var program = _engine.Render("bff/Program", model);
-        program.Should().Contain($".Add{pascal}Client(\"{client}\")");
-        program.Should().Contain("app.UseModulusBff();").And.Contain("app.MapModulusBff();").And.Contain("app.UseRateLimiter();");
-        program.IndexOf("app.UseAuthentication();", StringComparison.Ordinal)
-            .Should().BeLessThan(program.IndexOf("app.UseModulusBff();", StringComparison.Ordinal));
+        program.Should().Contain($"app.Use{pascal}BffPipeline();").And.Contain($"app.Map{pascal}BffEndpoints();");
+        _engine.Render("bff/SessionAuthSetup", model).Should().Contain($".Add{pascal}Client(Client)").And.Contain($"Client = \"{client}\"");
+        _engine.Render("bff/PipelineSetup", model).Should().Contain("app.UseModulusBff();").And.Contain("app.UseRateLimiter();");
+        _engine.Render("bff/BffEndpoints", model).Should().Contain("app.MapModulusBff();");
+        var pipeline = _engine.Render("bff/PipelineSetup", model);
+        pipeline.IndexOf("app.UseAuthentication();", StringComparison.Ordinal)
+            .Should().BeLessThan(pipeline.IndexOf("app.UseModulusBff();", StringComparison.Ordinal));
 
         _engine.Render("bff/launchSettings.json", model).Should().Contain($"http://localhost:{5190 + index}");
         model.SolutionPath.Should().Be($"src/Bff/Shop.Bff.{pascal}/Shop.Bff.{pascal}.csproj");

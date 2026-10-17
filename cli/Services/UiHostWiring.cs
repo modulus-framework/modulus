@@ -24,14 +24,15 @@ internal static class UiHostWiring
     public static IReadOnlyList<string> EnsureControllerRouting(string programPath)
     {
         var text = File.ReadAllText(programPath);
+        var source = HostSource(programPath);
         var changed = new List<string>();
-        if (!text.Contains("AddControllersWithViews(") && !text.Contains("AddControllers("))
+        if (!source.Contains("AddControllersWithViews(") && !source.Contains("AddControllers("))
         {
             text = InsertBefore(text, "var app = builder.Build();", "builder.Services.AddControllersWithViews();");
             changed.Add("AddControllersWithViews()");
         }
 
-        if (!text.Contains("MapControllers("))
+        if (!source.Contains("MapControllers(") && !source.Contains("MapControllerRoute("))
         {
             text = InsertBefore(text, "app.Run();", "app.MapControllers();");
             changed.Add("MapControllers()");
@@ -48,10 +49,9 @@ internal static class UiHostWiring
     /// </summary>
     public static IReadOnlyList<string> EnsureAdminMenu(string programPath, string line)
     {
-        var text = File.ReadAllText(programPath);
-        if (text.Contains("AddModulusAdminUi(", StringComparison.Ordinal))
+        if (HostSource(programPath).Contains("AddModulusAdminUi(", StringComparison.Ordinal))
             return [];
-        File.WriteAllText(programPath, InsertBefore(text, "var app = builder.Build();", line));
+        File.WriteAllText(programPath, InsertBefore(File.ReadAllText(programPath), "var app = builder.Build();", line));
         return [line];
     }
 
@@ -70,17 +70,16 @@ internal static class UiHostWiring
             changed.Add($"Controllers/{ProxyControllerFile}");
         }
 
-        var text = File.ReadAllText(programPath);
-        if (!text.Contains("AddIdentityApiProxy("))
+        if (!HostSource(programPath).Contains("AddIdentityApiProxy("))
         {
-            text = InsertBefore(text, "var app = builder.Build();", "builder.Services.AddIdentityApiProxy();");
-            File.WriteAllText(programPath, text);
+            File.WriteAllText(programPath, InsertBefore(File.ReadAllText(programPath), "var app = builder.Build();", "builder.Services.AddIdentityApiProxy();"));
             changed.Add("AddIdentityApiProxy()");
         }
 
-        var allowlist = Path.Combine(webDir, "security", "loosening-allowlist.json");
-        if (File.Exists(allowlist) && AddAllowlistEntries(allowlist))
-            changed.Add("security/loosening-allowlist.json");
+        // Apps generated before the rename keep the allowlist in lowercase "security".
+        var allowlist = new[] { "Security", "security" }.Select(folder => Path.Combine(webDir, folder, "loosening-allowlist.json")).FirstOrDefault(File.Exists);
+        if (allowlist is not null && AddAllowlistEntries(allowlist))
+            changed.Add(Path.GetRelativePath(webDir, allowlist).Replace('\\', '/'));
 
         return changed;
     }
@@ -146,6 +145,22 @@ internal static class UiHostWiring
         }
 
         return -1;
+    }
+
+    /// <summary>The folders of the Web host whose files Program.cs composes (see the Razor Pages and MVC host's setup files).</summary>
+    private static readonly string[] SetupFolders = ["Composition", "Configuration", "Endpoints", "Middleware", "Observability", "Security"];
+
+    /// <summary>
+    /// The Web host's wiring: Program.cs and the setup files it composes, so a line already present in any of them is not added
+    /// twice. Controllers and pages are left out, because their comments may name a registration. Lines are only inserted into Program.cs.
+    /// </summary>
+    private static string HostSource(string programPath)
+    {
+        var root = Path.GetDirectoryName(programPath)!;
+        var setupFiles = Directory.EnumerateDirectories(root)
+            .Where(d => SetupFolders.Contains(Path.GetFileName(d), StringComparer.OrdinalIgnoreCase))
+            .SelectMany(d => Directory.EnumerateFiles(d, "*.cs", SearchOption.AllDirectories));
+        return string.Concat(new[] { programPath }.Concat(setupFiles).Select(File.ReadAllText));
     }
 
     private static string InsertBefore(string text, string anchor, string line)

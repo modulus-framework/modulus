@@ -22,7 +22,7 @@ public sealed class HybridCacheTemplateTests
     [Fact]
     public void Inmemory_host_registers_the_L1_fusion_cache()
     {
-        var program = _engine.Render("app/Program", Model("inmemory"));
+        var program = ApiHostSource.Render(_engine, Model("inmemory"));
         var csproj = _engine.Render("app/api.csproj", Model("inmemory"));
 
         program.Should().Contain("builder.Services.AddModulusFusionCache(builder.Configuration);");
@@ -35,7 +35,7 @@ public sealed class HybridCacheTemplateTests
     [Fact]
     public void Redis_host_registers_redis_L2_and_backplane()
     {
-        var program = _engine.Render("app/Program", Model("redis"));
+        var program = ApiHostSource.Render(_engine, Model("redis"));
         var csproj = _engine.Render("app/api.csproj", Model("redis"));
 
         program.Should().Contain("builder.Services.AddRedisFusionCache(builder.Configuration);");

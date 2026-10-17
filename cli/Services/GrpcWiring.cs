@@ -35,57 +35,48 @@ internal static partial class GrpcWiring
             $"  </ItemGroup>{nl}");
     }
 
-    /// <summary>The API host registers the gRPC server before <c>Build()</c> and maps the modules' services after their endpoints.</summary>
-    public static string EnsureApiProgram(string program, string rootNamespace)
+    /// <summary>The optional features' services (<c>Configuration/FeatureServicesSetup.cs</c>): the gRPC server.</summary>
+    public static string EnsureApiServices(string text)
     {
-        var nl = NewLine(program);
-        var text = EnsureUsing(program, "using Modulus.Grpc;");
-
+        var nl = NewLine(text);
         if (!text.Contains("AddModulusGrpc(", StringComparison.Ordinal))
         {
-            var build = text.IndexOf("var app = builder.Build();", StringComparison.Ordinal);
-            if (build < 0)
-                return program;
-            text = text[..build] +
-                "// ── gRPC ───────────────────────────────────────────────────────" + nl +
-                "// Module gRPC services (modulus generate-grpc): domain exceptions become status codes," + nl +
-                "// grpc.health.v1 reports the module health checks, and reflection (grpcurl, Postman)" + nl +
-                "// is on only where \"Grpc:EnableReflection\" is (Development). Settings live under \"Grpc\"." + nl +
-                "builder.Services.AddModulusGrpc(builder.Configuration);" + nl + nl +
-                text[build..];
+            var block =
+                "        // ── gRPC ───────────────────────────────────────────────────────" + nl +
+                "        // Module gRPC services (modulus generate-grpc): domain exceptions become status codes," + nl +
+                "        // grpc.health.v1 reports the module health checks, and reflection (grpcurl, Postman)" + nl +
+                "        // is on only where \"Grpc:EnableReflection\" is (Development). Settings live under \"Grpc\"." + nl +
+                "        builder.Services.AddModulusGrpc(builder.Configuration);" + nl;
+            var inserted = ApiHostFiles.InsertFeatureServices(text, block, nl);
+            if (inserted == text)
+                return text;
+            text = inserted + nl;
         }
 
+        return EnsureUsing(text, "using Modulus.Grpc;");
+    }
+
+    /// <summary>The optional features' endpoints (<c>Endpoints/FeatureEndpoints.cs</c>): the modules' gRPC services.</summary>
+    public static string EnsureApiEndpoints(string text, string rootNamespace)
+    {
+        var nl = NewLine(text);
         if (!text.Contains("MapModulusGrpc(", StringComparison.Ordinal))
         {
             var block =
-                "// gRPC services of the module Presentation assemblies, found like the endpoints above;" + nl +
-                "// each carries its own [Authorize]. grpc.health.v1 is mapped too (anonymous)." + nl +
-                "app.MapModulusGrpc(" + nl +
-                $"    Directory.GetFiles(AppContext.BaseDirectory, \"{rootNamespace}.Modules.*.Presentation.dll\")" + nl +
-                "        .Select(Assembly.LoadFrom)" + nl +
-                "        .ToArray());" + nl;
-
-            var endpoints = text.IndexOf("app.MapModulusEndpoints(", StringComparison.Ordinal);
-            var end = endpoints < 0 ? -1 : text.IndexOf(".ToArray());", endpoints, StringComparison.Ordinal);
-            if (end >= 0)
-            {
-                var lineEnd = text.IndexOf('\n', end);
-                if (lineEnd < 0)
-                    return program;
-                text = text[..(lineEnd + 1)] + nl + block + text[(lineEnd + 1)..];
-            }
-            else
-            {
-                var run = text.IndexOf("app.Run();", StringComparison.Ordinal);
-                if (run < 0)
-                    return program;
-                text = text[..run] + block + nl + text[run..];
-            }
-
-            text = EnsureUsing(text, "using System.Reflection;");
+                "        // gRPC services of the module Presentation assemblies, found like the endpoints above;" + nl +
+                "        // each carries its own [Authorize]. grpc.health.v1 is mapped too (anonymous)." + nl +
+                "        app.MapModulusGrpc(" + nl +
+                $"            Directory.GetFiles(AppContext.BaseDirectory, \"{rootNamespace}.Modules.*.Presentation.dll\")" + nl +
+                "                .Select(Assembly.LoadFrom)" + nl +
+                "                .ToArray());" + nl;
+            var inserted = ApiHostFiles.InsertFeatureEndpoints(text, block, nl);
+            if (inserted is null)
+                return text;
+            text = inserted;
         }
 
-        return text;
+        text = EnsureUsing(text, "using Modulus.Grpc;");
+        return EnsureUsing(text, "using System.Reflection;");
     }
 
     /// <summary>

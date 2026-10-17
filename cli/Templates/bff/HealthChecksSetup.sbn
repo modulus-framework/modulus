@@ -1,0 +1,19 @@
+using Modulus.AspNetCore.HealthChecks;
+
+namespace {{ project_name }}.Observability;
+
+/// <summary>Health probes: <c>/health/live</c> reports that the process runs, for orchestrators and load balancers.</summary>
+internal static class HealthChecksSetup
+{
+    public static IServiceCollection Add{{ client_pascal }}BffHealthChecks(this IServiceCollection services)
+    {
+        services.AddHealthChecks();
+        return services;
+    }
+
+    public static WebApplication Map{{ client_pascal }}BffHealthChecks(this WebApplication app)
+    {
+        app.MapModulusHealthChecks();
+        return app;
+    }
+}

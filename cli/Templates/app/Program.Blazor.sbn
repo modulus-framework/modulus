@@ -1,88 +1,31 @@
-{{ if use_auth }}using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Mvc;
-using Modulus.Bff;
-using Modulus.Bff.Tokens;
-using Modulus.Core.Abstractions;
-using Modulus.AspNetCore.Security;
-using Modulus.AspNetCore.Security.Policy;
-{{ end }}using Modulus.AspNetCore.Hosting;
-using Modulus.Blazor;
-using Modulus.Ui.Abstractions.Theming;
-using {{ root_namespace }}.Web;
-using {{ root_namespace }}.Web.Components;
+using {{ root_namespace }}.Web.Composition;
+using {{ root_namespace }}.Web.Configuration;
+using {{ root_namespace }}.Web.Endpoints;
+using {{ root_namespace }}.Web.Middleware;
+using {{ root_namespace }}.Web.Services;
 {{ if use_auth }}using {{ root_namespace }}.Web.Security;
-{{ end }}
-{{ if use_auth }}// The "web" client of Bff:Clients in appsettings.json.
-const string BffWebClient = "web";
-
-// Only same-site paths: a sign-in never redirects to another site.
-static string SafeReturnUrl(string? url) =>
-    url is { Length: > 0 } && url[0] == '/' && !url.StartsWith("//") && !url.StartsWith("/\\") ? url : "/";
 {{ end }}
 var builder = WebApplication.CreateBuilder(args);
 
-// ── Modulus UI framework (Blazor) ───────────────────────────────
-// Ant Design Blazor, the ProLayout, the theme tokens and the menu pipeline. Theme values come from "Modulus:Theme" in
-// appsettings.json; add menu entries with an IMenuContributor.
-builder.Services.AddRazorComponents()
-    .AddInteractiveServerComponents();
-builder.Services.AddModulusBlazor(theme => builder.Configuration.GetSection("Modulus:Theme").Bind(theme));
+// The presentation host: Blazor components over the API host. No DbContext and no modules here. Each concern has its own
+// setup file (Configuration, Security, Composition, Middleware, Endpoints); this file only composes them, in the order the
+// pipeline depends on.
 
-// Compression, security headers and the CSP (report-only for Blazor: its import map is an inline script with no nonce), and /health.
-builder.Services.AddModulusHardening();
-
-// The typed API clients (ApiClients/) read the API address from "Api:BaseUrl".
-builder.Services.AddModuleApiClients();
-{{ if use_auth }}
-// ── Authentication: a BFF web session (Modulus.Bff) ────────────
-// The tokens stay on the server (the cookie only names the session) and are refreshed before they expire. This host is the
-// "web" client of "Bff:Clients:web" in appsettings.json. Every typed API client carries the signed-in user's access token.
-builder.Services.AddModulusBff(builder.Configuration, bff => bff
-    .AddWebClient(BffWebClient)
-    .SetDefaultClient(BffWebClient));
-builder.Services.AddHttpContextAccessor();
-// A signed-out visitor is challenged by the cookie scheme; its default login path is /Account/Login (the MVC host's page). This host's page is /account/login.
-builder.Services.PostConfigureAll<CookieAuthenticationOptions>(o => o.LoginPath = "/account/login");
-builder.Services.AddScoped<ICurrentUser, PrincipalCurrentUser>();
-builder.Services.AddAuthorization();
-builder.Services.AddCascadingAuthenticationState();
-// Every page needs a signed-in user; the component endpoints carry that policy (RequireAuthorization below), and the sign-in
-// page opts out with [AllowAnonymous] and [Loosened]. At startup every endpoint must resolve to a policy. An anonymous endpoint
-// needs a reason (.Loosen(reason)) and, outside Development, an entry in security/loosening-allowlist.json; otherwise the app
-// refuses to start (settings: Security:Guard).
-builder.Services.AddModulusSecurityGuard(builder.Configuration);
+// The Modulus UI framework for Blazor (Ant Design Blazor, the ProLayout, the theme tokens and the menu pipeline), and the hardening.
+builder.Services.AddWebUi(builder.Configuration);
+{{ if use_auth }}builder.Services.AddWebAuthentication(builder.Configuration);
 {{ end }}
+// The typed API clients (Services/ApiClients/) read the API address from "Api:BaseUrl".
+builder.Services.AddModuleApiClients();
+
+// Menu contributors under Components/Navigation/Menu are registered by scan: a new entity's menu entry is its file there.
+builder.Services.AddMenuContributors();
+
 var app = builder.Build();
 
-app.UseModulusHardening();
-app.UseHttpsRedirection();
-app.UseAntiforgery();
-{{ if use_auth }}app.UseAuthentication();
-app.UseAuthorization();
-
-// Sign-in and sign-out. The sign-in page posts here as a native form (a circuit cannot set cookies).
-{{ if web_login_mode == "Password" }}app.MapPost("/account/login", async (HttpContext http, IBffSessionService session, [FromForm] string? userName, [FromForm] string? password, [FromForm] string? returnUrl) =>
-{
-    var result = await session.SignInWithPasswordAsync(http, BffWebClient, userName ?? "", password ?? "", rememberMe: true, http.RequestAborted);
-    return result.Succeeded
-        ? Results.LocalRedirect(SafeReturnUrl(returnUrl))
-        : Results.LocalRedirect("/account/login?error=1&returnUrl=" + Uri.EscapeDataString(SafeReturnUrl(returnUrl)));
-}).Loosen("Sign-in form: the credentials are checked by the API's token endpoint");
-{{ else }}app.MapGet("/account/login", (string? returnUrl) =>
-    Results.Challenge(new AuthenticationProperties { RedirectUri = SafeReturnUrl(returnUrl) }, [BffDefaults.OidcScheme(BffWebClient)]))
-    .Loosen("Starts the sign-in with the external provider; the provider checks the user");
-{{ end }}app.MapGet("/account/logout", async (HttpContext http, IBffSessionService session) =>
-{
-    var endSessionUrl = await session.SignOutAsync(http, BffWebClient, "/account/login", http.RequestAborted);
-    return endSessionUrl is null ? Results.LocalRedirect("/account/login") : Results.Redirect(endSessionUrl);
-}).Loosen("Ends the BFF session; it only removes the caller's own session cookie");
-{{ end }}
-app.MapModulusHealth(){{ if use_auth }}.Loosen("Liveness and readiness probes for orchestrators and load balancers"){{ else }}.AllowAnonymous(){{ end }};
-app.MapStaticAssets(){{ if use_auth }}.Loosen("Static files of the app and the UI packages"){{ else }}.AllowAnonymous(){{ end }};
-app.MapRazorComponents<App>()
-    .AddInteractiveServerRenderMode(){{ if use_auth }}
-    .RequireAuthorization(){{ end }};
+app.UseWebPipeline();
+{{ if use_auth }}app.MapAccountEndpoints();
+{{ end }}app.MapWebEndpoints();
 
 app.Run();
 

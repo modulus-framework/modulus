@@ -4,7 +4,7 @@ sidebar_position: 4
 
 # Clean Architecture
 
-Each Modulus module follows a 4-layer Clean Architecture layout:
+Each Modulus module follows a Clean Architecture layout with five projects:
 
 ```
 MyApp.Modules.Catalog/
@@ -15,7 +15,8 @@ MyApp.Modules.Catalog/
 │   ├── IUnitOfWork.cs
 │   ├── Dtos/
 │   ├── Commands/
-│   ├── Queries/
+│   └── Queries/
+├── .IntegrationEvents/   # Integration events (contracts other modules may reference)
 │   └── IntegrationEvents/
 ├── .Infrastructure/      # Infrastructure layer
 │   ├── CatalogDbContext.cs
@@ -162,5 +163,6 @@ Presentation ─── Application ─── Shared.Presentation, Modulus.AspNet
 4. **Presentation** depends on Application (plus `Shared.Presentation`, `Modulus.AspNetCore`)
 
 Never reference Infrastructure from Presentation or Application. DTOs live
-under `Application/Dtos`, integration events under
-`Application/IntegrationEvents` — there are no separate Contracts projects.
+under `Application/Dtos`; integration events live in the module's
+`IntegrationEvents` project, which Application references. There are no
+separate Contracts projects.

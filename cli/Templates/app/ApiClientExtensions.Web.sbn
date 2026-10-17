@@ -1,17 +1,16 @@
 using Microsoft.Extensions.DependencyInjection;
-{{ if use_auth }}using Modulus.Bff;
+{{ if use_auth }}using {{ root_namespace }}.Web.Security;
 {{ end }}using Modulus.Platform.Http;
-{{ if !no_example }}using {{ root_namespace }}.Web.ApiClients;
+{{ if !no_example }}using {{ root_namespace }}.Web.Services.ApiClients;
 {{ end }}
-namespace {{ root_namespace }}.Web;
+namespace {{ root_namespace }}.Web.Services;
 
 /// <summary>
 /// Typed clients for the API project's module endpoints, one per module.
 /// Each gets the standard resilience pipeline (retry, circuit breaker,
 /// timeouts) and the correlation handler from <see cref="HttpClientExtensions.AddModulusHttpClient"/>{{ if use_auth }},
-/// plus the signed-in user's access token from the BFF web session
-/// (<c>AddBffUserAccessToken</c>: refreshed before it expires, one refresh per
-/// session at a time, refreshed and replayed once on a 401){{ else }}.
+/// plus the BFF gateway handler: each call goes through the BFF's <c>/api</c> route and carries the browser's BFF
+/// session cookie (the BFF holds the access token and refreshes it){{ else }}.
 /// No authentication is configured, so the clients call the API anonymously{{ end }}.
 /// </summary>
 public static class ApiClientExtensions
@@ -19,8 +18,11 @@ public static class ApiClientExtensions
     public static IServiceCollection AddModuleApiClients(this IServiceCollection services)
     {
 {{~ if !no_example ~}}
-        services.AddModulusHttpClient<{{ example_entity }}ApiClient>(){{ if use_auth }}
-            .AddBffUserAccessToken(){{ end }};
+{{~ if use_auth ~}}
+        services.AddBffGatewayClient<{{ example_entity }}ApiClient>();
+{{~ else ~}}
+        services.AddModulusHttpClient<{{ example_entity }}ApiClient>();
+{{~ end ~}}
 {{~ end ~}}
 
         return services;

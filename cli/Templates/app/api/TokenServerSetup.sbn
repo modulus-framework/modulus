@@ -1,0 +1,29 @@
+using Modulus.Identity.Extensions;
+using OpenIddict.Server.AspNetCore;
+
+namespace {{ root_namespace }}.Api.Security;
+
+/// <summary>
+/// The local OAuth2/OIDC token server (OpenIddict): /connect/token, /connect/userinfo and /connect/revoke. The users, roles and
+/// token store live in the Identity module (registered by ModuleRegistration), which is also what makes the API usable by
+/// external clients (mobile, desktop, other systems):
+///   curl -d grant_type=password -d client_id={{ app_name_lower }} -d username=&lt;email&gt; -d password=&lt;password&gt; http://localhost:5180/connect/token
+/// then call the API with "Authorization: Bearer &lt;access_token&gt;".
+/// Development uses ephemeral certificates and the password grant (see appsettings.Development.json). Production: register
+/// real signing and encryption certificates here, serve over https, and turn on Identity:AllowPasswordFlow only if a trusted
+/// first-party client needs it (it is off by default: the password grant hands the user's credentials to the client).
+/// </summary>
+internal static class TokenServerSetup
+{
+    public static WebApplicationBuilder AddApiTokenServer(this WebApplicationBuilder builder)
+    {
+        builder.Services.AddModulusOpenIddict(builder.Configuration, options =>
+        {
+            // Development runs over plain http on localhost; OpenIddict insists on https unless told otherwise.
+            if (builder.Environment.IsDevelopment())
+                options.UseAspNetCore().DisableTransportSecurityRequirement();
+        });
+
+        return builder;
+    }
+}

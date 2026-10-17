@@ -187,12 +187,16 @@ internal static partial class BffApiClients
         return true;
     }
 
-    /// <summary>Wires an endpoint class's <c>Map{Name}Endpoints()</c> into <c>Program.cs</c> after <c>MapModulusBff()</c>.</summary>
+    /// <summary>
+    /// Wires an endpoint class's <c>Map{Name}Endpoints()</c> after <c>app.MapModulusBff();</c>, in <c>Endpoints/BffEndpoints.cs</c>
+    /// (where the BFF maps its session endpoints) or in <c>Program.cs</c> for a BFF generated before that file existed.
+    /// </summary>
     public static bool EnsureEndpointMapped(BffProject bff, string mapMethod)
     {
-        if (!File.Exists(bff.ProgramCs))
+        var target = BffEndpointsFile(bff);
+        if (target is null || !File.Exists(target))
             return false;
-        var text = File.ReadAllText(bff.ProgramCs);
+        var text = File.ReadAllText(target);
         var original = text;
         var nl = text.Contains("\r\n", StringComparison.Ordinal) ? "\r\n" : "\n";
 
@@ -207,13 +211,20 @@ internal static partial class BffApiClients
         }
 
         var usingLine = $"using {bff.ProjectName}.Endpoints;";
-        if (!text.Contains(usingLine, StringComparison.Ordinal))
+        if (!text.Contains(usingLine, StringComparison.Ordinal) && target == bff.ProgramCs)
             text = usingLine + nl + text;
 
         if (text == original)
             return false;
-        Ux.WriteFile(bff.ProgramCs, text);
+        Ux.WriteFile(target, text);
         return true;
+    }
+
+    /// <summary>The file that maps the BFF's endpoints: <c>Endpoints/BffEndpoints.cs</c>, else <c>Program.cs</c> (an older BFF).</summary>
+    public static string? BffEndpointsFile(BffProject bff)
+    {
+        var endpoints = Path.Combine(bff.Directory, "Endpoints", "BffEndpoints.cs");
+        return File.Exists(endpoints) ? endpoints : bff.ProgramCs;
     }
 
     [GeneratedRegex(@"""applicationUrl""\s*:\s*""https?://[^:""]+:(\d+)")]

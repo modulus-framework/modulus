@@ -1,0 +1,60 @@
+using System.Security.Claims;
+using System.Text.Encodings.Web;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.Extensions.Options;
+
+namespace {{ root_namespace }}.Web.Security;
+
+/// <summary>
+/// The <c>bff-session</c> scheme. A request is signed in when the BFF says the browser's session is valid; the claims
+/// come from the BFF, which has already normalized names and roles. A request without cookies is anonymous and makes no
+/// call. A challenge redirects to the sign-in page and a forbid to the access-denied page.
+/// </summary>
+internal sealed class BffSessionAuthenticationHandler(
+    IOptionsMonitor<AuthenticationSchemeOptions> options,
+    ILoggerFactory logger,
+    UrlEncoder encoder,
+    BffSessionClient session,
+    ILogger<BffSessionAuthenticationHandler> log)
+    : AuthenticationHandler<AuthenticationSchemeOptions>(options, logger, encoder)
+{
+    public const string SchemeName = "bff-session";
+
+    private const string SignInPath = "/Account/Login";
+    private const string AccessDeniedPath = "/Account/AccessDenied";
+
+    protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
+    {
+        // Static files and other requests with an extension never need the session, so they make no BFF call.
+        if (Request.Cookies.Count == 0 || Request.Path.HasValue && Path.HasExtension(Request.Path.Value))
+            return AuthenticateResult.NoResult();
+
+        try
+        {
+            var claims = await session.GetUserClaimsAsync(Context.RequestAborted);
+            if (claims is null)
+                return AuthenticateResult.NoResult();
+
+            var identity = new ClaimsIdentity(claims.Select(c => new Claim(c.Type, c.Value)), SchemeName, "name", "role");
+            return AuthenticateResult.Success(new AuthenticationTicket(new ClaimsPrincipal(identity), SchemeName));
+        }
+        catch (HttpRequestException ex)
+        {
+            log.LogWarning(ex, "The BFF session check failed; the request is treated as anonymous");
+            return AuthenticateResult.Fail(ex);
+        }
+    }
+
+    protected override Task HandleChallengeAsync(AuthenticationProperties properties)
+    {
+        Response.Redirect(QueryHelpers.AddQueryString(SignInPath, "ReturnUrl", Request.Path + Request.QueryString));
+        return Task.CompletedTask;
+    }
+
+    protected override Task HandleForbiddenAsync(AuthenticationProperties properties)
+    {
+        Response.Redirect(AccessDeniedPath);
+        return Task.CompletedTask;
+    }
+}

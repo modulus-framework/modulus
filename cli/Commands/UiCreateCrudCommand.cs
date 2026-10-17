@@ -75,28 +75,41 @@ internal sealed class UiCreateCrudCommand : Command<UiCreateCrudCommand.Settings
             var pages = new List<(string Source, string Target, bool Package)>();
             if (engine == "razor-pages")
             {
-                var folder = Path.Combine(uiDir, "Pages", plural);
-                pages.Add((UiScaffold.TemplateFile(templates, engine, "crud-index") ?? throw Missing(engine), Path.Combine(folder, "Index.cshtml"), true));
+                // Same split as the reference Web host: list (Index + _List), create, edit, and the shared _Form and view models.
+                var folder = UiLayout.PagesFolder(uiDir, moduleName, plural);
+                string Package(string name) => UiScaffold.TemplateFile(templates, engine, name) ?? throw Missing(engine);
+                pages.Add((Package("crud-index"), Path.Combine(folder, "Index.cshtml"), true));
                 pages.Add(("ui/CrudIndexModel", Path.Combine(folder, "Index.cshtml.cs"), false));
-                pages.Add((UiScaffold.TemplateFile(templates, engine, "crud-edit") ?? throw Missing(engine), Path.Combine(folder, "Edit.cshtml"), true));
+                pages.Add((Package("crud-list"), Path.Combine(folder, "_List.cshtml"), true));
+                pages.Add((Package("crud-create"), Path.Combine(folder, "Create.cshtml"), true));
+                pages.Add(("ui/CrudCreateModel", Path.Combine(folder, "Create.cshtml.cs"), false));
+                pages.Add((Package("crud-edit"), Path.Combine(folder, "Edit.cshtml"), true));
                 pages.Add(("ui/CrudEditModel", Path.Combine(folder, "Edit.cshtml.cs"), false));
+                pages.Add((Package("crud-form"), Path.Combine(folder, "_Form.cshtml"), true));
+                pages.Add(("ui/CrudViewModels", Path.Combine(folder, $"{entity}ViewModels.cs"), false));
             }
             else if (engine == "mvc")
             {
+                // Create and Edit share _Form; the controller routes /new and /edit to their own views.
                 var views = Path.Combine(uiDir, "Views", plural);
                 pages.Add((UiScaffold.TemplateFile(templates, engine, "crud-index") ?? throw Missing(engine), Path.Combine(views, "Index.cshtml"), true));
+                pages.Add((UiScaffold.TemplateFile(templates, engine, "crud-create") ?? throw Missing(engine), Path.Combine(views, "Create.cshtml"), true));
                 pages.Add((UiScaffold.TemplateFile(templates, engine, "crud-edit") ?? throw Missing(engine), Path.Combine(views, "Edit.cshtml"), true));
-                pages.Add(("ui/CrudController", Path.Combine(uiDir, "Controllers", $"{plural}Controller.cs"), false));
+                pages.Add((UiScaffold.TemplateFile(templates, engine, "crud-form") ?? throw Missing(engine), Path.Combine(views, "_Form.cshtml"), true));
+                pages.Add(("ui/CrudController", UiLayout.ControllerFile(uiDir, moduleName, plural), false));
             }
             else
             {
-                var folder = Path.Combine(uiDir, "Components", "Pages", plural);
+                // Create and Edit pages share the {Entity}Editor component, which holds the fields and the validation.
+                var folder = UiLayout.BlazorFolder(uiDir, moduleName, plural);
                 pages.Add((UiScaffold.TemplateFile(templates, engine, "crud-index") ?? throw Missing(engine), Path.Combine(folder, "Index.razor"), true));
+                pages.Add((UiScaffold.TemplateFile(templates, engine, "crud-create") ?? throw Missing(engine), Path.Combine(folder, "Create.razor"), true));
                 pages.Add((UiScaffold.TemplateFile(templates, engine, "crud-edit") ?? throw Missing(engine), Path.Combine(folder, "Edit.razor"), true));
+                pages.Add((UiScaffold.TemplateFile(templates, engine, "crud-form") ?? throw Missing(engine), Path.Combine(folder, $"{entity}Editor.razor"), true));
             }
 
-            var client = Path.Combine(uiDir, "ApiClients", $"{entity}ApiClient.cs");
-            var menu = Path.Combine(uiDir, "Menu", $"{plural}MenuContributor.cs");
+            var client = UiLayout.ApiClientFile(uiDir, entity);
+            var menu = UiLayout.MenuFile(uiDir, plural);
             var targets = pages.Select(p => p.Target).Append(client).Append(menu).ToList();
             var existing = targets.Where(File.Exists).ToList();
             if (existing.Count > 0 && !Ux.Force)
@@ -135,17 +148,18 @@ internal sealed class UiCreateCrudCommand : Command<UiCreateCrudCommand.Settings
         if (File.Exists(application) && ProjectFileService.EnsureCsprojProjectReference(uiProject, application, Ux.DryRun))
             Ux.Success("Project reference added", Path.GetRelativePath(start, uiProject));
 
-        var extensions = Path.Combine(uiDir, "ApiClientExtensions.cs");
+        var extensions = UiLayout.ApiClientExtensions(uiDir);
         if (File.Exists(extensions))
             Edit(extensions, text => UiCrud.EnsureClientRegistered(text, entity), start);
         else
-            Ux.Warning($"ApiClientExtensions.cs not found: register the client yourself with services.AddModulusHttpClient<{entity}ApiClient>().");
+            Ux.Warning($"{UiLayout.ApiClientExtensionsFile} not found: register the client yourself with services.AddModulusHttpClient<{entity}ApiClient>().");
 
+        // A host that finds its menu contributors by scanning Components/Navigation/Menu needs no line in Program.cs.
         var program = inventory.UiProgramCsPath;
-        if (File.Exists(program))
-            Edit(program, text => UiCrud.EnsureMenuRegistered(text, uiNamespace, plural), start);
-        else
+        if (!File.Exists(program))
             Ux.Warning($"Program.cs not found: register {plural}MenuContributor yourself.");
+        else if (!UiCrud.HostScansMenu(File.ReadAllText(program)))
+            Edit(program, text => UiCrud.EnsureMenuRegistered(text, UiLayout.MenuNamespace(uiNamespace), plural), start);
     }
 
     private static void Edit(string path, Func<string, string> update, string start)

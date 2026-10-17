@@ -1,135 +1,38 @@
-using Microsoft.AspNetCore.Mvc.RazorPages;
-using Modulus.AspNetCore.Configuration;
-using Modulus.AspNetCore.Correlation;
-using Modulus.AspNetCore.Extensions;
-using Modulus.AspNetCore.FeatureFlags;
-using Modulus.AspNetCore.Logging;
-using Modulus.AspNetCore.Security;
-{{ if use_auth }}using Modulus.AspNetCore.Security.Policy;
-using Microsoft.AspNetCore.Mvc;
-using Modulus.Core.Abstractions.Security;
-{{ end }}using Modulus.AspNetCore.Mvc;
-using Modulus.Core.Abstractions;
-using {{ root_namespace }}.Web;
-{{ if use_auth }}using Modulus.Bff;
-using {{ root_namespace }}.Web.Security;
-using Login = {{ root_namespace }}.Web.Pages.Account.LoginModel;
-{{ end }}using Microsoft.AspNetCore.HttpOverrides;
-
+using {{ root_namespace }}.Web.Composition;
+using {{ root_namespace }}.Web.Configuration;
+using {{ root_namespace }}.Web.Endpoints;
+using {{ root_namespace }}.Web.Middleware;
+using {{ root_namespace }}.Web.Observability;
+using {{ root_namespace }}.Web.Services;
+{{ if use_auth }}using {{ root_namespace }}.Web.Security;
+{{ end }}
 var builder = WebApplication.CreateBuilder(args);
 
-// ── Razor Pages UI ─────────────────────────────────────────────
-// This project is only the presentation shell: pages call the API project over
-// HTTP (typed clients, see ApiClientExtensions.cs) — no DbContext, no modules.
-builder.Services.AddRazorPages();
-{{ if ui_engine == "mvc" }}// MVC controllers and views for the landing page; the sign-in pages stay Razor Pages.
-builder.Services.AddControllersWithViews();
+// The presentation host: {{ if ui_engine == "mvc" }}MVC and Razor Pages{{ else }}Razor Pages{{ end }} over the API host. No DbContext and no modules here. Each concern has its own
+// setup file (Configuration, Security, Services, Composition, Observability, Middleware, Endpoints); this file only
+// composes them, in the order the pipeline depends on.
+builder.Services.AddWebCore(builder.Configuration);
+builder.Services.AddWebUi(builder.Configuration);
+{{ if use_auth }}builder.Services.AddWebAuthentication(builder.Configuration);
 {{ end }}
-// ── Modulus UI framework ───────────────────────────────────────
-// The shell layout (header, menu, footer, theme settings), the tag helpers (app-*) and the assets. Brand and layout
-// settings come from "Modulus:Theme" in appsettings.json; add menu entries with an IMenuContributor.
-builder.Services.AddModulusMvc(theme => builder.Configuration.GetSection("Modulus:Theme").Bind(theme));
-// ── Typed API clients ──────────────────────────────────────────
-// One typed HttpClient per module (resilience + correlation wired in
-// AddModulusHttpClient). {{ if use_auth }}Every call carries the signed-in user's access token from
-// the BFF web session (see Authentication below).{{ else }}Without auth the clients call the API anonymously.{{ end }}
+// Typed API clients, one per module (resilience and correlation are wired in AddModulusHttpClient). {{ if use_auth }}Every call carries the
+// signed-in user's access token from the BFF web session.{{ else }}Without auth the clients call the API anonymously.{{ end }}
 builder.Services.AddModuleApiClients();
-{{ if use_auth }}
-// ── Authentication: a BFF web session (Modulus.Bff) ────────────
-// The token server is {{ if use_open_iddict }}the API project{{ else }}the external provider{{ end }}. This host is the "web" client of
-// "Bff:Clients:web" (appsettings.json): {{ if web_login_mode == "Password" }}the sign-in page presents the credentials
-// to the API's token endpoint (password grant){{ else }}the sign-in page sends the browser to the provider's
-// login page (OIDC code + PKCE){{ end }}, the tokens stay on the server (FusionCache,
-// Data Protection encrypted; the cookie only names the session) and are refreshed
-// before they expire, one refresh per session at a time. With more than one
-// replica, register AddRedisFusionCache and a shared Data Protection key ring.
-builder.Services.AddModulusBff(builder.Configuration, bff => bff
-    .AddWebClient(Login.Client)
-    .SetDefaultClient(Login.Client));
 
-// ICurrentUser for menus, contributed entity fields and page guards: read from
-// the signed-in principal, with permissions resolved from the same Admin-role
-// grants the API host seeds (in-memory; point both hosts at the EF grant store
-// to edit grants at run time).
-builder.Services.AddScoped<ICurrentUser, PrincipalCurrentUser>();
+// Menu contributors under Components/Navigation/Menu are registered by scan: a new entity's menu entry is its file there.
+builder.Services.AddMenuContributors();
 
-// Pages require a signed-in user; only /Account (sign-in, sign-out, access denied) is open.
-// Open another folder with AllowAnonymousToFolder.
-builder.Services.PostConfigure<RazorPagesOptions>(options =>
-{
-{{ if use_auth }}    options.Conventions.AuthorizeFolder("/");
-{{ end }}    options.Conventions.AllowAnonymousToFolder("/Account");
-    options.Conventions.AddFolderApplicationModelConvention("/Account", page =>
-        page.EndpointMetadata.Add(new LoosenedAttribute("Sign-in pages under /Account are open") { Framework = true }));
-});
-
-// At startup every endpoint must resolve to a policy. An anonymous endpoint needs a reason (.Loosen(reason)) and,
-// outside Development, an entry in security/loosening-allowlist.json; otherwise the app refuses to start
-// (settings: Security:Guard).
-builder.Services.AddModulusSecurityGuard(builder.Configuration);
-{{ else }}
-// No authentication configured. Pages are public; add auth manually
-// (AddAuthentication().AddCookie(...)) and a sign-in flow when you need one.
-{{ end }}
-{{ if enable_correlation }}// ── Correlation ────────────────────────────────────────────────
-// Every log line carries the X-Correlation-ID (adopted from the API's response
-// header or derived here), so a request can be traced across both hosts.
-builder.Services.AddModulusCorrelation(builder.Configuration);
-{{ end }}
-// ── Health checks ──────────────────────────────────────────────
-builder.Services.AddHealthChecks();
-
-{{ if enable_feature_flags }}// Runtime feature flags (see "FeatureManagement" in appsettings.json).
-builder.Services.AddModulusFeatureFlags(builder.Configuration);
-{{ end }}{{ if enable_secrets_guard }}// Guard rail: fails startup if secrets are committed to appsettings*.json.
-builder.Services.AddModulusSecretsGuard(builder.Configuration);
-{{ end }}
-// ── Log redaction ──────────────────────────────────────────────
-// Values classified with [PersonalInformation], [ProtectedPersonalData], [ConfidentialData], [RestrictedData] or
-// [SecretData] are redacted in source-generated logs ([LoggerMessage]); settings: Security:Redaction (the HMAC key that
-// pseudonymizes personal data comes from user secrets or the environment). Analyzer MOD0002 flags a classified value
-// passed to an ordinary LogInformation(...) call.
-builder.Services.AddModulusRedaction(builder.Configuration);
-
-// ── Forwarded headers ──────────────────────────────────────────
-// Required when behind a reverse proxy so the app sees real client IPs.
-builder.Services.Configure<ForwardedHeadersOptions>(options =>
-{
-    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
-    // Trust only the proxies named in ForwardedHeaders:KnownProxies / KnownNetworks (appsettings or the environment).
-    // With none configured only loopback is trusted, so a client cannot choose the address the rate limiter and audit see.
-    options.ApplyModulusTrustedProxies(builder.Configuration);
-});
-
-// ── Exception handling ─────────────────────────────────────────
-builder.Services.AddModulusExceptionHandling();
+builder.Services.AddWebHealthChecks();
 
 var app = builder.Build();
 
-// ── Pipeline ───────────────────────────────────────────────────
-app.UseForwardedHeaders();
-{{ if enable_security_headers }}app.UseModulusSecurityHeaders();
-{{ end }}app.UseExceptionHandler();
-{{ if enable_correlation }}app.UseModulusCorrelation();
-{{ end }}// Static web assets of the UI packages (/_content/...), then the request culture from Modulus:Theme:Cultures.
-app.MapStaticAssets();
-app.UseModulusLocalization();
-app.UseStatusCodePages();
-app.UseRouting();
-{{ if use_auth }}app.UseAuthentication();
-app.UseAuthorization();
-{{ end }}app.MapRazorPages().WithStaticAssets();
-{{ if ui_engine == "mvc" }}app.MapControllerRoute(name: "default", pattern: "{controller=Home}/{action=Index}/{id?}").WithStaticAssets();
-{{ end }}
-{{ if enable_health_checks }}app.MapHealthChecks("/health/live"){{ if use_auth }}.Loosen("Liveness probe for orchestrators and load balancers"){{ end }};
-{{ end }}
+app.UseWebPipeline();
+app.MapWebEndpoints();
+
 app.Run();
 
-// The entry point stays in the global namespace (top-level statements); this
-// namespaced marker gives the integration tests an unambiguous generic
-// argument for booting this host: ModulusWebAppFactory<{{ root_namespace }}.Web.WebEntryPoint>
-// (the API host's Program is also global — two global Programs cannot be
-// named together in one test project).
+// The entry point stays in the global namespace (top-level statements). This namespaced marker gives the integration
+// tests an unambiguous generic argument for booting this host: ModulusWebAppFactory<{{ root_namespace }}.Web.WebEntryPoint>.
 namespace {{ root_namespace }}.Web
 {
     public sealed class WebEntryPoint;

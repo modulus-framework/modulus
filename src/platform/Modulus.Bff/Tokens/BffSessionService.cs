@@ -114,7 +114,10 @@ internal sealed class BffSessionService(
             return null;
 
         var request = context.Request;
-        var postLogout = $"{request.Scheme}://{request.Host}{request.PathBase}{BffEndpointRouteBuilderExtensions.SafeReturnUrl(returnUrl)}";
+        var target = BffEndpointRouteBuilderExtensions.SafeReturnUrl(returnUrl, bff.Value.AllowedReturnOrigins);
+        var postLogout = Uri.TryCreate(target, UriKind.Absolute, out _)
+            ? target
+            : $"{request.Scheme}://{request.Host}{request.PathBase}{target}";
         var query = new Dictionary<string, string?> { ["post_logout_redirect_uri"] = postLogout, ["client_id"] = options.ClientId };
         if (tokens?.IdToken is { } idToken)
             query["id_token_hint"] = idToken;

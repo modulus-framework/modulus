@@ -89,7 +89,7 @@ generates complete solutions, modules, commands, queries, and CRUD code:
 | Command | Description |
 |---------|-------------|
 | `modulus app <name>` | Creates a modular-monolith solution (Host + Shared kernel + example module + tests) |
-| `modulus module <name>` | Creates a blank 4-layer business module |
+| `modulus module <name>` | Creates a blank business module (five projects) |
 | `modulus add-module <name>` | Adds a module to an existing app + wires Program.cs registration + `ProjectReference` |
 | `modulus generate-crud <Entity> --module M` | Generates entity, repo, DTOs, command/query handlers, controller |
 | `modulus generate-command <Name> --module M` | Generates a single command + handler |
@@ -97,10 +97,10 @@ generates complete solutions, modules, commands, queries, and CRUD code:
 | `modulus migrate add <Name>` | Scaffolds an EF Core migration in each module's Infrastructure project |
 | `modulus migrate update` | Applies pending migrations to each module's database |
 
-Each generated module uses a **4-layer Clean-Architecture** layout
-(`{App}.Modules.{Module}.{Domain,Application,Infrastructure,Presentation}`) with
-a per-module DbContext, per-module `IUnitOfWork`, and DTOs/integration events
-living under `Application/Dtos` and `Application/IntegrationEvents`.
+Each generated module uses a **Clean-Architecture** layout
+(`{App}.Modules.{Module}.{Domain,Application,IntegrationEvents,Infrastructure,Presentation}`)
+with a per-module DbContext, per-module `IUnitOfWork`, DTOs under `Application/Dtos`,
+and integration events in their own `IntegrationEvents` project.
 
 Templates are embedded Scriban resources under `cli/Templates/`.
 

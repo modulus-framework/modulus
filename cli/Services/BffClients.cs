@@ -12,8 +12,18 @@ internal static class BffClients
     /// <summary>The first BFF's port; each further client takes the next one (the API is 5180, the Web host 5181).</summary>
     public const int FirstPort = 5190;
 
+    /// <summary>
+    /// A <c>webapp+api</c> host with a sign-in always has its Web project call a BFF (the <c>web</c> client), so the web client
+    /// is added to the requested clients and comes first (its port is the Web host's <c>Bff:BaseUrl</c>).
+    /// </summary>
+    public static IReadOnlyList<string> WithWebClient(IReadOnlyList<string> clients, bool webAppWithSignIn)
+        => webAppWithSignIn ? Kinds.Where(k => k == "web" || clients.Contains(k)).ToList() : clients;
+
     /// <summary>The API host's development address, the <c>api</c> upstream every generated BFF starts with.</summary>
     public const string ApiBaseUrl = "http://localhost:5180";
+
+    /// <summary>The Web host's development origin: the one origin the web BFF sends the browser back to after sign-in and sign-out.</summary>
+    public const string WebOrigin = "http://localhost:5181";
 
     /// <summary>Parses <c>web,mobile</c> (case-insensitive, de-duplicated, in menu order); empty or <c>none</c> = no BFF.</summary>
     public static IReadOnlyList<string> Parse(string? value)
@@ -176,6 +186,9 @@ internal sealed class BffHostModel
     public int Port { get; init; }
 
     public string ApiBaseUrl => BffClients.ApiBaseUrl;
+
+    /// <summary>The Web host's origin, allowed as a sign-in and sign-out return target by the web BFF.</summary>
+    public string WebOrigin => BffClients.WebOrigin;
 
     public string AuthServer { get; init; } = "";
 

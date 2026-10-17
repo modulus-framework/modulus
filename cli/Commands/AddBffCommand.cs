@@ -43,7 +43,7 @@ internal sealed class AddBffCommand : Command<AddBffCommand.Settings>
 
         var app = ModuleDiscovery.Inventory(startDir)
             ?? throw new InvalidOperationException("No .slnx file found in the current directory tree. Run this command from within a Modulus application.");
-        var program = File.Exists(app.ProgramCsPath) ? File.ReadAllText(app.ProgramCsPath) : "";
+        var program = ApiHostFiles.ReadAll(app.ProgramCsPath);
         var apiCsproj = File.Exists(app.ApiProjectPath) ? File.ReadAllText(app.ApiProjectPath) : "";
 
         var auth = string.IsNullOrWhiteSpace(s.Auth) ? DetectAuth(program) : s.Auth.Trim().ToLowerInvariant();

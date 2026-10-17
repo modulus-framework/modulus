@@ -14,7 +14,8 @@
       "{{ svc.name }}": { "Address": "{{ svc.address }}" }{{ end }}
     },
     "UseServiceDiscovery": {{ if use_service_discovery }}true{{ else }}false{{ end }},
-    "Clients": {
+{{ if is_web }}    "AllowedReturnOrigins": ["{{ web_origin }}"],
+{{ end }}    "Clients": {
       "{{ client_name }}": {
         "ClientId": "{{ client_id }}",
         "ClientSecret": "",

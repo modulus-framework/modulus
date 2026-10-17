@@ -180,9 +180,13 @@ modulus ui create-crud Product --module Catalog --engine blazor
 
 | Engine | Files |
 |---|---|
-| `mvc` | `Controllers/<Entities>Controller.cs`, `Views/<Entities>/Index.cshtml`, `Views/<Entities>/Edit.cshtml`, `ApiClients/<Entity>ApiClient.cs` |
-| `razor-pages` | Razor Pages for the list and the form, with the typed client |
-| `blazor` | Blazor components for the list and the form, with the typed client |
+| `mvc` | `Controllers/<Module>/<Entities>Controller.cs`, `Views/<Entities>/Index.cshtml`, `Create.cshtml` and `Edit.cshtml` (both with `_Form.cshtml`) |
+| `razor-pages` | `Pages/<Module>/<Entities>/`: `Index.cshtml` (the list, with `_List.cshtml`), `Create.cshtml` and `Edit.cshtml` (both with `_Form.cshtml`), each page with its model, and `<Entity>ViewModels.cs` |
+| `blazor` | `Components/Pages/<Module>/<Entities>/`: `Index.razor`, `Create.razor` and `Edit.razor` (both with the `<Entity>Editor.razor` form component) |
+
+Every engine also gets the typed client `Services/ApiClients/<Entity>ApiClient.cs`, registered in `Services/ApiClientExtensions.cs`,
+and the menu entry `Components/Navigation/Menu/<Entities>MenuContributor.cs`. The Web project finds menu contributors by scan, so
+nothing is added to `Program.cs`.
 
 The entity's API must exist, because the pages call it through the client.
 
@@ -227,6 +231,31 @@ modulus ui audit --format markdown --fail-on-issues
 | `--format` | A report as `json`, `markdown` or `html`, written next to `--out-file` |
 | `--out-file` | The report file. The default is `accessibility-audit.<format>` in the current directory. |
 | `--fail-on-issues` | Exit with code 1 when issues are found, for CI |
+
+## Sign-in and the API host
+
+A `webapp+api` app signs users in through the Web host's BFF session (`/bff/login`, `/bff/logout`). Three things
+changed in how the generated apps wire this:
+
+- **Return URLs.** The Web BFF client's `AllowedReturnOrigins` lists the Web origin. A `returnUrl` on the sign-in
+  page is honoured only when it stays on one of those origins; anything else falls back to the home page.
+- **External providers.** With an external OpenID Connect provider (`--auth keycloak`, Auth0, Okta, Entra ID and
+  others) the Web host sends the browser to `/bff/login` and the provider's own login page answers. The sign-in
+  page reports a service outage with its own message, distinct from a wrong password.
+- **Sign-in rate limiting.** The Web host limits sign-in attempts per client address. A client that exceeds the
+  limit gets `429 Too Many Requests`.
+
+The API host is set up in files, not in one `Program.cs`. Its `Program.cs` reads as a composition of named steps
+(`AddApiTokenServer`, `AddApiModules`, `AddApiCore`, `AddApiAuthentication`, `AddApiOpenApi`, `AddApiFeatures`,
+`InitializeApiAsync`, `UseApiPipeline`, `MapApiEndpoints`), and each step lives in its own folder: `Composition/`,
+`Configuration/`, `Security/`, `OpenApi/`, `Hosting/`, `Middleware/` and `Endpoints/`. The CLI reads the whole host
+when it needs to know what is wired, so `modulus add-webhooks`, `add-realtime` and the other `add-*` commands find
+their registrations wherever they were written.
+
+The CLI detects whether the API host has authentication by reading the whole host, not only `Program.cs`, so the
+`app.UseAuthentication()` call in a setup file counts. With `--auth none` no scheme is registered: endpoints need a
+signed-in user by default, so the API answers `500` until you add one. `modulus app` warns about this when you
+generate such an app.
 
 ## Next steps
 

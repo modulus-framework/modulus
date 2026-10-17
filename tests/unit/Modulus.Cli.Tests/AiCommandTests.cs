@@ -32,10 +32,12 @@ public sealed class AiWiringTests
 
     private static readonly AiWiring.AiNames Names = AiWiring.NamesFor("Shop", "Catalog", "Product", "catalog:products:manage");
 
+    private static string AiConnectorHost(string text) => AiWiring.EnsureConnectorEndpoints(AiWiring.EnsureConnectorServices(text, identity: false));
+
     [Fact]
     public void Program_wires_the_connector_before_build_and_maps_it_after_the_endpoints()
     {
-        var once = AiWiring.EnsureConnectorProgram(Program);
+        var once = AiConnectorHost(Program);
 
         once.Should().Contain("builder.Services.AddModulusAiConnector(builder.Configuration")
             .And.Contain(".UseEntityFrameworkCore()")
@@ -46,7 +48,7 @@ public sealed class AiWiringTests
             .Should().BeGreaterThan(once.IndexOf(".ToArray());", StringComparison.Ordinal))
             .And.BeLessThan(once.IndexOf("app.Run();", StringComparison.Ordinal));
         AiWiring.HasConnector(once).Should().BeTrue();
-        AiWiring.EnsureConnectorProgram(once).Should().Be(once);
+        AiConnectorHost(once).Should().Be(once);
     }
 
     [Fact]
@@ -227,7 +229,7 @@ public sealed class AiCommandTests : IDisposable
 
         Read("src/API/Shop.Api/Shop.Api.csproj").Should()
             .Contain("Modulus.AI.Connector\"").And.Contain("Modulus.AI.Connector.EntityFrameworkCore");
-        Read("src/API/Shop.Api/Program.cs").Should()
+        ApiHostFiles.ReadAll(Path.Combine(AppDir, "src/API/Shop.Api/Program.cs")).Should()
             .Contain(".UseIdentityUsers<ModulusUser>(")
             .And.Contain("app.MapModulusAiConnector();");
         WebhooksWiringTests.Parse(Read("src/API/Shop.Api/appsettings.json"))
@@ -327,7 +329,7 @@ public sealed class AiCommandTests : IDisposable
             first.GetProperty("success").GetBoolean().Should().BeTrue();
             first.GetProperty("files").EnumerateArray()
                 .Select(f => (Path.GetFileName(f.GetProperty("path").GetString()), f.GetProperty("action").GetString()))
-                .Should().Contain([("Program.cs", "updated"), ("AiConnectorTests.cs", "created")]);
+                .Should().Contain([("FeatureServicesSetup.cs", "updated"), ("AiConnectorTests.cs", "created")]);
             second.GetProperty("files").GetArrayLength().Should().Be(0);
 
             output.GetStringBuilder().Clear();

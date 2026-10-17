@@ -39,58 +39,52 @@ internal static partial class RealtimeWiring
     }
 
     /// <summary>
-    /// Program.cs: <c>AddModulusRealtime</c> before <c>Build()</c> with every event not yet added, and
-    /// <c>MapModulusRealtime()</c> after the endpoints (else before <c>app.Run()</c>).
+    /// The optional features' services (<c>Configuration/FeatureServicesSetup.cs</c>): <c>AddModulusRealtime</c> with every event
+    /// not yet added.
     /// </summary>
-    public static string EnsureApiProgram(string program, IReadOnlyList<RealtimeEventInfo> events)
+    public static string EnsureApiServices(string text, IReadOnlyList<RealtimeEventInfo> events)
     {
-        var nl = WebhooksWiring.NewLine(program);
-        var text = program;
-
+        var nl = WebhooksWiring.NewLine(text);
         if (!text.Contains("AddModulusRealtime(", StringComparison.Ordinal))
         {
-            var build = text.IndexOf("var app = builder.Build();", StringComparison.Ordinal);
-            if (build < 0)
-                return program;
-            text = text[..build] +
-                "// ── Realtime ───────────────────────────────────────────────────" + nl +
-                "// Integration events pushed to connected clients (modulus add-realtime; re-run it to add events" + nl +
-                "// created since), each to the audience it names, within the event's tenant. Clients read the SSE" + nl +
-                "// stream GET /realtime/events (EventSource; resumes with Last-Event-ID); SignalR (/realtime/hub, for" + nl +
-                "// topic subscriptions and two-way calls) is on when \"Realtime:SignalR:Enabled\". With more than one" + nl +
-                "// replica, add the Redis backplane (Modulus.Realtime.Redis: AddRedisRealtimeBackplane)." + nl +
-                "builder.Services.AddModulusRealtime(builder.Configuration, realtime =>" + nl +
-                "{" + nl +
-                "});" + nl + nl +
-                text[build..];
+            var block =
+                "        // ── Realtime ───────────────────────────────────────────────────" + nl +
+                "        // Integration events pushed to connected clients (modulus add-realtime; re-run it to add events" + nl +
+                "        // created since), each to the audience it names, within the event's tenant. Clients read the SSE" + nl +
+                "        // stream GET /realtime/events (EventSource; resumes with Last-Event-ID); SignalR (/realtime/hub, for" + nl +
+                "        // topic subscriptions and two-way calls) is on when \"Realtime:SignalR:Enabled\". With more than one" + nl +
+                "        // replica, add the Redis backplane (Modulus.Realtime.Redis: AddRedisRealtimeBackplane)." + nl +
+                "        builder.Services.AddModulusRealtime(builder.Configuration, realtime =>" + nl +
+                "        {" + nl +
+                "        });" + nl;
+            var inserted = ApiHostFiles.InsertFeatureServices(text, block, nl);
+            if (inserted == text)
+                return text;
+            text = inserted + nl;
         }
 
         text = EnsureEvents(text, events);
-
-        if (!text.Contains("MapModulusRealtime(", StringComparison.Ordinal))
-        {
-            var block = "// Realtime endpoints: GET /realtime/events (SSE) and, when enabled, the /realtime/hub SignalR hub." + nl +
-                        "app.MapModulusRealtime();" + nl;
-            var endpoints = text.IndexOf("app.MapModulusEndpoints(", StringComparison.Ordinal);
-            var end = endpoints < 0 ? -1 : text.IndexOf(".ToArray());", endpoints, StringComparison.Ordinal);
-            var lineEnd = end < 0 ? -1 : text.IndexOf('\n', end);
-            if (lineEnd >= 0)
-            {
-                text = text[..(lineEnd + 1)] + nl + block + text[(lineEnd + 1)..];
-            }
-            else
-            {
-                var run = text.IndexOf("app.Run();", StringComparison.Ordinal);
-                if (run < 0)
-                    return program;
-                text = text[..run] + block + nl + text[run..];
-            }
-        }
-
         text = WebhooksWiring.EnsureUsing(text, "using Modulus.Realtime;");
         foreach (var ns in events.Select(e => e.Event.Namespace).Distinct(StringComparer.Ordinal))
             text = WebhooksWiring.EnsureUsing(text, $"using {ns};");
         return text;
+    }
+
+    /// <summary>The optional features' endpoints (<c>Endpoints/FeatureEndpoints.cs</c>): <c>MapModulusRealtime()</c>.</summary>
+    public static string EnsureApiEndpoints(string text)
+    {
+        var nl = WebhooksWiring.NewLine(text);
+        if (!text.Contains("MapModulusRealtime(", StringComparison.Ordinal))
+        {
+            var block = "        // Realtime endpoints: GET /realtime/events (SSE) and, when enabled, the /realtime/hub SignalR hub." + nl +
+                        "        app.MapModulusRealtime();" + nl;
+            var inserted = ApiHostFiles.InsertFeatureEndpoints(text, block, nl);
+            if (inserted is null)
+                return text;
+            text = inserted;
+        }
+
+        return WebhooksWiring.EnsureUsing(text, "using Modulus.Realtime;");
     }
 
     // Adds `realtime.AddEvent<T>(_ => audience);` for each event not yet in the AddModulusRealtime callback.
@@ -108,7 +102,8 @@ internal static partial class RealtimeWiring
             return text;
 
         var lineStart = text.LastIndexOf('\n', close) + 1;
-        var lines = string.Concat(missing.Select(e => $"    realtime.AddEvent<{e.Event.TypeName}>(_ => {e.Audience});{nl}"));
+        var indent = new string(' ', text[lineStart..].TakeWhile(c => c == ' ').Count()) + "    ";
+        var lines = string.Concat(missing.Select(e => $"{indent}realtime.AddEvent<{e.Event.TypeName}>(_ => {e.Audience});{nl}"));
         return text[..lineStart] + lines + text[lineStart..];
     }
 

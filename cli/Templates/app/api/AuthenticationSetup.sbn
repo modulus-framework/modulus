@@ -1,0 +1,75 @@
+using Microsoft.AspNetCore.Authentication;
+{{ if auth == "openiddict" }}using Modulus.Identity.Extensions;
+using OpenIddict.Validation.AspNetCore;
+{{ end }}{{ if use_external_provider }}using {{ external_provider_namespace }};
+{{ end }}{{ if example_permission || needs_fallback_authorization }}using Modulus.Authorization.Extensions;
+{{ end }}{{ if use_security_guard }}using Modulus.AspNetCore.Security.Policy;
+using Modulus.AuditLogging.Security;
+{{ end }}{{ if multi_tenancy }}using Modulus.MultiTenancy.EntityFrameworkCore;
+using Modulus.MultiTenancy.Extensions;
+using Modulus.Security;
+{{ end }}
+namespace {{ root_namespace }}.Api.Security;
+
+/// <summary>
+/// Authentication, authorization, the security guard and audit, and multi-tenancy: how a caller is recognised and what it may
+/// reach. Every policy here is a reviewed decision (see the security guard's loosening allowlist).
+/// </summary>
+internal static class AuthenticationSetup
+{
+    public static WebApplicationBuilder AddApiAuthentication(this WebApplicationBuilder builder)
+    {
+{{ if auth == "openiddict" }}        // API only: callers present a bearer token. AddModulusIdentity would otherwise make the cookie the default.
+        builder.Services.AddAuthentication(options =>
+        {
+            options.DefaultScheme = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme;
+            options.DefaultAuthenticateScheme = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme;
+            options.DefaultChallengeScheme = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme;
+        });
+{{ if example_permission }}
+        // The example API needs a permission, and the Admin role (seeded at startup) holds it: a signed-in caller without it gets 403.
+        // AddModulusAuthorization turns a "module:thing:action" name into a permission check, resolved from the grants of the caller's roles.
+        // The grants below are an in-memory seed: to edit them at run time (Permissions UI or API), keep them in the database with
+        // AddEfCoreAuthorizationStores (Modulus.Authorization.EntityFrameworkCore) instead.
+        builder.Services.AddModulusAuthorization();
+        builder.Services.AddGrantStorePermissionChecker();
+        builder.Services.AddPermissions("{{ example_module_lower }}", permissions => permissions.Add("{{ example_permission }}", "{{ example_permission_description }}"));
+        builder.Services.AddPermissionGrants(grants => grants.GrantToRole("{{ admin_role }}", "{{ example_permission }}"));
+{{ end }}{{ else if use_external_provider }}        // External identity provider ({{ external_provider_name }}).
+        // Validates bearer tokens issued by {{ external_provider_name }} via OIDC discovery / introspection. Configure the provider
+        // details under "{{ external_provider_config_key }}" in appsettings.json. Set ClientSecret via User Secrets or env var
+        // (never committed):
+        //   dotnet user-secrets set "{{ external_provider_config_key }}:ClientSecret" "your-secret"
+        builder.Services.AddAuthentication()
+            .{{ external_provider_add_method }}(builder.Configuration);
+{{ else }}        // None is registered. Endpoints require an authenticated user by default, so until you add a scheme every API call
+        // fails (500: no authentication scheme). Either register one here (e.g. builder.Services.AddAuthentication().AddJwtBearer(...)
+        // and, after app.UseExceptionHandler(), app.UseAuthentication()), re-generate with --auth openiddict or an external
+        // provider, or call AllowAnonymous() in an endpoint's Configure().
+{{ end }}{{ if use_security_guard }}
+{{ if needs_fallback_authorization }}        // Closed by default: AddModulusAuthorization makes "a signed-in user" the fallback policy, so an endpoint that
+        // declares no policy of its own is not open.
+        builder.Services.AddModulusAuthorization();
+{{ end }}        // At startup every endpoint must resolve to a policy. An anonymous endpoint needs a reason (.Loosen(reason) on a
+        // minimal API, AllowAnonymous(reason) in an endpoint's Configure()) and, outside Development, an entry in
+        // Security/loosening-allowlist.json; otherwise the app refuses to start (settings: Security:Guard).
+        builder.Services.AddModulusSecurityGuard(builder.Configuration);
+
+        // Security decisions (refused sign-ins, issued, refused and revoked tokens, tenant rejections, cross-tenant SQL, the
+        // startup loosening report) are recorded as one tamper-evident hash chain per company. The chain lives in memory until a
+        // durable store is added (modulus add-audit-store); settings: Security:Audit.
+        builder.Services.AddModulusSecurityAudit(builder.Configuration);
+{{ end }}{{ if multi_tenancy }}
+        // A token with a "tid" claim stays pinned to its company; a login without one selects a company with the X-Tenant-Id
+        // header (id or slug) and needs an active membership in it (TenantManager.AddMemberAsync / RemoveMemberAsync; the
+        // companies and memberships live in TenancyModule's database). No company selected = no tenant data (fail-closed).
+        builder.Services.AddMultiTenancy(tenancy => tenancy
+            .UseJwtClaimResolver()
+            .UseHeaderResolver()
+            .RequireMembership());
+        // One view of who is calling, for which company and branch (X-Branch-Id, checked against the caller's org scope).
+        builder.Services.AddModulusSecurityContext();
+{{ end }}
+        return builder;
+    }
+}

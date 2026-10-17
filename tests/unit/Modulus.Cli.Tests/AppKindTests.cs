@@ -185,7 +185,7 @@ public sealed class AppKindTests : IDisposable
     {
         var model = new AppModel { AppName = "Shop", RootNamespace = "Shop", Auth = auth };
 
-        var program = new TemplateEngine().Render("app/Program", model);
+        var program = ApiHostSource.Render(new TemplateEngine(), model);
 
         (program.Contains("None is registered.", StringComparison.Ordinal)).Should().Be(explained);
     }

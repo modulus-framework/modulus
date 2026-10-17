@@ -10,11 +10,11 @@ namespace Modulus.Cli.Tests;
 public sealed class RealtimeWiringTests
 {
     private static readonly RealtimeWiring.RealtimeEventInfo Product = new(
-        new("catalog.product-created.v1", "ProductCreatedIntegrationEvent", "Shop.Modules.Catalog.Application.IntegrationEvents", IdOnly: true),
+        new("catalog.product-created.v1", "ProductCreatedIntegrationEvent", "Shop.Modules.Catalog.IntegrationEvents", IdOnly: true),
         "catalog:products:manage");
 
     private static readonly RealtimeWiring.RealtimeEventInfo Order = new(
-        new("orders.order-placed.v1", "OrderPlacedIntegrationEvent", "Shop.Modules.Orders.Application.IntegrationEvents"),
+        new("orders.order-placed.v1", "OrderPlacedIntegrationEvent", "Shop.Modules.Orders.IntegrationEvents"),
         Permission: null);
 
     private const string Program =
@@ -22,31 +22,36 @@ public sealed class RealtimeWiringTests
         "app.MapModulusEndpoints(\n    Directory.GetFiles(AppContext.BaseDirectory, \"Shop.Modules.*.Presentation.dll\")\n        .Select(Assembly.LoadFrom)\n        .ToArray());\n" +
         "app.Run();\n";
 
+    private static string RealtimeHost(string text, IReadOnlyList<RealtimeWiring.RealtimeEventInfo> events) => RealtimeWiring.EnsureApiEndpoints(RealtimeWiring.EnsureApiServices(text, events));
+
+    private static string WebhooksHost(string text, string ns, IReadOnlyList<WebhooksWiring.IntegrationEventInfo> events, string? adminRole) =>
+        WebhooksWiring.EnsureApiEndpoints(WebhooksWiring.EnsureApiServices(WebhooksWiring.EnsureApiModule(text, ns), events, adminRole));
+
     [Fact]
     public void Program_registers_each_event_with_its_audience_and_maps_after_the_endpoints()
     {
-        var once = RealtimeWiring.EnsureApiProgram(Program, [Product]);
+        var once = RealtimeHost(Program, [Product]);
 
-        once.Should().Contain("builder.Services.AddModulusRealtime(builder.Configuration, realtime =>\n{\n" +
-                              "    realtime.AddEvent<ProductCreatedIntegrationEvent>(_ => RealtimeAudience.Permission(\"catalog:products:manage\"));\n});")
+        once.Should().Contain("builder.Services.AddModulusRealtime(builder.Configuration, realtime =>")
+            .And.Contain("realtime.AddEvent<ProductCreatedIntegrationEvent>(_ => RealtimeAudience.Permission(\"catalog:products:manage\"));")
             .And.Contain("using Modulus.Realtime;")
-            .And.Contain("using Shop.Modules.Catalog.Application.IntegrationEvents;");
+            .And.Contain("using Shop.Modules.Catalog.IntegrationEvents;");
         once.IndexOf("AddModulusRealtime(", StringComparison.Ordinal).Should().BeLessThan(once.IndexOf("var app = builder.Build();", StringComparison.Ordinal));
         once.IndexOf("app.MapModulusRealtime();", StringComparison.Ordinal)
             .Should().BeGreaterThan(once.IndexOf(".ToArray());", StringComparison.Ordinal))
             .And.BeLessThan(once.IndexOf("app.Run();", StringComparison.Ordinal));
-        RealtimeWiring.EnsureApiProgram(once, [Product]).Should().Be(once);
+        RealtimeHost(once, [Product]).Should().Be(once);
     }
 
     [Fact]
     public void A_rerun_adds_new_events_and_an_event_without_a_permission_goes_to_the_tenant()
     {
-        var once = RealtimeWiring.EnsureApiProgram(Program, [Product]);
+        var once = RealtimeHost(Program, [Product]);
 
-        var twice = RealtimeWiring.EnsureApiProgram(once, [Product, Order]);
+        var twice = RealtimeHost(once, [Product, Order]);
 
-        twice.Should().Contain("    realtime.AddEvent<OrderPlacedIntegrationEvent>(_ => RealtimeAudience.Tenant);\n});")
-            .And.Contain("using Shop.Modules.Orders.Application.IntegrationEvents;");
+        twice.Should().Contain("            realtime.AddEvent<OrderPlacedIntegrationEvent>(_ => RealtimeAudience.Tenant);\n        });")
+            .And.Contain("using Shop.Modules.Orders.IntegrationEvents;");
         twice.Split("realtime.AddEvent<ProductCreatedIntegrationEvent>").Should().HaveCount(2);
     }
 
@@ -56,8 +61,8 @@ public sealed class RealtimeWiringTests
         var program = Program.Replace("var app = builder.Build();",
             "builder.Services.AddModulus(builder.Configuration, modules =>\n{\n    modules.AddModule<CatalogModule>();\n});\nvar app = builder.Build();", StringComparison.Ordinal);
 
-        var realtimeFirst = WebhooksWiring.EnsureApiProgram(RealtimeWiring.EnsureApiProgram(program, [Product]), "Shop.Modules.Webhooks", [Product.Event], adminRole: null);
-        var webhooksFirst = RealtimeWiring.EnsureApiProgram(WebhooksWiring.EnsureApiProgram(program, "Shop.Modules.Webhooks", [Product.Event], adminRole: null), [Product]);
+        var realtimeFirst = WebhooksHost(RealtimeHost(program, [Product]), "Shop.Modules.Webhooks", [Product.Event], adminRole: null);
+        var webhooksFirst = RealtimeHost(WebhooksHost(program, "Shop.Modules.Webhooks", [Product.Event], adminRole: null), [Product]);
 
         foreach (var both in new[] { realtimeFirst, webhooksFirst })
         {
@@ -131,7 +136,7 @@ public sealed class RealtimeCommandTests : IDisposable
         Run(AppDir).Should().Be(0);
 
         Read("src/API/Shop.Api/Shop.Api.csproj").Should().Contain("Modulus.Realtime");
-        Read("src/API/Shop.Api/Program.cs").Should()
+        ApiHostFiles.ReadAll(Path.Combine(AppDir, "src/API/Shop.Api/Program.cs")).Should()
             .Contain("realtime.AddEvent<ProductCreatedIntegrationEvent>(_ => RealtimeAudience.Permission(\"catalog:products:manage\"));")
             .And.Contain("app.MapModulusRealtime();");
         WebhooksWiringTests.Parse(Read("src/API/Shop.Api/appsettings.json")).GetProperty("Realtime").GetProperty("Path").GetString().Should().Be("/realtime");
@@ -139,7 +144,7 @@ public sealed class RealtimeCommandTests : IDisposable
         Read("tests/Shop.Tests/RealtimeTests.cs").Should()
             .Contain("ProductCreatedIntegrationEvent_reaches_only_holders_of_the_permission")
             .And.Contain("roles: [\"Admin\"]")
-            .And.Contain("using Shop.Modules.Catalog.Application.IntegrationEvents;");
+            .And.Contain("using Shop.Modules.Catalog.IntegrationEvents;");
     }
 
     [Fact]

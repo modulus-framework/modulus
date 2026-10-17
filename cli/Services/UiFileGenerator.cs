@@ -88,7 +88,7 @@ internal class UiFileGenerator
                 try
                 {
                     // Substitute placeholders
-                    var outputFile = SubstitutePlaceholders(pattern, entity, entityPlural);
+                    var outputFile = SubstitutePlaceholders(pattern, entity, entityPlural, module.ModuleName);
                     var fullPath = Path.Combine(outputPath, outputFile);
 
                     // Determine template file name
@@ -154,9 +154,10 @@ internal class UiFileGenerator
         => (path, null, path is not null && (path.EndsWith(".cshtml.cs", StringComparison.OrdinalIgnoreCase)
             || path.EndsWith(".razor.cs", StringComparison.OrdinalIgnoreCase)));
 
-    private string SubstitutePlaceholders(string pattern, string entity, string plural)
+    private string SubstitutePlaceholders(string pattern, string entity, string plural, string module)
     {
         return pattern
+            .Replace("[Module]", module, StringComparison.OrdinalIgnoreCase)
             .Replace("[Entity]", entity, StringComparison.OrdinalIgnoreCase)
             .Replace("[Entities]", plural, StringComparison.OrdinalIgnoreCase)
             .Replace("[entity]", CodeGen.ToCamelCase(entity), StringComparison.OrdinalIgnoreCase)
@@ -169,6 +170,13 @@ internal class UiFileGenerator
 
         if (pattern.Contains("Index", StringComparison.OrdinalIgnoreCase))
             return $"crud-index.{ext}.sbn";
+
+        if (pattern.Contains("Create", StringComparison.OrdinalIgnoreCase))
+            return $"crud-create.{ext}.sbn";
+
+        // The shared form is checked before Edit: "Editor" contains "Edit".
+        if (pattern.Contains("_Form", StringComparison.OrdinalIgnoreCase) || pattern.Contains("Editor", StringComparison.OrdinalIgnoreCase))
+            return $"crud-form.{ext}.sbn";
 
         if (pattern.Contains("Edit", StringComparison.OrdinalIgnoreCase))
             return $"crud-edit.{ext}.sbn";

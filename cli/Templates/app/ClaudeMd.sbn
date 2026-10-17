@@ -6,8 +6,8 @@ Read this file first. For the UI components and patterns, read `.claude/skills/m
 ## Layout
 
 - `src/API/{{ root_namespace }}.Api` — the API host: modules, data, and the endpoints.
-{{ if ui_engine == "blazor" }}- `src/Web/{{ root_namespace }}.Web` — the Blazor host: pages in `Components/Pages`, the shell in `Components/Layout`, the menu in `Menu`, the typed API clients in `ApiClients`.
-{{ else }}- `src/Web/{{ root_namespace }}.Web` — the {{ if ui_engine == "mvc" }}MVC{{ else }}Razor Pages{{ end }} host: {{ if ui_engine == "mvc" }}controllers in `Controllers`, views in `Views`{{ else }}pages in `Pages`{{ end }}, the menu in `Menu`, the typed API clients in `ApiClients`.
+{{ if ui_engine == "blazor" }}- `src/Web/{{ root_namespace }}.Web` — the Blazor host: pages in `Components/Pages/<Module>/<Entities>`, the shell in `Components/Layout`, the menu contributors in `Components/Navigation/Menu`, the typed API clients in `Services/ApiClients`, the client registration in `Services/ApiClientExtensions.cs`.
+{{ else }}- `src/Web/{{ root_namespace }}.Web` — the {{ if ui_engine == "mvc" }}MVC{{ else }}Razor Pages{{ end }} host: {{ if ui_engine == "mvc" }}controllers in `Controllers/<Module>`, views in `Views/<Entities>`{{ else }}pages in `Pages/<Module>/<Entities>`{{ end }}, the menu contributors in `Components/Navigation/Menu`, the typed API clients in `Services/ApiClients`, the client registration in `Services/ApiClientExtensions.cs`.
 {{ end }}- `.modulus.json` — written by `modulus app`; it records the UI engine (`{{ ui_engine }}`) for later `modulus` commands.
 
 ## Working rules

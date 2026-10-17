@@ -29,7 +29,7 @@ public sealed class SecurityGuardTemplateTests
     public void Hosts_with_a_sign_in_wire_the_guard_and_loosen_the_development_OpenAPI_document(string auth, string kind)
     {
         var model = Model(auth, Kind(kind));
-        var program = _engine.Render("app/Program", model);
+        var program = ApiHostSource.Render(_engine, model);
 
         model.UseSecurityGuard.Should().BeTrue();
         program.Should().Contain("builder.Services.AddModulusSecurityGuard(builder.Configuration);")
@@ -48,7 +48,7 @@ public sealed class SecurityGuardTemplateTests
         model.ExamplePermission.Should().BeNull();
         model.NeedsFallbackAuthorization.Should().BeTrue();
 
-        var program = _engine.Render("app/Program", model);
+        var program = ApiHostSource.Render(_engine, model);
 
         Occurrences(program, "builder.Services.AddModulusAuthorization();").Should().Be(1);
     }
@@ -59,7 +59,7 @@ public sealed class SecurityGuardTemplateTests
         var model = Model("openiddict");
         model.NeedsFallbackAuthorization.Should().BeFalse();
 
-        Occurrences(_engine.Render("app/Program", model), "builder.Services.AddModulusAuthorization();").Should().Be(1);
+        Occurrences(ApiHostSource.Render(_engine, model), "builder.Services.AddModulusAuthorization();").Should().Be(1);
     }
 
     [Theory]
@@ -69,7 +69,7 @@ public sealed class SecurityGuardTemplateTests
         var model = Model(auth, Kind(kind));
 
         model.UseSecurityGuard.Should().BeFalse();
-        _engine.Render("app/Program", model).Should().NotContain("AddModulusSecurityGuard").And.NotContain(".Loosen(")
+        ApiHostSource.Render(_engine, model).Should().NotContain("AddModulusSecurityGuard").And.NotContain(".Loosen(")
             .And.NotContain("AddModulusSecurityAudit");
     }
 
@@ -90,8 +90,8 @@ public sealed class SecurityGuardTemplateTests
         var model = Model("openiddict", AppKind.WebAppApi);
         model.EnableHealthChecks = true;
 
-        _engine.Render("app/Program.Web", model)
-            .Should().Contain("builder.Services.AddModulusSecurityGuard(builder.Configuration);")
+        WebHostSource.Render(_engine, model)
+            .Should().Contain("services.AddModulusSecurityGuard(configuration);")
             .And.Contain("app.MapHealthChecks(\"/health/live\").Loosen(");
 
         var json = _engine.Render("app/loosening-allowlist.Web.json", model);

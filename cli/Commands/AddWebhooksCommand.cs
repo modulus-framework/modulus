@@ -18,7 +18,7 @@ internal sealed class AddWebhooksCommand : Command<AddWebhooksCommand.Settings>
 
     internal sealed class Settings : ModulusSettings
     {
-        [Description("Integration events to expose, by event name or type name (comma-separated). Default: every [[IntegrationEventName]] event in the modules' Application/IntegrationEvents.")]
+        [Description("Integration events to expose, by event name or type name (comma-separated). Default: every [[IntegrationEventName]] event in the modules' IntegrationEvents projects.")]
         [CommandOption("--events")]
         public string? Events { get; init; }
     }
@@ -37,9 +37,9 @@ internal sealed class AddWebhooksCommand : Command<AddWebhooksCommand.Settings>
             throw new InvalidOperationException($"Program.cs not found at {app.ProgramCsPath}.");
 
         var events = SelectEvents(WebhooksWiring.FindIntegrationEvents(app.SolutionDir), s.Events);
-        var program = File.ReadAllText(app.ProgramCsPath);
-        var hasAdminRole = UiAccessGates.HasAdminRole(program);
-        var grantsAdmin = hasAdminRole && program.Contains("AddModulusAuthorization(", StringComparison.Ordinal);
+        var host = ApiHostFiles.ReadAll(app.ProgramCsPath);
+        var hasAdminRole = UiAccessGates.HasAdminRole(host);
+        var grantsAdmin = hasAdminRole && host.Contains("AddModulusAuthorization(", StringComparison.Ordinal);
         var provider = app.Modules.Select(m => m.DatabaseProvider).FirstOrDefault(p => NewAppCommand.KnownProviders.Contains(p)) ?? "SQLite";
         var model = new WebhooksModel
         {
@@ -68,10 +68,12 @@ internal sealed class AddWebhooksCommand : Command<AddWebhooksCommand.Settings>
         var apiDir = Path.GetDirectoryName(app.ApiProjectPath)!;
         var reference = Path.GetRelativePath(apiDir, infraCsproj).Replace('\\', '/');
         Edit(app.ApiProjectPath, t => WebhooksWiring.EnsureApiProjectReference(t, reference), written, app);
-        if (!Edit(app.ProgramCsPath, t => WebhooksWiring.EnsureApiProgram(t, model.WebhooksNamespace, events, grantsAdmin ? UiAccessGates.AdminRole : null), written, app)
-            && !program.Contains("MapModulusWebhooks(", StringComparison.Ordinal))
+        var changed = Edit(ApiHostFiles.ModulesFile(app.ProgramCsPath), t => WebhooksWiring.EnsureApiModule(t, model.WebhooksNamespace), written, app);
+        changed |= Edit(ApiHostFiles.FeatureServicesFile(app.ProgramCsPath), t => WebhooksWiring.EnsureApiServices(t, events, grantsAdmin ? UiAccessGates.AdminRole : null), written, app);
+        changed |= Edit(ApiHostFiles.FeatureEndpointsFile(app.ProgramCsPath), WebhooksWiring.EnsureApiEndpoints, written, app);
+        if (!changed && !host.Contains("MapModulusWebhooks(", StringComparison.Ordinal))
         {
-            hints.Add("Program.cs: add modules.AddModule<WebhooksModule>(), builder.Services.AddModulusWebhooks(builder.Configuration, webhooks => { webhooks.AddEvent<...>(); }) before Build() and app.MapModulusWebhooks().");
+            hints.Add("Add modules.AddModule<WebhooksModule>() to the AddModulus callback (Composition/ModuleRegistration.cs), builder.Services.AddModulusWebhooks(builder.Configuration, webhooks => { webhooks.AddEvent<...>(); }) to Configuration/FeatureServicesSetup.cs and app.MapModulusWebhooks() to Endpoints/FeatureEndpoints.cs.");
         }
 
         if (hasAdminRole && !grantsAdmin)
@@ -105,7 +107,7 @@ internal sealed class AddWebhooksCommand : Command<AddWebhooksCommand.Settings>
         foreach (var hint in hints)
             AnsiConsole.MarkupLine("  [yellow]![/] {0}", Markup.Escape(hint));
         if (events.Count == 0)
-            AnsiConsole.MarkupLine("  [yellow]![/] No [[IntegrationEventName]] event found: declare one in a module's Application/IntegrationEvents and run modulus add-webhooks again.");
+            AnsiConsole.MarkupLine("  [yellow]![/] No [[IntegrationEventName]] event found: declare one in a module's IntegrationEvents project and run modulus add-webhooks again.");
         AnsiConsole.MarkupLine("  [grey]An event reaches subscribers once a module publishes it (IModuleBus, or the outbox). Manage subscriptions at /api/webhooks.[/]");
         AnsiConsole.MarkupLine("  [grey]Signing secrets are encrypted with ASP.NET Data Protection: persist and share its key ring in production.[/]");
         return 0;

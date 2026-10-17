@@ -15,6 +15,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../{{ module_namespace }}.Domain/{{ module_namespace }}.Domain.csproj" />
+    <ProjectReference Include="../{{ module_namespace }}.IntegrationEvents/{{ module_namespace }}.IntegrationEvents.csproj" />
     <ProjectReference Include="../../../Shared/{{ root_namespace }}.Shared.Application/{{ root_namespace }}.Shared.Application.csproj" />
   </ItemGroup>
 

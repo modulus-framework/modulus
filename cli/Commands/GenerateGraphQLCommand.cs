@@ -69,10 +69,11 @@ internal sealed partial class GenerateGraphQLCommand : Command<GenerateGraphQLCo
         // ── API host ────────────────────────────────────────────────
         if (ProjectFileService.EnsureCsprojPackageReference(app.ApiProjectPath, GraphQLWiring.PackageId, FrameworkVersion.Current, Ux.DryRun))
             written.Add(Path.GetRelativePath(app.SolutionDir, app.ApiProjectPath) + " (updated)");
-        if (!Edit(app.ProgramCsPath, t => GraphQLWiring.EnsureApiProgram(t, app.RootNamespace), written, app)
-            && !File.ReadAllText(app.ProgramCsPath).Contains("MapModulusGraphQL(", StringComparison.Ordinal))
+        var changed = Edit(ApiHostFiles.FeatureServicesFile(app.ProgramCsPath), t => GraphQLWiring.EnsureApiServices(t, app.RootNamespace), written, app);
+        changed |= Edit(ApiHostFiles.FeatureEndpointsFile(app.ProgramCsPath), GraphQLWiring.EnsureApiEndpoints, written, app);
+        if (!changed && !ApiHostFiles.ReadAll(app.ProgramCsPath).Contains("MapModulusGraphQL(", StringComparison.Ordinal))
         {
-            hints.Add("Program.cs: add builder.Services.AddModulusGraphQL(builder.Configuration, <Presentation assemblies>); before Build() and app.MapModulusGraphQL(); after the endpoints.");
+            hints.Add("Add builder.Services.AddModulusGraphQL(builder.Configuration, <Presentation assemblies>) to Configuration/FeatureServicesSetup.cs and app.MapModulusGraphQL() to Endpoints/FeatureEndpoints.cs.");
         }
 
         Edit(Path.Combine(apiDir, "appsettings.json"), t => GraphQLWiring.EnsureApiSettings(t, development: false), written, app);

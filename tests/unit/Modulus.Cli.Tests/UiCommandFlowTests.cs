@@ -20,6 +20,7 @@ public sealed class UiCommandFlowTests : IDisposable
         File.WriteAllText(Path.Combine(_ui, "Demo.Api.csproj"),
             "<Project Sdk=\"Microsoft.NET.Sdk.Web\"><PropertyGroup><ModulusAppKind>webapp+api</ModulusAppKind></PropertyGroup></Project>");
         File.WriteAllText(Path.Combine(_ui, "appsettings.json"), "{}");
+        File.WriteAllText(Path.Combine(_ui, "Program.cs"), "var builder = WebApplication.CreateBuilder(args);\nvar app = builder.Build();\napp.Run();\n");
         File.WriteAllText(Path.Combine(_root, ".modulus.json"), """{ "ui_engine": "mvc" }""");
     }
 

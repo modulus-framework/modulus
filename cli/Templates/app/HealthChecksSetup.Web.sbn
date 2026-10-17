@@ -1,0 +1,20 @@
+using Modulus.AspNetCore.Security;
+{{ if use_auth }}using Modulus.AspNetCore.Security.Policy;
+{{ end }}
+namespace {{ root_namespace }}.Web.Observability;
+
+/// <summary>Health probes: <c>/health/live</c> reports that the process runs, for orchestrators and load balancers.</summary>
+internal static class HealthChecksSetup
+{
+    public static IServiceCollection AddWebHealthChecks(this IServiceCollection services)
+    {
+        services.AddHealthChecks();
+        return services;
+    }
+
+    public static WebApplication MapWebHealthChecks(this WebApplication app)
+    {
+{{ if enable_health_checks }}        app.MapHealthChecks("/health/live"){{ if use_auth }}.Loosen("Liveness probe for orchestrators and load balancers"){{ end }};
+{{ end }}        return app;
+    }
+}

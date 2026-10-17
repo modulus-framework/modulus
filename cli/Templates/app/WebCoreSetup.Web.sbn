@@ -1,0 +1,48 @@
+using Microsoft.AspNetCore.HttpOverrides;
+using Modulus.AspNetCore.Configuration;
+using Modulus.AspNetCore.Correlation;
+using Modulus.AspNetCore.Extensions;
+using Modulus.AspNetCore.FeatureFlags;
+using Modulus.AspNetCore.Logging;
+using Modulus.AspNetCore.Security;
+
+namespace {{ root_namespace }}.Web.Configuration;
+
+/// <summary>
+/// Cross-cutting services for the web host: correlation, feature flags, the secrets guard, log redaction, forwarded headers
+/// and exception handling. All settings are config-bound; see appsettings.json.
+/// </summary>
+internal static class WebCoreSetup
+{
+    public static IServiceCollection AddWebCore(this IServiceCollection services, IConfiguration configuration)
+    {
+{{ if enable_correlation }}        // Every log line carries the X-Correlation-ID (adopted from the API's response header or derived here), so a
+        // request can be traced across both hosts.
+        services.AddModulusCorrelation(configuration);
+
+{{ end }}{{ if enable_feature_flags }}        // Runtime feature flags (see "FeatureManagement" in appsettings.json).
+        services.AddModulusFeatureFlags(configuration);
+
+{{ end }}{{ if enable_secrets_guard }}        // Guard rail: fails startup if secrets are committed to appsettings*.json.
+        services.AddModulusSecretsGuard(configuration);
+
+{{ end }}        // Values classified with [PersonalInformation], [ProtectedPersonalData], [ConfidentialData], [RestrictedData] or
+        // [SecretData] are redacted in source-generated logs. Settings: Security:Redaction (the HMAC key that pseudonymizes
+        // personal data comes from user secrets or the environment). Analyzer MOD0002 flags a classified value passed to an
+        // ordinary LogInformation(...) call.
+        services.AddModulusRedaction(configuration);
+
+        // Forwarded headers: required behind a reverse proxy so the app sees real client IPs. Only the proxies named in
+        // ForwardedHeaders:KnownProxies or KnownNetworks are trusted; with none configured only loopback is trusted, so a
+        // client cannot choose the address the rate limiter and audit see.
+        services.Configure<ForwardedHeadersOptions>(options =>
+        {
+            options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+            options.ApplyModulusTrustedProxies(configuration);
+        });
+
+        services.AddModulusExceptionHandling();
+
+        return services;
+    }
+}

@@ -10,8 +10,8 @@ namespace Modulus.Cli.Tests;
 [Trait("Category", "Unit")]
 public sealed class WebhooksWiringTests
 {
-    private static readonly WebhooksWiring.IntegrationEventInfo Product = new("catalog.product-created.v1", "ProductCreatedIntegrationEvent", "Shop.Modules.Catalog.Application.IntegrationEvents");
-    private static readonly WebhooksWiring.IntegrationEventInfo Order = new("orders.order-placed.v1", "OrderPlacedIntegrationEvent", "Shop.Modules.Orders.Application.IntegrationEvents");
+    private static readonly WebhooksWiring.IntegrationEventInfo Product = new("catalog.product-created.v1", "ProductCreatedIntegrationEvent", "Shop.Modules.Catalog.IntegrationEvents");
+    private static readonly WebhooksWiring.IntegrationEventInfo Order = new("orders.order-placed.v1", "OrderPlacedIntegrationEvent", "Shop.Modules.Orders.IntegrationEvents");
 
     private const string Program =
         "using Modulus.AspNetCore;\n\nvar builder = WebApplication.CreateBuilder(args);\n" +
@@ -20,11 +20,14 @@ public sealed class WebhooksWiringTests
         "app.MapModulusEndpoints(\n    Directory.GetFiles(AppContext.BaseDirectory, \"Shop.Modules.*.Presentation.dll\")\n        .Select(Assembly.LoadFrom)\n        .ToArray());\n" +
         "app.Run();\n";
 
+    private static string WebhooksHost(string text, string ns, IReadOnlyList<WebhooksWiring.IntegrationEventInfo> events, string? adminRole) =>
+        WebhooksWiring.EnsureApiEndpoints(WebhooksWiring.EnsureApiServices(WebhooksWiring.EnsureApiModule(text, ns), events, adminRole));
+
     [Fact]
     public void Parses_named_events_with_their_namespace()
     {
         const string source =
-            "using Modulus.Events.Abstractions;\n\nnamespace Shop.Modules.Catalog.Application.IntegrationEvents;\n\n" +
+            "using Modulus.Events.Abstractions;\n\nnamespace Shop.Modules.Catalog.IntegrationEvents;\n\n" +
             "[IntegrationEventName(\"catalog.product-created.v1\")]\npublic sealed record ProductCreatedIntegrationEvent(Guid Id)\n    : IntegrationEventBase(\"x\");\n\n" +
             "public sealed record Unnamed(Guid Id) : IntegrationEventBase(\"y\");\n";
 
@@ -36,7 +39,7 @@ public sealed class WebhooksWiringTests
     public void Parses_events_whose_name_is_derived_from_types()
     {
         const string source =
-            "using Modulus.Events.Abstractions;\n\nnamespace Shop.Modules.Catalog.Application.IntegrationEvents;\n\n" +
+            "using Modulus.Events.Abstractions;\n\nnamespace Shop.Modules.Catalog.IntegrationEvents;\n\n" +
             "[IntegrationEvent<CatalogArea>]\npublic sealed record ProductCreatedIntegrationEvent(Guid Id) : IntegrationEventBase;\n\n" +
             "[IntegrationEvent<CatalogArea>(Version = 2)]\npublic sealed record PriceChanged(Guid Id, decimal Price) : IntegrationEventBase;\n";
 
@@ -67,31 +70,32 @@ public sealed class WebhooksWiringTests
     [Fact]
     public void Program_registers_the_module_events_grant_and_map_once()
     {
-        var once = WebhooksWiring.EnsureApiProgram(Program, "Shop.Modules.Webhooks", [Product], "Admin");
+        var once = WebhooksHost(Program, "Shop.Modules.Webhooks", [Product], "Admin");
 
         once.Should().Contain("    modules.AddModule<WebhooksModule>();\n});")
-            .And.Contain("    webhooks.AddEvent<ProductCreatedIntegrationEvent>();\n});")
+            .And.Contain("            webhooks.AddEvent<ProductCreatedIntegrationEvent>();\n        });")
             .And.Contain("grants.GrantToRole(\"Admin\", \"webhooks:manage\")")
+            .And.Contain("using Modulus.Authorization.Extensions;")
             .And.Contain("using Modulus.Webhooks;")
             .And.Contain("using Shop.Modules.Webhooks.Infrastructure;")
-            .And.Contain("using Shop.Modules.Catalog.Application.IntegrationEvents;");
+            .And.Contain("using Shop.Modules.Catalog.IntegrationEvents;");
         once.IndexOf("AddModulusWebhooks(", StringComparison.Ordinal)
             .Should().BeLessThan(once.IndexOf("var app = builder.Build();", StringComparison.Ordinal));
         once.IndexOf("app.MapModulusWebhooks();", StringComparison.Ordinal)
             .Should().BeGreaterThan(once.IndexOf(".ToArray());", StringComparison.Ordinal))
             .And.BeLessThan(once.IndexOf("app.Run();", StringComparison.Ordinal));
-        WebhooksWiring.EnsureApiProgram(once, "Shop.Modules.Webhooks", [Product], "Admin").Should().Be(once);
+        WebhooksHost(once, "Shop.Modules.Webhooks", [Product], "Admin").Should().Be(once);
     }
 
     [Fact]
     public void A_second_run_adds_only_new_events()
     {
-        var once = WebhooksWiring.EnsureApiProgram(Program, "Shop.Modules.Webhooks", [Product], adminRole: null);
-        var twice = WebhooksWiring.EnsureApiProgram(once, "Shop.Modules.Webhooks", [Product, Order], adminRole: null);
+        var once = WebhooksHost(Program, "Shop.Modules.Webhooks", [Product], adminRole: null);
+        var twice = WebhooksHost(once, "Shop.Modules.Webhooks", [Product, Order], adminRole: null);
 
         once.Should().NotContain("GrantToRole");
-        twice.Should().Contain("    webhooks.AddEvent<ProductCreatedIntegrationEvent>();\n    webhooks.AddEvent<OrderPlacedIntegrationEvent>();\n});")
-            .And.Contain("using Shop.Modules.Orders.Application.IntegrationEvents;");
+        twice.Should().Contain("            webhooks.AddEvent<ProductCreatedIntegrationEvent>();\n            webhooks.AddEvent<OrderPlacedIntegrationEvent>();\n        });")
+            .And.Contain("using Shop.Modules.Orders.IntegrationEvents;");
         CountOf(twice, "AddEvent<ProductCreatedIntegrationEvent>").Should().Be(1);
         CountOf(twice, "AddModule<WebhooksModule>").Should().Be(1);
     }
@@ -101,15 +105,15 @@ public sealed class WebhooksWiringTests
     {
         const string program = "using A;\r\nbuilder.Services.AddModulus(builder.Configuration, modules =>\r\n{\r\n});\r\nvar app = builder.Build();\r\napp.Run();\r\n";
 
-        var result = WebhooksWiring.EnsureApiProgram(program, "Shop.Modules.Webhooks", [Product], adminRole: null);
+        var result = WebhooksHost(program, "Shop.Modules.Webhooks", [Product], adminRole: null);
 
-        result.Should().StartWith("using A;\r\nusing Modulus.Webhooks;\r\n");
+        result.Should().StartWith("using A;\r\nusing Shop.Modules.Webhooks.Infrastructure;\r\nusing Modulus.Webhooks;\r\n");
         result.Should().Contain("app.MapModulusWebhooks();\r\n\r\napp.Run();").And.NotMatchRegex("[^\r]\n");
     }
 
     [Fact]
     public void Program_without_anchors_is_left_alone()
-        => WebhooksWiring.EnsureApiProgram("var x = 1;\n", "Shop.Modules.Webhooks", [Product], null).Should().Be("var x = 1;\n");
+        => WebhooksHost("var x = 1;\n", "Shop.Modules.Webhooks", [Product], null).Should().Be("var x = 1;\n");
 
     [Fact]
     public void Api_project_references_the_store_module_once()
@@ -216,7 +220,7 @@ public sealed class WebhooksCommandTests : IDisposable
         Read("Shop.slnx").Should().Contain("Shop.Modules.Webhooks.Infrastructure.csproj");
         Read("src/API/Shop.Api/Shop.Api.csproj").Should().Contain("Shop.Modules.Webhooks.Infrastructure.csproj");
 
-        var program = Read("src/API/Shop.Api/Program.cs");
+        var program = ApiHostFiles.ReadAll(Path.Combine(AppDir, "src/API/Shop.Api/Program.cs"));
         program.Should().Contain("modules.AddModule<WebhooksModule>();")
             .And.Contain("webhooks.AddEvent<ProductCreatedIntegrationEvent>();")
             .And.Contain("GrantToRole(\"Admin\", \"webhooks:manage\")")

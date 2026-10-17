@@ -8,8 +8,16 @@ namespace Modulus.Cli.Services;
 internal static class ApiPermissionWiring
 {
     public static string EnsurePermission(string content, string moduleName, string permission, string description)
+        => EnsurePermission(content, content, moduleName, permission, description);
+
+    /// <summary>
+    /// <paramref name="host"/> is the API host's whole text, where the permission is looked for; <paramref name="content"/> is the
+    /// file the lines go into (the feature services, or Program.cs of a host generated before the split).
+    /// </summary>
+    public static string EnsurePermission(string content, string host, string moduleName, string permission, string description)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(content);
+        ArgumentException.ThrowIfNullOrWhiteSpace(host);
         ArgumentException.ThrowIfNullOrWhiteSpace(moduleName);
         ArgumentException.ThrowIfNullOrWhiteSpace(permission);
         ArgumentException.ThrowIfNullOrWhiteSpace(description);
@@ -17,21 +25,23 @@ internal static class ApiPermissionWiring
         var nl = content.Contains("\r\n", StringComparison.Ordinal) ? "\r\n" : "\n";
 
         var lines = new List<string>();
-        if (!content.Contains("AddModulusAuthorization(", StringComparison.OrdinalIgnoreCase))
+        if (!host.Contains("AddModulusAuthorization(", StringComparison.OrdinalIgnoreCase))
             lines.Add("builder.Services.AddModulusAuthorization();");
-        var needsChecker = !content.Contains(UiAccessGates.GrantCheckerCall, StringComparison.OrdinalIgnoreCase);
+        var needsChecker = !host.Contains(UiAccessGates.GrantCheckerCall, StringComparison.OrdinalIgnoreCase);
         if (needsChecker)
             lines.Add(UiAccessGates.GrantCheckerCall);
-        if (!content.Contains($"Add(\"{permission}\"", StringComparison.OrdinalIgnoreCase))
+        if (!host.Contains($"Add(\"{permission}\"", StringComparison.OrdinalIgnoreCase))
             lines.Add($"builder.Services.AddPermissions(\"{moduleName.ToLowerInvariant()}\", permissions => permissions.Add(\"{permission}\", \"{description}\"));");
-        if (!content.Contains(UiAccessGates.GrantMarker(permission), StringComparison.OrdinalIgnoreCase))
+        if (!host.Contains(UiAccessGates.GrantMarker(permission), StringComparison.OrdinalIgnoreCase))
             lines.Add(UiAccessGates.GrantCall(permission));
 
         if (lines.Count == 0)
             return content;
 
+        // The feature services method ends in "return builder;"; a host generated before the split has "var app = builder.Build();".
+        var anchor = content.Contains("AddApiFeatures(", StringComparison.Ordinal) ? "return builder;" : "var app = builder.Build();";
         foreach (var line in lines)
-            content = InsertBefore(content, "var app = builder.Build();", line, nl);
+            content = InsertBefore(content, anchor, line, nl);
 
         var usings = new List<string> { "using Modulus.Authorization.Extensions;" };
         if (needsChecker)

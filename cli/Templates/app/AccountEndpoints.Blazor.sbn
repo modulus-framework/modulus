@@ -1,0 +1,42 @@
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
+using Modulus.AspNetCore.Security;
+using Modulus.AspNetCore.Security.Policy;
+using {{ root_namespace }}.Web.Configuration;
+using {{ root_namespace }}.Web.Security;
+
+namespace {{ root_namespace }}.Web.Endpoints;
+
+/// <summary>
+/// The sign-in and sign-out endpoints of the Blazor host. They call the BFF over HTTP, as the Razor Pages host does: a circuit
+/// cannot set cookies, so the sign-in is a native form post (password) or a browser visit (external provider), and the BFF's
+/// Set-Cookie headers are relayed to the browser by <see cref="BffGatewayHandler"/>.
+/// </summary>
+internal static class AccountEndpoints
+{
+    public static WebApplication MapAccountEndpoints(this WebApplication app)
+    {
+{{ if web_login_mode == "Password" }}        app.MapPost("/account/login", async (HttpContext http, BffSessionClient session, [FromForm] string? userName, [FromForm] string? password, [FromForm] string? returnUrl) =>
+        {
+            var result = await session.SignInAsync(userName ?? "", password ?? "", rememberMe: true, http.RequestAborted);
+            return result.Succeeded
+                ? Results.LocalRedirect(SafeReturnUrl(returnUrl))
+                : Results.LocalRedirect($"/account/login?error={(result.Error == "temporarily_unavailable" ? 2 : 1)}&returnUrl=" + Uri.EscapeDataString(SafeReturnUrl(returnUrl)));
+        }).Loosen("Sign-in form: the credentials are checked by the API's token endpoint")
+            .RequireRateLimiting(RateLimitingSetup.SignInPolicy);
+{{ else }}        app.MapGet("/account/login", (HttpContext http, string? returnUrl, BffSessionClient session) =>
+            Results.Redirect(session.SignInUrl($"{http.Request.Scheme}://{http.Request.Host}{SafeReturnUrl(returnUrl)}")))
+            .Loosen("Starts the sign-in with the external provider; the provider checks the user");
+{{ end }}        app.MapGet("/account/logout", async (HttpContext http, BffSessionClient session) =>
+        {
+            var endSessionUrl = await session.SignOutAsync($"{http.Request.Scheme}://{http.Request.Host}/account/login", http.RequestAborted);
+            return endSessionUrl is null ? Results.LocalRedirect("/account/login") : Results.Redirect(endSessionUrl);
+        }).Loosen("Ends the BFF session; it only removes the caller's own session cookie");
+
+        return app;
+    }
+
+    /// <summary>Only same-site paths: a sign-in never redirects to another site.</summary>
+    private static string SafeReturnUrl(string? url) =>
+        url is { Length: > 0 } && url[0] == '/' && !url.StartsWith("//") && !url.StartsWith("/\\") ? url : "/";
+}

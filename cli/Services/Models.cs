@@ -337,6 +337,9 @@ internal sealed class AppModel
     /// </summary>
     public string WebLoginMode => UseOpenIddict ? "Password" : "Oidc";
 
+    /// <summary>The Web host's <c>Bff:BaseUrl</c>: the <c>web</c> BFF, the first client (see <see cref="BffClients.WithWebClient"/>).</summary>
+    public string BffBaseUrl => $"http://localhost:{BffClients.FirstPort}";
+
     /// <summary>The Web host's <c>Bff:AuthServer</c>.</summary>
     public string WebAuthServer => BffClients.AuthServer(Auth);
 
@@ -426,12 +429,10 @@ internal sealed class AppModel
 /// Model for generating a module project.
 /// </summary>
 /// <remarks>
-/// The 4-layer (FoodDelivery-style) layout produces four projects per module:
-/// <c>Domain</c>, <c>Application</c>, <c>Infrastructure</c>, <c>Presentation</c>.
-/// DTOs live under <c>Application/Dtos</c> and integration events under
-/// <c>Application/IntegrationEvents</c> (no separate Contracts / IntegrationEvents
-/// projects). There is no per-module Tests project; tests live at the solution
-/// root.
+/// The layout produces five projects per module: <c>Domain</c>, <c>Application</c>,
+/// <c>IntegrationEvents</c>, <c>Infrastructure</c>, <c>Presentation</c>. Application references
+/// IntegrationEvents, so other modules reference only that project's contracts. DTOs live under
+/// <c>Application/Dtos</c>. There is no per-module Tests project; tests live at the solution root.
 /// </remarks>
 internal sealed class ModuleModel
 {
@@ -448,6 +449,12 @@ internal sealed class ModuleModel
 
     /// <summary>The host runs the AI connector, so the module's design-time factory passes the change-journal contributor (migrations then include <c>ai_changes</c>).</summary>
     public bool AiJournal { get; set; }
+
+    /// <summary>
+    /// The app signs users in, as the generated endpoints need it. <c>app</c> sets it from its own model (the host files do not
+    /// exist yet when the module is generated); left null, the templates read it from the host (<see cref="AppAuth"/>).
+    /// </summary>
+    public bool? UseAuth { get; set; }
 
     /// <summary>EF Core DbContextOptions extension method name.</summary>
     public string UseDbMethod => DbProviderInfo.UseMethod(DbProvider);
@@ -491,11 +498,23 @@ internal sealed class ModuleModel
     /// </summary>
     public string DbshConnectionStringToken => "${" + DbshConnectionEnvVar + "}";
 
-    // ── Layer project names (4-layer layout) ──────────────────────
+    // ── Layer project names (5-project layout) ────────────────────
     public string DomainProject => $"{ModuleNamespace}.Domain";
     public string ApplicationProject => $"{ModuleNamespace}.Application";
+    public string IntegrationEventsProject => $"{ModuleNamespace}.IntegrationEvents";
     public string InfrastructureProject => $"{ModuleNamespace}.Infrastructure";
     public string PresentationProject => $"{ModuleNamespace}.Presentation";
+
+    /// <summary>
+    /// True for a module generated before the separate IntegrationEvents project: its events stay in
+    /// <c>Application/IntegrationEvents</c> under the old namespace, so <c>generate-crud</c> keeps writing there.
+    /// </summary>
+    public bool LegacyIntegrationEvents { get; set; }
+
+    /// <summary>The namespace of the module's integration events (<c>{Module}.IntegrationEvents</c>).</summary>
+    public string IntegrationEventsNamespace => LegacyIntegrationEvents
+        ? $"{ModuleNamespace}.Application.IntegrationEvents"
+        : $"{ModuleNamespace}.IntegrationEvents";
 
     // Lower-cased module name, used for table prefix + integration event type strings.
     public string ModuleNameLower => ModuleName.ToLowerInvariant();

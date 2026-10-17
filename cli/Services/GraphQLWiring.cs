@@ -27,54 +27,49 @@ internal static partial class GraphQLWiring
     }
 
     /// <summary>
-    /// The API host registers the schema over the module Presentation assemblies before <c>Build()</c> and maps it after the
-    /// endpoints (else before <c>app.Run()</c>).
+    /// The optional features' services (<c>Configuration/FeatureServicesSetup.cs</c>): the schema over the module Presentation
+    /// assemblies.
     /// </summary>
-    public static string EnsureApiProgram(string program, string rootNamespace)
+    public static string EnsureApiServices(string text, string rootNamespace)
     {
-        var nl = GrpcWiring.NewLine(program);
-        var text = program;
-
+        var nl = GrpcWiring.NewLine(text);
         if (!text.Contains("AddModulusGraphQL(", StringComparison.Ordinal))
         {
-            var build = text.IndexOf("var app = builder.Build();", StringComparison.Ordinal);
-            if (build < 0)
-                return program;
-            text = text[..build] +
-                "// ── GraphQL ────────────────────────────────────────────────────" + nl +
-                "// One schema at /graphql made of the fields each module's Presentation assembly contributes" + nl +
-                "// (IGraphQLContributor; modulus generate-graphql). Resolvers go through the mediator, fields carry" + nl +
-                "// the same permissions as the HTTP endpoints, and depth/complexity limits apply. Introspection and the" + nl +
-                "// GraphiQL IDE (/graphql/ui) are on only where \"GraphQL\" settings say so (Development)." + nl +
-                "builder.Services.AddModulusGraphQL(builder.Configuration," + nl +
-                $"    Directory.GetFiles(AppContext.BaseDirectory, \"{rootNamespace}.Modules.*.Presentation.dll\")" + nl +
-                "        .Select(Assembly.LoadFrom)" + nl +
-                "        .ToArray());" + nl + nl +
-                text[build..];
-        }
-
-        if (!text.Contains("MapModulusGraphQL(", StringComparison.Ordinal))
-        {
-            var block = "// GraphQL endpoint (POST/GET /graphql), behind the sign-in; each field checks its own permission." + nl +
-                        "app.MapModulusGraphQL();" + nl;
-            var endpoints = text.IndexOf("app.MapModulusEndpoints(", StringComparison.Ordinal);
-            var end = endpoints < 0 ? -1 : text.IndexOf(".ToArray());", endpoints, StringComparison.Ordinal);
-            var lineEnd = end < 0 ? -1 : text.IndexOf('\n', end);
-            if (lineEnd >= 0)
-            {
-                text = text[..(lineEnd + 1)] + nl + block + text[(lineEnd + 1)..];
-            }
-            else
-            {
-                var run = text.IndexOf("app.Run();", StringComparison.Ordinal);
-                if (run < 0)
-                    return program;
-                text = text[..run] + block + nl + text[run..];
-            }
+            var block =
+                "        // ── GraphQL ────────────────────────────────────────────────────" + nl +
+                "        // One schema at /graphql made of the fields each module's Presentation assembly contributes" + nl +
+                "        // (IGraphQLContributor; modulus generate-graphql). Resolvers go through the mediator, fields carry" + nl +
+                "        // the same permissions as the HTTP endpoints, and depth/complexity limits apply. Introspection and the" + nl +
+                "        // GraphiQL IDE (/graphql/ui) are on only where \"GraphQL\" settings say so (Development)." + nl +
+                "        builder.Services.AddModulusGraphQL(builder.Configuration," + nl +
+                $"            Directory.GetFiles(AppContext.BaseDirectory, \"{rootNamespace}.Modules.*.Presentation.dll\")" + nl +
+                "                .Select(Assembly.LoadFrom)" + nl +
+                "                .ToArray());" + nl;
+            var inserted = ApiHostFiles.InsertFeatureServices(text, block, nl);
+            if (inserted == text)
+                return text;
+            text = inserted + nl;
         }
 
         text = GrpcWiring.EnsureUsing(text, "using Modulus.GraphQL;");
         return GrpcWiring.EnsureUsing(text, "using System.Reflection;");
+    }
+
+    /// <summary>The optional features' endpoints (<c>Endpoints/FeatureEndpoints.cs</c>): <c>MapModulusGraphQL()</c>.</summary>
+    public static string EnsureApiEndpoints(string text)
+    {
+        var nl = GrpcWiring.NewLine(text);
+        if (!text.Contains("MapModulusGraphQL(", StringComparison.Ordinal))
+        {
+            var block = "        // GraphQL endpoint (POST/GET /graphql), behind the sign-in; each field checks its own permission." + nl +
+                        "        app.MapModulusGraphQL();" + nl;
+            var inserted = ApiHostFiles.InsertFeatureEndpoints(text, block, nl);
+            if (inserted is null)
+                return text;
+            text = inserted;
+        }
+
+        return GrpcWiring.EnsureUsing(text, "using Modulus.GraphQL;");
     }
 
     /// <summary>

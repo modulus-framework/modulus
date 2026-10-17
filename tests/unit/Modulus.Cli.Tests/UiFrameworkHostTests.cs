@@ -34,10 +34,10 @@ public sealed class UiFrameworkHostTests
     [Fact]
     public void The_framework_host_registers_the_shell_and_serves_static_web_assets()
     {
-        var program = _engine.Render("app/Program.Web", Model());
+        var program = WebHostSource.Render(_engine, Model());
 
         program.Should().Contain("using Modulus.AspNetCore.Mvc;")
-            .And.Contain("builder.Services.AddModulusMvc(theme => builder.Configuration.GetSection(\"Modulus:Theme\").Bind(theme));")
+            .And.Contain("services.AddModulusMvc(theme => configuration.GetSection(\"Modulus:Theme\").Bind(theme));")
             .And.Contain("app.MapStaticAssets();").And.Contain("app.UseModulusLocalization();")
             .And.Contain("app.MapRazorPages().WithStaticAssets();")
             .And.NotContain("AddModulusUi").And.NotContain("AddTablerTheme")
@@ -54,7 +54,7 @@ public sealed class UiFrameworkHostTests
     [Fact]
     public void Signed_in_pages_are_required_and_only_account_is_open()
     {
-        _engine.Render("app/Program.Web", Model()).Should().Contain("AuthorizeFolder(\"/\")").And.Contain("AllowAnonymousToFolder(\"/Account\")");
+        WebHostSource.Render(_engine, Model()).Should().Contain("AuthorizeFolder(\"/\")").And.Contain("AllowAnonymousToFolder(\"/Account\")");
     }
 
     [Fact]

@@ -10,6 +10,8 @@ namespace Modulus.Cli.Tests;
 [Trait("Category", "Unit")]
 public sealed class GraphQLWiringTests
 {
+    private static string GraphQLHost(string text, string rootNamespace) => GraphQLWiring.EnsureApiEndpoints(GraphQLWiring.EnsureApiServices(text, rootNamespace));
+
     [Fact]
     public void Presentation_project_references_the_package_once()
     {
@@ -30,16 +32,17 @@ public sealed class GraphQLWiringTests
             "app.MapModulusEndpoints(\n    Directory.GetFiles(AppContext.BaseDirectory, \"Shop.Modules.*.Presentation.dll\")\n        .Select(Assembly.LoadFrom)\n        .ToArray());\n" +
             "app.Run();\n";
 
-        var once = GraphQLWiring.EnsureApiProgram(program, "Shop");
+        var once = GraphQLHost(program, "Shop");
 
         once.Should().Contain("using Modulus.GraphQL;").And.Contain("using System.Reflection;")
-            .And.Contain("builder.Services.AddModulusGraphQL(builder.Configuration,\n    Directory.GetFiles(AppContext.BaseDirectory, \"Shop.Modules.*.Presentation.dll\")");
+            .And.Contain("builder.Services.AddModulusGraphQL(builder.Configuration,")
+            .And.Contain("Directory.GetFiles(AppContext.BaseDirectory, \"Shop.Modules.*.Presentation.dll\")");
         once.IndexOf("AddModulusGraphQL(", StringComparison.Ordinal)
             .Should().BeLessThan(once.IndexOf("var app = builder.Build();", StringComparison.Ordinal));
         once.IndexOf("app.MapModulusGraphQL();", StringComparison.Ordinal)
             .Should().BeGreaterThan(once.IndexOf(".ToArray());", once.IndexOf("app.MapModulusEndpoints(", StringComparison.Ordinal), StringComparison.Ordinal))
             .And.BeLessThan(once.IndexOf("app.Run();", StringComparison.Ordinal));
-        GraphQLWiring.EnsureApiProgram(once, "Shop").Should().Be(once);
+        GraphQLHost(once, "Shop").Should().Be(once);
     }
 
     [Fact]
@@ -47,7 +50,7 @@ public sealed class GraphQLWiringTests
     {
         const string program = "using A;\r\nvar app = builder.Build();\r\napp.Run();\r\n";
 
-        var result = GraphQLWiring.EnsureApiProgram(program, "Shop");
+        var result = GraphQLHost(program, "Shop");
 
         result.Should().StartWith("using A;\r\nusing Modulus.GraphQL;\r\nusing System.Reflection;\r\n");
         result.Should().Contain("app.MapModulusGraphQL();\r\n\r\napp.Run();").And.NotMatchRegex("[^\r]\n");
@@ -147,7 +150,7 @@ public sealed class GraphQLCommandTests : IDisposable
         Read($"{Pres}/Shop.Modules.Catalog.Presentation.csproj").Should().Contain("Modulus.GraphQL");
 
         Read("src/API/Shop.Api/Shop.Api.csproj").Should().Contain("Modulus.GraphQL");
-        Read("src/API/Shop.Api/Program.cs").Should().Contain("builder.Services.AddModulusGraphQL(builder.Configuration,").And.Contain("app.MapModulusGraphQL();");
+        ApiHostFiles.ReadAll(Path.Combine(AppDir, "src/API/Shop.Api/Program.cs")).Should().Contain("builder.Services.AddModulusGraphQL(builder.Configuration,").And.Contain("app.MapModulusGraphQL();");
         Read("src/API/Shop.Api/appsettings.Development.json").Should().Contain("\"EnableIntrospection\": true");
         Read("src/API/Shop.Api/appsettings.json").Should().Contain("\"EnableIntrospection\": false");
 

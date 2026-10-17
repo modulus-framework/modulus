@@ -1,4 +1,4 @@
-namespace {{ module_namespace }}.Application.IntegrationEvents;
+namespace {{ integration_events_namespace }};
 
 /// <summary>
 /// Marks the {{ module_name }} module as the owner of its integration events: <c>[IntegrationEvent&lt;{{ module_name }}Area&gt;]</c>

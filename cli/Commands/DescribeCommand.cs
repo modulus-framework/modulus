@@ -40,7 +40,7 @@ internal sealed class DescribeCommand : Command<DescribeCommand.Settings>
     /// <summary>The app's description (also the <c>--json</c> result).</summary>
     internal static AppDescription Describe(ModuleDiscovery.AppInventory app)
     {
-        var program = File.Exists(app.ProgramCsPath) ? File.ReadAllText(app.ProgramCsPath) : string.Empty;
+        var program = ApiHostFiles.ReadAll(app.ProgramCsPath);
         var uiProgram = File.Exists(app.UiProgramCsPath) ? File.ReadAllText(app.UiProgramCsPath) : program;
 
         return new AppDescription(

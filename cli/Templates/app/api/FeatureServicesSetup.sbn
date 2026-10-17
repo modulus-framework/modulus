@@ -1,0 +1,15 @@
+namespace {{ root_namespace }}.Api.Configuration;
+
+/// <summary>
+/// The optional features of this API host: webhooks, realtime, GraphQL, gRPC, the AI connector, the audit store and the
+/// permission wiring a generated CRUD set needs. The modulus CLI adds a feature here (`modulus add-webhooks`,
+/// `add-realtime`, `add-ai`, `add-audit-store`, `generate-grpc`, `generate-graphql`), and its endpoints to
+/// Endpoints/FeatureEndpoints.cs, so Program.cs and the core setup stay as they are.
+/// </summary>
+internal static class FeatureServicesSetup
+{
+    public static WebApplicationBuilder AddApiFeatures(this WebApplicationBuilder builder)
+    {
+        return builder;
+    }
+}

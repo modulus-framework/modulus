@@ -2,7 +2,7 @@ using Modulus.Events.Abstractions;
 using Modulus.Mediator.Abstractions;
 using Modulus.Core.Abstractions.Common;
 using Modulus.Core.Abstractions.Exceptions;
-using {{ module_namespace }}.Application.IntegrationEvents;
+using {{ integration_events_namespace }};
 using {{ module_namespace }}.Domain;
 
 namespace {{ module_namespace }}.Application;

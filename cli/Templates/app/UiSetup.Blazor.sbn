@@ -1,0 +1,26 @@
+using Modulus.AspNetCore.Hosting;
+using Modulus.Blazor;
+using Modulus.Ui.Abstractions.Theming;
+
+namespace {{ root_namespace }}.Web.Configuration;
+
+/// <summary>
+/// The Blazor UI: Ant Design Blazor, the ProLayout, the theme tokens and the menu pipeline, plus the hardening (compression,
+/// security headers and the CSP, and /health).
+/// </summary>
+internal static class UiSetup
+{
+    public static IServiceCollection AddWebUi(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddRazorComponents()
+            .AddInteractiveServerComponents();
+
+        // Theme values come from "Modulus:Theme" in appsettings.json; add menu entries with an IMenuContributor.
+        services.AddModulusBlazor(theme => configuration.GetSection("Modulus:Theme").Bind(theme));
+
+        // Compression, security headers and the CSP (report-only for Blazor: its import map is an inline script with no nonce), and /health.
+        services.AddModulusHardening();
+
+        return services;
+    }
+}

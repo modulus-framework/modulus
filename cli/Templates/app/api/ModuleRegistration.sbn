@@ -1,0 +1,26 @@
+using Modulus.AspNetCore.Extensions;
+{{ if auth == "openiddict" }}using {{ identity_namespace }}.Infrastructure;
+{{ end }}{{ if multi_tenancy }}using {{ tenancy_namespace }}.Infrastructure;
+{{ end }}{{ if !no_example }}using {{ root_namespace }}.Modules.{{ example_module }}.Infrastructure;
+{{ end }}
+namespace {{ root_namespace }}.Api.Composition;
+
+/// <summary>
+/// The modules this host composes. This is the single composition root for modules: the list below is the order every
+/// lifecycle phase runs in (PreConfigure, Configure and PostConfigure, then InitializeAsync; ShutdownAsync in reverse).
+/// <c>modulus add-module</c>, <c>add-audit-store</c> and <c>add-webhooks</c> add their module here.
+/// </summary>
+internal static class ModuleRegistration
+{
+    public static WebApplicationBuilder AddApiModules(this WebApplicationBuilder builder)
+    {
+        builder.Services.AddModulus(builder.Configuration, modules =>
+        {
+{{ if auth == "openiddict" }}            modules.AddModule<IdentityModule>();
+{{ end }}{{ if multi_tenancy }}            modules.AddModule<TenancyModule>();
+{{ end }}{{ if !no_example }}            modules.AddModule<{{ example_module }}Module>();
+{{ end }}        });
+
+        return builder;
+    }
+}

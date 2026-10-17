@@ -40,7 +40,7 @@ public sealed class MultiTenancyTemplateTests
     [Fact]
     public void Program_resolves_the_company_after_authentication_and_seeds_the_default_company()
     {
-        var program = _engine.Render("app/Program", Model());
+        var program = ApiHostSource.Render(_engine, Model());
 
         program.Should().Contain("modules.AddModule<TenancyModule>();")
             .And.Contain(".UseJwtClaimResolver()")
@@ -71,7 +71,7 @@ public sealed class MultiTenancyTemplateTests
     {
         var model = Model(multiTenancy: false);
 
-        _engine.Render("app/Program", model).Should().NotContain("AddMultiTenancy").And.NotContain("TenancyModule");
+        ApiHostSource.Render(_engine, model).Should().NotContain("AddMultiTenancy").And.NotContain("TenancyModule");
         _engine.Render("app/AppTests", model).Should().NotContain("TenantIsolationTests").And.NotContain("ForeignTenantId");
         _engine.Render("app/api.csproj", model).Should().NotContain("Tenancy");
         var settings = _engine.Render("app/appsettings.json", model);
@@ -154,10 +154,10 @@ public sealed class MultiTenancyTemplateTests
         try
         {
             var program = Path.Combine(dir.FullName, "Program.cs");
-            File.WriteAllText(program, _engine.Render("app/Program", Model()));
+            File.WriteAllText(program, ApiHostSource.Render(_engine, Model()));
             GenerateCrudCommand.IsMultiTenantHost(program).Should().BeTrue();
 
-            File.WriteAllText(program, _engine.Render("app/Program", Model(multiTenancy: false)));
+            File.WriteAllText(program, ApiHostSource.Render(_engine, Model(multiTenancy: false)));
             GenerateCrudCommand.IsMultiTenantHost(program).Should().BeFalse();
             GenerateCrudCommand.IsMultiTenantHost(null).Should().BeFalse();
         }

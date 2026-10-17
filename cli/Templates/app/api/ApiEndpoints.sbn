@@ -1,0 +1,32 @@
+using System.Reflection;
+{{ if expose_api }}using Modulus.AspNetCore.Endpoints;
+{{ end }}{{ if enable_health_checks }}using Modulus.AspNetCore.HealthChecks;
+{{ end }}{{ if use_security_guard }}using Modulus.AspNetCore.Security.Policy;
+{{ end }}
+namespace {{ root_namespace }}.Api.Endpoints;
+
+/// <summary>Maps the API's endpoints: the controllers and REPR endpoints of every module, the health probes and the OpenAPI document.</summary>
+internal static class ApiEndpoints
+{
+    public static WebApplication MapApiEndpoints(this WebApplication app)
+    {
+{{ if expose_api }}        app.MapControllers();
+
+        // REPR endpoints (EndpointBase subclasses) contributed by module Presentation assemblies. `modulus add-module` adds
+        // ProjectReferences; the Presentation DLLs land in the bin directory and are discovered by naming convention.
+        // For explicit control, replace with app.MapModulusEndpoints(typeof(SomeEndpoints).Assembly).
+        app.MapModulusEndpoints(
+            Directory.GetFiles(AppContext.BaseDirectory, "{{ root_namespace }}.Modules.*.Presentation.dll")
+                .Select(Assembly.LoadFrom)
+                .ToArray());
+{{ end }}{{ if enable_health_checks }}        app.MapModulusHealthChecks();
+{{ end }}        app.MapApiFeatures();
+
+        if (app.Environment.IsDevelopment())
+        {
+{{ if expose_api }}            app.MapOpenApi(){{ if use_security_guard }}.Loosen("OpenAPI document, mapped in Development only"){{ end }};
+{{ end }}        }
+
+        return app;
+    }
+}

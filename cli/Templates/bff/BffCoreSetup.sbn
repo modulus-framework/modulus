@@ -1,0 +1,39 @@
+using Microsoft.AspNetCore.HttpOverrides;
+using Modulus.AspNetCore.Configuration;
+using Modulus.AspNetCore.Correlation;
+using Modulus.AspNetCore.Logging;
+using Modulus.AspNetCore.Security;
+using Modulus.Caching;
+
+namespace {{ project_name }}.Configuration;
+
+/// <summary>
+/// Cross-cutting services for the {{ client_name }} BFF: the hybrid cache, correlation, security headers, the secrets guard,
+/// log redaction and forwarded headers. All settings are config-bound; see appsettings.json.
+/// </summary>
+internal static class BffCoreSetup
+{
+    public static IServiceCollection Add{{ client_pascal }}BffCore(this IServiceCollection services, IConfiguration configuration, IHostEnvironment environment)
+    {
+        // Hybrid cache (FusionCache). {{ if is_web }}It holds the server-side session tokens, so with more than one replica it needs
+        // Redis (L2 + backplane) and a shared Data Protection key ring.{{ else }}It caches aggregate sections (and introspection results when enabled).{{ end }}
+{{ if use_redis_cache }}        services.AddRedisFusionCache(configuration);
+{{ else }}        services.AddModulusFusionCache(configuration);
+{{ end }}{{ if enable_correlation }}        services.AddModulusCorrelation(configuration);
+{{ end }}{{ if enable_security_headers }}        services.AddModulusSecurityHeaders(configuration);
+{{ end }}{{ if enable_secrets_guard }}        services.AddModulusSecretsGuard(configuration);
+{{ end }}
+        // Log redaction for classified values ([PersonalInformation], [SecretData], ...); settings: Security:Redaction.
+        services.AddModulusRedaction(configuration);
+
+        // Forwarded headers: only the proxies named in ForwardedHeaders:KnownProxies / KnownNetworks are trusted. With none
+        // configured only loopback is trusted, so a client cannot choose the address the rate limiter and audit see.
+        services.Configure<ForwardedHeadersOptions>(options =>
+        {
+            options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+            options.ApplyModulusTrustedProxies(configuration);
+        });
+
+        return services;
+    }
+}

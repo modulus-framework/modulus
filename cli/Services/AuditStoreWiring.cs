@@ -11,20 +11,18 @@ internal static class AuditStoreWiring
     public const string DevelopmentAnchorFile = "audit-anchors.jsonl";
 
     /// <summary>
-    /// Program.cs: <c>modules.AddModule&lt;AuditModule&gt;()</c> last in the <c>AddModulus</c> callback and, when the host does not
-    /// record security events yet, <c>AddModulusSecurityAudit(builder.Configuration)</c> before <c>Build()</c>.
+    /// The API host's module registration (<c>Composition/ModuleRegistration.cs</c>): <c>modules.AddModule&lt;AuditModule&gt;()</c>
+    /// last in the <c>AddModulus</c> callback, with its namespace.
     /// </summary>
-    public static string EnsureApiProgram(string program, string auditNamespace)
+    public static string EnsureApiModule(string text, string auditNamespace)
     {
-        var nl = WebhooksWiring.NewLine(program);
-        var text = program;
-
+        var nl = WebhooksWiring.NewLine(text);
         if (!text.Contains("AddModule<AuditModule>()", StringComparison.Ordinal))
         {
             var call = text.IndexOf("AddModulus(", StringComparison.Ordinal);
             var close = call < 0 ? -1 : text.IndexOf("});", call, StringComparison.Ordinal);
             if (close < 0)
-                return program;
+                return text;
             var lineStart = text.LastIndexOf('\n', close) + 1;
             var lastRegistration = text.LastIndexOf("modules.AddModule<", close, StringComparison.Ordinal);
             var indent = "    ";
@@ -37,21 +35,30 @@ internal static class AuditStoreWiring
             text = text[..lineStart] + indent + "modules.AddModule<AuditModule>();" + nl + text[lineStart..];
         }
 
+        return WebhooksWiring.EnsureUsing(text, $"using {auditNamespace}.Infrastructure;");
+    }
+
+    /// <summary>
+    /// The optional features' services (<c>Configuration/FeatureServicesSetup.cs</c>): <c>AddModulusSecurityAudit</c> when the host
+    /// does not record security events yet (the caller checks the whole host first; a generated guarded host already does).
+    /// </summary>
+    public static string EnsureApiServices(string text)
+    {
+        var nl = WebhooksWiring.NewLine(text);
         if (!text.Contains("AddModulusSecurityAudit(", StringComparison.Ordinal))
         {
-            var build = text.IndexOf("var app = builder.Build();", StringComparison.Ordinal);
-            if (build < 0)
-                return program;
             var block =
-                "// ── Security audit ─────────────────────────────────────────────" + nl +
-                "// Security decisions are recorded as one tamper-evident hash chain per company, stored by AuditModule" + nl +
-                "// (modulus add-audit-store); settings: Security:Audit." + nl +
-                "builder.Services.AddModulusSecurityAudit(builder.Configuration);" + nl;
-            text = text[..build] + block + nl + text[build..];
+                "        // ── Security audit ─────────────────────────────────────────────" + nl +
+                "        // Security decisions are recorded as one tamper-evident hash chain per company, stored by AuditModule" + nl +
+                "        // (modulus add-audit-store); settings: Security:Audit." + nl +
+                "        builder.Services.AddModulusSecurityAudit(builder.Configuration);" + nl;
+            var inserted = ApiHostFiles.InsertFeatureServices(text, block, nl);
+            if (inserted == text)
+                return text;
+            text = inserted + nl;
         }
 
-        text = WebhooksWiring.EnsureUsing(text, "using Modulus.AuditLogging.Security;");
-        return WebhooksWiring.EnsureUsing(text, $"using {auditNamespace}.Infrastructure;");
+        return WebhooksWiring.EnsureUsing(text, "using Modulus.AuditLogging.Security;");
     }
 
     /// <summary>

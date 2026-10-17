@@ -2,9 +2,9 @@ using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using {{ module_namespace }}.Application.Dtos;
-using {{ ui_namespace }}.ApiClients;
+using {{ ui_namespace }}.Services.ApiClients;
 
-namespace {{ ui_namespace }}.Controllers;
+namespace {{ ui_namespace }}.Controllers.{{ module_name }};
 
 /// <summary>Lists, creates, edits and deletes {{ entity_name }}s through the {{ module_name }} API. Views: Views/{{ entity_name_plural }}.</summary>
 {{ if use_auth }}[Authorize]
@@ -49,11 +49,39 @@ namespace {{ ui_namespace }}.Controllers;
         return Redirect($"/{{ route }}?p={Math.Max(1, p)}");
     }
 
+    [HttpGet("/{{ route }}/new")]
+    public IActionResult New() => View("Create", new EditViewModel());
+
+    [HttpPost("/{{ route }}/new")]
+    public async Task<IActionResult> Create(EditViewModel model, CancellationToken ct)
+    {
+        if (!ModelState.IsValid)
+            return View("Create", model);
+
+        try
+        {
+            var id = await api.CreateAsync(new Create{{ entity_name }}Dto { Name = model.Input.Name }, ct);
+            if (id == Guid.Empty)
+            {
+                ModelState.AddModelError(string.Empty, "The API refused the change.");
+                return View("Create", model);
+            }
+        }
+        catch (HttpRequestException)
+        {
+            ModelState.AddModelError(string.Empty, "The API could not be reached.");
+            return View("Create", model);
+        }
+
+        TempData["Message"] = "Created.";
+        return Redirect("/{{ route }}");
+    }
+
     [HttpGet("/{{ route }}/edit")]
     public async Task<IActionResult> Edit(Guid? id, CancellationToken ct)
     {
         if (id is null || id == Guid.Empty)
-            return View("Edit", new EditViewModel());
+            return Redirect("/{{ route }}/new");
 
         var existing = await api.GetByIdAsync(id.Value, ct);
         if (existing is null)
@@ -63,18 +91,18 @@ namespace {{ ui_namespace }}.Controllers;
     }
 
     [HttpPost("/{{ route }}/edit")]
-    public async Task<IActionResult> Save(EditViewModel model, CancellationToken ct)
+    public async Task<IActionResult> Update(EditViewModel model, CancellationToken ct)
     {
+        if (model.IsNew)
+            return Redirect("/{{ route }}/new");
+
         if (!ModelState.IsValid)
             return View("Edit", model);
 
         try
         {
-            var input = model.Input;
-            var saved = model.IsNew
-                ? await api.CreateAsync(new Create{{ entity_name }}Dto { Name = input.Name }, ct) != Guid.Empty
-                : await api.UpdateAsync(input.Id, new Update{{ entity_name }}Dto { Name = input.Name }, ct);
-            if (!saved)
+            var updated = await api.UpdateAsync(model.Input.Id, new Update{{ entity_name }}Dto { Name = model.Input.Name }, ct);
+            if (!updated)
             {
                 ModelState.AddModelError(string.Empty, "The API refused the change.");
                 return View("Edit", model);
@@ -105,6 +133,7 @@ namespace {{ ui_namespace }}.Controllers;
         public bool Failed { get; set; }
     }
 
+    /// <summary>Shared by the create and edit pages: the form posts back to the page it is on.</summary>
     public sealed class EditViewModel
     {
         public InputModel Input { get; set; } = new();

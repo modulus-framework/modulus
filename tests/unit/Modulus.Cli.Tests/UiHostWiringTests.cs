@@ -68,13 +68,13 @@ public sealed class UiHostWiringTests : IDisposable
     public void The_forwarding_controller_is_written_and_registered_once_and_its_recovery_routes_are_opened()
     {
         var webDir = Path.Combine(_root, "Web");
-        Directory.CreateDirectory(Path.Combine(webDir, "security"));
-        File.WriteAllText(Path.Combine(webDir, "security", "loosening-allowlist.json"), Allowlist);
+        Directory.CreateDirectory(Path.Combine(webDir, "Security"));
+        File.WriteAllText(Path.Combine(webDir, "Security", "loosening-allowlist.json"), Allowlist);
         var program = Path.Combine(webDir, "Program.cs");
         File.WriteAllText(program, WebProgram);
 
         var changed = UiHostWiring.EnsureIdentityProxy(webDir, program, "Shop.Web", new TemplateEngine());
-        changed.Should().Contain("Controllers/IdentityApiProxy.cs").And.Contain("AddIdentityApiProxy()").And.Contain("security/loosening-allowlist.json");
+        changed.Should().Contain("Controllers/IdentityApiProxy.cs").And.Contain("AddIdentityApiProxy()").And.Contain("Security/loosening-allowlist.json");
 
         var controller = File.ReadAllText(Path.Combine(webDir, "Controllers", "IdentityApiProxy.cs"));
         controller.Should().Contain("namespace Shop.Web;")
@@ -86,7 +86,7 @@ public sealed class UiHostWiringTests : IDisposable
 
         File.ReadAllText(program).Should().Contain("builder.Services.AddIdentityApiProxy();");
 
-        var allowlist = File.ReadAllText(Path.Combine(webDir, "security", "loosening-allowlist.json"));
+        var allowlist = File.ReadAllText(Path.Combine(webDir, "Security", "loosening-allowlist.json"));
         allowlist.Should().Contain("\"route\": \"/account/forgot-password\"").And.Contain("\"route\": \"/account/reset-password\"");
         AssertParses(allowlist);
 

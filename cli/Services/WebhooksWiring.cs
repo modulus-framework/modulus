@@ -12,14 +12,14 @@ namespace Modulus.Cli.Services;
 /// </summary>
 internal static partial class WebhooksWiring
 {
-    /// <summary>An integration event found in a module's <c>Application/IntegrationEvents</c>.</summary>
+    /// <summary>An integration event found in a module's <c>IntegrationEvents</c> project (or a legacy <c>Application/IntegrationEvents</c>).</summary>
     /// <param name="Name">The <c>[IntegrationEventName]</c>.</param>
     /// <param name="TypeName">The record or class name.</param>
     /// <param name="Namespace">The file's namespace.</param>
     /// <param name="IdOnly">The event's only parameter is <c>Guid Id</c> (the shape <c>generate-crud</c> emits).</param>
     internal sealed record IntegrationEventInfo(string Name, string TypeName, string Namespace, bool IdOnly = false);
 
-    /// <summary>The <c>[IntegrationEventName]</c> events declared under every module's <c>*.Application/IntegrationEvents</c>.</summary>
+    /// <summary>The <c>[IntegrationEventName]</c> events declared under every module's <c>IntegrationEvents</c> folder.</summary>
     public static IReadOnlyList<IntegrationEventInfo> FindIntegrationEvents(string solutionDir)
     {
         var modules = Path.Combine(solutionDir, "src", "Modules");
@@ -56,21 +56,18 @@ internal static partial class WebhooksWiring
     }
 
     /// <summary>
-    /// Program.cs: the store module in <c>AddModulus</c>, <c>AddModulusWebhooks</c> before <c>Build()</c> (with every event
-    /// not yet added), the Admin grant when the host has the Admin role, and <c>MapModulusWebhooks()</c> after the endpoints.
+    /// The API host's module registration (<c>Composition/ModuleRegistration.cs</c>): the store module, registered last in the
+    /// <c>AddModulus</c> callback, with its namespace.
     /// </summary>
-    public static string EnsureApiProgram(string program, string webhooksNamespace, IReadOnlyList<IntegrationEventInfo> events, string? adminRole)
+    public static string EnsureApiModule(string text, string webhooksNamespace)
     {
-        var nl = NewLine(program);
-        var text = program;
-
-        // Store module, registered last in the AddModulus callback.
+        var nl = NewLine(text);
         if (!text.Contains("AddModule<WebhooksModule>()", StringComparison.Ordinal))
         {
             var call = text.IndexOf("AddModulus(", StringComparison.Ordinal);
             var close = call < 0 ? -1 : text.IndexOf("});", call, StringComparison.Ordinal);
             if (close < 0)
-                return program;
+                return text;
             var lineStart = text.LastIndexOf('\n', close) + 1;
             var lastRegistration = text.LastIndexOf("modules.AddModule<", close, StringComparison.Ordinal);
             var indent = "    ";
@@ -83,53 +80,59 @@ internal static partial class WebhooksWiring
             text = text[..lineStart] + indent + "modules.AddModule<WebhooksModule>();" + nl + text[lineStart..];
         }
 
-        // AddModulusWebhooks with the events.
+        return EnsureUsing(text, $"using {webhooksNamespace}.Infrastructure;");
+    }
+
+    /// <summary>
+    /// The optional features' services (<c>Configuration/FeatureServicesSetup.cs</c>): <c>AddModulusWebhooks</c> with every event
+    /// not yet added, and the Admin grant when the host has the Admin role.
+    /// </summary>
+    public static string EnsureApiServices(string text, IReadOnlyList<IntegrationEventInfo> events, string? adminRole)
+    {
+        var nl = NewLine(text);
         if (!text.Contains("AddModulusWebhooks(", StringComparison.Ordinal))
         {
-            var build = text.IndexOf("var app = builder.Build();", StringComparison.Ordinal);
-            if (build < 0)
-                return program;
             var block =
-                "// ── Webhooks ───────────────────────────────────────────────────" + nl +
-                "// Integration events subscribers can receive (modulus add-webhooks; re-run it to add events" + nl +
-                "// created since). Each is POSTed, signed per Standard Webhooks, to the matching subscriptions" + nl +
-                "// of the event's tenant, with retries. Settings live under \"Webhooks\"; manage subscriptions" + nl +
-                "// at /api/webhooks (permission webhooks:manage)." + nl +
-                "builder.Services.AddModulusWebhooks(builder.Configuration, webhooks =>" + nl +
-                "{" + nl +
-                "});" + nl;
+                "        // ── Webhooks ───────────────────────────────────────────────────" + nl +
+                "        // Integration events subscribers can receive (modulus add-webhooks; re-run it to add events" + nl +
+                "        // created since). Each is POSTed, signed per Standard Webhooks, to the matching subscriptions" + nl +
+                "        // of the event's tenant, with retries. Settings live under \"Webhooks\"; manage subscriptions" + nl +
+                "        // at /api/webhooks (permission webhooks:manage)." + nl +
+                "        builder.Services.AddModulusWebhooks(builder.Configuration, webhooks =>" + nl +
+                "        {" + nl +
+                "        });" + nl;
             if (adminRole is not null)
-                block += $"builder.Services.AddPermissionGrants(grants => grants.GrantToRole(\"{adminRole}\", \"webhooks:manage\"));" + nl;
-            text = text[..build] + block + nl + text[build..];
+                block += $"        builder.Services.AddPermissionGrants(grants => grants.GrantToRole(\"{adminRole}\", \"webhooks:manage\"));" + nl;
+            var inserted = ApiHostFiles.InsertFeatureServices(text, block, nl);
+            if (inserted == text)
+                return text;
+            text = inserted;
+            if (adminRole is not null)
+                text = EnsureUsing(text, "using Modulus.Authorization.Extensions;");
         }
 
         text = EnsureEvents(text, events);
-
-        if (!text.Contains("MapModulusWebhooks(", StringComparison.Ordinal))
-        {
-            var block = "// Webhook management API (subscriptions, deliveries, test and retry), behind webhooks:manage." + nl +
-                        "app.MapModulusWebhooks();" + nl;
-            var endpoints = text.IndexOf("app.MapModulusEndpoints(", StringComparison.Ordinal);
-            var end = endpoints < 0 ? -1 : text.IndexOf(".ToArray());", endpoints, StringComparison.Ordinal);
-            var lineEnd = end < 0 ? -1 : text.IndexOf('\n', end);
-            if (lineEnd >= 0)
-            {
-                text = text[..(lineEnd + 1)] + nl + block + text[(lineEnd + 1)..];
-            }
-            else
-            {
-                var run = text.IndexOf("app.Run();", StringComparison.Ordinal);
-                if (run < 0)
-                    return program;
-                text = text[..run] + block + nl + text[run..];
-            }
-        }
-
         text = EnsureUsing(text, "using Modulus.Webhooks;");
-        text = EnsureUsing(text, $"using {webhooksNamespace}.Infrastructure;");
         foreach (var ns in events.Select(e => e.Namespace).Distinct(StringComparer.Ordinal))
             text = EnsureUsing(text, $"using {ns};");
         return text;
+    }
+
+    /// <summary>The optional features' endpoints (<c>Endpoints/FeatureEndpoints.cs</c>): <c>MapModulusWebhooks()</c>.</summary>
+    public static string EnsureApiEndpoints(string text)
+    {
+        var nl = NewLine(text);
+        if (!text.Contains("MapModulusWebhooks(", StringComparison.Ordinal))
+        {
+            var block = "        // Webhook management API (subscriptions, deliveries, test and retry), behind webhooks:manage." + nl +
+                        "        app.MapModulusWebhooks();" + nl;
+            var inserted = ApiHostFiles.InsertFeatureEndpoints(text, block, nl);
+            if (inserted is null)
+                return text;
+            text = inserted;
+        }
+
+        return EnsureUsing(text, "using Modulus.Webhooks;");
     }
 
     // Adds `webhooks.AddEvent<T>();` for each event not yet in the AddModulusWebhooks callback (its `{ ... });` body).
@@ -150,7 +153,8 @@ internal static partial class WebhooksWiring
             return text;
 
         var lineStart = text.LastIndexOf('\n', close) + 1;
-        var lines = string.Concat(missing.Select(e => $"    webhooks.AddEvent<{e.TypeName}>();{nl}"));
+        var indent = new string(' ', text[lineStart..].TakeWhile(c => c == ' ').Count()) + "    ";
+        var lines = string.Concat(missing.Select(e => $"{indent}webhooks.AddEvent<{e.TypeName}>();{nl}"));
         return text[..lineStart] + lines + text[lineStart..];
     }
 

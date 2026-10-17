@@ -13,7 +13,7 @@ namespace {{ namespace }};
 /// The pages of the Modulus UI package call the identity endpoints (<c>/account/*</c>) and the permission endpoints
 /// (<c>/authorization/*</c>) on their own host. On a split app those live in the API host, so this controller forwards
 /// the calls there with the signed-in user's token from the BFF session. The API still decides what the caller may do.
-/// Password recovery is open to anonymous callers on purpose; those two routes are listed in security/loosening-allowlist.json.
+/// Password recovery is open to anonymous callers on purpose; those two routes are listed in Security/loosening-allowlist.json.
 /// The pages send no antiforgery token, so the cross-site check is the browser's Fetch Metadata header instead: a request from
 /// another site is refused, and the session cookie is SameSite=Lax.
 /// </summary>
@@ -78,8 +78,8 @@ public static class IdentityApiProxyExtensions
 {
     public static IServiceCollection AddIdentityApiProxy(this IServiceCollection services)
     {
-        services.AddModulusHttpClient<IdentityApiClient>()
-            .AddBffUserAccessToken();
+        // The forwarded routes are the anonymous account recovery pages, so the client carries no token.
+        services.AddModulusHttpClient<IdentityApiClient>();
         return services;
     }
 }

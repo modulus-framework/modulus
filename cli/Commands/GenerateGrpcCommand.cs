@@ -69,10 +69,11 @@ internal sealed partial class GenerateGrpcCommand : Command<GenerateGrpcCommand.
         // ── API host ────────────────────────────────────────────────
         if (ProjectFileService.EnsureCsprojPackageReference(app.ApiProjectPath, "Synvro.Modulus.Grpc", FrameworkVersion.Current, Ux.DryRun))
             written.Add(Path.GetRelativePath(app.SolutionDir, app.ApiProjectPath) + " (updated)");
-        if (!Edit(app.ProgramCsPath, t => GrpcWiring.EnsureApiProgram(t, app.RootNamespace), written, app)
-            && !File.ReadAllText(app.ProgramCsPath).Contains("MapModulusGrpc(", StringComparison.Ordinal))
+        var changed = Edit(ApiHostFiles.FeatureServicesFile(app.ProgramCsPath), GrpcWiring.EnsureApiServices, written, app);
+        changed |= Edit(ApiHostFiles.FeatureEndpointsFile(app.ProgramCsPath), t => GrpcWiring.EnsureApiEndpoints(t, app.RootNamespace), written, app);
+        if (!changed && !ApiHostFiles.ReadAll(app.ProgramCsPath).Contains("MapModulusGrpc(", StringComparison.Ordinal))
         {
-            hints.Add("Program.cs: add builder.Services.AddModulusGrpc(builder.Configuration); before Build() and app.MapModulusGrpc(<Presentation assemblies>); after the endpoints.");
+            hints.Add("Add builder.Services.AddModulusGrpc(builder.Configuration) to Configuration/FeatureServicesSetup.cs and app.MapModulusGrpc(<Presentation assemblies>) to Endpoints/FeatureEndpoints.cs.");
         }
 
         Edit(Path.Combine(apiDir, "appsettings.json"), t => GrpcWiring.EnsureApiSettings(t, development: false, 0), written, app);
@@ -84,7 +85,7 @@ internal sealed partial class GenerateGrpcCommand : Command<GenerateGrpcCommand.
             Edit(devSettings, t => GrpcWiring.EnsureApiSettings(t, development: true, port), written, app);
 
             // The local token server must have one issuer across both endpoints, or gRPC callers' tokens are rejected.
-            if (File.ReadAllText(app.ProgramCsPath).Contains("AddModulusOpenIddict(", StringComparison.Ordinal))
+            if (ApiHostFiles.ReadAll(app.ProgramCsPath).Contains("AddModulusOpenIddict(", StringComparison.Ordinal))
             {
                 Edit(devSettings, t => GrpcWiring.EnsureIdentityIssuer(t, $"http://localhost:{port}/"), written, app);
                 hints.Add("The API listens on two endpoints now: set Identity:Issuer to its public URL outside Development, so tokens are accepted on both.");

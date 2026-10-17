@@ -20,10 +20,10 @@ public class TemplateRenderingTests
             Auth = "none",
         };
 
-        var act = () => _engine.Render("app/Program", model);
+        var act = () => ApiHostSource.Render(_engine, model);
         act.Should().NotThrow();
 
-        var output = _engine.Render("app/Program", model);
+        var output = ApiHostSource.Render(_engine, model);
         output.Should().Contain("AddModulus(builder.Configuration, modules =>");
         output.Should().Contain("modules.AddModule<CatalogModule>()");
         output.Should().NotContain("HostModule");
@@ -41,7 +41,7 @@ public class TemplateRenderingTests
             Auth = "openiddict",
         };
 
-        var output = _engine.Render("app/Program", model);
+        var output = ApiHostSource.Render(_engine, model);
         output.Should().Contain("AddModulusOpenIddict");
         output.Should().NotContain("AddKeycloak");
     }

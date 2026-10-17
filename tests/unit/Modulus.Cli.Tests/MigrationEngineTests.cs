@@ -180,7 +180,7 @@ public class MigrationEngineTests
             MigrationEngine = engine,
         };
 
-        var output = _engine.Render("app/Program", model);
+        var output = ApiHostSource.Render(_engine, model);
         output.Should().NotContain("{{");
         output.Should().Contain("MigrateModulusDatabasesAsync");
         output.Should().Contain("using Modulus.EntityFrameworkCore.Extensions;");

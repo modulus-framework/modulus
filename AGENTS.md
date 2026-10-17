@@ -149,14 +149,14 @@ seeding) and `ShutdownAsync` runs in reverse order on graceful shutdown.
 ## CLI tool
 
 The `modulus` CLI (Spectre.Console.Cli + Scriban) is a `dotnet tool` that
-generates complete solutions, modules, and CRUD code using a **4-layer
-Clean-Architecture / modular-monolith** layout (Domain → Application →
-Infrastructure → Presentation per module), mirroring the structure used by
-large DDD/CQRS modular monoliths.
+generates complete solutions, modules, and CRUD code using a **Clean-Architecture /
+modular-monolith** layout (Domain → Application → Infrastructure → Presentation per module,
+with the integration events in their own IntegrationEvents project that Application references),
+mirroring the structure of the garments-erp modules.
 
 | Command | Description |
 |---------|-------------|
-| `modulus app <name>` | Creates a solution: `src/API/{App}.Api` host + `src/Shared/{App}.Shared.*` kernel (4 projects) + example `Catalog` module (4 projects) + top-level tests. `--migration-engine dbsh` uses SQL-first migrations. `--kind api\|web` picks the **app kind** (see below). `--multi-tenancy` (with `--kind api --auth openiddict`) makes companies tenants: membership-checked resolution, a tenant store module, tenant-owned entities, isolation tests (see *Security model*). |
+| `modulus app <name>` | Creates a solution: `src/API/{App}.Api` host + `src/Shared/{App}.Shared.*` kernel (4 projects) + example `Catalog` module (5 projects) + top-level tests. `--migration-engine dbsh` uses SQL-first migrations. `--kind api\|web` picks the **app kind** (see below). `--multi-tenancy` (with `--kind api --auth openiddict`) makes companies tenants: membership-checked resolution, a tenant store module, tenant-owned entities, isolation tests (see *Security model*). |
 | `modulus add-bff <client>` | Adds a `web`, `mobile` or `partner` BFF host (`src/Bff/{App}.Bff.{Client}`) to an existing app; `modulus app --bff web,mobile,partner [--services catalog=...]` generates them up front. See *BFF (per client)*. |
 | `modulus generate-bff-endpoint <Name>` | Scaffolds an aggregate endpoint in a BFF (`--bff`, `--modules`, `--route`) composing the modules' typed clients. |
 | `modulus generate-grpc <Entity>` | Exposes an entity's CRUD commands/queries over gRPC: `.proto` + service in the module's Presentation layer, API host wiring, a test class; `--bff mobile\|all` adds the contract to BFFs as a client. See *gRPC*. |
@@ -166,7 +166,7 @@ large DDD/CQRS modular monoliths.
 | `modulus add-realtime [--events a,b] [--bff ...] [--signalr]` | Pushes integration events to connected clients: API host wiring (`AddModulusRealtime` with one `AddEvent` per event, audience = the entity's permission; `MapModulusRealtime`), settings, a test class; `--bff` relays `/realtime` as an event stream; `--signalr` turns the hub on (SSE is the default). See *Realtime*. |
 | `modulus add-ai` | Hosts the AI platform's connector (`Modulus.AI.Connector` + EF journal) in the API host: `AddModulusAiConnector`/`MapModulusAiConnector`, `Ai:Connector` settings (off until registered with the platform), test settings with a hashed test key, `AiConnectorTests` and `AiConformanceTests` (package `Modulus.AI.Connector.Testing`). Idempotent; not for `webapp`. `generate-crud <Entity> --ai` then marks the entity `[AiIndexed]`/`[AiQueryable]`, the list query `[AiCapability]`, the lookup `[AiResource]` (with `[RequirePermission]`), grants the `AiIndexer` role and writes `{Entity}AiCapabilityTests`. See *AI connector*. |
 | `modulus describe [--json]` | Prints the app's kind, hosts, modules + entities, BFFs and wired features. The global `--json` option (any command) silences the human output and ends with one JSON document (`success`, `exitCode`, `dryRun`, `files` written with `created`/`updated`, `error`, `result`), so a developer tool can drive the generators (with `--dry-run`). |
-| `modulus module <name>` | Creates a blank 4-layer business module |
+| `modulus module <name>` | Creates a blank business module (five projects) |
 | `modulus add-module <name>` | Adds a module to an existing app + wires Program.cs registration + Host `ProjectReference`s. `--migration-engine` defaults to `dbsh` when all existing modules use dbsh. |
 | `modulus generate-crud <Entity>` | Generates entity, repo, DTOs, command/query handlers across the module's layers |
 | `modulus migrate add <Name>` | Scaffolds a migration in each module's Infrastructure project (or one via `--module`). Auto-detects engine: `dotnet ef` for EF Core modules, `dbsh create` for dbsh modules. |
@@ -190,27 +190,33 @@ large DDD/CQRS modular monoliths.
     │   ├── {App}.Shared.Application
     │   ├── {App}.Shared.Infrastructure
     │   └── {App}.Shared.Presentation
-    └── Modules/                              # feature modules (4 projects each)
+    └── Modules/                              # feature modules (5 projects each)
         └── {App}.Modules.{Module}/
-            ├── .Domain/          # entity, IRepository
-            ├── .Application/     # IUnitOfWork, commands/queries/handlers + Dtos/ + IntegrationEvents/
-            ├── .Infrastructure/  # {Module}DbContext, {Module}DbContextFactory, repository impl, {Module}Module composition root
-            └── .Presentation/    # API controllers
+            ├── .Domain/              # entity, IRepository
+            ├── .Application/         # IUnitOfWork, commands/queries/handlers + Dtos/
+            ├── .IntegrationEvents/   # integration events + the module's [IntegrationEventName] area marker (IntegrationEvents/)
+            ├── .Infrastructure/      # {Module}DbContext, {Module}DbContextFactory, repository impl, {Module}Module composition root
+            └── .Presentation/        # API controllers
 ```
 
-Each module gets **four** projects named `{App}.Modules.{Module}.{Layer}`:
+Each module gets **five** projects named `{App}.Modules.{Module}.{Layer}`:
 
 | Layer | Contains | References |
 |-------|----------|------------|
 | `Domain` | Entity, `IRepository` | `Shared.Domain`, `Modulus.Core`, `Modulus.Data.Abstractions` |
-| `Application` | **`IUnitOfWork`**, commands, queries, handlers, **DTOs** (`Dtos/`), **integration events** (`IntegrationEvents/`) | `Domain`, `Shared.Application`, `Modulus.Mediator`, `Modulus.EntityFrameworkCore`, `Modulus.Events` |
+| `IntegrationEvents` | **integration events** (`IntegrationEvents/`), the module's area marker | `Modulus.Events` |
+| `Application` | **`IUnitOfWork`**, commands, queries, handlers, **DTOs** (`Dtos/`) | `Domain`, `IntegrationEvents`, `Shared.Application`, `Modulus.Mediator`, `Modulus.EntityFrameworkCore`, `Modulus.Events` |
 | `Infrastructure` | **`{Module}DbContext`**, **`{Module}DbContextFactory`**, repository impl, `{Module}Module` composition root | `Application`, `Domain`, `Shared.Infrastructure`, `Modulus.EntityFrameworkCore`, `Modulus.Events`, EF Core provider package |
 | `Presentation` | API controllers | `Application`, `Shared.Presentation`, `Modulus.AspNetCore` |
 
-There are **no separate Contracts / IntegrationEvents / Tests projects** —
-DTOs live under `Application/Dtos` and integration events under
-`Application/IntegrationEvents`; tests live in one top-level
-`tests/{App}.Tests` project. This collapses the previous 7-layer design to 4.
+Integration events are a separate project so another module can reference a
+contract without taking the owner's Application layer. There are **no separate
+Contracts / Tests projects**: DTOs live under `Application/Dtos`, and tests live in
+one top-level `tests/{App}.Tests` project.
+
+Modules generated before this layout (four projects, events in
+`Application/IntegrationEvents`) keep it: `generate-crud` detects them by the missing
+`{Module}.IntegrationEvents` project and writes events where they already are.
 
 **Per-module DbContext + per-module IUnitOfWork.** Each module owns its
 `{Module}DbContext : ModuleDbContext` (in `Infrastructure`) with its own

@@ -1,0 +1,38 @@
+using Microsoft.AspNetCore.Mvc.RazorPages;
+using Modulus.AspNetCore.Mvc;
+using Modulus.AspNetCore.Security;
+using Modulus.Core.Abstractions.Security;
+{{ if use_auth }}using Modulus.AspNetCore.Security.Policy;
+{{ end }}
+namespace {{ root_namespace }}.Web.Configuration;
+
+/// <summary>
+/// The Razor Pages{{ if ui_engine == "mvc" }} and MVC{{ end }} UI: the Modulus UI shell (header, sidebar, theme settings), the app-* tag helpers and the default
+/// access rule. {{ if use_auth }}Pages require a signed-in user; only /Account (sign-in, sign-out, access denied) is open.{{ else }}Pages are public until auth is added.{{ end }}
+/// </summary>
+internal static class UiSetup
+{
+    public static IServiceCollection AddWebUi(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddRazorPages();
+{{ if ui_engine == "mvc" }}
+        // MVC controllers and views for the landing page; the sign-in pages stay Razor Pages.
+        services.AddControllersWithViews();
+{{ end }}
+        // Brand and layout settings come from "Modulus:Theme" in appsettings.json; add menu entries with an IMenuContributor.
+        services.AddModulusMvc(theme => configuration.GetSection("Modulus:Theme").Bind(theme));
+
+{{ if use_auth }}        // Pages require a signed-in user; the sign-in pages under /Account are the only open folder.
+{{ else }}        // No authentication configured. Pages are public; add auth manually (AddAuthentication().AddCookie(...)) and a
+        // sign-in flow when you need one.
+{{ end }}        services.PostConfigure<RazorPagesOptions>(options =>
+        {
+{{ if use_auth }}            options.Conventions.AuthorizeFolder("/");
+{{ end }}            options.Conventions.AllowAnonymousToFolder("/Account");
+            options.Conventions.AddFolderApplicationModelConvention("/Account", page =>
+                page.EndpointMetadata.Add(new LoosenedAttribute("Sign-in pages under /Account are open") { Framework = true }));
+        });
+
+        return services;
+    }
+}

@@ -239,14 +239,14 @@ internal sealed class DoctorCommand : Command<DoctorCommand.Settings>
             return CheckResult.Warn(
                 "Web sign-in",
                 "Uses the generated TokenRelayHandler (tokens in the browser cookie, refresh only after a 401, no refresh lock). " +
-                "Move to the BFF web session: reference Modulus.Bff, call AddModulusBff(..., bff => bff.AddWebClient(\"web\").SetDefaultClient(\"web\")), " +
-                "sign in/out with IBffSessionService, replace .AddHttpMessageHandler<TokenRelayHandler>() with .AddBffUserAccessToken() " +
+                "Move to the BFF gateway: add the web BFF (modulus add-bff web), sign in and out through BffSessionClient, " +
+                "replace .AddHttpMessageHandler<TokenRelayHandler>() with .AddHttpMessageHandler<BffGatewayHandler>() " +
                 "and delete Security/TokenRelayHandler.cs (see docs/DOCUMENTATION.md#advanced-features-hybrid-cache-per-client-bffs-grpc-webhooks-graphql-realtime-ai-platform-integration).");
         }
 
         var csproj = File.Exists(webProjectPath) ? File.ReadAllText(webProjectPath) : "";
-        return csproj.Contains("Modulus.Bff", StringComparison.Ordinal)
-            ? CheckResult.Pass("Web sign-in", "BFF web session (server-side tokens)")
+        return File.Exists(Path.Combine(webDir, "Security", "BffGatewayHandler.cs")) || csproj.Contains("Modulus.Bff", StringComparison.Ordinal)
+            ? CheckResult.Pass("Web sign-in", "BFF gateway (the web BFF holds the tokens)")
             : null;
     }
 

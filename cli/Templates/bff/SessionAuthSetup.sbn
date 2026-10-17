@@ -1,0 +1,23 @@
+using Modulus.Bff;
+
+namespace {{ project_name }}.Security;
+
+/// <summary>
+/// The {{ client_name }} client's authentication. {{ if is_web }}The browser signs in with a cookie session (Bff:Clients:{{ client_name }}): the tokens stay on
+/// the server, are refreshed before they expire, and the cookie only names the session. The Web host calls the BFF's
+/// session endpoints (bff/login, bff/logout, bff/user) over HTTP.{{ else if is_mobile }}The app presents bearer tokens, validated
+/// against the auth server's keys.{{ else }}Partners present client-credentials tokens, validated against the auth server's keys.{{ end }}
+/// </summary>
+internal static class SessionAuthSetup
+{
+    /// <summary>The client name the BFF serves. Matches the key under Bff:Clients.</summary>
+    public const string Client = "{{ client_name }}";
+
+    public static IServiceCollection Add{{ client_pascal }}BffSession(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddModulusBff(configuration, bff => bff
+            .Add{{ client_pascal }}Client(Client)
+            .AddOpenApi());
+        return services;
+    }
+}

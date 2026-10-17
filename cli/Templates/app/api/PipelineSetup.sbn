@@ -1,0 +1,42 @@
+using Microsoft.AspNetCore.HttpOverrides;
+using Modulus.AspNetCore.Correlation;
+using Modulus.AspNetCore.Extensions;
+{{ if expose_api }}using Modulus.AspNetCore.Http;
+using Modulus.AspNetCore.Idempotency;
+{{ end }}{{ if expose_api && enable_cors }}using Modulus.AspNetCore.Cors;
+{{ end }}{{ if expose_api && enable_rate_limiting }}using Modulus.AspNetCore.RateLimiting;
+{{ end }}{{ if enable_security_headers }}using Modulus.AspNetCore.Security;
+{{ end }}{{ if multi_tenancy }}using Modulus.MultiTenancy.Extensions;
+using Modulus.Security;
+{{ end }}
+namespace {{ root_namespace }}.Api.Middleware;
+
+/// <summary>The API host's request pipeline. The order is authoritative.</summary>
+internal static class PipelineSetup
+{
+    /// <remarks>
+    /// Forwarded headers first, so everything downstream sees the real client IP and scheme. Then correlation (every log line,
+    /// span and error carries the id), security headers on every response, error handling, CORS before authentication, and
+    /// rate limiting after authentication and the tenant. Idempotency runs after UseModulus so the tenant is resolved before
+    /// keys are scoped, and still wraps the controller so responses can be replayed.
+    /// </remarks>
+    public static WebApplication UseApiPipeline(this WebApplication app)
+    {
+        app.UseForwardedHeaders();
+{{ if expose_api }}        app.UseModulusResponseCompression();
+{{ end }}{{ if enable_correlation }}        app.UseModulusCorrelation();
+{{ end }}{{ if enable_security_headers }}        app.UseModulusSecurityHeaders();
+{{ end }}        app.UseExceptionHandler();
+{{ if expose_api && enable_cors }}        app.UseModulusCors();
+{{ end }}{{ if auth != "none" }}        app.UseAuthentication();
+{{ if multi_tenancy }}        // The company is resolved (and the membership checked) once the caller is known, before authorization.
+        app.UseMultiTenancy();
+        app.UseModulusSecurityContext();
+{{ end }}        app.UseAuthorization();
+{{ end }}{{ if expose_api && enable_rate_limiting }}        app.UseModulusRateLimiting();
+{{ end }}        app.UseModulus();
+{{ if expose_api && enable_idempotency }}        app.UseModulusIdempotency();
+{{ end }}
+        return app;
+    }
+}

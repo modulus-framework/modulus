@@ -44,56 +44,33 @@ internal static partial class AiWiring
         && program.Contains("AddModule<IdentityModule>", StringComparison.Ordinal);
 
     /// <summary>
-    /// Program.cs: <c>AddModulusAiConnector</c> before <c>Build()</c> (with <c>UseIdentityUsers</c> when the host has the local
-    /// identity backend, and the EF journal) and <c>MapModulusAiConnector()</c> after the endpoints (else before <c>app.Run()</c>).
+    /// The optional features' services (<c>Configuration/FeatureServicesSetup.cs</c>): <c>AddModulusAiConnector</c>, with
+    /// <c>UseIdentityUsers</c> when the host has the local identity backend (<paramref name="identity"/>, read from the whole host)
+    /// and the EF journal.
     /// </summary>
-    public static string EnsureConnectorProgram(string program)
+    public static string EnsureConnectorServices(string text, bool identity)
     {
-        var nl = WebhooksWiring.NewLine(program);
-        var text = program;
-        var identity = HasIdentityUsers(program);
-
+        var nl = WebhooksWiring.NewLine(text);
         if (!HasConnector(text))
         {
-            var build = text.IndexOf("var app = builder.Build();", StringComparison.Ordinal);
-            if (build < 0)
-                return program;
-
             var users = identity
-                ? "    .UseIdentityUsers<ModulusUser>(user => user.IsActive)    // the envelope's user, matched to an account" + nl
-                : "    // .UseUserResolver<MyResolver>()   // no local accounts: without a resolver every user call is refused" + nl;
-            text = text[..build] +
-                "// ── AI connector ───────────────────────────────────────────────" + nl +
-                "// Hosts the AI platform's connector wire contract v1 (modulus add-ai): /_ai/connector/* (manifest, capabilities," + nl +
-                "// record lookups, authorization checks, extraction and the change feed). The platform calls it with an API key" + nl +
-                "// (Ai:Connector:ApiKeyHashes keeps only SHA-256 hashes) plus a signed envelope naming the user, and each call runs" + nl +
-                "// as that user with their own permissions; nothing is ever written. Expose data with [AiCapability]/[AiResource] on" + nl +
-                "// queries and [AiIndexed]/[AiQueryable] on entities (modulus generate-crud <Entity> --ai). The ai_changes journal is" + nl +
-                "// a new table in every module database: add a migration (modulus migrate add AiChanges)." + nl +
-                "builder.Services.AddModulusAiConnector(builder.Configuration, ai => ai" + nl +
+                ? "            .UseIdentityUsers<ModulusUser>(user => user.IsActive)    // the envelope's user, matched to an account" + nl
+                : "            // .UseUserResolver<MyResolver>()   // no local accounts: without a resolver every user call is refused" + nl;
+            var block =
+                "        // ── AI connector ───────────────────────────────────────────────" + nl +
+                "        // Hosts the AI platform's connector wire contract v1 (modulus add-ai): /_ai/connector/* (manifest, capabilities," + nl +
+                "        // record lookups, authorization checks, extraction and the change feed). The platform calls it with an API key" + nl +
+                "        // (Ai:Connector:ApiKeyHashes keeps only SHA-256 hashes) plus a signed envelope naming the user, and each call runs" + nl +
+                "        // as that user with their own permissions; nothing is ever written. Expose data with [AiCapability]/[AiResource] on" + nl +
+                "        // queries and [AiIndexed]/[AiQueryable] on entities (modulus generate-crud <Entity> --ai). The ai_changes journal is" + nl +
+                "        // a new table in every module database: add a migration (modulus migrate add AiChanges)." + nl +
+                "        builder.Services.AddModulusAiConnector(builder.Configuration, ai => ai" + nl +
                 users +
-                "    .UseEntityFrameworkCore());                                  // change journal, change feed, entity source" + nl + nl +
-                text[build..];
-        }
-
-        if (!text.Contains("MapModulusAiConnector(", StringComparison.Ordinal))
-        {
-            var block = "// AI connector endpoints (/_ai/connector/*), each behind the platform's API key." + nl +
-                        "app.MapModulusAiConnector();" + nl;
-            var endpoints = text.IndexOf("app.MapModulusEndpoints(", StringComparison.Ordinal);
-            var end = endpoints < 0 ? -1 : text.IndexOf(".ToArray());", endpoints, StringComparison.Ordinal);
-            var lineEnd = end < 0 ? -1 : text.IndexOf('\n', end);
-            if (lineEnd >= 0)
-            {
-                text = text[..(lineEnd + 1)] + nl + block + text[(lineEnd + 1)..];
-            }
-            else
-            {
-                var run = text.IndexOf("app.Run();", StringComparison.Ordinal);
-                if (run < 0)
-                    return program;
-                text = text[..run] + block + nl + text[run..];
-            }
+                "            .UseEntityFrameworkCore());                                  // change journal, change feed, entity source" + nl;
+            var inserted = ApiHostFiles.InsertFeatureServices(text, block, nl);
+            if (inserted == text)
+                return text;
+            text = inserted + nl;
         }
 
         text = WebhooksWiring.EnsureUsing(text, "using Modulus.AI.Connector;");
@@ -103,26 +80,39 @@ internal static partial class AiWiring
         return text;
     }
 
+    /// <summary>The optional features' endpoints (<c>Endpoints/FeatureEndpoints.cs</c>): <c>MapModulusAiConnector()</c>.</summary>
+    public static string EnsureConnectorEndpoints(string text)
+    {
+        var nl = WebhooksWiring.NewLine(text);
+        if (!text.Contains("MapModulusAiConnector(", StringComparison.Ordinal))
+        {
+            var block = "        // AI connector endpoints (/_ai/connector/*), each behind the platform's API key." + nl +
+                        "        app.MapModulusAiConnector();" + nl;
+            var inserted = ApiHostFiles.InsertFeatureEndpoints(text, block, nl);
+            if (inserted is null)
+                return text;
+            text = inserted;
+        }
+
+        return WebhooksWiring.EnsureUsing(text, "using Modulus.AI.Connector;");
+    }
+
     /// <summary>
-    /// Program.cs: grants <paramref name="permission"/> to the indexing identity's role, so <c>/extract</c> may read the
-    /// entity. Only on a host that seeds grants (<c>AddPermissionGrants</c>); otherwise the app grants it its own way.
+    /// The file that seeds grants (<c>AddPermissionGrants</c>): grants <paramref name="permission"/> to the indexing identity's role,
+    /// after the last existing grant line, so <c>/extract</c> may read the entity. Only where the host seeds grants; otherwise the
+    /// app grants it its own way.
     /// </summary>
-    public static string EnsureIndexerGrant(string program, string permission)
+    public static string EnsureIndexerGrant(string text, string permission)
     {
         var marker = $"GrantToRole(\"{IndexerRole}\", \"{permission}\")";
-        if (program.Contains(marker, StringComparison.Ordinal) || !program.Contains("AddPermissionGrants(", StringComparison.Ordinal))
-            return program;
+        if (text.Contains(marker, StringComparison.Ordinal) || !text.Contains("builder.Services.AddPermissionGrants(", StringComparison.Ordinal))
+            return text;
 
-        var build = program.IndexOf("var app = builder.Build();", StringComparison.Ordinal);
-        if (build < 0)
-            return program;
-
-        var nl = WebhooksWiring.NewLine(program);
-        var line = $"builder.Services.AddPermissionGrants(grants => grants.{marker}); // the AI index may read it" + nl;
-        // After the last existing grant line, so the seed stays in one place.
-        var last = program.LastIndexOf("builder.Services.AddPermissionGrants(", build, StringComparison.Ordinal);
-        var at = last < 0 ? build : program.IndexOf('\n', last) + 1;
-        return at <= 0 ? program : program[..at] + line + (last < 0 ? nl : string.Empty) + program[at..];
+        var nl = WebhooksWiring.NewLine(text);
+        var line = $"        builder.Services.AddPermissionGrants(grants => grants.{marker}); // the AI index may read it" + nl;
+        var last = text.LastIndexOf("builder.Services.AddPermissionGrants(", StringComparison.Ordinal);
+        var at = text.IndexOf('\n', last) + 1;
+        return at <= 0 ? text : text[..at] + line + text[at..];
     }
 
     /// <summary>
@@ -280,7 +270,7 @@ internal static partial class AiWiring
 
     /// <summary>Whether the app that contains <paramref name="dir"/> hosts the AI connector (its API host calls <c>AddModulusAiConnector</c>).</summary>
     internal static bool JournalWired(string dir)
-        => ModuleDiscovery.Inventory(dir) is { } app && File.Exists(app.ProgramCsPath) && HasConnector(File.ReadAllText(app.ProgramCsPath));
+        => ModuleDiscovery.Inventory(dir) is { } app && File.Exists(app.ProgramCsPath) && HasConnector(ApiHostFiles.ReadAll(app.ProgramCsPath));
 
     /// <summary>The module projects whose context is a <c>ModuleDbContext</c> (the ones that get the journal table) with their design-time factory.</summary>
     internal static IReadOnlyList<(string Name, string InfrastructureCsproj, string Factory)> JournalModules(string root)

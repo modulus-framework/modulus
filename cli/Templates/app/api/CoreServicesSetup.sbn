@@ -1,0 +1,91 @@
+using Microsoft.AspNetCore.HttpOverrides;
+using Modulus.AspNetCore.Cors;
+using Modulus.AspNetCore.Configuration;
+using Modulus.AspNetCore.Correlation;
+using Modulus.AspNetCore.DataProtection;
+using Modulus.AspNetCore.Extensions;
+using Modulus.AspNetCore.FeatureFlags;
+using Modulus.AspNetCore.Idempotency;
+using Modulus.AspNetCore.Logging;
+using Modulus.AspNetCore.RateLimiting;
+using Modulus.AspNetCore.Security;
+{{ if expose_api }}using Modulus.AspNetCore.Http;
+using Modulus.AspNetCore.Versioning;
+{{ end }}using Modulus.Caching;
+using Modulus.EntityFrameworkCore.Extensions;
+using Modulus.Events.Extensions;
+using Modulus.Mediator.Extensions;
+
+namespace {{ root_namespace }}.Api.Configuration;
+
+/// <summary>
+/// Cross-cutting services for the API host: exception handling, correlation, rate limiting, CORS, security headers, response
+/// compression, feature flags, the secrets guard, log redaction, forwarded headers, personal-data encryption, domain and
+/// integration events, the hybrid cache and the CQRS pipeline. All settings are config-bound; see appsettings.json.
+/// </summary>
+internal static class CoreServicesSetup
+{
+    public static WebApplicationBuilder AddApiCore(this WebApplicationBuilder builder)
+    {
+        builder.Services.AddModulusExceptionHandling();
+
+{{ if enable_correlation }}        builder.Services.AddModulusCorrelation(builder.Configuration);
+{{ end }}{{ if expose_api && enable_idempotency }}        builder.Services.AddModulusIdempotency(builder.Configuration);
+{{ end }}{{ if expose_api && enable_api_versioning }}        builder.Services.AddModulusApiVersioning(builder.Configuration);
+{{ end }}{{ if expose_api && enable_rate_limiting }}        builder.Services.AddModulusRateLimiting(builder.Configuration);
+{{ end }}{{ if expose_api && enable_cors }}        builder.Services.AddModulusCors(builder.Configuration);
+{{ end }}{{ if enable_security_headers }}        builder.Services.AddModulusSecurityHeaders(builder.Configuration);
+{{ end }}{{ if expose_api }}
+        // Brotli/gzip for API responses ("ResponseCompression" section; off over HTTPS unless EnableForHttps, see BREACH).
+        builder.Services.AddModulusResponseCompression(builder.Configuration);
+{{ end }}{{ if enable_feature_flags }}
+        // Runtime feature flags bound to the "FeatureManagement" section. Gate a minimal-API endpoint with .RequireFeature("Flag");
+        // MVC actions can use [FeatureGate("Flag")].
+        builder.Services.AddModulusFeatureFlags(builder.Configuration);
+{{ end }}{{ if enable_secrets_guard }}
+        // Guard rail (Development/Staging only): fails startup if a connection string or other secret is committed to
+        // appsettings*.json instead of coming from environment variables, User Secrets, or a vault.
+        builder.Services.AddModulusSecretsGuard(builder.Configuration);
+{{ end }}
+        // Values classified with [PersonalInformation], [ProtectedPersonalData], [ConfidentialData], [RestrictedData] or
+        // [SecretData] are redacted in source-generated logs. Settings: Security:Redaction (the HMAC key that pseudonymizes
+        // personal data comes from user secrets or the environment). Analyzer MOD0002 flags a classified value passed to an
+        // ordinary LogInformation(...) call.
+        builder.Services.AddModulusRedaction(builder.Configuration);
+
+        // Forwarded headers: required behind a reverse proxy so the app sees real client IPs and the scheme. Only the proxies
+        // named in ForwardedHeaders:KnownProxies or KnownNetworks are trusted; trusting every sender would let a caller choose
+        // the address the rate limiter and the audit trail see.
+        builder.Services.Configure<ForwardedHeadersOptions>(options =>
+        {
+            options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+            options.ApplyModulusTrustedProxies(builder.Configuration);
+        });
+{{ if enable_personal_data_protection }}
+        // Transparent at-rest encryption for [ProtectedPersonalData] string properties. Each module DbContext applies the value
+        // converter itself, so marking a property is all that's required. In production, persist the key ring outside the app
+        // (file share / DB / Key Vault) so restarts keep decrypting old data. Settings: PersonalDataProtection.
+        builder.Services.AddModulusPersonalDataProtection(builder.Configuration);
+{{ end }}
+        // Registers DomainEventDispatcher (required by each module's DbContext), the in-process event bus, and discovers the
+        // handlers in this host's assembly. Each module can call AddModulusEvents() with its own assemblies too.
+        builder.Services.AddModulusEvents(typeof(ApiEntryPoint).Assembly);
+
+        // ICacheService plus the [CacheFor] query cache: in-memory L1 per node, stampede protection, fail-safe and tag invalidation
+        // ([InvalidatesCache] on commands). Settings live under "Caching:Fusion".
+{{ if use_redis_cache }}        // Redis is the shared L2 and the backplane that keeps every replica's L1 in sync.
+        builder.Services.AddRedisFusionCache(builder.Configuration);
+{{ else }}        // Single node: L1 only. Re-run with '--caching redis' (or call AddRedisFusionCache from Modulus.Caching.Redis)
+        // once you run more than one replica.
+        builder.Services.AddModulusFusionCache(builder.Configuration);
+{{ end }}
+        // Behaviours are registered once here; each module registers its own handlers, DbContext and IUnitOfWork in its
+        // Module composition root.
+        builder.Services.AddMediator();
+{{ if expose_api }}
+        // MVC controllers (module Presentation assemblies).
+        builder.Services.AddControllers();
+{{ end }}
+        return builder;
+    }
+}

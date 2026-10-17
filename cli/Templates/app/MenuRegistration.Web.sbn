@@ -1,0 +1,26 @@
+using Modulus.Ui.Abstractions.Navigation;
+
+namespace {{ root_namespace }}.Web.Composition;
+
+/// <summary>
+/// Registers every menu contributor under <c>Components/Navigation/Menu</c>. A new entity's menu entry is its contributor file:
+/// nothing else needs registering, so an entity cannot be left out of the menu.
+/// </summary>
+internal static class MenuRegistration
+{
+    private const string MenuNamespace = "{{ root_namespace }}.Web.Components.Navigation.Menu";
+
+    public static IServiceCollection AddMenuContributors(this IServiceCollection services)
+    {
+        var contributors = typeof(MenuRegistration).Assembly.GetTypes()
+            .Where(type => type is { IsClass: true, IsAbstract: false, Namespace: not null }
+                && type.Namespace.StartsWith(MenuNamespace, StringComparison.Ordinal)
+                && typeof(IMenuContributor).IsAssignableFrom(type))
+            .OrderBy(type => type.Name, StringComparer.Ordinal);
+
+        foreach (var contributor in contributors)
+            services.AddTransient(typeof(IMenuContributor), contributor);
+
+        return services;
+    }
+}

@@ -98,8 +98,8 @@ public static class BffEndpointRouteBuilderExtensions
         if (options.LoginMode == BffLoginMode.Oidc)
         {
             // A top-level browser navigation, so no CSRF header can be sent.
-            bff.MapGet("/login", (string? returnUrl) => Results.Challenge(
-                    new AuthenticationProperties { RedirectUri = SafeReturnUrl(returnUrl) }, [BffDefaults.OidcScheme(name)]))
+            bff.MapGet("/login", (string? returnUrl, IOptions<BffOptions> bffOptions) => Results.Challenge(
+                    new AuthenticationProperties { RedirectUri = SafeReturnUrl(returnUrl, bffOptions.Value.AllowedReturnOrigins) }, [BffDefaults.OidcScheme(name)]))
                 .Loosen(new LoosenedAttribute("Starts the OIDC sign-in (a browser navigation before any session exists)") { Framework = true })
                 .WithMetadata(BffSkipCsrfMetadata.Instance);
         }
@@ -132,9 +132,20 @@ public static class BffEndpointRouteBuilderExtensions
         return endSessionUrl is null ? Results.NoContent() : Results.Ok(new { endSessionUrl });
     }
 
-    /// <summary>Only local paths: <c>/x</c>, never <c>//host</c>, <c>/\host</c> or a control character (open-redirect guard).</summary>
-    internal static string SafeReturnUrl(string? returnUrl)
-        => Modulus.Core.Http.LocalUrl.IsLocal(returnUrl) ? returnUrl! : "/";
+    /// <summary>
+    /// A local path (<c>/x</c>, never <c>//host</c>, <c>/\host</c> or a control character), or an absolute URL whose origin is in
+    /// <paramref name="allowedOrigins"/> (open-redirect guard). Anything else is <c>/</c>.
+    /// </summary>
+    internal static string SafeReturnUrl(string? returnUrl, IReadOnlyCollection<string>? allowedOrigins = null)
+    {
+        if (Modulus.Core.Http.LocalUrl.IsLocal(returnUrl))
+            return returnUrl!;
+        if (allowedOrigins is { Count: > 0 } && Uri.TryCreate(returnUrl, UriKind.Absolute, out var uri)
+            && uri.Scheme is "http" or "https" && string.IsNullOrEmpty(uri.UserInfo)
+            && allowedOrigins.Any(origin => string.Equals(origin.TrimEnd('/'), uri.GetLeftPart(UriPartial.Authority).TrimEnd('/'), StringComparison.OrdinalIgnoreCase)))
+            return returnUrl!;
+        return "/";
+    }
 
     private static BffUserClaim[] Claims(ClaimsPrincipal user)
         => user.Claims.Where(c => c.Type != BffDefaults.SessionIdClaim).Select(c => new BffUserClaim(c.Type, c.Value)).ToArray();

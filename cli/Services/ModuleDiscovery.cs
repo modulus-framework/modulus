@@ -117,7 +117,7 @@ internal static partial class ModuleDiscovery
     public static IReadOnlyList<string> DetectEnabledFeatures(string programCsPath)
     {
         if (!File.Exists(programCsPath)) return [];
-        var content = File.ReadAllText(programCsPath);
+        var content = ApiHostFiles.ReadAll(programCsPath);
         var features = new List<string>();
 
         // Each entry: (display name, signature fragment to grep for).
@@ -195,8 +195,8 @@ internal static partial class ModuleDiscovery
 
     private static bool HasLayerChildren(string dir, string rootNs)
     {
-        // A module dir is one that directly contains one of its four
-        // layer projects (Domain/Application/Infrastructure/Presentation).
+        // A module dir is one that directly contains one of its five
+        // layer projects (Domain/Application/IntegrationEvents/Infrastructure/Presentation).
         return Directory.GetDirectories(dir, $"{rootNs}.Modules.*", SearchOption.TopDirectoryOnly).Length > 0
             || Directory.GetDirectories(dir).Any(d => IsLayerDir(Path.GetFileName(d)));
     }
@@ -204,6 +204,7 @@ internal static partial class ModuleDiscovery
     private static bool IsLayerDir(string name)
         => name.EndsWith(".Domain", StringComparison.Ordinal)
         || name.EndsWith(".Application", StringComparison.Ordinal)
+        || name.EndsWith(".IntegrationEvents", StringComparison.Ordinal)
         || name.EndsWith(".Infrastructure", StringComparison.Ordinal)
         || name.EndsWith(".Presentation", StringComparison.Ordinal);
 

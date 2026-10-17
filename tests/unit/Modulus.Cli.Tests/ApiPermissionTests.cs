@@ -58,8 +58,8 @@ public sealed class ApiPermissionTests
     [Fact]
     public void A_host_with_the_identity_seeder_or_the_sign_in_has_an_admin_role()
     {
-        var api = _engine.Render("app/Program", App(kind: AppKind.Api));
-        var web = _engine.Render("app/Program", App(kind: AppKind.WebAppApi));
+        var api = ApiHostSource.Render(_engine, App(kind: AppKind.Api));
+        var web = ApiHostSource.Render(_engine, App(kind: AppKind.WebAppApi));
 
         UiAccessGates.HasAdminRole(api).Should().BeTrue("an api app has no pages but seeds the Admin role");
         UiAccessGates.HasAdminRole(web).Should().BeTrue();
@@ -69,8 +69,8 @@ public sealed class ApiPermissionTests
     [Fact]
     public void A_host_with_no_identity_backend_has_no_admin_role()
     {
-        UiAccessGates.HasAdminRole(_engine.Render("app/Program", App(auth: "none"))).Should().BeFalse();
-        UiAccessGates.HasAdminRole(_engine.Render("app/Program", App(auth: "keycloak"))).Should().BeFalse();
+        UiAccessGates.HasAdminRole(ApiHostSource.Render(_engine, App(auth: "none"))).Should().BeFalse();
+        UiAccessGates.HasAdminRole(ApiHostSource.Render(_engine, App(auth: "keycloak"))).Should().BeFalse();
     }
 
     // ── The example app ──────────────────────────────────────────
@@ -81,7 +81,7 @@ public sealed class ApiPermissionTests
     public void The_example_app_grants_its_permission_to_the_admin_role(bool web)
     {
         var model = App(kind: web ? AppKind.WebAppApi : AppKind.Api);
-        var program = _engine.Render("app/Program", model);
+        var program = ApiHostSource.Render(_engine, model);
 
         model.ExamplePermission.Should().Be("catalog:products:manage");
         program.Should().Contain("using Modulus.Authorization.Extensions;")
@@ -89,7 +89,7 @@ public sealed class ApiPermissionTests
             .And.Contain("builder.Services.AddGrantStorePermissionChecker();")
             .And.Contain("AddPermissions(\"catalog\", permissions => permissions.Add(\"catalog:products:manage\", \"Manage Products.\"));")
             .And.Contain("AddPermissionGrants(grants => grants.GrantToRole(\"Admin\", \"catalog:products:manage\"));");
-        program.IndexOf("AddModulusAuthorization();", StringComparison.Ordinal)
+        program.IndexOf("builder.AddApiAuthentication();", StringComparison.Ordinal)
             .Should().BeLessThan(program.IndexOf("builder.Build()", StringComparison.Ordinal), "services are registered before the host is built");
     }
 
@@ -97,7 +97,7 @@ public sealed class ApiPermissionTests
     public void A_second_generate_crud_finds_the_example_permission_already_wired()
     {
         // generate-crud Product on a fresh web app must not add the same lines again.
-        var program = _engine.Render("app/Program", App(kind: AppKind.WebAppApi));
+        var program = ApiHostSource.Render(_engine, App(kind: AppKind.WebAppApi));
 
         ApiPermissionWiring.EnsurePermission(program, "Catalog", "catalog:products:manage", "Manage Products.")
             .Should().Be(program);
@@ -106,19 +106,22 @@ public sealed class ApiPermissionTests
     [Fact]
     public void A_later_crud_set_in_an_api_host_adds_its_lines_in_order_before_the_host_is_built()
     {
-        var program = _engine.Render("app/Program", App(noExample: true));
+        var program = ApiHostSource.Render(_engine, App(noExample: true));
 
         var wired = ApiPermissionWiring.EnsurePermission(program, "Orders", "orders:orders:manage", "Manage Orders.");
 
         // The template already registers AddModulusAuthorization (the security guard's fallback policy), so it is
         // not added a second time.
         wired.Split("builder.Services.AddModulusAuthorization();").Should().HaveCount(2);
-        wired.ReplaceLineEndings("\n").Should().Contain(
-            "builder.Services.AddGrantStorePermissionChecker();\n" +
-            "builder.Services.AddPermissions(\"orders\", permissions => permissions.Add(\"orders:orders:manage\", \"Manage Orders.\"));\n" +
-            "builder.Services.AddPermissionGrants(grants => grants.GrantToRole(\"Admin\", \"orders:orders:manage\"));\n" +
-            "var app = builder.Build();",
-            "top-level statements have no indentation and keep the order they were listed in");
+        // The lines go into the feature services method (FeatureServicesSetup.cs) before its `return builder;`, in order.
+        var lines = wired.ReplaceLineEndings("\n");
+        var checker = lines.IndexOf("builder.Services.AddGrantStorePermissionChecker();", StringComparison.Ordinal);
+        var permissions = lines.IndexOf("builder.Services.AddPermissions(\"orders\", permissions => permissions.Add(\"orders:orders:manage\", \"Manage Orders.\"));", StringComparison.Ordinal);
+        var grants = lines.IndexOf("builder.Services.AddPermissionGrants(grants => grants.GrantToRole(\"Admin\", \"orders:orders:manage\"));", StringComparison.Ordinal);
+        checker.Should().BeGreaterThan(0);
+        permissions.Should().BeGreaterThan(checker, "the lines keep the order they were listed in");
+        grants.Should().BeGreaterThan(permissions);
+        lines.IndexOf("return builder;", StringComparison.Ordinal).Should().BeGreaterThan(grants, "the services are registered before the host is built");
         ApiPermissionWiring.EnsurePermission(wired, "Orders", "orders:orders:manage", "Manage Orders.").Should().Be(wired);
     }
 
@@ -131,7 +134,7 @@ public sealed class ApiPermissionTests
         var model = App(auth: auth);
 
         (model.ExamplePermission is not null).Should().Be(expected);
-        _engine.Render("app/Program", model).Contains("AddPermissionGrants", StringComparison.Ordinal).Should().Be(expected);
+        ApiHostSource.Render(_engine, model).Contains("AddPermissionGrants", StringComparison.Ordinal).Should().Be(expected);
     }
 
     [Fact]
@@ -140,7 +143,7 @@ public sealed class ApiPermissionTests
         var model = App(noExample: true);
 
         model.ExamplePermission.Should().BeNull();
-        _engine.Render("app/Program", model).Should().NotContain("AddPermissionGrants");
+        ApiHostSource.Render(_engine, model).Should().NotContain("AddPermissionGrants");
     }
 
     [Fact]

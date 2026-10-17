@@ -1,0 +1,46 @@
+using Microsoft.AspNetCore.Authentication;
+{{ if ui_engine == "blazor" }}using Microsoft.AspNetCore.Components.Authorization;
+{{ end }}using Modulus.AspNetCore.Security;
+using Modulus.AspNetCore.Security.Policy;
+using Modulus.Core.Abstractions;
+using Modulus.Platform.Http;
+using {{ root_namespace }}.Web.Configuration;
+
+namespace {{ root_namespace }}.Web.Security;
+
+/// <summary>
+/// Sign-in for the web host goes through the BFF (the "Bff:BaseUrl" host), which owns the session and the tokens. This
+/// host keeps only the browser's BFF cookie: it forwards it on every call, and a request is signed in when the BFF says
+/// that session is valid (see <see cref="BffSessionAuthenticationHandler"/>).
+/// </summary>
+internal static class AuthenticationSetup
+{
+    public static IServiceCollection AddWebAuthentication(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddHttpContextAccessor();
+        services.AddTransient<BffGatewayHandler>();
+
+        // The BFF is the "web" client of Bff:Clients in its own appsettings. {{ if web_login_mode == "Password" }}Sign-in
+        // posts the credentials to the BFF, which runs the password grant against the API's token endpoint.{{ else }}Sign-in
+        // sends the browser to the BFF's OIDC login (Bff:AllowedReturnOrigins lists this host), which runs at the provider.{{ end }}
+        var bffBaseUrl = configuration["Bff:BaseUrl"]
+            ?? throw new InvalidOperationException("Bff:BaseUrl is not configured.");
+        services.AddModulusHttpClient<BffSessionClient>(http => http.BaseAddress = new Uri($"{bffBaseUrl.TrimEnd('/')}/"))
+            .AddHttpMessageHandler<BffGatewayHandler>();
+
+        services.AddAuthentication(BffSessionAuthenticationHandler.SchemeName)
+            .AddScheme<AuthenticationSchemeOptions, BffSessionAuthenticationHandler>(BffSessionAuthenticationHandler.SchemeName, _ => { });
+        services.AddAuthorization();
+{{ if ui_engine == "blazor" }}        services.AddCascadingAuthenticationState();
+{{ end }}        services.AddWebRateLimiting();
+        // ICurrentUser for menus, contributed entity fields and page guards, read from the signed-in principal.
+        services.AddScoped<ICurrentUser, PrincipalCurrentUser>();
+
+        // At startup every endpoint must resolve to a policy. An anonymous endpoint needs a reason (.Loosen(reason)) and,
+        // outside Development, an entry in Security/loosening-allowlist.json; otherwise the app refuses to start
+        // (settings: Security:Guard).
+        services.AddModulusSecurityGuard(configuration);
+
+        return services;
+    }
+}

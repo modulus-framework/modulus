@@ -1,6 +1,6 @@
 using Modulus.Ui.Abstractions.Navigation;
 
-namespace {{ ui_namespace }}.Menu;
+namespace {{ ui_namespace }}.Components.Navigation.Menu;
 
 /// <summary>Adds the {{ entity_name_plural }} page to the main menu.</summary>
 public sealed class {{ entity_name_plural }}MenuContributor : IMenuContributor

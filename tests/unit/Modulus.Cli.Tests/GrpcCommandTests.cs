@@ -12,6 +12,8 @@ public sealed class GrpcWiringTests
 {
     private const string Csproj = "<Project Sdk=\"Microsoft.NET.Sdk\">\n  <ItemGroup>\n    <PackageReference Include=\"X\" Version=\"1\" />\n  </ItemGroup>\n</Project>\n";
 
+    private static string GrpcHost(string text, string rootNamespace) => GrpcWiring.EnsureApiEndpoints(GrpcWiring.EnsureApiServices(text), rootNamespace);
+
     [Fact]
     public void Presentation_project_compiles_the_contracts_once()
     {
@@ -32,7 +34,7 @@ public sealed class GrpcWiringTests
             "app.MapModulusEndpoints(\n    Directory.GetFiles(AppContext.BaseDirectory, \"Shop.Modules.*.Presentation.dll\")\n        .Select(Assembly.LoadFrom)\n        .ToArray());\n" +
             "app.Run();\n";
 
-        var once = GrpcWiring.EnsureApiProgram(program, "Shop");
+        var once = GrpcHost(program, "Shop");
 
         once.Should().Contain("using Modulus.Grpc;").And.Contain("using System.Reflection;");
         once.IndexOf("builder.Services.AddModulusGrpc(builder.Configuration);", StringComparison.Ordinal)
@@ -41,7 +43,7 @@ public sealed class GrpcWiringTests
             .Should().BeGreaterThan(once.IndexOf("app.MapModulusEndpoints(", StringComparison.Ordinal))
             .And.BeLessThan(once.IndexOf("app.Run();", StringComparison.Ordinal));
         once.Should().Contain("\"Shop.Modules.*.Presentation.dll\")");
-        GrpcWiring.EnsureApiProgram(once, "Shop").Should().Be(once);
+        GrpcHost(once, "Shop").Should().Be(once);
     }
 
     [Fact]
@@ -49,7 +51,7 @@ public sealed class GrpcWiringTests
     {
         const string program = "using A;\r\nusing var _ = Something();\r\nvar app = builder.Build();\r\napp.Run();\r\n";
 
-        var result = GrpcWiring.EnsureApiProgram(program, "Shop");
+        var result = GrpcHost(program, "Shop");
 
         result.Should().StartWith("using A;\r\nusing Modulus.Grpc;\r\nusing System.Reflection;\r\nusing var _");
         result.Should().Contain("app.MapModulusGrpc(").And.NotContain("\n\n").And.NotMatchRegex("[^\r]\n");
@@ -212,7 +214,7 @@ public sealed class GrpcCommandTests : IDisposable
         Read($"{Pres}/Shop.Modules.Catalog.Presentation.csproj").Should().Contain("GrpcServices=\"Both\"");
 
         Read("src/API/Shop.Api/Shop.Api.csproj").Should().Contain("Modulus.Grpc");
-        Read("src/API/Shop.Api/Program.cs").Should().Contain("builder.Services.AddModulusGrpc(builder.Configuration);").And.Contain("app.MapModulusGrpc(");
+        ApiHostFiles.ReadAll(Path.Combine(AppDir, "src/API/Shop.Api/Program.cs")).Should().Contain("builder.Services.AddModulusGrpc(builder.Configuration);").And.Contain("app.MapModulusGrpc(");
         Read("src/API/Shop.Api/appsettings.Development.json").Should().Contain("\"Protocols\": \"Http2\"").And.Contain("\"Issuer\": \"http://localhost:5180/\"");
 
         var tests = Read("tests/Shop.Tests/ProductGrpcTests.cs");

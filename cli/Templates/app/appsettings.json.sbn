@@ -82,6 +82,9 @@
     "FailOnViolation": true
   },
 {{ end }}  "Security": {
+    "Guard": {
+      "AllowListPath": "Security/loosening-allowlist.json"
+    },
     "Redaction": {
       "Enabled": true
     }

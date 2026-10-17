@@ -257,7 +257,7 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
             UseUiFramework = useUiFramework,
             LocalPackageSource = s.PackageSource,
             UiFeedSource = uiEngine == "none" ? null : UiFrameworkPackages.LocalFeed(),
-            Bff = bff,
+            Bff = BffClients.WithWebClient(bff, kind == AppKind.WebAppApi && auth != "none"),
             BffServices = bffServices,
             MultiTenancy = multiTenancy,
         };
@@ -381,6 +381,7 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
                 // With the identity backend the example API needs the permission the Admin role holds (see Program.cs).
                 RequiredPermission = model.ExamplePermission,
                 MultiTenant = model.MultiTenancy,
+                UseAuth = model.UseAuth,
             };
             GenerateModule(modDir, modModel);
             projects.AddRange(ModuleProjectPaths(rootNs, model.ExampleModule));
@@ -448,6 +449,26 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         File.WriteAllText(modulusJsonPath, System.Text.Json.JsonSerializer.Serialize(modulusJson, new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
     }
 
+    /// <summary>
+    /// The API host's setup files, one per concern (garments-erp's API layout). Program.cs composes them; the CLI's feature
+    /// wiring adds to FeatureServicesSetup and FeatureEndpoints, and the module wiring to ModuleRegistration.
+    /// </summary>
+    private void RenderApiSetup(string apiDir, AppModel model)
+    {
+        _templates.RenderToFile("app/api/ModuleRegistration", model, Path.Combine(apiDir, "Composition", "ModuleRegistration.cs"));
+        _templates.RenderToFile("app/api/CoreServicesSetup", model, Path.Combine(apiDir, "Configuration", "CoreServicesSetup.cs"));
+        _templates.RenderToFile("app/api/FeatureServicesSetup", model, Path.Combine(apiDir, "Configuration", "FeatureServicesSetup.cs"));
+        if (model.UseOpenIddict)
+            _templates.RenderToFile("app/api/TokenServerSetup", model, Path.Combine(apiDir, "Security", "TokenServerSetup.cs"));
+        _templates.RenderToFile("app/api/AuthenticationSetup", model, Path.Combine(apiDir, "Security", "AuthenticationSetup.cs"));
+        if (model.ExposeApi)
+            _templates.RenderToFile("app/api/OpenApiSetup", model, Path.Combine(apiDir, "OpenApi", "OpenApiSetup.cs"));
+        _templates.RenderToFile("app/api/DatabaseStartup", model, Path.Combine(apiDir, "Hosting", "DatabaseStartup.cs"));
+        _templates.RenderToFile("app/api/PipelineSetup", model, Path.Combine(apiDir, "Middleware", "PipelineSetup.cs"));
+        _templates.RenderToFile("app/api/ApiEndpoints", model, Path.Combine(apiDir, "Endpoints", "ApiEndpoints.cs"));
+        _templates.RenderToFile("app/api/FeatureEndpoints", model, Path.Combine(apiDir, "Endpoints", "FeatureEndpoints.cs"));
+    }
+
     /// <summary>Generates the API host project for this app (single-project api/webapp, or the API component of webapp+api).</summary>
     private void GenerateApiHost(string projectDir, AppModel model, List<string> projects)
     {
@@ -457,6 +478,7 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
             Path.Combine(apiDir, $"{rootNs}.Api.csproj"));
         _templates.RenderToFile("app/Program", model,
             Path.Combine(apiDir, "Program.cs"));
+        RenderApiSetup(apiDir, model);
         _templates.RenderToFile("app/appsettings.json", model,
             Path.Combine(apiDir, "appsettings.json"));
         _templates.RenderToFile("app/appsettings.Development.json", model,
@@ -468,7 +490,7 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
             Path.Combine(apiDir, "Properties", "launchSettings.json"));
         if (model.UseSecurityGuard)
             _templates.RenderToFile("app/loosening-allowlist.json", model,
-                Path.Combine(apiDir, "security", "loosening-allowlist.json"));
+                Path.Combine(apiDir, "Security", "loosening-allowlist.json"));
         projects.Add($"src/API/{rootNs}.Api/{rootNs}.Api.csproj");
     }
 
@@ -497,9 +519,11 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         if (model.UiEngine == "blazor")
         {
             GenerateBlazorWebPages(webDir, model);
-            _templates.RenderToFile("app/ApiClientExtensions.Web", model, Path.Combine(webDir, "ApiClientExtensions.cs"));
+            RenderBlazorWebSetup(webDir, model);
+            _templates.RenderToFile("app/ApiClientExtensions.Web", model, Path.Combine(webDir, "Services", "ApiClientExtensions.cs"));
+            _templates.RenderToFile("app/MenuRegistration.Web", model, Path.Combine(webDir, "Composition", "MenuRegistration.cs"));
             if (!model.NoExample)
-                _templates.RenderToFile("ui/EntityApiClient", model, Path.Combine(webDir, "ApiClients", $"{model.ExampleEntity}ApiClient.cs"));
+                _templates.RenderToFile("ui/EntityApiClient", model, UiLayout.ApiClientFile(webDir, model.ExampleEntity));
             projects.Add($"src/Web/{rootNs}.Web/{rootNs}.Web.csproj");
             return;
         }
@@ -543,18 +567,25 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         // Typed API clients: always generated. With auth on they carry the BFF web session's token
         // (AddBffUserAccessToken); with auth off they call the API anonymously.
         _templates.RenderToFile("app/ApiClientExtensions.Web", model,
-            Path.Combine(webDir, "ApiClientExtensions.cs"));
+            Path.Combine(webDir, "Services", "ApiClientExtensions.cs"));
         if (!model.NoExample)
         {
             _templates.RenderToFile("ui/EntityApiClient", model,
-                Path.Combine(webDir, "ApiClients", $"{model.ExampleEntity}ApiClient.cs"));
+                UiLayout.ApiClientFile(webDir, model.ExampleEntity));
         }
+
+        // Program.cs composes one setup file per concern; the Razor Pages and MVC hosts share them.
+        RenderRazorWebSetup(webDir, model);
+
+        // Menu contributors live in Components/Navigation/Menu and are registered by scan (see Composition/MenuRegistration.cs).
+        _templates.RenderToFile("app/MenuRegistration.Web", model,
+            Path.Combine(webDir, "Composition", "MenuRegistration.cs"));
 
         // â”€â”€ Authentication: a BFF web session (Modulus.Bff) behind the sign-in pages â”€â”€
         if (model.UseAuth)
         {
             _templates.RenderToFile("app/loosening-allowlist.Web.json", model,
-                Path.Combine(webDir, "security", "loosening-allowlist.json"));
+                Path.Combine(webDir, "Security", "loosening-allowlist.json"));
             _templates.RenderToFile("app/PrincipalCurrentUser", model,
                 Path.Combine(webDir, "Security", "PrincipalCurrentUser.cs"));
 
@@ -578,6 +609,44 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         projects.Add($"src/Web/{rootNs}.Web/{rootNs}.Web.csproj");
     }
 
+    /// <summary>The Razor Pages and MVC host's setup files: one per concern, composed by Program.cs.</summary>
+    private void RenderRazorWebSetup(string webDir, AppModel model)
+    {
+        _templates.RenderToFile("app/WebCoreSetup.Web", model, Path.Combine(webDir, "Configuration", "WebCoreSetup.cs"));
+        _templates.RenderToFile("app/UiSetup.Web", model, Path.Combine(webDir, "Configuration", "UiSetup.cs"));
+        if (model.UseAuth)
+            RenderBffGatewaySecurity(webDir, model);
+        _templates.RenderToFile("app/PipelineSetup.Web", model, Path.Combine(webDir, "Middleware", "PipelineSetup.cs"));
+        _templates.RenderToFile("app/WebEndpoints.Web", model, Path.Combine(webDir, "Endpoints", "WebEndpoints.cs"));
+        _templates.RenderToFile("app/HealthChecksSetup.Web", model, Path.Combine(webDir, "Observability", "HealthChecksSetup.cs"));
+    }
+
+    /// <summary>
+    /// The Web hosts' sign-in through the BFF (src/Bff/{App}.Bff.Web), shared by Razor Pages and Blazor: the authentication setup,
+    /// the gateway that carries the browser's cookie to the BFF, the scheme that reads the BFF's session and the BFF client.
+    /// </summary>
+    private void RenderBffGatewaySecurity(string webDir, AppModel model)
+    {
+        _templates.RenderToFile("app/AuthenticationSetup.Web", model, Path.Combine(webDir, "Security", "AuthenticationSetup.cs"));
+        _templates.RenderToFile("app/BffGatewayHandler.Web", model, Path.Combine(webDir, "Security", "BffGatewayHandler.cs"));
+        _templates.RenderToFile("app/BffSessionAuthenticationHandler.Web", model, Path.Combine(webDir, "Security", "BffSessionAuthenticationHandler.cs"));
+        _templates.RenderToFile("app/BffSessionClient.Web", model, Path.Combine(webDir, "Security", "BffSessionClient.cs"));
+        _templates.RenderToFile("app/RateLimitingSetup.Web", model, Path.Combine(webDir, "Configuration", "RateLimitingSetup.cs"));
+    }
+
+    /// <summary>The Blazor host's setup files: one per concern, composed by Program.cs.</summary>
+    private void RenderBlazorWebSetup(string webDir, AppModel model)
+    {
+        _templates.RenderToFile("app/UiSetup.Blazor", model, Path.Combine(webDir, "Configuration", "UiSetup.cs"));
+        if (model.UseAuth)
+        {
+            RenderBffGatewaySecurity(webDir, model);
+            _templates.RenderToFile("app/AccountEndpoints.Blazor", model, Path.Combine(webDir, "Endpoints", "AccountEndpoints.cs"));
+        }
+        _templates.RenderToFile("app/PipelineSetup.Blazor", model, Path.Combine(webDir, "Middleware", "PipelineSetup.cs"));
+        _templates.RenderToFile("app/WebEndpoints.Blazor", model, Path.Combine(webDir, "Endpoints", "WebEndpoints.cs"));
+    }
+
     /// <summary>The Blazor host's pages: the app shell, routes, the main layout and a home page, plus the sign-in pages with --auth.</summary>
     private void GenerateBlazorWebPages(string webDir, AppModel model)
     {
@@ -593,7 +662,7 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         {
             _templates.RenderToFile("app/blazor/Layout/BlankLayout.razor", model, Path.Combine(components, "Layout", "BlankLayout.razor"));
             _templates.RenderToFile("app/blazor/RedirectToLogin.razor", model, Path.Combine(components, "RedirectToLogin.razor"));
-            _templates.RenderToFile("app/loosening-allowlist.Web.json", model, Path.Combine(webDir, "security", "loosening-allowlist.json"));
+            _templates.RenderToFile("app/loosening-allowlist.Web.json", model, Path.Combine(webDir, "Security", "loosening-allowlist.json"));
             _templates.RenderToFile("app/PrincipalCurrentUser", model, Path.Combine(webDir, "Security", "PrincipalCurrentUser.cs"));
             if (model.WebLoginMode == "Password")
                 _templates.RenderToFile("app/blazor/Pages/Account/Login.razor", model, Path.Combine(components, "Pages", "Account", "Login.razor"));
@@ -609,6 +678,12 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         var dir = Path.Combine(projectDir, "src", "Bff", bff.ProjectName);
         _templates.RenderToFile("bff/bff.csproj", bff, Path.Combine(dir, $"{bff.ProjectName}.csproj"));
         _templates.RenderToFile("bff/Program", bff, Path.Combine(dir, "Program.cs"));
+        // Program.cs composes one setup file per concern (garments-erp's BFF layout).
+        _templates.RenderToFile("bff/BffCoreSetup", bff, Path.Combine(dir, "Configuration", "BffCoreSetup.cs"));
+        _templates.RenderToFile("bff/SessionAuthSetup", bff, Path.Combine(dir, "Security", "SessionAuthSetup.cs"));
+        _templates.RenderToFile("bff/PipelineSetup", bff, Path.Combine(dir, "Middleware", "PipelineSetup.cs"));
+        _templates.RenderToFile("bff/BffEndpoints", bff, Path.Combine(dir, "Endpoints", "BffEndpoints.cs"));
+        _templates.RenderToFile("bff/HealthChecksSetup", bff, Path.Combine(dir, "Observability", "HealthChecksSetup.cs"));
         _templates.RenderToFile("bff/appsettings.json", bff, Path.Combine(dir, "appsettings.json"));
         _templates.RenderToFile("bff/appsettings.Development.json", bff, Path.Combine(dir, "appsettings.Development.json"));
         _templates.RenderToFile("bff/launchSettings.json", bff, Path.Combine(dir, "Properties", "launchSettings.json"));
@@ -1026,11 +1101,11 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
     }
 
     /// <summary>
-    /// Generates a 4-layer module (Domain, Application, Infrastructure,
-    /// Presentation) â€” each its own .csproj. DTOs live under
-    /// <c>Application/Dtos</c> and integration events under
-    /// <c>Application/IntegrationEvents</c>; there are no separate
-    /// Contracts / IntegrationEvents / Tests projects. Pass a
+    /// Generates a five-project module (Domain, Application, IntegrationEvents,
+    /// Infrastructure, Presentation), each its own .csproj. DTOs live under
+    /// <c>Application/Dtos</c>; integration events live in the IntegrationEvents
+    /// project, which Application references. There is no separate Contracts or
+    /// Tests project. Pass a
     /// <see cref="ModuleModel"/> with a blank <see cref="ModuleModel.EntityName"/>
     /// to create an empty module skeleton.
     /// </summary>
@@ -1054,6 +1129,11 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         }
 
         // â”€â”€ Application layer (commands/handlers/queries/DTOs/events) â”€â”€
+        // The IntegrationEvents project is always generated (Application references it, even for a blank module).
+        var eventsDir = Path.Combine(modDir, m.IntegrationEventsProject);
+        _templates.RenderToFile("module/integrationevents.csproj", m,
+            Path.Combine(eventsDir, $"{m.IntegrationEventsProject}.csproj"));
+
         var appDir = Path.Combine(modDir, m.ApplicationProject);
         _templates.RenderToFile("module/application.csproj", m,
             Path.Combine(appDir, $"{m.ApplicationProject}.csproj"));
@@ -1089,13 +1169,13 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
                 Path.Combine(appDir, $"Delete{entityName}Handler.cs"));
 
             _templates.RenderToFile("module/Application/ModuleArea", m,
-                Path.Combine(appDir, "IntegrationEvents", $"{m.ModuleName}Area.cs"));
+                Path.Combine(eventsDir, "IntegrationEvents", $"{m.ModuleName}Area.cs"));
             _templates.RenderToFile("module/Application/IntegrationEvent", m,
-                Path.Combine(appDir, "IntegrationEvents", $"{entityName}CreatedIntegrationEvent.cs"));
+                Path.Combine(eventsDir, "IntegrationEvents", $"{entityName}CreatedIntegrationEvent.cs"));
             _templates.RenderToFile("module/Application/UpdatedIntegrationEvent", m,
-                Path.Combine(appDir, "IntegrationEvents", $"{entityName}UpdatedIntegrationEvent.cs"));
+                Path.Combine(eventsDir, "IntegrationEvents", $"{entityName}UpdatedIntegrationEvent.cs"));
             _templates.RenderToFile("module/Application/DeletedIntegrationEvent", m,
-                Path.Combine(appDir, "IntegrationEvents", $"{entityName}DeletedIntegrationEvent.cs"));
+                Path.Combine(eventsDir, "IntegrationEvents", $"{entityName}DeletedIntegrationEvent.cs"));
         }
 
         // â”€â”€ Infrastructure layer (composition root) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -1146,13 +1226,13 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
     }
 
     /// <summary>
-    /// All four layer project paths (relative to solution root) for a module,
+    /// All five layer project paths (relative to solution root) for a module,
     /// used when registering projects in the .slnx file.
     /// </summary>
     internal static IEnumerable<string> ModuleProjectPaths(string rootNs, string moduleName)
     {
         var moduleNs = $"{rootNs}.Modules.{moduleName}";
-        string[] layers = ["Domain", "Application", "Infrastructure", "Presentation"];
+        string[] layers = ["Domain", "IntegrationEvents", "Application", "Infrastructure", "Presentation"];
         foreach (var layer in layers)
         {
             var proj = $"{moduleNs}.{layer}";

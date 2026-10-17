@@ -1,0 +1,34 @@
+using Modulus.AspNetCore.Correlation;
+using Modulus.AspNetCore.Extensions;
+using Modulus.AspNetCore.Mvc;
+using Modulus.AspNetCore.Security;
+
+namespace {{ root_namespace }}.Web.Middleware;
+
+/// <summary>The web host's request pipeline. The order is authoritative.</summary>
+internal static class PipelineSetup
+{
+    /// <remarks>
+    /// Forwarded headers first, so downstream code sees the real client address and scheme. Correlation before the exception
+    /// handler, so errors it logs carry the id.{{ if use_auth }} Authentication and authorization before the endpoints, so the
+    /// endpoint metadata they check is in place.{{ end }}
+    /// </remarks>
+    public static WebApplication UseWebPipeline(this WebApplication app)
+    {
+        app.UseForwardedHeaders();
+{{ if enable_security_headers }}        app.UseModulusSecurityHeaders();
+{{ end }}        app.UseExceptionHandler();
+{{ if enable_correlation }}        app.UseModulusCorrelation();
+{{ end }}
+        // Static web assets of the UI packages (/_content/...), then the request culture from Modulus:Theme:Cultures.
+        app.MapStaticAssets();
+        app.UseModulusLocalization();
+        app.UseStatusCodePages();
+        app.UseRouting();
+{{ if use_auth }}        app.UseRateLimiter();
+        app.UseAuthentication();
+        app.UseAuthorization();
+{{ end }}
+        return app;
+    }
+}

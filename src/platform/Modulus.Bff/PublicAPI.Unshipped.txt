@@ -141,6 +141,8 @@ Modulus.Bff.BffLoginRequest.UserName.get -> string!
 Modulus.Bff.BffLoginRequest.UserName.init -> void
 Modulus.Bff.BffOptions
 Modulus.Bff.BffOptions.AuthServer.get -> Modulus.Bff.BffAuthServer
+Modulus.Bff.BffOptions.AllowedReturnOrigins.get -> System.Collections.Generic.List<string!>!
+Modulus.Bff.BffOptions.AllowedReturnOrigins.set -> void
 Modulus.Bff.BffOptions.AuthServer.set -> void
 Modulus.Bff.BffOptions.Authority.get -> string?
 Modulus.Bff.BffOptions.Authority.set -> void

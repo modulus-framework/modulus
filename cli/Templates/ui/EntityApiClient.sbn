@@ -4,7 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Modulus.AspNetCore.Http;
 using {{ module_namespace }}.Application.Dtos;
 
-namespace {{ ui_namespace }}.ApiClients;
+namespace {{ ui_namespace }}.Services.ApiClients;
 
 /// <summary>
 /// Typed client for the {{ module_name }} module's {{ entity_name }} API, served by
@@ -62,7 +62,8 @@ public sealed class {{ entity_name }}ApiClient(HttpClient http, IConfiguration c
     /// lifetime, not per request).</summary>
     private static HttpClient Configure(HttpClient http, IConfiguration configuration)
     {
-        var baseUrl = configuration["Api:BaseUrl"] ?? "http://localhost:5180";
+        // With a sign-in the calls go through the BFF (Bff:BaseUrl), which forwards /api with the session's token.
+        var baseUrl = configuration["Bff:BaseUrl"] ?? configuration["Api:BaseUrl"] ?? "http://localhost:5180";
         http.BaseAddress = new Uri($"{baseUrl.TrimEnd('/')}/");
         return http;
     }

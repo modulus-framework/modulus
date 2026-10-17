@@ -19,7 +19,7 @@ internal sealed class AddRealtimeCommand : Command<AddRealtimeCommand.Settings>
 
     internal sealed class Settings : ModulusSettings
     {
-        [Description("Integration events to push, by event name or type name (comma-separated). Default: every [[IntegrationEventName]] event in the modules' Application/IntegrationEvents.")]
+        [Description("Integration events to push, by event name or type name (comma-separated). Default: every [[IntegrationEventName]] event in the modules' IntegrationEvents projects.")]
         [CommandOption("--events")]
         public string? Events { get; init; }
 
@@ -49,12 +49,12 @@ internal sealed class AddRealtimeCommand : Command<AddRealtimeCommand.Settings>
         var events = AddWebhooksCommand.SelectEvents(WebhooksWiring.FindIntegrationEvents(app.SolutionDir), s.Events)
             .Select(e => new RealtimeWiring.RealtimeEventInfo(e, RealtimeWiring.PermissionFor(e, app.Modules)))
             .ToList();
-        var program = File.ReadAllText(app.ProgramCsPath);
+        var host = ApiHostFiles.ReadAll(app.ProgramCsPath);
         var model = new RealtimeModel
         {
             RootNamespace = app.RootNamespace,
             Events = events,
-            HasAdminRole = UiAccessGates.HasAdminRole(program),
+            HasAdminRole = UiAccessGates.HasAdminRole(host),
         };
 
         var written = new List<string>();
@@ -64,10 +64,11 @@ internal sealed class AddRealtimeCommand : Command<AddRealtimeCommand.Settings>
         var apiDir = Path.GetDirectoryName(app.ApiProjectPath)!;
         if (ProjectFileService.EnsureCsprojPackageReference(app.ApiProjectPath, RealtimeWiring.PackageId, FrameworkVersion.Current, Ux.DryRun))
             written.Add(Path.GetRelativePath(app.SolutionDir, app.ApiProjectPath) + " (updated)");
-        if (!Edit(app.ProgramCsPath, t => RealtimeWiring.EnsureApiProgram(t, events), written, app)
-            && !program.Contains("MapModulusRealtime(", StringComparison.Ordinal))
+        var changed = Edit(ApiHostFiles.FeatureServicesFile(app.ProgramCsPath), t => RealtimeWiring.EnsureApiServices(t, events), written, app);
+        changed |= Edit(ApiHostFiles.FeatureEndpointsFile(app.ProgramCsPath), RealtimeWiring.EnsureApiEndpoints, written, app);
+        if (!changed && !host.Contains("MapModulusRealtime(", StringComparison.Ordinal))
         {
-            hints.Add("Program.cs: add builder.Services.AddModulusRealtime(builder.Configuration, realtime => { realtime.AddEvent<...>(_ => RealtimeAudience...); }) before Build() and app.MapModulusRealtime().");
+            hints.Add("Add builder.Services.AddModulusRealtime(builder.Configuration, realtime => { realtime.AddEvent<...>(_ => RealtimeAudience...); }) to Configuration/FeatureServicesSetup.cs and app.MapModulusRealtime() to Endpoints/FeatureEndpoints.cs.");
         }
 
         Edit(Path.Combine(apiDir, "appsettings.json"), t => RealtimeWiring.EnsureApiSettings(t, s.SignalR), written, app);

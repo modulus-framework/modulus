@@ -52,10 +52,13 @@ internal sealed class AddAuditStoreCommand : Command<AddAuditStoreCommand.Settin
         var apiDir = Path.GetDirectoryName(app.ApiProjectPath)!;
         var reference = Path.GetRelativePath(apiDir, infraCsproj).Replace('\\', '/');
         Edit(app.ApiProjectPath, t => WebhooksWiring.EnsureApiProjectReference(t, reference), written, app);
-        Edit(app.ProgramCsPath, t => AuditStoreWiring.EnsureApiProgram(t, model.AuditNamespace), written, app);
-        var program = File.Exists(app.ProgramCsPath) ? File.ReadAllText(app.ProgramCsPath) : string.Empty;
-        if (!Ux.DryRun && !program.Contains("AddModule<AuditModule>()", StringComparison.Ordinal))
-            hints.Add("Program.cs: add modules.AddModule<AuditModule>() to AddModulus(...) and builder.Services.AddModulusSecurityAudit(builder.Configuration) before Build().");
+        Edit(ApiHostFiles.ModulesFile(app.ProgramCsPath), t => AuditStoreWiring.EnsureApiModule(t, model.AuditNamespace), written, app);
+        // A guarded host already records security events (AuthenticationSetup); only a host without it gets the call.
+        if (!ApiHostFiles.ReadAll(app.ProgramCsPath).Contains("AddModulusSecurityAudit(", StringComparison.Ordinal))
+            Edit(ApiHostFiles.FeatureServicesFile(app.ProgramCsPath), AuditStoreWiring.EnsureApiServices, written, app);
+        var host = ApiHostFiles.ReadAll(app.ProgramCsPath);
+        if (!Ux.DryRun && !host.Contains("AddModule<AuditModule>()", StringComparison.Ordinal))
+            hints.Add("Add modules.AddModule<AuditModule>() to the AddModulus callback (Composition/ModuleRegistration.cs) and builder.Services.AddModulusSecurityAudit(builder.Configuration) to Configuration/FeatureServicesSetup.cs.");
 
         Edit(Path.Combine(apiDir, "appsettings.json"), t => AuditStoreWiring.EnsureSettings(t, "Production", model.AuditConnectionString), written, app);
         var development = Path.Combine(apiDir, "appsettings.Development.json");

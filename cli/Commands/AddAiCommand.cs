@@ -36,7 +36,7 @@ internal sealed class AddAiCommand : Command<AddAiCommand.Settings>
         if (!File.Exists(app.ProgramCsPath))
             throw new InvalidOperationException($"Program.cs not found at {app.ProgramCsPath}.");
 
-        var program = File.ReadAllText(app.ProgramCsPath);
+        var program = ApiHostFiles.ReadAll(app.ProgramCsPath);
         var written = new List<string>();
         var apiDir = Path.GetDirectoryName(app.ApiProjectPath)!;
 
@@ -46,7 +46,9 @@ internal sealed class AddAiCommand : Command<AddAiCommand.Settings>
                 written.Add(Path.GetRelativePath(app.SolutionDir, app.ApiProjectPath).Replace('\\', '/') + " (updated)");
         }
 
-        Edit(app.ProgramCsPath, AiWiring.EnsureConnectorProgram, written, app);
+        var identity = AiWiring.HasIdentityUsers(program);
+        Edit(ApiHostFiles.FeatureServicesFile(app.ProgramCsPath), t => AiWiring.EnsureConnectorServices(t, identity), written, app);
+        Edit(ApiHostFiles.FeatureEndpointsFile(app.ProgramCsPath), AiWiring.EnsureConnectorEndpoints, written, app);
 
         // The journal table must reach the migrations the EF tools scaffold: each module's design-time factory passes the contributor.
         var journalModules = AiWiring.JournalModules(app.SolutionDir);
