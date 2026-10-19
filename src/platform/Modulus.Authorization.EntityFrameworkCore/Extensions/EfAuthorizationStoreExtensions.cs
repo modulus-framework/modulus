@@ -49,7 +49,37 @@ public static class EfAuthorizationStoreExtensions
         this IServiceCollection services,
         Action<DbContextOptionsBuilder> configure)
     {
-        services.AddDbContextFactory<AuthorizationStoreDbContext>(configure);
+        // The framework's own organization types: the generic registrations below resolve these default classes.
+        services.TryAddSingleton<EfOrgHierarchy>();
+        services.TryAddSingleton<EfOrgHierarchy<OrgUnitRow, OrgUnitParentRow, OrgUnitProfileRow, CompanyProfileRow>>(
+            sp => sp.GetRequiredService<EfOrgHierarchy>());
+        services.TryAddSingleton<EfOrganizationProfileStore>();
+        services.TryAddSingleton<EfOrganizationProfileStore<OrgUnitRow, OrgUnitParentRow, OrgUnitProfileRow, CompanyProfileRow>>(
+            sp => sp.GetRequiredService<EfOrganizationProfileStore>());
+        return services.AddEfCoreAuthorizationStores<AuthorizationStoreDbContext, OrgUnitRow, OrgUnitParentRow, OrgUnitProfileRow, CompanyProfileRow>(configure);
+    }
+
+    /// <summary>
+    /// Registers the EF authorization stores with application-defined organization entities, the way <c>IdentityDbContext</c> is
+    /// extended. <typeparamref name="TContext"/> derives from <see cref="AuthorizationStoreDbContext{TOrgUnit,TOrgUnitParent,TOrgUnitProfile,TCompanyProfile}"/>.
+    /// </summary>
+    public static IServiceCollection AddEfCoreAuthorizationStores<TContext, TOrgUnit, TOrgUnitParent, TOrgUnitProfile, TCompanyProfile>(
+        this IServiceCollection services,
+        Action<DbContextOptionsBuilder> configure)
+        where TContext : AuthorizationStoreDbContext<TOrgUnit, TOrgUnitParent, TOrgUnitProfile, TCompanyProfile>
+        where TOrgUnit : OrgUnitRow, new()
+        where TOrgUnitParent : OrgUnitParentRow, new()
+        where TOrgUnitProfile : OrgUnitProfileRow, new()
+        where TCompanyProfile : CompanyProfileRow, new()
+    {
+        services.AddDbContextFactory<TContext>(configure);
+
+        // Stores that need only the base context, and stores that need the organization types, both resolve the application's
+        // context through an adapter (IDbContextFactory<T> is invariant).
+        services.TryAddSingleton<IDbContextFactory<AuthorizationStoreDbContextBase>>(
+            sp => new ContextFactoryAdapter<AuthorizationStoreDbContextBase, TContext>(sp.GetRequiredService<IDbContextFactory<TContext>>()));
+        services.TryAddSingleton<IDbContextFactory<AuthorizationStoreDbContext<TOrgUnit, TOrgUnitParent, TOrgUnitProfile, TCompanyProfile>>>(
+            sp => new ContextFactoryAdapter<AuthorizationStoreDbContext<TOrgUnit, TOrgUnitParent, TOrgUnitProfile, TCompanyProfile>, TContext>(sp.GetRequiredService<IDbContextFactory<TContext>>()));
         services.TryAddSingleton(TimeProvider.System);
 
         // Fail-safe default (mirrors AddModulusAuthorizationManagement's
@@ -70,10 +100,11 @@ public static class EfAuthorizationStoreExtensions
         services.AddScoped<IPermissionGrantStore>(sp =>
             new CachedPermissionGrantStore(sp.GetRequiredService<EfPermissionGrantStore>()));
 
-        services.TryAddSingleton<EfOrgHierarchy>();
+        services.TryAddSingleton<EfOrgHierarchy<TOrgUnit, TOrgUnitParent, TOrgUnitProfile, TCompanyProfile>>();
+        services.TryAddSingleton<IOrgUnitAdministration>(sp => sp.GetRequiredService<EfOrgHierarchy<TOrgUnit, TOrgUnitParent, TOrgUnitProfile, TCompanyProfile>>());
         services.RemoveAll<IOrgHierarchy>();
         services.AddSingleton<IOrgHierarchy>(
-            sp => sp.GetRequiredService<EfOrgHierarchy>());
+            sp => sp.GetRequiredService<EfOrgHierarchy<TOrgUnit, TOrgUnitParent, TOrgUnitProfile, TCompanyProfile>>());
 
         services.TryAddSingleton<EfOrgPlacementStore>();
         services.RemoveAll<IOrgPlacementStore>();
@@ -105,11 +136,21 @@ public static class EfAuthorizationStoreExtensions
             sp => sp.GetRequiredService<EfAssignmentStore>());
 
         services.TryAddSingleton<EfAccessRequestStore>();
-        services.TryAddSingleton<EfOrganizationProfileStore>();
+        services.TryAddSingleton<EfOrganizationProfileStore<TOrgUnit, TOrgUnitParent, TOrgUnitProfile, TCompanyProfile>>();
         services.TryAddSingleton<EfSodRuleStore>();
+        services.TryAddSingleton<IPermissionCatalogSnapshotStore, EfPermissionCatalogSnapshotStore>();
         services.TryAddSingleton<EfRoleInclusionStore>();
         services.TryAddSingleton<EfPositionStore>();
         services.TryAddSingleton<EfPartyStore>();
+        services.TryAddSingleton<Modulus.Authorization.Dimensions.IDimensionValueRegistry, EfDimensionValueRegistry>();
+        // Findings are kept in the database (A4-1): the decision path only enqueues, and a hosted service writes and purges.
+        services.AddOptions<DataQualityFindingOptions>();
+        services.TryAddSingleton(sp => new DataQualityFindingQueue(sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<DataQualityFindingOptions>>().Value.Capacity));
+        services.Replace(ServiceDescriptor.Singleton<Modulus.Core.Abstractions.DataQuality.IDataQualityFindingSink>(sp => sp.GetRequiredService<DataQualityFindingQueue>()));
+        services.TryAddSingleton<DataQualityFindingStore>();
+        services.AddHostedService<DataQualityFindingService>();
+        // Replaces the framework's null hierarchy whatever the registration order: the placements are in the database.
+        services.Replace(ServiceDescriptor.Singleton<Modulus.Authorization.Dimensions.IDimensionHierarchy, EfDimensionHierarchy>());
         // Rules edited at runtime plus the ones declared in code (AddSegregationOfDuties); scoped, read once per request.
         services.RemoveAll<ISodPolicy>();
         services.AddScoped<ISodPolicy, EfSodPolicy>();
@@ -154,7 +195,7 @@ public static class EfAuthorizationStoreExtensions
     {
         await using var scope = services.CreateAsyncScope();
         var factory = scope.ServiceProvider
-            .GetRequiredService<IDbContextFactory<AuthorizationStoreDbContext>>();
+            .GetRequiredService<IDbContextFactory<AuthorizationStoreDbContextBase>>();
         await using var db = await factory.CreateDbContextAsync(ct);
         var strategy = db.Database.CreateExecutionStrategy();
 

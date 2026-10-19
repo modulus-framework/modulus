@@ -40,7 +40,8 @@ public sealed class InvitationAndTwoFactorTests
         }
     }
 
-    private static async Task<(ServiceProvider Provider, CapturingSender Sender, SqliteConnection Connection)> CreateAsync()
+    private static async Task<(ServiceProvider Provider, CapturingSender Sender, SqliteConnection Connection)> CreateAsync(
+        Modulus.Authorization.Fields.IFieldAuthorizer? fieldAuthorizer = null)
     {
         var connection = new SqliteConnection("DataSource=:memory:");
         await connection.OpenAsync();
@@ -50,6 +51,8 @@ public sealed class InvitationAndTwoFactorTests
         services.AddHttpContextAccessor();
         services.AddSingleton<Microsoft.Extensions.Hosting.IHostEnvironment>(new FakeEnvironment());
         services.AddSingleton<IIdentityEmailSender>(sender);
+        if (fieldAuthorizer is not null)
+            services.AddSingleton(fieldAuthorizer);
         services.AddScoped<ICurrentTenant, Modulus.Core.Null.NullCurrentTenant>();
         services.AddDbContext<ModulusIdentityDbContext>(o => o.UseSqlite(connection));
         services.AddModulusIdentity<ModulusIdentityDbContext, ModulusUser, ModulusRole>(new ConfigurationBuilder().Build());
@@ -131,6 +134,45 @@ public sealed class InvitationAndTwoFactorTests
         results[2].Error.Should().Contain("Missing");
         sender.Sent.Select(m => m.Email).Should().Equal("a@example.test", "a@example.test");
         results[0].UserId.Should().Be(results[3].UserId, "the same pending account is re-invited, not duplicated");
+    }
+
+    [Fact]
+    public async Task A_refused_field_stops_the_whole_invitation_batch_before_any_account_is_created()
+    {
+        var (provider, sender, connection) = await CreateAsync(new DenyFieldsAuthorizer("FirstName"));
+        await using var _ = provider;
+        await using var __ = connection;
+        using var scope = provider.CreateScope();
+        var invitations = scope.ServiceProvider.GetRequiredService<IUserInvitationService>();
+        var users = scope.ServiceProvider.GetRequiredService<UserManager<ModulusUser>>();
+
+        var act = () => invitations.InviteManyAsync(
+        [
+            new UserInvitation("first@example.test"),
+            new UserInvitation("second@example.test", FirstName: "Protected"),
+        ]);
+
+        var error = await act.Should().ThrowAsync<Modulus.Core.Abstractions.Exceptions.ForbiddenException>();
+        error.Which.Message.Should().Contain("FIELD_PROTECTED");
+        (await users.FindByEmailAsync("first@example.test")).Should().BeNull("the batch is refused as a whole");
+        sender.Sent.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task A_refused_field_stops_a_single_invitation_before_any_account_is_created()
+    {
+        var (provider, sender, connection) = await CreateAsync(new DenyFieldsAuthorizer("FirstName"));
+        await using var _ = provider;
+        await using var __ = connection;
+        using var scope = provider.CreateScope();
+        var invitations = scope.ServiceProvider.GetRequiredService<IUserInvitationService>();
+        var users = scope.ServiceProvider.GetRequiredService<UserManager<ModulusUser>>();
+
+        var act = () => invitations.InviteAsync(new UserInvitation("single@example.test", FirstName: "Protected"));
+
+        await act.Should().ThrowAsync<Modulus.Core.Abstractions.Exceptions.ForbiddenException>();
+        (await users.FindByEmailAsync("single@example.test")).Should().BeNull();
+        sender.Sent.Should().BeEmpty();
     }
 
     [Fact]

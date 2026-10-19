@@ -54,6 +54,10 @@ public static class Program
             config.AddCommand<Commands.AddAuditStoreCommand>("add-audit-store")
                 .WithDescription("Keep the business audit log and the hash-chained security audit in a database (store module, host wiring, settings).")
                 .WithExample("add-audit-store");
+            config.AddCommand<Commands.AddOpenBaoCommand>("add-openbao")
+                .WithDescription("Keep secrets in OpenBao (read-only in the API host), with --tenant-databases for per-tenant connection strings; settings and dev bootstrap.")
+                .WithExample("add-openbao")
+                .WithExample("add-openbao", "--auth", "approle", "--tenant-databases");
             config.AddCommand<Commands.AddRealtimeCommand>("add-realtime")
                 .WithDescription("Push integration events to connected clients over SSE (and SignalR with --signalr), filtered by tenant and permission; relays /realtime through BFFs.")
                 .WithExample("add-realtime")

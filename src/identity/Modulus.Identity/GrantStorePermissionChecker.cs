@@ -32,8 +32,16 @@ internal sealed class GrantStorePermissionChecker(
         if (principal?.Identity?.IsAuthenticated != true)
             return EmptySet;
 
-        return resolver.Resolve(new PrincipalGrantQuery(ReadUserId(principal), ReadRoles(principal)));
+        // An agent token whose agent cannot be named grants nothing; otherwise the agent's role caps the person's access (A9-1).
+        var agent = principal.FindFirst(AgentClaim)?.Value;
+        if (agent is not null && string.IsNullOrWhiteSpace(agent))
+            return EmptySet;
+
+        return resolver.Resolve(new PrincipalGrantQuery(ReadUserId(principal), ReadRoles(principal), agent));
     }
+
+    // The RFC 8693 actor claim: its value is the agent's role (see the PermissionRequirementHandler, which reads the same claim).
+    private const string AgentClaim = "act";
 
     private static Guid? ReadUserId(ClaimsPrincipal principal)
     {

@@ -34,6 +34,12 @@ public sealed class PermissionResolver(
             return index;
         });
 
+    // Retired permissions are denied to everyone, whatever grants exist. Snapshot once, like the requires index.
+    private readonly Lazy<IReadOnlySet<string>> _retired =
+        new(() => new HashSet<string>(
+            registry.GetAll().Where(d => d.Lifecycle is PermissionLifecycle.Retired).Select(d => d.Permission),
+            StringComparer.OrdinalIgnoreCase));
+
     public IReadOnlySet<string> Resolve(PrincipalGrantQuery principal)
     {
         ArgumentNullException.ThrowIfNull(principal);
@@ -75,8 +81,19 @@ public sealed class PermissionResolver(
         if (denied.Count > 0)
             allowed.ExceptWith(denied);
 
+        // An agent acting for the principal never does more than its own role is granted (A9-1).
+        if (principal.AgentRole is { } agentRole)
+            allowed.IntersectWith(ResolveRole(agentRole));
+
+        // A retired permission is denied outright, even when a grant or a wildcard names it.
+        allowed.ExceptWith(_retired.Value);
+
         return allowed;
     }
+
+    /// <summary>What <paramref name="role"/> holds, resolved as a principal with no user of its own.</summary>
+    private IReadOnlySet<string> ResolveRole(string role)
+        => Resolve(new PrincipalGrantQuery(null, [role]));
 
     /// <summary>
     /// The permissions explicitly denied to <paramref name="principal"/> (wildcard denies expanded). Authority that
@@ -137,7 +154,8 @@ public sealed class PermissionResolver(
         while (pending.Count > 0)
         {
             var permission = pending.Pop();
-            if (!index.TryGetValue(permission, out var requires))
+            // A retired permission confers nothing, not even its prerequisites.
+            if (_retired.Value.Contains(permission) || !index.TryGetValue(permission, out var requires))
                 continue;
 
             foreach (var required in requires)

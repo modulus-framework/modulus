@@ -11,6 +11,7 @@
     <PackageReference Include="Synvro.Modulus.Mediator" Version="{{ framework_version }}" />
     <PackageReference Include="Synvro.Modulus.EntityFrameworkCore" Version="{{ framework_version }}" />
     <PackageReference Include="Synvro.Modulus.Events" Version="{{ framework_version }}" />
+    <PackageReference Include="Synvro.Modulus.Platform" Version="{{ framework_version }}" />
   </ItemGroup>
 
   <ItemGroup>

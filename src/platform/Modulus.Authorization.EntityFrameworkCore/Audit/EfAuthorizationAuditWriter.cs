@@ -17,11 +17,11 @@ using Modulus.Core.Correlation;
 /// </summary>
 public sealed class EfAuthorizationAuditWriter : IAuthorizationAuditWriter
 {
-    private readonly IDbContextFactory<AuthorizationStoreDbContext> _factory;
+    private readonly IDbContextFactory<AuthorizationStoreDbContextBase> _factory;
     private readonly IServiceProvider _sp;
 
     public EfAuthorizationAuditWriter(
-        IDbContextFactory<AuthorizationStoreDbContext> factory,
+        IDbContextFactory<AuthorizationStoreDbContextBase> factory,
         IIntegrationEventRegistry registry,
         IServiceProvider sp)
     {

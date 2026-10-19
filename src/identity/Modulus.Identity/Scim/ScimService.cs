@@ -39,14 +39,15 @@ internal interface IScimService
     Task<bool> DeleteGroupAsync(string id, CancellationToken ct);
 }
 
-internal sealed class ScimService<TUser>(
+internal sealed class ScimService<TUser, TRole>(
     UserManager<TUser> users,
-    RoleManager<ModulusRole> roles,
+    RoleManager<TRole> roles,
     ICurrentTenant tenant,
     IOptions<ScimOptions> options,
     IServiceProvider services,
-    ILogger<ScimService<TUser>> logger) : IScimService
+    ILogger<ScimService<TUser, TRole>> logger) : IScimService
     where TUser : ModulusUser, new()
+    where TRole : ModulusRole, new()
 {
     private static readonly IReadOnlyDictionary<string, ScimAttribute<TUser>> s_userAttributes =
         new Dictionary<string, ScimAttribute<TUser>>(StringComparer.Ordinal)
@@ -58,11 +59,12 @@ internal sealed class ScimService<TUser>(
             ["emails.value"] = new(ScimAttributeKind.String, u => u.Email),
             ["name.givenname"] = new(ScimAttributeKind.String, u => u.FirstName),
             ["name.familyname"] = new(ScimAttributeKind.String, u => u.LastName),
-            ["active"] = new(ScimAttributeKind.Boolean, u => u.IsActive),
+            // Inline, not MayStartNewAccess(): this getter is translated into the SQL of a filter.
+            ["active"] = new(ScimAttributeKind.Boolean, u => u.IsActive && u.Lifecycle == AccountLifecycle.Active),
         };
 
-    private static readonly IReadOnlyDictionary<string, ScimAttribute<ModulusRole>> s_groupAttributes =
-        new Dictionary<string, ScimAttribute<ModulusRole>>(StringComparer.Ordinal)
+    private static readonly IReadOnlyDictionary<string, ScimAttribute<TRole>> s_groupAttributes =
+        new Dictionary<string, ScimAttribute<TRole>>(StringComparer.Ordinal)
         {
             ["id"] = new(ScimAttributeKind.Guid, r => r.Id),
             ["displayname"] = new(ScimAttributeKind.String, r => r.Name),
@@ -142,7 +144,7 @@ internal sealed class ScimService<TUser>(
         if (string.IsNullOrWhiteSpace(model.UserName))
             throw new ScimException(400, "invalidValue", "userName is required.");
 
-        model.Active ??= user.IsActive;
+        model.Active ??= user.MayStartNewAccess();
         await UpdateAsync(user, model, company, ct);
         return await ToScimWithGroupsAsync(user, baseUrl);
     }
@@ -177,7 +179,7 @@ internal sealed class ScimService<TUser>(
                 throw FromIdentity(deleted);
             Audit("scim.user.deleted", user);
         }
-        else if (user.IsActive)
+        else if (user.MayStartNewAccess())
         {
             user.IsActive = false;
             var updated = await users.UpdateAsync(user);
@@ -191,7 +193,7 @@ internal sealed class ScimService<TUser>(
 
     private async Task UpdateAsync(TUser user, ScimUser model, Guid company, CancellationToken ct)
     {
-        var wasActive = user.IsActive;
+        var wasActive = user.MayStartNewAccess();
         var active = model.Active ?? wasActive;
         await ApplyAsync(user, model, create: false, company, ct);
 
@@ -256,7 +258,7 @@ internal sealed class ScimService<TUser>(
             Name = name,
             DisplayName = formatted.Length > 0 ? formatted : user.UserName,
             Emails = user.Email is null ? [] : [new ScimEmail { Value = user.Email, Type = "work", Primary = true }],
-            Active = user.IsActive,
+            Active = user.MayStartNewAccess(),
             Groups = groups?.ToList(),
             Meta = new ScimMeta { ResourceType = "User", Location = $"{baseUrl}/Users/{user.Id}" },
         };
@@ -398,7 +400,7 @@ internal sealed class ScimService<TUser>(
             throw new ScimException(403, null, "This server does not let a provisioning client create this group.");
 
         var members = await ResolveMembersAsync(model.Members);
-        var created = await roles.CreateAsync(new ModulusRole { Name = name, DisplayName = name, TenantId = company });
+        var created = await roles.CreateAsync(new TRole { Name = name, DisplayName = name, TenantId = company });
         if (!created.Succeeded)
             throw FromIdentity(created);
 
@@ -453,7 +455,7 @@ internal sealed class ScimService<TUser>(
         return true;
     }
 
-    private async Task ApplyGroupOperationAsync(ModulusRole role, HashSet<Guid> members, ScimPatchOperation operation)
+    private async Task ApplyGroupOperationAsync(TRole role, HashSet<Guid> members, ScimPatchOperation operation)
     {
         var op = OperationName(operation);
         var path = operation.Path?.Trim();
@@ -469,7 +471,7 @@ internal sealed class ScimService<TUser>(
         await ApplyGroupAttributeAsync(role, members, op, path, operation.Value);
     }
 
-    private async Task ApplyGroupAttributeAsync(ModulusRole role, HashSet<Guid> members, string op, string path, JsonElement? value)
+    private async Task ApplyGroupAttributeAsync(TRole role, HashSet<Guid> members, string op, string path, JsonElement? value)
     {
         var key = path.ToLowerInvariant();
         if (key == "displayname")
@@ -549,7 +551,7 @@ internal sealed class ScimService<TUser>(
     }
 
     /// <summary>Makes the role's members exactly <paramref name="wanted"/>.</summary>
-    private async Task SetMembersAsync(ModulusRole role, HashSet<Guid> wanted, Guid company)
+    private async Task SetMembersAsync(TRole role, HashSet<Guid> wanted, Guid company)
     {
         var current = (await users.GetUsersInRoleAsync(role.Name!)).ToDictionary(u => u.Id);
         var changed = false;
@@ -574,7 +576,7 @@ internal sealed class ScimService<TUser>(
         _ = company;
     }
 
-    private async Task<ScimGroup> ToGroupAsync(ModulusRole role, string baseUrl)
+    private async Task<ScimGroup> ToGroupAsync(TRole role, string baseUrl)
     {
         var members = await users.GetUsersInRoleAsync(role.Name!);
         return new ScimGroup
@@ -592,7 +594,7 @@ internal sealed class ScimService<TUser>(
         };
     }
 
-    private async Task<ModulusRole?> FindRoleAsync(string id)
+    private async Task<TRole?> FindRoleAsync(string id)
     {
         RequireCompany();
         if (!Guid.TryParse(id, CultureInfo.InvariantCulture, out var guid))
@@ -600,7 +602,7 @@ internal sealed class ScimService<TUser>(
         return await ManagedRoles().FirstOrDefaultAsync(r => r.Id == guid);
     }
 
-    private IQueryable<ModulusRole> ManagedRoles()
+    private IQueryable<TRole> ManagedRoles()
     {
         var company = RequireCompany();
         var query = roles.Roles.Where(r => r.TenantId == company);
@@ -614,7 +616,7 @@ internal sealed class ScimService<TUser>(
     private bool IsManaged(string name)
         => Options.ManagedRoles.Contains("*") || Options.ManagedRoles.Any(n => string.Equals(n, name, StringComparison.OrdinalIgnoreCase));
 
-    private static void RequireSameName(ModulusRole role, string? displayName)
+    private static void RequireSameName(TRole role, string? displayName)
     {
         if (displayName is not null && !string.Equals(displayName, role.Name, StringComparison.OrdinalIgnoreCase))
             throw new ScimException(400, "mutability", "A group cannot be renamed here: permissions are granted to the role by name.");
@@ -708,7 +710,7 @@ internal sealed class ScimService<TUser>(
             Target = $"user:{user.Id}",
         });
 
-    private void Audit(string action, ModulusRole role)
+    private void Audit(string action, TRole role)
         => services.GetService<ISecurityAuditLog>()?.Record(new SecurityAuditEvent
         {
             Category = SecurityAuditCategories.Identity,
@@ -719,7 +721,7 @@ internal sealed class ScimService<TUser>(
             Target = $"role:{role.Id}",
         });
 
-    private ValueTask NotifyRoleChangedAsync(ModulusRole role, string reason, Guid company)
+    private ValueTask NotifyRoleChangedAsync(TRole role, string reason, Guid company)
         => services.GetServices<IAccessChangeObserver>().NotifyAccessChangedAsync(
             new AccessChange { Kind = AccessChangeKinds.Role, Reason = reason, TenantId = company }, logger);
 }

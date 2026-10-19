@@ -55,7 +55,7 @@ internal sealed class IdentityPasswordGrantValidator<TUser>(
             return DenyAfterHashing(password);
         }
 
-        if (!user.IsActive)
+        if (!user.MayStartNewAccess())
         {
             Denied(user, "account-disabled");
             return DenyAfterHashing(password, "account_disabled");

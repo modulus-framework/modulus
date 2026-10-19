@@ -66,7 +66,7 @@ public class AccountController<TUser>(
         // Look-up only: the token and the mail are produced off the request, so a known and an unknown address take
         // the same time to answer.
         var user = await userManager.FindByEmailAsync(email);
-        if (user is not null && user.IsActive)
+        if (user is not null && user.MayStartNewAccess())
             emailQueue.EnqueuePasswordReset(user.Id);
 
         return Ok(new { message = NonCommittalMessage });
@@ -122,10 +122,16 @@ public class AccountController<TUser>(
         if (!result.Succeeded)
             return MapIdentityFailure(result);
 
-        if (!user.EmailConfirmed)
+        // Using the invitation activates the account: it may sign in from now on.
+        var activating = user.Lifecycle == AccountLifecycle.PendingActivation;
+        if (activating)
+            user.Lifecycle = AccountLifecycle.Active;
+        if (!user.EmailConfirmed || activating)
         {
             user.EmailConfirmed = true;
-            await userManager.UpdateAsync(user);
+            var updated = await userManager.UpdateAsync(user);
+            if (!updated.Succeeded)
+                return MapIdentityFailure(updated);
         }
 
         return Ok(new { message = "Invitation accepted. You can sign in." });
@@ -174,7 +180,7 @@ public class AccountController<TUser>(
             return BadRequest(new { error = "Email is required" });
 
         var user = await userManager.FindByEmailAsync(email);
-        if (user is not null && user.IsActive)
+        if (user is not null && user.MayStartNewAccess())
             emailQueue.EnqueueEmailConfirmation(user.Id);
 
         return Ok(new { message = NonCommittalMessage });

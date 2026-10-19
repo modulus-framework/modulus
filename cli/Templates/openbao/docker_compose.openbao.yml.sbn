@@ -1,0 +1,8 @@
+# Local OpenBao for development only. The dev server keeps everything in memory and uses a known root token.
+# Production runs a 3- or 5-node Raft cluster behind TLS, with auto-unseal (see docs/DOCUMENTATION.md, tenant secrets).
+services:
+  openbao:
+    image: openbao/openbao:2.1.0
+    command: server -dev -dev-root-token-id=dev-root -dev-listen-address=0.0.0.0:8200
+    ports:
+      - "8200:8200"

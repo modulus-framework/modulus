@@ -11,7 +11,7 @@ namespace Modulus.Authorization.EntityFrameworkCore;
 /// feature gate is enabled).
 /// </summary>
 public sealed class EfFeatureEntitlementStore(
-    IDbContextFactory<AuthorizationStoreDbContext> factory)
+    IDbContextFactory<AuthorizationStoreDbContextBase> factory)
     : IFeatureEntitlementStore
 {
     /// <inheritdoc />

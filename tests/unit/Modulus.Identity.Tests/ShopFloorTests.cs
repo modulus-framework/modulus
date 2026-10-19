@@ -183,6 +183,22 @@ public sealed class ShopFloorTests
     }
 
     [Fact]
+    public async Task A_refused_field_stops_the_whole_import_before_any_account_is_created()
+    {
+        await using var h = await Harness.CreateAsync(new DenyFieldsAuthorizer("FirstName"));
+
+        var act = () => h.Accounts.ImportAsync(Company,
+        [
+            new ShopFloorImportRow("e1"),
+            new ShopFloorImportRow("e2", "Protected", "Lee"),
+        ]);
+
+        var error = await act.Should().ThrowAsync<Modulus.Core.Abstractions.Exceptions.ForbiddenException>();
+        error.Which.Message.Should().Contain("FIELD_PROTECTED");
+        (await h.Users.Users.CountAsync(u => u.EmployeeCode != null)).Should().Be(0, "the batch is refused as a whole");
+    }
+
+    [Fact]
     public async Task An_imported_pin_must_be_replaced_before_a_token_is_issued()
     {
         await using var h = await Harness.CreateAsync();
@@ -270,7 +286,7 @@ public sealed class ShopFloorTests
             _scope = scope;
         }
 
-        public static async Task<Harness> CreateAsync()
+        public static async Task<Harness> CreateAsync(Modulus.Authorization.Fields.IFieldAuthorizer? fieldAuthorizer = null)
         {
             var connection = new SqliteConnection("DataSource=:memory:");
             await connection.OpenAsync();
@@ -282,6 +298,8 @@ public sealed class ShopFloorTests
 
             var services = new ServiceCollection();
             services.AddLogging();
+            if (fieldAuthorizer is not null)
+                services.AddSingleton(fieldAuthorizer);
             services.AddSingleton<SwitchableTenant>();
             services.AddScoped<ICurrentTenant>(sp => sp.GetRequiredService<SwitchableTenant>());
             services.AddDbContext<ModulusIdentityDbContext>(o => o.UseSqlite(connection));

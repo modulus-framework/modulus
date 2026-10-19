@@ -12,6 +12,8 @@ public enum ModulusErrorKind
     FeatureDisabled,
     Cancelled,
     Internal,
+    /// <summary>A dependency the request needs is temporarily unavailable (answered as 503 / SERVICE_UNAVAILABLE).</summary>
+    Unavailable,
 }
 
 /// <summary>A classified failure: the kind, the stable machine-readable code and whether the caller caused it.</summary>
@@ -36,6 +38,7 @@ public static class ModulusErrorCatalog
     private static readonly ModulusError s_concurrency = new(ModulusErrorKind.ConcurrencyConflict, "CONCURRENCY_CONFLICT", "Concurrent update conflict", true);
     private static readonly ModulusError s_featureDisabled = new(ModulusErrorKind.FeatureDisabled, "FEATURE_DISABLED", "Feature not available", true);
     private static readonly ModulusError s_cancelled = new(ModulusErrorKind.Cancelled, "CANCELLED", "The request was cancelled", true);
+    private static readonly ModulusError s_unavailable = new(ModulusErrorKind.Unavailable, "SERVICE_UNAVAILABLE", "A required service is temporarily unavailable", false);
     private static readonly ModulusError s_internal = new(ModulusErrorKind.Internal, "INTERNAL", "An unexpected error occurred", false);
 
     /// <summary>Classifies <paramref name="exception"/>; anything unknown is <see cref="ModulusErrorKind.Internal"/>.</summary>
@@ -53,6 +56,8 @@ public static class ModulusErrorCatalog
             ConflictException => s_conflict,
             FeatureDisabledException => s_featureDisabled,
             OperationCanceledException => s_cancelled,
+            SecretStoreUnavailableException => s_unavailable,
+            TenantDatabaseUnavailableException => s_unavailable,
             _ when IsDbUpdateConcurrencyException(exception) => s_concurrency,
             _ => s_internal,
         };

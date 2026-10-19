@@ -5,13 +5,13 @@ namespace Modulus.MultiTenancy.EntityFrameworkCore;
 
 /// <summary>
 /// Singleton <see cref="ITenantStore"/> bridge that resolves the real
-/// <see cref="EfTenantStore"/> from a fresh DI scope on every lookup.
+/// <see cref="IEfTenantStore"/> from a fresh DI scope on every lookup.
 /// </summary>
 /// <remarks>
 /// The tenant resolvers registered by <c>AddMultiTenancy</c> are singletons
 /// (they are injected into <c>TenantMiddleware</c>, which the request pipeline
 /// constructs from the root provider), so anything they capture must also be
-/// a singleton. Capturing a scoped <see cref="EfTenantStore"/> directly would
+/// a singleton. Capturing a scoped <see cref="IEfTenantStore"/> directly would
 /// (a) throw at startup when scope validation is enabled and (b) share one
 /// <see cref="TenantStoreDbContext"/> across all concurrent requests in
 /// production. This bridge keeps the singleton contract while guaranteeing a
@@ -25,7 +25,7 @@ public sealed class ScopedTenantStoreBridge(
     {
         await using var scope = scopeFactory.CreateAsyncScope();
         return await scope.ServiceProvider
-            .GetRequiredService<EfTenantStore>()
+            .GetRequiredService<IEfTenantStore>()
             .FindByIdAsync(id, ct);
     }
 
@@ -33,7 +33,7 @@ public sealed class ScopedTenantStoreBridge(
     {
         await using var scope = scopeFactory.CreateAsyncScope();
         return await scope.ServiceProvider
-            .GetRequiredService<EfTenantStore>()
+            .GetRequiredService<IEfTenantStore>()
             .FindBySlugAsync(slug, ct);
     }
 
@@ -41,7 +41,7 @@ public sealed class ScopedTenantStoreBridge(
     {
         await using var scope = scopeFactory.CreateAsyncScope();
         return await scope.ServiceProvider
-            .GetRequiredService<EfTenantStore>()
+            .GetRequiredService<IEfTenantStore>()
             .ListAsync(ct);
     }
 
@@ -49,7 +49,7 @@ public sealed class ScopedTenantStoreBridge(
     {
         await using var scope = scopeFactory.CreateAsyncScope();
         return await scope.ServiceProvider
-            .GetRequiredService<EfTenantStore>()
+            .GetRequiredService<IEfTenantStore>()
             .ListByGroupAsync(groupId, ct);
     }
 }

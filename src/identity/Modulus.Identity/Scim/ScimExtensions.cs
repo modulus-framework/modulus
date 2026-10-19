@@ -35,10 +35,20 @@ public static class ScimExtensions
     /// </summary>
     public static IServiceCollection AddModulusScim<TUser>(this IServiceCollection services, IConfiguration configuration)
         where TUser : ModulusUser, new()
+        => services.AddModulusScim<TUser, ModulusRole>(configuration);
+
+    /// <summary>
+    /// Registers the SCIM service for an application's own user and role classes (derived from <see cref="ModulusUser"/> and
+    /// <see cref="ModulusRole"/>), so the groups it manages are the application's extended roles. Otherwise as
+    /// <see cref="AddModulusScim{TUser}"/>.
+    /// </summary>
+    public static IServiceCollection AddModulusScim<TUser, TRole>(this IServiceCollection services, IConfiguration configuration)
+        where TUser : ModulusUser, new()
+        where TRole : ModulusRole, new()
     {
         ArgumentNullException.ThrowIfNull(configuration);
         services.Configure<ScimOptions>(configuration.GetSection("Identity:Scim"));
-        services.TryAddScoped<IScimService, ScimService<TUser>>();
+        services.TryAddScoped<IScimService, ScimService<TUser, TRole>>();
         return services.AddPermissions("Modulus.Identity.Scim", registry =>
             registry.Add(
                 ManagePermission,

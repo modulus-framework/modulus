@@ -25,8 +25,13 @@ public sealed class DelegationRoleRefreshTests : IDisposable
     {
         public Dictionary<Guid, string[]> Roles { get; } = [];
 
+        public HashSet<Guid> Disabled { get; } = [];
+
         public ValueTask<IReadOnlyCollection<string>?> GetRolesAsync(Guid userId, CancellationToken ct = default)
             => ValueTask.FromResult<IReadOnlyCollection<string>?>(Roles.TryGetValue(userId, out var r) ? r : null);
+
+        public ValueTask<bool> MayStartAccessAsync(Guid userId, CancellationToken ct = default)
+            => ValueTask.FromResult(Roles.ContainsKey(userId) && !Disabled.Contains(userId));
     }
 
     private sealed class FixedClock : TimeProvider
@@ -66,13 +71,51 @@ public sealed class DelegationRoleRefreshTests : IDisposable
     }
 
     [Fact]
-    public async Task A_delegator_the_identity_store_no_longer_knows_keeps_no_roles()
+    public async Task A_delegator_the_identity_store_no_longer_knows_loses_the_delegation()
     {
         await DelegateAsync("Approver");
 
-        await _provider.GetRequiredService<DelegationRoleRefresher>().RefreshAsync();
+        var changed = await _provider.GetRequiredService<DelegationRoleRefresher>().RefreshAsync();
 
-        _provider.GetRequiredService<IDelegationStore>().ActiveFor(Deputy, Now).Single().FromRoles.Should().BeEmpty();
+        changed.Should().Be(1);
+        _provider.GetRequiredService<IDelegationStore>().ActiveFor(Deputy, Now).Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task A_disabled_delegator_loses_their_delegations_on_the_next_refresh()
+    {
+        await DelegateAsync("Approver");
+        _directory.Roles[Manager] = ["Approver"];
+        _directory.Disabled.Add(Manager);
+
+        var changed = await _provider.GetRequiredService<DelegationRoleRefresher>().RefreshAsync();
+
+        changed.Should().Be(1);
+        _provider.GetRequiredService<IDelegationStore>().ActiveFor(Deputy, Now).Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task A_disabled_delegator_loses_their_delegations_at_once_when_their_access_changes()
+    {
+        await DelegateAsync("Approver");
+        _directory.Roles[Manager] = ["Approver"];
+        _directory.Disabled.Add(Manager);
+
+        foreach (var observer in _provider.GetServices<IAccessChangeObserver>())
+            await observer.OnAccessChangedAsync(new AccessChange { Kind = "lifecycle", Reason = "test", UserId = Manager });
+
+        _provider.GetRequiredService<IDelegationStore>().ActiveFor(Deputy, Now).Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task An_active_delegator_keeps_their_delegations()
+    {
+        await DelegateAsync("Approver");
+        _directory.Roles[Manager] = ["Approver"];
+
+        (await _provider.GetRequiredService<DelegationRoleRefresher>().RefreshAsync()).Should().Be(0);
+
+        _provider.GetRequiredService<IDelegationStore>().ActiveFor(Deputy, Now).Should().ContainSingle();
     }
 
     [Fact]

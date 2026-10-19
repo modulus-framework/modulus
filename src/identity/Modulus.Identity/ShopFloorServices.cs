@@ -4,6 +4,7 @@ using System.Globalization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using Modulus.Authorization.Fields;
 using Modulus.Core.Abstractions;
 using Modulus.Identity.Abstractions;
 
@@ -65,9 +66,9 @@ internal sealed class ShopFloorCredentialValidator<TUser>(
             return DenyAfterHashing(pin);
         }
 
-        if (!user.IsActive || user.PinHash is null)
+        if (!user.MayStartNewAccess() || user.PinHash is null)
         {
-            Denied(tenantId, user, user.IsActive ? "no-pin" : "account-disabled");
+            Denied(tenantId, user, user.MayStartNewAccess() ? "no-pin" : "account-disabled");
             return DenyAfterHashing(pin);
         }
 
@@ -154,11 +155,15 @@ internal sealed class ShopFloorAccountService<TUser, TRole>(
     UserManager<TUser> userManager,
     RoleManager<TRole> roleManager,
     IOptions<ShopFloorOptions> options,
-    ICurrentTenant tenant)
+    ICurrentTenant tenant,
+    IFieldAuthorizer? fieldAuthorizer = null)
     : IShopFloorAccountService
     where TUser : ModulusUser, new()
     where TRole : ModulusRole
 {
+    // The fields an import writes on each account: the code and names the caller supplies, plus the PIN hash and the forced change.
+    private static readonly string[] ImportedFields = ["EmployeeCode", "FirstName", "LastName", "TenantId", "PinHash", "MustChangePin"];
+
     public async Task<IdentityResult> CreateAsync(
         Guid tenantId,
         string employeeCode,
@@ -236,8 +241,14 @@ internal sealed class ShopFloorAccountService<TUser, TRole>(
     public async Task<IReadOnlyList<ShopFloorImportResult>> ImportAsync(Guid tenantId, IEnumerable<ShopFloorImportRow> rows, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(rows);
+        var batch = rows.ToList();
+
+        // All or nothing: the fields of every row are checked as the current caller before the first account is created.
+        if (fieldAuthorizer is not null)
+            await fieldAuthorizer.EnsureBatchWriteAllowedAsync(typeof(TUser), batch.Select(_ => ImportedFields), ct);
+
         var results = new List<ShopFloorImportResult>();
-        foreach (var row in rows)
+        foreach (var row in batch)
         {
             ct.ThrowIfCancellationRequested();
             var pin = string.IsNullOrEmpty(row.InitialPin) ? ShopFloorRules.GeneratePin(options.Value) : row.InitialPin;

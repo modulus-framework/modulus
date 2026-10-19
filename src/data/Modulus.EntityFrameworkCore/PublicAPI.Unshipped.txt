@@ -209,3 +209,34 @@ override Modulus.EntityFrameworkCore.ChangeHistory.EntityChangeQuery.ToString() 
 static Modulus.EntityFrameworkCore.ChangeHistory.EntityChangeQuery.operator !=(Modulus.EntityFrameworkCore.ChangeHistory.EntityChangeQuery? left, Modulus.EntityFrameworkCore.ChangeHistory.EntityChangeQuery? right) -> bool
 static Modulus.EntityFrameworkCore.ChangeHistory.EntityChangeQuery.operator ==(Modulus.EntityFrameworkCore.ChangeHistory.EntityChangeQuery? left, Modulus.EntityFrameworkCore.ChangeHistory.EntityChangeQuery? right) -> bool
 static Modulus.EntityFrameworkCore.Design.DesignTimeContext.ServicesWith(params Modulus.EntityFrameworkCore.ModelBuilding.IModuleModelContributor![]! contributors) -> System.IServiceProvider!
+Modulus.EntityFrameworkCore.Isolation.TenantConnectionInterceptor
+Modulus.EntityFrameworkCore.Isolation.TenantConnectionInterceptor.TenantConnectionInterceptor(Modulus.Core.Abstractions.Tenancy.ITenantDatabaseResolver! resolver, Modulus.Core.Abstractions.ICurrentTenant! tenant, Modulus.EntityFrameworkCore.Isolation.TenantDatabaseRoute! route) -> void
+Modulus.EntityFrameworkCore.Isolation.TenantDatabaseRoute
+Modulus.EntityFrameworkCore.Isolation.TenantDatabaseRoute.<Clone>$() -> Modulus.EntityFrameworkCore.Isolation.TenantDatabaseRoute!
+Modulus.EntityFrameworkCore.Isolation.TenantDatabaseRoute.ContextType.get -> System.Type!
+Modulus.EntityFrameworkCore.Isolation.TenantDatabaseRoute.ContextType.init -> void
+Modulus.EntityFrameworkCore.Isolation.TenantDatabaseRoute.Deconstruct(out System.Type! ContextType, out string! StoreKey, out string! ProviderKey) -> void
+Modulus.EntityFrameworkCore.Isolation.TenantDatabaseRoute.Equals(Modulus.EntityFrameworkCore.Isolation.TenantDatabaseRoute? other) -> bool
+Modulus.EntityFrameworkCore.Isolation.TenantDatabaseRoute.ProviderKey.get -> string!
+Modulus.EntityFrameworkCore.Isolation.TenantDatabaseRoute.ProviderKey.init -> void
+Modulus.EntityFrameworkCore.Isolation.TenantDatabaseRoute.StoreKey.get -> string!
+Modulus.EntityFrameworkCore.Isolation.TenantDatabaseRoute.StoreKey.init -> void
+Modulus.EntityFrameworkCore.Isolation.TenantDatabaseRoute.TenantDatabaseRoute(System.Type! ContextType, string! StoreKey, string! ProviderKey) -> void
+override Modulus.EntityFrameworkCore.Isolation.TenantConnectionInterceptor.ConnectionOpening(System.Data.Common.DbConnection! connection, Microsoft.EntityFrameworkCore.Diagnostics.ConnectionEventData! eventData, Microsoft.EntityFrameworkCore.Diagnostics.InterceptionResult result) -> Microsoft.EntityFrameworkCore.Diagnostics.InterceptionResult
+override Modulus.EntityFrameworkCore.Isolation.TenantConnectionInterceptor.ConnectionOpeningAsync(System.Data.Common.DbConnection! connection, Microsoft.EntityFrameworkCore.Diagnostics.ConnectionEventData! eventData, Microsoft.EntityFrameworkCore.Diagnostics.InterceptionResult result, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<Microsoft.EntityFrameworkCore.Diagnostics.InterceptionResult>
+override Modulus.EntityFrameworkCore.Isolation.TenantDatabaseRoute.Equals(object? obj) -> bool
+override Modulus.EntityFrameworkCore.Isolation.TenantDatabaseRoute.GetHashCode() -> int
+override Modulus.EntityFrameworkCore.Isolation.TenantDatabaseRoute.ToString() -> string!
+static Modulus.EntityFrameworkCore.Isolation.DataIsolationExtensions.AddModuleDatabasePerTenant<TContext>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, string! storeKey, string! providerKey, string! hostConnectionString, System.Action<Microsoft.EntityFrameworkCore.DbContextOptionsBuilder!, string!>! configure) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.EntityFrameworkCore.Isolation.TenantDatabaseRoute.operator !=(Modulus.EntityFrameworkCore.Isolation.TenantDatabaseRoute? left, Modulus.EntityFrameworkCore.Isolation.TenantDatabaseRoute? right) -> bool
+static Modulus.EntityFrameworkCore.Isolation.TenantDatabaseRoute.operator ==(Modulus.EntityFrameworkCore.Isolation.TenantDatabaseRoute? left, Modulus.EntityFrameworkCore.Isolation.TenantDatabaseRoute? right) -> bool
+Modulus.EntityFrameworkCore.Isolation.TenantDatabaseWarmup
+Modulus.EntityFrameworkCore.Isolation.TenantDatabaseWarmup.TenantDatabaseWarmup(Modulus.Core.Abstractions.Tenancy.ITenantDatabaseResolver! resolver, System.Collections.Generic.IEnumerable<Modulus.EntityFrameworkCore.Isolation.TenantDatabaseRoute!>! routes) -> void
+Modulus.EntityFrameworkCore.Isolation.TenantDatabaseWarmup.WarmAsync(Modulus.Core.Abstractions.TenantInfo! tenant, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.EntityFrameworkCore.Isolation.TenantDatabaseProviderExtensions
+Modulus.EntityFrameworkCore.Isolation.TenantDatabaseProviderOptions
+Modulus.EntityFrameworkCore.Isolation.TenantDatabaseProviderOptions.Register(string! providerKey, System.Func<string!, System.Data.Common.DbConnection!>! createConnection, System.Action<string!>? clearPool = null) -> void
+Modulus.EntityFrameworkCore.Isolation.TenantDatabaseProviderOptions.TenantDatabaseProviderOptions() -> void
+Modulus.EntityFrameworkCore.Isolation.TenantDatabaseSetup
+static Modulus.EntityFrameworkCore.Isolation.TenantDatabaseProviderExtensions.AddTenantDatabaseProvider(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, string! providerKey, System.Func<string!, System.Data.Common.DbConnection!>! createConnection, System.Action<string!>? clearPool = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.EntityFrameworkCore.Isolation.TenantDatabaseSetup.Use(System.Guid tenantId, string! storeKey, string! providerKey, string! connectionString) -> System.IDisposable!

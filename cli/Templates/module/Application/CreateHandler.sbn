@@ -1,3 +1,6 @@
+using Modulus.Authorization.Dimensions;
+using Modulus.Authorization.Fields;
+using Modulus.Authorization.Resources;
 using Modulus.Core.Abstractions.Entities;
 using Modulus.Events.Abstractions;
 using Modulus.Mediator.Abstractions;
@@ -9,7 +12,10 @@ namespace {{ module_namespace }}.Application;
 public sealed class Create{{ entity_name }}Handler(
     I{{ entity_name }}Repository repo,
     IUnitOfWork unitOfWork,
-    IModuleBus bus)
+    IModuleBus bus,
+    IResourceScopeGuard? scopeGuard = null,
+    IFieldAuthorizer? fieldAuthorizer = null,
+    IDimensionValueRegistry? dimensions = null)
     : ICommandHandler<Create{{ entity_name }}Command, Guid>
 {
     public async Task<Guid> HandleAsync(
@@ -19,6 +25,22 @@ public sealed class Create{{ entity_name }}Handler(
         var entity = new {{ entity_name }} { Name = command.Name };
         if (command.ExtraProperties is not null)
             entity.SetExtraProperties(command.ExtraProperties);
+
+        // The caller must be allowed to set every field the command sets: a field above their clearance is refused, not dropped.
+        if (fieldAuthorizer is not null)
+        {
+            string[] fields = CommandFields.SetBy(command);
+            await fieldAuthorizer.EnsureWriteAllowedAsync(typeof({{ entity_name }}), fields, ct);
+        }
+
+        // Every [Dimension] id the record carries must be registered for the caller's company.
+        if (dimensions is not null)
+            await dimensions.EnsureRecordDimensionsAsync(entity, ct);
+
+        // The caller may create this kind of record, but this record must also lie inside the caller's company, org-unit and
+        // permission scope (the same permission the endpoint checks, when it checks one). Without authorization registered there is no scope.
+        if (scopeGuard is not null)
+            await scopeGuard.EnsureResultingScopeAsync(entity, "create", {{ if required_permission }}"{{ required_permission }}"{{ else }}null{{ end }}, ct);
 
         await repo.AddAsync(entity, ct);
         await unitOfWork.CommitAsync(ct);

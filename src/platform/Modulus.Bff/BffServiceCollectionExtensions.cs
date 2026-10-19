@@ -274,10 +274,38 @@ public sealed class BffBuilder
                 OnRedirectToAccessDenied = c => client.AccessDeniedPath is { Length: > 0 } && !IsBffEndpoint(c.HttpContext)
                     ? Redirect(c.Response, c.RedirectUri)
                     : Status(c.Response, StatusCodes.Status403Forbidden),
+                // Stamps the first sign-in time once. A sliding renewal keeps the claim (the principal carries it), so the
+                // absolute lifetime measures from the sign-in and not from the last renewal.
+                OnSigningIn = c =>
+                {
+                    if (c.Principal?.Identity is ClaimsIdentity identity && identity.FindFirst(BffDefaults.SignedInAtClaim) is null)
+                    {
+                        var now = c.HttpContext.RequestServices.GetService<TimeProvider>()?.GetUtcNow() ?? DateTimeOffset.UtcNow;
+                        identity.AddClaim(new Claim(
+                            BffDefaults.SignedInAtClaim,
+                            now.ToUnixTimeSeconds().ToString(System.Globalization.CultureInfo.InvariantCulture),
+                            ClaimValueTypes.Integer64));
+                    }
+
+                    return Task.CompletedTask;
+                },
                 OnValidatePrincipal = async c =>
                 {
+                    if (c.Principal is null)
+                        return;
+
+                    // Sliding renewal keeps a session alive as long as it is used, so the session also ends SessionLifetime after
+                    // its sign-in. A session without the sign-in time predates this check and is of unknown age: it ends too.
+                    var now = c.HttpContext.RequestServices.GetService<TimeProvider>()?.GetUtcNow() ?? DateTimeOffset.UtcNow;
+                    if (!WithinLifetime(c.Principal, client.SessionLifetime, now))
+                    {
+                        c.RejectPrincipal();
+                        await c.HttpContext.SignOutAsync(scheme).ConfigureAwait(false);
+                        return;
+                    }
+
                     // A server-side session whose tokens were evicted (logout elsewhere, cache flush) is over.
-                    if (c.Principal is null || client.TokenStorage == BffTokenStorage.Cookie)
+                    if (client.TokenStorage == BffTokenStorage.Cookie)
                         return;
                     var store = c.HttpContext.RequestServices.GetRequiredService<IUserTokenStore>();
                     if (await store.GetAsync(name, c.Principal, c.Properties, c.HttpContext.RequestAborted).ConfigureAwait(false) is null)
@@ -400,4 +428,10 @@ public sealed class BffBuilder
 
     private static bool IsBffEndpoint(HttpContext context)
         => context.GetEndpoint()?.Metadata.GetMetadata<BffClientMetadata>() is not null;
+
+    /// <summary>True when the session was signed in no more than <paramref name="lifetime"/> before <paramref name="now"/>. Fails closed without the sign-in time.</summary>
+    private static bool WithinLifetime(ClaimsPrincipal principal, TimeSpan lifetime, DateTimeOffset now)
+        => principal.FindFirstValue(BffDefaults.SignedInAtClaim) is { Length: > 0 } value
+           && long.TryParse(value, System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var seconds)
+           && now - DateTimeOffset.FromUnixTimeSeconds(seconds) <= lifetime;
 }

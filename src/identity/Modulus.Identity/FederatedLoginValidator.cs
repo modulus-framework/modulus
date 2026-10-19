@@ -51,7 +51,7 @@ internal sealed class FederatedLoginValidator<TUser, TRole>(
         if (user is null)
             return Denied(null, reason ?? "no-account");
 
-        if (!user.IsActive)
+        if (!user.MayStartNewAccess())
             return Denied(user, "account-disabled");
 
         if (await userManager.IsLockedOutAsync(user))

@@ -3,6 +3,8 @@ namespace Modulus.EntityFrameworkCore.Extensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Modulus.Core.Abstractions;
+using Modulus.Core.Abstractions.Tenancy;
 using Modulus.Data.Abstractions;
 using Modulus.EntityFrameworkCore.Abstractions;
 using Modulus.EntityFrameworkCore.Isolation;
@@ -116,6 +118,15 @@ public static class EFCoreServiceCollectionExtensions
         where TContext : ModuleDbContext
     {
         options.AddInterceptors(TenantSqlGuardInterceptor.Instance);
+        foreach (var route in sp.GetServices<TenantDatabaseRoute>())
+        {
+            if (route.ContextType == typeof(TContext))
+            {
+                options.AddInterceptors(new TenantConnectionInterceptor(
+                    sp.GetRequiredService<ITenantDatabaseResolver>(), sp.GetRequiredService<ICurrentTenant>(), route));
+            }
+        }
+
         foreach (var isolation in sp.GetServices<ModuleDbContextIsolation>())
         {
             if (isolation.ContextType == typeof(TContext) && isolation.SessionInterceptor is { } session)

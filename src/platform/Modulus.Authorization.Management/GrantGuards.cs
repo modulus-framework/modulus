@@ -19,10 +19,14 @@ internal static class GrantGuards
     /// Expands <paramref name="requested"/> against the permission catalog: wildcards become every registered permission under
     /// their prefix. Names that match nothing are returned in <paramref name="unknown"/>; they are refused, never stored,
     /// because a typo would otherwise sit in the grant table waiting for a future permission to collide with it.
+    /// A deprecated or retired permission is refused the same way: a new grant may not name it (the holders of existing grants keep
+    /// theirs until the lifecycle state says otherwise), and a wildcard never pulls one in.
     /// </summary>
     public static List<string> Expand(IPermissionRegistry registry, IEnumerable<string?> requested, out List<string> unknown)
     {
         var all = registry.GetAll();
+        var assignable = all.Where(d => d.Lifecycle is PermissionLifecycle.Active).Select(d => d.Permission)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
         var expanded = new List<string>();
         unknown = [];
         foreach (var raw in requested)
@@ -38,6 +42,7 @@ internal static class GrantGuards
             {
                 var prefix = permission[..^1];
                 var matches = all.Where(d => d.Sensitivity is not PermissionSensitivity.Critical
+                                             && d.Lifecycle is PermissionLifecycle.Active
                                              && d.Permission.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
                     .Select(d => d.Permission).ToList();
                 if (matches.Count == 0)
@@ -45,7 +50,7 @@ internal static class GrantGuards
                 else
                     expanded.AddRange(matches);
             }
-            else if (registry.Exists(permission))
+            else if (assignable.Contains(permission))
             {
                 expanded.Add(permission);
             }
@@ -84,7 +89,7 @@ internal static class GrantGuards
     public static IResult Unknown(IEnumerable<string> names)
         => Results.ValidationProblem(new Dictionary<string, string[]>
         {
-            ["permissions"] = [$"Not a registered permission: {string.Join(", ", names)}."],
+            ["permissions"] = [$"Not a registered, assignable permission: {string.Join(", ", names)}."],
         });
 
     public static IResult Refused(string detail)

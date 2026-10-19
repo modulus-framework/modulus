@@ -21,7 +21,7 @@ namespace Modulus.Authorization.EntityFrameworkCore;
 /// treat role names and permission strings the same way regardless of casing.
 /// </remarks>
 public sealed class EfPermissionGrantStore(
-    IDbContextFactory<AuthorizationStoreDbContext> factory,
+    IDbContextFactory<AuthorizationStoreDbContextBase> factory,
     IServiceScopeFactory? scopes = null)
     : IPermissionGrantStore
 {

@@ -34,12 +34,29 @@ public sealed class QuartzJobScheduler(
     /// cross-tenant data-isolation risk for any handler that touches a
     /// tenant-scoped <c>ModuleDbContext</c>.
     /// </summary>
-    private JobDataMap BuildJobDataMap<TArgs>(TArgs args) => new()
+    private JobDataMap BuildJobDataMap<TArgs>(TArgs args, string systemName, bool queuedByPerson = true)
     {
-        ["args"] = args!,
-        ["tenantId"] = serviceProvider.GetService<ICurrentTenant>()?.TenantId?.ToString("N") ?? string.Empty,
-        ["correlationId"] = serviceProvider.GetService<ICorrelationContext>()?.CorrelationId ?? string.Empty,
-    };
+        var map = new JobDataMap
+        {
+            ["args"] = args!,
+            ["tenantId"] = serviceProvider.GetService<ICurrentTenant>()?.TenantId?.ToString("N") ?? string.Empty,
+            ["correlationId"] = serviceProvider.GetService<ICorrelationContext>()?.CorrelationId ?? string.Empty,
+        };
+
+        // The signed-in person who queued the job is its actor, and the adapter checks they may still start access (A6-1). Otherwise the
+        // job runs as the system, named by systemName (A6-2): the job type for an ad hoc job, the job id for a recurring one.
+        if (queuedByPerson && serviceProvider.GetService<ICurrentUser>() is { IsAuthenticated: true, UserId: { } userId })
+        {
+            map["initiatorId"] = userId.ToString("N");
+            map["actor"] = JobActor.ForPerson(userId);
+        }
+        else
+        {
+            map["actor"] = JobActor.ForSystem(systemName);
+        }
+
+        return map;
+    }
 
     public async Task EnqueueAsync<TJob, TArgs>(
         TArgs args,
@@ -51,7 +68,7 @@ public sealed class QuartzJobScheduler(
 
         var jobDetail = JobBuilder.Create<QuartzJobAdapter<TJob, TArgs>>()
             .WithIdentity(jobName, Guid.NewGuid().ToString())
-            .SetJobData(BuildJobDataMap(args))
+            .SetJobData(BuildJobDataMap(args, jobName))
             .Build();
 
         var trigger = TriggerBuilder.Create()
@@ -73,7 +90,7 @@ public sealed class QuartzJobScheduler(
 
         var jobDetail = JobBuilder.Create<QuartzJobAdapter<TJob, TArgs>>()
             .WithIdentity(jobName, Guid.NewGuid().ToString())
-            .SetJobData(BuildJobDataMap(args))
+            .SetJobData(BuildJobDataMap(args, jobName))
             .Build();
 
         var trigger = TriggerBuilder.Create()
@@ -105,7 +122,7 @@ public sealed class QuartzJobScheduler(
 
             var jobDetail = JobBuilder.Create<QuartzJobAdapter<TJob, TArgs>>()
                 .WithIdentity(jobId, "recurring")
-                .SetJobData(BuildJobDataMap(args))
+                .SetJobData(BuildJobDataMap(args, jobId, queuedByPerson: false))
                 .StoreDurably()
                 .Build();
 

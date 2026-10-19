@@ -14,6 +14,9 @@ internal static class SessionPolicy
     public static TimeSpan? Idle(SessionOptions options, IEnumerable<string> roles)
         => Strictest(options.IdleTimeoutMinutes, options.IdleTimeoutMinutesByRole, roles) is var minutes and > 0 ? TimeSpan.FromMinutes(minutes) : null;
 
+    public static TimeSpan? Lifetime(SessionOptions options, IEnumerable<string> roles)
+        => Strictest(options.MaxLifetimeMinutes, options.MaxLifetimeMinutesByRole, roles) is var minutes and > 0 ? TimeSpan.FromMinutes(minutes) : null;
+
     // 0 means "none"; among the positive values that apply, the smallest wins.
     private static int Strictest(int global, Dictionary<string, int> byRole, IEnumerable<string> roles)
     {
@@ -41,6 +44,8 @@ internal sealed class SessionRegistry<TContext>(
     IBackChannelLogoutQueue? logoutQueue = null) : ISessionRegistry
     where TContext : DbContext
 {
+    private const string MaxLifetimeReason = "max-lifetime";
+
     private readonly TimeProvider _clock = clock ?? TimeProvider.System;
 
     private SessionOptions Settings => options.Value;
@@ -104,10 +109,10 @@ internal sealed class SessionRegistry<TContext>(
         if (row.EndedAt is not null)
             return SessionState.Ended;
 
-        if (IdleExpired(row, now))
+        if (ExpiryReason(row, now) is { } reason)
         {
-            await EndRowAsync(row.Id, "idle-timeout", now, ct);
-            return SessionState.IdleExpired;
+            await EndRowAsync(row.Id, reason, now, ct);
+            return reason == MaxLifetimeReason ? SessionState.LifetimeExpired : SessionState.IdleExpired;
         }
 
         // Writing on every request would make the registry a hot spot; the timeout is accurate to the touch interval.
@@ -159,15 +164,15 @@ internal sealed class SessionRegistry<TContext>(
         return count;
     }
 
-    /// <summary>Active sessions of the user; those past their idle timeout are ended on the way and left out.</summary>
+    /// <summary>Active sessions of the user; those past their lifetime or idle timeout are ended on the way and left out.</summary>
     private async Task<List<ModulusSession>> ActiveAsync(Guid userId, DateTime now, CancellationToken ct)
     {
         var rows = await Sessions.AsNoTracking().Where(s => s.UserId == userId && s.EndedAt == null).ToListAsync(ct);
         var live = new List<ModulusSession>();
         foreach (var row in rows)
         {
-            if (IdleExpired(row, now))
-                await EndRowAsync(row.Id, "idle-timeout", now, ct);
+            if (ExpiryReason(row, now) is { } reason)
+                await EndRowAsync(row.Id, reason, now, ct);
             else
                 live.Add(row);
         }
@@ -175,8 +180,16 @@ internal sealed class SessionRegistry<TContext>(
         return live;
     }
 
-    private bool IdleExpired(ModulusSession row, DateTime now)
-        => SessionPolicy.Idle(Settings, row.Roles.Split(',', StringSplitOptions.RemoveEmptyEntries)) is { } idle && now - row.LastSeenAt > idle;
+    // The absolute lifetime (since sign-in) is checked first, so a session that is still busy cannot outlive it. Null: still usable.
+    private string? ExpiryReason(ModulusSession row, DateTime now)
+    {
+        var roles = row.Roles.Split(',', StringSplitOptions.RemoveEmptyEntries);
+        if (SessionPolicy.Lifetime(Settings, roles) is { } lifetime && now - row.CreatedAt > lifetime)
+            return MaxLifetimeReason;
+        if (SessionPolicy.Idle(Settings, roles) is { } idle && now - row.LastSeenAt > idle)
+            return "idle-timeout";
+        return null;
+    }
 
     private async Task EndRowAsync(Guid id, string reason, DateTime now, CancellationToken ct)
     {

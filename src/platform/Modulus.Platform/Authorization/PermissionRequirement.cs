@@ -3,6 +3,7 @@ namespace Modulus.Authorization;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Modulus.Authorization.Grants;
+using Modulus.Core.Abstractions;
 
 /// <summary>
 /// The authorization requirement behind the <c>:</c>-permission policy convention
@@ -49,11 +50,17 @@ public sealed class PermissionRequirement : IAuthorizationRequirement
 internal sealed class PermissionRequirementHandler(
     IPermissionResolver resolver, IPermissionGrantStore grantStore, TimeProvider? clock = null,
     Microsoft.Extensions.Options.IOptions<ModulusAuthorizationOptions>? options = null,
-    StepUpPolicy? stepUp = null)
+    StepUpPolicy? stepUp = null,
+    IPermissionRegistry? registry = null)
     : AuthorizationHandler<PermissionRequirement>
 {
     private readonly TimeProvider _clock = clock ?? TimeProvider.System;
     private readonly bool _trustClaims = options?.Value.TrustPermissionClaims ?? false;
+
+    // A retired permission is refused here too: the permission-claim path below never reaches the resolver.
+    private readonly Lazy<IReadOnlySet<string>> _retired = new(() => new HashSet<string>(
+        registry?.GetAll().Where(d => d.Lifecycle is PermissionLifecycle.Retired).Select(d => d.Permission) ?? [],
+        StringComparer.OrdinalIgnoreCase));
 
     private const string WildcardSuffix = ":*";
 
@@ -62,6 +69,12 @@ internal sealed class PermissionRequirementHandler(
     {
         var principal = context.User;
         if (principal.Identity?.IsAuthenticated != true)
+            return;
+        if (_retired.Value.Contains(requirement.Permission))
+            return;
+
+        // An agent token whose agent cannot be named grants nothing (A9-1).
+        if (principal.FindFirst(AgentClaim) is { } agent && string.IsNullOrWhiteSpace(agent.Value))
             return;
 
         var query = BuildQuery(principal);
@@ -81,7 +94,8 @@ internal sealed class PermissionRequirementHandler(
         if (IsExplicitlyDenied(grants, requirement.Permission))
             return;
 
-        if ((_trustClaims && principal.HasClaim("permission", requirement.Permission))
+        // A permission claim is never trusted for an agent token: the claim would skip the cap the agent role sets (A9-1).
+        if ((query.AgentRole is null && _trustClaims && principal.HasClaim("permission", requirement.Permission))
             || resolver.Resolve(query, grants).Contains(requirement.Permission))
         {
             // Holding the permission is not enough for a sensitive one: the sign-in must be recent and multi-factor.
@@ -131,6 +145,12 @@ internal sealed class PermissionRequirementHandler(
             .Distinct()
             .ToArray();
 
-        return new PrincipalGrantQuery(userId, roles);
+        return new PrincipalGrantQuery(userId, roles, principal.FindFirst(AgentClaim)?.Value);
     }
+
+    /// <summary>
+    /// The claim that names the agent acting for the token's person (A9-1, RFC 8693 <c>act</c>). Its value is the agent's role; the
+    /// agent's grants bound the person's access.
+    /// </summary>
+    internal const string AgentClaim = "act";
 }

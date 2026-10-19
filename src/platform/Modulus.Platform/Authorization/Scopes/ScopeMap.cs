@@ -135,7 +135,7 @@ public interface IScopeMapRegistry
     ScopeMap? Find(Type recordType);
 
     /// <summary>
-    /// The assignment types (<c>customer</c>, <c>warehouse</c>, <c>buyer</c>, ...) that declared maps use as access keys: the
+    /// The assignment types (for example <c>customer</c> or <c>warehouse</c>) that declared maps use as access keys: the
     /// vocabulary of "Assigned" scopes. Empty when no map declares one, in which case any name is accepted.
     /// </summary>
     IReadOnlySet<string> AssignmentTypes => new HashSet<string>();

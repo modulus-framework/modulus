@@ -35,6 +35,15 @@ public sealed class SessionOptions
     /// <summary>Idle timeout per role name (case-insensitive), in minutes. The strictest that applies wins, so a treasurer can time out sooner than a clerk.</summary>
     public Dictionary<string, int> IdleTimeoutMinutesByRole { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
+    /// <summary>
+    /// Minutes after sign-in after which a session ends, however active it is; 0 means never. Use-independent, so a session that is
+    /// used all day still ends and must sign in again. A role in <see cref="MaxLifetimeMinutesByRole"/> can shorten it.
+    /// </summary>
+    public int MaxLifetimeMinutes { get; set; }
+
+    /// <summary>Maximum lifetime per role name (case-insensitive), in minutes. The strictest that applies wins.</summary>
+    public Dictionary<string, int> MaxLifetimeMinutesByRole { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+
     /// <summary>How often a busy session's last-seen time is written, in seconds (default 60): the idle timeout is accurate to this.</summary>
     public int TouchIntervalSeconds { get; set; } = 60;
 
@@ -51,7 +60,8 @@ public sealed class SessionOptions
             return true;
         if (BackChannelLogout.Enabled && !BackChannelLogout.IsValid(out problem))
             return false;
-        if (MaxConcurrent < 0 || IdleTimeoutMinutes < 0 || MaxConcurrentByRole.Values.Any(v => v < 0) || IdleTimeoutMinutesByRole.Values.Any(v => v < 0))
+        if (MaxConcurrent < 0 || IdleTimeoutMinutes < 0 || MaxConcurrentByRole.Values.Any(v => v < 0) || IdleTimeoutMinutesByRole.Values.Any(v => v < 0)
+            || MaxLifetimeMinutes < 0 || MaxLifetimeMinutesByRole.Values.Any(v => v < 0))
             problem = "Identity:Sessions limits and timeouts cannot be negative.";
         else if (TouchIntervalSeconds < 1 || RetainEndedDays < 1)
             problem = "Identity:Sessions:TouchIntervalSeconds and RetainEndedDays must be at least 1.";
@@ -245,6 +255,9 @@ public enum SessionState
 
     /// <summary>No such session.</summary>
     Unknown = 3,
+
+    /// <summary>Older than the maximum lifetime since sign-in, whatever its activity; it has just been ended.</summary>
+    LifetimeExpired = 4,
 }
 
 /// <summary>Records sign-ins and decides whether a session may still be used.</summary>

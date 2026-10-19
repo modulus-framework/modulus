@@ -16,6 +16,7 @@ This document combines 14 source documents. Contents:
 - [Tier 3 Roadmap — Remaining API/Platform Robustness](#tier-3-roadmap--remaining-apiplatform-robustness)
 - [Database roles for tenant isolation](#database-roles-for-tenant-isolation)
 - [Authorization policy combination](#authorization-policy-combination)
+- [Tenant secrets, settings and navigation: plan and status](#tenant-secrets-settings-and-navigation-plan-and-status)
 
 <!-- source: docs/ADVANCED_FEATURES_PLAN.md -->
 ## Advanced features: hybrid cache, per-client BFFs, gRPC, webhooks, GraphQL, realtime, AI platform integration
@@ -5853,3 +5854,214 @@ measured), P1c (A11 engine, A12 slice + B1/B4 full, IN-10; exit: all modules MC-
 (governance layer; exit: AUTH-15..20/31..32 green), P3 (intelligence). Layer A schema additions are
 listed in the plan's upgrade section — existing deployments need a migration; all changes are
 additive.
+
+<!-- source: approved plan "OpenBao tenant databases, setting management, navigation management" (phase 0, 2 and 3) -->
+## Tenant secrets, settings and navigation: plan and status
+
+Status (2026-10-19): **Phases 0 (migration fix), 1, 2, 3 and 4 are built and tested** (Phase 3 has one open deployment decision, the existing-deployment
+migration; Phase 4 is complete in code, its `add-openbao` CLI included). Phases 5 to 7 are not started. Settings and navigation (Phases 5 and 6) have no code yet.
+
+### Decisions
+
+- OpenBao is called through the framework's own `HttpClient` (no vendor SDK), with the standard resilience handler on reads.
+- The navigation core will live in Modulus, and `modulus-ui` becomes a renderer of it (Phase 6, 7).
+- The first release covers KV v2 static secrets, the tenant catalog, the shared resolver, provisioning and rotation. Dynamic
+  database credentials come later.
+- A tenant connection string never sits in a database row or on `TenantInfo`. The catalog holds a pointer (`SecretPath`), and the
+  connection string is the `connectionString` field of that secret.
+
+### Phase 0: migration fan-out
+
+- [x] Host pass of `MigrateModulusDatabasesForTenantsAsync` runs in host context (`Change(null)`).
+- [x] Per-tenant failures are collected; the others still migrate; an `AggregateException` is thrown at the end
+  (`TenantMigrationFanOutTests`).
+- [x] Each tenant's targets are warmed before its migration (new): per-tenant contexts open synchronously during
+  migration, so the connection interceptor needs the target resolved first.
+- [ ] This section (done now) and the Contents bullet.
+- [ ] Stale `/_ui/menu` reference at the end of the "Modulus Improvement Plan" and the `samples/Meetup` call.
+- [ ] Verify the fan-out test fails without the fix (not yet run against the old code).
+
+### Phase 1: secret abstractions
+
+- [x] `SecretReference`, `SecretValue` (redacted `ToString`), `ISecretStore`, `ISecretWriter` (check-and-set) in `Modulus.Core`.
+- [x] `SecretStoreUnavailableException` (503), `SecretNotFoundException`, `TenantDatabaseUnavailableException` (503).
+- [x] `CachedSecretStore`: fresh within `Ttl`, stale-if-error up to `MaxStaleOnFailure`, single-flight, misses not cached.
+- [x] `ConfigurationSecretStore` (development), `InMemorySecretStore` (tests). `SecretsTests`: 25 tests.
+
+### Phase 2: `Modulus.Secrets.OpenBao`
+
+- [x] Options (`Secrets:OpenBao`), HTTP client with KV v2 read and check-and-set write, `X-Vault-Namespace`, CA certificate pinning.
+- [x] Token lifecycle: Kubernetes, AppRole and token-file logins; renewal at two thirds of the lease; one re-login on 403.
+- [x] Path prefix refused before any request; `http://` refused outside `AllowInsecureHttp`.
+- [x] Read and write identities are separate. The writer is refused while `Secrets:RuntimeReadOnly` is true.
+- [x] Health check against `sys/health`.
+- [x] Assets in `deploy/openbao/`: `runtime-read.hcl`, `provisioner.hcl`, `bootstrap-dev.sh`.
+- [x] Unit tests (`Modulus.Secrets.OpenBao.Tests`, 39) and container tests against `openbao/openbao:2.1.0`
+  (`Modulus.Secrets.OpenBao.Integration.Tests`, 6), on net8.0 and net10.0.
+- **Fixed during Phase 2:** the AppRole login went to `auth/kubernetes/login` because the mount defaulted to `kubernetes`. The
+  mount now follows the method unless `MountPath` is set.
+
+### Phase 3: catalog, resolver and per-tenant connections
+
+Built:
+
+- [x] `ITenantDataStoreCatalog` / `TenantDataStore` (`Modulus.Core`): isolation, provider key, secret path, expected secret
+  version, status (`Provisioning`, `Active`, `Rotating`, `Disabled`).
+- [x] `TenantDataStoreEntity` in table `ModulusTenantDataStores` (primary key `(TenantId, StoreKey)`; statuses and isolation stored
+  as text), mapped in `TenantStoreDbContext`. `EfTenantDataStoreCatalog` is registered by `AddEfCoreTenantStore`.
+- [x] `ITenantDatabaseResolver` and `TenantDatabaseTarget` (`ToString` never prints the connection string). The resolver
+  (`Modulus.Secrets.TenantDatabaseResolver`, registered with `AddModulusTenantDatabases(configuration)`):
+  - refuses a missing row, a status that does not serve, a provider mismatch, and a secret path that is not the canonical
+    `{SecretPrefix}/{tenantId}/{storeKey}` (so a catalog edit cannot point at another tenant's secret);
+  - re-reads a secret that is older than the catalog expects;
+  - caches targets for `TenantDataStores:CatalogCacheTtl` (30 s);
+  - returns a `null` connection string for a shared store, which means the host connection.
+- [x] `TenantConnectionInterceptor` (`Modulus.EntityFrameworkCore.Isolation`): sets the connection string before the connection
+  opens. The async open resolves; the synchronous open uses only a warm cache. In the host context nothing changes, and with no
+  tenant the open is refused.
+- [x] `AddModuleDatabasePerTenant<TContext>(storeKey, providerKey, hostConnectionString, configure)`. It registers a
+  `TenantDatabaseRoute` that `AddIsolationInterceptors` turns into the interceptor, and it declares `DatabasePerTenant` isolation.
+- [x] `TenantInfo.ConnectionString` is marked obsolete. No code in the repository set it.
+
+Tests:
+
+- `TenantDatabaseResolverTests` (Platform, 13 cases): active, rotating, missing row, non-serving statuses, provider mismatch,
+  tampered path, shared store, missing secret or field, stale secret with eviction, secret-store outage, TTL caching,
+  `TryGetCached`, invalid store keys, redaction.
+- `TenantDatabaseInterceptorTests` (MultiTenancy, SQLite, real EF catalog and resolver): each tenant's rows land only in that
+  tenant's database; a tenant without a row writes nothing; a synchronous open is refused until the target is resolved, then
+  works.
+
+Phase 3, remaining items (done in the second pass):
+
+- [x] **Request path warming.** `ITenantWarmup` (Core) runs in `TenantMiddleware` right after the tenant is set. The EF
+  `TenantDatabaseWarmup` resolves every per-tenant context's target, so synchronous opens in the request find it cached. A
+  tenant whose database cannot be resolved gets `503` (`SERVICE_UNAVAILABLE`) before the application runs. The warmup is
+  registered once by `AddModuleDatabasePerTenant`. Tests: `TenantMiddlewareTests` (503 before the application; warmups run for
+  the resolved tenant), `TenantDatabaseInterceptorTests` (warmup resolves, refuses an unprovisioned tenant).
+- [x] **Startup guard for the secret backend.** Deviation: the plan put this in `DataIsolationCheck`, but the check needs the
+  Platform secret types, which the EF package does not reference. `TenantSecretBackendCheck` (Platform, registered by
+  `AddModulusTenantDatabases`) refuses to start outside Development when the secret backend is `InMemorySecretStore` or
+  `ConfigurationSecretStore`. Tests: `TenantDatabaseStartupTests`.
+- [x] **Dapper / ADO.NET access.** `OpenTenantConnectionAsync` opens through EF, so the lease reaches the tenant database.
+  Test: `DapperStyleLease_ReachesTheTenantDatabase`.
+- [x] **Provider helpers.** `AddPostgreSqlPerTenantDatabase` (Modulus.Data.PostgreSQL) and `AddSqlServerPerTenantDatabase`
+  (Modulus.Data.SqlServer), thin wrappers over `AddModuleDatabasePerTenant`.
+- [ ] **Existing deployments need the `ModulusTenantDataStores` table.** Not done on purpose. The framework ships no migration
+  for `TenantStoreDbContext`, and `EnsureCreated` never alters an existing database. Adding a migration is a deployment
+  decision: a migration for a database that already has the table will fail, and the provider-specific DDL differs. The
+  recommended path is one migration per provider in the host that owns the tenant store, applied with the same migrator job as
+  the tenant migrations.
+
+### Extensible entities, step 1: tenant store (for review)
+
+Applied the `IdentityDbContext<TUser, TRole, ...>` pattern to the tenant store. Steps 2 (organization) and 3 (identity user and role)
+are not started.
+
+- `TenantStoreDbContext<TTenant, TMembership, TDataStore>` is generic over its entity classes. The non-generic `TenantStoreDbContext`
+  is the default, with the framework's entities.
+- The stores (`EfTenantStore`, `EfTenantMembershipStore`, `EfTenantDataStoreCatalog`), `TenantManager` and
+  `TenantDataStoreProvisioner` are generic over the same three types. Each one is reached through a non-generic interface
+  (`IEfTenantStore`, `IEfTenantMembershipStore`, `ITenantDataStoreCatalog`, `ITenantDataStoreProvisioner`), so the scope bridges keep
+  their shape. `TenantManager` keeps its non-generic name as the default subclass.
+- Registration: `AddEfCoreTenantStore<TContext, TTenant, TMembership, TDataStore>(configure)`. The existing non-generic call is
+  unchanged. `MigrateTenantStoreAsync<TContext>` migrates an application's context.
+- Application pattern (tested by `TenantStoreExtensibilityTests`): derive the entity from `TenantEntity`, derive the context from
+  `TenantStoreDbContext<...>`, register it through the generic overload. The extra column persists in the same table, and the
+  framework's stores and manager work on the application's type.
+- CLI: `modulus migrate add` scaffolds the table automatically for new apps (verified with `dotnet ef migrations add` against the
+  generated factory shape). Existing apps get it from the next `migrate add`.
+
+### Extensible entities, step 2: organization (authorization store)
+
+The organization entities follow the same pattern as the tenant store. Step 3 (identity user and role) is not started.
+
+- The authorization context is split in two. `AuthorizationStoreDbContextBase` (abstract) holds every non-organization set, its mapping
+  and its tenant filters. `AuthorizationStoreDbContext<TOrgUnit, TOrgUnitParent, TOrgUnitProfile, TCompanyProfile>` adds the four
+  organization sets, their mapping and their tenant filters. The non-generic `AuthorizationStoreDbContext` is the default with the
+  framework's own rows.
+- The organization row classes (`OrgUnitRow`, `OrgUnitParentRow`, `OrgUnitProfileRow`, `CompanyProfileRow`) are public and unsealed,
+  so an application can derive its own.
+- The 15 non-organization stores depend on `IDbContextFactory<AuthorizationStoreDbContextBase>`, so they are unchanged in behaviour.
+  The organization stores (`EfOrgHierarchy<...>`, `EfOrganizationProfileStore<...>`) are generic over the four types.
+- Registration: `AddEfCoreAuthorizationStores<TContext, TOrgUnit, TOrgUnitParent, TOrgUnitProfile, TCompanyProfile>(configure)`. The
+  existing non-generic call is unchanged. `ContextFactoryAdapter` presents an application's factory under the base type and the
+  generic instantiation, since `IDbContextFactory<T>` is invariant.
+- `IOrgUnitAdministration` (new) carries the add and re-parent operations that the management API uses, so the management extension no
+  longer depends on the concrete default hierarchy class.
+- Tests: `OrganizationExtensibilityTests` (an application org unit column persists; the hierarchy works on the application's type).
+  Existing authorization EF tests (51) and management tests (85) pass on net8.0 and net10.0.
+
+### Phase 4: provisioning and rotation (built, 2026-10-19)
+
+Built:
+
+- [x] `ITenantDataStoreProvisioner` (Core). `TenantDataStoreProvisioner` (`Modulus.MultiTenancy.EntityFrameworkCore`, registered by
+  `AddEfCoreTenantStore`) writes the connection string with check-and-set and keeps the catalog row in step. It needs an
+  `ISecretWriter` (the provisioning identity, for example `AddOpenBaoSecretWriter`) and an `ITenantDatabaseResolver`.
+  - `ProvisionAsync` creates the row as `Provisioning`, writes the secret, then marks it `Active`. It is idempotent for an active
+    store. A store left `Provisioning` by an interrupted run is completed (the write is against the secret's current version).
+    A disabled store and a provider mismatch are refused.
+  - `RotateAsync` moves the store to `Rotating`, writes the new string with check-and-set against the current version, and marks it
+    `Active` again. A failed rotation stays `Rotating` (still served) and can be retried. An unprovisioned tenant gives not found.
+  - Both evict the resolver's cached target, so the next request on this node reads the new value.
+- [x] `InMemorySecretStore` now follows OpenBao's check-and-set rule. It had treated `expectedVersion: 0` as "must be 0", which
+  never matches an absent secret, so a fresh provision would have failed. Regression test: `InMemorySecretStoreCasTests`.
+- Tests: `TenantDataStoreProvisionerTests` (provision, idempotent provision, resuming an interrupted provision, refusal of a disabled
+  store, rotation with the resolver seeing the new string, rotation of an unprovisioned or non-active store).
+
+Completed in the third pass:
+
+- [x] **Probe and setup migration.** Provisioning opens the candidate string through `ITenantDatabaseProviders.ProbeAsync` before
+  it writes anything; a refused probe changes nothing and leaves the store `Provisioning`. The write is followed by the tenant's
+  migration (`MigrateOrCreate`, the framework default) and only then `Active`. The store is still `Provisioning` during the
+  migration, so the resolver refuses it; the migration reaches its database through `TenantDatabaseSetup.Use`, an override that
+  the interceptor honours for one tenant, one store and one provider. Test: `Provisioning_a_new_tenant_creates_its_schema_...`.
+  The probe is `SELECT 1` through the provider's connection factory, registered with `AddTenantDatabaseProvider` (PostgreSQL and
+  SQL Server helpers register theirs; a store for a provider with none fails with a clear message).
+- [x] **Cross-node invalidation.** `TenantDataStoreChanged` (`tenancy.tenant-data-store-changed.v1`, marker `TenancyArea`) is published
+  through `IModuleBus` after a provision or rotation. `TenantDataStoreChangedHandler` evicts the node's cached target and clears the
+  pool of the string it replaced: the resolver keeps each target it evicts (`TryTakeSuperseded`), and the handler clears that
+  string's pool through `ITenantDatabaseProviders.ClearPool`. **Operational requirements:** the event reaches other nodes only through
+  a broker- or outbox-backed bus, and a broker or outbox consumer can route it only when the Platform assembly is passed to
+  `AddModulusEvents` (the registry is filled from those assemblies). Without that, other nodes see the change when their cache entry
+  expires (`CatalogCacheTtl`, 30 s by default). A failed publish fails the call after the change is stored; the change is not undone.
+  Tests: `Rotate_ClearsThePoolOfTheReplacedString_WhenTheChangeIsHandled`, `Provision_PublishesTheChange_OnceTheStoreIsActive`.
+- [x] **Admin API.** `MapModulusTenantProvisioning("/api/tenancy/data-stores")` (`TenantDataStoreEndpoints`): `GET {tenantId}/{storeKey}`,
+  `POST {tenantId}/{storeKey}` (provision) and `POST .../rotate`. Every route needs `tenancy:data-stores:manage` (Critical, so step-up
+  applies when it is on; registered by `AddModulusTenantProvisioningAdmin`). The routes run in host context, validate the store key
+  and the required fields, and never return a connection string. Map it only on the provisioning host. Tests:
+  `TenantDataStoreEndpointTests` (in-process server; the policy is open there, so the permission itself is not exercised).
+- [x] **Metrics and audit.** Counters `modulus.tenant_data_store.provisioned` / `.rotated` and a security audit event per change, naming the
+  store and version only.
+- [x] **`modulus add-openbao [--auth kubernetes|approle] [--tenant-databases]`.** Writes `deploy/openbao/` (the runtime and provisioning
+  policies and the dev bootstrap), `docker-compose.openbao.yml`, the `Synvro.Modulus.Secrets.OpenBao` package reference, the store in
+  `Configuration/FeatureServicesSetup.cs` (and `AddModulusTenantDatabases` with `--tenant-databases`), and the `Secrets` settings for
+  production (placeholder address, read-only) and Development (dev server over http, AppRole files under `secrets/`). Idempotent.
+  The dev AppRole files must be git-ignored; the command prints that. The template names avoid `.sh` and dashes, because MSBuild reads a
+  `.sh` extension as a culture and drops the resource from the main assembly. Tests: `OpenBaoCommandTests` (10).
+- [x] **Doctor check.** When the API host wires OpenBao, `modulus doctor` probes `{Address}/v1/sys/health` (3 s); any HTTP answer passes
+  (OpenBao reports its state in the code), no answer is a warning.
+
+Still open in Phase 4 (deployment, not code):
+
+- [ ] The provisioning host (the writer identity, `AddOpenBaoSecretWriter`) is not generated by the CLI.
+- [ ] The production deployment runbook (Raft cluster sizing, TLS, auto-unseal, audit devices, snapshots, Kubernetes roles) is not
+  written yet. The `add-openbao` output is a development setup, not a production one.
+- [ ] The existing-deployment migration for `ModulusTenantDataStores` (Phase 3, above).
+
+### Phases 5 to 7 (not started)
+
+- **Phase 5:** setting engine (typed definitions, scope precedence, pinned values, `ISettingAdministration`, `ModulusSettingValues`,
+  global cache version key, HTTP API).
+- **Phase 6:** navigation engine (contributors, startup validation, overrides in `ModulusNavigationOverrides`, per-user filter,
+  admin API, CLI template updates).
+- **Phase 7:** `modulus-ui` adapter (separate repository).
+
+### Verification so far
+
+- Unit, on net8.0 and net10.0: `Modulus.Core.Tests`, `Modulus.EntityFrameworkCore.Tests`, `Modulus.MultiTenancy.Tests` (84),
+  `Modulus.Platform.Tests` (328), `Modulus.Secrets.OpenBao.Tests` (39), `Modulus.AspNetCore.Tests`. All pass.
+- Integration, on net8.0 and net10.0: `Modulus.Secrets.OpenBao.Integration.Tests` (6, Docker).
+- `dotnet format --verify-no-changes` is clean for every project touched.
+- Not run yet: the full `dotnet build modulus.slnx` and the full unit run.

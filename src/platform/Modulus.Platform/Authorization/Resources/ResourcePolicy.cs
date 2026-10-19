@@ -128,9 +128,15 @@ public sealed class ResourcePolicy
             matchedAllow = true;
         }
 
-        return matchedAllow
-            ? AccessDecision.Allow()
-            : AccessDecision.Deny(AccessReasonCodes.PolicyViolation, $"no policy rule grants action '{request.Action}' on this resource");
+        if (matchedAllow)
+            return AccessDecision.Allow();
+
+        // Refused because a record attribute is missing, not because the caller lacks authority: say so, naming the attribute only.
+        if (request.MissingAttributes.Count > 0)
+            return AccessDecision.Deny(AccessReasonCodes.MissingAttribute,
+                $"action '{request.Action}' cannot be decided: the record has no {string.Join(", ", request.MissingAttributes.Order(StringComparer.Ordinal))}");
+
+        return AccessDecision.Deny(AccessReasonCodes.PolicyViolation, $"no policy rule grants action '{request.Action}' on this resource");
     }
 }
 

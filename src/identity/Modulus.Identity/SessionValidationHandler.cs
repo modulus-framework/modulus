@@ -35,7 +35,12 @@ internal sealed class SessionValidationHandler(IServiceProvider services) : IOpe
         {
             context.Reject(
                 error: OpenIddictConstants.Errors.InvalidToken,
-                description: state == SessionState.IdleExpired ? "The session timed out." : "The session has ended.");
+                description: state switch
+                {
+                    SessionState.IdleExpired => "The session timed out.",
+                    SessionState.LifetimeExpired => "The session reached its maximum lifetime.",
+                    _ => "The session has ended.",
+                });
         }
     }
 }

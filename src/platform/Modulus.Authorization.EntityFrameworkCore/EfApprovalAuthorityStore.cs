@@ -8,7 +8,7 @@ namespace Modulus.Authorization.EntityFrameworkCore;
 /// EF Core-backed <see cref="IApprovalAuthorityStore"/>: approval limits as durable, tenant-filtered, effective-dated rows, so a
 /// change takes effect on the next request.
 /// </summary>
-public sealed class EfApprovalAuthorityStore(IDbContextFactory<AuthorizationStoreDbContext> factory) : IApprovalAuthorityStore
+public sealed class EfApprovalAuthorityStore(IDbContextFactory<AuthorizationStoreDbContextBase> factory) : IApprovalAuthorityStore
 {
     /// <summary>A stored limit with its id and who made it.</summary>
     /// <param name="Id">The row id (used to remove it).</param>

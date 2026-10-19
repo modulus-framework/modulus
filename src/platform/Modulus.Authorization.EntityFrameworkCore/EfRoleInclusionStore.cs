@@ -7,7 +7,7 @@ namespace Modulus.Authorization.EntityFrameworkCore;
 /// second (permissions, scoped grants and approval limits), through any number of levels. Kept per company; the grant and
 /// approval-limit stores expand a principal's roles with it, so a change shows on the next request.
 /// </summary>
-public sealed class EfRoleInclusionStore(IDbContextFactory<AuthorizationStoreDbContext> factory)
+public sealed class EfRoleInclusionStore(IDbContextFactory<AuthorizationStoreDbContextBase> factory)
 {
     /// <summary>The deepest chain of inclusions allowed.</summary>
     public const int MaxDepth = 10;
@@ -89,11 +89,11 @@ public sealed class EfRoleInclusionStore(IDbContextFactory<AuthorizationStoreDbC
     }
 
     /// <summary>Synchronous expansion over an open context, for the grant and approval stores (their contracts are synchronous).</summary>
-    internal static IReadOnlyCollection<string> Expand(AuthorizationStoreDbContext db, IEnumerable<string> roles)
+    internal static IReadOnlyCollection<string> Expand(AuthorizationStoreDbContextBase db, IEnumerable<string> roles)
         => Expand(db.RoleInclusions.AsNoTracking().ToList(), roles);
 
     /// <summary>Asynchronous expansion over an open context, for the grant read on the authorization path.</summary>
-    internal static async Task<IReadOnlyCollection<string>> ExpandAsync(AuthorizationStoreDbContext db, IEnumerable<string> roles, CancellationToken ct)
+    internal static async Task<IReadOnlyCollection<string>> ExpandAsync(AuthorizationStoreDbContextBase db, IEnumerable<string> roles, CancellationToken ct)
         => Expand(await db.RoleInclusions.AsNoTracking().ToListAsync(ct), roles);
 
     private static List<string> Expand(List<RoleInclusionRow> edges, IEnumerable<string> roles)

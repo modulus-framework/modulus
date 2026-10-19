@@ -11,4 +11,10 @@ public interface IUserRoleDirectory
     /// to the current tenant (callers treat that as a refusal, never as "no roles").
     /// </summary>
     ValueTask<IReadOnlyCollection<string>?> GetRolesAsync(Guid userId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Whether <paramref name="userId"/> may start access now: the account exists and is enabled. A delegation made by a user who may not is
+    /// ended (A9-2), so a directory that does not answer this refuses by default rather than keeping delegations alive.
+    /// </summary>
+    ValueTask<bool> MayStartAccessAsync(Guid userId, CancellationToken ct = default) => ValueTask.FromResult(false);
 }

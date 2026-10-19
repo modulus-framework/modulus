@@ -13,3 +13,5 @@ static Modulus.Data.PostgreSQL.PostgreSqlRowLevelSecurity.EnableTenantRowLevelSe
 static Modulus.Data.PostgreSQL.PostgreSqlRowLevelSecurity.EnsureAsync(Microsoft.EntityFrameworkCore.DbContext! context, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
 static Modulus.Data.PostgreSQL.PostgreSqlRowLevelSecurity.Interceptor.get -> Modulus.EntityFrameworkCore.Isolation.TenantSessionInterceptor!
 static Modulus.Data.PostgreSQL.PostgreSqlRowLevelSecurity.Script(Microsoft.EntityFrameworkCore.Metadata.IModel! model) -> string!
+Modulus.Data.PostgreSQL.PostgreSqlTenantDatabaseExtensions
+static Modulus.Data.PostgreSQL.PostgreSqlTenantDatabaseExtensions.AddPostgreSqlPerTenantDatabase<TContext>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, string! storeKey, string! hostConnectionString) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!

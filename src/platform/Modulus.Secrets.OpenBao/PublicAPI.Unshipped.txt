@@ -1,0 +1,49 @@
+#nullable enable
+Modulus.Secrets.OpenBao.OpenBaoAuthMethod
+Modulus.Secrets.OpenBao.OpenBaoAuthMethod.AppRole = 1 -> Modulus.Secrets.OpenBao.OpenBaoAuthMethod
+Modulus.Secrets.OpenBao.OpenBaoAuthMethod.Kubernetes = 0 -> Modulus.Secrets.OpenBao.OpenBaoAuthMethod
+Modulus.Secrets.OpenBao.OpenBaoAuthMethod.TokenFile = 2 -> Modulus.Secrets.OpenBao.OpenBaoAuthMethod
+Modulus.Secrets.OpenBao.OpenBaoAuthOptions
+Modulus.Secrets.OpenBao.OpenBaoAuthOptions.JwtPath.get -> string?
+Modulus.Secrets.OpenBao.OpenBaoAuthOptions.JwtPath.set -> void
+Modulus.Secrets.OpenBao.OpenBaoAuthOptions.Method.get -> Modulus.Secrets.OpenBao.OpenBaoAuthMethod
+Modulus.Secrets.OpenBao.OpenBaoAuthOptions.Method.set -> void
+Modulus.Secrets.OpenBao.OpenBaoAuthOptions.MountPath.get -> string?
+Modulus.Secrets.OpenBao.OpenBaoAuthOptions.MountPath.set -> void
+Modulus.Secrets.OpenBao.OpenBaoAuthOptions.OpenBaoAuthOptions() -> void
+Modulus.Secrets.OpenBao.OpenBaoAuthOptions.Role.get -> string?
+Modulus.Secrets.OpenBao.OpenBaoAuthOptions.Role.set -> void
+Modulus.Secrets.OpenBao.OpenBaoAuthOptions.RoleIdPath.get -> string?
+Modulus.Secrets.OpenBao.OpenBaoAuthOptions.RoleIdPath.set -> void
+Modulus.Secrets.OpenBao.OpenBaoAuthOptions.SecretIdPath.get -> string?
+Modulus.Secrets.OpenBao.OpenBaoAuthOptions.SecretIdPath.set -> void
+Modulus.Secrets.OpenBao.OpenBaoAuthOptions.TokenPath.get -> string?
+Modulus.Secrets.OpenBao.OpenBaoAuthOptions.TokenPath.set -> void
+Modulus.Secrets.OpenBao.OpenBaoHealthCheck
+Modulus.Secrets.OpenBao.OpenBaoHealthCheck.CheckAsync(System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Core.Abstractions.ModuleHealthResult!>!
+Modulus.Secrets.OpenBao.OpenBaoHealthCheck.OpenBaoHealthCheck(System.Net.Http.HttpClient! http) -> void
+Modulus.Secrets.OpenBao.OpenBaoOptions
+Modulus.Secrets.OpenBao.OpenBaoOptions.Address.get -> string!
+Modulus.Secrets.OpenBao.OpenBaoOptions.Address.set -> void
+Modulus.Secrets.OpenBao.OpenBaoOptions.AllowInsecureHttp.get -> bool
+Modulus.Secrets.OpenBao.OpenBaoOptions.AllowInsecureHttp.set -> void
+Modulus.Secrets.OpenBao.OpenBaoOptions.Auth.get -> Modulus.Secrets.OpenBao.OpenBaoAuthOptions!
+Modulus.Secrets.OpenBao.OpenBaoOptions.Auth.set -> void
+Modulus.Secrets.OpenBao.OpenBaoOptions.CaCertificatePath.get -> string?
+Modulus.Secrets.OpenBao.OpenBaoOptions.CaCertificatePath.set -> void
+Modulus.Secrets.OpenBao.OpenBaoOptions.Mount.get -> string!
+Modulus.Secrets.OpenBao.OpenBaoOptions.Mount.set -> void
+Modulus.Secrets.OpenBao.OpenBaoOptions.Namespace.get -> string?
+Modulus.Secrets.OpenBao.OpenBaoOptions.Namespace.set -> void
+Modulus.Secrets.OpenBao.OpenBaoOptions.OpenBaoOptions() -> void
+Modulus.Secrets.OpenBao.OpenBaoOptions.PathPrefix.get -> string!
+Modulus.Secrets.OpenBao.OpenBaoOptions.PathPrefix.set -> void
+Modulus.Secrets.OpenBao.OpenBaoOptions.RequestTimeout.get -> System.TimeSpan
+Modulus.Secrets.OpenBao.OpenBaoOptions.RequestTimeout.set -> void
+Modulus.Secrets.OpenBao.OpenBaoOptions.Validate() -> string?
+Modulus.Secrets.OpenBao.OpenBaoOptions.Writer.get -> Modulus.Secrets.OpenBao.OpenBaoAuthOptions?
+Modulus.Secrets.OpenBao.OpenBaoOptions.Writer.set -> void
+Modulus.Secrets.OpenBao.OpenBaoSecretsExtensions
+const Modulus.Secrets.OpenBao.OpenBaoOptions.SectionName = "Secrets:OpenBao" -> string!
+static Modulus.Secrets.OpenBao.OpenBaoSecretsExtensions.AddOpenBaoSecretStore(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.Secrets.OpenBao.OpenBaoSecretsExtensions.AddOpenBaoSecretWriter(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!

@@ -671,3 +671,149 @@ Modulus.Core.Abstractions.ITenantMemberProvisioner.RemoveMemberAsync(System.Guid
 Modulus.Core.Http.LocalUrl
 static Modulus.Core.Http.LocalUrl.IsLocal(string? url) -> bool
 static Modulus.Observability.ModulusMeters.ReportOutboxDepth(string! source, long depth) -> void
+Modulus.Core.Abstractions.Exceptions.ModulusErrorKind.Unavailable = 9 -> Modulus.Core.Abstractions.Exceptions.ModulusErrorKind
+Modulus.Core.Abstractions.Exceptions.SecretNotFoundException
+Modulus.Core.Abstractions.Exceptions.SecretNotFoundException.SecretNotFoundException(string! message) -> void
+Modulus.Core.Abstractions.Exceptions.SecretStoreUnavailableException
+Modulus.Core.Abstractions.Exceptions.SecretStoreUnavailableException.SecretStoreUnavailableException(string! message, System.Exception? inner = null) -> void
+Modulus.Core.Abstractions.Secrets.ISecretStore
+Modulus.Core.Abstractions.Secrets.ISecretStore.GetAsync(Modulus.Core.Abstractions.Secrets.SecretReference! reference, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Core.Abstractions.Secrets.SecretValue!>!
+Modulus.Core.Abstractions.Secrets.ISecretWriter
+Modulus.Core.Abstractions.Secrets.ISecretWriter.GetCurrentVersionAsync(Modulus.Core.Abstractions.Secrets.SecretReference! reference, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<int?>!
+Modulus.Core.Abstractions.Secrets.ISecretWriter.WriteAsync(Modulus.Core.Abstractions.Secrets.SecretReference! reference, System.Collections.Generic.IReadOnlyDictionary<string!, string!>! data, int? expectedVersion, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<int>!
+Modulus.Core.Abstractions.Secrets.SecretReference
+Modulus.Core.Abstractions.Secrets.SecretReference.Equals(Modulus.Core.Abstractions.Secrets.SecretReference? other) -> bool
+Modulus.Core.Abstractions.Secrets.SecretReference.Path.get -> string!
+Modulus.Core.Abstractions.Secrets.SecretValue
+Modulus.Core.Abstractions.Secrets.SecretValue.Data.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+Modulus.Core.Abstractions.Secrets.SecretValue.Get(string! key) -> string!
+Modulus.Core.Abstractions.Secrets.SecretValue.SecretValue(System.Collections.Generic.IReadOnlyDictionary<string!, string!>! data, int version) -> void
+Modulus.Core.Abstractions.Secrets.SecretValue.Version.get -> int
+Modulus.Core.Abstractions.Secrets.SensitiveString
+Modulus.Core.Abstractions.Secrets.SensitiveString.Reveal() -> string!
+Modulus.Core.Abstractions.Secrets.SensitiveString.SensitiveString(string! value) -> void
+override Modulus.Core.Abstractions.Secrets.SecretReference.Equals(object? obj) -> bool
+override Modulus.Core.Abstractions.Secrets.SecretReference.GetHashCode() -> int
+override Modulus.Core.Abstractions.Secrets.SecretReference.ToString() -> string!
+override Modulus.Core.Abstractions.Secrets.SecretValue.ToString() -> string!
+override Modulus.Core.Abstractions.Secrets.SensitiveString.ToString() -> string!
+static Modulus.Core.Abstractions.Secrets.SecretReference.Parse(string! path) -> Modulus.Core.Abstractions.Secrets.SecretReference!
+static Modulus.Core.Abstractions.Secrets.SecretReference.TryParse(string? path, out Modulus.Core.Abstractions.Secrets.SecretReference? reference) -> bool
+Modulus.Core.Abstractions.Exceptions.TenantDatabaseUnavailableException
+Modulus.Core.Abstractions.Exceptions.TenantDatabaseUnavailableException.TenantDatabaseUnavailableException(string! message, System.Exception? inner = null) -> void
+Modulus.Core.Abstractions.Tenancy.ITenantDataStoreCatalog
+Modulus.Core.Abstractions.Tenancy.ITenantDataStoreCatalog.FindAsync(System.Guid tenantId, string! storeKey, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Core.Abstractions.Tenancy.TenantDataStore?>!
+Modulus.Core.Abstractions.Tenancy.ITenantDatabaseResolver
+Modulus.Core.Abstractions.Tenancy.ITenantDatabaseResolver.Evict(System.Guid tenantId, string! storeKey) -> void
+Modulus.Core.Abstractions.Tenancy.ITenantDatabaseResolver.ResolveAsync(System.Guid tenantId, string! storeKey, string! providerKey, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Core.Abstractions.Tenancy.TenantDatabaseTarget!>!
+Modulus.Core.Abstractions.Tenancy.ITenantDatabaseResolver.TryGetCached(System.Guid tenantId, string! storeKey, string! providerKey, out Modulus.Core.Abstractions.Tenancy.TenantDatabaseTarget? target) -> bool
+Modulus.Core.Abstractions.Tenancy.TenantDataIsolation
+Modulus.Core.Abstractions.Tenancy.TenantDataIsolation.DatabasePerTenant = 1 -> Modulus.Core.Abstractions.Tenancy.TenantDataIsolation
+Modulus.Core.Abstractions.Tenancy.TenantDataIsolation.Shared = 0 -> Modulus.Core.Abstractions.Tenancy.TenantDataIsolation
+Modulus.Core.Abstractions.Tenancy.TenantDataStore
+Modulus.Core.Abstractions.Tenancy.TenantDataStore.<Clone>$() -> Modulus.Core.Abstractions.Tenancy.TenantDataStore!
+Modulus.Core.Abstractions.Tenancy.TenantDataStore.Deconstruct(out System.Guid TenantId, out string! StoreKey, out Modulus.Core.Abstractions.Tenancy.TenantDataIsolation Isolation, out string! ProviderKey, out string! SecretPath, out int SecretVersion, out Modulus.Core.Abstractions.Tenancy.TenantDataStoreStatus Status) -> void
+Modulus.Core.Abstractions.Tenancy.TenantDataStore.Equals(Modulus.Core.Abstractions.Tenancy.TenantDataStore? other) -> bool
+Modulus.Core.Abstractions.Tenancy.TenantDataStore.Isolation.get -> Modulus.Core.Abstractions.Tenancy.TenantDataIsolation
+Modulus.Core.Abstractions.Tenancy.TenantDataStore.Isolation.init -> void
+Modulus.Core.Abstractions.Tenancy.TenantDataStore.ProviderKey.get -> string!
+Modulus.Core.Abstractions.Tenancy.TenantDataStore.ProviderKey.init -> void
+Modulus.Core.Abstractions.Tenancy.TenantDataStore.SecretPath.get -> string!
+Modulus.Core.Abstractions.Tenancy.TenantDataStore.SecretPath.init -> void
+Modulus.Core.Abstractions.Tenancy.TenantDataStore.SecretVersion.get -> int
+Modulus.Core.Abstractions.Tenancy.TenantDataStore.SecretVersion.init -> void
+Modulus.Core.Abstractions.Tenancy.TenantDataStore.Status.get -> Modulus.Core.Abstractions.Tenancy.TenantDataStoreStatus
+Modulus.Core.Abstractions.Tenancy.TenantDataStore.Status.init -> void
+Modulus.Core.Abstractions.Tenancy.TenantDataStore.StoreKey.get -> string!
+Modulus.Core.Abstractions.Tenancy.TenantDataStore.StoreKey.init -> void
+Modulus.Core.Abstractions.Tenancy.TenantDataStore.TenantDataStore(System.Guid TenantId, string! StoreKey, Modulus.Core.Abstractions.Tenancy.TenantDataIsolation Isolation, string! ProviderKey, string! SecretPath, int SecretVersion, Modulus.Core.Abstractions.Tenancy.TenantDataStoreStatus Status) -> void
+Modulus.Core.Abstractions.Tenancy.TenantDataStore.TenantId.get -> System.Guid
+Modulus.Core.Abstractions.Tenancy.TenantDataStore.TenantId.init -> void
+Modulus.Core.Abstractions.Tenancy.TenantDataStoreStatus
+Modulus.Core.Abstractions.Tenancy.TenantDataStoreStatus.Active = 1 -> Modulus.Core.Abstractions.Tenancy.TenantDataStoreStatus
+Modulus.Core.Abstractions.Tenancy.TenantDataStoreStatus.Disabled = 3 -> Modulus.Core.Abstractions.Tenancy.TenantDataStoreStatus
+Modulus.Core.Abstractions.Tenancy.TenantDataStoreStatus.Provisioning = 0 -> Modulus.Core.Abstractions.Tenancy.TenantDataStoreStatus
+Modulus.Core.Abstractions.Tenancy.TenantDataStoreStatus.Rotating = 2 -> Modulus.Core.Abstractions.Tenancy.TenantDataStoreStatus
+Modulus.Core.Abstractions.Tenancy.TenantDatabaseTarget
+Modulus.Core.Abstractions.Tenancy.TenantDatabaseTarget.<Clone>$() -> Modulus.Core.Abstractions.Tenancy.TenantDatabaseTarget!
+Modulus.Core.Abstractions.Tenancy.TenantDatabaseTarget.ConnectionString.get -> string?
+Modulus.Core.Abstractions.Tenancy.TenantDatabaseTarget.ConnectionString.init -> void
+Modulus.Core.Abstractions.Tenancy.TenantDatabaseTarget.Deconstruct(out System.Guid TenantId, out string! StoreKey, out string! ProviderKey, out string? ConnectionString, out int SecretVersion) -> void
+Modulus.Core.Abstractions.Tenancy.TenantDatabaseTarget.Equals(Modulus.Core.Abstractions.Tenancy.TenantDatabaseTarget? other) -> bool
+Modulus.Core.Abstractions.Tenancy.TenantDatabaseTarget.ProviderKey.get -> string!
+Modulus.Core.Abstractions.Tenancy.TenantDatabaseTarget.ProviderKey.init -> void
+Modulus.Core.Abstractions.Tenancy.TenantDatabaseTarget.SecretVersion.get -> int
+Modulus.Core.Abstractions.Tenancy.TenantDatabaseTarget.SecretVersion.init -> void
+Modulus.Core.Abstractions.Tenancy.TenantDatabaseTarget.StoreKey.get -> string!
+Modulus.Core.Abstractions.Tenancy.TenantDatabaseTarget.StoreKey.init -> void
+Modulus.Core.Abstractions.Tenancy.TenantDatabaseTarget.TenantDatabaseTarget(System.Guid TenantId, string! StoreKey, string! ProviderKey, string? ConnectionString, int SecretVersion) -> void
+Modulus.Core.Abstractions.Tenancy.TenantDatabaseTarget.TenantId.get -> System.Guid
+Modulus.Core.Abstractions.Tenancy.TenantDatabaseTarget.TenantId.init -> void
+override Modulus.Core.Abstractions.Tenancy.TenantDataStore.Equals(object? obj) -> bool
+override Modulus.Core.Abstractions.Tenancy.TenantDataStore.GetHashCode() -> int
+override Modulus.Core.Abstractions.Tenancy.TenantDataStore.ToString() -> string!
+override Modulus.Core.Abstractions.Tenancy.TenantDatabaseTarget.Equals(object? obj) -> bool
+override Modulus.Core.Abstractions.Tenancy.TenantDatabaseTarget.GetHashCode() -> int
+override Modulus.Core.Abstractions.Tenancy.TenantDatabaseTarget.ToString() -> string!
+static Modulus.Core.Abstractions.Tenancy.TenantDataStore.operator !=(Modulus.Core.Abstractions.Tenancy.TenantDataStore? left, Modulus.Core.Abstractions.Tenancy.TenantDataStore? right) -> bool
+static Modulus.Core.Abstractions.Tenancy.TenantDataStore.operator ==(Modulus.Core.Abstractions.Tenancy.TenantDataStore? left, Modulus.Core.Abstractions.Tenancy.TenantDataStore? right) -> bool
+static Modulus.Core.Abstractions.Tenancy.TenantDatabaseTarget.operator !=(Modulus.Core.Abstractions.Tenancy.TenantDatabaseTarget? left, Modulus.Core.Abstractions.Tenancy.TenantDatabaseTarget? right) -> bool
+static Modulus.Core.Abstractions.Tenancy.TenantDatabaseTarget.operator ==(Modulus.Core.Abstractions.Tenancy.TenantDatabaseTarget? left, Modulus.Core.Abstractions.Tenancy.TenantDatabaseTarget? right) -> bool
+Modulus.Core.Abstractions.Tenancy.ITenantWarmup
+Modulus.Core.Abstractions.Tenancy.ITenantWarmup.WarmAsync(Modulus.Core.Abstractions.TenantInfo! tenant, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Core.Abstractions.Tenancy.ITenantDataStoreProvisioner
+Modulus.Core.Abstractions.Tenancy.ITenantDataStoreProvisioner.ProvisionAsync(System.Guid tenantId, string! storeKey, string! providerKey, string! connectionString, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Core.Abstractions.Tenancy.TenantDataStore!>!
+Modulus.Core.Abstractions.Tenancy.ITenantDataStoreProvisioner.RotateAsync(System.Guid tenantId, string! storeKey, string! connectionString, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Core.Abstractions.Tenancy.TenantDataStore!>!
+Modulus.Core.Abstractions.IPermissionRegistry.Add(string! permission, string! description, string![]? requires, Modulus.Core.Abstractions.PermissionSensitivity sensitivity, Modulus.Core.Abstractions.PermissionLifecycle lifecycle, string? replacedBy) -> void
+Modulus.Core.Abstractions.PermissionDefinition.Lifecycle.get -> Modulus.Core.Abstractions.PermissionLifecycle
+Modulus.Core.Abstractions.PermissionDefinition.Lifecycle.init -> void
+Modulus.Core.Abstractions.PermissionDefinition.ReplacedBy.get -> string?
+Modulus.Core.Abstractions.PermissionDefinition.ReplacedBy.init -> void
+Modulus.Core.Abstractions.PermissionLifecycle
+Modulus.Core.Abstractions.PermissionLifecycle.Active = 0 -> Modulus.Core.Abstractions.PermissionLifecycle
+Modulus.Core.Abstractions.PermissionLifecycle.Deprecated = 1 -> Modulus.Core.Abstractions.PermissionLifecycle
+Modulus.Core.Abstractions.PermissionLifecycle.Retired = 2 -> Modulus.Core.Abstractions.PermissionLifecycle
+Modulus.Core.Null.NullPermissionRegistry.Add(string! permission, string! description, string![]? requires, Modulus.Core.Abstractions.PermissionSensitivity sensitivity, Modulus.Core.Abstractions.PermissionLifecycle lifecycle, string? replacedBy) -> void
+Modulus.Core.Abstractions.DataQuality.DataQualityFinding
+Modulus.Core.Abstractions.DataQuality.DataQualityFinding.<Clone>$() -> Modulus.Core.Abstractions.DataQuality.DataQualityFinding!
+Modulus.Core.Abstractions.DataQuality.DataQualityFinding.Action.get -> string!
+Modulus.Core.Abstractions.DataQuality.DataQualityFinding.Action.init -> void
+Modulus.Core.Abstractions.DataQuality.DataQualityFinding.DataQualityFinding(System.Guid? TenantId, string! ResourceType, string? RecordId, string! Action, System.Collections.Generic.IReadOnlyList<string!>! MissingAttributes) -> void
+Modulus.Core.Abstractions.DataQuality.DataQualityFinding.Deconstruct(out System.Guid? TenantId, out string! ResourceType, out string? RecordId, out string! Action, out System.Collections.Generic.IReadOnlyList<string!>! MissingAttributes) -> void
+Modulus.Core.Abstractions.DataQuality.DataQualityFinding.Equals(Modulus.Core.Abstractions.DataQuality.DataQualityFinding? other) -> bool
+Modulus.Core.Abstractions.DataQuality.DataQualityFinding.MissingAttributes.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Modulus.Core.Abstractions.DataQuality.DataQualityFinding.MissingAttributes.init -> void
+Modulus.Core.Abstractions.DataQuality.DataQualityFinding.RecordId.get -> string?
+Modulus.Core.Abstractions.DataQuality.DataQualityFinding.RecordId.init -> void
+Modulus.Core.Abstractions.DataQuality.DataQualityFinding.ResourceType.get -> string!
+Modulus.Core.Abstractions.DataQuality.DataQualityFinding.ResourceType.init -> void
+Modulus.Core.Abstractions.DataQuality.DataQualityFinding.TenantId.get -> System.Guid?
+Modulus.Core.Abstractions.DataQuality.DataQualityFinding.TenantId.init -> void
+Modulus.Core.Abstractions.DataQuality.IDataQualityFindingSink
+Modulus.Core.Abstractions.DataQuality.IDataQualityFindingSink.Record(Modulus.Core.Abstractions.DataQuality.DataQualityFinding! finding) -> void
+Modulus.Core.Null.NullDataQualityFindingSink
+Modulus.Core.Null.NullDataQualityFindingSink.NullDataQualityFindingSink() -> void
+Modulus.Core.Null.NullDataQualityFindingSink.Record(Modulus.Core.Abstractions.DataQuality.DataQualityFinding! finding) -> void
+override Modulus.Core.Abstractions.DataQuality.DataQualityFinding.Equals(object? obj) -> bool
+override Modulus.Core.Abstractions.DataQuality.DataQualityFinding.GetHashCode() -> int
+override Modulus.Core.Abstractions.DataQuality.DataQualityFinding.ToString() -> string!
+static Modulus.Core.Abstractions.DataQuality.DataQualityFinding.operator !=(Modulus.Core.Abstractions.DataQuality.DataQualityFinding? left, Modulus.Core.Abstractions.DataQuality.DataQualityFinding? right) -> bool
+static Modulus.Core.Abstractions.DataQuality.DataQualityFinding.operator ==(Modulus.Core.Abstractions.DataQuality.DataQualityFinding? left, Modulus.Core.Abstractions.DataQuality.DataQualityFinding? right) -> bool
+Modulus.Core.Abstractions.Entities.ExtensionFieldCatalog
+Modulus.Core.Abstractions.Entities.ExtensionFieldCatalog.ExtensionFieldCatalog() -> void
+Modulus.Core.Abstractions.Entities.ExtensionFieldCatalog.Find(System.Type! entityType, string! name) -> Modulus.Core.Abstractions.Entities.FieldClassification?
+Modulus.Core.Abstractions.Entities.ExtensionFieldCatalog.Register<TEntity>(string! name, Modulus.Core.Abstractions.Entities.FieldClassification classification) -> Modulus.Core.Abstractions.Entities.ExtensionFieldCatalog!
+Modulus.Core.Abstractions.Entities.IExtensionFieldCatalog
+Modulus.Core.Abstractions.Entities.IExtensionFieldCatalog.Find(System.Type! entityType, string! name) -> Modulus.Core.Abstractions.Entities.FieldClassification?
+Modulus.Core.Null.NullExtensionFieldCatalog
+Modulus.Core.Null.NullExtensionFieldCatalog.Find(System.Type! entityType, string! name) -> Modulus.Core.Abstractions.Entities.FieldClassification?
+Modulus.Core.Null.NullExtensionFieldCatalog.NullExtensionFieldCatalog() -> void
+static readonly Modulus.Core.Null.NullExtensionFieldCatalog.Instance -> Modulus.Core.Null.NullExtensionFieldCatalog!
+Modulus.Core.Abstractions.Dimensions.DimensionAttribute
+Modulus.Core.Abstractions.Dimensions.DimensionAttribute.DimensionAttribute(string! dimension) -> void
+Modulus.Core.Abstractions.Dimensions.DimensionAttribute.Dimension.get -> string!
+Modulus.Core.Abstractions.Tenancy.ITenantDatabaseProviders
+Modulus.Core.Abstractions.Tenancy.ITenantDatabaseProviders.ClearPool(string! providerKey, string! connectionString) -> void
+Modulus.Core.Abstractions.Tenancy.ITenantDatabaseProviders.ProbeAsync(string! providerKey, string! connectionString, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Core.Abstractions.Tenancy.ITenantDatabaseResolver.TryTakeSuperseded(System.Guid tenantId, string! storeKey, out Modulus.Core.Abstractions.Tenancy.TenantDatabaseTarget? target) -> bool
+Modulus.Core.Abstractions.IUserRoleDirectory.MayStartAccessAsync(System.Guid userId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<bool>

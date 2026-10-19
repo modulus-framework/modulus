@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Modulus.Core.Abstractions;
 using Modulus.Core.Abstractions.Entities;
+using Modulus.Core.Abstractions.Exceptions;
 using Modulus.Core.Null;
 using Modulus.EntityFrameworkCore.Extensions;
 using Modulus.Events;
@@ -30,6 +31,11 @@ public sealed class ExtraPropertiesTests : IAsyncDisposable
         services.AddScoped<ICurrentTenant, NullCurrentTenant>();
         services.AddScoped<ICurrentUser, NullCurrentUser>();
         services.AddScoped<DomainEventDispatcher>();
+        services.AddSingleton<IExtensionFieldCatalog>(new ExtensionFieldCatalog()
+            .Register<Product>("ReorderLevel", FieldClassification.Internal)
+            .Register<Product>("Note", FieldClassification.Internal)
+            .Register<Product>("Bin", FieldClassification.Internal)
+            .Register<Product>("Zone", FieldClassification.Internal));
         services.AddModuleDatabase<CatalogDbContext>(o => o.UseSqlite(_connection));
         _root = services.BuildServiceProvider();
 
@@ -106,6 +112,28 @@ public sealed class ExtraPropertiesTests : IAsyncDisposable
         await using var readScope = _root.CreateAsyncScope();
         var loaded = await readScope.ServiceProvider.GetRequiredService<CatalogDbContext>().Products.SingleAsync(p => p.Id == id);
         loaded.ExtraProperties.Should().NotBeNull().And.BeEmpty();
+    }
+
+    [Fact]
+    public async Task A_value_under_an_undeclared_key_is_refused_and_nothing_is_saved()
+    {
+        var id = Guid.NewGuid();
+        var act = async () =>
+        {
+            await using var scope = _root.CreateAsyncScope();
+            var db = scope.ServiceProvider.GetRequiredService<CatalogDbContext>();
+            var product = new Product { Id = id, Name = "Widget" };
+            product.ExtraProperties["Unknown"] = "x";
+            db.Products.Add(product);
+            await db.SaveChangesAsync();
+        };
+
+        await act.Should().ThrowAsync<ValidationException>()
+            .WithMessage("*Unknown*not a declared extension field*");
+
+        await using var readScope = _root.CreateAsyncScope();
+        var rows = await readScope.ServiceProvider.GetRequiredService<CatalogDbContext>().Products.CountAsync(p => p.Id == id);
+        rows.Should().Be(0);
     }
 
     private async Task<string?> ReadRawExtraAsync(Guid id)

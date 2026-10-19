@@ -10,7 +10,7 @@ namespace Modulus.Authorization.EntityFrameworkCore;
 /// organizational scope (fail-closed).
 /// </summary>
 public sealed class EfOrgPlacementStore(
-    IDbContextFactory<AuthorizationStoreDbContext> factory)
+    IDbContextFactory<AuthorizationStoreDbContextBase> factory)
     : IOrgPlacementStore
 {
     /// <inheritdoc />

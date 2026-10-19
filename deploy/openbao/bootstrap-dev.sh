@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+# Local development only. Starts nothing: point BAO_ADDR at a dev server first, for example
+#   docker run --rm -p 8200:8200 -e BAO_DEV_ROOT_TOKEN_ID=dev-root openbao/openbao server -dev
+#
+# It enables KV v2, writes the runtime and provisioning policies, creates a sample tenant secret and prints the
+# AppRole identities the API host reads from files. Never run this against a production server.
+set -euo pipefail
+
+: "${BAO_ADDR:=http://127.0.0.1:8200}"
+: "${BAO_TOKEN:?Set BAO_TOKEN to the dev root token (for example dev-root)}"
+MOUNT="${MODULUS_OPENBAO_MOUNT:-modulus-dev}"
+HERE="$(cd "$(dirname "$0")" && pwd)"
+
+export BAO_ADDR BAO_TOKEN
+
+bao secrets enable -path="$MOUNT" -version=2 kv >/dev/null 2>&1 || true
+
+sed "s#modulus-prod#$MOUNT#g" "$HERE/runtime-read.hcl" | bao policy write modulus-runtime-read -
+sed "s#modulus-prod#$MOUNT#g" "$HERE/provisioner.hcl" | bao policy write modulus-provisioner -
+
+bao auth enable approle >/dev/null 2>&1 || true
+bao write auth/approle/role/modulus-api token_policies=modulus-runtime-read token_ttl=1h token_max_ttl=4h
+bao write auth/approle/role/modulus-provisioner token_policies=modulus-provisioner token_ttl=15m token_max_ttl=1h
+
+# A sample primary connection for a tenant. The value is a placeholder, not a credential.
+TENANT_ID="${MODULUS_DEV_TENANT_ID:-3f2c0000-0000-0000-0000-000000000001}"
+bao kv put -mount="$MOUNT" "tenant-db/$TENANT_ID/primary" connectionString="Host=localhost;Database=dev_$TENANT_ID;Username=dev;Password=dev" >/dev/null
+
+echo "Mount:            $MOUNT"
+echo "Runtime role:     modulus-api   (policy modulus-runtime-read)"
+echo "Provisioner role: modulus-provisioner (policy modulus-provisioner)"
+echo "Role id:          $(bao read -field=role_id auth/approle/role/modulus-api/role-id)"
+echo "Secret id:        $(bao write -f -field=secret_id auth/approle/role/modulus-api/secret-id)"
+echo "Store the secret id in a file, then set Secrets:OpenBao:Auth:SecretIdPath to that file."

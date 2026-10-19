@@ -64,3 +64,25 @@ public sealed class FeatureDisabledException(string feature)
 
 public sealed class ConflictException(string message)
     : ModulusException(message);
+
+/// <summary>
+/// A secret store (for example OpenBao) could not be reached and no bounded stale value is available. Answered as
+/// <c>503</c> with code <c>SERVICE_UNAVAILABLE</c>. The message never names the secret path.
+/// </summary>
+public sealed class SecretStoreUnavailableException(string message, Exception? inner = null)
+    : ModulusException(message, inner);
+
+/// <summary>
+/// A secret the framework needs is missing from its store. A server-side fault (<c>500</c>): callers never learn which
+/// secret was missing. The message never names the secret path.
+/// </summary>
+public sealed class SecretNotFoundException(string message)
+    : ModulusException(message);
+
+/// <summary>
+/// A tenant's database cannot be resolved right now: no catalog row, a status that does not serve requests, a provider
+/// mismatch, a tampered secret reference or a secret older than the catalog expects. Answered as <c>503</c>. The message
+/// never names a connection string or a secret path.
+/// </summary>
+public sealed class TenantDatabaseUnavailableException(string message, Exception? inner = null)
+    : ModulusException(message, inner);

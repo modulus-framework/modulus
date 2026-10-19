@@ -17,7 +17,9 @@ internal sealed record JobEnvelope(
     object Args,
     TimeSpan Delay = default,
     Guid? TenantId = null,
-    string? CorrelationId = null);
+    string? CorrelationId = null,
+    Guid? InitiatorId = null,
+    string? Actor = null);
 
 internal sealed record RecurringEntry(
     JobEnvelope Envelope,
@@ -70,10 +72,13 @@ public sealed class ChannelJobQueue(
         TArgs args, CancellationToken ct)
         where TJob : IBackgroundJob<TArgs>
     {
+        var initiatorId = ResolveInitiatorId();
         var envelope = new JobEnvelope(
             typeof(TJob), typeof(TArgs), args!,
             TenantId: ResolveTenantId(),
-            CorrelationId: ResolveCorrelationId());
+            CorrelationId: ResolveCorrelationId(),
+            InitiatorId: initiatorId,
+            Actor: ResolveActor(typeof(TJob), initiatorId));
         await _channel.Writer.WriteAsync(envelope, ct);
     }
 
@@ -81,10 +86,13 @@ public sealed class ChannelJobQueue(
         TArgs args, TimeSpan delay, CancellationToken ct)
         where TJob : IBackgroundJob<TArgs>
     {
+        var initiatorId = ResolveInitiatorId();
         var envelope = new JobEnvelope(
             typeof(TJob), typeof(TArgs), args!,
             TenantId: ResolveTenantId(),
-            CorrelationId: ResolveCorrelationId());
+            CorrelationId: ResolveCorrelationId(),
+            InitiatorId: initiatorId,
+            Actor: ResolveActor(typeof(TJob), initiatorId));
 
         // Fire-and-forget: cancellation is expected (shutdown / caller abort)
         // and must not surface as an unobserved task exception; any other
@@ -112,10 +120,12 @@ public sealed class ChannelJobQueue(
         string jobId, string cronExpression, TArgs args)
         where TJob : IBackgroundJob<TArgs>
     {
+        // A recurring job runs as the system, named by its id, and carries no person.
         var envelope = new JobEnvelope(
             typeof(TJob), typeof(TArgs), args!,
             TenantId: ResolveTenantId(),
-            CorrelationId: ResolveCorrelationId());
+            CorrelationId: ResolveCorrelationId(),
+            Actor: JobActor.ForSystem(jobId));
         var cron = CronExpression.Parse(cronExpression);
         var nextRun = cron.GetNextOccurrence(
             DateTimeOffset.UtcNow, TimeZoneInfo.Utc);
@@ -284,6 +294,11 @@ public sealed class ChannelJobQueue(
             await using var scope = sp.CreateAsyncScope();
             ModulusMeters.JobsStarted.Add(1);
 
+            // The actor the job runs as (A6-2): visible to the job through JobContext and to every log line of this job.
+            if (scope.ServiceProvider.GetService<JobContext>() is { } jobContext)
+                jobContext.Actor = envelope.Actor;
+            using var actorScope = logger.BeginScope(new Dictionary<string, object?> { ["JobActor"] = envelope.Actor });
+
             // Restore the ambient tenant/correlation captured at enqueue.
             // The accessors are stateless AsyncLocal wrappers, so resolving
             // them here (outside the job's scope) sets the flow the job then
@@ -309,6 +324,24 @@ public sealed class ChannelJobQueue(
                 && sp.GetService<ICorrelationContext>() is { } correlation
                     ? correlation.BeginScope(correlationId)
                     : null;
+
+            if (envelope.InitiatorId is { } initiatorId
+                && scope.ServiceProvider.GetService<IJobInitiatorGuard>() is { } guard
+                && !await guard.MayRunAsync(initiatorId, ct))
+            {
+                logger.LogWarning("Job {Type} skipped: the account that queued it may no longer start access.", envelope.JobType.Name);
+                scope.ServiceProvider.GetService<ISecurityAuditLog>()?.Record(new SecurityAuditEvent
+                {
+                    Category = SecurityAuditCategories.Authorization,
+                    Action = "job.refused",
+                    Outcome = SecurityAuditOutcomes.Denied,
+                    Actor = envelope.Actor,
+                    Target = envelope.JobType.Name,
+                    TenantId = envelope.TenantId,
+                    CorrelationId = envelope.CorrelationId,
+                });
+                continue;
+            }
 
             try
             {
@@ -336,6 +369,14 @@ public sealed class ChannelJobQueue(
 
     private string? ResolveCorrelationId()
         => sp.GetService<ICorrelationContext>()?.CorrelationId;
+
+    // A person who queued the job is the actor; otherwise the job runs as the system, named by its job type (ad hoc jobs).
+    private static string ResolveActor(Type jobType, Guid? initiatorId)
+        => initiatorId is { } id ? JobActor.ForPerson(id) : JobActor.ForSystem(jobType.Name);
+
+    // The person who queued the job, when a signed-in person did; recurring jobs (AddRecurring) run as the system and carry none.
+    private Guid? ResolveInitiatorId()
+        => sp.GetService<ICurrentUser>() is { IsAuthenticated: true, UserId: { } userId } ? userId : null;
 
     private static readonly System.Collections.Concurrent.ConcurrentDictionary<Type,
         Func<object, object, CancellationToken, Task>> s_jobInvokers = new();

@@ -4,20 +4,20 @@ using Modulus.Authorization.Grants;
 namespace Modulus.Authorization.EntityFrameworkCore;
 
 /// <summary>
-/// External-party users: a buyer contact, supplier or subcontractor is an ordinary account linked to one party (a buyer,
-/// supplier or subcontractor record of the app) with a kind. Two things follow from the link:
+/// External-party users: an account from outside the company is linked to one party record of the application with a kind the
+/// application defines (for example a customer or a supplier). Two things follow from the link:
 /// <list type="bullet">
-/// <item>An <c>Assigned</c> scope keyed on the kind (<c>assigned:buyer</c>) covers exactly that party, because the link
-/// writes the user's assignment (type = kind, target = party id). A buyer sees only its own orders.</item>
+/// <item>An <c>Assigned</c> scope keyed on the kind (<c>assigned:{kind}</c>) covers exactly that party, because the link
+/// writes the user's assignment (type = kind, target = party id). Such a user sees only that party's records.</item>
 /// <item>A permission ceiling per kind: whatever grants the account holds, only permissions the kind's ceiling lists take
 /// effect (denies always do). A kind with no ceiling rows gets nothing, so a new kind fails closed.</item>
 /// </list>
 /// </summary>
-public sealed class EfPartyStore(IDbContextFactory<AuthorizationStoreDbContext> factory)
+public sealed class EfPartyStore(IDbContextFactory<AuthorizationStoreDbContextBase> factory)
 {
     /// <summary>A user's link to a party.</summary>
     /// <param name="UserId">The account.</param>
-    /// <param name="Kind">The kind, lower-case (for example <c>buyer</c>, <c>supplier</c>, <c>subcontractor</c>).</param>
+    /// <param name="Kind">The kind, lower-case, as the application defines it.</param>
     /// <param name="PartyId">The party record the account belongs to.</param>
     /// <param name="CreatedBy">The administrator who made it, or null.</param>
     /// <param name="CreatedAt">When it was made.</param>
@@ -109,7 +109,7 @@ public sealed class EfPartyStore(IDbContextFactory<AuthorizationStoreDbContext> 
     /// Applies the ceiling to the grants of a user: an account with no party link keeps them all; a linked one keeps its
     /// denies and the grants the kind's ceiling covers.
     /// </summary>
-    internal static async Task<List<PermissionGrant>> ApplyCeilingAsync(AuthorizationStoreDbContext db, Guid? userId, List<PermissionGrant> grants, CancellationToken ct)
+    internal static async Task<List<PermissionGrant>> ApplyCeilingAsync(AuthorizationStoreDbContextBase db, Guid? userId, List<PermissionGrant> grants, CancellationToken ct)
     {
         if (userId is not { } id)
             return grants;
@@ -121,7 +121,7 @@ public sealed class EfPartyStore(IDbContextFactory<AuthorizationStoreDbContext> 
         return [.. grants.Where(g => g.Type == PermissionGrantType.Deny || Covered(ceiling, g.Permission))];
     }
 
-    internal static List<PermissionGrant> ApplyCeiling(AuthorizationStoreDbContext db, Guid? userId, List<PermissionGrant> grants)
+    internal static List<PermissionGrant> ApplyCeiling(AuthorizationStoreDbContextBase db, Guid? userId, List<PermissionGrant> grants)
     {
         if (userId is not { } id)
             return grants;
@@ -146,7 +146,7 @@ public sealed class EfPartyStore(IDbContextFactory<AuthorizationStoreDbContext> 
         return false;
     }
 
-    private static Task RemoveAssignmentAsync(AuthorizationStoreDbContext db, PartyLinkRow link, CancellationToken ct)
+    private static Task RemoveAssignmentAsync(AuthorizationStoreDbContextBase db, PartyLinkRow link, CancellationToken ct)
         => db.Assignments
             .Where(a => a.UserId == link.UserId && a.AssignmentType == link.Kind && a.TargetId == link.PartyId)
             .ExecuteDeleteAsync(ct);

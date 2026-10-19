@@ -1246,3 +1246,130 @@ static Modulus.Identity.Abstractions.ShopFloorImportResult.operator !=(Modulus.I
 static Modulus.Identity.Abstractions.ShopFloorImportResult.operator ==(Modulus.Identity.Abstractions.ShopFloorImportResult? left, Modulus.Identity.Abstractions.ShopFloorImportResult? right) -> bool
 static Modulus.Identity.Abstractions.ShopFloorImportRow.operator !=(Modulus.Identity.Abstractions.ShopFloorImportRow? left, Modulus.Identity.Abstractions.ShopFloorImportRow? right) -> bool
 static Modulus.Identity.Abstractions.ShopFloorImportRow.operator ==(Modulus.Identity.Abstractions.ShopFloorImportRow? left, Modulus.Identity.Abstractions.ShopFloorImportRow? right) -> bool
+static Modulus.Identity.Scim.ScimExtensions.AddModulusScim<TUser, TRole>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+Modulus.Identity.Abstractions.AccountLifecycle
+Modulus.Identity.Abstractions.AccountLifecycleRules
+static Modulus.Identity.Abstractions.AccountLifecycleRules.AllowsNewAccess(Modulus.Identity.Abstractions.AccountLifecycle state) -> bool
+static Modulus.Identity.Abstractions.AccountLifecycleRules.CanTransition(Modulus.Identity.Abstractions.AccountLifecycle from, Modulus.Identity.Abstractions.AccountLifecycle to, bool rehireReviewed = false) -> bool
+static Modulus.Identity.Abstractions.AccountLifecycleRules.Transition(Modulus.Identity.Abstractions.AccountLifecycle from, Modulus.Identity.Abstractions.AccountLifecycle to, bool rehireReviewed = false) -> Modulus.Identity.Abstractions.AccountLifecycle
+Modulus.Identity.Abstractions.PrincipalKinds
+Modulus.Identity.Abstractions.SuspensionReasons
+const Modulus.Identity.Abstractions.PrincipalKinds.Person = "person" -> string!
+const Modulus.Identity.Abstractions.PrincipalKinds.ServiceAccount = "service-account" -> string!
+const Modulus.Identity.Abstractions.SuspensionReasons.Absence = "absence" -> string!
+const Modulus.Identity.Abstractions.SuspensionReasons.AdministrativeHold = "administrative-hold" -> string!
+const Modulus.Identity.Abstractions.SuspensionReasons.Other = "other" -> string!
+const Modulus.Identity.Abstractions.SuspensionReasons.PolicyViolation = "policy-violation" -> string!
+const Modulus.Identity.Abstractions.SuspensionReasons.SecurityReview = "security-review" -> string!
+static Modulus.Identity.Abstractions.PrincipalKinds.Normalize(string! kind) -> string!
+static Modulus.Identity.Abstractions.SuspensionReasons.RequiresNote(string! code) -> bool
+Modulus.Identity.Abstractions.ModulusUser.Lifecycle.get -> Modulus.Identity.Abstractions.AccountLifecycle
+Modulus.Identity.Abstractions.ModulusUser.Lifecycle.set -> void
+Modulus.Identity.Abstractions.ModulusUser.LifecycleChangedAt.get -> System.DateTimeOffset?
+Modulus.Identity.Abstractions.ModulusUser.LifecycleChangedAt.set -> void
+Modulus.Identity.Abstractions.ModulusUser.PrincipalKind.get -> string!
+Modulus.Identity.Abstractions.ModulusUser.PrincipalKind.set -> void
+Modulus.Identity.Abstractions.ModulusUser.SuspensionNote.get -> string?
+Modulus.Identity.Abstractions.ModulusUser.SuspensionNote.set -> void
+Modulus.Identity.Abstractions.ModulusUser.SuspensionReason.get -> string?
+Modulus.Identity.Abstractions.ModulusUser.SuspensionReason.set -> void
+Modulus.Identity.Abstractions.ModulusAccountTransition
+Modulus.Identity.Abstractions.ModulusAccountTransition.ActorId.get -> System.Guid?
+Modulus.Identity.Abstractions.ModulusAccountTransition.ActorId.set -> void
+Modulus.Identity.Abstractions.ModulusAccountTransition.FromState.get -> Modulus.Identity.Abstractions.AccountLifecycle
+Modulus.Identity.Abstractions.ModulusAccountTransition.FromState.set -> void
+Modulus.Identity.Abstractions.ModulusAccountTransition.Id.get -> long
+Modulus.Identity.Abstractions.ModulusAccountTransition.Id.set -> void
+Modulus.Identity.Abstractions.ModulusAccountTransition.ModulusAccountTransition() -> void
+Modulus.Identity.Abstractions.ModulusAccountTransition.OccurredAt.get -> System.DateTimeOffset
+Modulus.Identity.Abstractions.ModulusAccountTransition.OccurredAt.set -> void
+Modulus.Identity.Abstractions.ModulusAccountTransition.Reason.get -> string?
+Modulus.Identity.Abstractions.ModulusAccountTransition.Reason.set -> void
+Modulus.Identity.Abstractions.ModulusAccountTransition.ToState.get -> Modulus.Identity.Abstractions.AccountLifecycle
+Modulus.Identity.Abstractions.ModulusAccountTransition.ToState.set -> void
+Modulus.Identity.Abstractions.ModulusAccountTransition.UserId.get -> System.Guid
+Modulus.Identity.Abstractions.ModulusAccountTransition.UserId.set -> void
+Modulus.Identity.EntityFrameworkCore.ModulusIdentityDbContext<TUser, TRole>.AccountTransitions.get -> Microsoft.EntityFrameworkCore.DbSet<Modulus.Identity.Abstractions.ModulusAccountTransition!>!
+Modulus.Identity.Abstractions.IAccountTransitionStore
+Modulus.Identity.Abstractions.IAccountTransitionStore.GetStoredLifecycleAsync(System.Guid userId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Identity.Abstractions.AccountLifecycle?>!
+Modulus.Identity.Abstractions.IAccountTransitionStore.Record(Modulus.Identity.Abstractions.ModulusAccountTransition! transition) -> void
+Modulus.Identity.Abstractions.AccountLifecycle.Active = 0 -> Modulus.Identity.Abstractions.AccountLifecycle
+Modulus.Identity.Abstractions.AccountLifecycle.Archived = 4 -> Modulus.Identity.Abstractions.AccountLifecycle
+Modulus.Identity.Abstractions.AccountLifecycle.Disabled = 3 -> Modulus.Identity.Abstractions.AccountLifecycle
+Modulus.Identity.Abstractions.AccountLifecycle.Invited = 1 -> Modulus.Identity.Abstractions.AccountLifecycle
+Modulus.Identity.Abstractions.AccountLifecycle.PendingActivation = 2 -> Modulus.Identity.Abstractions.AccountLifecycle
+Modulus.Identity.Abstractions.AccountLifecycleChange
+Modulus.Identity.Abstractions.AccountLifecycleChange.<Clone>$() -> Modulus.Identity.Abstractions.AccountLifecycleChange!
+Modulus.Identity.Abstractions.AccountLifecycleChange.AccountLifecycleChange(System.Guid UserId, Modulus.Identity.Abstractions.AccountLifecycle To, System.Guid? ActorId, string? Reason = null, string? Note = null, bool RehireReviewed = false) -> void
+Modulus.Identity.Abstractions.AccountLifecycleChange.ActorId.get -> System.Guid?
+Modulus.Identity.Abstractions.AccountLifecycleChange.ActorId.init -> void
+Modulus.Identity.Abstractions.AccountLifecycleChange.Deconstruct(out System.Guid UserId, out Modulus.Identity.Abstractions.AccountLifecycle To, out System.Guid? ActorId, out string? Reason, out string? Note, out bool RehireReviewed) -> void
+Modulus.Identity.Abstractions.AccountLifecycleChange.Equals(Modulus.Identity.Abstractions.AccountLifecycleChange? other) -> bool
+Modulus.Identity.Abstractions.AccountLifecycleChange.Note.get -> string?
+Modulus.Identity.Abstractions.AccountLifecycleChange.Note.init -> void
+Modulus.Identity.Abstractions.AccountLifecycleChange.Reason.get -> string?
+Modulus.Identity.Abstractions.AccountLifecycleChange.Reason.init -> void
+Modulus.Identity.Abstractions.AccountLifecycleChange.RehireReviewed.get -> bool
+Modulus.Identity.Abstractions.AccountLifecycleChange.RehireReviewed.init -> void
+Modulus.Identity.Abstractions.AccountLifecycleChange.To.get -> Modulus.Identity.Abstractions.AccountLifecycle
+Modulus.Identity.Abstractions.AccountLifecycleChange.To.init -> void
+Modulus.Identity.Abstractions.AccountLifecycleChange.UserId.get -> System.Guid
+Modulus.Identity.Abstractions.AccountLifecycleChange.UserId.init -> void
+Modulus.Identity.Abstractions.IAccountLifecycleService
+Modulus.Identity.Abstractions.IAccountLifecycleService.ChangeAsync(Modulus.Identity.Abstractions.AccountLifecycleChange! change, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Identity.Abstractions.AccountLifecycle>!
+override Modulus.Identity.Abstractions.AccountLifecycleChange.Equals(object? obj) -> bool
+override Modulus.Identity.Abstractions.AccountLifecycleChange.GetHashCode() -> int
+override Modulus.Identity.Abstractions.AccountLifecycleChange.ToString() -> string!
+static Modulus.Identity.Abstractions.AccountLifecycleChange.operator !=(Modulus.Identity.Abstractions.AccountLifecycleChange? left, Modulus.Identity.Abstractions.AccountLifecycleChange? right) -> bool
+static Modulus.Identity.Abstractions.AccountLifecycleChange.operator ==(Modulus.Identity.Abstractions.AccountLifecycleChange? left, Modulus.Identity.Abstractions.AccountLifecycleChange? right) -> bool
+Modulus.Identity.Abstractions.SessionOptions.MaxLifetimeMinutes.get -> int
+Modulus.Identity.Abstractions.SessionOptions.MaxLifetimeMinutes.set -> void
+Modulus.Identity.Abstractions.SessionOptions.MaxLifetimeMinutesByRole.get -> System.Collections.Generic.Dictionary<string!, int>!
+Modulus.Identity.Abstractions.SessionOptions.MaxLifetimeMinutesByRole.set -> void
+Modulus.Identity.Abstractions.SessionState.LifetimeExpired = 4 -> Modulus.Identity.Abstractions.SessionState
+Modulus.Identity.Abstractions.IRehireReviewService
+Modulus.Identity.Abstractions.IRehireReviewService.ApproveAsync(System.Guid userId, System.Guid approverId, string! reason, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Identity.Abstractions.AccountLifecycle>!
+Modulus.Identity.Abstractions.RehireReviewOptions
+Modulus.Identity.Abstractions.RehireReviewOptions.ApproverRoles.get -> System.Collections.Generic.List<string!>!
+Modulus.Identity.Abstractions.RehireReviewOptions.ApproverRoles.set -> void
+Modulus.Identity.Abstractions.RehireReviewOptions.RehireReviewOptions() -> void
+Modulus.Identity.Extensions.AccountLifecycleExtensions
+Modulus.Identity.Extensions.AccountLifecycleRequest
+Modulus.Identity.Extensions.AccountLifecycleRequest.<Clone>$() -> Modulus.Identity.Extensions.AccountLifecycleRequest!
+Modulus.Identity.Extensions.AccountLifecycleRequest.AccountLifecycleRequest(Modulus.Identity.Abstractions.AccountLifecycle To, string? Reason = null, string? Note = null) -> void
+Modulus.Identity.Extensions.AccountLifecycleRequest.Deconstruct(out Modulus.Identity.Abstractions.AccountLifecycle To, out string? Reason, out string? Note) -> void
+Modulus.Identity.Extensions.AccountLifecycleRequest.Equals(Modulus.Identity.Extensions.AccountLifecycleRequest? other) -> bool
+Modulus.Identity.Extensions.AccountLifecycleRequest.Note.get -> string?
+Modulus.Identity.Extensions.AccountLifecycleRequest.Note.init -> void
+Modulus.Identity.Extensions.AccountLifecycleRequest.Reason.get -> string?
+Modulus.Identity.Extensions.AccountLifecycleRequest.Reason.init -> void
+Modulus.Identity.Extensions.AccountLifecycleRequest.To.get -> Modulus.Identity.Abstractions.AccountLifecycle
+Modulus.Identity.Extensions.AccountLifecycleRequest.To.init -> void
+Modulus.Identity.Extensions.RehireRequest
+Modulus.Identity.Extensions.RehireRequest.<Clone>$() -> Modulus.Identity.Extensions.RehireRequest!
+Modulus.Identity.Extensions.RehireRequest.Deconstruct(out string! Reason) -> void
+Modulus.Identity.Extensions.RehireRequest.Equals(Modulus.Identity.Extensions.RehireRequest? other) -> bool
+Modulus.Identity.Extensions.RehireRequest.Reason.get -> string!
+Modulus.Identity.Extensions.RehireRequest.Reason.init -> void
+Modulus.Identity.Extensions.RehireRequest.RehireRequest(string! Reason) -> void
+const Modulus.Identity.Extensions.AccountLifecycleExtensions.ManagePermission = "identity:accounts:manage" -> string!
+override Modulus.Identity.Extensions.AccountLifecycleRequest.Equals(object? obj) -> bool
+override Modulus.Identity.Extensions.AccountLifecycleRequest.GetHashCode() -> int
+override Modulus.Identity.Extensions.AccountLifecycleRequest.ToString() -> string!
+override Modulus.Identity.Extensions.RehireRequest.Equals(object? obj) -> bool
+override Modulus.Identity.Extensions.RehireRequest.GetHashCode() -> int
+override Modulus.Identity.Extensions.RehireRequest.ToString() -> string!
+static Modulus.Identity.Extensions.AccountLifecycleExtensions.AddModulusAccountLifecycleAdmin(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.Identity.Extensions.AccountLifecycleExtensions.MapModulusAccountLifecycle(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! prefix = "/identity/accounts") -> Microsoft.AspNetCore.Routing.RouteGroupBuilder!
+static Modulus.Identity.Extensions.AccountLifecycleRequest.operator !=(Modulus.Identity.Extensions.AccountLifecycleRequest? left, Modulus.Identity.Extensions.AccountLifecycleRequest? right) -> bool
+static Modulus.Identity.Extensions.AccountLifecycleRequest.operator ==(Modulus.Identity.Extensions.AccountLifecycleRequest? left, Modulus.Identity.Extensions.AccountLifecycleRequest? right) -> bool
+static Modulus.Identity.Extensions.RehireRequest.operator !=(Modulus.Identity.Extensions.RehireRequest? left, Modulus.Identity.Extensions.RehireRequest? right) -> bool
+static Modulus.Identity.Extensions.RehireRequest.operator ==(Modulus.Identity.Extensions.RehireRequest? left, Modulus.Identity.Extensions.RehireRequest? right) -> bool
+Modulus.Identity.Abstractions.BreachedPasswordOptions
+Modulus.Identity.Abstractions.BreachedPasswordOptions.BreachedPasswordOptions() -> void
+Modulus.Identity.Abstractions.BreachedPasswordOptions.Enabled.get -> bool
+Modulus.Identity.Abstractions.BreachedPasswordOptions.Enabled.set -> void
+Modulus.Identity.Abstractions.BreachedPasswordOptions.ListPath.get -> string?
+Modulus.Identity.Abstractions.BreachedPasswordOptions.ListPath.set -> void
+Modulus.Identity.Abstractions.IBreachedPasswordList
+Modulus.Identity.Abstractions.IBreachedPasswordList.IsBreached(string! password) -> bool

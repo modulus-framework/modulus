@@ -35,6 +35,30 @@ public class ModulusUser : IdentityUser<Guid>
     /// </summary>
     public string? ExternalId { get; set; }
 
+    /// <summary>
+    /// What kind of principal the account is (<see cref="PrincipalKinds"/>, an open vocabulary). Needs a column in apps that already have
+    /// users; existing rows read as <see cref="PrincipalKinds.Person"/>.
+    /// </summary>
+    public string PrincipalKind { get; set; } = PrincipalKinds.Person;
+
+    /// <summary>
+    /// Where the account is in its life (<see cref="AccountLifecycle"/>). Changed only through <see cref="AccountLifecycleRules"/>. Needs a
+    /// column in apps that already have users; existing rows read as <see cref="AccountLifecycle.Active"/>.
+    /// </summary>
+    public AccountLifecycle Lifecycle { get; set; } = AccountLifecycle.Active;
+
+    /// <summary>When <see cref="Lifecycle"/> last changed; null for an account that never moved.</summary>
+    public DateTimeOffset? LifecycleChangedAt { get; set; }
+
+    /// <summary>
+    /// Why the account is administratively suspended (<see cref="SuspensionReasons"/>, an open vocabulary); null when it is not.
+    /// Independent of lock-out and of <see cref="Lifecycle"/>.
+    /// </summary>
+    public string? SuspensionReason { get; set; }
+
+    /// <summary>The note that goes with the suspension (required by <see cref="SuspensionReasons.RequiresNote"/> reasons).</summary>
+    public string? SuspensionNote { get; set; }
+
     public string FullName =>
         string.IsNullOrWhiteSpace(FirstName) && string.IsNullOrWhiteSpace(LastName)
             ? UserName ?? Email ?? "Unknown"

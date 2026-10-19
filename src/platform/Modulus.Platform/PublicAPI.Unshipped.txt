@@ -420,9 +420,7 @@ Modulus.Authorization.Grants.PermissionResolver.Resolve(Modulus.Authorization.Gr
 Modulus.Authorization.Grants.PermissionResolver.Resolve(Modulus.Authorization.Grants.PrincipalGrantQuery! principal) -> System.Collections.Generic.IReadOnlySet<string!>!
 Modulus.Authorization.Grants.PrincipalGrantQuery
 Modulus.Authorization.Grants.PrincipalGrantQuery.<Clone>$() -> Modulus.Authorization.Grants.PrincipalGrantQuery!
-Modulus.Authorization.Grants.PrincipalGrantQuery.Deconstruct(out System.Guid? UserId, out System.Collections.Generic.IReadOnlyCollection<string!>! Roles) -> void
 Modulus.Authorization.Grants.PrincipalGrantQuery.Equals(Modulus.Authorization.Grants.PrincipalGrantQuery? other) -> bool
-Modulus.Authorization.Grants.PrincipalGrantQuery.PrincipalGrantQuery(System.Guid? UserId, System.Collections.Generic.IReadOnlyCollection<string!>! Roles) -> void
 Modulus.Authorization.Grants.PrincipalGrantQuery.Roles.get -> System.Collections.Generic.IReadOnlyCollection<string!>!
 Modulus.Authorization.Grants.PrincipalGrantQuery.Roles.init -> void
 Modulus.Authorization.Grants.PrincipalGrantQuery.UserId.get -> System.Guid?
@@ -687,7 +685,6 @@ Modulus.Authorization.Scopes.ScopeSubject.AssignedTargets(string! assignmentType
 Modulus.Authorization.Scopes.ScopeSubject.IsOrgUnrestricted.get -> bool
 Modulus.Authorization.Scopes.ScopeSubject.OrgSubtree(System.Guid unit) -> System.Collections.Generic.IReadOnlySet<System.Guid>!
 Modulus.Authorization.Scopes.ScopeSubject.OrgUnits.get -> System.Collections.Generic.IReadOnlySet<System.Guid>!
-Modulus.Authorization.Scopes.ScopeSubject.ScopeSubject(Modulus.Core.Abstractions.ICurrentUser! user, Modulus.Authorization.Organization.IOrgHierarchy! hierarchy, Modulus.Authorization.Scopes.IAssignmentStore! assignments, Modulus.Core.Abstractions.ICurrentDataScope? dataScope = null, System.TimeProvider? clock = null) -> void
 Modulus.Authorization.Scopes.ScopeSubject.UserId.get -> System.Guid?
 Modulus.BackgroundJobs.ChannelJobQueue
 Modulus.BackgroundJobs.ChannelJobQueue.AddRecurring<TJob, TArgs>(string! jobId, string! cronExpression, TArgs args) -> void
@@ -1481,7 +1478,6 @@ Modulus.Authorization.Approval.InMemoryApprovalAuthorityStore
 Modulus.Authorization.Approval.InMemoryApprovalAuthorityStore.Add(Modulus.Authorization.Approval.ApprovalAuthority! authority) -> Modulus.Authorization.Approval.InMemoryApprovalAuthorityStore!
 Modulus.Authorization.Approval.InMemoryApprovalAuthorityStore.GetAuthorities(Modulus.Authorization.Grants.PrincipalGrantQuery! principal, string! permission) -> System.Collections.Generic.IReadOnlyCollection<Modulus.Authorization.Approval.ApprovalAuthority!>!
 Modulus.Authorization.Approval.InMemoryApprovalAuthorityStore.InMemoryApprovalAuthorityStore() -> void
-Modulus.Authorization.Resources.ResourceAuthorizer.ResourceAuthorizer(Modulus.Core.Abstractions.ICurrentUser! currentUser, Modulus.Core.Abstractions.ICurrentDataScope! dataScope, Modulus.Authorization.Resources.IResourcePolicyRegistry! registry, Modulus.Authorization.Scopes.IScopeEnforcer? scopes = null, Modulus.Authorization.Approval.IApprovalAuthorityEvaluator? approvals = null, Modulus.Core.Abstractions.IStepUpGate? stepUp = null) -> void
 Modulus.Authorization.Resources.ResourceRequest.NotActedOnByCaller() -> bool
 Modulus.Authorization.Resources.ResourceRequest.NotOwnedByCaller() -> bool
 Modulus.Authorization.Resources.ResourceRequest.ResourceRequest(System.Guid? callerId, System.Func<string!, bool>! hasPermission, System.Func<System.Guid?, bool>! inScope, Modulus.Authorization.Resources.ResourceAttributes! resource, string! action, System.Func<string!, bool>? inScopeOf = null, System.Func<string!, bool>? withinAuthority = null, System.Collections.Generic.IReadOnlyCollection<System.Guid>? priorActors = null) -> void
@@ -1807,3 +1803,171 @@ static Modulus.Networking.OutboundAddressGuard.IsPublic(System.Net.IPAddress! ad
 static Modulus.Networking.OutboundAddressGuard.IsReservedHost(System.Uri! uri) -> bool
 Modulus.Authorization.Grants.CachedPermissionGrantStore.GetGrantsAsync(Modulus.Authorization.Grants.PrincipalGrantQuery! principal, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyCollection<Modulus.Authorization.Grants.PermissionGrant!>!>!
 Modulus.Authorization.Grants.IPermissionGrantStore.GetGrantsAsync(Modulus.Authorization.Grants.PrincipalGrantQuery! principal, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyCollection<Modulus.Authorization.Grants.PermissionGrant!>!>!
+Modulus.Secrets.CachedSecretStore
+Modulus.Secrets.CachedSecretStore.CachedSecretStore(Modulus.Secrets.ISecretBackend! backend, Microsoft.Extensions.Options.IOptions<Modulus.Secrets.SecretsOptions!>! options, System.TimeProvider! clock, Microsoft.Extensions.Logging.ILogger<Modulus.Secrets.CachedSecretStore!>! logger) -> void
+Modulus.Secrets.CachedSecretStore.Evict(Modulus.Core.Abstractions.Secrets.SecretReference! reference) -> void
+Modulus.Secrets.CachedSecretStore.GetAsync(Modulus.Core.Abstractions.Secrets.SecretReference! reference, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Core.Abstractions.Secrets.SecretValue!>!
+Modulus.Secrets.ConfigurationSecretStore
+Modulus.Secrets.ConfigurationSecretStore.ConfigurationSecretStore(Microsoft.Extensions.Configuration.IConfiguration! configuration) -> void
+Modulus.Secrets.ConfigurationSecretStore.GetAsync(Modulus.Core.Abstractions.Secrets.SecretReference! reference, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Core.Abstractions.Secrets.SecretValue!>!
+Modulus.Secrets.ISecretBackend
+Modulus.Secrets.ISecretCache
+Modulus.Secrets.ISecretCache.Evict(Modulus.Core.Abstractions.Secrets.SecretReference! reference) -> void
+Modulus.Secrets.InMemorySecretStore
+Modulus.Secrets.InMemorySecretStore.GetAsync(Modulus.Core.Abstractions.Secrets.SecretReference! reference, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Core.Abstractions.Secrets.SecretValue!>!
+Modulus.Secrets.InMemorySecretStore.GetCurrentVersionAsync(Modulus.Core.Abstractions.Secrets.SecretReference! reference, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<int?>!
+Modulus.Secrets.InMemorySecretStore.InMemorySecretStore() -> void
+Modulus.Secrets.InMemorySecretStore.WriteAsync(Modulus.Core.Abstractions.Secrets.SecretReference! reference, System.Collections.Generic.IReadOnlyDictionary<string!, string!>! data, int? expectedVersion, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<int>!
+Modulus.Secrets.SecretsExtensions
+Modulus.Secrets.SecretsOptions
+Modulus.Secrets.SecretsOptions.MaxStaleOnFailure.get -> System.TimeSpan
+Modulus.Secrets.SecretsOptions.MaxStaleOnFailure.set -> void
+Modulus.Secrets.SecretsOptions.RuntimeReadOnly.get -> bool
+Modulus.Secrets.SecretsOptions.RuntimeReadOnly.set -> void
+Modulus.Secrets.SecretsOptions.SecretsOptions() -> void
+Modulus.Secrets.SecretsOptions.Ttl.get -> System.TimeSpan
+Modulus.Secrets.SecretsOptions.Ttl.set -> void
+Modulus.Secrets.SecretsOptions.Validate() -> string?
+const Modulus.Secrets.SecretsOptions.SectionName = "Secrets" -> string!
+static Modulus.Secrets.SecretsExtensions.AddModulusSecrets(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+Modulus.Secrets.TenantDataStoreOptions
+Modulus.Secrets.TenantDataStoreOptions.CatalogCacheTtl.get -> System.TimeSpan
+Modulus.Secrets.TenantDataStoreOptions.CatalogCacheTtl.set -> void
+Modulus.Secrets.TenantDataStoreOptions.ConnectionStringField.get -> string!
+Modulus.Secrets.TenantDataStoreOptions.ConnectionStringField.set -> void
+Modulus.Secrets.TenantDataStoreOptions.SecretPrefix.get -> string!
+Modulus.Secrets.TenantDataStoreOptions.SecretPrefix.set -> void
+Modulus.Secrets.TenantDataStoreOptions.TenantDataStoreOptions() -> void
+Modulus.Secrets.TenantDataStoreRegistration
+Modulus.Secrets.TenantDatabaseResolver
+Modulus.Secrets.TenantDatabaseResolver.Evict(System.Guid tenantId, string! storeKey) -> void
+Modulus.Secrets.TenantDatabaseResolver.ResolveAsync(System.Guid tenantId, string! storeKey, string! providerKey, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Core.Abstractions.Tenancy.TenantDatabaseTarget!>!
+Modulus.Secrets.TenantDatabaseResolver.TenantDatabaseResolver(Microsoft.Extensions.DependencyInjection.IServiceScopeFactory! scopes, Modulus.Core.Abstractions.Secrets.ISecretStore! secrets, Modulus.Secrets.ISecretCache! secretCache, Microsoft.Extensions.Options.IOptions<Modulus.Secrets.TenantDataStoreOptions!>! options, System.TimeProvider! clock) -> void
+Modulus.Secrets.TenantDatabaseResolver.TryGetCached(System.Guid tenantId, string! storeKey, string! providerKey, out Modulus.Core.Abstractions.Tenancy.TenantDatabaseTarget? target) -> bool
+const Modulus.Secrets.TenantDataStoreOptions.SectionName = "TenantDataStores" -> string!
+static Modulus.Secrets.TenantDataStoreRegistration.AddModulusTenantDatabases(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+Modulus.Authorization.PermissionRegistry.Add(string! permission, string! description, string![]? requires, Modulus.Core.Abstractions.PermissionSensitivity sensitivity, Modulus.Core.Abstractions.PermissionLifecycle lifecycle, string? replacedBy) -> void
+Modulus.Authorization.Resources.ResourceAuthorizer.ResourceAuthorizer(Modulus.Core.Abstractions.ICurrentUser! currentUser, Modulus.Core.Abstractions.ICurrentDataScope! dataScope, Modulus.Authorization.Resources.IResourcePolicyRegistry! registry, Modulus.Authorization.Scopes.IScopeEnforcer? scopes = null, Modulus.Authorization.Approval.IApprovalAuthorityEvaluator? approvals = null, Modulus.Core.Abstractions.IStepUpGate? stepUp = null, Modulus.Core.Abstractions.DataQuality.IDataQualityFindingSink? findings = null, Modulus.Core.Abstractions.ICurrentTenant? tenant = null) -> void
+Modulus.Authorization.Resources.ResourceRequest.MissingAttributes.get -> System.Collections.Generic.IReadOnlyCollection<string!>!
+const Modulus.Authorization.Resources.AccessReasonCodes.MissingAttribute = "MISSING_ATTRIBUTE" -> string!
+Modulus.Authorization.Resources.IResourceScopeGuard
+Modulus.Authorization.Resources.IResourceScopeGuard.CheckResultingScopeAsync(object! resource, string! action, string? permission = null, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Authorization.Resources.AccessDecision!>!
+Modulus.Authorization.Resources.ResourceScopeGuard
+Modulus.Authorization.Resources.ResourceScopeGuard.CheckResultingScopeAsync(object! resource, string! action, string? permission = null, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Authorization.Resources.AccessDecision!>!
+Modulus.Authorization.Resources.ResourceScopeGuard.ResourceScopeGuard(Modulus.Core.Abstractions.ICurrentTenant! tenant, Modulus.Core.Abstractions.ICurrentDataScope! dataScope, Modulus.Authorization.Scopes.IScopeEnforcer? scopes = null, Modulus.Core.Abstractions.DataQuality.IDataQualityFindingSink? findings = null, Modulus.Authorization.Scopes.IScopeMapRegistry? maps = null) -> void
+Modulus.Authorization.Resources.ResourceScopeGuardExtensions
+static Modulus.Authorization.Resources.ResourceScopeGuardExtensions.EnsureResultingScopeAsync(this Modulus.Authorization.Resources.IResourceScopeGuard! guard, object! resource, string! action, string? permission = null, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Authorization.Fields.FieldAuthorizerExtensions
+static Modulus.Authorization.Fields.FieldAuthorizerExtensions.EnsureWriteAllowedAsync(this Modulus.Authorization.Fields.IFieldAuthorizer! authorizer, System.Type! type, System.Collections.Generic.IEnumerable<string!>! fields, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Authorization.Dimensions.DimensionKeys
+Modulus.Authorization.Dimensions.DimensionValue
+Modulus.Authorization.Dimensions.DimensionValue.<Clone>$() -> Modulus.Authorization.Dimensions.DimensionValue!
+Modulus.Authorization.Dimensions.DimensionValue.Code.get -> string!
+Modulus.Authorization.Dimensions.DimensionValue.Code.init -> void
+Modulus.Authorization.Dimensions.DimensionValue.Dimension.get -> string!
+Modulus.Authorization.Dimensions.DimensionValue.Dimension.init -> void
+Modulus.Authorization.Dimensions.DimensionValue.Equals(Modulus.Authorization.Dimensions.DimensionValue? other) -> bool
+Modulus.Authorization.Dimensions.DimensionValue.Id.get -> System.Guid
+Modulus.Authorization.Dimensions.DimensionValue.Id.init -> void
+Modulus.Authorization.Dimensions.DimensionValue.Label.get -> string!
+Modulus.Authorization.Dimensions.DimensionValue.Label.init -> void
+Modulus.Authorization.Dimensions.IDimensionValueRegistry
+Modulus.Authorization.Dimensions.IDimensionValueRegistry.ListAsync(string! dimension, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Authorization.Dimensions.DimensionValue!>!>!
+Modulus.Authorization.Dimensions.IDimensionValueRegistry.RegisterAsync(string! dimension, string! code, string! label, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Authorization.Dimensions.DimensionValue!>!
+Modulus.Authorization.Dimensions.IDimensionValueRegistry.ResolveIdAsync(string! dimension, string! code, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Guid?>!
+override Modulus.Authorization.Dimensions.DimensionValue.Equals(object? obj) -> bool
+override Modulus.Authorization.Dimensions.DimensionValue.GetHashCode() -> int
+override Modulus.Authorization.Dimensions.DimensionValue.ToString() -> string!
+static Modulus.Authorization.Dimensions.DimensionKeys.Code(string! code) -> string!
+static Modulus.Authorization.Dimensions.DimensionKeys.Dimension(string! dimension) -> string!
+static Modulus.Authorization.Dimensions.DimensionValue.operator !=(Modulus.Authorization.Dimensions.DimensionValue? left, Modulus.Authorization.Dimensions.DimensionValue? right) -> bool
+static Modulus.Authorization.Dimensions.DimensionValue.operator ==(Modulus.Authorization.Dimensions.DimensionValue? left, Modulus.Authorization.Dimensions.DimensionValue? right) -> bool
+Modulus.Authorization.IPermissionCatalogSnapshotStore
+Modulus.Authorization.IPermissionCatalogSnapshotStore.LoadAsync(System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Core.Abstractions.PermissionDefinition!>?>!
+Modulus.Authorization.IPermissionCatalogSnapshotStore.SaveAsync(System.Collections.Generic.IReadOnlyList<Modulus.Core.Abstractions.PermissionDefinition!>! catalog, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Authorization.PermissionCatalogChange
+Modulus.Authorization.PermissionCatalogChange.<Clone>$() -> Modulus.Authorization.PermissionCatalogChange!
+Modulus.Authorization.PermissionCatalogChange.After.get -> string!
+Modulus.Authorization.PermissionCatalogChange.After.init -> void
+Modulus.Authorization.PermissionCatalogChange.Before.get -> string!
+Modulus.Authorization.PermissionCatalogChange.Before.init -> void
+Modulus.Authorization.PermissionCatalogChange.Deconstruct(out string! Permission, out Modulus.Authorization.PermissionCatalogChangeKind Kind, out string! Before, out string! After) -> void
+Modulus.Authorization.PermissionCatalogChange.Equals(Modulus.Authorization.PermissionCatalogChange? other) -> bool
+Modulus.Authorization.PermissionCatalogChange.Kind.get -> Modulus.Authorization.PermissionCatalogChangeKind
+Modulus.Authorization.PermissionCatalogChange.Kind.init -> void
+Modulus.Authorization.PermissionCatalogChange.Permission.get -> string!
+Modulus.Authorization.PermissionCatalogChange.Permission.init -> void
+Modulus.Authorization.PermissionCatalogChange.PermissionCatalogChange(string! Permission, Modulus.Authorization.PermissionCatalogChangeKind Kind, string! Before, string! After) -> void
+Modulus.Authorization.PermissionCatalogChangeKind
+Modulus.Authorization.PermissionCatalogChangeKind.LifecycleChanged = 0 -> Modulus.Authorization.PermissionCatalogChangeKind
+Modulus.Authorization.PermissionCatalogChangeKind.Removed = 2 -> Modulus.Authorization.PermissionCatalogChangeKind
+Modulus.Authorization.PermissionCatalogChangeKind.ReplacementChanged = 1 -> Modulus.Authorization.PermissionCatalogChangeKind
+Modulus.Authorization.PermissionCatalogChanges
+override Modulus.Authorization.PermissionCatalogChange.Equals(object? obj) -> bool
+override Modulus.Authorization.PermissionCatalogChange.GetHashCode() -> int
+override Modulus.Authorization.PermissionCatalogChange.ToString() -> string!
+static Modulus.Authorization.PermissionCatalogChange.operator !=(Modulus.Authorization.PermissionCatalogChange? left, Modulus.Authorization.PermissionCatalogChange? right) -> bool
+static Modulus.Authorization.PermissionCatalogChange.operator ==(Modulus.Authorization.PermissionCatalogChange? left, Modulus.Authorization.PermissionCatalogChange? right) -> bool
+static Modulus.Authorization.PermissionCatalogChanges.Compare(System.Collections.Generic.IReadOnlyList<Modulus.Core.Abstractions.PermissionDefinition!>? recorded, System.Collections.Generic.IReadOnlyList<Modulus.Core.Abstractions.PermissionDefinition!>! declared) -> System.Collections.Generic.IReadOnlyList<Modulus.Authorization.PermissionCatalogChange!>!
+Modulus.Authorization.Fields.CommandFields
+static Modulus.Authorization.Fields.CommandFields.SetBy<TCommand>(TCommand command) -> string![]!
+Modulus.Authorization.Fields.FieldOutputGuard
+static Modulus.Authorization.Fields.FieldOutputGuard.EnsureMasked<T>(Modulus.Authorization.Fields.IFieldAuthorizer! authorizer, T output) -> void
+static Modulus.Authorization.Fields.FieldOutputGuard.EnsureNotRedacted(object! entity) -> void
+Modulus.Authorization.Fields.FieldBatchExtensions
+static Modulus.Authorization.Fields.FieldBatchExtensions.EnsureBatchWriteAllowedAsync(this Modulus.Authorization.Fields.IFieldAuthorizer! authorizer, System.Type! type, System.Collections.Generic.IEnumerable<System.Collections.Generic.IEnumerable<string!>!>! rows, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+static Modulus.Authorization.Fields.FieldBatchExtensions.RedactForExport<T>(this Modulus.Authorization.Fields.IFieldAuthorizer! authorizer, System.Collections.Generic.IEnumerable<T!>! rows) -> System.Collections.Generic.List<T!>!
+Modulus.Authorization.Dimensions.DimensionRecordValidation
+static Modulus.Authorization.Dimensions.DimensionRecordValidation.RequireRegisteredAsync(this Modulus.Authorization.Dimensions.IDimensionValueRegistry! registry, string! dimension, string! field, string! code, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Guid>!
+Modulus.Authorization.Dimensions.DimensionValue.Deconstruct(out System.Guid Id, out string! Dimension, out string! Code, out string! Label, out System.Guid? ParentId) -> void
+Modulus.Authorization.Dimensions.DimensionValue.DimensionValue(System.Guid Id, string! Dimension, string! Code, string! Label, System.Guid? ParentId = null) -> void
+Modulus.Authorization.Dimensions.DimensionValue.ParentId.get -> System.Guid?
+Modulus.Authorization.Dimensions.DimensionValue.ParentId.init -> void
+Modulus.Authorization.Dimensions.IDimensionHierarchy
+Modulus.Authorization.Dimensions.IDimensionHierarchy.Expand(System.Collections.Generic.IReadOnlySet<System.Guid>! targets) -> System.Collections.Generic.IReadOnlySet<System.Guid>!
+Modulus.Authorization.Dimensions.IDimensionValueRegistry.SetParentAsync(string! dimension, string! code, string? parentDimension, string? parentCode, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Authorization.Dimensions.DimensionValue!>!
+Modulus.Authorization.Dimensions.NullDimensionHierarchy
+Modulus.Authorization.Dimensions.NullDimensionHierarchy.Expand(System.Collections.Generic.IReadOnlySet<System.Guid>! targets) -> System.Collections.Generic.IReadOnlySet<System.Guid>!
+Modulus.Authorization.Dimensions.NullDimensionHierarchy.NullDimensionHierarchy() -> void
+Modulus.Authorization.Scopes.ScopeSubject.ScopeSubject(Modulus.Core.Abstractions.ICurrentUser! user, Modulus.Authorization.Organization.IOrgHierarchy! hierarchy, Modulus.Authorization.Scopes.IAssignmentStore! assignments, Modulus.Core.Abstractions.ICurrentDataScope? dataScope = null, System.TimeProvider? clock = null, Modulus.Authorization.Dimensions.IDimensionHierarchy? dimensions = null) -> void
+static Modulus.Authorization.Dimensions.DimensionRecordValidation.EnsureRecordDimensionsAsync<TRecord>(this Modulus.Authorization.Dimensions.IDimensionValueRegistry! registry, TRecord! record, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Secrets.TenancyArea
+Modulus.Secrets.TenancyArea.TenancyArea() -> void
+Modulus.Secrets.TenantDataStoreChanged
+Modulus.Secrets.TenantDataStoreChanged.Deconstruct(out System.Guid TenantId, out string! StoreKey, out string! ProviderKey, out int SecretVersion) -> void
+Modulus.Secrets.TenantDataStoreChanged.Equals(Modulus.Secrets.TenantDataStoreChanged? other) -> bool
+Modulus.Secrets.TenantDataStoreChanged.ProviderKey.get -> string!
+Modulus.Secrets.TenantDataStoreChanged.ProviderKey.init -> void
+Modulus.Secrets.TenantDataStoreChanged.SecretVersion.get -> int
+Modulus.Secrets.TenantDataStoreChanged.SecretVersion.init -> void
+Modulus.Secrets.TenantDataStoreChanged.StoreKey.get -> string!
+Modulus.Secrets.TenantDataStoreChanged.StoreKey.init -> void
+Modulus.Secrets.TenantDataStoreChanged.TenantDataStoreChanged(System.Guid TenantId, string! StoreKey, string! ProviderKey, int SecretVersion) -> void
+Modulus.Secrets.TenantDataStoreChanged.TenantId.get -> System.Guid
+Modulus.Secrets.TenantDataStoreChanged.TenantId.init -> void
+Modulus.Secrets.TenantDataStoreChangedHandler
+Modulus.Secrets.TenantDataStoreChangedHandler.HandleAsync(Modulus.Secrets.TenantDataStoreChanged! event, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
+Modulus.Secrets.TenantDataStoreChangedHandler.TenantDataStoreChangedHandler(Modulus.Core.Abstractions.Tenancy.ITenantDatabaseResolver! resolver, Modulus.Core.Abstractions.Tenancy.ITenantDatabaseProviders? providers = null) -> void
+Modulus.Secrets.TenantDatabaseResolver.TryTakeSuperseded(System.Guid tenantId, string! storeKey, out Modulus.Core.Abstractions.Tenancy.TenantDatabaseTarget? target) -> bool
+override Modulus.Secrets.TenantDataStoreChanged.<Clone>$() -> Modulus.Secrets.TenantDataStoreChanged!
+override Modulus.Secrets.TenantDataStoreChanged.Equals(object? obj) -> bool
+override Modulus.Secrets.TenantDataStoreChanged.GetHashCode() -> int
+override Modulus.Secrets.TenantDataStoreChanged.ToString() -> string!
+override sealed Modulus.Secrets.TenantDataStoreChanged.Equals(Modulus.Events.Abstractions.IntegrationEventBase? other) -> bool
+static Modulus.Secrets.TenantDataStoreChanged.operator !=(Modulus.Secrets.TenantDataStoreChanged? left, Modulus.Secrets.TenantDataStoreChanged? right) -> bool
+static Modulus.Secrets.TenantDataStoreChanged.operator ==(Modulus.Secrets.TenantDataStoreChanged? left, Modulus.Secrets.TenantDataStoreChanged? right) -> bool
+Modulus.BackgroundJobs.IJobInitiatorGuard
+Modulus.BackgroundJobs.IJobInitiatorGuard.MayRunAsync(System.Guid initiatorId, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<bool>!
+Modulus.BackgroundJobs.JobActor
+const Modulus.BackgroundJobs.JobActor.PersonPrefix = "person:" -> string!
+const Modulus.BackgroundJobs.JobActor.SystemPrefix = "system:" -> string!
+Modulus.BackgroundJobs.JobContext
+Modulus.BackgroundJobs.JobContext.Actor.get -> string?
+Modulus.BackgroundJobs.JobContext.Actor.set -> void
+Modulus.BackgroundJobs.JobContext.JobContext() -> void
+static Modulus.BackgroundJobs.JobActor.ForPerson(System.Guid userId) -> string!
+static Modulus.BackgroundJobs.JobActor.ForSystem(string! name) -> string!
+Modulus.Authorization.Grants.PrincipalGrantQuery.AgentRole.get -> string?
+Modulus.Authorization.Grants.PrincipalGrantQuery.AgentRole.init -> void
+Modulus.Authorization.Grants.PrincipalGrantQuery.Deconstruct(out System.Guid? UserId, out System.Collections.Generic.IReadOnlyCollection<string!>! Roles, out string? AgentRole) -> void
+Modulus.Authorization.Grants.PrincipalGrantQuery.PrincipalGrantQuery(System.Guid? UserId, System.Collections.Generic.IReadOnlyCollection<string!>! Roles, string? AgentRole = null) -> void

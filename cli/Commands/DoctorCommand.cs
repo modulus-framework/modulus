@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Text.Json;
 using Modulus.Cli.Services;
 using Spectre.Console;
 using Spectre.Console.Cli;
@@ -145,6 +146,13 @@ internal sealed class DoctorCommand : Command<DoctorCommand.Settings>
                     "None found under src/Modules/. Add one with: modulus add-module <Name>"));
             }
 
+            // ── Secrets ────────────────────────────────────────────────
+            if (inventory.ApiProjectPath is not null && File.Exists(inventory.ProgramCsPath)
+                && ApiHostFiles.ReadAll(inventory.ProgramCsPath).Contains("AddOpenBaoSecretStore(", StringComparison.Ordinal))
+            {
+                checks.Add(await CheckOpenBaoAsync(Path.GetDirectoryName(inventory.ApiProjectPath)!));
+            }
+
             // ── Version checks ─────────────────────────────────────────
             checks.Add(await CheckCliVersionAsync());
             checks.Add(await CheckFrameworkVersionAsync(inventory.SolutionDir));
@@ -189,6 +197,51 @@ internal sealed class DoctorCommand : Command<DoctorCommand.Settings>
     }
 
     // ── Individual checks ─────────────────────────────────────────────
+
+    /// <summary>
+    /// Whether the configured OpenBao server answers. A warning only: the app keeps serving cached secrets for a while when
+    /// OpenBao is down, and the check is run from a developer machine that may be offline.
+    /// </summary>
+    private static async Task<CheckResult> CheckOpenBaoAsync(string apiDir)
+    {
+        var address = ReadOpenBaoAddress(Path.Combine(apiDir, "appsettings.json"));
+        if (string.IsNullOrWhiteSpace(address))
+            return CheckResult.Warn("OpenBao", "Secrets:OpenBao:Address is not set in appsettings.json.");
+
+        try
+        {
+            using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(3) };
+            using var response = await http.GetAsync(new Uri(new Uri(address), "/v1/sys/health"));
+
+            // OpenBao reports its state in the status code (200 active, 429 standby, 472/473 DR, 501 uninitialized, 503 sealed);
+            // every one of them means the server is there.
+            return CheckResult.Pass("OpenBao", $"{address} answered (HTTP {(int)response.StatusCode}).");
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or UriFormatException)
+        {
+            return CheckResult.Warn("OpenBao", $"{address} did not answer ({ex.GetType().Name}). Secrets cannot be read until it does.");
+        }
+    }
+
+    private static string? ReadOpenBaoAddress(string appsettings)
+    {
+        if (!File.Exists(appsettings))
+            return null;
+        try
+        {
+            using var document = JsonDocument.Parse(File.ReadAllText(appsettings),
+                new JsonDocumentOptions { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true });
+            return document.RootElement.TryGetProperty("Secrets", out var secrets)
+                && secrets.TryGetProperty("OpenBao", out var openBao)
+                && openBao.TryGetProperty("Address", out var address)
+                    ? address.GetString()
+                    : null;
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
 
     private static CheckResult CheckDotNetSdk()
     {

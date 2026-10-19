@@ -11,7 +11,8 @@ public sealed class ScopeSubject(
     IOrgHierarchy hierarchy,
     IAssignmentStore assignments,
     ICurrentDataScope? dataScope = null,
-    TimeProvider? clock = null) : IScopeSubject
+    TimeProvider? clock = null,
+    Modulus.Authorization.Dimensions.IDimensionHierarchy? dimensions = null) : IScopeSubject
 {
     // With no org scoping configured the framework registers an "unrestricted" null scope so the org query filter is a
     // no-op. A grant that names the caller's own org scope must not read that as "everything": it needs placements to mean anything.
@@ -47,7 +48,12 @@ public sealed class ScopeSubject(
             return new HashSet<Guid>();
 
         if (!_assigned.TryGetValue(assignmentType, out var targets))
-            _assigned[assignmentType] = targets = assignments.TargetsFor(id, assignmentType, _clock.GetUtcNow());
+        {
+            // An assignment to a value covers the values placed beneath it (a region covers its warehouses), once per type per request.
+            var assigned = assignments.TargetsFor(id, assignmentType, _clock.GetUtcNow());
+            _assigned[assignmentType] = targets = dimensions is null ? assigned : dimensions.Expand(assigned);
+        }
+
         return targets;
     }
 }

@@ -52,6 +52,7 @@ public sealed record TenantInfo(
     Guid TenantId,
     string TenantSlug,
     string? DisplayName = null,
+    [property: Obsolete("Tenant databases are described by the tenant data-store catalog and read through ITenantDatabaseResolver. A connection string is never stored on the tenant.")]
     string? ConnectionString = null,
     Guid? GroupId = null,
     TenantStatus Status = TenantStatus.Active)

@@ -38,6 +38,7 @@ internal sealed class GlobalExceptionHandler(
             ModulusErrorKind.Unauthenticated => StatusCodes.Status401Unauthorized,
             ModulusErrorKind.PermissionDenied => StatusCodes.Status403Forbidden,
             ModulusErrorKind.Conflict or ModulusErrorKind.ConcurrencyConflict => StatusCodes.Status409Conflict,
+            ModulusErrorKind.Unavailable => StatusCodes.Status503ServiceUnavailable,
             _ => StatusCodes.Status500InternalServerError,
         };
 

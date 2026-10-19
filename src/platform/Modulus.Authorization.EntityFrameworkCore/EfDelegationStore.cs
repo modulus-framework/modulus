@@ -13,7 +13,7 @@ namespace Modulus.Authorization.EntityFrameworkCore;
 /// providers.
 /// </summary>
 public sealed class EfDelegationStore(
-    IDbContextFactory<AuthorizationStoreDbContext> factory)
+    IDbContextFactory<AuthorizationStoreDbContextBase> factory)
     : IDelegationStore
 {
     /// <inheritdoc />

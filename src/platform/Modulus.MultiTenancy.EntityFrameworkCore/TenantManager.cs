@@ -7,15 +7,18 @@ namespace Modulus.MultiTenancy.EntityFrameworkCore;
 /// Provisioning surface for the EF-backed tenant store: create tenants and toggle
 /// their active state. Registered as a scoped service by
 /// <c>AddEfCoreTenantStore</c>. Reads go through <see cref="ITenantStore"/> /
-/// <see cref="EfTenantStore"/>; this is the write side, used by admin endpoints or
+/// <see cref="IEfTenantStore"/>; this is the write side, used by admin endpoints or
 /// seed code. Membership and activation changes are recorded in the tenant's security audit chain and reported
 /// to every <see cref="IAccessChangeObserver"/> (systems that cache access, such as the AI connector).
 /// </summary>
-public sealed class TenantManager(
-    TenantStoreDbContext db,
+public class TenantManager<TTenant, TMembership, TDataStore>(
+    TenantStoreDbContext<TTenant, TMembership, TDataStore> db,
     ISecurityAuditLog? audit = null,
     ICurrentUser? actor = null,
     IEnumerable<IAccessChangeObserver>? observers = null) : ITenantMemberProvisioner
+    where TTenant : TenantEntity, new()
+    where TMembership : TenantMembershipEntity, new()
+    where TDataStore : TenantDataStoreEntity
 {
     /// <summary>
     /// Creates a new active tenant. Throws
@@ -45,7 +48,7 @@ public sealed class TenantManager(
             throw new InvalidOperationException(
                 $"A tenant with slug '{slug}' already exists.");
 
-        var entity = new TenantEntity
+        var entity = new TTenant
         {
             Id = id ?? Guid.NewGuid(),
             Slug = slug,
@@ -62,7 +65,7 @@ public sealed class TenantManager(
 
     /// <summary>
     /// Sets a tenant's active flag. A deactivated tenant stops resolving
-    /// immediately (see <see cref="EfTenantStore"/>). Returns
+    /// immediately (see <see cref="IEfTenantStore"/>). Returns
     /// <see langword="false"/> if no tenant has the given id.
     /// </summary>
     public async Task<bool> SetActiveAsync(
@@ -145,7 +148,7 @@ public sealed class TenantManager(
 
         if (existing is null)
         {
-            db.TenantMemberships.Add(new TenantMembershipEntity
+            db.TenantMemberships.Add(new TMembership
             {
                 UserId = userId,
                 TenantId = tenantId,

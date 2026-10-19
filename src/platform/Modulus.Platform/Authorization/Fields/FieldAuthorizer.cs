@@ -1,7 +1,9 @@
 namespace Modulus.Authorization.Fields;
 
+using System.Collections;
 using System.Collections.Concurrent;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using Modulus.Authorization.Resources;
 using Modulus.Core.Abstractions;
 
@@ -57,6 +59,9 @@ public sealed class FieldAuthorizer(
 {
     private static readonly ConcurrentDictionary<Type, PropertyInfo[]> SettableProperties = new();
 
+    // The fields redaction reset on each instance, by name only, so FieldOutputGuard can refuse to save a redacted instance.
+    private static readonly ConditionalWeakTable<object, List<string>> ClearedFields = new();
+
     private readonly Dictionary<Type, FieldMask> _masks = [];
 
     public FieldMask MaskFor(Type type)
@@ -86,16 +91,59 @@ public sealed class FieldAuthorizer(
         if (projection is null)
             return projection;
 
-        var type = projection.GetType();
+        RedactModel(projection, new HashSet<object>(ReferenceEqualityComparer.Instance));
+        return projection;
+    }
+
+    // Nested objects and collection elements are masked by their own type's mask, so a classified field inside a child DTO
+    // is covered too. The visited set stops a cycle or a shared reference from being walked twice.
+    private void RedactModel(object instance, HashSet<object> visited)
+    {
+        if (!visited.Add(instance))
+            return;
+
+        var type = instance.GetType();
         var mask = MaskFor(type);
         foreach (var property in SettablePropertiesOf(type))
         {
             if (!mask.CanRead(property.Name))
-                property.SetValue(projection, DefaultValue(property.PropertyType));
-        }
+            {
+                var fallback = DefaultValue(property.PropertyType);
+                if (!Equals(property.GetValue(instance), fallback))
+                    ClearedFields.GetOrCreateValue(instance).Add(property.Name);
+                property.SetValue(instance, fallback);
+                continue;
+            }
 
-        return projection;
+            var value = property.GetValue(instance);
+            switch (value)
+            {
+                case null:
+                    break;
+                case IDictionary:
+                    // Extension dictionaries hold untyped values with no classification: nothing to mask beyond the property itself.
+                    break;
+                case IEnumerable items when value is not string:
+                    foreach (var item in items)
+                    {
+                        if (item is not null && IsModel(item.GetType()))
+                            RedactModel(item, visited);
+                    }
+
+                    break;
+                default:
+                    if (IsModel(value.GetType()))
+                        RedactModel(value, visited);
+                    break;
+            }
+        }
     }
+
+    // A model is a class the application defines: not a primitive, string, enum, value type or framework type.
+    internal static bool IsModel(Type type)
+        => type.IsClass
+           && type != typeof(string)
+           && type.Namespace?.StartsWith("System", StringComparison.Ordinal) != true;
 
     public Task<AccessDecision> AuthorizeWriteAsync(
         Type type, IEnumerable<string> attemptedFields, CancellationToken ct = default)
@@ -108,16 +156,43 @@ public sealed class FieldAuthorizer(
         return Task.FromResult(denied.Count == 0
             ? AccessDecision.Allow()
             : AccessDecision.Deny(
+                AccessReasonCodes.FieldProtected,
                 $"write to protected field(s) {string.Join(", ", denied)} on '{type.Name}' is not permitted"));
     }
 
-    private static PropertyInfo[] SettablePropertiesOf(Type type)
+    internal static PropertyInfo[] SettablePropertiesOf(Type type)
         => SettableProperties.GetOrAdd(type, static t =>
             [.. t.GetProperties(BindingFlags.Public | BindingFlags.Instance)
                 .Where(p => p.CanWrite && p.SetMethod is { IsPublic: true } && p.GetIndexParameters().Length == 0)]);
 
-    private static object? DefaultValue(Type type)
+    internal static object? DefaultValue(Type type)
         => type.IsValueType && Nullable.GetUnderlyingType(type) is null
             ? Activator.CreateInstance(type)
             : null;
+
+    /// <summary>The fields redaction reset on <paramref name="instance"/>, by name; empty when none were reset.</summary>
+    internal static IReadOnlyList<string> ClearedFieldsOf(object instance)
+        => ClearedFields.TryGetValue(instance, out var fields) ? fields : [];
+}
+
+/// <summary>Throwing form of <see cref="IFieldAuthorizer.AuthorizeWriteAsync"/>, for command handlers.</summary>
+public static class FieldAuthorizerExtensions
+{
+    /// <summary>
+    /// Refuses the write with <see cref="Modulus.Core.Abstractions.Exceptions.ForbiddenException"/> (403, the reason code in the message)
+    /// when the caller may not set one of <paramref name="fields"/>. The message names the fields, never their values. Call it before the
+    /// change is applied: an attempt to set a field above the caller's clearance is refused, not silently dropped.
+    /// </summary>
+    public static async Task EnsureWriteAllowedAsync(
+        this IFieldAuthorizer authorizer, Type type, IEnumerable<string> fields, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(authorizer);
+        var decision = await authorizer.AuthorizeWriteAsync(type, fields, ct).ConfigureAwait(false);
+        if (!decision.IsAllowed)
+        {
+            throw new Modulus.Core.Abstractions.Exceptions.ForbiddenException(
+                $"{type.Name}:write",
+                $"Not allowed to write this {type.Name}: {decision.Code} ({decision.Reason}).");
+        }
+    }
 }

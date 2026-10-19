@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Modulus.Authorization.Fields;
 using Modulus.Core.Abstractions;
 using Modulus.Identity.Abstractions;
 
@@ -45,20 +46,38 @@ internal sealed class UserInvitationService<TUser>(
     RoleManager<ModulusRole> roles,
     IIdentityEmailSender sender,
     IServiceProvider services,
-    ILogger<UserInvitationService<TUser>> logger) : IUserInvitationService
+    ILogger<UserInvitationService<TUser>> logger,
+    IFieldAuthorizer? fieldAuthorizer = null) : IUserInvitationService
     where TUser : ModulusUser, new()
 {
+    // The fields the caller supplies on an invitation. Lifecycle and IsActive are set by the server, not the caller.
+    private static readonly string[] InvitedFields = ["Email", "UserName", "TenantId", "FirstName", "LastName"];
+
     public async Task<IReadOnlyList<InvitationResult>> InviteManyAsync(IEnumerable<UserInvitation> invitations, CancellationToken ct = default)
     {
+        ArgumentNullException.ThrowIfNull(invitations);
+        var batch = invitations.ToList();
+
+        // All or nothing: the fields of every row are checked as the current caller before the first account is created.
+        if (fieldAuthorizer is not null)
+            await fieldAuthorizer.EnsureBatchWriteAllowedAsync(typeof(TUser), batch.Select(_ => InvitedFields), ct);
+
         var results = new List<InvitationResult>();
-        foreach (var invitation in invitations)
-            results.Add(await InviteAsync(invitation, ct));
+        foreach (var invitation in batch)
+            results.Add(await InviteOneAsync(invitation, ct));
         return results;
     }
 
     public async Task<InvitationResult> InviteAsync(UserInvitation invitation, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(invitation);
+        if (fieldAuthorizer is not null)
+            await fieldAuthorizer.EnsureWriteAllowedAsync(typeof(TUser), InvitedFields, ct);
+        return await InviteOneAsync(invitation, ct);
+    }
+
+    private async Task<InvitationResult> InviteOneAsync(UserInvitation invitation, CancellationToken ct)
+    {
         var email = invitation.Email?.Trim();
         if (string.IsNullOrEmpty(email) || !email.Contains('@', StringComparison.Ordinal))
             return new InvitationResult(invitation.Email ?? "", null, "A valid e-mail address is required.");
@@ -85,7 +104,8 @@ internal sealed class UserInvitationService<TUser>(
                 TenantId = invitation.TenantId,
                 FirstName = invitation.FirstName,
                 LastName = invitation.LastName,
-                IsActive = true,
+                Lifecycle = AccountLifecycle.Invited,
+                IsActive = false,
             };
             var created = await users.CreateAsync(user);
             if (!created.Succeeded)
@@ -104,6 +124,15 @@ internal sealed class UserInvitationService<TUser>(
             var added = await users.AddToRolesAsync(user, missing);
             if (!added.Succeeded)
                 return new InvitationResult(email, user.Id, string.Join(" ", added.Errors.Select(e => e.Description)));
+        }
+
+        if (user.Lifecycle == AccountLifecycle.Invited)
+        {
+            // The link is about to be sent: the account now waits for it to be used.
+            user.Lifecycle = AccountLifecycle.PendingActivation;
+            var moved = await users.UpdateAsync(user);
+            if (!moved.Succeeded)
+                return new InvitationResult(email, user.Id, string.Join(" ", moved.Errors.Select(e => e.Description)));
         }
 
         await sender.SendInvitationEmailAsync(email, await users.GeneratePasswordResetTokenAsync(user), ct);

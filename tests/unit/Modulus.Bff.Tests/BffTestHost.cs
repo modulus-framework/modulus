@@ -202,7 +202,8 @@ internal sealed class BffTestHost : IAsyncDisposable
         Dictionary<string, string?> settings,
         Action<BffBuilder> clients,
         Action<WebApplication>? map = null,
-        bool withRevocation = true)
+        bool withRevocation = true,
+        TimeProvider? clock = null)
     {
         var auth = new FakeAuthServer(withRevocation);
         var api = new FakeApi();
@@ -223,6 +224,9 @@ internal sealed class BffTestHost : IAsyncDisposable
         });
         builder.Configuration.AddInMemoryCollection(settings);
 
+        // Registered before AddModulusBff, which only adds the system clock when none is present.
+        if (clock is not null)
+            builder.Services.AddSingleton(clock);
         builder.Services.AddModulusBff(builder.Configuration, clients);
         builder.Services.ConfigureHttpClientDefaults(http => http.ConfigurePrimaryHttpMessageHandler(() => router));
         builder.Services.RemoveAll<IForwarderHttpClientFactory>();

@@ -24,8 +24,11 @@ public sealed record ResourceAttributes(Guid? OwnerId, Guid? OrgUnitId, string? 
     {
         ArgumentNullException.ThrowIfNull(resource);
         return new ResourceAttributes(
-            (resource as IHasOwner)?.OwnerId,
-            (resource as IHasOrgUnit)?.OrgUnitId,
-            (resource as IHasWorkflowState)?.WorkflowState);
+            // The marker interfaces return a plain Guid, so an unset value arrives as Guid.Empty. An unset id is a missing attribute.
+            Known((resource as IHasOwner)?.OwnerId),
+            Known((resource as IHasOrgUnit)?.OrgUnitId),
+            string.IsNullOrWhiteSpace((resource as IHasWorkflowState)?.WorkflowState) ? null : (resource as IHasWorkflowState)?.WorkflowState);
     }
+
+    private static Guid? Known(Guid? id) => id is { } value && value != Guid.Empty ? value : null;
 }

@@ -9,6 +9,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 using Modulus.Authorization.Approval;
 using Modulus.Authorization.Audit;
+using Modulus.Authorization.Dimensions;
 using Modulus.Authorization.EntityFrameworkCore;
 using Modulus.Authorization.Extensions;
 using Modulus.Authorization.Governance;
@@ -512,30 +513,121 @@ public static partial class AuthorizationManagementExtensions
         group.MapGet("/assignments/{userId:guid}", async (Guid userId, EfAssignmentStore store, CancellationToken ct) =>
             Results.Ok(await store.ListAsync(userId, ct)));
 
-        group.MapPost("/assignments", async (
+        group.MapPost("/assignments", (
             AssignmentWriteRequest request, EfAssignmentStore store, IScopeMapRegistry scopeMaps,
             [FromServices] IUserRoleDirectory? roleDirectory,
             IAuthorizationAuditWriter auditWriter, IEnumerable<IAccessChangeObserver> observers,
             ICurrentUser currentUser, CancellationToken ct) =>
+            AssignAsync(request, store, scopeMaps, roleDirectory, auditWriter, observers, currentUser, ct));
+
+        // The same assignment, naming the value by its business code (a warehouse code) instead of its id.
+        group.MapPost("/assignments/by-code", async (
+            AssignmentByCodeRequest request, EfAssignmentStore store, IScopeMapRegistry scopeMaps,
+            [FromServices] IUserRoleDirectory? roleDirectory, [FromServices] IDimensionValueRegistry? dimensions,
+            IAuthorizationAuditWriter auditWriter, IEnumerable<IAccessChangeObserver> observers,
+            ICurrentUser currentUser, CancellationToken ct) =>
         {
+            if (dimensions is null)
+                return DimensionRegistryMissing();
             if (string.IsNullOrWhiteSpace(request.AssignmentType))
                 return Results.ValidationProblem(new Dictionary<string, string[]> { ["assignmentType"] = ["An assignment type is required."] });
-            if (UnknownAssignmentType(scopeMaps, request.AssignmentType) is { } unknownType)
-                return unknownType;
-            if (request is { ValidFrom: { } from, ValidUntil: { } until } && until <= from)
-                return Results.ValidationProblem(new Dictionary<string, string[]> { ["validUntil"] = ["An assignment must end after it begins."] });
-            if (roleDirectory is not null && await roleDirectory.GetRolesAsync(request.UserId, ct) is null)
-                return Results.Problem(detail: "The user is unknown.", statusCode: StatusCodes.Status404NotFound);
 
-            await store.AssignAsync(new Assignment(request.UserId, request.AssignmentType, request.TargetId, request.ValidFrom, request.ValidUntil), ct);
-            await EmitAuditAsync(auditWriter, observers, currentUser, "Assignment", "Assigned",
-                $"user:{request.UserId} -> {request.AssignmentType.Trim().ToLowerInvariant()}:{request.TargetId}",
-                new Dictionary<string, string>
-                {
-                    ["validFrom"] = request.ValidFrom?.ToString("O") ?? "",
-                    ["validUntil"] = request.ValidUntil?.ToString("O") ?? "",
-                }, ct);
-            return Results.NoContent();
+            Guid? targetId;
+            try
+            {
+                targetId = await dimensions.ResolveIdAsync(request.AssignmentType, request.Code ?? "", ct);
+            }
+            catch (ArgumentException ex)
+            {
+                return InvalidDimensionInput(ex);
+            }
+
+            if (targetId is not { } id)
+                return Results.Problem(detail: "No value with that code is registered for this assignment type.", statusCode: StatusCodes.Status404NotFound);
+
+            return await AssignAsync(new AssignmentWriteRequest(request.UserId, request.AssignmentType, id, request.ValidFrom, request.ValidUntil),
+                store, scopeMaps, roleDirectory, auditWriter, observers, currentUser, ct);
+        });
+
+        // Typed dimension values (warehouses, regions) per company: list, and register a code once (registering again returns it).
+        group.MapGet("/dimensions/{dimension}", async (
+            string dimension, [FromServices] IDimensionValueRegistry? dimensions, CancellationToken ct) =>
+        {
+            if (dimensions is null)
+                return DimensionRegistryMissing();
+            try
+            {
+                return Results.Ok(await dimensions.ListAsync(dimension, ct));
+            }
+            catch (ArgumentException ex)
+            {
+                return InvalidDimensionInput(ex);
+            }
+        });
+
+        group.MapPost("/dimensions/{dimension}", async (
+            string dimension, DimensionValueWriteRequest request, [FromServices] IDimensionValueRegistry? dimensions,
+            IAuthorizationAuditWriter auditWriter, IEnumerable<IAccessChangeObserver> observers,
+            ICurrentUser currentUser, CancellationToken ct) =>
+        {
+            if (dimensions is null)
+                return DimensionRegistryMissing();
+            try
+            {
+                var value = await dimensions.RegisterAsync(dimension, request.Code ?? "", request.Label ?? "", ct);
+                await EmitAuditAsync(auditWriter, observers, currentUser, "Dimension", "Registered",
+                    $"{value.Dimension}:{value.Code}", new Dictionary<string, string> { ["label"] = value.Label }, ct);
+                return Results.Ok(value);
+            }
+            catch (ArgumentException ex)
+            {
+                return InvalidDimensionInput(ex);
+            }
+        });
+
+        group.MapPut("/dimensions/{dimension}/{code}/parent", async (
+            string dimension, string code, DimensionParentWriteRequest request, [FromServices] IDimensionValueRegistry? dimensions,
+            IAuthorizationAuditWriter auditWriter, IEnumerable<IAccessChangeObserver> observers,
+            ICurrentUser currentUser, CancellationToken ct) =>
+        {
+            if (dimensions is null)
+                return DimensionRegistryMissing();
+            try
+            {
+                var value = await dimensions.SetParentAsync(dimension, code, request.ParentDimension, request.ParentCode, ct);
+                await EmitAuditAsync(auditWriter, observers, currentUser, "Dimension", "ParentSet",
+                    $"{value.Dimension}:{value.Code}",
+                    new Dictionary<string, string> { ["parented"] = value.ParentId is null ? "false" : "true" },
+                    ct);
+                return Results.Ok(value);
+            }
+            catch (Modulus.Core.Abstractions.Exceptions.NotFoundException ex)
+            {
+                return Results.Problem(detail: ex.Message, statusCode: StatusCodes.Status404NotFound);
+            }
+            catch (ArgumentException ex)
+            {
+                return InvalidDimensionInput(ex);
+            }
+        });
+
+        // A company's administrator reads its own findings only; the host context reads every company (A4-2).
+        group.MapGet("/findings", async (
+            Guid? tenantId, string? resourceType, string? attribute, int? skip, int? take,
+            DataQualityFindingStore store, ICurrentTenant tenant, CancellationToken ct) =>
+        {
+            var scope = tenantId;
+            if (!tenant.IsHost)
+            {
+                if (tenant.TenantId is not { } own)
+                    return Results.Problem(detail: "No company is in scope.", statusCode: StatusCodes.Status403Forbidden);
+                if (tenantId is { } requested && requested != own)
+                    return Results.Problem(detail: "Findings of another company are not readable from this one.", statusCode: StatusCodes.Status403Forbidden);
+                scope = own;
+            }
+
+            var query = new DataQualityFindingQuery(scope, resourceType, attribute, skip ?? 0, take ?? DataQualityFindingQuery.DefaultTake);
+            return Results.Ok(await store.ListAsync(query, ct));
         });
 
         group.MapDelete("/assignments/{userId:guid}/{assignmentType}/{targetId:guid}", async (
@@ -551,6 +643,39 @@ public static partial class AuthorizationManagementExtensions
             return Results.NoContent();
         });
     }
+
+    private static async Task<IResult> AssignAsync(
+        AssignmentWriteRequest request, EfAssignmentStore store, IScopeMapRegistry scopeMaps, IUserRoleDirectory? roleDirectory,
+        IAuthorizationAuditWriter auditWriter, IEnumerable<IAccessChangeObserver> observers, ICurrentUser currentUser, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(request.AssignmentType))
+            return Results.ValidationProblem(new Dictionary<string, string[]> { ["assignmentType"] = ["An assignment type is required."] });
+        if (UnknownAssignmentType(scopeMaps, request.AssignmentType) is { } unknownType)
+            return unknownType;
+        if (request is { ValidFrom: { } from, ValidUntil: { } until } && until <= from)
+            return Results.ValidationProblem(new Dictionary<string, string[]> { ["validUntil"] = ["An assignment must end after it begins."] });
+        if (roleDirectory is not null && await roleDirectory.GetRolesAsync(request.UserId, ct) is null)
+            return Results.Problem(detail: "The user is unknown.", statusCode: StatusCodes.Status404NotFound);
+
+        await store.AssignAsync(new Assignment(request.UserId, request.AssignmentType, request.TargetId, request.ValidFrom, request.ValidUntil), ct);
+        await EmitAuditAsync(auditWriter, observers, currentUser, "Assignment", "Assigned",
+            $"user:{request.UserId} -> {request.AssignmentType.Trim().ToLowerInvariant()}:{request.TargetId}",
+            new Dictionary<string, string>
+            {
+                ["validFrom"] = request.ValidFrom?.ToString("O") ?? "",
+                ["validUntil"] = request.ValidUntil?.ToString("O") ?? "",
+            }, ct);
+        return Results.NoContent();
+    }
+
+    private static IResult DimensionRegistryMissing()
+        => Results.Problem(
+            detail: "Dimension values need the authorization database store (AddEfCoreAuthorizationStores).",
+            statusCode: StatusCodes.Status501NotImplemented);
+
+    // The registry names the rejected parameter ("dimension" or "code"), so the problem points at the field that was wrong.
+    private static IResult InvalidDimensionInput(ArgumentException ex)
+        => Results.ValidationProblem(new Dictionary<string, string[]> { [ex.ParamName ?? "value"] = [ex.Message] });
 
     // ── Approval limits ("up to this amount") ───────────────────────
 
@@ -704,7 +829,7 @@ public static partial class AuthorizationManagementExtensions
         });
     }
 
-    // ── External parties (buyer, supplier and subcontractor accounts) ────
+    // ── External parties (accounts linked to a party, by an application-defined kind) ────
 
     private static void MapParties(RouteGroupBuilder group)
     {
@@ -1022,7 +1147,7 @@ public static partial class AuthorizationManagementExtensions
     {
         group.MapPost("/org/units", async (
             OrgUnitWriteRequest request,
-            EfOrgHierarchy hierarchy, IAuthorizationAuditWriter auditWriter, IEnumerable<IAccessChangeObserver> observers,
+            IOrgUnitAdministration hierarchy, IAuthorizationAuditWriter auditWriter, IEnumerable<IAccessChangeObserver> observers,
             ICurrentUser currentUser, CancellationToken ct) =>
         {
             await hierarchy.AddUnitAsync(request.Id, request.Parents ?? [], ct);
@@ -1036,7 +1161,7 @@ public static partial class AuthorizationManagementExtensions
 
         group.MapPut("/org/units/{id:guid}/parents", async (
             Guid id, OrgUnitParentsRequest request,
-            EfOrgHierarchy hierarchy, IAuthorizationAuditWriter auditWriter, IEnumerable<IAccessChangeObserver> observers,
+            IOrgUnitAdministration hierarchy, IAuthorizationAuditWriter auditWriter, IEnumerable<IAccessChangeObserver> observers,
             ICurrentUser currentUser, CancellationToken ct) =>
         {
             await hierarchy.MoveUnitAsync(id, request.Parents, ct);
@@ -1101,7 +1226,7 @@ public static partial class AuthorizationManagementExtensions
             if (string.IsNullOrWhiteSpace(request.Name))
                 errors["name"] = ["A name is required."];
             if (string.IsNullOrWhiteSpace(request.Kind))
-                errors["kind"] = ["A kind is required (branch, factory, office, warehouse, department, team, ...)."];
+                errors["kind"] = ["A kind is required (the application defines its kinds, for example branch or department)."];
             if (errors.Count > 0)
                 return Results.ValidationProblem(errors);
             if (!hierarchy.Contains(id))

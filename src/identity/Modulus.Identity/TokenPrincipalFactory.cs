@@ -31,6 +31,13 @@ internal static class TokenPrincipalFactory
     /// <summary>When the person authenticated, in seconds since the Unix epoch; a refresh keeps the original value.</summary>
     internal const string AuthTimeClaim = "auth_time";
 
+    /// <summary>
+    /// When the Identity cookie was first issued, in seconds since the Unix epoch. Kept across sliding renewals (the cookie's
+    /// <c>IssuedUtc</c> is renewed by each one), so the absolute session lifetime and <c>max_age</c> measure from the sign-in. A cookie
+    /// claim only: <c>BuildPrincipal</c> never copies it into a token.
+    /// </summary>
+    internal const string SignedInAtClaim = "modulus_signed_in_at";
+
     /// <summary>The <c>amr</c> values of a password sign-in, with the second factor when one was verified.</summary>
     internal static string[] PasswordMethods(bool secondFactorVerified)
         => secondFactorVerified ? ["pwd", "otp", "mfa"] : ["pwd"];
@@ -126,7 +133,7 @@ internal static class TokenPrincipalFactory
         var user = string.IsNullOrWhiteSpace(subject) ? null : await userManager.FindByIdAsync(subject);
 
         // A refresh token can outlive a disabled or deleted account.
-        if (user is not { IsActive: true })
+        if (user is null || !user.MayStartNewAccess())
             return null;
 
         // Mirrors the sign-in flow's lock-out policy.

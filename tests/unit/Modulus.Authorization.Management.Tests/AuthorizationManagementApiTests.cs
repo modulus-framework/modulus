@@ -11,6 +11,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Modulus.Authorization.Dimensions;
 using Modulus.Authorization.EntityFrameworkCore;
 using Modulus.Authorization.Extensions;
 using Modulus.Authorization.Governance;
@@ -1357,5 +1358,96 @@ public sealed class AuthorizationManagementApiTests : IAsyncLifetime
         (await reviewer.PostAsJsonAsync($"/authorization/access-requests/{use.Id}/review", new { note = "fine" })).StatusCode.Should().Be(HttpStatusCode.NoContent);
         (await reviewer.PostAsJsonAsync($"/authorization/access-requests/{use.Id}/review", new { })).StatusCode.Should().Be(HttpStatusCode.Conflict);
         (await reviewer.GetFromJsonAsync<RequestView[]>("/authorization/access-requests/break-glass/unreviewed")).Should().BeEmpty();
+    }
+
+    // ── Dimension values and assignment by code ──
+
+    [Fact]
+    public async Task Dimension_codes_register_once_list_and_reject_bad_input()
+    {
+        var first = await _client.PostAsJsonAsync("/authorization/dimensions/customer", new { code = "cust-7", label = "Acme Ltd" });
+        first.StatusCode.Should().Be(HttpStatusCode.OK);
+        var value = await first.Content.ReadFromJsonAsync<DimensionValue>();
+
+        var again = await (await _client.PostAsJsonAsync("/authorization/dimensions/customer", new { code = " CUST-7 ", label = "ignored" }))
+            .Content.ReadFromJsonAsync<DimensionValue>();
+        again!.Id.Should().Be(value!.Id, "the same code keeps its id");
+
+        var listed = await _client.GetFromJsonAsync<DimensionValue[]>("/authorization/dimensions/customer");
+        listed.Should().ContainSingle().Which.Code.Should().Be("CUST-7");
+
+        var badDimension = await _client.PostAsJsonAsync("/authorization/dimensions/Bad Name!", new { code = "X" });
+        badDimension.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await badDimension.Content.ReadAsStringAsync()).Should().Contain("dimension");
+
+        var emptyCode = await _client.PostAsJsonAsync("/authorization/dimensions/customer", new { code = "  " });
+        emptyCode.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await emptyCode.Content.ReadAsStringAsync()).Should().Contain("code");
+    }
+
+    [Fact]
+    public async Task A_value_is_placed_under_a_parent_and_a_loop_or_an_unknown_parent_is_refused()
+    {
+        await _client.PostAsJsonAsync("/authorization/dimensions/region", new { code = "EU" });
+        await _client.PostAsJsonAsync("/authorization/dimensions/warehouse", new { code = "WH-01" });
+
+        var placed = await _client.PutAsJsonAsync(
+            "/authorization/dimensions/warehouse/WH-01/parent", new { parentDimension = "region", parentCode = "EU" });
+        placed.StatusCode.Should().Be(HttpStatusCode.OK);
+        var value = await placed.Content.ReadFromJsonAsync<DimensionValue>();
+        value!.ParentId.Should().NotBeNull();
+
+        var loop = await _client.PutAsJsonAsync(
+            "/authorization/dimensions/region/EU/parent", new { parentDimension = "warehouse", parentCode = "WH-01" });
+        loop.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        var unknown = await _client.PutAsJsonAsync(
+            "/authorization/dimensions/warehouse/WH-01/parent", new { parentDimension = "region", parentCode = "NOPE" });
+        unknown.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task Data_quality_findings_are_read_by_the_host_and_only_by_their_own_company()
+    {
+        var companyA = Guid.NewGuid();
+        var companyB = Guid.NewGuid();
+        var store = _app.Services.GetRequiredService<DataQualityFindingStore>();
+        await store.AddAsync(
+        [
+            new Modulus.Core.Abstractions.DataQuality.DataQualityFinding(companyA, "Shipment", "1", "update", ["OrgUnitId"]),
+            new Modulus.Core.Abstractions.DataQuality.DataQualityFinding(companyB, "Shipment", "2", "update", ["OrgUnitId"]),
+        ]);
+
+        // The host reads every company, or one company when asked.
+        (await _client.GetFromJsonAsync<DataQualityFindingRecord[]>("/authorization/findings")).Should().HaveCount(2);
+        (await _client.GetFromJsonAsync<DataQualityFindingRecord[]>($"/authorization/findings?tenantId={companyA}"))
+            .Should().ContainSingle().Which.RecordId.Should().Be("1");
+
+        // A company's administrator reads only its own, and cannot name another company.
+        _tenant.IsHost = false;
+        _tenant.TenantId = companyA;
+        (await _client.GetFromJsonAsync<DataQualityFindingRecord[]>("/authorization/findings"))
+            .Should().ContainSingle().Which.TenantId.Should().Be(companyA);
+        (await _client.GetAsync($"/authorization/findings?tenantId={companyB}")).StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task An_assignment_by_code_links_the_registered_value_and_refuses_unknown_codes()
+    {
+        var user = _directory.AddUser();
+        await _client.PostAsJsonAsync("/authorization/dimensions/customer", new { code = "CUST-9" });
+
+        (await _client.PostAsJsonAsync("/authorization/assignments/by-code", new { userId = user, assignmentType = "customer", code = "cust-9" }))
+            .StatusCode.Should().Be(HttpStatusCode.NoContent);
+        var registered = (await _client.GetFromJsonAsync<DimensionValue[]>("/authorization/dimensions/customer")).Should().ContainSingle().Which;
+        (await _client.GetFromJsonAsync<Assignment[]>($"/authorization/assignments/{user}"))
+            .Should().ContainSingle().Which.TargetId.Should().Be(registered.Id);
+
+        (await _client.PostAsJsonAsync("/authorization/assignments/by-code", new { userId = user, assignmentType = "customer", code = "NOPE" }))
+            .StatusCode.Should().Be(HttpStatusCode.NotFound);
+        (await _client.PostAsJsonAsync("/authorization/assignments/by-code", new { userId = Guid.NewGuid(), assignmentType = "customer", code = "CUST-9" }))
+            .StatusCode.Should().Be(HttpStatusCode.NotFound);
+        (await _client.PostAsJsonAsync("/authorization/assignments/by-code", new { userId = user, assignmentType = " ", code = "CUST-9" }))
+            .StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 }

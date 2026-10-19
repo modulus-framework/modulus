@@ -109,6 +109,58 @@ public sealed class GrantStorePermissionCheckerTests
             ["sales:order:read", "sales:order:update", "reports:view"]);
     }
 
+    private static ClaimsPrincipal Acting(Guid userId, string agent, params string[] roles)
+    {
+        var claims = new List<Claim> { new(ClaimTypes.NameIdentifier, userId.ToString()), new("act", agent) };
+        claims.AddRange(roles.Select(r => new Claim(ClaimTypes.Role, r)));
+        return new ClaimsPrincipal(new ClaimsIdentity(claims, authenticationType: "Test"));
+    }
+
+    [Fact]
+    public void An_agent_token_is_capped_to_what_the_agent_role_holds()
+    {
+        var checker = BuildChecker(
+            Acting(User, "agent:orders-bot", "clerk"),
+            s => s.GrantToRole("clerk", "sales:order:read", "sales:order:update")
+                  .GrantToRole("agent:orders-bot", "sales:order:read"));
+
+        checker.HasPermission("sales:order:read").Should().BeTrue();
+        checker.HasPermission("sales:order:update").Should().BeFalse("the agent role does not hold it");
+    }
+
+    [Fact]
+    public void An_agent_token_with_a_blank_agent_grants_nothing()
+    {
+        var checker = BuildChecker(
+            Acting(User, " ", "clerk"),
+            s => s.GrantToRole("clerk", "sales:order:read"));
+
+        checker.GetEffectivePermissions().Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Without_the_grant_store_an_agent_token_grants_no_permission_claim()
+    {
+        var principal = Acting(User, "agent:orders-bot", "clerk");
+        principal.AddIdentity(new ClaimsIdentity([new Claim("permission", "sales:order:update")], "Test"));
+        var accessor = new HttpContextAccessor { HttpContext = new DefaultHttpContext { User = principal } };
+
+        var user = new ClaimsPrincipalCurrentUser(accessor);
+
+        user.HasPermission("sales:order:update").Should().BeFalse("a permission claim is not trusted for an agent");
+        user.Permissions.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Without_the_grant_store_a_person_token_still_honours_its_permission_claim()
+    {
+        var principal = Authenticated(User, "clerk");
+        principal.AddIdentity(new ClaimsIdentity([new Claim("permission", "sales:order:update")], "Test"));
+        var accessor = new HttpContextAccessor { HttpContext = new DefaultHttpContext { User = principal } };
+
+        new ClaimsPrincipalCurrentUser(accessor).HasPermission("sales:order:update").Should().BeTrue();
+    }
+
     [Fact]
     public void GetEffectivePermissions_IsEmpty_WhenUnauthenticated()
     {

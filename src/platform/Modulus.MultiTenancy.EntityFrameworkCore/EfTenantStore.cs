@@ -3,14 +3,18 @@ using Modulus.Core.Abstractions;
 
 namespace Modulus.MultiTenancy.EntityFrameworkCore;
 
-/// <summary>
-/// <see cref="ITenantStore"/> backed by <see cref="TenantStoreDbContext"/>.
-/// Only <b>active</b> tenants resolve — a deactivated tenant (or an unknown
-/// id/slug) returns <see langword="null"/>, which the resolvers treat as
-/// "no tenant", keeping the pipeline fail-closed.
-/// </summary>
-public sealed class EfTenantStore(TenantStoreDbContext db, TimeProvider? clock = null) : ITenantStore
+/// <summary>Resolves tenants from the tenant store. Scoped; reached from the singleton bridge through <see cref="IEfTenantStore"/>.</summary>
+public interface IEfTenantStore : ITenantStore;
+
+/// <summary>The EF tenant store over <see cref="TenantStoreDbContext{TTenant,TMembership,TDataStore}"/>.</summary>
+public sealed class EfTenantStore<TTenant, TMembership, TDataStore>(
+    TenantStoreDbContext<TTenant, TMembership, TDataStore> db,
+    TimeProvider? clock = null) : IEfTenantStore
+    where TTenant : TenantEntity
+    where TMembership : TenantMembershipEntity
+    where TDataStore : TenantDataStoreEntity
 {
+    /// <inheritdoc />
     public async Task<TenantInfo?> FindByIdAsync(Guid id, CancellationToken ct)
     {
         var entity = await db.Tenants.AsNoTracking()
@@ -18,6 +22,7 @@ public sealed class EfTenantStore(TenantStoreDbContext db, TimeProvider? clock =
         return Map(entity);
     }
 
+    /// <inheritdoc />
     public async Task<TenantInfo?> FindBySlugAsync(string slug, CancellationToken ct)
     {
         var entity = await db.Tenants.AsNoTracking()
@@ -25,6 +30,7 @@ public sealed class EfTenantStore(TenantStoreDbContext db, TimeProvider? clock =
         return Map(entity);
     }
 
+    /// <inheritdoc />
     public async Task<IReadOnlyList<TenantInfo>> ListAsync(CancellationToken ct)
     {
         var entities = await db.Tenants.AsNoTracking()
@@ -36,6 +42,7 @@ public sealed class EfTenantStore(TenantStoreDbContext db, TimeProvider? clock =
             .ToList();
     }
 
+    /// <inheritdoc />
     public async Task<IReadOnlyList<TenantInfo>> ListByGroupAsync(Guid groupId, CancellationToken ct)
     {
         var entities = await db.Tenants.AsNoTracking()

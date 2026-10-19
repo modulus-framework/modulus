@@ -43,6 +43,7 @@
   <!-- ── Platform ────────────────────────────────────────────────── -->
   <Folder Name="/src/platform/">
     <Project Path="src/platform/Modulus.Platform/Modulus.Platform.csproj" />
+    <Project Path="src/platform/Modulus.Secrets.OpenBao/Modulus.Secrets.OpenBao.csproj" />
     <Project Path="src/platform/Modulus.BackgroundJobs.Quartz/Modulus.BackgroundJobs.Quartz.csproj" />
     <Project Path="src/platform/Modulus.Storage.S3/Modulus.Storage.S3.csproj" />
     <Project Path="src/platform/Modulus.Storage.AzureBlobs/Modulus.Storage.AzureBlobs.csproj" />
@@ -109,6 +110,8 @@
     <Project Path="tests/unit/Modulus.Identity.Tests/Modulus.Identity.Tests.csproj" />
     <Project Path="tests/unit/Modulus.MultiTenancy.Tests/Modulus.MultiTenancy.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Platform.Tests/Modulus.Platform.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.Secrets.OpenBao.Tests/Modulus.Secrets.OpenBao.Tests.csproj" />
+    <Project Path="tests/integration/Modulus.Secrets.OpenBao.Integration.Tests/Modulus.Secrets.OpenBao.Integration.Tests.csproj" />
     <Project Path="tests/unit/Modulus.AuditLogging.EntityFrameworkCore.Tests/Modulus.AuditLogging.EntityFrameworkCore.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Authorization.EntityFrameworkCore.Tests/Modulus.Authorization.EntityFrameworkCore.Tests.csproj" />
     <Project Path="tests/unit/Modulus.AspNetCore.Redis.Tests/Modulus.AspNetCore.Redis.Tests.csproj" />

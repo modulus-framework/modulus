@@ -8,7 +8,7 @@ namespace Modulus.Authorization.EntityFrameworkCore;
 /// Segregation-of-duties rules kept as data: durable, tenant-filtered rows an administrator edits at runtime. The rules
 /// declared in code (<c>AddSegregationOfDuties</c>) stay as seeds; <see cref="EfSodPolicy"/> merges both.
 /// </summary>
-public sealed class EfSodRuleStore(IDbContextFactory<AuthorizationStoreDbContext> factory)
+public sealed class EfSodRuleStore(IDbContextFactory<AuthorizationStoreDbContextBase> factory)
 {
     /// <summary>A stored rule with its id and bookkeeping.</summary>
     /// <param name="Id">The row id.</param>

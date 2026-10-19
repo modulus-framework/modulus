@@ -1,6 +1,7 @@
 namespace Modulus.BackgroundJobs.Extensions;
 
 using System.Reflection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 public static class BackgroundJobsExtensions
 {
@@ -13,6 +14,8 @@ public static class BackgroundJobsExtensions
             sp => sp.GetRequiredService<ChannelJobQueue>());
         services.AddHostedService(
             sp => sp.GetRequiredService<ChannelJobQueue>());
+        services.TryAddScoped<IJobInitiatorGuard, AllowAllJobInitiators>();
+        services.TryAddScoped<JobContext>();
 
         foreach (var assembly in assemblies)
         {

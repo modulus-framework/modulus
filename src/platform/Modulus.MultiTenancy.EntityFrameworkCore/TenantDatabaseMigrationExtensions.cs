@@ -3,7 +3,9 @@ namespace Modulus.MultiTenancy.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Modulus.Core.Abstractions;
+using Modulus.Core.Abstractions.Tenancy;
 using Modulus.EntityFrameworkCore.Extensions;
+using Modulus.EntityFrameworkCore.Isolation;
 using Modulus.MultiTenancy;
 
 /// <summary>
@@ -16,6 +18,12 @@ using Modulus.MultiTenancy;
 /// <see cref="ITenantStore.ListAsync"/>; stores without an implementation
 /// return empty and this becomes a host-only run.
 /// </summary>
+/// <remarks>
+/// The host pass runs in host context (<c>Change(null)</c>) so per-tenant
+/// resolvers never see a stale ambient tenant. Each tenant is migrated in
+/// isolation: a failure is logged and collected, the remaining tenants still
+/// run, and an <see cref="AggregateException"/> reports every failure at the end.
+/// </remarks>
 public static class TenantDatabaseMigrationExtensions
 {
     public static async Task MigrateModulusDatabasesForTenantsAsync(
@@ -23,8 +31,16 @@ public static class TenantDatabaseMigrationExtensions
         DatabaseInitializationMode mode = DatabaseInitializationMode.Migrate,
         CancellationToken ct = default)
     {
-        // Host database first (shared tables, tenant store itself).
-        await services.MigrateModulusDatabasesAsync(mode, ct);
+        var logger = services.GetService<ILoggerFactory>()?.CreateLogger("Modulus.Database");
+
+        // Host database first (shared tables, tenant store itself), in host context
+        // so per-tenant connection resolvers do not run without a tenant.
+        await using (var hostScope = services.CreateAsyncScope())
+        {
+            var hostCurrent = hostScope.ServiceProvider.GetService<ICurrentTenant>();
+            using var _ = hostCurrent?.Change(null);
+            await hostScope.ServiceProvider.MigrateModulusDatabasesAsync(mode, ct);
+        }
 
         await using var scope = services.CreateAsyncScope();
         var sp = scope.ServiceProvider;
@@ -39,11 +55,11 @@ public static class TenantDatabaseMigrationExtensions
         }
         catch (Exception ex)
         {
-            var logger = sp.GetService<ILoggerFactory>()?.CreateLogger("Modulus.Database");
             logger?.LogWarning(ex, "Tenant enumeration failed; migrated host database only.");
             return;
         }
 
+        var failures = new List<Exception>();
         foreach (var tenant in tenants)
         {
             ct.ThrowIfCancellationRequested();
@@ -53,8 +69,38 @@ public static class TenantDatabaseMigrationExtensions
             if (current is null)
                 break;
 
-            using var _ = current.Change(tenant);
-            await tenantScope.ServiceProvider.MigrateModulusDatabasesAsync(mode, ct);
+            try
+            {
+                using var _ = current.Change(tenant);
+                // Warm each tenant database first: migrations open their connections synchronously, and a
+                // connection that is not resolved yet is refused (see TenantConnectionInterceptor).
+                await WarmTenantDatabasesAsync(tsp, tenant, ct);
+                await tsp.MigrateModulusDatabasesAsync(mode, ct);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                logger?.LogError(ex, "Migration failed for tenant {TenantSlug} ({TenantId}); continuing with the next tenant.",
+                    tenant.TenantSlug, tenant.TenantId);
+                failures.Add(new InvalidOperationException(
+                    $"Migration failed for tenant '{tenant.TenantSlug}' ({tenant.TenantId}).", ex));
+            }
         }
+
+        if (failures.Count > 0)
+            throw new AggregateException("One or more tenant migrations failed.", failures);
+    }
+
+    /// <summary>
+    /// Resolves the tenant's target for every per-tenant context, so their synchronous opens find it cached. Runs in the
+    /// tenant's scope; a missing or refused target fails that tenant only.
+    /// </summary>
+    private static async Task WarmTenantDatabasesAsync(IServiceProvider sp, TenantInfo tenant, CancellationToken ct)
+    {
+        var resolver = sp.GetService<ITenantDatabaseResolver>();
+        if (resolver is null)
+            return;
+
+        foreach (var route in sp.GetServices<TenantDatabaseRoute>())
+            await resolver.ResolveAsync(tenant.TenantId, route.StoreKey, route.ProviderKey, ct);
     }
 }

@@ -6,6 +6,12 @@ public static class BffDefaults
     /// <summary>The session-id claim a web session carries; it keys the server-side token store.</summary>
     public const string SessionIdClaim = "bff_sid";
 
+    /// <summary>
+    /// When a web session was signed in, in seconds since the Unix epoch. Set once by the cookie's sign-in event and kept
+    /// across sliding renewals, so the session ends <c>SessionLifetime</c> after the sign-in, not after the last request.
+    /// </summary>
+    internal const string SignedInAtClaim = "modulus_signed_in_at";
+
     /// <summary>The header carrying the calling client's name to upstream services.</summary>
     public const string ClientAppHeader = "X-Client-App";
 

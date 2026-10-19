@@ -194,6 +194,101 @@ public sealed class SessionHttpTests : OidcHostTestBase
     }
 }
 
+/// <summary>The absolute lifetime: a session ends that long after sign-in, however busy it is, and a role can shorten it.</summary>
+[Trait("Category", "Unit")]
+public sealed class SessionLifetimeHttpTests : OidcHostTestBase
+{
+    protected override void ConfigureSettings(Dictionary<string, string?> settings)
+    {
+        settings["Identity:Sessions:Enabled"] = "true";
+        settings["Identity:Sessions:MaxLifetimeMinutes"] = "60";
+        settings["Identity:Sessions:MaxLifetimeMinutesByRole:Treasurer"] = "20";
+        settings["Identity:AccessTokenLifetimeMin"] = "1440";
+        settings["Identity:ValidateTokenEntries"] = "false";
+    }
+
+    private async Task<(string Access, string Refresh)> SignInAsync(string user)
+    {
+        var (status, body) = await PasswordAsync(user);
+        status.Should().Be(HttpStatusCode.OK, body.ToString());
+        return (body.GetProperty("access_token").GetString()!, body.GetProperty("refresh_token").GetString()!);
+    }
+
+    private async Task<HttpStatusCode> WhoAmIAsync(string access)
+        => (await CallAsync(HttpMethod.Get, "/whoami", access)).StatusCode;
+
+    [Fact]
+    public async Task A_busy_session_still_ends_at_the_maximum_lifetime_and_its_refresh_stops_too()
+    {
+        await CreateUserAsync("pam", "Planner");
+        var planner = await SignInAsync("pam");
+
+        // Used every ten minutes: never idle, but the lifetime since sign-in runs out after sixty.
+        for (var i = 0; i < 6; i++)
+        {
+            Clock.Advance(TimeSpan.FromMinutes(10));
+            (await WhoAmIAsync(planner.Access)).Should().Be(HttpStatusCode.OK);
+        }
+
+        Clock.Advance(TimeSpan.FromMinutes(10));
+        (await WhoAmIAsync(planner.Access)).Should().Be(HttpStatusCode.Unauthorized);
+        (await TokenAsync(("grant_type", "refresh_token"), ("client_id", SpaClient), ("refresh_token", planner.Refresh))).Status
+            .Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task A_role_can_shorten_the_lifetime()
+    {
+        await CreateUserAsync("tess", "Treasurer");
+        await CreateUserAsync("pam", "Planner");
+        var treasurer = await SignInAsync("tess");
+        var planner = await SignInAsync("pam");
+
+        Clock.Advance(TimeSpan.FromMinutes(10));
+        (await WhoAmIAsync(treasurer.Access)).Should().Be(HttpStatusCode.OK);
+        Clock.Advance(TimeSpan.FromMinutes(11));
+
+        (await WhoAmIAsync(treasurer.Access)).Should().Be(HttpStatusCode.Unauthorized, "the treasurer role allows twenty minutes");
+        (await WhoAmIAsync(planner.Access)).Should().Be(HttpStatusCode.OK, "the planner is still inside the global hour");
+    }
+
+    [Fact]
+    public async Task A_sign_in_cookie_past_the_maximum_lifetime_cannot_mint_a_new_session()
+    {
+        await CreateUserAsync("pam", "Planner");
+        using (var login = NewClient())
+        {
+            // The cookie is issued at sign-in and is not renewed by the check below.
+            var issued = await login.GetAsync("/test/login/pam");
+            issued.StatusCode.Should().Be(HttpStatusCode.OK);
+            _cookie = string.Join("; ", issued.Headers.GetValues("Set-Cookie").Select(c => c.Split(';')[0]));
+        }
+
+        (await AuthorizeAsync()).Headers.Location!.ToString().Should().StartWith(RedirectUri, "the cookie is within the lifetime");
+
+        Clock.Advance(TimeSpan.FromMinutes(61));
+
+        // Past the lifetime the person is sent to sign in again, instead of getting a code for a new session.
+        var expired = await AuthorizeAsync();
+        expired.Headers.Location!.ToString().Should().Contain("/account/login");
+    }
+
+    private string? _cookie;
+
+    private async Task<HttpResponseMessage> AuthorizeAsync()
+    {
+        using var client = NewClient();
+        var verifier = new string('v', 43);
+        var challenge = Convert.ToBase64String(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.ASCII.GetBytes(verifier)))
+            .TrimEnd('=').Replace('+', '-').Replace('/', '_');
+        var query = $"/connect/authorize?client_id={SpaClient}&response_type=code&redirect_uri={Uri.EscapeDataString(RedirectUri)}"
+            + $"&scope=openid&state=xyz&code_challenge={challenge}&code_challenge_method=S256";
+        using var request = new HttpRequestMessage(HttpMethod.Get, query);
+        request.Headers.Add("Cookie", _cookie);
+        return await client.SendAsync(request);
+    }
+}
+
 /// <summary>The other limit behaviour: refuse the new sign-in instead of ending the oldest session.</summary>
 [Trait("Category", "Unit")]
 public sealed class SessionRefuseHttpTests : OidcHostTestBase

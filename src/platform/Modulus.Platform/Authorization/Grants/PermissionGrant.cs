@@ -69,9 +69,17 @@ public sealed record PermissionGrant(
 /// authenticated identity. Roles come from the identity/claims; fine-grained
 /// grants are resolved server-side against these (blueprint §22).
 /// </summary>
+/// <param name="UserId">The principal's user id, or null when there is none.</param>
+/// <param name="Roles">The role names the principal carries.</param>
+/// <param name="AgentRole">
+/// The role of the agent acting for this principal (A9-1), when a person's access is used through an agent. The principal's effective
+/// permissions are then capped by what this role holds: an agent never does more than the person could, and never more than the agent
+/// itself is granted. Null for a person acting directly.
+/// </param>
 public sealed record PrincipalGrantQuery(
     Guid? UserId,
-    IReadOnlyCollection<string> Roles)
+    IReadOnlyCollection<string> Roles,
+    string? AgentRole = null)
 {
     /// <summary>An unauthenticated / empty principal — resolves to no permissions.</summary>
     public static readonly PrincipalGrantQuery Anonymous =

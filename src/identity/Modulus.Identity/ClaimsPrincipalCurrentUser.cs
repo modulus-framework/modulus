@@ -45,21 +45,35 @@ internal sealed class ClaimsPrincipalCurrentUser(
         if (permissionChecker is not null)
             return permissionChecker.HasPermission(permission);
 
+        // An agent token carries no permission it can use without the grant store's cap (A9-1): with no checker it grants nothing.
+        if (Principal?.FindFirst("act") is not null)
+            return false;
+
         // Fallback: honour the "permission" claims on the principal directly
         // (e.g. issued by the Modulus role/permission seeder) so permissions
         // resolve even when no custom IPermissionChecker is registered.
         return Principal?.HasClaim("permission", permission) ?? false;
     }
 
-    public IReadOnlyList<string> Permissions =>
-        permissionChecker is not null
-            ? permissionChecker.GetEffectivePermissions().ToList()
+    public IReadOnlyList<string> Permissions
+    {
+        get
+        {
+            if (permissionChecker is not null)
+                return permissionChecker.GetEffectivePermissions().ToList();
+
             // Fallback: same claim-based reasoning as HasPermission's fallback —
             // resolve from the token when no store-backed checker is registered.
-            : Principal?.FindAll("permission")
+            // An agent token carries none without the checker (A9-1).
+            if (Principal?.FindFirst("act") is not null)
+                return [];
+
+            return Principal?.FindAll("permission")
                 .Select(c => c.Value)
                 .ToList()
-            ?? (IReadOnlyList<string>)[];
+                ?? (IReadOnlyList<string>)[];
+        }
+    }
 }
 
 /// <summary>

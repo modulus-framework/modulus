@@ -33,7 +33,7 @@ public sealed class DelegationAwarePermissionResolver(
         if (delegated.Count == 0)
             return effective;
 
-        return Union(effective, delegated, directAuthority.ResolveDenied(principal));
+        return Bounded(principal, Union(effective, delegated, directAuthority.ResolveDenied(principal)));
     }
 
     /// <inheritdoc />
@@ -53,8 +53,14 @@ public sealed class DelegationAwarePermissionResolver(
         if (delegated.Count == 0)
             return effective;
 
-        return Union(effective, delegated, directAuthority.ResolveDenied(grants));
+        return Bounded(principal, Union(effective, delegated, directAuthority.ResolveDenied(grants)));
     }
+
+    // A delegated permission reaches an agent only within what the agent's role holds (A9-1): the union above is re-capped.
+    private IReadOnlySet<string> Bounded(PrincipalGrantQuery principal, IReadOnlySet<string> permissions)
+        => principal.AgentRole is { } agentRole
+            ? permissions.Intersect(directAuthority.Resolve(new PrincipalGrantQuery(null, [agentRole])), StringComparer.OrdinalIgnoreCase).ToHashSet(StringComparer.OrdinalIgnoreCase)
+            : permissions;
 
     // Deny wins over every source: a permission explicitly denied to the delegate is not restored by a delegation.
     private static IReadOnlySet<string> Union(

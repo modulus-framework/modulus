@@ -6,6 +6,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Modulus.Core.Abstractions;
+using Modulus.Core.Abstractions.Exceptions;
+using Modulus.Core.Abstractions.Tenancy;
 using Modulus.MultiTenancy.Extensions;
 using Modulus.MultiTenancy.Resolvers;
 
@@ -113,6 +115,11 @@ public sealed class TenantMiddleware(
         if (info is not null)
         {
             tenant.Set(info);
+
+            // The tenant's database targets are resolved while the request is still async (see ITenantWarmup). A tenant whose
+            // database cannot be resolved is answered 503 here instead of failing inside the application.
+            if (!await WarmTenantAsync(ctx, info))
+                return;
         }
 
         // Every log line of the request carries the company and the caller (never their name or e-mail).
@@ -123,6 +130,29 @@ public sealed class TenantMiddleware(
         });
 
         await next(ctx);
+    }
+
+    private async Task<bool> WarmTenantAsync(HttpContext ctx, TenantInfo info)
+    {
+        foreach (var warmup in ctx.RequestServices.GetServices<ITenantWarmup>())
+        {
+            try
+            {
+                await warmup.WarmAsync(info, ctx.RequestAborted);
+            }
+            catch (TenantDatabaseUnavailableException ex)
+            {
+                logger.LogWarning(ex, "Rejected request: the database of tenant {Tenant} is unavailable.", info.TenantSlug);
+                ctx.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
+                ctx.Response.ContentType = "application/problem+json";
+                await ctx.Response.WriteAsync(
+                    "{\"title\":\"Service unavailable\",\"status\":503,\"code\":\"SERVICE_UNAVAILABLE\","
+                    + "\"detail\":\"This company's data is temporarily unavailable.\"}", ctx.RequestAborted);
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private static async Task<ClaimsPrincipal?> AuthenticateOtherSchemesAsync(HttpContext ctx)

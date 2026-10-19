@@ -55,7 +55,8 @@ public class ModulusAuthorizeController : Controller
         var needsLogin = !signedIn.Succeeded
             || signedIn.Principal is null
             || request.HasPromptValue(OpenIddictConstants.PromptValues.Login)
-            || MaxAgeExceeded(request, signedIn);
+            || MaxAgeExceeded(request, signedIn, Now(HttpContext))
+            || LifetimeExceeded(HttpContext, signedIn);
 
         if (needsLogin)
         {
@@ -68,7 +69,7 @@ public class ModulusAuthorizeController : Controller
                 IdentityConstants.ApplicationScheme);
         }
 
-        var principal = BuildPrincipal(signedIn.Principal!, request.GetScopes(), signedIn.Properties?.IssuedUtc);
+        var principal = BuildPrincipal(signedIn.Principal!, request.GetScopes(), SignedInAt(signedIn) ?? signedIn.Properties?.IssuedUtc);
         if (principal is null)
             return Rejected(OpenIddictConstants.Errors.AccessDenied, "The signed-in user could not be identified.");
 
@@ -154,17 +155,45 @@ public class ModulusAuthorizeController : Controller
         return request.PathBase + request.Path + QueryString.Create(kept);
     }
 
-    /// <summary>OIDC <c>max_age</c>: a session older than the client accepts has to sign in again.</summary>
-    private static bool MaxAgeExceeded(OpenIddictRequest request, AuthenticateResult signedIn)
+    /// <summary>OIDC <c>max_age</c>: a session older than the client accepts has to sign in again, measured from the sign-in.</summary>
+    private static bool MaxAgeExceeded(OpenIddictRequest request, AuthenticateResult signedIn, DateTimeOffset now)
     {
         if (request.MaxAge is not { } maxAge
-            || signedIn.Properties?.IssuedUtc is not { } issued)
+            || (SignedInAt(signedIn) ?? signedIn.Properties?.IssuedUtc) is not { } since)
         {
             return false;
         }
 
-        return DateTimeOffset.UtcNow - issued > TimeSpan.FromSeconds(maxAge);
+        return now - since > TimeSpan.FromSeconds(maxAge);
     }
+
+    /// <summary>
+    /// The absolute session lifetime applies to the cookie as well: a cookie older than the maximum for the person's roles cannot
+    /// mint new sessions, so the person signs in again. Only when the session registry is on, like the other session limits. A
+    /// cookie without the sign-in claim predates it and is of unknown age, so it signs in again too.
+    /// </summary>
+    private static bool LifetimeExceeded(HttpContext http, AuthenticateResult signedIn)
+    {
+        var options = http.RequestServices.GetService<Microsoft.Extensions.Options.IOptions<SessionOptions>>()?.Value;
+        if (options is not { Enabled: true } || signedIn.Principal is null)
+            return false;
+
+        var roles = signedIn.Principal.FindAll(ClaimTypes.Role).Select(c => c.Value);
+        if (SessionPolicy.Lifetime(options, roles) is not { } lifetime)
+            return false;
+
+        return SignedInAt(signedIn) is not { } since || Now(http) - since > lifetime;
+    }
+
+    /// <summary>When the Identity cookie was first issued (see <see cref="TokenPrincipalFactory.SignedInAtClaim"/>), or null for a cookie that predates the claim.</summary>
+    private static DateTimeOffset? SignedInAt(AuthenticateResult signedIn)
+        => signedIn.Principal?.FindFirstValue(TokenPrincipalFactory.SignedInAtClaim) is { Length: > 0 } value
+           && long.TryParse(value, System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var seconds)
+            ? DateTimeOffset.FromUnixTimeSeconds(seconds)
+            : null;
+
+    private static DateTimeOffset Now(HttpContext http)
+        => http.RequestServices.GetService<TimeProvider>()?.GetUtcNow() ?? DateTimeOffset.UtcNow;
 
     private ForbidResult Rejected(string error, string description)
         => Forbid(

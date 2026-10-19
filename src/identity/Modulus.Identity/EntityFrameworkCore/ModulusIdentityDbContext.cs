@@ -40,6 +40,9 @@ public class ModulusIdentityDbContext<TUser, TRole>(
     /// <summary>SAML sign-ins waiting for the identity provider's answer.</summary>
     public DbSet<ModulusSamlRequest> SamlRequests => Set<ModulusSamlRequest>();
 
+    /// <summary>The lifecycle history of the accounts (append-only; see <see cref="ModulusAccountTransition"/>).</summary>
+    public DbSet<ModulusAccountTransition> AccountTransitions => Set<ModulusAccountTransition>();
+
     /// <summary>
     /// The most password hashes kept per account: the largest <c>Identity:Password:HistoryCount</c> allowed. Older ones
     /// are removed when the account is saved.
@@ -143,6 +146,11 @@ public class ModulusIdentityDbContext<TUser, TRole>(
             // and not every provider ignores nulls in a unique index; ShopFloorAccountService checks uniqueness.
             b.HasIndex(u => new { u.TenantId, u.EmployeeCode });
             b.HasIndex(u => new { u.TenantId, u.ExternalId });
+            // Existing rows read as the defaults: a person, an active account, no suspension.
+            b.Property(u => u.PrincipalKind).HasMaxLength(32).HasDefaultValue(PrincipalKinds.Person);
+            b.Property(u => u.Lifecycle).HasConversion<string>().HasMaxLength(32).HasDefaultValue(AccountLifecycle.Active);
+            b.Property(u => u.SuspensionReason).HasMaxLength(64);
+            b.Property(u => u.SuspensionNote).HasMaxLength(512);
             // TenantId is nullable (a host-level account belongs to no
             // tenant), so this can't use IHasTenantId / ModuleDbContext's
             // filter (which assumes a non-nullable TenantId) as-is. Same
@@ -175,6 +183,17 @@ public class ModulusIdentityDbContext<TUser, TRole>(
              .WithMany()
              .HasForeignKey(h => h.UserId)
              .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // Lifecycle history: append-only, deliberately without a foreign key so it outlives the account.
+        builder.Entity<ModulusAccountTransition>(b =>
+        {
+            b.ToTable("ModulusAccountTransitions");
+            b.HasKey(t => t.Id);
+            b.Property(t => t.FromState).HasConversion<string>().HasMaxLength(32);
+            b.Property(t => t.ToState).HasConversion<string>().HasMaxLength(32);
+            b.Property(t => t.Reason).HasMaxLength(512);
+            b.HasIndex(t => new { t.UserId, t.Id });
         });
 
         // Passkeys: removed with their account; the credential id is unique across the database.

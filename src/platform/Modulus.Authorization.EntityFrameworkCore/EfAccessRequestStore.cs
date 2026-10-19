@@ -53,7 +53,7 @@ public sealed record AccessRequest(
     string? Note = null, DateTimeOffset? AccessEndsAt = null, Guid? ReviewedBy = null, DateTimeOffset? ReviewedAt = null);
 
 /// <summary>Access requests and break-glass activations of the current company (tenant-filtered table <c>ModulusAccessRequests</c>).</summary>
-public sealed class EfAccessRequestStore(IDbContextFactory<AuthorizationStoreDbContext> factory)
+public sealed class EfAccessRequestStore(IDbContextFactory<AuthorizationStoreDbContextBase> factory)
 {
     /// <summary>Records a new request or activation.</summary>
     public async Task<AccessRequest> CreateAsync(AccessRequest request, CancellationToken ct = default)

@@ -751,3 +751,51 @@ static Modulus.Authorization.Management.ApprovalCommentRequest.operator ==(Modul
 static Modulus.Authorization.Management.ApprovalStepModel.operator !=(Modulus.Authorization.Management.ApprovalStepModel? left, Modulus.Authorization.Management.ApprovalStepModel? right) -> bool
 static Modulus.Authorization.Management.ApprovalStepModel.operator ==(Modulus.Authorization.Management.ApprovalStepModel? left, Modulus.Authorization.Management.ApprovalStepModel? right) -> bool
 static Modulus.Authorization.Management.AuthorizationManagementExtensions.MapModulusApprovalWorkflow(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! prefix = "/authorization/approvals") -> Microsoft.AspNetCore.Routing.RouteGroupBuilder!
+Modulus.Authorization.Management.AssignmentByCodeRequest
+Modulus.Authorization.Management.AssignmentByCodeRequest.<Clone>$() -> Modulus.Authorization.Management.AssignmentByCodeRequest!
+Modulus.Authorization.Management.AssignmentByCodeRequest.AssignmentByCodeRequest(System.Guid UserId, string! AssignmentType, string? Code, System.DateTimeOffset? ValidFrom, System.DateTimeOffset? ValidUntil) -> void
+Modulus.Authorization.Management.AssignmentByCodeRequest.AssignmentType.get -> string!
+Modulus.Authorization.Management.AssignmentByCodeRequest.AssignmentType.init -> void
+Modulus.Authorization.Management.AssignmentByCodeRequest.Code.get -> string?
+Modulus.Authorization.Management.AssignmentByCodeRequest.Code.init -> void
+Modulus.Authorization.Management.AssignmentByCodeRequest.Deconstruct(out System.Guid UserId, out string! AssignmentType, out string? Code, out System.DateTimeOffset? ValidFrom, out System.DateTimeOffset? ValidUntil) -> void
+Modulus.Authorization.Management.AssignmentByCodeRequest.Equals(Modulus.Authorization.Management.AssignmentByCodeRequest? other) -> bool
+Modulus.Authorization.Management.AssignmentByCodeRequest.UserId.get -> System.Guid
+Modulus.Authorization.Management.AssignmentByCodeRequest.UserId.init -> void
+Modulus.Authorization.Management.AssignmentByCodeRequest.ValidFrom.get -> System.DateTimeOffset?
+Modulus.Authorization.Management.AssignmentByCodeRequest.ValidFrom.init -> void
+Modulus.Authorization.Management.AssignmentByCodeRequest.ValidUntil.get -> System.DateTimeOffset?
+Modulus.Authorization.Management.AssignmentByCodeRequest.ValidUntil.init -> void
+Modulus.Authorization.Management.DimensionValueWriteRequest
+Modulus.Authorization.Management.DimensionValueWriteRequest.<Clone>$() -> Modulus.Authorization.Management.DimensionValueWriteRequest!
+Modulus.Authorization.Management.DimensionValueWriteRequest.Code.get -> string?
+Modulus.Authorization.Management.DimensionValueWriteRequest.Code.init -> void
+Modulus.Authorization.Management.DimensionValueWriteRequest.Deconstruct(out string? Code, out string? Label) -> void
+Modulus.Authorization.Management.DimensionValueWriteRequest.DimensionValueWriteRequest(string? Code, string? Label) -> void
+Modulus.Authorization.Management.DimensionValueWriteRequest.Equals(Modulus.Authorization.Management.DimensionValueWriteRequest? other) -> bool
+Modulus.Authorization.Management.DimensionValueWriteRequest.Label.get -> string?
+Modulus.Authorization.Management.DimensionValueWriteRequest.Label.init -> void
+override Modulus.Authorization.Management.AssignmentByCodeRequest.Equals(object? obj) -> bool
+override Modulus.Authorization.Management.AssignmentByCodeRequest.GetHashCode() -> int
+override Modulus.Authorization.Management.AssignmentByCodeRequest.ToString() -> string!
+override Modulus.Authorization.Management.DimensionValueWriteRequest.Equals(object? obj) -> bool
+override Modulus.Authorization.Management.DimensionValueWriteRequest.GetHashCode() -> int
+override Modulus.Authorization.Management.DimensionValueWriteRequest.ToString() -> string!
+static Modulus.Authorization.Management.AssignmentByCodeRequest.operator !=(Modulus.Authorization.Management.AssignmentByCodeRequest? left, Modulus.Authorization.Management.AssignmentByCodeRequest? right) -> bool
+static Modulus.Authorization.Management.AssignmentByCodeRequest.operator ==(Modulus.Authorization.Management.AssignmentByCodeRequest? left, Modulus.Authorization.Management.AssignmentByCodeRequest? right) -> bool
+static Modulus.Authorization.Management.DimensionValueWriteRequest.operator !=(Modulus.Authorization.Management.DimensionValueWriteRequest? left, Modulus.Authorization.Management.DimensionValueWriteRequest? right) -> bool
+static Modulus.Authorization.Management.DimensionValueWriteRequest.operator ==(Modulus.Authorization.Management.DimensionValueWriteRequest? left, Modulus.Authorization.Management.DimensionValueWriteRequest? right) -> bool
+Modulus.Authorization.Management.DimensionParentWriteRequest
+Modulus.Authorization.Management.DimensionParentWriteRequest.<Clone>$() -> Modulus.Authorization.Management.DimensionParentWriteRequest!
+Modulus.Authorization.Management.DimensionParentWriteRequest.Deconstruct(out string? ParentDimension, out string? ParentCode) -> void
+Modulus.Authorization.Management.DimensionParentWriteRequest.DimensionParentWriteRequest(string? ParentDimension, string? ParentCode) -> void
+Modulus.Authorization.Management.DimensionParentWriteRequest.Equals(Modulus.Authorization.Management.DimensionParentWriteRequest? other) -> bool
+Modulus.Authorization.Management.DimensionParentWriteRequest.ParentCode.get -> string?
+Modulus.Authorization.Management.DimensionParentWriteRequest.ParentCode.init -> void
+Modulus.Authorization.Management.DimensionParentWriteRequest.ParentDimension.get -> string?
+Modulus.Authorization.Management.DimensionParentWriteRequest.ParentDimension.init -> void
+override Modulus.Authorization.Management.DimensionParentWriteRequest.Equals(object? obj) -> bool
+override Modulus.Authorization.Management.DimensionParentWriteRequest.GetHashCode() -> int
+override Modulus.Authorization.Management.DimensionParentWriteRequest.ToString() -> string!
+static Modulus.Authorization.Management.DimensionParentWriteRequest.operator !=(Modulus.Authorization.Management.DimensionParentWriteRequest? left, Modulus.Authorization.Management.DimensionParentWriteRequest? right) -> bool
+static Modulus.Authorization.Management.DimensionParentWriteRequest.operator ==(Modulus.Authorization.Management.DimensionParentWriteRequest? left, Modulus.Authorization.Management.DimensionParentWriteRequest? right) -> bool

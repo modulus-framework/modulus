@@ -42,7 +42,7 @@ public sealed class AuthorizationAuditRelayProcessor(
         var ssp = scope.ServiceProvider;
         var options = opts.Value;
 
-        var factory = ssp.GetRequiredService<IDbContextFactory<AuthorizationStoreDbContext>>();
+        var factory = ssp.GetRequiredService<IDbContextFactory<AuthorizationStoreDbContextBase>>();
         var dispatcher = ssp.GetRequiredService<IOutboxDispatcher>();
         await using var db = await factory.CreateDbContextAsync(ct);
 

@@ -73,6 +73,7 @@ public static class GrpcExceptionMapper
             ModulusErrorKind.FeatureDisabled => (Build(StatusCode.NotFound, error.Title, error.Code,
                 new Dictionary<string, string> { ["feature"] = ((FeatureDisabledException)exception).Feature }), true),
             ModulusErrorKind.Cancelled => (Build(StatusCode.Cancelled, "The call was cancelled", error.Code), true),
+            ModulusErrorKind.Unavailable => (Build(StatusCode.Unavailable, error.Title, error.Code), false),
             _ => (Build(StatusCode.Internal,
                 includeExceptionDetails ? exception.ToString() : error.Title, error.Code), false),
         };

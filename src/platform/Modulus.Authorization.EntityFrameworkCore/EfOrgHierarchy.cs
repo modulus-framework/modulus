@@ -27,11 +27,15 @@ namespace Modulus.Authorization.EntityFrameworkCore;
 /// window is acceptable; call <see cref="Invalidate"/> to force an
 /// immediate reload of the current tenant's entry.
 /// </summary>
-public sealed class EfOrgHierarchy(
-    IDbContextFactory<AuthorizationStoreDbContext> factory,
+public class EfOrgHierarchy<TOrgUnit, TOrgUnitParent, TOrgUnitProfile, TCompanyProfile>(
+    IDbContextFactory<AuthorizationStoreDbContext<TOrgUnit, TOrgUnitParent, TOrgUnitProfile, TCompanyProfile>> factory,
     TimeProvider time,
     ICurrentTenant currentTenant)
-    : IOrgHierarchy
+    : IOrgHierarchy, IOrgUnitAdministration
+    where TOrgUnit : OrgUnitRow, new()
+    where TOrgUnitParent : OrgUnitParentRow, new()
+    where TOrgUnitProfile : OrgUnitProfileRow, new()
+    where TCompanyProfile : CompanyProfileRow, new()
 {
     private static readonly InMemoryOrgHierarchy Empty = new();
 
@@ -71,7 +75,7 @@ public sealed class EfOrgHierarchy(
                 .Where(e => e.ChildId == id && e.ParentId == parent)
                 .AnyAsync(ct);
             if (!edgeExists)
-                db.OrgUnitParents.Add(new OrgUnitParentRow { ChildId = id, ParentId = parent });
+                db.OrgUnitParents.Add(new TOrgUnitParent { ChildId = id, ParentId = parent });
         }
 
         await db.SaveChangesAsync(ct);
@@ -103,7 +107,7 @@ public sealed class EfOrgHierarchy(
             foreach (var parent in newParents)
             {
                 await EnsureUnitAsync(db, parent, ct);
-                db.OrgUnitParents.Add(new OrgUnitParentRow { ChildId = id, ParentId = parent });
+                db.OrgUnitParents.Add(new TOrgUnitParent { ChildId = id, ParentId = parent });
             }
 
             await db.SaveChangesAsync(ct);
@@ -183,10 +187,17 @@ public sealed class EfOrgHierarchy(
     }
 
     private static async Task EnsureUnitAsync(
-        AuthorizationStoreDbContext db, Guid id, CancellationToken ct)
+        AuthorizationStoreDbContext<TOrgUnit, TOrgUnitParent, TOrgUnitProfile, TCompanyProfile> db, Guid id, CancellationToken ct)
     {
         var exists = await db.OrgUnits.Where(u => u.Id == id).AnyAsync(ct);
         if (!exists)
-            db.OrgUnits.Add(new OrgUnitRow { Id = id });
+            db.OrgUnits.Add(new TOrgUnit { Id = id });
     }
 }
+
+/// <summary>The organizational hierarchy over the framework's own organization entities.</summary>
+public sealed class EfOrgHierarchy(
+    IDbContextFactory<AuthorizationStoreDbContext<OrgUnitRow, OrgUnitParentRow, OrgUnitProfileRow, CompanyProfileRow>> factory,
+    TimeProvider time,
+    ICurrentTenant currentTenant)
+    : EfOrgHierarchy<OrgUnitRow, OrgUnitParentRow, OrgUnitProfileRow, CompanyProfileRow>(factory, time, currentTenant);

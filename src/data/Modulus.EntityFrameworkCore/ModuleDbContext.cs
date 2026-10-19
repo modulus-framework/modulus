@@ -9,6 +9,7 @@ using Modulus.Core.Abstractions;
 using Modulus.Core.Abstractions.DataProtection;
 using Modulus.Core.Abstractions.Domain;
 using Modulus.Core.Abstractions.Entities;
+using Modulus.Core.Abstractions.Exceptions;
 using Modulus.Core.Null;
 using Modulus.EntityFrameworkCore.Abstractions;
 using Modulus.EntityFrameworkCore.ChangeHistory;
@@ -104,6 +105,7 @@ public abstract class ModuleDbContext(
         try
         {
             ApplyAuditFields();
+            EnsureExtensionFieldsDeclared();
 
             // After ApplyAuditFields: soft-deletes have been converted Deleted →
             // Modified by then, so a soft-delete rotates the stamp like any other
@@ -462,6 +464,38 @@ public abstract class ModuleDbContext(
             if (entry.State is EntityState.Added or EntityState.Modified)
                 entry.Entity.ConcurrencyStamp = Guid.NewGuid().ToString("N");
         }
+    }
+
+    /// <summary>
+    /// Refuses a save that stores an extension value under a key no catalog declares (A7-3). Only a key whose value is new
+    /// or changed is checked, so existing values on an entity keep saving after an unrelated edit. The error names the key,
+    /// never the value.
+    /// </summary>
+    private void EnsureExtensionFieldsDeclared()
+    {
+        var catalog = sp.GetService<IExtensionFieldCatalog>() ?? NullExtensionFieldCatalog.Instance;
+        List<string>? undeclared = null;
+
+        foreach (var entry in ChangeTracker.Entries<IHasExtraProperties>())
+        {
+            if (entry.State is not (EntityState.Added or EntityState.Modified))
+                continue;
+
+            var original = entry.State == EntityState.Added
+                ? null
+                : entry.Property(nameof(IHasExtraProperties.ExtraProperties)).OriginalValue as Dictionary<string, string?>;
+            foreach (var (name, value) in entry.Entity.ExtraProperties)
+            {
+                if (original is not null && original.TryGetValue(name, out var before) && before == value)
+                    continue;
+
+                if (catalog.Find(entry.Metadata.ClrType, name) is null)
+                    (undeclared ??= []).Add($"{nameof(IHasExtraProperties.ExtraProperties)}: '{name}' is not a declared extension field");
+            }
+        }
+
+        if (undeclared is not null)
+            throw new ValidationException(undeclared);
     }
 
     private void ApplyAuditFields()

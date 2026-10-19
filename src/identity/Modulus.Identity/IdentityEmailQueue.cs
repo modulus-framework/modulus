@@ -72,7 +72,7 @@ internal sealed class IdentityEmailQueue<TUser>(IServiceScopeFactory scopes, ILo
 
                 var users = services.GetRequiredService<UserManager<TUser>>();
                 var user = await users.FindByIdAsync(userId.ToString());
-                if (user is null || !user.IsActive || string.IsNullOrWhiteSpace(user.Email))
+                if (user is null || !user.MayStartNewAccess() || string.IsNullOrWhiteSpace(user.Email))
                     continue;
 
                 // The stored address is the only destination: the token goes where the account's owner registered.

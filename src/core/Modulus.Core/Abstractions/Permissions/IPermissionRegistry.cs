@@ -16,6 +16,23 @@ public enum PermissionSensitivity
     Critical = 2,
 }
 
+/// <summary>
+/// Where a permission is in its life. <see cref="Active"/> is the normal state. <see cref="Deprecated"/> keeps the
+/// permission working for the grants that already hold it, but refuses new grants (move to <see cref="PermissionDefinition.ReplacedBy"/>).
+/// <see cref="Retired"/> denies every holder, whatever the grant says.
+/// </summary>
+public enum PermissionLifecycle
+{
+    /// <summary>Assignable and effective.</summary>
+    Active = 0,
+
+    /// <summary>Effective for existing grants; no new grant may name it.</summary>
+    Deprecated = 1,
+
+    /// <summary>Denied to everyone. The declaration stays, so the denial is explicit rather than "unknown".</summary>
+    Retired = 2,
+}
+
 /// <summary>A declared permission and its (optional) prerequisites.</summary>
 public sealed record PermissionDefinition(
     string Permission,
@@ -24,6 +41,14 @@ public sealed record PermissionDefinition(
 {
     /// <summary>The permission's sensitivity level.</summary>
     public PermissionSensitivity Sensitivity { get; init; }
+
+    /// <summary>The lifecycle state (<see cref="PermissionLifecycle.Active"/> unless declared otherwise).</summary>
+    public PermissionLifecycle Lifecycle { get; init; }
+
+    /// <summary>
+    /// The permission that replaces this one. It is never granted automatically: an administrator grants the replacement explicitly.
+    /// </summary>
+    public string? ReplacedBy { get; init; }
 }
 
 /// <summary>
@@ -41,6 +66,15 @@ public interface IPermissionRegistry
     /// </summary>
     void Add(string permission, string description, string[]? requires, PermissionSensitivity sensitivity)
         => Add(permission, description, requires);
+
+    /// <summary>
+    /// Declares a permission with a sensitivity and a lifecycle state. Declaring the same permission again with a different
+    /// sensitivity, lifecycle or replacement is an error: the catalog must not change meaning silently. A registry that does
+    /// not support lifecycle refuses the call rather than ignore a retirement.
+    /// </summary>
+    void Add(string permission, string description, string[]? requires, PermissionSensitivity sensitivity,
+        PermissionLifecycle lifecycle, string? replacedBy)
+        => throw new NotSupportedException("This permission registry does not support permission lifecycle.");
 
     IReadOnlyList<PermissionDefinition> GetAll();
     IReadOnlyList<PermissionDefinition> GetByModule(string moduleName);

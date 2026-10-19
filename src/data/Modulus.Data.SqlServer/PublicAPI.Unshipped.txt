@@ -15,3 +15,5 @@ static Modulus.Data.SqlServer.SqlServerRowLevelSecurity.EnsureAsync(Microsoft.En
 static Modulus.Data.SqlServer.SqlServerRowLevelSecurity.FunctionStatements() -> System.Collections.Generic.IReadOnlyList<string!>!
 static Modulus.Data.SqlServer.SqlServerRowLevelSecurity.Interceptor.get -> Modulus.EntityFrameworkCore.Isolation.TenantSessionInterceptor!
 static Modulus.Data.SqlServer.SqlServerRowLevelSecurity.Statements(Microsoft.EntityFrameworkCore.Metadata.IModel! model) -> System.Collections.Generic.IReadOnlyList<string!>!
+Modulus.Data.SqlServer.SqlServerTenantDatabaseExtensions
+static Modulus.Data.SqlServer.SqlServerTenantDatabaseExtensions.AddSqlServerPerTenantDatabase<TContext>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, string! storeKey, string! hostConnectionString) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!

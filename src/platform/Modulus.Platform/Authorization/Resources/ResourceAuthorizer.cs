@@ -1,6 +1,7 @@
 namespace Modulus.Authorization.Resources;
 
 using Modulus.Core.Abstractions;
+using Modulus.Core.Abstractions.DataQuality;
 
 /// <summary>
 /// The enforcement point for instance-level (resource/workflow) authorization: call it
@@ -87,7 +88,9 @@ public sealed class ResourceAuthorizer(
     IResourcePolicyRegistry registry,
     Scopes.IScopeEnforcer? scopes = null,
     Approval.IApprovalAuthorityEvaluator? approvals = null,
-    IStepUpGate? stepUp = null) : IResourceAuthorizer
+    IStepUpGate? stepUp = null,
+    IDataQualityFindingSink? findings = null,
+    ICurrentTenant? tenant = null) : IResourceAuthorizer
 {
     /// <summary>
     /// Explains the decision for <paramref name="action"/> on <paramref name="resource"/>: the decision plus which
@@ -122,7 +125,22 @@ public sealed class ResourceAuthorizer(
                 AccessReasonCodes.MetadataMissing,
                 $"no resource policy is registered for '{resource.GetType().Name}'"));
 
-        return Task.FromResult(policy.Evaluate(BuildRequest(resource, action)));
+        var request = BuildRequest(resource, action);
+        var decision = policy.Evaluate(request);
+
+        // A refusal caused by a missing record attribute is a data-quality problem as well as a denial: the record cannot be
+        // authorized until someone fills the attribute in. The finding carries names and the record id, never the values.
+        if (decision.Code == AccessReasonCodes.MissingAttribute)
+        {
+            findings?.Record(new DataQualityFinding(
+                tenant?.TenantId,
+                resource.GetType().Name,
+                resource.GetType().GetProperty("Id")?.GetValue(resource)?.ToString(),
+                action,
+                [.. request.MissingAttributes.Order(StringComparer.Ordinal)]));
+        }
+
+        return Task.FromResult(decision);
     }
 
     private ResourceRequest BuildRequest(object resource, string action)

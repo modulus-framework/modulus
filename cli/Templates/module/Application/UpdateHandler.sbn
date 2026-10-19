@@ -1,3 +1,6 @@
+using Modulus.Authorization.Dimensions;
+using Modulus.Authorization.Fields;
+using Modulus.Authorization.Resources;
 using Modulus.Events.Abstractions;
 using Modulus.Mediator.Abstractions;
 using Modulus.Core.Abstractions.Entities;
@@ -10,7 +13,10 @@ namespace {{ module_namespace }}.Application;
 public sealed class Update{{ entity_name }}Handler(
     I{{ entity_name }}Repository repo,
     IUnitOfWork unitOfWork,
-    IModuleBus bus)
+    IModuleBus bus,
+    IResourceScopeGuard? scopeGuard = null,
+    IFieldAuthorizer? fieldAuthorizer = null,
+    IDimensionValueRegistry? dimensions = null)
     : ICommandHandler<Update{{ entity_name }}Command, Update{{ entity_name }}Result>
 {
     public async Task<Update{{ entity_name }}Result> HandleAsync(
@@ -24,6 +30,21 @@ public sealed class Update{{ entity_name }}Handler(
         entity.Name = command.Name;
         if (command.ExtraProperties is not null)
             entity.SetExtraProperties(command.ExtraProperties);
+
+        // Only the fields this command sets are checked against the caller's clearance.
+        if (fieldAuthorizer is not null)
+        {
+            string[] fields = CommandFields.SetBy(command);
+            await fieldAuthorizer.EnsureWriteAllowedAsync(typeof({{ entity_name }}), fields, ct);
+        }
+
+        // Every [Dimension] id the record carries must be registered for the caller's company.
+        if (dimensions is not null)
+            await dimensions.EnsureRecordDimensionsAsync(entity, ct);
+
+        // Checked on the record as it will be saved, so a change that moves it outside the caller's scope is refused.
+        if (scopeGuard is not null)
+            await scopeGuard.EnsureResultingScopeAsync(entity, "edit", {{ if required_permission }}"{{ required_permission }}"{{ else }}null{{ end }}, ct);
 
         await repo.UpdateAsync(entity, ct);
         await unitOfWork.CommitAsync(ct);

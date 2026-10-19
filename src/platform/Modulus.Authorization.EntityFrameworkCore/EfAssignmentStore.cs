@@ -7,7 +7,7 @@ namespace Modulus.Authorization.EntityFrameworkCore;
 /// EF Core-backed <see cref="IAssignmentStore"/>: user-to-object assignments as durable, tenant-filtered, effective-dated rows,
 /// so a change takes effect on the next request without a role change or a restart.
 /// </summary>
-public sealed class EfAssignmentStore(IDbContextFactory<AuthorizationStoreDbContext> factory) : IAssignmentStore
+public sealed class EfAssignmentStore(IDbContextFactory<AuthorizationStoreDbContextBase> factory) : IAssignmentStore
 {
     /// <inheritdoc />
     public IReadOnlySet<Guid> TargetsFor(Guid userId, string assignmentType, DateTimeOffset now)

@@ -9,12 +9,14 @@ public static class OrgUnitKinds
     public const string Branch = "branch";
 
     /// <summary>A factory or plant.</summary>
+    [Obsolete("Industry kinds belong to the application. Use the kind string the application defines (it is open vocabulary).")]
     public const string Factory = "factory";
 
     /// <summary>An office.</summary>
     public const string Office = "office";
 
     /// <summary>A warehouse or store.</summary>
+    [Obsolete("Industry kinds belong to the application. Use the kind string the application defines (it is open vocabulary).")]
     public const string Warehouse = "warehouse";
 
     /// <summary>A department.</summary>
@@ -51,7 +53,11 @@ public sealed record CompanyProfile(
     string? Country = null, string? Currency = null, int FiscalYearStartMonth = 1, string? TimeZone = null, string? Language = null);
 
 /// <summary>The company's profile and its org units' profiles, in the authorization store (tenant-filtered).</summary>
-public sealed class EfOrganizationProfileStore(IDbContextFactory<AuthorizationStoreDbContext> factory)
+public class EfOrganizationProfileStore<TOrgUnit, TOrgUnitParent, TOrgUnitProfile, TCompanyProfile>(IDbContextFactory<AuthorizationStoreDbContext<TOrgUnit, TOrgUnitParent, TOrgUnitProfile, TCompanyProfile>> factory)
+    where TOrgUnit : OrgUnitRow, new()
+    where TOrgUnitParent : OrgUnitParentRow, new()
+    where TOrgUnitProfile : OrgUnitProfileRow, new()
+    where TCompanyProfile : CompanyProfileRow, new()
 {
     /// <summary>The company profile of the current company; null until one is saved.</summary>
     public async Task<CompanyProfile?> GetCompanyAsync(CancellationToken ct = default)
@@ -76,7 +82,7 @@ public sealed class EfOrganizationProfileStore(IDbContextFactory<AuthorizationSt
         var row = await db.CompanyProfiles.SingleOrDefaultAsync(ct);
         if (row is null)
         {
-            row = new CompanyProfileRow();
+            row = new TCompanyProfile();
             db.CompanyProfiles.Add(row);
         }
 
@@ -130,7 +136,7 @@ public sealed class EfOrganizationProfileStore(IDbContextFactory<AuthorizationSt
         var row = await db.OrgUnitProfiles.SingleOrDefaultAsync(p => p.UnitId == profile.UnitId, ct);
         if (row is null)
         {
-            row = new OrgUnitProfileRow { UnitId = profile.UnitId };
+            row = new TOrgUnitProfile { UnitId = profile.UnitId };
             db.OrgUnitProfiles.Add(row);
         }
 
@@ -161,5 +167,9 @@ public sealed class EfOrganizationProfileStore(IDbContextFactory<AuthorizationSt
 
     private static string? Clean(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
-    private static OrgUnitProfile ToProfile(OrgUnitProfileRow r) => new(r.UnitId, r.Code, r.Name, r.Kind, r.IsClosed, r.ManagerUserId, r.ClosedAt);
+    private static OrgUnitProfile ToProfile(TOrgUnitProfile r) => new(r.UnitId, r.Code, r.Name, r.Kind, r.IsClosed, r.ManagerUserId, r.ClosedAt);
 }
+
+/// <summary>The organization profile store over the framework's own organization entities.</summary>
+public sealed class EfOrganizationProfileStore(IDbContextFactory<AuthorizationStoreDbContext<OrgUnitRow, OrgUnitParentRow, OrgUnitProfileRow, CompanyProfileRow>> factory)
+    : EfOrganizationProfileStore<OrgUnitRow, OrgUnitParentRow, OrgUnitProfileRow, CompanyProfileRow>(factory);

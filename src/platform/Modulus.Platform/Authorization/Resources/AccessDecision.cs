@@ -61,6 +61,12 @@ public static class AccessReasonCodes
     /// <summary>The record's workflow state forbids the action.</summary>
     public const string InvalidState = "INVALID_STATE";
 
+    /// <summary>
+    /// The decision depends on an attribute the record does not have (for example its org unit or owner), and no rule grants
+    /// the action. Denied, and reported as a data-quality finding, rather than treated as a plain refusal.
+    /// </summary>
+    public const string MissingAttribute = "MISSING_ATTRIBUTE";
+
     /// <summary>No policy rule grants the action, or a policy deny applies.</summary>
     public const string PolicyViolation = "POLICY_VIOLATION";
 

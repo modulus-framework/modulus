@@ -16,14 +16,14 @@ namespace Modulus.Authorization.EntityFrameworkCore;
 /// or the module migration loop — its schema is initialised separately via
 /// <c>MigrateAuthorizationStoreAsync</c>.
 /// </summary>
-public class AuthorizationStoreDbContext(
-    DbContextOptions<AuthorizationStoreDbContext> options,
+public abstract class AuthorizationStoreDbContextBase(
+    DbContextOptions options,
     ICurrentTenant currentTenant)
     : DbContext(options)
 {
+    /// <summary>The ambient tenant the query filters read. Organization types add their filters through it.</summary>
+    protected ICurrentTenant CurrentTenant => currentTenant;
     internal DbSet<PermissionGrantRow> Grants => Set<PermissionGrantRow>();
-    internal DbSet<OrgUnitRow> OrgUnits => Set<OrgUnitRow>();
-    internal DbSet<OrgUnitParentRow> OrgUnitParents => Set<OrgUnitParentRow>();
     internal DbSet<OrgPlacementRow> OrgPlacements => Set<OrgPlacementRow>();
     internal DbSet<PlanFeatureRow> PlanFeatures => Set<PlanFeatureRow>();
     internal DbSet<TenantPlanRow> TenantPlans => Set<TenantPlanRow>();
@@ -39,10 +39,10 @@ public class AuthorizationStoreDbContext(
     internal DbSet<PositionRow> Positions => Set<PositionRow>();
     internal DbSet<PartyLinkRow> PartyLinks => Set<PartyLinkRow>();
     internal DbSet<PartyCeilingRow> PartyCeilings => Set<PartyCeilingRow>();
+    internal DbSet<DimensionValueRow> DimensionValues => Set<DimensionValueRow>();
     internal DbSet<PositionAssignmentRow> PositionAssignments => Set<PositionAssignmentRow>();
     internal DbSet<AccessRequestRow> AccessRequests => Set<AccessRequestRow>();
-    internal DbSet<OrgUnitProfileRow> OrgUnitProfiles => Set<OrgUnitProfileRow>();
-    internal DbSet<CompanyProfileRow> CompanyProfiles => Set<CompanyProfileRow>();
+    internal DbSet<PermissionCatalogRow> PermissionCatalog => Set<PermissionCatalogRow>();
 
     /// <summary>
     /// Durable audit-event outbox (auth blueprint §5.14/§16), written by
@@ -57,6 +57,7 @@ public class AuthorizationStoreDbContext(
 
     internal DbSet<RecertificationCampaignRow> RecertificationCampaigns => Set<RecertificationCampaignRow>();
     internal DbSet<RecertificationItemRow> RecertificationItems => Set<RecertificationItemRow>();
+    internal DbSet<DataQualityFindingRow> DataQualityFindings => Set<DataQualityFindingRow>();
 
     // ── SaveChanges sync override ──────────────────────────────────
     // Intentionally not implemented: the tenant auto-stamp below only runs
@@ -113,16 +114,6 @@ public class AuthorizationStoreDbContext(
         grant.Property(g => g.Holder).HasMaxLength(256);
         grant.Property(g => g.Permission).HasMaxLength(256);
 
-        var unit = modelBuilder.Entity<OrgUnitRow>();
-        unit.ToTable("ModulusOrgUnits");
-        unit.HasKey(u => u.Id);
-        unit.HasIndex(u => u.TenantId);
-
-        var edge = modelBuilder.Entity<OrgUnitParentRow>();
-        edge.ToTable("ModulusOrgUnitParents");
-        edge.HasKey(e => new { e.TenantId, e.ChildId, e.ParentId });
-
-        // One placement per (tenant, user, unit): re-placing updates the
         // traversal mode.
         var placement = modelBuilder.Entity<OrgPlacementRow>();
         placement.ToTable("ModulusOrgPlacements");
@@ -225,6 +216,24 @@ public class AuthorizationStoreDbContext(
         partyCeiling.Property(p => p.Kind).HasMaxLength(64);
         partyCeiling.Property(p => p.Permission).HasMaxLength(256);
 
+        // A dimension value's code is unique within its dimension and company; the id is what scope assignments carry.
+        var dimensionValue = modelBuilder.Entity<DimensionValueRow>();
+        dimensionValue.ToTable("ModulusDimensionValues");
+        dimensionValue.HasKey(v => new { v.TenantId, v.Id });
+        dimensionValue.Property(v => v.Dimension).HasMaxLength(64);
+        dimensionValue.Property(v => v.Code).HasMaxLength(64);
+        dimensionValue.Property(v => v.Label).HasMaxLength(128);
+        dimensionValue.HasIndex(v => new { v.TenantId, v.Dimension, v.Code }).IsUnique();
+        dimensionValue.HasIndex(v => new { v.TenantId, v.ParentId });
+
+        // The recorded permission catalog: global, not per company, so it has no tenant column or filter.
+        var catalog = modelBuilder.Entity<PermissionCatalogRow>();
+        catalog.ToTable("ModulusPermissionCatalog");
+        catalog.HasKey(p => p.Permission);
+        catalog.Property(p => p.Permission).HasMaxLength(128);
+        catalog.Property(p => p.Lifecycle).HasConversion<string>().HasMaxLength(16);
+        catalog.Property(p => p.ReplacedBy).HasMaxLength(128);
+
         var inclusion = modelBuilder.Entity<RoleInclusionRow>();
         inclusion.ToTable("ModulusRoleInclusions");
         inclusion.HasKey(r => new { r.TenantId, r.NormalizedRole, r.NormalizedIncludes });
@@ -250,27 +259,6 @@ public class AuthorizationStoreDbContext(
         accessRequest.Property(r => r.Note).HasMaxLength(2000);
         accessRequest.HasIndex(r => new { r.TenantId, r.Status, r.RequesterId });
 
-        var unitProfile = modelBuilder.Entity<OrgUnitProfileRow>();
-        unitProfile.ToTable("ModulusOrgUnitProfiles");
-        unitProfile.HasKey(p => new { p.TenantId, p.UnitId });
-        unitProfile.Property(p => p.Code).HasMaxLength(64);
-        unitProfile.Property(p => p.NormalizedCode).HasMaxLength(64);
-        unitProfile.Property(p => p.Name).HasMaxLength(256);
-        unitProfile.Property(p => p.Kind).HasMaxLength(64);
-        unitProfile.HasIndex(p => new { p.TenantId, p.NormalizedCode }).IsUnique();
-
-        var company = modelBuilder.Entity<CompanyProfileRow>();
-        company.ToTable("ModulusCompanyProfiles");
-        company.HasKey(c => c.TenantId);
-        company.Property(c => c.LegalName).HasMaxLength(256);
-        company.Property(c => c.TradeName).HasMaxLength(256);
-        company.Property(c => c.RegistrationNumber).HasMaxLength(64);
-        company.Property(c => c.TaxId).HasMaxLength(64);
-        company.Property(c => c.Address).HasMaxLength(1000);
-        company.Property(c => c.Country).HasMaxLength(2);
-        company.Property(c => c.Currency).HasMaxLength(3);
-        company.Property(c => c.TimeZone).HasMaxLength(64);
-        company.Property(c => c.Language).HasMaxLength(16);
 
         var auditOutbox = modelBuilder.Entity<OutboxMessage>();
         auditOutbox.ToTable("ModulusAuthorizationAuditOutbox");
@@ -293,6 +281,12 @@ public class AuthorizationStoreDbContext(
         item.HasIndex(i => new { i.CampaignId, i.UserId });
         item.HasIndex(i => new { i.TenantId, i.CampaignId });
 
+        var finding = modelBuilder.Entity<DataQualityFindingRow>();
+        finding.ToTable("ModulusDataQualityFindings");
+        finding.HasKey(f => f.Id);
+        finding.HasIndex(f => f.CreatedAt);
+        finding.HasIndex(f => new { f.TenantId, f.CreatedAt });
+
         ApplyTenantFilters(modelBuilder);
     }
 
@@ -309,12 +303,6 @@ public class AuthorizationStoreDbContext(
     private void ApplyTenantFilters(ModelBuilder mb)
     {
         mb.Entity<PermissionGrantRow>().HasQueryFilter(e =>
-            currentTenant.IsHost
-            || (currentTenant.TenantId != null && e.TenantId == currentTenant.TenantId));
-        mb.Entity<OrgUnitRow>().HasQueryFilter(e =>
-            currentTenant.IsHost
-            || (currentTenant.TenantId != null && e.TenantId == currentTenant.TenantId));
-        mb.Entity<OrgUnitParentRow>().HasQueryFilter(e =>
             currentTenant.IsHost
             || (currentTenant.TenantId != null && e.TenantId == currentTenant.TenantId));
         mb.Entity<OrgPlacementRow>().HasQueryFilter(e =>
@@ -347,6 +335,9 @@ public class AuthorizationStoreDbContext(
         mb.Entity<PartyCeilingRow>().HasQueryFilter(e =>
             currentTenant.IsHost
             || (currentTenant.TenantId != null && e.TenantId == currentTenant.TenantId));
+        mb.Entity<DimensionValueRow>().HasQueryFilter(e =>
+            currentTenant.IsHost
+            || (currentTenant.TenantId != null && e.TenantId == currentTenant.TenantId));
         mb.Entity<PositionRow>().HasQueryFilter(e =>
             currentTenant.IsHost
             || (currentTenant.TenantId != null && e.TenantId == currentTenant.TenantId));
@@ -363,12 +354,6 @@ public class AuthorizationStoreDbContext(
             currentTenant.IsHost
             || (currentTenant.TenantId != null && e.TenantId == currentTenant.TenantId));
         mb.Entity<AccessRequestRow>().HasQueryFilter(e =>
-            currentTenant.IsHost
-            || (currentTenant.TenantId != null && e.TenantId == currentTenant.TenantId));
-        mb.Entity<OrgUnitProfileRow>().HasQueryFilter(e =>
-            currentTenant.IsHost
-            || (currentTenant.TenantId != null && e.TenantId == currentTenant.TenantId));
-        mb.Entity<CompanyProfileRow>().HasQueryFilter(e =>
             currentTenant.IsHost
             || (currentTenant.TenantId != null && e.TenantId == currentTenant.TenantId));
     }
@@ -481,7 +466,7 @@ internal sealed class AccessRequestRow : IHasTenantId
 }
 
 /// <summary>Row backing an <see cref="OrgUnitProfile"/>.</summary>
-internal sealed class OrgUnitProfileRow : IHasTenantId
+public class OrgUnitProfileRow : IHasTenantId
 {
     public Guid TenantId { get; set; }
     public Guid UnitId { get; set; }
@@ -496,7 +481,7 @@ internal sealed class OrgUnitProfileRow : IHasTenantId
 }
 
 /// <summary>Row backing a <see cref="CompanyProfile"/>; one per company.</summary>
-internal sealed class CompanyProfileRow : IHasTenantId
+public class CompanyProfileRow : IHasTenantId
 {
     public Guid TenantId { get; set; }
     public string LegalName { get; set; } = null!;
@@ -523,14 +508,14 @@ internal sealed class PermissionGrantRow : IHasTenantId
 }
 
 /// <summary>A node of the organizational hierarchy.</summary>
-internal sealed class OrgUnitRow : IHasTenantId
+public class OrgUnitRow : IHasTenantId
 {
     public Guid Id { get; set; }
     public Guid TenantId { get; set; }
 }
 
 /// <summary>A child→parent edge; several rows per child model a matrixed DAG.</summary>
-internal sealed class OrgUnitParentRow : IHasTenantId
+public class OrgUnitParentRow : IHasTenantId
 {
     public Guid TenantId { get; set; }
     public Guid ChildId { get; set; }
@@ -646,7 +631,7 @@ internal sealed class PositionAssignmentRow : IHasTenantId
     public DateTimeOffset CreatedAt { get; set; }
 }
 
-/// <summary>Row linking an account to an external party (buyer, supplier, subcontractor).</summary>
+/// <summary>Row linking an account to an external party, by an application-defined kind.</summary>
 internal sealed class PartyLinkRow : IHasTenantId
 {
     public Guid TenantId { get; set; }
@@ -663,4 +648,24 @@ internal sealed class PartyCeilingRow : IHasTenantId
     public Guid TenantId { get; set; }
     public string Kind { get; set; } = null!;
     public string Permission { get; set; } = null!;
+}
+
+/// <summary>One typed value of a scope dimension, owned by a company (see <c>Modulus.Authorization.Dimensions.DimensionValue</c>).</summary>
+internal sealed class PermissionCatalogRow
+{
+    public string Permission { get; set; } = null!;
+    public PermissionLifecycle Lifecycle { get; set; }
+    public string? ReplacedBy { get; set; }
+}
+
+internal sealed class DimensionValueRow : IHasTenantId
+{
+    public Guid TenantId { get; set; }
+    public Guid Id { get; set; }
+    public string Dimension { get; set; } = null!;
+    public string Code { get; set; } = null!;
+    public string Label { get; set; } = null!;
+
+    /// <summary>The value this one sits under, or null at the top (see <see cref="Modulus.Authorization.Dimensions.DimensionValue.ParentId"/>).</summary>
+    public Guid? ParentId { get; set; }
 }

@@ -36,7 +36,7 @@ internal sealed class PasskeyService<TContext, TUser>(
     public async Task<PasskeyCeremony?> BeginRegistrationAsync(Guid userId, CancellationToken ct = default)
     {
         var user = await userManager.FindByIdAsync(userId.ToString());
-        if (user is not { IsActive: true })
+        if (user is null || !user.MayStartNewAccess())
             return null;
 
         var existing = await db.Set<ModulusPasskey>().AsNoTracking().Where(p => p.UserId == userId).Select(p => p.CredentialId).ToListAsync(ct);
@@ -135,7 +135,7 @@ internal sealed class PasskeyService<TContext, TUser>(
             return Deny(null, "unknown-credential");
 
         var user = await userManager.FindByIdAsync(passkey.UserId.ToString());
-        if (user is not { IsActive: true } || await userManager.IsLockedOutAsync(user) || !await CanSignInAsync(user))
+        if (user is null || !user.MayStartNewAccess() || await userManager.IsLockedOutAsync(user) || !await CanSignInAsync(user))
             return Deny(passkey.UserId, "account-unavailable");
 
         VerifyAssertionResult verified;

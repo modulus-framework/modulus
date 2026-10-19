@@ -8,7 +8,7 @@ namespace Modulus.Authorization.EntityFrameworkCore;
 /// follows the post, not the person: when someone is moved the holding ends and the access goes with it. The grant and
 /// approval-limit stores add the roles of a user's current positions to the roles they present (then expand role inclusions).
 /// </summary>
-public sealed class EfPositionStore(IDbContextFactory<AuthorizationStoreDbContext> factory, TimeProvider? clock = null)
+public sealed class EfPositionStore(IDbContextFactory<AuthorizationStoreDbContextBase> factory, TimeProvider? clock = null)
 {
     private readonly TimeProvider _clock = clock ?? TimeProvider.System;
 
@@ -151,7 +151,7 @@ public sealed class EfPositionStore(IDbContextFactory<AuthorizationStoreDbContex
     }
 
     /// <summary>Synchronous lookup over an open context, for the grant and approval stores.</summary>
-    internal static IReadOnlyList<string> RolesOf(AuthorizationStoreDbContext db, Guid userId, DateTimeOffset now)
+    internal static IReadOnlyList<string> RolesOf(AuthorizationStoreDbContextBase db, Guid userId, DateTimeOffset now)
     {
         var positionIds = db.PositionAssignments.AsNoTracking()
             .Where(a => a.UserId == userId)
@@ -170,7 +170,7 @@ public sealed class EfPositionStore(IDbContextFactory<AuthorizationStoreDbContex
     }
 
     /// <summary>Asynchronous lookup over an open context, for the grant read on the authorization path.</summary>
-    internal static async Task<IReadOnlyList<string>> RolesOfAsync(AuthorizationStoreDbContext db, Guid userId, DateTimeOffset now, CancellationToken ct)
+    internal static async Task<IReadOnlyList<string>> RolesOfAsync(AuthorizationStoreDbContextBase db, Guid userId, DateTimeOffset now, CancellationToken ct)
     {
         var positionIds = (await db.PositionAssignments.AsNoTracking()
                 .Where(a => a.UserId == userId)
@@ -188,7 +188,7 @@ public sealed class EfPositionStore(IDbContextFactory<AuthorizationStoreDbContex
     }
 
     /// <summary>Asynchronous <see cref="WithPositionRoles"/> over an open context.</summary>
-    internal static async Task<IReadOnlyCollection<string>> WithPositionRolesAsync(AuthorizationStoreDbContext db, IEnumerable<string> roles, Guid? userId, CancellationToken ct)
+    internal static async Task<IReadOnlyCollection<string>> WithPositionRolesAsync(AuthorizationStoreDbContextBase db, IEnumerable<string> roles, Guid? userId, CancellationToken ct)
     {
         var given = roles.ToList();
         if (userId is not { } id)
@@ -199,7 +199,7 @@ public sealed class EfPositionStore(IDbContextFactory<AuthorizationStoreDbContex
     }
 
     /// <summary>The roles presented plus those of the user's current positions.</summary>
-    internal static IReadOnlyCollection<string> WithPositionRoles(AuthorizationStoreDbContext db, IEnumerable<string> roles, Guid? userId)
+    internal static IReadOnlyCollection<string> WithPositionRoles(AuthorizationStoreDbContextBase db, IEnumerable<string> roles, Guid? userId)
     {
         var given = roles.ToList();
         if (userId is not { } id)

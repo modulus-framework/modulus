@@ -20,6 +20,16 @@ public sealed class WebClientTests
         ["Bff:Clients:web:RemoteApis:0:RemotePath"] = "/v1/catalog",
     };
 
+    /// <summary>A clock the test moves forward; the session lifetime is measured on it.</summary>
+    private sealed class ManualClock(DateTimeOffset start) : TimeProvider
+    {
+        private DateTimeOffset _now = start;
+
+        public override DateTimeOffset GetUtcNow() => _now;
+
+        public void Advance(TimeSpan by) => _now += by;
+    }
+
     private static Task<BffTestHost> StartAsync(string storage = "ServerSide", bool withRevocation = true)
         => BffTestHost.StartAsync(WebSettings(storage), bff => bff.AddWebClient(), withRevocation: withRevocation);
 
@@ -59,6 +69,27 @@ public sealed class WebClientTests
         var login = await browser.PostJsonAsync("/bff/login", new { userName = "alice", password = "nope" });
         login.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         browser.Cookie.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task A_web_session_ends_its_lifetime_after_sign_in_even_while_it_is_in_use()
+    {
+        var clock = new ManualClock(DateTimeOffset.UtcNow);
+        var settings = WebSettings();
+        settings["Bff:Clients:web:SessionLifetime"] = "01:00:00";
+        await using var host = await BffTestHost.StartAsync(settings, bff => bff.AddWebClient(), clock: clock);
+        var browser = await LoginAsync(host);
+
+        // Keeps using the session: a sliding renewal must not push the end past the sign-in plus the lifetime.
+        clock.Advance(TimeSpan.FromMinutes(50));
+        (await browser.GetAsync("/bff/user")).StatusCode.Should().Be(HttpStatusCode.OK);
+
+        clock.Advance(TimeSpan.FromMinutes(11));
+        (await browser.GetAsync("/bff/user")).StatusCode.Should().Be(HttpStatusCode.Unauthorized, "the session is over one hour after sign-in");
+
+        // A new sign-in starts a new session, which works.
+        var again = await LoginAsync(host);
+        (await again.GetAsync("/bff/user")).StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
     [Fact]

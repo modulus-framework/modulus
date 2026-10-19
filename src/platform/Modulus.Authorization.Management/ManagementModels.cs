@@ -89,6 +89,23 @@ public sealed record ScopedGrantResponse(
 public sealed record AssignmentWriteRequest(
     Guid UserId, string AssignmentType, Guid TargetId, DateTimeOffset? ValidFrom, DateTimeOffset? ValidUntil);
 
+/// <summary>Links a user to a dimension value named by its business code (see <c>AssignmentWriteRequest</c>).</summary>
+/// <param name="UserId">The assigned user.</param>
+/// <param name="AssignmentType">The dimension the code belongs to (for example <c>warehouse</c>).</param>
+/// <param name="Code">The business code of the value, for example <c>WH-01</c>; spelling and case do not matter.</param>
+/// <param name="ValidFrom">Effective from this instant.</param>
+/// <param name="ValidUntil">Effective until this instant.</param>
+public sealed record AssignmentByCodeRequest(
+    Guid UserId, string AssignmentType, string? Code, DateTimeOffset? ValidFrom, DateTimeOffset? ValidUntil);
+
+/// <summary>Registers a dimension value. Registering a code that exists returns the existing value unchanged.</summary>
+/// <param name="Code">The business code (1 to 64 characters).</param>
+/// <param name="Label">A display name; defaults to the code.</param>
+public sealed record DimensionValueWriteRequest(string? Code, string? Label);
+
+/// <summary>Places a dimension value under another one. Both parent fields null moves the value to the top.</summary>
+public sealed record DimensionParentWriteRequest(string? ParentDimension, string? ParentCode);
+
 /// <summary>An approval limit to add ("this holder may use this permission on documents up to this amount").</summary>
 /// <param name="HolderType"><c>Role</c> or <c>User</c>.</param>
 /// <param name="Holder">Role name, or the user id for a user limit.</param>
@@ -179,7 +196,7 @@ public sealed record RoleInclusionResponse(string Role, string Includes, Guid? C
 
 /// <summary>Links an account to an external party.</summary>
 /// <param name="UserId">The account.</param>
-/// <param name="Kind">The kind, such as buyer, supplier or subcontractor.</param>
+/// <param name="Kind">The kind, as the application defines it.</param>
 /// <param name="PartyId">The party record the account belongs to.</param>
 public sealed record PartyLinkRequest(Guid UserId, string Kind, Guid PartyId);
 

@@ -96,6 +96,56 @@ public class ModuleLayoutTests
     }
 
     [Fact]
+    public void Generated_create_and_update_handlers_check_the_resulting_record_scope()
+    {
+        Ux.Reset();
+        var dir = TempDir();
+        try
+        {
+            new NewAppCommand().GenerateModule(dir, CatalogModel());
+
+            var appCsproj = File.ReadAllText(Path.Combine(dir, "MyApp.Modules.Catalog.Application", "MyApp.Modules.Catalog.Application.csproj"));
+            appCsproj.Should().Contain("Synvro.Modulus.Platform");
+
+            var create = File.ReadAllText(Path.Combine(dir, "MyApp.Modules.Catalog.Application", "CreateProductHandler.cs"));
+            create.Should().Contain("IResourceScopeGuard? scopeGuard = null")
+                .And.Contain("scopeGuard.EnsureResultingScopeAsync(entity, \"create\", null, ct)")
+                .And.Contain("fieldAuthorizer.EnsureWriteAllowedAsync(typeof(Product), fields, ct)");
+
+            var update = File.ReadAllText(Path.Combine(dir, "MyApp.Modules.Catalog.Application", "UpdateProductHandler.cs"));
+            update.Should().Contain("scopeGuard.EnsureResultingScopeAsync(entity, \"edit\", null, ct)")
+                .And.Contain("fieldAuthorizer.EnsureWriteAllowedAsync(typeof(Product), fields, ct)");
+        }
+        finally
+        {
+            Directory.Delete(dir, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void Generated_write_handlers_check_the_endpoint_permission_when_the_host_enforces_one()
+    {
+        Ux.Reset();
+        var dir = TempDir();
+        try
+        {
+            var model = CatalogModel();
+            model.RequiredPermission = "catalog:products:manage";
+            new NewAppCommand().GenerateModule(dir, model);
+
+            var create = File.ReadAllText(Path.Combine(dir, "MyApp.Modules.Catalog.Application", "CreateProductHandler.cs"));
+            create.Should().Contain("EnsureResultingScopeAsync(entity, \"create\", \"catalog:products:manage\", ct)");
+
+            var update = File.ReadAllText(Path.Combine(dir, "MyApp.Modules.Catalog.Application", "UpdateProductHandler.cs"));
+            update.Should().Contain("EnsureResultingScopeAsync(entity, \"edit\", \"catalog:products:manage\", ct)");
+        }
+        finally
+        {
+            Directory.Delete(dir, recursive: true);
+        }
+    }
+
+    [Fact]
     public void Blank_module_still_generates_the_events_project_it_references()
     {
         Ux.Reset();

@@ -17,6 +17,7 @@ public sealed class ResourceRequest
     private readonly Func<string, bool>? _inScopeOf;
     private readonly Func<string, bool>? _withinAuthority;
     private readonly IReadOnlyCollection<Guid>? _priorActors;
+    private readonly HashSet<string> _missing = new(StringComparer.Ordinal);
 
     /// <summary>Creates a request context for evaluating one action on one resource.</summary>
     /// <param name="callerId">The calling principal's user id, or <see langword="null"/> if anonymous.</param>
@@ -61,14 +62,41 @@ public sealed class ResourceRequest
     /// or an unownable resource is never the owner.
     /// </summary>
     public bool OwnedByCaller()
-        => CallerId is { } id && Resource.OwnerId == id;
+    {
+        if (CallerId is not { } id)
+            return false;
+        if (Resource.OwnerId is { } owner)
+            return owner == id;
+
+        // The owner is unknown, so the caller cannot be shown to own the record. That is a missing attribute, not an ordinary refusal.
+        _missing.Add(ResourceAttributeNames.OwnerId);
+        return false;
+    }
 
     /// <summary>
     /// True when the caller is a known user who is not the resource's owner (the requester cannot approve their own document).
     /// Fail-closed: an anonymous caller is never allowed.
     /// </summary>
     public bool NotOwnedByCaller()
-        => CallerId is not null && !OwnedByCaller();
+    {
+        if (CallerId is not { } id)
+            return false;
+
+        // An unknown owner is not "someone other than the caller": the requester could be the owner. Deny, and record why.
+        if (Resource.OwnerId is not { } owner)
+        {
+            _missing.Add(ResourceAttributeNames.OwnerId);
+            return false;
+        }
+
+        return owner != id;
+    }
+
+    /// <summary>
+    /// The attributes whose absence made a condition fail while this request was evaluated (for example <c>OrgUnitId</c>).
+    /// Names only, never values. A condition that passed never adds one, so a grant through another rule is not affected.
+    /// </summary>
+    public IReadOnlyCollection<string> MissingAttributes => _missing;
 
     /// <summary>
     /// True when the caller has not yet acted on the document (prepared, verified, approved, ...): one person cannot hold two steps.
@@ -93,8 +121,13 @@ public sealed class ResourceRequest
     /// (case-insensitive). Fail-closed: a stateless resource matches no state.
     /// </summary>
     public bool InState(params string[] states)
-        => Resource.State is { } s
-           && Array.Exists(states, x => string.Equals(x, s, StringComparison.OrdinalIgnoreCase));
+    {
+        if (Resource.State is { } s)
+            return Array.Exists(states, x => string.Equals(x, s, StringComparison.OrdinalIgnoreCase));
+
+        _missing.Add(ResourceAttributeNames.State);
+        return false;
+    }
 
     /// <summary>
     /// True when the record is within the scope the caller was granted for
@@ -110,5 +143,20 @@ public sealed class ResourceRequest
     /// record hidden from a list cannot be acted on by id.
     /// </summary>
     public bool InCallerScope()
-        => _inScope(Resource.OrgUnitId);
+    {
+        var inScope = _inScope(Resource.OrgUnitId);
+
+        // An unrestricted caller passes for a record with no org unit, so only a refusal caused by the missing unit is recorded.
+        if (!inScope && Resource.OrgUnitId is null)
+            _missing.Add(ResourceAttributeNames.OrgUnitId);
+        return inScope;
+    }
+}
+
+/// <summary>The attribute names a missing-attribute finding reports.</summary>
+internal static class ResourceAttributeNames
+{
+    public const string OwnerId = "OwnerId";
+    public const string OrgUnitId = "OrgUnitId";
+    public const string State = "State";
 }

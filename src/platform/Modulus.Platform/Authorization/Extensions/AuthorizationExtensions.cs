@@ -109,6 +109,7 @@ public static class AuthorizationExtensions
         services.TryAddScoped<IPrincipalGrantQuerySource, HttpPrincipalGrantQuerySource>();
         services.TryAddScoped<IPermissionScopeResolver, PermissionScopeResolver>();
         services.TryAddScoped<IScopeSubject, ScopeSubject>();
+        services.TryAddSingleton<Modulus.Authorization.Dimensions.IDimensionHierarchy, Modulus.Authorization.Dimensions.NullDimensionHierarchy>();
         services.TryAddScoped<IScopeEnforcer, ScopeEnforcer>();
 
         // Approval limits ("up to this amount"): empty until limits are added, so nobody has authority by default.
@@ -300,7 +301,10 @@ public static class AuthorizationExtensions
         // Register the concrete authorizers so the decorator can depend on the
         // *undecorated* instance, then Replace the public seam — the same
         // pattern AddDelegation uses for DelegationAwarePermissionResolver.
+        // Missing-attribute findings are discarded unless the application registers a sink that keeps them.
+        services.TryAddSingleton<Modulus.Core.Abstractions.DataQuality.IDataQualityFindingSink, Modulus.Core.Null.NullDataQualityFindingSink>();
         services.TryAddScoped<ResourceAuthorizer>();
+        services.TryAddScoped<IResourceScopeGuard, ResourceScopeGuard>();
         services.Replace(ServiceDescriptor.Scoped<IResourceAuthorizer>(sp =>
             new AuditingResourceAuthorizer(
                 sp.GetRequiredService<ResourceAuthorizer>(),

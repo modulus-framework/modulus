@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Modulus.Core.Abstractions;
+using Modulus.Core.Abstractions.Tenancy;
 using Modulus.EntityFrameworkCore.Extensions;
 
 /// <summary>How a module context keeps companies apart below the EF Core query filter.</summary>
@@ -90,6 +91,39 @@ public static class DataIsolationExtensions
         ArgumentNullException.ThrowIfNull(configuration);
         services.TryAddEnumerable(ServiceDescriptor.Singleton<Microsoft.Extensions.Hosting.IHostedService, DataIsolationCheck>(
             sp => ActivatorUtilities.CreateInstance<DataIsolationCheck>(sp, configuration)));
+        return services;
+    }
+
+    /// <summary>
+    /// Registers <typeparamref name="TContext"/> with one database per tenant, resolved from the tenant data-store catalog
+    /// and the secret store (<see cref="Modulus.Core.Abstractions.Tenancy.ITenantDatabaseResolver"/>). The context is built with
+    /// <paramref name="hostConnectionString"/>; a connection opened in a tenant scope is pointed at that tenant's database
+    /// first, by <see cref="TenantConnectionInterceptor"/>. Requires <c>AddModulusTenantDatabases</c> and the EF tenant
+    /// catalog (<c>AddEfCoreTenantStore</c>). No tenant in scope throws; the host database is never a fallback.
+    /// </summary>
+    /// <typeparam name="TContext">The module context.</typeparam>
+    /// <param name="services">The service collection.</param>
+    /// <param name="storeKey">The tenant store the context reads (for example <c>primary</c>).</param>
+    /// <param name="providerKey">The provider, checked against the catalog row on every resolve (for example <c>postgresql</c>).</param>
+    /// <param name="hostConnectionString">The host database (migrations and host work).</param>
+    /// <param name="configure">Applies the provider with the connection string (<c>(o, cs) =&gt; o.UseNpgsql(cs)</c>).</param>
+    public static IServiceCollection AddModuleDatabasePerTenant<TContext>(
+        this IServiceCollection services,
+        string storeKey,
+        string providerKey,
+        string hostConnectionString,
+        Action<DbContextOptionsBuilder, string> configure)
+        where TContext : ModuleDbContext
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(storeKey);
+        ArgumentException.ThrowIfNullOrWhiteSpace(providerKey);
+        ArgumentException.ThrowIfNullOrWhiteSpace(hostConnectionString);
+        ArgumentNullException.ThrowIfNull(configure);
+
+        services.AddModuleDatabase<TContext>(_ => hostConnectionString, configure);
+        services.AddSingleton(new ModuleDbContextIsolation(typeof(TContext), TenantIsolationMode.DatabasePerTenant));
+        services.AddSingleton(new TenantDatabaseRoute(typeof(TContext), storeKey, providerKey));
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<ITenantWarmup, TenantDatabaseWarmup>());
         return services;
     }
 

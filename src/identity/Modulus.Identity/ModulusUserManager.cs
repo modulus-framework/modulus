@@ -94,12 +94,60 @@ internal sealed class ModulusUserManager<TUser> : UserManager<TUser>
             : result;
     }
 
+    public override async Task<IdentityResult> CreateAsync(TUser user)
+    {
+        // A new account has no stored state yet: its lifecycle and flag must agree before it is first saved.
+        var target = LifecycleReconciliation.Resolve(stored: null, user.Lifecycle, user.IsActive);
+        if (target is { } state)
+            ApplyLifecycle(user, state);
+        return await base.CreateAsync(user).ConfigureAwait(false);
+    }
+
     public override async Task<IdentityResult> UpdateAsync(TUser user)
     {
+        var transitions = _services.GetService<IAccountTransitionStore>();
+        var stored = transitions is null ? null : await transitions.GetStoredLifecycleAsync(user.Id).ConfigureAwait(false);
+        var explicitChange = AccountLifecycleScope.Current;
+        var target = LifecycleReconciliation.Resolve(stored, user.Lifecycle, user.IsActive, explicitChange?.RehireReviewed ?? false);
+        if (target is not { } state)
+            return IdentityResult.Failed(new IdentityError
+            {
+                Code = "IllegalLifecycleTransition",
+                Description = $"An account cannot move from {stored} to {user.Lifecycle}.",
+            });
+
+        if (stored is { } from && from != state)
+        {
+            transitions!.Record(new ModulusAccountTransition
+            {
+                UserId = user.Id,
+                FromState = from,
+                ToState = state,
+                ActorId = explicitChange is { } change ? change.ActorId : CurrentActor(),
+                Reason = explicitChange is { } named ? named.Reason : state == AccountLifecycle.Disabled ? user.SuspensionReason : null,
+                OccurredAt = DateTimeOffset.UtcNow,
+            });
+            user.LifecycleChangedAt = DateTimeOffset.UtcNow;
+        }
+
+        ApplyLifecycle(user, state);
         var result = await base.UpdateAsync(user).ConfigureAwait(false);
-        return user is { IsActive: false }
+        return !user.MayStartNewAccess()
             ? await NotifyOnSuccessAsync(result, user, AccessChangeKinds.Account, "account.disabled").ConfigureAwait(false)
             : result;
+    }
+
+    /// <summary>The lifecycle is saved with the legacy flag that agrees with it, so sign-in (which reads the flag) follows it.</summary>
+    private static void ApplyLifecycle(TUser user, AccountLifecycle state)
+    {
+        user.Lifecycle = state;
+        user.IsActive = AccountLifecycleRules.AllowsNewAccess(state);
+    }
+
+    private Guid? CurrentActor()
+    {
+        var current = _services.GetService<ICurrentUser>();
+        return current is { IsAuthenticated: true, UserId: { } id } ? id : null;
     }
 
     private async Task<IdentityResult> NotifyOnSuccessAsync(IdentityResult result, TUser user, string kind, string reason)

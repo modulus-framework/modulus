@@ -77,7 +77,7 @@ internal sealed class ExternalAccountProvisioner<TUser>(
             }
         }
 
-        if (!user.IsActive)
+        if (!user.MayStartNewAccess())
             return Deny("account-disabled");
         if (await users.IsLockedOutAsync(user))
             return Deny("locked-out");

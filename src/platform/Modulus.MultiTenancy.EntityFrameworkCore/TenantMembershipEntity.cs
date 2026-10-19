@@ -2,7 +2,7 @@ namespace Modulus.MultiTenancy.EntityFrameworkCore;
 
 /// <summary>
 /// Persistence record for a user's membership in a tenant (company), read by
-/// <see cref="EfTenantMembershipStore"/>. One row per (user, tenant); an inactive row is kept for
+/// <see cref="IEfTenantMembershipStore"/>. One row per (user, tenant); an inactive row is kept for
 /// history and grants nothing.
 /// </summary>
 public class TenantMembershipEntity

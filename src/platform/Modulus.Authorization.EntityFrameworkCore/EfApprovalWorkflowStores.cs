@@ -14,7 +14,7 @@ internal static class ApprovalJson
 }
 
 /// <summary>Approval chains of the current company (tenant-filtered table <c>ModulusApprovalChains</c>).</summary>
-public sealed class EfApprovalChainStore(IDbContextFactory<AuthorizationStoreDbContext> factory) : IApprovalChainStore
+public sealed class EfApprovalChainStore(IDbContextFactory<AuthorizationStoreDbContextBase> factory) : IApprovalChainStore
 {
     /// <inheritdoc />
     public async Task<IReadOnlyList<ApprovalChain>> ListAsync(CancellationToken ct = default)
@@ -67,7 +67,7 @@ public sealed class EfApprovalChainStore(IDbContextFactory<AuthorizationStoreDbC
 }
 
 /// <summary>Approval requests of the current company (tenant-filtered table <c>ModulusApprovalRequests</c>; <c>Version</c> is a concurrency token).</summary>
-public sealed class EfApprovalRequestStore(IDbContextFactory<AuthorizationStoreDbContext> factory) : IApprovalRequestStore
+public sealed class EfApprovalRequestStore(IDbContextFactory<AuthorizationStoreDbContextBase> factory) : IApprovalRequestStore
 {
     /// <inheritdoc />
     public async Task AddAsync(ApprovalRequest request, CancellationToken ct = default)

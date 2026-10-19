@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Modulus.Core.Abstractions;
+using Modulus.Core.Abstractions.Exceptions;
+using Modulus.Core.Abstractions.Tenancy;
 using Modulus.MultiTenancy.Extensions;
 using Modulus.MultiTenancy.Resolvers;
 using Xunit;
@@ -509,6 +511,60 @@ public sealed class TenantMiddlewareTests
     }
 
     // ── Helpers ──────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task Tenant_whose_database_is_unavailable_gets_503_before_the_application_runs()
+    {
+        var store = new FakeStore(TenantA);
+        var reached = false;
+        var ctx = BuildContext(
+            store,
+            headerTenantId: TenantA.TenantId,
+            claimTenantId: null,
+            authenticated: false,
+            configureServices: s => s.AddSingleton<ITenantWarmup>(new RefusingWarmup()));
+
+        await InvokeAsync(ctx, store, next: _ => { reached = true; return Task.CompletedTask; }, includeJwtResolver: false);
+
+        ctx.Response.StatusCode.Should().Be(StatusCodes.Status503ServiceUnavailable);
+        reached.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Every_registered_warmup_runs_for_the_resolved_tenant_before_the_application()
+    {
+        var store = new FakeStore(TenantA);
+        var warmup = new RecordingWarmup();
+        var ctx = BuildContext(
+            store,
+            headerTenantId: TenantA.TenantId,
+            claimTenantId: null,
+            authenticated: false,
+            configureServices: s => s.AddSingleton<ITenantWarmup>(warmup));
+        var reached = false;
+
+        await InvokeAsync(ctx, store, next: _ => { reached = true; return Task.CompletedTask; }, includeJwtResolver: false);
+
+        reached.Should().BeTrue();
+        warmup.Seen.Should().ContainSingle().Which.Should().Be(TenantA.TenantId);
+    }
+
+    private sealed class RefusingWarmup : ITenantWarmup
+    {
+        public Task WarmAsync(TenantInfo tenant, CancellationToken cancellationToken = default)
+            => throw new TenantDatabaseUnavailableException("No data store is provisioned for this tenant.");
+    }
+
+    private sealed class RecordingWarmup : ITenantWarmup
+    {
+        public List<Guid> Seen { get; } = [];
+
+        public Task WarmAsync(TenantInfo tenant, CancellationToken cancellationToken = default)
+        {
+            Seen.Add(tenant.TenantId);
+            return Task.CompletedTask;
+        }
+    }
 
     private static Task InvokeAsync(
         HttpContext ctx, ITenantStore store, RequestDelegate next, bool includeJwtResolver = true)

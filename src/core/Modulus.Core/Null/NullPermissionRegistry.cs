@@ -15,6 +15,10 @@ public sealed class NullPermissionRegistry : IPermissionRegistry
         string[]? requires = null)
     { }
 
+    public void Add(string permission, string description, string[]? requires, PermissionSensitivity sensitivity,
+        PermissionLifecycle lifecycle, string? replacedBy)
+    { }
+
     public IReadOnlyList<PermissionDefinition> GetAll() => [];
     public IReadOnlyList<PermissionDefinition> GetByModule(string _) => [];
     public bool Exists(string permission) => false;

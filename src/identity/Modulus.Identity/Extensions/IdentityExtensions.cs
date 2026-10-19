@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Modulus.BackgroundJobs;
 using Modulus.Core.Abstractions;
 using Modulus.Networking;
 using Modulus.Core.Null;
@@ -110,6 +111,11 @@ public static class IdentityExtensions
         services.TryAddScoped<IIntegrationClientDirectory, OpenIddictIntegrationClientDirectory>();
         services.TryAddScoped<IUserTwoFactorService, UserTwoFactorService<TUser>>();
         services.TryAddScoped<IUserInvitationService, UserInvitationService<TUser>>();
+        services.TryAddScoped<IAccountLifecycleService, AccountLifecycleService<TUser>>();
+        // Replaces the platform default (which allows every queued job), so a job whose initiator may no longer start access is skipped.
+        services.Replace(ServiceDescriptor.Scoped<IJobInitiatorGuard, UserJobInitiatorGuard<TUser>>());
+        services.Configure<RehireReviewOptions>(configuration.GetSection("Identity:RehireReview"));
+        services.TryAddScoped<IRehireReviewService, RehireReviewService<TUser>>();
         services.TryAddScoped<ILoginHistoryService, LoginHistoryService<TUser>>();
 
         // Authorization administration resolves roles here instead of trusting role names in a request body.
@@ -124,7 +130,21 @@ public static class IdentityExtensions
 
         // Password history (reuse check and expiry), stored over the same context as the Identity store.
         services.TryAddScoped<IPasswordHistoryStore>(sp => new EfPasswordHistoryStore(sp.GetRequiredService<TContext>()));
+        services.TryAddScoped<IAccountTransitionStore>(sp => new EfAccountTransitionStore<TUser>(sp.GetRequiredService<TContext>()));
         services.AddScoped<IPasswordValidator<TUser>, PasswordHistoryValidator<TUser>>();
+
+        // Breached passwords (offline list, no external call). Off by default; when on, a missing list file stops the host at startup.
+        services.AddOptions<BreachedPasswordOptions>()
+            .Bind(configuration.GetSection("Identity:BreachedPasswords"))
+            .Validate(o => !o.Enabled || (!string.IsNullOrWhiteSpace(o.ListPath) && File.Exists(o.ListPath)),
+                "Identity:BreachedPasswords needs an existing ListPath when Enabled is true.")
+            .ValidateOnStart();
+        services.TryAddSingleton<IBreachedPasswordList>(sp =>
+        {
+            var breached = sp.GetRequiredService<IOptions<BreachedPasswordOptions>>().Value;
+            return breached.Enabled ? new FileBreachedPasswordList(breached.ListPath!) : EmptyBreachedPasswordList.Instance;
+        });
+        services.AddScoped<IPasswordValidator<TUser>, BreachedPasswordValidator<TUser>>();
 
         services.ConfigureApplicationCookie(options =>
         {
@@ -132,6 +152,23 @@ public static class IdentityExtensions
             options.LogoutPath = "/account/logout";
             options.ExpireTimeSpan = TimeSpan.FromHours(1);
             options.SlidingExpiration = true;
+
+            // Stamps the first sign-in time once; a sliding renewal keeps the claim (the principal carries it), so it marks the
+            // sign-in and not the last renewal.
+            options.Events.OnSigningIn = context =>
+            {
+                if (context.Principal?.Identity is System.Security.Claims.ClaimsIdentity identity
+                    && identity.FindFirst(TokenPrincipalFactory.SignedInAtClaim) is null)
+                {
+                    var now = context.HttpContext.RequestServices.GetService<TimeProvider>()?.GetUtcNow() ?? DateTimeOffset.UtcNow;
+                    identity.AddClaim(new System.Security.Claims.Claim(
+                        TokenPrincipalFactory.SignedInAtClaim,
+                        now.ToUnixTimeSeconds().ToString(System.Globalization.CultureInfo.InvariantCulture),
+                        System.Security.Claims.ClaimValueTypes.Integer64));
+                }
+
+                return Task.CompletedTask;
+            };
 
             // Never let the auth cookie cross the wire over plain HTTP —
             // SameAsRequest (the ASP.NET default) silently does exactly that

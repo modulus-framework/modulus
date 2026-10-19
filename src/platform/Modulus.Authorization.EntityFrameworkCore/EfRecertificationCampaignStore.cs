@@ -9,7 +9,7 @@ using Modulus.Authorization.Governance;
 /// a short-lived context so the store stays thread-safe.
 /// </summary>
 public sealed class EfRecertificationCampaignStore(
-    IDbContextFactory<AuthorizationStoreDbContext> factory)
+    IDbContextFactory<AuthorizationStoreDbContextBase> factory)
     : IRecertificationCampaignStore
 {
     public async Task<RecertificationCampaign?> GetAsync(Guid campaignId, CancellationToken ct)
