@@ -1,0 +1,34 @@
+using System.Net.Http;
+using System.Text;
+using Microsoft.Extensions.Configuration;
+
+namespace {{ root_namespace }}.Web.Services.ApiClients;
+
+/// <summary>
+/// The API's passkey endpoints (<c>/api/account/passkeys</c>), reached through the BFF gateway so the browser's session carries the
+/// signed-in person's token. Responses are returned as they came, status and body, so the page can show the API's own refusals
+/// (for example a sign-in that is too old to change passkeys).
+/// </summary>
+public sealed class PasskeyApiClient(HttpClient http, IConfiguration configuration)
+{
+    private const string BaseRoute = "/api/account/passkeys";
+
+    // With a sign-in the calls go through the BFF (Bff:BaseUrl), which forwards /api with the session's token.
+    private readonly HttpClient _http = Configure(http, configuration);
+
+    private static HttpClient Configure(HttpClient http, IConfiguration configuration)
+    {
+        var baseUrl = configuration["Bff:BaseUrl"] ?? configuration["Api:BaseUrl"] ?? "http://localhost:5180";
+        http.BaseAddress = new Uri($"{baseUrl.TrimEnd('/')}/");
+        return http;
+    }
+
+    public Task<HttpResponseMessage> ListAsync(CancellationToken ct) => _http.GetAsync(BaseRoute, ct);
+
+    public Task<HttpResponseMessage> BeginRegistrationAsync(CancellationToken ct) => _http.PostAsync($"{BaseRoute}/register/options", null, ct);
+
+    public Task<HttpResponseMessage> CompleteRegistrationAsync(string json, CancellationToken ct)
+        => _http.PostAsync($"{BaseRoute}/register/complete", new StringContent(json, Encoding.UTF8, "application/json"), ct);
+
+    public Task<HttpResponseMessage> RemoveAsync(Guid id, CancellationToken ct) => _http.DeleteAsync($"{BaseRoute}/{id:D}", ct);
+}

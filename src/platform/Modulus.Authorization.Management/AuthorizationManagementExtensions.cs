@@ -148,6 +148,10 @@ public static partial class AuthorizationManagementExtensions
             return Results.Ok(new { actions = await authorizer.GetAvailableActionsAsync(registry, record, ct) });
         });
 
+        // Shares need AddRecordSharing(); without it the share routes are not mapped at all.
+        if (endpoints.ServiceProvider.GetService<Microsoft.Extensions.DependencyInjection.IServiceProviderIsService>()?.IsService(typeof(Modulus.Authorization.Sharing.RecordShares)) == true)
+            MapRecordShares(group);
+
         group.MapGet("/{resourceType}/{id}/explain", async (
             string resourceType, string id, string action,
             IResourceLocator locator, IServiceProvider services, CancellationToken ct) =>
@@ -156,7 +160,7 @@ public static partial class AuthorizationManagementExtensions
             if (record is null)
                 return Results.NotFound();
 
-            var explanation = ActivatorUtilities.CreateInstance<ResourceAuthorizer>(services).Explain(record, action);
+            var explanation = await ActivatorUtilities.CreateInstance<ResourceAuthorizer>(services).ExplainAsync(record, action, ct);
             return Results.Ok(new
             {
                 allowed = explanation.Decision.IsAllowed,

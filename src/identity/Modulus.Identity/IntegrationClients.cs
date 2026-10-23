@@ -13,7 +13,8 @@ namespace Modulus.Identity;
 /// <param name="ClientId">The OpenIddict client id.</param>
 /// <param name="TenantId">The one company the client acts in (its tokens carry it as <c>tid</c>); null for a host-level client.</param>
 /// <param name="ValidUntil">After this instant the client is refused new tokens; null for no end.</param>
-public sealed record IntegrationClientBinding(string ClientId, Guid? TenantId, DateTimeOffset? ValidUntil);
+/// <param name="MayActForPeople">Whether the agent may act for signed-in people through token exchange (spec 12A); off by default.</param>
+public sealed record IntegrationClientBinding(string ClientId, Guid? TenantId, DateTimeOffset? ValidUntil, bool MayActForPeople = false);
 
 /// <summary>Reads and writes the binding of an integration client, kept in its OpenIddict application record.</summary>
 public interface IIntegrationClientDirectory
@@ -26,6 +27,9 @@ public interface IIntegrationClientDirectory
 
     /// <summary>Ends the client now: it gets no new tokens and every token it holds is revoked. False when the client does not exist.</summary>
     Task<bool> DisableAsync(string clientId, CancellationToken ct = default);
+
+    /// <summary>Whether the agent may act for people (token exchange, spec 12A). Off by default; an administrator turns it on per agent.</summary>
+    Task<bool> SetMayActForPeopleAsync(string clientId, bool mayActForPeople, CancellationToken ct = default) => Task.FromResult(false);
 }
 
 /// <summary>Names used for integration clients.</summary>
@@ -49,6 +53,7 @@ internal sealed class OpenIddictIntegrationClientDirectory(IServiceProvider serv
 {
     private const string TenantProperty = "modulus:tenant";
     private const string ValidUntilProperty = "modulus:valid-until";
+    private const string MayActForPeopleProperty = "modulus:may-act-for-people";
 
     public async Task<IntegrationClientBinding?> FindAsync(string clientId, CancellationToken ct = default)
     {
@@ -60,7 +65,8 @@ internal sealed class OpenIddictIntegrationClientDirectory(IServiceProvider serv
         Guid? tenant = properties.TryGetValue(TenantProperty, out var t) && Guid.TryParse(t.GetString(), out var id) ? id : null;
         DateTimeOffset? until = properties.TryGetValue(ValidUntilProperty, out var u) && DateTimeOffset.TryParse(
             u.GetString(), System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.RoundtripKind, out var when) ? when : null;
-        return new IntegrationClientBinding(clientId, tenant, until);
+        var mayAct = properties.TryGetValue(MayActForPeopleProperty, out var m) && m.ValueKind == System.Text.Json.JsonValueKind.True;
+        return new IntegrationClientBinding(clientId, tenant, until, mayAct);
     }
 
     public async Task<bool> BindAsync(string clientId, Guid? tenantId, DateTimeOffset? validUntil, CancellationToken ct = default)
@@ -73,6 +79,19 @@ internal sealed class OpenIddictIntegrationClientDirectory(IServiceProvider serv
         await apps.PopulateAsync(descriptor, app, ct);
         Set(descriptor, TenantProperty, tenantId?.ToString());
         Set(descriptor, ValidUntilProperty, validUntil?.ToString("O", System.Globalization.CultureInfo.InvariantCulture));
+        await apps.UpdateAsync(app, descriptor, ct);
+        return true;
+    }
+
+    public async Task<bool> SetMayActForPeopleAsync(string clientId, bool mayActForPeople, CancellationToken ct = default)
+    {
+        if (services.GetService<IOpenIddictApplicationManager>() is not { } apps
+            || await apps.FindByClientIdAsync(clientId, ct) is not { } app)
+            return false;
+
+        var descriptor = new OpenIddictApplicationDescriptor();
+        await apps.PopulateAsync(descriptor, app, ct);
+        descriptor.Properties[MayActForPeopleProperty] = JsonSerializer.SerializeToElement(mayActForPeople);
         await apps.UpdateAsync(app, descriptor, ct);
         return true;
     }

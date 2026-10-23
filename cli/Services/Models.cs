@@ -34,19 +34,28 @@ internal static class DbProviderInfo
         _ => "Microsoft.EntityFrameworkCore.Sqlite",
     };
 
-    public static string Version(string provider) => provider switch
-    {
-        "SqlServer" => "10.0.9",
-        "PostgreSQL" => "10.0.2",
-        "MySQL" => "10.0.7",
-        _ => "10.0.9",
-    };
+    /// <summary>The EF Core provider version for a target; the same versions as the framework's Directory.Packages.props.</summary>
+    public static string Version(string provider, string framework = AppFramework.Default) => framework == "net8.0"
+        ? provider switch
+        {
+            "SqlServer" => "8.0.31",
+            "PostgreSQL" => "8.0.11",
+            "MySQL" => "8.0.8",
+            _ => "8.0.31",
+        }
+        : provider switch
+        {
+            "SqlServer" => "10.0.9",
+            "PostgreSQL" => "10.0.2",
+            "MySQL" => "10.0.7",
+            _ => "10.0.9",
+        };
 
     public static string UseMethod(string provider) => provider switch
     {
         "SqlServer" => "UseSqlServer",
         "PostgreSQL" => "UseNpgsql",
-        "MySQL" => "UseMySql",
+        "MySQL" => "UseMySQL",
         _ => "UseSqlite",
     };
 
@@ -110,6 +119,8 @@ internal sealed class AppModel
 
     /// <summary>"SQLite", "SqlServer", "PostgreSQL", or "MySQL".</summary>
     public string DbProvider { get; set; } = "SQLite";
+    /// <summary>The .NET target the app is generated for; decides the EF Core provider version.</summary>
+    public string TargetFramework { get; set; } = AppFramework.Default;
 
     /// <summary>
     /// Path to a local NuGet feed containing the Modulus.* packages
@@ -208,6 +219,12 @@ internal sealed class AppModel
     /// <summary>Connection string for the tenant store (companies and memberships).</summary>
     public string TenancyConnectionString => DbProviderInfo.ConnectionString(DbProvider, "Tenancy");
 
+    /// <summary>
+    /// Connection string for the authorization store (the durable permission grants of an <c>Admin</c>-role host). The provisioning
+    /// host reads the same database, so its grants are the API's grants.
+    /// </summary>
+    public string AuthorizationConnectionString => DbProviderInfo.ConnectionString(DbProvider, "Authorization");
+
     /// <summary>True when an external identity provider is selected.</summary>
     public bool UseExternalProvider => AuthProviders.IsExternalProvider(Auth);
 
@@ -238,7 +255,7 @@ internal sealed class AppModel
     public string EfProviderPackage => DbProviderInfo.Package(DbProvider);
 
     /// <summary>EF Core package version for the provider.</summary>
-    public string EfProviderVersion => DbProviderInfo.Version(DbProvider);
+    public string EfProviderVersion => DbProviderInfo.Version(DbProvider, TargetFramework);
 
 
     /// <summary>
@@ -446,6 +463,14 @@ internal sealed class ModuleModel
     // ── Database provider ──────────────────────────────────────────
     /// <summary>"SQLite", "SqlServer", "PostgreSQL", or "MySQL".</summary>
     public string DbProvider { get; set; } = "SQLite";
+    /// <summary>The .NET target the app is generated for; decides the EF Core provider version.</summary>
+    public string TargetFramework { get; set; } = AppFramework.Default;
+
+    /// <summary>
+    /// Keyset (cursor) paging is generated only where the framework can order a Guid v7 key by position: PostgreSQL on .NET 10.
+    /// Other engines and targets get offset paging only.
+    /// </summary>
+    public bool CursorPaging => DbProvider == "PostgreSQL" && TargetFramework == "net10.0";
 
     /// <summary>The host runs the AI connector, so the module's design-time factory passes the change-journal contributor (migrations then include <c>ai_changes</c>).</summary>
     public bool AiJournal { get; set; }
@@ -463,7 +488,7 @@ internal sealed class ModuleModel
     public string EfProviderPackage => DbProviderInfo.Package(DbProvider);
 
     /// <summary>EF Core package version for the provider.</summary>
-    public string EfProviderVersion => DbProviderInfo.Version(DbProvider);
+    public string EfProviderVersion => DbProviderInfo.Version(DbProvider, TargetFramework);
 
     /// <summary>Per-module connection string (fallback if not in appsettings).</summary>
     public string ConnectionString =>

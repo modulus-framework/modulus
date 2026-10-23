@@ -1,0 +1,23 @@
+using System.Text;
+using Microsoft.Extensions.Configuration;
+
+namespace {{ root_namespace }}.Web.Services.ApiClients;
+
+/// <summary>
+/// The API's passkey sign-in options, asked for before anyone is signed in, so this client is anonymous: it calls the API directly
+/// (not through the BFF gateway, whose /api route needs a session). The answer goes back to the browser, which runs the ceremony.
+/// </summary>
+public sealed class PasskeyLoginClient(HttpClient http, IConfiguration configuration)
+{
+    private readonly HttpClient _http = Configure(http, configuration);
+
+    private static HttpClient Configure(HttpClient http, IConfiguration configuration)
+    {
+        var baseUrl = configuration["Api:BaseUrl"] ?? "http://localhost:5180";
+        http.BaseAddress = new Uri($"{baseUrl.TrimEnd('/')}/");
+        return http;
+    }
+
+    public Task<HttpResponseMessage> BeginAsync(CancellationToken ct)
+        => _http.PostAsync("api/account/passkeys/login/options", new StringContent("{}", Encoding.UTF8, "application/json"), ct);
+}

@@ -71,6 +71,7 @@
   <!-- ── Testing ─────────────────────────────────────────────────── -->
   <Folder Name="/src/testing/">
     <Project Path="src/testing/Modulus.Testing.Architecture/Modulus.Testing.Architecture.csproj" />
+    <Project Path="src/testing/Modulus.Testing.Authorization/Modulus.Testing.Authorization.csproj" />
     <Project Path="src/testing/Modulus.Testing/Modulus.Testing.csproj" />
   </Folder>
   <!-- ── CLI ─────────────────────────────────────────────────────── -->
@@ -118,6 +119,7 @@
     <Project Path="tests/unit/Modulus.Authorization.Management.Tests/Modulus.Authorization.Management.Tests.csproj" />
     <Project Path="tests/unit/Modulus.BackgroundJobs.Quartz.Tests/Modulus.BackgroundJobs.Quartz.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Testing.Tests/Modulus.Testing.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.Testing.Authorization.Tests/Modulus.Testing.Authorization.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Caching.Redis.Tests/Modulus.Caching.Redis.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Cli.Tests/Modulus.Cli.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Observability.Tests/Modulus.Observability.Tests.csproj" />

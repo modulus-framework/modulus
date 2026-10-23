@@ -132,36 +132,53 @@ public class TenantManager<TTenant, TMembership, TDataStore>(
     /// </summary>
     public async Task<bool> AddMemberAsync(Guid userId, Guid tenantId, CancellationToken ct = default)
     {
-        var maxUsers = await db.Tenants.Where(t => t.Id == tenantId).Select(t => new { t.MaxUsers }).FirstOrDefaultAsync(ct);
-        if (maxUsers is null)
+        // The seat count and the insert must not interleave with another add for the same company: on a server database two adds could
+        // both see a free seat. The company row is locked for the transaction (a no-op update), so a concurrent add waits at the lock
+        // until this one commits, then counts the seat it took.
+        var strategy = db.Database.CreateExecutionStrategy();
+        var added = await strategy.ExecuteAsync(async () =>
+        {
+            db.ChangeTracker.Clear();
+            await using var tx = await db.Database.BeginTransactionAsync(ct);
+
+            var locked = await db.Tenants.Where(t => t.Id == tenantId)
+                .ExecuteUpdateAsync(s => s.SetProperty(t => t.MaxUsers, t => t.MaxUsers), ct);
+            if (locked == 0)
+                return false;
+
+            var limit = await db.Tenants.Where(t => t.Id == tenantId).Select(t => t.MaxUsers).FirstOrDefaultAsync(ct);
+            var existing = await db.TenantMemberships
+                .FirstOrDefaultAsync(m => m.UserId == userId && m.TenantId == tenantId, ct);
+            if (existing is not { IsActive: true } && limit is { } max
+                && await db.TenantMemberships.CountAsync(m => m.TenantId == tenantId && m.IsActive, ct) >= max)
+            {
+                Audit("membership.limit-reached", tenantId, $"user:{userId}");
+                throw new Modulus.Core.Abstractions.Exceptions.ConflictException(
+                    $"The company has reached its limit of {max} users.");
+            }
+
+            if (existing is null)
+            {
+                db.TenantMemberships.Add(new TMembership
+                {
+                    UserId = userId,
+                    TenantId = tenantId,
+                    IsActive = true,
+                    CreatedAtUtc = DateTimeOffset.UtcNow,
+                });
+            }
+            else
+            {
+                existing.IsActive = true;
+            }
+
+            await db.SaveChangesAsync(ct);
+            await tx.CommitAsync(ct);
+            return true;
+        });
+        if (!added)
             return false;
 
-        var existing = await db.TenantMemberships
-            .FirstOrDefaultAsync(m => m.UserId == userId && m.TenantId == tenantId, ct);
-        if (existing is not { IsActive: true } && maxUsers.MaxUsers is { } limit
-            && await db.TenantMemberships.CountAsync(m => m.TenantId == tenantId && m.IsActive, ct) >= limit)
-        {
-            Audit("membership.limit-reached", tenantId, $"user:{userId}");
-            throw new Modulus.Core.Abstractions.Exceptions.ConflictException(
-                $"The company has reached its limit of {limit} users.");
-        }
-
-        if (existing is null)
-        {
-            db.TenantMemberships.Add(new TMembership
-            {
-                UserId = userId,
-                TenantId = tenantId,
-                IsActive = true,
-                CreatedAtUtc = DateTimeOffset.UtcNow,
-            });
-        }
-        else
-        {
-            existing.IsActive = true;
-        }
-
-        await db.SaveChangesAsync(ct);
         Audit("membership.added", tenantId, $"user:{userId}");
         await NotifyAsync(AccessChangeKinds.Membership, "membership.added", tenantId, userId, ct);
         return true;

@@ -80,3 +80,7 @@ static Modulus.Data.Abstractions.OrderByClause<T>.operator ==(Modulus.Data.Abstr
 virtual Modulus.Data.Abstractions.Specification<T>.And(System.Linq.Expressions.Expression<System.Func<T, bool>!>! other) -> Modulus.Data.Abstractions.ISpecification<T>!
 virtual Modulus.Data.Abstractions.Specification<T>.Not() -> Modulus.Data.Abstractions.ISpecification<T>!
 virtual Modulus.Data.Abstractions.Specification<T>.Or(System.Linq.Expressions.Expression<System.Func<T, bool>!>! other) -> Modulus.Data.Abstractions.ISpecification<T>!
+Modulus.Data.Abstractions.CursorCodec
+Modulus.Data.Abstractions.IReadRepository<T>.ListKeysetAsync<TKey, TResult>(Modulus.Data.Abstractions.ISpecification<T!>! spec, System.Linq.Expressions.Expression<System.Func<T!, TKey>!>! keySelector, System.Linq.Expressions.Expression<System.Func<T!, TResult>!>! selector, TKey? after, int size, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Modulus.Core.Abstractions.Common.KeysetPage<TResult>!>!
+static Modulus.Data.Abstractions.CursorCodec.Decode<TKey>(string! cursor) -> TKey
+static Modulus.Data.Abstractions.CursorCodec.Encode<TKey>(TKey key) -> string!

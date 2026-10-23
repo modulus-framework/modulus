@@ -26,6 +26,8 @@ internal static class AuthenticationSetup
         var bffBaseUrl = configuration["Bff:BaseUrl"]
             ?? throw new InvalidOperationException("Bff:BaseUrl is not configured.");
         services.AddModulusHttpClient<BffSessionClient>(http => http.BaseAddress = new Uri($"{bffBaseUrl.TrimEnd('/')}/"))
+            // No cookie container: the gateway handler carries the browser's cookies, so one person's BFF session is never replayed on another's request.
+            .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler { UseCookies = false })
             .AddHttpMessageHandler<BffGatewayHandler>();
 
         services.AddAuthentication(BffSessionAuthenticationHandler.SchemeName)

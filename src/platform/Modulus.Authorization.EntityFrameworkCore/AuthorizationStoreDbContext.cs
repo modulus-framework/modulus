@@ -32,6 +32,7 @@ public abstract class AuthorizationStoreDbContextBase(
     internal DbSet<ScopedGrantRow> ScopedGrants => Set<ScopedGrantRow>();
     internal DbSet<AssignmentRow> Assignments => Set<AssignmentRow>();
     internal DbSet<ApprovalAuthorityRow> ApprovalAuthorities => Set<ApprovalAuthorityRow>();
+    internal DbSet<RecordShareRow> RecordShares => Set<RecordShareRow>();
     internal DbSet<ApprovalChainRow> ApprovalChains => Set<ApprovalChainRow>();
     internal DbSet<ApprovalRequestRow> ApprovalRequests => Set<ApprovalRequestRow>();
     internal DbSet<SodRuleRow> SodRules => Set<SodRuleRow>();
@@ -58,6 +59,7 @@ public abstract class AuthorizationStoreDbContextBase(
     internal DbSet<RecertificationCampaignRow> RecertificationCampaigns => Set<RecertificationCampaignRow>();
     internal DbSet<RecertificationItemRow> RecertificationItems => Set<RecertificationItemRow>();
     internal DbSet<DataQualityFindingRow> DataQualityFindings => Set<DataQualityFindingRow>();
+    internal DbSet<SeedMarkerRow> SeedMarkers => Set<SeedMarkerRow>();
 
     // ── SaveChanges sync override ──────────────────────────────────
     // Intentionally not implemented: the tenant auto-stamp below only runs
@@ -108,6 +110,12 @@ public abstract class AuthorizationStoreDbContextBase(
         // triple within a tenant replaces the Allow/Deny type, mirroring the
         // in-memory store's bucket[permission] = grant upsert semantics. The
         // same role/holder name in two different tenants is a distinct row.
+        // One row per startup seed that has been applied to this database (host-level, so no tenant column).
+        var seedMarker = modelBuilder.Entity<SeedMarkerRow>();
+        seedMarker.ToTable("ModulusAuthorizationSeeds");
+        seedMarker.HasKey(m => m.Name);
+        seedMarker.Property(m => m.Name).HasMaxLength(128);
+
         var grant = modelBuilder.Entity<PermissionGrantRow>();
         grant.ToTable("ModulusPermissionGrants");
         grant.HasKey(g => new { g.TenantId, g.HolderType, g.Holder, g.Permission });
@@ -147,7 +155,10 @@ public abstract class AuthorizationStoreDbContextBase(
         scoped.HasKey(g => g.Id);
         scoped.Property(g => g.Holder).HasMaxLength(256);
         scoped.Property(g => g.Permission).HasMaxLength(256);
-        scoped.Property(g => g.Scope).HasMaxLength(300);
+        // MySQL caps an index key at 3072 bytes (4 per utf8mb4 character). The unique key below holds TenantId (char(36): 144 bytes), HolderType
+        // (4), Holder and Permission (1024 each), Type (4): 800 bytes are left for Scope, which is 200 characters there. Other providers keep 300.
+        var mysql = Database.ProviderName?.Contains("MySql", StringComparison.OrdinalIgnoreCase) == true;
+        scoped.Property(g => g.Scope).HasMaxLength(mysql ? 200 : 300);
         scoped.Property(g => g.Reason).HasMaxLength(1000);
         scoped.HasIndex(g => new { g.TenantId, g.HolderType, g.Holder, g.Permission, g.Type, g.Scope }).IsUnique();
 
@@ -155,6 +166,13 @@ public abstract class AuthorizationStoreDbContextBase(
         assignment.ToTable("ModulusAssignments");
         assignment.HasKey(a => new { a.TenantId, a.UserId, a.AssignmentType, a.TargetId });
         assignment.Property(a => a.AssignmentType).HasMaxLength(128);
+
+        var share = modelBuilder.Entity<RecordShareRow>();
+        share.ToTable("ModulusRecordShares");
+        share.HasKey(s => s.Id);
+        share.Property(s => s.ResourceType).HasMaxLength(256);
+        share.Property(s => s.ResourceId).HasMaxLength(256);
+        share.HasIndex(s => new { s.TenantId, s.ResourceType, s.ResourceId });
 
         var approval = modelBuilder.Entity<ApprovalAuthorityRow>();
         approval.ToTable("ModulusApprovalAuthorities");
@@ -226,10 +244,12 @@ public abstract class AuthorizationStoreDbContextBase(
         dimensionValue.HasIndex(v => new { v.TenantId, v.Dimension, v.Code }).IsUnique();
         dimensionValue.HasIndex(v => new { v.TenantId, v.ParentId });
 
-        // The recorded permission catalog: global, not per company, so it has no tenant column or filter.
+        // The recorded permission catalog: global, not per company, so it has no tenant column or filter. Each host owns its rows
+        // (PermissionCatalogOptions.Owner), so the key is the owner and the permission.
         var catalog = modelBuilder.Entity<PermissionCatalogRow>();
         catalog.ToTable("ModulusPermissionCatalog");
-        catalog.HasKey(p => p.Permission);
+        catalog.HasKey(p => new { p.Owner, p.Permission });
+        catalog.Property(p => p.Owner).HasMaxLength(128);
         catalog.Property(p => p.Permission).HasMaxLength(128);
         catalog.Property(p => p.Lifecycle).HasConversion<string>().HasMaxLength(16);
         catalog.Property(p => p.ReplacedBy).HasMaxLength(128);
@@ -326,6 +346,9 @@ public abstract class AuthorizationStoreDbContextBase(
         mb.Entity<ApprovalAuthorityRow>().HasQueryFilter(e =>
             currentTenant.IsHost
             || (currentTenant.TenantId != null && e.TenantId == currentTenant.TenantId));
+        mb.Entity<RecordShareRow>().HasQueryFilter(e =>
+            currentTenant.IsHost
+            || (currentTenant.TenantId != null && e.TenantId == currentTenant.TenantId));
         mb.Entity<RoleInclusionRow>().HasQueryFilter(e =>
             currentTenant.IsHost
             || (currentTenant.TenantId != null && e.TenantId == currentTenant.TenantId));
@@ -387,6 +410,20 @@ internal sealed class AssignmentRow : IHasTenantId
     public Guid TargetId { get; set; }
     public DateTimeOffset? ValidFrom { get; set; }
     public DateTimeOffset? ValidUntil { get; set; }
+}
+
+/// <summary>Row backing a <see cref="Modulus.Authorization.Sharing.RecordShare"/>; the host company is stored as <see cref="Guid.Empty"/>.</summary>
+internal sealed class RecordShareRow : IHasTenantId
+{
+    public Guid Id { get; set; }
+    public Guid TenantId { get; set; }
+    public string ResourceType { get; set; } = null!;
+    public string ResourceId { get; set; } = null!;
+    public Guid GranteeUserId { get; set; }
+    public Guid SharedByUserId { get; set; }
+    public DateTimeOffset CreatedAt { get; set; }
+    public DateTimeOffset ExpiresAt { get; set; }
+    public DateTimeOffset? RevokedAt { get; set; }
 }
 
 /// <summary>Row backing an <see cref="Modulus.Authorization.Approval.ApprovalAuthority"/>.</summary>
@@ -653,6 +690,7 @@ internal sealed class PartyCeilingRow : IHasTenantId
 /// <summary>One typed value of a scope dimension, owned by a company (see <c>Modulus.Authorization.Dimensions.DimensionValue</c>).</summary>
 internal sealed class PermissionCatalogRow
 {
+    public string Owner { get; set; } = null!;
     public string Permission { get; set; } = null!;
     public PermissionLifecycle Lifecycle { get; set; }
     public string? ReplacedBy { get; set; }
@@ -668,4 +706,11 @@ internal sealed class DimensionValueRow : IHasTenantId
 
     /// <summary>The value this one sits under, or null at the top (see <see cref="Modulus.Authorization.Dimensions.DimensionValue.ParentId"/>).</summary>
     public Guid? ParentId { get; set; }
+}
+
+/// <summary>A startup seed that has been written to this database; a seed is applied once, so a grant revoked later stays revoked.</summary>
+internal sealed class SeedMarkerRow
+{
+    public string Name { get; set; } = null!;
+    public DateTimeOffset AppliedAtUtc { get; set; }
 }

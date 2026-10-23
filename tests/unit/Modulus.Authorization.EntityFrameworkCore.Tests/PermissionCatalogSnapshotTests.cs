@@ -92,7 +92,33 @@ public sealed class PermissionCatalogSnapshotTests : IAsyncLifetime
         logs.Should().BeEmpty();
     }
 
-    private ServiceProvider Host(Action<IPermissionRegistry> declare, List<string>? logs = null)
+    [Fact]
+    public async Task Hosts_sharing_a_database_reconcile_only_their_own_rows()
+    {
+        Action<IPermissionRegistry> apiDeclares = r =>
+        {
+            r.Add("orders:read", "Read orders.");
+            r.Add("orders:export", "Export orders.");
+        };
+        await using var api = Host(owner: "Api", declare: apiDeclares);
+        await StartAsync(api);
+        var logs = new List<string>();
+        await using var provisioning = Host(logs: logs, owner: "Provisioning", declare: r => r.Add("tenancy:data-stores:manage", "Manage data stores."));
+
+        await StartAsync(provisioning);
+
+        logs.Should().NotContain(m => m.Contains("orders:"), "the provisioning host does not report permissions it does not declare");
+        (await Store(provisioning).LoadAsync())!.Select(p => p.Permission).Should().Equal("tenancy:data-stores:manage");
+
+        await using var apiAgain = Host(owner: "Api", declare: apiDeclares);
+        await StartAsync(apiAgain);
+
+        (await Store(apiAgain).LoadAsync())!.Select(p => p.Permission).Should().Equal(new[] { "orders:export", "orders:read" });
+        (await Store(provisioning).LoadAsync())!.Select(p => p.Permission).Should().Equal(new[] { "tenancy:data-stores:manage" },
+            "the API's restart does not remove the other host's permission");
+    }
+
+    private ServiceProvider Host(Action<IPermissionRegistry> declare, List<string>? logs = null, string? owner = null)
     {
         var services = new ServiceCollection();
         services.AddLogging(b =>
@@ -105,6 +131,8 @@ public sealed class PermissionCatalogSnapshotTests : IAsyncLifetime
         services.AddModulusAuthorization();
         services.AddPermissions("Orders", declare);
         services.AddEfCoreAuthorizationStores(o => o.UseSqlite(_connection));
+        if (owner is not null)
+            services.Configure<PermissionCatalogOptions>(o => o.Owner = owner);
         return services.BuildServiceProvider();
     }
 

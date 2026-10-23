@@ -1,5 +1,9 @@
+{{ if auth == "openiddict" }}using System.Security.Cryptography.X509Certificates;
+using Modulus.Identity.Abstractions;
 using Modulus.Identity.Extensions;
-using OpenIddict.Server.AspNetCore;
+using {{ identity_namespace }}.Infrastructure;
+using OpenIddict.Server;
+{{ end }}using OpenIddict.Server.AspNetCore;
 
 namespace {{ root_namespace }}.Api.Security;
 
@@ -23,7 +27,30 @@ internal static class TokenServerSetup
             if (builder.Environment.IsDevelopment())
                 options.UseAspNetCore().DisableTransportSecurityRequirement();
         });
+{{ if auth == "openiddict" }}
+        // Passkey sign-in and enrolment (Identity:Passkeys). The endpoints are mapped only when it is enabled (ApiEndpoints).
+        builder.Services.AddModulusPasskeys<AppIdentityDbContext, ModulusUser>(builder.Configuration);
 
+        // Production signs and encrypts tokens with the operator's certificates, never the development ones (the server refuses those in
+        // Production). Each is a PFX file: its path and password come from Identity:Certificates:{Signing|Encryption}, set through User
+        // Secrets, the environment or a vault, never committed.
+        if (builder.Environment.IsProduction())
+        {
+            builder.Services.AddOpenIddict().AddServer(server =>
+            {
+                server.AddSigningCertificate(LoadCertificate(builder.Configuration, "Identity:Certificates:Signing"));
+                server.AddEncryptionCertificate(LoadCertificate(builder.Configuration, "Identity:Certificates:Encryption"));
+            });
+        }
+{{ end }}
         return builder;
     }
-}
+{{ if auth == "openiddict" }}
+    private static X509Certificate2 LoadCertificate(IConfiguration configuration, string section)
+    {
+        var path = configuration[$"{section}:Path"]
+            ?? throw new InvalidOperationException($"Production needs {section}:Path (a PFX file) for the token server.");
+        var password = configuration[$"{section}:Password"];
+        return X509CertificateLoader.LoadPkcs12FromFile(path, password);
+    }
+{{ end }}}

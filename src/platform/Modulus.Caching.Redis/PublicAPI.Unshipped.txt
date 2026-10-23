@@ -17,3 +17,5 @@ static Modulus.Caching.RedisCachingExtensions.AddRedisDistributedLock(this Micro
 Modulus.Caching.RedisFusionCachingExtensions
 static Modulus.Caching.RedisFusionCachingExtensions.AddRedisFusionCache(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration, bool useBackplane = true) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static Modulus.Caching.RedisFusionCachingExtensions.AddRedisFusionCache(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration, string! connectionString, bool useBackplane = true) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+Modulus.Caching.RedisSettingCacheBackplaneExtensions
+static Modulus.Caching.RedisSettingCacheBackplaneExtensions.AddRedisSettingCacheBackplane(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!

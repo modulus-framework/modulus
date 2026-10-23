@@ -799,3 +799,41 @@ override Modulus.Authorization.Management.DimensionParentWriteRequest.GetHashCod
 override Modulus.Authorization.Management.DimensionParentWriteRequest.ToString() -> string!
 static Modulus.Authorization.Management.DimensionParentWriteRequest.operator !=(Modulus.Authorization.Management.DimensionParentWriteRequest? left, Modulus.Authorization.Management.DimensionParentWriteRequest? right) -> bool
 static Modulus.Authorization.Management.DimensionParentWriteRequest.operator ==(Modulus.Authorization.Management.DimensionParentWriteRequest? left, Modulus.Authorization.Management.DimensionParentWriteRequest? right) -> bool
+Modulus.Authorization.Management.AuthorizationManagementExtensions.RecordShareRequest
+Modulus.Authorization.Management.AuthorizationManagementExtensions.RecordShareRequest.<Clone>$() -> Modulus.Authorization.Management.AuthorizationManagementExtensions.RecordShareRequest!
+Modulus.Authorization.Management.AuthorizationManagementExtensions.RecordShareRequest.Deconstruct(out System.Guid GranteeUserId, out double Hours) -> void
+Modulus.Authorization.Management.AuthorizationManagementExtensions.RecordShareRequest.Equals(Modulus.Authorization.Management.AuthorizationManagementExtensions.RecordShareRequest? other) -> bool
+Modulus.Authorization.Management.AuthorizationManagementExtensions.RecordShareRequest.GranteeUserId.get -> System.Guid
+Modulus.Authorization.Management.AuthorizationManagementExtensions.RecordShareRequest.GranteeUserId.init -> void
+Modulus.Authorization.Management.AuthorizationManagementExtensions.RecordShareRequest.Hours.get -> double
+Modulus.Authorization.Management.AuthorizationManagementExtensions.RecordShareRequest.Hours.init -> void
+Modulus.Authorization.Management.AuthorizationManagementExtensions.RecordShareRequest.RecordShareRequest(System.Guid GranteeUserId, double Hours) -> void
+Modulus.Authorization.Management.AuthorizationManagementExtensions.RecordShareResponse
+Modulus.Authorization.Management.AuthorizationManagementExtensions.RecordShareResponse.<Clone>$() -> Modulus.Authorization.Management.AuthorizationManagementExtensions.RecordShareResponse!
+Modulus.Authorization.Management.AuthorizationManagementExtensions.RecordShareResponse.Active.get -> bool
+Modulus.Authorization.Management.AuthorizationManagementExtensions.RecordShareResponse.Active.init -> void
+Modulus.Authorization.Management.AuthorizationManagementExtensions.RecordShareResponse.CreatedAt.get -> System.DateTimeOffset
+Modulus.Authorization.Management.AuthorizationManagementExtensions.RecordShareResponse.CreatedAt.init -> void
+Modulus.Authorization.Management.AuthorizationManagementExtensions.RecordShareResponse.Deconstruct(out System.Guid Id, out System.Guid GranteeUserId, out System.Guid SharedByUserId, out System.DateTimeOffset CreatedAt, out System.DateTimeOffset ExpiresAt, out System.DateTimeOffset? RevokedAt, out bool Active) -> void
+Modulus.Authorization.Management.AuthorizationManagementExtensions.RecordShareResponse.Equals(Modulus.Authorization.Management.AuthorizationManagementExtensions.RecordShareResponse? other) -> bool
+Modulus.Authorization.Management.AuthorizationManagementExtensions.RecordShareResponse.ExpiresAt.get -> System.DateTimeOffset
+Modulus.Authorization.Management.AuthorizationManagementExtensions.RecordShareResponse.ExpiresAt.init -> void
+Modulus.Authorization.Management.AuthorizationManagementExtensions.RecordShareResponse.GranteeUserId.get -> System.Guid
+Modulus.Authorization.Management.AuthorizationManagementExtensions.RecordShareResponse.GranteeUserId.init -> void
+Modulus.Authorization.Management.AuthorizationManagementExtensions.RecordShareResponse.Id.get -> System.Guid
+Modulus.Authorization.Management.AuthorizationManagementExtensions.RecordShareResponse.Id.init -> void
+Modulus.Authorization.Management.AuthorizationManagementExtensions.RecordShareResponse.RecordShareResponse(System.Guid Id, System.Guid GranteeUserId, System.Guid SharedByUserId, System.DateTimeOffset CreatedAt, System.DateTimeOffset ExpiresAt, System.DateTimeOffset? RevokedAt, bool Active) -> void
+Modulus.Authorization.Management.AuthorizationManagementExtensions.RecordShareResponse.RevokedAt.get -> System.DateTimeOffset?
+Modulus.Authorization.Management.AuthorizationManagementExtensions.RecordShareResponse.RevokedAt.init -> void
+Modulus.Authorization.Management.AuthorizationManagementExtensions.RecordShareResponse.SharedByUserId.get -> System.Guid
+Modulus.Authorization.Management.AuthorizationManagementExtensions.RecordShareResponse.SharedByUserId.init -> void
+override Modulus.Authorization.Management.AuthorizationManagementExtensions.RecordShareRequest.Equals(object? obj) -> bool
+override Modulus.Authorization.Management.AuthorizationManagementExtensions.RecordShareRequest.GetHashCode() -> int
+override Modulus.Authorization.Management.AuthorizationManagementExtensions.RecordShareRequest.ToString() -> string!
+override Modulus.Authorization.Management.AuthorizationManagementExtensions.RecordShareResponse.Equals(object? obj) -> bool
+override Modulus.Authorization.Management.AuthorizationManagementExtensions.RecordShareResponse.GetHashCode() -> int
+override Modulus.Authorization.Management.AuthorizationManagementExtensions.RecordShareResponse.ToString() -> string!
+static Modulus.Authorization.Management.AuthorizationManagementExtensions.RecordShareRequest.operator !=(Modulus.Authorization.Management.AuthorizationManagementExtensions.RecordShareRequest? left, Modulus.Authorization.Management.AuthorizationManagementExtensions.RecordShareRequest? right) -> bool
+static Modulus.Authorization.Management.AuthorizationManagementExtensions.RecordShareRequest.operator ==(Modulus.Authorization.Management.AuthorizationManagementExtensions.RecordShareRequest? left, Modulus.Authorization.Management.AuthorizationManagementExtensions.RecordShareRequest? right) -> bool
+static Modulus.Authorization.Management.AuthorizationManagementExtensions.RecordShareResponse.operator !=(Modulus.Authorization.Management.AuthorizationManagementExtensions.RecordShareResponse? left, Modulus.Authorization.Management.AuthorizationManagementExtensions.RecordShareResponse? right) -> bool
+static Modulus.Authorization.Management.AuthorizationManagementExtensions.RecordShareResponse.operator ==(Modulus.Authorization.Management.AuthorizationManagementExtensions.RecordShareResponse? left, Modulus.Authorization.Management.AuthorizationManagementExtensions.RecordShareResponse? right) -> bool

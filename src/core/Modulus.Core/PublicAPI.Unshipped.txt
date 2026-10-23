@@ -817,3 +817,23 @@ Modulus.Core.Abstractions.Tenancy.ITenantDatabaseProviders.ClearPool(string! pro
 Modulus.Core.Abstractions.Tenancy.ITenantDatabaseProviders.ProbeAsync(string! providerKey, string! connectionString, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
 Modulus.Core.Abstractions.Tenancy.ITenantDatabaseResolver.TryTakeSuperseded(System.Guid tenantId, string! storeKey, out Modulus.Core.Abstractions.Tenancy.TenantDatabaseTarget? target) -> bool
 Modulus.Core.Abstractions.IUserRoleDirectory.MayStartAccessAsync(System.Guid userId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<bool>
+Modulus.Core.Abstractions.Common.KeysetPage<T>
+Modulus.Core.Abstractions.Common.KeysetPage<T>.<Clone>$() -> Modulus.Core.Abstractions.Common.KeysetPage<T>!
+Modulus.Core.Abstractions.Common.KeysetPage<T>.Equals(Modulus.Core.Abstractions.Common.KeysetPage<T>? other) -> bool
+Modulus.Core.Abstractions.Common.KeysetPage<T>.HasNextPage.get -> bool
+Modulus.Core.Abstractions.Common.KeysetPage<T>.HasNextPage.init -> void
+Modulus.Core.Abstractions.Common.KeysetPage<T>.Items.get -> System.Collections.Generic.IReadOnlyList<T>!
+Modulus.Core.Abstractions.Common.KeysetPage<T>.Items.init -> void
+Modulus.Core.Abstractions.Common.KeysetPage<T>.KeysetPage() -> void
+Modulus.Core.Abstractions.Common.KeysetPage<T>.Map<TResult>(System.Func<T, TResult>! selector) -> Modulus.Core.Abstractions.Common.KeysetPage<TResult>!
+Modulus.Core.Abstractions.Common.KeysetPage<T>.NextCursor.get -> string?
+Modulus.Core.Abstractions.Common.KeysetPage<T>.NextCursor.init -> void
+Modulus.Core.Abstractions.Common.PagingMode
+Modulus.Core.Abstractions.Common.PagingMode.Cursor = 2 -> Modulus.Core.Abstractions.Common.PagingMode
+Modulus.Core.Abstractions.Common.PagingMode.Keyset = 1 -> Modulus.Core.Abstractions.Common.PagingMode
+Modulus.Core.Abstractions.Common.PagingMode.Offset = 0 -> Modulus.Core.Abstractions.Common.PagingMode
+override Modulus.Core.Abstractions.Common.KeysetPage<T>.Equals(object? obj) -> bool
+override Modulus.Core.Abstractions.Common.KeysetPage<T>.GetHashCode() -> int
+override Modulus.Core.Abstractions.Common.KeysetPage<T>.ToString() -> string!
+static Modulus.Core.Abstractions.Common.KeysetPage<T>.operator !=(Modulus.Core.Abstractions.Common.KeysetPage<T>? left, Modulus.Core.Abstractions.Common.KeysetPage<T>? right) -> bool
+static Modulus.Core.Abstractions.Common.KeysetPage<T>.operator ==(Modulus.Core.Abstractions.Common.KeysetPage<T>? left, Modulus.Core.Abstractions.Common.KeysetPage<T>? right) -> bool

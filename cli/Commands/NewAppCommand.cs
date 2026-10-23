@@ -22,6 +22,10 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         [CommandOption("-d|--database")]
         public string? Database { get; init; }
 
+        [Description("Target framework: net10.0 (default) or net8.0. Guid v7 keyset paging is available on net10.0 with PostgreSQL.")]
+        [CommandOption("--framework")]
+        public string? Framework { get; init; }
+
         [Description("Auth provider: none, openiddict, auth0, authentik, azuread, duende, keycloak, okta. Omit to be prompted.")]
         [CommandOption("--auth")]
         public string? Auth { get; init; }
@@ -235,6 +239,7 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
             RootNamespace = rootNs,
             AppName = appName,
             DbProvider = database,
+            TargetFramework = string.IsNullOrWhiteSpace(s.Framework) ? AppFramework.Default : ValidateChoice(s.Framework!, AppFramework.Supported, "framework"),
             NoExample = noExample,
             Auth = auth,
             MessageBroker = messageBroker,
@@ -373,6 +378,7 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
                 ModuleName = model.ExampleModule,
                 ModuleNamespace = modNs,
                 DbProvider = model.DbProvider,
+                TargetFramework = model.TargetFramework,
                 MigrationEngine = model.MigrationEngine,
                 EntityName = model.ExampleEntity,
                 EntityNameLower = CodeGen.ToCamelCase(model.ExampleEntity),
@@ -604,6 +610,17 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
                 Path.Combine(accountDir, "AccessDenied.cshtml.cs"));
             _templates.RenderToFile("app/AccessDenied.Web.cshtml", model,
                 Path.Combine(accountDir, "AccessDenied.cshtml"));
+
+            // Passkey enrolment: the signed-in person adds and removes passkeys through the API (local token server only).
+            if (model.Auth == "openiddict")
+            {
+                _templates.RenderToFile("app/PasskeysModel.Web", model, Path.Combine(webDir, "Pages", "Passkeys.cshtml.cs"));
+                _templates.RenderToFile("app/Passkeys.Web.cshtml", model, Path.Combine(webDir, "Pages", "Passkeys.cshtml"));
+                _templates.RenderToFile("app/PasskeyApiClient.Web", model, Path.Combine(webDir, "Services", "ApiClients", "PasskeyApiClient.cs"));
+                _templates.RenderToFile("app/passkeys.js", model, Path.Combine(webDir, "wwwroot", "js", "passkeys.js"));
+                _templates.RenderToFile("app/PasskeyLoginClient.Web", model, Path.Combine(webDir, "Services", "ApiClients", "PasskeyLoginClient.cs"));
+                _templates.RenderToFile("app/passkey-login.js", model, Path.Combine(webDir, "wwwroot", "js", "passkey-login.js"));
+            }
         }
 
         projects.Add($"src/Web/{rootNs}.Web/{rootNs}.Web.csproj");
@@ -1155,6 +1172,13 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
                 Path.Combine(appDir, $"Get{m.EntityPlural}Query.cs"));
             _templates.RenderToFile("module/Application/GetAllHandler", m,
                 Path.Combine(appDir, $"Get{m.EntityPlural}Handler.cs"));
+            if (m.CursorPaging)
+            {
+                _templates.RenderToFile("module/Application/GetCursorQuery", m,
+                    Path.Combine(appDir, $"Get{m.EntityPlural}CursorQuery.cs"));
+                _templates.RenderToFile("module/Application/GetCursorHandler", m,
+                    Path.Combine(appDir, $"Get{m.EntityPlural}CursorHandler.cs"));
+            }
             _templates.RenderToFile("module/Application/GetByIdQuery", m,
                 Path.Combine(appDir, $"Get{entityName}ByIdQuery.cs"));
             _templates.RenderToFile("module/Application/GetByIdHandler", m,
@@ -1222,6 +1246,9 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         {
             _templates.RenderToFile("module/Presentation/Endpoint", m,
                 Path.Combine(presDir, $"{m.EntityPlural}Endpoint.cs"));
+            if (m.CursorPaging)
+                _templates.RenderToFile("module/Presentation/CursorEndpoint", m,
+                    Path.Combine(presDir, $"{m.EntityPlural}CursorEndpoint.cs"));
         }
     }
 

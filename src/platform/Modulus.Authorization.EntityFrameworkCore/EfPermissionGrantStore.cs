@@ -57,11 +57,7 @@ public sealed class EfPermissionGrantStore(
         var lowerUser = userKey?.ToLowerInvariant();
 
         var grantRows = db.Grants.AsNoTracking()
-            .Where(g =>
-                (g.HolderType == GrantHolderType.Role && lowerRoles.Contains(g.Holder.ToLower()))
-                || (lowerUser != null
-                    && g.HolderType == GrantHolderType.User
-                    && g.Holder.ToLower() == lowerUser))
+            .Where(ScalarPredicates.Holder<PermissionGrantRow>(g => g.HolderType, g => g.Holder.ToLower(), lowerRoles, lowerUser))
             .ToList();
 
         var result = grantRows
@@ -69,11 +65,7 @@ public sealed class EfPermissionGrantStore(
             .ToList();
 
         var scopedRows = db.ScopedGrants.AsNoTracking()
-            .Where(g =>
-                (g.HolderType == GrantHolderType.Role && lowerRoles.Contains(g.Holder.ToLower()))
-                || (lowerUser != null
-                    && g.HolderType == GrantHolderType.User
-                    && g.Holder.ToLower() == lowerUser))
+            .Where(ScalarPredicates.Holder<ScopedGrantRow>(g => g.HolderType, g => g.Holder.ToLower(), lowerRoles, lowerUser))
             .ToList();
         result.AddRange(scopedRows.Select(ToGrant).OfType<PermissionGrant>());
         return EfPartyStore.ApplyCeiling(db, principal.UserId, result);
@@ -96,11 +88,7 @@ public sealed class EfPermissionGrantStore(
         var lowerUser = userKey?.ToLowerInvariant();
 
         var grantRows = await db.Grants.AsNoTracking()
-            .Where(g =>
-                (g.HolderType == GrantHolderType.Role && lowerRoles.Contains(g.Holder.ToLower()))
-                || (lowerUser != null
-                    && g.HolderType == GrantHolderType.User
-                    && g.Holder.ToLower() == lowerUser))
+            .Where(ScalarPredicates.Holder<PermissionGrantRow>(g => g.HolderType, g => g.Holder.ToLower(), lowerRoles, lowerUser))
             .ToListAsync(ct);
 
         var result = grantRows
@@ -108,11 +96,7 @@ public sealed class EfPermissionGrantStore(
             .ToList();
 
         var scopedRows = await db.ScopedGrants.AsNoTracking()
-            .Where(g =>
-                (g.HolderType == GrantHolderType.Role && lowerRoles.Contains(g.Holder.ToLower()))
-                || (lowerUser != null
-                    && g.HolderType == GrantHolderType.User
-                    && g.Holder.ToLower() == lowerUser))
+            .Where(ScalarPredicates.Holder<ScopedGrantRow>(g => g.HolderType, g => g.Holder.ToLower(), lowerRoles, lowerUser))
             .ToListAsync(ct);
         result.AddRange(scopedRows.Select(ToGrant).OfType<PermissionGrant>());
         return await EfPartyStore.ApplyCeilingAsync(db, principal.UserId, result, ct);
@@ -238,6 +222,23 @@ public sealed class EfPermissionGrantStore(
             .Where(id => Guid.TryParse(id, out _))
             .Select(Guid.Parse)
             .ToList();
+    }
+
+    /// <summary>Whether the named startup seed has already been written to this database.</summary>
+    public async Task<bool> IsSeedAppliedAsync(string name, CancellationToken ct = default)
+    {
+        await using var db = await factory.CreateDbContextAsync(ct);
+        return await db.SeedMarkers.AsNoTracking().AnyAsync(m => m.Name == name, ct);
+    }
+
+    /// <summary>Records that the named startup seed has been written to this database. Recording it twice is a no-op.</summary>
+    public async Task MarkSeedAppliedAsync(string name, DateTimeOffset appliedAt, CancellationToken ct = default)
+    {
+        await using var db = await factory.CreateDbContextAsync(ct);
+        if (await db.SeedMarkers.AnyAsync(m => m.Name == name, ct))
+            return;
+        db.SeedMarkers.Add(new SeedMarkerRow { Name = name, AppliedAtUtc = appliedAt });
+        await db.SaveChangesAsync(ct);
     }
 
     /// <summary>Grants one or more permissions to a role.</summary>

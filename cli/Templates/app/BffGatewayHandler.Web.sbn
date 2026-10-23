@@ -36,11 +36,17 @@ internal sealed class BffGatewayHandler(IHttpContextAccessor httpContextAccessor
     }
 }
 
-/// <summary>Registration helpers for the typed clients that reach the API through the BFF.</summary>
+/// <summary>
+/// Registration helpers for the typed clients that reach the API through the BFF. <c>UseCookies = false</c> is required: the
+/// browser's cookies are copied by <see cref="BffGatewayHandler"/>, and a client that kept the BFF's <c>Set-Cookie</c> in its own
+/// cookie container would replay one person's session on another person's request.
+/// </summary>
 internal static class BffGatewayRegistration
 {
     /// <summary>A typed client whose calls go through the BFF's <c>/api</c> route, carrying the browser's session.</summary>
     public static IHttpClientBuilder AddBffGatewayClient<TClient>(this IServiceCollection services)
         where TClient : class
-        => services.AddModulusHttpClient<TClient>().AddHttpMessageHandler<BffGatewayHandler>();
+        => services.AddModulusHttpClient<TClient>()
+            .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler { UseCookies = false })
+            .AddHttpMessageHandler<BffGatewayHandler>();
 }

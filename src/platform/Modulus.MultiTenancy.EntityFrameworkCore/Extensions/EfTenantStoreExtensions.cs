@@ -54,6 +54,7 @@ public static class EfTenantStoreExtensions
         services.AddDbContext<TContext>(configure);
 
         // The generic services take the context under its base type, so a derived context satisfies them.
+        services.TryAddScoped<TenantStoreDbContextBase>(sp => sp.GetRequiredService<TContext>());
         services.TryAddScoped<TenantStoreDbContext<TTenant, TMembership, TDataStore>>(sp => sp.GetRequiredService<TContext>());
         services.TryAddScoped<TenantManager<TTenant, TMembership, TDataStore>>();
         services.AddScoped<ITenantMemberProvisioner>(sp => sp.GetRequiredService<TenantManager<TTenant, TMembership, TDataStore>>());
@@ -111,10 +112,18 @@ public static class EfTenantStoreExtensions
 
         await strategy.ExecuteAsync(async () =>
         {
-            if (!ensureCreatedIfNoMigrations || db.Database.GetMigrations().Any())
+            if (db.Database.GetMigrations().Any())
                 await db.Database.MigrateAsync(ct);
-            else
+            else if (ensureCreatedIfNoMigrations)
                 await db.Database.EnsureCreatedAsync(ct);
+            else
+                throw NoMigrationsException(db);
         });
     }
+
+    // Without migrations, the production path refuses to start: the schema would never be created and the first read would fail far from here.
+    private static InvalidOperationException NoMigrationsException(DbContext db)
+        => new(
+            $"No migrations are compiled into {db.GetType().Name}, so its schema cannot be created outside Development. "
+            + "Author them in the application (a context derived from it, with migrations) and apply them before the host starts.");
 }

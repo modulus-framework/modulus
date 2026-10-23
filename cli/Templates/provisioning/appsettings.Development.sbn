@@ -1,0 +1,27 @@
+{
+  "Provisioning": {
+    "Authority": "http://localhost:5180",
+    "Audience": ""
+  },
+  "Secrets": {
+    "RuntimeReadOnly": false,
+    "OpenBao": {
+      "Address": "http://127.0.0.1:8200",
+      "Mount": "modulus-dev",
+      "PathPrefix": "tenant-db",
+      "AllowInsecureHttp": true,
+      "Auth": {
+        "Method": "AppRole",
+        "Role": "modulus-api",
+        "RoleIdPath": "secrets/openbao-role-id",
+        "SecretIdPath": "secrets/openbao-secret-id"
+      },
+      "Writer": {
+        "Method": "AppRole",
+        "Role": "modulus-provisioner",
+        "RoleIdPath": "secrets/openbao-provisioner-role-id",
+        "SecretIdPath": "secrets/openbao-provisioner-secret-id"
+      }
+    }
+  }
+}

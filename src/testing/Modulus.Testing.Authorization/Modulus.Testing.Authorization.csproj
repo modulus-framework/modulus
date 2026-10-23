@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework />
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <Description>Conformance kit for an app's permission grants (TEST-1): the truth table every grant store and resolver must satisfy (direct, role and wildcard grants, denies, expiry, restriction, delegation, agent caps and company isolation), run against the app's own subject.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../platform/Modulus.Platform/Modulus.Platform.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -14,6 +14,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
+using Modulus.Authorization;
+using Modulus.Authorization.Grants;
 using Modulus.Core.Abstractions;
 using Modulus.Core.Abstractions.Ai;
 using Modulus.Core.Abstractions.Compliance;
@@ -163,6 +165,25 @@ public sealed class TestUsers : IAiConnectorUserResolver
         ["auditor"] = ["audit:view"],
     };
 
+    /// <summary>A grant store holding <see cref="RolePermissions"/> as role grants: the store the test user's permissions come from.</summary>
+    public static InMemoryPermissionGrantStore CreateGrants()
+    {
+        var grants = new InMemoryPermissionGrantStore();
+        foreach (var (role, permissions) in RolePermissions)
+            grants.GrantToRole(role, permissions);
+        return grants;
+    }
+
+    /// <summary>The real permission resolver over <paramref name="grants"/>, with every permission the grants name registered.</summary>
+    public static IPermissionResolver ResolverOver(InMemoryPermissionGrantStore grants)
+    {
+        var registry = new PermissionRegistry();
+        foreach (var permission in RolePermissions.Values.SelectMany(p => p).Concat(["audit:view", "catalog:read"]).Distinct())
+            registry.Add(permission, permission, null);
+        registry.Freeze();
+        return new PermissionResolver(grants, registry);
+    }
+
     public Task<AiConnectorUser?> ResolveAsync(AiUserLookup lookup, CancellationToken ct = default)
     {
         AiConnectorUser? user = Guid.TryParse(lookup.Value, out var id) switch
@@ -177,7 +198,7 @@ public sealed class TestUsers : IAiConnectorUserResolver
 }
 
 /// <summary>The request principal as <see cref="ICurrentUser"/>, permissions by role.</summary>
-public sealed class TestCurrentUser(IHttpContextAccessor accessor) : ICurrentUser
+public sealed class TestCurrentUser(IHttpContextAccessor accessor, IPermissionResolver resolver) : ICurrentUser
 {
     private ClaimsPrincipal? Principal => accessor.HttpContext?.User;
 
@@ -189,12 +210,22 @@ public sealed class TestCurrentUser(IHttpContextAccessor accessor) : ICurrentUse
 
     public bool IsAuthenticated => Principal?.Identity?.IsAuthenticated == true;
 
-    public IReadOnlyList<string> Permissions =>
-    [
-        .. (Principal?.FindAll("role") ?? [])
-            .SelectMany(r => TestUsers.RolePermissions.TryGetValue(r.Value, out var p) ? p : [])
-            .Distinct(),
-    ];
+    // An agent acting for the user (the "act" claim) holds nothing here: the production user without a grant store grants an agent
+    // token nothing (A9-1, ClaimsPrincipalCurrentUser), and this double mirrors that rule.
+    // The grant store decides, as in production: an envelope's agent (the "act" claim) caps the user to the agent's own grants.
+    public IReadOnlyList<string> Permissions
+    {
+        get
+        {
+            var principal = Principal;
+            if (principal is null)
+                return [];
+            // The indexing identity has roles but no user: its roles resolve on their own, as the resolver allows.
+            var roles = (principal.FindAll("role") ?? []).Select(r => r.Value).ToArray();
+            var agent = principal.FindFirst("act")?.Value;
+            return [.. resolver.Resolve(new PrincipalGrantQuery(UserId, roles, agent))];
+        }
+    }
 
     public bool IsInRole(string role) => Principal?.HasClaim("role", role) == true;
 
@@ -303,6 +334,9 @@ public sealed class ConnectorTestHost : IAsyncDisposable
         var services = builder.Services;
         services.AddHttpContextAccessor();
         services.AddSingleton<ISecurityAuditLog, RecordingAuditLog>();
+        var grants = TestUsers.CreateGrants();
+        services.AddSingleton(grants);
+        services.AddSingleton<IPermissionResolver>(TestUsers.ResolverOver(grants));
         services.AddScoped<ICurrentUser, TestCurrentUser>();
         services.AddSingleton<ITenantContextRestorer, TestTenantRestorer>();
         services.AddSingleton<ITenantMembershipStore, InMemoryTenantMembershipStore>();

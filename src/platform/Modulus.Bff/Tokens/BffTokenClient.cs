@@ -18,6 +18,9 @@ public interface IBffTokenClient
     /// <summary>Resource-owner password grant (for web clients in <see cref="BffLoginMode.Password"/>).</summary>
     Task<BffTokenResult> PasswordAsync(string client, string userName, string password, CancellationToken ct = default);
 
+    /// <summary>The passkey grant: the challenge id from the auth server's passkey options and the browser's assertion.</summary>
+    Task<BffTokenResult> PasskeyAsync(string client, string challengeId, string assertion, CancellationToken ct = default);
+
     /// <summary>Refresh-token grant.</summary>
     Task<BffTokenResult> RefreshAsync(string client, string refreshToken, CancellationToken ct = default);
 
@@ -35,6 +38,9 @@ internal sealed class BffTokenClient(
     TimeProvider clock,
     ILogger<BffTokenClient> logger) : IBffTokenClient
 {
+    /// <summary>The auth server's passkey grant (<c>Modulus.Identity</c>'s PasskeyGrant.GrantType).</summary>
+    internal const string PasskeyGrantType = "urn:modulus:params:oauth:grant-type:passkey";
+
     public Task<BffTokenResult> PasswordAsync(string client, string userName, string password, CancellationToken ct = default)
     {
         var options = clients.Get(client);
@@ -43,6 +49,19 @@ internal sealed class BffTokenClient(
             ["grant_type"] = "password",
             ["username"] = userName,
             ["password"] = password,
+            ["scope"] = string.Join(' ', options.Scopes),
+        };
+        return RequestAsync(client, options, form, previousRefreshToken: null, ct);
+    }
+
+    public Task<BffTokenResult> PasskeyAsync(string client, string challengeId, string assertion, CancellationToken ct = default)
+    {
+        var options = clients.Get(client);
+        var form = new Dictionary<string, string>
+        {
+            ["grant_type"] = PasskeyGrantType,
+            ["challenge_id"] = challengeId,
+            ["assertion"] = assertion,
             ["scope"] = string.Join(' ', options.Scopes),
         };
         return RequestAsync(client, options, form, previousRefreshToken: null, ct);

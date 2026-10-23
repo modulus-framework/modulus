@@ -41,7 +41,7 @@ public sealed class InvitationAndTwoFactorTests
     }
 
     private static async Task<(ServiceProvider Provider, CapturingSender Sender, SqliteConnection Connection)> CreateAsync(
-        Modulus.Authorization.Fields.IFieldAuthorizer? fieldAuthorizer = null)
+        Modulus.Authorization.Fields.IFieldAuthorizer? fieldAuthorizer = null, bool grantAny = true)
     {
         var connection = new SqliteConnection("DataSource=:memory:");
         await connection.OpenAsync();
@@ -55,6 +55,8 @@ public sealed class InvitationAndTwoFactorTests
             services.AddSingleton(fieldAuthorizer);
         services.AddScoped<ICurrentTenant, Modulus.Core.Null.NullCurrentTenant>();
         services.AddDbContext<ModulusIdentityDbContext>(o => o.UseSqlite(connection));
+        if (grantAny)
+            services.AddScoped<ICurrentUser, GrantAnyCurrentUser>();
         services.AddModulusIdentity<ModulusIdentityDbContext, ModulusUser, ModulusRole>(new ConfigurationBuilder().Build());
         var provider = services.BuildServiceProvider();
         using (var scope = provider.CreateScope())
@@ -84,6 +86,24 @@ public sealed class InvitationAndTwoFactorTests
         var offset = hash[^1] & 0xF;
         var code = (((hash[offset] & 0x7F) << 24) | (hash[offset + 1] << 16) | (hash[offset + 2] << 8) | hash[offset + 3]) % 1_000_000;
         return code.ToString("D6", System.Globalization.CultureInfo.InvariantCulture);
+    }
+
+    [Fact]
+    public async Task A_caller_without_grant_any_cannot_invite_someone_into_a_role()
+    {
+        var (provider, sender, connection) = await CreateAsync(grantAny: false);
+        await using var _ = provider;
+        await using var __ = connection;
+        using var scope = provider.CreateScope();
+        await scope.ServiceProvider.GetRequiredService<RoleManager<ModulusRole>>().CreateAsync(new ModulusRole { Name = "Buyer" });
+        var invitations = scope.ServiceProvider.GetRequiredService<IUserInvitationService>();
+        var users = scope.ServiceProvider.GetRequiredService<UserManager<ModulusUser>>();
+
+        var result = await invitations.InviteAsync(new UserInvitation("roled@example.test", ["Buyer"]));
+
+        result.Error.Should().Contain("authorization:grant-any");
+        (await users.FindByEmailAsync("roled@example.test")).Should().BeNull();
+        sender.Sent.Should().BeEmpty();
     }
 
     [Fact]

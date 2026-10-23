@@ -1,5 +1,6 @@
 using Modulus.EntityFrameworkCore.Extensions;
-{{ if auth == "openiddict" }}using {{ identity_namespace }}.Infrastructure;
+{{ if example_permission }}using Modulus.Authorization.EntityFrameworkCore;
+{{ end }}{{ if auth == "openiddict" }}using {{ identity_namespace }}.Infrastructure;
 {{ end }}{{ if multi_tenancy }}using Modulus.MultiTenancy.EntityFrameworkCore;
 using {{ tenancy_namespace }}.Infrastructure;
 {{ end }}
@@ -21,13 +22,18 @@ internal static class DatabaseStartup
     /// </remarks>
     public static async Task InitializeApiAsync(this WebApplication app)
     {
-{{ if multi_tenancy }}        // The tenant store (companies, memberships) is not a module context: it is migrated on its own, first.
+{{ if example_permission }}        // The permission grants have their own database (the Authorization connection), shared with the provisioning host.
+        await app.Services.MigrateAuthorizationStoreAsync(ensureCreatedIfNoMigrations: !app.Environment.IsProduction());
+{{ end }}{{ if multi_tenancy }}        // The tenant store (companies, memberships) is not a module context: it is migrated on its own, first.
         await app.Services.MigrateTenantStoreAsync(ensureCreatedIfNoMigrations: !app.Environment.IsProduction());
 {{ end }}        await app.Services.MigrateModulusDatabasesAsync(
             app.Environment.IsProduction()
                 ? DatabaseInitializationMode.Migrate
                 : DatabaseInitializationMode.MigrateOrCreate);
-{{ if auth == "openiddict" }}
+{{ if example_permission }}
+        // The first-boot grants (AddPermissionGrants), written once into the empty grant store.
+        await app.Services.SeedPermissionGrantsAsync();
+{{ end }}{{ if auth == "openiddict" }}
         // Roles, and the first administrator where that is safe (see IdentitySeeding).
         await app.Services.SeedIdentityAsync(app.Environment);
 {{ end }}{{ if multi_tenancy }}

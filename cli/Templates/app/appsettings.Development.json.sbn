@@ -7,6 +7,12 @@
   }{{ if auth == "openiddict" }},
   "Identity": {
     "UseDevelopmentCertificates": true,
-    "AllowPasswordFlow": true
+    "AllowPasswordFlow": true,
+    "Passkeys": {
+      "Enabled": true,
+      "RelyingPartyId": "localhost",
+      "RelyingPartyName": "{{ app_name }}",
+      "Origins": [ "http://localhost:5180"{{ if use_ui }}, "http://localhost:5181"{{ end }} ]
+    }
   }{{ end }}
 }

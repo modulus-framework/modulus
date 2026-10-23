@@ -2,7 +2,10 @@ using Microsoft.AspNetCore.Authentication;
 {{ if auth == "openiddict" }}using Modulus.Identity.Extensions;
 using OpenIddict.Validation.AspNetCore;
 {{ end }}{{ if use_external_provider }}using {{ external_provider_namespace }};
-{{ end }}{{ if example_permission || needs_fallback_authorization }}using Modulus.Authorization.Extensions;
+{{ end }}{{ if example_permission || needs_fallback_authorization || auth == "openiddict" }}using Modulus.Authorization.Extensions;
+{{ if auth == "openiddict" }}using Modulus.Core.Abstractions;
+{{ end }}{{ end }}{{ if example_permission }}using Microsoft.EntityFrameworkCore;
+using Modulus.Authorization.EntityFrameworkCore;
 {{ end }}{{ if use_security_guard }}using Modulus.AspNetCore.Security.Policy;
 using Modulus.AuditLogging.Security;
 {{ end }}{{ if multi_tenancy }}using Modulus.MultiTenancy.EntityFrameworkCore;
@@ -26,15 +29,42 @@ internal static class AuthenticationSetup
             options.DefaultAuthenticateScheme = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme;
             options.DefaultChallengeScheme = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme;
         });
-{{ if example_permission }}
+{{ if auth == "openiddict" }}        // Identity administration (create, change, disable and delete accounts) is a Critical permission. Generated apps expose no
+        // such route; one added later must map to it and fail closed. It is registered here so it is discoverable, and no role is granted it.
+        builder.Services.AddPermissions("Identity", permissions => permissions.Add("identity:accounts:manage", "Manage identity accounts: create, change, disable and delete accounts. Not granted by default.", null, PermissionSensitivity.Critical));
+{{ end }}{{ if example_permission }}
         // The example API needs a permission, and the Admin role (seeded at startup) holds it: a signed-in caller without it gets 403.
         // AddModulusAuthorization turns a "module:thing:action" name into a permission check, resolved from the grants of the caller's roles.
-        // The grants below are an in-memory seed: to edit them at run time (Permissions UI or API), keep them in the database with
-        // AddEfCoreAuthorizationStores (Modulus.Authorization.EntityFrameworkCore) instead.
+        // The grants are durable: they live in the Authorization database, so an administrator can change them at run time, and the
+        // provisioning host reads the same database. AddPermissionGrants is the first-boot seed only: DatabaseStartup writes it into an
+        // empty store, and a store that already holds grants is never re-seeded (a revoked grant stays revoked).
         builder.Services.AddModulusAuthorization();
+        // D10: in production, privileged (Critical) permissions need a fresh multi-factor sign-in, and the framework's privileged
+        // permissions need a passkey sign-in on top of it (phishing-resistant: hwk/swk). Development and tests keep the password sign-in.
+        // Production refuses to start without passkeys: an admin could not enrol one, so every privileged operation would be refused.
+        if (builder.Environment.IsProduction() && !builder.Configuration.GetValue<bool>("Identity:Passkeys:Enabled"))
+            throw new InvalidOperationException("Production needs Identity:Passkeys (RelyingPartyId and Origins): privileged permissions require a passkey sign-in.");
+        builder.Services.AddModulusAuthorization(options =>
+        {
+            options.StepUp.RequireForCritical = builder.Environment.IsProduction();
+            if (builder.Environment.IsProduction())
+            {
+                options.StepUp.PhishingResistantPermissions.AddRange(
+                [
+                    "identity:accounts:manage",
+                    "scim:manage",
+                    "tenancy:data-stores:manage",
+                    "authorization:manage",
+                    "authorization:grant-any",
+                    "authorization:entitlements:manage",
+                    "authorization:break-glass",
+                ]);
+            }
+        });
         builder.Services.AddGrantStorePermissionChecker();
         builder.Services.AddPermissions("{{ example_module_lower }}", permissions => permissions.Add("{{ example_permission }}", "{{ example_permission_description }}"));
         builder.Services.AddPermissionGrants(grants => grants.GrantToRole("{{ admin_role }}", "{{ example_permission }}"));
+        builder.Services.AddEfCoreAuthorizationStores(options => options.{{ use_db_method }}(builder.Configuration.GetConnectionString("Authorization") ?? throw new InvalidOperationException("ConnectionStrings:Authorization is not configured.")));
 {{ end }}{{ else if use_external_provider }}        // External identity provider ({{ external_provider_name }}).
         // Validates bearer tokens issued by {{ external_provider_name }} via OIDC discovery / introspection. Configure the provider
         // details under "{{ external_provider_config_key }}" in appsettings.json. Set ClientSecret via User Secrets or env var

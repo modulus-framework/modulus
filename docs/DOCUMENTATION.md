@@ -1377,9 +1377,16 @@ significantly shrinks the scope of Phase B1 below.
 - [x] A2.5.2. API boots standalone and answers its endpoints directly
       (`ApiIntegrationTests`: health, 401/403/200 permission gating, extension-field rules).
 - [ ] A2.5.3. Web-side round-trip over HTTP: the API side is proven by the generated suite, and
-      the Web host boots/serves pages (`WebAppSmokeTest`), but a full
-      login-via-`/connect/token` → page create → visible-through-API round-trip is **not yet
-      asserted by the generated tests** (see A5.5) — remaining validation.
+      the Web host boots/serves pages (`WebAppSmokeTest`). 2026-10-23: the round trip works in a generated
+      `webapp+api` app (sign-in through the BFF → create a Widget on its Web page → the list page shows it), as
+      `CreatedWidget_IsListedThroughTheBffAndTheApi` in a hand-edited scratch copy (15/15 generated tests pass). Not in the
+      templates yet: the example module has no Web pages, so the template has nothing to drive. Two template changes
+      follow, and the first needs a decision: (1) generate the example's Web CRUD pages in `webapp+api` apps (it changes
+      what every such app contains), or keep the example API-only and add the test to `AppTests.sbn` for apps that have
+      pages; (2) then port the test: `TestHost` using, `PostFormAsync`, the test scheme overrides for the Web and API hosts
+      (both factories force the test scheme as default, which 401s the cookie session and the forwarded bearer token), and
+      `PairedForwarderFactory` (`TestServerPairing` does not reach YARP's forwarder, so the BFF proxy needs the same
+      replacement `Modulus.Bff.Tests` uses).
 - [x] A2.5.4. (done: `LoginPage_ExplainsWhenTheApiIsDown` in the generated tests; the BFF session returns `temporarily_unavailable` instead of a 500) Kill-the-API resilience check not run yet (the resilience handler should convert
       connection failures into retried/failed requests, not crashes — verify explicitly).
 
@@ -1423,12 +1430,16 @@ significantly shrinks the scope of Phase B1 below.
       also close A2.5.3/A5.5.
 - [x] A5.4. `Modulus.Testing.TestServerPairing` exists; the generated `WebToApiLoginTests` uses it (login through the API's token endpoint).
 - [ ] A5.5. The HTTP hop is proven on the API side (entity created through the API is visible
-      via the API factory's client); the Web-page-driven flow is not yet asserted — remaining
-      validation, same work as A2.5.3/A5.3.
+      via the API factory's client); the Web-page-driven flow is asserted in the scratch copy only (see A2.5.3). Remaining: the template step.
 
 ---
 
 ### Phase B — Prebuilt & CLI-generated module UI customizability
+
+> **Moved (2026-10-23).** This phase works on `src/ui/Modulus.UI.*` packages that no longer exist in this repository: the UI
+> lives in the `modulus-ui` repository (see AGENTS.md, "UI and app kinds"). Its boxes below are open against that repository and
+> are not tracked here. Items in it that touch this repository's Identity model (B0) are still open work for `modulus-ui` to
+> pick up with the model change.
 
 An audit of `Modulus.UI.Identity` plus a second, separate audit of the other 7 prebuilt feature UI
 packages (Users, Tenancy, Permissions, Settings, AuditLogging, Notifications, Files) and CLI
@@ -1962,7 +1973,7 @@ Limits: delegations to a party account bypass the ceiling; approval limits are n
 - **Groups = roles.** Only roles listed in `ManagedRoles` (`*` = all; empty = none, so a privileged role is never reachable by accident) are visible. Members are set with `members` add/remove/replace or `members[value eq "id"]`; a member must be an account of the company. A group is never renamed (permissions are granted to the role by name). `POST/DELETE /Groups` create/remove a role only with `AllowRoleCreation` and only for managed names.
 - **Seats.** New seam `ITenantMemberProvisioner` (Core), implemented by `TenantManager` and registered by `AddEfCoreTenantStore`: creating or re-activating an account takes a seat (`MaxUsers` over the limit = `409`, a refused create leaves no account), deactivating or deleting frees it. Without the registration there is no limit.
 - **Audit and access changes.** Every change records `scim.user.created|updated|deactivated|deleted` / `scim.group.*` in the security audit; role and activation changes reach `IAccessChangeObserver` through `ModulusUserManager`.
-- **Also served:** `ServiceProviderConfig`, `ResourceTypes`. Not built: Bulk, sort, ETag, `Schemas`, password sync, groups in the user list response (only on single-user reads), `meta.created/lastModified`, enterprise extension.
+- **Also served:** `ServiceProviderConfig`, `ResourceTypes`. **Sorting (2026-10-22):** `sortBy` and `sortOrder` (RFC 7644 §3.4.2.3) on users (`userName`, `externalId`, `name.givenName`, `name.familyName`) and groups (`displayName`); ties break by id; an unknown `sortBy` is ignored, an invalid `sortOrder` is `400 invalidValue`; advertised as `sort.supported: true`. **ETag (2026-10-22):** `meta.version` and the `ETag` header come from the account's or group's concurrency stamp (weak tag `W/"…"`); `PUT`, `PATCH` and `DELETE` honour `If-Match` (`*` or a tag) and refuse a stale one with `412` before anything is written; advertised as `etag.supported: true`. The check runs inside the service on the record it has just loaded, and the store's concurrency token refuses the write if the record changed after that load, so a stale change cannot win. A group's tag covers its role stamp and its sorted member ids, so a membership change moves the tag even when the role stamp is absent. **Bulk (2026-10-22):** `POST /Bulk` (RFC 7644 §3.7) applies `POST`, `PUT`, `PATCH` and `DELETE` on `/Users` and `/Groups` in order, each through the same service as its single-resource endpoint, so the same rules, seat limits and audit apply. A `bulkId` names a created resource: later paths use `/Users/bulkId:{id}`, and data uses the string `"bulkId:{id}"`. `failOnErrors` stops at that many failures; the rest are not processed. Limits: 1000 operations, advertised as `maxOperations`/`maxPayloadSize` (1 MiB). The bulk is not one transaction (the RFC does not require it). A `DELETE` deactivates the account unless `DeleteRemovesAccount` is set. **Schemas (2026-10-22):** `GET /Schemas` and `GET /Schemas/{id}` (RFC 7643 §6, RFC 7644 §4) serve the User and Group schema documents, with the attributes the server accepts and returns, their required flags and mutability. Unknown ids are `404`. **Passwords (2026-10-22, decided: not set through SCIM).** A `password` in a create, replace or PATCH is refused with `400 mutability` and nothing is written; the message says the person sets their own password through the invitation link (`IUserInvitationService`). The error never echoes the value. `ServiceProviderConfig` keeps `changePassword.supported: false`. **Timestamps (2026-10-22).** Users carry `meta.created` and `meta.lastModified` from two new nullable columns on `ModulusUser` (`CreatedAt`, `ModifiedAt`). SCIM sets them on create and on every SCIM change; they are null for accounts created another way. Limits: `lastModified` moves only on SCIM writes (a sign-in, a password reset or a lockout does not move it), and groups report no timestamps (a role has no column for them). **Upgrade note:** an app with an Identity migration gets `PendingModelChangesWarning` until it runs `modulus migrate add <Name> --module Identity` and `migrate update`. Not built: groups in the user list response (only on single-user reads), `meta.created/lastModified`, enterprise extension.
 
 #### Item 9: Multi-step approval workflow (as built)
 Built inside the existing authorization packages (no new package), like approval authority and delegation: engine and in-memory stores in `Modulus.Platform` (`Authorization/Workflow`), EF rows in `AuthorizationStoreDbContext`, endpoints in `Modulus.Authorization.Management`. `AddApprovalWorkflow(o => ...)` registers the engine (scoped `IApprovalWorkflow`) and the escalation service; `AddEfCoreAuthorizationStores` swaps in the EF stores; `MapModulusApprovalWorkflow("/authorization/approvals")` maps the API.
@@ -2066,6 +2077,12 @@ Decisions taken:
 | `dotnet format --verify-no-changes` (2026-10-12) | PASS | PASS (exit 0) |
 | `dotnet list package --vulnerable --include-transitive` (2026-10-12) | PASS | PASS: no vulnerable packages |
 | `dotnet list package --vulnerable --include-transitive` | PASS, none | PASS |
+| `dotnet build modulus.slnx -c Release` (2026-10-22) | PASS | PASS: 0 warnings, 0 errors |
+| `dotnet format modulus.slnx --verify-no-changes` (2026-10-22) | PASS | PASS (exit 0) |
+| `dotnet test modulus.slnx --filter Category=Unit` (2026-10-22) | PASS | PASS: 71 test assemblies, 0 failed, net8.0 and net10.0 |
+| `dotnet pack modulus.slnx -c Release` (2026-10-22) | PASS | PASS: Synvro.Modulus.* 1.5.0, Cli 1.5.5 |
+| Generated `api --auth openiddict --multi-tenancy` app, tests from the local feed (2026-10-22) | PASS | PASS: 11/11, including `SecurityProbeTests`. **Fails against the published nuget.org 1.5.0 packages**: see the open item below |
+| Mongo, EF Core and RLS integration tests (Docker or Podman) | not run | Run 2026-10-23 (Podman): EF Core 46/46 and 49/49, Mongo 6/6 |
 | TODO / FIXME / `NotImplementedException` in `src/` | none | none |
 
 ### Step 0: Plan docs ✅
@@ -2074,11 +2091,11 @@ Decisions taken:
 - [x] Deleted as obsolete:
   - `cli/PHASE_*.md` (28 files) and `cli/CLI_PRO_SCAFFOLDING.md`, which claimed a "v3.5.0" release (the real version is 1.4.0, `build/Modulus.Packaging.props`);
   - `docs/UI_FRAMEWORK_PLAN.md` and `docs/UI_FRAMEWORK_GUIDELINE.md`, which described the removed `src/ui/`.
-- [x] Archived as completed in `docs/archive/`, each with a status banner: `IMPROVEMENT_PLAN.md`, `DUAL_TARGETING_PLAN.md` and `ROADMAP_TIER3.md`. Links updated.
-- [x] Status lines corrected:
-  - `docs/ERP_IDENTITY_GAPS_PLAN.md`: complete, open gaps listed.
-  - `docs/APP_KIND_SPLIT_AND_IDENTITY_UI_PLAN.md`: Phase A complete; Phase B superseded and moved to `modulus-ui`.
-- Still live: `docs/ADVANCED_FEATURES_PLAN.md` (Modulus.UI.AI, push notifications) and `docs/SECURITY_STAGE2_PLAN.md` (2 items).
+- [x] Plan docs were consolidated into this file (commit `bdded52`, and `c9d76f2` for the readiness plan). The separate files were deleted, so the archive and status-line work above no longer has files to point at:
+  - `docs/archive/IMPROVEMENT_PLAN.md`, `DUAL_TARGETING_PLAN.md` and `ROADMAP_TIER3.md`: content kept in the sections of this file, not as separate archive files.
+  - `docs/ERP_IDENTITY_GAPS_PLAN.md`: its content is the "ERP identity gaps" section of this file.
+  - `docs/APP_KIND_SPLIT_AND_IDENTITY_UI_PLAN.md`: its content is the "App-kind split" section of this file; Phase B moved to `modulus-ui`.
+- Not live as separate files: `docs/ADVANCED_FEATURES_PLAN.md` and `docs/SECURITY_STAGE2_PLAN.md`. Their content is in this file (the "Security stage 2" section and the advanced-features sections).
 
 ### Step 1: Unblock the build ✅
 
@@ -2214,6 +2231,11 @@ Tests: `tests/unit/Modulus.Data.MongoDB.Tests`, `Modulus.Outbox.Tests`, `Modulus
   - a Security section (S1–S6);
   - the breaking defaults (S7, S8, S13, D4) with their opt-outs;
   - the other fixes.
+- [ ] **Open, blocks Step 5:** the CLI 1.5.5 module templates (`cli/Templates/module/Application/CreateHandler.sbn` and `UpdateHandler.sbn`, added in `e625a0e`) use `Modulus.Authorization.Dimensions` (`IDimensionValueRegistry`) and `Modulus.Authorization.Resources` (`IResourceScopeGuard`), which live in `Synvro.Modulus.Platform`. Checked 2026-10-23 with a fresh download from nuget.org (`Synvro.Modulus.Platform` 1.5.0, 374 KB): those types are **not** in the published package, so a generated app fails with CS0234/CS0246 in the module Application project (6 errors in the probe; the API project was not reached). An earlier check that said they were present read the global NuGet cache, which holds a locally packed 1.5.0 (428 KB) and is not the published package. Fix by publishing a Platform release that contains them and pinning the CLI to it (publishing needs an explicit instruction), or by removing the scope and dimension checks from the two handler templates (a security feature, so a decision for the owner). Do not tick Step 5 until a generated app builds from nuget.org.
+- [x] **Found 2026-10-23, reverted (Step 5 blocker):** the navigation wiring in the API templates (`cli/Templates/app/api/FeatureServicesSetup.sbn` `using Modulus.Navigation;` and `AddModulusNavigation()`, `FeatureEndpoints.sbn` `MapModulusNavigation()`) does not compile against the published `Synvro.Modulus.Platform` 1.5.0: its DLL has no `Modulus.Navigation` namespace. A `webapp+api` app generated today with the default packages fails with CS0234 in `Shop.Api`. It builds with 0 warnings against the local `1.5.0-local.4` feed (`feed4`), which has the namespace. Done 2026-10-23: the three template lines were removed (the generated API no longer wires the menu), and `NavigationWiringTests` now guards that absence. Restore the wiring together with a Platform release that contains navigation (publishing needs an explicit instruction).
+- [x] Mongo, EF Core and RLS integration tests run for this wrap-up (2026-10-23, Podman containers, `Category=Integration`):
+  `Modulus.EFCore.Integration.Tests` 46/46 (net8.0) and 49/49 (net10.0), including PostgreSQL and SQL Server row-level security,
+  MySQL database-per-tenant and tenant isolation; `Modulus.Data.MongoDB.Tests` 6/6 on both targets. Zero skipped.
 - [ ] Tick every box above and set the status to "complete".
 
 ### Verification
@@ -2224,6 +2246,50 @@ Tests: `tests/unit/Modulus.Data.MongoDB.Tests`, `Modulus.Outbox.Tests`, `Modulus
 - `dotnet list modulus.slnx package --vulnerable --include-transitive`: none.
 - Integration tests (Docker or Podman) for Mongo, the outbox and RLS.
 - `dotnet pack modulus.slnx -c Release`, then generate an `api --auth openiddict --multi-tenancy` app from the local feed and run its tests, including `SecurityProbeTests`.
+
+## Keyset (seek) paging and data access (2026-10-22)
+
+**Paging modes.** `PagingMode` (Core) names the three ways a list can be paged; the caller picks one per request:
+- **Offset:** page number and size with a total count (`PagedList<T>`, `ListPagedAsync`, unchanged). Deep pages get slower and rows shift under concurrent inserts.
+- **Keyset:** the caller sends the key of the last item it has seen (`after`). `IReadRepository<T>.ListKeysetAsync(spec, keySelector, selector, after, size)` returns `KeysetPage<TResult>` with `HasNextPage` and no count query. It fetches one extra row to learn whether a next page exists.
+- **Cursor:** keyset with an opaque token. `CursorCodec` (Data.Abstractions) encodes the last key as base64url JSON and decodes it, and a malformed token is an `ArgumentException`. It sits in Data.Abstractions because Core is AOT-compatible and JSON serialization is not.
+
+**Limits (deliberate).** The key must be unique and orderable in SQL: `int`, `long`, `short`, `byte`, `sbyte`, `uint`, `ulong`, `ushort`, `double`, `float`, `decimal`, `DateTime`, `DateTimeOffset` or `TimeSpan`. A `Guid` key is refused with `NotSupportedException`, because the provider cannot order by `>` on a Guid. A specification that carries `Skip` or `Take` is refused with `ArgumentException`, because the key is the position. The order is the key, so `OrderBy` on the spec is replaced. The key and the selector run on materialized entities, since one query cannot project both the key and the selector; the seek and the ordering run on the server. Mongo does not implement keyset yet (the default interface method returns `NotSupportedException`).
+
+**Tenancy.** Keyset adds no tenant logic, so isolation rests on the existing layers:
+- **Shared database:** the tenant query filter applies inside `ApplySpec`, so a page only sees the current company's rows. `SharedDatabaseKeysetTests` checks that a seek position taken in company A pulls in none of company B's rows, and that company B's page holds only its own rows.
+- **Database per tenant:** the repository resolves the tenant's own context, so the same call runs against that tenant's database and its key only needs to be unique inside it.
+- **Cursor authority:** a cursor is not signed and carries no tenant. Using company A's cursor under company B returns B's rows after that key, not an error and not A's data. Clients should keep cursors per company. If a stronger guarantee is needed, bind the tenant id into the token and verify it on decode (not built).
+
+**Data access by use case** (framework supports all three; the app chooses per query):
+- **Writes (add, update, delete):** EF Core through the aggregate, so change tracking, domain events, the outbox and the tenant write guard apply. Dapper and raw SQL do not write through these paths.
+- **Read models and reporting:** Dapper through `OpenTenantConnectionAsync`, which opens the context's connection with the tenant's RLS session set. Dapper is not a framework dependency; the app adds it.
+- **Entity queries that need the EF model:** LINQ through the specification, or `FromSql` with parameters. Raw SQL on a tenant table inside a tenant is refused by `TenantSqlGuardInterceptor` unless the code runs in `CrossTenantSql.Allow(reason)`, so raw SQL must keep its tenant predicate.
+- **Not built:** a per-query selector API that the framework chooses for the caller; the choice is made in code today. A typed query-description surface for AI tools (cursor paging plus typed specs) is the planned direction.
+
+**Tests:** `KeysetPagingTests` (7: paging to the end, cursor round-trip, filter before window, Skip/Take refused, Guid key refused on SQLite, malformed cursor, cursor of another type) and `SharedDatabaseKeysetTests` (2: one company's page, cross-company seek). Both targets.
+
+### Guid v7 keys (.NET 10, PostgreSQL only)
+
+- **Generation.** `ModuleDbContext` gives a Guid key the application does not set a `GuidV7ValueGenerator` (time-ordered Guid v7), but only on a .NET 10 build with the Npgsql provider. Other providers and targets keep their own generation. Test: `A_key_the_application_does_not_set_is_generated_as_guid_v7_on_postgres` (PostgreSQL, through Testcontainers).
+- **Keyset.** A Guid key is accepted by `ListKeysetAsync` only on .NET 10 with Npgsql. The seek is `key.CompareTo(after) > 0`, because a Guid has no `>` in expression trees. PostgreSQL orders `uuid` bytewise in RFC order, so the pages follow creation time. Tests: `GuidV7KeysetPostgresTests` (25 rows paged in uuid order; cursor decodes to the last id).
+- **SQL Server.** Guid keys are refused for keyset and cursor paging: SQL Server orders `uniqueidentifier` by a byte order that is not chronological for Guid v7, so a keyset seek would skip or repeat rows. Use an integer or timestamp key there, with the Guid as a tie-breaker.
+- **Other targets.** On .NET 8 a Guid keyset is refused with a message that names the .NET 10 requirement.
+
+### CLI: `modulus app --framework`
+
+- `--framework net8.0|net10.0` (default `net10.0`) sets the target of the generated app. The app's `Directory.Build.props` carries it, and every project file uses `{{ target_framework }}`, so modules, tests and the shared kernel follow it. Add-commands (`add-module`, `generate-crud`, `add-audit-store`, `add-webhooks`, `add-bff`) read the target from the app's props.
+- **Package versions follow the target.** `DbProviderInfo.Version(provider, framework)` returns the same provider versions as the framework's `Directory.Packages.props` (net8.0: SqlServer 8.0.31, PostgreSQL 8.0.11, MySQL 8.0.8, SQLite 8.0.31; net10.0: 10.0.9, 10.0.2, 10.0.7, 10.0.9). EF Core, EF Design and the test packages (coverlet, System.Security.Cryptography) take their versions from `AppFramework` in the same way.
+- **OpenAPI is net10-only.** The framework's OpenAPI support (`AddModulusOpenApi`, `MapOpenApi`, the BFF `AddOpenApi`) is compiled out on net8.0, so the templates emit it only for net10.0. On net8.0 the OpenAPI setup method stays as a no-op.
+- **Verified.** A generated `--framework net8.0 --database PostgreSQL` app builds with 0 warnings and 0 errors and passes its 7 generated tests. A default net10.0 PostgreSQL app builds with 0 warnings and 0 errors. The CLI suite passes 575/575 (also three runs in a row after a test fix: `ModuleDiscoveryTests` now gives each test its own temp folder, because it scans every file beside the one it is given, which raced with the other tests' temp folders).
+- **Engine fix.** The MySQL provider's options method is `UseMySQL` (capital SQL); the CLI emitted `UseMySql`, which did not compile. Fixed, with a regression test in `FrameworkTargetTests`. Generated SQL Server, MySQL and SQLite apps build on both targets.
+
+### CLI: generated keyset (cursor) endpoints
+
+- **Where.** A generated module gets a cursor query, handler and endpoint (`GET /api/{module}/{route}/cursor?cursor=&pageSize=`) and a keyset method on its repository only when `ModuleModel.CursorPaging` is true: PostgreSQL on .NET 10. Everywhere else the module keeps the offset endpoint alone. `generate-crud` reads the module's engine from the app inventory, so an existing PostgreSQL module gets the cursor files for each new entity.
+- **Response.** The page is the framework's `KeysetPage<T>` inside the usual envelope: `items`, `hasNextPage`, `nextCursor`. The cursor is an opaque token; a malformed one is `400`.
+- **Verified end to end.** A generated `--database PostgreSQL` app on .NET 10 was built, run against PostgreSQL 16 (Podman), and walked page by page with `pageSize=3`: seven products came back once each, in creation order, over three pages, and a malformed cursor returned `400`. Gate-off apps (net8.0 PostgreSQL, SQLite net8.0) build with 0 errors. Template tests: `CursorPagingTemplateTests`.
+- **Packaging note.** A local feed has to be repacked after framework changes (`dotnet pack -o <feed>`); the generated app otherwise restores the old `Synvro.Modulus.*` packages, which lack `KeysetPage`.
 
 <!-- source: docs/SECURITY_STAGE2_PLAN.md -->
 ## Security stage 2: Company = Tenant
@@ -2350,9 +2416,9 @@ Every phase leaves `dotnet build` at 0 warnings, `Category=Unit` green and `dotn
   - It also covers requests that match no endpoint, so unknown routes answer `401` to anonymous callers, and so do static files served after `UseAuthorization`. The CLI's UI wiring therefore puts `UseStaticFiles()` before `UseAuthentication()`.
 - [x] **`.Loosen(reason, ticket)`** (`Modulus.AspNetCore.Security.Policy.EndpointSecurityExtensions`, plus a `Loosen(LoosenedAttribute)` overload) and REPR `AllowAnonymous(reason, ticket)` / `Classification(...)`. `.WithSecurityPolicy(classification, network)` covers minimal APIs.
   - **Deviation:** the bare REPR `AllowAnonymous()` is not `[Obsolete]`: under `TreatWarningsAsErrors` that would break every app at upgrade. MOD0001 flags it at build time, and the guard refuses it at boot.
-- [x] **Every framework anonymous endpoint carries a reason** (`Framework = true`): health live/ready, `/health/modules`, `/health/graph`, gRPC health/reflection, GraphiQL, BFF login/logout, `/_error/{code}`, the Identity UI's Login/Register/LoggedOut/AccessDenied pages, the `/Account` folder opened by `AddModulusPageAuthorization` (other folders count as app loosenings), and the OpenIddict token/authorize/introspect/end-session endpoints plus the account controller's anonymous actions. `/connect/userinfo` gained `[Authorize]`.
+- [x] **Every framework anonymous endpoint carries a reason** (`Framework = true`): health live/ready, `/health/modules`, `/health/graph`, gRPC health/reflection, GraphiQL, BFF login/logout, `/_error/{code}`, the Identity UI's Login/Register/LoggedOut/AccessDenied pages, the app's own `/Account` folder when it calls `AllowAnonymousToFolder("/Account")` (other folders count as app loosenings), and the OpenIddict token/authorize/introspect/end-session endpoints plus the account controller's anonymous actions. `/connect/userinfo` gained `[Authorize]`.
   - **Not loosened on purpose:** GraphQL and Realtime with `RequireAuthenticatedUser: false`. Endpoint-level anonymity overrides the policy of an enclosing route group (a BFF client's), so an app that wants them anonymous calls `.Loosen(...)` on the returned builder.
-  - **Changed in phase 5:** `/_ui/menu` was on this list, which made the guard refuse to start the Web host of a `webapp+api` app (no fallback policy there, so the menu was `unpoliced`); the phase 5 end-to-end run found it. `MapModulusUiMenu` maps it in its own group, never inside a BFF client's, and the tree is filtered per caller, so it is now a framework loosening ("anonymous callers get an empty tree"). On a host with a fallback policy an anonymous caller now gets an empty menu instead of `401`.
+  - **Changed in phase 5:** `/_ui/menu` was on this list, which made the guard refuse to start the Web host of a `webapp+api` app (no fallback policy there, so the menu was `unpoliced`); the phase 5 end-to-end run found it. The menu endpoint came from the server-rendered UI that was removed from this repository (`src/ui`). No code here maps `/_ui/menu` now, so this entry describes the removed endpoint's behaviour, not a current loosening.
 - [x] **Startup guard** `AddModulusSecurityGuard(configuration)` (settings `Security:Guard`: `Enabled`, `AllowListPath` = `security/loosening-allowlist.json`, `FailOnUnlistedInDevelopment`).
   - It runs in `IHostedLifecycleService.StartedAsync`: the web host builds its pipeline (which hands the mapped endpoints to routing) after the other hosted services' `StartAsync`. Throwing there still fails `Host.StartAsync`.
   - The pure `EndpointSecurityAnalyzer` resolves each endpoint to `Policed` / `Fallback` / `Loosened` / `Unpoliced`.
@@ -2716,8 +2782,13 @@ smaller gap), item 7 (account route), item 2 (`--multi-tenancy`) and item 5 (log
    - Files UI paths relative to the tenant root;
    - Security tab in `Modulus.UI.AuditLogging` (chain list, `VerifyChainAsync` status per company, anchor comparison).
 5. ~~Log redaction.~~ Done: see "Log redaction" (taxonomy `Modulus`, `AddModulusRedaction`, MOD0002, CLI wiring).
-   Follow-ups: HTTP request-logging redaction if an app turns request logging on, and a check that a project declaring
-   classified `[LoggerMessage]` methods has the classification-aware generator (today a documented requirement).
+   Follow-ups: HTTP request-logging redaction if an app turns request logging on. The check that a project declaring
+   classified `[LoggerMessage]` methods has the classification-aware generator is done: analyzer **MOD0004**
+   (`ClassifiedLoggerMessageAnalyzer`, 2026-10-23) warns on each classified parameter (other than `[InternalData]`) when the
+   project does not reference `Microsoft.Extensions.Telemetry.Abstractions`. It reads the project's references, so a reference
+   that arrives only transitively counts as present and the warning is missed, never raised wrongly. Tests:
+   `ClassifiedLoggerMessageAnalyzerTests` (3 tests, analyzer suite 21/21 on net8.0 and net10.0). Repo projects and the CLI
+   templates pass: the test project references the package directly, and the generated apps' `Directory.Build.props` does too.
 6. ~~Smaller gaps.~~ All done: token revocation audited, `Unscoped(reason)` audited, Mongo database per tenant,
    `OpenTenantConnectionAsync` for Dapper / read models, GraphQL fields and realtime topics in the guard report, and the
    durable audit spool.
@@ -5773,7 +5844,7 @@ Not built: storing per-rule evidence with each decision, or a policy store that 
 ---
 
 <!-- in-progress plan; canonical copy: docs/IDENTITY_PLATFORM_IMPLEMENTATION_PLAN.md -->
-## Identity Platform Implementation Plan (BRS, baseline v1.3.1 source-verified) — in progress
+## Identity Platform Implementation Plan (BRS, baseline v1.3.1 source-verified) — registration, status in IDENTITY_PLATFORM_PLAN.md
 
 Turns the *Identity, Authentication & Authorization Platform BRS* (ERP-agnostic; first consumer
 Garments ERP) into implementation work on Modulus while keeping the framework generic. The canonical
@@ -5784,7 +5855,7 @@ conformance and traceability specification lives in
 [`docs/AUTHORIZATION_CONFORMANCE.md`](AUTHORIZATION_CONFORMANCE.md). This section is the registration
 and will hold the archived record as phases complete.
 
-Compliance baseline (2026-10-15): the framework covers ~60–70% of the BRS P1 scope — the authorization
+Compliance baseline (2026-10-15, before the 2026-10-18/19 work; the failure list and row counts below are that baseline, not current status, which is in section 11 of `docs/IDENTITY_PLATFORM_PLAN.md`): the framework covers ~60–70% of the BRS P1 scope — the authorization
 engine (permissions, scopes, deny precedence, delegations, SoD, approval authority), multi-tenancy with
 database isolation, the hash-chained security audit and the OpenIddict identity server (MFA, passkeys,
 step-up, SSO/SCIM/LDAP/SAML, sessions). Source-verified truth-table failures: AUTH-08/09 (no
@@ -5858,8 +5929,9 @@ additive.
 <!-- source: approved plan "OpenBao tenant databases, setting management, navigation management" (phase 0, 2 and 3) -->
 ## Tenant secrets, settings and navigation: plan and status
 
-Status (2026-10-19): **Phases 0 (migration fix), 1, 2, 3 and 4 are built and tested** (Phase 3 has one open deployment decision, the existing-deployment
-migration; Phase 4 is complete in code, its `add-openbao` CLI included). Phases 5 to 7 are not started. Settings and navigation (Phases 5 and 6) have no code yet.
+Status (2026-10-23): **Phases 0 to 6 are built and tested.** Phase 3 has one open deployment decision (the existing-deployment migration, which the
+upgrade script now covers); Phase 4 is complete in code, its `add-openbao` CLI included. Phase 5 (settings) and Phase 6 (navigation) are built as described below.
+Phase 7 is the `modulus-ui` adapter, in that repository.
 
 ### Decisions
 
@@ -5877,9 +5949,9 @@ migration; Phase 4 is complete in code, its `add-openbao` CLI included). Phases 
   (`TenantMigrationFanOutTests`).
 - [x] Each tenant's targets are warmed before its migration (new): per-tenant contexts open synchronously during
   migration, so the connection interceptor needs the target resolved first.
-- [ ] This section (done now) and the Contents bullet.
-- [ ] Stale `/_ui/menu` reference at the end of the "Modulus Improvement Plan" and the `samples/Meetup` call.
-- [ ] Verify the fan-out test fails without the fix (not yet run against the old code).
+- [x] This section and its Contents bullet (checked 2026-10-23).
+- [x] Stale `/_ui/menu` reference: none remains in the "Modulus Improvement Plan" (checked 2026-10-23). The two remaining mentions (phase 2 and phase 5 notes) are historical and correct. The `samples/Meetup` call uses the single-database `MigrateModulusDatabasesAsync`, not the tenant fan-out, so nothing there is stale.
+- [x] Verified the fan-out tests fail without the fix (2026-10-23): with `TenantDatabaseMigrationExtensions.cs` replaced by its pre-fix version (`e625a0e^`), `TenantMigrationFanOutTests` fails both rows (`BrokenTenant_IsReported_AndHealthyTenantStillMigrates`, `HostPass_RunsInHostContext_EvenWhenPerTenantContextIsRegistered`). With the fix, 4/4 pass with `TenantDatabaseMigrationTests` (net10.0).
 
 ### Phase 1: secret abstractions
 
@@ -5947,11 +6019,11 @@ Phase 3, remaining items (done in the second pass):
   Test: `DapperStyleLease_ReachesTheTenantDatabase`.
 - [x] **Provider helpers.** `AddPostgreSqlPerTenantDatabase` (Modulus.Data.PostgreSQL) and `AddSqlServerPerTenantDatabase`
   (Modulus.Data.SqlServer), thin wrappers over `AddModuleDatabasePerTenant`.
-- [ ] **Existing deployments need the `ModulusTenantDataStores` table.** Not done on purpose. The framework ships no migration
-  for `TenantStoreDbContext`, and `EnsureCreated` never alters an existing database. Adding a migration is a deployment
-  decision: a migration for a database that already has the table will fail, and the provider-specific DDL differs. The
-  recommended path is one migration per provider in the host that owns the tenant store, applied with the same migrator job as
-  the tenant migrations.
+- [x] **Existing deployments need the `ModulusTenantDataStores` table.** The framework still ships no migration for
+  `TenantStoreDbContext` (a migration would fail on a database that already has the table). Instead, the idempotent upgrade
+  scripts `docs/upgrades/identity-platform-2026-10.tenancy.{postgresql,sqlserver,mysql}.sql` create it. Each was run twice on
+  PostgreSQL 17, SQL Server 2022 and MySQL 8.4. Applications that author their own migrations for `TenantStoreDbContext` must
+  keep them in step with these tables.
 
 ### Extensible entities, step 1: tenant store (for review)
 
@@ -6045,18 +6117,87 @@ Completed in the third pass:
 
 Still open in Phase 4 (deployment, not code):
 
-- [ ] The provisioning host (the writer identity, `AddOpenBaoSecretWriter`) is not generated by the CLI.
-- [ ] The production deployment runbook (Raft cluster sizing, TLS, auto-unseal, audit devices, snapshots, Kubernetes roles) is not
-  written yet. The `add-openbao` output is a development setup, not a production one.
-- [ ] The existing-deployment migration for `ModulusTenantDataStores` (Phase 3, above).
+- [x] **Provisioning host (built 2026-10-24).** `modulus add-openbao --provisioner` (PostgreSQL and SQL Server) generates `src/Provisioning/{App}.Provisioning`: a separate web host, the only one with an OpenBao write identity. It registers `AddOpenBaoSecretWriter` (refused unless `Secrets:RuntimeReadOnly` is false), the EF tenant catalog and its probe, and serves only `MapModulusTenantProvisioning` behind `tenancy:data-stores:manage` (Critical). The grant store defaults to an empty one, so nobody can provision until it points at the API host's authorization database (fail closed). Verified on a generated PostgreSQL app against the local pack: it builds with 0 warnings; it starts in Development; `/health/live` answers 200 through a reviewed `Loosen`; the provisioning routes answer 401 to anonymous callers; and with `Secrets:RuntimeReadOnly=true` it refuses to start. Tests: `ProvisioningHostTests` (15 rows); the CLI suite is 602/602 on net10.0. **Authenticated path (verified 2026-10-24, against a generated API on PostgreSQL):** the API's token server issued an admin access token; the provisioning host validated it (signature, issuer, lifetime) and refused the provisioning route with 403, because the host's grant store holds no `tenancy:data-stores:manage` grant. That is the authenticated-but-unauthorized path working. Two findings from that run: the API must issue unencrypted access tokens (`Identity:EncryptAccessTokens=false`), since the provisioning host cannot read encrypted ones; and the identity module could not issue an audience claim; it now can, through `Identity:Audiences` (every access token carries the configured audiences; test `AccessTokenAudienceTests`, identity suite 426/426 on net10.0 and net8.0). The host checks the audience only when `Provisioning:Audience` is set, and the generator's hint tells the operator to set both to the same value (the generated Development settings leave it empty). **Success path (verified 2026-10-23, generated PostgreSQL API and provisioning host, OpenBao dev server).** The API keeps its grants in the Authorization database (`AddEfCoreAuthorizationStores`) and writes its first-boot seed once (`SeedPermissionGrantsAsync`, guarded by a marker row in `ModulusAuthorizationSeeds`); the provisioning host reads the same database. An administrator with `tenancy:data-stores:manage` provisioned a tenant: `POST` returned 200 (`Active`), the connection string is in OpenBao at `modulus-dev/tenant-db/{tenant}/primary`, a repeated `POST` is idempotent, `GET` returns the row, an anonymous call gets 401, and the same call without the grant gets 403. Defects found and fixed on the way: (1) the host used `AddMultiTenancy()`, which fails closed on an unresolved request, so it could not see the host-level grants; it now runs in the host context (`NullCurrentTenant`, a singleton). (2) Two hosts on one database each reconciled the whole permission catalog, so one host's startup deleted the rows the other declared; the provisioning host no longer writes the catalog, and the API is its only writer. (3) Revoking the last seeded grant re-seeded it on the next boot; a seed now leaves a marker. Verified also: the generated PostgreSQL app and a fresh SQLite app each pass their own tests (9/9), the CLI suite passes (608/608), and the Authorization EF suite passes (108/108, including five seed tests). **Known limits:** the shared catalog keeps one set of rows per host (`PermissionCatalogOptions.Owner`), so a host's restart never touches another host's permissions; this replaced an earlier single-writer workaround that let one host's startup delete another's rows. An existing `ModulusPermissionCatalog` table needs the upgrade in `docs/upgrades/identity-platform-2026-10.authorization.postgresql.sql` (new `Owner` column, primary key `(Owner, Permission)`; existing rows take the API host's owner). The authorization store, the seed marker and the tenant catalog ship no migrations, so a production deployment must author them; without them the first grant read or write fails. An existing deployment needs the new `ModulusAuthorizationSeeds` table. The generator now covers SQLite and MySQL as well (2026-10-25). An end-to-end run on each engine (generated API with the OpenBao dev server, a provisioning call with an audience-bearing token, a grant check and an OpenBao secret check) returned 200 for a granted admin, 403 without the grant and 401 anonymously. Running it found and fixed: (1) the authorization store and the identity store could not be created on MySQL: the scoped-grant unique key and OpenIddict's token index exceeded MySQL's 3072-byte index limit (the scoped `Scope` is 200 characters on MySQL; OpenIddict's token columns get explicit lengths there); (2) the grant, position, approval and dimension queries sent a captured list as one collection parameter, which the MySQL provider cannot type (they now use scalar comparisons, with the same results on SQLite: authorization suite 116/116); (3) the generated SQLite provisioning host lacked the patched native SQLite library (its build reported a known advisory); (4) the generated code passed a nullable connection string to the MySQL provider's `UseMySQL`, which warned under `TreatWarningsAsErrors`. The index limit is guarded by unit tests (`ScopedGrantKeyTests`, `MySqlIndexLimitTests`), and the query translations by `MySqlQueryTranslationTests`. |
+- [x] **Production runbook, Modulus side (written 2026-10-23).** The `add-openbao` output is a development setup. For production:
+  1. **Schema.** The authorization store, its seed marker and the tenant catalog ship no migrations. Author them in the application (a context derived from `AuthorizationStoreDbContext` / `TenantStoreDbContext`, with `dotnet ef migrations add`) and apply them before the host starts. Outside Development the helpers refuse to start without migrations (`MigrateAuthorizationStoreAsync` / `MigrateTenantStoreAsync` throw "No migrations are compiled").
+  2. **Write identity.** Only the provisioning host runs with `Secrets:RuntimeReadOnly=false`; the API host stays read-only, and `AddOpenBaoSecretWriter` refuses to register anywhere else.
+  3. **Grants.** The first-boot seed is written once per database. Grant `tenancy:data-stores:manage` (Critical) to the administrators through the grant API, which needs `authorization:manage`; never by editing the seed.
+  4. **Catalog.** The shared permission catalog keeps one set of rows per host (`PermissionCatalogOptions.Owner`, the assembly name by default). Set the owner explicitly when the assembly name may change, because a new owner orphans the rows recorded under the old one.
+  5. **Tokens and audience.** The API issues unencrypted access tokens (`Identity:EncryptAccessTokens=false`) so the provisioning host can validate them. Set `Provisioning:Audience` once the token server issues an audience; until then the permission check is the only gate.
+  6. **Login identities.** Deploy the policies under `deploy/openbao` (runtime read for the API, provisioner for the writer) and bind them to the Kubernetes service accounts or AppRole ids the platform issues. Deliver secret ids as files, and rotate them.
+  7. **Existing deployments.** Add the `ModulusAuthorizationSeeds` table (seed marker) and the `ModulusTenantDataStores` table (Phase 3) with migrations before the first start.
+- [ ] **Operator-owned (not code):** Raft cluster sizing, TLS certificates, auto-unseal, audit devices, snapshots and the Kubernetes role bindings. These depend on the platform and are not verified here.
+- [x] The existing-deployment migration for `ModulusTenantDataStores` (Phase 3, above): `docs/upgrades/identity-platform-2026-10.tenancy.{postgresql,sqlserver,mysql}.sql` (2026-10-23; run twice per engine, not yet compared with EF's DDL).
 
-### Phases 5 to 7 (not started)
+### Phase 5: setting engine (built, 2026-10-23)
 
-- **Phase 5:** setting engine (typed definitions, scope precedence, pinned values, `ISettingAdministration`, `ModulusSettingValues`,
-  global cache version key, HTTP API).
-- **Phase 6:** navigation engine (contributors, startup validation, overrides in `ModulusNavigationOverrides`, per-user filter,
-  admin API, CLI template updates).
-- **Phase 7:** `modulus-ui` adapter (separate repository).
+Decisions (taken by the engineering team; the owner may revise them):
+
+- **Typed definitions.** `SettingDefinition` gains `ValueType` (`SettingValueType`: string, boolean, int32, int64, decimal, guid,
+  time span), `AllowedValues` (case-insensitive, for choice settings) and `AllowedScopes` (`SettingScopes` flags). A write is checked
+  against the definition: a value that does not parse, is not allowed, or is at a scope not listed is refused with 400. Values are
+  stored as text, at most 4000 characters, for every name (registered or not).
+- **Pins.** `Settings:Pinned:{name}` (configuration) fixes a value for every caller and every scope. A pin wins over the user, tenant
+  and global values, and a write to a pinned name is refused with 409. Pins come from configuration, so a pin is a deployment decision.
+- **Resolution.** `ISettingManager.ResolveAsync` returns the effective value and its source (`Pinned`, `User`, `Tenant`, `Global`,
+  `Default`, `None`). `GetOrNullAsync` is unchanged for callers.
+- **Scope safety.** A company-scoped write with no company in scope, or a person-scoped write with no signed-in person, is refused
+  (400). Before this fix such a write silently changed the installation-wide value.
+- **Administrator's view.** `ISettingAdministration`: `ListAsync` (every registered definition with its effective value, source and
+  pin state), `SetAsync` and `RemoveAsync`. Only registered names can be written, so an administrator cannot create an arbitrary setting
+  (404 otherwise).
+- **HTTP API.** `MapModulusSettingAdministration()` (default `/api/settings`): `GET`, `PUT|DELETE tenant/{name}` and `user/{name}` need
+  `settings:manage` (Sensitive); `PUT|DELETE global/{name}` also needs `settings:global:manage` (Critical), so a company administrator
+  cannot change every company's value.
+- **Storage.** `EfSettingStore` (`AddEfCoreSettingStore()`, package `Modulus.MultiTenancy.EntityFrameworkCore`) keeps values in
+  `ModulusSettingValues` in the tenant store database. The key is `(Name, ScopeKey)`, where `ScopeKey` is one non-null text column
+  (`global`, `tenant:{id}`, `user:{tenantId or none}:{userId}`), so the key is unique on every provider. The table has no migration in
+  the framework; the upgrade scripts add it for existing databases, and a new application's tenant store migration includes it.
+- **Cache and version key.** `CachedSettingStore` caches each read for `Settings:CacheDuration` (30 seconds by default, zero turns it
+  off), misses included. Every cached value is keyed by a process-wide `SettingCacheVersion`, and a write advances it, so a write on
+  a node makes that node's cache stale at once. **Other nodes (built 2026-10-23):** `ISettingChangeNotifier` is called after each
+  committed write and removal. The default does nothing (one node). `AddRedisSettingCacheBackplane()` (`Modulus.Caching.Redis`, on the
+  same Redis connection as `AddRedisCacheService`) publishes the change on `modulus:settings:changed`, and every other node advances its
+  own version. A node ignores its own message (the origin is per notifier instance). Delivery is best effort: a lost message leaves the
+  other nodes stale until their cache entries expire, so `Settings:CacheDuration` remains the bound on staleness. Tests:
+  `RedisSettingChangeBackplaneTests` (2, Testcontainers Redis, both targets) and `SettingsPhase5Tests` (notifier calls).
+- **Concurrency.** Two writes to the same setting at the same scope at once can both insert; one fails on the key and the caller sees
+  the exception. Settings change rarely; a retry repeats the write.
+
+Tests: `SettingsPhase5Tests` (typed, allowed-value and scope checks, pins, source, administrator view and refusals, cache, binding),
+`SettingStoreTests` (EF store isolation and upsert, the cache seen through the manager, the HTTP routes and permissions).
+
+### Phase 6: navigation engine (built, 2026-10-23)
+
+- **Items and contributors.** `NavigationItem` (key, title, parent, URL, permission, icon, order). A module declares its items with
+  `INavigationContributor` (`AddNavigationContributor<T>()`); a host can add inline items to `AddModulusNavigation(configure)`. The menu
+  is built once, on first use, from every contributor in registration order.
+- **Checked when the host starts.** `NavigationStartupCheck` (after every `StartAsync`) refuses a menu with a duplicate or invalid
+  key, a missing or looping parent, a depth over 8 levels, a blank title, a URL that leaves the application (scheme, `//` or a
+  backslash), or a permission that is not registered.
+- **Per person.** `GET /api/navigation/menu` (any signed-in caller) returns the tree: an item shows when the caller holds its
+  permission (the same `PermissionRequirement` as the endpoints) and no override hides it. A group shows only while a child does.
+  An item with no permission shows to every signed-in caller.
+- **Company overrides.** `ModulusNavigationOverrides` is not a separate table: an override is a setting (`navigation.override.{key}`,
+  company scope, JSON). It can hide an item and everything under it, retitle it, reorder it, or move it under another item. It cannot
+  reveal an item the permission hides, and it cannot change the link or the permission, so an override only narrows the menu. Writes
+  are checked: the item and new parent must be declared, the new parent may not loop back, the depth stays within the limit, and the
+  title must be non-blank. A write with no company in scope is refused (400).
+- **Admin API.** `MapModulusNavigation()` (default `/api/navigation`): `GET menu` (signed in), `GET definitions` (every item with its
+  override, hidden ones included), `PUT|DELETE overrides/{key}` (both need `navigation:manage`, Sensitive). Administration routes are a
+  separate route group, so the menu route does not inherit their permission.
+- **Generated applications.** An OpenIddict API maps the menu (`AddModulusNavigation()` and `MapModulusNavigation()`, from
+  `FeatureServicesSetup` and `FeatureEndpoints`). The generated application declares no items yet, so its menu is empty until a module
+  adds a contributor. Overrides use the in-memory setting store until `AddEfCoreSettingStore()` is added with the tenant store, so a
+  generated application loses overrides on restart; `navigation:manage` is granted to no role by default (fail closed).
+- **Not built.** Per-person item visibility beyond permissions (for example feature flags or per-company entitlements in the menu),
+  per-user overrides, and the `modulus-ui` renderer (Phase 7).
+
+Tests: `NavigationTests` (visibility and order, groups, overrides, write checks, definition checks, the startup permission check),
+`NavigationEndpointTests` (the menu's sign-in requirement, the administration permission, override and removal through HTTP).
+`NavigationWiringTests` (CLI) covers the generated wiring.
+
+### Phase 7: `modulus-ui` adapter (separate repository, not started here)
 
 ### Verification so far
 

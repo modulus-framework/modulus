@@ -108,6 +108,9 @@ public static class BffEndpointRouteBuilderExtensions
             bff.MapPost("/login", (BffLoginRequest request, HttpContext context, CancellationToken ct) => PasswordLoginAsync(context, name, request, ct))
                 .Loosen(new LoosenedAttribute("Password sign-in: creates the session, so there is none yet") { Framework = true })
                 .RequireRateLimiting(BffDefaults.LoginRateLimitPolicy(name));
+            bff.MapPost("/login/passkey", (BffPasskeyLoginRequest request, HttpContext context, CancellationToken ct) => PasskeyLoginAsync(context, name, request, ct))
+                .Loosen(new LoosenedAttribute("Passkey sign-in: creates the session, so there is none yet") { Framework = true })
+                .RequireRateLimiting(BffDefaults.LoginRateLimitPolicy(name));
         }
 
         bff.MapPost("/logout", (HttpContext context, string? returnUrl, CancellationToken ct) => LogoutAsync(context, name, returnUrl, ct))
@@ -118,6 +121,17 @@ public static class BffEndpointRouteBuilderExtensions
     {
         var result = await context.RequestServices.GetRequiredService<IBffSessionService>()
             .SignInWithPasswordAsync(context, name, request.UserName, request.Password, request.RememberMe, ct).ConfigureAwait(false);
+        if (result.Error == BffSessionService.TemporarilyUnavailable)
+            return Results.Json(new { error = result.Error, error_description = result.ErrorDescription }, statusCode: StatusCodes.Status503ServiceUnavailable);
+        return result.Succeeded
+            ? Results.Ok(Claims(result.Principal!))
+            : Results.BadRequest(new { error = result.Error, error_description = result.ErrorDescription });
+    }
+
+    private static async Task<IResult> PasskeyLoginAsync(HttpContext context, string name, BffPasskeyLoginRequest request, CancellationToken ct)
+    {
+        var result = await context.RequestServices.GetRequiredService<IBffSessionService>()
+            .SignInWithPasskeyAsync(context, name, request.ChallengeId, request.Assertion, request.RememberMe, ct).ConfigureAwait(false);
         if (result.Error == BffSessionService.TemporarilyUnavailable)
             return Results.Json(new { error = result.Error, error_description = result.ErrorDescription }, statusCode: StatusCodes.Status503ServiceUnavailable);
         return result.Succeeded
@@ -153,6 +167,9 @@ public static class BffEndpointRouteBuilderExtensions
 
 /// <summary>The body of <c>POST /bff/login</c> (password login mode).</summary>
 public sealed record BffLoginRequest(string UserName, string Password, bool RememberMe = false);
+
+/// <summary>Body of <c>POST bff/login/passkey</c>: the challenge id from the passkey options and the browser's assertion (its JSON text).</summary>
+public sealed record BffPasskeyLoginRequest(string ChallengeId, string Assertion, bool RememberMe = false);
 
 /// <summary>One claim as returned by <c>/bff/user</c> and <c>/bff/me</c>.</summary>
 public sealed record BffUserClaim(string Type, string Value);

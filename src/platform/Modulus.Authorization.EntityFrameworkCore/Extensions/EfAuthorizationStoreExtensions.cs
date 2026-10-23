@@ -81,6 +81,7 @@ public static class EfAuthorizationStoreExtensions
         services.TryAddSingleton<IDbContextFactory<AuthorizationStoreDbContext<TOrgUnit, TOrgUnitParent, TOrgUnitProfile, TCompanyProfile>>>(
             sp => new ContextFactoryAdapter<AuthorizationStoreDbContext<TOrgUnit, TOrgUnitParent, TOrgUnitProfile, TCompanyProfile>, TContext>(sp.GetRequiredService<IDbContextFactory<TContext>>()));
         services.TryAddSingleton(TimeProvider.System);
+        services.AddOptions<PermissionCatalogOptions>();
 
         // Fail-safe default (mirrors AddModulusAuthorizationManagement's
         // ICurrentUser guard below): a host that never touches multi-tenancy
@@ -154,6 +155,11 @@ public static class EfAuthorizationStoreExtensions
         // Rules edited at runtime plus the ones declared in code (AddSegregationOfDuties); scoped, read once per request.
         services.RemoveAll<ISodPolicy>();
         services.AddScoped<ISodPolicy, EfSodPolicy>();
+        // Record shares (A8-1): durable, so a share outlives a restart.
+        services.TryAddSingleton<EfRecordShareStore>();
+        services.RemoveAll<Modulus.Authorization.Sharing.IRecordShareStore>();
+        services.AddSingleton<Modulus.Authorization.Sharing.IRecordShareStore>(sp => sp.GetRequiredService<EfRecordShareStore>());
+
         services.TryAddSingleton<EfApprovalAuthorityStore>();
         services.RemoveAll<IApprovalAuthorityStore>();
         services.AddSingleton<IApprovalAuthorityStore>(
@@ -201,10 +207,68 @@ public static class EfAuthorizationStoreExtensions
 
         await strategy.ExecuteAsync(async () =>
         {
-            if (!ensureCreatedIfNoMigrations || db.Database.GetMigrations().Any())
+            if (db.Database.GetMigrations().Any())
                 await db.Database.MigrateAsync(ct);
-            else
+            else if (ensureCreatedIfNoMigrations)
                 await db.Database.EnsureCreatedAsync(ct);
+            else
+                throw NoMigrationsException(db);
         });
     }
+
+    /// <summary>
+    /// Writes the startup seeds (<c>AddPermissionGrants</c>) into the durable grant store, once per database: a marker records the
+    /// seed, so a grant revoked later stays revoked, even when that revocation leaves the store empty. Only plain role and user allows
+    /// and denies are seeded; a scoped or time-limited grant is refused, because the seed cannot store it durably. Call after
+    /// <see cref="MigrateAuthorizationStoreAsync"/>.
+    /// </summary>
+    public static async Task SeedPermissionGrantsAsync(this IServiceProvider services, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        await using var scope = services.CreateAsyncScope();
+        var seeds = scope.ServiceProvider.GetServices<IPermissionGrantSeed>().ToList();
+        if (seeds.Count == 0)
+            return;
+
+        var store = scope.ServiceProvider.GetRequiredService<EfPermissionGrantStore>();
+        if (await store.IsSeedAppliedAsync(PermissionGrantSeedName, ct))
+            return;
+
+        var staging = new InMemoryPermissionGrantStore();
+        foreach (var seed in seeds)
+            seed.Apply(staging);
+
+        foreach (var grant in staging.Snapshot())
+        {
+            if (grant.Scope is not null || grant.ValidFrom is not null || grant.ValidUntil is not null)
+                throw new NotSupportedException(
+                    $"The seeded grant {grant.Permission} for {grant.Holder} is scoped or time-limited; create it through the grant API instead.");
+
+            var permissions = new[] { grant.Permission };
+            if (grant.HolderType == GrantHolderType.Role)
+            {
+                await (grant.Type == PermissionGrantType.Allow
+                    ? store.GrantToRoleAsync(grant.Holder, permissions, ct)
+                    : store.DenyToRoleAsync(grant.Holder, permissions, ct));
+            }
+            else
+            {
+                var userId = Guid.Parse(grant.Holder);
+                await (grant.Type == PermissionGrantType.Allow
+                    ? store.GrantToUserAsync(userId, permissions, ct)
+                    : store.DenyToUserAsync(userId, permissions, ct));
+            }
+        }
+
+        var clock = scope.ServiceProvider.GetService<TimeProvider>() ?? TimeProvider.System;
+        await store.MarkSeedAppliedAsync(PermissionGrantSeedName, clock.GetUtcNow(), ct);
+    }
+
+    private const string PermissionGrantSeedName = "permission-grants";
+
+    // Without migrations, the production path refuses to start: the schema would never be created and the first read would fail far from here.
+    private static InvalidOperationException NoMigrationsException(DbContext db)
+        => new(
+            $"No migrations are compiled into {db.GetType().Name}, so its schema cannot be created outside Development. "
+            + "Author them in the application (a context derived from it, with migrations) and apply them before the host starts.");
 }

@@ -1,6 +1,7 @@
 namespace Modulus.AuditLogging.Security;
 
 using System.Threading.Channels;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -26,11 +27,13 @@ public sealed class SecurityAuditLog : ISecurityAuditLog, IDisposable
     private readonly ICorrelationContext? _correlation;
     private readonly ILogger<SecurityAuditLog> _logger;
     private readonly SecurityAuditSpool? _spool;
+    private readonly IHttpContextAccessor? _http;
 
     public SecurityAuditLog(
         IOptions<SecurityAuditOptions> options, TimeProvider clock, ILogger<SecurityAuditLog> logger,
-        ICorrelationContext? correlation = null)
+        ICorrelationContext? correlation = null, IHttpContextAccessor? httpContextAccessor = null)
     {
+        _http = httpContextAccessor;
         ArgumentNullException.ThrowIfNull(options);
         _spool = options.Value.SpoolFile is { Length: > 0 } path ? new SecurityAuditSpool(path) : null;
         var pending = _spool?.Pending ?? [];
@@ -52,6 +55,18 @@ public sealed class SecurityAuditLog : ISecurityAuditLog, IDisposable
 
     internal ChannelReader<QueuedSecurityAuditEvent> Reader => _queue.Reader;
 
+    // An event raised while an agent acts for a person (A9-1) names the agent, whatever its category. A job or consumer has no
+    // request, so its events carry none. An event that already names an agent keeps its own value.
+    private IReadOnlyDictionary<string, string?> WithAgent(IReadOnlyDictionary<string, string?> details)
+    {
+        var agent = _http?.HttpContext?.User.FindFirst("act")?.Value;
+        if (string.IsNullOrWhiteSpace(agent) || details.ContainsKey("agent"))
+            return details;
+
+        var copy = new Dictionary<string, string?>(details) { ["agent"] = agent };
+        return copy;
+    }
+
     /// <inheritdoc />
     public void Record(SecurityAuditEvent auditEvent)
     {
@@ -60,6 +75,7 @@ public sealed class SecurityAuditLog : ISecurityAuditLog, IDisposable
         {
             OccurredAt = auditEvent.OccurredAt ?? _clock.GetUtcNow(),
             CorrelationId = auditEvent.CorrelationId ?? (_correlation is { IsSet: true } ? _correlation.CorrelationId : null),
+            Details = WithAgent(auditEvent.Details),
         };
         var id = global::Modulus.GuidV7.Create();
         var spooled = _spool?.TryAppend(id, stamped) ?? false;

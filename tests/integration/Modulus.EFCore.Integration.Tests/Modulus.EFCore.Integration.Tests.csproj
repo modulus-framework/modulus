@@ -2,6 +2,8 @@
 
   <ItemGroup>
     <ProjectReference Include="../../../src/data/Modulus.Data.PostgreSQL/Modulus.Data.PostgreSQL.csproj" />
+    <ProjectReference Include="../../../src/platform/Modulus.MultiTenancy.EntityFrameworkCore/Modulus.MultiTenancy.EntityFrameworkCore.csproj" />
+    <ProjectReference Include="../../../src/platform/Modulus.AuditLogging.EntityFrameworkCore/Modulus.AuditLogging.EntityFrameworkCore.csproj" />
     <ProjectReference Include="../../../src/data/Modulus.Data.SqlServer/Modulus.Data.SqlServer.csproj" />
     <ProjectReference Include="../../../src/data/Modulus.Data.MySQL/Modulus.Data.MySQL.csproj" />
     <ProjectReference Include="../../../src/data/Modulus.EntityFrameworkCore/Modulus.EntityFrameworkCore.csproj" />

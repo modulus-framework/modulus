@@ -61,7 +61,7 @@ public sealed class ResourcePolicy
     /// Evaluates the policy and reports, for every rule that applies to the action, whether it matched — the
     /// answer to "why can or can't this caller do this to this record". It never throws on a rule that does:
     /// a rule whose requirement throws counts as not matched and is flagged <see cref="RuleOutcome.Faulted"/>
-    /// (the decision itself stays fail-closed through <see cref="Evaluate"/>).
+    /// (the decision itself stays fail-closed through <see cref="Evaluate(ResourceRequest)"/>).
     /// </summary>
     public PolicyExplanation Explain(ResourceRequest request)
     {
@@ -96,8 +96,17 @@ public sealed class ResourcePolicy
     /// Deny-override then allow-if-any, else fail-closed.
     /// </summary>
     public AccessDecision Evaluate(ResourceRequest request)
+        => Evaluate(request, out _);
+
+    /// <summary>
+    /// <see cref="Evaluate(ResourceRequest)"/>, and whether the refusal came from an explicit deny rule. A deny rule and "no rule
+    /// granted it" both answer <see cref="AccessReasonCodes.PolicyViolation"/>, so a caller that must tell them apart (record sharing,
+    /// A8-1) reads the flag.
+    /// </summary>
+    internal AccessDecision Evaluate(ResourceRequest request, out bool explicitDeny)
     {
         ArgumentNullException.ThrowIfNull(request);
+        explicitDeny = false;
 
         var matchedAllow = false;
         foreach (var rule in _rules)
@@ -121,9 +130,12 @@ public sealed class ResourcePolicy
                 continue;
 
             if (rule.Effect == PolicyEffect.Deny)
+            {
+                explicitDeny = true;
                 return AccessDecision.Deny(
                     AccessReasonCodes.PolicyViolation,
                     $"action '{request.Action}' is denied by policy on this resource");
+            }
 
             matchedAllow = true;
         }
@@ -149,6 +161,6 @@ public sealed class ResourcePolicy
 public sealed record RuleOutcome(int Index, PolicyEffect Effect, string Action, bool Matched, bool Faulted);
 
 /// <summary>A decision with the per-rule evidence behind it.</summary>
-/// <param name="Decision">The authoritative decision (same as <see cref="ResourcePolicy.Evaluate"/>).</param>
+/// <param name="Decision">The authoritative decision (same as <see cref="ResourcePolicy.Evaluate(ResourceRequest)"/>).</param>
 /// <param name="Rules">Every rule that applies to the action and whether it matched.</param>
 public sealed record PolicyExplanation(AccessDecision Decision, IReadOnlyList<RuleOutcome> Rules);

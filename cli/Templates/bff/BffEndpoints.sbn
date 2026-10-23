@@ -17,8 +17,8 @@ internal static class BffEndpoints
         if (app.Environment.IsDevelopment())
         {
             // The {{ client_name }} client's contract: /openapi/{{ client_name }}.json
-            app.MapOpenApi();
-        }
+{{ if target_framework == "net10.0" }}            app.MapOpenApi();
+{{ end }}        }
         return app;
     }
 }

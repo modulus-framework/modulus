@@ -96,6 +96,33 @@ public class ModuleLayoutTests
     }
 
     [Fact]
+    public void Generated_read_handlers_mask_restricted_fields_through_the_field_authorizer()
+    {
+        Ux.Reset();
+        var dir = TempDir();
+        try
+        {
+            new NewAppCommand().GenerateModule(dir, CatalogModel());
+
+            // The list and by-id reads are generated for every module. The cursor read exists only with cursor paging, not covered here.
+            var application = Path.Combine(dir, "MyApp.Modules.Catalog.Application");
+            var readHandlers = Directory.EnumerateFiles(application, "Get*Handler.cs").ToList();
+
+            readHandlers.Select(Path.GetFileName).Should().BeEquivalentTo(["GetProductsHandler.cs", "GetProductByIdHandler.cs"]);
+            foreach (var file in readHandlers)
+            {
+                var text = File.ReadAllText(file);
+                text.Should().Contain("IFieldAuthorizer? fieldAuthorizer = null", because: Path.GetFileName(file));
+                text.Should().Contain("fieldAuthorizer?.Redact(dto) ?? dto", because: Path.GetFileName(file));
+            }
+        }
+        finally
+        {
+            Directory.Delete(dir, recursive: true);
+        }
+    }
+
+    [Fact]
     public void Generated_create_and_update_handlers_check_the_resulting_record_scope()
     {
         Ux.Reset();

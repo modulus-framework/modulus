@@ -47,6 +47,13 @@ public class ModulusUser : IdentityUser<Guid>
     /// </summary>
     public AccountLifecycle Lifecycle { get; set; } = AccountLifecycle.Active;
 
+    /// <summary>When the account was created through SCIM (<c>meta.created</c>); null for accounts created another way.</summary>
+    public DateTimeOffset? CreatedAt { get; set; }
+
+    /// <summary>When the account last changed through SCIM (<c>meta.lastModified</c>); null when SCIM never changed it.</summary>
+    public DateTimeOffset? ModifiedAt { get; set; }
+
+
     /// <summary>When <see cref="Lifecycle"/> last changed; null for an account that never moved.</summary>
     public DateTimeOffset? LifecycleChangedAt { get; set; }
 

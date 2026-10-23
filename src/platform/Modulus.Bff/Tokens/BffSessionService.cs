@@ -26,6 +26,12 @@ public interface IBffSessionService
     Task<BffSignInResult> SignInWithPasswordAsync(HttpContext context, string client, string userName, string password, bool rememberMe = false, CancellationToken ct = default);
 
     /// <summary>
+    /// Signs the person in with a passkey: the auth server's passkey grant turns <paramref name="assertion"/> (the browser's WebAuthn
+    /// answer to the options of <paramref name="challengeId"/>) into tokens, then the session is set up as for a password sign-in.
+    /// </summary>
+    Task<BffSignInResult> SignInWithPasskeyAsync(HttpContext context, string client, string challengeId, string assertion, bool rememberMe = false, CancellationToken ct = default);
+
+    /// <summary>
     /// Revokes the session's tokens (when the auth server has a revocation endpoint), clears the store and removes
     /// the cookie. In OIDC login mode returns the auth server's end-session URL (RP-initiated logout) the browser
     /// should visit, with <paramref name="returnUrl"/> (a local path) as the post-logout target; otherwise <c>null</c>.
@@ -63,6 +69,33 @@ internal sealed class BffSessionService(
             return new BffSignInResult(null, TemporarilyUnavailable, "The sign-in service is not reachable.");
         }
 
+        return await FinishSignInAsync(context, client, result, rememberMe, ct).ConfigureAwait(false);
+    }
+
+    public async Task<BffSignInResult> SignInWithPasskeyAsync(
+        HttpContext context, string client, string challengeId, string assertion, bool rememberMe = false, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentException.ThrowIfNullOrEmpty(client);
+        if (string.IsNullOrWhiteSpace(challengeId) || string.IsNullOrWhiteSpace(assertion))
+            return new BffSignInResult(null, "invalid_request");
+
+        BffTokenResult result;
+        try
+        {
+            result = await tokenClient.PasskeyAsync(client, challengeId, assertion, ct).ConfigureAwait(false);
+        }
+        catch (HttpRequestException)
+        {
+            return new BffSignInResult(null, TemporarilyUnavailable, "The sign-in service is not reachable.");
+        }
+
+        return await FinishSignInAsync(context, client, result, rememberMe, ct).ConfigureAwait(false);
+    }
+
+    // The token answer becomes the session: the claims, the token store and the session cookie. Shared by every sign-in method.
+    private async Task<BffSignInResult> FinishSignInAsync(HttpContext context, string client, BffTokenResult result, bool rememberMe, CancellationToken ct)
+    {
         if (!result.Succeeded)
         {
             // "server_error": the token endpoint answered without a usable OAuth body (a 5xx, a proxy error page).

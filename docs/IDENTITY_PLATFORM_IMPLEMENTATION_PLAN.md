@@ -1,7 +1,7 @@
 # Modulus Identity Platform Implementation Plan
 
 **Version:** 1.3.1 — source-verified architectural baseline
-**Status:** Approved for implementation; canonical living plan
+**Status:** Superseded (2026-10-22). Its gap matrix predates the 2026-10-18/19 work, and several "full gap" rows are now built. The living plan is [`docs/IDENTITY_PLATFORM_PLAN.md`](IDENTITY_PLATFORM_PLAN.md). Kept for its ADRs and the 2026-10-15 baseline.
 **Date:** 2026-10-15
 **Scope:** Reusable Modulus framework and optional platform modules; first production consumer is the Garments ERP
 **Supersedes:** the v1.2 draft plan and the pre-verification v1.3 text (both preserved in Git history)
@@ -736,10 +736,10 @@ invented by engineering**. Until an owner approves them:
 | D4 workflow routing | Workflow module owns routing/reminders/escalation; platform supplies eligibility, limits, delegation resolution (already the built seam) | Proposed; needs sign-off |
 | D5 notification delivery | B3 owns channels/templates/preferences/tracking; platform emits events | Proposed; needs sign-off |
 | D6 leaver process | B1: revocation at effective time, tracked reassignment, never delayed | Proposed; needs sign-off |
-| D7 pilot module | Inventory first (subject to BRS pilot criteria), Procurement next | Open — needs business approvers |
-| D8 audit retention/privacy | A11 + B5; durations and obligations are provisional (§8) until compliance owners approve | Open |
-| D9 NFR targets | §8 provisional; validated at P1b benches before baseline | Open |
-| D10 MFA assurance | A12 factor matrix per §18.1, incl. shop-floor compensating controls; provisional until approved | Open |
+| D7 pilot module | Inventory first (subject to BRS pilot criteria), Procurement next | Decided by engineering (2026-10-23, see IDENTITY_PLATFORM_PLAN §14); pilot approver still needed |
+| D8 audit retention/privacy | A11 + B5; durations and obligations are provisional (§8) until compliance owners approve | Engineering default decided (2026-10-23, §14); legal minimum still needs compliance sign-off before purge is enabled |
+| D9 NFR targets | §8 provisional; validated at P1b benches before baseline | Targets decided (2026-10-23, §14); 10 ms p95 not yet measured |
+| D10 MFA assurance | A12 factor matrix per §18.1, incl. shop-floor compensating controls; provisional until approved | Decided (2026-10-23, §14): shop-floor PIN-only, step-up for Critical |
 
 Owner confirmations still required (never invented by engineering): the §8 list. Names and dates
 are recorded in the BRS document-control record at baseline.

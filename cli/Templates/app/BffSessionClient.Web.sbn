@@ -34,6 +34,29 @@ public sealed class BffSessionClient(HttpClient http)
         return new BffSignInResult(false, problem?.Error ?? "invalid_request");
     }
 
+    /// <summary>Signs the user in with a passkey at the BFF (the assertion the browser made for the options of <paramref name="challengeId"/>).</summary>
+    public async Task<BffSignInResult> SignInWithPasskeyAsync(string challengeId, string assertion, bool rememberMe, CancellationToken ct = default)
+    {
+        HttpResponseMessage response;
+        try
+        {
+            response = await http.PostAsJsonAsync("bff/login/passkey", new { challengeId, assertion, rememberMe }, ct);
+        }
+        catch (HttpRequestException)
+        {
+            return BffSignInResult.Unavailable;
+        }
+
+        if (response.IsSuccessStatusCode)
+            return BffSignInResult.Ok;
+
+        if (response.StatusCode == HttpStatusCode.ServiceUnavailable)
+            return BffSignInResult.Unavailable;
+
+        var problem = await response.Content.ReadFromJsonAsync<BffError>(ct);
+        return new BffSignInResult(false, problem?.Error ?? "invalid_request");
+    }
+
     /// <summary>
     /// The BFF's sign-in URL for the browser to visit (the OIDC code flow at the auth server's login page). The BFF sends the
     /// browser back to <paramref name="returnUrl"/>, which must be an absolute URL of an origin the BFF allows (Bff:AllowedReturnOrigins).

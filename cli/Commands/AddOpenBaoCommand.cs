@@ -24,6 +24,10 @@ internal sealed class AddOpenBaoCommand : Command<AddOpenBaoCommand.Settings>
         [Description("Keep tenant database connection strings in OpenBao (AddModulusTenantDatabases). Needs a multi-tenant host with a tenant store.")]
         [CommandOption("--tenant-databases")]
         public bool TenantDatabases { get; init; }
+
+        [Description("Generate the provisioning host (src/Provisioning): the only host with an OpenBao write identity. PostgreSQL and SQL Server.")]
+        [CommandOption("--provisioner")]
+        public bool Provisioner { get; init; }
     }
 
     public override int Execute(CommandContext ctx, Settings s)
@@ -68,6 +72,9 @@ internal sealed class AddOpenBaoCommand : Command<AddOpenBaoCommand.Settings>
             hints.Add("appsettings.Development.json already has an OpenBao section: review it there (it was left as it is).");
         Edit(development, t => OpenBaoWiring.EnsureDevelopmentSettings(t), written, app);
 
+        if (s.Provisioner)
+            GenerateProvisioningHost(auth, app, written, hints);
+
         if (s.TenantDatabases && !ApiHostFiles.ReadAll(app.ProgramCsPath).Contains("AddEfCoreTenantStore(", StringComparison.Ordinal))
             hints.Add("--tenant-databases needs the EF tenant store (AddEfCoreTenantStore). Generate the app with --multi-tenancy, or add it before the secrets.");
 
@@ -84,6 +91,9 @@ internal sealed class AddOpenBaoCommand : Command<AddOpenBaoCommand.Settings>
     }
 
     private void Write(string template, string path, List<string> written, ModuleDiscovery.AppInventory app)
+        => Write(template, new { }, path, written, app);
+
+    private void Write(string template, object model, string path, List<string> written, ModuleDiscovery.AppInventory app)
     {
         var display = Path.GetRelativePath(app.SolutionDir, path).Replace('\\', '/');
         if (File.Exists(path))
@@ -92,8 +102,35 @@ internal sealed class AddOpenBaoCommand : Command<AddOpenBaoCommand.Settings>
             return;
         }
 
-        _templates.RenderToFile(template, new { }, path);
+        _templates.RenderToFile(template, model, path);
         written.Add(display);
+    }
+
+    // The provisioning host: a project with the write identity, its program and settings, added to the solution. Existing files are kept.
+    private void GenerateProvisioningHost(string auth, ModuleDiscovery.AppInventory app, List<string> written, List<string> hints)
+    {
+        // The provider package is referenced by the module projects that hold the DbContexts, so every project of the solution is read.
+        var projects = string.Concat(Directory.EnumerateFiles(app.SolutionDir, "*.csproj", SearchOption.AllDirectories)
+            .Where(f => !f.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal)
+                && !f.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
+            .Select(File.ReadAllText));
+        var engine = ProvisioningHost.DetectEngine(projects)
+            ?? throw new InvalidOperationException("The provisioning host needs a database package in the API host (PostgreSQL or SQL Server).");
+        ProvisioningHost.EnsureSupported(engine);
+
+        var model = new ProvisioningHost.Model(app.RootNamespace, FrameworkVersion.Current, engine, auth, Guid.NewGuid().ToString("D"));
+        var directory = Path.Combine(app.SolutionDir, ProvisioningHost.ProjectDirectory(app.RootNamespace).Replace('/', Path.DirectorySeparatorChar));
+        Write("provisioning/provisioning.csproj", model, Path.Combine(directory, $"{app.RootNamespace}.Provisioning.csproj"), written, app);
+        Write("provisioning/Program", model, Path.Combine(directory, "Program.cs"), written, app);
+        Write("provisioning/appsettings", model, Path.Combine(directory, "appsettings.json"), written, app);
+        Write("provisioning/appsettings.Development", model, Path.Combine(directory, "appsettings.Development.json"), written, app);
+
+        if (File.Exists(app.SolutionPath))
+            SolutionHelper.AddProject(app.SolutionPath, ProvisioningHost.ProjectFile(app.RootNamespace));
+
+        hints.Add("Provisioning host: the API must issue unencrypted access tokens (Identity:EncryptAccessTokens=false), or this host cannot read them.");
+        hints.Add($"Provisioning host: replace the Tenancy and Authorization connection strings (the Authorization one must be the API host's database) and the Provisioning:Authority and Audience placeholders. Set the API host's Identity:Audiences to the same audience, so its access tokens carry it. Grant tenancy:data-stores:manage to the administrators in that database.");
+        hints.Add("Provisioning host (development): write the provisioner AppRole ids from bootstrap-dev.sh to secrets/openbao-provisioner-role-id and secrets/openbao-provisioner-secret-id (git-ignored).");
     }
 
     // Applies a pure text edit; true when the file changed (and was written, unless --dry-run).

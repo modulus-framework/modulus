@@ -164,4 +164,49 @@ public sealed class StepUpTests
         using var machine = Client(app, "demo:pay", roles: "integration:erp-sync", machine: true);
         (await machine.GetAsync("/pay")).StatusCode.Should().Be(HttpStatusCode.OK);
     }
+
+    [Fact]
+    public async Task A_phishing_resistant_permission_needs_a_recent_passkey_and_a_password_with_an_app_is_refused()
+    {
+        await using var app = await StartAsync(o => o.PhishingResistantPermissions.Add("demo:export"));
+
+        // The D10 rule: a password with an authenticator app does not qualify, however recent.
+        using var appCode = Client(app, "demo:export", "pwd,otp,mfa", s_now.AddMinutes(-1));
+        var refused = await appCode.GetAsync("/export");
+        refused.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        (await refused.Content.ReadAsStringAsync()).Should().Contain("STEP_UP_REQUIRED");
+
+        using var device = Client(app, "demo:export", "hwk,user,mfa", s_now.AddMinutes(-1));
+        (await device.GetAsync("/export")).StatusCode.Should().Be(HttpStatusCode.OK);
+
+        using var synced = Client(app, "demo:export", "swk,user,mfa", s_now.AddMinutes(-1));
+        (await synced.GetAsync("/export")).StatusCode.Should().Be(HttpStatusCode.OK);
+
+        using var stale = Client(app, "demo:export", "hwk,user,mfa", s_now.AddMinutes(-16));
+        (await stale.GetAsync("/export")).StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+
+        using var noTime = Client(app, "demo:export", "hwk,user,mfa");
+        (await noTime.GetAsync("/export")).StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task The_passkey_rule_is_per_permission_and_a_machine_is_still_exempt()
+    {
+        await using var app = await StartAsync(o => o.PhishingResistantPermissions.Add("demo:export"));
+
+        using var password = Client(app, "demo:view,demo:export", "pwd,otp,mfa", s_now.AddMinutes(-1));
+        (await password.GetAsync("/view")).StatusCode.Should().Be(HttpStatusCode.OK);
+
+        using var machine = Client(app, "demo:export", null, s_now, roles: "integration:partner", machine: true);
+        (await machine.GetAsync("/export")).StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task Without_phishing_resistant_permissions_nothing_changes()
+    {
+        await using var app = await StartAsync(null);
+
+        using var password = Client(app, "demo:export", "pwd,otp,mfa", s_now.AddMinutes(-1));
+        (await password.GetAsync("/export")).StatusCode.Should().Be(HttpStatusCode.OK);
+    }
 }

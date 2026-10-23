@@ -156,6 +156,14 @@ internal sealed class AiConnectorAuthenticationHandler(
         identity.AddClaim(new Claim(AiConnectorDefaults.PlatformTenantClaim, instance.PlatformTenantId));
         identity.AddClaim(new Claim(AiConnectorDefaults.EnvelopeClaim, envelope.Id));
 
+        // An agent acting for this user: the same "act" claim the grant store reads, so the user's access is capped to the agent's (A9-1).
+        if (envelope.Claims.TryGetValue(AiEnvelopeClaims.Agent, out var agent) && !string.IsNullOrWhiteSpace(agent))
+        {
+            if (!agent.StartsWith(AiEnvelopeClaims.AgentRolePrefix, StringComparison.Ordinal))
+                return Deny("agent claim is not an integration role", envelope, instance.TenantId);
+            identity.AddClaim(new Claim(AiEnvelopeClaims.Agent, agent));
+        }
+
         new AiConnectorCall(instance, user, envelope).Attach(Context);
         return AuthenticateResult.Success(new AuthenticationTicket(new ClaimsPrincipal(identity), Scheme.Name));
     }

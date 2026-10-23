@@ -382,3 +382,21 @@ Modulus.Bff.BffOptions.TenantHeader.set -> void
 Modulus.Bff.Http.BffTenantHeaderHandler
 Modulus.Bff.Http.BffTenantHeaderHandler.BffTenantHeaderHandler(Microsoft.AspNetCore.Http.IHttpContextAccessor! accessor, Microsoft.Extensions.Options.IOptions<Modulus.Bff.BffOptions!>! options) -> void
 const Modulus.Bff.BffDefaults.TenantHeader = "X-Tenant-Id" -> string!
+Modulus.Bff.BffPasskeyLoginRequest.RememberMe.get -> bool
+Modulus.Bff.BffPasskeyLoginRequest.ChallengeId.get -> string!
+Modulus.Bff.BffPasskeyLoginRequest.Assertion.get -> string!
+Modulus.Bff.BffPasskeyLoginRequest.Assertion.init -> void
+Modulus.Bff.BffPasskeyLoginRequest.RememberMe.init -> void
+Modulus.Bff.BffPasskeyLoginRequest.ChallengeId.init -> void
+Modulus.Bff.BffPasskeyLoginRequest
+override Modulus.Bff.BffPasskeyLoginRequest.ToString() -> string!
+static Modulus.Bff.BffPasskeyLoginRequest.operator !=(Modulus.Bff.BffPasskeyLoginRequest? left, Modulus.Bff.BffPasskeyLoginRequest? right) -> bool
+static Modulus.Bff.BffPasskeyLoginRequest.operator ==(Modulus.Bff.BffPasskeyLoginRequest? left, Modulus.Bff.BffPasskeyLoginRequest? right) -> bool
+override Modulus.Bff.BffPasskeyLoginRequest.GetHashCode() -> int
+override Modulus.Bff.BffPasskeyLoginRequest.Equals(object? obj) -> bool
+Modulus.Bff.BffPasskeyLoginRequest.Equals(Modulus.Bff.BffPasskeyLoginRequest? other) -> bool
+Modulus.Bff.BffPasskeyLoginRequest.<Clone>$() -> Modulus.Bff.BffPasskeyLoginRequest!
+Modulus.Bff.BffPasskeyLoginRequest.Deconstruct(out string! ChallengeId, out string! Assertion, out bool RememberMe) -> void
+Modulus.Bff.BffPasskeyLoginRequest.BffPasskeyLoginRequest(string! ChallengeId, string! Assertion, bool RememberMe = false) -> void
+Modulus.Bff.Tokens.IBffSessionService.SignInWithPasskeyAsync(Microsoft.AspNetCore.Http.HttpContext! context, string! client, string! challengeId, string! assertion, bool rememberMe = false, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Bff.Tokens.BffSignInResult!>!
+Modulus.Bff.Tokens.IBffTokenClient.PasskeyAsync(string! client, string! challengeId, string! assertion, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Bff.Tokens.BffTokenResult!>!

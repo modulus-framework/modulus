@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Modulus.Authorization.Governance;
 using Modulus.Authorization.Grants;
+using Modulus.BackgroundJobs;
 using Modulus.Core.Abstractions;
 
 /// <summary>Who the grants of the current request are looked up for (user id + role names from the verified identity).</summary>
@@ -14,8 +15,11 @@ public interface IPrincipalGrantQuerySource
     PrincipalGrantQuery Current { get; }
 }
 
-/// <summary>Reads the principal of the current HTTP request (user id, roles); anonymous outside a request.</summary>
-internal sealed class HttpPrincipalGrantQuerySource(IHttpContextAccessor accessor) : IPrincipalGrantQuerySource
+/// <summary>
+/// Reads the principal of the current HTTP request (user id, roles). Outside a request, inside a background job, it is the person who
+/// queued the job with the roles the identity store held when the job started (<see cref="JobContext"/>); anonymous otherwise.
+/// </summary>
+internal sealed class HttpPrincipalGrantQuerySource(IHttpContextAccessor accessor, JobContext? job = null) : IPrincipalGrantQuerySource
 {
     public PrincipalGrantQuery Current
     {
@@ -23,7 +27,9 @@ internal sealed class HttpPrincipalGrantQuerySource(IHttpContextAccessor accesso
         {
             var principal = accessor.HttpContext?.User;
             if (principal?.Identity?.IsAuthenticated != true)
-                return PrincipalGrantQuery.Anonymous;
+                return job?.InitiatorId is { } initiator
+                    ? new PrincipalGrantQuery(initiator, job.Roles.ToArray())
+                    : PrincipalGrantQuery.Anonymous;
 
             var sub = principal.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? principal.FindFirst("sub")?.Value;
             var roles = principal.Claims

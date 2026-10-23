@@ -16,5 +16,9 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" />
   </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Modulus.Authorization.EntityFrameworkCore.Tests" />
+  </ItemGroup>
+
 
 </Project>

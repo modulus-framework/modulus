@@ -29,6 +29,17 @@ public sealed class OutboxManagementApiTests : IAsyncLifetime
     private SqliteConnection _connection = null!;
     private WebApplication _app = null!;
 
+    [Fact]
+    public void Replaying_and_inspecting_the_outbox_is_a_critical_permission()
+    {
+        // D10 (owner decision, 2026-10-23): production operations on messages are privileged, so the permission needs a
+        // step-up sign-in in production and cannot be taken from a wildcard grant.
+        var registry = _app.Services.GetRequiredService<Modulus.Core.Abstractions.IPermissionRegistry>();
+
+        registry.GetAll().Should().ContainSingle(d => d.Permission == ManagePermission)
+            .Which.Sensitivity.Should().Be(Modulus.Core.Abstractions.PermissionSensitivity.Critical);
+    }
+
     public async Task InitializeAsync()
     {
         _connection = new SqliteConnection("DataSource=:memory:");

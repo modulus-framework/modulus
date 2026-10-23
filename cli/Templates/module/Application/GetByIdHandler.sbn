@@ -1,11 +1,14 @@
 using Modulus.Mediator.Abstractions;
+using Modulus.Authorization.Fields;
 using Modulus.Core.Abstractions.Exceptions;
 using {{ module_namespace }}.Domain;
 using {{ module_namespace }}.Application.Dtos;
 
 namespace {{ module_namespace }}.Application;
 
-public sealed class Get{{ entity_name }}ByIdHandler(I{{ entity_name }}Repository repo)
+public sealed class Get{{ entity_name }}ByIdHandler(
+    I{{ entity_name }}Repository repo,
+    IFieldAuthorizer? fieldAuthorizer = null)
     : IQueryHandler<Get{{ entity_name }}ByIdQuery, {{ entity_name }}Dto>
 {
     public async Task<{{ entity_name }}Dto> HandleAsync(
@@ -16,10 +19,13 @@ public sealed class Get{{ entity_name }}ByIdHandler(I{{ entity_name }}Repository
             ?? throw new NotFoundException(
                 "{{ entity_name }} not found: " + query.Id);
 
-        return new {{ entity_name }}Dto
+        // Restricted fields are masked for a caller without their read permission (no-op without field security).
+        return Mask(new {{ entity_name }}Dto
         {
             Id = entity.Id,
             Name = entity.Name,
-        };
+        });
     }
+
+    private {{ entity_name }}Dto Mask({{ entity_name }}Dto dto) => fieldAuthorizer?.Redact(dto) ?? dto;
 }

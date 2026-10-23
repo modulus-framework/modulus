@@ -19,6 +19,19 @@ public interface ISecurityAuditStore
     Task<IReadOnlyList<SecurityAuditHead>> GetHeadsAsync(CancellationToken ct = default);
 
     /// <summary>
+    /// The head of the last entry retention purged from a chain (A11-1), or null when none was purged. The entries after it verify from it
+    /// (<see cref="SecurityAuditChain.VerifyFrom"/>). The default store does not purge and answers null.
+    /// </summary>
+    Task<SecurityAuditHead?> GetCheckpointAsync(Guid chainId, CancellationToken ct = default) => Task.FromResult<SecurityAuditHead?>(null);
+
+    /// <summary>
+    /// Removes the entries of a chain up to and including <paramref name="checkpoint"/> and stores it as the chain's checkpoint. Only the
+    /// retention service calls it, after the entries were archived. A store that cannot purge refuses.
+    /// </summary>
+    Task PurgeAsync(SecurityAuditHead checkpoint, CancellationToken ct = default)
+        => throw new NotSupportedException("This security audit store cannot purge entries; retention needs a store that supports it.");
+
+    /// <summary>
     /// The entries of one chain that match <paramref name="query"/>, newest first. The default reads the chain and filters in memory
     /// (correct for any store, slow for a long chain); a database store overrides it to filter in the database.
     /// </summary>
@@ -125,6 +138,8 @@ public sealed class InMemorySecurityAuditStore(TimeProvider clock) : ISecurityAu
         await Task.CompletedTask.ConfigureAwait(false);
     }
 
+    private readonly Dictionary<Guid, SecurityAuditHead> _checkpoints = [];
+
     /// <inheritdoc />
     public Task<IReadOnlyList<SecurityAuditHead>> GetHeadsAsync(CancellationToken ct = default)
     {
@@ -136,5 +151,30 @@ public sealed class InMemorySecurityAuditStore(TimeProvider clock) : ISecurityAu
                 .ToList();
             return Task.FromResult(heads);
         }
+    }
+
+    /// <inheritdoc />
+    public Task<SecurityAuditHead?> GetCheckpointAsync(Guid chainId, CancellationToken ct = default)
+    {
+        lock (_gate)
+            return Task.FromResult(_checkpoints.TryGetValue(chainId, out var checkpoint) ? checkpoint : null);
+    }
+
+    /// <inheritdoc />
+    public Task PurgeAsync(SecurityAuditHead checkpoint, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(checkpoint);
+        lock (_gate)
+        {
+            if (!_chains.TryGetValue(checkpoint.ChainId, out var chain))
+                throw new InvalidOperationException($"Chain '{checkpoint.ChainId}' does not exist.");
+            var through = chain.FindIndex(r => r.Sequence == checkpoint.Sequence);
+            if (through < 0 || chain[through].Hash != checkpoint.Hash)
+                throw new InvalidOperationException("The checkpoint is not an entry of this chain.");
+            chain.RemoveRange(0, through + 1);
+            _checkpoints[checkpoint.ChainId] = checkpoint;
+        }
+
+        return Task.CompletedTask;
     }
 }

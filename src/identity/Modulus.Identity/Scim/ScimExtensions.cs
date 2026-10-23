@@ -76,7 +76,8 @@ public static class ScimExtensions
 
         MapUsers(group, prefix);
         MapGroups(group, prefix);
-        MapDiscovery(group);
+        MapBulk(group, prefix);
+        MapDiscovery(group, prefix);
         return group;
     }
 
@@ -90,67 +91,279 @@ public static class ScimExtensions
 
     private static IResult NotFound(string kind) => Error(404, null, $"{kind} not found.");
 
+    // RFC 7644 §3.14: the If-Match tag of a change, or null when the client sent none. The service checks it against the record.
+    private static string? IfMatch(HttpRequest request)
+    {
+        var value = request.Headers["If-Match"].ToString();
+        return string.IsNullOrWhiteSpace(value) ? null : value;
+    }
+
     private static void MapUsers(RouteGroupBuilder group, string prefix)
     {
-        group.MapGet("/Users", async (HttpRequest request, IScimService scim, string? filter, int? startIndex, int? count, CancellationToken ct) =>
-            Scim(await scim.ListUsersAsync(filter, startIndex ?? 1, count ?? 100, BaseUrl(request, prefix), ct)));
+        group.MapGet("/Users", async (HttpRequest request, IScimService scim, string? filter, string? sortBy, string? sortOrder, int? startIndex, int? count, CancellationToken ct) =>
+            Scim(await scim.ListUsersAsync(filter, sortBy, sortOrder, startIndex ?? 1, count ?? 100, BaseUrl(request, prefix), ct)));
 
         group.MapGet("/Users/{id}", async (HttpRequest request, IScimService scim, string id, CancellationToken ct) =>
-            await scim.GetUserAsync(id, BaseUrl(request, prefix), ct) is { } user ? Scim(user) : NotFound("User"));
+            await scim.GetUserAsync(id, BaseUrl(request, prefix), ct) is { } user
+                ? WithETag(Scim(user), user.Meta?.Version)
+                : NotFound("User"));
 
         group.MapPost("/Users", async (HttpRequest request, IScimService scim, ScimUser body, CancellationToken ct) =>
         {
             var user = await scim.CreateUserAsync(body, BaseUrl(request, prefix), ct);
-            return Results.Json(user, s_json, ScimMediaTypes.Json, StatusCodes.Status201Created)
-                .WithLocation(user.Meta?.Location);
+            return WithETag(
+                Results.Json(user, s_json, ScimMediaTypes.Json, StatusCodes.Status201Created).WithLocation(user.Meta?.Location),
+                user.Meta?.Version);
         });
 
         group.MapPut("/Users/{id}", async (HttpRequest request, IScimService scim, string id, ScimUser body, CancellationToken ct) =>
-            await scim.ReplaceUserAsync(id, body, BaseUrl(request, prefix), ct) is { } user ? Scim(user) : NotFound("User"));
+            await scim.ReplaceUserAsync(id, body, BaseUrl(request, prefix), IfMatch(request), ct) is { } user
+                ? WithETag(Scim(user), user.Meta?.Version)
+                : NotFound("User"));
 
         group.MapPatch("/Users/{id}", async (HttpRequest request, IScimService scim, string id, ScimPatchRequest body, CancellationToken ct) =>
-            await scim.PatchUserAsync(id, body, BaseUrl(request, prefix), ct) is { } user ? Scim(user) : NotFound("User"));
+            await scim.PatchUserAsync(id, body, BaseUrl(request, prefix), IfMatch(request), ct) is { } user
+                ? WithETag(Scim(user), user.Meta?.Version)
+                : NotFound("User"));
 
-        group.MapDelete("/Users/{id}", async (IScimService scim, string id, CancellationToken ct) =>
-            await scim.DeleteUserAsync(id, ct) ? Results.NoContent() : NotFound("User"));
+        group.MapDelete("/Users/{id}", async (HttpRequest request, IScimService scim, string id, CancellationToken ct) =>
+            await scim.DeleteUserAsync(id, IfMatch(request), ct) ? Results.NoContent() : NotFound("User"));
     }
 
     private static void MapGroups(RouteGroupBuilder group, string prefix)
     {
-        group.MapGet("/Groups", async (HttpRequest request, IScimService scim, string? filter, int? startIndex, int? count, CancellationToken ct) =>
-            Scim(await scim.ListGroupsAsync(filter, startIndex ?? 1, count ?? 100, BaseUrl(request, prefix), ct)));
+        group.MapGet("/Groups", async (HttpRequest request, IScimService scim, string? filter, string? sortBy, string? sortOrder, int? startIndex, int? count, CancellationToken ct) =>
+            Scim(await scim.ListGroupsAsync(filter, sortBy, sortOrder, startIndex ?? 1, count ?? 100, BaseUrl(request, prefix), ct)));
 
         group.MapGet("/Groups/{id}", async (HttpRequest request, IScimService scim, string id, CancellationToken ct) =>
-            await scim.GetGroupAsync(id, BaseUrl(request, prefix), ct) is { } found ? Scim(found) : NotFound("Group"));
+            await scim.GetGroupAsync(id, BaseUrl(request, prefix), ct) is { } found
+                ? WithETag(Scim(found), found.Meta?.Version)
+                : NotFound("Group"));
 
         group.MapPost("/Groups", async (HttpRequest request, IScimService scim, ScimGroup body, CancellationToken ct) =>
         {
             var created = await scim.CreateGroupAsync(body, BaseUrl(request, prefix), ct);
-            return Results.Json(created, s_json, ScimMediaTypes.Json, StatusCodes.Status201Created)
-                .WithLocation(created.Meta?.Location);
+            return WithETag(
+                Results.Json(created, s_json, ScimMediaTypes.Json, StatusCodes.Status201Created).WithLocation(created.Meta?.Location),
+                created.Meta?.Version);
         });
 
         group.MapPut("/Groups/{id}", async (HttpRequest request, IScimService scim, string id, ScimGroup body, CancellationToken ct) =>
-            await scim.ReplaceGroupAsync(id, body, BaseUrl(request, prefix), ct) is { } found ? Scim(found) : NotFound("Group"));
+            await scim.ReplaceGroupAsync(id, body, BaseUrl(request, prefix), IfMatch(request), ct) is { } found
+                ? WithETag(Scim(found), found.Meta?.Version)
+                : NotFound("Group"));
 
         group.MapPatch("/Groups/{id}", async (HttpRequest request, IScimService scim, string id, ScimPatchRequest body, CancellationToken ct) =>
-            await scim.PatchGroupAsync(id, body, BaseUrl(request, prefix), ct) is { } found ? Scim(found) : NotFound("Group"));
+            await scim.PatchGroupAsync(id, body, BaseUrl(request, prefix), IfMatch(request), ct) is { } found
+                ? WithETag(Scim(found), found.Meta?.Version)
+                : NotFound("Group"));
 
-        group.MapDelete("/Groups/{id}", async (IScimService scim, string id, CancellationToken ct) =>
-            await scim.DeleteGroupAsync(id, ct) ? Results.NoContent() : NotFound("Group"));
+        group.MapDelete("/Groups/{id}", async (HttpRequest request, IScimService scim, string id, CancellationToken ct) =>
+            await scim.DeleteGroupAsync(id, IfMatch(request), ct) ? Results.NoContent() : NotFound("Group"));
     }
 
-    private static void MapDiscovery(RouteGroupBuilder group)
+    /// <summary>The limits advertised in ServiceProviderConfig and enforced by <c>POST /Bulk</c>.</summary>
+    private const int MaxBulkOperations = 1000;
+    private const int MaxBulkPayloadBytes = 1_048_576;
+
+    private static readonly string[] BulkResponseSchemas = ["urn:ietf:params:scim:api:messages:2.0:BulkResponse"];
+
+    private sealed record BulkOutcome(string Method, string? BulkId, string? Location, string Status, string? Detail);
+
+    // RFC 7644 §3.7: operations are applied in order, each through the same service as its single-resource endpoint, so the
+    // same rules, seat limits and audit apply. The bulk is not one transaction (the RFC does not require it).
+    private static void MapBulk(RouteGroupBuilder group, string prefix)
     {
+        group.MapPost("/Bulk", async (HttpRequest request, IScimService scim, ScimBulkRequest body, CancellationToken ct) =>
+        {
+            var operations = body.Operations ?? [];
+            if (operations.Count > MaxBulkOperations)
+                return Error(StatusCodes.Status413PayloadTooLarge, "tooMany", $"A bulk request holds at most {MaxBulkOperations} operations.");
+
+            var baseUrl = BaseUrl(request, prefix);
+            var created = new Dictionary<string, string>(StringComparer.Ordinal);
+            var outcomes = new List<BulkOutcome>();
+            var failures = 0;
+            foreach (var operation in operations)
+            {
+                if (body.FailOnErrors is { } limit && failures >= limit)
+                    break;
+                var outcome = await RunBulkOperationAsync(operation, created, scim, baseUrl, ct);
+                outcomes.Add(outcome);
+                if (int.TryParse(outcome.Status, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var status) && status >= 400)
+                    failures++;
+            }
+
+            return Scim(new
+            {
+                schemas = BulkResponseSchemas,
+                Operations = outcomes,
+            });
+        });
+    }
+
+    private static async Task<BulkOutcome> RunBulkOperationAsync(
+        ScimBulkOperation operation, Dictionary<string, string> created, IScimService scim, string baseUrl, CancellationToken ct)
+    {
+        var method = operation.Method?.ToUpperInvariant() ?? string.Empty;
+        try
+        {
+            var (kind, id) = BulkPath(operation.Path, created);
+            var data = operation.Data is { ValueKind: not System.Text.Json.JsonValueKind.Undefined } json
+                ? ResolveBulkIds(json.GetRawText(), created)
+                : null;
+
+            if (kind == "Users")
+                return await RunUserOperationAsync(method, id, data, operation.BulkId, created, scim, baseUrl, ct);
+            return await RunGroupOperationAsync(method, id, data, operation.BulkId, created, scim, baseUrl, ct);
+        }
+        catch (ScimException ex)
+        {
+            return new BulkOutcome(method, operation.BulkId, null, ex.Status.ToString(System.Globalization.CultureInfo.InvariantCulture), ex.Message);
+        }
+    }
+
+    private static async Task<BulkOutcome> RunUserOperationAsync(
+        string method, string? id, string? data, string? bulkId, Dictionary<string, string> created, IScimService scim, string baseUrl, CancellationToken ct)
+    {
+        switch (method)
+        {
+            case "POST":
+                {
+                    var user = await scim.CreateUserAsync(BulkBody<ScimUser>(data), baseUrl, ct);
+                    if (bulkId is not null)
+                        created[bulkId] = user.Id!;
+                    return new BulkOutcome(method, bulkId, user.Meta?.Location, "201", null);
+                }
+            case "PUT":
+                {
+                    var user = await scim.ReplaceUserAsync(Required(id), BulkBody<ScimUser>(data), baseUrl, null, ct);
+                    return user is null ? Missing(method, bulkId) : new BulkOutcome(method, bulkId, user.Meta?.Location, "200", null);
+                }
+            case "PATCH":
+                {
+                    var user = await scim.PatchUserAsync(Required(id), BulkBody<ScimPatchRequest>(data), baseUrl, null, ct);
+                    return user is null ? Missing(method, bulkId) : new BulkOutcome(method, bulkId, user.Meta?.Location, "200", null);
+                }
+            case "DELETE":
+                return await scim.DeleteUserAsync(Required(id), null, ct)
+                    ? new BulkOutcome(method, bulkId, null, "204", null)
+                    : Missing(method, bulkId);
+            default:
+                throw new ScimException(400, "invalidSyntax", "The method must be POST, PUT, PATCH or DELETE.");
+        }
+    }
+
+    private static async Task<BulkOutcome> RunGroupOperationAsync(
+        string method, string? id, string? data, string? bulkId, Dictionary<string, string> created, IScimService scim, string baseUrl, CancellationToken ct)
+    {
+        switch (method)
+        {
+            case "POST":
+                {
+                    var group = await scim.CreateGroupAsync(BulkBody<ScimGroup>(data), baseUrl, ct);
+                    if (bulkId is not null)
+                        created[bulkId] = group.Id!;
+                    return new BulkOutcome(method, bulkId, group.Meta?.Location, "201", null);
+                }
+            case "PUT":
+                {
+                    var group = await scim.ReplaceGroupAsync(Required(id), BulkBody<ScimGroup>(data), baseUrl, null, ct);
+                    return group is null ? Missing(method, bulkId) : new BulkOutcome(method, bulkId, group.Meta?.Location, "200", null);
+                }
+            case "PATCH":
+                {
+                    var group = await scim.PatchGroupAsync(Required(id), BulkBody<ScimPatchRequest>(data), baseUrl, null, ct);
+                    return group is null ? Missing(method, bulkId) : new BulkOutcome(method, bulkId, group.Meta?.Location, "200", null);
+                }
+            case "DELETE":
+                return await scim.DeleteGroupAsync(Required(id), null, ct)
+                    ? new BulkOutcome(method, bulkId, null, "204", null)
+                    : Missing(method, bulkId);
+            default:
+                throw new ScimException(400, "invalidSyntax", "The method must be POST, PUT, PATCH or DELETE.");
+        }
+    }
+
+    private static BulkOutcome Missing(string method, string? bulkId)
+        => new(method, bulkId, null, "404", "The resource was not found.");
+
+    // A path is /Users, /Groups, /Users/{id} or /Groups/{id}; {id} may be a bulkId reference created earlier in the request.
+    private static (string Kind, string? Id) BulkPath(string? path, IReadOnlyDictionary<string, string> created)
+    {
+        var parts = (path ?? string.Empty).Trim('/').Split('/', 2);
+        if (parts[0] != "Users" && parts[0] != "Groups")
+            throw new ScimException(400, "invalidPath", "The path must start with /Users or /Groups.");
+        if (parts.Length == 1)
+            return (parts[0], null);
+
+        var id = parts[1];
+        if (id.StartsWith("bulkId:", StringComparison.Ordinal))
+        {
+            var bulkId = id["bulkId:".Length..];
+            id = created.TryGetValue(bulkId, out var real)
+                ? real
+                : throw new ScimException(400, "invalidValue", "The path names a bulkId that no earlier operation created.");
+        }
+        return (parts[0], id);
+    }
+
+    // References to created resources inside data are written as the JSON string "bulkId:{id}".
+    private static string ResolveBulkIds(string raw, IReadOnlyDictionary<string, string> created)
+    {
+        foreach (var (bulkId, realId) in created)
+            raw = raw.Replace($"\"bulkId:{bulkId}\"", $"\"{realId}\"", StringComparison.Ordinal);
+        return raw;
+    }
+
+    private static string Required(string? id)
+        => string.IsNullOrEmpty(id) ? throw new ScimException(400, "invalidPath", "The operation needs the id of a resource.") : id;
+
+    private static T BulkBody<T>(string? data) where T : class
+    {
+        if (data is null)
+            throw new ScimException(400, "invalidSyntax", "The operation needs its data.");
+        try
+        {
+            return System.Text.Json.JsonSerializer.Deserialize<T>(data, s_json)
+                ?? throw new ScimException(400, "invalidSyntax", "The operation's data is empty.");
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            throw new ScimException(400, "invalidSyntax", "The operation's data is not valid SCIM JSON.");
+        }
+    }
+
+    private static void MapDiscovery(RouteGroupBuilder group, string prefix)
+    {
+        // RFC 7644 §4 and RFC 7643 §6: the schemas this server accepts and returns.
+        group.MapGet("/Schemas", (HttpRequest request) =>
+        {
+            var documents = ScimSchemaDocuments.All(BaseUrl(request, prefix));
+            return Scim(new
+            {
+                schemas = new[] { ScimSchemas.ListResponse },
+                totalResults = documents.Count,
+                startIndex = 1,
+                itemsPerPage = documents.Count,
+                Resources = documents,
+            });
+        });
+
+        group.MapGet("/Schemas/{id}", (HttpRequest request, string id) =>
+            ScimSchemaDocuments.Find(id, BaseUrl(request, prefix)) is { } document
+                ? Scim(document)
+                : NotFound("Schema"));
+
         group.MapGet("/ServiceProviderConfig", (Microsoft.Extensions.Options.IOptions<ScimOptions> options) => Scim(new
         {
             schemas = new[] { ScimSchemas.ServiceProviderConfig },
             patch = new { supported = true },
-            bulk = new { supported = false, maxOperations = 0, maxPayloadSize = 0 },
+            bulk = new { supported = true, maxOperations = MaxBulkOperations, maxPayloadSize = MaxBulkPayloadBytes },
             filter = new { supported = true, maxResults = options.Value.MaxPageSize },
             changePassword = new { supported = false },
-            sort = new { supported = false },
-            etag = new { supported = false },
+            sort = new { supported = true },
+            etag = new { supported = true },
             authenticationSchemes = new[]
             {
                 new { type = "oauthbearertoken", name = "OAuth Bearer Token", description = "An access token of an integration client bound to a company.", primary = true },
@@ -170,13 +383,16 @@ public static class ScimExtensions
     }
 
     private static IResult WithLocation(this IResult result, string? location)
-        => location is null ? result : new LocationResult(result, location);
+        => location is null ? result : new HeaderResult(result, "Location", location);
 
-    private sealed class LocationResult(IResult inner, string location) : IResult
+    private static IResult WithETag(IResult result, string? version)
+        => version is null ? result : new HeaderResult(result, "ETag", version);
+
+    private sealed class HeaderResult(IResult inner, string name, string value) : IResult
     {
         public Task ExecuteAsync(HttpContext httpContext)
         {
-            httpContext.Response.Headers.Location = location;
+            httpContext.Response.Headers[name] = value;
             return inner.ExecuteAsync(httpContext);
         }
     }

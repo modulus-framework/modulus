@@ -761,3 +761,5 @@ Modulus.AI.Connector.ModulusAiConnectorOptions.MaskPersonalInformation.set -> vo
 Modulus.AI.Connector.Data.AiCompositeKey
 static Modulus.AI.Connector.Data.AiCompositeKey.Format(params object?[]! parts) -> string!
 static Modulus.AI.Connector.Data.AiCompositeKey.Split(string! id) -> System.Collections.Generic.IReadOnlyList<string!>!
+const Modulus.AI.Connector.AiEnvelopeClaims.Agent = "act" -> string!
+const Modulus.AI.Connector.AiEnvelopeClaims.AgentRolePrefix = "integration:" -> string!

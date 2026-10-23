@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <!-- The provisioning host: the only host with a write identity to OpenBao (tenant database connection strings). It is not the API host,
+       it serves only the tenant provisioning routes, and it is run where operators can reach it, not behind the public gateway. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>{{ root_namespace }}.Provisioning</RootNamespace>
+    <UserSecretsId>{{ user_secrets_id }}</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Synvro.Modulus.AspNetCore" Version="{{ framework_version }}" />
+    <PackageReference Include="Synvro.Modulus.Core" Version="{{ framework_version }}" />
+    <PackageReference Include="Synvro.Modulus.Platform" Version="{{ framework_version }}" />
+    <PackageReference Include="Synvro.Modulus.EntityFrameworkCore" Version="{{ framework_version }}" />
+    <PackageReference Include="Synvro.Modulus.MultiTenancy.EntityFrameworkCore" Version="{{ framework_version }}" />
+    <PackageReference Include="Synvro.Modulus.Authorization.EntityFrameworkCore" Version="{{ framework_version }}" />
+    <PackageReference Include="Synvro.Modulus.Secrets.OpenBao" Version="{{ framework_version }}" />
+    <PackageReference Include="{{ ef_provider_package }}" Version="{{ ef_provider_version }}" />
+{{ if engine == "SQLite" }}    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.3" />
+{{ end }}    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.9" />
+  </ItemGroup>
+
+</Project>

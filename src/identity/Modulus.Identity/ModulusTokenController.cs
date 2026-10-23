@@ -6,6 +6,8 @@ using System.Text;
 
 namespace Modulus.Identity;
 
+using static Modulus.Identity.AccessTokenChecks;
+
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
@@ -116,7 +118,101 @@ public class ModulusTokenController(
         if (request.GrantType == PasskeyGrant.GrantType)
             return await HandlePasskeyGrantAsync(request);
 
+        // Token exchange (spec 12A): only registered (and allowed by OpenIddict) when Identity:TokenExchange:Enabled is set.
+        if (request.GrantType == TokenExchangeGrant.GrantType)
+            return await HandleTokenExchangeAsync(request);
+
         return BadRequest(new { error = "unsupported_grant_type" });
+    }
+
+    /// <summary>
+    /// Token exchange (<see cref="TokenExchangeGrant"/>, spec 12A): an agent acts for a signed-in person. The person's token is
+    /// re-verified as a person's sign-in (active, not locked out, current security stamp), the agent's token must be its own
+    /// client-credentials token for an integration client bound to the person's company and allowed to act for people, and the
+    /// issued token keeps the person as subject with the agent's role in <c>act</c>. Every refusal is audited.
+    /// </summary>
+    private async Task<IActionResult> HandleTokenExchangeAsync(OpenIddictRequest request)
+    {
+        var services = HttpContext.RequestServices;
+        var settings = services.GetService<IOptions<TokenExchangeOptions>>()?.Value;
+        if (settings is not { Enabled: true })
+            return ForbidGrant(OpenIddictConstants.Errors.UnsupportedGrantType, "Token exchange is not enabled.");
+
+        var subjectToken = request.GetParameter(TokenExchangeGrant.SubjectTokenParameter)?.ToString();
+        var actorToken = request.GetParameter(TokenExchangeGrant.ActorTokenParameter)?.ToString();
+        if (string.IsNullOrWhiteSpace(subjectToken) || string.IsNullOrWhiteSpace(actorToken))
+            return ForbidGrant(OpenIddictConstants.Errors.InvalidRequest, "The subject and actor tokens are required.");
+
+        // The agent: its own client-credentials token, still in force, for an integration client.
+        var serverOptions = services.GetRequiredService<IOptions<OpenIddictServerOptions>>().Value;
+        var agent = await AccessTokenChecks.ValidateTokenAsync(HttpContext, serverOptions, actorToken);
+        var agentClient = agent is null ? null : AgentClientOf(agent);
+        if (agent is null || agentClient is null || !await AccessTokenChecks.IsInForceAsync(HttpContext, agent))
+            return RefuseExchange("The actor token is not a valid agent token.", agentClient: null);
+
+        // The agent's binding: bound to a company, not expired, and allowed to act for people.
+        var binding = services.GetService<IIntegrationClientDirectory>() is { } directory
+            ? await directory.FindAsync(agentClient, HttpContext.RequestAborted)
+            : null;
+        if (binding is not { TenantId: { } agentTenant, MayActForPeople: true }
+            || (binding.ValidUntil is { } until && until <= Now))
+            return RefuseExchange("This agent may not act for people.", agentClient);
+
+        // The person: a sign-in of their own, not an agent's, in the agent's company.
+        var subject = await AccessTokenChecks.ValidateTokenAsync(HttpContext, serverOptions, subjectToken);
+        if (subject is null || !await AccessTokenChecks.IsInForceAsync(HttpContext, subject))
+            return RefuseExchange("The person's token is not valid.", agentClient);
+        if (subject.HasClaim(c => c.Type == "act"))
+            return RefuseExchange("An agent cannot act through another agent.", agentClient);
+        if (TenantOf(new ClaimsPrincipal(subject)) != agentTenant)
+            return RefuseExchange("The person is not in the agent's company.", agentClient);
+
+        if (ResolveUserManager() is not { } userManager)
+            return RefuseExchange("Identity is not configured.", agentClient);
+        var person = await TokenPrincipalFactory.RevalidateAsync(userManager, new ClaimsPrincipal(subject));
+        if (person is null)
+            return RefuseExchange("The person may no longer start access.", agentClient, agentTenant);
+
+        // The issued token: the person as subject, the agent's role in act (the claim the access cap and audit read), no refresh
+        // token, and at most the person's remaining life.
+        var lifetime = TimeSpan.FromMinutes(TokenExchangeGrant.MaxLifetimeMinutes);
+        if (subject.FindFirst(OpenIddictConstants.Claims.ExpiresAt)?.Value is { } expiry
+            && long.TryParse(expiry, out var seconds))
+        {
+            var remaining = DateTimeOffset.FromUnixTimeSeconds(seconds) - Now;
+            if (remaining < lifetime)
+                lifetime = remaining;
+        }
+        if (lifetime <= TimeSpan.Zero)
+            return RefuseExchange("The person's token has expired.", agentClient, agentTenant);
+
+        var personId = person.GetClaim(OpenIddictConstants.Claims.Subject);
+        person.Identities.First().AddClaim(new Claim("act", IntegrationClients.RoleFor(agentClient)));
+        person.SetScopes(PasswordGrant.AuthorizeScopes(request.GetScopes(), AllowedGrantScopes)
+            .Where(s => s != OpenIddictConstants.Scopes.OfflineAccess));
+        person.SetAccessTokenLifetime(lifetime);
+        ApplyDestinations(person);
+        Audit("token.exchange", SecurityAuditOutcomes.Success, personId, agentTenant, agentClient);
+
+        return SignIn(person, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+    }
+
+    // The integration client an agent token belongs to: its subject, provided its role names that client. A user's token names
+    // no such role, so it is not an agent's token.
+    private static string? AgentClientOf(ClaimsIdentity token)
+    {
+        var client = token.FindFirst(OpenIddictConstants.Claims.Subject)?.Value;
+        if (string.IsNullOrWhiteSpace(client))
+            return null;
+        return token.Claims.Any(c => c.Type == OpenIddictConstants.Claims.Role && c.Value == IntegrationClients.RoleFor(client))
+            ? client
+            : null;
+    }
+
+    private IActionResult RefuseExchange(string detail, string? agentClient, Guid? agentTenant = null)
+    {
+        Audit("token.exchange", SecurityAuditOutcomes.Denied, actor: null, agentTenant, agentClient);
+        return ForbidGrant(OpenIddictConstants.Errors.InvalidGrant, detail);
     }
 
     /// <summary>
@@ -642,8 +738,8 @@ public class ModulusIntrospectionController(
         if (string.IsNullOrWhiteSpace(token))
             return Ok(new { active = false });
 
-        var result = await ValidateTokenAsync(token);
-        if (result is null || !await IsInForceAsync(result))
+        var result = await AccessTokenChecks.ValidateTokenAsync(HttpContext, serverOptions.Value, token);
+        if (result is null || !await AccessTokenChecks.IsInForceAsync(HttpContext, result))
             return Ok(new { active = false });
 
         var claims = result.Claims.ToList();
@@ -669,35 +765,6 @@ public class ModulusIntrospectionController(
         });
     }
 
-    /// <summary>
-    /// A signed token is reported active only while the checks a resource server makes still hold: its stored entry is an
-    /// access token that is still valid (not revoked or expired), and its session has not ended.
-    /// </summary>
-    private async Task<bool> IsInForceAsync(ClaimsIdentity claims)
-    {
-        // Without a stored entry there is nothing to check revocation against, so the token is not reported active. Id tokens
-        // have no entry, and the entry records whether the token is an access token.
-        var manager = HttpContext.RequestServices.GetService<IOpenIddictTokenManager>();
-        if (manager is null || First(claims.Claims, OpenIddictConstants.Claims.Private.TokenId) is not { Length: > 0 } tokenId)
-            return false;
-        if (await manager.FindByIdAsync(tokenId) is not { } entry
-            || !IsAccessTokenEntryType(await manager.GetTypeAsync(entry))
-            || await manager.GetStatusAsync(entry) != OpenIddictConstants.Statuses.Valid)
-            return false;
-
-        if (First(claims.Claims, TokenPrincipalFactory.SessionClaim) is { Length: > 0 } sid
-            && HttpContext.RequestServices.GetService<ISessionRegistry>() is { } registry)
-        {
-            // A sid that is not a session id cannot have been issued by this server.
-            var state = Guid.TryParse(sid, out var sessionId)
-                ? await registry.TouchAsync(sessionId, ct: HttpContext.RequestAborted)
-                : SessionState.Unknown;
-            if (state != SessionState.Active)
-                return false;
-        }
-
-        return true;
-    }
 
     /// <summary>
     /// RFC 7662 caller authentication: the configured client credentials must
@@ -747,12 +814,6 @@ public class ModulusIntrospectionController(
         return false;
     }
 
-    /// <summary>
-    /// OpenIddict stores an access token's type as the RFC 8693 URN (<c>urn:ietf:params:oauth:token-type:access_token</c>), not
-    /// the short <c>access_token</c> hint, so both spellings are accepted.
-    /// </summary>
-    private static bool IsAccessTokenEntryType(string? type)
-        => type is OpenIddictConstants.TokenTypeHints.AccessToken or "urn:ietf:params:oauth:token-type:access_token";
 
     private static bool Matches(string? actual, string expected)
     {
@@ -765,70 +826,7 @@ public class ModulusIntrospectionController(
             Encoding.UTF8.GetBytes(expected));
     }
 
-    /// <summary>
-    /// Validates the submitted token with this server's own credentials
-    /// (signature, issuer, lifetime; JWE-decrypts when encrypted tokens are
-    /// used). Returns the validated principal or <c>null</c> for any
-    /// invalid/expired/tampered token.
-    /// </summary>
-    private async Task<ClaimsIdentity?> ValidateTokenAsync(string token)
-    {
-        var options = serverOptions.Value;
 
-        // The default issuer matches what OpenIddict stamps on minted tokens: the configured issuer, else the current request's
-        // base URL. OpenIddict writes the base URL with a trailing slash ("https://host/"), so the request form ends with one too.
-        var issuer = options.Issuer?.AbsoluteUri
-            ?? $"{Request.Scheme}://{Request.Host.Value}{(Request.PathBase.Value ?? "").TrimEnd('/')}/";
-
-        var parameters = new TokenValidationParameters
-        {
-            ValidIssuer = issuer,
-            ValidateAudience = false,
-            IssuerSigningKeys = options.SigningCredentials
-                .Select(c => c.Key)
-                .ToList(),
-            TokenDecryptionKeys = options.EncryptionCredentials
-                .Select(c => c.Key)
-                .ToList(),
-            ValidAlgorithms = options.SigningCredentials
-                .Select(c => c.Algorithm)
-                .Distinct()
-                .ToList(),
-            RequireSignedTokens = true,
-            ClockSkew = TimeSpan.FromMinutes(1),
-        };
-
-        try
-        {
-            var handler = new JsonWebTokenHandler();
-            if (!handler.CanReadToken(token))
-                return null;
-
-            var result = await handler.ValidateTokenAsync(token, parameters);
-            if (!result.IsValid || result.Claims is null)
-                return null;
-
-            // IdentityModel 8 exposes the validated claims as a raw
-            // dictionary; rebuild a ClaimsIdentity for uniform lookup.
-            var identity = new ClaimsIdentity();
-            foreach (var (type, value) in result.Claims)
-                identity.AddClaim(new Claim(type, value.ToString() ?? string.Empty));
-
-            return identity;
-        }
-        catch (SecurityTokenException)
-        {
-            return null;
-        }
-        catch (ArgumentException)
-        {
-            return null;
-        }
-    }
-
-    private static string? First(
-        IEnumerable<Claim> claims, string type)
-        => claims.FirstOrDefault(c => c.Type == type)?.Value;
 
     private static long? AsLong(string? value)
         => long.TryParse(value, out var parsed) ? parsed : null;

@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <!-- A measurement tool, not a product: it is run by hand against a database, never packed or tested in CI. -->
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../../src/platform/Modulus.Authorization.EntityFrameworkCore/Modulus.Authorization.EntityFrameworkCore.csproj" />
+    <ProjectReference Include="../../../src/platform/Modulus.Platform/Modulus.Platform.csproj" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+  </ItemGroup>
+
+</Project>

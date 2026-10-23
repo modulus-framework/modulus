@@ -163,7 +163,8 @@ public sealed class EfPositionStore(IDbContextFactory<AuthorizationStoreDbContex
             return [];
 
         return [.. db.Positions.AsNoTracking()
-            .Where(p => positionIds.Contains(p.Id) && p.IsActive)
+            .Where(ScalarPredicates.In<PositionRow, Guid>(p => p.Id, positionIds))
+            .Where(p => p.IsActive)
             .ToList()
             .SelectMany(p => ParseRoles(p.Roles))
             .Distinct(StringComparer.OrdinalIgnoreCase)];
@@ -182,7 +183,8 @@ public sealed class EfPositionStore(IDbContextFactory<AuthorizationStoreDbContex
             return [];
 
         var positions = await db.Positions.AsNoTracking()
-            .Where(p => positionIds.Contains(p.Id) && p.IsActive)
+            .Where(ScalarPredicates.In<PositionRow, Guid>(p => p.Id, positionIds))
+            .Where(p => p.IsActive)
             .ToListAsync(ct);
         return [.. positions.SelectMany(p => ParseRoles(p.Roles)).Distinct(StringComparer.OrdinalIgnoreCase)];
     }

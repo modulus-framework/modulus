@@ -23,4 +23,8 @@
     <ProjectReference Include="../../messaging/Modulus.Events/Modulus.Events.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Modulus.Platform.Tests" />
+  </ItemGroup>
+
 </Project>

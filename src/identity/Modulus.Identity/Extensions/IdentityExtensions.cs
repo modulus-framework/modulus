@@ -354,6 +354,21 @@ public static class IdentityExtensions
                 if (configuration.GetValue<bool>("Identity:Sessions:BackChannelLogout:Enabled"))
                     options.AddEventHandler(BackChannelLogoutDiscovery.Descriptor);
 
+                // Access tokens carry the configured audiences as their aud claim: OpenIddict takes it from the principal's resources, which
+                // every sign-in path shares. The handler runs first, so the principal has its audiences before a token is generated.
+                if (identityOptions.Audiences.Count > 0)
+                {
+                    var audiences = identityOptions.Audiences.ToArray();
+                    options.AddEventHandler<OpenIddict.Server.OpenIddictServerEvents.ProcessSignInContext>(builder => builder
+                        .UseInlineHandler(context =>
+                        {
+                            if (context.Principal is { } principal)
+                                principal.SetResources(audiences);
+                            return default;
+                        })
+                        .SetOrder(int.MinValue));
+                }
+
                 configure?.Invoke(options);
             })
             .AddValidation(options =>

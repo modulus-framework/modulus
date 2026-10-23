@@ -248,8 +248,61 @@ public static class ModuleBoundaryRules
             .Distinct();
     }
 
-    private static IEnumerable<Type> GetScannableTypes() =>
-        AppDomain.CurrentDomain.GetAssemblies()
+    // Rules read the types of the assemblies loaded in the process. A framework assembly that nothing has loaded yet (a test run alone, or
+    // before any host starts) would be missing, so a contract snapshot would depend on test order. Load the Modulus assemblies the loaded
+    // ones reference first, so every run sees the same set.
+    private static readonly Lazy<bool> s_referencedModulusAssembliesLoaded = new(() =>
+    {
+        LoadReferencedModulusAssemblies();
+        return true;
+    });
+
+    private static bool IsModulusAssembly(string? name)
+        => name is not null && (name.StartsWith("Modulus.", StringComparison.Ordinal) || name.StartsWith("Synvro.Modulus.", StringComparison.Ordinal));
+
+    private static void LoadReferencedModulusAssemblies()
+    {
+        var loaded = AppDomain.CurrentDomain.GetAssemblies()
+            .Where(a => !a.IsDynamic)
+            .GroupBy(a => a.GetName().Name ?? string.Empty, StringComparer.Ordinal)
+            .ToDictionary(g => g.Key, g => g.First(), StringComparer.Ordinal);
+        var pending = new Queue<Assembly>(loaded.Values);
+        var visited = new HashSet<string>(StringComparer.Ordinal);
+
+        while (pending.Count > 0)
+        {
+            foreach (var reference in pending.Dequeue().GetReferencedAssemblies())
+            {
+                if (!IsModulusAssembly(reference.Name) || !visited.Add(reference.Name!))
+                    continue;
+
+                if (!loaded.TryGetValue(reference.Name!, out var assembly))
+                {
+                    try
+                    {
+                        assembly = Assembly.Load(reference);
+                    }
+                    catch (FileNotFoundException)
+                    {
+                        continue;
+                    }
+                    catch (FileLoadException)
+                    {
+                        continue;
+                    }
+
+                    loaded[reference.Name!] = assembly;
+                }
+
+                pending.Enqueue(assembly);
+            }
+        }
+    }
+
+    private static IEnumerable<Type> GetScannableTypes()
+    {
+        _ = s_referencedModulusAssembliesLoaded.Value;
+        return AppDomain.CurrentDomain.GetAssemblies()
             .Where(a => !a.IsDynamic)
             .SelectMany(a =>
             {
@@ -264,5 +317,5 @@ public static class ModuleBoundaryRules
                     return ex.Types.OfType<Type>();
                 }
             });
-
+    }
 }

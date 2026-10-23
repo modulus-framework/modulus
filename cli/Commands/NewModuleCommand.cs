@@ -77,6 +77,7 @@ internal sealed class NewModuleCommand : Command<NewModuleCommand.Settings>
             ModuleName = moduleName,
             ModuleNamespace = moduleNs,
             DbProvider = database,
+            TargetFramework = AppFramework.Resolve(outputBase),
             MigrationEngine = migrationEngine,
             AiJournal = AiWiring.JournalWired(projectDir),
         };

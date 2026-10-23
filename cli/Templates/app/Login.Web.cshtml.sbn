@@ -31,6 +31,14 @@
                 <app-button type="primary" html-type="submit" block>Sign in</app-button>
             </div>
         </form>
-    </div>
+{{ if auth == "openiddict" }}        <div class="m-auth-actions">
+            <button type="button" id="passkey-signin" class="ant-btn ant-btn-default ant-btn-block">Sign in with a passkey</button>
+        </div>
+        <p id="passkey-signin-status" role="status" class="m-auth-hint"></p>
+        <form id="passkey-signin-token" method="post">
+            @Html.AntiForgeryToken()
+        </form>
+        <script src="~/js/passkey-login.js" asp-append-version="true"></script>
+{{ end }}    </div>
 </div>
 {{ end }}

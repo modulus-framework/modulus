@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Linq.Expressions;
 using System.Text.Json;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -14,29 +15,29 @@ namespace Modulus.Identity.Scim;
 /// <summary>The SCIM operations over the Identity user and role managers, in the current company.</summary>
 internal interface IScimService
 {
-    Task<ScimListResponse<ScimUser>> ListUsersAsync(string? filter, int startIndex, int count, string baseUrl, CancellationToken ct);
+    Task<ScimListResponse<ScimUser>> ListUsersAsync(string? filter, string? sortBy, string? sortOrder, int startIndex, int count, string baseUrl, CancellationToken ct);
 
     Task<ScimUser?> GetUserAsync(string id, string baseUrl, CancellationToken ct);
 
     Task<ScimUser> CreateUserAsync(ScimUser model, string baseUrl, CancellationToken ct);
 
-    Task<ScimUser?> ReplaceUserAsync(string id, ScimUser model, string baseUrl, CancellationToken ct);
+    Task<ScimUser?> ReplaceUserAsync(string id, ScimUser model, string baseUrl, string? ifMatch, CancellationToken ct);
 
-    Task<ScimUser?> PatchUserAsync(string id, ScimPatchRequest patch, string baseUrl, CancellationToken ct);
+    Task<ScimUser?> PatchUserAsync(string id, ScimPatchRequest patch, string baseUrl, string? ifMatch, CancellationToken ct);
 
-    Task<bool> DeleteUserAsync(string id, CancellationToken ct);
+    Task<bool> DeleteUserAsync(string id, string? ifMatch, CancellationToken ct);
 
-    Task<ScimListResponse<ScimGroup>> ListGroupsAsync(string? filter, int startIndex, int count, string baseUrl, CancellationToken ct);
+    Task<ScimListResponse<ScimGroup>> ListGroupsAsync(string? filter, string? sortBy, string? sortOrder, int startIndex, int count, string baseUrl, CancellationToken ct);
 
     Task<ScimGroup?> GetGroupAsync(string id, string baseUrl, CancellationToken ct);
 
     Task<ScimGroup> CreateGroupAsync(ScimGroup model, string baseUrl, CancellationToken ct);
 
-    Task<ScimGroup?> ReplaceGroupAsync(string id, ScimGroup model, string baseUrl, CancellationToken ct);
+    Task<ScimGroup?> ReplaceGroupAsync(string id, ScimGroup model, string baseUrl, string? ifMatch, CancellationToken ct);
 
-    Task<ScimGroup?> PatchGroupAsync(string id, ScimPatchRequest patch, string baseUrl, CancellationToken ct);
+    Task<ScimGroup?> PatchGroupAsync(string id, ScimPatchRequest patch, string baseUrl, string? ifMatch, CancellationToken ct);
 
-    Task<bool> DeleteGroupAsync(string id, CancellationToken ct);
+    Task<bool> DeleteGroupAsync(string id, string? ifMatch, CancellationToken ct);
 }
 
 internal sealed class ScimService<TUser, TRole>(
@@ -49,6 +50,41 @@ internal sealed class ScimService<TUser, TRole>(
     where TUser : ModulusUser, new()
     where TRole : ModulusRole, new()
 {
+    // RFC 7644 §3.4.2.3 sortBy: the attributes this server can sort on. An attribute it cannot sort on is ignored and the list
+    // keeps its id order, which the RFC allows. Ties are broken by id so that pages stay stable.
+    private static readonly IReadOnlyDictionary<string, Expression<Func<TUser, string?>>> s_userSortKeys =
+        new Dictionary<string, Expression<Func<TUser, string?>>>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["userName"] = u => u.UserName,
+            ["externalId"] = u => u.ExternalId,
+            ["name.givenName"] = u => u.FirstName,
+            ["name.familyName"] = u => u.LastName,
+        };
+
+    private static readonly IReadOnlyDictionary<string, Expression<Func<TRole, string?>>> s_groupSortKeys =
+        new Dictionary<string, Expression<Func<TRole, string?>>>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["displayName"] = r => r.Name,
+        };
+
+    private static IOrderedQueryable<TUser> SortUsers(IQueryable<TUser> query, string? sortBy, bool descending)
+        => s_userSortKeys.TryGetValue(sortBy ?? "", out var key)
+            ? (descending ? query.OrderByDescending(key) : query.OrderBy(key)).ThenBy(u => u.Id)
+            : query.OrderBy(u => u.Id);
+
+    private static IOrderedQueryable<TRole> SortGroups(IQueryable<TRole> query, string? sortBy, bool descending)
+        => s_groupSortKeys.TryGetValue(sortBy ?? "", out var key)
+            ? (descending ? query.OrderByDescending(key) : query.OrderBy(key)).ThenBy(r => r.Id)
+            : query.OrderBy(r => r.Id);
+
+    // sortOrder defaults to ascending. Any other value is refused, as RFC 7644 requires for an invalid value.
+    private static bool ParseDescending(string? sortOrder) => sortOrder?.ToLowerInvariant() switch
+    {
+        null or "" or "ascending" => false,
+        "descending" => true,
+        _ => throw new ScimException(400, "invalidValue", "sortOrder must be ascending or descending."),
+    };
+
     private static readonly IReadOnlyDictionary<string, ScimAttribute<TUser>> s_userAttributes =
         new Dictionary<string, ScimAttribute<TUser>>(StringComparer.Ordinal)
         {
@@ -74,16 +110,17 @@ internal sealed class ScimService<TUser, TRole>(
 
     // ── Users ──────────────────────────────────────────────────────
 
-    public async Task<ScimListResponse<ScimUser>> ListUsersAsync(string? filter, int startIndex, int count, string baseUrl, CancellationToken ct)
+    public async Task<ScimListResponse<ScimUser>> ListUsersAsync(string? filter, string? sortBy, string? sortOrder, int startIndex, int count, string baseUrl, CancellationToken ct)
     {
         var company = RequireCompany();
         var query = users.Users.AsNoTracking().Where(u => u.TenantId == company);
         if (ScimFilter.Parse(filter, s_userAttributes) is { } predicate)
             query = query.Where(predicate);
 
+        var descending = ParseDescending(sortOrder);
         var (skip, take) = Page(startIndex, count);
         var total = await query.CountAsync(ct);
-        var page = take == 0 ? [] : await query.OrderBy(u => u.Id).Skip(skip).Take(take).ToListAsync(ct);
+        var page = take == 0 ? [] : await SortUsers(query, sortBy, descending).Skip(skip).Take(take).ToListAsync(ct);
         return new ScimListResponse<ScimUser>
         {
             TotalResults = total,
@@ -102,6 +139,7 @@ internal sealed class ScimService<TUser, TRole>(
     public async Task<ScimUser> CreateUserAsync(ScimUser model, string baseUrl, CancellationToken ct)
     {
         var company = RequireCompany();
+        RefuseAPassword(model.Password);
         var userName = model.UserName?.Trim();
         if (string.IsNullOrEmpty(userName))
             throw new ScimException(400, "invalidValue", "userName is required.");
@@ -111,6 +149,8 @@ internal sealed class ScimService<TUser, TRole>(
         await ApplyAsync(user, model, create: true, company, ct);
         user.IsActive = active;
 
+        user.CreatedAt = DateTimeOffset.UtcNow;
+        user.ModifiedAt = user.CreatedAt;
         var created = await users.CreateAsync(user);
         if (!created.Succeeded)
             throw FromIdentity(created);
@@ -135,12 +175,14 @@ internal sealed class ScimService<TUser, TRole>(
         return await ToScimWithGroupsAsync(user, baseUrl);
     }
 
-    public async Task<ScimUser?> ReplaceUserAsync(string id, ScimUser model, string baseUrl, CancellationToken ct)
+    public async Task<ScimUser?> ReplaceUserAsync(string id, ScimUser model, string baseUrl, string? ifMatch, CancellationToken ct)
     {
         var company = RequireCompany();
         var user = await FindUserAsync(id);
         if (user is null)
             return null;
+        RequireVersion(ifMatch, ScimEtags.Of(user.ConcurrencyStamp));
+        RefuseAPassword(model.Password);
         if (string.IsNullOrWhiteSpace(model.UserName))
             throw new ScimException(400, "invalidValue", "userName is required.");
 
@@ -149,12 +191,13 @@ internal sealed class ScimService<TUser, TRole>(
         return await ToScimWithGroupsAsync(user, baseUrl);
     }
 
-    public async Task<ScimUser?> PatchUserAsync(string id, ScimPatchRequest patch, string baseUrl, CancellationToken ct)
+    public async Task<ScimUser?> PatchUserAsync(string id, ScimPatchRequest patch, string baseUrl, string? ifMatch, CancellationToken ct)
     {
         var company = RequireCompany();
         var user = await FindUserAsync(id);
         if (user is null)
             return null;
+        RequireVersion(ifMatch, ScimEtags.Of(user.ConcurrencyStamp));
 
         var draft = ToScim(user, null, baseUrl);
         foreach (var op in Operations(patch))
@@ -164,12 +207,13 @@ internal sealed class ScimService<TUser, TRole>(
         return await ToScimWithGroupsAsync(user, baseUrl);
     }
 
-    public async Task<bool> DeleteUserAsync(string id, CancellationToken ct)
+    public async Task<bool> DeleteUserAsync(string id, string? ifMatch, CancellationToken ct)
     {
         var company = RequireCompany();
         var user = await FindUserAsync(id);
         if (user is null)
             return false;
+        RequireVersion(ifMatch, ScimEtags.Of(user.ConcurrencyStamp));
 
         await RemoveMemberAsync(user.Id, company, ct);
         if (Options.DeleteRemovesAccount)
@@ -202,6 +246,7 @@ internal sealed class ScimService<TUser, TRole>(
             await AddMemberAsync(user.Id, company, ct);
 
         user.IsActive = active;
+        user.ModifiedAt = DateTimeOffset.UtcNow;
         var updated = await users.UpdateAsync(user);
         if (!updated.Succeeded)
             throw FromIdentity(updated);
@@ -260,7 +305,14 @@ internal sealed class ScimService<TUser, TRole>(
             Emails = user.Email is null ? [] : [new ScimEmail { Value = user.Email, Type = "work", Primary = true }],
             Active = user.MayStartNewAccess(),
             Groups = groups?.ToList(),
-            Meta = new ScimMeta { ResourceType = "User", Location = $"{baseUrl}/Users/{user.Id}" },
+            Meta = new ScimMeta
+            {
+                ResourceType = "User",
+                Location = $"{baseUrl}/Users/{user.Id}",
+                Version = ScimEtags.Of(user.ConcurrencyStamp),
+                Created = user.CreatedAt,
+                LastModified = user.ModifiedAt,
+            },
         };
     }
 
@@ -331,6 +383,9 @@ internal sealed class ScimService<TUser, TRole>(
                 break;
             case "id" or "groups" or "meta":
                 throw new ScimException(400, "mutability", $"'{path}' is read-only.");
+            case "password":
+                RefuseAPassword(null, refusedByPatch: true);
+                break;
             default:
                 if (key.StartsWith("emails", StringComparison.Ordinal))
                 {
@@ -362,16 +417,17 @@ internal sealed class ScimService<TUser, TRole>(
 
     // ── Groups (roles) ─────────────────────────────────────────────
 
-    public async Task<ScimListResponse<ScimGroup>> ListGroupsAsync(string? filter, int startIndex, int count, string baseUrl, CancellationToken ct)
+    public async Task<ScimListResponse<ScimGroup>> ListGroupsAsync(string? filter, string? sortBy, string? sortOrder, int startIndex, int count, string baseUrl, CancellationToken ct)
     {
         RequireCompany();
         var query = ManagedRoles().AsNoTracking();
         if (ScimFilter.Parse(filter, s_groupAttributes) is { } predicate)
             query = query.Where(predicate);
 
+        var descending = ParseDescending(sortOrder);
         var (skip, take) = Page(startIndex, count);
         var total = await query.CountAsync(ct);
-        var page = take == 0 ? [] : await query.OrderBy(r => r.Id).Skip(skip).Take(take).ToListAsync(ct);
+        var page = take == 0 ? [] : await SortGroups(query, sortBy, descending).Skip(skip).Take(take).ToListAsync(ct);
         var resources = new List<ScimGroup>();
         foreach (var role in page)
             resources.Add(await ToGroupAsync(role, baseUrl));
@@ -411,24 +467,26 @@ internal sealed class ScimService<TUser, TRole>(
         return await ToGroupAsync(role, baseUrl);
     }
 
-    public async Task<ScimGroup?> ReplaceGroupAsync(string id, ScimGroup model, string baseUrl, CancellationToken ct)
+    public async Task<ScimGroup?> ReplaceGroupAsync(string id, ScimGroup model, string baseUrl, string? ifMatch, CancellationToken ct)
     {
         var company = RequireCompany();
         var role = await FindRoleAsync(id);
         if (role is null)
             return null;
+        RequireVersion(ifMatch, await GroupTagAsync(role));
 
         RequireSameName(role, model.DisplayName);
         await SetMembersAsync(role, await ResolveMembersAsync(model.Members), company);
         return await ToGroupAsync(role, baseUrl);
     }
 
-    public async Task<ScimGroup?> PatchGroupAsync(string id, ScimPatchRequest patch, string baseUrl, CancellationToken ct)
+    public async Task<ScimGroup?> PatchGroupAsync(string id, ScimPatchRequest patch, string baseUrl, string? ifMatch, CancellationToken ct)
     {
         var company = RequireCompany();
         var role = await FindRoleAsync(id);
         if (role is null)
             return null;
+        RequireVersion(ifMatch, await GroupTagAsync(role));
 
         var members = (await users.GetUsersInRoleAsync(role.Name!)).Select(u => u.Id).ToHashSet();
         foreach (var operation in Operations(patch))
@@ -438,12 +496,13 @@ internal sealed class ScimService<TUser, TRole>(
         return await ToGroupAsync(role, baseUrl);
     }
 
-    public async Task<bool> DeleteGroupAsync(string id, CancellationToken ct)
+    public async Task<bool> DeleteGroupAsync(string id, string? ifMatch, CancellationToken ct)
     {
         var company = RequireCompany();
         var role = await FindRoleAsync(id);
         if (role is null)
             return false;
+        RequireVersion(ifMatch, await GroupTagAsync(role));
         if (!Options.AllowRoleCreation)
             throw new ScimException(403, null, "This server does not let a provisioning client delete groups.");
 
@@ -550,6 +609,37 @@ internal sealed class ScimService<TUser, TRole>(
         return ids;
     }
 
+    // Passwords are never set through SCIM: a person sets their own through the invitation link. A client that sends one is
+    // told so, rather than having it silently dropped.
+    private static void RefuseAPassword(string? password, bool refusedByPatch = false)
+    {
+        if (password is null && !refusedByPatch)
+            return;
+        throw new ScimException(400, "mutability",
+            "Passwords are not set through SCIM. The person sets their own password through the invitation link.");
+    }
+
+    // A group's tag covers its role and its members, so a membership change moves the tag even when the role's concurrency
+    // stamp is unchanged (or absent).
+    private static string GroupStamp(TRole role, IEnumerable<Guid> memberIds)
+    {
+        var basis = $"{role.ConcurrencyStamp}|{string.Join(",", memberIds.OrderBy(id => id))}";
+        return Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(basis))).ToLowerInvariant();
+    }
+
+    private async Task<string?> GroupTagAsync(TRole role)
+        => ScimEtags.Of(GroupStamp(role, (await users.GetUsersInRoleAsync(role.Name!)).Select(u => u.Id)));
+
+    // RFC 7644 §3.14: a change that names an If-Match tag applies only while the record still carries that tag. The check runs
+    // on the record just loaded; the store's concurrency token refuses the write if the record changed after that load.
+    private static void RequireVersion(string? ifMatch, string? currentTag)
+    {
+        if (string.IsNullOrWhiteSpace(ifMatch))
+            return;
+        if (!ScimEtags.Matches(ifMatch, currentTag))
+            throw new ScimException(412, null, "The resource changed since it was read: read it again and send its current ETag in If-Match.");
+    }
+
     /// <summary>Makes the role's members exactly <paramref name="wanted"/>.</summary>
     private async Task SetMembersAsync(TRole role, HashSet<Guid> wanted, Guid company)
     {
@@ -590,7 +680,7 @@ internal sealed class ScimService<TUser, TRole>(
                 Type = "User",
                 Ref = $"{baseUrl}/Users/{u.Id}",
             })],
-            Meta = new ScimMeta { ResourceType = "Group", Location = $"{baseUrl}/Groups/{role.Id}" },
+            Meta = new ScimMeta { ResourceType = "Group", Location = $"{baseUrl}/Groups/{role.Id}", Version = ScimEtags.Of(GroupStamp(role, members.Select(u => u.Id))) },
         };
     }
 

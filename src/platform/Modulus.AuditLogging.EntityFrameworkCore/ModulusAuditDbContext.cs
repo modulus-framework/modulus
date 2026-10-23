@@ -21,6 +21,15 @@ public class ModulusAuditDbContext : DbContext
     /// <summary>The security audit chain table.</summary>
     public const string SecurityAuditTable = "modulus_security_audit";
 
+    /// <summary>The head of the last entry retention purged from each chain (A11-1).</summary>
+    public const string SecurityAuditCheckpointTable = "modulus_security_audit_checkpoints";
+
+    /// <summary>The chains under a legal hold (A11-1): a held chain is never purged.</summary>
+    public const string SecurityAuditHoldTable = "modulus_security_audit_holds";
+
+    /// <summary>The purged entries of each chain, kept as their own verifiable record (A11-2).</summary>
+    public const string SecurityAuditArchiveTable = "modulus_security_audit_archive";
+
     /// <summary>Creates the context.</summary>
     protected ModulusAuditDbContext(DbContextOptions options)
         : base(options)
@@ -32,6 +41,15 @@ public class ModulusAuditDbContext : DbContext
 
     /// <summary>Security audit chain entries of every tenant.</summary>
     public DbSet<SecurityAuditRow> SecurityAuditEntries => Set<SecurityAuditRow>();
+
+    /// <summary>The purge checkpoint of each chain, one row per chain.</summary>
+    public DbSet<SecurityAuditCheckpointRow> SecurityAuditCheckpoints => Set<SecurityAuditCheckpointRow>();
+
+    /// <summary>The legal holds, one row per held chain.</summary>
+    public DbSet<SecurityAuditHoldRow> SecurityAuditHolds => Set<SecurityAuditHoldRow>();
+
+    /// <summary>The archived entries, one row per entry.</summary>
+    public DbSet<SecurityAuditArchiveRow> SecurityAuditArchives => Set<SecurityAuditArchiveRow>();
 
     /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -48,6 +66,7 @@ public class ModulusAuditDbContext : DbContext
 
         // SQLite cannot order or compare DateTimeOffset values; store them as sortable binary there.
         var sqlite = providerName?.Contains("Sqlite", StringComparison.OrdinalIgnoreCase) == true;
+        var mysql = providerName?.Contains("MySql", StringComparison.OrdinalIgnoreCase) == true;
 
         modelBuilder.Entity<AuditLogRow>(b =>
         {
@@ -79,10 +98,89 @@ public class ModulusAuditDbContext : DbContext
             b.Property(r => r.Details).IsRequired();
             b.Property(r => r.PreviousHash).HasMaxLength(64).IsFixedLength().IsRequired();
             b.Property(r => r.Hash).HasMaxLength(64).IsFixedLength().IsRequired();
+            // The chain hashes OccurredAt to whole milliseconds, and a read-back must return exactly the stored instant or verification fails.
+            // SQLite stores binary; MySQL reads a datetime(3) back without its fraction, so it stores Unix milliseconds in a bigint; the other
+            // databases keep the milliseconds in a datetime column.
             if (sqlite)
                 b.Property(r => r.OccurredAt).HasConversion(new DateTimeOffsetToBinaryConverter());
+            else if (mysql)
+                b.Property(r => r.OccurredAt)
+                    .HasConversion(v => v.ToUnixTimeMilliseconds(), v => DateTimeOffset.FromUnixTimeMilliseconds(v))
+                    .HasColumnType("bigint");
+            else
+                b.Property(r => r.OccurredAt).HasPrecision(3);
+        });
+
+        modelBuilder.Entity<SecurityAuditCheckpointRow>(b =>
+        {
+            b.ToTable(SecurityAuditCheckpointTable);
+            b.HasKey(r => r.ChainId);
+            b.Property(r => r.Hash).HasMaxLength(64).IsFixedLength().IsRequired();
+            if (sqlite)
+                b.Property(r => r.PurgedAtUtc).HasConversion(new DateTimeOffsetToBinaryConverter());
+        });
+
+        modelBuilder.Entity<SecurityAuditArchiveRow>(b =>
+        {
+            b.ToTable(SecurityAuditArchiveTable);
+            b.HasKey(r => new { r.ChainId, r.Sequence });
+            b.Property(r => r.PreviousHash).HasMaxLength(64).IsFixedLength().IsRequired();
+            b.Property(r => r.Hash).HasMaxLength(64).IsFixedLength().IsRequired();
+            b.Property(r => r.Payload).IsRequired();
+            if (sqlite)
+                b.Property(r => r.ArchivedAtUtc).HasConversion(new DateTimeOffsetToBinaryConverter());
+        });
+
+        modelBuilder.Entity<SecurityAuditHoldRow>(b =>
+        {
+            b.ToTable(SecurityAuditHoldTable);
+            b.HasKey(r => r.ChainId);
+            b.Property(r => r.Reason).HasMaxLength(500).IsRequired();
+            if (sqlite)
+                b.Property(r => r.PlacedAtUtc).HasConversion(new DateTimeOffsetToBinaryConverter());
         });
     }
+}
+
+/// <summary>
+/// One purged security audit entry, kept whole: <see cref="Payload"/> is the entry as JSON, and the hashes let the segment be verified again
+/// on its own (A11-2).
+/// </summary>
+public sealed class SecurityAuditArchiveRow
+{
+    public Guid ChainId { get; set; }
+
+    public long Sequence { get; set; }
+
+    public string PreviousHash { get; set; } = string.Empty;
+
+    public string Hash { get; set; } = string.Empty;
+
+    public string Payload { get; set; } = string.Empty;
+
+    public DateTimeOffset ArchivedAtUtc { get; set; }
+}
+
+/// <summary>A legal hold on one chain: retention and purges leave it alone until someone releases the hold (A11-1).</summary>
+public sealed class SecurityAuditHoldRow
+{
+    public Guid ChainId { get; set; }
+
+    public string Reason { get; set; } = string.Empty;
+
+    public DateTimeOffset PlacedAtUtc { get; set; }
+}
+
+/// <summary>The purge checkpoint of one chain: the head of the last entry retention removed (A11-1).</summary>
+public sealed class SecurityAuditCheckpointRow
+{
+    public Guid ChainId { get; set; }
+
+    public long Sequence { get; set; }
+
+    public string Hash { get; set; } = string.Empty;
+
+    public DateTimeOffset PurgedAtUtc { get; set; }
 }
 
 /// <summary>A stored <see cref="AuditLogEntry"/>.</summary>

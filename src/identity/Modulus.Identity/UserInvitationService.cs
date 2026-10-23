@@ -47,7 +47,8 @@ internal sealed class UserInvitationService<TUser>(
     IIdentityEmailSender sender,
     IServiceProvider services,
     ILogger<UserInvitationService<TUser>> logger,
-    IFieldAuthorizer? fieldAuthorizer = null) : IUserInvitationService
+    IFieldAuthorizer? fieldAuthorizer = null,
+    ICurrentUser? currentUser = null) : IUserInvitationService
     where TUser : ModulusUser, new()
 {
     // The fields the caller supplies on an invitation. Lifecycle and IsActive are set by the server, not the caller.
@@ -81,6 +82,10 @@ internal sealed class UserInvitationService<TUser>(
         var email = invitation.Email?.Trim();
         if (string.IsNullOrEmpty(email) || !email.Contains('@', StringComparison.Ordinal))
             return new InvitationResult(invitation.Email ?? "", null, "A valid e-mail address is required.");
+
+        // Handing out a role hands out its permissions: the caller must be allowed to grant them.
+        if (!RoleAssignmentRules.MayAssign(currentUser, invitation.Roles))
+            return new InvitationResult(email, null, "You need authorization:grant-any to invite someone into a role.");
 
         foreach (var role in invitation.Roles ?? [])
         {

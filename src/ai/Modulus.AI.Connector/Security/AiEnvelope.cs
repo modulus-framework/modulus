@@ -24,6 +24,15 @@ public static class AiEnvelopeClaims
 
     /// <summary>The platform's correlation id of the question.</summary>
     public const string CorrelationId = "correlation_id";
+
+    /// <summary>
+    /// The agent acting for the user, when the question came through an agent (A9-1): an integration role, <c>integration:{clientId}</c>.
+    /// The connector caps the user's access to that agent's rights; any other value is refused.
+    /// </summary>
+    public const string Agent = "act";
+
+    /// <summary>The prefix every agent role carries (the identity's integration-client roles).</summary>
+    public const string AgentRolePrefix = "integration:";
 }
 
 /// <summary>API-key hashing for <see cref="ModulusAiConnectorOptions.ApiKeyHashes"/>.</summary>

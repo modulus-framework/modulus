@@ -61,7 +61,7 @@ public sealed class ScimExtendedRoleTests : IAsyncLifetime
         using var scope = _provider.CreateScope();
 
         var scim = scope.ServiceProvider.GetRequiredService<IScimService>();
-        var groups = await scim.ListGroupsAsync(null, 1, 100, "https://localhost/scim/v2", CancellationToken.None);
+        var groups = await scim.ListGroupsAsync(null, null, null, 1, 100, "https://localhost/scim/v2", CancellationToken.None);
 
         groups.TotalResults.Should().Be(1);
         groups.Resources.Single().DisplayName.Should().Be("Buyers");

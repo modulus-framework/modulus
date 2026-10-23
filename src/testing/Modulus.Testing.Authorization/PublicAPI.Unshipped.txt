@@ -1,0 +1,75 @@
+#nullable enable
+Modulus.Testing.Authorization.AuthorizationConformance
+Modulus.Testing.Authorization.AuthorizationConformanceReport
+Modulus.Testing.Authorization.AuthorizationConformanceReport.AuthorizationConformanceReport(System.Collections.Generic.IReadOnlyList<Modulus.Testing.Authorization.AuthorizationConformanceResult!>! results) -> void
+Modulus.Testing.Authorization.AuthorizationConformanceReport.EnsurePassed() -> void
+Modulus.Testing.Authorization.AuthorizationConformanceReport.Failures.get -> System.Collections.Generic.IReadOnlyList<Modulus.Testing.Authorization.AuthorizationConformanceResult!>!
+Modulus.Testing.Authorization.AuthorizationConformanceReport.Results.get -> System.Collections.Generic.IReadOnlyList<Modulus.Testing.Authorization.AuthorizationConformanceResult!>!
+Modulus.Testing.Authorization.AuthorizationConformanceResult
+Modulus.Testing.Authorization.AuthorizationConformanceResult.<Clone>$() -> Modulus.Testing.Authorization.AuthorizationConformanceResult!
+Modulus.Testing.Authorization.AuthorizationConformanceResult.AuthorizationConformanceResult(string! Name, string? Problem) -> void
+Modulus.Testing.Authorization.AuthorizationConformanceResult.Deconstruct(out string! Name, out string? Problem) -> void
+Modulus.Testing.Authorization.AuthorizationConformanceResult.Equals(Modulus.Testing.Authorization.AuthorizationConformanceResult? other) -> bool
+Modulus.Testing.Authorization.AuthorizationConformanceResult.Name.get -> string!
+Modulus.Testing.Authorization.AuthorizationConformanceResult.Name.init -> void
+Modulus.Testing.Authorization.AuthorizationConformanceResult.Passed.get -> bool
+Modulus.Testing.Authorization.AuthorizationConformanceResult.Problem.get -> string?
+Modulus.Testing.Authorization.AuthorizationConformanceResult.Problem.init -> void
+Modulus.Testing.Authorization.IAuthorizationConformanceSubject
+Modulus.Testing.Authorization.IAuthorizationConformanceSubject.AddGrantAsync(Modulus.Authorization.Grants.PermissionGrant! grant, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Testing.Authorization.IAuthorizationConformanceSubject.ResetAsync(System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Testing.Authorization.IAuthorizationConformanceSubject.Resolver.get -> Modulus.Authorization.Grants.PermissionResolver!
+const Modulus.Testing.Authorization.AuthorizationConformance.Approve = "orders:approve" -> string!
+const Modulus.Testing.Authorization.AuthorizationConformance.Read = "orders:read" -> string!
+override Modulus.Testing.Authorization.AuthorizationConformanceResult.Equals(object? obj) -> bool
+override Modulus.Testing.Authorization.AuthorizationConformanceResult.GetHashCode() -> int
+override Modulus.Testing.Authorization.AuthorizationConformanceResult.ToString() -> string!
+static Modulus.Testing.Authorization.AuthorizationConformance.RunAsync(Modulus.Testing.Authorization.IAuthorizationConformanceSubject! subject, Modulus.Testing.Authorization.IAuthorizationConformanceSubject! otherCompany, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Testing.Authorization.AuthorizationConformanceReport!>!
+static Modulus.Testing.Authorization.AuthorizationConformanceResult.operator !=(Modulus.Testing.Authorization.AuthorizationConformanceResult? left, Modulus.Testing.Authorization.AuthorizationConformanceResult? right) -> bool
+static Modulus.Testing.Authorization.AuthorizationConformanceResult.operator ==(Modulus.Testing.Authorization.AuthorizationConformanceResult? left, Modulus.Testing.Authorization.AuthorizationConformanceResult? right) -> bool
+Modulus.Testing.Authorization.IResourceConformanceSubject
+Modulus.Testing.Authorization.IResourceConformanceSubject.ResetAsync(System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Testing.Authorization.IResourceConformanceSubject.Shares.get -> Modulus.Authorization.Sharing.RecordShares!
+Modulus.Testing.Authorization.ResourceConformance
+Modulus.Testing.Authorization.ResourceConformance.ConformanceOrder
+Modulus.Testing.Authorization.ResourceConformance.ConformanceOrder.ConformanceOrder() -> void
+Modulus.Testing.Authorization.ResourceConformance.ConformanceOrder.Id.get -> System.Guid
+Modulus.Testing.Authorization.ResourceConformance.ConformanceOrder.Id.set -> void
+Modulus.Testing.Authorization.ResourceConformance.ConformanceOrder.OrgUnitId.get -> System.Guid
+Modulus.Testing.Authorization.ResourceConformance.ConformanceOrder.OrgUnitId.set -> void
+Modulus.Testing.Authorization.ResourceConformance.ConformanceOrder.OwnerId.get -> System.Guid
+Modulus.Testing.Authorization.ResourceConformance.ConformanceOrder.OwnerId.set -> void
+Modulus.Testing.Authorization.ResourceConformance.ConformanceOrder.WorkflowState.get -> string!
+Modulus.Testing.Authorization.ResourceConformance.ConformanceOrder.WorkflowState.set -> void
+const Modulus.Testing.Authorization.ResourceConformance.Edit = "edit" -> string!
+const Modulus.Testing.Authorization.ResourceConformance.View = "view" -> string!
+static Modulus.Testing.Authorization.ResourceConformance.RunAsync(Modulus.Testing.Authorization.IResourceConformanceSubject! subject, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Testing.Authorization.AuthorizationConformanceReport!>!
+Modulus.Testing.Authorization.ApprovalConformance
+Modulus.Testing.Authorization.IApprovalConformanceSubject
+Modulus.Testing.Authorization.IApprovalConformanceSubject.AddAsync(Modulus.Authorization.Approval.ApprovalAuthority! authority, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Testing.Authorization.IApprovalConformanceSubject.ResetAsync(System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Testing.Authorization.IApprovalConformanceSubject.Store.get -> Modulus.Authorization.Approval.IApprovalAuthorityStore!
+static Modulus.Testing.Authorization.ApprovalConformance.RunAsync(Modulus.Testing.Authorization.IApprovalConformanceSubject! subject, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Testing.Authorization.AuthorizationConformanceReport!>!
+Modulus.Testing.Authorization.ApprovalDelegationConformance
+Modulus.Testing.Authorization.IApprovalDelegationSubject
+Modulus.Testing.Authorization.IApprovalDelegationSubject.AddLimitAsync(Modulus.Authorization.Approval.ApprovalAuthority! authority, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Testing.Authorization.IApprovalDelegationSubject.DelegateAsync(System.Guid fromUserId, string! fromRole, System.Guid toUserId, string! permission, System.DateTimeOffset notBefore, System.DateTimeOffset notAfter, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Authorization.Governance.Delegation!>!
+Modulus.Testing.Authorization.IApprovalDelegationSubject.Delegations.get -> Modulus.Authorization.Governance.IDelegationStore!
+Modulus.Testing.Authorization.IApprovalDelegationSubject.Limits.get -> Modulus.Authorization.Approval.IApprovalAuthorityStore!
+Modulus.Testing.Authorization.IApprovalDelegationSubject.ResetAsync(System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Testing.Authorization.IApprovalDelegationSubject.RevokeAsync(System.Guid delegationId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+static Modulus.Testing.Authorization.ApprovalDelegationConformance.RunAsync(Modulus.Testing.Authorization.IApprovalDelegationSubject! subject, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Testing.Authorization.AuthorizationConformanceReport!>!
+Modulus.Testing.Authorization.ApprovalWorkflowConformance
+Modulus.Testing.Authorization.IApprovalWorkflowConformanceSubject
+Modulus.Testing.Authorization.IApprovalWorkflowConformanceSubject.AddChainAsync(Modulus.Authorization.Workflow.ApprovalChain! chain, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Testing.Authorization.IApprovalWorkflowConformanceSubject.ResetAsync(System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Testing.Authorization.IApprovalWorkflowConformanceSubject.WorkflowAs(System.Guid userId, System.Collections.Generic.IReadOnlyCollection<string!>! permissions) -> Modulus.Authorization.Workflow.IApprovalWorkflow!
+static Modulus.Testing.Authorization.ApprovalWorkflowConformance.RunAsync(Modulus.Testing.Authorization.IApprovalWorkflowConformanceSubject! subject, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Testing.Authorization.AuthorizationConformanceReport!>!
+Modulus.Testing.Authorization.IOrgPlacementConformanceSubject
+Modulus.Testing.Authorization.IOrgPlacementConformanceSubject.AddUnitAsync(System.Guid id, System.Guid[]! parents, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Testing.Authorization.IOrgPlacementConformanceSubject.Hierarchy.get -> Modulus.Authorization.Organization.IOrgHierarchy!
+Modulus.Testing.Authorization.IOrgPlacementConformanceSubject.PlaceAsync(System.Guid userId, System.Guid orgUnitId, Modulus.Authorization.Organization.OrgScopeMode mode, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Testing.Authorization.IOrgPlacementConformanceSubject.Placements.get -> Modulus.Authorization.Organization.IOrgPlacementStore!
+Modulus.Testing.Authorization.IOrgPlacementConformanceSubject.ResetAsync(System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Testing.Authorization.OrgPlacementConformance
+static Modulus.Testing.Authorization.OrgPlacementConformance.RunAsync(Modulus.Testing.Authorization.IOrgPlacementConformanceSubject! subject, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Testing.Authorization.AuthorizationConformanceReport!>!

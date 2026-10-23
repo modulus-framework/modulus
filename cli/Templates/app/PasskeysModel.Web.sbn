@@ -1,0 +1,51 @@
+using System.Net;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
+using {{ root_namespace }}.Web.Services.ApiClients;
+
+namespace {{ root_namespace }}.Web.Pages;
+
+/// <summary>
+/// Adds, lists and removes the signed-in person's passkeys. The browser runs the WebAuthn ceremony (passkeys.js); these handlers
+/// relay each step to the API, which does the checks and stores the result. The page sits outside the anonymous /Account folder,
+/// so the sign-in is required here and the API refuses anyone without it as well.
+/// </summary>
+[Authorize]
+public sealed class PasskeysModel(PasskeyApiClient passkeys) : PageModel
+{
+    public void OnGet()
+    {
+    }
+
+    public Task<IActionResult> OnGetListAsync(CancellationToken ct) => Relay(passkeys.ListAsync(ct));
+
+    public Task<IActionResult> OnPostBeginAsync(CancellationToken ct) => Relay(passkeys.BeginRegistrationAsync(ct));
+
+    public async Task<IActionResult> OnPostCompleteAsync(CancellationToken ct)
+    {
+        using var reader = new StreamReader(Request.Body);
+        return await Relay(passkeys.CompleteRegistrationAsync(await reader.ReadToEndAsync(ct), ct));
+    }
+
+    public Task<IActionResult> OnPostRemoveAsync(Guid id, CancellationToken ct) => Relay(passkeys.RemoveAsync(id, ct));
+
+    private async Task<IActionResult> Relay(Task<HttpResponseMessage> call)
+    {
+        if (User.Identity?.IsAuthenticated != true)
+            return Unauthorized();
+
+        using var response = await call;
+        if (response.StatusCode == HttpStatusCode.NoContent)
+            return new StatusCodeResult(StatusCodes.Status204NoContent);
+
+        var body = await response.Content.ReadAsStringAsync();
+        return new ContentResult
+        {
+            StatusCode = (int)response.StatusCode,
+            ContentType = "application/json",
+            Content = string.IsNullOrEmpty(body) ? "null" : body,
+        };
+    }
+}

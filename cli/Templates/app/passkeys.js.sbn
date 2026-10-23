@@ -1,0 +1,123 @@
+// Passkey enrolment for the signed-in person. The browser runs the WebAuthn ceremony; the page relays each step to the API,
+// which checks it and stores the credential. Text is written with textContent, never as HTML.
+(function () {
+  "use strict";
+
+  var list = document.getElementById("passkey-list");
+  var status = document.getElementById("passkey-status");
+  var nameInput = document.getElementById("passkey-name");
+  var addButton = document.getElementById("passkey-add");
+
+  function token() {
+    var input = document.querySelector("#passkey-token input[name='__RequestVerificationToken']");
+    return input ? input.value : "";
+  }
+
+  // WebAuthn sends and receives binary values; the API uses base64url text.
+  function toBytes(value) {
+    var base64 = value.replace(/-/g, "+").replace(/_/g, "/");
+    while (base64.length % 4) base64 += "=";
+    return Uint8Array.from(atob(base64), function (c) { return c.charCodeAt(0); });
+  }
+
+  function toBase64Url(buffer) {
+    var bytes = new Uint8Array(buffer);
+    var text = "";
+    for (var i = 0; i < bytes.length; i++) text += String.fromCharCode(bytes[i]);
+    return btoa(text).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  }
+
+  // A page handler: the API's answer on success; the API's own problem detail as an error otherwise.
+  function send(query, method, body) {
+    return fetch("/Passkeys?handler=" + query, {
+      method: method,
+      credentials: "same-origin",
+      headers: { "RequestVerificationToken": token(), "Content-Type": "application/json" },
+      body: body === undefined ? undefined : JSON.stringify(body)
+    }).then(function (response) {
+      return response.text().then(function (text) {
+        var data = text ? JSON.parse(text) : null;
+        if (!response.ok) {
+          throw new Error((data && (data.detail || data.title)) || ("Request failed (" + response.status + ")"));
+        }
+        return data;
+      });
+    });
+  }
+
+  function render(items) {
+    list.textContent = "";
+    (items || []).forEach(function (item) {
+      var row = document.createElement("li");
+      var label = document.createElement("span");
+      label.textContent = item.name + (item.synced ? " (synced)" : "");
+      var remove = document.createElement("button");
+      remove.type = "button";
+      remove.textContent = "Remove";
+      remove.addEventListener("click", function () { removeOne(item.id); });
+      row.appendChild(label);
+      row.appendChild(document.createTextNode(" "));
+      row.appendChild(remove);
+      list.appendChild(row);
+    });
+  }
+
+  function load() {
+    return send("List", "GET").then(render).catch(function (error) {
+      status.textContent = error.message;
+    });
+  }
+
+  function removeOne(id) {
+    status.textContent = "";
+    send("Remove&id=" + encodeURIComponent(id), "POST").then(load).catch(function (error) {
+      status.textContent = error.message;
+    });
+  }
+
+  function add() {
+    var name = nameInput.value.trim() || "Passkey";
+    status.textContent = "Waiting for your device...";
+    send("Begin", "POST").then(function (ceremony) {
+      var options = ceremony.options;
+      var publicKey = {
+        challenge: toBytes(options.challenge),
+        rp: options.rp,
+        user: { id: toBytes(options.user.id), name: options.user.name, displayName: options.user.displayName },
+        pubKeyCredParams: options.pubKeyCredParams,
+        timeout: options.timeout,
+        attestation: options.attestation || "none",
+        authenticatorSelection: options.authenticatorSelection,
+        excludeCredentials: (options.excludeCredentials || []).map(function (c) {
+          return { type: c.type, id: toBytes(c.id), transports: c.transports };
+        })
+      };
+      return navigator.credentials.create({ publicKey: publicKey }).then(function (credential) {
+        return send("Complete", "POST", {
+          challengeId: ceremony.challengeId,
+          name: name,
+          credential: {
+            id: credential.id,
+            rawId: toBase64Url(credential.rawId),
+            type: credential.type,
+            response: {
+              attestationObject: toBase64Url(credential.response.attestationObject),
+              clientDataJSON: toBase64Url(credential.response.clientDataJSON)
+            },
+            clientExtensionResults: {}
+          }
+        });
+      });
+    }).then(function () {
+      status.textContent = "Passkey added.";
+      return load();
+    }).catch(function (error) {
+      status.textContent = error.message || "The passkey could not be added.";
+    });
+  }
+
+  if (addButton && list && status && nameInput) {
+    addButton.addEventListener("click", add);
+    load();
+  }
+})();

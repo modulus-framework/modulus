@@ -1,6 +1,7 @@
 {
   "ConnectionStrings": {
 {{ if auth == "openiddict" }}    "Identity": "{{ identity_connection_string }}"{{ if multi_tenancy || !no_example }},{{ end }}
+{{ end }}{{ if example_permission }}    "Authorization": "{{ authorization_connection_string }}",
 {{ end }}{{ if multi_tenancy }}    "Tenancy": "{{ tenancy_connection_string }}"{{ if !no_example }},{{ end }}
 {{ end }}{{ if !no_example }}    "{{ example_module }}": "{{ connection_string }}"
 {{ end }}  },

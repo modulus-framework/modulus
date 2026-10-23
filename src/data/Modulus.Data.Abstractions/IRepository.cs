@@ -50,6 +50,23 @@ public interface IReadRepository<T> where T : class
         int page, int size,
         CancellationToken ct);
 
+    /// <summary>
+    /// Keyset (seek) paging: the next <paramref name="size"/> items after <paramref name="after"/> in
+    /// <paramref name="keySelector"/> order, without a total count. Pass <see langword="null"/> for the first page.
+    /// The key must be unique (for example an id that is an integer or a timestamp, not a Guid) and orderable by the
+    /// provider. The specification must not carry Skip or Take, because the key is the position.
+    /// </summary>
+    Task<KeysetPage<TResult>> ListKeysetAsync<TKey, TResult>(
+        ISpecification<T> spec,
+        Expression<Func<T, TKey>> keySelector,
+        Expression<Func<T, TResult>> selector,
+        TKey? after,
+        int size,
+        CancellationToken ct)
+        where TKey : struct, IComparable<TKey>
+        => Task.FromException<KeysetPage<TResult>>(
+            new NotSupportedException($"{GetType().Name} does not support keyset paging."));
+
     Task<int> CountAsync(ISpecification<T> spec, CancellationToken ct);
     Task<bool> AnyAsync(ISpecification<T> spec, CancellationToken ct);
 }

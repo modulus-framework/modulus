@@ -1,0 +1,94 @@
+// Passkey sign-in on the sign-in page. The browser runs the WebAuthn assertion; the page hands it to the BFF, which exchanges it at
+// the API's passkey grant and starts the session. Text is written with textContent, never as HTML.
+(function () {
+  "use strict";
+
+  var button = document.getElementById("passkey-signin");
+  var status = document.getElementById("passkey-signin-status");
+
+  if (!button || !status) {
+    return;
+  }
+  if (!window.PublicKeyCredential || !navigator.credentials) {
+    button.disabled = true;
+    status.textContent = "This browser cannot sign in with a passkey.";
+    return;
+  }
+
+  function token() {
+    var input = document.querySelector("#passkey-signin-token input[name='__RequestVerificationToken']");
+    return input ? input.value : "";
+  }
+
+  function toBytes(value) {
+    var base64 = value.replace(/-/g, "+").replace(/_/g, "/");
+    while (base64.length % 4) base64 += "=";
+    return Uint8Array.from(atob(base64), function (c) { return c.charCodeAt(0); });
+  }
+
+  function toBase64Url(buffer) {
+    var bytes = new Uint8Array(buffer);
+    var text = "";
+    for (var i = 0; i < bytes.length; i++) text += String.fromCharCode(bytes[i]);
+    return btoa(text).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  }
+
+  // A page handler on this sign-in page: the handler's answer on success; the problem detail as an error otherwise.
+  function send(handler, body) {
+    return fetch("/Account/Login?handler=" + handler, {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "RequestVerificationToken": token(), "Content-Type": "application/json" },
+      body: body === undefined ? undefined : JSON.stringify(body)
+    }).then(function (response) {
+      return response.text().then(function (text) {
+        var data = text ? JSON.parse(text) : null;
+        if (!response.ok) {
+          throw new Error((data && (data.detail || data.error_description || data.error || data.title)) || "Sign-in with the passkey failed.");
+        }
+        return data;
+      });
+    });
+  }
+
+  function signIn() {
+    var returnUrl = new URLSearchParams(window.location.search).get("returnUrl");
+    status.textContent = "Waiting for your device...";
+    send("PasskeyBegin").then(function (ceremony) {
+      var options = ceremony.options;
+      var publicKey = {
+        challenge: toBytes(options.challenge),
+        rpId: options.rpId,
+        timeout: options.timeout,
+        userVerification: options.userVerification || "required",
+        allowCredentials: (options.allowCredentials || []).map(function (c) {
+          return { type: c.type, id: toBytes(c.id), transports: c.transports };
+        })
+      };
+      return navigator.credentials.get({ publicKey: publicKey }).then(function (assertion) {
+        return send("PasskeyComplete", {
+          challengeId: ceremony.challengeId,
+          returnUrl: returnUrl,
+          assertion: JSON.stringify({
+            id: assertion.id,
+            rawId: toBase64Url(assertion.rawId),
+            type: assertion.type,
+            response: {
+              authenticatorData: toBase64Url(assertion.response.authenticatorData),
+              clientDataJSON: toBase64Url(assertion.response.clientDataJSON),
+              signature: toBase64Url(assertion.response.signature),
+              userHandle: assertion.response.userHandle ? toBase64Url(assertion.response.userHandle) : null
+            },
+            clientExtensionResults: {}
+          })
+        });
+      });
+    }).then(function (result) {
+      window.location.assign(result.returnUrl || "/");
+    }).catch(function (error) {
+      status.textContent = error.message || "Sign-in with the passkey failed.";
+    });
+  }
+
+  button.addEventListener("click", signIn);
+})();

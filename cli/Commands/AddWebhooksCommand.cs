@@ -46,6 +46,7 @@ internal sealed class AddWebhooksCommand : Command<AddWebhooksCommand.Settings>
             RootNamespace = app.RootNamespace,
             DbProvider = provider,
             Events = events,
+            TargetFramework = AppFramework.Resolve(app.ProgramCsPath),
             HasAdminRole = hasAdminRole,
         };
 
@@ -139,13 +140,14 @@ internal sealed class AddWebhooksCommand : Command<AddWebhooksCommand.Settings>
     {
         public string RootNamespace { get; init; } = "";
         public string DbProvider { get; init; } = "SQLite";
+        public string TargetFramework { get; init; } = AppFramework.Default;
         public IReadOnlyList<WebhooksWiring.IntegrationEventInfo> Events { get; init; } = [];
         public bool HasAdminRole { get; init; }
         public string AdminRole => UiAccessGates.AdminRole;
         public string WebhooksNamespace => $"{RootNamespace}.Modules.Webhooks";
         public string FrameworkVersion => Services.FrameworkVersion.Current;
         public string EfProviderPackage => DbProviderInfo.Package(DbProvider);
-        public string EfProviderVersion => DbProviderInfo.Version(DbProvider);
+        public string EfProviderVersion => DbProviderInfo.Version(DbProvider, TargetFramework);
         public string UseDbMethod => DbProviderInfo.UseMethod(DbProvider);
         public string WebhooksConnectionString => DbProviderInfo.ConnectionString(DbProvider, "Webhooks");
     }

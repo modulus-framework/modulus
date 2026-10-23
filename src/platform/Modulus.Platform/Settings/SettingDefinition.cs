@@ -10,4 +10,17 @@ public sealed record SettingDefinition(
     string? DefaultValue = null,
     string? DisplayName = null,
     string? Description = null,
-    bool IsVisibleToClients = true);
+    bool IsVisibleToClients = true)
+{
+    /// <summary>What a value must parse as. Writes that do not parse are refused. Default <see cref="SettingValueType.String"/>.</summary>
+    public SettingValueType ValueType { get; init; } = SettingValueType.String;
+
+    /// <summary>
+    /// When not empty, the only values accepted (case-insensitive), for example <c>["cash", "card"]</c>. Empty means any value of
+    /// <see cref="ValueType"/>.
+    /// </summary>
+    public IReadOnlyList<string> AllowedValues { get; init; } = [];
+
+    /// <summary>The scopes a value may be stored at. Default every scope. A value at a scope not listed here is refused.</summary>
+    public SettingScopes AllowedScopes { get; init; } = SettingScopes.All;
+}

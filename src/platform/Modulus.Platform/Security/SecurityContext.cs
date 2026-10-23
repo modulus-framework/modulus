@@ -40,7 +40,16 @@ public sealed class SecurityContext(
 
     public NetworkContext Network => NetworkContext.Unverified;
 
-    public AgentContext? Agent => null;
+    // An agent acting for the person (A9-1): the request's act claim names the agent's role. Read from the request principal only;
+    // a job or consumer has no request, so it has no agent.
+    public AgentContext? Agent
+    {
+        get
+        {
+            var act = httpContextAccessor?.HttpContext?.User.FindFirst("act")?.Value;
+            return string.IsNullOrWhiteSpace(act) ? null : new AgentContext(act);
+        }
+    }
 
     public string? CorrelationId => correlation?.CorrelationId;
 }

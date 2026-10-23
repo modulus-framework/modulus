@@ -775,9 +775,7 @@ Modulus.Identity.IntegrationClientBinding
 Modulus.Identity.IntegrationClientBinding.ClientId.get -> string!
 Modulus.Identity.IntegrationClientBinding.ClientId.init -> void
 Modulus.Identity.IntegrationClientBinding.<Clone>$() -> Modulus.Identity.IntegrationClientBinding!
-Modulus.Identity.IntegrationClientBinding.Deconstruct(out string! ClientId, out System.Guid? TenantId, out System.DateTimeOffset? ValidUntil) -> void
 Modulus.Identity.IntegrationClientBinding.Equals(Modulus.Identity.IntegrationClientBinding? other) -> bool
-Modulus.Identity.IntegrationClientBinding.IntegrationClientBinding(string! ClientId, System.Guid? TenantId, System.DateTimeOffset? ValidUntil) -> void
 Modulus.Identity.IntegrationClientBinding.TenantId.get -> System.Guid?
 Modulus.Identity.IntegrationClientBinding.TenantId.init -> void
 Modulus.Identity.IntegrationClientBinding.ValidUntil.get -> System.DateTimeOffset?
@@ -857,7 +855,6 @@ Modulus.Identity.ModulusEndSessionController.EndSessionAsync(string? post_logout
 Modulus.Identity.ModulusEndSessionController.ModulusEndSessionController(Microsoft.Extensions.Options.IOptions<Modulus.Identity.Abstractions.ModulusIdentityOptions!>! identityOptions) -> void
 Modulus.Identity.ModulusIntrospectionController
 Modulus.Identity.ModulusIntrospectionController.Introspect(string? token) -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Mvc.IActionResult!>!
-Modulus.Identity.ModulusIntrospectionController.ModulusIntrospectionController(Microsoft.Extensions.Options.IOptions<OpenIddict.Server.OpenIddictServerOptions!>! serverOptions, Microsoft.Extensions.Options.IOptions<Modulus.Identity.Abstractions.ModulusIdentityOptions!>! identityOptions) -> void
 Modulus.Identity.ModulusRoleSeed
 Modulus.Identity.ModulusRoleSeed.<Clone>$() -> Modulus.Identity.ModulusRoleSeed!
 Modulus.Identity.ModulusRoleSeed.Deconstruct(out string! Name, out string? DisplayName, out bool IsDefault, out string![]! Permissions) -> void
@@ -1373,3 +1370,26 @@ Modulus.Identity.Abstractions.BreachedPasswordOptions.ListPath.get -> string?
 Modulus.Identity.Abstractions.BreachedPasswordOptions.ListPath.set -> void
 Modulus.Identity.Abstractions.IBreachedPasswordList
 Modulus.Identity.Abstractions.IBreachedPasswordList.IsBreached(string! password) -> bool
+Modulus.Identity.Abstractions.ModulusUser.CreatedAt.get -> System.DateTimeOffset?
+Modulus.Identity.Abstractions.ModulusUser.CreatedAt.set -> void
+Modulus.Identity.Abstractions.ModulusUser.ModifiedAt.get -> System.DateTimeOffset?
+Modulus.Identity.Abstractions.ModulusUser.ModifiedAt.set -> void
+Modulus.Identity.Abstractions.TokenExchangeGrant
+Modulus.Identity.Abstractions.TokenExchangeOptions
+Modulus.Identity.Abstractions.TokenExchangeOptions.Enabled.get -> bool
+Modulus.Identity.Abstractions.TokenExchangeOptions.Enabled.set -> void
+Modulus.Identity.Abstractions.TokenExchangeOptions.TokenExchangeOptions() -> void
+Modulus.Identity.Extensions.TokenExchangeExtensions
+Modulus.Identity.IIntegrationClientDirectory.SetMayActForPeopleAsync(string! clientId, bool mayActForPeople, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.Identity.IntegrationClientBinding.Deconstruct(out string! ClientId, out System.Guid? TenantId, out System.DateTimeOffset? ValidUntil, out bool MayActForPeople) -> void
+Modulus.Identity.IntegrationClientBinding.IntegrationClientBinding(string! ClientId, System.Guid? TenantId, System.DateTimeOffset? ValidUntil, bool MayActForPeople = false) -> void
+Modulus.Identity.IntegrationClientBinding.MayActForPeople.get -> bool
+Modulus.Identity.IntegrationClientBinding.MayActForPeople.init -> void
+const Modulus.Identity.Abstractions.TokenExchangeGrant.ActorTokenParameter = "actor_token" -> string!
+const Modulus.Identity.Abstractions.TokenExchangeGrant.GrantType = "urn:ietf:params:oauth:grant-type:token-exchange" -> string!
+const Modulus.Identity.Abstractions.TokenExchangeGrant.MaxLifetimeMinutes = 15 -> int
+const Modulus.Identity.Abstractions.TokenExchangeGrant.SubjectTokenParameter = "subject_token" -> string!
+static Modulus.Identity.Extensions.TokenExchangeExtensions.AddModulusTokenExchange(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+Modulus.Identity.ModulusIntrospectionController.ModulusIntrospectionController(Microsoft.Extensions.Options.IOptions<OpenIddict.Server.OpenIddictServerOptions!>! serverOptions, Microsoft.Extensions.Options.IOptions<Modulus.Identity.Abstractions.ModulusIdentityOptions!>! identityOptions) -> void
+Modulus.Identity.Abstractions.ModulusIdentityOptions.Audiences.get -> System.Collections.Generic.List<string!>!
+Modulus.Identity.Abstractions.ModulusIdentityOptions.Audiences.set -> void

@@ -52,6 +52,14 @@ internal sealed class TemplateEngine
         // use_auth tells UI templates whether the app signs users in; the app is found from the file being written.
         if (outputPath is not null && !scriptObject.ContainsKey("use_auth"))
             scriptObject["use_auth"] = AppAuth.Enabled(outputPath);
+        // Every project file targets the app's framework; a model that names none gets the one of the app being written.
+        if (!scriptObject.ContainsKey("target_framework"))
+            scriptObject["target_framework"] = AppFramework.Resolve(outputPath ?? Directory.GetCurrentDirectory());
+        // The package versions that follow the target, so a net8.0 app never references a net10.0 package.
+        var target = scriptObject["target_framework"]!.ToString()!;
+        scriptObject["ef_core_version"] = AppFramework.EfCoreVersion(target);
+        scriptObject["coverlet_version"] = AppFramework.CoverletVersion(target);
+        scriptObject["cryptography_version"] = AppFramework.CryptographyVersion(target);
         var context = new TemplateContext { TemplateLoader = new TemplateLoaderImpl(_assembly) };
         context.PushGlobal(scriptObject);
         return template.Render(context);

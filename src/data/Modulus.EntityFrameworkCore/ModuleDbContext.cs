@@ -222,6 +222,33 @@ public abstract class ModuleDbContext(
     }
 
     // ── Model configuration ───────────────────────────────────────
+    /// <summary>
+    /// On .NET 10 with PostgreSQL, a Guid key the application does not set is generated as Guid v7, so it sorts by creation
+    /// time and works as a keyset key. Other providers and targets keep their own generation.
+    /// </summary>
+    private void ConfigureGuidKeys(ModelBuilder mb)
+    {
+#if NET10_0_OR_GREATER
+        if (Database.ProviderName != "Npgsql.EntityFrameworkCore.PostgreSQL")
+            return;
+
+        foreach (var entity in mb.Model.GetEntityTypes().ToList())
+        {
+            var key = entity.FindPrimaryKey();
+            if (key is not { Properties.Count: 1 })
+                continue;
+
+            var property = key.Properties[0];
+            if (property.ClrType != typeof(Guid)
+                || property.ValueGenerated == Microsoft.EntityFrameworkCore.Metadata.ValueGenerated.Never
+                || property.GetValueGeneratorFactory() is not null)
+                continue;
+
+            mb.Entity(entity.ClrType).Property(property.Name).HasValueGenerator<GuidV7ValueGenerator>();
+        }
+#endif
+    }
+
     protected override void OnModelCreating(ModelBuilder mb)
     {
         base.OnModelCreating(mb);
@@ -234,6 +261,7 @@ public abstract class ModuleDbContext(
         ConfigureOutbox(mb);
         ConfigureEntityChangeHistory(mb);
         ConfigureConcurrencyTokens(mb);
+        ConfigureGuidKeys(mb);
         mb.UseModulusExtraProperties();
         ApplyTablePrefix(mb);
         ApplyQueryFilters(mb);

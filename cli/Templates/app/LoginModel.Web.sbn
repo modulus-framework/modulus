@@ -1,9 +1,11 @@
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.RateLimiting;
 using {{ root_namespace }}.Web.Configuration;
 using {{ root_namespace }}.Web.Security;
-
+{{ if auth == "openiddict" }}using {{ root_namespace }}.Web.Services.ApiClients;
+{{ end }}
 namespace {{ root_namespace }}.Web.Pages.Account;
 {{ if web_login_mode == "Oidc" }}
 /// <summary>
@@ -30,7 +32,7 @@ public class LoginModel(BffSessionClient session) : PageModel
 /// keeps only the BFF session cookie, and every typed API client calls through the BFF with that cookie.
 /// </summary>
 [EnableRateLimiting(RateLimitingSetup.SignInPolicy)]
-public class LoginModel(BffSessionClient session) : PageModel
+public class LoginModel(BffSessionClient session{{ if auth == "openiddict" }}, PasskeyLoginClient passkeys{{ end }}) : PageModel
 {
     [BindProperty]
     public string UserName { get; set; } = "";
@@ -63,7 +65,39 @@ public class LoginModel(BffSessionClient session) : PageModel
         return LocalRedirect(ReturnUrl ?? "/");
     }
 
-    private string? SafeReturnUrl(string? returnUrl) =>
+{{ if auth == "openiddict" }}
+    /// <summary>Asks the API for passkey sign-in options. The browser runs the ceremony and posts the assertion to <see cref="OnPostPasskeyCompleteAsync"/>.</summary>
+    public async Task<IActionResult> OnPostPasskeyBeginAsync(CancellationToken ct)
+    {
+        using var response = await passkeys.BeginAsync(ct);
+        var body = await response.Content.ReadAsStringAsync(ct);
+        return new ContentResult
+        {
+            StatusCode = (int)response.StatusCode,
+            ContentType = "application/json",
+            Content = string.IsNullOrEmpty(body) ? "null" : body,
+        };
+    }
+
+    /// <summary>Exchanges the browser's passkey assertion at the BFF, which starts the session. Answers where the browser goes next.</summary>
+    public async Task<IActionResult> OnPostPasskeyCompleteAsync([FromBody] PasskeyCompleteInput input, CancellationToken ct)
+    {
+        var result = await session.SignInWithPasskeyAsync(input.ChallengeId, input.Assertion, rememberMe: true, ct);
+        if (!result.Succeeded)
+        {
+            return new JsonResult(new { error = result.Error ?? "invalid_request", error_description = "Sign-in with the passkey failed." })
+            {
+                StatusCode = StatusCodes.Status400BadRequest,
+            };
+        }
+
+        return new JsonResult(new { returnUrl = SafeReturnUrl(input.ReturnUrl) ?? "/" });
+    }
+
+    /// <summary>The browser's answer to the passkey options: the challenge id and the assertion (its JSON text).</summary>
+    public sealed record PasskeyCompleteInput(string ChallengeId, string Assertion, string? ReturnUrl);
+
+{{ end }}    private string? SafeReturnUrl(string? returnUrl) =>
         Url.IsLocalUrl(returnUrl) ? returnUrl : null;
 }
 {{ end }}

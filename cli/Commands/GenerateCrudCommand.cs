@@ -74,6 +74,7 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
             ModuleName = module.Name,
             EntityName = entity,
             EntityNameLower = entityLower,
+            TargetFramework = AppFramework.Resolve(module.Directory),
             RouteName = routeName,
             LegacyIntegrationEvents = legacyEvents,
         };
@@ -88,6 +89,9 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
         // A multi-tenant host (modulus app --multi-tenancy) keeps companies apart: the entity is tenant-owned and gets a test.
         var inventory = ModuleDiscovery.Inventory(Environment.CurrentDirectory);
         model.MultiTenant = IsMultiTenantHost(inventory?.ProgramCsPath);
+        // The module's own engine decides the generated paging (keyset only where the framework can order the key).
+        if (inventory?.Modules.FirstOrDefault(m => m.Name == module.Name)?.DatabaseProvider is { Length: > 0 } provider)
+            model.DbProvider = provider;
 
         var generated = new List<string>();
         var skipped = new List<string>();
@@ -111,6 +115,13 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
             Path.Combine(appDir, $"Get{plural}Query.cs"), generated, skipped);
         WriteIfMissing("module/Application/GetAllHandler", model,
             Path.Combine(appDir, $"Get{plural}Handler.cs"), generated, skipped);
+        if (model.CursorPaging)
+        {
+            WriteIfMissing("module/Application/GetCursorQuery", model,
+                Path.Combine(appDir, $"Get{plural}CursorQuery.cs"), generated, skipped);
+            WriteIfMissing("module/Application/GetCursorHandler", model,
+                Path.Combine(appDir, $"Get{plural}CursorHandler.cs"), generated, skipped);
+        }
 
         WriteIfMissing("module/Application/GetByIdQuery", model,
             Path.Combine(appDir, $"Get{entity}ByIdQuery.cs"), generated, skipped);
@@ -166,6 +177,9 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
         // ── Presentation layer ────────────────────────────────────
         WriteIfMissing("module/Presentation/Endpoint", model,
             Path.Combine(presDir, $"{plural}Endpoint.cs"), generated, skipped);
+        if (model.CursorPaging)
+            WriteIfMissing("module/Presentation/CursorEndpoint", model,
+                Path.Combine(presDir, $"{plural}CursorEndpoint.cs"), generated, skipped);
 
         // ── AI connector surface (opt-in; marks files that already exist too) ──
         if (s.Ai)

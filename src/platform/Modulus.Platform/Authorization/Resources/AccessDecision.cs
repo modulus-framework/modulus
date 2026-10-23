@@ -31,6 +31,9 @@ public static class AccessReasonCodes
     /// <summary>The action is permitted.</summary>
     public const string Allowed = "ALLOWED";
 
+    /// <summary>Allowed because a live record share of the record names the caller (A8-1), where no policy rule granted the action.</summary>
+    public const string Shared = "SHARED";
+
     /// <summary>The record belongs to another tenant.</summary>
     public const string TenantMismatch = "TENANT_MISMATCH";
 

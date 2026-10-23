@@ -27,7 +27,8 @@ public sealed class EfDimensionHierarchy(IDbContextFactory<AuthorizationStoreDbC
         while (frontier.Count > 0 && result.Count < MaxValues)
         {
             var children = db.DimensionValues.AsNoTracking()
-                .Where(v => v.ParentId != null && frontier.Contains(v.ParentId))
+                .Where(v => v.ParentId != null)
+                .Where(ScalarPredicates.In<DimensionValueRow, Guid?>(v => v.ParentId, frontier))
                 .Select(v => v.Id)
                 .ToList();
 

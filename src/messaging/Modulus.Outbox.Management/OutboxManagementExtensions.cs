@@ -45,7 +45,9 @@ public static class OutboxManagementExtensions
         return services.AddPermissions("Modulus.Outbox", registry =>
             registry.Add(
                 ManagePermission,
-                "Manage outbox operations: list, inspect, and replay dead-lettered messages."));
+                "Manage outbox operations: list, inspect, and replay dead-lettered messages.",
+                null,
+                PermissionSensitivity.Critical));
     }
 
     /// <summary>

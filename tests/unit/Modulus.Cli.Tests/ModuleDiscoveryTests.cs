@@ -7,6 +7,11 @@ namespace Modulus.Cli.Tests;
 [Trait("Category", "Unit")]
 public class ModuleDiscoveryTests
 {
+    // Each test gets a folder of its own: discovery reads every file beside the one it is given, so a shared
+    // temp folder would race with the other tests that create and delete folders there.
+    private static string TempProgramFile()
+        => Path.Combine(Directory.CreateTempSubdirectory("modulus-discovery-").FullName, "Program.cs");
+
     [Fact]
     public void DetectEnabledFeatures_returns_empty_when_file_missing()
     {
@@ -17,7 +22,7 @@ public class ModuleDiscoveryTests
     [Fact]
     public void DetectEnabledFeatures_finds_all_framework_features()
     {
-        var tempFile = Path.GetTempFileName();
+        var tempFile = TempProgramFile();
         try
         {
             File.WriteAllText(tempFile, """
@@ -54,14 +59,14 @@ public class ModuleDiscoveryTests
         }
         finally
         {
-            if (File.Exists(tempFile)) File.Delete(tempFile);
+            Directory.Delete(Path.GetDirectoryName(tempFile)!, recursive: true);
         }
     }
 
     [Fact]
     public void DetectEnabledFeatures_detects_openiddict_auth()
     {
-        var tempFile = Path.GetTempFileName();
+        var tempFile = TempProgramFile();
         try
         {
             File.WriteAllText(tempFile, """
@@ -73,7 +78,7 @@ public class ModuleDiscoveryTests
         }
         finally
         {
-            if (File.Exists(tempFile)) File.Delete(tempFile);
+            Directory.Delete(Path.GetDirectoryName(tempFile)!, recursive: true);
         }
     }
 
@@ -87,7 +92,7 @@ public class ModuleDiscoveryTests
     public void DetectEnabledFeatures_detects_each_external_provider(
         string marker, string expectedLabel)
     {
-        var tempFile = Path.GetTempFileName();
+        var tempFile = TempProgramFile();
         try
         {
             File.WriteAllText(tempFile, $"builder.Services.AddAuthentication().{marker}builder.Configuration);");
@@ -96,14 +101,14 @@ public class ModuleDiscoveryTests
         }
         finally
         {
-            if (File.Exists(tempFile)) File.Delete(tempFile);
+            Directory.Delete(Path.GetDirectoryName(tempFile)!, recursive: true);
         }
     }
 
     [Fact]
     public void DetectEnabledFeatures_returns_empty_for_file_with_no_framework_calls()
     {
-        var tempFile = Path.GetTempFileName();
+        var tempFile = TempProgramFile();
         try
         {
             File.WriteAllText(tempFile, """
@@ -115,7 +120,7 @@ public class ModuleDiscoveryTests
         }
         finally
         {
-            if (File.Exists(tempFile)) File.Delete(tempFile);
+            Directory.Delete(Path.GetDirectoryName(tempFile)!, recursive: true);
         }
     }
 }

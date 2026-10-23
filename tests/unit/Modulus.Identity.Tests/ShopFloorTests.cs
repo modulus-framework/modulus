@@ -199,6 +199,48 @@ public sealed class ShopFloorTests
     }
 
     [Fact]
+    public async Task Only_an_account_administrator_may_create_or_import_shop_floor_accounts()
+    {
+        await using var h = await Harness.CreateAsync(grantAny: false);
+
+        var single = () => h.Accounts.CreateAsync(Company, "e-9", "482913");
+        (await single.Should().ThrowAsync<Modulus.Core.Abstractions.Exceptions.ForbiddenException>())
+            .Which.Message.Should().Contain("authorization:manage");
+
+        var batch = () => h.Accounts.ImportAsync(Company, [new ShopFloorImportRow("e10")]);
+        await batch.Should().ThrowAsync<Modulus.Core.Abstractions.Exceptions.ForbiddenException>();
+
+        (await h.Users.Users.CountAsync(u => u.EmployeeCode != null)).Should().Be(0);
+    }
+
+    [Fact]
+    public async Task A_caller_without_grant_any_cannot_assign_roles_and_nothing_is_created()
+    {
+        await using var h = await Harness.CreateAsync(grantAny: false);
+
+        var single = () => h.Accounts.CreateAsync(Company, "e-8", "482913", roles: ["ShopFloor"]);
+        (await single.Should().ThrowAsync<Modulus.Core.Abstractions.Exceptions.ForbiddenException>())
+            .Which.Message.Should().Contain("authorization:manage");
+
+        var batch = () => h.Accounts.ImportAsync(Company, [new ShopFloorImportRow("e9", Roles: ["ShopFloor"])]);
+        await batch.Should().ThrowAsync<Modulus.Core.Abstractions.Exceptions.ForbiddenException>();
+
+        (await h.Users.Users.CountAsync(u => u.EmployeeCode != null)).Should().Be(0);
+    }
+
+    [Fact]
+    public async Task A_single_account_with_a_refused_field_is_not_created()
+    {
+        await using var h = await Harness.CreateAsync(new DenyFieldsAuthorizer("FirstName"));
+
+        var act = () => h.Accounts.CreateAsync(Company, "e-7", "482913", "Protected", "Lee");
+
+        var error = await act.Should().ThrowAsync<Modulus.Core.Abstractions.Exceptions.ForbiddenException>();
+        error.Which.Message.Should().Contain("FIELD_PROTECTED");
+        (await h.Users.Users.CountAsync(u => u.EmployeeCode != null)).Should().Be(0);
+    }
+
+    [Fact]
     public async Task An_imported_pin_must_be_replaced_before_a_token_is_issued()
     {
         await using var h = await Harness.CreateAsync();
@@ -286,7 +328,7 @@ public sealed class ShopFloorTests
             _scope = scope;
         }
 
-        public static async Task<Harness> CreateAsync(Modulus.Authorization.Fields.IFieldAuthorizer? fieldAuthorizer = null)
+        public static async Task<Harness> CreateAsync(Modulus.Authorization.Fields.IFieldAuthorizer? fieldAuthorizer = null, bool grantAny = true)
         {
             var connection = new SqliteConnection("DataSource=:memory:");
             await connection.OpenAsync();
@@ -303,6 +345,8 @@ public sealed class ShopFloorTests
             services.AddSingleton<SwitchableTenant>();
             services.AddScoped<ICurrentTenant>(sp => sp.GetRequiredService<SwitchableTenant>());
             services.AddDbContext<ModulusIdentityDbContext>(o => o.UseSqlite(connection));
+            if (grantAny)
+                services.AddScoped<ICurrentUser, GrantAnyCurrentUser>();
             services.AddModulusIdentity<ModulusIdentityDbContext, ModulusUser, ModulusRole>(configuration);
             services.AddModulusShopFloor<ModulusUser, ModulusRole>(configuration);
 

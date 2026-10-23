@@ -1,0 +1,35 @@
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "AllowedHosts": "*",
+  "ConnectionStrings": {
+    "Tenancy": "{{ tenancy_placeholder }}",
+    "Authorization": "{{ authorization_placeholder }}"
+  },
+  "Provisioning": {
+    "Authority": "https://api.example.internal",
+    "Audience": "{{ app_audience }}"
+  },
+  "Secrets": {
+    "RuntimeReadOnly": false,
+    "OpenBao": {
+      "Address": "https://openbao.internal:8200",
+      "Mount": "modulus-prod",
+      "PathPrefix": "tenant-db",
+      "Auth": {
+        "Method": "{{ auth_method }}",
+        "Role": "modulus-api"
+      },
+      "Writer": {
+        "Method": "{{ auth_method }}",
+        "Role": "modulus-provisioner"{{ if auth_method == "AppRole" }},
+        "RoleIdPath": "/run/secrets/openbao-provisioner-role-id",
+        "SecretIdPath": "/run/secrets/openbao-provisioner-secret-id"{{ end }}
+      }
+    }
+  }
+}

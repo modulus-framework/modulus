@@ -68,7 +68,61 @@ const Modulus.AuditLogging.EntityFrameworkCore.ModulusAuditDbContext.SecurityAud
 override Modulus.AuditLogging.EntityFrameworkCore.ModulusAuditDbContext.OnModelCreating(Microsoft.EntityFrameworkCore.ModelBuilder! modelBuilder) -> void
 static Modulus.AuditLogging.EntityFrameworkCore.AuditStoreExtensions.AddModulusAuditStore<TContext>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static Modulus.AuditLogging.EntityFrameworkCore.ModulusAuditDbContext.ConfigureAudit(Microsoft.EntityFrameworkCore.ModelBuilder! modelBuilder, string? providerName = null) -> void
-static Modulus.AuditLogging.EntityFrameworkCore.SecurityAuditDatabaseScripts.MySql(string! applicationUser, string! database, string! host = "%") -> string![]!
-static Modulus.AuditLogging.EntityFrameworkCore.SecurityAuditDatabaseScripts.PostgreSql(string! applicationRole, string! schema = "public") -> string!
-static Modulus.AuditLogging.EntityFrameworkCore.SecurityAuditDatabaseScripts.SqlServer(string! applicationUser, string! schema = "dbo") -> string![]!
+static Modulus.AuditLogging.EntityFrameworkCore.SecurityAuditDatabaseScripts.MySql(string! applicationUser, string! database, string! host = "%", string? purgeUser = null) -> string![]!
+static Modulus.AuditLogging.EntityFrameworkCore.SecurityAuditDatabaseScripts.SqlServer(string! applicationUser, string! schema = "dbo", string? purgeUser = null) -> string![]!
 Modulus.AuditLogging.EntityFrameworkCore.EfSecurityAuditStore.QueryAsync(Modulus.AuditLogging.Security.SecurityAuditQuery! query, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.AuditLogging.Security.SecurityAuditRecord!>!>!
+Modulus.AuditLogging.EntityFrameworkCore.EfSecurityAuditStore.GetCheckpointAsync(System.Guid chainId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.AuditLogging.Security.SecurityAuditHead?>!
+Modulus.AuditLogging.EntityFrameworkCore.EfSecurityAuditStore.PurgeAsync(Modulus.AuditLogging.Security.SecurityAuditHead! checkpoint, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.AuditLogging.EntityFrameworkCore.ModulusAuditDbContext.SecurityAuditCheckpoints.get -> Microsoft.EntityFrameworkCore.DbSet<Modulus.AuditLogging.EntityFrameworkCore.SecurityAuditCheckpointRow!>!
+Modulus.AuditLogging.EntityFrameworkCore.SecurityAuditCheckpointRow
+Modulus.AuditLogging.EntityFrameworkCore.SecurityAuditCheckpointRow.ChainId.get -> System.Guid
+Modulus.AuditLogging.EntityFrameworkCore.SecurityAuditCheckpointRow.ChainId.set -> void
+Modulus.AuditLogging.EntityFrameworkCore.SecurityAuditCheckpointRow.Hash.get -> string!
+Modulus.AuditLogging.EntityFrameworkCore.SecurityAuditCheckpointRow.Hash.set -> void
+Modulus.AuditLogging.EntityFrameworkCore.SecurityAuditCheckpointRow.PurgedAtUtc.get -> System.DateTimeOffset
+Modulus.AuditLogging.EntityFrameworkCore.SecurityAuditCheckpointRow.PurgedAtUtc.set -> void
+Modulus.AuditLogging.EntityFrameworkCore.SecurityAuditCheckpointRow.SecurityAuditCheckpointRow() -> void
+Modulus.AuditLogging.EntityFrameworkCore.SecurityAuditCheckpointRow.Sequence.get -> long
+Modulus.AuditLogging.EntityFrameworkCore.SecurityAuditCheckpointRow.Sequence.set -> void
+const Modulus.AuditLogging.EntityFrameworkCore.ModulusAuditDbContext.SecurityAuditCheckpointTable = "modulus_security_audit_checkpoints" -> string!
+Modulus.AuditLogging.EntityFrameworkCore.AuditPurgeRoleExtensions
+Modulus.AuditLogging.EntityFrameworkCore.ModulusAuditPurgeDbContext
+Modulus.AuditLogging.EntityFrameworkCore.ModulusAuditPurgeDbContext.ModulusAuditPurgeDbContext(Microsoft.EntityFrameworkCore.DbContextOptions<Modulus.AuditLogging.EntityFrameworkCore.ModulusAuditPurgeDbContext!>! options) -> void
+static Modulus.AuditLogging.EntityFrameworkCore.AuditPurgeRoleExtensions.AddModulusAuditPurgeRole(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<Microsoft.EntityFrameworkCore.DbContextOptionsBuilder!>! configure) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.AuditLogging.EntityFrameworkCore.SecurityAuditDatabaseScripts.PostgreSql(string! applicationRole, string! schema = "public", string? purgeRole = null) -> string!
+Modulus.AuditLogging.EntityFrameworkCore.EfSecurityAuditHolds
+Modulus.AuditLogging.EntityFrameworkCore.EfSecurityAuditHolds.EfSecurityAuditHolds(Microsoft.Extensions.DependencyInjection.IServiceScopeFactory! scopes, System.TimeProvider! clock) -> void
+Modulus.AuditLogging.EntityFrameworkCore.EfSecurityAuditHolds.IsHeldAsync(System.Guid chainId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.AuditLogging.EntityFrameworkCore.EfSecurityAuditHolds.PlaceAsync(System.Guid chainId, string! reason, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.AuditLogging.EntityFrameworkCore.EfSecurityAuditHolds.ReleaseAsync(System.Guid chainId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.AuditLogging.EntityFrameworkCore.ModulusAuditDbContext.SecurityAuditHolds.get -> Microsoft.EntityFrameworkCore.DbSet<Modulus.AuditLogging.EntityFrameworkCore.SecurityAuditHoldRow!>!
+Modulus.AuditLogging.EntityFrameworkCore.SecurityAuditHoldRow
+Modulus.AuditLogging.EntityFrameworkCore.SecurityAuditHoldRow.ChainId.get -> System.Guid
+Modulus.AuditLogging.EntityFrameworkCore.SecurityAuditHoldRow.ChainId.set -> void
+Modulus.AuditLogging.EntityFrameworkCore.SecurityAuditHoldRow.PlacedAtUtc.get -> System.DateTimeOffset
+Modulus.AuditLogging.EntityFrameworkCore.SecurityAuditHoldRow.PlacedAtUtc.set -> void
+Modulus.AuditLogging.EntityFrameworkCore.SecurityAuditHoldRow.Reason.get -> string!
+Modulus.AuditLogging.EntityFrameworkCore.SecurityAuditHoldRow.Reason.set -> void
+Modulus.AuditLogging.EntityFrameworkCore.SecurityAuditHoldRow.SecurityAuditHoldRow() -> void
+const Modulus.AuditLogging.EntityFrameworkCore.ModulusAuditDbContext.SecurityAuditHoldTable = "modulus_security_audit_holds" -> string!
+Modulus.AuditLogging.EntityFrameworkCore.EfSecurityAuditArchive
+Modulus.AuditLogging.EntityFrameworkCore.EfSecurityAuditArchive.ArchiveAsync(System.Guid chainId, System.Collections.Generic.IReadOnlyList<Modulus.AuditLogging.Security.SecurityAuditRecord!>! records, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.AuditLogging.EntityFrameworkCore.EfSecurityAuditArchive.EfSecurityAuditArchive(Microsoft.Extensions.DependencyInjection.IServiceScopeFactory! scopes, System.TimeProvider! clock) -> void
+Modulus.AuditLogging.EntityFrameworkCore.EfSecurityAuditArchive.ReadAsync(System.Guid chainId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.AuditLogging.Security.SecurityAuditRecord!>!>!
+Modulus.AuditLogging.EntityFrameworkCore.EfSecurityAuditArchive.VerifyAsync(System.Guid chainId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.AuditLogging.Security.SecurityAuditVerification!>!
+Modulus.AuditLogging.EntityFrameworkCore.ModulusAuditDbContext.SecurityAuditArchives.get -> Microsoft.EntityFrameworkCore.DbSet<Modulus.AuditLogging.EntityFrameworkCore.SecurityAuditArchiveRow!>!
+Modulus.AuditLogging.EntityFrameworkCore.SecurityAuditArchiveRow
+Modulus.AuditLogging.EntityFrameworkCore.SecurityAuditArchiveRow.ArchivedAtUtc.get -> System.DateTimeOffset
+Modulus.AuditLogging.EntityFrameworkCore.SecurityAuditArchiveRow.ArchivedAtUtc.set -> void
+Modulus.AuditLogging.EntityFrameworkCore.SecurityAuditArchiveRow.ChainId.get -> System.Guid
+Modulus.AuditLogging.EntityFrameworkCore.SecurityAuditArchiveRow.ChainId.set -> void
+Modulus.AuditLogging.EntityFrameworkCore.SecurityAuditArchiveRow.Hash.get -> string!
+Modulus.AuditLogging.EntityFrameworkCore.SecurityAuditArchiveRow.Hash.set -> void
+Modulus.AuditLogging.EntityFrameworkCore.SecurityAuditArchiveRow.Payload.get -> string!
+Modulus.AuditLogging.EntityFrameworkCore.SecurityAuditArchiveRow.Payload.set -> void
+Modulus.AuditLogging.EntityFrameworkCore.SecurityAuditArchiveRow.PreviousHash.get -> string!
+Modulus.AuditLogging.EntityFrameworkCore.SecurityAuditArchiveRow.PreviousHash.set -> void
+Modulus.AuditLogging.EntityFrameworkCore.SecurityAuditArchiveRow.SecurityAuditArchiveRow() -> void
+Modulus.AuditLogging.EntityFrameworkCore.SecurityAuditArchiveRow.Sequence.get -> long
+Modulus.AuditLogging.EntityFrameworkCore.SecurityAuditArchiveRow.Sequence.set -> void
+const Modulus.AuditLogging.EntityFrameworkCore.ModulusAuditDbContext.SecurityAuditArchiveTable = "modulus_security_audit_archive" -> string!

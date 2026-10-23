@@ -92,8 +92,19 @@ public sealed class AuthorizationSecurityAuditHandler(ISecurityAuditLog log, ICu
             Actor = @event.ActorUserId,
             Target = $"{@event.ResourceType}:{@event.Action}",
             OccurredAt = new DateTimeOffset(DateTime.SpecifyKind(@event.OccurredAt, DateTimeKind.Utc)),
-            Details = @event.Reason is null ? new Dictionary<string, string?>() : new Dictionary<string, string?> { ["reason"] = @event.Reason },
+            Details = DecisionDetails(@event),
         });
         return Task.CompletedTask;
+    }
+
+    // The reason and, when an agent acted for the person, the agent's role: an agent's decisions stay visible in the audit trail.
+    private static Dictionary<string, string?> DecisionDetails(AccessDecisionAuditEvent @event)
+    {
+        var details = new Dictionary<string, string?>();
+        if (@event.Reason is not null)
+            details["reason"] = @event.Reason;
+        if (@event.AgentId is not null)
+            details["agent"] = @event.AgentId;
+        return details;
     }
 }

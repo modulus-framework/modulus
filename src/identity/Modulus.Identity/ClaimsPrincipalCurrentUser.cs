@@ -3,15 +3,18 @@ using System.Security.Claims;
 namespace Modulus.Identity;
 
 using Microsoft.AspNetCore.Http;
+using Modulus.BackgroundJobs;
 using Modulus.Core.Abstractions;
 
 /// <summary>
-/// Implements ICurrentUser by reading claims from the current HttpContext principal.
+/// Implements ICurrentUser by reading claims from the current HttpContext principal. Inside a background job there is no request, so the
+/// caller is the person who queued the job (their id, and the roles the identity store gave when the job started, from <see cref="JobContext"/>).
 /// Registered as scoped; resolves the current user per-request.
 /// </summary>
 internal sealed class ClaimsPrincipalCurrentUser(
     IHttpContextAccessor httpContextAccessor,
-    IPermissionChecker? permissionChecker = null)
+    IPermissionChecker? permissionChecker = null,
+    JobContext? job = null)
     : ICurrentUser
 {
     private ClaimsPrincipal? Principal => httpContextAccessor.HttpContext?.User;
@@ -22,7 +25,9 @@ internal sealed class ClaimsPrincipalCurrentUser(
         {
             var sub = Principal?.FindFirst(ClaimTypes.NameIdentifier)?.Value
                    ?? Principal?.FindFirst("sub")?.Value;
-            return Guid.TryParse(sub, out var id) ? id : null;
+            if (Guid.TryParse(sub, out var id))
+                return id;
+            return job?.InitiatorId;
         }
     }
 
@@ -35,10 +40,10 @@ internal sealed class ClaimsPrincipalCurrentUser(
         ?? Principal?.FindFirst("email")?.Value;
 
     public bool IsAuthenticated =>
-        Principal?.Identity?.IsAuthenticated ?? false;
+        (Principal?.Identity?.IsAuthenticated ?? false) || job?.InitiatorId is not null;
 
     public bool IsInRole(string role) =>
-        Principal?.IsInRole(role) ?? false;
+        (Principal?.IsInRole(role) ?? false) || (job?.Roles.Contains(role) ?? false);
 
     public bool HasPermission(string permission)
     {

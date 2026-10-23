@@ -282,6 +282,177 @@ public sealed class ScimTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Sorting_orders_by_a_supported_attribute_and_refuses_a_bad_sort_order()
+    {
+        using var client = Client(s_company);
+        foreach (var name in new[] { "bob@acme.test", "ali@acme.test", "carol@acme.test" })
+            await CreateAsync(client, name);
+
+        async Task<string?> FirstUser(string query)
+            => (await Json(await client.GetAsync("/scim/v2/Users?" + query))).GetProperty("Resources")[0].GetProperty("userName").GetString();
+
+        (await FirstUser("sortBy=userName")).Should().Be("ali@acme.test");
+        (await FirstUser("sortBy=userName&sortOrder=descending")).Should().Be("carol@acme.test");
+        (await FirstUser("sortBy=userName&sortOrder=DESCENDING")).Should().Be("carol@acme.test");
+        (await FirstUser("sortBy=notAnAttribute")).Should().NotBeNull("an attribute it cannot sort on is ignored, not refused");
+
+        var bad = await client.GetAsync("/scim/v2/Users?sortBy=userName&sortOrder=sideways");
+        bad.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await Json(bad)).GetProperty("scimType").GetString().Should().Be("invalidValue");
+
+        var groups = await client.GetAsync("/scim/v2/Groups?sortBy=displayName&sortOrder=descending");
+        groups.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        (await Json(await client.GetAsync("/scim/v2/ServiceProviderConfig"))).GetProperty("sort").GetProperty("supported").GetBoolean()
+            .Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task A_change_with_a_current_etag_applies_and_a_stale_one_is_refused_with_412_and_writes_nothing()
+    {
+        using var client = Client(s_company);
+        var id = await CreateAsync(client, "etag@acme.test");
+        var url = $"/scim/v2/Users/{id}";
+
+        var read = await client.GetAsync(url);
+        var first = read.Headers.GetValues("ETag").Single();
+        (await Json(read)).GetProperty("meta").GetProperty("version").GetString().Should().Be(first);
+
+        var current = PatchRequest(url, Patch(new { op = "replace", path = "userName", value = "renamed@acme.test" }));
+        current.Headers.TryAddWithoutValidation("If-Match", first);
+        var applied = await client.SendAsync(current);
+        applied.StatusCode.Should().Be(HttpStatusCode.OK);
+        var second = applied.Headers.GetValues("ETag").Single();
+        second.Should().NotBe(first, "a change moves the tag on");
+
+        var stale = PatchRequest(url, Patch(new { op = "replace", path = "userName", value = "lost@acme.test" }));
+        stale.Headers.TryAddWithoutValidation("If-Match", first);
+        (await client.SendAsync(stale)).StatusCode.Should().Be(HttpStatusCode.PreconditionFailed);
+        (await Json(await client.GetAsync(url))).GetProperty("userName").GetString().Should().Be("renamed@acme.test");
+
+        var delete = new HttpRequestMessage(HttpMethod.Delete, url);
+        delete.Headers.TryAddWithoutValidation("If-Match", first);
+        (await client.SendAsync(delete)).StatusCode.Should().Be(HttpStatusCode.PreconditionFailed);
+
+        var any = new HttpRequestMessage(HttpMethod.Delete, url);
+        any.Headers.TryAddWithoutValidation("If-Match", "*");
+        (await client.SendAsync(any)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        (await Json(await client.GetAsync("/scim/v2/ServiceProviderConfig"))).GetProperty("etag").GetProperty("supported").GetBoolean()
+            .Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task A_password_is_refused_on_create_replace_and_patch_so_it_is_never_silently_dropped()
+    {
+        using var client = Client(s_company);
+
+        var create = await client.PostAsync("/scim/v2/Users", Body(new { userName = "pw@acme.test", password = "Sup3r-secret!" }));
+        create.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await Json(create)).GetProperty("scimType").GetString().Should().Be("mutability");
+        (await Json(await client.GetAsync("/scim/v2/Users?filter=" + Uri.EscapeDataString("userName eq \"pw@acme.test\""))))
+            .GetProperty("totalResults").GetInt32().Should().Be(0, "a refused create writes nothing");
+
+        var id = await CreateAsync(client, "pw-ok@acme.test");
+        var replace = await client.PutAsync($"/scim/v2/Users/{id}", Body(new { userName = "pw-ok@acme.test", password = "Sup3r-secret!" }));
+        replace.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        var patch = await client.SendAsync(PatchRequest($"/scim/v2/Users/{id}", Patch(new { op = "replace", path = "password", value = "Sup3r-secret!" })));
+        patch.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var detail = (await Json(patch)).GetProperty("detail").GetString()!;
+        detail.Should().Contain("invitation link");
+        detail.Should().NotContain("Sup3r-secret");
+    }
+
+    [Fact]
+    public async Task Users_carry_meta_created_and_meta_last_modified_and_a_change_moves_last_modified_on()
+    {
+        using var client = Client(s_company);
+
+        var created = await client.PostAsync("/scim/v2/Users", Body(NewUser("times@acme.test")));
+        created.StatusCode.Should().Be(HttpStatusCode.Created);
+        var body = await Json(created);
+        var id = body.GetProperty("id").GetString()!;
+        var meta = body.GetProperty("meta");
+        var createdAt = meta.GetProperty("created").GetDateTimeOffset();
+        meta.GetProperty("lastModified").GetDateTimeOffset().Should().Be(createdAt, "nothing has changed since creation");
+
+        await Task.Delay(20);
+        var patched = await client.SendAsync(PatchRequest($"/scim/v2/Users/{id}", Patch(
+            new { op = "replace", path = "externalId", value = "ext-times" })));
+        patched.StatusCode.Should().Be(HttpStatusCode.OK);
+        var after = (await Json(patched)).GetProperty("meta");
+        after.GetProperty("created").GetDateTimeOffset().Should().Be(createdAt);
+        after.GetProperty("lastModified").GetDateTimeOffset().Should().BeAfter(createdAt);
+    }
+
+    [Fact]
+    public async Task The_schemas_endpoints_describe_the_user_and_group_resources()
+    {
+        using var client = Client(s_company);
+
+        (await Json(await client.GetAsync("/scim/v2/Schemas"))).GetProperty("totalResults").GetInt32().Should().Be(2);
+
+        var user = await Json(await client.GetAsync("/scim/v2/Schemas/urn:ietf:params:scim:schemas:core:2.0:User"));
+        user.GetProperty("id").GetString().Should().Be("urn:ietf:params:scim:schemas:core:2.0:User");
+        var userAttributes = user.GetProperty("attributes").EnumerateArray().ToList();
+        userAttributes.Select(a => a.GetProperty("name").GetString()).Should().Contain(new[] { "userName", "emails", "active", "groups" });
+        userAttributes.Single(a => a.GetProperty("name").GetString() == "userName").GetProperty("required").GetBoolean().Should().BeTrue();
+
+        var group = await Json(await client.GetAsync("/scim/v2/Schemas/urn:ietf:params:scim:schemas:core:2.0:Group"));
+        group.GetProperty("attributes").EnumerateArray().Single(a => a.GetProperty("name").GetString() == "displayName")
+            .GetProperty("required").GetBoolean().Should().BeTrue();
+
+        (await client.GetAsync("/scim/v2/Schemas/urn:example:unknown")).StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task A_bulk_request_applies_operations_in_order_resolves_bulk_ids_and_stops_at_fail_on_errors()
+    {
+        using var client = Client(s_company);
+
+        var bulk = new
+        {
+            schemas = new[] { "urn:ietf:params:scim:api:messages:2.0:BulkRequest" },
+            Operations = new object[]
+            {
+                new { method = "POST", bulkId = "u1", path = "/Users", data = NewUser("bulk@acme.test") },
+                new { method = "DELETE", path = "/Users/bulkId:u1" },
+            },
+        };
+        var response = await client.PostAsync("/scim/v2/Bulk", Body(bulk));
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var ops = (await Json(response)).GetProperty("operations");
+        ops.GetArrayLength().Should().Be(2);
+        ops[0].GetProperty("status").GetString().Should().Be("201");
+        ops[0].GetProperty("bulkId").GetString().Should().Be("u1");
+        ops[1].GetProperty("status").GetString().Should().Be("204");
+        // DELETE deactivates by default (the account is kept, so it cannot sign in).
+        var kept = (await Json(await client.GetAsync("/scim/v2/Users?filter=" + Uri.EscapeDataString("userName eq \"bulk@acme.test\""))))
+            .GetProperty("Resources")[0];
+        kept.GetProperty("active").GetBoolean().Should().BeFalse();
+
+        // failOnErrors = 1: the first failure stops the bulk, so the create after it never runs.
+        var stopping = new
+        {
+            failOnErrors = 1,
+            Operations = new object[]
+            {
+                new { method = "POST", path = "/Users", data = new { displayName = "no user name" } },
+                new { method = "POST", path = "/Users", data = NewUser("never@acme.test") },
+            },
+        };
+        var stopped = (await Json(await client.PostAsync("/scim/v2/Bulk", Body(stopping)))).GetProperty("operations");
+        stopped.GetArrayLength().Should().Be(1);
+        stopped[0].GetProperty("status").GetString().Should().Be("400");
+        (await Json(await client.GetAsync("/scim/v2/Users?filter=" + Uri.EscapeDataString("userName eq \"never@acme.test\""))))
+            .GetProperty("totalResults").GetInt32().Should().Be(0);
+
+        (await Json(await client.GetAsync("/scim/v2/ServiceProviderConfig"))).GetProperty("bulk").GetProperty("supported").GetBoolean()
+            .Should().BeTrue();
+    }
+
+    [Fact]
     public async Task Patch_in_the_azure_dialect_deactivates_renames_and_changes_the_email()
     {
         using var client = Client(s_company);
@@ -378,6 +549,28 @@ public sealed class ScimTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task A_membership_change_moves_the_group_etag_so_a_stale_group_change_is_refused()
+    {
+        using var client = Client(s_company);
+        var userId = await CreateAsync(client, "member@acme.test");
+        var groupId = (await Json(await client.GetAsync("/scim/v2/Groups"))).GetProperty("Resources")[0].GetProperty("id").GetString()!;
+        var url = $"/scim/v2/Groups/{groupId}";
+
+        var before = (await client.GetAsync(url)).Headers.GetValues("ETag").Single();
+
+        var add = await client.SendAsync(PatchRequest(url, Patch(
+            new { op = "Add", path = "members", value = new[] { new { value = userId } } })));
+        add.StatusCode.Should().Be(HttpStatusCode.OK);
+        var after = add.Headers.GetValues("ETag").Single();
+        after.Should().NotBe(before, "the membership is part of the group's representation");
+
+        var stale = PatchRequest(url, Patch(new { op = "Remove", path = "members", value = new[] { new { value = userId } } }));
+        stale.Headers.TryAddWithoutValidation("If-Match", before);
+        (await client.SendAsync(stale)).StatusCode.Should().Be(HttpStatusCode.PreconditionFailed);
+        (await Json(await client.GetAsync(url))).GetProperty("members").GetArrayLength().Should().Be(1, "the refused change wrote nothing");
+    }
+
+    [Fact]
     public async Task Groups_expose_only_managed_roles_and_membership_changes_the_users_roles()
     {
         using var client = Client(s_company);
@@ -450,7 +643,7 @@ public sealed class ScimTests : IAsyncLifetime
         using var client = Client(s_company);
         var config = await Json(await client.GetAsync("/scim/v2/ServiceProviderConfig"));
         config.GetProperty("patch").GetProperty("supported").GetBoolean().Should().BeTrue();
-        config.GetProperty("bulk").GetProperty("supported").GetBoolean().Should().BeFalse();
+        config.GetProperty("bulk").GetProperty("supported").GetBoolean().Should().BeTrue("bulk is served (RFC 7644 §3.7)");
         (await Json(await client.GetAsync("/scim/v2/ResourceTypes"))).GetProperty("totalResults").GetInt32().Should().Be(2);
     }
 }

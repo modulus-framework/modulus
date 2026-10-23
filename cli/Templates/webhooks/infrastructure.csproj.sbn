@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFramework>{{ target_framework }}</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
@@ -16,7 +16,7 @@
     <PackageReference Include="Synvro.Modulus.EntityFrameworkCore" Version="{{ framework_version }}" />
     <PackageReference Include="{{ ef_provider_package }}" Version="{{ ef_provider_version }}" />
 {{ if db_provider == "SQLite" }}    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.3" />
-{{ end }}    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.9" />
+{{ end }}    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="{{ ef_core_version }}" />
   </ItemGroup>
 
 </Project>

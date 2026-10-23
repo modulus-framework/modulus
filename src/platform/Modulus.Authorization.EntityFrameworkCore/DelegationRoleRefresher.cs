@@ -10,8 +10,8 @@ namespace Modulus.Authorization.EntityFrameworkCore;
 /// <summary>Settings for <see cref="DelegationRoleRefreshService"/> (<c>Authorization:Delegation</c>).</summary>
 public sealed class DelegationRoleRefreshOptions
 {
-    /// <summary>How often the delegators' roles are re-read from the identity store. Default one minute.</summary>
-    public TimeSpan Interval { get; set; } = TimeSpan.FromMinutes(1);
+    /// <summary>How often the delegators' roles are re-read from the identity store. Default 30 seconds, so a role change the identity store does not report reaches a delegation's cap well inside the 60-second revocation target.</summary>
+    public TimeSpan Interval { get; set; } = TimeSpan.FromSeconds(30);
 }
 
 /// <summary>

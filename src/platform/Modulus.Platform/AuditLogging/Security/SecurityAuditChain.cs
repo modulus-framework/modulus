@@ -86,11 +86,29 @@ public static class SecurityAuditChain
     /// (a chain recomputed from scratch after an edit passes the link checks but not the anchor).
     /// </summary>
     public static SecurityAuditVerification Verify(IEnumerable<SecurityAuditRecord> records, SecurityAuditHead? anchor = null)
+        => VerifyFrom(records, checkpoint: null, anchor);
+
+    /// <summary>
+    /// <see cref="Verify(IEnumerable{SecurityAuditRecord}, SecurityAuditHead?)"/> for a chain whose oldest entries were purged by retention (A11-1):
+    /// the first entry must follow <paramref name="checkpoint"/>, the head of the last purged entry. An anchor at the checkpoint itself is
+    /// still checked; an anchor older than the checkpoint cannot be checked any more and fails, so it must be re-anchored.
+    /// </summary>
+    public static SecurityAuditVerification VerifyFrom(
+        IEnumerable<SecurityAuditRecord> records, SecurityAuditHead? checkpoint, SecurityAuditHead? anchor = null)
     {
         ArgumentNullException.ThrowIfNull(records);
-        SecurityAuditHead? head = null;
+        SecurityAuditHead? head = checkpoint;
         long count = 0;
         var anchorSeen = false;
+        if (anchor is not null && checkpoint is not null && anchor.Sequence < checkpoint.Sequence)
+            return Broken(0, head, anchor.Sequence, $"The anchored entry {anchor.Sequence} was purged by retention; re-anchor the chain.");
+        if (anchor is not null && checkpoint is not null && anchor.Sequence == checkpoint.Sequence)
+        {
+            if (anchor.Hash != checkpoint.Hash)
+                return Broken(0, head, anchor.Sequence, "The checkpoint differs from the anchored head (the chain was rewritten).");
+            anchorSeen = true;
+        }
+
         foreach (var record in records)
         {
             count++;

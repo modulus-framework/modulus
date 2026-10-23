@@ -2,6 +2,7 @@ using System.Reflection;
 {{ if expose_api }}using Modulus.AspNetCore.Endpoints;
 {{ end }}{{ if enable_health_checks }}using Modulus.AspNetCore.HealthChecks;
 {{ end }}{{ if use_security_guard }}using Modulus.AspNetCore.Security.Policy;
+{{ end }}{{ if auth == "openiddict" }}using Modulus.Identity.Extensions;
 {{ end }}
 namespace {{ root_namespace }}.Api.Endpoints;
 
@@ -20,11 +21,15 @@ internal static class ApiEndpoints
                 .Select(Assembly.LoadFrom)
                 .ToArray());
 {{ end }}{{ if enable_health_checks }}        app.MapModulusHealthChecks();
+{{ end }}{{ if auth == "openiddict" }}        // Passkey sign-in and enrolment: mapped only when Identity:Passkeys:Enabled, since the services are registered only then.
+        // Under /api so the Web host reaches them through the BFF gateway.
+        if (app.Configuration.GetValue<bool>("Identity:Passkeys:Enabled"))
+            app.MapModulusPasskeys("/api/account/passkeys");
 {{ end }}        app.MapApiFeatures();
 
         if (app.Environment.IsDevelopment())
         {
-{{ if expose_api }}            app.MapOpenApi(){{ if use_security_guard }}.Loosen("OpenAPI document, mapped in Development only"){{ end }};
+{{ if expose_api && target_framework == "net10.0" }}            app.MapOpenApi(){{ if use_security_guard }}.Loosen("OpenAPI document, mapped in Development only"){{ end }};
 {{ end }}        }
 
         return app;

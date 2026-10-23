@@ -16,6 +16,7 @@ public static class BackgroundJobsExtensions
             sp => sp.GetRequiredService<ChannelJobQueue>());
         services.TryAddScoped<IJobInitiatorGuard, AllowAllJobInitiators>();
         services.TryAddScoped<JobContext>();
+        services.TryAddScoped<IJobStageGuard, JobStageGuard>();
 
         foreach (var assembly in assemblies)
         {

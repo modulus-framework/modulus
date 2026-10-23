@@ -58,7 +58,8 @@ public interface IJobScheduler
     void AddRecurring<TJob, TArgs>(
         string jobId,
         string cronExpression,
-        TArgs args)
+        TArgs args,
+        DateTime? firstRunAt = null)
         where TJob : IBackgroundJob<TArgs>;
 
     void RemoveRecurring(string jobId);

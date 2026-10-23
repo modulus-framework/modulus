@@ -27,9 +27,8 @@ public sealed class EfApprovalAuthorityStore(IDbContextFactory<AuthorizationStor
         using var db = factory.CreateDbContext();
         var roles = EfRoleInclusionStore.Expand(db, EfPositionStore.WithPositionRoles(db, principal.Roles, principal.UserId)).Select(r => r.ToLowerInvariant()).ToArray();
         var rows = db.ApprovalAuthorities.AsNoTracking()
-            .Where(a => a.Permission == permission
-                        && ((a.HolderType == GrantHolderType.User && a.Holder == userKey)
-                            || (a.HolderType == GrantHolderType.Role && roles.Contains(a.Holder.ToLower()))))
+            .Where(a => a.Permission == permission)
+            .Where(ScalarPredicates.Holder<ApprovalAuthorityRow>(a => a.HolderType, a => a.Holder.ToLower(), roles, userKey?.ToLowerInvariant()))
             .ToList();
         return [.. rows.Select(ToAuthority)];
     }

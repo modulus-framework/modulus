@@ -107,7 +107,6 @@ Modulus.Authorization.Audit.AuditingFieldAuthorizer.AuthorizeWriteAsync(System.T
 Modulus.Authorization.Audit.AuditingFieldAuthorizer.MaskFor(System.Type! type) -> Modulus.Authorization.Fields.FieldMask!
 Modulus.Authorization.Audit.AuditingFieldAuthorizer.Redact<T>(T projection) -> T
 Modulus.Authorization.Audit.AuditingResourceAuthorizer
-Modulus.Authorization.Audit.AuditingResourceAuthorizer.AuditingResourceAuthorizer(Modulus.Authorization.Resources.IResourceAuthorizer! inner, Modulus.Authorization.Audit.IAuditableActionRegistry! registry, Modulus.Authorization.Audit.IAuthorizationAuditWriter! auditWriter, Modulus.Core.Abstractions.ICurrentUser! currentUser, Modulus.Authorization.Resources.IResourcePolicyRegistry? policies = null) -> void
 Modulus.Authorization.Audit.AuditingResourceAuthorizer.AuthorizeAsync(object! resource, string! action, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Authorization.Resources.AccessDecision!>!
 Modulus.Authorization.Audit.AuthorizationAdministrativeChangeEvent
 Modulus.Authorization.Audit.AuthorizationAdministrativeChangeEvent.Action.get -> string!
@@ -687,8 +686,6 @@ Modulus.Authorization.Scopes.ScopeSubject.OrgSubtree(System.Guid unit) -> System
 Modulus.Authorization.Scopes.ScopeSubject.OrgUnits.get -> System.Collections.Generic.IReadOnlySet<System.Guid>!
 Modulus.Authorization.Scopes.ScopeSubject.UserId.get -> System.Guid?
 Modulus.BackgroundJobs.ChannelJobQueue
-Modulus.BackgroundJobs.ChannelJobQueue.AddRecurring<TJob, TArgs>(string! jobId, string! cronExpression, TArgs args) -> void
-Modulus.BackgroundJobs.ChannelJobQueue.ChannelJobQueue(System.IServiceProvider! sp, Microsoft.Extensions.Logging.ILogger<Modulus.BackgroundJobs.ChannelJobQueue!>! logger) -> void
 Modulus.BackgroundJobs.ChannelJobQueue.EnqueueAsync<TJob, TArgs>(TArgs args, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
 Modulus.BackgroundJobs.ChannelJobQueue.RemoveRecurring(string! jobId) -> void
 Modulus.BackgroundJobs.ChannelJobQueue.ScheduleAsync<TJob, TArgs>(TArgs args, System.TimeSpan delay, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
@@ -698,7 +695,6 @@ Modulus.BackgroundJobs.Extensions.BackgroundJobsExtensions
 Modulus.BackgroundJobs.IBackgroundJob<TArgs>
 Modulus.BackgroundJobs.IBackgroundJob<TArgs>.ExecuteAsync(TArgs args, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
 Modulus.BackgroundJobs.IJobScheduler
-Modulus.BackgroundJobs.IJobScheduler.AddRecurring<TJob, TArgs>(string! jobId, string! cronExpression, TArgs args) -> void
 Modulus.BackgroundJobs.IJobScheduler.EnqueueAsync<TJob, TArgs>(TArgs args, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
 Modulus.BackgroundJobs.IJobScheduler.RemoveRecurring(string! jobId) -> void
 Modulus.BackgroundJobs.IJobScheduler.ScheduleAsync<TJob, TArgs>(TArgs args, System.TimeSpan delay, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
@@ -870,7 +866,6 @@ Modulus.Settings.SettingManager.GetAsync<T>(string! name, T? fallback = default(
 Modulus.Settings.SettingManager.GetOrNullAsync(string! name, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<string?>!
 Modulus.Settings.SettingManager.RemoveAsync(string! name, Modulus.Settings.SettingScope scope, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
 Modulus.Settings.SettingManager.SetAsync(string! name, string? value, Modulus.Settings.SettingScope scope, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
-Modulus.Settings.SettingManager.SettingManager(Modulus.Settings.ISettingStore! store, Modulus.Settings.ISettingDefinitionRegistry! definitions, Modulus.Core.Abstractions.ICurrentTenant! currentTenant, Modulus.Core.Abstractions.ICurrentUser! currentUser) -> void
 Modulus.Settings.SettingScope
 Modulus.Settings.SettingScope.Global = 0 -> Modulus.Settings.SettingScope
 Modulus.Settings.SettingScope.Tenant = 1 -> Modulus.Settings.SettingScope
@@ -1261,7 +1256,6 @@ Modulus.AuditLogging.Security.SecurityAuditHead.Sequence.get -> long
 Modulus.AuditLogging.Security.SecurityAuditHead.Sequence.init -> void
 Modulus.AuditLogging.Security.SecurityAuditLog
 Modulus.AuditLogging.Security.SecurityAuditLog.Record(Modulus.Core.Abstractions.SecurityAuditEvent! auditEvent) -> void
-Modulus.AuditLogging.Security.SecurityAuditLog.SecurityAuditLog(Microsoft.Extensions.Options.IOptions<Modulus.AuditLogging.Security.SecurityAuditOptions!>! options, System.TimeProvider! clock, Microsoft.Extensions.Logging.ILogger<Modulus.AuditLogging.Security.SecurityAuditLog!>! logger, Modulus.Core.Abstractions.ICorrelationContext? correlation = null) -> void
 Modulus.AuditLogging.Security.SecurityAuditOptions
 Modulus.AuditLogging.Security.SecurityAuditOptions.AnchorFile.get -> string?
 Modulus.AuditLogging.Security.SecurityAuditOptions.AnchorFile.set -> void
@@ -1847,7 +1841,6 @@ Modulus.Secrets.TenantDatabaseResolver.TryGetCached(System.Guid tenantId, string
 const Modulus.Secrets.TenantDataStoreOptions.SectionName = "TenantDataStores" -> string!
 static Modulus.Secrets.TenantDataStoreRegistration.AddModulusTenantDatabases(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 Modulus.Authorization.PermissionRegistry.Add(string! permission, string! description, string![]? requires, Modulus.Core.Abstractions.PermissionSensitivity sensitivity, Modulus.Core.Abstractions.PermissionLifecycle lifecycle, string? replacedBy) -> void
-Modulus.Authorization.Resources.ResourceAuthorizer.ResourceAuthorizer(Modulus.Core.Abstractions.ICurrentUser! currentUser, Modulus.Core.Abstractions.ICurrentDataScope! dataScope, Modulus.Authorization.Resources.IResourcePolicyRegistry! registry, Modulus.Authorization.Scopes.IScopeEnforcer? scopes = null, Modulus.Authorization.Approval.IApprovalAuthorityEvaluator? approvals = null, Modulus.Core.Abstractions.IStepUpGate? stepUp = null, Modulus.Core.Abstractions.DataQuality.IDataQualityFindingSink? findings = null, Modulus.Core.Abstractions.ICurrentTenant? tenant = null) -> void
 Modulus.Authorization.Resources.ResourceRequest.MissingAttributes.get -> System.Collections.Generic.IReadOnlyCollection<string!>!
 const Modulus.Authorization.Resources.AccessReasonCodes.MissingAttribute = "MISSING_ATTRIBUTE" -> string!
 Modulus.Authorization.Resources.IResourceScopeGuard
@@ -1971,3 +1964,403 @@ Modulus.Authorization.Grants.PrincipalGrantQuery.AgentRole.get -> string?
 Modulus.Authorization.Grants.PrincipalGrantQuery.AgentRole.init -> void
 Modulus.Authorization.Grants.PrincipalGrantQuery.Deconstruct(out System.Guid? UserId, out System.Collections.Generic.IReadOnlyCollection<string!>! Roles, out string? AgentRole) -> void
 Modulus.Authorization.Grants.PrincipalGrantQuery.PrincipalGrantQuery(System.Guid? UserId, System.Collections.Generic.IReadOnlyCollection<string!>! Roles, string? AgentRole = null) -> void
+Modulus.BackgroundJobs.IJobInitiatorGuard.MayPerformAsync(System.Guid initiatorId, string! permission, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<bool>!
+Modulus.BackgroundJobs.IJobStageGuard
+Modulus.BackgroundJobs.IJobStageGuard.EnsureAllowedAsync(string! permission, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.BackgroundJobs.IJobStageGuard.HoldsAsync(string! permission, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.BackgroundJobs.JobContext.InitiatorId.get -> System.Guid?
+Modulus.BackgroundJobs.ChannelJobQueue.AddRecurring<TJob, TArgs>(string! jobId, string! cronExpression, TArgs args, System.DateTime? firstRunAt = null) -> void
+Modulus.BackgroundJobs.ChannelJobQueue.ChannelJobQueue(System.IServiceProvider! sp, Microsoft.Extensions.Logging.ILogger<Modulus.BackgroundJobs.ChannelJobQueue!>! logger, System.TimeSpan? recurringTick = null) -> void
+Modulus.BackgroundJobs.IJobScheduler.AddRecurring<TJob, TArgs>(string! jobId, string! cronExpression, TArgs args, System.DateTime? firstRunAt = null) -> void
+Modulus.Authorization.Audit.AccessDecisionAuditEvent.AgentId.get -> string?
+Modulus.Authorization.Audit.AccessDecisionAuditEvent.AgentId.init -> void
+Modulus.Authorization.Audit.AuditingResourceAuthorizer.AuditingResourceAuthorizer(Modulus.Authorization.Resources.IResourceAuthorizer! inner, Modulus.Authorization.Audit.IAuditableActionRegistry! registry, Modulus.Authorization.Audit.IAuthorizationAuditWriter! auditWriter, Modulus.Core.Abstractions.ICurrentUser! currentUser, Modulus.Authorization.Resources.IResourcePolicyRegistry? policies = null, Modulus.Core.Abstractions.ISecurityContext? security = null) -> void
+Modulus.AuditLogging.Security.SecurityAuditLog.SecurityAuditLog(Microsoft.Extensions.Options.IOptions<Modulus.AuditLogging.Security.SecurityAuditOptions!>! options, System.TimeProvider! clock, Microsoft.Extensions.Logging.ILogger<Modulus.AuditLogging.Security.SecurityAuditLog!>! logger, Modulus.Core.Abstractions.ICorrelationContext? correlation = null, Microsoft.AspNetCore.Http.IHttpContextAccessor? httpContextAccessor = null) -> void
+Modulus.BackgroundJobs.IJobInitiatorGuard.MayPerformAsAgentAsync(System.Guid initiatorId, string! agentRole, string! permission, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<bool>!
+Modulus.BackgroundJobs.JobContext.AgentId.get -> string?
+Modulus.BackgroundJobs.JobContext.AgentId.set -> void
+Modulus.BackgroundJobs.JobContext.Roles.get -> System.Collections.Generic.IReadOnlyCollection<string!>!
+Modulus.Authorization.Sharing.IRecordShareStore
+Modulus.Authorization.Sharing.IRecordShareStore.AddAsync(Modulus.Authorization.Sharing.RecordShare! share, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Authorization.Sharing.IRecordShareStore.FindAsync(System.Guid id, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Authorization.Sharing.RecordShare?>!
+Modulus.Authorization.Sharing.IRecordShareStore.ForRecordAsync(System.Guid? tenantId, string! resourceType, string! resourceId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Authorization.Sharing.RecordShare!>!>!
+Modulus.Authorization.Sharing.IRecordShareStore.UpdateAsync(Modulus.Authorization.Sharing.RecordShare! share, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Authorization.Sharing.InMemoryRecordShareStore
+Modulus.Authorization.Sharing.InMemoryRecordShareStore.AddAsync(Modulus.Authorization.Sharing.RecordShare! share, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Authorization.Sharing.InMemoryRecordShareStore.FindAsync(System.Guid id, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Authorization.Sharing.RecordShare?>!
+Modulus.Authorization.Sharing.InMemoryRecordShareStore.ForRecordAsync(System.Guid? tenantId, string! resourceType, string! resourceId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Authorization.Sharing.RecordShare!>!>!
+Modulus.Authorization.Sharing.InMemoryRecordShareStore.InMemoryRecordShareStore() -> void
+Modulus.Authorization.Sharing.InMemoryRecordShareStore.UpdateAsync(Modulus.Authorization.Sharing.RecordShare! share, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Authorization.Sharing.RecordShare
+Modulus.Authorization.Sharing.RecordShare.<Clone>$() -> Modulus.Authorization.Sharing.RecordShare!
+Modulus.Authorization.Sharing.RecordShare.CreatedAt.get -> System.DateTimeOffset
+Modulus.Authorization.Sharing.RecordShare.CreatedAt.init -> void
+Modulus.Authorization.Sharing.RecordShare.Deconstruct(out System.Guid Id, out System.Guid? TenantId, out string! ResourceType, out string! ResourceId, out System.Guid GranteeUserId, out System.Guid SharedByUserId, out System.DateTimeOffset CreatedAt, out System.DateTimeOffset ExpiresAt, out System.DateTimeOffset? RevokedAt) -> void
+Modulus.Authorization.Sharing.RecordShare.Equals(Modulus.Authorization.Sharing.RecordShare? other) -> bool
+Modulus.Authorization.Sharing.RecordShare.ExpiresAt.get -> System.DateTimeOffset
+Modulus.Authorization.Sharing.RecordShare.ExpiresAt.init -> void
+Modulus.Authorization.Sharing.RecordShare.GranteeUserId.get -> System.Guid
+Modulus.Authorization.Sharing.RecordShare.GranteeUserId.init -> void
+Modulus.Authorization.Sharing.RecordShare.Id.get -> System.Guid
+Modulus.Authorization.Sharing.RecordShare.Id.init -> void
+Modulus.Authorization.Sharing.RecordShare.IsActiveAt(System.DateTimeOffset now) -> bool
+Modulus.Authorization.Sharing.RecordShare.RecordShare(System.Guid Id, System.Guid? TenantId, string! ResourceType, string! ResourceId, System.Guid GranteeUserId, System.Guid SharedByUserId, System.DateTimeOffset CreatedAt, System.DateTimeOffset ExpiresAt, System.DateTimeOffset? RevokedAt) -> void
+Modulus.Authorization.Sharing.RecordShare.ResourceId.get -> string!
+Modulus.Authorization.Sharing.RecordShare.ResourceId.init -> void
+Modulus.Authorization.Sharing.RecordShare.ResourceType.get -> string!
+Modulus.Authorization.Sharing.RecordShare.ResourceType.init -> void
+Modulus.Authorization.Sharing.RecordShare.RevokedAt.get -> System.DateTimeOffset?
+Modulus.Authorization.Sharing.RecordShare.RevokedAt.init -> void
+Modulus.Authorization.Sharing.RecordShare.SharedByUserId.get -> System.Guid
+Modulus.Authorization.Sharing.RecordShare.SharedByUserId.init -> void
+Modulus.Authorization.Sharing.RecordShare.TenantId.get -> System.Guid?
+Modulus.Authorization.Sharing.RecordShare.TenantId.init -> void
+Modulus.Authorization.Sharing.RecordShareOptions
+Modulus.Authorization.Sharing.RecordShareOptions.MaxDuration.get -> System.TimeSpan
+Modulus.Authorization.Sharing.RecordShareOptions.MaxDuration.set -> void
+Modulus.Authorization.Sharing.RecordShareOptions.RecordShareOptions() -> void
+Modulus.Authorization.Sharing.RecordShares
+Modulus.Authorization.Sharing.RecordShares.CreateAsync(string! resourceType, string! resourceId, System.Guid granteeUserId, System.Guid sharedByUserId, System.TimeSpan duration, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Authorization.Sharing.RecordShare!>!
+Modulus.Authorization.Sharing.RecordShares.IsSharedWithAsync(string! resourceType, string! resourceId, System.Guid granteeUserId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.Authorization.Sharing.RecordShares.RecordShares(Modulus.Authorization.Sharing.IRecordShareStore! store, Modulus.Core.Abstractions.ICurrentTenant! tenant, System.TimeProvider! clock, Microsoft.Extensions.Options.IOptions<Modulus.Authorization.Sharing.RecordShareOptions!>! options) -> void
+Modulus.Authorization.Sharing.RecordShares.RevokeAsync(System.Guid shareId, System.Guid revokedByUserId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.Authorization.Sharing.RecordSharingExtensions
+override Modulus.Authorization.Sharing.RecordShare.Equals(object? obj) -> bool
+override Modulus.Authorization.Sharing.RecordShare.GetHashCode() -> int
+override Modulus.Authorization.Sharing.RecordShare.ToString() -> string!
+static Modulus.Authorization.Sharing.RecordShare.operator !=(Modulus.Authorization.Sharing.RecordShare? left, Modulus.Authorization.Sharing.RecordShare? right) -> bool
+static Modulus.Authorization.Sharing.RecordShare.operator ==(Modulus.Authorization.Sharing.RecordShare? left, Modulus.Authorization.Sharing.RecordShare? right) -> bool
+static Modulus.Authorization.Sharing.RecordSharingExtensions.AddRecordSharing(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<Modulus.Authorization.Sharing.RecordShareOptions!>? configure = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+Modulus.Authorization.Resources.ResourceAuthorizer.ResourceAuthorizer(Modulus.Core.Abstractions.ICurrentUser! currentUser, Modulus.Core.Abstractions.ICurrentDataScope! dataScope, Modulus.Authorization.Resources.IResourcePolicyRegistry! registry, Modulus.Authorization.Scopes.IScopeEnforcer? scopes = null, Modulus.Authorization.Approval.IApprovalAuthorityEvaluator? approvals = null, Modulus.Core.Abstractions.IStepUpGate? stepUp = null, Modulus.Core.Abstractions.DataQuality.IDataQualityFindingSink? findings = null, Modulus.Core.Abstractions.ICurrentTenant? tenant = null, Modulus.Authorization.Sharing.RecordShares? shares = null) -> void
+Modulus.Authorization.Sharing.RecordShareOptions.SharedAction.get -> string!
+Modulus.Authorization.Sharing.RecordShareOptions.SharedAction.set -> void
+Modulus.Authorization.Sharing.RecordShares.SharedAction.get -> string!
+const Modulus.Authorization.Resources.AccessReasonCodes.Shared = "SHARED" -> string!
+Modulus.Authorization.Sharing.RecordShares.ForRecordAsync(string! resourceType, string! resourceId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Authorization.Sharing.RecordShare!>!>!
+static Modulus.Authorization.Sharing.RecordShares.TryKeyOf(object! resource, out string! resourceType, out string! resourceId) -> bool
+Modulus.Authorization.Resources.ResourceAuthorizer.ExplainAsync(object! resource, string! action, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Authorization.Resources.PolicyExplanation!>!
+Modulus.AuditLogging.Security.ISecurityAuditStore.GetCheckpointAsync(System.Guid chainId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.AuditLogging.Security.SecurityAuditHead?>!
+Modulus.AuditLogging.Security.ISecurityAuditStore.PurgeAsync(Modulus.AuditLogging.Security.SecurityAuditHead! checkpoint, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.AuditLogging.Security.InMemorySecurityAuditStore.GetCheckpointAsync(System.Guid chainId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.AuditLogging.Security.SecurityAuditHead?>!
+Modulus.AuditLogging.Security.InMemorySecurityAuditStore.PurgeAsync(Modulus.AuditLogging.Security.SecurityAuditHead! checkpoint, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+static Modulus.AuditLogging.Security.SecurityAuditChain.VerifyFrom(System.Collections.Generic.IEnumerable<Modulus.AuditLogging.Security.SecurityAuditRecord!>! records, Modulus.AuditLogging.Security.SecurityAuditHead? checkpoint, Modulus.AuditLogging.Security.SecurityAuditHead? anchor = null) -> Modulus.AuditLogging.Security.SecurityAuditVerification!
+Modulus.AuditLogging.Security.Retention.ISecurityAuditArchive
+Modulus.AuditLogging.Security.Retention.ISecurityAuditArchive.ArchiveAsync(System.Guid chainId, System.Collections.Generic.IReadOnlyList<Modulus.AuditLogging.Security.SecurityAuditRecord!>! records, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.AuditLogging.Security.Retention.ISecurityAuditHolds
+Modulus.AuditLogging.Security.Retention.ISecurityAuditHolds.IsHeldAsync(System.Guid chainId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.AuditLogging.Security.Retention.ISecurityAuditHolds.PlaceAsync(System.Guid chainId, string! reason, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.AuditLogging.Security.Retention.ISecurityAuditHolds.ReleaseAsync(System.Guid chainId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.AuditLogging.Security.Retention.NoSecurityAuditArchive
+Modulus.AuditLogging.Security.Retention.NoSecurityAuditArchive.ArchiveAsync(System.Guid chainId, System.Collections.Generic.IReadOnlyList<Modulus.AuditLogging.Security.SecurityAuditRecord!>! records, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.AuditLogging.Security.Retention.NoSecurityAuditArchive.NoSecurityAuditArchive() -> void
+Modulus.AuditLogging.Security.Retention.SecurityAuditArchiveNotConfiguredException
+Modulus.AuditLogging.Security.Retention.SecurityAuditArchiveNotConfiguredException.SecurityAuditArchiveNotConfiguredException() -> void
+Modulus.AuditLogging.Security.Retention.SecurityAuditHolds
+Modulus.AuditLogging.Security.Retention.SecurityAuditHolds.IsHeldAsync(System.Guid chainId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.AuditLogging.Security.Retention.SecurityAuditHolds.PlaceAsync(System.Guid chainId, string! reason, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.AuditLogging.Security.Retention.SecurityAuditHolds.ReleaseAsync(System.Guid chainId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.AuditLogging.Security.Retention.SecurityAuditHolds.SecurityAuditHolds() -> void
+Modulus.AuditLogging.Security.Retention.SecurityAuditRetention
+Modulus.AuditLogging.Security.Retention.SecurityAuditRetention.RunAsync(System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.AuditLogging.Security.Retention.SecurityAuditRetentionResult!>!>!
+Modulus.AuditLogging.Security.Retention.SecurityAuditRetention.SecurityAuditRetention(Modulus.AuditLogging.Security.ISecurityAuditStore! store, Modulus.AuditLogging.Security.Retention.ISecurityAuditArchive! archive, Modulus.AuditLogging.Security.Retention.ISecurityAuditHolds! holds, System.TimeProvider! clock, Microsoft.Extensions.Options.IOptions<Modulus.AuditLogging.Security.Retention.SecurityAuditRetentionOptions!>! options) -> void
+Modulus.AuditLogging.Security.Retention.SecurityAuditRetentionOptions
+Modulus.AuditLogging.Security.Retention.SecurityAuditRetentionOptions.Retention.get -> System.TimeSpan
+Modulus.AuditLogging.Security.Retention.SecurityAuditRetentionOptions.Retention.set -> void
+Modulus.AuditLogging.Security.Retention.SecurityAuditRetentionOptions.SecurityAuditRetentionOptions() -> void
+Modulus.AuditLogging.Security.Retention.SecurityAuditRetentionOutcome
+Modulus.AuditLogging.Security.Retention.SecurityAuditRetentionOutcome.Held = 1 -> Modulus.AuditLogging.Security.Retention.SecurityAuditRetentionOutcome
+Modulus.AuditLogging.Security.Retention.SecurityAuditRetentionOutcome.NothingToPurge = 2 -> Modulus.AuditLogging.Security.Retention.SecurityAuditRetentionOutcome
+Modulus.AuditLogging.Security.Retention.SecurityAuditRetentionOutcome.Purged = 0 -> Modulus.AuditLogging.Security.Retention.SecurityAuditRetentionOutcome
+Modulus.AuditLogging.Security.Retention.SecurityAuditRetentionOutcome.RefusedInvalid = 3 -> Modulus.AuditLogging.Security.Retention.SecurityAuditRetentionOutcome
+Modulus.AuditLogging.Security.Retention.SecurityAuditRetentionOutcome.RefusedNoArchive = 4 -> Modulus.AuditLogging.Security.Retention.SecurityAuditRetentionOutcome
+Modulus.AuditLogging.Security.Retention.SecurityAuditRetentionResult
+Modulus.AuditLogging.Security.Retention.SecurityAuditRetentionResult.<Clone>$() -> Modulus.AuditLogging.Security.Retention.SecurityAuditRetentionResult!
+Modulus.AuditLogging.Security.Retention.SecurityAuditRetentionResult.ChainId.get -> System.Guid
+Modulus.AuditLogging.Security.Retention.SecurityAuditRetentionResult.ChainId.init -> void
+Modulus.AuditLogging.Security.Retention.SecurityAuditRetentionResult.Deconstruct(out System.Guid ChainId, out Modulus.AuditLogging.Security.Retention.SecurityAuditRetentionOutcome Outcome, out int Purged) -> void
+Modulus.AuditLogging.Security.Retention.SecurityAuditRetentionResult.Equals(Modulus.AuditLogging.Security.Retention.SecurityAuditRetentionResult? other) -> bool
+Modulus.AuditLogging.Security.Retention.SecurityAuditRetentionResult.Outcome.get -> Modulus.AuditLogging.Security.Retention.SecurityAuditRetentionOutcome
+Modulus.AuditLogging.Security.Retention.SecurityAuditRetentionResult.Outcome.init -> void
+Modulus.AuditLogging.Security.Retention.SecurityAuditRetentionResult.Purged.get -> int
+Modulus.AuditLogging.Security.Retention.SecurityAuditRetentionResult.Purged.init -> void
+Modulus.AuditLogging.Security.Retention.SecurityAuditRetentionResult.SecurityAuditRetentionResult(System.Guid ChainId, Modulus.AuditLogging.Security.Retention.SecurityAuditRetentionOutcome Outcome, int Purged) -> void
+override Modulus.AuditLogging.Security.Retention.SecurityAuditRetentionResult.Equals(object? obj) -> bool
+override Modulus.AuditLogging.Security.Retention.SecurityAuditRetentionResult.GetHashCode() -> int
+override Modulus.AuditLogging.Security.Retention.SecurityAuditRetentionResult.ToString() -> string!
+static Modulus.AuditLogging.Security.Retention.SecurityAuditRetentionResult.operator !=(Modulus.AuditLogging.Security.Retention.SecurityAuditRetentionResult? left, Modulus.AuditLogging.Security.Retention.SecurityAuditRetentionResult? right) -> bool
+static Modulus.AuditLogging.Security.Retention.SecurityAuditRetentionResult.operator ==(Modulus.AuditLogging.Security.Retention.SecurityAuditRetentionResult? left, Modulus.AuditLogging.Security.Retention.SecurityAuditRetentionResult? right) -> bool
+Modulus.AuditLogging.Security.Retention.SecurityAuditRetentionOptions.Enabled.get -> bool
+Modulus.AuditLogging.Security.Retention.SecurityAuditRetentionOptions.Enabled.set -> void
+Modulus.AuditLogging.Security.Retention.SecurityAuditRetentionOutcome.RefusedStore = 5 -> Modulus.AuditLogging.Security.Retention.SecurityAuditRetentionOutcome
+Modulus.AuditLogging.Security.Retention.SecurityAuditRetentionExtensions
+Modulus.AuditLogging.Security.Retention.SecurityAuditRetentionOptions.Interval.get -> System.TimeSpan
+Modulus.AuditLogging.Security.Retention.SecurityAuditRetentionOptions.Interval.set -> void
+Modulus.AuditLogging.Security.Retention.SecurityAuditRetentionOptions.LockLease.get -> System.TimeSpan
+Modulus.AuditLogging.Security.Retention.SecurityAuditRetentionOptions.LockLease.set -> void
+Modulus.AuditLogging.Security.Retention.SecurityAuditRetentionService
+Modulus.AuditLogging.Security.Retention.SecurityAuditRetentionService.RunOnceAsync(System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.AuditLogging.Security.Retention.SecurityAuditRetentionResult!>!>!
+Modulus.AuditLogging.Security.Retention.SecurityAuditRetentionService.SecurityAuditRetentionService(Modulus.AuditLogging.Security.Retention.SecurityAuditRetention! retention, System.IServiceProvider! services, Microsoft.Extensions.Options.IOptions<Modulus.AuditLogging.Security.Retention.SecurityAuditRetentionOptions!>! options, System.TimeProvider! clock, Microsoft.Extensions.Logging.ILogger<Modulus.AuditLogging.Security.Retention.SecurityAuditRetentionService!>! logger) -> void
+const Modulus.AuditLogging.Security.Retention.SecurityAuditRetentionOptions.SectionName = "Security:Retention" -> string!
+const Modulus.AuditLogging.Security.Retention.SecurityAuditRetentionService.LockName = "modulus:audit:retention:leader" -> string!
+static Modulus.AuditLogging.Security.Retention.SecurityAuditRetentionExtensions.AddModulusSecurityAuditRetention(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration? configuration = null, System.Action<Modulus.AuditLogging.Security.Retention.SecurityAuditRetentionOptions!>? configure = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+Modulus.Authorization.Grants.InMemoryPermissionGrantStore.Snapshot() -> System.Collections.Generic.IReadOnlyCollection<Modulus.Authorization.Grants.PermissionGrant!>!
+Modulus.AuditLogging.Security.Retention.ISecurityAuditArchive.ReadAsync(System.Guid chainId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.AuditLogging.Security.SecurityAuditRecord!>!>!
+Modulus.AuditLogging.Security.Retention.SecurityAuditRestoreValidation
+Modulus.AuditLogging.Security.Retention.SecurityAuditRestoreValidation.<Clone>$() -> Modulus.AuditLogging.Security.Retention.SecurityAuditRestoreValidation!
+Modulus.AuditLogging.Security.Retention.SecurityAuditRestoreValidation.ArchivedEntries.get -> long
+Modulus.AuditLogging.Security.Retention.SecurityAuditRestoreValidation.ArchivedEntries.init -> void
+Modulus.AuditLogging.Security.Retention.SecurityAuditRestoreValidation.Deconstruct(out bool IsValid, out long ArchivedEntries, out long LiveEntries, out string? Problem) -> void
+Modulus.AuditLogging.Security.Retention.SecurityAuditRestoreValidation.Equals(Modulus.AuditLogging.Security.Retention.SecurityAuditRestoreValidation? other) -> bool
+Modulus.AuditLogging.Security.Retention.SecurityAuditRestoreValidation.IsValid.get -> bool
+Modulus.AuditLogging.Security.Retention.SecurityAuditRestoreValidation.IsValid.init -> void
+Modulus.AuditLogging.Security.Retention.SecurityAuditRestoreValidation.LiveEntries.get -> long
+Modulus.AuditLogging.Security.Retention.SecurityAuditRestoreValidation.LiveEntries.init -> void
+Modulus.AuditLogging.Security.Retention.SecurityAuditRestoreValidation.Problem.get -> string?
+Modulus.AuditLogging.Security.Retention.SecurityAuditRestoreValidation.Problem.init -> void
+Modulus.AuditLogging.Security.Retention.SecurityAuditRestoreValidation.SecurityAuditRestoreValidation(bool IsValid, long ArchivedEntries, long LiveEntries, string? Problem) -> void
+Modulus.AuditLogging.Security.Retention.SecurityAuditRestoreValidator
+Modulus.AuditLogging.Security.Retention.SecurityAuditRestoreValidator.SecurityAuditRestoreValidator(Modulus.AuditLogging.Security.ISecurityAuditStore! store, Modulus.AuditLogging.Security.Retention.ISecurityAuditArchive! archive) -> void
+Modulus.AuditLogging.Security.Retention.SecurityAuditRestoreValidator.ValidateAsync(System.Guid chainId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.AuditLogging.Security.Retention.SecurityAuditRestoreValidation!>!
+override Modulus.AuditLogging.Security.Retention.SecurityAuditRestoreValidation.Equals(object? obj) -> bool
+override Modulus.AuditLogging.Security.Retention.SecurityAuditRestoreValidation.GetHashCode() -> int
+override Modulus.AuditLogging.Security.Retention.SecurityAuditRestoreValidation.ToString() -> string!
+static Modulus.AuditLogging.Security.Retention.SecurityAuditRestoreValidation.operator !=(Modulus.AuditLogging.Security.Retention.SecurityAuditRestoreValidation? left, Modulus.AuditLogging.Security.Retention.SecurityAuditRestoreValidation? right) -> bool
+static Modulus.AuditLogging.Security.Retention.SecurityAuditRestoreValidation.operator ==(Modulus.AuditLogging.Security.Retention.SecurityAuditRestoreValidation? left, Modulus.AuditLogging.Security.Retention.SecurityAuditRestoreValidation? right) -> bool
+
+Modulus.Authorization.StepUpOptions.PhishingResistantPermissions.get -> System.Collections.Generic.List<string!>!
+Modulus.Authorization.StepUpOptions.PhishingResistantPermissions.set -> void
+Modulus.Authorization.StepUpPolicy.IsSatisfiedBy(System.Security.Claims.ClaimsPrincipal! principal, string! permission) -> bool
+Modulus.Authorization.StepUpPolicy.RequiresPhishingResistant(string! permission) -> bool
+const Modulus.Settings.SettingsAdministrationEndpoints.GlobalManagePermission = "settings:global:manage" -> string!
+const Modulus.Settings.SettingsAdministrationEndpoints.ManagePermission = "settings:manage" -> string!
+Modulus.Settings.CachedSettingStore.GetOrNullAsync(string! name, System.Guid? tenantId, System.Guid? userId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<string?>!
+Modulus.Settings.CachedSettingStore
+Modulus.Settings.CachedSettingStore.RemoveAsync(string! name, System.Guid? tenantId, System.Guid? userId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Settings.CachedSettingStore.SetAsync(string! name, string? value, System.Guid? tenantId, System.Guid? userId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Settings.ISettingAdministration.ListAsync(System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Settings.SettingView!>!>!
+Modulus.Settings.ISettingAdministration
+Modulus.Settings.ISettingAdministration.RemoveAsync(string! name, Modulus.Settings.SettingScope scope, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Settings.ISettingAdministration.SetAsync(string! name, string? value, Modulus.Settings.SettingScope scope, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Settings.ISettingManager.ResolveAsync(string! name, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Settings.SettingResolution!>!
+Modulus.Settings.ModulusSettingsOptions.CacheDuration.get -> System.TimeSpan
+Modulus.Settings.ModulusSettingsOptions.CacheDuration.set -> void
+Modulus.Settings.ModulusSettingsOptions.ModulusSettingsOptions() -> void
+Modulus.Settings.ModulusSettingsOptions
+Modulus.Settings.ModulusSettingsOptions.Pinned.get -> System.Collections.Generic.Dictionary<string!, string!>!
+Modulus.Settings.ModulusSettingsOptions.Pinned.set -> void
+Modulus.Settings.SettingAdministration.ListAsync(System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Settings.SettingView!>!>!
+Modulus.Settings.SettingAdministration
+Modulus.Settings.SettingAdministration.RemoveAsync(string! name, Modulus.Settings.SettingScope scope, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Settings.SettingAdministration.SetAsync(string! name, string? value, Modulus.Settings.SettingScope scope, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Settings.SettingAdministration.SettingAdministration(Modulus.Settings.ISettingManager! manager, Modulus.Settings.ISettingDefinitionRegistry! definitions) -> void
+Modulus.Settings.SettingCacheVersion.Advance() -> void
+Modulus.Settings.SettingCacheVersion.Current.get -> long
+Modulus.Settings.SettingCacheVersion
+Modulus.Settings.SettingCacheVersion.SettingCacheVersion() -> void
+Modulus.Settings.SettingDefinition.AllowedScopes.get -> Modulus.Settings.SettingScopes
+Modulus.Settings.SettingDefinition.AllowedScopes.init -> void
+Modulus.Settings.SettingDefinition.AllowedValues.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Modulus.Settings.SettingDefinition.AllowedValues.init -> void
+Modulus.Settings.SettingDefinition.ValueType.get -> Modulus.Settings.SettingValueType
+Modulus.Settings.SettingDefinition.ValueType.init -> void
+Modulus.Settings.SettingManager.ResolveAsync(string! name, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Settings.SettingResolution!>!
+Modulus.Settings.SettingManager.SettingManager(Modulus.Settings.ISettingStore! store, Modulus.Settings.ISettingDefinitionRegistry! definitions, Modulus.Core.Abstractions.ICurrentTenant! currentTenant, Modulus.Core.Abstractions.ICurrentUser! currentUser, Microsoft.Extensions.Options.IOptions<Modulus.Settings.ModulusSettingsOptions!>! options) -> void
+Modulus.Settings.SettingResolution.<Clone>$() -> Modulus.Settings.SettingResolution!
+Modulus.Settings.SettingResolution.Deconstruct(out string! Name, out string? Value, out Modulus.Settings.SettingSource Source) -> void
+Modulus.Settings.SettingResolution.Equals(Modulus.Settings.SettingResolution? other) -> bool
+Modulus.Settings.SettingResolution.Name.get -> string!
+Modulus.Settings.SettingResolution.Name.init -> void
+Modulus.Settings.SettingResolution
+Modulus.Settings.SettingResolution.SettingResolution(string! Name, string? Value, Modulus.Settings.SettingSource Source) -> void
+Modulus.Settings.SettingResolution.Source.get -> Modulus.Settings.SettingSource
+Modulus.Settings.SettingResolution.Source.init -> void
+Modulus.Settings.SettingResolution.Value.get -> string?
+Modulus.Settings.SettingResolution.Value.init -> void
+Modulus.Settings.SettingsAdministrationEndpoints
+Modulus.Settings.SettingScopes.All = Modulus.Settings.SettingScopes.Global | Modulus.Settings.SettingScopes.Tenant | Modulus.Settings.SettingScopes.User -> Modulus.Settings.SettingScopes
+Modulus.Settings.SettingScopes.Global = 1 -> Modulus.Settings.SettingScopes
+Modulus.Settings.SettingScopes.None = 0 -> Modulus.Settings.SettingScopes
+Modulus.Settings.SettingScopes
+Modulus.Settings.SettingScopes.Tenant = 2 -> Modulus.Settings.SettingScopes
+Modulus.Settings.SettingScopes.User = 4 -> Modulus.Settings.SettingScopes
+Modulus.Settings.SettingSource.Default = 1 -> Modulus.Settings.SettingSource
+Modulus.Settings.SettingSource.Global = 2 -> Modulus.Settings.SettingSource
+Modulus.Settings.SettingSource.None = 0 -> Modulus.Settings.SettingSource
+Modulus.Settings.SettingSource
+Modulus.Settings.SettingSource.Pinned = 5 -> Modulus.Settings.SettingSource
+Modulus.Settings.SettingSource.Tenant = 3 -> Modulus.Settings.SettingSource
+Modulus.Settings.SettingSource.User = 4 -> Modulus.Settings.SettingSource
+Modulus.Settings.SettingValueRequest.<Clone>$() -> Modulus.Settings.SettingValueRequest!
+Modulus.Settings.SettingValueRequest.Deconstruct(out string? Value) -> void
+Modulus.Settings.SettingValueRequest.Equals(Modulus.Settings.SettingValueRequest? other) -> bool
+Modulus.Settings.SettingValueRequest
+Modulus.Settings.SettingValueRequest.SettingValueRequest(string? Value) -> void
+Modulus.Settings.SettingValueRequest.Value.get -> string?
+Modulus.Settings.SettingValueRequest.Value.init -> void
+Modulus.Settings.SettingValueType.Boolean = 1 -> Modulus.Settings.SettingValueType
+Modulus.Settings.SettingValueType.Decimal = 4 -> Modulus.Settings.SettingValueType
+Modulus.Settings.SettingValueType.Guid = 5 -> Modulus.Settings.SettingValueType
+Modulus.Settings.SettingValueType.Int32 = 2 -> Modulus.Settings.SettingValueType
+Modulus.Settings.SettingValueType.Int64 = 3 -> Modulus.Settings.SettingValueType
+Modulus.Settings.SettingValueType
+Modulus.Settings.SettingValueType.String = 0 -> Modulus.Settings.SettingValueType
+Modulus.Settings.SettingValueType.TimeSpan = 6 -> Modulus.Settings.SettingValueType
+Modulus.Settings.SettingView.AllowedScopes.get -> Modulus.Settings.SettingScopes
+Modulus.Settings.SettingView.AllowedScopes.init -> void
+Modulus.Settings.SettingView.AllowedValues.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Modulus.Settings.SettingView.AllowedValues.init -> void
+Modulus.Settings.SettingView.<Clone>$() -> Modulus.Settings.SettingView!
+Modulus.Settings.SettingView.Deconstruct(out string! Name, out string? DisplayName, out string? Description, out Modulus.Settings.SettingValueType ValueType, out System.Collections.Generic.IReadOnlyList<string!>! AllowedValues, out Modulus.Settings.SettingScopes AllowedScopes, out string? DefaultValue, out string? EffectiveValue, out Modulus.Settings.SettingSource Source, out bool IsPinned) -> void
+Modulus.Settings.SettingView.DefaultValue.get -> string?
+Modulus.Settings.SettingView.DefaultValue.init -> void
+Modulus.Settings.SettingView.Description.get -> string?
+Modulus.Settings.SettingView.Description.init -> void
+Modulus.Settings.SettingView.DisplayName.get -> string?
+Modulus.Settings.SettingView.DisplayName.init -> void
+Modulus.Settings.SettingView.EffectiveValue.get -> string?
+Modulus.Settings.SettingView.EffectiveValue.init -> void
+Modulus.Settings.SettingView.Equals(Modulus.Settings.SettingView? other) -> bool
+Modulus.Settings.SettingView.IsPinned.get -> bool
+Modulus.Settings.SettingView.IsPinned.init -> void
+Modulus.Settings.SettingView.Name.get -> string!
+Modulus.Settings.SettingView.Name.init -> void
+Modulus.Settings.SettingView
+Modulus.Settings.SettingView.SettingView(string! Name, string? DisplayName, string? Description, Modulus.Settings.SettingValueType ValueType, System.Collections.Generic.IReadOnlyList<string!>! AllowedValues, Modulus.Settings.SettingScopes AllowedScopes, string? DefaultValue, string? EffectiveValue, Modulus.Settings.SettingSource Source, bool IsPinned) -> void
+Modulus.Settings.SettingView.Source.get -> Modulus.Settings.SettingSource
+Modulus.Settings.SettingView.Source.init -> void
+Modulus.Settings.SettingView.ValueType.get -> Modulus.Settings.SettingValueType
+Modulus.Settings.SettingView.ValueType.init -> void
+override Modulus.Settings.SettingResolution.Equals(object? obj) -> bool
+override Modulus.Settings.SettingResolution.GetHashCode() -> int
+override Modulus.Settings.SettingResolution.ToString() -> string!
+override Modulus.Settings.SettingValueRequest.Equals(object? obj) -> bool
+override Modulus.Settings.SettingValueRequest.GetHashCode() -> int
+override Modulus.Settings.SettingValueRequest.ToString() -> string!
+override Modulus.Settings.SettingView.Equals(object? obj) -> bool
+override Modulus.Settings.SettingView.GetHashCode() -> int
+override Modulus.Settings.SettingView.ToString() -> string!
+static Modulus.Settings.SettingResolution.operator !=(Modulus.Settings.SettingResolution? left, Modulus.Settings.SettingResolution? right) -> bool
+static Modulus.Settings.SettingResolution.operator ==(Modulus.Settings.SettingResolution? left, Modulus.Settings.SettingResolution? right) -> bool
+static Modulus.Settings.SettingsAdministrationEndpoints.AddModulusSettingAdministration(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.Settings.SettingsAdministrationEndpoints.MapModulusSettingAdministration(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! prefix = "/api/settings") -> Microsoft.AspNetCore.Routing.RouteGroupBuilder!
+static Modulus.Settings.SettingsExtensions.AddModulusSettings(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.Settings.SettingValueRequest.operator !=(Modulus.Settings.SettingValueRequest? left, Modulus.Settings.SettingValueRequest? right) -> bool
+static Modulus.Settings.SettingValueRequest.operator ==(Modulus.Settings.SettingValueRequest? left, Modulus.Settings.SettingValueRequest? right) -> bool
+static Modulus.Settings.SettingView.operator !=(Modulus.Settings.SettingView? left, Modulus.Settings.SettingView? right) -> bool
+static Modulus.Settings.SettingView.operator ==(Modulus.Settings.SettingView? left, Modulus.Settings.SettingView? right) -> bool
+const Modulus.Navigation.NavigationDefinition.MaxDepth = 8 -> int
+const Modulus.Navigation.NavigationDefinition.MaxTitleLength = 128 -> int
+const Modulus.Navigation.NavigationEndpoints.ManagePermission = "navigation:manage" -> string!
+Modulus.Navigation.INavigationContributor
+Modulus.Navigation.INavigationContributor.Contribute(Modulus.Navigation.NavigationBuilder! navigation) -> void
+Modulus.Navigation.INavigationService
+Modulus.Navigation.INavigationService.GetMenuAsync(System.Security.Claims.ClaimsPrincipal! user, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Navigation.NavigationNode!>!>!
+Modulus.Navigation.INavigationService.ListAsync(System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Navigation.NavigationDefinitionView!>!>!
+Modulus.Navigation.INavigationService.RemoveOverrideAsync(string! key, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Navigation.INavigationService.SetOverrideAsync(string! key, Modulus.Navigation.NavigationOverride! change, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Navigation.NavigationBuilder
+Modulus.Navigation.NavigationBuilder.Add(Modulus.Navigation.NavigationItem! item) -> Modulus.Navigation.NavigationBuilder!
+Modulus.Navigation.NavigationBuilder.Items.get -> System.Collections.Generic.IReadOnlyList<Modulus.Navigation.NavigationItem!>!
+Modulus.Navigation.NavigationBuilder.NavigationBuilder() -> void
+Modulus.Navigation.NavigationDefinition
+Modulus.Navigation.NavigationDefinition.ByKey.get -> System.Collections.Generic.IReadOnlyDictionary<string!, Modulus.Navigation.NavigationItem!>!
+Modulus.Navigation.NavigationDefinition.Items.get -> System.Collections.Generic.IReadOnlyList<Modulus.Navigation.NavigationItem!>!
+Modulus.Navigation.NavigationDefinitionView
+Modulus.Navigation.NavigationDefinitionView.<Clone>$() -> Modulus.Navigation.NavigationDefinitionView!
+Modulus.Navigation.NavigationDefinitionView.Deconstruct(out Modulus.Navigation.NavigationItem! Item, out Modulus.Navigation.NavigationOverride? Override) -> void
+Modulus.Navigation.NavigationDefinitionView.Equals(Modulus.Navigation.NavigationDefinitionView? other) -> bool
+Modulus.Navigation.NavigationDefinitionView.Item.get -> Modulus.Navigation.NavigationItem!
+Modulus.Navigation.NavigationDefinitionView.Item.init -> void
+Modulus.Navigation.NavigationDefinitionView.NavigationDefinitionView(Modulus.Navigation.NavigationItem! Item, Modulus.Navigation.NavigationOverride? Override) -> void
+Modulus.Navigation.NavigationDefinitionView.Override.get -> Modulus.Navigation.NavigationOverride?
+Modulus.Navigation.NavigationDefinitionView.Override.init -> void
+Modulus.Navigation.NavigationEndpoints
+Modulus.Navigation.NavigationExtensions
+Modulus.Navigation.NavigationItem
+Modulus.Navigation.NavigationItem.<Clone>$() -> Modulus.Navigation.NavigationItem!
+Modulus.Navigation.NavigationItem.Deconstruct(out string! Key, out string! Title) -> void
+Modulus.Navigation.NavigationItem.Equals(Modulus.Navigation.NavigationItem? other) -> bool
+Modulus.Navigation.NavigationItem.Icon.get -> string?
+Modulus.Navigation.NavigationItem.Icon.init -> void
+Modulus.Navigation.NavigationItem.Key.get -> string!
+Modulus.Navigation.NavigationItem.Key.init -> void
+Modulus.Navigation.NavigationItem.NavigationItem(string! Key, string! Title) -> void
+Modulus.Navigation.NavigationItem.Order.get -> int
+Modulus.Navigation.NavigationItem.Order.init -> void
+Modulus.Navigation.NavigationItem.ParentKey.get -> string?
+Modulus.Navigation.NavigationItem.ParentKey.init -> void
+Modulus.Navigation.NavigationItem.Permission.get -> string?
+Modulus.Navigation.NavigationItem.Permission.init -> void
+Modulus.Navigation.NavigationItem.Title.get -> string!
+Modulus.Navigation.NavigationItem.Title.init -> void
+Modulus.Navigation.NavigationItem.Url.get -> string?
+Modulus.Navigation.NavigationItem.Url.init -> void
+Modulus.Navigation.NavigationNode
+Modulus.Navigation.NavigationNode.Children.get -> System.Collections.Generic.IReadOnlyList<Modulus.Navigation.NavigationNode!>!
+Modulus.Navigation.NavigationNode.Children.init -> void
+Modulus.Navigation.NavigationNode.<Clone>$() -> Modulus.Navigation.NavigationNode!
+Modulus.Navigation.NavigationNode.Deconstruct(out string! Key, out string! Title, out string? Url, out string? Icon, out System.Collections.Generic.IReadOnlyList<Modulus.Navigation.NavigationNode!>! Children) -> void
+Modulus.Navigation.NavigationNode.Equals(Modulus.Navigation.NavigationNode? other) -> bool
+Modulus.Navigation.NavigationNode.Icon.get -> string?
+Modulus.Navigation.NavigationNode.Icon.init -> void
+Modulus.Navigation.NavigationNode.Key.get -> string!
+Modulus.Navigation.NavigationNode.Key.init -> void
+Modulus.Navigation.NavigationNode.NavigationNode(string! Key, string! Title, string? Url, string? Icon, System.Collections.Generic.IReadOnlyList<Modulus.Navigation.NavigationNode!>! Children) -> void
+Modulus.Navigation.NavigationNode.Title.get -> string!
+Modulus.Navigation.NavigationNode.Title.init -> void
+Modulus.Navigation.NavigationNode.Url.get -> string?
+Modulus.Navigation.NavigationNode.Url.init -> void
+Modulus.Navigation.NavigationOverride
+Modulus.Navigation.NavigationOverride.<Clone>$() -> Modulus.Navigation.NavigationOverride!
+Modulus.Navigation.NavigationOverride.Deconstruct(out bool? Hidden, out string? Title, out int? Order, out string? ParentKey) -> void
+Modulus.Navigation.NavigationOverride.Equals(Modulus.Navigation.NavigationOverride? other) -> bool
+Modulus.Navigation.NavigationOverride.Hidden.get -> bool?
+Modulus.Navigation.NavigationOverride.Hidden.init -> void
+Modulus.Navigation.NavigationOverride.NavigationOverride(bool? Hidden = null, string? Title = null, int? Order = null, string? ParentKey = null) -> void
+Modulus.Navigation.NavigationOverride.Order.get -> int?
+Modulus.Navigation.NavigationOverride.Order.init -> void
+Modulus.Navigation.NavigationOverride.ParentKey.get -> string?
+Modulus.Navigation.NavigationOverride.ParentKey.init -> void
+Modulus.Navigation.NavigationOverride.Title.get -> string?
+Modulus.Navigation.NavigationOverride.Title.init -> void
+Modulus.Navigation.NavigationRegistry
+Modulus.Navigation.NavigationRegistry.Definition.get -> Modulus.Navigation.NavigationDefinition!
+Modulus.Navigation.NavigationRegistry.NavigationRegistry(System.Collections.Generic.IEnumerable<Modulus.Navigation.INavigationContributor!>! contributors) -> void
+Modulus.Navigation.NavigationService
+Modulus.Navigation.NavigationService.GetMenuAsync(System.Security.Claims.ClaimsPrincipal! user, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Navigation.NavigationNode!>!>!
+Modulus.Navigation.NavigationService.ListAsync(System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Navigation.NavigationDefinitionView!>!>!
+Modulus.Navigation.NavigationService.NavigationService(Modulus.Navigation.NavigationRegistry! registry, Modulus.Settings.ISettingManager! settings, Microsoft.AspNetCore.Authorization.IAuthorizationService! authorization) -> void
+Modulus.Navigation.NavigationService.RemoveOverrideAsync(string! key, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Navigation.NavigationService.SetOverrideAsync(string! key, Modulus.Navigation.NavigationOverride! change, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+override Modulus.Navigation.NavigationDefinitionView.Equals(object? obj) -> bool
+override Modulus.Navigation.NavigationDefinitionView.GetHashCode() -> int
+override Modulus.Navigation.NavigationDefinitionView.ToString() -> string!
+override Modulus.Navigation.NavigationItem.Equals(object? obj) -> bool
+override Modulus.Navigation.NavigationItem.GetHashCode() -> int
+override Modulus.Navigation.NavigationItem.ToString() -> string!
+override Modulus.Navigation.NavigationNode.Equals(object? obj) -> bool
+override Modulus.Navigation.NavigationNode.GetHashCode() -> int
+override Modulus.Navigation.NavigationNode.ToString() -> string!
+override Modulus.Navigation.NavigationOverride.Equals(object? obj) -> bool
+override Modulus.Navigation.NavigationOverride.GetHashCode() -> int
+override Modulus.Navigation.NavigationOverride.ToString() -> string!
+static Modulus.Navigation.NavigationDefinition.Build(System.Collections.Generic.IEnumerable<Modulus.Navigation.NavigationItem!>! items) -> Modulus.Navigation.NavigationDefinition!
+static Modulus.Navigation.NavigationDefinitionView.operator !=(Modulus.Navigation.NavigationDefinitionView? left, Modulus.Navigation.NavigationDefinitionView? right) -> bool
+static Modulus.Navigation.NavigationDefinitionView.operator ==(Modulus.Navigation.NavigationDefinitionView? left, Modulus.Navigation.NavigationDefinitionView? right) -> bool
+static Modulus.Navigation.NavigationEndpoints.AddModulusNavigationAdministration(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.Navigation.NavigationEndpoints.MapModulusNavigation(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! prefix = "/api/navigation") -> Microsoft.AspNetCore.Routing.RouteGroupBuilder!
+static Modulus.Navigation.NavigationExtensions.AddModulusNavigation(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<Modulus.Navigation.NavigationBuilder!>? configure = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.Navigation.NavigationExtensions.AddNavigationContributor<T>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.Navigation.NavigationItem.operator !=(Modulus.Navigation.NavigationItem? left, Modulus.Navigation.NavigationItem? right) -> bool
+static Modulus.Navigation.NavigationItem.operator ==(Modulus.Navigation.NavigationItem? left, Modulus.Navigation.NavigationItem? right) -> bool
+static Modulus.Navigation.NavigationNode.operator !=(Modulus.Navigation.NavigationNode? left, Modulus.Navigation.NavigationNode? right) -> bool
+static Modulus.Navigation.NavigationNode.operator ==(Modulus.Navigation.NavigationNode? left, Modulus.Navigation.NavigationNode? right) -> bool
+static Modulus.Navigation.NavigationOverride.operator !=(Modulus.Navigation.NavigationOverride? left, Modulus.Navigation.NavigationOverride? right) -> bool
+static Modulus.Navigation.NavigationOverride.operator ==(Modulus.Navigation.NavigationOverride? left, Modulus.Navigation.NavigationOverride? right) -> bool
+static Modulus.Navigation.NavigationService.OverrideSetting(string! key) -> string!
+Modulus.Settings.CachedSettingStore.CachedSettingStore(Modulus.Settings.ISettingStore! inner, Microsoft.Extensions.Caching.Memory.IMemoryCache! cache, Modulus.Settings.SettingCacheVersion! version, System.TimeSpan duration, Modulus.Settings.ISettingChangeNotifier? notifier = null) -> void
+Modulus.Settings.ISettingChangeNotifier
+Modulus.Settings.ISettingChangeNotifier.NotifyChangedAsync(System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Settings.NullSettingChangeNotifier
+Modulus.Settings.NullSettingChangeNotifier.NotifyChangedAsync(System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Settings.NullSettingChangeNotifier.NullSettingChangeNotifier() -> void

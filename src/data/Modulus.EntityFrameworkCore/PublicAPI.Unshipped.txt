@@ -240,3 +240,8 @@ Modulus.EntityFrameworkCore.Isolation.TenantDatabaseProviderOptions.TenantDataba
 Modulus.EntityFrameworkCore.Isolation.TenantDatabaseSetup
 static Modulus.EntityFrameworkCore.Isolation.TenantDatabaseProviderExtensions.AddTenantDatabaseProvider(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, string! providerKey, System.Func<string!, System.Data.Common.DbConnection!>! createConnection, System.Action<string!>? clearPool = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static Modulus.EntityFrameworkCore.Isolation.TenantDatabaseSetup.Use(System.Guid tenantId, string! storeKey, string! providerKey, string! connectionString) -> System.IDisposable!
+Modulus.EntityFrameworkCore.EfReadRepository<T>.ListKeysetAsync<TKey, TResult>(Modulus.Data.Abstractions.ISpecification<T!>! spec, System.Linq.Expressions.Expression<System.Func<T!, TKey>!>! keySelector, System.Linq.Expressions.Expression<System.Func<T!, TResult>!>! selector, TKey? after, int size, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Modulus.Core.Abstractions.Common.KeysetPage<TResult>!>!
+Modulus.EntityFrameworkCore.GuidV7ValueGenerator
+Modulus.EntityFrameworkCore.GuidV7ValueGenerator.GuidV7ValueGenerator() -> void
+override Modulus.EntityFrameworkCore.GuidV7ValueGenerator.GeneratesTemporaryValues.get -> bool
+override Modulus.EntityFrameworkCore.GuidV7ValueGenerator.Next(Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry! entry) -> System.Guid

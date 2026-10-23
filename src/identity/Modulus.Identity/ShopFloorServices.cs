@@ -156,7 +156,8 @@ internal sealed class ShopFloorAccountService<TUser, TRole>(
     RoleManager<TRole> roleManager,
     IOptions<ShopFloorOptions> options,
     ICurrentTenant tenant,
-    IFieldAuthorizer? fieldAuthorizer = null)
+    IFieldAuthorizer? fieldAuthorizer = null,
+    ICurrentUser? currentUser = null)
     : IShopFloorAccountService
     where TUser : ModulusUser, new()
     where TRole : ModulusRole
@@ -172,6 +173,41 @@ internal sealed class ShopFloorAccountService<TUser, TRole>(
         string? lastName = null,
         IEnumerable<string>? roles = null,
         CancellationToken ct = default)
+    {
+        RequireAccountAdministrator();
+        // Handing out a role hands out its permissions: the caller must be allowed to grant the roles they name.
+        if (!RoleAssignmentRules.MayAssign(currentUser, roles))
+            throw new Modulus.Core.Abstractions.Exceptions.ForbiddenException(
+                RoleAssignmentRules.GrantAnyPermission,
+                "Assigning roles to a shop-floor account needs authorization:grant-any.");
+
+        // Single-account path (admin): the caller must be allowed to write every field this account sets.
+        if (fieldAuthorizer is not null)
+            await fieldAuthorizer.EnsureWriteAllowedAsync(typeof(TUser), ImportedFields, ct);
+
+        return await CreateCoreAsync(tenantId, employeeCode, pin, firstName, lastName, roles, ct);
+    }
+
+    // The field check is done by the caller: an import checks its whole batch once, before the first account is created.
+    // Decided (A7-2 follow-up): creating shop-floor accounts, singly or by import, is an administrator's job. The caller must hold
+    // authorization:manage. With no current user (a background process) the check is not made, as for the field checks.
+    private const string AccountAdministratorPermission = "authorization:manage";
+
+    private void RequireAccountAdministrator()
+    {
+        if (currentUser is not null && !currentUser.HasPermission(AccountAdministratorPermission))
+            throw new Modulus.Core.Abstractions.Exceptions.ForbiddenException(
+                AccountAdministratorPermission, "Creating shop-floor accounts needs authorization:manage.");
+    }
+
+    private async Task<IdentityResult> CreateCoreAsync(
+        Guid tenantId,
+        string employeeCode,
+        string pin,
+        string? firstName,
+        string? lastName,
+        IEnumerable<string>? roles,
+        CancellationToken ct)
     {
         if (tenantId == Guid.Empty)
             return Fail("TenantRequired", "A shop-floor account belongs to a company.");
@@ -241,9 +277,15 @@ internal sealed class ShopFloorAccountService<TUser, TRole>(
     public async Task<IReadOnlyList<ShopFloorImportResult>> ImportAsync(Guid tenantId, IEnumerable<ShopFloorImportRow> rows, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(rows);
+        RequireAccountAdministrator();
         var batch = rows.ToList();
 
-        // All or nothing: the fields of every row are checked as the current caller before the first account is created.
+        // All or nothing: the roles and fields of every row are checked as the current caller before the first account is created.
+        if (!RoleAssignmentRules.MayAssign(currentUser, batch.SelectMany(r => (IEnumerable<string>?)r.Roles ?? Array.Empty<string>())))
+            throw new Modulus.Core.Abstractions.Exceptions.ForbiddenException(
+                RoleAssignmentRules.GrantAnyPermission,
+                "Importing shop-floor accounts with roles needs authorization:grant-any.");
+
         if (fieldAuthorizer is not null)
             await fieldAuthorizer.EnsureBatchWriteAllowedAsync(typeof(TUser), batch.Select(_ => ImportedFields), ct);
 
@@ -252,7 +294,7 @@ internal sealed class ShopFloorAccountService<TUser, TRole>(
         {
             ct.ThrowIfCancellationRequested();
             var pin = string.IsNullOrEmpty(row.InitialPin) ? ShopFloorRules.GeneratePin(options.Value) : row.InitialPin;
-            var created = await CreateAsync(tenantId, row.EmployeeCode, pin, row.FirstName, row.LastName, row.Roles, ct);
+            var created = await CreateCoreAsync(tenantId, row.EmployeeCode, pin, row.FirstName, row.LastName, row.Roles, ct);
             if (!created.Succeeded)
             {
                 results.Add(new ShopFloorImportResult(row.EmployeeCode, null, null, string.Join(" ", created.Errors.Select(e => e.Description))));

@@ -55,6 +55,13 @@ public sealed class ModulusIdentityOptions
     public List<string> AllowedPostLogoutRedirectUris { get; set; } = [];
 
     /// <summary>
+    /// The audiences (<c>aud</c>) of the access tokens this server issues, for example <c>api://shop</c>. Empty by default, which keeps the
+    /// token without an audience claim. A resource server that checks its audience (such as the provisioning host's
+    /// <c>Provisioning:Audience</c>) needs one of these names.
+    /// </summary>
+    public List<string> Audiences { get; set; } = [];
+
+    /// <summary>
     /// Enables the OAuth 2.0 Resource Owner Password Credentials (ROPC) grant.
     /// <b>Off by default</b> — ROPC is removed in OAuth 2.1 and exposes user
     /// credentials directly to the client. Turn it on only for first-party,

@@ -75,6 +75,10 @@ public sealed class InMemoryPermissionGrantStore : IPermissionGrantStore
         return result;
     }
 
+    /// <summary>Every grant held, in no particular order. Used to replay a startup seed into a durable store.</summary>
+    public IReadOnlyCollection<PermissionGrant> Snapshot()
+        => _grants.Values.SelectMany(bucket => bucket.Values).ToList();
+
     private void Collect(string holderKey, List<PermissionGrant> into)
     {
         if (_grants.TryGetValue(holderKey, out var byPermission))

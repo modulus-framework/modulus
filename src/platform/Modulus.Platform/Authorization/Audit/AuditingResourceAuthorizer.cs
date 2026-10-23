@@ -17,7 +17,8 @@ public sealed class AuditingResourceAuthorizer(
     IAuditableActionRegistry registry,
     IAuthorizationAuditWriter auditWriter,
     ICurrentUser currentUser,
-    IResourcePolicyRegistry? policies = null)
+    IResourcePolicyRegistry? policies = null,
+    ISecurityContext? security = null)
     : IResourceAuthorizer
 {
     public async Task<AccessDecision> AuthorizeAsync(
@@ -40,6 +41,7 @@ public sealed class AuditingResourceAuthorizer(
                 {
                     PolicyVersion = policy?.Version,
                     PolicyFingerprint = policy?.Fingerprint,
+                    AgentId = security?.Agent?.AgentId,
                 },
                 ct);
         }

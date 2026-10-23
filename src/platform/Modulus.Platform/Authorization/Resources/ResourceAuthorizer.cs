@@ -90,7 +90,8 @@ public sealed class ResourceAuthorizer(
     Approval.IApprovalAuthorityEvaluator? approvals = null,
     IStepUpGate? stepUp = null,
     IDataQualityFindingSink? findings = null,
-    ICurrentTenant? tenant = null) : IResourceAuthorizer
+    ICurrentTenant? tenant = null,
+    Sharing.RecordShares? shares = null) : IResourceAuthorizer
 {
     /// <summary>
     /// Explains the decision for <paramref name="action"/> on <paramref name="resource"/>: the decision plus which
@@ -113,7 +114,25 @@ public sealed class ResourceAuthorizer(
         return policy.Explain(BuildRequest(resource, action));
     }
 
-    public Task<AccessDecision> AuthorizeAsync(
+    /// <summary>
+    /// <see cref="Explain"/>, and it also answers for a live record share (A8-1): where a share is what allows the action, the decision is
+    /// <see cref="AccessReasonCodes.Shared"/> and the matched rules are still listed. Same audience as <see cref="Explain"/>.
+    /// </summary>
+    public async Task<PolicyExplanation> ExplainAsync(object resource, string action, CancellationToken ct = default)
+    {
+        var explanation = Explain(resource, action);
+        if (explanation.Decision.IsAllowed || registry.Find(resource.GetType()) is not { } policy)
+            return explanation;
+
+        var request = BuildRequest(resource, action);
+        policy.Evaluate(request, out var explicitDeny);
+        if (explicitDeny || !await SharedAccessAsync(resource, action, explanation.Decision, ct).ConfigureAwait(false))
+            return explanation;
+
+        return new PolicyExplanation(new AccessDecision(true, null, AccessReasonCodes.Shared), explanation.Rules);
+    }
+
+    public async Task<AccessDecision> AuthorizeAsync(
         object resource, string action, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(resource);
@@ -121,12 +140,17 @@ public sealed class ResourceAuthorizer(
 
         var policy = registry.Find(resource.GetType());
         if (policy is null)
-            return Task.FromResult(AccessDecision.Deny(
+            return AccessDecision.Deny(
                 AccessReasonCodes.MetadataMissing,
-                $"no resource policy is registered for '{resource.GetType().Name}'"));
+                $"no resource policy is registered for '{resource.GetType().Name}'");
 
         var request = BuildRequest(resource, action);
-        var decision = policy.Evaluate(request);
+        var decision = policy.Evaluate(request, out var explicitDeny);
+
+        // A live share of this record gives its one read action where no rule granted it (A8-1). An explicit deny, a tenant mismatch,
+        // a missing attribute or an approval or step-up refusal still stands: a share never overrides those.
+        if (!decision.IsAllowed && !explicitDeny && await SharedAccessAsync(resource, action, decision, ct).ConfigureAwait(false))
+            return new AccessDecision(true, null, AccessReasonCodes.Shared);
 
         // A refusal caused by a missing record attribute is a data-quality problem as well as a denial: the record cannot be
         // authorized until someone fills the attribute in. The finding carries names and the record id, never the values.
@@ -140,7 +164,28 @@ public sealed class ResourceAuthorizer(
                 [.. request.MissingAttributes.Order(StringComparer.Ordinal)]));
         }
 
-        return Task.FromResult(decision);
+        return decision;
+    }
+
+    // Only the denials that mean "no grant matched" can be overridden by a share.
+    private static readonly HashSet<string> s_shareableDenials = new(StringComparer.Ordinal)
+    {
+        AccessReasonCodes.PermissionNotGranted,
+        AccessReasonCodes.ScopeRestricted,
+        AccessReasonCodes.OutOfScope,
+        AccessReasonCodes.NotOwner,
+        AccessReasonCodes.NotAssigned,
+        AccessReasonCodes.PolicyViolation,
+    };
+
+    private async Task<bool> SharedAccessAsync(object resource, string action, AccessDecision denial, CancellationToken ct)
+    {
+        if (shares is null || action != shares.SharedAction || denial.Code is not { } code || !s_shareableDenials.Contains(code))
+            return false;
+        if (currentUser.UserId is not { } grantee || !Sharing.RecordShares.TryKeyOf(resource, out var type, out var id))
+            return false;
+
+        return await shares.IsSharedWithAsync(type, id, grantee, ct).ConfigureAwait(false);
     }
 
     private ResourceRequest BuildRequest(object resource, string action)

@@ -1,0 +1,22 @@
+@page
+@model {{ root_namespace }}.Web.Pages.PasskeysModel
+@{
+    ViewData["Title"] = "Passkeys";
+}
+<h1>Passkeys</h1>
+<p>A passkey signs you in with this device (a fingerprint, a face or a security key). Adding or removing one needs a recent sign-in.</p>
+
+<form id="passkey-token" method="post">
+    @Html.AntiForgeryToken()
+</form>
+
+<ul id="passkey-list"></ul>
+<p id="passkey-status" role="status"></p>
+
+<div>
+    <label for="passkey-name">Name for the new passkey</label>
+    <input id="passkey-name" type="text" maxlength="64" value="This device" />
+    <button id="passkey-add" type="button">Add a passkey</button>
+</div>
+
+<script src="~/js/passkeys.js" asp-append-version="true"></script>

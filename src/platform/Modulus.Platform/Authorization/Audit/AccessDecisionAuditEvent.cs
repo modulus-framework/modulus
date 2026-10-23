@@ -36,4 +36,7 @@ public sealed record AccessDecisionAuditEvent(
 
     /// <summary>The deciding policy's fingerprint at decision time (resource decisions only).</summary>
     public string? PolicyFingerprint { get; init; }
+
+    /// <summary>The agent role acting for the person, when the request came through an agent (A9-1); null otherwise.</summary>
+    public string? AgentId { get; init; }
 }

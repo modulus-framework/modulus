@@ -1,10 +1,11 @@
 using Microsoft.EntityFrameworkCore;
 using Modulus.Data.Abstractions;
-using {{ module_namespace }}.Domain;
+{{ if cursor_paging }}using Modulus.Core.Abstractions.Common;
+{{ end }}using {{ module_namespace }}.Domain;
 
 namespace {{ module_namespace }}.Infrastructure;
 
-public sealed class {{ entity_name }}Repository({{ module_name }}DbContext context)
+public sealed class {{ entity_name }}Repository({{ module_name }}DbContext context{{ if cursor_paging }}, IReadRepository<{{ entity_name }}> reads{{ end }})
     : I{{ entity_name }}Repository
 {
     private readonly DbSet<{{ entity_name }}> _dbSet = context.Set<{{ entity_name }}>();
@@ -20,6 +21,14 @@ public sealed class {{ entity_name }}Repository({{ module_name }}DbContext conte
 
     public async Task<IReadOnlyList<{{ entity_name }}>> GetByIdsAsync(IReadOnlyCollection<Guid> ids, CancellationToken ct)
         => await _dbSet.AsNoTracking().Where(e => ids.Contains(e.Id)).ToListAsync(ct);
+{{ if cursor_paging }}
+    public Task<KeysetPage<{{ entity_name }}>> GetKeysetPageAsync(string? cursor, int size, CancellationToken ct)
+    {
+        // The key is the position: a Guid v7 id, ordered by creation time on PostgreSQL.
+        Guid? after = cursor is null ? null : CursorCodec.Decode<Guid>(cursor);
+        return reads.ListKeysetAsync(new All{{ entity_name }}s(), e => e.Id, e => e, after, size, ct);
+    }
+{{ end }}
 
     public async Task<IReadOnlyList<{{ entity_name }}>> ListAsync(
         ISpecification<{{ entity_name }}> spec,
@@ -128,4 +137,9 @@ public sealed class {{ entity_name }}Repository({{ module_name }}DbContext conte
 
         return query;
     }
-}
+{{ if cursor_paging }}
+    private sealed class All{{ entity_name }}s : Specification<{{ entity_name }}>
+    {
+        public All{{ entity_name }}s() => Filter = _ => true;
+    }
+{{ end }}}

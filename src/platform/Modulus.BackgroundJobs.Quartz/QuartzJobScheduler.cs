@@ -101,19 +101,25 @@ public sealed class QuartzJobScheduler(
         await scheduler.ScheduleJob(jobDetail, trigger, ct);
     }
 
+    /// <summary>
+    /// Schedules a cron job. <paramref name="firstRunAt"/> is the earliest time the schedule may fire (Quartz's <c>StartAt</c>); the
+    /// first run is then the first cron time at or after it. Null starts the schedule now.
+    /// </summary>
     public void AddRecurring<TJob, TArgs>(
         string jobId,
         string cronExpression,
-        TArgs args)
+        TArgs args,
+        DateTime? firstRunAt = null)
         where TJob : IBackgroundJob<TArgs>
     {
-        _ = AddRecurringAsync<TJob, TArgs>(jobId, cronExpression, args);
+        _ = AddRecurringAsync<TJob, TArgs>(jobId, cronExpression, args, firstRunAt);
     }
 
     private async Task AddRecurringAsync<TJob, TArgs>(
         string jobId,
         string cronExpression,
-        TArgs args)
+        TArgs args,
+        DateTime? firstRunAt)
         where TJob : IBackgroundJob<TArgs>
     {
         try
@@ -126,10 +132,13 @@ public sealed class QuartzJobScheduler(
                 .StoreDurably()
                 .Build();
 
+            var start = firstRunAt is { } earliest
+                ? new DateTimeOffset(DateTime.SpecifyKind(earliest, DateTimeKind.Utc))
+                : DateTimeOffset.UtcNow;
             var trigger = TriggerBuilder.Create()
                 .WithIdentity($"{jobId}_trigger", "recurring")
                 .WithCronSchedule(cronExpression)
-                .StartNow()
+                .StartAt(start)
                 .Build();
 
             var jobKey = jobDetail.Key;

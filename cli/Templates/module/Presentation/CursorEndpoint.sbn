@@ -1,0 +1,34 @@
+using Modulus.AspNetCore.Endpoints;
+using Modulus.Core.Abstractions.Common;
+using Modulus.Mediator.Abstractions;
+using {{ module_namespace }}.Application;
+using {{ module_namespace }}.Application.Dtos;
+
+namespace {{ module_namespace }}.Presentation;
+
+public sealed class Get{{ entity_plural }}CursorRequest
+{
+    /// <summary>The <c>nextCursor</c> of the previous page; omit it for the first page.</summary>
+    public string? Cursor { get; set; }
+
+    /// <summary>Rows per page (at most <see cref="Get{{ entity_plural }}CursorQuery.MaxPageSize"/>).</summary>
+    public int PageSize { get; set; } = Get{{ entity_plural }}CursorQuery.DefaultPageSize;
+}
+
+public sealed class Get{{ entity_plural }}CursorEndpoint(IMediator mediator)
+    : Endpoint<Get{{ entity_plural }}CursorRequest, KeysetPage<{{ entity_name }}Dto>>
+{
+    public override void Configure()
+    {
+        Get("/api/{{ module_name_lower }}/{{ route_name }}/cursor");
+        Summary("Get a keyset page of {{ entity_name_lower }}s (?cursor=&pageSize=100); each page names the next one");
+{{ if required_permission }}        Permissions("{{ required_permission }}");
+{{ else if !use_auth }}        AllowAnonymous("No sign-in is configured (--auth none), so this endpoint is open.");
+{{ end }}    }
+
+    public override async Task HandleAsync(Get{{ entity_plural }}CursorRequest req, CancellationToken ct)
+    {
+        var page = await mediator.QueryAsync(new Get{{ entity_plural }}CursorQuery(req.Cursor, req.PageSize), ct);
+        await SendOkAsync(page, ct);
+    }
+}

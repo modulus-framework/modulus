@@ -281,6 +281,98 @@ public class EfReadRepository<T>(IServiceProvider sp)
         };
     }
 
+    /// <summary>Keyset (seek) page of <paramref name="size"/> items after <paramref name="after"/>; see <see cref="IReadRepository{T}.ListKeysetAsync{TKey,TResult}"/>.</summary>
+    /// <remarks>
+    /// The query orders and seeks by <paramref name="keySelector"/> on the server, and fetches one row more than the page to
+    /// learn whether a next page exists (no count query). The page is then projected in memory, so the key and the
+    /// selector run on materialized entities; the provider cannot project the key and the selector together in one query.
+    /// </remarks>
+    public async Task<KeysetPage<TResult>> ListKeysetAsync<TKey, TResult>(
+        ISpecification<T> spec,
+        Expression<Func<T, TKey>> keySelector,
+        Expression<Func<T, TResult>> selector,
+        TKey? after,
+        int size,
+        CancellationToken ct)
+        where TKey : struct, IComparable<TKey>
+    {
+        ArgumentNullException.ThrowIfNull(spec);
+        ArgumentNullException.ThrowIfNull(keySelector);
+        ArgumentNullException.ThrowIfNull(selector);
+        if (spec.Skip is not null || spec.Take is not null)
+            throw new ArgumentException(
+                "Keyset paging cannot be combined with Skip or Take on the specification: the key is the position.", nameof(spec));
+        EnsureKeysetKeyIsSupported(typeof(TKey), Db.Database.ProviderName);
+        size = Math.Max(1, size);
+
+        IQueryable<T> query = ApplySpec(Set.AsQueryable(), spec, applyPaging: false);
+        if (after is { } position)
+        {
+            var beyond = Expression.Lambda<Func<T, bool>>(
+                GreaterThanKey(keySelector.Body, position),
+                keySelector.Parameters[0]);
+            query = query.Where(beyond);
+        }
+
+        var rows = await query.OrderBy(keySelector).Take(size + 1).ToListAsync(ct);
+        var hasNext = rows.Count > size;
+        var window = rows.Take(size).ToList();
+        var keyOf = keySelector.Compile();
+        var project = selector.Compile();
+        return new KeysetPage<TResult>
+        {
+            Items = window.Select(project).ToList().AsReadOnly(),
+            HasNextPage = hasNext,
+            NextCursor = hasNext ? CursorCodec.Encode(keyOf(window[^1])) : null,
+        };
+    }
+
+    private const string NpgsqlProvider = "Npgsql.EntityFrameworkCore.PostgreSQL";
+
+    private static bool IsOrderableByProvider(Type type) => type == typeof(int) || type == typeof(long)
+        || type == typeof(short) || type == typeof(byte) || type == typeof(sbyte) || type == typeof(uint)
+        || type == typeof(ulong) || type == typeof(ushort) || type == typeof(double) || type == typeof(float)
+        || type == typeof(decimal) || type == typeof(DateTime) || type == typeof(DateTimeOffset) || type == typeof(TimeSpan);
+
+    /// <summary>
+    /// Refuses the keys a provider cannot order by position. A Guid key is supported only on .NET 10 and only on
+    /// PostgreSQL, whose <c>uuid</c> ordering is bytewise in RFC order, so a Guid v7 (time-prefixed) key sorts by creation
+    /// time. SQL Server orders <c>uniqueidentifier</c> with its own byte order, which is not chronological for Guid v7,
+    /// so Guid keys are refused there.
+    /// </summary>
+    private static void EnsureKeysetKeyIsSupported(Type keyType, string? providerName)
+    {
+        if (IsOrderableByProvider(keyType))
+            return;
+        if (keyType != typeof(Guid))
+            throw new NotSupportedException(
+                $"Keyset paging needs an integer, decimal, DateTime, DateTimeOffset or TimeSpan key; {keyType.Name} cannot be compared with > in a query.");
+#if NET10_0_OR_GREATER
+        if (providerName == NpgsqlProvider)
+            return;
+        throw new NotSupportedException(
+            $"Guid keyset paging is refused on this provider ({providerName}): only PostgreSQL orders uuid values by position. On SQL Server use an integer or timestamp key and keep the Guid as a tie-breaker.");
+#else
+        throw new NotSupportedException(
+            "Guid keyset paging needs .NET 10: only the .NET 10 build of Modulus orders Guid v7 keys on PostgreSQL. Use an integer or timestamp key on this target.");
+#endif
+    }
+
+    /// <summary>
+    /// The seek predicate <c>key &gt; position</c>. A Guid has no <c>&gt;</c> operator in expression trees, so it is written as
+    /// <c>key.CompareTo(position) &gt; 0</c>, which the Npgsql provider translates to a uuid comparison.
+    /// </summary>
+    private static Expression GreaterThanKey<TKey>(Expression key, TKey position) where TKey : struct, IComparable<TKey>
+    {
+        if (typeof(TKey) != typeof(Guid))
+            return Expression.GreaterThan(key, Expression.Constant(position, typeof(TKey)));
+
+        var compareTo = typeof(Guid).GetMethod(nameof(Guid.CompareTo), [typeof(Guid)])!;
+        return Expression.GreaterThan(
+            Expression.Call(key, compareTo, Expression.Constant(position)),
+            Expression.Constant(0));
+    }
+
     public async Task<bool> AnyAsync(
         ISpecification<T> spec, CancellationToken ct)
         => await ApplySpec(Set.AsQueryable(), spec).AnyAsync(ct);

@@ -77,6 +77,16 @@ public abstract class OidcHostTestBase : IAsyncLifetime
     protected SqliteConnection _connection = null!;
     protected WebApplication _app = null!;
 
+    /// <summary>Every security audit event the host records, in order (token decisions are audited here).</summary>
+    protected readonly RecordingSecurityAuditLog Audit = new();
+
+    protected sealed class RecordingSecurityAuditLog : ISecurityAuditLog
+    {
+        public List<SecurityAuditEvent> Events { get; } = [];
+
+        public void Record(SecurityAuditEvent auditEvent) => Events.Add(auditEvent);
+    }
+
     /// <summary>Lets a test class change the server's settings.</summary>
     protected virtual void ConfigureSettings(Dictionary<string, string?> settings)
     {
@@ -114,6 +124,8 @@ public abstract class OidcHostTestBase : IAsyncLifetime
             ["Identity:AllowAuthorizationCodeFlow"] = "true",
             ["Identity:AllowDeviceCodeFlow"] = "true",
             ["Identity:ShopFloor:Enabled"] = "true",
+            ["Identity:TokenExchange:Enabled"] = "true",
+            ["Identity:AllowClientCredentialsFlow"] = "true",
             ["Identity:FederatedLogin:Enabled"] = "true",
             ["Identity:FederatedLogin:MetadataAddress"] = "https://idp.example.test/.well-known/openid-configuration",
             ["Identity:FederatedLogin:Audiences:0"] = "erp",
@@ -135,6 +147,9 @@ public abstract class OidcHostTestBase : IAsyncLifetime
         builder.Services.AddScoped<ICurrentTenant, Modulus.Core.Null.NullCurrentTenant>();
         builder.Services.AddDbContext<ModulusIdentityDbContext>(o => o.UseSqlite(_connection));
         builder.Services.AddModulusOpenIddict(configuration);
+        builder.Services.AddModulusTokenExchange(configuration);
+        builder.Services.AddSingleton<ISecurityAuditLog>(Audit);
+        builder.Services.AddScoped<ICurrentUser, GrantAnyCurrentUser>();
         builder.Services.AddModulusIdentity<ModulusIdentityDbContext, ModulusUser, ModulusRole>(configuration);
         builder.Services.AddModulusIdentityStore<ModulusIdentityDbContext>();
         builder.Services.AddSingleton<IFederatedTokenReader, FakeFederatedReader>();

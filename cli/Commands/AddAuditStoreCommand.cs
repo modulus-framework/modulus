@@ -33,7 +33,7 @@ internal sealed class AddAuditStoreCommand : Command<AddAuditStoreCommand.Settin
             throw new InvalidOperationException($"Program.cs not found at {app.ProgramCsPath}.");
 
         var provider = app.Modules.Select(m => m.DatabaseProvider).FirstOrDefault(p => NewAppCommand.KnownProviders.Contains(p)) ?? "SQLite";
-        var model = new AuditStoreModel { RootNamespace = app.RootNamespace, DbProvider = provider };
+        var model = new AuditStoreModel { RootNamespace = app.RootNamespace, DbProvider = provider, TargetFramework = AppFramework.Resolve(app.ProgramCsPath) };
         var written = new List<string>();
         var hints = new List<string>();
 
@@ -81,10 +81,11 @@ internal sealed class AddAuditStoreCommand : Command<AddAuditStoreCommand.Settin
     {
         public string RootNamespace { get; init; } = "";
         public string DbProvider { get; init; } = "SQLite";
+        public string TargetFramework { get; init; } = AppFramework.Default;
         public string AuditNamespace => $"{RootNamespace}.Modules.Audit";
         public string FrameworkVersion => Services.FrameworkVersion.Current;
         public string EfProviderPackage => DbProviderInfo.Package(DbProvider);
-        public string EfProviderVersion => DbProviderInfo.Version(DbProvider);
+        public string EfProviderVersion => DbProviderInfo.Version(DbProvider, TargetFramework);
         public string UseDbMethod => DbProviderInfo.UseMethod(DbProvider);
         public string AuditConnectionString => DbProviderInfo.ConnectionString(DbProvider, "Audit");
     }

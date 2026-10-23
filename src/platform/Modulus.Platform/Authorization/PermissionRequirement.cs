@@ -99,7 +99,7 @@ internal sealed class PermissionRequirementHandler(
             || resolver.Resolve(query, grants).Contains(requirement.Permission))
         {
             // Holding the permission is not enough for a sensitive one: the sign-in must be recent and multi-factor.
-            if (stepUp is not null && stepUp.Requires(requirement.Permission) && !stepUp.IsSatisfiedBy(principal))
+            if (stepUp is not null && stepUp.Requires(requirement.Permission) && !stepUp.IsSatisfiedBy(principal, requirement.Permission))
             {
                 context.Fail(new StepUpRequiredReason(this));
                 return;

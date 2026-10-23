@@ -94,6 +94,15 @@ public sealed class ApiPermissionTests
     }
 
     [Fact]
+    public void The_example_app_requires_the_mfa_step_up_for_privileged_permissions_only_in_production()
+    {
+        // D10: privileged (Critical) permissions need a fresh multi-factor sign-in in production; development and tests keep password sign-in.
+        var program = ApiHostSource.Render(_engine, App());
+
+        program.Should().Contain("options.StepUp.RequireForCritical = builder.Environment.IsProduction();");
+    }
+
+    [Fact]
     public void A_second_generate_crud_finds_the_example_permission_already_wired()
     {
         // generate-crud Product on a fresh web app must not add the same lines again.
@@ -123,6 +132,32 @@ public sealed class ApiPermissionTests
         grants.Should().BeGreaterThan(permissions);
         lines.IndexOf("return builder;", StringComparison.Ordinal).Should().BeGreaterThan(grants, "the services are registered before the host is built");
         ApiPermissionWiring.EnsurePermission(wired, "Orders", "orders:orders:manage", "Manage Orders.").Should().Be(wired);
+    }
+
+    [Fact]
+    public void The_example_app_keeps_its_grants_in_the_authorization_database_seeded_once_at_startup()
+    {
+        var model = App();
+        var program = ApiHostSource.Render(_engine, model);
+        var startup = _engine.Render("app/api/DatabaseStartup", model);
+        var settings = _engine.Render("app/appsettings.json", model);
+
+        program.Should().Contain("builder.Services.AddEfCoreAuthorizationStores(options => options.UseSqlite(builder.Configuration.GetConnectionString(\"Authorization\") ?? throw new InvalidOperationException(\"ConnectionStrings:Authorization is not configured.\")));")
+            .And.Contain("using Modulus.Authorization.EntityFrameworkCore;");
+        startup.Should().Contain("MigrateAuthorizationStoreAsync(ensureCreatedIfNoMigrations: !app.Environment.IsProduction());")
+            .And.Contain("await app.Services.SeedPermissionGrantsAsync();");
+        startup.IndexOf("SeedPermissionGrantsAsync", StringComparison.Ordinal)
+            .Should().BeGreaterThan(startup.IndexOf("MigrateModulusDatabasesAsync", StringComparison.Ordinal), "the grants are seeded after the schema exists");
+        settings.Should().Contain("\"Authorization\": \"Data Source=authorization.db\"");
+    }
+
+    [Fact]
+    public void An_app_without_the_example_module_has_no_authorization_database()
+    {
+        var model = App(noExample: true);
+
+        _engine.Render("app/api/DatabaseStartup", model).Should().NotContain("SeedPermissionGrantsAsync");
+        _engine.Render("app/appsettings.json", model).Should().NotContain("\"Authorization\"");
     }
 
     [Theory]

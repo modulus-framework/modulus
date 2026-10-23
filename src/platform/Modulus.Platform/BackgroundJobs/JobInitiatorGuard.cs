@@ -10,6 +10,20 @@ public interface IJobInitiatorGuard
 {
     /// <summary>Whether the job queued by <paramref name="initiatorId"/> may run now.</summary>
     Task<bool> MayRunAsync(Guid initiatorId, CancellationToken ct);
+
+    /// <summary>
+    /// Whether the job queued by <paramref name="initiatorId"/> may perform a step that needs <paramref name="permission"/> (the
+    /// per-stage re-check, <see cref="IJobStageGuard"/>). The default answers only the start check, so an application without an
+    /// identity provider behaves as before; Identity answers the permission too.
+    /// </summary>
+    Task<bool> MayPerformAsync(Guid initiatorId, string permission, CancellationToken ct) => MayRunAsync(initiatorId, ct);
+
+    /// <summary>
+    /// Whether the job queued by <paramref name="initiatorId"/> through the agent <paramref name="agentRole"/> may perform a step that
+    /// needs <paramref name="permission"/>: the person's permission, capped by the agent's (A9-1). The default ignores the agent.
+    /// </summary>
+    Task<bool> MayPerformAsAgentAsync(Guid initiatorId, string agentRole, string permission, CancellationToken ct)
+        => MayPerformAsync(initiatorId, permission, ct);
 }
 
 internal sealed class AllowAllJobInitiators : IJobInitiatorGuard

@@ -1,6 +1,5 @@
-using Modulus.AspNetCore.OpenApi;
-
-namespace {{ root_namespace }}.Api.OpenApi;
+{{ if target_framework == "net10.0" }}using Modulus.AspNetCore.OpenApi;
+{{ end }}namespace {{ root_namespace }}.Api.OpenApi;
 
 /// <summary>The OpenAPI document of the API host. The document is served in Development (see Endpoints/ApiEndpoints.cs).</summary>
 internal static class OpenApiSetup
@@ -9,8 +8,9 @@ internal static class OpenApiSetup
     {
         // Hardened document: metadata from the OpenApi config section + a JWT Bearer security scheme, with a padlock on
         // operations that require authorization.
-        builder.Services.AddModulusOpenApi(builder.Configuration);
-
+{{ if target_framework == "net10.0" }}        builder.Services.AddModulusOpenApi(builder.Configuration);
+{{ else }}        // The OpenAPI document needs .NET 10 (the framework's OpenAPI support is compiled out on net8.0).
+{{ end }}
         return builder;
     }
 }

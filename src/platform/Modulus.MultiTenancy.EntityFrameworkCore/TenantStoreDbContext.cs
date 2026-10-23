@@ -3,6 +3,27 @@ using Microsoft.EntityFrameworkCore;
 namespace Modulus.MultiTenancy.EntityFrameworkCore;
 
 /// <summary>
+/// The part of the tenant store context that does not depend on the company entity types: the setting values
+/// (<c>ModulusSettingValues</c>). <see cref="EfSettingStore"/> reads and writes through this type, so an application that derives its
+/// own tenant store context keeps the settings store without any change.
+/// </summary>
+public abstract class TenantStoreDbContextBase(DbContextOptions options) : DbContext(options)
+{
+    /// <summary>The setting values stored for the installation, a company or a person.</summary>
+    public DbSet<SettingValueEntity> SettingValues => Set<SettingValueEntity>();
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        var setting = modelBuilder.Entity<SettingValueEntity>();
+        setting.ToTable("ModulusSettingValues");
+        setting.HasKey(s => new { s.Name, s.ScopeKey });
+        setting.Property(s => s.Name).IsRequired().HasMaxLength(128);
+        setting.Property(s => s.ScopeKey).IsRequired().HasMaxLength(80);
+        setting.Property(s => s.Value).IsRequired().HasMaxLength(4000);
+    }
+}
+
+/// <summary>
 /// EF Core context that owns the framework's tenant, membership and data-store tables, generic over its entity types the way
 /// <c>IdentityDbContext&lt;TUser, TRole, ...&gt;</c> is. An application that needs more columns derives its own entity classes
 /// from <see cref="TenantEntity"/>, <see cref="TenantMembershipEntity"/> and <see cref="TenantDataStoreEntity"/>, derives a
@@ -18,7 +39,7 @@ namespace Modulus.MultiTenancy.EntityFrameworkCore;
 /// <typeparam name="TMembership">The membership entity (who may enter which company).</typeparam>
 /// <typeparam name="TDataStore">The tenant data-store entity (where a company's database secret lives).</typeparam>
 public class TenantStoreDbContext<TTenant, TMembership, TDataStore>(DbContextOptions options)
-    : DbContext(options)
+    : TenantStoreDbContextBase(options)
     where TTenant : TenantEntity
     where TMembership : TenantMembershipEntity
     where TDataStore : TenantDataStoreEntity
@@ -31,6 +52,8 @@ public class TenantStoreDbContext<TTenant, TMembership, TDataStore>(DbContextOpt
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        base.OnModelCreating(modelBuilder);
+
         var tenant = modelBuilder.Entity<TTenant>();
         tenant.ToTable("ModulusTenants");
         tenant.HasKey(t => t.Id);

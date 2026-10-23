@@ -16,8 +16,8 @@ internal static class SessionAuthSetup
     public static IServiceCollection Add{{ client_pascal }}BffSession(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddModulusBff(configuration, bff => bff
-            .Add{{ client_pascal }}Client(Client)
-            .AddOpenApi());
+            .Add{{ client_pascal }}Client(Client){{ if target_framework == "net10.0" }}
+            .AddOpenApi(){{ end }});
         return services;
     }
 }

@@ -85,6 +85,15 @@ internal sealed class ScimMeta
 
     /// <summary>The resource's URL.</summary>
     [JsonPropertyName("location")] public string? Location { get; set; }
+
+    /// <summary>The entity tag of this representation (RFC 7644 §3.14): sent as the ETag header and the If-Match value.</summary>
+    [JsonPropertyName("version")] public string? Version { get; set; }
+
+    /// <summary>When the account was created through SCIM (users only; null when unknown).</summary>
+    [JsonPropertyName("created")] public DateTimeOffset? Created { get; set; }
+
+    /// <summary>When the account last changed through SCIM (users only; null when unknown).</summary>
+    [JsonPropertyName("lastModified")] public DateTimeOffset? LastModified { get; set; }
 }
 
 /// <summary>A SCIM User, as sent by a client and as returned.</summary>
@@ -95,6 +104,9 @@ internal sealed class ScimUser
 
     /// <summary>Id (server-assigned).</summary>
     [JsonPropertyName("id")] public string? Id { get; set; }
+
+    /// <summary>Never stored and never returned: a client that sends one is refused (the service refuses the request).</summary>
+    [JsonPropertyName("password")] public string? Password { get; set; }
 
     /// <summary>The client's own id for the person.</summary>
     [JsonPropertyName("externalId")] public string? ExternalId { get; set; }
@@ -208,4 +220,25 @@ internal sealed class ScimException(int status, string? scimType, string detail)
     public int Status { get; } = status;
 
     public string? ScimType { get; } = scimType;
+}
+
+/// <summary>A bulk request (RFC 7644 §3.7): operations applied in order.</summary>
+internal sealed class ScimBulkRequest
+{
+    [JsonPropertyName("Operations")] public List<ScimBulkOperation> Operations { get; set; } = [];
+
+    /// <summary>Stop after this many failed operations; the rest are not processed. Absent means no limit.</summary>
+    [JsonPropertyName("failOnErrors")] public int? FailOnErrors { get; set; }
+}
+
+/// <summary>One operation of a bulk request. A <c>bulkId</c> names a created resource for later operations (<c>bulkId:{id}</c>).</summary>
+internal sealed class ScimBulkOperation
+{
+    [JsonPropertyName("method")] public string? Method { get; set; }
+
+    [JsonPropertyName("bulkId")] public string? BulkId { get; set; }
+
+    [JsonPropertyName("path")] public string? Path { get; set; }
+
+    [JsonPropertyName("data")] public System.Text.Json.JsonElement? Data { get; set; }
 }

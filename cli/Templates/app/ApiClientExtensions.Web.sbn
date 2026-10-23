@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 {{ if use_auth }}using {{ root_namespace }}.Web.Security;
 {{ end }}using Modulus.Platform.Http;
 {{ if !no_example }}using {{ root_namespace }}.Web.Services.ApiClients;
+{{ end }}{{ if no_example && auth == "openiddict" }}using {{ root_namespace }}.Web.Services.ApiClients;
 {{ end }}
 namespace {{ root_namespace }}.Web.Services;
 
@@ -23,6 +24,10 @@ public static class ApiClientExtensions
 {{~ else ~}}
         services.AddModulusHttpClient<{{ example_entity }}ApiClient>();
 {{~ end ~}}
+{{~ end ~}}
+{{~ if auth == "openiddict" ~}}
+        services.AddBffGatewayClient<PasskeyApiClient>();
+        services.AddModulusHttpClient<PasskeyLoginClient>().ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler { UseCookies = false });
 {{~ end ~}}
 
         return services;

@@ -19,7 +19,8 @@ internal sealed record JobEnvelope(
     Guid? TenantId = null,
     string? CorrelationId = null,
     Guid? InitiatorId = null,
-    string? Actor = null);
+    string? Actor = null,
+    string? AgentId = null);
 
 internal sealed record RecurringEntry(
     JobEnvelope Envelope,
@@ -40,9 +41,13 @@ internal sealed record RecurringEntry(
 /// </summary>
 public sealed class ChannelJobQueue(
     IServiceProvider sp,
-    ILogger<ChannelJobQueue> logger)
+    ILogger<ChannelJobQueue> logger,
+    TimeSpan? recurringTick = null)
     : IJobScheduler, IHostedService
 {
+    // How often the recurring scheduler checks for due jobs. Thirty seconds in production; tests pass a shorter tick.
+    private readonly TimeSpan _recurringTick = recurringTick ?? TimeSpan.FromSeconds(30);
+
     private readonly Channel<JobEnvelope> _channel =
         Channel.CreateBounded<JobEnvelope>(
             new BoundedChannelOptions(10_000)
@@ -78,7 +83,8 @@ public sealed class ChannelJobQueue(
             TenantId: ResolveTenantId(),
             CorrelationId: ResolveCorrelationId(),
             InitiatorId: initiatorId,
-            Actor: ResolveActor(typeof(TJob), initiatorId));
+            Actor: ResolveActor(typeof(TJob), initiatorId),
+            AgentId: ResolveAgentId());
         await _channel.Writer.WriteAsync(envelope, ct);
     }
 
@@ -92,7 +98,8 @@ public sealed class ChannelJobQueue(
             TenantId: ResolveTenantId(),
             CorrelationId: ResolveCorrelationId(),
             InitiatorId: initiatorId,
-            Actor: ResolveActor(typeof(TJob), initiatorId));
+            Actor: ResolveActor(typeof(TJob), initiatorId),
+            AgentId: ResolveAgentId());
 
         // Fire-and-forget: cancellation is expected (shutdown / caller abort)
         // and must not surface as an unobserved task exception; any other
@@ -117,7 +124,7 @@ public sealed class ChannelJobQueue(
     }
 
     public void AddRecurring<TJob, TArgs>(
-        string jobId, string cronExpression, TArgs args)
+        string jobId, string cronExpression, TArgs args, DateTime? firstRunAt = null)
         where TJob : IBackgroundJob<TArgs>
     {
         // A recurring job runs as the system, named by its id, and carries no person.
@@ -132,8 +139,9 @@ public sealed class ChannelJobQueue(
 
         lock (_recurringLock)
         {
+            // firstRunAt lets a caller (tests, a catch-up after a restart) make the first run due before the next cron time.
             _recurring[jobId] = new RecurringEntry(
-                envelope, cron, nextRun?.UtcDateTime ?? DateTime.UtcNow);
+                envelope, cron, firstRunAt ?? nextRun?.UtcDateTime ?? DateTime.UtcNow);
         }
 
         ModulusMeters.RecurringJobCount.Add(1);
@@ -231,7 +239,7 @@ public sealed class ChannelJobQueue(
     // ── Recurring scheduler ───────────────────────────────────────
     private async Task RecurringSchedulerAsync(CancellationToken ct)
     {
-        using var timer = new PeriodicTimer(TimeSpan.FromSeconds(30));
+        using var timer = new PeriodicTimer(_recurringTick);
 
         while (!ct.IsCancellationRequested)
         {
@@ -296,7 +304,10 @@ public sealed class ChannelJobQueue(
 
             // The actor the job runs as (A6-2): visible to the job through JobContext and to every log line of this job.
             if (scope.ServiceProvider.GetService<JobContext>() is { } jobContext)
+            {
                 jobContext.Actor = envelope.Actor;
+                jobContext.AgentId = envelope.AgentId;
+            }
             using var actorScope = logger.BeginScope(new Dictionary<string, object?> { ["JobActor"] = envelope.Actor });
 
             // Restore the ambient tenant/correlation captured at enqueue.
@@ -345,6 +356,10 @@ public sealed class ChannelJobQueue(
 
             try
             {
+                // The queuer's roles as the identity store holds them now: a job reads them when it starts, never from the queue.
+                if (envelope.InitiatorId is { } roleOwner && scope.ServiceProvider.GetService<JobContext>() is { } running)
+                    running.Roles = await LoadInitiatorRolesAsync(scope.ServiceProvider, roleOwner, ct);
+
                 // Resolve via the closed generic IBackgroundJob<TArgs> interface
                 // so we can dispatch through the interface without dynamic/DLR.
                 var jobInterface = typeof(IBackgroundJob<>).MakeGenericType(envelope.ArgsType);
@@ -374,9 +389,33 @@ public sealed class ChannelJobQueue(
     private static string ResolveActor(Type jobType, Guid? initiatorId)
         => initiatorId is { } id ? JobActor.ForPerson(id) : JobActor.ForSystem(jobType.Name);
 
-    // The person who queued the job, when a signed-in person did; recurring jobs (AddRecurring) run as the system and carry none.
+    // The queuer's roles now. An unknown person or a missing directory gives no roles, which refuses every role grant (fail closed).
+    private static async Task<IReadOnlyCollection<string>> LoadInitiatorRolesAsync(IServiceProvider services, Guid userId, CancellationToken ct)
+    {
+        var directory = services.GetService<IUserRoleDirectory>();
+        if (directory is null)
+            return [];
+        return (await directory.GetRolesAsync(userId, ct))?.ToArray() ?? [];
+    }
+
+    // The person who queued the job, when a signed-in person did. Inside a request the caller is the request's own: the queue is a singleton,
+    // so its provider holds no scoped user (resolving one there throws in Development). Outside a request the queue's provider is read, as
+    // before. Recurring jobs (AddRecurring) run as the system and carry none.
     private Guid? ResolveInitiatorId()
-        => sp.GetService<ICurrentUser>() is { IsAuthenticated: true, UserId: { } userId } ? userId : null;
+    {
+        var requestServices = sp.GetService<Microsoft.AspNetCore.Http.IHttpContextAccessor>()?.HttpContext?.RequestServices;
+        var user = requestServices is not null
+            ? requestServices.GetService<ICurrentUser>()
+            : sp.GetService<ICurrentUser>();
+        return user is { IsAuthenticated: true, UserId: { } userId } ? userId : null;
+    }
+
+    // The agent role acting for that person, when the queuing request came through an agent (A9-1): the request's act claim.
+    private string? ResolveAgentId()
+    {
+        var agent = sp.GetService<Microsoft.AspNetCore.Http.IHttpContextAccessor>()?.HttpContext?.User.FindFirst("act")?.Value;
+        return string.IsNullOrWhiteSpace(agent) ? null : agent;
+    }
 
     private static readonly System.Collections.Concurrent.ConcurrentDictionary<Type,
         Func<object, object, CancellationToken, Task>> s_jobInvokers = new();

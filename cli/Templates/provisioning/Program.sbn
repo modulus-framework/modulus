@@ -1,0 +1,71 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using {{ probe_namespace }};
+using {{ ef_extensions_namespace }};
+using Modulus.AspNetCore.Security.Policy;
+using Modulus.Authorization.Extensions;
+using Modulus.Authorization.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Modulus.MultiTenancy.EntityFrameworkCore;
+using Modulus.MultiTenancy.Extensions;
+using Modulus.Secrets;
+using Modulus.Secrets.OpenBao;
+using Modulus.EntityFrameworkCore.Isolation;
+
+var builder = WebApplication.CreateBuilder(args);
+
+// The one host with a write identity to OpenBao. AddOpenBaoSecretWriter refuses to start unless Secrets:RuntimeReadOnly is false, so the API
+// host, which must stay read-only, can never register it by mistake.
+builder.Services.AddModulusSecrets(builder.Configuration);
+builder.Services.AddOpenBaoSecretWriter(builder.Configuration);
+
+// The tenant catalog this host writes to is the one the API host reads (ConnectionStrings:Tenancy). The probe lets it test a new connection
+// string before it stores anything.
+builder.Services.AddEfCoreTenantStore(o => o.{{ use_method }}(builder.Configuration.GetConnectionString("Tenancy") ?? throw new InvalidOperationException("ConnectionStrings:Tenancy is not configured.")));
+builder.Services.AddTenantDatabaseProvider("{{ provider_key }}", connection => new {{ probe_class }}(connection));
+builder.Services.AddModulusTenantDatabases(builder.Configuration);
+builder.Services.AddModulusTenantProvisioningAdmin();
+
+// Callers are the accounts the API host issues tokens to. Permissions come from the grant store, never from token claims. The grants are
+// read from the API host's Authorization database (the same connection string the API writes its grants to), so a grant the API's
+// administrators make takes effect here on the next request. This host seeds nothing.
+builder.Services.AddAuthentication("Bearer").AddJwtBearer("Bearer", options =>
+{
+    options.Authority = builder.Configuration["Provisioning:Authority"];
+    // The audience is checked only when Provisioning:Audience is set. Set it to the API host's Identity:Audiences entry, so the token
+    // server's access tokens carry it; the permission check below is the authorization either way.
+    var audience = builder.Configuration["Provisioning:Audience"];
+    options.TokenValidationParameters.ValidateAudience = !string.IsNullOrEmpty(audience);
+    options.TokenValidationParameters.ValidAudience = audience;
+    // Metadata over https everywhere except a local Development authority, so a token server on http works on a laptop only.
+    options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
+});
+builder.Services.AddAuthorization();
+builder.Services.AddModulusAuthorization(options => options.TrustPermissionClaims = false);
+
+// The provisioning routes are authorized by their permission policy on the caller's principal, not by an ambient user, so the current-user
+// default stays the fail-closed null one. This host serves no company: its tenant accessor is the host context, so the grant store and the
+// tenant catalog read host-level rows. AddMultiTenancy would make an unresolved request fail closed (no company, no host rows), so it is not used.
+builder.Services.TryAddScoped<Modulus.Core.Abstractions.ICurrentUser, Modulus.Core.Null.NullCurrentUser>();
+builder.Services.TryAddSingleton<Modulus.Core.Abstractions.ICurrentTenant, Modulus.Core.Null.NullCurrentTenant>();
+builder.Services.AddEfCoreAuthorizationStores(o => o.{{ use_method }}(builder.Configuration.GetConnectionString("Authorization") ?? throw new InvalidOperationException("ConnectionStrings:Authorization is not configured.")));
+
+// The shared permission catalog keeps one set of rows per host (PermissionCatalogOptions.Owner, the assembly name by default), so this
+// host's startup reports and removes only its own permissions, never the API host's.
+
+var app = builder.Build();
+
+// This host writes the tenant catalog, so it creates the schema it writes to (in Production, the catalog needs authored migrations).
+await app.Services.MigrateTenantStoreAsync(ensureCreatedIfNoMigrations: !app.Environment.IsProduction());
+
+app.UseAuthentication();
+app.UseAuthorization();
+
+app.MapGet("/health/live", () => Results.Ok(new { status = "live" }))
+    .Loosen("Liveness probe for orchestrators and load balancers; returns no data");
+
+// Provision and rotate tenant database connections. Every route needs tenancy:data-stores:manage (Critical, so step-up applies when on).
+app.MapModulusTenantProvisioning();
+
+app.Run();
+
+public partial class Program;

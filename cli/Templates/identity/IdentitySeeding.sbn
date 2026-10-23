@@ -222,6 +222,8 @@ public static class IdentitySeeding
         yield return Permissions.Endpoints.Token;
         yield return Permissions.Endpoints.Revocation;
         yield return Permissions.GrantTypes.Password;
+        // The passkey grant (Identity:Passkeys): allowed for every first-party client; the server only accepts it when passkeys are enabled.
+        yield return Permissions.Prefixes.GrantType + PasskeyGrant.GrantType;
         yield return Permissions.GrantTypes.RefreshToken;
         yield return Permissions.Scopes.Email;
         yield return Permissions.Scopes.Profile;

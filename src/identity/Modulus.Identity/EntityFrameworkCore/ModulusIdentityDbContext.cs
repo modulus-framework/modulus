@@ -258,6 +258,20 @@ public class ModulusIdentityDbContext<TUser, TRole>(
 
         // Use OpenIddict EF Core tables
         builder.UseOpenIddict();
+
+        // MySQL caps an index key at 3072 bytes (4 per utf8mb4 character). At its default lengths OpenIddict's token index
+        // (ApplicationId, Status, Subject, Type) is 3420 bytes, and MySQL refuses the table. These lengths hold every value OpenIddict
+        // writes there (token statuses and types are short words; subjects and application ids are identifiers): 2424 bytes.
+        if (Database.ProviderName?.Contains("MySql", StringComparison.OrdinalIgnoreCase) == true)
+        {
+            foreach (var token in builder.Model.GetEntityTypes().Where(e => e.GetTableName() == "OpenIddictTokens"))
+            {
+                token.FindProperty("Status")?.SetMaxLength(32);
+                token.FindProperty("Type")?.SetMaxLength(64);
+                token.FindProperty("Subject")?.SetMaxLength(255);
+                token.FindProperty("ApplicationId")?.SetMaxLength(255);
+            }
+        }
     }
 }
 
