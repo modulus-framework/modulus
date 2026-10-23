@@ -1,0 +1,96 @@
+using System.Net;
+using System.Text.Json;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
+using {{ root_namespace }}.Web.Services.ApiClients;
+
+namespace {{ root_namespace }}.Web.Pages.Admin;
+
+/// <summary>
+/// Role administration (premodule 1): lists the roles, creates, renames and deletes them, and sets a role's permissions. Every action is a
+/// call to the API, which checks the permission and refuses what it must. The page shows the API's answer and decides no access itself.
+/// </summary>
+[Authorize]
+public sealed class RolesModel(RoleAdminApiClient roles) : PageModel
+{
+    private static readonly JsonSerializerOptions s_json = new(JsonSerializerDefaults.Web);
+
+    [BindProperty(SupportsGet = true)]
+    public string? Role { get; set; }
+
+    public IReadOnlyList<RoleRow> Rows { get; private set; } = [];
+
+    public IReadOnlyList<PermissionRow> Catalog { get; private set; } = [];
+
+    public IReadOnlyList<string> Granted { get; private set; } = [];
+
+    /// <summary>True when the caller may read and set the role's permissions (it holds authorization:manage).</summary>
+    public bool CanManagePermissions { get; private set; }
+
+    public string? Message { get; private set; }
+
+    public async Task OnGetAsync(CancellationToken ct)
+    {
+        Message = TempData["Message"] as string;
+        using var list = await roles.ListAsync(ct);
+        if (list.IsSuccessStatusCode)
+            Rows = await list.Content.ReadFromJsonAsync<List<RoleRow>>(s_json, ct) ?? [];
+        else
+            Message = Explain(list.StatusCode);
+
+        if (string.IsNullOrWhiteSpace(Role))
+            return;
+
+        using var catalog = await roles.CatalogAsync(ct);
+        if (catalog.IsSuccessStatusCode)
+            Catalog = await catalog.Content.ReadFromJsonAsync<List<PermissionRow>>(s_json, ct) ?? [];
+
+        using var grants = await roles.PermissionsAsync(Role, ct);
+        CanManagePermissions = grants.IsSuccessStatusCode;
+        if (grants.IsSuccessStatusCode)
+            Granted = (await grants.Content.ReadFromJsonAsync<List<RoleGrantRow>>(s_json, ct) ?? [])
+                .Where(g => g.Type == "Allow").Select(g => g.Permission).ToList();
+    }
+
+    public async Task<IActionResult> OnPostCreateAsync(string? name, string? displayName, CancellationToken ct)
+    {
+        using var response = await roles.CreateAsync(name ?? "", displayName, ct);
+        return Answered(response, "Role created.", name);
+    }
+
+    public async Task<IActionResult> OnPostRenameAsync(string? name, string? newName, CancellationToken ct)
+    {
+        using var response = await roles.RenameAsync(name ?? "", newName ?? "", ct);
+        return Answered(response, "Role renamed.", newName);
+    }
+
+    public async Task<IActionResult> OnPostDeleteAsync(string? name, CancellationToken ct)
+    {
+        using var response = await roles.DeleteAsync(name ?? "", ct);
+        return Answered(response, "Role deleted.", null);
+    }
+
+    public async Task<IActionResult> OnPostPermissionsAsync(string? name, string? permissions, CancellationToken ct)
+    {
+        var names = (permissions ?? "").Split([',', '\n', ' '], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        using var response = await roles.SetPermissionsAsync(name ?? "", names, ct);
+        return Answered(response, "Permissions saved.", name);
+    }
+
+    private IActionResult Answered(HttpResponseMessage response, string success, string? roleToShow)
+    {
+        TempData["Message"] = response.IsSuccessStatusCode ? success : Explain(response.StatusCode);
+        return RedirectToPage(new { Role = roleToShow });
+    }
+
+    private static string Explain(HttpStatusCode status) => status switch
+    {
+        HttpStatusCode.Unauthorized => "Your session has ended. Sign in again.",
+        HttpStatusCode.Forbidden => "You do not have permission for that. Changing a role's permissions needs authorization:manage.",
+        HttpStatusCode.NotFound => "That role does not exist.",
+        HttpStatusCode.Conflict => "The change was refused: the role is in use, holds grants, is the default role, or the name is taken.",
+        HttpStatusCode.BadRequest => "The change was refused. Check the name.",
+        _ => $"The API answered {(int)status}.",
+    };
+}

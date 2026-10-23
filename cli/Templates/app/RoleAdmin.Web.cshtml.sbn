@@ -1,0 +1,86 @@
+@page
+@model {{ root_namespace }}.Web.Pages.Admin.RolesModel
+@{
+    ViewData["Title"] = "Roles";
+}
+
+<h1>Roles</h1>
+
+@if (Model.Message is not null)
+{
+    <p role="status">@Model.Message</p>
+}
+
+<table>
+    <thead>
+        <tr>
+            <th>Role</th>
+            <th>Display name</th>
+            <th>Default</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+    @foreach (var row in Model.Rows)
+    {
+        <tr>
+            <td>@row.Name</td>
+            <td>@row.DisplayName</td>
+            <td>@(row.IsDefault ? "Yes" : "")</td>
+            <td><a asp-page="/Admin/Roles" asp-route-Role="@row.Name">Open</a></td>
+        </tr>
+    }
+    </tbody>
+</table>
+
+<details>
+    <summary>Create a role</summary>
+    <form method="post" asp-page-handler="Create">
+        <label>Name <input name="name" required /></label>
+        <label>Display name <input name="displayName" /></label>
+        <button type="submit">Create</button>
+    </form>
+</details>
+
+@if (!string.IsNullOrEmpty(Model.Role))
+{
+    <section>
+        <h2>@Model.Role</h2>
+
+        <form method="post" asp-page-handler="Rename">
+            <input type="hidden" name="name" value="@Model.Role" />
+            <label>New name <input name="newName" required /></label>
+            <button type="submit">Rename</button>
+        </form>
+
+        <form method="post" asp-page-handler="Delete">
+            <input type="hidden" name="name" value="@Model.Role" />
+            <button type="submit">Delete</button>
+            <small>A role is deleted only when no account holds it and it has no permission grants.</small>
+        </form>
+
+        <h3>Permissions</h3>
+        @if (!Model.CanManagePermissions)
+        {
+            <p>You can see the role, but changing its permissions needs authorization:manage.</p>
+        }
+        else
+        {
+            <form method="post" asp-page-handler="Permissions">
+                <input type="hidden" name="name" value="@Model.Role" />
+                <label>Permissions (comma separated)
+                    <textarea name="permissions" rows="4">@string.Join(", ", Model.Granted)</textarea>
+                </label>
+                <button type="submit">Save permissions</button>
+            </form>
+
+            <h4>Catalog</h4>
+            <ul>
+                @foreach (var permission in Model.Catalog)
+                {
+                    <li><code>@permission.Permission</code> (@permission.Sensitivity): @permission.Description</li>
+                }
+            </ul>
+        }
+    </section>
+}

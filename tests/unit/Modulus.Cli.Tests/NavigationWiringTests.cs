@@ -28,7 +28,7 @@ public sealed class NavigationWiringTests
     {
         var model = App();
 
-        _engine.Render("app/api/FeatureServicesSetup", model).Should().Contain("builder.Services.AddModulusNavigation();");
+        _engine.Render("app/api/FeatureServicesSetup", model).Should().Contain("builder.Services.AddModulusNavigation(navigation =>");
         _engine.Render("app/api/FeatureEndpoints", model).Should().Contain("app.MapModulusNavigation();")
             .And.Contain("using Modulus.Navigation;");
     }
@@ -60,5 +60,37 @@ public sealed class NavigationWiringTests
 
         contributor.Should().Contain("namespace Shop.Web.Components.Navigation.Menu;")
             .And.Contain("class ServerNavigationMenuContributor(NavigationMenuClient client) : IMenuContributor");
+    }
+
+    [Fact]
+    public void The_user_admin_routes_are_mapped_under_api_and_their_permission_is_registered()
+    {
+        var model = App();
+
+        _engine.Render("app/api/FeatureEndpoints", model).Should().Contain("app.MapModulusUserAdmin<Modulus.Identity.Abstractions.ModulusUser>(\"/api/identity/users\");");
+        _engine.Render("app/api/AuthenticationSetup", model).Should().Contain("AddModulusAccountLifecycleAdmin(builder.Services);");
+        _engine.Render("app/api/FeatureServicesSetup", model).Should().Contain("Permission = \"identity:accounts:manage\"");
+    }
+
+    [Fact]
+    public void The_users_page_calls_the_api_through_the_bff_and_is_absent_without_an_identity_backend()
+    {
+        var model = App();
+
+        _engine.Render("app/UserAdminApiClient.Web", model).Should().Contain("private const string BaseRoute = \"/api/identity/users\";");
+        _engine.Render("app/UserAdminModel.Web", model).Should().Contain("[Authorize]").And.Contain("public sealed class UsersModel");
+        _engine.Render("app/api/FeatureEndpoints", App(auth: "none")).Should().NotContain("MapModulusUserAdmin");
+    }
+
+    [Fact]
+    public void The_permission_catalog_roles_and_role_permissions_are_mapped_for_an_identity_backend()
+    {
+        var model = App();
+
+        var endpoints = _engine.Render("app/api/FeatureEndpoints", model);
+        endpoints.Should().Contain("app.MapModulusPermissionCatalog();").And.Contain("app.MapModulusRoleAdmin<Modulus.Identity.Abstractions.ModulusRole>();");
+        endpoints.Should().Contain("app.MapModulusRolePermissions();", "the grant store is registered with the example permission");
+        _engine.Render("app/api/AuthenticationSetup", model).Should().Contain("\"Identity:Seed:RolePermissions\"");
+        _engine.Render("app/api/AuthenticationSetup", model).Should().Contain("builder.Services.AddModulusAuthorizationManagement();");
     }
 }

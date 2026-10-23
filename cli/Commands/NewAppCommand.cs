@@ -535,6 +535,25 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
             Path.Combine(webDir, "Components", "Navigation", "Menu", "ServerNavigationMenuContributor.cs"));
     }
 
+    /// <summary>
+    /// The user administration pages (premodule 1): the typed client for the API's user routes and the Users page. Rendered with the
+    /// identity backend only, because the API maps the routes there.
+    /// </summary>
+    private void RenderRoleAdmin(string webDir, AppModel model)
+    {
+        _templates.RenderToFile("app/RoleAdminApiClient.Web", model, Path.Combine(webDir, "Services", "ApiClients", "RoleAdminApiClient.cs"));
+        _templates.RenderToFile("app/RoleAdminModel.Web", model, Path.Combine(webDir, "Pages", "Admin", "Roles.cshtml.cs"));
+        _templates.RenderToFile("app/RoleAdmin.Web.cshtml", model, Path.Combine(webDir, "Pages", "Admin", "Roles.cshtml"));
+    }
+
+    private void RenderUserAdmin(string webDir, AppModel model)
+    {
+        if (model.Auth != "openiddict") return;
+        _templates.RenderToFile("app/UserAdminApiClient.Web", model, Path.Combine(webDir, "Services", "ApiClients", "UserAdminApiClient.cs"));
+        _templates.RenderToFile("app/UserAdminModel.Web", model, Path.Combine(webDir, "Pages", "Admin", "Users.cshtml.cs"));
+        _templates.RenderToFile("app/UserAdmin.Web.cshtml", model, Path.Combine(webDir, "Pages", "Admin", "Users.cshtml"));
+    }
+
     private void GenerateWebHost(string projectDir, AppModel model, List<string> projects)
     {
         var rootNs = model.RootNamespace;
@@ -563,6 +582,8 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
             _templates.RenderToFile("app/ApiClientExtensions.Web", model, Path.Combine(webDir, "Services", "ApiClientExtensions.cs"));
             _templates.RenderToFile("app/MenuRegistration.Web", model, Path.Combine(webDir, "Composition", "MenuRegistration.cs"));
             RenderNavigationMenu(webDir, model);
+            RenderUserAdmin(webDir, model);
+            RenderRoleAdmin(webDir, model);
             if (!model.NoExample)
                 _templates.RenderToFile("ui/EntityApiClient", model, UiLayout.ApiClientFile(webDir, model.ExampleEntity));
             projects.Add($"src/Web/{rootNs}.Web/{rootNs}.Web.csproj");
@@ -622,6 +643,8 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         _templates.RenderToFile("app/MenuRegistration.Web", model,
             Path.Combine(webDir, "Composition", "MenuRegistration.cs"));
         RenderNavigationMenu(webDir, model);
+        RenderUserAdmin(webDir, model);
+        RenderRoleAdmin(webDir, model);
 
         // â”€â”€ Authentication: a BFF web session (Modulus.Bff) behind the sign-in pages â”€â”€
         if (model.UseAuth)

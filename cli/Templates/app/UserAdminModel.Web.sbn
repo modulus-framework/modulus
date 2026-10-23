@@ -1,0 +1,176 @@
+using System.Net;
+using System.Text.Json;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
+using {{ root_namespace }}.Web.Services.ApiClients;
+
+namespace {{ root_namespace }}.Web.Pages.Admin;
+
+/// <summary>
+/// User administration (premodule 1): lists the company's users, shows one, and changes its roles, lock and unlock. Every action is a call
+/// to the API, which checks the permission and the company. The page shows the API's answer and decides no access itself.
+/// </summary>
+[Authorize]
+public sealed class UsersModel(UserAdminApiClient users) : PageModel
+{
+    private static readonly JsonSerializerOptions s_json = new(JsonSerializerDefaults.Web);
+
+    [BindProperty(SupportsGet = true)]
+    public string? Search { get; set; }
+
+    [BindProperty(SupportsGet = true)]
+    public string? Status { get; set; }
+
+    [BindProperty(SupportsGet = true)]
+    public string? Role { get; set; }
+
+    [BindProperty(SupportsGet = true)]
+    public int PageNumber { get; set; } = 1;
+
+    [BindProperty(SupportsGet = true)]
+    public Guid? Id { get; set; }
+
+    public IReadOnlyList<UserRow> Rows { get; private set; } = [];
+
+    public int Total { get; private set; }
+
+    public UserDetailView? Detail { get; private set; }
+
+    public EffectiveAccessView? Access { get; private set; }
+
+    public IReadOnlyList<SessionRow> Sessions { get; private set; } = [];
+
+    public IReadOnlyList<LoginRow> History { get; private set; } = [];
+
+    public string? Message { get; private set; }
+
+    public async Task OnGetAsync(CancellationToken ct)
+    {
+        Message = TempData["Message"] as string;
+        using var list = await users.ListAsync(Search, Status, Role, PageNumber, ct);
+        if (list.IsSuccessStatusCode)
+        {
+            var page = await list.Content.ReadFromJsonAsync<UserPage>(s_json, ct);
+            Rows = page?.Items ?? [];
+            Total = page?.Total ?? 0;
+        }
+        else
+        {
+            Message = Explain(list.StatusCode);
+        }
+
+        if (Id is { } id)
+        {
+            using var response = await users.GetAsync(id, ct);
+            if (response.IsSuccessStatusCode)
+                Detail = await response.Content.ReadFromJsonAsync<UserDetailView>(s_json, ct);
+            else
+                Message = Explain(response.StatusCode);
+
+            // The account's sessions and recent sign-in attempts, and what it can do now. A caller that cannot read one still sees the user.
+            if (Detail is not null)
+            {
+                using var sessions = await users.SessionsAsync(id, ct);
+                if (sessions.IsSuccessStatusCode)
+                    Sessions = await sessions.Content.ReadFromJsonAsync<List<SessionRow>>(s_json, ct) ?? [];
+                using var history = await users.LoginHistoryAsync(id, ct);
+                if (history.IsSuccessStatusCode)
+                    History = await history.Content.ReadFromJsonAsync<List<LoginRow>>(s_json, ct) ?? [];
+
+                using var access = await users.EffectiveAccessAsync(id, ct);
+                if (access.IsSuccessStatusCode)
+                    Access = await access.Content.ReadFromJsonAsync<EffectiveAccessView>(s_json, ct);
+            }
+        }
+    }
+
+    public async Task<IActionResult> OnPostRolesAsync(Guid id, string? roles, CancellationToken ct)
+    {
+        var names = (roles ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        using var response = await users.SetRolesAsync(id, names, ct);
+        return Answered(id, response, "Roles saved.");
+    }
+
+    public async Task<IActionResult> OnPostLockAsync(Guid id, string? reason, int? hours, CancellationToken ct)
+    {
+        DateTimeOffset? until = hours is > 0 ? DateTimeOffset.UtcNow.AddHours(hours.Value) : null;
+        using var response = await users.LockAsync(id, until, reason ?? "", ct);
+        return Answered(id, response, "Account locked.");
+    }
+
+    public async Task<IActionResult> OnGetExportAsync(string? search, string? status, string? role, CancellationToken ct)
+    {
+        using var response = await users.ExportAsync(search, status, role, ct);
+        if (!response.IsSuccessStatusCode)
+        {
+            TempData["Message"] = Explain(response.StatusCode);
+            return RedirectToPage(new { Search = search, Status = status, Role = role });
+        }
+        return File(await response.Content.ReadAsByteArrayAsync(ct), "text/csv", "users.csv");
+    }
+
+    public async Task<IActionResult> OnPostInviteAsync(string? email, string? roles, string? firstName, string? lastName, CancellationToken ct)
+    {
+        var names = (roles ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        using var response = await users.InviteAsync(email ?? "", names, firstName, lastName, ct);
+        TempData["Message"] = response.IsSuccessStatusCode ? "Invitation sent." : Explain(response.StatusCode);
+        return RedirectToPage(new { Search, Status, Role });
+    }
+
+    public async Task<IActionResult> OnPostRevokeSessionAsync(Guid id, string sessionId, CancellationToken ct)
+    {
+        using var response = await users.RevokeSessionAsync(id, sessionId, ct);
+        return Answered(id, response, "Session ended.");
+    }
+
+    public async Task<IActionResult> OnPostUnlockAsync(Guid id, CancellationToken ct)
+    {
+        using var response = await users.UnlockAsync(id, ct);
+        return Answered(id, response, "Account unlocked.");
+    }
+
+    private IActionResult Answered(Guid id, HttpResponseMessage response, string success)
+    {
+        TempData["Message"] = response.IsSuccessStatusCode ? success : Explain(response.StatusCode);
+        return RedirectToPage(new { Id = id, Search });
+    }
+
+    private static string Explain(HttpStatusCode status) => status switch
+    {
+        HttpStatusCode.Unauthorized => "Your session has ended. Sign in again.",
+        HttpStatusCode.Forbidden => "You do not have permission to manage accounts.",
+        HttpStatusCode.NotFound => "That user is not in this company.",
+        HttpStatusCode.BadRequest => "The change was refused. Check the reason and the role names.",
+        _ => $"The API answered {(int)status}.",
+    };
+}
+
+/// <summary>One row of the user list, as the API serves it.</summary>
+public sealed record UserRow(Guid Id, string? UserName, string? Email, string? FullName, bool IsActive, string Lifecycle, DateTimeOffset? LockedUntil);
+
+/// <summary>A page of the user list.</summary>
+public sealed record UserPage(IReadOnlyList<UserRow> Items, int Total, int Page, int PageSize);
+
+/// <summary>What an account can do now: every permission it holds, the ones granted to it directly, and how many toxic combinations it has.</summary>
+public sealed record EffectiveAccessView(IReadOnlyList<string> All, IReadOnlyList<string> Direct, int SodViolations);
+
+/// <summary>One session of an account, as the API serves it.</summary>
+public sealed record SessionRow(string Id, string Type, string? ClientId, DateTimeOffset? CreatedAt, DateTimeOffset? ExpiresAt);
+
+/// <summary>One recent sign-in attempt or token event of an account, as the API serves it.</summary>
+public sealed record LoginRow(DateTimeOffset OccurredAt, string Action, bool Succeeded, string? Reason, string? ClientId);
+
+/// <summary>One user, as the API serves it.</summary>
+public sealed record UserDetailView(
+    Guid Id,
+    string? UserName,
+    string? Email,
+    bool EmailConfirmed,
+    string? FirstName,
+    string? LastName,
+    bool IsActive,
+    string Lifecycle,
+    DateTimeOffset? LockedUntil,
+    bool TwoFactorEnabled,
+    IReadOnlyList<string> Roles);

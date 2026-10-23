@@ -1,0 +1,153 @@
+@page
+@model {{ root_namespace }}.Web.Pages.Admin.UsersModel
+@{
+    ViewData["Title"] = "Users";
+}
+
+<h1>Users</h1>
+
+@if (Model.Message is not null)
+{
+    <p role="status">@Model.Message</p>
+}
+
+<form method="get">
+    <label>Search by user name or email <input type="search" name="Search" value="@Model.Search" /></label>
+    <label>Status
+        <select name="Status">
+            <option value="any" selected="@(string.IsNullOrEmpty(Model.Status) || Model.Status == "any")">Any</option>
+            <option value="active" selected="@(Model.Status == "active")">Active</option>
+            <option value="inactive" selected="@(Model.Status == "inactive")">Inactive</option>
+            <option value="locked" selected="@(Model.Status == "locked")">Locked</option>
+        </select>
+    </label>
+    <label>Role <input name="Role" value="@Model.Role" /></label>
+    <button type="submit">Filter</button>
+    <a asp-page-handler="Export" asp-route-Search="@Model.Search" asp-route-Status="@Model.Status" asp-route-Role="@Model.Role">Export CSV</a>
+</form>
+
+<details>
+    <summary>Invite a person</summary>
+    <form method="post" asp-page-handler="Invite">
+        <label>E-mail <input type="email" name="email" required /></label>
+        <label>First name <input name="firstName" /></label>
+        <label>Last name <input name="lastName" /></label>
+        <label>Roles (comma separated) <input name="roles" /></label>
+        <p>The person gets an e-mailed link and sets a password. Giving any role needs the grant-any permission.</p>
+        <button type="submit">Send invitation</button>
+    </form>
+</details>
+
+<table>
+    <thead>
+        <tr>
+            <th>User name</th>
+            <th>Email</th>
+            <th>Status</th>
+            <th>Locked until</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+    @foreach (var row in Model.Rows)
+    {
+        <tr>
+            <td>@row.UserName</td>
+            <td>@row.Email</td>
+            <td>@(row.IsActive ? "Active" : "Inactive") (@row.Lifecycle)</td>
+            <td>@(row.LockedUntil?.ToString("yyyy-MM-dd HH:mm") ?? "-")</td>
+            <td><a asp-page="/Admin/Users" asp-route-Id="@row.Id" asp-route-Search="@Model.Search">Open</a></td>
+        </tr>
+    }
+    </tbody>
+</table>
+<p>@Model.Total user(s)</p>
+
+@if (Model.Detail is { } detail)
+{
+    <section>
+        <h2>@detail.UserName</h2>
+        <p>
+            @detail.Email · @(detail.EmailConfirmed ? "email confirmed" : "email not confirmed")
+            · two-factor @(detail.TwoFactorEnabled ? "on" : "off")
+        </p>
+
+        <h3>Sessions</h3>
+        @if (Model.Sessions.Count == 0)
+        {
+            <p>No active sessions.</p>
+        }
+        else
+        {
+            <table>
+                <thead><tr><th>Type</th><th>Client</th><th>Started</th><th>Expires</th><th></th></tr></thead>
+                <tbody>
+                @foreach (var session in Model.Sessions)
+                {
+                    <tr>
+                        <td>@session.Type</td>
+                        <td>@session.ClientId</td>
+                        <td>@session.CreatedAt?.ToString("yyyy-MM-dd HH:mm")</td>
+                        <td>@session.ExpiresAt?.ToString("yyyy-MM-dd HH:mm")</td>
+                        <td>
+                            <form method="post" asp-page-handler="RevokeSession" asp-route-id="@detail.Id">
+                                <input type="hidden" name="sessionId" value="@session.Id" />
+                                <button type="submit">End session</button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        }
+
+        <h3>Recent sign-ins</h3>
+        <table>
+            <thead><tr><th>When</th><th>Event</th><th>Result</th><th>Reason</th></tr></thead>
+            <tbody>
+            @foreach (var entry in Model.History)
+            {
+                <tr>
+                    <td>@entry.OccurredAt.ToString("yyyy-MM-dd HH:mm")</td>
+                    <td>@entry.Action</td>
+                    <td>@(entry.Succeeded ? "Succeeded" : "Refused")</td>
+                    <td>@entry.Reason</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+
+        @if (Model.Access is { } access)
+        {
+            <details>
+                <summary>Permissions in effect (@access.All.Count)@(access.SodViolations > 0 ? $", {access.SodViolations} separation-of-duties conflict(s)" : "")</summary>
+                <ul>
+                    @foreach (var permission in access.All)
+                    {
+                        <li>@permission</li>
+                    }
+                </ul>
+            </details>
+        }
+
+        <form method="post" asp-page-handler="Roles" asp-route-id="@detail.Id">
+            <label>Roles (comma separated) <input name="roles" value="@string.Join(", ", detail.Roles)" /></label>
+            <button type="submit">Save roles</button>
+        </form>
+
+        @if (detail.LockedUntil is null)
+        {
+            <form method="post" asp-page-handler="Lock" asp-route-id="@detail.Id">
+                <label>Reason <input name="reason" required /></label>
+                <label>Hours (empty = until unlocked) <input name="hours" type="number" min="1" /></label>
+                <button type="submit">Lock</button>
+            </form>
+        }
+        else
+        {
+            <form method="post" asp-page-handler="Unlock" asp-route-id="@detail.Id">
+                <button type="submit">Unlock</button>
+            </form>
+        }
+    </section>
+}

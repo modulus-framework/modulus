@@ -2376,3 +2376,5 @@ Modulus.Authorization.Grants.TtlPermissionGrantStore.TtlPermissionGrantStore(Mod
 Modulus.Settings.ModulusSettingsOptions.VersionCheckInterval.get -> System.TimeSpan
 Modulus.Settings.ModulusSettingsOptions.VersionCheckInterval.set -> void
 Modulus.AuditLogging.Security.Retention.SecurityAuditRetentionOptions.CategoryRetention.get -> System.Collections.Generic.IDictionary<string!, System.TimeSpan>!
+Modulus.Authorization.Grants.IRoleDeletionGuard
+Modulus.Authorization.Grants.IRoleDeletionGuard.BlockingReasonAsync(string! role, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<string?>!

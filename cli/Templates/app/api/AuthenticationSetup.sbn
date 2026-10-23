@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authentication;
 {{ if auth == "openiddict" }}using Modulus.Identity.Extensions;
-using OpenIddict.Validation.AspNetCore;
+{{ if example_permission }}using Modulus.Authorization.Management;
+{{ end }}using OpenIddict.Validation.AspNetCore;
 {{ end }}{{ if use_external_provider }}using {{ external_provider_namespace }};
 {{ end }}{{ if example_permission || needs_fallback_authorization || auth == "openiddict" }}using Modulus.Authorization.Extensions;
 {{ if auth == "openiddict" }}using Modulus.Core.Abstractions;
@@ -64,8 +65,21 @@ internal static class AuthenticationSetup
         builder.Services.AddGrantStorePermissionChecker();
         builder.Services.AddPermissions("{{ example_module_lower }}", permissions => permissions.Add("{{ example_permission }}", "{{ example_permission_description }}"));
         builder.Services.AddPermissionGrants(grants => grants.GrantToRole("{{ admin_role }}", "{{ example_permission }}"));
+        // User administration (the Users page): the permission is registered and granted to no role by default (owner decision, 2026-10-23).
+        // A deployment names the first administrators here; the grants are applied once per database, on the first start (later edits
+        // go through the authorization API). Example: Identity:Seed:RolePermissions:Admin = ["identity:accounts:manage", "identity:accounts:personal-data"]
+        // (the second one shows names and addresses on the Users page; without it those fields are masked).
+        Modulus.Identity.Extensions.AccountLifecycleExtensions.AddModulusAccountLifecycleAdmin(builder.Services);
+        var seededRolePermissions = builder.Configuration.GetSection("Identity:Seed:RolePermissions").Get<Dictionary<string, string[]>>() ?? [];
+        builder.Services.AddPermissionGrants(grants =>
+        {
+            foreach (var (role, permissions) in seededRolePermissions)
+                grants.GrantToRole(role, permissions);
+        });
         builder.Services.AddEfCoreAuthorizationStores(options => options.{{ use_db_method }}(builder.Configuration.GetConnectionString("Authorization") ?? throw new InvalidOperationException("ConnectionStrings:Authorization is not configured.")));
-{{ end }}{{ else if use_external_provider }}        // External identity provider ({{ external_provider_name }}).
+{{ if auth == "openiddict" }}        // Role-permission administration (the Roles page's grants) uses the grant store and the grant rules.
+        builder.Services.AddModulusAuthorizationManagement();
+{{ end }}{{ end }}{{ else if use_external_provider }}        // External identity provider ({{ external_provider_name }}).
         // Validates bearer tokens issued by {{ external_provider_name }} via OIDC discovery / introspection. Configure the provider
         // details under "{{ external_provider_config_key }}" in appsettings.json. Set ClientSecret via User Secrets or env var
         // (never committed):

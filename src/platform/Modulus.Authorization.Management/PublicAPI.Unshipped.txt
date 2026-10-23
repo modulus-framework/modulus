@@ -933,3 +933,17 @@ static Modulus.Authorization.Management.PermissionExceptionView.operator !=(Modu
 static Modulus.Authorization.Management.PermissionExceptionView.operator ==(Modulus.Authorization.Management.PermissionExceptionView? left, Modulus.Authorization.Management.PermissionExceptionView? right) -> bool
 static Modulus.Authorization.Management.PermissionExceptionWriteRequest.operator !=(Modulus.Authorization.Management.PermissionExceptionWriteRequest? left, Modulus.Authorization.Management.PermissionExceptionWriteRequest? right) -> bool
 static Modulus.Authorization.Management.PermissionExceptionWriteRequest.operator ==(Modulus.Authorization.Management.PermissionExceptionWriteRequest? left, Modulus.Authorization.Management.PermissionExceptionWriteRequest? right) -> bool
+Modulus.Authorization.Management.RolePermissionEndpoints
+Modulus.Authorization.Management.RolePermissionsRequest
+Modulus.Authorization.Management.RolePermissionsRequest.<Clone>$() -> Modulus.Authorization.Management.RolePermissionsRequest!
+Modulus.Authorization.Management.RolePermissionsRequest.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>? Permissions) -> void
+Modulus.Authorization.Management.RolePermissionsRequest.Equals(Modulus.Authorization.Management.RolePermissionsRequest? other) -> bool
+Modulus.Authorization.Management.RolePermissionsRequest.Permissions.get -> System.Collections.Generic.IReadOnlyList<string!>?
+Modulus.Authorization.Management.RolePermissionsRequest.Permissions.init -> void
+Modulus.Authorization.Management.RolePermissionsRequest.RolePermissionsRequest(System.Collections.Generic.IReadOnlyList<string!>? Permissions) -> void
+override Modulus.Authorization.Management.RolePermissionsRequest.Equals(object? obj) -> bool
+override Modulus.Authorization.Management.RolePermissionsRequest.GetHashCode() -> int
+override Modulus.Authorization.Management.RolePermissionsRequest.ToString() -> string!
+static Modulus.Authorization.Management.RolePermissionEndpoints.MapModulusRolePermissions(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! prefix = "/api/identity/roles") -> Microsoft.AspNetCore.Routing.RouteGroupBuilder!
+static Modulus.Authorization.Management.RolePermissionsRequest.operator !=(Modulus.Authorization.Management.RolePermissionsRequest? left, Modulus.Authorization.Management.RolePermissionsRequest? right) -> bool
+static Modulus.Authorization.Management.RolePermissionsRequest.operator ==(Modulus.Authorization.Management.RolePermissionsRequest? left, Modulus.Authorization.Management.RolePermissionsRequest? right) -> bool

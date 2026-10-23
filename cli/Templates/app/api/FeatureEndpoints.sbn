@@ -1,4 +1,6 @@
-{{ if auth == "openiddict" }}using Modulus.Navigation;
+{{ if auth == "openiddict" }}using Modulus.Identity.Extensions;
+{{ if example_permission }}using Modulus.Authorization.Management;
+{{ end }}using Modulus.Navigation;
 {{ end }}namespace {{ root_namespace }}.Api.Endpoints;
 
 /// <summary>
@@ -11,6 +13,15 @@ internal static class FeatureEndpoints
     public static WebApplication MapApiFeatures(this WebApplication app)
     {
 {{ if auth == "openiddict" }}        app.MapModulusNavigation();
+        // User administration under /api so the BFF forwards it: list, read, roles, lock and unlock (identity:accounts:manage).
+        app.MapModulusUserAdmin<Modulus.Identity.Abstractions.ModulusUser>("/api/identity/users");
+        // The permission catalog and the roles (create, list); a role's permissions go through the grant rules.
+        app.MapModulusPermissionCatalog();
+        app.MapModulusRoleAdmin<Modulus.Identity.Abstractions.ModulusRole>();
+{{ if example_permission }}        app.MapModulusRolePermissions();
+        // Deleting a role is refused while it still holds grants, so it needs the grant store (AddModulusAuthorizationManagement).
+        app.MapModulusRoleDelete<Modulus.Identity.Abstractions.ModulusRole, Modulus.Identity.Abstractions.ModulusUser>();
+{{ end }}
 {{ end }}        return app;
     }
 }

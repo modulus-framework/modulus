@@ -1,0 +1,52 @@
+using System.Net.Http;
+using System.Net.Http.Json;
+using Microsoft.Extensions.Configuration;
+
+namespace {{ root_namespace }}.Web.Services.ApiClients;
+
+/// <summary>
+/// The API's role administration (<c>/api/identity/roles</c>) and the permission catalog, reached through the BFF gateway so the browser's
+/// session carries the signed-in person's token. The role-permission calls need <c>authorization:manage</c>; the API answers without it.
+/// </summary>
+public sealed class RoleAdminApiClient(HttpClient http, IConfiguration configuration)
+{
+    private const string BaseRoute = "/api/identity/roles";
+
+    // With a sign-in the calls go through the BFF (Bff:BaseUrl), which forwards /api with the session's token.
+    private readonly HttpClient _http = Configure(http, configuration);
+
+    private static HttpClient Configure(HttpClient http, IConfiguration configuration)
+    {
+        var baseUrl = configuration["Bff:BaseUrl"] ?? configuration["Api:BaseUrl"] ?? "http://localhost:5180";
+        http.BaseAddress = new Uri($"{baseUrl.TrimEnd('/')}/");
+        return http;
+    }
+
+    public Task<HttpResponseMessage> ListAsync(CancellationToken ct) => _http.GetAsync(BaseRoute, ct);
+
+    public Task<HttpResponseMessage> CreateAsync(string name, string? displayName, CancellationToken ct)
+        => _http.PostAsJsonAsync(BaseRoute, new { name, displayName }, ct);
+
+    public Task<HttpResponseMessage> RenameAsync(string name, string newName, CancellationToken ct)
+        => _http.PutAsJsonAsync($"{BaseRoute}/{Uri.EscapeDataString(name)}", new { name = newName }, ct);
+
+    public Task<HttpResponseMessage> DeleteAsync(string name, CancellationToken ct)
+        => _http.DeleteAsync($"{BaseRoute}/{Uri.EscapeDataString(name)}", ct);
+
+    public Task<HttpResponseMessage> PermissionsAsync(string name, CancellationToken ct)
+        => _http.GetAsync($"{BaseRoute}/{Uri.EscapeDataString(name)}/permissions", ct);
+
+    public Task<HttpResponseMessage> SetPermissionsAsync(string name, IReadOnlyList<string> permissions, CancellationToken ct)
+        => _http.PutAsJsonAsync($"{BaseRoute}/{Uri.EscapeDataString(name)}/permissions", new { permissions }, ct);
+
+    public Task<HttpResponseMessage> CatalogAsync(CancellationToken ct) => _http.GetAsync("/api/identity/permissions", ct);
+}
+
+/// <summary>One role, as the API serves it.</summary>
+public sealed record RoleRow(string Name, string? DisplayName, bool IsDefault);
+
+/// <summary>One permission of the catalog, as the API serves it.</summary>
+public sealed record PermissionRow(string Permission, string Description, string Sensitivity, string Group);
+
+/// <summary>One allow grant of a role, as the API serves it.</summary>
+public sealed record RoleGrantRow(string Permission, string Type);

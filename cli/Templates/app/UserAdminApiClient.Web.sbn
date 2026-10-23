@@ -1,0 +1,52 @@
+using System.Net.Http;
+using System.Net.Http.Json;
+using Microsoft.Extensions.Configuration;
+
+namespace {{ root_namespace }}.Web.Services.ApiClients;
+
+/// <summary>
+/// The API's user administration routes (<c>/api/identity/users</c>), reached through the BFF gateway so the browser's session carries
+/// the signed-in person's token. Each call returns the API's own answer, so the page can show a refusal as it came.
+/// </summary>
+public sealed class UserAdminApiClient(HttpClient http, IConfiguration configuration)
+{
+    private const string BaseRoute = "/api/identity/users";
+
+    // With a sign-in the calls go through the BFF (Bff:BaseUrl), which forwards /api with the session's token.
+    private readonly HttpClient _http = Configure(http, configuration);
+
+    private static HttpClient Configure(HttpClient http, IConfiguration configuration)
+    {
+        var baseUrl = configuration["Bff:BaseUrl"] ?? configuration["Api:BaseUrl"] ?? "http://localhost:5180";
+        http.BaseAddress = new Uri($"{baseUrl.TrimEnd('/')}/");
+        return http;
+    }
+
+    public Task<HttpResponseMessage> ListAsync(string? search, string? status, string? role, int page, CancellationToken ct)
+        => _http.GetAsync($"{BaseRoute}?search={Uri.EscapeDataString(search ?? "")}&status={Uri.EscapeDataString(status ?? "")}&role={Uri.EscapeDataString(role ?? "")}&page={page}", ct);
+
+    public Task<HttpResponseMessage> ExportAsync(string? search, string? status, string? role, CancellationToken ct)
+        => _http.GetAsync($"{BaseRoute}/export?search={Uri.EscapeDataString(search ?? "")}&status={Uri.EscapeDataString(status ?? "")}&role={Uri.EscapeDataString(role ?? "")}", ct);
+
+    public Task<HttpResponseMessage> InviteAsync(string email, IReadOnlyList<string> roles, string? firstName, string? lastName, CancellationToken ct)
+        => _http.PostAsJsonAsync($"{BaseRoute}/invitations", new { email, roles, firstName, lastName }, ct);
+
+    public Task<HttpResponseMessage> SessionsAsync(Guid id, CancellationToken ct) => _http.GetAsync($"{BaseRoute}/{id:D}/sessions", ct);
+
+    public Task<HttpResponseMessage> RevokeSessionAsync(Guid id, string sessionId, CancellationToken ct)
+        => _http.DeleteAsync($"{BaseRoute}/{id:D}/sessions/{Uri.EscapeDataString(sessionId)}", ct);
+
+    public Task<HttpResponseMessage> LoginHistoryAsync(Guid id, CancellationToken ct) => _http.GetAsync($"{BaseRoute}/{id:D}/login-history", ct);
+
+    public Task<HttpResponseMessage> GetAsync(Guid id, CancellationToken ct) => _http.GetAsync($"{BaseRoute}/{id:D}", ct);
+
+    public Task<HttpResponseMessage> EffectiveAccessAsync(Guid id, CancellationToken ct) => _http.GetAsync($"{BaseRoute}/{id:D}/effective-access", ct);
+
+    public Task<HttpResponseMessage> SetRolesAsync(Guid id, IReadOnlyList<string> roles, CancellationToken ct)
+        => _http.PutAsJsonAsync($"{BaseRoute}/{id:D}/roles", new { roles }, ct);
+
+    public Task<HttpResponseMessage> LockAsync(Guid id, DateTimeOffset? until, string reason, CancellationToken ct)
+        => _http.PostAsJsonAsync($"{BaseRoute}/{id:D}/lock", new { until, reason }, ct);
+
+    public Task<HttpResponseMessage> UnlockAsync(Guid id, CancellationToken ct) => _http.PostAsync($"{BaseRoute}/{id:D}/unlock", null, ct);
+}

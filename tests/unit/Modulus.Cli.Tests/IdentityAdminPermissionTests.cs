@@ -6,7 +6,8 @@ namespace Modulus.Cli.Tests;
 
 /// <summary>
 /// The identity-account administration permission (owner decision, 2026-10-23): registered in every generated app with an identity
-/// backend, discoverable, Critical, and granted to no role by default. Generated apps expose no such route, so the gate holds.
+/// backend, discoverable, Critical, and granted to no role by default. The user administration routes sit behind the permission, so
+/// the gate holds until an administrator is granted it through the authorization API.
 /// </summary>
 [Trait("Category", "Unit")]
 [Collection(UxStateCollection.Name)]

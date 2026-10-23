@@ -3,7 +3,9 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Modulus.Authorization.Extensions;
+using Modulus.Authorization.Fields;
 using Modulus.Core.Abstractions;
+using Modulus.Core.Abstractions.Entities;
 using Modulus.Identity.Abstractions;
 
 namespace Modulus.Identity.Extensions;
@@ -28,14 +30,34 @@ public static class AccountLifecycleExtensions
     /// <summary>The permission that guards the lifecycle routes.</summary>
     public const string ManagePermission = "identity:accounts:manage";
 
-    /// <summary>Registers the permission. Requires <c>AddModulusAuthorization</c> for the permission to be enforced.</summary>
+    /// <summary>
+    /// The permission that reads personal fields (name, email) of an account. Without it the user administration routes mask those
+    /// fields (decision D-P3); it is Sensitive, so it can be granted to a role without being Critical.
+    /// </summary>
+    public const string PersonalDataPermission = "identity:accounts:personal-data";
+
+    /// <summary>Registers the permissions and the field guard for personal fields. Requires <c>AddModulusAuthorization</c> for the permissions to be enforced.</summary>
     public static IServiceCollection AddModulusAccountLifecycleAdmin(this IServiceCollection services)
-        => services.AddPermissions("Modulus.Identity.Accounts", registry =>
+    {
+        services.AddPermissions("Modulus.Identity.Accounts", registry =>
+        {
             registry.Add(
                 ManagePermission,
                 "Change the lifecycle of company accounts (suspend, reinstate, archive) and approve a rehire.",
                 null,
-                PermissionSensitivity.Critical));
+                PermissionSensitivity.Critical);
+            registry.Add(
+                PersonalDataPermission,
+                "Read the personal fields of accounts (name, email) in the user administration routes.",
+                null,
+                PermissionSensitivity.Sensitive);
+        });
+
+        var personalData = FieldSecurityProfile.Define(profile => profile.Classification(FieldClassification.Restricted, read: PersonalDataPermission));
+        services.AddFieldSecurity<UserSummary>(personalData);
+        services.AddFieldSecurity<UserDetail>(personalData);
+        return services;
+    }
 
     /// <summary>Maps <c>{prefix}/{id}/lifecycle</c> and <c>{prefix}/{id}/rehire</c> (default prefix <c>/identity/accounts</c>).</summary>
     public static RouteGroupBuilder MapModulusAccountLifecycle(this IEndpointRouteBuilder endpoints, string prefix = "/identity/accounts")

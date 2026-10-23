@@ -27,6 +27,7 @@ public static class ApiClientExtensions
 {{~ end ~}}
 {{~ if auth == "openiddict" ~}}
         services.AddBffGatewayClient<NavigationMenuClient>();
+        services.AddBffGatewayClient<UserAdminApiClient>();
         services.AddBffGatewayClient<PasskeyApiClient>();
         services.AddModulusHttpClient<PasskeyLoginClient>().ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler { UseCookies = false });
 {{~ end ~}}

@@ -202,6 +202,58 @@ public class TenantManager<TTenant, TMembership, TDataStore>(
         return true;
     }
 
+    /// <summary>
+    /// One page of companies, newest last by slug, optionally filtered by a part of the slug or the display name. Reads only; the
+    /// caller is responsible for the host context.
+    /// </summary>
+    public async Task<(IReadOnlyList<TenantAdminView> Items, int Total)> ListAsync(string? search, int page, int pageSize, CancellationToken ct = default)
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThan(page, 1);
+        ArgumentOutOfRangeException.ThrowIfLessThan(pageSize, 1);
+
+        var query = db.Tenants.AsNoTracking();
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var term = search.Trim();
+            query = query.Where(t => t.Slug.Contains(term) || (t.DisplayName != null && t.DisplayName.Contains(term)));
+        }
+
+        var total = await query.CountAsync(ct);
+        var items = await query
+            .OrderBy(t => t.Slug)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(ViewOf)
+            .ToListAsync(ct);
+        return (items, total);
+    }
+
+    /// <summary>One company, or null when no company has the id.</summary>
+    public Task<TenantAdminView?> GetAsync(Guid id, CancellationToken ct = default)
+        => db.Tenants.AsNoTracking().Where(t => t.Id == id).Select(ViewOf).FirstOrDefaultAsync(ct);
+
+    /// <summary>Every membership of a company, active or revoked, oldest first.</summary>
+    public async Task<IReadOnlyList<TenantMemberView>> ListMembersAsync(Guid tenantId, CancellationToken ct = default)
+    {
+        // Sorted here: SQLite cannot order by DateTimeOffset in the database.
+        var members = await db.TenantMemberships.AsNoTracking()
+            .Where(m => m.TenantId == tenantId)
+            .Select(m => new TenantMemberView(m.UserId, m.IsActive, m.CreatedAtUtc))
+            .ToListAsync(ct);
+        return members.OrderBy(m => m.AddedAtUtc).ToList();
+    }
+
+    private System.Linq.Expressions.Expression<Func<TTenant, TenantAdminView>> ViewOf => t => new TenantAdminView(
+        t.Id,
+        t.Slug,
+        t.DisplayName,
+        t.GroupId,
+        t.Status,
+        t.TrialEndsAt,
+        t.MaxUsers,
+        db.TenantMemberships.Count(m => m.TenantId == t.Id && m.IsActive),
+        t.CreatedAtUtc);
+
     private ValueTask NotifyAsync(string kind, string reason, Guid tenantId, Guid? userId, CancellationToken ct)
         => observers is null
             ? ValueTask.CompletedTask

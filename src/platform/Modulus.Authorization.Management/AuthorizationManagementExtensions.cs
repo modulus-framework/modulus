@@ -68,6 +68,9 @@ public static partial class AuthorizationManagementExtensions
         services.AddOptions<AuthorizationManagementOptions>();
         services.AddOptions<PermissionExceptionOptions>();
 
+        // The role deletion clearance check reads the grant store (premodule 1, D-P1). TryAdd so an app can replace it.
+        services.TryAddScoped<IRoleDeletionGuard, RoleDeletionGuard>();
+
         // Every mutating endpoint resolves ICurrentUser to attribute the audit
         // event (blueprint §5.14/§16). Normally registered by AddModulus/
         // AddMediator/AddModulusIdentity — TryAdd so this package doesn't
@@ -304,7 +307,7 @@ public static partial class AuthorizationManagementExtensions
     }
 
     /// <summary>The permissions the holder would effectively have after the grant, for the SoD simulation.</summary>
-    private static async Task<(bool Unknown, HashSet<string> Permissions)> ProposedPermissionsAsync(
+    internal static async Task<(bool Unknown, HashSet<string> Permissions)> ProposedPermissionsAsync(
         GrantHolderType holderType, string holder, string[]? holderRoles, List<string> granted,
         EfPermissionGrantStore store, [FromServices] IUserRoleDirectory? roleDirectory,
         IEffectiveAccessService? effectiveAccessService, CancellationToken ct)
@@ -353,7 +356,7 @@ public static partial class AuthorizationManagementExtensions
         return (false, proposed);
     }
 
-    private static async Task<IResult> RefuseAsync(
+    internal static async Task<IResult> RefuseAsync(
         IAuthorizationAuditWriter auditWriter, ICurrentUser currentUser,
         string category, string target, string reason, string detail, CancellationToken ct)
     {
@@ -1545,7 +1548,7 @@ public static partial class AuthorizationManagementExtensions
     /// only: a failed store write never reaches this call, so there is no audit
     /// record for a change that didn't happen.
     /// </summary>
-    private static async Task EmitAuditAsync(
+    internal static async Task EmitAuditAsync(
         IAuthorizationAuditWriter auditWriter, IEnumerable<IAccessChangeObserver> observers,
         ICurrentUser currentUser,
         string category,
