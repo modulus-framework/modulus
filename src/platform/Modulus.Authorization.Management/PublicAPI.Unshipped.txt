@@ -837,3 +837,99 @@ static Modulus.Authorization.Management.AuthorizationManagementExtensions.Record
 static Modulus.Authorization.Management.AuthorizationManagementExtensions.RecordShareRequest.operator ==(Modulus.Authorization.Management.AuthorizationManagementExtensions.RecordShareRequest? left, Modulus.Authorization.Management.AuthorizationManagementExtensions.RecordShareRequest? right) -> bool
 static Modulus.Authorization.Management.AuthorizationManagementExtensions.RecordShareResponse.operator !=(Modulus.Authorization.Management.AuthorizationManagementExtensions.RecordShareResponse? left, Modulus.Authorization.Management.AuthorizationManagementExtensions.RecordShareResponse? right) -> bool
 static Modulus.Authorization.Management.AuthorizationManagementExtensions.RecordShareResponse.operator ==(Modulus.Authorization.Management.AuthorizationManagementExtensions.RecordShareResponse? left, Modulus.Authorization.Management.AuthorizationManagementExtensions.RecordShareResponse? right) -> bool
+Modulus.Authorization.Management.PermissionExceptionEndpoints
+Modulus.Authorization.Management.PermissionExceptionFindingView
+Modulus.Authorization.Management.PermissionExceptionFindingView.<Clone>$() -> Modulus.Authorization.Management.PermissionExceptionFindingView!
+Modulus.Authorization.Management.PermissionExceptionFindingView.Deconstruct(out string! Permission, out string! HolderType, out string! Holder, out bool HadExpiredException) -> void
+Modulus.Authorization.Management.PermissionExceptionFindingView.Equals(Modulus.Authorization.Management.PermissionExceptionFindingView? other) -> bool
+Modulus.Authorization.Management.PermissionExceptionFindingView.HadExpiredException.get -> bool
+Modulus.Authorization.Management.PermissionExceptionFindingView.HadExpiredException.init -> void
+Modulus.Authorization.Management.PermissionExceptionFindingView.Holder.get -> string!
+Modulus.Authorization.Management.PermissionExceptionFindingView.Holder.init -> void
+Modulus.Authorization.Management.PermissionExceptionFindingView.HolderType.get -> string!
+Modulus.Authorization.Management.PermissionExceptionFindingView.HolderType.init -> void
+Modulus.Authorization.Management.PermissionExceptionFindingView.PermissionExceptionFindingView(string! Permission, string! HolderType, string! Holder, bool HadExpiredException) -> void
+Modulus.Authorization.Management.PermissionExceptionFindingView.Permission.get -> string!
+Modulus.Authorization.Management.PermissionExceptionFindingView.Permission.init -> void
+Modulus.Authorization.Management.PermissionExceptionOptions
+Modulus.Authorization.Management.PermissionExceptionOptions.MaxDuration.get -> System.TimeSpan
+Modulus.Authorization.Management.PermissionExceptionOptions.MaxDuration.set -> void
+Modulus.Authorization.Management.PermissionExceptionOptions.MinJustificationLength.get -> int
+Modulus.Authorization.Management.PermissionExceptionOptions.MinJustificationLength.set -> void
+Modulus.Authorization.Management.PermissionExceptionOptions.PermissionExceptionOptions() -> void
+Modulus.Authorization.Management.PermissionExceptionView
+Modulus.Authorization.Management.PermissionExceptionView.Active.get -> bool
+Modulus.Authorization.Management.PermissionExceptionView.Active.init -> void
+Modulus.Authorization.Management.PermissionExceptionView.BusinessOwner.get -> string!
+Modulus.Authorization.Management.PermissionExceptionView.BusinessOwner.init -> void
+Modulus.Authorization.Management.PermissionExceptionView.<Clone>$() -> Modulus.Authorization.Management.PermissionExceptionView!
+Modulus.Authorization.Management.PermissionExceptionView.CompensatingControl.get -> string?
+Modulus.Authorization.Management.PermissionExceptionView.CompensatingControl.init -> void
+Modulus.Authorization.Management.PermissionExceptionView.CreatedAt.get -> System.DateTimeOffset
+Modulus.Authorization.Management.PermissionExceptionView.CreatedAt.init -> void
+Modulus.Authorization.Management.PermissionExceptionView.Deconstruct(out System.Guid Id, out string! Permission, out string! HolderType, out string! Holder, out string! Justification, out string? CompensatingControl, out string! BusinessOwner, out System.Guid RequestedBy, out System.DateTimeOffset ValidFrom, out System.DateTimeOffset ValidUntil, out System.DateTimeOffset ReviewDueOn, out System.DateTimeOffset CreatedAt, out System.Guid? ReviewedBy, out System.DateTimeOffset? ReviewedAt, out System.Guid? RevokedBy, out System.DateTimeOffset? RevokedAt, out bool Active) -> void
+Modulus.Authorization.Management.PermissionExceptionView.Equals(Modulus.Authorization.Management.PermissionExceptionView? other) -> bool
+Modulus.Authorization.Management.PermissionExceptionView.Holder.get -> string!
+Modulus.Authorization.Management.PermissionExceptionView.Holder.init -> void
+Modulus.Authorization.Management.PermissionExceptionView.HolderType.get -> string!
+Modulus.Authorization.Management.PermissionExceptionView.HolderType.init -> void
+Modulus.Authorization.Management.PermissionExceptionView.Id.get -> System.Guid
+Modulus.Authorization.Management.PermissionExceptionView.Id.init -> void
+Modulus.Authorization.Management.PermissionExceptionView.Justification.get -> string!
+Modulus.Authorization.Management.PermissionExceptionView.Justification.init -> void
+Modulus.Authorization.Management.PermissionExceptionView.PermissionExceptionView(System.Guid Id, string! Permission, string! HolderType, string! Holder, string! Justification, string? CompensatingControl, string! BusinessOwner, System.Guid RequestedBy, System.DateTimeOffset ValidFrom, System.DateTimeOffset ValidUntil, System.DateTimeOffset ReviewDueOn, System.DateTimeOffset CreatedAt, System.Guid? ReviewedBy, System.DateTimeOffset? ReviewedAt, System.Guid? RevokedBy, System.DateTimeOffset? RevokedAt, bool Active) -> void
+Modulus.Authorization.Management.PermissionExceptionView.Permission.get -> string!
+Modulus.Authorization.Management.PermissionExceptionView.Permission.init -> void
+Modulus.Authorization.Management.PermissionExceptionView.RequestedBy.get -> System.Guid
+Modulus.Authorization.Management.PermissionExceptionView.RequestedBy.init -> void
+Modulus.Authorization.Management.PermissionExceptionView.ReviewDueOn.get -> System.DateTimeOffset
+Modulus.Authorization.Management.PermissionExceptionView.ReviewDueOn.init -> void
+Modulus.Authorization.Management.PermissionExceptionView.ReviewedAt.get -> System.DateTimeOffset?
+Modulus.Authorization.Management.PermissionExceptionView.ReviewedAt.init -> void
+Modulus.Authorization.Management.PermissionExceptionView.ReviewedBy.get -> System.Guid?
+Modulus.Authorization.Management.PermissionExceptionView.ReviewedBy.init -> void
+Modulus.Authorization.Management.PermissionExceptionView.RevokedAt.get -> System.DateTimeOffset?
+Modulus.Authorization.Management.PermissionExceptionView.RevokedAt.init -> void
+Modulus.Authorization.Management.PermissionExceptionView.RevokedBy.get -> System.Guid?
+Modulus.Authorization.Management.PermissionExceptionView.RevokedBy.init -> void
+Modulus.Authorization.Management.PermissionExceptionView.ValidFrom.get -> System.DateTimeOffset
+Modulus.Authorization.Management.PermissionExceptionView.ValidFrom.init -> void
+Modulus.Authorization.Management.PermissionExceptionView.ValidUntil.get -> System.DateTimeOffset
+Modulus.Authorization.Management.PermissionExceptionView.ValidUntil.init -> void
+Modulus.Authorization.Management.PermissionExceptionWriteRequest
+Modulus.Authorization.Management.PermissionExceptionWriteRequest.BusinessOwner.get -> string?
+Modulus.Authorization.Management.PermissionExceptionWriteRequest.BusinessOwner.init -> void
+Modulus.Authorization.Management.PermissionExceptionWriteRequest.<Clone>$() -> Modulus.Authorization.Management.PermissionExceptionWriteRequest!
+Modulus.Authorization.Management.PermissionExceptionWriteRequest.CompensatingControl.get -> string?
+Modulus.Authorization.Management.PermissionExceptionWriteRequest.CompensatingControl.init -> void
+Modulus.Authorization.Management.PermissionExceptionWriteRequest.Deconstruct(out string? Permission, out string? HolderType, out string? Holder, out string? Justification, out string? CompensatingControl, out string? BusinessOwner, out System.DateTimeOffset? ValidUntil, out System.DateTimeOffset? ReviewDueOn) -> void
+Modulus.Authorization.Management.PermissionExceptionWriteRequest.Equals(Modulus.Authorization.Management.PermissionExceptionWriteRequest? other) -> bool
+Modulus.Authorization.Management.PermissionExceptionWriteRequest.Holder.get -> string?
+Modulus.Authorization.Management.PermissionExceptionWriteRequest.Holder.init -> void
+Modulus.Authorization.Management.PermissionExceptionWriteRequest.HolderType.get -> string?
+Modulus.Authorization.Management.PermissionExceptionWriteRequest.HolderType.init -> void
+Modulus.Authorization.Management.PermissionExceptionWriteRequest.Justification.get -> string?
+Modulus.Authorization.Management.PermissionExceptionWriteRequest.Justification.init -> void
+Modulus.Authorization.Management.PermissionExceptionWriteRequest.PermissionExceptionWriteRequest(string? Permission, string? HolderType, string? Holder, string? Justification, string? CompensatingControl, string? BusinessOwner, System.DateTimeOffset? ValidUntil, System.DateTimeOffset? ReviewDueOn) -> void
+Modulus.Authorization.Management.PermissionExceptionWriteRequest.Permission.get -> string?
+Modulus.Authorization.Management.PermissionExceptionWriteRequest.Permission.init -> void
+Modulus.Authorization.Management.PermissionExceptionWriteRequest.ReviewDueOn.get -> System.DateTimeOffset?
+Modulus.Authorization.Management.PermissionExceptionWriteRequest.ReviewDueOn.init -> void
+Modulus.Authorization.Management.PermissionExceptionWriteRequest.ValidUntil.get -> System.DateTimeOffset?
+Modulus.Authorization.Management.PermissionExceptionWriteRequest.ValidUntil.init -> void
+override Modulus.Authorization.Management.PermissionExceptionFindingView.Equals(object? obj) -> bool
+override Modulus.Authorization.Management.PermissionExceptionFindingView.GetHashCode() -> int
+override Modulus.Authorization.Management.PermissionExceptionFindingView.ToString() -> string!
+override Modulus.Authorization.Management.PermissionExceptionView.Equals(object? obj) -> bool
+override Modulus.Authorization.Management.PermissionExceptionView.GetHashCode() -> int
+override Modulus.Authorization.Management.PermissionExceptionView.ToString() -> string!
+override Modulus.Authorization.Management.PermissionExceptionWriteRequest.Equals(object? obj) -> bool
+override Modulus.Authorization.Management.PermissionExceptionWriteRequest.GetHashCode() -> int
+override Modulus.Authorization.Management.PermissionExceptionWriteRequest.ToString() -> string!
+static Modulus.Authorization.Management.PermissionExceptionEndpoints.MapModulusPermissionExceptions(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! prefix = "/authorization/exceptions") -> Microsoft.AspNetCore.Routing.RouteGroupBuilder!
+static Modulus.Authorization.Management.PermissionExceptionFindingView.operator !=(Modulus.Authorization.Management.PermissionExceptionFindingView? left, Modulus.Authorization.Management.PermissionExceptionFindingView? right) -> bool
+static Modulus.Authorization.Management.PermissionExceptionFindingView.operator ==(Modulus.Authorization.Management.PermissionExceptionFindingView? left, Modulus.Authorization.Management.PermissionExceptionFindingView? right) -> bool
+static Modulus.Authorization.Management.PermissionExceptionView.operator !=(Modulus.Authorization.Management.PermissionExceptionView? left, Modulus.Authorization.Management.PermissionExceptionView? right) -> bool
+static Modulus.Authorization.Management.PermissionExceptionView.operator ==(Modulus.Authorization.Management.PermissionExceptionView? left, Modulus.Authorization.Management.PermissionExceptionView? right) -> bool
+static Modulus.Authorization.Management.PermissionExceptionWriteRequest.operator !=(Modulus.Authorization.Management.PermissionExceptionWriteRequest? left, Modulus.Authorization.Management.PermissionExceptionWriteRequest? right) -> bool
+static Modulus.Authorization.Management.PermissionExceptionWriteRequest.operator ==(Modulus.Authorization.Management.PermissionExceptionWriteRequest? left, Modulus.Authorization.Management.PermissionExceptionWriteRequest? right) -> bool

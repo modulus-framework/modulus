@@ -50,23 +50,27 @@ Not built: notifications to approvers and per-profile approver lists. Until they
 
 ## 3. Exception register
 
-An exception lets a privileged permission reach a person or service that the classification would otherwise refuse. The framework
-does not store exceptions yet, so the register is kept by the operator in a controlled system and reviewed on a fixed cadence.
+An exception records why a holder keeps a Critical permission: the justification, the business owner who approved it, a
+compensating control, the end date and a review. The register is stored in the authorization database (table
+`ModulusPermissionExceptions`, tenant-scoped, upgrade script step 4) and served under `/authorization/exceptions` by
+`MapModulusPermissionExceptions()`. A host maps the routes itself; the generated applications do not map them yet.
 
-Each entry records:
+Rules, as built:
 
-- the permission and the principal (a person, or an `integration:{clientId}` service identity);
-- the justification and the business owner who approved it;
-- the start and end date (an exception without an end date is refused; the maximum is set by the owner);
-- the least privilege that meets the need, and the compensating control;
-- the review date and the reviewer, who is not the requester.
+- Only a Critical permission can have an exception. The holder is a role or another user; a person cannot record one for themselves.
+- The justification is at least 20 characters. The end date is in the future and at most 90 days away (`PermissionExceptionOptions`).
+- The review date is after now and no later than the end date. The person who recorded an exception cannot review it.
+- An exception is reviewed once and can be ended early once. Both are audited (`PermissionException`).
 
-Service identities use the `integration:` role and need their own grant; they never inherit a person's privileged access. Revoke an
-exception by removing the grant (the next request is refused) and record the revocation.
+The register reports and does not enforce. `GET /authorization/exceptions/findings` lists each role or user grant of a Critical
+permission that no active exception explains, and marks those whose exception has ended. Run it on the review cadence and treat each
+finding as an open item. Revoking the grant is what removes access; ending the exception only changes what the register reports.
+
+Service identities use the `integration:` role and need their own grant; they never inherit a person's privileged access.
 
 ## 4. Verification
 
-- Build and test: `OutboxManagementApiTests.Replaying_and_inspecting_the_outbox_is_a_critical_permission` and the step-up tests
-  (`StepUpTests`).
+- Build and test: `OutboxManagementApiTests.Replaying_and_inspecting_the_outbox_is_a_critical_permission`, the step-up tests
+  (`StepUpTests`) and `PermissionExceptionApiTests` (8).
 - Production: a privileged route with a password-only token must return 401 `STEP_UP_REQUIRED`; with a passkey token, 200 (the
   check recorded in §14.6 of `docs/IDENTITY_PLATFORM_PLAN.md`, run 2026-10-23 on a generated app with scratch-only setup).

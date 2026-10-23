@@ -825,3 +825,40 @@ The owner's decision memo pasted into the session (2026-10-23) is recorded here.
 | OpenBao (operator) | Mandatory end-to-end TLS, including cluster traffic. Raft of five nodes preferred, three as the constrained-HA minimum (one node may fail; a one- or two-node cluster is not HA). Auto-unseal through an independent KMS or HSM preferred; a documented manual-unseal alternative if none exists, never a stored static key. Two independent audit destinations, tested for failure. Kubernetes roles bound to explicit service-account names and namespaces, with access and denial both tested. | Requirements recorded. Operator-owned: none of this is deployed or verified here. Production readiness needs the evidence the memo lists: TLS validation, quorum and recovery, seal and restart recovery, audit-device failure, snapshot restore, Kubernetes access tests, with the configuration version and an accountable sign-off. |
 
 **Not claimed by this record:** that any test, benchmark, operator task or release has been executed for these items, or that production is ready. The owner's memo says the same.
+
+### 14.8 Grant copy for the permission check (built 2026-10-23, off by default)
+
+`TtlPermissionGrantStore` (`Modulus.Platform`) keeps each principal's grants on this node for `Authorization:GrantCache:Duration`
+(`PermissionGrantCacheOptions.Duration`). It keeps grants only, never a decision. The default is zero, which means off, and then a
+revoked grant applies on the next check (`RevocationLatencyTests`). A change announced through `IAccessChangeObserver` empties the
+copy at once on this node; other nodes wait for the duration. Concurrent misses for one principal share one database read. Keys
+include the company. Tests: `TtlPermissionGrantStoreTests` (7, both targets). **The owner must choose the duration** (D9): it is the
+trade-off between the 10 ms objective and revocation time on other nodes.
+
+Measured with `tests/benchmarks/Modulus.Benchmarks.EfLatency` on PostgreSQL 17 (one host, 5 roles, 5,000 checks, one run per row, a
+warm copy except where stated). p95 in ms:
+
+| Grants | Copy | c1 | c8 | c32 | Notes |
+|---:|---|---:|---:|---:|---|
+| 1,000 | off | 4.69 | 7.13 | 45.63 | the database cost of every check |
+| 1,000 | 5 s | 0.31 | 0.17 | 0.17 | warm; a miss pays the database cost |
+| 10,000 | 5 s | 3.14 | 8.26 | 38.94 | warm; resolution over 10,000 grants is now the cost |
+
+Not met: 10,000 grants at concurrency 32 (39 ms p95). The copy removes the database round-trip; evaluating every grant per check
+(`PermissionResolver`) is the next cost, and an index by permission would address it. One sample at concurrency 32 took 2.5 s; its
+cause is not known. Cold-path latency (a miss) is the uncached figure above. Warm and cold are reported separately, as the memo asks.
+
+### 14.9 Status after the completion round (2026-10-23)
+
+| Item | Status | Evidence or what is needed |
+|---|---|---|
+| Permission-check latency (10 ms p95) | Partly met: 1,000 grants with a warm grant copy at 0.17 ms p95 (c32); 10,000 grants at 39 ms (c32) | §14.8. A structural change to the resolver (an index by permission, or a precomputed set per principal) is needed for 10,000 grants. Not built: it changes security-critical evaluation. |
+| Per-category audit retention | Not built | The purge removes a prefix of one hash chain (archive first). A window per category needs one chain per category, which changes the audit format of existing deployments. Owner decision. |
+| Exception register | Built (2026-10-23) | `EfPermissionExceptionStore`, `MapModulusPermissionExceptions`, table `ModulusPermissionExceptions` (upgrade step 4, verified twice on PostgreSQL 17, SQL Server 2022, MySQL 8.4), `PermissionExceptionApiTests` (8). It reports; it does not enforce. |
+| Cross-node settings without Redis | Built (2026-10-23) | `ModulusSettingVersions` change counter, `SettingVersionPoller` every `Settings:VersionCheckInterval` (5 s). Tenancy upgrade step 4, verified twice on each engine. `SettingVersionPollerTests` (2). |
+| MVC web host routing | Fixed (2026-10-23) | Attribute-routed controllers mapped; the default route requires sign-in. Verified on a generated MVC app: `/widgets` redirects to sign-in, health 200. |
+| `ui create-form-from-entity` partial | Clarified | The command says it wrote a partial and points to `ui create-crud`. The partial is still not a page, by design. |
+| `generate-crud --ui-engine` | Open | The flag is accepted and ignored; no files are misplaced. Rejecting it is a small change, not yet made. |
+| `/account/*` on the Web host | Not reproduced | The Blazor host maps its own; the Razor and MVC hosts sign in through the BFF. |
+| Round trip in the templates | Not built | Needs the example Web pages decision (`webapp+api` apps have no example pages). |
+| Authorization upgrade scripts | Partial (pre-existing gap) | The scripts create the seed marker, dimension values and the exception register. The other 31 authorization tables (access requests, approval, positions, party links, scoped grants, record shares, ...) are not in any script; deployments must author them as migrations in the application (the release notes require it). A full idempotent script generated from the model is the fix, not started. |

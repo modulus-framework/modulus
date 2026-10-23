@@ -1224,9 +1224,10 @@ isolation, hash-chained security audit, probe suite), and the provider integrati
 - **Known gaps (open).**
   - Identity tables are not opt-in, as noted above.
   - The `ui` CLI defects below are deferred by decision.
-- **Open CLI defects in the `ui` commands (deferred):** MVC controllers are generated but never routed (`Program.Web.sbn` maps only Razor
-  Pages); auth pages call `/account/*` on the Web host, which has no Identity endpoints on `webapp+api`; `generate-crud` with
-  `--ui-engine` misplaces files; `--kind` help omits `webapp+api`.
+- **CLI defects in the `ui` commands (status 2026-10-23):** fixed: MVC controllers were unreachable and an MVC web host refused to
+  start under the security guard (`WebEndpoints.Web.sbn` now maps controllers and polices the default route). Not reproduced: auth
+  pages calling `/account/*` (the Blazor host maps its own; the Razor and MVC hosts sign in through the BFF). Open: `generate-crud`
+  accepts `--ui-engine` and silently ignores it (no files are misplaced); `--kind` help omits `webapp+api`.
 
 ## Cross-surface errors, REST completeness, performance (audit remediation)
 

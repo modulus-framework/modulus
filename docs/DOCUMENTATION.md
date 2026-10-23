@@ -6161,6 +6161,11 @@ Decisions (taken by the engineering team; the owner may revise them):
   own version. A node ignores its own message (the origin is per notifier instance). Delivery is best effort: a lost message leaves the
   other nodes stale until their cache entries expire, so `Settings:CacheDuration` remains the bound on staleness. Tests:
   `RedisSettingChangeBackplaneTests` (2, Testcontainers Redis, both targets) and `SettingsPhase5Tests` (notifier calls).
+  **Without Redis (built 2026-10-23):** the EF store advances a change counter (`ModulusSettingVersions`, tenant store database) after
+  each write, and each node checks it every `Settings:VersionCheckInterval` (5 seconds by default; zero turns it off). A change seen
+  this way empties the node's cache. The first reading is the baseline, so a node does not empty its cache at start-up. The counter
+  table is upgrade step 4 of the tenancy scripts (verified twice on PostgreSQL 17, SQL Server 2022 and MySQL 8.4). Test:
+  `SettingVersionPollerTests` (two nodes on one database, both targets).
 - **Concurrency.** Two writes to the same setting at the same scope at once can both insert; one fails on the key and the caller sees
   the exception. Settings change rarely; a retry repeats the write.
 

@@ -57,4 +57,27 @@ CREATE TABLE IF NOT EXISTS "ModulusDimensionValues" (
 CREATE UNIQUE INDEX IF NOT EXISTS "IX_ModulusDimensionValues_TenantId_Dimension_Code" ON "ModulusDimensionValues" ("TenantId", "Dimension", "Code");
 CREATE INDEX IF NOT EXISTS "IX_ModulusDimensionValues_TenantId_ParentId" ON "ModulusDimensionValues" ("TenantId", "ParentId");
 
+-- 4. Permission exceptions: the register of privileged-permission exceptions (who keeps a Critical permission, why, until when).
+CREATE TABLE IF NOT EXISTS "ModulusPermissionExceptions" (
+    "Id" uuid NOT NULL,
+    "TenantId" uuid NOT NULL,
+    "Permission" varchar(200) NOT NULL,
+    "HolderType" integer NOT NULL,
+    "Holder" varchar(200) NOT NULL,
+    "Justification" varchar(2000) NOT NULL,
+    "CompensatingControl" varchar(2000) NULL,
+    "BusinessOwner" varchar(200) NOT NULL,
+    "RequestedBy" uuid NOT NULL,
+    "ValidFrom" timestamptz NOT NULL,
+    "ValidUntil" timestamptz NOT NULL,
+    "ReviewDueOn" timestamptz NOT NULL,
+    "CreatedAt" timestamptz NOT NULL,
+    "ReviewedBy" uuid NULL,
+    "ReviewedAt" timestamptz NULL,
+    "RevokedBy" uuid NULL,
+    "RevokedAt" timestamptz NULL,
+    CONSTRAINT "PK_ModulusPermissionExceptions" PRIMARY KEY ("Id")
+);
+CREATE INDEX IF NOT EXISTS "IX_PermissionExceptions_Holder" ON "ModulusPermissionExceptions" ("TenantId", "Permission", "HolderType", "Holder");
+
 COMMIT;

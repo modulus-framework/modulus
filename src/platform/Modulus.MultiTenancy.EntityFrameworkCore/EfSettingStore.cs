@@ -53,6 +53,35 @@ public sealed class EfSettingStore(TenantStoreDbContextBase db) : ISettingStore
         }
 
         await db.SaveChangesAsync(ct).ConfigureAwait(false);
+        await BumpVersionAsync(ct).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Advances the change counter that the other nodes poll. It is written after the value, so a node that sees the new counter reads the
+    /// new value. The first write creates the row; two first writes that race retry the update.
+    /// </summary>
+    private async Task BumpVersionAsync(CancellationToken ct)
+    {
+        var updated = await db.SettingVersions
+            .Where(v => v.Name == SettingVersionEntity.SettingsName)
+            .ExecuteUpdateAsync(s => s.SetProperty(v => v.Version, v => v.Version + 1), ct)
+            .ConfigureAwait(false);
+        if (updated > 0)
+            return;
+
+        try
+        {
+            db.SettingVersions.Add(new SettingVersionEntity { Version = 1 });
+            await db.SaveChangesAsync(ct).ConfigureAwait(false);
+        }
+        catch (DbUpdateException)
+        {
+            // Another writer created the row first: count this change on that row.
+            await db.SettingVersions
+                .Where(v => v.Name == SettingVersionEntity.SettingsName)
+                .ExecuteUpdateAsync(s => s.SetProperty(v => v.Version, v => v.Version + 1), ct)
+                .ConfigureAwait(false);
+        }
     }
 
     public async Task RemoveAsync(string name, Guid? tenantId, Guid? userId, CancellationToken ct = default)
@@ -62,5 +91,6 @@ public sealed class EfSettingStore(TenantStoreDbContextBase db) : ISettingStore
             .Where(s => s.Name == name && s.ScopeKey == scope)
             .ExecuteDeleteAsync(ct)
             .ConfigureAwait(false);
+        await BumpVersionAsync(ct).ConfigureAwait(false);
     }
 }

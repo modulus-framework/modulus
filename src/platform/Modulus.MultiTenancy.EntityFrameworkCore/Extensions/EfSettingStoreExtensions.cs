@@ -3,6 +3,7 @@ namespace Modulus.MultiTenancy.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Modulus.Settings;
 
@@ -19,6 +20,8 @@ public static class EfSettingStoreExtensions
         services.AddMemoryCache();
         services.AddModulusSettings();
         services.TryAddSingleton<ISettingChangeNotifier, NullSettingChangeNotifier>();
+        // Without Redis, the other nodes learn of a change from the database counter (see SettingVersionPoller).
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, SettingVersionPoller>());
         services.RemoveAll<ISettingStore>();
         services.AddScoped<EfSettingStore>();
         services.AddScoped<ISettingStore>(sp =>

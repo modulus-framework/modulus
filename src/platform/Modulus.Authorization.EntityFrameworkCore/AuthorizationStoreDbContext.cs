@@ -43,6 +43,7 @@ public abstract class AuthorizationStoreDbContextBase(
     internal DbSet<DimensionValueRow> DimensionValues => Set<DimensionValueRow>();
     internal DbSet<PositionAssignmentRow> PositionAssignments => Set<PositionAssignmentRow>();
     internal DbSet<AccessRequestRow> AccessRequests => Set<AccessRequestRow>();
+    internal DbSet<PermissionExceptionRow> PermissionExceptions => Set<PermissionExceptionRow>();
     internal DbSet<PermissionCatalogRow> PermissionCatalog => Set<PermissionCatalogRow>();
 
     /// <summary>
@@ -279,6 +280,17 @@ public abstract class AuthorizationStoreDbContextBase(
         accessRequest.Property(r => r.Note).HasMaxLength(2000);
         accessRequest.HasIndex(r => new { r.TenantId, r.Status, r.RequesterId });
 
+        var permissionException = modelBuilder.Entity<PermissionExceptionRow>();
+        permissionException.ToTable("ModulusPermissionExceptions");
+        permissionException.HasKey(r => r.Id);
+        permissionException.Property(r => r.Permission).HasMaxLength(200);
+        permissionException.Property(r => r.Holder).HasMaxLength(200);
+        permissionException.Property(r => r.Justification).HasMaxLength(2000);
+        permissionException.Property(r => r.CompensatingControl).HasMaxLength(2000);
+        permissionException.Property(r => r.BusinessOwner).HasMaxLength(200);
+        // A short name: MySQL limits index names to 64 characters.
+        permissionException.HasIndex(r => new { r.TenantId, r.Permission, r.HolderType, r.Holder }).HasDatabaseName("IX_PermissionExceptions_Holder");
+
 
         var auditOutbox = modelBuilder.Entity<OutboxMessage>();
         auditOutbox.ToTable("ModulusAuthorizationAuditOutbox");
@@ -377,6 +389,9 @@ public abstract class AuthorizationStoreDbContextBase(
             currentTenant.IsHost
             || (currentTenant.TenantId != null && e.TenantId == currentTenant.TenantId));
         mb.Entity<AccessRequestRow>().HasQueryFilter(e =>
+            currentTenant.IsHost
+            || (currentTenant.TenantId != null && e.TenantId == currentTenant.TenantId));
+        mb.Entity<PermissionExceptionRow>().HasQueryFilter(e =>
             currentTenant.IsHost
             || (currentTenant.TenantId != null && e.TenantId == currentTenant.TenantId));
     }
@@ -500,6 +515,28 @@ internal sealed class AccessRequestRow : IHasTenantId
     public DateTimeOffset? AccessEndsAt { get; set; }
     public Guid? ReviewedBy { get; set; }
     public DateTimeOffset? ReviewedAt { get; set; }
+}
+
+/// <summary>Row backing a <see cref="PermissionException"/>.</summary>
+internal sealed class PermissionExceptionRow : IHasTenantId
+{
+    public Guid Id { get; set; }
+    public Guid TenantId { get; set; }
+    public string Permission { get; set; } = null!;
+    public GrantHolderType HolderType { get; set; }
+    public string Holder { get; set; } = null!;
+    public string Justification { get; set; } = null!;
+    public string? CompensatingControl { get; set; }
+    public string BusinessOwner { get; set; } = null!;
+    public Guid RequestedBy { get; set; }
+    public DateTimeOffset ValidFrom { get; set; }
+    public DateTimeOffset ValidUntil { get; set; }
+    public DateTimeOffset ReviewDueOn { get; set; }
+    public DateTimeOffset CreatedAt { get; set; }
+    public Guid? ReviewedBy { get; set; }
+    public DateTimeOffset? ReviewedAt { get; set; }
+    public Guid? RevokedBy { get; set; }
+    public DateTimeOffset? RevokedAt { get; set; }
 }
 
 /// <summary>Row backing an <see cref="OrgUnitProfile"/>.</summary>

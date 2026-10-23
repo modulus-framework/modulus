@@ -14,4 +14,11 @@ public sealed class ModulusSettingsOptions
     /// turns the cache off. A write on this node invalidates the cache at once; another node sees it within this duration.
     /// </summary>
     public TimeSpan CacheDuration { get; set; } = TimeSpan.FromSeconds(30);
+
+    /// <summary>
+    /// How often a database-backed store checks, on this node, whether another node changed a value (<c>Settings:VersionCheckInterval</c>).
+    /// A change seen this way empties the node's cache. It is the bound on how long another node's change waits when Redis is not
+    /// registered (<c>AddRedisSettingCacheBackplane</c> is faster). Zero turns the check off.
+    /// </summary>
+    public TimeSpan VersionCheckInterval { get; set; } = TimeSpan.FromSeconds(5);
 }

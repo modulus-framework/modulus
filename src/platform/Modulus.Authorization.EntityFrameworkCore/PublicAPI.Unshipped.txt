@@ -637,3 +637,72 @@ Modulus.Authorization.EntityFrameworkCore.PermissionCatalogOptions
 Modulus.Authorization.EntityFrameworkCore.PermissionCatalogOptions.Owner.get -> string?
 Modulus.Authorization.EntityFrameworkCore.PermissionCatalogOptions.Owner.set -> void
 Modulus.Authorization.EntityFrameworkCore.PermissionCatalogOptions.PermissionCatalogOptions() -> void
+Modulus.Authorization.EntityFrameworkCore.EfPermissionExceptionStore
+Modulus.Authorization.EntityFrameworkCore.EfPermissionExceptionStore.CreateAsync(Modulus.Authorization.EntityFrameworkCore.PermissionException! exception, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Authorization.EntityFrameworkCore.PermissionException!>!
+Modulus.Authorization.EntityFrameworkCore.EfPermissionExceptionStore.EfPermissionExceptionStore(Microsoft.EntityFrameworkCore.IDbContextFactory<Modulus.Authorization.EntityFrameworkCore.AuthorizationStoreDbContextBase!>! factory) -> void
+Modulus.Authorization.EntityFrameworkCore.EfPermissionExceptionStore.FindingsAsync(System.Collections.Generic.IEnumerable<string!>! criticalPermissions, System.DateTimeOffset now, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Authorization.EntityFrameworkCore.PermissionExceptionFinding!>!>!
+Modulus.Authorization.EntityFrameworkCore.EfPermissionExceptionStore.GetAsync(System.Guid id, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Authorization.EntityFrameworkCore.PermissionException?>!
+Modulus.Authorization.EntityFrameworkCore.EfPermissionExceptionStore.ListAsync(System.DateTimeOffset? activeAt = null, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Authorization.EntityFrameworkCore.PermissionException!>!>!
+Modulus.Authorization.EntityFrameworkCore.EfPermissionExceptionStore.ReviewAsync(System.Guid id, System.Guid reviewer, System.DateTimeOffset now, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.Authorization.EntityFrameworkCore.EfPermissionExceptionStore.RevokeAsync(System.Guid id, System.Guid by, System.DateTimeOffset now, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.Authorization.EntityFrameworkCore.PermissionException
+Modulus.Authorization.EntityFrameworkCore.PermissionException.BusinessOwner.get -> string!
+Modulus.Authorization.EntityFrameworkCore.PermissionException.BusinessOwner.init -> void
+Modulus.Authorization.EntityFrameworkCore.PermissionException.<Clone>$() -> Modulus.Authorization.EntityFrameworkCore.PermissionException!
+Modulus.Authorization.EntityFrameworkCore.PermissionException.CompensatingControl.get -> string?
+Modulus.Authorization.EntityFrameworkCore.PermissionException.CompensatingControl.init -> void
+Modulus.Authorization.EntityFrameworkCore.PermissionException.CreatedAt.get -> System.DateTimeOffset
+Modulus.Authorization.EntityFrameworkCore.PermissionException.CreatedAt.init -> void
+Modulus.Authorization.EntityFrameworkCore.PermissionException.Deconstruct(out System.Guid Id, out string! Permission, out Modulus.Authorization.Grants.GrantHolderType HolderType, out string! Holder, out string! Justification, out string? CompensatingControl, out string! BusinessOwner, out System.Guid RequestedBy, out System.DateTimeOffset ValidFrom, out System.DateTimeOffset ValidUntil, out System.DateTimeOffset ReviewDueOn, out System.DateTimeOffset CreatedAt, out System.Guid? ReviewedBy, out System.DateTimeOffset? ReviewedAt, out System.Guid? RevokedBy, out System.DateTimeOffset? RevokedAt) -> void
+Modulus.Authorization.EntityFrameworkCore.PermissionException.Equals(Modulus.Authorization.EntityFrameworkCore.PermissionException? other) -> bool
+Modulus.Authorization.EntityFrameworkCore.PermissionExceptionFinding
+Modulus.Authorization.EntityFrameworkCore.PermissionExceptionFinding.<Clone>$() -> Modulus.Authorization.EntityFrameworkCore.PermissionExceptionFinding!
+Modulus.Authorization.EntityFrameworkCore.PermissionExceptionFinding.Deconstruct(out string! Permission, out Modulus.Authorization.Grants.GrantHolderType HolderType, out string! Holder, out bool HadExpiredException) -> void
+Modulus.Authorization.EntityFrameworkCore.PermissionExceptionFinding.Equals(Modulus.Authorization.EntityFrameworkCore.PermissionExceptionFinding? other) -> bool
+Modulus.Authorization.EntityFrameworkCore.PermissionExceptionFinding.HadExpiredException.get -> bool
+Modulus.Authorization.EntityFrameworkCore.PermissionExceptionFinding.HadExpiredException.init -> void
+Modulus.Authorization.EntityFrameworkCore.PermissionExceptionFinding.Holder.get -> string!
+Modulus.Authorization.EntityFrameworkCore.PermissionExceptionFinding.Holder.init -> void
+Modulus.Authorization.EntityFrameworkCore.PermissionExceptionFinding.HolderType.get -> Modulus.Authorization.Grants.GrantHolderType
+Modulus.Authorization.EntityFrameworkCore.PermissionExceptionFinding.HolderType.init -> void
+Modulus.Authorization.EntityFrameworkCore.PermissionExceptionFinding.PermissionExceptionFinding(string! Permission, Modulus.Authorization.Grants.GrantHolderType HolderType, string! Holder, bool HadExpiredException) -> void
+Modulus.Authorization.EntityFrameworkCore.PermissionExceptionFinding.Permission.get -> string!
+Modulus.Authorization.EntityFrameworkCore.PermissionExceptionFinding.Permission.init -> void
+Modulus.Authorization.EntityFrameworkCore.PermissionException.Holder.get -> string!
+Modulus.Authorization.EntityFrameworkCore.PermissionException.Holder.init -> void
+Modulus.Authorization.EntityFrameworkCore.PermissionException.HolderType.get -> Modulus.Authorization.Grants.GrantHolderType
+Modulus.Authorization.EntityFrameworkCore.PermissionException.HolderType.init -> void
+Modulus.Authorization.EntityFrameworkCore.PermissionException.Id.get -> System.Guid
+Modulus.Authorization.EntityFrameworkCore.PermissionException.Id.init -> void
+Modulus.Authorization.EntityFrameworkCore.PermissionException.IsActiveAt(System.DateTimeOffset now) -> bool
+Modulus.Authorization.EntityFrameworkCore.PermissionException.Justification.get -> string!
+Modulus.Authorization.EntityFrameworkCore.PermissionException.Justification.init -> void
+Modulus.Authorization.EntityFrameworkCore.PermissionException.PermissionException(System.Guid Id, string! Permission, Modulus.Authorization.Grants.GrantHolderType HolderType, string! Holder, string! Justification, string? CompensatingControl, string! BusinessOwner, System.Guid RequestedBy, System.DateTimeOffset ValidFrom, System.DateTimeOffset ValidUntil, System.DateTimeOffset ReviewDueOn, System.DateTimeOffset CreatedAt, System.Guid? ReviewedBy = null, System.DateTimeOffset? ReviewedAt = null, System.Guid? RevokedBy = null, System.DateTimeOffset? RevokedAt = null) -> void
+Modulus.Authorization.EntityFrameworkCore.PermissionException.Permission.get -> string!
+Modulus.Authorization.EntityFrameworkCore.PermissionException.Permission.init -> void
+Modulus.Authorization.EntityFrameworkCore.PermissionException.RequestedBy.get -> System.Guid
+Modulus.Authorization.EntityFrameworkCore.PermissionException.RequestedBy.init -> void
+Modulus.Authorization.EntityFrameworkCore.PermissionException.ReviewDueOn.get -> System.DateTimeOffset
+Modulus.Authorization.EntityFrameworkCore.PermissionException.ReviewDueOn.init -> void
+Modulus.Authorization.EntityFrameworkCore.PermissionException.ReviewedAt.get -> System.DateTimeOffset?
+Modulus.Authorization.EntityFrameworkCore.PermissionException.ReviewedAt.init -> void
+Modulus.Authorization.EntityFrameworkCore.PermissionException.ReviewedBy.get -> System.Guid?
+Modulus.Authorization.EntityFrameworkCore.PermissionException.ReviewedBy.init -> void
+Modulus.Authorization.EntityFrameworkCore.PermissionException.RevokedAt.get -> System.DateTimeOffset?
+Modulus.Authorization.EntityFrameworkCore.PermissionException.RevokedAt.init -> void
+Modulus.Authorization.EntityFrameworkCore.PermissionException.RevokedBy.get -> System.Guid?
+Modulus.Authorization.EntityFrameworkCore.PermissionException.RevokedBy.init -> void
+Modulus.Authorization.EntityFrameworkCore.PermissionException.ValidFrom.get -> System.DateTimeOffset
+Modulus.Authorization.EntityFrameworkCore.PermissionException.ValidFrom.init -> void
+Modulus.Authorization.EntityFrameworkCore.PermissionException.ValidUntil.get -> System.DateTimeOffset
+Modulus.Authorization.EntityFrameworkCore.PermissionException.ValidUntil.init -> void
+override Modulus.Authorization.EntityFrameworkCore.PermissionException.Equals(object? obj) -> bool
+override Modulus.Authorization.EntityFrameworkCore.PermissionExceptionFinding.Equals(object? obj) -> bool
+override Modulus.Authorization.EntityFrameworkCore.PermissionExceptionFinding.GetHashCode() -> int
+override Modulus.Authorization.EntityFrameworkCore.PermissionExceptionFinding.ToString() -> string!
+override Modulus.Authorization.EntityFrameworkCore.PermissionException.GetHashCode() -> int
+override Modulus.Authorization.EntityFrameworkCore.PermissionException.ToString() -> string!
+static Modulus.Authorization.EntityFrameworkCore.PermissionExceptionFinding.operator !=(Modulus.Authorization.EntityFrameworkCore.PermissionExceptionFinding? left, Modulus.Authorization.EntityFrameworkCore.PermissionExceptionFinding? right) -> bool
+static Modulus.Authorization.EntityFrameworkCore.PermissionExceptionFinding.operator ==(Modulus.Authorization.EntityFrameworkCore.PermissionExceptionFinding? left, Modulus.Authorization.EntityFrameworkCore.PermissionExceptionFinding? right) -> bool
+static Modulus.Authorization.EntityFrameworkCore.PermissionException.operator !=(Modulus.Authorization.EntityFrameworkCore.PermissionException? left, Modulus.Authorization.EntityFrameworkCore.PermissionException? right) -> bool
+static Modulus.Authorization.EntityFrameworkCore.PermissionException.operator ==(Modulus.Authorization.EntityFrameworkCore.PermissionException? left, Modulus.Authorization.EntityFrameworkCore.PermissionException? right) -> bool

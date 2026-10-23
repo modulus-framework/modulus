@@ -85,6 +85,8 @@ internal sealed class UiCreateFormFromEntityCommand : Command<UiCreateFormFromEn
 
             Ux.Success($"Form for {entity} created", Path.GetRelativePath(start, target));
             Ux.Info($"{fields.Count} field{(fields.Count == 1 ? "" : "s")}: {string.Join(", ", fields.Select(f => f.Name))}");
+            // The file is a partial: it has no page model, so nothing routes to it. A page that saves through the API is what `ui create-crud` writes.
+            Ux.Info($"This is a form partial, not a page. For list, create and edit pages that save through the API, run `modulus ui create-crud {entity} --module {moduleName}`.");
             return 0;
         });
     }

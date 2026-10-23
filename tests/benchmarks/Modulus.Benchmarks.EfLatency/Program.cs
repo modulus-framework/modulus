@@ -23,6 +23,8 @@ services.AddEfCoreAuthorizationStores(o =>
 {
     o.UseNpgsql(options.Connection);
 });
+// 0 = no grant copy (every check reads the database); N = a principal's grants are reused for N seconds on this node.
+services.Configure<Modulus.Authorization.Grants.PermissionGrantCacheOptions>(o => o.Duration = TimeSpan.FromSeconds(options.GrantCacheSeconds));
 
 using var provider = services.BuildServiceProvider();
 var registry = new PermissionRegistry();
@@ -55,7 +57,7 @@ using (var setup = provider.CreateScope())
 
 var query = new PrincipalGrantQuery(user, roles);
 Console.WriteLine($"Database: {options.Connection.Split(';').FirstOrDefault(p => p.StartsWith("Host", StringComparison.OrdinalIgnoreCase))}");
-Console.WriteLine($"Grants: {options.Grants} across {roles.Length} roles (+1 target). Checks per run: {options.Checks}.");
+Console.WriteLine($"Grants: {options.Grants} across {roles.Length} roles (+1 target). Checks per run: {options.Checks}. Grant copy: {options.GrantCacheSeconds} s.");
 Console.WriteLine();
 
 // The first check in a process pays for the model and query compilation: reported on its own.
@@ -105,7 +107,7 @@ static double Percentile(double[] sorted, double fraction)
     return sorted[Math.Clamp(rank, 0, sorted.Length - 1)];
 }
 
-internal sealed record Options(string Connection, int Grants, int Roles, int Checks, int[] Concurrency)
+internal sealed record Options(string Connection, int Grants, int Roles, int Checks, int[] Concurrency, int GrantCacheSeconds)
 {
     public static Options Parse(string[] args)
     {
@@ -114,6 +116,7 @@ internal sealed record Options(string Connection, int Grants, int Roles, int Che
         var roles = 5;
         var checks = 5_000;
         var concurrency = new[] { 1, 8, 32 };
+        var grantCacheSeconds = 0;
         for (var i = 0; i < args.Length - 1; i++)
         {
             switch (args[i])
@@ -123,11 +126,12 @@ internal sealed record Options(string Connection, int Grants, int Roles, int Che
                 case "--roles": roles = int.Parse(args[++i]); break;
                 case "--checks": checks = int.Parse(args[++i]); break;
                 case "--concurrency": concurrency = args[++i].Split(',').Select(int.Parse).ToArray(); break;
+                case "--grant-cache-seconds": grantCacheSeconds = int.Parse(args[++i]); break;
             }
         }
 
         return connection is null
             ? throw new ArgumentException("Pass --connection with the database to measure.")
-            : new Options(connection, grants, roles, checks, concurrency);
+            : new Options(connection, grants, roles, checks, concurrency, grantCacheSeconds);
     }
 }

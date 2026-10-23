@@ -176,3 +176,11 @@ static Modulus.MultiTenancy.EntityFrameworkCore.TenantDataStoreEndpoints.AddModu
 static Modulus.MultiTenancy.EntityFrameworkCore.TenantDataStoreEndpoints.MapModulusTenantProvisioning(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! prefix = "/api/tenancy/data-stores") -> Microsoft.AspNetCore.Routing.RouteGroupBuilder!
 static Modulus.MultiTenancy.EntityFrameworkCore.TenantDataStoreResponse.operator !=(Modulus.MultiTenancy.EntityFrameworkCore.TenantDataStoreResponse? left, Modulus.MultiTenancy.EntityFrameworkCore.TenantDataStoreResponse? right) -> bool
 static Modulus.MultiTenancy.EntityFrameworkCore.TenantDataStoreResponse.operator ==(Modulus.MultiTenancy.EntityFrameworkCore.TenantDataStoreResponse? left, Modulus.MultiTenancy.EntityFrameworkCore.TenantDataStoreResponse? right) -> bool
+const Modulus.MultiTenancy.EntityFrameworkCore.SettingVersionEntity.SettingsName = "settings" -> string!
+Modulus.MultiTenancy.EntityFrameworkCore.SettingVersionEntity
+Modulus.MultiTenancy.EntityFrameworkCore.SettingVersionEntity.Name.get -> string!
+Modulus.MultiTenancy.EntityFrameworkCore.SettingVersionEntity.Name.set -> void
+Modulus.MultiTenancy.EntityFrameworkCore.SettingVersionEntity.SettingVersionEntity() -> void
+Modulus.MultiTenancy.EntityFrameworkCore.SettingVersionEntity.Version.get -> long
+Modulus.MultiTenancy.EntityFrameworkCore.SettingVersionEntity.Version.set -> void
+Modulus.MultiTenancy.EntityFrameworkCore.TenantStoreDbContextBase.SettingVersions.get -> Microsoft.EntityFrameworkCore.DbSet<Modulus.MultiTenancy.EntityFrameworkCore.SettingVersionEntity!>!

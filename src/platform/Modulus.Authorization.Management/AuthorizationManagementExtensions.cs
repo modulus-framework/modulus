@@ -66,6 +66,7 @@ public static partial class AuthorizationManagementExtensions
         // AddAuthorizationCore). Idempotent if the host already called it.
         services.AddAuthorization();
         services.AddOptions<AuthorizationManagementOptions>();
+        services.AddOptions<PermissionExceptionOptions>();
 
         // Every mutating endpoint resolves ICurrentUser to attribute the audit
         // event (blueprint §5.14/§16). Normally registered by AddModulus/

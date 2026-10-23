@@ -51,5 +51,13 @@ IF OBJECT_ID('ModulusSettingValues', 'U') IS NULL
         CONSTRAINT PK_ModulusSettingValues PRIMARY KEY (Name, ScopeKey)
     );
 
+-- 4. Settings change counter: every settings write advances it, and the other nodes check it on a schedule, so a change reaches them
+--    without Redis. The first write creates the row.
+IF OBJECT_ID('ModulusSettingVersions') IS NULL
+    CREATE TABLE ModulusSettingVersions (
+        Name nvarchar(64) NOT NULL CONSTRAINT PK_ModulusSettingVersions PRIMARY KEY,
+        Version bigint NOT NULL);
+GO
+
 COMMIT;
 GO

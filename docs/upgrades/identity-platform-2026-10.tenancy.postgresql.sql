@@ -38,4 +38,12 @@ CREATE TABLE IF NOT EXISTS "ModulusSettingValues" (
     CONSTRAINT "PK_ModulusSettingValues" PRIMARY KEY ("Name", "ScopeKey")
 );
 
+-- 4. Settings change counter: every settings write advances it, and the other nodes check it on a schedule, so a change reaches them
+--    without Redis. The first write creates the row.
+CREATE TABLE IF NOT EXISTS "ModulusSettingVersions" (
+    "Name" varchar(64) NOT NULL,
+    "Version" bigint NOT NULL,
+    CONSTRAINT "PK_ModulusSettingVersions" PRIMARY KEY ("Name")
+);
+
 COMMIT;

@@ -12,8 +12,16 @@ public abstract class TenantStoreDbContextBase(DbContextOptions options) : DbCon
     /// <summary>The setting values stored for the installation, a company or a person.</summary>
     public DbSet<SettingValueEntity> SettingValues => Set<SettingValueEntity>();
 
+    /// <summary>The settings change counter (one row, <see cref="SettingVersionEntity.SettingsName"/>): every write advances it.</summary>
+    public DbSet<SettingVersionEntity> SettingVersions => Set<SettingVersionEntity>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        var version = modelBuilder.Entity<SettingVersionEntity>();
+        version.ToTable("ModulusSettingVersions");
+        version.HasKey(v => v.Name);
+        version.Property(v => v.Name).IsRequired().HasMaxLength(64);
+
         var setting = modelBuilder.Entity<SettingValueEntity>();
         setting.ToTable("ModulusSettingValues");
         setting.HasKey(s => new { s.Name, s.ScopeKey });

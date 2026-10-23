@@ -1,6 +1,7 @@
 using Modulus.Authorization.Approval;
 using Modulus.Authorization.Workflow;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Modulus.Authorization.Features;
@@ -97,9 +98,18 @@ public static class EfAuthorizationStoreExtensions
         // principal within a single request, eliminating redundant DB queries
         // when multiple permissions are checked against the same principal.
         services.TryAddSingleton<EfPermissionGrantStore>();
+        // Optional node-wide grant copy (Authorization:GrantCache:Duration, off by default). It is also told about every access change.
+        services.AddOptions<PermissionGrantCacheOptions>();
+        services.TryAddSingleton(TimeProvider.System);
+        services.TryAddSingleton<TtlPermissionGrantStore>(sp => new TtlPermissionGrantStore(
+            sp.GetRequiredService<EfPermissionGrantStore>(),
+            sp.GetRequiredService<IServiceScopeFactory>(),
+            sp.GetRequiredService<IOptions<PermissionGrantCacheOptions>>(),
+            sp.GetRequiredService<TimeProvider>()));
+        services.AddSingleton<IAccessChangeObserver>(sp => sp.GetRequiredService<TtlPermissionGrantStore>());
         services.RemoveAll<IPermissionGrantStore>();
         services.AddScoped<IPermissionGrantStore>(sp =>
-            new CachedPermissionGrantStore(sp.GetRequiredService<EfPermissionGrantStore>()));
+            new CachedPermissionGrantStore(sp.GetRequiredService<TtlPermissionGrantStore>()));
 
         services.TryAddSingleton<EfOrgHierarchy<TOrgUnit, TOrgUnitParent, TOrgUnitProfile, TCompanyProfile>>();
         services.TryAddSingleton<IOrgUnitAdministration>(sp => sp.GetRequiredService<EfOrgHierarchy<TOrgUnit, TOrgUnitParent, TOrgUnitProfile, TCompanyProfile>>());
@@ -137,6 +147,7 @@ public static class EfAuthorizationStoreExtensions
             sp => sp.GetRequiredService<EfAssignmentStore>());
 
         services.TryAddSingleton<EfAccessRequestStore>();
+        services.TryAddSingleton<EfPermissionExceptionStore>();
         services.TryAddSingleton<EfOrganizationProfileStore<TOrgUnit, TOrgUnitParent, TOrgUnitProfile, TCompanyProfile>>();
         services.TryAddSingleton<EfSodRuleStore>();
         services.TryAddSingleton<IPermissionCatalogSnapshotStore, EfPermissionCatalogSnapshotStore>();

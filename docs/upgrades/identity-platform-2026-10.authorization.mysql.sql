@@ -80,6 +80,29 @@ CREATE TABLE IF NOT EXISTS ModulusDimensionValues (
 CALL modulus_upgrade_add_index('ModulusDimensionValues', 'IX_ModulusDimensionValues_TenantId_Dimension_Code', '`TenantId`, `Dimension`, `Code`', TRUE);
 CALL modulus_upgrade_add_index('ModulusDimensionValues', 'IX_ModulusDimensionValues_TenantId_ParentId', '`TenantId`, `ParentId`', FALSE);
 
+-- 4. Permission exceptions: the register of privileged-permission exceptions (who keeps a Critical permission, why, until when).
+CREATE TABLE IF NOT EXISTS ModulusPermissionExceptions (
+    Id char(36) NOT NULL,
+    TenantId char(36) NOT NULL,
+    Permission varchar(200) NOT NULL,
+    HolderType int NOT NULL,
+    Holder varchar(200) NOT NULL,
+    Justification varchar(2000) NOT NULL,
+    CompensatingControl varchar(2000) NULL,
+    BusinessOwner varchar(200) NOT NULL,
+    RequestedBy char(36) NOT NULL,
+    ValidFrom datetime NOT NULL,
+    ValidUntil datetime NOT NULL,
+    ReviewDueOn datetime NOT NULL,
+    CreatedAt datetime NOT NULL,
+    ReviewedBy char(36) NULL,
+    ReviewedAt datetime NULL,
+    RevokedBy char(36) NULL,
+    RevokedAt datetime NULL,
+    PRIMARY KEY (Id)
+);
+CALL modulus_upgrade_add_index('ModulusPermissionExceptions', 'IX_PermissionExceptions_Holder', '`TenantId`, `Permission`, `HolderType`, `Holder`', FALSE);
+
 DROP PROCEDURE modulus_upgrade_add_column;
 DROP PROCEDURE modulus_upgrade_add_index;
 DROP PROCEDURE modulus_upgrade_catalog_key;

@@ -34,7 +34,8 @@ for tenant databases. Existing deployments must run the upgrade scripts in this 
 - **Access token audience:** `Identity:Audiences` puts the configured audiences in the `aud` claim of every access token.
 - **Settings (typed, pinned, administered).** Setting definitions take a value type, allowed values and allowed scopes, and writes are
   checked against them (400 when refused). With several nodes and Redis, `AddRedisSettingCacheBackplane()` (after `AddEfCoreSettingStore()`)
-  makes a write on one node visible on the others at once; without it they see it when their cache entry expires. `Settings:Pinned` fixes a value that no scope can change (409 on a write). `AddEfCoreSettingStore()`
+  makes a write on one node visible on the others at once. Without Redis, the store's change counter (`ModulusSettingVersions`, upgrade
+  step 4 of the tenancy scripts) is checked every `Settings:VersionCheckInterval` (5 seconds), so other nodes see the change within that time. `Settings:Pinned` fixes a value that no scope can change (409 on a write). `AddEfCoreSettingStore()`
   keeps values in the tenant store database (`ModulusSettingValues`, below) and caches them per node for `Settings:CacheDuration`. A
   company-scoped write with no company in scope is refused: before this release it changed the installation-wide value.
   `MapModulusSettingAdministration()` serves the administrator's view and writes (`settings:manage`; installation-wide writes need `settings:global:manage`).
@@ -47,6 +48,24 @@ for tenant databases. Existing deployments must run the upgrade scripts in this 
 - **Outbox management is privileged.** `messaging:manage` (list, inspect and replay dead-lettered messages) is now `Critical`: in production it
   needs a passkey or multi-factor sign-in, and no wildcard grant confers it. Grant it deliberately. The procedure is in
   `docs/runbooks/privileged-access.md`.
+
+- **Permission grant copy (optional, off).** `Authorization:GrantCache:Duration` lets a node reuse a principal's grants for that long
+  (grants only, never decisions). Off by default, so revocations apply on the next check. Enabling it trades revocation time on other
+  nodes for speed; see `docs/IDENTITY_PLATFORM_PLAN.md` §14.8 for the measurements.
+
+- **MVC web hosts (fix).** A generated `--ui-engine mvc` host now maps its attribute-routed CRUD controllers (`MapControllers`), and its
+  default controller route requires sign-in. Before this fix the host refused to start under the security guard (the default route had
+  no policy), and the attribute routes were unreachable. Regenerate an MVC web host, or add the same two lines to its endpoints file.
+
+- **Permission-exception register.** `MapModulusPermissionExceptions()` records exceptions to privileged permissions (justification,
+  business owner, compensating control, end date at most 90 days away, review by someone else) and lists the privileged grants no
+  active exception explains. Table `ModulusPermissionExceptions`: upgrade script step 4 in the authorization scripts (verified twice on
+  PostgreSQL 17, SQL Server 2022 and MySQL 8.4). It reports; it does not grant or revoke.
+
+- **Authorization upgrade scripts are partial.** The authorization scripts create the seed marker, dimension values and the permission
+  exception register. Other authorization tables added since the last release (access requests, approval workflow, positions, party
+  links, scoped grants, record shares and others) are not in the scripts: an existing deployment creates them with migrations authored in
+  the application. A generated full script is open work.
 
 ## Upgrade order
 

@@ -8,7 +8,10 @@ internal static class WebEndpoints
     public static WebApplication MapWebEndpoints(this WebApplication app)
     {
         app.MapRazorPages().WithStaticAssets();
-{{ if ui_engine == "mvc" }}        app.MapControllerRoute(name: "default", pattern: "{controller=Home}/{action=Index}/{id?}").WithStaticAssets();
+{{ if ui_engine == "mvc" }}        // Attribute-routed controllers (the CRUD pages written by `modulus ui create-crud`) are reached only through MapControllers.
+        app.MapControllers();
+        // Signed in like the Razor Pages: the security guard refuses an endpoint with no policy.
+        app.MapControllerRoute(name: "default", pattern: "{controller=Home}/{action=Index}/{id?}").WithStaticAssets().RequireAuthorization();
 {{ end }}        app.MapWebHealthChecks();
         return app;
     }

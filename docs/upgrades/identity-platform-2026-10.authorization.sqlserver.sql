@@ -65,5 +65,31 @@ IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_ModulusDimensionValues
     CREATE INDEX IX_ModulusDimensionValues_TenantId_ParentId ON ModulusDimensionValues (TenantId, ParentId);
 GO
 
+-- 4. Permission exceptions: the register of privileged-permission exceptions (who keeps a Critical permission, why, until when).
+IF OBJECT_ID('ModulusPermissionExceptions') IS NULL
+    CREATE TABLE ModulusPermissionExceptions (
+        Id uniqueidentifier NOT NULL CONSTRAINT PK_ModulusPermissionExceptions PRIMARY KEY,
+        TenantId uniqueidentifier NOT NULL,
+        Permission nvarchar(200) NOT NULL,
+        HolderType int NOT NULL,
+        Holder nvarchar(200) NOT NULL,
+        Justification nvarchar(2000) NOT NULL,
+        CompensatingControl nvarchar(2000) NULL,
+        BusinessOwner nvarchar(200) NOT NULL,
+        RequestedBy uniqueidentifier NOT NULL,
+        ValidFrom datetimeoffset NOT NULL,
+        ValidUntil datetimeoffset NOT NULL,
+        ReviewDueOn datetimeoffset NOT NULL,
+        CreatedAt datetimeoffset NOT NULL,
+        ReviewedBy uniqueidentifier NULL,
+        ReviewedAt datetimeoffset NULL,
+        RevokedBy uniqueidentifier NULL,
+        RevokedAt datetimeoffset NULL);
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_PermissionExceptions_Holder' AND object_id = OBJECT_ID('ModulusPermissionExceptions'))
+    CREATE INDEX IX_PermissionExceptions_Holder ON ModulusPermissionExceptions (TenantId, Permission, HolderType, Holder);
+GO
+
 COMMIT TRANSACTION;
 GO
