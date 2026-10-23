@@ -67,6 +67,10 @@ for tenant databases. Existing deployments must run the upgrade scripts in this 
   statement is idempotent. Verified twice on PostgreSQL 17, SQL Server 2022 and MySQL 8.4: each database ends with the model's 31 tables.
   Existing tables are left as they are; a change to the shape of a table that already exists is not in the scripts.
 
+- **UI packages renamed to `Synvro.Modulus.*` and versioned 1.6.0.** The `modulus-ui` packages (`Ui.Abstractions`, `Ui.Assets`, `AspNetCore.Mvc`,
+  `AspNetCore.Hosting`, `AspNetCore.Fluid`, `Blazor`, `Documents`, `Ui.Templates`) are now `Synvro.Modulus.*`, matching the framework and the CLI.
+  Applications that reference `Modulus.*` UI packages must change the package ids.
+
 ## Upgrade order
 
 1. Back up every database listed below. Stop writes to the authorization and identity databases, or deploy in a maintenance window.

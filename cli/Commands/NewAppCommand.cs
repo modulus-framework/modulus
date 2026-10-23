@@ -453,6 +453,28 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         };
         var modulusJsonPath = Path.Combine(projectDir, ".modulus.json");
         File.WriteAllText(modulusJsonPath, System.Text.Json.JsonSerializer.Serialize(modulusJson, new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
+
+        // The example entity's list, create and edit pages in a web app, over the example API they already call. Best effort: the
+        // pages need the UI template package, and without it the app is still generated (`modulus ui create-crud` adds them later).
+        if (model.Kind == AppKind.WebAppApi && !model.NoExample && model.UiEngine != "blazor")
+            AddExamplePages(projectDir, model);
+    }
+
+    private static void AddExamplePages(string projectDir, AppModel model)
+    {
+        var settings = new UiCreateCrudCommand.Settings
+        {
+            Entity = model.ExampleEntity,
+            Module = model.ExampleModule,
+            Engine = model.UiEngine,
+            Output = projectDir,
+            // The API client was written a moment ago by this same run, so the overwrite replaces only what this run produced.
+            Force = true,
+            Quiet = true,
+        };
+        var code = new UiCreateCrudCommand().Execute(null!, settings);
+        if (code != 0)
+            Ux.Warning($"The {model.ExampleEntity} pages were not added (run `modulus ui create-crud {model.ExampleEntity} --module {model.ExampleModule}` once the UI template package is available).");
     }
 
     /// <summary>

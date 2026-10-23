@@ -2,7 +2,8 @@ using System.Net;
 using System.Net.Http.Json;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
+{{ if kind_name == "webapp+api" && web_login_mode == "Password" }}using Microsoft.AspNetCore.TestHost;
+{{ end }}using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Xunit;
 using Modulus.AspNetCore.Extensions;
@@ -258,7 +259,69 @@ public sealed class WebToApiLoginTests
         Assert.Equal(HttpStatusCode.Redirect, accepted.StatusCode);
     }
 
-    [Fact]
+{{ if !no_example }}    [Fact]
+    public async Task CreatedProduct_IsListedThroughTheBffAndTheApi()
+    {
+        // The round trip through the whole stack: a {{ example_entity | string.downcase }} created on the Web page is stored by the API and read back by the
+        // Web list page, through the BFF's session and proxy. The Web host, the BFF and the API run in-process, each paired to the next.
+        await using var api = new ModulusWebAppFactory<ApiEntryPoint>().WithWebHostBuilder(builder =>
+        {
+            builder.UseSetting("Identity:Seed:AdminEmail", AdminEmail);
+            builder.UseSetting("Identity:Seed:AdminPassword", AdminPassword);
+            // The API validates the bearer token the BFF forwards: its default scheme is the token validation, not the test one.
+            builder.ConfigureTestServices(services => services.PostConfigure<Microsoft.AspNetCore.Authentication.AuthenticationOptions>(options =>
+            {
+                options.DefaultScheme = "OpenIddict.Validation.AspNetCore";
+                options.DefaultAuthenticateScheme = "OpenIddict.Validation.AspNetCore";
+                options.DefaultChallengeScheme = "OpenIddict.Validation.AspNetCore";
+                options.DefaultForbidScheme = "OpenIddict.Validation.AspNetCore";
+            }));
+        });
+        await using var bff = new ModulusWebAppFactory<BffEntryPoint>().WithWebHostBuilder(builder =>
+        {
+            builder.UseSetting("Bff:Authority", "https://localhost");
+            builder.UseSetting("Bff:Services:api:Address", "https://localhost");
+            // The proxy (YARP) sends its own requests, outside IHttpClientFactory, so PairedWith does not reach it:
+            // its forwarder goes to the API's TestServer instead.
+            builder.ConfigureTestServices(services =>
+            {
+                services.RemoveAll<Yarp.ReverseProxy.Forwarder.IForwarderHttpClientFactory>();
+                services.AddSingleton<Yarp.ReverseProxy.Forwarder.IForwarderHttpClientFactory>(new PairedForwarderFactory(api.Server.CreateHandler()));
+            });
+        }).PairedWith(api);
+        await using var web = new ModulusWebAppFactory<WebEntryPoint>().WithWebHostBuilder(builder =>
+        {
+            builder.UseSetting("Bff:BaseUrl", "https://localhost");
+            // The factory makes its test scheme the default, which would answer the page with 401 before the browser's BFF
+            // session is checked. This page is signed in through the real cookie session, so the defaults go back to it.
+            builder.ConfigureTestServices(services => services.PostConfigure<Microsoft.AspNetCore.Authentication.AuthenticationOptions>(options =>
+            {
+                options.DefaultScheme = "bff-session";
+                options.DefaultAuthenticateScheme = "bff-session";
+                options.DefaultChallengeScheme = "bff-session";
+                options.DefaultForbidScheme = "bff-session";
+            }));
+        }).PairedWith(bff);
+        // The session cookie is Secure: the client must address the host over https or it would not send it back.
+        var client = web.CreateClient(new Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions
+        {
+            AllowAutoRedirect = false,
+            BaseAddress = new Uri("https://localhost"),
+        });
+
+        var signedIn = await SubmitLoginAsync(client, AdminEmail, AdminPassword);
+        Assert.Equal(HttpStatusCode.Redirect, signedIn.StatusCode);
+
+        var name = $"Round trip {Guid.NewGuid():N}";
+        var created = await PostFormAsync(client, "/{{ example_route }}/new", new Dictionary<string, string> { ["Input.Name"] = name });
+        var createdBody = await created.Content.ReadAsStringAsync();
+        Assert.True(created.StatusCode == HttpStatusCode.Redirect, $"create answered {created.StatusCode}: {System.Text.RegularExpressions.Regex.Match(createdBody, "validation-summary[\\s\\S]{0,400}")}");
+
+        var list = await client.GetStringAsync("/{{ example_route }}");
+        Assert.Contains(name, list);
+    }
+
+{{ end }}    [Fact]
     public async Task LoginPage_ExplainsWhenTheBffIsDown()
     {
         // Not paired: the authority points at a port nothing listens on, i.e. the API is down.
@@ -272,6 +335,22 @@ public sealed class WebToApiLoginTests
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Contains("not available", await response.Content.ReadAsStringAsync());
+    }
+
+    private static async Task<HttpResponseMessage> PostFormAsync(HttpClient client, string path, Dictionary<string, string> fields)
+    {
+        // Razor Pages forms carry an anti-forgery token: read it from the page the form is on, then post it back.
+        var page = await client.GetStringAsync(path);
+        var token = System.Text.RegularExpressions.Regex
+            .Match(page, "name=\"__RequestVerificationToken\"[^>]*value=\"([^\"]+)\"").Groups[1].Value;
+        fields["__RequestVerificationToken"] = token;
+        return await client.PostAsync(path, new FormUrlEncodedContent(fields));
+    }
+
+    // Sends the proxy's requests to a TestServer handler (the paired API).
+    private sealed class PairedForwarderFactory(HttpMessageHandler handler) : Yarp.ReverseProxy.Forwarder.IForwarderHttpClientFactory
+    {
+        public HttpMessageInvoker CreateClient(Yarp.ReverseProxy.Forwarder.ForwarderHttpClientContext context) => new(handler, disposeHandler: false);
     }
 
     private static async Task<HttpResponseMessage> SubmitLoginAsync(HttpClient client, string user, string password)

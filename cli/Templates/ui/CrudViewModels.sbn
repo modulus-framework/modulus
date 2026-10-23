@@ -18,4 +18,7 @@ public abstract class {{ entity_name }}FormModel : PageModel
 {
     [BindProperty]
     public {{ entity_name }}Input Input { get; set; } = new();
+
+    /// <summary>Whether the form creates a new {{ entity_name | string.downcase }} (no id yet).</summary>
+    public bool IsNew => Input.Id == Guid.Empty;
 }
