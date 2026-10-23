@@ -6127,7 +6127,7 @@ Still open in Phase 4 (deployment, not code):
   6. **Login identities.** Deploy the policies under `deploy/openbao` (runtime read for the API, provisioner for the writer) and bind them to the Kubernetes service accounts or AppRole ids the platform issues. Deliver secret ids as files, and rotate them.
   7. **Existing deployments.** Add the `ModulusAuthorizationSeeds` table (seed marker) and the `ModulusTenantDataStores` table (Phase 3) with migrations before the first start.
 - [ ] **Operator-owned (not code):** Raft cluster sizing, TLS certificates, auto-unseal, audit devices, snapshots and the Kubernetes role bindings. These depend on the platform and are not verified here.
-- [x] The existing-deployment migration for `ModulusTenantDataStores` (Phase 3, above): `docs/upgrades/identity-platform-2026-10.tenancy.{postgresql,sqlserver,mysql}.sql` (2026-10-23; run twice per engine, not yet compared with EF's DDL).
+- [x] The existing-deployment migration for `ModulusTenantDataStores` (Phase 3, above): `docs/upgrades/identity-platform-2026-10.tenancy.{postgresql,sqlserver,mysql}.sql` (2026-10-23; run twice per engine). Compared with EF's generated DDL for `TenantStoreDbContext` on all three engines: the column sets of `ModulusTenantDataStores`, `ModulusSettingValues` and `ModulusSettingVersions` match, and the types are each engine's equivalents.
 
 ### Phase 5: setting engine (built, 2026-10-23)
 
@@ -6210,4 +6210,4 @@ Tests: `NavigationTests` (visibility and order, groups, overrides, write checks,
   `Modulus.Platform.Tests` (328), `Modulus.Secrets.OpenBao.Tests` (39), `Modulus.AspNetCore.Tests`. All pass.
 - Integration, on net8.0 and net10.0: `Modulus.Secrets.OpenBao.Integration.Tests` (6, Docker).
 - `dotnet format --verify-no-changes` is clean for every project touched.
-- Not run yet: the full `dotnet build modulus.slnx` and the full unit run.
+- Full `dotnet build modulus.slnx` (0 warnings, 0 errors) and the full `Category=Unit` run (73 test assemblies, 0 failures) pass as of 2026-10-23. `Modulus.Secrets.OpenBao.Integration.Tests` passes (6/6 on net8.0 and net10.0) against a real OpenBao container under podman.

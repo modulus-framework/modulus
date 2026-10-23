@@ -582,7 +582,7 @@ Generate the migration in the host with `dotnet ef migrations add <Name>` agains
 These are tracked in `docs/DOCUMENTATION.md`, in the section "Tenant secrets, settings and navigation: plan and status". They are not repeated here.
 
 - **OpenBao Phase 0:** done (2026-10-23). The Contents bullet exists, no stale `/_ui/menu` reference remains in the Improvement Plan, and the fan-out tests fail on the pre-fix code and pass on the current code.
-- **OpenBao Phase 3:** the existing-deployment `ModulusTenantDataStores` migration (deliberately not shipped).
+- **OpenBao Phase 3:** the existing-deployment migration ships as `docs/upgrades/identity-platform-2026-10.tenancy.{postgresql,sqlserver,mysql}.sql`. Its tables match EF's generated DDL on all three engines (checked 2026-10-23).
 - **OpenBao Phase 4:** connectivity probe and tenant migration in provisioning; cross-node invalidation through the outbox; admin API; metrics and audit; `modulus add-openbao` and the doctor check.
 - **Phase 5:** setting engine, built 2026-10-23 (`docs/DOCUMENTATION.md`, Tenant secrets, settings and navigation). **Phase 6:** navigation engine, built 2026-10-23 (same section). **Phase 7:** `modulus-ui` adapter (separate repository).
 
@@ -672,7 +672,7 @@ The maintainer asked engineering to decide the open items. Each choice below is 
 | A11-2 re-insertion of archived entries | Not built. Restore is validated read-only by `SecurityAuditRestoreValidator` | Re-insertion rewrites committed history, and the validator already proves the archive and the live store form one chain | None, unless a regulator requires re-insertion |
 | ADR-05 audit model | Accepted as implemented: append-only chain, anchors, retention, holds, archive and purge are built and tested | The evidence requirements in the plan are met by the built and tested integrity core | Compliance review of the event model, recorded with the D8 sign-off |
 | PILOT-1 to PILOT-4 | Still open. They are engineering and business work, not decisions | PILOT-1 needs the pilot's acceptance scenarios from the business; PILOT-2 to PILOT-4 need a populated schema, benchmarks and runbooks | Pilot scenarios (PILOT-1); engineering work for PILOT-2 to PILOT-4 |
-| OpenBao Phases 5 and 6 | Deferred. Not started in this release | Each is several days of work and no release needs them | A decision to schedule them |
+| OpenBao Phases 5 and 6 | Built 2026-10-23: the setting engine (Phase 5) and the navigation engine (Phase 6), with tests | Superseded the earlier "deferred" status; see `docs/DOCUMENTATION.md`, Tenant secrets, settings and navigation | None |
 | OpenBao Phase 7 (`modulus-ui`) | Belongs to the `modulus-ui` repository, not this one | Cross-repository work | The `modulus-ui` owners |
 | Operator-owned OpenBao items (Raft, TLS, auto-unseal, audit devices, snapshots, Kubernetes roles) | Operators own them. This repository documents them and does not build them | They run on the operator's infrastructure | The operator's runbook |
 
