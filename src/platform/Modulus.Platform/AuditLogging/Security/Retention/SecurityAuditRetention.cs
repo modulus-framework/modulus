@@ -26,6 +26,11 @@ public sealed class SecurityAuditRetention(
         return results;
     }
 
+    private TimeSpan WindowFor(string? category)
+        => category is not null && options.Value.CategoryRetention.TryGetValue(category, out var window)
+            ? window
+            : options.Value.Retention;
+
     private async Task<SecurityAuditRetentionResult> PurgeChainAsync(Guid chainId, CancellationToken ct)
     {
         if (await holds.IsHeldAsync(chainId, ct).ConfigureAwait(false))
@@ -40,8 +45,9 @@ public sealed class SecurityAuditRetention(
         if (!SecurityAuditChain.VerifyFrom(records, checkpoint).IsValid)
             return new(chainId, SecurityAuditRetentionOutcome.RefusedInvalid, 0);
 
-        var cutoff = clock.GetUtcNow() - options.Value.Retention;
-        var expired = records.TakeWhile(r => r.OccurredAt < cutoff).ToList();
+        // Each entry is judged against its own category's window; the purge is still the contiguous prefix that qualifies.
+        var now = clock.GetUtcNow();
+        var expired = records.TakeWhile(r => r.OccurredAt < now - WindowFor(r.Category)).ToList();
         if (expired.Count == 0)
             return new(chainId, SecurityAuditRetentionOutcome.NothingToPurge, 0);
 

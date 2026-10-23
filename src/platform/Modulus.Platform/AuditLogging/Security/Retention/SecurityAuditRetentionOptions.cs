@@ -15,6 +15,14 @@ public sealed class SecurityAuditRetentionOptions
     /// </summary>
     public TimeSpan Retention { get; set; } = TimeSpan.FromDays(2555);
 
+    /// <summary>
+    /// The age after which an entry of one category may be purged, by category name (<c>Security:Retention:CategoryRetention</c>).
+    /// A category that is not listed uses <see cref="Retention"/>. An entry is purged only when it is older than its own category's
+    /// window, and only a contiguous prefix of a chain is purged, so a long window on one category keeps the entries of other
+    /// categories that come after it: the outcome is never a shorter retention than configured for any entry.
+    /// </summary>
+    public IDictionary<string, TimeSpan> CategoryRetention { get; } = new Dictionary<string, TimeSpan>(StringComparer.OrdinalIgnoreCase);
+
     /// <summary>How often the scheduled host runs retention over every chain. Default one day.</summary>
     public TimeSpan Interval { get; set; } = TimeSpan.FromDays(1);
 

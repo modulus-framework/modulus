@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Modulus.AuditLogging.Security;
 using Modulus.AuditLogging.Security.Retention;
@@ -30,9 +31,9 @@ public sealed class SecurityAuditRetentionTests
         public override DateTimeOffset GetUtcNow() => now;
     }
 
-    private static SecurityAuditEvent Event(DateTimeOffset at, string name) => new()
+    private static SecurityAuditEvent Event(DateTimeOffset at, string name, string category = SecurityAuditCategories.Identity) => new()
     {
-        Category = SecurityAuditCategories.Identity,
+        Category = category,
         Action = "signin.success",
         TenantId = s_company,
         Actor = name,
@@ -49,9 +50,74 @@ public sealed class SecurityAuditRetentionTests
     }
 
     private static SecurityAuditRetention Retention(
-        ISecurityAuditStore store, ISecurityAuditArchive archive, ISecurityAuditHolds? holds = null, bool enabled = true)
-        => new(store, archive, holds ?? new SecurityAuditHolds(), new FixedClock(s_now),
-            Options.Create(new SecurityAuditRetentionOptions { Retention = TimeSpan.FromDays(730), Enabled = enabled }));
+        ISecurityAuditStore store, ISecurityAuditArchive archive, ISecurityAuditHolds? holds = null, bool enabled = true,
+        params (string Category, TimeSpan Window)[] categories)
+    {
+        var options = new SecurityAuditRetentionOptions { Retention = TimeSpan.FromDays(730), Enabled = enabled };
+        foreach (var (category, window) in categories)
+            options.CategoryRetention[category] = window;
+        return new(store, archive, holds ?? new SecurityAuditHolds(), new FixedClock(s_now), Options.Create(options));
+    }
+
+    [Fact]
+    public async Task A_longer_window_for_one_category_keeps_its_entries_and_the_entries_behind_them()
+    {
+        // Identity keeps the default 730 days; authorization keeps 10 years. The authorization entry at the head of the chain is
+        // not yet due, so the identity entry behind it stays too: the purge is a prefix.
+        var store = new InMemorySecurityAuditStore(TimeProvider.System);
+        await store.AppendAsync(Event(s_old, "a", SecurityAuditCategories.Authorization));
+        await store.AppendAsync(Event(s_old, "b", SecurityAuditCategories.Identity));
+        var archive = new RecordingArchive();
+
+        var results = await Retention(store, archive, categories: (SecurityAuditCategories.Authorization, TimeSpan.FromDays(3650))).RunAsync();
+
+        results.Should().ContainSingle().Which.Outcome.Should().Be(SecurityAuditRetentionOutcome.NothingToPurge);
+        archive.Archived.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task A_shorter_window_for_one_category_purges_its_entries_sooner()
+    {
+        // Identity entries of 10 days are older than a 5-day identity window, though the default 730 days would keep them.
+        var store = new InMemorySecurityAuditStore(TimeProvider.System);
+        await store.AppendAsync(Event(s_recent, "a", SecurityAuditCategories.Identity));
+        await store.AppendAsync(Event(s_recent, "b", SecurityAuditCategories.Identity));
+        var archive = new RecordingArchive();
+
+        var results = await Retention(store, archive, categories: (SecurityAuditCategories.Identity, TimeSpan.FromDays(5))).RunAsync();
+
+        results.Should().ContainSingle().Which.Should().Be(new SecurityAuditRetentionResult(s_company, SecurityAuditRetentionOutcome.Purged, 2));
+    }
+
+    [Fact]
+    public void Category_windows_bind_from_the_retention_section()
+    {
+        var configuration = new Microsoft.Extensions.Configuration.ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["Security:Retention:Retention"] = "700.00:00:00",
+            ["Security:Retention:CategoryRetention:authorization"] = "3650.00:00:00",
+        }).Build();
+        var services = new Microsoft.Extensions.DependencyInjection.ServiceCollection();
+
+        services.AddModulusSecurityAuditRetention(configuration);
+        var options = services.BuildServiceProvider().GetRequiredService<IOptions<SecurityAuditRetentionOptions>>().Value;
+
+        options.Retention.Should().Be(TimeSpan.FromDays(700));
+        options.CategoryRetention.Should().ContainKey(SecurityAuditCategories.Authorization)
+            .WhoseValue.Should().Be(TimeSpan.FromDays(3650));
+    }
+
+    [Fact]
+    public async Task A_category_without_a_window_keeps_the_default()
+    {
+        var store = new InMemorySecurityAuditStore(TimeProvider.System);
+        await store.AppendAsync(Event(s_old, "a", SecurityAuditCategories.Data));
+        var archive = new RecordingArchive();
+
+        var results = await Retention(store, archive, categories: (SecurityAuditCategories.Identity, TimeSpan.FromDays(5))).RunAsync();
+
+        results.Should().ContainSingle().Which.Outcome.Should().Be(SecurityAuditRetentionOutcome.Purged);
+    }
 
     private static readonly DateTimeOffset s_old = s_now.AddDays(-1000);
     private static readonly DateTimeOffset s_recent = s_now.AddDays(-10);

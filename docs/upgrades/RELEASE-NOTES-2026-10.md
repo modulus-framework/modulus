@@ -71,6 +71,11 @@ for tenant databases. Existing deployments must run the upgrade scripts in this 
   `AspNetCore.Hosting`, `AspNetCore.Fluid`, `Blazor`, `Documents`, `Ui.Templates`) are now `Synvro.Modulus.*`, matching the framework and the CLI.
   Applications that reference `Modulus.*` UI packages must change the package ids.
 
+- **Per-category audit retention.** `Security:Retention:CategoryRetention:{category}` gives a category its own age limit (for example
+  `authorization` 3650 days). An entry is purged only when it is older than its own category's limit, and a purge still removes only a
+  contiguous prefix of a chain. So a long limit on one category also holds back the entries of other categories that come after it. Exact
+  separation (one chain per category) is not built: it changes where events are written.
+
 ## Upgrade order
 
 1. Back up every database listed below. Stop writes to the authorization and identity databases, or deploy in a maintenance window.

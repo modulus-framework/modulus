@@ -2375,3 +2375,4 @@ Modulus.Authorization.Grants.TtlPermissionGrantStore.OnAccessChangedAsync(Modulu
 Modulus.Authorization.Grants.TtlPermissionGrantStore.TtlPermissionGrantStore(Modulus.Authorization.Grants.IPermissionGrantStore! inner, Microsoft.Extensions.DependencyInjection.IServiceScopeFactory! scopes, Microsoft.Extensions.Options.IOptions<Modulus.Authorization.Grants.PermissionGrantCacheOptions!>! options, System.TimeProvider! clock) -> void
 Modulus.Settings.ModulusSettingsOptions.VersionCheckInterval.get -> System.TimeSpan
 Modulus.Settings.ModulusSettingsOptions.VersionCheckInterval.set -> void
+Modulus.AuditLogging.Security.Retention.SecurityAuditRetentionOptions.CategoryRetention.get -> System.Collections.Generic.IDictionary<string!, System.TimeSpan>!
