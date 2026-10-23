@@ -523,6 +523,18 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
     }
 
     /// <summary>Generates the Web project for webapp+api kind (Razor Pages UI, no DB access, all calls over HTTP to the API).</summary>
+    /// <summary>
+    /// The application menu the Web host shows: its client and the contributor that adds the API's menu to the shell. Rendered with the
+    /// identity backend only, because the API maps the menu there, and whenever the API client registration refers to it.
+    /// </summary>
+    private void RenderNavigationMenu(string webDir, AppModel model)
+    {
+        if (model.Auth != "openiddict") return;
+        _templates.RenderToFile("app/NavigationMenuClient.Web", model, Path.Combine(webDir, "Services", "ApiClients", "NavigationMenuClient.cs"));
+        _templates.RenderToFile("app/NavigationMenuContributor.Web", model,
+            Path.Combine(webDir, "Components", "Navigation", "Menu", "ServerNavigationMenuContributor.cs"));
+    }
+
     private void GenerateWebHost(string projectDir, AppModel model, List<string> projects)
     {
         var rootNs = model.RootNamespace;
@@ -550,6 +562,7 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
             RenderBlazorWebSetup(webDir, model);
             _templates.RenderToFile("app/ApiClientExtensions.Web", model, Path.Combine(webDir, "Services", "ApiClientExtensions.cs"));
             _templates.RenderToFile("app/MenuRegistration.Web", model, Path.Combine(webDir, "Composition", "MenuRegistration.cs"));
+            RenderNavigationMenu(webDir, model);
             if (!model.NoExample)
                 _templates.RenderToFile("ui/EntityApiClient", model, UiLayout.ApiClientFile(webDir, model.ExampleEntity));
             projects.Add($"src/Web/{rootNs}.Web/{rootNs}.Web.csproj");
@@ -608,6 +621,7 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         // Menu contributors live in Components/Navigation/Menu and are registered by scan (see Composition/MenuRegistration.cs).
         _templates.RenderToFile("app/MenuRegistration.Web", model,
             Path.Combine(webDir, "Composition", "MenuRegistration.cs"));
+        RenderNavigationMenu(webDir, model);
 
         // â”€â”€ Authentication: a BFF web session (Modulus.Bff) behind the sign-in pages â”€â”€
         if (model.UseAuth)

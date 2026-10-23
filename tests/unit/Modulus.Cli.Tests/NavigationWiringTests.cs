@@ -41,4 +41,24 @@ public sealed class NavigationWiringTests
         _engine.Render("app/api/FeatureServicesSetup", model).Should().NotContain("AddModulusNavigation");
         _engine.Render("app/api/FeatureEndpoints", model).Should().NotContain("MapModulusNavigation");
     }
+
+    [Fact]
+    public void The_web_host_fetches_the_menu_only_with_an_identity_backend()
+    {
+        var model = new AppModel { RootNamespace = "Shop", AppName = "Shop", Auth = "openiddict", Kind = AppKind.WebAppApi, NoExample = false };
+
+        _engine.Render("app/ApiClientExtensions.Web", model).Should().Contain("AddBffGatewayClient<NavigationMenuClient>();");
+        _engine.Render("app/NavigationMenuClient.Web", model).Should().Contain("Route = \"/api/navigation/menu\"");
+    }
+
+    [Fact]
+    public void The_menu_contributor_sits_where_the_menu_registration_scans()
+    {
+        var model = new AppModel { RootNamespace = "Shop", AppName = "Shop", Auth = "openiddict", Kind = AppKind.WebAppApi, NoExample = false };
+
+        var contributor = _engine.Render("app/NavigationMenuContributor.Web", model);
+
+        contributor.Should().Contain("namespace Shop.Web.Components.Navigation.Menu;")
+            .And.Contain("class ServerNavigationMenuContributor(NavigationMenuClient client) : IMenuContributor");
+    }
 }

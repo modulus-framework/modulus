@@ -1,0 +1,15 @@
+using Modulus.Ui.Abstractions.Navigation;
+using {{ root_namespace }}.Web.Services.ApiClients;
+
+namespace {{ root_namespace }}.Web.Components.Navigation.Menu;
+
+/// <summary>
+/// The application menu the API serves to the signed-in person: its items, with the company's overrides applied and the items the
+/// person may not see removed. Nothing here is listed by hand; add items on the API side with <c>AddNavigationContributor</c>.
+/// </summary>
+internal sealed class ServerNavigationMenuContributor(NavigationMenuClient client) : IMenuContributor
+{
+    private readonly ServerMenuContributor _menu = new(client.GetMenuAsync);
+
+    public Task ConfigureMenuAsync(MenuConfigurationContext context) => _menu.ConfigureMenuAsync(context);
+}

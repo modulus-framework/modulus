@@ -12,8 +12,8 @@ public sealed class PermissionGrantCacheOptions
     /// How long one principal's grants are reused on this node, bound <c>Authorization:GrantCache:Duration</c>. Zero (the default)
     /// turns the cache off, so a revoked grant stops applying on the very next check. A longer duration makes each check cheaper
     /// and lets a revocation take up to this long to reach the other nodes: this node drops its copy at once on a change it
-    /// hears about, but other nodes wait for the duration to end. Owner decision D9 (the 10 ms permission-check objective and the
-    /// 60-second revocation objective) sets the value.
+    /// hears about, but other nodes wait for the duration to end. Owner decision D9 (2026-10-23) sets the deployment value to 30 seconds
+    /// (the 10 ms permission-check objective and the 60-second revocation objective). The framework default stays off.
     /// </summary>
     public TimeSpan Duration { get; set; } = TimeSpan.Zero;
 }

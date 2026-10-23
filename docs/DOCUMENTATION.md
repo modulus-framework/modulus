@@ -6202,7 +6202,26 @@ Tests: `NavigationTests` (visibility and order, groups, overrides, write checks,
 `NavigationEndpointTests` (the menu's sign-in requirement, the administration permission, override and removal through HTTP).
 `NavigationWiringTests` (CLI) covers the generated wiring.
 
-### Phase 7: `modulus-ui` adapter (separate repository, not started here)
+### Phase 7: `modulus-ui` adapter (built 2026-10-23, in the `modulus-ui` repository)
+
+- **Scope (owner decision, 2026-10-23: start now).** The adapter renders the server's menu in `modulus-ui`. Nothing else is in scope:
+  the settings and override administration screens are not part of Phase 7.
+- **What is built.** `Modulus.Ui.Abstractions/Navigation/ServerMenu.cs`: `ServerMenuNode` (the JSON shape of `GET /api/navigation/menu`),
+  `ServerMenu.ToDefinition(s)` (converts the tree to the existing `MenuItemDefinition` model; URLs become app-relative paths, a `/` URL
+  matches exactly, the server's sibling order is kept) and `ServerMenuContributor`, an `IMenuContributor` that takes a fetch delegate.
+  The host decides how the menu is fetched (for example through its BFF client with the person's session), so the adapter assumes no
+  transport. A failed fetch is not swallowed: an empty menu would look like a permission problem.
+- **Tests.** `Modulus.Blazor.Tests/Navigation/ServerMenuTests.cs` (6): path and group mapping, the root match, sibling order, the
+  `MenuProvider` end to end, a failed fetch, and the server's JSON shape.
+- **Host wiring (built 2026-10-23, UI packages 1.6.1).** Generated `webapp+api` apps with an identity backend register
+  `NavigationMenuClient` (`GET /api/navigation/menu` through the BFF gateway, a `401` gives an empty menu so the sign-in pages still
+  render) and `ServerNavigationMenuContributor`, which adds the API's items to the shell. Verified on a generated app: a signed-in
+  person's BFF call returns the API's items and the shell shows them with `/{path}` links; anonymous pages render with no menu.
+  The UI packages moved to 1.6.1 for this (the framework stays at 1.6.0), which the generated apps reference through `ui-kit.json`.
+- **Unreachable API.** The menu client answers an empty menu when the API cannot be reached (and logs why), so the pages still render.
+  A failed fetch that reaches the page as a failure is the library's default (`ServerMenuContributor`); the generated host chooses
+  the empty menu. The generated tests cover the menu through the signed-in round trip and the landing page.
+- **Not built.** A renderer for the company's overrides beyond what the server already applies.
 
 ### Verification so far
 

@@ -11,7 +11,7 @@ using Modulus.Cli.Services;
 internal sealed class TemplatePackageFixture : IDisposable
 {
     public const string PackageId = "Synvro.Modulus.Ui.Templates";
-    public const string Version = "1.6.0";
+    public const string Version = "1.6.1";
 
     private readonly string _root = Path.Combine(Path.GetTempPath(), $"modulus-templates-{Guid.NewGuid():N}");
 
@@ -45,7 +45,7 @@ internal sealed class TemplatePackageFixture : IDisposable
 
         File.WriteAllText(Path.Combine(staging, "ui-kit.json"), """
             {
-              "version": "1.6.0",
+              "version": "1.6.1",
               "engines": ["mvc", "razor-pages", "blazor"],
               "features": {
                 "crud": {

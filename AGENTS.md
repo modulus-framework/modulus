@@ -816,7 +816,7 @@ abstractions for apps to wire their own admin APIs.
 **The older server-rendered UI (`src/ui/Modulus.UI.*`, the Tabler theme, `ui add/remove/update/eject/diff`, `--ui-modules`) was
 removed from this repository.** The UI lives in the separate `modulus-ui` repository (packages `Synvro.Modulus.Ui.Abstractions`, `Synvro.Modulus.Ui.Assets`,
 `Synvro.Modulus.AspNetCore.Mvc`, `Synvro.Modulus.AspNetCore.Hosting`, `Synvro.Modulus.AspNetCore.Fluid`, `Synvro.Modulus.Blazor`, `Synvro.Modulus.Documents`, and the page templates in
-`Synvro.Modulus.Ui.Templates`, all at the framework's version; renamed from `Modulus.*` on 2026-10-23). The CLI scaffolds pages from that template package with `modulus ui ...` (`add-component`, `create-form-from-entity`,
+`Synvro.Modulus.Ui.Templates`, at 1.6.1 since the menu adapter (2026-10-23): one UI version, set in `ui-kit.json` and `UiTemplatePackage.DefaultVersion`, separate from the framework's 1.6.0; renamed from `Modulus.*` on 2026-10-23). The CLI scaffolds pages from that template package with `modulus ui ...` (`add-component`, `create-form-from-entity`,
 `create-dashboard`, `add-admin` (the admin dashboard starter and its menu), `add-auth`, `add-2fa`, `add-session-manager`, `add-chart`, `add-i18n`, `create-permission-matrix`, `audit`, `theme ...`; see
 `modulus-ui/docs/CLI.md`). Package templates resolve from `~/.modulus/cache`, then the local feed (`~/.modulus/feed` or `MODULUS_LOCAL_FEED`), then nuget.org.
 
