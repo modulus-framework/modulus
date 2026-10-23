@@ -41,8 +41,8 @@ for tenant databases. Existing deployments must run the upgrade scripts in this 
 - **Navigation.** `AddModulusNavigation()` builds the application menu from `INavigationContributor`s and checks it when the host starts. A person
   sees an item when they hold its permission. A company can hide, retitle, reorder or move items (stored as settings, `navigation.override.{key}`);
   an override never reveals an item. `MapModulusNavigation()` serves `/api/navigation/menu` and the administration routes (`navigation:manage`).
-  **Generated OpenIddict APIs do not map the menu yet.** The published `Synvro.Modulus.Platform` 1.5.0 has no navigation, so the
-  template lines that would wire it were removed; they return with the release that contains it.
+  Generated OpenIddict APIs register and map it (`AddModulusNavigation`, `MapModulusNavigation`). They need the 1.6.0 packages: the
+  published 1.5.0 has no navigation.
 
 - **Outbox management is privileged.** `messaging:manage` (list, inspect and replay dead-lettered messages) is now `Critical`: in production it
   needs a passkey or multi-factor sign-in, and no wildcard grant confers it. Grant it deliberately. The procedure is in

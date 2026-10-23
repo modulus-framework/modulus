@@ -5,9 +5,8 @@ using Xunit;
 namespace Modulus.Cli.Tests;
 
 /// <summary>
-/// The application menu of a generated API is not wired yet: the published Synvro.Modulus.Platform 1.5.0 lacks the navigation
-/// namespace, so a generated app would not compile. These tests fail when the wiring is added back before the release has it,
-/// so the change is made together with the release (restore the template lines, then update these tests).
+/// The application menu of a generated API: registered and mapped for an application with a sign-in (the menu is for signed-in people), and
+/// absent where there is none, since the menu would then answer nobody.
 /// </summary>
 [Trait("Category", "Unit")]
 [Collection(UxStateCollection.Name)]
@@ -25,11 +24,21 @@ public sealed class NavigationWiringTests
     };
 
     [Fact]
-    public void An_openiddict_api_does_not_wire_the_menu_until_the_platform_release_has_it()
+    public void An_openiddict_api_registers_and_maps_the_menu()
     {
         var model = App();
 
-        _engine.Render("app/api/FeatureServicesSetup", model).Should().NotContain("AddModulusNavigation").And.NotContain("Modulus.Navigation");
-        _engine.Render("app/api/FeatureEndpoints", model).Should().NotContain("MapModulusNavigation").And.NotContain("Modulus.Navigation");
+        _engine.Render("app/api/FeatureServicesSetup", model).Should().Contain("builder.Services.AddModulusNavigation();");
+        _engine.Render("app/api/FeatureEndpoints", model).Should().Contain("app.MapModulusNavigation();")
+            .And.Contain("using Modulus.Navigation;");
+    }
+
+    [Fact]
+    public void An_app_without_the_identity_backend_has_no_menu()
+    {
+        var model = App(auth: "none");
+
+        _engine.Render("app/api/FeatureServicesSetup", model).Should().NotContain("AddModulusNavigation");
+        _engine.Render("app/api/FeatureEndpoints", model).Should().NotContain("MapModulusNavigation");
     }
 }

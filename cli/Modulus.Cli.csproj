@@ -5,9 +5,9 @@
     <TargetFramework>net10.0</TargetFramework>
     <PackAsTool>true</PackAsTool>
     <!-- The CLI ships on its own version: its changes do not republish the framework packages. -->
-    <VersionPrefix>1.5.5</VersionPrefix>
-    <Version>1.5.5</Version>
-    <PackageVersion>1.5.5</PackageVersion>
+    <VersionPrefix>1.6.0</VersionPrefix>
+    <Version>1.6.0</Version>
+    <PackageVersion>1.6.0</PackageVersion>
     <ToolCommandName>modulus</ToolCommandName>
     <PackageId>Synvro.Modulus.Cli</PackageId>
     <Description>

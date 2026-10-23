@@ -1,4 +1,5 @@
-namespace {{ root_namespace }}.Api.Endpoints;
+{{ if auth == "openiddict" }}using Modulus.Navigation;
+{{ end }}namespace {{ root_namespace }}.Api.Endpoints;
 
 /// <summary>
 /// The endpoints of the optional features of this API host (webhooks, realtime, GraphQL, gRPC, the AI connector). The modulus
@@ -9,6 +10,7 @@ internal static class FeatureEndpoints
 {
     public static WebApplication MapApiFeatures(this WebApplication app)
     {
-        return app;
+{{ if auth == "openiddict" }}        app.MapModulusNavigation();
+{{ end }}        return app;
     }
 }

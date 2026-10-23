@@ -1,4 +1,5 @@
-namespace {{ root_namespace }}.Api.Configuration;
+{{ if auth == "openiddict" }}using Modulus.Navigation;
+{{ end }}namespace {{ root_namespace }}.Api.Configuration;
 
 /// <summary>
 /// The optional features of this API host: webhooks, realtime, GraphQL, gRPC, the AI connector, the audit store and the
@@ -10,8 +11,10 @@ internal static class FeatureServicesSetup
 {
     public static WebApplicationBuilder AddApiFeatures(this WebApplicationBuilder builder)
     {
-        // The application menu is not wired here yet: the published Synvro.Modulus.Platform 1.5.0 has no navigation (see the
-        // release notes). The menu's registration and endpoint mapping come back with the release that contains them.
-        return builder;
+{{ if auth == "openiddict" }}        // The application menu (GET api/navigation/menu) for signed-in people, and the company overrides to it. Modules declare
+        // their items with AddNavigationContributor<T>(). Overrides are stored as settings: until AddEfCoreSettingStore is added
+        // (with the tenant store) they live in memory and are lost on restart. Grant navigation:manage to administrators to change them.
+        builder.Services.AddModulusNavigation();
+{{ end }}        return builder;
     }
 }
