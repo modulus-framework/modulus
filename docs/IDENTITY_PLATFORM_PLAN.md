@@ -842,17 +842,22 @@ warm copy except where stated). p95 in ms:
 |---:|---|---:|---:|---:|---|
 | 1,000 | off | 4.69 | 7.13 | 45.63 | the database cost of every check |
 | 1,000 | 5 s | 0.31 | 0.17 | 0.17 | warm; a miss pays the database cost |
-| 10,000 | 5 s | 3.14 | 8.26 | 38.94 | warm; resolution over 10,000 grants is now the cost |
+| 10,000 | 5 s (before the resolver change) | 3.14 | 8.26 | 38.94 | warm; resolution over 10,000 grants was the cost |
+| 10,000 | 5 s (after the resolver change) | 1.52 | 7.64 | 11.72 | 5 s copy expires during the run; a miss costs a database read (max 2.1 s at c32) |
+| 10,000 | 300 s, fully warm | 2.45 | 2.42 | 2.40 | the target is met warm (max 8.9 ms) |
 
-Not met: 10,000 grants at concurrency 32 (39 ms p95). The copy removes the database round-trip; evaluating every grant per check
-(`PermissionResolver`) is the next cost, and an index by permission would address it. One sample at concurrency 32 took 2.5 s; its
-cause is not known. Cold-path latency (a miss) is the uncached figure above. Warm and cold are reported separately, as the memo asks.
+The resolver now starts its implication closure only from the allowed permissions that name prerequisites (`PermissionResolver`), and a
+randomized test (`ResolverEquivalenceTests`, 400 rounds with wildcards, denials, restrictions, lapsed and future grants, retired
+permissions and prerequisite cycles) checks that it gives the same permissions as a full closure. A deliberately broken closure fails the
+test. With that change 10,000 grants meet the 10 ms target warm (2.4 ms p95). A miss still reads the database, and at 10,000 grants under
+load a miss took up to 2.1 s in one run. The warm rows do not show contention: a cache hit completes without yielding, so the probe runs
+its checks one after another. They measure per-check cost. Warm and cold are reported separately, as the memo asks.
 
 ### 14.9 Status after the completion round (2026-10-23)
 
 | Item | Status | Evidence or what is needed |
 |---|---|---|
-| Permission-check latency (10 ms p95) | Partly met: 1,000 grants with a warm grant copy at 0.17 ms p95 (c32); 10,000 grants at 39 ms (c32) | §14.8. A structural change to the resolver (an index by permission, or a precomputed set per principal) is needed for 10,000 grants. Not built: it changes security-critical evaluation. |
+| Permission-check latency (10 ms p95) | Met warm: 1,000 grants 0.17 ms p95 and 10,000 grants 2.4 ms p95 (c32), with the grant copy on. Cold (a miss) reads the database; not met for a miss under load at 10,000 grants | §14.8. Resolver change verified by a randomized equivalence test. The owner still chooses the copy duration (D9). |
 | Per-category audit retention | Not built | The purge removes a prefix of one hash chain (archive first). A window per category needs one chain per category, which changes the audit format of existing deployments. Owner decision. |
 | Exception register | Built (2026-10-23) | `EfPermissionExceptionStore`, `MapModulusPermissionExceptions`, table `ModulusPermissionExceptions` (upgrade step 4, verified twice on PostgreSQL 17, SQL Server 2022, MySQL 8.4), `PermissionExceptionApiTests` (8). It reports; it does not enforce. |
 | Cross-node settings without Redis | Built (2026-10-23) | `ModulusSettingVersions` change counter, `SettingVersionPoller` every `Settings:VersionCheckInterval` (5 s). Tenancy upgrade step 4, verified twice on each engine. `SettingVersionPollerTests` (2). |
@@ -861,4 +866,4 @@ cause is not known. Cold-path latency (a miss) is the uncached figure above. War
 | `generate-crud --ui-engine` | Open | The flag is accepted and ignored; no files are misplaced. Rejecting it is a small change, not yet made. |
 | `/account/*` on the Web host | Not reproduced | The Blazor host maps its own; the Razor and MVC hosts sign in through the BFF. |
 | Round trip in the templates | Not built | Needs the example Web pages decision (`webapp+api` apps have no example pages). |
-| Authorization upgrade scripts | Partial (pre-existing gap) | The scripts create the seed marker, dimension values and the exception register. The other 31 authorization tables (access requests, approval, positions, party links, scoped grants, record shares, ...) are not in any script; deployments must author them as migrations in the application (the release notes require it). A full idempotent script generated from the model is the fix, not started. |
+| Authorization upgrade scripts | Built (2026-10-23) | Step 5 creates every table of the model, generated from the EF DDL and idempotent; verified twice on each engine (31 tables each). Shape changes to existing tables are not in the scripts. |

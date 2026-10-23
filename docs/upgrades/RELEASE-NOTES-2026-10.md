@@ -62,10 +62,10 @@ for tenant databases. Existing deployments must run the upgrade scripts in this 
   active exception explains. Table `ModulusPermissionExceptions`: upgrade script step 4 in the authorization scripts (verified twice on
   PostgreSQL 17, SQL Server 2022 and MySQL 8.4). It reports; it does not grant or revoke.
 
-- **Authorization upgrade scripts are partial.** The authorization scripts create the seed marker, dimension values and the permission
-  exception register. Other authorization tables added since the last release (access requests, approval workflow, positions, party
-  links, scoped grants, record shares and others) are not in the scripts: an existing deployment creates them with migrations authored in
-  the application. A generated full script is open work.
+- **Authorization upgrade scripts create every table.** Step 5 of each authorization script creates the remaining tables of the store
+  (access requests, approval workflow, positions, party links, scoped grants, record shares and others), generated from the EF model. Every
+  statement is idempotent. Verified twice on PostgreSQL 17, SQL Server 2022 and MySQL 8.4: each database ends with the model's 31 tables.
+  Existing tables are left as they are; a change to the shape of a table that already exists is not in the scripts.
 
 ## Upgrade order
 

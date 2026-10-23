@@ -58,6 +58,9 @@ public sealed class PermissionResolver(
 
         var allowed = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var denied = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        // The allowed permissions that name prerequisites: the implication closure starts from these, not from every allowed name.
+        var seeds = new List<string>();
+        var withRequires = WithRequires;
         var now = _clock.GetUtcNow();
 
         foreach (var grant in grants)
@@ -67,15 +70,25 @@ public sealed class PermissionResolver(
             if (!grant.IsValidAt(now) || grant.Type is PermissionGrantType.Restrict)
                 continue;
 
-            var target = grant.Type is PermissionGrantType.Allow ? allowed : denied;
-            if (IsWildcard(grant.Permission))
-                ExpandWildcard(grant.Permission, target, includeCritical: grant.Type is PermissionGrantType.Deny);
+            if (grant.Type is PermissionGrantType.Allow)
+            {
+                if (IsWildcard(grant.Permission))
+                    ExpandWildcard(grant.Permission, allowed, includeCritical: false, seeds, withRequires);
+                else if (allowed.Add(grant.Permission) && withRequires.Contains(grant.Permission))
+                    seeds.Add(grant.Permission);
+            }
+            else if (IsWildcard(grant.Permission))
+            {
+                ExpandWildcard(grant.Permission, denied, includeCritical: true, seeds: null, withRequires);
+            }
             else
-                target.Add(grant.Permission);
+            {
+                denied.Add(grant.Permission);
+            }
         }
 
         // Implication closure: an allowed permission confers everything it requires.
-        ExpandImplications(allowed);
+        ExpandImplications(allowed, seeds);
 
         // Deny-override: explicit denials win, applied after the closure.
         if (denied.Count > 0)
@@ -118,7 +131,7 @@ public sealed class PermissionResolver(
                 continue;
 
             if (IsWildcard(grant.Permission))
-                ExpandWildcard(grant.Permission, denied, includeCritical: true);
+                ExpandWildcard(grant.Permission, denied, includeCritical: true, seeds: null, WithRequires);
             else
                 denied.Add(grant.Permission);
         }
@@ -129,7 +142,7 @@ public sealed class PermissionResolver(
     private static bool IsWildcard(string permission)
         => permission.EndsWith(WildcardSuffix, StringComparison.Ordinal);
 
-    private void ExpandWildcard(string wildcard, HashSet<string> into, bool includeCritical)
+    private void ExpandWildcard(string wildcard, HashSet<string> into, bool includeCritical, List<string>? seeds, IReadOnlySet<string> withRequires)
     {
         // "module:group:*" → prefix "module:group:"; matches registered permissions
         // that start with the prefix. Fail-closed: unknown prefixes add nothing.
@@ -140,22 +153,26 @@ public sealed class PermissionResolver(
             if (!includeCritical && definition.Sensitivity is PermissionSensitivity.Critical)
                 continue;
 
-            if (definition.Permission.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-                into.Add(definition.Permission);
+            if (definition.Permission.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)
+                && into.Add(definition.Permission)
+                && seeds is not null && withRequires.Contains(definition.Permission))
+                seeds.Add(definition.Permission);
         }
     }
 
-    private void ExpandImplications(HashSet<string> allowed)
+    private void ExpandImplications(HashSet<string> allowed, List<string> seeds)
     {
-        // Walk the Requires graph from every granted permission, adding each
-        // prerequisite. The result set itself guards against cycles.
+        // Walk the Requires graph from every granted permission that names prerequisites, adding each prerequisite. A permission
+        // without prerequisites adds nothing, so starting from the others gives the same closure. The result set itself guards
+        // against cycles.
         var index = _requiresIndex.Value;
-        var pending = new Stack<string>(allowed);
+        var retired = _retired.Value;
+        var pending = new Stack<string>(seeds);
         while (pending.Count > 0)
         {
             var permission = pending.Pop();
             // A retired permission confers nothing, not even its prerequisites.
-            if (_retired.Value.Contains(permission) || !index.TryGetValue(permission, out var requires))
+            if (retired.Contains(permission) || !index.TryGetValue(permission, out var requires))
                 continue;
 
             foreach (var required in requires)
@@ -165,4 +182,12 @@ public sealed class PermissionResolver(
             }
         }
     }
+
+    // Permissions that name at least one prerequisite, from the same snapshot as the requires index. Built on first use; the
+    // computation is idempotent, so two threads that race both get the same set.
+    private IReadOnlySet<string>? _withRequiresSet;
+
+    private IReadOnlySet<string> WithRequires => _withRequiresSet ??= new HashSet<string>(
+        _requiresIndex.Value.Where(entry => entry.Value.Length > 0).Select(entry => entry.Key),
+        StringComparer.OrdinalIgnoreCase);
 }

@@ -29,6 +29,11 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
         [Description("Expose the entity to the AI platform: [[AiIndexed]]/[[AiQueryable]] on the entity, [[AiCapability]] on the list query, [[AiResource]] on the lookup query, the indexing grant and a test class. Re-run on an existing entity to mark it. Needs modulus add-ai.")]
         public bool Ai { get; init; }
 
+        // Declared only to refuse it: generate-crud writes the API side, and the pages come from `modulus ui create-crud`.
+        [CommandOption("--ui-engine")]
+        [Description("Not used here: pages come from `modulus ui create-crud <Entity> --engine <mvc|razor-pages|blazor>`.")]
+        public string? UiEngine { get; init; }
+
     }
 
     private readonly TemplateEngine _templates = new();
@@ -39,7 +44,12 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
     public override int Execute(CommandContext ctx, Settings s)
     {
         s.Apply();
-        return CommandRunner.Run(() => ExecuteCore(ctx, s));
+        return CommandRunner.Run(() =>
+        {
+            if (s.UiEngine is not null)
+                throw new InvalidOperationException("generate-crud does not take --ui-engine: it writes the API side only. Run `modulus ui create-crud <Entity> --engine <mvc|razor-pages|blazor>` for the pages.");
+            return ExecuteCore(ctx, s);
+        });
     }
 
     private int ExecuteCore(CommandContext ctx, Settings s)
