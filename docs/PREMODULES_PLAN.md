@@ -249,7 +249,8 @@ This section is the single list of what is still open after the premodule 1 to 5
 
 ### Repository state (2026-10-24)
 
-- **Framework (`modulus`):** `main` is at `8e288c6` on origin. The work of this round is uncommitted until it is committed.
+- **Framework (`modulus`):** `main` is at `8e288c6` on origin. The work of this round is committed as `d4f3538` on the local branch
+  `company-provisioning-baseline`, not pushed and without a PR.
 - **UI (`modulus-ui`):** the Blazor test work is on `origin/blazor-test-stability` (`954ab84`). Local `main` is 5 commits ahead and 3 behind
   `origin/main`, because the remote kept a separate 0.9.1 line. The version line is an open decision.
 
