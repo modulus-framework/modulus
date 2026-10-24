@@ -23,4 +23,9 @@ public sealed record SettingDefinition(
 
     /// <summary>The scopes a value may be stored at. Default every scope. A value at a scope not listed here is refused.</summary>
     public SettingScopes AllowedScopes { get; init; } = SettingScopes.All;
+
+    /// <summary>
+    /// The group the settings screen files this setting under (decision 28), for example <c>Sales</c> or <c>Security</c>. Null means ungrouped.
+    /// </summary>
+    public string? Group { get; init; }
 }

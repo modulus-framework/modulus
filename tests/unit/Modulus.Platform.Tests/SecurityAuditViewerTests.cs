@@ -22,6 +22,7 @@ namespace Modulus.Platform.Tests;
 public sealed class SecurityAuditViewerTests : IAsyncLifetime
 {
     private readonly InMemorySecurityAuditStore _store = new(TimeProvider.System);
+    private bool _allowHostView = true;
     private WebApplication _app = null!;
     private HttpClient _client = null!;
 
@@ -33,7 +34,12 @@ public sealed class SecurityAuditViewerTests : IAsyncLifetime
         builder.Services.AddSingleton<ISecurityAuditStore>(_store);
         builder.Services.AddSingleton<ICurrentTenant, NullCurrentTenant>();
         builder.Services.AddSingleton<ICurrentUser, NullCurrentUser>();
-        builder.Services.AddAuthorization(o => o.AddPolicy(SecurityAuditViewerEndpoints.ViewPermission, p => p.RequireAssertion(_ => true)));
+        builder.Services.AddAuthorization(o =>
+        {
+            o.AddPolicy(SecurityAuditViewerEndpoints.ViewPermission, p => p.RequireAssertion(_ => true));
+            // The host chain needs audit:view-host (decision 32); the test switches it per case.
+            o.AddPolicy(SecurityAuditViewerEndpoints.HostViewPermission, p => p.RequireAssertion(_ => _allowHostView));
+        });
 
         _app = builder.Build();
         _app.MapModulusSecurityAuditViewer();
@@ -51,6 +57,11 @@ public sealed class SecurityAuditViewerTests : IAsyncLifetime
         await _app.StopAsync();
         await _app.DisposeAsync();
     }
+
+    /// <summary>A window that covers the events the fixture writes just now (the export needs both ends).</summary>
+    private static string Window() =>
+        $"since={Uri.EscapeDataString(DateTimeOffset.UtcNow.AddDays(-1).ToString("O", System.Globalization.CultureInfo.InvariantCulture))}" +
+        $"&until={Uri.EscapeDataString(DateTimeOffset.UtcNow.AddDays(1).ToString("O", System.Globalization.CultureInfo.InvariantCulture))}";
 
     private static SecurityAuditEvent Event(string action, string category) => new()
     {
@@ -79,7 +90,7 @@ public sealed class SecurityAuditViewerTests : IAsyncLifetime
         verify!.IsValid.Should().BeTrue();
         verify.Count.Should().Be(3);
 
-        var export = await _client.GetAsync("/api/audit/security/export");
+        var export = await _client.GetAsync($"/api/audit/security/export?{Window()}");
         export.StatusCode.Should().Be(HttpStatusCode.OK);
         export.Content.Headers.ContentType!.MediaType.Should().Be("text/csv");
         var lines = (await export.Content.ReadAsStringAsync()).Split('\n', StringSplitOptions.RemoveEmptyEntries);
@@ -94,7 +105,36 @@ public sealed class SecurityAuditViewerTests : IAsyncLifetime
         var none = await _client.GetFromJsonAsync<List<SecurityAuditView>>("/api/audit/security?action=no.such.action");
         none.Should().BeEmpty();
 
-        var export = await (await _client.GetAsync("/api/audit/security/export?outcome=Refused")).Content.ReadAsStringAsync();
+        var export = await (await _client.GetAsync($"/api/audit/security/export?outcome=Refused&{Window()}")).Content.ReadAsStringAsync();
         export.Trim().Split('\n').Should().HaveCount(1);
+    }
+
+    [Fact]
+    public async Task The_host_chain_needs_the_host_view_permission_and_a_company_chain_does_not()
+    {
+        _allowHostView = false;
+
+        var host = await _client.GetAsync("/api/audit/security");
+
+        host.StatusCode.Should().Be(HttpStatusCode.Forbidden, "the host chain is for operators with audit:view-host, which no role holds by default");
+        (await _client.GetAsync("/api/audit/security/verify")).StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        (await _client.GetAsync("/api/audit/security/export?since=2026-10-01T00:00:00Z&until=2026-10-10T00:00:00Z")).StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task An_export_needs_both_ends_of_its_window_and_refuses_a_window_longer_than_31_days()
+    {
+        var noWindow = await _client.GetAsync("/api/audit/security/export");
+        noWindow.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await noWindow.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>()).GetProperty("errors").TryGetProperty("since", out _).Should().BeTrue();
+
+        var tooLong = await _client.GetAsync("/api/audit/security/export?since=2026-01-01T00:00:00Z&until=2026-03-01T00:00:00Z");
+        tooLong.StatusCode.Should().Be(HttpStatusCode.BadRequest, "59 days is more than the 31-day export window");
+
+        var backwards = await _client.GetAsync("/api/audit/security/export?since=2026-10-10T00:00:00Z&until=2026-10-01T00:00:00Z");
+        backwards.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        var within = await _client.GetAsync("/api/audit/security/export?since=2026-01-01T00:00:00Z&until=2026-01-20T00:00:00Z");
+        within.StatusCode.Should().Be(HttpStatusCode.OK, "19 days is inside the window");
     }
 }

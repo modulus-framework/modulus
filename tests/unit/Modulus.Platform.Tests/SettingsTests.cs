@@ -116,6 +116,23 @@ public sealed class SettingsTests
         (await manager.GetAsync<int>("A.Broken", 99)).Should().Be(99, "unparseable values fall back instead of throwing");
     }
 
+    [Fact]
+    public async Task A_definition_group_is_carried_to_the_administrator_view()
+    {
+        var (services, _) = BuildServices();
+        services.GetRequiredService<ISettingDefinitionRegistry>().Add(new SettingDefinition("Shop.Tender") { Group = "Sales" });
+        services.GetRequiredService<ISettingDefinitionRegistry>().Add(new SettingDefinition("Shop.Locale"));
+        using var scope = services.CreateScope();
+        var administration = new SettingAdministration(
+            scope.ServiceProvider.GetRequiredService<ISettingManager>(),
+            scope.ServiceProvider.GetRequiredService<ISettingDefinitionRegistry>());
+
+        var views = await administration.ListAsync();
+
+        views.Single(v => v.Name == "Shop.Tender").Group.Should().Be("Sales");
+        views.Single(v => v.Name == "Shop.Locale").Group.Should().BeNull("an ungrouped setting has no group");
+    }
+
     private sealed class TestUser : ICurrentUser
     {
         public static Guid? CurrentId { get; set; }

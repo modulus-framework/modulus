@@ -188,6 +188,8 @@ public sealed class EfSecurityAuditStore(IServiceScopeFactory scopes, TimeProvid
             rows = rows.Where(r => r.Outcome == outcome);
         if (query.Since is { } since)
             rows = rows.Where(r => r.OccurredAt >= since);
+        if (query.Until is { } until)
+            rows = rows.Where(r => r.OccurredAt < until);
 
         var found = await rows.OrderByDescending(r => r.Sequence).Take(query.Limit).ToListAsync(ct).ConfigureAwait(false);
         return [.. found.Select(ToRecord)];

@@ -1,4 +1,5 @@
 using System.Globalization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -44,17 +45,33 @@ public static class SecurityAuditViewerEndpoints
     /// <summary>The permission that reads the security audit. Sensitive: the events name actors, targets and refusals.</summary>
     public const string ViewPermission = "audit:security:view";
 
+    /// <summary>
+    /// The permission that reads the host's own audit chain, from the host context (decision 32). Critical: granted to no role by default, so
+    /// only an operator who grants it sees the events of the whole installation. A company's chain never needs it.
+    /// </summary>
+    public const string HostViewPermission = "audit:view-host";
+
     // The store returns at most 1000 rows per query, so an export holds at most that many (narrow the filter for the rest).
     private const int MaxExportRows = 1000;
 
-    /// <summary>Registers the permission. Requires <c>AddModulusAuthorization</c> for it to be enforced.</summary>
+    // An export covers at most this window, so a receiver never gets an open-ended history in one file (decision 10).
+    private static readonly TimeSpan MaxExportWindow = TimeSpan.FromDays(31);
+
+    /// <summary>Registers both permissions. Requires <c>AddModulusAuthorization</c> for them to be enforced.</summary>
     public static IServiceCollection AddModulusSecurityAuditViewer(this IServiceCollection services)
         => services.AddPermissions("Modulus.Audit.Security", registry =>
+        {
             registry.Add(
                 ViewPermission,
                 "Read the security audit of the caller's company: search events, verify the hash chain and export them.",
                 null,
-                PermissionSensitivity.Sensitive));
+                PermissionSensitivity.Sensitive);
+            registry.Add(
+                HostViewPermission,
+                "Read the security audit of the whole installation (the host chain) from the host context. Granted to no role by default.",
+                null,
+                PermissionSensitivity.Critical);
+        });
 
     /// <summary>Maps <c>GET {prefix}</c> (search), <c>GET {prefix}/verify</c> (chain verification) and <c>GET {prefix}/export</c> (CSV). Default prefix <c>/api/audit/security</c>.</summary>
     public static RouteGroupBuilder MapModulusSecurityAuditViewer(this IEndpointRouteBuilder endpoints, string prefix = "/api/audit/security")
@@ -63,21 +80,35 @@ public static class SecurityAuditViewerEndpoints
         var group = endpoints.MapGroup(prefix).RequireAuthorization(ViewPermission);
 
         group.MapGet("/", async (string? category, string? actor, string? action, string? outcome, DateTimeOffset? since, int? take,
-            ISecurityAuditStore store, ICurrentTenant tenant, CancellationToken ct) =>
+            ISecurityAuditStore store, ICurrentTenant tenant, HttpContext http, CancellationToken ct) =>
         {
+            if (!await MayReadChainAsync(tenant, http))
+                return Results.StatusCode(StatusCodes.Status403Forbidden);
             var query = new SecurityAuditQuery(SecurityAuditChain.ChainOf(tenant.TenantId), category, actor, action, outcome, since, take ?? 100);
             var records = await store.QueryAsync(query, ct);
             return Results.Ok(records.Select(View).ToList());
         });
 
-        group.MapGet("/verify", async (ISecurityAuditStore store, ICurrentTenant tenant, CancellationToken ct) =>
-            Results.Ok(await store.VerifyChainAsync(tenant.TenantId, null, ct)));
+        group.MapGet("/verify", async (ISecurityAuditStore store, ICurrentTenant tenant, HttpContext http, CancellationToken ct) =>
+        {
+            if (!await MayReadChainAsync(tenant, http))
+                return Results.StatusCode(StatusCodes.Status403Forbidden);
+            return Results.Ok(await store.VerifyChainAsync(tenant.TenantId, null, ct));
+        });
 
-        group.MapGet("/export", async (string? category, string? actor, string? action, string? outcome, DateTimeOffset? since,
+        group.MapGet("/export", async (string? category, string? actor, string? action, string? outcome, DateTimeOffset? since, DateTimeOffset? until,
             ISecurityAuditStore store, ICurrentTenant tenant, ICurrentUser caller, HttpContext http, CancellationToken ct) =>
         {
+            if (!await MayReadChainAsync(tenant, http))
+                return Results.StatusCode(StatusCodes.Status403Forbidden);
+            // Decision 10: an export names both ends of its window, and the window is at most 31 days.
+            if (since is null || until is null)
+                return Results.ValidationProblem(new Dictionary<string, string[]> { ["since"] = ["An export needs both since and until."] });
+            if (until <= since || until - since > MaxExportWindow)
+                return Results.ValidationProblem(new Dictionary<string, string[]> { ["until"] = [$"The export window is at most {MaxExportWindow.TotalDays:0} days, and until must be after since."] });
+
             var chain = SecurityAuditChain.ChainOf(tenant.TenantId);
-            var query = new SecurityAuditQuery(chain, category, actor, action, outcome, since, MaxExportRows);
+            var query = new SecurityAuditQuery(chain, category, actor, action, outcome, since, MaxExportRows, until);
             var records = await store.QueryAsync(query, ct);
             // The export carries the chain head and its verification, so a receiver can check that the rows belong to the chain.
             var verification = await store.VerifyChainAsync(tenant.TenantId, null, ct);
@@ -107,6 +138,18 @@ public static class SecurityAuditViewerEndpoints
         });
 
         return group;
+    }
+
+    /// <summary>
+    /// A company's own chain is read with <see cref="ViewPermission"/> alone. The host chain (the host context) also needs
+    /// <see cref="HostViewPermission"/>, so a holder of the security view permission cannot read every company's events by default.
+    /// </summary>
+    private static async Task<bool> MayReadChainAsync(ICurrentTenant tenant, HttpContext http)
+    {
+        if (!tenant.IsHost)
+            return true;
+        var authorization = http.RequestServices.GetRequiredService<IAuthorizationService>();
+        return (await authorization.AuthorizeAsync(http.User, null, HostViewPermission)).Succeeded;
     }
 
     private static SecurityAuditView View(SecurityAuditRecord record) => new(

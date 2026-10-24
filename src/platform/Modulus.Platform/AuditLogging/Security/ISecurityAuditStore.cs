@@ -58,9 +58,10 @@ public interface ISecurityAuditStore
 /// <param name="Outcome">Only this outcome.</param>
 /// <param name="Since">Only entries at or after this time.</param>
 /// <param name="Take">The most entries returned (1 to 1000, default 100).</param>
+/// <param name="Until">Only entries before this time, when set.</param>
 public sealed record SecurityAuditQuery(
     Guid ChainId, string? Category = null, string? Actor = null, string? ActionPrefix = null, string? Outcome = null,
-    DateTimeOffset? Since = null, int Take = 100)
+    DateTimeOffset? Since = null, int Take = 100, DateTimeOffset? Until = null)
 {
     /// <summary><see cref="Take"/> held to 1..1000.</summary>
     public int Limit => Math.Clamp(Take, 1, 1000);
@@ -73,7 +74,8 @@ public sealed record SecurityAuditQuery(
                && (Actor is null || string.Equals(record.Actor, Actor, StringComparison.Ordinal))
                && (ActionPrefix is null || record.Action.StartsWith(ActionPrefix, StringComparison.Ordinal))
                && (Outcome is null || string.Equals(record.Outcome, Outcome, StringComparison.Ordinal))
-               && (Since is null || record.OccurredAt >= Since);
+               && (Since is null || record.OccurredAt >= Since)
+               && (Until is null || record.OccurredAt < Until);
     }
 }
 

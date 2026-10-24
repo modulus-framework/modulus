@@ -1507,13 +1507,11 @@ Modulus.AuditLogging.Security.SecurityAuditQuery.Category.get -> string?
 Modulus.AuditLogging.Security.SecurityAuditQuery.Category.init -> void
 Modulus.AuditLogging.Security.SecurityAuditQuery.ChainId.get -> System.Guid
 Modulus.AuditLogging.Security.SecurityAuditQuery.ChainId.init -> void
-Modulus.AuditLogging.Security.SecurityAuditQuery.Deconstruct(out System.Guid ChainId, out string? Category, out string? Actor, out string? ActionPrefix, out string? Outcome, out System.DateTimeOffset? Since, out int Take) -> void
 Modulus.AuditLogging.Security.SecurityAuditQuery.Equals(Modulus.AuditLogging.Security.SecurityAuditQuery? other) -> bool
 Modulus.AuditLogging.Security.SecurityAuditQuery.Limit.get -> int
 Modulus.AuditLogging.Security.SecurityAuditQuery.Matches(Modulus.AuditLogging.Security.SecurityAuditRecord! record) -> bool
 Modulus.AuditLogging.Security.SecurityAuditQuery.Outcome.get -> string?
 Modulus.AuditLogging.Security.SecurityAuditQuery.Outcome.init -> void
-Modulus.AuditLogging.Security.SecurityAuditQuery.SecurityAuditQuery(System.Guid ChainId, string? Category = null, string? Actor = null, string? ActionPrefix = null, string? Outcome = null, System.DateTimeOffset? Since = null, int Take = 100) -> void
 Modulus.AuditLogging.Security.SecurityAuditQuery.Since.get -> System.DateTimeOffset?
 Modulus.AuditLogging.Security.SecurityAuditQuery.Since.init -> void
 Modulus.AuditLogging.Security.SecurityAuditQuery.Take.get -> int
@@ -2199,7 +2197,6 @@ Modulus.Settings.SettingView.AllowedScopes.init -> void
 Modulus.Settings.SettingView.AllowedValues.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Modulus.Settings.SettingView.AllowedValues.init -> void
 Modulus.Settings.SettingView.<Clone>$() -> Modulus.Settings.SettingView!
-Modulus.Settings.SettingView.Deconstruct(out string! Name, out string? DisplayName, out string? Description, out Modulus.Settings.SettingValueType ValueType, out System.Collections.Generic.IReadOnlyList<string!>! AllowedValues, out Modulus.Settings.SettingScopes AllowedScopes, out string? DefaultValue, out string? EffectiveValue, out Modulus.Settings.SettingSource Source, out bool IsPinned) -> void
 Modulus.Settings.SettingView.DefaultValue.get -> string?
 Modulus.Settings.SettingView.DefaultValue.init -> void
 Modulus.Settings.SettingView.Description.get -> string?
@@ -2214,7 +2211,6 @@ Modulus.Settings.SettingView.IsPinned.init -> void
 Modulus.Settings.SettingView.Name.get -> string!
 Modulus.Settings.SettingView.Name.init -> void
 Modulus.Settings.SettingView
-Modulus.Settings.SettingView.SettingView(string! Name, string? DisplayName, string? Description, Modulus.Settings.SettingValueType ValueType, System.Collections.Generic.IReadOnlyList<string!>! AllowedValues, Modulus.Settings.SettingScopes AllowedScopes, string? DefaultValue, string? EffectiveValue, Modulus.Settings.SettingSource Source, bool IsPinned) -> void
 Modulus.Settings.SettingView.Source.get -> Modulus.Settings.SettingSource
 Modulus.Settings.SettingView.Source.init -> void
 Modulus.Settings.SettingView.ValueType.get -> Modulus.Settings.SettingValueType
@@ -2451,3 +2447,14 @@ Modulus.Settings.SettingScope.Branch = 3 -> Modulus.Settings.SettingScope
 Modulus.Settings.SettingScopes.Branch = 8 -> Modulus.Settings.SettingScopes
 Modulus.Settings.SettingScopes.All = Modulus.Settings.SettingScopes.Global | Modulus.Settings.SettingScopes.Tenant | Modulus.Settings.SettingScopes.User | Modulus.Settings.SettingScopes.Branch -> Modulus.Settings.SettingScopes
 Modulus.Settings.SettingSource.Branch = 6 -> Modulus.Settings.SettingSource
+Modulus.AuditLogging.Security.SecurityAuditQuery.Deconstruct(out System.Guid ChainId, out string? Category, out string? Actor, out string? ActionPrefix, out string? Outcome, out System.DateTimeOffset? Since, out int Take, out System.DateTimeOffset? Until) -> void
+Modulus.AuditLogging.Security.SecurityAuditQuery.SecurityAuditQuery(System.Guid ChainId, string? Category = null, string? Actor = null, string? ActionPrefix = null, string? Outcome = null, System.DateTimeOffset? Since = null, int Take = 100, System.DateTimeOffset? Until = null) -> void
+Modulus.AuditLogging.Security.SecurityAuditQuery.Until.get -> System.DateTimeOffset?
+Modulus.AuditLogging.Security.SecurityAuditQuery.Until.init -> void
+const Modulus.AuditLogging.Security.SecurityAuditViewerEndpoints.HostViewPermission = "audit:view-host" -> string!
+Modulus.Settings.SettingView.Deconstruct(out string! Name, out string? DisplayName, out string? Description, out Modulus.Settings.SettingValueType ValueType, out System.Collections.Generic.IReadOnlyList<string!>! AllowedValues, out Modulus.Settings.SettingScopes AllowedScopes, out string? DefaultValue, out string? EffectiveValue, out Modulus.Settings.SettingSource Source, out bool IsPinned, out string? Group) -> void
+Modulus.Settings.SettingView.SettingView(string! Name, string? DisplayName, string? Description, Modulus.Settings.SettingValueType ValueType, System.Collections.Generic.IReadOnlyList<string!>! AllowedValues, Modulus.Settings.SettingScopes AllowedScopes, string? DefaultValue, string? EffectiveValue, Modulus.Settings.SettingSource Source, bool IsPinned, string? Group = null) -> void
+Modulus.Settings.SettingView.Group.get -> string?
+Modulus.Settings.SettingView.Group.init -> void
+Modulus.Settings.SettingDefinition.Group.get -> string?
+Modulus.Settings.SettingDefinition.Group.init -> void

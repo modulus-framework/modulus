@@ -30,6 +30,7 @@ public interface ISettingAdministration
 /// <param name="EffectiveValue">The value that applies in the current context.</param>
 /// <param name="Source">Where <paramref name="EffectiveValue"/> came from.</param>
 /// <param name="IsPinned">Whether the host pins the value (no scope can change it).</param>
+/// <param name="Group">The group the settings screen files the setting under, or null.</param>
 public sealed record SettingView(
     string Name,
     string? DisplayName,
@@ -40,7 +41,8 @@ public sealed record SettingView(
     string? DefaultValue,
     string? EffectiveValue,
     SettingSource Source,
-    bool IsPinned);
+    bool IsPinned,
+    string? Group = null);
 
 /// <inheritdoc cref="ISettingAdministration" />
 public sealed class SettingAdministration(ISettingManager manager, ISettingDefinitionRegistry definitions) : ISettingAdministration
@@ -61,7 +63,8 @@ public sealed class SettingAdministration(ISettingManager manager, ISettingDefin
                 definition.DefaultValue,
                 resolution.Value,
                 resolution.Source,
-                resolution.Source == SettingSource.Pinned));
+                resolution.Source == SettingSource.Pinned,
+                definition.Group));
         }
 
         return views;

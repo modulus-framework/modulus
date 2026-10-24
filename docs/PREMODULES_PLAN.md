@@ -251,6 +251,25 @@ Pilot: identity-account administration (decision D7). Sign-off needs every item 
    API app's test suite passes.
 6. **Operator checks.** Audit retention is off unless an operator enables it, and the enabled period is recorded in the deployment's runbook.
 
+## Status of the decided items (2026-10-24, after the Phase 2 and 3 pass)
+
+- **Decision 10 (audit export): built.** The export needs both `since` and `until`, covers at most 31 days, and keeps the 1,000-row cap.
+  Tests: `SecurityAuditViewerTests` (5).
+- **Decision 11 (company-admin audit visibility): open.** The company viewer still returns each event's stored details. Decoding them into a
+  summary needs the field list decided first.
+- **Decision 12 (parent administration, D-03): satisfied by default, explicit path not built.** The company administration routes run in host
+  context under `tenants:manage`, so no parent administrator can write to a child through them. An explicit "parent admin with a grant in the
+  child" rule is not built; it needs the company switcher.
+- **Decision 28 (settings groups): data built.** `SettingDefinition.Group` is carried to the admin view (`SettingView.Group`). The grouped
+  screen is not built. Test: `A_definition_group_is_carried_to_the_administrator_view`.
+- **Decision 32 (`audit:view-host`): built.** Critical, granted to no role. Host-context reads of the security audit need it; a company's own
+  chain does not. Tests: `The_host_chain_needs_the_host_view_permission_and_a_company_chain_does_not`.
+- **Decision 30 (baseline re-application): built.** See "Admin grant for new companies (done, D-10)".
+- **Correction to the note in section 2 about grant visibility.** The "regression" described there (host-level grants invisible inside a
+  company) was addressed by the per-company baseline grants of D-10. The generated multi-tenant app passed 11 of 11 on 2026-10-24.
+- **Not started:** profile fields and email confirmation (decision 8), the company switcher for web apps (decision 29), and the grouped
+  settings screen and company-admin summary (decisions 28 and 11, see above).
+
 ## Remaining work and limitations (2026-10-24)
 
 This section is the single list of what is still open after the premodule 1 to 5 work. Each item says what blocks it.

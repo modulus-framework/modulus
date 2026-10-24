@@ -88,7 +88,7 @@ public sealed class EfSecurityAuditArchiveTests : IAsyncLifetime
             node.GetRequiredService<EfSecurityAuditArchive>(),
             node.GetRequiredService<ISecurityAuditHolds>(),
             new FixedClock(Now),
-            Options.Create(new SecurityAuditRetentionOptions { Retention = TimeSpan.FromDays(1) }));
+            Options.Create(new SecurityAuditRetentionOptions { Enabled = true, Retention = TimeSpan.FromDays(1) }));
 
         var results = await retention.RunAsync();
 
