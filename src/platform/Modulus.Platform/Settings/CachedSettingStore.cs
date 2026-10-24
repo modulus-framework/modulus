@@ -16,28 +16,28 @@ public sealed class CachedSettingStore(
 {
     private sealed record CachedValue(string? Value);
 
-    public async Task<string?> GetOrNullAsync(string name, Guid? tenantId, Guid? userId, CancellationToken ct = default)
+    public async Task<string?> GetOrNullAsync(string name, Guid? tenantId, Guid? userId, Guid? branchId, CancellationToken ct = default)
     {
         // The version is read before the store: a write that lands during the read leaves this entry under the old version, where
         // no later read looks.
-        var key = $"settings:{version.Current}:{name}:{tenantId}:{userId}";
+        var key = $"settings:{version.Current}:{name}:{tenantId}:{userId}:{branchId}";
         if (cache.TryGetValue(key, out CachedValue? cached))
             return cached!.Value;
 
-        var value = await inner.GetOrNullAsync(name, tenantId, userId, ct).ConfigureAwait(false);
+        var value = await inner.GetOrNullAsync(name, tenantId, userId, branchId, ct).ConfigureAwait(false);
         cache.Set(key, new CachedValue(value), duration);
         return value;
     }
 
-    public async Task SetAsync(string name, string? value, Guid? tenantId, Guid? userId, CancellationToken ct = default)
+    public async Task SetAsync(string name, string? value, Guid? tenantId, Guid? userId, Guid? branchId, CancellationToken ct = default)
     {
-        await inner.SetAsync(name, value, tenantId, userId, ct).ConfigureAwait(false);
+        await inner.SetAsync(name, value, tenantId, userId, branchId, ct).ConfigureAwait(false);
         await Changed(ct).ConfigureAwait(false);
     }
 
-    public async Task RemoveAsync(string name, Guid? tenantId, Guid? userId, CancellationToken ct = default)
+    public async Task RemoveAsync(string name, Guid? tenantId, Guid? userId, Guid? branchId, CancellationToken ct = default)
     {
-        await inner.RemoveAsync(name, tenantId, userId, ct).ConfigureAwait(false);
+        await inner.RemoveAsync(name, tenantId, userId, branchId, ct).ConfigureAwait(false);
         await Changed(ct).ConfigureAwait(false);
     }
 

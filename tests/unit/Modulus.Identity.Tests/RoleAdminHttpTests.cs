@@ -122,6 +122,23 @@ public sealed class RoleAdminHttpTests : OidcHostTestBase
     }
 
     [Fact]
+    public async Task The_built_in_admin_role_is_never_deleted_or_renamed_even_when_no_account_holds_it()
+    {
+        var token = await AdministratorTokenAsync();
+        await EnsureRoleAsync("Admin");
+
+        var deleted = await SendAsync(HttpMethod.Delete, "/api/identity/roles/Admin", token, null);
+        deleted.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        (await deleted.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("error").GetString().Should().Be("BUILT_IN_ROLE");
+
+        var renamed = await SendAsync(HttpMethod.Put, "/api/identity/roles/Admin", token, new { name = "Owners" });
+        renamed.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        (await renamed.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("error").GetString().Should().Be("BUILT_IN_ROLE");
+
+        _audit.Events.Should().NotContain(e => e.Action == "identity.role.deleted" || e.Action == "identity.role.renamed");
+    }
+
+    [Fact]
     public async Task A_signed_in_account_without_the_account_permission_cannot_delete_or_rename_a_role()
     {
         await EnsureRoleAsync("Reviewer");

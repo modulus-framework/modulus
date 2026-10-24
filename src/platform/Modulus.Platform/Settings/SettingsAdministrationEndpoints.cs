@@ -46,6 +46,7 @@ public static class SettingsAdministrationEndpoints
 
         MapScope(group, "global", SettingScope.Global, GlobalManagePermission);
         MapScope(group, "tenant", SettingScope.Tenant, extraPermission: null);
+        MapScope(group, "branch", SettingScope.Branch, extraPermission: null);
         MapScope(group, "user", SettingScope.User, extraPermission: null);
 
         return group;

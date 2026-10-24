@@ -11,9 +11,12 @@ internal static class FeatureServicesSetup
 {
     public static WebApplicationBuilder AddApiFeatures(this WebApplicationBuilder builder)
     {
-{{ if auth == "openiddict" }}        // The application menu (GET api/navigation/menu) for signed-in people, and the company overrides to it. Modules declare
-        // their items with AddNavigationContributor<T>(). Overrides are stored as settings: until AddEfCoreSettingStore is added
-        // (with the tenant store) they live in memory and are lost on restart. Grant navigation:manage to administrators to change them.
+{{ if multi_tenancy }}        // Settings (the Settings page and the navigation overrides) are stored in the tenant store database (ModulusSettingValues),
+        // so they survive a restart and every node sees them. Registered before the settings system, which keeps this store.
+        Modulus.MultiTenancy.EntityFrameworkCore.EfSettingStoreExtensions.AddEfCoreSettingStore(builder.Services);
+{{ end }}{{ if auth == "openiddict" }}        // The application menu (GET api/navigation/menu) for signed-in people, and the company overrides to it. Modules declare
+        // their items with AddNavigationContributor<T>(). Overrides are stored as settings: multi-tenant apps keep them in the tenant store,
+        // single-tenant apps in memory (lost on restart). Grant navigation:manage to administrators to change them.
         // The Users entry is shown only to people who hold identity:accounts:manage (the server filters the menu by permission).
         builder.Services.AddModulusNavigation(navigation => navigation.Add(new NavigationItem("identity.users", "Users")
         {
@@ -22,8 +25,7 @@ internal static class FeatureServicesSetup
             Permission = "identity:accounts:manage",
             Order = 10,
         }));
-{{ if example_permission }}        // Settings administration (the Settings page): the registered settings, written per scope. Values are in memory until the
-        // EF settings store is added (with the tenant store); no role is granted settings:manage by default.
+{{ if example_permission }}        // Settings administration (the Settings page): the registered settings, written per scope. No role is granted settings:manage by default.
         Modulus.Settings.SettingsExtensions.AddModulusSettings(builder.Services);
         Modulus.Settings.SettingsAdministrationEndpoints.AddModulusSettingAdministration(builder.Services);
 {{ if multi_tenancy }}        // Company administration (the Companies page): list, create, status, seats and members of the companies (tenants:manage).

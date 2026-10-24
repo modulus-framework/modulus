@@ -11,4 +11,7 @@ public enum SettingScope
 
     /// <summary>Overrides <see cref="Tenant"/> for one user.</summary>
     User = 2,
+
+    /// <summary>Overrides <see cref="Tenant"/> for one branch (an organization unit of the company). <see cref="User"/> still wins over it.</summary>
+    Branch = 3,
 }

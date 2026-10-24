@@ -25,7 +25,7 @@ public sealed class RehireReviewTests
         await using var _ = provider;
         await using var __ = connection;
         var account = await ArchivedAccountAsync(provider);
-        var approver = await AccountWithRoleAsync(provider, "TenantAdministrator");
+        var approver = await AccountWithRoleAsync(provider, "Admin");
 
         var state = await Approve(provider, account, approver);
 
@@ -66,7 +66,7 @@ public sealed class RehireReviewTests
         await using var _ = provider;
         await using var __ = connection;
         var account = await ArchivedAccountAsync(provider);
-        await AddRoleAsync(provider, account, "TenantAdministrator");
+        await AddRoleAsync(provider, account, "Admin");
 
         await FluentActions.Invoking(() => Approve(provider, account, account)).Should().ThrowAsync<ForbiddenException>();
         (await Stored(provider, account)).Lifecycle.Should().Be(AccountLifecycle.Archived);
@@ -79,7 +79,7 @@ public sealed class RehireReviewTests
         await using var _ = provider;
         await using var __ = connection;
         var account = await NewAccountAsync(provider);
-        var approver = await AccountWithRoleAsync(provider, "TenantAdministrator");
+        var approver = await AccountWithRoleAsync(provider, "Admin");
 
         await FluentActions.Invoking(() => Approve(provider, account, approver)).Should().ThrowAsync<ConflictException>();
     }
@@ -91,7 +91,7 @@ public sealed class RehireReviewTests
         await using var _ = provider;
         await using var __ = connection;
         var account = await ArchivedAccountAsync(provider, tenantId: Guid.NewGuid());
-        var approver = await AccountWithRoleAsync(provider, "TenantAdministrator", tenantId: Guid.NewGuid());
+        var approver = await AccountWithRoleAsync(provider, "Admin", tenantId: Guid.NewGuid());
 
         await FluentActions.Invoking(() => Approve(provider, account, approver)).Should().ThrowAsync<ForbiddenException>();
         (await Stored(provider, account)).Lifecycle.Should().Be(AccountLifecycle.Archived);

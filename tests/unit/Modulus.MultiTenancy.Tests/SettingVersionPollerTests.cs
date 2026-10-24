@@ -73,7 +73,7 @@ public sealed class SettingVersionPollerTests : IAsyncLifetime
         var before = versionOnB.Current;
 
         await using (var scope = a.CreateAsyncScope())
-            await scope.ServiceProvider.GetRequiredService<ISettingStore>().SetAsync("Shop.Theme", "dark", null, null);
+            await scope.ServiceProvider.GetRequiredService<ISettingStore>().SetAsync("Shop.Theme", "dark", null, null, null);
 
         await Eventually(() => versionOnB.Current > before);
     }

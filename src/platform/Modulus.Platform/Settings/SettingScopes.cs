@@ -16,6 +16,9 @@ public enum SettingScopes
     /// <summary>A person's value.</summary>
     User = 1 << (int)SettingScope.User,
 
+    /// <summary>A branch's value (an organization unit of the company).</summary>
+    Branch = 1 << (int)SettingScope.Branch,
+
     /// <summary>Every scope.</summary>
-    All = Global | Tenant | User,
+    All = Global | Tenant | User | Branch,
 }

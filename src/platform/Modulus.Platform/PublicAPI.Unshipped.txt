@@ -824,10 +824,7 @@ Modulus.Notifications.UserNotification.UserId.init -> void
 Modulus.Notifications.UserNotification.UserNotification() -> void
 Modulus.Platform.Http.HttpClientExtensions
 Modulus.Settings.InMemorySettingStore
-Modulus.Settings.InMemorySettingStore.GetOrNullAsync(string! name, System.Guid? tenantId, System.Guid? userId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<string?>!
 Modulus.Settings.InMemorySettingStore.InMemorySettingStore() -> void
-Modulus.Settings.InMemorySettingStore.RemoveAsync(string! name, System.Guid? tenantId, System.Guid? userId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
-Modulus.Settings.InMemorySettingStore.SetAsync(string! name, string? value, System.Guid? tenantId, System.Guid? userId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
 Modulus.Settings.ISettingDefinitionRegistry
 Modulus.Settings.ISettingDefinitionRegistry.Add(Modulus.Settings.SettingDefinition! definition) -> void
 Modulus.Settings.ISettingDefinitionRegistry.Find(string! name) -> Modulus.Settings.SettingDefinition?
@@ -838,9 +835,6 @@ Modulus.Settings.ISettingManager.GetOrNullAsync(string! name, System.Threading.C
 Modulus.Settings.ISettingManager.RemoveAsync(string! name, Modulus.Settings.SettingScope scope, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
 Modulus.Settings.ISettingManager.SetAsync(string! name, string? value, Modulus.Settings.SettingScope scope, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
 Modulus.Settings.ISettingStore
-Modulus.Settings.ISettingStore.GetOrNullAsync(string! name, System.Guid? tenantId, System.Guid? userId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<string?>!
-Modulus.Settings.ISettingStore.RemoveAsync(string! name, System.Guid? tenantId, System.Guid? userId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
-Modulus.Settings.ISettingStore.SetAsync(string! name, string? value, System.Guid? tenantId, System.Guid? userId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
 Modulus.Settings.SettingDefinition
 Modulus.Settings.SettingDefinition.<Clone>$() -> Modulus.Settings.SettingDefinition!
 Modulus.Settings.SettingDefinition.Deconstruct(out string! Name, out string? DefaultValue, out string? DisplayName, out string? Description, out bool IsVisibleToClients) -> void
@@ -2133,10 +2127,7 @@ Modulus.Authorization.StepUpPolicy.IsSatisfiedBy(System.Security.Claims.ClaimsPr
 Modulus.Authorization.StepUpPolicy.RequiresPhishingResistant(string! permission) -> bool
 const Modulus.Settings.SettingsAdministrationEndpoints.GlobalManagePermission = "settings:global:manage" -> string!
 const Modulus.Settings.SettingsAdministrationEndpoints.ManagePermission = "settings:manage" -> string!
-Modulus.Settings.CachedSettingStore.GetOrNullAsync(string! name, System.Guid? tenantId, System.Guid? userId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<string?>!
 Modulus.Settings.CachedSettingStore
-Modulus.Settings.CachedSettingStore.RemoveAsync(string! name, System.Guid? tenantId, System.Guid? userId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
-Modulus.Settings.CachedSettingStore.SetAsync(string! name, string? value, System.Guid? tenantId, System.Guid? userId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
 Modulus.Settings.ISettingAdministration.ListAsync(System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Settings.SettingView!>!>!
 Modulus.Settings.ISettingAdministration
 Modulus.Settings.ISettingAdministration.RemoveAsync(string! name, Modulus.Settings.SettingScope scope, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
@@ -2164,7 +2155,6 @@ Modulus.Settings.SettingDefinition.AllowedValues.init -> void
 Modulus.Settings.SettingDefinition.ValueType.get -> Modulus.Settings.SettingValueType
 Modulus.Settings.SettingDefinition.ValueType.init -> void
 Modulus.Settings.SettingManager.ResolveAsync(string! name, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Settings.SettingResolution!>!
-Modulus.Settings.SettingManager.SettingManager(Modulus.Settings.ISettingStore! store, Modulus.Settings.ISettingDefinitionRegistry! definitions, Modulus.Core.Abstractions.ICurrentTenant! currentTenant, Modulus.Core.Abstractions.ICurrentUser! currentUser, Microsoft.Extensions.Options.IOptions<Modulus.Settings.ModulusSettingsOptions!>! options) -> void
 Modulus.Settings.SettingResolution.<Clone>$() -> Modulus.Settings.SettingResolution!
 Modulus.Settings.SettingResolution.Deconstruct(out string! Name, out string? Value, out Modulus.Settings.SettingSource Source) -> void
 Modulus.Settings.SettingResolution.Equals(Modulus.Settings.SettingResolution? other) -> bool
@@ -2177,7 +2167,6 @@ Modulus.Settings.SettingResolution.Source.init -> void
 Modulus.Settings.SettingResolution.Value.get -> string?
 Modulus.Settings.SettingResolution.Value.init -> void
 Modulus.Settings.SettingsAdministrationEndpoints
-Modulus.Settings.SettingScopes.All = Modulus.Settings.SettingScopes.Global | Modulus.Settings.SettingScopes.Tenant | Modulus.Settings.SettingScopes.User -> Modulus.Settings.SettingScopes
 Modulus.Settings.SettingScopes.Global = 1 -> Modulus.Settings.SettingScopes
 Modulus.Settings.SettingScopes.None = 0 -> Modulus.Settings.SettingScopes
 Modulus.Settings.SettingScopes
@@ -2448,3 +2437,17 @@ static Modulus.AuditLogging.BusinessAuditView.operator !=(Modulus.AuditLogging.B
 static Modulus.AuditLogging.BusinessAuditView.operator ==(Modulus.AuditLogging.BusinessAuditView? left, Modulus.AuditLogging.BusinessAuditView? right) -> bool
 static Modulus.AuditLogging.BusinessAuditViewerEndpoints.AddModulusBusinessAuditViewer(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static Modulus.AuditLogging.BusinessAuditViewerEndpoints.MapModulusBusinessAuditViewer(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! prefix = "/api/audit/business") -> Microsoft.AspNetCore.Routing.RouteGroupBuilder!
+Modulus.Settings.InMemorySettingStore.GetOrNullAsync(string! name, System.Guid? tenantId, System.Guid? userId, System.Guid? branchId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<string?>!
+Modulus.Settings.InMemorySettingStore.RemoveAsync(string! name, System.Guid? tenantId, System.Guid? userId, System.Guid? branchId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Settings.InMemorySettingStore.SetAsync(string! name, string? value, System.Guid? tenantId, System.Guid? userId, System.Guid? branchId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Settings.ISettingStore.GetOrNullAsync(string! name, System.Guid? tenantId, System.Guid? userId, System.Guid? branchId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<string?>!
+Modulus.Settings.ISettingStore.RemoveAsync(string! name, System.Guid? tenantId, System.Guid? userId, System.Guid? branchId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Settings.ISettingStore.SetAsync(string! name, string? value, System.Guid? tenantId, System.Guid? userId, System.Guid? branchId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Settings.CachedSettingStore.GetOrNullAsync(string! name, System.Guid? tenantId, System.Guid? userId, System.Guid? branchId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<string?>!
+Modulus.Settings.CachedSettingStore.RemoveAsync(string! name, System.Guid? tenantId, System.Guid? userId, System.Guid? branchId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Settings.CachedSettingStore.SetAsync(string! name, string? value, System.Guid? tenantId, System.Guid? userId, System.Guid? branchId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Settings.SettingManager.SettingManager(Modulus.Settings.ISettingStore! store, Modulus.Settings.ISettingDefinitionRegistry! definitions, Modulus.Core.Abstractions.ICurrentTenant! currentTenant, Modulus.Core.Abstractions.ICurrentUser! currentUser, Microsoft.Extensions.Options.IOptions<Modulus.Settings.ModulusSettingsOptions!>! options, Modulus.Core.Abstractions.ISecurityContext? security = null) -> void
+Modulus.Settings.SettingScope.Branch = 3 -> Modulus.Settings.SettingScope
+Modulus.Settings.SettingScopes.Branch = 8 -> Modulus.Settings.SettingScopes
+Modulus.Settings.SettingScopes.All = Modulus.Settings.SettingScopes.Global | Modulus.Settings.SettingScopes.Tenant | Modulus.Settings.SettingScopes.User | Modulus.Settings.SettingScopes.Branch -> Modulus.Settings.SettingScopes
+Modulus.Settings.SettingSource.Branch = 6 -> Modulus.Settings.SettingSource

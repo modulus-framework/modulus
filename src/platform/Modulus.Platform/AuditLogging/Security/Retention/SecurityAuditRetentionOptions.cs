@@ -6,8 +6,11 @@ public sealed class SecurityAuditRetentionOptions
     /// <summary>The configuration section these options bind from.</summary>
     public const string SectionName = "Security:Retention";
 
-    /// <summary>Whether retention runs. On by default; with no archive registered it still purges nothing.</summary>
-    public bool Enabled { get; set; } = true;
+    /// <summary>
+    /// Whether retention runs. Off by default: no entry is purged until an operator enables it with the retention period the deployment's
+    /// legal advice sets (decision D8). With an archive registered, a purge moves the entries to the archive first.
+    /// </summary>
+    public bool Enabled { get; set; }
 
     /// <summary>
     /// The age after which an entry may be purged. Default seven years, the owner memo's proposed product baseline (not a legal determination); an

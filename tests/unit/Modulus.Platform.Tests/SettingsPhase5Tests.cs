@@ -220,12 +220,12 @@ public sealed class SettingsPhase5Tests
         var version = new SettingCacheVersion();
         var store = new CachedSettingStore(inner, cache, version, TimeSpan.FromMinutes(5));
 
-        (await store.GetOrNullAsync("Shop.Theme", null, null)).Should().BeNull();
-        (await store.GetOrNullAsync("Shop.Theme", null, null)).Should().BeNull();
+        (await store.GetOrNullAsync("Shop.Theme", null, null, null)).Should().BeNull();
+        (await store.GetOrNullAsync("Shop.Theme", null, null, null)).Should().BeNull();
         inner.Reads.Should().Be(1, "a miss is cached too");
 
-        await store.SetAsync("Shop.Theme", "dark", null, null);
-        (await store.GetOrNullAsync("Shop.Theme", null, null)).Should().Be("dark");
+        await store.SetAsync("Shop.Theme", "dark", null, null, null);
+        (await store.GetOrNullAsync("Shop.Theme", null, null, null)).Should().Be("dark");
         inner.Reads.Should().Be(2, "the write advanced the version, so the read went to the store once");
     }
 
@@ -239,8 +239,8 @@ public sealed class SettingsPhase5Tests
         var notifier = new CountingNotifier();
         var store = new CachedSettingStore(inner, cache, version, TimeSpan.FromMinutes(5), notifier);
 
-        await store.SetAsync("Shop.Theme", "dark", null, null);
-        await store.RemoveAsync("Shop.Theme", null, null);
+        await store.SetAsync("Shop.Theme", "dark", null, null, null);
+        await store.RemoveAsync("Shop.Theme", null, null, null);
 
         notifier.Announcements.Should().Be(2, "one announcement per committed write and per removal");
     }
@@ -250,7 +250,7 @@ public sealed class SettingsPhase5Tests
     {
         var store = new CachedSettingStore(new CountingStore(), new MemoryCache(new MemoryCacheOptions()), new SettingCacheVersion(), TimeSpan.FromMinutes(5));
 
-        await FluentActions.Awaiting(() => store.SetAsync("Shop.Theme", "dark", null, null)).Should().NotThrowAsync();
+        await FluentActions.Awaiting(() => store.SetAsync("Shop.Theme", "dark", null, null, null)).Should().NotThrowAsync();
     }
 
     private sealed class CountingNotifier : ISettingChangeNotifier
@@ -293,25 +293,25 @@ public sealed class SettingsPhase5Tests
 
     private sealed class CountingStore : ISettingStore
     {
-        private readonly Dictionary<(string, Guid?, Guid?), string> _values = [];
+        private readonly Dictionary<(string, Guid?, Guid?, Guid?), string> _values = [];
 
         public int Reads { get; private set; }
 
-        public Task<string?> GetOrNullAsync(string name, Guid? tenantId, Guid? userId, CancellationToken ct = default)
+        public Task<string?> GetOrNullAsync(string name, Guid? tenantId, Guid? userId, Guid? branchId, CancellationToken ct = default)
         {
             Reads++;
-            return Task.FromResult(_values.TryGetValue((name, tenantId, userId), out var value) ? value : null);
+            return Task.FromResult(_values.TryGetValue((name, tenantId, userId, branchId), out var value) ? value : null);
         }
 
-        public Task SetAsync(string name, string? value, Guid? tenantId, Guid? userId, CancellationToken ct = default)
+        public Task SetAsync(string name, string? value, Guid? tenantId, Guid? userId, Guid? branchId, CancellationToken ct = default)
         {
-            _values[(name, tenantId, userId)] = value!;
+            _values[(name, tenantId, userId, branchId)] = value!;
             return Task.CompletedTask;
         }
 
-        public Task RemoveAsync(string name, Guid? tenantId, Guid? userId, CancellationToken ct = default)
+        public Task RemoveAsync(string name, Guid? tenantId, Guid? userId, Guid? branchId, CancellationToken ct = default)
         {
-            _values.Remove((name, tenantId, userId));
+            _values.Remove((name, tenantId, userId, branchId));
             return Task.CompletedTask;
         }
     }

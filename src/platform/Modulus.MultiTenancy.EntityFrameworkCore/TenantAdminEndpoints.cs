@@ -59,7 +59,7 @@ public static partial class TenantAdminEndpoints
     /// <summary>
     /// Maps <c>GET</c> and <c>POST</c> on <paramref name="prefix"/> (default <c>/api/tenancy/tenants</c>), <c>GET {id}</c>,
     /// <c>PUT {id}/status</c>, <c>PUT {id}/seats</c>, <c>PUT {id}/parent</c>, <c>GET {id}/members</c>, <c>POST {id}/members</c> and
-    /// <c>DELETE {id}/members/{userId}</c>.
+    /// <c>DELETE {id}/members/{userId}</c>, and <c>POST {id}/baseline</c> (re-applies the company baseline).
     /// </summary>
     public static RouteGroupBuilder MapModulusTenantAdmin<TTenant, TMembership, TDataStore>(this IEndpointRouteBuilder endpoints, string prefix = "/api/tenancy/tenants")
         where TTenant : TenantEntity, new()
@@ -84,6 +84,9 @@ public static partial class TenantAdminEndpoints
             var slug = body.Slug?.Trim().ToLowerInvariant() ?? "";
             if (!SlugPattern.IsMatch(slug))
                 return Problem("slug", "A company name is 1 to 63 lower-case letters, digits or hyphens, starting with a letter or digit.");
+            // Checked before anything is created: a designated administrator that is not an account would leave a company nobody can join.
+            if (body.AdministratorUserId is { } designated && !await IsAccountAsync(http, designated, ct))
+                return Problem("administratorUserId", "The designated administrator cannot be verified as an account in the identity store.");
             TenantInfo created;
             try
             {
@@ -113,6 +116,28 @@ public static partial class TenantAdminEndpoints
 
             var view = await manager.GetAsync(created.TenantId, ct);
             return Results.Created($"{prefix}/{created.TenantId:D}", view);
+        });
+
+        // Re-applies the baseline to an existing company. Roles that already hold grants there are left alone, so only the roles the company
+        // has no grants for receive them; a deliberate change is never overwritten. Answers the roles that were granted now.
+        group.MapPost("/{id:guid}/baseline", async (Guid id, HttpContext http, ITenantStore store, ICurrentTenant tenant, CancellationToken ct) =>
+        {
+            using var _ = tenant.Change(null);
+            if (http.RequestServices.GetService<ICompanyProvisioner>() is not { } provisioner)
+                return Results.Json(new { error = "BASELINE_UNAVAILABLE", message = "No company provisioner is registered." }, statusCode: StatusCodes.Status503ServiceUnavailable);
+            var company = await store.FindByIdAsync(id, ct);
+            if (company is null)
+                return Results.NotFound();
+
+            try
+            {
+                var granted = await provisioner.ProvisionAsync(company, ct);
+                return Results.Ok(new { companyId = company.TenantId, grantedRoles = granted });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Results.Json(new { error = "BASELINE_INVALID", message = ex.Message, companyId = company.TenantId }, statusCode: StatusCodes.Status500InternalServerError);
+            }
         });
 
         group.MapGet("/{id:guid}", async (Guid id, TenantManager<TTenant, TMembership, TDataStore> manager, ICurrentTenant tenant, CancellationToken ct) =>
@@ -193,6 +218,16 @@ public static partial class TenantAdminEndpoints
         });
 
         return group;
+    }
+
+    /// <summary>
+    /// Whether <paramref name="userId"/> is an account in the identity store. Refuses when no identity store is registered, since an
+    /// account that cannot be verified must not be made a company's administrator.
+    /// </summary>
+    private static async Task<bool> IsAccountAsync(HttpContext http, Guid userId, CancellationToken ct)
+    {
+        var directory = http.RequestServices.GetService<IUserRoleDirectory>();
+        return directory is not null && await directory.GetRolesAsync(userId, ct) is not null;
     }
 
     private static IResult Problem(string field, string message)

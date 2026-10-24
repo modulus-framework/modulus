@@ -42,6 +42,12 @@ public static class RoleAdminExtensions
     /// <summary>The longest role name the store accepts.</summary>
     public const int MaxRoleNameLength = 256;
 
+    /// <summary>
+    /// The built-in administrator role. It is never deleted or renamed, whether or not accounts hold it, so the installation keeps one
+    /// role that can administer the rest (decision 6). Its permissions stay editable through the grant routes.
+    /// </summary>
+    internal const string BuiltInRoleName = "Admin";
+
     /// <summary>Maps <c>GET {prefix}</c>, the permission catalog (default <c>/api/identity/permissions</c>).</summary>
     public static RouteGroupBuilder MapModulusPermissionCatalog(this IEndpointRouteBuilder endpoints, string prefix = "/api/identity/permissions")
     {
@@ -108,7 +114,8 @@ public static class RoleAdminExtensions
 
     /// <summary>
     /// Maps <c>DELETE {prefix}/{name}</c> and <c>PUT {prefix}/{name}</c> (rename, default <c>/api/identity/roles</c>). A role is deleted or
-    /// renamed only when no account holds it, it is not the default role, it is not an integration role, and it holds no permission grant
+    /// renamed only when no account holds it, it is not the built-in administrator role, it is not the default role, it is not an
+    /// integration role, and it holds no permission grant
     /// (<see cref="IRoleDeletionGuard"/>). A rename therefore never leaves a grant or a membership pointing at the old name. Without a
     /// registered guard no role is changed. Needs <see cref="AccountLifecycleExtensions.ManagePermission"/>, as the other role routes do.
     /// </summary>
@@ -177,6 +184,8 @@ public static class RoleAdminExtensions
         var role = await roles.FindByNameAsync(name);
         if (role is null)
             return Results.NotFound();
+        if (string.Equals(role.Name, BuiltInRoleName, StringComparison.OrdinalIgnoreCase))
+            return Results.Conflict(new { error = "BUILT_IN_ROLE", message = $"The built-in {BuiltInRoleName} role cannot be deleted or renamed." });
         if (role.IsDefault)
             return Results.Conflict(new { error = "DEFAULT_ROLE", message = "The default role cannot be deleted or renamed." });
 

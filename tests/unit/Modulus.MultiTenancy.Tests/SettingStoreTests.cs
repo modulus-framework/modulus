@@ -82,16 +82,16 @@ public sealed class SettingStoreTests : IAsyncLifetime
         using var scope = _app.Services.CreateScope();
         var store = scope.ServiceProvider.GetRequiredService<EfSettingStore>();
 
-        await store.SetAsync("Shop.Tender", "cash", null, null);
-        await store.SetAsync("Shop.Tender", "card", TenantA, null);
-        await store.SetAsync("Shop.Tender", "voucher", TenantA, User);
-        await store.SetAsync("Shop.Tender", "other", TenantB, null);
+        await store.SetAsync("Shop.Tender", "cash", null, null, null);
+        await store.SetAsync("Shop.Tender", "card", TenantA, null, null);
+        await store.SetAsync("Shop.Tender", "voucher", TenantA, User, null);
+        await store.SetAsync("Shop.Tender", "other", TenantB, null, null);
 
-        (await store.GetOrNullAsync("Shop.Tender", null, null)).Should().Be("cash");
-        (await store.GetOrNullAsync("Shop.Tender", TenantA, null)).Should().Be("card");
-        (await store.GetOrNullAsync("Shop.Tender", TenantA, User)).Should().Be("voucher");
-        (await store.GetOrNullAsync("Shop.Tender", TenantB, null)).Should().Be("other");
-        (await store.GetOrNullAsync("Shop.Tender", TenantB, User)).Should().BeNull("a person of one company has no value in another");
+        (await store.GetOrNullAsync("Shop.Tender", null, null, null)).Should().Be("cash");
+        (await store.GetOrNullAsync("Shop.Tender", TenantA, null, null)).Should().Be("card");
+        (await store.GetOrNullAsync("Shop.Tender", TenantA, User, null)).Should().Be("voucher");
+        (await store.GetOrNullAsync("Shop.Tender", TenantB, null, null)).Should().Be("other");
+        (await store.GetOrNullAsync("Shop.Tender", TenantB, User, null)).Should().BeNull("a person of one company has no value in another");
     }
 
     [Fact]
@@ -100,22 +100,46 @@ public sealed class SettingStoreTests : IAsyncLifetime
         using var scope = _app.Services.CreateScope();
         var store = scope.ServiceProvider.GetRequiredService<EfSettingStore>();
 
-        await store.SetAsync("Shop.Tender", "cash", TenantA, null);
-        await store.SetAsync("Shop.Tender", "card", TenantA, null);
-        (await store.GetOrNullAsync("Shop.Tender", TenantA, null)).Should().Be("card");
+        await store.SetAsync("Shop.Tender", "cash", TenantA, null, null);
+        await store.SetAsync("Shop.Tender", "card", TenantA, null, null);
+        (await store.GetOrNullAsync("Shop.Tender", TenantA, null, null)).Should().Be("card");
         scope.ServiceProvider.GetRequiredService<TenantStoreDbContextBase>().SettingValues.Count(s => s.Name == "Shop.Tender").Should().Be(1);
 
-        await store.RemoveAsync("Shop.Tender", TenantA, null);
-        (await store.GetOrNullAsync("Shop.Tender", TenantA, null)).Should().BeNull();
+        await store.RemoveAsync("Shop.Tender", TenantA, null, null);
+        (await store.GetOrNullAsync("Shop.Tender", TenantA, null, null)).Should().BeNull();
+    }
+
+    [Fact]
+    public async Task A_branch_value_is_kept_apart_from_its_company_and_from_other_branches()
+    {
+        using var scope = _app.Services.CreateScope();
+        var store = scope.ServiceProvider.GetRequiredService<EfSettingStore>();
+        var branchA = Guid.NewGuid();
+        var branchB = Guid.NewGuid();
+
+        await store.SetAsync("Shop.Tender", "card", TenantA, null, null);
+        await store.SetAsync("Shop.Tender", "cash-only", TenantA, null, branchA);
+
+        (await store.GetOrNullAsync("Shop.Tender", TenantA, null, null)).Should().Be("card");
+        (await store.GetOrNullAsync("Shop.Tender", TenantA, null, branchA)).Should().Be("cash-only");
+        (await store.GetOrNullAsync("Shop.Tender", TenantA, null, branchB)).Should().BeNull("another branch of the company has its own value");
+        (await store.GetOrNullAsync("Shop.Tender", TenantB, null, branchA)).Should().BeNull("another company's branch with the same id has none");
+
+        await store.RemoveAsync("Shop.Tender", TenantA, null, branchA);
+        (await store.GetOrNullAsync("Shop.Tender", TenantA, null, branchA)).Should().BeNull();
+        (await store.GetOrNullAsync("Shop.Tender", TenantA, null, null)).Should().Be("card", "removing the branch value leaves the company's");
     }
 
     [Fact]
     public void ScopeKey_IsUniquePerScope()
     {
-        EfSettingStore.ScopeKey(null, null).Should().Be("global");
-        EfSettingStore.ScopeKey(TenantA, null).Should().Be($"tenant:{TenantA:N}");
-        EfSettingStore.ScopeKey(TenantA, User).Should().Be($"user:{TenantA:N}:{User:N}");
-        EfSettingStore.ScopeKey(null, User).Should().Be($"user:none:{User:N}");
+        var branch = Guid.NewGuid();
+
+        EfSettingStore.ScopeKey(null, null, null).Should().Be("global");
+        EfSettingStore.ScopeKey(TenantA, null, null).Should().Be($"tenant:{TenantA:N}");
+        EfSettingStore.ScopeKey(TenantA, User, null).Should().Be($"user:{TenantA:N}:{User:N}");
+        EfSettingStore.ScopeKey(null, User, null).Should().Be($"user:none:{User:N}");
+        EfSettingStore.ScopeKey(TenantA, null, branch).Should().Be($"branch:{TenantA:N}:{branch:N}");
     }
 
     [Fact]

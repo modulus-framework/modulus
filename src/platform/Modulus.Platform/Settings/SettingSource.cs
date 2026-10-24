@@ -20,4 +20,7 @@ public enum SettingSource
 
     /// <summary>A value the host fixed in configuration. No scope overrides it.</summary>
     Pinned = 5,
+
+    /// <summary>A value stored for the current branch (an organization unit of the company).</summary>
+    Branch = 6,
 }

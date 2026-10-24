@@ -36,21 +36,26 @@ internal sealed class CompanyProvisioner(
     IOptions<CompanyProvisioningOptions> options) : ICompanyProvisioner
 {
     /// <inheritdoc />
-    public async Task ProvisionAsync(TenantInfo company, CancellationToken ct = default)
+    public async Task<IReadOnlyList<string>> ProvisionAsync(TenantInfo company, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(company);
         var baseline = Validate(options.Value.Grants);
         if (baseline.Count == 0)
-            return;
+            return [];
 
-        using var _ = tenant.Change(company);
-        foreach (var (role, permissions) in baseline)
+        var granted = new List<string>();
+        using (tenant.Change(company))
         {
-            if ((await grants.GetGrantsForHolderAsync(GrantHolderType.Role, role, ct)).Count > 0)
-                continue;
-            await grants.GrantToRoleAsync(role, permissions, ct);
+            foreach (var (role, permissions) in baseline)
+            {
+                if ((await grants.GetGrantsForHolderAsync(GrantHolderType.Role, role, ct)).Count > 0)
+                    continue;
+                await grants.GrantToRoleAsync(role, permissions, ct);
+                granted.Add(role);
+            }
         }
 
+        // Every run is audited, including one that granted nothing, so a re-application leaves a record of who ran it and what it changed.
         (services.GetService(typeof(ISecurityAuditLog)) as ISecurityAuditLog ?? NullSecurityAuditLog.Instance).Record(new SecurityAuditEvent
         {
             Category = SecurityAuditCategories.Authorization,
@@ -58,7 +63,9 @@ internal sealed class CompanyProvisioner(
             TenantId = company.TenantId,
             Target = $"tenant:{company.TenantId:D}",
             Outcome = SecurityAuditOutcomes.Success,
+            Details = new Dictionary<string, string?> { ["grantedRoles"] = granted.Count.ToString(System.Globalization.CultureInfo.InvariantCulture) },
         });
+        return granted;
     }
 
     private IReadOnlyDictionary<string, string[]> Validate(Dictionary<string, string[]> configured)

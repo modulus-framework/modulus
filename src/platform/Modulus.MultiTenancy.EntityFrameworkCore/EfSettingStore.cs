@@ -13,19 +13,24 @@ using Modulus.Settings;
 /// </remarks>
 public sealed class EfSettingStore(TenantStoreDbContextBase db) : ISettingStore
 {
-    /// <summary>The scope key of a value, as the table stores it.</summary>
-    public static string ScopeKey(Guid? tenantId, Guid? userId)
+    /// <summary>
+    /// The scope key of a value, as the table stores it. A branch value is keyed by its company and branch, so it needs no column of its
+    /// own: the table's scope key carries it.
+    /// </summary>
+    public static string ScopeKey(Guid? tenantId, Guid? userId, Guid? branchId)
     {
         if (userId is { } user)
             return $"user:{tenantId?.ToString("N") ?? "none"}:{user:N}";
+        if (branchId is { } branch)
+            return $"branch:{tenantId?.ToString("N") ?? "none"}:{branch:N}";
         if (tenantId is { } tenant)
             return $"tenant:{tenant:N}";
         return "global";
     }
 
-    public Task<string?> GetOrNullAsync(string name, Guid? tenantId, Guid? userId, CancellationToken ct = default)
+    public Task<string?> GetOrNullAsync(string name, Guid? tenantId, Guid? userId, Guid? branchId, CancellationToken ct = default)
     {
-        var scope = ScopeKey(tenantId, userId);
+        var scope = ScopeKey(tenantId, userId, branchId);
         return db.SettingValues
             .AsNoTracking()
             .Where(s => s.Name == name && s.ScopeKey == scope)
@@ -33,15 +38,15 @@ public sealed class EfSettingStore(TenantStoreDbContextBase db) : ISettingStore
             .FirstOrDefaultAsync(ct);
     }
 
-    public async Task SetAsync(string name, string? value, Guid? tenantId, Guid? userId, CancellationToken ct = default)
+    public async Task SetAsync(string name, string? value, Guid? tenantId, Guid? userId, Guid? branchId, CancellationToken ct = default)
     {
         if (value is null)
         {
-            await RemoveAsync(name, tenantId, userId, ct).ConfigureAwait(false);
+            await RemoveAsync(name, tenantId, userId, branchId, ct).ConfigureAwait(false);
             return;
         }
 
-        var scope = ScopeKey(tenantId, userId);
+        var scope = ScopeKey(tenantId, userId, branchId);
         var row = await db.SettingValues.FirstOrDefaultAsync(s => s.Name == name && s.ScopeKey == scope, ct).ConfigureAwait(false);
         if (row is null)
         {
@@ -84,9 +89,9 @@ public sealed class EfSettingStore(TenantStoreDbContextBase db) : ISettingStore
         }
     }
 
-    public async Task RemoveAsync(string name, Guid? tenantId, Guid? userId, CancellationToken ct = default)
+    public async Task RemoveAsync(string name, Guid? tenantId, Guid? userId, Guid? branchId, CancellationToken ct = default)
     {
-        var scope = ScopeKey(tenantId, userId);
+        var scope = ScopeKey(tenantId, userId, branchId);
         await db.SettingValues
             .Where(s => s.Name == name && s.ScopeKey == scope)
             .ExecuteDeleteAsync(ct)

@@ -498,7 +498,8 @@ Each item: BRS IDs in the traceability record; positive, negative, tenant and re
 
 ### A1-1 reviewed rehire (2026-10-19, P1a, built)
 
-- **Decision used (owner delegated, recommended option).** Approvers are holders of `TenantAdministrator` or `HR` in the account's company. Names are configurable: `Identity:RehireReview:ApproverRoles`.
+- **Decision used (owner delegated, recommended option).** Approvers are holders of `Admin` or `HR` in the account's company. Names are configurable: `Identity:RehireReview:ApproverRoles`. (Changed 2026-10-24 from `TenantAdministrator`, which duplicated `Admin`; decision D-01.)
+- **Upgrade for an installation that has `TenantAdministrator`.** (1) Give each holder `Admin` with the user-role admin API. (2) Move any grants held by `TenantAdministrator` to `Admin` with the grant API. (3) Delete `TenantAdministrator`: the delete route refuses while accounts hold it or grants name it, so a leftover assignment cannot be lost silently. (4) If `Identity:RehireReview:ApproverRoles` names `TenantAdministrator` in configuration, change it to `Admin`.
 - **Flow.** `IRehireReviewService.ApproveAsync(accountId, approverId, reason)` is the single approval step. An archived account is the request, so no separate request row is stored.
 - **Refusals.** A non-archived account (`Conflict`); an approver who is the account; an approver in another company or with no approver role (`Forbidden`, nothing changes); an empty reason (`ArgumentException`).
 - **Effect.** Moves the account to `PendingActivation` through `IAccountLifecycleService` with `RehireReviewed: true`, so the transition row records the approver and reason, and the account must still accept its link. Audits `account.rehire_approved`.

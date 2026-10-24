@@ -191,6 +191,66 @@ Validation: the PRD's two acceptance applications are the test beds. The identit
 garments ERP case (approvals and complex roles come later); the food delivery case uses the public catalog and idempotency parts of
 the framework and is not part of these premodules.
 
+## Decisions recorded (2026-10-24)
+
+The owner's final choices. Items marked *unverified* need a check before they are relied on.
+
+- **D8 legal retention:** no statutory minimum is set. Do not enforce a minimum until counsel confirms one, and do not delete audit records
+  freely. Keep a documented interim configuration; no irreversible deletion until a retention policy is approved.
+  Built (2026-10-24): security audit retention is off by default (`Security:Retention:Enabled` = false). An operator turns it on with the
+  period the legal advice sets. Test: `Retention_is_off_until_an_operator_turns_it_on`.
+- **D7 pilot:** write measurable acceptance criteria for identity-account administration (role protection, authorization boundaries,
+  account lifecycle, auditability, regression tests), then sign off after they pass. Proposed criteria are in "Pilot acceptance criteria
+  (proposed)" below; they are not signed off.
+- **Built-in administrator role:** `Admin` is protected from deletion and rename. Built: `BUILT_IN_ROLE` refusal in `RoleAdminEndpoints`.
+- **D-01 `TenantAdministrator`:** map to `Admin`, migrate existing assignments without losing grants, mark `Admin` protected. Built
+  (2026-10-24): the rehire approver default is `Admin` and `Admin` is protected. An installation that still has `TenantAdministrator` follows
+  the upgrade steps in `docs/IDENTITY_PLATFORM_PLAN.md` (A1-1); the delete route refuses while holders or grants remain.
+- **Profile fields:** display name, language, time zone, contact phone. Email changes need a confirmation link.
+- **Audit permission:** `audit:security:view` goes to no role by default; an authorized operator grants it.
+- **Audit export:** CSV, 31-day maximum window, the 1,000-row query cap kept; exports are authorized and audited.
+- **Company-admin audit visibility:** decoded summary only. Raw host-level events stay with authorized host operators.
+- **D-03 parent administration:** a parent administrator cannot change a child company without a grant in that child.
+- **D-05 audit retention:** configured per category; a valid legal hold suspends deletion. Deletion is built only after the policy is approved.
+  Built: per-category windows and per-chain legal holds already existed; the default is now off (see D8).
+- **Premodule order:** identity, tenancy, profile, audit, settings.
+- **Owner records D-02, D-06 to D-09, B-02 to B-05:** unverified until the original decisions and code are checked.
+- **OpenBao:** Podman on Linux with AppRole; three independent Raft nodes for production (one node only for development or a temporary
+  pilot); manual Shamir recovery shares held by separate custodians until a KMS is configured; migrate all listed secrets (database and
+  tenant credentials, payment and API keys, webhook secrets, LDAP and SAML bind credentials, AI platform keys, Data Protection keys,
+  personal-data search keys, log-redaction keys); static KV secrets with scheduled rotation; cache reads for at most 5 minutes and fail
+  closed for writes and new-tenant provisioning (verified 2026-10-24: `Secrets:Ttl` and `Secrets:MaxStaleOnFailure` both default to 5 minutes;
+  the stale bound was 15 minutes and is now 5, test `The_default_maximum_age_of_a_cached_secret_is_five_minutes`; the runbook is
+  `docs/runbooks/openbao-production.md`); shared database by default with tenant scope
+  in the application and PostgreSQL row-level security where it applies; SSO/OIDC with MFA for administrators and a separate break-glass
+  account; a separate protected audit destination; production separate from development and staging; no Python client until a Python service
+  needs one; database passwords every 90 days, API and payment keys every 90 days or sooner, AppRole Secret IDs short-lived and per deployment.
+- **Settings grouping:** approved. Add a group field to `SettingDefinition`.
+- **Company switcher:** build now. Membership, permissions and data scope are checked on every request, never implied by selection.
+- **Baseline re-application:** approved and built (2026-10-24). Endpoint, identity check, audit and the no-overwrite rule as described under
+  "Admin grant for new companies (done, D-10)" in the remaining-work section.
+- **Offboarding export (D-P5):** deferred from Release 1. The contract and manifest stay; the export and retention hold come later unless a
+  confirmed requirement makes them a blocker.
+- **`audit:view-host`:** a Critical permission, granted to no role by default, kept separate from company audit permissions.
+- **`ISettingStore` breaking change:** accepted. Branch id stays in every method; in-repo implementations and tests updated (done); external
+  implementations need a documented migration.
+
+## Pilot acceptance criteria (proposed, not signed off)
+
+Pilot: identity-account administration (decision D7). Sign-off needs every item below to be met, with the test named or a recorded result.
+
+1. **Role protection.** `Admin` cannot be deleted or renamed, with or without holders (`The_built_in_admin_role_is_never_deleted_or_renamed...`).
+   A role with holders or grants is refused for delete and rename (`A_role_is_not_deleted_...`, `A_role_is_not_renamed_...`).
+2. **Authorization boundaries.** A caller without `identity:accounts:manage` cannot change roles (`A_signed_in_account_without_the_account_permission...`).
+   A company administrator cannot change a global value (403). A parent administrator cannot change a child company without a grant there.
+3. **Account lifecycle.** Invite, activate, disable, archive and rehire-review work end to end, and a rehire needs an approver with `Admin` or
+   `HR` in the account's own company (`RehireReviewTests`).
+4. **Auditability.** Every administrative write records an audit event, and the audit viewer needs `audit:security:view` or `audit:view`
+   (`SecurityAuditViewerTests`, `BusinessAuditViewerTests`).
+5. **Regression.** The identity, authorization and platform unit suites pass on net8.0 and net10.0, the build has 0 warnings, and a generated
+   API app's test suite passes.
+6. **Operator checks.** Audit retention is off unless an operator enables it, and the enabled period is recorded in the deployment's runbook.
+
 ## Remaining work and limitations (2026-10-24)
 
 This section is the single list of what is still open after the premodule 1 to 5 work. Each item says what blocks it.
@@ -222,11 +282,22 @@ This section is the single list of what is still open after the premodule 1 to 5
 - **Companies page in web apps:** needs a company switcher, because `--multi-tenancy` is refused for web apps.
 - **Admin grant for new companies (done, D-10):** `POST /api/tenancy/tenants` applies the configured baseline to the new company and, when
   `AdministratorUserId` is given, makes that account a member. An invalid baseline answers 500 `BASELINE_INVALID` and keeps the company with no
-  grants. Open: no endpoint re-applies the baseline to an existing company, and the designated account is not checked against the identity store.
+  grants. Closed (2026-10-24, decision 30): `POST /api/tenancy/tenants/{id}/baseline` re-applies the baseline to an existing company and answers
+  the roles it granted. A role that already holds grants there is left alone, so a deliberate change is never overwritten, and every run is
+  audited (`company.provisioned`, with the count of roles granted). A closed company does not resolve, so it answers 404. The designated
+  administrator must be an account in the identity store (`IUserRoleDirectory`); without a registered identity store the company is refused,
+  since the account cannot be verified. Tests: `TenantCompanyProvisioningTests` (7 in total).
 - **Business audit log viewer UI (premodule 4):** the API is built (`GET /api/audit/business`, company-scoped, `audit:view`) and wired into
   generated apps; no page reads it yet. The security viewer covers the security chain only.
-- **Premodule 5:** the branch (organization-unit) scope from D-P4, grouping settings by definition group (definitions carry no group field), and
-  an EF settings store for generated apps (values are in memory until one is added).
+- **Premodule 5:** grouping settings by definition group is open (definitions carry no group field).
+  The EF settings store is wired into generated multi-tenant apps (`AddEfCoreSettingStore`, values in the tenant store); single-tenant apps
+  stay in memory. Closed: `SettingsStoreWiringTests` (3) and a generated multi-tenant app builds with 0 warnings and passes 11 of 11. Open:
+  the `ModulusSettingValues` table needs a tenant-store migration in production (dev creates it when no migrations exist).
+- **Branch scope (D-P4, built in the framework):** `SettingScope.Branch` and `SettingSource.Branch`. Precedence user, branch, company,
+  installation, default. A branch value is keyed by company and branch (`ISettingStore` takes a branch id; the EF table needs no new column).
+  It applies to the request's branch (`ISecurityContext.BranchId`, checked against the caller's org scope) and needs a company and a branch in
+  scope to be written. Admin API: `PUT|DELETE /api/settings/branch/{name}`. Tests: `BranchSettingsTests` (6), store tests (+2). Open: the
+  generated Settings page has no branch option, because the Web host does not send `X-Branch-Id` yet (a branch selector is needed first).
 - **Browser checks:** the generated Users, Roles, Audit, Settings and Companies pages were verified by build and API tests only.
 
 ### Limitations in the built code
@@ -254,17 +325,18 @@ This section is the single list of what is still open after the premodule 1 to 5
 - **UI (`modulus-ui`):** the Blazor test work is on `origin/blazor-test-stability` (`954ab84`). Local `main` is 5 commits ahead and 3 behind
   `origin/main`, because the remote kept a separate 0.9.1 line. The version line is an open decision.
 
-### Verification of this round
+### Verification (2026-10-24)
 
-- Affected unit suites pass on net8 and net10: authorization management (136), platform (566), multi-tenancy (132), identity (450).
-  The EF authorization suite passes on net10 (123) and on net8 in four runs after one unexplained failure in a fifth run (the failure text
-  was not captured; the cause is not known).
-- `dotnet format modulus.slnx --verify-no-changes`: clean.
-- Generated single-tenant app: builds, 15 of 15 tests pass, on the framework at `1.6.0-local.11`.
-- Generated multi-tenant app: builds, 11 of 11 tests pass, on the same framework.
-- Company baseline (D-10), on a generated multi-tenant app built against the current source: builds with 0 warnings, 11 of 11 tests
-  pass (the default company's `Admin` grant comes from `CompanyProvisioning:Grants`). Multi-tenancy suite 135 of 135 and CLI suite
-  636 of 636 on net10; multi-tenancy also 135 of 135 on net8. Build 0 warnings, format clean.
+- Unit suites, on net8.0 and net10.0 (`dotnet test --filter "Category=Unit"`): Platform 574, MultiTenancy 140, Authorization EF 131,
+  Authorization management 136, Identity 451, AspNetCore 156 (net10.0) and 149 (net8.0). The CLI suite is 639 on net10.0.
+- The EF authorization suite passed on both targets in this round, and five further net8.0 runs passed. The one failure seen earlier on
+  net8.0 has not been reproduced; its cause is unknown and the item stays open. On 2026-10-24 one more timing test failed once in a full run,
+  `DelegationRoleStalenessTests.The_refresh_timer_bounds_an_unreported_change_to_its_interval` (net8.0); it passed 3 of 3 in isolation. Treat
+  both as flaky under load until a cause is found.
+- `dotnet build modulus.slnx`: 0 warnings, 0 errors. `dotnet format modulus.slnx --verify-no-changes`: clean.
+- Generated multi-tenant API app, built on repacked framework packages that include the branch scope and the settings store: builds with
+  0 warnings, 11 of 11 tests pass.
+- Generated single-tenant app: 15 of 15 tests, measured on the framework at `1.6.0-local.11`. Not re-run in this round.
 
 ## Ordering
 
@@ -433,11 +505,11 @@ global writes behind `settings:global:manage`, refusals for unknown names and ba
 `AddModulusSettingAdministration`, `MapModulusSettingAdministration`) and ship a Settings page: effective value and source per setting, pinned
 values read-only, an edit control by value type (checkbox-style choice for booleans, a choice list for allowed values, text otherwise), and the
 API's refusal message on the field. Verified: a fresh generated `webapp+api` app builds and passes its 15 tests; the page was not driven in a
-browser. Not built: the branch scope (D-P4, an organization-unit scope between user and company), grouping by definition group (the
-definitions carry no group field yet), and an EF settings store for generated apps (values are in memory until the tenant store is added).
+browser. Built since: the branch scope (D-P4, an organization-unit scope between user and company; see the remaining-work section) and the EF
+settings store in multi-tenant apps. Not built: grouping by definition group (the definitions carry no group field yet).
 
-- **API:** exists (`/api/settings`). Add `GET /api/settings/definitions` shape review so the screen can show the type, allowed values and
-  allowed scopes; no new write paths.
+- **API:** exists (`/api/settings`). Each row already carries the type, allowed values and allowed scopes (`SettingView`), so a separate
+  definitions endpoint is not needed. `AllowedScopes` is a flags enum and serializes as a number; the screen maps it to names.
 - **Screens:** settings list grouped by definition group, with the effective value, its source (pinned, user, company, global, default)
   and the pinned ones read-only. Edit controls follow the value type (text, boolean, number, choice, duration, GUID).
 - **Tests:** a pinned setting refuses writes (`409`) and shows read-only; a company administrator cannot change a global value (`403`);

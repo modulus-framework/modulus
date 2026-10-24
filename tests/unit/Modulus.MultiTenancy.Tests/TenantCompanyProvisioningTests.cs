@@ -16,8 +16,9 @@ using Xunit;
 namespace Modulus.MultiTenancy.Tests;
 
 /// <summary>
-/// Company creation with the provisioning baseline (D-10): the baseline runs for the new company, the designated administrator becomes its
-/// member after that, an invalid baseline is reported without hiding the company, and a duplicate slug provisions nothing.
+/// Company creation and the baseline (D-10, decision 30): the baseline runs for the new company, the designated administrator must be an
+/// account in the identity store and becomes a member after the baseline, an invalid baseline is reported without hiding the company, a duplicate
+/// slug provisions nothing, and the baseline can be re-applied to an existing company (never to a closed one).
 /// </summary>
 [Trait("Category", "Unit")]
 public sealed class TenantCompanyProvisioningTests : IAsyncLifetime
@@ -28,6 +29,7 @@ public sealed class TenantCompanyProvisioningTests : IAsyncLifetime
 
     private readonly SqliteConnection _storeKeepAlive = new("DataSource=:memory:");
     private readonly RecordingProvisioner _provisioner = new();
+    private readonly KnownAccounts _accounts = new();
     private WebApplication _app = null!;
     private HttpClient _client = null!;
 
@@ -40,6 +42,7 @@ public sealed class TenantCompanyProvisioningTests : IAsyncLifetime
         builder.Services.AddMultiTenancy(t => t.UseHeaderResolver());
         builder.Services.AddEfCoreTenantStore(o => o.UseSqlite(_storeKeepAlive));
         builder.Services.AddSingleton<ICompanyProvisioner>(_provisioner);
+        builder.Services.AddSingleton<IUserRoleDirectory>(_accounts);
         builder.Services.AddAuthorization(o => o.AddPolicy(TenantAdminEndpoints.ManagePermission, p => p.RequireAssertion(_ => true)));
 
         _app = builder.Build();
@@ -63,6 +66,7 @@ public sealed class TenantCompanyProvisioningTests : IAsyncLifetime
     public async Task The_baseline_runs_for_the_new_company_and_then_the_administrator_becomes_a_member()
     {
         var administrator = Guid.NewGuid();
+        _accounts.Known.Add(administrator);
 
         var created = await _client.PostAsJsonAsync(Route, new TenantCreateRequest("acme", "Acme", null, administrator));
 
@@ -71,6 +75,17 @@ public sealed class TenantCompanyProvisioningTests : IAsyncLifetime
         _provisioner.Provisioned.Should().ContainSingle(provisioned => provisioned == id);
         var members = (await (await _client.GetAsync($"{Route}/{id:D}/members")).Content.ReadFromJsonAsync<JsonElement>(JsonOptions)).EnumerateArray().ToList();
         members.Should().ContainSingle(m => m.GetProperty("userId").GetGuid() == administrator && m.GetProperty("isActive").GetBoolean());
+    }
+
+    [Fact]
+    public async Task A_designated_administrator_must_be_an_account_before_the_company_is_created()
+    {
+        var response = await _client.PostAsJsonAsync(Route, new TenantCreateRequest("umbrella", null, null, Guid.NewGuid()));
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var errors = (await response.Content.ReadFromJsonAsync<JsonElement>(JsonOptions)).GetProperty("errors");
+        errors.TryGetProperty("administratorUserId", out _).Should().BeTrue();
+        _provisioner.Provisioned.Should().BeEmpty("nothing is provisioned for a company that was never created");
     }
 
     [Fact]
@@ -99,18 +114,77 @@ public sealed class TenantCompanyProvisioningTests : IAsyncLifetime
         _provisioner.Provisioned.Should().HaveCount(before);
     }
 
+    [Fact]
+    public async Task Re_applying_the_baseline_reports_the_roles_it_granted()
+    {
+        var id = await CreateCompanyAsync("hooli");
+        _provisioner.Granted = ["Admin"];
+
+        var response = await _client.PostAsync($"{Route}/{id:D}/baseline", null);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>(JsonOptions);
+        body.GetProperty("companyId").GetGuid().Should().Be(id);
+        body.GetProperty("grantedRoles").EnumerateArray().Select(r => r.GetString()).Should().Equal("Admin");
+        _provisioner.Provisioned.Should().HaveCount(2, "the company was provisioned at creation and again by the re-application");
+    }
+
+    [Fact]
+    public async Task Re_applying_the_baseline_to_an_unknown_company_is_not_found()
+    {
+        var response = await _client.PostAsync($"{Route}/{Guid.NewGuid():D}/baseline", null);
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task A_closed_company_does_not_resolve_so_it_gets_no_baseline()
+    {
+        var id = await CreateCompanyAsync("pied-piper");
+        using (var scope = _app.Services.CreateScope())
+        {
+            var manager = scope.ServiceProvider.GetRequiredService<TenantManager<TenantEntity, TenantMembershipEntity, TenantDataStoreEntity>>();
+            (await manager.SetStatusAsync(id, TenantStatus.Closed)).Should().BeTrue();
+        }
+        var provisionedBefore = _provisioner.Provisioned.Count;
+
+        var response = await _client.PostAsync($"{Route}/{id:D}/baseline", null);
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound, "a closed company is inactive, so the store does not resolve it");
+        _provisioner.Provisioned.Should().HaveCount(provisionedBefore);
+    }
+
+    private async Task<Guid> CreateCompanyAsync(string slug)
+    {
+        var created = await _client.PostAsJsonAsync(Route, new TenantCreateRequest(slug, null, null));
+        created.StatusCode.Should().Be(HttpStatusCode.Created);
+        return (await created.Content.ReadFromJsonAsync<JsonElement>(JsonOptions)).GetProperty("id").GetGuid();
+    }
+
+    /// <summary>The identity store as the company endpoints see it: an account is known by its id, and has no roles in these tests.</summary>
+    private sealed class KnownAccounts : IUserRoleDirectory
+    {
+        public HashSet<Guid> Known { get; } = [];
+
+        public ValueTask<IReadOnlyCollection<string>?> GetRolesAsync(Guid userId, CancellationToken ct = default)
+            => ValueTask.FromResult<IReadOnlyCollection<string>?>(Known.Contains(userId) ? new List<string>() : null);
+    }
+
     private sealed class RecordingProvisioner : ICompanyProvisioner
     {
         public List<Guid> Provisioned { get; } = [];
 
         public Exception? Failure { get; set; }
 
-        public Task ProvisionAsync(TenantInfo company, CancellationToken ct = default)
+        /// <summary>The roles the next provisioning reports as granted.</summary>
+        public IReadOnlyList<string> Granted { get; set; } = [];
+
+        public Task<IReadOnlyList<string>> ProvisionAsync(TenantInfo company, CancellationToken ct = default)
         {
             if (Failure is not null)
                 throw Failure;
             Provisioned.Add(company.TenantId);
-            return Task.CompletedTask;
+            return Task.FromResult(Granted);
         }
     }
 }

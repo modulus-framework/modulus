@@ -65,7 +65,7 @@ public sealed class SecurityAuditRestoreValidatorTests
     {
         var retention = new SecurityAuditRetention(
             store, archive, new SecurityAuditHolds(), new FixedClock(s_now),
-            Options.Create(new SecurityAuditRetentionOptions { Retention = TimeSpan.FromDays(730) }));
+            Options.Create(new SecurityAuditRetentionOptions { Enabled = true, Retention = TimeSpan.FromDays(730) }));
         await retention.RunAsync();
     }
 

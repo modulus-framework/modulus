@@ -13,7 +13,7 @@ public sealed class SecretsOptions
     /// The oldest a cached secret may be (measured from its fetch) and still be served while the store is unreachable.
     /// Past this age the request fails with <c>503</c>; the framework never serves a secret older than this bound.
     /// </summary>
-    public TimeSpan MaxStaleOnFailure { get; set; } = TimeSpan.FromMinutes(15);
+    public TimeSpan MaxStaleOnFailure { get; set; } = TimeSpan.FromMinutes(5);
 
     /// <summary>
     /// When <c>true</c> the host is a runtime host and must not register a secret writer. Generated API hosts keep it on.

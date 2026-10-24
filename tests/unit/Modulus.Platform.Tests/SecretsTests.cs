@@ -82,7 +82,7 @@ public sealed class SecretsTests
     {
         var backend = Sync(call => call == 1 ? Value(1) : throw Down());
         var clock = new FakeClock();
-        var store = Store(backend, clock);
+        var store = StaleStore(backend, clock);
 
         await store.GetAsync(Primary);
         clock.Advance(TimeSpan.FromMinutes(10));
@@ -96,7 +96,7 @@ public sealed class SecretsTests
     {
         var backend = Sync(call => call == 1 ? Value(1) : throw Down());
         var clock = new FakeClock();
-        var store = Store(backend, clock);
+        var store = StaleStore(backend, clock);
 
         await store.GetAsync(Primary);
         clock.Advance(TimeSpan.FromMinutes(16));
@@ -177,6 +177,17 @@ public sealed class SecretsTests
     }
 
     [Fact]
+    public void The_default_maximum_age_of_a_cached_secret_is_five_minutes()
+    {
+        // Decision 21: a cached secret is never served past five minutes, fresh or while the store is unreachable.
+        var options = new SecretsOptions();
+
+        options.Ttl.Should().Be(TimeSpan.FromMinutes(5));
+        options.MaxStaleOnFailure.Should().Be(TimeSpan.FromMinutes(5));
+        options.Validate().Should().BeNull();
+    }
+
+    [Fact]
     public void Options_RejectStaleBoundShorterThanTtl()
     {
         var options = new SecretsOptions { Ttl = TimeSpan.FromMinutes(10), MaxStaleOnFailure = TimeSpan.FromMinutes(5) };
@@ -188,6 +199,9 @@ public sealed class SecretsTests
         new(new Dictionary<string, string> { ["connectionString"] = $"v{version}" }, version);
 
     private static SecretStoreUnavailableException Down() => new("down");
+
+    private static CachedSecretStore StaleStore(ISecretBackend backend, TimeProvider clock) =>
+        new(backend, Options.Create(new SecretsOptions { Ttl = TimeSpan.FromMinutes(1), MaxStaleOnFailure = TimeSpan.FromMinutes(15) }), clock, NullLogger<CachedSecretStore>.Instance);
 
     private static CachedSecretStore Store(ISecretBackend backend, TimeProvider clock) =>
         new(backend, Options.Create(new SecretsOptions()), clock, NullLogger<CachedSecretStore>.Instance);

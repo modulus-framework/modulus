@@ -82,6 +82,7 @@ public sealed class SecurityAuditRetentionServiceTests
     {
         var options = Options.Create(new SecurityAuditRetentionOptions
         {
+            Enabled = true,
             Retention = TimeSpan.FromDays(730),
             Interval = interval ?? TimeSpan.FromDays(1),
         });
@@ -149,6 +150,13 @@ public sealed class SecurityAuditRetentionServiceTests
         await service.StopAsync(CancellationToken.None);
 
         archive.Archived.Should().HaveCount(3, "the scheduled pass archived the expired prefix");
+    }
+
+    [Fact]
+    public void Retention_is_off_until_an_operator_turns_it_on()
+    {
+        // Decision D8: no entry is purged by default, whether or not an archive is registered.
+        new SecurityAuditRetentionOptions().Enabled.Should().BeFalse();
     }
 
     [Fact]

@@ -4,9 +4,9 @@ namespace Modulus.Identity.Abstractions;
 public sealed class RehireReviewOptions
 {
     /// <summary>
-    /// The roles whose holders may approve a rehire, in the account's own company. Default: the tenant administrator and HR.
+    /// The roles whose holders may approve a rehire, in the account's own company. Default: the built-in administrator (`Admin`) and HR. An installation that still has a `TenantAdministrator` role grants `Admin` to its holders first; see the upgrade note in the identity plan.
     /// </summary>
-    public List<string> ApproverRoles { get; set; } = ["TenantAdministrator", "HR"];
+    public List<string> ApproverRoles { get; set; } = ["Admin", "HR"];
 }
 
 /// <summary>
