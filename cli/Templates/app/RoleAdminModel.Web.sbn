@@ -25,6 +25,8 @@ public sealed class RolesModel(RoleAdminApiClient roles) : PageModel
 
     public IReadOnlyList<string> Granted { get; private set; } = [];
 
+    public IReadOnlyList<InheritedRoleGrant> Inherited { get; private set; } = [];
+
     /// <summary>True when the caller may read and set the role's permissions (it holds authorization:manage).</summary>
     public bool CanManagePermissions { get; private set; }
 
@@ -49,8 +51,11 @@ public sealed class RolesModel(RoleAdminApiClient roles) : PageModel
         using var grants = await roles.PermissionsAsync(Role, ct);
         CanManagePermissions = grants.IsSuccessStatusCode;
         if (grants.IsSuccessStatusCode)
-            Granted = (await grants.Content.ReadFromJsonAsync<List<RoleGrantRow>>(s_json, ct) ?? [])
-                .Where(g => g.Type == "Allow").Select(g => g.Permission).ToList();
+        {
+            var view = await grants.Content.ReadFromJsonAsync<RolePermissionsView>(s_json, ct);
+            Granted = (view?.Own ?? []).Where(g => g.Type == "Allow").Select(g => g.Permission).ToList();
+            Inherited = view?.Inherited ?? [];
+        }
     }
 
     public async Task<IActionResult> OnPostCreateAsync(string? name, string? displayName, CancellationToken ct)

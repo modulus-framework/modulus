@@ -18,6 +18,15 @@ public sealed record GrantWriteRequest(
 public sealed record GrantResponse(
     string HolderType, string Holder, string Permission, string Type);
 
+/// <summary>A grant a holder inherits from a company above the current one.</summary>
+/// <param name="CompanyId">The company that holds the grant.</param>
+/// <param name="HolderType"><c>Role</c> or <c>User</c>.</param>
+/// <param name="Holder">Role name, or the user id for user grants.</param>
+/// <param name="Permission">The permission name.</param>
+/// <param name="Type"><c>Allow</c> or <c>Deny</c>.</param>
+public sealed record InheritedGrantResponse(
+    Guid CompanyId, string HolderType, string Holder, string Permission, string Type);
+
 /// <summary>Adds an org unit (with optional parent edges).</summary>
 /// <param name="Id">The stable unit id.</param>
 /// <param name="Parents">Parent unit ids; empty or omitted for a root unit.</param>

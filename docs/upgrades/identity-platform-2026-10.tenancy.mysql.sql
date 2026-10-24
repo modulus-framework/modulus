@@ -3,7 +3,7 @@
 -- Run as the schema owner, never as an application user, once, before the new release starts:
 --   mysql -h "$HOST" -u "$OWNER" -p "$DATABASE" < identity-platform-2026-10.tenancy.mysql.sql
 --
--- Adds the company lifecycle columns (Status, TrialEndsAt, MaxUsers) to ModulusTenants and creates ModulusTenantDataStores and ModulusSettingValues.
+-- Adds the company lifecycle columns (Status, TrialEndsAt, MaxUsers) and the parent company (ParentId) to ModulusTenants and creates ModulusTenantDataStores and ModulusSettingValues.
 -- MySQL has no ADD COLUMN IF NOT EXISTS, so the helper procedure checks information_schema first. It is dropped at the end.
 -- Idempotent: a second run changes nothing. Existing companies start as Active with no trial end and no seat limit.
 -- Existing deployments only: it expects ModulusTenants to exist.
@@ -29,6 +29,8 @@ DELIMITER ;
 CALL modulus_upgrade_add_column('ModulusTenants', 'Status', 'int NOT NULL DEFAULT 1');
 CALL modulus_upgrade_add_column('ModulusTenants', 'TrialEndsAt', 'datetime NULL');
 CALL modulus_upgrade_add_column('ModulusTenants', 'MaxUsers', 'int NULL');
+-- The parent company (null for a top-level company). A plain fact: access does not follow it.
+CALL modulus_upgrade_add_column('ModulusTenants', 'ParentId', 'char(36) NULL');
 
 -- 2. Tenant data stores: a pointer to a company's database secret, never a connection string.
 CREATE TABLE IF NOT EXISTS ModulusTenantDataStores (

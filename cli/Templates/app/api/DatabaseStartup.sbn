@@ -1,9 +1,15 @@
 using Modulus.EntityFrameworkCore.Extensions;
 {{ if example_permission }}using Modulus.Authorization.EntityFrameworkCore;
 {{ end }}{{ if auth == "openiddict" }}using {{ identity_namespace }}.Infrastructure;
-{{ end }}{{ if multi_tenancy }}using Modulus.MultiTenancy.EntityFrameworkCore;
+{{ end }}{{ if multi_tenancy }}using Modulus.Core.Abstractions;
+using Modulus.Core.Abstractions.Tenancy;
+using Modulus.MultiTenancy;
+using Modulus.MultiTenancy.EntityFrameworkCore;
 using {{ tenancy_namespace }}.Infrastructure;
-{{ end }}
+{{ end }}{{ if multi_tenancy }}{{ if example_permission }}using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Modulus.Authorization.Grants;
+{{ end }}{{ end }}
 namespace {{ root_namespace }}.Api.Hosting;
 
 /// <summary>
@@ -39,5 +45,26 @@ internal static class DatabaseStartup
 {{ end }}{{ if multi_tenancy }}
         // The default company and the administrators' memberships in it (see TenancySeeding).
         await app.Services.SeedTenancyAsync(app.Environment);
-{{ end }}    }
-}
+{{ if example_permission }}        await app.Services.SeedCompanyGrantsAsync(app.Configuration);
+{{ end }}{{ end }}    }
+
+{{ if multi_tenancy }}{{ if example_permission }}    /// <summary>
+    /// Gives the Admin role the example permission inside the default company. Grants are per company, so a company sees only its own:
+    /// the first-boot grant is written in the host context and would be invisible to the company. Written only when the company has no
+    /// Admin grant yet, so an administrator's later revocation stays revoked after a restart.
+    /// </summary>
+    private static async Task SeedCompanyGrantsAsync(this IServiceProvider services, IConfiguration configuration)
+    {
+        var slug = configuration["Tenancy:Seed:DefaultTenant"] is { Length: > 0 } configured ? configured : "default";
+        await using var scope = services.CreateAsyncScope();
+        var provider = scope.ServiceProvider;
+        var tenant = await provider.GetRequiredService<ITenantStore>().FindBySlugAsync(slug, CancellationToken.None);
+        if (tenant is null)
+            return;
+
+        using var company = provider.GetRequiredService<ICurrentTenant>().Change(tenant);
+        var grants = provider.GetRequiredService<EfPermissionGrantStore>();
+        if ((await grants.GetGrantsForHolderAsync(GrantHolderType.Role, "{{ admin_role }}", CancellationToken.None)).Count == 0)
+            await grants.GrantToRoleAsync("{{ admin_role }}", ["{{ example_permission }}"], CancellationToken.None);
+    }
+{{ end }}{{ end }}}

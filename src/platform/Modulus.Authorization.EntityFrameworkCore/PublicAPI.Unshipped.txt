@@ -434,7 +434,6 @@ Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore.EfApprovalAut
 Modulus.Authorization.EntityFrameworkCore.EfApprovalChainStore.EfApprovalChainStore(Microsoft.EntityFrameworkCore.IDbContextFactory<Modulus.Authorization.EntityFrameworkCore.AuthorizationStoreDbContextBase!>! factory) -> void
 Modulus.Authorization.EntityFrameworkCore.EfApprovalRequestStore.EfApprovalRequestStore(Microsoft.EntityFrameworkCore.IDbContextFactory<Modulus.Authorization.EntityFrameworkCore.AuthorizationStoreDbContextBase!>! factory) -> void
 Modulus.Authorization.EntityFrameworkCore.EfAssignmentStore.EfAssignmentStore(Microsoft.EntityFrameworkCore.IDbContextFactory<Modulus.Authorization.EntityFrameworkCore.AuthorizationStoreDbContextBase!>! factory) -> void
-Modulus.Authorization.EntityFrameworkCore.EfDelegationStore.EfDelegationStore(Microsoft.EntityFrameworkCore.IDbContextFactory<Modulus.Authorization.EntityFrameworkCore.AuthorizationStoreDbContextBase!>! factory) -> void
 Modulus.Authorization.EntityFrameworkCore.EfFeatureEntitlementStore.EfFeatureEntitlementStore(Microsoft.EntityFrameworkCore.IDbContextFactory<Modulus.Authorization.EntityFrameworkCore.AuthorizationStoreDbContextBase!>! factory) -> void
 Modulus.Authorization.EntityFrameworkCore.EfOrgHierarchy.EfOrgHierarchy(Microsoft.EntityFrameworkCore.IDbContextFactory<Modulus.Authorization.EntityFrameworkCore.AuthorizationStoreDbContext<Modulus.Authorization.EntityFrameworkCore.OrgUnitRow!, Modulus.Authorization.EntityFrameworkCore.OrgUnitParentRow!, Modulus.Authorization.EntityFrameworkCore.OrgUnitProfileRow!, Modulus.Authorization.EntityFrameworkCore.CompanyProfileRow!>!>! factory, System.TimeProvider! time, Modulus.Core.Abstractions.ICurrentTenant! currentTenant) -> void
 Modulus.Authorization.EntityFrameworkCore.EfOrgHierarchy<TOrgUnit, TOrgUnitParent, TOrgUnitProfile, TCompanyProfile>
@@ -706,3 +705,19 @@ static Modulus.Authorization.EntityFrameworkCore.PermissionExceptionFinding.oper
 static Modulus.Authorization.EntityFrameworkCore.PermissionExceptionFinding.operator ==(Modulus.Authorization.EntityFrameworkCore.PermissionExceptionFinding? left, Modulus.Authorization.EntityFrameworkCore.PermissionExceptionFinding? right) -> bool
 static Modulus.Authorization.EntityFrameworkCore.PermissionException.operator !=(Modulus.Authorization.EntityFrameworkCore.PermissionException? left, Modulus.Authorization.EntityFrameworkCore.PermissionException? right) -> bool
 static Modulus.Authorization.EntityFrameworkCore.PermissionException.operator ==(Modulus.Authorization.EntityFrameworkCore.PermissionException? left, Modulus.Authorization.EntityFrameworkCore.PermissionException? right) -> bool
+Modulus.Authorization.EntityFrameworkCore.EfDelegationStore.EfDelegationStore(Microsoft.EntityFrameworkCore.IDbContextFactory<Modulus.Authorization.EntityFrameworkCore.AuthorizationStoreDbContextBase!>! factory, Microsoft.Extensions.DependencyInjection.IServiceScopeFactory? scopes = null) -> void
+Modulus.Authorization.EntityFrameworkCore.EfPermissionGrantStore.GetInheritedGrantsForHolderAsync(Modulus.Authorization.Grants.GrantHolderType holderType, string! holder, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyCollection<Modulus.Authorization.EntityFrameworkCore.InheritedGrant!>!>!
+Modulus.Authorization.EntityFrameworkCore.InheritedGrant
+Modulus.Authorization.EntityFrameworkCore.InheritedGrant.<Clone>$() -> Modulus.Authorization.EntityFrameworkCore.InheritedGrant!
+Modulus.Authorization.EntityFrameworkCore.InheritedGrant.CompanyId.get -> System.Guid
+Modulus.Authorization.EntityFrameworkCore.InheritedGrant.CompanyId.init -> void
+Modulus.Authorization.EntityFrameworkCore.InheritedGrant.Deconstruct(out System.Guid CompanyId, out Modulus.Authorization.Grants.PermissionGrant! Grant) -> void
+Modulus.Authorization.EntityFrameworkCore.InheritedGrant.Equals(Modulus.Authorization.EntityFrameworkCore.InheritedGrant? other) -> bool
+Modulus.Authorization.EntityFrameworkCore.InheritedGrant.Grant.get -> Modulus.Authorization.Grants.PermissionGrant!
+Modulus.Authorization.EntityFrameworkCore.InheritedGrant.Grant.init -> void
+Modulus.Authorization.EntityFrameworkCore.InheritedGrant.InheritedGrant(System.Guid CompanyId, Modulus.Authorization.Grants.PermissionGrant! Grant) -> void
+override Modulus.Authorization.EntityFrameworkCore.InheritedGrant.Equals(object? obj) -> bool
+override Modulus.Authorization.EntityFrameworkCore.InheritedGrant.GetHashCode() -> int
+override Modulus.Authorization.EntityFrameworkCore.InheritedGrant.ToString() -> string!
+static Modulus.Authorization.EntityFrameworkCore.InheritedGrant.operator !=(Modulus.Authorization.EntityFrameworkCore.InheritedGrant? left, Modulus.Authorization.EntityFrameworkCore.InheritedGrant? right) -> bool
+static Modulus.Authorization.EntityFrameworkCore.InheritedGrant.operator ==(Modulus.Authorization.EntityFrameworkCore.InheritedGrant? left, Modulus.Authorization.EntityFrameworkCore.InheritedGrant? right) -> bool

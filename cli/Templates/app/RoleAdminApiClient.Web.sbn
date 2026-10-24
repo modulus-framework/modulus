@@ -48,5 +48,11 @@ public sealed record RoleRow(string Name, string? DisplayName, bool IsDefault);
 /// <summary>One permission of the catalog, as the API serves it.</summary>
 public sealed record PermissionRow(string Permission, string Description, string Sensitivity, string Group);
 
-/// <summary>One allow grant of a role, as the API serves it.</summary>
+/// <summary>One grant of a role, as the API serves it.</summary>
 public sealed record RoleGrantRow(string Permission, string Type);
+
+/// <summary>A grant a role inherits from a company above, as the API serves it (read-only here).</summary>
+public sealed record InheritedRoleGrant(Guid CompanyId, string Permission, string Type);
+
+/// <summary>A role's permissions: the company's own grants (changed here) and the grants it inherits (shown only).</summary>
+public sealed record RolePermissionsView(IReadOnlyList<RoleGrantRow> Own, IReadOnlyList<InheritedRoleGrant> Inherited);

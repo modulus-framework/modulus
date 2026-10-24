@@ -1,0 +1,89 @@
+@page
+@using Modulus.Settings
+@model {{ root_namespace }}.Web.Pages.Admin.SettingsModel
+@{
+    ViewData["Title"] = "Settings";
+}
+
+<h1>Settings</h1>
+
+@if (Model.Message is not null)
+{
+    <p role="status">@Model.Message</p>
+}
+
+@if (Model.Rows.Count == 0)
+{
+    <p>No settings are registered in this application.</p>
+}
+
+<table>
+    <thead>
+        <tr><th>Setting</th><th>Value</th><th>Source</th><th>Change</th></tr>
+    </thead>
+    <tbody>
+    @foreach (var row in Model.Rows)
+    {
+        <tr>
+            <td>
+                <strong>@(row.DisplayName ?? row.Name)</strong><br />
+                <code>@row.Name</code>
+                @if (!string.IsNullOrEmpty(row.Description)) { <br /><small>@row.Description</small> }
+            </td>
+            <td>@row.EffectiveValue</td>
+            <td>@row.Source@(row.IsPinned ? " (pinned)" : "")</td>
+            <td>
+                @if (row.IsPinned)
+                {
+                    <span>Read-only: the host pins this value.</span>
+                }
+                else
+                {
+                    <form method="post" asp-page-handler="Save">
+                        <input type="hidden" name="name" value="@row.Name" />
+                        <label>Scope
+                            <select name="scope">
+                                <option value="tenant">Company</option>
+                                <option value="user">Me</option>
+                                <option value="global">Everyone (global)</option>
+                            </select>
+                        </label>
+                        @if (row.ValueType == SettingValueType.Boolean)
+                        {
+                            <select name="value">
+                                <option value="true" selected="@(row.EffectiveValue == "true")">true</option>
+                                <option value="false" selected="@(row.EffectiveValue == "false")">false</option>
+                            </select>
+                        }
+                        else if (row.AllowedValues.Count > 0)
+                        {
+                            <select name="value">
+                                @foreach (var allowed in row.AllowedValues)
+                                {
+                                    <option value="@allowed" selected="@(row.EffectiveValue == allowed)">@allowed</option>
+                                }
+                            </select>
+                        }
+                        else
+                        {
+                            <input name="value" value="@row.EffectiveValue" />
+                        }
+                        <button type="submit">Save</button>
+                    </form>
+                    <form method="post" asp-page-handler="Remove">
+                        <input type="hidden" name="name" value="@row.Name" />
+                        <label>Scope
+                            <select name="scope">
+                                <option value="tenant">Company</option>
+                                <option value="user">Me</option>
+                                <option value="global">Everyone (global)</option>
+                            </select>
+                        </label>
+                        <button type="submit">Remove override</button>
+                    </form>
+                }
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>

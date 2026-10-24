@@ -191,6 +191,71 @@ Validation: the PRD's two acceptance applications are the test beds. The identit
 garments ERP case (approvals and complex roles come later); the food delivery case uses the public catalog and idempotency parts of
 the framework and is not part of these premodules.
 
+## Remaining work and limitations (2026-10-24)
+
+This section is the single list of what is still open after the premodule 1 to 5 work. Each item says what blocks it.
+
+### Owner or operator (cannot be closed in the repository)
+
+- **Legal retention minimum (D8):** a legal decision. No value is set.
+- **D7 pilot sign-off:** the owner's sign-off.
+- **OpenBao production evidence:** an operator runs the production checks and provides the evidence.
+- **AI platform conformance:** the real platform's suite must run against the connector before activation. The in-repo fake platform tests only our side.
+- **Publishing packages:** the owner publishes manually. Packages are built on request, with the new version.
+- **Built-in administrator role (premodule 1):** which role counts as built in, so its removal can be refused.
+- **Profile field list (premodule 3):** the owner confirms the fields before premodule 3 starts.
+- **Audit permission default (premodule 4):** whether `audit:security:view` is granted to any role by default. Currently none.
+- **Parent-administrator authority (premodule 2):** who in a parent company may add members or grants in a child, and under which rule.
+  Not built; the access rule for reads is built.
+
+### Decisions already taken, to confirm in review
+
+- Parent grants apply below their holder; a deny anywhere on the path wins (the owner confirmed these defaults).
+- Role administration gate (D-P17): role list, create, rename and delete need `identity:accounts:manage`; role permissions need `authorization:manage`.
+- Personal-data permission and the audit permission are granted to no role by default.
+- The company `Admin` grant is written into the default company at startup and into companies the tests create, not into companies created later
+  through the API (see the gaps below).
+
+### Buildable gaps
+
+- **Companies page in web apps:** needs a company switcher, because `--multi-tenancy` is refused for web apps.
+- **Admin grant for new companies:** companies created through the company API start with no grants. Only the default company gets `Admin` at
+  startup. The fix is to seed the same grant when a company is created.
+- **Business audit log search (premodule 4):** the viewer covers the security chain only.
+- **Premodule 5:** the branch (organization-unit) scope from D-P4, grouping settings by definition group (definitions carry no group field), and
+  an EF settings store for generated apps (values are in memory until one is added).
+- **Browser checks:** the generated Users, Roles, Audit, Settings and Companies pages were verified by build and API tests only.
+
+### Limitations in the built code
+
+- **Upgrade scripts:** the `ParentId` column is in the three tenancy scripts, but no automated test checks them against the EF model.
+- **Per-request grant memo:** if a tenant changes inside one scope, the per-request memo can reuse the earlier company's grants. The shared
+  grant cache keys by company, so it is safe.
+- **Admin listings are own-rows for writes:** the grant listings show the company's own rows for editing, and a separate read shows inherited
+  rows. A listing does not merge them.
+- **Refresher:** the delegation role refresher runs in the host context, so it sees every company. This is correct, not a gap.
+
+### Blazor test stability
+
+- **Teardown race:** fixed in practice. All component test classes derive from one base class that awaits asynchronous teardown. Ten consecutive
+  full runs passed after the change.
+- **Acceptance gap:** the owner requires a regression test for a confirmed cause. The cause is inferred from stack traces, not confirmed, so no
+  such test exists yet.
+- **Row-rule test:** it waits for each render before reading the grid. It passed in the last ten full runs.
+
+### Repository state (2026-10-24)
+
+- **Framework (`modulus`):** `main` is at `8e288c6` on origin. The work of this round is uncommitted until it is committed.
+- **UI (`modulus-ui`):** the Blazor test work is on `origin/blazor-test-stability` (`954ab84`). Local `main` is 5 commits ahead and 3 behind
+  `origin/main`, because the remote kept a separate 0.9.1 line. The version line is an open decision.
+
+### Verification of this round
+
+- Affected unit suites pass on net8 and net10: authorization (122 and 7 new grant tests), management (136), platform (558), multi-tenancy (128),
+  identity (450) and CLI (636).
+- Generated single-tenant app: builds, 15 of 15 tests pass, on the framework at `1.6.0-local.11`.
+- Generated multi-tenant app: builds, 11 of 11 tests pass, on the same framework.
+
 ## Ordering
 
 The order follows dependencies: tenant management and identity are needed by everything; audit is needed to show evidence for the others.
@@ -269,6 +334,35 @@ only; an administrator without it cannot grant what they do not hold (`403`); pe
 field clearance and shown with it; every change is in the security audit; the permission catalog lists every registered permission.
 
 ### 2. Tenant management
+Parent grants apply below their holder (built 2026-10-24, the defaults confirmed by the owner). `TenantInfo.ParentId` and `TenantInfo.Lineage`
+carry the company's line of ancestors, set by the tenant store when a company is looked up (bounded, failing closed at a missing, inactive
+or cyclic company). `ICurrentTenant.Lineage` exposes it to the authorization store, which reads grants, scoped grants and delegations in the
+company and above it, on the synchronous and the asynchronous read alike. Precedence is the checker's existing rule: a deny anywhere in the chain
+wins, so a parent deny always applies below it and a child allow cannot override it. Tests: `ParentGrantTests` (6, including sync and async
+agreement and an inherited delegation), `TenantLineageStoreTests` (2). The authorization, management, platform, multi-tenancy, identity and CLI
+suites pass on both targets. The generated single-tenant app (15 tests) and multi-tenant app (11 tests) build and pass on the framework at
+local.10. The shared grant cache keys by company, so it is safe. Delegations are read in force through the company's lineage; the admin listing
+and the role refresher still read the company's own rows.
+
+Parent and child companies (2026-10-24, option 2 of the access model): a company has an optional parent (`TenantEntity.ParentId`).
+`TenantManager.SetParentAsync` refuses a self-link, a missing parent and a link that would close a cycle (walk depth capped at 64), and audits
+`tenant.parent-changed`. `PUT /api/tenancy/tenants/{id}/parent` exposes it (host context). The three tenancy upgrade scripts add the column.
+Tests: `TenantAdminEndpointTests` (5, both targets). Access does not follow the link for permissions: a parent's administrators reach a child only through the
+child's own grants. Membership follows the link (built 2026-10-24): a membership of a company counts for every company below it, so a member of a parent may
+enter a child; a member of a child does not reach its parent; every company on the path up must be active. The selectable list includes the
+descendants. Tests: `ParentMembershipTests` (3), tenancy suite 126 of 126 on both targets. What a parent member may do in a child is still decided
+by the child's own grants, so a parent member without a child grant is refused there (`403`). Not built yet: granting a parent-level permission
+that applies in the children (the subtree grant), the rule that lets a parent administrator manage a child's memberships and grants, and the
+Companies page. The generated multi-tenant app builds and passes its 11 tests on the framework at local.8.
+
+Progress (2026-10-24): generated multi-tenant API apps now map the company routes (`AddModulusTenantAdmin`, `MapModulusTenantAdmin`, a
+Companies menu entry for `tenants:manage`). Not built: the Companies page. `--multi-tenancy` is refused for web apps (no company switcher), so a
+page would have no host to live in; the switcher is the prerequisite. A regression found while testing: since commit b92876b (2026-09-22) the
+EF grant store shows a company only the grants with its own tenant id, so grants seeded at host level (the `Admin` role's permissions, the first
+administrator's grant) are invisible inside a company and every company request is refused (`403`). The generated multi-tenant app's round trip
+and permission tests fail for this reason. Decision needed: seed the role grants per company (the B4 model), or let host grants apply to every
+company (a change to a security filter). Until then the multi-tenant generated app fails two of its tests.
+
 
 Progress (2026-10-23): the company administration API is built in `Modulus.MultiTenancy.EntityFrameworkCore` (`MapModulusTenantAdmin<TTenant,TMembership,TDataStore>()`,
 `AddModulusTenantAdmin()` for `tenants:manage`, Critical). It lists (paged, searchable), creates (duplicate slug `409`, invalid slug `400`), reads,
@@ -323,6 +417,14 @@ company-level export that spans several chains.
 - **Size (estimate):** 2 to 3 weeks.
 
 ### 5. Settings administration
+
+Progress (2026-10-24): the API was already built and tested (`SettingsAdministrationEndpoints`: list with source and pins, writes per scope,
+global writes behind `settings:global:manage`, refusals for unknown names and bad values). Generated apps now register it (`AddModulusSettings`,
+`AddModulusSettingAdministration`, `MapModulusSettingAdministration`) and ship a Settings page: effective value and source per setting, pinned
+values read-only, an edit control by value type (checkbox-style choice for booleans, a choice list for allowed values, text otherwise), and the
+API's refusal message on the field. Verified: a fresh generated `webapp+api` app builds and passes its 15 tests; the page was not driven in a
+browser. Not built: the branch scope (D-P4, an organization-unit scope between user and company), grouping by definition group (the
+definitions carry no group field yet), and an EF settings store for generated apps (values are in memory until the tenant store is added).
 
 - **API:** exists (`/api/settings`). Add `GET /api/settings/definitions` shape review so the screen can show the type, allowed values and
   allowed scopes; no new write paths.

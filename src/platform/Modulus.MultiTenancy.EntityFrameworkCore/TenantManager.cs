@@ -126,7 +126,40 @@ public class TenantManager<TTenant, TMembership, TDataStore>(
     }
 
     /// <summary>
-    /// Grants <paramref name="userId"/> membership in <paramref name="tenantId"/> (one login across
+    /// Sets the parent company of <paramref name="id"/> (null makes it top-level). A company cannot be its own parent, and a link that
+    /// would close a cycle is refused with <see cref="ArgumentException"/>; a missing parent is refused the same way. Returns
+    /// <see langword="false"/> if no tenant has the id.
+    /// </summary>
+    public async Task<bool> SetParentAsync(Guid id, Guid? parentId, CancellationToken ct = default)
+    {
+        var entity = await db.Tenants.FirstOrDefaultAsync(t => t.Id == id, ct);
+        if (entity is null) return false;
+        if (parentId is { } parent)
+        {
+            if (parent == id)
+                throw new ArgumentException("A company cannot be its own parent.", nameof(parentId));
+            if (!await db.Tenants.AnyAsync(t => t.Id == parent, ct))
+                throw new ArgumentException("The parent company does not exist.", nameof(parentId));
+
+            // Walk up from the proposed parent: reaching the company itself would make a cycle.
+            var cursor = parent;
+            for (var depth = 0; depth < MaxHierarchyDepth; depth++)
+            {
+                var next = await db.Tenants.AsNoTracking().Where(t => t.Id == cursor).Select(t => t.ParentId).FirstOrDefaultAsync(ct);
+                if (next is null) break;
+                if (next == id)
+                    throw new ArgumentException("That parent would make the company its own ancestor.", nameof(parentId));
+                cursor = next.Value;
+            }
+        }
+
+        entity.ParentId = parentId;
+        await db.SaveChangesAsync(ct);
+        Audit("tenant.parent-changed", id, $"tenant:{id} parent={parentId?.ToString("D") ?? "none"}");
+        return true;
+    }
+
+    /// <summary>Grants <paramref name="userId"/> membership in <paramref name="tenantId"/> (one login across
     /// companies), or re-activates a revoked one. Returns <see langword="false"/> when the tenant
     /// does not exist.
     /// </summary>
@@ -243,6 +276,9 @@ public class TenantManager<TTenant, TMembership, TDataStore>(
         return members.OrderBy(m => m.AddedAtUtc).ToList();
     }
 
+    // A bound on the ancestor walk: a deeper chain than this is refused rather than walked forever on corrupt data.
+    private const int MaxHierarchyDepth = 64;
+
     private System.Linq.Expressions.Expression<Func<TTenant, TenantAdminView>> ViewOf => t => new TenantAdminView(
         t.Id,
         t.Slug,
@@ -251,6 +287,7 @@ public class TenantManager<TTenant, TMembership, TDataStore>(
         t.Status,
         t.TrialEndsAt,
         t.MaxUsers,
+        t.ParentId,
         db.TenantMemberships.Count(m => m.TenantId == t.Id && m.IsActive),
         t.CreatedAtUtc);
 

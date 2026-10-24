@@ -105,7 +105,7 @@ public sealed class RolePermissionApiTests : IAsyncLifetime
         var response = await As([]).PutAsJsonAsync("/api/identity/roles/Ops/permissions", new { permissions = new[] { "ops:read" } });
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
-        (await As([]).GetFromJsonAsync<List<Grant>>("/api/identity/roles/Ops/permissions")).Should().BeEmpty("nothing was granted");
+        (await As([]).GetFromJsonAsync<OwnedPermissions>("/api/identity/roles/Ops/permissions"))!.Own.Should().BeEmpty("nothing was granted");
     }
 
     [Fact]
@@ -115,12 +115,12 @@ public sealed class RolePermissionApiTests : IAsyncLifetime
 
         (await granter.PutAsJsonAsync("/api/identity/roles/Ops/permissions", new { permissions = new[] { "ops:read", "ops:danger" } }))
             .StatusCode.Should().Be(HttpStatusCode.OK);
-        var held = await granter.GetFromJsonAsync<List<Grant>>("/api/identity/roles/Ops/permissions");
+        var held = (await granter.GetFromJsonAsync<OwnedPermissions>("/api/identity/roles/Ops/permissions"))!.Own;
         held!.Select(g => g.Permission).Should().BeEquivalentTo(["ops:read", "ops:danger"]);
 
         var revoked = await granter.PutAsJsonAsync("/api/identity/roles/Ops/permissions", new { permissions = Array.Empty<string>() });
         revoked.StatusCode.Should().Be(HttpStatusCode.OK);
-        (await As([]).GetFromJsonAsync<List<Grant>>("/api/identity/roles/Ops/permissions")).Should().BeEmpty();
+        (await As([]).GetFromJsonAsync<OwnedPermissions>("/api/identity/roles/Ops/permissions"))!.Own.Should().BeEmpty();
     }
 
     [Fact]
@@ -142,4 +142,6 @@ public sealed class RolePermissionApiTests : IAsyncLifetime
     }
 
     private sealed record Grant(string Permission, string Type);
+
+    private sealed record OwnedPermissions(List<Grant> Own, List<Grant> Inherited);
 }

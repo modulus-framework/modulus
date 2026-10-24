@@ -7,6 +7,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
 using Xunit;
 using Modulus.AspNetCore.Extensions;
+using Modulus.Core.Abstractions;
+using Modulus.Core.Abstractions.Tenancy;
 using Modulus.Events.Extensions;
 using Modulus.Mediator.Extensions;
 using Modulus.Testing;
@@ -102,8 +104,11 @@ public sealed class ApiIntegrationTests(ModulusWebAppFactory<ApiEntryPoint> fact
         // Anonymous: challenged. Signed in without the permission: forbidden. The {{ admin_role }} role: allowed.
         Assert.Equal(HttpStatusCode.Unauthorized, (await factory.CreateClient().GetAsync(url)).StatusCode);
         Assert.Equal(HttpStatusCode.Forbidden, (await factory.CreateAuthenticatedClient().GetAsync(url)).StatusCode);
-        Assert.Equal(HttpStatusCode.OK, (await factory.CreateAuthenticatedClient(roles: ["{{ admin_role }}"]).GetAsync(url)).StatusCode);
-    }
+{{ if multi_tenancy }}        // A multi-company app answers only inside a company: the caller must select one (fail closed without it).
+        var company = await Companies.CreateAsync(factory.Services, "permission");
+        Assert.Equal(HttpStatusCode.OK, (await factory.CreateAuthenticatedClient(roles: ["{{ admin_role }}"], tenantId: company, pinTenant: true).GetAsync(url)).StatusCode);
+{{ else }}        Assert.Equal(HttpStatusCode.OK, (await factory.CreateAuthenticatedClient(roles: ["{{ admin_role }}"]).GetAsync(url)).StatusCode);
+{{ end }}    }
 {{ end }}{{ end }}
 }
 {{ end }}
@@ -165,7 +170,12 @@ internal static class Companies
     {
         await using var scope = services.CreateAsyncScope();
         var tenants = scope.ServiceProvider.GetRequiredService<TenantManager>();
-        return (await tenants.CreateAsync($"{name}-{Guid.NewGuid():N}", name)).TenantId;
+        var company = await tenants.CreateAsync($"{name}-{Guid.NewGuid():N}", name);
+        // A company starts with the Admin role's grant of the example permission (the same as the default company at startup).
+        using var inCompany = scope.ServiceProvider.GetRequiredService<ICurrentTenant>().Change(company);
+        var grants = scope.ServiceProvider.GetRequiredService<Modulus.Authorization.EntityFrameworkCore.EfPermissionGrantStore>();
+        await grants.GrantToRoleAsync("{{ admin_role }}", ["{{ example_permission }}"]);
+        return company.TenantId;
     }
 }
 {{ end }}

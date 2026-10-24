@@ -25,6 +25,10 @@ public sealed record TenantStatusRequest(string Status, DateTimeOffset? TrialEnd
 /// <param name="MaxUsers">The most active members the company may have.</param>
 public sealed record TenantSeatsRequest(int? MaxUsers);
 
+/// <summary>Body of <c>PUT /api/tenancy/tenants/{id}/parent</c>: the parent company, or null to make the company top-level.</summary>
+/// <param name="ParentId">The parent company's id.</param>
+public sealed record TenantParentRequest(Guid? ParentId);
+
 /// <summary>Body of <c>POST /api/tenancy/tenants/{id}/members</c>.</summary>
 /// <param name="UserId">The account to make a member.</param>
 public sealed record TenantMemberRequest(Guid UserId);
@@ -53,7 +57,7 @@ public static partial class TenantAdminEndpoints
 
     /// <summary>
     /// Maps <c>GET</c> and <c>POST</c> on <paramref name="prefix"/> (default <c>/api/tenancy/tenants</c>), <c>GET {id}</c>,
-    /// <c>PUT {id}/status</c>, <c>PUT {id}/seats</c>, <c>GET {id}/members</c>, <c>POST {id}/members</c> and
+    /// <c>PUT {id}/status</c>, <c>PUT {id}/seats</c>, <c>PUT {id}/parent</c>, <c>GET {id}/members</c>, <c>POST {id}/members</c> and
     /// <c>DELETE {id}/members/{userId}</c>.
     /// </summary>
     public static RouteGroupBuilder MapModulusTenantAdmin<TTenant, TMembership, TDataStore>(this IEndpointRouteBuilder endpoints, string prefix = "/api/tenancy/tenants")
@@ -122,6 +126,21 @@ public static partial class TenantAdminEndpoints
             if (!await manager.SetMaxUsersAsync(id, body.MaxUsers, ct))
                 return Results.NotFound();
             return Results.Ok(await manager.GetAsync(id, ct));
+        });
+
+        group.MapPut("/{id:guid}/parent", async (Guid id, TenantParentRequest body, TenantManager<TTenant, TMembership, TDataStore> manager, ICurrentTenant tenant, CancellationToken ct) =>
+        {
+            using var _ = tenant.Change(null);
+            try
+            {
+                if (!await manager.SetParentAsync(id, body.ParentId, ct))
+                    return Results.NotFound();
+                return Results.Ok(await manager.GetAsync(id, ct));
+            }
+            catch (ArgumentException ex)
+            {
+                return Problem(ex.ParamName ?? "parentId", ex.Message);
+            }
         });
 
         group.MapGet("/{id:guid}/members", async (Guid id, TenantManager<TTenant, TMembership, TDataStore> manager, ICurrentTenant tenant, CancellationToken ct) =>

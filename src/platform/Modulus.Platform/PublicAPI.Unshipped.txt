@@ -2414,3 +2414,4 @@ static Modulus.AuditLogging.Security.SecurityAuditViewerEndpoints.AddModulusSecu
 static Modulus.AuditLogging.Security.SecurityAuditViewerEndpoints.MapModulusSecurityAuditViewer(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! prefix = "/api/audit/security") -> Microsoft.AspNetCore.Routing.RouteGroupBuilder!
 static Modulus.AuditLogging.Security.SecurityAuditView.operator !=(Modulus.AuditLogging.Security.SecurityAuditView? left, Modulus.AuditLogging.Security.SecurityAuditView? right) -> bool
 static Modulus.AuditLogging.Security.SecurityAuditView.operator ==(Modulus.AuditLogging.Security.SecurityAuditView? left, Modulus.AuditLogging.Security.SecurityAuditView? right) -> bool
+Modulus.MultiTenancy.CurrentTenant.Lineage.get -> System.Collections.Generic.IReadOnlyList<System.Guid>!

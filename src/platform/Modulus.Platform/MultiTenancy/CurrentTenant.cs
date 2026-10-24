@@ -24,6 +24,11 @@ public sealed class CurrentTenant : ICurrentTenant
     public string? TenantSlug => _current.Value?.Tenant?.TenantSlug;
     public bool IsAvailable => _current.Value?.Tenant is not null;
 
+    /// <summary>The company and the companies above it (see <see cref="ICurrentTenant.Lineage"/>); the company alone when no lineage is known.</summary>
+    public IReadOnlyList<Guid> Lineage => _current.Value?.Tenant is { } tenant
+        ? tenant.Lineage ?? [tenant.TenantId]
+        : [];
+
     /// <summary>The full metadata of the ambient tenant (group, display name), when one is resolved.</summary>
     public TenantInfo? Tenant => _current.Value?.Tenant;
 

@@ -647,11 +647,9 @@ Modulus.Core.Abstractions.Entities.IHasApprovalAmount.ApprovalAmount.get -> deci
 Modulus.Core.Abstractions.Entities.IHasApprovalAmount.ApprovalCurrency.get -> string?
 Modulus.Core.Abstractions.Entities.IHasApprovalTrail
 Modulus.Core.Abstractions.Entities.IHasApprovalTrail.ActedByUserIds.get -> System.Collections.Generic.IReadOnlyCollection<System.Guid>!
-Modulus.Core.Abstractions.TenantInfo.Deconstruct(out System.Guid TenantId, out string! TenantSlug, out string? DisplayName, out string? ConnectionString, out System.Guid? GroupId, out Modulus.Core.Abstractions.TenantStatus Status) -> void
 Modulus.Core.Abstractions.TenantInfo.IsReadOnly.get -> bool
 Modulus.Core.Abstractions.TenantInfo.Status.get -> Modulus.Core.Abstractions.TenantStatus
 Modulus.Core.Abstractions.TenantInfo.Status.init -> void
-Modulus.Core.Abstractions.TenantInfo.TenantInfo(System.Guid TenantId, string! TenantSlug, string? DisplayName = null, string? ConnectionString = null, System.Guid? GroupId = null, Modulus.Core.Abstractions.TenantStatus Status = Modulus.Core.Abstractions.TenantStatus.Active) -> void
 Modulus.Core.Abstractions.TenantStatus
 Modulus.Core.Abstractions.TenantStatus.Active = 1 -> Modulus.Core.Abstractions.TenantStatus
 Modulus.Core.Abstractions.TenantStatus.Closed = 3 -> Modulus.Core.Abstractions.TenantStatus
@@ -837,3 +835,10 @@ override Modulus.Core.Abstractions.Common.KeysetPage<T>.GetHashCode() -> int
 override Modulus.Core.Abstractions.Common.KeysetPage<T>.ToString() -> string!
 static Modulus.Core.Abstractions.Common.KeysetPage<T>.operator !=(Modulus.Core.Abstractions.Common.KeysetPage<T>? left, Modulus.Core.Abstractions.Common.KeysetPage<T>? right) -> bool
 static Modulus.Core.Abstractions.Common.KeysetPage<T>.operator ==(Modulus.Core.Abstractions.Common.KeysetPage<T>? left, Modulus.Core.Abstractions.Common.KeysetPage<T>? right) -> bool
+Modulus.Core.Abstractions.TenantInfo.ParentId.get -> System.Guid?
+Modulus.Core.Abstractions.TenantInfo.ParentId.init -> void
+Modulus.Core.Abstractions.ICurrentTenant.Lineage.get -> System.Collections.Generic.IReadOnlyList<System.Guid>!
+Modulus.Core.Abstractions.TenantInfo.Deconstruct(out System.Guid TenantId, out string! TenantSlug, out string? DisplayName, out string? ConnectionString, out System.Guid? GroupId, out Modulus.Core.Abstractions.TenantStatus Status, out System.Guid? ParentId, out System.Collections.Generic.IReadOnlyList<System.Guid>? Lineage) -> void
+Modulus.Core.Abstractions.TenantInfo.Lineage.get -> System.Collections.Generic.IReadOnlyList<System.Guid>?
+Modulus.Core.Abstractions.TenantInfo.Lineage.init -> void
+Modulus.Core.Abstractions.TenantInfo.TenantInfo(System.Guid TenantId, string! TenantSlug, string? DisplayName = null, string? ConnectionString = null, System.Guid? GroupId = null, Modulus.Core.Abstractions.TenantStatus Status = Modulus.Core.Abstractions.TenantStatus.Active, System.Guid? ParentId = null, System.Collections.Generic.IReadOnlyList<System.Guid>? Lineage = null) -> void

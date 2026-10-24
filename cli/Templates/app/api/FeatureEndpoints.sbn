@@ -21,7 +21,11 @@ internal static class FeatureEndpoints
 {{ if example_permission }}        app.MapModulusRolePermissions();
         // Deleting a role is refused while it still holds grants, so it needs the grant store (AddModulusAuthorizationManagement).
         app.MapModulusRoleDelete<Modulus.Identity.Abstractions.ModulusRole, Modulus.Identity.Abstractions.ModulusUser>();
-{{ if use_security_guard }}        // The security audit viewer: search, verify the chain and export, for holders of audit:security:view.
+{{ if example_permission }}        // Settings administration: the registered settings, read and written per scope (settings:manage; global needs settings:global:manage).
+        Modulus.Settings.SettingsAdministrationEndpoints.MapModulusSettingAdministration(app);
+{{ if multi_tenancy }}        // Company administration under /api/tenancy/tenants (tenants:manage, host context only).
+        Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminEndpoints.MapModulusTenantAdmin<Modulus.MultiTenancy.EntityFrameworkCore.TenantEntity, Modulus.MultiTenancy.EntityFrameworkCore.TenantMembershipEntity, Modulus.MultiTenancy.EntityFrameworkCore.TenantDataStoreEntity>(app);
+{{ end }}{{ end }}{{ if use_security_guard }}        // The security audit viewer: search, verify the chain and export, for holders of audit:security:view.
         Modulus.AuditLogging.Security.SecurityAuditViewerEndpoints.MapModulusSecurityAuditViewer(app);
 {{ end }}{{ end }}
 {{ end }}        return app;

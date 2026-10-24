@@ -3,7 +3,7 @@
 -- Run as the schema owner, never as an application role, once, before the new release starts:
 --   psql "$TENANCY_CONNECTION" -v ON_ERROR_STOP=1 -f identity-platform-2026-10.tenancy.postgresql.sql
 --
--- Adds the company lifecycle columns (Status, TrialEndsAt, MaxUsers) to ModulusTenants and creates ModulusTenantDataStores and ModulusSettingValues.
+-- Adds the company lifecycle columns (Status, TrialEndsAt, MaxUsers) and the parent company (ParentId) to ModulusTenants and creates ModulusTenantDataStores and ModulusSettingValues.
 -- Idempotent: a second run changes nothing. Existing companies start as Active with no trial end and no seat limit, which is
 -- what they were before. Existing deployments only: it expects ModulusTenants to exist.
 
@@ -14,6 +14,8 @@ BEGIN;
 ALTER TABLE IF EXISTS "ModulusTenants" ADD COLUMN IF NOT EXISTS "Status" integer NOT NULL DEFAULT 1;
 ALTER TABLE IF EXISTS "ModulusTenants" ADD COLUMN IF NOT EXISTS "TrialEndsAt" timestamptz NULL;
 ALTER TABLE IF EXISTS "ModulusTenants" ADD COLUMN IF NOT EXISTS "MaxUsers" integer NULL;
+-- The parent company (null for a top-level company). A plain fact: access does not follow it.
+ALTER TABLE IF EXISTS "ModulusTenants" ADD COLUMN IF NOT EXISTS "ParentId" uuid NULL;
 
 -- 2. Tenant data stores: a pointer to a company's database secret, never a connection string.
 CREATE TABLE IF NOT EXISTS "ModulusTenantDataStores" (

@@ -74,6 +74,17 @@
                 <button type="submit">Save permissions</button>
             </form>
 
+            @if (Model.Inherited.Count > 0)
+            {
+                <h4>Inherited from companies above (read-only)</h4>
+                <ul>
+                    @foreach (var grant in Model.Inherited)
+                    {
+                        <li><code>@grant.Permission</code> (@grant.Type), held by company <code>@grant.CompanyId</code></li>
+                    }
+                </ul>
+            }
+
             <h4>Catalog</h4>
             <ul>
                 @foreach (var permission in Model.Catalog)

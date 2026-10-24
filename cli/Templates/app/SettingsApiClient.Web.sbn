@@ -1,0 +1,31 @@
+using System.Net.Http;
+using System.Net.Http.Json;
+using Microsoft.Extensions.Configuration;
+
+namespace {{ root_namespace }}.Web.Services.ApiClients;
+
+/// <summary>
+/// The API's settings administration (<c>/api/settings</c>), reached through the BFF gateway so the browser's session carries the signed-in
+/// person's token. The API decides what may be read and written (settings:manage; a global value needs settings:global:manage).
+/// </summary>
+public sealed class SettingsApiClient(HttpClient http, IConfiguration configuration)
+{
+    private const string BaseRoute = "/api/settings";
+
+    private readonly HttpClient _http = Configure(http, configuration);
+
+    private static HttpClient Configure(HttpClient http, IConfiguration configuration)
+    {
+        var baseUrl = configuration["Bff:BaseUrl"] ?? configuration["Api:BaseUrl"] ?? "http://localhost:5180";
+        http.BaseAddress = new Uri($"{baseUrl.TrimEnd('/')}/");
+        return http;
+    }
+
+    public Task<HttpResponseMessage> ListAsync(CancellationToken ct) => _http.GetAsync(BaseRoute, ct);
+
+    public Task<HttpResponseMessage> SetAsync(string scope, string name, string? value, CancellationToken ct)
+        => _http.PutAsJsonAsync($"{BaseRoute}/{scope}/{Uri.EscapeDataString(name)}", new { value }, ct);
+
+    public Task<HttpResponseMessage> RemoveAsync(string scope, string name, CancellationToken ct)
+        => _http.DeleteAsync($"{BaseRoute}/{scope}/{Uri.EscapeDataString(name)}", ct);
+}

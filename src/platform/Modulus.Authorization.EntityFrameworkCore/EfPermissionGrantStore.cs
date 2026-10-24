@@ -1,3 +1,4 @@
+using Modulus.Core.Abstractions.Tenancy;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Modulus.Authorization.Grants;
@@ -56,7 +57,8 @@ public sealed class EfPermissionGrantStore(
         var lowerRoles = EfRoleInclusionStore.Expand(db, EfPositionStore.WithPositionRoles(db, roles, principal.UserId)).Select(r => r.ToLowerInvariant()).ToList();
         var lowerUser = userKey?.ToLowerInvariant();
 
-        var grantRows = db.Grants.AsNoTracking()
+        var reach = ReachNow();
+        var grantRows = GrantRows(db, reach)
             .Where(ScalarPredicates.Holder<PermissionGrantRow>(g => g.HolderType, g => g.Holder.ToLower(), lowerRoles, lowerUser))
             .ToList();
 
@@ -64,7 +66,7 @@ public sealed class EfPermissionGrantStore(
             .Select(g => new PermissionGrant(g.HolderType, g.Holder, g.Permission, g.Type))
             .ToList();
 
-        var scopedRows = db.ScopedGrants.AsNoTracking()
+        var scopedRows = ScopedRows(db, reach)
             .Where(ScalarPredicates.Holder<ScopedGrantRow>(g => g.HolderType, g => g.Holder.ToLower(), lowerRoles, lowerUser))
             .ToList();
         result.AddRange(scopedRows.Select(ToGrant).OfType<PermissionGrant>());
@@ -87,7 +89,8 @@ public sealed class EfPermissionGrantStore(
             .Select(r => r.ToLowerInvariant()).ToList();
         var lowerUser = userKey?.ToLowerInvariant();
 
-        var grantRows = await db.Grants.AsNoTracking()
+        var reach = await ReachAsync(ct);
+        var grantRows = await GrantRows(db, reach)
             .Where(ScalarPredicates.Holder<PermissionGrantRow>(g => g.HolderType, g => g.Holder.ToLower(), lowerRoles, lowerUser))
             .ToListAsync(ct);
 
@@ -95,12 +98,45 @@ public sealed class EfPermissionGrantStore(
             .Select(g => new PermissionGrant(g.HolderType, g.Holder, g.Permission, g.Type))
             .ToList();
 
-        var scopedRows = await db.ScopedGrants.AsNoTracking()
+        var scopedRows = await ScopedRows(db, reach)
             .Where(ScalarPredicates.Holder<ScopedGrantRow>(g => g.HolderType, g => g.Holder.ToLower(), lowerRoles, lowerUser))
             .ToListAsync(ct);
         result.AddRange(scopedRows.Select(ToGrant).OfType<PermissionGrant>());
         return await EfPartyStore.ApplyCeilingAsync(db, principal.UserId, result, ct);
     }
+
+    /// <summary>
+    /// The companies whose grant rows the current request reads: the company and the companies above it, so a parent-level grant applies
+    /// below its holder. Null for the host, which the query filter already lets through. Empty when no company is resolved (fail closed).
+    /// Without a scope factory the query filter alone decides, which is the company's own rows.
+    /// </summary>
+    private IReadOnlyList<Guid>? ReachNow()
+    {
+        if (scopes is null)
+            return null;
+        using var scope = scopes.CreateScope();
+        return TenantReach.Of(scope.ServiceProvider.GetService<ICurrentTenant>());
+    }
+
+    private async Task<IReadOnlyList<Guid>?> ReachAsync(CancellationToken ct)
+    {
+        if (scopes is null)
+            return null;
+        await using var scope = scopes.CreateAsyncScope();
+        return TenantReach.Of(scope.ServiceProvider.GetService<ICurrentTenant>());
+    }
+
+    // The grant rows a read may see: the query filter's own rows, or, with a reach, the rows of exactly those companies (the filter is bypassed
+    // only for them, and the reach is the only thing that widens it).
+    private static IQueryable<PermissionGrantRow> GrantRows(AuthorizationStoreDbContextBase db, IReadOnlyList<Guid>? reach)
+        => reach is null
+            ? db.Grants.AsNoTracking()
+            : db.Grants.IgnoreQueryFilters().AsNoTracking().Where(g => reach.Contains(g.TenantId));
+
+    private static IQueryable<ScopedGrantRow> ScopedRows(AuthorizationStoreDbContextBase db, IReadOnlyList<Guid>? reach)
+        => reach is null
+            ? db.ScopedGrants.AsNoTracking()
+            : db.ScopedGrants.IgnoreQueryFilters().AsNoTracking().Where(g => reach.Contains(g.TenantId));
 
     // A stored scope that no longer parses is dropped, never widened to "the whole company".
     private static PermissionGrant? ToGrant(ScopedGrantRow row)
@@ -194,6 +230,31 @@ public sealed class EfPermissionGrantStore(
 
     /// <summary>Every grant attached to one holder — the admin/review read,
     /// complementing the principal-shaped <see cref="GetGrants"/>.</summary>
+    /// <summary>
+    /// The grants a holder inherits from the companies above the current one (nearest first in the lineage, each tagged with the company that
+    /// holds it). Read-only: a company changes only its own grants, so the admin writes never touch these rows. Empty for the host and for a
+    /// company with no ancestors.
+    /// </summary>
+    public async Task<IReadOnlyCollection<InheritedGrant>> GetInheritedGrantsForHolderAsync(
+        GrantHolderType holderType, string holder, CancellationToken ct = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(holder);
+
+        var reach = await ReachAsync(ct);
+        if (reach is null || reach.Count <= 1)
+            return [];
+        var ancestors = reach.Skip(1).ToList();
+
+        await using var db = await factory.CreateDbContextAsync(ct);
+        var rows = await db.Grants.IgnoreQueryFilters().AsNoTracking()
+            .Where(g => ancestors.Contains(g.TenantId) && g.HolderType == holderType && g.Holder == holder)
+            .ToListAsync(ct);
+        return rows
+            .Select(g => new InheritedGrant(g.TenantId, new PermissionGrant(g.HolderType, g.Holder, g.Permission, g.Type)))
+            .ToList();
+    }
+
+    /// <inheritdoc />
     public async Task<IReadOnlyCollection<PermissionGrant>> GetGrantsForHolderAsync(
         GrantHolderType holderType, string holder, CancellationToken ct = default)
     {
@@ -310,3 +371,8 @@ public sealed class EfPermissionGrantStore(
             await NotifyAsync("grant.removed", ct);
     }
 }
+
+/// <summary>A grant a company inherits from a company above it.</summary>
+/// <param name="CompanyId">The company that holds the grant.</param>
+/// <param name="Grant">The grant.</param>
+public sealed record InheritedGrant(Guid CompanyId, PermissionGrant Grant);

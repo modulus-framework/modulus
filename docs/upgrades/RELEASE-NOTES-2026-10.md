@@ -144,6 +144,16 @@ columns and primary key were read back from each catalog. Its column types were 
 - **Production needs migrations.** A production start stops until the authorization and tenancy stores have migrations authored in the
   application (the runbook's step 1). This is deliberate: those stores ship no migrations.
 
+## Company hierarchy (2026-10-24)
+
+- **Parent companies.** A company can have a parent (`ModulusTenants.ParentId`, the tenancy upgrade scripts add the column). A parent link
+  does three things: a membership of a company counts for every company below it; a grant or a delegation held by a company applies below
+  it, and a deny at the top always applies below; the company's line of ancestors is read when the company is looked up. A parent does not
+  change a child's own grants, and a child's grants never reach its parent. Every company on the path up must be active.
+- **Read-only inheritance.** A child's administrators see the grants they inherit (`GET .../permissions` returns `own` and `inherited`), but
+  change only their own grants.
+- **Upgrade.** Run the tenancy script for your engine. Existing companies get no parent, so nothing changes until a parent is set.
+
 ## Known limits and decisions still open
 
 - **MySQL audit history:** the MySQL audit timestamps were stored as `datetime` (whole seconds, UTC) before this release. Their milliseconds are

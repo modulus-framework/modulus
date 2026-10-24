@@ -192,7 +192,6 @@ Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.ActiveMembers.init -> v
 Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.<Clone>$() -> Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView!
 Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.CreatedAtUtc.get -> System.DateTimeOffset
 Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.CreatedAtUtc.init -> void
-Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.Deconstruct(out System.Guid Id, out string! Slug, out string? DisplayName, out System.Guid? GroupId, out Modulus.Core.Abstractions.TenantStatus Status, out System.DateTimeOffset? TrialEndsAt, out int? MaxUsers, out int ActiveMembers, out System.DateTimeOffset CreatedAtUtc) -> void
 Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.DisplayName.get -> string?
 Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.DisplayName.init -> void
 Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.Equals(Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView? other) -> bool
@@ -206,7 +205,6 @@ Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.Slug.get -> string!
 Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.Slug.init -> void
 Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.Status.get -> Modulus.Core.Abstractions.TenantStatus
 Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.Status.init -> void
-Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.TenantAdminView(System.Guid Id, string! Slug, string? DisplayName, System.Guid? GroupId, Modulus.Core.Abstractions.TenantStatus Status, System.DateTimeOffset? TrialEndsAt, int? MaxUsers, int ActiveMembers, System.DateTimeOffset CreatedAtUtc) -> void
 Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.TrialEndsAt.get -> System.DateTimeOffset?
 Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.TrialEndsAt.init -> void
 Modulus.MultiTenancy.EntityFrameworkCore.TenantCreateRequest
@@ -289,3 +287,22 @@ static Modulus.MultiTenancy.EntityFrameworkCore.TenantSeatsRequest.operator !=(M
 static Modulus.MultiTenancy.EntityFrameworkCore.TenantSeatsRequest.operator ==(Modulus.MultiTenancy.EntityFrameworkCore.TenantSeatsRequest? left, Modulus.MultiTenancy.EntityFrameworkCore.TenantSeatsRequest? right) -> bool
 static Modulus.MultiTenancy.EntityFrameworkCore.TenantStatusRequest.operator !=(Modulus.MultiTenancy.EntityFrameworkCore.TenantStatusRequest? left, Modulus.MultiTenancy.EntityFrameworkCore.TenantStatusRequest? right) -> bool
 static Modulus.MultiTenancy.EntityFrameworkCore.TenantStatusRequest.operator ==(Modulus.MultiTenancy.EntityFrameworkCore.TenantStatusRequest? left, Modulus.MultiTenancy.EntityFrameworkCore.TenantStatusRequest? right) -> bool
+Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.Deconstruct(out System.Guid Id, out string! Slug, out string? DisplayName, out System.Guid? GroupId, out Modulus.Core.Abstractions.TenantStatus Status, out System.DateTimeOffset? TrialEndsAt, out int? MaxUsers, out System.Guid? ParentId, out int ActiveMembers, out System.DateTimeOffset CreatedAtUtc) -> void
+Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.ParentId.get -> System.Guid?
+Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.ParentId.init -> void
+Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.TenantAdminView(System.Guid Id, string! Slug, string? DisplayName, System.Guid? GroupId, Modulus.Core.Abstractions.TenantStatus Status, System.DateTimeOffset? TrialEndsAt, int? MaxUsers, System.Guid? ParentId, int ActiveMembers, System.DateTimeOffset CreatedAtUtc) -> void
+Modulus.MultiTenancy.EntityFrameworkCore.TenantEntity.ParentId.get -> System.Guid?
+Modulus.MultiTenancy.EntityFrameworkCore.TenantEntity.ParentId.set -> void
+Modulus.MultiTenancy.EntityFrameworkCore.TenantManager<TTenant, TMembership, TDataStore>.SetParentAsync(System.Guid id, System.Guid? parentId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.MultiTenancy.EntityFrameworkCore.TenantParentRequest
+Modulus.MultiTenancy.EntityFrameworkCore.TenantParentRequest.<Clone>$() -> Modulus.MultiTenancy.EntityFrameworkCore.TenantParentRequest!
+Modulus.MultiTenancy.EntityFrameworkCore.TenantParentRequest.Deconstruct(out System.Guid? ParentId) -> void
+Modulus.MultiTenancy.EntityFrameworkCore.TenantParentRequest.Equals(Modulus.MultiTenancy.EntityFrameworkCore.TenantParentRequest? other) -> bool
+Modulus.MultiTenancy.EntityFrameworkCore.TenantParentRequest.ParentId.get -> System.Guid?
+Modulus.MultiTenancy.EntityFrameworkCore.TenantParentRequest.ParentId.init -> void
+Modulus.MultiTenancy.EntityFrameworkCore.TenantParentRequest.TenantParentRequest(System.Guid? ParentId) -> void
+override Modulus.MultiTenancy.EntityFrameworkCore.TenantParentRequest.Equals(object? obj) -> bool
+override Modulus.MultiTenancy.EntityFrameworkCore.TenantParentRequest.GetHashCode() -> int
+override Modulus.MultiTenancy.EntityFrameworkCore.TenantParentRequest.ToString() -> string!
+static Modulus.MultiTenancy.EntityFrameworkCore.TenantParentRequest.operator !=(Modulus.MultiTenancy.EntityFrameworkCore.TenantParentRequest? left, Modulus.MultiTenancy.EntityFrameworkCore.TenantParentRequest? right) -> bool
+static Modulus.MultiTenancy.EntityFrameworkCore.TenantParentRequest.operator ==(Modulus.MultiTenancy.EntityFrameworkCore.TenantParentRequest? left, Modulus.MultiTenancy.EntityFrameworkCore.TenantParentRequest? right) -> bool

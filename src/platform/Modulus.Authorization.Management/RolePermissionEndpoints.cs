@@ -36,10 +36,17 @@ public static class RolePermissionEndpoints
         ArgumentNullException.ThrowIfNull(endpoints);
         var group = endpoints.MapGroup(prefix).RequireAuthorization(AuthorizationManagementExtensions.ManagePermission);
 
+        // The company's own grants (what a PUT changes) and the grants it inherits from the companies above it (read-only).
         group.MapGet("/{role}/permissions", async (string role, EfPermissionGrantStore store, CancellationToken ct) =>
         {
             var grants = await store.GetGrantsForHolderAsync(GrantHolderType.Role, role, ct);
-            return Results.Ok(grants.Select(g => new { permission = g.Permission, type = g.Type.ToString() }).OrderBy(g => g.permission, StringComparer.Ordinal));
+            var inherited = await store.GetInheritedGrantsForHolderAsync(GrantHolderType.Role, role, ct);
+            return Results.Ok(new
+            {
+                own = grants.Select(g => new { permission = g.Permission, type = g.Type.ToString() }).OrderBy(g => g.permission, StringComparer.Ordinal),
+                inherited = inherited.Select(i => new { companyId = i.CompanyId, permission = i.Grant.Permission, type = i.Grant.Type.ToString() })
+                    .OrderBy(g => g.permission, StringComparer.Ordinal),
+            });
         });
 
         group.MapPut("/{role}/permissions", async (

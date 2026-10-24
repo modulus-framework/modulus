@@ -539,6 +539,13 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
     /// The user administration pages (premodule 1): the typed client for the API's user routes and the Users page. Rendered with the
     /// identity backend only, because the API maps the routes there.
     /// </summary>
+    private void RenderSettingsAdmin(string webDir, AppModel model)
+    {
+        _templates.RenderToFile("app/SettingsApiClient.Web", model, Path.Combine(webDir, "Services", "ApiClients", "SettingsApiClient.cs"));
+        _templates.RenderToFile("app/SettingsModel.Web", model, Path.Combine(webDir, "Pages", "Admin", "Settings.cshtml.cs"));
+        _templates.RenderToFile("app/Settings.Web.cshtml", model, Path.Combine(webDir, "Pages", "Admin", "Settings.cshtml"));
+    }
+
     private void RenderAuditViewer(string webDir, AppModel model)
     {
         _templates.RenderToFile("app/AuditApiClient.Web", model, Path.Combine(webDir, "Services", "ApiClients", "AuditApiClient.cs"));
@@ -591,8 +598,8 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
             RenderNavigationMenu(webDir, model);
             RenderUserAdmin(webDir, model);
             RenderRoleAdmin(webDir, model);
-        RenderAuditViewer(webDir, model);
             RenderAuditViewer(webDir, model);
+            RenderSettingsAdmin(webDir, model);
             if (!model.NoExample)
                 _templates.RenderToFile("ui/EntityApiClient", model, UiLayout.ApiClientFile(webDir, model.ExampleEntity));
             projects.Add($"src/Web/{rootNs}.Web/{rootNs}.Web.csproj");
@@ -655,6 +662,7 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         RenderUserAdmin(webDir, model);
         RenderRoleAdmin(webDir, model);
         RenderAuditViewer(webDir, model);
+        RenderSettingsAdmin(webDir, model);
 
         // â”€â”€ Authentication: a BFF web session (Modulus.Bff) behind the sign-in pages â”€â”€
         if (model.UseAuth)

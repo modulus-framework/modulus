@@ -11,6 +11,7 @@ namespace Modulus.MultiTenancy.EntityFrameworkCore;
 /// <param name="Status">Trial, Active, Suspended or Closed.</param>
 /// <param name="TrialEndsAt">When a trial ends, for a company on trial.</param>
 /// <param name="MaxUsers">The seat limit, or null when there is none.</param>
+/// <param name="ParentId">The parent company, or null for a top-level company.</param>
 /// <param name="ActiveMembers">Members whose membership is active now.</param>
 /// <param name="CreatedAtUtc">When the company was created.</param>
 public sealed record TenantAdminView(
@@ -21,6 +22,7 @@ public sealed record TenantAdminView(
     [property: JsonConverter(typeof(JsonStringEnumConverter<TenantStatus>))] TenantStatus Status,
     DateTimeOffset? TrialEndsAt,
     int? MaxUsers,
+    Guid? ParentId,
     int ActiveMembers,
     DateTimeOffset CreatedAtUtc);
 

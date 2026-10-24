@@ -22,7 +22,27 @@ internal static class FeatureServicesSetup
             Permission = "identity:accounts:manage",
             Order = 10,
         }));
-{{ if use_security_guard }}        builder.Services.AddModulusNavigation(navigation => navigation.Add(new NavigationItem("identity.audit", "Security audit")
+{{ if example_permission }}        // Settings administration (the Settings page): the registered settings, written per scope. Values are in memory until the
+        // EF settings store is added (with the tenant store); no role is granted settings:manage by default.
+        Modulus.Settings.SettingsExtensions.AddModulusSettings(builder.Services);
+        Modulus.Settings.SettingsAdministrationEndpoints.AddModulusSettingAdministration(builder.Services);
+{{ if multi_tenancy }}        // Company administration (the Companies page): list, create, status, seats and members of the companies (tenants:manage).
+        Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminEndpoints.AddModulusTenantAdmin(builder.Services);
+        builder.Services.AddModulusNavigation(navigation => navigation.Add(new NavigationItem("identity.companies", "Companies")
+        {
+            Url = "/Admin/Companies",
+            Icon = "bank",
+            Permission = "tenants:manage",
+            Order = 14,
+        }));
+{{ end }}        builder.Services.AddModulusNavigation(navigation => navigation.Add(new NavigationItem("identity.settings", "Settings")
+        {
+            Url = "/Admin/Settings",
+            Icon = "setting",
+            Permission = "settings:manage",
+            Order = 13,
+        }));
+{{ end }}{{ if use_security_guard }}        builder.Services.AddModulusNavigation(navigation => navigation.Add(new NavigationItem("identity.audit", "Security audit")
         {
             Url = "/Admin/Audit",
             Icon = "audit",

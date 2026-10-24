@@ -30,6 +30,12 @@ public interface ICurrentTenant
     bool IsHost { get; }
 
     /// <summary>
+    /// The current company followed by every company above it, nearest first: the companies whose grants a company reads (a parent's grant
+    /// applies below it). Empty when no company is resolved. An implementation that knows only the company returns just that company.
+    /// </summary>
+    IReadOnlyList<Guid> Lineage => TenantId is { } id ? [id] : [];
+
+    /// <summary>
     /// Establishes <paramref name="tenant"/> as the ambient tenant for the
     /// current async flow and returns a scope that restores the previous
     /// tenant when disposed. Use in background jobs, message consumers, and
@@ -55,7 +61,9 @@ public sealed record TenantInfo(
     [property: Obsolete("Tenant databases are described by the tenant data-store catalog and read through ITenantDatabaseResolver. A connection string is never stored on the tenant.")]
     string? ConnectionString = null,
     Guid? GroupId = null,
-    TenantStatus Status = TenantStatus.Active)
+    TenantStatus Status = TenantStatus.Active,
+    Guid? ParentId = null,
+    IReadOnlyList<Guid>? Lineage = null)
 {
     /// <summary>Whether the company only allows reads right now (it is suspended or its trial ended).</summary>
     public bool IsReadOnly => Status is TenantStatus.Suspended;

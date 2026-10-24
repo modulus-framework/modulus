@@ -200,6 +200,19 @@ public static partial class AuthorizationManagementExtensions
                 g.HolderType.ToString(), g.Holder, g.Permission, g.Type.ToString())));
         });
 
+        // The grants the holder inherits from the companies above the current one, each with the company that holds it (read-only).
+        group.MapGet("/grants/{holderType}/{holder}/inherited", async (
+            string holderType, string holder,
+            EfPermissionGrantStore store, CancellationToken ct) =>
+        {
+            if (!Enum.TryParse<GrantHolderType>(holderType, ignoreCase: true, out var type))
+                return InvalidEnum("holderType", holderType, typeof(GrantHolderType));
+
+            var inherited = await store.GetInheritedGrantsForHolderAsync(type, holder, ct);
+            return Results.Ok(inherited.Select(i => new InheritedGrantResponse(
+                i.CompanyId, i.Grant.HolderType.ToString(), i.Grant.Holder, i.Grant.Permission, i.Grant.Type.ToString())));
+        });
+
         group.MapPost("/grants", async (
             GrantWriteRequest request, ClaimsPrincipal caller,
             EfPermissionGrantStore store, IPermissionRegistry registry, IAuthorizationService authorization,

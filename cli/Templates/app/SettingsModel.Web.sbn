@@ -1,0 +1,73 @@
+using System.Net;
+using System.Text.Json;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
+using Modulus.Settings;
+using {{ root_namespace }}.Web.Services.ApiClients;
+
+namespace {{ root_namespace }}.Web.Pages.Admin;
+
+/// <summary>
+/// Settings administration (premodule 5): lists the registered settings with their effective value and source, and writes a value at a scope.
+/// A pinned setting is shown read-only. Every change is a call to the API, which checks the permission and the value; the page shows the
+/// API's answer, including a refused value's message, and decides nothing itself.
+/// </summary>
+[Authorize]
+public sealed class SettingsModel(SettingsApiClient settings) : PageModel
+{
+    private static readonly JsonSerializerOptions s_json = new(JsonSerializerDefaults.Web);
+
+    public IReadOnlyList<SettingView> Rows { get; private set; } = [];
+
+    public string? Message { get; private set; }
+
+    public async Task OnGetAsync(CancellationToken ct)
+    {
+        Message = TempData["Message"] as string;
+        using var response = await settings.ListAsync(ct);
+        if (response.IsSuccessStatusCode)
+            Rows = await response.Content.ReadFromJsonAsync<List<SettingView>>(s_json, ct) ?? [];
+        else
+            Message = Explain(response.StatusCode);
+    }
+
+    public async Task<IActionResult> OnPostSaveAsync(string? name, string? scope, string? value, CancellationToken ct)
+    {
+        using var response = await settings.SetAsync(scope ?? "", name ?? "", value, ct);
+        return await Answered(response, "Setting saved.", ct);
+    }
+
+    public async Task<IActionResult> OnPostRemoveAsync(string? name, string? scope, CancellationToken ct)
+    {
+        using var response = await settings.RemoveAsync(scope ?? "", name ?? "", ct);
+        return await Answered(response, "Setting removed.", ct);
+    }
+
+    private async Task<IActionResult> Answered(HttpResponseMessage response, string success, CancellationToken ct)
+    {
+        TempData["Message"] = response.IsSuccessStatusCode ? success : await Refusal(response, ct);
+        return RedirectToPage();
+    }
+
+    /// <summary>The API's reason for a refusal: a value's own message when it names one, else the status.</summary>
+    private static async Task<string> Refusal(HttpResponseMessage response, CancellationToken ct)
+    {
+        if (response.StatusCode == HttpStatusCode.BadRequest)
+        {
+            using var problem = JsonDocument.Parse(await response.Content.ReadAsStringAsync(ct));
+            if (problem.RootElement.TryGetProperty("errors", out var errors) && errors.TryGetProperty("value", out var messages))
+                return string.Join(' ', messages.EnumerateArray().Select(m => m.GetString()));
+        }
+        return Explain(response.StatusCode);
+    }
+
+    private static string Explain(HttpStatusCode status) => status switch
+    {
+        HttpStatusCode.Unauthorized => "Your session has ended. Sign in again.",
+        HttpStatusCode.Forbidden => "You do not have permission to change this setting. A global value needs settings:global:manage.",
+        HttpStatusCode.Conflict => "This setting is pinned by the host and cannot be changed.",
+        HttpStatusCode.NotFound => "No setting has that name.",
+        _ => $"The API answered {(int)status}.",
+    };
+}

@@ -947,3 +947,23 @@ override Modulus.Authorization.Management.RolePermissionsRequest.ToString() -> s
 static Modulus.Authorization.Management.RolePermissionEndpoints.MapModulusRolePermissions(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! prefix = "/api/identity/roles") -> Microsoft.AspNetCore.Routing.RouteGroupBuilder!
 static Modulus.Authorization.Management.RolePermissionsRequest.operator !=(Modulus.Authorization.Management.RolePermissionsRequest? left, Modulus.Authorization.Management.RolePermissionsRequest? right) -> bool
 static Modulus.Authorization.Management.RolePermissionsRequest.operator ==(Modulus.Authorization.Management.RolePermissionsRequest? left, Modulus.Authorization.Management.RolePermissionsRequest? right) -> bool
+Modulus.Authorization.Management.InheritedGrantResponse
+Modulus.Authorization.Management.InheritedGrantResponse.<Clone>$() -> Modulus.Authorization.Management.InheritedGrantResponse!
+Modulus.Authorization.Management.InheritedGrantResponse.CompanyId.get -> System.Guid
+Modulus.Authorization.Management.InheritedGrantResponse.CompanyId.init -> void
+Modulus.Authorization.Management.InheritedGrantResponse.Deconstruct(out System.Guid CompanyId, out string! HolderType, out string! Holder, out string! Permission, out string! Type) -> void
+Modulus.Authorization.Management.InheritedGrantResponse.Equals(Modulus.Authorization.Management.InheritedGrantResponse? other) -> bool
+Modulus.Authorization.Management.InheritedGrantResponse.Holder.get -> string!
+Modulus.Authorization.Management.InheritedGrantResponse.Holder.init -> void
+Modulus.Authorization.Management.InheritedGrantResponse.HolderType.get -> string!
+Modulus.Authorization.Management.InheritedGrantResponse.HolderType.init -> void
+Modulus.Authorization.Management.InheritedGrantResponse.InheritedGrantResponse(System.Guid CompanyId, string! HolderType, string! Holder, string! Permission, string! Type) -> void
+Modulus.Authorization.Management.InheritedGrantResponse.Permission.get -> string!
+Modulus.Authorization.Management.InheritedGrantResponse.Permission.init -> void
+Modulus.Authorization.Management.InheritedGrantResponse.Type.get -> string!
+Modulus.Authorization.Management.InheritedGrantResponse.Type.init -> void
+override Modulus.Authorization.Management.InheritedGrantResponse.Equals(object? obj) -> bool
+override Modulus.Authorization.Management.InheritedGrantResponse.GetHashCode() -> int
+override Modulus.Authorization.Management.InheritedGrantResponse.ToString() -> string!
+static Modulus.Authorization.Management.InheritedGrantResponse.operator !=(Modulus.Authorization.Management.InheritedGrantResponse? left, Modulus.Authorization.Management.InheritedGrantResponse? right) -> bool
+static Modulus.Authorization.Management.InheritedGrantResponse.operator ==(Modulus.Authorization.Management.InheritedGrantResponse? left, Modulus.Authorization.Management.InheritedGrantResponse? right) -> bool

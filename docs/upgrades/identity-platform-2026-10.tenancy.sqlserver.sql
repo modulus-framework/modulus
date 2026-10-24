@@ -4,7 +4,7 @@
   Run as the schema owner, never as an application login, once, before the new release starts:
     sqlcmd -S "$SERVER" -d "$DATABASE" -U "$OWNER" -P "$OWNER_PASSWORD" -b -i identity-platform-2026-10.tenancy.sqlserver.sql
 
-  Adds the company lifecycle columns (Status, TrialEndsAt, MaxUsers) to ModulusTenants and creates ModulusTenantDataStores and ModulusSettingValues.
+  Adds the company lifecycle columns (Status, TrialEndsAt, MaxUsers) and the parent company (ParentId) to ModulusTenants and creates ModulusTenantDataStores and ModulusSettingValues.
   Idempotent: a second run changes nothing. Existing companies start as Active with no trial end and no seat limit.
   Existing deployments only: it expects ModulusTenants to exist.
 */
@@ -23,6 +23,11 @@ GO
 
 IF COL_LENGTH('ModulusTenants', 'MaxUsers') IS NULL
     ALTER TABLE ModulusTenants ADD MaxUsers int NULL;
+GO
+
+-- The parent company (null for a top-level company). A plain fact: access does not follow it.
+IF COL_LENGTH('ModulusTenants', 'ParentId') IS NULL
+    ALTER TABLE ModulusTenants ADD ParentId uniqueidentifier NULL;
 GO
 
 -- 2. Tenant data stores: a pointer to a company's database secret, never a connection string.

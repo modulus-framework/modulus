@@ -1,6 +1,8 @@
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Modulus.Authorization.Governance;
+using Modulus.Core.Abstractions;
 
 namespace Modulus.Authorization.EntityFrameworkCore;
 
@@ -13,19 +15,36 @@ namespace Modulus.Authorization.EntityFrameworkCore;
 /// providers.
 /// </summary>
 public sealed class EfDelegationStore(
-    IDbContextFactory<AuthorizationStoreDbContextBase> factory)
+    IDbContextFactory<AuthorizationStoreDbContextBase> factory,
+    IServiceScopeFactory? scopes = null)
     : IDelegationStore
 {
+    /// <summary>
+    /// The delegations in force for a user, in the companies the current request reads: a delegation made in a company above the current one
+    /// applies below it, the same as a grant does. Admin listings and the role refresher keep the company's own rows.
+    /// </summary>
     /// <inheritdoc />
     public IReadOnlyCollection<Delegation> ActiveFor(Guid toUserId, DateTimeOffset now)
     {
         using var db = factory.CreateDbContext();
-        return db.Delegations.AsNoTracking()
+        var reach = ReachNow();
+        var rows = reach is null
+            ? db.Delegations.AsNoTracking()
+            : db.Delegations.IgnoreQueryFilters().AsNoTracking().Where(d => reach.Contains(d.TenantId));
+        return rows
             .Where(d => d.ToUserId == toUserId && !d.Revoked)
             .AsEnumerable()
             .Select(ToDelegation)
             .Where(d => d.IsActiveAt(now))
             .ToList();
+    }
+
+    private IReadOnlyList<Guid>? ReachNow()
+    {
+        if (scopes is null)
+            return null;
+        using var scope = scopes.CreateScope();
+        return TenantReach.Of(scope.ServiceProvider.GetService<ICurrentTenant>());
     }
 
     /// <inheritdoc />

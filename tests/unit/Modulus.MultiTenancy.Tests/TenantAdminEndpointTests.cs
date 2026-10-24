@@ -124,6 +124,29 @@ public sealed class TenantAdminEndpointTests : IAsyncLifetime
         (await _client.GetAsync($"{Route}/{Guid.NewGuid():D}/members")).StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
+    [Fact]
+    public async Task A_child_company_links_to_its_parent_and_a_cycle_or_a_missing_parent_is_refused()
+    {
+        var parent = await CreateAsync("holding");
+        var child = await CreateAsync("branch-co");
+        var grandchild = await CreateAsync("branch-sub");
+
+        var linked = await _client.PutAsJsonAsync($"{Route}/{child:D}/parent", new TenantParentRequest(parent));
+        linked.StatusCode.Should().Be(HttpStatusCode.OK);
+        (await linked.Content.ReadFromJsonAsync<JsonElement>(JsonOptions)).GetProperty("parentId").GetGuid().Should().Be(parent);
+        (await _client.PutAsJsonAsync($"{Route}/{grandchild:D}/parent", new TenantParentRequest(child))).StatusCode.Should().Be(HttpStatusCode.OK);
+
+        // The parent would be a child of its own grandchild: a cycle.
+        (await _client.PutAsJsonAsync($"{Route}/{parent:D}/parent", new TenantParentRequest(grandchild))).StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        // A company cannot be its own parent, and the parent must exist.
+        (await _client.PutAsJsonAsync($"{Route}/{child:D}/parent", new TenantParentRequest(child))).StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await _client.PutAsJsonAsync($"{Route}/{child:D}/parent", new TenantParentRequest(Guid.NewGuid()))).StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        // Unlinking makes the company top-level again.
+        var unlinked = await _client.PutAsJsonAsync($"{Route}/{child:D}/parent", new TenantParentRequest(null));
+        (await unlinked.Content.ReadFromJsonAsync<JsonElement>(JsonOptions)).GetProperty("parentId").ValueKind.Should().Be(JsonValueKind.Null);
+        (await _client.PutAsJsonAsync($"{Route}/{Guid.NewGuid():D}/parent", new TenantParentRequest(null))).StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
     private async Task<Guid> CreateAsync(string slug)
     {
         var response = await _client.PostAsJsonAsync(Route, new TenantCreateRequest(slug, null, null));

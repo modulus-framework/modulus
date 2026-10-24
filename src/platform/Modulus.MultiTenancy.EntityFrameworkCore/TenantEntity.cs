@@ -23,6 +23,12 @@ public class TenantEntity
     /// <summary>The group of companies this tenant belongs to; null when it stands alone.</summary>
     public Guid? GroupId { get; set; }
 
+    /// <summary>
+    /// The parent company, or null for a top-level company. A parent link is a plain fact; access does not follow it (the parent's
+    /// administrators reach a child only through the child's own memberships and grants).
+    /// </summary>
+    public Guid? ParentId { get; set; }
+
     /// <summary>Optional display name shown in admin UIs.</summary>
     public string? DisplayName { get; set; }
 
