@@ -721,3 +721,8 @@ override Modulus.Authorization.EntityFrameworkCore.InheritedGrant.GetHashCode() 
 override Modulus.Authorization.EntityFrameworkCore.InheritedGrant.ToString() -> string!
 static Modulus.Authorization.EntityFrameworkCore.InheritedGrant.operator !=(Modulus.Authorization.EntityFrameworkCore.InheritedGrant? left, Modulus.Authorization.EntityFrameworkCore.InheritedGrant? right) -> bool
 static Modulus.Authorization.EntityFrameworkCore.InheritedGrant.operator ==(Modulus.Authorization.EntityFrameworkCore.InheritedGrant? left, Modulus.Authorization.EntityFrameworkCore.InheritedGrant? right) -> bool
+Modulus.Authorization.EntityFrameworkCore.CompanyProvisioningOptions
+Modulus.Authorization.EntityFrameworkCore.CompanyProvisioningOptions.CompanyProvisioningOptions() -> void
+Modulus.Authorization.EntityFrameworkCore.CompanyProvisioningOptions.Grants.get -> System.Collections.Generic.Dictionary<string!, string![]!>!
+Modulus.Authorization.EntityFrameworkCore.CompanyProvisioningOptions.Grants.set -> void
+const Modulus.Authorization.EntityFrameworkCore.CompanyProvisioningOptions.SectionName = "CompanyProvisioning" -> string!

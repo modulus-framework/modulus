@@ -364,8 +364,8 @@ Modulus.Authorization.Governance.SodViolation.HeldPermissions.get -> System.Coll
 Modulus.Authorization.Governance.SodViolation.HeldPermissions.init -> void
 Modulus.Authorization.Governance.SodViolation.SodViolation(Modulus.Authorization.Governance.SodConstraint! Constraint, System.Collections.Generic.IReadOnlyCollection<string!>! HeldPermissions) -> void
 Modulus.Authorization.Grants.CachedPermissionGrantStore
-Modulus.Authorization.Grants.CachedPermissionGrantStore.CachedPermissionGrantStore(Modulus.Authorization.Grants.InMemoryPermissionGrantStore! inner) -> void
-Modulus.Authorization.Grants.CachedPermissionGrantStore.CachedPermissionGrantStore(Modulus.Authorization.Grants.IPermissionGrantStore! inner) -> void
+Modulus.Authorization.Grants.CachedPermissionGrantStore.CachedPermissionGrantStore(Modulus.Authorization.Grants.InMemoryPermissionGrantStore! inner, Modulus.Core.Abstractions.ICurrentTenant? tenant = null) -> void
+Modulus.Authorization.Grants.CachedPermissionGrantStore.CachedPermissionGrantStore(Modulus.Authorization.Grants.IPermissionGrantStore! inner, Modulus.Core.Abstractions.ICurrentTenant? tenant = null) -> void
 Modulus.Authorization.Grants.CachedPermissionGrantStore.GetGrants(Modulus.Authorization.Grants.PrincipalGrantQuery! principal) -> System.Collections.Generic.IReadOnlyCollection<Modulus.Authorization.Grants.PermissionGrant!>!
 Modulus.Authorization.Grants.GrantHolderType
 Modulus.Authorization.Grants.GrantHolderType.Role = 0 -> Modulus.Authorization.Grants.GrantHolderType
@@ -2415,3 +2415,36 @@ static Modulus.AuditLogging.Security.SecurityAuditViewerEndpoints.MapModulusSecu
 static Modulus.AuditLogging.Security.SecurityAuditView.operator !=(Modulus.AuditLogging.Security.SecurityAuditView? left, Modulus.AuditLogging.Security.SecurityAuditView? right) -> bool
 static Modulus.AuditLogging.Security.SecurityAuditView.operator ==(Modulus.AuditLogging.Security.SecurityAuditView? left, Modulus.AuditLogging.Security.SecurityAuditView? right) -> bool
 Modulus.MultiTenancy.CurrentTenant.Lineage.get -> System.Collections.Generic.IReadOnlyList<System.Guid>!
+Modulus.AuditLogging.BusinessAuditView
+Modulus.AuditLogging.BusinessAuditView.<Clone>$() -> Modulus.AuditLogging.BusinessAuditView!
+Modulus.AuditLogging.BusinessAuditView.Action.get -> string!
+Modulus.AuditLogging.BusinessAuditView.Action.init -> void
+Modulus.AuditLogging.BusinessAuditView.BusinessAuditView(System.Guid Id, System.DateTimeOffset OccurredAt, System.Guid? TenantId, System.Guid? UserId, string? UserName, string! Action, string? Resource, string? ResourceId, string? Detail) -> void
+Modulus.AuditLogging.BusinessAuditView.Deconstruct(out System.Guid Id, out System.DateTimeOffset OccurredAt, out System.Guid? TenantId, out System.Guid? UserId, out string? UserName, out string! Action, out string? Resource, out string? ResourceId, out string? Detail) -> void
+Modulus.AuditLogging.BusinessAuditView.Detail.get -> string?
+Modulus.AuditLogging.BusinessAuditView.Detail.init -> void
+Modulus.AuditLogging.BusinessAuditView.Equals(Modulus.AuditLogging.BusinessAuditView? other) -> bool
+Modulus.AuditLogging.BusinessAuditView.Id.get -> System.Guid
+Modulus.AuditLogging.BusinessAuditView.Id.init -> void
+Modulus.AuditLogging.BusinessAuditView.OccurredAt.get -> System.DateTimeOffset
+Modulus.AuditLogging.BusinessAuditView.OccurredAt.init -> void
+Modulus.AuditLogging.BusinessAuditView.Resource.get -> string?
+Modulus.AuditLogging.BusinessAuditView.Resource.init -> void
+Modulus.AuditLogging.BusinessAuditView.ResourceId.get -> string?
+Modulus.AuditLogging.BusinessAuditView.ResourceId.init -> void
+Modulus.AuditLogging.BusinessAuditView.TenantId.get -> System.Guid?
+Modulus.AuditLogging.BusinessAuditView.TenantId.init -> void
+Modulus.AuditLogging.BusinessAuditView.UserId.get -> System.Guid?
+Modulus.AuditLogging.BusinessAuditView.UserId.init -> void
+Modulus.AuditLogging.BusinessAuditView.UserName.get -> string?
+Modulus.AuditLogging.BusinessAuditView.UserName.init -> void
+Modulus.AuditLogging.BusinessAuditViewerEndpoints
+const Modulus.AuditLogging.BusinessAuditViewerEndpoints.MaxPageSize = 200 -> int
+const Modulus.AuditLogging.BusinessAuditViewerEndpoints.ViewPermission = "audit:view" -> string!
+override Modulus.AuditLogging.BusinessAuditView.Equals(object? obj) -> bool
+override Modulus.AuditLogging.BusinessAuditView.GetHashCode() -> int
+override Modulus.AuditLogging.BusinessAuditView.ToString() -> string!
+static Modulus.AuditLogging.BusinessAuditView.operator !=(Modulus.AuditLogging.BusinessAuditView? left, Modulus.AuditLogging.BusinessAuditView? right) -> bool
+static Modulus.AuditLogging.BusinessAuditView.operator ==(Modulus.AuditLogging.BusinessAuditView? left, Modulus.AuditLogging.BusinessAuditView? right) -> bool
+static Modulus.AuditLogging.BusinessAuditViewerEndpoints.AddModulusBusinessAuditViewer(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.AuditLogging.BusinessAuditViewerEndpoints.MapModulusBusinessAuditViewer(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! prefix = "/api/audit/business") -> Microsoft.AspNetCore.Routing.RouteGroupBuilder!

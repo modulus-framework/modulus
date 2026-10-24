@@ -72,6 +72,8 @@ internal static class AuthenticationSetup
         Modulus.Identity.Extensions.AccountLifecycleExtensions.AddModulusAccountLifecycleAdmin(builder.Services);
 {{ if use_security_guard }}        // The security audit viewer (search, chain verification, CSV export of the caller's company). Not granted by default.
         Modulus.AuditLogging.Security.SecurityAuditViewerEndpoints.AddModulusSecurityAuditViewer(builder.Services);
+        // The business audit viewer (entries of the business audit log, by entity, actor and time). Not granted by default either.
+        Modulus.AuditLogging.BusinessAuditViewerEndpoints.AddModulusBusinessAuditViewer(builder.Services);
 {{ end }}        var seededRolePermissions = builder.Configuration.GetSection("Identity:Seed:RolePermissions").Get<Dictionary<string, string[]>>() ?? [];
         builder.Services.AddPermissionGrants(grants =>
         {
@@ -79,6 +81,8 @@ internal static class AuthenticationSetup
                 grants.GrantToRole(role, permissions);
         });
         builder.Services.AddEfCoreAuthorizationStores(options => options.{{ use_db_method }}(builder.Configuration.GetConnectionString("Authorization") ?? throw new InvalidOperationException("ConnectionStrings:Authorization is not configured.")));
+        // The starting grants of every new company (D-10): CompanyProvisioning:Grants, checked against the registered permissions.
+        builder.Services.Configure<Modulus.Authorization.EntityFrameworkCore.CompanyProvisioningOptions>(builder.Configuration.GetSection(Modulus.Authorization.EntityFrameworkCore.CompanyProvisioningOptions.SectionName));
 {{ if auth == "openiddict" }}        // Role-permission administration (the Roles page's grants) uses the grant store and the grant rules.
         builder.Services.AddModulusAuthorizationManagement();
 {{ end }}{{ end }}{{ else if use_external_provider }}        // External identity provider ({{ external_provider_name }}).

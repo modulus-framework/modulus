@@ -842,3 +842,5 @@ Modulus.Core.Abstractions.TenantInfo.Deconstruct(out System.Guid TenantId, out s
 Modulus.Core.Abstractions.TenantInfo.Lineage.get -> System.Collections.Generic.IReadOnlyList<System.Guid>?
 Modulus.Core.Abstractions.TenantInfo.Lineage.init -> void
 Modulus.Core.Abstractions.TenantInfo.TenantInfo(System.Guid TenantId, string! TenantSlug, string? DisplayName = null, string? ConnectionString = null, System.Guid? GroupId = null, Modulus.Core.Abstractions.TenantStatus Status = Modulus.Core.Abstractions.TenantStatus.Active, System.Guid? ParentId = null, System.Collections.Generic.IReadOnlyList<System.Guid>? Lineage = null) -> void
+Modulus.Core.Abstractions.ICompanyProvisioner
+Modulus.Core.Abstractions.ICompanyProvisioner.ProvisionAsync(Modulus.Core.Abstractions.TenantInfo! company, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!

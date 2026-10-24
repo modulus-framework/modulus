@@ -27,6 +27,8 @@ internal static class FeatureEndpoints
         Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminEndpoints.MapModulusTenantAdmin<Modulus.MultiTenancy.EntityFrameworkCore.TenantEntity, Modulus.MultiTenancy.EntityFrameworkCore.TenantMembershipEntity, Modulus.MultiTenancy.EntityFrameworkCore.TenantDataStoreEntity>(app);
 {{ end }}{{ end }}{{ if use_security_guard }}        // The security audit viewer: search, verify the chain and export, for holders of audit:security:view.
         Modulus.AuditLogging.Security.SecurityAuditViewerEndpoints.MapModulusSecurityAuditViewer(app);
+        // The business audit viewer: search and read the business audit log (audit:view), in the caller's company.
+        Modulus.AuditLogging.BusinessAuditViewerEndpoints.MapModulusBusinessAuditViewer(app);
 {{ end }}{{ end }}
 {{ end }}        return app;
     }

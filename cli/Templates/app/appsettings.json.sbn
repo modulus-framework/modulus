@@ -72,6 +72,11 @@
       "DefaultTenant": "default"
     }
   },
+  "CompanyProvisioning": {
+    "Grants": {
+{{ if example_permission }}      "{{ admin_role }}": [ "{{ example_permission }}" ]
+{{ end }}    }
+  },
   "Storage": {
     "IsolateTenants": true
   },

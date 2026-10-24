@@ -45,13 +45,14 @@ internal static class DatabaseStartup
 {{ end }}{{ if multi_tenancy }}
         // The default company and the administrators' memberships in it (see TenancySeeding).
         await app.Services.SeedTenancyAsync(app.Environment);
-{{ if example_permission }}        await app.Services.SeedCompanyGrantsAsync(app.Configuration);
+{{ if multi_tenancy }}        await app.Services.SeedCompanyGrantsAsync(app.Configuration);
 {{ end }}{{ end }}    }
 
-{{ if multi_tenancy }}{{ if example_permission }}    /// <summary>
-    /// Gives the Admin role the example permission inside the default company. Grants are per company, so a company sees only its own:
-    /// the first-boot grant is written in the host context and would be invisible to the company. Written only when the company has no
-    /// Admin grant yet, so an administrator's later revocation stays revoked after a restart.
+{{ if multi_tenancy }}    /// <summary>
+    /// Gives the default company its configured starting grants (CompanyProvisioning:Grants, the same baseline a new company gets through the
+    /// company API). Grants are per company, so a company sees only its own: the first-boot grant is written in the host context and would be
+    /// invisible to the company. A role that already holds grants in the company is left alone, so a later change by an administrator survives
+    /// a restart; a role whose every grant was revoked is granted its baseline again on the next start.
     /// </summary>
     private static async Task SeedCompanyGrantsAsync(this IServiceProvider services, IConfiguration configuration)
     {
@@ -62,9 +63,8 @@ internal static class DatabaseStartup
         if (tenant is null)
             return;
 
-        using var company = provider.GetRequiredService<ICurrentTenant>().Change(tenant);
-        var grants = provider.GetRequiredService<EfPermissionGrantStore>();
-        if ((await grants.GetGrantsForHolderAsync(GrantHolderType.Role, "{{ admin_role }}", CancellationToken.None)).Count == 0)
-            await grants.GrantToRoleAsync("{{ admin_role }}", ["{{ example_permission }}"], CancellationToken.None);
+        // Without the authorization stores there are no grants to give; the company then has none, as before.
+        if (provider.GetService<ICompanyProvisioner>() is { } provisioner)
+            await provisioner.ProvisionAsync(tenant, CancellationToken.None);
     }
-{{ end }}{{ end }}}
+{{ end }}}

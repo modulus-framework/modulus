@@ -209,15 +209,17 @@ Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.TrialEndsAt.get -> Syst
 Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.TrialEndsAt.init -> void
 Modulus.MultiTenancy.EntityFrameworkCore.TenantCreateRequest
 Modulus.MultiTenancy.EntityFrameworkCore.TenantCreateRequest.<Clone>$() -> Modulus.MultiTenancy.EntityFrameworkCore.TenantCreateRequest!
-Modulus.MultiTenancy.EntityFrameworkCore.TenantCreateRequest.Deconstruct(out string! Slug, out string? DisplayName, out System.Guid? GroupId) -> void
+Modulus.MultiTenancy.EntityFrameworkCore.TenantCreateRequest.Deconstruct(out string! Slug, out string? DisplayName, out System.Guid? GroupId, out System.Guid? AdministratorUserId) -> void
 Modulus.MultiTenancy.EntityFrameworkCore.TenantCreateRequest.DisplayName.get -> string?
 Modulus.MultiTenancy.EntityFrameworkCore.TenantCreateRequest.DisplayName.init -> void
 Modulus.MultiTenancy.EntityFrameworkCore.TenantCreateRequest.Equals(Modulus.MultiTenancy.EntityFrameworkCore.TenantCreateRequest? other) -> bool
 Modulus.MultiTenancy.EntityFrameworkCore.TenantCreateRequest.GroupId.get -> System.Guid?
 Modulus.MultiTenancy.EntityFrameworkCore.TenantCreateRequest.GroupId.init -> void
+Modulus.MultiTenancy.EntityFrameworkCore.TenantCreateRequest.AdministratorUserId.get -> System.Guid?
+Modulus.MultiTenancy.EntityFrameworkCore.TenantCreateRequest.AdministratorUserId.init -> void
 Modulus.MultiTenancy.EntityFrameworkCore.TenantCreateRequest.Slug.get -> string!
 Modulus.MultiTenancy.EntityFrameworkCore.TenantCreateRequest.Slug.init -> void
-Modulus.MultiTenancy.EntityFrameworkCore.TenantCreateRequest.TenantCreateRequest(string! Slug, string? DisplayName, System.Guid? GroupId) -> void
+Modulus.MultiTenancy.EntityFrameworkCore.TenantCreateRequest.TenantCreateRequest(string! Slug, string? DisplayName, System.Guid? GroupId, System.Guid? AdministratorUserId = null) -> void
 Modulus.MultiTenancy.EntityFrameworkCore.TenantManager<TTenant, TMembership, TDataStore>.GetAsync(System.Guid id, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView?>!
 Modulus.MultiTenancy.EntityFrameworkCore.TenantManager<TTenant, TMembership, TDataStore>.ListAsync(string? search, int page, int pageSize, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<(System.Collections.Generic.IReadOnlyList<Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView!>! Items, int Total)>!
 Modulus.MultiTenancy.EntityFrameworkCore.TenantManager<TTenant, TMembership, TDataStore>.ListMembersAsync(System.Guid tenantId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.MultiTenancy.EntityFrameworkCore.TenantMemberView!>!>!

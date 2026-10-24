@@ -14,7 +14,8 @@ using Modulus.Core.Abstractions.Security;
 /// <param name="Slug">The short name: lower-case letters, digits and hyphens, starting with a letter or digit.</param>
 /// <param name="DisplayName">The name shown to people.</param>
 /// <param name="GroupId">The group of companies to put the company in, if any.</param>
-public sealed record TenantCreateRequest(string Slug, string? DisplayName, Guid? GroupId);
+/// <param name="AdministratorUserId">The account to make a member of the new company, if any (the designated administrator).</param>
+public sealed record TenantCreateRequest(string Slug, string? DisplayName, Guid? GroupId, Guid? AdministratorUserId = null);
 
 /// <summary>Body of <c>PUT /api/tenancy/tenants/{id}/status</c>.</summary>
 /// <param name="Status">Trial, Active, Suspended or Closed.</param>
@@ -77,22 +78,41 @@ public static partial class TenantAdminEndpoints
             return Results.Ok(new { items, total, page = number, pageSize = size });
         });
 
-        group.MapPost("/", async (TenantCreateRequest body, TenantManager<TTenant, TMembership, TDataStore> manager, ICurrentTenant tenant, CancellationToken ct) =>
+        group.MapPost("/", async (TenantCreateRequest body, HttpContext http, TenantManager<TTenant, TMembership, TDataStore> manager, ICurrentTenant tenant, CancellationToken ct) =>
         {
             using var _ = tenant.Change(null);
             var slug = body.Slug?.Trim().ToLowerInvariant() ?? "";
             if (!SlugPattern.IsMatch(slug))
                 return Problem("slug", "A company name is 1 to 63 lower-case letters, digits or hyphens, starting with a letter or digit.");
+            TenantInfo created;
             try
             {
-                var created = await manager.CreateAsync(slug, string.IsNullOrWhiteSpace(body.DisplayName) ? null : body.DisplayName.Trim(), null, body.GroupId, ct);
-                var view = await manager.GetAsync(created.TenantId, ct);
-                return Results.Created($"{prefix}/{created.TenantId:D}", view);
+                created = await manager.CreateAsync(slug, string.IsNullOrWhiteSpace(body.DisplayName) ? null : body.DisplayName.Trim(), null, body.GroupId, ct);
             }
             catch (InvalidOperationException ex)
             {
                 return Results.Conflict(new { error = "DUPLICATE_TENANT", message = ex.Message });
             }
+
+            // D-10: the configured baseline first, so the designated administrator never meets a company without its grants. An invalid
+            // baseline leaves the company created with no grants (no one can use it yet); the response says so.
+            if (http.RequestServices.GetService<ICompanyProvisioner>() is { } provisioner)
+            {
+                try
+                {
+                    await provisioner.ProvisionAsync(created, ct);
+                }
+                catch (InvalidOperationException ex)
+                {
+                    return Results.Json(new { error = "BASELINE_INVALID", message = ex.Message, companyId = created.TenantId }, statusCode: StatusCodes.Status500InternalServerError);
+                }
+            }
+
+            if (body.AdministratorUserId is { } administrator)
+                await manager.AddMemberAsync(administrator, created.TenantId, ct);
+
+            var view = await manager.GetAsync(created.TenantId, ct);
+            return Results.Created($"{prefix}/{created.TenantId:D}", view);
         });
 
         group.MapGet("/{id:guid}", async (Guid id, TenantManager<TTenant, TMembership, TDataStore> manager, ICurrentTenant tenant, CancellationToken ct) =>

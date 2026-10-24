@@ -100,6 +100,9 @@ public static class EfAuthorizationStoreExtensions
         services.TryAddSingleton<EfPermissionGrantStore>();
         // Optional node-wide grant copy (Authorization:GrantCache:Duration, off by default). It is also told about every access change.
         services.AddOptions<PermissionGrantCacheOptions>();
+        // The configured starting grants of a new company (CompanyProvisioning:Grants). Empty unless configured.
+        services.AddOptions<CompanyProvisioningOptions>();
+        services.TryAddScoped<ICompanyProvisioner, CompanyProvisioner>();
         services.TryAddSingleton(TimeProvider.System);
         services.TryAddSingleton<TtlPermissionGrantStore>(sp => new TtlPermissionGrantStore(
             sp.GetRequiredService<EfPermissionGrantStore>(),
@@ -109,7 +112,7 @@ public static class EfAuthorizationStoreExtensions
         services.AddSingleton<IAccessChangeObserver>(sp => sp.GetRequiredService<TtlPermissionGrantStore>());
         services.RemoveAll<IPermissionGrantStore>();
         services.AddScoped<IPermissionGrantStore>(sp =>
-            new CachedPermissionGrantStore(sp.GetRequiredService<TtlPermissionGrantStore>()));
+            new CachedPermissionGrantStore(sp.GetRequiredService<TtlPermissionGrantStore>(), sp.GetService<ICurrentTenant>()));
 
         services.TryAddSingleton<EfOrgHierarchy<TOrgUnit, TOrgUnitParent, TOrgUnitProfile, TCompanyProfile>>();
         services.TryAddSingleton<IOrgUnitAdministration>(sp => sp.GetRequiredService<EfOrgHierarchy<TOrgUnit, TOrgUnitParent, TOrgUnitProfile, TCompanyProfile>>());

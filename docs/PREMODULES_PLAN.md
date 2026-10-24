@@ -213,24 +213,28 @@ This section is the single list of what is still open after the premodule 1 to 5
 - Parent grants apply below their holder; a deny anywhere on the path wins (the owner confirmed these defaults).
 - Role administration gate (D-P17): role list, create, rename and delete need `identity:accounts:manage`; role permissions need `authorization:manage`.
 - Personal-data permission and the audit permission are granted to no role by default.
-- The company `Admin` grant is written into the default company at startup and into companies the tests create, not into companies created later
-  through the API (see the gaps below).
+- A new company gets the configured baseline (`CompanyProvisioning:Grants`, role to permissions), never a copy of another company's grants.
+  The baseline may not name an unregistered, Critical or wildcard permission, or an `integration:` role. The default company gets the same
+  baseline at startup. The baseline is empty unless configured; generated apps configure `Admin` with the example permission.
 
 ### Buildable gaps
 
 - **Companies page in web apps:** needs a company switcher, because `--multi-tenancy` is refused for web apps.
-- **Admin grant for new companies:** companies created through the company API start with no grants. Only the default company gets `Admin` at
-  startup. The fix is to seed the same grant when a company is created.
-- **Business audit log search (premodule 4):** the viewer covers the security chain only.
+- **Admin grant for new companies (done, D-10):** `POST /api/tenancy/tenants` applies the configured baseline to the new company and, when
+  `AdministratorUserId` is given, makes that account a member. An invalid baseline answers 500 `BASELINE_INVALID` and keeps the company with no
+  grants. Open: no endpoint re-applies the baseline to an existing company, and the designated account is not checked against the identity store.
+- **Business audit log viewer UI (premodule 4):** the API is built (`GET /api/audit/business`, company-scoped, `audit:view`) and wired into
+  generated apps; no page reads it yet. The security viewer covers the security chain only.
 - **Premodule 5:** the branch (organization-unit) scope from D-P4, grouping settings by definition group (definitions carry no group field), and
   an EF settings store for generated apps (values are in memory until one is added).
 - **Browser checks:** the generated Users, Roles, Audit, Settings and Companies pages were verified by build and API tests only.
 
 ### Limitations in the built code
 
-- **Upgrade scripts:** the `ParentId` column is in the three tenancy scripts, but no automated test checks them against the EF model.
-- **Per-request grant memo:** if a tenant changes inside one scope, the per-request memo can reuse the earlier company's grants. The shared
-  grant cache keys by company, so it is safe.
+- **Upgrade scripts (closed):** `TenancyUpgradeScriptTests` checks that the three tenancy scripts add every company column the entity maps
+  (`Status`, `TrialEndsAt`, `MaxUsers`, `ParentId`), and that the entity has the same property names.
+- **Per-request grant memo (closed):** `CachedPermissionGrantStore` now keys its memo by the company lineage (`ICurrentTenant`), so a tenant
+  change inside one request no longer reuses the earlier company's grants. Covered by `CachedPermissionGrantStoreTests`.
 - **Admin listings are own-rows for writes:** the grant listings show the company's own rows for editing, and a separate read shows inherited
   rows. A listing does not merge them.
 - **Refresher:** the delegation role refresher runs in the host context, so it sees every company. This is correct, not a gap.
@@ -251,10 +255,15 @@ This section is the single list of what is still open after the premodule 1 to 5
 
 ### Verification of this round
 
-- Affected unit suites pass on net8 and net10: authorization (122 and 7 new grant tests), management (136), platform (558), multi-tenancy (128),
-  identity (450) and CLI (636).
+- Affected unit suites pass on net8 and net10: authorization management (136), platform (566), multi-tenancy (132), identity (450).
+  The EF authorization suite passes on net10 (123) and on net8 in four runs after one unexplained failure in a fifth run (the failure text
+  was not captured; the cause is not known).
+- `dotnet format modulus.slnx --verify-no-changes`: clean.
 - Generated single-tenant app: builds, 15 of 15 tests pass, on the framework at `1.6.0-local.11`.
 - Generated multi-tenant app: builds, 11 of 11 tests pass, on the same framework.
+- Company baseline (D-10), on a generated multi-tenant app built against the current source: builds with 0 warnings, 11 of 11 tests
+  pass (the default company's `Admin` grant comes from `CompanyProvisioning:Grants`). Multi-tenancy suite 135 of 135 and CLI suite
+  636 of 636 on net10; multi-tenancy also 135 of 135 on net8. Build 0 warnings, format clean.
 
 ## Ordering
 

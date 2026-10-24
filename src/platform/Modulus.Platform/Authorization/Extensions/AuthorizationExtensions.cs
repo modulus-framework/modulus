@@ -87,7 +87,7 @@ public static class AuthorizationExtensions
             return store;
         });
         services.TryAddScoped<IPermissionGrantStore>(sp =>
-            new CachedPermissionGrantStore(sp.GetRequiredService<InMemoryPermissionGrantStore>()));
+            new CachedPermissionGrantStore(sp.GetRequiredService<InMemoryPermissionGrantStore>(), sp.GetService<ICurrentTenant>()));
 
         // Register the concrete resolver once per scope and map the interface to
         // it, so the delegation-aware decorator (AddDelegation) and the

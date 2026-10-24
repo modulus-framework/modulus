@@ -1,3 +1,5 @@
+using Modulus.Core.Abstractions;
+
 namespace Modulus.Authorization.Grants;
 
 /// <summary>
@@ -10,18 +12,29 @@ namespace Modulus.Authorization.Grants;
 /// request lifetime. The underlying store is injected by concrete type to avoid
 /// circular dependency with the interface registration.
 /// </summary>
+/// <remarks>
+/// The memo key includes the ambient company and its lineage (<see cref="ICurrentTenant"/>). Grants differ per company, so a
+/// request that changes company (or enters the host context) must not reuse the grants read for the earlier company.
+/// </remarks>
 public sealed class CachedPermissionGrantStore : IPermissionGrantStore
 {
     private readonly IPermissionGrantStore _inner;
+    private readonly ICurrentTenant? _tenant;
     private readonly Dictionary<string, IReadOnlyCollection<PermissionGrant>> _cache = [];
 
     /// <summary>Constructor for InMemory store wrapping.</summary>
-    public CachedPermissionGrantStore(InMemoryPermissionGrantStore inner)
-        => _inner = inner;
+    public CachedPermissionGrantStore(InMemoryPermissionGrantStore inner, ICurrentTenant? tenant = null)
+    {
+        _inner = inner;
+        _tenant = tenant;
+    }
 
     /// <summary>Generic constructor for any IPermissionGrantStore implementation.</summary>
-    public CachedPermissionGrantStore(IPermissionGrantStore inner)
-        => _inner = inner;
+    public CachedPermissionGrantStore(IPermissionGrantStore inner, ICurrentTenant? tenant = null)
+    {
+        _inner = inner;
+        _tenant = tenant;
+    }
 
     public async Task<IReadOnlyCollection<PermissionGrant>> GetGrantsAsync(PrincipalGrantQuery principal, CancellationToken ct = default)
     {
@@ -50,14 +63,23 @@ public sealed class CachedPermissionGrantStore : IPermissionGrantStore
     }
 
     /// <summary>
-    /// Creates a deterministic cache key from the principal's identity
-    /// (user id + sorted roles). Same principal always produces the same key.
+    /// Creates a deterministic cache key from the ambient company lineage, then the principal's identity
+    /// (user id + sorted roles). Same principal in the same company always produces the same key.
     /// </summary>
-    private static string CacheKey(PrincipalGrantQuery principal)
+    private string CacheKey(PrincipalGrantQuery principal)
     {
         // User ID is the primary key; roles are secondary and order-independent
         var userId = principal.UserId?.ToString() ?? "";
         var rolesPart = string.Join("|", principal.Roles.OrderBy(r => r));
-        return $"{userId}:{rolesPart}";
+        return $"{CompanyKey()}#{userId}:{rolesPart}";
+    }
+
+    private string CompanyKey()
+    {
+        if (_tenant is null)
+            return "";
+        if (_tenant.IsHost)
+            return "host";
+        return string.Join(",", _tenant.Lineage);
     }
 }
