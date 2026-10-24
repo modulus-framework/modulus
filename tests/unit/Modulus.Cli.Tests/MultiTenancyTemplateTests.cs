@@ -27,13 +27,10 @@ public sealed class MultiTenancyTemplateTests
     [Fact]
     public void The_option_needs_an_api_host_with_the_local_token_server()
     {
-        NewAppCommand.ResolveMultiTenancy(true, AppKind.Api, "openiddict").Should().BeTrue();
-        NewAppCommand.ResolveMultiTenancy(false, AppKind.WebAppApi, "none").Should().BeFalse();
+        NewAppCommand.ResolveMultiTenancy(true, "openiddict").Should().BeTrue();
+        NewAppCommand.ResolveMultiTenancy(false, "none").Should().BeFalse();
+        var external = () => NewAppCommand.ResolveMultiTenancy(true, "keycloak");
 
-        var split = () => NewAppCommand.ResolveMultiTenancy(true, AppKind.WebAppApi, "openiddict");
-        var external = () => NewAppCommand.ResolveMultiTenancy(true, AppKind.Api, "keycloak");
-
-        split.Should().Throw<ArgumentException>().WithMessage("*--kind api*");
         external.Should().Throw<ArgumentException>().WithMessage("*--auth openiddict*");
     }
 
@@ -165,5 +162,70 @@ public sealed class MultiTenancyTemplateTests
         {
             dir.Delete(recursive: true);
         }
+    }
+
+    [Fact]
+    public void The_company_administration_page_calls_the_tenant_admin_routes()
+    {
+        var model = Model();
+
+        _engine.Render("app/CompanyAdminApiClient.Web", model).Should().Contain("/api/tenancy/tenants")
+            .And.Contain("/status").And.Contain("/seats").And.Contain("/members").And.Contain("/parent");
+        _engine.Render("app/CompanyAdminModel.Web", model).Should().Contain("class CompaniesModel")
+            .And.Contain("tenants:manage");
+        _engine.Render("app/CompanyAdmin.Web.cshtml", model).Should()
+            .Contain("@model Shop.Web.Pages.Admin.CompaniesModel");
+    }
+
+    [Fact]
+    public void The_business_audit_page_searches_the_company_entries_and_pages_by_number()
+    {
+        var model = Model();
+
+        _engine.Render("app/BusinessAuditApiClient.Web", model).Should().Contain("/api/audit/business")
+            .And.Contain("pageSize");
+        var page = _engine.Render("app/BusinessAuditModel.Web", model);
+        page.Should().Contain("PageNumber").And.Contain("audit:view");
+        _engine.Render("app/BusinessAudit.Web.cshtml", model).Should()
+            .Contain("@model Shop.Web.Pages.Admin.BusinessAuditModel");
+    }
+
+    [Fact]
+    public void The_admin_clients_the_pages_resolve_are_registered()
+    {
+        var model = Model();
+
+        var registrations = _engine.Render("app/ApiClientExtensions.Web", model);
+
+        registrations.Should().Contain("AddBffGatewayClient<AuditApiClient>()")
+            .And.Contain("AddBffGatewayClient<BusinessAuditApiClient>()")
+            .And.Contain("AddBffGatewayClient<RoleAdminApiClient>()")
+            .And.Contain("AddBffGatewayClient<CompanyAdminApiClient>()");
+    }
+
+    [Fact]
+    public void The_branch_picker_reaches_the_api_through_the_gateway_as_X_Branch_Id()
+    {
+        var model = Model();
+
+        _engine.Render("app/BranchApiClient.Web", model).Should().Contain("/api/org/branches");
+        _engine.Render("app/BranchModel.Web", model).Should().Contain("BffGatewayHandler.BranchCookie")
+            .And.Contain("Guid.TryParse");
+        _engine.Render("app/Branch.Web.cshtml", model).Should().Contain("@model Shop.Web.Pages.BranchModel");
+        _engine.Render("app/BffGatewayHandler.Web", model).Should().Contain("\"X-Branch-Id\"")
+            .And.Contain("\"modulus.branch\"");
+    }
+
+    [Fact]
+    public void The_company_audit_summary_page_shows_six_fields_and_calls_the_summary_route()
+    {
+        var model = Model();
+
+        _engine.Render("app/CompanyAuditApiClient.Web", model).Should().Contain("/api/audit/company-summary");
+        var page = _engine.Render("app/CompanyAuditModel.Web", model);
+        page.Should().Contain("audit:company-summary:view").And.Contain("CompanyAuditRow");
+        _engine.Render("app/CompanyAudit.Web.cshtml", model).Should()
+            .Contain("@model Shop.Web.Pages.Admin.CompanyAuditModel")
+            .And.Contain("row.ActorName");
     }
 }

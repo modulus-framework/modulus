@@ -1,9 +1,8 @@
 using Microsoft.Extensions.DependencyInjection;
 {{ if use_auth }}using {{ root_namespace }}.Web.Security;
 {{ end }}using Modulus.Platform.Http;
-{{ if !no_example }}using {{ root_namespace }}.Web.Services.ApiClients;
-{{ end }}{{ if no_example && auth == "openiddict" }}using {{ root_namespace }}.Web.Services.ApiClients;
-{{ end }}
+using {{ root_namespace }}.Web.Services.ApiClients;
+
 namespace {{ root_namespace }}.Web.Services;
 
 /// <summary>
@@ -25,10 +24,29 @@ public static class ApiClientExtensions
         services.AddModulusHttpClient<{{ example_entity }}ApiClient>();
 {{~ end ~}}
 {{~ end ~}}
+{{~ if use_auth ~}}
+        services.AddBffGatewayClient<SettingsApiClient>();
+        services.AddBffGatewayClient<AuditApiClient>();
+        services.AddBffGatewayClient<BusinessAuditApiClient>();
+        services.AddBffGatewayClient<CompanyAuditApiClient>();
+        services.AddBffGatewayClient<RoleAdminApiClient>();
+{{~ else ~}}
+        services.AddModulusHttpClient<SettingsApiClient>();
+        services.AddModulusHttpClient<AuditApiClient>();
+        services.AddModulusHttpClient<BusinessAuditApiClient>();
+        services.AddModulusHttpClient<CompanyAuditApiClient>();
+        services.AddModulusHttpClient<RoleAdminApiClient>();
+{{~ end ~}}
 {{~ if auth == "openiddict" ~}}
         services.AddBffGatewayClient<NavigationMenuClient>();
         services.AddBffGatewayClient<UserAdminApiClient>();
         services.AddBffGatewayClient<PasskeyApiClient>();
+        services.AddBffGatewayClient<ProfileApiClient>();
+{{~ if multi_tenancy ~}}
+        services.AddBffGatewayClient<CompanyApiClient>();
+        services.AddBffGatewayClient<CompanyAdminApiClient>();
+        services.AddBffGatewayClient<BranchApiClient>();
+{{~ end ~}}
         services.AddModulusHttpClient<PasskeyLoginClient>().ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler { UseCookies = false });
 {{~ end ~}}
 

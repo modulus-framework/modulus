@@ -1,0 +1,46 @@
+@page
+@model {{ root_namespace }}.Web.Pages.BranchModel
+@{
+    ViewData["Title"] = "Branches";
+}
+
+<h1>Branches</h1>
+
+@if (Model.Message is not null)
+{
+    <p role="status">@Model.Message</p>
+}
+
+@if (Model.Branches.Count == 0)
+{
+    <p>No branch is available to you. Ask an administrator to give you an organizational unit in your scope.</p>
+}
+else
+{
+    <table>
+        <thead>
+            <tr><th>Branch</th><th>Kind</th><th>Acting in</th><th>Choose</th></tr>
+        </thead>
+        <tbody>
+        @foreach (var branch in Model.Branches)
+        {
+            var current = Model.Current == branch.Id;
+            <tr>
+                <td>@branch.Name <code>@branch.Code</code></td>
+                <td>@branch.Kind</td>
+                <td>@(current ? "Yes" : "")</td>
+                <td>
+                    <form method="post" asp-page-handler="Switch">
+                        <input type="hidden" name="branchId" value="@branch.Id" />
+                        <button type="submit" disabled="@current">Use this branch</button>
+                    </form>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}
+
+<form method="post" asp-page-handler="Clear">
+    <button type="submit">Stop choosing a branch</button>
+</form>

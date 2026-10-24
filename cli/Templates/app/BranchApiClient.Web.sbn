@@ -1,0 +1,26 @@
+using Microsoft.Extensions.Configuration;
+
+namespace {{ root_namespace }}.Web.Services.ApiClients;
+
+/// <summary>
+/// The branches the caller may select (<c>/api/org/branches</c>), reached through the BFF gateway so the browser's session carries the
+/// signed-in person's token. The list only offers choices; the API checks every request's branch against the caller's scope.
+/// </summary>
+public sealed class BranchApiClient(HttpClient http, IConfiguration configuration)
+{
+    private const string BaseRoute = "/api/org/branches";
+
+    private readonly HttpClient _http = Configure(http, configuration);
+
+    private static HttpClient Configure(HttpClient http, IConfiguration configuration)
+    {
+        var baseUrl = configuration["Bff:BaseUrl"] ?? configuration["Api:BaseUrl"] ?? "http://localhost:5180";
+        http.BaseAddress = new Uri($"{baseUrl.TrimEnd('/')}/");
+        return http;
+    }
+
+    public Task<HttpResponseMessage> ListAsync(CancellationToken ct) => _http.GetAsync(BaseRoute, ct);
+}
+
+/// <summary>One branch (organizational unit) the caller may select.</summary>
+public sealed record BranchChoice(Guid Id, string Code, string Name, string Kind);

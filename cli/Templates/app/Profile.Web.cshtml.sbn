@@ -1,0 +1,38 @@
+@page
+@model {{ root_namespace }}.Web.Pages.ProfileModel
+@{
+    ViewData["Title"] = "My profile";
+}
+
+<h1>My profile</h1>
+
+@if (Model.Message is not null)
+{
+    <p role="status">@Model.Message</p>
+}
+
+@if (Model.Current is not null)
+{
+    <p>
+        Signed in as <strong>@Model.Current.Email</strong>
+        @(Model.Current.EmailConfirmed ? "" : "(address not confirmed)")
+    </p>
+
+    <form method="post" asp-page-handler="Save">
+        <p><label>Display name <input asp-for="Input.DisplayName" /></label></p>
+        <p><label>Language, as a BCP 47 tag (for example en-GB) <input asp-for="Input.Language" /></label></p>
+        <p><label>Time zone (for example Europe/London) <input asp-for="Input.TimeZone" /></label></p>
+        <p><label>Contact phone <input asp-for="Input.PhoneNumber" /></label></p>
+        <button type="submit">Save profile</button>
+    </form>
+
+    <h2>Change email address</h2>
+    <p>A link goes to the new address. The address changes only when that link is opened.</p>
+    <form method="post" asp-page-handler="Email">
+        <p><label>New email address <input asp-for="NewEmail" type="email" /></label></p>
+        <button type="submit">Send link to the new address</button>
+    </form>
+
+{{ if multi_tenancy }}    <p><a asp-page="/Company">Companies</a></p>
+{{ end }}
+}

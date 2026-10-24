@@ -319,6 +319,98 @@ public class AccountController<TUser>(
         return NoContent();
     }
 
+    /// <summary>The caller's own profile: name, language, time zone, phone and the address on the account.</summary>
+    [HttpGet("profile")]
+    [HttpGet("/api/account/profile")]
+    [Authorize]
+    public async Task<IActionResult> GetProfileAsync()
+    {
+        var user = await CurrentUserAsync();
+        return user is null ? Unauthorized() : Ok(ProfileView(user));
+    }
+
+    /// <summary>
+    /// Updates the caller's own name, language, time zone and phone. A person changes only their own profile, and the address
+    /// changes only through <c>profile/email</c>.
+    /// </summary>
+    [HttpPut("profile")]
+    [HttpPut("/api/account/profile")]
+    [Authorize]
+    public async Task<IActionResult> UpdateProfileAsync([FromBody] UpdateProfileRequest request)
+    {
+        var user = await CurrentUserAsync();
+        if (user is null)
+            return Unauthorized();
+        if (!ProfileRules.TryNormalize(request.DisplayName, request.Language, request.TimeZone, request.PhoneNumber,
+                out var values, out var errors))
+            return BadRequest(new { errors });
+
+        user.DisplayName = values.DisplayName;
+        user.Language = values.Language;
+        user.TimeZone = values.TimeZone;
+        if (!string.Equals(user.PhoneNumber, values.PhoneNumber, StringComparison.Ordinal))
+        {
+            // A changed number is unconfirmed until the person proves it again.
+            user.PhoneNumber = values.PhoneNumber;
+            user.PhoneNumberConfirmed = false;
+        }
+
+        var result = await userManager.UpdateAsync(user);
+        return result.Succeeded ? Ok(ProfileView(user)) : MapIdentityFailure(result);
+    }
+
+    /// <summary>
+    /// Starts an email change: a one-time link goes to the <em>new</em> address, and the change completes only when that link is used
+    /// (<c>profile/email/confirm</c>). The answer is the same whether or not the address is taken, so this does not show which addresses
+    /// have accounts. The mail is sent inline (not through the queue, which only mails stored addresses), so the caller is signed in.
+    /// </summary>
+    [HttpPost("profile/email")]
+    [HttpPost("/api/account/profile/email")]
+    [Authorize]
+    public async Task<IActionResult> RequestEmailChangeAsync(
+        [FromBody] ChangeEmailRequest request,
+        [FromServices] IIdentityEmailSender emailSender,
+        CancellationToken ct)
+    {
+        var user = await CurrentUserAsync();
+        if (user is null)
+            return Unauthorized();
+        var address = ProfileRules.NormalizeEmail(request.NewEmail);
+        if (address is null)
+            return BadRequest(new { errors = new Dictionary<string, string[]> { ["newEmail"] = ["Enter a valid email address."] } });
+
+        if (!string.Equals(address, user.Email, StringComparison.OrdinalIgnoreCase) && await userManager.FindByEmailAsync(address) is null)
+        {
+            var token = await userManager.GenerateChangeEmailTokenAsync(user, address);
+            await emailSender.SendEmailChangeEmailAsync(address, token, ct);
+        }
+
+        return Accepted(new { message = "If the address can be used, a link has been sent to it." });
+    }
+
+    /// <summary>Completes an email change with the link's token. The token works only for this account and this address.</summary>
+    [HttpPost("profile/email/confirm")]
+    [HttpPost("/api/account/profile/email/confirm")]
+    [Authorize]
+    public async Task<IActionResult> ConfirmEmailChangeAsync([FromBody] ConfirmEmailChangeRequest request)
+    {
+        var user = await CurrentUserAsync();
+        if (user is null)
+            return Unauthorized();
+        var address = ProfileRules.NormalizeEmail(request.NewEmail);
+        if (address is null || string.IsNullOrEmpty(request.Token) || await userManager.FindByEmailAsync(address) is not null)
+            return InvalidEmailOrToken();
+
+        var result = await userManager.ChangeEmailAsync(user, address, request.Token);
+        return result.Succeeded ? Ok(ProfileView(user)) : MapIdentityFailure(result);
+    }
+
+    private async Task<TUser?> CurrentUserAsync()
+        => CallerId() is { } id ? await userManager.FindByIdAsync(id.ToString()) : null;
+
+    private static ProfileResponse ProfileView(TUser user) => new(
+        user.DisplayName, user.Language, user.TimeZone, user.PhoneNumber, user.Email, user.EmailConfirmed);
+
     private Guid? CallerId()
         => Guid.TryParse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("sub")?.Value, out var id) ? id : null;
 
@@ -380,6 +472,54 @@ public sealed class TwoFactorDisableRequest
 {
     /// <summary>The account's password.</summary>
     public string? Password { get; set; }
+}
+
+/// <summary>Request body for <c>PUT account/profile</c>. Every field is optional; an empty value clears it.</summary>
+public sealed class UpdateProfileRequest
+{
+    /// <summary>The name the person shows to others.</summary>
+    public string? DisplayName { get; set; }
+
+    /// <summary>The language as a BCP 47 tag, for example <c>en-GB</c>.</summary>
+    public string? Language { get; set; }
+
+    /// <summary>The time zone as an IANA or Windows id, for example <c>Europe/London</c>.</summary>
+    public string? TimeZone { get; set; }
+
+    /// <summary>The contact phone number.</summary>
+    public string? PhoneNumber { get; set; }
+}
+
+/// <summary>The caller's profile (<c>GET account/profile</c>).</summary>
+/// <param name="DisplayName">The chosen name, if any.</param>
+/// <param name="Language">The BCP 47 language tag, if any.</param>
+/// <param name="TimeZone">The time zone id, if any.</param>
+/// <param name="PhoneNumber">The contact phone number, if any.</param>
+/// <param name="Email">The address on the account.</param>
+/// <param name="EmailConfirmed">Whether the address has been confirmed.</param>
+public sealed record ProfileResponse(
+    string? DisplayName,
+    string? Language,
+    string? TimeZone,
+    string? PhoneNumber,
+    string? Email,
+    bool EmailConfirmed);
+
+/// <summary>Request body for <c>profile/email</c>: the address the account should move to.</summary>
+public sealed class ChangeEmailRequest
+{
+    /// <summary>The new address.</summary>
+    public string? NewEmail { get; set; }
+}
+
+/// <summary>Request body for <c>profile/email/confirm</c>.</summary>
+public sealed class ConfirmEmailChangeRequest
+{
+    /// <summary>The address the link was sent to.</summary>
+    public string? NewEmail { get; set; }
+
+    /// <summary>The token from the link.</summary>
+    public string? Token { get; set; }
 }
 
 /// <summary>Request body for <c>accept-invitation</c>.</summary>

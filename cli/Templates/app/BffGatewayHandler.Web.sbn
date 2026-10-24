@@ -17,12 +17,28 @@ internal sealed class BffGatewayHandler(IHttpContextAccessor httpContextAccessor
     internal const string CsrfHeader = "X-CSRF";
     internal const string CsrfValue = "1";
 
+    /// <summary>The cookie that holds the company the person chose on the company page (decision 29); the API checks membership.</summary>
+    internal const string CompanyCookie = "modulus.company";
+
+    /// <summary>The header that selects the company upstream (the BFF forwards it; the API checks membership).</summary>
+    internal const string TenantHeader = "X-Tenant-Id";
+
+    /// <summary>The cookie that holds the branch the person chose on the branch page (decision 14). It selects only; the API checks the scope.</summary>
+    internal const string BranchCookie = "modulus.branch";
+
+    /// <summary>The header that selects the branch upstream (the API accepts it only inside the caller's organizational scope).</summary>
+    internal const string BranchHeader = "X-Branch-Id";
+
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
         var context = httpContextAccessor.HttpContext;
         if (context is not null && context.Request.Headers.Cookie.Count > 0)
             request.Headers.TryAddWithoutValidation("Cookie", context.Request.Headers.Cookie.ToString());
         request.Headers.TryAddWithoutValidation(CsrfHeader, CsrfValue);
+        if (context is not null && context.Request.Cookies.TryGetValue(CompanyCookie, out var company) && Guid.TryParse(company, out var companyId))
+            request.Headers.TryAddWithoutValidation(TenantHeader, companyId.ToString("D"));
+        if (context is not null && context.Request.Cookies.TryGetValue(BranchCookie, out var branch) && Guid.TryParse(branch, out var branchId))
+            request.Headers.TryAddWithoutValidation(BranchHeader, branchId.ToString("D"));
 
         var response = await base.SendAsync(request, cancellationToken);
 

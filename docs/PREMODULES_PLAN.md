@@ -1,6 +1,30 @@
 # Premodules plan: identity and auth, audit, settings, profile, tenant management
 
-Status: **plan, not started** (2026-10-23). Each premodule is a framework module that a generated application registers
+## Resume here (state at 2026-10-24)
+
+Branch `company-provisioning-baseline`. This round's work is committed in the commit that introduced this section (see `git log`). Start the next session from that commit.
+
+Done in this round (built, unit-tested, and the generated `webapp+api` app builds with 0 warnings and passes its tests, with and without `--multi-tenancy`):
+
+- Profile (decision 8), company switcher (29), grouped settings (28), companies admin page with members and parent, business audit page, company audit summary (decision 7), branch picker (decision 14). The branch picker is a cookie, the gateway sends `X-Branch-Id`, and the server checks scope.
+- Generator fixes: Settings page braces, unregistered Audit/Roles/BusinessAudit/CompanyAudit clients, a 403-specific message on CRUD writes, `--multi-tenancy` help text, and the round-trip test (chooses a company, opens every admin page).
+- Decision register in the "Decision register" section of this file. Decisions 2, 4, 5, 8 are built; 7 is built with the test gaps listed in its row.
+
+Next, in order:
+
+1. **Decision 6, explicit parent-to-child grant.** Decided, not implemented. Design and acceptance criteria are in the register row. Start with the `CompanyAuthorizationGrant` table (EF, in `Modulus.Authorization.EntityFrameworkCore`), the checks on every parent-to-child member and grant operation (parent permission, child belongs to parent, an active grant for the exact operation, no caching), audit records for create, revoke and modify, and the tests named in the acceptance criteria. Grants that users cannot delegate themselves must be refused.
+2. **Decision 13, Blazor teardown race.** Still investigating. The second thread that changes the subscription list is not found. A regression test waits for a confirmed cause.
+3. **Browser checks** of the generated pages (Users, Roles, Audit, Business audit, Company audit, Settings, Companies, Company, Branch, Profile). Only build and API-level tests exist for them.
+4. **Branch option on the Settings page** (decision 14 follow-up) and a Blazor host equivalent for the new pages.
+5. **Owner and operator items** (decisions 1, 3, 9, 10, 11, 12): no repository work until the people named in the register provide their inputs.
+
+Known gaps to keep in view:
+
+- The identity directory test covers the lookup only; the identity side of the company audit summary is not exercised end to end in a browser.
+- The branch picker is not covered by a generated-app round trip: no org unit is created by the generated tests.
+- The `1.6.0-dev.local` and `1.6.1-dev.local` packages used for verification are local packs in the scratch folder, not published. Clear `~/.nuget/packages/synvro.modulus.*/1.6.0-dev.local` before a re-pack, or a stale copy is restored.
+
+Status: **in progress** (plan 2026-10-23; state in "Resume here" above). Each premodule is a framework module that a generated application registers
 instead of writing its own. "Premodule" here means: the engine (already in the framework), the HTTP API (the endpoints an
 application or UI calls), the screens (in `modulus-ui`), the CLI wiring (`modulus app` / `modulus add-*`), and tests. A premodule is
 done when all five parts exist and its acceptance tests pass in a generated application.
@@ -84,8 +108,7 @@ Roles (2026-10-23, the gate chosen by the team, to be confirmed by the owner):
   deletes them, and shows and sets the permissions when the caller holds `authorization:manage`. Verified: a fresh generated `webapp+api` app
   builds and passes its 15 tests. The page was not driven in a browser.
 
-Still open on this premodule: the built-in administrator role's removal refusal (it needs a rule for which role is built in, an owner
-decision).
+The built-in administrator role's removal refusal is built (`Admin`, owner decision 4): delete and rename answer `409 BUILT_IN_ROLE`.
 
 ## Decisions after the PRD review (2026-10-23)
 
@@ -267,8 +290,29 @@ Pilot: identity-account administration (decision D7). Sign-off needs every item 
 - **Decision 30 (baseline re-application): built.** See "Admin grant for new companies (done, D-10)".
 - **Correction to the note in section 2 about grant visibility.** The "regression" described there (host-level grants invisible inside a
   company) was addressed by the per-company baseline grants of D-10. The generated multi-tenant app passed 11 of 11 on 2026-10-24.
-- **Not started:** profile fields and email confirmation (decision 8), the company switcher for web apps (decision 29), and the grouped
-  settings screen and company-admin summary (decisions 28 and 11, see above).
+- **Decision 8 (profile): API built, screens not built.** `GET` and `PUT account/profile` (display name, language as a BCP 47 tag, time zone
+  as an IANA or Windows id, contact phone on the built-in `PhoneNumber`; a changed phone is unconfirmed). The address changes through
+  `POST account/profile/email`, which mails a one-time link to the new address, and `POST account/profile/email/confirm`, which completes it
+  with the token. A taken address gets the same answer and no mail. The change-email mail is sent inline, not through the queue (the queue
+  mails only stored addresses), so the request is slower for a taken address; the answer is identical. Upgrade: the columns `DisplayName`,
+  `Language` and `TimeZone` on the user table need a migration. Tests: `ProfileTests` (10 cases, including the three invalid-value rows), net8.0 and net10.0.
+  Not built: the profile page and the change-email confirmation page in the generated web host.
+- **Decision 29 (company switcher): built in the API and the generated web host.** `GET account/companies` (`MapModulusCompanySwitcher`) lists the
+  caller's active memberships (closed companies left out, suspended ones listed read-only) and marks the company in the request. The list is a
+  convenience: each request is still checked against membership by `TenantMiddleware`. Tests: `CompanySwitcherTests` (4), net8.0 and net10.0.
+  The generated Razor host has a company page (`/company`, multi-tenancy only): it sets a `modulus.company` cookie that `BffGatewayHandler` turns into
+  `X-Tenant-Id`, and accepts only a company the caller is listed for. The round-trip test chooses a company first. Not built: a Blazor host page, and
+  data-scope checks beyond membership and the write guard.
+- **Decision 28 (grouped settings screen): built in the generated web host.** Rows are grouped under their definition group (ungrouped under General, last).
+  The Settings page never registered its typed client (`SettingsApiClient`), so it could not resolve it at runtime; the registration is fixed in
+  `ApiClientExtensions` for every Razor host.
+- **Decision 12 and 29 (company switcher UI): built in the generated web host (multi-company apps).** The company page lists the caller's companies,
+  chooses one (a cookie that the BFF gateway turns into `X-Tenant-Id`) or clears the choice. Only a listed company can be chosen, and the API checks
+  membership on every request. The per-request data-scope checks beyond membership are the existing tenant filter and write guard, not a new check.
+- **Profile pages (decision 8): built in the generated web host (openiddict apps).** `Profile` (name, language, time zone, phone, and the change-email
+  form) and `ConfirmEmailChange` (the link target; the change happens on POST, not on GET). The API routes are also served under `/api/account/profile`,
+  because the BFF forwards only `/api`.
+- **Not started:** the company-admin audit summary (decision 11, blocked on the field list).
 
 ## Remaining work and limitations (2026-10-24)
 
@@ -298,7 +342,9 @@ This section is the single list of what is still open after the premodule 1 to 5
 
 ### Buildable gaps
 
-- **Companies page in web apps:** needs a company switcher, because `--multi-tenancy` is refused for web apps.
+- **Companies admin page in web apps (closed 2026-10-24):** `/Admin/Companies` (`tenants:manage`) lists, creates, changes the status and seat
+  limit of companies through `/api/tenancy/tenants`, and shows and changes a company's members (add, revoke) and its parent company. Its
+  navigation entry was already in the API and now leads to a real page. Multi-company web apps are allowed (decision 29).
 - **Admin grant for new companies (done, D-10):** `POST /api/tenancy/tenants` applies the configured baseline to the new company and, when
   `AdministratorUserId` is given, makes that account a member. An invalid baseline answers 500 `BASELINE_INVALID` and keeps the company with no
   grants. Closed (2026-10-24, decision 30): `POST /api/tenancy/tenants/{id}/baseline` re-applies the baseline to an existing company and answers
@@ -306,8 +352,8 @@ This section is the single list of what is still open after the premodule 1 to 5
   audited (`company.provisioned`, with the count of roles granted). A closed company does not resolve, so it answers 404. The designated
   administrator must be an account in the identity store (`IUserRoleDirectory`); without a registered identity store the company is refused,
   since the account cannot be verified. Tests: `TenantCompanyProvisioningTests` (7 in total).
-- **Business audit log viewer UI (premodule 4):** the API is built (`GET /api/audit/business`, company-scoped, `audit:view`) and wired into
-  generated apps; no page reads it yet. The security viewer covers the security chain only.
+- **Business audit log viewer UI (premodule 4, closed 2026-10-24):** `/Admin/BusinessAudit` (`audit:view`) searches the company's entries by
+  entity, actor, action and time, and pages them. Navigation entry added. The security viewer covers the security chain only.
 - **Premodule 5:** grouping settings by definition group is open (definitions carry no group field).
   The EF settings store is wired into generated multi-tenant apps (`AddEfCoreSettingStore`, values in the tenant store); single-tenant apps
   stay in memory. Closed: `SettingsStoreWiringTests` (3) and a generated multi-tenant app builds with 0 warnings and passes 11 of 11. Open:
@@ -457,12 +503,10 @@ that applies in the children (the subtree grant), the rule that lets a parent ad
 Companies page. The generated multi-tenant app builds and passes its 11 tests on the framework at local.8.
 
 Progress (2026-10-24): generated multi-tenant API apps now map the company routes (`AddModulusTenantAdmin`, `MapModulusTenantAdmin`, a
-Companies menu entry for `tenants:manage`). Not built: the Companies page. `--multi-tenancy` is refused for web apps (no company switcher), so a
-page would have no host to live in; the switcher is the prerequisite. A regression found while testing: since commit b92876b (2026-09-22) the
-EF grant store shows a company only the grants with its own tenant id, so grants seeded at host level (the `Admin` role's permissions, the first
-administrator's grant) are invisible inside a company and every company request is refused (`403`). The generated multi-tenant app's round trip
-and permission tests fail for this reason. Decision needed: seed the role grants per company (the B4 model), or let host grants apply to every
-company (a change to a security filter). Until then the multi-tenant generated app fails two of its tests.
+Companies menu entry for `tenants:manage`). The Companies page is built (2026-10-24, see the buildable gaps). Earlier, the EF grant store
+showed a company only the grants with its own tenant id, so host-level grants were invisible inside a company and company requests were refused
+(`403`), failing the generated multi-tenant app's round-trip and permission tests. On 2026-10-24 the generated multi-tenant app passes 17 of 17,
+including the round trip through a chosen company, so this looks resolved. Confirm it against the grant store before relying on it.
 
 
 Progress (2026-10-23): the company administration API is built in `Modulus.MultiTenancy.EntityFrameworkCore` (`MapModulusTenantAdmin<TTenant,TMembership,TDataStore>()`,
@@ -567,6 +611,34 @@ settings store in multi-tenant apps. Not built: grouping by definition group (th
 - Not yet found: the second thread. Next step: capture the thread id in the failing test's teardown and the thread that last changed
   the list (a test-only subscriber, or a logging decorator on `IDomEventListener`).
 - Acceptance (owner record): ten consecutive clean full runs, plus a regression test for the confirmed cause.
+
+## Decision register (owner decisions, 2026-10-24)
+
+The owner decided the 14 open items. Status is what the repository shows; external dependencies are marked as such.
+
+| # | Item | Decision | Status |
+|---|---|---|---|
+| 1 | Legal retention minimum (D8) | Unset until counsel confirms in writing | Open (counsel) |
+| 2 | Security audit retention | Off by default; operator enables after approval; no automatic deletion before that | Built (`Security:Retention:Enabled` = false) |
+| 3 | Pilot sign-off (D7) | Not signed off; define acceptance criteria, run tests, review evidence, then sign off | Open (owner) |
+| 4 | Built-in administrator role | `Admin`, protected against deletion and rename | Built (`BUILT_IN_ROLE`, `RoleAdminEndpoints`) |
+| 5 | `audit:security:view` default | No role by default; an operator grants it | Built (no default grant) |
+| 6 | Parent-administrator authority | DECIDED 2026-10-24: a persisted `CompanyAuthorizationGrant` per parent, child, principal and operation (`ManageMembers`, `ManageGrants`); revoked, not deleted; no caching; deny on any failed check. Acceptance: no grant, a grant for another child, `ManageMembers` without `ManageGrants` for grant operations, a revoked grant, or missing parent permission each deny; a valid relationship, parent permission and matching active grant allow | Not implemented: needs the table, the checks on every parent-to-child member and grant operation, the audit records and the automated tests above |
+| 7 | Company-admin audit summary | Six fields: time, category, action, outcome, actor display name, target; no raw details, hashes or host events | Built: `GET /api/audit/company-summary` (`audit:company-summary:view`, no default grant), `/Admin/CompanyAudit` in the web host. Actor names come from `IUserDisplayNameDirectory` (identity implementation, host context, display name only, one batch per page). An account that cannot be resolved, or has no display name, shows as "Unknown user"; the page still returns. The chain keeps user ids only; names are read at display time. Tests: `CompanyAuditSummaryTests` (5, Platform), `UserDisplayNameDirectoryTests` (3, Identity: batch, missing and nameless accounts, duplicates). Authorization on the endpoint is covered by the generated apps' security probe suite (`401`/`403` for every guarded endpoint). Company isolation: the endpoint takes no company id; it reads the caller's own chain only |
+| 8 | Profile fields | Display name, language, time zone, phone; email change by confirmed link; no avatar or files in Release 1 | Built in the web host |
+| 9 | OpenBao production evidence | Required before production sign-off; single node is development only | Open (operator) |
+| 10 | SSO, KMS, custodians | OIDC SSO with MFA for OpenBao admins; external KMS auto-unseal if supported, else Shamir shares with at least three separate custodians | Architecture chosen; providers and people not yet confirmed (operator) |
+| 11 | AI platform conformance | Activation blocked until the platform's suite passes against the real connector | Open (platform owner) |
+| 12 | `modulus-ui` publishing line | Target `1.6.1`, after reconciling the local branch and reviewing the `0.9.x` line | Open (release; manual publish) |
+| 13 | Blazor teardown race | Keep the fix as a candidate; do not declare the cause confirmed; find the second thread or a reproducible explanation | Open (investigation) |
+| 14 | Branch selector | Cookie, then gateway header `X-Branch-Id`, validated server-side against the caller's org scope; branches from the org-unit API | Built in multi-company web apps: `/Branch` picker, `GET /api/org/branches` (open units in scope), gateway sends `X-Branch-Id`; the server check is `BranchContextMiddleware`. Settings page branch option not built |
+
+Rules that go with the decisions:
+
+- Items 1, 9, 10 and 11 need external people or systems. The repository does not mark them complete.
+- Item 6: the explicit child grant is checked server-side for every relevant operation.
+- Item 7: actor names and target identifiers show only to users authorized for the company audit summary.
+- Item 14: the cookie selects a branch and grants nothing. Only the server's scope check authorizes it.
 
 ## Open decisions for the owner
 

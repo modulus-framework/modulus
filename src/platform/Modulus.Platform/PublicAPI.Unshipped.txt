@@ -2458,3 +2458,54 @@ Modulus.Settings.SettingView.Group.get -> string?
 Modulus.Settings.SettingView.Group.init -> void
 Modulus.Settings.SettingDefinition.Group.get -> string?
 Modulus.Settings.SettingDefinition.Group.init -> void
+Modulus.MultiTenancy.CompanyChoice
+Modulus.MultiTenancy.CompanyChoice.<Clone>$() -> Modulus.MultiTenancy.CompanyChoice!
+Modulus.MultiTenancy.CompanyChoice.CompanyChoice(System.Guid TenantId, string! TenantSlug, string? DisplayName, string! Status, bool Current) -> void
+Modulus.MultiTenancy.CompanyChoice.Current.get -> bool
+Modulus.MultiTenancy.CompanyChoice.Current.init -> void
+Modulus.MultiTenancy.CompanyChoice.Deconstruct(out System.Guid TenantId, out string! TenantSlug, out string? DisplayName, out string! Status, out bool Current) -> void
+Modulus.MultiTenancy.CompanyChoice.DisplayName.get -> string?
+Modulus.MultiTenancy.CompanyChoice.DisplayName.init -> void
+Modulus.MultiTenancy.CompanyChoice.Equals(Modulus.MultiTenancy.CompanyChoice? other) -> bool
+Modulus.MultiTenancy.CompanyChoice.Status.get -> string!
+Modulus.MultiTenancy.CompanyChoice.Status.init -> void
+Modulus.MultiTenancy.CompanyChoice.TenantId.get -> System.Guid
+Modulus.MultiTenancy.CompanyChoice.TenantId.init -> void
+Modulus.MultiTenancy.CompanyChoice.TenantSlug.get -> string!
+Modulus.MultiTenancy.CompanyChoice.TenantSlug.init -> void
+Modulus.MultiTenancy.CompanySwitcherEndpoints
+override Modulus.MultiTenancy.CompanyChoice.Equals(object? obj) -> bool
+override Modulus.MultiTenancy.CompanyChoice.GetHashCode() -> int
+override Modulus.MultiTenancy.CompanyChoice.ToString() -> string!
+static Modulus.MultiTenancy.CompanyChoice.operator !=(Modulus.MultiTenancy.CompanyChoice? left, Modulus.MultiTenancy.CompanyChoice? right) -> bool
+static Modulus.MultiTenancy.CompanyChoice.operator ==(Modulus.MultiTenancy.CompanyChoice? left, Modulus.MultiTenancy.CompanyChoice? right) -> bool
+static Modulus.MultiTenancy.CompanySwitcherEndpoints.MapModulusCompanySwitcher(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! path = "/api/account/companies") -> Microsoft.AspNetCore.Builder.RouteHandlerBuilder!
+Modulus.AuditLogging.Security.CompanyAuditSummaryEndpoints
+Modulus.AuditLogging.Security.CompanyAuditSummaryRow
+Modulus.AuditLogging.Security.CompanyAuditSummaryRow.<Clone>$() -> Modulus.AuditLogging.Security.CompanyAuditSummaryRow!
+Modulus.AuditLogging.Security.CompanyAuditSummaryRow.Action.get -> string!
+Modulus.AuditLogging.Security.CompanyAuditSummaryRow.Action.init -> void
+Modulus.AuditLogging.Security.CompanyAuditSummaryRow.ActorName.get -> string!
+Modulus.AuditLogging.Security.CompanyAuditSummaryRow.ActorName.init -> void
+Modulus.AuditLogging.Security.CompanyAuditSummaryRow.Category.get -> string!
+Modulus.AuditLogging.Security.CompanyAuditSummaryRow.Category.init -> void
+Modulus.AuditLogging.Security.CompanyAuditSummaryRow.CompanyAuditSummaryRow(System.DateTimeOffset OccurredAt, string! Category, string! Action, string! Outcome, string! ActorName, string? Target) -> void
+Modulus.AuditLogging.Security.CompanyAuditSummaryRow.Deconstruct(out System.DateTimeOffset OccurredAt, out string! Category, out string! Action, out string! Outcome, out string! ActorName, out string? Target) -> void
+Modulus.AuditLogging.Security.CompanyAuditSummaryRow.Equals(Modulus.AuditLogging.Security.CompanyAuditSummaryRow? other) -> bool
+Modulus.AuditLogging.Security.CompanyAuditSummaryRow.OccurredAt.get -> System.DateTimeOffset
+Modulus.AuditLogging.Security.CompanyAuditSummaryRow.OccurredAt.init -> void
+Modulus.AuditLogging.Security.CompanyAuditSummaryRow.Outcome.get -> string!
+Modulus.AuditLogging.Security.CompanyAuditSummaryRow.Outcome.init -> void
+Modulus.AuditLogging.Security.CompanyAuditSummaryRow.Target.get -> string?
+Modulus.AuditLogging.Security.CompanyAuditSummaryRow.Target.init -> void
+const Modulus.AuditLogging.Security.CompanyAuditSummaryEndpoints.ViewPermission = "audit:company-summary:view" -> string!
+override Modulus.AuditLogging.Security.CompanyAuditSummaryRow.Equals(object? obj) -> bool
+override Modulus.AuditLogging.Security.CompanyAuditSummaryRow.GetHashCode() -> int
+override Modulus.AuditLogging.Security.CompanyAuditSummaryRow.ToString() -> string!
+static Modulus.AuditLogging.Security.CompanyAuditSummaryEndpoints.AccountIds(System.Collections.Generic.IEnumerable<Modulus.AuditLogging.Security.SecurityAuditRecord!>! records) -> System.Collections.Generic.IReadOnlyCollection<System.Guid>!
+static Modulus.AuditLogging.Security.CompanyAuditSummaryEndpoints.AddModulusCompanyAuditSummary(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.AuditLogging.Security.CompanyAuditSummaryEndpoints.MapModulusCompanyAuditSummary(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! prefix = "/api/audit/company-summary") -> Microsoft.AspNetCore.Routing.RouteGroupBuilder!
+static Modulus.AuditLogging.Security.CompanyAuditSummaryEndpoints.Summarize(System.Collections.Generic.IEnumerable<Modulus.AuditLogging.Security.SecurityAuditRecord!>! records, System.Collections.Generic.IReadOnlyDictionary<System.Guid, string!>! displayNames) -> System.Collections.Generic.IReadOnlyList<Modulus.AuditLogging.Security.CompanyAuditSummaryRow!>!
+static Modulus.AuditLogging.Security.CompanyAuditSummaryRow.operator !=(Modulus.AuditLogging.Security.CompanyAuditSummaryRow? left, Modulus.AuditLogging.Security.CompanyAuditSummaryRow? right) -> bool
+static Modulus.AuditLogging.Security.CompanyAuditSummaryRow.operator ==(Modulus.AuditLogging.Security.CompanyAuditSummaryRow? left, Modulus.AuditLogging.Security.CompanyAuditSummaryRow? right) -> bool
+const Modulus.AuditLogging.Security.CompanyAuditSummaryEndpoints.UnknownUser = "Unknown user" -> string!

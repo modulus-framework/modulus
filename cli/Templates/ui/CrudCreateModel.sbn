@@ -24,6 +24,12 @@ public class CreateModel({{ entity_name }}ApiClient api) : {{ entity_name }}Form
                 return Page();
             }
         }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Forbidden)
+        {
+            // The API refused the call itself: no permission, or (multi-company apps) no company chosen for the write.
+            ModelState.AddModelError(string.Empty, "You do not have permission to make this change, or no company is selected. In a multi-company app, choose the company first.");
+            return Page();
+        }
         catch (HttpRequestException)
         {
             ModelState.AddModelError(string.Empty, "The API could not be reached.");

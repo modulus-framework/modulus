@@ -1,0 +1,79 @@
+using System.Text.Json;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
+using {{ root_namespace }}.Web.Services.ApiClients;
+
+namespace {{ root_namespace }}.Web.Pages;
+
+/// <summary>
+/// The signed-in person's own profile (premodule 3): name, language, time zone and phone, and the address change. The API serves and checks
+/// every change, and only for the caller's own account; the page shows the API's answer.
+/// </summary>
+[Authorize]
+public sealed class ProfileModel(ProfileApiClient profile) : PageModel
+{
+    private static readonly JsonSerializerOptions s_json = new(JsonSerializerDefaults.Web);
+
+    public ProfileView? Current { get; private set; }
+
+    public string? Message { get; private set; }
+
+    [BindProperty]
+    public ProfileInput Input { get; set; } = new();
+
+    [BindProperty]
+    public string? NewEmail { get; set; }
+
+    public async Task OnGetAsync(CancellationToken ct)
+    {
+        Message = TempData["Message"] as string;
+        using var response = await profile.GetAsync(ct);
+        if (!response.IsSuccessStatusCode)
+        {
+            Message = await ProfileApiClient.RefusalAsync(response, ct);
+            return;
+        }
+
+        Current = await response.Content.ReadFromJsonAsync<ProfileView>(s_json, ct);
+        if (Current is not null)
+        {
+            Input = new ProfileInput
+            {
+                DisplayName = Current.DisplayName,
+                Language = Current.Language,
+                TimeZone = Current.TimeZone,
+                PhoneNumber = Current.PhoneNumber,
+            };
+        }
+    }
+
+    public async Task<IActionResult> OnPostSaveAsync(CancellationToken ct)
+    {
+        using var response = await profile.UpdateAsync(
+            new ProfileUpdate(Input.DisplayName, Input.Language, Input.TimeZone, Input.PhoneNumber), ct);
+        TempData["Message"] = response.IsSuccessStatusCode ? "Profile saved." : await ProfileApiClient.RefusalAsync(response, ct);
+        return RedirectToPage();
+    }
+
+    public async Task<IActionResult> OnPostEmailAsync(CancellationToken ct)
+    {
+        using var response = await profile.RequestEmailChangeAsync(NewEmail ?? "", ct);
+        TempData["Message"] = response.IsSuccessStatusCode
+            ? "If the address can be used, a link has been sent to it. The address changes when you open that link."
+            : await ProfileApiClient.RefusalAsync(response, ct);
+        return RedirectToPage();
+    }
+
+    /// <summary>The editable fields. An empty field clears it.</summary>
+    public sealed class ProfileInput
+    {
+        public string? DisplayName { get; set; }
+
+        public string? Language { get; set; }
+
+        public string? TimeZone { get; set; }
+
+        public string? PhoneNumber { get; set; }
+    }
+}

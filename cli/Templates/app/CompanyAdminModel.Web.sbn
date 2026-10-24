@@ -1,0 +1,164 @@
+using System.Net;
+using System.Text.Json;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
+using {{ root_namespace }}.Web.Services.ApiClients;
+
+namespace {{ root_namespace }}.Web.Pages.Admin;
+
+/// <summary>
+/// The company administration page (<c>tenants:manage</c>): lists the companies, creates one, and changes its status and seat limit. Every
+/// change is a call to the API, which checks the permission and the rules (a suspended company is read-only, a closed one does not resolve).
+/// The page shows the API's answer and decides nothing itself.
+/// </summary>
+[Authorize]
+public sealed class CompaniesModel(CompanyAdminApiClient companies) : PageModel
+{
+    /// <summary>How long a company on trial gets when it is put on trial from this page.</summary>
+    private const int TrialDays = 30;
+
+    private static readonly JsonSerializerOptions s_json = new(JsonSerializerDefaults.Web);
+
+    [BindProperty(SupportsGet = true)]
+    public string? Search { get; set; }
+
+    public IReadOnlyList<CompanyAdminRow> Rows { get; private set; } = [];
+
+    public int Total { get; private set; }
+
+    /// <summary>The company whose members are shown (its row's "Members" link).</summary>
+    [BindProperty(SupportsGet = true)]
+    public Guid? Company { get; set; }
+
+    public CompanyAdminRow? Selected => Company is { } id ? Rows.FirstOrDefault(r => r.Id == id) : null;
+
+    public IReadOnlyList<CompanyMemberRow> Members { get; private set; } = [];
+
+    public string? Message { get; private set; }
+
+    public async Task OnGetAsync(CancellationToken ct)
+    {
+        Message = TempData["Message"] as string;
+        using var response = await companies.ListAsync(Search, ct);
+        if (response.IsSuccessStatusCode)
+        {
+            var page = await response.Content.ReadFromJsonAsync<CompanyAdminPage>(s_json, ct);
+            Rows = page?.Items ?? [];
+            Total = page?.Total ?? 0;
+        }
+        else
+        {
+            Message = Explain(response.StatusCode);
+        }
+
+        if (Company is { } id)
+        {
+            using var members = await companies.ListMembersAsync(id, ct);
+            if (members.IsSuccessStatusCode)
+                Members = await members.Content.ReadFromJsonAsync<List<CompanyMemberRow>>(s_json, ct) ?? [];
+            else
+                Message ??= Explain(members.StatusCode);
+        }
+    }
+
+    public async Task<IActionResult> OnPostAddMemberAsync(Guid company, string? userId, CancellationToken ct)
+    {
+        if (!Guid.TryParse(userId, out var user))
+        {
+            TempData["Message"] = "The account id must be a GUID.";
+            return RedirectToPage(new { Search, Company = company });
+        }
+
+        using var response = await companies.AddMemberAsync(company, user, ct);
+        return await Answered(response, "Member added.", ct, company);
+    }
+
+    public async Task<IActionResult> OnPostRemoveMemberAsync(Guid company, Guid userId, CancellationToken ct)
+    {
+        using var response = await companies.RemoveMemberAsync(company, userId, ct);
+        return await Answered(response, "Member removed.", ct, company);
+    }
+
+    public async Task<IActionResult> OnPostParentAsync(Guid id, string? parentId, CancellationToken ct)
+    {
+        // Blank makes the company top-level; the API refuses a parent that would make a cycle.
+        var parent = string.IsNullOrWhiteSpace(parentId) ? (Guid?)null : Guid.TryParse(parentId, out var p) ? p : Guid.Empty;
+        if (parent == Guid.Empty)
+        {
+            TempData["Message"] = "The parent company must be a GUID, or blank for a top-level company.";
+            return RedirectToPage(new { Search, Company = id });
+        }
+
+        using var response = await companies.SetParentAsync(id, parent, ct);
+        return await Answered(response, "Parent company saved.", ct, id);
+    }
+
+    public async Task<IActionResult> OnPostCreateAsync(string? slug, string? displayName, string? groupId, string? administratorUserId, CancellationToken ct)
+    {
+        using var response = await companies.CreateAsync(slug ?? "", Blank(displayName), ParseGuid(groupId), ParseGuid(administratorUserId), ct);
+        return await Answered(response, "Company created.", ct);
+    }
+
+    public async Task<IActionResult> OnPostStatusAsync(Guid id, string? status, CancellationToken ct)
+    {
+        // A trial gets a fixed length from the moment it is set; the API refuses a trial without an end.
+        var trialEndsAt = status == "Trial" ? DateTimeOffset.UtcNow.AddDays(TrialDays) : (DateTimeOffset?)null;
+        using var response = await companies.SetStatusAsync(id, status ?? "", trialEndsAt, ct);
+        return await Answered(response, "Status changed.", ct);
+    }
+
+    public async Task<IActionResult> OnPostSeatsAsync(Guid id, string? maxUsers, CancellationToken ct)
+    {
+        // Blank removes the limit; anything else must be a whole number (checked here, the API has the final say).
+        if (!string.IsNullOrWhiteSpace(maxUsers) && !int.TryParse(maxUsers, out _))
+        {
+            TempData["Message"] = "The seat limit must be a whole number, or blank for no limit.";
+            return RedirectToPage();
+        }
+
+        var limit = string.IsNullOrWhiteSpace(maxUsers) ? (int?)null : int.Parse(maxUsers);
+        using var response = await companies.SetSeatsAsync(id, limit, ct);
+        return await Answered(response, "Seat limit saved.", ct);
+    }
+
+    private async Task<IActionResult> Answered(HttpResponseMessage response, string success, CancellationToken ct, Guid? company = null)
+    {
+        TempData["Message"] = response.IsSuccessStatusCode ? success : await Refusal(response, ct);
+        return RedirectToPage(new { Search, Company = company });
+    }
+
+    /// <summary>
+    /// The API's reason for a refusal: its problem title, or its message (the seat-limit conflict says it that way), else the status.
+    /// </summary>
+    private static async Task<string> Refusal(HttpResponseMessage response, CancellationToken ct)
+    {
+        try
+        {
+            using var problem = JsonDocument.Parse(await response.Content.ReadAsStringAsync(ct));
+            foreach (var field in new[] { "title", "message" })
+            {
+                if (problem.RootElement.TryGetProperty(field, out var text) && text.GetString() is { Length: > 0 } reason)
+                    return reason;
+            }
+        }
+        catch (JsonException)
+        {
+            // Not a problem body: fall through to the status.
+        }
+        return Explain(response.StatusCode);
+    }
+
+    private static string? Blank(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    private static Guid? ParseGuid(string? value) => Guid.TryParse(value, out var id) ? id : null;
+
+    private static string Explain(HttpStatusCode status) => status switch
+    {
+        HttpStatusCode.Unauthorized => "Your session has ended. Sign in again.",
+        HttpStatusCode.Forbidden => "You do not have permission to manage companies (tenants:manage).",
+        HttpStatusCode.NotFound => "No company has that id.",
+        HttpStatusCode.Conflict => "The company's state does not allow this change.",
+        _ => $"The API answered {(int)status}.",
+    };
+}

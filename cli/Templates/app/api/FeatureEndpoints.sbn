@@ -25,10 +25,16 @@ internal static class FeatureEndpoints
         Modulus.Settings.SettingsAdministrationEndpoints.MapModulusSettingAdministration(app);
 {{ if multi_tenancy }}        // Company administration under /api/tenancy/tenants (tenants:manage, host context only).
         Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminEndpoints.MapModulusTenantAdmin<Modulus.MultiTenancy.EntityFrameworkCore.TenantEntity, Modulus.MultiTenancy.EntityFrameworkCore.TenantMembershipEntity, Modulus.MultiTenancy.EntityFrameworkCore.TenantDataStoreEntity>(app);
-{{ end }}{{ end }}{{ if use_security_guard }}        // The security audit viewer: search, verify the chain and export, for holders of audit:security:view.
+{{ end }}{{ end }}{{ if multi_tenancy }}        // The company switcher list: the companies the caller holds an active membership in (any signed-in caller).
+        Modulus.MultiTenancy.CompanySwitcherEndpoints.MapModulusCompanySwitcher(app);
+        // The branch list for the picker: the open organizational units inside the caller's scope (any signed-in caller).
+        Modulus.Authorization.Management.OrgBranchEndpoints.MapModulusOrgBranches(app);
+{{ end }}{{ if use_security_guard }}        // The security audit viewer: search, verify the chain and export, for holders of audit:security:view.
         Modulus.AuditLogging.Security.SecurityAuditViewerEndpoints.MapModulusSecurityAuditViewer(app);
         // The business audit viewer: search and read the business audit log (audit:view), in the caller's company.
         Modulus.AuditLogging.BusinessAuditViewerEndpoints.MapModulusBusinessAuditViewer(app);
+        // The company audit summary: the caller's company's events, decoded to six fields (audit:company-summary:view).
+        Modulus.AuditLogging.Security.CompanyAuditSummaryEndpoints.MapModulusCompanyAuditSummary(app);
 {{ end }}{{ end }}
 {{ end }}        return app;
     }

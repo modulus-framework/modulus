@@ -1,0 +1,64 @@
+using Microsoft.Extensions.Configuration;
+
+namespace {{ root_namespace }}.Web.Services.ApiClients;
+
+/// <summary>
+/// The company administration API (<c>/api/tenancy/tenants</c>), reached through the BFF gateway so the browser's session carries the
+/// signed-in person's token. The API checks <c>tenants:manage</c> and the company rules; this client only carries the calls.
+/// </summary>
+public sealed class CompanyAdminApiClient(HttpClient http, IConfiguration configuration)
+{
+    private const string BaseRoute = "/api/tenancy/tenants";
+
+    private readonly HttpClient _http = Configure(http, configuration);
+
+    private static HttpClient Configure(HttpClient http, IConfiguration configuration)
+    {
+        var baseUrl = configuration["Bff:BaseUrl"] ?? configuration["Api:BaseUrl"] ?? "http://localhost:5180";
+        http.BaseAddress = new Uri($"{baseUrl.TrimEnd('/')}/");
+        return http;
+    }
+
+    public Task<HttpResponseMessage> ListAsync(string? search, CancellationToken ct)
+        => _http.GetAsync($"{BaseRoute}?search={Uri.EscapeDataString(search ?? "")}&pageSize=100", ct);
+
+    public Task<HttpResponseMessage> CreateAsync(string slug, string? displayName, Guid? groupId, Guid? administratorUserId, CancellationToken ct)
+        => _http.PostAsJsonAsync(BaseRoute, new { slug, displayName, groupId, administratorUserId }, ct);
+
+    public Task<HttpResponseMessage> SetStatusAsync(Guid id, string status, DateTimeOffset? trialEndsAt, CancellationToken ct)
+        => _http.PutAsJsonAsync($"{BaseRoute}/{id:D}/status", new { status, trialEndsAt }, ct);
+
+    public Task<HttpResponseMessage> SetSeatsAsync(Guid id, int? maxUsers, CancellationToken ct)
+        => _http.PutAsJsonAsync($"{BaseRoute}/{id:D}/seats", new { maxUsers }, ct);
+
+    public Task<HttpResponseMessage> SetParentAsync(Guid id, Guid? parentId, CancellationToken ct)
+        => _http.PutAsJsonAsync($"{BaseRoute}/{id:D}/parent", new { parentId }, ct);
+
+    public Task<HttpResponseMessage> ListMembersAsync(Guid id, CancellationToken ct)
+        => _http.GetAsync($"{BaseRoute}/{id:D}/members", ct);
+
+    public Task<HttpResponseMessage> AddMemberAsync(Guid id, Guid userId, CancellationToken ct)
+        => _http.PostAsJsonAsync($"{BaseRoute}/{id:D}/members", new { userId }, ct);
+
+    public Task<HttpResponseMessage> RemoveMemberAsync(Guid id, Guid userId, CancellationToken ct)
+        => _http.DeleteAsync($"{BaseRoute}/{id:D}/members/{userId:D}", ct);
+}
+
+/// <summary>One company, as the administration API serves it.</summary>
+public sealed record CompanyAdminRow(
+    Guid Id,
+    string Slug,
+    string? DisplayName,
+    Guid? GroupId,
+    string Status,
+    DateTimeOffset? TrialEndsAt,
+    int? MaxUsers,
+    Guid? ParentId,
+    int ActiveMembers,
+    DateTimeOffset CreatedAtUtc);
+
+/// <summary>One page of companies.</summary>
+public sealed record CompanyAdminPage(IReadOnlyList<CompanyAdminRow> Items, int Total, int Page, int PageSize);
+
+/// <summary>One membership of a company: revoked members stay listed, inactive.</summary>
+public sealed record CompanyMemberRow(Guid UserId, bool IsActive, DateTimeOffset AddedAtUtc);

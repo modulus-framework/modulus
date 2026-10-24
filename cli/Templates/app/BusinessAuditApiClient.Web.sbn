@@ -1,0 +1,51 @@
+using Microsoft.Extensions.Configuration;
+
+namespace {{ root_namespace }}.Web.Services.ApiClients;
+
+/// <summary>
+/// The business audit viewer (<c>/api/audit/business</c>), reached through the BFF gateway so the browser's session carries the signed-in
+/// person's token. The API shows the caller's company only and checks <c>audit:view</c>.
+/// </summary>
+public sealed class BusinessAuditApiClient(HttpClient http, IConfiguration configuration)
+{
+    private const string BaseRoute = "/api/audit/business";
+
+    private readonly HttpClient _http = Configure(http, configuration);
+
+    private static HttpClient Configure(HttpClient http, IConfiguration configuration)
+    {
+        var baseUrl = configuration["Bff:BaseUrl"] ?? configuration["Api:BaseUrl"] ?? "http://localhost:5180";
+        http.BaseAddress = new Uri($"{baseUrl.TrimEnd('/')}/");
+        return http;
+    }
+
+    /// <summary>Searches the entries. Blank filters are left out of the query, so the API reads them as absent.</summary>
+    public Task<HttpResponseMessage> SearchAsync(string? entity, string? actor, string? action, string? since, string? until, int page, CancellationToken ct)
+        => _http.GetAsync(BaseRoute + Query(
+            ("entity", entity), ("actor", actor), ("action", action), ("since", since), ("until", until),
+            ("page", page.ToString()), ("pageSize", "50")), ct);
+
+    private static string Query(params (string Key, string? Value)[] parameters)
+    {
+        var parts = parameters
+            .Where(p => !string.IsNullOrWhiteSpace(p.Value))
+            .Select(p => $"{Uri.EscapeDataString(p.Key)}={Uri.EscapeDataString(p.Value!.Trim())}");
+        var query = string.Join('&', parts);
+        return query.Length == 0 ? "" : "?" + query;
+    }
+}
+
+/// <summary>One business audit entry, as the viewer serves it.</summary>
+public sealed record BusinessAuditRow(
+    Guid Id,
+    DateTimeOffset OccurredAt,
+    Guid? TenantId,
+    Guid? UserId,
+    string? UserName,
+    string Action,
+    string? Resource,
+    string? ResourceId,
+    string? Detail);
+
+/// <summary>One page of business audit entries.</summary>
+public sealed record BusinessAuditPage(IReadOnlyList<BusinessAuditRow> Items, int TotalCount, int Page, int PageSize);

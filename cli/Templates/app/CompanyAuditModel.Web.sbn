@@ -1,0 +1,56 @@
+using System.Net;
+using System.Text.Json;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
+using {{ root_namespace }}.Web.Services.ApiClients;
+
+namespace {{ root_namespace }}.Web.Pages.Admin;
+
+/// <summary>
+/// The company audit summary page (decision 7, <c>audit:company-summary:view</c>): the company's security events in six fields, time, category,
+/// action, outcome, actor display name and target. Raw details, hashes and host-level events are not shown. Every search is a call to the API,
+/// which checks the permission and the company; the page shows the API's answer and decides nothing itself.
+/// </summary>
+[Authorize]
+public sealed class CompanyAuditModel(CompanyAuditApiClient audit) : PageModel
+{
+    private static readonly JsonSerializerOptions s_json = new(JsonSerializerDefaults.Web);
+
+    [BindProperty(SupportsGet = true)]
+    public string? Category { get; set; }
+
+    [BindProperty(SupportsGet = true)]
+    public string? Action { get; set; }
+
+    [BindProperty(SupportsGet = true)]
+    public string? Outcome { get; set; }
+
+    [BindProperty(SupportsGet = true)]
+    public string? Since { get; set; }
+
+    [BindProperty(SupportsGet = true)]
+    public string? Until { get; set; }
+
+    public IReadOnlyList<CompanyAuditRow> Rows { get; private set; } = [];
+
+    public string? Message { get; private set; }
+
+    public async Task OnGetAsync(CancellationToken ct)
+    {
+        Message = TempData["Message"] as string;
+        using var response = await audit.SearchAsync(Category, Action, Outcome, Since, Until, 100, ct);
+        if (response.IsSuccessStatusCode)
+            Rows = await response.Content.ReadFromJsonAsync<List<CompanyAuditRow>>(s_json, ct) ?? [];
+        else
+            Message = Explain(response.StatusCode);
+    }
+
+    private static string Explain(HttpStatusCode status) => status switch
+    {
+        HttpStatusCode.Unauthorized => "Your session has ended. Sign in again.",
+        HttpStatusCode.Forbidden => "You do not have permission to read the company audit summary (audit:company-summary:view).",
+        HttpStatusCode.BadRequest => "A filter is not valid. Check the dates (for example 2026-10-01 or 2026-10-01T09:00:00Z).",
+        _ => $"The API answered {(int)status}.",
+    };
+}

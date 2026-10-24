@@ -1,0 +1,120 @@
+@page
+@model {{ root_namespace }}.Web.Pages.Admin.CompaniesModel
+@{
+    ViewData["Title"] = "Companies";
+}
+
+<h1>Companies</h1>
+
+@if (Model.Message is not null)
+{
+    <p role="status">@Model.Message</p>
+}
+
+<form method="get">
+    <label>Search <input name="Search" value="@Model.Search" /></label>
+    <button type="submit">Search</button>
+</form>
+
+<p>@Model.Total compan@(Model.Total == 1 ? "y" : "ies") found.</p>
+
+<table>
+    <thead>
+        <tr>
+            <th>Company</th>
+            <th>Status</th>
+            <th>Seat limit</th>
+            <th>Active members</th>
+            <th>Change status</th>
+            <th>Change seat limit</th>
+            <th>Members</th>
+        </tr>
+    </thead>
+    <tbody>
+    @foreach (var company in Model.Rows)
+    {
+        <tr>
+            <td>@(company.DisplayName ?? company.Slug) <code>@company.Slug</code></td>
+            <td>@company.Status</td>
+            <td>@(company.MaxUsers?.ToString() ?? "none")</td>
+            <td>@company.ActiveMembers</td>
+            <td>
+                <form method="post" asp-page-handler="Status">
+                    <input type="hidden" name="id" value="@company.Id" />
+                    <input type="hidden" name="Search" value="@Model.Search" />
+                    <select name="status">
+                        @foreach (var option in new[] { "Trial", "Active", "Suspended", "Closed" })
+                        {
+                            <option value="@option" selected="@(option == company.Status)">@option</option>
+                        }
+                    </select>
+                    <button type="submit">Set</button>
+                </form>
+            </td>
+            <td>
+                <form method="post" asp-page-handler="Seats">
+                    <input type="hidden" name="id" value="@company.Id" />
+                    <input type="hidden" name="Search" value="@Model.Search" />
+                    <input name="maxUsers" value="@company.MaxUsers" size="6" placeholder="no limit" />
+                    <button type="submit">Save</button>
+                </form>
+            </td>
+            <td><a asp-route-Company="@company.Id" asp-route-Search="@Model.Search">Members</a></td>
+        </tr>
+    }
+    </tbody>
+</table>
+
+@if (Model.Company is { } selectedId)
+{
+    <h2>Members of @(Model.Selected?.DisplayName ?? Model.Selected?.Slug ?? selectedId.ToString("D"))</h2>
+    <table>
+        <thead>
+            <tr><th>Account</th><th>Active</th><th>Added (UTC)</th><th>Remove</th></tr>
+        </thead>
+        <tbody>
+        @foreach (var member in Model.Members)
+        {
+            <tr>
+                <td><code>@member.UserId</code></td>
+                <td>@(member.IsActive ? "Yes" : "No (revoked)")</td>
+                <td>@member.AddedAtUtc.ToString("yyyy-MM-dd HH:mm")</td>
+                <td>
+                    @if (member.IsActive)
+                    {
+                        <form method="post" asp-page-handler="RemoveMember">
+                            <input type="hidden" name="company" value="@selectedId" />
+                            <input type="hidden" name="userId" value="@member.UserId" />
+                            <button type="submit">Remove</button>
+                        </form>
+                    }
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+    <form method="post" asp-page-handler="AddMember">
+        <input type="hidden" name="company" value="@selectedId" />
+        <label>Account id <input name="userId" required /></label>
+        <button type="submit">Add member</button>
+    </form>
+
+    <h3>Parent company</h3>
+    <p>Current parent: @(Model.Selected?.ParentId?.ToString("D") ?? "none (top-level)")</p>
+    <form method="post" asp-page-handler="Parent">
+        <input type="hidden" name="id" value="@selectedId" />
+        <label>Parent company id (blank for top-level) <input name="parentId" /></label>
+        <button type="submit">Save parent</button>
+    </form>
+    <p>Adding a member is refused when the company is at its seat limit.</p>
+}
+
+<h2>New company</h2>
+<form method="post" asp-page-handler="Create">
+    <label>Short name <input name="slug" required pattern="[a-z0-9][a-z0-9-]*" /></label>
+    <label>Display name <input name="displayName" /></label>
+    <label>Group (optional, id) <input name="groupId" /></label>
+    <label>Administrator (optional, account id) <input name="administratorUserId" /></label>
+    <button type="submit">Create company</button>
+</form>
+<p>A new company gets the configured baseline of grants. Putting a company on trial gives it 30 days from now.</p>

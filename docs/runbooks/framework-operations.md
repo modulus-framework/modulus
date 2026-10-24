@@ -68,7 +68,46 @@ The framework does not rotate these keys by itself. Each row says what to do and
 | OpenIddict signing and encryption certificates | Token signing and encryption | **Operator task.** Not verified in this repository. Plan the rotation with the authorization server's own documentation before the first rotation |
 | OpenBao (tenant secrets) | Tenant database connection strings and other secrets | Rotate the secret in OpenBao. Confirm the application picks up the new version in a test environment first. **Operator task** for OpenBao's own unseal and token policy (section 5) |
 
-## 5. OpenBao (operator-owned)
+## 5. Premodule administration pages (generated web host)
+
+The web host's administration pages call the API through the BFF. Each page checks one permission in the API; a page without the permission
+shows the refusal and changes nothing. Nothing is granted to any role by default unless the table says so.
+
+| Page | Route | Permission | Granted by default | What it does |
+|---|---|---|---|---|
+| Users | `/Admin/Users` | `identity:accounts:manage` | No | Accounts, invitations, lock and disable, effective access |
+| Personal data in the Users page | (field guard) | `identity:accounts:personal-data` | No | Shows names and emails, which are masked without it |
+| Roles | `/Admin/Roles` | `identity:accounts:manage` (roles), `authorization:manage` (role permissions) | No | Roles, permissions, deletion when unused |
+| Security audit | `/Admin/Audit` | `audit:security:view` | No | Searches the security chain, verifies it, exports CSV |
+| Business audit | `/Admin/BusinessAudit` | `audit:view` | No | Searches the company's business entries by entity, actor, action and time |
+| Company audit summary | `/Admin/CompanyAudit` | `audit:company-summary:view` | No | The company's own security events in six fields: time, category, action, outcome, actor display name, target. No details, hashes or host-level events |
+| Settings | `/Admin/Settings` | `settings:manage`; `settings:global:manage` for global values | No | Registered settings per scope |
+| Companies (multi-company apps) | `/Admin/Companies` | `tenants:manage` (Critical) | No | Lists, creates, changes status and seat limit, manages members and parent |
+| Profile | `/Profile` | Any signed-in person | Yes | Own display name, language, time zone, phone, email change |
+| Company switcher (multi-company apps) | `/Company` | Any signed-in person, membership checked per request | Yes | Chooses the company the next writes act in |
+| Branch picker (multi-company apps) | `/Branch` | Any signed-in person; the branch is checked against the caller's organizational scope on every request | Yes | Chooses the branch (organizational unit) the next calls act in; lists only open units inside the scope |
+
+Steps the operator takes:
+
+- **Grant an administrator the account administration permission.** Use the grant APIs or the Roles page. Nothing grants it by default.
+- **Turn on the security audit viewer for auditors.** Grant `audit:security:view` to the auditors' role. Nothing grants it by default.
+- **Turn on the business audit viewer.** Grant `audit:view` to the role that reads it. Entries are shown for the caller's company only.
+- **Turn on security audit retention (operator task).** `Security:Retention:Enabled` is `false` until an operator sets it. The enabled period
+  must match the legal advice (see the open legal decision in `docs/PREMODULES_PLAN.md`). Until counsel confirms a minimum, leave it off.
+- **Set the baseline grants for new companies.** `CompanyProvisioning:Grants` maps roles to permissions. The baseline may not name an
+  unregistered, Critical or wildcard permission, or an `integration:` role. It is empty unless configured.
+
+Migrations for an application that already has users or data (the framework does not run them for you):
+
+- **Profile columns.** `DisplayName`, `Language` and `TimeZone` were added to `ModulusUser`. An application with existing users needs a
+  migration on the Identity context: `modulus migrate add <Name> --module Identity`, then `modulus migrate update`.
+- **Settings values in multi-company apps.** `ModulusSettingValues` lives in the tenant store. Development creates it when no migration exists;
+  production needs a migration on the tenant store before the first start.
+- **Company columns.** Run the tenancy upgrade script for your database provider, `docs/upgrades/identity-platform-2026-10.tenancy.{provider}.sql`,
+  to add `Status`, `TrialEndsAt`, `MaxUsers` and `ParentId` to existing company tables. `TenancyUpgradeScriptTests` checks that each script
+  adds every column the entity maps.
+
+## 6. OpenBao (operator-owned)
 
 These are the operator's responsibility. The framework reads secrets from OpenBao through its KV v2 client. Outside Development it refuses to start when tenant
 databases use a development-only secret store (`TenantSecretBackendCheck`); it does not test the OpenBao connection or deploy or unseal OpenBao:

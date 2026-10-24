@@ -967,3 +967,24 @@ override Modulus.Authorization.Management.InheritedGrantResponse.GetHashCode() -
 override Modulus.Authorization.Management.InheritedGrantResponse.ToString() -> string!
 static Modulus.Authorization.Management.InheritedGrantResponse.operator !=(Modulus.Authorization.Management.InheritedGrantResponse? left, Modulus.Authorization.Management.InheritedGrantResponse? right) -> bool
 static Modulus.Authorization.Management.InheritedGrantResponse.operator ==(Modulus.Authorization.Management.InheritedGrantResponse? left, Modulus.Authorization.Management.InheritedGrantResponse? right) -> bool
+Modulus.Authorization.Management.OrgBranchChoice
+Modulus.Authorization.Management.OrgBranchChoice.<Clone>$() -> Modulus.Authorization.Management.OrgBranchChoice!
+Modulus.Authorization.Management.OrgBranchChoice.Code.get -> string!
+Modulus.Authorization.Management.OrgBranchChoice.Code.init -> void
+Modulus.Authorization.Management.OrgBranchChoice.Deconstruct(out System.Guid Id, out string! Code, out string! Name, out string! Kind) -> void
+Modulus.Authorization.Management.OrgBranchChoice.Equals(Modulus.Authorization.Management.OrgBranchChoice? other) -> bool
+Modulus.Authorization.Management.OrgBranchChoice.Id.get -> System.Guid
+Modulus.Authorization.Management.OrgBranchChoice.Id.init -> void
+Modulus.Authorization.Management.OrgBranchChoice.Kind.get -> string!
+Modulus.Authorization.Management.OrgBranchChoice.Kind.init -> void
+Modulus.Authorization.Management.OrgBranchChoice.Name.get -> string!
+Modulus.Authorization.Management.OrgBranchChoice.Name.init -> void
+Modulus.Authorization.Management.OrgBranchChoice.OrgBranchChoice(System.Guid Id, string! Code, string! Name, string! Kind) -> void
+Modulus.Authorization.Management.OrgBranchEndpoints
+override Modulus.Authorization.Management.OrgBranchChoice.Equals(object? obj) -> bool
+override Modulus.Authorization.Management.OrgBranchChoice.GetHashCode() -> int
+override Modulus.Authorization.Management.OrgBranchChoice.ToString() -> string!
+static Modulus.Authorization.Management.OrgBranchChoice.operator !=(Modulus.Authorization.Management.OrgBranchChoice? left, Modulus.Authorization.Management.OrgBranchChoice? right) -> bool
+static Modulus.Authorization.Management.OrgBranchChoice.operator ==(Modulus.Authorization.Management.OrgBranchChoice? left, Modulus.Authorization.Management.OrgBranchChoice? right) -> bool
+static Modulus.Authorization.Management.OrgBranchEndpoints.MapModulusOrgBranches(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! prefix = "/api/org/branches") -> Microsoft.AspNetCore.Routing.RouteGroupBuilder!
+static Modulus.Authorization.Management.OrgBranchEndpoints.SelectableBranches(System.Collections.Generic.IEnumerable<Modulus.Authorization.EntityFrameworkCore.OrgUnitProfile!>! units, Modulus.Core.Abstractions.ICurrentDataScope! scope) -> System.Collections.Generic.IReadOnlyList<Modulus.Authorization.Management.OrgBranchChoice!>!

@@ -15,6 +15,18 @@ public class ModulusUser : IdentityUser<Guid>
     public bool IsActive { get; set; } = true;
 
     /// <summary>
+    /// The name the person chose for themselves (self-service profile, <c>PUT account/profile</c>). Null when not set. Needs a column in
+    /// apps that already have users.
+    /// </summary>
+    public string? DisplayName { get; set; }
+
+    /// <summary>The person's language as a BCP 47 tag (for example <c>en-GB</c>). Null when not set. Needs a column in apps that already have users.</summary>
+    public string? Language { get; set; }
+
+    /// <summary>The person's time zone as an IANA or Windows id (for example <c>Europe/London</c>). Null when not set. Needs a column in apps that already have users.</summary>
+    public string? TimeZone { get; set; }
+
+    /// <summary>
     /// Shop-floor employee code, upper-case, unique within the company (checked when it is set). Null for an ordinary account.
     /// Needs a column in apps that already have users.
     /// </summary>

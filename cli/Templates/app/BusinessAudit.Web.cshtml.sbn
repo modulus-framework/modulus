@@ -1,0 +1,59 @@
+@page
+@model {{ root_namespace }}.Web.Pages.Admin.BusinessAuditModel
+@{
+    ViewData["Title"] = "Business audit";
+}
+
+<h1>Business audit</h1>
+
+@if (Model.Message is not null)
+{
+    <p role="status">@Model.Message</p>
+}
+
+<form method="get">
+    <label>Entity <input name="Entity" value="@Model.Entity" /></label>
+    <label>Actor (user id) <input name="Actor" value="@Model.Actor" /></label>
+    <label>Action <input name="Action" value="@Model.Action" /></label>
+    <label>Since <input name="Since" value="@Model.Since" placeholder="2026-10-01" /></label>
+    <label>Until <input name="Until" value="@Model.Until" placeholder="2026-10-31" /></label>
+    <button type="submit">Search</button>
+</form>
+
+<table>
+    <thead>
+        <tr>
+            <th>When</th>
+            <th>Action</th>
+            <th>Resource</th>
+            <th>Id</th>
+            <th>Who</th>
+            <th>Detail</th>
+        </tr>
+    </thead>
+    <tbody>
+    @foreach (var row in Model.Rows)
+    {
+        <tr>
+            <td>@row.OccurredAt.ToString("yyyy-MM-dd HH:mm:ss")</td>
+            <td>@row.Action</td>
+            <td>@row.Resource</td>
+            <td>@row.ResourceId</td>
+            <td>@(row.UserName ?? row.UserId?.ToString())</td>
+            <td>@row.Detail</td>
+        </tr>
+    }
+    </tbody>
+</table>
+
+<p>
+    @Model.TotalCount entr@(Model.TotalCount == 1 ? "y" : "ies") found.
+    @if (Model.HasPrevious)
+    {
+        <a asp-route-PageNumber="@(Model.PageNumber - 1)" asp-route-Entity="@Model.Entity" asp-route-Actor="@Model.Actor" asp-route-Action="@Model.Action" asp-route-Since="@Model.Since" asp-route-Until="@Model.Until">Previous</a>
+    }
+    @if (Model.HasNext)
+    {
+        <a asp-route-PageNumber="@(Model.PageNumber + 1)" asp-route-Entity="@Model.Entity" asp-route-Actor="@Model.Actor" asp-route-Action="@Model.Action" asp-route-Since="@Model.Since" asp-route-Until="@Model.Until">Next</a>
+    }
+</p>

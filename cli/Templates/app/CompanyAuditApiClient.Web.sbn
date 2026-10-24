@@ -1,0 +1,39 @@
+using Microsoft.Extensions.Configuration;
+
+namespace {{ root_namespace }}.Web.Services.ApiClients;
+
+/// <summary>
+/// The company audit summary (<c>/api/audit/company-summary</c>, decision 7), reached through the BFF gateway so the browser's session carries
+/// the signed-in person's token. The API shows the caller's company only and checks <c>audit:company-summary:view</c>.
+/// </summary>
+public sealed class CompanyAuditApiClient(HttpClient http, IConfiguration configuration)
+{
+    private const string BaseRoute = "/api/audit/company-summary";
+
+    private readonly HttpClient _http = Configure(http, configuration);
+
+    private static HttpClient Configure(HttpClient http, IConfiguration configuration)
+    {
+        var baseUrl = configuration["Bff:BaseUrl"] ?? configuration["Api:BaseUrl"] ?? "http://localhost:5180";
+        http.BaseAddress = new Uri($"{baseUrl.TrimEnd('/')}/");
+        return http;
+    }
+
+    /// <summary>Searches the company's summary rows. Blank filters are left out of the query.</summary>
+    public Task<HttpResponseMessage> SearchAsync(string? category, string? action, string? outcome, string? since, string? until, int take, CancellationToken ct)
+        => _http.GetAsync(BaseRoute + Query(
+            ("category", category), ("action", action), ("outcome", outcome), ("since", since), ("until", until),
+            ("take", take.ToString())), ct);
+
+    private static string Query(params (string Key, string? Value)[] parameters)
+    {
+        var parts = parameters
+            .Where(p => !string.IsNullOrWhiteSpace(p.Value))
+            .Select(p => $"{Uri.EscapeDataString(p.Key)}={Uri.EscapeDataString(p.Value!.Trim())}");
+        var query = string.Join('&', parts);
+        return query.Length == 0 ? "" : "?" + query;
+    }
+}
+
+/// <summary>One line of the company audit summary: the six approved fields.</summary>
+public sealed record CompanyAuditRow(DateTimeOffset OccurredAt, string Category, string Action, string Outcome, string ActorName, string? Target);

@@ -844,3 +844,9 @@ Modulus.Core.Abstractions.TenantInfo.Lineage.init -> void
 Modulus.Core.Abstractions.TenantInfo.TenantInfo(System.Guid TenantId, string! TenantSlug, string? DisplayName = null, string? ConnectionString = null, System.Guid? GroupId = null, Modulus.Core.Abstractions.TenantStatus Status = Modulus.Core.Abstractions.TenantStatus.Active, System.Guid? ParentId = null, System.Collections.Generic.IReadOnlyList<System.Guid>? Lineage = null) -> void
 Modulus.Core.Abstractions.ICompanyProvisioner
 Modulus.Core.Abstractions.ICompanyProvisioner.ProvisionAsync(Modulus.Core.Abstractions.TenantInfo! company, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<string!>!>!
+Modulus.Core.Abstractions.IUserDisplayNameDirectory
+Modulus.Core.Abstractions.IUserDisplayNameDirectory.GetDisplayNamesAsync(System.Collections.Generic.IReadOnlyCollection<System.Guid>! userIds, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyDictionary<System.Guid, string!>!>
+Modulus.Core.Null.NullUserDisplayNameDirectory
+Modulus.Core.Null.NullUserDisplayNameDirectory.GetDisplayNamesAsync(System.Collections.Generic.IReadOnlyCollection<System.Guid>! userIds, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyDictionary<System.Guid, string!>!>
+Modulus.Core.Null.NullUserDisplayNameDirectory.NullUserDisplayNameDirectory() -> void
+static Modulus.Core.Null.NullUserDisplayNameDirectory.Instance.get -> Modulus.Core.Null.NullUserDisplayNameDirectory!

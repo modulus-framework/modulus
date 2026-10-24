@@ -1,0 +1,49 @@
+@page
+@model {{ root_namespace }}.Web.Pages.Admin.CompanyAuditModel
+@{
+    ViewData["Title"] = "Company audit";
+}
+
+<h1>Company audit</h1>
+
+@if (Model.Message is not null)
+{
+    <p role="status">@Model.Message</p>
+}
+
+<form method="get">
+    <label>Category <input name="Category" value="@Model.Category" /></label>
+    <label>Action (prefix) <input name="Action" value="@Model.Action" /></label>
+    <label>Outcome <input name="Outcome" value="@Model.Outcome" /></label>
+    <label>Since <input name="Since" value="@Model.Since" placeholder="2026-10-01" /></label>
+    <label>Until <input name="Until" value="@Model.Until" placeholder="2026-10-31" /></label>
+    <button type="submit">Search</button>
+</form>
+
+<table>
+    <thead>
+        <tr>
+            <th>When</th>
+            <th>Category</th>
+            <th>Action</th>
+            <th>Outcome</th>
+            <th>Actor</th>
+            <th>Target</th>
+        </tr>
+    </thead>
+    <tbody>
+    @foreach (var row in Model.Rows)
+    {
+        <tr>
+            <td>@row.OccurredAt.ToString("yyyy-MM-dd HH:mm:ss")</td>
+            <td>@row.Category</td>
+            <td>@row.Action</td>
+            <td>@row.Outcome</td>
+            <td>@row.ActorName</td>
+            <td>@row.Target</td>
+        </tr>
+    }
+    </tbody>
+</table>
+
+<p>Showing the company's own events only. Raw details and host-level events are not shown here.</p>

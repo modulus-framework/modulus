@@ -1,0 +1,48 @@
+@page
+@model {{ root_namespace }}.Web.Pages.CompanyModel
+@{
+    ViewData["Title"] = "Companies";
+}
+
+<h1>Companies</h1>
+
+@if (Model.Message is not null)
+{
+    <p role="status">@Model.Message</p>
+}
+
+@if (Model.Companies.Count == 0)
+{
+    <p>You are not a member of any company.</p>
+}
+else
+{
+    <table>
+        <thead>
+            <tr><th>Company</th><th>Status</th><th>Acting in</th><th>Choose</th></tr>
+        </thead>
+        <tbody>
+        @foreach (var company in Model.Companies)
+        {
+            <tr>
+                <td>@(company.DisplayName ?? company.TenantSlug) <code>@company.TenantSlug</code></td>
+                <td>@company.Status@(company.Status == "Suspended" ? " (read-only)" : "")</td>
+                <td>@(company.Current ? "Yes" : "")</td>
+                <td>
+                    <form method="post" asp-page-handler="Switch">
+                        <input type="hidden" name="companyId" value="@company.TenantId" />
+                        <button type="submit" disabled="@company.Current">Use this company</button>
+                    </form>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}
+
+<form method="post" asp-page-handler="Clear">
+    <button type="submit">Stop choosing a company</button>
+</form>
+
+<p><a asp-page="/Branch">Choose a branch</a></p>
+<p><a asp-page="/Profile">My profile</a></p>

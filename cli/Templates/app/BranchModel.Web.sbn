@@ -1,0 +1,66 @@
+using System.Text.Json;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
+using {{ root_namespace }}.Web.Security;
+using {{ root_namespace }}.Web.Services.ApiClients;
+
+namespace {{ root_namespace }}.Web.Pages;
+
+/// <summary>
+/// The branch picker (decision 14): lists the branches the caller's scope allows and chooses the one the next calls act in. The choice is a
+/// cookie that the gateway turns into <c>X-Branch-Id</c>. The cookie selects and grants nothing: the API checks the branch against the
+/// caller's organizational scope on every request. Only a listed branch can be chosen here.
+/// </summary>
+[Authorize]
+public sealed class BranchModel(BranchApiClient branches) : PageModel
+{
+    private static readonly JsonSerializerOptions s_json = new(JsonSerializerDefaults.Web);
+
+    public IReadOnlyList<BranchChoice> Branches { get; private set; } = [];
+
+    public Guid? Current { get; private set; }
+
+    public string? Message { get; private set; }
+
+    public async Task OnGetAsync(CancellationToken ct)
+    {
+        Message = TempData["Message"] as string;
+        Current = Guid.TryParse(Request.Cookies[BffGatewayHandler.BranchCookie], out var chosen) ? chosen : null;
+        using var response = await branches.ListAsync(ct);
+        if (response.IsSuccessStatusCode)
+            Branches = await response.Content.ReadFromJsonAsync<List<BranchChoice>>(s_json, ct) ?? [];
+        else
+            Message = "The branches could not be loaded.";
+    }
+
+    public async Task<IActionResult> OnPostSwitchAsync(Guid branchId, CancellationToken ct)
+    {
+        using var response = await branches.ListAsync(ct);
+        var listed = response.IsSuccessStatusCode
+            && (await response.Content.ReadFromJsonAsync<List<BranchChoice>>(s_json, ct) ?? []).Any(b => b.Id == branchId);
+        if (!listed)
+        {
+            TempData["Message"] = "That branch is not available to you.";
+            return RedirectToPage();
+        }
+
+        Response.Cookies.Append(BffGatewayHandler.BranchCookie, branchId.ToString("D"), new CookieOptions
+        {
+            HttpOnly = true,
+            SameSite = SameSiteMode.Lax,
+            Secure = Request.IsHttps,
+            IsEssential = true,
+        });
+        TempData["Message"] = "Branch selected.";
+        return RedirectToPage();
+    }
+
+    public IActionResult OnPostClear()
+    {
+        Response.Cookies.Delete(BffGatewayHandler.BranchCookie);
+        TempData["Message"] = "The branch choice was cleared.";
+        return RedirectToPage();
+    }
+}

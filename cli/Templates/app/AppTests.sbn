@@ -321,7 +321,10 @@ public sealed class WebToApiLoginTests
 
         var signedIn = await SubmitLoginAsync(client, AdminEmail, AdminPassword);
         Assert.Equal(HttpStatusCode.Redirect, signedIn.StatusCode);
-
+{{ if multi_tenancy }}
+        // Writes act in one company: the person picks it on the company page first, as they would in the browser.
+        await ChooseFirstCompanyAsync(client);
+{{ end }}
         var name = $"Round trip {Guid.NewGuid():N}";
         var created = await PostFormAsync(client, "/{{ example_route }}/new", new Dictionary<string, string> { ["Input.Name"] = name });
         var createdBody = await created.Content.ReadAsStringAsync();
@@ -329,6 +332,14 @@ public sealed class WebToApiLoginTests
 
         var list = await client.GetStringAsync("/{{ example_route }}");
         Assert.Contains(name, list);
+
+        // The admin pages run their API calls through the same session. A client that is not registered fails only when its page runs, so
+        // every page is opened here.
+        foreach (var path in new[] { "/Admin/Users", "/Admin/Roles", "/Admin/Audit", "/Admin/BusinessAudit", "/Admin/CompanyAudit", "/Admin/Settings"{{ if multi_tenancy }}, "/Admin/Companies", "/Company", "/Branch"{{ end }} })
+        {
+            using var page = await client.GetAsync(path);
+            Assert.True(page.StatusCode == HttpStatusCode.OK, $"{path} answered {page.StatusCode}");
+        }
     }
 
 {{ end }}    [Fact]
@@ -356,6 +367,23 @@ public sealed class WebToApiLoginTests
         fields["__RequestVerificationToken"] = token;
         return await client.PostAsync(path, new FormUrlEncodedContent(fields));
     }
+{{ if multi_tenancy }}
+    private static async Task ChooseFirstCompanyAsync(HttpClient client)
+    {
+        // The company page lists the companies the person belongs to; each row posts its id back to the Switch handler.
+        var page = await client.GetStringAsync("/company");
+        var companyId = System.Text.RegularExpressions.Regex.Match(page, "name=\"companyId\" value=\"([^\"]+)\"").Groups[1].Value;
+        Assert.NotEmpty(companyId);
+        var token = System.Text.RegularExpressions.Regex
+            .Match(page, "name=\"__RequestVerificationToken\"[^>]*value=\"([^\"]+)\"").Groups[1].Value;
+        var switched = await client.PostAsync("/company?handler=Switch", new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["companyId"] = companyId,
+            ["__RequestVerificationToken"] = token,
+        }));
+        Assert.Equal(HttpStatusCode.Redirect, switched.StatusCode);
+    }
+{{ end }}
 
     // Sends the proxy's requests to a TestServer handler (the paired API).
     private sealed class PairedForwarderFactory(HttpMessageHandler handler) : Yarp.ReverseProxy.Forwarder.IForwarderHttpClientFactory

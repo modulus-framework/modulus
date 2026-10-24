@@ -17,12 +17,15 @@
     <p>No settings are registered in this application.</p>
 }
 
+@foreach (var group in Model.Groups)
+{
+    <h2>@group.Name</h2>
 <table>
     <thead>
         <tr><th>Setting</th><th>Value</th><th>Source</th><th>Change</th></tr>
     </thead>
     <tbody>
-    @foreach (var row in Model.Rows)
+    @foreach (var row in group.Rows)
     {
         <tr>
             <td>
@@ -87,3 +90,4 @@
     }
     </tbody>
 </table>
+}

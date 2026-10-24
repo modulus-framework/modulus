@@ -1,0 +1,27 @@
+using System.Net.Http;
+using Microsoft.Extensions.Configuration;
+
+namespace {{ root_namespace }}.Web.Services.ApiClients;
+
+/// <summary>One company the signed-in person may act in (<c>/api/account/companies</c>).</summary>
+public sealed record CompanyChoice(Guid TenantId, string TenantSlug, string? DisplayName, string Status, bool Current);
+
+/// <summary>
+/// The API's company list, reached through the BFF gateway. The list is the companies the person holds an active membership in; the API
+/// checks membership again on every request, so the page's choice is a convenience and not an access decision.
+/// </summary>
+public sealed class CompanyApiClient(HttpClient http, IConfiguration configuration)
+{
+    private const string BaseRoute = "/api/account/companies";
+
+    private readonly HttpClient _http = Configure(http, configuration);
+
+    private static HttpClient Configure(HttpClient http, IConfiguration configuration)
+    {
+        var baseUrl = configuration["Bff:BaseUrl"] ?? configuration["Api:BaseUrl"] ?? "http://localhost:5180";
+        http.BaseAddress = new Uri($"{baseUrl.TrimEnd('/')}/");
+        return http;
+    }
+
+    public Task<HttpResponseMessage> ListAsync(CancellationToken ct) => _http.GetAsync(BaseRoute, ct);
+}

@@ -121,6 +121,9 @@ public static class IdentityExtensions
         // Authorization administration resolves roles here instead of trusting role names in a request body.
         services.TryAddScoped<IUserRoleDirectory, IdentityUserRoleDirectory<TUser>>();
 
+        // The company audit summary shows who acted by display name (decision 7). Replaces the null default whatever the order of registration.
+        services.Replace(ServiceDescriptor.Scoped<IUserDisplayNameDirectory, IdentityUserDisplayNameDirectory<TUser>>());
+
         // Replace the deny-default validator (registered by AddModulusOpenIddict)
         // with the SignInManager-backed implementation so the password grant
         // actually verifies credentials.

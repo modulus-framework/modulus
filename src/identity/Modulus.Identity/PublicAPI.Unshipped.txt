@@ -1594,3 +1594,56 @@ Modulus.Identity.Extensions.UserDetail.EmployeeCode.init -> void
 Modulus.Identity.Extensions.UserDetail.PhoneNumber.get -> string?
 Modulus.Identity.Extensions.UserDetail.PhoneNumber.init -> void
 Modulus.Identity.Extensions.UserDetail.UserDetail(System.Guid Id, string? UserName, string? Email, bool EmailConfirmed, string? FirstName, string? LastName, string? PhoneNumber, string? EmployeeCode, bool IsActive, string! Lifecycle, System.DateTimeOffset? LockedUntil, bool TwoFactorEnabled, System.Collections.Generic.IReadOnlyList<string!>! Roles) -> void
+Modulus.Identity.Abstractions.IIdentityEmailSender.SendEmailChangeEmailAsync(string! newEmail, string! changeToken, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Identity.Abstractions.ModulusUser.DisplayName.get -> string?
+Modulus.Identity.Abstractions.ModulusUser.DisplayName.set -> void
+Modulus.Identity.Abstractions.ModulusUser.Language.get -> string?
+Modulus.Identity.Abstractions.ModulusUser.Language.set -> void
+Modulus.Identity.Abstractions.ModulusUser.TimeZone.get -> string?
+Modulus.Identity.Abstractions.ModulusUser.TimeZone.set -> void
+Modulus.Identity.AccountController<TUser>.ConfirmEmailChangeAsync(Modulus.Identity.ConfirmEmailChangeRequest! request) -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Mvc.IActionResult!>!
+Modulus.Identity.AccountController<TUser>.GetProfileAsync() -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Mvc.IActionResult!>!
+Modulus.Identity.AccountController<TUser>.RequestEmailChangeAsync(Modulus.Identity.ChangeEmailRequest! request, Modulus.Identity.Abstractions.IIdentityEmailSender! emailSender, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Mvc.IActionResult!>!
+Modulus.Identity.AccountController<TUser>.UpdateProfileAsync(Modulus.Identity.UpdateProfileRequest! request) -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Mvc.IActionResult!>!
+Modulus.Identity.ChangeEmailRequest
+Modulus.Identity.ChangeEmailRequest.ChangeEmailRequest() -> void
+Modulus.Identity.ChangeEmailRequest.NewEmail.get -> string?
+Modulus.Identity.ChangeEmailRequest.NewEmail.set -> void
+Modulus.Identity.ConfirmEmailChangeRequest
+Modulus.Identity.ConfirmEmailChangeRequest.ConfirmEmailChangeRequest() -> void
+Modulus.Identity.ConfirmEmailChangeRequest.NewEmail.get -> string?
+Modulus.Identity.ConfirmEmailChangeRequest.NewEmail.set -> void
+Modulus.Identity.ConfirmEmailChangeRequest.Token.get -> string?
+Modulus.Identity.ConfirmEmailChangeRequest.Token.set -> void
+Modulus.Identity.ProfileResponse
+Modulus.Identity.ProfileResponse.<Clone>$() -> Modulus.Identity.ProfileResponse!
+Modulus.Identity.ProfileResponse.Deconstruct(out string? DisplayName, out string? Language, out string? TimeZone, out string? PhoneNumber, out string? Email, out bool EmailConfirmed) -> void
+Modulus.Identity.ProfileResponse.DisplayName.get -> string?
+Modulus.Identity.ProfileResponse.DisplayName.init -> void
+Modulus.Identity.ProfileResponse.Email.get -> string?
+Modulus.Identity.ProfileResponse.Email.init -> void
+Modulus.Identity.ProfileResponse.EmailConfirmed.get -> bool
+Modulus.Identity.ProfileResponse.EmailConfirmed.init -> void
+Modulus.Identity.ProfileResponse.Equals(Modulus.Identity.ProfileResponse? other) -> bool
+Modulus.Identity.ProfileResponse.Language.get -> string?
+Modulus.Identity.ProfileResponse.Language.init -> void
+Modulus.Identity.ProfileResponse.PhoneNumber.get -> string?
+Modulus.Identity.ProfileResponse.PhoneNumber.init -> void
+Modulus.Identity.ProfileResponse.ProfileResponse(string? DisplayName, string? Language, string? TimeZone, string? PhoneNumber, string? Email, bool EmailConfirmed) -> void
+Modulus.Identity.ProfileResponse.TimeZone.get -> string?
+Modulus.Identity.ProfileResponse.TimeZone.init -> void
+Modulus.Identity.UpdateProfileRequest
+Modulus.Identity.UpdateProfileRequest.DisplayName.get -> string?
+Modulus.Identity.UpdateProfileRequest.DisplayName.set -> void
+Modulus.Identity.UpdateProfileRequest.Language.get -> string?
+Modulus.Identity.UpdateProfileRequest.Language.set -> void
+Modulus.Identity.UpdateProfileRequest.PhoneNumber.get -> string?
+Modulus.Identity.UpdateProfileRequest.PhoneNumber.set -> void
+Modulus.Identity.UpdateProfileRequest.TimeZone.get -> string?
+Modulus.Identity.UpdateProfileRequest.TimeZone.set -> void
+Modulus.Identity.UpdateProfileRequest.UpdateProfileRequest() -> void
+override Modulus.Identity.ProfileResponse.Equals(object? obj) -> bool
+override Modulus.Identity.ProfileResponse.GetHashCode() -> int
+override Modulus.Identity.ProfileResponse.ToString() -> string!
+static Modulus.Identity.ProfileResponse.operator !=(Modulus.Identity.ProfileResponse? left, Modulus.Identity.ProfileResponse? right) -> bool
+static Modulus.Identity.ProfileResponse.operator ==(Modulus.Identity.ProfileResponse? left, Modulus.Identity.ProfileResponse? right) -> bool

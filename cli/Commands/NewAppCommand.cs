@@ -110,7 +110,7 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         [CommandOption("--services")]
         public string? Services { get; init; }
 
-        [Description("Company = tenant: tenant resolution with membership checks, a tenant store module, tenant-owned entities and isolation tests. Needs --kind api and --auth openiddict.")]
+        [Description("Company = tenant: tenant resolution with membership checks, a tenant store module, tenant-owned entities and isolation tests. Needs --auth openiddict (api and webapp+api).")]
         [CommandOption("--multi-tenancy")]
         [DefaultValue(false)]
         public bool MultiTenancy { get; init; }
@@ -172,7 +172,7 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         var useUiFramework = UsesUiFramework(kind, uiEngine);
 
         var auth = ResolveAuth(s.Auth);
-        var multiTenancy = ResolveMultiTenancy(s.MultiTenancy, kind, auth);
+        var multiTenancy = ResolveMultiTenancy(s.MultiTenancy, auth);
 
         // Resolve infrastructure options
         var messageBroker = ResolveMessageBroker(s.MessageBroker);
@@ -546,11 +546,45 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         _templates.RenderToFile("app/Settings.Web.cshtml", model, Path.Combine(webDir, "Pages", "Admin", "Settings.cshtml"));
     }
 
+    /// <summary>
+    /// The profile pages (premodule 3) and, in multi-company apps, the company switcher (decision 29). Both call identity routes, so they need
+    /// the identity backend and a sign-in.
+    /// </summary>
+    private void RenderProfileAndCompanies(string webDir, AppModel model)
+    {
+        if (model.Auth != "openiddict") return;
+        _templates.RenderToFile("app/ProfileApiClient.Web", model, Path.Combine(webDir, "Services", "ApiClients", "ProfileApiClient.cs"));
+        _templates.RenderToFile("app/ProfileModel.Web", model, Path.Combine(webDir, "Pages", "Profile.cshtml.cs"));
+        _templates.RenderToFile("app/Profile.Web.cshtml", model, Path.Combine(webDir, "Pages", "Profile.cshtml"));
+        _templates.RenderToFile("app/ConfirmEmailChangeModel.Web", model, Path.Combine(webDir, "Pages", "ConfirmEmailChange.cshtml.cs"));
+        _templates.RenderToFile("app/ConfirmEmailChange.Web.cshtml", model, Path.Combine(webDir, "Pages", "ConfirmEmailChange.cshtml"));
+        if (!model.MultiTenancy) return;
+        _templates.RenderToFile("app/CompanyApiClient.Web", model, Path.Combine(webDir, "Services", "ApiClients", "CompanyApiClient.cs"));
+        _templates.RenderToFile("app/CompanyModel.Web", model, Path.Combine(webDir, "Pages", "Company.cshtml.cs"));
+        _templates.RenderToFile("app/Company.Web.cshtml", model, Path.Combine(webDir, "Pages", "Company.cshtml"));
+        // The company administration page (tenants:manage), the Companies entry the API navigation already links to.
+        _templates.RenderToFile("app/CompanyAdminApiClient.Web", model, Path.Combine(webDir, "Services", "ApiClients", "CompanyAdminApiClient.cs"));
+        _templates.RenderToFile("app/CompanyAdminModel.Web", model, Path.Combine(webDir, "Pages", "Admin", "Companies.cshtml.cs"));
+        _templates.RenderToFile("app/CompanyAdmin.Web.cshtml", model, Path.Combine(webDir, "Pages", "Admin", "Companies.cshtml"));
+        // The branch picker (decision 14): the branches the caller's scope allows; the cookie becomes X-Branch-Id at the gateway.
+        _templates.RenderToFile("app/BranchApiClient.Web", model, Path.Combine(webDir, "Services", "ApiClients", "BranchApiClient.cs"));
+        _templates.RenderToFile("app/BranchModel.Web", model, Path.Combine(webDir, "Pages", "Branch.cshtml.cs"));
+        _templates.RenderToFile("app/Branch.Web.cshtml", model, Path.Combine(webDir, "Pages", "Branch.cshtml"));
+    }
+
     private void RenderAuditViewer(string webDir, AppModel model)
     {
         _templates.RenderToFile("app/AuditApiClient.Web", model, Path.Combine(webDir, "Services", "ApiClients", "AuditApiClient.cs"));
         _templates.RenderToFile("app/AuditModel.Web", model, Path.Combine(webDir, "Pages", "Admin", "Audit.cshtml.cs"));
         _templates.RenderToFile("app/Audit.Web.cshtml", model, Path.Combine(webDir, "Pages", "Admin", "Audit.cshtml"));
+        // The business audit page (audit:view), searching the company's business audit entries.
+        _templates.RenderToFile("app/BusinessAuditApiClient.Web", model, Path.Combine(webDir, "Services", "ApiClients", "BusinessAuditApiClient.cs"));
+        _templates.RenderToFile("app/BusinessAuditModel.Web", model, Path.Combine(webDir, "Pages", "Admin", "BusinessAudit.cshtml.cs"));
+        _templates.RenderToFile("app/BusinessAudit.Web.cshtml", model, Path.Combine(webDir, "Pages", "Admin", "BusinessAudit.cshtml"));
+        // The company audit summary (decision 7, audit:company-summary:view): six decoded fields of the company's own events.
+        _templates.RenderToFile("app/CompanyAuditApiClient.Web", model, Path.Combine(webDir, "Services", "ApiClients", "CompanyAuditApiClient.cs"));
+        _templates.RenderToFile("app/CompanyAuditModel.Web", model, Path.Combine(webDir, "Pages", "Admin", "CompanyAudit.cshtml.cs"));
+        _templates.RenderToFile("app/CompanyAudit.Web.cshtml", model, Path.Combine(webDir, "Pages", "Admin", "CompanyAudit.cshtml"));
     }
 
     private void RenderRoleAdmin(string webDir, AppModel model)
@@ -663,6 +697,7 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         RenderRoleAdmin(webDir, model);
         RenderAuditViewer(webDir, model);
         RenderSettingsAdmin(webDir, model);
+        RenderProfileAndCompanies(webDir, model);
 
         // â”€â”€ Authentication: a BFF web session (Modulus.Bff) behind the sign-in pages â”€â”€
         if (model.UseAuth)
@@ -816,12 +851,10 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
     /// <c>--multi-tenancy</c> is for an API host with the local token server: pages have no company switcher yet (a browser
     /// sends no <c>X-Tenant-Id</c>), and an external provider has no local users whose memberships could be seeded.
     /// </summary>
-    internal static bool ResolveMultiTenancy(bool requested, AppKind kind, string auth)
+    internal static bool ResolveMultiTenancy(bool requested, string auth)
     {
         if (!requested)
             return false;
-        if (kind != AppKind.Api)
-            throw new ArgumentException("--multi-tenancy needs --kind api: web pages have no company switcher yet, so a browser could not select a company.");
         if (auth != "openiddict")
             throw new ArgumentException("--multi-tenancy needs --auth openiddict: memberships are seeded for the local users (an external provider's users are not local).");
         return true;

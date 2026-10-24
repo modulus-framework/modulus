@@ -20,6 +20,11 @@ public sealed class SettingsModel(SettingsApiClient settings) : PageModel
 
     public IReadOnlyList<SettingView> Rows { get; private set; } = [];
 
+    /// <summary>The rows under their definition group (ungrouped settings are under General, last).</summary>
+    public IReadOnlyList<SettingGroup> Groups { get; private set; } = [];
+
+    public sealed record SettingGroup(string Name, IReadOnlyList<SettingView> Rows);
+
     public string? Message { get; private set; }
 
     public async Task OnGetAsync(CancellationToken ct)
@@ -27,10 +32,20 @@ public sealed class SettingsModel(SettingsApiClient settings) : PageModel
         Message = TempData["Message"] as string;
         using var response = await settings.ListAsync(ct);
         if (response.IsSuccessStatusCode)
+        {
             Rows = await response.Content.ReadFromJsonAsync<List<SettingView>>(s_json, ct) ?? [];
+            Groups = GroupRows(Rows);
+        }
         else
             Message = Explain(response.StatusCode);
     }
+
+    private static IReadOnlyList<SettingGroup> GroupRows(IReadOnlyList<SettingView> rows)
+        => [.. rows
+            .GroupBy(r => string.IsNullOrWhiteSpace(r.Group) ? "General" : r.Group!, StringComparer.Ordinal)
+            .OrderBy(g => g.Key == "General" ? 1 : 0)
+            .ThenBy(g => g.Key, StringComparer.Ordinal)
+            .Select(g => new SettingGroup(g.Key, [.. g]))];
 
     public async Task<IActionResult> OnPostSaveAsync(string? name, string? scope, string? value, CancellationToken ct)
     {

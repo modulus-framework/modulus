@@ -74,6 +74,8 @@ internal static class AuthenticationSetup
         Modulus.AuditLogging.Security.SecurityAuditViewerEndpoints.AddModulusSecurityAuditViewer(builder.Services);
         // The business audit viewer (entries of the business audit log, by entity, actor and time). Not granted by default either.
         Modulus.AuditLogging.BusinessAuditViewerEndpoints.AddModulusBusinessAuditViewer(builder.Services);
+        // The company audit summary (decision 7): six decoded fields of the caller's company, with actors' display names. Not granted by default.
+        Modulus.AuditLogging.Security.CompanyAuditSummaryEndpoints.AddModulusCompanyAuditSummary(builder.Services);
 {{ end }}        var seededRolePermissions = builder.Configuration.GetSection("Identity:Seed:RolePermissions").Get<Dictionary<string, string[]>>() ?? [];
         builder.Services.AddPermissionGrants(grants =>
         {

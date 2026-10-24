@@ -51,6 +51,20 @@ internal static class FeatureServicesSetup
             Permission = "audit:security:view",
             Order = 12,
         }));
+        builder.Services.AddModulusNavigation(navigation => navigation.Add(new NavigationItem("identity.business-audit", "Business audit")
+        {
+            Url = "/Admin/BusinessAudit",
+            Icon = "audit",
+            Permission = "audit:view",
+            Order = 15,
+        }));
+        builder.Services.AddModulusNavigation(navigation => navigation.Add(new NavigationItem("identity.company-audit", "Company audit")
+        {
+            Url = "/Admin/CompanyAudit",
+            Icon = "audit",
+            Permission = "audit:company-summary:view",
+            Order = 16,
+        }));
 {{ end }}        builder.Services.AddModulusNavigation(navigation => navigation.Add(new NavigationItem("identity.roles", "Roles")
         {
             Url = "/Admin/Roles",

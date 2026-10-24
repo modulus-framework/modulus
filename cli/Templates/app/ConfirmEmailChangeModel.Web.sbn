@@ -1,0 +1,39 @@
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
+using {{ root_namespace }}.Web.Services.ApiClients;
+
+namespace {{ root_namespace }}.Web.Pages;
+
+/// <summary>
+/// Completes an email change from the link sent to the new address. A GET only shows the confirmation; the change happens on POST, so opening
+/// a link (or a mail scanner following it) changes nothing. The API checks the token against this account and this address.
+/// </summary>
+[Authorize]
+public sealed class ConfirmEmailChangeModel(ProfileApiClient profile) : PageModel
+{
+    [BindProperty(SupportsGet = true)]
+    public string? NewEmail { get; set; }
+
+    [BindProperty(SupportsGet = true)]
+    public string? Token { get; set; }
+
+    public string? Message { get; private set; }
+
+    public void OnGet()
+    {
+    }
+
+    public async Task<IActionResult> OnPostAsync(CancellationToken ct)
+    {
+        using var response = await profile.ConfirmEmailChangeAsync(NewEmail ?? "", Token ?? "", ct);
+        if (response.IsSuccessStatusCode)
+        {
+            TempData["Message"] = "Your email address has changed.";
+            return RedirectToPage("/Profile");
+        }
+
+        Message = "This link is invalid or has expired, or the address is already in use.";
+        return Page();
+    }
+}
