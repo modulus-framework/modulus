@@ -21,7 +21,9 @@ internal static class FeatureEndpoints
 {{ if example_permission }}        app.MapModulusRolePermissions();
         // Deleting a role is refused while it still holds grants, so it needs the grant store (AddModulusAuthorizationManagement).
         app.MapModulusRoleDelete<Modulus.Identity.Abstractions.ModulusRole, Modulus.Identity.Abstractions.ModulusUser>();
-{{ end }}
+{{ if use_security_guard }}        // The security audit viewer: search, verify the chain and export, for holders of audit:security:view.
+        Modulus.AuditLogging.Security.SecurityAuditViewerEndpoints.MapModulusSecurityAuditViewer(app);
+{{ end }}{{ end }}
 {{ end }}        return app;
     }
 }

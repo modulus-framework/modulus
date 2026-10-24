@@ -22,7 +22,14 @@ internal static class FeatureServicesSetup
             Permission = "identity:accounts:manage",
             Order = 10,
         }));
-        builder.Services.AddModulusNavigation(navigation => navigation.Add(new NavigationItem("identity.roles", "Roles")
+{{ if use_security_guard }}        builder.Services.AddModulusNavigation(navigation => navigation.Add(new NavigationItem("identity.audit", "Security audit")
+        {
+            Url = "/Admin/Audit",
+            Icon = "audit",
+            Permission = "audit:security:view",
+            Order = 12,
+        }));
+{{ end }}        builder.Services.AddModulusNavigation(navigation => navigation.Add(new NavigationItem("identity.roles", "Roles")
         {
             Url = "/Admin/Roles",
             Icon = "safety",

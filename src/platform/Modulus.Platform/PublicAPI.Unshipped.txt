@@ -2378,3 +2378,39 @@ Modulus.Settings.ModulusSettingsOptions.VersionCheckInterval.set -> void
 Modulus.AuditLogging.Security.Retention.SecurityAuditRetentionOptions.CategoryRetention.get -> System.Collections.Generic.IDictionary<string!, System.TimeSpan>!
 Modulus.Authorization.Grants.IRoleDeletionGuard
 Modulus.Authorization.Grants.IRoleDeletionGuard.BlockingReasonAsync(string! role, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<string?>!
+const Modulus.AuditLogging.Security.SecurityAuditViewerEndpoints.ViewPermission = "audit:security:view" -> string!
+Modulus.AuditLogging.Security.SecurityAuditView
+Modulus.AuditLogging.Security.SecurityAuditView.Action.get -> string!
+Modulus.AuditLogging.Security.SecurityAuditView.Action.init -> void
+Modulus.AuditLogging.Security.SecurityAuditView.Actor.get -> string?
+Modulus.AuditLogging.Security.SecurityAuditView.Actor.init -> void
+Modulus.AuditLogging.Security.SecurityAuditView.Category.get -> string!
+Modulus.AuditLogging.Security.SecurityAuditView.Category.init -> void
+Modulus.AuditLogging.Security.SecurityAuditView.ChainId.get -> System.Guid
+Modulus.AuditLogging.Security.SecurityAuditView.ChainId.init -> void
+Modulus.AuditLogging.Security.SecurityAuditView.<Clone>$() -> Modulus.AuditLogging.Security.SecurityAuditView!
+Modulus.AuditLogging.Security.SecurityAuditView.CorrelationId.get -> string?
+Modulus.AuditLogging.Security.SecurityAuditView.CorrelationId.init -> void
+Modulus.AuditLogging.Security.SecurityAuditView.Deconstruct(out System.Guid ChainId, out long Sequence, out System.DateTimeOffset OccurredAt, out string! Category, out string! Action, out string! Outcome, out string? Actor, out string? Target, out string? CorrelationId, out System.Collections.Generic.IReadOnlyDictionary<string!, string?>! Details, out string! Hash) -> void
+Modulus.AuditLogging.Security.SecurityAuditView.Details.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string?>!
+Modulus.AuditLogging.Security.SecurityAuditView.Details.init -> void
+Modulus.AuditLogging.Security.SecurityAuditView.Equals(Modulus.AuditLogging.Security.SecurityAuditView? other) -> bool
+Modulus.AuditLogging.Security.SecurityAuditViewerEndpoints
+Modulus.AuditLogging.Security.SecurityAuditView.Hash.get -> string!
+Modulus.AuditLogging.Security.SecurityAuditView.Hash.init -> void
+Modulus.AuditLogging.Security.SecurityAuditView.OccurredAt.get -> System.DateTimeOffset
+Modulus.AuditLogging.Security.SecurityAuditView.OccurredAt.init -> void
+Modulus.AuditLogging.Security.SecurityAuditView.Outcome.get -> string!
+Modulus.AuditLogging.Security.SecurityAuditView.Outcome.init -> void
+Modulus.AuditLogging.Security.SecurityAuditView.SecurityAuditView(System.Guid ChainId, long Sequence, System.DateTimeOffset OccurredAt, string! Category, string! Action, string! Outcome, string? Actor, string? Target, string? CorrelationId, System.Collections.Generic.IReadOnlyDictionary<string!, string?>! Details, string! Hash) -> void
+Modulus.AuditLogging.Security.SecurityAuditView.Sequence.get -> long
+Modulus.AuditLogging.Security.SecurityAuditView.Sequence.init -> void
+Modulus.AuditLogging.Security.SecurityAuditView.Target.get -> string?
+Modulus.AuditLogging.Security.SecurityAuditView.Target.init -> void
+override Modulus.AuditLogging.Security.SecurityAuditView.Equals(object? obj) -> bool
+override Modulus.AuditLogging.Security.SecurityAuditView.GetHashCode() -> int
+override Modulus.AuditLogging.Security.SecurityAuditView.ToString() -> string!
+static Modulus.AuditLogging.Security.SecurityAuditViewerEndpoints.AddModulusSecurityAuditViewer(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.AuditLogging.Security.SecurityAuditViewerEndpoints.MapModulusSecurityAuditViewer(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! prefix = "/api/audit/security") -> Microsoft.AspNetCore.Routing.RouteGroupBuilder!
+static Modulus.AuditLogging.Security.SecurityAuditView.operator !=(Modulus.AuditLogging.Security.SecurityAuditView? left, Modulus.AuditLogging.Security.SecurityAuditView? right) -> bool
+static Modulus.AuditLogging.Security.SecurityAuditView.operator ==(Modulus.AuditLogging.Security.SecurityAuditView? left, Modulus.AuditLogging.Security.SecurityAuditView? right) -> bool

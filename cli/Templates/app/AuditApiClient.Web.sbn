@@ -1,0 +1,39 @@
+using System.Net.Http;
+using Microsoft.Extensions.Configuration;
+
+namespace {{ root_namespace }}.Web.Services.ApiClients;
+
+/// <summary>
+/// The API's security audit viewer (<c>/api/audit/security</c>), reached through the BFF gateway so the browser's session carries the
+/// signed-in person's token. The viewer shows the caller's company's chain only; the API decides what the caller may see.
+/// </summary>
+public sealed class AuditApiClient(HttpClient http, IConfiguration configuration)
+{
+    private const string BaseRoute = "/api/audit/security";
+
+    private readonly HttpClient _http = Configure(http, configuration);
+
+    private static HttpClient Configure(HttpClient http, IConfiguration configuration)
+    {
+        var baseUrl = configuration["Bff:BaseUrl"] ?? configuration["Api:BaseUrl"] ?? "http://localhost:5180";
+        http.BaseAddress = new Uri($"{baseUrl.TrimEnd('/')}/");
+        return http;
+    }
+
+    public Task<HttpResponseMessage> SearchAsync(string? category, string? action, string? outcome, int take, CancellationToken ct)
+        => _http.GetAsync($"{BaseRoute}?category={Uri.EscapeDataString(category ?? "")}&action={Uri.EscapeDataString(action ?? "")}&outcome={Uri.EscapeDataString(outcome ?? "")}&take={take}", ct);
+
+    public Task<HttpResponseMessage> VerifyAsync(CancellationToken ct) => _http.GetAsync($"{BaseRoute}/verify", ct);
+
+    public Task<HttpResponseMessage> ExportAsync(string? category, string? action, string? outcome, CancellationToken ct)
+        => _http.GetAsync($"{BaseRoute}/export?category={Uri.EscapeDataString(category ?? "")}&action={Uri.EscapeDataString(action ?? "")}&outcome={Uri.EscapeDataString(outcome ?? "")}", ct);
+}
+
+/// <summary>One security audit event, as the viewer serves it.</summary>
+public sealed record AuditRow(Guid ChainId, long Sequence, DateTimeOffset OccurredAt, string Category, string Action, string Outcome, string? Actor, string? Target, string? CorrelationId, string Hash);
+
+/// <summary>The chain verification, as the viewer serves it.</summary>
+public sealed record AuditVerification(bool IsValid, long Count, AuditHead? Head, long? BrokenAt, string? Problem);
+
+/// <summary>The chain head.</summary>
+public sealed record AuditHead(Guid ChainId, long Sequence, string Hash);

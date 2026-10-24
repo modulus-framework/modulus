@@ -4,4 +4,8 @@
     <ProjectReference Include="../../../src/platform/Modulus.Platform/Modulus.Platform.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+  </ItemGroup>
+
 </Project>

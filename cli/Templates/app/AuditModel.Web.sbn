@@ -1,0 +1,65 @@
+using System.Net;
+using System.Text.Json;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
+using {{ root_namespace }}.Web.Services.ApiClients;
+
+namespace {{ root_namespace }}.Web.Pages.Admin;
+
+/// <summary>
+/// The security audit viewer (premodule 4): searches the company's audit events, shows the chain verification, and exports the rows as CSV.
+/// Every action is a call to the API, which checks the permission and the company. The page shows the API's answer and decides nothing itself.
+/// </summary>
+[Authorize]
+public sealed class AuditModel(AuditApiClient audit) : PageModel
+{
+    private static readonly JsonSerializerOptions s_json = new(JsonSerializerDefaults.Web);
+
+    [BindProperty(SupportsGet = true)]
+    public string? Category { get; set; }
+
+    [BindProperty(SupportsGet = true)]
+    public string? Action { get; set; }
+
+    [BindProperty(SupportsGet = true)]
+    public string? Outcome { get; set; }
+
+    public IReadOnlyList<AuditRow> Rows { get; private set; } = [];
+
+    public AuditVerification? Verification { get; private set; }
+
+    public string? Message { get; private set; }
+
+    public async Task OnGetAsync(CancellationToken ct)
+    {
+        Message = TempData["Message"] as string;
+        using var search = await audit.SearchAsync(Category, Action, Outcome, 100, ct);
+        if (search.IsSuccessStatusCode)
+            Rows = await search.Content.ReadFromJsonAsync<List<AuditRow>>(s_json, ct) ?? [];
+        else
+            Message = Explain(search.StatusCode);
+
+        using var verify = await audit.VerifyAsync(ct);
+        if (verify.IsSuccessStatusCode)
+            Verification = await verify.Content.ReadFromJsonAsync<AuditVerification>(s_json, ct);
+    }
+
+    public async Task<IActionResult> OnGetExportAsync(string? category, string? action, string? outcome, CancellationToken ct)
+    {
+        using var response = await audit.ExportAsync(category, action, outcome, ct);
+        if (!response.IsSuccessStatusCode)
+        {
+            TempData["Message"] = Explain(response.StatusCode);
+            return RedirectToPage(new { Category = category, Action = action, Outcome = outcome });
+        }
+        return File(await response.Content.ReadAsByteArrayAsync(ct), "text/csv", "security-audit.csv");
+    }
+
+    private static string Explain(HttpStatusCode status) => status switch
+    {
+        HttpStatusCode.Unauthorized => "Your session has ended. Sign in again.",
+        HttpStatusCode.Forbidden => "You do not have permission to read the security audit (audit:security:view).",
+        _ => $"The API answered {(int)status}.",
+    };
+}

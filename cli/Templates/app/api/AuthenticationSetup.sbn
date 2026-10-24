@@ -70,7 +70,9 @@ internal static class AuthenticationSetup
         // go through the authorization API). Example: Identity:Seed:RolePermissions:Admin = ["identity:accounts:manage", "identity:accounts:personal-data"]
         // (the second one shows names and addresses on the Users page; without it those fields are masked).
         Modulus.Identity.Extensions.AccountLifecycleExtensions.AddModulusAccountLifecycleAdmin(builder.Services);
-        var seededRolePermissions = builder.Configuration.GetSection("Identity:Seed:RolePermissions").Get<Dictionary<string, string[]>>() ?? [];
+{{ if use_security_guard }}        // The security audit viewer (search, chain verification, CSV export of the caller's company). Not granted by default.
+        Modulus.AuditLogging.Security.SecurityAuditViewerEndpoints.AddModulusSecurityAuditViewer(builder.Services);
+{{ end }}        var seededRolePermissions = builder.Configuration.GetSection("Identity:Seed:RolePermissions").Get<Dictionary<string, string[]>>() ?? [];
         builder.Services.AddPermissionGrants(grants =>
         {
             foreach (var (role, permissions) in seededRolePermissions)

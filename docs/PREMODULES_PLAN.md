@@ -300,6 +300,17 @@ side of the generated web app, and the navigation item.
 
 ### 4. Audit viewer
 
+Progress (2026-10-24): built in `Modulus.Platform` (`MapModulusSecurityAuditViewer`, `AddModulusSecurityAuditViewer`, permission
+`audit:security:view`, Sensitive). Search over the caller's company's chain (the host chain from the host context), chain verification,
+and CSV export. Each exported row carries the chain position and the verification with the head sequence and hash (D-P6). The export
+itself is audited with its row count. The export is capped at the store's 1,000 rows per query. Tests: `SecurityAuditViewerTests` (3, both
+targets). In generated apps with the security guard: the API routes, a menu entry for holders of `audit:security:view`, and an Audit page.
+Verified: a fresh generated `webapp+api` app builds and passes its 15 tests. The permission is granted to no role by default; an operator
+grants it (the same rule as the account permissions). Not built: business audit log search (the page reads the security chain only), and a
+company-level export that spans several chains.
+
+### 4. Audit viewer
+
 - **API:** `GET /api/audit/security` (filter by category, actor, action prefix, outcome, time window, company; paged, newest first),
   `GET /api/audit/business` (filter by entity, actor, time), `GET /api/audit/chain/{companyId}/verify` (runs
   `VerifyChainAsync` and reports the head and the anchor result), `GET /api/audit/export` (CSV of a filtered window, one row per event,

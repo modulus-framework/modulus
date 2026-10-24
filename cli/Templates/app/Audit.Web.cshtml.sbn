@@ -1,0 +1,56 @@
+@page
+@model {{ root_namespace }}.Web.Pages.Admin.AuditModel
+@{
+    ViewData["Title"] = "Security audit";
+}
+
+<h1>Security audit</h1>
+
+@if (Model.Message is not null)
+{
+    <p role="status">@Model.Message</p>
+}
+
+@if (Model.Verification is { } check)
+{
+    <p>
+        Chain: @(check.IsValid ? "verified" : "NOT VERIFIED") · @check.Count event(s)
+        @if (check.Problem is not null) { <text>· @check.Problem</text> }
+    </p>
+}
+
+<form method="get">
+    <label>Category <input name="Category" value="@Model.Category" /></label>
+    <label>Action (prefix) <input name="Action" value="@Model.Action" /></label>
+    <label>Outcome <input name="Outcome" value="@Model.Outcome" /></label>
+    <button type="submit">Search</button>
+    <a asp-page-handler="Export" asp-route-Category="@Model.Category" asp-route-Action="@Model.Action" asp-route-Outcome="@Model.Outcome">Export CSV</a>
+</form>
+
+<table>
+    <thead>
+        <tr>
+            <th>#</th>
+            <th>When</th>
+            <th>Category</th>
+            <th>Action</th>
+            <th>Outcome</th>
+            <th>Actor</th>
+            <th>Target</th>
+        </tr>
+    </thead>
+    <tbody>
+    @foreach (var row in Model.Rows)
+    {
+        <tr>
+            <td>@row.Sequence</td>
+            <td>@row.OccurredAt.ToString("yyyy-MM-dd HH:mm:ss")</td>
+            <td>@row.Category</td>
+            <td>@row.Action</td>
+            <td>@row.Outcome</td>
+            <td>@row.Actor</td>
+            <td>@row.Target</td>
+        </tr>
+    }
+    </tbody>
+</table>
