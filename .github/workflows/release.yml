@@ -43,7 +43,7 @@ jobs:
           dotnet tool install --global CycloneDX
           dotnet CycloneDX modulus.slnx --json --output artifacts/sbom
       - name: Build provenance
-        uses: actions/attest-build-provenance@v2
+        uses: actions/attest-build-provenance@v4
         with:
           subject-path: 'artifacts/packages/*.nupkg'
       - name: Upload packages and SBOM
