@@ -888,3 +888,13 @@ override Modulus.Core.Abstractions.CompanyAuthorityGrant.GetHashCode() -> int
 override Modulus.Core.Abstractions.CompanyAuthorityGrant.ToString() -> string!
 static Modulus.Core.Abstractions.CompanyAuthorityGrant.operator !=(Modulus.Core.Abstractions.CompanyAuthorityGrant? left, Modulus.Core.Abstractions.CompanyAuthorityGrant? right) -> bool
 static Modulus.Core.Abstractions.CompanyAuthorityGrant.operator ==(Modulus.Core.Abstractions.CompanyAuthorityGrant? left, Modulus.Core.Abstractions.CompanyAuthorityGrant? right) -> bool
+Modulus.Core.Abstractions.ITenantDirectory
+Modulus.Core.Abstractions.ITenantDirectory.ListActiveTenantIdsAsync(System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<System.Guid>!>!
+Modulus.Core.Abstractions.Ai.AiCapabilityAttribute.Public.get -> bool
+Modulus.Core.Abstractions.Ai.AiCapabilityAttribute.Public.set -> void
+Modulus.Core.Abstractions.Ai.AiCapabilityAttribute.Reason.get -> string?
+Modulus.Core.Abstractions.Ai.AiCapabilityAttribute.Reason.set -> void
+Modulus.Core.Abstractions.Ai.AiResourceAttribute.Public.get -> bool
+Modulus.Core.Abstractions.Ai.AiResourceAttribute.Public.set -> void
+Modulus.Core.Abstractions.Ai.AiResourceAttribute.Reason.get -> string?
+Modulus.Core.Abstractions.Ai.AiResourceAttribute.Reason.set -> void

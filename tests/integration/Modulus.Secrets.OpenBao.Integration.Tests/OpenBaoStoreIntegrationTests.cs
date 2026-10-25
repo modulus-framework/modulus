@@ -46,10 +46,20 @@ public sealed class OpenBaoStoreIntegrationTests(OpenBaoFixture openBao) : IClas
         var configuration = new ConfigurationBuilder().AddInMemoryCollection(values).Build();
         var services = new ServiceCollection();
         services.AddLogging();
+        // Plain http is accepted only by a Development host (see OpenBaoOptionsValidator).
+        services.AddSingleton<Microsoft.Extensions.Hosting.IHostEnvironment>(new DevelopmentEnvironment());
         services.AddOpenBaoSecretStore(configuration);
         if (writer is not null)
             services.AddOpenBaoSecretWriter(configuration);
         return services.BuildServiceProvider();
+    }
+
+    private sealed class DevelopmentEnvironment : Microsoft.Extensions.Hosting.IHostEnvironment
+    {
+        public string EnvironmentName { get; set; } = "Development";
+        public string ApplicationName { get; set; } = "openbao-integration";
+        public string ContentRootPath { get; set; } = ".";
+        public Microsoft.Extensions.FileProviders.IFileProvider ContentRootFileProvider { get; set; } = new Microsoft.Extensions.FileProviders.NullFileProvider();
     }
 
     private static void AddIdentity(Dictionary<string, string?> values, string section, Identity identity)

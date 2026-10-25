@@ -195,6 +195,31 @@ public sealed class SecretsTests
         options.Validate().Should().NotBeNull();
     }
 
+    [Fact]
+    public async Task Cache_HoldsNoMoreThanMaxEntries_DroppingTheOldestFetch()
+    {
+        var backend = Sync(call => Value(call));
+        var clock = new FakeClock();
+        var store = new CachedSecretStore(backend, Options.Create(new SecretsOptions { MaxEntries = 2 }), clock, NullLogger<CachedSecretStore>.Instance);
+        var a = SecretReference.Parse("tenant-db/a/primary");
+        var b = SecretReference.Parse("tenant-db/b/primary");
+        var c = SecretReference.Parse("tenant-db/c/primary");
+
+        await store.GetAsync(a);
+        clock.Advance(TimeSpan.FromSeconds(1));
+        await store.GetAsync(b);
+        clock.Advance(TimeSpan.FromSeconds(1));
+        await store.GetAsync(c);
+        backend.Calls.Should().Be(3);
+
+        await store.GetAsync(b);
+        await store.GetAsync(c);
+        backend.Calls.Should().Be(3, "the two newest fetches are still cached");
+
+        await store.GetAsync(a);
+        backend.Calls.Should().Be(4, "the oldest fetch was dropped to stay within the bound");
+    }
+
     private static SecretValue Value(int version) =>
         new(new Dictionary<string, string> { ["connectionString"] = $"v{version}" }, version);
 

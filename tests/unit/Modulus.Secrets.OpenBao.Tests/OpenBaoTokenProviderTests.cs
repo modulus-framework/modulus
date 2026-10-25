@@ -133,7 +133,7 @@ public sealed class OpenBaoTokenProviderTests : IDisposable
     }
 
     [Fact]
-    public async Task LoginRefusedByPolicyIsAFault()
+    public async Task LoginRefusedByPolicyIsUnavailable_SoTheStaleCacheCanServeIt()
     {
         var clock = new TestClock(DateTimeOffset.Parse("2026-10-18T10:00:00Z"));
         var handler = new ScriptedHandler(_ => Respond.Status(HttpStatusCode.Forbidden));
@@ -141,7 +141,7 @@ public sealed class OpenBaoTokenProviderTests : IDisposable
 
         Func<Task> act = () => tokens.GetAsync(CancellationToken.None);
 
-        await act.Should().ThrowAsync<InvalidOperationException>();
+        await act.Should().ThrowAsync<SecretStoreUnavailableException>();
     }
 
     [Fact]

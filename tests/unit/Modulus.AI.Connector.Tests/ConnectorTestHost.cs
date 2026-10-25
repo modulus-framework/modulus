@@ -73,10 +73,12 @@ public sealed class LookupLog
 }
 
 [AiCapability("Test.Catalog.Product.Count", "Counts the products.")]
+[RequirePermission("catalog:read")]
 public sealed record CountProducts : IQuery<int>;
 
 /// <summary>Never answers (waits for the connector's call timeout): the conformance kit's slow capability.</summary>
 [AiCapability("Test.Catalog.Slow.Run", "A deliberately slow query.")]
+[RequirePermission("catalog:read")]
 public sealed record SlowThing : IQuery<int>;
 
 public sealed class SlowThingHandler : IQueryHandler<SlowThing, int>

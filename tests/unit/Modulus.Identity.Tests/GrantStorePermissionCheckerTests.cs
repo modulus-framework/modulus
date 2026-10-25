@@ -38,6 +38,39 @@ public sealed class GrantStorePermissionCheckerTests
         return scope.ServiceProvider.GetRequiredService<IPermissionChecker>();
     }
 
+    /// <summary>A checker resolved inside a background job: no request, and the job's actor.</summary>
+    private static IPermissionChecker BuildJobChecker(string? actor, Action<Modulus.Authorization.Grants.InMemoryPermissionGrantStore> seed)
+    {
+        var services = new ServiceCollection();
+        services.AddModulusAuthorization();
+        services.AddPermissionGrants(seed);
+        services.AddGrantStorePermissionChecker();
+        services.AddScoped(_ => new Modulus.BackgroundJobs.JobContext { Actor = actor });
+
+        var scope = services.BuildServiceProvider().CreateScope();
+        return scope.ServiceProvider.GetRequiredService<IPermissionChecker>();
+    }
+
+    [Fact]
+    public void A_job_runs_with_its_initiators_grants()
+    {
+        var checker = BuildJobChecker(
+            $"{Modulus.BackgroundJobs.JobActor.PersonPrefix}{User:N}",
+            s => s.GrantToUser(User, "sales:order:delete"));
+
+        checker.HasPermission("sales:order:delete").Should().BeTrue();
+    }
+
+    [Fact]
+    public void A_system_job_has_no_permissions()
+    {
+        var checker = BuildJobChecker(
+            actor: null,
+            seed: s => s.GrantToUser(User, "sales:order:delete"));
+
+        checker.HasPermission("sales:order:delete").Should().BeFalse("a system job has no person whose grants it could use");
+    }
+
     private static ClaimsPrincipal Authenticated(Guid userId, params string[] roles)
     {
         var claims = new List<Claim> { new(ClaimTypes.NameIdentifier, userId.ToString()) };

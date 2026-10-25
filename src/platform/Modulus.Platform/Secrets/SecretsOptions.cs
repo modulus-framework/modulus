@@ -16,6 +16,12 @@ public sealed class SecretsOptions
     public TimeSpan MaxStaleOnFailure { get; set; } = TimeSpan.FromMinutes(5);
 
     /// <summary>
+    /// The most secrets held in memory. When a new one would exceed it, the oldest fetch is dropped first, so a tenant
+    /// fan-out cannot grow the cache without limit.
+    /// </summary>
+    public int MaxEntries { get; set; } = 10_000;
+
+    /// <summary>
     /// When <c>true</c> the host is a runtime host and must not register a secret writer. Generated API hosts keep it on.
     /// </summary>
     public bool RuntimeReadOnly { get; set; } = true;

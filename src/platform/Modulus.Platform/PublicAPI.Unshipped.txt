@@ -2509,3 +2509,5 @@ static Modulus.AuditLogging.Security.CompanyAuditSummaryEndpoints.Summarize(Syst
 static Modulus.AuditLogging.Security.CompanyAuditSummaryRow.operator !=(Modulus.AuditLogging.Security.CompanyAuditSummaryRow? left, Modulus.AuditLogging.Security.CompanyAuditSummaryRow? right) -> bool
 static Modulus.AuditLogging.Security.CompanyAuditSummaryRow.operator ==(Modulus.AuditLogging.Security.CompanyAuditSummaryRow? left, Modulus.AuditLogging.Security.CompanyAuditSummaryRow? right) -> bool
 const Modulus.AuditLogging.Security.CompanyAuditSummaryEndpoints.UnknownUser = "Unknown user" -> string!
+Modulus.Secrets.SecretsOptions.MaxEntries.get -> int
+Modulus.Secrets.SecretsOptions.MaxEntries.set -> void

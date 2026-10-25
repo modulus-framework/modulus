@@ -245,3 +245,9 @@ Modulus.EntityFrameworkCore.GuidV7ValueGenerator
 Modulus.EntityFrameworkCore.GuidV7ValueGenerator.GuidV7ValueGenerator() -> void
 override Modulus.EntityFrameworkCore.GuidV7ValueGenerator.GeneratesTemporaryValues.get -> bool
 override Modulus.EntityFrameworkCore.GuidV7ValueGenerator.Next(Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry! entry) -> System.Guid
+Modulus.EntityFrameworkCore.Isolation.HardDelete
+Modulus.EntityFrameworkCore.Isolation.HardDeleteException
+Modulus.EntityFrameworkCore.Isolation.HardDeleteException.HardDeleteException(System.Collections.Generic.IReadOnlyList<string!>! tables) -> void
+Modulus.EntityFrameworkCore.Isolation.HardDeleteException.Tables.get -> System.Collections.Generic.IReadOnlyList<string!>!
+static Modulus.EntityFrameworkCore.Isolation.HardDelete.Allow(string! reason) -> System.IDisposable!
+static Modulus.EntityFrameworkCore.Isolation.HardDelete.CurrentReason.get -> string?

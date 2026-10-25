@@ -9,7 +9,8 @@ namespace {{ module_namespace }}.Application;
 /// One page of {{ entity_name_lower }}s. The result is bounded: <see cref="PageSize"/> is clamped to
 /// <see cref="MaxPageSize"/> by the handler, so no caller (REST, gRPC, GraphQL, the admin page) can ask for every row.
 /// </summary>
-public sealed record Get{{ entity_plural }}Query(int Page = 1, int PageSize = Get{{ entity_plural }}Query.DefaultPageSize)
+{{ if required_permission }}[RequirePermission("{{ required_permission }}")]
+{{ end }}public sealed record Get{{ entity_plural }}Query(int Page = 1, int PageSize = Get{{ entity_plural }}Query.DefaultPageSize)
     : IQuery<IReadOnlyList<{{ entity_name }}Dto>>
 {
     public const int DefaultPageSize = 100;

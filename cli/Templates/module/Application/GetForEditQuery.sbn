@@ -1,4 +1,5 @@
 using Modulus.Mediator.Abstractions;
+using Modulus.Mediator.Abstractions.Attributes;
 
 namespace {{ module_namespace }}.Application;
 
@@ -7,7 +8,8 @@ namespace {{ module_namespace }}.Application;
 /// exposed by an API endpoint: the values of fields other modules contributed are only shown after the UI filtered
 /// them by the user's permissions.
 /// </summary>
-public sealed record Get{{ entity_name }}ForEditQuery(Guid Id) : IQuery<{{ entity_name }}EditDto>;
+{{ if required_permission }}[RequirePermission("{{ required_permission }}")]
+{{ end }}public sealed record Get{{ entity_name }}ForEditQuery(Guid Id) : IQuery<{{ entity_name }}EditDto>;
 
 public sealed record {{ entity_name }}EditDto(
     Guid Id,

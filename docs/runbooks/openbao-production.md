@@ -80,6 +80,13 @@ restart, and there is no auto-unseal and no external KMS. (OpenBao's recovery ke
 - Issue Secret IDs with a short lifetime and limited use, for example:
   `bao write auth/approle/role/<role> token_policies=<policy> secret_id_ttl=24h secret_id_num_uses=1`.
   Reissue them on every deployment. Do not leave a long-lived Secret ID in configuration.
+- A single-use Secret ID is consumed by the first login. The API host keeps its token for as long as it is renewed, but once the
+  token reaches its maximum lifetime it logs in again with the same file, and that login is refused. The cache then serves the last
+  good values only for `Secrets:MaxStaleOnFailure`, after which tenant databases fail. So an AppRole Secret ID is for a host that is
+  redeployed before its token's maximum lifetime. For a host that runs longer, use one of these instead:
+  - Kubernetes auth (`Method: Kubernetes`), where the service account token is re-read for each login; or
+  - OpenBao Agent with auto-auth, which renews the token and writes it to a file the host reads (`Method: TokenFile`).
+  Alert on `OpenBao refused the login` in the logs: it means the Secret ID or the role needs attention.
 - The role ID is not a secret, but it is kept with the deployment configuration. Deliver the Secret ID through the deployment step, not
   through the repository.
 - Never use the root token for application requests.

@@ -4,6 +4,7 @@ namespace Modulus.Identity;
 
 using Microsoft.AspNetCore.Http;
 using Modulus.Authorization.Grants;
+using Modulus.BackgroundJobs;
 using Modulus.Core.Abstractions;
 
 /// <summary>
@@ -16,7 +17,8 @@ using Modulus.Core.Abstractions;
 /// </summary>
 internal sealed class GrantStorePermissionChecker(
     IHttpContextAccessor httpContextAccessor,
-    IPermissionResolver resolver) : IPermissionChecker
+    IPermissionResolver resolver,
+    JobContext? job = null) : IPermissionChecker
 {
     private IReadOnlySet<string>? _effective;
 
@@ -28,7 +30,12 @@ internal sealed class GrantStorePermissionChecker(
 
     private IReadOnlySet<string> Resolve()
     {
-        var principal = httpContextAccessor.HttpContext?.User;
+        // Outside a request (a background job, a consumer) there is no principal. A job runs as the person who queued it,
+        // with the roles the identity store holds for them when it started (JobContext). A system job has no person and gets nothing.
+        if (httpContextAccessor.HttpContext is null)
+            return ResolveForJob();
+
+        var principal = httpContextAccessor.HttpContext.User;
         if (principal?.Identity?.IsAuthenticated != true)
             return EmptySet;
 
@@ -38,6 +45,14 @@ internal sealed class GrantStorePermissionChecker(
             return EmptySet;
 
         return resolver.Resolve(new PrincipalGrantQuery(ReadUserId(principal), ReadRoles(principal), agent));
+    }
+
+    private IReadOnlySet<string> ResolveForJob()
+    {
+        if (job?.InitiatorId is not { } userId)
+            return EmptySet;
+
+        return resolver.Resolve(new PrincipalGrantQuery(userId, job.Roles.ToArray(), job.AgentId));
     }
 
     // The RFC 8693 actor claim: its value is the agent's role (see the PermissionRequirementHandler, which reads the same claim).

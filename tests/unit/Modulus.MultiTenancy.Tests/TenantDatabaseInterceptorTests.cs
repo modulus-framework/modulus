@@ -201,7 +201,7 @@ public sealed class TenantDatabaseInterceptorTests : IAsyncLifetime
     };
 
     [Fact]
-    public async Task Provisioning_a_new_tenant_creates_its_schema_in_its_own_database_and_then_activates_the_store()
+    public async Task Provisioning_a_context_without_migrations_is_refused_and_the_store_stays_inactive()
     {
         var fresh = Guid.NewGuid();
         var freshCs = $"Data Source=tdi-fresh-{Guid.NewGuid():N};Mode=Memory;Cache=Shared";
@@ -215,16 +215,19 @@ public sealed class TenantDatabaseInterceptorTests : IAsyncLifetime
 
         using (var scope = _provider.CreateScope())
         {
-            var record = await scope.ServiceProvider.GetRequiredService<ITenantDataStoreProvisioner>()
+            Func<Task> act = () => scope.ServiceProvider.GetRequiredService<ITenantDataStoreProvisioner>()
                 .ProvisionAsync(fresh, "primary", "sqlite", freshCs);
-            record.Status.Should().Be(TenantDataStoreStatus.Active);
+            await act.Should().ThrowAsync<TenantDatabaseUnavailableException>();
         }
 
+        // Without migrations nothing was created in the tenant's database, and the store was never activated.
         using var check = Open(freshCs);
         using var command = check.CreateCommand();
         command.CommandText = "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'shop_Orders'";
-        Convert.ToInt32(await command.ExecuteScalarAsync()).Should().Be(1, "the tenant's schema is created before the store serves");
-        CountRows(check).Should().Be(0);
+        Convert.ToInt32(await command.ExecuteScalarAsync()).Should().Be(0, "a schema is only created from migrations");
+        using var catalogScope = _provider.CreateScope();
+        (await catalogScope.ServiceProvider.GetRequiredService<ITenantDataStoreCatalog>().FindAsync(fresh, "primary"))!
+            .Status.Should().NotBe(TenantDataStoreStatus.Active);
     }
 
     private async Task WarmAsync(Guid tenant) => await _provider.GetRequiredService<ITenantDatabaseResolver>()

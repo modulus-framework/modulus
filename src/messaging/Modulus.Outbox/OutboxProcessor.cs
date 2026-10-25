@@ -7,6 +7,7 @@ namespace Modulus.Outbox;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Modulus.Core.Abstractions;
+using Modulus.EntityFrameworkCore.Isolation;
 using Modulus.Observability;
 using Modulus.Outbox.Abstractions;
 
@@ -45,6 +46,12 @@ public sealed class OutboxProcessor(
             .ToList();
         if (contexts.Count == 0) return;
 
+        // A context whose database is kept per tenant has no host database to drain: its rows live in each tenant's
+        // database, so it is drained per tenant below (never in the host pass, which would fail for lack of a tenant).
+        var perTenantContexts = ssp.GetServices<TenantDatabaseRoute>()
+            .Select(r => r.ContextType)
+            .ToHashSet();
+
         HasMoreWork = false;
         var totalDepth = 0;
         foreach (var db in contexts)
@@ -54,6 +61,8 @@ public sealed class OutboxProcessor(
             // exception whose message text is brittle across EF versions and
             // cultures and fires only after a wasted query round-trip.
             if (db.Model.FindEntityType(typeof(OutboxMessage)) is null)
+                continue;
+            if (perTenantContexts.Contains(db.GetType()))
                 continue;
 
             try
@@ -71,7 +80,51 @@ public sealed class OutboxProcessor(
             }
         }
 
+        foreach (var contextType in perTenantContexts)
+            totalDepth += await ProcessPerTenantAsync(contextType, options, ct);
+
         ModulusMeters.ReportOutboxDepth("ef", totalDepth);
+    }
+
+    /// <summary>
+    /// Drains one per-tenant context in every active tenant. Each tenant gets its own scope, entered with its verified tenant
+    /// (<see cref="TenantContextRestorerExtensions.EnterTenant"/>), so the context opens that tenant's database. A tenant that
+    /// fails is logged and the others still run; the polling loop retries on the next cycle.
+    /// </summary>
+    private async Task<int> ProcessPerTenantAsync(Type contextType, OutboxOptions options, CancellationToken ct)
+    {
+        var directory = sp.GetService<ITenantDirectory>();
+        if (directory is null)
+        {
+            logger.LogError(
+                "Outbox rows of {Context} are kept per tenant, but no ITenantDirectory is registered; they are not dispatched. Call AddMultiTenancy.",
+                contextType.Name);
+            return 0;
+        }
+
+        var depth = 0;
+        foreach (var tenantId in await directory.ListActiveTenantIdsAsync(ct))
+        {
+            try
+            {
+                await using var scope = sp.CreateAsyncScope();
+                var tsp = scope.ServiceProvider;
+                using var entered = tsp.EnterTenant(await tsp.VerifyTenantAsync(tenantId, ct));
+                var db = (DbContext)tsp.GetRequiredService(contextType);
+                if (db.Model.FindEntityType(typeof(OutboxMessage)) is null)
+                    continue;
+
+                depth += await ProcessContextAsync(db, tsp, options, ct);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                logger.LogError(ex,
+                    "Outbox processing failed for context {Context} in tenant {TenantId}; continuing with the other tenants.",
+                    contextType.Name, tenantId);
+            }
+        }
+
+        return depth;
     }
 
     private async Task<int> ProcessContextAsync(

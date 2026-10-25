@@ -135,10 +135,15 @@ public sealed class TenantDataStoreProvisioner<TTenant, TMembership, TDataStore>
     }
 
     /// <summary>
-    /// Migrates this tenant's database before the store is active. The store is still <c>Provisioning</c> here, so the resolver
-    /// refuses it; the setup override gives the migration the candidate string instead (see <see cref="TenantDatabaseSetup"/>).
-    /// The host's shared contexts are migrated in the same pass, as in the tenant fan-out.
+    /// Migrates the module contexts that keep their database in this store, before the store is active. The store is still
+    /// <c>Provisioning</c> here, so the resolver refuses it; the setup override gives the migration the candidate string instead
+    /// (see <see cref="TenantDatabaseSetup"/>). Only those contexts are migrated: the host's shared contexts are not this
+    /// tenant's schema. The store is activated only when every such context has applied all of its migrations.
     /// </summary>
+    /// <remarks>
+    /// Migrations are required. A context with none would be created with <c>EnsureCreated</c>, which writes no history, so a
+    /// later migration could never be applied to it. A context managed outside EF Core (dbsh) is applied by its own tool.
+    /// </remarks>
     private async Task MigrateTenantAsync(
         Guid tenantId, string storeKey, string providerKey, string connectionString, CancellationToken cancellationToken)
     {
@@ -150,9 +155,31 @@ public sealed class TenantDataStoreProvisioner<TTenant, TMembership, TDataStore>
         var current = sp.GetRequiredService<ICurrentTenant>();
         using var _ = current.Change(new TenantInfo(tenantId, slug));
         using var __ = TenantDatabaseSetup.Use(tenantId, storeKey, providerKey, connectionString);
+
+        // Without a context in this store there is no schema to create. Activating the store would leave the tenant with
+        // empty tables, so it is refused instead.
+        var contextTypes = sp.GetServices<TenantDatabaseRoute>()
+            .Where(r => r.StoreKey == storeKey && r.ProviderKey == providerKey)
+            .Select(r => r.ContextType)
+            .ToHashSet();
+        if (contextTypes.Count == 0)
+            throw new ConflictException("No module keeps its database in this data store, so there is no schema to provision.");
+
+        var registry = sp.GetService<IModuleMigrationRegistry>();
         try
         {
-            await sp.MigrateModulusDatabasesAsync(DatabaseInitializationMode.MigrateOrCreate, cancellationToken);
+            foreach (var context in sp.GetServices<DbContext>().Where(c => contextTypes.Contains(c.GetType())).DistinctBy(c => c.GetType()))
+            {
+                if (registry?.IsExternallyManaged(context.GetType()) == true)
+                    continue;
+                if (!context.Database.GetMigrations().Any())
+                    throw new InvalidOperationException($"{context.GetType().Name} defines no EF Core migrations; a tenant database is provisioned from migrations.");
+
+                await context.Database.CreateExecutionStrategy().ExecuteAsync(
+                    async ct => await context.Database.MigrateAsync(ct), cancellationToken);
+                if ((await context.Database.GetPendingMigrationsAsync(cancellationToken)).Any())
+                    throw new InvalidOperationException($"{context.GetType().Name} still has pending migrations after provisioning.");
+            }
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {

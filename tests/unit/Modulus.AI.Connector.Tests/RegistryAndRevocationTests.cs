@@ -1,5 +1,6 @@
 namespace Modulus.AI.Connector.Tests;
 
+using Modulus.Mediator.Abstractions.Attributes;
 using System.Net;
 using System.Text.Json;
 using FluentAssertions;
@@ -11,21 +12,27 @@ using Modulus.Mediator.Abstractions;
 using Xunit;
 
 [AiCapability("Test.Bad.Thing.Create", "Creates a thing.")]
+[RequirePermission("catalog:read")]
 public sealed record CreateThing : ICommand<Guid>;
 
 [AiCapability("lowercase", "Badly named.")]
+[RequirePermission("catalog:read")]
 public sealed record BadlyNamed : IQuery<int>;
 
 [AiCapability("Test.Catalog.Product.Search", "Same name as the real one.")]
+[RequirePermission("catalog:read")]
 public sealed record DuplicateName : IQuery<int>;
 
 [AiCapability("Test.Orphan.Thing.List", "Lists things of an undeclared type.", ResourceType = "Orphan.Thing")]
+[RequirePermission("catalog:read")]
 public sealed record OrphanResourceType : IQuery<IReadOnlyList<ProductDto>>;
 
 [AiResource("Test.Thing", "A thing without an id constructor.")]
+[RequirePermission("catalog:read")]
 public sealed record NoIdLookup(Guid A, Guid B) : IQuery<ProductDto>;
 
 [AiResource("Test.Thing", "A thing.", TitleField = "Missing")]
+[RequirePermission("catalog:read")]
 public sealed record MissingTitleField(Guid Id) : IQuery<ProductDto>;
 
 public sealed record BatchWithWrongConstructor(Guid Id) : IQuery<IReadOnlyList<ProductDto>>;
@@ -33,12 +40,15 @@ public sealed record BatchWithWrongConstructor(Guid Id) : IQuery<IReadOnlyList<P
 public sealed record BatchOfAnotherType(IReadOnlyCollection<Guid> Ids) : IQuery<IReadOnlyList<string>>;
 
 [AiResource("Test.WrongBatch", "A thing whose batch lookup takes one id.", BatchLookup = typeof(BatchWithWrongConstructor))]
+[RequirePermission("catalog:read")]
 public sealed record WrongBatchLookup(Guid Id) : IQuery<ProductDto>;
 
 [AiResource("Test.OtherBatch", "A thing whose batch lookup returns another type.", BatchLookup = typeof(BatchOfAnotherType))]
+[RequirePermission("catalog:read")]
 public sealed record OtherBatchLookup(Guid Id) : IQuery<ProductDto>;
 
 [AiCapability("Test.Not.A.Request", "Not a mediator request.")]
+[RequirePermission("catalog:read")]
 public sealed class NotARequest;
 
 [Trait("Category", "Unit")]
@@ -74,6 +84,30 @@ public sealed class RegistryAndRevocationTests
         var act = () => Build(typeof(SearchProducts), typeof(GetProduct), type);
 
         act.Should().Throw<InvalidOperationException>().WithMessage($"*{mentions}*");
+    }
+
+    [Fact]
+    public void A_capability_with_no_permission_is_refused_at_startup()
+    {
+        var act = () => Build(typeof(SearchProducts), typeof(GetProduct), typeof(UndeclaredThings));
+
+        act.Should().Throw<InvalidOperationException>().WithMessage("*no [RequirePermission]*");
+    }
+
+    [Fact]
+    public void A_capability_declared_open_with_a_reason_is_accepted()
+    {
+        var act = () => Build(typeof(SearchProducts), typeof(GetProduct), typeof(OpenThings));
+
+        act.Should().NotThrow();
+    }
+
+    [Fact]
+    public void Open_without_a_reason_is_refused_at_startup()
+    {
+        var act = () => Build(typeof(SearchProducts), typeof(GetProduct), typeof(OpenWithoutReason));
+
+        act.Should().Throw<InvalidOperationException>().WithMessage("*Reason*");
     }
 
     [Fact]
@@ -152,3 +186,12 @@ public sealed class RegistryAndRevocationTests
             .Should().BeEquivalentTo([ConnectorTestHost.Instance, ConnectorTestHost.CompanyInstance]);
     }
 }
+
+[AiCapability("Test.Undeclared.Thing.List", "Lists things with no permission at all.")]
+public sealed record UndeclaredThings : IQuery<int>;
+
+[AiCapability("Test.Open.Thing.List", "Lists things every signed-in user may see.", Public = true, Reason = "Only public catalogue names.")]
+public sealed record OpenThings : IQuery<int>;
+
+[AiCapability("Test.Open.Thing.Count", "Counts things, claimed open without a reason.", Public = true)]
+public sealed record OpenWithoutReason : IQuery<int>;

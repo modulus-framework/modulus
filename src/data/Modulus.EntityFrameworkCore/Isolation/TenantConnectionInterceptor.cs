@@ -1,6 +1,8 @@
 namespace Modulus.EntityFrameworkCore.Isolation;
 
+using System.Data;
 using System.Data.Common;
+using System.Runtime.CompilerServices;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Modulus.Core.Abstractions;
 using Modulus.Core.Abstractions.Exceptions;
@@ -27,12 +29,18 @@ public sealed class TenantConnectionInterceptor(
     ICurrentTenant tenant,
     TenantDatabaseRoute route) : DbConnectionInterceptor
 {
+    /// <summary>The host connection string of each connection this interceptor retargeted, so the host path can restore it.</summary>
+    private readonly ConditionalWeakTable<DbConnection, string> _hostConnectionStrings = new();
+
     /// <inheritdoc />
     public override InterceptionResult ConnectionOpening(
         DbConnection connection, ConnectionEventData eventData, InterceptionResult result)
     {
         if (tenant.IsHost)
+        {
+            RestoreHost(connection);
             return result;
+        }
 
         var tenantId = RequireTenant();
         if (TryApplySetup(connection, tenantId))
@@ -52,7 +60,10 @@ public sealed class TenantConnectionInterceptor(
         DbConnection connection, ConnectionEventData eventData, InterceptionResult result, CancellationToken cancellationToken = default)
     {
         if (tenant.IsHost)
+        {
+            RestoreHost(connection);
             return result;
+        }
 
         var tenantId = RequireTenant();
         if (TryApplySetup(connection, tenantId))
@@ -68,7 +79,7 @@ public sealed class TenantConnectionInterceptor(
         if (!TenantDatabaseSetup.TryGet(tenantId, route.StoreKey, route.ProviderKey, out var connectionString) || connectionString is null)
             return false;
 
-        connection.ConnectionString = connectionString;
+        Retarget(connection, connectionString);
         return true;
     }
 
@@ -76,9 +87,38 @@ public sealed class TenantConnectionInterceptor(
         $"{route.ContextType.Name} keeps one database per tenant, and no tenant is in scope. Resolve a tenant, or "
         + "enter the host context (ICurrentTenant.Change(null)) for host work.");
 
-    private static void Apply(DbConnection connection, TenantDatabaseTarget target)
+    private void Apply(DbConnection connection, TenantDatabaseTarget target)
     {
         if (target.ConnectionString is not null)
-            connection.ConnectionString = target.ConnectionString;
+            Retarget(connection, target.ConnectionString);
+    }
+
+    /// <summary>
+    /// The host path. EF Core reuses one connection per context, so a connection an earlier tenant scope retargeted goes back to
+    /// the host database here; host work must never reach a tenant's database.
+    /// </summary>
+    private void RestoreHost(DbConnection connection)
+    {
+        if (_hostConnectionStrings.TryGetValue(connection, out var hostConnectionString))
+            Retarget(connection, hostConnectionString);
+    }
+
+    /// <summary>
+    /// Points the connection at <paramref name="connectionString"/>, remembering the connection's first (host) string. A connection
+    /// that is already open cannot change database; refusing that is safer than sending the next statements elsewhere.
+    /// </summary>
+    private void Retarget(DbConnection connection, string connectionString)
+    {
+        if (connection.ConnectionString == connectionString)
+            return;
+        if (connection.State != ConnectionState.Closed)
+        {
+            throw new InvalidOperationException(
+                $"{route.ContextType.Name} cannot switch databases while its connection is open. Close the connection before changing tenant.");
+        }
+
+        if (!_hostConnectionStrings.TryGetValue(connection, out _))
+            _hostConnectionStrings.Add(connection, connection.ConnectionString);
+        connection.ConnectionString = connectionString;
     }
 }

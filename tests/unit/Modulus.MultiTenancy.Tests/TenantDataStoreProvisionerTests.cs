@@ -1,11 +1,15 @@
 using FluentAssertions;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using Modulus.Core.Abstractions;
 using Modulus.Core.Abstractions.Exceptions;
 using Modulus.Core.Abstractions.Secrets;
 using Modulus.Core.Abstractions.Tenancy;
+using Modulus.EntityFrameworkCore.Isolation;
 using Modulus.Events.Abstractions;
 using Modulus.MultiTenancy.EntityFrameworkCore;
 using Modulus.MultiTenancy.Extensions;
@@ -17,7 +21,8 @@ namespace Modulus.MultiTenancy.Tests;
 
 /// <summary>
 /// Provisioning and rotation against the real catalog (SQLite) and an in-memory secret store, through the resolver that the
-/// application uses, so a test sees exactly what a request would see.
+/// application uses, so a test sees exactly what a request would see. The tenant's database is a SQLite file per test, migrated
+/// by the provisioner through a context routed to the store.
 /// </summary>
 [Trait("Category", "Unit")]
 public sealed class TenantDataStoreProvisionerTests : IAsyncLifetime
@@ -26,6 +31,7 @@ public sealed class TenantDataStoreProvisionerTests : IAsyncLifetime
     private const string Store = "primary";
     private const string Provider = "sqlite";
 
+    private readonly string _dir = Directory.CreateTempSubdirectory("modulus-prov-").FullName;
     private readonly SqliteConnection _storeKeepAlive = new("DataSource=:memory:");
     private readonly InMemorySecretStore _secrets = new();
     private readonly ISecretCache _cache = Substitute.For<ISecretCache>();
@@ -36,6 +42,7 @@ public sealed class TenantDataStoreProvisionerTests : IAsyncLifetime
     public async Task InitializeAsync()
     {
         await _storeKeepAlive.OpenAsync();
+        var route = new TenantDatabaseRoute(typeof(ProvisionedDbContext), Store, Provider);
         var services = new ServiceCollection();
         services.AddLogging();
         services.AddMultiTenancy(t => t.UseHeaderResolver());
@@ -47,6 +54,13 @@ public sealed class TenantDataStoreProvisionerTests : IAsyncLifetime
         services.AddSingleton<IModuleBus>(_bus);
         services.AddSingleton<ITenantDatabaseResolver>(sp => new TenantDatabaseResolver(
             sp.GetRequiredService<IServiceScopeFactory>(), _secrets, _cache, Options.Create(new TenantDataStoreOptions()), TimeProvider.System));
+        services.AddSingleton(route);
+        services.AddScoped(sp => new ProvisionedDbContext(new DbContextOptionsBuilder<ProvisionedDbContext>()
+            .UseSqlite("DataSource=:memory:")
+            .AddInterceptors(new TenantConnectionInterceptor(
+                sp.GetRequiredService<ITenantDatabaseResolver>(), sp.GetRequiredService<ICurrentTenant>(), route))
+            .Options));
+        services.AddScoped<DbContext>(sp => sp.GetRequiredService<ProvisionedDbContext>());
         _provider = services.BuildServiceProvider();
         await EnsureStoreSchemaAsync();
         await SeedTenantAsync();
@@ -56,43 +70,59 @@ public sealed class TenantDataStoreProvisionerTests : IAsyncLifetime
     {
         await _provider.DisposeAsync();
         _storeKeepAlive.Dispose();
+        SqliteConnection.ClearAllPools();
+        Directory.Delete(_dir, recursive: true);
     }
 
+    /// <summary>A database file for the tenant under test, named after the test's role.</summary>
+    private string Cs(string name) => $"Data Source={Path.Combine(_dir, name + ".db")}";
+
     [Fact]
-    public async Task Provision_WritesTheSecret_ActivatesTheRow_AndTheResolverSeesIt()
+    public async Task Provision_MigratesTheTenantDatabase_WritesTheSecret_ActivatesTheRow_AndTheResolverSeesIt()
     {
-        var record = await WithProvisionerAsync(p => p.ProvisionAsync(Tenant, Store, Provider, "Data Source=one.db"));
+        var record = await WithProvisionerAsync(p => p.ProvisionAsync(Tenant, Store, Provider, Cs("one")));
 
         record.Status.Should().Be(TenantDataStoreStatus.Active);
         record.SecretVersion.Should().Be(1);
         record.SecretPath.Should().Be($"tenant-db/{Tenant:D}/{Store}");
-        (await ResolveAsync()).ConnectionString.Should().Be("Data Source=one.db");
+        (await ResolveAsync()).ConnectionString.Should().Be(Cs("one"));
+        (await TableExistsAsync("one", "prov_shops")).Should().BeTrue("the tenant's schema was migrated before the store was activated");
+    }
+
+    [Fact]
+    public async Task Provision_OfAStoreWithNoModuleContext_IsRefused_AndNeverActivated()
+    {
+        // "orders" has no module context routed to it, so the provisioner has no schema to create.
+        Func<Task> act = () => WithProvisionerAsync(p => p.ProvisionAsync(Tenant, "orders", Provider, Cs("orders")));
+
+        await act.Should().ThrowAsync<ConflictException>();
+        (await ReadRowAsync("orders")).Status.Should().NotBe(TenantDataStoreStatus.Active);
     }
 
     [Fact]
     public async Task Provision_OfAnActiveStore_IsIdempotent()
     {
-        await WithProvisionerAsync(p => p.ProvisionAsync(Tenant, Store, Provider, "Data Source=one.db"));
+        await WithProvisionerAsync(p => p.ProvisionAsync(Tenant, Store, Provider, Cs("one")));
 
-        var again = await WithProvisionerAsync(p => p.ProvisionAsync(Tenant, Store, Provider, "Data Source=other.db"));
+        var again = await WithProvisionerAsync(p => p.ProvisionAsync(Tenant, Store, Provider, Cs("other")));
 
         again.SecretVersion.Should().Be(1, "a second provision must not write a new version");
         (await _secrets.GetCurrentVersionAsync(Ref())).Should().Be(1);
-        (await ResolveAsync()).ConnectionString.Should().Be("Data Source=one.db");
+        (await ResolveAsync()).ConnectionString.Should().Be(Cs("one"));
     }
 
     [Fact]
     public async Task Provision_CompletesAStoreLeftProvisioning_ByAnInterruptedRun()
     {
         // The row exists and the secret was written, but the run stopped before the row was activated.
-        await _secrets.WriteAsync(Ref(), new Dictionary<string, string> { ["connectionString"] = "Data Source=old.db" }, null);
+        await _secrets.WriteAsync(Ref(), new Dictionary<string, string> { ["connectionString"] = Cs("old") }, null);
         await InsertRowAsync(TenantDataStoreStatus.Provisioning, secretVersion: 0);
 
-        var record = await WithProvisionerAsync(p => p.ProvisionAsync(Tenant, Store, Provider, "Data Source=new.db"));
+        var record = await WithProvisionerAsync(p => p.ProvisionAsync(Tenant, Store, Provider, Cs("new")));
 
         record.Status.Should().Be(TenantDataStoreStatus.Active);
         record.SecretVersion.Should().Be(2);
-        (await ResolveAsync()).ConnectionString.Should().Be("Data Source=new.db");
+        (await ResolveAsync()).ConnectionString.Should().Be(Cs("new"));
     }
 
     [Fact]
@@ -100,7 +130,7 @@ public sealed class TenantDataStoreProvisionerTests : IAsyncLifetime
     {
         await InsertRowAsync(TenantDataStoreStatus.Disabled, secretVersion: 0);
 
-        Func<Task> act = () => WithProvisionerAsync(p => p.ProvisionAsync(Tenant, Store, Provider, "Data Source=x.db"));
+        Func<Task> act = () => WithProvisionerAsync(p => p.ProvisionAsync(Tenant, Store, Provider, Cs("x")));
 
         await act.Should().ThrowAsync<ConflictException>();
     }
@@ -108,20 +138,20 @@ public sealed class TenantDataStoreProvisionerTests : IAsyncLifetime
     [Fact]
     public async Task Rotate_SwapsTheConnectionString_BumpsTheVersion_AndTheResolverSeesIt()
     {
-        await WithProvisionerAsync(p => p.ProvisionAsync(Tenant, Store, Provider, "Data Source=one.db"));
-        (await ResolveAsync()).ConnectionString.Should().Be("Data Source=one.db");
+        await WithProvisionerAsync(p => p.ProvisionAsync(Tenant, Store, Provider, Cs("one")));
+        (await ResolveAsync()).ConnectionString.Should().Be(Cs("one"));
 
-        var rotated = await WithProvisionerAsync(p => p.RotateAsync(Tenant, Store, "Data Source=two.db"));
+        var rotated = await WithProvisionerAsync(p => p.RotateAsync(Tenant, Store, Cs("two")));
 
         rotated.Status.Should().Be(TenantDataStoreStatus.Active);
         rotated.SecretVersion.Should().Be(2);
-        (await ResolveAsync()).ConnectionString.Should().Be("Data Source=two.db");
+        (await ResolveAsync()).ConnectionString.Should().Be(Cs("two"));
     }
 
     [Fact]
     public async Task Rotate_WithoutAProvisionedStore_IsNotFound()
     {
-        Func<Task> act = () => WithProvisionerAsync(p => p.RotateAsync(Tenant, Store, "Data Source=x.db"));
+        Func<Task> act = () => WithProvisionerAsync(p => p.RotateAsync(Tenant, Store, Cs("x")));
 
         await act.Should().ThrowAsync<NotFoundException>();
     }
@@ -131,7 +161,7 @@ public sealed class TenantDataStoreProvisionerTests : IAsyncLifetime
     {
         await InsertRowAsync(TenantDataStoreStatus.Provisioning, secretVersion: 0);
 
-        Func<Task> act = () => WithProvisionerAsync(p => p.RotateAsync(Tenant, Store, "Data Source=x.db"));
+        Func<Task> act = () => WithProvisionerAsync(p => p.RotateAsync(Tenant, Store, Cs("x")));
 
         await act.Should().ThrowAsync<ConflictException>();
     }
@@ -143,7 +173,7 @@ public sealed class TenantDataStoreProvisionerTests : IAsyncLifetime
     {
         _databases.FailProbe = true;
 
-        Func<Task> act = () => WithProvisionerAsync(p => p.ProvisionAsync(Tenant, Store, Provider, "Data Source=x.db"));
+        Func<Task> act = () => WithProvisionerAsync(p => p.ProvisionAsync(Tenant, Store, Provider, Cs("x")));
 
         await act.Should().ThrowAsync<TenantDatabaseUnavailableException>();
         (await _secrets.GetCurrentVersionAsync(Ref())).Should().BeNull("an unreachable database must not reach the secret store");
@@ -154,7 +184,7 @@ public sealed class TenantDataStoreProvisionerTests : IAsyncLifetime
     [Fact]
     public async Task Provision_PublishesTheChange_OnceTheStoreIsActive()
     {
-        await WithProvisionerAsync(p => p.ProvisionAsync(Tenant, Store, Provider, "Data Source=one.db"));
+        await WithProvisionerAsync(p => p.ProvisionAsync(Tenant, Store, Provider, Cs("one")));
 
         var changed = _bus.Published.OfType<TenantDataStoreChanged>().Should().ContainSingle().Subject;
         changed.TenantId.Should().Be(Tenant);
@@ -166,14 +196,14 @@ public sealed class TenantDataStoreProvisionerTests : IAsyncLifetime
     [Fact]
     public async Task Rotate_ClearsThePoolOfTheReplacedString_WhenTheChangeIsHandled()
     {
-        await WithProvisionerAsync(p => p.ProvisionAsync(Tenant, Store, Provider, "Data Source=one.db"));
-        (await ResolveAsync()).ConnectionString.Should().Be("Data Source=one.db");
+        await WithProvisionerAsync(p => p.ProvisionAsync(Tenant, Store, Provider, Cs("one")));
+        (await ResolveAsync()).ConnectionString.Should().Be(Cs("one"));
 
-        await WithProvisionerAsync(p => p.RotateAsync(Tenant, Store, "Data Source=two.db"));
+        await WithProvisionerAsync(p => p.RotateAsync(Tenant, Store, Cs("two")));
         await DeliverLastChangeAsync();
 
-        _databases.Cleared.Should().ContainSingle().Which.Should().Be((Provider, "Data Source=one.db"));
-        (await ResolveAsync()).ConnectionString.Should().Be("Data Source=two.db");
+        _databases.Cleared.Should().ContainSingle().Which.Should().Be((Provider, Cs("one")));
+        (await ResolveAsync()).ConnectionString.Should().Be(Cs("two"));
     }
 
     private async Task DeliverLastChangeAsync()
@@ -183,10 +213,10 @@ public sealed class TenantDataStoreProvisionerTests : IAsyncLifetime
         await handler.HandleAsync(changed, CancellationToken.None);
     }
 
-    private async Task<TenantDataStore> ReadRowAsync()
+    private async Task<TenantDataStore> ReadRowAsync(string storeKey = Store)
     {
         using var scope = _provider.CreateScope();
-        return await scope.ServiceProvider.GetRequiredService<ITenantDataStoreCatalog>().FindAsync(Tenant, Store)
+        return await scope.ServiceProvider.GetRequiredService<ITenantDataStoreCatalog>().FindAsync(Tenant, storeKey)
             ?? throw new InvalidOperationException("The test expected a catalog row.");
     }
 
@@ -230,6 +260,17 @@ public sealed class TenantDataStoreProvisionerTests : IAsyncLifetime
         await db.SaveChangesAsync();
     }
 
+    private async Task<bool> TableExistsAsync(string name, string table)
+    {
+        // A fresh connection to the tenant's file, so the check sees what the migration committed.
+        await using var conn = new SqliteConnection(Cs(name));
+        await conn.OpenAsync();
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = $name";
+        cmd.Parameters.AddWithValue("$name", table);
+        return Convert.ToInt64(await cmd.ExecuteScalarAsync()) == 1;
+    }
+
     /// <summary>Stands in for the provider probe and records the pools that were cleared.</summary>
     private sealed class FakeProviders : ITenantDatabaseProviders
     {
@@ -254,4 +295,18 @@ public sealed class TenantDataStoreProvisionerTests : IAsyncLifetime
             return Task.CompletedTask;
         }
     }
+}
+
+/// <summary>The tenant-scoped module context of the provisioner tests; its schema comes from <see cref="CreateShops"/>.</summary>
+public sealed class ProvisionedDbContext(DbContextOptions<ProvisionedDbContext> options) : DbContext(options);
+
+[DbContext(typeof(ProvisionedDbContext))]
+[Migration("20261025000000_CreateShops")]
+public sealed class CreateShops : Migration
+{
+    protected override void Up(MigrationBuilder migrationBuilder)
+        => migrationBuilder.Sql("CREATE TABLE prov_shops (Id TEXT NOT NULL PRIMARY KEY)");
+
+    protected override void Down(MigrationBuilder migrationBuilder)
+        => migrationBuilder.Sql("DROP TABLE prov_shops");
 }

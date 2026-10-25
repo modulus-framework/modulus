@@ -45,6 +45,7 @@ public sealed class CachedSecretStore(
             {
                 var value = await backend.GetAsync(reference, cancellationToken);
                 _entries[reference.Path] = new Entry(value, clock.GetUtcNow());
+                TrimToBound();
                 return value;
             }
             catch (SecretStoreUnavailableException ex) when (TryGetStale(reference, out var stale))
@@ -75,6 +76,16 @@ public sealed class CachedSecretStore(
 
         value = entry.Value;
         return true;
+    }
+
+    /// <summary>Drops the oldest fetches while the cache is over <see cref="SecretsOptions.MaxEntries"/>.</summary>
+    private void TrimToBound()
+    {
+        while (_entries.Count > _options.MaxEntries)
+        {
+            var oldest = _entries.MinBy(e => e.Value.FetchedAt);
+            _entries.TryRemove(oldest.Key, out _);
+        }
     }
 
     private bool TryGetStale(SecretReference reference, out SecretValue value)

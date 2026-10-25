@@ -14,6 +14,7 @@ public static class MultiTenancyExtensions
         // Deny-by-default tenant store: resolvers can always resolve an
         // ITenantStore even before a real one is registered.
         services.TryAddSingleton<ITenantStore, NullTenantStore>();
+        services.TryAddSingleton<ITenantDirectory>(sp => new TenantStoreDirectory(sp.GetRequiredService<ITenantStore>()));
 
         // Files of a multi-tenant host are isolated by tenant unless the app opted out (StorageOptions.IsolateTenants = false).
         services.PostConfigure<Modulus.Storage.StorageOptions>(o => o.IsolateTenants ??= true);

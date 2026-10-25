@@ -196,6 +196,16 @@ internal sealed partial class AiCapabilityRegistry
                     $"'{type.FullName}' carries an AI attribute but is not an IQuery<T>.");
             var permission = type.GetCustomAttribute<RequirePermissionAttribute>()?.Permission;
 
+            // Fail closed: without a permission every user of the company could call it. Open access must be declared, with a reason.
+            if (permission is null)
+            {
+                var declaredPublic = capability?.Public == true || resource?.Public == true;
+                var reason = capability?.Reason ?? resource?.Reason;
+                Check(declaredPublic && !string.IsNullOrWhiteSpace(reason),
+                    $"'{type.FullName}' is an AI capability or resource with no [RequirePermission]. Add one, or declare it open with "
+                    + "Public = true and a Reason naming why every signed-in user of the company may read it.");
+            }
+
             if (capability is not null)
             {
                 Check(CapabilityName().IsMatch(capability.Name),

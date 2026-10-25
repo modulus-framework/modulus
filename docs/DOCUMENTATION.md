@@ -2058,6 +2058,95 @@ Not built / limits: IdP-initiated SSO (unsolicited responses are refused on purp
 `dotnet build modulus.slnx` (0 warnings), `dotnet test modulus.slnx --filter "Category=Unit"`, `dotnet format modulus.slnx --verify-no-changes`; new public API goes in `PublicAPI.Unshipped.txt` (net10 only).
 
 <!-- source: docs/PRODUCTION_READINESS_PLAN.md -->
+## Production readiness audit 2026-10-25: findings and remediation plan
+
+**Status (2026-10-25): plan approved, no fix started.** Read-only, evidence-based audit of the repository (code, templates, tests, workflows) and of the sibling `ai-platform` document set (no code). Nothing here was built or run in that session; gate results come from the 2026-10-22/23 runs in the earlier section. Items marked *verify* need a failing test before they are treated as defects. Tick a finding when its fix and named test land.
+
+Scope: framework core, optional packages, CLI templates, CI and release, and the AI connector. `modulus-ui` was not audited. Stack versions and licences (section H of the plan) are not verified.
+
+### Verdict
+
+Not production-ready as a released framework. Strong foundation: explicit module lifecycle, fail-closed shared-database tenancy (EF filter, write guard, raw-SQL guard, RLS on PostgreSQL and SQL Server), closed-by-default endpoints with a startup guard and probe suite, hash-chained audit, transactional outbox/inbox, a broad identity stack, a read-only AI connector with signed envelopes. Blocked by release packaging, bulk-operation and database-per-tenant defects, and fail-open paths on non-HTTP and AI surfaces.
+
+### Release blockers (P0)
+
+- [ ] **F-24** Generated apps pin 1.6.0 (`cli/Services/Models.cs`), which is not on nuget.org; the 1.5.0 Platform lacks types the templates use. CHANGELOG has no 1.6.0 entry. *Decision for the owner: publish 1.6.0 or pin a published version.*
+- [ ] **F-23** No shipped public-API baseline (all 47 `PublicAPI.Shipped.txt` are empty) and no `EnablePackageValidation`. *Fix:* move Unshipped to Shipped at the release commit and enable package validation against it.
+
+### Tenant isolation and data integrity
+
+- [x] **F-01 (High)** Bulk `ExecuteUpdate`/`ExecuteDelete` bypass the write guard (`ModuleDbContext.cs:597-625`) and soft delete (`:536-543`). `ExecuteUpdate` can move rows to another tenant; `ExecuteDelete` hard-deletes `ISoftDelete` rows. *Fix:* command interceptor refuses `SetProperty(TenantId)` in a tenant and `ExecuteDelete` on soft-delete tables unless `HardDelete.Allow(reason)`. *Test:* both refused on SQLite and PostgreSQL.
+  - Note: the `SaveChanges` path is excluded from the bulk check (`CommandSource.SaveChanges`). The soft delete rewrites every column of the row, so its UPDATE names `TenantId` with the row's own value; the save-time guard covers that path. The first version of this check caught it and broke `Modulus.AI.Connector.EntityFrameworkCore.Tests` (the earlier F-01 run did not include that suite); fixed and re-run 31/31.
+  - Done on SQLite: `TenantSqlGuardInterceptor.CheckBulkStatement` refuses an UPDATE that sets `TenantId` on a tenant table in a tenant (`CrossTenantSqlException`, unless `CrossTenantSql.Allow`) and a DELETE of soft-delete rows in any context (`HardDeleteException`, unless the new `HardDelete.Allow(reason)`). Tests: `BulkOperationGuardTests` (5). PostgreSQL not run (no container in this session).
+- [x] **F-02 (High)** The outbox never drains per-tenant databases: `OutboxProcessor.ProcessAsync` (`src/messaging/Modulus.Outbox/OutboxProcessor.cs:31-71`) runs with no tenant and `RequireTenant` throws on every poll. *Fix:* enumerate active tenants and process each in `EnterTenant(verified)` with a per-tenant lease; same for inbox purge and webhook delivery. *Test:* two tenants on MySQL/PostgreSQL both dispatch.
+  - Done (outbox dispatch only): `Core.ITenantDirectory` (adapted from `ITenantStore` in Platform, `TryAddSingleton` in `AddMultiTenancy`). `OutboxProcessor` skips contexts with a `TenantDatabaseRoute` in the host pass and drains each active tenant in its own scope, entered with its verified tenant; one failing tenant is logged and the others still run. Tests: `OutboxPerTenantTests` (2); `Modulus.Outbox.Tests` 30/30; `Modulus.Platform.Tests` 588/588. Not run: MySQL/PostgreSQL integration (no container). Still open: the inbox purge and webhook delivery, which need the same fan-out.
+- [x] **F-03 (High, repro needed)** Host work after tenant work uses the tenant's database: `TenantConnectionInterceptor.cs:30-31,50-51` returns without restoring the connection string mutated at `:72-75`. *Fix:* save and restore the host string; refuse a tenant change while open. *Test:* tenant A query, then `Change(null)` query hits the host database.
+  - Done: host path restores the first (host) string (`RestoreHost`); a retarget of an open connection throws. Tests: `TenantConnectionInterceptorTests` (3). Passing with the 70 other unit tests in `Modulus.EntityFrameworkCore.Tests`.
+- [x] **F-04 (High)** OpenBao AppRole re-login fails after the token's max TTL: `OpenBaoTokenProvider.cs:104-112` re-reads a single-use `secret_id` (runbook `openbao-production.md:81-82`); stale cache serves only on `SecretStoreUnavailableException` (`CachedSecretStore.cs:50`). *Fix:* map login refusal to unavailable (stale-while-error); document a re-issued Secret ID or recommend Kubernetes auth / OpenBao Agent. Also limit `AllowInsecureHttp` to Development (`OpenBaoOptions.cs:88`) and bound the cache. *Test:* login refusal after max TTL; insecure HTTP refused in Production.
+  - Done: a refused login (403/400) is `SecretStoreUnavailableException`, so `CachedSecretStore` serves the last good value within its stale bound (`OpenBaoTokenProvider.LoginAsync`); `AllowInsecureHttp` is refused unless the host is Development (`OpenBaoOptionsValidator`, now given `IHostEnvironment`). Tests: `OpenBaoTokenProviderTests.LoginRefusedByPolicyIsUnavailable...`, `OpenBaoInsecureHttpTests` (3); `Modulus.Secrets.OpenBao.Tests` 43/43.
+  - Done (closing the open items): the cache is bounded by `Secrets:MaxEntries` (default 10000; the oldest fetch is dropped first; test `Cache_HoldsNoMoreThanMaxEntries...`); the runbook (`docs/runbooks/openbao-production.md`, section 6) states that a single-use Secret ID fails on re-login and names Kubernetes auth or OpenBao Agent for long-running hosts; the integration host runs with a Development environment (not run here: needs a container).
+- [ ] **F-05 (Medium)** Pool clearing after rotation is not wired: `AddPostgreSqlPerTenantDatabase` / `AddSqlServerPerTenantDatabase` never call `AddTenantDatabaseProvider` (`TenantDataStoreEvents.cs:21,31`). *Fix:* register providers in each helper; correct `DOCUMENTATION.md` (the database-per-tenant text near line 6095).
+- [x] **F-06 (High)** The provisioning host marks a tenant store `Active` with an empty schema: `TenantDataStoreProvisioner.MigrateTenantAsync` (`:238-258`) has no module contexts and uses `MigrateOrCreate`. *Fix:* the provisioner runs the app's module migrations with `Migrate`; activate only after history matches. *Test:* provisioned tenant has every module's tables.
+  - Done: `TenantDataStoreProvisioner.MigrateTenantAsync` migrates only the module contexts routed to the store being provisioned, requires EF Core migrations (no `EnsureCreated`), refuses a store with no such context (`ConflictException`), and activates only when no migration is pending. Externally managed (dbsh) contexts are skipped; their schema is applied by their own tool, so activation does not verify it. Tests: `TenantDataStoreProvisionerTests` (migrated schema asserted, no-context refusal), `TenantDatabaseInterceptorTests` (no-migrations refusal), `TenantDataStoreEndpointTests`; `Modulus.MultiTenancy.Tests` 162/162, `Modulus.Authorization.EntityFrameworkCore.Tests` 143/143. The F-06 note that the host has no module contexts was not the cause: the scope has them; the defect was activating without checking the schema.
+- [ ] **F-07 (Medium)** `MigrateModulusDatabasesForTenantsAsync` reports success when tenant listing fails or `ICurrentTenant` is null (`TenantDatabaseMigrationExtensions.cs:57-71`). *Fix:* throw.
+- [ ] **F-08 (Medium)** No migration lock on net8 (EF 8 providers have no `AcquireDatabaseLockAsync`), and `DatabaseStartup.sbn:32-38` migrates on every replica. *Fix:* advisory lock around migrate and seed on net8; template migrates on startup only when `Database:MigrateOnStartup` is set; document a migrator job.
+- [ ] **F-19 (Medium, verify)** `ApplyQueryFilters` (`ModuleDbContext.cs:398-410`) sets filters on derived TPH/TPT types, which EF rejects. *Test:* inheritance model builds.
+- [ ] **F-20 (Medium, verify)** Soft delete converts to `Modified` (`:539`) and leaves cascaded dependents in `Deleted`, which are then hard-deleted. *Test:* dependent survives a soft delete.
+- [ ] **F-30 (High, missing capability)** No tenant export, offboarding, deletion certificate or retention job (AGENTS.md confirms not built). *Fix:* optional package, not core.
+
+### Authorization and data exposure
+
+- [ ] **F-09 (High, partly done)** Generated Create/Update/Delete commands (`cli/Templates/module/Application/*Command.sbn`) carry no `[RequirePermission]`, and `AuthorizationBehavior.cs:26` passes them through. Jobs, event handlers and new transports run them unchecked. *Fix:* generate the attribute on commands and queries. Also make `GrantStorePermissionChecker` (`:30-32`) use the job initiator from `ICurrentUser`, since jobs currently always get 403.
+  - Done: the Create, Update and Delete command templates carry `[RequirePermission("{module}:{route}:manage")]` under the same condition as the endpoints' `Permissions(...)` (a host with an Admin role). Tests: `ApiPermissionTests` (6 new); `Modulus.Cli.Tests` 674/674. Breaking for generated apps: a command run without a signed-in user that holds the permission is now refused.
+  - Done: the job path. `GrantStorePermissionChecker` resolves a job with no HTTP request as its initiator (`JobContext.InitiatorId`) with the roles the identity store holds for them when the job started; a system job has no person and gets nothing (tests: `A_job_runs_with_its_initiators_grants`, `A_system_job_has_no_permissions`). Query templates (`GetAllQuery`, `GetByIdQuery`, `GetCursorQuery`, `GetForEditQuery`) carry the attribute on the same condition; the AI wiring does not add a second one (`MarkQuery` checks for an existing `[RequirePermission(`). `Modulus.Cli.Tests` 682/682; `Modulus.Identity.Tests` 565/565.
+  - Still open (a decision, not a fix): hosts with no identity backend. Their endpoints are open to any authenticated caller, and no one holds the `{module}:{route}:manage` permission there, so making the commands unconditional would refuse every caller of an external-IdP host. Keeping the attribute conditional leaves those commands open to authenticated callers, as the endpoints are. Needs your call: require a grant wired by the generator, or accept the current behaviour.
+- [ ] **F-10 (Medium)** `ClaimsPrincipalCurrentUser.cs:58-61` trusts `permission` claims when no `IPermissionChecker` is registered; the grant-store checker is registered only in the `example_permission` template block (`AuthenticationSetup.sbn:76`). *Fix:* always register it with authorization; honour `TrustPermissionClaims=false` in the mediator.
+- [x] **F-11 (High, fails open)** AI capabilities and resources without `[RequirePermission]` register with `permission = null` (`AiCapabilityRegistry.cs:197`). *Fix:* refuse at startup unless marked `Public = true` with a reason.
+  - Done: `AiCapabilityRegistry.Build` refuses a capability or resource with no `[RequirePermission]` unless it is declared `Public = true` with a non-empty `Reason` (new on `AiCapabilityAttribute` and `AiResourceAttribute`; PublicAPI entries added). Tests: `RegistryAndRevocationTests` (3 new), the fixtures of `Modulus.AI.Connector.Tests` now declare a permission (132/132). Upgrade note: an app whose AI capability has no permission (for example one generated on a host with no Admin role) now fails at startup until it declares one or the reason. Framework capabilities already carry a permission.
+- [ ] **F-12 (Medium)** Envelope replay protection is per node without `IDistributedLock` (`AiEnvelope.cs:160-178`), with a window of about 5.5 minutes while the comment says about 60 s. *Fix:* startup check for >1 replica without a lock; lower default lifetime.
+- [ ] **F-13 (Medium)** `/extract` and `/changes` take the app instance from a query parameter (`AiIndexer.cs:29`), so one API key reads every mapped company. *Fix:* bind API keys to instances.
+- [ ] **F-14 (Medium)** `FieldAuthorizer.SettablePropertiesOf` ignores get-only properties, so classified constructor-set fields are not masked, and `FieldOutputGuard` misses them. *Fix:* mask via rebuilt records or refuse unmaskable classified properties at startup.
+- [ ] **F-15 (Medium, risk)** Field security is opt-in and keyed on DTO attributes; entity classification does not reach the DTO. *Fix:* analyzer or startup check.
+- [ ] **F-16 (Medium)** S3 and Azure presigned GETs set no `Content-Disposition` or content type; Azure upload SAS ignores content type; no upload size policy (`S3FileStorage.cs:57-86`, `AzureBlobFileStorage.cs:124-133`). *Fix:* `attachment` by default, inline allow-list, size policy.
+- [ ] **F-17 (Low)** No CSP default (`SecurityHeadersOptions.cs:20`); MVC has no global antiforgery (`UiSetup.Web.sbn:20`); GET logout (`LogoutModel.Web.sbn:14`, `AccountEndpoints.Blazor.sbn`); `IdentityApiProxy` accepts a missing `Sec-Fetch-Site`; wildcard origin with credentials allowed (`CorsExtensions.cs:47-58`).
+- [ ] **F-18 (Low)** Outbox dispatchers call `Type.GetType` and deserialize before the `IIntegrationEvent` check (`InProcessOutboxDispatcher.cs:19-32`, `MongoOutboxDispatcher.cs:23`, `RebusModuleBus.cs:67`). *Fix:* check the type first.
+
+### Reliability, operations, release
+
+- [ ] **F-28 (High, missing capability)** Default jobs are in-memory and never retried (`ChannelJobQueue`); Quartz uses the in-memory store and throws `JobExecutionException` without retry (`QuartzJobAdapter.cs:86-87`, `QuartzExtensions.cs:30`). *Fix:* Quartz ADO store option, retry/back-off policy, production warning or refusal.
+- [ ] **F-22 (Medium)** `AssemblyVersion` and `FileVersion` use `$(VersionPrefix).0`, ignoring the tag's `-p:Version` (`build/Modulus.Packaging.props`). A `v1.6.1` tag ships `1.6.0.0` assemblies.
+- [ ] **F-25 (Medium)** NuGet push uses `NUGET_API_KEY` (`release.yml:33-38`); no package signing, SBOM or provenance; no `permissions:` blocks; Dependabot does not cover GitHub Actions.
+- [ ] **F-26 (Medium)** About 1,500 `samples/` files are deleted in the working tree and uncommitted, while `tradeflow-sample.yml` still targets `samples/TradeFlow`. *Fix:* delete or retarget the workflow in the same commit as the sample decision. No committed working example app.
+- [ ] **F-27 (Medium)** Declared but never recorded (`src/core/Modulus.Core/ModulusMeters.cs`): `OutboxDispatchLag`, `CacheHits`, `AuthorizationDenied`, `JobsQueueDepth`, `InboxDeadLettered`, `UnresolvedTenant`. No OTel log export (`ModulusOpenTelemetrySetup.cs:52-78`); `OutboxDepth` is summed across replicas.
+- [ ] **F-21 (Medium)** Module boundaries are not enforced in generated apps: `AppTests.sbn:486-548` omits `FindCrossModuleDomainTypeUsage` and `FindCrossModuleDbContextUsage`; `ModuleBoundaryRules.GetReferencedTypes` (`:215-247`) misses generic arguments and value types.
+- [ ] **F-29 (Low/Medium)** Notifications (only in-app and Identity email), localization store (memory only), no time-zone or money primitive; `ModuleLoader.cs:132` runs shutdown for modules that never initialized after a failed first init.
+
+### Verification gates for this audit
+
+- `dotnet build modulus.slnx -c Release`: 0 warnings, 0 errors.
+- `dotnet format modulus.slnx --verify-no-changes`: clean.
+- `dotnet test modulus.slnx --filter "Category=Unit"`: green on net8.0 and net10.0.
+- Integration (Podman, `Category=Integration`): bulk-operation guard (SQLite, PostgreSQL), per-tenant outbox (MySQL/PostgreSQL), host-after-tenant routing, provisioning schema.
+- CLI suite green after template changes; a regenerated `api --auth openiddict --multi-tenancy` app from a local feed passes its tests, including `SecurityProbeTests` and a job-path permission test.
+- Each finding's named test fails before its fix and passes after it.
+
+### Remediation order
+
+1. F-03, F-01, F-02, F-06, F-04 (tenancy and secrets, P0).
+2. F-09, F-11 (permissions on non-HTTP and AI paths, P0).
+3. F-24, F-23 (release decision and API baseline, owner decision).
+4. P1: F-05, F-07, F-08, F-10, F-12, F-13, F-14, F-16, F-19, F-20, F-22, F-25, F-26, F-27, F-28, F-30.
+5. P2: F-15, F-17, F-18, F-21, F-29, module dependency validation, a committed sample, rate-limiter partition cap, documentation drift (`DOCUMENTATION.md` near lines 1902 and 6095).
+6. P3 (AI foundation, in `ai-platform` first): an ADR for agent actions as app-executed proposals, keeping AD-19 (models hold no tools). Then `[AiAction]`, a preview endpoint and conformance categories in Modulus. Actions execute only through the app's own endpoint, under the user's session, with `Idempotency-Key`, `IApprovalWorkflow` where policy requires, and audit.
+
+### AI platform assessment
+
+The Modulus connector is a read-only, conformance-tested base. The `ai-platform` document set (BRS v6.5, Architecture, ADR-01…28) is design only and already forbids write and tool use on the model (BRS §1.4, AD-19), listing writes as a known gap (Architecture §20). The recommended shape is proposal, preview, user confirmation, then execution by the app. The platform never holds write credentials.
+
+### Domain fit (summary)
+
+Shared-database API and web apps can be built on the current core once the P0 items are done, for e-commerce, food delivery, ERP, rental and personal finance. The gaps are shared infrastructure, not domain logic: durable jobs, notifications, money and time-zone primitives, export and retention, and per-tenant databases. Hospital and clinic apps also need record-read audit, retention and deletion, field security on by default, and a jurisdiction review; the framework cannot supply those alone.
+
 ## Production readiness: review findings and plan
 
 **Status (2026-10-11): in progress, not production-ready.** Steps 0 through 4 are done, and the CHANGELOG is written. The status becomes "complete" once the gates under *Verification* that have not run yet pass. Tick each box when its fix and test land. Set this status to "complete" once every gate in

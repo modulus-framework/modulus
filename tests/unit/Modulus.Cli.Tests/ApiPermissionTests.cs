@@ -53,6 +53,52 @@ public sealed class ApiPermissionTests
         endpoints.Should().NotContain("Permissions(").And.NotContain("Every endpoint below needs");
     }
 
+    // ── The commands carry the same permission, so a job or a handler call is guarded too ──
+
+    [Theory]
+    [InlineData("module/Application/CreateCommand", "CreateProductCommand")]
+    [InlineData("module/Application/UpdateCommand", "UpdateProductCommand")]
+    [InlineData("module/Application/DeleteCommand", "DeleteProductCommand")]
+    public void Write_commands_require_the_permission_the_endpoints_declare(string template, string record)
+    {
+        var source = _engine.Render(template, Crud("catalog:products:manage"));
+
+        source.Should().Contain("[RequirePermission(\"catalog:products:manage\")]");
+        source.Should().Contain($"public sealed record {record}(");
+    }
+
+    [Theory]
+    [InlineData("module/Application/GetAllQuery")]
+    [InlineData("module/Application/GetByIdQuery")]
+    [InlineData("module/Application/GetCursorQuery")]
+    [InlineData("module/Application/GetForEditQuery")]
+    public void Read_queries_require_the_same_permission(string template)
+    {
+        var source = _engine.Render(template, Crud("catalog:products:manage"));
+
+        source.Should().Contain("[RequirePermission(\"catalog:products:manage\")]");
+        source.Should().Contain("using Modulus.Mediator.Abstractions.Attributes;");
+    }
+
+    [Theory]
+    [InlineData("module/Application/GetAllQuery")]
+    [InlineData("module/Application/GetByIdQuery")]
+    [InlineData("module/Application/GetCursorQuery")]
+    [InlineData("module/Application/GetForEditQuery")]
+    public void Read_queries_have_no_permission_attribute_without_a_permission(string template)
+    {
+        _engine.Render(template, Crud(null)).Should().NotContain("RequirePermission");
+    }
+
+    [Theory]
+    [InlineData("module/Application/CreateCommand")]
+    [InlineData("module/Application/UpdateCommand")]
+    [InlineData("module/Application/DeleteCommand")]
+    public void Write_commands_have_no_permission_attribute_without_a_permission(string template)
+    {
+        _engine.Render(template, Crud(null)).Should().NotContain("RequirePermission");
+    }
+
     // ── Which hosts have a role to hold it ───────────────────────
 
     [Fact]

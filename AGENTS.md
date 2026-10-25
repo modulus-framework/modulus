@@ -267,6 +267,8 @@ tracked as a checklist item, with file:line, fix and test, in
 [`docs/DOCUMENTATION.md#production-readiness-review-findings-and-plan`](docs/DOCUMENTATION.md#production-readiness-review-findings-and-plan). Tick an item there when its fix lands.
 Completed plans are in `docs/DOCUMENTATION.md`, in the archive sections.
 
+The 2026-10-25 audit (tenancy, bulk operations, per-tenant databases, OpenBao, generated-command permissions, AI fail-open paths, release packaging) is a plan with a checkbox per finding (F-01 to F-30) in [`docs/DOCUMENTATION.md#production-readiness-audit-2026-10-25-findings-and-remediation-plan`](docs/DOCUMENTATION.md#production-readiness-audit-2026-10-25-findings-and-remediation-plan). Its P0 fixes are not started; work them in the order given there.
+
 ## Earlier review findings (all fixed)
 
 Kept for history:

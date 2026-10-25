@@ -11,8 +11,10 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
+using Modulus.Core.Abstractions;
 using Modulus.Core.Abstractions.Secrets;
 using Modulus.Core.Abstractions.Tenancy;
+using Modulus.EntityFrameworkCore.Isolation;
 using Modulus.MultiTenancy.EntityFrameworkCore;
 using Modulus.MultiTenancy.Extensions;
 using Modulus.Secrets;
@@ -31,9 +33,13 @@ public sealed class TenantDataStoreEndpointTests : IAsyncLifetime
 {
     private static readonly Guid Tenant = Guid.Parse("eeeeeeee-0000-0000-0000-000000000005");
     private const string Route = "/api/tenancy/data-stores";
-    private const string Connection = "Data Source=endpoint-secret.db;Password=do-not-return";
 
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+
+    // The tenant's database is a file, migrated by the provisioning route through the module context routed to "primary".
+    // The marker sits in the file name: a SQLite "Password" keyword is refused by this native build, and the response must not echo the path.
+    private readonly string _dbPath = Path.Combine(Path.GetTempPath(), $"do-not-return-{Guid.NewGuid():N}.db");
+    private string Connection => $"Data Source={_dbPath}";
 
     private readonly SqliteConnection _storeKeepAlive = new("DataSource=:memory:");
     private readonly InMemorySecretStore _secrets = new();
@@ -55,6 +61,14 @@ public sealed class TenantDataStoreEndpointTests : IAsyncLifetime
         builder.Services.AddSingleton<ITenantDatabaseResolver>(sp => new TenantDatabaseResolver(
             sp.GetRequiredService<IServiceScopeFactory>(), _secrets, sp.GetRequiredService<ISecretCache>(),
             Options.Create(new TenantDataStoreOptions()), TimeProvider.System));
+        var route = new TenantDatabaseRoute(typeof(ProvisionedDbContext), "primary", "sqlite");
+        builder.Services.AddSingleton(route);
+        builder.Services.AddScoped(sp => new ProvisionedDbContext(new DbContextOptionsBuilder<ProvisionedDbContext>()
+            .UseSqlite("DataSource=:memory:")
+            .AddInterceptors(new TenantConnectionInterceptor(
+                sp.GetRequiredService<ITenantDatabaseResolver>(), sp.GetRequiredService<ICurrentTenant>(), route))
+            .Options));
+        builder.Services.AddScoped<DbContext>(sp => sp.GetRequiredService<ProvisionedDbContext>());
         builder.Services.AddAuthorization(o => o.AddPolicy(TenantDataStoreEndpoints.ManagePermission, p => p.RequireAssertion(_ => true)));
 
         _app = builder.Build();
@@ -75,6 +89,8 @@ public sealed class TenantDataStoreEndpointTests : IAsyncLifetime
         await _app.StopAsync();
         await _app.DisposeAsync();
         _storeKeepAlive.Dispose();
+        SqliteConnection.ClearAllPools();
+        File.Delete(_dbPath);
     }
 
     [Fact]

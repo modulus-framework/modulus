@@ -1,5 +1,6 @@
 using Modulus.Core.Abstractions.Common;
 using Modulus.Mediator.Abstractions;
+using Modulus.Mediator.Abstractions.Attributes;
 using {{ module_namespace }}.Application.Dtos;
 
 namespace {{ module_namespace }}.Application;
@@ -8,7 +9,8 @@ namespace {{ module_namespace }}.Application;
 /// One keyset page of {{ entity_name_lower }}s after the opaque <see cref="Cursor"/> (null = the first page). The keys are Guid v7,
 /// so the pages follow creation time. The result names the next page in <see cref="KeysetPage{T}.NextCursor"/>.
 /// </summary>
-public sealed record Get{{ entity_plural }}CursorQuery(string? Cursor = null, int PageSize = Get{{ entity_plural }}CursorQuery.DefaultPageSize)
+{{ if required_permission }}[RequirePermission("{{ required_permission }}")]
+{{ end }}public sealed record Get{{ entity_plural }}CursorQuery(string? Cursor = null, int PageSize = Get{{ entity_plural }}CursorQuery.DefaultPageSize)
     : IQuery<KeysetPage<{{ entity_name }}Dto>>
 {
     public const int DefaultPageSize = 100;

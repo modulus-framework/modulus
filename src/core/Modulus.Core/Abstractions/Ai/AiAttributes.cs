@@ -37,6 +37,15 @@ public sealed class AiCapabilityAttribute : Attribute
     /// reference and a deep link. Null for results that are not records (totals, counts).
     /// </summary>
     public string? ResourceType { get; set; }
+
+    /// <summary>
+    /// Set when every signed-in user of the company may read this without a permission. Needs a <see cref="Reason"/>. Without it, the
+    /// capability must carry <c>[RequirePermission]</c>, or the connector refuses to start.
+    /// </summary>
+    public bool Public { get; set; }
+
+    /// <summary>Why every signed-in user of the company may read this. Required with <see cref="Public"/>.</summary>
+    public string? Reason { get; set; }
 }
 
 /// <summary>
@@ -65,6 +74,15 @@ public sealed class AiResourceAttribute : Attribute
 
     /// <summary>The resource type name.</summary>
     public string ResourceType { get; }
+
+    /// <summary>
+    /// Set when every signed-in user of the company may read records of this type without a permission. Needs a <see cref="Reason"/>.
+    /// Without it, the lookup must carry <c>[RequirePermission]</c>, or the connector refuses to start.
+    /// </summary>
+    public bool Public { get; set; }
+
+    /// <summary>Why every signed-in user of the company may read records of this type. Required with <see cref="Public"/>.</summary>
+    public string? Reason { get; set; }
 
     /// <summary>What a record of this type is.</summary>
     public string Description { get; }

@@ -5,6 +5,7 @@ using System.Security.Cryptography.X509Certificates;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Modulus.Core.Abstractions;
@@ -99,7 +100,7 @@ public static class OpenBaoSecretsExtensions
         services.AddOptions<OpenBaoOptions>()
             .Bind(configuration.GetSection(OpenBaoOptions.SectionName))
             .ValidateOnStart();
-        services.AddSingleton<IValidateOptions<OpenBaoOptions>, OpenBaoOptionsValidator>();
+        services.AddSingleton<IValidateOptions<OpenBaoOptions>>(sp => new OpenBaoOptionsValidator(sp.GetService<IHostEnvironment>()));
     }
 
     private static void ConfigureClient(IServiceProvider sp, HttpClient client)
@@ -144,10 +145,17 @@ public static class OpenBaoSecretsExtensions
         return chain.Build(certificate);
     }
 
-    internal sealed class OpenBaoOptionsValidator : IValidateOptions<OpenBaoOptions>
+    internal sealed class OpenBaoOptionsValidator(IHostEnvironment? environment) : IValidateOptions<OpenBaoOptions>
     {
         public ValidateOptionsResult Validate(string? name, OpenBaoOptions options)
-            => options.Validate() is { } problem ? ValidateOptionsResult.Fail(problem) : ValidateOptionsResult.Success;
+        {
+            // Plain http is for a local Development OpenBao only. Without a known Development environment it is refused.
+            if (options.AllowInsecureHttp && options.Address.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
+                && environment?.IsDevelopment() != true)
+                return ValidateOptionsResult.Fail("Secrets:OpenBao:AllowInsecureHttp is allowed only in the Development environment.");
+
+            return options.Validate() is { } problem ? ValidateOptionsResult.Fail(problem) : ValidateOptionsResult.Success;
+        }
     }
 
     internal sealed class WriterRequiredValidator : IValidateOptions<OpenBaoOptions>

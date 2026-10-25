@@ -108,8 +108,12 @@ internal sealed class OpenBaoTokenProvider(
             };
 
         using var response = await http.PostAsJsonAsync($"v1/auth/{auth.LoginMount}/login", body, cancellationToken);
+        // A refused login is an availability failure for the caller, not a programming error: the AppRole Secret ID is
+        // single-use (see the runbook), so a refusal means the identity needs re-issuing. The secret cache serves its last
+        // good value within the stale bound while that happens, instead of failing every tenant database at once.
         if (response.StatusCode is HttpStatusCode.Forbidden or HttpStatusCode.BadRequest)
-            throw new InvalidOperationException("OpenBao refused the login. Check the identity's role and auth mount.");
+            throw new SecretStoreUnavailableException(
+                "OpenBao refused the login. Check the identity's role, the auth mount and whether the Secret ID is still valid.");
         if (!response.IsSuccessStatusCode)
             throw new SecretStoreUnavailableException($"OpenBao login returned {(int)response.StatusCode}.");
 

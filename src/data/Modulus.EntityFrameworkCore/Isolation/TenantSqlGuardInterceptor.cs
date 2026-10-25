@@ -51,7 +51,26 @@ public sealed class TenantSqlGuardInterceptor : DbCommandInterceptor, IQueryExpr
         .GetMethods()
         .Single(m => m.Name == nameof(EntityFrameworkQueryableExtensions.TagWith) && m.GetParameters().Length == 2);
 
-    private readonly ConditionalWeakTable<IModel, TenantTables> _tables = new();
+    /// <summary>The audit action of a bulk statement refused or allowed by <see cref="CheckBulkStatement"/>.</summary>
+    private const string BulkAction = "sql.bulk";
+
+    // A statement opens with its verb, after any leading "-- tag" comment lines EF Core writes.
+    private static readonly Regex BulkVerb = new(
+        @"^(?:\s*--[^\r\n]*\r?\n)*\s*(?<verb>UPDATE|DELETE)\b",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1));
+
+    // The SET list of an UPDATE, up to its WHERE (if any).
+    private static readonly Regex SetClause = new(
+        @"\bSET\s(?<set>.*?)(?=\sWHERE\s|$)",
+        RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1));
+
+    // "TenantId" as an assignment target, quoted or bare: "TenantId" = , [TenantId] = , `TenantId` = .
+    private static readonly Regex TenantIdAssignment = new(
+        @"(?<![\w$])[""`\[]?TenantId[""`\]]?\s*=",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1));
+
+    private readonly ConditionalWeakTable<IModel, ModelTables> _tenantTables = new();
+    private readonly ConditionalWeakTable<IModel, ModelTables> _softDeleteTables = new();
 
     private TenantSqlGuardInterceptor()
     {
@@ -114,7 +133,14 @@ public sealed class TenantSqlGuardInterceptor : DbCommandInterceptor, IQueryExpr
 
     private void Check(DbCommand command, CommandEventData eventData)
     {
-        if (eventData.Context is not ModuleDbContext context || context.TenantSession.IsHost)
+        if (eventData.Context is not ModuleDbContext context)
+            return;
+
+        // A SaveChanges statement is checked by the save-time write guard, and it is not a bulk move: the soft delete rewrites
+        // every column of a row, so its SET list names TenantId with the row's own value.
+        if (eventData.CommandSource != CommandSource.SaveChanges)
+            CheckBulkStatement(command, context);
+        if (context.TenantSession.IsHost)
             return;
 
         var text = command.CommandText;
@@ -129,7 +155,7 @@ public sealed class TenantSqlGuardInterceptor : DbCommandInterceptor, IQueryExpr
         if (origin is null)
             return;
 
-        var tables = _tables.GetValue(context.Model, static model => new TenantTables(model)).Find(command.CommandText);
+        var tables = _tenantTables.GetValue(context.Model, static model => new ModelTables(model, typeof(IHasTenantId))).Find(command.CommandText);
         if (tables.Count == 0)
             return;
 
@@ -150,9 +176,62 @@ public sealed class TenantSqlGuardInterceptor : DbCommandInterceptor, IQueryExpr
         throw new CrossTenantSqlException(tables, origin);
     }
 
+    /// <summary>
+    /// <c>ExecuteUpdate</c> / <c>ExecuteDelete</c> run as plain UPDATE / DELETE statements, so the save-time guard and the soft
+    /// delete never see them. An UPDATE that sets <c>TenantId</c> on a tenant table moves rows between companies: refused in a
+    /// tenant unless <see cref="CrossTenantSql.Allow"/> is open. A DELETE on a soft-delete table destroys rows the soft delete
+    /// keeps: refused unless <see cref="HardDelete.Allow"/> is open. The host context may move rows, not delete soft-delete ones
+    /// silently. The decision is taken per execution, so a cached compiled query is checked too.
+    /// </summary>
+    private void CheckBulkStatement(DbCommand command, ModuleDbContext context)
+    {
+        var text = command.CommandText;
+        var verb = BulkVerb.Match(text);
+        if (!verb.Success)
+            return;
+
+        if (verb.Groups["verb"].Value.Equals("UPDATE", StringComparison.OrdinalIgnoreCase))
+        {
+            if (context.TenantSession.IsHost || !SetsTenantId(text))
+                return;
+            var tenantTables = _tenantTables.GetValue(context.Model, static model => new ModelTables(model, typeof(IHasTenantId))).Find(text);
+            if (tenantTables.Count == 0)
+                return;
+            if (CrossTenantSql.CurrentReason is { } reason)
+            {
+                Audit(ContextAudit(context), context, SecurityAuditOutcomes.Overridden, tenantTables, "A bulk update that sets TenantId", reason, BulkAction);
+                return;
+            }
+
+            Audit(ContextAudit(context), context, SecurityAuditOutcomes.Denied, tenantTables, "A bulk update that sets TenantId", reason: null, BulkAction);
+            throw new CrossTenantSqlException(tenantTables, "A bulk update that sets TenantId");
+        }
+
+        var softDeleteTables = _softDeleteTables.GetValue(context.Model, static model => new ModelTables(model, typeof(ISoftDelete))).Find(text);
+        if (softDeleteTables.Count == 0)
+            return;
+        if (HardDelete.CurrentReason is { } hardReason)
+        {
+            Audit(ContextAudit(context), context, SecurityAuditOutcomes.Overridden, softDeleteTables, "A bulk delete of soft-delete rows", hardReason, BulkAction);
+            return;
+        }
+
+        Audit(ContextAudit(context), context, SecurityAuditOutcomes.Denied, softDeleteTables, "A bulk delete of soft-delete rows", reason: null, BulkAction);
+        throw new HardDeleteException(softDeleteTables);
+    }
+
+    private static bool SetsTenantId(string sql)
+    {
+        var set = SetClause.Match(sql);
+        return set.Success && TenantIdAssignment.IsMatch(set.Groups["set"].Value);
+    }
+
+    private static ISecurityAuditLog? ContextAudit(ModuleDbContext context) => context.ContextServices.GetService<ISecurityAuditLog>();
+
     // The statement text is never recorded: it may carry literal values (personal data, secrets).
     internal static void Audit(
-        ISecurityAuditLog? audit, ModuleDbContext context, string outcome, IReadOnlyList<string> tables, string origin, string? reason)
+        ISecurityAuditLog? audit, ModuleDbContext context, string outcome, IReadOnlyList<string> tables, string origin, string? reason,
+        string action = "sql.cross-tenant")
     {
         if (audit is null)
             return;
@@ -163,7 +242,7 @@ public sealed class TenantSqlGuardInterceptor : DbCommandInterceptor, IQueryExpr
         audit.Record(new SecurityAuditEvent
         {
             Category = SecurityAuditCategories.Data,
-            Action = "sql.cross-tenant",
+            Action = action,
             Outcome = outcome,
             TenantId = context.TenantSession.TenantId,
             Actor = context.ContextServices.GetService<ICurrentUser>()?.UserId?.ToString(),
@@ -172,15 +251,15 @@ public sealed class TenantSqlGuardInterceptor : DbCommandInterceptor, IQueryExpr
         });
     }
 
-    /// <summary>The tables of a model's tenant entities, matched by name (quoted or bare) in command text.</summary>
-    private sealed class TenantTables
+    /// <summary>The tables of a model's entities of one marker type, matched by name (quoted or bare) in command text.</summary>
+    private sealed class ModelTables
     {
         private readonly Regex? _pattern;
 
-        public TenantTables(IModel model)
+        public ModelTables(IModel model, Type marker)
         {
             var names = model.GetEntityTypes()
-                .Where(e => typeof(IHasTenantId).IsAssignableFrom(e.ClrType))
+                .Where(e => marker.IsAssignableFrom(e.ClrType))
                 .Select(e => e.GetTableName())
                 .OfType<string>()
                 .Distinct(StringComparer.OrdinalIgnoreCase)
