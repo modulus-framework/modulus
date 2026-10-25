@@ -119,7 +119,7 @@ public class ModulusTokenController(
             return await HandlePasskeyGrantAsync(request);
 
         // Token exchange (spec 12A): only registered (and allowed by OpenIddict) when Identity:TokenExchange:Enabled is set.
-        if (request.GrantType == TokenExchangeGrant.GrantType)
+        if (request.IsTokenExchangeGrantType())
             return await HandleTokenExchangeAsync(request);
 
         return BadRequest(new { error = "unsupported_grant_type" });

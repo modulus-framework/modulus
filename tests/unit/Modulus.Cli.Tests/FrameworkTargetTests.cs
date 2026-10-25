@@ -23,14 +23,14 @@ public sealed class FrameworkTargetTests : IDisposable
     }
 
     [Theory]
-    [InlineData("SqlServer", "net8.0", "8.0.31")]
+    [InlineData("SqlServer", "net8.0", "8.0.32")]
     [InlineData("PostgreSQL", "net8.0", "8.0.11")]
-    [InlineData("MySQL", "net8.0", "8.0.8")]
-    [InlineData("SQLite", "net8.0", "8.0.31")]
-    [InlineData("SqlServer", "net10.0", "10.0.9")]
-    [InlineData("PostgreSQL", "net10.0", "10.0.2")]
-    [InlineData("MySQL", "net10.0", "10.0.7")]
-    [InlineData("SQLite", "net10.0", "10.0.9")]
+    [InlineData("MySQL", "net8.0", "8.0.31")]
+    [InlineData("SQLite", "net8.0", "8.0.32")]
+    [InlineData("SqlServer", "net10.0", "10.0.13")]
+    [InlineData("PostgreSQL", "net10.0", "10.0.3")]
+    [InlineData("MySQL", "net10.0", "10.0.12")]
+    [InlineData("SQLite", "net10.0", "10.0.13")]
     public void The_provider_version_follows_the_target(string provider, string framework, string version)
         => DbProviderInfo.Version(provider, framework).Should().Be(version);
 

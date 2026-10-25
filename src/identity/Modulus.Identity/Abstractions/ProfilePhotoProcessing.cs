@@ -17,8 +17,8 @@ public enum ProfilePhotoRefusal
     /// <summary>The bytes start like an image but do not decode.</summary>
     Undecodable,
     /// <summary>
-    /// The photo carries an embedded colour profile (ICC). The decoder's colour-profile parser has an unfixed advisory (GHSA-gwg2-r3hj-4w44),
-    /// so such photos are refused until the owner accepts the risk or the parser is fixed. The message asks for a re-save without a profile.
+    /// The photo carries an embedded colour profile (ICC). Profiles are not applied when the photo is stored, so such photos are refused.
+    /// The message asks for a re-save without a profile.
     /// </summary>
     ColorProfileUnsupported,
     /// <summary>

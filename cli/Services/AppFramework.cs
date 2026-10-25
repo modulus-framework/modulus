@@ -37,7 +37,7 @@ internal static partial class AppFramework
     }
 
     /// <summary>EF Core and EF Design for a target (the framework's Directory.Packages.props uses the same versions).</summary>
-    public static string EfCoreVersion(string framework) => framework == "net8.0" ? "8.0.31" : "10.0.9";
+    public static string EfCoreVersion(string framework) => framework == "net8.0" ? "8.0.32" : "10.0.13";
 
     /// <summary>The coverlet collector used by the generated tests, per target.</summary>
     public static string CoverletVersion(string framework) => framework == "net8.0" ? "6.0.4" : "10.0.1";

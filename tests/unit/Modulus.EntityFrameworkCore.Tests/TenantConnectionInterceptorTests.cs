@@ -11,8 +11,8 @@ using Xunit;
 public sealed class TenantConnectionInterceptorTests
 {
     private const string HostConnection = "Data Source=host;Mode=Memory;Cache=Shared";
-    private static readonly Guid TenantA = Guid.CreateVersion7();
-    private static readonly Guid TenantB = Guid.CreateVersion7();
+    private static readonly Guid TenantA = Guid.NewGuid();
+    private static readonly Guid TenantB = Guid.NewGuid();
 
     [Fact]
     public async Task Host_open_after_a_tenant_open_restores_the_host_connection_string()

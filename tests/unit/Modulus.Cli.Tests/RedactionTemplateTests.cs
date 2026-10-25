@@ -73,7 +73,7 @@ public sealed class RedactionTemplateTests
 
     private static string RepositoryVersion(string package)
     {
-        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        var dir = new DirectoryInfo(SourceDirectory());
         while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "Directory.Packages.props")))
             dir = dir.Parent;
         dir.Should().NotBeNull("the tests run inside the repository");
@@ -83,4 +83,8 @@ public sealed class RedactionTemplateTests
             .Single(e => (string?)e.Attribute("Include") == package)
             .Attribute("Version")!.Value;
     }
+
+    // The repository is found from this source file, not the build output, which can live outside the repository.
+    private static string SourceDirectory([System.Runtime.CompilerServices.CallerFilePath] string source = "") => Path.GetDirectoryName(source)!;
+
 }

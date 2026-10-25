@@ -173,6 +173,23 @@ public sealed class TokenExchangeHttpTests : OidcHostTestBase
     }
 
     [Fact]
+    public async Task A_missing_subject_token_type_is_an_invalid_request_from_openiddict()
+    {
+        // OpenIddict validates the token-type parameters before the Modulus handler runs, so its own error comes back here, not
+        // the handler's invalid_grant refusal.
+        await UserInCompanyAsync("ann", s_company);
+        await AgentAsync(s_company, mayActForPeople: true);
+
+        var (status, body) = await TokenAsync(
+            ("grant_type", TokenExchangeGrant.GrantType), ("client_id", AgentClient), ("client_secret", AgentSecret),
+            ("subject_token", await PersonTokenAsync("ann")),
+            ("actor_token", await ActorTokenAsync()), ("actor_token_type", AccessTokenType));
+
+        status.Should().Be(HttpStatusCode.BadRequest, body.ToString());
+        body.GetProperty("error").GetString().Should().Be("invalid_request");
+    }
+
+    [Fact]
     public async Task A_missing_actor_token_is_an_invalid_request()
     {
         await UserInCompanyAsync("ann", s_company);

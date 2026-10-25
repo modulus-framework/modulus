@@ -1893,3 +1893,4 @@ Modulus.Identity.Extensions.UserSummary.LockedUntil.init -> void
 Modulus.Identity.Extensions.UserSummary.UserName.get -> string?
 Modulus.Identity.Extensions.UserSummary.UserName.init -> void
 Modulus.Identity.Extensions.UserSummary.UserSummary(System.Guid id, string? userName, string? email, string? fullName, bool isActive, string! lifecycle, System.DateTimeOffset? lockedUntil) -> void
+const Modulus.Identity.Abstractions.TokenExchangeGrant.AccessTokenType = "urn:ietf:params:oauth:token-type:access_token" -> string!

@@ -19,3 +19,8 @@ override Modulus.Analyzers.ClassifiedLoggerMessageAnalyzer.SupportedDiagnostics.
 override Modulus.Analyzers.ClassifiedLoggerMessageAnalyzer.Initialize(Microsoft.CodeAnalysis.Diagnostics.AnalysisContext! context) -> void
 Modulus.Analyzers.ClassifiedLoggerMessageAnalyzer
 Modulus.Analyzers.ClassifiedLoggerMessageAnalyzer.ClassifiedLoggerMessageAnalyzer() -> void
+const Modulus.Analyzers.UnprojectedClassifiedFieldAnalyzer.DiagnosticId = "MOD0005" -> string!
+override Modulus.Analyzers.UnprojectedClassifiedFieldAnalyzer.SupportedDiagnostics.get -> System.Collections.Immutable.ImmutableArray<Microsoft.CodeAnalysis.DiagnosticDescriptor!>
+override Modulus.Analyzers.UnprojectedClassifiedFieldAnalyzer.Initialize(Microsoft.CodeAnalysis.Diagnostics.AnalysisContext! context) -> void
+Modulus.Analyzers.UnprojectedClassifiedFieldAnalyzer
+Modulus.Analyzers.UnprojectedClassifiedFieldAnalyzer.UnprojectedClassifiedFieldAnalyzer() -> void

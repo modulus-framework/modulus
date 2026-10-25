@@ -16,6 +16,9 @@ public static class TokenExchangeGrant
     /// <summary>The token request parameter holding the agent's own access token.</summary>
     public const string ActorTokenParameter = "actor_token";
 
+    /// <summary>The RFC 8693 type of an access token, used for the subject, actor and requested token types.</summary>
+    public const string AccessTokenType = "urn:ietf:params:oauth:token-type:access_token";
+
     /// <summary>The longest an exchanged token lives, whatever the person's token has left.</summary>
     public const int MaxLifetimeMinutes = 15;
 }

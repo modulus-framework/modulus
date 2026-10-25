@@ -114,11 +114,15 @@ public sealed class CompanyAuthorityStoreTests : IAsyncLifetime
 
     private static string ScriptPath(string provider)
     {
-        var directory = new DirectoryInfo(AppContext.BaseDirectory);
+        var directory = new DirectoryInfo(SourceDirectory());
         while (directory is not null && !Directory.Exists(Path.Combine(directory.FullName, "docs", "upgrades")))
             directory = directory.Parent;
         directory.Should().NotBeNull("the repository root (with docs/upgrades) must be above the test output");
 
         return Path.Combine(directory!.FullName, "docs", "upgrades", $"identity-platform-2026-10.authorization.{provider}.sql");
     }
+
+    // The repository is found from this source file, not the build output, which can live outside the repository.
+    private static string SourceDirectory([System.Runtime.CompilerServices.CallerFilePath] string source = "") => Path.GetDirectoryName(source)!;
+
 }

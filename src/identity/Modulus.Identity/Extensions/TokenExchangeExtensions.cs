@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Modulus.Identity.Abstractions;
 using OpenIddict.Abstractions;
+using OpenIddict.Server;
 
 public static class TokenExchangeExtensions
 {
@@ -22,7 +23,15 @@ public static class TokenExchangeExtensions
         if (!configuration.GetValue<bool>("Identity:TokenExchange:Enabled"))
             return services;
 
-        services.AddOpenIddict().AddServer(server => server.AllowCustomFlow(TokenExchangeGrant.GrantType));
+        // OpenIddict 7 ships token exchange (RFC 8693) as a built-in grant, so it is enabled with its own switch. The subject
+        // and actor tokens are access tokens: the server requires their types and checks them against these lists.
+        services.AddOpenIddict().AddServer(server => server.AllowTokenExchangeFlow());
+        services.Configure<OpenIddictServerOptions>(options =>
+        {
+            options.SubjectTokenTypes.Add(TokenExchangeGrant.AccessTokenType);
+            options.ActorTokenTypes.Add(TokenExchangeGrant.AccessTokenType);
+            options.RequestedTokenTypes.Add(TokenExchangeGrant.AccessTokenType);
+        });
         return services;
     }
 }

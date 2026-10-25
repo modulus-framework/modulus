@@ -10,3 +10,13 @@ Modulus.BackgroundJobs.Quartz.QuartzJobScheduler.ScheduleAsync<TJob, TArgs>(TArg
 static Modulus.BackgroundJobs.Quartz.QuartzExtensions.AddQuartzJobScheduler(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<Quartz.IServiceCollectionQuartzConfigurator!>? configureQuartz = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 Modulus.BackgroundJobs.Quartz.QuartzJobAdapter<TJob, TArgs>.QuartzJobAdapter(System.IServiceProvider! serviceProvider, Microsoft.Extensions.Logging.ILogger<Modulus.BackgroundJobs.Quartz.QuartzJobAdapter<TJob, TArgs>!>! logger) -> void
 Modulus.BackgroundJobs.Quartz.QuartzJobScheduler.AddRecurring<TJob, TArgs>(string! jobId, string! cronExpression, TArgs args, System.DateTime? firstRunAt = null) -> void
+Modulus.BackgroundJobs.Quartz.QuartzSchema
+static Modulus.BackgroundJobs.Quartz.QuartzSchema.CreateSqliteAsync(System.Data.Common.DbConnection! connection, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+static Modulus.BackgroundJobs.Quartz.QuartzSchema.SqliteScript.get -> string!
+static Modulus.BackgroundJobs.Quartz.QuartzExtensions.UseModulusSqliteStore(this Quartz.IServiceCollectionQuartzConfigurator! configurator, string! connectionString) -> Quartz.IServiceCollectionQuartzConfigurator!
+static Modulus.BackgroundJobs.Quartz.QuartzSchema.CreatePostgresAsync(System.Data.Common.DbConnection! connection, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+static Modulus.BackgroundJobs.Quartz.QuartzSchema.PostgresScript.get -> string!
+static Modulus.BackgroundJobs.Quartz.QuartzExtensions.UseModulusPostgresStore(this Quartz.IServiceCollectionQuartzConfigurator! configurator, string! connectionString, bool clustered = false) -> Quartz.IServiceCollectionQuartzConfigurator!
+static Modulus.BackgroundJobs.Quartz.QuartzSchema.CreateSqlServerAsync(System.Data.Common.DbConnection! connection, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+static Modulus.BackgroundJobs.Quartz.QuartzSchema.SqlServerScript.get -> string!
+static Modulus.BackgroundJobs.Quartz.QuartzExtensions.UseModulusSqlServerStore(this Quartz.IServiceCollectionQuartzConfigurator! configurator, string! connectionString, bool clustered = false) -> Quartz.IServiceCollectionQuartzConfigurator!

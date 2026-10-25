@@ -1,13 +1,10 @@
 namespace Modulus.Identity.Media;
 
 using Modulus.Identity.Abstractions;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Formats.Jpeg;
-using SixLabors.ImageSharp.PixelFormats;
-using SixLabors.ImageSharp.Processing;
+using SkiaSharp;
 
 /// <summary>
-/// The default <see cref="IProfilePhotoProcessor"/>, on ImageSharp 2.1 (Apache-2.0, pure managed code: no native binaries on any platform).
+/// The default <see cref="IProfilePhotoProcessor"/>, on SkiaSharp (MIT; the Skia engine ships as native libraries per platform).
 /// Order of checks: size, then the format by its bytes (JPEG, PNG or WebP only), then animation and embedded colour profiles by walking the
 /// file structure, then the header's dimensions, and only then a full decode. Anything that fails, or that does not decode, is refused.
 /// The stored photo is a centred square of <see cref="ProfilePhotoRules.ThumbnailSize"/> pixels, re-encoded as JPEG from the decoded pixels,
@@ -16,6 +13,7 @@ using SixLabors.ImageSharp.Processing;
 internal sealed class ProfilePhotoProcessor : IProfilePhotoProcessor
 {
     private const int JpegQuality = 90;
+    private static readonly SKColor s_background = SKColors.White;
     private static readonly byte[] s_pngSignature = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
 
     private enum Format
@@ -32,9 +30,9 @@ internal sealed class ProfilePhotoProcessor : IProfilePhotoProcessor
         {
             return await ProcessCoreAsync(content, ct).ConfigureAwait(false);
         }
-        catch (TypeInitializationException)
+        catch (Exception ex) when (ex is TypeInitializationException or DllNotFoundException or EntryPointNotFoundException)
         {
-            // The image library did not start: validation cannot run, so nothing is stored.
+            // The image library did not start (its native part is missing): validation cannot run, so nothing is stored.
             return Refuse(ProfilePhotoRefusal.ProcessingUnavailable);
         }
     }
@@ -61,16 +59,20 @@ internal sealed class ProfilePhotoProcessor : IProfilePhotoProcessor
         try
         {
             // The header alone gives the dimensions, so a huge image is refused before its pixels are decoded.
-            var info = Image.Identify(new MemoryStream(bytes));
-            if (info is null || info.Width < 1 || info.Height < 1)
+            using var data = SKData.CreateCopy(bytes);
+            using var codec = SKCodec.Create(data);
+            if (codec is null || codec.Info.Width < 1 || codec.Info.Height < 1)
                 return Refuse(ProfilePhotoRefusal.Undecodable);
-            if (info.Width > ProfilePhotoRules.MaxDimension || info.Height > ProfilePhotoRules.MaxDimension)
+            if (codec.Info.Width > ProfilePhotoRules.MaxDimension || codec.Info.Height > ProfilePhotoRules.MaxDimension)
                 return Refuse(ProfilePhotoRefusal.TooManyPixels);
 
-            using var image = Image.Load<Rgba32>(bytes);
-            return new ProfilePhotoProcessing(ProfilePhotoRefusal.None, Square(image));
+            using var image = SKBitmap.Decode(data);
+            if (image is null)
+                return Refuse(ProfilePhotoRefusal.Undecodable);
+
+            return new ProfilePhotoProcessing(ProfilePhotoRefusal.None, Square(image, codec.EncodedOrigin));
         }
-        catch (Exception ex) when (ex is not OperationCanceledException and not TypeInitializationException)
+        catch (Exception ex) when (ex is not OperationCanceledException and not TypeInitializationException and not DllNotFoundException)
         {
             // Malformed or truncated input: the decoder rejects it, and so do we. No partial photo is stored.
             return Refuse(ProfilePhotoRefusal.Undecodable);
@@ -78,31 +80,62 @@ internal sealed class ProfilePhotoProcessor : IProfilePhotoProcessor
     }
 
     /// <summary>Turns the photo upright, crops the largest centred square, scales it, flattens transparency to white and strips the metadata.</summary>
-    private static byte[] Square(Image<Rgba32> source)
+    private static byte[] Square(SKBitmap source, SKEncodedOrigin origin)
     {
         // A camera stores the sensor rows and records the rotation in EXIF. The rotation is applied first, so the crop is taken
-        // from the photo as it is seen (its size is the oriented size).
-        source.Mutate(context => context.AutoOrient());
+        // from the photo as it is seen (its size is the oriented size). Origins 5 to 8 turn the photo on its side.
+        var turned = origin is SKEncodedOrigin.LeftTop or SKEncodedOrigin.RightTop or SKEncodedOrigin.RightBottom or SKEncodedOrigin.LeftBottom;
+        var width = turned ? source.Height : source.Width;
+        var height = turned ? source.Width : source.Height;
 
-        var side = Math.Min(source.Width, source.Height);
-        var crop = new Rectangle((source.Width - side) / 2, (source.Height - side) / 2, side, side);
+        var side = Math.Min(width, height);
         var size = ProfilePhotoRules.ThumbnailSize;
+        var scale = (float)size / side;
 
-        using var target = source.Clone(context => context
-            .Crop(crop)
-            .Resize(size, size)
-            .BackgroundColor(Color.White));
+        using var target = new SKBitmap(size, size, isOpaque: true);
+        using var canvas = new SKCanvas(target);
+        canvas.Clear(s_background);
 
-        // Metadata that a JPEG could carry is cleared; the pixels are all that is stored.
-        target.Metadata.ExifProfile = null;
-        target.Metadata.XmpProfile = null;
-        target.Metadata.IptcProfile = null;
-        target.Metadata.IccProfile = null;
+        // Points go through the orientation, then the crop's offset, then the scale: the last transform concatenated is applied first.
+        canvas.Scale(scale);
+        canvas.Translate(-(width - side) / 2f, -(height - side) / 2f);
+        var orientation = Orientation(origin, source.Width, source.Height);
+        canvas.Concat(in orientation);
 
-        using var stream = new MemoryStream();
-        target.SaveAsJpeg(stream, new JpegEncoder { Quality = JpegQuality });
-        return stream.ToArray();
+        using var paint = new SKPaint { IsAntialias = true };
+        canvas.DrawBitmap(source, 0, 0, new SKSamplingOptions(SKCubicResampler.Mitchell), paint);
+        canvas.Flush();
+
+        // The pixels are all that is stored: a new bitmap carries no EXIF, XMP, IPTC or colour profile.
+        using var image = SKImage.FromBitmap(target);
+        using var encoded = image.Encode(SKEncodedImageFormat.Jpeg, JpegQuality);
+        return encoded.ToArray();
     }
+
+    /// <summary>The transform from the stored pixels to the upright photo, for a source of <paramref name="width"/> by <paramref name="height"/>.</summary>
+    private static SKMatrix Orientation(SKEncodedOrigin origin, int width, int height) => origin switch
+    {
+        SKEncodedOrigin.TopRight => Matrix(-1, 0, width, 0, 1, 0),
+        SKEncodedOrigin.BottomRight => Matrix(-1, 0, width, 0, -1, height),
+        SKEncodedOrigin.BottomLeft => Matrix(1, 0, 0, 0, -1, height),
+        SKEncodedOrigin.LeftTop => Matrix(0, 1, 0, 1, 0, 0),
+        SKEncodedOrigin.RightTop => Matrix(0, -1, height, 1, 0, 0),
+        SKEncodedOrigin.RightBottom => Matrix(0, -1, height, -1, 0, width),
+        SKEncodedOrigin.LeftBottom => Matrix(0, 1, 0, -1, 0, width),
+        _ => SKMatrix.Identity,
+    };
+
+    // x' = a*x + c*y + e, y' = b*x + d*y + f, written as (a, c, e, b, d, f).
+    private static SKMatrix Matrix(float a, float c, float e, float b, float d, float f) => new()
+    {
+        ScaleX = a,
+        SkewX = c,
+        TransX = e,
+        SkewY = b,
+        ScaleY = d,
+        TransY = f,
+        Persp2 = 1,
+    };
 
     private static Format Sniff(byte[] bytes)
     {

@@ -9,3 +9,4 @@ MOD0001 | Security | Warning  | AnonymousEndpointAnalyzer: anonymous endpoint wi
 MOD0002 | Security | Warning  | ClassifiedLogArgumentAnalyzer: classified value written through an unredacted log call
 MOD0003 | Design   | Warning  | IntegrationEventNameAnalyzer: integration event name not declared once and well-formed
 MOD0004 | Security | Warning  | ClassifiedLoggerMessageAnalyzer: classified [LoggerMessage] parameter without the classification-aware generator
+MOD0005 | Security | Warning  | UnprojectedClassifiedFieldAnalyzer: classified entity field copied to a type without [ProjectionOf]

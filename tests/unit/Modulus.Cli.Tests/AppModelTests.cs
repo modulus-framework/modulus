@@ -83,7 +83,7 @@ public class AppModelTests
     {
         // Keep cli/Services/Models.cs FrameworkVersion.Current in sync with
         // build/Modulus.Packaging.props <VersionPrefix>.
-        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        var dir = new DirectoryInfo(SourceDirectory());
         string? propsPath = null;
         while (dir is not null)
         {
@@ -101,14 +101,18 @@ public class AppModelTests
     }
 
     [Theory]
-    [InlineData("SqlServer", "Microsoft.EntityFrameworkCore.SqlServer", "10.0.9")]
-    [InlineData("PostgreSQL", "Npgsql.EntityFrameworkCore.PostgreSQL", "10.0.2")]
-    [InlineData("MySQL", "MySql.EntityFrameworkCore", "10.0.7")]
-    [InlineData("SQLite", "Microsoft.EntityFrameworkCore.Sqlite", "10.0.9")]
+    [InlineData("SqlServer", "Microsoft.EntityFrameworkCore.SqlServer", "10.0.13")]
+    [InlineData("PostgreSQL", "Npgsql.EntityFrameworkCore.PostgreSQL", "10.0.3")]
+    [InlineData("MySQL", "MySql.EntityFrameworkCore", "10.0.12")]
+    [InlineData("SQLite", "Microsoft.EntityFrameworkCore.Sqlite", "10.0.13")]
     public void Db_provider_info_matches_central_pins(string provider, string package, string version)
     {
         DbProviderInfo.Package(provider).Should().Be(package);
         DbProviderInfo.Version(provider).Should().Be(version);
     }
+
+
+    // The repository is found from this source file, not the build output, which can live outside the repository.
+    private static string SourceDirectory([System.Runtime.CompilerServices.CallerFilePath] string source = "") => Path.GetDirectoryName(source)!;
 
 }

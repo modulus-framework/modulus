@@ -1,0 +1,9 @@
+<Project>
+
+  <!--
+    This node is a console app that a test starts as a separate process, not a test project. Chain to the repository root
+    props only, so the test-wide props under tests/ (xUnit, IsTestProject) do not apply to it.
+  -->
+  <Import Project="$(MSBuildThisFileDirectory)../../../Directory.Build.props" />
+
+</Project>

@@ -157,7 +157,7 @@ public sealed class ProvisioningHostTests
     {
         var project = new TemplateEngine().Render("provisioning/provisioning.csproj", Model("SQLite"));
 
-        project.Should().Contain("<PackageReference Include=\"SQLitePCLRaw.bundle_e_sqlite3\" Version=\"3.0.3\" />");
+        project.Should().Contain("<PackageReference Include=\"SQLitePCLRaw.bundle_e_sqlite3\" Version=\"3.0.5\" />");
         new TemplateEngine().Render("provisioning/provisioning.csproj", Model("PostgreSQL"))
             .Should().NotContain("SQLitePCLRaw", "only the SQLite host needs the native library");
     }

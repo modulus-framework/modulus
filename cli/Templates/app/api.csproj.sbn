@@ -27,10 +27,10 @@
 {{ end }}{{ if auth != "none" }}    <PackageReference Include="Synvro.Modulus.Identity" Version="{{ framework_version }}" />
 {{ end }}    <!-- Transitive pin: AspNetCore.OpenApi floats to Microsoft.OpenApi 2.0.0,
           which has a high-severity advisory (GHSA-v5pm-xwqc-g5wc). Pin to latest 2.x.
-          Source of truth: Directory.Packages.props (Microsoft.OpenApi 2.9.0,
-          SQLitePCLRaw.bundle_e_sqlite3 3.0.3, Microsoft.EntityFrameworkCore.Design 10.0.9). -->
-    <PackageReference Include="Microsoft.OpenApi" Version="2.9.0" />
-{{ if db_provider == "SQLite" }}    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.3" />
+          Source of truth: Directory.Packages.props (Microsoft.OpenApi 2.13.0,
+          SQLitePCLRaw.bundle_e_sqlite3 3.0.5, Microsoft.EntityFrameworkCore.Design 10.0.13). -->
+    <PackageReference Include="Microsoft.OpenApi" Version="2.13.0" />
+{{ if db_provider == "SQLite" }}    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.5" />
 {{ end }}    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="{{ ef_core_version }}">
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>

@@ -14,6 +14,13 @@
     <ProjectReference Include="../Modulus.Platform/Modulus.Platform.csproj" />
     <PackageReference Include="Quartz" />
     <PackageReference Include="Quartz.Extensions.DependencyInjection" />
+    <PackageReference Include="Quartz.Serialization.SystemTextJson" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Schema\quartz-sqlite.sql" LogicalName="Modulus.BackgroundJobs.Quartz.Schema.quartz-sqlite.sql" />
+    <EmbeddedResource Include="Schema\quartz-postgres.sql" LogicalName="Modulus.BackgroundJobs.Quartz.Schema.quartz-postgres.sql" />
+    <EmbeddedResource Include="Schema\quartz-sqlserver.sql" LogicalName="Modulus.BackgroundJobs.Quartz.Schema.quartz-sqlserver.sql" />
   </ItemGroup>
 
 </Project>

@@ -898,3 +898,6 @@ Modulus.Core.Abstractions.Ai.AiResourceAttribute.Public.get -> bool
 Modulus.Core.Abstractions.Ai.AiResourceAttribute.Public.set -> void
 Modulus.Core.Abstractions.Ai.AiResourceAttribute.Reason.get -> string?
 Modulus.Core.Abstractions.Ai.AiResourceAttribute.Reason.set -> void
+Modulus.Core.Abstractions.Entities.ProjectionOfAttribute
+Modulus.Core.Abstractions.Entities.ProjectionOfAttribute.EntityType.get -> System.Type!
+Modulus.Core.Abstractions.Entities.ProjectionOfAttribute.ProjectionOfAttribute(System.Type! entityType) -> void

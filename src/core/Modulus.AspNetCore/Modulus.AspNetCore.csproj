@@ -29,12 +29,17 @@
     <PackageReference Include="Microsoft.OpenApi" Condition="'$(TargetFramework)' != 'net8.0'" />
   </ItemGroup>
 
+  <!-- The analyzer's build output: bin/<Configuration>/netstandard2.0, or with ArtifactsPath bin/<project>/<configuration>. -->
+  <PropertyGroup>
+    <ModulusAnalyzerDll Condition="'$(ArtifactsPath)' == ''">$(MSBuildThisFileDirectory)../../analyzers/Modulus.Analyzers/bin/$(Configuration)/netstandard2.0/Modulus.Analyzers.dll</ModulusAnalyzerDll>
+    <ModulusAnalyzerDll Condition="'$(ArtifactsPath)' != ''">$(ArtifactsPath)/bin/Modulus.Analyzers/$(Configuration.ToLowerInvariant())/Modulus.Analyzers.dll</ModulusAnalyzerDll>
+  </PropertyGroup>
+
   <!-- MOD0001 ships inside this package: every app that maps Modulus endpoints gets it, no extra reference. -->
   <ItemGroup>
     <ProjectReference Include="../../analyzers/Modulus.Analyzers/Modulus.Analyzers.csproj"
                       ReferenceOutputAssembly="false" PrivateAssets="all" />
-    <None Include="../../analyzers/Modulus.Analyzers/bin/$(Configuration)/netstandard2.0/Modulus.Analyzers.dll"
-          Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+    <None Include="$(ModulusAnalyzerDll)" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
   </ItemGroup>
 
   <!-- On net8.0 both logging source generators (Logging.Abstractions' and Telemetry's) would emit the same [LoggerMessage]
