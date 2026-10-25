@@ -59,13 +59,15 @@ public sealed class S3FileStorage(
         // GetPreSignedURL is a local cryptographic operation (no network I/O);
         // the AWS SDK provides no async overload.
 #pragma warning disable VSTHRD103
+        // The download opens as an attachment: a presigned link must not render an uploaded HTML or SVG file inside the app's origin.
         var url = client.GetPreSignedURL(new GetPreSignedUrlRequest
 #pragma warning restore VSTHRD103
         {
             BucketName = _bucket,
             Key = path,
             Expires = DateTime.UtcNow.Add(expiry),
-            Verb = HttpVerb.GET
+            Verb = HttpVerb.GET,
+            ResponseHeaderOverrides = new ResponseHeaderOverrides { ContentDisposition = "attachment" },
         });
         return Task.FromResult(url);
     }

@@ -763,3 +763,7 @@ static Modulus.AI.Connector.Data.AiCompositeKey.Format(params object?[]! parts) 
 static Modulus.AI.Connector.Data.AiCompositeKey.Split(string! id) -> System.Collections.Generic.IReadOnlyList<string!>!
 const Modulus.AI.Connector.AiEnvelopeClaims.Agent = "act" -> string!
 const Modulus.AI.Connector.AiEnvelopeClaims.AgentRolePrefix = "integration:" -> string!
+Modulus.AI.Connector.AiPlatformOptions.ReplicaCount.get -> int
+Modulus.AI.Connector.AiPlatformOptions.ReplicaCount.set -> void
+Modulus.AI.Connector.AiAppInstanceOptions.ApiKeyHash.get -> string?
+Modulus.AI.Connector.AiAppInstanceOptions.ApiKeyHash.set -> void

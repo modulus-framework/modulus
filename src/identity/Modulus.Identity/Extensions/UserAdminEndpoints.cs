@@ -20,34 +20,94 @@ namespace Modulus.Identity.Extensions;
 /// One row of the user list. Personal fields are classified, so the field guard masks them for a caller without
 /// <see cref="AccountLifecycleExtensions.PersonalDataPermission"/>.
 /// </summary>
-public sealed record UserSummary(
-    Guid Id,
-    string? UserName,
-    [property: Classified(FieldClassification.Restricted)] string? Email,
-    [property: Classified(FieldClassification.Restricted)] string? FullName,
-    bool IsActive,
-    string Lifecycle,
-    DateTimeOffset? LockedUntil);
+public sealed class UserSummary(
+    Guid id,
+    string? userName,
+    string? email,
+    string? fullName,
+    bool isActive,
+    string lifecycle,
+    DateTimeOffset? lockedUntil)
+{
+    public Guid Id { get; init; } = id;
+
+    public string? UserName { get; init; } = userName;
+
+    [Classified(FieldClassification.Restricted)]
+    public string? Email { get; init; } = email;
+
+    [Classified(FieldClassification.Restricted)]
+    public string? FullName { get; init; } = fullName;
+
+    public bool IsActive { get; init; } = isActive;
+
+    public string Lifecycle { get; init; } = lifecycle;
+
+    public DateTimeOffset? LockedUntil { get; init; } = lockedUntil;
+}
 
 /// <summary>One user, with the state an administrator needs. Never a password hash, a PIN or a secret.</summary>
-public sealed record UserDetail(
-    Guid Id,
-    string? UserName,
-    [property: Classified(FieldClassification.Restricted)] string? Email,
-    bool EmailConfirmed,
-    [property: Classified(FieldClassification.Restricted)] string? FirstName,
-    [property: Classified(FieldClassification.Restricted)] string? LastName,
-    [property: Classified(FieldClassification.Restricted)] string? PhoneNumber,
-    [property: Classified(FieldClassification.Restricted)] string? EmployeeCode,
-    bool IsActive,
-    string Lifecycle,
-    DateTimeOffset? LockedUntil,
-    bool TwoFactorEnabled,
-    IReadOnlyList<string> Roles,
-    [property: Classified(FieldClassification.Restricted)] string? WorkEmail = null,
-    [property: Classified(FieldClassification.Confidential)] string? JobTitle = null,
-    [property: Classified(FieldClassification.Confidential)] string? Department = null,
-    Guid? PrimaryBranchId = null);
+public sealed class UserDetail(
+    Guid id,
+    string? userName,
+    string? email,
+    bool emailConfirmed,
+    string? firstName,
+    string? lastName,
+    string? phoneNumber,
+    string? employeeCode,
+    bool isActive,
+    string lifecycle,
+    DateTimeOffset? lockedUntil,
+    bool twoFactorEnabled,
+    IReadOnlyList<string> roles,
+    string? workEmail = null,
+    string? jobTitle = null,
+    string? department = null,
+    Guid? primaryBranchId = null)
+{
+    public Guid Id { get; init; } = id;
+
+    public string? UserName { get; init; } = userName;
+
+    [Classified(FieldClassification.Restricted)]
+    public string? Email { get; init; } = email;
+
+    public bool EmailConfirmed { get; init; } = emailConfirmed;
+
+    [Classified(FieldClassification.Restricted)]
+    public string? FirstName { get; init; } = firstName;
+
+    [Classified(FieldClassification.Restricted)]
+    public string? LastName { get; init; } = lastName;
+
+    [Classified(FieldClassification.Restricted)]
+    public string? PhoneNumber { get; init; } = phoneNumber;
+
+    [Classified(FieldClassification.Restricted)]
+    public string? EmployeeCode { get; init; } = employeeCode;
+
+    public bool IsActive { get; init; } = isActive;
+
+    public string Lifecycle { get; init; } = lifecycle;
+
+    public DateTimeOffset? LockedUntil { get; init; } = lockedUntil;
+
+    public bool TwoFactorEnabled { get; init; } = twoFactorEnabled;
+
+    public IReadOnlyList<string> Roles { get; init; } = roles;
+
+    [Classified(FieldClassification.Restricted)]
+    public string? WorkEmail { get; init; } = workEmail;
+
+    [Classified(FieldClassification.Confidential)]
+    public string? JobTitle { get; init; } = jobTitle;
+
+    [Classified(FieldClassification.Confidential)]
+    public string? Department { get; init; } = department;
+
+    public Guid? PrimaryBranchId { get; init; } = primaryBranchId;
+}
 
 /// <summary>
 /// Body of <c>PATCH {id}/organization</c>: the employee code (upper-case letters, digits and hyphens; empty clears it) and the primary branch.

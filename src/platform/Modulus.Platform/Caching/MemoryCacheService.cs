@@ -32,7 +32,8 @@ public sealed class MemoryCacheService(IMemoryCache cache, IServiceProvider serv
 
     public Task<T?> GetAsync<T>(string key, CancellationToken ct = default)
     {
-        cache.TryGetValue(EntryKey(key), out T? value);
+        var found = cache.TryGetValue(EntryKey(key), out T? value);
+        (found ? Modulus.Observability.ModulusMeters.CacheHits : Modulus.Observability.ModulusMeters.CacheMisses).Add(1);
         return Task.FromResult(value);
     }
 

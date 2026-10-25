@@ -120,6 +120,7 @@ public sealed class S3FileStorageTests
         url.Should().Be("https://signed/get");
         _client.Received(1).GetPreSignedURL(Arg.Is<GetPreSignedUrlRequest>(r =>
             r.Verb == HttpVerb.GET &&
+            r.ResponseHeaderOverrides.ContentDisposition == "attachment" &&
             r.BucketName == "docs" &&
             r.Key == "report.pdf" &&
             r.Expires >= before.AddMinutes(9) &&
@@ -158,7 +159,8 @@ public sealed class S3FileStorageTests
         services.AddS3FileStorage(config);
         using var provider = services.BuildServiceProvider();
 
-        provider.GetRequiredService<IFileStorage>().Should().BeOfType<S3FileStorage>();
+        provider.GetRequiredService<IFileStorage>().GetType().Name.Should().Be("SizeLimitedFileStorage", "every provider is capped");
+        provider.GetRequiredService<S3FileStorage>().Should().NotBeNull();
         provider.GetRequiredService<IOptions<StorageOptions>>().Value.BucketName.Should().Be("app-files");
     }
 
@@ -175,6 +177,7 @@ public sealed class S3FileStorageTests
         services.AddS3FileStorage(config);
         using var provider = services.BuildServiceProvider();
 
-        provider.GetRequiredService<IFileStorage>().Should().BeOfType<S3FileStorage>();
+        provider.GetRequiredService<IFileStorage>().GetType().Name.Should().Be("SizeLimitedFileStorage", "every provider is capped");
+        provider.GetRequiredService<S3FileStorage>().Should().NotBeNull();
     }
 }

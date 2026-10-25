@@ -153,12 +153,12 @@ public sealed class AiFakePlatform : IDisposable
             o.Platform.RevocationMaxBackoff = TimeSpan.FromMilliseconds(50);
             // Options are built once per options cache (IOptions, IOptionsMonitor): remember each copy of the instance, so
             // a company set later reaches all of them.
-            var instance = new AiAppInstanceOptions { AppInstanceId = AppInstanceId, PlatformTenantId = PlatformTenantId, TenantId = CompanyId };
+            var instance = new AiAppInstanceOptions { AppInstanceId = AppInstanceId, PlatformTenantId = PlatformTenantId, TenantId = CompanyId, ApiKeyHash = AiApiKeys.Hash(ApiKey) };
             _instances.Add(instance);
             o.Instances =
             [
                 instance,
-                new AiAppInstanceOptions { AppInstanceId = OtherAppInstanceId, PlatformTenantId = OtherPlatformTenantId },
+                new AiAppInstanceOptions { AppInstanceId = OtherAppInstanceId, PlatformTenantId = OtherPlatformTenantId, ApiKeyHash = AiApiKeys.Hash(ApiKey) },
             ];
             o.Indexing.ChangesSettleDelay = TimeSpan.Zero;
             o.Indexing.ChangeHints.Enabled = false;

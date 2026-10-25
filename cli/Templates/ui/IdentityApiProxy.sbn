@@ -32,8 +32,11 @@ public sealed class IdentityApiProxyController(IdentityApiClient api) : Controll
 
     private async Task<IActionResult> ForwardAsync(CancellationToken ct)
     {
+        // A browser sends Sec-Fetch-Site on every request. Without it, a request that carries the session cookie is an older browser or a
+        // forged form, so it is refused; a request with no cookie (a non-browser client) is still allowed.
         var site = Request.Headers["Sec-Fetch-Site"].ToString();
-        if (site is not ("" or "same-origin" or "none"))
+        var carriesCookie = Request.Headers.ContainsKey("Cookie");
+        if (site is not ("same-origin" or "none") && !(site == "" && !carriesCookie))
             return StatusCode(StatusCodes.Status403Forbidden);
 
         using var request = new HttpRequestMessage(new HttpMethod(Request.Method), Request.Path.Value!.TrimStart('/') + Request.QueryString.Value);

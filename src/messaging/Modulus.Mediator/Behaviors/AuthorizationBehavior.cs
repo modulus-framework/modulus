@@ -26,15 +26,25 @@ public sealed class AuthorizationBehavior<TRequest, TResponse>(
         if (attr is null) return next();
 
         if (!currentUser.IsAuthenticated)
+        {
+            Modulus.Observability.ModulusMeters.AuthorizationDenied.Add(1);
             throw new UnauthorizedException();
+        }
 
         if (!currentUser.HasPermission(attr.Permission))
+        {
+            Modulus.Observability.ModulusMeters.AuthorizationDenied.Add(1);
             throw new ForbiddenException(attr.Permission);
+        }
 
         // Step-up applies to every entry point that runs a command or query (HTTP, gRPC, GraphQL, the BFF), not only HTTP policies.
         if (stepUp is not null && !stepUp.IsSatisfied(attr.Permission))
+        {
+            Modulus.Observability.ModulusMeters.AuthorizationDenied.Add(1);
             throw new StepUpRequiredException(attr.Permission);
+        }
 
+        Modulus.Observability.ModulusMeters.AuthorizationAllowed.Add(1);
         return next();
     }
 }

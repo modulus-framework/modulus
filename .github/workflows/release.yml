@@ -5,9 +5,18 @@ on:
     tags:
       - 'v*'
 
+# Least privilege: the default token reads the repository. The job adds what it needs (attestations and the OIDC token for
+# NuGet trusted publishing) and nothing else.
+permissions:
+  contents: read
+
 jobs:
   release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write       # OIDC: NuGet trusted publishing, and the build provenance signature
+      attestations: write   # build provenance attestation of the packages
     steps:
       - uses: actions/checkout@v4
       - name: Setup .NET
@@ -29,11 +38,30 @@ jobs:
         run: dotnet test modulus.slnx --no-build --configuration Release --filter "Category=Integration" --verbosity minimal
       - name: Pack
         run: dotnet pack modulus.slnx --no-build --configuration Release --output artifacts/packages -p:Version=${GITHUB_REF_NAME#v}
+      - name: Software bill of materials (CycloneDX)
+        run: |
+          dotnet tool install --global CycloneDX
+          dotnet CycloneDX modulus.slnx --json --output artifacts/sbom
+      - name: Build provenance
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: 'artifacts/packages/*.nupkg'
+      - name: Upload packages and SBOM
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ github.ref_name }}
+          path: |
+            artifacts/packages/*.nupkg
+            artifacts/sbom/
+      # NuGet trusted publishing: no long-lived API key in the repository. The owner configures the trusted publishing policy for
+      # this repository and the nuget.org user (NUGET_USER) once, on nuget.org; until then this step fails.
+      - name: NuGet login (trusted publishing)
+        id: nuget-login
+        uses: NuGet/login@v1
+        with:
+          user: ${{ secrets.NUGET_USER }}
       - name: Publish to NuGet
-        # Requires repository secret NUGET_API_KEY (nuget.org API key).
-        # Publishes Modulus.* to https://api.nuget.org/v3/index.json.
-        # After the first 1.3.0 push, generated apps can omit --package-source.
         run: |
           for pkg in artifacts/packages/*.nupkg; do
-            dotnet nuget push "$pkg" --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+            dotnet nuget push "$pkg" --api-key "${{ steps.nuget-login.outputs.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json --skip-duplicate
           done

@@ -23,3 +23,11 @@ updates:
           - "NSubstitute"
           - "Testcontainers*"
           - "coverlet*"
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels:
+      - "dependencies"
+      - "github-actions"

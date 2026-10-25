@@ -20,7 +20,8 @@ internal sealed record JobEnvelope(
     string? CorrelationId = null,
     Guid? InitiatorId = null,
     string? Actor = null,
-    string? AgentId = null);
+    string? AgentId = null,
+    int Attempt = 1);
 
 internal sealed record RecurringEntry(
     JobEnvelope Envelope,
@@ -86,6 +87,7 @@ public sealed class ChannelJobQueue(
             Actor: ResolveActor(typeof(TJob), initiatorId),
             AgentId: ResolveAgentId());
         await _channel.Writer.WriteAsync(envelope, ct);
+        ModulusMeters.JobsQueueDepth.Add(1);
     }
 
     public Task ScheduleAsync<TJob, TArgs>(
@@ -110,6 +112,7 @@ public sealed class ChannelJobQueue(
             {
                 await Task.Delay(delay, ct);
                 await _channel.Writer.WriteAsync(envelope, ct);
+                ModulusMeters.JobsQueueDepth.Add(1);
             }
             catch (OperationCanceledException)
             {
@@ -164,7 +167,7 @@ public sealed class ChannelJobQueue(
     {
         var env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")
             ?? Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT");
-        if (string.Equals(env, "Production", StringComparison.OrdinalIgnoreCase))
+        if (!string.Equals(env, "Development", StringComparison.OrdinalIgnoreCase))
             logger.LogWarning(
                 "ChannelJobQueue is in-memory (bounded 10,000, lost on shutdown, duplicated across replicas). " +
                 "Register a durable scheduler (Quartz/Hangfire) for Production.");
@@ -279,6 +282,7 @@ public sealed class ChannelJobQueue(
                 try
                 {
                     await _channel.Writer.WriteAsync(envelope, ct);
+                    ModulusMeters.JobsQueueDepth.Add(1);
                     logger.LogInformation("Recurring job {JobId} enqueued", jobId);
                 }
                 catch (OperationCanceledException)
@@ -301,6 +305,7 @@ public sealed class ChannelJobQueue(
         {
             await using var scope = sp.CreateAsyncScope();
             ModulusMeters.JobsStarted.Add(1);
+            ModulusMeters.JobsQueueDepth.Add(-1);
 
             // The actor the job runs as (A6-2): visible to the job through JobContext and to every log line of this job.
             if (scope.ServiceProvider.GetService<JobContext>() is { } jobContext)
@@ -370,11 +375,47 @@ public sealed class ChannelJobQueue(
             }
             catch (Exception ex)
             {
-                ModulusMeters.JobsFailed.Add(1);
-                logger.LogError(ex, "Job {Type} failed",
-                    envelope.JobType.Name);
+                // A failed job runs again after a back-off, up to MaxAttempts, so a transient outage does not drop it. A job must be
+                // safe to run again: the same arguments can arrive twice after a failure.
+                if (envelope.Attempt < MaxAttempts)
+                {
+                    logger.LogWarning(ex, "Job {Type} failed on attempt {Attempt} of {Max}; retrying.",
+                        envelope.JobType.Name, envelope.Attempt, MaxAttempts);
+                    RequeueAfterBackoff(envelope with { Attempt = envelope.Attempt + 1 });
+                }
+                else
+                {
+                    ModulusMeters.JobsFailed.Add(1);
+                    logger.LogError(ex, "Job {Type} failed after {Attempts} attempts",
+                        envelope.JobType.Name, envelope.Attempt);
+                }
             }
         }
+    }
+
+    /// <summary>Attempts per job (the first run included).</summary>
+    internal const int MaxAttempts = 3;
+
+    /// <summary>The first back-off; each retry waits twice as long as the one before.</summary>
+    internal static readonly TimeSpan RetryBackoffBase = TimeSpan.FromSeconds(5);
+
+    /// <summary>Puts a failed job back on the queue once its back-off has passed. Runs off the worker loop so a retry does not stall it.</summary>
+    private void RequeueAfterBackoff(JobEnvelope retry)
+    {
+        var delay = TimeSpan.FromTicks(RetryBackoffBase.Ticks * (1L << (retry.Attempt - 2)));
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(delay);
+                await _channel.Writer.WriteAsync(retry);
+                ModulusMeters.JobsQueueDepth.Add(1);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                logger.LogError(ex, "Failed to requeue job {JobType} for attempt {Attempt}", retry.JobType.Name, retry.Attempt);
+            }
+        });
     }
 
     private Guid? ResolveTenantId()

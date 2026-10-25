@@ -89,12 +89,10 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
             LegacyIntegrationEvents = legacyEvents,
         };
 
-        // A host with the identity backend guards the API endpoints with a permission the Admin role holds;
-        // a host with no such role has nothing to grant it to, so its endpoints stay as open as the rest of that host.
+        // Every generated endpoint and command needs the CRUD permission, whatever the identity backend: the administrator
+        // roles it is granted to are configured (Authorization:AdministratorRoles, default Admin), so an external provider names its own.
         var host = ResolveHost(module);
-        model.RequiredPermission = File.Exists(host.ProgramCs) && UiAccessGates.HasAdminRole(ApiHostFiles.ReadAll(host.ProgramCs))
-            ? UiAccessGates.CrudPermission(module.Name, routeName)
-            : null;
+        model.RequiredPermission = UiAccessGates.CrudPermission(module.Name, routeName);
 
         // A multi-tenant host (modulus app --multi-tenancy) keeps companies apart: the entity is tenant-owned and gets a test.
         var inventory = ModuleDiscovery.Inventory(Environment.CurrentDirectory);
@@ -401,8 +399,12 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
         // permission is looked for across the whole host, so an existing registration is never repeated.
         var target = ApiHostFiles.FeatureServicesFile(host.ProgramCs);
         var original = File.ReadAllText(target);
+        // The grant checker lives in the Identity package, which a --auth none host does not reference.
+        var identityPackage = File.Exists(host.ApiCsproj)
+            && File.ReadAllText(host.ApiCsproj).Contains("Include=\"Synvro.Modulus.Identity\"", StringComparison.Ordinal);
         var wired = ApiPermissionWiring.EnsurePermission(
-            original, ApiHostFiles.ReadAll(host.ProgramCs), module.Name, permission, UiAccessGates.CrudPermissionDescription(model.EntityPlural ?? module.Name));
+            original, ApiHostFiles.ReadAll(host.ProgramCs), module.Name, permission, UiAccessGates.CrudPermissionDescription(model.EntityPlural ?? module.Name),
+            withChecker: identityPackage);
         if (wired == original)
             return;
 

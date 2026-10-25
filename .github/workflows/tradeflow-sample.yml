@@ -12,6 +12,9 @@ on:
       - "samples/TradeFlow/**"
       - ".github/workflows/tradeflow-sample.yml"
 
+permissions:
+  contents: read
+
 jobs:
   build-and-test:
     runs-on: ubuntu-latest

@@ -2511,3 +2511,5 @@ static Modulus.AuditLogging.Security.CompanyAuditSummaryRow.operator ==(Modulus.
 const Modulus.AuditLogging.Security.CompanyAuditSummaryEndpoints.UnknownUser = "Unknown user" -> string!
 Modulus.Secrets.SecretsOptions.MaxEntries.get -> int
 Modulus.Secrets.SecretsOptions.MaxEntries.set -> void
+Modulus.Storage.StorageOptions.MaxUploadBytes.get -> long
+Modulus.Storage.StorageOptions.MaxUploadBytes.set -> void

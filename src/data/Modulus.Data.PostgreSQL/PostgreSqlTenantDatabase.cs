@@ -2,6 +2,7 @@ namespace Modulus.Data.PostgreSQL;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Npgsql;
 using Modulus.EntityFrameworkCore;
 using Modulus.EntityFrameworkCore.Isolation;
 
@@ -20,6 +21,14 @@ public static class PostgreSqlTenantDatabaseExtensions
     public static IServiceCollection AddPostgreSqlPerTenantDatabase<TContext>(
         this IServiceCollection services, string storeKey, string hostConnectionString)
         where TContext : ModuleDbContext
-        => services.AddModuleDatabasePerTenant<TContext>(
+    {
+        // The provider's probe (before a connection string is trusted) and its pool clear (after a rotation). Without this a rotated
+        // tenant string keeps its pooled connections, and the provisioner cannot probe a new one.
+        services.AddTenantDatabaseProvider(
+            "postgresql",
+            connectionString => new NpgsqlConnection(connectionString),
+            connectionString => NpgsqlConnection.ClearPool(new NpgsqlConnection(connectionString)));
+        return services.AddModuleDatabasePerTenant<TContext>(
             storeKey, "postgresql", hostConnectionString, (options, connectionString) => options.UseNpgsql(connectionString));
+    }
 }

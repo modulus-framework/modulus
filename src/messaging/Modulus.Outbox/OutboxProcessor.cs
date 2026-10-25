@@ -282,6 +282,7 @@ public sealed class OutboxProcessor(
                 message.LockedBy = null;
                 message.LockedUntil = null;
                 ModulusMeters.OutboxDispatched.Add(1);
+                ModulusMeters.OutboxDispatchLag.Record((message.ProcessedAt!.Value - message.CreatedAt).TotalMilliseconds);
                 if (logger.IsEnabled(LogLevel.Debug))
                     logger.LogDebug("Outbox dispatched {Id} ({Type})", message.Id, message.MessageType);
             }

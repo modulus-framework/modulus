@@ -67,7 +67,8 @@ internal sealed class RebusOutboxDispatcher(
         if (!registry.TryGetType(message.MessageType, out var type))
             type = Type.GetType(message.MessageType);
 
-        if (type is null)
+        // Checked before anything is built from the payload: a row that names any other type is refused, never deserialized.
+        if (type is null || !typeof(IIntegrationEvent).IsAssignableFrom(type))
             throw new InvalidOperationException(
                 $"Cannot resolve outbox message type: {message.MessageType}");
 

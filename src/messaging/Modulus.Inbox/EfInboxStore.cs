@@ -165,7 +165,10 @@ internal sealed class EfInboxStore(
             return null;
 
         if (existing is { } prev && prev.RetryCount >= maxRetries)
+        {
+            Modulus.Observability.ModulusMeters.InboxDeadLettered.Add(1);
             return null;
+        }
 
         if (existing.Status == InboxStatus.Processing)
         {

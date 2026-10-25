@@ -53,6 +53,7 @@ public sealed class IdentityAdminPermissionTests
     [Fact]
     public void An_app_without_an_identity_backend_registers_nothing_for_it()
     {
-        ApiHostSource.Render(_engine, App("none")).Should().NotContain("identity:accounts:manage");
+        // The step-up list may name the permission (a production policy); what must not happen is registering it without an identity backend.
+        ApiHostSource.Render(_engine, App("none")).Should().NotContain("AddPermissions(\"Identity\"");
     }
 }

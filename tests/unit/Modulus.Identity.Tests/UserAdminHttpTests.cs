@@ -381,7 +381,7 @@ public sealed class UserAdminHttpTests : OidcHostTestBase
         // Handing out a role hands out its permissions, so inviting into one needs authorization:grant-any; this administrator lacks it.
         var refusedRole = await SendAsync(HttpMethod.Post, "/identity/users/invitations", token,
             new { email = "newcomer@example.test", roles = new[] { "Visitor" }, firstName = "New" });
-        refusedRole.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        refusedRole.StatusCode.Should().Be(HttpStatusCode.BadRequest, await refusedRole.Content.ReadAsStringAsync());
         (await refusedRole.Content.ReadAsStringAsync()).Should().Contain("authorization:grant-any");
 
         var invited = await SendAsync(HttpMethod.Post, "/identity/users/invitations", token,

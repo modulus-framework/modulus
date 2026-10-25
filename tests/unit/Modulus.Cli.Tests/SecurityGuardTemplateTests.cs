@@ -42,9 +42,10 @@ public sealed class SecurityGuardTemplateTests
     }
 
     [Fact]
-    public void Without_an_example_permission_the_fallback_policy_still_comes_from_AddModulusAuthorization()
+    public void Without_an_example_module_the_fallback_policy_still_comes_from_AddModulusAuthorization()
     {
         var model = Model("keycloak");
+        model.NoExample = true;
         model.ExamplePermission.Should().BeNull();
         model.NeedsFallbackAuthorization.Should().BeTrue();
 

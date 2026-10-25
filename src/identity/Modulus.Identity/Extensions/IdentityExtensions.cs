@@ -432,10 +432,13 @@ public static class IdentityExtensions
     /// services (<c>AddModulusAuthorization</c>) and, for any permissions to resolve,
     /// grants seeded via <c>AddPermissionGrants</c>. Opt-in — without it,
     /// <see cref="ClaimsPrincipalCurrentUser"/> falls back to permission claims.
+    /// It also makes <see cref="ClaimsPrincipalCurrentUser"/> the <see cref="ICurrentUser"/> (unless the app registered its own), so the
+    /// mediator's authorization sees the caller: a host with an external identity provider has no <c>AddModulusIdentity</c> to do it.
     /// </summary>
     public static IServiceCollection AddGrantStorePermissionChecker(
         this IServiceCollection services)
     {
+        UseClaimsPrincipalCurrentUser(services);
         services.AddHttpContextAccessor();
         services.AddScoped<IPermissionChecker, GrantStorePermissionChecker>();
         return services;

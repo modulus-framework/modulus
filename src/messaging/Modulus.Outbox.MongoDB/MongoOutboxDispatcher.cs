@@ -23,10 +23,11 @@ internal sealed class MongoOutboxDispatcher(
         if (!registry.TryGetType(message.MessageType, out var type))
             type = Type.GetType(message.MessageType);
 
-        if (type is null)
+        // Checked before anything is built from the payload: a row that names any other type is refused, never deserialized.
+        if (type is null || !typeof(IIntegrationEvent).IsAssignableFrom(type))
             throw new InvalidOperationException(
                 $"Cannot resolve integration event '{message.MessageType}'. " +
-                "Ensure its assembly is scanned by AddModulusEvents(...).");
+                "Ensure its assembly is scanned by AddModulusEvents(...) and that it is an integration event.");
 
         // Deserialise with the shared IMessageSerializer — the same options the
         // row was written with (camelCase + string enums). Raw JsonSerializer

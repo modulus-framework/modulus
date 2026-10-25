@@ -7,11 +7,16 @@ namespace {{ root_namespace }}.Web.Pages.Account;
 /// <summary>
 /// Ends the BFF session: the BFF revokes the tokens it holds, and the BFF's Set-Cookie that clears the session cookie is
 /// relayed to the browser. When the BFF returns an end-session URL (an OIDC provider), the browser visits it too and comes
-/// back to the sign-in page.
+/// back to the sign-in page. Signing out is a POST: a GET only shows the confirmation, so a link or an image on another site
+/// cannot end the user's session.
 /// </summary>
 public class LogoutModel(BffSessionClient session) : PageModel
 {
-    public async Task<IActionResult> OnGetAsync()
+    public void OnGet()
+    {
+    }
+
+    public async Task<IActionResult> OnPostAsync()
     {
         var loginPage = $"{Request.Scheme}://{Request.Host}/Account/Login";
         var endSessionUrl = await session.SignOutAsync(loginPage, HttpContext.RequestAborted);

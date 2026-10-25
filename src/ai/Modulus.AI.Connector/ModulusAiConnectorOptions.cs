@@ -169,8 +169,14 @@ public sealed class AiPlatformOptions
     /// <summary>Clock skew tolerated on the envelope's lifetime.</summary>
     public TimeSpan ClockSkew { get; set; } = TimeSpan.FromSeconds(30);
 
-    /// <summary>The longest envelope lifetime accepted (<c>exp - iat</c>); the platform issues about 60 seconds.</summary>
-    public TimeSpan MaxEnvelopeLifetime { get; set; } = TimeSpan.FromMinutes(5);
+    /// <summary>The longest envelope lifetime accepted (<c>exp - iat</c>); the platform issues about 60 seconds, so this is headroom only.</summary>
+    public TimeSpan MaxEnvelopeLifetime { get; set; } = TimeSpan.FromMinutes(2);
+
+    /// <summary>
+    /// How many replicas of the app serve this connector. Above 1 the replay protection needs an <see cref="Modulus.Core.Abstractions.IDistributedLock"/>
+    /// shared by the replicas (Redis); the app does not start without one.
+    /// </summary>
+    public int ReplicaCount { get; set; } = 1;
 
     /// <summary>The platform's base URL; revocation signals go to <c>{BaseUrl}/revocations/scope</c>.</summary>
     public string? BaseUrl { get; set; }
@@ -209,6 +215,12 @@ public sealed class AiAppInstanceOptions
     /// sees nothing (the connector never enters the host context).
     /// </summary>
     public Guid? TenantId { get; set; }
+
+    /// <summary>
+    /// The SHA-256 hash (hex, <see cref="AiApiKeys.Hash"/>) of the API key the platform uses for this instance's index. With more than
+    /// one instance every instance needs one: a key then reads only its own instance, not every company the connector maps.
+    /// </summary>
+    public string? ApiKeyHash { get; set; }
 }
 
 /// <summary>How the envelope's user is found among the app's accounts.</summary>

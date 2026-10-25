@@ -91,8 +91,8 @@ public sealed class TenantScopedFileStorageTests : IDisposable
     }
 
     [Fact]
-    public void Isolation_off_keeps_the_provider_unwrapped()
-        => Build(isolate: false).Should().BeOfType<LocalFileStorage>();
+    public void Isolation_off_keeps_the_provider_without_the_tenant_prefix()
+        => Build(isolate: false).Should().BeOfType<SizeLimitedFileStorage>("every provider is capped, but not tenant-scoped");
 
     public void Dispose()
     {

@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Authentication;
+{{ if auth != "none" && auth != "openiddict" }}using Modulus.Identity.Extensions;
+{{ end }}
 {{ if auth == "openiddict" }}using Modulus.Identity.Extensions;
 {{ if example_permission }}using Modulus.Authorization.Management;
 {{ end }}using OpenIddict.Validation.AspNetCore;
@@ -44,6 +46,18 @@ internal static class AuthenticationSetup
             .GrantToRole("TenantOwner", Modulus.Identity.Extensions.AccountLifecycleExtensions.PersonalDataPermission)
             .GrantToRole("TenantOwner", Modulus.Identity.Extensions.AccountLifecycleExtensions.OrganizationPermission)
             .GrantToRole("TenantOwner", Modulus.Identity.Extensions.AccountLifecycleExtensions.OrganizationManagePermission));
+{{ end }}
+{{ else if use_external_provider }}        // External identity provider ({{ external_provider_name }}).
+        // Validates bearer tokens issued by {{ external_provider_name }} via OIDC discovery / introspection. Configure the provider
+        // details under "{{ external_provider_config_key }}" in appsettings.json. Set ClientSecret via User Secrets or env var
+        // (never committed):
+        //   dotnet user-secrets set "{{ external_provider_config_key }}:ClientSecret" "your-secret"
+        builder.Services.AddAuthentication()
+            .{{ external_provider_add_method }}(builder.Configuration);
+{{ else }}        // None is registered. Endpoints require an authenticated user by default, so until you add a scheme every API call
+        // fails (500: no authentication scheme). Either register one here (e.g. builder.Services.AddAuthentication().AddJwtBearer(...)
+        // and, after app.UseExceptionHandler(), app.UseAuthentication()), re-generate with --auth openiddict or an external
+        // provider, or call AllowAnonymous() in an endpoint's Configure().
 {{ end }}{{ if example_permission }}
         // The example API needs a permission, and the Admin role (seeded at startup) holds it: a signed-in caller without it gets 403.
         // AddModulusAuthorization turns a "module:thing:action" name into a permission check, resolved from the grants of the caller's roles.
@@ -73,9 +87,10 @@ internal static class AuthenticationSetup
                 ]);
             }
         });
-        builder.Services.AddGrantStorePermissionChecker();
+{{ if auth != "none" }}        builder.Services.AddGrantStorePermissionChecker();
+{{ end }}
         builder.Services.AddPermissions("{{ example_module_lower }}", permissions => permissions.Add("{{ example_permission }}", "{{ example_permission_description }}"));
-        builder.Services.AddPermissionGrants(grants => grants.GrantToRole("{{ admin_role }}", "{{ example_permission }}"));
+        builder.Services.AddPermissionGrants(grants => { foreach (var role in builder.Configuration.GetSection("Authorization:AdministratorRoles").Get<string[]>() ?? ["{{ admin_role }}"]) grants.GrantToRole(role, "{{ example_permission }}"); });
 {{ if use_security_guard }}        // The security audit viewer (search, chain verification, CSV export of the caller's company). Not granted by default.
         Modulus.AuditLogging.Security.SecurityAuditViewerEndpoints.AddModulusSecurityAuditViewer(builder.Services);
         // The business audit viewer (entries of the business audit log, by entity, actor and time). Not granted by default either.
@@ -93,17 +108,7 @@ internal static class AuthenticationSetup
         builder.Services.Configure<Modulus.Authorization.EntityFrameworkCore.CompanyProvisioningOptions>(builder.Configuration.GetSection(Modulus.Authorization.EntityFrameworkCore.CompanyProvisioningOptions.SectionName));
 {{ if auth == "openiddict" }}        // Role-permission administration (the Roles page's grants) uses the grant store and the grant rules.
         builder.Services.AddModulusAuthorizationManagement();
-{{ end }}{{ end }}{{ else if use_external_provider }}        // External identity provider ({{ external_provider_name }}).
-        // Validates bearer tokens issued by {{ external_provider_name }} via OIDC discovery / introspection. Configure the provider
-        // details under "{{ external_provider_config_key }}" in appsettings.json. Set ClientSecret via User Secrets or env var
-        // (never committed):
-        //   dotnet user-secrets set "{{ external_provider_config_key }}:ClientSecret" "your-secret"
-        builder.Services.AddAuthentication()
-            .{{ external_provider_add_method }}(builder.Configuration);
-{{ else }}        // None is registered. Endpoints require an authenticated user by default, so until you add a scheme every API call
-        // fails (500: no authentication scheme). Either register one here (e.g. builder.Services.AddAuthentication().AddJwtBearer(...)
-        // and, after app.UseExceptionHandler(), app.UseAuthentication()), re-generate with --auth openiddict or an external
-        // provider, or call AllowAnonymous() in an endpoint's Configure().
+{{ end }}
 {{ end }}{{ if use_security_guard }}
 {{ if needs_fallback_authorization }}        // Closed by default: AddModulusAuthorization makes "a signed-in user" the fallback policy, so an endpoint that
         // declares no policy of its own is not open.

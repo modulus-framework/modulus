@@ -322,8 +322,10 @@ public sealed class ConnectorTestHost : IAsyncDisposable
             ["Ai:Connector:Platform:RevocationMaxBackoff"] = "00:00:00.020",
             ["Ai:Connector:Instances:0:AppInstanceId"] = Instance,
             ["Ai:Connector:Instances:0:PlatformTenantId"] = PlatformTenant,
+            ["Ai:Connector:Instances:0:ApiKeyHash"] = AiApiKeys.Hash(ApiKey),
             ["Ai:Connector:Instances:1:AppInstanceId"] = CompanyInstance,
             ["Ai:Connector:Instances:1:PlatformTenantId"] = PlatformTenant,
+            ["Ai:Connector:Instances:1:ApiKeyHash"] = AiApiKeys.Hash(ApiKey),
             ["Ai:Connector:Instances:1:TenantId"] = TestTenantRestorer.Company.ToString(),
             ["Ai:Connector:PublicBaseUrl"] = "https://erp.test",
         };

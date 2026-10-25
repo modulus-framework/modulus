@@ -50,9 +50,11 @@ public static class StorageExtensions
         {
             var provider = sp.GetRequiredService<TStorage>();
             var options = sp.GetService<IOptions<StorageOptions>>()?.Value;
+            // Every provider caps server-side uploads, whatever the isolation mode.
+            var capped = new SizeLimitedFileStorage(provider, options?.MaxUploadBytes ?? new StorageOptions().MaxUploadBytes);
             return options?.IsolateTenants == true
-                ? new TenantScopedFileStorage(provider, sp.GetService<ICurrentTenant>() ?? new NullCurrentTenant())
-                : provider;
+                ? new TenantScopedFileStorage(capped, sp.GetService<ICurrentTenant>() ?? new NullCurrentTenant())
+                : capped;
         });
         return services;
     }

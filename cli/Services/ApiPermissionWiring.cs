@@ -14,7 +14,11 @@ internal static class ApiPermissionWiring
     /// <paramref name="host"/> is the API host's whole text, where the permission is looked for; <paramref name="content"/> is the
     /// file the lines go into (the feature services, or Program.cs of a host generated before the split).
     /// </summary>
-    public static string EnsurePermission(string content, string host, string moduleName, string permission, string description)
+    /// <summary>
+    /// <paramref name="withChecker"/> is false for a host with no identity package (<c>--auth none</c>): the grant checker lives in it,
+    /// so it is not added there.
+    /// </summary>
+    public static string EnsurePermission(string content, string host, string moduleName, string permission, string description, bool withChecker = true)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(content);
         ArgumentException.ThrowIfNullOrWhiteSpace(host);
@@ -27,12 +31,14 @@ internal static class ApiPermissionWiring
         var lines = new List<string>();
         if (!host.Contains("AddModulusAuthorization(", StringComparison.OrdinalIgnoreCase))
             lines.Add("builder.Services.AddModulusAuthorization();");
-        var needsChecker = !host.Contains(UiAccessGates.GrantCheckerCall, StringComparison.OrdinalIgnoreCase);
+        var needsChecker = withChecker && !host.Contains(UiAccessGates.GrantCheckerCall, StringComparison.OrdinalIgnoreCase);
         if (needsChecker)
             lines.Add(UiAccessGates.GrantCheckerCall);
         if (!host.Contains($"Add(\"{permission}\"", StringComparison.OrdinalIgnoreCase))
             lines.Add($"builder.Services.AddPermissions(\"{moduleName.ToLowerInvariant()}\", permissions => permissions.Add(\"{permission}\", \"{description}\"));");
-        if (!host.Contains(UiAccessGates.GrantMarker(permission), StringComparison.OrdinalIgnoreCase))
+        var granted = host.Contains(UiAccessGates.GrantMarker(permission), StringComparison.OrdinalIgnoreCase)
+            || host.Contains(UiAccessGates.LegacyGrantMarker(permission), StringComparison.OrdinalIgnoreCase);
+        if (!granted)
             lines.Add(UiAccessGates.GrantCall(permission));
 
         if (lines.Count == 0)

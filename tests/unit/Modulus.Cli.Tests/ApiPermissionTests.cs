@@ -134,7 +134,8 @@ public sealed class ApiPermissionTests
             .And.Contain("builder.Services.AddModulusAuthorization();")
             .And.Contain("builder.Services.AddGrantStorePermissionChecker();")
             .And.Contain("AddPermissions(\"catalog\", permissions => permissions.Add(\"catalog:products:manage\", \"Manage Products.\"));")
-            .And.Contain("AddPermissionGrants(grants => grants.GrantToRole(\"Admin\", \"catalog:products:manage\"));");
+            .And.Contain("GrantToRole(role, \"catalog:products:manage\")")
+            .And.Contain("builder.Configuration.GetSection(\"Authorization:AdministratorRoles\").Get<string[]>() ?? [\"Admin\"]");
         program.IndexOf("builder.AddApiAuthentication();", StringComparison.Ordinal)
             .Should().BeLessThan(program.IndexOf("builder.Build()", StringComparison.Ordinal), "services are registered before the host is built");
     }
@@ -172,7 +173,7 @@ public sealed class ApiPermissionTests
         var lines = wired.ReplaceLineEndings("\n");
         var checker = lines.IndexOf("builder.Services.AddGrantStorePermissionChecker();", StringComparison.Ordinal);
         var permissions = lines.IndexOf("builder.Services.AddPermissions(\"orders\", permissions => permissions.Add(\"orders:orders:manage\", \"Manage Orders.\"));", StringComparison.Ordinal);
-        var grants = lines.IndexOf("builder.Services.AddPermissionGrants(grants => grants.GrantToRole(\"Admin\", \"orders:orders:manage\"));", StringComparison.Ordinal);
+        var grants = lines.IndexOf("GrantToRole(role, \"orders:orders:manage\")", StringComparison.Ordinal);
         checker.Should().BeGreaterThan(0);
         permissions.Should().BeGreaterThan(checker, "the lines keep the order they were listed in");
         grants.Should().BeGreaterThan(permissions);
@@ -207,15 +208,15 @@ public sealed class ApiPermissionTests
     }
 
     [Theory]
-    [InlineData("none", false)]
-    [InlineData("keycloak", false)]
-    [InlineData("openiddict", true)]
-    public void Only_the_identity_backend_gets_a_permission(string auth, bool expected)
+    [InlineData("keycloak")]
+    [InlineData("openiddict")]
+    [InlineData("none")]
+    public void Every_identity_backend_gets_the_example_permission(string auth)
     {
         var model = App(auth: auth);
 
-        (model.ExamplePermission is not null).Should().Be(expected);
-        ApiHostSource.Render(_engine, model).Contains("AddPermissionGrants", StringComparison.Ordinal).Should().Be(expected);
+        model.ExamplePermission.Should().Be("catalog:products:manage");
+        ApiHostSource.Render(_engine, model).Should().Contain("GrantToRole(role, \"catalog:products:manage\")");
     }
 
     [Fact]
@@ -238,12 +239,20 @@ public sealed class ApiPermissionTests
     }
 
     [Fact]
-    public void Without_a_permission_the_generated_test_only_signs_in()
+    public void A_generated_test_signs_in_as_the_administrator_role_when_there_is_an_identity_backend()
     {
+        _engine.Render("app/AppTests", App(auth: "keycloak")).Should().Contain("CreateAuthenticatedClient(roles: [\"Admin\"]");
+        _engine.Render("app/AppTests", App(auth: "openiddict")).Should().Contain("CreateAuthenticatedClient(roles: [\"Admin\"]");
+    }
+
+    [Fact]
+    public void Without_an_identity_backend_the_generated_tests_only_check_the_anonymous_challenge()
+    {
+        // No identity package and no user: nothing can be signed in as the administrator, so the round trip and the grant check are not generated.
         var tests = _engine.Render("app/AppTests", App(auth: "none"));
 
-        tests.Should().Contain("factory.CreateAuthenticatedClient()");
-        tests.Should().NotContain("HttpStatusCode.Forbidden");
+        tests.Should().NotContain("CreateAuthenticatedClient(roles: [\"Admin\"]");
+        tests.Should().Contain("Assert.Equal(HttpStatusCode.Unauthorized, (await factory.CreateClient().GetAsync(url)).StatusCode);");
     }
 
     [Fact]

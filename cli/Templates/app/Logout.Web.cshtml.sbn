@@ -1,15 +1,15 @@
 @page
 @model {{ root_namespace }}.Web.Pages.Account.LogoutModel
 @{
-    ViewData["Title"] = "Signing out";
+    ViewData["Title"] = "Sign out";
 }
 
 <div class="m-auth-card">
     <div class="m-auth-card-body" style="text-align: center;">
-        <h1 class="m-auth-title">You have signed out</h1>
-        <p class="m-auth-hint">Your session has ended on this device.</p>
-        <div class="m-auth-actions">
-            <a class="ant-btn ant-btn-primary ant-btn-block" href="/Account/Login">Sign in again</a>
-        </div>
+        <h1 class="m-auth-title">Sign out of this device?</h1>
+        <p class="m-auth-hint">Your session on this device will end.</p>
+        <form method="post" class="m-auth-actions">
+            <button type="submit" class="ant-btn ant-btn-primary ant-btn-block">Sign out</button>
+        </form>
     </div>
 </div>

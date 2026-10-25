@@ -2,6 +2,8 @@ using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Modulus.Core.Abstractions;
+using Modulus.Core.Abstractions.Tenancy;
+using NSubstitute;
 using Modulus.EntityFrameworkCore.Extensions;
 using Modulus.MultiTenancy.EntityFrameworkCore;
 using Modulus.MultiTenancy.Extensions;
@@ -33,13 +35,31 @@ public sealed class TenantDatabaseMigrationTests : IDisposable
     }
 
     [Fact]
-    public async Task FanOut_WithoutTenantStore_RunsHostOnly()
+    public async Task FanOut_WithoutTenantStore_Fails_InsteadOfReportingSuccess()
     {
+        // Without a tenant store the fan-out cannot find the tenants; reporting success would leave them on an old schema.
         var services = new ServiceCollection();
         services.AddLogging();
 
-        await services.BuildServiceProvider().MigrateModulusDatabasesForTenantsAsync(
+        Func<Task> act = () => services.BuildServiceProvider().MigrateModulusDatabasesForTenantsAsync(
             DatabaseInitializationMode.EnsureCreated);
+
+        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("*No tenant store*");
+    }
+
+    [Fact]
+    public async Task FanOut_WhenTheTenantListCannotBeRead_Fails()
+    {
+        var store = Substitute.For<ITenantStore>();
+        store.ListAsync(Arg.Any<CancellationToken>()).Returns<Task<IReadOnlyList<TenantInfo>>>(_ => throw new InvalidOperationException("store down"));
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddSingleton(store);
+
+        Func<Task> act = () => services.BuildServiceProvider().MigrateModulusDatabasesForTenantsAsync(
+            DatabaseInitializationMode.EnsureCreated);
+
+        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("*tenant list could not be read*");
     }
 
     [Fact]

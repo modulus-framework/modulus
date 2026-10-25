@@ -32,10 +32,13 @@ internal static class DatabaseStartup
         await app.Services.MigrateAuthorizationStoreAsync(ensureCreatedIfNoMigrations: !app.Environment.IsProduction());
 {{ end }}{{ if multi_tenancy }}        // The tenant store (companies, memberships) is not a module context: it is migrated on its own, first.
         await app.Services.MigrateTenantStoreAsync(ensureCreatedIfNoMigrations: !app.Environment.IsProduction());
-{{ end }}        await app.Services.MigrateModulusDatabasesAsync(
-            app.Environment.IsProduction()
-                ? DatabaseInitializationMode.Migrate
-                : DatabaseInitializationMode.MigrateOrCreate);
+{{ end }}        // Replicas take turns on the migration lock (IDistributedLock). Set Database:MigrateOnStartup to false when a migrator job
+        // applies the schema instead, so the replicas never migrate.
+        if (app.Configuration.GetValue("Database:MigrateOnStartup", true))
+            await app.Services.MigrateModulusDatabasesAsync(
+                app.Environment.IsProduction()
+                    ? DatabaseInitializationMode.Migrate
+                    : DatabaseInitializationMode.MigrateOrCreate);
 {{ if example_permission }}
         // The first-boot grants (AddPermissionGrants), written once into the empty grant store.
         await app.Services.SeedPermissionGrantsAsync();

@@ -818,7 +818,7 @@ abstractions for apps to wire their own admin APIs.
 **The older server-rendered UI (`src/ui/Modulus.UI.*`, the Tabler theme, `ui add/remove/update/eject/diff`, `--ui-modules`) was
 removed from this repository.** The UI lives in the separate `modulus-ui` repository (packages `Synvro.Modulus.Ui.Abstractions`, `Synvro.Modulus.Ui.Assets`,
 `Synvro.Modulus.AspNetCore.Mvc`, `Synvro.Modulus.AspNetCore.Hosting`, `Synvro.Modulus.AspNetCore.Fluid`, `Synvro.Modulus.Blazor`, `Synvro.Modulus.Documents`, and the page templates in
-`Synvro.Modulus.Ui.Templates`, at 1.6.1 since the menu adapter (2026-10-23): one UI version, set in `ui-kit.json` and `UiTemplatePackage.DefaultVersion`, separate from the framework's 1.6.0; renamed from `Modulus.*` on 2026-10-23). The CLI scaffolds pages from that template package with `modulus ui ...` (`add-component`, `create-form-from-entity`,
+`Synvro.Modulus.Ui.Templates`, at 1.7.0, the same version as the framework (one version for both repositories, set in `ui-kit.json`, `UiTemplatePackage.DefaultVersion` and `src/Directory.Build.props` in the UI repository); renamed from `Modulus.*` on 2026-10-23). The CLI scaffolds pages from that template package with `modulus ui ...` (`add-component`, `create-form-from-entity`,
 `create-dashboard`, `add-admin` (the admin dashboard starter and its menu), `add-auth`, `add-2fa`, `add-session-manager`, `add-chart`, `add-i18n`, `create-permission-matrix`, `audit`, `theme ...`; see
 `modulus-ui/docs/CLI.md`). Package templates resolve from `~/.modulus/cache`, then the local feed (`~/.modulus/feed` or `MODULUS_LOCAL_FEED`), then nuget.org.
 
@@ -843,7 +843,7 @@ removed from this repository.** The UI lives in the separate `modulus-ui` reposi
 - **API permission.** Every endpoint of a generated CRUD set declares `Permissions("{module}:{route}:manage")` (`ModuleModel.RequiredPermission`, set when the host has the Admin role:
   `UiAccessGates.HasAdminRole` = the sign-in or `SeedIdentityAsync(`, so an api host qualifies). The Admin role holds it: `ApiPermissionWiring.EnsurePermission` adds
   `AddModulusAuthorization`, `AddGrantStorePermissionChecker`, `AddPermissions`, `AddPermissionGrants` before `builder.Build()` (idempotent, at the file's own indentation), for the example module
-  and for each later `generate-crud`. Anonymous 401, signed in without the role 403. A host with no identity backend keeps endpoints as open as the host. The generated test project signs in as
+  and for each later `generate-crud`. Anonymous 401, signed in without the role 403. Every generated host gets the permission, whatever its identity backend: the roles it is granted to come from `Authorization:AdministratorRoles` (default `Admin`), so an external provider names its own roles there. A host with no identity package (`--auth none`) has no grant checker, and its endpoints need a signed-in caller until an identity is added. The generated test project signs in as
   `Admin` and asserts 401/403/200, and ships `appsettings.Testing.json`. `generate-crud` scaffolds the API side only; pages come from the `modulus ui` commands.
   Covered by `AppKindTests`, `ApiPermissionTests`, `IdentityBackendTests`, `SeededClientTemplateTests`, `UiFrameworkHostTests`.
 - **Known gaps.** The Blazor, Fluid and no-engine hosts for a web app are not generated (only `mvc` and `razor-pages`); there is no generated admin CRUD page or

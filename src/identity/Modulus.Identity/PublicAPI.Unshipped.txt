@@ -1398,31 +1398,6 @@ Modulus.Identity.Abstractions.ModulusIdentityOptions.Audiences.set -> void
 const Modulus.Identity.Extensions.UserAdminExtensions.MaxPageSize = 100 -> int
 const Modulus.Identity.Extensions.UserAdminExtensions.MaxReasonLength = 500 -> int
 Modulus.Identity.Extensions.UserAdminExtensions
-Modulus.Identity.Extensions.UserDetail
-Modulus.Identity.Extensions.UserDetail.<Clone>$() -> Modulus.Identity.Extensions.UserDetail!
-Modulus.Identity.Extensions.UserDetail.EmailConfirmed.get -> bool
-Modulus.Identity.Extensions.UserDetail.EmailConfirmed.init -> void
-Modulus.Identity.Extensions.UserDetail.Email.get -> string?
-Modulus.Identity.Extensions.UserDetail.Email.init -> void
-Modulus.Identity.Extensions.UserDetail.Equals(Modulus.Identity.Extensions.UserDetail? other) -> bool
-Modulus.Identity.Extensions.UserDetail.FirstName.get -> string?
-Modulus.Identity.Extensions.UserDetail.FirstName.init -> void
-Modulus.Identity.Extensions.UserDetail.Id.get -> System.Guid
-Modulus.Identity.Extensions.UserDetail.Id.init -> void
-Modulus.Identity.Extensions.UserDetail.IsActive.get -> bool
-Modulus.Identity.Extensions.UserDetail.IsActive.init -> void
-Modulus.Identity.Extensions.UserDetail.LastName.get -> string?
-Modulus.Identity.Extensions.UserDetail.LastName.init -> void
-Modulus.Identity.Extensions.UserDetail.Lifecycle.get -> string!
-Modulus.Identity.Extensions.UserDetail.Lifecycle.init -> void
-Modulus.Identity.Extensions.UserDetail.LockedUntil.get -> System.DateTimeOffset?
-Modulus.Identity.Extensions.UserDetail.LockedUntil.init -> void
-Modulus.Identity.Extensions.UserDetail.Roles.get -> System.Collections.Generic.IReadOnlyList<string!>!
-Modulus.Identity.Extensions.UserDetail.Roles.init -> void
-Modulus.Identity.Extensions.UserDetail.TwoFactorEnabled.get -> bool
-Modulus.Identity.Extensions.UserDetail.TwoFactorEnabled.init -> void
-Modulus.Identity.Extensions.UserDetail.UserName.get -> string?
-Modulus.Identity.Extensions.UserDetail.UserName.init -> void
 Modulus.Identity.Extensions.UserLockRequest
 Modulus.Identity.Extensions.UserLockRequest.<Clone>$() -> Modulus.Identity.Extensions.UserLockRequest!
 Modulus.Identity.Extensions.UserLockRequest.Deconstruct(out System.DateTimeOffset? Until, out string! Reason) -> void
@@ -1434,9 +1409,7 @@ Modulus.Identity.Extensions.UserLockRequest.Until.init -> void
 Modulus.Identity.Extensions.UserLockRequest.UserLockRequest(System.DateTimeOffset? Until, string! Reason) -> void
 Modulus.Identity.Extensions.UserPage
 Modulus.Identity.Extensions.UserPage.<Clone>$() -> Modulus.Identity.Extensions.UserPage!
-Modulus.Identity.Extensions.UserPage.Deconstruct(out System.Collections.Generic.IReadOnlyList<Modulus.Identity.Extensions.UserSummary!>! Items, out int Total, out int Page, out int PageSize) -> void
 Modulus.Identity.Extensions.UserPage.Equals(Modulus.Identity.Extensions.UserPage? other) -> bool
-Modulus.Identity.Extensions.UserPage.Items.get -> System.Collections.Generic.IReadOnlyList<Modulus.Identity.Extensions.UserSummary!>!
 Modulus.Identity.Extensions.UserPage.Items.init -> void
 Modulus.Identity.Extensions.UserPage.Page.get -> int
 Modulus.Identity.Extensions.UserPage.Page.init -> void
@@ -1444,7 +1417,6 @@ Modulus.Identity.Extensions.UserPage.PageSize.get -> int
 Modulus.Identity.Extensions.UserPage.PageSize.init -> void
 Modulus.Identity.Extensions.UserPage.Total.get -> int
 Modulus.Identity.Extensions.UserPage.Total.init -> void
-Modulus.Identity.Extensions.UserPage.UserPage(System.Collections.Generic.IReadOnlyList<Modulus.Identity.Extensions.UserSummary!>! Items, int Total, int Page, int PageSize) -> void
 Modulus.Identity.Extensions.UserRolesRequest
 Modulus.Identity.Extensions.UserRolesRequest.<Clone>$() -> Modulus.Identity.Extensions.UserRolesRequest!
 Modulus.Identity.Extensions.UserRolesRequest.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>! Roles) -> void
@@ -1452,28 +1424,6 @@ Modulus.Identity.Extensions.UserRolesRequest.Equals(Modulus.Identity.Extensions.
 Modulus.Identity.Extensions.UserRolesRequest.Roles.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Modulus.Identity.Extensions.UserRolesRequest.Roles.init -> void
 Modulus.Identity.Extensions.UserRolesRequest.UserRolesRequest(System.Collections.Generic.IReadOnlyList<string!>! Roles) -> void
-Modulus.Identity.Extensions.UserSummary
-Modulus.Identity.Extensions.UserSummary.<Clone>$() -> Modulus.Identity.Extensions.UserSummary!
-Modulus.Identity.Extensions.UserSummary.Deconstruct(out System.Guid Id, out string? UserName, out string? Email, out string? FullName, out bool IsActive, out string! Lifecycle, out System.DateTimeOffset? LockedUntil) -> void
-Modulus.Identity.Extensions.UserSummary.Email.get -> string?
-Modulus.Identity.Extensions.UserSummary.Email.init -> void
-Modulus.Identity.Extensions.UserSummary.Equals(Modulus.Identity.Extensions.UserSummary? other) -> bool
-Modulus.Identity.Extensions.UserSummary.FullName.get -> string?
-Modulus.Identity.Extensions.UserSummary.FullName.init -> void
-Modulus.Identity.Extensions.UserSummary.Id.get -> System.Guid
-Modulus.Identity.Extensions.UserSummary.Id.init -> void
-Modulus.Identity.Extensions.UserSummary.IsActive.get -> bool
-Modulus.Identity.Extensions.UserSummary.IsActive.init -> void
-Modulus.Identity.Extensions.UserSummary.Lifecycle.get -> string!
-Modulus.Identity.Extensions.UserSummary.Lifecycle.init -> void
-Modulus.Identity.Extensions.UserSummary.LockedUntil.get -> System.DateTimeOffset?
-Modulus.Identity.Extensions.UserSummary.LockedUntil.init -> void
-Modulus.Identity.Extensions.UserSummary.UserName.get -> string?
-Modulus.Identity.Extensions.UserSummary.UserName.init -> void
-Modulus.Identity.Extensions.UserSummary.UserSummary(System.Guid Id, string? UserName, string? Email, string? FullName, bool IsActive, string! Lifecycle, System.DateTimeOffset? LockedUntil) -> void
-override Modulus.Identity.Extensions.UserDetail.Equals(object? obj) -> bool
-override Modulus.Identity.Extensions.UserDetail.GetHashCode() -> int
-override Modulus.Identity.Extensions.UserDetail.ToString() -> string!
 override Modulus.Identity.Extensions.UserLockRequest.Equals(object? obj) -> bool
 override Modulus.Identity.Extensions.UserLockRequest.GetHashCode() -> int
 override Modulus.Identity.Extensions.UserLockRequest.ToString() -> string!
@@ -1483,20 +1433,13 @@ override Modulus.Identity.Extensions.UserPage.ToString() -> string!
 override Modulus.Identity.Extensions.UserRolesRequest.Equals(object? obj) -> bool
 override Modulus.Identity.Extensions.UserRolesRequest.GetHashCode() -> int
 override Modulus.Identity.Extensions.UserRolesRequest.ToString() -> string!
-override Modulus.Identity.Extensions.UserSummary.Equals(object? obj) -> bool
-override Modulus.Identity.Extensions.UserSummary.GetHashCode() -> int
-override Modulus.Identity.Extensions.UserSummary.ToString() -> string!
 static Modulus.Identity.Extensions.UserAdminExtensions.MapModulusUserAdmin<TUser>(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! prefix = "/identity/users") -> Microsoft.AspNetCore.Routing.RouteGroupBuilder!
-static Modulus.Identity.Extensions.UserDetail.operator !=(Modulus.Identity.Extensions.UserDetail? left, Modulus.Identity.Extensions.UserDetail? right) -> bool
-static Modulus.Identity.Extensions.UserDetail.operator ==(Modulus.Identity.Extensions.UserDetail? left, Modulus.Identity.Extensions.UserDetail? right) -> bool
 static Modulus.Identity.Extensions.UserLockRequest.operator !=(Modulus.Identity.Extensions.UserLockRequest? left, Modulus.Identity.Extensions.UserLockRequest? right) -> bool
 static Modulus.Identity.Extensions.UserLockRequest.operator ==(Modulus.Identity.Extensions.UserLockRequest? left, Modulus.Identity.Extensions.UserLockRequest? right) -> bool
 static Modulus.Identity.Extensions.UserPage.operator !=(Modulus.Identity.Extensions.UserPage? left, Modulus.Identity.Extensions.UserPage? right) -> bool
 static Modulus.Identity.Extensions.UserPage.operator ==(Modulus.Identity.Extensions.UserPage? left, Modulus.Identity.Extensions.UserPage? right) -> bool
 static Modulus.Identity.Extensions.UserRolesRequest.operator !=(Modulus.Identity.Extensions.UserRolesRequest? left, Modulus.Identity.Extensions.UserRolesRequest? right) -> bool
 static Modulus.Identity.Extensions.UserRolesRequest.operator ==(Modulus.Identity.Extensions.UserRolesRequest? left, Modulus.Identity.Extensions.UserRolesRequest? right) -> bool
-static Modulus.Identity.Extensions.UserSummary.operator !=(Modulus.Identity.Extensions.UserSummary? left, Modulus.Identity.Extensions.UserSummary? right) -> bool
-static Modulus.Identity.Extensions.UserSummary.operator ==(Modulus.Identity.Extensions.UserSummary? left, Modulus.Identity.Extensions.UserSummary? right) -> bool
 const Modulus.Identity.Extensions.RoleAdminExtensions.MaxRoleNameLength = 256 -> int
 const Modulus.Identity.Extensions.RoleAdminExtensions.ReservedRolePrefix = "integration:" -> string!
 Modulus.Identity.Extensions.PermissionSummary
@@ -1591,10 +1534,6 @@ override Modulus.Identity.Extensions.UserInvitationRequest.GetHashCode() -> int
 override Modulus.Identity.Extensions.UserInvitationRequest.ToString() -> string!
 static Modulus.Identity.Extensions.UserInvitationRequest.operator !=(Modulus.Identity.Extensions.UserInvitationRequest? left, Modulus.Identity.Extensions.UserInvitationRequest? right) -> bool
 static Modulus.Identity.Extensions.UserInvitationRequest.operator ==(Modulus.Identity.Extensions.UserInvitationRequest? left, Modulus.Identity.Extensions.UserInvitationRequest? right) -> bool
-Modulus.Identity.Extensions.UserDetail.EmployeeCode.get -> string?
-Modulus.Identity.Extensions.UserDetail.EmployeeCode.init -> void
-Modulus.Identity.Extensions.UserDetail.PhoneNumber.get -> string?
-Modulus.Identity.Extensions.UserDetail.PhoneNumber.init -> void
 Modulus.Identity.Abstractions.IIdentityEmailSender.SendEmailChangeEmailAsync(string! newEmail, string! changeToken, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
 Modulus.Identity.Abstractions.ModulusUser.DisplayName.get -> string?
 Modulus.Identity.Abstractions.ModulusUser.DisplayName.set -> void
@@ -1707,14 +1646,6 @@ override Modulus.Identity.ProfileDetailsResponse.GetHashCode() -> int
 override Modulus.Identity.ProfileDetailsResponse.ToString() -> string!
 static Modulus.Identity.ProfileDetailsResponse.operator !=(Modulus.Identity.ProfileDetailsResponse? left, Modulus.Identity.ProfileDetailsResponse? right) -> bool
 static Modulus.Identity.ProfileDetailsResponse.operator ==(Modulus.Identity.ProfileDetailsResponse? left, Modulus.Identity.ProfileDetailsResponse? right) -> bool
-Modulus.Identity.Extensions.UserDetail.Department.get -> string?
-Modulus.Identity.Extensions.UserDetail.Department.init -> void
-Modulus.Identity.Extensions.UserDetail.JobTitle.get -> string?
-Modulus.Identity.Extensions.UserDetail.JobTitle.init -> void
-Modulus.Identity.Extensions.UserDetail.PrimaryBranchId.get -> System.Guid?
-Modulus.Identity.Extensions.UserDetail.PrimaryBranchId.init -> void
-Modulus.Identity.Extensions.UserDetail.WorkEmail.get -> string?
-Modulus.Identity.Extensions.UserDetail.WorkEmail.init -> void
 Modulus.Identity.Extensions.UserOrganizationRequest
 Modulus.Identity.Extensions.UserOrganizationRequest.<Clone>$() -> Modulus.Identity.Extensions.UserOrganizationRequest!
 Modulus.Identity.Extensions.UserOrganizationRequest.ClearPrimaryBranch.get -> bool
@@ -1731,8 +1662,6 @@ override Modulus.Identity.Extensions.UserOrganizationRequest.GetHashCode() -> in
 override Modulus.Identity.Extensions.UserOrganizationRequest.ToString() -> string!
 static Modulus.Identity.Extensions.UserOrganizationRequest.operator !=(Modulus.Identity.Extensions.UserOrganizationRequest? left, Modulus.Identity.Extensions.UserOrganizationRequest? right) -> bool
 static Modulus.Identity.Extensions.UserOrganizationRequest.operator ==(Modulus.Identity.Extensions.UserOrganizationRequest? left, Modulus.Identity.Extensions.UserOrganizationRequest? right) -> bool
-Modulus.Identity.Extensions.UserDetail.Deconstruct(out System.Guid Id, out string? UserName, out string? Email, out bool EmailConfirmed, out string? FirstName, out string? LastName, out string? PhoneNumber, out string? EmployeeCode, out bool IsActive, out string! Lifecycle, out System.DateTimeOffset? LockedUntil, out bool TwoFactorEnabled, out System.Collections.Generic.IReadOnlyList<string!>! Roles, out string? WorkEmail, out string? JobTitle, out string? Department, out System.Guid? PrimaryBranchId) -> void
-Modulus.Identity.Extensions.UserDetail.UserDetail(System.Guid Id, string? UserName, string? Email, bool EmailConfirmed, string? FirstName, string? LastName, string? PhoneNumber, string? EmployeeCode, bool IsActive, string! Lifecycle, System.DateTimeOffset? LockedUntil, bool TwoFactorEnabled, System.Collections.Generic.IReadOnlyList<string!>! Roles, string? WorkEmail = null, string? JobTitle = null, string? Department = null, System.Guid? PrimaryBranchId = null) -> void
 const Modulus.Identity.Extensions.AccountLifecycleExtensions.OrganizationManagePermission = "identity:accounts:organization:manage" -> string!
 const Modulus.Identity.Extensions.AccountLifecycleExtensions.OrganizationPermission = "identity:accounts:organization" -> string!
 const Modulus.Identity.EntityFrameworkCore.ModulusIdentityDbContext<TUser, TRole>.EmployeeCodeIndexName = "IX_AspNetUsers_TenantId_EmployeeCode_Unique" -> string!
@@ -1909,3 +1838,58 @@ const Modulus.Identity.Email.SmtpIdentityEmailSender.EmailConfirmationPath = "/C
 const Modulus.Identity.Email.SmtpIdentityEmailSender.PasswordResetPath = "/ResetPassword" -> string!
 const Modulus.Identity.Email.SmtpIdentityEmailSender.WorkEmailPath = "/ConfirmWorkEmail" -> string!
 static Modulus.Identity.Email.SmtpIdentityEmailSender.ValidatedBase(string? baseUrl) -> System.Uri!
+Modulus.Identity.Extensions.UserDetail
+Modulus.Identity.Extensions.UserDetail.Department.get -> string?
+Modulus.Identity.Extensions.UserDetail.Department.init -> void
+Modulus.Identity.Extensions.UserDetail.Email.get -> string?
+Modulus.Identity.Extensions.UserDetail.Email.init -> void
+Modulus.Identity.Extensions.UserDetail.EmailConfirmed.get -> bool
+Modulus.Identity.Extensions.UserDetail.EmailConfirmed.init -> void
+Modulus.Identity.Extensions.UserDetail.EmployeeCode.get -> string?
+Modulus.Identity.Extensions.UserDetail.EmployeeCode.init -> void
+Modulus.Identity.Extensions.UserDetail.FirstName.get -> string?
+Modulus.Identity.Extensions.UserDetail.FirstName.init -> void
+Modulus.Identity.Extensions.UserDetail.Id.get -> System.Guid
+Modulus.Identity.Extensions.UserDetail.Id.init -> void
+Modulus.Identity.Extensions.UserDetail.IsActive.get -> bool
+Modulus.Identity.Extensions.UserDetail.IsActive.init -> void
+Modulus.Identity.Extensions.UserDetail.JobTitle.get -> string?
+Modulus.Identity.Extensions.UserDetail.JobTitle.init -> void
+Modulus.Identity.Extensions.UserDetail.LastName.get -> string?
+Modulus.Identity.Extensions.UserDetail.LastName.init -> void
+Modulus.Identity.Extensions.UserDetail.Lifecycle.get -> string!
+Modulus.Identity.Extensions.UserDetail.Lifecycle.init -> void
+Modulus.Identity.Extensions.UserDetail.LockedUntil.get -> System.DateTimeOffset?
+Modulus.Identity.Extensions.UserDetail.LockedUntil.init -> void
+Modulus.Identity.Extensions.UserDetail.PhoneNumber.get -> string?
+Modulus.Identity.Extensions.UserDetail.PhoneNumber.init -> void
+Modulus.Identity.Extensions.UserDetail.PrimaryBranchId.get -> System.Guid?
+Modulus.Identity.Extensions.UserDetail.PrimaryBranchId.init -> void
+Modulus.Identity.Extensions.UserDetail.Roles.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Modulus.Identity.Extensions.UserDetail.Roles.init -> void
+Modulus.Identity.Extensions.UserDetail.TwoFactorEnabled.get -> bool
+Modulus.Identity.Extensions.UserDetail.TwoFactorEnabled.init -> void
+Modulus.Identity.Extensions.UserDetail.UserDetail(System.Guid id, string? userName, string? email, bool emailConfirmed, string? firstName, string? lastName, string? phoneNumber, string? employeeCode, bool isActive, string! lifecycle, System.DateTimeOffset? lockedUntil, bool twoFactorEnabled, System.Collections.Generic.IReadOnlyList<string!>! roles, string? workEmail = null, string? jobTitle = null, string? department = null, System.Guid? primaryBranchId = null) -> void
+Modulus.Identity.Extensions.UserDetail.UserName.get -> string?
+Modulus.Identity.Extensions.UserDetail.UserName.init -> void
+Modulus.Identity.Extensions.UserDetail.WorkEmail.get -> string?
+Modulus.Identity.Extensions.UserDetail.WorkEmail.init -> void
+Modulus.Identity.Extensions.UserPage.Deconstruct(out System.Collections.Generic.IReadOnlyList<Modulus.Identity.Extensions.UserSummary!>! Items, out int Total, out int Page, out int PageSize) -> void
+Modulus.Identity.Extensions.UserPage.Items.get -> System.Collections.Generic.IReadOnlyList<Modulus.Identity.Extensions.UserSummary!>!
+Modulus.Identity.Extensions.UserPage.UserPage(System.Collections.Generic.IReadOnlyList<Modulus.Identity.Extensions.UserSummary!>! Items, int Total, int Page, int PageSize) -> void
+Modulus.Identity.Extensions.UserSummary
+Modulus.Identity.Extensions.UserSummary.Email.get -> string?
+Modulus.Identity.Extensions.UserSummary.Email.init -> void
+Modulus.Identity.Extensions.UserSummary.FullName.get -> string?
+Modulus.Identity.Extensions.UserSummary.FullName.init -> void
+Modulus.Identity.Extensions.UserSummary.Id.get -> System.Guid
+Modulus.Identity.Extensions.UserSummary.Id.init -> void
+Modulus.Identity.Extensions.UserSummary.IsActive.get -> bool
+Modulus.Identity.Extensions.UserSummary.IsActive.init -> void
+Modulus.Identity.Extensions.UserSummary.Lifecycle.get -> string!
+Modulus.Identity.Extensions.UserSummary.Lifecycle.init -> void
+Modulus.Identity.Extensions.UserSummary.LockedUntil.get -> System.DateTimeOffset?
+Modulus.Identity.Extensions.UserSummary.LockedUntil.init -> void
+Modulus.Identity.Extensions.UserSummary.UserName.get -> string?
+Modulus.Identity.Extensions.UserSummary.UserName.init -> void
+Modulus.Identity.Extensions.UserSummary.UserSummary(System.Guid id, string? userName, string? email, string? fullName, bool isActive, string! lifecycle, System.DateTimeOffset? lockedUntil) -> void

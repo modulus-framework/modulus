@@ -167,7 +167,8 @@ public static class AiConnectorServiceCollectionExtensions
 }
 
 /// <summary>Refuses settings that would let the connector run unsafely or not at all.</summary>
-internal sealed class AiConnectorOptionsValidator : IValidateOptions<ModulusAiConnectorOptions>
+internal sealed class AiConnectorOptionsValidator(Modulus.Core.Abstractions.IDistributedLock? distributedLock = null)
+    : IValidateOptions<ModulusAiConnectorOptions>
 {
     public ValidateOptionsResult Validate(string? name, ModulusAiConnectorOptions options)
     {
@@ -176,6 +177,12 @@ internal sealed class AiConnectorOptionsValidator : IValidateOptions<ModulusAiCo
             return ValidateOptionsResult.Success;
 
         var failures = new List<string>();
+        // Envelope replay is refused across nodes only through the shared lock; several replicas without one would accept a replay.
+        if (options.Platform.ReplicaCount > 1 && distributedLock is null)
+            failures.Add("Ai:Connector:Platform:ReplicaCount is above 1, so envelope replay protection needs an IDistributedLock (Redis) shared by the replicas.");
+        // Several companies mapped by one connector need a key per instance, or any key reads them all.
+        if (options.Instances.Count > 1 && options.Instances.Any(i => string.IsNullOrWhiteSpace(i.ApiKeyHash)))
+            failures.Add("Ai:Connector:Instances: with more than one instance every instance needs its own ApiKeyHash.");
         if (options.ApiKeyHashes.Count is < 1 or > 2)
             failures.Add("Ai:Connector:ApiKeyHashes needs one or two SHA-256 hashes (two only while rotating).");
         if (options.ApiKeyHashes.Any(h => h is null || h.Length != 64 || !h.All(Uri.IsHexDigit)))

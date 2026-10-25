@@ -9,9 +9,9 @@ internal static class FrameworkVersion
 {
     // Keep in sync with <VersionPrefix> in build/Modulus.Packaging.props —
     // generated apps pin Modulus.* packages at this version.
-    // MODULUS_FRAMEWORK_VERSION points generated apps at another build, e.g. a local pack (1.6.0-dev.<sha>).
+    // MODULUS_FRAMEWORK_VERSION points generated apps at another build, e.g. a local pack (1.7.0-dev.<sha>).
     public static string Current { get; } =
-        Environment.GetEnvironmentVariable("MODULUS_FRAMEWORK_VERSION") is { Length: > 0 } v ? v : "1.6.0";
+        Environment.GetEnvironmentVariable("MODULUS_FRAMEWORK_VERSION") is { Length: > 0 } v ? v : "1.7.0";
 
     // Keep in sync with Microsoft.Extensions.Telemetry.Abstractions in Directory.Packages.props: every project of a generated
     // app references it so classified [LoggerMessage] parameters are redacted (RedactionTemplateTests checks it).
@@ -303,11 +303,12 @@ internal sealed class AppModel
     public string RouteName => ExampleRoute;
 
     /// <summary>
-    /// The permission that guards the example entity's API, when the app has the identity backend whose
-    /// <c>Admin</c> role holds it; null otherwise. The same <c>{module}:{route}:manage</c> a later <c>generate-crud</c> would pick.
+    /// The permission that guards the example entity's API: the same <c>{module}:{route}:manage</c> a later <c>generate-crud</c> picks.
+    /// It is granted to the configured administrator roles (<c>Authorization:AdministratorRoles</c>), whatever the identity backend;
+    /// null only without the example module.
     /// </summary>
     public string? ExamplePermission =>
-        UseOpenIddict && !NoExample ? UiAccessGates.CrudPermission(ExampleModule, ExampleRoute) : null;
+        !NoExample ? UiAccessGates.CrudPermission(ExampleModule, ExampleRoute) : null;
 
     /// <summary>
     /// True when the host wires the startup security guard (<c>AddModulusSecurityGuard</c>): every endpoint must resolve to a

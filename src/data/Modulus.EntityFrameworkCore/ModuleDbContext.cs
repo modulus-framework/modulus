@@ -393,15 +393,30 @@ public abstract class ModuleDbContext(
     /// unauthenticated or unplaced principal (once scoping is configured) sees
     /// nothing. Seeing all tenants / all units requires a deliberate privileged scope.
     /// </summary>
+    private static readonly Type[] FilterMarkers = [typeof(ISoftDelete), typeof(IHasTenantId), typeof(IHasOrgUnit)];
+
     private void ApplyQueryFilters(ModelBuilder mb)
     {
         foreach (var entity in mb.Model.GetEntityTypes())
         {
             var clr = entity.ClrType;
-            if (!typeof(ISoftDelete).IsAssignableFrom(clr)
-                && !typeof(IHasTenantId).IsAssignableFrom(clr)
-                && !typeof(IHasOrgUnit).IsAssignableFrom(clr))
+            if (!FilterMarkers.Any(m => m.IsAssignableFrom(clr)))
                 continue;
+
+            // EF Core takes a query filter on the root of a hierarchy only; the root's filter already reaches the derived types. A marker
+            // a derived type has and its root lacks would go unfiltered, so that is refused when the model is built.
+            if (entity.BaseType is not null)
+            {
+                var root = entity.GetRootType().ClrType;
+                var missing = FilterMarkers.Where(m => m.IsAssignableFrom(clr) && !m.IsAssignableFrom(root)).ToList();
+                if (missing.Count > 0)
+                {
+                    throw new InvalidOperationException(
+                        $"'{clr.Name}' has {string.Join(", ", missing.Select(m => m.Name))} but its root '{root.Name}' does not, so the tenant or "
+                        + "soft-delete filter would not apply. Put the marker on the root type.");
+                }
+                continue;
+            }
 
             typeof(ModuleDbContext)
                 .GetMethod(nameof(SetCombinedFilter), BindingFlags.NonPublic | BindingFlags.Instance)!
@@ -526,6 +541,26 @@ public abstract class ModuleDbContext(
             throw new ValidationException(undeclared);
     }
 
+    /// <summary>True when a foreign key of <paramref name="child"/> names the key of one of the soft-deleted parents.</summary>
+    private static bool FollowsSoftDeletedParent(EntityEntry child, IReadOnlyList<EntityEntry> softDeleted)
+    {
+        foreach (var fk in child.Metadata.GetForeignKeys())
+        {
+            foreach (var parent in softDeleted)
+            {
+                if (fk.PrincipalEntityType != parent.Metadata)
+                    continue;
+
+                var matches = fk.Properties.Zip(fk.PrincipalKey.Properties).All(pair =>
+                    Equals(child.Property(pair.First.Name).CurrentValue, parent.Property(pair.Second.Name).CurrentValue));
+                if (matches)
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
     private void ApplyAuditFields()
     {
         var now = _clock.GetUtcNow().UtcDateTime;
@@ -533,6 +568,7 @@ public abstract class ModuleDbContext(
 
         // Soft-delete first so the audit loop below stamps UpdatedAt/UpdatedBy
         // on the soft-deleted row (which transitions Deleted→Modified).
+        var softDeleted = new List<EntityEntry>();
         foreach (var entry in ChangeTracker.Entries<ISoftDelete>()
             .Where(e => e.State == EntityState.Deleted))
         {
@@ -540,6 +576,21 @@ public abstract class ModuleDbContext(
             entry.Entity.IsDeleted = true;
             entry.Entity.DeletedAt = now;
             entry.Entity.DeletedBy = user;
+            softDeleted.Add(entry);
+        }
+
+        // EF Core marked the children of a removed parent Deleted (the cascade). The soft delete keeps the parent's row, so its children
+        // keep theirs. A child that points at a soft-deleted parent goes back to Unchanged, including one removed in the same save: an
+        // explicit hard delete of that child needs HardDelete.Allow, not a soft delete of its parent.
+        if (softDeleted.Count > 0)
+        {
+            foreach (var child in ChangeTracker.Entries()
+                .Where(e => e.State == EntityState.Deleted && e.Entity is not ISoftDelete)
+                .ToList())
+            {
+                if (FollowsSoftDeletedParent(child, softDeleted))
+                    child.State = EntityState.Unchanged;
+            }
         }
 
         foreach (var entry in ChangeTracker.Entries<IAuditableEntity>())

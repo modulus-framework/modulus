@@ -44,6 +44,7 @@ public sealed class AzureBlobFileStorageTests
         query["sr"].Should().Be("b");
         query.Should().ContainKey("sig");
         query.Should().ContainKey("se");
+        query["rscd"].Should().Be("attachment", "the download opens as an attachment, never inline");
     }
 
     [Fact]
@@ -100,7 +101,8 @@ public sealed class AzureBlobFileStorageTests
         services.AddAzureBlobFileStorage(config);
         using var provider = services.BuildServiceProvider();
 
-        provider.GetRequiredService<IFileStorage>().Should().BeOfType<AzureBlobFileStorage>();
+        provider.GetRequiredService<IFileStorage>().GetType().Name.Should().Be("SizeLimitedFileStorage", "every provider is capped");
+        provider.GetRequiredService<AzureBlobFileStorage>().Should().NotBeNull();
         provider.GetRequiredService<BlobServiceClient>().AccountName.Should().Be("devaccount");
     }
 }

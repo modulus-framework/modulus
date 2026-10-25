@@ -66,6 +66,7 @@ public sealed class TenantMiddleware(
                 {
                     logger.LogWarning(
                         "Rejected request: the authenticated principal's tenant claim does not resolve to an active tenant.");
+                    Modulus.Observability.ModulusMeters.UnresolvedTenant.Add(1);
                     Audit(ctx, "tenant.claim-unresolved", SecurityAuditOutcomes.Denied, null, ctx.User.FindFirst("tid")?.Value);
                     ctx.Response.StatusCode = StatusCodes.Status403Forbidden;
                     return;

@@ -71,7 +71,7 @@ public class TemplatePackageResolverTests : IDisposable
             var path = await resolver.ResolveAsync(TemplatePackageFixture.PackageId, TemplatePackageFixture.Version);
 
             path.Should().NotBeNull();
-            requested.Should().Contain("https://feed.test/flat/synvro.modulus.ui.templates/1.6.1/synvro.modulus.ui.templates.1.6.1.nupkg");
+            requested.Should().Contain("https://feed.test/flat/synvro.modulus.ui.templates/1.7.0/synvro.modulus.ui.templates.1.7.0.nupkg");
             requested.Should().NotContain(url => url.Contains("/download/"), "the v3 download path does not exist on NuGet feeds");
         }
         finally

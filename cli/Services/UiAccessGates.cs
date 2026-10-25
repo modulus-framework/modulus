@@ -50,11 +50,26 @@ internal static class UiAccessGates
         return $"{moduleName.ToLowerInvariant()}:{route.ToLowerInvariant()}:manage";
     }
 
-    /// <summary>The line that grants <paramref name="permission"/> to the Admin role.</summary>
+    /// <summary>
+    /// The configuration key that names the administrator roles of the host (default <c>Admin</c>). A host whose users come from an
+    /// external provider sets its own role names here; the grant reads the roles from the token at request time.
+    /// </summary>
+    public const string AdministratorRolesKey = "Authorization:AdministratorRoles";
+
+    /// <summary>
+    /// The line that grants <paramref name="permission"/> to each administrator role of the host. One line, so the wiring can insert
+    /// it like the others.
+    /// </summary>
     public static string GrantCall(string permission)
-        => $"builder.Services.AddPermissionGrants(grants => grants.GrantToRole(\"{AdminRole}\", \"{permission}\"));";
+        => "builder.Services.AddPermissionGrants(grants => { foreach (var role in builder.Configuration.GetSection(\""
+           + AdministratorRolesKey + "\").Get<string[]>() ?? [\"" + AdminRole + "\"]) grants.GrantToRole(role, \""
+           + permission + "\"); });";
 
     /// <summary>What to look for in <c>Program.cs</c> to see the grant is already there (even inside a hand-written call).</summary>
     public static string GrantMarker(string permission)
+        => $"GrantToRole(role, \"{permission}\")";
+
+    /// <summary>The grant written by earlier generators, which named the <c>Admin</c> role directly.</summary>
+    public static string LegacyGrantMarker(string permission)
         => $"GrantToRole(\"{AdminRole}\", \"{permission}\")";
 }

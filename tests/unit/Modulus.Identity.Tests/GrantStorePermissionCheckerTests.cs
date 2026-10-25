@@ -185,13 +185,14 @@ public sealed class GrantStorePermissionCheckerTests
     }
 
     [Fact]
-    public void Without_the_grant_store_a_person_token_still_honours_its_permission_claim()
+    public void Without_the_grant_store_a_token_permission_claim_is_ignored_by_default()
     {
         var principal = Authenticated(User, "clerk");
         principal.AddIdentity(new ClaimsIdentity([new Claim("permission", "sales:order:update")], "Test"));
         var accessor = new HttpContextAccessor { HttpContext = new DefaultHttpContext { User = principal } };
 
-        new ClaimsPrincipalCurrentUser(accessor).HasPermission("sales:order:update").Should().BeTrue();
+        new ClaimsPrincipalCurrentUser(accessor).HasPermission("sales:order:update").Should().BeFalse(
+            "a permission claim on a token is not a grant unless the app opts in (TrustPermissionClaims)");
     }
 
     [Fact]

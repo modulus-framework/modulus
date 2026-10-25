@@ -44,19 +44,19 @@ public static class TenantDatabaseMigrationExtensions
 
         await using var scope = services.CreateAsyncScope();
         var sp = scope.ServiceProvider;
-        var store = sp.GetService<ITenantStore>();
-        if (store is null)
-            return;
+        // A fan-out that cannot see the tenants must fail: reporting success would leave every tenant on an old schema.
+        var store = sp.GetService<ITenantStore>()
+            ?? throw new InvalidOperationException("No tenant store is registered, so the tenant databases cannot be migrated.");
 
         IReadOnlyList<TenantInfo> tenants;
         try
         {
             tenants = await store.ListAsync(ct);
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            logger?.LogWarning(ex, "Tenant enumeration failed; migrated host database only.");
-            return;
+            logger?.LogError(ex, "Tenant enumeration failed; no tenant database was migrated.");
+            throw new InvalidOperationException("The tenant list could not be read, so no tenant database was migrated.", ex);
         }
 
         var failures = new List<Exception>();
@@ -65,9 +65,8 @@ public static class TenantDatabaseMigrationExtensions
             ct.ThrowIfCancellationRequested();
             await using var tenantScope = services.CreateAsyncScope();
             var tsp = tenantScope.ServiceProvider;
-            var current = tsp.GetService<ICurrentTenant>();
-            if (current is null)
-                break;
+            var current = tsp.GetService<ICurrentTenant>()
+                ?? throw new InvalidOperationException("No ICurrentTenant is registered, so a tenant scope cannot be entered.");
 
             try
             {

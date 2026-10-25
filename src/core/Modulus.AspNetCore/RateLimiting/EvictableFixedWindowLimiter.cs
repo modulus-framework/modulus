@@ -30,6 +30,30 @@ internal sealed class EvictableFixedWindowLimiter(
 {
     private readonly ConcurrentDictionary<string, RateLimiter> _partitions = new();
 
+    /// <summary>The most partitions kept at once. Beyond it a new key shares one overflow limiter: still limited, memory still bounded.</summary>
+    internal const int MaxPartitions = 100_000;
+
+    private readonly Lazy<RateLimiter> _overflow = new(() => new FixedWindowRateLimiter(optionsFactory()));
+
+    /// <summary>Returns the limiter for <paramref name="key"/>, creating it unless the partition cap is reached.</summary>
+    private RateLimiter LimiterFor(string key, out bool isNew)
+    {
+        if (_partitions.TryGetValue(key, out var existing))
+        {
+            isNew = false;
+            return existing;
+        }
+
+        if (_partitions.Count >= MaxPartitions)
+        {
+            isNew = false;
+            return _overflow.Value;
+        }
+
+        isNew = true;
+        return _partitions.GetOrAdd(key, _ => new FixedWindowRateLimiter(optionsFactory()));
+    }
+
     /// <summary>How often the partition sweeper should run.</summary>
     public TimeSpan SweepInterval { get; } = sweepInterval;
 
@@ -63,11 +87,7 @@ internal sealed class EvictableFixedWindowLimiter(
         if (appliesTo is not null && !appliesTo(resource))
             return UnlimitedLease.Instance;
 
-        var key = partitionKey(resource);
-        var isNew = !_partitions.ContainsKey(key);
-        var limiter = _partitions.GetOrAdd(
-            key,
-            _ => new FixedWindowRateLimiter(optionsFactory()));
+        var limiter = LimiterFor(partitionKey(resource), out var isNew);
 
         if (isNew)
             ModulusMeters.RateLimitPartitions.Add(1);
@@ -85,11 +105,7 @@ internal sealed class EvictableFixedWindowLimiter(
         if (appliesTo is not null && !appliesTo(resource))
             return UnlimitedLease.Instance;
 
-        var key = partitionKey(resource);
-        var isNew = !_partitions.ContainsKey(key);
-        var limiter = _partitions.GetOrAdd(
-            key,
-            _ => new FixedWindowRateLimiter(optionsFactory()));
+        var limiter = LimiterFor(partitionKey(resource), out var isNew);
 
         if (isNew)
             ModulusMeters.RateLimitPartitions.Add(1);

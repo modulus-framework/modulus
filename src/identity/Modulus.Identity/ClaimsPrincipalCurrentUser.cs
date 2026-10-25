@@ -14,7 +14,8 @@ using Modulus.Core.Abstractions;
 internal sealed class ClaimsPrincipalCurrentUser(
     IHttpContextAccessor httpContextAccessor,
     IPermissionChecker? permissionChecker = null,
-    JobContext? job = null)
+    JobContext? job = null,
+    Microsoft.Extensions.Options.IOptions<Modulus.Authorization.ModulusAuthorizationOptions>? authorization = null)
     : ICurrentUser
 {
     private ClaimsPrincipal? Principal => httpContextAccessor.HttpContext?.User;
@@ -54,11 +55,12 @@ internal sealed class ClaimsPrincipalCurrentUser(
         if (Principal?.FindFirst("act") is not null)
             return false;
 
-        // Fallback: honour the "permission" claims on the principal directly
-        // (e.g. issued by the Modulus role/permission seeder) so permissions
-        // resolve even when no custom IPermissionChecker is registered.
-        return Principal?.HasClaim("permission", permission) ?? false;
+        // Fallback: the "permission" claims on the token, only when the app trusts them (TrustPermissionClaims). By default the
+        // grant store is the only source, the same rule the authorization policies follow.
+        return TrustsPermissionClaims && (Principal?.HasClaim("permission", permission) ?? false);
     }
+
+    private bool TrustsPermissionClaims => authorization?.Value.TrustPermissionClaims ?? false;
 
     public IReadOnlyList<string> Permissions
     {
@@ -70,7 +72,7 @@ internal sealed class ClaimsPrincipalCurrentUser(
             // Fallback: same claim-based reasoning as HasPermission's fallback —
             // resolve from the token when no store-backed checker is registered.
             // An agent token carries none without the checker (A9-1).
-            if (Principal?.FindFirst("act") is not null)
+            if (Principal?.FindFirst("act") is not null || !TrustsPermissionClaims)
                 return [];
 
             return Principal?.FindAll("permission")

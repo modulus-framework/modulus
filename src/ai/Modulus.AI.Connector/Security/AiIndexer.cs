@@ -44,11 +44,45 @@ internal static class AiIndexer
                 statusCode: StatusCodes.Status403Forbidden);
         }
 
+        // The key must be the one bound to this instance: with several instances, one shared key would read every company's index.
+        if (!KeyBelongsTo(http.Request.Headers.Authorization.ToString(), instance, options.Instances.Count))
+        {
+            services.GetRequiredService<ISecurityAuditLog>().Record(new SecurityAuditEvent
+            {
+                Category = SecurityAuditCategories.Ai,
+                Action = "connector.indexer",
+                Outcome = SecurityAuditOutcomes.Denied,
+                Actor = Actor,
+                Details = new Dictionary<string, string?> { ["reason"] = "api key not bound to app instance", ["appInstanceId"] = appInstanceId },
+            });
+            return Results.Json(
+                new ConnectorError(ConnectorErrorCodes.Denied, "This API key is not bound to the app instance."),
+                ConnectorJson.Options,
+                statusCode: StatusCodes.Status403Forbidden);
+        }
+
         http.User = Principal(instance, options.Indexing);
 
         // Resolved only now, so every scoped service that reads the user (permission checks, field masks) sees the
         // indexing identity rather than the bare API-key principal.
         return await work(services.GetRequiredService<AiConnectorService>(), instance);
+    }
+
+    /// <summary>
+    /// True when the <c>Authorization</c> header carries the API key bound to <paramref name="instance"/>. An instance with no binding
+    /// is served by the connector's shared keys only when it is the single instance (the single-company case).
+    /// </summary>
+    internal static bool KeyBelongsTo(string? authorization, AiAppInstanceOptions instance, int instanceCount)
+    {
+        ArgumentNullException.ThrowIfNull(instance);
+        if (string.IsNullOrEmpty(instance.ApiKeyHash))
+            return instanceCount == 1;
+        const string prefix = "ApiKey ";
+        if (authorization is null || !authorization.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        var presented = AiApiKeys.Hash(authorization[prefix.Length..].Trim());
+        return string.Equals(presented, instance.ApiKeyHash, StringComparison.OrdinalIgnoreCase);
     }
 
     private static ClaimsPrincipal Principal(AiAppInstanceOptions instance, AiIndexingOptions indexing)

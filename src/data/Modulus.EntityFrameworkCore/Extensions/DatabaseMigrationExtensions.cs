@@ -76,6 +76,10 @@ public static class DatabaseMigrationExtensions
         var logger = sp.GetService<ILoggerFactory>()?.CreateLogger("Modulus.Database");
         var registry = sp.GetService<IModuleMigrationRegistry>();
 
+        // Replicas start together: one migrates while the others wait for it, then find nothing left to apply. This is the lock that
+        // makes concurrent startup safe on every provider (EF Core 8 has no migration lock of its own).
+        await using var migrationLock = await MigrationLock.AcquireAsync(sp, MigrationLock.DefaultWaitTimeout, logger, ct);
+
         // AddModuleDatabase/AddOutbox/AddInbox each register a DbContext descriptor
         // resolving the same instance — dedup by runtime type so each database
         // migrates exactly once per boot.

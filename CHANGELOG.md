@@ -7,6 +7,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.7.0] - not yet published
+
+This release closes the production-readiness findings of 2026-10-25 (see `docs/DOCUMENTATION.md`, "Production readiness audit").
+
+### Breaking changes
+- **Generated endpoints and commands need `{module}:{route}:manage` on every host.** Before, a host with no local identity backend
+  left them open. The permission is granted to the roles in `Authorization:AdministratorRoles` (default `Admin`); an external
+  identity provider names its own roles there. A host with no identity package (`--auth none`) has no grant checker.
+- **AI capabilities and resources need a permission.** One without `[RequirePermission]` now fails at startup, unless it is declared
+  `Public = true` with a `Reason`.
+- **Token permission claims are ignored by default.** `ClaimsPrincipalCurrentUser` honours `permission` claims only when
+  `TrustPermissionClaims` is set (the grant store is the source otherwise).
+- **Bulk writes are checked.** `ExecuteUpdate` that sets `TenantId` needs `CrossTenantSql.Allow`; `ExecuteDelete` on soft-delete rows
+  needs `HardDelete.Allow(reason)`. A soft delete keeps the children of the row it removes.
+- **Tenant provisioning requires migrations.** A context without migrations is refused, and the store is activated only after its
+  migrations have applied. A store with no context routed to it is refused.
+- **AI connector.** Envelope lifetime is capped at 2 minutes by default. `ReplicaCount` above 1 needs an `IDistributedLock`. With
+  several app instances each needs its own `ApiKeyHash`.
+- **Storage.** Server-side uploads are capped by `Storage:MaxUploadBytes` (default 100 MB). Presigned downloads open as attachments.
+  Presigned uploads are not capped (S3 and Azure SAS cannot limit size).
+
+### Added
+- `ITenantDirectory`: lists active tenants for per-tenant background passes.
+- `HardDelete.Allow(reason)`: the explicit scope for hard-deleting soft-delete rows.
+- `Secrets:MaxEntries`: bounds the secret cache.
+- `Database:MigrateOnStartup`: set to `false` when a migrator job applies the schema. Migrations run under a cross-replica lock
+  (`IDistributedLock`) when one is registered.
+- Job retries: a failed in-memory job runs again after a back-off, up to three attempts.
+- Metrics now recorded: outbox dispatch lag, cache hits and misses, authorization allowed and denied, job queue depth, inbox
+  dead-lettered, unresolved tenant (claim refusal).
+- Generated boundary tests: cross-module domain-type and DbContext usage.
+
+### Fixed
+- Host work after tenant work reached the tenant's database (the connection string is restored on the host path).
+- The outbox never drained per-tenant databases.
+- Provisioning could mark an empty tenant store active.
+- A refused OpenBao login took every secret offline at once; `AllowInsecureHttp` is Development-only.
+- Keycloak and other external-identity hosts refused every guarded call as unauthenticated.
+- Tenant migration fan-out reported success when the tenant list failed.
+- Soft-deleting a parent hard-deleted its children; derived types in a soft-delete hierarchy failed to build.
+- Outbox dispatchers built a payload from any type named in a row before checking it was an integration event.
+- Per-tenant SQL Server and PostgreSQL helpers did not register their pool-clearing provider.
+- Downloads from presigned storage URLs could render inline.
+- Classified members without a setter were returned unmasked; they now refuse the type.
+- AI indexing: one shared key could read every company's index.
+
 ## [1.5.0] - 2026-10-13
 
 ### Added

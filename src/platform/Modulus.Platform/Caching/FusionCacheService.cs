@@ -22,6 +22,7 @@ public sealed class FusionCacheService(IFusionCache cache, IServiceProvider serv
     public async Task<T?> GetAsync<T>(string key, CancellationToken ct = default)
     {
         var result = await cache.TryGetAsync<T>(CacheKeys.Entry(Tenant, key), token: ct);
+        (result.HasValue ? Modulus.Observability.ModulusMeters.CacheHits : Modulus.Observability.ModulusMeters.CacheMisses).Add(1);
         return result.HasValue ? result.Value : default;
     }
 

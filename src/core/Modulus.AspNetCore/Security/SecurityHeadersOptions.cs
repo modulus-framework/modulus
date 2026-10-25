@@ -17,8 +17,11 @@ public sealed class SecurityHeadersOptions
     /// <summary><c>Referrer-Policy</c> value. Empty ⇒ omit.</summary>
     public string ReferrerPolicy { get; set; } = "strict-origin-when-cross-origin";
 
-    /// <summary><c>Content-Security-Policy</c> value. Empty ⇒ omit (recommended to set for browser-facing apps).</summary>
-    public string ContentSecurityPolicy { get; set; } = string.Empty;
+    /// <summary>
+    /// <c>Content-Security-Policy</c> value. The default restricts framing, plugins and base URLs without restricting scripts, so
+    /// existing pages keep working; set a full policy for a browser-facing app. Empty ⇒ omit.
+    /// </summary>
+    public string ContentSecurityPolicy { get; set; } = "frame-ancestors 'none'; base-uri 'self'; object-src 'none'";
 
     /// <summary><c>Permissions-Policy</c> value. Empty ⇒ omit.</summary>
     public string PermissionsPolicy { get; set; } = string.Empty;

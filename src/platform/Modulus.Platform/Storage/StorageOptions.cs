@@ -18,4 +18,10 @@ public sealed class StorageOptions
     /// in a multi-tenant app (existing files keep their paths, so this is a breaking change for upgrades).
     /// </summary>
     public bool? IsolateTenants { get; set; }
+
+    /// <summary>
+    /// The largest file the app uploads through <c>IFileStorage.UploadAsync</c>, in bytes (default 100 MB). Larger files are refused
+    /// before they are written. Presigned uploads are not capped by this (see <c>SizeLimitedFileStorage</c>).
+    /// </summary>
+    public long MaxUploadBytes { get; set; } = 100L * 1024 * 1024;
 }

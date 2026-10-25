@@ -77,7 +77,7 @@ public sealed class ApiIntegrationTests(ModulusWebAppFactory<ApiEntryPoint> fact
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 {{ if !no_example }}
-    [Fact]
+{{ if auth != "none" }}    [Fact]
     public async Task Create{{ example_entity }}_ThenList_RoundTripsThroughTheHost()
     {
         // The endpoints need a signed-in caller{{ if example_permission }} holding "{{ example_permission }}", which the {{ admin_role }} role is granted in Program.cs{{ end }}.{{ if multi_tenancy }}
@@ -95,7 +95,7 @@ public sealed class ApiIntegrationTests(ModulusWebAppFactory<ApiEntryPoint> fact
         var list = await client.GetAsync("/api/{{ example_module_lower }}/{{ example_route }}");
         Assert.Equal(HttpStatusCode.OK, list.StatusCode);
     }
-{{ if example_permission }}
+{{ end }}{{ if example_permission }}
     [Fact]
     public async Task {{ example_entity }}Api_RequiresSignIn_AndThePermission()
     {
@@ -103,12 +103,12 @@ public sealed class ApiIntegrationTests(ModulusWebAppFactory<ApiEntryPoint> fact
 
         // Anonymous: challenged. Signed in without the permission: forbidden. The {{ admin_role }} role: allowed.
         Assert.Equal(HttpStatusCode.Unauthorized, (await factory.CreateClient().GetAsync(url)).StatusCode);
-        Assert.Equal(HttpStatusCode.Forbidden, (await factory.CreateAuthenticatedClient().GetAsync(url)).StatusCode);
+{{ if auth != "none" }}        Assert.Equal(HttpStatusCode.Forbidden, (await factory.CreateAuthenticatedClient().GetAsync(url)).StatusCode);
 {{ if multi_tenancy }}        // A multi-company app answers only inside a company: the caller must select one (fail closed without it).
         var company = await Companies.CreateAsync(factory.Services, "permission");
         Assert.Equal(HttpStatusCode.OK, (await factory.CreateAuthenticatedClient(roles: ["{{ admin_role }}"], tenantId: company, pinTenant: true).GetAsync(url)).StatusCode);
 {{ else }}        Assert.Equal(HttpStatusCode.OK, (await factory.CreateAuthenticatedClient(roles: ["{{ admin_role }}"]).GetAsync(url)).StatusCode);
-{{ end }}    }
+{{ end }}{{ end }}    }
 {{ end }}{{ end }}
 }
 {{ end }}
@@ -544,5 +544,21 @@ public sealed class ModuleBoundaryTests
         // circular dependency errors in the dependency graph.
         var modules = ModuleBoundaryRules.FindModuleTypes();
         modules.Should().NotBeEmpty(because: "at least one module should exist");
+    }
+
+    [Fact]
+    public void NoModule_UsesAnotherModulesDomainTypes()
+    {
+        // A module talks to another through its integration events and queries, not through its domain types.
+        var violations = ModuleBoundaryRules.FindCrossModuleDomainTypeUsage();
+        violations.Should().BeEmpty(because: "a module's domain types stay inside the module");
+    }
+
+    [Fact]
+    public void NoModule_UsesAnotherModulesDbContext()
+    {
+        // A DbContext is a module's own storage; another module reaches its data through the module's queries.
+        var violations = ModuleBoundaryRules.FindCrossModuleDbContextUsage();
+        violations.Should().BeEmpty(because: "a module's DbContext is an implementation detail of that module");
     }
 }

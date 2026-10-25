@@ -1,5 +1,6 @@
 namespace Modulus.Authorization.Fields;
 
+using Modulus.Core.Abstractions.Entities;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Reflection;
@@ -72,6 +73,23 @@ public sealed class FieldAuthorizer(
 
         var profile = registry.Find(type) ?? FieldSecurityProfile.Empty;
         var classifications = FieldClassificationMap.For(type);
+
+        // A classified member that masking cannot write (a get-only or constructor-set property) would reach the caller unmasked.
+        // Refuse the type instead: the first use fails, and the message names the member.
+        var settableNames = SettablePropertiesOf(type).Select(p => p.Name).ToHashSet(StringComparer.Ordinal);
+        var unmaskable = new List<string>();
+        foreach (var (name, classification) in classifications)
+        {
+            // The map lists every property; only a member that carries a classification (not Public) needs masking.
+            if (classification != FieldClassification.Public && !settableNames.Contains(name))
+                unmaskable.Add(name);
+        }
+        if (unmaskable.Count > 0)
+        {
+            throw new InvalidOperationException(
+                $"'{type.Name}' has classified member(s) {string.Join(", ", unmaskable)} that cannot be masked because they have no setter. "
+                + "Give them an init or set accessor, or remove the classification.");
+        }
 
         var fields = new Dictionary<string, FieldAccess>(StringComparer.OrdinalIgnoreCase);
         foreach (var (name, classification) in classifications)

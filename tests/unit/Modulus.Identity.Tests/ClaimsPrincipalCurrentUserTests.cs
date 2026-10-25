@@ -33,10 +33,12 @@ public sealed class ClaimsPrincipalCurrentUserTests
     private static ICurrentUser BuildCurrentUser(
         ClaimsPrincipal? principal,
         bool withGrantStoreChecker,
-        Action<Modulus.Authorization.Grants.InMemoryPermissionGrantStore>? seed = null)
+        Action<Modulus.Authorization.Grants.InMemoryPermissionGrantStore>? seed = null,
+        bool trustPermissionClaims = false)
     {
         var services = new ServiceCollection();
         services.AddHttpContextAccessor();
+        services.Configure<Modulus.Authorization.ModulusAuthorizationOptions>(o => o.TrustPermissionClaims = trustPermissionClaims);
         services.AddScoped<ICurrentUser, ClaimsPrincipalCurrentUser>();
 
         if (withGrantStoreChecker)
@@ -100,13 +102,26 @@ public sealed class ClaimsPrincipalCurrentUserTests
     }
 
     [Fact]
-    public void Permissions_FallsBackToTokenClaims_WhenNoCheckerIsRegistered()
+    public void Permissions_IgnoreTokenClaims_WhenNoCheckerIsRegisteredAndTheAppDoesNotTrustThem()
     {
         var principal = Authenticated(User);
         principal.AddIdentity(new ClaimsIdentity(
             [new Claim("permission", "sales:order:read"), new Claim("permission", "reports:view")]));
 
         var currentUser = BuildCurrentUser(principal, withGrantStoreChecker: false);
+
+        currentUser.Permissions.Should().BeEmpty("the grant store is the only source unless the app trusts the token");
+        currentUser.HasPermission("sales:order:read").Should().BeFalse();
+    }
+
+    [Fact]
+    public void Permissions_FallBackToTokenClaims_WhenTheAppTrustsThem()
+    {
+        var principal = Authenticated(User);
+        principal.AddIdentity(new ClaimsIdentity(
+            [new Claim("permission", "sales:order:read"), new Claim("permission", "reports:view")]));
+
+        var currentUser = BuildCurrentUser(principal, withGrantStoreChecker: false, trustPermissionClaims: true);
 
         currentUser.Permissions.Should().BeEquivalentTo(["sales:order:read", "reports:view"]);
     }

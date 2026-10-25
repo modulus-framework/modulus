@@ -34,10 +34,11 @@ public sealed class AzureBlobFileStorage(
     public async Task<bool> ExistsAsync(string path, CancellationToken ct = default)
         => await GetBlob(path).ExistsAsync(ct);
 
+    // A download opens as an attachment: a presigned link must not render an uploaded HTML or SVG file inside the app's origin.
     public Task<string> GetPresignedUrlAsync(string path, TimeSpan expiry, CancellationToken ct = default)
         => GeneratePresignedAsync(
             GetBlob(path), BlobSasPermissions.Read,
-            DateTimeOffset.UtcNow.Add(expiry), ct);
+            DateTimeOffset.UtcNow.Add(expiry), ct, contentDisposition: "attachment");
 
     public Task<string> GetPresignedUploadUrlAsync(string path, TimeSpan expiry, string? contentType = null, CancellationToken ct = default)
         => GeneratePresignedAsync(
@@ -49,11 +50,20 @@ public sealed class AzureBlobFileStorage(
         BlobClient blob,
         BlobSasPermissions permissions,
         DateTimeOffset expiresOn,
-        CancellationToken ct)
+        CancellationToken ct,
+        string? contentDisposition = null)
     {
         // Shared-key clients mint a service SAS directly.
         if (blob.CanGenerateSasUri)
-            return blob.GenerateSasUri(permissions, expiresOn).ToString();
+        {
+            var sharedKey = new BlobSasBuilder(permissions, expiresOn)
+            {
+                BlobContainerName = _container,
+                BlobName = blob.Name,
+                ContentDisposition = contentDisposition,
+            };
+            return blob.GenerateSasUri(sharedKey).ToString();
+        }
 
         // AAD-backed clients (TokenCredential) cannot mint a service SAS —
         // GenerateSasUri would throw at runtime. Mint a user-delegation SAS
@@ -80,6 +90,7 @@ public sealed class AzureBlobFileStorage(
             BlobContainerName = _container,
             BlobName = blob.Name,
             Resource = "b",
+            ContentDisposition = contentDisposition,
         };
         var sas = builder.ToSasQueryParameters(delegationKey, client.AccountName);
         return new BlobUriBuilder(blob.Uri) { Sas = sas }.ToUri().ToString();

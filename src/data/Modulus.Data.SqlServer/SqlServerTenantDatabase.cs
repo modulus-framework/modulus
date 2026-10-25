@@ -1,5 +1,6 @@
 namespace Modulus.Data.SqlServer;
 
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Modulus.EntityFrameworkCore;
@@ -20,6 +21,13 @@ public static class SqlServerTenantDatabaseExtensions
     public static IServiceCollection AddSqlServerPerTenantDatabase<TContext>(
         this IServiceCollection services, string storeKey, string hostConnectionString)
         where TContext : ModuleDbContext
-        => services.AddModuleDatabasePerTenant<TContext>(
+    {
+        // The provider's probe (before a connection string is trusted) and its pool clear (after a rotation).
+        services.AddTenantDatabaseProvider(
+            "sqlserver",
+            connectionString => new SqlConnection(connectionString),
+            connectionString => SqlConnection.ClearPool(new SqlConnection(connectionString)));
+        return services.AddModuleDatabasePerTenant<TContext>(
             storeKey, "sqlserver", hostConnectionString, (options, connectionString) => options.UseSqlServer(connectionString));
+    }
 }
