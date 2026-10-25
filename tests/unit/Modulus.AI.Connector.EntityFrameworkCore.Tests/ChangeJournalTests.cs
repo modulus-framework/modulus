@@ -17,6 +17,20 @@ public sealed class ChangeJournalTests : IAsyncLifetime
     public async Task DisposeAsync() => await _host.DisposeAsync();
 
     [Fact]
+    public async Task While_the_connector_is_off_saves_journal_nothing()
+    {
+        await using var off = new JournalTestHost(connectorEnabled: false);
+        await off.InAsync(JournalTestHost.CompanyA, async sp =>
+        {
+            var db = sp.GetRequiredService<ShopDbContext>();
+            db.Products.Add(new Product { Name = "Widget" });
+            await db.SaveChangesAsync();
+        });
+
+        (await off.JournalAsync()).Should().BeEmpty("the application's saves must not touch connector data while it is off");
+    }
+
+    [Fact]
     public async Task Inserts_updates_and_deletes_are_journaled_with_the_company_and_key()
     {
         var product = new Product { Name = "Widget" };

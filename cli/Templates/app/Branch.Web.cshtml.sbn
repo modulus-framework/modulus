@@ -4,43 +4,52 @@
     ViewData["Title"] = "Branches";
 }
 
-<h1>Branches</h1>
+<app-page-header pretitle="Account" title="Branches" />
 
 @if (Model.Message is not null)
 {
-    <p role="status">@Model.Message</p>
+    <app-alert type="info" show-icon message="@Model.Message" class="m-mb-16" />
 }
 
-@if (Model.Branches.Count == 0)
-{
-    <p>No branch is available to you. Ask an administrator to give you an organizational unit in your scope.</p>
-}
-else
-{
-    <table>
-        <thead>
-            <tr><th>Branch</th><th>Kind</th><th>Acting in</th><th>Choose</th></tr>
-        </thead>
-        <tbody>
-        @foreach (var branch in Model.Branches)
+<div class="m-card m-table-card m-mb-16">
+    <div class="m-card-body m-card-body-flush">
+        @if (Model.Branches.Count == 0)
         {
-            var current = Model.Current == branch.Id;
-            <tr>
-                <td>@branch.Name <code>@branch.Code</code></td>
-                <td>@branch.Kind</td>
-                <td>@(current ? "Yes" : "")</td>
-                <td>
-                    <form method="post" asp-page-handler="Switch">
-                        <input type="hidden" name="branchId" value="@branch.Id" />
-                        <button type="submit" disabled="@current">Use this branch</button>
-                    </form>
-                </td>
-            </tr>
+            <div class="m-empty">
+                <h3 class="m-empty-title">No branch is available to you</h3>
+                <p class="m-empty-subtitle">Ask an administrator to give you an organizational unit in your scope.</p>
+            </div>
         }
-        </tbody>
-    </table>
-}
+        else
+        {
+            <div class="ant-table-wrapper m-table-flush"><div class="ant-table"><div class="ant-table-container"><div class="ant-table-content">
+                <table style="table-layout: auto;">
+                    <thead class="ant-table-thead">
+                        <tr><th class="ant-table-cell">Branch</th><th class="ant-table-cell">Kind</th><th class="ant-table-cell">Acting in</th><th class="ant-table-cell"></th></tr>
+                    </thead>
+                    <tbody class="ant-table-tbody">
+                    @foreach (var branch in Model.Branches)
+                    {
+                        var current = Model.Current == branch.Id;
+                        <tr class="ant-table-row">
+                            <td class="ant-table-cell"><strong>@branch.Name</strong> <code>@branch.Code</code></td>
+                            <td class="ant-table-cell">@branch.Kind</td>
+                            <td class="ant-table-cell">@(current ? "Yes" : "")</td>
+                            <td class="ant-table-cell">
+                                <form method="post" asp-page-handler="Switch">
+                                    <input type="hidden" name="branchId" value="@branch.Id" />
+                                    <button class="ant-btn ant-btn-primary ant-btn-sm" type="submit" disabled="@current"><span>Use this branch</span></button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div></div></div></div>
+        }
+    </div>
+</div>
 
 <form method="post" asp-page-handler="Clear">
-    <button type="submit">Stop choosing a branch</button>
+    <button class="ant-btn ant-btn-default" type="submit">Stop choosing a branch</button>
 </form>

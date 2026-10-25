@@ -45,6 +45,7 @@ public abstract class AuthorizationStoreDbContextBase(
     internal DbSet<AccessRequestRow> AccessRequests => Set<AccessRequestRow>();
     internal DbSet<PermissionExceptionRow> PermissionExceptions => Set<PermissionExceptionRow>();
     internal DbSet<PermissionCatalogRow> PermissionCatalog => Set<PermissionCatalogRow>();
+    internal DbSet<CompanyAuthorityRow> CompanyAuthorities => Set<CompanyAuthorityRow>();
 
     /// <summary>
     /// Durable audit-event outbox (auth blueprint §5.14/§16), written by
@@ -254,6 +255,13 @@ public abstract class AuthorizationStoreDbContextBase(
         catalog.Property(p => p.Permission).HasMaxLength(128);
         catalog.Property(p => p.Lifecycle).HasConversion<string>().HasMaxLength(16);
         catalog.Property(p => p.ReplacedBy).HasMaxLength(128);
+
+        // Parent-to-child authorities (decision 6). Host data, keyed by the two companies and the account: no tenant column, so no query filter.
+        var companyAuthority = modelBuilder.Entity<CompanyAuthorityRow>();
+        companyAuthority.ToTable("ModulusCompanyAuthorityGrants");
+        companyAuthority.HasKey(a => a.Id);
+        companyAuthority.Property(a => a.Operation).HasConversion<string>().HasMaxLength(32);
+        companyAuthority.HasIndex(a => new { a.ParentId, a.ChildId, a.PrincipalId, a.Operation });
 
         var inclusion = modelBuilder.Entity<RoleInclusionRow>();
         inclusion.ToTable("ModulusRoleInclusions");
@@ -722,6 +730,20 @@ internal sealed class PartyCeilingRow : IHasTenantId
     public Guid TenantId { get; set; }
     public string Kind { get; set; } = null!;
     public string Permission { get; set; } = null!;
+}
+
+/// <summary>An explicit authority of a parent company's administrator over a child company (<see cref="CompanyAuthorityGrant"/>).</summary>
+internal sealed class CompanyAuthorityRow
+{
+    public Guid Id { get; set; }
+    public Guid ParentId { get; set; }
+    public Guid ChildId { get; set; }
+    public Guid PrincipalId { get; set; }
+    public CompanyOperation Operation { get; set; }
+    public Guid? GrantedBy { get; set; }
+    public DateTimeOffset GrantedAt { get; set; }
+    public DateTimeOffset? RevokedAt { get; set; }
+    public Guid? RevokedBy { get; set; }
 }
 
 /// <summary>One typed value of a scope dimension, owned by a company (see <c>Modulus.Authorization.Dimensions.DimensionValue</c>).</summary>

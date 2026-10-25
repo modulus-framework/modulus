@@ -4,56 +4,93 @@
     ViewData["Title"] = "Business audit";
 }
 
-<h1>Business audit</h1>
+<app-page-header pretitle="Administration" title="Business audit" />
 
 @if (Model.Message is not null)
 {
-    <p role="status">@Model.Message</p>
+    <app-alert type="info" show-icon message="@Model.Message" class="m-mb-16" />
 }
 
-<form method="get">
-    <label>Entity <input name="Entity" value="@Model.Entity" /></label>
-    <label>Actor (user id) <input name="Actor" value="@Model.Actor" /></label>
-    <label>Action <input name="Action" value="@Model.Action" /></label>
-    <label>Since <input name="Since" value="@Model.Since" placeholder="2026-10-01" /></label>
-    <label>Until <input name="Until" value="@Model.Until" placeholder="2026-10-31" /></label>
-    <button type="submit">Search</button>
-</form>
+<div class="m-card m-mb-16">
+    <div class="m-card-body">
+        <form method="get" class="m-flex m-flex-wrap m-gap-12" style="align-items: flex-end;">
+            <div style="flex: 1 1 160px;">
+                <label class="m-muted" for="biz-entity">Entity</label>
+                <input id="biz-entity" class="ant-input" name="Entity" value="@Model.Entity" />
+            </div>
+            <div style="flex: 1 1 200px;">
+                <label class="m-muted" for="biz-actor">Actor (user id)</label>
+                <input id="biz-actor" class="ant-input" name="Actor" value="@Model.Actor" />
+            </div>
+            <div style="flex: 1 1 160px;">
+                <label class="m-muted" for="biz-action">Action</label>
+                <input id="biz-action" class="ant-input" name="Action" value="@Model.Action" />
+            </div>
+            <div style="flex: 0 1 150px;">
+                <label class="m-muted" for="biz-since">Since</label>
+                <input id="biz-since" class="ant-input" name="Since" value="@Model.Since" placeholder="2026-10-01" />
+            </div>
+            <div style="flex: 0 1 150px;">
+                <label class="m-muted" for="biz-until">Until</label>
+                <input id="biz-until" class="ant-input" name="Until" value="@Model.Until" placeholder="2026-10-31" />
+            </div>
+            <div><button class="ant-btn ant-btn-primary" type="submit">Search</button></div>
+        </form>
+    </div>
+</div>
 
-<table>
-    <thead>
-        <tr>
-            <th>When</th>
-            <th>Action</th>
-            <th>Resource</th>
-            <th>Id</th>
-            <th>Who</th>
-            <th>Detail</th>
-        </tr>
-    </thead>
-    <tbody>
-    @foreach (var row in Model.Rows)
-    {
-        <tr>
-            <td>@row.OccurredAt.ToString("yyyy-MM-dd HH:mm:ss")</td>
-            <td>@row.Action</td>
-            <td>@row.Resource</td>
-            <td>@row.ResourceId</td>
-            <td>@(row.UserName ?? row.UserId?.ToString())</td>
-            <td>@row.Detail</td>
-        </tr>
-    }
-    </tbody>
-</table>
+<div class="m-card m-table-card">
+    <div class="m-card-body m-card-body-flush">
+        @if (Model.Rows.Count == 0)
+        {
+            <div class="m-empty">
+                <h3 class="m-empty-title">No business events found</h3>
+                <p class="m-empty-subtitle">Business events appear here as people change records in the application.</p>
+            </div>
+        }
+        else
+        {
+            <div class="ant-table-wrapper m-table-flush"><div class="ant-table"><div class="ant-table-container"><div class="ant-table-content">
+                <table style="table-layout: auto;">
+                    <thead class="ant-table-thead">
+                        <tr>
+                            <th class="ant-table-cell">When</th>
+                            <th class="ant-table-cell">Action</th>
+                            <th class="ant-table-cell">Resource</th>
+                            <th class="ant-table-cell">Id</th>
+                            <th class="ant-table-cell">Who</th>
+                            <th class="ant-table-cell">Detail</th>
+                        </tr>
+                    </thead>
+                    <tbody class="ant-table-tbody">
+                    @foreach (var row in Model.Rows)
+                    {
+                        <tr class="ant-table-row">
+                            <td class="ant-table-cell">@row.OccurredAt.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                            <td class="ant-table-cell">@row.Action</td>
+                            <td class="ant-table-cell">@row.Resource</td>
+                            <td class="ant-table-cell"><code>@row.ResourceId</code></td>
+                            <td class="ant-table-cell">@(row.UserName ?? row.UserId?.ToString())</td>
+                            <td class="ant-table-cell m-muted">@row.Detail</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div></div></div></div>
+        }
+    </div>
+</div>
 
-<p>
-    @Model.TotalCount entr@(Model.TotalCount == 1 ? "y" : "ies") found.
-    @if (Model.HasPrevious)
-    {
-        <a asp-route-PageNumber="@(Model.PageNumber - 1)" asp-route-Entity="@Model.Entity" asp-route-Actor="@Model.Actor" asp-route-Action="@Model.Action" asp-route-Since="@Model.Since" asp-route-Until="@Model.Until">Previous</a>
-    }
-    @if (Model.HasNext)
-    {
-        <a asp-route-PageNumber="@(Model.PageNumber + 1)" asp-route-Entity="@Model.Entity" asp-route-Actor="@Model.Actor" asp-route-Action="@Model.Action" asp-route-Since="@Model.Since" asp-route-Until="@Model.Until">Next</a>
-    }
-</p>
+<div class="m-flex m-gap-12 m-mt-16" style="align-items: center; justify-content: space-between;">
+    <span class="m-muted">@Model.TotalCount entr@(Model.TotalCount == 1 ? "y" : "ies") found.</span>
+    <div class="m-flex m-gap-8">
+        @if (Model.HasPrevious)
+        {
+            <a class="ant-btn ant-btn-default" asp-route-PageNumber="@(Model.PageNumber - 1)" asp-route-Entity="@Model.Entity" asp-route-Actor="@Model.Actor" asp-route-Action="@Model.Action" asp-route-Since="@Model.Since" asp-route-Until="@Model.Until">Previous</a>
+        }
+        @if (Model.HasNext)
+        {
+            <a class="ant-btn ant-btn-default" asp-route-PageNumber="@(Model.PageNumber + 1)" asp-route-Entity="@Model.Entity" asp-route-Actor="@Model.Actor" asp-route-Action="@Model.Action" asp-route-Since="@Model.Since" asp-route-Until="@Model.Until">Next</a>
+        }
+    </div>
+</div>

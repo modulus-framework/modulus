@@ -11,7 +11,7 @@ namespace {{ root_namespace }}.Web.Pages;
 /// every change, and only for the caller's own account; the page shows the API's answer.
 /// </summary>
 [Authorize]
-public sealed class ProfileModel(ProfileApiClient profile) : PageModel
+public sealed class ProfileModel(ProfileApiClient profile, BranchApiClient branches) : PageModel
 {
     private static readonly JsonSerializerOptions s_json = new(JsonSerializerDefaults.Web);
 
@@ -24,6 +24,15 @@ public sealed class ProfileModel(ProfileApiClient profile) : PageModel
 
     [BindProperty]
     public string? NewEmail { get; set; }
+
+    /// <summary>The profile details (premodule 3). The employee code and primary branch are read-only here.</summary>
+    public ProfileDetailsView? Details { get; private set; }
+
+    /// <summary>The primary branch by name and code, or a plain statement when the caller cannot see it. Null when none is set.</summary>
+    public string? PrimaryBranchLabel { get; private set; }
+
+    [BindProperty]
+    public ProfileDetailsInput DetailsInput { get; set; } = new();
 
     public async Task OnGetAsync(CancellationToken ct)
     {
@@ -46,6 +55,34 @@ public sealed class ProfileModel(ProfileApiClient profile) : PageModel
                 PhoneNumber = Current.PhoneNumber,
             };
         }
+
+        using var details = await profile.GetDetailsAsync(ct);
+        if (details.IsSuccessStatusCode)
+        {
+            Details = await details.Content.ReadFromJsonAsync<ProfileDetailsView>(s_json, ct);
+            if (Details is not null)
+            {
+                DetailsInput = new ProfileDetailsInput
+                {
+                    FirstName = Details.FirstName,
+                    LastName = Details.LastName,
+                    AvatarUrl = Details.AvatarUrl,
+                    WorkEmail = Details.WorkEmail,
+                    JobTitle = Details.JobTitle,
+                    Department = Details.Department,
+                };
+                if (Details.PrimaryBranchId is { } branchId)
+                    await LoadPrimaryBranchAsync(branchId, ct);
+            }
+        }
+    }
+
+    public async Task<IActionResult> OnPostDetailsAsync(CancellationToken ct)
+    {
+        using var response = await profile.UpdateDetailsAsync(
+            new ProfileDetailsUpdate(DetailsInput.FirstName, DetailsInput.LastName, DetailsInput.AvatarUrl, DetailsInput.WorkEmail, DetailsInput.JobTitle, DetailsInput.Department), ct);
+        TempData["Message"] = response.IsSuccessStatusCode ? "Profile details saved." : await ProfileApiClient.RefusalAsync(response, ct);
+        return RedirectToPage();
     }
 
     public async Task<IActionResult> OnPostSaveAsync(CancellationToken ct)
@@ -65,6 +102,22 @@ public sealed class ProfileModel(ProfileApiClient profile) : PageModel
         return RedirectToPage();
     }
 
+    /// <summary>The editable profile details. An empty field clears it.</summary>
+    public sealed class ProfileDetailsInput
+    {
+        public string? FirstName { get; set; }
+
+        public string? LastName { get; set; }
+
+        public string? AvatarUrl { get; set; }
+
+        public string? WorkEmail { get; set; }
+
+        public string? JobTitle { get; set; }
+
+        public string? Department { get; set; }
+    }
+
     /// <summary>The editable fields. An empty field clears it.</summary>
     public sealed class ProfileInput
     {
@@ -75,5 +128,15 @@ public sealed class ProfileModel(ProfileApiClient profile) : PageModel
         public string? TimeZone { get; set; }
 
         public string? PhoneNumber { get; set; }
+    }
+
+    private async Task LoadPrimaryBranchAsync(Guid branchId, CancellationToken ct)
+    {
+        using var response = await branches.ListAsync(ct);
+        var listed = response.IsSuccessStatusCode
+            ? await response.Content.ReadFromJsonAsync<List<BranchChoice>>(s_json, ct)
+            : null;
+        var branch = listed?.FirstOrDefault(b => b.Id == branchId);
+        PrimaryBranchLabel = branch is null ? "a branch you cannot see" : $"{branch.Name} ({branch.Code})";
     }
 }

@@ -391,6 +391,22 @@ CREATE TABLE [ModulusRecordShares] (
 );
 GO
 
+-- Explicit parent-to-child authorities (decision 6). Revoked rows are kept; host data, so no tenant column.
+IF OBJECT_ID('ModulusCompanyAuthorityGrants') IS NULL
+CREATE TABLE [ModulusCompanyAuthorityGrants] (
+    [Id] uniqueidentifier NOT NULL,
+    [ParentId] uniqueidentifier NOT NULL,
+    [ChildId] uniqueidentifier NOT NULL,
+    [PrincipalId] uniqueidentifier NOT NULL,
+    [Operation] nvarchar(32) NOT NULL,
+    [GrantedBy] uniqueidentifier NULL,
+    [GrantedAt] datetimeoffset NOT NULL,
+    [RevokedAt] datetimeoffset NULL,
+    [RevokedBy] uniqueidentifier NULL,
+    CONSTRAINT [PK_ModulusCompanyAuthorityGrants] PRIMARY KEY ([Id])
+);
+GO
+
 IF OBJECT_ID('ModulusRoleInclusions') IS NULL
 CREATE TABLE [ModulusRoleInclusions] (
     [TenantId] uniqueidentifier NOT NULL,
@@ -540,6 +556,10 @@ GO
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_ModulusRecertificationItems_TenantId_CampaignId' AND object_id = OBJECT_ID(N'ModulusRecertificationItems'))
     CREATE INDEX IX_ModulusRecertificationItems_TenantId_CampaignId ON ModulusRecertificationItems ([TenantId], [CampaignId]);
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_ModulusCompanyAuthorityGrants_Lookup' AND object_id = OBJECT_ID(N'ModulusCompanyAuthorityGrants'))
+    CREATE INDEX IX_ModulusCompanyAuthorityGrants_Lookup ON ModulusCompanyAuthorityGrants ([ParentId], [ChildId], [PrincipalId], [Operation]);
 GO
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_ModulusRecordShares_TenantId_ResourceType_ResourceId' AND object_id = OBJECT_ID(N'ModulusRecordShares'))

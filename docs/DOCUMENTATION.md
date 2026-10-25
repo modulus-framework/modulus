@@ -1352,9 +1352,9 @@ significantly shrinks the scope of Phase B1 below.
       model calls `{Module}ApiClient` methods instead of `IMediator.Send(...)`, mapping non-2xx
       responses to `ModelState`.
 - [x] A2.3.4. `ResolveHost` routes via `AppInventory.WebProjectPath` for this kind.
-- [ ] A2.3.5. ui-schema endpoint (`GET /{module}/{route}/ui-schema` + `EntityUiSchemaDto`) —
+- [ ] **Decided 2026-10-25: deferred, not built.** A2.3.5. ui-schema endpoint (`GET /{module}/{route}/ui-schema` + `EntityUiSchemaDto`) —
       the schema model exists (`EntityUiSchema`, `EntityUiSchemaTests`) and `Endpoint.sbn` references it, but it is **not wired as a documented endpoint; deferred pending design sign-off** (needs an explicit decision, see A2.3.6).
-- [ ] A2.3.6. Web-side `m-fields`/`m-datatable` overload consuming the schema DTO — the one
+- [ ] **Decided 2026-10-25: deferred, not built.** A2.3.6. Web-side `m-fields`/`m-datatable` overload consuming the schema DTO — the one
       piece of new framework abstraction in Phase A; **not built**, awaiting explicit sign-off
       on the design before implementation.
 - [x] A2.3.7. Interim behavior (without A2.3.5/A2.3.6): the API's extension-field endpoints
@@ -1376,7 +1376,7 @@ significantly shrinks the scope of Phase B1 below.
 - [x] A2.5.1. Both projects build 0 warnings.
 - [x] A2.5.2. API boots standalone and answers its endpoints directly
       (`ApiIntegrationTests`: health, 401/403/200 permission gating, extension-field rules).
-- [ ] A2.5.3. Web-side round-trip over HTTP: the API side is proven by the generated suite, and
+- [x] A2.5.3. **Done (verified 2026-10-25).** The generated `webapp+api` OpenIddict app runs `CreatedProduct_IsListedThroughTheBffAndTheApi`: sign in through the BFF, create a product on the Web page, the list shows it, and the API serves it (15/15 generated tests pass). The paragraph below predates the template step and is kept as history. Web-side round-trip over HTTP: the API side is proven by the generated suite, and
       the Web host boots/serves pages (`WebAppSmokeTest`). 2026-10-23: the round trip works in a generated
       `webapp+api` app (sign-in through the BFF → create a Widget on its Web page → the list page shows it), as
       `CreatedWidget_IsListedThroughTheBffAndTheApi` in a hand-edited scratch copy (15/15 generated tests pass). Not in the
@@ -1387,8 +1387,7 @@ significantly shrinks the scope of Phase B1 below.
       (both factories force the test scheme as default, which 401s the cookie session and the forwarded bearer token), and
       `PairedForwarderFactory` (`TestServerPairing` does not reach YARP's forwarder, so the BFF proxy needs the same
       replacement `Modulus.Bff.Tests` uses).
-- [x] A2.5.4. (done: `LoginPage_ExplainsWhenTheApiIsDown` in the generated tests; the BFF session returns `temporarily_unavailable` instead of a 500) Kill-the-API resilience check not run yet (the resilience handler should convert
-      connection failures into retried/failed requests, not crashes — verify explicitly).
+- [x] A2.5.4. Verified live 2026-10-25 on a generated `webapp+api` OpenIddict app (`LoginPage_ExplainsWhenTheApiIsDown` covers the login page): signed in through the Web login, then the API process was stopped. `/` and `/products` still answered 200 with "The API could not be reached." and no unhandled exception. Finding: the products list also showed the empty state ("No products yet") under that message. That markup is in the `modulus-ui` `crud-list` template (`Model.Items.Count == 0`), not in this repo. Open as a UI item: show the empty state only when the list loaded. Needs a `modulus-ui` change and a UI release.
 
 #### A3. Propagate the kind model through the rest of the CLI ✅ COMPLETE
 
@@ -1429,7 +1428,7 @@ significantly shrinks the scope of Phase B1 below.
       calls, so they pass without the API running. Pairing is the natural next step and would
       also close A2.5.3/A5.5.
 - [x] A5.4. `Modulus.Testing.TestServerPairing` exists; the generated `WebToApiLoginTests` uses it (login through the API's token endpoint).
-- [ ] A5.5. The HTTP hop is proven on the API side (entity created through the API is visible
+- [x] A5.5. **Done (verified 2026-10-25):** the Web-page-driven flow is in the generated suite (`CreatedProduct_IsListedThroughTheBffAndTheApi`, paired Web, BFF and API factories) and passes. The text below predates it. The HTTP hop is proven on the API side (entity created through the API is visible
       via the API factory's client); the Web-page-driven flow is asserted in the scratch copy only (see A2.5.3). Remaining: the template step.
 
 ---
@@ -1470,25 +1469,28 @@ explicitly document the N/A-by-design packages so nobody re-attempts a fix there
 This single fix unblocks **both** Identity's Register page (B2.1) and Users' Create/Edit pages
 (B2.2), since they share the same entity and DbContext.
 
-- [ ] B0.1. Read `IHasExtraProperties`'s exact member shape in
+- [x] B0.1. Read `IHasExtraProperties`'s exact member shape in
       `src/core/Modulus.Core/Abstractions/Entities/IHasExtraProperties.cs` first.
-- [ ] B0.2. `src/identity/Modulus.Identity/Abstractions/ModulusUser.cs` — implement
+- [x] B0.2. `src/identity/Modulus.Identity/Abstractions/ModulusUser.cs` — implement
       `IHasExtraProperties` (likely just `Dictionary<string, string?> ExtraProperties` plus
       whatever helper members `EntityFieldValues`/`SetExtraProperties` expects).
-- [ ] B0.3. `src/identity/Modulus.Identity/EntityFrameworkCore/ModulusIdentityDbContext.cs` — do
+- [x] B0.3. `src/identity/Modulus.Identity/EntityFrameworkCore/ModulusIdentityDbContext.cs` — do
       **not** change its base class. Call `UseModulusExtraProperties()`
       (`src/data/Modulus.EntityFrameworkCore/ModelBuilding/ExtraPropertiesModelBuilderExtensions.cs`,
       a standalone `ModelBuilder` extension with no `ModuleDbContext` dependency) directly from
       `OnModelCreating` after `builder.UseOpenIddict()`.
-- [ ] B0.4. Do not make this context derive from `ModuleDbContext` — that would drag in
+- [x] B0.4. Do not make this context derive from `ModuleDbContext` — that would drag in
       multi-tenancy/outbox assumptions needing a much larger audit for no benefit.
-- [ ] B0.5. Document the migration impact: new apps get the column from the template on day one;
+- [x] B0.5. Document the migration impact: new apps get the column from the template on day one;
       existing apps need `modulus migrate add AddUserExtraProperties --module Identity` after
       upgrading the framework package (normal migration workflow, not auto-applied) — call this
       out in release notes.
-- [ ] B0.6. Validate: round-trip test on the new column (SQLite in-memory, matching existing
-      Identity test fixtures); re-run the existing Identity end-to-end login/register suite to
-      confirm no regression.
+- [x] B0.6. Validate: round-trip test on the new column (`ExtraPropertiesTests`, SQLite in-memory, matching the
+      Identity fixtures) and the Identity unit suite (557/557, net10.0). 2026-10-25: the three identity upgrade scripts were
+      run twice each against a real PostgreSQL 16, SQL Server 2022 and MySQL 8.4 database: the column is NOT NULL with
+      default `{}` (MySQL: `longtext NOT NULL`, existing rows read as an empty value, which the reader treats as `{}`).
+      Not run: the generated Identity end-to-end login/register suite (needs a generated app; see the premodule plan).
+      The `ModulusUser.ExtraProperties` property is the one B0 change; B1 to B7 target the UI that has moved to `modulus-ui`.
 
 #### B1. Forgot Password / Reset Password pages (Identity-specific)
 
@@ -1498,6 +1500,7 @@ anti-enumeration behavior and an `IIdentityEmailSender` hook — confirmed by re
 **No new identity/token plumbing needed.** Only new Razor Pages UI. (This also doubles as the
 worked example/validation case for B5's new-page pattern — see below.)
 
+- [x] B1 (done in the generated web app, 2026-10-25; see the premodule plan, Round 6). The pages are in the generated `Pages/Account`: `ForgotPassword`, `ResetPassword` (served at `/ResetPassword`, the path the email link uses), and the sign-in link. The reset flow was run end to end with real SMTP.
 - [ ] B1.1. `src/ui/Modulus.UI.Identity/Pages/Account/ForgotPassword.cshtml(.cs)` +
       `ForgotPasswordConfirmation.cshtml` — mirror `ModulusAccountController.ForgotPasswordAsync`'s
       logic in-process (`UserManager.GeneratePasswordResetTokenAsync` +
@@ -6126,7 +6129,7 @@ Still open in Phase 4 (deployment, not code):
   5. **Tokens and audience.** The API issues unencrypted access tokens (`Identity:EncryptAccessTokens=false`) so the provisioning host can validate them. Set `Provisioning:Audience` once the token server issues an audience; until then the permission check is the only gate.
   6. **Login identities.** Deploy the policies under `deploy/openbao` (runtime read for the API, provisioner for the writer) and bind them to the Kubernetes service accounts or AppRole ids the platform issues. Deliver secret ids as files, and rotate them.
   7. **Existing deployments.** Add the `ModulusAuthorizationSeeds` table (seed marker) and the `ModulusTenantDataStores` table (Phase 3) with migrations before the first start.
-- [ ] **Operator-owned (not code):** Raft cluster sizing, TLS certificates, auto-unseal, audit devices, snapshots and the Kubernetes role bindings. These depend on the platform and are not verified here.
+- [ ] **Operator-owned (not code):** Raft cluster sizing, TLS certificates, Shamir unseal (3 of 5), audit devices, snapshots and the Kubernetes role bindings. These depend on the platform and are not verified here.
 - [x] The existing-deployment migration for `ModulusTenantDataStores` (Phase 3, above): `docs/upgrades/identity-platform-2026-10.tenancy.{postgresql,sqlserver,mysql}.sql` (2026-10-23; run twice per engine). Compared with EF's generated DDL for `TenantStoreDbContext` on all three engines: the column sets of `ModulusTenantDataStores`, `ModulusSettingValues` and `ModulusSettingVersions` match, and the types are each engine's equivalents.
 
 ### Phase 5: setting engine (built, 2026-10-23)

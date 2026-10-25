@@ -73,11 +73,11 @@ public sealed class LifecycleSchemaTests : IAsyncLifetime
             await db.Database.ExecuteSqlRawAsync(
                 """
                 INSERT INTO AspNetUsers (Id, UserName, NormalizedUserName, Email, NormalizedEmail, EmailConfirmed,
-                    PhoneNumberConfirmed, TwoFactorEnabled, LockoutEnabled, AccessFailedCount, IsActive, MustChangePin)
+                    PhoneNumberConfirmed, TwoFactorEnabled, LockoutEnabled, AccessFailedCount, IsActive, MustChangePin, ExtraProperties)
                 VALUES ({0}, 'legacy@example.test', 'LEGACY@EXAMPLE.TEST', 'legacy@example.test', 'LEGACY@EXAMPLE.TEST', 0,
-                    0, 0, 1, 0, 1, 0)
+                    0, 0, 1, 0, 1, 0, {1})
                 """,
-                userId);
+                userId, "{}");
         }
 
         await using var read = Host();

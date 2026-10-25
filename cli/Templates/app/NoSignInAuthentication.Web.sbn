@@ -1,0 +1,38 @@
+using System.Text.Encodings.Web;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.Extensions.Options;
+
+namespace {{ root_namespace }}.Web.Security;
+
+/// <summary>
+/// The scheme of a web host with no sign-in. It never signs anyone in, and a challenge answers 401. A page or endpoint that needs a
+/// signed-in user therefore answers 401 instead of failing with "no authentication scheme" (500).
+/// </summary>
+internal sealed class NoSignInAuthenticationHandler(
+    IOptionsMonitor<AuthenticationSchemeOptions> options,
+    ILoggerFactory logger,
+    UrlEncoder encoder)
+    : AuthenticationHandler<AuthenticationSchemeOptions>(options, logger, encoder)
+{
+    public const string SchemeName = "NoSignIn";
+
+    protected override Task<AuthenticateResult> HandleAuthenticateAsync() => Task.FromResult(AuthenticateResult.NoResult());
+
+    protected override Task HandleChallengeAsync(AuthenticationProperties properties)
+    {
+        Response.StatusCode = StatusCodes.Status401Unauthorized;
+        return Task.CompletedTask;
+    }
+}
+
+internal static class NoSignInAuthenticationSetup
+{
+    /// <summary>Registers the no-sign-in scheme as the default, so the closed endpoints and the admin pages answer 401.</summary>
+    public static IServiceCollection AddNoSignInAuthentication(this IServiceCollection services)
+    {
+        services.AddAuthentication(NoSignInAuthenticationHandler.SchemeName)
+            .AddScheme<AuthenticationSchemeOptions, NoSignInAuthenticationHandler>(NoSignInAuthenticationHandler.SchemeName, _ => { });
+        services.AddAuthorization();
+        return services;
+    }
+}

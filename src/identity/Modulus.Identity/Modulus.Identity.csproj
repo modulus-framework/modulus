@@ -17,6 +17,7 @@
     <PackageReference Include="OpenIddict.EntityFrameworkCore" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" />
     <PackageReference Include="Fido2" />
+    <PackageReference Include="SixLabors.ImageSharp" />
     <PackageReference Include="ITfoxtec.Identity.Saml2" />
     <PackageReference Include="System.DirectoryServices.Protocols" />
   </ItemGroup>

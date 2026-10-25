@@ -725,4 +725,14 @@ Modulus.Authorization.EntityFrameworkCore.CompanyProvisioningOptions
 Modulus.Authorization.EntityFrameworkCore.CompanyProvisioningOptions.CompanyProvisioningOptions() -> void
 Modulus.Authorization.EntityFrameworkCore.CompanyProvisioningOptions.Grants.get -> System.Collections.Generic.Dictionary<string!, string![]!>!
 Modulus.Authorization.EntityFrameworkCore.CompanyProvisioningOptions.Grants.set -> void
+const Modulus.Authorization.EntityFrameworkCore.CompanyProvisioningOptions.OwnerRole = "TenantOwner" -> string!
+Modulus.Authorization.EntityFrameworkCore.CompanyProvisioningOptions.OwnerPermissions.get -> string![]!
+Modulus.Authorization.EntityFrameworkCore.CompanyProvisioningOptions.OwnerPermissions.set -> void
 const Modulus.Authorization.EntityFrameworkCore.CompanyProvisioningOptions.SectionName = "CompanyProvisioning" -> string!
+Modulus.Authorization.EntityFrameworkCore.EfCompanyAuthorityStore
+Modulus.Authorization.EntityFrameworkCore.EfCompanyAuthorityStore.EfCompanyAuthorityStore(Microsoft.EntityFrameworkCore.IDbContextFactory<Modulus.Authorization.EntityFrameworkCore.AuthorizationStoreDbContextBase!>! factory) -> void
+Modulus.Authorization.EntityFrameworkCore.EfCompanyAuthorityStore.FindAsync(System.Guid id, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Core.Abstractions.CompanyAuthorityGrant?>!
+Modulus.Authorization.EntityFrameworkCore.EfCompanyAuthorityStore.GrantAsync(System.Guid parentId, System.Guid childId, System.Guid principalId, Modulus.Core.Abstractions.CompanyOperation operation, System.Guid? grantedBy, System.DateTimeOffset now, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Core.Abstractions.CompanyAuthorityGrant!>!
+Modulus.Authorization.EntityFrameworkCore.EfCompanyAuthorityStore.HasActiveGrantAsync(System.Guid parentId, System.Guid childId, System.Guid principalId, Modulus.Core.Abstractions.CompanyOperation operation, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.Authorization.EntityFrameworkCore.EfCompanyAuthorityStore.ListAsync(System.Guid parentId, System.Guid childId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Core.Abstractions.CompanyAuthorityGrant!>!>!
+Modulus.Authorization.EntityFrameworkCore.EfCompanyAuthorityStore.RevokeAsync(System.Guid id, System.Guid? revokedBy, System.DateTimeOffset now, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!

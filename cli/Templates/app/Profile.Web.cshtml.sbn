@@ -2,37 +2,137 @@
 @model {{ root_namespace }}.Web.Pages.ProfileModel
 @{
     ViewData["Title"] = "My profile";
-}
+{{ if use_auth }}    // The controlled photo first; a legacy https address only when there is no photo (Modulus.Identity AvatarUrlPolicy).
+    var avatar = Model.Details is null ? default : Modulus.Identity.Abstractions.AvatarUrlPolicy.Resolve(Model.Details.HasPhoto, Model.Details.AvatarUrl);
+{{ end }}}
 
-<h1>My profile</h1>
+<app-page-header pretitle="Account" title="My profile" />
 
 @if (Model.Message is not null)
 {
-    <p role="status">@Model.Message</p>
+    <app-alert type="info" show-icon message="@Model.Message" class="m-mb-16" />
 }
 
 @if (Model.Current is not null)
 {
-    <p>
-        Signed in as <strong>@Model.Current.Email</strong>
-        @(Model.Current.EmailConfirmed ? "" : "(address not confirmed)")
-    </p>
+    <div class="m-grid m-cols-main">
+        <div>
+            <div class="m-card m-mb-16">
+                <div class="m-card-header"><div class="m-card-title">Account</div></div>
+                <div class="m-card-body">
+                    <p class="m-muted m-mb-16">
+                        Signed in as <strong>@Model.Current.Email</strong>
+                        @(Model.Current.EmailConfirmed ? "" : " (address not confirmed)")
+                    </p>
+                    <form method="post" asp-page-handler="Save" class="ant-form ant-form-vertical" novalidate>
+                        <div class="m-form-grid">
+                            <app-form-item asp-for="Input.DisplayName" label="Display name">
+                                <app-input asp-for="Input.DisplayName" placeholder="How your name appears to others" />
+                            </app-form-item>
+                            <app-form-item asp-for="Input.PhoneNumber" label="Contact phone">
+                                <app-input asp-for="Input.PhoneNumber" placeholder="+44 20 7946 0000" />
+                            </app-form-item>
+                            <app-form-item asp-for="Input.Language" label="Language">
+                                <app-input asp-for="Input.Language" placeholder="en-GB" />
+                                <div class="m-muted m-mt-4">A BCP 47 tag, for example en-GB.</div>
+                            </app-form-item>
+                            <app-form-item asp-for="Input.TimeZone" label="Time zone">
+                                <app-input asp-for="Input.TimeZone" placeholder="Europe/London" />
+                                <div class="m-muted m-mt-4">An IANA time zone, for example Europe/London.</div>
+                            </app-form-item>
+                        </div>
+                        <div class="m-form-actions">
+                            <app-button type="primary" html-type="submit">Save profile</app-button>
+                        </div>
+                    </form>
+                </div>
+            </div>
 
-    <form method="post" asp-page-handler="Save">
-        <p><label>Display name <input asp-for="Input.DisplayName" /></label></p>
-        <p><label>Language, as a BCP 47 tag (for example en-GB) <input asp-for="Input.Language" /></label></p>
-        <p><label>Time zone (for example Europe/London) <input asp-for="Input.TimeZone" /></label></p>
-        <p><label>Contact phone <input asp-for="Input.PhoneNumber" /></label></p>
-        <button type="submit">Save profile</button>
-    </form>
+            @if (Model.Details is not null)
+            {
+                <div class="m-card m-mb-16">
+                    <div class="m-card-header"><div class="m-card-title">Profile details</div></div>
+                    <div class="m-card-body">
+                        <div class="m-flex m-gap-12 m-mb-16" style="align-items: center;">
+{{ if use_auth }}                            @if (avatar.Kind == Modulus.Identity.Abstractions.AvatarSourceKind.Controlled)
+                            {
+                                <img src="@Url.Page("/ProfilePhoto", "Image")" alt="Your photo" width="64" height="64" style="border-radius: 50%; object-fit: cover;" referrerpolicy="no-referrer" />
+                            }
+                            else if (avatar.Kind == Modulus.Identity.Abstractions.AvatarSourceKind.External)
+                            {
+                                <img src="@avatar.Url" alt="Your photo" width="64" height="64" style="border-radius: 50%; object-fit: cover;" referrerpolicy="no-referrer" />
+                            }
+{{ end }}                            <a class="ant-btn ant-btn-default" asp-page="/ProfilePhoto">Change photo</a>
+                        </div>
+                        <form method="post" asp-page-handler="Details" class="ant-form ant-form-vertical" novalidate>
+                            <div class="m-form-grid">
+                                <app-form-item asp-for="DetailsInput.FirstName" label="First name">
+                                    <app-input asp-for="DetailsInput.FirstName" />
+                                </app-form-item>
+                                <app-form-item asp-for="DetailsInput.LastName" label="Last name">
+                                    <app-input asp-for="DetailsInput.LastName" />
+                                </app-form-item>
+                                <app-form-item asp-for="DetailsInput.WorkEmail" label="Work email">
+                                    <app-input asp-for="DetailsInput.WorkEmail" type="email" placeholder="you@company.example" />
+                                    <div class="m-muted m-mt-4">It becomes yours only after you confirm the link we send.</div>
+                                </app-form-item>
+                                <app-form-item asp-for="DetailsInput.AvatarUrl" label="Legacy photo address">
+                                    <app-input asp-for="DetailsInput.AvatarUrl" placeholder="https://" />
+                                    <div class="m-muted m-mt-4">Used only when you have no uploaded photo.</div>
+                                </app-form-item>
+                                <app-form-item asp-for="DetailsInput.JobTitle" label="Job title">
+                                    <app-input asp-for="DetailsInput.JobTitle" />
+                                </app-form-item>
+                                <app-form-item asp-for="DetailsInput.Department" label="Department">
+                                    <app-input asp-for="DetailsInput.Department" />
+                                </app-form-item>
+                            </div>
+                            @if (Model.Details.PendingWorkEmail is not null)
+                            {
+                                <app-alert type="info" show-icon message="@Model.Details.PendingWorkEmail is waiting for confirmation. Open the link sent to it to confirm." class="m-mt-16" />
+                            }
+                            <div class="m-form-actions">
+                                <app-button type="primary" html-type="submit">Save details</app-button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            }
+        </div>
 
-    <h2>Change email address</h2>
-    <p>A link goes to the new address. The address changes only when that link is opened.</p>
-    <form method="post" asp-page-handler="Email">
-        <p><label>New email address <input asp-for="NewEmail" type="email" /></label></p>
-        <button type="submit">Send link to the new address</button>
-    </form>
+        <aside>
+            @if (Model.Details is not null)
+            {
+                <div class="m-card m-mb-16">
+                    <div class="m-card-header"><div class="m-card-title">Set by an administrator</div></div>
+                    <div class="m-card-body">
+                        <p class="m-mb-8"><span class="m-muted">Employee code</span><br />@(Model.Details.EmployeeCode ?? "Not set")</p>
+                        <p class="m-mb-8"><span class="m-muted">Primary branch</span><br />@(Model.PrimaryBranchLabel ?? "Not set")</p>
+                        <p class="m-mb-0"><span class="m-muted">Account</span><br />@Model.Details.UserName, @(Model.Details.IsActive ? "active" : "disabled")</p>
+                    </div>
+                </div>
+            }
 
-{{ if multi_tenancy }}    <p><a asp-page="/Company">Companies</a></p>
-{{ end }}
+            <div class="m-card m-mb-16">
+                <div class="m-card-header"><div class="m-card-title">Change email address</div></div>
+                <div class="m-card-body">
+                    <p class="m-muted m-mb-16">We send a link to the new address. The address changes only when that link is opened.</p>
+                    <form method="post" asp-page-handler="Email" class="ant-form ant-form-vertical" novalidate>
+                        <app-form-item asp-for="NewEmail" label="New email address">
+                            <app-input asp-for="NewEmail" type="email" placeholder="you@example.com" />
+                        </app-form-item>
+                        <div class="m-form-actions">
+                            <app-button html-type="submit">Send the link</app-button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+{{ if multi_tenancy }}
+            <div class="m-card m-mb-16">
+                <div class="m-card-body">
+                    <a href="/Company">Your companies</a>
+                </div>
+            </div>
+{{ end }}        </aside>
+    </div>
 }

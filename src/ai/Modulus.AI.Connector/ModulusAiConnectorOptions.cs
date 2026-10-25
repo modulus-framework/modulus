@@ -11,8 +11,13 @@ public sealed class ModulusAiConnectorOptions
     /// <summary>The configuration section.</summary>
     public const string SectionName = "Ai:Connector";
 
-    /// <summary>Whether the endpoints answer at all. Off: every connector call gets <c>404</c>.</summary>
-    public bool Enabled { get; set; } = true;
+    /// <summary>
+    /// Whether the connector is active. Off by default: the platform's conformance suite must pass against the real connector before an
+    /// operator turns it on. Read at startup. Off means no connector work: no route is mapped, the change hints and the revocation
+    /// dispatcher do not run, and the revocation observer queues nothing. Turning it on needs a restart. The change journal
+    /// (<c>ai_changes</c>) is still written by saves while the EF journal is registered; see the plan.
+    /// </summary>
+    public bool Enabled { get; set; } = false;
 
     /// <summary>Where the wire contract is mapped. Framework endpoints live under <c>/_ai</c>.</summary>
     public string PathPrefix { get; set; } = "/_ai/connector";

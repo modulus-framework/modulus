@@ -95,7 +95,8 @@ public sealed class RegistryAndRevocationTests
     [Fact]
     public void Settings_without_keys_or_instances_are_refused()
     {
-        var result = new AiConnectorOptionsValidator().Validate(null, new ModulusAiConnectorOptions());
+        // Validated only when on: a fresh app is generated with the connector off and no keys, and must still start.
+        var result = new AiConnectorOptionsValidator().Validate(null, new ModulusAiConnectorOptions { Enabled = true });
 
         result.Failed.Should().BeTrue();
         result.FailureMessage.Should().Contain("ApiKeyHashes").And.Contain("Instances").And.Contain("Issuer").And.Contain("BaseUrl");
@@ -104,7 +105,7 @@ public sealed class RegistryAndRevocationTests
     [Fact]
     public void A_raw_key_instead_of_a_hash_is_refused()
     {
-        var options = new ModulusAiConnectorOptions { ApiKeyHashes = ["my-plain-key"] };
+        var options = new ModulusAiConnectorOptions { Enabled = true, ApiKeyHashes = ["my-plain-key"] };
 
         new AiConnectorOptionsValidator().Validate(null, options).FailureMessage.Should().Contain("never the keys");
     }

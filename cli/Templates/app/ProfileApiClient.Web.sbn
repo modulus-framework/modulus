@@ -12,6 +12,32 @@ public sealed record ProfileView(string? DisplayName, string? Language, string? 
 /// <summary>The fields the profile page sends (<c>PUT /api/account/profile</c>). An empty field clears it.</summary>
 public sealed record ProfileUpdate(string? DisplayName, string? Language, string? TimeZone, string? PhoneNumber);
 
+/// <summary>The profile details as the API returns them (<c>/api/account/profile/details</c>). The employee code and primary branch are set by an administrator.</summary>
+public sealed record ProfileDetailsView(
+    Guid Id,
+    string? UserName,
+    string? Email,
+    bool IsActive,
+    string? FirstName,
+    string? LastName,
+    string? AvatarUrl,
+    string? WorkEmail,
+    string? JobTitle,
+    string? Department,
+    string? EmployeeCode,
+    Guid? PrimaryBranchId,
+    DateTimeOffset? CreatedAt,
+    DateTimeOffset? ModifiedAt,
+    bool HasPhoto = false,
+    string? PendingWorkEmail = null,
+    string? PhotoUrl = null);
+
+/// <summary>The answer of a confirmation request: the API's error code (when refused) and its message.</summary>
+public sealed record ApiRefusal(string? Code, string Message);
+
+/// <summary>The details the page sends (<c>PATCH /api/account/profile/details</c>). A field the page leaves out keeps its value; an empty field clears it.</summary>
+public sealed record ProfileDetailsUpdate(string? FirstName, string? LastName, string? AvatarUrl, string? WorkEmail, string? JobTitle, string? Department);
+
 /// <summary>
 /// The API's self-service profile, reached through the BFF gateway so the browser's session carries the signed-in person's token. The API
 /// answers only for the caller's own account; the page decides nothing about what may change.
@@ -33,26 +59,63 @@ public sealed class ProfileApiClient(HttpClient http, IConfiguration configurati
 
     public Task<HttpResponseMessage> UpdateAsync(ProfileUpdate update, CancellationToken ct) => _http.PutAsJsonAsync(BaseRoute, update, ct);
 
+    public Task<HttpResponseMessage> GetDetailsAsync(CancellationToken ct) => _http.GetAsync($"{BaseRoute}/details", ct);
+
+    public Task<HttpResponseMessage> UpdateDetailsAsync(ProfileDetailsUpdate update, CancellationToken ct)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Patch, $"{BaseRoute}/details") { Content = JsonContent.Create(update) };
+        return _http.SendAsync(request, ct);
+    }
+
+    /// <summary>Uploads the photo. The API checks the type, the size and the decoded image; the page checks them first only for a clearer message.</summary>
+    public Task<HttpResponseMessage> UploadPhotoAsync(Stream content, string contentType, CancellationToken ct)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Put, $"{BaseRoute}/photo") { Content = new StreamContent(content) };
+        request.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(contentType);
+        return _http.SendAsync(request, ct);
+    }
+
+    public Task<HttpResponseMessage> GetPhotoAsync(CancellationToken ct) => _http.GetAsync($"{BaseRoute}/photo", ct);
+
+    public Task<HttpResponseMessage> DeletePhotoAsync(CancellationToken ct) => _http.DeleteAsync($"{BaseRoute}/photo", ct);
+
+    /// <summary>Confirms the work e-mail with the link's token. Only the signed-in account the link was issued for can confirm it.</summary>
+    public Task<HttpResponseMessage> ConfirmWorkEmailAsync(string token, CancellationToken ct)
+        => _http.PostAsJsonAsync($"{BaseRoute}/work-email/confirm", new { token }, ct);
+
     public Task<HttpResponseMessage> RequestEmailChangeAsync(string newEmail, CancellationToken ct)
         => _http.PostAsJsonAsync($"{BaseRoute}/email", new { newEmail }, ct);
 
     public Task<HttpResponseMessage> ConfirmEmailChangeAsync(string newEmail, string token, CancellationToken ct)
         => _http.PostAsJsonAsync($"{BaseRoute}/email/confirm", new { newEmail, token }, ct);
 
-    /// <summary>The API's reason for a refusal: the field messages of a validation failure, else a plain statement.</summary>
+    /// <summary>The API's reason for a refusal: the field messages of a validation failure, else its message, else a plain statement.</summary>
     public static async Task<string> RefusalAsync(HttpResponseMessage response, CancellationToken ct)
+        => (await ReadRefusalAsync(response, ct)).Message;
+
+    /// <summary>The refusal with the API's stable error code, for pages that show a different message per code.</summary>
+    public static async Task<ApiRefusal> ReadRefusalAsync(HttpResponseMessage response, CancellationToken ct)
     {
-        if (response.StatusCode == HttpStatusCode.BadRequest)
+        var body = await response.Content.ReadAsStringAsync(ct);
+        string? code = null;
+        string? message = null;
+        if (!string.IsNullOrWhiteSpace(body) && body.TrimStart().StartsWith('{'))
         {
-            using var problem = JsonDocument.Parse(await response.Content.ReadAsStringAsync(ct));
-            if (problem.RootElement.TryGetProperty("errors", out var errors))
-                return string.Join(' ', errors.EnumerateObject().SelectMany(f => f.Value.EnumerateArray()).Select(m => m.GetString()));
+            using var problem = JsonDocument.Parse(body);
+            var root = problem.RootElement;
+            if (root.TryGetProperty("error", out var error) && error.ValueKind == JsonValueKind.String)
+                code = error.GetString();
+            if (root.TryGetProperty("message", out var text) && text.ValueKind == JsonValueKind.String)
+                message = text.GetString();
+            if (message is null && root.TryGetProperty("errors", out var errors))
+                message = string.Join(' ', errors.EnumerateObject().SelectMany(f => f.Value.EnumerateArray()).Select(m => m.GetString()));
         }
-        return response.StatusCode switch
+        message ??= response.StatusCode switch
         {
             HttpStatusCode.Unauthorized => "Your session has ended. Sign in again.",
             HttpStatusCode.Forbidden => "You are not allowed to do that.",
             _ => $"The API answered {(int)response.StatusCode}.",
         };
+        return new ApiRefusal(code, message);
     }
 }

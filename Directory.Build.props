@@ -13,4 +13,21 @@
   <Import Project="$(MSBuildThisFileDirectory)build\Modulus.Common.props"   />
   <Import Project="$(MSBuildThisFileDirectory)build\Modulus.Packaging.props" />
 
+<ItemGroup>
+    <!--
+      ImageSharp 2.1.13 (Apache-2.0; transitively used by Modulus.Identity, its tests and the EF integration tests) has advisories whose fixes exist only in 4.1.2+ (Six Labors Split License, not permitted by the repository
+      licence policy). Each is suppressed below with why it cannot be reached from the profile-photo path. Accepted as a risk on 2026-10-24, on the owner's behalf; the owner can reverse this (THIRD-PARTY-NOTICES.md).
+      The format gate (ProfilePhotoProcessor) accepts only JPEG, PNG and WebP by their magic bytes; everything else is refused before any decoder runs.
+      - GHSA-gwg2-r3hj-4w44 ICC CLUT parsing: any embedded colour profile is refused by the structure walk before decoding.
+      - GHSA-wmxv-xphr-5c9g BigTIFF decoder, GHSA-jjfr-hcj7-qf5w and GHSA-j9gm-c75j-xc9q TIFF CCITT encoders: TIFF is refused by the format gate;
+        the encoders are never called.
+      - GHSA-j3p4-wp97-rph4 HistogramEqualization: never called.
+    -->
+    <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-gwg2-r3hj-4w44" />
+    <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-wmxv-xphr-5c9g" />
+    <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-j3p4-wp97-rph4" />
+    <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-j9gm-c75j-xc9q" />
+    <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-jjfr-hcj7-qf5w" />
+  </ItemGroup>
+
 </Project>

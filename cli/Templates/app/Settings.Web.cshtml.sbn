@@ -5,89 +5,121 @@
     ViewData["Title"] = "Settings";
 }
 
-<h1>Settings</h1>
+<app-page-header pretitle="Administration" title="Settings" />
 
 @if (Model.Message is not null)
 {
-    <p role="status">@Model.Message</p>
+    <app-alert type="info" show-icon message="@Model.Message" class="m-mb-16" />
 }
 
-@if (Model.Rows.Count == 0)
+{{ if multi_tenancy }}@if (!Model.HasBranch)
 {
-    <p>No settings are registered in this application.</p>
+    <app-alert type="info" show-icon message="A branch value needs a branch. Choose one on the Branch page first; the Current branch option is refused until then." class="m-mb-16" />
+}
+
+{{ end }}@if (Model.Rows.Count == 0 && Model.Message is not null)
+{
+    <div class="m-card">
+        <div class="m-empty">
+            <h3 class="m-empty-title">The settings could not be loaded</h3>
+            <p class="m-empty-subtitle">The message above says why.</p>
+        </div>
+    </div>
+}
+else if (Model.Rows.Count == 0)
+{
+    <div class="m-card">
+        <div class="m-empty">
+            <h3 class="m-empty-title">No settings are registered</h3>
+            <p class="m-empty-subtitle">Settings appear here once the application registers them.</p>
+        </div>
+    </div>
 }
 
 @foreach (var group in Model.Groups)
 {
-    <h2>@group.Name</h2>
-<table>
-    <thead>
-        <tr><th>Setting</th><th>Value</th><th>Source</th><th>Change</th></tr>
-    </thead>
-    <tbody>
-    @foreach (var row in group.Rows)
-    {
-        <tr>
-            <td>
-                <strong>@(row.DisplayName ?? row.Name)</strong><br />
-                <code>@row.Name</code>
-                @if (!string.IsNullOrEmpty(row.Description)) { <br /><small>@row.Description</small> }
-            </td>
-            <td>@row.EffectiveValue</td>
-            <td>@row.Source@(row.IsPinned ? " (pinned)" : "")</td>
-            <td>
-                @if (row.IsPinned)
-                {
-                    <span>Read-only: the host pins this value.</span>
-                }
-                else
-                {
-                    <form method="post" asp-page-handler="Save">
-                        <input type="hidden" name="name" value="@row.Name" />
-                        <label>Scope
-                            <select name="scope">
-                                <option value="tenant">Company</option>
-                                <option value="user">Me</option>
-                                <option value="global">Everyone (global)</option>
-                            </select>
-                        </label>
-                        @if (row.ValueType == SettingValueType.Boolean)
-                        {
-                            <select name="value">
-                                <option value="true" selected="@(row.EffectiveValue == "true")">true</option>
-                                <option value="false" selected="@(row.EffectiveValue == "false")">false</option>
-                            </select>
-                        }
-                        else if (row.AllowedValues.Count > 0)
-                        {
-                            <select name="value">
-                                @foreach (var allowed in row.AllowedValues)
+    <div class="m-card m-mb-16">
+        <div class="m-card-header"><div class="m-card-title">@group.Name</div></div>
+        <div class="m-card-body m-card-body-flush">
+            <div class="ant-table-wrapper m-table-flush"><div class="ant-table"><div class="ant-table-container"><div class="ant-table-content">
+                <table style="table-layout: auto;">
+                    <thead class="ant-table-thead">
+                        <tr><th class="ant-table-cell">Setting</th><th class="ant-table-cell">Value</th><th class="ant-table-cell">Source</th><th class="ant-table-cell">Change</th></tr>
+                    </thead>
+                    <tbody class="ant-table-tbody">
+                    @foreach (var row in group.Rows)
+                    {
+                        <tr class="ant-table-row">
+                            <td class="ant-table-cell">
+                                <strong>@(row.DisplayName ?? row.Name)</strong>
+                                <div><code>@row.Name</code></div>
+                                @if (!string.IsNullOrEmpty(row.Description))
                                 {
-                                    <option value="@allowed" selected="@(row.EffectiveValue == allowed)">@allowed</option>
+                                    <div class="m-muted">@row.Description</div>
                                 }
-                            </select>
-                        }
-                        else
-                        {
-                            <input name="value" value="@row.EffectiveValue" />
-                        }
-                        <button type="submit">Save</button>
-                    </form>
-                    <form method="post" asp-page-handler="Remove">
-                        <input type="hidden" name="name" value="@row.Name" />
-                        <label>Scope
-                            <select name="scope">
-                                <option value="tenant">Company</option>
-                                <option value="user">Me</option>
-                                <option value="global">Everyone (global)</option>
-                            </select>
-                        </label>
-                        <button type="submit">Remove override</button>
-                    </form>
-                }
-            </td>
-        </tr>
-    }
-    </tbody>
-</table>
+                            </td>
+                            <td class="ant-table-cell"><strong>@row.EffectiveValue</strong></td>
+                            <td class="ant-table-cell">
+                                <span class="ant-tag">@row.Source</span>
+                                @if (row.IsPinned)
+                                {
+                                    <span class="ant-tag ant-tag-warning">pinned</span>
+                                }
+                            </td>
+                            <td class="ant-table-cell" style="min-width: 320px;">
+                                @if (row.IsPinned)
+                                {
+                                    <span class="m-muted">Read-only: the host pins this value.</span>
+                                }
+                                else
+                                {
+                                    <form method="post" asp-page-handler="Save" class="m-flex m-flex-wrap m-gap-8 m-mb-8" style="align-items: flex-end;">
+                                        <input type="hidden" name="name" value="@row.Name" />
+                                        <select class="ant-input" name="scope" style="flex: 0 0 auto; width: auto;" aria-label="Scope">
+                                            <option value="tenant">Company</option>
+                                            <option value="user">Me</option>
+                                            <option value="global">Everyone (global)</option>
+{{ if multi_tenancy }}                                            <option value="branch">Current branch</option>
+{{ end }}                                        </select>
+                                        @if (row.ValueType == SettingValueType.Boolean)
+                                        {
+                                            <select class="ant-input" name="value" style="width: auto;" aria-label="Value">
+                                                <option value="true" selected="@(row.EffectiveValue == "true")">true</option>
+                                                <option value="false" selected="@(row.EffectiveValue == "false")">false</option>
+                                            </select>
+                                        }
+                                        else if (row.AllowedValues.Count > 0)
+                                        {
+                                            <select class="ant-input" name="value" style="width: auto;" aria-label="Value">
+                                                @foreach (var allowed in row.AllowedValues)
+                                                {
+                                                    <option value="@allowed" selected="@(row.EffectiveValue == allowed)">@allowed</option>
+                                                }
+                                            </select>
+                                        }
+                                        else
+                                        {
+                                            <input class="ant-input" name="value" value="@row.EffectiveValue" style="width: 200px;" aria-label="Value" />
+                                        }
+                                        <button class="ant-btn ant-btn-primary ant-btn-sm" type="submit"><span>Save</span></button>
+                                    </form>
+                                    <form method="post" asp-page-handler="Remove" class="m-flex m-gap-8" style="align-items: center;">
+                                        <input type="hidden" name="name" value="@row.Name" />
+                                        <select class="ant-input" name="scope" style="width: auto;" aria-label="Scope">
+                                            <option value="tenant">Company</option>
+                                            <option value="user">Me</option>
+                                            <option value="global">Everyone (global)</option>
+{{ if multi_tenancy }}                                            <option value="branch">Current branch</option>
+{{ end }}                                        </select>
+                                        <button class="ant-btn ant-btn-text ant-btn-sm" type="submit"><span>Remove override</span></button>
+                                    </form>
+                                }
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div></div></div></div>
+        </div>
+    </div>
 }

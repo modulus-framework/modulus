@@ -48,6 +48,8 @@ CALL modulus_upgrade_add_column(@user_table, 'MustChangePin', 'tinyint(1) NOT NU
 CALL modulus_upgrade_add_column(@user_table, 'EmployeeCode', 'varchar(255) NULL');
 CALL modulus_upgrade_add_column(@user_table, 'PinHash', 'longtext NULL');
 CALL modulus_upgrade_add_column(@user_table, 'ExternalId', 'varchar(255) NULL');
+-- MySQL allows no default on a TEXT type: existing rows read as '' (an empty object to the application).
+CALL modulus_upgrade_add_column(@user_table, 'ExtraProperties', 'longtext NOT NULL');
 
 SET @backfill = CONCAT('UPDATE `', @user_table, '` SET Lifecycle = ''Disabled'' ',
                        'WHERE IsActive = 0 AND Lifecycle = ''Active'' AND LifecycleChangedAt IS NULL');

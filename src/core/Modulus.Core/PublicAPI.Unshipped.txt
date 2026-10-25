@@ -850,3 +850,41 @@ Modulus.Core.Null.NullUserDisplayNameDirectory
 Modulus.Core.Null.NullUserDisplayNameDirectory.GetDisplayNamesAsync(System.Collections.Generic.IReadOnlyCollection<System.Guid>! userIds, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyDictionary<System.Guid, string!>!>
 Modulus.Core.Null.NullUserDisplayNameDirectory.NullUserDisplayNameDirectory() -> void
 static Modulus.Core.Null.NullUserDisplayNameDirectory.Instance.get -> Modulus.Core.Null.NullUserDisplayNameDirectory!
+Modulus.Core.Abstractions.CompanyAuthorityGrant
+Modulus.Core.Abstractions.CompanyAuthorityGrant.<Clone>$() -> Modulus.Core.Abstractions.CompanyAuthorityGrant!
+Modulus.Core.Abstractions.CompanyAuthorityGrant.ChildId.get -> System.Guid
+Modulus.Core.Abstractions.CompanyAuthorityGrant.ChildId.init -> void
+Modulus.Core.Abstractions.CompanyAuthorityGrant.CompanyAuthorityGrant(System.Guid Id, System.Guid ParentId, System.Guid ChildId, System.Guid PrincipalId, Modulus.Core.Abstractions.CompanyOperation Operation, System.Guid? GrantedBy, System.DateTimeOffset GrantedAt, System.DateTimeOffset? RevokedAt = null, System.Guid? RevokedBy = null) -> void
+Modulus.Core.Abstractions.CompanyAuthorityGrant.Deconstruct(out System.Guid Id, out System.Guid ParentId, out System.Guid ChildId, out System.Guid PrincipalId, out Modulus.Core.Abstractions.CompanyOperation Operation, out System.Guid? GrantedBy, out System.DateTimeOffset GrantedAt, out System.DateTimeOffset? RevokedAt, out System.Guid? RevokedBy) -> void
+Modulus.Core.Abstractions.CompanyAuthorityGrant.Equals(Modulus.Core.Abstractions.CompanyAuthorityGrant? other) -> bool
+Modulus.Core.Abstractions.CompanyAuthorityGrant.GrantedAt.get -> System.DateTimeOffset
+Modulus.Core.Abstractions.CompanyAuthorityGrant.GrantedAt.init -> void
+Modulus.Core.Abstractions.CompanyAuthorityGrant.GrantedBy.get -> System.Guid?
+Modulus.Core.Abstractions.CompanyAuthorityGrant.GrantedBy.init -> void
+Modulus.Core.Abstractions.CompanyAuthorityGrant.Id.get -> System.Guid
+Modulus.Core.Abstractions.CompanyAuthorityGrant.Id.init -> void
+Modulus.Core.Abstractions.CompanyAuthorityGrant.IsActive.get -> bool
+Modulus.Core.Abstractions.CompanyAuthorityGrant.Operation.get -> Modulus.Core.Abstractions.CompanyOperation
+Modulus.Core.Abstractions.CompanyAuthorityGrant.Operation.init -> void
+Modulus.Core.Abstractions.CompanyAuthorityGrant.ParentId.get -> System.Guid
+Modulus.Core.Abstractions.CompanyAuthorityGrant.ParentId.init -> void
+Modulus.Core.Abstractions.CompanyAuthorityGrant.PrincipalId.get -> System.Guid
+Modulus.Core.Abstractions.CompanyAuthorityGrant.PrincipalId.init -> void
+Modulus.Core.Abstractions.CompanyAuthorityGrant.RevokedAt.get -> System.DateTimeOffset?
+Modulus.Core.Abstractions.CompanyAuthorityGrant.RevokedAt.init -> void
+Modulus.Core.Abstractions.CompanyAuthorityGrant.RevokedBy.get -> System.Guid?
+Modulus.Core.Abstractions.CompanyAuthorityGrant.RevokedBy.init -> void
+Modulus.Core.Abstractions.CompanyOperation
+Modulus.Core.Abstractions.CompanyOperation.ManageGrants = 1 -> Modulus.Core.Abstractions.CompanyOperation
+Modulus.Core.Abstractions.CompanyOperation.ManageMembers = 0 -> Modulus.Core.Abstractions.CompanyOperation
+Modulus.Core.Abstractions.ICompanyAuthorityStore
+Modulus.Core.Abstractions.ICompanyAuthorityStore.FindAsync(System.Guid id, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Core.Abstractions.CompanyAuthorityGrant?>!
+Modulus.Core.Abstractions.ICompanyAuthorityStore.GrantAsync(System.Guid parentId, System.Guid childId, System.Guid principalId, Modulus.Core.Abstractions.CompanyOperation operation, System.Guid? grantedBy, System.DateTimeOffset now, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Core.Abstractions.CompanyAuthorityGrant!>!
+Modulus.Core.Abstractions.ICompanyAuthorityStore.HasActiveGrantAsync(System.Guid parentId, System.Guid childId, System.Guid principalId, Modulus.Core.Abstractions.CompanyOperation operation, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.Core.Abstractions.ICompanyAuthorityStore.ListAsync(System.Guid parentId, System.Guid childId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Core.Abstractions.CompanyAuthorityGrant!>!>!
+Modulus.Core.Abstractions.ICompanyAuthorityStore.RevokeAsync(System.Guid id, System.Guid? revokedBy, System.DateTimeOffset now, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+override Modulus.Core.Abstractions.CompanyAuthorityGrant.Equals(object? obj) -> bool
+override Modulus.Core.Abstractions.CompanyAuthorityGrant.GetHashCode() -> int
+override Modulus.Core.Abstractions.CompanyAuthorityGrant.ToString() -> string!
+static Modulus.Core.Abstractions.CompanyAuthorityGrant.operator !=(Modulus.Core.Abstractions.CompanyAuthorityGrant? left, Modulus.Core.Abstractions.CompanyAuthorityGrant? right) -> bool
+static Modulus.Core.Abstractions.CompanyAuthorityGrant.operator ==(Modulus.Core.Abstractions.CompanyAuthorityGrant? left, Modulus.Core.Abstractions.CompanyAuthorityGrant? right) -> bool

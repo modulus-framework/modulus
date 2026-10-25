@@ -1,0 +1,61 @@
+@page
+@model {{ root_namespace }}.Web.Pages.ProfilePhotoModel
+@{
+    ViewData["Title"] = "Profile photo";
+}
+
+<app-page-header pretitle="Account" title="Profile photo" />
+
+@if (Model.Message is not null)
+{
+    <app-alert type="info" show-icon message="@Model.Message" class="m-mb-16" />
+}
+
+<div class="m-grid m-cols-main">
+    <div class="m-card">
+        <div class="m-card-header"><div class="m-card-title">@(Model.HasPhoto ? "Your photo" : "Add a photo")</div></div>
+        <div class="m-card-body">
+            <div class="photo-current m-mb-16">
+                @if (Model.HasPhoto)
+                {
+                    <img src="@Url.Page("/ProfilePhoto", "Image")" alt="Your current photo" width="160" height="160" style="border-radius: 50%; object-fit: cover;" />
+                }
+                else
+                {
+                    <div class="m-empty" style="padding: 24px 0;">
+                        <p class="m-empty-subtitle">You have no photo yet.</p>
+                    </div>
+                }
+            </div>
+
+            <form method="post" asp-page-handler="Upload" enctype="multipart/form-data" id="photo-form" data-max-bytes="5242880" class="ant-form ant-form-vertical" novalidate>
+                <label for="photo-input">Choose a photo</label>
+                <input id="photo-input" class="ant-input" type="file" name="photo" accept="image/jpeg,image/png,image/webp" />
+                <div class="m-muted m-mt-4 m-mb-12">JPEG, PNG or WebP, up to 5 MB.</div>
+                <div class="m-mb-12"><img id="photo-preview" alt="Preview of the photo you chose" width="160" height="160" style="border-radius: 50%; object-fit: cover;" hidden /></div>
+                <div id="photo-error" class="ant-alert ant-alert-error m-mb-12" role="alert" hidden></div>
+                <progress id="photo-progress" max="100" value="0" hidden style="width: 100%;"></progress>
+                <div class="m-form-actions m-mt-12">
+                    <button class="ant-btn ant-btn-primary" type="submit">@(Model.HasPhoto ? "Replace photo" : "Upload photo")</button>
+                    <a class="ant-btn ant-btn-default" asp-page="/Profile">Back to my profile</a>
+                </div>
+            </form>
+
+            @if (Model.HasPhoto)
+            {
+                <form method="post" asp-page-handler="Remove" class="m-mt-16">
+                    <button class="ant-btn ant-btn-text ant-btn-dangerous" type="submit">Remove photo</button>
+                </form>
+            }
+        </div>
+    </div>
+    <aside>
+        <div class="m-card">
+            <div class="m-card-body">
+                <p class="m-muted">A square crop of the photo is stored. The original file is not kept, and its metadata (location, camera) is removed.</p>
+            </div>
+        </div>
+    </aside>
+</div>
+
+<script src="~/js/profile-photo.js" asp-append-version="true"></script>

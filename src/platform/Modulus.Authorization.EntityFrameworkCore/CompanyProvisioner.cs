@@ -19,6 +19,16 @@ public sealed class CompanyProvisioningOptions
 
     /// <summary>Role name to permission names, applied to each new company.</summary>
     public Dictionary<string, string[]> Grants { get; set; } = new(StringComparer.Ordinal);
+
+    /// <summary>The role that holds <see cref="OwnerPermissions"/> in each company.</summary>
+    public const string OwnerRole = "TenantOwner";
+
+    /// <summary>
+    /// The permissions the <c>TenantOwner</c> role holds in each company (owner decision, 2026-10-24). Unlike <see cref="Grants"/> this list
+    /// may name Critical permissions (the account administration permissions are Critical); it may not name a wildcard or an unregistered
+    /// permission. Empty means no owner baseline.
+    /// </summary>
+    public string[] OwnerPermissions { get; set; } = [];
 }
 
 /// <summary>
@@ -40,7 +50,8 @@ internal sealed class CompanyProvisioner(
     {
         ArgumentNullException.ThrowIfNull(company);
         var baseline = Validate(options.Value.Grants);
-        if (baseline.Count == 0)
+        var owner = ValidateOwner(options.Value.OwnerPermissions);
+        if (baseline.Count == 0 && owner.Length == 0)
             return [];
 
         var granted = new List<string>();
@@ -52,6 +63,12 @@ internal sealed class CompanyProvisioner(
                     continue;
                 await grants.GrantToRoleAsync(role, permissions, ct);
                 granted.Add(role);
+            }
+
+            if (owner.Length > 0 && (await grants.GetGrantsForHolderAsync(GrantHolderType.Role, CompanyProvisioningOptions.OwnerRole, ct)).Count == 0)
+            {
+                await grants.GrantToRoleAsync(CompanyProvisioningOptions.OwnerRole, owner, ct);
+                granted.Add(CompanyProvisioningOptions.OwnerRole);
             }
         }
 
@@ -66,6 +83,27 @@ internal sealed class CompanyProvisioner(
             Details = new Dictionary<string, string?> { ["grantedRoles"] = granted.Count.ToString(System.Globalization.CultureInfo.InvariantCulture) },
         });
         return granted;
+    }
+
+    // The owner list: registered permissions only, Critical allowed (the owner role is the one place a Critical permission is granted to a company).
+    private string[] ValidateOwner(string[] permissions)
+    {
+        if (permissions.Length == 0)
+            return [];
+
+        foreach (var declaration in declarations)
+            declaration.Apply(registry);
+
+        var known = registry.GetAll().ToDictionary(p => p.Permission, StringComparer.Ordinal);
+        foreach (var permission in permissions)
+        {
+            if (permission.Contains('*', StringComparison.Ordinal))
+                throw new InvalidOperationException($"{CompanyProvisioningOptions.SectionName}:OwnerPermissions names the wildcard '{permission}'. Wildcards are not allowed.");
+            if (!known.ContainsKey(permission))
+                throw new InvalidOperationException($"{CompanyProvisioningOptions.SectionName}:OwnerPermissions names '{permission}', which is not a registered permission.");
+        }
+
+        return permissions;
     }
 
     private IReadOnlyDictionary<string, string[]> Validate(Dictionary<string, string[]> configured)

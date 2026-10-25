@@ -31,8 +31,19 @@ internal static class AuthenticationSetup
             options.DefaultChallengeScheme = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme;
         });
 {{ if auth == "openiddict" }}        // Identity administration (create, change, disable and delete accounts) is a Critical permission. Generated apps expose no
-        // such route; one added later must map to it and fail closed. It is registered here so it is discoverable, and no role is granted it.
-        builder.Services.AddPermissions("Identity", permissions => permissions.Add("identity:accounts:manage", "Manage identity accounts: create, change, disable and delete accounts. Not granted by default.", null, PermissionSensitivity.Critical));
+        // such route; one added later must map to it and fail closed. It is registered here so it is discoverable. Only the Tenant Owner role holds it.
+        builder.Services.AddPermissions("Identity", permissions => permissions.Add("identity:accounts:manage", "Manage identity accounts: create, change, disable and delete accounts. Held by the Tenant Owner role.", null, PermissionSensitivity.Critical));
+        // User administration (the Users page). The Tenant Owner role holds the account permissions by default (owner decision, 2026-10-24):
+        // the first administrator is made an owner at startup (IdentitySeeding), and a normal administrator holds neither permission. An
+        // owner adds more holders through the Roles and Users pages, which are audited. The personal-data permission shows names and
+        // addresses on the Users page; without it those fields are masked. Multi-company apps give the owner role these permissions per company
+        // (CompanyProvisioning:OwnerPermissions, applied at startup to the default company); a host-level grant does not reach a company.
+        Modulus.Identity.Extensions.AccountLifecycleExtensions.AddModulusAccountLifecycleAdmin(builder.Services);
+        builder.Services.AddPermissionGrants(grants => grants
+            .GrantToRole("TenantOwner", Modulus.Identity.Extensions.AccountLifecycleExtensions.ManagePermission)
+            .GrantToRole("TenantOwner", Modulus.Identity.Extensions.AccountLifecycleExtensions.PersonalDataPermission)
+            .GrantToRole("TenantOwner", Modulus.Identity.Extensions.AccountLifecycleExtensions.OrganizationPermission)
+            .GrantToRole("TenantOwner", Modulus.Identity.Extensions.AccountLifecycleExtensions.OrganizationManagePermission));
 {{ end }}{{ if example_permission }}
         // The example API needs a permission, and the Admin role (seeded at startup) holds it: a signed-in caller without it gets 403.
         // AddModulusAuthorization turns a "module:thing:action" name into a permission check, resolved from the grants of the caller's roles.
@@ -65,11 +76,6 @@ internal static class AuthenticationSetup
         builder.Services.AddGrantStorePermissionChecker();
         builder.Services.AddPermissions("{{ example_module_lower }}", permissions => permissions.Add("{{ example_permission }}", "{{ example_permission_description }}"));
         builder.Services.AddPermissionGrants(grants => grants.GrantToRole("{{ admin_role }}", "{{ example_permission }}"));
-        // User administration (the Users page): the permission is registered and granted to no role by default (owner decision, 2026-10-23).
-        // A deployment names the first administrators here; the grants are applied once per database, on the first start (later edits
-        // go through the authorization API). Example: Identity:Seed:RolePermissions:Admin = ["identity:accounts:manage", "identity:accounts:personal-data"]
-        // (the second one shows names and addresses on the Users page; without it those fields are masked).
-        Modulus.Identity.Extensions.AccountLifecycleExtensions.AddModulusAccountLifecycleAdmin(builder.Services);
 {{ if use_security_guard }}        // The security audit viewer (search, chain verification, CSV export of the caller's company). Not granted by default.
         Modulus.AuditLogging.Security.SecurityAuditViewerEndpoints.AddModulusSecurityAuditViewer(builder.Services);
         // The business audit viewer (entries of the business audit log, by entity, actor and time). Not granted by default either.

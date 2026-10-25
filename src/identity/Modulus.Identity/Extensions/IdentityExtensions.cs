@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Modulus.BackgroundJobs;
 using Modulus.Core.Abstractions;
@@ -13,6 +14,7 @@ using Modulus.Identity;
 using Modulus.Identity.Abstractions;
 using Modulus.Identity.EntityFrameworkCore;
 using Modulus.Identity.Guards;
+using Modulus.Identity.Media;
 using OpenIddict.Abstractions;
 
 public static class IdentityExtensions
@@ -38,13 +40,29 @@ public static class IdentityExtensions
             .Get<ModulusIdentityOptions>() ?? new ModulusIdentityOptions();
 
         services.AddHttpContextAccessor();
+        // Profile photos (premodule 3): the default processor validates and re-encodes the upload; an app may register its own before this.
+        services.TryAddSingleton<IProfilePhotoProcessor, ProfilePhotoProcessor>();
+        // Work-e-mail confirmation (premodule 3): the lifetime and cooldown of the link, the clock it expires on, and the verifier per user type.
+        services.Configure<WorkEmailVerificationOptions>(configuration.GetSection(WorkEmailVerificationOptions.SectionName));
+        services.TryAddSingleton(TimeProvider.System);
+        services.TryAdd(ServiceDescriptor.Scoped(typeof(WorkEmailVerifier<>), typeof(WorkEmailVerifier<>)));
         UseClaimsPrincipalCurrentUser(services);
 
         // Token delivery for the account endpoints (password reset / email
         // confirmation). No-op by default: without a real sender the emails
         // are discarded, keeping the flows unusable (fail-closed) rather than
         // returning tokens in API responses.
-        services.TryAddScoped<IIdentityEmailSender, NoopIdentityEmailSender>();
+        // Mail: SMTP when Identity:Email:SmtpHost is set (links built from Identity:Email:BaseUrl), otherwise the no-op sender.
+        services.Configure<IdentityEmailOptions>(configuration.GetSection(IdentityEmailOptions.SectionName));
+        if (configuration.GetValue<string>($"{IdentityEmailOptions.SectionName}:SmtpHost") is not null)
+        {
+            services.TryAddSingleton<Modulus.Identity.Email.IIdentityEmailTransport, Modulus.Identity.Email.SmtpIdentityEmailTransport>();
+            services.TryAddScoped<IIdentityEmailSender>(sp => ActivatorUtilities.CreateInstance<Modulus.Identity.Email.SmtpIdentityEmailSender>(sp));
+        }
+        else
+        {
+            services.TryAddScoped<IIdentityEmailSender, NoopIdentityEmailSender>();
+        }
 
         // Reset / confirmation mails are produced off the request (see IdentityEmailQueue).
         services.TryAddSingleton<IdentityEmailQueue<TUser>>();

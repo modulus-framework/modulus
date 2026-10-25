@@ -5,6 +5,8 @@ using System.Globalization;
 using System.Reflection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
+using Microsoft.Extensions.Options;
+using Modulus.AI.Connector;
 using Modulus.AI.Connector.Data;
 using Modulus.Core.Abstractions.Ai;
 using Modulus.Core.Abstractions.Entities;
@@ -63,14 +65,19 @@ public sealed class AiChangeModelContributor : IModuleModelContributor
 /// is journaled as a delete. The key (one column, or several: a composite key is journaled as an <see cref="AiCompositeKey"/> id)
 /// must be known before saving (client-generated, such as <see cref="Guid"/> keys): a store-generated key has no value yet, and the
 /// save fails rather than journal a wrong id.
+/// <para>
+/// Nothing is journaled while the connector is off (<see cref="ModulusAiConnectorOptions.Enabled"/>): the application's saves then
+/// touch no connector data. The journal starts with the connector, so changes made while it was off are not in it, and the platform
+/// must run a full re-extract after activation.
+/// </para>
 /// </summary>
-internal sealed class AiChangeSaveContributor(TimeProvider time) : IModuleSaveContributor
+internal sealed class AiChangeSaveContributor(TimeProvider time, IOptions<ModulusAiConnectorOptions> options) : IModuleSaveContributor
 {
     private static readonly ConcurrentDictionary<Type, string?> ResourceTypes = new();
 
     public void OnSaving(DbContext context, Guid? tenantId)
     {
-        if (context.Model.FindEntityType(typeof(AiChangeRecord)) is null)
+        if (!options.Value.Enabled || context.Model.FindEntityType(typeof(AiChangeRecord)) is null)
             return;
 
         var now = time.GetUtcNow().UtcDateTime;

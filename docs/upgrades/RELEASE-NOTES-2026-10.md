@@ -133,8 +133,14 @@ columns and primary key were read back from each catalog. Its column types were 
   and needs the relying-party ID and origins for the deployment.
 - **Privileged permissions in production.** Production requires a passkey sign-in (phishing-resistant) for the framework's privileged
   permissions. No generated app maps those admin surfaces yet, so the rule takes effect only where an app wires them.
-- **Identity administration.** `identity:accounts:manage` is registered as a Critical permission in every generated OpenIddict app and
-  granted to no role. Generated apps expose no identity-account administration route. A route added later must map to it and fail closed.
+- **Identity administration.** `identity:accounts:manage` is registered as a Critical permission in every generated OpenIddict app. It is held by the
+  `TenantOwner` role only (owner decision, 2026-10-24): the first administrator of a new deployment is made an owner, and a normal
+  administrator holds neither account permission. Only an owner grants or revokes the role, and the last active owner cannot be demoted.
+  Existing deployments: add `CompanyProvisioning:OwnerPermissions` (`["identity:accounts:manage", "identity:accounts:personal-data"]`)
+  to `appsettings.json`, and name an existing administrator with `Identity:Seed:TenantOwnerEmail` (or grant the role on the Users page as an
+  owner) once, since seeding only creates the first administrator in an empty database.
+  The last active owner also cannot be locked, disabled or archived. A person who belongs to exactly one company acts in it without
+  choosing (a multi-company web app); a person in several still picks on the Company page.
 - **Production needs certificates.** A production start needs the operator's signing and encryption certificates for the token server.
   Generated apps read them from `Identity:Certificates:Signing` and `Identity:Certificates:Encryption` (`Path` to a PFX file, `Password`
   from User Secrets, the environment or a vault, never committed). A production start stops with the missing setting's name if a path is
@@ -152,6 +158,16 @@ columns and primary key were read back from each catalog. Its column types were 
   change a child's own grants, and a child's grants never reach its parent. Every company on the path up must be active.
 - **Read-only inheritance.** A child's administrators see the grants they inherit (`GET .../permissions` returns `own` and `inherited`), but
   change only their own grants.
+- **Parent administration (decision 6).** A parent's administrator manages a child's members and grants only with an explicit authority:
+  an active row in `ModulusCompanyAuthorityGrants` for that parent, child, account and operation (`ManageMembers` or `ManageGrants`; a
+  grant of one never covers the other). The caller must also hold `tenants:children:manage` in the parent (Critical, granted to no role by
+  default). Routes: `POST|DELETE .../tenants/{parentId}/children/{childId}/members[/{userId}]` and `POST .../baseline` (needs `ManageGrants`).
+  The host administrator (`tenants:manage`) grants and revokes authorities with `POST|GET .../tenants/{id}/children/{childId}/authority` and
+  `DELETE .../authority/{grantId}`. Nobody grants authority to themselves. A refusal is `403 CHILD_AUTHORITY_DENIED` with no detail and is
+  audited (`company-authority.denied`, with the rule that refused). Grants and revocations are audited too. The check reads the authority
+  row on every request. The parent permission goes through the normal grant path, which is cached only when an operator enables `Authorization:GrantCache`.
+- **Upgrade (decision 6).** Each of the three authorization scripts creates `ModulusCompanyAuthorityGrants`. Run the authorization script for
+  your engine, then grant `tenants:children:manage` only to the roles that should hold it.
 - **Upgrade.** Run the tenancy script for your engine. Existing companies get no parent, so nothing changes until a parent is set.
 
 ## Known limits and decisions still open
@@ -166,3 +182,76 @@ columns and primary key were read back from each catalog. Its column types were 
   own catalog rows, which is expected.
 - **Not in this release:** re-inserting archived audit entries into a live chain (it needs the technical spike the identity plan requires),
   and the owner decisions D7–D10 in the identity plan (pilot module, audit retention durations, NFR targets, MFA assurance matrix).
+
+## Profile details (premodule 3)
+
+- **New self-service routes:** `GET account/profile/details` and `PATCH account/profile/details` (first and last name, photo address, work
+  email, job title, department). A field left out keeps its value; an empty string clears it. `PUT account/profile` is unchanged.
+- **Administrator route:** `PATCH identity/users/{id}/organization` sets the employee code (upper-case, unique per company) and the primary branch.
+- **Upgrade (existing deployments):** the identity user table gains `WorkEmail`, `JobTitle`, `Department` and `PrimaryBranchId`. Add a migration:
+  `modulus migrate add <Name> --module Identity`, then `modulus migrate update`.
+- **Name clash:** an application whose `ModulusUser` subclass declares `Department`, `JobTitle`, `WorkEmail` or `PrimaryBranchId` fails to
+  compile (CS0108). Remove the property from the subclass; the framework property has the same name and type.
+- **Work email is confirmed by a link (2026-10-24, breaking for one behaviour).** A work email set through `PATCH account/profile/details`
+  (or `PATCH identity/users/{id}/work-email` by an administrator) is *pending* until its owner follows the link sent to it. The response carries
+  `pendingWorkEmail`; `workEmail` stays empty until confirmation. Confirm with `POST account/profile/work-email/confirm` (signed in as the account,
+  token from the link). **Upgrade path:** an application that displayed `workEmail` straight after a save must show `pendingWorkEmail` as well, and
+  must route the link to its own confirm page. **Mail is configured, not coded:** set `Identity:Email:BaseUrl` (the public https address of the web
+  application), `Identity:Email:FromAddress` and `Identity:Email:SmtpHost` (with the SMTP password in user secrets or the environment). The mail then
+  links to `/ConfirmWorkEmail?token=`. Without `SmtpHost` no mail is sent. Lifetime 30 minutes, one request per minute (`Identity:WorkEmail`).
+- **Profile photo (new, 2026-10-24).** `PUT account/profile/photo` (raw image body; JPEG, PNG or WebP by content, at most 5 MB, sides at most 4096 px,
+  no animation), `GET account/profile/photo` (the caller's own, as a JPEG), `DELETE account/profile/photo`. The stored photo is a 512 px square
+  with no metadata. It needs a file storage (`IFileStorage`): without one the upload answers 503. Deco
+
+### Release gate for premodule 3 (conditions of 2026-10-24)
+
+- **Duplicate employee codes block the upgrade, by design.** Before any change, each profile upgrade script checks for two accounts in one
+  company with the same employee code. If it finds one, it stops with an error and changes nothing. Find the duplicates, resolve them, then rerun:
+  - PostgreSQL and SQL Server: `SELECT TenantId, EmployeeCode, COUNT(*) FROM AspNetUsers WHERE EmployeeCode IS NOT NULL GROUP BY TenantId, EmployeeCode HAVING COUNT(*) > 1;`
+  - MySQL: the same query, with the table name as your schema uses it.
+  Resolving means changing one of the codes in the application (an administrator sets it through `PATCH identity/users/{id}/organization`),
+  not editing the database by hand. The scripts never delete or rewrite employee data.
+- **Index order.** Each script creates the unique index before it drops the earlier non-unique one, so a failure leaves the old index in place.
+  Verified on PostgreSQL 16, SQL Server 2022 and MySQL 8.4, on clean data (two runs; data preserved; duplicate in one company refused; NULL and the
+  same code in another company accepted) and on duplicate data (the script exits non-zero, adds no column, keeps the old index, creates no unique index).
+- **Work-email confirmation limit.** After five failed confirmation attempts on one account, the confirm endpoint answers `429`
+  (`WORK_EMAIL_TOO_MANY_ATTEMPTS`), even for the right link, until a new request is made. The counter is `ConfirmationFailures` (a non-null
+  integer, default 0). Attempts are counted in the database, so the limit holds across replicas.
+- **Confirmation answers (2026-10-24).** `POST account/profile/work-email/confirm` answers with a stable code:
+  `200` confirmed; `410 WORK_EMAIL_LINK_EXPIRED` (time passed); `410 WORK_EMAIL_LINK_USED` (already confirmed); `400 WORK_EMAIL_LINK_SUPERSEDED`
+  (a newer link or another address, or a cleared address, replaced it); `400 WORK_EMAIL_LINK_INVALID` (not issued for this account and purpose, or damaged);
+  `429 WORK_EMAIL_TOO_MANY_ATTEMPTS`. Only guessed or forged links count toward the limit; an expired or used link does not.
+  The expiry is inside the signed payload and is checked against the server clock. A signed-in session alone confirms nothing.
+- **Web pages (2026-10-24).** The web template has a photo page (`/ProfilePhoto`: upload, replace, remove, preview, progress; type and size checked
+  first for a clear message, then by the API) and a confirmation page (`/ConfirmWorkEmail?token=`). The confirmation page consumes the link on POST
+  only, so a mail scanner that opens the link does not use it. The configured mail (`Identity:Email`) links to `/ConfirmWorkEmail`.
+- **Avatar policy (2026-10-24).** `AvatarUrlPolicy` (Modulus.Identity): the controlled photo first; a legacy `AvatarUrl` only when it is an absolute
+  https address with no credentials, no whitespace or control characters, and at most 2048 characters. Anything else falls back to the default
+  avatar. External hosts are allowed under this rule; an application that must restrict them checks `IsAllowedExternal` against its own list. The
+  browser loads the picture with `referrerpolicy="no-referrer"`; the server never fetches it.
+- **Verified address is kept.** A new work-email request does not change the verified address. It changes only the pending address, until the link is
+  followed.
+- **Photo precedence.** The details response carries `photoUrl` (`/api/account/profile/photo`) when a controlled photo exists. Clients should use
+  `photoUrl` first and fall back to `avatarUrl` only when no photo exists. The server never fetches `avatarUrl`. `avatarUrl` is still an https address
+  that the client must render under an approved URL policy; that client policy is not in this repository yet.
+- **Image decoder (2026-10-24, replaces SkiaSharp).** Profile photos are decoded with SixLabors.ImageSharp 2.1.13 (Apache-2.0, pure managed
+  code). A colour profile (ICC) embedded in the upload is refused (`PHOTO_COLOR_PROFILE_UNSUPPORTED`, 422): save a copy without one and upload that.
+  This affects photos that a camera or editor stored with a profile. If the decoder cannot start, the upload is refused with 503
+  (`PHOTO_PROCESSING_UNAVAILABLE`); validation is never skipped.
+- **Advisory risk acceptance (Open).** Five advisories for ImageSharp 2.1.13 have fixes only in the Split-Licensed 4.x line. They are suppressed
+  in `Directory.Build.props` with the reasons in `THIRD-PARTY-NOTICES.md`. The owner must accept this risk before the photo feature is released.
+- **Third-party notices.** See `THIRD-PARTY-NOTICES.md`.
+
+## Generated web apps: what changes for an app created earlier (2026-10-25)
+
+- **Advisory suppressions.** Apps created before this release warn with NU1902/NU1903 for ImageSharp 2.1.13. Copy the `NuGetAuditSuppress`
+  block with its comment from a freshly generated app's `Directory.Build.props` (the reasons are in `THIRD-PARTY-NOTICES.md`). The build is
+  then 0 warnings again.
+- **Identity column.** `ModulusUser.ExtraProperties` needs the `ExtraProperties` column: run the identity upgrade script for your provider
+  (`docs/upgrades/identity-platform-2026-10.identity.*.sql`); it is idempotent.
+- **Password recovery.** Apps with sign-in gain `Pages/Account/ForgotPassword`, `Pages/ResetPassword` (route `/ResetPassword`) and
+  `Services/ApiClients/AccountApiClient.cs`. Regenerate the web host or copy those files; the API needs no change.
+- **Error page and favicon.** New `Pages/Error.cshtml` (+ model) and `wwwroot/favicon.svg`; `PipelineSetup` re-executes `/Error/{code}`.
+- **Published UI packages.** The shipped `Synvro.Modulus.Ui.*` 1.6.1 serves its assets from a path that returns 404, so pages render unstyled.
+  Generated apps need a UI release that includes the fix in `modulus-ui` (asset base path) and the list empty states. Until it is published,
+  generate with a local UI pack (`MODULUS_UI_VERSION` and `MODULUS_LOCAL_FEED`).

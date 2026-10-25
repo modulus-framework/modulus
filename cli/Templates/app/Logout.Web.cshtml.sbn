@@ -5,11 +5,11 @@
 }
 
 <div class="m-auth-card">
-    <div class="m-auth-card-body text-center">
-        <p>Signing out…</p>
+    <div class="m-auth-card-body" style="text-align: center;">
+        <h1 class="m-auth-title">You have signed out</h1>
+        <p class="m-auth-hint">Your session has ended on this device.</p>
         <div class="m-auth-actions">
-            <a class="ant-btn ant-btn-primary" href="/Account/Login">Sign in again</a>
+            <a class="ant-btn ant-btn-primary ant-btn-block" href="/Account/Login">Sign in again</a>
         </div>
     </div>
 </div>
-

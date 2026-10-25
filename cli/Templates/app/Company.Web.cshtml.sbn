@@ -4,45 +4,58 @@
     ViewData["Title"] = "Companies";
 }
 
-<h1>Companies</h1>
+<app-page-header pretitle="Account" title="Companies" />
 
 @if (Model.Message is not null)
 {
-    <p role="status">@Model.Message</p>
+    <app-alert type="info" show-icon message="@Model.Message" class="m-mb-16" />
 }
 
-@if (Model.Companies.Count == 0)
-{
-    <p>You are not a member of any company.</p>
-}
-else
-{
-    <table>
-        <thead>
-            <tr><th>Company</th><th>Status</th><th>Acting in</th><th>Choose</th></tr>
-        </thead>
-        <tbody>
-        @foreach (var company in Model.Companies)
+<div class="m-card m-table-card m-mb-16">
+    <div class="m-card-body m-card-body-flush">
+        @if (Model.Companies.Count == 0)
         {
-            <tr>
-                <td>@(company.DisplayName ?? company.TenantSlug) <code>@company.TenantSlug</code></td>
-                <td>@company.Status@(company.Status == "Suspended" ? " (read-only)" : "")</td>
-                <td>@(company.Current ? "Yes" : "")</td>
-                <td>
-                    <form method="post" asp-page-handler="Switch">
-                        <input type="hidden" name="companyId" value="@company.TenantId" />
-                        <button type="submit" disabled="@company.Current">Use this company</button>
-                    </form>
-                </td>
-            </tr>
+            <div class="m-empty">
+                <h3 class="m-empty-title">You are not a member of any company</h3>
+                <p class="m-empty-subtitle">Ask an administrator to add you to a company.</p>
+            </div>
         }
-        </tbody>
-    </table>
-}
+        else
+        {
+            <div class="ant-table-wrapper m-table-flush"><div class="ant-table"><div class="ant-table-container"><div class="ant-table-content">
+                <table style="table-layout: auto;">
+                    <thead class="ant-table-thead">
+                        <tr><th class="ant-table-cell">Company</th><th class="ant-table-cell">Status</th><th class="ant-table-cell">Acting in</th><th class="ant-table-cell"></th></tr>
+                    </thead>
+                    <tbody class="ant-table-tbody">
+                    @foreach (var company in Model.Companies)
+                    {
+                        <tr class="ant-table-row">
+                            <td class="ant-table-cell"><strong>@(company.DisplayName ?? company.TenantSlug)</strong> <code>@company.TenantSlug</code></td>
+                            <td class="ant-table-cell">
+                                <span class="ant-tag @(company.Status == "Suspended" ? "ant-tag-warning" : "")">@company.Status</span>
+                                @if (company.Status == "Suspended") { <span class="m-muted">read-only</span> }
+                            </td>
+                            <td class="ant-table-cell">@(company.Current ? "Yes" : "")</td>
+                            <td class="ant-table-cell">
+                                <form method="post" asp-page-handler="Switch">
+                                    <input type="hidden" name="companyId" value="@company.TenantId" />
+                                    <button class="ant-btn ant-btn-primary ant-btn-sm" type="submit" disabled="@company.Current"><span>Use this company</span></button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div></div></div></div>
+        }
+    </div>
+</div>
 
-<form method="post" asp-page-handler="Clear">
-    <button type="submit">Stop choosing a company</button>
-</form>
-
-<p><a asp-page="/Branch">Choose a branch</a></p>
-<p><a asp-page="/Profile">My profile</a></p>
+<div class="m-flex m-gap-8 m-flex-wrap">
+    <form method="post" asp-page-handler="Clear">
+        <button class="ant-btn ant-btn-default" type="submit">Stop choosing a company</button>
+    </form>
+    <a class="ant-btn ant-btn-default" asp-page="/Branch">Choose a branch</a>
+    <a class="ant-btn ant-btn-default" asp-page="/Profile">My profile</a>
+</div>

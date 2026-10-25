@@ -4,117 +4,195 @@
     ViewData["Title"] = "Companies";
 }
 
-<h1>Companies</h1>
+<app-page-header pretitle="Administration" title="Companies" />
 
 @if (Model.Message is not null)
 {
-    <p role="status">@Model.Message</p>
+    <app-alert type="info" show-icon message="@Model.Message" class="m-mb-16" />
 }
 
-<form method="get">
-    <label>Search <input name="Search" value="@Model.Search" /></label>
-    <button type="submit">Search</button>
-</form>
-
-<p>@Model.Total compan@(Model.Total == 1 ? "y" : "ies") found.</p>
-
-<table>
-    <thead>
-        <tr>
-            <th>Company</th>
-            <th>Status</th>
-            <th>Seat limit</th>
-            <th>Active members</th>
-            <th>Change status</th>
-            <th>Change seat limit</th>
-            <th>Members</th>
-        </tr>
-    </thead>
-    <tbody>
-    @foreach (var company in Model.Rows)
-    {
-        <tr>
-            <td>@(company.DisplayName ?? company.Slug) <code>@company.Slug</code></td>
-            <td>@company.Status</td>
-            <td>@(company.MaxUsers?.ToString() ?? "none")</td>
-            <td>@company.ActiveMembers</td>
-            <td>
-                <form method="post" asp-page-handler="Status">
-                    <input type="hidden" name="id" value="@company.Id" />
-                    <input type="hidden" name="Search" value="@Model.Search" />
-                    <select name="status">
-                        @foreach (var option in new[] { "Trial", "Active", "Suspended", "Closed" })
-                        {
-                            <option value="@option" selected="@(option == company.Status)">@option</option>
-                        }
-                    </select>
-                    <button type="submit">Set</button>
+<div class="m-grid m-cols-main">
+    <div>
+        <div class="m-card m-mb-16">
+            <div class="m-card-body">
+                <form method="get" class="m-flex m-flex-wrap m-gap-12" style="align-items: flex-end;">
+                    <div style="flex: 1 1 260px;">
+                        <label class="m-muted" for="company-search">Search companies</label>
+                        <input id="company-search" class="ant-input" name="Search" value="@Model.Search" placeholder="Name or short name" />
+                    </div>
+                    <div class="m-flex m-gap-8">
+                        <button class="ant-btn ant-btn-primary" type="submit">Search</button>
+                    </div>
                 </form>
-            </td>
-            <td>
-                <form method="post" asp-page-handler="Seats">
-                    <input type="hidden" name="id" value="@company.Id" />
-                    <input type="hidden" name="Search" value="@Model.Search" />
-                    <input name="maxUsers" value="@company.MaxUsers" size="6" placeholder="no limit" />
-                    <button type="submit">Save</button>
-                </form>
-            </td>
-            <td><a asp-route-Company="@company.Id" asp-route-Search="@Model.Search">Members</a></td>
-        </tr>
-    }
-    </tbody>
-</table>
+                <p class="m-muted m-mt-12">@Model.Total compan@(Model.Total == 1 ? "y" : "ies") found.</p>
+            </div>
+        </div>
 
-@if (Model.Company is { } selectedId)
-{
-    <h2>Members of @(Model.Selected?.DisplayName ?? Model.Selected?.Slug ?? selectedId.ToString("D"))</h2>
-    <table>
-        <thead>
-            <tr><th>Account</th><th>Active</th><th>Added (UTC)</th><th>Remove</th></tr>
-        </thead>
-        <tbody>
-        @foreach (var member in Model.Members)
+        <div class="m-card m-table-card m-mb-16">
+            <div class="m-card-body m-card-body-flush">
+                @if (Model.Rows.Count == 0 && Model.Message is not null)
+                {
+                    <div class="m-empty">
+                        <h3 class="m-empty-title">The companies could not be loaded</h3>
+                        <p class="m-empty-subtitle">The message above says why.</p>
+                    </div>
+                }
+                else if (Model.Rows.Count == 0)
+                {
+                    <div class="m-empty">
+                        <h3 class="m-empty-title">No companies match this search</h3>
+                        <p class="m-empty-subtitle">Create a company with the form beside this list.</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="ant-table-wrapper m-table-flush"><div class="ant-table"><div class="ant-table-container"><div class="ant-table-content">
+                        <table style="table-layout: auto;">
+                            <thead class="ant-table-thead">
+                                <tr>
+                                    <th class="ant-table-cell">Company</th>
+                                    <th class="ant-table-cell">Status</th>
+                                    <th class="ant-table-cell">Seats</th>
+                                    <th class="ant-table-cell">Change status</th>
+                                    <th class="ant-table-cell">Seat limit</th>
+                                    <th class="ant-table-cell"></th>
+                                </tr>
+                            </thead>
+                            <tbody class="ant-table-tbody">
+                            @foreach (var company in Model.Rows)
+                            {
+                                <tr class="ant-table-row">
+                                    <td class="ant-table-cell">
+                                        <strong>@(company.DisplayName ?? company.Slug)</strong>
+                                        <div><code>@company.Slug</code></div>
+                                    </td>
+                                    <td class="ant-table-cell"><span class="ant-tag">@company.Status</span></td>
+                                    <td class="ant-table-cell">@company.ActiveMembers / @(company.MaxUsers?.ToString() ?? "no limit")</td>
+                                    <td class="ant-table-cell">
+                                        <form method="post" asp-page-handler="Status" class="m-flex m-gap-8" style="align-items: center;">
+                                            <input type="hidden" name="id" value="@company.Id" />
+                                            <input type="hidden" name="Search" value="@Model.Search" />
+                                            <select class="ant-input" name="status" style="width: auto;" aria-label="Status">
+                                                @foreach (var option in new[] { "Trial", "Active", "Suspended", "Closed" })
+                                                {
+                                                    <option value="@option" selected="@(option == company.Status)">@option</option>
+                                                }
+                                            </select>
+                                            <button class="ant-btn ant-btn-default ant-btn-sm" type="submit"><span>Set</span></button>
+                                        </form>
+                                    </td>
+                                    <td class="ant-table-cell">
+                                        <form method="post" asp-page-handler="Seats" class="m-flex m-gap-8" style="align-items: center;">
+                                            <input type="hidden" name="id" value="@company.Id" />
+                                            <input type="hidden" name="Search" value="@Model.Search" />
+                                            <input class="ant-input" name="maxUsers" value="@company.MaxUsers" placeholder="no limit" style="width: 110px;" aria-label="Seat limit" />
+                                            <button class="ant-btn ant-btn-default ant-btn-sm" type="submit"><span>Save</span></button>
+                                        </form>
+                                    </td>
+                                    <td class="ant-table-cell"><a class="ant-btn ant-btn-text ant-btn-sm" asp-route-Company="@company.Id" asp-route-Search="@Model.Search"><span>Members</span></a></td>
+                                </tr>
+                            }
+                            </tbody>
+                        </table>
+                    </div></div></div></div>
+                }
+            </div>
+        </div>
+
+        @if (Model.Company is { } selectedId)
         {
-            <tr>
-                <td><code>@member.UserId</code></td>
-                <td>@(member.IsActive ? "Yes" : "No (revoked)")</td>
-                <td>@member.AddedAtUtc.ToString("yyyy-MM-dd HH:mm")</td>
-                <td>
-                    @if (member.IsActive)
+            <div class="m-card m-mb-16">
+                <div class="m-card-header"><div class="m-card-title">Members of @(Model.Selected?.DisplayName ?? Model.Selected?.Slug ?? selectedId.ToString("D"))</div></div>
+                <div class="m-card-body m-card-body-flush">
+                    @if (Model.Members.Count == 0)
                     {
-                        <form method="post" asp-page-handler="RemoveMember">
-                            <input type="hidden" name="company" value="@selectedId" />
-                            <input type="hidden" name="userId" value="@member.UserId" />
-                            <button type="submit">Remove</button>
-                        </form>
+                        <div class="m-empty"><p class="m-empty-subtitle">No members yet. Add an account below.</p></div>
                     }
-                </td>
-            </tr>
+                    else
+                    {
+                        <div class="ant-table-wrapper m-table-flush"><div class="ant-table"><div class="ant-table-container"><div class="ant-table-content">
+                            <table style="table-layout: auto;">
+                                <thead class="ant-table-thead"><tr><th class="ant-table-cell">Account</th><th class="ant-table-cell">Active</th><th class="ant-table-cell">Added (UTC)</th><th class="ant-table-cell"></th></tr></thead>
+                                <tbody class="ant-table-tbody">
+                                @foreach (var member in Model.Members)
+                                {
+                                    <tr class="ant-table-row">
+                                        <td class="ant-table-cell"><code>@member.UserId</code></td>
+                                        <td class="ant-table-cell"><span class="ant-tag @(member.IsActive ? "ant-tag-success" : "")">@(member.IsActive ? "Yes" : "No (revoked)")</span></td>
+                                        <td class="ant-table-cell">@member.AddedAtUtc.ToString("yyyy-MM-dd HH:mm")</td>
+                                        <td class="ant-table-cell">
+                                            @if (member.IsActive)
+                                            {
+                                                <form method="post" asp-page-handler="RemoveMember">
+                                                    <input type="hidden" name="company" value="@selectedId" />
+                                                    <input type="hidden" name="userId" value="@member.UserId" />
+                                                    <button class="ant-btn ant-btn-text ant-btn-sm ant-btn-dangerous" type="submit"><span>Remove</span></button>
+                                                </form>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                                </tbody>
+                            </table>
+                        </div></div></div></div>
+                    }
+                </div>
+            </div>
+
+            <div class="m-card m-mb-16">
+                <div class="m-card-header"><div class="m-card-title">Add a member</div></div>
+                <div class="m-card-body">
+                    <form method="post" asp-page-handler="AddMember" class="m-flex m-flex-wrap m-gap-12" style="align-items: flex-end;">
+                        <input type="hidden" name="company" value="@selectedId" />
+                        <div style="flex: 1 1 320px;">
+                            <label class="m-muted" for="member-user">Account id</label>
+                            <input id="member-user" class="ant-input" name="userId" required placeholder="The account's id" />
+                        </div>
+                        <button class="ant-btn ant-btn-primary" type="submit">Add member</button>
+                    </form>
+                    <p class="m-muted m-mt-12">Adding a member is refused when the company is at its seat limit.</p>
+                </div>
+            </div>
         }
-        </tbody>
-    </table>
-    <form method="post" asp-page-handler="AddMember">
-        <input type="hidden" name="company" value="@selectedId" />
-        <label>Account id <input name="userId" required /></label>
-        <button type="submit">Add member</button>
-    </form>
+    </div>
 
-    <h3>Parent company</h3>
-    <p>Current parent: @(Model.Selected?.ParentId?.ToString("D") ?? "none (top-level)")</p>
-    <form method="post" asp-page-handler="Parent">
-        <input type="hidden" name="id" value="@selectedId" />
-        <label>Parent company id (blank for top-level) <input name="parentId" /></label>
-        <button type="submit">Save parent</button>
-    </form>
-    <p>Adding a member is refused when the company is at its seat limit.</p>
-}
+    <aside>
+        <div class="m-card m-mb-16">
+            <div class="m-card-header"><div class="m-card-title">New company</div></div>
+            <div class="m-card-body">
+                <form method="post" asp-page-handler="Create" class="ant-form ant-form-vertical" novalidate>
+                    <label for="new-slug">Short name</label>
+                    <input id="new-slug" class="ant-input m-mb-12" name="slug" required pattern="[a-z0-9][a-z0-9\-]*" placeholder="acme-north" />
+                    <label for="new-display">Display name</label>
+                    <input id="new-display" class="ant-input m-mb-12" name="displayName" placeholder="Acme North Ltd" />
+                    <label for="new-group">Group (optional, id)</label>
+                    <input id="new-group" class="ant-input m-mb-12" name="groupId" />
+                    <label for="new-admin">Administrator (optional, account id)</label>
+                    <input id="new-admin" class="ant-input" name="administratorUserId" />
+                    <div class="m-form-actions m-mt-12">
+                        <button class="ant-btn ant-btn-primary" type="submit">Create company</button>
+                    </div>
+                </form>
+                <p class="m-muted m-mt-12">A new company gets the configured baseline of grants. A company on trial gets 30 days from today.</p>
+            </div>
+        </div>
 
-<h2>New company</h2>
-<form method="post" asp-page-handler="Create">
-    <label>Short name <input name="slug" required pattern="[a-z0-9][a-z0-9-]*" /></label>
-    <label>Display name <input name="displayName" /></label>
-    <label>Group (optional, id) <input name="groupId" /></label>
-    <label>Administrator (optional, account id) <input name="administratorUserId" /></label>
-    <button type="submit">Create company</button>
-</form>
-<p>A new company gets the configured baseline of grants. Putting a company on trial gives it 30 days from now.</p>
+        @if (Model.Company is { } parentOf)
+        {
+            <div class="m-card m-mb-16">
+                <div class="m-card-header"><div class="m-card-title">Parent company</div></div>
+                <div class="m-card-body">
+                    <p class="m-muted m-mb-12">Current parent: @(Model.Selected?.ParentId?.ToString("D") ?? "none (top-level)")</p>
+                    <form method="post" asp-page-handler="Parent" class="ant-form ant-form-vertical" novalidate>
+                        <input type="hidden" name="id" value="@parentOf" />
+                        <label for="parent-id">Parent company id (blank for top-level)</label>
+                        <input id="parent-id" class="ant-input" name="parentId" />
+                        <div class="m-form-actions m-mt-12">
+                            <button class="ant-btn ant-btn-default" type="submit">Save parent</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        }
+    </aside>
+</div>

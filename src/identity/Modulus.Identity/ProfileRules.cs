@@ -45,6 +45,62 @@ internal static partial class ProfileRules
         return errors.Count == 0;
     }
 
+    internal const int MaxNameLength = 100;
+    internal const int MaxJobLength = 100;
+    internal const int MaxAvatarUrlLength = 2048;
+    internal const int MaxEmployeeCodeLength = 32;
+
+    /// <summary>
+    /// Checks the details a person may set on their own profile (first and last name, photo address, work e-mail, job title, department).
+    /// Returns the normalized values, or the refusal per field. A null input is not checked here; the caller keeps the stored value.
+    /// </summary>
+    internal static bool TryNormalizeDetails(
+        string? firstName, string? lastName, string? avatarUrl, string? workEmail, string? jobTitle, string? department,
+        out ProfileDetailValues values, out Dictionary<string, string[]> errors)
+    {
+        errors = [];
+        var first = Trim(firstName);
+        var last = Trim(lastName);
+        var avatar = Trim(avatarUrl);
+        var work = Trim(workEmail);
+        var job = Trim(jobTitle);
+        var dept = Trim(department);
+
+        if (first is not null && (first.Length > MaxNameLength || HasControl(first)))
+            errors["firstName"] = [$"The first name is at most {MaxNameLength} characters and has no control characters."];
+        if (last is not null && (last.Length > MaxNameLength || HasControl(last)))
+            errors["lastName"] = [$"The last name is at most {MaxNameLength} characters and has no control characters."];
+        if (avatar is not null && !IsHttpsUrl(avatar))
+            errors["avatarUrl"] = [$"The photo address must be an https address of at most {MaxAvatarUrlLength} characters."];
+        if (work is not null && NormalizeEmail(work) is null)
+            errors["workEmail"] = ["The work e-mail address is not a usable address."];
+        if (job is not null && (job.Length > MaxJobLength || HasControl(job)))
+            errors["jobTitle"] = [$"The job title is at most {MaxJobLength} characters and has no control characters."];
+        if (dept is not null && (dept.Length > MaxJobLength || HasControl(dept)))
+            errors["department"] = [$"The department is at most {MaxJobLength} characters and has no control characters."];
+
+        values = new ProfileDetailValues(first, last, avatar, work, job, dept);
+        return errors.Count == 0;
+    }
+
+    /// <summary>
+    /// Checks an employee code an administrator sets: upper-case letters, digits and hyphens, at most 32 characters. Returns the normalized
+    /// code, or null when it is not usable.
+    /// </summary>
+    internal static string? NormalizeEmployeeCode(string? code)
+    {
+        var value = Trim(code)?.ToUpperInvariant();
+        return value is not null && value.Length <= MaxEmployeeCodeLength && EmployeeCodePattern().IsMatch(value) ? value : null;
+    }
+
+    [GeneratedRegex(@"^[A-Z0-9][A-Z0-9\-]*$", RegexOptions.CultureInvariant)]
+    private static partial Regex EmployeeCodePattern();
+
+    private static bool HasControl(string value) => value.Any(char.IsControl);
+
+    private static bool IsHttpsUrl(string value)
+        => value.Length <= MaxAvatarUrlLength && Uri.TryCreate(value, UriKind.Absolute, out var uri) && uri.Scheme == Uri.UriSchemeHttps;
+
     /// <summary>Checks an address for an email change. Returns the trimmed address, or null when it is not a usable address.</summary>
     internal static string? NormalizeEmail(string? email)
     {
@@ -96,6 +152,9 @@ internal static partial class ProfileRules
         }
     }
 }
+
+/// <summary>The normalized profile details, ready to store.</summary>
+internal readonly record struct ProfileDetailValues(string? FirstName, string? LastName, string? AvatarUrl, string? WorkEmail, string? JobTitle, string? Department);
 
 /// <summary>The normalized profile values, ready to store.</summary>
 internal readonly record struct ProfileValues(string? DisplayName, string? Language, string? TimeZone, string? PhoneNumber);

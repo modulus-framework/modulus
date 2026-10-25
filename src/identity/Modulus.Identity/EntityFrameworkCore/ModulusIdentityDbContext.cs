@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Modulus.Core.Abstractions;
+using Modulus.EntityFrameworkCore.ModelBuilding;
 using Modulus.Identity.Abstractions;
 
 /// <summary>
@@ -134,21 +135,45 @@ public class ModulusIdentityDbContext<TUser, TRole>(
         }
     }
 
+    /// <summary>The unique index on (TenantId, EmployeeCode). Upgrade scripts create the same name.</summary>
+    public const string EmployeeCodeIndexName = "IX_AspNetUsers_TenantId_EmployeeCode_Unique";
+
+    /// <summary>
+    /// The partial-index filter for the employee-code index, per provider. A filter that the provider cannot express would be silently
+    /// wrong, so an unknown provider gets no filter: its NULL handling then decides, and the fresh-install tests cover the known ones.
+    /// </summary>
+    private string? EmployeeCodeIndexFilter() => Database.ProviderName switch
+    {
+        "Microsoft.EntityFrameworkCore.SqlServer" => "[EmployeeCode] IS NOT NULL",
+        "Npgsql.EntityFrameworkCore.PostgreSQL" or "Microsoft.EntityFrameworkCore.Sqlite" => "\"EmployeeCode\" IS NOT NULL",
+        _ => null,
+    };
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
+
+        // The extension values of ModulusUser (IHasExtraProperties). Not a ModuleDbContext, so the mapping is applied directly.
+        builder.UseModulusExtraProperties();
 
         builder.Entity<TUser>(b =>
         {
             b.HasIndex(u => u.TenantId);
             b.HasIndex(u => u.Email);
-            // Shop-floor sign-in looks an operator up by company + code. Not unique here: ordinary accounts have a null code
-            // and not every provider ignores nulls in a unique index; ShopFloorAccountService checks uniqueness.
-            b.HasIndex(u => new { u.TenantId, u.EmployeeCode });
+            // An employee code is unique within a company when it is set (premodule 3). Codes are normalized (trimmed, upper-case) before
+            // they are written, so the database compares normalized values. Accounts without a code store NULL, which the filter leaves
+            // out of the constraint on providers that index NULLs (SQL Server, PostgreSQL, SQLite). MySQL allows any number of NULLs in a
+            // unique index already, so it takes no filter. Upgrades add the same index (docs/upgrades/identity-platform-2026-10.profile.*.sql).
+            b.HasIndex(u => new { u.TenantId, u.EmployeeCode })
+                .IsUnique()
+                .HasDatabaseName(EmployeeCodeIndexName)
+                .HasFilter(EmployeeCodeIndexFilter());
             b.HasIndex(u => new { u.TenantId, u.ExternalId });
             // Existing rows read as the defaults: a person, an active account, no suspension.
             b.Property(u => u.PrincipalKind).HasMaxLength(32).HasDefaultValue(PrincipalKinds.Person);
             b.Property(u => u.Lifecycle).HasConversion<string>().HasMaxLength(32).HasDefaultValue(AccountLifecycle.Active);
+            // Work-email confirmation failures: an existing row starts at zero, as the upgrade script's default does.
+            b.Property(u => u.ConfirmationFailures).HasDefaultValue(0);
             b.Property(u => u.SuspensionReason).HasMaxLength(64);
             b.Property(u => u.SuspensionNote).HasMaxLength(512);
             // TenantId is nullable (a host-level account belongs to no

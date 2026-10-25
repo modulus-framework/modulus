@@ -309,6 +309,8 @@ public sealed class ConnectorTestHost : IAsyncDisposable
 
         var values = new Dictionary<string, string?>
         {
+            // The connector is off by default; these tests exercise it, so the host turns it on explicitly.
+            ["Ai:Connector:Enabled"] = "true",
             ["Ai:Connector:AppName"] = "Test ERP",
             ["Ai:Connector:ApiKeyHashes:0"] = AiApiKeys.Hash(ApiKey),
             ["Ai:Connector:Platform:Issuer"] = Issuer,

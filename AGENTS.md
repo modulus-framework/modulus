@@ -1724,6 +1724,22 @@ platform package; the platform is read-only, so only queries are exposed. The pl
   now looks accounts up in the host context (on a multi-tenant host every user call was refused), and the EF change
   feed never returns an empty cursor. The real platform's suite still runs before activation.
 
+## Generated web app UI conventions (2026-10-25)
+
+The `webapp+api` web host is generated from `cli/Templates/app`. Its pages use the `modulus-ui` components and the framework's own
+layout pattern, so a new page looks like the rest of the app:
+
+- Page: `<app-page-header pretitle title />`, then `m-grid m-cols-main` (main column plus `<aside>`), with `m-card` sections
+  (`m-card-header` / `m-card-title` / `m-card-body`).
+- Forms: `ant-form ant-form-vertical`, `app-form-item` + `app-input`, a `m-form-grid` for two columns, actions in `m-form-actions`.
+- Lists: `m-card m-table-card` with the `ant-table` markup; empty state `m-empty`. When a list failed to load (a message is set and
+  the list is empty), show a failed-load state, not "no results".
+- Errors: any error status re-runs `Pages/Error.cshtml` (`/Error/{code}`); the page is a framework loosening, so it needs no
+  allow-list entry.
+- Keep element ids and bound property names that scripts or tests depend on (`passkey-add`, `photo-form`, `Input.*`, handler names).
+- Password recovery: `Pages/Account/ForgotPassword` and `Pages/ResetPassword` (served at `/ResetPassword`, the path the email link
+  uses), calling `AccountApiClient` anonymously. OpenIddict apps only.
+
 ## Testing notes
 
 - Unit tests use `[Trait("Category", "Unit")]`; integration tests use

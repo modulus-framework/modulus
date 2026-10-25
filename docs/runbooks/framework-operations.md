@@ -114,7 +114,7 @@ databases use a development-only secret store (`TenantSecretBackendCheck`); it d
 
 - TLS on every listener, including cluster traffic.
 - Raft: five nodes preferred, three as the minimum. A one- or two-node cluster is not highly available.
-- Auto-unseal through an independent KMS or HSM is preferred. A documented manual-unseal procedure is the alternative. A static key stored next to the application is not acceptable.
+- The unseal design is Shamir, 3 of 5 shares, with five named custodians (`docs/runbooks/openbao-production.md`, section 5). Auto-unseal is not used. A static key stored next to the application is not acceptable.
 - Two independent audit devices, with failure of one tested.
 - Kubernetes roles bound to explicit service-account names and namespaces, with access and denial both tested.
 - Snapshot and restore drill, with the result recorded.

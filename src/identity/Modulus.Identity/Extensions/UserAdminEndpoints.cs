@@ -12,6 +12,7 @@ using Modulus.Core.Abstractions;
 using Modulus.Core.Abstractions.Entities;
 using Modulus.Core.Abstractions.Security;
 using Modulus.Identity.Abstractions;
+using Modulus.Authorization.Organization;
 
 namespace Modulus.Identity.Extensions;
 
@@ -42,7 +43,20 @@ public sealed record UserDetail(
     string Lifecycle,
     DateTimeOffset? LockedUntil,
     bool TwoFactorEnabled,
-    IReadOnlyList<string> Roles);
+    IReadOnlyList<string> Roles,
+    [property: Classified(FieldClassification.Restricted)] string? WorkEmail = null,
+    [property: Classified(FieldClassification.Confidential)] string? JobTitle = null,
+    [property: Classified(FieldClassification.Confidential)] string? Department = null,
+    Guid? PrimaryBranchId = null);
+
+/// <summary>
+/// Body of <c>PATCH {id}/organization</c>: the employee code (upper-case letters, digits and hyphens; empty clears it) and the primary branch.
+/// A field left out (null) keeps its value; <see cref="ClearPrimaryBranch"/> removes the branch.
+/// </summary>
+public sealed record UserOrganizationRequest(string? EmployeeCode, Guid? PrimaryBranchId, bool ClearPrimaryBranch = false);
+
+/// <summary>Body of <c>PATCH {id}/work-email</c>: the address to confirm (an empty value withdraws the work e-mail).</summary>
+public sealed record UserWorkEmailRequest(string? WorkEmail);
 
 /// <summary>A page of the user list.</summary>
 public sealed record UserPage(IReadOnlyList<UserSummary> Items, int Total, int Page, int PageSize);
@@ -234,6 +248,22 @@ public static class UserAdminExtensions
             var desired = body.Roles.Select(r => r.Trim()).Where(r => r.Length > 0).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
             var toAdd = desired.Except(current, StringComparer.OrdinalIgnoreCase).ToList();
             var toRemove = current.Except(desired, StringComparer.OrdinalIgnoreCase).ToList();
+            var grantsOwner = toAdd.Contains(AccountLifecycleExtensions.TenantOwnerRole, StringComparer.OrdinalIgnoreCase);
+            var revokesOwner = toRemove.Contains(AccountLifecycleExtensions.TenantOwnerRole, StringComparer.OrdinalIgnoreCase);
+
+            // Ownership is not inherited from administration: only an owner grants or revokes it.
+            if ((grantsOwner || revokesOwner) && await users.FindByIdAsync(actor.ToString()) is { } actingUser
+                && !await users.IsInRoleAsync(actingUser, AccountLifecycleExtensions.TenantOwnerRole))
+            {
+                return Results.Json(new { error = "TENANT_OWNER_REQUIRED", message = "Only a Tenant Owner grants or revokes the Tenant Owner role." },
+                    statusCode: StatusCodes.Status403Forbidden);
+            }
+
+            // The last active owner is kept: demoting it needs another owner first (an approved ownership transfer).
+            if (revokesOwner && await IsLastActiveTenantOwnerAsync(users, user))
+            {
+                return Results.Conflict(new { error = "LAST_TENANT_OWNER", message = "The last active Tenant Owner cannot be demoted. Name another owner first." });
+            }
 
             if (toAdd.Count > 0)
             {
@@ -254,9 +284,129 @@ public static class UserAdminExtensions
                 return Results.ValidationProblem(new Dictionary<string, string[]> { ["roles"] = stamped.Errors.Select(e => e.Description).ToArray() });
 
             Audit(http, actor, "identity.user.roles.changed", user.Id, $"added={string.Join(',', toAdd)};removed={string.Join(',', toRemove)}");
+            if (grantsOwner)
+                Audit(http, actor, "identity.tenant-owner.granted", user.Id, null);
+            if (revokesOwner)
+                Audit(http, actor, "identity.tenant-owner.revoked", user.Id, null);
             http.Response.Headers.ETag = ETagOf(user);
             return Results.Ok(await DetailAsync(user, users, authorizer));
         });
+
+        // Organization data an administrator sets: the employee code (shop-floor sign-in) and the primary branch. The person cannot change either
+        // on their own profile. A code is unique within the company; a second account with the same code is refused.
+        group.MapPatch("/{id:guid}/organization", async (Guid id, UserOrganizationRequest body, UserManager<TUser> users, ClaimsPrincipal caller, HttpContext http, IFieldAuthorizer authorizer, IOrgHierarchy? hierarchy, CancellationToken ct) =>
+        {
+            if (ActorOf(caller) is not { } actor)
+                return Results.Unauthorized();
+            var user = await users.FindByIdAsync(id.ToString());
+            if (user is null)
+                return Results.NotFound();
+            if (IsStale(http, user))
+                return Stale();
+
+            // The branch must be an org unit of the company the request runs in (the identity query already limits the account to that company).
+            if (body.PrimaryBranchId is { } requested)
+            {
+                if (hierarchy is null)
+                    return Results.Problem(statusCode: StatusCodes.Status400BadRequest, title: "ORG_HIERARCHY_UNAVAILABLE",
+                        detail: "The organization hierarchy is not registered, so a primary branch cannot be validated.");
+                if (!hierarchy.Contains(requested))
+                    return Results.ValidationProblem(new Dictionary<string, string[]> { ["primaryBranchId"] = ["The branch is not an org unit of this company."] });
+            }
+
+            var changed = new List<string>();
+            if (body.EmployeeCode is not null)
+            {
+                var code = string.IsNullOrWhiteSpace(body.EmployeeCode) ? null : ProfileRules.NormalizeEmployeeCode(body.EmployeeCode);
+                if (!string.IsNullOrWhiteSpace(body.EmployeeCode) && code is null)
+                    return Results.ValidationProblem(new Dictionary<string, string[]> { ["employeeCode"] = ["The employee code is upper-case letters, digits and hyphens, at most 32 characters."] });
+                if (code is not null && await users.Users.AnyAsync(u => u.Id != user.Id && u.TenantId == user.TenantId && u.EmployeeCode == code, ct))
+                    return Results.Conflict(new { error = "EMPLOYEE_CODE_TAKEN", message = "Another account in this company already has that employee code." });
+                if (user.EmployeeCode != code)
+                {
+                    user.EmployeeCode = code;
+                    changed.Add("employeeCode");
+                }
+            }
+            if (body.ClearPrimaryBranch)
+            {
+                user.PrimaryBranchId = null;
+                changed.Add("primaryBranch");
+            }
+            else if (body.PrimaryBranchId is { } branch)
+            {
+                user.PrimaryBranchId = branch;
+                changed.Add("primaryBranch");
+            }
+
+            if (changed.Count > 0)
+            {
+                IdentityResult result;
+                try
+                {
+                    result = await users.UpdateAsync(user);
+                }
+                catch (DbUpdateException) when (changed.Contains("employeeCode"))
+                {
+                    // Two requests can pass the check above together; the unique index (TenantId, EmployeeCode) decides the race.
+                    return Results.Conflict(new { error = "EMPLOYEE_CODE_TAKEN", message = "Another account in this company already has that employee code." });
+                }
+                if (!result.Succeeded)
+                    return Results.ValidationProblem(new Dictionary<string, string[]> { ["organization"] = result.Errors.Select(e => e.Description).ToArray() });
+                Audit(http, actor, "identity.user.organization.changed", user.Id, $"fields={string.Join(',', changed)}");
+            }
+
+            http.Response.Headers.ETag = ETagOf(user);
+            return Results.Ok(await DetailAsync(user, users, authorizer));
+        }).RequireAuthorization(AccountLifecycleExtensions.OrganizationManagePermission);
+
+        // A work e-mail an administrator enters is not verified by that. The address gets a confirmation link, which its owner follows, and it
+        // becomes the work e-mail only then (premodule 3). An empty value withdraws the work e-mail and any pending one at once.
+        group.MapPatch("/{id:guid}/work-email", async (Guid id, UserWorkEmailRequest body, UserManager<TUser> users, ClaimsPrincipal caller, HttpContext http, IFieldAuthorizer authorizer, IIdentityEmailSender emailSender, CancellationToken ct) =>
+        {
+            if (ActorOf(caller) is not { } actor)
+                return Results.Unauthorized();
+            var user = await users.FindByIdAsync(id.ToString());
+            if (user is null)
+                return Results.NotFound();
+            if (IsStale(http, user))
+                return Stale();
+
+            var address = string.IsNullOrWhiteSpace(body.WorkEmail) ? null : ProfileRules.NormalizeEmail(body.WorkEmail.Trim());
+            if (!string.IsNullOrWhiteSpace(body.WorkEmail) && address is null)
+                return Results.ValidationProblem(new Dictionary<string, string[]> { ["workEmail"] = ["The work e-mail address is not a usable address."] });
+
+            if (address is null)
+            {
+                user.WorkEmail = null;
+                user.PendingWorkEmail = null;
+                user.WorkEmailVerificationStamp = Guid.NewGuid().ToString("N");
+                var cleared = await users.UpdateAsync(user);
+                if (!cleared.Succeeded)
+                    return Results.ValidationProblem(new Dictionary<string, string[]> { ["workEmail"] = cleared.Errors.Select(e => e.Description).ToArray() });
+                Audit(http, actor, "identity.user.work-email.cleared", user.Id, null);
+                http.Response.Headers.ETag = ETagOf(user);
+                return Results.Ok(await DetailAsync(user, users, authorizer));
+            }
+
+            var verifier = http.RequestServices.GetRequiredService<WorkEmailVerifier<TUser>>();
+            var request = await verifier.RequestAsync(user, address);
+            switch (request.Outcome)
+            {
+                case WorkEmailRequestOutcome.Sent:
+                    await emailSender.SendWorkEmailVerificationAsync(address, request.Token!, ct);
+                    Audit(http, actor, "identity.user.work-email.requested", user.Id, "by=administrator");
+                    break;
+                case WorkEmailRequestOutcome.TooSoon:
+                    return Results.Problem(statusCode: StatusCodes.Status429TooManyRequests, title: "WORK_EMAIL_TOO_SOON",
+                        detail: "A confirmation link was requested a moment ago. Wait a minute before asking again.");
+                case WorkEmailRequestOutcome.Failed:
+                    return Results.ValidationProblem(new Dictionary<string, string[]> { ["workEmail"] = request.Result!.Errors.Select(e => e.Description).ToArray() });
+            }
+
+            http.Response.Headers.ETag = ETagOf(user);
+            return Results.Accepted(null, await DetailAsync(user, users, authorizer));
+        }).RequireAuthorization(AccountLifecycleExtensions.OrganizationManagePermission);
 
         group.MapPost("/{id:guid}/lock", async (Guid id, UserLockRequest body, UserManager<TUser> users, ClaimsPrincipal caller, HttpContext http, IFieldAuthorizer authorizer, CancellationToken ct) =>
         {
@@ -272,6 +422,9 @@ public static class UserAdminExtensions
 
             if (IsStale(http, user))
                 return Stale();
+            // Locking the last active owner would leave the company without an administrator of its own permissions.
+            if (await IsLastActiveTenantOwnerAsync(users, user))
+                return Results.Conflict(new { error = "LAST_TENANT_OWNER", message = "The last active Tenant Owner cannot be locked. Name another owner first." });
             await users.SetLockoutEnabledAsync(user, true);
             var set = await users.SetLockoutEndDateAsync(user, body.Until ?? DateTimeOffset.MaxValue);
             if (!set.Succeeded)
@@ -400,7 +553,20 @@ public static class UserAdminExtensions
             user.Lifecycle.ToString(),
             user.LockoutEnd is { } end && end > DateTimeOffset.UtcNow ? end : null,
             user.TwoFactorEnabled,
-            roles.OrderBy(r => r, StringComparer.OrdinalIgnoreCase).ToList()));
+            roles.OrderBy(r => r, StringComparer.OrdinalIgnoreCase).ToList(),
+            user.WorkEmail,
+            user.JobTitle,
+            user.Department,
+            user.PrimaryBranchId));
+    }
+
+    // True when the user is an active Tenant Owner and no other active account holds the role.
+    internal static async Task<bool> IsLastActiveTenantOwnerAsync<TUser>(UserManager<TUser> users, TUser user) where TUser : ModulusUser
+    {
+        if (!user.IsActive || !await users.IsInRoleAsync(user, AccountLifecycleExtensions.TenantOwnerRole))
+            return false;
+        var owners = await users.GetUsersInRoleAsync(AccountLifecycleExtensions.TenantOwnerRole);
+        return !owners.Any(o => o.Id != user.Id && o.IsActive);
     }
 
     private static void Audit(HttpContext http, Guid actor, string action, Guid target, string? details)

@@ -44,9 +44,13 @@ public class LoginModel(BffSessionClient session{{ if auth == "openiddict" }}, P
 
     public string? ReturnUrl { get; private set; }
 
-    public void OnGet(string? returnUrl = null)
+    /// <summary>True when the visitor has just set a new password, so the page says to sign in with it.</summary>
+    public bool PasswordReset { get; private set; }
+
+    public void OnGet(string? returnUrl = null, bool reset = false)
     {
         ReturnUrl = SafeReturnUrl(returnUrl);
+        PasswordReset = reset;
     }
 
     public async Task<IActionResult> OnPostAsync(string? returnUrl = null)

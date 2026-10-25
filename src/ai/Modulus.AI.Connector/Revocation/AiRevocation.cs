@@ -117,6 +117,10 @@ internal sealed class AiRevocationDispatcher(
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        // Off: no signal is sent. Signals journalled before a restart wait until the connector is turned on.
+        if (!options.Value.Enabled)
+            return;
+
         while (!stoppingToken.IsCancellationRequested)
         {
             try
@@ -184,6 +188,9 @@ internal sealed class AiRevocationObserver(
     public ValueTask OnAccessChangedAsync(AccessChange change, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(change);
+        if (!options.Value.Enabled)
+            return ValueTask.CompletedTask;
+
         var tenantId = change.TenantId ?? currentTenant?.TenantId;
         foreach (var instance in options.Value.Instances)
         {

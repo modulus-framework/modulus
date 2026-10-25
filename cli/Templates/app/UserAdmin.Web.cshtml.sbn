@@ -4,150 +4,245 @@
     ViewData["Title"] = "Users";
 }
 
-<h1>Users</h1>
+<app-page-header pretitle="Administration" title="Users" />
 
 @if (Model.Message is not null)
 {
-    <p role="status">@Model.Message</p>
+    <app-alert type="info" show-icon message="@Model.Message" class="m-mb-16" />
 }
 
-<form method="get">
-    <label>Search by user name or email <input type="search" name="Search" value="@Model.Search" /></label>
-    <label>Status
-        <select name="Status">
-            <option value="any" selected="@(string.IsNullOrEmpty(Model.Status) || Model.Status == "any")">Any</option>
-            <option value="active" selected="@(Model.Status == "active")">Active</option>
-            <option value="inactive" selected="@(Model.Status == "inactive")">Inactive</option>
-            <option value="locked" selected="@(Model.Status == "locked")">Locked</option>
-        </select>
-    </label>
-    <label>Role <input name="Role" value="@Model.Role" /></label>
-    <button type="submit">Filter</button>
-    <a asp-page-handler="Export" asp-route-Search="@Model.Search" asp-route-Status="@Model.Status" asp-route-Role="@Model.Role">Export CSV</a>
-</form>
+<div class="m-card m-mb-16">
+    <div class="m-card-body">
+        <form method="get" class="m-flex m-flex-wrap m-gap-12" style="align-items: flex-end;">
+            <div style="flex: 1 1 260px;">
+                <label class="m-muted" for="user-search">Search by user name or email</label>
+                <input id="user-search" class="ant-input" type="search" name="Search" value="@Model.Search" placeholder="Name or email" />
+            </div>
+            <div style="flex: 0 1 160px;">
+                <label class="m-muted" for="user-status">Status</label>
+                <select id="user-status" class="ant-input" name="Status">
+                    <option value="any" selected="@(string.IsNullOrEmpty(Model.Status) || Model.Status == "any")">Any</option>
+                    <option value="active" selected="@(Model.Status == "active")">Active</option>
+                    <option value="inactive" selected="@(Model.Status == "inactive")">Inactive</option>
+                    <option value="locked" selected="@(Model.Status == "locked")">Locked</option>
+                </select>
+            </div>
+            <div style="flex: 0 1 200px;">
+                <label class="m-muted" for="user-role">Role</label>
+                <input id="user-role" class="ant-input" name="Role" value="@Model.Role" placeholder="Any role" />
+            </div>
+            <div class="m-flex m-gap-8">
+                <button class="ant-btn ant-btn-primary" type="submit">Filter</button>
+                <a class="ant-btn ant-btn-default" asp-page-handler="Export" asp-route-Search="@Model.Search" asp-route-Status="@Model.Status" asp-route-Role="@Model.Role">Export CSV</a>
+            </div>
+        </form>
+    </div>
+</div>
 
-<details>
-    <summary>Invite a person</summary>
-    <form method="post" asp-page-handler="Invite">
-        <label>E-mail <input type="email" name="email" required /></label>
-        <label>First name <input name="firstName" /></label>
-        <label>Last name <input name="lastName" /></label>
-        <label>Roles (comma separated) <input name="roles" /></label>
-        <p>The person gets an e-mailed link and sets a password. Giving any role needs the grant-any permission.</p>
-        <button type="submit">Send invitation</button>
-    </form>
+<details class="m-card m-mb-16">
+    <summary class="m-card-body" style="cursor: pointer; font-weight: 600;">Invite a person</summary>
+    <div class="m-card-body" style="border-top: 1px solid var(--m-border-secondary);">
+        <form method="post" asp-page-handler="Invite" class="ant-form ant-form-vertical" novalidate>
+            <div class="m-form-grid">
+                <div>
+                    <label for="invite-email">Email</label>
+                    <input id="invite-email" class="ant-input" type="email" name="email" required placeholder="person@company.example" />
+                </div>
+                <div>
+                    <label for="invite-roles">Roles (comma separated)</label>
+                    <input id="invite-roles" class="ant-input" name="roles" placeholder="Admin, Auditor" />
+                </div>
+                <div>
+                    <label for="invite-first">First name</label>
+                    <input id="invite-first" class="ant-input" name="firstName" />
+                </div>
+                <div>
+                    <label for="invite-last">Last name</label>
+                    <input id="invite-last" class="ant-input" name="lastName" />
+                </div>
+            </div>
+            <p class="m-muted m-mt-8">The person gets an emailed link and sets a password. Giving any role needs the grant-any permission.</p>
+            <div class="m-form-actions">
+                <button class="ant-btn ant-btn-primary" type="submit">Send invitation</button>
+            </div>
+        </form>
+    </div>
 </details>
 
-<table>
-    <thead>
-        <tr>
-            <th>User name</th>
-            <th>Email</th>
-            <th>Status</th>
-            <th>Locked until</th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-    @foreach (var row in Model.Rows)
-    {
-        <tr>
-            <td>@row.UserName</td>
-            <td>@row.Email</td>
-            <td>@(row.IsActive ? "Active" : "Inactive") (@row.Lifecycle)</td>
-            <td>@(row.LockedUntil?.ToString("yyyy-MM-dd HH:mm") ?? "-")</td>
-            <td><a asp-page="/Admin/Users" asp-route-Id="@row.Id" asp-route-Search="@Model.Search">Open</a></td>
-        </tr>
-    }
-    </tbody>
-</table>
-<p>@Model.Total user(s)</p>
+<div class="m-card m-table-card m-mb-16">
+    <div class="m-card-body m-card-body-flush">
+        @if (Model.Rows.Count == 0 && Model.Message is not null)
+        {
+            <div class="m-empty">
+                <h3 class="m-empty-title">The users could not be loaded</h3>
+                <p class="m-empty-subtitle">The message above says why.</p>
+            </div>
+        }
+        else if (Model.Rows.Count == 0)
+        {
+            <div class="m-empty">
+                <h3 class="m-empty-title">No users match these filters</h3>
+                <p class="m-empty-subtitle">Change the search or the status, or invite a person above.</p>
+            </div>
+        }
+        else
+        {
+            <div class="ant-table-wrapper m-table-flush">
+                <div class="ant-table"><div class="ant-table-container"><div class="ant-table-content">
+                    <table style="table-layout: auto;">
+                        <thead class="ant-table-thead">
+                            <tr>
+                                <th class="ant-table-cell">User name</th>
+                                <th class="ant-table-cell">Email</th>
+                                <th class="ant-table-cell">Status</th>
+                                <th class="ant-table-cell">Locked until</th>
+                                <th class="ant-table-cell"></th>
+                            </tr>
+                        </thead>
+                        <tbody class="ant-table-tbody">
+                        @foreach (var row in Model.Rows)
+                        {
+                            <tr class="ant-table-row">
+                                <td class="ant-table-cell"><strong>@row.UserName</strong></td>
+                                <td class="ant-table-cell">@row.Email</td>
+                                <td class="ant-table-cell">
+                                    <span class="ant-tag @(row.IsActive ? "ant-tag-success" : "")">@(row.IsActive ? "Active" : "Inactive")</span>
+                                    <span class="m-muted">@row.Lifecycle</span>
+                                </td>
+                                <td class="ant-table-cell">@(row.LockedUntil?.ToString("yyyy-MM-dd HH:mm") ?? "-")</td>
+                                <td class="ant-table-cell"><a class="ant-btn ant-btn-text ant-btn-sm" asp-page="/Admin/Users" asp-route-Id="@row.Id" asp-route-Search="@Model.Search"><span>Open</span></a></td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div></div></div>
+            </div>
+        }
+    </div>
+</div>
+<p class="m-muted">@Model.Total user(s)</p>
 
 @if (Model.Detail is { } detail)
 {
-    <section>
-        <h2>@detail.UserName</h2>
-        <p>
-            @detail.Email · @(detail.EmailConfirmed ? "email confirmed" : "email not confirmed")
-            · two-factor @(detail.TwoFactorEnabled ? "on" : "off")
-        </p>
+    <section class="m-mt-24">
+        <div class="m-card m-mb-16">
+            <div class="m-card-header"><div class="m-card-title">@detail.UserName</div></div>
+            <div class="m-card-body">
+                <p class="m-muted m-mb-16">
+                    @detail.Email · @(detail.EmailConfirmed ? "Email confirmed" : "Email not confirmed") · Two-factor @(detail.TwoFactorEnabled ? "on" : "off")
+                </p>
 
-        <h3>Sessions</h3>
-        @if (Model.Sessions.Count == 0)
-        {
-            <p>No active sessions.</p>
-        }
-        else
-        {
-            <table>
-                <thead><tr><th>Type</th><th>Client</th><th>Started</th><th>Expires</th><th></th></tr></thead>
-                <tbody>
-                @foreach (var session in Model.Sessions)
-                {
-                    <tr>
-                        <td>@session.Type</td>
-                        <td>@session.ClientId</td>
-                        <td>@session.CreatedAt?.ToString("yyyy-MM-dd HH:mm")</td>
-                        <td>@session.ExpiresAt?.ToString("yyyy-MM-dd HH:mm")</td>
-                        <td>
-                            <form method="post" asp-page-handler="RevokeSession" asp-route-id="@detail.Id">
-                                <input type="hidden" name="sessionId" value="@session.Id" />
-                                <button type="submit">End session</button>
+                <div class="m-form-grid">
+                    <div>
+                        <h4 class="m-mb-8">Roles</h4>
+                        <form method="post" asp-page-handler="Roles" asp-route-id="@detail.Id" class="ant-form ant-form-vertical" novalidate>
+                            <input class="ant-input" name="roles" value="@string.Join(", ", detail.Roles)" />
+                            <div class="m-form-actions m-mt-8">
+                                <button class="ant-btn ant-btn-primary" type="submit">Save roles</button>
+                            </div>
+                        </form>
+                    </div>
+                    <div>
+                        <h4 class="m-mb-8">Account</h4>
+                        @if (detail.LockedUntil is null)
+                        {
+                            <form method="post" asp-page-handler="Lock" asp-route-id="@detail.Id" class="ant-form ant-form-vertical" novalidate>
+                                <input class="ant-input m-mb-8" name="reason" required placeholder="Reason for the lock" />
+                                <input class="ant-input" name="hours" type="number" min="1" placeholder="Hours (empty = until unlocked)" />
+                                <div class="m-form-actions m-mt-8">
+                                    <button class="ant-btn ant-btn-dangerous" type="submit">Lock account</button>
+                                </div>
                             </form>
-                        </td>
-                    </tr>
-                }
-                </tbody>
-            </table>
-        }
+                        }
+                        else
+                        {
+                            <p class="m-muted m-mb-8">Locked until @detail.LockedUntil</p>
+                            <form method="post" asp-page-handler="Unlock" asp-route-id="@detail.Id">
+                                <button class="ant-btn ant-btn-default" type="submit">Unlock account</button>
+                            </form>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
 
-        <h3>Recent sign-ins</h3>
-        <table>
-            <thead><tr><th>When</th><th>Event</th><th>Result</th><th>Reason</th></tr></thead>
-            <tbody>
-            @foreach (var entry in Model.History)
-            {
-                <tr>
-                    <td>@entry.OccurredAt.ToString("yyyy-MM-dd HH:mm")</td>
-                    <td>@entry.Action</td>
-                    <td>@(entry.Succeeded ? "Succeeded" : "Refused")</td>
-                    <td>@entry.Reason</td>
-                </tr>
-            }
-            </tbody>
-        </table>
+        <div class="m-card m-mb-16">
+            <div class="m-card-header"><div class="m-card-title">Sessions</div></div>
+            <div class="m-card-body m-card-body-flush">
+                @if (Model.Sessions.Count == 0)
+                {
+                    <div class="m-empty"><p class="m-empty-subtitle">No active sessions.</p></div>
+                }
+                else
+                {
+                    <div class="ant-table-wrapper m-table-flush"><div class="ant-table"><div class="ant-table-container"><div class="ant-table-content">
+                        <table style="table-layout: auto;">
+                            <thead class="ant-table-thead"><tr><th class="ant-table-cell">Type</th><th class="ant-table-cell">Client</th><th class="ant-table-cell">Started</th><th class="ant-table-cell">Expires</th><th class="ant-table-cell"></th></tr></thead>
+                            <tbody class="ant-table-tbody">
+                            @foreach (var session in Model.Sessions)
+                            {
+                                <tr class="ant-table-row">
+                                    <td class="ant-table-cell">@session.Type</td>
+                                    <td class="ant-table-cell">@session.ClientId</td>
+                                    <td class="ant-table-cell">@session.CreatedAt?.ToString("yyyy-MM-dd HH:mm")</td>
+                                    <td class="ant-table-cell">@session.ExpiresAt?.ToString("yyyy-MM-dd HH:mm")</td>
+                                    <td class="ant-table-cell">
+                                        <form method="post" asp-page-handler="RevokeSession" asp-route-id="@detail.Id">
+                                            <input type="hidden" name="sessionId" value="@session.Id" />
+                                            <button class="ant-btn ant-btn-text ant-btn-sm ant-btn-dangerous" type="submit"><span>End session</span></button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            }
+                            </tbody>
+                        </table>
+                    </div></div></div></div>
+                }
+            </div>
+        </div>
+
+        <div class="m-card m-mb-16">
+            <div class="m-card-header"><div class="m-card-title">Recent sign-ins</div></div>
+            <div class="m-card-body m-card-body-flush">
+                @if (Model.History.Count == 0)
+                {
+                    <div class="m-empty"><p class="m-empty-subtitle">No recent sign-ins are recorded.</p></div>
+                }
+                else
+                {
+                    <div class="ant-table-wrapper m-table-flush"><div class="ant-table"><div class="ant-table-container"><div class="ant-table-content">
+                        <table style="table-layout: auto;">
+                            <thead class="ant-table-thead"><tr><th class="ant-table-cell">When</th><th class="ant-table-cell">Event</th><th class="ant-table-cell">Result</th><th class="ant-table-cell">Reason</th></tr></thead>
+                            <tbody class="ant-table-tbody">
+                            @foreach (var entry in Model.History)
+                            {
+                                <tr class="ant-table-row">
+                                    <td class="ant-table-cell">@entry.OccurredAt.ToString("yyyy-MM-dd HH:mm")</td>
+                                    <td class="ant-table-cell">@entry.Action</td>
+                                    <td class="ant-table-cell"><span class="ant-tag @(entry.Succeeded ? "ant-tag-success" : "ant-tag-error")">@(entry.Succeeded ? "Succeeded" : "Refused")</span></td>
+                                    <td class="ant-table-cell">@entry.Reason</td>
+                                </tr>
+                            }
+                            </tbody>
+                        </table>
+                    </div></div></div></div>
+                }
+            </div>
+        </div>
 
         @if (Model.Access is { } access)
         {
-            <details>
-                <summary>Permissions in effect (@access.All.Count)@(access.SodViolations > 0 ? $", {access.SodViolations} separation-of-duties conflict(s)" : "")</summary>
-                <ul>
-                    @foreach (var permission in access.All)
-                    {
-                        <li>@permission</li>
-                    }
-                </ul>
+            <details class="m-card m-mb-16">
+                <summary class="m-card-body" style="cursor: pointer; font-weight: 600;">Permissions in effect (@access.All.Count)@(access.SodViolations > 0 ? $", {access.SodViolations} separation-of-duties conflict(s)" : "")</summary>
+                <div class="m-card-body" style="border-top: 1px solid var(--m-border-secondary);">
+                    <ul>
+                        @foreach (var permission in access.All)
+                        {
+                            <li>@permission</li>
+                        }
+                    </ul>
+                </div>
             </details>
-        }
-
-        <form method="post" asp-page-handler="Roles" asp-route-id="@detail.Id">
-            <label>Roles (comma separated) <input name="roles" value="@string.Join(", ", detail.Roles)" /></label>
-            <button type="submit">Save roles</button>
-        </form>
-
-        @if (detail.LockedUntil is null)
-        {
-            <form method="post" asp-page-handler="Lock" asp-route-id="@detail.Id">
-                <label>Reason <input name="reason" required /></label>
-                <label>Hours (empty = until unlocked) <input name="hours" type="number" min="1" /></label>
-                <button type="submit">Lock</button>
-            </form>
-        }
-        else
-        {
-            <form method="post" asp-page-handler="Unlock" asp-route-id="@detail.Id">
-                <button type="submit">Unlock</button>
-            </form>
         }
     </section>
 }

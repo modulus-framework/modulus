@@ -55,6 +55,9 @@ public sealed class CompanyProvisionerTests : IDisposable
         options.Grants = grants.ToDictionary(g => g.Role, g => g.Permissions, StringComparer.Ordinal);
     }
 
+    private void ConfigureOwner(params string[] permissions)
+        => _provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<CompanyProvisioningOptions>>().Value.OwnerPermissions = permissions;
+
     private Task<IReadOnlyCollection<PermissionGrant>> ReadAsync(string role) => Store().GetGrantsAsync(new PrincipalGrantQuery(null, [role]));
 
     private EfPermissionGrantStore Store() => _provider.GetRequiredService<EfPermissionGrantStore>();
@@ -115,6 +118,45 @@ public sealed class CompanyProvisionerTests : IDisposable
         var act = () => Provisioner().ProvisionAsync(_acme);
 
         await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("*orders:admin*Critical*");
+    }
+
+    [Fact]
+    public async Task The_owner_permissions_reach_the_tenant_owner_role_in_each_provisioned_company_and_may_be_critical()
+    {
+        ConfigureOwner("orders:admin", "orders:read");
+
+        await Provisioner().ProvisionAsync(_acme);
+
+        _tenant.Enter(_acme);
+        (await ReadAsync(CompanyProvisioningOptions.OwnerRole)).Select(g => g.Permission)
+            .Should().BeEquivalentTo(["orders:admin", "orders:read"], "the owner role holds its Critical permission in the company");
+        _tenant.Enter(_globex);
+        (await ReadAsync(CompanyProvisioningOptions.OwnerRole)).Should().BeEmpty("a company that was not provisioned has no owner grants");
+    }
+
+    [Fact]
+    public async Task The_owner_permissions_are_not_applied_twice()
+    {
+        ConfigureOwner("orders:admin");
+
+        await Provisioner().ProvisionAsync(_acme);
+        await Provisioner().ProvisionAsync(_acme);
+
+        _tenant.Enter(_acme);
+        (await ReadAsync(CompanyProvisioningOptions.OwnerRole)).Should().ContainSingle();
+    }
+
+    [Theory]
+    [InlineData("*")]
+    [InlineData("orders:*")]
+    [InlineData("orders:missing")]
+    public async Task A_wildcard_or_unregistered_owner_permission_is_refused(string permission)
+    {
+        ConfigureOwner(permission);
+
+        var act = () => Provisioner().ProvisionAsync(_acme);
+
+        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("*OwnerPermissions*");
     }
 
     [Theory]

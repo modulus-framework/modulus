@@ -178,7 +178,8 @@ public sealed class ApiPermissionTests
         var model = App(noExample: true);
 
         model.ExamplePermission.Should().BeNull();
-        ApiHostSource.Render(_engine, model).Should().NotContain("AddPermissionGrants");
+        // The only grants left are the Tenant Owner's account permissions (identity, not the example module); none goes to Admin.
+        ApiHostSource.Render(_engine, model).Should().NotContain("GrantToRole(\"Admin\"");
     }
 
     [Fact]

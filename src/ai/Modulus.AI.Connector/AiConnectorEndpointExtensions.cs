@@ -17,8 +17,11 @@ public static class AiConnectorEndpointExtensions
     /// (API key, run as the indexing identity of the <c>appInstanceId</c> query parameter), and
     /// <c>POST /capabilities/{name}:execute</c>,
     /// <c>/resources:get</c>, <c>/authz/scope</c>, <c>/authz/resources:check</c> and <c>/authz/fields:check</c> as the
-    /// envelope's user. Excluded from OpenAPI. With <see cref="ModulusAiConnectorOptions.Enabled"/> off every route
-    /// answers <c>404</c>.
+    /// envelope's user. Excluded from OpenAPI.
+    /// <para>
+    /// Decided at startup, like the background services: with <see cref="ModulusAiConnectorOptions.Enabled"/> off no route is mapped, so
+    /// a request never reaches authentication (which can fetch the platform's signing keys) or the connector. Turning it on needs a restart.
+    /// </para>
     /// </summary>
     public static RouteGroupBuilder MapModulusAiConnector(this IEndpointRouteBuilder endpoints)
     {
@@ -27,10 +30,8 @@ public static class AiConnectorEndpointExtensions
 
         var group = endpoints.MapGroup(options.PathPrefix);
         group.ExcludeFromDescription();
-        group.AddEndpointFilter(async (context, next) =>
-            context.HttpContext.RequestServices.GetRequiredService<IOptionsMonitor<ModulusAiConnectorOptions>>().CurrentValue.Enabled
-                ? await next(context)
-                : Results.NotFound());
+        if (!options.Enabled)
+            return group;
 
         group.MapGet("/manifest", (AiManifestBuilder manifest) => Results.Json(manifest.Manifest, ConnectorJson.Options))
             .RequireAuthorization(AiConnectorDefaults.ServicePolicy);

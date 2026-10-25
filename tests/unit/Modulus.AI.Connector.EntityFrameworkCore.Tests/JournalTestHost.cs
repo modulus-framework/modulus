@@ -12,6 +12,7 @@ using Modulus.Core.Abstractions.Entities;
 using Modulus.Core.Null;
 using Modulus.EntityFrameworkCore;
 using Modulus.EntityFrameworkCore.Extensions;
+using Modulus.AI.Connector;
 using Modulus.AI.Connector.Data;
 using Modulus.EntityFrameworkCore.ModelBuilding;
 using Modulus.EntityFrameworkCore.Saving;
@@ -145,7 +146,7 @@ public sealed class JournalTestHost : IAsyncDisposable
     private readonly SqliteConnection _sales;
     private readonly ServiceProvider _root;
 
-    public JournalTestHost(Action<IServiceCollection>? configure = null)
+    public JournalTestHost(Action<IServiceCollection>? configure = null, bool connectorEnabled = true)
     {
         var name = Guid.NewGuid().ToString("N");
         _shop = new SqliteConnection($"DataSource=shop-{name};Mode=Memory;Cache=Shared");
@@ -160,7 +161,7 @@ public sealed class JournalTestHost : IAsyncDisposable
         services.AddScoped<ICurrentUser, NullCurrentUser>();
         services.AddScoped<DomainEventDispatcher>();
         services.AddSingleton<IModuleModelContributor, AiChangeModelContributor>();
-        services.AddSingleton<IModuleSaveContributor>(new AiChangeSaveContributor(Time));
+        services.AddSingleton<IModuleSaveContributor>(new AiChangeSaveContributor(Time, Options.Create(new ModulusAiConnectorOptions { Enabled = connectorEnabled })));
         services.AddModuleDatabase<ShopDbContext>(o => o.UseSqlite(_shop));
         services.AddModuleDatabase<SalesDbContext>(o => o.UseSqlite(_sales));
         services.AddScoped<EfAiChangeFeed>();

@@ -22,8 +22,8 @@ Check every command below against the OpenBao version you deploy. The command na
 - **Availability (17):** three independent Raft nodes in production. Quorum is two of three. The nodes sit on separate hosts and, where
   possible, in separate failure domains. Three containers on one VPS are not high availability. One node is acceptable only for development
   or a temporary pilot.
-- **Unseal (18):** manual Shamir recovery shares until a KMS is configured. Shares are held by separate custodians and never kept with the
-  running service.
+- **Unseal (18):** Shamir seal, 5 shares with a threshold of 3, held by 5 separate named custodians. No external KMS and no auto-unseal in this
+  design. Shares are never kept with the running service, in source control, in application configuration or in a shared secret store.
 - **Secrets (19):** database credentials, tenant credentials, payment and API keys, webhook secrets, LDAP and SAML bind credentials, AI
   platform keys, Data Protection keys, personal-data search keys and log-redaction keys.
 - **Database credentials (20):** static KV secrets with a controlled rotation schedule. Dynamic credentials are revisited later.
@@ -57,11 +57,20 @@ Check every command below against the OpenBao version you deploy. The command na
 
 ## 5. Unseal and recovery (Operator)
 
-1. Initialise once with five key shares and a threshold of three: `bao operator init -key-shares=5 -key-threshold=3`.
-2. Give each share to a different custodian. Record who holds which share, outside the cluster.
-3. Never store the root token beside the service. Revoke it after the initial setup and use it only for break-glass.
-4. Test recovery at least once per year: restore a snapshot into an isolated cluster and unseal it with three custodians.
-5. Move to an external KMS when one is available, and document the change.
+This design uses the **Shamir seal**. Its unseal keys are the five shares. The seal is manual: every node needs three shares after each
+restart, and there is no auto-unseal and no external KMS. (OpenBao's recovery keys belong to auto-unseal, which this design does not use.)
+
+1. Initialise once with five shares and a threshold of three: `bao operator init -key-shares=5 -key-threshold=3`.
+2. Give each share to a different named custodian, five custodians in all. Record who holds which share, outside the cluster.
+3. Unseal each node after a restart with three different custodians. No custodian holds more than one share.
+4. Never store the shares, or the root token, beside the service, in source control, in application configuration or in a shared secret
+   store. Revoke the root token after the initial setup and use it only for break-glass.
+5. Write and test these procedures, and rehearse each one at least once a year:
+   - restart and unseal of each node;
+   - backup recovery: restore a snapshot into an isolated cluster and unseal it with three custodians;
+   - custodian unavailability: with two custodians unreachable, the cluster must stay sealed and nothing may be improvised, and with three
+     reachable it must unseal;
+   - a lost or compromised share: rekey the seal with the remaining custodians, and record the change.
 
 ## 6. Authentication and policies (Operator, with generated files)
 
@@ -114,7 +123,7 @@ Coordinate rotation with the five-minute cache window, so the old value is not u
 ## 11. Go-live checks (Operator)
 
 - [ ] Three Raft voters, all healthy, with a tested snapshot restore.
-- [ ] Unseal shares held by different custodians, with a documented list.
+- [ ] Five Shamir shares, each held by a different named custodian, with a documented list. Three custodians unseal a restored test cluster.
 - [ ] Audit device writing to protected storage, and forwarding confirmed.
 - [ ] Each application uses its own AppRole in production. No root token in use.
 - [ ] Outage test in staging: stop OpenBao, confirm cached reads for at most five minutes, then `503`, and writes refused.
@@ -124,7 +133,6 @@ Coordinate rotation with the five-minute cache window, so the old value is not u
 ## 12. Open items (operator)
 
 - Choose the SSO provider and confirm its OpenBao OIDC support.
-- Choose the KMS for auto-unseal, when one is available.
-- Name the custodians for the five unseal shares.
+- Name the five custodians for the Shamir shares (the design is fixed at 3 of 5; the names are not yet known).
 - Set the retention period for OpenBao audit files.
 - Decide the environment hosts and their failure domains.

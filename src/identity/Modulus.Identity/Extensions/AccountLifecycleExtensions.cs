@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
@@ -36,6 +37,24 @@ public static class AccountLifecycleExtensions
     /// </summary>
     public const string PersonalDataPermission = "identity:accounts:personal-data";
 
+    /// <summary>
+    /// The clearance to read organization details of accounts (job title and department, classified Confidential). Granted explicitly: holding the
+    /// account administration permission does not include it.
+    /// </summary>
+    public const string OrganizationPermission = "identity:accounts:organization";
+
+    /// <summary>
+    /// The permission to change organization details of accounts (the employee code and the primary branch). Separate from the account
+    /// administration permission, so an administrator who only manages accounts cannot reassign people between branches.
+    /// </summary>
+    public const string OrganizationManagePermission = "identity:accounts:organization:manage";
+
+    /// <summary>
+    /// The company's owner role. The first administrator of a new deployment receives it (never every administrator), and it holds the
+    /// account permissions by default. Only an owner can grant or revoke it, and the last active owner cannot be demoted.
+    /// </summary>
+    public const string TenantOwnerRole = "TenantOwner";
+
     /// <summary>Registers the permissions and the field guard for personal fields. Requires <c>AddModulusAuthorization</c> for the permissions to be enforced.</summary>
     public static IServiceCollection AddModulusAccountLifecycleAdmin(this IServiceCollection services)
     {
@@ -51,11 +70,25 @@ public static class AccountLifecycleExtensions
                 "Read the personal fields of accounts (name, email) in the user administration routes.",
                 null,
                 PermissionSensitivity.Sensitive);
+            registry.Add(
+                OrganizationPermission,
+                "Read the organization details of accounts (job title, department) in the user administration routes.",
+                null,
+                PermissionSensitivity.Sensitive);
+            registry.Add(
+                OrganizationManagePermission,
+                "Change the organization details of accounts: the employee code and the primary branch.",
+                null,
+                PermissionSensitivity.Sensitive);
         });
 
-        var personalData = FieldSecurityProfile.Define(profile => profile.Classification(FieldClassification.Restricted, read: PersonalDataPermission));
-        services.AddFieldSecurity<UserSummary>(personalData);
-        services.AddFieldSecurity<UserDetail>(personalData);
+        // Restricted fields (name, email, work email, phone, employee code) need the personal-data clearance; Confidential fields (job title,
+        // department) need the organization clearance. Holding the account administration permission alone opens neither.
+        var accountFields = FieldSecurityProfile.Define(profile => profile
+            .Classification(FieldClassification.Restricted, read: PersonalDataPermission)
+            .Classification(FieldClassification.Confidential, read: OrganizationPermission));
+        services.AddFieldSecurity<UserSummary>(accountFields);
+        services.AddFieldSecurity<UserDetail>(accountFields);
         return services;
     }
 
@@ -65,10 +98,17 @@ public static class AccountLifecycleExtensions
         ArgumentNullException.ThrowIfNull(endpoints);
         var group = endpoints.MapGroup(prefix).RequireAuthorization(ManagePermission);
 
-        group.MapPut("/{id:guid}/lifecycle", async (Guid id, AccountLifecycleRequest body, ICurrentUser caller, IAccountLifecycleService lifecycle, CancellationToken ct) =>
+        group.MapPut("/{id:guid}/lifecycle", async (Guid id, AccountLifecycleRequest body, ICurrentUser caller, IAccountLifecycleService lifecycle, UserManager<ModulusUser> users, CancellationToken ct) =>
         {
             if (caller.UserId is not { } actor)
                 return Results.Unauthorized();
+            // Disabling or archiving the last active owner would leave the company without one; another owner must be named first.
+            if (body.To is AccountLifecycle.Disabled or AccountLifecycle.Archived
+                && await users.FindByIdAsync(id.ToString()) is { } target
+                && await UserAdminExtensions.IsLastActiveTenantOwnerAsync(users, target))
+            {
+                return Results.Conflict(new { error = "LAST_TENANT_OWNER", message = "The last active Tenant Owner cannot be disabled or archived. Name another owner first." });
+            }
             try
             {
                 var state = await lifecycle.ChangeAsync(new AccountLifecycleChange(id, body.To, actor, body.Reason, body.Note), ct);

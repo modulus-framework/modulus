@@ -24,6 +24,17 @@ public sealed class UserAdminHttpTests : OidcHostTestBase
 {
     private const string AccountAdminRole = "AccountAdmin";
     private const string PersonalDataRole = "PersonalDataReader";
+    private const string OrgReaderRole = "OrganizationReader";
+    private const string OrgManagerRole = "OrganizationManager";
+    private static readonly Guid KnownBranch = Guid.Parse("b7a1c2d3-0000-4000-8000-00000000be01");
+
+    // The company's org units for these tests: one branch, which the primary-branch rule accepts.
+    private sealed class KnownBranchHierarchy(Guid branch) : Modulus.Authorization.Organization.IOrgHierarchy
+    {
+        public bool Contains(Guid orgUnitId) => orgUnitId == branch;
+        public IReadOnlySet<Guid> Descendants(Guid orgUnitId) => new HashSet<Guid>();
+        public IReadOnlySet<Guid> Ancestors(Guid orgUnitId) => new HashSet<Guid>();
+    }
     private readonly RecordingAuditLog _audit = new();
     private readonly SwitchableTenant _tenant = new();
 
@@ -37,9 +48,12 @@ public sealed class UserAdminHttpTests : OidcHostTestBase
         services.AddModulusAuthorization();
         services.AddGrantStorePermissionChecker();
         services.Replace(ServiceDescriptor.Scoped<ICurrentUser, ClaimsPrincipalCurrentUser>());
+        services.AddSingleton<Modulus.Authorization.Organization.IOrgHierarchy>(new KnownBranchHierarchy(KnownBranch));
         services.AddPermissionGrants(grants => grants
             .GrantToRole(AccountAdminRole, AccountLifecycleExtensions.ManagePermission)
-            .GrantToRole(PersonalDataRole, AccountLifecycleExtensions.PersonalDataPermission));
+            .GrantToRole(PersonalDataRole, AccountLifecycleExtensions.PersonalDataPermission)
+            .GrantToRole(OrgReaderRole, AccountLifecycleExtensions.OrganizationPermission)
+            .GrantToRole(OrgManagerRole, AccountLifecycleExtensions.OrganizationManagePermission));
     }
 
     protected override void ConfigureEndpoints(WebApplication app)
@@ -53,6 +67,7 @@ public sealed class UserAdminHttpTests : OidcHostTestBase
                 await next(context);
         });
         app.MapModulusUserAdmin<ModulusUser>();
+        app.MapModulusAccountLifecycle();
     }
 
     [Fact]
@@ -129,6 +144,195 @@ public sealed class UserAdminHttpTests : OidcHostTestBase
         var writes = _audit.Events.Where(e => e.Action.StartsWith("identity.user.", StringComparison.Ordinal)).ToList();
         writes.Select(e => e.Action).Should().Equal("identity.user.roles.changed", "identity.user.locked", "identity.user.unlocked");
         writes.All(e => e.Actor == admin.Id.ToString("D") && e.Target == $"user:{target.Id:D}").Should().BeTrue("each event names the actor and the target");
+    }
+
+    [Fact]
+    public async Task The_last_active_tenant_owner_cannot_be_demoted_and_ownership_changes_are_audited()
+    {
+        await EnsureRoleAsync(AccountAdminRole);
+        await EnsureRoleAsync(AccountLifecycleExtensions.TenantOwnerRole);
+        var owner = await CreateUserAsync("owner", AccountAdminRole, AccountLifecycleExtensions.TenantOwnerRole);
+        var successor = await CreateUserAsync("successor");
+        var key = await EnableSecondFactorAsync(owner);
+        var (status, body) = await PasswordAsync("owner", mfa: Totp(key));
+        status.Should().Be(HttpStatusCode.OK);
+        var token = body.GetProperty("access_token").GetString();
+
+        var selfDemotion = await SendAsync(HttpMethod.Put, $"/identity/users/{owner.Id}/roles", token, new { roles = new[] { AccountAdminRole } });
+        selfDemotion.StatusCode.Should().Be(HttpStatusCode.Conflict, "the last active owner cannot be demoted");
+        (await selfDemotion.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("error").GetString().Should().Be("LAST_TENANT_OWNER");
+
+        var promoted = await SendAsync(HttpMethod.Put, $"/identity/users/{successor.Id}/roles", token, new { roles = new[] { AccountLifecycleExtensions.TenantOwnerRole } });
+        promoted.StatusCode.Should().Be(HttpStatusCode.OK, "an owner names another owner");
+
+        var demoted = await SendAsync(HttpMethod.Put, $"/identity/users/{owner.Id}/roles", token, new { roles = new[] { AccountAdminRole } });
+        demoted.StatusCode.Should().Be(HttpStatusCode.OK, "another active owner exists");
+
+        var ownership = _audit.Events.Where(e => e.Action.StartsWith("identity.tenant-owner.", StringComparison.Ordinal)).Select(e => e.Action).ToList();
+        ownership.Should().Equal("identity.tenant-owner.granted", "identity.tenant-owner.revoked");
+    }
+
+    [Fact]
+    public async Task The_last_active_owner_cannot_be_locked_or_disabled_until_another_owner_exists()
+    {
+        await EnsureRoleAsync(AccountAdminRole);
+        await EnsureRoleAsync(AccountLifecycleExtensions.TenantOwnerRole);
+        var owner = await CreateUserAsync("owner", AccountAdminRole, AccountLifecycleExtensions.TenantOwnerRole);
+        var successor = await CreateUserAsync("successor");
+        var key = await EnableSecondFactorAsync(owner);
+        var (status, body) = await PasswordAsync("owner", mfa: Totp(key));
+        status.Should().Be(HttpStatusCode.OK);
+        var token = body.GetProperty("access_token").GetString();
+
+        var locked = await SendAsync(HttpMethod.Post, $"/identity/users/{owner.Id}/lock", token, new { until = (DateTimeOffset?)null, reason = "Review" });
+        locked.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        (await locked.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("error").GetString().Should().Be("LAST_TENANT_OWNER");
+
+        var disabled = await SendAsync(HttpMethod.Put, $"/identity/accounts/{owner.Id}/lifecycle", token, new { To = (int)AccountLifecycle.Disabled, Reason = "other", Note = "x" });
+        disabled.StatusCode.Should().Be(HttpStatusCode.Conflict, "disabling the last owner is refused too");
+
+        (await SendAsync(HttpMethod.Put, $"/identity/users/{successor.Id}/roles", token, new { roles = new[] { AccountLifecycleExtensions.TenantOwnerRole } }))
+            .StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var lockedAfter = await SendAsync(HttpMethod.Post, $"/identity/users/{owner.Id}/lock", token, new { until = (DateTimeOffset?)null, reason = "Review" });
+        lockedAfter.StatusCode.Should().Be(HttpStatusCode.OK, "another active owner exists");
+    }
+
+    [Fact]
+    public async Task Organization_details_need_the_organization_clearance_even_for_an_administrator()
+    {
+        var target = await CreateUserAsync("target");
+        using (var scope = _app.Services.CreateScope())
+        {
+            using (_tenant.Change(null))
+            {
+                var users = scope.ServiceProvider.GetRequiredService<UserManager<ModulusUser>>();
+                var fresh = await users.FindByIdAsync(target.Id.ToString());
+                fresh!.JobTitle = "Analyst";
+                fresh.Department = "Operations";
+                (await users.UpdateAsync(fresh)).Succeeded.Should().BeTrue();
+            }
+        }
+
+        // An administrator with the account and personal-data permissions, but no organization clearance: the organization fields are masked.
+        var plainAdmin = await SecondFactorTokenAsync("plain-admin", AccountAdminRole, PersonalDataRole);
+        var masked = await (await SendAsync(HttpMethod.Get, $"/identity/users/{target.Id}", plainAdmin, null)).Content.ReadFromJsonAsync<JsonElement>();
+        masked.GetProperty("jobTitle").ValueKind.Should().Be(JsonValueKind.Null, "holding the admin role does not clear Confidential data");
+        masked.GetProperty("department").ValueKind.Should().Be(JsonValueKind.Null);
+
+        // The same administrator with the organization clearance sees them.
+        var cleared = await SecondFactorTokenAsync("cleared-admin", AccountAdminRole, PersonalDataRole, OrgReaderRole);
+        var visible = await (await SendAsync(HttpMethod.Get, $"/identity/users/{target.Id}", cleared, null)).Content.ReadFromJsonAsync<JsonElement>();
+        visible.GetProperty("jobTitle").GetString().Should().Be("Analyst");
+        visible.GetProperty("department").GetString().Should().Be("Operations");
+
+        // An ordinary account without the administration permission cannot reach the detail at all.
+        var ordinary = await SecondFactorTokenAsync("ordinary");
+        (await SendAsync(HttpMethod.Get, $"/identity/users/{target.Id}", ordinary, null)).StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task Changing_the_employee_code_needs_the_organization_manage_permission_not_only_account_administration()
+    {
+        var target = await CreateUserAsync("target");
+        var accountOnly = await SecondFactorTokenAsync("account-admin", AccountAdminRole, PersonalDataRole);
+        var refused = await SendAsync(HttpMethod.Patch, $"/identity/users/{target.Id}/organization", accountOnly, new { employeeCode = "EMP-1" });
+        refused.StatusCode.Should().Be(HttpStatusCode.Forbidden, "account administration alone does not reassign people");
+
+        var manager = await SecondFactorTokenAsync("org-manager", AccountAdminRole, OrgManagerRole);
+        var allowed = await SendAsync(HttpMethod.Patch, $"/identity/users/{target.Id}/organization", manager, new { employeeCode = "EMP-1" });
+        allowed.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task An_administrator_enters_a_work_email_only_as_a_pending_one_and_needs_the_organization_manage_permission()
+    {
+        var target = await CreateUserAsync("work-target");
+        var accountOnly = await SecondFactorTokenAsync("work-account-admin", AccountAdminRole, PersonalDataRole);
+        var refused = await SendAsync(HttpMethod.Patch, $"/identity/users/{target.Id}/work-email", accountOnly, new { workEmail = "target@work.example" });
+        refused.StatusCode.Should().Be(HttpStatusCode.Forbidden, "account administration alone does not set organization data");
+
+        var manager = await SecondFactorTokenAsync("work-org-manager", AccountAdminRole, OrgManagerRole);
+        var accepted = await SendAsync(HttpMethod.Patch, $"/identity/users/{target.Id}/work-email", manager, new { workEmail = "target@work.example" });
+        accepted.StatusCode.Should().Be(HttpStatusCode.Accepted);
+
+        // Entered by an administrator, it is not verified: the stored work e-mail stays empty and the address is pending.
+        using var scope = _app.Services.CreateScope();
+        using var host = _tenant.Change(null);
+        var users = scope.ServiceProvider.GetRequiredService<UserManager<ModulusUser>>();
+        var stored = await users.FindByIdAsync(target.Id.ToString());
+        stored!.WorkEmail.Should().BeNull("an administrator's entry is not verified by being entered");
+        stored.PendingWorkEmail.Should().Be("target@work.example");
+        _audit.Events.Should().Contain(e => e.Action == "identity.user.work-email.requested");
+    }
+
+    private async Task<string> SecondFactorTokenAsync(string name, params string[] roles)
+    {
+        foreach (var role in roles)
+            await EnsureRoleAsync(role);
+        var user = await CreateUserAsync(name, roles);
+        var key = await EnableSecondFactorAsync(user);
+        var (status, body) = await PasswordAsync(name, mfa: Totp(key));
+        status.Should().Be(HttpStatusCode.OK);
+        return body.GetProperty("access_token").GetString()!;
+    }
+
+    [Fact]
+    public async Task An_administrator_sets_the_employee_code_and_the_primary_branch_and_a_duplicate_code_is_refused()
+    {
+        await EnsureRoleAsync(AccountAdminRole);
+        await EnsureRoleAsync(PersonalDataRole);
+        await EnsureRoleAsync(OrgManagerRole);
+        // The personal-data permission is needed to read the employee code (a Restricted field); the organization-manage permission to set it.
+        var admin = await CreateUserAsync("admin", AccountAdminRole, PersonalDataRole, OrgManagerRole);
+        var first = await CreateUserAsync("first");
+        var second = await CreateUserAsync("second");
+        var key = await EnableSecondFactorAsync(admin);
+        var (status, body) = await PasswordAsync("admin", mfa: Totp(key));
+        status.Should().Be(HttpStatusCode.OK);
+        var token = body.GetProperty("access_token").GetString();
+        var branch = KnownBranch;
+
+        var foreign = await SendAsync(HttpMethod.Patch, $"/identity/users/{first.Id}/organization", token, new { primaryBranchId = Guid.NewGuid() });
+        foreign.StatusCode.Should().Be(HttpStatusCode.BadRequest, "a branch outside the company's org units is refused");
+
+        var set = await SendAsync(HttpMethod.Patch, $"/identity/users/{first.Id}/organization", token, new { employeeCode = "emp-0042", primaryBranchId = branch });
+        set.StatusCode.Should().Be(HttpStatusCode.OK);
+        var detail = await set.Content.ReadFromJsonAsync<JsonElement>();
+        detail.GetProperty("employeeCode").GetString().Should().Be("EMP-0042", "codes are stored upper-case");
+        detail.GetProperty("primaryBranchId").GetGuid().Should().Be(branch);
+
+        var duplicate = await SendAsync(HttpMethod.Patch, $"/identity/users/{second.Id}/organization", token, new { employeeCode = "EMP-0042" });
+        duplicate.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        (await duplicate.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("error").GetString().Should().Be("EMPLOYEE_CODE_TAKEN");
+
+        var bad = await SendAsync(HttpMethod.Patch, $"/identity/users/{second.Id}/organization", token, new { employeeCode = "emp code!" });
+        bad.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        var cleared = await SendAsync(HttpMethod.Patch, $"/identity/users/{first.Id}/organization", token, new { clearPrimaryBranch = true });
+        cleared.StatusCode.Should().Be(HttpStatusCode.OK);
+        (await cleared.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("primaryBranchId").ValueKind.Should().Be(JsonValueKind.Null);
+
+        _audit.Events.Count(e => e.Action == "identity.user.organization.changed").Should().Be(2, "each successful change is audited; the refusals are not");
+    }
+
+    [Fact]
+    public async Task A_normal_administrator_cannot_grant_the_tenant_owner_role()
+    {
+        await EnsureRoleAsync(AccountAdminRole);
+        await EnsureRoleAsync(AccountLifecycleExtensions.TenantOwnerRole);
+        var admin = await CreateUserAsync("admin", AccountAdminRole);
+        var target = await CreateUserAsync("target");
+        var key = await EnableSecondFactorAsync(admin);
+        var (status, body) = await PasswordAsync("admin", mfa: Totp(key));
+        status.Should().Be(HttpStatusCode.OK);
+        var token = body.GetProperty("access_token").GetString();
+
+        var refused = await SendAsync(HttpMethod.Put, $"/identity/users/{target.Id}/roles", token, new { roles = new[] { AccountLifecycleExtensions.TenantOwnerRole } });
+
+        refused.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        (await refused.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("error").GetString().Should().Be("TENANT_OWNER_REQUIRED");
+        _audit.Events.Should().NotContain(e => e.Action.StartsWith("identity.tenant-owner.", StringComparison.Ordinal), "nothing changed");
     }
 
     [Fact]

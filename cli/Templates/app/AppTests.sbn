@@ -190,7 +190,7 @@ internal static class Companies
 public sealed class WebAppSmokeTest(ModulusWebAppFactory<{{ if web_entry }}WebEntryPoint{{ else }}ApiEntryPoint{{ end }}> factory)
     : IClassFixture<ModulusWebAppFactory<{{ if web_entry }}WebEntryPoint{{ else }}ApiEntryPoint{{ end }}>>
 {
-    [Fact]
+{{ if use_auth }}    [Fact]
     public async Task Root_ChallengesAnonymousCallers()
     {
         var client = factory.CreateClient();
@@ -220,6 +220,26 @@ public sealed class WebAppSmokeTest(ModulusWebAppFactory<{{ if web_entry }}WebEn
     }
 
     [Fact]
+    public async Task Unknown_pages_show_the_error_page_not_a_problem_document()
+    {
+        var response = await factory.CreateClient().GetAsync("/no-such-page-" + Guid.NewGuid().ToString("N"));
+        var body = await response.Content.ReadAsStringAsync();
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        Assert.Contains("Page not found", body);
+        Assert.DoesNotContain("traceId", body);
+    }
+{{ if auth == "openiddict" }}
+    [Fact]
+    public async Task Password_recovery_pages_are_public_and_a_reset_without_a_token_is_refused()
+    {
+        var client = factory.CreateClient();
+
+        Assert.Contains("Send the reset link", await client.GetStringAsync("/Account/ForgotPassword"));
+        Assert.Contains("This link is incomplete", await client.GetStringAsync("/ResetPassword"));
+    }
+{{ end }}
+    [Fact]
     public async Task SignedInUser_ReachesTheLandingPage()
     {
         var client = factory.CreateAuthenticatedClient();
@@ -228,6 +248,21 @@ public sealed class WebAppSmokeTest(ModulusWebAppFactory<{{ if web_entry }}WebEn
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
+{{ else }}
+    /// <summary>
+    /// With no sign-in the host registers a scheme that never signs anyone in, and the closed routes require a user. An anonymous caller
+    /// gets 401 (not 500, and not a page). The landing page and the admin pages are all closed.
+    /// </summary>
+    [Fact]
+    public async Task Without_sign_in_no_page_is_served_to_anonymous_callers()
+    {
+        var client = factory.CreateClient();
+
+        var response = await client.GetAsync("/");
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+{{ end }}
 }
 {{ if kind_name == "webapp+api" && web_login_mode == "Password" }}
 /// <summary>
@@ -332,6 +367,20 @@ public sealed class WebToApiLoginTests
 
         var list = await client.GetStringAsync("/{{ example_route }}");
         Assert.Contains(name, list);
+{{ if multi_tenancy }}
+        // The branch picker (decision 14): a branch of the company is listed, chosen, and a branch outside the caller's scope is refused.
+        var branchId = await CreateBranchAsync(api);
+        Assert.Contains(branchId.ToString("D"), await client.GetStringAsync("/Branch"));
+
+        var chosen = await PostFormAsync(client, "/Branch?handler=Switch", new Dictionary<string, string> { ["branchId"] = branchId.ToString("D") });
+        Assert.Equal(HttpStatusCode.Redirect, chosen.StatusCode);
+        Assert.Contains(branchId.ToString("D"), string.Join(";", chosen.Headers.GetValues("Set-Cookie")));
+        Assert.Contains("Branch selected.", await client.GetStringAsync("/Branch"));
+
+        var outOfScope = await PostFormAsync(client, "/Branch?handler=Switch", new Dictionary<string, string> { ["branchId"] = Guid.NewGuid().ToString("D") });
+        Assert.Equal(HttpStatusCode.Redirect, outOfScope.StatusCode);
+        Assert.Contains("That branch is not available to you.", await client.GetStringAsync("/Branch"));
+{{ end }}
 
         // The admin pages run their API calls through the same session. A client that is not registered fails only when its page runs, so
         // every page is opened here.
@@ -358,7 +407,25 @@ public sealed class WebToApiLoginTests
         Assert.Contains("not available", await response.Content.ReadAsStringAsync());
     }
 
-    private static async Task<HttpResponseMessage> PostFormAsync(HttpClient client, string path, Dictionary<string, string> fields)
+{{ if multi_tenancy }}    // A branch of the default company, made the way the organization admin API makes one: a unit in the hierarchy, with its profile.
+    private static async Task<Guid> CreateBranchAsync(Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory<ApiEntryPoint> api)
+    {
+        await using var scope = api.Services.CreateAsyncScope();
+        var company = await scope.ServiceProvider.GetRequiredService<Modulus.MultiTenancy.ITenantStore>()
+            .FindBySlugAsync("default", CancellationToken.None)
+            ?? throw new InvalidOperationException("The default company is not seeded.");
+        using var inCompany = scope.ServiceProvider.GetRequiredService<Modulus.Core.Abstractions.ICurrentTenant>().Change(company);
+
+        var branchId = Guid.NewGuid();
+        await scope.ServiceProvider.GetRequiredService<Modulus.Authorization.EntityFrameworkCore.IOrgUnitAdministration>()
+            .AddUnitAsync(branchId, [], CancellationToken.None);
+        await scope.ServiceProvider.GetRequiredService<Modulus.Authorization.EntityFrameworkCore.EfOrganizationProfileStore>().SaveUnitAsync(
+            new Modulus.Authorization.EntityFrameworkCore.OrgUnitProfile(branchId, "BR-1", "Main branch", "branch", false, null, null),
+            DateTimeOffset.UtcNow, CancellationToken.None);
+        return branchId;
+    }
+
+{{ end }}    private static async Task<HttpResponseMessage> PostFormAsync(HttpClient client, string path, Dictionary<string, string> fields)
     {
         // Razor Pages forms carry an anti-forgery token: read it from the page the form is on, then post it back.
         var page = await client.GetStringAsync(path);

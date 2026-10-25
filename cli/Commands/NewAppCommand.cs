@@ -234,6 +234,11 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
             Ux.Status($"Clearing {appName}/", () => Ux.DeleteDirectory(projectDir));
         }
 
+        // --package-source is the local feed of the packages. The UI templates are looked up in MODULUS_LOCAL_FEED, so a feed given only with
+        // --package-source would be ignored there (the Web project then lost its UI references); the option stands in for it unless the variable is set.
+        if (s.PackageSource is { Length: > 0 } feed && Environment.GetEnvironmentVariable(UiTemplatePackage.FeedEnvironmentVariable) is not { Length: > 0 })
+            Environment.SetEnvironmentVariable(UiTemplatePackage.FeedEnvironmentVariable, feed);
+
         var model = new AppModel
         {
             RootNamespace = rootNs,
@@ -261,7 +266,9 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
             UiEngine = uiEngine,
             UseUiFramework = useUiFramework,
             LocalPackageSource = s.PackageSource,
-            UiFeedSource = uiEngine == "none" ? null : UiFrameworkPackages.LocalFeed(),
+            // The UI feed is a source of its own unless it is the package source already: one folder under two source keys
+            // confuses NuGet's source mapping (the UI packages then fail to resolve at their own version).
+            UiFeedSource = UiFeedSourceFor(uiEngine, s.PackageSource),
             Bff = BffClients.WithWebClient(bff, kind == AppKind.WebAppApi && auth != "none"),
             BffServices = bffServices,
             MultiTenancy = multiTenancy,
@@ -558,8 +565,16 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         _templates.RenderToFile("app/Profile.Web.cshtml", model, Path.Combine(webDir, "Pages", "Profile.cshtml"));
         _templates.RenderToFile("app/ConfirmEmailChangeModel.Web", model, Path.Combine(webDir, "Pages", "ConfirmEmailChange.cshtml.cs"));
         _templates.RenderToFile("app/ConfirmEmailChange.Web.cshtml", model, Path.Combine(webDir, "Pages", "ConfirmEmailChange.cshtml"));
+        _templates.RenderToFile("app/ProfilePhotoModel.Web", model, Path.Combine(webDir, "Pages", "ProfilePhoto.cshtml.cs"));
+        _templates.RenderToFile("app/ProfilePhoto.Web.cshtml", model, Path.Combine(webDir, "Pages", "ProfilePhoto.cshtml"));
+        _templates.RenderToFile("app/profile-photo.js", model, Path.Combine(webDir, "wwwroot", "js", "profile-photo.js"));
+        _templates.RenderToFile("app/ConfirmWorkEmailModel.Web", model, Path.Combine(webDir, "Pages", "ConfirmWorkEmail.cshtml.cs"));
+        _templates.RenderToFile("app/ConfirmWorkEmail.Web.cshtml", model, Path.Combine(webDir, "Pages", "ConfirmWorkEmail.cshtml"));
+        // The branches the caller may see (the profile names the primary branch; the branch picker lists them).
+        _templates.RenderToFile("app/BranchApiClient.Web", model, Path.Combine(webDir, "Services", "ApiClients", "BranchApiClient.cs"));
         if (!model.MultiTenancy) return;
         _templates.RenderToFile("app/CompanyApiClient.Web", model, Path.Combine(webDir, "Services", "ApiClients", "CompanyApiClient.cs"));
+        _templates.RenderToFile("app/DefaultCompany.Web", model, Path.Combine(webDir, "Middleware", "DefaultCompanyMiddleware.cs"));
         _templates.RenderToFile("app/CompanyModel.Web", model, Path.Combine(webDir, "Pages", "Company.cshtml.cs"));
         _templates.RenderToFile("app/Company.Web.cshtml", model, Path.Combine(webDir, "Pages", "Company.cshtml"));
         // The company administration page (tenants:manage), the Companies entry the API navigation already links to.
@@ -567,7 +582,6 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         _templates.RenderToFile("app/CompanyAdminModel.Web", model, Path.Combine(webDir, "Pages", "Admin", "Companies.cshtml.cs"));
         _templates.RenderToFile("app/CompanyAdmin.Web.cshtml", model, Path.Combine(webDir, "Pages", "Admin", "Companies.cshtml"));
         // The branch picker (decision 14): the branches the caller's scope allows; the cookie becomes X-Branch-Id at the gateway.
-        _templates.RenderToFile("app/BranchApiClient.Web", model, Path.Combine(webDir, "Services", "ApiClients", "BranchApiClient.cs"));
         _templates.RenderToFile("app/BranchModel.Web", model, Path.Combine(webDir, "Pages", "Branch.cshtml.cs"));
         _templates.RenderToFile("app/Branch.Web.cshtml", model, Path.Combine(webDir, "Pages", "Branch.cshtml"));
     }
@@ -693,6 +707,9 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         _templates.RenderToFile("app/MenuRegistration.Web", model,
             Path.Combine(webDir, "Composition", "MenuRegistration.cs"));
         RenderNavigationMenu(webDir, model);
+        _templates.RenderToFile("app/favicon.svg", model, Path.Combine(webDir, "wwwroot", "favicon.svg"));
+        _templates.RenderToFile("app/ErrorModel.Web", model, Path.Combine(webDir, "Pages", "Error.cshtml.cs"));
+        _templates.RenderToFile("app/Error.Web.cshtml", model, Path.Combine(webDir, "Pages", "Error.cshtml"));
         RenderUserAdmin(webDir, model);
         RenderRoleAdmin(webDir, model);
         RenderAuditViewer(webDir, model);
@@ -732,10 +749,28 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
                 _templates.RenderToFile("app/passkeys.js", model, Path.Combine(webDir, "wwwroot", "js", "passkeys.js"));
                 _templates.RenderToFile("app/PasskeyLoginClient.Web", model, Path.Combine(webDir, "Services", "ApiClients", "PasskeyLoginClient.cs"));
                 _templates.RenderToFile("app/passkey-login.js", model, Path.Combine(webDir, "wwwroot", "js", "passkey-login.js"));
+
+                // Password recovery: the forgot and reset pages call the API anonymously (the email link carries the token).
+                _templates.RenderToFile("app/AccountApiClient.Web", model, Path.Combine(webDir, "Services", "ApiClients", "AccountApiClient.cs"));
+                _templates.RenderToFile("app/ForgotPasswordModel.Web", model, Path.Combine(accountDir, "ForgotPassword.cshtml.cs"));
+                _templates.RenderToFile("app/ForgotPassword.Web.cshtml", model, Path.Combine(accountDir, "ForgotPassword.cshtml"));
+                _templates.RenderToFile("app/ResetPasswordModel.Web", model, Path.Combine(accountDir, "ResetPassword.cshtml.cs"));
+                _templates.RenderToFile("app/ResetPassword.Web.cshtml", model, Path.Combine(accountDir, "ResetPassword.cshtml"));
             }
         }
 
         projects.Add($"src/Web/{rootNs}.Web/{rootNs}.Web.csproj");
+    }
+
+    /// <summary>The local UI feed for the generated app, or null when the app needs none or the package source already serves it.</summary>
+    private static string? UiFeedSourceFor(string uiEngine, string? packageSource)
+    {
+        if (uiEngine == "none")
+            return null;
+        var uiFeed = UiFrameworkPackages.LocalFeed();
+        if (uiFeed is null || packageSource is null)
+            return uiFeed;
+        return string.Equals(Path.GetFullPath(uiFeed), Path.GetFullPath(packageSource), StringComparison.Ordinal) ? null : uiFeed;
     }
 
     /// <summary>The Razor Pages and MVC host's setup files: one per concern, composed by Program.cs.</summary>
@@ -745,6 +780,8 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         _templates.RenderToFile("app/UiSetup.Web", model, Path.Combine(webDir, "Configuration", "UiSetup.cs"));
         if (model.UseAuth)
             RenderBffGatewaySecurity(webDir, model);
+        else
+            _templates.RenderToFile("app/NoSignInAuthentication.Web", model, Path.Combine(webDir, "Security", "NoSignInAuthentication.cs"));
         _templates.RenderToFile("app/PipelineSetup.Web", model, Path.Combine(webDir, "Middleware", "PipelineSetup.cs"));
         _templates.RenderToFile("app/WebEndpoints.Web", model, Path.Combine(webDir, "Endpoints", "WebEndpoints.cs"));
         _templates.RenderToFile("app/HealthChecksSetup.Web", model, Path.Combine(webDir, "Observability", "HealthChecksSetup.cs"));

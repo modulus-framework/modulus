@@ -103,6 +103,8 @@ public static class EfAuthorizationStoreExtensions
         // The configured starting grants of a new company (CompanyProvisioning:Grants). Empty unless configured.
         services.AddOptions<CompanyProvisioningOptions>();
         services.TryAddScoped<ICompanyProvisioner, CompanyProvisioner>();
+        // Explicit parent-to-child authorities (decision 6). Read directly on every check, never cached.
+        services.TryAddSingleton<ICompanyAuthorityStore, EfCompanyAuthorityStore>();
         services.TryAddSingleton(TimeProvider.System);
         services.TryAddSingleton<TtlPermissionGrantStore>(sp => new TtlPermissionGrantStore(
             sp.GetRequiredService<EfPermissionGrantStore>(),

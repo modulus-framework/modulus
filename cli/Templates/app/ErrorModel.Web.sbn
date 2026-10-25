@@ -1,0 +1,40 @@
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc.RazorPages;
+using Modulus.Core.Abstractions.Security;
+
+namespace {{ root_namespace }}.Web.Pages;
+
+/// <summary>
+/// The error page: a status code (404, 403, 500 ...) re-runs this page with the code in the route (<c>/Error/404</c>), so every error
+/// reads the same way. Anonymous, because a 404 for a signed-out visitor must not turn into a sign-in redirect.
+/// </summary>
+[AllowAnonymous]
+[Loosened("The error page is shown to every visitor", Framework = true)]
+public sealed class ErrorModel : PageModel
+{
+    /// <summary>The HTTP status the page is for.</summary>
+    public int Code { get; private set; } = StatusCodes.Status500InternalServerError;
+
+    /// <summary>The short heading for the status.</summary>
+    public string Heading { get; private set; } = "Something went wrong";
+
+    /// <summary>What the visitor can do about it.</summary>
+    public string Message { get; private set; } = "An unexpected error occurred. Try again, or go back to the home page.";
+
+    public void OnGet(int? code)
+    {
+        var status = code ?? (Response.StatusCode >= StatusCodes.Status400BadRequest ? Response.StatusCode : Code);
+        Code = status;
+        (Heading, Message) = status switch
+        {
+            StatusCodes.Status400BadRequest => ("The request could not be processed", "Check what you entered and try again."),
+            StatusCodes.Status401Unauthorized => ("Sign in to continue", "This page needs a signed-in account."),
+            StatusCodes.Status403Forbidden => ("Access denied", "Your account does not have permission to open this page."),
+            StatusCodes.Status404NotFound => ("Page not found", "The page you are looking for does not exist or has moved."),
+            StatusCodes.Status429TooManyRequests => ("Too many requests", "Wait a minute, then try again."),
+            StatusCodes.Status409Conflict => ("This changed while you were editing", "Reload the page to see the latest version, then make your change again."),
+            _ when status >= StatusCodes.Status500InternalServerError => ("Something went wrong", "An unexpected error occurred. It has been logged. Try again, or go back to the home page."),
+            _ => ("Something went wrong", $"The request failed with status {status}."),
+        };
+    }
+}

@@ -23,14 +23,18 @@ internal static class UiSetup
         services.AddModulusMvc(theme => configuration.GetSection("Modulus:Theme").Bind(theme));
 
 {{ if use_auth }}        // Pages require a signed-in user; the sign-in pages under /Account are the only open folder.
-{{ else }}        // No authentication configured. Pages are public; add auth manually (AddAuthentication().AddCookie(...)) and a
-        // sign-in flow when you need one.
+{{ else }}        // No sign-in configured: the no-sign-in scheme (Security/NoSignInAuthentication.cs) answers 401 to every page that
+        // requires a user. Add a sign-in flow (AddAuthentication().AddCookie(...)) when you need one.
 {{ end }}        services.PostConfigure<RazorPagesOptions>(options =>
         {
 {{ if use_auth }}            options.Conventions.AuthorizeFolder("/");
 {{ end }}            options.Conventions.AllowAnonymousToFolder("/Account");
             options.Conventions.AddFolderApplicationModelConvention("/Account", page =>
                 page.EndpointMetadata.Add(new LoosenedAttribute("Sign-in pages under /Account are open") { Framework = true }));
+            // The error page shows a 404 or 500 to anyone, signed in or not.
+            options.Conventions.AllowAnonymousToFolder("/Error");
+            options.Conventions.AddFolderApplicationModelConvention("/Error", page =>
+                page.EndpointMetadata.Add(new LoosenedAttribute("The error page is shown to every visitor") { Framework = true }));
         });
 
         return services;

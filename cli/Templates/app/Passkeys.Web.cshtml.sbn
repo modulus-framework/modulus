@@ -3,20 +3,37 @@
 @{
     ViewData["Title"] = "Passkeys";
 }
-<h1>Passkeys</h1>
-<p>A passkey signs you in with this device (a fingerprint, a face or a security key). Adding or removing one needs a recent sign-in.</p>
 
-<form id="passkey-token" method="post">
-    @Html.AntiForgeryToken()
-</form>
+<app-page-header pretitle="Account" title="Passkeys" />
 
-<ul id="passkey-list"></ul>
-<p id="passkey-status" role="status"></p>
-
-<div>
-    <label for="passkey-name">Name for the new passkey</label>
-    <input id="passkey-name" type="text" maxlength="64" value="This device" />
-    <button id="passkey-add" type="button">Add a passkey</button>
+<div class="m-grid m-cols-main">
+    <div>
+        <div class="m-card m-mb-16">
+            <div class="m-card-header"><div class="m-card-title">Your passkeys</div></div>
+            <div class="m-card-body">
+                <p class="m-muted m-mb-16">A passkey signs you in with this device: a fingerprint, a face or a security key. Adding or removing one needs a recent sign-in.</p>
+                <form id="passkey-token" method="post">
+                    @Html.AntiForgeryToken()
+                </form>
+                <ul id="passkey-list" class="m-mb-8"></ul>
+                <p id="passkey-status" role="status" class="m-muted"></p>
+            </div>
+        </div>
+    </div>
+    <aside>
+        <div class="m-card m-mb-16">
+            <div class="m-card-header"><div class="m-card-title">Add a passkey</div></div>
+            <div class="m-card-body">
+                <div class="ant-form ant-form-vertical">
+                    <label for="passkey-name">Name for the new passkey</label>
+                    <input id="passkey-name" class="ant-input" type="text" maxlength="64" value="This device" />
+                    <div class="m-form-actions m-mt-12">
+                        <button id="passkey-add" class="ant-btn ant-btn-primary" type="button">Add a passkey</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </aside>
 </div>
 
 <script src="~/js/passkeys.js" asp-append-version="true"></script>

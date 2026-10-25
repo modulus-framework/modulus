@@ -4,46 +4,81 @@
     ViewData["Title"] = "Company audit";
 }
 
-<h1>Company audit</h1>
+<app-page-header pretitle="Administration" title="Company audit" />
 
 @if (Model.Message is not null)
 {
-    <p role="status">@Model.Message</p>
+    <app-alert type="info" show-icon message="@Model.Message" class="m-mb-16" />
 }
 
-<form method="get">
-    <label>Category <input name="Category" value="@Model.Category" /></label>
-    <label>Action (prefix) <input name="Action" value="@Model.Action" /></label>
-    <label>Outcome <input name="Outcome" value="@Model.Outcome" /></label>
-    <label>Since <input name="Since" value="@Model.Since" placeholder="2026-10-01" /></label>
-    <label>Until <input name="Until" value="@Model.Until" placeholder="2026-10-31" /></label>
-    <button type="submit">Search</button>
-</form>
+<div class="m-card m-mb-16">
+    <div class="m-card-body">
+        <form method="get" class="m-flex m-flex-wrap m-gap-12" style="align-items: flex-end;">
+            <div style="flex: 1 1 180px;">
+                <label class="m-muted" for="co-category">Category</label>
+                <input id="co-category" class="ant-input" name="Category" value="@Model.Category" />
+            </div>
+            <div style="flex: 1 1 180px;">
+                <label class="m-muted" for="co-action">Action (prefix)</label>
+                <input id="co-action" class="ant-input" name="Action" value="@Model.Action" />
+            </div>
+            <div style="flex: 0 1 150px;">
+                <label class="m-muted" for="co-outcome">Outcome</label>
+                <input id="co-outcome" class="ant-input" name="Outcome" value="@Model.Outcome" />
+            </div>
+            <div style="flex: 0 1 150px;">
+                <label class="m-muted" for="co-since">Since</label>
+                <input id="co-since" class="ant-input" name="Since" value="@Model.Since" placeholder="2026-10-01" />
+            </div>
+            <div style="flex: 0 1 150px;">
+                <label class="m-muted" for="co-until">Until</label>
+                <input id="co-until" class="ant-input" name="Until" value="@Model.Until" placeholder="2026-10-31" />
+            </div>
+            <div><button class="ant-btn ant-btn-primary" type="submit">Search</button></div>
+        </form>
+    </div>
+</div>
 
-<table>
-    <thead>
-        <tr>
-            <th>When</th>
-            <th>Category</th>
-            <th>Action</th>
-            <th>Outcome</th>
-            <th>Actor</th>
-            <th>Target</th>
-        </tr>
-    </thead>
-    <tbody>
-    @foreach (var row in Model.Rows)
-    {
-        <tr>
-            <td>@row.OccurredAt.ToString("yyyy-MM-dd HH:mm:ss")</td>
-            <td>@row.Category</td>
-            <td>@row.Action</td>
-            <td>@row.Outcome</td>
-            <td>@row.ActorName</td>
-            <td>@row.Target</td>
-        </tr>
-    }
-    </tbody>
-</table>
+<div class="m-card m-table-card">
+    <div class="m-card-body m-card-body-flush">
+        @if (Model.Rows.Count == 0)
+        {
+            <div class="m-empty">
+                <h3 class="m-empty-title">No company events match this search</h3>
+                <p class="m-empty-subtitle">Widen the filters to see more of the company's history.</p>
+            </div>
+        }
+        else
+        {
+            <div class="ant-table-wrapper m-table-flush"><div class="ant-table"><div class="ant-table-container"><div class="ant-table-content">
+                <table style="table-layout: auto;">
+                    <thead class="ant-table-thead">
+                        <tr>
+                            <th class="ant-table-cell">When</th>
+                            <th class="ant-table-cell">Category</th>
+                            <th class="ant-table-cell">Action</th>
+                            <th class="ant-table-cell">Outcome</th>
+                            <th class="ant-table-cell">Actor</th>
+                            <th class="ant-table-cell">Target</th>
+                        </tr>
+                    </thead>
+                    <tbody class="ant-table-tbody">
+                    @foreach (var row in Model.Rows)
+                    {
+                        <tr class="ant-table-row">
+                            <td class="ant-table-cell">@row.OccurredAt.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                            <td class="ant-table-cell">@row.Category</td>
+                            <td class="ant-table-cell">@row.Action</td>
+                            <td class="ant-table-cell"><span class="ant-tag">@row.Outcome</span></td>
+                            <td class="ant-table-cell">@row.ActorName</td>
+                            <td class="ant-table-cell">@row.Target</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div></div></div></div>
+        }
+    </div>
+</div>
 
-<p>Showing the company's own events only. Raw details and host-level events are not shown here.</p>
+<p class="m-muted m-mt-16">Showing the company's own events only. Raw details and host-level events are not shown here.</p>

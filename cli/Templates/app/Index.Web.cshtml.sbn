@@ -4,38 +4,26 @@
     ViewData["Title"] = "Home";
 }
 
-<app-page-header pretitle="Welcome" title="Signed in as @User.Identity?.Name" />
+<app-page-header pretitle="Welcome" title="{{ if use_auth }}Hello, @User.Identity?.Name{{ else }}Welcome to {{ app_name }}{{ end }}" />
 
-<app-card>
-    <p>
-        This web project is the presentation host: pages call the API host over HTTP with the signed-in user's
-        bearer token. Add admin pages with <code>modulus generate-crud &lt;Entity&gt; --module &lt;Module&gt;</code>
-        and UI with <code>modulus ui add-component</code>, <code>modulus ui create-dashboard</code>
-        or <code>modulus ui add-chart</code>.
-    </p>
-{{ if use_auth }}    <p><a class="ant-btn ant-btn-default" href="/Account/Logout">Sign out</a></p>
-{{ end }}
-</app-card>
+<div style="display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));">
+    <app-card title="Get started">
+        <p>Your app is running. Build it up one step at a time with the CLI:</p>
+        <ol style="padding-left: 20px; line-height: 1.8;">
+            <li>Add a module: <code>modulus add-module Orders</code></li>
+            <li>Generate a CRUD set: <code>modulus generate-crud Product --module Catalog</code></li>
+            <li>Add a screen for it: <code>modulus ui create-form-from-entity Product</code></li>
+        </ol>
+        <p style="margin-top: 12px;">Run <code>modulus describe</code> to see the modules, entities and pages of this app.</p>
+    </app-card>
 
-<app-card title="Interactivity: Alpine.js and htmx" style="margin-top: 16px;">
-    <p>
-        Both libraries are loaded by the layout (<code>&lt;modulus-scripts /&gt;</code>), so any page can use them.
-        Alpine toggles this panel without a request; htmx fetches the line below from the
-        <code>Greeting</code> page handler and replaces it.
-    </p>
-    <div x-data="{ open: false }">
-        <button type="button" class="ant-btn ant-btn-default" @@click="open = !open">
-            <span x-text="open ? 'Hide details' : 'Show details'">Show details</span>
-        </button>
-        <div x-show="open" style="margin-top: 12px;">
-            <p>Alpine.js state lives in the browser, so this panel needs no server round trip.</p>
-        </div>
-    </div>
-    <div style="margin-top: 12px;">
-        <button type="button" class="ant-btn ant-btn-primary"
-                hx-get="?handler=Greeting" hx-target="#greeting" hx-swap="innerHTML">
-            Load from server
-        </button>
-        <div id="greeting" style="margin-top: 12px;"></div>
-    </div>
-</app-card>
+    <app-card title="Your application">
+        <p>Open a part of the application:</p>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px;">
+            <a class="ant-btn ant-btn-primary" href="/{{ example_route }}">{{ example_route | string.capitalize }}</a>
+{{ if use_auth }}            <a class="ant-btn ant-btn-default" href="/Profile">Your profile</a>
+            <a class="ant-btn ant-btn-default" href="/Admin/Users">Users</a>
+            <a class="ant-btn ant-btn-default" href="/Admin/Roles">Roles</a>
+{{ end }}        </div>
+    </app-card>
+</div>

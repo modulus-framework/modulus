@@ -1,0 +1,63 @@
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
+using {{ root_namespace }}.Web.Services.ApiClients;
+
+namespace {{ root_namespace }}.Web.Pages;
+
+/// <summary>
+/// Confirms a work e-mail address from the link sent to it (premodule 3). A GET only shows the form: the token is used on POST, so a mail
+/// scanner that opens the link cannot consume it. The API checks the token against the signed-in account, the pending address, the newest
+/// link and the expiry; this page only explains the answer.
+/// </summary>
+[Authorize]
+public sealed class ConfirmWorkEmailModel(ProfileApiClient profile) : PageModel
+{
+    [BindProperty(SupportsGet = true)]
+    public string? Token { get; set; }
+
+    /// <summary>What happened: <c>success</c>, <c>error</c>, or null before an attempt.</summary>
+    public string? Status { get; private set; }
+
+    public string? Message { get; private set; }
+
+    public void OnGet()
+    {
+        if (string.IsNullOrWhiteSpace(Token))
+        {
+            Status = "error";
+            Message = "This page needs the link from your email. Open the link again, or ask for a new one from your profile.";
+        }
+    }
+
+    public async Task<IActionResult> OnPostAsync(CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(Token))
+        {
+            Status = "error";
+            Message = "This page needs the link from your email. Open the link again, or ask for a new one from your profile.";
+            return Page();
+        }
+
+        using var response = await profile.ConfirmWorkEmailAsync(Token, ct);
+        if (response.IsSuccessStatusCode)
+        {
+            Status = "success";
+            Message = "Your work email address is confirmed.";
+            return Page();
+        }
+
+        var refusal = await ProfileApiClient.ReadRefusalAsync(response, ct);
+        Status = "error";
+        Message = refusal.Code switch
+        {
+            "WORK_EMAIL_LINK_EXPIRED" => "This link has expired. Ask for a new confirmation link from your profile.",
+            "WORK_EMAIL_LINK_USED" => "This address is already confirmed. You do not need this link.",
+            "WORK_EMAIL_LINK_SUPERSEDED" => "A newer link was sent for this address. Use the newest link in your inbox, or ask for a new one.",
+            "WORK_EMAIL_LINK_INVALID" => "This link is not valid for your account. Sign in with the account the link was sent to, or ask for a new link.",
+            "WORK_EMAIL_TOO_MANY_ATTEMPTS" => "Too many attempts. Ask for a new confirmation link from your profile.",
+            _ => refusal.Message,
+        };
+        return Page();
+    }
+}

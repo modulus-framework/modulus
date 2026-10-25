@@ -4,8 +4,7 @@ using {{ root_namespace }}.Web.Endpoints;
 using {{ root_namespace }}.Web.Middleware;
 using {{ root_namespace }}.Web.Observability;
 using {{ root_namespace }}.Web.Services;
-{{ if use_auth }}using {{ root_namespace }}.Web.Security;
-{{ end }}
+using {{ root_namespace }}.Web.Security;
 var builder = WebApplication.CreateBuilder(args);
 
 // The presentation host: {{ if ui_engine == "mvc" }}MVC and Razor Pages{{ else }}Razor Pages{{ end }} over the API host. No DbContext and no modules here. Each concern has its own
@@ -14,6 +13,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddWebCore(builder.Configuration);
 builder.Services.AddWebUi(builder.Configuration);
 {{ if use_auth }}builder.Services.AddWebAuthentication(builder.Configuration);
+{{ else }}// No sign-in: the scheme never signs anyone in, so a page that needs a user answers 401.
+builder.Services.AddNoSignInAuthentication();
 {{ end }}
 // Typed API clients, one per module (resilience and correlation are wired in AddModulusHttpClient). {{ if use_auth }}Every call carries the
 // signed-in user's access token from the BFF web session.{{ else }}Without auth the clients call the API anonymously.{{ end }}

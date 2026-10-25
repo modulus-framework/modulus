@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Rewrite;
 using Modulus.AspNetCore.Correlation;
 using Modulus.AspNetCore.Extensions;
 using Modulus.AspNetCore.Mvc;
@@ -15,17 +16,25 @@ internal static class PipelineSetup
     /// </remarks>
     public static WebApplication UseWebPipeline(this WebApplication app)
     {
+        // Browsers ask for /favicon.ico on every page: the brand mark is served as the SVG favicon (wwwroot/favicon.svg), so that request is not a 404.
+        app.UseRewriter(new RewriteOptions().AddRewrite(@"^favicon\.ico$", "/favicon.svg", skipRemainingRules: true));
         app.UseForwardedHeaders();
 {{ if enable_security_headers }}        app.UseModulusSecurityHeaders();
-{{ end }}        app.UseExceptionHandler();
+{{ end }}        app.UseExceptionHandler("/Error/500");
 {{ if enable_correlation }}        app.UseModulusCorrelation();
 {{ end }}
         // Static web assets of the UI packages (/_content/...), then the request culture from Modulus:Theme:Cultures.
         app.MapStaticAssets();
         app.UseModulusLocalization();
-        app.UseStatusCodePages();
+        // Every error status re-runs the error page (Pages/Error.cshtml), so a visitor never sees a raw problem document.
+        app.UseStatusCodePagesWithReExecute("/Error/{0}");
         app.UseRouting();
 {{ if use_auth }}        app.UseRateLimiter();
+        app.UseAuthentication();
+        app.UseAuthorization();
+{{ if multi_tenancy }}        // A person in exactly one company acts in it without choosing (see DefaultCompanyMiddleware).
+        app.UseMiddleware<DefaultCompanyMiddleware>();
+{{ end }}{{ else }}        // No sign-in: the authorization middleware still runs, so the closed endpoints answer 401 (NoSignInAuthentication).
         app.UseAuthentication();
         app.UseAuthorization();
 {{ end }}

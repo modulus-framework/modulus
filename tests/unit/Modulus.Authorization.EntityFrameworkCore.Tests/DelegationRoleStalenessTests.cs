@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using FluentAssertions;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
@@ -100,20 +99,14 @@ public sealed class DelegationRoleStalenessTests : IDisposable
             Options.Create(new DelegationRoleRefreshOptions { Interval = TimeSpan.FromMilliseconds(50) }),
             NullLogger<DelegationRoleRefreshService>.Instance);
 
-        var clock = Stopwatch.StartNew();
+        // The timer refreshes on its own thread over the same SQLite connection this test reads from, so the test must not read while
+        // the timer runs (concurrent use of one connection fails with "active statements"). The service runs for 40 intervals, then
+        // StopAsync waits for any refresh in flight to finish, and only then is the snapshot read.
         await service.StartAsync(CancellationToken.None);
-        try
-        {
-            while (SnapshotRoles().Count != 1 && clock.Elapsed < TimeSpan.FromSeconds(10))
-                await Task.Delay(10);
-        }
-        finally
-        {
-            await service.StopAsync(CancellationToken.None);
-        }
+        await Task.Delay(TimeSpan.FromSeconds(2));
+        await service.StopAsync(CancellationToken.None);
 
-        SnapshotRoles().Should().BeEquivalentTo(["Clerk"]);
-        clock.Elapsed.Should().BeLessThan(TimeSpan.FromSeconds(10), "the timer ticks every 50 ms, so the change is picked up well within a second");
+        SnapshotRoles().Should().BeEquivalentTo(["Clerk"], "the timer picked the change up within its interval");
     }
 
     public void Dispose()

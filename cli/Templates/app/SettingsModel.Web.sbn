@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Modulus.Settings;
+{{ if multi_tenancy }}using {{ root_namespace }}.Web.Security;{{ end }}
 using {{ root_namespace }}.Web.Services.ApiClients;
 
 namespace {{ root_namespace }}.Web.Pages.Admin;
@@ -27,9 +28,14 @@ public sealed class SettingsModel(SettingsApiClient settings) : PageModel
 
     public string? Message { get; private set; }
 
-    public async Task OnGetAsync(CancellationToken ct)
+{{ if multi_tenancy }}    /// <summary>Whether the person has chosen a branch (the branch cookie), so a branch-scoped value can be written.</summary>
+    public bool HasBranch { get; private set; }
+
+{{ end }}    public async Task OnGetAsync(CancellationToken ct)
     {
         Message = TempData["Message"] as string;
+{{ if multi_tenancy }}        HasBranch = HasChosenBranch();
+{{ end }}
         using var response = await settings.ListAsync(ct);
         if (response.IsSuccessStatusCode)
         {
@@ -37,7 +43,9 @@ public sealed class SettingsModel(SettingsApiClient settings) : PageModel
             Groups = GroupRows(Rows);
         }
         else
-            Message = Explain(response.StatusCode);
+            Message = response.StatusCode == HttpStatusCode.Forbidden
+                ? "You do not have permission to see the settings of this company."
+                : Explain(response.StatusCode);
     }
 
     private static IReadOnlyList<SettingGroup> GroupRows(IReadOnlyList<SettingView> rows)
@@ -65,7 +73,11 @@ public sealed class SettingsModel(SettingsApiClient settings) : PageModel
         return RedirectToPage();
     }
 
-    /// <summary>The API's reason for a refusal: a value's own message when it names one, else the status.</summary>
+{{ if multi_tenancy }}    /// <summary>The branch cookie names a branch the person picked. The API still checks it against their organizational scope.</summary>
+    private bool HasChosenBranch()
+        => Request.Cookies.TryGetValue(BffGatewayHandler.BranchCookie, out var branch) && Guid.TryParse(branch, out _);
+
+{{ end }}    /// <summary>The API's reason for a refusal: a value's own message when it names one, else the status.</summary>
     private static async Task<string> Refusal(HttpResponseMessage response, CancellationToken ct)
     {
         if (response.StatusCode == HttpStatusCode.BadRequest)
@@ -73,6 +85,8 @@ public sealed class SettingsModel(SettingsApiClient settings) : PageModel
             using var problem = JsonDocument.Parse(await response.Content.ReadAsStringAsync(ct));
             if (problem.RootElement.TryGetProperty("errors", out var errors) && errors.TryGetProperty("value", out var messages))
                 return string.Join(' ', messages.EnumerateArray().Select(m => m.GetString()));
+            if (problem.RootElement.TryGetProperty("detail", out var detail) && detail.GetString() is { Length: > 0 } text)
+                return text;
         }
         return Explain(response.StatusCode);
     }
@@ -83,6 +97,7 @@ public sealed class SettingsModel(SettingsApiClient settings) : PageModel
         HttpStatusCode.Forbidden => "You do not have permission to change this setting. A global value needs settings:global:manage.",
         HttpStatusCode.Conflict => "This setting is pinned by the host and cannot be changed.",
         HttpStatusCode.NotFound => "No setting has that name.",
+        HttpStatusCode.BadRequest => "The value or scope was refused.",
         _ => $"The API answered {(int)status}.",
     };
 }

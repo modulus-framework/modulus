@@ -1,5 +1,5 @@
 # Local OpenBao for development only. The dev server keeps everything in memory and uses a known root token.
-# Production runs a 3- or 5-node Raft cluster behind TLS, with auto-unseal (see docs/DOCUMENTATION.md, tenant secrets).
+# Production runs a 3- or 5-node Raft cluster behind TLS, unsealed manually with the Shamir seal, 3 of 5 shares (see docs/runbooks/openbao-production.md, section 5).
 services:
   openbao:
     image: openbao/openbao:2.1.0

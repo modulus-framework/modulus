@@ -38,6 +38,10 @@ public sealed class ProfileTests : IAsyncLifetime
         services.AddSingleton<ICurrentTenant>(new CurrentTenant());
         services.AddDbContext<ModulusIdentityDbContext>(o => o.UseSqlite(_connection));
         services.AddIdentityCore<ModulusUser>().AddEntityFrameworkStores<ModulusIdentityDbContext>().AddDefaultTokenProviders();
+        // The work-e-mail confirmation (premodule 3) the details endpoint uses.
+        services.AddSingleton(TimeProvider.System);
+        services.AddScoped(typeof(WorkEmailVerifier<>));
+        services.Configure<WorkEmailVerificationOptions>(_ => { });
         _provider = services.BuildServiceProvider();
 
         using (_provider.GetRequiredService<ICurrentTenant>().Change(null))
@@ -108,6 +112,69 @@ public sealed class ProfileTests : IAsyncLifetime
 
         var bad = result.Should().BeOfType<BadRequestObjectResult>().Subject;
         System.Text.Json.JsonSerializer.Serialize(bad.Value).Should().Contain($"\"{field}\"");
+    }
+
+    [Fact]
+    public async Task A_person_updates_their_details_and_a_field_left_out_keeps_its_value()
+    {
+        EnterHost();
+        var (controller, _) = await SignedInAsync();
+        await controller.UpdateProfileAsync(new UpdateProfileRequest { DisplayName = "Ada", Language = "en-GB", TimeZone = "Europe/London", PhoneNumber = "+44 20 7946 0958" });
+        await controller.UpdateProfileDetailsAsync(new UpdateProfileDetailsRequest { FirstName = "Ada", LastName = "Lovelace", JobTitle = "Engineer", WorkEmail = "ada.work@example.com" }, _sender, default);
+
+        // Only the department is sent: the names, the job title and the work e-mail keep their values.
+        var update = await controller.UpdateProfileDetailsAsync(new UpdateProfileDetailsRequest { Department = "Research" }, _sender, default);
+        update.Should().BeOfType<OkObjectResult>();
+
+        var read = (ProfileDetailsResponse)((OkObjectResult)await controller.GetProfileDetailsAsync()).Value!;
+        read.FirstName.Should().Be("Ada");
+        read.LastName.Should().Be("Lovelace");
+        read.JobTitle.Should().Be("Engineer");
+        // The work e-mail is pending until its owner follows the link: it is not verified by being entered.
+        read.WorkEmail.Should().BeNull("an entered work e-mail is not verified");
+        read.PendingWorkEmail.Should().Be("ada.work@example.com");
+        _sender.Recipients.Should().Contain("ada.work@example.com", "the confirmation link goes to the address");
+        read.Department.Should().Be("Research");
+        read.Email.Should().Be("ada@example.com", "the sign-in address is not changed by the details");
+        read.EmployeeCode.Should().BeNull("an administrator sets the employee code");
+
+        // The four original fields are untouched by the details request.
+        var original = (ProfileResponse)((OkObjectResult)await controller.GetProfileAsync()).Value!;
+        original.DisplayName.Should().Be("Ada");
+        original.PhoneNumber.Should().Be("+44 20 7946 0958");
+    }
+
+    [Fact]
+    public async Task An_empty_detail_clears_it_and_the_photo_must_be_https()
+    {
+        EnterHost();
+        var (controller, _) = await SignedInAsync();
+        await controller.UpdateProfileDetailsAsync(new UpdateProfileDetailsRequest { JobTitle = "Engineer", AvatarUrl = "https://cdn.example.com/ada.png" }, _sender, default);
+
+        await controller.UpdateProfileDetailsAsync(new UpdateProfileDetailsRequest { JobTitle = "" }, _sender, default);
+        var read = (ProfileDetailsResponse)((OkObjectResult)await controller.GetProfileDetailsAsync()).Value!;
+        read.JobTitle.Should().BeNull();
+        read.AvatarUrl.Should().Be("https://cdn.example.com/ada.png");
+
+        var refused = await controller.UpdateProfileDetailsAsync(new UpdateProfileDetailsRequest { AvatarUrl = "http://cdn.example.com/ada.png" }, _sender, default);
+        System.Text.Json.JsonSerializer.Serialize(refused.Should().BeOfType<BadRequestObjectResult>().Subject.Value).Should().Contain("\"avatarUrl\"");
+    }
+
+    [Theory]
+    [InlineData("ada\u0007", null, "firstName")]
+    [InlineData(null, null, "workEmail")]
+    public async Task Invalid_details_are_refused_with_a_message_on_the_field(string? firstName, string? workEmail, string field)
+    {
+        EnterHost();
+        var (controller, _) = await SignedInAsync();
+
+        var result = await controller.UpdateProfileDetailsAsync(new UpdateProfileDetailsRequest
+        {
+            FirstName = firstName,
+            WorkEmail = workEmail ?? "not an address",
+        }, _sender, default);
+
+        System.Text.Json.JsonSerializer.Serialize(result.Should().BeOfType<BadRequestObjectResult>().Subject.Value).Should().Contain($"\"{field}\"");
     }
 
     [Fact]
@@ -202,7 +269,7 @@ public sealed class ProfileTests : IAsyncLifetime
             [new Claim(ClaimTypes.NameIdentifier, user.Id.ToString())], "test"));
         var controller = new AccountController<ModulusUser>(users, null!, null!, null!, null!, null!)
         {
-            ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext { User = principal } },
+            ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext { User = principal, RequestServices = _scope.ServiceProvider } },
         };
         return (controller, users);
     }
@@ -221,6 +288,13 @@ public sealed class ProfileTests : IAsyncLifetime
         {
             Recipients.Add(newEmail);
             Tokens[newEmail] = changeToken;
+            return Task.CompletedTask;
+        }
+
+        public Task SendWorkEmailVerificationAsync(string workEmail, string verificationToken, CancellationToken ct = default)
+        {
+            Recipients.Add(workEmail);
+            Tokens[workEmail] = verificationToken;
             return Task.CompletedTask;
         }
     }

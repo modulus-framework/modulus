@@ -20,6 +20,8 @@ ALTER TABLE :"user_table" ADD COLUMN IF NOT EXISTS "MustChangePin" boolean NOT N
 ALTER TABLE :"user_table" ADD COLUMN IF NOT EXISTS "EmployeeCode" text NULL;
 ALTER TABLE :"user_table" ADD COLUMN IF NOT EXISTS "PinHash" text NULL;
 ALTER TABLE :"user_table" ADD COLUMN IF NOT EXISTS "ExternalId" text NULL;
+-- Extension values of the account (ModulusUser.ExtraProperties), JSON text; an empty object for existing accounts.
+ALTER TABLE :"user_table" ADD COLUMN IF NOT EXISTS "ExtraProperties" text NOT NULL DEFAULT '{}';
 
 -- The lifecycle replaces IsActive: a disabled account must stay disabled after the upgrade. Only accounts whose lifecycle has never been
 -- changed are carried over, so a rerun cannot disable an account that the new release has since re-enabled.

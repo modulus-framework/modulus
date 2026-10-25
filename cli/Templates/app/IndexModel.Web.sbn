@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace {{ root_namespace }}.Web.Pages;
@@ -12,8 +11,4 @@ namespace {{ root_namespace }}.Web.Pages;
     public void OnGet()
     {
     }
-
-    /// <summary>htmx demo: returns a fragment that replaces #greeting (GET ?handler=Greeting).</summary>
-    public ContentResult OnGetGreeting() =>
-        Content($"<p>Loaded by htmx at {DateTime.UtcNow:HH:mm:ss} UTC.</p>", "text/html");
 }

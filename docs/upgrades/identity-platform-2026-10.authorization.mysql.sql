@@ -361,6 +361,20 @@ CREATE TABLE IF NOT EXISTS `ModulusRecordShares` (
     PRIMARY KEY (`Id`)
 );
 
+-- Explicit parent-to-child authorities (decision 6). Revoked rows are kept; host data, so no tenant column.
+CREATE TABLE IF NOT EXISTS `ModulusCompanyAuthorityGrants` (
+    `Id` char(36) NOT NULL,
+    `ParentId` char(36) NOT NULL,
+    `ChildId` char(36) NOT NULL,
+    `PrincipalId` char(36) NOT NULL,
+    `Operation` varchar(32) NOT NULL,
+    `GrantedBy` char(36) NULL,
+    `GrantedAt` datetime NOT NULL,
+    `RevokedAt` datetime NULL,
+    `RevokedBy` char(36) NULL,
+    PRIMARY KEY (`Id`)
+);
+
 CREATE TABLE IF NOT EXISTS `ModulusRoleInclusions` (
     `TenantId` char(36) NOT NULL,
     `NormalizedRole` varchar(256) NOT NULL,
@@ -461,6 +475,8 @@ CALL modulus_upgrade_add_index('ModulusRecertificationItems', 'IX_ModulusRecerti
 CALL modulus_upgrade_add_index('ModulusRecertificationItems', 'IX_ModulusRecertificationItems_CampaignId_UserId', '`CampaignId`, `UserId`', FALSE);
 
 CALL modulus_upgrade_add_index('ModulusRecertificationItems', 'IX_ModulusRecertificationItems_TenantId_CampaignId', '`TenantId`, `CampaignId`', FALSE);
+
+CALL modulus_upgrade_add_index('ModulusCompanyAuthorityGrants', 'IX_ModulusCompanyAuthorityGrants_Lookup', '`ParentId`, `ChildId`, `PrincipalId`, `Operation`', FALSE);
 
 CALL modulus_upgrade_add_index('ModulusRecordShares', 'IX_ModulusRecordShares_TenantId_ResourceType_ResourceId', '`TenantId`, `ResourceType`, `ResourceId`', FALSE);
 

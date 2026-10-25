@@ -33,6 +33,8 @@ IF COL_LENGTH('$(user_table)', 'PinHash') IS NULL
     ALTER TABLE [$(user_table)] ADD PinHash nvarchar(max) NULL;
 IF COL_LENGTH('$(user_table)', 'ExternalId') IS NULL
     ALTER TABLE [$(user_table)] ADD ExternalId nvarchar(450) NULL;
+IF COL_LENGTH('$(user_table)', 'ExtraProperties') IS NULL
+    ALTER TABLE [$(user_table)] ADD ExtraProperties nvarchar(max) NOT NULL CONSTRAINT DF_$(user_table)_ExtraProperties DEFAULT N'{}';
 GO
 
 UPDATE [$(user_table)] SET Lifecycle = N'Disabled'

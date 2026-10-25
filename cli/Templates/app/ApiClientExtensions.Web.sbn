@@ -42,12 +42,14 @@ public static class ApiClientExtensions
         services.AddBffGatewayClient<UserAdminApiClient>();
         services.AddBffGatewayClient<PasskeyApiClient>();
         services.AddBffGatewayClient<ProfileApiClient>();
+        // The branches the caller may see: the profile names the primary branch, and the branch picker (multi-company apps) lists them.
+        services.AddBffGatewayClient<BranchApiClient>();
 {{~ if multi_tenancy ~}}
         services.AddBffGatewayClient<CompanyApiClient>();
         services.AddBffGatewayClient<CompanyAdminApiClient>();
-        services.AddBffGatewayClient<BranchApiClient>();
 {{~ end ~}}
         services.AddModulusHttpClient<PasskeyLoginClient>().ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler { UseCookies = false });
+        services.AddModulusHttpClient<AccountApiClient>().ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler { UseCookies = false });
 {{~ end ~}}
 
         return services;

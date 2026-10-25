@@ -9,8 +9,4 @@ namespace {{ root_namespace }}.Web.Controllers;
 {{ end }}public class HomeController : Controller
 {
     public IActionResult Index() => View();
-
-    /// <summary>htmx demo: returns a fragment that replaces #greeting (GET /Home/Greeting).</summary>
-    public ContentResult Greeting() =>
-        Content($"<p>Loaded by htmx at {DateTime.UtcNow:HH:mm:ss} UTC.</p>", "text/html");
 }

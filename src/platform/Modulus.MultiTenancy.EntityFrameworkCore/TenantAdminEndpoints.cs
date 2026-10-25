@@ -1,10 +1,12 @@
 namespace Modulus.MultiTenancy.EntityFrameworkCore;
 
+using System.Security.Claims;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Modulus.Authorization.Extensions;
 using Modulus.Core.Abstractions;
 using Modulus.Core.Abstractions.Exceptions;
@@ -34,6 +36,11 @@ public sealed record TenantParentRequest(Guid? ParentId);
 /// <param name="UserId">The account to make a member.</param>
 public sealed record TenantMemberRequest(Guid UserId);
 
+/// <summary>Body of <c>POST /api/tenancy/tenants/{parentId}/children/{childId}/authority</c>: the account and the operation it may perform in the child.</summary>
+/// <param name="PrincipalId">The account that receives the authority. It cannot be the administrator who grants it.</param>
+/// <param name="Operation"><c>ManageMembers</c> or <c>ManageGrants</c>.</param>
+public sealed record CompanyAuthorityRequest(Guid PrincipalId, string Operation);
+
 /// <summary>
 /// The company administration API (premodule 2): list and read companies, create one, change its status and seats, and manage its members.
 /// It runs in the host context (a company administrator cannot reach another company's record through it), and every route needs
@@ -49,17 +56,29 @@ public static partial class TenantAdminEndpoints
 
     /// <summary>Registers the permission. Requires <c>AddModulusAuthorization</c> for it to be enforced.</summary>
     public static IServiceCollection AddModulusTenantAdmin(this IServiceCollection services)
-        => services.AddPermissions("Modulus.Tenancy.Companies", registry =>
+    {
+        services.AddPermissions("Modulus.Tenancy.Companies", registry =>
             registry.Add(
                 ManagePermission,
                 "Create companies, change their status and seat limit, and manage their members.",
                 null,
                 PermissionSensitivity.Critical));
+        services.AddPermissions("Modulus.Tenancy.Companies", registry =>
+            registry.Add(
+                ParentCompanyAuthority.ChildrenManagePermission,
+                "Manage the members and grants of a child company, where the explicit parent-to-child authority allows it (decision 6).",
+                null,
+                PermissionSensitivity.Critical));
+        services.TryAddScoped<ParentCompanyAuthority>();
+        return services;
+    }
 
     /// <summary>
     /// Maps <c>GET</c> and <c>POST</c> on <paramref name="prefix"/> (default <c>/api/tenancy/tenants</c>), <c>GET {id}</c>,
     /// <c>PUT {id}/status</c>, <c>PUT {id}/seats</c>, <c>PUT {id}/parent</c>, <c>GET {id}/members</c>, <c>POST {id}/members</c> and
     /// <c>DELETE {id}/members/{userId}</c>, and <c>POST {id}/baseline</c> (re-applies the company baseline).
+    /// The authority routes (<c>{id}/children/{childId}/authority</c>) are host-only. The parent-to-child routes
+    /// (<c>{parentId}/children/{childId}/members</c> and <c>.../baseline</c>) need an explicit authority; see <see cref="ParentCompanyAuthority"/>.
     /// </summary>
     public static RouteGroupBuilder MapModulusTenantAdmin<TTenant, TMembership, TDataStore>(this IEndpointRouteBuilder endpoints, string prefix = "/api/tenancy/tenants")
         where TTenant : TenantEntity, new()
@@ -217,8 +236,159 @@ public static partial class TenantAdminEndpoints
             return await manager.RemoveMemberAsync(userId, id, ct) ? Results.NoContent() : Results.NotFound();
         });
 
+        // The explicit parent-to-child authorities (decision 6). Only the host administrator (ManagePermission above) may grant or revoke
+        // them, and nobody grants authority to themselves. A grant is read directly, never cached.
+        group.MapGet("/{id:guid}/children/{childId:guid}/authority", async (Guid id, Guid childId, TenantManager<TTenant, TMembership, TDataStore> manager, HttpContext http, ICurrentTenant tenant, CancellationToken ct) =>
+        {
+            using var _ = tenant.Change(null);
+            if (http.RequestServices.GetService<ICompanyAuthorityStore>() is not { } authorities)
+                return AuthorityStoreUnavailable();
+            if (await manager.GetAsync(childId, ct) is not { } child || child.ParentId != id)
+                return Results.NotFound();
+            return Results.Ok((await authorities.ListAsync(id, childId, ct)).Select(AuthorityView));
+        });
+
+        group.MapPost("/{id:guid}/children/{childId:guid}/authority", async (Guid id, Guid childId, CompanyAuthorityRequest body, ClaimsPrincipal caller, TenantManager<TTenant, TMembership, TDataStore> manager, HttpContext http, ICurrentTenant tenant, CancellationToken ct) =>
+        {
+            using var _ = tenant.Change(null);
+            if (http.RequestServices.GetService<ICompanyAuthorityStore>() is not { } authorities)
+                return AuthorityStoreUnavailable();
+            if (!Enum.TryParse<CompanyOperation>(body.Operation, ignoreCase: true, out var operation) || !Enum.IsDefined(operation))
+                return Problem("operation", "The operation is ManageMembers or ManageGrants.");
+            if (body.PrincipalId == Guid.Empty)
+                return Problem("principalId", "An account is required.");
+
+            var grantor = ParentCompanyAuthority.UserIdOf(caller);
+            if (grantor == body.PrincipalId)
+                return Results.Json(new { error = "SELF_AUTHORITY", message = "An administrator cannot grant company authority to themselves." }, statusCode: StatusCodes.Status403Forbidden);
+            if (await manager.GetAsync(childId, ct) is not { } child)
+                return Results.NotFound();
+            if (child.ParentId != id)
+                return Problem("childId", "That company is not a child of the parent company.");
+
+            var grant = await authorities.GrantAsync(id, childId, body.PrincipalId, operation, grantor, DateTimeOffset.UtcNow, ct);
+            RecordAudit(http, "company-authority.granted", SecurityAuditOutcomes.Success, childId, grantor, $"tenant:{childId:D} parent={id:D} principal={body.PrincipalId:D} operation={operation}");
+            return Results.Created($"{prefix}/{id:D}/children/{childId:D}/authority/{grant.Id:D}", AuthorityView(grant));
+        });
+
+        group.MapDelete("/{id:guid}/children/{childId:guid}/authority/{grantId:guid}", async (Guid id, Guid childId, Guid grantId, ClaimsPrincipal caller, HttpContext http, ICurrentTenant tenant, CancellationToken ct) =>
+        {
+            using var _ = tenant.Change(null);
+            if (http.RequestServices.GetService<ICompanyAuthorityStore>() is not { } authorities)
+                return AuthorityStoreUnavailable();
+            var grant = await authorities.FindAsync(grantId, ct);
+            if (grant is null || grant.ParentId != id || grant.ChildId != childId)
+                return Results.NotFound();
+
+            var revoker = ParentCompanyAuthority.UserIdOf(caller);
+            if (!await authorities.RevokeAsync(grantId, revoker, DateTimeOffset.UtcNow, ct))
+                return Results.NotFound();
+            RecordAudit(http, "company-authority.revoked", SecurityAuditOutcomes.Success, childId, revoker, $"tenant:{childId:D} parent={id:D} principal={grant.PrincipalId:D} operation={grant.Operation}");
+            return Results.NoContent();
+        });
+
+        // Parent-to-child administration. Each route runs the checks of ParentCompanyAuthority (valid relationship, the parent permission,
+        // a matching active authority for the operation) before it changes anything; a refusal is audited and answers 403 without detail.
+        var children = endpoints.MapGroup(prefix).RequireAuthorization();
+
+        children.MapPost("/{parentId:guid}/children/{childId:guid}/members", async (Guid parentId, Guid childId, TenantMemberRequest body, ClaimsPrincipal caller, TenantManager<TTenant, TMembership, TDataStore> manager, HttpContext http, ICurrentTenant tenant, CancellationToken ct) =>
+        {
+            using var _ = tenant.Change(null);
+            var decision = await CheckChildAsync(http, caller, parentId, childId, CompanyOperation.ManageMembers, ct);
+            if (!decision.Allowed)
+                return Refused(http, caller, parentId, childId, decision);
+            if (body.UserId == Guid.Empty)
+                return Problem("userId", "A user is required.");
+            try
+            {
+                return await manager.AddMemberAsync(body.UserId, childId, ct) ? Results.NoContent() : Results.NotFound();
+            }
+            catch (ConflictException ex)
+            {
+                return Results.Conflict(new { error = "SEAT_LIMIT", message = ex.Message });
+            }
+        });
+
+        children.MapDelete("/{parentId:guid}/children/{childId:guid}/members/{userId:guid}", async (Guid parentId, Guid childId, Guid userId, ClaimsPrincipal caller, TenantManager<TTenant, TMembership, TDataStore> manager, HttpContext http, ICurrentTenant tenant, CancellationToken ct) =>
+        {
+            using var _ = tenant.Change(null);
+            var decision = await CheckChildAsync(http, caller, parentId, childId, CompanyOperation.ManageMembers, ct);
+            if (!decision.Allowed)
+                return Refused(http, caller, parentId, childId, decision);
+            return await manager.RemoveMemberAsync(userId, childId, ct) ? Results.NoContent() : Results.NotFound();
+        });
+
+        // Re-applies the child's baseline. A grant operation, so it needs a ManageGrants authority (a ManageMembers one does not cover it).
+        children.MapPost("/{parentId:guid}/children/{childId:guid}/baseline", async (Guid parentId, Guid childId, ClaimsPrincipal caller, ITenantStore store, HttpContext http, ICurrentTenant tenant, CancellationToken ct) =>
+        {
+            using var _ = tenant.Change(null);
+            var decision = await CheckChildAsync(http, caller, parentId, childId, CompanyOperation.ManageGrants, ct);
+            if (!decision.Allowed)
+                return Refused(http, caller, parentId, childId, decision);
+            if (http.RequestServices.GetService<ICompanyProvisioner>() is not { } provisioner)
+                return Results.Json(new { error = "BASELINE_UNAVAILABLE", message = "No company provisioner is registered." }, statusCode: StatusCodes.Status503ServiceUnavailable);
+            if (await store.FindByIdAsync(childId, ct) is not { } company)
+                return Results.NotFound();
+
+            try
+            {
+                var granted = await provisioner.ProvisionAsync(company, ct);
+                return Results.Ok(new { companyId = company.TenantId, grantedRoles = granted });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Results.Json(new { error = "BASELINE_INVALID", message = ex.Message, companyId = company.TenantId }, statusCode: StatusCodes.Status500InternalServerError);
+            }
+        });
+
         return group;
     }
+
+    /// <summary>
+    /// Runs the parent-to-child checks. The service is resolved here rather than as a route parameter, so an application that maps the
+    /// routes without registering <c>AddModulusTenantAdmin</c> still starts; without it every child route refuses (fail closed).
+    /// </summary>
+    private static Task<CompanyAuthorityDecision> CheckChildAsync(HttpContext http, ClaimsPrincipal caller, Guid parentId, Guid childId, CompanyOperation operation, CancellationToken ct)
+        => http.RequestServices.GetService<ParentCompanyAuthority>() is { } authority
+            ? authority.CheckAsync(caller, parentId, childId, operation, ct)
+            : Task.FromResult(CompanyAuthorityDecision.Deny("AUTHORITY_UNAVAILABLE"));
+
+    private static object AuthorityView(CompanyAuthorityGrant grant)
+        => new
+        {
+            id = grant.Id,
+            parentId = grant.ParentId,
+            childId = grant.ChildId,
+            principalId = grant.PrincipalId,
+            operation = grant.Operation.ToString(),
+            grantedBy = grant.GrantedBy,
+            grantedAt = grant.GrantedAt,
+            revokedAt = grant.RevokedAt,
+            revokedBy = grant.RevokedBy,
+            isActive = grant.IsActive,
+        };
+
+    private static IResult AuthorityStoreUnavailable()
+        => Results.Json(new { error = "AUTHORITY_STORE_UNAVAILABLE", message = "No company authority store is registered." }, statusCode: StatusCodes.Status503ServiceUnavailable);
+
+    /// <summary>Answers a refused parent-to-child request: audited with the rule that refused it, and 403 without detail.</summary>
+    private static IResult Refused(HttpContext http, ClaimsPrincipal caller, Guid parentId, Guid childId, CompanyAuthorityDecision decision)
+    {
+        RecordAudit(http, "company-authority.denied", SecurityAuditOutcomes.Denied, childId, ParentCompanyAuthority.UserIdOf(caller),
+            $"tenant:{childId:D} parent={parentId:D} reason={decision.Reason}");
+        return Results.Json(new { error = "CHILD_AUTHORITY_DENIED", message = "The caller has no authority over this company." }, statusCode: StatusCodes.Status403Forbidden);
+    }
+
+    private static void RecordAudit(HttpContext http, string action, string outcome, Guid companyId, Guid? actor, string target)
+        => http.RequestServices.GetService<ISecurityAuditLog>()?.Record(new SecurityAuditEvent
+        {
+            Category = SecurityAuditCategories.Tenancy,
+            Action = action,
+            Outcome = outcome,
+            TenantId = companyId,
+            Actor = actor?.ToString("D"),
+            Target = target,
+        });
 
     /// <summary>
     /// Whether <paramref name="userId"/> is an account in the identity store. Refuses when no identity store is registered, since an

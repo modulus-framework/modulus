@@ -1,0 +1,14 @@
+@page "{code:int?}"
+@model {{ root_namespace }}.Web.Pages.ErrorModel
+@{
+    ViewData["Title"] = Model.Heading;
+}
+
+<app-page-header pretitle="Error @Model.Code" title="@Model.Heading" />
+
+<app-card>
+    <p style="font-size: 15px; line-height: 1.7;">@Model.Message</p>
+    <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px;">
+        <a class="ant-btn ant-btn-primary" href="/">Back to home</a>
+    </div>
+</app-card>

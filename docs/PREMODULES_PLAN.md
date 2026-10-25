@@ -10,13 +10,36 @@ Done in this round (built, unit-tested, and the generated `webapp+api` app build
 - Generator fixes: Settings page braces, unregistered Audit/Roles/BusinessAudit/CompanyAudit clients, a 403-specific message on CRUD writes, `--multi-tenancy` help text, and the round-trip test (chooses a company, opens every admin page).
 - Decision register in the "Decision register" section of this file. Decisions 2, 4, 5, 8 are built; 7 is built with the test gaps listed in its row.
 
-Next, in order:
+Status of the remaining list (2026-10-24, second pass):
 
-1. **Decision 6, explicit parent-to-child grant.** Decided, not implemented. Design and acceptance criteria are in the register row. Start with the `CompanyAuthorizationGrant` table (EF, in `Modulus.Authorization.EntityFrameworkCore`), the checks on every parent-to-child member and grant operation (parent permission, child belongs to parent, an active grant for the exact operation, no caching), audit records for create, revoke and modify, and the tests named in the acceptance criteria. Grants that users cannot delegate themselves must be refused.
-2. **Decision 13, Blazor teardown race.** Still investigating. The second thread that changes the subscription list is not found. A regression test waits for a confirmed cause.
-3. **Browser checks** of the generated pages (Users, Roles, Audit, Business audit, Company audit, Settings, Companies, Company, Branch, Profile). Only build and API-level tests exist for them.
-4. **Branch option on the Settings page** (decision 14 follow-up) and a Blazor host equivalent for the new pages.
-5. **Owner and operator items** (decisions 1, 3, 9, 10, 11, 12): no repository work until the people named in the register provide their inputs.
+1. **Decision 6, parent-to-child authority:** built (see the register row 6).
+2. **Decision 13, Blazor teardown race:** not confirmed. Findings: the `modulus-ui` suite did not compile on `main` (`Xunit.TestContext.Current` in `SampleAdminDataTests`, an xUnit 3 API in an xUnit 2 project); fixed. With the async teardown base class, ten consecutive full runs passed (838 each). With synchronous teardown (the experiment, reverted), 3 of 6 full runs failed with the same "Collection was modified" stack. Removing the delayed focus in `ColumnHeader` and `ColumnValueList` did not stop it (2 of 6 failed), so that delay is not the cause. The second thread is still not identified, so the owner's regression-test rule stays open.
+3. **Browser checks:** done for the generated multi-company web host, in Chromium: sign-in, then all ten admin pages return 200 with the expected heading and no console errors after the fix below. Not done: interactive flows (saving a setting, choosing a branch, creating a company) in the browser.
+4. **Branch option on the Settings page:** built in the generated web host (multi-company apps only): a "Current branch" scope choice, and a note when no branch is chosen. The API already checks branch scope. Tests: `The_settings_page_offers_a_branch_scope...` (net10). The Blazor host equivalent is not built: the CLI generates only the Razor Pages and MVC hosts, and the Blazor host lives in `modulus-ui`.
+5. **Owner and operator items:** no repository work until the owners provide their inputs (unchanged, see the register).
+
+Defects found and fixed in this pass:
+
+- **Generated multi-company API host crashed in Development** (`ISecretWriter` missing for `TenantDataStoreProvisioner`, caught by build-time validation). The provisioner is now built lazily; the failure moves to the first provisioning call. Tests: `TenantStoreValidationTests` (2).
+- **Generated pages were unstyled.** `modulus-ui`'s asset project set `StaticWebAssetBasePath` to the pre-rename `_content/Modulus.Ui.Assets`, while the head helpers and Blazor head used the `Synvro.*` name. Fixed in `modulus-ui` (source and csproj). Verified with locally packed `1.6.1-local.fix2` packages. The packages are not published.
+
+Still open (not decided in this repo):
+
+- **Resolved (owner decision, 2026-10-24): first administrator.** The first administrator of a new deployment is made the `TenantOwner` role
+  (`IdentitySeeding`, audited as `identity.tenant-owner.granted`). The owner role holds `identity:accounts:manage` and `identity:accounts:personal-data`:
+  in each company through `CompanyProvisioning:OwnerPermissions` (Critical is allowed for this list only; the default company gets it on startup),
+  and at host level through the first-boot grants. A normal administrator holds neither. Only an owner grants or revokes the role (`TENANT_OWNER_REQUIRED`),
+  and the last active owner cannot be demoted (`LAST_TENANT_OWNER`). Recovery: `Identity:Seed:TenantOwnerEmail` names an existing account that becomes
+  the owner when no active owner exists (audited). Verified on a regenerated multi-company app: the first administrator gets `200` on the Users API,
+  where it had `403` before. Tests: `UserAdminHttpTests` (2 new), `IdentityBackendTests`, `IdentityAdminPermissionTests`, `CompanyProvisionerTests` (3 new).
+  The last active owner is also refused a lock, a disable and an archive (`LAST_TENANT_OWNER`, `UserAdminHttpTests`). A multi-company
+  person in exactly one company acts in it without choosing (`DefaultCompanyMiddleware`), so the first Users page opens without a
+  company-header 403. Browser check on a regenerated app: the Users page has no permission error and no console errors.
+  Not covered: an owner-transfer workflow beyond the role change, and a platform administrator's company creation (the owner is refused, by design).
+- Resolved (2026-10-24): the CLI dropped the UI package references when `MODULUS_UI_VERSION` was set. Cause: the UI templates package was
+  looked up only in `MODULUS_LOCAL_FEED`, not in `--package-source`. `modulus app --package-source` now serves that lookup too.
+- Fixed (2026-10-24): the company short-name field's `pattern` attribute was an invalid regular expression in Chrome (`[a-z0-9-]` needs an escaped
+  hyphen under the `v` flag), so the browser blocked the form. Test: `The_short_name_pattern_is_a_valid_regular_expression_in_browsers`.
 
 Known gaps to keep in view:
 
@@ -239,7 +262,7 @@ The owner's final choices. Items marked *unverified* need a check before they ar
 - **Premodule order:** identity, tenancy, profile, audit, settings.
 - **Owner records D-02, D-06 to D-09, B-02 to B-05:** unverified until the original decisions and code are checked.
 - **OpenBao:** Podman on Linux with AppRole; three independent Raft nodes for production (one node only for development or a temporary
-  pilot); manual Shamir recovery shares held by separate custodians until a KMS is configured; migrate all listed secrets (database and
+  pilot); Shamir seal with 5 shares and a threshold of 3, each held by a different named custodian (no KMS, no auto-unseal, decided 2026-10-25); migrate all listed secrets (database and
   tenant credentials, payment and API keys, webhook secrets, LDAP and SAML bind credentials, AI platform keys, Data Protection keys,
   personal-data search keys, log-redaction keys); static KV secrets with scheduled rotation; cache reads for at most 5 minutes and fail
   closed for writes and new-tenant provisioning (verified 2026-10-24: `Secrets:Ttl` and `Secrets:MaxStaleOnFailure` both default to 5 minutes;
@@ -328,8 +351,7 @@ This section is the single list of what is still open after the premodule 1 to 5
 - **Built-in administrator role (premodule 1):** which role counts as built in, so its removal can be refused.
 - **Profile field list (premodule 3):** the owner confirms the fields before premodule 3 starts.
 - **Audit permission default (premodule 4):** whether `audit:security:view` is granted to any role by default. Currently none.
-- **Parent-administrator authority (premodule 2):** who in a parent company may add members or grants in a child, and under which rule.
-  Not built; the access rule for reads is built.
+- **Parent-administrator authority (premodule 2):** decided (decision 6) and built: an explicit authority per parent, child, account and operation, plus the parent permission.
 
 ### Decisions already taken, to confirm in review
 
@@ -354,7 +376,7 @@ This section is the single list of what is still open after the premodule 1 to 5
   since the account cannot be verified. Tests: `TenantCompanyProvisioningTests` (7 in total).
 - **Business audit log viewer UI (premodule 4, closed 2026-10-24):** `/Admin/BusinessAudit` (`audit:view`) searches the company's entries by
   entity, actor, action and time, and pages them. Navigation entry added. The security viewer covers the security chain only.
-- **Premodule 5:** grouping settings by definition group is open (definitions carry no group field).
+- **Premodule 5:** grouping settings by definition group: closed 2026-10-25. `SettingDefinition.Group` files each setting, the administrator's view carries it, and the Settings page groups its rows (test `Administration_CarriesTheGroupEachSettingIsFiledUnder_AndNullWhenUngrouped`).
   The EF settings store is wired into generated multi-tenant apps (`AddEfCoreSettingStore`, values in the tenant store); single-tenant apps
   stay in memory. Closed: `SettingsStoreWiringTests` (3) and a generated multi-tenant app builds with 0 warnings and passes 11 of 11. Open:
   the `ModulusSettingValues` table needs a tenant-store migration in production (dev creates it when no migrations exist).
@@ -377,8 +399,10 @@ This section is the single list of what is still open after the premodule 1 to 5
 
 ### Blazor test stability
 
-- **Teardown race:** fixed in practice. All component test classes derive from one base class that awaits asynchronous teardown. Ten consecutive
-  full runs passed after the change.
+- **Teardown race:** mitigated, not explained. All component test classes derive from one base class that awaits asynchronous teardown; ten
+  consecutive full runs passed after the change. Corrections (2026-10-24): the suite already disables test parallelization
+  (`TestCollections.cs`), so parallel classes are not the cause. Forcing a GC and waiting for finalizers after synchronous dispose did not
+  stop the failures (6 of 8 runs failed), so finalizer timing alone is not the explanation either.
 - **Acceptance gap:** the owner requires a regression test for a confirmed cause. The cause is inferred from stack traces, not confirmed, so no
   such test exists yet.
 - **Row-rule test:** it waits for each render before reading the grid. It passed in the last ten full runs.
@@ -499,8 +523,7 @@ child's own grants. Membership follows the link (built 2026-10-24): a membership
 enter a child; a member of a child does not reach its parent; every company on the path up must be active. The selectable list includes the
 descendants. Tests: `ParentMembershipTests` (3), tenancy suite 126 of 126 on both targets. What a parent member may do in a child is still decided
 by the child's own grants, so a parent member without a child grant is refused there (`403`). Not built yet: granting a parent-level permission
-that applies in the children (the subtree grant), the rule that lets a parent administrator manage a child's memberships and grants, and the
-Companies page. The generated multi-tenant app builds and passes its 11 tests on the framework at local.8.
+that applies in the children (the subtree grant) and the Companies page. The rule that lets a parent administrator manage a child's memberships and grants is built (decision 6). The generated multi-tenant app builds and passes its 11 tests on the framework at local.8.
 
 Progress (2026-10-24): generated multi-tenant API apps now map the company routes (`AddModulusTenantAdmin`, `MapModulusTenantAdmin`, a
 Companies menu entry for `tenants:manage`). The Companies page is built (2026-10-24, see the buildable gaps). Earlier, the EF grant store
@@ -569,7 +592,7 @@ global writes behind `settings:global:manage`, refusals for unknown names and ba
 values read-only, an edit control by value type (checkbox-style choice for booleans, a choice list for allowed values, text otherwise), and the
 API's refusal message on the field. Verified: a fresh generated `webapp+api` app builds and passes its 15 tests; the page was not driven in a
 browser. Built since: the branch scope (D-P4, an organization-unit scope between user and company; see the remaining-work section) and the EF
-settings store in multi-tenant apps. Not built: grouping by definition group (the definitions carry no group field yet).
+settings store in multi-tenant apps. Grouping by definition group: built 2026-10-25 (`SettingDefinition.Group`).
 
 - **API:** exists (`/api/settings`). Each row already carries the type, allowed values and allowed scopes (`SettingView`), so a separate
   definitions endpoint is not needed. `AllowedScopes` is a flags enum and serializes as a number; the screen maps it to names.
@@ -623,15 +646,138 @@ The owner decided the 14 open items. Status is what the repository shows; extern
 | 3 | Pilot sign-off (D7) | Not signed off; define acceptance criteria, run tests, review evidence, then sign off | Open (owner) |
 | 4 | Built-in administrator role | `Admin`, protected against deletion and rename | Built (`BUILT_IN_ROLE`, `RoleAdminEndpoints`) |
 | 5 | `audit:security:view` default | No role by default; an operator grants it | Built (no default grant) |
-| 6 | Parent-administrator authority | DECIDED 2026-10-24: a persisted `CompanyAuthorizationGrant` per parent, child, principal and operation (`ManageMembers`, `ManageGrants`); revoked, not deleted; no caching; deny on any failed check. Acceptance: no grant, a grant for another child, `ManageMembers` without `ManageGrants` for grant operations, a revoked grant, or missing parent permission each deny; a valid relationship, parent permission and matching active grant allow | Not implemented: needs the table, the checks on every parent-to-child member and grant operation, the audit records and the automated tests above |
+| 6 | Parent-administrator authority | DECIDED 2026-10-24: a persisted `CompanyAuthorityGrant` per parent, child, principal and operation (`ManageMembers`, `ManageGrants`); revoked, not deleted; no caching; deny on any failed check. Acceptance: no grant, a grant for another child, `ManageMembers` without `ManageGrants` for grant operations, a revoked grant, or missing parent permission each deny; a valid relationship, parent permission and matching active grant allow | Built 2026-10-24: `ParentCompanyAuthority` checks, parent-to-child routes, host-only grant administration with no self-grant, audit of grant, revoke and refusal. Tests: `ParentCompanyAuthorityTests`, `ParentCompanyRouteTests`, `CompanyAuthorityStoreTests`. Upgrade: `ModulusCompanyAuthorityGrants` in the three authorization scripts |
 | 7 | Company-admin audit summary | Six fields: time, category, action, outcome, actor display name, target; no raw details, hashes or host events | Built: `GET /api/audit/company-summary` (`audit:company-summary:view`, no default grant), `/Admin/CompanyAudit` in the web host. Actor names come from `IUserDisplayNameDirectory` (identity implementation, host context, display name only, one batch per page). An account that cannot be resolved, or has no display name, shows as "Unknown user"; the page still returns. The chain keeps user ids only; names are read at display time. Tests: `CompanyAuditSummaryTests` (5, Platform), `UserDisplayNameDirectoryTests` (3, Identity: batch, missing and nameless accounts, duplicates). Authorization on the endpoint is covered by the generated apps' security probe suite (`401`/`403` for every guarded endpoint). Company isolation: the endpoint takes no company id; it reads the caller's own chain only |
 | 8 | Profile fields | Display name, language, time zone, phone; email change by confirmed link; no avatar or files in Release 1 | Built in the web host |
 | 9 | OpenBao production evidence | Required before production sign-off; single node is development only | Open (operator) |
-| 10 | SSO, KMS, custodians | OIDC SSO with MFA for OpenBao admins; external KMS auto-unseal if supported, else Shamir shares with at least three separate custodians | Architecture chosen; providers and people not yet confirmed (operator) |
+| 10 | SSO, KMS, custodians | OIDC SSO with MFA for OpenBao admins; Shamir seal, 5 shares, threshold 3, five separate custodians (no KMS, decided 2026-10-25) | Architecture chosen; providers and people not yet confirmed (operator) |
 | 11 | AI platform conformance | Activation blocked until the platform's suite passes against the real connector | Open (platform owner) |
 | 12 | `modulus-ui` publishing line | Target `1.6.1`, after reconciling the local branch and reviewing the `0.9.x` line | Open (release; manual publish) |
-| 13 | Blazor teardown race | Keep the fix as a candidate; do not declare the cause confirmed; find the second thread or a reproducible explanation | Open (investigation) |
-| 14 | Branch selector | Cookie, then gateway header `X-Branch-Id`, validated server-side against the caller's org scope; branches from the org-unit API | Built in multi-company web apps: `/Branch` picker, `GET /api/org/branches` (open units in scope), gateway sends `X-Branch-Id`; the server check is `BranchContextMiddleware`. Settings page branch option not built |
+| 13 | Blazor teardown race | Keep the fix as a candidate; do not declare the cause confirmed; find the second thread or a reproducible explanation | CLOSED 2026-10-24 by waiver (option A, chosen by the owner): the async teardown base class is the fix. Cause unconfirmed; no regression test for it, by waiver. Evidence: synchronous teardown fails most full runs; async teardown 10 of 10 clean; parallelization already off (`TestCollections.cs`); delayed focus ruled out; forced finalization does not stop it. Upstream report drafted: `scratchpad/antdesign-issue.md` (AntDesign 1.6.2, static `DomEventSubscriptionStore`, `AntComponentBase` finalization) |
+| 14 | Branch selector | Cookie, then gateway header `X-Branch-Id`, validated server-side against the caller's org scope; branches from the org-unit API | Built in multi-company web apps: `/Branch` picker, `GET /api/org/branches` (open units in scope), gateway sends `X-Branch-Id`; the server check is `BranchContextMiddleware`. Settings page branch option built in the generated web host (2026-10-24) |
+
+Decisions recorded 2026-10-24 (owner, follow-up):
+
+- **Item 5 (built-in Admin, audit default): confirmed, no change.** `Admin` stays protected (`BUILT_IN_ROLE`). `audit:security:view` has no default
+  grant; security and audit staff get it explicitly.
+- **Item 4 (profile field list): baseline approved.** Editable fields: display name, first name, last name, profile photo; work email, work phone;
+  employee ID, job title, department, primary branch; preferred language, time zone. System-managed (not editable): user ID, account status,
+  created and updated timestamps. Never in the profile: credentials, MFA secrets, recovery codes, authorization assignments (roles and
+  permissions belong to the access-control module). Gap against the built profile (display name, language, time zone, phone; email by confirmed
+  link; no photo): first name, last name, profile photo, work email (the built email is the account's own, changed by link), employee ID, job
+  title, department, primary branch are not built. Building them is premodule 3 work and is not started.
+- **Item 12 (modulus-ui line): reconciled on `release/1.6.1` (local, not pushed; owner approved keeping both commits for review).** Found already on `origin/main`: the 0.9.1 line merged into
+  `main` at `5c581e6`, which deleted 28 docs (among them `docs/CLI.md`, which `AGENTS.md` names). Version metadata stayed `1.6.1` everywhere.
+  Reconciliation commit `3db0dfa` restores those 28 docs from the 1.6.1 parent; `8ae6239` keeps the uncommitted asset-path fix and test
+  fixes. Verified: solution builds with 0 warnings; tests pass (Hosting 15, Fluid 13, Mvc 245, Blazor 838). Not published: the owner publishes
+  manually after reviewing the branch. Whether `origin/main` should be rewritten to drop the merge is the owner's call; this work does not rewrite it.
+- **Item 2 (D7 pilot): SIGNED OFF 2026-10-24 by the owner** on the evidence reported (not independently re-executed by the signer). Evidence: Framework unit suite passes on net8 and net10 with 0 warnings
+  (Identity 467, Authorization EF 143, Authorization Management 140, Platform 587, MultiTenancy 161, Audit EF 19). Criteria 1 to 4 are covered by
+  the named test classes in those suites. Generated app (regenerated, `local.20`): 17 of 17 tests pass. A failure found on the way (the
+  signed-in landing page returned 500 when the API was unreachable) was fixed: the default-company step now fails soft, with a template test.
+
+Premodule 3 (profile), started 2026-10-24 on the approved field list:
+
+- **Compatibility.** `PUT account/profile` (four fields, empty clears), `GET account/profile` and the email-change routes are unchanged. The
+  new routes are additive: `GET` and `PATCH account/profile/details`. In `PATCH` a field left out keeps its value; an empty string clears it.
+- **Fields.** Identity: display name (existing), first and last name (existing columns), photo (`AvatarUrl`, an https address; no upload yet).
+  Contact: the existing `PhoneNumber` is the work phone (no second phone field); work email is new and separate from the sign-in address, and
+  is not confirmed by a link. Organization: job title and department (new, editable by the person); employee code and primary branch (new
+  `PrimaryBranchId`) are set only by an administrator through `PATCH identity/users/{id}/organization`. Preferences: language and time zone
+  (existing). System-managed, read-only on the profile: user id, user name, sign-in address, active flag, created and modified timestamps.
+  Credentials, MFA secrets, recovery codes and authorization assignments are not in the profile.
+- **Required.** None. Every field is optional, because existing accounts have none of the new values.
+- **Access control.** Employee code and work email are `Restricted` and job title and department are `Confidential` on the administrator's
+  detail view, so they follow the field guard. The administrator's routes need `identity:accounts:manage` (the employee code additionally
+  needs `identity:accounts:personal-data` to be read). An employee code is unique per company and upper-case.
+- **Gaps, as built.** The primary branch is stored as an id and is not checked against the org units yet (an administrator enters it).
+  The photo is an address only. Work email has no confirmation step.
+- **Verification.** `ProfileTests` (2 new), `UserAdminHttpTests` (1 new), `TokenPrincipalFactoryTests` (a test subclass that declared its own
+  `Department` now inherits it), `ProfileDetailsTemplateTests` (2). Identity suite 472 on net8 and net10; CLI 650. Generated app
+  (`local.21`): builds, 17 of 17 tests pass. Browser, through the gateway: saved the details, reloaded, values persisted, no console errors.
+- **Upgrade.** New columns on the identity user table (`WorkEmail`, `JobTitle`, `Department`, `PrimaryBranchId`): existing deployments add a
+  migration (`modulus migrate add <Name> --module Identity`). Apps that declare their own `Department`, `JobTitle`, `WorkEmail` or
+  `PrimaryBranchId` on a `ModulusUser` subclass must remove or rename them (CS0108).
+
+Premodule 3 review (2026-10-24, after the owner's compatibility, migration and authorization decisions). Status by requirement:
+
+- **Work phone:** reuses `PhoneNumber`. Done.
+- **Work email:** separate from the sign-in address, which it never changes. Built 2026-10-24 (owner decision): an entered address is **pending**
+  (`PendingWorkEmail`) and becomes `WorkEmail` only when its owner follows the link. The link is a Data Protection token with its own purpose
+  (`Modulus.Identity.WorkEmailVerification.v1`, so a sign-in or e-mail-change token cannot confirm it), valid 30 minutes
+  (`Identity:WorkEmail:Lifetime`), bound to the account and the pending address, and tied to a per-request stamp on the account: a new request or
+  a new address replaces the stamp, and confirming clears it, so a link works once and only the newest works. Requests are rate-limited (one per
+  60 seconds, `Identity:WorkEmail:Cooldown`) and answer the same whatever the address. The person confirms with `POST account/profile/work-email/confirm`
+  while signed in as that account. An administrator's entry (`PATCH identity/users/{id}/work-email`, `identity:accounts:organization:manage`)
+  also only starts a link. Each request and each verification is audited (`identity.user.work-email.requested` / `.verified`). The link mail is
+  sent through `IIdentityEmailSender.SendWorkEmailVerificationAsync`; its default sends a confirmation mail, so an app must override it to point
+  at the confirm route. Tests: `WorkEmailVerificationTests` (11), `ProfileTests`.
+  **Breaking for a client that relied on the old behaviour:** `PATCH account/profile/details` no longer makes a work email take effect at once.
+  The response carries `pendingWorkEmail` until the link is followed; `workEmail` stays empty until then.
+- **Employee code and primary branch:** organization-managed. Writes need `identity:accounts:organization:manage` (Sensitive, new), in addition to
+  the account administration permission. Employee code is upper-case and unique per company (checked in the application, and by a unique index on
+  `(TenantId, EmployeeCode)` in the upgrade scripts for PostgreSQL, MySQL and SQL Server, filtered on SQL Server). The primary branch must be an
+  org unit of the request's company (`IOrgHierarchy.Contains`); with no hierarchy registered it is refused. The branch name is not resolved yet.
+- **Profile photo:** built as the API (2026-10-24). `PUT account/profile/photo` takes the image as the body and accepts JPEG, PNG and WebP only,
+  decided by its bytes, not its name or declared type; SVG and animated images are refused. A file over 5 MB is refused before it is read in full,
+  and a side over 4096 px is refused from the header before the pixels are decoded. The stored photo is a centred 512 px square, re-encoded as JPEG
+  from the decoded pixels, so no metadata of the original survives; the original is never kept. The key is a random asset id under the account's
+  tenant folder (`profile-photos/{tenant}/{asset}.jpg`), and the account keeps only that id (`PhotoAssetId`). `GET account/profile/photo` serves
+  only the caller's own photo; `DELETE` clears the reference first, then removes the file. A replacement removes the old file only after the account
+  is saved, and a failed account save removes the new file. A failed removal is logged, not returned as an error. `AvatarUrl` (https address) stays
+  as it was, for accounts that already have one; the photo asset is the controlled path. Decoding uses SixLabors.ImageSharp 2.1.13 (Apache-2.0, pure managed; replaced SkiaSharp on 2026-10-24, see `THIRD-PARTY-NOTICES.md`). The
+  storage is the framework's `IFileStorage` (local, S3 or Azure); without one the upload is refused with 503. **Not built:** the web page to upload a
+  photo upload page is in the web template (see the release gate, item 3). EXIF orientation: applied before the crop since 2026-10-25
+  (`AutoOrient`; test `A_camera_photo_with_a_rotation_tag_is_stored_upright`). Tests: `ProfilePhotoProcessorTests` (11), `ProfilePhotoEndpointTests` (7).
+- **Optional fields:** every new field is optional; the original four keep their rules.
+- **Confidential behaviour (tested, API level):** job title and department were masked for every caller, because a non-public classification with no
+  clearance profile is closed. They now need `identity:accounts:organization` (Sensitive, new). Tests: an administrator without the clearance sees
+  them as null; with it, they are visible; an ordinary account gets 403 on the admin routes (`Organization_details_need_the_organization_clearance_even_for_an_administrator`).
+  The UI was not tested in a browser for these cases.
+- **Admin-managed fields need explicit permission:** `Changing_the_employee_code_needs_the_organization_manage_permission...` (account administration alone gets 403).
+- **Source compatibility:** the new `ModulusUser` properties could clash with an application's own property of the same name (CS0108). No generated
+  template declares them (checked). A freshly generated app builds and passes its 17 tests. **Not done:** regenerating an older application and
+  compiling it against this framework, as the owner asked.
+- **Database migration (existing deployments):** `docs/upgrades/identity-platform-2026-10.profile.{postgresql,sqlserver,mysql}.sql`. Nullable columns
+  (`WorkEmail`, `JobTitle`, `Department`, `PrimaryBranchId`, and since 2026-10-24 `PhotoAssetId`, `PendingWorkEmail`, `WorkEmailVerificationStamp`,
+  `WorkEmailRequestedAt`), plus `ConfirmationFailures` (`NOT NULL DEFAULT 0`). Each script first checks for duplicate employee codes in one company and stops
+  with a diagnostic, changing nothing, if it finds any. It then creates the unique employee-code index before dropping the earlier non-unique one, so
+  upgraded and fresh schemas have the same index set. Verified 2026-10-24 on PostgreSQL 16, SQL Server 2022 and MySQL 8.4: clean data (two runs; data
+  preserved; duplicate in one company refused; NULL and cross-company codes accepted) and duplicate data (non-zero exit, no column added, old index kept, no
+  unique index). Test: `ProfileUpgradeScriptTests` (static checks on each script, including the order).
+- **Fresh installations (done 2026-10-24).** The EF model maps `(TenantId, EmployeeCode)` as a unique index named `IX_AspNetUsers_TenantId_EmployeeCode_Unique`,
+  filtered `IS NOT NULL` on SQL Server, PostgreSQL and SQLite; MySQL takes no filter. Codes are trimmed and upper-cased before they are written, so the
+  database compares one spelling. Verified with `EmployeeCodeUniquenessTests` (SQLite) and `EmployeeCodeFreshInstallTests` (PostgreSQL 16, SQL Server 2022,
+  MySQL 8.4; 12 tests per target), rerun after the later EF default for `ConfirmationFailures`: 12 of 12.
+- **Release diff review:** `crud-edit.razor.sbn` reviewed. The 1.6.1 edit page had its own inline form; the create page on the same line already used the
+  shared editor, so the merged edit page makes the pair consistent. Validation, Save/Create and Cancel are all kept in the editor. One unverified
+  point: the namespace moved from `ApiClients` to `Services.ApiClients`; check it against the generator's output. The other ~320 deleted lines are not reviewed.
+- **Release gate for premodule 3 (owner decisions, 2026-10-24).** Evidence: `docs/upgrades/RELEASE-NOTES-2026-10.md` ("Release gate for premodule 3")
+  and `THIRD-PARTY-NOTICES.md`. Status per item:
+  1. *Browser confidentiality (admin without clearance, admin with, ordinary user; displayed values and PATCH):* **Open.** API tests pass; no
+     generated app was started in a browser this pass.
+  2. *Release-diff review of every remaining deleted line:* **Open.** One file reviewed (`crud-edit.razor.sbn`); about 320 lines remain.
+  3. *Photo and confirmation pages:* **Built** in the web template (`ProfilePhoto`, `ConfirmWorkEmail`), with template tests (6 in
+     `ProfileDetailsTemplateTests`). **Not compiled** as a generated app this pass. The API behind them is tested: photo (`ProfilePhotoProcessorTests`,
+     `ProfilePhotoEndpointTests`) and confirmation outcomes, including expired, used, superseded, too-many-attempts (`WorkEmailVerificationTests`).
+  4. *Native image runtimes:* **Reframed.** The decoder is pure managed code, so there is no native runtime per platform. **Verified: Linux x64 only.**
+     Windows, macOS, Linux ARM64, Linux ARM and musl are **not tested** and no claim is made for them. The refusal paths (malformed, truncated, TIFF,
+     colour profile, animation, oversize) are tested on Linux x64 only.
+  5. *Decoder licence and security (replaced SkiaSharp):* **Open, owner decision.** ImageSharp 2.1.13 is Apache-2.0 (verified at the upstream commit);
+     its managed dependencies are MIT. Five advisories whose fixes exist only in the Split-Licensed 4.x line are suppressed in `Directory.Build.props`,
+     each with its reason (`THIRD-PARTY-NOTICES.md`). The owner must accept that risk, or choose another decoder.
+  6. *Legacy `AvatarUrl` policy:* **Built** (`AvatarUrlPolicy`, 21 tests): https only, no credentials, no whitespace, at most 2048 characters; the photo
+     takes precedence; the server never fetches the address. External hosts are allowed by the rule; the page uses `referrerpolicy="no-referrer"`.
+  7. *Work-email confirmation safeguards:* **Built and tested:** the link is bound to account, purpose and pending address; it expires; it is single-use;
+     the newest link only works; a verified address is kept until a new one is confirmed; five failed attempts lock confirmation until a new request.
+  8. *Employee-code migration:* **Built and verified** on PostgreSQL 16, SQL Server 2022 and MySQL 8.4: a duplicate in one company is refused before
+     any change, with a diagnostic; the unique index is created before the old one is dropped.
+  9. *Older generated app compiling:* **Open.** Not done in this pass.
+  10. *Full regression:* Identity suite 539 of 539 on net8.0 and net10.0; CLI suite 654 of 654 (net10.0); the full solution builds with 0 errors and
+      0 warnings; `dotnet format modulus.slnx --verify-no-changes` clean; provider fresh-install tests 12 of 12 on both targets.
+  The release stays local and unpublished.
+- **Blocked, unchanged:** D8 legal retention (counsel), OpenBao evidence (operator), item 10 SSO/KMS (operator), item 11 AI conformance (platform owner).
+- **Publication:** `release/1.6.1` stays local. Nothing is pushed, merged to the remote, or published.
 
 Rules that go with the decisions:
 
@@ -647,3 +793,188 @@ Rules that go with the decisions:
 3. Audit export format and maximum window (premodule 4).
 4. Whether company administrators may see their own audit chain's raw events or only the decoded summary (premodule 4).
 5. Confirm the order above, or choose another.
+
+## Final disposition of blocked items (owner, 2026-10-24)
+
+These four items stay open. Each closes only on the written or verified deliverable listed. Design intent does not close an item.
+
+| Item | Status | Owner | Required before closure | Current safeguard |
+| --- | --- | --- | --- | --- |
+| D8 legal retention minimum | Blocked | Counsel | Written retention requirements: record categories and jurisdiction | `Security:Retention:Enabled` = false; no statutory minimum invented |
+| OpenBao production evidence | Blocked | Operator | Evidence of cluster health, Raft membership and quorum, storage persistence, TLS, audit logging, and a tested recovery | Three-node Raft production design; single node for development or temporary pilot only |
+| Item 10 SSO, KMS and custodians | Blocked | Operator | The Shamir 3-of-5 design with the five named custodians; documented recovery responsibilities; a tested restart-unseal, backup-recovery and custodian-unavailability procedure | OIDC SSO with MFA for OpenBao administrators |
+| Item 11 AI platform conformance | Blocked | Platform owner | The platform's own conformance suite passing against the real connector; preserved output, failures, connector version and final result | Connector activation disabled |
+
+No configuration change, deletion enablement, connector activation, or production sign-off is authorized by this disposition.
+
+## Release-diff review of `modulus-ui` 1.6.1 (2026-10-24)
+
+Scope: the deleted lines from the 1.6.1 baseline (`954ab84`) to the release branch (`HEAD`): 324 lines across 76 files. Each deleted line was
+checked for whether its text still exists in the release tree. Of 299 deleted lines of 12 characters or more, 110 still exist (moved or
+kept). The 189 that are gone were sorted by the change they belong to, then read in context.
+
+| Category | Lines | Verdict |
+| --- | --- | --- |
+| Package rename `Modulus.Ui.Assets` → `Synvro.Modulus.Ui.Assets` (commit `7ade1c7`, asset base path fixed in `8ae6239`) | in the head, asset, theme, and Fluid files | Intentional. Asset paths match the renamed package. |
+| Create/edit split: `crud-edit` renders the shared `_Form` (`crud-form` maps to `_Form.cshtml` in the CLI); `New` links go to `/new`, and the create routes exist | create/edit and index templates | Intentional. Checked: the hidden `Input.Id` and the validation summary are in `_Form`; `_List` (`crud-list`) keeps the empty state, table, and delete form. |
+| Entity form (Blazor): route `/{entity}/edit/{Id}` → `/{entity}/form/{Id}`; the `TODO: save through the API` stub is replaced by real create/update calls | `entity-form.razor` | Intentional. Matches the `/form/` convention the samples use. The stub was a gap, now closed. |
+| Namespace `.ApiClients` → `.Services.ApiClients` | Blazor CRUD templates | Verified consistent: the CLI writes clients to `Services/ApiClients`, and the framework's profile client uses that namespace. |
+| Placeholder text on inputs (added `placeholder=`) | forms in several templates | Intentional UX text. No behaviour change. |
+| `IUserDirectory`, `ITenantDirectory`, `IAuditTrail`, `INotificationCenter` injection renamed to `…Directory` / `AuditTrail` / `NotificationCenter` | Blazor admin pages | Intentional naming; every use in each file was renamed. |
+| `CancellationToken` passed through test calls | `SampleAdminDataTests` | Intentional (analyzer warnings). **Not compiled in this pass.** |
+| Sample money and date formatting: `en-US` → `InvariantCulture` | `Fmt.cs` | Behaviour-preserving: every format is a literal pattern with `$`, and invariant English month names equal en-US. |
+| README and DEPENDENCIES links from `docs/UPGRADING.md` to `docs/DOCUMENTATION.md#…` | docs | Intentional. Each anchor matches a real heading (checked). |
+| `[Authorize]` made conditional on `use_auth` (commit `7ade1c7`, "conditional [Authorize] when the app signs users in") | admin, user-profile, tenant, audit, notification, and role pages, MVC `AdminController` | **Intentional but security-relevant. Owner decision.** In an app with no sign-in, these pages carry no attribute. Access then depends on the framework fallback policy, which applies only when `AddModulusAuthorization` is registered. An unconditional `[Authorize]` would make such an app return 500 (no scheme). Options: keep the conditional, and require the app to register a fallback policy or `[AllowAnonymous]` explicitly; or make the attribute unconditional and document that no-sign-in apps must loosen it. |
+
+**Accidental regressions found:** none confirmed. The one apparent loss (the inline table in `crud-index`) is the intentional split into `_List`.
+
+**Not verified in this pass:** the `modulus-ui` build and test run (the Blazor test changes are unverified), and any generated output from these templates.
+Items still open: the owner decision on conditional `[Authorize]`, and a build plus test run of `modulus-ui` on this branch.
+
+## Decisions taken on the owner's behalf (2026-10-24)
+
+The owner asked for the open items to be analysed and decided. These are the decisions, with the reason and what would change them. Nothing here
+pushes, publishes, or enables a blocked item.
+
+| # | Item | Decision | Reason | Revisit when |
+|---|------|----------|--------|--------------|
+| 1 | Five ImageSharp 2.1.13 advisory suppressions | **Accept**, as recorded in `Directory.Build.props` and `THIRD-PARTY-NOTICES.md` | Each affected path is unreachable: ICC (refused by the structure walk), BigTIFF (refused by the format gate), TIFF/histogram code is never called. Tests prove the gates. 2.x is Apache-2.0 and pure managed; 3.x is Split License and is rejected. SkiaSharp and MagicScaler were rejected earlier for native or licence reasons. | A fixed 2.x release appears, any gate test fails, or a permissive decoder with a clean advisory record is found. Review at every release. |
+| 2 | Conditional `[Authorize]` when the app has no sign-in | **Keep conditional.** No-sign-in apps rely on the closed-by-default fallback policy | An unconditional attribute makes a no-sign-in app answer 500. The framework already closes such an app by default (`AddModulusAuthorization` fallback = signed-in user) and the startup guard refuses an unpoliced endpoint. Opening an endpoint stays a reviewed `Loosen` decision. | A generated no-sign-in app is found to serve an admin page anonymously. |
+| 3 | `modulus-ui` build and tests | **Done**: `Modulus.Blazor.Tests` 838/838, including the `SampleAdminDataTests` changes | | |
+| 4 | Fresh and older generated-app compile | **Defer** until 5 GB or more is free; do not delete anything to make room | Repack needs ~1 GB beyond what is free | Disk freed by the owner |
+| 5 | Browser confidentiality tests | **Required before release**, no waiver | They are the only evidence for the displayed values and PATCH rejection | A generated app can run |
+| 6 | Native runtime coverage | **Release supports linux-x64 only**; other platforms are listed as untested, not as passing | Pure managed code makes failure unlikely, but it is not evidence | A CI runner for each platform |
+| 7 | Real SMTP delivery | **Required before enabling mail in any environment**; the feature ships off (`Identity:Email:SmtpHost` unset uses the no-op sender) | Only a recording transport was tested | A test mailbox is available |
+| 8 | D8, OpenBao, item 10, item 11 | **Unchanged: blocked.** `Security:Retention:Enabled` stays `false` | Need counsel, operator and platform-owner evidence | Their evidence arrives |
+
+The release stays on hold until items 4, 5 and 7 have evidence. Items 1 and 2 no longer wait for an owner.
+
+### Verification pass (2026-10-24, second round)
+
+- `modulus-ui` Blazor tests: 838/838. Mvc: 245/245. Fluid: 13/13. Hosting: 15/15 (all net10.0).
+- Framework `dotnet format modulus.slnx --verify-no-changes`: exit 0 (clean).
+- `Modulus.Identity.Tests` Category=Unit: 552/552 on net10.0 and net8.0.
+- Not run: the generated-app compile, browser tests and SMTP test (disk and environment limits, see the decisions table above).
+
+### Fresh-app compile and fixes (2026-10-24, third round)
+
+The framework was packed into a scratchpad feed (root partition, not `/home`) with `NUGET_PACKAGES` redirected, and `modulus-ui` was packed
+beside it (`Synvro.Modulus.Ui.*` and `AspNetCore.Mvc/Hosting/Fluid` 1.6.1). Four generated apps were then built with the new CLI.
+
+Defects found by the fresh-app builds and fixed in the templates:
+
+1. **`Profile.cshtml` did not compile** (RZ1010): a `@{}` block nested inside an `@if` in the page. Fixed: the avatar is chosen in a top-level
+   block; the Identity types are referenced only when the app has sign-in (`use_auth`).
+2. **Generated apps lacked the ImageSharp advisory suppressions**, so every auth app showed 40 NU1902/NU1903 warnings. Fixed:
+   `Directory.Build.props.sbn` carries the five `NuGetAuditSuppress` items with their reason, for apps with sign-in.
+3. **`--auth none` web apps did not compile** (`Settings` page used the auth-only `Web.Security` namespace). Introduced by this branch's
+   uncommitted Settings change. Fixed: the branch-cookie code is generated only with `multi_tenancy`, the one case where the branch picker exists.
+   The same `Web.Security` reference in `Branch.cshtml.cs` predates this branch, but that page is generated only with `multi_tenancy`.
+
+Results:
+
+| App | Build | Tests |
+|---|---|---|
+| webapp+api, openiddict, mvc | 0 errors, 0 warnings | 15/15 (generated suite) |
+| webapp+api, none, mvc | 0 errors, 0 warnings | not run |
+| webapp+api, openiddict, multi-tenancy, mvc | 0 errors, 0 warnings | not run |
+| api, openiddict, multi-tenancy | 0 errors, 0 warnings | not run |
+
+`modulus` CLI tests: 657/657 (three new in `OptionalAuthTemplateTests`, which fail on the defects above). `dotnet format --verify-no-changes`: clean.
+
+Not done: browser tests, SMTP, native runtimes, and repacking with `/home` space freed (the disk is still at 1.1 GB free).
+
+### Round 4 (2026-10-25): AI connector off by default, OpenBao unseal fixed at 3 of 5, no-sign-in smoke tests
+
+Owner decisions applied (see "Final disposition of blocked items"): the unseal design is **Shamir, 3 of 5, five named custodians, no KMS**;
+the AI connector is **off by default**. Items 10 and 11 stay blocked: the custodians, the SSO provider and the platform's conformance
+result are still missing.
+
+**AI connector (item 11 safeguard).**
+- `ModulusAiConnectorOptions.Enabled` defaults to `false` (was `true`). `add-ai` already wrote `"Enabled": false`; the generated testing
+  settings turn it on for the generated tests only.
+- Decided at startup, like the background services. With the connector off, `MapModulusAiConnector` maps **no route**. The first draft
+  kept the routes and returned 404 from an endpoint filter, but authentication runs before endpoint filters, so a request with an envelope
+  could still reach the platform's signing-key fetch (`AiEnvelope`). Found by the new tests, fixed.
+- The revocation dispatcher does not run and the revocation observer queues nothing while off. Before this round, a disabled connector with
+  instances configured still sent `revocations/scope` requests.
+- Turning it on requires a restart.
+- Tests: `DisabledByDefaultTests` (4: default off; no route mapped and no platform call; no signal queued; a pre-journalled signal waits;
+  control: the same signal is sent when on). Existing tests that exercise the connector set `Enabled = true` explicitly; two validator
+  tests now say "when on", because the validator skips a disabled connector so a fresh app with no keys can start.
+- Results: `Modulus.AI.Connector.Tests` 129/129 (net10.0 and net8.0); `Modulus.AI.Connector.EntityFrameworkCore.Tests` 30/30 (net10.0).
+- Running a generated API (`add-ai`, Development): `/health/live` 200; every `/_ai/connector/*` route answers 401 to a wrong key, and the
+  startup log has no connector line.
+
+**Not changed, needs a decision.** The change journal `ai_changes` is still written on every save while the EF journal is registered, even
+with the connector off. The journal rows are written by the application's own transactions and are read only by the connector, so
+"no application data accessed" is not strictly met. Stopping the write means changes made while off are not journalled, and the index needs
+a full re-extract after activation. Owner to choose.
+
+**OpenBao unseal (item 10).** The runbook, the disposition, the plan, the framework-operations note, the operator checklists and the compose
+template now all say: Shamir seal, 5 shares, threshold 3, five named custodians, no KMS, no auto-unseal. The runbook's restart, backup-recovery,
+custodian-unavailability and lost-share procedures are listed for testing. Item 10 stays blocked until the custodians are named and the
+procedures are tested.
+
+**Found, then resolved (2026-10-25).** `docs/IDENTITY_PLATFORM_PLAN.md` said "Raft of five nodes preferred"; it now says three, as the runbook and decision 17 do.
+
+**No-sign-in web apps.** Every page of a `--auth none` web app answers 500: the closed default requires a signed-in user, and no
+authentication scheme exists, so the endpoint throws. The generated smoke test now asserts only that no page is served anonymously. A
+clean 401 or a sign-in redirect would need the app to register a scheme, or an explicit open decision. Owner to decide.
+
+**Generated apps (fresh, `/tmp` feed, rebuilt CLI).** Each builds with 0 errors and 0 warnings, and each suite passes:
+
+| App | Tests |
+|---|---|
+| web, sign-in, MVC | 15/15 |
+| web, no sign-in, MVC | 8/8 (before this round: 3 failing smoke tests, which assumed sign-in) |
+| web, sign-in, multi-tenancy, MVC | 17/17 |
+| API, sign-in, multi-tenancy | 11/11 |
+| API, sign-in, `add-ai` | 14/14 |
+
+`modulus` CLI tests: 658/658, including three new in `OptionalAuthTemplateTests` (no-sign-in smoke tests, identity references, advisory
+suppressions). `dotnet format --verify-no-changes` run at the end of this round: clean (exit 0).
+
+### Round 5 (2026-10-25): gaps closed in the code, and what stays open
+
+Built and tested in this round:
+
+- **EXIF orientation of profile photos.** `ProfilePhotoProcessor` applied no rotation, so a camera photo was stored sideways. The
+  rotation is now applied before the square crop. Test: `A_camera_photo_with_a_rotation_tag_is_stored_upright` (fails without the fix).
+  `Modulus.Identity.Tests` Category=Unit: 553/553 on net10.0.
+- **Settings grouping (premodule 5).** Already in the code (`SettingDefinition.Group`, the Settings page); the plan said "not built", which
+  was stale. Test added: `Administration_CarriesTheGroupEachSettingIsFiledUnder_AndNullWhenUngrouped` (`Modulus.Platform.Tests`, 25/25 in
+  `SettingsPhase5Tests`).
+
+Still open, and why (none can be closed in this repository alone):
+
+- Owner or operator items (decision register, items 1, 3, 9, 10, 11) and the release gate items 1, 2, 5, 9 above: browser evidence,
+  SMTP, the older generated-app compile, and the decoder licence decision. Disk is at 1.1 GB free; repacking needs about 1 GB more.
+- Branch picker in a generated-app round trip: the generated tests create no org unit (a test fixture change, not started).
+- Primary branch is checked against the org units of the company, but its name is not resolved (premodule 3, display only).
+
+### Round 6 (2026-10-25): open items closed, UI polish, and what stays open
+
+Closed and verified in this round:
+
+- **No-sign-in web app answers 401, not 500** (`NoSignInAuthentication` scheme; pipeline runs authentication and authorization). Generated suite 8/8.
+- **AI change journal writes nothing while the connector is off** (`AiChangeSaveContributor` checks `Enabled`; the journal starts empty, so a full re-extract follows activation). EF connector suite 31/31.
+- **Flaky `DelegationRoleStalenessTests` (net8.0)**: cause was the test reading the shared SQLite connection while the refresh timer wrote through it. Fixed. Five clean runs after the fix.
+- **Branch picker round trip** (multi-tenant generated suite, 19/19). **Web-to-API round trip** (A2.5.3, A5.5). **Kill-the-API** (A2.5.4, live).
+- **Raft** aligned to three nodes. **A2.3.5 / A2.3.6** deferred by decision.
+- **Older generated app** (generated by the commit `d4f3538` CLI) compiles against the current framework with 0 errors. Its 40 warnings are the ImageSharp advisories, which the current template suppresses; with the same `NuGetAuditSuppress` block copied in, it builds with 0 warnings and its 15 tests pass.
+- **SMTP delivery** verified against a real SMTP server (Mailpit): a password-reset mail arrives, its link resets the password, the link is single-use, and sign-in works with the new password.
+- **Password recovery pages (B1)**: forgot and reset pages, a forgot link on sign-in, and the reset page at `/ResetPassword` (the path the email link uses). A browser run of the whole flow passes: forgot, mail, reset, sign-in, and creating a product through its form.
+- **Browser checks (interactive)**: that flow ran in headless Chromium with no console or page errors. Screenshots are in the scratchpad.
+- **NuGet source bug**: with one folder passed as both the package source and the UI feed, NuGet's source mapping could not resolve the UI packages. The generator now emits one source in that case.
+- **UI polish** (generated web app): a welcome page in place of the developer note, a styled error page (404, 403, 409, 429, 500) in place of raw problem documents, the SPA navigation loader on, a favicon in place of a 404, and every page rewritten with the framework's card, table and form pattern (profile, users, roles, settings, audit, companies, branches, passkeys, photo, confirmations, sign-out). Empty lists show a failed-load state with the reason when a request fails, not "no results".
+- **Profile names the primary branch** (or "a branch you cannot see" when it is outside the caller's scope).
+
+Still open, and why:
+
+- **Publishing (needs your go-ahead):** the `modulus-ui` fixes (failed-load state, `crud-list`, `crud-index` for MVC and Blazor) are in source and in local packs (`1.6.1-local.fix4`), not published. The shipped `1.6.1` UI packages serve assets from a path that returns 404, so pages render unstyled; that is the root cause behind the earlier unstyled pages, and it needs a published UI release. The CLI and Platform packages are also unpublished.
+- **Browser confidentiality (release gate):** the admin detail pages do not show the classified fields (employee code, job title, department), so there is nothing in the browser to check yet.
+- **Branch name in the profile, set path:** the "not set" path is checked in the browser; the name path compiles, but no admin path to set a primary branch was verified (the owner permission list does not include the organization permission).
+- **Tenancy (found, not changed):** in a multi-company app the seeded admin sees empty Users, Roles and Settings lists, because host-level accounts and built-in roles are hidden inside a company and the company baseline does not grant settings reads. This is the authorization design; a decision is needed on what the company administrator should see.
+- **B2 to B7:** these target the UI code that now lives in `modulus-ui` (B2 extension fields in forms, B3 audit columns, B4 to B7 notes and page precedents).
+- **Native runtimes:** only linux-x64 can be run here; there is no arm64 emulation in this environment, and no CI runners for the other platforms.

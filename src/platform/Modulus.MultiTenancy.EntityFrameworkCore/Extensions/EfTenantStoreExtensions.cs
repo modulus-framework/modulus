@@ -75,7 +75,11 @@ public static class EfTenantStoreExtensions
 
         // The data-store catalog and the provisioner live in the same context: pointers and writes, never a secret value.
         services.TryAddScoped<ITenantDataStoreCatalog, EfTenantDataStoreCatalog<TTenant, TMembership, TDataStore>>();
-        services.TryAddScoped<ITenantDataStoreProvisioner, TenantDataStoreProvisioner<TTenant, TMembership, TDataStore>>();
+        // Built by ActivatorUtilities rather than by type: the provisioner needs an ISecretWriter (OpenBao), which an application may not
+        // register. A type registration would fail the host's build-time validation in Development for every such application; this way
+        // the missing writer surfaces only when a data store is provisioned.
+        services.TryAddScoped<ITenantDataStoreProvisioner>(sp =>
+            ActivatorUtilities.CreateInstance<TenantDataStoreProvisioner<TTenant, TMembership, TDataStore>>(sp));
         return services;
     }
 

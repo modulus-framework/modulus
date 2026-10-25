@@ -1,0 +1,89 @@
+// The photo page's help in the browser: a preview, a clear message for a bad file, and a progress bar. The server checks everything again;
+// without this script the form still posts normally.
+(function () {
+    var form = document.getElementById('photo-form');
+    if (!form) {
+        return;
+    }
+
+    var input = document.getElementById('photo-input');
+    var preview = document.getElementById('photo-preview');
+    var error = document.getElementById('photo-error');
+    var progress = document.getElementById('photo-progress');
+    var maxBytes = Number(form.getAttribute('data-max-bytes')) || 5242880;
+    var types = ['image/jpeg', 'image/png', 'image/webp'];
+    var previewUrl = null;
+
+    function fail(message) {
+        error.textContent = message;
+        error.hidden = false;
+    }
+
+    function clearError() {
+        error.textContent = '';
+        error.hidden = true;
+    }
+
+    function hidePreview() {
+        preview.hidden = true;
+        if (previewUrl) {
+            URL.revokeObjectURL(previewUrl);
+            previewUrl = null;
+        }
+    }
+
+    input.addEventListener('change', function () {
+        clearError();
+        hidePreview();
+        var file = input.files && input.files[0];
+        if (!file) {
+            return;
+        }
+        if (types.indexOf(file.type) < 0) {
+            input.value = '';
+            fail('Choose a JPEG, PNG or WebP photo.');
+            return;
+        }
+        if (file.size > maxBytes) {
+            input.value = '';
+            fail('The photo is larger than 5 MB. Choose a smaller one.');
+            return;
+        }
+        previewUrl = URL.createObjectURL(file);
+        preview.src = previewUrl;
+        preview.hidden = false;
+    });
+
+    form.addEventListener('submit', function (event) {
+        var file = input.files && input.files[0];
+        if (!file) {
+            event.preventDefault();
+            fail('Choose a photo to upload.');
+            return;
+        }
+        if (!window.XMLHttpRequest || !window.FormData) {
+            return;
+        }
+        event.preventDefault();
+        clearError();
+        progress.value = 0;
+        progress.hidden = false;
+
+        var request = new XMLHttpRequest();
+        request.open('POST', form.action, true);
+        request.upload.onprogress = function (e) {
+            if (e.lengthComputable) {
+                progress.value = Math.round((e.loaded / e.total) * 100);
+            }
+        };
+        request.onload = function () {
+            // The server answers with a redirect that shows the result; follow it.
+            window.location.href = request.responseURL || window.location.href;
+        };
+        request.onerror = function () {
+            progress.hidden = true;
+            fail('The upload failed. Check your connection and try again.');
+        };
+        request.send(new FormData(form));
+    });
+})();

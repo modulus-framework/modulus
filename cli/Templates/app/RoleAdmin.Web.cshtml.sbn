@@ -4,94 +4,134 @@
     ViewData["Title"] = "Roles";
 }
 
-<h1>Roles</h1>
+<app-page-header pretitle="Administration" title="Roles" />
 
 @if (Model.Message is not null)
 {
-    <p role="status">@Model.Message</p>
+    <app-alert type="info" show-icon message="@Model.Message" class="m-mb-16" />
 }
 
-<table>
-    <thead>
-        <tr>
-            <th>Role</th>
-            <th>Display name</th>
-            <th>Default</th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-    @foreach (var row in Model.Rows)
-    {
-        <tr>
-            <td>@row.Name</td>
-            <td>@row.DisplayName</td>
-            <td>@(row.IsDefault ? "Yes" : "")</td>
-            <td><a asp-page="/Admin/Roles" asp-route-Role="@row.Name">Open</a></td>
-        </tr>
-    }
-    </tbody>
-</table>
-
-<details>
-    <summary>Create a role</summary>
-    <form method="post" asp-page-handler="Create">
-        <label>Name <input name="name" required /></label>
-        <label>Display name <input name="displayName" /></label>
-        <button type="submit">Create</button>
-    </form>
-</details>
-
-@if (!string.IsNullOrEmpty(Model.Role))
-{
-    <section>
-        <h2>@Model.Role</h2>
-
-        <form method="post" asp-page-handler="Rename">
-            <input type="hidden" name="name" value="@Model.Role" />
-            <label>New name <input name="newName" required /></label>
-            <button type="submit">Rename</button>
-        </form>
-
-        <form method="post" asp-page-handler="Delete">
-            <input type="hidden" name="name" value="@Model.Role" />
-            <button type="submit">Delete</button>
-            <small>A role is deleted only when no account holds it and it has no permission grants.</small>
-        </form>
-
-        <h3>Permissions</h3>
-        @if (!Model.CanManagePermissions)
-        {
-            <p>You can see the role, but changing its permissions needs authorization:manage.</p>
-        }
-        else
-        {
-            <form method="post" asp-page-handler="Permissions">
-                <input type="hidden" name="name" value="@Model.Role" />
-                <label>Permissions (comma separated)
-                    <textarea name="permissions" rows="4">@string.Join(", ", Model.Granted)</textarea>
-                </label>
-                <button type="submit">Save permissions</button>
-            </form>
-
-            @if (Model.Inherited.Count > 0)
-            {
-                <h4>Inherited from companies above (read-only)</h4>
-                <ul>
-                    @foreach (var grant in Model.Inherited)
-                    {
-                        <li><code>@grant.Permission</code> (@grant.Type), held by company <code>@grant.CompanyId</code></li>
-                    }
-                </ul>
-            }
-
-            <h4>Catalog</h4>
-            <ul>
-                @foreach (var permission in Model.Catalog)
+<div class="m-grid m-cols-main">
+    <div>
+        <div class="m-card m-table-card m-mb-16">
+            <div class="m-card-body m-card-body-flush">
+                @if (Model.Rows.Count == 0 && Model.Message is not null)
                 {
-                    <li><code>@permission.Permission</code> (@permission.Sensitivity): @permission.Description</li>
+                    <div class="m-empty">
+                        <h3 class="m-empty-title">The roles could not be loaded</h3>
+                        <p class="m-empty-subtitle">The message above says why.</p>
+                    </div>
                 }
-            </ul>
+                else if (Model.Rows.Count == 0)
+                {
+                    <div class="m-empty">
+                        <h3 class="m-empty-title">No roles yet</h3>
+                        <p class="m-empty-subtitle">Create the first role to group permissions for your people.</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="ant-table-wrapper m-table-flush"><div class="ant-table"><div class="ant-table-container"><div class="ant-table-content">
+                        <table style="table-layout: auto;">
+                            <thead class="ant-table-thead">
+                                <tr><th class="ant-table-cell">Role</th><th class="ant-table-cell">Display name</th><th class="ant-table-cell">Default</th><th class="ant-table-cell"></th></tr>
+                            </thead>
+                            <tbody class="ant-table-tbody">
+                            @foreach (var row in Model.Rows)
+                            {
+                                <tr class="ant-table-row">
+                                    <td class="ant-table-cell"><strong>@row.Name</strong></td>
+                                    <td class="ant-table-cell">@row.DisplayName</td>
+                                    <td class="ant-table-cell">@(row.IsDefault ? "Yes" : "")</td>
+                                    <td class="ant-table-cell"><a class="ant-btn ant-btn-text ant-btn-sm" asp-page="/Admin/Roles" asp-route-Role="@row.Name"><span>Open</span></a></td>
+                                </tr>
+                            }
+                            </tbody>
+                        </table>
+                    </div></div></div></div>
+                }
+            </div>
+        </div>
+
+        @if (!string.IsNullOrEmpty(Model.Role))
+        {
+            <div class="m-card m-mb-16">
+                <div class="m-card-header"><div class="m-card-title">@Model.Role</div></div>
+                <div class="m-card-body">
+                    @if (!Model.CanManagePermissions)
+                    {
+                        <app-alert type="info" show-icon message="You can see this role. Changing its permissions needs the authorization:manage permission." class="m-mb-16" />
+                    }
+                    else
+                    {
+                        <form method="post" asp-page-handler="Permissions" class="ant-form ant-form-vertical" novalidate>
+                            <input type="hidden" name="name" value="@Model.Role" />
+                            <label for="role-permissions">Permissions (comma separated)</label>
+                            <textarea id="role-permissions" class="ant-input" name="permissions" rows="4">@string.Join(", ", Model.Granted)</textarea>
+                            <div class="m-form-actions m-mt-8">
+                                <button class="ant-btn ant-btn-primary" type="submit">Save permissions</button>
+                            </div>
+                        </form>
+
+                        @if (Model.Inherited.Count > 0)
+                        {
+                            <h4 class="m-mt-24 m-mb-8">Inherited from companies above (read-only)</h4>
+                            <ul>
+                                @foreach (var grant in Model.Inherited)
+                                {
+                                    <li><code>@grant.Permission</code> (@grant.Type), held by company <code>@grant.CompanyId</code></li>
+                                }
+                            </ul>
+                        }
+
+                        <h4 class="m-mt-24 m-mb-8">Permission catalog</h4>
+                        <ul>
+                            @foreach (var permission in Model.Catalog)
+                            {
+                                <li><code>@permission.Permission</code> <span class="m-muted">(@permission.Sensitivity)</span> @permission.Description</li>
+                            }
+                        </ul>
+                    }
+                </div>
+            </div>
+
+            <div class="m-card m-mb-16">
+                <div class="m-card-header"><div class="m-card-title">Manage this role</div></div>
+                <div class="m-card-body">
+                    <div class="m-form-grid">
+                        <form method="post" asp-page-handler="Rename" class="ant-form ant-form-vertical" novalidate>
+                            <input type="hidden" name="name" value="@Model.Role" />
+                            <label for="role-new-name">New name</label>
+                            <input id="role-new-name" class="ant-input" name="newName" required />
+                            <div class="m-form-actions m-mt-8">
+                                <button class="ant-btn ant-btn-default" type="submit">Rename</button>
+                            </div>
+                        </form>
+                        <form method="post" asp-page-handler="Delete">
+                            <input type="hidden" name="name" value="@Model.Role" />
+                            <p class="m-muted m-mb-8">A role is deleted only when no account holds it and it has no permission grants.</p>
+                            <button class="ant-btn ant-btn-dangerous" type="submit">Delete role</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
         }
-    </section>
-}
+    </div>
+
+    <aside>
+        <div class="m-card m-mb-16">
+            <div class="m-card-header"><div class="m-card-title">Create a role</div></div>
+            <div class="m-card-body">
+                <form method="post" asp-page-handler="Create" class="ant-form ant-form-vertical" novalidate>
+                    <label for="role-name">Name</label>
+                    <input id="role-name" class="ant-input m-mb-12" name="name" required placeholder="for example Auditor" />
+                    <label for="role-display">Display name</label>
+                    <input id="role-display" class="ant-input" name="displayName" placeholder="Shown in menus and lists" />
+                    <div class="m-form-actions m-mt-8">
+                        <button class="ant-btn ant-btn-primary" type="submit">Create role</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </aside>
+</div>

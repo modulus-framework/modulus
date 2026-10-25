@@ -308,3 +308,38 @@ Modulus.MultiTenancy.EntityFrameworkCore.EfSettingStore.GetOrNullAsync(string! n
 Modulus.MultiTenancy.EntityFrameworkCore.EfSettingStore.RemoveAsync(string! name, System.Guid? tenantId, System.Guid? userId, System.Guid? branchId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
 Modulus.MultiTenancy.EntityFrameworkCore.EfSettingStore.SetAsync(string! name, string? value, System.Guid? tenantId, System.Guid? userId, System.Guid? branchId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
 static Modulus.MultiTenancy.EntityFrameworkCore.EfSettingStore.ScopeKey(System.Guid? tenantId, System.Guid? userId, System.Guid? branchId) -> string!
+Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityDecision
+Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityDecision.<Clone>$() -> Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityDecision!
+Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityDecision.Allowed.get -> bool
+Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityDecision.Allowed.init -> void
+Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityDecision.CompanyAuthorityDecision(bool Allowed, string! Reason) -> void
+Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityDecision.Deconstruct(out bool Allowed, out string! Reason) -> void
+Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityDecision.Equals(Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityDecision? other) -> bool
+Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityDecision.Reason.get -> string!
+Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityDecision.Reason.init -> void
+Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityRequest
+Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityRequest.<Clone>$() -> Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityRequest!
+Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityRequest.CompanyAuthorityRequest(System.Guid PrincipalId, string! Operation) -> void
+Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityRequest.Deconstruct(out System.Guid PrincipalId, out string! Operation) -> void
+Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityRequest.Equals(Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityRequest? other) -> bool
+Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityRequest.Operation.get -> string!
+Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityRequest.Operation.init -> void
+Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityRequest.PrincipalId.get -> System.Guid
+Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityRequest.PrincipalId.init -> void
+Modulus.MultiTenancy.EntityFrameworkCore.ParentCompanyAuthority
+Modulus.MultiTenancy.EntityFrameworkCore.ParentCompanyAuthority.CheckAsync(System.Security.Claims.ClaimsPrincipal! caller, System.Guid parentId, System.Guid childId, Modulus.Core.Abstractions.CompanyOperation operation, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityDecision!>!
+Modulus.MultiTenancy.EntityFrameworkCore.ParentCompanyAuthority.ParentCompanyAuthority(Modulus.MultiTenancy.ITenantStore! store, Modulus.Core.Abstractions.ICurrentTenant! tenant, Microsoft.AspNetCore.Authorization.IAuthorizationService! authorization, Modulus.Core.Abstractions.ICompanyAuthorityStore? authorities = null) -> void
+const Modulus.MultiTenancy.EntityFrameworkCore.ParentCompanyAuthority.ChildrenManagePermission = "tenants:children:manage" -> string!
+override Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityDecision.Equals(object? obj) -> bool
+override Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityDecision.GetHashCode() -> int
+override Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityDecision.ToString() -> string!
+override Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityRequest.Equals(object? obj) -> bool
+override Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityRequest.GetHashCode() -> int
+override Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityRequest.ToString() -> string!
+static Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityDecision.Allow.get -> Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityDecision!
+static Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityDecision.Deny(string! reason) -> Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityDecision!
+static Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityDecision.operator !=(Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityDecision? left, Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityDecision? right) -> bool
+static Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityDecision.operator ==(Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityDecision? left, Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityDecision? right) -> bool
+static Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityRequest.operator !=(Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityRequest? left, Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityRequest? right) -> bool
+static Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityRequest.operator ==(Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityRequest? left, Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityRequest? right) -> bool
+static Modulus.MultiTenancy.EntityFrameworkCore.ParentCompanyAuthority.UserIdOf(System.Security.Claims.ClaimsPrincipal! caller) -> System.Guid?

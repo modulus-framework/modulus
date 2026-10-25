@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Identity;
+using Modulus.Core.Abstractions.Entities;
 
 namespace Modulus.Identity.Abstractions;
 
@@ -6,8 +7,15 @@ namespace Modulus.Identity.Abstractions;
 /// Base user entity for all Modulus applications.
 /// Extends ASP.NET Identity with tenant support and profile fields.
 /// </summary>
-public class ModulusUser : IdentityUser<Guid>
+public class ModulusUser : IdentityUser<Guid>, IHasExtraProperties
 {
+    /// <summary>
+    /// Values that other modules or the application add to the account (the <c>ExtraProperties</c> convention of
+    /// <see cref="IHasExtraProperties"/>), keyed by field name. Stored as a JSON text column; never null. Needs a column in apps that
+    /// already have users (docs/upgrades/identity-platform-2026-10.identity.*.sql).
+    /// </summary>
+    public Dictionary<string, string?> ExtraProperties { get; set; } = [];
+
     public Guid? TenantId { get; set; }
     public string? FirstName { get; set; }
     public string? LastName { get; set; }
@@ -25,6 +33,46 @@ public class ModulusUser : IdentityUser<Guid>
 
     /// <summary>The person's time zone as an IANA or Windows id (for example <c>Europe/London</c>). Null when not set. Needs a column in apps that already have users.</summary>
     public string? TimeZone { get; set; }
+
+    /// <summary>
+    /// The person's work e-mail address: a contact address, separate from the sign-in address (<see cref="Microsoft.AspNetCore.Identity.IdentityUser{TKey}.Email"/>).
+    /// Null when not set. Needs a column in apps that already have users.
+    /// </summary>
+    public string? WorkEmail { get; set; }
+
+    /// <summary>
+    /// The work e-mail address waiting for its owner's confirmation. It is not the work e-mail until confirmed. Null when none is pending.
+    /// Needs a column in apps that already have users.
+    /// </summary>
+    public string? PendingWorkEmail { get; set; }
+
+    /// <summary>The stamp of the newest confirmation link; a link works only while it carries this stamp. Null when none is out.</summary>
+    public string? WorkEmailVerificationStamp { get; set; }
+
+    /// <summary>When the newest confirmation was requested (the cooldown runs from it). Null when never requested.</summary>
+    public DateTimeOffset? WorkEmailRequestedAt { get; set; }
+
+    /// <summary>Failed confirmation attempts since the newest request. At the limit, confirmation is refused until a new request. Needs a column.</summary>
+    public int ConfirmationFailures { get; set; }
+
+    /// <summary>The person's job title. Null when not set. Needs a column in apps that already have users.</summary>
+    public string? JobTitle { get; set; }
+
+    /// <summary>The department the person works in. Null when not set. Needs a column in apps that already have users.</summary>
+    public string? Department { get; set; }
+
+    /// <summary>
+    /// The opaque id of the person's uploaded photo (premodule 3). The photo is stored under a key derived from this id and the tenant
+    /// (<see cref="Modulus.Identity.Abstractions.ProfilePhotoRules.StoragePath"/>), so the account refers to a stored file, never to an
+    /// arbitrary address. Null when there is no uploaded photo. Needs a column in apps that already have users.
+    /// </summary>
+    public Guid? PhotoAssetId { get; set; }
+
+    /// <summary>
+    /// The org unit (branch) the person works in primarily. Set by an administrator (<c>PATCH identity/users/{id}/organization</c>), not by the
+    /// person. Null when not set. Needs a column in apps that already have users.
+    /// </summary>
+    public Guid? PrimaryBranchId { get; set; }
 
     /// <summary>
     /// Shop-floor employee code, upper-case, unique within the company (checked when it is set). Null for an ordinary account.

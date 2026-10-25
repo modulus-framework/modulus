@@ -26,10 +26,16 @@ namespace {{ identity_namespace }}.Infrastructure;
 /// password that is logged once.</item>
 /// </list>
 /// Production with no configured admin creates none: create the first user another way.
+/// The first administrator is also made the <c>TenantOwner</c> (the only account that gets it here). If no active owner exists and
+/// <c>Identity:Seed:TenantOwnerEmail</c> names an existing account, that account is made the owner on startup (recovery). Each
+/// assignment is recorded in the security audit.
 /// </summary>
 public static class IdentitySeeding
 {
     public const string AdminRole = "Admin";
+
+    /// <summary>The company owner role (holds the account permissions by default; see <c>AuthenticationSetup</c>).</summary>
+    public const string OwnerRole = "TenantOwner";
 
     /// <summary>The client id of the first-party client (send it as <c>client_id</c> to <c>/connect/token</c>).</summary>
     public const string ClientId = "{{ app_name_lower }}";
@@ -54,6 +60,29 @@ public static class IdentitySeeding
         if (!await roles.RoleExistsAsync(AdminRole))
         {
             Require(await roles.CreateAsync(new ModulusRole { Name = AdminRole, DisplayName = "Administrator" }), "create the Admin role");
+        }
+
+        if (!await roles.RoleExistsAsync(OwnerRole))
+        {
+            Require(await roles.CreateAsync(new ModulusRole { Name = OwnerRole, DisplayName = "Tenant Owner" }), "create the Tenant Owner role");
+        }
+
+        // Recovery: when no active owner exists, the account named by Identity:Seed:TenantOwnerEmail becomes the owner. It runs on every start,
+        // so an operator restores ownership by configuration; it never picks an account by itself.
+        var recoveryEmail = configuration["Identity:Seed:TenantOwnerEmail"];
+        if (!string.IsNullOrWhiteSpace(recoveryEmail) && !(await users.GetUsersInRoleAsync(OwnerRole)).Any(o => o.IsActive))
+        {
+            var recovered = await users.FindByEmailAsync(recoveryEmail);
+            if (recovered is null)
+            {
+                logger.LogWarning("No active Tenant Owner exists and Identity:Seed:TenantOwnerEmail names no account: no owner was assigned.");
+            }
+            else
+            {
+                Require(await users.AddToRoleAsync(recovered, OwnerRole), "make the recovery account a Tenant Owner");
+                RecordOwnershipChange(provider, "identity.tenant-owner.granted", recovered.Id, "recovery");
+                logger.LogWarning("Tenant Owner {Email} assigned from Identity:Seed:TenantOwnerEmail (no active owner existed).", recoveryEmail);
+            }
         }
 
         if (users.Users.Any())
@@ -81,6 +110,8 @@ public static class IdentitySeeding
         var admin = new ModulusUser { UserName = email, Email = email, EmailConfirmed = true };
         Require(await users.CreateAsync(admin, password), "create the administrator");
         Require(await users.AddToRoleAsync(admin, AdminRole), "add the administrator to the Admin role");
+        Require(await users.AddToRoleAsync(admin, OwnerRole), "make the first administrator a Tenant Owner");
+        RecordOwnershipChange(provider, "identity.tenant-owner.granted", admin.Id, "seeding");
 
         if (generated)
         {
@@ -238,6 +269,16 @@ public static class IdentitySeeding
             yield return Permissions.ResponseTypes.Code;
         }
     }
+
+    private static void RecordOwnershipChange(IServiceProvider provider, string action, Guid target, string source)
+        => provider.GetService<ISecurityAuditLog>()?.Record(new SecurityAuditEvent
+        {
+            Category = SecurityAuditCategories.Identity,
+            Action = action,
+            Actor = "system",
+            Target = $"user:{target:D}",
+            Details = new Dictionary<string, string?> { ["source"] = source },
+        });
 
     // Meets the default password rules (digit, upper case, length 8) with room to spare.
     private static string GeneratePassword()

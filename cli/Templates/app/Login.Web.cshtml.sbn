@@ -15,6 +15,10 @@
     <div class="m-auth-card-body">
         <h1 class="m-auth-title">Sign in</h1>
         <p class="m-auth-hint">Use your application account to continue.</p>
+        @if (Model.PasswordReset)
+        {
+            <app-alert type="success" show-icon message="Your password has been changed. Sign in with the new password." class="m-mb-16" />
+        }
         @if (!string.IsNullOrEmpty(Model.Error))
         {
             <app-alert type="error" show-icon message="@Model.Error" class="m-mb-16" />
@@ -31,7 +35,8 @@
                 <app-button type="primary" html-type="submit" block>Sign in</app-button>
             </div>
         </form>
-{{ if auth == "openiddict" }}        <div class="m-auth-actions">
+{{ if auth == "openiddict" }}        <p class="m-auth-hint" style="text-align: center; margin-top: 12px;"><a href="/Account/ForgotPassword">Forgot your password?</a></p>
+        <div class="m-auth-actions">
             <button type="button" id="passkey-signin" class="ant-btn ant-btn-default ant-btn-block">Sign in with a passkey</button>
         </div>
         <p id="passkey-signin-status" role="status" class="m-auth-hint"></p>

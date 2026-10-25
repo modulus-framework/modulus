@@ -135,6 +135,9 @@
     <PackageVersion Include="OpenTelemetry.Instrumentation.Http"        Version="1.16.0" />
     <PackageVersion Include="OpenTelemetry.Instrumentation.Runtime"     Version="1.15.1" />
   </ItemGroup>
+  <ItemGroup Label="Imaging (ImageSharp 2.x, Apache-2.0, pure managed; 3.x is the Six Labors Split License, not used)">
+    <PackageVersion Include="SixLabors.ImageSharp"                       Version="2.1.13" />
+  </ItemGroup>
   <ItemGroup Label="Cloud Storage">
     <PackageVersion Include="AWSSDK.S3"                              Version="4.0.22" />
     <PackageVersion Include="Azure.Storage.Blobs"                    Version="12.24.0" />

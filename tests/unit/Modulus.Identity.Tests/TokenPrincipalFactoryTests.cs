@@ -197,9 +197,9 @@ public sealed class TokenPrincipalFactoryTests : IAsyncDisposable
         await _connection.DisposeAsync();
     }
 
+    // The department is the framework's ModulusUser.Department, so the test subclass declares nothing of its own.
     public sealed class AppUser : ModulusUser
     {
-        public string? Department { get; set; }
     }
 
     private sealed class HostTenant : ICurrentTenant

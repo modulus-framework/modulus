@@ -23,11 +23,22 @@ internal sealed class BffGatewayHandler(IHttpContextAccessor httpContextAccessor
     /// <summary>The header that selects the company upstream (the BFF forwards it; the API checks membership).</summary>
     internal const string TenantHeader = "X-Tenant-Id";
 
+    /// <summary>The company the default-company step selected for this request (<c>HttpContext.Items</c>). The cookie it sets is not visible to the same request.</summary>
+    internal const string SelectedCompanyItem = "modulus.company.selected";
+
     /// <summary>The cookie that holds the branch the person chose on the branch page (decision 14). It selects only; the API checks the scope.</summary>
     internal const string BranchCookie = "modulus.branch";
 
     /// <summary>The header that selects the branch upstream (the API accepts it only inside the caller's organizational scope).</summary>
     internal const string BranchHeader = "X-Branch-Id";
+
+    // The company of this request: the one selected for it, else the one the person chose on the company page.
+    private static Guid? CompanyOf(HttpContext context)
+    {
+        if (context.Items[SelectedCompanyItem] is Guid selected)
+            return selected;
+        return context.Request.Cookies.TryGetValue(CompanyCookie, out var company) && Guid.TryParse(company, out var chosen) ? chosen : null;
+    }
 
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
@@ -35,7 +46,7 @@ internal sealed class BffGatewayHandler(IHttpContextAccessor httpContextAccessor
         if (context is not null && context.Request.Headers.Cookie.Count > 0)
             request.Headers.TryAddWithoutValidation("Cookie", context.Request.Headers.Cookie.ToString());
         request.Headers.TryAddWithoutValidation(CsrfHeader, CsrfValue);
-        if (context is not null && context.Request.Cookies.TryGetValue(CompanyCookie, out var company) && Guid.TryParse(company, out var companyId))
+        if (context is not null && CompanyOf(context) is { } companyId)
             request.Headers.TryAddWithoutValidation(TenantHeader, companyId.ToString("D"));
         if (context is not null && context.Request.Cookies.TryGetValue(BranchCookie, out var branch) && Guid.TryParse(branch, out var branchId))
             request.Headers.TryAddWithoutValidation(BranchHeader, branchId.ToString("D"));

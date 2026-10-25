@@ -439,6 +439,8 @@ Modulus.Identity.Abstractions.ModulusUser.AvatarUrl.get -> string?
 Modulus.Identity.Abstractions.ModulusUser.AvatarUrl.set -> void
 Modulus.Identity.Abstractions.ModulusUser.EmployeeCode.get -> string?
 Modulus.Identity.Abstractions.ModulusUser.EmployeeCode.set -> void
+Modulus.Identity.Abstractions.ModulusUser.ExtraProperties.get -> System.Collections.Generic.Dictionary<string!, string?>!
+Modulus.Identity.Abstractions.ModulusUser.ExtraProperties.set -> void
 Modulus.Identity.Abstractions.ModulusUser.ExternalId.get -> string?
 Modulus.Identity.Abstractions.ModulusUser.ExternalId.set -> void
 Modulus.Identity.Abstractions.ModulusUser.FirstName.get -> string?
@@ -1555,6 +1557,7 @@ static Modulus.Identity.Extensions.RoleCreateRequest.operator ==(Modulus.Identit
 static Modulus.Identity.Extensions.RoleSummary.operator !=(Modulus.Identity.Extensions.RoleSummary? left, Modulus.Identity.Extensions.RoleSummary? right) -> bool
 static Modulus.Identity.Extensions.RoleSummary.operator ==(Modulus.Identity.Extensions.RoleSummary? left, Modulus.Identity.Extensions.RoleSummary? right) -> bool
 const Modulus.Identity.Extensions.AccountLifecycleExtensions.PersonalDataPermission = "identity:accounts:personal-data" -> string!
+const Modulus.Identity.Extensions.AccountLifecycleExtensions.TenantOwnerRole = "TenantOwner" -> string!
 static Modulus.Identity.Extensions.RoleAdminExtensions.MapModulusRoleDelete<TRole, TUser>(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! prefix = "/api/identity/roles") -> void
 Modulus.Identity.Extensions.RoleRenameRequest
 Modulus.Identity.Extensions.RoleRenameRequest.<Clone>$() -> Modulus.Identity.Extensions.RoleRenameRequest!
@@ -1588,12 +1591,10 @@ override Modulus.Identity.Extensions.UserInvitationRequest.GetHashCode() -> int
 override Modulus.Identity.Extensions.UserInvitationRequest.ToString() -> string!
 static Modulus.Identity.Extensions.UserInvitationRequest.operator !=(Modulus.Identity.Extensions.UserInvitationRequest? left, Modulus.Identity.Extensions.UserInvitationRequest? right) -> bool
 static Modulus.Identity.Extensions.UserInvitationRequest.operator ==(Modulus.Identity.Extensions.UserInvitationRequest? left, Modulus.Identity.Extensions.UserInvitationRequest? right) -> bool
-Modulus.Identity.Extensions.UserDetail.Deconstruct(out System.Guid Id, out string? UserName, out string? Email, out bool EmailConfirmed, out string? FirstName, out string? LastName, out string? PhoneNumber, out string? EmployeeCode, out bool IsActive, out string! Lifecycle, out System.DateTimeOffset? LockedUntil, out bool TwoFactorEnabled, out System.Collections.Generic.IReadOnlyList<string!>! Roles) -> void
 Modulus.Identity.Extensions.UserDetail.EmployeeCode.get -> string?
 Modulus.Identity.Extensions.UserDetail.EmployeeCode.init -> void
 Modulus.Identity.Extensions.UserDetail.PhoneNumber.get -> string?
 Modulus.Identity.Extensions.UserDetail.PhoneNumber.init -> void
-Modulus.Identity.Extensions.UserDetail.UserDetail(System.Guid Id, string? UserName, string? Email, bool EmailConfirmed, string? FirstName, string? LastName, string? PhoneNumber, string? EmployeeCode, bool IsActive, string! Lifecycle, System.DateTimeOffset? LockedUntil, bool TwoFactorEnabled, System.Collections.Generic.IReadOnlyList<string!>! Roles) -> void
 Modulus.Identity.Abstractions.IIdentityEmailSender.SendEmailChangeEmailAsync(string! newEmail, string! changeToken, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
 Modulus.Identity.Abstractions.ModulusUser.DisplayName.get -> string?
 Modulus.Identity.Abstractions.ModulusUser.DisplayName.set -> void
@@ -1647,3 +1648,264 @@ override Modulus.Identity.ProfileResponse.GetHashCode() -> int
 override Modulus.Identity.ProfileResponse.ToString() -> string!
 static Modulus.Identity.ProfileResponse.operator !=(Modulus.Identity.ProfileResponse? left, Modulus.Identity.ProfileResponse? right) -> bool
 static Modulus.Identity.ProfileResponse.operator ==(Modulus.Identity.ProfileResponse? left, Modulus.Identity.ProfileResponse? right) -> bool
+Modulus.Identity.Abstractions.ModulusUser.Department.get -> string?
+Modulus.Identity.Abstractions.ModulusUser.Department.set -> void
+Modulus.Identity.Abstractions.ModulusUser.JobTitle.get -> string?
+Modulus.Identity.Abstractions.ModulusUser.JobTitle.set -> void
+Modulus.Identity.Abstractions.ModulusUser.PrimaryBranchId.get -> System.Guid?
+Modulus.Identity.Abstractions.ModulusUser.PrimaryBranchId.set -> void
+Modulus.Identity.Abstractions.ModulusUser.WorkEmail.get -> string?
+Modulus.Identity.Abstractions.ModulusUser.WorkEmail.set -> void
+Modulus.Identity.AccountController<TUser>.GetProfileDetailsAsync() -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Mvc.IActionResult!>!
+Modulus.Identity.ProfileDetailsResponse
+Modulus.Identity.ProfileDetailsResponse.<Clone>$() -> Modulus.Identity.ProfileDetailsResponse!
+Modulus.Identity.ProfileDetailsResponse.AvatarUrl.get -> string?
+Modulus.Identity.ProfileDetailsResponse.AvatarUrl.init -> void
+Modulus.Identity.ProfileDetailsResponse.CreatedAt.get -> System.DateTimeOffset?
+Modulus.Identity.ProfileDetailsResponse.CreatedAt.init -> void
+Modulus.Identity.ProfileDetailsResponse.Department.get -> string?
+Modulus.Identity.ProfileDetailsResponse.Department.init -> void
+Modulus.Identity.ProfileDetailsResponse.Email.get -> string?
+Modulus.Identity.ProfileDetailsResponse.Email.init -> void
+Modulus.Identity.ProfileDetailsResponse.EmployeeCode.get -> string?
+Modulus.Identity.ProfileDetailsResponse.EmployeeCode.init -> void
+Modulus.Identity.ProfileDetailsResponse.Equals(Modulus.Identity.ProfileDetailsResponse? other) -> bool
+Modulus.Identity.ProfileDetailsResponse.FirstName.get -> string?
+Modulus.Identity.ProfileDetailsResponse.FirstName.init -> void
+Modulus.Identity.ProfileDetailsResponse.Id.get -> System.Guid
+Modulus.Identity.ProfileDetailsResponse.Id.init -> void
+Modulus.Identity.ProfileDetailsResponse.IsActive.get -> bool
+Modulus.Identity.ProfileDetailsResponse.IsActive.init -> void
+Modulus.Identity.ProfileDetailsResponse.JobTitle.get -> string?
+Modulus.Identity.ProfileDetailsResponse.JobTitle.init -> void
+Modulus.Identity.ProfileDetailsResponse.LastName.get -> string?
+Modulus.Identity.ProfileDetailsResponse.LastName.init -> void
+Modulus.Identity.ProfileDetailsResponse.ModifiedAt.get -> System.DateTimeOffset?
+Modulus.Identity.ProfileDetailsResponse.ModifiedAt.init -> void
+Modulus.Identity.ProfileDetailsResponse.PrimaryBranchId.get -> System.Guid?
+Modulus.Identity.ProfileDetailsResponse.PrimaryBranchId.init -> void
+Modulus.Identity.ProfileDetailsResponse.UserName.get -> string?
+Modulus.Identity.ProfileDetailsResponse.UserName.init -> void
+Modulus.Identity.ProfileDetailsResponse.WorkEmail.get -> string?
+Modulus.Identity.ProfileDetailsResponse.WorkEmail.init -> void
+Modulus.Identity.UpdateProfileDetailsRequest
+Modulus.Identity.UpdateProfileDetailsRequest.AvatarUrl.get -> string?
+Modulus.Identity.UpdateProfileDetailsRequest.AvatarUrl.set -> void
+Modulus.Identity.UpdateProfileDetailsRequest.Department.get -> string?
+Modulus.Identity.UpdateProfileDetailsRequest.Department.set -> void
+Modulus.Identity.UpdateProfileDetailsRequest.FirstName.get -> string?
+Modulus.Identity.UpdateProfileDetailsRequest.FirstName.set -> void
+Modulus.Identity.UpdateProfileDetailsRequest.JobTitle.get -> string?
+Modulus.Identity.UpdateProfileDetailsRequest.JobTitle.set -> void
+Modulus.Identity.UpdateProfileDetailsRequest.LastName.get -> string?
+Modulus.Identity.UpdateProfileDetailsRequest.LastName.set -> void
+Modulus.Identity.UpdateProfileDetailsRequest.UpdateProfileDetailsRequest() -> void
+Modulus.Identity.UpdateProfileDetailsRequest.WorkEmail.get -> string?
+Modulus.Identity.UpdateProfileDetailsRequest.WorkEmail.set -> void
+override Modulus.Identity.ProfileDetailsResponse.Equals(object? obj) -> bool
+override Modulus.Identity.ProfileDetailsResponse.GetHashCode() -> int
+override Modulus.Identity.ProfileDetailsResponse.ToString() -> string!
+static Modulus.Identity.ProfileDetailsResponse.operator !=(Modulus.Identity.ProfileDetailsResponse? left, Modulus.Identity.ProfileDetailsResponse? right) -> bool
+static Modulus.Identity.ProfileDetailsResponse.operator ==(Modulus.Identity.ProfileDetailsResponse? left, Modulus.Identity.ProfileDetailsResponse? right) -> bool
+Modulus.Identity.Extensions.UserDetail.Department.get -> string?
+Modulus.Identity.Extensions.UserDetail.Department.init -> void
+Modulus.Identity.Extensions.UserDetail.JobTitle.get -> string?
+Modulus.Identity.Extensions.UserDetail.JobTitle.init -> void
+Modulus.Identity.Extensions.UserDetail.PrimaryBranchId.get -> System.Guid?
+Modulus.Identity.Extensions.UserDetail.PrimaryBranchId.init -> void
+Modulus.Identity.Extensions.UserDetail.WorkEmail.get -> string?
+Modulus.Identity.Extensions.UserDetail.WorkEmail.init -> void
+Modulus.Identity.Extensions.UserOrganizationRequest
+Modulus.Identity.Extensions.UserOrganizationRequest.<Clone>$() -> Modulus.Identity.Extensions.UserOrganizationRequest!
+Modulus.Identity.Extensions.UserOrganizationRequest.ClearPrimaryBranch.get -> bool
+Modulus.Identity.Extensions.UserOrganizationRequest.ClearPrimaryBranch.init -> void
+Modulus.Identity.Extensions.UserOrganizationRequest.Deconstruct(out string? EmployeeCode, out System.Guid? PrimaryBranchId, out bool ClearPrimaryBranch) -> void
+Modulus.Identity.Extensions.UserOrganizationRequest.EmployeeCode.get -> string?
+Modulus.Identity.Extensions.UserOrganizationRequest.EmployeeCode.init -> void
+Modulus.Identity.Extensions.UserOrganizationRequest.Equals(Modulus.Identity.Extensions.UserOrganizationRequest? other) -> bool
+Modulus.Identity.Extensions.UserOrganizationRequest.PrimaryBranchId.get -> System.Guid?
+Modulus.Identity.Extensions.UserOrganizationRequest.PrimaryBranchId.init -> void
+Modulus.Identity.Extensions.UserOrganizationRequest.UserOrganizationRequest(string? EmployeeCode, System.Guid? PrimaryBranchId, bool ClearPrimaryBranch = false) -> void
+override Modulus.Identity.Extensions.UserOrganizationRequest.Equals(object? obj) -> bool
+override Modulus.Identity.Extensions.UserOrganizationRequest.GetHashCode() -> int
+override Modulus.Identity.Extensions.UserOrganizationRequest.ToString() -> string!
+static Modulus.Identity.Extensions.UserOrganizationRequest.operator !=(Modulus.Identity.Extensions.UserOrganizationRequest? left, Modulus.Identity.Extensions.UserOrganizationRequest? right) -> bool
+static Modulus.Identity.Extensions.UserOrganizationRequest.operator ==(Modulus.Identity.Extensions.UserOrganizationRequest? left, Modulus.Identity.Extensions.UserOrganizationRequest? right) -> bool
+Modulus.Identity.Extensions.UserDetail.Deconstruct(out System.Guid Id, out string? UserName, out string? Email, out bool EmailConfirmed, out string? FirstName, out string? LastName, out string? PhoneNumber, out string? EmployeeCode, out bool IsActive, out string! Lifecycle, out System.DateTimeOffset? LockedUntil, out bool TwoFactorEnabled, out System.Collections.Generic.IReadOnlyList<string!>! Roles, out string? WorkEmail, out string? JobTitle, out string? Department, out System.Guid? PrimaryBranchId) -> void
+Modulus.Identity.Extensions.UserDetail.UserDetail(System.Guid Id, string? UserName, string? Email, bool EmailConfirmed, string? FirstName, string? LastName, string? PhoneNumber, string? EmployeeCode, bool IsActive, string! Lifecycle, System.DateTimeOffset? LockedUntil, bool TwoFactorEnabled, System.Collections.Generic.IReadOnlyList<string!>! Roles, string? WorkEmail = null, string? JobTitle = null, string? Department = null, System.Guid? PrimaryBranchId = null) -> void
+const Modulus.Identity.Extensions.AccountLifecycleExtensions.OrganizationManagePermission = "identity:accounts:organization:manage" -> string!
+const Modulus.Identity.Extensions.AccountLifecycleExtensions.OrganizationPermission = "identity:accounts:organization" -> string!
+const Modulus.Identity.EntityFrameworkCore.ModulusIdentityDbContext<TUser, TRole>.EmployeeCodeIndexName = "IX_AspNetUsers_TenantId_EmployeeCode_Unique" -> string!
+Modulus.Identity.Abstractions.IProfilePhotoProcessor
+Modulus.Identity.Abstractions.IProfilePhotoProcessor.ProcessAsync(System.IO.Stream! content, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Identity.Abstractions.ProfilePhotoProcessing!>!
+Modulus.Identity.Abstractions.ModulusUser.PhotoAssetId.get -> System.Guid?
+Modulus.Identity.Abstractions.ModulusUser.PhotoAssetId.set -> void
+Modulus.Identity.Abstractions.ProfilePhotoProcessing
+Modulus.Identity.Abstractions.ProfilePhotoProcessing.<Clone>$() -> Modulus.Identity.Abstractions.ProfilePhotoProcessing!
+Modulus.Identity.Abstractions.ProfilePhotoProcessing.Accepted.get -> bool
+Modulus.Identity.Abstractions.ProfilePhotoProcessing.Deconstruct(out Modulus.Identity.Abstractions.ProfilePhotoRefusal Refusal, out byte[]? Jpeg) -> void
+Modulus.Identity.Abstractions.ProfilePhotoProcessing.Equals(Modulus.Identity.Abstractions.ProfilePhotoProcessing? other) -> bool
+Modulus.Identity.Abstractions.ProfilePhotoProcessing.Jpeg.get -> byte[]?
+Modulus.Identity.Abstractions.ProfilePhotoProcessing.Jpeg.init -> void
+Modulus.Identity.Abstractions.ProfilePhotoProcessing.ProfilePhotoProcessing(Modulus.Identity.Abstractions.ProfilePhotoRefusal Refusal, byte[]? Jpeg) -> void
+Modulus.Identity.Abstractions.ProfilePhotoProcessing.Refusal.get -> Modulus.Identity.Abstractions.ProfilePhotoRefusal
+Modulus.Identity.Abstractions.ProfilePhotoProcessing.Refusal.init -> void
+Modulus.Identity.Abstractions.ProfilePhotoRefusal
+Modulus.Identity.Abstractions.ProfilePhotoRules
+Modulus.Identity.AccountController<TUser>.DeleteProfilePhotoAsync(System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Mvc.IActionResult!>!
+Modulus.Identity.AccountController<TUser>.GetProfilePhotoAsync(System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Mvc.IActionResult!>!
+Modulus.Identity.AccountController<TUser>.UploadProfilePhotoAsync(System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Mvc.IActionResult!>!
+Modulus.Identity.ProfileDetailsResponse.HasPhoto.get -> bool
+Modulus.Identity.ProfileDetailsResponse.HasPhoto.init -> void
+const Modulus.Identity.Abstractions.ProfilePhotoRules.MaxBytes = 5242880 -> int
+const Modulus.Identity.Abstractions.ProfilePhotoRules.MaxDimension = 4096 -> int
+const Modulus.Identity.Abstractions.ProfilePhotoRules.ThumbnailSize = 512 -> int
+override Modulus.Identity.Abstractions.ProfilePhotoProcessing.Equals(object? obj) -> bool
+override Modulus.Identity.Abstractions.ProfilePhotoProcessing.GetHashCode() -> int
+override Modulus.Identity.Abstractions.ProfilePhotoProcessing.ToString() -> string!
+static Modulus.Identity.Abstractions.ProfilePhotoProcessing.operator !=(Modulus.Identity.Abstractions.ProfilePhotoProcessing? left, Modulus.Identity.Abstractions.ProfilePhotoProcessing? right) -> bool
+static Modulus.Identity.Abstractions.ProfilePhotoProcessing.operator ==(Modulus.Identity.Abstractions.ProfilePhotoProcessing? left, Modulus.Identity.Abstractions.ProfilePhotoProcessing? right) -> bool
+static Modulus.Identity.Abstractions.ProfilePhotoRules.Describe(Modulus.Identity.Abstractions.ProfilePhotoRefusal refusal) -> (int Status, string! Code, string! Message)
+static Modulus.Identity.Abstractions.ProfilePhotoRules.StoragePath(System.Guid? tenantId, System.Guid assetId) -> string!
+Modulus.Identity.Abstractions.IIdentityEmailSender.SendWorkEmailVerificationAsync(string! workEmail, string! verificationToken, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Identity.Abstractions.ModulusUser.PendingWorkEmail.get -> string?
+Modulus.Identity.Abstractions.ModulusUser.PendingWorkEmail.set -> void
+Modulus.Identity.Abstractions.ModulusUser.WorkEmailRequestedAt.get -> System.DateTimeOffset?
+Modulus.Identity.Abstractions.ModulusUser.WorkEmailRequestedAt.set -> void
+Modulus.Identity.Abstractions.ModulusUser.WorkEmailVerificationStamp.get -> string?
+Modulus.Identity.Abstractions.ModulusUser.WorkEmailVerificationStamp.set -> void
+Modulus.Identity.Abstractions.WorkEmailConfirmOutcome
+Modulus.Identity.Abstractions.WorkEmailRequest
+Modulus.Identity.Abstractions.WorkEmailRequest.<Clone>$() -> Modulus.Identity.Abstractions.WorkEmailRequest!
+Modulus.Identity.Abstractions.WorkEmailRequest.Deconstruct(out Modulus.Identity.Abstractions.WorkEmailRequestOutcome Outcome, out string? Token, out Microsoft.AspNetCore.Identity.IdentityResult? Result) -> void
+Modulus.Identity.Abstractions.WorkEmailRequest.Equals(Modulus.Identity.Abstractions.WorkEmailRequest? other) -> bool
+Modulus.Identity.Abstractions.WorkEmailRequest.Outcome.get -> Modulus.Identity.Abstractions.WorkEmailRequestOutcome
+Modulus.Identity.Abstractions.WorkEmailRequest.Outcome.init -> void
+Modulus.Identity.Abstractions.WorkEmailRequest.Result.get -> Microsoft.AspNetCore.Identity.IdentityResult?
+Modulus.Identity.Abstractions.WorkEmailRequest.Result.init -> void
+Modulus.Identity.Abstractions.WorkEmailRequest.Token.get -> string?
+Modulus.Identity.Abstractions.WorkEmailRequest.Token.init -> void
+Modulus.Identity.Abstractions.WorkEmailRequest.WorkEmailRequest(Modulus.Identity.Abstractions.WorkEmailRequestOutcome Outcome, string? Token, Microsoft.AspNetCore.Identity.IdentityResult? Result) -> void
+Modulus.Identity.Abstractions.WorkEmailRequestOutcome
+Modulus.Identity.Abstractions.WorkEmailRequestOutcome.Failed = 3 -> Modulus.Identity.Abstractions.WorkEmailRequestOutcome
+Modulus.Identity.Abstractions.WorkEmailRequestOutcome.Sent = 0 -> Modulus.Identity.Abstractions.WorkEmailRequestOutcome
+Modulus.Identity.Abstractions.WorkEmailRequestOutcome.TooSoon = 2 -> Modulus.Identity.Abstractions.WorkEmailRequestOutcome
+Modulus.Identity.Abstractions.WorkEmailRequestOutcome.Unchanged = 1 -> Modulus.Identity.Abstractions.WorkEmailRequestOutcome
+Modulus.Identity.Abstractions.WorkEmailVerificationOptions
+Modulus.Identity.Abstractions.WorkEmailVerificationOptions.Cooldown.get -> System.TimeSpan
+Modulus.Identity.Abstractions.WorkEmailVerificationOptions.Cooldown.set -> void
+Modulus.Identity.Abstractions.WorkEmailVerificationOptions.Lifetime.get -> System.TimeSpan
+Modulus.Identity.Abstractions.WorkEmailVerificationOptions.Lifetime.set -> void
+Modulus.Identity.Abstractions.WorkEmailVerificationOptions.WorkEmailVerificationOptions() -> void
+Modulus.Identity.Abstractions.WorkEmailVerifier<TUser>
+Modulus.Identity.Abstractions.WorkEmailVerifier<TUser>.ClearAsync(TUser! user) -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Identity.IdentityResult!>!
+Modulus.Identity.Abstractions.WorkEmailVerifier<TUser>.ConfirmAsync(System.Guid callerId, string! token) -> System.Threading.Tasks.Task<Modulus.Identity.Abstractions.WorkEmailConfirmOutcome>!
+Modulus.Identity.Abstractions.WorkEmailVerifier<TUser>.RequestAsync(TUser! user, string! address) -> System.Threading.Tasks.Task<Modulus.Identity.Abstractions.WorkEmailRequest!>!
+Modulus.Identity.Abstractions.WorkEmailVerifier<TUser>.WorkEmailVerifier(Microsoft.AspNetCore.Identity.UserManager<TUser!>! users, Microsoft.AspNetCore.DataProtection.IDataProtectionProvider! protection, Microsoft.Extensions.Options.IOptions<Modulus.Identity.Abstractions.WorkEmailVerificationOptions!>! options, System.TimeProvider! clock) -> void
+Modulus.Identity.AccountController<TUser>.ConfirmWorkEmailAsync(Modulus.Identity.ConfirmWorkEmailRequest! request) -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Mvc.IActionResult!>!
+Modulus.Identity.AccountController<TUser>.UpdateProfileDetailsAsync(Modulus.Identity.UpdateProfileDetailsRequest! request, Modulus.Identity.Abstractions.IIdentityEmailSender! emailSender, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Mvc.IActionResult!>!
+Modulus.Identity.ConfirmWorkEmailRequest
+Modulus.Identity.ConfirmWorkEmailRequest.ConfirmWorkEmailRequest() -> void
+Modulus.Identity.ConfirmWorkEmailRequest.Token.get -> string?
+Modulus.Identity.ConfirmWorkEmailRequest.Token.set -> void
+Modulus.Identity.Extensions.UserWorkEmailRequest
+Modulus.Identity.Extensions.UserWorkEmailRequest.<Clone>$() -> Modulus.Identity.Extensions.UserWorkEmailRequest!
+Modulus.Identity.Extensions.UserWorkEmailRequest.Deconstruct(out string? WorkEmail) -> void
+Modulus.Identity.Extensions.UserWorkEmailRequest.Equals(Modulus.Identity.Extensions.UserWorkEmailRequest? other) -> bool
+Modulus.Identity.Extensions.UserWorkEmailRequest.UserWorkEmailRequest(string? WorkEmail) -> void
+Modulus.Identity.Extensions.UserWorkEmailRequest.WorkEmail.get -> string?
+Modulus.Identity.Extensions.UserWorkEmailRequest.WorkEmail.init -> void
+Modulus.Identity.ProfileDetailsResponse.PendingWorkEmail.get -> string?
+Modulus.Identity.ProfileDetailsResponse.PendingWorkEmail.init -> void
+const Modulus.Identity.Abstractions.WorkEmailVerificationOptions.SectionName = "Identity:WorkEmail" -> string!
+override Modulus.Identity.Abstractions.WorkEmailRequest.Equals(object? obj) -> bool
+override Modulus.Identity.Abstractions.WorkEmailRequest.GetHashCode() -> int
+override Modulus.Identity.Abstractions.WorkEmailRequest.ToString() -> string!
+override Modulus.Identity.Extensions.UserWorkEmailRequest.Equals(object? obj) -> bool
+override Modulus.Identity.Extensions.UserWorkEmailRequest.GetHashCode() -> int
+override Modulus.Identity.Extensions.UserWorkEmailRequest.ToString() -> string!
+static Modulus.Identity.Abstractions.WorkEmailRequest.operator !=(Modulus.Identity.Abstractions.WorkEmailRequest? left, Modulus.Identity.Abstractions.WorkEmailRequest? right) -> bool
+static Modulus.Identity.Abstractions.WorkEmailRequest.operator ==(Modulus.Identity.Abstractions.WorkEmailRequest? left, Modulus.Identity.Abstractions.WorkEmailRequest? right) -> bool
+static Modulus.Identity.Extensions.UserWorkEmailRequest.operator !=(Modulus.Identity.Extensions.UserWorkEmailRequest? left, Modulus.Identity.Extensions.UserWorkEmailRequest? right) -> bool
+static Modulus.Identity.Extensions.UserWorkEmailRequest.operator ==(Modulus.Identity.Extensions.UserWorkEmailRequest? left, Modulus.Identity.Extensions.UserWorkEmailRequest? right) -> bool
+Modulus.Identity.Abstractions.ModulusUser.ConfirmationFailures.get -> int
+Modulus.Identity.Abstractions.ModulusUser.ConfirmationFailures.set -> void
+Modulus.Identity.Abstractions.WorkEmailVerificationOptions.MaxFailedConfirmations.get -> int
+Modulus.Identity.Abstractions.WorkEmailVerificationOptions.MaxFailedConfirmations.set -> void
+Modulus.Identity.ProfileDetailsResponse.Deconstruct(out System.Guid Id, out string? UserName, out string? Email, out bool IsActive, out string? FirstName, out string? LastName, out string? AvatarUrl, out string? WorkEmail, out string? JobTitle, out string? Department, out string? EmployeeCode, out System.Guid? PrimaryBranchId, out System.DateTimeOffset? CreatedAt, out System.DateTimeOffset? ModifiedAt, out bool HasPhoto, out string? PendingWorkEmail, out string? PhotoUrl) -> void
+Modulus.Identity.ProfileDetailsResponse.PhotoUrl.get -> string?
+Modulus.Identity.ProfileDetailsResponse.PhotoUrl.init -> void
+Modulus.Identity.ProfileDetailsResponse.ProfileDetailsResponse(System.Guid Id, string? UserName, string? Email, bool IsActive, string? FirstName, string? LastName, string? AvatarUrl, string? WorkEmail, string? JobTitle, string? Department, string? EmployeeCode, System.Guid? PrimaryBranchId, System.DateTimeOffset? CreatedAt, System.DateTimeOffset? ModifiedAt, bool HasPhoto = false, string? PendingWorkEmail = null, string? PhotoUrl = null) -> void
+Modulus.Identity.Abstractions.WorkEmailConfirmOutcome.Expired = 2 -> Modulus.Identity.Abstractions.WorkEmailConfirmOutcome
+Modulus.Identity.Abstractions.WorkEmailConfirmOutcome.Failed = 6 -> Modulus.Identity.Abstractions.WorkEmailConfirmOutcome
+Modulus.Identity.Abstractions.WorkEmailConfirmOutcome.Invalid = 1 -> Modulus.Identity.Abstractions.WorkEmailConfirmOutcome
+Modulus.Identity.Abstractions.WorkEmailConfirmOutcome.Superseded = 4 -> Modulus.Identity.Abstractions.WorkEmailConfirmOutcome
+Modulus.Identity.Abstractions.WorkEmailConfirmOutcome.TooManyAttempts = 5 -> Modulus.Identity.Abstractions.WorkEmailConfirmOutcome
+Modulus.Identity.Abstractions.WorkEmailConfirmOutcome.Used = 3 -> Modulus.Identity.Abstractions.WorkEmailConfirmOutcome
+Modulus.Identity.Abstractions.WorkEmailConfirmOutcome.Verified = 0 -> Modulus.Identity.Abstractions.WorkEmailConfirmOutcome
+Modulus.Identity.Abstractions.AvatarSource
+Modulus.Identity.Abstractions.AvatarSource.AvatarSource() -> void
+Modulus.Identity.Abstractions.AvatarSource.AvatarSource(Modulus.Identity.Abstractions.AvatarSourceKind Kind, string? Url) -> void
+Modulus.Identity.Abstractions.AvatarSource.Deconstruct(out Modulus.Identity.Abstractions.AvatarSourceKind Kind, out string? Url) -> void
+Modulus.Identity.Abstractions.AvatarSource.Equals(Modulus.Identity.Abstractions.AvatarSource other) -> bool
+Modulus.Identity.Abstractions.AvatarSource.Kind.get -> Modulus.Identity.Abstractions.AvatarSourceKind
+Modulus.Identity.Abstractions.AvatarSource.Kind.init -> void
+Modulus.Identity.Abstractions.AvatarSource.Url.get -> string?
+Modulus.Identity.Abstractions.AvatarSource.Url.init -> void
+Modulus.Identity.Abstractions.AvatarSourceKind
+Modulus.Identity.Abstractions.AvatarSourceKind.Controlled = 1 -> Modulus.Identity.Abstractions.AvatarSourceKind
+Modulus.Identity.Abstractions.AvatarSourceKind.Default = 0 -> Modulus.Identity.Abstractions.AvatarSourceKind
+Modulus.Identity.Abstractions.AvatarSourceKind.External = 2 -> Modulus.Identity.Abstractions.AvatarSourceKind
+Modulus.Identity.Abstractions.AvatarUrlPolicy
+const Modulus.Identity.Abstractions.AvatarUrlPolicy.MaxLength = 2048 -> int
+const Modulus.Identity.Abstractions.AvatarUrlPolicy.PhotoPath = "/api/account/profile/photo" -> string!
+override Modulus.Identity.Abstractions.AvatarSource.GetHashCode() -> int
+static Modulus.Identity.Abstractions.AvatarSource.operator !=(Modulus.Identity.Abstractions.AvatarSource left, Modulus.Identity.Abstractions.AvatarSource right) -> bool
+static Modulus.Identity.Abstractions.AvatarSource.operator ==(Modulus.Identity.Abstractions.AvatarSource left, Modulus.Identity.Abstractions.AvatarSource right) -> bool
+static Modulus.Identity.Abstractions.AvatarUrlPolicy.IsAllowedExternal(string? url) -> bool
+static Modulus.Identity.Abstractions.AvatarUrlPolicy.Resolve(bool hasPhoto, string? avatarUrl) -> Modulus.Identity.Abstractions.AvatarSource
+~override Modulus.Identity.Abstractions.AvatarSource.Equals(object obj) -> bool
+~override Modulus.Identity.Abstractions.AvatarSource.ToString() -> string
+Modulus.Identity.Abstractions.ProfilePhotoRefusal.Animated = 3 -> Modulus.Identity.Abstractions.ProfilePhotoRefusal
+Modulus.Identity.Abstractions.ProfilePhotoRefusal.ColorProfileUnsupported = 6 -> Modulus.Identity.Abstractions.ProfilePhotoRefusal
+Modulus.Identity.Abstractions.ProfilePhotoRefusal.None = 0 -> Modulus.Identity.Abstractions.ProfilePhotoRefusal
+Modulus.Identity.Abstractions.ProfilePhotoRefusal.ProcessingUnavailable = 7 -> Modulus.Identity.Abstractions.ProfilePhotoRefusal
+Modulus.Identity.Abstractions.ProfilePhotoRefusal.TooLarge = 1 -> Modulus.Identity.Abstractions.ProfilePhotoRefusal
+Modulus.Identity.Abstractions.ProfilePhotoRefusal.TooManyPixels = 4 -> Modulus.Identity.Abstractions.ProfilePhotoRefusal
+Modulus.Identity.Abstractions.ProfilePhotoRefusal.Undecodable = 5 -> Modulus.Identity.Abstractions.ProfilePhotoRefusal
+Modulus.Identity.Abstractions.ProfilePhotoRefusal.UnsupportedFormat = 2 -> Modulus.Identity.Abstractions.ProfilePhotoRefusal
+Modulus.Identity.Abstractions.IdentityEmailOptions
+Modulus.Identity.Abstractions.IdentityEmailOptions.BaseUrl.get -> string?
+Modulus.Identity.Abstractions.IdentityEmailOptions.BaseUrl.set -> void
+Modulus.Identity.Abstractions.IdentityEmailOptions.FromAddress.get -> string?
+Modulus.Identity.Abstractions.IdentityEmailOptions.FromAddress.set -> void
+Modulus.Identity.Abstractions.IdentityEmailOptions.FromName.get -> string?
+Modulus.Identity.Abstractions.IdentityEmailOptions.FromName.set -> void
+Modulus.Identity.Abstractions.IdentityEmailOptions.IdentityEmailOptions() -> void
+Modulus.Identity.Abstractions.IdentityEmailOptions.SmtpHost.get -> string?
+Modulus.Identity.Abstractions.IdentityEmailOptions.SmtpHost.set -> void
+Modulus.Identity.Abstractions.IdentityEmailOptions.SmtpPassword.get -> string?
+Modulus.Identity.Abstractions.IdentityEmailOptions.SmtpPassword.set -> void
+Modulus.Identity.Abstractions.IdentityEmailOptions.SmtpPort.get -> int
+Modulus.Identity.Abstractions.IdentityEmailOptions.SmtpPort.set -> void
+Modulus.Identity.Abstractions.IdentityEmailOptions.SmtpUserName.get -> string?
+Modulus.Identity.Abstractions.IdentityEmailOptions.SmtpUserName.set -> void
+Modulus.Identity.Abstractions.IdentityEmailOptions.UseTls.get -> bool
+Modulus.Identity.Abstractions.IdentityEmailOptions.UseTls.set -> void
+Modulus.Identity.Email.IIdentityEmailTransport
+Modulus.Identity.Email.IIdentityEmailTransport.SendAsync(System.Net.Mail.MailMessage! message, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
+Modulus.Identity.Email.SmtpIdentityEmailSender
+Modulus.Identity.Email.SmtpIdentityEmailSender.SendEmailChangeEmailAsync(string! newEmail, string! changeToken, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Identity.Email.SmtpIdentityEmailSender.SendEmailConfirmationEmailAsync(string! email, string! confirmationToken, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Identity.Email.SmtpIdentityEmailSender.SendPasswordResetEmailAsync(string! email, string! resetToken, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Identity.Email.SmtpIdentityEmailSender.SendWorkEmailVerificationAsync(string! workEmail, string! verificationToken, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Identity.Email.SmtpIdentityEmailSender.SmtpIdentityEmailSender(Microsoft.Extensions.Options.IOptions<Modulus.Identity.Abstractions.IdentityEmailOptions!>! options, Modulus.Identity.Email.IIdentityEmailTransport! transport) -> void
+Modulus.Identity.Email.SmtpIdentityEmailTransport
+Modulus.Identity.Email.SmtpIdentityEmailTransport.SendAsync(System.Net.Mail.MailMessage! message, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
+Modulus.Identity.Email.SmtpIdentityEmailTransport.SmtpIdentityEmailTransport(Microsoft.Extensions.Options.IOptions<Modulus.Identity.Abstractions.IdentityEmailOptions!>! options) -> void
+const Modulus.Identity.Abstractions.IdentityEmailOptions.SectionName = "Identity:Email" -> string!
+const Modulus.Identity.Email.SmtpIdentityEmailSender.EmailChangePath = "/ConfirmEmailChange" -> string!
+const Modulus.Identity.Email.SmtpIdentityEmailSender.EmailConfirmationPath = "/ConfirmEmail" -> string!
+const Modulus.Identity.Email.SmtpIdentityEmailSender.PasswordResetPath = "/ResetPassword" -> string!
+const Modulus.Identity.Email.SmtpIdentityEmailSender.WorkEmailPath = "/ConfirmWorkEmail" -> string!
+static Modulus.Identity.Email.SmtpIdentityEmailSender.ValidatedBase(string? baseUrl) -> System.Uri!

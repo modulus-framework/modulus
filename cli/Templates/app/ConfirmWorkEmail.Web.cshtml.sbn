@@ -1,0 +1,30 @@
+@page
+@model {{ root_namespace }}.Web.Pages.ConfirmWorkEmailModel
+@{
+    ViewData["Title"] = "Confirm work email";
+}
+
+<app-page-header pretitle="Account" title="Confirm work email" />
+
+@if (Model.Message is not null)
+{
+    <app-alert type="@(Model.Status == "error" ? "error" : "success")" show-icon message="@Model.Message" class="m-mb-16" />
+}
+
+<div class="m-card" style="max-width: 560px;">
+    <div class="m-card-body">
+        @if (Model.Status != "success" && !string.IsNullOrWhiteSpace(Model.Token))
+        {
+            <p class="m-mb-16">Confirm that this is your work email address. The address becomes your work email only after you confirm it here.</p>
+            <form method="post" class="m-flex m-gap-8">
+                <input type="hidden" asp-for="Token" />
+                <button class="ant-btn ant-btn-primary" type="submit">Confirm my work email</button>
+                <a class="ant-btn ant-btn-default" href="/Profile">Back to my profile</a>
+            </form>
+        }
+        else
+        {
+            <a class="ant-btn ant-btn-default" href="/Profile">Back to my profile</a>
+        }
+    </div>
+</div>

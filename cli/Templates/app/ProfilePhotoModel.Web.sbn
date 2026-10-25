@@ -1,0 +1,75 @@
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
+using {{ root_namespace }}.Web.Services.ApiClients;
+
+namespace {{ root_namespace }}.Web.Pages;
+
+/// <summary>
+/// The signed-in person's profile photo (premodule 3): upload, replace, show and remove. This page checks the type and size only to give a
+/// clear message; the API checks the type, the size, the decoded image and the owner, and it stores the photo (the server decides, never the page).
+/// </summary>
+[Authorize]
+[RequestSizeLimit(ProfilePhotoModel.MaxBytes + 64 * 1024)]
+public sealed class ProfilePhotoModel(ProfileApiClient profile) : PageModel
+{
+    /// <summary>The largest photo accepted (5 MB), matching the API.</summary>
+    public const long MaxBytes = 5 * 1024 * 1024;
+
+    private static readonly string[] s_types = ["image/jpeg", "image/png", "image/webp"];
+
+    public bool HasPhoto { get; private set; }
+
+    public string? Message { get; private set; }
+
+    public async Task OnGetAsync(CancellationToken ct)
+    {
+        Message = TempData["Message"] as string;
+        using var details = await profile.GetDetailsAsync(ct);
+        if (details.IsSuccessStatusCode)
+        {
+            var view = await details.Content.ReadFromJsonAsync<ProfileDetailsView>(new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web), ct);
+            HasPhoto = view?.HasPhoto ?? false;
+        }
+    }
+
+    /// <summary>The photo bytes, through the API, for the signed-in person only.</summary>
+    public async Task<IActionResult> OnGetImageAsync(CancellationToken ct)
+    {
+        using var response = await profile.GetPhotoAsync(ct);
+        if (!response.IsSuccessStatusCode)
+            return NotFound();
+        var bytes = await response.Content.ReadAsByteArrayAsync(ct);
+        Response.Headers.CacheControl = "private, no-cache";
+        return File(bytes, "image/jpeg");
+    }
+
+    public async Task<IActionResult> OnPostUploadAsync(IFormFile? photo, CancellationToken ct)
+    {
+        if (photo is null || photo.Length == 0)
+            return Refuse("Choose a photo to upload.");
+        if (photo.Length > MaxBytes)
+            return Refuse("The photo is larger than 5 MB. Choose a smaller one.");
+        if (!s_types.Contains(photo.ContentType))
+            return Refuse("Choose a JPEG, PNG or WebP photo.");
+
+        await using var stream = photo.OpenReadStream();
+        using var response = await profile.UploadPhotoAsync(stream, photo.ContentType, ct);
+        TempData["Message"] = response.IsSuccessStatusCode ? "Photo saved." : await ProfileApiClient.RefusalAsync(response, ct);
+        return RedirectToPage();
+    }
+
+    public async Task<IActionResult> OnPostRemoveAsync(CancellationToken ct)
+    {
+        using var response = await profile.DeletePhotoAsync(ct);
+        TempData["Message"] = response.IsSuccessStatusCode ? "Photo removed." : await ProfileApiClient.RefusalAsync(response, ct);
+        return RedirectToPage();
+    }
+
+    private IActionResult Refuse(string message)
+    {
+        TempData["Message"] = message;
+        return RedirectToPage();
+    }
+}

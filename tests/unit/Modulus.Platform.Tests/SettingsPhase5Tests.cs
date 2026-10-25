@@ -202,6 +202,22 @@ public sealed class SettingsPhase5Tests
     }
 
     [Fact]
+    public async Task Administration_CarriesTheGroupEachSettingIsFiledUnder_AndNullWhenUngrouped()
+    {
+        var (services, _) = Build();
+        var registry = services.GetRequiredService<ISettingDefinitionRegistry>();
+        registry.Add(new SettingDefinition("Shop.Tender") { Group = "Sales" });
+        registry.Add(new SettingDefinition("Shop.Theme"));
+        using var scope = services.CreateScope();
+        var admin = scope.ServiceProvider.GetRequiredService<ISettingAdministration>();
+
+        var views = await admin.ListAsync();
+
+        views.Single(v => v.Name == "Shop.Tender").Group.Should().Be("Sales");
+        views.Single(v => v.Name == "Shop.Theme").Group.Should().BeNull();
+    }
+
+    [Fact]
     public async Task Administration_RefusesNamesWithNoDefinition()
     {
         var (services, _) = Build();

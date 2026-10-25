@@ -165,6 +165,20 @@ public sealed class MultiTenancyTemplateTests
     }
 
     [Fact]
+    public void A_person_in_exactly_one_company_acts_in_it_and_the_gateway_reads_the_choice_of_the_request()
+    {
+        var model = Model();
+
+        var middleware = _engine.Render("app/DefaultCompany.Web", model);
+        middleware.Should().Contain("class DefaultCompanyMiddleware").And.Contain("memberships is not [{ } only]")
+            .And.Contain("BffGatewayHandler.SelectedCompanyItem").And.Contain("BffGatewayHandler.CompanyCookie");
+        _engine.Render("app/PipelineSetup.Web", model).Should().Contain("app.UseMiddleware<DefaultCompanyMiddleware>()");
+        _engine.Render("app/PipelineSetup.Web", Model(multiTenancy: false)).Should().NotContain("DefaultCompanyMiddleware");
+        _engine.Render("app/BffGatewayHandler.Web", model).Should().Contain("SelectedCompanyItem").And.Contain("CompanyOf(context)");
+        middleware.Should().Contain("catch (HttpRequestException)", "an unreachable API must not turn the page the person asked for into a 500");
+    }
+
+    [Fact]
     public void The_company_administration_page_calls_the_tenant_admin_routes()
     {
         var model = Model();
@@ -175,6 +189,14 @@ public sealed class MultiTenancyTemplateTests
             .And.Contain("tenants:manage");
         _engine.Render("app/CompanyAdmin.Web.cshtml", model).Should()
             .Contain("@model Shop.Web.Pages.Admin.CompaniesModel");
+    }
+
+    [Fact]
+    public void The_short_name_pattern_is_a_valid_regular_expression_in_browsers()
+    {
+        // Chrome compiles pattern attributes with the v flag, where a hyphen inside a character class must be escaped.
+        _engine.Render("app/CompanyAdmin.Web.cshtml", Model()).Should().Contain("pattern=\"[a-z0-9][a-z0-9\\-]*\"")
+            .And.NotContain("[a-z0-9-]*");
     }
 
     [Fact]
@@ -214,6 +236,18 @@ public sealed class MultiTenancyTemplateTests
         _engine.Render("app/Branch.Web.cshtml", model).Should().Contain("@model Shop.Web.Pages.BranchModel");
         _engine.Render("app/BffGatewayHandler.Web", model).Should().Contain("\"X-Branch-Id\"")
             .And.Contain("\"modulus.branch\"");
+    }
+
+    [Fact]
+    public void The_settings_page_offers_a_branch_scope_in_multi_company_apps_and_says_when_no_branch_is_chosen()
+    {
+        var page = _engine.Render("app/Settings.Web.cshtml", Model());
+
+        page.Should().Contain("value=\"branch\"").And.Contain("Current branch")
+            .And.Contain("Model.HasBranch");
+        _engine.Render("app/SettingsModel.Web", Model()).Should().Contain("HasChosenBranch")
+            .And.Contain("BffGatewayHandler.BranchCookie");
+        _engine.Render("app/Settings.Web.cshtml", Model(multiTenancy: false)).Should().NotContain("value=\"branch\"");
     }
 
     [Fact]

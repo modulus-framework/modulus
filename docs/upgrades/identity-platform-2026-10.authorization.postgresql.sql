@@ -338,6 +338,20 @@ CREATE TABLE IF NOT EXISTS "ModulusRecordShares" (
     CONSTRAINT "PK_ModulusRecordShares" PRIMARY KEY ("Id")
 );
 
+-- Explicit parent-to-child authorities (decision 6). Revoked rows are kept; host data, so no tenant column.
+CREATE TABLE IF NOT EXISTS "ModulusCompanyAuthorityGrants" (
+    "Id" uuid NOT NULL,
+    "ParentId" uuid NOT NULL,
+    "ChildId" uuid NOT NULL,
+    "PrincipalId" uuid NOT NULL,
+    "Operation" character varying(32) NOT NULL,
+    "GrantedBy" uuid,
+    "GrantedAt" timestamp with time zone NOT NULL,
+    "RevokedAt" timestamp with time zone,
+    "RevokedBy" uuid,
+    CONSTRAINT "PK_ModulusCompanyAuthorityGrants" PRIMARY KEY ("Id")
+);
+
 CREATE TABLE IF NOT EXISTS "ModulusRoleInclusions" (
     "TenantId" uuid NOT NULL,
     "NormalizedRole" character varying(256) NOT NULL,
@@ -438,6 +452,8 @@ CREATE INDEX IF NOT EXISTS "IX_ModulusRecertificationItems_CampaignId_Decision" 
 CREATE INDEX IF NOT EXISTS "IX_ModulusRecertificationItems_CampaignId_UserId" ON "ModulusRecertificationItems" ("CampaignId", "UserId");
 
 CREATE INDEX IF NOT EXISTS "IX_ModulusRecertificationItems_TenantId_CampaignId" ON "ModulusRecertificationItems" ("TenantId", "CampaignId");
+
+CREATE INDEX IF NOT EXISTS "IX_ModulusCompanyAuthorityGrants_Lookup" ON "ModulusCompanyAuthorityGrants" ("ParentId", "ChildId", "PrincipalId", "Operation");
 
 CREATE INDEX IF NOT EXISTS "IX_ModulusRecordShares_TenantId_ResourceType_ResourceId" ON "ModulusRecordShares" ("TenantId", "ResourceType", "ResourceId");
 

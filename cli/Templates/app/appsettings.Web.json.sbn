@@ -7,7 +7,8 @@
   },
   "Modulus": {
     "Theme": {
-      "Title": "{{ app_name }}"
+      "Title": "{{ app_name }}",
+      "SpaNavigation": true
     }
   },
   "Api": {

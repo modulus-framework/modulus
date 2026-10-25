@@ -1,0 +1,64 @@
+using System.Text.Json;
+using Microsoft.AspNetCore.Http;
+using {{ root_namespace }}.Web.Security;
+using {{ root_namespace }}.Web.Services.ApiClients;
+
+namespace {{ root_namespace }}.Web.Middleware;
+
+/// <summary>
+/// The default company (decision 29): a person who belongs to exactly one company acts in it without choosing. Until a company is chosen the
+/// gateway sends none, and the API refuses company-scoped pages with 403, so the first page after sign-in would look like a missing permission.
+/// With one membership the choice is made here: it is kept in the company cookie and used for this request too. Several memberships, or none,
+/// leave the choice to the company page.
+/// </summary>
+public sealed class DefaultCompanyMiddleware(RequestDelegate next)
+{
+    private static readonly JsonSerializerOptions s_json = new(JsonSerializerDefaults.Web);
+
+    public async Task InvokeAsync(HttpContext context)
+    {
+        if (ShouldSelect(context))
+            await SelectSoleCompanyAsync(context);
+        await next(context);
+    }
+
+    // Page loads only: a sign-in, a token call or a form post is not where a company is chosen for the person.
+    private static bool ShouldSelect(HttpContext context)
+        => HttpMethods.IsGet(context.Request.Method)
+            && context.User.Identity?.IsAuthenticated == true
+            && !context.Request.Cookies.ContainsKey(BffGatewayHandler.CompanyCookie);
+
+    private static async Task SelectSoleCompanyAsync(HttpContext context)
+    {
+        // The page the person asked for must still render when the API is unreachable: the company page reports that, so nothing is selected here.
+        List<CompanyChoice> memberships;
+        try
+        {
+            var companies = context.RequestServices.GetRequiredService<CompanyApiClient>();
+            using var response = await companies.ListAsync(context.RequestAborted);
+            if (!response.IsSuccessStatusCode)
+                return;
+            memberships = await response.Content.ReadFromJsonAsync<List<CompanyChoice>>(s_json, context.RequestAborted) ?? [];
+        }
+        catch (HttpRequestException)
+        {
+            return;
+        }
+        catch (JsonException)
+        {
+            return;
+        }
+
+        if (memberships is not [{ } only])
+            return;
+
+        context.Items[BffGatewayHandler.SelectedCompanyItem] = only.TenantId;
+        context.Response.Cookies.Append(BffGatewayHandler.CompanyCookie, only.TenantId.ToString("D"), new CookieOptions
+        {
+            HttpOnly = true,
+            SameSite = SameSiteMode.Lax,
+            Secure = context.Request.IsHttps,
+            IsEssential = true,
+        });
+    }
+}

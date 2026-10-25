@@ -125,6 +125,18 @@ public sealed class IdentityBackendTests : IDisposable
         seeding.Should().NotContain("Password = \"", "no password is ever written into generated source");
     }
 
+    [Fact]
+    public void The_first_administrator_is_the_tenant_owner_and_the_owner_is_recoverable_by_configuration()
+    {
+        var seeding = Render("identity/IdentitySeeding", Model());
+
+        seeding.Should().Contain("OwnerRole = \"TenantOwner\"").And.Contain("DisplayName = \"Tenant Owner\"");
+        seeding.Should().Contain("AddToRoleAsync(admin, OwnerRole)", "the first administrator gets the owner role");
+        seeding.Should().Contain("Identity:Seed:TenantOwnerEmail", "a lost owner is restored by configuration")
+            .And.Contain("GetUsersInRoleAsync(OwnerRole)");
+        seeding.Should().Contain("identity.tenant-owner.granted", "the initial and recovered assignments are audited");
+    }
+
     // ── The host ─────────────────────────────────────────────────
 
     [Fact]
