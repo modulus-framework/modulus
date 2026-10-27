@@ -36,7 +36,7 @@ public sealed class QuartzInitiatorTests
     private static ServiceProvider BuildProvider(Guid userId)
     {
         var services = new ServiceCollection();
-        services.AddLogging();
+        services.AddSilentLogging();
         services.AddSingleton<ICurrentUser>(new SignedInUser(userId));
         services.AddQuartzJobScheduler(q => q.SchedulerName = $"test-{Guid.NewGuid()}");
         return services.BuildServiceProvider();

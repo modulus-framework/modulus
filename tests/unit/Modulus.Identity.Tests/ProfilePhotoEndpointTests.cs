@@ -14,8 +14,7 @@ using Modulus.Identity.EntityFrameworkCore;
 using Modulus.Identity.Media;
 using Modulus.MultiTenancy;
 using Modulus.Storage;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
+using SkiaSharp;
 using Xunit;
 
 /// <summary>
@@ -207,10 +206,12 @@ public sealed class ProfilePhotoEndpointTests : IAsyncLifetime
 
     private static byte[] EncodePng()
     {
-        using var image = new Image<Rgba32>(64, 64, Color.DarkSeaGreen);
-        using var stream = new MemoryStream();
-        image.SaveAsPng(stream);
-        return stream.ToArray();
+        using var bitmap = new SKBitmap(64, 64, isOpaque: true);
+        using (var canvas = new SKCanvas(bitmap))
+            canvas.Clear(SKColors.DarkSeaGreen);
+        using var image = SKImage.FromBitmap(bitmap);
+        using var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
+        return encoded.ToArray();
     }
 
     /// <summary>An in-memory <see cref="IFileStorage"/>: what the test needs of a store, with a switch that makes removals fail.</summary>

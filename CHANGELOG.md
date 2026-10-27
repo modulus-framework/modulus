@@ -5,7 +5,47 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.8.1] - not yet published
+
+### Breaking changes
+- **Token exchange (spec 12A) uses OpenIddict's built-in RFC 8693 flow.** Clients must send `subject_token_type` and, with an actor
+  token, `actor_token_type`, both `urn:ietf:params:oauth:token-type:access_token`. A request without them gets `invalid_request` from
+  OpenIddict's validation, before the Modulus handler runs (tested: `A_missing_subject_token_type_is_an_invalid_request_from_openiddict`
+  and `A_missing_actor_token_is_an_invalid_request`).
+
+### Added
+- **Durable Quartz job store** on SQLite, PostgreSQL and SQL Server: `QuartzSchema.Create*Async` creates the `QRTZ_` tables, and
+  `UseModulus*Store` switches the scheduler to the ADO.NET store with the System.Text.Json serializer. `clustered: true` turns on
+  clustering for several replicas (PostgreSQL and SQL Server).
+- **Analyzer MOD0005** (`UnprojectedClassifiedFieldAnalyzer`, warning): a classified entity field copied onto a type without
+  `[ProjectionOf]` is reported.
+- **`[ProjectionOf(typeof(Entity))]`** declares that a DTO shows an entity's fields, so the entity's classifications apply to it.
+- **OpenTelemetry log export** (`OpenTelemetry:Otlp:ExportLogs`, default true), added only when an exporter is configured.
+- **Production warning** when background jobs run on the in-memory Quartz store.
+
+### Changed
+- **OpenIddict 7.7.2** (was 7.5.0). The 7.7 release notes list a fix for an audience-validation bug in client assertions
+  (GHSA-925x-4h4v-2792; I could not open the advisory page). The framework uses no client assertions (checked in `src/` and the CLI
+  templates), so the bug is unlikely to reach it.
+- **Profile photos are decoded with SkiaSharp 4.153.1** (was ImageSharp 2.1.13). The native bundle includes components under other
+  licences (see `THIRD-PARTY-NOTICES.md`). The owner accepted it on 2026-10-25; a legal review is still needed before a commercial
+  release. The five ImageSharp advisory suppressions were removed from the repository and the CLI templates.
+- **Packages moved to the newest release in their current line** for most packages: ASP.NET Core and EF Core 10.0.13 (8.0.32 for net8),
+  Microsoft.Extensions 10.0.13, Microsoft.Extensions.Telemetry 10.11.0, Quartz 3.22.7, Npgsql 10.0.3, MongoDB.Driver 3.13.0,
+  StackExchange.Redis 3.0.25, Testcontainers 4.16.0, and others.
+- **Major-version upgrades, both build or test tooling:** NSubstitute 6.2.0 (test mocking, BSD-3-Clause) and Roslynator.Analyzers 5.0.1
+  (build analyzer, Apache-2.0).
+- **Generated apps** pin the same versions as the framework: `Microsoft.Extensions.Telemetry.Abstractions` 10.11.0, EF Core 10.0.13
+  (8.0.32 for net8), the provider packages (Npgsql 10.0.3, MySQL 10.0.12), `Microsoft.OpenApi` 2.13.0, `SQLitePCLRaw` 3.0.5 and
+  `JwtBearer` 10.0.13. A generated app no longer conflicts with the framework's versions.
+- Test helpers find the repository root from their source file, so the build output can live outside the repository.
+
+### Not changed
+- **Quartz 4 and Asp.Versioning 10 are not taken.** Both target only .NET 10, and the framework still targets net8. The latest 3.x and
+  8.x lines are in use (Quartz 3.22.7, Asp.Versioning.Mvc 8.1.1).
+- **FluentAssertions stays on 7.x.** Version 8 is licensed under the Xceed Community License for non-commercial use only.
+- **Microsoft.OpenApi stays on 2.x.** ASP.NET Core 10 requires `[2.12.2, 3.0.0)`.
+- **Microsoft.CodeAnalysis.CSharp stays on 5.0.0.** Version 5.9 conflicts with the Roslyn version the EF Core design package needs.
 
 ## [1.7.0] - not yet published
 

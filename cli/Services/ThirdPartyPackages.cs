@@ -22,15 +22,15 @@ internal static class ThirdPartyPackages
             ["Microsoft.NET.Test.Sdk"] = "18.6.0",
 
             // EF Core
-            ["Microsoft.EntityFrameworkCore"] = "10.0.9",
-            ["Microsoft.EntityFrameworkCore.Design"] = "10.0.9",
-            ["Microsoft.EntityFrameworkCore.Sqlite"] = "10.0.9",
+            ["Microsoft.EntityFrameworkCore"] = "10.0.13",
+            ["Microsoft.EntityFrameworkCore.Design"] = "10.0.13",
+            ["Microsoft.EntityFrameworkCore.Sqlite"] = "10.0.13",
 
             // SQLite
-            ["SQLitePCLRaw.bundle_e_sqlite3"] = "3.0.3",
+            ["SQLitePCLRaw.bundle_e_sqlite3"] = "3.0.5",
 
             // OpenApi
-            ["Microsoft.OpenApi"] = "2.9.0",
+            ["Microsoft.OpenApi"] = "2.13.0",
 
             // gRPC (modulus generate-grpc): protoc code generation, build time only
             ["Grpc.Tools"] = "2.84.0",

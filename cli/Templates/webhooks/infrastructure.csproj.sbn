@@ -15,7 +15,7 @@
     <PackageReference Include="Synvro.Modulus.Webhooks" Version="{{ framework_version }}" />
     <PackageReference Include="Synvro.Modulus.EntityFrameworkCore" Version="{{ framework_version }}" />
     <PackageReference Include="{{ ef_provider_package }}" Version="{{ ef_provider_version }}" />
-{{ if db_provider == "SQLite" }}    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.3" />
+{{ if db_provider == "SQLite" }}    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.5" />
 {{ end }}    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="{{ ef_core_version }}" />
   </ItemGroup>
 

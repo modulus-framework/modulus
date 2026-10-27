@@ -39,12 +39,13 @@ public sealed class ExtraPropertiesUpgradeScriptTests
         script.Should().Contain(guards, "a rerun must not fail on an existing column");
     }
 
-    private static string ScriptPath(string provider)
+    // Anchored on this source file, not the test output: the build output can live outside the repository.
+    private static string ScriptPath(string provider, [System.Runtime.CompilerServices.CallerFilePath] string source = "")
     {
-        var directory = new DirectoryInfo(AppContext.BaseDirectory);
+        var directory = new DirectoryInfo(Path.GetDirectoryName(source)!);
         while (directory is not null && !Directory.Exists(Path.Combine(directory.FullName, "docs", "upgrades")))
             directory = directory.Parent;
-        directory.Should().NotBeNull("the repository root (with docs/upgrades) must be above the test output");
+        directory.Should().NotBeNull("the repository root (with docs/upgrades) must be above this test source file");
 
         return Path.Combine(directory!.FullName, "docs", "upgrades", $"identity-platform-2026-10.identity.{provider}.sql");
     }

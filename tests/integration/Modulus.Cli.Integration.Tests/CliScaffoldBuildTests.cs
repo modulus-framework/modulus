@@ -29,7 +29,7 @@ public sealed class CliScaffoldBuildTests
     [InlineData("mvc")]
     [InlineData("razor-pages")]
     [InlineData("blazor")]
-    [InlineData("fluid")]
+    // The fluid engine is refused by the CLI for a web host (only mvc, razor-pages and blazor are generated), so it is not in the matrix.
     public async Task ModulusApp_ScaffoldedWithUiEngine_BuildsSuccessfully(string uiEngine)
     {
         var repoRoot = FindRepoRoot();
@@ -39,7 +39,12 @@ public sealed class CliScaffoldBuildTests
             var nupkgDir = Path.Combine(work.FullName, "nupkg");
             var cliBinDir = Path.Combine(work.FullName, "cli-bin");
             var outputDir = Path.Combine(work.FullName, "output");
-            var isolatedCache = new Dictionary<string, string> { ["NUGET_PACKAGES"] = Path.Combine(work.FullName, "packages") };
+            var isolatedCache = new Dictionary<string, string>
+            {
+                ["NUGET_PACKAGES"] = Path.Combine(work.FullName, "packages"),
+                // The generated app builds in its own folder; a shared redirected output folder would collide between apps.
+                ["ArtifactsPath"] = string.Empty,
+            };
             Directory.CreateDirectory(nupkgDir);
             Directory.CreateDirectory(outputDir);
 
@@ -49,7 +54,10 @@ public sealed class CliScaffoldBuildTests
                 $"pack \"{Path.Combine(repoRoot, "modulus.slnx")}\" -c Release -o \"{nupkgDir}\" --nologo",
                 repoRoot);
 
-            // 2. Build the CLI
+            // 2. The UI framework packages come from the modulus-ui repository. Copy them into this run's feed.
+            CopyUiPackages(nupkgDir);
+
+            // 3. Build the CLI
             await RunAsync(
                 "dotnet",
                 $"build \"{Path.Combine(repoRoot, "cli", "Modulus.Cli.csproj")}\" -c Release -o \"{cliBinDir}\" --nologo",
@@ -57,11 +65,11 @@ public sealed class CliScaffoldBuildTests
             var cliDll = Path.Combine(cliBinDir, "Modulus.Cli.dll");
             File.Exists(cliDll).Should().BeTrue($"the CLI build should have produced {cliDll}");
 
-            // 3. Scaffold a fresh web app with UI engine
+            // 4. Scaffold a fresh web app with UI engine
             var appName = $"TestApp{char.ToUpper(uiEngine[0])}{uiEngine.Substring(1).Replace("-", "")}";
             var scaffoldArgs = string.Join(' ',
                 "app", appName,
-                "--kind", "web",
+                "--kind", "webapp+api",
                 "--ui-engine", uiEngine,
                 "--database", "SQLite",
                 "--auth", "none",
@@ -86,7 +94,7 @@ public sealed class CliScaffoldBuildTests
             // 5. Generate CRUD to test UI template integration
             var generateCrudArgs = string.Join(' ',
                 "generate-crud", "Product",
-                "--module", "Inventory",
+                "--module", "Catalog",
                 "--package-source", $"\"{nupkgDir}\"");
             await RunAsync("dotnet", $"\"{cliDll}\" {generateCrudArgs}", Path.Combine(outputDir, appName), isolatedCache);
 
@@ -112,7 +120,12 @@ public sealed class CliScaffoldBuildTests
             // The packed version number does not change between runs, so a machine-wide package cache would serve the
             // Modulus.* packages of an earlier pack (and hide every framework change since). The generated
             // app restores into its own cache instead.
-            var isolatedCache = new Dictionary<string, string> { ["NUGET_PACKAGES"] = Path.Combine(work.FullName, "packages") };
+            var isolatedCache = new Dictionary<string, string>
+            {
+                ["NUGET_PACKAGES"] = Path.Combine(work.FullName, "packages"),
+                // The generated app builds in its own folder; a shared redirected output folder would collide between apps.
+                ["ArtifactsPath"] = string.Empty,
+            };
             Directory.CreateDirectory(nupkgDir);
             Directory.CreateDirectory(outputDir);
 
@@ -169,7 +182,7 @@ public sealed class CliScaffoldBuildTests
 
     private static string FindRepoRoot()
     {
-        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        var dir = new DirectoryInfo(SourceDirectory());
         while (dir is not null)
         {
             if (File.Exists(Path.Combine(dir.FullName, "modulus.slnx")))
@@ -179,6 +192,92 @@ public sealed class CliScaffoldBuildTests
 
         throw new InvalidOperationException(
             $"Could not locate modulus.slnx by walking up from {AppContext.BaseDirectory}");
+    }
+
+    [Fact]
+    public async Task ModulusApp_ScaffoldedWithOpenIddict_BuildsAndItsTestsPass()
+    {
+        var repoRoot = FindRepoRoot();
+        var work = Directory.CreateTempSubdirectory("modulus-cli-oidc-");
+        try
+        {
+            var nupkgDir = Path.Combine(work.FullName, "nupkg");
+            var cliBinDir = Path.Combine(work.FullName, "cli-bin");
+            var outputDir = Path.Combine(work.FullName, "output");
+            var isolatedCache = new Dictionary<string, string>
+            {
+                ["NUGET_PACKAGES"] = Path.Combine(work.FullName, "packages"),
+                ["ArtifactsPath"] = string.Empty,
+            };
+            Directory.CreateDirectory(nupkgDir);
+            Directory.CreateDirectory(outputDir);
+
+            // 1. Pack every Modulus.* package into a local feed of this test run.
+            await RunAsync(
+                "dotnet",
+                $"pack \"{Path.Combine(repoRoot, "modulus.slnx")}\" -c Release -o \"{nupkgDir}\" --nologo",
+                repoRoot);
+
+            // 2. Build the CLI.
+            await RunAsync(
+                "dotnet",
+                $"build \"{Path.Combine(repoRoot, "cli", "Modulus.Cli.csproj")}\" -c Release -o \"{cliBinDir}\" --nologo",
+                repoRoot);
+            var cliDll = Path.Combine(cliBinDir, "Modulus.Cli.dll");
+            File.Exists(cliDll).Should().BeTrue($"the CLI build should have produced {cliDll}");
+
+            // 3. Scaffold an API with the local OpenIddict token server (the identity module, seeding and the token endpoint).
+            var scaffoldArgs = string.Join(' ',
+                "app", "TestOidc",
+                "--kind", "api",
+                "--database", "SQLite",
+                "--auth", "openiddict",
+                "--message-broker", "none",
+                "--caching", "inmemory",
+                "--storage", "local",
+                "--signalr", "none",
+                "--migration-engine", "efcore",
+                "--package-source", $"\"{nupkgDir}\"",
+                "-o", $"\"{outputDir}\"");
+            await RunAsync("dotnet", $"\"{cliDll}\" {scaffoldArgs}", work.FullName, isolatedCache);
+
+            var appSlnx = Path.Combine(outputDir, "TestOidc", "TestOidc.slnx");
+            File.Exists(appSlnx).Should().BeTrue($"the CLI should have scaffolded {appSlnx}");
+
+            // 4. Build the generated solution, then run its tests: the sign-in, the token endpoint and the generated tests.
+            await RunAsync("dotnet", $"build \"{appSlnx}\" -c Release --nologo", Path.Combine(outputDir, "TestOidc"), isolatedCache);
+            await RunAsync("dotnet", $"test \"{appSlnx}\" -c Release --no-build --nologo", Path.Combine(outputDir, "TestOidc"), isolatedCache);
+        }
+        finally
+        {
+            try { work.Delete(recursive: true); } catch { /* best-effort cleanup */ }
+        }
+    }
+
+    /// <summary>
+    /// Copies the modulus-ui packages the CLI needs (version 1.8.1, the UI version in cli/Services/UiTemplatePackage.cs) from the
+    /// local UI feed (MODULUS_LOCAL_FEED, then ~/.modulus/feed) into the test's package folder. Without them the generated web app
+    /// cannot restore, because the test's package source is the framework feed only.
+    /// </summary>
+    private static void CopyUiPackages(string destination)
+    {
+        const string UiVersion = "1.8.1";
+        var folders = new List<string>();
+        if (Environment.GetEnvironmentVariable("MODULUS_LOCAL_FEED") is { Length: > 0 } custom)
+            folders.AddRange(custom.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries));
+        folders.Add(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".modulus", "feed"));
+
+        var feed = folders.FirstOrDefault(f => Directory.Exists(f) && Directory.EnumerateFiles(f, $"*.{UiVersion}.nupkg").Any());
+        feed.Should().NotBeNull($"the modulus-ui {UiVersion} packages should be packed into a local feed (see the modulus-ui repository)");
+
+        var uiPackages = new[] { "Synvro.Modulus.Ui.", "Synvro.Modulus.AspNetCore.Mvc.", "Synvro.Modulus.AspNetCore.Hosting.",
+            "Synvro.Modulus.AspNetCore.Fluid.", "Synvro.Modulus.Blazor.", "Synvro.Modulus.Documents." };
+        var copied = Directory.EnumerateFiles(feed!, $"*.{UiVersion}.nupkg")
+            .Where(file => uiPackages.Any(prefix => Path.GetFileName(file).StartsWith(prefix, StringComparison.Ordinal)))
+            .ToList();
+        copied.Should().NotBeEmpty();
+        foreach (var file in copied)
+            File.Copy(file, Path.Combine(destination, Path.GetFileName(file)), overwrite: true);
     }
 
     private static async Task RunAsync(
@@ -223,5 +322,9 @@ public sealed class CliScaffoldBuildTests
             $"'{fileName} {arguments}' in {workingDirectory} should succeed.\n" +
             $"--- stdout ---\n{stdout}\n--- stderr ---\n{stderr}");
     }
+
+    // The repository is found from this source file, not the build output, which can live outside the repository.
+    private static string SourceDirectory([System.Runtime.CompilerServices.CallerFilePath] string source = "") => Path.GetDirectoryName(source)!;
+
 }
 

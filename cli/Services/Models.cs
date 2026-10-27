@@ -9,13 +9,13 @@ internal static class FrameworkVersion
 {
     // Keep in sync with <VersionPrefix> in build/Modulus.Packaging.props —
     // generated apps pin Modulus.* packages at this version.
-    // MODULUS_FRAMEWORK_VERSION points generated apps at another build, e.g. a local pack (1.7.0-dev.<sha>).
+    // MODULUS_FRAMEWORK_VERSION points generated apps at another build, e.g. a local pack (1.8.1-dev.<sha>).
     public static string Current { get; } =
-        Environment.GetEnvironmentVariable("MODULUS_FRAMEWORK_VERSION") is { Length: > 0 } v ? v : "1.7.0";
+        Environment.GetEnvironmentVariable("MODULUS_FRAMEWORK_VERSION") is { Length: > 0 } v ? v : "1.8.1";
 
     // Keep in sync with Microsoft.Extensions.Telemetry.Abstractions in Directory.Packages.props: every project of a generated
     // app references it so classified [LoggerMessage] parameters are redacted (RedactionTemplateTests checks it).
-    public const string TelemetryAbstractions = "10.7.0";
+    public const string TelemetryAbstractions = "10.11.0";
 }
 
 /// <summary>
@@ -38,17 +38,17 @@ internal static class DbProviderInfo
     public static string Version(string provider, string framework = AppFramework.Default) => framework == "net8.0"
         ? provider switch
         {
-            "SqlServer" => "8.0.31",
+            "SqlServer" => "8.0.32",
             "PostgreSQL" => "8.0.11",
-            "MySQL" => "8.0.8",
-            _ => "8.0.31",
+            "MySQL" => "8.0.31",
+            _ => "8.0.32",
         }
         : provider switch
         {
-            "SqlServer" => "10.0.9",
-            "PostgreSQL" => "10.0.2",
-            "MySQL" => "10.0.7",
-            _ => "10.0.9",
+            "SqlServer" => "10.0.13",
+            "PostgreSQL" => "10.0.3",
+            "MySQL" => "10.0.12",
+            _ => "10.0.13",
         };
 
     public static string UseMethod(string provider) => provider switch

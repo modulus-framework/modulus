@@ -26,7 +26,7 @@ public sealed class QuartzTenantContextTests
     private static ServiceProvider BuildProvider()
     {
         var services = new ServiceCollection();
-        services.AddLogging();
+        services.AddSilentLogging();
         services.AddSingleton<ICurrentTenant, CurrentTenant>();
         services.AddSingleton<ICorrelationContext, CorrelationContext>();
         // A unique instance name per test: Quartz.NET registers schedulers

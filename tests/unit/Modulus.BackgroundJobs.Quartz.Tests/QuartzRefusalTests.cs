@@ -62,7 +62,7 @@ public sealed class QuartzRefusalTests
         var runs = new RunCount();
         var audit = new RecordingAudit();
         var services = new ServiceCollection();
-        services.AddLogging();
+        services.AddSilentLogging();
         services.AddSingleton(runs);
         services.AddSingleton<ICurrentUser>(new SignedInUser(Guid.NewGuid()));
         services.AddSingleton<ISecurityAuditLog>(audit);

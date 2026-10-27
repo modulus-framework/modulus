@@ -19,8 +19,8 @@
     <PackageReference Include="Synvro.Modulus.Authorization.EntityFrameworkCore" Version="{{ framework_version }}" />
     <PackageReference Include="Synvro.Modulus.Secrets.OpenBao" Version="{{ framework_version }}" />
     <PackageReference Include="{{ ef_provider_package }}" Version="{{ ef_provider_version }}" />
-{{ if engine == "SQLite" }}    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.3" />
-{{ end }}    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.9" />
+{{ if engine == "SQLite" }}    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.5" />
+{{ end }}    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.13" />
   </ItemGroup>
 
 </Project>

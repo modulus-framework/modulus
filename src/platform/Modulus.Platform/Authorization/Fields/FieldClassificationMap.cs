@@ -33,6 +33,17 @@ public static class FieldClassificationMap
                 ?? FieldClassification.Public;
         }
 
+        // A projection shows its entity's fields under the same names. The entity's classification reaches the projection,
+        // and where both declare a field the stricter one wins, so a DTO cannot lower a field's protection.
+        if (type.GetCustomAttribute<ProjectionOfAttribute>() is { } projection)
+        {
+            foreach (var (name, classification) in For(projection.EntityType))
+            {
+                if (map.TryGetValue(name, out var own) && classification > own)
+                    map[name] = classification;
+            }
+        }
+
         return map;
     }
 }

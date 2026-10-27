@@ -5,6 +5,7 @@ using Microsoft.Extensions.Hosting;
 using Modulus.Mediator.Abstractions;
 using Modulus.Observability;
 using NSubstitute;
+using OpenTelemetry.Logs;
 using Xunit;
 
 namespace Modulus.Observability.Tests;
@@ -52,5 +53,49 @@ public sealed class ModulusOpenTelemetrySetupTests
         services.Should().Contain(d =>
             d.ServiceType.IsGenericType &&
             d.ServiceType.GetGenericTypeDefinition() == typeof(IPipelineBehavior<,>));
+    }
+
+    [Fact]
+    public void Otlp_Endpoint_WiresLogExport()
+    {
+        using var provider = BuildProvider(new Dictionary<string, string?>
+        {
+            ["OpenTelemetry:Otlp:Endpoint"] = "http://localhost:4317",
+        });
+
+        provider.GetService<LoggerProvider>().Should().NotBeNull();
+    }
+
+    [Fact]
+    public void Otlp_ExportLogsFalse_DoesNotWireLogExport()
+    {
+        using var provider = BuildProvider(new Dictionary<string, string?>
+        {
+            ["OpenTelemetry:Otlp:Endpoint"] = "http://localhost:4317",
+            ["OpenTelemetry:Otlp:ExportLogs"] = "false",
+        });
+
+        provider.GetService<LoggerProvider>().Should().BeNull();
+    }
+
+    [Fact]
+    public void NoEndpoint_DoesNotWireLogExport()
+    {
+        using var provider = BuildProvider(new Dictionary<string, string?>());
+
+        provider.GetService<LoggerProvider>().Should().BeNull();
+    }
+
+    private static ServiceProvider BuildProvider(Dictionary<string, string?> values)
+    {
+        var services = new ServiceCollection();
+        var config = new ConfigurationBuilder()
+            .AddInMemoryCollection(values)
+            .Build();
+        var env = Substitute.For<IHostEnvironment>();
+        env.ApplicationName.Returns("test-app");
+
+        services.AddModulusOpenTelemetry(config, env);
+        return services.BuildServiceProvider();
     }
 }

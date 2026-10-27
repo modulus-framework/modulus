@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Modulus.OpenTelemetry.Extensions;
+using global::OpenTelemetry.Logs;
 using global::OpenTelemetry.Metrics;
 using global::OpenTelemetry.Resources;
 using global::OpenTelemetry.Trace;
@@ -37,6 +38,7 @@ public static class ModulusOpenTelemetrySetup
         var otlpEndpoint = otlp["Endpoint"];
         var exportTraces = otlp.GetValue("ExportTraces", true);
         var exportMetrics = otlp.GetValue("ExportMetrics", true);
+        var exportLogs = otlp.GetValue("ExportLogs", true);
         var fusionCache = section.GetValue("Instrumentation:FusionCache", true);
 
         Uri? endpoint = null;
@@ -44,6 +46,7 @@ public static class ModulusOpenTelemetrySetup
         {
             exportTraces = false;
             exportMetrics = false;
+            exportLogs = false;
         }
         else
         {
@@ -77,6 +80,20 @@ public static class ModulusOpenTelemetrySetup
                 if (exportMetrics && endpoint is not null)
                     metrics.AddOtlpExporter(o => o.Endpoint = endpoint);
             });
+
+        if (enableConsole || (exportLogs && endpoint is not null))
+        {
+            // Log records carry the trace and span ids, so they correlate with
+            // the traces above in the same backend. Added only when an exporter
+            // is configured; otherwise logs never leave the process.
+            services.AddOpenTelemetry().WithLogging(logging =>
+            {
+                if (enableConsole)
+                    logging.AddConsoleExporter();
+                if (exportLogs && endpoint is not null)
+                    logging.AddOtlpExporter(o => o.Endpoint = endpoint);
+            });
+        }
 
         services.AddModulusObservability();
 

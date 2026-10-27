@@ -3,9 +3,7 @@ namespace Modulus.Identity.Tests;
 using FluentAssertions;
 using Modulus.Identity.Abstractions;
 using Modulus.Identity.Media;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Formats.Jpeg;
-using SixLabors.ImageSharp.PixelFormats;
+using SkiaSharp;
 using Xunit;
 
 /// <summary>
@@ -23,7 +21,7 @@ public sealed class ProfilePhotoProcessorTests
         var result = await _processor.ProcessAsync(new MemoryStream(EncodePng(800, 600)));
 
         result.Accepted.Should().BeTrue();
-        var decoded = Image.Identify(new MemoryStream(result.Jpeg!));
+        var decoded = SizeOf(result.Jpeg!);
         decoded.Width.Should().Be(ProfilePhotoRules.ThumbnailSize);
         decoded.Height.Should().Be(ProfilePhotoRules.ThumbnailSize);
         result.Jpeg!.Take(3).Should().Equal(new byte[] { 0xFF, 0xD8, 0xFF }, "the stored photo is a JPEG whatever the upload was");
@@ -32,12 +30,7 @@ public sealed class ProfilePhotoProcessorTests
     [Fact]
     public async Task The_stored_photo_carries_no_exif_block_even_when_the_upload_had_one()
     {
-        using var image = new Image<Rgba32>(300, 300, Color.Coral);
-        image.Metadata.ExifProfile = new SixLabors.ImageSharp.Metadata.Profiles.Exif.ExifProfile();
-        image.Metadata.ExifProfile.SetValue(SixLabors.ImageSharp.Metadata.Profiles.Exif.ExifTag.Make, "Modulus test camera");
-        using var upload = new MemoryStream();
-        image.SaveAsJpeg(upload);
-        var bytes = upload.ToArray();
+        var bytes = WithExif(Encode(SKEncodedImageFormat.Jpeg, 300, 300, SKColors.Coral), orientation: null, make: "Modulus test camera");
         System.Text.Encoding.ASCII.GetString(bytes).Should().Contain("Exif", "the upload really carries EXIF, so the test means something");
 
         var result = await _processor.ProcessAsync(new MemoryStream(bytes));
@@ -52,25 +45,22 @@ public sealed class ProfilePhotoProcessorTests
         // Stored 200 wide and 100 high: red on the left half, blue on the right. Orientation 6 says a viewer shows it turned a
         // quarter turn clockwise, so upright it is 100 wide and 200 high, red on top and blue below. The square crop of that is
         // red at the top and blue at the bottom. Without the rotation the crop would be red on the left.
-        using var image = new Image<Rgba32>(200, 100, Color.Blue);
+        using var image = new SKBitmap(200, 100, isOpaque: true);
         for (var y = 0; y < image.Height; y++)
-            for (var x = 0; x < 100; x++)
-                image[x, y] = Color.Red;
-        image.Metadata.ExifProfile = new SixLabors.ImageSharp.Metadata.Profiles.Exif.ExifProfile();
-        image.Metadata.ExifProfile.SetValue(SixLabors.ImageSharp.Metadata.Profiles.Exif.ExifTag.Orientation, (ushort)6);
-        using var upload = new MemoryStream();
-        image.SaveAsJpeg(upload);
+            for (var x = 0; x < image.Width; x++)
+                image.SetPixel(x, y, x < 100 ? SKColors.Red : SKColors.Blue);
+        var upload = WithExif(EncodeBitmap(image, SKEncodedImageFormat.Jpeg), orientation: 6, make: null);
 
-        var result = await _processor.ProcessAsync(new MemoryStream(upload.ToArray()));
+        var result = await _processor.ProcessAsync(new MemoryStream(upload));
 
         result.Accepted.Should().BeTrue();
-        using var stored = Image.Load<Rgba32>(result.Jpeg!);
+        using var stored = SKBitmap.Decode(result.Jpeg!);
         var near = stored.Width / 10;
         var far = stored.Width * 9 / 10;
-        stored[near, far].B.Should().BeGreaterThan(200, "the bottom of the upright square is blue");
-        stored[near, far].R.Should().BeLessThan(80);
-        stored[far, near].R.Should().BeGreaterThan(200, "the top of the upright square is red");
-        stored[far, near].B.Should().BeLessThan(80);
+        stored.GetPixel(near, far).Blue.Should().BeGreaterThan(200, "the bottom of the upright square is blue");
+        stored.GetPixel(near, far).Red.Should().BeLessThan(80);
+        stored.GetPixel(far, near).Red.Should().BeGreaterThan(200, "the top of the upright square is red");
+        stored.GetPixel(far, near).Blue.Should().BeLessThan(80);
     }
 
     [Fact]
@@ -79,7 +69,7 @@ public sealed class ProfilePhotoProcessorTests
         var result = await _processor.ProcessAsync(new MemoryStream(EncodeWebp(200, 120)));
 
         result.Accepted.Should().BeTrue();
-        Image.Identify(new MemoryStream(result.Jpeg!)).Width.Should().Be(ProfilePhotoRules.ThumbnailSize);
+        SizeOf(result.Jpeg!).Width.Should().Be(ProfilePhotoRules.ThumbnailSize);
     }
 
     [Fact]
@@ -222,29 +212,72 @@ public sealed class ProfilePhotoProcessorTests
         ProfilePhotoRules.StoragePath(null, asset).Should().StartWith("profile-photos/host/");
     }
 
-    private static byte[] EncodePng(int width, int height)
+    private static byte[] EncodePng(int width, int height) => Encode(SKEncodedImageFormat.Png, width, height, SKColors.SteelBlue);
+
+    private static byte[] EncodeJpeg(int width, int height) => Encode(SKEncodedImageFormat.Jpeg, width, height, SKColors.Coral);
+
+    private static byte[] EncodeWebp(int width, int height) => Encode(SKEncodedImageFormat.Webp, width, height, SKColors.DarkSeaGreen);
+
+    private static byte[] Encode(SKEncodedImageFormat format, int width, int height, SKColor color)
     {
-        using var image = new Image<Rgba32>(width, height, Color.SteelBlue);
-        using var stream = new MemoryStream();
-        image.SaveAsPng(stream);
-        return stream.ToArray();
+        using var bitmap = new SKBitmap(width, height, isOpaque: true);
+        using var canvas = new SKCanvas(bitmap);
+        canvas.Clear(color);
+        return EncodeBitmap(bitmap, format);
     }
 
-    private static byte[] EncodeJpeg(int width, int height)
+    private static byte[] EncodeBitmap(SKBitmap bitmap, SKEncodedImageFormat format)
     {
-        using var image = new Image<Rgba32>(width, height, Color.Coral);
-        using var stream = new MemoryStream();
-        image.SaveAsJpeg(stream);
-        return stream.ToArray();
+        using var image = SKImage.FromBitmap(bitmap);
+        using var encoded = image.Encode(format, 100);
+        return encoded.ToArray();
     }
 
-    private static byte[] EncodeWebp(int width, int height)
+    private static SKSizeI SizeOf(byte[] bytes)
     {
-        using var image = new Image<Rgba32>(width, height, Color.DarkSeaGreen);
-        using var stream = new MemoryStream();
-        image.SaveAsWebp(stream);
-        return stream.ToArray();
+        using var data = SKData.CreateCopy(bytes);
+        using var codec = SKCodec.Create(data) ?? throw new InvalidOperationException("The bytes are not an image.");
+        return codec.Info.Size;
     }
+
+    /// <summary>
+    /// Inserts an EXIF APP1 segment right after the start-of-image marker of a JPEG. SkiaSharp does not write metadata, so the
+    /// segment is built here: a little-endian TIFF with an optional Orientation and an optional Make entry.
+    /// </summary>
+    private static byte[] WithExif(byte[] jpeg, int? orientation, string? make)
+    {
+        var entries = new List<(ushort Tag, ushort Type, uint Count, byte[] Value)>();
+        var makeBytes = make is null ? null : System.Text.Encoding.ASCII.GetBytes(make + "\0");
+        var entryCount = (orientation is null ? 0 : 1) + (make is null ? 0 : 1);
+        var stringOffset = 8 + 2 + entryCount * 12 + 4;
+
+        // Entries are written in ascending tag order, as the TIFF format requires: Make (0x010F) before Orientation (0x0112).
+        if (makeBytes is not null)
+            entries.Add((0x010F, 2, (uint)makeBytes.Length, LittleEndian((uint)stringOffset)));
+        if (orientation is not null)
+            entries.Add((0x0112, 3, 1, [(byte)orientation.Value, (byte)(orientation.Value >> 8), 0, 0]));
+
+        var tiff = new List<byte> { (byte)'I', (byte)'I', 0x2A, 0x00, 8, 0, 0, 0, (byte)entryCount, 0 };
+        foreach (var (tag, type, count, value) in entries)
+        {
+            tiff.AddRange(LittleEndian(tag, 2));
+            tiff.AddRange(LittleEndian(type, 2));
+            tiff.AddRange(LittleEndian(count));
+            tiff.AddRange(value);
+        }
+        tiff.AddRange(new byte[4]);
+        if (makeBytes is not null)
+            tiff.AddRange(makeBytes);
+
+        var payload = System.Text.Encoding.ASCII.GetBytes("Exif\0\0").Concat(tiff).ToArray();
+        var length = payload.Length + 2;
+        var segment = new byte[] { 0xFF, 0xE1, (byte)(length >> 8), (byte)length }.Concat(payload).ToArray();
+        return jpeg.Take(2).Concat(segment).Concat(jpeg.Skip(2)).ToArray();
+    }
+
+    private static byte[] LittleEndian(uint value) => LittleEndian(value, 4);
+
+    private static byte[] LittleEndian(uint value, int bytes) => Enumerable.Range(0, bytes).Select(i => (byte)(value >> (8 * i))).ToArray();
 
     /// <summary>Inserts an <c>acTL</c> chunk right after the PNG header chunk, which is what an animated PNG carries.</summary>
     private static byte[] WithAnimationChunk(byte[] png)

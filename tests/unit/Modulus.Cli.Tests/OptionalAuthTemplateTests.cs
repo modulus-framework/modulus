@@ -68,12 +68,11 @@ public sealed class OptionalAuthTemplateTests
     }
 
     [Fact]
-    public void The_generated_build_props_acknowledge_the_imagesharp_advisories_only_for_sign_in_apps()
+    public void The_generated_build_props_carry_no_imagesharp_advisory_suppressions()
     {
-        const string Advisory = "GHSA-wmxv-xphr-5c9g";
-
-        _engine.Render("app/Directory.Build.props", Model("openiddict")).Should().Contain(Advisory)
-            .And.Contain("THIRD-PARTY-NOTICES.md");
+        // SkiaSharp replaced ImageSharp for profile photos, so no advisory is suppressed for any app kind.
+        _engine.Render("app/Directory.Build.props", Model("openiddict")).Should().NotContain("NuGetAuditSuppress")
+            .And.NotContain("GHSA-wmxv-xphr-5c9g");
         _engine.Render("app/Directory.Build.props", Model("none")).Should().NotContain("NuGetAuditSuppress");
     }
 }

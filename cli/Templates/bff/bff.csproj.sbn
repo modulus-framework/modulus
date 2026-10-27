@@ -19,7 +19,7 @@
     <PackageReference Include="Synvro.Modulus.Platform" Version="{{ framework_version }}" />
 {{ if use_redis_cache }}    <PackageReference Include="Synvro.Modulus.Caching.Redis" Version="{{ framework_version }}" />
 {{ end }}    <!-- Transitive pin: AspNetCore.OpenApi floats to Microsoft.OpenApi 2.0.0 (GHSA-v5pm-xwqc-g5wc). -->
-    <PackageReference Include="Microsoft.OpenApi" Version="2.9.0" />
+    <PackageReference Include="Microsoft.OpenApi" Version="2.13.0" />
   </ItemGroup>
 
 </Project>
