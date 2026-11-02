@@ -17,8 +17,6 @@ modulus/
 ├── src/                         # Framework packages (see below)
 ├── cli/                         # Modulus.Cli — `modulus` dotnet tool (Spectre.Console + Scriban)
 ├── tests/                       # unit/ (xUnit, Category=Unit) and integration/ (Testcontainers)
-├── samples/                     # TradeFlow — 18-module reference app (procurement, trade finance,
-│                                 # inventory, workflow) with Dockerfile, compose, and GitHub Actions CI
 ├── docs/DOCUMENTATION.md        # All project documentation: blueprints, plans, the live checklist, completed plans, security notes
 └── .github/workflows/           # ci.yml (build/format/test/pack), codeql.yml, release.yml
 ```
