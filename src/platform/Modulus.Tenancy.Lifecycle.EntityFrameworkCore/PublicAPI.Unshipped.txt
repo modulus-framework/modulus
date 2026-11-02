@@ -1,0 +1,91 @@
+#nullable enable
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.EfTenantLifecycleStore<TContext>
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.EfTenantLifecycleStore<TContext>.AddLegalHoldAsync(Modulus.Tenancy.Lifecycle.LegalHold! hold, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.EfTenantLifecycleStore<TContext>.AddOperationAsync(Modulus.Tenancy.Lifecycle.LifecycleOperation! operation, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.EfTenantLifecycleStore<TContext>.EfTenantLifecycleStore(TContext! db) -> void
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.EfTenantLifecycleStore<TContext>.FindLegalHoldAsync(System.Guid id, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Modulus.Tenancy.Lifecycle.LegalHold?>!
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.EfTenantLifecycleStore<TContext>.FindOperationAsync(System.Guid id, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Modulus.Tenancy.Lifecycle.LifecycleOperation?>!
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.EfTenantLifecycleStore<TContext>.ListActiveLegalHoldsAsync(System.Guid tenantId, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Tenancy.Lifecycle.LegalHold!>!>!
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.EfTenantLifecycleStore<TContext>.ListActiveOperationsAsync(System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Tenancy.Lifecycle.LifecycleOperation!>!>!
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.EfTenantLifecycleStore<TContext>.ListDuePendingDeletionsAsync(System.DateTimeOffset now, int take, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Tenancy.Lifecycle.PendingDeletion!>!>!
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.EfTenantLifecycleStore<TContext>.ListExpiredExportsAsync(System.DateTimeOffset now, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Tenancy.Lifecycle.LifecycleOperation!>!>!
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.EfTenantLifecycleStore<TContext>.ListOperationsAsync(System.Guid tenantId, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Tenancy.Lifecycle.LifecycleOperation!>!>!
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.EfTenantLifecycleStore<TContext>.SaveLegalHoldAsync(Modulus.Tenancy.Lifecycle.LegalHold! hold, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.EfTenantLifecycleStore<TContext>.SaveOperationAsync(Modulus.Tenancy.Lifecycle.LifecycleOperation! operation, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.EfTenantLifecycleStore<TContext>.SavePendingDeletionAsync(Modulus.Tenancy.Lifecycle.PendingDeletion! item, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.LegalHoldRow
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.LegalHoldRow.Id.get -> System.Guid
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.LegalHoldRow.Id.set -> void
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.LegalHoldRow.LegalHoldRow() -> void
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.LegalHoldRow.PlacedAt.get -> System.DateTimeOffset
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.LegalHoldRow.PlacedAt.set -> void
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.LegalHoldRow.PlacedBy.get -> string!
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.LegalHoldRow.PlacedBy.set -> void
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.LegalHoldRow.Reason.get -> string!
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.LegalHoldRow.Reason.set -> void
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.LegalHoldRow.ReleasedAt.get -> System.DateTimeOffset?
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.LegalHoldRow.ReleasedAt.set -> void
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.LegalHoldRow.ReleasedBy.get -> string?
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.LegalHoldRow.ReleasedBy.set -> void
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.LegalHoldRow.TenantId.get -> System.Guid
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.LegalHoldRow.TenantId.set -> void
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.OperationRow
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.OperationRow.CertificateKeyId.get -> string?
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.OperationRow.CertificateKeyId.set -> void
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.OperationRow.CertificatePayload.get -> string?
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.OperationRow.CertificatePayload.set -> void
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.OperationRow.CertificateSignature.get -> string?
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.OperationRow.CertificateSignature.set -> void
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.OperationRow.CompletedAt.get -> System.DateTimeOffset?
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.OperationRow.CompletedAt.set -> void
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.OperationRow.Error.get -> string?
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.OperationRow.Error.set -> void
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.OperationRow.ExportExpiresAt.get -> System.DateTimeOffset?
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.OperationRow.ExportExpiresAt.set -> void
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.OperationRow.ExportFirst.get -> bool
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.OperationRow.ExportFirst.set -> void
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.OperationRow.ExportPath.get -> string?
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.OperationRow.ExportPath.set -> void
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.OperationRow.Id.get -> System.Guid
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.OperationRow.Id.set -> void
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.OperationRow.Kind.get -> int
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.OperationRow.Kind.set -> void
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.OperationRow.OperationRow() -> void
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.OperationRow.OutcomesJson.get -> string!
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.OperationRow.OutcomesJson.set -> void
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.OperationRow.RequestedAt.get -> System.DateTimeOffset
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.OperationRow.RequestedAt.set -> void
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.OperationRow.RequestedBy.get -> string!
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.OperationRow.RequestedBy.set -> void
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.OperationRow.State.get -> int
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.OperationRow.State.set -> void
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.OperationRow.StepsJson.get -> string!
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.OperationRow.StepsJson.set -> void
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.OperationRow.TenantId.get -> System.Guid
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.OperationRow.TenantId.set -> void
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.PendingDeletionRow
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.PendingDeletionRow.Dataset.get -> string!
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.PendingDeletionRow.Dataset.set -> void
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.PendingDeletionRow.DeleteAfter.get -> System.DateTimeOffset
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.PendingDeletionRow.DeleteAfter.set -> void
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.PendingDeletionRow.DoneAt.get -> System.DateTimeOffset?
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.PendingDeletionRow.DoneAt.set -> void
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.PendingDeletionRow.Id.get -> System.Guid
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.PendingDeletionRow.Id.set -> void
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.PendingDeletionRow.Module.get -> string!
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.PendingDeletionRow.Module.set -> void
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.PendingDeletionRow.OperationId.get -> System.Guid
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.PendingDeletionRow.OperationId.set -> void
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.PendingDeletionRow.PendingDeletionRow() -> void
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.PendingDeletionRow.Rows.get -> long?
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.PendingDeletionRow.Rows.set -> void
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.PendingDeletionRow.TenantId.get -> System.Guid
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.PendingDeletionRow.TenantId.set -> void
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.TenantLifecycleDbContext
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.TenantLifecycleDbContext.LegalHolds.get -> Microsoft.EntityFrameworkCore.DbSet<Modulus.Tenancy.Lifecycle.EntityFrameworkCore.LegalHoldRow!>!
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.TenantLifecycleDbContext.LifecycleOperations.get -> Microsoft.EntityFrameworkCore.DbSet<Modulus.Tenancy.Lifecycle.EntityFrameworkCore.OperationRow!>!
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.TenantLifecycleDbContext.PendingDeletions.get -> Microsoft.EntityFrameworkCore.DbSet<Modulus.Tenancy.Lifecycle.EntityFrameworkCore.PendingDeletionRow!>!
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.TenantLifecycleDbContext.TenantLifecycleDbContext(Microsoft.EntityFrameworkCore.DbContextOptions! options) -> void
+Modulus.Tenancy.Lifecycle.EntityFrameworkCore.TenantLifecycleEntityFrameworkCoreExtensions
+override Modulus.Tenancy.Lifecycle.EntityFrameworkCore.TenantLifecycleDbContext.OnModelCreating(Microsoft.EntityFrameworkCore.ModelBuilder! modelBuilder) -> void
+static Modulus.Tenancy.Lifecycle.EntityFrameworkCore.TenantLifecycleEntityFrameworkCoreExtensions.AddEfTenantLifecycleStore<TContext>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!

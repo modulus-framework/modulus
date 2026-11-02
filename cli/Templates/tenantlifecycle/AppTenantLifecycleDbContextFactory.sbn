@@ -1,0 +1,25 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Design;
+
+namespace {{ module_namespace }}.Infrastructure;
+
+/// <summary>
+/// Design-time factory used by the EF Core tools (<c>dotnet ef</c> / <c>modulus migrate</c>) to construct
+/// <see cref="AppTenantLifecycleDbContext"/> without the application's DI container. The connection string comes from the
+/// <c>TENANT_LIFECYCLE_CONNECTION</c> environment variable when set (CI/CD), otherwise the development default.
+/// </summary>
+public sealed class AppTenantLifecycleDbContextFactory : IDesignTimeDbContextFactory<AppTenantLifecycleDbContext>
+{
+    public AppTenantLifecycleDbContext CreateDbContext(string[] args)
+    {
+        var connectionString =
+            Environment.GetEnvironmentVariable("TENANT_LIFECYCLE_CONNECTION")
+            ?? "{{ connection_string }}";
+
+        var options = new DbContextOptionsBuilder<AppTenantLifecycleDbContext>()
+            .{{ use_db_method }}(connectionString)
+            .Options;
+
+        return new AppTenantLifecycleDbContext(options);
+    }
+}

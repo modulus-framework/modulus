@@ -1,0 +1,332 @@
+#nullable enable
+const Modulus.Tenancy.Lifecycle.TenantLifecycleOptions.SectionName = "TenantLifecycle" -> string!
+const Modulus.Tenancy.Lifecycle.TenantLifecycleServiceCollectionExtensions.ExportPermission = "tenant-data:export" -> string!
+Modulus.Tenancy.Lifecycle.DatasetAction
+Modulus.Tenancy.Lifecycle.DatasetAction.Deleted = 0 -> Modulus.Tenancy.Lifecycle.DatasetAction
+Modulus.Tenancy.Lifecycle.DatasetAction.DeletedByRetention = 4 -> Modulus.Tenancy.Lifecycle.DatasetAction
+Modulus.Tenancy.Lifecycle.DatasetAction.Global = 3 -> Modulus.Tenancy.Lifecycle.DatasetAction
+Modulus.Tenancy.Lifecycle.DatasetAction.PendingDeletion = 2 -> Modulus.Tenancy.Lifecycle.DatasetAction
+Modulus.Tenancy.Lifecycle.DatasetAction.Retained = 1 -> Modulus.Tenancy.Lifecycle.DatasetAction
+Modulus.Tenancy.Lifecycle.DatasetOutcome
+Modulus.Tenancy.Lifecycle.DatasetOutcome.Action.get -> Modulus.Tenancy.Lifecycle.DatasetAction
+Modulus.Tenancy.Lifecycle.DatasetOutcome.Action.init -> void
+Modulus.Tenancy.Lifecycle.DatasetOutcome.Category.get -> Modulus.Tenancy.Lifecycle.TenantDataCategory
+Modulus.Tenancy.Lifecycle.DatasetOutcome.Category.init -> void
+Modulus.Tenancy.Lifecycle.DatasetOutcome.<Clone>$() -> Modulus.Tenancy.Lifecycle.DatasetOutcome!
+Modulus.Tenancy.Lifecycle.DatasetOutcome.Dataset.get -> string!
+Modulus.Tenancy.Lifecycle.DatasetOutcome.Dataset.init -> void
+Modulus.Tenancy.Lifecycle.DatasetOutcome.DatasetOutcome(string! Module, string! Dataset, Modulus.Tenancy.Lifecycle.TenantDataCategory Category, Modulus.Tenancy.Lifecycle.DatasetAction Action, long Rows, System.DateTimeOffset? DeleteAfter = null) -> void
+Modulus.Tenancy.Lifecycle.DatasetOutcome.Deconstruct(out string! Module, out string! Dataset, out Modulus.Tenancy.Lifecycle.TenantDataCategory Category, out Modulus.Tenancy.Lifecycle.DatasetAction Action, out long Rows, out System.DateTimeOffset? DeleteAfter) -> void
+Modulus.Tenancy.Lifecycle.DatasetOutcome.DeleteAfter.get -> System.DateTimeOffset?
+Modulus.Tenancy.Lifecycle.DatasetOutcome.DeleteAfter.init -> void
+Modulus.Tenancy.Lifecycle.DatasetOutcome.Equals(Modulus.Tenancy.Lifecycle.DatasetOutcome? other) -> bool
+Modulus.Tenancy.Lifecycle.DatasetOutcome.Module.get -> string!
+Modulus.Tenancy.Lifecycle.DatasetOutcome.Module.init -> void
+Modulus.Tenancy.Lifecycle.DatasetOutcome.Rows.get -> long
+Modulus.Tenancy.Lifecycle.DatasetOutcome.Rows.init -> void
+Modulus.Tenancy.Lifecycle.Export.ArchiveEntry
+Modulus.Tenancy.Lifecycle.Export.ArchiveEntry.ArchiveEntry(string! Name, long Bytes, string! Sha256, long? Records = null) -> void
+Modulus.Tenancy.Lifecycle.Export.ArchiveEntry.Bytes.get -> long
+Modulus.Tenancy.Lifecycle.Export.ArchiveEntry.Bytes.init -> void
+Modulus.Tenancy.Lifecycle.Export.ArchiveEntry.<Clone>$() -> Modulus.Tenancy.Lifecycle.Export.ArchiveEntry!
+Modulus.Tenancy.Lifecycle.Export.ArchiveEntry.Deconstruct(out string! Name, out long Bytes, out string! Sha256, out long? Records) -> void
+Modulus.Tenancy.Lifecycle.Export.ArchiveEntry.Equals(Modulus.Tenancy.Lifecycle.Export.ArchiveEntry? other) -> bool
+Modulus.Tenancy.Lifecycle.Export.ArchiveEntry.Name.get -> string!
+Modulus.Tenancy.Lifecycle.Export.ArchiveEntry.Name.init -> void
+Modulus.Tenancy.Lifecycle.Export.ArchiveEntry.Records.get -> long?
+Modulus.Tenancy.Lifecycle.Export.ArchiveEntry.Records.init -> void
+Modulus.Tenancy.Lifecycle.Export.ArchiveEntry.Sha256.get -> string!
+Modulus.Tenancy.Lifecycle.Export.ArchiveEntry.Sha256.init -> void
+Modulus.Tenancy.Lifecycle.Export.ArchiveManifest
+Modulus.Tenancy.Lifecycle.Export.ArchiveManifest.ArchiveManifest(string! Format, int Version, System.Guid TenantId, System.Guid OperationId, System.DateTimeOffset CreatedAt, System.Collections.Generic.IReadOnlyList<Modulus.Tenancy.Lifecycle.Export.ArchiveEntry!>! Entries) -> void
+Modulus.Tenancy.Lifecycle.Export.ArchiveManifest.<Clone>$() -> Modulus.Tenancy.Lifecycle.Export.ArchiveManifest!
+Modulus.Tenancy.Lifecycle.Export.ArchiveManifest.CreatedAt.get -> System.DateTimeOffset
+Modulus.Tenancy.Lifecycle.Export.ArchiveManifest.CreatedAt.init -> void
+Modulus.Tenancy.Lifecycle.Export.ArchiveManifest.Deconstruct(out string! Format, out int Version, out System.Guid TenantId, out System.Guid OperationId, out System.DateTimeOffset CreatedAt, out System.Collections.Generic.IReadOnlyList<Modulus.Tenancy.Lifecycle.Export.ArchiveEntry!>! Entries) -> void
+Modulus.Tenancy.Lifecycle.Export.ArchiveManifest.Entries.get -> System.Collections.Generic.IReadOnlyList<Modulus.Tenancy.Lifecycle.Export.ArchiveEntry!>!
+Modulus.Tenancy.Lifecycle.Export.ArchiveManifest.Entries.init -> void
+Modulus.Tenancy.Lifecycle.Export.ArchiveManifest.Equals(Modulus.Tenancy.Lifecycle.Export.ArchiveManifest? other) -> bool
+Modulus.Tenancy.Lifecycle.Export.ArchiveManifest.Format.get -> string!
+Modulus.Tenancy.Lifecycle.Export.ArchiveManifest.Format.init -> void
+Modulus.Tenancy.Lifecycle.Export.ArchiveManifest.OperationId.get -> System.Guid
+Modulus.Tenancy.Lifecycle.Export.ArchiveManifest.OperationId.init -> void
+Modulus.Tenancy.Lifecycle.Export.ArchiveManifest.TenantId.get -> System.Guid
+Modulus.Tenancy.Lifecycle.Export.ArchiveManifest.TenantId.init -> void
+Modulus.Tenancy.Lifecycle.Export.ArchiveManifest.Version.get -> int
+Modulus.Tenancy.Lifecycle.Export.ArchiveManifest.Version.init -> void
+Modulus.Tenancy.Lifecycle.InMemoryTenantLifecycleStore
+Modulus.Tenancy.Lifecycle.InMemoryTenantLifecycleStore.AddLegalHoldAsync(Modulus.Tenancy.Lifecycle.LegalHold! hold, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
+Modulus.Tenancy.Lifecycle.InMemoryTenantLifecycleStore.AddOperationAsync(Modulus.Tenancy.Lifecycle.LifecycleOperation! operation, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
+Modulus.Tenancy.Lifecycle.InMemoryTenantLifecycleStore.FindLegalHoldAsync(System.Guid id, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Modulus.Tenancy.Lifecycle.LegalHold?>!
+Modulus.Tenancy.Lifecycle.InMemoryTenantLifecycleStore.FindOperationAsync(System.Guid id, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Modulus.Tenancy.Lifecycle.LifecycleOperation?>!
+Modulus.Tenancy.Lifecycle.InMemoryTenantLifecycleStore.InMemoryTenantLifecycleStore() -> void
+Modulus.Tenancy.Lifecycle.InMemoryTenantLifecycleStore.ListActiveLegalHoldsAsync(System.Guid tenantId, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Tenancy.Lifecycle.LegalHold!>!>!
+Modulus.Tenancy.Lifecycle.InMemoryTenantLifecycleStore.ListActiveOperationsAsync(System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Tenancy.Lifecycle.LifecycleOperation!>!>!
+Modulus.Tenancy.Lifecycle.InMemoryTenantLifecycleStore.ListDuePendingDeletionsAsync(System.DateTimeOffset now, int take, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Tenancy.Lifecycle.PendingDeletion!>!>!
+Modulus.Tenancy.Lifecycle.InMemoryTenantLifecycleStore.ListExpiredExportsAsync(System.DateTimeOffset now, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Tenancy.Lifecycle.LifecycleOperation!>!>!
+Modulus.Tenancy.Lifecycle.InMemoryTenantLifecycleStore.ListOperationsAsync(System.Guid tenantId, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Tenancy.Lifecycle.LifecycleOperation!>!>!
+Modulus.Tenancy.Lifecycle.InMemoryTenantLifecycleStore.SaveLegalHoldAsync(Modulus.Tenancy.Lifecycle.LegalHold! hold, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
+Modulus.Tenancy.Lifecycle.InMemoryTenantLifecycleStore.SaveOperationAsync(Modulus.Tenancy.Lifecycle.LifecycleOperation! operation, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
+Modulus.Tenancy.Lifecycle.InMemoryTenantLifecycleStore.SavePendingDeletionAsync(Modulus.Tenancy.Lifecycle.PendingDeletion! item, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
+Modulus.Tenancy.Lifecycle.ITenantDataHandler
+Modulus.Tenancy.Lifecycle.ITenantDataHandler.CountAsync(Modulus.Tenancy.Lifecycle.TenantDataset! dataset, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<long>!
+Modulus.Tenancy.Lifecycle.ITenantDataHandler.Datasets.get -> System.Collections.Generic.IReadOnlyList<Modulus.Tenancy.Lifecycle.TenantDataset!>!
+Modulus.Tenancy.Lifecycle.ITenantDataHandler.DeleteAsync(Modulus.Tenancy.Lifecycle.TenantDataset! dataset, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<long>!
+Modulus.Tenancy.Lifecycle.ITenantDataHandler.ExportAsync(Modulus.Tenancy.Lifecycle.TenantDataset! dataset, Modulus.Tenancy.Lifecycle.ITenantExportWriter! writer, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
+Modulus.Tenancy.Lifecycle.ITenantDataHandler.Module.get -> string!
+Modulus.Tenancy.Lifecycle.ITenantExportWriter
+Modulus.Tenancy.Lifecycle.ITenantExportWriter.AttachFileAsync(string! storagePath, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Tenancy.Lifecycle.ITenantExportWriter.WriteRecordsAsync<T>(System.Collections.Generic.IAsyncEnumerable<T>! records, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Tenancy.Lifecycle.ITenantLifecycleProvider
+Modulus.Tenancy.Lifecycle.ITenantLifecycleProvider.GetOperationAsync(System.Guid operationId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Tenancy.Lifecycle.LifecycleOperation?>!
+Modulus.Tenancy.Lifecycle.ITenantLifecycleProvider.ListOperationsAsync(System.Guid tenantId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Tenancy.Lifecycle.LifecycleOperation!>!>!
+Modulus.Tenancy.Lifecycle.ITenantLifecycleProvider.OpenExportAsync(System.Guid operationId, System.IO.Stream! destination, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Tenancy.Lifecycle.ITenantLifecycleProvider.PlaceLegalHoldAsync(System.Guid tenantId, string! reason, string! placedBy, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Tenancy.Lifecycle.LegalHold!>!
+Modulus.Tenancy.Lifecycle.ITenantLifecycleProvider.ReleaseLegalHoldAsync(System.Guid holdId, string! releasedBy, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Tenancy.Lifecycle.ITenantLifecycleProvider.RequestExportAsync(System.Guid tenantId, string! requestedBy, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Tenancy.Lifecycle.LifecycleOperation!>!
+Modulus.Tenancy.Lifecycle.ITenantLifecycleProvider.RequestOffboardingAsync(System.Guid tenantId, string! requestedBy, bool exportFirst, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Tenancy.Lifecycle.LifecycleOperation!>!
+Modulus.Tenancy.Lifecycle.ITenantLifecycleProvider.RunOperationAsync(System.Guid operationId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Tenancy.Lifecycle.ITenantLifecycleProvider.RunRetentionAsync(System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Tenancy.Lifecycle.ITenantLifecycleProvider.VerifyCertificateAsync(System.Guid operationId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.Tenancy.Lifecycle.ITenantLifecycleStore
+Modulus.Tenancy.Lifecycle.ITenantLifecycleStore.AddLegalHoldAsync(Modulus.Tenancy.Lifecycle.LegalHold! hold, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
+Modulus.Tenancy.Lifecycle.ITenantLifecycleStore.AddOperationAsync(Modulus.Tenancy.Lifecycle.LifecycleOperation! operation, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
+Modulus.Tenancy.Lifecycle.ITenantLifecycleStore.FindLegalHoldAsync(System.Guid id, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Modulus.Tenancy.Lifecycle.LegalHold?>!
+Modulus.Tenancy.Lifecycle.ITenantLifecycleStore.FindOperationAsync(System.Guid id, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Modulus.Tenancy.Lifecycle.LifecycleOperation?>!
+Modulus.Tenancy.Lifecycle.ITenantLifecycleStore.ListActiveLegalHoldsAsync(System.Guid tenantId, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Tenancy.Lifecycle.LegalHold!>!>!
+Modulus.Tenancy.Lifecycle.ITenantLifecycleStore.ListActiveOperationsAsync(System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Tenancy.Lifecycle.LifecycleOperation!>!>!
+Modulus.Tenancy.Lifecycle.ITenantLifecycleStore.ListDuePendingDeletionsAsync(System.DateTimeOffset now, int take, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Tenancy.Lifecycle.PendingDeletion!>!>!
+Modulus.Tenancy.Lifecycle.ITenantLifecycleStore.ListExpiredExportsAsync(System.DateTimeOffset now, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Tenancy.Lifecycle.LifecycleOperation!>!>!
+Modulus.Tenancy.Lifecycle.ITenantLifecycleStore.ListOperationsAsync(System.Guid tenantId, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Tenancy.Lifecycle.LifecycleOperation!>!>!
+Modulus.Tenancy.Lifecycle.ITenantLifecycleStore.SaveLegalHoldAsync(Modulus.Tenancy.Lifecycle.LegalHold! hold, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
+Modulus.Tenancy.Lifecycle.ITenantLifecycleStore.SaveOperationAsync(Modulus.Tenancy.Lifecycle.LifecycleOperation! operation, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
+Modulus.Tenancy.Lifecycle.ITenantLifecycleStore.SavePendingDeletionAsync(Modulus.Tenancy.Lifecycle.PendingDeletion! item, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
+Modulus.Tenancy.Lifecycle.ITenantOffboardingStep
+Modulus.Tenancy.Lifecycle.ITenantOffboardingStep.DisableAsync(System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
+Modulus.Tenancy.Lifecycle.ITenantOffboardingStep.Name.get -> string!
+Modulus.Tenancy.Lifecycle.LegalHold
+Modulus.Tenancy.Lifecycle.LegalHold.Id.get -> System.Guid
+Modulus.Tenancy.Lifecycle.LegalHold.Id.set -> void
+Modulus.Tenancy.Lifecycle.LegalHold.IsActive.get -> bool
+Modulus.Tenancy.Lifecycle.LegalHold.LegalHold() -> void
+Modulus.Tenancy.Lifecycle.LegalHold.PlacedAt.get -> System.DateTimeOffset
+Modulus.Tenancy.Lifecycle.LegalHold.PlacedAt.set -> void
+Modulus.Tenancy.Lifecycle.LegalHold.PlacedBy.get -> string!
+Modulus.Tenancy.Lifecycle.LegalHold.PlacedBy.set -> void
+Modulus.Tenancy.Lifecycle.LegalHold.Reason.get -> string!
+Modulus.Tenancy.Lifecycle.LegalHold.Reason.set -> void
+Modulus.Tenancy.Lifecycle.LegalHold.ReleasedAt.get -> System.DateTimeOffset?
+Modulus.Tenancy.Lifecycle.LegalHold.ReleasedAt.set -> void
+Modulus.Tenancy.Lifecycle.LegalHold.ReleasedBy.get -> string?
+Modulus.Tenancy.Lifecycle.LegalHold.ReleasedBy.set -> void
+Modulus.Tenancy.Lifecycle.LegalHold.TenantId.get -> System.Guid
+Modulus.Tenancy.Lifecycle.LegalHold.TenantId.set -> void
+Modulus.Tenancy.Lifecycle.LifecycleOperation
+Modulus.Tenancy.Lifecycle.LifecycleOperation.CertificateKeyId.get -> string?
+Modulus.Tenancy.Lifecycle.LifecycleOperation.CertificateKeyId.set -> void
+Modulus.Tenancy.Lifecycle.LifecycleOperation.CertificatePayload.get -> string?
+Modulus.Tenancy.Lifecycle.LifecycleOperation.CertificatePayload.set -> void
+Modulus.Tenancy.Lifecycle.LifecycleOperation.CertificateSignature.get -> string?
+Modulus.Tenancy.Lifecycle.LifecycleOperation.CertificateSignature.set -> void
+Modulus.Tenancy.Lifecycle.LifecycleOperation.CompletedAt.get -> System.DateTimeOffset?
+Modulus.Tenancy.Lifecycle.LifecycleOperation.CompletedAt.set -> void
+Modulus.Tenancy.Lifecycle.LifecycleOperation.Complete(string! name, System.DateTimeOffset at, string? detail = null) -> void
+Modulus.Tenancy.Lifecycle.LifecycleOperation.Error.get -> string?
+Modulus.Tenancy.Lifecycle.LifecycleOperation.Error.set -> void
+Modulus.Tenancy.Lifecycle.LifecycleOperation.ExportExpiresAt.get -> System.DateTimeOffset?
+Modulus.Tenancy.Lifecycle.LifecycleOperation.ExportExpiresAt.set -> void
+Modulus.Tenancy.Lifecycle.LifecycleOperation.ExportFirst.get -> bool
+Modulus.Tenancy.Lifecycle.LifecycleOperation.ExportFirst.set -> void
+Modulus.Tenancy.Lifecycle.LifecycleOperation.ExportPath.get -> string?
+Modulus.Tenancy.Lifecycle.LifecycleOperation.ExportPath.set -> void
+Modulus.Tenancy.Lifecycle.LifecycleOperation.HasStep(string! name) -> bool
+Modulus.Tenancy.Lifecycle.LifecycleOperation.Id.get -> System.Guid
+Modulus.Tenancy.Lifecycle.LifecycleOperation.Id.set -> void
+Modulus.Tenancy.Lifecycle.LifecycleOperation.Kind.get -> Modulus.Tenancy.Lifecycle.OperationKind
+Modulus.Tenancy.Lifecycle.LifecycleOperation.Kind.set -> void
+Modulus.Tenancy.Lifecycle.LifecycleOperation.LifecycleOperation() -> void
+Modulus.Tenancy.Lifecycle.LifecycleOperation.Outcomes.get -> System.Collections.Generic.List<Modulus.Tenancy.Lifecycle.DatasetOutcome!>!
+Modulus.Tenancy.Lifecycle.LifecycleOperation.Outcomes.set -> void
+Modulus.Tenancy.Lifecycle.LifecycleOperation.RequestedAt.get -> System.DateTimeOffset
+Modulus.Tenancy.Lifecycle.LifecycleOperation.RequestedAt.set -> void
+Modulus.Tenancy.Lifecycle.LifecycleOperation.RequestedBy.get -> string!
+Modulus.Tenancy.Lifecycle.LifecycleOperation.RequestedBy.set -> void
+Modulus.Tenancy.Lifecycle.LifecycleOperation.State.get -> Modulus.Tenancy.Lifecycle.OperationState
+Modulus.Tenancy.Lifecycle.LifecycleOperation.State.set -> void
+Modulus.Tenancy.Lifecycle.LifecycleOperation.Steps.get -> System.Collections.Generic.List<Modulus.Tenancy.Lifecycle.OperationStep!>!
+Modulus.Tenancy.Lifecycle.LifecycleOperation.Steps.set -> void
+Modulus.Tenancy.Lifecycle.LifecycleOperation.TenantId.get -> System.Guid
+Modulus.Tenancy.Lifecycle.LifecycleOperation.TenantId.set -> void
+Modulus.Tenancy.Lifecycle.OperationKind
+Modulus.Tenancy.Lifecycle.OperationKind.Export = 0 -> Modulus.Tenancy.Lifecycle.OperationKind
+Modulus.Tenancy.Lifecycle.OperationKind.Offboarding = 1 -> Modulus.Tenancy.Lifecycle.OperationKind
+Modulus.Tenancy.Lifecycle.OperationKind.RetentionDeletion = 2 -> Modulus.Tenancy.Lifecycle.OperationKind
+Modulus.Tenancy.Lifecycle.OperationState
+Modulus.Tenancy.Lifecycle.OperationState.Completed = 3 -> Modulus.Tenancy.Lifecycle.OperationState
+Modulus.Tenancy.Lifecycle.OperationState.Expired = 5 -> Modulus.Tenancy.Lifecycle.OperationState
+Modulus.Tenancy.Lifecycle.OperationState.Failed = 4 -> Modulus.Tenancy.Lifecycle.OperationState
+Modulus.Tenancy.Lifecycle.OperationState.OnHold = 2 -> Modulus.Tenancy.Lifecycle.OperationState
+Modulus.Tenancy.Lifecycle.OperationState.Pending = 0 -> Modulus.Tenancy.Lifecycle.OperationState
+Modulus.Tenancy.Lifecycle.OperationState.Running = 1 -> Modulus.Tenancy.Lifecycle.OperationState
+Modulus.Tenancy.Lifecycle.OperationStep
+Modulus.Tenancy.Lifecycle.OperationStep.<Clone>$() -> Modulus.Tenancy.Lifecycle.OperationStep!
+Modulus.Tenancy.Lifecycle.OperationStep.CompletedAt.get -> System.DateTimeOffset
+Modulus.Tenancy.Lifecycle.OperationStep.CompletedAt.init -> void
+Modulus.Tenancy.Lifecycle.OperationStep.Deconstruct(out string! Name, out System.DateTimeOffset CompletedAt, out string? Detail) -> void
+Modulus.Tenancy.Lifecycle.OperationStep.Detail.get -> string?
+Modulus.Tenancy.Lifecycle.OperationStep.Detail.init -> void
+Modulus.Tenancy.Lifecycle.OperationStep.Equals(Modulus.Tenancy.Lifecycle.OperationStep? other) -> bool
+Modulus.Tenancy.Lifecycle.OperationStep.Name.get -> string!
+Modulus.Tenancy.Lifecycle.OperationStep.Name.init -> void
+Modulus.Tenancy.Lifecycle.OperationStep.OperationStep(string! Name, System.DateTimeOffset CompletedAt, string? Detail = null) -> void
+Modulus.Tenancy.Lifecycle.PendingDeletion
+Modulus.Tenancy.Lifecycle.PendingDeletion.Dataset.get -> string!
+Modulus.Tenancy.Lifecycle.PendingDeletion.Dataset.set -> void
+Modulus.Tenancy.Lifecycle.PendingDeletion.DeleteAfter.get -> System.DateTimeOffset
+Modulus.Tenancy.Lifecycle.PendingDeletion.DeleteAfter.set -> void
+Modulus.Tenancy.Lifecycle.PendingDeletion.DoneAt.get -> System.DateTimeOffset?
+Modulus.Tenancy.Lifecycle.PendingDeletion.DoneAt.set -> void
+Modulus.Tenancy.Lifecycle.PendingDeletion.Id.get -> System.Guid
+Modulus.Tenancy.Lifecycle.PendingDeletion.Id.set -> void
+Modulus.Tenancy.Lifecycle.PendingDeletion.Module.get -> string!
+Modulus.Tenancy.Lifecycle.PendingDeletion.Module.set -> void
+Modulus.Tenancy.Lifecycle.PendingDeletion.OperationId.get -> System.Guid
+Modulus.Tenancy.Lifecycle.PendingDeletion.OperationId.set -> void
+Modulus.Tenancy.Lifecycle.PendingDeletion.PendingDeletion() -> void
+Modulus.Tenancy.Lifecycle.PendingDeletion.Rows.get -> long?
+Modulus.Tenancy.Lifecycle.PendingDeletion.Rows.set -> void
+Modulus.Tenancy.Lifecycle.PendingDeletion.TenantId.get -> System.Guid
+Modulus.Tenancy.Lifecycle.PendingDeletion.TenantId.set -> void
+Modulus.Tenancy.Lifecycle.RegisteredDataset
+Modulus.Tenancy.Lifecycle.RegisteredDataset.<Clone>$() -> Modulus.Tenancy.Lifecycle.RegisteredDataset!
+Modulus.Tenancy.Lifecycle.RegisteredDataset.Dataset.get -> Modulus.Tenancy.Lifecycle.TenantDataset!
+Modulus.Tenancy.Lifecycle.RegisteredDataset.Dataset.init -> void
+Modulus.Tenancy.Lifecycle.RegisteredDataset.Deconstruct(out string! Module, out Modulus.Tenancy.Lifecycle.TenantDataset! Dataset, out System.Type! HandlerType) -> void
+Modulus.Tenancy.Lifecycle.RegisteredDataset.Equals(Modulus.Tenancy.Lifecycle.RegisteredDataset? other) -> bool
+Modulus.Tenancy.Lifecycle.RegisteredDataset.HandlerType.get -> System.Type!
+Modulus.Tenancy.Lifecycle.RegisteredDataset.HandlerType.init -> void
+Modulus.Tenancy.Lifecycle.RegisteredDataset.Module.get -> string!
+Modulus.Tenancy.Lifecycle.RegisteredDataset.Module.init -> void
+Modulus.Tenancy.Lifecycle.RegisteredDataset.RegisteredDataset(string! Module, Modulus.Tenancy.Lifecycle.TenantDataset! Dataset, System.Type! HandlerType) -> void
+Modulus.Tenancy.Lifecycle.RetentionClass
+Modulus.Tenancy.Lifecycle.RetentionClass.ApplicationLogs = 5 -> Modulus.Tenancy.Lifecycle.RetentionClass
+Modulus.Tenancy.Lifecycle.RetentionClass.Financial = 7 -> Modulus.Tenancy.Lifecycle.RetentionClass
+Modulus.Tenancy.Lifecycle.RetentionClass.None = 0 -> Modulus.Tenancy.Lifecycle.RetentionClass
+Modulus.Tenancy.Lifecycle.RetentionClass.OperationalAudit = 6 -> Modulus.Tenancy.Lifecycle.RetentionClass
+Modulus.Tenancy.Lifecycle.RetentionClass.OutboxInbox = 3 -> Modulus.Tenancy.Lifecycle.RetentionClass
+Modulus.Tenancy.Lifecycle.RetentionClass.SecurityAudit = 8 -> Modulus.Tenancy.Lifecycle.RetentionClass
+Modulus.Tenancy.Lifecycle.RetentionClass.TemporaryExports = 1 -> Modulus.Tenancy.Lifecycle.RetentionClass
+Modulus.Tenancy.Lifecycle.RetentionClass.TemporaryUploads = 2 -> Modulus.Tenancy.Lifecycle.RetentionClass
+Modulus.Tenancy.Lifecycle.RetentionClass.WebhookHistory = 4 -> Modulus.Tenancy.Lifecycle.RetentionClass
+Modulus.Tenancy.Lifecycle.TenantDataCategory
+Modulus.Tenancy.Lifecycle.TenantDataCategory.Audit = 2 -> Modulus.Tenancy.Lifecycle.TenantDataCategory
+Modulus.Tenancy.Lifecycle.TenantDataCategory.Global = 3 -> Modulus.Tenancy.Lifecycle.TenantDataCategory
+Modulus.Tenancy.Lifecycle.TenantDataCategory.Owned = 0 -> Modulus.Tenancy.Lifecycle.TenantDataCategory
+Modulus.Tenancy.Lifecycle.TenantDataCategory.Retained = 1 -> Modulus.Tenancy.Lifecycle.TenantDataCategory
+Modulus.Tenancy.Lifecycle.TenantDataRegistry
+Modulus.Tenancy.Lifecycle.TenantDataRegistry.Datasets.get -> System.Collections.Generic.IReadOnlyList<Modulus.Tenancy.Lifecycle.RegisteredDataset!>!
+Modulus.Tenancy.Lifecycle.TenantDataset
+Modulus.Tenancy.Lifecycle.TenantDataset.Category.get -> Modulus.Tenancy.Lifecycle.TenantDataCategory
+Modulus.Tenancy.Lifecycle.TenantDataset.Category.init -> void
+Modulus.Tenancy.Lifecycle.TenantDataset.<Clone>$() -> Modulus.Tenancy.Lifecycle.TenantDataset!
+Modulus.Tenancy.Lifecycle.TenantDataset.Deconstruct(out string! Name, out Modulus.Tenancy.Lifecycle.TenantDataCategory Category, out Modulus.Tenancy.Lifecycle.RetentionClass Retention) -> void
+Modulus.Tenancy.Lifecycle.TenantDataset.Equals(Modulus.Tenancy.Lifecycle.TenantDataset? other) -> bool
+Modulus.Tenancy.Lifecycle.TenantDataset.Name.get -> string!
+Modulus.Tenancy.Lifecycle.TenantDataset.Name.init -> void
+Modulus.Tenancy.Lifecycle.TenantDataset.Retention.get -> Modulus.Tenancy.Lifecycle.RetentionClass
+Modulus.Tenancy.Lifecycle.TenantDataset.Retention.init -> void
+Modulus.Tenancy.Lifecycle.TenantDataset.TenantDataset(string! Name, Modulus.Tenancy.Lifecycle.TenantDataCategory Category, Modulus.Tenancy.Lifecycle.RetentionClass Retention = Modulus.Tenancy.Lifecycle.RetentionClass.None) -> void
+Modulus.Tenancy.Lifecycle.TenantLifecycleBuilder
+Modulus.Tenancy.Lifecycle.TenantLifecycleBuilder.AddHandler<THandler>() -> Modulus.Tenancy.Lifecycle.TenantLifecycleBuilder!
+Modulus.Tenancy.Lifecycle.TenantLifecycleBuilder.AddOffboardingStep<TStep>() -> Modulus.Tenancy.Lifecycle.TenantLifecycleBuilder!
+Modulus.Tenancy.Lifecycle.TenantLifecycleEndpoints
+Modulus.Tenancy.Lifecycle.TenantLifecycleOptions
+Modulus.Tenancy.Lifecycle.TenantLifecycleOptions.ApplicationLogsDays.get -> int?
+Modulus.Tenancy.Lifecycle.TenantLifecycleOptions.ApplicationLogsDays.set -> void
+Modulus.Tenancy.Lifecycle.TenantLifecycleOptions.BackupsDays.get -> int
+Modulus.Tenancy.Lifecycle.TenantLifecycleOptions.BackupsDays.set -> void
+Modulus.Tenancy.Lifecycle.TenantLifecycleOptions.CertificateKeyId.get -> string!
+Modulus.Tenancy.Lifecycle.TenantLifecycleOptions.CertificateKeyId.set -> void
+Modulus.Tenancy.Lifecycle.TenantLifecycleOptions.CertificateSigningKey.get -> string?
+Modulus.Tenancy.Lifecycle.TenantLifecycleOptions.CertificateSigningKey.set -> void
+Modulus.Tenancy.Lifecycle.TenantLifecycleOptions.ExportEncryptionKey.get -> string?
+Modulus.Tenancy.Lifecycle.TenantLifecycleOptions.ExportEncryptionKey.set -> void
+Modulus.Tenancy.Lifecycle.TenantLifecycleOptions.ExportLifetime.get -> System.TimeSpan
+Modulus.Tenancy.Lifecycle.TenantLifecycleOptions.ExportLifetime.set -> void
+Modulus.Tenancy.Lifecycle.TenantLifecycleOptions.FinancialDays.get -> int?
+Modulus.Tenancy.Lifecycle.TenantLifecycleOptions.FinancialDays.set -> void
+Modulus.Tenancy.Lifecycle.TenantLifecycleOptions.OperationalAuditDays.get -> int?
+Modulus.Tenancy.Lifecycle.TenantLifecycleOptions.OperationalAuditDays.set -> void
+Modulus.Tenancy.Lifecycle.TenantLifecycleOptions.OutboxInboxDays.get -> int?
+Modulus.Tenancy.Lifecycle.TenantLifecycleOptions.OutboxInboxDays.set -> void
+Modulus.Tenancy.Lifecycle.TenantLifecycleOptions.RetentionDays(Modulus.Tenancy.Lifecycle.RetentionClass retention) -> int?
+Modulus.Tenancy.Lifecycle.TenantLifecycleOptions.RetentionSweepInterval.get -> System.TimeSpan
+Modulus.Tenancy.Lifecycle.TenantLifecycleOptions.RetentionSweepInterval.set -> void
+Modulus.Tenancy.Lifecycle.TenantLifecycleOptions.SecurityAuditDays.get -> int?
+Modulus.Tenancy.Lifecycle.TenantLifecycleOptions.SecurityAuditDays.set -> void
+Modulus.Tenancy.Lifecycle.TenantLifecycleOptions.TemporaryUploadsDays.get -> int?
+Modulus.Tenancy.Lifecycle.TenantLifecycleOptions.TemporaryUploadsDays.set -> void
+Modulus.Tenancy.Lifecycle.TenantLifecycleOptions.TenantLifecycleOptions() -> void
+Modulus.Tenancy.Lifecycle.TenantLifecycleOptions.WebhookHistoryDays.get -> int?
+Modulus.Tenancy.Lifecycle.TenantLifecycleOptions.WebhookHistoryDays.set -> void
+Modulus.Tenancy.Lifecycle.TenantLifecycleOptions.WorkerInterval.get -> System.TimeSpan
+Modulus.Tenancy.Lifecycle.TenantLifecycleOptions.WorkerInterval.set -> void
+Modulus.Tenancy.Lifecycle.TenantLifecycleRefusedException
+Modulus.Tenancy.Lifecycle.TenantLifecycleRefusedException.TenantLifecycleRefusedException(string! message) -> void
+Modulus.Tenancy.Lifecycle.TenantLifecycleServiceCollectionExtensions
+override Modulus.Tenancy.Lifecycle.DatasetOutcome.Equals(object? obj) -> bool
+override Modulus.Tenancy.Lifecycle.DatasetOutcome.GetHashCode() -> int
+override Modulus.Tenancy.Lifecycle.DatasetOutcome.ToString() -> string!
+override Modulus.Tenancy.Lifecycle.Export.ArchiveEntry.Equals(object? obj) -> bool
+override Modulus.Tenancy.Lifecycle.Export.ArchiveEntry.GetHashCode() -> int
+override Modulus.Tenancy.Lifecycle.Export.ArchiveEntry.ToString() -> string!
+override Modulus.Tenancy.Lifecycle.Export.ArchiveManifest.Equals(object? obj) -> bool
+override Modulus.Tenancy.Lifecycle.Export.ArchiveManifest.GetHashCode() -> int
+override Modulus.Tenancy.Lifecycle.Export.ArchiveManifest.ToString() -> string!
+override Modulus.Tenancy.Lifecycle.OperationStep.Equals(object? obj) -> bool
+override Modulus.Tenancy.Lifecycle.OperationStep.GetHashCode() -> int
+override Modulus.Tenancy.Lifecycle.OperationStep.ToString() -> string!
+override Modulus.Tenancy.Lifecycle.RegisteredDataset.Equals(object? obj) -> bool
+override Modulus.Tenancy.Lifecycle.RegisteredDataset.GetHashCode() -> int
+override Modulus.Tenancy.Lifecycle.RegisteredDataset.ToString() -> string!
+override Modulus.Tenancy.Lifecycle.TenantDataset.Equals(object? obj) -> bool
+override Modulus.Tenancy.Lifecycle.TenantDataset.GetHashCode() -> int
+override Modulus.Tenancy.Lifecycle.TenantDataset.ToString() -> string!
+static Modulus.Tenancy.Lifecycle.DatasetOutcome.operator !=(Modulus.Tenancy.Lifecycle.DatasetOutcome? left, Modulus.Tenancy.Lifecycle.DatasetOutcome? right) -> bool
+static Modulus.Tenancy.Lifecycle.DatasetOutcome.operator ==(Modulus.Tenancy.Lifecycle.DatasetOutcome? left, Modulus.Tenancy.Lifecycle.DatasetOutcome? right) -> bool
+static Modulus.Tenancy.Lifecycle.Export.ArchiveEntry.operator !=(Modulus.Tenancy.Lifecycle.Export.ArchiveEntry? left, Modulus.Tenancy.Lifecycle.Export.ArchiveEntry? right) -> bool
+static Modulus.Tenancy.Lifecycle.Export.ArchiveEntry.operator ==(Modulus.Tenancy.Lifecycle.Export.ArchiveEntry? left, Modulus.Tenancy.Lifecycle.Export.ArchiveEntry? right) -> bool
+static Modulus.Tenancy.Lifecycle.Export.ArchiveManifest.operator !=(Modulus.Tenancy.Lifecycle.Export.ArchiveManifest? left, Modulus.Tenancy.Lifecycle.Export.ArchiveManifest? right) -> bool
+static Modulus.Tenancy.Lifecycle.Export.ArchiveManifest.operator ==(Modulus.Tenancy.Lifecycle.Export.ArchiveManifest? left, Modulus.Tenancy.Lifecycle.Export.ArchiveManifest? right) -> bool
+static Modulus.Tenancy.Lifecycle.OperationStep.operator !=(Modulus.Tenancy.Lifecycle.OperationStep? left, Modulus.Tenancy.Lifecycle.OperationStep? right) -> bool
+static Modulus.Tenancy.Lifecycle.OperationStep.operator ==(Modulus.Tenancy.Lifecycle.OperationStep? left, Modulus.Tenancy.Lifecycle.OperationStep? right) -> bool
+static Modulus.Tenancy.Lifecycle.RegisteredDataset.operator !=(Modulus.Tenancy.Lifecycle.RegisteredDataset? left, Modulus.Tenancy.Lifecycle.RegisteredDataset? right) -> bool
+static Modulus.Tenancy.Lifecycle.RegisteredDataset.operator ==(Modulus.Tenancy.Lifecycle.RegisteredDataset? left, Modulus.Tenancy.Lifecycle.RegisteredDataset? right) -> bool
+static Modulus.Tenancy.Lifecycle.TenantDataRegistry.Build(System.Collections.Generic.IEnumerable<(System.Type! HandlerType, Modulus.Tenancy.Lifecycle.ITenantDataHandler! Handler)>! handlers) -> Modulus.Tenancy.Lifecycle.TenantDataRegistry!
+static Modulus.Tenancy.Lifecycle.TenantDataset.operator !=(Modulus.Tenancy.Lifecycle.TenantDataset? left, Modulus.Tenancy.Lifecycle.TenantDataset? right) -> bool
+static Modulus.Tenancy.Lifecycle.TenantDataset.operator ==(Modulus.Tenancy.Lifecycle.TenantDataset? left, Modulus.Tenancy.Lifecycle.TenantDataset? right) -> bool
+static Modulus.Tenancy.Lifecycle.TenantLifecycleEndpoints.MapModulusTenantLifecycle(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! app, string! prefix = "/tenant-data") -> Microsoft.AspNetCore.Routing.IEndpointRouteBuilder!
+static Modulus.Tenancy.Lifecycle.TenantLifecycleServiceCollectionExtensions.AddTenantLifecycleStore<TStore>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.Tenancy.Lifecycle.TenantLifecycleServiceCollectionExtensions.AddTenantLifecycle(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration, System.Action<Modulus.Tenancy.Lifecycle.TenantLifecycleBuilder!>? configure = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+Modulus.Tenancy.Lifecycle.TenantExportView
+Modulus.Tenancy.Lifecycle.TenantExportView.<Clone>$() -> Modulus.Tenancy.Lifecycle.TenantExportView!
+Modulus.Tenancy.Lifecycle.TenantExportView.CompletedAt.get -> System.DateTimeOffset?
+Modulus.Tenancy.Lifecycle.TenantExportView.CompletedAt.init -> void
+Modulus.Tenancy.Lifecycle.TenantExportView.Deconstruct(out System.Guid Id, out string! State, out System.DateTimeOffset RequestedAt, out System.DateTimeOffset? CompletedAt, out System.DateTimeOffset? ExpiresAt, out bool Downloadable) -> void
+Modulus.Tenancy.Lifecycle.TenantExportView.Downloadable.get -> bool
+Modulus.Tenancy.Lifecycle.TenantExportView.Downloadable.init -> void
+Modulus.Tenancy.Lifecycle.TenantExportView.Equals(Modulus.Tenancy.Lifecycle.TenantExportView? other) -> bool
+Modulus.Tenancy.Lifecycle.TenantExportView.ExpiresAt.get -> System.DateTimeOffset?
+Modulus.Tenancy.Lifecycle.TenantExportView.ExpiresAt.init -> void
+Modulus.Tenancy.Lifecycle.TenantExportView.Id.get -> System.Guid
+Modulus.Tenancy.Lifecycle.TenantExportView.Id.init -> void
+Modulus.Tenancy.Lifecycle.TenantExportView.RequestedAt.get -> System.DateTimeOffset
+Modulus.Tenancy.Lifecycle.TenantExportView.RequestedAt.init -> void
+Modulus.Tenancy.Lifecycle.TenantExportView.State.get -> string!
+Modulus.Tenancy.Lifecycle.TenantExportView.State.init -> void
+Modulus.Tenancy.Lifecycle.TenantExportView.TenantExportView(System.Guid Id, string! State, System.DateTimeOffset RequestedAt, System.DateTimeOffset? CompletedAt, System.DateTimeOffset? ExpiresAt, bool Downloadable) -> void
+override Modulus.Tenancy.Lifecycle.TenantExportView.Equals(object? obj) -> bool
+override Modulus.Tenancy.Lifecycle.TenantExportView.GetHashCode() -> int
+override Modulus.Tenancy.Lifecycle.TenantExportView.ToString() -> string!
+static Modulus.Tenancy.Lifecycle.TenantExportView.operator !=(Modulus.Tenancy.Lifecycle.TenantExportView? left, Modulus.Tenancy.Lifecycle.TenantExportView? right) -> bool
+static Modulus.Tenancy.Lifecycle.TenantExportView.operator ==(Modulus.Tenancy.Lifecycle.TenantExportView? left, Modulus.Tenancy.Lifecycle.TenantExportView? right) -> bool
