@@ -78,6 +78,34 @@ public sealed class RegistryAndCryptoTests
     }
 
     [Fact]
+    public async Task A_zip_written_straight_through_the_encrypting_stream_decrypts_to_the_same_archive()
+    {
+        var key = RandomNumberGenerator.GetBytes(32);
+        var sink = new MemoryStream();
+        // Disposing the encrypting stream disposes its destination, so the ciphertext is read back with ToArray.
+        using (var sealedStream = ArchiveCrypto.CreateEncryptingStream(sink, key))
+        using (var zip = new ZipArchive(sealedStream, ZipArchiveMode.Create, leaveOpen: false))
+        {
+            using (var entry = zip.CreateEntry("a.txt").Open())
+                entry.Write(Encoding.UTF8.GetBytes(new string('a', 200_000)));
+            using (var entry = zip.CreateEntry("b.txt").Open())
+                entry.Write(Encoding.UTF8.GetBytes("bee"));
+        }
+        var encrypted = sink.ToArray();
+
+        // The ciphertext hides the names and contents.
+        Encoding.UTF8.GetString(encrypted).Should().NotContain("b.txt");
+
+        using var plainZip = new MemoryStream();
+        await ArchiveCrypto.DecryptAsync(new MemoryStream(encrypted), plainZip, key, default);
+        plainZip.Position = 0;
+        using var zip2 = new ZipArchive(plainZip, ZipArchiveMode.Read);
+        zip2.Entries.Select(e => e.FullName).Should().Equal("a.txt", "b.txt");
+        using var reader = new StreamReader(zip2.GetEntry("b.txt")!.Open());
+        (await reader.ReadToEndAsync()).Should().Be("bee");
+    }
+
+    [Fact]
     public async Task Ciphertext_does_not_show_the_plaintext()
     {
         var key = RandomNumberGenerator.GetBytes(32);

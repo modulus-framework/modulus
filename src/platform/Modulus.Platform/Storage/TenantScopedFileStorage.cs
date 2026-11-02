@@ -36,6 +36,10 @@ public sealed class TenantScopedFileStorage(IFileStorage inner, ICurrentTenant c
         string path, TimeSpan expiry, string? contentType = null, CancellationToken ct = default)
         => Inner.GetPresignedUploadUrlAsync(Scope(path), expiry, contentType, ct);
 
+    public Task<PresignedPost> GetPresignedUploadPostAsync(
+        string path, TimeSpan expiry, long maxBytes, string? contentType = null, CancellationToken ct = default)
+        => Inner.GetPresignedUploadPostAsync(Scope(path), expiry, maxBytes, contentType, ct);
+
     /// <summary>
     /// The tenant prefix plus <paramref name="path"/>. Rooted paths and <c>.</c>/<c>..</c> segments
     /// are rejected before prefixing: the local provider canonicalizes <c>..</c>, so

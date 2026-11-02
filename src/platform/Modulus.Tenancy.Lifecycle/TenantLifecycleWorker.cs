@@ -45,7 +45,7 @@ internal sealed class TenantLifecycleWorker(
                 }
 
                 var now = clock.GetUtcNow();
-                if (now - lastSweep >= options.Value.RetentionSweepInterval)
+                if (options.Value.RetentionDriver == RetentionDriver.Worker && now - lastSweep >= options.Value.RetentionSweepInterval)
                 {
                     await provider.RunRetentionAsync(stoppingToken);
                     lastSweep = now;

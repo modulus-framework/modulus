@@ -222,7 +222,7 @@ internal sealed class Harness : IDisposable
     public ManualClock Clock { get; } = new(new DateTimeOffset(2026, 11, 2, 9, 0, 0, TimeSpan.Zero));
     public World World { get; } = new();
 
-    public Harness(bool withExportKey = true)
+    public Harness(bool withExportKey = true, IDictionary<string, string?>? overrides = null, Action<IServiceCollection>? extra = null)
     {
         Tenants.Known.Add(Company);
         var settings = new Dictionary<string, string?>
@@ -231,10 +231,13 @@ internal sealed class Harness : IDisposable
         };
         if (withExportKey)
             settings["TenantLifecycle:ExportEncryptionKey"] = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
+        foreach (var (key, value) in overrides ?? new Dictionary<string, string?>())
+            settings[key] = value;
         Configuration = new ConfigurationBuilder().AddInMemoryCollection(settings).Build();
 
         var services = new ServiceCollection();
         Register(services);
+        extra?.Invoke(services);
         Services = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
     }
 

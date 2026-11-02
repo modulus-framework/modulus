@@ -29,34 +29,110 @@ internal static class ArchiveCrypto
         return key;
     }
 
+    /// <summary>
+    /// A write-only stream that encrypts what is written to <paramref name="destination"/> as it arrives, in the archive format.
+    /// Nothing reaches the destination unencrypted, and the stream needs no seeking, so a ZIP can be written straight through it.
+    /// Disposing it writes the final chunk and disposes the destination.
+    /// </summary>
+    public static Stream CreateEncryptingStream(Stream destination, byte[] key) => new EncryptingStream(destination, key);
+
     /// <summary>Encrypts <paramref name="plaintext"/> to <paramref name="destination"/>.</summary>
     public static async Task EncryptAsync(Stream plaintext, Stream destination, byte[] key, CancellationToken ct)
     {
-        using var aes = new AesGcm(key, TagSize);
-        var prefix = RandomNumberGenerator.GetBytes(PrefixSize);
-        await destination.WriteAsync(Magic, ct);
-        await destination.WriteAsync(prefix, ct);
-
+        await using var sealedStream = new EncryptingStream(destination, key, leaveDestinationOpen: true);
         var buffer = new byte[ChunkSize];
-        var ciphertext = new byte[ChunkSize];
-        var tag = new byte[TagSize];
-        var header = new byte[5];
-        ulong counter = 0;
         while (true)
         {
             var read = await ReadChunkAsync(plaintext, buffer, ct);
-            var final = read < ChunkSize;
-            aes.Encrypt(Nonce(prefix, counter), buffer.AsSpan(0, read), ciphertext.AsSpan(0, read), tag, Aad(counter, final));
-
-            BinaryPrimitives.WriteUInt32BigEndian(header, (uint)read);
-            header[4] = final ? (byte)1 : (byte)0;
-            await destination.WriteAsync(header, ct);
-            await destination.WriteAsync(ciphertext.AsMemory(0, read), ct);
-            await destination.WriteAsync(tag, ct);
-
-            if (final)
+            if (read == 0)
                 return;
-            counter++;
+            sealedStream.Write(buffer.AsSpan(0, read));
+        }
+    }
+
+    private sealed class EncryptingStream : Stream
+    {
+        private readonly Stream _destination;
+        private readonly bool _leaveDestinationOpen;
+        private readonly AesGcm _aes;
+        private readonly byte[] _prefix;
+        private readonly byte[] _buffer = new byte[ChunkSize];
+        private readonly byte[] _cipher = new byte[ChunkSize];
+        private readonly byte[] _tag = new byte[TagSize];
+        private readonly byte[] _header = new byte[5];
+        private int _filled;
+        private ulong _counter;
+        private bool _finished;
+
+        public EncryptingStream(Stream destination, byte[] key, bool leaveDestinationOpen = false)
+        {
+            _destination = destination;
+            _leaveDestinationOpen = leaveDestinationOpen;
+            _aes = new AesGcm(key, TagSize);
+            _prefix = RandomNumberGenerator.GetBytes(PrefixSize);
+            destination.Write(Magic);
+            destination.Write(_prefix);
+        }
+
+        public override bool CanRead => false;
+        public override bool CanSeek => false;
+        public override bool CanWrite => true;
+        public override long Length => throw new NotSupportedException();
+        public override long Position
+        {
+            get => throw new NotSupportedException();
+            set => throw new NotSupportedException();
+        }
+
+        public override void Flush() => _destination.Flush();
+
+        public override int Read(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+
+        public override void SetLength(long value) => throw new NotSupportedException();
+
+        public override void Write(byte[] buffer, int offset, int count) => Write(buffer.AsSpan(offset, count));
+
+        public override void Write(ReadOnlySpan<byte> data)
+        {
+            if (_finished)
+                throw new ObjectDisposedException(nameof(EncryptingStream));
+            while (!data.IsEmpty)
+            {
+                // A full chunk waits until more data arrives: the last chunk is the one written at dispose, so it is marked final.
+                if (_filled == ChunkSize)
+                    EmitChunk(final: false);
+                var count = Math.Min(ChunkSize - _filled, data.Length);
+                data[..count].CopyTo(_buffer.AsSpan(_filled));
+                _filled += count;
+                data = data[count..];
+            }
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing && !_finished)
+            {
+                _finished = true;
+                EmitChunk(final: true);
+                _aes.Dispose();
+                if (!_leaveDestinationOpen)
+                    _destination.Dispose();
+            }
+            base.Dispose(disposing);
+        }
+
+        private void EmitChunk(bool final)
+        {
+            _aes.Encrypt(Nonce(_prefix, _counter), _buffer.AsSpan(0, _filled), _cipher.AsSpan(0, _filled), _tag, Aad(_counter, final));
+            BinaryPrimitives.WriteUInt32BigEndian(_header, (uint)_filled);
+            _header[4] = final ? (byte)1 : (byte)0;
+            _destination.Write(_header);
+            _destination.Write(_cipher, 0, _filled);
+            _destination.Write(_tag);
+            _counter++;
+            _filled = 0;
         }
     }
 

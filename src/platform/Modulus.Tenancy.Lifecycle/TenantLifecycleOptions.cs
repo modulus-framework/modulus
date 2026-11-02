@@ -4,6 +4,16 @@ namespace Modulus.Tenancy.Lifecycle;
 /// Settings for the tenant data lifecycle (section <c>TenantLifecycle</c>). Secrets (the two keys) come from the environment,
 /// user secrets or a vault, never from a committed file.
 /// </summary>
+/// <summary>Who runs the retention sweep (see <see cref="TenantLifecycleOptions.RetentionDriver"/>).</summary>
+public enum RetentionDriver
+{
+    /// <summary>The lifecycle's hosted worker, every <see cref="TenantLifecycleOptions.RetentionSweepInterval"/>.</summary>
+    Worker = 0,
+
+    /// <summary>The platform's job scheduler, on <see cref="TenantLifecycleOptions.RetentionCron"/> (Quartz for a durable schedule).</summary>
+    Scheduler = 1,
+}
+
 public sealed class TenantLifecycleOptions
 {
     /// <summary>The configuration section name.</summary>
@@ -48,8 +58,17 @@ public sealed class TenantLifecycleOptions
     /// <summary>How often the background worker looks for due operations. Default one minute.</summary>
     public TimeSpan WorkerInterval { get; set; } = TimeSpan.FromMinutes(1);
 
-    /// <summary>How often the worker runs the retention sweep. Default one hour.</summary>
+    /// <summary>How often the worker runs the retention sweep, when <see cref="RetentionDriver"/> is <see cref="RetentionDriver.Worker"/>. Default one hour.</summary>
     public TimeSpan RetentionSweepInterval { get; set; } = TimeSpan.FromHours(1);
+
+    /// <summary>
+    /// Who runs the retention sweep: the lifecycle's own worker (the default, every <see cref="RetentionSweepInterval"/>), or the
+    /// platform's job scheduler on the <see cref="RetentionCron"/> schedule (use it with Quartz for a durable, clustered schedule).
+    /// </summary>
+    public RetentionDriver RetentionDriver { get; set; } = RetentionDriver.Worker;
+
+    /// <summary>The Quartz-style cron expression of the scheduled sweep (six fields: second minute hour day month weekday). Default hourly.</summary>
+    public string RetentionCron { get; set; } = "0 0 * ? * *";
 
     /// <summary>The retention period of a class in days; null means no limit (kept indefinitely).</summary>
     public int? RetentionDays(RetentionClass retention) => retention switch

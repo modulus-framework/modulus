@@ -901,3 +901,40 @@ Modulus.Core.Abstractions.Ai.AiResourceAttribute.Reason.set -> void
 Modulus.Core.Abstractions.Entities.ProjectionOfAttribute
 Modulus.Core.Abstractions.Entities.ProjectionOfAttribute.EntityType.get -> System.Type!
 Modulus.Core.Abstractions.Entities.ProjectionOfAttribute.ProjectionOfAttribute(System.Type! entityType) -> void
+Modulus.Core.Money.CurrencyMismatchException
+Modulus.Core.Money.CurrencyMismatchException.CurrencyMismatchException(string! left, string! right) -> void
+Modulus.Core.Money.CurrencyMismatchException.Left.get -> string!
+Modulus.Core.Money.CurrencyMismatchException.Right.get -> string!
+Modulus.Core.Money.Money
+Modulus.Core.Money.Money.Amount.get -> decimal
+Modulus.Core.Money.Money.Currency.get -> string!
+Modulus.Core.Money.Money.Equals(Modulus.Core.Money.Money other) -> bool
+Modulus.Core.Money.Money.IsNegative.get -> bool
+Modulus.Core.Money.Money.IsZero.get -> bool
+Modulus.Core.Money.Money.Money(decimal amount, string! currency) -> void
+Modulus.Core.Money.Money.Money() -> void
+Modulus.Core.Money.Money.Multiply(decimal factor) -> Modulus.Core.Money.Money
+Modulus.Core.Money.Money.RoundTo(int decimals) -> Modulus.Core.Money.Money
+~override Modulus.Core.Money.Money.Equals(object obj) -> bool
+override Modulus.Core.Money.Money.GetHashCode() -> int
+override Modulus.Core.Money.Money.ToString() -> string!
+static Modulus.Core.Money.Money.operator !=(Modulus.Core.Money.Money left, Modulus.Core.Money.Money right) -> bool
+static Modulus.Core.Money.Money.operator ==(Modulus.Core.Money.Money left, Modulus.Core.Money.Money right) -> bool
+static Modulus.Core.Money.Money.operator +(Modulus.Core.Money.Money left, Modulus.Core.Money.Money right) -> Modulus.Core.Money.Money
+static Modulus.Core.Money.Money.operator -(Modulus.Core.Money.Money left, Modulus.Core.Money.Money right) -> Modulus.Core.Money.Money
+static Modulus.Core.Money.Money.operator -(Modulus.Core.Money.Money money) -> Modulus.Core.Money.Money
+static Modulus.Core.Money.Money.Zero(string! currency) -> Modulus.Core.Money.Money
+Modulus.Core.Money.Money.Allocate(params int[]! ratios) -> System.Collections.Generic.IReadOnlyList<Modulus.Core.Money.Money>!
+Modulus.Core.Money.Money.Format(System.IFormatProvider! culture) -> string!
+Modulus.Core.Money.Money.MinorUnitDigits.get -> int
+Modulus.Core.Time.ZoneTime
+static Modulus.Core.Money.Money.MinorUnits(string! currency) -> int
+static Modulus.Core.Time.ZoneTime.EndOfDayExclusive(System.DateOnly date, string! zoneId) -> System.DateTimeOffset
+static Modulus.Core.Time.ZoneTime.GetZone(string! zoneId) -> System.TimeZoneInfo!
+static Modulus.Core.Time.ZoneTime.IsValidZone(string? zoneId) -> bool
+static Modulus.Core.Time.ZoneTime.LocalDate(System.DateTimeOffset instant, string! zoneId) -> System.DateOnly
+static Modulus.Core.Time.ZoneTime.StartOfDay(System.DateOnly date, string! zoneId) -> System.DateTimeOffset
+static Modulus.Core.Time.ZoneTime.ToZone(System.DateTimeOffset instant, string! zoneId) -> System.DateTimeOffset
+static Modulus.Core.Time.ZoneTime.TryFindZone(string? zoneId, out System.TimeZoneInfo! zone) -> bool
+Modulus.Core.Abstractions.ITenantStatusWriter
+Modulus.Core.Abstractions.ITenantStatusWriter.SetStatusAsync(System.Guid id, Modulus.Core.Abstractions.TenantStatus status, System.DateTimeOffset? trialEndsAt = null, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!

@@ -426,13 +426,14 @@ internal sealed class TenantLifecycleProvider(
         return true;
     }
 
-    /// <summary>Gathers the company's data in its tenant context into a plaintext archive, encrypts it, and stores the ciphertext in the host
-    /// context. The plaintext lives in a temporary file for the duration of the build and is deleted afterwards.</summary>
+    /// <summary>
+    /// Gathers the company's data in its tenant context and writes the archive straight through the encryption stream, so the
+    /// only file that exists is the ciphertext, which is then stored in the host context.
+    /// </summary>
     private async Task BuildArchiveAsync(LifecycleOperation operation, string path, CancellationToken ct)
     {
         var key = ArchiveCrypto.ParseKey(Settings.ExportEncryptionKey);
         var tenant = await FindTenantAsync(operation.TenantId, ct);
-        var plainPath = Path.GetTempFileName();
         var encryptedPath = Path.GetTempFileName();
         try
         {
@@ -440,23 +441,18 @@ internal sealed class TenantLifecycleProvider(
             using (scope.ServiceProvider.EnterTenant(tenant))
             {
                 var handlers = Handlers(scope.ServiceProvider);
-                await using (var file = File.Create(plainPath))
-                using (var zip = new System.IO.Compression.ZipArchive(file, System.IO.Compression.ZipArchiveMode.Create))
+                await using var file = File.Create(encryptedPath);
+                using var sealedArchive = ArchiveCrypto.CreateEncryptingStream(file, key);
+                using var zip = new System.IO.Compression.ZipArchive(sealedArchive, System.IO.Compression.ZipArchiveMode.Create);
+                var writer = new ExportArchiveWriter(zip, files);
+                foreach (var registered in registry.Datasets.Where(d => d.Dataset.Category != TenantDataCategory.Global))
                 {
-                    var writer = new ExportArchiveWriter(zip, files);
-                    foreach (var registered in registry.Datasets.Where(d => d.Dataset.Category != TenantDataCategory.Global))
-                    {
-                        writer.BeginDataset(registered.Dataset.Name);
-                        await handlers[registered.HandlerType].ExportAsync(registered.Dataset, writer, ct);
-                        writer.EndDataset();
-                    }
-                    writer.WriteManifest(operation.TenantId, operation.Id, clock.GetUtcNow());
+                    writer.BeginDataset(registered.Dataset.Name);
+                    await handlers[registered.HandlerType].ExportAsync(registered.Dataset, writer, ct);
+                    writer.EndDataset();
                 }
+                writer.WriteManifest(operation.TenantId, operation.Id, clock.GetUtcNow());
             }
-
-            await using (var plain = File.OpenRead(plainPath))
-            await using (var encrypted = File.Create(encryptedPath))
-                await ArchiveCrypto.EncryptAsync(plain, encrypted, key, ct);
 
             using var host = HostContext();
             await using var upload = File.OpenRead(encryptedPath);
@@ -464,7 +460,6 @@ internal sealed class TenantLifecycleProvider(
         }
         finally
         {
-            File.Delete(plainPath);
             File.Delete(encryptedPath);
         }
     }

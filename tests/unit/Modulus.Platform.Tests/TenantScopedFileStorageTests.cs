@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Modulus.Core.Abstractions;
 using Modulus.MultiTenancy;
 using Modulus.Storage;
+using NSubstitute;
 using Xunit;
 
 namespace Modulus.Platform.Tests;
@@ -98,5 +99,24 @@ public sealed class TenantScopedFileStorageTests : IDisposable
     {
         if (Directory.Exists(_root))
             Directory.Delete(_root, recursive: true);
+    }
+
+    [Fact]
+    public async Task Presigned_post_is_issued_under_the_tenant_prefix()
+    {
+        var inner = Substitute.For<IFileStorage>();
+        inner.GetPresignedUploadPostAsync(default!, default, default, default, default)
+            .ReturnsForAnyArgs(Task.FromResult(new PresignedPost("https://storage.test/", new Dictionary<string, string>())));
+        var storage = new TenantScopedFileStorage(inner, _tenant);
+        string scoped;
+
+        using (_tenant.Change(new TenantInfo(TenantA, "a")))
+        {
+            scoped = storage.Scope("docs/a.pdf");
+            await storage.GetPresignedUploadPostAsync("docs/a.pdf", TimeSpan.FromMinutes(5), 100);
+        }
+
+        scoped.Should().StartWith("tenants/");
+        await inner.Received(1).GetPresignedUploadPostAsync(scoped, TimeSpan.FromMinutes(5), 100, null, default);
     }
 }

@@ -330,3 +330,23 @@ override Modulus.Tenancy.Lifecycle.TenantExportView.GetHashCode() -> int
 override Modulus.Tenancy.Lifecycle.TenantExportView.ToString() -> string!
 static Modulus.Tenancy.Lifecycle.TenantExportView.operator !=(Modulus.Tenancy.Lifecycle.TenantExportView? left, Modulus.Tenancy.Lifecycle.TenantExportView? right) -> bool
 static Modulus.Tenancy.Lifecycle.TenantExportView.operator ==(Modulus.Tenancy.Lifecycle.TenantExportView? left, Modulus.Tenancy.Lifecycle.TenantExportView? right) -> bool
+const Modulus.Tenancy.Lifecycle.TenantRetentionJob.JobId = "tenant-lifecycle-retention" -> string!
+Modulus.Tenancy.Lifecycle.RetentionDriver
+Modulus.Tenancy.Lifecycle.RetentionDriver.Scheduler = 1 -> Modulus.Tenancy.Lifecycle.RetentionDriver
+Modulus.Tenancy.Lifecycle.RetentionDriver.Worker = 0 -> Modulus.Tenancy.Lifecycle.RetentionDriver
+Modulus.Tenancy.Lifecycle.TenantLifecycleOptions.RetentionCron.get -> string!
+Modulus.Tenancy.Lifecycle.TenantLifecycleOptions.RetentionCron.set -> void
+Modulus.Tenancy.Lifecycle.TenantLifecycleOptions.RetentionDriver.get -> Modulus.Tenancy.Lifecycle.RetentionDriver
+Modulus.Tenancy.Lifecycle.TenantLifecycleOptions.RetentionDriver.set -> void
+Modulus.Tenancy.Lifecycle.TenantRetentionArgs
+Modulus.Tenancy.Lifecycle.TenantRetentionArgs.<Clone>$() -> Modulus.Tenancy.Lifecycle.TenantRetentionArgs!
+Modulus.Tenancy.Lifecycle.TenantRetentionArgs.Equals(Modulus.Tenancy.Lifecycle.TenantRetentionArgs? other) -> bool
+Modulus.Tenancy.Lifecycle.TenantRetentionArgs.TenantRetentionArgs() -> void
+Modulus.Tenancy.Lifecycle.TenantRetentionJob
+Modulus.Tenancy.Lifecycle.TenantRetentionJob.ExecuteAsync(Modulus.Tenancy.Lifecycle.TenantRetentionArgs! args, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
+Modulus.Tenancy.Lifecycle.TenantRetentionJob.TenantRetentionJob(Modulus.Tenancy.Lifecycle.ITenantLifecycleProvider! provider) -> void
+override Modulus.Tenancy.Lifecycle.TenantRetentionArgs.Equals(object? obj) -> bool
+override Modulus.Tenancy.Lifecycle.TenantRetentionArgs.GetHashCode() -> int
+override Modulus.Tenancy.Lifecycle.TenantRetentionArgs.ToString() -> string!
+static Modulus.Tenancy.Lifecycle.TenantRetentionArgs.operator !=(Modulus.Tenancy.Lifecycle.TenantRetentionArgs? left, Modulus.Tenancy.Lifecycle.TenantRetentionArgs? right) -> bool
+static Modulus.Tenancy.Lifecycle.TenantRetentionArgs.operator ==(Modulus.Tenancy.Lifecycle.TenantRetentionArgs? left, Modulus.Tenancy.Lifecycle.TenantRetentionArgs? right) -> bool

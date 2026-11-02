@@ -4,6 +4,7 @@ using System.Collections.Concurrent;
 using System.Globalization;
 using System.IO.Compression;
 using System.Reflection;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -59,6 +60,10 @@ internal sealed class ExportArchiveWriter(ZipArchive zip, IFileStorage files) : 
         ArgumentNullException.ThrowIfNull(records);
         var dataset = _dataset ?? throw new InvalidOperationException("Records can only be written inside a dataset export.");
         var columns = ColumnsOf<T>();
+
+        // The CSV is produced in the same pass as the JSON, but a zip entry can only be written one at a time, so the CSV waits in a
+        // temporary file. That file holds ciphertext under a key that exists only in memory for this dataset: no plaintext reaches disk.
+        var csvKey = RandomNumberGenerator.GetBytes(ArchiveCrypto.KeyBytes);
         var csvTemp = Path.GetTempFileName();
         try
         {
@@ -66,9 +71,11 @@ internal sealed class ExportArchiveWriter(ZipArchive zip, IFileStorage files) : 
             var jsonEntry = zip.CreateEntry($"{dataset}.json", CompressionLevel.Optimal);
             long jsonBytes;
             string jsonHash;
+            await using (var csvFile = File.Create(csvTemp))
+            await using (var csvSealed = ArchiveCrypto.CreateEncryptingStream(csvFile, csvKey))
+            await using (var csv = new StreamWriter(csvSealed, new UTF8Encoding(false)))
             await using (var jsonOut = new HashingStream(jsonEntry.Open()))
             using (var json = new Utf8JsonWriter(jsonOut))
-            await using (var csv = new StreamWriter(csvTemp, false, new UTF8Encoding(false)))
             {
                 json.WriteStartArray();
                 await csv.WriteLineAsync(string.Join(',', columns.Select(c => Escape(c.Name))).AsMemory(), ct);
@@ -80,6 +87,7 @@ internal sealed class ExportArchiveWriter(ZipArchive zip, IFileStorage files) : 
                 }
                 json.WriteEndArray();
                 await json.FlushAsync(ct);
+                await csv.FlushAsync(ct);
                 jsonBytes = jsonOut.Bytes;
                 jsonHash = jsonOut.Sha256Hex();
             }
@@ -88,7 +96,7 @@ internal sealed class ExportArchiveWriter(ZipArchive zip, IFileStorage files) : 
             var csvEntry = zip.CreateEntry($"{dataset}.csv", CompressionLevel.Optimal);
             await using var sink = new HashingStream(csvEntry.Open());
             await using (var source = File.OpenRead(csvTemp))
-                await source.CopyToAsync(sink, ct);
+                await ArchiveCrypto.DecryptAsync(source, sink, csvKey, ct);
             _entries.Add(new ArchiveEntry($"{dataset}.csv", sink.Bytes, sink.Sha256Hex(), count));
         }
         finally

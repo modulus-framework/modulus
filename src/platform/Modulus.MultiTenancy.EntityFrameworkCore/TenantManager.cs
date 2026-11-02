@@ -15,7 +15,7 @@ public class TenantManager<TTenant, TMembership, TDataStore>(
     TenantStoreDbContext<TTenant, TMembership, TDataStore> db,
     ISecurityAuditLog? audit = null,
     ICurrentUser? actor = null,
-    IEnumerable<IAccessChangeObserver>? observers = null) : ITenantMemberProvisioner
+    IEnumerable<IAccessChangeObserver>? observers = null) : ITenantMemberProvisioner, ITenantStatusWriter
     where TTenant : TenantEntity, new()
     where TMembership : TenantMembershipEntity, new()
     where TDataStore : TenantDataStoreEntity

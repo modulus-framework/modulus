@@ -46,6 +46,8 @@ public static class TenantLifecycleServiceCollectionExtensions
         // Scoped: the provider uses the store, which an EF store implements with a scoped DbContext.
         services.TryAddScoped<ITenantLifecycleProvider, TenantLifecycleProvider>();
         services.AddHostedService<TenantLifecycleWorker>();
+        services.TryAddScoped<TenantRetentionJob>();
+        services.AddHostedService<TenantRetentionScheduleService>();
 
         // The export endpoints: a company's administrator only, through the permission system (or a "permission" claim
         // when the host has no grant store). Offboarding is an operator action in code, not an HTTP endpoint.

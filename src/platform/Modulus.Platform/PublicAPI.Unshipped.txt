@@ -2513,3 +2513,19 @@ Modulus.Secrets.SecretsOptions.MaxEntries.get -> int
 Modulus.Secrets.SecretsOptions.MaxEntries.set -> void
 Modulus.Storage.StorageOptions.MaxUploadBytes.get -> long
 Modulus.Storage.StorageOptions.MaxUploadBytes.set -> void
+Modulus.Storage.IFileStorage.GetPresignedUploadPostAsync(string! path, System.TimeSpan expiry, long maxBytes, string? contentType = null, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Storage.PresignedPost!>!
+Modulus.Storage.PresignedPost
+Modulus.Storage.PresignedPost.<Clone>$() -> Modulus.Storage.PresignedPost!
+Modulus.Storage.PresignedPost.Deconstruct(out string! Url, out System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Fields) -> void
+Modulus.Storage.PresignedPost.Equals(Modulus.Storage.PresignedPost? other) -> bool
+Modulus.Storage.PresignedPost.Fields.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+Modulus.Storage.PresignedPost.Fields.init -> void
+Modulus.Storage.PresignedPost.PresignedPost(string! Url, System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Fields) -> void
+Modulus.Storage.PresignedPost.Url.get -> string!
+Modulus.Storage.PresignedPost.Url.init -> void
+Modulus.Storage.TenantScopedFileStorage.GetPresignedUploadPostAsync(string! path, System.TimeSpan expiry, long maxBytes, string? contentType = null, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Storage.PresignedPost!>!
+override Modulus.Storage.PresignedPost.Equals(object? obj) -> bool
+override Modulus.Storage.PresignedPost.GetHashCode() -> int
+override Modulus.Storage.PresignedPost.ToString() -> string!
+static Modulus.Storage.PresignedPost.operator !=(Modulus.Storage.PresignedPost? left, Modulus.Storage.PresignedPost? right) -> bool
+static Modulus.Storage.PresignedPost.operator ==(Modulus.Storage.PresignedPost? left, Modulus.Storage.PresignedPost? right) -> bool
