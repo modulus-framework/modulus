@@ -1,0 +1,49 @@
+using Microsoft.EntityFrameworkCore;
+using Modulus.Tenancy.Lifecycle;
+using {{ module_namespace }}.Domain;
+
+namespace {{ module_namespace }}.Infrastructure.TenantData;
+
+/// <summary>
+/// The {{ module_name }} module's tenant data for the tenant data lifecycle: the export, the counts for the deletion certificate and
+/// the deletion at offboarding. It runs inside the company's tenant context, so the module context's tenant filter applies to every
+/// query here. Deletes are idempotent, as a resumed offboarding calls them again.
+/// </summary>
+public sealed class {{ module_name }}TenantDataHandler({{ module_name }}DbContext db) : ITenantDataHandler
+{
+    public string Module => "{{ module_name }}";
+
+    public IReadOnlyList<TenantDataset> Datasets { get; } =
+    [
+{{ for e in entities }}        new("{{ e.dataset }}", TenantDataCategory.Owned),
+{{ end }}    ];
+
+    public async Task ExportAsync(TenantDataset dataset, ITenantExportWriter writer, CancellationToken ct)
+    {
+        switch (dataset.Name)
+        {
+{{ for e in entities }}            case "{{ e.dataset }}":
+                await writer.WriteRecordsAsync(db.{{ e.plural }}.AsNoTracking().AsAsyncEnumerable(), ct);
+                return;
+{{ end }}            default:
+                throw new ArgumentOutOfRangeException(nameof(dataset), dataset.Name, "Not a dataset of this module.");
+        }
+    }
+
+    public Task<long> CountAsync(TenantDataset dataset, CancellationToken ct) => dataset.Name switch
+    {
+{{ for e in entities }}        "{{ e.dataset }}" => db.{{ e.plural }}.LongCountAsync(ct),
+{{ end }}        _ => throw new ArgumentOutOfRangeException(nameof(dataset), dataset.Name, "Not a dataset of this module."),
+    };
+
+    public async Task<long> DeleteAsync(TenantDataset dataset, CancellationToken ct)
+    {
+        switch (dataset.Name)
+        {
+{{ for e in entities }}            case "{{ e.dataset }}":
+                return await db.{{ e.plural }}.ExecuteDeleteAsync(ct);
+{{ end }}            default:
+                throw new ArgumentOutOfRangeException(nameof(dataset), dataset.Name, "Not a dataset of this module.");
+        }
+    }
+}

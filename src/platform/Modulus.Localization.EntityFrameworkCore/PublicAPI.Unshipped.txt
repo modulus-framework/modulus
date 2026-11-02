@@ -1,0 +1,22 @@
+#nullable enable
+const Modulus.Localization.EntityFrameworkCore.ModulusLocalizationDbContext.TranslationTable = "modulus_translations" -> string!
+Modulus.Localization.EntityFrameworkCore.EfLocalizationStore<TContext>
+Modulus.Localization.EntityFrameworkCore.EfLocalizationStore<TContext>.EfLocalizationStore(Microsoft.EntityFrameworkCore.IDbContextFactory<TContext!>! factory) -> void
+Modulus.Localization.EntityFrameworkCore.EfLocalizationStore<TContext>.GetOrNullAsync(string! resourceName, string! culture, string! key, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<string?>!
+Modulus.Localization.EntityFrameworkCore.EfLocalizationStore<TContext>.SetAsync(string! resourceName, string! culture, string! key, string? value, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Localization.EntityFrameworkCore.LocalizationStoreExtensions
+Modulus.Localization.EntityFrameworkCore.ModulusLocalizationDbContext
+Modulus.Localization.EntityFrameworkCore.ModulusLocalizationDbContext.ModulusLocalizationDbContext(Microsoft.EntityFrameworkCore.DbContextOptions! options) -> void
+Modulus.Localization.EntityFrameworkCore.ModulusLocalizationDbContext.Translations.get -> Microsoft.EntityFrameworkCore.DbSet<Modulus.Localization.EntityFrameworkCore.TranslationRow!>!
+Modulus.Localization.EntityFrameworkCore.TranslationRow
+Modulus.Localization.EntityFrameworkCore.TranslationRow.Culture.get -> string!
+Modulus.Localization.EntityFrameworkCore.TranslationRow.Culture.set -> void
+Modulus.Localization.EntityFrameworkCore.TranslationRow.Key.get -> string!
+Modulus.Localization.EntityFrameworkCore.TranslationRow.Key.set -> void
+Modulus.Localization.EntityFrameworkCore.TranslationRow.Resource.get -> string!
+Modulus.Localization.EntityFrameworkCore.TranslationRow.Resource.set -> void
+Modulus.Localization.EntityFrameworkCore.TranslationRow.TranslationRow() -> void
+Modulus.Localization.EntityFrameworkCore.TranslationRow.Value.get -> string!
+Modulus.Localization.EntityFrameworkCore.TranslationRow.Value.set -> void
+override Modulus.Localization.EntityFrameworkCore.ModulusLocalizationDbContext.OnModelCreating(Microsoft.EntityFrameworkCore.ModelBuilder! modelBuilder) -> void
+static Modulus.Localization.EntityFrameworkCore.LocalizationStoreExtensions.AddModulusEfLocalizationStore<TContext>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!

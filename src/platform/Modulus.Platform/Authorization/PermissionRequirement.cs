@@ -62,7 +62,6 @@ internal sealed class PermissionRequirementHandler(
         registry?.GetAll().Where(d => d.Lifecycle is PermissionLifecycle.Retired).Select(d => d.Permission) ?? [],
         StringComparer.OrdinalIgnoreCase));
 
-    private const string WildcardSuffix = ":*";
 
     protected override async Task HandleRequirementAsync(
         AuthorizationHandlerContext context, PermissionRequirement requirement)
@@ -120,7 +119,7 @@ internal sealed class PermissionRequirementHandler(
             if (string.Equals(grant.Permission, permission, StringComparison.OrdinalIgnoreCase))
                 return true;
 
-            if (grant.Permission.EndsWith(WildcardSuffix, StringComparison.Ordinal)
+            if (Modulus.Authorization.PermissionNames.IsWildcard(grant.Permission)
                 && permission.StartsWith(
                     grant.Permission[..^1], StringComparison.OrdinalIgnoreCase))
                 return true;

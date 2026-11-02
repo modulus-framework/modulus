@@ -23,6 +23,15 @@ public sealed class InboxOptions
     /// </summary>
     public int ClaimTimeoutSeconds { get; set; } = 300;
 
+    /// <summary>
+    /// How many days a processed inbox row is kept. Once it is purged, a redelivery of that event is no longer recognised as a
+    /// duplicate, so keep this longer than the broker's redelivery horizon. Defaults to 30. Zero or less keeps rows forever.
+    /// </summary>
+    public int ProcessedRetentionDays { get; set; } = 30;
+
+    /// <summary>How often the housekeeping purge runs. Defaults to 60 minutes.</summary>
+    public int PurgeIntervalMinutes { get; set; } = 60;
+
     // ── In-pipeline handler retry ──────────────────────────────────
     // When HandlerRetryCount > 0, each handler invocation is retried
     // in-process (back-off below) for fast recovery from transient faults

@@ -78,9 +78,16 @@
 {{ if example_permission }}      "{{ admin_role }}": [ "{{ example_permission }}" ]
 {{ end }}    }
   },
-  "Storage": {
-    "IsolateTenants": true
-  },
+{{ end }}{{ if multi_tenancy || use_s3_storage }}  "Storage": {
+{{ if use_s3_storage }}    "Provider": "S3",
+    "BucketName": "{{ s3_bucket_name }}",
+    "Endpoint": "{{ s3_endpoint }}",
+    "Region": "{{ s3_region }}",
+    "ForcePathStyle": {{ s3_force_path_style }},
+    "AccessKey": "",
+    "SecretKey": "",
+{{ end }}{{ if multi_tenancy }}    "IsolateTenants": true
+{{ end }}  },
 {{ end }}  "FeatureManagement": {
     "SampleFeature": false
   },

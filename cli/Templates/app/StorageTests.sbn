@@ -1,0 +1,22 @@
+using Amazon.S3;
+using FluentAssertions;
+using Microsoft.Extensions.DependencyInjection;
+using Modulus.Testing;
+using Xunit;
+using ApiEntryPoint = {{ root_namespace }}.Api.ApiEntryPoint;
+
+namespace {{ root_namespace }}.Tests;
+
+/// <summary>
+/// The file storage the host was generated with: the S3 client is registered from the Storage settings. No request leaves the machine;
+/// the check is the wiring.
+/// </summary>
+public sealed class StorageProviderTests(ModulusWebAppFactory<ApiEntryPoint> factory)
+    : IClassFixture<ModulusWebAppFactory<ApiEntryPoint>>
+{
+    [Fact]
+    public void The_S3_client_is_registered_for_the_configured_storage()
+    {
+        factory.Services.GetService<IAmazonS3>().Should().NotBeNull("the host registers S3 storage with AddS3FileStorage");
+    }
+}

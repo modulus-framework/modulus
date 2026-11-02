@@ -42,6 +42,7 @@ public static class S3StorageExtensions
         var config = new AmazonS3Config();
         if (options.Endpoint is not null)
             config.ServiceURL = options.Endpoint;
+        config.ForcePathStyle = options.ForcePathStyle;
         if (options.Region is not null)
             config.RegionEndpoint = Amazon.RegionEndpoint.GetBySystemName(options.Region);
         else if (options.Endpoint is null && FallbackRegionFactory.GetRegionEndpoint() is null)

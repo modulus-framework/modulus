@@ -39,7 +39,7 @@ public sealed class InboxIndexStartupTests
     {
         await using var provider = Build(FailingDatabase(), skipIndexCreation: false);
 
-        var initializer = provider.GetServices<IHostedService>().Should().ContainSingle().Subject;
+        var initializer = provider.GetServices<IHostedService>().OfType<InboxIndexInitializer>().Should().ContainSingle().Subject;
 
         var act = () => initializer.StartAsync(CancellationToken.None);
         await act.Should().ThrowAsync<TimeoutException>();
@@ -50,6 +50,6 @@ public sealed class InboxIndexStartupTests
     {
         using var provider = Build(Substitute.For<IMongoDatabase>(), skipIndexCreation: true);
 
-        provider.GetServices<IHostedService>().Should().BeEmpty();
+        provider.GetServices<IHostedService>().OfType<InboxIndexInitializer>().Should().BeEmpty("skipping creates no index step, while the purge service still runs");
     }
 }

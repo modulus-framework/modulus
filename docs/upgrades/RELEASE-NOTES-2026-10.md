@@ -183,64 +183,36 @@ columns and primary key were read back from each catalog. Its column types were 
 - **Not in this release:** re-inserting archived audit entries into a live chain (it needs the technical spike the identity plan requires),
   and the owner decisions D7–D10 in the identity plan (pilot module, audit retention durations, NFR targets, MFA assurance matrix).
 
-## Profile details (premodule 3)
+## Generic account model (2026-10-30)
 
-- **New self-service routes:** `GET account/profile/details` and `PATCH account/profile/details` (first and last name, photo address, work
-  email, job title, department). A field left out keeps its value; an empty string clears it. `PUT account/profile` is unchanged.
-- **Administrator route:** `PATCH identity/users/{id}/organization` sets the employee code (upper-case, unique per company) and the primary branch.
-- **Upgrade (existing deployments):** the identity user table gains `WorkEmail`, `JobTitle`, `Department` and `PrimaryBranchId`. Add a migration:
-  `modulus migrate add <Name> --module Identity`, then `modulus migrate update`.
-- **Name clash:** an application whose `ModulusUser` subclass declares `Department`, `JobTitle`, `WorkEmail` or `PrimaryBranchId` fails to
-  compile (CS0108). Remove the property from the subclass; the framework property has the same name and type.
-- **Work email is confirmed by a link (2026-10-24, breaking for one behaviour).** A work email set through `PATCH account/profile/details`
-  (or `PATCH identity/users/{id}/work-email` by an administrator) is *pending* until its owner follows the link sent to it. The response carries
-  `pendingWorkEmail`; `workEmail` stays empty until confirmation. Confirm with `POST account/profile/work-email/confirm` (signed in as the account,
-  token from the link). **Upgrade path:** an application that displayed `workEmail` straight after a save must show `pendingWorkEmail` as well, and
-  must route the link to its own confirm page. **Mail is configured, not coded:** set `Identity:Email:BaseUrl` (the public https address of the web
-  application), `Identity:Email:FromAddress` and `Identity:Email:SmtpHost` (with the SMTP password in user secrets or the environment). The mail then
-  links to `/ConfirmWorkEmail?token=`. Without `SmtpHost` no mail is sent. Lifetime 30 minutes, one request per minute (`Identity:WorkEmail`).
-- **Profile photo (new, 2026-10-24).** `PUT account/profile/photo` (raw image body; JPEG, PNG or WebP by content, at most 5 MB, sides at most 4096 px,
-  no animation), `GET account/profile/photo` (the caller's own, as a JPEG), `DELETE account/profile/photo`. The stored photo is a 512 px square
-  with no metadata. It needs a file storage (`IFileStorage`): without one the upload answers 503. Deco
+`ModulusUser` now holds only what the framework itself needs: the ASP.NET Identity account, the company (`TenantId`), `IsActive`,
+`ExtraProperties`, the provisioning id (`ExternalId`), the principal kind, the lifecycle and suspension state, and the SCIM timestamps.
+Profile data and ERP fields are not part of the framework. An application extends the type and adds its own required columns:
 
-### Release gate for premodule 3 (conditions of 2026-10-24)
+```csharp
+public sealed class AppUser : ModulusUser
+{
+    public required string FirstName { get; set; }
+    public required string LastName { get; set; }
+}
+```
 
-- **Duplicate employee codes block the upgrade, by design.** Before any change, each profile upgrade script checks for two accounts in one
-  company with the same employee code. If it finds one, it stops with an error and changes nothing. Find the duplicates, resolve them, then rerun:
-  - PostgreSQL and SQL Server: `SELECT TenantId, EmployeeCode, COUNT(*) FROM AspNetUsers WHERE EmployeeCode IS NOT NULL GROUP BY TenantId, EmployeeCode HAVING COUNT(*) > 1;`
-  - MySQL: the same query, with the table name as your schema uses it.
-  Resolving means changing one of the codes in the application (an administrator sets it through `PATCH identity/users/{id}/organization`),
-  not editing the database by hand. The scripts never delete or rewrite employee data.
-- **Index order.** Each script creates the unique index before it drops the earlier non-unique one, so a failure leaves the old index in place.
-  Verified on PostgreSQL 16, SQL Server 2022 and MySQL 8.4, on clean data (two runs; data preserved; duplicate in one company refused; NULL and the
-  same code in another company accepted) and on duplicate data (the script exits non-zero, adds no column, keeps the old index, creates no unique index).
-- **Work-email confirmation limit.** After five failed confirmation attempts on one account, the confirm endpoint answers `429`
-  (`WORK_EMAIL_TOO_MANY_ATTEMPTS`), even for the right link, until a new request is made. The counter is `ConfirmationFailures` (a non-null
-  integer, default 0). Attempts are counted in the database, so the limit holds across replicas.
-- **Confirmation answers (2026-10-24).** `POST account/profile/work-email/confirm` answers with a stable code:
-  `200` confirmed; `410 WORK_EMAIL_LINK_EXPIRED` (time passed); `410 WORK_EMAIL_LINK_USED` (already confirmed); `400 WORK_EMAIL_LINK_SUPERSEDED`
-  (a newer link or another address, or a cleared address, replaced it); `400 WORK_EMAIL_LINK_INVALID` (not issued for this account and purpose, or damaged);
-  `429 WORK_EMAIL_TOO_MANY_ATTEMPTS`. Only guessed or forged links count toward the limit; an expired or used link does not.
-  The expiry is inside the signed payload and is checked against the server clock. A signed-in session alone confirms nothing.
-- **Web pages (2026-10-24).** The web template has a photo page (`/ProfilePhoto`: upload, replace, remove, preview, progress; type and size checked
-  first for a clear message, then by the API) and a confirmation page (`/ConfirmWorkEmail?token=`). The confirmation page consumes the link on POST
-  only, so a mail scanner that opens the link does not use it. The configured mail (`Identity:Email`) links to `/ConfirmWorkEmail`.
-- **Avatar policy (2026-10-24).** `AvatarUrlPolicy` (Modulus.Identity): the controlled photo first; a legacy `AvatarUrl` only when it is an absolute
-  https address with no credentials, no whitespace or control characters, and at most 2048 characters. Anything else falls back to the default
-  avatar. External hosts are allowed under this rule; an application that must restrict them checks `IsAllowedExternal` against its own list. The
-  browser loads the picture with `referrerpolicy="no-referrer"`; the server never fetches it.
-- **Verified address is kept.** A new work-email request does not change the verified address. It changes only the pending address, until the link is
-  followed.
-- **Photo precedence.** The details response carries `photoUrl` (`/api/account/profile/photo`) when a controlled photo exists. Clients should use
-  `photoUrl` first and fall back to `avatarUrl` only when no photo exists. The server never fetches `avatarUrl`. `avatarUrl` is still an https address
-  that the client must render under an approved URL policy; that client policy is not in this repository yet.
-- **Image decoder (2026-10-24, replaces SkiaSharp).** Profile photos are decoded with SixLabors.ImageSharp 2.1.13 (Apache-2.0, pure managed
-  code). A colour profile (ICC) embedded in the upload is refused (`PHOTO_COLOR_PROFILE_UNSUPPORTED`, 422): save a copy without one and upload that.
-  This affects photos that a camera or editor stored with a profile. If the decoder cannot start, the upload is refused with 503
-  (`PHOTO_PROCESSING_UNAVAILABLE`); validation is never skipped.
-- **Advisory risk acceptance (Open).** Five advisories for ImageSharp 2.1.13 have fixes only in the Split-Licensed 4.x line. They are suppressed
-  in `Directory.Build.props` with the reasons in `THIRD-PARTY-NOTICES.md`. The owner must accept this risk before the photo feature is released.
-- **Third-party notices.** See `THIRD-PARTY-NOTICES.md`.
+Pass it to `AddModulusIdentity<AppUser, ModulusRole>(...)` as the user type.
+Two hooks connect outside data to the subclass:
+
+- `IExternalAccountProfile<TUser>.Apply(user, person)` copies the names and details an external provider, directory or SAML provider
+  sends onto the subclass. It runs on account creation and on each later sign-in. The default maps nothing.
+- `IUserDisplayNameDirectory` (Core) supplies the names the company audit summary shows. The default knows no names, so the summary
+  shows ids.
+
+Removed from the framework: `FirstName`, `LastName`, `DisplayName`, `Language`, `TimeZone`, `AvatarUrl`, `JobTitle`, `Department`,
+`WorkEmail` (and its confirmation fields), `PhotoAssetId`, `PrimaryBranchId`, `ConfirmationFailures`, `FullName`, and the shop-floor sign-in
+(`EmployeeCode`, `PinHash`, `MustChangePin`, the `shop-floor` grant, `IShopFloorAccountService`, `ProfileRules`). SCIM no longer maps the
+`name` attributes (the display name is the user name). The shop-floor sign-in is an application feature now: build it on the subclass.
+
+Upgrade (existing deployments): the columns of the removed fields stay in the database and are ignored by the model. Nothing needs to be
+dropped. Their defaults keep existing rows valid. The identity upgrade scripts no longer add `MustChangePin`, `EmployeeCode`, `PinHash`
+or the employee-code index. An application that still uses those columns keeps its own migration for them.
 
 ## Generated web apps: what changes for an app created earlier (2026-10-25)
 

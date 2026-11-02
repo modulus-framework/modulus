@@ -63,4 +63,41 @@ internal static class TenantLifecycleWiring
     /// <summary>The <c>TenantLifecycle</c> connection string, when the file has a <c>ConnectionStrings</c> section.</summary>
     public static string EnsureSettings(string json, string connectionString)
         => WebhooksWiring.EnsureConnectionString(json, "TenantLifecycle", connectionString);
+
+    /// <summary>
+    /// Registers a tenant-data handler in the lifecycle's <c>AddTenantLifecycle</c> call. Idempotent: a handler already registered is left
+    /// alone. The plain call is widened to take the builder callback; a host that already customised the call is left as it is.
+    /// </summary>
+    public static string EnsureHandlerRegistration(string text, string handlerType, string handlerNamespace)
+    {
+        if (text.Contains($"AddHandler<{handlerType}>()", StringComparison.Ordinal))
+            return text;
+        const string plain = "builder.Services.AddTenantLifecycle(builder.Configuration);";
+        var at = text.IndexOf(plain, StringComparison.Ordinal);
+        if (at < 0)
+            return text;
+        var lineStart = text.LastIndexOf('\n', at) + 1;
+        var indent = text[lineStart..at];
+        var nl = WebhooksWiring.NewLine(text);
+        var widened = "builder.Services.AddTenantLifecycle(builder.Configuration, lifecycle => lifecycle" + nl +
+                      indent + "    .AddHandler<" + handlerType + ">());";
+        text = text[..at] + widened + text[(at + plain.Length)..];
+        return WebhooksWiring.EnsureUsing(text, "using " + handlerNamespace + ";");
+    }
+
+    /// <summary>The module's infrastructure project references the lifecycle package (the handler implements its interfaces).</summary>
+    public static string EnsurePackageReference(string csproj, string version)
+    {
+        if (csproj.Contains("Synvro.Modulus.Tenancy.Lifecycle\"", StringComparison.Ordinal))
+            return csproj;
+        var end = csproj.LastIndexOf("</Project>", StringComparison.Ordinal);
+        if (end < 0)
+            return csproj;
+        var nl = WebhooksWiring.NewLine(csproj);
+        var head = csproj[..end].TrimEnd();
+        return head + nl + nl +
+               "  <ItemGroup>" + nl +
+               "    <PackageReference Include=\"Synvro.Modulus.Tenancy.Lifecycle\" Version=\"" + version + "\" />" + nl +
+               "  </ItemGroup>" + nl + nl + csproj[end..];
+    }
 }

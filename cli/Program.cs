@@ -21,7 +21,8 @@ public static class Program
                 .WithExample("app", "MyApp", "--database", "SqlServer")
                 .WithExample("app", "MyApp", "--kind", "api")
                 .WithExample("app", "MyApp", "--kind", "web")
-                .WithExample("app", "MyApp", "--no-example")
+                .WithExample("app", "MyApp")
+                .WithExample("app", "MyApp", "--with-example")
                 .WithExample("app", "MyApp", "--message-broker", "rabbitmq", "--caching", "redis")
                 .WithExample("app", "MyApp", "--storage", "s3", "--enable-feature-flags")
                 .WithExample("app") // interactive wizard
@@ -51,6 +52,9 @@ public static class Program
                 .WithDescription("Add outgoing webhooks: integration events delivered, signed, to tenant subscriptions (store module, host wiring, management API).")
                 .WithExample("add-webhooks")
                 .WithExample("add-webhooks", "--events", "catalog.product-created.v1");
+            config.AddCommand<Commands.AddTenantLifecycleCommand>("add-tenant-lifecycle")
+                .WithDescription("Add the tenant data lifecycle: exports of a company's data, offboarding, legal holds, retention (store module, host wiring, export endpoints). Needs multi-tenancy.")
+                .WithExample("add-tenant-lifecycle");
             config.AddCommand<Commands.AddAuditStoreCommand>("add-audit-store")
                 .WithDescription("Keep the business audit log and the hash-chained security audit in a database (store module, host wiring, settings).")
                 .WithExample("add-audit-store");
@@ -291,6 +295,7 @@ internal sealed class DefaultCommand : Command
         table.AddRow("[cyan]generate-grpc[/] [grey]<service>[/]", "Generate gRPC service from domain models");
         table.AddRow("[cyan]generate-graphql[/] [grey]<type>[/]", "Generate GraphQL types and resolvers");
         table.AddRow("[cyan]add-webhooks[/]", "Add webhook infrastructure (outbox, dispatcher)");
+        table.AddRow("[cyan]add-tenant-lifecycle[/]", "Add tenant data export, offboarding and retention (multi-tenant apps)");
         table.AddRow("[cyan]add-audit-store[/]", "Add change auditing to entities");
         table.AddRow("[cyan]add-realtime[/]", "Add SignalR realtime messaging");
         table.AddRow("[cyan]add-ai[/]", "Add AI features (embedding, semantic search)");

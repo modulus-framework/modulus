@@ -9,7 +9,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Modulus.Core.Abstractions;
 using Modulus.Core.Abstractions.Security;
+using Modulus.Events.Abstractions;
 using Modulus.Identity.Abstractions;
+using Modulus.Identity.IntegrationEvents;
 using Modulus.Storage;
 
 /// <summary>
@@ -76,6 +78,24 @@ public class AccountController<TUser>(
         return Ok(new { message = NonCommittalMessage });
     }
 
+    // Publishes the password change to the bus when the host has one. The event carries no secret, and a failed publish is logged, not
+    // raised: the password is already changed, so the reset must still answer success.
+    private async Task PublishPasswordChangedAsync(Guid userId)
+    {
+        var bus = HttpContext.RequestServices.GetService<IModuleBus>();
+        if (bus is null)
+            return;
+        try
+        {
+            await bus.PublishAsync(new PasswordChangedIntegrationEvent(userId, DateTimeOffset.UtcNow), HttpContext.RequestAborted);
+        }
+        catch (Exception ex)
+        {
+            HttpContext.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger("Modulus.Identity.Account")
+                .LogError(ex, "Publishing the password change for {UserId} failed.", userId);
+        }
+    }
+
     /// <summary>
     /// Resets a user's password using a reset token (obtained from forgot-password).
     /// </summary>
@@ -100,6 +120,7 @@ public class AccountController<TUser>(
         if (!result.Succeeded)
             return MapIdentityFailure(result);
 
+        await PublishPasswordChangedAsync(user.Id);
         return Ok(new { message = "Password has been reset successfully" });
     }
 
@@ -125,6 +146,7 @@ public class AccountController<TUser>(
         var result = await userManager.ResetPasswordAsync(user, request.Token, request.NewPassword);
         if (!result.Succeeded)
             return MapIdentityFailure(result);
+        await PublishPasswordChangedAsync(user.Id);
 
         // Using the invitation activates the account: it may sign in from now on.
         var activating = user.Lifecycle == AccountLifecycle.PendingActivation;
@@ -323,337 +345,8 @@ public class AccountController<TUser>(
         return NoContent();
     }
 
-    /// <summary>The caller's own profile: name, language, time zone, phone and the address on the account.</summary>
-    [HttpGet("profile")]
-    [HttpGet("/api/account/profile")]
-    [Authorize]
-    public async Task<IActionResult> GetProfileAsync()
-    {
-        var user = await CurrentUserAsync();
-        return user is null ? Unauthorized() : Ok(ProfileView(user));
-    }
-
-    /// <summary>
-    /// The caller's profile details (premodule 3): names, photo address, work e-mail, job title and department, with the employee code and
-    /// primary branch an administrator manages (read-only here), and the system-managed fields. Additive to <c>account/profile</c>.
-    /// </summary>
-    [HttpGet("profile/details")]
-    [HttpGet("/api/account/profile/details")]
-    [Authorize]
-    public async Task<IActionResult> GetProfileDetailsAsync()
-    {
-        var user = await CurrentUserAsync();
-        return user is null ? Unauthorized() : Ok(DetailsView(user));
-    }
-
-    /// <summary>
-    /// Updates the caller's profile details. A field left out (null) keeps its value; an empty string clears it. The employee code, the
-    /// primary branch, the sign-in address, the account state and the timestamps are not in this request, so the person cannot set them.
-    /// </summary>
-    [HttpPatch("profile/details")]
-    [HttpPatch("/api/account/profile/details")]
-    [Authorize]
-    public async Task<IActionResult> UpdateProfileDetailsAsync([FromBody] UpdateProfileDetailsRequest request, [FromServices] IIdentityEmailSender emailSender, CancellationToken ct)
-    {
-        var user = await CurrentUserAsync();
-        if (user is null)
-            return Unauthorized();
-        if (!ProfileRules.TryNormalizeDetails(request.FirstName, request.LastName, request.AvatarUrl, request.WorkEmail, request.JobTitle, request.Department,
-                out var values, out var errors))
-            return BadRequest(new { errors });
-
-        if (request.FirstName is not null) user.FirstName = values.FirstName;
-        if (request.LastName is not null) user.LastName = values.LastName;
-        if (request.AvatarUrl is not null) user.AvatarUrl = values.AvatarUrl;
-        if (request.JobTitle is not null) user.JobTitle = values.JobTitle;
-        if (request.Department is not null) user.Department = values.Department;
-        // A work e-mail is never set directly: an address starts a confirmation (below), and an empty value withdraws it at once.
-        if (request.WorkEmail is not null && values.WorkEmail is null)
-        {
-            user.WorkEmail = null;
-            user.PendingWorkEmail = null;
-            user.WorkEmailVerificationStamp = Guid.NewGuid().ToString("N");
-        }
-
-        var result = await userManager.UpdateAsync(user);
-        if (!result.Succeeded)
-            return MapIdentityFailure(result);
-        if (request.WorkEmail is not null && values.WorkEmail is { } address && await RequestWorkEmailAsync(user, address, emailSender, ct) is { } refused)
-            return refused;
-        return Ok(DetailsView(user));
-    }
-
-    /// <summary>
-    /// Starts the confirmation of a work e-mail address and mails the link to it. The answer does not depend on the account, so it does
-    /// not show whether the address is in use. Returns the refusal, or <c>null</c> when the link was sent (or nothing was needed).
-    /// </summary>
-    private async Task<IActionResult?> RequestWorkEmailAsync(TUser user, string address, IIdentityEmailSender emailSender, CancellationToken ct)
-    {
-        var verifier = HttpContext.RequestServices.GetRequiredService<WorkEmailVerifier<TUser>>();
-        var request = await verifier.RequestAsync(user, address);
-        switch (request.Outcome)
-        {
-            case WorkEmailRequestOutcome.Sent:
-                await emailSender.SendWorkEmailVerificationAsync(address, request.Token!, ct);
-                AuditWorkEmail("identity.user.work-email.requested", user);
-                return null;
-            case WorkEmailRequestOutcome.TooSoon:
-                return StatusCode(StatusCodes.Status429TooManyRequests, new { error = "WORK_EMAIL_TOO_SOON", message = "Wait a minute before asking for another confirmation link." });
-            case WorkEmailRequestOutcome.Failed:
-                return MapIdentityFailure(request.Result!);
-            default:
-                return null;
-        }
-    }
-
-    /// <summary>
-    /// Confirms the caller's pending work e-mail with the link's token. The link works once, for 30 minutes by default
-    /// (<c>Identity:WorkEmail</c>), and only the newest one works; the sign-in e-mail is not changed.
-    /// </summary>
-    [HttpPost("profile/work-email/confirm")]
-    [HttpPost("/api/account/profile/work-email/confirm")]
-    [Authorize]
-    public async Task<IActionResult> ConfirmWorkEmailAsync([FromBody] ConfirmWorkEmailRequest request)
-    {
-        var user = await CurrentUserAsync();
-        if (user is null)
-            return Unauthorized();
-        if (string.IsNullOrEmpty(request.Token))
-            return InvalidWorkEmailLink();
-
-        var verifier = HttpContext.RequestServices.GetRequiredService<WorkEmailVerifier<TUser>>();
-        switch (await verifier.ConfirmAsync(user.Id, request.Token))
-        {
-            case WorkEmailConfirmOutcome.Verified:
-                AuditWorkEmail("identity.user.work-email.verified", user);
-                return Ok(DetailsView(user));
-            case WorkEmailConfirmOutcome.Failed:
-                return Conflict(new { error = "WORK_EMAIL_CHANGED", message = "The account changed while the link was used. Try the link again." });
-            case WorkEmailConfirmOutcome.TooManyAttempts:
-                return StatusCode(StatusCodes.Status429TooManyRequests, new { error = "WORK_EMAIL_TOO_MANY_ATTEMPTS", message = "Too many attempts. Ask for a new confirmation link." });
-            case WorkEmailConfirmOutcome.Expired:
-                return StatusCode(StatusCodes.Status410Gone, new { error = "WORK_EMAIL_LINK_EXPIRED", message = "This confirmation link has expired. Ask for a new one." });
-            case WorkEmailConfirmOutcome.Used:
-                return StatusCode(StatusCodes.Status410Gone, new { error = "WORK_EMAIL_LINK_USED", message = "This address is already confirmed. The link cannot be used again." });
-            case WorkEmailConfirmOutcome.Superseded:
-                return BadRequest(new { error = "WORK_EMAIL_LINK_SUPERSEDED", message = "A newer confirmation link was sent. Use the newest link, or ask for a new one." });
-            default:
-                return InvalidWorkEmailLink();
-        }
-    }
-
-    private IActionResult InvalidWorkEmailLink()
-        => BadRequest(new { error = "WORK_EMAIL_LINK_INVALID", message = "The confirmation link is invalid, expired or already used. Ask for a new one." });
-
-    private void AuditWorkEmail(string action, TUser user)
-        => HttpContext.RequestServices.GetService<ISecurityAuditLog>()?.Record(new SecurityAuditEvent
-        {
-            Category = SecurityAuditCategories.Identity,
-            Action = action,
-            Actor = user.Id.ToString("D"),
-            Target = $"user:{user.Id:D}",
-        });
-
-    /// <summary>
-    /// Replaces the caller's photo (premodule 3). The body is the image; its bytes decide the format (JPEG, PNG or WebP, still, at most
-    /// 5 MB, sides up to 4096 px), not its content type. The stored photo is a normalized square under a random key, and the original is
-    /// not kept. The previous photo is removed only after the new one is saved; if saving the account fails, the new one is removed.
-    /// </summary>
-    [HttpPut("profile/photo")]
-    [HttpPut("/api/account/profile/photo")]
-    [Authorize]
-    public async Task<IActionResult> UploadProfilePhotoAsync(CancellationToken ct)
-    {
-        var user = await CurrentUserAsync();
-        if (user is null)
-            return Unauthorized();
-        var storage = HttpContext.RequestServices.GetService<IFileStorage>();
-        if (storage is null)
-            return StatusCode(StatusCodes.Status503ServiceUnavailable, new { error = "PHOTO_STORAGE_UNAVAILABLE", message = "Photo storage is not configured." });
-
-        var processor = HttpContext.RequestServices.GetRequiredService<IProfilePhotoProcessor>();
-        var processed = await processor.ProcessAsync(Request.Body, ct);
-        if (!processed.Accepted)
-            return PhotoRefused(processed.Refusal);
-
-        var assetId = Guid.NewGuid();
-        var path = ProfilePhotoRules.StoragePath(user.TenantId, assetId);
-        await using (var stream = new MemoryStream(processed.Jpeg!))
-            await storage.UploadAsync(path, stream, "image/jpeg", ct);
-
-        var previous = user.PhotoAssetId;
-        user.PhotoAssetId = assetId;
-        IdentityResult result;
-        try
-        {
-            result = await userManager.UpdateAsync(user);
-        }
-        catch
-        {
-            await DeleteStoredPhotoAsync(storage, path, ct);
-            throw;
-        }
-        if (!result.Succeeded)
-        {
-            await DeleteStoredPhotoAsync(storage, path, ct);
-            return MapIdentityFailure(result);
-        }
-
-        if (previous is { } replaced)
-            await DeleteStoredPhotoAsync(storage, ProfilePhotoRules.StoragePath(user.TenantId, replaced), ct);
-        return Ok(DetailsView(user));
-    }
-
-    /// <summary>Removes the caller's photo. The account is saved first, so a stored file is removed only once nothing refers to it.</summary>
-    [HttpDelete("profile/photo")]
-    [HttpDelete("/api/account/profile/photo")]
-    [Authorize]
-    public async Task<IActionResult> DeleteProfilePhotoAsync(CancellationToken ct)
-    {
-        var user = await CurrentUserAsync();
-        if (user is null)
-            return Unauthorized();
-        if (user.PhotoAssetId is not { } current)
-            return NoContent();
-
-        user.PhotoAssetId = null;
-        var result = await userManager.UpdateAsync(user);
-        if (!result.Succeeded)
-            return MapIdentityFailure(result);
-
-        if (HttpContext.RequestServices.GetService<IFileStorage>() is { } storage)
-            await DeleteStoredPhotoAsync(storage, ProfilePhotoRules.StoragePath(user.TenantId, current), ct);
-        return NoContent();
-    }
-
-    /// <summary>The caller's photo, as a JPEG. Only the account's own photo is served, and only from the account's own tenant folder.</summary>
-    [HttpGet("profile/photo")]
-    [HttpGet("/api/account/profile/photo")]
-    [Authorize]
-    public async Task<IActionResult> GetProfilePhotoAsync(CancellationToken ct)
-    {
-        var user = await CurrentUserAsync();
-        if (user is null)
-            return Unauthorized();
-        if (user.PhotoAssetId is not { } current || HttpContext.RequestServices.GetService<IFileStorage>() is not { } storage)
-            return NotFound();
-
-        var path = ProfilePhotoRules.StoragePath(user.TenantId, current);
-        if (!await storage.ExistsAsync(path, ct))
-            return NotFound();
-
-        Response.Headers.CacheControl = "private, no-cache";
-        return File(await storage.DownloadAsync(path, ct), "image/jpeg");
-    }
-
-    private IActionResult PhotoRefused(ProfilePhotoRefusal refusal)
-    {
-        var (status, code, message) = ProfilePhotoRules.Describe(refusal);
-        return StatusCode(status, new { error = code, message });
-    }
-
-    /// <summary>
-    /// Removes a stored photo. A failure is logged, not thrown: the account no longer refers to the file, and a leftover is an orphan a
-    /// cleanup can remove, so it should not fail the request that already changed the account.
-    /// </summary>
-    private async Task DeleteStoredPhotoAsync(IFileStorage storage, string path, CancellationToken ct)
-    {
-        try
-        {
-            await storage.DeleteAsync(path, ct);
-        }
-        catch (Exception ex) when (ex is not OperationCanceledException)
-        {
-            HttpContext.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger("Modulus.Identity.ProfilePhotos")
-                .LogWarning(ex, "Could not remove the profile photo {Path}; it is an orphan until a cleanup removes it.", path);
-        }
-    }
-
-    /// <summary>
-    /// Updates the caller's own name, language, time zone and phone. A person changes only their own profile, and the address
-    /// changes only through <c>profile/email</c>.
-    /// </summary>
-    [HttpPut("profile")]
-    [HttpPut("/api/account/profile")]
-    [Authorize]
-    public async Task<IActionResult> UpdateProfileAsync([FromBody] UpdateProfileRequest request)
-    {
-        var user = await CurrentUserAsync();
-        if (user is null)
-            return Unauthorized();
-        if (!ProfileRules.TryNormalize(request.DisplayName, request.Language, request.TimeZone, request.PhoneNumber,
-                out var values, out var errors))
-            return BadRequest(new { errors });
-
-        user.DisplayName = values.DisplayName;
-        user.Language = values.Language;
-        user.TimeZone = values.TimeZone;
-        if (!string.Equals(user.PhoneNumber, values.PhoneNumber, StringComparison.Ordinal))
-        {
-            // A changed number is unconfirmed until the person proves it again.
-            user.PhoneNumber = values.PhoneNumber;
-            user.PhoneNumberConfirmed = false;
-        }
-
-        var result = await userManager.UpdateAsync(user);
-        return result.Succeeded ? Ok(ProfileView(user)) : MapIdentityFailure(result);
-    }
-
-    /// <summary>
-    /// Starts an email change: a one-time link goes to the <em>new</em> address, and the change completes only when that link is used
-    /// (<c>profile/email/confirm</c>). The answer is the same whether or not the address is taken, so this does not show which addresses
-    /// have accounts. The mail is sent inline (not through the queue, which only mails stored addresses), so the caller is signed in.
-    /// </summary>
-    [HttpPost("profile/email")]
-    [HttpPost("/api/account/profile/email")]
-    [Authorize]
-    public async Task<IActionResult> RequestEmailChangeAsync(
-        [FromBody] ChangeEmailRequest request,
-        [FromServices] IIdentityEmailSender emailSender,
-        CancellationToken ct)
-    {
-        var user = await CurrentUserAsync();
-        if (user is null)
-            return Unauthorized();
-        var address = ProfileRules.NormalizeEmail(request.NewEmail);
-        if (address is null)
-            return BadRequest(new { errors = new Dictionary<string, string[]> { ["newEmail"] = ["Enter a valid email address."] } });
-
-        if (!string.Equals(address, user.Email, StringComparison.OrdinalIgnoreCase) && await userManager.FindByEmailAsync(address) is null)
-        {
-            var token = await userManager.GenerateChangeEmailTokenAsync(user, address);
-            await emailSender.SendEmailChangeEmailAsync(address, token, ct);
-        }
-
-        return Accepted(new { message = "If the address can be used, a link has been sent to it." });
-    }
-
-    /// <summary>Completes an email change with the link's token. The token works only for this account and this address.</summary>
-    [HttpPost("profile/email/confirm")]
-    [HttpPost("/api/account/profile/email/confirm")]
-    [Authorize]
-    public async Task<IActionResult> ConfirmEmailChangeAsync([FromBody] ConfirmEmailChangeRequest request)
-    {
-        var user = await CurrentUserAsync();
-        if (user is null)
-            return Unauthorized();
-        var address = ProfileRules.NormalizeEmail(request.NewEmail);
-        if (address is null || string.IsNullOrEmpty(request.Token) || await userManager.FindByEmailAsync(address) is not null)
-            return InvalidEmailOrToken();
-
-        var result = await userManager.ChangeEmailAsync(user, address, request.Token);
-        return result.Succeeded ? Ok(ProfileView(user)) : MapIdentityFailure(result);
-    }
-
     private async Task<TUser?> CurrentUserAsync()
         => CallerId() is { } id ? await userManager.FindByIdAsync(id.ToString()) : null;
-
-    private static ProfileDetailsResponse DetailsView(TUser user) => new(
-        user.Id, user.UserName, user.Email, user.IsActive, user.FirstName, user.LastName, user.AvatarUrl, user.WorkEmail, user.JobTitle,
-        user.Department, user.EmployeeCode, user.PrimaryBranchId, user.CreatedAt, user.ModifiedAt, user.PhotoAssetId is not null, user.PendingWorkEmail, user.PhotoAssetId is not null ? "/api/account/profile/photo" : null);
-
-    private static ProfileResponse ProfileView(TUser user) => new(
-        user.DisplayName, user.Language, user.TimeZone, user.PhoneNumber, user.Email, user.EmailConfirmed);
 
     private Guid? CallerId()
         => Guid.TryParse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("sub")?.Value, out var id) ? id : null;
@@ -716,109 +409,6 @@ public sealed class TwoFactorDisableRequest
 {
     /// <summary>The account's password.</summary>
     public string? Password { get; set; }
-}
-
-/// <summary>Request body for <c>PUT account/profile</c>. Every field is optional; an empty value clears it.</summary>
-public sealed class UpdateProfileRequest
-{
-    /// <summary>The name the person shows to others.</summary>
-    public string? DisplayName { get; set; }
-
-    /// <summary>The language as a BCP 47 tag, for example <c>en-GB</c>.</summary>
-    public string? Language { get; set; }
-
-    /// <summary>The time zone as an IANA or Windows id, for example <c>Europe/London</c>.</summary>
-    public string? TimeZone { get; set; }
-
-    /// <summary>The contact phone number.</summary>
-    public string? PhoneNumber { get; set; }
-}
-
-/// <summary>The caller's profile (<c>GET account/profile</c>).</summary>
-/// <param name="DisplayName">The chosen name, if any.</param>
-/// <param name="Language">The BCP 47 language tag, if any.</param>
-/// <param name="TimeZone">The time zone id, if any.</param>
-/// <param name="PhoneNumber">The contact phone number, if any.</param>
-/// <param name="Email">The address on the account.</param>
-/// <param name="EmailConfirmed">Whether the address has been confirmed.</param>
-public sealed record ProfileResponse(
-    string? DisplayName,
-    string? Language,
-    string? TimeZone,
-    string? PhoneNumber,
-    string? Email,
-    bool EmailConfirmed);
-
-/// <summary>
-/// Request body for <c>PATCH account/profile/details</c>. A field left out (null) keeps its value; an empty string clears it.
-/// Employee code, primary branch and the account's own address are not here: an administrator sets the first two, and the address changes only through <c>profile/email</c>.
-/// </summary>
-public sealed class UpdateProfileDetailsRequest
-{
-    /// <summary>The first name (at most 100 characters).</summary>
-    public string? FirstName { get; set; }
-
-    /// <summary>The last name (at most 100 characters).</summary>
-    public string? LastName { get; set; }
-
-    /// <summary>The address of the profile photo: an https address of at most 2048 characters.</summary>
-    public string? AvatarUrl { get; set; }
-
-    /// <summary>The work e-mail address, a contact address (the sign-in address is separate).</summary>
-    public string? WorkEmail { get; set; }
-
-    /// <summary>The job title (at most 100 characters).</summary>
-    public string? JobTitle { get; set; }
-
-    /// <summary>The department (at most 100 characters).</summary>
-    public string? Department { get; set; }
-}
-
-/// <summary>
-/// The caller's profile details (<c>GET account/profile/details</c>). The fields an administrator manages (<see cref="EmployeeCode"/>,
-/// <see cref="PrimaryBranchId"/>) and the system-managed ones (<see cref="Id"/>, <see cref="UserName"/>, <see cref="IsActive"/>,
-/// <see cref="CreatedAt"/>, <see cref="ModifiedAt"/>) are read-only here.
-/// </summary>
-public sealed record ProfileDetailsResponse(
-    Guid Id,
-    string? UserName,
-    string? Email,
-    bool IsActive,
-    string? FirstName,
-    string? LastName,
-    string? AvatarUrl,
-    string? WorkEmail,
-    string? JobTitle,
-    string? Department,
-    string? EmployeeCode,
-    Guid? PrimaryBranchId,
-    DateTimeOffset? CreatedAt,
-    DateTimeOffset? ModifiedAt,
-    bool HasPhoto = false,
-    string? PendingWorkEmail = null,
-    string? PhotoUrl = null);
-
-/// <summary>Request body for <c>profile/work-email/confirm</c>: the token from the confirmation link.</summary>
-public sealed class ConfirmWorkEmailRequest
-{
-    public string? Token { get; set; }
-}
-
-/// <summary>Request body for <c>profile/email</c>: the address the account should move to.</summary>
-public sealed class ChangeEmailRequest
-{
-    /// <summary>The new address.</summary>
-    public string? NewEmail { get; set; }
-}
-
-/// <summary>Request body for <c>profile/email/confirm</c>.</summary>
-public sealed class ConfirmEmailChangeRequest
-{
-    /// <summary>The address the link was sent to.</summary>
-    public string? NewEmail { get; set; }
-
-    /// <summary>The token from the link.</summary>
-    public string? Token { get; set; }
 }
 
 /// <summary>Request body for <c>accept-invitation</c>.</summary>

@@ -68,9 +68,6 @@ public static partial class AuthorizationManagementExtensions
         services.AddOptions<AuthorizationManagementOptions>();
         services.AddOptions<PermissionExceptionOptions>();
 
-        // The role deletion clearance check reads the grant store (premodule 1, D-P1). TryAdd so an app can replace it.
-        services.TryAddScoped<IRoleDeletionGuard, RoleDeletionGuard>();
-
         // Every mutating endpoint resolves ICurrentUser to attribute the audit
         // event (blueprint §5.14/§16). Normally registered by AddModulus/
         // AddMediator/AddModulusIdentity — TryAdd so this package doesn't
@@ -424,7 +421,7 @@ public static partial class AuthorizationManagementExtensions
             if (scope.Kind is ScopeKind.Assigned && UnknownAssignmentType(scopeMaps, scope.Value) is { } unknownType)
                 return unknownType;
 
-            if (request.Permission is null || request.Permission.EndsWith(":*", StringComparison.Ordinal))
+            if (request.Permission is null || Modulus.Authorization.PermissionNames.IsWildcard(request.Permission))
                 return Results.ValidationProblem(new Dictionary<string, string[]>
                 {
                     ["permission"] = ["Name one registered permission; wildcards belong in role definitions, not in scoped or temporary grants."],
@@ -724,7 +721,7 @@ public static partial class AuthorizationManagementExtensions
                 return Results.ValidationProblem(new Dictionary<string, string[]> { ["holder"] = ["A holder is required."] });
             if (holderType is GrantHolderType.User && !Guid.TryParse(request.Holder, out _))
                 return Results.ValidationProblem(new Dictionary<string, string[]> { ["holder"] = ["A user limit takes the user id."] });
-            if (request.Permission is null || request.Permission.EndsWith(":*", StringComparison.Ordinal))
+            if (request.Permission is null || Modulus.Authorization.PermissionNames.IsWildcard(request.Permission))
                 return Results.ValidationProblem(new Dictionary<string, string[]> { ["permission"] = ["Name one registered permission."] });
             _ = GrantGuards.Expand(registry, [request.Permission], out var unknown);
             if (unknown.Count > 0)
@@ -1115,7 +1112,7 @@ public static partial class AuthorizationManagementExtensions
             .Distinct(StringComparer.OrdinalIgnoreCase).ToList();
         if (permissions.Count < 2)
             return Results.ValidationProblem(new Dictionary<string, string[]> { ["permissions"] = ["Name at least two different permissions."] });
-        if (permissions.Any(p => p.EndsWith(":*", StringComparison.Ordinal)))
+        if (permissions.Any(p => Modulus.Authorization.PermissionNames.IsWildcard(p)))
             return Results.ValidationProblem(new Dictionary<string, string[]> { ["permissions"] = ["Name registered permissions, not wildcards."] });
 
         _ = GrantGuards.Expand(registry, permissions, out var unknown);
@@ -1467,7 +1464,7 @@ public static partial class AuthorizationManagementExtensions
                 });
 
             // Only permissions modules declared; wildcards are not delegable (a delegation names exactly what it lends).
-            if (request.Permissions.Any(p => p.EndsWith(":*", StringComparison.Ordinal)))
+            if (request.Permissions.Any(p => Modulus.Authorization.PermissionNames.IsWildcard(p)))
                 return Results.ValidationProblem(new Dictionary<string, string[]>
                 {
                     ["permissions"] = ["Wildcards cannot be delegated; name each permission."],

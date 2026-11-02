@@ -14,7 +14,6 @@ using Modulus.Identity;
 using Modulus.Identity.Abstractions;
 using Modulus.Identity.EntityFrameworkCore;
 using Modulus.Identity.Guards;
-using Modulus.Identity.Media;
 using OpenIddict.Abstractions;
 
 public static class IdentityExtensions
@@ -40,12 +39,7 @@ public static class IdentityExtensions
             .Get<ModulusIdentityOptions>() ?? new ModulusIdentityOptions();
 
         services.AddHttpContextAccessor();
-        // Profile photos (premodule 3): the default processor validates and re-encodes the upload; an app may register its own before this.
-        services.TryAddSingleton<IProfilePhotoProcessor, ProfilePhotoProcessor>();
-        // Work-e-mail confirmation (premodule 3): the lifetime and cooldown of the link, the clock it expires on, and the verifier per user type.
-        services.Configure<WorkEmailVerificationOptions>(configuration.GetSection(WorkEmailVerificationOptions.SectionName));
         services.TryAddSingleton(TimeProvider.System);
-        services.TryAdd(ServiceDescriptor.Scoped(typeof(WorkEmailVerifier<>), typeof(WorkEmailVerifier<>)));
         UseClaimsPrincipalCurrentUser(services);
 
         // Token delivery for the account endpoints (password reset / email
@@ -139,8 +133,8 @@ public static class IdentityExtensions
         // Authorization administration resolves roles here instead of trusting role names in a request body.
         services.TryAddScoped<IUserRoleDirectory, IdentityUserRoleDirectory<TUser>>();
 
-        // The company audit summary shows who acted by display name (decision 7). Replaces the null default whatever the order of registration.
-        services.Replace(ServiceDescriptor.Scoped<IUserDisplayNameDirectory, IdentityUserDisplayNameDirectory<TUser>>());
+        // The framework keeps no profile data. An application maps outside details (names, for example) onto its own columns.
+        services.TryAddScoped<IExternalAccountProfile<TUser>, NoExternalAccountProfile<TUser>>();
 
         // Replace the deny-default validator (registered by AddModulusOpenIddict)
         // with the SignInManager-backed implementation so the password grant

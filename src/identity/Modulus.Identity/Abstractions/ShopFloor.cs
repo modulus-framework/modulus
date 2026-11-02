@@ -64,12 +64,10 @@ public static class ShopFloorGrant
 
 /// <summary>One line of a shop-floor import.</summary>
 /// <param name="EmployeeCode">The employee code (unique within the company).</param>
-/// <param name="FirstName">Given name.</param>
-/// <param name="LastName">Surname.</param>
 /// <param name="Roles">Roles to give; each must exist.</param>
 /// <param name="InitialPin">The PIN to start with; null or empty makes the import choose one.</param>
 public sealed record ShopFloorImportRow(
-    string EmployeeCode, string? FirstName = null, string? LastName = null, IReadOnlyList<string>? Roles = null, string? InitialPin = null);
+    string EmployeeCode, IReadOnlyList<string>? Roles = null, string? InitialPin = null);
 
 /// <summary>The outcome of one import line.</summary>
 /// <param name="EmployeeCode">The code as given.</param>
@@ -93,8 +91,6 @@ public interface IShopFloorAccountService
         Guid tenantId,
         string employeeCode,
         string pin,
-        string? firstName = null,
-        string? lastName = null,
         IEnumerable<string>? roles = null,
         CancellationToken ct = default);
 

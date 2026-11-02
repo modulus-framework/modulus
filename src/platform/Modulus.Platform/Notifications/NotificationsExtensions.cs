@@ -2,6 +2,8 @@ namespace Modulus.Notifications;
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Modulus.Events.Abstractions;
+using Modulus.Identity.IntegrationEvents;
 
 public static class NotificationsExtensions
 {
@@ -15,6 +17,12 @@ public static class NotificationsExtensions
         services.TryAddSingleton(TimeProvider.System);
         services.TryAddSingleton<INotificationStore, InMemoryNotificationStore>();
         services.TryAddScoped<INotificationPublisher, NotificationPublisher>();
+        services.TryAddSingleton<INotificationPreferenceStore, InMemoryNotificationPreferenceStore>();
+        services.TryAddScoped<INotificationSender, NotificationSender>();
+        services.TryAddScoped<INotificationInbox, NotificationInbox>();
+
+        // The notification module consumes the identity module's events through its contracts only.
+        services.TryAddEnumerable(ServiceDescriptor.Transient<IIntegrationEventHandler<PasswordChangedIntegrationEvent>, PasswordChangedNotificationHandler>());
         return services;
     }
 }

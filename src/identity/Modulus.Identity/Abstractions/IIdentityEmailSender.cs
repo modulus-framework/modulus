@@ -38,23 +38,6 @@ public interface IIdentityEmailSender
     /// </summary>
     Task SendInvitationEmailAsync(string email, string invitationToken, CancellationToken ct = default)
         => SendPasswordResetEmailAsync(email, invitationToken, ct);
-
-    /// <summary>
-    /// Sends an email-change link to the <em>new</em> address (<c>POST account/profile/email</c>); the link completes the change at
-    /// <c>POST account/profile/email/confirm</c>, which is a different endpoint from the sign-up confirmation. The default sends it as a
-    /// confirmation mail, so an app that keeps the default must point its link at <c>profile/email/confirm</c>; override this to word and
-    /// route it separately.
-    /// </summary>
-    Task SendEmailChangeEmailAsync(string newEmail, string changeToken, CancellationToken ct = default)
-        => SendEmailConfirmationEmailAsync(newEmail, changeToken, ct);
-
-    /// <summary>
-    /// Sends the link that confirms a work e-mail address (premodule 3): the link confirms at <c>POST account/profile/work-email/confirm</c>,
-    /// a route of its own (the sign-in address is never changed by it). The default sends it as a confirmation mail, so an app that keeps
-    /// the default must point its link at that route; override this to word and route it separately.
-    /// </summary>
-    Task SendWorkEmailVerificationAsync(string workEmail, string verificationToken, CancellationToken ct = default)
-        => SendEmailConfirmationEmailAsync(workEmail, verificationToken, ct);
 }
 
 /// <summary>

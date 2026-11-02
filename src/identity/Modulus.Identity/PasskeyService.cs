@@ -45,7 +45,7 @@ internal sealed class PasskeyService<TContext, TUser>(
 
         var created = fido2.RequestNewCredential(new RequestNewCredentialParams
         {
-            User = new Fido2User { Id = userId.ToByteArray(), Name = user.UserName ?? user.Email ?? userId.ToString("N"), DisplayName = user.FullName },
+            User = new Fido2User { Id = userId.ToByteArray(), Name = user.UserName ?? user.Email ?? userId.ToString("N"), DisplayName = user.UserName ?? user.Email ?? userId.ToString("N") },
             ExcludeCredentials = [.. existing.Select(id => new PublicKeyCredentialDescriptor(id))],
             AuthenticatorSelection = new AuthenticatorSelection
             {

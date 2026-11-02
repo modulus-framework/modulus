@@ -13,29 +13,9 @@ internal static class FeatureEndpoints
     public static WebApplication MapApiFeatures(this WebApplication app)
     {
 {{ if auth == "openiddict" }}        app.MapModulusNavigation();
-        // User administration under /api so the BFF forwards it: list, read, roles, lock and unlock (identity:accounts:manage).
-        app.MapModulusUserAdmin<Modulus.Identity.Abstractions.ModulusUser>("/api/identity/users");
-        // The permission catalog and the roles (create, list); a role's permissions go through the grant rules.
-        app.MapModulusPermissionCatalog();
-        app.MapModulusRoleAdmin<Modulus.Identity.Abstractions.ModulusRole>();
-{{ if example_permission }}        app.MapModulusRolePermissions();
-        // Deleting a role is refused while it still holds grants, so it needs the grant store (AddModulusAuthorizationManagement).
-        app.MapModulusRoleDelete<Modulus.Identity.Abstractions.ModulusRole, Modulus.Identity.Abstractions.ModulusUser>();
 {{ if example_permission }}        // Settings administration: the registered settings, read and written per scope (settings:manage; global needs settings:global:manage).
         Modulus.Settings.SettingsAdministrationEndpoints.MapModulusSettingAdministration(app);
-{{ if multi_tenancy }}        // Company administration under /api/tenancy/tenants (tenants:manage, host context only).
-        Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminEndpoints.MapModulusTenantAdmin<Modulus.MultiTenancy.EntityFrameworkCore.TenantEntity, Modulus.MultiTenancy.EntityFrameworkCore.TenantMembershipEntity, Modulus.MultiTenancy.EntityFrameworkCore.TenantDataStoreEntity>(app);
-{{ end }}{{ end }}{{ if multi_tenancy }}        // The company switcher list: the companies the caller holds an active membership in (any signed-in caller).
-        Modulus.MultiTenancy.CompanySwitcherEndpoints.MapModulusCompanySwitcher(app);
-        // The branch list for the picker: the open organizational units inside the caller's scope (any signed-in caller).
-        Modulus.Authorization.Management.OrgBranchEndpoints.MapModulusOrgBranches(app);
-{{ end }}{{ if use_security_guard }}        // The security audit viewer: search, verify the chain and export, for holders of audit:security:view.
-        Modulus.AuditLogging.Security.SecurityAuditViewerEndpoints.MapModulusSecurityAuditViewer(app);
-        // The business audit viewer: search and read the business audit log (audit:view), in the caller's company.
-        Modulus.AuditLogging.BusinessAuditViewerEndpoints.MapModulusBusinessAuditViewer(app);
-        // The company audit summary: the caller's company's events, decoded to six fields (audit:company-summary:view).
-        Modulus.AuditLogging.Security.CompanyAuditSummaryEndpoints.MapModulusCompanyAuditSummary(app);
 {{ end }}{{ end }}
-{{ end }}        return app;
+        return app;
     }
 }

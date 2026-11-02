@@ -44,9 +44,6 @@ CALL modulus_upgrade_add_column(@user_table, 'Lifecycle', "varchar(32) NOT NULL 
 CALL modulus_upgrade_add_column(@user_table, 'LifecycleChangedAt', 'datetime NULL');
 CALL modulus_upgrade_add_column(@user_table, 'SuspensionReason', 'varchar(64) NULL');
 CALL modulus_upgrade_add_column(@user_table, 'SuspensionNote', 'varchar(512) NULL');
-CALL modulus_upgrade_add_column(@user_table, 'MustChangePin', 'tinyint(1) NOT NULL DEFAULT 0');
-CALL modulus_upgrade_add_column(@user_table, 'EmployeeCode', 'varchar(255) NULL');
-CALL modulus_upgrade_add_column(@user_table, 'PinHash', 'longtext NULL');
 CALL modulus_upgrade_add_column(@user_table, 'ExternalId', 'varchar(255) NULL');
 -- MySQL allows no default on a TEXT type: existing rows read as '' (an empty object to the application).
 CALL modulus_upgrade_add_column(@user_table, 'ExtraProperties', 'longtext NOT NULL');
@@ -57,7 +54,6 @@ PREPARE stmt FROM @backfill;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
-CALL modulus_upgrade_add_index(@user_table, 'IX_AspNetUsers_TenantId_EmployeeCode', '`TenantId`, `EmployeeCode`', FALSE);
 CALL modulus_upgrade_add_index(@user_table, 'IX_AspNetUsers_TenantId_ExternalId', '`TenantId`, `ExternalId`', FALSE);
 
 CREATE TABLE IF NOT EXISTS ModulusAccountTransitions (

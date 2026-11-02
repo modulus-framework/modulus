@@ -21,6 +21,12 @@ public sealed record SettingDefinition(
     /// </summary>
     public IReadOnlyList<string> AllowedValues { get; init; } = [];
 
+    /// <summary>
+    /// True for a credential or other secret. Administrator reads show a mask in place of the value, and the value is never written to
+    /// an audit trail. Server code still reads the real value through <see cref="ISettingManager"/>.
+    /// </summary>
+    public bool IsSensitive { get; init; }
+
     /// <summary>The scopes a value may be stored at. Default every scope. A value at a scope not listed here is refused.</summary>
     public SettingScopes AllowedScopes { get; init; } = SettingScopes.All;
 

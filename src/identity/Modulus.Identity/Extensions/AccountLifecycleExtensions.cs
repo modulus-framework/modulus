@@ -50,12 +50,27 @@ public static class AccountLifecycleExtensions
     public const string OrganizationManagePermission = "identity:accounts:organization:manage";
 
     /// <summary>
+    /// The permission to create a shared role: one that every company sees. Critical, and held by the installation's operators only: a shared
+    /// role is created from the host context, outside any company.
+    /// </summary>
+    public const string SharedRolePermission = "identity:roles:shared:manage";
+
+    /// <summary>
     /// The company's owner role. The first administrator of a new deployment receives it (never every administrator), and it holds the
     /// account permissions by default. Only an owner can grant or revoke it, and the last active owner cannot be demoted.
     /// </summary>
     public const string TenantOwnerRole = "TenantOwner";
 
-    /// <summary>Registers the permissions and the field guard for personal fields. Requires <c>AddModulusAuthorization</c> for the permissions to be enforced.</summary>
+    // True when the user is an active Tenant Owner and no other active account holds the role.
+    internal static async Task<bool> IsLastActiveTenantOwnerAsync<TUser>(UserManager<TUser> users, TUser user) where TUser : ModulusUser
+    {
+        if (!user.IsActive || !await users.IsInRoleAsync(user, TenantOwnerRole))
+            return false;
+        var owners = await users.GetUsersInRoleAsync(TenantOwnerRole);
+        return !owners.Any(o => o.Id != user.Id && o.IsActive);
+    }
+
+    /// <summary>Registers the account permissions. Requires <c>AddModulusAuthorization</c> for the permissions to be enforced.</summary>
     public static IServiceCollection AddModulusAccountLifecycleAdmin(this IServiceCollection services)
     {
         services.AddPermissions("Modulus.Identity.Accounts", registry =>
@@ -76,19 +91,17 @@ public static class AccountLifecycleExtensions
                 null,
                 PermissionSensitivity.Sensitive);
             registry.Add(
+                SharedRolePermission,
+                "Create a shared role that every company sees (created from the host context, outside any company).",
+                null,
+                PermissionSensitivity.Critical);
+            registry.Add(
                 OrganizationManagePermission,
                 "Change the organization details of accounts: the employee code and the primary branch.",
                 null,
                 PermissionSensitivity.Sensitive);
         });
 
-        // Restricted fields (name, email, work email, phone, employee code) need the personal-data clearance; Confidential fields (job title,
-        // department) need the organization clearance. Holding the account administration permission alone opens neither.
-        var accountFields = FieldSecurityProfile.Define(profile => profile
-            .Classification(FieldClassification.Restricted, read: PersonalDataPermission)
-            .Classification(FieldClassification.Confidential, read: OrganizationPermission));
-        services.AddFieldSecurity<UserSummary>(accountFields);
-        services.AddFieldSecurity<UserDetail>(accountFields);
         return services;
     }
 
@@ -105,7 +118,7 @@ public static class AccountLifecycleExtensions
             // Disabling or archiving the last active owner would leave the company without one; another owner must be named first.
             if (body.To is AccountLifecycle.Disabled or AccountLifecycle.Archived
                 && await users.FindByIdAsync(id.ToString()) is { } target
-                && await UserAdminExtensions.IsLastActiveTenantOwnerAsync(users, target))
+                && await IsLastActiveTenantOwnerAsync(users, target))
             {
                 return Results.Conflict(new { error = "LAST_TENANT_OWNER", message = "The last active Tenant Owner cannot be disabled or archived. Name another owner first." });
             }

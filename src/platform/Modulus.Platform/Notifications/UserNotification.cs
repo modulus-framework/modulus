@@ -16,6 +16,11 @@ public sealed record UserNotification
 
     public required string Title { get; init; }
 
+    /// <summary>
+    /// A dotted category such as <c>orders.shipped</c>, used by per-person channel preferences. Null for notifications published without one.
+    /// </summary>
+    public string? Category { get; init; }
+
     public string? Message { get; init; }
 
     public DateTimeOffset CreatedAt { get; init; }

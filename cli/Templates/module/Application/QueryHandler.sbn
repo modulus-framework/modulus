@@ -9,7 +9,9 @@ public sealed class {{ feature_name }}Handler : IQueryHandler<{{ feature_name }}
         {{ feature_name }}Query query,
         CancellationToken ct)
     {
-        // TODO: Implement {{ feature_name }} logic here
-        return await Task.FromResult(new { });
+        // Not implemented yet: fails loudly so an unfinished query never returns an empty result as if it were real.
+        // Replace this body (and the object response type) with the {{ feature_name }} logic.
+        await Task.CompletedTask;
+        throw new NotImplementedException("{{ feature_name }}Handler is a scaffold: implement HandleAsync.");
     }
 }

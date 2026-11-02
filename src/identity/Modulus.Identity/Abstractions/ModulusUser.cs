@@ -4,8 +4,18 @@ using Modulus.Core.Abstractions.Entities;
 namespace Modulus.Identity.Abstractions;
 
 /// <summary>
-/// Base user entity for all Modulus applications.
-/// Extends ASP.NET Identity with tenant support and profile fields.
+/// Base user entity for all Modulus applications: the ASP.NET Identity account, the company (tenant) it belongs to, and the account
+/// state the framework itself needs (lifecycle, suspension, provisioning). Profile data (names, photos, job details, contact
+/// addresses, shop-floor codes) is not part of the framework. An application subclasses this type and adds the columns it needs:
+/// <code>
+/// public sealed class AppUser : ModulusUser
+/// {
+///     public required string FirstName { get; set; }
+///     public required string LastName { get; set; }
+/// }
+/// </code>
+/// and passes it to <c>AddModulusIdentity&lt;AppUser, ...&gt;</c>. Hooks that map outside data onto the subclass are
+/// <see cref="IExternalAccountProfile{TUser}"/> and the display-name directory (<c>IUserDisplayNameDirectory</c>).
 /// </summary>
 public class ModulusUser : IdentityUser<Guid>, IHasExtraProperties
 {
@@ -17,63 +27,12 @@ public class ModulusUser : IdentityUser<Guid>, IHasExtraProperties
     public Dictionary<string, string?> ExtraProperties { get; set; } = [];
 
     public Guid? TenantId { get; set; }
-    public string? FirstName { get; set; }
-    public string? LastName { get; set; }
-    public string? AvatarUrl { get; set; }
     public bool IsActive { get; set; } = true;
 
     /// <summary>
-    /// The name the person chose for themselves (self-service profile, <c>PUT account/profile</c>). Null when not set. Needs a column in
-    /// apps that already have users.
+    /// The identifier the provisioning system (SCIM client, HR system) uses for this person. Null for an account it did not
+    /// create. Needs a column in apps that already have users.
     /// </summary>
-    public string? DisplayName { get; set; }
-
-    /// <summary>The person's language as a BCP 47 tag (for example <c>en-GB</c>). Null when not set. Needs a column in apps that already have users.</summary>
-    public string? Language { get; set; }
-
-    /// <summary>The person's time zone as an IANA or Windows id (for example <c>Europe/London</c>). Null when not set. Needs a column in apps that already have users.</summary>
-    public string? TimeZone { get; set; }
-
-    /// <summary>
-    /// The person's work e-mail address: a contact address, separate from the sign-in address (<see cref="Microsoft.AspNetCore.Identity.IdentityUser{TKey}.Email"/>).
-    /// Null when not set. Needs a column in apps that already have users.
-    /// </summary>
-    public string? WorkEmail { get; set; }
-
-    /// <summary>
-    /// The work e-mail address waiting for its owner's confirmation. It is not the work e-mail until confirmed. Null when none is pending.
-    /// Needs a column in apps that already have users.
-    /// </summary>
-    public string? PendingWorkEmail { get; set; }
-
-    /// <summary>The stamp of the newest confirmation link; a link works only while it carries this stamp. Null when none is out.</summary>
-    public string? WorkEmailVerificationStamp { get; set; }
-
-    /// <summary>When the newest confirmation was requested (the cooldown runs from it). Null when never requested.</summary>
-    public DateTimeOffset? WorkEmailRequestedAt { get; set; }
-
-    /// <summary>Failed confirmation attempts since the newest request. At the limit, confirmation is refused until a new request. Needs a column.</summary>
-    public int ConfirmationFailures { get; set; }
-
-    /// <summary>The person's job title. Null when not set. Needs a column in apps that already have users.</summary>
-    public string? JobTitle { get; set; }
-
-    /// <summary>The department the person works in. Null when not set. Needs a column in apps that already have users.</summary>
-    public string? Department { get; set; }
-
-    /// <summary>
-    /// The opaque id of the person's uploaded photo (premodule 3). The photo is stored under a key derived from this id and the tenant
-    /// (<see cref="Modulus.Identity.Abstractions.ProfilePhotoRules.StoragePath"/>), so the account refers to a stored file, never to an
-    /// arbitrary address. Null when there is no uploaded photo. Needs a column in apps that already have users.
-    /// </summary>
-    public Guid? PhotoAssetId { get; set; }
-
-    /// <summary>
-    /// The org unit (branch) the person works in primarily. Set by an administrator (<c>PATCH identity/users/{id}/organization</c>), not by the
-    /// person. Null when not set. Needs a column in apps that already have users.
-    /// </summary>
-    public Guid? PrimaryBranchId { get; set; }
-
     /// <summary>
     /// Shop-floor employee code, upper-case, unique within the company (checked when it is set). Null for an ordinary account.
     /// Needs a column in apps that already have users.
@@ -89,10 +48,6 @@ public class ModulusUser : IdentityUser<Guid>, IHasExtraProperties
     /// </summary>
     public bool MustChangePin { get; set; }
 
-    /// <summary>
-    /// The identifier the provisioning system (SCIM client, HR system) uses for this person. Null for an account it did not
-    /// create. Needs a column in apps that already have users.
-    /// </summary>
     public string? ExternalId { get; set; }
 
     /// <summary>
@@ -113,7 +68,6 @@ public class ModulusUser : IdentityUser<Guid>, IHasExtraProperties
     /// <summary>When the account last changed through SCIM (<c>meta.lastModified</c>); null when SCIM never changed it.</summary>
     public DateTimeOffset? ModifiedAt { get; set; }
 
-
     /// <summary>When <see cref="Lifecycle"/> last changed; null for an account that never moved.</summary>
     public DateTimeOffset? LifecycleChangedAt { get; set; }
 
@@ -125,9 +79,4 @@ public class ModulusUser : IdentityUser<Guid>, IHasExtraProperties
 
     /// <summary>The note that goes with the suspension (required by <see cref="SuspensionReasons.RequiresNote"/> reasons).</summary>
     public string? SuspensionNote { get; set; }
-
-    public string FullName =>
-        string.IsNullOrWhiteSpace(FirstName) && string.IsNullOrWhiteSpace(LastName)
-            ? UserName ?? Email ?? "Unknown"
-            : $"{FirstName} {LastName}".Trim();
 }

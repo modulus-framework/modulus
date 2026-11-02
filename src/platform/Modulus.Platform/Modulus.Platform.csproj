@@ -21,6 +21,7 @@
     <PackageReference Include="ZiggyCreatures.FusionCache" />
     <PackageReference Include="ZiggyCreatures.FusionCache.Serialization.SystemTextJson" />
     <ProjectReference Include="../../messaging/Modulus.Events/Modulus.Events.csproj" />
+    <ProjectReference Include="../../identity/Modulus.Identity.IntegrationEvents/Modulus.Identity.IntegrationEvents.csproj" />
   </ItemGroup>
 
   <ItemGroup>

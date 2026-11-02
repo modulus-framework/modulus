@@ -16,7 +16,7 @@ using Modulus.Identity.Abstractions;
 /// <param name="LastName">Surname.</param>
 /// <param name="Groups">The groups the system says the person belongs to.</param>
 /// <param name="EmailVerified">The system vouches that <paramref name="Email"/> belongs to the person; only then may it link to an existing account.</param>
-internal sealed record ExternalPrincipal(
+public sealed record ExternalPrincipal(
     string Provider, string Subject, string? UserName, string? Email, string? FirstName, string? LastName, IReadOnlyCollection<string> Groups,
     bool EmailVerified = false);
 
@@ -38,7 +38,8 @@ internal sealed record ExternalSignIn<TUser>(TUser? User, string? Denial) where 
 internal sealed class ExternalAccountProvisioner<TUser>(
     UserManager<TUser> users,
     IServiceProvider services,
-    ILogger<ExternalAccountProvisioner<TUser>> logger)
+    ILogger<ExternalAccountProvisioner<TUser>> logger,
+    IExternalAccountProfile<TUser> profile)
     where TUser : ModulusUser, new()
 {
     public async Task<ExternalSignIn<TUser>> SignInAsync(ExternalPrincipal person, ExternalProvisioningRules rules, CancellationToken ct = default)
@@ -100,10 +101,9 @@ internal sealed class ExternalAccountProvisioner<TUser>(
             Email = person.Email?.Trim(),
             // The outside system vouches for the address; there is no first-password link to prove it.
             EmailConfirmed = !string.IsNullOrWhiteSpace(person.Email),
-            FirstName = person.FirstName,
-            LastName = person.LastName,
             TenantId = rules.TenantId,
         };
+        profile.Apply(user, person);
         var result = await users.CreateAsync(user);
         if (!result.Succeeded)
         {
@@ -144,20 +144,7 @@ internal sealed class ExternalAccountProvisioner<TUser>(
 
     private async Task RefreshProfileAsync(TUser user, ExternalPrincipal person)
     {
-        var changed = false;
-        if (!string.IsNullOrWhiteSpace(person.FirstName) && user.FirstName != person.FirstName)
-        {
-            user.FirstName = person.FirstName;
-            changed = true;
-        }
-
-        if (!string.IsNullOrWhiteSpace(person.LastName) && user.LastName != person.LastName)
-        {
-            user.LastName = person.LastName;
-            changed = true;
-        }
-
-        if (changed)
+        if (profile.Apply(user, person))
             await users.UpdateAsync(user);
     }
 

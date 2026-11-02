@@ -11,11 +11,9 @@ namespace Modulus.Identity;
 /// <param name="Email">Their e-mail address (also their user name when <paramref name="UserName"/> is null).</param>
 /// <param name="Roles">The roles they start with; each must exist.</param>
 /// <param name="TenantId">The company the account belongs to; null for a host-level account.</param>
-/// <param name="FirstName">Optional first name.</param>
-/// <param name="LastName">Optional last name.</param>
 /// <param name="UserName">Optional user name.</param>
 public sealed record UserInvitation(
-    string Email, IReadOnlyCollection<string>? Roles = null, Guid? TenantId = null, string? FirstName = null, string? LastName = null, string? UserName = null);
+    string Email, IReadOnlyCollection<string>? Roles = null, Guid? TenantId = null, string? UserName = null);
 
 /// <summary>The outcome of one invitation.</summary>
 /// <param name="Email">The address invited.</param>
@@ -52,7 +50,7 @@ internal sealed class UserInvitationService<TUser>(
     where TUser : ModulusUser, new()
 {
     // The fields the caller supplies on an invitation. Lifecycle and IsActive are set by the server, not the caller.
-    private static readonly string[] InvitedFields = ["Email", "UserName", "TenantId", "FirstName", "LastName"];
+    private static readonly string[] InvitedFields = ["Email", "UserName", "TenantId"];
 
     public async Task<IReadOnlyList<InvitationResult>> InviteManyAsync(IEnumerable<UserInvitation> invitations, CancellationToken ct = default)
     {
@@ -107,8 +105,6 @@ internal sealed class UserInvitationService<TUser>(
                 UserName = string.IsNullOrWhiteSpace(invitation.UserName) ? email : invitation.UserName.Trim(),
                 Email = email,
                 TenantId = invitation.TenantId,
-                FirstName = invitation.FirstName,
-                LastName = invitation.LastName,
                 Lifecycle = AccountLifecycle.Invited,
                 IsActive = false,
             };

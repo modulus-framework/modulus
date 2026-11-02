@@ -9,6 +9,12 @@ public sealed class StorageOptions
     public string? AccessKey { get; set; }
     public string? SecretKey { get; set; }
     public string? Endpoint { get; set; }
+
+    /// <summary>
+    /// Address buckets in the path (<c>endpoint/bucket/key</c>) instead of as a subdomain. Needed by self-hosted S3 servers such as
+    /// MinIO and Ceph; Wasabi, Backblaze B2 and Cloudflare R2 work with the default (subdomain) style.
+    /// </summary>
+    public bool ForcePathStyle { get; set; }
     public string? ConnectionString { get; set; }
 
     /// <summary>

@@ -154,7 +154,7 @@ public static partial class AuthorizationManagementExtensions
             if (hours < 1 || hours > profile.MaxHours)
                 return Results.ValidationProblem(new Dictionary<string, string[]> { ["hours"] = [$"Emergency access lasts 1 to {profile.MaxHours} hours."] });
             _ = GrantGuards.Expand(registry, profile.Permissions, out var unknown);
-            if (unknown.Count > 0 || profile.Permissions.Any(p => p.EndsWith(":*", StringComparison.Ordinal)))
+            if (unknown.Count > 0 || profile.Permissions.Any(p => Modulus.Authorization.PermissionNames.IsWildcard(p)))
                 return Results.Problem(detail: "The break-glass profile is misconfigured (unknown permission or wildcard).", statusCode: StatusCodes.Status500InternalServerError);
 
             // Emergency access may not create the toxic combinations separation of duties exists to prevent.
@@ -219,7 +219,7 @@ public static partial class AuthorizationManagementExtensions
         out List<string> permissions)
     {
         permissions = [];
-        if (asked is null or { Count: 0 } || asked.Any(p => string.IsNullOrWhiteSpace(p) || p.EndsWith(":*", StringComparison.Ordinal)))
+        if (asked is null or { Count: 0 } || asked.Any(p => string.IsNullOrWhiteSpace(p) || Modulus.Authorization.PermissionNames.IsWildcard(p)))
             return Results.ValidationProblem(new Dictionary<string, string[]> { ["permissions"] = ["Name the registered permissions you need (no wildcards)."] });
         permissions = [.. asked.Select(p => p.Trim()).Distinct(StringComparer.OrdinalIgnoreCase)];
         _ = GrantGuards.Expand(registry, permissions, out var unknown);

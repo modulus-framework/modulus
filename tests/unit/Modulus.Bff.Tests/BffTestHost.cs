@@ -55,6 +55,14 @@ internal sealed class FakeAuthServer : IAsyncDisposable
             {
                 case "password" when form["username"] == "alice" && form["password"] == "pw":
                     return Issue();
+                // carol has a second factor: the password is right, so without the code the server asks for it (as Garments does).
+                case "password" when form["username"] == "carol" && form["password"] == "pw" && form["mfa_code"] != "123456":
+                    return Results.Json(new { error = "mfa_required", error_description = "A code from your authenticator app is required." }, statusCode: 400);
+                case "password" when form["username"] == "carol" && form["password"] == "pw":
+                    return Issue();
+                // The impersonation grant: a one-time code gives an access token only (no refresh token).
+                case "urn:modulus:params:oauth:grant-type:impersonation" when form["code"] == "imp-1":
+                    return IssueWithoutRefresh();
                 case "refresh_token" when !RefuseRefresh && form["refresh_token"].ToString().StartsWith("rt-", StringComparison.Ordinal):
                     Interlocked.Increment(ref _refreshCount);
                     await Task.Delay(50);
@@ -110,6 +118,13 @@ internal sealed class FakeAuthServer : IAsyncDisposable
     public string? LastTokenAuthorization { get; private set; }
 
     public string? CurrentAccessToken { get; private set; }
+
+    private IResult IssueWithoutRefresh()
+    {
+        var n = Interlocked.Increment(ref _counter);
+        CurrentAccessToken = "at-" + n;
+        return Results.Json(new { access_token = CurrentAccessToken, expires_in = ExpiresIn, token_type = "Bearer" });
+    }
 
     private IResult Issue()
     {

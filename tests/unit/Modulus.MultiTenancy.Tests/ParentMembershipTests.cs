@@ -9,7 +9,7 @@ using Xunit;
 namespace Modulus.MultiTenancy.Tests;
 
 /// <summary>
-/// A membership of a parent company counts for the companies below it (premodule 2, option 2): a member of the parent may enter a child, and
+/// A membership of a parent company counts for the companies below it: a member of the parent may enter a child, and
 /// a member of a child does not reach its parent. The child's own grants still decide what the member may do there.
 /// </summary>
 [Trait("Category", "Unit")]

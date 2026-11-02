@@ -20,6 +20,7 @@ public static class ModulusMeters
     public static readonly Meter MultiTenancy = new("Modulus.MultiTenancy", Version);
     public static readonly Meter Caching = new("Modulus.Caching", Version);
     public static readonly Meter Authorization = new("Modulus.Authorization", Version);
+    public static readonly Meter Database = new("Modulus.Database", Version);
 
     public static readonly string[] AllMeters =
     [
@@ -32,6 +33,7 @@ public static class ModulusMeters
         MultiTenancy.Name,
         Caching.Name,
         Authorization.Name,
+        Database.Name,
     ];
 
     /// <summary>Outbox: count of messages dispatched successfully.</summary>
@@ -52,28 +54,36 @@ public static class ModulusMeters
         unit: "1",
         description: "Count of outbox dispatches deferred due to transient contention");
 
-    /// <summary>Outbox: current depth (pending messages).</summary>
-    public static readonly UpDownCounter<long> OutboxDepth = Outbox.CreateUpDownCounter<long>(
-        "modulus.outbox.depth",
-        unit: "1",
-        description: "Current count of pending outbox messages");
-
-    // The last depth reported per outbox source ("ef", "mongo"). Processors are scoped, so a per-instance field always started at
-    // zero and the gauge grew by the full depth each cycle; the value has to live here, process-wide.
-    private static readonly Dictionary<string, long> s_lastOutboxDepth = [];
+    // The latest pending depth per outbox source ("ef", "mongo"). Processors are scoped, so the value lives here, process-wide.
+    private static readonly Dictionary<string, long> s_outboxDepth = [];
 
     /// <summary>
-    /// Records an outbox's current pending depth. <see cref="OutboxDepth"/> is an up-down counter, so this adds the change since
-    /// the last report from the same <paramref name="source"/>, not the absolute depth.
+    /// Outbox: current pending depth, as an absolute gauge per <c>source</c> tag. Every replica reads the same outbox table, so each
+    /// replica reports the whole backlog: aggregate across replicas with <c>max</c>, not <c>sum</c>.
     /// </summary>
+    public static readonly ObservableGauge<long> OutboxDepth = Outbox.CreateObservableGauge<long>(
+        "modulus.outbox.depth",
+        ObserveOutboxDepth,
+        unit: "1",
+        description: "Current count of pending outbox messages, per outbox source");
+
+    /// <summary>Records an outbox's current pending depth (absolute, replaces the previous value of the same <paramref name="source"/>).</summary>
     public static void ReportOutboxDepth(string source, long depth)
     {
-        lock (s_lastOutboxDepth)
+        lock (s_outboxDepth)
+            s_outboxDepth[source] = depth;
+    }
+
+    private static IEnumerable<Measurement<long>> ObserveOutboxDepth()
+    {
+        var measurements = new List<Measurement<long>>();
+        lock (s_outboxDepth)
         {
-            s_lastOutboxDepth.TryGetValue(source, out var previous);
-            s_lastOutboxDepth[source] = depth;
-            OutboxDepth.Add(depth - previous);
+            foreach (var (source, depth) in s_outboxDepth)
+                measurements.Add(new Measurement<long>(depth, new KeyValuePair<string, object?>("source", source)));
         }
+
+        return measurements;
     }
 
     /// <summary>Inbox: count of duplicate message attempts (dedup hits).</summary>
@@ -197,6 +207,18 @@ public static class ModulusMeters
         "modulus.authorization.denied",
         unit: "1",
         description: "Count of authorization decisions that denied access");
+
+    /// <summary>Database: duration of one EF Core command (reader, non-query or scalar), per operation and provider.</summary>
+    public static readonly Histogram<double> DatabaseCommandDuration = Database.CreateHistogram<double>(
+        "modulus.db.command.duration",
+        unit: "ms",
+        description: "Duration of an EF Core database command in milliseconds");
+
+    /// <summary>Database: count of EF Core commands that failed.</summary>
+    public static readonly Counter<long> DatabaseCommandErrors = Database.CreateCounter<long>(
+        "modulus.db.command.errors",
+        unit: "1",
+        description: "Count of EF Core database commands that threw");
 
     /// <summary>Mediator: module initialization duration per module.</summary>
     public static readonly Histogram<double> ModuleInitDuration = Mediator.CreateHistogram<double>(

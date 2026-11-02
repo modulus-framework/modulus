@@ -25,7 +25,7 @@ public sealed class ModulusPermissionPolicyProvider(
 
     public Task<AuthorizationPolicy?> GetPolicyAsync(string policyName)
     {
-        if (policyName.Contains(':'))
+        if (PermissionNames.IsPermissionPolicy(policyName))
         {
             var policy = new AuthorizationPolicyBuilder()
                 .RequireAuthenticatedUser()

@@ -82,6 +82,10 @@ internal sealed class AddTenantLifecycleCommand : Command<AddTenantLifecycleComm
 
         Edit(Path.Combine(apiDir, "appsettings.json"), t => TenantLifecycleWiring.EnsureSettings(t, model.ConnectionString), written, app);
 
+        // ── Tenant data of the modules ──────────────────────────────
+        foreach (var module in app.Modules.Where(m => m.Entities.Count > 0))
+            WireModuleTenantData(app, module, written, hints);
+
         // ── Tests ───────────────────────────────────────────────────
         var testsDir = Path.Combine(app.SolutionDir, "tests", $"{app.RootNamespace}.Tests");
         if (Directory.Exists(testsDir))
@@ -93,8 +97,74 @@ internal sealed class AddTenantLifecycleCommand : Command<AddTenantLifecycleComm
         foreach (var hint in hints)
             AnsiConsole.MarkupLine("  [yellow]![/] {0}", Markup.Escape(hint));
         AnsiConsole.MarkupLine("  [grey]Set TenantLifecycle:ExportEncryptionKey (32 random bytes, base64) and TenantLifecycle:CertificateSigningKey (32+ bytes) in the environment or user secrets. Exports are refused until they are set.[/]");
-        AnsiConsole.MarkupLine("  [grey]The lifecycle has no tenant data to act on until modules declare their datasets (ITenantDataHandler).[/]");
+        if (!app.Modules.Any(m => m.Entities.Count > 0))
+            AnsiConsole.MarkupLine("  [grey]No module has entities yet, so the lifecycle has no tenant data to act on. Add entities with generate-crud, then run this command again.[/]");
         return 0;
+    }
+
+    // Each module with entities gets a handler over its own context (export, count, delete), registered in the host.
+    private void WireModuleTenantData(ModuleDiscovery.AppInventory app, ModuleDiscovery.ModuleSummary module, List<string> written, List<string> hints)
+    {
+        var infraName = $"{module.Namespace}.Infrastructure";
+        var infraDir = Path.Combine(module.Directory, infraName);
+        var infraCsproj = Path.Combine(infraDir, $"{infraName}.csproj");
+        if (!File.Exists(infraCsproj))
+        {
+            hints.Add($"{module.Name}: no Infrastructure project, so no tenant-data handler was generated for it.");
+            return;
+        }
+
+        var handlerType = $"{module.Name}TenantDataHandler";
+        var handlerNamespace = $"{module.Namespace}.Infrastructure.TenantData";
+        var entities = module.Entities
+            .Select(e => new TenantDataEntity
+            {
+                Plural = CodeGen.Pluralize(e),
+                Dataset = $"{module.Name.ToLowerInvariant()}.{CodeGen.Pluralize(e).ToLowerInvariant()}",
+            })
+            .ToList();
+        var handler = new TenantDataHandlerModel
+        {
+            ModuleName = module.Name,
+            ModuleNamespace = module.Namespace,
+            Entities = entities,
+        };
+        Write("tenantlifecycle/TenantDataHandler", handler, Path.Combine(infraDir, "TenantData", handlerType + ".cs"), written, app);
+
+        var version = Services.FrameworkVersion.Current;
+        Edit(infraCsproj, t => TenantLifecycleWiring.EnsurePackageReference(t, version), written, app);
+        Edit(ApiHostFiles.FeatureServicesFile(app.ProgramCsPath), t => TenantLifecycleWiring.EnsureHandlerRegistration(t, handlerType, handlerNamespace), written, app);
+
+        var testsDir = Path.Combine(app.SolutionDir, "tests", $"{app.RootNamespace}.Tests");
+        if (Directory.Exists(testsDir))
+        {
+            var first = entities[0];
+            Write("tenantlifecycle/TenantDataHandlerTests", new TenantDataHandlerModel
+            {
+                ModuleName = module.Name,
+                ModuleNamespace = module.Namespace,
+                RootNamespace = app.RootNamespace,
+                Entities = entities,
+                FirstRoute = $"/api/{module.Name.ToLowerInvariant()}/{first.Plural.ToLowerInvariant()}",
+            }, Path.Combine(testsDir, $"{module.Name}TenantDataHandlerTests.cs"), written, app);
+        }
+    }
+
+    internal sealed class TenantDataHandlerModel
+    {
+        public string ModuleName { get; init; } = "";
+        public string ModuleNamespace { get; init; } = "";
+        public List<TenantDataEntity> Entities { get; init; } = [];
+        public string RootNamespace { get; init; } = "";
+        public string FirstRoute { get; init; } = "";
+        public string HandlerType => ModuleName + "TenantDataHandler";
+        public string ModuleNameLower => ModuleName.ToLowerInvariant();
+    }
+
+    internal sealed class TenantDataEntity
+    {
+        public string Plural { get; init; } = "";
+        public string Dataset { get; init; } = "";
     }
 
     internal sealed class LifecycleModel
@@ -110,7 +180,8 @@ internal sealed class AddTenantLifecycleCommand : Command<AddTenantLifecycleComm
         public string ConnectionString => DbProviderInfo.ConnectionString(DbProvider, "TenantLifecycle");
     }
 
-    private void Write(string template, LifecycleModel model, string path, List<string> written, ModuleDiscovery.AppInventory app)
+    private void Write<T>(string template, T model, string path, List<string> written, ModuleDiscovery.AppInventory app)
+        where T : class
     {
         var display = Path.GetRelativePath(app.SolutionDir, path).Replace('\\', '/');
         if (File.Exists(path))

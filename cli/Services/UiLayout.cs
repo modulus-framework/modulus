@@ -2,7 +2,7 @@ namespace Modulus.Cli.Services;
 
 /// <summary>
 /// Where a generated Web project keeps its files, so every <c>modulus ui</c> command and the <c>modulus app</c> templates agree.
-/// It follows the reference layout of the garments-erp Web host:
+/// It follows the reference layout of a generated Web host:
 /// <list type="bullet">
 /// <item><c>Services/ApiClients/&lt;Entity&gt;ApiClient.cs</c>, with the registration in <c>Services/ApiClientExtensions.cs</c></item>
 /// <item><c>Components/Navigation/Menu/&lt;Entities&gt;MenuContributor.cs</c>, found by <c>Composition/MenuRegistration.cs</c></item>

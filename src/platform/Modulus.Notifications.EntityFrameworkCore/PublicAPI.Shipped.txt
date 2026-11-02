@@ -1,0 +1,58 @@
+#nullable enable
+Modulus.Notifications.EntityFrameworkCore.EfNotificationPreferenceStore
+Modulus.Notifications.EntityFrameworkCore.EfNotificationPreferenceStore.EfNotificationPreferenceStore(Modulus.Notifications.EntityFrameworkCore.ModulusNotificationsDbContext! db) -> void
+Modulus.Notifications.EntityFrameworkCore.EfNotificationPreferenceStore.GetAsync(System.Guid? tenantId, System.Guid userId, string! category, Modulus.Notifications.NotificationChannel channel, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool?>!
+Modulus.Notifications.EntityFrameworkCore.EfNotificationPreferenceStore.SetAsync(System.Guid? tenantId, System.Guid userId, string! category, Modulus.Notifications.NotificationChannel channel, bool enabled, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Notifications.EntityFrameworkCore.EfNotificationStore
+Modulus.Notifications.EntityFrameworkCore.EfNotificationStore.DeleteAsync(System.Guid id, System.Guid userId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.Notifications.EntityFrameworkCore.EfNotificationStore.EfNotificationStore(Modulus.Notifications.EntityFrameworkCore.ModulusNotificationsDbContext! db) -> void
+Modulus.Notifications.EntityFrameworkCore.EfNotificationStore.GetOrNullAsync(System.Guid id, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Notifications.UserNotification?>!
+Modulus.Notifications.EntityFrameworkCore.EfNotificationStore.InsertAsync(Modulus.Notifications.UserNotification! notification, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Notifications.EntityFrameworkCore.EfNotificationStore.ListAsync(System.Guid userId, System.Guid? tenantId = null, bool unreadOnly = false, int page = 1, int pageSize = 20, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Core.Abstractions.Common.PagedList<Modulus.Notifications.UserNotification!>!>!
+Modulus.Notifications.EntityFrameworkCore.EfNotificationStore.MarkAllAsReadAsync(System.Guid userId, System.Guid? tenantId = null, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<int>!
+Modulus.Notifications.EntityFrameworkCore.EfNotificationStore.MarkAsReadAsync(System.Guid id, System.Guid userId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.Notifications.EntityFrameworkCore.ModulusNotificationsDbContext
+Modulus.Notifications.EntityFrameworkCore.ModulusNotificationsDbContext.ModulusNotificationsDbContext(Microsoft.EntityFrameworkCore.DbContextOptions! options) -> void
+Modulus.Notifications.EntityFrameworkCore.ModulusNotificationsDbContext.Notifications.get -> Microsoft.EntityFrameworkCore.DbSet<Modulus.Notifications.EntityFrameworkCore.NotificationRow!>!
+Modulus.Notifications.EntityFrameworkCore.ModulusNotificationsDbContext.Preferences.get -> Microsoft.EntityFrameworkCore.DbSet<Modulus.Notifications.EntityFrameworkCore.NotificationPreferenceRow!>!
+Modulus.Notifications.EntityFrameworkCore.NotificationPreferenceRow
+Modulus.Notifications.EntityFrameworkCore.NotificationPreferenceRow.Category.get -> string!
+Modulus.Notifications.EntityFrameworkCore.NotificationPreferenceRow.Category.set -> void
+Modulus.Notifications.EntityFrameworkCore.NotificationPreferenceRow.Channel.get -> Modulus.Notifications.NotificationChannel
+Modulus.Notifications.EntityFrameworkCore.NotificationPreferenceRow.Channel.set -> void
+Modulus.Notifications.EntityFrameworkCore.NotificationPreferenceRow.Enabled.get -> bool
+Modulus.Notifications.EntityFrameworkCore.NotificationPreferenceRow.Enabled.set -> void
+Modulus.Notifications.EntityFrameworkCore.NotificationPreferenceRow.Id.get -> System.Guid
+Modulus.Notifications.EntityFrameworkCore.NotificationPreferenceRow.Id.set -> void
+Modulus.Notifications.EntityFrameworkCore.NotificationPreferenceRow.NotificationPreferenceRow() -> void
+Modulus.Notifications.EntityFrameworkCore.NotificationPreferenceRow.TenantId.get -> System.Guid?
+Modulus.Notifications.EntityFrameworkCore.NotificationPreferenceRow.TenantId.set -> void
+Modulus.Notifications.EntityFrameworkCore.NotificationPreferenceRow.UserId.get -> System.Guid
+Modulus.Notifications.EntityFrameworkCore.NotificationPreferenceRow.UserId.set -> void
+Modulus.Notifications.EntityFrameworkCore.NotificationRow
+Modulus.Notifications.EntityFrameworkCore.NotificationRow.Category.get -> string?
+Modulus.Notifications.EntityFrameworkCore.NotificationRow.Category.set -> void
+Modulus.Notifications.EntityFrameworkCore.NotificationRow.CreatedAtTicks.get -> long
+Modulus.Notifications.EntityFrameworkCore.NotificationRow.CreatedAtTicks.set -> void
+Modulus.Notifications.EntityFrameworkCore.NotificationRow.Id.get -> System.Guid
+Modulus.Notifications.EntityFrameworkCore.NotificationRow.Id.set -> void
+Modulus.Notifications.EntityFrameworkCore.NotificationRow.Message.get -> string?
+Modulus.Notifications.EntityFrameworkCore.NotificationRow.Message.set -> void
+Modulus.Notifications.EntityFrameworkCore.NotificationRow.NotificationRow() -> void
+Modulus.Notifications.EntityFrameworkCore.NotificationRow.ReadAtTicks.get -> long?
+Modulus.Notifications.EntityFrameworkCore.NotificationRow.ReadAtTicks.set -> void
+Modulus.Notifications.EntityFrameworkCore.NotificationRow.Severity.get -> Modulus.Notifications.NotificationSeverity
+Modulus.Notifications.EntityFrameworkCore.NotificationRow.Severity.set -> void
+Modulus.Notifications.EntityFrameworkCore.NotificationRow.TenantId.get -> System.Guid?
+Modulus.Notifications.EntityFrameworkCore.NotificationRow.TenantId.set -> void
+Modulus.Notifications.EntityFrameworkCore.NotificationRow.Title.get -> string!
+Modulus.Notifications.EntityFrameworkCore.NotificationRow.Title.set -> void
+Modulus.Notifications.EntityFrameworkCore.NotificationRow.ToNotification() -> Modulus.Notifications.UserNotification!
+Modulus.Notifications.EntityFrameworkCore.NotificationRow.UserId.get -> System.Guid
+Modulus.Notifications.EntityFrameworkCore.NotificationRow.UserId.set -> void
+Modulus.Notifications.EntityFrameworkCore.NotificationStoreExtensions
+const Modulus.Notifications.EntityFrameworkCore.ModulusNotificationsDbContext.NotificationTable = "modulus_notifications" -> string!
+const Modulus.Notifications.EntityFrameworkCore.ModulusNotificationsDbContext.PreferenceTable = "modulus_notification_preferences" -> string!
+override Modulus.Notifications.EntityFrameworkCore.ModulusNotificationsDbContext.OnModelCreating(Microsoft.EntityFrameworkCore.ModelBuilder! modelBuilder) -> void
+static Modulus.Notifications.EntityFrameworkCore.NotificationRow.From(Modulus.Notifications.UserNotification! n) -> Modulus.Notifications.EntityFrameworkCore.NotificationRow!
+static Modulus.Notifications.EntityFrameworkCore.NotificationStoreExtensions.AddModulusNotificationsStore<TContext>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!

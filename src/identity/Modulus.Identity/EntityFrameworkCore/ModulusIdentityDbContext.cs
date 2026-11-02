@@ -56,6 +56,7 @@ public class ModulusIdentityDbContext<TUser, TRole>(
     /// </summary>
     public override int SaveChanges(bool acceptAllChangesOnSuccess)
     {
+        StampRoleScope();
         var accounts = RecordPasswordHashes();
         var result = base.SaveChanges(acceptAllChangesOnSuccess);
         PrunePasswordHistory(accounts);
@@ -64,10 +65,25 @@ public class ModulusIdentityDbContext<TUser, TRole>(
 
     public override async Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
     {
+        StampRoleScope();
         var accounts = RecordPasswordHashes();
         var result = await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken).ConfigureAwait(false);
         await PrunePasswordHistoryAsync(accounts, cancellationToken).ConfigureAwait(false);
         return result;
+    }
+
+    // A role created inside a company belongs to that company. A shared role (TenantId NULL) is created from the host context only, so a
+    // company cannot make a role that other companies see.
+    private void StampRoleScope()
+    {
+        if (currentTenant.IsHost || currentTenant.TenantId is not { } tenant)
+            return;
+
+        foreach (var entry in ChangeTracker.Entries<TRole>())
+        {
+            if (entry.State == EntityState.Added && entry.Entity.TenantId is null)
+                entry.Entity.TenantId = tenant;
+        }
     }
 
     private List<Guid> RecordPasswordHashes()
@@ -149,6 +165,23 @@ public class ModulusIdentityDbContext<TUser, TRole>(
         _ => null,
     };
 
+    /// <summary>The unique index on (TenantId, NormalizedName) of the roles.</summary>
+    internal const string RoleNameIndexName = "IX_AspNetRoles_TenantId_NormalizedName_Unique";
+
+    /// <summary>The unique index on the names of the shared roles (TenantId NULL).</summary>
+    internal const string SharedRoleNameIndexName = "IX_AspNetRoles_SharedNormalizedName_Unique";
+
+    /// <summary>
+    /// The partial-index filter for the shared-role index. The same rule as the other partial indexes: a provider that cannot
+    /// express it gets no filter, and then two shared roles of one name are not prevented by the database.
+    /// </summary>
+    private string? SharedRoleIndexFilter() => Database.ProviderName switch
+    {
+        "Microsoft.EntityFrameworkCore.SqlServer" => "[TenantId] IS NULL",
+        "Npgsql.EntityFrameworkCore.PostgreSQL" or "Microsoft.EntityFrameworkCore.Sqlite" => "\"TenantId\" IS NULL",
+        _ => null,
+    };
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -160,20 +193,20 @@ public class ModulusIdentityDbContext<TUser, TRole>(
         {
             b.HasIndex(u => u.TenantId);
             b.HasIndex(u => u.Email);
-            // An employee code is unique within a company when it is set (premodule 3). Codes are normalized (trimmed, upper-case) before
+            b.HasIndex(u => new { u.TenantId, u.ExternalId });
+            // An employee code is unique within a company when it is set (shop-floor sign-in). Codes are normalized (trimmed, upper-case) before
             // they are written, so the database compares normalized values. Accounts without a code store NULL, which the filter leaves
             // out of the constraint on providers that index NULLs (SQL Server, PostgreSQL, SQLite). MySQL allows any number of NULLs in a
-            // unique index already, so it takes no filter. Upgrades add the same index (docs/upgrades/identity-platform-2026-10.profile.*.sql).
+            // unique index already, so it takes no filter.
             b.HasIndex(u => new { u.TenantId, u.EmployeeCode })
                 .IsUnique()
                 .HasDatabaseName(EmployeeCodeIndexName)
                 .HasFilter(EmployeeCodeIndexFilter());
-            b.HasIndex(u => new { u.TenantId, u.ExternalId });
             // Existing rows read as the defaults: a person, an active account, no suspension.
             b.Property(u => u.PrincipalKind).HasMaxLength(32).HasDefaultValue(PrincipalKinds.Person);
             b.Property(u => u.Lifecycle).HasConversion<string>().HasMaxLength(32).HasDefaultValue(AccountLifecycle.Active);
-            // Work-email confirmation failures: an existing row starts at zero, as the upgrade script's default does.
-            b.Property(u => u.ConfirmationFailures).HasDefaultValue(0);
+            // Existing rows: no forced PIN change (the shop-floor column, added after users existed).
+            b.Property(u => u.MustChangePin).HasDefaultValue(false);
             b.Property(u => u.SuspensionReason).HasMaxLength(64);
             b.Property(u => u.SuspensionNote).HasMaxLength(512);
             // TenantId is nullable (a host-level account belongs to no
@@ -189,13 +222,29 @@ public class ModulusIdentityDbContext<TUser, TRole>(
                 || (currentTenant.TenantId != null && u.TenantId == currentTenant.TenantId));
         });
 
+        // The framework's role-name index is unique on the name alone, which would stop two companies from each having a role of the
+        // same name. Replaced by the scoped indexes below.
+        builder.Model.FindEntityType(typeof(TRole))?
+            .GetIndexes()
+            .Where(i => i.Properties.Count == 1 && i.Properties[0].Name == nameof(ModulusRole.NormalizedName))
+            .ToList()
+            .ForEach(i => builder.Model.FindEntityType(typeof(TRole))!.RemoveIndex(i.Properties));
+
         builder.Entity<TRole>(b =>
         {
             b.HasIndex(r => r.TenantId);
-            b.HasIndex(r => r.NormalizedName);
+            // A name is unique within a company (TenantId set) and, through the filtered index, among the shared roles (TenantId NULL).
+            b.HasIndex(r => new { r.TenantId, r.NormalizedName })
+                .IsUnique()
+                .HasDatabaseName(RoleNameIndexName);
+            b.HasIndex(r => r.NormalizedName)
+                .IsUnique()
+                .HasDatabaseName(SharedRoleNameIndexName)
+                .HasFilter(SharedRoleIndexFilter());
+            // A company sees its own roles and the shared ones; the host sees every role. An unresolved tenant sees no roles.
             b.HasQueryFilter(r =>
                 currentTenant.IsHost
-                || (currentTenant.TenantId != null && r.TenantId == currentTenant.TenantId));
+                || (currentTenant.TenantId != null && (r.TenantId == null || r.TenantId == currentTenant.TenantId)));
         });
 
         // Password hashes for the reuse check and expiry. Removed with their account.

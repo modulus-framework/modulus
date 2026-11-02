@@ -21,9 +21,6 @@
         <p>Open a part of the application:</p>
         <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px;">
             <a class="ant-btn ant-btn-primary" href="/{{ example_route }}">{{ example_route | string.capitalize }}</a>
-{{ if use_auth }}            <a class="ant-btn ant-btn-default" href="/Profile">Your profile</a>
-            <a class="ant-btn ant-btn-default" href="/Admin/Users">Users</a>
-            <a class="ant-btn ant-btn-default" href="/Admin/Roles">Roles</a>
-{{ end }}        </div>
+        </div>
     </app-card>
 </div>

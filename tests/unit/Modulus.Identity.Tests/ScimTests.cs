@@ -202,7 +202,6 @@ public sealed class ScimTests : IAsyncLifetime
         body.GetProperty("userName").GetString().Should().Be("ali@acme.test");
         body.GetProperty("externalId").GetString().Should().Be("HR-1");
         body.GetProperty("active").GetBoolean().Should().BeTrue();
-        body.GetProperty("name").GetProperty("formatted").GetString().Should().Be("Ali Khan");
 
         using var other = Client(s_other);
         (await other.GetAsync($"/scim/v2/Users/{id}")).StatusCode.Should().Be(HttpStatusCode.NotFound);
@@ -467,7 +466,6 @@ public sealed class ScimTests : IAsyncLifetime
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = await Json(response);
         body.GetProperty("active").GetBoolean().Should().BeFalse();
-        body.GetProperty("name").GetProperty("givenName").GetString().Should().Be("Aliya");
         body.GetProperty("emails")[0].GetProperty("value").GetString().Should().Be("aliya@acme.test");
         _seats.Members.Should().BeEmpty("a deactivated account frees its seat");
     }
@@ -528,7 +526,6 @@ public sealed class ScimTests : IAsyncLifetime
             active = true,
         }));
         put.StatusCode.Should().Be(HttpStatusCode.OK);
-        (await Json(put)).GetProperty("name").GetProperty("familyName").GetString().Should().Be("Raza");
 
         (await client.DeleteAsync($"/scim/v2/Users/{id}")).StatusCode.Should().Be(HttpStatusCode.NoContent);
         (await Json(await client.GetAsync($"/scim/v2/Users/{id}"))).GetProperty("active").GetBoolean().Should().BeFalse();

@@ -7,7 +7,6 @@ using Microsoft.Extensions.Options;
 using Modulus.Core.Abstractions;
 using Modulus.Core.Abstractions.Security;
 using Modulus.Identity.Abstractions;
-
 /// <summary>
 /// Maps a validated external token to a local account, the federated counterpart of
 /// <see cref="IdentityPasswordGrantValidator{TUser}"/>. Registered by <c>AddModulusFederatedLogin</c>.
@@ -35,38 +34,28 @@ internal sealed class FederatedLoginValidator<TUser, TRole>(
     public async Task<PasswordGrantResult> ValidateAsync(string subjectToken, CancellationToken ct = default)
     {
         var settings = options.Value;
-
         var principal = await reader.ReadAsync(subjectToken, ct);
         if (principal is null)
             return Denied(null, "invalid-token");
-
         var external = FederatedClaims.Read(principal, settings);
         if (external is null)
             return Denied(null, "no-subject");
-
         if (!FederatedClaims.EmailDomainAllowed(external.Email, settings.AllowedEmailDomains))
             return Denied(null, "email-domain-not-allowed");
-
         var (user, reason) = await ResolveAccountAsync(external, settings);
         if (user is null)
             return Denied(null, reason ?? "no-account");
-
         if (!user.MayStartNewAccess())
             return Denied(user, "account-disabled");
-
         if (await userManager.IsLockedOutAsync(user))
             return Denied(user, "locked-out");
-
         if (userManager.Options.SignIn.RequireConfirmedEmail && !await userManager.IsEmailConfirmedAsync(user))
             return Denied(user, "email-not-confirmed");
-
         // The provider cannot answer a local second-factor challenge, so such an account must not get in through it.
         if (await userManager.GetTwoFactorEnabledAsync(user))
             return Denied(user, "second-factor-required");
-
         if (!await SyncRolesAsync(user, external, settings))
             return Denied(user, "role-sync-failed");
-
         return new PasswordGrantResult
         {
             Success = true,
@@ -78,7 +67,6 @@ internal sealed class FederatedLoginValidator<TUser, TRole>(
             SecurityStamp = await userManager.GetSecurityStampAsync(user),
         };
     }
-
     /// <summary>Finds the account the subject is linked to, links an existing one by verified email, or creates one.</summary>
     private async Task<(TUser? User, string? Reason)> ResolveAccountAsync(
         FederatedIdentity external, FederatedLoginOptions settings)
@@ -86,7 +74,6 @@ internal sealed class FederatedLoginValidator<TUser, TRole>(
         var linked = await userManager.FindByLoginAsync(settings.ProviderName, external.Subject);
         if (linked is not null)
             return (linked, null);
-
         if (external.Email is not null)
         {
             var sameEmail = await userManager.FindByEmailAsync(external.Email);
@@ -94,18 +81,14 @@ internal sealed class FederatedLoginValidator<TUser, TRole>(
             {
                 if (!(settings.LinkByVerifiedEmail && external.EmailVerified))
                     return (null, "email-in-use");
-
                 var added = await userManager.AddLoginAsync(sameEmail, LoginFor(external, settings));
                 return added.Succeeded ? (sameEmail, null) : (null, "link-failed");
             }
         }
-
         if (!settings.CreateUnknownUsers)
             return (null, "no-account");
-
         return await CreateAccountAsync(external, settings);
     }
-
     private async Task<(TUser? User, string? Reason)> CreateAccountAsync(FederatedIdentity external, FederatedLoginOptions settings)
     {
         // The email is the user name when there is one (it is unique and readable). Without it, a hash of the subject
@@ -113,31 +96,23 @@ internal sealed class FederatedLoginValidator<TUser, TRole>(
         var userName = external.Email ?? $"{settings.ProviderName}-{Hash(external.Subject)}";
         if (await userManager.FindByNameAsync(userName) is not null)
             return (null, "user-name-taken");
-
-        var (first, last) = SplitName(external.Name);
         var user = new TUser
         {
             UserName = userName,
             Email = external.Email,
             EmailConfirmed = external.EmailVerified,
-            FirstName = first,
-            LastName = last,
             IsActive = true,
         };
-
         var created = await userManager.CreateAsync(user);
         if (!created.Succeeded)
             return (null, "create-failed");
-
         var login = await userManager.AddLoginAsync(user, LoginFor(external, settings));
         if (login.Succeeded)
             return (user, null);
-
         // Never leave an account behind that the provider cannot reach.
         await userManager.DeleteAsync(user);
         return (null, "link-failed");
     }
-
     /// <summary>
     /// Brings the account's roles in line with the provider's groups. Adds mapped roles the user lacks (skipping role names
     /// that do not exist locally) and removes mapped roles the user no longer has in the provider. Returns false when a
@@ -148,37 +123,21 @@ internal sealed class FederatedLoginValidator<TUser, TRole>(
         var managed = settings.RoleMap.Values.Concat(settings.DefaultRoles).ToHashSet(StringComparer.OrdinalIgnoreCase);
         var desired = external.LocalRoles.Concat(settings.DefaultRoles).ToHashSet(StringComparer.OrdinalIgnoreCase);
         var current = (await userManager.GetRolesAsync(user)).ToHashSet(StringComparer.OrdinalIgnoreCase);
-
         var toAdd = new List<string>();
         foreach (var role in desired)
         {
             if (!current.Contains(role) && await roleManager.RoleExistsAsync(role))
                 toAdd.Add(role);
         }
-
         var toRemove = current.Where(role => managed.Contains(role) && !desired.Contains(role)).ToList();
-
         if (toRemove.Count > 0 && !(await userManager.RemoveFromRolesAsync(user, toRemove)).Succeeded)
             return false;
-
         return toAdd.Count == 0 || (await userManager.AddToRolesAsync(user, toAdd)).Succeeded;
     }
-
     private static UserLoginInfo LoginFor(FederatedIdentity external, FederatedLoginOptions settings)
         => new(settings.ProviderName, external.Subject, settings.ProviderName);
-
-    private static (string? First, string? Last) SplitName(string? name)
-    {
-        if (string.IsNullOrWhiteSpace(name))
-            return (null, null);
-
-        var parts = name.Trim().Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
-        return (parts[0], parts.Length > 1 ? parts[1] : null);
-    }
-
     private static string Hash(string value)
         => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value)))[..16].ToLowerInvariant();
-
     private PasswordGrantResult Denied(TUser? user, string reason)
     {
         audit?.Record(new SecurityAuditEvent

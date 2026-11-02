@@ -17,7 +17,6 @@ public sealed class PermissionResolver(
 {
     private readonly TimeProvider _clock = clock ?? TimeProvider.System;
 
-    private const string WildcardSuffix = ":*";
 
     private static readonly IReadOnlySet<string> EmptySet =
         new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -140,7 +139,7 @@ public sealed class PermissionResolver(
     }
 
     private static bool IsWildcard(string permission)
-        => permission.EndsWith(WildcardSuffix, StringComparison.Ordinal);
+        => Modulus.Authorization.PermissionNames.IsWildcard(permission);
 
     private void ExpandWildcard(string wildcard, HashSet<string> into, bool includeCritical, List<string>? seeds, IReadOnlySet<string> withRequires)
     {

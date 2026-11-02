@@ -9,7 +9,8 @@ using Modulus.AspNetCore.Idempotency;
 using Modulus.AspNetCore.Logging;
 using Modulus.AspNetCore.RateLimiting;
 using Modulus.AspNetCore.Security;
-{{ if expose_api }}using Modulus.AspNetCore.Http;
+{{ if use_s3_storage }}using Modulus.Storage;
+{{ end }}{{ if expose_api }}using Modulus.AspNetCore.Http;
 using Modulus.AspNetCore.Versioning;
 {{ end }}using Modulus.Caching;
 using Modulus.EntityFrameworkCore.Extensions;
@@ -78,6 +79,10 @@ internal static class CoreServicesSetup
 {{ else }}        // Single node: L1 only. Re-run with '--caching redis' (or call AddRedisFusionCache from Modulus.Caching.Redis)
         // once you run more than one replica.
         builder.Services.AddModulusFusionCache(builder.Configuration);
+{{ end }}
+{{ if use_s3_storage }}        // File storage in S3 or an S3-compatible service (Wasabi, Backblaze B2, Cloudflare R2, MinIO). The endpoint, region and
+        // bucket live in Storage (appsettings.json); the keys come from Storage__AccessKey and Storage__SecretKey, never the file.
+        builder.Services.AddS3FileStorage(builder.Configuration);
 {{ end }}
         // Behaviours are registered once here; each module registers its own handlers, DbContext and IUnitOfWork in its
         // Module composition root.

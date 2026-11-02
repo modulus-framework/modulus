@@ -1,5 +1,6 @@
 namespace Modulus.Settings;
 
+using Modulus.Core.Abstractions;
 using Modulus.Core.Abstractions.Exceptions;
 
 /// <summary>
@@ -31,6 +32,7 @@ public interface ISettingAdministration
 /// <param name="Source">Where <paramref name="EffectiveValue"/> came from.</param>
 /// <param name="IsPinned">Whether the host pins the value (no scope can change it).</param>
 /// <param name="Group">The group the settings screen files the setting under, or null.</param>
+/// <param name="IsSensitive">True for a secret; <paramref name="EffectiveValue"/> is then <see cref="SettingMasking.Mask"/> when a value is set.</param>
 public sealed record SettingView(
     string Name,
     string? DisplayName,
@@ -42,11 +44,38 @@ public sealed record SettingView(
     string? EffectiveValue,
     SettingSource Source,
     bool IsPinned,
-    string? Group = null);
+    string? Group = null,
+    bool IsSensitive = false);
+
+/// <summary>How administrator reads show a secret.</summary>
+public static class SettingMasking
+{
+    /// <summary>Stands in for a secret's value in every administrator read. It is never a real value.</summary>
+    public const string Mask = "********";
+}
 
 /// <inheritdoc cref="ISettingAdministration" />
-public sealed class SettingAdministration(ISettingManager manager, ISettingDefinitionRegistry definitions) : ISettingAdministration
+/// <param name="manager">The setting manager that validates and stores the values.</param>
+/// <param name="definitions">The registered definitions.</param>
+/// <param name="audit">Receives one event per successful change. Optional: without a security audit log, changes are not recorded here.</param>
+/// <param name="currentUser">The person making the change, recorded as the actor. Optional.</param>
+/// <param name="currentTenant">The company whose chain receives the event. Optional: without it the host chain is used.</param>
+public sealed class SettingAdministration(
+    ISettingManager manager,
+    ISettingDefinitionRegistry definitions,
+    ISecurityAuditLog? audit = null,
+    ICurrentUser? currentUser = null,
+    ICurrentTenant? currentTenant = null) : ISettingAdministration
 {
+    /// <summary>The audit category for setting changes.</summary>
+    public const string AuditCategory = "settings";
+
+    /// <summary>The audit action for a changed value.</summary>
+    public const string ChangedAction = "setting.changed";
+
+    /// <summary>The audit action for a removed value.</summary>
+    public const string RemovedAction = "setting.removed";
+
     public async Task<IReadOnlyList<SettingView>> ListAsync(CancellationToken ct = default)
     {
         var views = new List<SettingView>();
@@ -60,31 +89,73 @@ public sealed class SettingAdministration(ISettingManager manager, ISettingDefin
                 definition.ValueType,
                 definition.AllowedValues,
                 definition.AllowedScopes,
-                definition.DefaultValue,
-                resolution.Value,
+                definition.IsSensitive ? null : definition.DefaultValue,
+                MaskIfSensitive(definition, resolution),
                 resolution.Source,
                 resolution.Source == SettingSource.Pinned,
-                definition.Group));
+                definition.Group,
+                definition.IsSensitive));
         }
 
         return views;
     }
 
-    public Task SetAsync(string name, string? value, SettingScope scope, CancellationToken ct = default)
+    public async Task SetAsync(string name, string? value, SettingScope scope, CancellationToken ct = default)
     {
-        RequireDefinition(name);
-        return manager.SetAsync(name, value, scope, ct);
+        var definition = RequireDefinition(name);
+        var before = await manager.ResolveAsync(name, ct).ConfigureAwait(false);
+        await manager.SetAsync(name, value, scope, ct).ConfigureAwait(false);
+        Record(ChangedAction, definition, scope, before, value);
     }
 
-    public Task RemoveAsync(string name, SettingScope scope, CancellationToken ct = default)
+    public async Task RemoveAsync(string name, SettingScope scope, CancellationToken ct = default)
     {
-        RequireDefinition(name);
-        return manager.RemoveAsync(name, scope, ct);
+        var definition = RequireDefinition(name);
+        var before = await manager.ResolveAsync(name, ct).ConfigureAwait(false);
+        await manager.RemoveAsync(name, scope, ct).ConfigureAwait(false);
+        Record(RemovedAction, definition, scope, before, null);
     }
 
-    private void RequireDefinition(string name)
+    // One event per successful change. The values go into the chain only for settings that are not sensitive; a secret is recorded as a
+    // change with no values, so the audit trail can say that it changed without holding it. "Before" is the value that applied before the
+    // change (the effective value), not the value at this scope alone.
+    private void Record(string action, SettingDefinition definition, SettingScope scope, SettingResolution before, string? after)
     {
-        if (definitions.Find(name) is null)
-            throw new NotFoundException($"No setting named '{name}' is registered.");
+        if (audit is null)
+            return;
+
+        var details = new Dictionary<string, string?>
+        {
+            ["scope"] = scope.ToString(),
+            ["sensitive"] = definition.IsSensitive ? "true" : "false",
+        };
+        if (!definition.IsSensitive)
+        {
+            details["before"] = before.Value;
+            details["after"] = after;
+        }
+
+        audit.Record(new SecurityAuditEvent
+        {
+            Category = AuditCategory,
+            Action = action,
+            TenantId = currentTenant?.TenantId,
+            Actor = currentUser?.UserId?.ToString("D"),
+            Target = definition.Name,
+            Details = details,
+        });
     }
+
+    // A secret that no scope or pin sets shows nothing, so a default is never mistaken for a stored value. A stored or pinned secret shows the mask.
+    private static string? MaskIfSensitive(SettingDefinition definition, SettingResolution resolution)
+    {
+        if (!definition.IsSensitive)
+            return resolution.Value;
+
+        var stored = resolution.Source is not (SettingSource.Default or SettingSource.None);
+        return stored && resolution.Value is not null ? SettingMasking.Mask : null;
+    }
+
+    private SettingDefinition RequireDefinition(string name)
+        => definitions.Find(name) ?? throw new NotFoundException($"No setting named '{name}' is registered.");
 }

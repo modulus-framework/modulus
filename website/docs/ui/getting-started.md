@@ -11,7 +11,7 @@ This page creates a web app with the Modulus UI, runs it, and shows where the co
 Pick the engine with `--ui-engine`: `blazor`, `mvc` or `razor-pages`. The app kind must be `webapp+api`, which creates a web project on the UI framework and an API project for it to call.
 
 ```bash
-modulus app Shop --kind webapp+api --ui-engine blazor --database SQLite --auth openiddict --no-example
+modulus app Shop --kind webapp+api --ui-engine blazor --database SQLite --auth openiddict
 ```
 
 Replace `blazor` with `mvc` or `razor-pages` to get the same app in another engine. Omitted options are asked for interactively.
@@ -21,7 +21,7 @@ Replace `blazor` with `mvc` or `razor-pages` to get the same app in another engi
 | `--kind webapp+api` | A web project (the UI) plus an API project. The single-project kind is retired. |
 | `--ui-engine` | `blazor`, `mvc` or `razor-pages` |
 | `--auth` | `openiddict` (the local token server, with sign-in pages), an external provider, or `none` |
-| `--no-example` | Do not add the example `Catalog` module |
+| `--with-example` | Add the example `Catalog` module (off by default) |
 
 The generated solution has two projects that run side by side:
 

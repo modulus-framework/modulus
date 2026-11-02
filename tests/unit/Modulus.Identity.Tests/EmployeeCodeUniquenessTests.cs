@@ -72,16 +72,15 @@ public sealed class EmployeeCodeUniquenessTests : IAsyncDisposable
     }
 
     /// <summary>
-    /// The rule for case and whitespace: a code is trimmed and upper-cased by <c>ProfileRules.NormalizeEmployeeCode</c> and
-    /// <c>ShopFloorRules.NormalizeCode</c> before it is written, so the stored value is one spelling and the constraint compares that.
-    /// Writing "emp001" after "EMP001" therefore collides once it is normalized, which the application does on every write path.
+    /// The rule for case and whitespace: a code is trimmed and upper-cased by <c>ShopFloorRules.NormalizeCode</c> before it is written,
+    /// so the stored value is one spelling and the constraint compares that. Writing "emp001" after "EMP001" therefore collides once
+    /// it is normalized, which the application does on every write path.
     /// </summary>
     [Theory]
     [InlineData("  emp001 ")]
     [InlineData("Emp001")]
     public void Both_normalizers_map_a_spelling_of_a_code_to_the_stored_upper_case_form(string spelling)
     {
-        ProfileRules.NormalizeEmployeeCode(spelling.Trim()).Should().Be("EMP001");
         ShopFloorRules.NormalizeCode(spelling).Should().Be("EMP001");
     }
 

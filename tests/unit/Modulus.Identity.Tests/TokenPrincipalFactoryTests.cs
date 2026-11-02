@@ -158,10 +158,7 @@ public sealed class TokenPrincipalFactoryTests : IAsyncDisposable
             Id = Guid.NewGuid(),
             UserName = "jdoe",
             Email = "jdoe@example.test",
-            FirstName = "Jane",
-            LastName = "Doe",
             TenantId = _tenantId,
-            Department = "Ops",
         };
         (await Users.CreateAsync(user)).Succeeded.Should().BeTrue();
         foreach (var role in roles)
@@ -197,7 +194,6 @@ public sealed class TokenPrincipalFactoryTests : IAsyncDisposable
         await _connection.DisposeAsync();
     }
 
-    // The department is the framework's ModulusUser.Department, so the test subclass declares nothing of its own.
     public sealed class AppUser : ModulusUser
     {
     }

@@ -114,8 +114,15 @@ public sealed class EvictableFixedWindowLimiterTests
         using (await host.Limiter.AcquireAsync(host.ContextFor("reused")))
         {
         }
-        await Task.Delay(Idle + TimeSpan.FromMilliseconds(120));
-        host.Limiter.EvictIdlePartitions().Should().BeGreaterThanOrEqualTo(1);
+        // Poll rather than sleep a fixed time: under load the idle threshold can pass later than any fixed margin.
+        var removed = 0;
+        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(5);
+        while (removed == 0 && DateTime.UtcNow < deadline)
+        {
+            await Task.Delay(20);
+            removed = host.Limiter.EvictIdlePartitions();
+        }
+        removed.Should().BeGreaterThanOrEqualTo(1);
 
         var act = async () =>
         {

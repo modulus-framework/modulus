@@ -40,8 +40,6 @@ public sealed class IdentityEmailLinkTests : IAsyncLifetime
         services.AddSingleton(TimeProvider.System);
         services.AddDbContext<ModulusIdentityDbContext>(o => o.UseSqlite(_connection));
         services.AddIdentityCore<ModulusUser>().AddEntityFrameworkStores<ModulusIdentityDbContext>().AddDefaultTokenProviders();
-        services.AddScoped(typeof(WorkEmailVerifier<>));
-        services.Configure<WorkEmailVerificationOptions>(_ => { });
         services.Configure<IdentityEmailOptions>(o =>
         {
             o.BaseUrl = BaseUrl;
@@ -65,43 +63,6 @@ public sealed class IdentityEmailLinkTests : IAsyncLifetime
         await _scope.DisposeAsync();
         await _provider.DisposeAsync();
         await _connection.DisposeAsync();
-    }
-
-    [Fact]
-    public async Task The_delivered_work_email_link_leads_to_the_confirmation_page_and_confirms_the_account()
-    {
-        using var host = _provider.GetRequiredService<ICurrentTenant>().Change(null);
-        var users = _scope.ServiceProvider.GetRequiredService<UserManager<ModulusUser>>();
-        var ada = new ModulusUser { UserName = "ada", Email = "ada@example.com", IsActive = true };
-        (await users.CreateAsync(ada, "Passw0rd!x")).Succeeded.Should().BeTrue();
-        var verifier = _scope.ServiceProvider.GetRequiredService<WorkEmailVerifier<ModulusUser>>();
-        var sender = _scope.ServiceProvider.GetRequiredService<IIdentityEmailSender>();
-
-        var request = await verifier.RequestAsync(ada, "ada@work.example");
-        await sender.SendWorkEmailVerificationAsync("ada@work.example", request.Token!);
-
-        var mail = _transport.Sent.Should().ContainSingle().Subject;
-        mail.To.Single().Address.Should().Be("ada@work.example");
-        mail.From!.Address.Should().Be("no-reply@shop.example.test");
-        // The link is the one whitespace-delimited address in the body that starts with the base address (a line break ends it).
-        var link = new Uri(System.Text.RegularExpressions.Regex.Matches(mail.Body, @"https://\S+").Select(m => m.Value).Single(v => v.StartsWith(BaseUrl + "ConfirmWorkEmail?token=", StringComparison.Ordinal)));
-        link.Scheme.Should().Be("https");
-        link.AbsolutePath.Should().Be("/ConfirmWorkEmail");
-        var token = System.Web.HttpUtility.ParseQueryString(link.Query)["token"]!;
-
-        (await verifier.ConfirmAsync(ada.Id, token)).Should().Be(WorkEmailConfirmOutcome.Verified, "the token from the delivered link confirms the account");
-    }
-
-    [Fact]
-    public async Task The_email_change_link_carries_the_new_address_and_the_token()
-    {
-        using var host = _provider.GetRequiredService<ICurrentTenant>().Change(null);
-        var sender = _scope.ServiceProvider.GetRequiredService<IIdentityEmailSender>();
-
-        await sender.SendEmailChangeEmailAsync("new@example.com", "tok en&x=1");
-
-        var body = _transport.Sent.Single().Body;
-        body.Should().Contain($"{BaseUrl}ConfirmEmailChange?NewEmail=new%40example.com&Token=tok%20en%26x%3D1");
     }
 
     [Theory]

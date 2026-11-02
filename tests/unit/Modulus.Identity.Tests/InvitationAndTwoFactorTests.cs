@@ -117,7 +117,7 @@ public sealed class InvitationAndTwoFactorTests
         var invitations = scope.ServiceProvider.GetRequiredService<IUserInvitationService>();
         var users = scope.ServiceProvider.GetRequiredService<UserManager<ModulusUser>>();
 
-        var result = await invitations.InviteAsync(new UserInvitation("new.user@example.test", ["Buyer"], FirstName: "New"));
+        var result = await invitations.InviteAsync(new UserInvitation("new.user@example.test", ["Buyer"], UserName: "new.user"));
 
         result.Succeeded.Should().BeTrue();
         var user = (await users.FindByIdAsync(result.UserId!.Value.ToString()))!;
@@ -159,7 +159,7 @@ public sealed class InvitationAndTwoFactorTests
     [Fact]
     public async Task A_refused_field_stops_the_whole_invitation_batch_before_any_account_is_created()
     {
-        var (provider, sender, connection) = await CreateAsync(new DenyFieldsAuthorizer("FirstName"));
+        var (provider, sender, connection) = await CreateAsync(new DenyFieldsAuthorizer("UserName"));
         await using var _ = provider;
         await using var __ = connection;
         using var scope = provider.CreateScope();
@@ -169,7 +169,7 @@ public sealed class InvitationAndTwoFactorTests
         var act = () => invitations.InviteManyAsync(
         [
             new UserInvitation("first@example.test"),
-            new UserInvitation("second@example.test", FirstName: "Protected"),
+            new UserInvitation("second@example.test", UserName: "protected"),
         ]);
 
         var error = await act.Should().ThrowAsync<Modulus.Core.Abstractions.Exceptions.ForbiddenException>();
@@ -181,14 +181,14 @@ public sealed class InvitationAndTwoFactorTests
     [Fact]
     public async Task A_refused_field_stops_a_single_invitation_before_any_account_is_created()
     {
-        var (provider, sender, connection) = await CreateAsync(new DenyFieldsAuthorizer("FirstName"));
+        var (provider, sender, connection) = await CreateAsync(new DenyFieldsAuthorizer("UserName"));
         await using var _ = provider;
         await using var __ = connection;
         using var scope = provider.CreateScope();
         var invitations = scope.ServiceProvider.GetRequiredService<IUserInvitationService>();
         var users = scope.ServiceProvider.GetRequiredService<UserManager<ModulusUser>>();
 
-        var act = () => invitations.InviteAsync(new UserInvitation("single@example.test", FirstName: "Protected"));
+        var act = () => invitations.InviteAsync(new UserInvitation("single@example.test", UserName: "protected"));
 
         await act.Should().ThrowAsync<Modulus.Core.Abstractions.Exceptions.ForbiddenException>();
         (await users.FindByEmailAsync("single@example.test")).Should().BeNull();

@@ -16,9 +16,6 @@ ALTER TABLE :"user_table" ADD COLUMN IF NOT EXISTS "Lifecycle" varchar(32) NOT N
 ALTER TABLE :"user_table" ADD COLUMN IF NOT EXISTS "LifecycleChangedAt" timestamptz NULL;
 ALTER TABLE :"user_table" ADD COLUMN IF NOT EXISTS "SuspensionReason" varchar(64) NULL;
 ALTER TABLE :"user_table" ADD COLUMN IF NOT EXISTS "SuspensionNote" varchar(512) NULL;
-ALTER TABLE :"user_table" ADD COLUMN IF NOT EXISTS "MustChangePin" boolean NOT NULL DEFAULT false;
-ALTER TABLE :"user_table" ADD COLUMN IF NOT EXISTS "EmployeeCode" text NULL;
-ALTER TABLE :"user_table" ADD COLUMN IF NOT EXISTS "PinHash" text NULL;
 ALTER TABLE :"user_table" ADD COLUMN IF NOT EXISTS "ExternalId" text NULL;
 -- Extension values of the account (ModulusUser.ExtraProperties), JSON text; an empty object for existing accounts.
 ALTER TABLE :"user_table" ADD COLUMN IF NOT EXISTS "ExtraProperties" text NOT NULL DEFAULT '{}';
@@ -28,7 +25,6 @@ ALTER TABLE :"user_table" ADD COLUMN IF NOT EXISTS "ExtraProperties" text NOT NU
 UPDATE :"user_table" SET "Lifecycle" = 'Disabled'
 WHERE "IsActive" = false AND "Lifecycle" = 'Active' AND "LifecycleChangedAt" IS NULL;
 
-CREATE INDEX IF NOT EXISTS "IX_AspNetUsers_TenantId_EmployeeCode" ON :"user_table" ("TenantId", "EmployeeCode");
 CREATE INDEX IF NOT EXISTS "IX_AspNetUsers_TenantId_ExternalId" ON :"user_table" ("TenantId", "ExternalId");
 
 -- Lifecycle history: append-only, without a foreign key so it outlives the account.

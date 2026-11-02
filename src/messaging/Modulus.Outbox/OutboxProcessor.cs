@@ -54,30 +54,38 @@ public sealed class OutboxProcessor(
 
         HasMoreWork = false;
         var totalDepth = 0;
-        foreach (var db in contexts)
-        {
-            // Skip contexts with no outbox table mapped (AddOutbox wasn't
-            // called for them). Detected via the model — not by catching an
-            // exception whose message text is brittle across EF versions and
-            // cultures and fires only after a wasted query round-trip.
-            if (db.Model.FindEntityType(typeof(OutboxMessage)) is null)
-                continue;
-            if (perTenantContexts.Contains(db.GetType()))
-                continue;
 
-            try
+        // The host pass reads and updates rows of every tenant, and the host's own, so it runs in the host context. Under row-level
+        // security a context with no tenant sees none of them. Each row is still dispatched in the tenant it was written for
+        // (ProcessContextAsync enters that tenant per message).
+        using (ssp.GetService<ICurrentTenant>()?.Change(null))
+        {
+            foreach (var db in contexts)
             {
-                totalDepth += await ProcessContextAsync(db, ssp, options, ct);
+                // Skip contexts with no outbox table mapped (AddOutbox wasn't
+                // called for them). Detected via the model — not by catching an
+                // exception whose message text is brittle across EF versions and
+                // cultures and fires only after a wasted query round-trip.
+                if (db.Model.FindEntityType(typeof(OutboxMessage)) is null)
+                    continue;
+
+                // A per-tenant context also has its host database: the host's own rows of that context (written in the host context)
+                // are drained here. Its tenant rows live in each tenant's database and are drained per tenant below.
+                try
+                {
+                    totalDepth += await ProcessContextAsync(db, ssp, options, ct);
+                }
+                catch (Exception ex)
+                {
+                    // One failing context must not starve the others: log and
+                    // continue with the remaining contexts; the polling loop
+                    // retries everything on the next cycle.
+                    logger.LogError(ex,
+                        "Outbox processing failed for context {Context}; continuing with remaining contexts.",
+                        db.GetType().Name);
+                }
             }
-            catch (Exception ex)
-            {
-                // One failing context must not starve the others: log and
-                // continue with the remaining contexts; the polling loop
-                // retries everything on the next cycle.
-                logger.LogError(ex,
-                    "Outbox processing failed for context {Context}; continuing with remaining contexts.",
-                    db.GetType().Name);
-            }
+
         }
 
         foreach (var contextType in perTenantContexts)

@@ -5,7 +5,61 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.8.1] - not yet published
+## [2.0.0] - not yet published
+
+### Breaking changes
+- **Premodule layer removed from the framework.** The user, role, permission, company, settings and audit administration APIs and
+  their generated screens, the profile and company-switcher and branch-picker features, and the profile fields of `ModulusUser` are
+  gone. Applications own these (see *Premodule removal* in `docs/DOCUMENTATION.md`). The removed public types are listed as `*REMOVED*`
+  in each `PublicAPI.Unshipped.txt`.
+- **Shop-floor accounts store no names.** `ShopFloorImportRow` and `IShopFloorAccountService.CreateAsync` no longer take first and last
+  names; set names on the application's user type. Existing deployments run `docs/upgrades/identity-shopfloor-2026-10.*.sql`.
+- **`ModulusMeters.OutboxDepth` is an `ObservableGauge<long>`** (was an `UpDownCounter<long>` fed with deltas). Each replica reads
+  the same outbox table, so aggregate `modulus.outbox.depth` with `max` across replicas, not `sum`. Code that called `.Add` on the
+  instrument must call `ModulusMeters.ReportOutboxDepth(source, depth)`. Recorded in `src/core/Modulus.Core/CompatibilitySuppressions.xml`.
+- **The example `Catalog` module is off by default.** `modulus app` creates no sample module unless `--with-example` is given
+  (`--no-example` is still accepted). Interactive runs are asked, with "no" as the default. Scripts that relied on the example must add `--with-example`.
+
+### Added
+- **Package validation** (`EnablePackageValidation`, baseline 1.8.2): every packed library is compared with the last published
+  release, and a breaking change fails the pack unless it is listed in a `CompatibilitySuppressions.xml` with its reason.
+- **`Modulus.Core.Money.Money`**: an exact decimal amount in one ISO 4217 currency. Adding or subtracting different currencies
+  throws `CurrencyMismatchException`; `RoundTo` rounds half away from zero.
+- **`Modulus.Localization.EntityFrameworkCore`**: `AddModulusEfLocalizationStore<TContext>()` replaces the in-memory translation
+  store with a database-backed one. The application derives its DbContext from `ModulusLocalizationDbContext`.
+- **EF Core command telemetry**: every command of a module context is timed as a `Modulus.Database` span and the
+  `modulus.db.command.duration` / `modulus.db.command.errors` instruments (statement text is never recorded).
+- **Time zones**: `Modulus.Core.Time.ZoneTime` (IANA zone ids, conversion, start and exclusive end of a local day, daylight-saving edges).
+- **Money**: `Money.Format(culture)` (currency symbol only in the culture's own currency, ISO 4217 minor units), `Money.Allocate` (exact split).
+- **Presigned POST uploads with a size limit**: `IFileStorage.GetPresignedUploadPostAsync`, implemented for S3 (SigV4 POST policy with
+  `content-length-range`), verified against MinIO. Other providers refuse it.
+- **Tenant data lifecycle** (`Modulus.Tenancy.Lifecycle`, `Modulus.Tenancy.Lifecycle.EntityFrameworkCore`, optional): exports (encrypted
+  archive, expiry), offboarding with legal holds and retention, deletion certificates. Modules declare their datasets and implement their own
+  handlers; no module declares any yet.
+- **Retention scheduling**: `TenantLifecycle:RetentionDriver` = `Scheduler` runs the retention sweep as a recurring job on the platform's
+  scheduler (`TenantLifecycle:RetentionCron`, Quartz for a durable clustered schedule). `Worker` (default) keeps the lifecycle's own worker.
+- **Release signing**: `release.yml` signs and verifies packages and checks the published signatures. Needs a code-signing certificate
+  in CI secrets before the first signed release.
+
+### Changed
+- **Azure Blob presigned uploads** throw `NotSupportedException` (a SAS upload URL cannot limit the size). Upload through `UploadAsync`.
+- **`TenantManager`** implements the new `ITenantStatusWriter` (suspension for offboarding).
+
+
+## [1.8.2] - 2026-11-01
+
+### Fixed
+- **`ModuleLoader.ShutdownAllAsync`** no longer shuts down every module when the first module fails to initialize; once initialization
+  has started, only modules that finished it are shut down (`ShutdownAllAsync_FirstModuleFailedToInitialize_ShutsDownNoModule`).
+
+### Changed
+- **Public API baseline:** `PublicAPI.Unshipped.txt` was merged into `PublicAPI.Shipped.txt` in every project (F-23); new API now goes in
+  the unshipped file again.
+- **CLI scaffolds:** the `generate-command` and `generate-query` handler templates throw `NotImplementedException` instead of returning
+  success (or an empty object) with a `TODO`, so an unfinished handler fails loudly.
+- 1.8.1 was never published; its changes ship in 1.8.2.
+
+## [1.8.1] - not published (shipped in 1.8.2)
 
 ### Breaking changes
 - **Token exchange (spec 12A) uses OpenIddict's built-in RFC 8693 flow.** Clients must send `subject_token_type` and, with an actor

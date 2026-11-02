@@ -7,6 +7,15 @@ public static class BffDefaults
     public const string SessionIdClaim = "bff_sid";
 
     /// <summary>
+    /// Set on an impersonating session: the session id of the caller's own session, whose tokens stay in the token store
+    /// until the impersonation ends. Never returned to the browser.
+    /// </summary>
+    public const string ActorSessionClaim = "bff_actor_sid";
+
+    /// <summary>Set on an impersonating session: the display name of the person doing the impersonating (shown to the browser).</summary>
+    public const string ImpersonatorClaim = "bff_impersonator";
+
+    /// <summary>
     /// When a web session was signed in, in seconds since the Unix epoch. Set once by the cookie's sign-in event and kept
     /// across sliding renewals, so the session ends <c>SessionLifetime</c> after the sign-in, not after the last request.
     /// </summary>

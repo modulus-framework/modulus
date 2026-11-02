@@ -1,0 +1,150 @@
+#nullable enable
+Modulus.Media.IMediaLibrary
+Modulus.Media.IMediaLibrary.DeleteAsync(System.Guid id, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Media.IMediaLibrary.GetAsync(System.Guid id, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Media.MediaItem!>!
+Modulus.Media.IMediaLibrary.ListAsync(Modulus.Media.MediaQuery! query, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Media.MediaPage!>!
+Modulus.Media.IMediaLibrary.OpenAsync(Modulus.Media.MediaItem! item, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.IO.Stream!>!
+Modulus.Media.IMediaLibrary.UploadAsync(System.IO.Stream! content, string! displayName, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Media.MediaItem!>!
+Modulus.Media.IMediaStore
+Modulus.Media.IMediaStore.AddAsync(Modulus.Media.MediaItem! item, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Media.IMediaStore.GetAsync(System.Guid? tenantId, System.Guid id, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Media.MediaItem?>!
+Modulus.Media.IMediaStore.QueryAsync(System.Guid? tenantId, Modulus.Media.MediaQuery! query, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Media.MediaPage!>!
+Modulus.Media.IMediaStore.RemoveAsync(System.Guid? tenantId, System.Guid id, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.Media.InMemoryMediaStore
+Modulus.Media.InMemoryMediaStore.AddAsync(Modulus.Media.MediaItem! item, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Media.InMemoryMediaStore.GetAsync(System.Guid? tenantId, System.Guid id, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Media.MediaItem?>!
+Modulus.Media.InMemoryMediaStore.InMemoryMediaStore() -> void
+Modulus.Media.InMemoryMediaStore.QueryAsync(System.Guid? tenantId, Modulus.Media.MediaQuery! query, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Media.MediaPage!>!
+Modulus.Media.InMemoryMediaStore.RemoveAsync(System.Guid? tenantId, System.Guid id, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.Media.MediaEndpoints
+Modulus.Media.MediaExtensions
+Modulus.Media.MediaFileName
+Modulus.Media.MediaItem
+Modulus.Media.MediaItem.<Clone>$() -> Modulus.Media.MediaItem!
+Modulus.Media.MediaItem.ContentType.get -> string!
+Modulus.Media.MediaItem.ContentType.init -> void
+Modulus.Media.MediaItem.Deconstruct(out System.Guid Id, out System.Guid? TenantId, out string! FileName, out string! ContentType, out Modulus.Media.MediaKind Kind, out long Size, out string! Sha256, out string! StorageKey, out System.Guid? UploadedBy, out System.DateTimeOffset UploadedAt) -> void
+Modulus.Media.MediaItem.Equals(Modulus.Media.MediaItem? other) -> bool
+Modulus.Media.MediaItem.FileName.get -> string!
+Modulus.Media.MediaItem.FileName.init -> void
+Modulus.Media.MediaItem.Id.get -> System.Guid
+Modulus.Media.MediaItem.Id.init -> void
+Modulus.Media.MediaItem.Kind.get -> Modulus.Media.MediaKind
+Modulus.Media.MediaItem.Kind.init -> void
+Modulus.Media.MediaItem.MediaItem(System.Guid Id, System.Guid? TenantId, string! FileName, string! ContentType, Modulus.Media.MediaKind Kind, long Size, string! Sha256, string! StorageKey, System.Guid? UploadedBy, System.DateTimeOffset UploadedAt) -> void
+Modulus.Media.MediaItem.Sha256.get -> string!
+Modulus.Media.MediaItem.Sha256.init -> void
+Modulus.Media.MediaItem.Size.get -> long
+Modulus.Media.MediaItem.Size.init -> void
+Modulus.Media.MediaItem.StorageKey.get -> string!
+Modulus.Media.MediaItem.StorageKey.init -> void
+Modulus.Media.MediaItem.TenantId.get -> System.Guid?
+Modulus.Media.MediaItem.TenantId.init -> void
+Modulus.Media.MediaItem.UploadedAt.get -> System.DateTimeOffset
+Modulus.Media.MediaItem.UploadedAt.init -> void
+Modulus.Media.MediaItem.UploadedBy.get -> System.Guid?
+Modulus.Media.MediaItem.UploadedBy.init -> void
+Modulus.Media.MediaItemResponse
+Modulus.Media.MediaItemResponse.<Clone>$() -> Modulus.Media.MediaItemResponse!
+Modulus.Media.MediaItemResponse.ContentType.get -> string!
+Modulus.Media.MediaItemResponse.ContentType.init -> void
+Modulus.Media.MediaItemResponse.ContentUrl.get -> string!
+Modulus.Media.MediaItemResponse.ContentUrl.init -> void
+Modulus.Media.MediaItemResponse.Deconstruct(out System.Guid Id, out string! FileName, out string! ContentType, out string! Kind, out long Size, out string! Sha256, out System.DateTimeOffset UploadedAt, out string! ContentUrl) -> void
+Modulus.Media.MediaItemResponse.Equals(Modulus.Media.MediaItemResponse? other) -> bool
+Modulus.Media.MediaItemResponse.FileName.get -> string!
+Modulus.Media.MediaItemResponse.FileName.init -> void
+Modulus.Media.MediaItemResponse.Id.get -> System.Guid
+Modulus.Media.MediaItemResponse.Id.init -> void
+Modulus.Media.MediaItemResponse.Kind.get -> string!
+Modulus.Media.MediaItemResponse.Kind.init -> void
+Modulus.Media.MediaItemResponse.MediaItemResponse(System.Guid Id, string! FileName, string! ContentType, string! Kind, long Size, string! Sha256, System.DateTimeOffset UploadedAt, string! ContentUrl) -> void
+Modulus.Media.MediaItemResponse.Sha256.get -> string!
+Modulus.Media.MediaItemResponse.Sha256.init -> void
+Modulus.Media.MediaItemResponse.Size.get -> long
+Modulus.Media.MediaItemResponse.Size.init -> void
+Modulus.Media.MediaItemResponse.UploadedAt.get -> System.DateTimeOffset
+Modulus.Media.MediaItemResponse.UploadedAt.init -> void
+Modulus.Media.MediaKind
+Modulus.Media.MediaKind.Document = 1 -> Modulus.Media.MediaKind
+Modulus.Media.MediaKind.Image = 0 -> Modulus.Media.MediaKind
+Modulus.Media.MediaLibrary
+Modulus.Media.MediaLibrary.DeleteAsync(System.Guid id, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Media.MediaLibrary.GetAsync(System.Guid id, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Media.MediaItem!>!
+Modulus.Media.MediaLibrary.ListAsync(Modulus.Media.MediaQuery! query, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Media.MediaPage!>!
+Modulus.Media.MediaLibrary.MediaLibrary(Modulus.Storage.IFileStorage! storage, Modulus.Media.IMediaStore! store, Modulus.Core.Abstractions.ICurrentTenant! currentTenant, Modulus.Core.Abstractions.ICurrentUser! currentUser, System.TimeProvider! clock, Microsoft.Extensions.Options.IOptions<Modulus.Media.MediaOptions!>! options) -> void
+Modulus.Media.MediaLibrary.OpenAsync(Modulus.Media.MediaItem! item, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.IO.Stream!>!
+Modulus.Media.MediaLibrary.UploadAsync(System.IO.Stream! content, string! displayName, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Media.MediaItem!>!
+Modulus.Media.MediaOptions
+Modulus.Media.MediaOptions.MaxBytes.get -> long
+Modulus.Media.MediaOptions.MaxBytes.set -> void
+Modulus.Media.MediaOptions.MaxFileNameLength.get -> int
+Modulus.Media.MediaOptions.MaxFileNameLength.set -> void
+Modulus.Media.MediaOptions.MediaOptions() -> void
+Modulus.Media.MediaPage
+Modulus.Media.MediaPage.<Clone>$() -> Modulus.Media.MediaPage!
+Modulus.Media.MediaPage.Deconstruct(out System.Collections.Generic.IReadOnlyList<Modulus.Media.MediaItem!>! Items, out int Total) -> void
+Modulus.Media.MediaPage.Equals(Modulus.Media.MediaPage? other) -> bool
+Modulus.Media.MediaPage.Items.get -> System.Collections.Generic.IReadOnlyList<Modulus.Media.MediaItem!>!
+Modulus.Media.MediaPage.Items.init -> void
+Modulus.Media.MediaPage.MediaPage(System.Collections.Generic.IReadOnlyList<Modulus.Media.MediaItem!>! Items, int Total) -> void
+Modulus.Media.MediaPage.Total.get -> int
+Modulus.Media.MediaPage.Total.init -> void
+Modulus.Media.MediaPageResponse
+Modulus.Media.MediaPageResponse.<Clone>$() -> Modulus.Media.MediaPageResponse!
+Modulus.Media.MediaPageResponse.Deconstruct(out System.Collections.Generic.IReadOnlyList<Modulus.Media.MediaItemResponse!>! Items, out int Total, out int Page, out int PageSize) -> void
+Modulus.Media.MediaPageResponse.Equals(Modulus.Media.MediaPageResponse? other) -> bool
+Modulus.Media.MediaPageResponse.Items.get -> System.Collections.Generic.IReadOnlyList<Modulus.Media.MediaItemResponse!>!
+Modulus.Media.MediaPageResponse.Items.init -> void
+Modulus.Media.MediaPageResponse.MediaPageResponse(System.Collections.Generic.IReadOnlyList<Modulus.Media.MediaItemResponse!>! Items, int Total, int Page, int PageSize) -> void
+Modulus.Media.MediaPageResponse.Page.get -> int
+Modulus.Media.MediaPageResponse.Page.init -> void
+Modulus.Media.MediaPageResponse.PageSize.get -> int
+Modulus.Media.MediaPageResponse.PageSize.init -> void
+Modulus.Media.MediaPageResponse.Total.get -> int
+Modulus.Media.MediaPageResponse.Total.init -> void
+Modulus.Media.MediaPermissions
+Modulus.Media.MediaQuery
+Modulus.Media.MediaQuery.<Clone>$() -> Modulus.Media.MediaQuery!
+Modulus.Media.MediaQuery.Deconstruct(out string? Search, out Modulus.Media.MediaKind? Kind, out int Page, out int PageSize) -> void
+Modulus.Media.MediaQuery.Equals(Modulus.Media.MediaQuery? other) -> bool
+Modulus.Media.MediaQuery.Kind.get -> Modulus.Media.MediaKind?
+Modulus.Media.MediaQuery.Kind.init -> void
+Modulus.Media.MediaQuery.MediaQuery(string? Search = null, Modulus.Media.MediaKind? Kind = null, int Page = 1, int PageSize = 50) -> void
+Modulus.Media.MediaQuery.Page.get -> int
+Modulus.Media.MediaQuery.Page.init -> void
+Modulus.Media.MediaQuery.PageSize.get -> int
+Modulus.Media.MediaQuery.PageSize.init -> void
+Modulus.Media.MediaQuery.Search.get -> string?
+Modulus.Media.MediaQuery.Search.init -> void
+const Modulus.Media.MediaPermissions.Manage = "media:manage" -> string!
+const Modulus.Media.MediaPermissions.Read = "media:read" -> string!
+const Modulus.Media.MediaQuery.MaxPageSize = 200 -> int
+override Modulus.Media.MediaItem.Equals(object? obj) -> bool
+override Modulus.Media.MediaItem.GetHashCode() -> int
+override Modulus.Media.MediaItem.ToString() -> string!
+override Modulus.Media.MediaItemResponse.Equals(object? obj) -> bool
+override Modulus.Media.MediaItemResponse.GetHashCode() -> int
+override Modulus.Media.MediaItemResponse.ToString() -> string!
+override Modulus.Media.MediaPage.Equals(object? obj) -> bool
+override Modulus.Media.MediaPage.GetHashCode() -> int
+override Modulus.Media.MediaPage.ToString() -> string!
+override Modulus.Media.MediaPageResponse.Equals(object? obj) -> bool
+override Modulus.Media.MediaPageResponse.GetHashCode() -> int
+override Modulus.Media.MediaPageResponse.ToString() -> string!
+override Modulus.Media.MediaQuery.Equals(object? obj) -> bool
+override Modulus.Media.MediaQuery.GetHashCode() -> int
+override Modulus.Media.MediaQuery.ToString() -> string!
+static Modulus.Media.MediaEndpoints.MapModulusMedia(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! prefix = "/api/media") -> Microsoft.AspNetCore.Routing.RouteGroupBuilder!
+static Modulus.Media.MediaExtensions.AddModulusMedia(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.Media.MediaFileName.Sanitize(string? name, int maxLength) -> string!
+static Modulus.Media.MediaItem.operator !=(Modulus.Media.MediaItem? left, Modulus.Media.MediaItem? right) -> bool
+static Modulus.Media.MediaItem.operator ==(Modulus.Media.MediaItem? left, Modulus.Media.MediaItem? right) -> bool
+static Modulus.Media.MediaItemResponse.operator !=(Modulus.Media.MediaItemResponse? left, Modulus.Media.MediaItemResponse? right) -> bool
+static Modulus.Media.MediaItemResponse.operator ==(Modulus.Media.MediaItemResponse? left, Modulus.Media.MediaItemResponse? right) -> bool
+static Modulus.Media.MediaPage.operator !=(Modulus.Media.MediaPage? left, Modulus.Media.MediaPage? right) -> bool
+static Modulus.Media.MediaPage.operator ==(Modulus.Media.MediaPage? left, Modulus.Media.MediaPage? right) -> bool
+static Modulus.Media.MediaPageResponse.operator !=(Modulus.Media.MediaPageResponse? left, Modulus.Media.MediaPageResponse? right) -> bool
+static Modulus.Media.MediaPageResponse.operator ==(Modulus.Media.MediaPageResponse? left, Modulus.Media.MediaPageResponse? right) -> bool
+static Modulus.Media.MediaQuery.operator !=(Modulus.Media.MediaQuery? left, Modulus.Media.MediaQuery? right) -> bool
+static Modulus.Media.MediaQuery.operator ==(Modulus.Media.MediaQuery? left, Modulus.Media.MediaQuery? right) -> bool

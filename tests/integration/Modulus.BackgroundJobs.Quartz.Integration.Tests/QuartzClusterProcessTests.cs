@@ -104,11 +104,12 @@ public sealed class QuartzClusterProcessTests(QuartzPostgresFixture fixture)
         if (File.Exists(Path.Combine(output, "Microsoft.Extensions.DependencyInjection.dll")))
             return Path.Combine(output, Dll);
 
-        // With the build output redirected, the copy can lack dependencies, so the node runs from its own build folder: under
-        // the same bin folder, the node's project folder with the same framework folder name.
+        // With the build output redirected, the copy can lack dependencies, so the node runs from its own build folder: the
+        // node project is a sibling of this test project, and its output has the same configuration and framework folders.
         var framework = Path.GetFileName(output);
-        var binFolder = Path.GetDirectoryName(Path.GetDirectoryName(output)!)!;
-        return Path.Combine(binFolder, "Modulus.BackgroundJobs.Quartz.ClusterNode", framework, Dll);
+        var configuration = Path.GetFileName(Path.GetDirectoryName(output)!);
+        var projectFolder = Path.GetDirectoryName(Path.GetDirectoryName(Path.GetDirectoryName(output)!)!)!;
+        return Path.Combine(projectFolder, "..", "Modulus.BackgroundJobs.Quartz.ClusterNode", "bin", configuration, framework, Dll);
     }
 
     private sealed record ChildResult(int ExitCode, string Output, string Error);

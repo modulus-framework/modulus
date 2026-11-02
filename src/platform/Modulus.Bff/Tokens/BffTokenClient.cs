@@ -18,8 +18,17 @@ public interface IBffTokenClient
     /// <summary>Resource-owner password grant (for web clients in <see cref="BffLoginMode.Password"/>).</summary>
     Task<BffTokenResult> PasswordAsync(string client, string userName, string password, CancellationToken ct = default);
 
+    /// <summary>
+    /// The password grant with the second factor: <paramref name="mfaCode"/> (an authenticator or recovery code) is sent as
+    /// <c>mfa_code</c> when the account needs one; null sends no code.
+    /// </summary>
+    Task<BffTokenResult> PasswordAsync(string client, string userName, string password, string? mfaCode, CancellationToken ct = default);
+
     /// <summary>The passkey grant: the challenge id from the auth server's passkey options and the browser's assertion.</summary>
     Task<BffTokenResult> PasskeyAsync(string client, string challengeId, string assertion, CancellationToken ct = default);
+
+    /// <summary>The impersonation grant: <paramref name="code"/> is the one-time code the API issued for the person to impersonate. No refresh token.</summary>
+    Task<BffTokenResult> ImpersonateAsync(string client, string code, CancellationToken ct = default);
 
     /// <summary>Refresh-token grant.</summary>
     Task<BffTokenResult> RefreshAsync(string client, string refreshToken, CancellationToken ct = default);
@@ -41,7 +50,13 @@ internal sealed class BffTokenClient(
     /// <summary>The auth server's passkey grant (<c>Modulus.Identity</c>'s PasskeyGrant.GrantType).</summary>
     internal const string PasskeyGrantType = "urn:modulus:params:oauth:grant-type:passkey";
 
+    /// <summary>The auth server's impersonation grant (the identity server's token endpoint of a multi-company app).</summary>
+    internal const string ImpersonationGrantType = "urn:modulus:params:oauth:grant-type:impersonation";
+
     public Task<BffTokenResult> PasswordAsync(string client, string userName, string password, CancellationToken ct = default)
+        => PasswordAsync(client, userName, password, mfaCode: null, ct);
+
+    public Task<BffTokenResult> PasswordAsync(string client, string userName, string password, string? mfaCode, CancellationToken ct = default)
     {
         var options = clients.Get(client);
         var form = new Dictionary<string, string>
@@ -51,6 +66,8 @@ internal sealed class BffTokenClient(
             ["password"] = password,
             ["scope"] = string.Join(' ', options.Scopes),
         };
+        if (!string.IsNullOrEmpty(mfaCode))
+            form["mfa_code"] = mfaCode;
         return RequestAsync(client, options, form, previousRefreshToken: null, ct);
     }
 
@@ -62,6 +79,18 @@ internal sealed class BffTokenClient(
             ["grant_type"] = PasskeyGrantType,
             ["challenge_id"] = challengeId,
             ["assertion"] = assertion,
+            ["scope"] = string.Join(' ', options.Scopes),
+        };
+        return RequestAsync(client, options, form, previousRefreshToken: null, ct);
+    }
+
+    public Task<BffTokenResult> ImpersonateAsync(string client, string code, CancellationToken ct = default)
+    {
+        var options = clients.Get(client);
+        var form = new Dictionary<string, string>
+        {
+            ["grant_type"] = ImpersonationGrantType,
+            ["code"] = code,
             ["scope"] = string.Join(' ', options.Scopes),
         };
         return RequestAsync(client, options, form, previousRefreshToken: null, ct);

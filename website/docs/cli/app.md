@@ -20,7 +20,7 @@ modulus app <name> [options]
 | `--auth` | Auth provider: `none`, `openiddict`, `auth0`, `authentik`, `azuread`, `duende`, `keycloak`, `okta` | prompted |
 | `--kind` | App kind: `api` (an API host, no UI) or `webapp+api` (a web project on the Modulus UI framework plus the API) | prompted |
 | `--ui-engine` | Web apps only: `blazor`, `mvc` or `razor-pages`. Use `none` for an API. See [the UI overview](../ui/overview). | prompted for web apps |
-| `--no-example` | Skip the example Catalog module | prompted (include) |
+| `--with-example` | Include the example Catalog module | off (no example) |
 | `--message-broker` | Message broker: `none`, `rabbitmq`, `kafka` | prompted |
 | `--caching` | Caching provider: `inmemory`, `redis` | prompted |
 | `--storage` | File storage: `local`, `s3`, `azureblobs` | prompted |

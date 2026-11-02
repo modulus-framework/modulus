@@ -46,7 +46,9 @@ public static class DataIsolationExtensions
         where TContext : ModuleDbContext
     {
         ArgumentNullException.ThrowIfNull(interceptor);
-        if (!services.Any(d => d.ImplementationInstance is ModuleDbContextIsolation i && i.ContextType == typeof(TContext)))
+        // Only an entry that already carries a session interceptor counts: a context registered for another isolation first (a database per
+        // tenant, which has none) must still get the row-level one.
+        if (!services.Any(d => d.ImplementationInstance is ModuleDbContextIsolation i && i.ContextType == typeof(TContext) && i.SessionInterceptor is not null))
             services.AddSingleton(new ModuleDbContextIsolation(typeof(TContext), TenantIsolationMode.RowLevelSecurity, interceptor));
         return services;
     }

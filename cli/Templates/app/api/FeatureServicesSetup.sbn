@@ -11,67 +11,17 @@ internal static class FeatureServicesSetup
 {
     public static WebApplicationBuilder AddApiFeatures(this WebApplicationBuilder builder)
     {
-{{ if multi_tenancy }}        // Settings (the Settings page and the navigation overrides) are stored in the tenant store database (ModulusSettingValues),
+{{ if multi_tenancy }}        // Settings values and the navigation overrides are stored in the tenant store database (ModulusSettingValues),
         // so they survive a restart and every node sees them. Registered before the settings system, which keeps this store.
         Modulus.MultiTenancy.EntityFrameworkCore.EfSettingStoreExtensions.AddEfCoreSettingStore(builder.Services);
-{{ end }}{{ if auth == "openiddict" }}        // The application menu (GET api/navigation/menu) for signed-in people, and the company overrides to it. Modules declare
+{{ end }}        // The application menu (GET api/navigation/menu) for signed-in people, and the company overrides to it. Modules declare
         // their items with AddNavigationContributor<T>(). Overrides are stored as settings: multi-tenant apps keep them in the tenant store,
         // single-tenant apps in memory (lost on restart). Grant navigation:manage to administrators to change them.
-        // The Users entry is shown only to people who hold identity:accounts:manage (the server filters the menu by permission).
-        builder.Services.AddModulusNavigation(navigation => navigation.Add(new NavigationItem("identity.users", "Users")
-        {
-            Url = "/Admin/Users",
-            Icon = "team",
-            Permission = "identity:accounts:manage",
-            Order = 10,
-        }));
-{{ if example_permission }}        // Settings administration (the Settings page): the registered settings, written per scope. No role is granted settings:manage by default.
+{{ if example_permission }}        // Settings administration: the registered settings, written per scope. No role is granted settings:manage by default.
         Modulus.Settings.SettingsExtensions.AddModulusSettings(builder.Services);
         Modulus.Settings.SettingsAdministrationEndpoints.AddModulusSettingAdministration(builder.Services);
-{{ if multi_tenancy }}        // Company administration (the Companies page): list, create, status, seats and members of the companies (tenants:manage).
-        Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminEndpoints.AddModulusTenantAdmin(builder.Services);
-        builder.Services.AddModulusNavigation(navigation => navigation.Add(new NavigationItem("identity.companies", "Companies")
-        {
-            Url = "/Admin/Companies",
-            Icon = "bank",
-            Permission = "tenants:manage",
-            Order = 14,
-        }));
-{{ end }}        builder.Services.AddModulusNavigation(navigation => navigation.Add(new NavigationItem("identity.settings", "Settings")
-        {
-            Url = "/Admin/Settings",
-            Icon = "setting",
-            Permission = "settings:manage",
-            Order = 13,
-        }));
-{{ end }}{{ if use_security_guard }}        builder.Services.AddModulusNavigation(navigation => navigation.Add(new NavigationItem("identity.audit", "Security audit")
-        {
-            Url = "/Admin/Audit",
-            Icon = "audit",
-            Permission = "audit:security:view",
-            Order = 12,
-        }));
-        builder.Services.AddModulusNavigation(navigation => navigation.Add(new NavigationItem("identity.business-audit", "Business audit")
-        {
-            Url = "/Admin/BusinessAudit",
-            Icon = "audit",
-            Permission = "audit:view",
-            Order = 15,
-        }));
-        builder.Services.AddModulusNavigation(navigation => navigation.Add(new NavigationItem("identity.company-audit", "Company audit")
-        {
-            Url = "/Admin/CompanyAudit",
-            Icon = "audit",
-            Permission = "audit:company-summary:view",
-            Order = 16,
-        }));
-{{ end }}        builder.Services.AddModulusNavigation(navigation => navigation.Add(new NavigationItem("identity.roles", "Roles")
-        {
-            Url = "/Admin/Roles",
-            Icon = "safety",
-            Permission = "identity:accounts:manage",
-            Order = 11,
-        }));
+{{ end }}{{ if auth == "openiddict" }}        // The application menu (GET api/navigation/menu) is served to every signed-in caller; modules add items with AddNavigationContributor.
+        builder.Services.AddModulusNavigation();
 {{ end }}        return builder;
     }
 }
