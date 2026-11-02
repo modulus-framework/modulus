@@ -31,6 +31,16 @@ internal sealed class SizeLimitedFileStorage(IFileStorage inner, long maxBytes) 
     public Task<string> GetPresignedUploadUrlAsync(string path, TimeSpan expiry, string? contentType = null, CancellationToken ct = default)
         => inner.GetPresignedUploadUrlAsync(path, expiry, contentType, ct);
 
+    public Task<PresignedPost> GetPresignedUploadPostAsync(
+        string path, TimeSpan expiry, long largestBytes, string? contentType = null, CancellationToken ct = default)
+    {
+        // The app's cap is a ceiling: a presigned policy may name a smaller limit, never a bigger one.
+        if (largestBytes > maxBytes)
+            throw new ArgumentOutOfRangeException(nameof(largestBytes), largestBytes,
+                $"A presigned upload may not allow more than the app's Storage:MaxUploadBytes ({maxBytes:N0} bytes).");
+        return inner.GetPresignedUploadPostAsync(path, expiry, largestBytes, contentType, ct);
+    }
+
     internal static ValidationException Refused(string path, long maxBytes)
         => new([$"The file '{path}' is larger than the {maxBytes:N0} bytes this app accepts."]);
 

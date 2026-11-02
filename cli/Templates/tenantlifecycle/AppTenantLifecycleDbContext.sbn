@@ -1,0 +1,12 @@
+using Microsoft.EntityFrameworkCore;
+using Modulus.Tenancy.Lifecycle.EntityFrameworkCore;
+
+namespace {{ module_namespace }}.Infrastructure;
+
+/// <summary>
+/// The host database's tenant-lifecycle store: export and offboarding operations, legal holds and pending deletions
+/// (tables <c>modulus_lifecycle_*</c>). It belongs to the host, not to any company, so a company's deletion never removes
+/// the record of it. Its migrations live here: <c>modulus migrate add InitialCreate --module TenantLifecycle</c>.
+/// </summary>
+public sealed class AppTenantLifecycleDbContext(DbContextOptions<AppTenantLifecycleDbContext> options)
+    : TenantLifecycleDbContext(options);

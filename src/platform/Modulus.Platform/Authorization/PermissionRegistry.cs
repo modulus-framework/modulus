@@ -63,8 +63,7 @@ public sealed class PermissionRegistry : IPermissionRegistry
 
     public IReadOnlyList<PermissionDefinition> GetByModule(string module)
         => [.. _permissions.Values
-            .Where(p => p.Permission.StartsWith(module + ":",
-                StringComparison.OrdinalIgnoreCase))];
+            .Where(p => PermissionNames.InModule(p.Permission, module))];
 
     public bool Exists(string permission)
         => _permissions.ContainsKey(permission);

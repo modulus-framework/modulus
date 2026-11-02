@@ -1,0 +1,738 @@
+#nullable enable
+Modulus.Authorization.EntityFrameworkCore.AccessRequest
+Modulus.Authorization.EntityFrameworkCore.AccessRequest.<Clone>$() -> Modulus.Authorization.EntityFrameworkCore.AccessRequest!
+Modulus.Authorization.EntityFrameworkCore.AccessRequest.AccessEndsAt.get -> System.DateTimeOffset?
+Modulus.Authorization.EntityFrameworkCore.AccessRequest.AccessEndsAt.init -> void
+Modulus.Authorization.EntityFrameworkCore.AccessRequest.AccessRequest(System.Guid Id, Modulus.Authorization.EntityFrameworkCore.AccessRequestKind Kind, System.Guid RequesterId, System.Collections.Generic.IReadOnlyList<string!>! Permissions, string! Reason, int Hours, Modulus.Authorization.EntityFrameworkCore.AccessRequestStatus Status, System.DateTimeOffset CreatedAt, System.Guid? DecidedBy = null, System.DateTimeOffset? DecidedAt = null, string? Note = null, System.DateTimeOffset? AccessEndsAt = null, System.Guid? ReviewedBy = null, System.DateTimeOffset? ReviewedAt = null) -> void
+Modulus.Authorization.EntityFrameworkCore.AccessRequest.CreatedAt.get -> System.DateTimeOffset
+Modulus.Authorization.EntityFrameworkCore.AccessRequest.CreatedAt.init -> void
+Modulus.Authorization.EntityFrameworkCore.AccessRequest.DecidedAt.get -> System.DateTimeOffset?
+Modulus.Authorization.EntityFrameworkCore.AccessRequest.DecidedAt.init -> void
+Modulus.Authorization.EntityFrameworkCore.AccessRequest.DecidedBy.get -> System.Guid?
+Modulus.Authorization.EntityFrameworkCore.AccessRequest.DecidedBy.init -> void
+Modulus.Authorization.EntityFrameworkCore.AccessRequest.Deconstruct(out System.Guid Id, out Modulus.Authorization.EntityFrameworkCore.AccessRequestKind Kind, out System.Guid RequesterId, out System.Collections.Generic.IReadOnlyList<string!>! Permissions, out string! Reason, out int Hours, out Modulus.Authorization.EntityFrameworkCore.AccessRequestStatus Status, out System.DateTimeOffset CreatedAt, out System.Guid? DecidedBy, out System.DateTimeOffset? DecidedAt, out string? Note, out System.DateTimeOffset? AccessEndsAt, out System.Guid? ReviewedBy, out System.DateTimeOffset? ReviewedAt) -> void
+Modulus.Authorization.EntityFrameworkCore.AccessRequest.Equals(Modulus.Authorization.EntityFrameworkCore.AccessRequest? other) -> bool
+Modulus.Authorization.EntityFrameworkCore.AccessRequest.Hours.get -> int
+Modulus.Authorization.EntityFrameworkCore.AccessRequest.Hours.init -> void
+Modulus.Authorization.EntityFrameworkCore.AccessRequest.Id.get -> System.Guid
+Modulus.Authorization.EntityFrameworkCore.AccessRequest.Id.init -> void
+Modulus.Authorization.EntityFrameworkCore.AccessRequest.Kind.get -> Modulus.Authorization.EntityFrameworkCore.AccessRequestKind
+Modulus.Authorization.EntityFrameworkCore.AccessRequest.Kind.init -> void
+Modulus.Authorization.EntityFrameworkCore.AccessRequest.Note.get -> string?
+Modulus.Authorization.EntityFrameworkCore.AccessRequest.Note.init -> void
+Modulus.Authorization.EntityFrameworkCore.AccessRequest.Permissions.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Modulus.Authorization.EntityFrameworkCore.AccessRequest.Permissions.init -> void
+Modulus.Authorization.EntityFrameworkCore.AccessRequest.Reason.get -> string!
+Modulus.Authorization.EntityFrameworkCore.AccessRequest.Reason.init -> void
+Modulus.Authorization.EntityFrameworkCore.AccessRequest.RequesterId.get -> System.Guid
+Modulus.Authorization.EntityFrameworkCore.AccessRequest.RequesterId.init -> void
+Modulus.Authorization.EntityFrameworkCore.AccessRequest.ReviewedAt.get -> System.DateTimeOffset?
+Modulus.Authorization.EntityFrameworkCore.AccessRequest.ReviewedAt.init -> void
+Modulus.Authorization.EntityFrameworkCore.AccessRequest.ReviewedBy.get -> System.Guid?
+Modulus.Authorization.EntityFrameworkCore.AccessRequest.ReviewedBy.init -> void
+Modulus.Authorization.EntityFrameworkCore.AccessRequest.Status.get -> Modulus.Authorization.EntityFrameworkCore.AccessRequestStatus
+Modulus.Authorization.EntityFrameworkCore.AccessRequest.Status.init -> void
+Modulus.Authorization.EntityFrameworkCore.AccessRequestKind
+Modulus.Authorization.EntityFrameworkCore.AccessRequestKind.BreakGlass = 1 -> Modulus.Authorization.EntityFrameworkCore.AccessRequestKind
+Modulus.Authorization.EntityFrameworkCore.AccessRequestKind.Request = 0 -> Modulus.Authorization.EntityFrameworkCore.AccessRequestKind
+Modulus.Authorization.EntityFrameworkCore.AccessRequestStatus
+Modulus.Authorization.EntityFrameworkCore.AccessRequestStatus.Activated = 4 -> Modulus.Authorization.EntityFrameworkCore.AccessRequestStatus
+Modulus.Authorization.EntityFrameworkCore.AccessRequestStatus.Approved = 1 -> Modulus.Authorization.EntityFrameworkCore.AccessRequestStatus
+Modulus.Authorization.EntityFrameworkCore.AccessRequestStatus.Cancelled = 3 -> Modulus.Authorization.EntityFrameworkCore.AccessRequestStatus
+Modulus.Authorization.EntityFrameworkCore.AccessRequestStatus.Denied = 2 -> Modulus.Authorization.EntityFrameworkCore.AccessRequestStatus
+Modulus.Authorization.EntityFrameworkCore.AccessRequestStatus.Pending = 0 -> Modulus.Authorization.EntityFrameworkCore.AccessRequestStatus
+Modulus.Authorization.EntityFrameworkCore.Audit.AuthorizationAuditOptions
+Modulus.Authorization.EntityFrameworkCore.Audit.AuthorizationAuditOptions.AuthorizationAuditOptions() -> void
+Modulus.Authorization.EntityFrameworkCore.Audit.AuthorizationAuditOptions.BatchSize.get -> int
+Modulus.Authorization.EntityFrameworkCore.Audit.AuthorizationAuditOptions.BatchSize.set -> void
+Modulus.Authorization.EntityFrameworkCore.Audit.AuthorizationAuditOptions.InitialBackoffSec.get -> int
+Modulus.Authorization.EntityFrameworkCore.Audit.AuthorizationAuditOptions.InitialBackoffSec.set -> void
+Modulus.Authorization.EntityFrameworkCore.Audit.AuthorizationAuditOptions.LockTimeoutSec.get -> int
+Modulus.Authorization.EntityFrameworkCore.Audit.AuthorizationAuditOptions.LockTimeoutSec.set -> void
+Modulus.Authorization.EntityFrameworkCore.Audit.AuthorizationAuditOptions.MaxRetries.get -> int
+Modulus.Authorization.EntityFrameworkCore.Audit.AuthorizationAuditOptions.MaxRetries.set -> void
+Modulus.Authorization.EntityFrameworkCore.Audit.AuthorizationAuditOptions.PollingIntervalSec.get -> int
+Modulus.Authorization.EntityFrameworkCore.Audit.AuthorizationAuditOptions.PollingIntervalSec.set -> void
+Modulus.Authorization.EntityFrameworkCore.Audit.AuthorizationAuditRelayProcessor
+Modulus.Authorization.EntityFrameworkCore.Audit.AuthorizationAuditRelayProcessor.AuthorizationAuditRelayProcessor(System.IServiceProvider! sp, Microsoft.Extensions.Options.IOptions<Modulus.Authorization.EntityFrameworkCore.Audit.AuthorizationAuditOptions!>! opts, Microsoft.Extensions.Logging.ILogger<Modulus.Authorization.EntityFrameworkCore.Audit.AuthorizationAuditRelayProcessor!>! logger) -> void
+Modulus.Authorization.EntityFrameworkCore.Audit.AuthorizationAuditRelayProcessor.ProcessAsync(System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Authorization.EntityFrameworkCore.Audit.AuthorizationAuditRelayService
+Modulus.Authorization.EntityFrameworkCore.Audit.AuthorizationAuditRelayService.AuthorizationAuditRelayService(System.IServiceProvider! sp, Microsoft.Extensions.Options.IOptions<Modulus.Authorization.EntityFrameworkCore.Audit.AuthorizationAuditOptions!>! opts, Microsoft.Extensions.Logging.ILogger<Modulus.Authorization.EntityFrameworkCore.Audit.AuthorizationAuditRelayService!>! logger) -> void
+Modulus.Authorization.EntityFrameworkCore.Audit.EfAuthorizationAuditExtensions
+Modulus.Authorization.EntityFrameworkCore.Audit.EfAuthorizationAuditWriter
+Modulus.Authorization.EntityFrameworkCore.Audit.EfAuthorizationAuditWriter.EfAuthorizationAuditWriter(Microsoft.EntityFrameworkCore.IDbContextFactory<Modulus.Authorization.EntityFrameworkCore.AuthorizationStoreDbContextBase!>! factory, Modulus.Events.Abstractions.IIntegrationEventRegistry! registry, System.IServiceProvider! sp) -> void
+Modulus.Authorization.EntityFrameworkCore.Audit.EfAuthorizationAuditWriter.WriteAsync(Modulus.Events.Abstractions.IIntegrationEvent! auditEvent, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Authorization.EntityFrameworkCore.AuthorizationStoreDbContext
+Modulus.Authorization.EntityFrameworkCore.AuthorizationStoreDbContext.AuthorizationStoreDbContext(Microsoft.EntityFrameworkCore.DbContextOptions<Modulus.Authorization.EntityFrameworkCore.AuthorizationStoreDbContext!>! options, Modulus.Core.Abstractions.ICurrentTenant! currentTenant) -> void
+Modulus.Authorization.EntityFrameworkCore.AuthorizationStoreDbContext<TOrgUnit, TOrgUnitParent, TOrgUnitProfile, TCompanyProfile>
+Modulus.Authorization.EntityFrameworkCore.AuthorizationStoreDbContext<TOrgUnit, TOrgUnitParent, TOrgUnitProfile, TCompanyProfile>.AuthorizationStoreDbContext(Microsoft.EntityFrameworkCore.DbContextOptions! options, Modulus.Core.Abstractions.ICurrentTenant! currentTenant) -> void
+Modulus.Authorization.EntityFrameworkCore.AuthorizationStoreDbContextBase
+Modulus.Authorization.EntityFrameworkCore.AuthorizationStoreDbContextBase.AuthorizationStoreDbContextBase(Microsoft.EntityFrameworkCore.DbContextOptions! options, Modulus.Core.Abstractions.ICurrentTenant! currentTenant) -> void
+Modulus.Authorization.EntityFrameworkCore.AuthorizationStoreDbContextBase.CurrentTenant.get -> Modulus.Core.Abstractions.ICurrentTenant!
+Modulus.Authorization.EntityFrameworkCore.CompanyProfile
+Modulus.Authorization.EntityFrameworkCore.CompanyProfile.<Clone>$() -> Modulus.Authorization.EntityFrameworkCore.CompanyProfile!
+Modulus.Authorization.EntityFrameworkCore.CompanyProfile.Address.get -> string?
+Modulus.Authorization.EntityFrameworkCore.CompanyProfile.Address.init -> void
+Modulus.Authorization.EntityFrameworkCore.CompanyProfile.CompanyProfile(string! LegalName, string? TradeName = null, string? RegistrationNumber = null, string? TaxId = null, string? Address = null, string? Country = null, string? Currency = null, int FiscalYearStartMonth = 1, string? TimeZone = null, string? Language = null) -> void
+Modulus.Authorization.EntityFrameworkCore.CompanyProfile.Country.get -> string?
+Modulus.Authorization.EntityFrameworkCore.CompanyProfile.Country.init -> void
+Modulus.Authorization.EntityFrameworkCore.CompanyProfile.Currency.get -> string?
+Modulus.Authorization.EntityFrameworkCore.CompanyProfile.Currency.init -> void
+Modulus.Authorization.EntityFrameworkCore.CompanyProfile.Deconstruct(out string! LegalName, out string? TradeName, out string? RegistrationNumber, out string? TaxId, out string? Address, out string? Country, out string? Currency, out int FiscalYearStartMonth, out string? TimeZone, out string? Language) -> void
+Modulus.Authorization.EntityFrameworkCore.CompanyProfile.Equals(Modulus.Authorization.EntityFrameworkCore.CompanyProfile? other) -> bool
+Modulus.Authorization.EntityFrameworkCore.CompanyProfile.FiscalYearStartMonth.get -> int
+Modulus.Authorization.EntityFrameworkCore.CompanyProfile.FiscalYearStartMonth.init -> void
+Modulus.Authorization.EntityFrameworkCore.CompanyProfile.Language.get -> string?
+Modulus.Authorization.EntityFrameworkCore.CompanyProfile.Language.init -> void
+Modulus.Authorization.EntityFrameworkCore.CompanyProfile.LegalName.get -> string!
+Modulus.Authorization.EntityFrameworkCore.CompanyProfile.LegalName.init -> void
+Modulus.Authorization.EntityFrameworkCore.CompanyProfile.RegistrationNumber.get -> string?
+Modulus.Authorization.EntityFrameworkCore.CompanyProfile.RegistrationNumber.init -> void
+Modulus.Authorization.EntityFrameworkCore.CompanyProfile.TaxId.get -> string?
+Modulus.Authorization.EntityFrameworkCore.CompanyProfile.TaxId.init -> void
+Modulus.Authorization.EntityFrameworkCore.CompanyProfile.TimeZone.get -> string?
+Modulus.Authorization.EntityFrameworkCore.CompanyProfile.TimeZone.init -> void
+Modulus.Authorization.EntityFrameworkCore.CompanyProfile.TradeName.get -> string?
+Modulus.Authorization.EntityFrameworkCore.CompanyProfile.TradeName.init -> void
+Modulus.Authorization.EntityFrameworkCore.CompanyProfileRow
+Modulus.Authorization.EntityFrameworkCore.CompanyProfileRow.Address.get -> string?
+Modulus.Authorization.EntityFrameworkCore.CompanyProfileRow.Address.set -> void
+Modulus.Authorization.EntityFrameworkCore.CompanyProfileRow.CompanyProfileRow() -> void
+Modulus.Authorization.EntityFrameworkCore.CompanyProfileRow.Country.get -> string?
+Modulus.Authorization.EntityFrameworkCore.CompanyProfileRow.Country.set -> void
+Modulus.Authorization.EntityFrameworkCore.CompanyProfileRow.Currency.get -> string?
+Modulus.Authorization.EntityFrameworkCore.CompanyProfileRow.Currency.set -> void
+Modulus.Authorization.EntityFrameworkCore.CompanyProfileRow.FiscalYearStartMonth.get -> int
+Modulus.Authorization.EntityFrameworkCore.CompanyProfileRow.FiscalYearStartMonth.set -> void
+Modulus.Authorization.EntityFrameworkCore.CompanyProfileRow.Language.get -> string?
+Modulus.Authorization.EntityFrameworkCore.CompanyProfileRow.Language.set -> void
+Modulus.Authorization.EntityFrameworkCore.CompanyProfileRow.LegalName.get -> string!
+Modulus.Authorization.EntityFrameworkCore.CompanyProfileRow.LegalName.set -> void
+Modulus.Authorization.EntityFrameworkCore.CompanyProfileRow.RegistrationNumber.get -> string?
+Modulus.Authorization.EntityFrameworkCore.CompanyProfileRow.RegistrationNumber.set -> void
+Modulus.Authorization.EntityFrameworkCore.CompanyProfileRow.TaxId.get -> string?
+Modulus.Authorization.EntityFrameworkCore.CompanyProfileRow.TaxId.set -> void
+Modulus.Authorization.EntityFrameworkCore.CompanyProfileRow.TenantId.get -> System.Guid
+Modulus.Authorization.EntityFrameworkCore.CompanyProfileRow.TenantId.set -> void
+Modulus.Authorization.EntityFrameworkCore.CompanyProfileRow.TimeZone.get -> string?
+Modulus.Authorization.EntityFrameworkCore.CompanyProfileRow.TimeZone.set -> void
+Modulus.Authorization.EntityFrameworkCore.CompanyProfileRow.TradeName.get -> string?
+Modulus.Authorization.EntityFrameworkCore.CompanyProfileRow.TradeName.set -> void
+Modulus.Authorization.EntityFrameworkCore.CompanyProfileRow.UpdatedAt.get -> System.DateTimeOffset
+Modulus.Authorization.EntityFrameworkCore.CompanyProfileRow.UpdatedAt.set -> void
+Modulus.Authorization.EntityFrameworkCore.CompanyProvisioningOptions
+Modulus.Authorization.EntityFrameworkCore.CompanyProvisioningOptions.CompanyProvisioningOptions() -> void
+Modulus.Authorization.EntityFrameworkCore.CompanyProvisioningOptions.Grants.get -> System.Collections.Generic.Dictionary<string!, string![]!>!
+Modulus.Authorization.EntityFrameworkCore.CompanyProvisioningOptions.Grants.set -> void
+Modulus.Authorization.EntityFrameworkCore.CompanyProvisioningOptions.OwnerPermissions.get -> string![]!
+Modulus.Authorization.EntityFrameworkCore.CompanyProvisioningOptions.OwnerPermissions.set -> void
+Modulus.Authorization.EntityFrameworkCore.DataQualityFindingOptions
+Modulus.Authorization.EntityFrameworkCore.DataQualityFindingOptions.BatchSize.get -> int
+Modulus.Authorization.EntityFrameworkCore.DataQualityFindingOptions.BatchSize.set -> void
+Modulus.Authorization.EntityFrameworkCore.DataQualityFindingOptions.Capacity.get -> int
+Modulus.Authorization.EntityFrameworkCore.DataQualityFindingOptions.Capacity.set -> void
+Modulus.Authorization.EntityFrameworkCore.DataQualityFindingOptions.DataQualityFindingOptions() -> void
+Modulus.Authorization.EntityFrameworkCore.DataQualityFindingOptions.PurgeInterval.get -> System.TimeSpan
+Modulus.Authorization.EntityFrameworkCore.DataQualityFindingOptions.PurgeInterval.set -> void
+Modulus.Authorization.EntityFrameworkCore.DataQualityFindingOptions.Retention.get -> System.TimeSpan
+Modulus.Authorization.EntityFrameworkCore.DataQualityFindingOptions.Retention.set -> void
+Modulus.Authorization.EntityFrameworkCore.DataQualityFindingQuery
+Modulus.Authorization.EntityFrameworkCore.DataQualityFindingQuery.<Clone>$() -> Modulus.Authorization.EntityFrameworkCore.DataQualityFindingQuery!
+Modulus.Authorization.EntityFrameworkCore.DataQualityFindingQuery.Attribute.get -> string?
+Modulus.Authorization.EntityFrameworkCore.DataQualityFindingQuery.Attribute.init -> void
+Modulus.Authorization.EntityFrameworkCore.DataQualityFindingQuery.DataQualityFindingQuery(System.Guid? TenantId = null, string? ResourceType = null, string? Attribute = null, int Skip = 0, int Take = 100) -> void
+Modulus.Authorization.EntityFrameworkCore.DataQualityFindingQuery.Deconstruct(out System.Guid? TenantId, out string? ResourceType, out string? Attribute, out int Skip, out int Take) -> void
+Modulus.Authorization.EntityFrameworkCore.DataQualityFindingQuery.Equals(Modulus.Authorization.EntityFrameworkCore.DataQualityFindingQuery? other) -> bool
+Modulus.Authorization.EntityFrameworkCore.DataQualityFindingQuery.ResourceType.get -> string?
+Modulus.Authorization.EntityFrameworkCore.DataQualityFindingQuery.ResourceType.init -> void
+Modulus.Authorization.EntityFrameworkCore.DataQualityFindingQuery.Skip.get -> int
+Modulus.Authorization.EntityFrameworkCore.DataQualityFindingQuery.Skip.init -> void
+Modulus.Authorization.EntityFrameworkCore.DataQualityFindingQuery.Take.get -> int
+Modulus.Authorization.EntityFrameworkCore.DataQualityFindingQuery.Take.init -> void
+Modulus.Authorization.EntityFrameworkCore.DataQualityFindingQuery.TenantId.get -> System.Guid?
+Modulus.Authorization.EntityFrameworkCore.DataQualityFindingQuery.TenantId.init -> void
+Modulus.Authorization.EntityFrameworkCore.DataQualityFindingQueue
+Modulus.Authorization.EntityFrameworkCore.DataQualityFindingQueue.DataQualityFindingQueue(int capacity) -> void
+Modulus.Authorization.EntityFrameworkCore.DataQualityFindingQueue.Dropped.get -> long
+Modulus.Authorization.EntityFrameworkCore.DataQualityFindingQueue.Record(Modulus.Core.Abstractions.DataQuality.DataQualityFinding! finding) -> void
+Modulus.Authorization.EntityFrameworkCore.DataQualityFindingRecord
+Modulus.Authorization.EntityFrameworkCore.DataQualityFindingRecord.<Clone>$() -> Modulus.Authorization.EntityFrameworkCore.DataQualityFindingRecord!
+Modulus.Authorization.EntityFrameworkCore.DataQualityFindingRecord.Action.get -> string!
+Modulus.Authorization.EntityFrameworkCore.DataQualityFindingRecord.Action.init -> void
+Modulus.Authorization.EntityFrameworkCore.DataQualityFindingRecord.CreatedAt.get -> System.DateTime
+Modulus.Authorization.EntityFrameworkCore.DataQualityFindingRecord.CreatedAt.init -> void
+Modulus.Authorization.EntityFrameworkCore.DataQualityFindingRecord.DataQualityFindingRecord(System.Guid Id, System.Guid TenantId, System.DateTime CreatedAt, string! ResourceType, string? RecordId, string! Action, System.Collections.Generic.IReadOnlyList<string!>! MissingAttributes) -> void
+Modulus.Authorization.EntityFrameworkCore.DataQualityFindingRecord.Deconstruct(out System.Guid Id, out System.Guid TenantId, out System.DateTime CreatedAt, out string! ResourceType, out string? RecordId, out string! Action, out System.Collections.Generic.IReadOnlyList<string!>! MissingAttributes) -> void
+Modulus.Authorization.EntityFrameworkCore.DataQualityFindingRecord.Equals(Modulus.Authorization.EntityFrameworkCore.DataQualityFindingRecord? other) -> bool
+Modulus.Authorization.EntityFrameworkCore.DataQualityFindingRecord.Id.get -> System.Guid
+Modulus.Authorization.EntityFrameworkCore.DataQualityFindingRecord.Id.init -> void
+Modulus.Authorization.EntityFrameworkCore.DataQualityFindingRecord.MissingAttributes.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Modulus.Authorization.EntityFrameworkCore.DataQualityFindingRecord.MissingAttributes.init -> void
+Modulus.Authorization.EntityFrameworkCore.DataQualityFindingRecord.RecordId.get -> string?
+Modulus.Authorization.EntityFrameworkCore.DataQualityFindingRecord.RecordId.init -> void
+Modulus.Authorization.EntityFrameworkCore.DataQualityFindingRecord.ResourceType.get -> string!
+Modulus.Authorization.EntityFrameworkCore.DataQualityFindingRecord.ResourceType.init -> void
+Modulus.Authorization.EntityFrameworkCore.DataQualityFindingRecord.TenantId.get -> System.Guid
+Modulus.Authorization.EntityFrameworkCore.DataQualityFindingRecord.TenantId.init -> void
+Modulus.Authorization.EntityFrameworkCore.DataQualityFindingService
+Modulus.Authorization.EntityFrameworkCore.DataQualityFindingService.DataQualityFindingService(Modulus.Authorization.EntityFrameworkCore.DataQualityFindingQueue! queue, Modulus.Authorization.EntityFrameworkCore.DataQualityFindingStore! store, Microsoft.Extensions.Options.IOptions<Modulus.Authorization.EntityFrameworkCore.DataQualityFindingOptions!>! options, Microsoft.Extensions.Logging.ILogger<Modulus.Authorization.EntityFrameworkCore.DataQualityFindingService!>! logger) -> void
+Modulus.Authorization.EntityFrameworkCore.DataQualityFindingStore
+Modulus.Authorization.EntityFrameworkCore.DataQualityFindingStore.AddAsync(System.Collections.Generic.IReadOnlyList<Modulus.Core.Abstractions.DataQuality.DataQualityFinding!>! findings, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Authorization.EntityFrameworkCore.DataQualityFindingStore.DataQualityFindingStore(Microsoft.EntityFrameworkCore.IDbContextFactory<Modulus.Authorization.EntityFrameworkCore.AuthorizationStoreDbContextBase!>! factory, Microsoft.Extensions.Options.IOptions<Modulus.Authorization.EntityFrameworkCore.DataQualityFindingOptions!>! options, System.TimeProvider! clock) -> void
+Modulus.Authorization.EntityFrameworkCore.DataQualityFindingStore.ListAsync(Modulus.Authorization.EntityFrameworkCore.DataQualityFindingQuery! query, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Authorization.EntityFrameworkCore.DataQualityFindingRecord!>!>!
+Modulus.Authorization.EntityFrameworkCore.DataQualityFindingStore.PurgeAsync(System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<int>!
+Modulus.Authorization.EntityFrameworkCore.DelegationRoleRefreshObserver
+Modulus.Authorization.EntityFrameworkCore.DelegationRoleRefreshObserver.DelegationRoleRefreshObserver(Modulus.Authorization.EntityFrameworkCore.DelegationRoleRefresher! refresher) -> void
+Modulus.Authorization.EntityFrameworkCore.DelegationRoleRefreshObserver.OnAccessChangedAsync(Modulus.Core.Abstractions.AccessChange! change, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask
+Modulus.Authorization.EntityFrameworkCore.DelegationRoleRefreshOptions
+Modulus.Authorization.EntityFrameworkCore.DelegationRoleRefreshOptions.DelegationRoleRefreshOptions() -> void
+Modulus.Authorization.EntityFrameworkCore.DelegationRoleRefreshOptions.Interval.get -> System.TimeSpan
+Modulus.Authorization.EntityFrameworkCore.DelegationRoleRefreshOptions.Interval.set -> void
+Modulus.Authorization.EntityFrameworkCore.DelegationRoleRefreshService
+Modulus.Authorization.EntityFrameworkCore.DelegationRoleRefreshService.DelegationRoleRefreshService(Modulus.Authorization.EntityFrameworkCore.DelegationRoleRefresher! refresher, Microsoft.Extensions.Options.IOptions<Modulus.Authorization.EntityFrameworkCore.DelegationRoleRefreshOptions!>! options, Microsoft.Extensions.Logging.ILogger<Modulus.Authorization.EntityFrameworkCore.DelegationRoleRefreshService!>! logger) -> void
+Modulus.Authorization.EntityFrameworkCore.DelegationRoleRefresher
+Modulus.Authorization.EntityFrameworkCore.DelegationRoleRefresher.DelegationRoleRefresher(Microsoft.Extensions.DependencyInjection.IServiceScopeFactory! scopes, Modulus.Authorization.EntityFrameworkCore.EfDelegationStore! store, System.TimeProvider! clock) -> void
+Modulus.Authorization.EntityFrameworkCore.DelegationRoleRefresher.RefreshAsync(System.Guid? delegatorId = null, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<int>!
+Modulus.Authorization.EntityFrameworkCore.EfAccessRequestStore
+Modulus.Authorization.EntityFrameworkCore.EfAccessRequestStore.CountPendingAsync(System.Guid requesterId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<int>!
+Modulus.Authorization.EntityFrameworkCore.EfAccessRequestStore.CreateAsync(Modulus.Authorization.EntityFrameworkCore.AccessRequest! request, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Authorization.EntityFrameworkCore.AccessRequest!>!
+Modulus.Authorization.EntityFrameworkCore.EfAccessRequestStore.DecideAsync(System.Guid id, Modulus.Authorization.EntityFrameworkCore.AccessRequestStatus expected, Modulus.Authorization.EntityFrameworkCore.AccessRequestStatus next, System.Guid? decidedBy, System.DateTimeOffset now, string? note, System.DateTimeOffset? accessEndsAt, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.Authorization.EntityFrameworkCore.EfAccessRequestStore.EfAccessRequestStore(Microsoft.EntityFrameworkCore.IDbContextFactory<Modulus.Authorization.EntityFrameworkCore.AuthorizationStoreDbContextBase!>! factory) -> void
+Modulus.Authorization.EntityFrameworkCore.EfAccessRequestStore.GetAsync(System.Guid id, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Authorization.EntityFrameworkCore.AccessRequest?>!
+Modulus.Authorization.EntityFrameworkCore.EfAccessRequestStore.ListAsync(Modulus.Authorization.EntityFrameworkCore.AccessRequestStatus status, Modulus.Authorization.EntityFrameworkCore.AccessRequestKind? kind = null, bool unreviewedOnly = false, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Authorization.EntityFrameworkCore.AccessRequest!>!>!
+Modulus.Authorization.EntityFrameworkCore.EfAccessRequestStore.ListForRequesterAsync(System.Guid requesterId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Authorization.EntityFrameworkCore.AccessRequest!>!>!
+Modulus.Authorization.EntityFrameworkCore.EfAccessRequestStore.ReviewAsync(System.Guid id, System.Guid? reviewer, System.DateTimeOffset now, string? note, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore
+Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore.AddAsync(Modulus.Authorization.Approval.ApprovalAuthority! authority, System.Guid? createdBy, System.DateTimeOffset now, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore.Stored!>!
+Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore.EfApprovalAuthorityStore(Microsoft.EntityFrameworkCore.IDbContextFactory<Modulus.Authorization.EntityFrameworkCore.AuthorizationStoreDbContextBase!>! factory) -> void
+Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore.GetAsync(System.Guid id, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore.Stored?>!
+Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore.GetAuthorities(Modulus.Authorization.Grants.PrincipalGrantQuery! principal, string! permission) -> System.Collections.Generic.IReadOnlyCollection<Modulus.Authorization.Approval.ApprovalAuthority!>!
+Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore.ListAsync(Modulus.Authorization.Grants.GrantHolderType holderType, string! holder, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyCollection<Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore.Stored!>!>!
+Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore.RemoveAsync(System.Guid id, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore.Stored
+Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore.Stored.<Clone>$() -> Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore.Stored!
+Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore.Stored.Authority.get -> Modulus.Authorization.Approval.ApprovalAuthority!
+Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore.Stored.Authority.init -> void
+Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore.Stored.CreatedAt.get -> System.DateTimeOffset
+Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore.Stored.CreatedAt.init -> void
+Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore.Stored.CreatedBy.get -> System.Guid?
+Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore.Stored.CreatedBy.init -> void
+Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore.Stored.Deconstruct(out System.Guid Id, out Modulus.Authorization.Approval.ApprovalAuthority! Authority, out System.Guid? CreatedBy, out System.DateTimeOffset CreatedAt) -> void
+Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore.Stored.Equals(Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore.Stored? other) -> bool
+Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore.Stored.Id.get -> System.Guid
+Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore.Stored.Id.init -> void
+Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore.Stored.Stored(System.Guid Id, Modulus.Authorization.Approval.ApprovalAuthority! Authority, System.Guid? CreatedBy, System.DateTimeOffset CreatedAt) -> void
+Modulus.Authorization.EntityFrameworkCore.EfApprovalChainStore
+Modulus.Authorization.EntityFrameworkCore.EfApprovalChainStore.DeleteAsync(System.Guid id, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.Authorization.EntityFrameworkCore.EfApprovalChainStore.EfApprovalChainStore(Microsoft.EntityFrameworkCore.IDbContextFactory<Modulus.Authorization.EntityFrameworkCore.AuthorizationStoreDbContextBase!>! factory) -> void
+Modulus.Authorization.EntityFrameworkCore.EfApprovalChainStore.GetAsync(System.Guid id, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Authorization.Workflow.ApprovalChain?>!
+Modulus.Authorization.EntityFrameworkCore.EfApprovalChainStore.ListAsync(System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Authorization.Workflow.ApprovalChain!>!>!
+Modulus.Authorization.EntityFrameworkCore.EfApprovalChainStore.SaveAsync(Modulus.Authorization.Workflow.ApprovalChain! chain, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Authorization.Workflow.ApprovalChain!>!
+Modulus.Authorization.EntityFrameworkCore.EfApprovalRequestStore
+Modulus.Authorization.EntityFrameworkCore.EfApprovalRequestStore.AddAsync(Modulus.Authorization.Workflow.ApprovalRequest! request, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Authorization.EntityFrameworkCore.EfApprovalRequestStore.EfApprovalRequestStore(Microsoft.EntityFrameworkCore.IDbContextFactory<Modulus.Authorization.EntityFrameworkCore.AuthorizationStoreDbContextBase!>! factory) -> void
+Modulus.Authorization.EntityFrameworkCore.EfApprovalRequestStore.ForDocumentAsync(string! documentType, string! documentId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Authorization.Workflow.ApprovalRequest!>!>!
+Modulus.Authorization.EntityFrameworkCore.EfApprovalRequestStore.GetAsync(System.Guid id, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Authorization.Workflow.ApprovalRequest?>!
+Modulus.Authorization.EntityFrameworkCore.EfApprovalRequestStore.PendingAsync(System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Authorization.Workflow.ApprovalRequest!>!>!
+Modulus.Authorization.EntityFrameworkCore.EfApprovalRequestStore.RequestedByAsync(System.Guid userId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Authorization.Workflow.ApprovalRequest!>!>!
+Modulus.Authorization.EntityFrameworkCore.EfApprovalRequestStore.TryUpdateAsync(Modulus.Authorization.Workflow.ApprovalRequest! updated, long expectedVersion, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.Authorization.EntityFrameworkCore.EfAssignmentStore
+Modulus.Authorization.EntityFrameworkCore.EfAssignmentStore.AssignAsync(Modulus.Authorization.Scopes.Assignment! assignment, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Authorization.EntityFrameworkCore.EfAssignmentStore.EfAssignmentStore(Microsoft.EntityFrameworkCore.IDbContextFactory<Modulus.Authorization.EntityFrameworkCore.AuthorizationStoreDbContextBase!>! factory) -> void
+Modulus.Authorization.EntityFrameworkCore.EfAssignmentStore.ListAsync(System.Guid userId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyCollection<Modulus.Authorization.Scopes.Assignment!>!>!
+Modulus.Authorization.EntityFrameworkCore.EfAssignmentStore.TargetsFor(System.Guid userId, string! assignmentType, System.DateTimeOffset now) -> System.Collections.Generic.IReadOnlySet<System.Guid>!
+Modulus.Authorization.EntityFrameworkCore.EfAssignmentStore.UnassignAsync(System.Guid userId, string! assignmentType, System.Guid targetId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.Authorization.EntityFrameworkCore.EfAuthorizationStoreExtensions
+Modulus.Authorization.EntityFrameworkCore.EfCompanyAuthorityStore
+Modulus.Authorization.EntityFrameworkCore.EfCompanyAuthorityStore.EfCompanyAuthorityStore(Microsoft.EntityFrameworkCore.IDbContextFactory<Modulus.Authorization.EntityFrameworkCore.AuthorizationStoreDbContextBase!>! factory) -> void
+Modulus.Authorization.EntityFrameworkCore.EfCompanyAuthorityStore.FindAsync(System.Guid id, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Core.Abstractions.CompanyAuthorityGrant?>!
+Modulus.Authorization.EntityFrameworkCore.EfCompanyAuthorityStore.GrantAsync(System.Guid parentId, System.Guid childId, System.Guid principalId, Modulus.Core.Abstractions.CompanyOperation operation, System.Guid? grantedBy, System.DateTimeOffset now, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Core.Abstractions.CompanyAuthorityGrant!>!
+Modulus.Authorization.EntityFrameworkCore.EfCompanyAuthorityStore.HasActiveGrantAsync(System.Guid parentId, System.Guid childId, System.Guid principalId, Modulus.Core.Abstractions.CompanyOperation operation, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.Authorization.EntityFrameworkCore.EfCompanyAuthorityStore.ListAsync(System.Guid parentId, System.Guid childId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Core.Abstractions.CompanyAuthorityGrant!>!>!
+Modulus.Authorization.EntityFrameworkCore.EfCompanyAuthorityStore.RevokeAsync(System.Guid id, System.Guid? revokedBy, System.DateTimeOffset now, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.Authorization.EntityFrameworkCore.EfDelegationStore
+Modulus.Authorization.EntityFrameworkCore.EfDelegationStore.ActiveFor(System.Guid toUserId, System.DateTimeOffset now) -> System.Collections.Generic.IReadOnlyCollection<Modulus.Authorization.Governance.Delegation!>!
+Modulus.Authorization.EntityFrameworkCore.EfDelegationStore.All() -> System.Collections.Generic.IReadOnlyCollection<Modulus.Authorization.Governance.Delegation!>!
+Modulus.Authorization.EntityFrameworkCore.EfDelegationStore.DelegateAsync(System.Guid fromUserId, System.Collections.Generic.IEnumerable<string!>! fromRoles, System.Guid toUserId, System.Collections.Generic.IEnumerable<string!>! permissions, System.DateTimeOffset notBefore, System.DateTimeOffset notAfter, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Authorization.Governance.Delegation!>!
+Modulus.Authorization.EntityFrameworkCore.EfDelegationStore.EfDelegationStore(Microsoft.EntityFrameworkCore.IDbContextFactory<Modulus.Authorization.EntityFrameworkCore.AuthorizationStoreDbContextBase!>! factory, Microsoft.Extensions.DependencyInjection.IServiceScopeFactory? scopes = null) -> void
+Modulus.Authorization.EntityFrameworkCore.EfDelegationStore.RevokeAsync(System.Guid id, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.Authorization.EntityFrameworkCore.EfDimensionHierarchy
+Modulus.Authorization.EntityFrameworkCore.EfDimensionHierarchy.EfDimensionHierarchy(Microsoft.EntityFrameworkCore.IDbContextFactory<Modulus.Authorization.EntityFrameworkCore.AuthorizationStoreDbContextBase!>! factory) -> void
+Modulus.Authorization.EntityFrameworkCore.EfDimensionHierarchy.Expand(System.Collections.Generic.IReadOnlySet<System.Guid>! targets) -> System.Collections.Generic.IReadOnlySet<System.Guid>!
+Modulus.Authorization.EntityFrameworkCore.EfDimensionValueRegistry
+Modulus.Authorization.EntityFrameworkCore.EfDimensionValueRegistry.EfDimensionValueRegistry(Microsoft.EntityFrameworkCore.IDbContextFactory<Modulus.Authorization.EntityFrameworkCore.AuthorizationStoreDbContextBase!>! factory) -> void
+Modulus.Authorization.EntityFrameworkCore.EfDimensionValueRegistry.ListAsync(string! dimension, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Authorization.Dimensions.DimensionValue!>!>!
+Modulus.Authorization.EntityFrameworkCore.EfDimensionValueRegistry.RegisterAsync(string! dimension, string! code, string! label, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Authorization.Dimensions.DimensionValue!>!
+Modulus.Authorization.EntityFrameworkCore.EfDimensionValueRegistry.ResolveIdAsync(string! dimension, string! code, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Guid?>!
+Modulus.Authorization.EntityFrameworkCore.EfDimensionValueRegistry.SetParentAsync(string! dimension, string! code, string? parentDimension, string? parentCode, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Authorization.Dimensions.DimensionValue!>!
+Modulus.Authorization.EntityFrameworkCore.EfFeatureEntitlementStore
+Modulus.Authorization.EntityFrameworkCore.EfFeatureEntitlementStore.AssignPlanAsync(System.Guid tenantId, string! plan, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Authorization.EntityFrameworkCore.EfFeatureEntitlementStore.AssignedPlan(System.Guid tenantId) -> string?
+Modulus.Authorization.EntityFrameworkCore.EfFeatureEntitlementStore.ClearOverrideAsync(System.Guid tenantId, string! feature, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Authorization.EntityFrameworkCore.EfFeatureEntitlementStore.DefinePlanAsync(string! plan, System.Collections.Generic.IEnumerable<string!>! features, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Authorization.EntityFrameworkCore.EfFeatureEntitlementStore.DisableAsync(System.Guid tenantId, string! feature, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Authorization.EntityFrameworkCore.EfFeatureEntitlementStore.EfFeatureEntitlementStore(Microsoft.EntityFrameworkCore.IDbContextFactory<Modulus.Authorization.EntityFrameworkCore.AuthorizationStoreDbContextBase!>! factory) -> void
+Modulus.Authorization.EntityFrameworkCore.EfFeatureEntitlementStore.EnableAsync(System.Guid tenantId, string! feature, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Authorization.EntityFrameworkCore.EfFeatureEntitlementStore.Override(System.Guid tenantId, string! feature) -> bool?
+Modulus.Authorization.EntityFrameworkCore.EfFeatureEntitlementStore.Overrides(System.Guid tenantId) -> System.Collections.Generic.IReadOnlyDictionary<string!, bool>!
+Modulus.Authorization.EntityFrameworkCore.EfFeatureEntitlementStore.PlanFeatures(string! plan) -> System.Collections.Generic.IReadOnlySet<string!>!
+Modulus.Authorization.EntityFrameworkCore.EfOrgHierarchy
+Modulus.Authorization.EntityFrameworkCore.EfOrgHierarchy.EfOrgHierarchy(Microsoft.EntityFrameworkCore.IDbContextFactory<Modulus.Authorization.EntityFrameworkCore.AuthorizationStoreDbContext<Modulus.Authorization.EntityFrameworkCore.OrgUnitRow!, Modulus.Authorization.EntityFrameworkCore.OrgUnitParentRow!, Modulus.Authorization.EntityFrameworkCore.OrgUnitProfileRow!, Modulus.Authorization.EntityFrameworkCore.CompanyProfileRow!>!>! factory, System.TimeProvider! time, Modulus.Core.Abstractions.ICurrentTenant! currentTenant) -> void
+Modulus.Authorization.EntityFrameworkCore.EfOrgHierarchy<TOrgUnit, TOrgUnitParent, TOrgUnitProfile, TCompanyProfile>
+Modulus.Authorization.EntityFrameworkCore.EfOrgHierarchy<TOrgUnit, TOrgUnitParent, TOrgUnitProfile, TCompanyProfile>.AddUnitAsync(System.Guid id, System.Guid[]! parents, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Authorization.EntityFrameworkCore.EfOrgHierarchy<TOrgUnit, TOrgUnitParent, TOrgUnitProfile, TCompanyProfile>.Ancestors(System.Guid orgUnitId) -> System.Collections.Generic.IReadOnlySet<System.Guid>!
+Modulus.Authorization.EntityFrameworkCore.EfOrgHierarchy<TOrgUnit, TOrgUnitParent, TOrgUnitProfile, TCompanyProfile>.CacheDuration.get -> System.TimeSpan
+Modulus.Authorization.EntityFrameworkCore.EfOrgHierarchy<TOrgUnit, TOrgUnitParent, TOrgUnitProfile, TCompanyProfile>.CacheDuration.init -> void
+Modulus.Authorization.EntityFrameworkCore.EfOrgHierarchy<TOrgUnit, TOrgUnitParent, TOrgUnitProfile, TCompanyProfile>.Contains(System.Guid orgUnitId) -> bool
+Modulus.Authorization.EntityFrameworkCore.EfOrgHierarchy<TOrgUnit, TOrgUnitParent, TOrgUnitProfile, TCompanyProfile>.Descendants(System.Guid orgUnitId) -> System.Collections.Generic.IReadOnlySet<System.Guid>!
+Modulus.Authorization.EntityFrameworkCore.EfOrgHierarchy<TOrgUnit, TOrgUnitParent, TOrgUnitProfile, TCompanyProfile>.EfOrgHierarchy(Microsoft.EntityFrameworkCore.IDbContextFactory<Modulus.Authorization.EntityFrameworkCore.AuthorizationStoreDbContext<TOrgUnit!, TOrgUnitParent!, TOrgUnitProfile!, TCompanyProfile!>!>! factory, System.TimeProvider! time, Modulus.Core.Abstractions.ICurrentTenant! currentTenant) -> void
+Modulus.Authorization.EntityFrameworkCore.EfOrgHierarchy<TOrgUnit, TOrgUnitParent, TOrgUnitProfile, TCompanyProfile>.Invalidate() -> void
+Modulus.Authorization.EntityFrameworkCore.EfOrgHierarchy<TOrgUnit, TOrgUnitParent, TOrgUnitProfile, TCompanyProfile>.MoveUnitAsync(System.Guid id, System.Guid[]! newParents, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Authorization.EntityFrameworkCore.EfOrgPlacementStore
+Modulus.Authorization.EntityFrameworkCore.EfOrgPlacementStore.EfOrgPlacementStore(Microsoft.EntityFrameworkCore.IDbContextFactory<Modulus.Authorization.EntityFrameworkCore.AuthorizationStoreDbContextBase!>! factory) -> void
+Modulus.Authorization.EntityFrameworkCore.EfOrgPlacementStore.GetPlacements(System.Guid userId) -> System.Collections.Generic.IReadOnlyCollection<Modulus.Authorization.Organization.OrgPlacement!>!
+Modulus.Authorization.EntityFrameworkCore.EfOrgPlacementStore.PlaceAsync(System.Guid userId, System.Guid orgUnitId, Modulus.Authorization.Organization.OrgScopeMode mode = Modulus.Authorization.Organization.OrgScopeMode.UnitAndDescendants, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Authorization.EntityFrameworkCore.EfOrgPlacementStore.RemoveAsync(System.Guid userId, System.Guid orgUnitId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Authorization.EntityFrameworkCore.EfOrganizationProfileStore
+Modulus.Authorization.EntityFrameworkCore.EfOrganizationProfileStore.EfOrganizationProfileStore(Microsoft.EntityFrameworkCore.IDbContextFactory<Modulus.Authorization.EntityFrameworkCore.AuthorizationStoreDbContext<Modulus.Authorization.EntityFrameworkCore.OrgUnitRow!, Modulus.Authorization.EntityFrameworkCore.OrgUnitParentRow!, Modulus.Authorization.EntityFrameworkCore.OrgUnitProfileRow!, Modulus.Authorization.EntityFrameworkCore.CompanyProfileRow!>!>! factory) -> void
+Modulus.Authorization.EntityFrameworkCore.EfOrganizationProfileStore<TOrgUnit, TOrgUnitParent, TOrgUnitProfile, TCompanyProfile>
+Modulus.Authorization.EntityFrameworkCore.EfOrganizationProfileStore<TOrgUnit, TOrgUnitParent, TOrgUnitProfile, TCompanyProfile>.EfOrganizationProfileStore(Microsoft.EntityFrameworkCore.IDbContextFactory<Modulus.Authorization.EntityFrameworkCore.AuthorizationStoreDbContext<TOrgUnit!, TOrgUnitParent!, TOrgUnitProfile!, TCompanyProfile!>!>! factory) -> void
+Modulus.Authorization.EntityFrameworkCore.EfOrganizationProfileStore<TOrgUnit, TOrgUnitParent, TOrgUnitProfile, TCompanyProfile>.GetCompanyAsync(System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Authorization.EntityFrameworkCore.CompanyProfile?>!
+Modulus.Authorization.EntityFrameworkCore.EfOrganizationProfileStore<TOrgUnit, TOrgUnitParent, TOrgUnitProfile, TCompanyProfile>.GetUnitAsync(System.Guid unitId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Authorization.EntityFrameworkCore.OrgUnitProfile?>!
+Modulus.Authorization.EntityFrameworkCore.EfOrganizationProfileStore<TOrgUnit, TOrgUnitParent, TOrgUnitProfile, TCompanyProfile>.ListUnitsAsync(System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Authorization.EntityFrameworkCore.OrgUnitProfile!>!>!
+Modulus.Authorization.EntityFrameworkCore.EfOrganizationProfileStore<TOrgUnit, TOrgUnitParent, TOrgUnitProfile, TCompanyProfile>.SaveCompanyAsync(Modulus.Authorization.EntityFrameworkCore.CompanyProfile! profile, System.DateTimeOffset now, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Authorization.EntityFrameworkCore.EfOrganizationProfileStore<TOrgUnit, TOrgUnitParent, TOrgUnitProfile, TCompanyProfile>.SaveUnitAsync(Modulus.Authorization.EntityFrameworkCore.OrgUnitProfile! profile, System.DateTimeOffset now, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.Authorization.EntityFrameworkCore.EfOrganizationProfileStore<TOrgUnit, TOrgUnitParent, TOrgUnitProfile, TCompanyProfile>.SetClosedAsync(System.Guid unitId, bool closed, System.DateTimeOffset now, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.Authorization.EntityFrameworkCore.EfPartyStore
+Modulus.Authorization.EntityFrameworkCore.EfPartyStore.AllowAsync(string! kind, string! permission, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.Authorization.EntityFrameworkCore.EfPartyStore.CeilingsAsync(System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyDictionary<string!, System.Collections.Generic.IReadOnlyList<string!>!>!>!
+Modulus.Authorization.EntityFrameworkCore.EfPartyStore.DisallowAsync(string! kind, string! permission, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.Authorization.EntityFrameworkCore.EfPartyStore.EfPartyStore(Microsoft.EntityFrameworkCore.IDbContextFactory<Modulus.Authorization.EntityFrameworkCore.AuthorizationStoreDbContextBase!>! factory) -> void
+Modulus.Authorization.EntityFrameworkCore.EfPartyStore.Link
+Modulus.Authorization.EntityFrameworkCore.EfPartyStore.Link.<Clone>$() -> Modulus.Authorization.EntityFrameworkCore.EfPartyStore.Link!
+Modulus.Authorization.EntityFrameworkCore.EfPartyStore.Link.CreatedAt.get -> System.DateTimeOffset
+Modulus.Authorization.EntityFrameworkCore.EfPartyStore.Link.CreatedAt.init -> void
+Modulus.Authorization.EntityFrameworkCore.EfPartyStore.Link.CreatedBy.get -> System.Guid?
+Modulus.Authorization.EntityFrameworkCore.EfPartyStore.Link.CreatedBy.init -> void
+Modulus.Authorization.EntityFrameworkCore.EfPartyStore.Link.Deconstruct(out System.Guid UserId, out string! Kind, out System.Guid PartyId, out System.Guid? CreatedBy, out System.DateTimeOffset CreatedAt) -> void
+Modulus.Authorization.EntityFrameworkCore.EfPartyStore.Link.Equals(Modulus.Authorization.EntityFrameworkCore.EfPartyStore.Link? other) -> bool
+Modulus.Authorization.EntityFrameworkCore.EfPartyStore.Link.Kind.get -> string!
+Modulus.Authorization.EntityFrameworkCore.EfPartyStore.Link.Kind.init -> void
+Modulus.Authorization.EntityFrameworkCore.EfPartyStore.Link.Link(System.Guid UserId, string! Kind, System.Guid PartyId, System.Guid? CreatedBy, System.DateTimeOffset CreatedAt) -> void
+Modulus.Authorization.EntityFrameworkCore.EfPartyStore.Link.PartyId.get -> System.Guid
+Modulus.Authorization.EntityFrameworkCore.EfPartyStore.Link.PartyId.init -> void
+Modulus.Authorization.EntityFrameworkCore.EfPartyStore.Link.UserId.get -> System.Guid
+Modulus.Authorization.EntityFrameworkCore.EfPartyStore.Link.UserId.init -> void
+Modulus.Authorization.EntityFrameworkCore.EfPartyStore.LinkAsync(System.Guid userId, string! kind, System.Guid partyId, System.Guid? createdBy, System.DateTimeOffset now, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Authorization.EntityFrameworkCore.EfPartyStore.Link!>!
+Modulus.Authorization.EntityFrameworkCore.EfPartyStore.LinksAsync(System.Guid? partyId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyCollection<Modulus.Authorization.EntityFrameworkCore.EfPartyStore.Link!>!>!
+Modulus.Authorization.EntityFrameworkCore.EfPartyStore.UnlinkAsync(System.Guid userId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.Authorization.EntityFrameworkCore.EfPermissionCatalogSnapshotStore
+Modulus.Authorization.EntityFrameworkCore.EfPermissionCatalogSnapshotStore.EfPermissionCatalogSnapshotStore(Microsoft.EntityFrameworkCore.IDbContextFactory<Modulus.Authorization.EntityFrameworkCore.AuthorizationStoreDbContextBase!>! factory, Microsoft.Extensions.Options.IOptions<Modulus.Authorization.EntityFrameworkCore.PermissionCatalogOptions!>! options) -> void
+Modulus.Authorization.EntityFrameworkCore.EfPermissionCatalogSnapshotStore.LoadAsync(System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Core.Abstractions.PermissionDefinition!>?>!
+Modulus.Authorization.EntityFrameworkCore.EfPermissionCatalogSnapshotStore.SaveAsync(System.Collections.Generic.IReadOnlyList<Modulus.Core.Abstractions.PermissionDefinition!>! catalog, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Authorization.EntityFrameworkCore.EfPermissionExceptionStore
+Modulus.Authorization.EntityFrameworkCore.EfPermissionExceptionStore.CreateAsync(Modulus.Authorization.EntityFrameworkCore.PermissionException! exception, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Authorization.EntityFrameworkCore.PermissionException!>!
+Modulus.Authorization.EntityFrameworkCore.EfPermissionExceptionStore.EfPermissionExceptionStore(Microsoft.EntityFrameworkCore.IDbContextFactory<Modulus.Authorization.EntityFrameworkCore.AuthorizationStoreDbContextBase!>! factory) -> void
+Modulus.Authorization.EntityFrameworkCore.EfPermissionExceptionStore.FindingsAsync(System.Collections.Generic.IEnumerable<string!>! criticalPermissions, System.DateTimeOffset now, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Authorization.EntityFrameworkCore.PermissionExceptionFinding!>!>!
+Modulus.Authorization.EntityFrameworkCore.EfPermissionExceptionStore.GetAsync(System.Guid id, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Authorization.EntityFrameworkCore.PermissionException?>!
+Modulus.Authorization.EntityFrameworkCore.EfPermissionExceptionStore.ListAsync(System.DateTimeOffset? activeAt = null, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Authorization.EntityFrameworkCore.PermissionException!>!>!
+Modulus.Authorization.EntityFrameworkCore.EfPermissionExceptionStore.ReviewAsync(System.Guid id, System.Guid reviewer, System.DateTimeOffset now, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.Authorization.EntityFrameworkCore.EfPermissionExceptionStore.RevokeAsync(System.Guid id, System.Guid by, System.DateTimeOffset now, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.Authorization.EntityFrameworkCore.EfPermissionGrantStore
+Modulus.Authorization.EntityFrameworkCore.EfPermissionGrantStore.AddScopedGrantAsync(Modulus.Authorization.Grants.PermissionGrant! grant, System.Guid? createdBy, System.DateTimeOffset now, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Authorization.EntityFrameworkCore.EfPermissionGrantStore.ScopedGrantRecord!>!
+Modulus.Authorization.EntityFrameworkCore.EfPermissionGrantStore.DenyToRoleAsync(string! role, System.Collections.Generic.IEnumerable<string!>! permissions, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Authorization.EntityFrameworkCore.EfPermissionGrantStore.DenyToUserAsync(System.Guid userId, System.Collections.Generic.IEnumerable<string!>! permissions, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Authorization.EntityFrameworkCore.EfPermissionGrantStore.EfPermissionGrantStore(Microsoft.EntityFrameworkCore.IDbContextFactory<Modulus.Authorization.EntityFrameworkCore.AuthorizationStoreDbContextBase!>! factory, Microsoft.Extensions.DependencyInjection.IServiceScopeFactory? scopes = null) -> void
+Modulus.Authorization.EntityFrameworkCore.EfPermissionGrantStore.GetAllUsersWithGrantsAsync(System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyCollection<System.Guid>!>!
+Modulus.Authorization.EntityFrameworkCore.EfPermissionGrantStore.GetGrants(Modulus.Authorization.Grants.PrincipalGrantQuery! principal) -> System.Collections.Generic.IReadOnlyCollection<Modulus.Authorization.Grants.PermissionGrant!>!
+Modulus.Authorization.EntityFrameworkCore.EfPermissionGrantStore.GetGrantsAsync(Modulus.Authorization.Grants.PrincipalGrantQuery! principal, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyCollection<Modulus.Authorization.Grants.PermissionGrant!>!>!
+Modulus.Authorization.EntityFrameworkCore.EfPermissionGrantStore.GetGrantsForHolderAsync(Modulus.Authorization.Grants.GrantHolderType holderType, string! holder, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyCollection<Modulus.Authorization.Grants.PermissionGrant!>!>!
+Modulus.Authorization.EntityFrameworkCore.EfPermissionGrantStore.GetInheritedGrantsForHolderAsync(Modulus.Authorization.Grants.GrantHolderType holderType, string! holder, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyCollection<Modulus.Authorization.EntityFrameworkCore.InheritedGrant!>!>!
+Modulus.Authorization.EntityFrameworkCore.EfPermissionGrantStore.GetScopedGrantAsync(System.Guid id, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Authorization.EntityFrameworkCore.EfPermissionGrantStore.ScopedGrantRecord?>!
+Modulus.Authorization.EntityFrameworkCore.EfPermissionGrantStore.GetScopedGrantsForHolderAsync(Modulus.Authorization.Grants.GrantHolderType holderType, string! holder, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyCollection<Modulus.Authorization.EntityFrameworkCore.EfPermissionGrantStore.ScopedGrantRecord!>!>!
+Modulus.Authorization.EntityFrameworkCore.EfPermissionGrantStore.GrantToRoleAsync(string! role, System.Collections.Generic.IEnumerable<string!>! permissions, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Authorization.EntityFrameworkCore.EfPermissionGrantStore.GrantToUserAsync(System.Guid userId, System.Collections.Generic.IEnumerable<string!>! permissions, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Authorization.EntityFrameworkCore.EfPermissionGrantStore.IsSeedAppliedAsync(string! name, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.Authorization.EntityFrameworkCore.EfPermissionGrantStore.MarkSeedAppliedAsync(string! name, System.DateTimeOffset appliedAt, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Authorization.EntityFrameworkCore.EfPermissionGrantStore.RemoveScopedGrantAsync(System.Guid id, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.Authorization.EntityFrameworkCore.EfPermissionGrantStore.RevokeFromRoleAsync(string! role, string! permission, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Authorization.EntityFrameworkCore.EfPermissionGrantStore.RevokeFromUserAsync(System.Guid userId, string! permission, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Authorization.EntityFrameworkCore.EfPermissionGrantStore.ScopedGrantRecord
+Modulus.Authorization.EntityFrameworkCore.EfPermissionGrantStore.ScopedGrantRecord.<Clone>$() -> Modulus.Authorization.EntityFrameworkCore.EfPermissionGrantStore.ScopedGrantRecord!
+Modulus.Authorization.EntityFrameworkCore.EfPermissionGrantStore.ScopedGrantRecord.CreatedAt.get -> System.DateTimeOffset
+Modulus.Authorization.EntityFrameworkCore.EfPermissionGrantStore.ScopedGrantRecord.CreatedAt.init -> void
+Modulus.Authorization.EntityFrameworkCore.EfPermissionGrantStore.ScopedGrantRecord.CreatedBy.get -> System.Guid?
+Modulus.Authorization.EntityFrameworkCore.EfPermissionGrantStore.ScopedGrantRecord.CreatedBy.init -> void
+Modulus.Authorization.EntityFrameworkCore.EfPermissionGrantStore.ScopedGrantRecord.Deconstruct(out System.Guid Id, out Modulus.Authorization.Grants.PermissionGrant! Grant, out System.Guid? CreatedBy, out System.DateTimeOffset CreatedAt) -> void
+Modulus.Authorization.EntityFrameworkCore.EfPermissionGrantStore.ScopedGrantRecord.Equals(Modulus.Authorization.EntityFrameworkCore.EfPermissionGrantStore.ScopedGrantRecord? other) -> bool
+Modulus.Authorization.EntityFrameworkCore.EfPermissionGrantStore.ScopedGrantRecord.Grant.get -> Modulus.Authorization.Grants.PermissionGrant!
+Modulus.Authorization.EntityFrameworkCore.EfPermissionGrantStore.ScopedGrantRecord.Grant.init -> void
+Modulus.Authorization.EntityFrameworkCore.EfPermissionGrantStore.ScopedGrantRecord.Id.get -> System.Guid
+Modulus.Authorization.EntityFrameworkCore.EfPermissionGrantStore.ScopedGrantRecord.Id.init -> void
+Modulus.Authorization.EntityFrameworkCore.EfPermissionGrantStore.ScopedGrantRecord.ScopedGrantRecord(System.Guid Id, Modulus.Authorization.Grants.PermissionGrant! Grant, System.Guid? CreatedBy, System.DateTimeOffset CreatedAt) -> void
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.AddAsync(string! code, string! name, System.Guid? orgUnitId, System.Collections.Generic.IEnumerable<string!>! roles, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Position?>!
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.AssignAsync(System.Guid positionId, System.Guid userId, System.DateTimeOffset validFrom, System.DateTimeOffset? validUntil, System.Guid? createdBy, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Holding?>!
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.EfPositionStore(Microsoft.EntityFrameworkCore.IDbContextFactory<Modulus.Authorization.EntityFrameworkCore.AuthorizationStoreDbContextBase!>! factory, System.TimeProvider? clock = null) -> void
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.EndAsync(System.Guid holdingId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Holding
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Holding.<Clone>$() -> Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Holding!
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Holding.CreatedAt.get -> System.DateTimeOffset
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Holding.CreatedAt.init -> void
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Holding.CreatedBy.get -> System.Guid?
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Holding.CreatedBy.init -> void
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Holding.Deconstruct(out System.Guid Id, out System.Guid PositionId, out System.Guid UserId, out System.DateTimeOffset ValidFrom, out System.DateTimeOffset? ValidUntil, out System.Guid? CreatedBy, out System.DateTimeOffset CreatedAt) -> void
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Holding.Equals(Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Holding? other) -> bool
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Holding.Holding(System.Guid Id, System.Guid PositionId, System.Guid UserId, System.DateTimeOffset ValidFrom, System.DateTimeOffset? ValidUntil, System.Guid? CreatedBy, System.DateTimeOffset CreatedAt) -> void
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Holding.Id.get -> System.Guid
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Holding.Id.init -> void
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Holding.PositionId.get -> System.Guid
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Holding.PositionId.init -> void
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Holding.UserId.get -> System.Guid
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Holding.UserId.init -> void
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Holding.ValidFrom.get -> System.DateTimeOffset
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Holding.ValidFrom.init -> void
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Holding.ValidUntil.get -> System.DateTimeOffset?
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Holding.ValidUntil.init -> void
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.HoldingsAsync(System.Guid? positionId, System.Guid? userId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyCollection<Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Holding!>!>!
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.ListAsync(System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyCollection<Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Position!>!>!
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Position
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Position.<Clone>$() -> Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Position!
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Position.Code.get -> string!
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Position.Code.init -> void
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Position.Deconstruct(out System.Guid Id, out string! Code, out string! Name, out System.Guid? OrgUnitId, out System.Collections.Generic.IReadOnlyList<string!>! Roles, out bool IsActive) -> void
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Position.Equals(Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Position? other) -> bool
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Position.Id.get -> System.Guid
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Position.Id.init -> void
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Position.IsActive.get -> bool
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Position.IsActive.init -> void
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Position.Name.get -> string!
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Position.Name.init -> void
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Position.OrgUnitId.get -> System.Guid?
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Position.OrgUnitId.init -> void
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Position.Position(System.Guid Id, string! Code, string! Name, System.Guid? OrgUnitId, System.Collections.Generic.IReadOnlyList<string!>! Roles, bool IsActive) -> void
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Position.Roles.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Position.Roles.init -> void
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.RemoveAsync(System.Guid id, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.RolesOfAsync(System.Guid userId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyCollection<string!>!>!
+Modulus.Authorization.EntityFrameworkCore.EfPositionStore.UpdateAsync(System.Guid id, string! name, System.Guid? orgUnitId, System.Collections.Generic.IEnumerable<string!>! roles, bool isActive, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Position?>!
+Modulus.Authorization.EntityFrameworkCore.EfRecertificationCampaignStore
+Modulus.Authorization.EntityFrameworkCore.EfRecertificationCampaignStore.CompleteAsync(System.Guid campaignId, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
+Modulus.Authorization.EntityFrameworkCore.EfRecertificationCampaignStore.CreateAsync(string! name, System.Collections.Generic.List<Modulus.Authorization.Governance.RecertificationItem!>! items, System.Guid createdBy, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<System.Guid>!
+Modulus.Authorization.EntityFrameworkCore.EfRecertificationCampaignStore.EfRecertificationCampaignStore(Microsoft.EntityFrameworkCore.IDbContextFactory<Modulus.Authorization.EntityFrameworkCore.AuthorizationStoreDbContextBase!>! factory) -> void
+Modulus.Authorization.EntityFrameworkCore.EfRecertificationCampaignStore.GetAsync(System.Guid campaignId, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Modulus.Authorization.Governance.RecertificationCampaign?>!
+Modulus.Authorization.EntityFrameworkCore.EfRecertificationCampaignStore.ListActiveAsync(System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<System.Collections.Generic.List<(System.Guid Id, string! Name, int PendingCount, int TotalCount)>!>!
+Modulus.Authorization.EntityFrameworkCore.EfRecertificationCampaignStore.UpdateDecisionAsync(System.Guid campaignId, System.Guid userId, string! permission, Modulus.Authorization.Governance.RecertificationDecision decision, System.Guid reviewedBy, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
+Modulus.Authorization.EntityFrameworkCore.EfRecordShareStore
+Modulus.Authorization.EntityFrameworkCore.EfRecordShareStore.AddAsync(Modulus.Authorization.Sharing.RecordShare! share, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Authorization.EntityFrameworkCore.EfRecordShareStore.EfRecordShareStore(Microsoft.EntityFrameworkCore.IDbContextFactory<Modulus.Authorization.EntityFrameworkCore.AuthorizationStoreDbContextBase!>! factory) -> void
+Modulus.Authorization.EntityFrameworkCore.EfRecordShareStore.FindAsync(System.Guid id, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Authorization.Sharing.RecordShare?>!
+Modulus.Authorization.EntityFrameworkCore.EfRecordShareStore.ForRecordAsync(System.Guid? tenantId, string! resourceType, string! resourceId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Authorization.Sharing.RecordShare!>!>!
+Modulus.Authorization.EntityFrameworkCore.EfRecordShareStore.UpdateAsync(Modulus.Authorization.Sharing.RecordShare! share, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Authorization.EntityFrameworkCore.EfRoleInclusionStore
+Modulus.Authorization.EntityFrameworkCore.EfRoleInclusionStore.AddAsync(string! role, string! includes, System.Guid? createdBy, System.DateTimeOffset now, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.Authorization.EntityFrameworkCore.EfRoleInclusionStore.EfRoleInclusionStore(Microsoft.EntityFrameworkCore.IDbContextFactory<Modulus.Authorization.EntityFrameworkCore.AuthorizationStoreDbContextBase!>! factory) -> void
+Modulus.Authorization.EntityFrameworkCore.EfRoleInclusionStore.ExpandAsync(System.Collections.Generic.IEnumerable<string!>! roles, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyCollection<string!>!>!
+Modulus.Authorization.EntityFrameworkCore.EfRoleInclusionStore.ListAsync(System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyCollection<Modulus.Authorization.EntityFrameworkCore.EfRoleInclusionStore.Stored!>!>!
+Modulus.Authorization.EntityFrameworkCore.EfRoleInclusionStore.RemoveAsync(string! role, string! includes, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.Authorization.EntityFrameworkCore.EfRoleInclusionStore.Stored
+Modulus.Authorization.EntityFrameworkCore.EfRoleInclusionStore.Stored.<Clone>$() -> Modulus.Authorization.EntityFrameworkCore.EfRoleInclusionStore.Stored!
+Modulus.Authorization.EntityFrameworkCore.EfRoleInclusionStore.Stored.CreatedAt.get -> System.DateTimeOffset
+Modulus.Authorization.EntityFrameworkCore.EfRoleInclusionStore.Stored.CreatedAt.init -> void
+Modulus.Authorization.EntityFrameworkCore.EfRoleInclusionStore.Stored.CreatedBy.get -> System.Guid?
+Modulus.Authorization.EntityFrameworkCore.EfRoleInclusionStore.Stored.CreatedBy.init -> void
+Modulus.Authorization.EntityFrameworkCore.EfRoleInclusionStore.Stored.Deconstruct(out string! Role, out string! Includes, out System.Guid? CreatedBy, out System.DateTimeOffset CreatedAt) -> void
+Modulus.Authorization.EntityFrameworkCore.EfRoleInclusionStore.Stored.Equals(Modulus.Authorization.EntityFrameworkCore.EfRoleInclusionStore.Stored? other) -> bool
+Modulus.Authorization.EntityFrameworkCore.EfRoleInclusionStore.Stored.Includes.get -> string!
+Modulus.Authorization.EntityFrameworkCore.EfRoleInclusionStore.Stored.Includes.init -> void
+Modulus.Authorization.EntityFrameworkCore.EfRoleInclusionStore.Stored.Role.get -> string!
+Modulus.Authorization.EntityFrameworkCore.EfRoleInclusionStore.Stored.Role.init -> void
+Modulus.Authorization.EntityFrameworkCore.EfRoleInclusionStore.Stored.Stored(string! Role, string! Includes, System.Guid? CreatedBy, System.DateTimeOffset CreatedAt) -> void
+Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore
+Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore.AddAsync(Modulus.Authorization.Governance.SodConstraint! constraint, bool isEnabled, System.Guid? createdBy, System.DateTimeOffset now, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore.Stored?>!
+Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore.EfSodRuleStore(Microsoft.EntityFrameworkCore.IDbContextFactory<Modulus.Authorization.EntityFrameworkCore.AuthorizationStoreDbContextBase!>! factory) -> void
+Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore.GetAsync(System.Guid id, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore.Stored?>!
+Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore.ListAsync(System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyCollection<Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore.Stored!>!>!
+Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore.RemoveAsync(System.Guid id, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore.Stored
+Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore.Stored.<Clone>$() -> Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore.Stored!
+Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore.Stored.Constraint.get -> Modulus.Authorization.Governance.SodConstraint!
+Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore.Stored.Constraint.init -> void
+Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore.Stored.CreatedAt.get -> System.DateTimeOffset
+Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore.Stored.CreatedAt.init -> void
+Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore.Stored.CreatedBy.get -> System.Guid?
+Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore.Stored.CreatedBy.init -> void
+Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore.Stored.Deconstruct(out System.Guid Id, out Modulus.Authorization.Governance.SodConstraint! Constraint, out bool IsEnabled, out System.Guid? CreatedBy, out System.DateTimeOffset CreatedAt, out System.DateTimeOffset? UpdatedAt) -> void
+Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore.Stored.Equals(Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore.Stored? other) -> bool
+Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore.Stored.Id.get -> System.Guid
+Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore.Stored.Id.init -> void
+Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore.Stored.IsEnabled.get -> bool
+Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore.Stored.IsEnabled.init -> void
+Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore.Stored.Stored(System.Guid Id, Modulus.Authorization.Governance.SodConstraint! Constraint, bool IsEnabled, System.Guid? CreatedBy, System.DateTimeOffset CreatedAt, System.DateTimeOffset? UpdatedAt) -> void
+Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore.Stored.UpdatedAt.get -> System.DateTimeOffset?
+Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore.Stored.UpdatedAt.init -> void
+Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore.UpdateAsync(System.Guid id, Modulus.Authorization.Governance.SodConstraint! constraint, bool isEnabled, System.DateTimeOffset now, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore.Stored?>!
+Modulus.Authorization.EntityFrameworkCore.IOrgUnitAdministration
+Modulus.Authorization.EntityFrameworkCore.IOrgUnitAdministration.AddUnitAsync(System.Guid id, System.Guid[]! parents, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Authorization.EntityFrameworkCore.IOrgUnitAdministration.MoveUnitAsync(System.Guid id, System.Guid[]! newParents, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Authorization.EntityFrameworkCore.IRecertificationCampaignStore
+Modulus.Authorization.EntityFrameworkCore.IRecertificationCampaignStore.CompleteAsync(System.Guid campaignId, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
+Modulus.Authorization.EntityFrameworkCore.IRecertificationCampaignStore.CreateAsync(string! name, System.Collections.Generic.List<Modulus.Authorization.Governance.RecertificationItem!>! items, System.Guid createdBy, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<System.Guid>!
+Modulus.Authorization.EntityFrameworkCore.IRecertificationCampaignStore.GetAsync(System.Guid campaignId, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Modulus.Authorization.Governance.RecertificationCampaign?>!
+Modulus.Authorization.EntityFrameworkCore.IRecertificationCampaignStore.ListActiveAsync(System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<System.Collections.Generic.List<(System.Guid Id, string! Name, int PendingCount, int TotalCount)>!>!
+Modulus.Authorization.EntityFrameworkCore.IRecertificationCampaignStore.UpdateDecisionAsync(System.Guid campaignId, System.Guid userId, string! permission, Modulus.Authorization.Governance.RecertificationDecision decision, System.Guid reviewedBy, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
+Modulus.Authorization.EntityFrameworkCore.InheritedGrant
+Modulus.Authorization.EntityFrameworkCore.InheritedGrant.<Clone>$() -> Modulus.Authorization.EntityFrameworkCore.InheritedGrant!
+Modulus.Authorization.EntityFrameworkCore.InheritedGrant.CompanyId.get -> System.Guid
+Modulus.Authorization.EntityFrameworkCore.InheritedGrant.CompanyId.init -> void
+Modulus.Authorization.EntityFrameworkCore.InheritedGrant.Deconstruct(out System.Guid CompanyId, out Modulus.Authorization.Grants.PermissionGrant! Grant) -> void
+Modulus.Authorization.EntityFrameworkCore.InheritedGrant.Equals(Modulus.Authorization.EntityFrameworkCore.InheritedGrant? other) -> bool
+Modulus.Authorization.EntityFrameworkCore.InheritedGrant.Grant.get -> Modulus.Authorization.Grants.PermissionGrant!
+Modulus.Authorization.EntityFrameworkCore.InheritedGrant.Grant.init -> void
+Modulus.Authorization.EntityFrameworkCore.InheritedGrant.InheritedGrant(System.Guid CompanyId, Modulus.Authorization.Grants.PermissionGrant! Grant) -> void
+Modulus.Authorization.EntityFrameworkCore.OrgUnitKinds
+Modulus.Authorization.EntityFrameworkCore.OrgUnitParentRow
+Modulus.Authorization.EntityFrameworkCore.OrgUnitParentRow.ChildId.get -> System.Guid
+Modulus.Authorization.EntityFrameworkCore.OrgUnitParentRow.ChildId.set -> void
+Modulus.Authorization.EntityFrameworkCore.OrgUnitParentRow.OrgUnitParentRow() -> void
+Modulus.Authorization.EntityFrameworkCore.OrgUnitParentRow.ParentId.get -> System.Guid
+Modulus.Authorization.EntityFrameworkCore.OrgUnitParentRow.ParentId.set -> void
+Modulus.Authorization.EntityFrameworkCore.OrgUnitParentRow.TenantId.get -> System.Guid
+Modulus.Authorization.EntityFrameworkCore.OrgUnitParentRow.TenantId.set -> void
+Modulus.Authorization.EntityFrameworkCore.OrgUnitProfile
+Modulus.Authorization.EntityFrameworkCore.OrgUnitProfile.<Clone>$() -> Modulus.Authorization.EntityFrameworkCore.OrgUnitProfile!
+Modulus.Authorization.EntityFrameworkCore.OrgUnitProfile.ClosedAt.get -> System.DateTimeOffset?
+Modulus.Authorization.EntityFrameworkCore.OrgUnitProfile.ClosedAt.init -> void
+Modulus.Authorization.EntityFrameworkCore.OrgUnitProfile.Code.get -> string!
+Modulus.Authorization.EntityFrameworkCore.OrgUnitProfile.Code.init -> void
+Modulus.Authorization.EntityFrameworkCore.OrgUnitProfile.Deconstruct(out System.Guid UnitId, out string! Code, out string! Name, out string! Kind, out bool IsClosed, out System.Guid? ManagerUserId, out System.DateTimeOffset? ClosedAt) -> void
+Modulus.Authorization.EntityFrameworkCore.OrgUnitProfile.Equals(Modulus.Authorization.EntityFrameworkCore.OrgUnitProfile? other) -> bool
+Modulus.Authorization.EntityFrameworkCore.OrgUnitProfile.IsClosed.get -> bool
+Modulus.Authorization.EntityFrameworkCore.OrgUnitProfile.IsClosed.init -> void
+Modulus.Authorization.EntityFrameworkCore.OrgUnitProfile.Kind.get -> string!
+Modulus.Authorization.EntityFrameworkCore.OrgUnitProfile.Kind.init -> void
+Modulus.Authorization.EntityFrameworkCore.OrgUnitProfile.ManagerUserId.get -> System.Guid?
+Modulus.Authorization.EntityFrameworkCore.OrgUnitProfile.ManagerUserId.init -> void
+Modulus.Authorization.EntityFrameworkCore.OrgUnitProfile.Name.get -> string!
+Modulus.Authorization.EntityFrameworkCore.OrgUnitProfile.Name.init -> void
+Modulus.Authorization.EntityFrameworkCore.OrgUnitProfile.OrgUnitProfile(System.Guid UnitId, string! Code, string! Name, string! Kind, bool IsClosed = false, System.Guid? ManagerUserId = null, System.DateTimeOffset? ClosedAt = null) -> void
+Modulus.Authorization.EntityFrameworkCore.OrgUnitProfile.UnitId.get -> System.Guid
+Modulus.Authorization.EntityFrameworkCore.OrgUnitProfile.UnitId.init -> void
+Modulus.Authorization.EntityFrameworkCore.OrgUnitProfileRow
+Modulus.Authorization.EntityFrameworkCore.OrgUnitProfileRow.ClosedAt.get -> System.DateTimeOffset?
+Modulus.Authorization.EntityFrameworkCore.OrgUnitProfileRow.ClosedAt.set -> void
+Modulus.Authorization.EntityFrameworkCore.OrgUnitProfileRow.Code.get -> string!
+Modulus.Authorization.EntityFrameworkCore.OrgUnitProfileRow.Code.set -> void
+Modulus.Authorization.EntityFrameworkCore.OrgUnitProfileRow.IsClosed.get -> bool
+Modulus.Authorization.EntityFrameworkCore.OrgUnitProfileRow.IsClosed.set -> void
+Modulus.Authorization.EntityFrameworkCore.OrgUnitProfileRow.Kind.get -> string!
+Modulus.Authorization.EntityFrameworkCore.OrgUnitProfileRow.Kind.set -> void
+Modulus.Authorization.EntityFrameworkCore.OrgUnitProfileRow.ManagerUserId.get -> System.Guid?
+Modulus.Authorization.EntityFrameworkCore.OrgUnitProfileRow.ManagerUserId.set -> void
+Modulus.Authorization.EntityFrameworkCore.OrgUnitProfileRow.Name.get -> string!
+Modulus.Authorization.EntityFrameworkCore.OrgUnitProfileRow.Name.set -> void
+Modulus.Authorization.EntityFrameworkCore.OrgUnitProfileRow.NormalizedCode.get -> string!
+Modulus.Authorization.EntityFrameworkCore.OrgUnitProfileRow.NormalizedCode.set -> void
+Modulus.Authorization.EntityFrameworkCore.OrgUnitProfileRow.OrgUnitProfileRow() -> void
+Modulus.Authorization.EntityFrameworkCore.OrgUnitProfileRow.TenantId.get -> System.Guid
+Modulus.Authorization.EntityFrameworkCore.OrgUnitProfileRow.TenantId.set -> void
+Modulus.Authorization.EntityFrameworkCore.OrgUnitProfileRow.UnitId.get -> System.Guid
+Modulus.Authorization.EntityFrameworkCore.OrgUnitProfileRow.UnitId.set -> void
+Modulus.Authorization.EntityFrameworkCore.OrgUnitProfileRow.UpdatedAt.get -> System.DateTimeOffset
+Modulus.Authorization.EntityFrameworkCore.OrgUnitProfileRow.UpdatedAt.set -> void
+Modulus.Authorization.EntityFrameworkCore.OrgUnitRow
+Modulus.Authorization.EntityFrameworkCore.OrgUnitRow.Id.get -> System.Guid
+Modulus.Authorization.EntityFrameworkCore.OrgUnitRow.Id.set -> void
+Modulus.Authorization.EntityFrameworkCore.OrgUnitRow.OrgUnitRow() -> void
+Modulus.Authorization.EntityFrameworkCore.OrgUnitRow.TenantId.get -> System.Guid
+Modulus.Authorization.EntityFrameworkCore.OrgUnitRow.TenantId.set -> void
+Modulus.Authorization.EntityFrameworkCore.PermissionCatalogOptions
+Modulus.Authorization.EntityFrameworkCore.PermissionCatalogOptions.Owner.get -> string?
+Modulus.Authorization.EntityFrameworkCore.PermissionCatalogOptions.Owner.set -> void
+Modulus.Authorization.EntityFrameworkCore.PermissionCatalogOptions.PermissionCatalogOptions() -> void
+Modulus.Authorization.EntityFrameworkCore.PermissionException
+Modulus.Authorization.EntityFrameworkCore.PermissionException.<Clone>$() -> Modulus.Authorization.EntityFrameworkCore.PermissionException!
+Modulus.Authorization.EntityFrameworkCore.PermissionException.BusinessOwner.get -> string!
+Modulus.Authorization.EntityFrameworkCore.PermissionException.BusinessOwner.init -> void
+Modulus.Authorization.EntityFrameworkCore.PermissionException.CompensatingControl.get -> string?
+Modulus.Authorization.EntityFrameworkCore.PermissionException.CompensatingControl.init -> void
+Modulus.Authorization.EntityFrameworkCore.PermissionException.CreatedAt.get -> System.DateTimeOffset
+Modulus.Authorization.EntityFrameworkCore.PermissionException.CreatedAt.init -> void
+Modulus.Authorization.EntityFrameworkCore.PermissionException.Deconstruct(out System.Guid Id, out string! Permission, out Modulus.Authorization.Grants.GrantHolderType HolderType, out string! Holder, out string! Justification, out string? CompensatingControl, out string! BusinessOwner, out System.Guid RequestedBy, out System.DateTimeOffset ValidFrom, out System.DateTimeOffset ValidUntil, out System.DateTimeOffset ReviewDueOn, out System.DateTimeOffset CreatedAt, out System.Guid? ReviewedBy, out System.DateTimeOffset? ReviewedAt, out System.Guid? RevokedBy, out System.DateTimeOffset? RevokedAt) -> void
+Modulus.Authorization.EntityFrameworkCore.PermissionException.Equals(Modulus.Authorization.EntityFrameworkCore.PermissionException? other) -> bool
+Modulus.Authorization.EntityFrameworkCore.PermissionException.Holder.get -> string!
+Modulus.Authorization.EntityFrameworkCore.PermissionException.Holder.init -> void
+Modulus.Authorization.EntityFrameworkCore.PermissionException.HolderType.get -> Modulus.Authorization.Grants.GrantHolderType
+Modulus.Authorization.EntityFrameworkCore.PermissionException.HolderType.init -> void
+Modulus.Authorization.EntityFrameworkCore.PermissionException.Id.get -> System.Guid
+Modulus.Authorization.EntityFrameworkCore.PermissionException.Id.init -> void
+Modulus.Authorization.EntityFrameworkCore.PermissionException.IsActiveAt(System.DateTimeOffset now) -> bool
+Modulus.Authorization.EntityFrameworkCore.PermissionException.Justification.get -> string!
+Modulus.Authorization.EntityFrameworkCore.PermissionException.Justification.init -> void
+Modulus.Authorization.EntityFrameworkCore.PermissionException.Permission.get -> string!
+Modulus.Authorization.EntityFrameworkCore.PermissionException.Permission.init -> void
+Modulus.Authorization.EntityFrameworkCore.PermissionException.PermissionException(System.Guid Id, string! Permission, Modulus.Authorization.Grants.GrantHolderType HolderType, string! Holder, string! Justification, string? CompensatingControl, string! BusinessOwner, System.Guid RequestedBy, System.DateTimeOffset ValidFrom, System.DateTimeOffset ValidUntil, System.DateTimeOffset ReviewDueOn, System.DateTimeOffset CreatedAt, System.Guid? ReviewedBy = null, System.DateTimeOffset? ReviewedAt = null, System.Guid? RevokedBy = null, System.DateTimeOffset? RevokedAt = null) -> void
+Modulus.Authorization.EntityFrameworkCore.PermissionException.RequestedBy.get -> System.Guid
+Modulus.Authorization.EntityFrameworkCore.PermissionException.RequestedBy.init -> void
+Modulus.Authorization.EntityFrameworkCore.PermissionException.ReviewDueOn.get -> System.DateTimeOffset
+Modulus.Authorization.EntityFrameworkCore.PermissionException.ReviewDueOn.init -> void
+Modulus.Authorization.EntityFrameworkCore.PermissionException.ReviewedAt.get -> System.DateTimeOffset?
+Modulus.Authorization.EntityFrameworkCore.PermissionException.ReviewedAt.init -> void
+Modulus.Authorization.EntityFrameworkCore.PermissionException.ReviewedBy.get -> System.Guid?
+Modulus.Authorization.EntityFrameworkCore.PermissionException.ReviewedBy.init -> void
+Modulus.Authorization.EntityFrameworkCore.PermissionException.RevokedAt.get -> System.DateTimeOffset?
+Modulus.Authorization.EntityFrameworkCore.PermissionException.RevokedAt.init -> void
+Modulus.Authorization.EntityFrameworkCore.PermissionException.RevokedBy.get -> System.Guid?
+Modulus.Authorization.EntityFrameworkCore.PermissionException.RevokedBy.init -> void
+Modulus.Authorization.EntityFrameworkCore.PermissionException.ValidFrom.get -> System.DateTimeOffset
+Modulus.Authorization.EntityFrameworkCore.PermissionException.ValidFrom.init -> void
+Modulus.Authorization.EntityFrameworkCore.PermissionException.ValidUntil.get -> System.DateTimeOffset
+Modulus.Authorization.EntityFrameworkCore.PermissionException.ValidUntil.init -> void
+Modulus.Authorization.EntityFrameworkCore.PermissionExceptionFinding
+Modulus.Authorization.EntityFrameworkCore.PermissionExceptionFinding.<Clone>$() -> Modulus.Authorization.EntityFrameworkCore.PermissionExceptionFinding!
+Modulus.Authorization.EntityFrameworkCore.PermissionExceptionFinding.Deconstruct(out string! Permission, out Modulus.Authorization.Grants.GrantHolderType HolderType, out string! Holder, out bool HadExpiredException) -> void
+Modulus.Authorization.EntityFrameworkCore.PermissionExceptionFinding.Equals(Modulus.Authorization.EntityFrameworkCore.PermissionExceptionFinding? other) -> bool
+Modulus.Authorization.EntityFrameworkCore.PermissionExceptionFinding.HadExpiredException.get -> bool
+Modulus.Authorization.EntityFrameworkCore.PermissionExceptionFinding.HadExpiredException.init -> void
+Modulus.Authorization.EntityFrameworkCore.PermissionExceptionFinding.Holder.get -> string!
+Modulus.Authorization.EntityFrameworkCore.PermissionExceptionFinding.Holder.init -> void
+Modulus.Authorization.EntityFrameworkCore.PermissionExceptionFinding.HolderType.get -> Modulus.Authorization.Grants.GrantHolderType
+Modulus.Authorization.EntityFrameworkCore.PermissionExceptionFinding.HolderType.init -> void
+Modulus.Authorization.EntityFrameworkCore.PermissionExceptionFinding.Permission.get -> string!
+Modulus.Authorization.EntityFrameworkCore.PermissionExceptionFinding.Permission.init -> void
+Modulus.Authorization.EntityFrameworkCore.PermissionExceptionFinding.PermissionExceptionFinding(string! Permission, Modulus.Authorization.Grants.GrantHolderType HolderType, string! Holder, bool HadExpiredException) -> void
+Modulus.Authorization.EntityFrameworkCore.RecertificationCampaignRow
+Modulus.Authorization.EntityFrameworkCore.RecertificationCampaignRow.CompletedAt.get -> System.DateTime?
+Modulus.Authorization.EntityFrameworkCore.RecertificationCampaignRow.CompletedAt.set -> void
+Modulus.Authorization.EntityFrameworkCore.RecertificationCampaignRow.CreatedAt.get -> System.DateTime
+Modulus.Authorization.EntityFrameworkCore.RecertificationCampaignRow.CreatedAt.set -> void
+Modulus.Authorization.EntityFrameworkCore.RecertificationCampaignRow.CreatedBy.get -> System.Guid
+Modulus.Authorization.EntityFrameworkCore.RecertificationCampaignRow.CreatedBy.set -> void
+Modulus.Authorization.EntityFrameworkCore.RecertificationCampaignRow.Id.get -> System.Guid
+Modulus.Authorization.EntityFrameworkCore.RecertificationCampaignRow.Id.set -> void
+Modulus.Authorization.EntityFrameworkCore.RecertificationCampaignRow.Items.get -> System.Collections.Generic.List<Modulus.Authorization.EntityFrameworkCore.RecertificationItemRow!>!
+Modulus.Authorization.EntityFrameworkCore.RecertificationCampaignRow.Items.set -> void
+Modulus.Authorization.EntityFrameworkCore.RecertificationCampaignRow.Name.get -> string!
+Modulus.Authorization.EntityFrameworkCore.RecertificationCampaignRow.Name.set -> void
+Modulus.Authorization.EntityFrameworkCore.RecertificationCampaignRow.RecertificationCampaignRow() -> void
+Modulus.Authorization.EntityFrameworkCore.RecertificationCampaignRow.TenantId.get -> System.Guid
+Modulus.Authorization.EntityFrameworkCore.RecertificationCampaignRow.TenantId.set -> void
+Modulus.Authorization.EntityFrameworkCore.RecertificationItemRow
+Modulus.Authorization.EntityFrameworkCore.RecertificationItemRow.Campaign.get -> Modulus.Authorization.EntityFrameworkCore.RecertificationCampaignRow!
+Modulus.Authorization.EntityFrameworkCore.RecertificationItemRow.Campaign.set -> void
+Modulus.Authorization.EntityFrameworkCore.RecertificationItemRow.CampaignId.get -> System.Guid
+Modulus.Authorization.EntityFrameworkCore.RecertificationItemRow.CampaignId.set -> void
+Modulus.Authorization.EntityFrameworkCore.RecertificationItemRow.Decision.get -> Modulus.Authorization.Governance.RecertificationDecision
+Modulus.Authorization.EntityFrameworkCore.RecertificationItemRow.Decision.set -> void
+Modulus.Authorization.EntityFrameworkCore.RecertificationItemRow.Id.get -> System.Guid
+Modulus.Authorization.EntityFrameworkCore.RecertificationItemRow.Id.set -> void
+Modulus.Authorization.EntityFrameworkCore.RecertificationItemRow.Permission.get -> string!
+Modulus.Authorization.EntityFrameworkCore.RecertificationItemRow.Permission.set -> void
+Modulus.Authorization.EntityFrameworkCore.RecertificationItemRow.RecertificationItemRow() -> void
+Modulus.Authorization.EntityFrameworkCore.RecertificationItemRow.ReviewedAt.get -> System.DateTime?
+Modulus.Authorization.EntityFrameworkCore.RecertificationItemRow.ReviewedAt.set -> void
+Modulus.Authorization.EntityFrameworkCore.RecertificationItemRow.ReviewedBy.get -> System.Guid?
+Modulus.Authorization.EntityFrameworkCore.RecertificationItemRow.ReviewedBy.set -> void
+Modulus.Authorization.EntityFrameworkCore.RecertificationItemRow.Source.get -> Modulus.Authorization.Governance.AccessSource
+Modulus.Authorization.EntityFrameworkCore.RecertificationItemRow.Source.set -> void
+Modulus.Authorization.EntityFrameworkCore.RecertificationItemRow.TenantId.get -> System.Guid
+Modulus.Authorization.EntityFrameworkCore.RecertificationItemRow.TenantId.set -> void
+Modulus.Authorization.EntityFrameworkCore.RecertificationItemRow.UserId.get -> System.Guid
+Modulus.Authorization.EntityFrameworkCore.RecertificationItemRow.UserId.set -> void
+const Modulus.Authorization.EntityFrameworkCore.CompanyProvisioningOptions.OwnerRole = "TenantOwner" -> string!
+const Modulus.Authorization.EntityFrameworkCore.CompanyProvisioningOptions.SectionName = "CompanyProvisioning" -> string!
+const Modulus.Authorization.EntityFrameworkCore.DataQualityFindingQuery.DefaultTake = 100 -> int
+const Modulus.Authorization.EntityFrameworkCore.DataQualityFindingQuery.MaxTake = 500 -> int
+const Modulus.Authorization.EntityFrameworkCore.EfDimensionHierarchy.MaxValues = 10000 -> int
+const Modulus.Authorization.EntityFrameworkCore.EfRoleInclusionStore.MaxDepth = 10 -> int
+const Modulus.Authorization.EntityFrameworkCore.OrgUnitKinds.Branch = "branch" -> string!
+const Modulus.Authorization.EntityFrameworkCore.OrgUnitKinds.Department = "department" -> string!
+const Modulus.Authorization.EntityFrameworkCore.OrgUnitKinds.Factory = "factory" -> string!
+const Modulus.Authorization.EntityFrameworkCore.OrgUnitKinds.Office = "office" -> string!
+const Modulus.Authorization.EntityFrameworkCore.OrgUnitKinds.Team = "team" -> string!
+const Modulus.Authorization.EntityFrameworkCore.OrgUnitKinds.Warehouse = "warehouse" -> string!
+override Modulus.Authorization.EntityFrameworkCore.AccessRequest.Equals(object? obj) -> bool
+override Modulus.Authorization.EntityFrameworkCore.AccessRequest.GetHashCode() -> int
+override Modulus.Authorization.EntityFrameworkCore.AccessRequest.ToString() -> string!
+override Modulus.Authorization.EntityFrameworkCore.AuthorizationStoreDbContext<TOrgUnit, TOrgUnitParent, TOrgUnitProfile, TCompanyProfile>.OnModelCreating(Microsoft.EntityFrameworkCore.ModelBuilder! modelBuilder) -> void
+override Modulus.Authorization.EntityFrameworkCore.AuthorizationStoreDbContextBase.OnModelCreating(Microsoft.EntityFrameworkCore.ModelBuilder! modelBuilder) -> void
+override Modulus.Authorization.EntityFrameworkCore.AuthorizationStoreDbContextBase.SaveChanges() -> int
+override Modulus.Authorization.EntityFrameworkCore.AuthorizationStoreDbContextBase.SaveChanges(bool acceptAllChangesOnSuccess) -> int
+override Modulus.Authorization.EntityFrameworkCore.AuthorizationStoreDbContextBase.SaveChangesAsync(bool acceptAllChangesOnSuccess, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<int>!
+override Modulus.Authorization.EntityFrameworkCore.CompanyProfile.Equals(object? obj) -> bool
+override Modulus.Authorization.EntityFrameworkCore.CompanyProfile.GetHashCode() -> int
+override Modulus.Authorization.EntityFrameworkCore.CompanyProfile.ToString() -> string!
+override Modulus.Authorization.EntityFrameworkCore.DataQualityFindingQuery.Equals(object? obj) -> bool
+override Modulus.Authorization.EntityFrameworkCore.DataQualityFindingQuery.GetHashCode() -> int
+override Modulus.Authorization.EntityFrameworkCore.DataQualityFindingQuery.ToString() -> string!
+override Modulus.Authorization.EntityFrameworkCore.DataQualityFindingRecord.Equals(object? obj) -> bool
+override Modulus.Authorization.EntityFrameworkCore.DataQualityFindingRecord.GetHashCode() -> int
+override Modulus.Authorization.EntityFrameworkCore.DataQualityFindingRecord.ToString() -> string!
+override Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore.Stored.Equals(object? obj) -> bool
+override Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore.Stored.GetHashCode() -> int
+override Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore.Stored.ToString() -> string!
+override Modulus.Authorization.EntityFrameworkCore.EfPartyStore.Link.Equals(object? obj) -> bool
+override Modulus.Authorization.EntityFrameworkCore.EfPartyStore.Link.GetHashCode() -> int
+override Modulus.Authorization.EntityFrameworkCore.EfPartyStore.Link.ToString() -> string!
+override Modulus.Authorization.EntityFrameworkCore.EfPermissionGrantStore.ScopedGrantRecord.Equals(object? obj) -> bool
+override Modulus.Authorization.EntityFrameworkCore.EfPermissionGrantStore.ScopedGrantRecord.GetHashCode() -> int
+override Modulus.Authorization.EntityFrameworkCore.EfPermissionGrantStore.ScopedGrantRecord.ToString() -> string!
+override Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Holding.Equals(object? obj) -> bool
+override Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Holding.GetHashCode() -> int
+override Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Holding.ToString() -> string!
+override Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Position.Equals(object? obj) -> bool
+override Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Position.GetHashCode() -> int
+override Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Position.ToString() -> string!
+override Modulus.Authorization.EntityFrameworkCore.EfRoleInclusionStore.Stored.Equals(object? obj) -> bool
+override Modulus.Authorization.EntityFrameworkCore.EfRoleInclusionStore.Stored.GetHashCode() -> int
+override Modulus.Authorization.EntityFrameworkCore.EfRoleInclusionStore.Stored.ToString() -> string!
+override Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore.Stored.Equals(object? obj) -> bool
+override Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore.Stored.GetHashCode() -> int
+override Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore.Stored.ToString() -> string!
+override Modulus.Authorization.EntityFrameworkCore.InheritedGrant.Equals(object? obj) -> bool
+override Modulus.Authorization.EntityFrameworkCore.InheritedGrant.GetHashCode() -> int
+override Modulus.Authorization.EntityFrameworkCore.InheritedGrant.ToString() -> string!
+override Modulus.Authorization.EntityFrameworkCore.OrgUnitProfile.Equals(object? obj) -> bool
+override Modulus.Authorization.EntityFrameworkCore.OrgUnitProfile.GetHashCode() -> int
+override Modulus.Authorization.EntityFrameworkCore.OrgUnitProfile.ToString() -> string!
+override Modulus.Authorization.EntityFrameworkCore.PermissionException.Equals(object? obj) -> bool
+override Modulus.Authorization.EntityFrameworkCore.PermissionException.GetHashCode() -> int
+override Modulus.Authorization.EntityFrameworkCore.PermissionException.ToString() -> string!
+override Modulus.Authorization.EntityFrameworkCore.PermissionExceptionFinding.Equals(object? obj) -> bool
+override Modulus.Authorization.EntityFrameworkCore.PermissionExceptionFinding.GetHashCode() -> int
+override Modulus.Authorization.EntityFrameworkCore.PermissionExceptionFinding.ToString() -> string!
+static Modulus.Authorization.EntityFrameworkCore.AccessRequest.operator !=(Modulus.Authorization.EntityFrameworkCore.AccessRequest? left, Modulus.Authorization.EntityFrameworkCore.AccessRequest? right) -> bool
+static Modulus.Authorization.EntityFrameworkCore.AccessRequest.operator ==(Modulus.Authorization.EntityFrameworkCore.AccessRequest? left, Modulus.Authorization.EntityFrameworkCore.AccessRequest? right) -> bool
+static Modulus.Authorization.EntityFrameworkCore.Audit.EfAuthorizationAuditExtensions.AddEfCoreAuthorizationAudit(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<Modulus.Authorization.EntityFrameworkCore.Audit.AuthorizationAuditOptions!>? configure = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.Authorization.EntityFrameworkCore.CompanyProfile.operator !=(Modulus.Authorization.EntityFrameworkCore.CompanyProfile? left, Modulus.Authorization.EntityFrameworkCore.CompanyProfile? right) -> bool
+static Modulus.Authorization.EntityFrameworkCore.CompanyProfile.operator ==(Modulus.Authorization.EntityFrameworkCore.CompanyProfile? left, Modulus.Authorization.EntityFrameworkCore.CompanyProfile? right) -> bool
+static Modulus.Authorization.EntityFrameworkCore.DataQualityFindingQuery.operator !=(Modulus.Authorization.EntityFrameworkCore.DataQualityFindingQuery? left, Modulus.Authorization.EntityFrameworkCore.DataQualityFindingQuery? right) -> bool
+static Modulus.Authorization.EntityFrameworkCore.DataQualityFindingQuery.operator ==(Modulus.Authorization.EntityFrameworkCore.DataQualityFindingQuery? left, Modulus.Authorization.EntityFrameworkCore.DataQualityFindingQuery? right) -> bool
+static Modulus.Authorization.EntityFrameworkCore.DataQualityFindingRecord.operator !=(Modulus.Authorization.EntityFrameworkCore.DataQualityFindingRecord? left, Modulus.Authorization.EntityFrameworkCore.DataQualityFindingRecord? right) -> bool
+static Modulus.Authorization.EntityFrameworkCore.DataQualityFindingRecord.operator ==(Modulus.Authorization.EntityFrameworkCore.DataQualityFindingRecord? left, Modulus.Authorization.EntityFrameworkCore.DataQualityFindingRecord? right) -> bool
+static Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore.Stored.operator !=(Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore.Stored? left, Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore.Stored? right) -> bool
+static Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore.Stored.operator ==(Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore.Stored? left, Modulus.Authorization.EntityFrameworkCore.EfApprovalAuthorityStore.Stored? right) -> bool
+static Modulus.Authorization.EntityFrameworkCore.EfAuthorizationStoreExtensions.AddEfCoreAuthorizationStores(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<Microsoft.EntityFrameworkCore.DbContextOptionsBuilder!>! configure) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.Authorization.EntityFrameworkCore.EfAuthorizationStoreExtensions.AddEfCoreAuthorizationStores<TContext, TOrgUnit, TOrgUnitParent, TOrgUnitProfile, TCompanyProfile>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<Microsoft.EntityFrameworkCore.DbContextOptionsBuilder!>! configure) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.Authorization.EntityFrameworkCore.EfAuthorizationStoreExtensions.MigrateAuthorizationStoreAsync(this System.IServiceProvider! services, bool ensureCreatedIfNoMigrations = false, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+static Modulus.Authorization.EntityFrameworkCore.EfAuthorizationStoreExtensions.SeedPermissionGrantsAsync(this System.IServiceProvider! services, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+static Modulus.Authorization.EntityFrameworkCore.EfPartyStore.Link.operator !=(Modulus.Authorization.EntityFrameworkCore.EfPartyStore.Link? left, Modulus.Authorization.EntityFrameworkCore.EfPartyStore.Link? right) -> bool
+static Modulus.Authorization.EntityFrameworkCore.EfPartyStore.Link.operator ==(Modulus.Authorization.EntityFrameworkCore.EfPartyStore.Link? left, Modulus.Authorization.EntityFrameworkCore.EfPartyStore.Link? right) -> bool
+static Modulus.Authorization.EntityFrameworkCore.EfPermissionGrantStore.ScopedGrantRecord.operator !=(Modulus.Authorization.EntityFrameworkCore.EfPermissionGrantStore.ScopedGrantRecord? left, Modulus.Authorization.EntityFrameworkCore.EfPermissionGrantStore.ScopedGrantRecord? right) -> bool
+static Modulus.Authorization.EntityFrameworkCore.EfPermissionGrantStore.ScopedGrantRecord.operator ==(Modulus.Authorization.EntityFrameworkCore.EfPermissionGrantStore.ScopedGrantRecord? left, Modulus.Authorization.EntityFrameworkCore.EfPermissionGrantStore.ScopedGrantRecord? right) -> bool
+static Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Holding.operator !=(Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Holding? left, Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Holding? right) -> bool
+static Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Holding.operator ==(Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Holding? left, Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Holding? right) -> bool
+static Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Position.operator !=(Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Position? left, Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Position? right) -> bool
+static Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Position.operator ==(Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Position? left, Modulus.Authorization.EntityFrameworkCore.EfPositionStore.Position? right) -> bool
+static Modulus.Authorization.EntityFrameworkCore.EfRoleInclusionStore.Stored.operator !=(Modulus.Authorization.EntityFrameworkCore.EfRoleInclusionStore.Stored? left, Modulus.Authorization.EntityFrameworkCore.EfRoleInclusionStore.Stored? right) -> bool
+static Modulus.Authorization.EntityFrameworkCore.EfRoleInclusionStore.Stored.operator ==(Modulus.Authorization.EntityFrameworkCore.EfRoleInclusionStore.Stored? left, Modulus.Authorization.EntityFrameworkCore.EfRoleInclusionStore.Stored? right) -> bool
+static Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore.Stored.operator !=(Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore.Stored? left, Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore.Stored? right) -> bool
+static Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore.Stored.operator ==(Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore.Stored? left, Modulus.Authorization.EntityFrameworkCore.EfSodRuleStore.Stored? right) -> bool
+static Modulus.Authorization.EntityFrameworkCore.InheritedGrant.operator !=(Modulus.Authorization.EntityFrameworkCore.InheritedGrant? left, Modulus.Authorization.EntityFrameworkCore.InheritedGrant? right) -> bool
+static Modulus.Authorization.EntityFrameworkCore.InheritedGrant.operator ==(Modulus.Authorization.EntityFrameworkCore.InheritedGrant? left, Modulus.Authorization.EntityFrameworkCore.InheritedGrant? right) -> bool
+static Modulus.Authorization.EntityFrameworkCore.OrgUnitProfile.operator !=(Modulus.Authorization.EntityFrameworkCore.OrgUnitProfile? left, Modulus.Authorization.EntityFrameworkCore.OrgUnitProfile? right) -> bool
+static Modulus.Authorization.EntityFrameworkCore.OrgUnitProfile.operator ==(Modulus.Authorization.EntityFrameworkCore.OrgUnitProfile? left, Modulus.Authorization.EntityFrameworkCore.OrgUnitProfile? right) -> bool
+static Modulus.Authorization.EntityFrameworkCore.PermissionException.operator !=(Modulus.Authorization.EntityFrameworkCore.PermissionException? left, Modulus.Authorization.EntityFrameworkCore.PermissionException? right) -> bool
+static Modulus.Authorization.EntityFrameworkCore.PermissionException.operator ==(Modulus.Authorization.EntityFrameworkCore.PermissionException? left, Modulus.Authorization.EntityFrameworkCore.PermissionException? right) -> bool
+static Modulus.Authorization.EntityFrameworkCore.PermissionExceptionFinding.operator !=(Modulus.Authorization.EntityFrameworkCore.PermissionExceptionFinding? left, Modulus.Authorization.EntityFrameworkCore.PermissionExceptionFinding? right) -> bool
+static Modulus.Authorization.EntityFrameworkCore.PermissionExceptionFinding.operator ==(Modulus.Authorization.EntityFrameworkCore.PermissionExceptionFinding? left, Modulus.Authorization.EntityFrameworkCore.PermissionExceptionFinding? right) -> bool

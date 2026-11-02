@@ -1,6 +1,7 @@
 namespace Modulus.EntityFrameworkCore.Extensions;
 
 using Microsoft.EntityFrameworkCore;
+using Modulus.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Modulus.Core.Abstractions;
@@ -117,7 +118,7 @@ public static class EFCoreServiceCollectionExtensions
     internal static void AddIsolationInterceptors<TContext>(IServiceProvider sp, DbContextOptionsBuilder options)
         where TContext : ModuleDbContext
     {
-        options.AddInterceptors(TenantSqlGuardInterceptor.Instance);
+        options.AddInterceptors(TenantSqlGuardInterceptor.Instance, DatabaseTelemetryInterceptor.Instance);
         foreach (var route in sp.GetServices<TenantDatabaseRoute>())
         {
             if (route.ContextType == typeof(TContext))

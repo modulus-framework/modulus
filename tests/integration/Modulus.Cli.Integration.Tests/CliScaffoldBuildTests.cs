@@ -69,6 +69,7 @@ public sealed class CliScaffoldBuildTests
             var appName = $"TestApp{char.ToUpper(uiEngine[0])}{uiEngine.Substring(1).Replace("-", "")}";
             var scaffoldArgs = string.Join(' ',
                 "app", appName,
+                "--with-example",
                 "--kind", "webapp+api",
                 "--ui-engine", uiEngine,
                 "--database", "SQLite",
@@ -149,12 +150,13 @@ public sealed class CliScaffoldBuildTests
             // 3. Scaffold a fresh app, pointed at the local feed. --kind api
             // and no UI modules keep the package surface minimal (no
             // `dotnet add package` shelling-out from WireUiModules); default
-            // NoExample=false includes the example Catalog module so this
+            // --with-example includes the example Catalog module so this
             // exercises real generated 4-layer module code, not just the
             // bare host. --auth none avoids OpenIddict cert/seed complexity
             // for this first smoke test.
             var scaffoldArgs = string.Join(' ',
                 "app", "TestApp",
+                "--with-example",
                 "--kind", "api",
                 "--database", "SQLite",
                 "--auth", "none",
@@ -255,13 +257,13 @@ public sealed class CliScaffoldBuildTests
     }
 
     /// <summary>
-    /// Copies the modulus-ui packages the CLI needs (version 1.8.1, the UI version in cli/Services/UiTemplatePackage.cs) from the
+    /// Copies the modulus-ui packages the CLI needs (version 1.8.2, the UI version in cli/Services/UiTemplatePackage.cs) from the
     /// local UI feed (MODULUS_LOCAL_FEED, then ~/.modulus/feed) into the test's package folder. Without them the generated web app
     /// cannot restore, because the test's package source is the framework feed only.
     /// </summary>
     private static void CopyUiPackages(string destination)
     {
-        const string UiVersion = "1.8.1";
+        const string UiVersion = "1.8.2";
         var folders = new List<string>();
         if (Environment.GetEnvironmentVariable("MODULUS_LOCAL_FEED") is { Length: > 0 } custom)
             folders.AddRange(custom.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries));

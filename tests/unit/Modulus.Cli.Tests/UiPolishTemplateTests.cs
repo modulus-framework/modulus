@@ -91,14 +91,4 @@ public sealed class UiPolishTemplateTests
     {
         _engine.Render("app/Login.Web.cshtml", Model("none")).Should().NotContain("/Account/ForgotPassword");
     }
-
-    [Fact]
-    public void The_profile_names_the_primary_branch_and_the_branch_client_serves_every_sign_in_app()
-    {
-        var profile = _engine.Render("app/ProfileModel.Web", Model());
-        profile.Should().Contain("BranchApiClient branches").And.Contain("LoadPrimaryBranchAsync");
-        profile.Should().Contain("a branch you cannot see", "a branch outside the caller's scope is not shown by id");
-
-        _engine.Render("app/Profile.Web.cshtml", Model()).Should().Contain("Model.PrimaryBranchLabel");
-    }
 }

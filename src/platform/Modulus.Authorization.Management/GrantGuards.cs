@@ -9,7 +9,6 @@ namespace Modulus.Authorization.Management;
 /// <summary>The rules that stop the administration API from becoming a privilege-escalation path.</summary>
 internal static class GrantGuards
 {
-    private const string WildcardSuffix = ":*";
 
     /// <summary>The caller's user id (<c>NameIdentifier</c> or <c>sub</c>), or null.</summary>
     public static Guid? UserIdOf(ClaimsPrincipal caller)
@@ -38,7 +37,7 @@ internal static class GrantGuards
                 continue;
             }
 
-            if (permission.EndsWith(WildcardSuffix, StringComparison.Ordinal))
+            if (Modulus.Authorization.PermissionNames.IsWildcard(permission))
             {
                 var prefix = permission[..^1];
                 var matches = all.Where(d => d.Sensitivity is not PermissionSensitivity.Critical

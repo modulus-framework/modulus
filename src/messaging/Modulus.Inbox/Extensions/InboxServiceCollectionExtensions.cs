@@ -84,6 +84,10 @@ public static class InboxServiceCollectionExtensions
         services.TryAddEnumerable(ServiceDescriptor.Singleton<
             IModuleModelContributor, InboxModelContributor>());
 
+        // Housekeeping for processed rows. Idempotent: a second AddInbox call adds the same service type once.
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<
+            Microsoft.Extensions.Hosting.IHostedService, InboxPurgeService>());
+
         return services.DecorateIntegrationEventHandlers();
     }
 

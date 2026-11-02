@@ -238,8 +238,6 @@ public sealed class FederatedLoginValidatorTests : IAsyncDisposable
         result.SecurityStamp.Should().NotBeNullOrEmpty();
         user.Email.Should().Be("alice@contoso.test");
         user.EmailConfirmed.Should().BeTrue();
-        user.FirstName.Should().Be("Alice");
-        user.LastName.Should().Be("Smith");
         (await Users.HasPasswordAsync(user)).Should().BeFalse("federated accounts sign in only through the provider");
     }
 

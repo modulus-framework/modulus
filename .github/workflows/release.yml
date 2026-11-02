@@ -38,10 +38,35 @@ jobs:
         run: dotnet test modulus.slnx --no-build --configuration Release --filter "Category=Integration" --verbosity minimal
       - name: Pack
         run: dotnet pack modulus.slnx --no-build --configuration Release --output artifacts/packages -p:Version=${GITHUB_REF_NAME#v}
+      # Author signature with a commercial code-signing certificate (never self-signed for production). The certificate is a
+      # base64 PFX in a CI secret; it is written to the runner's temporary directory, used, and deleted. The job fails when the
+      # secret is missing: an unsigned release must not be published.
+      - name: Sign packages
+        env:
+          SIGNING_PFX_BASE64: ${{ secrets.NUGET_SIGNING_PFX_BASE64 }}
+          SIGNING_PFX_PASSWORD: ${{ secrets.NUGET_SIGNING_PFX_PASSWORD }}
+          TIMESTAMP_URL: ${{ vars.NUGET_TIMESTAMP_URL || 'http://timestamp.digicert.com' }}
+        run: |
+          set -euo pipefail
+          if [ -z "$SIGNING_PFX_BASE64" ] || [ -z "$SIGNING_PFX_PASSWORD" ]; then
+            echo "::error::NUGET_SIGNING_PFX_BASE64 and NUGET_SIGNING_PFX_PASSWORD must be set to sign the packages."
+            exit 1
+          fi
+          pfx="$RUNNER_TEMP/nuget-signing.pfx"
+          trap 'rm -f "$pfx"' EXIT
+          printf '%s' "$SIGNING_PFX_BASE64" | base64 --decode > "$pfx"
+          dotnet nuget sign artifacts/packages/*.nupkg \
+            --certificate-path "$pfx" \
+            --certificate-password "$SIGNING_PFX_PASSWORD" \
+            --timestamper "$TIMESTAMP_URL" \
+            --overwrite
+      - name: Verify package signatures (before publishing)
+        run: dotnet nuget verify artifacts/packages/*.nupkg --all
       - name: Software bill of materials (CycloneDX)
         run: |
           dotnet tool install --global CycloneDX
           dotnet CycloneDX modulus.slnx --json --output artifacts/sbom
+      # The provenance covers the signed packages, so it is created after signing.
       - name: Build provenance
         uses: actions/attest-build-provenance@v2
         with:
@@ -65,3 +90,7 @@ jobs:
           for pkg in artifacts/packages/*.nupkg; do
             dotnet nuget push "$pkg" --api-key "${{ steps.nuget-login.outputs.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json --skip-duplicate
           done
+      # What nuget.org serves must carry a valid signature: download each published package and verify it. Indexing can take a
+      # few minutes, so the script retries.
+      - name: Verify published package signatures
+        run: bash build/verify-published-packages.sh artifacts/packages

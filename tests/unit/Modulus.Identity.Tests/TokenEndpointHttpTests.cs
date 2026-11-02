@@ -166,52 +166,6 @@ public sealed class TokenEndpointHttpTests : OidcHostTestBase
     }
 
     [Fact]
-    public async Task Shop_floor_sign_in_works_only_from_a_registered_device_and_gives_a_short_token_without_refresh()
-    {
-        await using (var scope = _app.Services.CreateAsyncScope())
-            (await scope.ServiceProvider.GetRequiredService<IShopFloorAccountService>().CreateAsync(s_company, "E1", "482913", roles: ["ShopFloor"])).Succeeded.Should().BeTrue();
-
-        var (status, body) = await TokenAsync(
-            ("grant_type", ShopFloorGrant.GrantType), ("client_id", Tablet), ("employee_code", "e1"), ("pin", "482913"), ("scope", "openid offline_access roles"));
-        status.Should().Be(HttpStatusCode.OK, body.ToString());
-        body.TryGetProperty("refresh_token", out _).Should().BeFalse("a tablet token cannot be refreshed");
-        var jwt = Jwt(body);
-        Amr(jwt).Should().Equal("pin");
-        jwt.GetClaim("tid").Value.Should().Be(s_company.ToString());
-        jwt.Claims.Where(c => c.Type == "role").Select(c => c.Value).Should().Equal("ShopFloor");
-
-        var (wrongStatus, wrong) = await TokenAsync(("grant_type", ShopFloorGrant.GrantType), ("client_id", Tablet), ("employee_code", "E1"), ("pin", "000111"));
-        wrongStatus.Should().Be(HttpStatusCode.BadRequest);
-        wrong.GetProperty("error").GetString().Should().Be("invalid_grant");
-
-        // A client that is not bound to a company is not a registered device.
-        var (unboundStatus, unbound) = await TokenAsync(("grant_type", ShopFloorGrant.GrantType), ("client_id", SpaClient), ("employee_code", "E1"), ("pin", "482913"));
-        unboundStatus.Should().Be(HttpStatusCode.Unauthorized, "invalid_client is a 401");
-        unbound.GetProperty("error").GetString().Should().Be("invalid_client");
-
-        // The tablet token works as a bearer token for what its roles allow.
-        (await CallAsync(HttpMethod.Get, "/whoami", body.GetProperty("access_token").GetString())).StatusCode.Should().Be(HttpStatusCode.OK);
-    }
-
-    [Fact]
-    public async Task An_imported_operator_chooses_their_own_pin_at_the_first_sign_in()
-    {
-        string initial;
-        await using (var scope = _app.Services.CreateAsyncScope())
-            initial = (await scope.ServiceProvider.GetRequiredService<IShopFloorAccountService>().ImportAsync(s_company, [new ShopFloorImportRow("E7", Roles: ["ShopFloor"])]))[0].InitialPin!;
-
-        var (status, body) = await TokenAsync(("grant_type", ShopFloorGrant.GrantType), ("client_id", Tablet), ("employee_code", "E7"), ("pin", initial));
-        status.Should().Be(HttpStatusCode.BadRequest);
-        body.GetProperty("error").GetString().Should().Be("pin_change_required");
-
-        var (ok, token) = await TokenAsync(("grant_type", ShopFloorGrant.GrantType), ("client_id", Tablet), ("employee_code", "E7"), ("pin", initial), ("new_pin", "739184"), ("scope", "openid roles"));
-        ok.Should().Be(HttpStatusCode.OK, token.ToString());
-
-        var (again, _) = await TokenAsync(("grant_type", ShopFloorGrant.GrantType), ("client_id", Tablet), ("employee_code", "E7"), ("pin", "739184"));
-        again.Should().Be(HttpStatusCode.OK);
-    }
-
-    [Fact]
     public async Task A_critical_permission_asks_for_step_up_and_a_second_factor_or_a_passkey_satisfies_it()
     {
         var user = await CreateUserAsync("tess", "Treasurer");

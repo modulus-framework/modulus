@@ -1,0 +1,23 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Modulus.Core.Abstractions;
+using Modulus.Tenancy.Lifecycle.EntityFrameworkCore;
+
+namespace {{ module_namespace }}.Infrastructure;
+
+/// <summary>
+/// Composition root of the tenant-data lifecycle store. The lifecycle itself (<c>AddTenantLifecycle</c>, the export
+/// endpoints) is wired in Program.cs; this module only puts its store in the host database.
+/// </summary>
+public sealed class TenantLifecycleModule : ModulusModule
+{
+    public override void ConfigureServices(IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddDbContext<AppTenantLifecycleDbContext>(options =>
+            options.{{ use_db_method }}(configuration.GetConnectionString("TenantLifecycle")
+                ?? "{{ connection_string }}"));
+
+        services.AddEfTenantLifecycleStore<AppTenantLifecycleDbContext>();
+    }
+}

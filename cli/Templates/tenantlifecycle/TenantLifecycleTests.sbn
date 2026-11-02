@@ -1,0 +1,33 @@
+using System.Net;
+using FluentAssertions;
+using Modulus.Testing;
+using Xunit;
+using ApiEntryPoint = {{ root_namespace }}.Api.ApiEntryPoint;
+
+namespace {{ root_namespace }}.Tests;
+
+/// <summary>
+/// The tenant-data export endpoints (modulus add-tenant-lifecycle) on the in-memory test host: they are closed to anonymous and to
+/// signed-in callers without the export permission. Archives are not produced here (the test host has no encryption key).
+/// </summary>
+public sealed class TenantLifecycleTests(ModulusWebAppFactory<ApiEntryPoint> factory)
+    : IClassFixture<ModulusWebAppFactory<ApiEntryPoint>>
+{
+    private const string Exports = "/tenant-data/exports";
+
+    [Fact]
+    public async Task Anonymous_callers_cannot_request_an_export()
+    {
+        var response = await factory.CreateClient().PostAsync(Exports, null);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task Callers_without_the_export_permission_are_forbidden()
+    {
+        var response = await factory.CreateAuthenticatedClient().PostAsync(Exports, null);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+}

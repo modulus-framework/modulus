@@ -162,15 +162,14 @@ internal sealed class ShopFloorAccountService<TUser, TRole>(
     where TUser : ModulusUser, new()
     where TRole : ModulusRole
 {
-    // The fields an import writes on each account: the code and names the caller supplies, plus the PIN hash and the forced change.
-    private static readonly string[] ImportedFields = ["EmployeeCode", "FirstName", "LastName", "TenantId", "PinHash", "MustChangePin"];
+    // The fields an import writes on each account: the code the caller supplies, plus the PIN hash and the forced change. Names are not
+    // stored here: an application keeps them on its own user type.
+    private static readonly string[] ImportedFields = ["EmployeeCode", "TenantId", "PinHash", "MustChangePin"];
 
     public async Task<IdentityResult> CreateAsync(
         Guid tenantId,
         string employeeCode,
         string pin,
-        string? firstName = null,
-        string? lastName = null,
         IEnumerable<string>? roles = null,
         CancellationToken ct = default)
     {
@@ -185,7 +184,7 @@ internal sealed class ShopFloorAccountService<TUser, TRole>(
         if (fieldAuthorizer is not null)
             await fieldAuthorizer.EnsureWriteAllowedAsync(typeof(TUser), ImportedFields, ct);
 
-        return await CreateCoreAsync(tenantId, employeeCode, pin, firstName, lastName, roles, ct);
+        return await CreateCoreAsync(tenantId, employeeCode, pin, roles, ct);
     }
 
     // The field check is done by the caller: an import checks its whole batch once, before the first account is created.
@@ -204,8 +203,6 @@ internal sealed class ShopFloorAccountService<TUser, TRole>(
         Guid tenantId,
         string employeeCode,
         string pin,
-        string? firstName,
-        string? lastName,
         IEnumerable<string>? roles,
         CancellationToken ct)
     {
@@ -236,8 +233,6 @@ internal sealed class ShopFloorAccountService<TUser, TRole>(
             EmailConfirmed = true,
             TenantId = tenantId,
             EmployeeCode = code,
-            FirstName = firstName,
-            LastName = lastName,
             IsActive = true,
         };
         user.PinHash = userManager.PasswordHasher.HashPassword(user, pin);
@@ -294,7 +289,7 @@ internal sealed class ShopFloorAccountService<TUser, TRole>(
         {
             ct.ThrowIfCancellationRequested();
             var pin = string.IsNullOrEmpty(row.InitialPin) ? ShopFloorRules.GeneratePin(options.Value) : row.InitialPin;
-            var created = await CreateCoreAsync(tenantId, row.EmployeeCode, pin, row.FirstName, row.LastName, row.Roles, ct);
+            var created = await CreateCoreAsync(tenantId, row.EmployeeCode, pin, row.Roles, ct);
             if (!created.Succeeded)
             {
                 results.Add(new ShopFloorImportResult(row.EmployeeCode, null, null, string.Join(" ", created.Errors.Select(e => e.Description))));

@@ -1,0 +1,53 @@
+using System.Net;
+using System.Net.Http.Json;
+using FluentAssertions;
+using Microsoft.Extensions.DependencyInjection;
+using Modulus.Core.Abstractions;
+using Modulus.MultiTenancy;
+using Modulus.Testing;
+using Xunit;
+using {{ module_namespace }}.Infrastructure.TenantData;
+using ApiEntryPoint = {{ root_namespace }}.Api.ApiEntryPoint;
+
+namespace {{ root_namespace }}.Tests;
+
+/// <summary>
+/// The {{ module_name }} module's tenant-data handler on the in-memory test host: a row created in one company is counted, exported and
+/// deleted for that company only, and the other company's rows are untouched.
+/// </summary>
+public sealed class {{ module_name }}TenantDataHandlerTests(ModulusWebAppFactory<ApiEntryPoint> factory)
+    : IClassFixture<ModulusWebAppFactory<ApiEntryPoint>>
+{
+    [Fact]
+    public async Task The_handler_counts_and_deletes_only_the_pinned_company_rows()
+    {
+        var company = await Companies.CreateAsync(factory.Services, "{{ module_name_lower }}-handler");
+        var other = await Companies.CreateAsync(factory.Services, "{{ module_name_lower }}-handler-other");
+        var client = factory.CreateAuthenticatedClient(roles: ["Admin"], tenantId: company, pinTenant: true);
+        var otherClient = factory.CreateAuthenticatedClient(roles: ["Admin"], tenantId: other, pinTenant: true);
+        (await client.PostAsJsonAsync("{{ first_route }}", new { name = "mine" })).StatusCode.Should().Be(HttpStatusCode.Created);
+        (await otherClient.PostAsJsonAsync("{{ first_route }}", new { name = "theirs" })).StatusCode.Should().Be(HttpStatusCode.Created);
+
+        await using var scope = factory.Services.CreateAsyncScope();
+        var handler = scope.ServiceProvider.GetRequiredService<{{ handler_type }}>();
+        var dataset = handler.Datasets[0];
+        var tenant = scope.ServiceProvider.GetRequiredService<ICurrentTenant>();
+        var store = scope.ServiceProvider.GetRequiredService<ITenantStore>();
+        var companyInfo = await store.FindByIdAsync(company, default) ?? throw new InvalidOperationException("The company was not found.");
+        var otherInfo = await store.FindByIdAsync(other, default) ?? throw new InvalidOperationException("The other company was not found.");
+
+        using (tenant.Change(companyInfo))
+        {
+            (await handler.CountAsync(dataset, default)).Should().Be(1);
+            (await handler.DeleteAsync(dataset, default)).Should().Be(1);
+            (await handler.CountAsync(dataset, default)).Should().Be(0);
+            // Deleting again finds nothing: the handler is idempotent.
+            (await handler.DeleteAsync(dataset, default)).Should().Be(0);
+        }
+
+        using (tenant.Change(otherInfo))
+        {
+            (await handler.CountAsync(dataset, default)).Should().Be(1);
+        }
+    }
+}

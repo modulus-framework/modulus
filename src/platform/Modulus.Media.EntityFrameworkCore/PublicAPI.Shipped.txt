@@ -1,0 +1,38 @@
+#nullable enable
+Modulus.Media.EntityFrameworkCore.EfMediaStore
+Modulus.Media.EntityFrameworkCore.EfMediaStore.AddAsync(Modulus.Media.MediaItem! item, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Media.EntityFrameworkCore.EfMediaStore.EfMediaStore(Modulus.Media.EntityFrameworkCore.ModulusMediaDbContext! db) -> void
+Modulus.Media.EntityFrameworkCore.EfMediaStore.GetAsync(System.Guid? tenantId, System.Guid id, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Media.MediaItem?>!
+Modulus.Media.EntityFrameworkCore.EfMediaStore.QueryAsync(System.Guid? tenantId, Modulus.Media.MediaQuery! query, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Media.MediaPage!>!
+Modulus.Media.EntityFrameworkCore.EfMediaStore.RemoveAsync(System.Guid? tenantId, System.Guid id, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.Media.EntityFrameworkCore.MediaRow
+Modulus.Media.EntityFrameworkCore.MediaRow.ContentType.get -> string!
+Modulus.Media.EntityFrameworkCore.MediaRow.ContentType.set -> void
+Modulus.Media.EntityFrameworkCore.MediaRow.FileName.get -> string!
+Modulus.Media.EntityFrameworkCore.MediaRow.FileName.set -> void
+Modulus.Media.EntityFrameworkCore.MediaRow.Id.get -> System.Guid
+Modulus.Media.EntityFrameworkCore.MediaRow.Id.set -> void
+Modulus.Media.EntityFrameworkCore.MediaRow.Kind.get -> Modulus.Media.MediaKind
+Modulus.Media.EntityFrameworkCore.MediaRow.Kind.set -> void
+Modulus.Media.EntityFrameworkCore.MediaRow.MediaRow() -> void
+Modulus.Media.EntityFrameworkCore.MediaRow.Sha256.get -> string!
+Modulus.Media.EntityFrameworkCore.MediaRow.Sha256.set -> void
+Modulus.Media.EntityFrameworkCore.MediaRow.Size.get -> long
+Modulus.Media.EntityFrameworkCore.MediaRow.Size.set -> void
+Modulus.Media.EntityFrameworkCore.MediaRow.StorageKey.get -> string!
+Modulus.Media.EntityFrameworkCore.MediaRow.StorageKey.set -> void
+Modulus.Media.EntityFrameworkCore.MediaRow.TenantId.get -> System.Guid?
+Modulus.Media.EntityFrameworkCore.MediaRow.TenantId.set -> void
+Modulus.Media.EntityFrameworkCore.MediaRow.ToItem() -> Modulus.Media.MediaItem!
+Modulus.Media.EntityFrameworkCore.MediaRow.UploadedAt.get -> System.DateTimeOffset
+Modulus.Media.EntityFrameworkCore.MediaRow.UploadedAt.set -> void
+Modulus.Media.EntityFrameworkCore.MediaRow.UploadedBy.get -> System.Guid?
+Modulus.Media.EntityFrameworkCore.MediaRow.UploadedBy.set -> void
+Modulus.Media.EntityFrameworkCore.MediaStoreExtensions
+Modulus.Media.EntityFrameworkCore.ModulusMediaDbContext
+Modulus.Media.EntityFrameworkCore.ModulusMediaDbContext.MediaItems.get -> Microsoft.EntityFrameworkCore.DbSet<Modulus.Media.EntityFrameworkCore.MediaRow!>!
+Modulus.Media.EntityFrameworkCore.ModulusMediaDbContext.ModulusMediaDbContext(Microsoft.EntityFrameworkCore.DbContextOptions! options) -> void
+const Modulus.Media.EntityFrameworkCore.ModulusMediaDbContext.MediaTable = "modulus_media" -> string!
+override Modulus.Media.EntityFrameworkCore.ModulusMediaDbContext.OnModelCreating(Microsoft.EntityFrameworkCore.ModelBuilder! modelBuilder) -> void
+static Modulus.Media.EntityFrameworkCore.MediaRow.From(Modulus.Media.MediaItem! item) -> Modulus.Media.EntityFrameworkCore.MediaRow!
+static Modulus.Media.EntityFrameworkCore.MediaStoreExtensions.AddModulusMediaStore<TContext>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!

@@ -31,14 +31,12 @@ public sealed class SmtpIdentityEmailTransport(IOptions<IdentityEmailOptions> op
 
 /// <summary>
 /// Sends identity mail with links built from <see cref="IdentityEmailOptions.BaseUrl"/>. Each link goes to the page that handles it:
-/// <c>/ConfirmWorkEmail?token=</c> (work e-mail), <c>/ConfirmEmailChange?NewEmail=&amp;Token=</c> (address change), and the password-reset and
+/// the password-reset and
 /// sign-up confirmation paths, which the application provides (the Web template does not include pages for them). The token is escaped into
 /// the link and never logged.
 /// </summary>
 public sealed class SmtpIdentityEmailSender(IOptions<IdentityEmailOptions> options, IIdentityEmailTransport transport) : IIdentityEmailSender
 {
-    public const string WorkEmailPath = "/ConfirmWorkEmail";
-    public const string EmailChangePath = "/ConfirmEmailChange";
     public const string PasswordResetPath = "/ResetPassword";
     public const string EmailConfirmationPath = "/ConfirmEmail";
 
@@ -60,15 +58,6 @@ public sealed class SmtpIdentityEmailSender(IOptions<IdentityEmailOptions> optio
     public Task SendEmailConfirmationEmailAsync(string email, string confirmationToken, CancellationToken ct = default)
         => SendAsync(email, "Confirm your email address",
             $"Confirm this address: {Link(EmailConfirmationPath, "token", confirmationToken)}", ct);
-
-    public Task SendEmailChangeEmailAsync(string newEmail, string changeToken, CancellationToken ct = default)
-        => SendAsync(newEmail, "Confirm your new email address",
-            $"Confirm this new address for your account: {Link(EmailChangePath, "NewEmail", newEmail, "Token", changeToken)}", ct);
-
-    public Task SendWorkEmailVerificationAsync(string workEmail, string verificationToken, CancellationToken ct = default)
-        => SendAsync(workEmail, "Confirm your work email address",
-            $"Confirm that this is your work email address. It becomes your work email only after you confirm it: {Link(WorkEmailPath, "token", verificationToken)}\n\n" +
-            "The link works once and expires after 30 minutes. If you did not expect this, ignore this message.", ct);
 
     private string Link(string path, params string[] nameValues)
     {

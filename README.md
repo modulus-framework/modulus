@@ -104,15 +104,10 @@ and integration events in their own `IntegrationEvents` project.
 
 Templates are embedded Scriban resources under `cli/Templates/`.
 
-## Sample application
+## Generating an application
 
-- **`samples/TradeFlow`** — a reference application (18 modules, 77 projects)
-  demonstrating the framework's recommended shape: module system, CQRS via
-  `Modulus.Mediator`, per-module EF Core persistence, Serilog, Sentry,
-  multi-tenancy, and authentication. Ships a `NuGet.config` pointing at the
-  sample-local `nupkg/` feed (with `Synvro.Modulus.*` source mapping), so it builds
-  straight after `dotnet pack modulus.slnx -c Release -o samples/TradeFlow/nupkg`.
-  Also includes Dockerfile, docker-compose.yml, and GitHub Actions CI.
+There is no sample application in this repository. Generate a working app with the CLI instead:
+`modulus app MyApp --with-example` (see `cli/` and `website/docs/cli/app.md`).
 
 ## Module system
 

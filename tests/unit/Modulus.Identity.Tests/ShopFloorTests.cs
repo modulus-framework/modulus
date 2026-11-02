@@ -167,7 +167,7 @@ public sealed class ShopFloorTests
 
         var results = await h.Accounts.ImportAsync(Company,
         [
-            new ShopFloorImportRow("e1", "Ann", "Lee", ["ShopFloor"]),
+            new ShopFloorImportRow("e1", ["ShopFloor"]),
             new ShopFloorImportRow("e2", InitialPin: "482913"),
             new ShopFloorImportRow("e1"),                        // duplicate in the same file
             new ShopFloorImportRow("e3", Roles: ["NoSuchRole"]), // bad role
@@ -180,22 +180,6 @@ public sealed class ShopFloorTests
         results[2].Error.Should().Contain("already in use");
         (await h.Users.Users.CountAsync(u => u.EmployeeCode != null)).Should().Be(2);
         (await h.Users.Users.Where(u => u.EmployeeCode != null).AllAsync(u => u.MustChangePin)).Should().BeTrue();
-    }
-
-    [Fact]
-    public async Task A_refused_field_stops_the_whole_import_before_any_account_is_created()
-    {
-        await using var h = await Harness.CreateAsync(new DenyFieldsAuthorizer("FirstName"));
-
-        var act = () => h.Accounts.ImportAsync(Company,
-        [
-            new ShopFloorImportRow("e1"),
-            new ShopFloorImportRow("e2", "Protected", "Lee"),
-        ]);
-
-        var error = await act.Should().ThrowAsync<Modulus.Core.Abstractions.Exceptions.ForbiddenException>();
-        error.Which.Message.Should().Contain("FIELD_PROTECTED");
-        (await h.Users.Users.CountAsync(u => u.EmployeeCode != null)).Should().Be(0, "the batch is refused as a whole");
     }
 
     [Fact]
@@ -225,18 +209,6 @@ public sealed class ShopFloorTests
         var batch = () => h.Accounts.ImportAsync(Company, [new ShopFloorImportRow("e9", Roles: ["ShopFloor"])]);
         await batch.Should().ThrowAsync<Modulus.Core.Abstractions.Exceptions.ForbiddenException>();
 
-        (await h.Users.Users.CountAsync(u => u.EmployeeCode != null)).Should().Be(0);
-    }
-
-    [Fact]
-    public async Task A_single_account_with_a_refused_field_is_not_created()
-    {
-        await using var h = await Harness.CreateAsync(new DenyFieldsAuthorizer("FirstName"));
-
-        var act = () => h.Accounts.CreateAsync(Company, "e-7", "482913", "Protected", "Lee");
-
-        var error = await act.Should().ThrowAsync<Modulus.Core.Abstractions.Exceptions.ForbiddenException>();
-        error.Which.Message.Should().Contain("FIELD_PROTECTED");
         (await h.Users.Users.CountAsync(u => u.EmployeeCode != null)).Should().Be(0);
     }
 

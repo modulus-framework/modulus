@@ -67,4 +67,19 @@ public sealed class SizeLimitedFileStorageTests
         public override void SetLength(long value) => throw new NotSupportedException();
         public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
     }
+
+    [Fact]
+    public async Task A_presigned_post_may_name_a_smaller_limit_but_never_a_bigger_one()
+    {
+        var inner = Substitute.For<IFileStorage>();
+        inner.GetPresignedUploadPostAsync(default!, default, default, default, default)
+            .ReturnsForAnyArgs(Task.FromResult(new PresignedPost("https://storage.test/", new Dictionary<string, string>())));
+        var storage = new SizeLimitedFileStorage(inner, maxBytes: 10);
+
+        await storage.GetPresignedUploadPostAsync("a.bin", TimeSpan.FromMinutes(5), 5);
+
+        var act = () => storage.GetPresignedUploadPostAsync("b.bin", TimeSpan.FromMinutes(5), 11);
+        await act.Should().ThrowAsync<ArgumentOutOfRangeException>();
+        await inner.Received(1).GetPresignedUploadPostAsync("a.bin", TimeSpan.FromMinutes(5), 5, null, default);
+    }
 }

@@ -1,0 +1,11 @@
+#nullable enable
+Modulus.Storage.S3FileStorage
+Modulus.Storage.S3FileStorage.DeleteAsync(string! path, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Storage.S3FileStorage.DownloadAsync(string! path, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.IO.Stream!>!
+Modulus.Storage.S3FileStorage.ExistsAsync(string! path, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.Storage.S3FileStorage.GetPresignedUploadUrlAsync(string! path, System.TimeSpan expiry, string? contentType = null, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<string!>!
+Modulus.Storage.S3FileStorage.GetPresignedUrlAsync(string! path, System.TimeSpan expiry, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<string!>!
+Modulus.Storage.S3FileStorage.S3FileStorage(Amazon.S3.IAmazonS3! client, Microsoft.Extensions.Options.IOptions<Modulus.Storage.StorageOptions!>! options) -> void
+Modulus.Storage.S3FileStorage.UploadAsync(string! path, System.IO.Stream! content, string? contentType = null, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Storage.S3StorageExtensions
+static Modulus.Storage.S3StorageExtensions.AddS3FileStorage(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!

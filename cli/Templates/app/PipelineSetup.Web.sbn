@@ -32,9 +32,7 @@ internal static class PipelineSetup
 {{ if use_auth }}        app.UseRateLimiter();
         app.UseAuthentication();
         app.UseAuthorization();
-{{ if multi_tenancy }}        // A person in exactly one company acts in it without choosing (see DefaultCompanyMiddleware).
-        app.UseMiddleware<DefaultCompanyMiddleware>();
-{{ end }}{{ else }}        // No sign-in: the authorization middleware still runs, so the closed endpoints answer 401 (NoSignInAuthentication).
+{{ else }}        // No sign-in: the authorization middleware still runs, so the closed endpoints answer 401 (NoSignInAuthentication).
         app.UseAuthentication();
         app.UseAuthorization();
 {{ end }}

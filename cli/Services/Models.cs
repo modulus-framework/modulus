@@ -9,9 +9,9 @@ internal static class FrameworkVersion
 {
     // Keep in sync with <VersionPrefix> in build/Modulus.Packaging.props —
     // generated apps pin Modulus.* packages at this version.
-    // MODULUS_FRAMEWORK_VERSION points generated apps at another build, e.g. a local pack (1.8.1-dev.<sha>).
+    // MODULUS_FRAMEWORK_VERSION points generated apps at another build, e.g. a local pack (2.0.0-dev.<sha>).
     public static string Current { get; } =
-        Environment.GetEnvironmentVariable("MODULUS_FRAMEWORK_VERSION") is { Length: > 0 } v ? v : "1.8.1";
+        Environment.GetEnvironmentVariable("MODULUS_FRAMEWORK_VERSION") is { Length: > 0 } v ? v : "2.0.0";
 
     // Keep in sync with Microsoft.Extensions.Telemetry.Abstractions in Directory.Packages.props: every project of a generated
     // app references it so classified [LoggerMessage] parameters are redacted (RedactionTemplateTests checks it).
@@ -397,6 +397,37 @@ internal sealed class AppModel
 
     /// <summary>True when S3 storage is selected.</summary>
     public bool UseS3Storage => StorageProvider == "s3";
+
+    /// <summary>
+    /// The S3-compatible service the app stores files in: aws, wasabi, b2, r2 or minio. It sets the endpoint, region and addressing style
+    /// the generated settings start with; the developer replaces the placeholders (<c>your-region</c>, <c>your-account-id</c>) and sets the
+    /// keys (environment variables, never the settings file).
+    /// </summary>
+    public string S3Provider { get; set; } = "aws";
+
+    /// <summary>The bucket name placeholder in the generated settings.</summary>
+    public string S3BucketName => "your-bucket-name";
+
+    /// <summary>The endpoint the generated settings start with ("" for AWS: the SDK picks the regional endpoint).</summary>
+    public string S3Endpoint => S3Provider switch
+    {
+        "wasabi" => "https://s3.your-region.wasabisys.com",
+        "b2" => "https://s3.your-region.backblazeb2.com",
+        "r2" => "https://your-account-id.r2.cloudflarestorage.com",
+        "minio" => "http://localhost:9000",
+        _ => "",
+    };
+
+    /// <summary>The signing region the generated settings start with.</summary>
+    public string S3Region => S3Provider switch
+    {
+        "wasabi" or "b2" => "your-region",
+        "r2" => "auto",
+        _ => "us-east-1",
+    };
+
+    /// <summary>"true" for a self-hosted server that needs bucket-in-path addressing (MinIO), else "false". JSON literal.</summary>
+    public string S3ForcePathStyle => S3Provider == "minio" ? "true" : "false";
 
     /// <summary>True when Azure Blob storage is selected.</summary>
     public bool UseAzureStorage => StorageProvider == "azureblobs";

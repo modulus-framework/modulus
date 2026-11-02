@@ -102,7 +102,7 @@ public sealed class UserManagerAccessChangeTests
         await users.CreateAsync(user, "Passw0rd!x");
 
         await users.SetLockoutEndDateAsync(user, null);
-        user.FirstName = "Bob";
+        user.ExtraProperties["Nickname"] = "Bob";
         await users.UpdateAsync(user);
 
         recorder.Changes.Should().BeEmpty();

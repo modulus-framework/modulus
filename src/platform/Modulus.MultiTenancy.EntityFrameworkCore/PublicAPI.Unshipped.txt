@@ -1,345 +1,50 @@
 #nullable enable
-const Modulus.MultiTenancy.EntityFrameworkCore.SettingVersionEntity.SettingsName = "settings" -> string!
-const Modulus.MultiTenancy.EntityFrameworkCore.TenantDataStoreEndpoints.ManagePermission = "tenancy:data-stores:manage" -> string!
-Modulus.MultiTenancy.EntityFrameworkCore.EfSettingStore
-Modulus.MultiTenancy.EntityFrameworkCore.EfSettingStore.EfSettingStore(Modulus.MultiTenancy.EntityFrameworkCore.TenantStoreDbContextBase! db) -> void
-Modulus.MultiTenancy.EntityFrameworkCore.EfSettingStoreExtensions
-Modulus.MultiTenancy.EntityFrameworkCore.EfTenantDataStoreCatalog<TTenant, TMembership, TDataStore>
-Modulus.MultiTenancy.EntityFrameworkCore.EfTenantDataStoreCatalog<TTenant, TMembership, TDataStore>.EfTenantDataStoreCatalog(Modulus.MultiTenancy.EntityFrameworkCore.TenantStoreDbContext<TTenant!, TMembership!, TDataStore!>! db) -> void
-Modulus.MultiTenancy.EntityFrameworkCore.EfTenantDataStoreCatalog<TTenant, TMembership, TDataStore>.FindAsync(System.Guid tenantId, string! storeKey, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Core.Abstractions.Tenancy.TenantDataStore?>!
-Modulus.MultiTenancy.EntityFrameworkCore.EfTenantMembershipStore<TTenant, TMembership, TDataStore>
-Modulus.MultiTenancy.EntityFrameworkCore.EfTenantMembershipStore<TTenant, TMembership, TDataStore>.EfTenantMembershipStore(Modulus.MultiTenancy.EntityFrameworkCore.TenantStoreDbContext<TTenant!, TMembership!, TDataStore!>! db) -> void
-Modulus.MultiTenancy.EntityFrameworkCore.EfTenantMembershipStore<TTenant, TMembership, TDataStore>.IsMemberAsync(System.Guid userId, System.Guid tenantId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
-Modulus.MultiTenancy.EntityFrameworkCore.EfTenantMembershipStore<TTenant, TMembership, TDataStore>.ListTenantIdsAsync(System.Guid userId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<System.Guid>!>!
-Modulus.MultiTenancy.EntityFrameworkCore.EfTenantStoreExtensions
-Modulus.MultiTenancy.EntityFrameworkCore.EfTenantStore<TTenant, TMembership, TDataStore>
-Modulus.MultiTenancy.EntityFrameworkCore.EfTenantStore<TTenant, TMembership, TDataStore>.EfTenantStore(Modulus.MultiTenancy.EntityFrameworkCore.TenantStoreDbContext<TTenant!, TMembership!, TDataStore!>! db, System.TimeProvider? clock = null) -> void
-Modulus.MultiTenancy.EntityFrameworkCore.EfTenantStore<TTenant, TMembership, TDataStore>.FindByIdAsync(System.Guid id, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Modulus.Core.Abstractions.TenantInfo?>!
-Modulus.MultiTenancy.EntityFrameworkCore.EfTenantStore<TTenant, TMembership, TDataStore>.FindBySlugAsync(string! slug, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Modulus.Core.Abstractions.TenantInfo?>!
-Modulus.MultiTenancy.EntityFrameworkCore.EfTenantStore<TTenant, TMembership, TDataStore>.ListAsync(System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Core.Abstractions.TenantInfo!>!>!
-Modulus.MultiTenancy.EntityFrameworkCore.EfTenantStore<TTenant, TMembership, TDataStore>.ListByGroupAsync(System.Guid groupId, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Core.Abstractions.TenantInfo!>!>!
-Modulus.MultiTenancy.EntityFrameworkCore.IEfTenantMembershipStore
-Modulus.MultiTenancy.EntityFrameworkCore.IEfTenantStore
-Modulus.MultiTenancy.EntityFrameworkCore.ProvisionDataStoreRequest
-Modulus.MultiTenancy.EntityFrameworkCore.ProvisionDataStoreRequest.<Clone>$() -> Modulus.MultiTenancy.EntityFrameworkCore.ProvisionDataStoreRequest!
-Modulus.MultiTenancy.EntityFrameworkCore.ProvisionDataStoreRequest.ConnectionString.get -> string!
-Modulus.MultiTenancy.EntityFrameworkCore.ProvisionDataStoreRequest.ConnectionString.init -> void
-Modulus.MultiTenancy.EntityFrameworkCore.ProvisionDataStoreRequest.Deconstruct(out string! ProviderKey, out string! ConnectionString) -> void
-Modulus.MultiTenancy.EntityFrameworkCore.ProvisionDataStoreRequest.Equals(Modulus.MultiTenancy.EntityFrameworkCore.ProvisionDataStoreRequest? other) -> bool
-Modulus.MultiTenancy.EntityFrameworkCore.ProvisionDataStoreRequest.ProviderKey.get -> string!
-Modulus.MultiTenancy.EntityFrameworkCore.ProvisionDataStoreRequest.ProviderKey.init -> void
-Modulus.MultiTenancy.EntityFrameworkCore.ProvisionDataStoreRequest.ProvisionDataStoreRequest(string! ProviderKey, string! ConnectionString) -> void
-Modulus.MultiTenancy.EntityFrameworkCore.RotateDataStoreRequest
-Modulus.MultiTenancy.EntityFrameworkCore.RotateDataStoreRequest.<Clone>$() -> Modulus.MultiTenancy.EntityFrameworkCore.RotateDataStoreRequest!
-Modulus.MultiTenancy.EntityFrameworkCore.RotateDataStoreRequest.ConnectionString.get -> string!
-Modulus.MultiTenancy.EntityFrameworkCore.RotateDataStoreRequest.ConnectionString.init -> void
-Modulus.MultiTenancy.EntityFrameworkCore.RotateDataStoreRequest.Deconstruct(out string! ConnectionString) -> void
-Modulus.MultiTenancy.EntityFrameworkCore.RotateDataStoreRequest.Equals(Modulus.MultiTenancy.EntityFrameworkCore.RotateDataStoreRequest? other) -> bool
-Modulus.MultiTenancy.EntityFrameworkCore.RotateDataStoreRequest.RotateDataStoreRequest(string! ConnectionString) -> void
-Modulus.MultiTenancy.EntityFrameworkCore.ScopedTenantMembershipStoreBridge
-Modulus.MultiTenancy.EntityFrameworkCore.ScopedTenantMembershipStoreBridge.IsMemberAsync(System.Guid userId, System.Guid tenantId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
-Modulus.MultiTenancy.EntityFrameworkCore.ScopedTenantMembershipStoreBridge.ListTenantIdsAsync(System.Guid userId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<System.Guid>!>!
-Modulus.MultiTenancy.EntityFrameworkCore.ScopedTenantMembershipStoreBridge.ScopedTenantMembershipStoreBridge(Microsoft.Extensions.DependencyInjection.IServiceScopeFactory! scopeFactory) -> void
-Modulus.MultiTenancy.EntityFrameworkCore.ScopedTenantStoreBridge
-Modulus.MultiTenancy.EntityFrameworkCore.ScopedTenantStoreBridge.FindByIdAsync(System.Guid id, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Modulus.Core.Abstractions.TenantInfo?>!
-Modulus.MultiTenancy.EntityFrameworkCore.ScopedTenantStoreBridge.FindBySlugAsync(string! slug, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Modulus.Core.Abstractions.TenantInfo?>!
-Modulus.MultiTenancy.EntityFrameworkCore.ScopedTenantStoreBridge.ListAsync(System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Core.Abstractions.TenantInfo!>!>!
-Modulus.MultiTenancy.EntityFrameworkCore.ScopedTenantStoreBridge.ListByGroupAsync(System.Guid groupId, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Core.Abstractions.TenantInfo!>!>!
-Modulus.MultiTenancy.EntityFrameworkCore.ScopedTenantStoreBridge.ScopedTenantStoreBridge(Microsoft.Extensions.DependencyInjection.IServiceScopeFactory! scopeFactory) -> void
-Modulus.MultiTenancy.EntityFrameworkCore.SettingValueEntity
-Modulus.MultiTenancy.EntityFrameworkCore.SettingValueEntity.Name.get -> string!
-Modulus.MultiTenancy.EntityFrameworkCore.SettingValueEntity.Name.set -> void
-Modulus.MultiTenancy.EntityFrameworkCore.SettingValueEntity.ScopeKey.get -> string!
-Modulus.MultiTenancy.EntityFrameworkCore.SettingValueEntity.ScopeKey.set -> void
-Modulus.MultiTenancy.EntityFrameworkCore.SettingValueEntity.SettingValueEntity() -> void
-Modulus.MultiTenancy.EntityFrameworkCore.SettingValueEntity.TenantId.get -> System.Guid?
-Modulus.MultiTenancy.EntityFrameworkCore.SettingValueEntity.TenantId.set -> void
-Modulus.MultiTenancy.EntityFrameworkCore.SettingValueEntity.UserId.get -> System.Guid?
-Modulus.MultiTenancy.EntityFrameworkCore.SettingValueEntity.UserId.set -> void
-Modulus.MultiTenancy.EntityFrameworkCore.SettingValueEntity.Value.get -> string!
-Modulus.MultiTenancy.EntityFrameworkCore.SettingValueEntity.Value.set -> void
-Modulus.MultiTenancy.EntityFrameworkCore.SettingVersionEntity
-Modulus.MultiTenancy.EntityFrameworkCore.SettingVersionEntity.Name.get -> string!
-Modulus.MultiTenancy.EntityFrameworkCore.SettingVersionEntity.Name.set -> void
-Modulus.MultiTenancy.EntityFrameworkCore.SettingVersionEntity.SettingVersionEntity() -> void
-Modulus.MultiTenancy.EntityFrameworkCore.SettingVersionEntity.Version.get -> long
-Modulus.MultiTenancy.EntityFrameworkCore.SettingVersionEntity.Version.set -> void
-Modulus.MultiTenancy.EntityFrameworkCore.TenantDatabaseMigrationExtensions
-Modulus.MultiTenancy.EntityFrameworkCore.TenantDataStoreEndpoints
-Modulus.MultiTenancy.EntityFrameworkCore.TenantDataStoreEntity
-Modulus.MultiTenancy.EntityFrameworkCore.TenantDataStoreEntity.Isolation.get -> Modulus.Core.Abstractions.Tenancy.TenantDataIsolation
-Modulus.MultiTenancy.EntityFrameworkCore.TenantDataStoreEntity.Isolation.set -> void
-Modulus.MultiTenancy.EntityFrameworkCore.TenantDataStoreEntity.ProviderKey.get -> string!
-Modulus.MultiTenancy.EntityFrameworkCore.TenantDataStoreEntity.ProviderKey.set -> void
-Modulus.MultiTenancy.EntityFrameworkCore.TenantDataStoreEntity.SecretPath.get -> string!
-Modulus.MultiTenancy.EntityFrameworkCore.TenantDataStoreEntity.SecretPath.set -> void
-Modulus.MultiTenancy.EntityFrameworkCore.TenantDataStoreEntity.SecretVersion.get -> int
-Modulus.MultiTenancy.EntityFrameworkCore.TenantDataStoreEntity.SecretVersion.set -> void
-Modulus.MultiTenancy.EntityFrameworkCore.TenantDataStoreEntity.Status.get -> Modulus.Core.Abstractions.Tenancy.TenantDataStoreStatus
-Modulus.MultiTenancy.EntityFrameworkCore.TenantDataStoreEntity.Status.set -> void
-Modulus.MultiTenancy.EntityFrameworkCore.TenantDataStoreEntity.StoreKey.get -> string!
-Modulus.MultiTenancy.EntityFrameworkCore.TenantDataStoreEntity.StoreKey.set -> void
-Modulus.MultiTenancy.EntityFrameworkCore.TenantDataStoreEntity.TenantDataStoreEntity() -> void
-Modulus.MultiTenancy.EntityFrameworkCore.TenantDataStoreEntity.TenantId.get -> System.Guid
-Modulus.MultiTenancy.EntityFrameworkCore.TenantDataStoreEntity.TenantId.set -> void
-Modulus.MultiTenancy.EntityFrameworkCore.TenantDataStoreProvisioner<TTenant, TMembership, TDataStore>
-Modulus.MultiTenancy.EntityFrameworkCore.TenantDataStoreProvisioner<TTenant, TMembership, TDataStore>.ProvisionAsync(System.Guid tenantId, string! storeKey, string! providerKey, string! connectionString, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Core.Abstractions.Tenancy.TenantDataStore!>!
-Modulus.MultiTenancy.EntityFrameworkCore.TenantDataStoreProvisioner<TTenant, TMembership, TDataStore>.RotateAsync(System.Guid tenantId, string! storeKey, string! connectionString, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Core.Abstractions.Tenancy.TenantDataStore!>!
-Modulus.MultiTenancy.EntityFrameworkCore.TenantDataStoreProvisioner<TTenant, TMembership, TDataStore>.TenantDataStoreProvisioner(Modulus.MultiTenancy.EntityFrameworkCore.TenantStoreDbContext<TTenant!, TMembership!, TDataStore!>! db, Modulus.Core.Abstractions.Secrets.ISecretWriter! writer, Modulus.Core.Abstractions.Tenancy.ITenantDatabaseResolver! resolver, Modulus.Core.Abstractions.Tenancy.ITenantDatabaseProviders! providers, Microsoft.Extensions.DependencyInjection.IServiceScopeFactory! scopes, Microsoft.Extensions.Options.IOptions<Modulus.Secrets.TenantDataStoreOptions!>! options, Modulus.Core.Abstractions.ISecurityAuditLog? audit = null, Modulus.Events.Abstractions.IModuleBus? bus = null) -> void
-Modulus.MultiTenancy.EntityFrameworkCore.TenantDataStoreResponse
-Modulus.MultiTenancy.EntityFrameworkCore.TenantDataStoreResponse.<Clone>$() -> Modulus.MultiTenancy.EntityFrameworkCore.TenantDataStoreResponse!
-Modulus.MultiTenancy.EntityFrameworkCore.TenantDataStoreResponse.Deconstruct(out System.Guid TenantId, out string! StoreKey, out string! ProviderKey, out string! Isolation, out string! Status, out int SecretVersion) -> void
-Modulus.MultiTenancy.EntityFrameworkCore.TenantDataStoreResponse.Equals(Modulus.MultiTenancy.EntityFrameworkCore.TenantDataStoreResponse? other) -> bool
-Modulus.MultiTenancy.EntityFrameworkCore.TenantDataStoreResponse.Isolation.get -> string!
-Modulus.MultiTenancy.EntityFrameworkCore.TenantDataStoreResponse.Isolation.init -> void
-Modulus.MultiTenancy.EntityFrameworkCore.TenantDataStoreResponse.ProviderKey.get -> string!
-Modulus.MultiTenancy.EntityFrameworkCore.TenantDataStoreResponse.ProviderKey.init -> void
-Modulus.MultiTenancy.EntityFrameworkCore.TenantDataStoreResponse.SecretVersion.get -> int
-Modulus.MultiTenancy.EntityFrameworkCore.TenantDataStoreResponse.SecretVersion.init -> void
-Modulus.MultiTenancy.EntityFrameworkCore.TenantDataStoreResponse.Status.get -> string!
-Modulus.MultiTenancy.EntityFrameworkCore.TenantDataStoreResponse.Status.init -> void
-Modulus.MultiTenancy.EntityFrameworkCore.TenantDataStoreResponse.StoreKey.get -> string!
-Modulus.MultiTenancy.EntityFrameworkCore.TenantDataStoreResponse.StoreKey.init -> void
-Modulus.MultiTenancy.EntityFrameworkCore.TenantDataStoreResponse.TenantDataStoreResponse(System.Guid TenantId, string! StoreKey, string! ProviderKey, string! Isolation, string! Status, int SecretVersion) -> void
-Modulus.MultiTenancy.EntityFrameworkCore.TenantDataStoreResponse.TenantId.get -> System.Guid
-Modulus.MultiTenancy.EntityFrameworkCore.TenantDataStoreResponse.TenantId.init -> void
-Modulus.MultiTenancy.EntityFrameworkCore.TenantEntity
-Modulus.MultiTenancy.EntityFrameworkCore.TenantEntity.CreatedAtUtc.get -> System.DateTimeOffset
-Modulus.MultiTenancy.EntityFrameworkCore.TenantEntity.CreatedAtUtc.set -> void
-Modulus.MultiTenancy.EntityFrameworkCore.TenantEntity.DisplayName.get -> string?
-Modulus.MultiTenancy.EntityFrameworkCore.TenantEntity.DisplayName.set -> void
-Modulus.MultiTenancy.EntityFrameworkCore.TenantEntity.GroupId.get -> System.Guid?
-Modulus.MultiTenancy.EntityFrameworkCore.TenantEntity.GroupId.set -> void
-Modulus.MultiTenancy.EntityFrameworkCore.TenantEntity.Id.get -> System.Guid
-Modulus.MultiTenancy.EntityFrameworkCore.TenantEntity.Id.set -> void
-Modulus.MultiTenancy.EntityFrameworkCore.TenantEntity.IsActive.get -> bool
-Modulus.MultiTenancy.EntityFrameworkCore.TenantEntity.IsActive.set -> void
-Modulus.MultiTenancy.EntityFrameworkCore.TenantEntity.MaxUsers.get -> int?
-Modulus.MultiTenancy.EntityFrameworkCore.TenantEntity.MaxUsers.set -> void
-Modulus.MultiTenancy.EntityFrameworkCore.TenantEntity.Slug.get -> string!
-Modulus.MultiTenancy.EntityFrameworkCore.TenantEntity.Slug.set -> void
-Modulus.MultiTenancy.EntityFrameworkCore.TenantEntity.Status.get -> Modulus.Core.Abstractions.TenantStatus
-Modulus.MultiTenancy.EntityFrameworkCore.TenantEntity.Status.set -> void
-Modulus.MultiTenancy.EntityFrameworkCore.TenantEntity.TenantEntity() -> void
-Modulus.MultiTenancy.EntityFrameworkCore.TenantEntity.TrialEndsAt.get -> System.DateTimeOffset?
-Modulus.MultiTenancy.EntityFrameworkCore.TenantEntity.TrialEndsAt.set -> void
-Modulus.MultiTenancy.EntityFrameworkCore.TenantManager
-Modulus.MultiTenancy.EntityFrameworkCore.TenantManager.TenantManager(Modulus.MultiTenancy.EntityFrameworkCore.TenantStoreDbContext! db, Modulus.Core.Abstractions.ISecurityAuditLog? audit = null, Modulus.Core.Abstractions.ICurrentUser? actor = null, System.Collections.Generic.IEnumerable<Modulus.Core.Abstractions.IAccessChangeObserver!>? observers = null) -> void
-Modulus.MultiTenancy.EntityFrameworkCore.TenantManager<TTenant, TMembership, TDataStore>
-Modulus.MultiTenancy.EntityFrameworkCore.TenantManager<TTenant, TMembership, TDataStore>.AddMemberAsync(System.Guid userId, System.Guid tenantId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
-Modulus.MultiTenancy.EntityFrameworkCore.TenantManager<TTenant, TMembership, TDataStore>.CreateAsync(string! slug, string? displayName = null, System.Guid? id = null, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Core.Abstractions.TenantInfo!>!
-Modulus.MultiTenancy.EntityFrameworkCore.TenantManager<TTenant, TMembership, TDataStore>.CreateAsync(string! slug, string? displayName, System.Guid? id, System.Guid? groupId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Core.Abstractions.TenantInfo!>!
-Modulus.MultiTenancy.EntityFrameworkCore.TenantManager<TTenant, TMembership, TDataStore>.RemoveMemberAsync(System.Guid userId, System.Guid tenantId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
-Modulus.MultiTenancy.EntityFrameworkCore.TenantManager<TTenant, TMembership, TDataStore>.SetActiveAsync(System.Guid id, bool isActive, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
-Modulus.MultiTenancy.EntityFrameworkCore.TenantManager<TTenant, TMembership, TDataStore>.SetMaxUsersAsync(System.Guid id, int? maxUsers, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
-Modulus.MultiTenancy.EntityFrameworkCore.TenantManager<TTenant, TMembership, TDataStore>.SetStatusAsync(System.Guid id, Modulus.Core.Abstractions.TenantStatus status, System.DateTimeOffset? trialEndsAt = null, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
-Modulus.MultiTenancy.EntityFrameworkCore.TenantManager<TTenant, TMembership, TDataStore>.TenantManager(Modulus.MultiTenancy.EntityFrameworkCore.TenantStoreDbContext<TTenant!, TMembership!, TDataStore!>! db, Modulus.Core.Abstractions.ISecurityAuditLog? audit = null, Modulus.Core.Abstractions.ICurrentUser? actor = null, System.Collections.Generic.IEnumerable<Modulus.Core.Abstractions.IAccessChangeObserver!>? observers = null) -> void
-Modulus.MultiTenancy.EntityFrameworkCore.TenantMembershipEntity
-Modulus.MultiTenancy.EntityFrameworkCore.TenantMembershipEntity.CreatedAtUtc.get -> System.DateTimeOffset
-Modulus.MultiTenancy.EntityFrameworkCore.TenantMembershipEntity.CreatedAtUtc.set -> void
-Modulus.MultiTenancy.EntityFrameworkCore.TenantMembershipEntity.IsActive.get -> bool
-Modulus.MultiTenancy.EntityFrameworkCore.TenantMembershipEntity.IsActive.set -> void
-Modulus.MultiTenancy.EntityFrameworkCore.TenantMembershipEntity.TenantId.get -> System.Guid
-Modulus.MultiTenancy.EntityFrameworkCore.TenantMembershipEntity.TenantId.set -> void
-Modulus.MultiTenancy.EntityFrameworkCore.TenantMembershipEntity.TenantMembershipEntity() -> void
-Modulus.MultiTenancy.EntityFrameworkCore.TenantMembershipEntity.UserId.get -> System.Guid
-Modulus.MultiTenancy.EntityFrameworkCore.TenantMembershipEntity.UserId.set -> void
-Modulus.MultiTenancy.EntityFrameworkCore.TenantStoreDbContext
-Modulus.MultiTenancy.EntityFrameworkCore.TenantStoreDbContextBase
-Modulus.MultiTenancy.EntityFrameworkCore.TenantStoreDbContextBase.SettingValues.get -> Microsoft.EntityFrameworkCore.DbSet<Modulus.MultiTenancy.EntityFrameworkCore.SettingValueEntity!>!
-Modulus.MultiTenancy.EntityFrameworkCore.TenantStoreDbContextBase.SettingVersions.get -> Microsoft.EntityFrameworkCore.DbSet<Modulus.MultiTenancy.EntityFrameworkCore.SettingVersionEntity!>!
-Modulus.MultiTenancy.EntityFrameworkCore.TenantStoreDbContextBase.TenantStoreDbContextBase(Microsoft.EntityFrameworkCore.DbContextOptions! options) -> void
-Modulus.MultiTenancy.EntityFrameworkCore.TenantStoreDbContext.TenantStoreDbContext(Microsoft.EntityFrameworkCore.DbContextOptions<Modulus.MultiTenancy.EntityFrameworkCore.TenantStoreDbContext!>! options) -> void
-Modulus.MultiTenancy.EntityFrameworkCore.TenantStoreDbContext<TTenant, TMembership, TDataStore>
-Modulus.MultiTenancy.EntityFrameworkCore.TenantStoreDbContext<TTenant, TMembership, TDataStore>.TenantDataStores.get -> Microsoft.EntityFrameworkCore.DbSet<TDataStore!>!
-Modulus.MultiTenancy.EntityFrameworkCore.TenantStoreDbContext<TTenant, TMembership, TDataStore>.TenantMemberships.get -> Microsoft.EntityFrameworkCore.DbSet<TMembership!>!
-Modulus.MultiTenancy.EntityFrameworkCore.TenantStoreDbContext<TTenant, TMembership, TDataStore>.Tenants.get -> Microsoft.EntityFrameworkCore.DbSet<TTenant!>!
-Modulus.MultiTenancy.EntityFrameworkCore.TenantStoreDbContext<TTenant, TMembership, TDataStore>.TenantStoreDbContext(Microsoft.EntityFrameworkCore.DbContextOptions! options) -> void
-override Modulus.MultiTenancy.EntityFrameworkCore.ProvisionDataStoreRequest.Equals(object? obj) -> bool
-override Modulus.MultiTenancy.EntityFrameworkCore.ProvisionDataStoreRequest.GetHashCode() -> int
-override Modulus.MultiTenancy.EntityFrameworkCore.ProvisionDataStoreRequest.ToString() -> string!
-override Modulus.MultiTenancy.EntityFrameworkCore.RotateDataStoreRequest.Equals(object? obj) -> bool
-override Modulus.MultiTenancy.EntityFrameworkCore.RotateDataStoreRequest.GetHashCode() -> int
-override Modulus.MultiTenancy.EntityFrameworkCore.RotateDataStoreRequest.ToString() -> string!
-override Modulus.MultiTenancy.EntityFrameworkCore.TenantDataStoreResponse.Equals(object? obj) -> bool
-override Modulus.MultiTenancy.EntityFrameworkCore.TenantDataStoreResponse.GetHashCode() -> int
-override Modulus.MultiTenancy.EntityFrameworkCore.TenantDataStoreResponse.ToString() -> string!
-override Modulus.MultiTenancy.EntityFrameworkCore.TenantStoreDbContextBase.OnModelCreating(Microsoft.EntityFrameworkCore.ModelBuilder! modelBuilder) -> void
-override Modulus.MultiTenancy.EntityFrameworkCore.TenantStoreDbContext<TTenant, TMembership, TDataStore>.OnModelCreating(Microsoft.EntityFrameworkCore.ModelBuilder! modelBuilder) -> void
-static Modulus.MultiTenancy.EntityFrameworkCore.EfSettingStoreExtensions.AddEfCoreSettingStore(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
-static Modulus.MultiTenancy.EntityFrameworkCore.EfTenantStoreExtensions.AddEfCoreTenantStore<TContext, TTenant, TMembership, TDataStore>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<Microsoft.EntityFrameworkCore.DbContextOptionsBuilder!>! configure) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
-static Modulus.MultiTenancy.EntityFrameworkCore.EfTenantStoreExtensions.AddEfCoreTenantStore(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<Microsoft.EntityFrameworkCore.DbContextOptionsBuilder!>! configure) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
-static Modulus.MultiTenancy.EntityFrameworkCore.EfTenantStoreExtensions.MigrateTenantStoreAsync<TContext>(this System.IServiceProvider! services, bool ensureCreatedIfNoMigrations = false, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
-static Modulus.MultiTenancy.EntityFrameworkCore.EfTenantStoreExtensions.MigrateTenantStoreAsync(this System.IServiceProvider! services, bool ensureCreatedIfNoMigrations = false, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
-static Modulus.MultiTenancy.EntityFrameworkCore.ProvisionDataStoreRequest.operator !=(Modulus.MultiTenancy.EntityFrameworkCore.ProvisionDataStoreRequest? left, Modulus.MultiTenancy.EntityFrameworkCore.ProvisionDataStoreRequest? right) -> bool
-static Modulus.MultiTenancy.EntityFrameworkCore.ProvisionDataStoreRequest.operator ==(Modulus.MultiTenancy.EntityFrameworkCore.ProvisionDataStoreRequest? left, Modulus.MultiTenancy.EntityFrameworkCore.ProvisionDataStoreRequest? right) -> bool
-static Modulus.MultiTenancy.EntityFrameworkCore.RotateDataStoreRequest.operator !=(Modulus.MultiTenancy.EntityFrameworkCore.RotateDataStoreRequest? left, Modulus.MultiTenancy.EntityFrameworkCore.RotateDataStoreRequest? right) -> bool
-static Modulus.MultiTenancy.EntityFrameworkCore.RotateDataStoreRequest.operator ==(Modulus.MultiTenancy.EntityFrameworkCore.RotateDataStoreRequest? left, Modulus.MultiTenancy.EntityFrameworkCore.RotateDataStoreRequest? right) -> bool
-static Modulus.MultiTenancy.EntityFrameworkCore.TenantDatabaseMigrationExtensions.MigrateModulusDatabasesForTenantsAsync(this System.IServiceProvider! services, Modulus.EntityFrameworkCore.Extensions.DatabaseInitializationMode mode = Modulus.EntityFrameworkCore.Extensions.DatabaseInitializationMode.Migrate, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
-static Modulus.MultiTenancy.EntityFrameworkCore.TenantDataStoreEndpoints.AddModulusTenantProvisioningAdmin(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
-static Modulus.MultiTenancy.EntityFrameworkCore.TenantDataStoreEndpoints.MapModulusTenantProvisioning(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! prefix = "/api/tenancy/data-stores") -> Microsoft.AspNetCore.Routing.RouteGroupBuilder!
-static Modulus.MultiTenancy.EntityFrameworkCore.TenantDataStoreResponse.operator !=(Modulus.MultiTenancy.EntityFrameworkCore.TenantDataStoreResponse? left, Modulus.MultiTenancy.EntityFrameworkCore.TenantDataStoreResponse? right) -> bool
-static Modulus.MultiTenancy.EntityFrameworkCore.TenantDataStoreResponse.operator ==(Modulus.MultiTenancy.EntityFrameworkCore.TenantDataStoreResponse? left, Modulus.MultiTenancy.EntityFrameworkCore.TenantDataStoreResponse? right) -> bool
-const Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminEndpoints.ManagePermission = "tenants:manage" -> string!
-Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminEndpoints
-Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView
-Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.ActiveMembers.get -> int
-Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.ActiveMembers.init -> void
-Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.<Clone>$() -> Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView!
-Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.CreatedAtUtc.get -> System.DateTimeOffset
-Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.CreatedAtUtc.init -> void
-Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.DisplayName.get -> string?
-Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.DisplayName.init -> void
-Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.Equals(Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView? other) -> bool
-Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.GroupId.get -> System.Guid?
-Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.GroupId.init -> void
-Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.Id.get -> System.Guid
-Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.Id.init -> void
-Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.MaxUsers.get -> int?
-Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.MaxUsers.init -> void
-Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.Slug.get -> string!
-Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.Slug.init -> void
-Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.Status.get -> Modulus.Core.Abstractions.TenantStatus
-Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.Status.init -> void
-Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.TrialEndsAt.get -> System.DateTimeOffset?
-Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.TrialEndsAt.init -> void
-Modulus.MultiTenancy.EntityFrameworkCore.TenantCreateRequest
-Modulus.MultiTenancy.EntityFrameworkCore.TenantCreateRequest.<Clone>$() -> Modulus.MultiTenancy.EntityFrameworkCore.TenantCreateRequest!
-Modulus.MultiTenancy.EntityFrameworkCore.TenantCreateRequest.Deconstruct(out string! Slug, out string? DisplayName, out System.Guid? GroupId, out System.Guid? AdministratorUserId) -> void
-Modulus.MultiTenancy.EntityFrameworkCore.TenantCreateRequest.DisplayName.get -> string?
-Modulus.MultiTenancy.EntityFrameworkCore.TenantCreateRequest.DisplayName.init -> void
-Modulus.MultiTenancy.EntityFrameworkCore.TenantCreateRequest.Equals(Modulus.MultiTenancy.EntityFrameworkCore.TenantCreateRequest? other) -> bool
-Modulus.MultiTenancy.EntityFrameworkCore.TenantCreateRequest.GroupId.get -> System.Guid?
-Modulus.MultiTenancy.EntityFrameworkCore.TenantCreateRequest.GroupId.init -> void
-Modulus.MultiTenancy.EntityFrameworkCore.TenantCreateRequest.AdministratorUserId.get -> System.Guid?
-Modulus.MultiTenancy.EntityFrameworkCore.TenantCreateRequest.AdministratorUserId.init -> void
-Modulus.MultiTenancy.EntityFrameworkCore.TenantCreateRequest.Slug.get -> string!
-Modulus.MultiTenancy.EntityFrameworkCore.TenantCreateRequest.Slug.init -> void
-Modulus.MultiTenancy.EntityFrameworkCore.TenantCreateRequest.TenantCreateRequest(string! Slug, string? DisplayName, System.Guid? GroupId, System.Guid? AdministratorUserId = null) -> void
-Modulus.MultiTenancy.EntityFrameworkCore.TenantManager<TTenant, TMembership, TDataStore>.GetAsync(System.Guid id, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView?>!
-Modulus.MultiTenancy.EntityFrameworkCore.TenantManager<TTenant, TMembership, TDataStore>.ListAsync(string? search, int page, int pageSize, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<(System.Collections.Generic.IReadOnlyList<Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView!>! Items, int Total)>!
-Modulus.MultiTenancy.EntityFrameworkCore.TenantManager<TTenant, TMembership, TDataStore>.ListMembersAsync(System.Guid tenantId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.MultiTenancy.EntityFrameworkCore.TenantMemberView!>!>!
-Modulus.MultiTenancy.EntityFrameworkCore.TenantMemberRequest
-Modulus.MultiTenancy.EntityFrameworkCore.TenantMemberRequest.<Clone>$() -> Modulus.MultiTenancy.EntityFrameworkCore.TenantMemberRequest!
-Modulus.MultiTenancy.EntityFrameworkCore.TenantMemberRequest.Deconstruct(out System.Guid UserId) -> void
-Modulus.MultiTenancy.EntityFrameworkCore.TenantMemberRequest.Equals(Modulus.MultiTenancy.EntityFrameworkCore.TenantMemberRequest? other) -> bool
-Modulus.MultiTenancy.EntityFrameworkCore.TenantMemberRequest.TenantMemberRequest(System.Guid UserId) -> void
-Modulus.MultiTenancy.EntityFrameworkCore.TenantMemberRequest.UserId.get -> System.Guid
-Modulus.MultiTenancy.EntityFrameworkCore.TenantMemberRequest.UserId.init -> void
-Modulus.MultiTenancy.EntityFrameworkCore.TenantMemberView
-Modulus.MultiTenancy.EntityFrameworkCore.TenantMemberView.AddedAtUtc.get -> System.DateTimeOffset
-Modulus.MultiTenancy.EntityFrameworkCore.TenantMemberView.AddedAtUtc.init -> void
-Modulus.MultiTenancy.EntityFrameworkCore.TenantMemberView.<Clone>$() -> Modulus.MultiTenancy.EntityFrameworkCore.TenantMemberView!
-Modulus.MultiTenancy.EntityFrameworkCore.TenantMemberView.Deconstruct(out System.Guid UserId, out bool IsActive, out System.DateTimeOffset AddedAtUtc) -> void
-Modulus.MultiTenancy.EntityFrameworkCore.TenantMemberView.Equals(Modulus.MultiTenancy.EntityFrameworkCore.TenantMemberView? other) -> bool
-Modulus.MultiTenancy.EntityFrameworkCore.TenantMemberView.IsActive.get -> bool
-Modulus.MultiTenancy.EntityFrameworkCore.TenantMemberView.IsActive.init -> void
-Modulus.MultiTenancy.EntityFrameworkCore.TenantMemberView.TenantMemberView(System.Guid UserId, bool IsActive, System.DateTimeOffset AddedAtUtc) -> void
-Modulus.MultiTenancy.EntityFrameworkCore.TenantMemberView.UserId.get -> System.Guid
-Modulus.MultiTenancy.EntityFrameworkCore.TenantMemberView.UserId.init -> void
-Modulus.MultiTenancy.EntityFrameworkCore.TenantSeatsRequest
-Modulus.MultiTenancy.EntityFrameworkCore.TenantSeatsRequest.<Clone>$() -> Modulus.MultiTenancy.EntityFrameworkCore.TenantSeatsRequest!
-Modulus.MultiTenancy.EntityFrameworkCore.TenantSeatsRequest.Deconstruct(out int? MaxUsers) -> void
-Modulus.MultiTenancy.EntityFrameworkCore.TenantSeatsRequest.Equals(Modulus.MultiTenancy.EntityFrameworkCore.TenantSeatsRequest? other) -> bool
-Modulus.MultiTenancy.EntityFrameworkCore.TenantSeatsRequest.MaxUsers.get -> int?
-Modulus.MultiTenancy.EntityFrameworkCore.TenantSeatsRequest.MaxUsers.init -> void
-Modulus.MultiTenancy.EntityFrameworkCore.TenantSeatsRequest.TenantSeatsRequest(int? MaxUsers) -> void
-Modulus.MultiTenancy.EntityFrameworkCore.TenantStatusRequest
-Modulus.MultiTenancy.EntityFrameworkCore.TenantStatusRequest.<Clone>$() -> Modulus.MultiTenancy.EntityFrameworkCore.TenantStatusRequest!
-Modulus.MultiTenancy.EntityFrameworkCore.TenantStatusRequest.Deconstruct(out string! Status, out System.DateTimeOffset? TrialEndsAt) -> void
-Modulus.MultiTenancy.EntityFrameworkCore.TenantStatusRequest.Equals(Modulus.MultiTenancy.EntityFrameworkCore.TenantStatusRequest? other) -> bool
-Modulus.MultiTenancy.EntityFrameworkCore.TenantStatusRequest.Status.get -> string!
-Modulus.MultiTenancy.EntityFrameworkCore.TenantStatusRequest.Status.init -> void
-Modulus.MultiTenancy.EntityFrameworkCore.TenantStatusRequest.TenantStatusRequest(string! Status, System.DateTimeOffset? TrialEndsAt) -> void
-Modulus.MultiTenancy.EntityFrameworkCore.TenantStatusRequest.TrialEndsAt.get -> System.DateTimeOffset?
-Modulus.MultiTenancy.EntityFrameworkCore.TenantStatusRequest.TrialEndsAt.init -> void
-override Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.Equals(object? obj) -> bool
-override Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.GetHashCode() -> int
-override Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.ToString() -> string!
-override Modulus.MultiTenancy.EntityFrameworkCore.TenantCreateRequest.Equals(object? obj) -> bool
-override Modulus.MultiTenancy.EntityFrameworkCore.TenantCreateRequest.GetHashCode() -> int
-override Modulus.MultiTenancy.EntityFrameworkCore.TenantCreateRequest.ToString() -> string!
-override Modulus.MultiTenancy.EntityFrameworkCore.TenantMemberRequest.Equals(object? obj) -> bool
-override Modulus.MultiTenancy.EntityFrameworkCore.TenantMemberRequest.GetHashCode() -> int
-override Modulus.MultiTenancy.EntityFrameworkCore.TenantMemberRequest.ToString() -> string!
-override Modulus.MultiTenancy.EntityFrameworkCore.TenantMemberView.Equals(object? obj) -> bool
-override Modulus.MultiTenancy.EntityFrameworkCore.TenantMemberView.GetHashCode() -> int
-override Modulus.MultiTenancy.EntityFrameworkCore.TenantMemberView.ToString() -> string!
-override Modulus.MultiTenancy.EntityFrameworkCore.TenantSeatsRequest.Equals(object? obj) -> bool
-override Modulus.MultiTenancy.EntityFrameworkCore.TenantSeatsRequest.GetHashCode() -> int
-override Modulus.MultiTenancy.EntityFrameworkCore.TenantSeatsRequest.ToString() -> string!
-override Modulus.MultiTenancy.EntityFrameworkCore.TenantStatusRequest.Equals(object? obj) -> bool
-override Modulus.MultiTenancy.EntityFrameworkCore.TenantStatusRequest.GetHashCode() -> int
-override Modulus.MultiTenancy.EntityFrameworkCore.TenantStatusRequest.ToString() -> string!
-static Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminEndpoints.AddModulusTenantAdmin(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
-static Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminEndpoints.MapModulusTenantAdmin<TTenant, TMembership, TDataStore>(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! prefix = "/api/tenancy/tenants") -> Microsoft.AspNetCore.Routing.RouteGroupBuilder!
-static Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.operator !=(Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView? left, Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView? right) -> bool
-static Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.operator ==(Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView? left, Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView? right) -> bool
-static Modulus.MultiTenancy.EntityFrameworkCore.TenantCreateRequest.operator !=(Modulus.MultiTenancy.EntityFrameworkCore.TenantCreateRequest? left, Modulus.MultiTenancy.EntityFrameworkCore.TenantCreateRequest? right) -> bool
-static Modulus.MultiTenancy.EntityFrameworkCore.TenantCreateRequest.operator ==(Modulus.MultiTenancy.EntityFrameworkCore.TenantCreateRequest? left, Modulus.MultiTenancy.EntityFrameworkCore.TenantCreateRequest? right) -> bool
-static Modulus.MultiTenancy.EntityFrameworkCore.TenantMemberRequest.operator !=(Modulus.MultiTenancy.EntityFrameworkCore.TenantMemberRequest? left, Modulus.MultiTenancy.EntityFrameworkCore.TenantMemberRequest? right) -> bool
-static Modulus.MultiTenancy.EntityFrameworkCore.TenantMemberRequest.operator ==(Modulus.MultiTenancy.EntityFrameworkCore.TenantMemberRequest? left, Modulus.MultiTenancy.EntityFrameworkCore.TenantMemberRequest? right) -> bool
-static Modulus.MultiTenancy.EntityFrameworkCore.TenantMemberView.operator !=(Modulus.MultiTenancy.EntityFrameworkCore.TenantMemberView? left, Modulus.MultiTenancy.EntityFrameworkCore.TenantMemberView? right) -> bool
-static Modulus.MultiTenancy.EntityFrameworkCore.TenantMemberView.operator ==(Modulus.MultiTenancy.EntityFrameworkCore.TenantMemberView? left, Modulus.MultiTenancy.EntityFrameworkCore.TenantMemberView? right) -> bool
-static Modulus.MultiTenancy.EntityFrameworkCore.TenantSeatsRequest.operator !=(Modulus.MultiTenancy.EntityFrameworkCore.TenantSeatsRequest? left, Modulus.MultiTenancy.EntityFrameworkCore.TenantSeatsRequest? right) -> bool
-static Modulus.MultiTenancy.EntityFrameworkCore.TenantSeatsRequest.operator ==(Modulus.MultiTenancy.EntityFrameworkCore.TenantSeatsRequest? left, Modulus.MultiTenancy.EntityFrameworkCore.TenantSeatsRequest? right) -> bool
-static Modulus.MultiTenancy.EntityFrameworkCore.TenantStatusRequest.operator !=(Modulus.MultiTenancy.EntityFrameworkCore.TenantStatusRequest? left, Modulus.MultiTenancy.EntityFrameworkCore.TenantStatusRequest? right) -> bool
-static Modulus.MultiTenancy.EntityFrameworkCore.TenantStatusRequest.operator ==(Modulus.MultiTenancy.EntityFrameworkCore.TenantStatusRequest? left, Modulus.MultiTenancy.EntityFrameworkCore.TenantStatusRequest? right) -> bool
-Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.Deconstruct(out System.Guid Id, out string! Slug, out string? DisplayName, out System.Guid? GroupId, out Modulus.Core.Abstractions.TenantStatus Status, out System.DateTimeOffset? TrialEndsAt, out int? MaxUsers, out System.Guid? ParentId, out int ActiveMembers, out System.DateTimeOffset CreatedAtUtc) -> void
-Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.ParentId.get -> System.Guid?
-Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.ParentId.init -> void
-Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.TenantAdminView(System.Guid Id, string! Slug, string? DisplayName, System.Guid? GroupId, Modulus.Core.Abstractions.TenantStatus Status, System.DateTimeOffset? TrialEndsAt, int? MaxUsers, System.Guid? ParentId, int ActiveMembers, System.DateTimeOffset CreatedAtUtc) -> void
-Modulus.MultiTenancy.EntityFrameworkCore.TenantEntity.ParentId.get -> System.Guid?
-Modulus.MultiTenancy.EntityFrameworkCore.TenantEntity.ParentId.set -> void
-Modulus.MultiTenancy.EntityFrameworkCore.TenantManager<TTenant, TMembership, TDataStore>.SetParentAsync(System.Guid id, System.Guid? parentId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
-Modulus.MultiTenancy.EntityFrameworkCore.TenantParentRequest
-Modulus.MultiTenancy.EntityFrameworkCore.TenantParentRequest.<Clone>$() -> Modulus.MultiTenancy.EntityFrameworkCore.TenantParentRequest!
-Modulus.MultiTenancy.EntityFrameworkCore.TenantParentRequest.Deconstruct(out System.Guid? ParentId) -> void
-Modulus.MultiTenancy.EntityFrameworkCore.TenantParentRequest.Equals(Modulus.MultiTenancy.EntityFrameworkCore.TenantParentRequest? other) -> bool
-Modulus.MultiTenancy.EntityFrameworkCore.TenantParentRequest.ParentId.get -> System.Guid?
-Modulus.MultiTenancy.EntityFrameworkCore.TenantParentRequest.ParentId.init -> void
-Modulus.MultiTenancy.EntityFrameworkCore.TenantParentRequest.TenantParentRequest(System.Guid? ParentId) -> void
-override Modulus.MultiTenancy.EntityFrameworkCore.TenantParentRequest.Equals(object? obj) -> bool
-override Modulus.MultiTenancy.EntityFrameworkCore.TenantParentRequest.GetHashCode() -> int
-override Modulus.MultiTenancy.EntityFrameworkCore.TenantParentRequest.ToString() -> string!
-static Modulus.MultiTenancy.EntityFrameworkCore.TenantParentRequest.operator !=(Modulus.MultiTenancy.EntityFrameworkCore.TenantParentRequest? left, Modulus.MultiTenancy.EntityFrameworkCore.TenantParentRequest? right) -> bool
-static Modulus.MultiTenancy.EntityFrameworkCore.TenantParentRequest.operator ==(Modulus.MultiTenancy.EntityFrameworkCore.TenantParentRequest? left, Modulus.MultiTenancy.EntityFrameworkCore.TenantParentRequest? right) -> bool
-Modulus.MultiTenancy.EntityFrameworkCore.EfSettingStore.GetOrNullAsync(string! name, System.Guid? tenantId, System.Guid? userId, System.Guid? branchId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<string?>!
-Modulus.MultiTenancy.EntityFrameworkCore.EfSettingStore.RemoveAsync(string! name, System.Guid? tenantId, System.Guid? userId, System.Guid? branchId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
-Modulus.MultiTenancy.EntityFrameworkCore.EfSettingStore.SetAsync(string! name, string? value, System.Guid? tenantId, System.Guid? userId, System.Guid? branchId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
-static Modulus.MultiTenancy.EntityFrameworkCore.EfSettingStore.ScopeKey(System.Guid? tenantId, System.Guid? userId, System.Guid? branchId) -> string!
-Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityDecision
-Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityDecision.<Clone>$() -> Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityDecision!
-Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityDecision.Allowed.get -> bool
-Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityDecision.Allowed.init -> void
-Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityDecision.CompanyAuthorityDecision(bool Allowed, string! Reason) -> void
-Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityDecision.Deconstruct(out bool Allowed, out string! Reason) -> void
-Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityDecision.Equals(Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityDecision? other) -> bool
-Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityDecision.Reason.get -> string!
-Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityDecision.Reason.init -> void
-Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityRequest
-Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityRequest.<Clone>$() -> Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityRequest!
-Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityRequest.CompanyAuthorityRequest(System.Guid PrincipalId, string! Operation) -> void
-Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityRequest.Deconstruct(out System.Guid PrincipalId, out string! Operation) -> void
-Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityRequest.Equals(Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityRequest? other) -> bool
-Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityRequest.Operation.get -> string!
-Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityRequest.Operation.init -> void
-Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityRequest.PrincipalId.get -> System.Guid
-Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityRequest.PrincipalId.init -> void
-Modulus.MultiTenancy.EntityFrameworkCore.ParentCompanyAuthority
-Modulus.MultiTenancy.EntityFrameworkCore.ParentCompanyAuthority.CheckAsync(System.Security.Claims.ClaimsPrincipal! caller, System.Guid parentId, System.Guid childId, Modulus.Core.Abstractions.CompanyOperation operation, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityDecision!>!
-Modulus.MultiTenancy.EntityFrameworkCore.ParentCompanyAuthority.ParentCompanyAuthority(Modulus.MultiTenancy.ITenantStore! store, Modulus.Core.Abstractions.ICurrentTenant! tenant, Microsoft.AspNetCore.Authorization.IAuthorizationService! authorization, Modulus.Core.Abstractions.ICompanyAuthorityStore? authorities = null) -> void
-const Modulus.MultiTenancy.EntityFrameworkCore.ParentCompanyAuthority.ChildrenManagePermission = "tenants:children:manage" -> string!
-override Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityDecision.Equals(object? obj) -> bool
-override Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityDecision.GetHashCode() -> int
-override Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityDecision.ToString() -> string!
-override Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityRequest.Equals(object? obj) -> bool
-override Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityRequest.GetHashCode() -> int
-override Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityRequest.ToString() -> string!
-static Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityDecision.Allow.get -> Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityDecision!
-static Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityDecision.Deny(string! reason) -> Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityDecision!
-static Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityDecision.operator !=(Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityDecision? left, Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityDecision? right) -> bool
-static Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityDecision.operator ==(Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityDecision? left, Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityDecision? right) -> bool
-static Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityRequest.operator !=(Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityRequest? left, Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityRequest? right) -> bool
-static Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityRequest.operator ==(Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityRequest? left, Modulus.MultiTenancy.EntityFrameworkCore.CompanyAuthorityRequest? right) -> bool
-static Modulus.MultiTenancy.EntityFrameworkCore.ParentCompanyAuthority.UserIdOf(System.Security.Claims.ClaimsPrincipal! caller) -> System.Guid?
+*REMOVED*Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView
+*REMOVED*Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.<Clone>$() -> Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView!
+*REMOVED*Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.ActiveMembers.get -> int
+*REMOVED*Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.ActiveMembers.init -> void
+*REMOVED*Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.CreatedAtUtc.get -> System.DateTimeOffset
+*REMOVED*Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.CreatedAtUtc.init -> void
+*REMOVED*Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.Deconstruct(out System.Guid Id, out string! Slug, out string? DisplayName, out System.Guid? GroupId, out Modulus.Core.Abstractions.TenantStatus Status, out System.DateTimeOffset? TrialEndsAt, out int? MaxUsers, out System.Guid? ParentId, out int ActiveMembers, out System.DateTimeOffset CreatedAtUtc) -> void
+*REMOVED*Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.DisplayName.get -> string?
+*REMOVED*Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.DisplayName.init -> void
+*REMOVED*Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.Equals(Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView? other) -> bool
+*REMOVED*Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.GroupId.get -> System.Guid?
+*REMOVED*Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.GroupId.init -> void
+*REMOVED*Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.Id.get -> System.Guid
+*REMOVED*Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.Id.init -> void
+*REMOVED*Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.MaxUsers.get -> int?
+*REMOVED*Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.MaxUsers.init -> void
+*REMOVED*Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.ParentId.get -> System.Guid?
+*REMOVED*Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.ParentId.init -> void
+*REMOVED*Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.Slug.get -> string!
+*REMOVED*Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.Slug.init -> void
+*REMOVED*Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.Status.get -> Modulus.Core.Abstractions.TenantStatus
+*REMOVED*Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.Status.init -> void
+*REMOVED*Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.TenantAdminView(System.Guid Id, string! Slug, string? DisplayName, System.Guid? GroupId, Modulus.Core.Abstractions.TenantStatus Status, System.DateTimeOffset? TrialEndsAt, int? MaxUsers, System.Guid? ParentId, int ActiveMembers, System.DateTimeOffset CreatedAtUtc) -> void
+*REMOVED*Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.TrialEndsAt.get -> System.DateTimeOffset?
+*REMOVED*Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.TrialEndsAt.init -> void
+*REMOVED*Modulus.MultiTenancy.EntityFrameworkCore.TenantManager<TTenant, TMembership, TDataStore>.GetAsync(System.Guid id, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView?>!
+*REMOVED*Modulus.MultiTenancy.EntityFrameworkCore.TenantManager<TTenant, TMembership, TDataStore>.ListAsync(string? search, int page, int pageSize, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<(System.Collections.Generic.IReadOnlyList<Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView!>! Items, int Total)>!
+*REMOVED*Modulus.MultiTenancy.EntityFrameworkCore.TenantManager<TTenant, TMembership, TDataStore>.ListMembersAsync(System.Guid tenantId, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.MultiTenancy.EntityFrameworkCore.TenantMemberView!>!>!
+*REMOVED*Modulus.MultiTenancy.EntityFrameworkCore.TenantMemberView
+*REMOVED*Modulus.MultiTenancy.EntityFrameworkCore.TenantMemberView.<Clone>$() -> Modulus.MultiTenancy.EntityFrameworkCore.TenantMemberView!
+*REMOVED*Modulus.MultiTenancy.EntityFrameworkCore.TenantMemberView.AddedAtUtc.get -> System.DateTimeOffset
+*REMOVED*Modulus.MultiTenancy.EntityFrameworkCore.TenantMemberView.AddedAtUtc.init -> void
+*REMOVED*Modulus.MultiTenancy.EntityFrameworkCore.TenantMemberView.Deconstruct(out System.Guid UserId, out bool IsActive, out System.DateTimeOffset AddedAtUtc) -> void
+*REMOVED*Modulus.MultiTenancy.EntityFrameworkCore.TenantMemberView.Equals(Modulus.MultiTenancy.EntityFrameworkCore.TenantMemberView? other) -> bool
+*REMOVED*Modulus.MultiTenancy.EntityFrameworkCore.TenantMemberView.IsActive.get -> bool
+*REMOVED*Modulus.MultiTenancy.EntityFrameworkCore.TenantMemberView.IsActive.init -> void
+*REMOVED*Modulus.MultiTenancy.EntityFrameworkCore.TenantMemberView.TenantMemberView(System.Guid UserId, bool IsActive, System.DateTimeOffset AddedAtUtc) -> void
+*REMOVED*Modulus.MultiTenancy.EntityFrameworkCore.TenantMemberView.UserId.get -> System.Guid
+*REMOVED*Modulus.MultiTenancy.EntityFrameworkCore.TenantMemberView.UserId.init -> void
+*REMOVED*override Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.Equals(object? obj) -> bool
+*REMOVED*override Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.GetHashCode() -> int
+*REMOVED*override Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.ToString() -> string!
+*REMOVED*override Modulus.MultiTenancy.EntityFrameworkCore.TenantMemberView.Equals(object? obj) -> bool
+*REMOVED*override Modulus.MultiTenancy.EntityFrameworkCore.TenantMemberView.GetHashCode() -> int
+*REMOVED*override Modulus.MultiTenancy.EntityFrameworkCore.TenantMemberView.ToString() -> string!
+*REMOVED*static Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.operator !=(Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView? left, Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView? right) -> bool
+*REMOVED*static Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView.operator ==(Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView? left, Modulus.MultiTenancy.EntityFrameworkCore.TenantAdminView? right) -> bool
+*REMOVED*static Modulus.MultiTenancy.EntityFrameworkCore.TenantMemberView.operator !=(Modulus.MultiTenancy.EntityFrameworkCore.TenantMemberView? left, Modulus.MultiTenancy.EntityFrameworkCore.TenantMemberView? right) -> bool
+*REMOVED*static Modulus.MultiTenancy.EntityFrameworkCore.TenantMemberView.operator ==(Modulus.MultiTenancy.EntityFrameworkCore.TenantMemberView? left, Modulus.MultiTenancy.EntityFrameworkCore.TenantMemberView? right) -> bool

@@ -25,26 +25,6 @@ public sealed class OptionalAuthTemplateTests
     };
 
     [Fact]
-    public void The_profile_page_refers_to_the_identity_package_only_when_the_app_has_sign_in()
-    {
-        _engine.Render("app/Profile.Web.cshtml", Model("none")).Should().NotContain("Modulus.Identity");
-
-        var signedIn = _engine.Render("app/Profile.Web.cshtml", Model("openiddict"));
-        signedIn.Should().Contain("Modulus.Identity.Abstractions.AvatarUrlPolicy.Resolve");
-        signedIn.Should().Contain("avatar.Kind", "the photo is chosen from the policy, not from a block nested in the details");
-    }
-
-    [Fact]
-    public void The_settings_page_uses_the_branch_cookie_only_with_multi_tenancy()
-    {
-        var plain = _engine.Render("app/SettingsModel.Web", Model("none"));
-        plain.Should().NotContain("Web.Security").And.NotContain("HasChosenBranch");
-
-        var company = _engine.Render("app/SettingsModel.Web", Model("openiddict", multiTenancy: true));
-        company.Should().Contain("Web.Security").And.Contain("HasChosenBranch");
-    }
-
-    [Fact]
     public void The_web_smoke_tests_assert_the_sign_in_redirects_only_when_the_app_has_sign_in()
     {
         var plain = _engine.Render("app/AppTests", Model("none"));

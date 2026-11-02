@@ -60,9 +60,16 @@ internal static partial class WebhooksWiring
     /// <c>AddModulus</c> callback, with its namespace.
     /// </summary>
     public static string EnsureApiModule(string text, string webhooksNamespace)
+        => EnsureModuleRegistration(text, "WebhooksModule", $"{webhooksNamespace}.Infrastructure");
+
+    /// <summary>
+    /// Registers <paramref name="moduleType"/> as the last module of the <c>AddModulus</c> callback and imports its namespace.
+    /// Shared by every command that adds a store module to the host.
+    /// </summary>
+    internal static string EnsureModuleRegistration(string text, string moduleType, string moduleNamespace)
     {
         var nl = NewLine(text);
-        if (!text.Contains("AddModule<WebhooksModule>()", StringComparison.Ordinal))
+        if (!text.Contains($"AddModule<{moduleType}>()", StringComparison.Ordinal))
         {
             var call = text.IndexOf("AddModulus(", StringComparison.Ordinal);
             var close = call < 0 ? -1 : text.IndexOf("});", call, StringComparison.Ordinal);
@@ -77,10 +84,10 @@ internal static partial class WebhooksWiring
                 indent = text[regLine..lastRegistration];
             }
 
-            text = text[..lineStart] + indent + "modules.AddModule<WebhooksModule>();" + nl + text[lineStart..];
+            text = text[..lineStart] + indent + $"modules.AddModule<{moduleType}>();" + nl + text[lineStart..];
         }
 
-        return EnsureUsing(text, $"using {webhooksNamespace}.Infrastructure;");
+        return EnsureUsing(text, $"using {moduleNamespace};");
     }
 
     /// <summary>

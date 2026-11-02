@@ -11,8 +11,9 @@ public sealed class {{ feature_name }}Handler
         {{ feature_name }}Command command,
         CancellationToken ct)
     {
-        // TODO: Implement {{ feature_name }} logic here
+        // Not implemented yet: fails loudly so an unfinished command is never reported as a success.
+        // Replace this body with the {{ feature_name }} logic.
         await Task.CompletedTask;
-        return Unit.Value;
+        throw new NotImplementedException("{{ feature_name }}Handler is a scaffold: implement HandleAsync.");
     }
 }

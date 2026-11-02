@@ -57,8 +57,6 @@ internal sealed class ScimService<TUser, TRole>(
         {
             ["userName"] = u => u.UserName,
             ["externalId"] = u => u.ExternalId,
-            ["name.givenName"] = u => u.FirstName,
-            ["name.familyName"] = u => u.LastName,
         };
 
     private static readonly IReadOnlyDictionary<string, Expression<Func<TRole, string?>>> s_groupSortKeys =
@@ -93,8 +91,6 @@ internal sealed class ScimService<TUser, TRole>(
             ["externalid"] = new(ScimAttributeKind.String, u => u.ExternalId),
             ["emails"] = new(ScimAttributeKind.String, u => u.Email),
             ["emails.value"] = new(ScimAttributeKind.String, u => u.Email),
-            ["name.givenname"] = new(ScimAttributeKind.String, u => u.FirstName),
-            ["name.familyname"] = new(ScimAttributeKind.String, u => u.LastName),
             // Inline, not MayStartNewAccess(): this getter is translated into the SQL of a filter.
             ["active"] = new(ScimAttributeKind.Boolean, u => u.IsActive && u.Lifecycle == AccountLifecycle.Active),
         };
@@ -271,8 +267,6 @@ internal sealed class ScimService<TUser, TRole>(
         else if (create || string.IsNullOrEmpty(user.Email))
             throw new ScimException(400, "invalidValue", "An e-mail address is required (emails, or a userName that is one).");
 
-        user.FirstName = model.Name?.GivenName;
-        user.LastName = model.Name?.FamilyName;
 
         var externalId = string.IsNullOrWhiteSpace(model.ExternalId) ? null : model.ExternalId.Trim();
         if (externalId is not null
@@ -292,16 +286,12 @@ internal sealed class ScimService<TUser, TRole>(
 
     private ScimUser ToScim(TUser user, IEnumerable<ScimRef>? groups, string baseUrl)
     {
-        var name = new ScimName { GivenName = user.FirstName, FamilyName = user.LastName };
-        var formatted = $"{user.FirstName} {user.LastName}".Trim();
-        name.Formatted = formatted.Length > 0 ? formatted : null;
         return new ScimUser
         {
             Id = user.Id.ToString(),
             ExternalId = user.ExternalId,
             UserName = user.UserName,
-            Name = name,
-            DisplayName = formatted.Length > 0 ? formatted : user.UserName,
+            DisplayName = user.UserName,
             Emails = user.Email is null ? [] : [new ScimEmail { Value = user.Email, Type = "work", Primary = true }],
             Active = user.MayStartNewAccess(),
             Groups = groups?.ToList(),
@@ -363,23 +353,6 @@ internal sealed class ScimService<TUser, TRole>(
                 break;
             case "active":
                 draft.Active = remove ? false : RequireBool(value, "active");
-                break;
-            case "name":
-                draft.Name = remove
-                    ? new ScimName()
-                    : new ScimName
-                    {
-                        GivenName = StringProperty(value, "givenName") ?? draft.Name?.GivenName,
-                        FamilyName = StringProperty(value, "familyName") ?? draft.Name?.FamilyName,
-                    };
-                break;
-            case "name.givenname":
-                draft.Name ??= new ScimName();
-                draft.Name.GivenName = remove ? null : RequireText(value, "name.givenName");
-                break;
-            case "name.familyname":
-                draft.Name ??= new ScimName();
-                draft.Name.FamilyName = remove ? null : RequireText(value, "name.familyName");
                 break;
             case "id" or "groups" or "meta":
                 throw new ScimException(400, "mutability", $"'{path}' is read-only.");

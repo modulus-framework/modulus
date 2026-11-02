@@ -30,7 +30,11 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         [CommandOption("--auth")]
         public string? Auth { get; init; }
 
-        [Description("Skip the example Catalog module. Omit to be prompted (CI default: include).")]
+        [Description("Include the example Catalog module. Off by default: a new app starts with no sample code.")]
+        [CommandOption("--with-example")]
+        public bool? WithExample { get; init; }
+
+        [Description("Deprecated: the example module is off by default; use --with-example to include it.")]
         [CommandOption("--no-example")]
         public bool? NoExample { get; init; }
 
@@ -41,6 +45,10 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         [Description("Caching provider: inmemory, redis. Omit to be prompted.")]
         [CommandOption("--caching")]
         public string? Caching { get; init; }
+
+        [Description("With --storage s3: the S3-compatible service (aws, wasabi, b2, r2, minio). Default aws. The generated settings start with its endpoint and region.")]
+        [CommandOption("--s3-provider")]
+        public string? S3Provider { get; init; }
 
         [Description("Storage provider: local, s3, azureblobs. Omit to be prompted.")]
         [CommandOption("--storage")]
@@ -132,6 +140,9 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
     /// <summary>Valid storage provider choices, in selection-menu order.</summary>
     internal static readonly string[] KnownStorageProviders = ["local", "s3", "azureblobs"];
 
+    /// <summary>The S3-compatible services the generated settings know how to start with (with <c>--storage s3</c>).</summary>
+    internal static readonly string[] KnownS3Providers = ["aws", "wasabi", "b2", "r2", "minio"];
+
     /// <summary>Valid SignalR backplane choices, in selection-menu order.</summary>
     internal static readonly string[] KnownSignalRBackplanes = ["none", "redis", "azure"];
 
@@ -178,6 +189,11 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         var messageBroker = ResolveMessageBroker(s.MessageBroker);
         var cachingProvider = ResolveCachingProvider(s.Caching);
         var storageProvider = ResolveStorageProvider(s.Storage);
+        if (s.S3Provider is not null && storageProvider != "s3")
+            throw new ArgumentException("--s3-provider needs --storage s3.");
+        var s3Provider = storageProvider == "s3"
+            ? ValidateChoice(s.S3Provider ?? "aws", KnownS3Providers, "S3 provider")
+            : "aws";
         var signalRBackplane = ResolveSignalRBackplane(s.SignalR);
 
         // Resolve production hardening features
@@ -201,21 +217,25 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         if (bffServices.Count > 0 && bff.Count == 0)
             throw new ArgumentException("--services lists the BFFs' upstream services; add --bff web,mobile,partner.");
 
-        // NoExample is tri-state: null = unspecified â†’ prompt (interactive)
-        // or default to include (CI). True/False are explicit user choices.
+        // The example Catalog module is opt-in (2.0.0): --with-example includes it, --no-example is accepted for compatibility.
+        // Interactive runs are asked (default: no); CI runs get no example.
         bool noExample;
-        if (s.NoExample is { } noExampleFlag)
+        if (s.WithExample is { } withExample)
+        {
+            noExample = !withExample;
+        }
+        else if (s.NoExample is { } noExampleFlag)
         {
             noExample = noExampleFlag;
         }
         else if (Ux.IsInteractive)
         {
-            var include = Ux.Confirm("Include the example [cyan]Catalog[/] module?", nonInteractiveDefault: true);
+            var include = Ux.Confirm("Include the example [cyan]Catalog[/] module?", nonInteractiveDefault: false);
             noExample = !include;
         }
         else
         {
-            noExample = false;
+            noExample = true;
         }
 
         var parts = rootNs.Split('.');
@@ -250,6 +270,7 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
             MessageBroker = messageBroker,
             CachingProvider = cachingProvider,
             StorageProvider = storageProvider,
+            S3Provider = s3Provider,
             SignalRBackplane = signalRBackplane,
             EnableApiVersioning = enableApiVersioning,
             EnableRateLimiting = enableRateLimiting,
@@ -291,6 +312,11 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         AnsiConsole.WriteLine();
         AnsiConsole.MarkupLine("[yellow]Next steps:[/]");
         AnsiConsole.MarkupLine("  [grey]cd[/] {0}", appName);
+        if (storageProvider == "s3")
+        {
+            AnsiConsole.MarkupLine("  [grey]S3 storage:[/] fill the placeholders in src/API/{0}.Api/appsettings.json (Storage:Endpoint, Storage:Region, Storage:BucketName)", rootNs);
+            AnsiConsole.MarkupLine("  [grey]and set the keys as environment variables:[/] Storage__AccessKey and Storage__SecretKey (never in the settings file)");
+        }
         if (!Ux.DryRun)
         {
             AnsiConsole.MarkupLine("  [grey]dotnet restore[/]");
@@ -406,6 +432,8 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
             Path.Combine(testDir, $"{rootNs}.Tests.csproj"));
         _templates.RenderToFile("app/AppTests", model,
             Path.Combine(testDir, "ModulePipelineSmokeTest.cs"));
+        if (model.UseS3Storage)
+            _templates.RenderToFile("app/StorageTests", model, Path.Combine(testDir, "StorageProviderTests.cs"));
         projects.Add($"tests/{rootNs}.Tests/{rootNs}.Tests.csproj");
 
         // â”€â”€ Solution file â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -485,7 +513,7 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
     }
 
     /// <summary>
-    /// The API host's setup files, one per concern (garments-erp's API layout). Program.cs composes them; the CLI's feature
+    /// The API host's setup files, one per concern (the layout of a modular-monolith API host). Program.cs composes them; the CLI's feature
     /// wiring adds to FeatureServicesSetup and FeatureEndpoints, and the module wiring to ModuleRegistration.
     /// </summary>
     private void RenderApiSetup(string apiDir, AppModel model)
@@ -542,80 +570,6 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
             Path.Combine(webDir, "Components", "Navigation", "Menu", "ServerNavigationMenuContributor.cs"));
     }
 
-    /// <summary>
-    /// The user administration pages (premodule 1): the typed client for the API's user routes and the Users page. Rendered with the
-    /// identity backend only, because the API maps the routes there.
-    /// </summary>
-    private void RenderSettingsAdmin(string webDir, AppModel model)
-    {
-        _templates.RenderToFile("app/SettingsApiClient.Web", model, Path.Combine(webDir, "Services", "ApiClients", "SettingsApiClient.cs"));
-        _templates.RenderToFile("app/SettingsModel.Web", model, Path.Combine(webDir, "Pages", "Admin", "Settings.cshtml.cs"));
-        _templates.RenderToFile("app/Settings.Web.cshtml", model, Path.Combine(webDir, "Pages", "Admin", "Settings.cshtml"));
-    }
-
-    /// <summary>
-    /// The profile pages (premodule 3) and, in multi-company apps, the company switcher (decision 29). Both call identity routes, so they need
-    /// the identity backend and a sign-in.
-    /// </summary>
-    private void RenderProfileAndCompanies(string webDir, AppModel model)
-    {
-        if (model.Auth != "openiddict") return;
-        _templates.RenderToFile("app/ProfileApiClient.Web", model, Path.Combine(webDir, "Services", "ApiClients", "ProfileApiClient.cs"));
-        _templates.RenderToFile("app/ProfileModel.Web", model, Path.Combine(webDir, "Pages", "Profile.cshtml.cs"));
-        _templates.RenderToFile("app/Profile.Web.cshtml", model, Path.Combine(webDir, "Pages", "Profile.cshtml"));
-        _templates.RenderToFile("app/ConfirmEmailChangeModel.Web", model, Path.Combine(webDir, "Pages", "ConfirmEmailChange.cshtml.cs"));
-        _templates.RenderToFile("app/ConfirmEmailChange.Web.cshtml", model, Path.Combine(webDir, "Pages", "ConfirmEmailChange.cshtml"));
-        _templates.RenderToFile("app/ProfilePhotoModel.Web", model, Path.Combine(webDir, "Pages", "ProfilePhoto.cshtml.cs"));
-        _templates.RenderToFile("app/ProfilePhoto.Web.cshtml", model, Path.Combine(webDir, "Pages", "ProfilePhoto.cshtml"));
-        _templates.RenderToFile("app/profile-photo.js", model, Path.Combine(webDir, "wwwroot", "js", "profile-photo.js"));
-        _templates.RenderToFile("app/ConfirmWorkEmailModel.Web", model, Path.Combine(webDir, "Pages", "ConfirmWorkEmail.cshtml.cs"));
-        _templates.RenderToFile("app/ConfirmWorkEmail.Web.cshtml", model, Path.Combine(webDir, "Pages", "ConfirmWorkEmail.cshtml"));
-        // The branches the caller may see (the profile names the primary branch; the branch picker lists them).
-        _templates.RenderToFile("app/BranchApiClient.Web", model, Path.Combine(webDir, "Services", "ApiClients", "BranchApiClient.cs"));
-        if (!model.MultiTenancy) return;
-        _templates.RenderToFile("app/CompanyApiClient.Web", model, Path.Combine(webDir, "Services", "ApiClients", "CompanyApiClient.cs"));
-        _templates.RenderToFile("app/DefaultCompany.Web", model, Path.Combine(webDir, "Middleware", "DefaultCompanyMiddleware.cs"));
-        _templates.RenderToFile("app/CompanyModel.Web", model, Path.Combine(webDir, "Pages", "Company.cshtml.cs"));
-        _templates.RenderToFile("app/Company.Web.cshtml", model, Path.Combine(webDir, "Pages", "Company.cshtml"));
-        // The company administration page (tenants:manage), the Companies entry the API navigation already links to.
-        _templates.RenderToFile("app/CompanyAdminApiClient.Web", model, Path.Combine(webDir, "Services", "ApiClients", "CompanyAdminApiClient.cs"));
-        _templates.RenderToFile("app/CompanyAdminModel.Web", model, Path.Combine(webDir, "Pages", "Admin", "Companies.cshtml.cs"));
-        _templates.RenderToFile("app/CompanyAdmin.Web.cshtml", model, Path.Combine(webDir, "Pages", "Admin", "Companies.cshtml"));
-        // The branch picker (decision 14): the branches the caller's scope allows; the cookie becomes X-Branch-Id at the gateway.
-        _templates.RenderToFile("app/BranchModel.Web", model, Path.Combine(webDir, "Pages", "Branch.cshtml.cs"));
-        _templates.RenderToFile("app/Branch.Web.cshtml", model, Path.Combine(webDir, "Pages", "Branch.cshtml"));
-    }
-
-    private void RenderAuditViewer(string webDir, AppModel model)
-    {
-        _templates.RenderToFile("app/AuditApiClient.Web", model, Path.Combine(webDir, "Services", "ApiClients", "AuditApiClient.cs"));
-        _templates.RenderToFile("app/AuditModel.Web", model, Path.Combine(webDir, "Pages", "Admin", "Audit.cshtml.cs"));
-        _templates.RenderToFile("app/Audit.Web.cshtml", model, Path.Combine(webDir, "Pages", "Admin", "Audit.cshtml"));
-        // The business audit page (audit:view), searching the company's business audit entries.
-        _templates.RenderToFile("app/BusinessAuditApiClient.Web", model, Path.Combine(webDir, "Services", "ApiClients", "BusinessAuditApiClient.cs"));
-        _templates.RenderToFile("app/BusinessAuditModel.Web", model, Path.Combine(webDir, "Pages", "Admin", "BusinessAudit.cshtml.cs"));
-        _templates.RenderToFile("app/BusinessAudit.Web.cshtml", model, Path.Combine(webDir, "Pages", "Admin", "BusinessAudit.cshtml"));
-        // The company audit summary (decision 7, audit:company-summary:view): six decoded fields of the company's own events.
-        _templates.RenderToFile("app/CompanyAuditApiClient.Web", model, Path.Combine(webDir, "Services", "ApiClients", "CompanyAuditApiClient.cs"));
-        _templates.RenderToFile("app/CompanyAuditModel.Web", model, Path.Combine(webDir, "Pages", "Admin", "CompanyAudit.cshtml.cs"));
-        _templates.RenderToFile("app/CompanyAudit.Web.cshtml", model, Path.Combine(webDir, "Pages", "Admin", "CompanyAudit.cshtml"));
-    }
-
-    private void RenderRoleAdmin(string webDir, AppModel model)
-    {
-        _templates.RenderToFile("app/RoleAdminApiClient.Web", model, Path.Combine(webDir, "Services", "ApiClients", "RoleAdminApiClient.cs"));
-        _templates.RenderToFile("app/RoleAdminModel.Web", model, Path.Combine(webDir, "Pages", "Admin", "Roles.cshtml.cs"));
-        _templates.RenderToFile("app/RoleAdmin.Web.cshtml", model, Path.Combine(webDir, "Pages", "Admin", "Roles.cshtml"));
-    }
-
-    private void RenderUserAdmin(string webDir, AppModel model)
-    {
-        if (model.Auth != "openiddict") return;
-        _templates.RenderToFile("app/UserAdminApiClient.Web", model, Path.Combine(webDir, "Services", "ApiClients", "UserAdminApiClient.cs"));
-        _templates.RenderToFile("app/UserAdminModel.Web", model, Path.Combine(webDir, "Pages", "Admin", "Users.cshtml.cs"));
-        _templates.RenderToFile("app/UserAdmin.Web.cshtml", model, Path.Combine(webDir, "Pages", "Admin", "Users.cshtml"));
-    }
-
     private void GenerateWebHost(string projectDir, AppModel model, List<string> projects)
     {
         var rootNs = model.RootNamespace;
@@ -644,10 +598,6 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
             _templates.RenderToFile("app/ApiClientExtensions.Web", model, Path.Combine(webDir, "Services", "ApiClientExtensions.cs"));
             _templates.RenderToFile("app/MenuRegistration.Web", model, Path.Combine(webDir, "Composition", "MenuRegistration.cs"));
             RenderNavigationMenu(webDir, model);
-            RenderUserAdmin(webDir, model);
-            RenderRoleAdmin(webDir, model);
-            RenderAuditViewer(webDir, model);
-            RenderSettingsAdmin(webDir, model);
             if (!model.NoExample)
                 _templates.RenderToFile("ui/EntityApiClient", model, UiLayout.ApiClientFile(webDir, model.ExampleEntity));
             projects.Add($"src/Web/{rootNs}.Web/{rootNs}.Web.csproj");
@@ -710,11 +660,6 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         _templates.RenderToFile("app/favicon.svg", model, Path.Combine(webDir, "wwwroot", "favicon.svg"));
         _templates.RenderToFile("app/ErrorModel.Web", model, Path.Combine(webDir, "Pages", "Error.cshtml.cs"));
         _templates.RenderToFile("app/Error.Web.cshtml", model, Path.Combine(webDir, "Pages", "Error.cshtml"));
-        RenderUserAdmin(webDir, model);
-        RenderRoleAdmin(webDir, model);
-        RenderAuditViewer(webDir, model);
-        RenderSettingsAdmin(webDir, model);
-        RenderProfileAndCompanies(webDir, model);
 
         // â”€â”€ Authentication: a BFF web session (Modulus.Bff) behind the sign-in pages â”€â”€
         if (model.UseAuth)
@@ -844,7 +789,7 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         var dir = Path.Combine(projectDir, "src", "Bff", bff.ProjectName);
         _templates.RenderToFile("bff/bff.csproj", bff, Path.Combine(dir, $"{bff.ProjectName}.csproj"));
         _templates.RenderToFile("bff/Program", bff, Path.Combine(dir, "Program.cs"));
-        // Program.cs composes one setup file per concern (garments-erp's BFF layout).
+        // Program.cs composes one setup file per concern (the layout of a BFF host).
         _templates.RenderToFile("bff/BffCoreSetup", bff, Path.Combine(dir, "Configuration", "BffCoreSetup.cs"));
         _templates.RenderToFile("bff/SessionAuthSetup", bff, Path.Combine(dir, "Security", "SessionAuthSetup.cs"));
         _templates.RenderToFile("bff/PipelineSetup", bff, Path.Combine(dir, "Middleware", "PipelineSetup.cs"));

@@ -131,7 +131,7 @@ public sealed class PermissionScopeResolver(
     // A grant covers the permission it names, every permission under a wildcard prefix, and whatever those imply.
     private bool Covers(string granted, string permission, bool includeCritical = true)
     {
-        if (granted.EndsWith(":*", StringComparison.Ordinal))
+        if (Modulus.Authorization.PermissionNames.IsWildcard(granted))
         {
             var prefix = granted[..^1];
             return registry.GetAll().Any(d => (includeCritical || d.Sensitivity is not PermissionSensitivity.Critical)

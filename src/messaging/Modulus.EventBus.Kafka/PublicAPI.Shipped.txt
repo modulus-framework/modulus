@@ -1,0 +1,42 @@
+#nullable enable
+Modulus.EventBus.Kafka.Extensions.KafkaEventBusExtensions
+Modulus.EventBus.Kafka.IPartitionKeyProvider
+Modulus.EventBus.Kafka.IPartitionKeyProvider.GetPartitionKey(Modulus.Events.Abstractions.IIntegrationEvent! event) -> string!
+Modulus.EventBus.Kafka.KafkaHealthCheck
+Modulus.EventBus.Kafka.KafkaHealthCheck.CheckAsync(System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Core.Abstractions.ModuleHealthResult!>!
+Modulus.EventBus.Kafka.KafkaHealthCheck.KafkaHealthCheck(Microsoft.Extensions.Options.IOptions<Modulus.EventBus.Kafka.KafkaOptions!>! options, Microsoft.Extensions.Logging.ILogger<Modulus.EventBus.Kafka.KafkaHealthCheck!>! logger) -> void
+Modulus.EventBus.Kafka.KafkaOptions
+Modulus.EventBus.Kafka.KafkaOptions.Acks.get -> string!
+Modulus.EventBus.Kafka.KafkaOptions.Acks.set -> void
+Modulus.EventBus.Kafka.KafkaOptions.AutoOffsetReset.get -> string!
+Modulus.EventBus.Kafka.KafkaOptions.AutoOffsetReset.set -> void
+Modulus.EventBus.Kafka.KafkaOptions.BootstrapServers.get -> string!
+Modulus.EventBus.Kafka.KafkaOptions.BootstrapServers.set -> void
+Modulus.EventBus.Kafka.KafkaOptions.DeadLetterTopicSuffix.get -> string!
+Modulus.EventBus.Kafka.KafkaOptions.DeadLetterTopicSuffix.set -> void
+Modulus.EventBus.Kafka.KafkaOptions.EnableDlq.get -> bool
+Modulus.EventBus.Kafka.KafkaOptions.EnableDlq.set -> void
+Modulus.EventBus.Kafka.KafkaOptions.GroupId.get -> string!
+Modulus.EventBus.Kafka.KafkaOptions.GroupId.set -> void
+Modulus.EventBus.Kafka.KafkaOptions.KafkaOptions() -> void
+Modulus.EventBus.Kafka.KafkaOptions.MaxDeliveryAttempts.get -> int
+Modulus.EventBus.Kafka.KafkaOptions.MaxDeliveryAttempts.set -> void
+Modulus.EventBus.Kafka.KafkaOptions.MaxTrackedFailures.get -> int
+Modulus.EventBus.Kafka.KafkaOptions.MaxTrackedFailures.set -> void
+Modulus.EventBus.Kafka.KafkaOptions.MessageSendMaxRetries.get -> int
+Modulus.EventBus.Kafka.KafkaOptions.MessageSendMaxRetries.set -> void
+Modulus.EventBus.Kafka.KafkaOptions.RedeliveryMaxBackoffMs.get -> int
+Modulus.EventBus.Kafka.KafkaOptions.RedeliveryMaxBackoffMs.set -> void
+Modulus.EventBus.Kafka.KafkaOptions.SaslMechanism.get -> string!
+Modulus.EventBus.Kafka.KafkaOptions.SaslMechanism.set -> void
+Modulus.EventBus.Kafka.KafkaOptions.SaslPassword.get -> string?
+Modulus.EventBus.Kafka.KafkaOptions.SaslPassword.set -> void
+Modulus.EventBus.Kafka.KafkaOptions.SaslUsername.get -> string?
+Modulus.EventBus.Kafka.KafkaOptions.SaslUsername.set -> void
+Modulus.EventBus.Kafka.KafkaOptions.SecurityProtocol.get -> string!
+Modulus.EventBus.Kafka.KafkaOptions.SecurityProtocol.set -> void
+Modulus.EventBus.Kafka.KafkaOptions.SslCaLocation.get -> string?
+Modulus.EventBus.Kafka.KafkaOptions.SslCaLocation.set -> void
+Modulus.EventBus.Kafka.KafkaOptions.TopicPrefix.get -> string!
+Modulus.EventBus.Kafka.KafkaOptions.TopicPrefix.set -> void
+static Modulus.EventBus.Kafka.Extensions.KafkaEventBusExtensions.AddKafkaEventBus(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<Modulus.EventBus.Kafka.KafkaOptions!>? configure = null, string! sectionName = "EventBus:Kafka") -> Microsoft.Extensions.DependencyInjection.IServiceCollection!

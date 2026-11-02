@@ -37,7 +37,7 @@ public static class RabbitMqEventBusExtensions
 
         services.RemoveIModuleBusRegistrations();
         services.AddSingleton<RabbitMqEventBus>();
-        services.AddScoped<IModuleBus>(sp => sp.GetRequiredService<RabbitMqEventBus>());
+        services.AddScoped<IModuleBus>(sp => new RabbitMqBusScope(sp.GetRequiredService<RabbitMqEventBus>()));
 
         services.AddHostedService<RabbitMqEventConsumer>();
 

@@ -8,7 +8,7 @@
 
   Accounts disabled through IsActive = 0 are carried over to the Disabled lifecycle state, so they stay disabled. Only accounts whose
   lifecycle has never changed are carried over, so a rerun cannot disable an account the new release has since re-enabled.
-  The ERP identifier columns (EmployeeCode, ExternalId) are nvarchar(450), the length EF Core gives an indexed string on SQL Server.
+  The identifier column (ExternalId) is nvarchar(450), the length EF Core gives an indexed string on SQL Server.
   Idempotent: a second run changes nothing. Existing deployments only.
 */
 SET XACT_ABORT ON;
@@ -25,12 +25,6 @@ IF COL_LENGTH('$(user_table)', 'SuspensionReason') IS NULL
     ALTER TABLE [$(user_table)] ADD SuspensionReason nvarchar(64) NULL;
 IF COL_LENGTH('$(user_table)', 'SuspensionNote') IS NULL
     ALTER TABLE [$(user_table)] ADD SuspensionNote nvarchar(512) NULL;
-IF COL_LENGTH('$(user_table)', 'MustChangePin') IS NULL
-    ALTER TABLE [$(user_table)] ADD MustChangePin bit NOT NULL CONSTRAINT DF_$(user_table)_MustChangePin DEFAULT 0;
-IF COL_LENGTH('$(user_table)', 'EmployeeCode') IS NULL
-    ALTER TABLE [$(user_table)] ADD EmployeeCode nvarchar(450) NULL;
-IF COL_LENGTH('$(user_table)', 'PinHash') IS NULL
-    ALTER TABLE [$(user_table)] ADD PinHash nvarchar(max) NULL;
 IF COL_LENGTH('$(user_table)', 'ExternalId') IS NULL
     ALTER TABLE [$(user_table)] ADD ExternalId nvarchar(450) NULL;
 IF COL_LENGTH('$(user_table)', 'ExtraProperties') IS NULL
@@ -41,8 +35,6 @@ UPDATE [$(user_table)] SET Lifecycle = N'Disabled'
 WHERE IsActive = 0 AND Lifecycle = N'Active' AND LifecycleChangedAt IS NULL;
 GO
 
-IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_AspNetUsers_TenantId_EmployeeCode' AND object_id = OBJECT_ID('[$(user_table)]'))
-    CREATE INDEX IX_AspNetUsers_TenantId_EmployeeCode ON [$(user_table)] (TenantId, EmployeeCode);
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_AspNetUsers_TenantId_ExternalId' AND object_id = OBJECT_ID('[$(user_table)]'))
     CREATE INDEX IX_AspNetUsers_TenantId_ExternalId ON [$(user_table)] (TenantId, ExternalId);
 GO

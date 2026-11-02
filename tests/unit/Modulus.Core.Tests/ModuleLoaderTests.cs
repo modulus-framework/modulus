@@ -92,6 +92,29 @@ public sealed class ModuleLoaderTests
     }
 
     [Fact]
+    public async Task ShutdownAllAsync_FirstModuleFailedToInitialize_ShutsDownNoModule()
+    {
+        var log = new List<string>();
+        var failing = new FailingInitModule { ShutdownLog = log };
+        var beta = new BetaModule { ShutdownLog = log };
+        var loader = new ModuleLoader([failing, beta]);
+
+        var services = new ServiceCollection();
+        services.AddSingleton<IConfiguration>(new ConfigurationBuilder().Build());
+        services.AddLogging();
+        services.AddSingleton(failing);
+        services.AddSingleton(beta);
+        await using var sp = services.BuildServiceProvider();
+
+        var act = () => loader.InitializeAllAsync(sp);
+        await act.Should().ThrowAsync<ModuleInitializationException>();
+
+        await loader.ShutdownAllAsync(sp);
+
+        log.Should().BeEmpty("no module finished initializing, so none may be shut down");
+    }
+
+    [Fact]
     public void DuplicateModuleType_Throws()
     {
         var act = () => new ModuleLoader([new AlphaModule(), new AlphaModule()]);
@@ -108,7 +131,7 @@ public sealed class ModuleLoaderTests
 
         public void ConfigureServices(IServiceCollection s, IConfiguration c) { }
 
-        public Task InitializeAsync(ModuleContext ctx, CancellationToken ct)
+        public virtual Task InitializeAsync(ModuleContext ctx, CancellationToken ct)
         {
             InitLog?.Add(GetType().Name);
             return Task.CompletedTask;
@@ -122,6 +145,12 @@ public sealed class ModuleLoaderTests
     }
 
     private class BetaModule : AlphaModule { }
+
+    private sealed class FailingInitModule : AlphaModule
+    {
+        public override Task InitializeAsync(ModuleContext ctx, CancellationToken ct)
+            => throw new InvalidOperationException("init failed");
+    }
 
     private sealed class ThrowingShutdownModule : AlphaModule
     {

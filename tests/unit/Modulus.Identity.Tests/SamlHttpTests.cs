@@ -90,7 +90,6 @@ public sealed class SamlHttpTests : OidcHostTestBase
         var users = scope.ServiceProvider.GetRequiredService<UserManager<ModulusUser>>();
         var pat = await users.FindByEmailAsync("pat@example.test");
         pat.Should().NotBeNull();
-        pat!.FirstName.Should().Be("Pat");
         pat.EmailConfirmed.Should().BeTrue();
         (await users.GetRolesAsync(pat)).Should().Equal("Planner");
         (await users.HasPasswordAsync(pat)).Should().BeFalse("the identity provider is the only way in");

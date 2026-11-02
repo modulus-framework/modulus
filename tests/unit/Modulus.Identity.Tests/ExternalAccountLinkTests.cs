@@ -47,7 +47,8 @@ public sealed class ExternalAccountLinkTests : IAsyncLifetime
     private ExternalAccountProvisioner<ModulusUser> Provisioner() => new(
         _scope.ServiceProvider.GetRequiredService<UserManager<ModulusUser>>(),
         _scope.ServiceProvider,
-        _scope.ServiceProvider.GetRequiredService<Microsoft.Extensions.Logging.ILogger<ExternalAccountProvisioner<ModulusUser>>>());
+        _scope.ServiceProvider.GetRequiredService<Microsoft.Extensions.Logging.ILogger<ExternalAccountProvisioner<ModulusUser>>>(),
+        new NoExternalAccountProfile<ModulusUser>());
 
     private UserManager<ModulusUser> Users => _scope.ServiceProvider.GetRequiredService<UserManager<ModulusUser>>();
 

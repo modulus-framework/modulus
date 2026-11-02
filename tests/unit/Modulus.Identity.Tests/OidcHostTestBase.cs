@@ -123,7 +123,6 @@ public abstract class OidcHostTestBase : IAsyncLifetime
             ["Identity:ValidateTokenEntries"] = "true",
             ["Identity:AllowAuthorizationCodeFlow"] = "true",
             ["Identity:AllowDeviceCodeFlow"] = "true",
-            ["Identity:ShopFloor:Enabled"] = "true",
             ["Identity:TokenExchange:Enabled"] = "true",
             ["Identity:AllowClientCredentialsFlow"] = "true",
             ["Identity:FederatedLogin:Enabled"] = "true",
@@ -154,7 +153,6 @@ public abstract class OidcHostTestBase : IAsyncLifetime
         builder.Services.AddModulusIdentityStore<ModulusIdentityDbContext>();
         builder.Services.AddSingleton<IFederatedTokenReader, FakeFederatedReader>();
         builder.Services.AddModulusFederatedLogin<ModulusUser, ModulusRole>(configuration);
-        builder.Services.AddModulusShopFloor<ModulusUser, ModulusRole>(configuration);
         builder.Services.AddModulusPasskeys<ModulusIdentityDbContext, ModulusUser>(configuration);
         builder.Services.AddControllers().AddApplicationPart(typeof(ModulusTokenController).Assembly);
         builder.Services.AddAuthentication().Services.PostConfigure<Microsoft.AspNetCore.Authentication.AuthenticationOptions>(o =>
@@ -210,7 +208,6 @@ public abstract class OidcHostTestBase : IAsyncLifetime
                 Permissions.GrantTypes.Password,
                 Permissions.GrantTypes.RefreshToken,
                 Permissions.Prefixes.GrantType + PasskeyGrant.GrantType,
-                Permissions.Prefixes.GrantType + ShopFloorGrant.GrantType,
                 Permissions.Prefixes.GrantType + FederatedLoginGrant.GrantType,
                 Permissions.Endpoints.Authorization,
                 Permissions.Endpoints.DeviceAuthorization,

@@ -48,18 +48,24 @@ public sealed class AzureBlobFileStorageTests
     }
 
     [Fact]
-    public async Task Presigned_upload_url_grants_create_write_and_add()
+    public async Task Presigned_upload_url_is_refused_because_a_sas_cannot_limit_the_size()
     {
         var storage = Create();
 
-        var url = await storage.GetPresignedUploadUrlAsync("uploads/new.png", TimeSpan.FromMinutes(5), "image/png");
+        var act = () => storage.GetPresignedUploadUrlAsync("uploads/new.png", TimeSpan.FromMinutes(5), "image/png");
 
-        url.Should().StartWith("https://devaccount.blob.core.windows.net/files/uploads/new.png?");
-        var permissions = Query(url)["sp"];
-        permissions.Should().Contain("w");
-        permissions.Should().Contain("c");
-        permissions.Should().Contain("a");
-        permissions.Should().NotContain("r");
+        (await act.Should().ThrowAsync<NotSupportedException>())
+            .WithMessage("*UploadAsync*");
+    }
+
+    [Fact]
+    public async Task Presigned_upload_post_is_refused_on_azure()
+    {
+        IFileStorage storage = Create();
+
+        var act = () => storage.GetPresignedUploadPostAsync("uploads/new.png", TimeSpan.FromMinutes(5), 1024);
+
+        await act.Should().ThrowAsync<NotSupportedException>();
     }
 
     [Fact]

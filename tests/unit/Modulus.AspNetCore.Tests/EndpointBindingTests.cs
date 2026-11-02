@@ -170,6 +170,21 @@ public sealed class EndpointBindingTests
     }
 
     [Fact]
+    public async Task A_body_method_with_no_body_binds_from_the_route_alone()
+    {
+        var ctx = NewContext();
+        var id = Guid.NewGuid();
+        ctx.Request.Method = "POST";
+        ctx.Request.RouteValues["id"] = id.ToString();
+
+        var (request, succeeded) = await EndpointDiscovery.BindRequestAsync(
+            typeof(GetOrderRequest), ctx, "POST", CancellationToken.None);
+
+        succeeded.Should().BeTrue();
+        request.Should().BeOfType<GetOrderRequest>().Subject.Id.Should().Be(id);
+    }
+
+    [Fact]
     public async Task Malformed_json_body_short_circuits_with_a_400_problem()
     {
         var ctx = NewContext();

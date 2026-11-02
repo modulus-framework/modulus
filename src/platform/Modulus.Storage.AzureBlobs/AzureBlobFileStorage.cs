@@ -40,11 +40,14 @@ public sealed class AzureBlobFileStorage(
             GetBlob(path), BlobSasPermissions.Read,
             DateTimeOffset.UtcNow.Add(expiry), ct, contentDisposition: "attachment");
 
+    /// <summary>
+    /// Not offered in the first release: a SAS upload URL cannot limit the size of the file it accepts, so the app would
+    /// have no upload cap on this path. Upload through <see cref="UploadAsync"/> (which enforces <c>Storage:MaxUploadBytes</c>).
+    /// Azure presigned uploads with a size limit follow once a design for them is approved.
+    /// </summary>
     public Task<string> GetPresignedUploadUrlAsync(string path, TimeSpan expiry, string? contentType = null, CancellationToken ct = default)
-        => GeneratePresignedAsync(
-            GetBlob(path),
-            BlobSasPermissions.Add | BlobSasPermissions.Create | BlobSasPermissions.Write,
-            DateTimeOffset.UtcNow.Add(expiry), ct);
+        => throw new NotSupportedException(
+            "Azure Blob Storage does not offer presigned uploads: a SAS upload URL cannot limit the file size. Upload through UploadAsync.");
 
     private async Task<string> GeneratePresignedAsync(
         BlobClient blob,

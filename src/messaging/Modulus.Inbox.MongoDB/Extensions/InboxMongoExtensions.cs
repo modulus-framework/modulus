@@ -2,6 +2,7 @@ namespace Modulus.Inbox.MongoDB.Extensions;
 
 using global::MongoDB.Driver;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Modulus.Inbox.Abstractions;
@@ -44,6 +45,9 @@ public static class InboxMongoExtensions
         // Without the index, two consumers can both claim the same event, so a failure to create it stops startup.
         if (!skipIndexCreation)
             services.AddHostedService<InboxIndexInitializer>();
+
+        // Housekeeping for processed documents. Idempotent: a second call adds the service once.
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, MongoInboxPurgeService>());
 
         // Registers the dispatch-time handler decorator — see
         // DecorateIntegrationEventHandlers' remarks (Modulus.Inbox) for why

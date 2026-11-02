@@ -325,8 +325,10 @@ public static class EndpointDiscovery
     {
         object? request = null;
 
-        // Body binding for POST / PUT / PATCH
-        if (IsBodyMethod(verb))
+        // Body binding for POST / PUT / PATCH. A request with no body (no Content-Type, or an empty one) binds from the route and query only:
+        // ReadFromJsonAsync refuses a missing Content-Type with an InvalidOperationException, which is not a client error.
+        var hasBody = ctx.Request.ContentLength is > 0 || (ctx.Request.ContentLength is null && ctx.Request.ContentType is not null);
+        if (IsBodyMethod(verb) && hasBody)
         {
             try
             {

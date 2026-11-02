@@ -128,7 +128,6 @@ const sidebars: SidebarsConfig = {
       ],
     },
     'deployment',
-    'samples',
   ],
   cliSidebar: [
     'cli/index',

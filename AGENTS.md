@@ -156,12 +156,13 @@ mirroring the structure of the garments-erp modules.
 
 | Command | Description |
 |---------|-------------|
-| `modulus app <name>` | Creates a solution: `src/API/{App}.Api` host + `src/Shared/{App}.Shared.*` kernel (4 projects) + example `Catalog` module (5 projects) + top-level tests. `--migration-engine dbsh` uses SQL-first migrations. `--kind api\|web` picks the **app kind** (see below). `--multi-tenancy` (with `--kind api --auth openiddict`) makes companies tenants: membership-checked resolution, a tenant store module, tenant-owned entities, isolation tests (see *Security model*). |
+| `modulus app <name>` | Creates a solution: `src/API/{App}.Api` host + `src/Shared/{App}.Shared.*` kernel (4 projects) + optional example `Catalog` module (`--with-example`, 5 projects; off by default) + top-level tests. `--migration-engine dbsh` uses SQL-first migrations. `--kind api\|web` picks the **app kind** (see below). `--multi-tenancy` (with `--kind api --auth openiddict`) makes companies tenants: membership-checked resolution, a tenant store module, tenant-owned entities, isolation tests (see *Security model*). |
 | `modulus add-bff <client>` | Adds a `web`, `mobile` or `partner` BFF host (`src/Bff/{App}.Bff.{Client}`) to an existing app; `modulus app --bff web,mobile,partner [--services catalog=...]` generates them up front. See *BFF (per client)*. |
 | `modulus generate-bff-endpoint <Name>` | Scaffolds an aggregate endpoint in a BFF (`--bff`, `--modules`, `--route`) composing the modules' typed clients. |
 | `modulus generate-grpc <Entity>` | Exposes an entity's CRUD commands/queries over gRPC: `.proto` + service in the module's Presentation layer, API host wiring, a test class; `--bff mobile\|all` adds the contract to BFFs as a client. See *gRPC*. |
 | `modulus generate-graphql <Entity>` | Exposes an entity's CRUD commands/queries over GraphQL: graph type + contributor in the module's Presentation layer, API host wiring (`AddModulusGraphQL`/`MapModulusGraphQL`, `GraphQL` settings), a test class; `--bff mobile\|all` routes `/graphql` through BFFs. See *GraphQL*. |
 | `modulus add-webhooks [--events a,b]` | Adds outgoing webhooks: the `{App}.Modules.Webhooks.Infrastructure` store module, API host wiring (one `AddEvent` per `[IntegrationEventName]` event, Admin grant, `MapModulusWebhooks`), settings and a test class. Re-run to add new events. See *Webhooks*. |
+| `modulus add-tenant-lifecycle` | Adds the tenant data lifecycle to a multi-tenant API app: the `{App}.Modules.TenantLifecycle.Infrastructure` store module (host database for operations, legal holds, pending deletions), file storage when the host has none, `AddTenantLifecycle`, `MapModulusTenantLifecycle` (export endpoints, `tenant-data:export`), the connection string and a test class. For each module with entities it adds a `{Module}TenantDataHandler` (export, count, idempotent delete over the module's context) registered in the host, with a test that checks one company's rows. Refused without multi-tenancy. Keys are secrets: `TenantLifecycle:ExportEncryptionKey` and `TenantLifecycle:CertificateSigningKey`. See *Tenant data lifecycle*. |
 | `modulus add-audit-store` | Keeps the business audit log and the hash-chained security audit in a database: the `{App}.Modules.Audit.Infrastructure` store module (`AppAuditDbContext`, `AuditModule` with `AddModulusAuditStore`), API host wiring (`AddModulusSecurityAudit` when missing), the `Audit` connection string and a Development anchor file. Idempotent. See *Security model*. |
 | `modulus add-realtime [--events a,b] [--bff ...] [--signalr]` | Pushes integration events to connected clients: API host wiring (`AddModulusRealtime` with one `AddEvent` per event, audience = the entity's permission; `MapModulusRealtime`), settings, a test class; `--bff` relays `/realtime` as an event stream; `--signalr` turns the hub on (SSE is the default). See *Realtime*. |
 | `modulus add-ai` | Hosts the AI platform's connector (`Modulus.AI.Connector` + EF journal) in the API host: `AddModulusAiConnector`/`MapModulusAiConnector`, `Ai:Connector` settings (off until registered with the platform), test settings with a hashed test key, `AiConnectorTests` and `AiConformanceTests` (package `Modulus.AI.Connector.Testing`). Idempotent; not for `webapp`. `generate-crud <Entity> --ai` then marks the entity `[AiIndexed]`/`[AiQueryable]`, the list query `[AiCapability]`, the lookup `[AiResource]` (with `[RequirePermission]`), grants the `AiIndexer` role and writes `{Entity}AiCapabilityTests`. See *AI connector*. |
@@ -252,10 +253,10 @@ contributes its own handlers without re-registering behaviours. The generated
 `.slnx` uses flat sibling solution folders (no nesting) so that `dotnet test`
 and `dotnet sln list` discover all projects.
 
-A working example lives at `samples/TradeFlow` (API host + Users module,
-SQLite). Because the `Synvro.Modulus.*` packages aren't on nuget.org yet, the
-sample ships a `NuGet.config` pointing at the repo's local `nupkg/` feed — run
-`dotnet pack modulus.slnx -c Release` first if the feed is empty.
+A working example is generated with `modulus app --with-example` (API host +
+example module, SQLite). Generated apps restore the `Synvro.Modulus.*` packages from a
+local feed, so run `dotnet pack modulus.slnx -c Release` first and pass that folder with
+`--package-source`.
 
 Templates are embedded Scriban resources under `cli/Templates/`
 (`app/`, `shared/`, `module/{Domain,Application,Infrastructure,Presentation}/`).
@@ -640,7 +641,7 @@ history is discoverable:
   IntegrationEvents / Tests projects) was collapsed: DTOs live under
   `Application/Dtos`, integration events under `Application/IntegrationEvents`,
   and tests at the solution root. The host is `{App}.Api` (was `{App}.Host`).
-  A working `samples/TradeFlow` (API host + Users module, SQLite)
+  A working example app (API host + Users module, SQLite)
   validates the full flow: `app` → `add-module` → `generate-crud`, building and
   running end-to-end.
 - **Outbox row-locking & retries** (`OutboxProcessor`) — claims rows atomically
@@ -847,8 +848,8 @@ removed from this repository.** The UI lives in the separate `modulus-ui` reposi
   `Admin` and asserts 401/403/200, and ships `appsettings.Testing.json`. `generate-crud` scaffolds the API side only; pages come from the `modulus ui` commands.
   Covered by `AppKindTests`, `ApiPermissionTests`, `IdentityBackendTests`, `SeededClientTemplateTests`, `UiFrameworkHostTests`.
 - **Known gaps.** The Blazor, Fluid and no-engine hosts for a web app are not generated (only `mvc` and `razor-pages`); there is no generated admin CRUD page or
-  user/role admin screen yet (the older ones were removed, the data-bound replacements are planned in `modulus-ui/docs/roadmaps/CLI-IMPLEMENTATION.md`); the samples under
-  `samples/` still consume the published `Synvro.Modulus.UI.*` 1.4.0 packages.
+  user/role admin screen yet (the older ones were removed, the data-bound replacements are planned in `modulus-ui/docs/roadmaps/CLI-IMPLEMENTATION.md`); the repository no longer
+  ships samples.
 
 ## App-kind split (`webapp+api`, as-built)
 
@@ -1139,7 +1140,7 @@ isolation, hash-chained security audit, probe suite), and the provider integrati
   `IIntegrationClientDirectory` (kept in the client's OpenIddict application properties, no new table) binds a client to one company (`BindAsync`: the token's `tid` pins it, a header cannot
   select another) with an optional `ValidUntil` (no new tokens after it), and `DisableAsync` ends it now and revokes every token it holds. An unbound client gets the role but no company.
 - **ERP identity gaps** (status and open gaps: [`docs/DOCUMENTATION.md#erp-identity-gaps-plan-and-status`](docs/DOCUMENTATION.md#erp-identity-gaps-plan-and-status)). Password/lockout policy with history and expiry; shop-floor sign-in
-  (employee code + PIN, `Identity:ShopFloor`, `IShopFloorAccountService`); SoD rules as data (`/authorization/sod/rules`, `EfSodRuleStore`); composite roles
+  (kept; its create and import store no names, see [`docs/DOCUMENTATION.md#premodule-removal-2026-11-02`](docs/DOCUMENTATION.md#premodule-removal-2026-11-02)); SoD rules as data (`/authorization/sod/rules`, `EfSodRuleStore`); composite roles
   (`/authorization/roles/inclusions`, `EfRoleInclusionStore`); positions (`/authorization/positions`, `EfPositionStore`: a post grants roles to whoever holds it, with validity);
   external-party users (`/authorization/parties/*`, `EfPartyStore`): an account linked to one party (kind `buyer`/`supplier`/`subcontractor`) gets the party as its
   assignment (so `assigned:{kind}` scopes cover only that party) and keeps only the grants its kind's **ceiling** covers (denies survive; a kind with no ceiling gets nothing;
@@ -1164,7 +1165,7 @@ isolation, hash-chained security audit, probe suite), and the provider integrati
   **LDAP/AD and SAML:** `AddModulusLdap<TUser>` (`Identity:Ldap`, the password grant binds as the directory user; several directories; unknown names fall back to local passwords unless `AllowLocalFallback` is off; a directory user never falls back) and
   `AddModulusSaml<TContext,TUser>` + `MapModulusSaml()` (`Identity:Saml`, ITfoxtec, SP-initiated, pinned IdP certificates, one-shot request rows in `ModulusSamlRequests`, several providers; the Identity cookie carries `amr` `fed`). Both create accounts on first sign-in
   through one provisioner (stable id linked via `AspNetUserLogins`, seats, roles follow `GroupRoles`). Details in the plan.
-  Shop-floor bulk import: `IShopFloorAccountService.ImportAsync` (random one-time PINs, `MustChangePin` forces the operator to send `new_pin` at the first sign-in; new column).
+  Shop-floor bulk import (`IShopFloorAccountService.ImportAsync`): random one-time PINs; `MustChangePin` forces the operator to send `new_pin` at the first sign-in (the existing upgrade script adds the column).
   Not built: IdP-initiated SAML and single logout, a SAML button on the login page.
 - **Reason codes.** `AccessDecision.Code` uses `AccessReasonCodes` (BRS Appendix B); no policy for a type = `METADATA_MISSING`.
 - **Sensitivity.** `PermissionSensitivity` (Normal/Sensitive/Critical) on `PermissionDefinition`; `registry.Add(..., sensitivity)`.

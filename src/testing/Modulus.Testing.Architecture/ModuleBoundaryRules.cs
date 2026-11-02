@@ -181,8 +181,14 @@ public static class ModuleBoundaryRules
             var usedTypes = GetReferencedTypes(type);
             foreach (var usedType in usedTypes)
             {
+                // A framework context (e.g. Modulus.MultiTenancy's store) belongs to no app module,
+                // so only a context owned by another app module is a boundary violation.
+                var usedModule = ExtractModuleName(usedType);
+                if (usedModule is null)
+                    continue;
+
                 if (dbContextType.IsAssignableFrom(usedType) &&
-                    ExtractModuleName(type) != ExtractModuleName(usedType))
+                    ExtractModuleName(type) != usedModule)
                 {
                     violations.Add((type, usedType));
                 }

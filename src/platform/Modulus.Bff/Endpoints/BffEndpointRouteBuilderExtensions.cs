@@ -115,12 +115,16 @@ public static class BffEndpointRouteBuilderExtensions
 
         bff.MapPost("/logout", (HttpContext context, string? returnUrl, CancellationToken ct) => LogoutAsync(context, name, returnUrl, ct))
             .Loosen(new LoosenedAttribute("Sign-out must succeed even when the session already expired") { Framework = true });
+
+        // Impersonation runs inside the signed-in session (the group's policy applies); the code is the one-time grant the API issued.
+        bff.MapPost("/impersonation", (BffImpersonationRequest request, HttpContext context, CancellationToken ct) => StartImpersonationAsync(context, name, request, ct));
+        bff.MapPost("/impersonation/exit", (HttpContext context, CancellationToken ct) => EndImpersonationAsync(context, name, ct));
     }
 
     private static async Task<IResult> PasswordLoginAsync(HttpContext context, string name, BffLoginRequest request, CancellationToken ct)
     {
         var result = await context.RequestServices.GetRequiredService<IBffSessionService>()
-            .SignInWithPasswordAsync(context, name, request.UserName, request.Password, request.RememberMe, ct).ConfigureAwait(false);
+            .SignInWithPasswordAsync(context, name, request.UserName, request.Password, request.MfaCode, request.RememberMe, ct).ConfigureAwait(false);
         if (result.Error == BffSessionService.TemporarilyUnavailable)
             return Results.Json(new { error = result.Error, error_description = result.ErrorDescription }, statusCode: StatusCodes.Status503ServiceUnavailable);
         return result.Succeeded
@@ -137,6 +141,28 @@ public static class BffEndpointRouteBuilderExtensions
         return result.Succeeded
             ? Results.Ok(Claims(result.Principal!))
             : Results.BadRequest(new { error = result.Error, error_description = result.ErrorDescription });
+    }
+
+    private static async Task<IResult> StartImpersonationAsync(HttpContext context, string name, BffImpersonationRequest request, CancellationToken ct)
+    {
+        var result = await context.RequestServices.GetRequiredService<IBffSessionService>()
+            .StartImpersonationAsync(context, name, request.Code, ct).ConfigureAwait(false);
+        if (result.Error == BffSessionService.TemporarilyUnavailable)
+            return Results.Json(new { error = result.Error, error_description = result.ErrorDescription }, statusCode: StatusCodes.Status503ServiceUnavailable);
+        return result.Succeeded
+            ? Results.Ok(Claims(result.Principal!))
+            : Results.BadRequest(new { error = result.Error, error_description = result.ErrorDescription });
+    }
+
+    private static async Task<IResult> EndImpersonationAsync(HttpContext context, string name, CancellationToken ct)
+    {
+        var result = await context.RequestServices.GetRequiredService<IBffSessionService>()
+            .EndImpersonationAsync(context, name, ct).ConfigureAwait(false);
+        if (result is null)
+            return Results.Conflict(new { error = "not_impersonating", error_description = "This session is not impersonating anyone." });
+        return result.Succeeded
+            ? Results.Ok(Claims(result.Principal!))
+            : Results.Json(new { error = result.Error, error_description = result.ErrorDescription }, statusCode: StatusCodes.Status401Unauthorized);
     }
 
     private static async Task<IResult> LogoutAsync(HttpContext context, string name, string? returnUrl, CancellationToken ct)
@@ -162,11 +188,18 @@ public static class BffEndpointRouteBuilderExtensions
     }
 
     private static BffUserClaim[] Claims(ClaimsPrincipal user)
-        => user.Claims.Where(c => c.Type != BffDefaults.SessionIdClaim).Select(c => new BffUserClaim(c.Type, c.Value)).ToArray();
+        => user.Claims.Where(c => c.Type is not (BffDefaults.SessionIdClaim or BffDefaults.ActorSessionClaim)).Select(c => new BffUserClaim(c.Type, c.Value)).ToArray();
 }
 
 /// <summary>The body of <c>POST /bff/login</c> (password login mode).</summary>
-public sealed record BffLoginRequest(string UserName, string Password, bool RememberMe = false);
+public sealed record BffLoginRequest(string UserName, string Password, bool RememberMe = false)
+{
+    /// <summary>The authenticator or recovery code, when the account has a second factor and the first attempt asked for one.</summary>
+    public string? MfaCode { get; init; }
+}
+
+/// <summary>Body of <c>POST bff/impersonation</c>: the one-time code the API issued for the person to impersonate.</summary>
+public sealed record BffImpersonationRequest(string Code);
 
 /// <summary>Body of <c>POST bff/login/passkey</c>: the challenge id from the passkey options and the browser's assertion (its JSON text).</summary>
 public sealed record BffPasskeyLoginRequest(string ChallengeId, string Assertion, bool RememberMe = false);

@@ -1489,7 +1489,7 @@ This single fix unblocks **both** Identity's Register page (B2.1) and Users' Cre
       Identity fixtures) and the Identity unit suite (557/557, net10.0). 2026-10-25: the three identity upgrade scripts were
       run twice each against a real PostgreSQL 16, SQL Server 2022 and MySQL 8.4 database: the column is NOT NULL with
       default `{}` (MySQL: `longtext NOT NULL`, existing rows read as an empty value, which the reader treats as `{}`).
-      Not run: the generated Identity end-to-end login/register suite (needs a generated app; see the premodule plan).
+      Not run: the generated Identity end-to-end login/register suite (needs a generated app).
       The `ModulusUser.ExtraProperties` property is the one B0 change; B1 to B7 target the UI that has moved to `modulus-ui`.
 
 #### B1. Forgot Password / Reset Password pages (Identity-specific)
@@ -1500,7 +1500,7 @@ anti-enumeration behavior and an `IIdentityEmailSender` hook — confirmed by re
 **No new identity/token plumbing needed.** Only new Razor Pages UI. (This also doubles as the
 worked example/validation case for B5's new-page pattern — see below.)
 
-- [x] B1 (done in the generated web app, 2026-10-25; see the premodule plan, Round 6). The pages are in the generated `Pages/Account`: `ForgotPassword`, `ResetPassword` (served at `/ResetPassword`, the path the email link uses), and the sign-in link. The reset flow was run end to end with real SMTP.
+- [x] B1 (done in the generated web app, 2026-10-25; Round 6). The pages are in the generated `Pages/Account`: `ForgotPassword`, `ResetPassword` (served at `/ResetPassword`, the path the email link uses), and the sign-in link. The reset flow was run end to end with real SMTP.
 - [ ] B1.1. `src/ui/Modulus.UI.Identity/Pages/Account/ForgotPassword.cshtml(.cs)` +
       `ForgotPasswordConfirmation.cshtml` — mirror `ModulusAccountController.ForgotPasswordAsync`'s
       logic in-process (`UserManager.GeneratePasswordResetTokenAsync` +
@@ -1944,7 +1944,7 @@ Nothing here is committed. Do not commit unless asked.
 | # | Item | Status |
 |---|------|--------|
 | 1 | Password and lockout policy, history, expiry | Done |
-| 2 | Shop-floor sign-in (employee code + PIN, `Identity:ShopFloor`) | Done |
+| 2 | Shop-floor sign-in (employee code + PIN, `Identity:ShopFloor`) | Done; kept 2026-11-02, without names (see *Premodule removal*) |
 | 3 | SoD rules as data (`/authorization/sod/rules`, `EfSodRuleStore`) | Done |
 | 4 | Bulk import without email | Done, tested (Identity 285) |
 | 6a | Composite roles (`/authorization/roles/inclusions`, `EfRoleInclusionStore`) | Done, tested |
@@ -2071,7 +2071,7 @@ Not production-ready as a released framework. Strong foundation: explicit module
 ### Release blockers (P0)
 
 - [ ] **F-24** Generated apps pin 1.6.0 (`cli/Services/Models.cs`), which is not on nuget.org; the 1.5.0 Platform lacks types the templates use. CHANGELOG has no 1.6.0 entry. *Decision for the owner: publish 1.6.0 or pin a published version.*
-- [ ] **F-23** No shipped public-API baseline (all 47 `PublicAPI.Shipped.txt` are empty) and no `EnablePackageValidation`. *Fix:* move Unshipped to Shipped at the release commit and enable package validation against it.
+- [x] **F-23 (Medium)** *(Done 2026-11-01 for 2.0.0: the API baseline is in `PublicAPI.Shipped.txt`; `EnablePackageValidation` runs against the 1.8.2 release, and the one breaking change (`OutboxDepth`) is listed in `CompatibilitySuppressions.xml`. Move `PackageValidationBaselineVersion` to 2.0.0 after that release is published.)* No shipped public-API baseline (all 47 `PublicAPI.Shipped.txt` were empty) and no `EnablePackageValidation`. *Fix:* move Unshipped to Shipped at the release commit and enable package validation against it.
 
 ### Status after 1.7.0 (2026-10-25)
 
@@ -2083,7 +2083,7 @@ Ticked above: every finding whose fix is in code and tested. Still open, with th
   - **F-27:** the six declared meters are recorded. OpenTelemetry log export is done: `OpenTelemetry:Otlp:ExportLogs` (default true) adds OTLP and console log exporters, and only when an exporter is configured (tests: `ModulusOpenTelemetrySetupTests`, 5/5 on net8.0 and net10.0). Still open: EF Core instrumentation and `OutboxDepth` summed across replicas.
   - **P2, rate-limiter partition cap:** done. `EvictableFixedWindowLimiter` caps partitions at `MaxPartitions` (100 000) and an idle sweeper evicts the rest.
   - **F-28:** in-memory jobs retry with back-off and warn outside Development. Quartz durable store, SQLite, PostgreSQL and SQL Server: `QuartzSchema.CreateSqliteAsync` creates the 11 `QRTZ_` tables from the embedded `Schema/quartz-sqlite.sql` (idempotent; refuses a partly created database), and `UseModulusSqliteStore(connectionString)` switches the scheduler to the ADO.NET store with the System.Text.Json serializer (required by Quartz for a persistent store: job arguments are arbitrary objects). Tests in `QuartzSqliteStoreTests` (4): schema on an empty database and idempotent, partial database refused, persistent store in use, and a durable job survives a restart; 11/11 on net8.0 and net10.0. PostgreSQL: `QuartzSchema.CreatePostgresAsync` and `UseModulusPostgresStore(connectionString)` (Npgsql, same JSON serializer), tested against a real PostgreSQL 17 container in `tests/integration/Modulus.BackgroundJobs.Quartz.Integration.Tests` (3 tests: schema, persistent store in use, durable job across a restart; 3/3 on net8.0 and net10.0 with the Podman socket). A Production host that runs the in-memory store logs a warning at startup (the hosted service reads `quartz.jobStore.type`; it warns, it does not refuse, so existing apps keep booting). SQL Server: `QuartzSchema.CreateSqlServerAsync` and `UseModulusSqlServerStore(connectionString)`, tested against SQL Server 2022 (`mcr.microsoft.com/mssql/server:2022-latest`) in the same integration project (3/3 on net8.0 and net10.0). The application must load `Microsoft.Data.SqlClient`, which EF Core's SQL Server provider does. Clustering: `clustered: true` on `UseModulusPostgresStore` and `UseModulusSqlServerStore` calls `UseClustering()`. Verified on PostgreSQL that a clustered node checks in to `QRTZ_SCHEDULER_STATE` (1 row) and a non-clustered one does not (0 rows). Several nodes at once: `QuartzClusterProcessTests` starts two clustered node processes (`tests/integration/Modulus.BackgroundJobs.Quartz.ClusterNode`, a console app) against one PostgreSQL schema and schedules 20 one-shot jobs. Each job fires exactly once, and both nodes take part (9 and 11 jobs in two runs). An in-process two-node test is not valid: Quartz keeps one scheduler per name per process (both providers returned the same instance).
-  - **F-02:** outbox dispatch is per-tenant. Webhook delivery needs no fan-out: `ModulusWebhooksDbContext` is a host-level store by design (no tenant filter, one database serves every tenant, `WebhookDeliveryProcessor`). Still open: the inbox purge, which is not built yet (no purge code exists in `Modulus.Inbox`). A per-tenant webhook store would be a new design decision.
+  - **F-02:** outbox dispatch is per-tenant. Webhook delivery needs no fan-out: `ModulusWebhooksDbContext` is a host-level store by design (no tenant filter, one database serves every tenant, `WebhookDeliveryProcessor`). Inbox purge, EF Core: built (2026-10-30). `InboxPurge` deletes `Processed` rows older than `InboxOptions.ProcessedRetentionDays` (default 30; zero keeps them) in batches of 1000, never touching pending, processing or failed rows; the host pass covers every inbox context, and a per-tenant context is purged in each active tenant. `InboxPurgeService` runs it every `PurgeIntervalMinutes` (default 60) and is registered once by `AddInbox`. Tests: `InboxPurgeTests` (3, including a 2,250-row batch) on SQLite; `Modulus.Inbox.Tests` 24/24 on net8.0 and net10.0. MongoDB inbox: built (2026-10-30). `MongoInboxPurgeService` (registered by `AddMongoInbox`) deletes processed documents past `ProcessedRetentionDays` in batches of 1000, on the same options and interval. Tests: `MongoInboxPurgeTests` (3, Testcontainers `mongo:7.0`, 4 min on Podman) pass on net8.0 and net10.0. A per-tenant webhook store would be a new design decision.
   - **Build gate (2026-10-25 session):** `TenantConnectionInterceptorTests` called `Guid.CreateVersion7()`, which breaks the net8.0 build; test ids now use `Guid.NewGuid()` (test-only ids, so the `Modulus.GuidV7` polyfill is not needed). `dotnet build modulus.slnx`: 0 warnings, 0 errors.
   - **F-09:** the no-identity decision is implemented (grants via `Authorization:AdministratorRoles`), and the job path is authorized as its initiator. Nothing open.
 - **Open, not started.**
@@ -2099,7 +2099,7 @@ Ticked above: every finding whose fix is in code and tested. Still open, with th
   - Docs drift in this document and the framework docs.
   - Inbox purge and webhook delivery per tenant (see F-02).
   - Verification not run here: PostgreSQL, SQL Server, MySQL and MongoDB container tests, and the OpenBao integration test.
-  - Known flaky tests: `EvictableFixedWindowLimiterTests` (timing), `PersonalInformationMaskingTests` and `BusinessFieldTests` (order-dependent when run in parallel).
+  - Known flaky tests, status 2026-10-30: `EvictableFixedWindowLimiterTests` passed 3/3 and `PersonalInformationMaskingTests` passed in 2 full `Modulus.AI.Connector.Tests` runs, so neither was reproduced; `BusinessFieldTests` does not exist in the repository any more. Keep watching in CI before closing the item.
 
 ### Tenant isolation and data integrity
 
@@ -2120,7 +2120,7 @@ Ticked above: every finding whose fix is in code and tested. Still open, with th
 - [x] **F-08 (Medium)** No migration lock on net8 (EF 8 providers have no `AcquireDatabaseLockAsync`), and `DatabaseStartup.sbn:32-38` migrates on every replica. *Fix:* advisory lock around migrate and seed on net8; template migrates on startup only when `Database:MigrateOnStartup` is set; document a migrator job.
 - [x] **F-19 (Medium, verify)** `ApplyQueryFilters` (`ModuleDbContext.cs:398-410`) sets filters on derived TPH/TPT types, which EF rejects. *Test:* inheritance model builds.
 - [x] **F-20 (Medium, verify)** Soft delete converts to `Modified` (`:539`) and leaves cascaded dependents in `Deleted`, which are then hard-deleted. *Test:* dependent survives a soft delete.
-- [ ] **F-30 (High, missing capability)** No tenant export, offboarding, deletion certificate or retention job (AGENTS.md confirms not built). *Fix:* optional package, not core.
+- [ ] **F-30 (High, missing capability)** *(2026-11-02: foundation built as the optional packages `Modulus.Tenancy.Lifecycle` and `Modulus.Tenancy.Lifecycle.EntityFrameworkCore`. Built: a central `TenantDataRegistry` (dataset categories Owned, Retained, Audit, Global, retention classes, validation); module-owned `ITenantDataHandler` and `ITenantOffboardingStep`, run inside the company's tenant context (no generic SQL deletion); `ITenantLifecycleProvider`; encrypted export archive (ZIP with per-dataset JSON and CSV, attachments, a manifest with SHA-256 per entry; chunked AES-256-GCM, every chunk authenticated, a damaged archive writes nothing); download for the company's own administrators behind `tenant-data:export`, expiry after seven days; offboarding (suspend, integrations, optional export, legal hold check, deletion, certificate), resumable step by step; legal holds that stop deletion and override export expiry; retention sweep with receipts; HMAC-signed deletion certificate with per-dataset outcomes and backup expiry; EF Core store in the host database, outside company data. Tests: 43 lifecycle (net8.0 and net10.0), 6 EF store (SQLite). Not done: no module declares handlers in this repository, so the generated apps have no tenant-data handlers yet; retention runs on the lifecycle's worker by default, or on the platform scheduler (Quartz) with `TenantLifecycle:RetentionDriver = Scheduler` (the Quartz path is registered and unit-tested with a recording scheduler, not run against a Quartz store); export archives go through `UploadAsync`, so `Storage:MaxUploadBytes` caps their size; no plaintext reaches disk: the archive is written through the encryption stream, and the CSV waits in a temporary file encrypted under a per-dataset in-memory key (45 lifecycle tests, net8.0 and net10.0); the decision's backup and retention periods are defaults the owner must confirm. Original note 2026-11-01: needs a design for which data each module holds per tenant before any export or deletion can be built.)* No tenant export, offboarding, deletion certificate or retention job (AGENTS.md confirms not built). *Fix:* optional package, not core.
 
 ### Authorization and data exposure
 
@@ -2135,7 +2135,7 @@ Ticked above: every finding whose fix is in code and tested. Still open, with th
 - [x] **F-13 (Medium)** `/extract` and `/changes` take the app instance from a query parameter (`AiIndexer.cs:29`), so one API key reads every mapped company. *Fix:* bind API keys to instances.
 - [x] **F-14 (Medium)** `FieldAuthorizer.SettablePropertiesOf` ignores get-only properties, so classified constructor-set fields are not masked, and `FieldOutputGuard` misses them. *Fix:* mask via rebuilt records or refuse unmaskable classified properties at startup.
 - [x] **F-15 (Medium, risk)** Field security is opt-in and keyed on DTO attributes; entity classification does not reach the DTO. *Fix:* analyzer or startup check.
-- [ ] **F-16 (Medium)** S3 and Azure presigned GETs set no `Content-Disposition` or content type; Azure upload SAS ignores content type; no upload size policy (`S3FileStorage.cs:57-86`, `AzureBlobFileStorage.cs:124-133`). *Fix:* `attachment` by default, inline allow-list, size policy.
+- [x] **F-16 (Medium)** *(2026-11-02: done for the first release. `IFileStorage.GetPresignedUploadPostAsync` issues an AWS SigV4 presigned POST with a `content-length-range` condition (S3, `S3FileStorage`), with the exact key, content type and expiry (at most seven days) signed in. S3 enforces the size: the MinIO integration tests (`Modulus.Storage.S3.Integration.Tests`, 6/6 against `cgr.dev/chainguard/minio`) show a file over the limit refused with 400, a policy edited to allow more refused with 403, a changed key, and an expired policy all refused. Azure Blob presigned uploads are refused (`NotSupportedException`) until a size-limited design is approved; uploads go through `UploadAsync`. `SizeLimitedFileStorage` keeps the app's cap as a ceiling. Not verified against other S3-compatible providers (Wasabi, Backblaze B2, Cloudflare R2, AWS): each needs its own run before it is listed as supported. The old S3 presigned PUT remains, uncapped, and is documented as such.)* S3 and Azure presigned GETs set no `Content-Disposition` or content type; Azure upload SAS ignores content type; no upload size policy (`S3FileStorage.cs:57-86`, `AzureBlobFileStorage.cs:124-133`). *Fix:* `attachment` by default, inline allow-list, size policy.
 - [x] **F-17 (Low)** No CSP default (`SecurityHeadersOptions.cs:20`); MVC has no global antiforgery (`UiSetup.Web.sbn:20`); GET logout (`LogoutModel.Web.sbn:14`, `AccountEndpoints.Blazor.sbn`); `IdentityApiProxy` accepts a missing `Sec-Fetch-Site`; wildcard origin with credentials allowed (`CorsExtensions.cs:47-58`).
 - [x] **F-18 (Low)** Outbox dispatchers call `Type.GetType` and deserialize before the `IIntegrationEvent` check (`InProcessOutboxDispatcher.cs:19-32`, `MongoOutboxDispatcher.cs:23`, `RebusModuleBus.cs:67`). *Fix:* check the type first.
 
@@ -2143,11 +2143,11 @@ Ticked above: every finding whose fix is in code and tested. Still open, with th
 
 - [x] **F-28 (High, missing capability)** Default jobs are in-memory and never retried (`ChannelJobQueue`); Quartz uses the in-memory store and throws `JobExecutionException` without retry (`QuartzJobAdapter.cs:86-87`, `QuartzExtensions.cs:30`). *Fix:* Quartz ADO store option, retry/back-off policy, production warning or refusal.
 - [x] **F-22 (Medium)** `AssemblyVersion` and `FileVersion` use `$(VersionPrefix).0`, ignoring the tag's `-p:Version` (`build/Modulus.Packaging.props`). A `v1.6.1` tag ships `1.6.0.0` assemblies.
-- [ ] **F-25 (Medium)** NuGet push uses `NUGET_API_KEY` (`release.yml:33-38`); no package signing, SBOM or provenance; no `permissions:` blocks; Dependabot does not cover GitHub Actions.
-- [ ] **F-26 (Medium)** About 1,500 `samples/` files are deleted in the working tree and uncommitted, while `tradeflow-sample.yml` still targets `samples/TradeFlow`. *Fix:* delete or retarget the workflow in the same commit as the sample decision. No committed working example app.
-- [ ] **F-27 (Medium)** Declared but never recorded (`src/core/Modulus.Core/ModulusMeters.cs`): `OutboxDispatchLag`, `CacheHits`, `AuthorizationDenied`, `JobsQueueDepth`, `InboxDeadLettered`, `UnresolvedTenant`. No OTel log export (`ModulusOpenTelemetrySetup.cs:52-78`); `OutboxDepth` is summed across replicas.
+- [ ] **F-25 (Medium)** *(Verified 2026-10-31: trusted publishing, SBOM, provenance, `permissions:` blocks and Dependabot for Actions are in place. 2026-11-02: `release.yml` now signs every package with `dotnet nuget sign` from a base64 PFX in CI secrets (`NUGET_SIGNING_PFX_BASE64`, `NUGET_SIGNING_PFX_PASSWORD`, optional `NUGET_TIMESTAMP_URL`), refuses to run without them, verifies the signatures before publishing (`dotnet nuget verify --all`), creates provenance after signing, and runs `build/verify-published-packages.sh` after the push. Local check with a throwaway self-signed certificate: signed packages pass the signing step, unsigned and self-signed ones fail verification (exit 1). Still open: end-to-end signing with the commercial code-signing certificate, which the owner must obtain; the first release that signs has not run.)* NuGet push uses `NUGET_API_KEY` (`release.yml:33-38`); no package signing, SBOM or provenance; no `permissions:` blocks; Dependabot does not cover GitHub Actions.
+- [x] **F-26 (Medium)** *(Verified 2026-10-31: `samples/TradeFlow` is committed and clean, the workflow target exists.)* About 1,500 `samples/` files are deleted in the working tree and uncommitted, while `tradeflow-sample.yml` still targets `samples/TradeFlow`. *Fix:* delete or retarget the workflow in the same commit as the sample decision. No committed working example app.
+- [x] **F-27 (Medium)** *(Done 2026-11-01: meters recorded, OTLP log export, EF Core command telemetry via `DatabaseTelemetryInterceptor`, `OutboxDepth` is an absolute gauge to aggregate with `max`.)* Declared but never recorded (`src/core/Modulus.Core/ModulusMeters.cs`): `OutboxDispatchLag`, `CacheHits`, `AuthorizationDenied`, `JobsQueueDepth`, `InboxDeadLettered`, `UnresolvedTenant`. No OTel log export (`ModulusOpenTelemetrySetup.cs:52-78`); `OutboxDepth` is summed across replicas.
 - [x] **F-21 (Medium)** Module boundaries are not enforced in generated apps: `AppTests.sbn:486-548` omits `FindCrossModuleDomainTypeUsage` and `FindCrossModuleDbContextUsage`; `ModuleBoundaryRules.GetReferencedTypes` (`:215-247`) misses generic arguments and value types.
-- [ ] **F-29 (Low/Medium)** Notifications (only in-app and Identity email), localization store (memory only), no time-zone or money primitive; `ModuleLoader.cs:132` runs shutdown for modules that never initialized after a failed first init.
+- [x] **F-29 (Low/Medium)** *(2026-11-02: done for the first release, except SMS and push, which are deferred by decision. Added: `Modulus.Core.Time.ZoneTime` (IANA zone ids; conversion; start and exclusive end of a local day with daylight-saving edges handled; unknown zones refused), `Money.Format(culture)` (the currency's own symbol only when it is the culture's, else the ISO code; ISO 4217 minor units), `Money.Allocate` (exact split in minor units, no cent lost), tests in `ZoneTimeTests` and `MoneyTests` (31/31 on net10.0). Notification channel abstractions stay extensible. 2026-11-01 notes follow.)* 2026-11-01: done: `ModuleLoader` shutdown after a failed first init (tested); `Modulus.Core.Money.Money` (exact decimal, one ISO 4217 currency, currency-mismatch refusal); `Modulus.Localization.EntityFrameworkCore` (database-backed translations). Open: time-zone primitive; notification channels beyond in-app and identity email (SMS, push, webhooks for people); money formatting per culture.)* Notifications (only in-app and Identity email), localization store (memory only), no time-zone or money primitive; `ModuleLoader.cs:132` runs shutdown for modules that never initialized after a failed first init.
 
 ### Verification gates for this audit
 
@@ -6350,3 +6350,28 @@ Tests: `NavigationTests` (visibility and order, groups, overrides, write checks,
 - Integration, on net8.0 and net10.0: `Modulus.Secrets.OpenBao.Integration.Tests` (6, Docker).
 - `dotnet format --verify-no-changes` is clean for every project touched.
 - Full `dotnet build modulus.slnx` (0 warnings, 0 errors) and the full `Category=Unit` run (73 test assemblies, 0 failures) pass as of 2026-10-23. `Modulus.Secrets.OpenBao.Integration.Tests` passes (6/6 on net8.0 and net10.0) against a real OpenBao container under podman.
+
+## Premodule removal (2026-11-02)
+
+The framework no longer ships the premodule layer: the administration APIs and screens built on the engines (user and role
+administration, the permission catalog, company administration, the company switcher and branch picker, the company audit summary,
+the security and business audit viewers, the profile, and the settings administration). Applications own these screens. The framework
+keeps the engines: identity accounts, roles and grants, tenants and memberships, settings, and the audit logs.
+
+The profile fields (names, language, time zone, work e-mail, job details, photo) left the base `ModulusUser`. An application adds those
+columns on its own subclass.
+
+The shop-floor sign-in is kept. It takes an employee code and PIN, and it no longer stores names: a name is the application's data, so an
+import or a create sets only the code, the PIN and the roles. Existing deployments that enable it run
+`docs/upgrades/identity-shopfloor-2026-10.{sqlserver,postgresql,mysql}.sql` once: it adds the employee-code, PIN-hash and forced-change
+columns and the employee-code index, and it refuses to run while a company has duplicate codes.
+The scripts were run against PostgreSQL 17, MySQL 8.4 and SQL Server 2022: a fresh install, a rerun, and a refusal on duplicate codes
+(nothing changed). MySQL cannot add a column only when it is missing and its DDL is not transactional, so a rerun needs the statements
+that already succeeded removed first; its header says so.
+
+Consequences for upgraders:
+
+- Public API: the removed types are recorded as `*REMOVED*` entries in the `PublicAPI.Unshipped.txt` of each project. Package
+  validation reports them as breaking against 1.8.2; they are listed in the affected projects' `CompatibilitySuppressions.xml`.
+- Generated apps no longer get the profile, company-admin, branch or audit-viewer pages, and `modulus app` no longer registers
+  `DefaultCompanyMiddleware`.

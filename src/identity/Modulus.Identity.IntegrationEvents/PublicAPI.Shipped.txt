@@ -1,0 +1,18 @@
+#nullable enable
+Modulus.Identity.IntegrationEvents.IdentityArea
+Modulus.Identity.IntegrationEvents.IdentityArea.IdentityArea() -> void
+Modulus.Identity.IntegrationEvents.PasswordChangedIntegrationEvent
+Modulus.Identity.IntegrationEvents.PasswordChangedIntegrationEvent.ChangedAt.get -> System.DateTimeOffset
+Modulus.Identity.IntegrationEvents.PasswordChangedIntegrationEvent.ChangedAt.init -> void
+Modulus.Identity.IntegrationEvents.PasswordChangedIntegrationEvent.Deconstruct(out System.Guid UserId, out System.DateTimeOffset ChangedAt) -> void
+Modulus.Identity.IntegrationEvents.PasswordChangedIntegrationEvent.Equals(Modulus.Identity.IntegrationEvents.PasswordChangedIntegrationEvent? other) -> bool
+Modulus.Identity.IntegrationEvents.PasswordChangedIntegrationEvent.PasswordChangedIntegrationEvent(System.Guid UserId, System.DateTimeOffset ChangedAt) -> void
+Modulus.Identity.IntegrationEvents.PasswordChangedIntegrationEvent.UserId.get -> System.Guid
+Modulus.Identity.IntegrationEvents.PasswordChangedIntegrationEvent.UserId.init -> void
+override Modulus.Identity.IntegrationEvents.PasswordChangedIntegrationEvent.<Clone>$() -> Modulus.Identity.IntegrationEvents.PasswordChangedIntegrationEvent!
+override Modulus.Identity.IntegrationEvents.PasswordChangedIntegrationEvent.Equals(object? obj) -> bool
+override Modulus.Identity.IntegrationEvents.PasswordChangedIntegrationEvent.GetHashCode() -> int
+override Modulus.Identity.IntegrationEvents.PasswordChangedIntegrationEvent.ToString() -> string!
+override sealed Modulus.Identity.IntegrationEvents.PasswordChangedIntegrationEvent.Equals(Modulus.Events.Abstractions.IntegrationEventBase? other) -> bool
+static Modulus.Identity.IntegrationEvents.PasswordChangedIntegrationEvent.operator !=(Modulus.Identity.IntegrationEvents.PasswordChangedIntegrationEvent? left, Modulus.Identity.IntegrationEvents.PasswordChangedIntegrationEvent? right) -> bool
+static Modulus.Identity.IntegrationEvents.PasswordChangedIntegrationEvent.operator ==(Modulus.Identity.IntegrationEvents.PasswordChangedIntegrationEvent? left, Modulus.Identity.IntegrationEvents.PasswordChangedIntegrationEvent? right) -> bool

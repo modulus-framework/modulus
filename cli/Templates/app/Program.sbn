@@ -8,7 +8,7 @@ using {{ root_namespace }}.Api.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// The API host composes one setup file per concern (garments-erp's API layout). This file only composes them, in the order
+// The API host composes one setup file per concern (the layout of a modular-monolith API host). This file only composes them, in the order
 // the pipeline depends on. Optional features (webhooks, realtime, GraphQL, gRPC, AI, audit store, ...) are added by the
 // modulus CLI to Configuration/FeatureServicesSetup.cs and Endpoints/FeatureEndpoints.cs.
 {{ if auth == "openiddict" }}// The token server first: the Identity module (registered by AddApiModules) replaces the deny-everything password validator it installs.

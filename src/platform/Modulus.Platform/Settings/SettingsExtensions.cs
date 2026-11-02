@@ -17,7 +17,14 @@ public static class SettingsExtensions
     {
         services.TryAddSingleton(TimeProvider.System);
         services.AddOptions<ModulusSettingsOptions>();
-        services.TryAddSingleton<ISettingDefinitionRegistry, SettingDefinitionRegistry>();
+        services.TryAddSingleton<ISettingDefinitionRegistry>(provider =>
+        {
+            // Contributors run once, when the registry is first resolved, in registration order.
+            var registry = new SettingDefinitionRegistry();
+            foreach (var contributor in provider.GetServices<ISettingDefinitionContributor>())
+                contributor.Contribute(registry);
+            return registry;
+        });
         services.TryAddSingleton<ISettingStore, InMemorySettingStore>();
         services.TryAddSingleton<SettingCacheVersion>();
         services.TryAddScoped<ISettingManager, SettingManager>();
@@ -27,6 +34,17 @@ public static class SettingsExtensions
         // registers the setting system without passing its configuration still honours the pins.
         services.AddOptions<ModulusSettingsOptions>()
             .Configure<IServiceProvider>((options, provider) => provider.GetService<IConfiguration>()?.GetSection("Settings").Bind(options));
+        return services;
+    }
+
+    /// <summary>
+    /// Registers the application identity, branding and regional setting definitions (<see cref="ApplicationSettingsCatalog"/>).
+    /// Call after <see cref="AddModulusSettings(IServiceCollection)"/>.
+    /// </summary>
+    public static IServiceCollection AddModulusApplicationSettings(this IServiceCollection services)
+    {
+        services.AddModulusSettings();
+        services.AddSingleton<ISettingDefinitionContributor, ApplicationSettingsCatalog>();
         return services;
     }
 

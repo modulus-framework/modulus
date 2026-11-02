@@ -356,10 +356,6 @@ public sealed class WebToApiLoginTests
 
         var signedIn = await SubmitLoginAsync(client, AdminEmail, AdminPassword);
         Assert.Equal(HttpStatusCode.Redirect, signedIn.StatusCode);
-{{ if multi_tenancy }}
-        // Writes act in one company: the person picks it on the company page first, as they would in the browser.
-        await ChooseFirstCompanyAsync(client);
-{{ end }}
         var name = $"Round trip {Guid.NewGuid():N}";
         var created = await PostFormAsync(client, "/{{ example_route }}/new", new Dictionary<string, string> { ["Input.Name"] = name });
         var createdBody = await created.Content.ReadAsStringAsync();
@@ -367,28 +363,7 @@ public sealed class WebToApiLoginTests
 
         var list = await client.GetStringAsync("/{{ example_route }}");
         Assert.Contains(name, list);
-{{ if multi_tenancy }}
-        // The branch picker (decision 14): a branch of the company is listed, chosen, and a branch outside the caller's scope is refused.
-        var branchId = await CreateBranchAsync(api);
-        Assert.Contains(branchId.ToString("D"), await client.GetStringAsync("/Branch"));
 
-        var chosen = await PostFormAsync(client, "/Branch?handler=Switch", new Dictionary<string, string> { ["branchId"] = branchId.ToString("D") });
-        Assert.Equal(HttpStatusCode.Redirect, chosen.StatusCode);
-        Assert.Contains(branchId.ToString("D"), string.Join(";", chosen.Headers.GetValues("Set-Cookie")));
-        Assert.Contains("Branch selected.", await client.GetStringAsync("/Branch"));
-
-        var outOfScope = await PostFormAsync(client, "/Branch?handler=Switch", new Dictionary<string, string> { ["branchId"] = Guid.NewGuid().ToString("D") });
-        Assert.Equal(HttpStatusCode.Redirect, outOfScope.StatusCode);
-        Assert.Contains("That branch is not available to you.", await client.GetStringAsync("/Branch"));
-{{ end }}
-
-        // The admin pages run their API calls through the same session. A client that is not registered fails only when its page runs, so
-        // every page is opened here.
-        foreach (var path in new[] { "/Admin/Users", "/Admin/Roles", "/Admin/Audit", "/Admin/BusinessAudit", "/Admin/CompanyAudit", "/Admin/Settings"{{ if multi_tenancy }}, "/Admin/Companies", "/Company", "/Branch"{{ end }} })
-        {
-            using var page = await client.GetAsync(path);
-            Assert.True(page.StatusCode == HttpStatusCode.OK, $"{path} answered {page.StatusCode}");
-        }
     }
 
 {{ end }}    [Fact]
@@ -407,25 +382,7 @@ public sealed class WebToApiLoginTests
         Assert.Contains("not available", await response.Content.ReadAsStringAsync());
     }
 
-{{ if multi_tenancy }}    // A branch of the default company, made the way the organization admin API makes one: a unit in the hierarchy, with its profile.
-    private static async Task<Guid> CreateBranchAsync(Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory<ApiEntryPoint> api)
-    {
-        await using var scope = api.Services.CreateAsyncScope();
-        var company = await scope.ServiceProvider.GetRequiredService<Modulus.MultiTenancy.ITenantStore>()
-            .FindBySlugAsync("default", CancellationToken.None)
-            ?? throw new InvalidOperationException("The default company is not seeded.");
-        using var inCompany = scope.ServiceProvider.GetRequiredService<Modulus.Core.Abstractions.ICurrentTenant>().Change(company);
-
-        var branchId = Guid.NewGuid();
-        await scope.ServiceProvider.GetRequiredService<Modulus.Authorization.EntityFrameworkCore.IOrgUnitAdministration>()
-            .AddUnitAsync(branchId, [], CancellationToken.None);
-        await scope.ServiceProvider.GetRequiredService<Modulus.Authorization.EntityFrameworkCore.EfOrganizationProfileStore>().SaveUnitAsync(
-            new Modulus.Authorization.EntityFrameworkCore.OrgUnitProfile(branchId, "BR-1", "Main branch", "branch", false, null, null),
-            DateTimeOffset.UtcNow, CancellationToken.None);
-        return branchId;
-    }
-
-{{ end }}    private static async Task<HttpResponseMessage> PostFormAsync(HttpClient client, string path, Dictionary<string, string> fields)
+    private static async Task<HttpResponseMessage> PostFormAsync(HttpClient client, string path, Dictionary<string, string> fields)
     {
         // Razor Pages forms carry an anti-forgery token: read it from the page the form is on, then post it back.
         var page = await client.GetStringAsync(path);
@@ -434,23 +391,6 @@ public sealed class WebToApiLoginTests
         fields["__RequestVerificationToken"] = token;
         return await client.PostAsync(path, new FormUrlEncodedContent(fields));
     }
-{{ if multi_tenancy }}
-    private static async Task ChooseFirstCompanyAsync(HttpClient client)
-    {
-        // The company page lists the companies the person belongs to; each row posts its id back to the Switch handler.
-        var page = await client.GetStringAsync("/company");
-        var companyId = System.Text.RegularExpressions.Regex.Match(page, "name=\"companyId\" value=\"([^\"]+)\"").Groups[1].Value;
-        Assert.NotEmpty(companyId);
-        var token = System.Text.RegularExpressions.Regex
-            .Match(page, "name=\"__RequestVerificationToken\"[^>]*value=\"([^\"]+)\"").Groups[1].Value;
-        var switched = await client.PostAsync("/company?handler=Switch", new FormUrlEncodedContent(new Dictionary<string, string>
-        {
-            ["companyId"] = companyId,
-            ["__RequestVerificationToken"] = token,
-        }));
-        Assert.Equal(HttpStatusCode.Redirect, switched.StatusCode);
-    }
-{{ end }}
 
     // Sends the proxy's requests to a TestServer handler (the paired API).
     private sealed class PairedForwarderFactory(HttpMessageHandler handler) : Yarp.ReverseProxy.Forwarder.IForwarderHttpClientFactory

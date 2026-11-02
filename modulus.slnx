@@ -39,12 +39,19 @@
   <!-- ── Identity ────────────────────────────────────────────────── -->
   <Folder Name="/src/identity/">
     <Project Path="src/identity/Modulus.Identity/Modulus.Identity.csproj" />
+    <Project Path="src/identity/Modulus.Identity.IntegrationEvents/Modulus.Identity.IntegrationEvents.csproj" />
   </Folder>
   <!-- ── Platform ────────────────────────────────────────────────── -->
   <Folder Name="/src/platform/">
     <Project Path="src/platform/Modulus.Platform/Modulus.Platform.csproj" />
     <Project Path="src/platform/Modulus.Secrets.OpenBao/Modulus.Secrets.OpenBao.csproj" />
     <Project Path="src/platform/Modulus.BackgroundJobs.Quartz/Modulus.BackgroundJobs.Quartz.csproj" />
+    <Project Path="src/platform/Modulus.Media/Modulus.Media.csproj" />
+    <Project Path="src/platform/Modulus.Media.EntityFrameworkCore/Modulus.Media.EntityFrameworkCore.csproj" />
+    <Project Path="src/platform/Modulus.Notifications.EntityFrameworkCore/Modulus.Notifications.EntityFrameworkCore.csproj" />
+    <Project Path="src/platform/Modulus.Localization.EntityFrameworkCore/Modulus.Localization.EntityFrameworkCore.csproj" />
+    <Project Path="src/platform/Modulus.Tenancy.Lifecycle/Modulus.Tenancy.Lifecycle.csproj" />
+    <Project Path="src/platform/Modulus.Tenancy.Lifecycle.EntityFrameworkCore/Modulus.Tenancy.Lifecycle.EntityFrameworkCore.csproj" />
     <Project Path="src/platform/Modulus.Storage.S3/Modulus.Storage.S3.csproj" />
     <Project Path="src/platform/Modulus.Storage.AzureBlobs/Modulus.Storage.AzureBlobs.csproj" />
     <Project Path="src/platform/Modulus.Caching.Redis/Modulus.Caching.Redis.csproj" />
@@ -85,6 +92,7 @@
   <Folder Name="/tests/unit/">
     <Project Path="tests/unit/Modulus.Core.Tests/Modulus.Core.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Storage.S3.Tests/Modulus.Storage.S3.Tests.csproj" />
+    <Project Path="tests/integration/Modulus.Storage.S3.Integration.Tests/Modulus.Storage.S3.Integration.Tests.csproj" />
     <Project Path="tests/unit/Modulus.SignalR.Backplane.Tests/Modulus.SignalR.Backplane.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Outbox.Management.Tests/Modulus.Outbox.Management.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Storage.AzureBlobs.Tests/Modulus.Storage.AzureBlobs.Tests.csproj" />
@@ -111,6 +119,12 @@
     <Project Path="tests/unit/Modulus.Identity.Tests/Modulus.Identity.Tests.csproj" />
     <Project Path="tests/unit/Modulus.MultiTenancy.Tests/Modulus.MultiTenancy.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Platform.Tests/Modulus.Platform.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.Media.Tests/Modulus.Media.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.Media.EntityFrameworkCore.Tests/Modulus.Media.EntityFrameworkCore.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.Notifications.EntityFrameworkCore.Tests/Modulus.Notifications.EntityFrameworkCore.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.Localization.EntityFrameworkCore.Tests/Modulus.Localization.EntityFrameworkCore.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.Tenancy.Lifecycle.Tests/Modulus.Tenancy.Lifecycle.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.Tenancy.Lifecycle.EntityFrameworkCore.Tests/Modulus.Tenancy.Lifecycle.EntityFrameworkCore.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Secrets.OpenBao.Tests/Modulus.Secrets.OpenBao.Tests.csproj" />
     <Project Path="tests/integration/Modulus.Secrets.OpenBao.Integration.Tests/Modulus.Secrets.OpenBao.Integration.Tests.csproj" />
     <Project Path="tests/unit/Modulus.AuditLogging.EntityFrameworkCore.Tests/Modulus.AuditLogging.EntityFrameworkCore.Tests.csproj" />

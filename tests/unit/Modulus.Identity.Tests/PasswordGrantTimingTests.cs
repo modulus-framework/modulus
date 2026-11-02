@@ -133,8 +133,6 @@ public sealed class PasswordGrantTimingTests : IAsyncDisposable
             UserName = userName,
             Email = $"{userName}@example.test",
             EmailConfirmed = true,
-            FirstName = "Jane",
-            LastName = "Doe",
         };
         configure?.Invoke(user);
         (await Users.CreateAsync(user, Password)).Succeeded.Should().BeTrue();

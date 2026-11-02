@@ -2,6 +2,7 @@ namespace Modulus.Bff.Tests;
 
 using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
 using FluentAssertions;
 using Modulus.Caching;
 using Xunit;
@@ -69,6 +70,23 @@ public sealed class WebClientTests
         var login = await browser.PostJsonAsync("/bff/login", new { userName = "alice", password = "nope" });
         login.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         browser.Cookie.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task An_account_with_a_second_factor_is_asked_for_its_code_and_the_code_is_sent_as_mfa_code()
+    {
+        await using var host = await StartAsync();
+        var browser = new Browser(host.Client());
+
+        var first = await browser.PostJsonAsync("/bff/login", new { userName = "carol", password = "pw" });
+        first.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await first.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("error").GetString().Should().Be("mfa_required");
+        browser.Cookie.Should().BeNull();
+
+        var second = await browser.PostJsonAsync("/bff/login", new { userName = "carol", password = "pw", mfaCode = "123456" });
+        second.StatusCode.Should().Be(HttpStatusCode.OK);
+        host.Auth.LastTokenForm!["mfa_code"].Should().Be("123456");
+        browser.Cookie.Should().NotBeNull();
     }
 
     [Fact]

@@ -10,11 +10,8 @@ namespace Modulus.EntityFrameworkCore.ChangeHistory;
 /// Reflects over entities to find <see cref="AuditedAttribute"/> markers
 /// and captures changes to those properties as <see cref="EntityChange"/> rows.
 /// </summary>
-internal sealed class EntityChangeHistoryWriter(ICurrentTenant? currentTenant)
-    : IEntityChangeHistoryWriter
+internal sealed class EntityChangeHistoryWriter : IEntityChangeHistoryWriter
 {
-    private readonly ICurrentTenant? _currentTenant = currentTenant;
-
     public void CaptureChanges(
         DbContext context,
         IEnumerable<EntityEntry> entries,
@@ -30,7 +27,8 @@ internal sealed class EntityChangeHistoryWriter(ICurrentTenant? currentTenant)
             var entityName = entry.Entity.GetType().Name;
             var entityKey = GetEntityKey(entry);
             var auditableEntity = (IAuditableEntity)entry.Entity;
-            var tenantId = _currentTenant?.TenantId ?? Guid.Empty;
+            // The tenant the saving context's session acts for (the one row-level security checks), not the ambient accessor's.
+            var tenantId = (context as ModuleDbContext)?.TenantSession.TenantId ?? Guid.Empty;
 
             var operation = entry.State switch
             {

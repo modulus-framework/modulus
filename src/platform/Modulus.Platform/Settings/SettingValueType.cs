@@ -23,4 +23,13 @@ public enum SettingValueType
 
     /// <summary>A time span, in the invariant <c>[d.]hh:mm[:ss]</c> form.</summary>
     TimeSpan = 6,
+
+    /// <summary>An absolute <c>http</c> or <c>https</c> URL.</summary>
+    Url = 7,
+
+    /// <summary>An email address (a plain <c>local@domain</c>, no display name).</summary>
+    Email = 8,
+
+    /// <summary>A hex colour, <c>#rgb</c> or <c>#rrggbb</c>.</summary>
+    Color = 9,
 }

@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework />
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <!-- New package: nothing of this ID is on nuget.org yet, so there is no baseline to validate against. Remove this line after its first release. -->
+    <EnablePackageValidation>false</EnablePackageValidation>
+    <Description>Entity Framework Core store for the Modulus tenant data lifecycle: operations, legal holds and pending deletions kept in the host database, outside every company's data.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <ProjectReference Include="../Modulus.Tenancy.Lifecycle/Modulus.Tenancy.Lifecycle.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" />
+  </ItemGroup>
+
+</Project>

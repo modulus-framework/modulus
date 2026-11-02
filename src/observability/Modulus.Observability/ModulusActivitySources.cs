@@ -18,5 +18,6 @@ public static class ModulusActivitySources
         Events.Name,
         BackgroundJobs.Name,
         "Modulus.GraphQL", // Modulus.GraphQL's own source; named here so this package need not reference it
+        "Modulus.Database", // EF Core command spans (Modulus.EntityFrameworkCore's DatabaseTelemetryInterceptor)
     ];
 }

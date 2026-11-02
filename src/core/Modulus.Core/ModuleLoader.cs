@@ -25,6 +25,7 @@ public sealed class ModuleLoader : IModuleLoader
     private readonly IReadOnlyList<ModuleDescriptor> _descriptors;
     private readonly Dictionary<Type, IModule> _modulesByType;
     private readonly HashSet<Type> _initialized = new();
+    private volatile bool _initStarted;
 
     /// <summary>
     /// Creates a loader over the given modules. Registration order is
@@ -64,6 +65,7 @@ public sealed class ModuleLoader : IModuleLoader
         var logger = sp.GetRequiredService<ILoggerFactory>()
             .CreateLogger<ModuleLoader>();
 
+        _initStarted = true;
         logger.LogInformation("[Modulus] Initializing {Count} modules...",
             _descriptors.Count);
 
@@ -127,9 +129,10 @@ public sealed class ModuleLoader : IModuleLoader
             var descriptor = _descriptors[i];
             lock (_initialized)
             {
-                // After a failed boot only shut down modules that initialized;
-                // when init never ran, shut everything down (safe no-op path).
-                if (_initialized.Count > 0 && !_initialized.Contains(descriptor.ModuleType))
+                // Once init has started, only modules that finished it are shut down (a first module that failed
+                // leaves the set empty and must not trigger a shutdown of every module). When init never ran,
+                // shut everything down (safe no-op path).
+                if (_initStarted && !_initialized.Contains(descriptor.ModuleType))
                     continue;
             }
             var module = (IModule?)sp.GetService(descriptor.ModuleType)
