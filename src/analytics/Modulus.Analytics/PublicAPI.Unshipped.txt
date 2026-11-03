@@ -2,6 +2,8 @@
 Modulus.Analytics.AnalyticsBuilder
 Modulus.Analytics.AnalyticsBuilder.AddDataset(Modulus.Analytics.AnalyticsDatasetDescriptor! dataset) -> Modulus.Analytics.AnalyticsBuilder!
 Modulus.Analytics.AnalyticsBuilder.AddSink<TSink>() -> Modulus.Analytics.AnalyticsBuilder!
+Modulus.Analytics.AnalyticsBuilder.AddUpcaster<TUpcaster>() -> Modulus.Analytics.AnalyticsBuilder!
+Modulus.Analytics.AnalyticsBuilder.MapEvent<TEvent>(string! dataset, int version, System.Func<TEvent!, System.Collections.Generic.IReadOnlyDictionary<string!, object?>!>! map) -> Modulus.Analytics.AnalyticsBuilder!
 Modulus.Analytics.AnalyticsBuilder.Services.get -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 Modulus.Analytics.AnalyticsDatasetCatalog
 Modulus.Analytics.AnalyticsDatasetCatalog.Add(Modulus.Analytics.AnalyticsDatasetDescriptor! dataset) -> void
@@ -47,6 +49,7 @@ Modulus.Analytics.AnalyticsDispatchResult.ShouldRetry.get -> bool
 Modulus.Analytics.AnalyticsDispatcher
 Modulus.Analytics.AnalyticsDispatcher.AnalyticsDispatcher(Modulus.Analytics.IAnalyticsDatasetCatalog! catalog, System.Collections.Generic.IEnumerable<Modulus.Analytics.IAnalyticsSink!>! sinks, System.Collections.Generic.IEnumerable<Modulus.Analytics.IAnalyticsRecordUpcaster!>! upcasters, Modulus.Core.Abstractions.DataProtection.IPersonalDataProtector! protector) -> void
 Modulus.Analytics.AnalyticsDispatcher.DispatchAsync(System.Collections.Generic.IReadOnlyList<Modulus.Analytics.AnalyticsRecord!>! records, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Analytics.AnalyticsDispatchResult!>!
+Modulus.Analytics.AnalyticsDispatcher.HasSinks.get -> bool
 Modulus.Analytics.AnalyticsFieldDescriptor
 Modulus.Analytics.AnalyticsFieldDescriptor.<Clone>$() -> Modulus.Analytics.AnalyticsFieldDescriptor!
 Modulus.Analytics.AnalyticsFieldDescriptor.AnalyticsFieldDescriptor(string! Name, Modulus.Analytics.AnalyticsFieldType Type, bool IsNullable = false, Modulus.Core.Abstractions.Entities.FieldClassification Classification = Modulus.Core.Abstractions.Entities.FieldClassification.Public, Modulus.Analytics.AnalyticsMaskingAction? Masking = null) -> void
@@ -125,10 +128,13 @@ Modulus.Analytics.AnalyticsSinkOutcome.Sink.init -> void
 Modulus.Analytics.AnalyticsSinkOutcome.Succeeded.get -> bool
 Modulus.Analytics.AnalyticsSinkOutcome.Succeeded.init -> void
 Modulus.Analytics.AnalyticsUpcasting
+Modulus.Analytics.AnalyticsValueSerializer
 Modulus.Analytics.IAnalyticsDatasetCatalog
 Modulus.Analytics.IAnalyticsDatasetCatalog.All.get -> System.Collections.Generic.IReadOnlyList<Modulus.Analytics.AnalyticsDatasetDescriptor!>!
 Modulus.Analytics.IAnalyticsDatasetCatalog.Latest(string! name) -> Modulus.Analytics.AnalyticsDatasetDescriptor?
 Modulus.Analytics.IAnalyticsDatasetCatalog.TryGet(string! name, int version, out Modulus.Analytics.AnalyticsDatasetDescriptor? dataset) -> bool
+Modulus.Analytics.IAnalyticsQueue
+Modulus.Analytics.IAnalyticsQueue.EnqueueAsync(System.Collections.Generic.IReadOnlyList<Modulus.Analytics.AnalyticsRecord!>! records, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 Modulus.Analytics.IAnalyticsRecordUpcaster
 Modulus.Analytics.IAnalyticsRecordUpcaster.Dataset.get -> string!
 Modulus.Analytics.IAnalyticsRecordUpcaster.FromVersion.get -> int
@@ -137,6 +143,9 @@ Modulus.Analytics.IAnalyticsSink
 Modulus.Analytics.IAnalyticsSink.EnsureDatasetAsync(Modulus.Analytics.AnalyticsDatasetDescriptor! dataset, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 Modulus.Analytics.IAnalyticsSink.Name.get -> string!
 Modulus.Analytics.IAnalyticsSink.WriteAsync(Modulus.Analytics.AnalyticsDatasetDescriptor! dataset, System.Collections.Generic.IReadOnlyList<Modulus.Analytics.AnalyticsRecord!>! records, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+Modulus.Analytics.InlineAnalyticsQueue
+Modulus.Analytics.InlineAnalyticsQueue.EnqueueAsync(System.Collections.Generic.IReadOnlyList<Modulus.Analytics.AnalyticsRecord!>! records, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+Modulus.Analytics.InlineAnalyticsQueue.InlineAnalyticsQueue(Modulus.Analytics.AnalyticsDispatcher! dispatcher) -> void
 override Modulus.Analytics.AnalyticsDatasetDescriptor.Equals(object? obj) -> bool
 override Modulus.Analytics.AnalyticsDatasetDescriptor.GetHashCode() -> int
 override Modulus.Analytics.AnalyticsDatasetDescriptor.ToString() -> string!
@@ -172,3 +181,5 @@ static Modulus.Analytics.AnalyticsServiceCollectionExtensions.AddModulusAnalytic
 static Modulus.Analytics.AnalyticsSinkOutcome.operator !=(Modulus.Analytics.AnalyticsSinkOutcome? left, Modulus.Analytics.AnalyticsSinkOutcome? right) -> bool
 static Modulus.Analytics.AnalyticsSinkOutcome.operator ==(Modulus.Analytics.AnalyticsSinkOutcome? left, Modulus.Analytics.AnalyticsSinkOutcome? right) -> bool
 static Modulus.Analytics.AnalyticsUpcasting.UpcastTo(System.Collections.Generic.IEnumerable<Modulus.Analytics.IAnalyticsRecordUpcaster!>! upcasters, Modulus.Analytics.AnalyticsRecord! record, int targetVersion) -> Modulus.Analytics.AnalyticsRecord!
+static Modulus.Analytics.AnalyticsValueSerializer.Deserialize(Modulus.Analytics.AnalyticsDatasetDescriptor! dataset, string! json) -> System.Collections.Generic.IReadOnlyDictionary<string!, object?>!
+static Modulus.Analytics.AnalyticsValueSerializer.Serialize(Modulus.Analytics.AnalyticsDatasetDescriptor! dataset, System.Collections.Generic.IReadOnlyDictionary<string!, object?>! values) -> string!

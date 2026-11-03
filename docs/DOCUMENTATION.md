@@ -6431,10 +6431,17 @@ Iceberg Kafka Connect sink commits the table.
     the sink conformance suite (`AnalyticsSinkConformance`).
   - Still open: writing `SchemaVersion` on outbox rows and envelopes (it is carried today but never set), so captured events can be upcast.
 - [ ] Phase 2: capture, mapper, masking, delivery queue, ClickHouse sink, messaging sink
-  - Done: `AnalyticsDispatcher`, the delivery core (reject records with no tenant or dataset, upcast, mask, one batch per dataset to each sink,
-    per-sink outcomes with transient or permanent failure, at-least-once with a once-per-sink dataset setup).
-  - Still open: the event-to-record mapper and event tap, the durable queue (claim, retry, dead-letter, replay), the ClickHouse sink (needs the
-    licence gate), the messaging sink.
+  - Done (51 unit tests across `Modulus.Analytics.Tests` and `Modulus.Analytics.EntityFrameworkCore.Tests`, net8.0 and net10.0):
+    - `AnalyticsDispatcher`: reject records with no tenant or dataset, upcast, mask, one batch per dataset to each sink, per-sink outcomes.
+    - Event tap: `AnalyticsBuilder.MapEvent<TEvent>(dataset, version, map)` registers a capture handler, so modules never reference analytics.
+      The event id is the record id and the current tenant is the record's tenant.
+    - `AnalyticsValueSerializer`: typed JSON for queued values. A mapper that does not fit the contract fails at capture, not in the queue.
+    - `IAnalyticsQueue` with the inline default (failures throw, so the event pipeline retries), and the durable `Modulus.Analytics.EntityFrameworkCore`:
+      `AddModulusAnalyticsStore<TContext>`, duplicate-safe enqueue, atomic claim with lease, retry schedule, dead-lettering, purge of delivered rows.
+      Dead letters are kept. With no sink registered the worker leaves rows queued rather than counting them delivered.
+  - Known limit: a failed sink makes the whole batch retry, so every sink sees the record again. Sinks must be idempotent (the conformance suite checks it).
+    A per-sink delivery state is the fix if one slow sink holds back the rest.
+  - Still open: the ClickHouse sink (needs the licence gate), the messaging sink, management endpoints for dead letters and replay, an EF migration sample.
 - [ ] Phase 3: extraction, change journal, per-tenant backfill with checkpoints, Parquet sink
 - [ ] Phase 4: dataset permissions, plan gating, export audit, freshness, reconciliation, quality, retention and erasure, lineage
 - [ ] Phase 5: management API, CLI `add-analytics` with compose template, `analytics-admin` in `modulus-ui`

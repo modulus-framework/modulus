@@ -72,6 +72,7 @@
   <!-- ── AI ──────────────────────────────────────────────────────── -->
   <Folder Name="/src/analytics/">
     <Project Path="src/analytics/Modulus.Analytics/Modulus.Analytics.csproj" />
+    <Project Path="src/analytics/Modulus.Analytics.EntityFrameworkCore/Modulus.Analytics.EntityFrameworkCore.csproj" />
     <Project Path="src/analytics/Modulus.Analytics.Testing/Modulus.Analytics.Testing.csproj" />
   </Folder>
   <Folder Name="/src/ai/">
@@ -113,6 +114,7 @@
     <Project Path="tests/unit/Modulus.Data.MongoDB.Tests/Modulus.Data.MongoDB.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Outbox.Tests/Modulus.Outbox.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Sagas.Tests/Modulus.Sagas.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.Analytics.EntityFrameworkCore.Tests/Modulus.Analytics.EntityFrameworkCore.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Analytics.Tests/Modulus.Analytics.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Webhooks.Tests/Modulus.Webhooks.Tests.csproj" />
     <Project Path="tests/unit/Modulus.AI.Connector.Tests/Modulus.AI.Connector.Tests.csproj" />

@@ -25,6 +25,7 @@ public static class AnalyticsServiceCollectionExtensions
         }
 
         services.TryAddSingleton<AnalyticsDispatcher>();
+        services.TryAddScoped<IAnalyticsQueue, InlineAnalyticsQueue>();
         configure?.Invoke(new AnalyticsBuilder(services, catalog));
         return services;
     }

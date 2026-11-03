@@ -1,0 +1,62 @@
+#nullable enable
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDelivery
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDelivery.AnalyticsDelivery() -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDelivery.AttemptCount.get -> int
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDelivery.AttemptCount.set -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDelivery.CreatedAt.get -> System.DateTime
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDelivery.CreatedAt.init -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDelivery.Dataset.get -> string!
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDelivery.Dataset.init -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDelivery.DeadLetteredAt.get -> System.DateTime?
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDelivery.DeadLetteredAt.set -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDelivery.DeliveredAt.get -> System.DateTime?
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDelivery.DeliveredAt.set -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDelivery.EventId.get -> System.Guid
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDelivery.EventId.init -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDelivery.Id.get -> System.Guid
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDelivery.Id.init -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDelivery.LastAttemptAt.get -> System.DateTime?
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDelivery.LastAttemptAt.set -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDelivery.LastError.get -> string?
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDelivery.LastError.set -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDelivery.LockedBy.get -> string?
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDelivery.LockedBy.set -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDelivery.LockedUntil.get -> System.DateTime?
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDelivery.LockedUntil.set -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDelivery.NextAttemptAt.get -> System.DateTime?
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDelivery.NextAttemptAt.set -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDelivery.OccurredAt.get -> System.DateTime
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDelivery.OccurredAt.init -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDelivery.Payload.get -> string!
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDelivery.Payload.init -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDelivery.SchemaVersion.get -> int
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDelivery.SchemaVersion.init -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDelivery.Status.get -> Modulus.Analytics.EntityFrameworkCore.AnalyticsDeliveryStatus
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDelivery.TenantId.get -> System.Guid
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDelivery.TenantId.init -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDeliveryOptions
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDeliveryOptions.AnalyticsDeliveryOptions() -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDeliveryOptions.BatchSize.get -> int
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDeliveryOptions.BatchSize.set -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDeliveryOptions.EnableDelivery.get -> bool
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDeliveryOptions.EnableDelivery.set -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDeliveryOptions.LockDuration.get -> System.TimeSpan
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDeliveryOptions.LockDuration.set -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDeliveryOptions.PollingInterval.get -> System.TimeSpan
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDeliveryOptions.PollingInterval.set -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDeliveryOptions.PurgeDeliveredAfter.get -> System.TimeSpan
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDeliveryOptions.PurgeDeliveredAfter.set -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDeliveryOptions.RetrySchedule.get -> System.TimeSpan[]!
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDeliveryOptions.RetrySchedule.set -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDeliveryStatus
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDeliveryStatus.Delivered = 1 -> Modulus.Analytics.EntityFrameworkCore.AnalyticsDeliveryStatus
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDeliveryStatus.Failed = 2 -> Modulus.Analytics.EntityFrameworkCore.AnalyticsDeliveryStatus
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDeliveryStatus.Pending = 0 -> Modulus.Analytics.EntityFrameworkCore.AnalyticsDeliveryStatus
+Modulus.Analytics.EntityFrameworkCore.AnalyticsEntityFrameworkExtensions
+Modulus.Analytics.EntityFrameworkCore.ModulusAnalyticsDbContext
+Modulus.Analytics.EntityFrameworkCore.ModulusAnalyticsDbContext.AnalyticsDeliveries.get -> Microsoft.EntityFrameworkCore.DbSet<Modulus.Analytics.EntityFrameworkCore.AnalyticsDelivery!>!
+Modulus.Analytics.EntityFrameworkCore.ModulusAnalyticsDbContext.ModulusAnalyticsDbContext(Microsoft.EntityFrameworkCore.DbContextOptions! options) -> void
+const Modulus.Analytics.EntityFrameworkCore.AnalyticsDeliveryOptions.SectionName = "Analytics:Delivery" -> string!
+override Modulus.Analytics.EntityFrameworkCore.ModulusAnalyticsDbContext.OnModelCreating(Microsoft.EntityFrameworkCore.ModelBuilder! modelBuilder) -> void
+static Modulus.Analytics.EntityFrameworkCore.AnalyticsEntityFrameworkExtensions.AddModulusAnalyticsStore<TContext>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration, System.Action<Modulus.Analytics.EntityFrameworkCore.AnalyticsDeliveryOptions!>? configure = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.Analytics.EntityFrameworkCore.ModulusAnalyticsDbContext.ConfigureAnalytics(Microsoft.EntityFrameworkCore.ModelBuilder! modelBuilder) -> void

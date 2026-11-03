@@ -37,6 +37,9 @@ public sealed class AnalyticsDispatcher
         _protector = protector ?? throw new ArgumentNullException(nameof(protector));
     }
 
+    /// <summary>Whether any sink is registered. With none, a dispatch would drop every record, so callers with a queue should wait instead.</summary>
+    public bool HasSinks => _sinks.Count > 0;
+
     /// <summary>Validates, upgrades, masks and delivers <paramref name="records"/>.</summary>
     /// <param name="records">The records, possibly of several datasets and tenants.</param>
     /// <param name="cancellationToken">Cancels the dispatch.</param>

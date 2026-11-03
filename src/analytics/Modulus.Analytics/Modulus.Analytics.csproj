@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../../core/Modulus.Core/Modulus.Core.csproj" />
+    <ProjectReference Include="../../messaging/Modulus.Events/Modulus.Events.csproj" />
   </ItemGroup>
 
   <ItemGroup>
