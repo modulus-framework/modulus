@@ -91,7 +91,7 @@ public sealed class UiCommandFlowTests : IDisposable
         Run("ui", "add-component", "--all", "--dry-run").Should().Be(0);
         Run("ui", "add-auth", "--dry-run").Should().Be(0);
         Run("ui", "theme", "create", "ghost", "--dry-run").Should().Be(0);
-        Run("ui", "add-component", "carousel").Should().Be(1);
+        Run("ui", "add-component", "hologram").Should().Be(1);
         Run("ui", "create-dashboard", "sales").Should().Be(1);
 
         Directory.Exists(P("Views")).Should().BeFalse();

@@ -21,6 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`--no-example` is still accepted). Interactive runs are asked, with "no" as the default. Scripts that relied on the example must add `--with-example`.
 
 ### Added
+- **`modulus ui add-component` now scaffolds 70 components** (was 17): every form input, the data-display, navigation, layout and feedback
+  building blocks, and the Pro boards and builders, for MVC, Razor Pages and Blazor. See `modulus ui add-component --list`.
 - **Package validation** (`EnablePackageValidation`, baseline 1.8.2): every packed library is compared with the last published
   release, and a breaking change fails the pack unless it is listed in a `CompatibilitySuppressions.xml` with its reason.
 - **`Modulus.Core.Money.Money`**: an exact decimal amount in one ISO 4217 currency. Adding or subtracting different currencies

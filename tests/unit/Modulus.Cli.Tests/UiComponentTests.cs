@@ -24,7 +24,7 @@ public sealed class UiComponentTests
     [Fact]
     public void Unknown_components_point_at_the_list()
     {
-        var act = () => UiComponents.Find("carousel");
+        var act = () => UiComponents.Find("hologram");
         act.Should().Throw<ArgumentException>().WithMessage("*--list*");
     }
 
