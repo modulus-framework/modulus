@@ -6425,6 +6425,9 @@ Iceberg Kafka Connect sink commits the table.
 
 - [ ] Phase 0: licence gate run and recorded in `THIRD-PARTY-NOTICES.md`
 - [ ] Phase 1: dataset and field metadata, `SchemaVersion` and upcasters, JSON Schema export, `IAnalyticsSink`, conformance tests
+  - Done in `Modulus.Analytics` (15 unit tests, net8.0 and net10.0): dataset and field descriptors with validation, the versioned dataset catalog,
+    `IAnalyticsSink` and `AnalyticsSinkException`, classification-driven batch masking (keep, hash, drop), `AddModulusAnalytics`.
+  - Still open: `SchemaVersion` population and upcasters, JSON Schema export, the sink conformance suite (`Modulus.Analytics.Testing`).
 - [ ] Phase 2: capture, mapper, masking, delivery queue, ClickHouse sink, messaging sink
 - [ ] Phase 3: extraction, change journal, per-tenant backfill with checkpoints, Parquet sink
 - [ ] Phase 4: dataset permissions, plan gating, export audit, freshness, reconciliation, quality, retention and erasure, lineage

@@ -1,0 +1,109 @@
+#nullable enable
+Modulus.Analytics.AnalyticsBuilder
+Modulus.Analytics.AnalyticsBuilder.AddDataset(Modulus.Analytics.AnalyticsDatasetDescriptor! dataset) -> Modulus.Analytics.AnalyticsBuilder!
+Modulus.Analytics.AnalyticsBuilder.AddSink<TSink>() -> Modulus.Analytics.AnalyticsBuilder!
+Modulus.Analytics.AnalyticsBuilder.Services.get -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+Modulus.Analytics.AnalyticsDatasetCatalog
+Modulus.Analytics.AnalyticsDatasetCatalog.Add(Modulus.Analytics.AnalyticsDatasetDescriptor! dataset) -> void
+Modulus.Analytics.AnalyticsDatasetCatalog.All.get -> System.Collections.Generic.IReadOnlyList<Modulus.Analytics.AnalyticsDatasetDescriptor!>!
+Modulus.Analytics.AnalyticsDatasetCatalog.AnalyticsDatasetCatalog() -> void
+Modulus.Analytics.AnalyticsDatasetCatalog.Latest(string! name) -> Modulus.Analytics.AnalyticsDatasetDescriptor?
+Modulus.Analytics.AnalyticsDatasetCatalog.TryGet(string! name, int version, out Modulus.Analytics.AnalyticsDatasetDescriptor? dataset) -> bool
+Modulus.Analytics.AnalyticsDatasetDescriptor
+Modulus.Analytics.AnalyticsDatasetDescriptor.<Clone>$() -> Modulus.Analytics.AnalyticsDatasetDescriptor!
+Modulus.Analytics.AnalyticsDatasetDescriptor.AnalyticsDatasetDescriptor(string! Name, int Version, string! Owner, System.Collections.Generic.IReadOnlyList<Modulus.Analytics.AnalyticsFieldDescriptor!>! Fields, string? Description = null, System.TimeSpan? FreshnessSla = null, int? RetentionDays = null) -> void
+Modulus.Analytics.AnalyticsDatasetDescriptor.Deconstruct(out string! Name, out int Version, out string! Owner, out System.Collections.Generic.IReadOnlyList<Modulus.Analytics.AnalyticsFieldDescriptor!>! Fields, out string? Description, out System.TimeSpan? FreshnessSla, out int? RetentionDays) -> void
+Modulus.Analytics.AnalyticsDatasetDescriptor.Description.get -> string?
+Modulus.Analytics.AnalyticsDatasetDescriptor.Description.init -> void
+Modulus.Analytics.AnalyticsDatasetDescriptor.Equals(Modulus.Analytics.AnalyticsDatasetDescriptor? other) -> bool
+Modulus.Analytics.AnalyticsDatasetDescriptor.Fields.get -> System.Collections.Generic.IReadOnlyList<Modulus.Analytics.AnalyticsFieldDescriptor!>!
+Modulus.Analytics.AnalyticsDatasetDescriptor.Fields.init -> void
+Modulus.Analytics.AnalyticsDatasetDescriptor.FreshnessSla.get -> System.TimeSpan?
+Modulus.Analytics.AnalyticsDatasetDescriptor.FreshnessSla.init -> void
+Modulus.Analytics.AnalyticsDatasetDescriptor.Key.get -> string!
+Modulus.Analytics.AnalyticsDatasetDescriptor.Name.get -> string!
+Modulus.Analytics.AnalyticsDatasetDescriptor.Name.init -> void
+Modulus.Analytics.AnalyticsDatasetDescriptor.Owner.get -> string!
+Modulus.Analytics.AnalyticsDatasetDescriptor.Owner.init -> void
+Modulus.Analytics.AnalyticsDatasetDescriptor.RetentionDays.get -> int?
+Modulus.Analytics.AnalyticsDatasetDescriptor.RetentionDays.init -> void
+Modulus.Analytics.AnalyticsDatasetDescriptor.Validate() -> System.Collections.Generic.IReadOnlyList<string!>!
+Modulus.Analytics.AnalyticsDatasetDescriptor.Version.get -> int
+Modulus.Analytics.AnalyticsDatasetDescriptor.Version.init -> void
+Modulus.Analytics.AnalyticsFieldDescriptor
+Modulus.Analytics.AnalyticsFieldDescriptor.<Clone>$() -> Modulus.Analytics.AnalyticsFieldDescriptor!
+Modulus.Analytics.AnalyticsFieldDescriptor.AnalyticsFieldDescriptor(string! Name, Modulus.Analytics.AnalyticsFieldType Type, bool IsNullable = false, Modulus.Core.Abstractions.Entities.FieldClassification Classification = Modulus.Core.Abstractions.Entities.FieldClassification.Public, Modulus.Analytics.AnalyticsMaskingAction? Masking = null) -> void
+Modulus.Analytics.AnalyticsFieldDescriptor.Classification.get -> Modulus.Core.Abstractions.Entities.FieldClassification
+Modulus.Analytics.AnalyticsFieldDescriptor.Classification.init -> void
+Modulus.Analytics.AnalyticsFieldDescriptor.Deconstruct(out string! Name, out Modulus.Analytics.AnalyticsFieldType Type, out bool IsNullable, out Modulus.Core.Abstractions.Entities.FieldClassification Classification, out Modulus.Analytics.AnalyticsMaskingAction? Masking) -> void
+Modulus.Analytics.AnalyticsFieldDescriptor.EffectiveMasking.get -> Modulus.Analytics.AnalyticsMaskingAction
+Modulus.Analytics.AnalyticsFieldDescriptor.Equals(Modulus.Analytics.AnalyticsFieldDescriptor? other) -> bool
+Modulus.Analytics.AnalyticsFieldDescriptor.IsNullable.get -> bool
+Modulus.Analytics.AnalyticsFieldDescriptor.IsNullable.init -> void
+Modulus.Analytics.AnalyticsFieldDescriptor.Masking.get -> Modulus.Analytics.AnalyticsMaskingAction?
+Modulus.Analytics.AnalyticsFieldDescriptor.Masking.init -> void
+Modulus.Analytics.AnalyticsFieldDescriptor.Name.get -> string!
+Modulus.Analytics.AnalyticsFieldDescriptor.Name.init -> void
+Modulus.Analytics.AnalyticsFieldDescriptor.Type.get -> Modulus.Analytics.AnalyticsFieldType
+Modulus.Analytics.AnalyticsFieldDescriptor.Type.init -> void
+Modulus.Analytics.AnalyticsFieldType
+Modulus.Analytics.AnalyticsFieldType.Boolean = 4 -> Modulus.Analytics.AnalyticsFieldType
+Modulus.Analytics.AnalyticsFieldType.Date = 6 -> Modulus.Analytics.AnalyticsFieldType
+Modulus.Analytics.AnalyticsFieldType.Decimal = 2 -> Modulus.Analytics.AnalyticsFieldType
+Modulus.Analytics.AnalyticsFieldType.Double = 3 -> Modulus.Analytics.AnalyticsFieldType
+Modulus.Analytics.AnalyticsFieldType.Guid = 7 -> Modulus.Analytics.AnalyticsFieldType
+Modulus.Analytics.AnalyticsFieldType.Int64 = 1 -> Modulus.Analytics.AnalyticsFieldType
+Modulus.Analytics.AnalyticsFieldType.String = 0 -> Modulus.Analytics.AnalyticsFieldType
+Modulus.Analytics.AnalyticsFieldType.Timestamp = 5 -> Modulus.Analytics.AnalyticsFieldType
+Modulus.Analytics.AnalyticsMasking
+Modulus.Analytics.AnalyticsMaskingAction
+Modulus.Analytics.AnalyticsMaskingAction.Drop = 2 -> Modulus.Analytics.AnalyticsMaskingAction
+Modulus.Analytics.AnalyticsMaskingAction.Hash = 1 -> Modulus.Analytics.AnalyticsMaskingAction
+Modulus.Analytics.AnalyticsMaskingAction.Keep = 0 -> Modulus.Analytics.AnalyticsMaskingAction
+Modulus.Analytics.AnalyticsRecord
+Modulus.Analytics.AnalyticsRecord.<Clone>$() -> Modulus.Analytics.AnalyticsRecord!
+Modulus.Analytics.AnalyticsRecord.AnalyticsRecord(System.Guid EventId, string! Dataset, int SchemaVersion, System.Guid TenantId, System.DateTimeOffset OccurredAt, System.Collections.Generic.IReadOnlyDictionary<string!, object?>! Values) -> void
+Modulus.Analytics.AnalyticsRecord.Dataset.get -> string!
+Modulus.Analytics.AnalyticsRecord.Dataset.init -> void
+Modulus.Analytics.AnalyticsRecord.Deconstruct(out System.Guid EventId, out string! Dataset, out int SchemaVersion, out System.Guid TenantId, out System.DateTimeOffset OccurredAt, out System.Collections.Generic.IReadOnlyDictionary<string!, object?>! Values) -> void
+Modulus.Analytics.AnalyticsRecord.Equals(Modulus.Analytics.AnalyticsRecord? other) -> bool
+Modulus.Analytics.AnalyticsRecord.EventId.get -> System.Guid
+Modulus.Analytics.AnalyticsRecord.EventId.init -> void
+Modulus.Analytics.AnalyticsRecord.OccurredAt.get -> System.DateTimeOffset
+Modulus.Analytics.AnalyticsRecord.OccurredAt.init -> void
+Modulus.Analytics.AnalyticsRecord.SchemaVersion.get -> int
+Modulus.Analytics.AnalyticsRecord.SchemaVersion.init -> void
+Modulus.Analytics.AnalyticsRecord.TenantId.get -> System.Guid
+Modulus.Analytics.AnalyticsRecord.TenantId.init -> void
+Modulus.Analytics.AnalyticsRecord.Values.get -> System.Collections.Generic.IReadOnlyDictionary<string!, object?>!
+Modulus.Analytics.AnalyticsRecord.Values.init -> void
+Modulus.Analytics.AnalyticsServiceCollectionExtensions
+Modulus.Analytics.AnalyticsSinkException
+Modulus.Analytics.AnalyticsSinkException.AnalyticsSinkException(string! message, bool isTransient, System.Exception? innerException = null) -> void
+Modulus.Analytics.AnalyticsSinkException.IsTransient.get -> bool
+Modulus.Analytics.IAnalyticsDatasetCatalog
+Modulus.Analytics.IAnalyticsDatasetCatalog.All.get -> System.Collections.Generic.IReadOnlyList<Modulus.Analytics.AnalyticsDatasetDescriptor!>!
+Modulus.Analytics.IAnalyticsDatasetCatalog.Latest(string! name) -> Modulus.Analytics.AnalyticsDatasetDescriptor?
+Modulus.Analytics.IAnalyticsDatasetCatalog.TryGet(string! name, int version, out Modulus.Analytics.AnalyticsDatasetDescriptor? dataset) -> bool
+Modulus.Analytics.IAnalyticsSink
+Modulus.Analytics.IAnalyticsSink.EnsureDatasetAsync(Modulus.Analytics.AnalyticsDatasetDescriptor! dataset, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+Modulus.Analytics.IAnalyticsSink.Name.get -> string!
+Modulus.Analytics.IAnalyticsSink.WriteAsync(Modulus.Analytics.AnalyticsDatasetDescriptor! dataset, System.Collections.Generic.IReadOnlyList<Modulus.Analytics.AnalyticsRecord!>! records, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+override Modulus.Analytics.AnalyticsDatasetDescriptor.Equals(object? obj) -> bool
+override Modulus.Analytics.AnalyticsDatasetDescriptor.GetHashCode() -> int
+override Modulus.Analytics.AnalyticsDatasetDescriptor.ToString() -> string!
+override Modulus.Analytics.AnalyticsFieldDescriptor.Equals(object? obj) -> bool
+override Modulus.Analytics.AnalyticsFieldDescriptor.GetHashCode() -> int
+override Modulus.Analytics.AnalyticsFieldDescriptor.ToString() -> string!
+override Modulus.Analytics.AnalyticsRecord.Equals(object? obj) -> bool
+override Modulus.Analytics.AnalyticsRecord.GetHashCode() -> int
+override Modulus.Analytics.AnalyticsRecord.ToString() -> string!
+static Modulus.Analytics.AnalyticsDatasetDescriptor.operator !=(Modulus.Analytics.AnalyticsDatasetDescriptor? left, Modulus.Analytics.AnalyticsDatasetDescriptor? right) -> bool
+static Modulus.Analytics.AnalyticsDatasetDescriptor.operator ==(Modulus.Analytics.AnalyticsDatasetDescriptor? left, Modulus.Analytics.AnalyticsDatasetDescriptor? right) -> bool
+static Modulus.Analytics.AnalyticsFieldDescriptor.operator !=(Modulus.Analytics.AnalyticsFieldDescriptor? left, Modulus.Analytics.AnalyticsFieldDescriptor? right) -> bool
+static Modulus.Analytics.AnalyticsFieldDescriptor.operator ==(Modulus.Analytics.AnalyticsFieldDescriptor? left, Modulus.Analytics.AnalyticsFieldDescriptor? right) -> bool
+static Modulus.Analytics.AnalyticsMasking.Apply(Modulus.Analytics.AnalyticsDatasetDescriptor! dataset, Modulus.Analytics.AnalyticsRecord! record, Modulus.Core.Abstractions.DataProtection.IPersonalDataProtector! protector) -> Modulus.Analytics.AnalyticsRecord!
+static Modulus.Analytics.AnalyticsMasking.DefaultFor(Modulus.Core.Abstractions.Entities.FieldClassification classification) -> Modulus.Analytics.AnalyticsMaskingAction
+static Modulus.Analytics.AnalyticsRecord.operator !=(Modulus.Analytics.AnalyticsRecord? left, Modulus.Analytics.AnalyticsRecord? right) -> bool
+static Modulus.Analytics.AnalyticsRecord.operator ==(Modulus.Analytics.AnalyticsRecord? left, Modulus.Analytics.AnalyticsRecord? right) -> bool
+static Modulus.Analytics.AnalyticsServiceCollectionExtensions.AddModulusAnalytics(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<Modulus.Analytics.AnalyticsBuilder!>? configure = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
