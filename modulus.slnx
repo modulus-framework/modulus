@@ -72,6 +72,7 @@
   <!-- ── AI ──────────────────────────────────────────────────────── -->
   <Folder Name="/src/analytics/">
     <Project Path="src/analytics/Modulus.Analytics/Modulus.Analytics.csproj" />
+    <Project Path="src/analytics/Modulus.Analytics.Testing/Modulus.Analytics.Testing.csproj" />
   </Folder>
   <Folder Name="/src/ai/">
     <Project Path="src/ai/Modulus.AI.Connector/Modulus.AI.Connector.csproj" />

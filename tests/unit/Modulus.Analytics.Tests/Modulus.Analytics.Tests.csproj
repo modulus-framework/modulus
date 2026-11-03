@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../../../src/analytics/Modulus.Analytics/Modulus.Analytics.csproj" />
+    <ProjectReference Include="../../../src/analytics/Modulus.Analytics.Testing/Modulus.Analytics.Testing.csproj" />
   </ItemGroup>
 
   <ItemGroup>

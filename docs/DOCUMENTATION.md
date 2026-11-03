@@ -6425,10 +6425,16 @@ Iceberg Kafka Connect sink commits the table.
 
 - [ ] Phase 0: licence gate run and recorded in `THIRD-PARTY-NOTICES.md`
 - [ ] Phase 1: dataset and field metadata, `SchemaVersion` and upcasters, JSON Schema export, `IAnalyticsSink`, conformance tests
-  - Done in `Modulus.Analytics` (15 unit tests, net8.0 and net10.0): dataset and field descriptors with validation, the versioned dataset catalog,
-    `IAnalyticsSink` and `AnalyticsSinkException`, classification-driven batch masking (keep, hash, drop), `AddModulusAnalytics`.
-  - Still open: `SchemaVersion` population and upcasters, JSON Schema export, the sink conformance suite (`Modulus.Analytics.Testing`).
+  - Done in `Modulus.Analytics` and `Modulus.Analytics.Testing` (29 unit tests, net8.0 and net10.0): dataset and field descriptors with validation,
+    the versioned dataset catalog, `IAnalyticsSink` and `AnalyticsSinkException`, classification-driven batch masking (keep, hash, drop),
+    record upcasters and `AnalyticsUpcasting`, JSON Schema export (`AnalyticsDatasetSchema`), `AddModulusAnalytics`, the in-memory sink and
+    the sink conformance suite (`AnalyticsSinkConformance`).
+  - Still open: writing `SchemaVersion` on outbox rows and envelopes (it is carried today but never set), so captured events can be upcast.
 - [ ] Phase 2: capture, mapper, masking, delivery queue, ClickHouse sink, messaging sink
+  - Done: `AnalyticsDispatcher`, the delivery core (reject records with no tenant or dataset, upcast, mask, one batch per dataset to each sink,
+    per-sink outcomes with transient or permanent failure, at-least-once with a once-per-sink dataset setup).
+  - Still open: the event-to-record mapper and event tap, the durable queue (claim, retry, dead-letter, replay), the ClickHouse sink (needs the
+    licence gate), the messaging sink.
 - [ ] Phase 3: extraction, change journal, per-tenant backfill with checkpoints, Parquet sink
 - [ ] Phase 4: dataset permissions, plan gating, export audit, freshness, reconciliation, quality, retention and erasure, lineage
 - [ ] Phase 5: management API, CLI `add-analytics` with compose template, `analytics-admin` in `modulus-ui`

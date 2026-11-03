@@ -8,7 +8,7 @@ public static class AnalyticsServiceCollectionExtensions
 {
     /// <summary>
     /// Adds the analytics dataset catalog and lets <paramref name="configure"/> declare datasets and sinks. Calling it more than once
-    /// adds to the same catalog.
+    /// adds to the same catalog. The dispatcher needs an <c>IPersonalDataProtector</c> (<c>AddModulusPersonalDataProtection</c>) to hash fields.
     /// </summary>
     /// <param name="services">The service collection.</param>
     /// <param name="configure">Declares datasets and sinks.</param>
@@ -24,6 +24,7 @@ public static class AnalyticsServiceCollectionExtensions
             services.TryAddSingleton<IAnalyticsDatasetCatalog>(catalog);
         }
 
+        services.TryAddSingleton<AnalyticsDispatcher>();
         configure?.Invoke(new AnalyticsBuilder(services, catalog));
         return services;
     }

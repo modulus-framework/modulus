@@ -43,7 +43,8 @@ modulus/
 | platform | `Modulus.Authorization.Management` | Admin REST API (`MapModulusAuthorizationManagement`) over the EF authorization stores, guarded by `authorization:manage` |
 | platform | `Modulus.AspNetCore.Redis` | Redis-backed shared HTTP idempotency store (`AddRedisIdempotencyStore`) |
 | platform | `Modulus.Caching.Redis`, `Modulus.Storage.{S3,AzureBlobs}`, `Modulus.SignalR.Backplane` | Dependency-heavy providers split from Platform |
-| analytics | `Modulus.Analytics` | Analytics Integration Layer contracts (planned, see docs/DOCUMENTATION.md): versioned dataset and field metadata with classification, dataset catalog, provider-neutral `IAnalyticsSink`, batch masking. Providers ship as separate packages |
+| analytics | `Modulus.Analytics.Testing` | In-memory sink and a test-framework-neutral conformance suite for any `IAnalyticsSink` |
+| analytics | `Modulus.Analytics` | Analytics Integration Layer contracts (planned, see docs/DOCUMENTATION.md): versioned dataset and field metadata with classification, dataset catalog, provider-neutral `IAnalyticsSink`, batch masking, upcasters, JSON Schema export, `AnalyticsDispatcher`. Providers ship as separate packages |
 | observability | `Modulus.Observability` | OpenTelemetry wiring, tracing behavior, module health + module-graph endpoints |
 | testing | `Modulus.Testing` | `ModulusWebAppFactory<TEntryPoint>` (real host on throwaway SQLite), header-driven test auth |
 

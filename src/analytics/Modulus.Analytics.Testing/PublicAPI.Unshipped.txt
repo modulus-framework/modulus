@@ -1,0 +1,43 @@
+#nullable enable
+Modulus.Analytics.Testing.AnalyticsConformanceCheck
+Modulus.Analytics.Testing.AnalyticsConformanceCheck.<Clone>$() -> Modulus.Analytics.Testing.AnalyticsConformanceCheck!
+Modulus.Analytics.Testing.AnalyticsConformanceCheck.AnalyticsConformanceCheck(string! Name, bool Passed, string? Detail = null) -> void
+Modulus.Analytics.Testing.AnalyticsConformanceCheck.Deconstruct(out string! Name, out bool Passed, out string? Detail) -> void
+Modulus.Analytics.Testing.AnalyticsConformanceCheck.Detail.get -> string?
+Modulus.Analytics.Testing.AnalyticsConformanceCheck.Detail.init -> void
+Modulus.Analytics.Testing.AnalyticsConformanceCheck.Equals(Modulus.Analytics.Testing.AnalyticsConformanceCheck? other) -> bool
+Modulus.Analytics.Testing.AnalyticsConformanceCheck.Name.get -> string!
+Modulus.Analytics.Testing.AnalyticsConformanceCheck.Name.init -> void
+Modulus.Analytics.Testing.AnalyticsConformanceCheck.Passed.get -> bool
+Modulus.Analytics.Testing.AnalyticsConformanceCheck.Passed.init -> void
+Modulus.Analytics.Testing.AnalyticsConformanceReport
+Modulus.Analytics.Testing.AnalyticsConformanceReport.<Clone>$() -> Modulus.Analytics.Testing.AnalyticsConformanceReport!
+Modulus.Analytics.Testing.AnalyticsConformanceReport.AnalyticsConformanceReport(System.Collections.Generic.IReadOnlyList<Modulus.Analytics.Testing.AnalyticsConformanceCheck!>! Checks) -> void
+Modulus.Analytics.Testing.AnalyticsConformanceReport.Checks.get -> System.Collections.Generic.IReadOnlyList<Modulus.Analytics.Testing.AnalyticsConformanceCheck!>!
+Modulus.Analytics.Testing.AnalyticsConformanceReport.Checks.init -> void
+Modulus.Analytics.Testing.AnalyticsConformanceReport.Deconstruct(out System.Collections.Generic.IReadOnlyList<Modulus.Analytics.Testing.AnalyticsConformanceCheck!>! Checks) -> void
+Modulus.Analytics.Testing.AnalyticsConformanceReport.Equals(Modulus.Analytics.Testing.AnalyticsConformanceReport? other) -> bool
+Modulus.Analytics.Testing.AnalyticsConformanceReport.Failures.get -> System.Collections.Generic.IEnumerable<Modulus.Analytics.Testing.AnalyticsConformanceCheck!>!
+Modulus.Analytics.Testing.AnalyticsConformanceReport.Passed.get -> bool
+Modulus.Analytics.Testing.AnalyticsSinkConformance
+Modulus.Analytics.Testing.InMemoryAnalyticsSink
+Modulus.Analytics.Testing.InMemoryAnalyticsSink.Datasets.get -> System.Collections.Generic.IReadOnlyDictionary<string!, Modulus.Analytics.AnalyticsDatasetDescriptor!>!
+Modulus.Analytics.Testing.InMemoryAnalyticsSink.EnsureCalls.get -> int
+Modulus.Analytics.Testing.InMemoryAnalyticsSink.EnsureDatasetAsync(Modulus.Analytics.AnalyticsDatasetDescriptor! dataset, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+Modulus.Analytics.Testing.InMemoryAnalyticsSink.FailWith.get -> System.Exception?
+Modulus.Analytics.Testing.InMemoryAnalyticsSink.FailWith.set -> void
+Modulus.Analytics.Testing.InMemoryAnalyticsSink.InMemoryAnalyticsSink(string! name = "memory") -> void
+Modulus.Analytics.Testing.InMemoryAnalyticsSink.Name.get -> string!
+Modulus.Analytics.Testing.InMemoryAnalyticsSink.Rows.get -> System.Collections.Generic.IReadOnlyCollection<Modulus.Analytics.AnalyticsRecord!>!
+Modulus.Analytics.Testing.InMemoryAnalyticsSink.WriteAsync(Modulus.Analytics.AnalyticsDatasetDescriptor! dataset, System.Collections.Generic.IReadOnlyList<Modulus.Analytics.AnalyticsRecord!>! records, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+override Modulus.Analytics.Testing.AnalyticsConformanceCheck.Equals(object? obj) -> bool
+override Modulus.Analytics.Testing.AnalyticsConformanceCheck.GetHashCode() -> int
+override Modulus.Analytics.Testing.AnalyticsConformanceCheck.ToString() -> string!
+override Modulus.Analytics.Testing.AnalyticsConformanceReport.Equals(object? obj) -> bool
+override Modulus.Analytics.Testing.AnalyticsConformanceReport.GetHashCode() -> int
+override Modulus.Analytics.Testing.AnalyticsConformanceReport.ToString() -> string!
+static Modulus.Analytics.Testing.AnalyticsConformanceCheck.operator !=(Modulus.Analytics.Testing.AnalyticsConformanceCheck? left, Modulus.Analytics.Testing.AnalyticsConformanceCheck? right) -> bool
+static Modulus.Analytics.Testing.AnalyticsConformanceCheck.operator ==(Modulus.Analytics.Testing.AnalyticsConformanceCheck? left, Modulus.Analytics.Testing.AnalyticsConformanceCheck? right) -> bool
+static Modulus.Analytics.Testing.AnalyticsConformanceReport.operator !=(Modulus.Analytics.Testing.AnalyticsConformanceReport? left, Modulus.Analytics.Testing.AnalyticsConformanceReport? right) -> bool
+static Modulus.Analytics.Testing.AnalyticsConformanceReport.operator ==(Modulus.Analytics.Testing.AnalyticsConformanceReport? left, Modulus.Analytics.Testing.AnalyticsConformanceReport? right) -> bool
+static Modulus.Analytics.Testing.AnalyticsSinkConformance.RunAsync(Modulus.Analytics.IAnalyticsSink! sink, Modulus.Analytics.AnalyticsDatasetDescriptor! dataset, System.Func<System.Guid, string!, System.Threading.Tasks.Task<long>!>! countRows, System.Func<System.Guid, string!, Modulus.Analytics.AnalyticsRecord!>! makeRecord, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Analytics.Testing.AnalyticsConformanceReport!>!
