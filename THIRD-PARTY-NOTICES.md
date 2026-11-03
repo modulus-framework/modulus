@@ -43,3 +43,23 @@ SkiaSharp 2.88.6 was the first decoder. Its managed code is MIT, but its native 
 
 PhotoSauce.MagicScaler 0.15.0 (MIT) was considered and not used. Its native component bundles libheif, which is under the LGPL 3.0, so it fails
 the complete-bundle rule.
+
+## Analytics Integration Layer: licence gate (planned, 2026-11-03; **Open**, not yet run)
+
+No analytics dependency is pinned yet. Before any `PackageVersion` is added for this feature, each candidate below must be checked against
+its upstream repository and its NuGet `license` metadata, and the verified result recorded here. The "expected" column is from memory and is
+**not** a verification.
+
+| Candidate | Use | Expected licence | Status |
+| --- | --- | --- | --- |
+| `ClickHouse.Client` (or its official successor) | ClickHouse sink | MIT | Open |
+| `Parquet.Net` | Parquet sink | MIT | Open |
+| `Apache.Arrow` | Parquet alternative | Apache-2.0 | Open |
+| `Apache.Avro` | Avro contracts | Apache-2.0 | Open |
+| `JsonSchema.Net` or `NJsonSchema` | JSON Schema export | MIT | Open |
+| `DuckDB.NET` | optional embedded reads | MIT | Open |
+| `Testcontainers.ClickHouse` | integration tests | MIT | Open |
+
+Server-side tools (ClickHouse, Debezium, Iceberg, Spark, Flink, Trino, Superset and the rest) are not shipped or linked by Modulus; they are
+reached over HTTP, Kafka or S3. They are listed in `docs/DOCUMENTATION.md` (Analytics Integration Layer) with the policy that excludes
+BSL, SSPL, Elastic License, ELv2 and Confluent Community License products.

@@ -3,7 +3,7 @@ namespace Modulus.Webhooks;
 using System.Diagnostics.CodeAnalysis;
 
 /// <summary>An integration event exposed as a webhook.</summary>
-/// <param name="Name">The event's stable name (its <c>[IntegrationEventName]</c>), the body's <c>type</c>.</param>
+/// <param name="Name">The event's stable name (declared with <c>[IntegrationEvent&lt;TModule&gt;]</c>, or the legacy <c>[IntegrationEventName]</c>), the body's <c>type</c>.</param>
 /// <param name="EventType">The integration event's CLR type.</param>
 /// <param name="Description">What it means, for the event-type listing.</param>
 public sealed record WebhookEventDescriptor(string Name, Type EventType, string? Description)

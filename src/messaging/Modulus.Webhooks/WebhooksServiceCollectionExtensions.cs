@@ -27,7 +27,7 @@ public sealed class WebhooksBuilder
     public IServiceCollection Services { get; }
 
     /// <summary>
-    /// Exposes <typeparamref name="TEvent"/> under its stable name (<c>[IntegrationEventName]</c>; name the event, since
+    /// Exposes <typeparamref name="TEvent"/> under its stable name (<c>[IntegrationEvent&lt;TModule&gt;]</c>, or the legacy <c>[IntegrationEventName]</c>; name the event, since
     /// subscribers depend on it). The body's <c>data</c> is the event itself, or what <paramref name="payload"/> returns:
     /// map it when the event carries fields that must not leave the system.
     /// </summary>

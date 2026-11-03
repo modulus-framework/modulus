@@ -6375,3 +6375,58 @@ Consequences for upgraders:
   validation reports them as breaking against 1.8.2; they are listed in the affected projects' `CompatibilitySuppressions.xml`.
 - Generated apps no longer get the profile, company-admin, branch or audit-viewer pages, and `modulus app` no longer registers
   `DefaultCompanyMiddleware`.
+
+## Analytics Integration Layer (plan, 2026-11-03)
+
+Status: **planned, nothing implemented yet.** Phase 0 (this note and the licence gate) is written; Phases 1 to 6 are open.
+The full plan is kept with the session that produced it; the decisions below are the ones to keep.
+
+### Purpose and boundary
+
+Analytics Integration is an optional, cross-cutting capability that exports, synchronises, governs and exposes operational data to
+external analytics platforms. It is **not** an analytics engine. Modulus owns: analytics event and dataset contracts and metadata,
+event delivery, extraction, backfill, provider abstraction, tenant-aware analytics security, dataset and schema metadata, freshness and
+sync status, reconciliation, and configuration. It keeps external: the OLAP database, distributed compute, lakehouse storage, large-scale
+ETL, the BI engine, ML training and report rendering. A small app runs on PostgreSQL + RabbitMQ + ClickHouse; a large one adds Kafka,
+Spark, Iceberg, Trino and Flink, without any of those being a framework dependency.
+
+### Tool selection policy (applies to every tool and every NuGet package)
+
+1. Licence: OSI-approved permissive or weak copyleft (Apache-2.0, MIT, BSD, MPL-2.0), as AGENTS.md already requires.
+2. Not source-available: no BSL, SSPL, Elastic License, ELv2 or Confluent Community License, and no "open core" feature we depend on.
+3. AGPL only as a separate, optional, operator-run service, never a NuGet dependency.
+4. Production proof: foundation-governed, or widely deployed with an active release cadence.
+5. Licence gate: each licence is verified against the upstream repository, and each NuGet package's `license` metadata, before a
+   `PackageVersion` is added to `Directory.Packages.props`. The result is recorded in `THIRD-PARTY-NOTICES.md`.
+
+Vetted tools (licences are from memory until the gate runs): ClickHouse and Apache Doris (OLAP), Apache Kafka and RabbitMQ (messaging),
+Debezium (CDC), Apache Iceberg with Apache Polaris or Project Nessie (lakehouse), Apache Spark, Apache Flink and Trino (compute and SQL),
+dbt Core and Apache Airflow or Dagster (transformation and orchestration), Apache Superset (BI), OpenLineage and Marquez (lineage),
+OpenMetadata or DataHub (catalog), dbt tests, Great Expectations or Soda Core (quality), MLflow, DuckDB, Apicurio Registry (schemas).
+Avoid: Confluent Schema Registry and ksqlDB (Confluent Community License), Redpanda (BSL), Airbyte (ELv2), MinIO in production (AGPL),
+Redis 7.4+ (use Valkey), Grafana and Metabase as integration targets (AGPL), Terraform and Vault (BSL).
+No mature .NET writer exists for Iceberg or Delta: .NET writes Parquet to object storage or events to Kafka, and Spark, Flink or the
+Iceberg Kafka Connect sink commits the table.
+
+### Design summary
+
+- Package family under `src/analytics/`: `Modulus.Analytics` (contracts, catalog, mapper, `IAnalyticsSink`, delivery, masking, freshness),
+  `.EntityFrameworkCore` (queue, catalog, job-run, checkpoint and watermark stores), `.Management` (`analytics:manage`, Critical),
+  providers `.ClickHouse`, `.Parquet`, `.Messaging`, `.Debezium`, `.OpenLineage`, and `.Testing` (sink conformance suite).
+- Reuse, do not rebuild: the integration-event names and envelope (`Modulus.Events`), the outbox writer, the webhook delivery
+  processor pattern (claim, lease, retry, dead-letter), `AiChangeJournal` as the change feed, `CursorCodec` keyset paging for backfill,
+  `[Classified]` and `ModulusTaxonomy` for masking, `ITenantStore` and Quartz for per-tenant fan-out, `TenantDataRegistry` for retention
+  and erasure, and the export rules in the exports design note (own permission, tenant-filtered context only, audit row counts not rows).
+- New work: the sink SPI, the analytics mapper and masking policy, populating `SchemaVersion` with upcasters (it is carried today but
+  never written or read), the dataset catalog, a replayable log (the outbox purges after 7 days), job-run and checkpoint stores,
+  freshness, reconciliation, lineage, and dataset permissions.
+
+### Checklist
+
+- [ ] Phase 0: licence gate run and recorded in `THIRD-PARTY-NOTICES.md`
+- [ ] Phase 1: dataset and field metadata, `SchemaVersion` and upcasters, JSON Schema export, `IAnalyticsSink`, conformance tests
+- [ ] Phase 2: capture, mapper, masking, delivery queue, ClickHouse sink, messaging sink
+- [ ] Phase 3: extraction, change journal, per-tenant backfill with checkpoints, Parquet sink
+- [ ] Phase 4: dataset permissions, plan gating, export audit, freshness, reconciliation, quality, retention and erasure, lineage
+- [ ] Phase 5: management API, CLI `add-analytics` with compose template, `analytics-admin` in `modulus-ui`
+- [ ] Phase 6: Debezium reader, Airflow and dbt triggers, Superset helper, Doris sink, lakehouse runbooks
