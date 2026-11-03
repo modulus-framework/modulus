@@ -48,13 +48,49 @@ public sealed class LocalFileStorage(IOptions<StorageOptions> options) : IFileSt
         return Task.FromResult<Stream>(stream);
     }
 
+    /// <summary>
+    /// Writes the content to a temporary file beside the target and moves it into place only once the copy has completed. A
+    /// failed or cancelled upload therefore never leaves a truncated file at <paramref name="path"/>, and a reader never sees a
+    /// half-written one. An existing file is replaced atomically on the same volume.
+    /// </summary>
     public async Task UploadAsync(string path, Stream content, string? contentType = null, CancellationToken ct = default)
     {
         var full = FullPath(path);
-        Directory.CreateDirectory(Path.GetDirectoryName(full)
-            ?? throw new InvalidOperationException("Resolved path has no directory."));
-        await using var fs = File.Create(full);
-        await content.CopyToAsync(fs, ct);
+        var directory = Path.GetDirectoryName(full)
+            ?? throw new InvalidOperationException("Resolved path has no directory.");
+        Directory.CreateDirectory(directory);
+
+        var temp = Path.Combine(directory, $".upload-{Guid.NewGuid():N}.tmp");
+        try
+        {
+            await using (var fs = new FileStream(temp, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+            {
+                await content.CopyToAsync(fs, ct);
+                await fs.FlushAsync(ct);
+            }
+            File.Move(temp, full, overwrite: true);
+        }
+        catch
+        {
+            TryDelete(temp);
+            throw;
+        }
+    }
+
+    private static void TryDelete(string file)
+    {
+        try
+        {
+            if (File.Exists(file))
+                File.Delete(file);
+        }
+        catch (IOException)
+        {
+            // Best effort: the temporary file is never read as content, and the original failure is what the caller needs.
+        }
+        catch (UnauthorizedAccessException)
+        {
+        }
     }
 
     public Task DeleteAsync(string path, CancellationToken ct = default)

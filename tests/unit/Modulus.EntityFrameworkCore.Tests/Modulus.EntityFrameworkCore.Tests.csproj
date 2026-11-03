@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../../../src/data/Modulus.EntityFrameworkCore/Modulus.EntityFrameworkCore.csproj" />
+    <ProjectReference Include="../../../src/messaging/Modulus.Mediator/Modulus.Mediator.csproj" />
     <!-- Provider packages: row-level security scripts are built from a real provider model (no server needed). -->
     <ProjectReference Include="../../../src/data/Modulus.Data.PostgreSQL/Modulus.Data.PostgreSQL.csproj" />
     <ProjectReference Include="../../../src/data/Modulus.Data.SqlServer/Modulus.Data.SqlServer.csproj" />

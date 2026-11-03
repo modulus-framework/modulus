@@ -54,6 +54,33 @@ public sealed class DomainEventDispatcher(IServiceProvider sp)
         }
     }
 
+    /// <summary>
+    /// Dispatches events that were raised by a unit of work that has already
+    /// committed. The commit cannot be undone, so a handler failure must not
+    /// surface as a failed command (and must never reach an execution-strategy
+    /// retry, which would re-run the committed work). Instead every handler
+    /// failure is returned for the caller to log.
+    /// </summary>
+    /// <returns>The handler failures; empty when every handler succeeded.</returns>
+    public async Task<IReadOnlyList<Exception>> DispatchAfterCommitAsync(
+        IEnumerable<IDomainEvent> events,
+        CancellationToken ct = default)
+    {
+        try
+        {
+            await DispatchAsync(events, ct);
+            return [];
+        }
+        catch (AggregateException ex)
+        {
+            return ex.InnerExceptions;
+        }
+        catch (Exception ex)
+        {
+            return [ex];
+        }
+    }
+
     private static Func<object, IDomainEvent, CancellationToken, Task> CompileDelegate(
         Type handlerType, Type eventType)
     {

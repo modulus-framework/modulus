@@ -124,6 +124,31 @@ public sealed class OutboxProcessorTests
     }
 
     [Fact]
+    public async Task ProcessAsync_ShutdownCancelsDispatch_ReleasesClaimWithoutCountingAFailure()
+    {
+        using var stop = new CancellationTokenSource();
+        await using var h = await BuildAsync(
+            onDispatch: _ =>
+            {
+#pragma warning disable VSTHRD103 // CancelAsync is not available on net8.0
+                stop.Cancel();
+#pragma warning restore VSTHRD103
+                throw new OperationCanceledException(stop.Token);
+            });
+        var msg = h.Seed();
+        await h.SaveChangesAsync();
+
+        await h.Processor.ProcessAsync(stop.Token);
+
+        var stored = await h.ReadSingleAsync();
+        stored.RetryCount.Should().Be(0, "a shutdown is not a failed attempt");
+        stored.Error.Should().BeNull();
+        stored.ProcessedAt.Should().BeNull("the message stays pending for the next start");
+        stored.LockedBy.Should().BeNull();
+        stored.LockedUntil.Should().BeNull();
+    }
+
+    [Fact]
     public async Task ProcessAsync_BackoffNotElapsed_DoesNotRedispatch()
     {
         // A failed message scheduled for a future retry must NOT be picked up

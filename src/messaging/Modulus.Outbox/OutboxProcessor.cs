@@ -319,6 +319,18 @@ public sealed class OutboxProcessor(
                     "Outbox message {Id} ({Type}) dead-lettered: its tenant context was rejected.",
                     message.Id, message.MessageType);
             }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
+            {
+                // Graceful shutdown (or a host stop) interrupted this dispatch. That is
+                // not a failure of the message: release the claim without burning retry
+                // budget or backing off. The message is redelivered on the next start, and
+                // consumers dedup through the inbox.
+                message.LockedBy = null;
+                message.LockedUntil = null;
+                logger.LogDebug(
+                    "Outbox dispatch of {Id} ({Type}) was cancelled by shutdown; it stays pending.",
+                    message.Id, message.MessageType);
+            }
             catch (Exception ex)
             {
                 message.RetryCount += 1;

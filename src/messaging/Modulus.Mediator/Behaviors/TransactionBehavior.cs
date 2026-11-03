@@ -108,7 +108,8 @@ public sealed class TransactionBehavior<TRequest, TResponse>(
         // user-initiated transactions" at SaveChanges time. For non-retrying
         // providers the strategy simply runs the delegate once.
         var strategy = contexts[0].Database.CreateExecutionStrategy();
-        return await strategy.ExecuteAsync(async () =>
+        var queue = sp.GetService<IDeferredDomainEventQueue>();
+        var result = await strategy.ExecuteAsync(async () =>
         {
             // Each execution-strategy retry re-invokes this delegate after
             // rolling back the previous attempt. Events that the failed
@@ -117,7 +118,14 @@ public sealed class TransactionBehavior<TRequest, TResponse>(
             // second time and the post-commit drain would dispatch every
             // event twice. Discard the rolled-back attempt's leftovers first
             // (a no-op on the first attempt, when the queue is empty).
-            sp.GetService<IDeferredDomainEventQueue>()?.DequeueAll();
+            queue?.DequeueAll();
+
+            // Hold automatic dispatch for this unit. Without the hold the
+            // transaction interceptor would drain the queue inside CommitAsync,
+            // where EF still reports the finished transaction as current, so a
+            // handler that writes through the same context would fail. This
+            // unit drains once, below, after its transactions are disposed.
+            using var hold = queue?.HoldDispatch();
 
             // Start a transaction on *every* wrapped context so all writes are
             // protected. The begin loop runs inside the try: if opening
@@ -129,33 +137,40 @@ public sealed class TransactionBehavior<TRequest, TResponse>(
                 foreach (var ctx in contexts)
                     transactions.Add(await ctx.Database.BeginTransactionAsync(ct));
 
-                var result = await next();
+                var handlerResult = await next();
 
                 // Commit once the handler has succeeded. Multi-context commits are
                 // sequential and non-atomic: if a later commit fails, earlier ones
                 // cannot be undone — prefer the transactional outbox for
                 // cross-module consistency.
+                var committed = 0;
                 try
                 {
                     foreach (var tx in transactions)
+                    {
                         await tx.CommitAsync(ct);
+                        committed++;
+                    }
                 }
                 catch (Exception commitEx)
                 {
+                    if (committed == 0)
+                        throw;
+
+                    // Some contexts are already committed and cannot be rolled back. The
+                    // failure is raised as a plain (non-transient) exception so the
+                    // execution strategy does NOT retry: a retry would re-run the handler
+                    // and repeat the writes that did commit.
                     sp.GetService<ILogger<TransactionBehavior<TRequest, TResponse>>>()?.LogError(
                         commitEx,
-                        "Transaction commit failed for {Request} after partial commits; already-committed contexts cannot be rolled back.",
-                        typeof(TRequest).Name);
-                    throw;
+                        "Transaction commit failed for {Request} after {Committed} of {Total} contexts committed; the committed contexts cannot be rolled back and the command is not retried.",
+                        typeof(TRequest).Name, committed, transactions.Count);
+                    throw new InvalidOperationException(
+                        $"Command {typeof(TRequest).Name} was partially committed: {committed} of {transactions.Count} contexts committed before a commit failed.",
+                        commitEx);
                 }
 
-                // Safety net: the transaction interceptor drains the deferred
-                // queue at the first commit; this post-commit drain is a no-op
-                // when it did, and still dispatches for contexts whose provider
-                // path bypasses interceptors.
-                await DispatchDeferredDomainEventsAsync(ct);
-
-                return result;
+                return handlerResult;
             }
             catch
             {
@@ -176,6 +191,12 @@ public sealed class TransactionBehavior<TRequest, TResponse>(
                 }
             }
         });
+
+        // Dispatch outside the execution strategy: the unit has committed and
+        // its transactions are disposed, so a handler may write through these
+        // contexts, and a handler failure can never re-run the committed work.
+        await DispatchDeferredDomainEventsAsync(ct);
+        return result;
     }
 
     /// <summary>
@@ -230,6 +251,16 @@ public sealed class TransactionBehavior<TRequest, TResponse>(
         var dispatcher = sp.GetService<DomainEventDispatcher>();
         if (dispatcher is null) return;
 
-        await dispatcher.DispatchAsync(events, ct);
+        // The unit has committed, so a failing handler is logged rather than
+        // failing the command (the client would otherwise see an error for
+        // a write that happened).
+        var failures = await dispatcher.DispatchAfterCommitAsync(events, ct);
+        if (failures.Count == 0) return;
+
+        var logger = sp.GetService<ILogger<TransactionBehavior<TRequest, TResponse>>>();
+        foreach (var failure in failures)
+            logger?.LogError(failure,
+                "A domain event handler failed after {Request} committed; the write was kept.",
+                typeof(TRequest).Name);
     }
 }

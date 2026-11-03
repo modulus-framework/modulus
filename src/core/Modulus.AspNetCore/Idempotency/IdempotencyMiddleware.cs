@@ -129,10 +129,24 @@ public sealed class IdempotencyMiddleware(
         {
             await next(context);
         }
-        catch
+        catch (Exception ex)
         {
             context.Response.Body = originalBody;
-            await store.AbandonAsync(scopedKey, claimToken, CancellationToken.None);
+            if (ex is OperationCanceledException)
+            {
+                // Cancelled (client gone, or a timeout): the handler may already have
+                // committed, so the outcome is unknown. Keep the claim: a retry inside the
+                // lease gets 409 instead of repeating the side effect. The lease expires on
+                // its own, after which a retry runs again.
+                _logger.LogWarning(
+                    "Idempotent request for key '{Key}' was cancelled; its outcome is unknown, so the key stays claimed until its lease expires.",
+                    scopedKey);
+            }
+            else
+            {
+                await TryAbandonAsync(store, scopedKey, claimToken);
+            }
+
             throw;
         }
 
@@ -148,18 +162,18 @@ public sealed class IdempotencyMiddleware(
                 scopedKey, cap);
             if (IsCacheable(context.Response.StatusCode))
             {
-                await store.CompleteAsync(
+                await TryCompleteAsync(
+                    store,
                     scopedKey,
                     claimToken,
                     new CachedResponse(
                         context.Response.StatusCode,
                         new Dictionary<string, string> { [UncacheableMarker] = "1" },
-                        []),
-                    CancellationToken.None);
+                        []));
             }
             else
             {
-                await store.AbandonAsync(scopedKey, claimToken, CancellationToken.None);
+                await TryAbandonAsync(store, scopedKey, claimToken);
             }
 
             return;
@@ -171,15 +185,63 @@ public sealed class IdempotencyMiddleware(
                 context.Response.StatusCode,
                 SnapshotHeaders(context.Response),
                 buffer.GetBufferedBytes());
-            await store.CompleteAsync(scopedKey, claimToken, cached, CancellationToken.None);
+            await TryCompleteAsync(store, scopedKey, claimToken, cached);
         }
         else
         {
             // Non-cacheable outcome (e.g. 5xx) — drop the claim so a retry re-runs.
-            await store.AbandonAsync(scopedKey, claimToken, CancellationToken.None);
+            await TryAbandonAsync(store, scopedKey, claimToken);
         }
 
         await buffer.CopyBufferedToAsync(originalBody, context.RequestAborted);
+    }
+
+    /// <summary>
+    /// Records the completed response. The request has already run, so a store hiccup
+    /// is retried briefly; if it still fails the claim is left in place (never released,
+    /// which would let a retry repeat the side effect) and the caller still receives the
+    /// real response instead of an error for work that happened.
+    /// </summary>
+    private async Task TryCompleteAsync(IIdempotencyStore store, string scopedKey, string? claimToken, CachedResponse response)
+    {
+        const int attempts = 3;
+        for (var attempt = 1; attempt <= attempts; attempt++)
+        {
+            try
+            {
+                await store.CompleteAsync(scopedKey, claimToken, response, CancellationToken.None);
+                return;
+            }
+            catch (Exception ex) when (attempt < attempts)
+            {
+                _logger.LogWarning(ex,
+                    "Recording the response for idempotency key '{Key}' failed (attempt {Attempt} of {Attempts}); retrying.",
+                    scopedKey, attempt, attempts);
+                await Task.Delay(TimeSpan.FromMilliseconds(100 * attempt), CancellationToken.None);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex,
+                    "Could not record the response for idempotency key '{Key}'. The claim stays until its lease expires, so a retry inside that window gets 409 rather than running again.",
+                    scopedKey);
+                return;
+            }
+        }
+    }
+
+    /// <summary>Releases the claim; a failure is logged, never thrown over the original outcome.</summary>
+    private async Task TryAbandonAsync(IIdempotencyStore store, string scopedKey, string? claimToken)
+    {
+        try
+        {
+            await store.AbandonAsync(scopedKey, claimToken, CancellationToken.None);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex,
+                "Releasing the claim for idempotency key '{Key}' failed; it stays until its lease expires.",
+                scopedKey);
+        }
     }
 
     private async Task ReplayAsync(HttpContext context, CachedResponse cached)

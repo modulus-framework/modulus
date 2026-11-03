@@ -94,8 +94,20 @@ internal static class AccessTokenChecks
             // IdentityModel 8 exposes the validated claims as a raw
             // dictionary; rebuild a ClaimsIdentity for uniform lookup.
             var identity = new ClaimsIdentity();
+            // A multi-valued claim (aud, roles) arrives as a collection; each value becomes its own claim. ToString would
+            // render the collection's type name instead.
             foreach (var (type, value) in result.Claims)
-                identity.AddClaim(new Claim(type, value.ToString() ?? string.Empty));
+            {
+                if (value is string text)
+                    identity.AddClaim(new Claim(type, text));
+                else if (value is System.Collections.IEnumerable values)
+                {
+                    foreach (var item in values)
+                        identity.AddClaim(new Claim(type, item?.ToString() ?? string.Empty));
+                }
+                else
+                    identity.AddClaim(new Claim(type, value?.ToString() ?? string.Empty));
+            }
 
             return identity;
         }

@@ -16,4 +16,15 @@ public interface IDeferredDomainEventQueue
 
     /// <summary>Retrieve and clear all queued events.</summary>
     IReadOnlyList<IDomainEvent> DequeueAll();
+
+    /// <summary>
+    /// Holds automatic dispatch: while the returned scope is alive, a transaction
+    /// commit does not drain the queue. The owner of the hold drains it itself
+    /// once its transactions have finished. Holds nest; the queue is held until
+    /// every scope has been disposed.
+    /// </summary>
+    IDisposable HoldDispatch();
+
+    /// <summary>True while at least one <see cref="HoldDispatch"/> scope is alive.</summary>
+    bool IsDispatchHeld { get; }
 }

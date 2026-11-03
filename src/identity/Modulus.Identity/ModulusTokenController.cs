@@ -147,7 +147,7 @@ public class ModulusTokenController(
         var serverOptions = services.GetRequiredService<IOptions<OpenIddictServerOptions>>().Value;
         var agent = await AccessTokenChecks.ValidateTokenAsync(HttpContext, serverOptions, actorToken);
         var agentClient = agent is null ? null : AgentClientOf(agent);
-        if (agent is null || agentClient is null || !await AccessTokenChecks.IsInForceAsync(HttpContext, agent))
+        if (agent is null || agentClient is null || !IsForThisApi(agent) || !await AccessTokenChecks.IsInForceAsync(HttpContext, agent))
             return RefuseExchange("The actor token is not a valid agent token.", agentClient: null);
 
         // The agent's binding: bound to a company, not expired, and allowed to act for people.
@@ -160,7 +160,7 @@ public class ModulusTokenController(
 
         // The person: a sign-in of their own, not an agent's, in the agent's company.
         var subject = await AccessTokenChecks.ValidateTokenAsync(HttpContext, serverOptions, subjectToken);
-        if (subject is null || !await AccessTokenChecks.IsInForceAsync(HttpContext, subject))
+        if (subject is null || !IsForThisApi(subject) || !await AccessTokenChecks.IsInForceAsync(HttpContext, subject))
             return RefuseExchange("The person's token is not valid.", agentClient);
         if (subject.HasClaim(c => c.Type == "act"))
             return RefuseExchange("An agent cannot act through another agent.", agentClient);
@@ -195,6 +195,16 @@ public class ModulusTokenController(
         Audit("token.exchange", SecurityAuditOutcomes.Success, personId, agentTenant, agentClient);
 
         return SignIn(person, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+    }
+
+    // A token is only exchanged when it was issued for this API: it must name one of the configured audiences (Identity:Audiences).
+    // With none configured the server issues no aud claim at all, so there is nothing to match and the check does not apply.
+    private bool IsForThisApi(ClaimsIdentity token)
+    {
+        var audiences = HttpContext.RequestServices.GetService<IOptions<ModulusIdentityOptions>>()?.Value.Audiences;
+        if (audiences is not { Count: > 0 })
+            return true;
+        return token.Claims.Any(c => c.Type == OpenIddictConstants.Claims.Audience && audiences.Contains(c.Value));
     }
 
     // The integration client an agent token belongs to: its subject, provided its role names that client. A user's token names

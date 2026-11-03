@@ -5,6 +5,7 @@ using System.Reflection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Modulus.Core.Abstractions;
 using Modulus.Core.Abstractions.DataProtection;
 using Modulus.Core.Abstractions.Domain;
@@ -174,7 +175,10 @@ public abstract class ModuleDbContext(
         }
         else
         {
-            await dispatcher.DispatchAsync(domainEvents, ct);
+            // The implicit transaction has committed; a failing handler is
+            // logged, not thrown, so the caller does not see an error for a write
+            // that was kept.
+            await DispatchAfterCommitAsync(domainEvents, ct);
         }
 
         return result;
@@ -202,10 +206,33 @@ public abstract class ModuleDbContext(
         var queue = sp.GetService<IDeferredDomainEventQueue>();
         if (queue is null) return;
 
+        // A mediator unit holds dispatch while it runs and drains after its
+        // transactions are disposed; draining here would run handlers inside
+        // CommitAsync, where this context's finished transaction is still current.
+        if (queue.IsDispatchHeld) return;
+
         var events = queue.DequeueAll();
         if (events.Count == 0) return;
 
-        await dispatcher.DispatchAsync(events, ct);
+        // EF still reports the committed transaction as current while its commit
+        // callback runs. Detach it so a handler that writes through this context
+        // starts its own unit instead of using the completed transaction.
+        if (Database.CurrentTransaction is not null)
+            Database.UseTransaction(null);
+
+        await DispatchAfterCommitAsync(events, ct);
+    }
+
+    private async Task DispatchAfterCommitAsync(IReadOnlyList<IDomainEvent> events, CancellationToken ct)
+    {
+        var failures = await dispatcher.DispatchAfterCommitAsync(events, ct);
+        if (failures.Count == 0) return;
+
+        var logger = sp.GetService<ILogger<ModuleDbContext>>();
+        foreach (var failure in failures)
+            logger?.LogError(failure,
+                "A domain event handler failed after the {Context} transaction committed; the write was kept.",
+                GetType().Name);
     }
 
     /// <summary>

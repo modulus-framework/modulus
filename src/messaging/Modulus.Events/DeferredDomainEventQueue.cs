@@ -10,6 +10,9 @@ using Modulus.Events.Abstractions;
 public sealed class DeferredDomainEventQueue : IDeferredDomainEventQueue
 {
     private readonly List<IDomainEvent> _queue = [];
+    private int _holds;
+
+    public bool IsDispatchHeld => _holds > 0;
 
     public void Enqueue(IEnumerable<IDomainEvent> events) => _queue.AddRange(events);
 
@@ -18,5 +21,23 @@ public sealed class DeferredDomainEventQueue : IDeferredDomainEventQueue
         var copy = _queue.ToList();
         _queue.Clear();
         return copy;
+    }
+
+    public IDisposable HoldDispatch()
+    {
+        _holds++;
+        return new Hold(this);
+    }
+
+    private sealed class Hold(DeferredDomainEventQueue owner) : IDisposable
+    {
+        private DeferredDomainEventQueue? _owner = owner;
+
+        public void Dispose()
+        {
+            var o = Interlocked.Exchange(ref _owner, null);
+            if (o is not null)
+                o._holds--;
+        }
     }
 }

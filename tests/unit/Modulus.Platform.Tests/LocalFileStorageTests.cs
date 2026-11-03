@@ -11,6 +11,58 @@ public sealed class LocalFileStorageTests
     private static LocalFileStorage Create(string? basePath)
         => new(Options.Create(basePath is null ? new StorageOptions() : new StorageOptions { BasePath = basePath }));
 
+    /// <summary>A source that yields some bytes and then fails, as an interrupted upload does.</summary>
+    private sealed class FailingStream : Stream
+    {
+        private bool _first = true;
+        public override bool CanRead => true;
+        public override bool CanSeek => false;
+        public override bool CanWrite => false;
+        public override long Length => throw new NotSupportedException();
+        public override long Position { get => 0; set => throw new NotSupportedException(); }
+        public override void Flush() { }
+        public override int Read(byte[] buffer, int offset, int count) => throw new IOException("connection reset");
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+        public override void SetLength(long value) => throw new NotSupportedException();
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            if (_first)
+            {
+                _first = false;
+                buffer.Span[0] = 42;
+                await Task.Yield();
+                return 1;
+            }
+            await Task.Yield();
+            throw new IOException("connection reset");
+        }
+    }
+
+    [Fact]
+    public async Task A_failed_upload_keeps_the_previous_file_and_leaves_no_partial_or_temporary_file()
+    {
+        var root = Path.Combine(Path.GetTempPath(), $"modulus-atomic-{Guid.NewGuid():N}");
+        try
+        {
+            var storage = Create(root);
+            await storage.UploadAsync("docs/report.txt", new MemoryStream([1, 2, 3]));
+
+            var act = () => storage.UploadAsync("docs/report.txt", new FailingStream());
+
+            await act.Should().ThrowAsync<IOException>();
+            var kept = await File.ReadAllBytesAsync(Path.Combine(root, "docs", "report.txt"));
+            kept.Should().Equal(1, 2, 3);
+            Directory.GetFiles(Path.Combine(root, "docs")).Should().HaveCount(1);
+        }
+        finally
+        {
+            if (Directory.Exists(root))
+                Directory.Delete(root, recursive: true);
+        }
+    }
+
     [Theory]
     [InlineData(null)]
     [InlineData("")]

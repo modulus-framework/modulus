@@ -49,6 +49,13 @@ public static class OutboundAddressGuard
                 return false;
             if (b[0] == 0x00 && b[1] == 0x64 && b[2] == 0xFF && b[3] == 0x9B) // 64:ff9b::/96 NAT64: check the IPv4 inside
                 return IsPublic(new IPAddress(b[12..16]));
+            // Tunnelling prefixes carry an IPv4 address that a router may deliver to, so the embedded address decides.
+            if (b[0] == 0x20 && b[1] == 0x02)                    // 2002::/16 6to4: the IPv4 address is in bytes 2-5
+                return IsPublic(new IPAddress(b[2..6]));
+            if (b[0] == 0x20 && b[1] == 0x01 && b[2] == 0x00 && b[3] == 0x00) // 2001:0::/32 Teredo: the client's IPv4 is bytes 12-15, inverted
+                return IsPublic(new IPAddress(new[] { (byte)~b[12], (byte)~b[13], (byte)~b[14], (byte)~b[15] }));
+            if (b.Take(12).All(x => x == 0))                     // ::/96 IPv4-compatible (deprecated): the IPv4 address is in bytes 12-15
+                return IsPublic(new IPAddress(b[12..16]));
             return true;
         }
 

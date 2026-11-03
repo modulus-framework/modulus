@@ -10,6 +10,8 @@ using Modulus.Core.Null;
 using Modulus.EntityFrameworkCore.Extensions;
 using Modulus.Events;
 using Modulus.Events.Abstractions;
+using Modulus.Mediator.Abstractions.Attributes;
+using Modulus.Mediator.Behaviors;
 using FluentAssertions;
 using Xunit;
 
@@ -20,10 +22,11 @@ public sealed class DomainEventDispatchTimingTests : IAsyncDisposable
     private readonly ServiceProvider _sp;
     private readonly TestDbContext _db;
     private readonly List<Guid> _handled = [];
+    private Func<CancellationToken, Task>? _onHandle;
 
     public DomainEventDispatchTimingTests()
     {
-        _conn = new SqliteConnection("DataSource=domain-event-timing;Mode=Memory;Cache=Shared");
+        _conn = new SqliteConnection($"DataSource=domain-event-timing-{Guid.NewGuid():N};Mode=Memory;Cache=Shared");
         _conn.Open();
 
         var services = new ServiceCollection();
@@ -33,7 +36,7 @@ public sealed class DomainEventDispatchTimingTests : IAsyncDisposable
         services.TryAddScoped<DomainEventDispatcher>();
         services.TryAddScoped<IDeferredDomainEventQueue, DeferredDomainEventQueue>();
         services.AddScoped<IDomainEventHandler<TestDomainEvent>>(
-            _ => new RecordingHandler(_handled));
+            _ => new RecordingHandler(_handled, ct => _onHandle?.Invoke(ct) ?? Task.CompletedTask));
         services.AddModuleDatabase<TestDbContext>(o => o.UseSqlite(_conn));
         _sp = services.BuildServiceProvider();
         _db = _sp.GetRequiredService<TestDbContext>();
@@ -99,6 +102,130 @@ public sealed class DomainEventDispatchTimingTests : IAsyncDisposable
         finally
         {
             await txn.DisposeAsync();
+        }
+    }
+
+    /// <summary>
+    /// A MANUAL transaction (no mediator) whose post-commit handler writes through
+    /// the same context. The commit callback runs while EF still reports the
+    /// finished transaction as current, so the drain must detach it first.
+    /// </summary>
+    [Fact]
+    public async Task ManualTransaction_HandlerWritingThroughSameContextAfterCommit_PersistsAndDispatches()
+    {
+        var reactions = 0;
+        _onHandle = async ct =>
+        {
+            if (Interlocked.Increment(ref reactions) > 1) return;
+
+            var reaction = new TestAggregate();
+            reaction.RaiseEvent();
+            _db.Aggregates.Add(reaction);
+            await _db.SaveChangesAsync(ct);
+        };
+
+        var txn = await _db.Database.BeginTransactionAsync();
+        try
+        {
+            var aggregate = new TestAggregate();
+            aggregate.RaiseEvent();
+            _db.Aggregates.Add(aggregate);
+            await _db.SaveChangesAsync();
+
+            await txn.CommitAsync();
+        }
+        finally
+        {
+            await txn.DisposeAsync();
+        }
+
+        _handled.Should().HaveCount(2, "the original event and the reaction's own event both dispatch");
+        await using (var verify = new TestDbContext(
+            new DbContextOptionsBuilder().UseSqlite(_conn).Options,
+            new HostTenant(), new NullCurrentUser(), _sp.GetRequiredService<DomainEventDispatcher>(), _sp))
+        {
+            (await verify.Aggregates.CountAsync()).Should().Be(2, "the reaction's write must persist");
+        }
+    }
+
+    /// <summary>
+    /// A unit run through <c>TransactionBehavior</c> whose post-commit handler
+    /// writes through the SAME context. The reaction's write must persist, its
+    /// own domain event must dispatch, and the command must return normally.
+    /// </summary>
+    [Fact]
+    public async Task MediatorUnit_HandlerWritingThroughSameContextAfterCommit_PersistsAndDispatches()
+    {
+        var reactions = 0;
+        _onHandle = async ct =>
+        {
+            // The reaction's own event must not recurse indefinitely.
+            if (Interlocked.Increment(ref reactions) > 1) return;
+
+            var reaction = new TestAggregate();
+            reaction.RaiseEvent();
+            _db.Aggregates.Add(reaction);
+            await _db.SaveChangesAsync(ct);
+        };
+
+        var behavior = new TransactionBehavior<TestCommand, bool>(
+            _sp, new TransactionRuntimeOptions(TransactionMode.TouchedOrSingle));
+
+        var result = await behavior.HandleAsync(new TestCommand(), async () =>
+        {
+            var aggregate = new TestAggregate();
+            aggregate.RaiseEvent();
+            _db.Aggregates.Add(aggregate);
+            await _db.SaveChangesAsync(CancellationToken.None);
+            return true;
+        }, CancellationToken.None);
+
+        result.Should().BeTrue();
+        _handled.Should().HaveCount(2, "the original event and the reaction's own event both dispatch");
+        await using (var verify = new TestDbContext(
+            new DbContextOptionsBuilder().UseSqlite(_conn).Options,
+            new HostTenant(), new NullCurrentUser(), _sp.GetRequiredService<DomainEventDispatcher>(), _sp))
+        {
+            (await verify.Aggregates.CountAsync()).Should().Be(2, "the reaction's write must persist");
+        }
+        _sp.GetRequiredService<IDeferredDomainEventQueue>()
+            .DequeueAll().Should().BeEmpty("no event may be stranded in the deferred queue");
+    }
+
+    /// <summary>
+    /// A handler that fails after the unit committed must not turn the command
+    /// into a failure: the write is kept, the handler runs exactly once (no
+    /// re-run of the committed unit), and the result is returned.
+    /// </summary>
+    [Fact]
+    public async Task MediatorUnit_HandlerFailingAfterCommit_KeepsWriteAndReturnsResult()
+    {
+        var calls = 0;
+        _onHandle = _ =>
+        {
+            Interlocked.Increment(ref calls);
+            throw new InvalidOperationException("handler failed after commit");
+        };
+
+        var behavior = new TransactionBehavior<TestCommand, bool>(
+            _sp, new TransactionRuntimeOptions(TransactionMode.TouchedOrSingle));
+
+        var result = await behavior.HandleAsync(new TestCommand(), async () =>
+        {
+            var aggregate = new TestAggregate();
+            aggregate.RaiseEvent();
+            _db.Aggregates.Add(aggregate);
+            await _db.SaveChangesAsync(CancellationToken.None);
+            return true;
+        }, CancellationToken.None);
+
+        result.Should().BeTrue("the write committed, so the command succeeds");
+        calls.Should().Be(1, "a committed unit must not be re-run because of a handler failure");
+        await using (var verify = new TestDbContext(
+            new DbContextOptionsBuilder().UseSqlite(_conn).Options,
+            new HostTenant(), new NullCurrentUser(), _sp.GetRequiredService<DomainEventDispatcher>(), _sp))
+        {
+            (await verify.Aggregates.CountAsync()).Should().Be(1, "the committed write must be kept");
         }
     }
 
@@ -204,18 +331,22 @@ public sealed class DomainEventDispatchTimingTests : IAsyncDisposable
         public void ClearDomainEvents() => _domainEvents.Clear();
     }
 
+    private sealed record TestCommand;
+
     private sealed record TestDomainEvent(Guid AggregateId) : IDomainEvent
     {
         public Guid EventId { get; } = Guid.NewGuid();
         public DateTime OccurredAt { get; } = DateTime.UtcNow;
     }
 
-    private sealed class RecordingHandler(List<Guid> handled) : IDomainEventHandler<TestDomainEvent>
+    private sealed class RecordingHandler(List<Guid> handled, Func<CancellationToken, Task>? onHandle = null)
+        : IDomainEventHandler<TestDomainEvent>
     {
-        public Task HandleAsync(TestDomainEvent @event, CancellationToken ct)
+        public async Task HandleAsync(TestDomainEvent @event, CancellationToken ct)
         {
             handled.Add(@event.EventId);
-            return Task.CompletedTask;
+            if (onHandle is not null)
+                await onHandle(ct);
         }
     }
 }

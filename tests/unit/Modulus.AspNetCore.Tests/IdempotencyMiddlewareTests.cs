@@ -121,6 +121,55 @@ public sealed class IdempotencyMiddlewareTests
     }
 
     [Fact]
+    public async Task CancelledRequest_KeepsItsClaim_SoARetryIsAnsweredNotRerun()
+    {
+        // The handler may have committed before the cancellation, so the key must not be released.
+        var (mw, store, calls) = Build(downstream: _ => throw new OperationCanceledException());
+
+        Func<Task> first = () => InvokeAsync(mw, store, "POST", key: "k", body: "payload");
+        await first.Should().ThrowAsync<OperationCanceledException>();
+
+        var retry = await InvokeAsync(mw, store, "POST", key: "k", body: "payload");
+
+        calls.Count.Should().Be(1, "the cancelled request's side effect must not run again");
+        retry.Response.StatusCode.Should().Be(409);
+    }
+
+    [Fact]
+    public async Task FailedCompletionWrite_StillReturnsTheRealResponse()
+    {
+        var options = new IdempotencyOptions();
+        var inner = new InMemoryIdempotencyStore(Options.Create(options));
+        var store = new CompleteFailingStore(inner);
+        var calls = 0;
+        var mw = new IdempotencyMiddleware(
+            ctx => { calls++; ctx.Response.StatusCode = 201; return Task.CompletedTask; },
+            Options.Create(options), NullLogger<IdempotencyMiddleware>.Instance);
+
+        var ctx = await InvokeAsync(mw, store, "POST", key: "k", body: "payload");
+
+        ctx.Response.StatusCode.Should().Be(201, "the work happened, so the client gets its real answer");
+        calls.Should().Be(1);
+        store.CompleteAttempts.Should().Be(3, "the completion write is retried before giving up");
+    }
+
+    private sealed class CompleteFailingStore(IIdempotencyStore inner) : IIdempotencyStore
+    {
+        public int CompleteAttempts { get; private set; }
+
+        public Task<IdempotencyResult> TryBeginAsync(string key, string fingerprint, CancellationToken ct)
+            => inner.TryBeginAsync(key, fingerprint, ct);
+
+        public Task CompleteAsync(string key, CachedResponse response, CancellationToken ct)
+        {
+            CompleteAttempts++;
+            throw new InvalidOperationException("store unavailable");
+        }
+
+        public Task AbandonAsync(string key, CancellationToken ct) => inner.AbandonAsync(key, ct);
+    }
+
+    [Fact]
     public async Task OversizedResponse_StreamsThroughUncached_AndRetryIsRefusedNotRerun()
     {
         var (mw, store, calls) = Build(

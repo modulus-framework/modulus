@@ -1,1 +1,6 @@
 #nullable enable
+Modulus.Events.Abstractions.IDeferredDomainEventQueue.HoldDispatch() -> System.IDisposable!
+Modulus.Events.Abstractions.IDeferredDomainEventQueue.IsDispatchHeld.get -> bool
+Modulus.Events.DeferredDomainEventQueue.HoldDispatch() -> System.IDisposable!
+Modulus.Events.DeferredDomainEventQueue.IsDispatchHeld.get -> bool
+Modulus.Events.DomainEventDispatcher.DispatchAfterCommitAsync(System.Collections.Generic.IEnumerable<Modulus.Core.Abstractions.Domain.IDomainEvent!>! events, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<System.Exception!>!>!
