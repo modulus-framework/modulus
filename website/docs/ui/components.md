@@ -83,6 +83,7 @@ Each plugin is a Blazor component and a tag helper over one renderer. The librar
 | `app-code-editor` | CodeMirror 6 | Highlighting, folding and search for JavaScript, TypeScript, JSON, CSS and HTML |
 | `app-sortable` and `app-sortable-item` | (native) | Reorder a list, drag between lists, handles and keyboard moves. It posts the order. |
 | `app-flow-editor` | (native) | An n8n style workflow designer for AI and automation flows: drag nodes, draw connections, undo, show run status. The graph posts as JSON. `modulus ui add-component flow-editor` scaffolds it. |
+| `app-chat` | (native) | A conversation and its question field: the answers, the notes under each one, and the conversation and filter kept in hidden fields so a plain form posts them back. Ask a question in plain words and the answer is a filter (`FilterAssistant`) with a model you configure (`Modulus.Flow.Connectors`). Blazor: `AppChat`. |
 | `app-lightbox` | (native) | Image lightbox |
 | `app-barcode` | (native) | Code 128 and EAN-13 as SVG |
 

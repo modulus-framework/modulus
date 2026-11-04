@@ -23,7 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **`modulus ui add-component` now scaffolds 78 components** (was 17): every form input, Word-style documents, spreadsheets, PDF, code and rich-text editors, data grids, pivot and import wizard, the data-display, navigation, layout and feedback
   building blocks, and the Pro boards and builders, for MVC, Razor Pages and Blazor. See `modulus ui add-component --list`.
-- **`modulus ui add-component` gains `tag-input`, `time-picker`, `popconfirm` and `flow-editor` (an n8n style workflow designer)** (82 components), and **`modulus ui add-chart` gains `radar`,
+- **`modulus ui add-component` gains `tag-input`, `time-picker`, `popconfirm`, `flow-editor` (an n8n style workflow designer) and `chat` (a conversation with a question field)** (83 components), and **`modulus ui add-chart` gains `radar`,
   `candlestick`, `sankey` and `org`** (an org chart), all for MVC, Razor Pages and Blazor. They need a Modulus UI template package newer than 1.8.2: `--all` adds
   what the pinned template package has and names the rest, and naming one the package lacks stops with the version to use.
 - **Package validation** (`EnablePackageValidation`, baseline 1.8.2): every packed library is compared with the last published
