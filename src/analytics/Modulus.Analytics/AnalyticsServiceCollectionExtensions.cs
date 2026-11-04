@@ -2,6 +2,7 @@ namespace Modulus.Analytics;
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Options;
 
 /// <summary>Registration for the analytics layer.</summary>
 public static class AnalyticsServiceCollectionExtensions
@@ -24,10 +25,17 @@ public static class AnalyticsServiceCollectionExtensions
             services.TryAddSingleton<IAnalyticsDatasetCatalog>(catalog);
         }
 
+        services.AddOptions<AnalyticsCircuitBreakerOptions>()
+            .Validate(o => o.FailureThreshold > 0, "Analytics:CircuitBreaker:FailureThreshold must be positive.")
+            .Validate(o => o.OpenDuration > TimeSpan.Zero, "Analytics:CircuitBreaker:OpenDuration must be positive.")
+            .ValidateOnStart();
+        services.TryAddSingleton(TimeProvider.System);
+        services.TryAddSingleton<AnalyticsCircuitBreaker>();
         services.TryAddSingleton<AnalyticsDispatcher>();
         services.TryAddScoped<IAnalyticsQueue, InlineAnalyticsQueue>();
         services.TryAddSingleton<IAnalyticsTenantDirectory, NullAnalyticsTenantDirectory>();
         services.TryAddSingleton<IAnalyticsEntitlement, AllowAllAnalyticsEntitlement>();
+        services.TryAddSingleton<IAnalyticsConsent, AllowAllAnalyticsConsent>();
         services.TryAddSingleton<IAnalyticsLineageEmitter, NullAnalyticsLineageEmitter>();
         configure?.Invoke(new AnalyticsBuilder(services, catalog));
         return services;

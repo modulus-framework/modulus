@@ -6450,6 +6450,7 @@ Iceberg Kafka Connect sink commits the table.
   - Management API (`Modulus.Analytics.Management`, `analytics:manage`, Critical): `GET /analytics/status` (pending, delivered, dead-lettered, age of the oldest
     pending record, so a rising age shows delivery falling behind), list and inspect dead letters, replay by id (at most 1000), purge old dead letters. Queued rows hold
     values *before* masking, so no response ever carries record values (tests pin this). Replay and purge are logged with the acting user. 12 unit tests.
+  - Gaps closed (2026-11-04): circuit breaker, consent, quality-finding sinks, and the optional OpenMetadata, Apicurio and DuckDB packages, plus the MLflow runbook. See the table in docs/ANALYTICS_PROGRESS.md.
   - Done since: the messaging sink (`Modulus.Analytics.Messaging`, publishes each record as `AnalyticsRecordPublished` on the module bus; append-only, so it blocks tenant erasure while registered) and an EF migration sample (`samples/Modulus.Analytics.MigrationSample`, migration `InitialAnalyticsStore`, applied to PostgreSQL 16.15). Outbox rows carry the event's `SchemaVersion`; the column migration is in `docs/runbooks/analytics-store-migrations.md`.
 - [ ] Phase 3: extraction, change journal, per-tenant backfill with checkpoints, Parquet sink
   - Done (`Modulus.Analytics` and `Modulus.Analytics.EntityFrameworkCore`, 36 tests across net8.0 and net10.0):

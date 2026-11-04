@@ -108,6 +108,10 @@
          Snappier (BSD-3-Clause), ZstdSharp.Port (MIT), Microsoft.IO.RecyclableMemoryStream (MIT) and K4os.Compression.LZ4 (MIT, read from its repository
          LICENSE because the package only carries a licence URL). -->
     <PackageVersion Include="Parquet.Net"                               Version="6.1.0" />
+    <!-- Analytics DuckDB lake reader: DuckDB.NET.Data 1.5.3 (MIT; the native DuckDB library it loads is MIT too). Checked against its .nuspec on 2026-11-04. -->
+    <PackageVersion Include="DuckDB.NET.Data"                           Version="1.5.3" />
+    <!-- DuckDB.NET.Bindings.Full (MIT): ships the native DuckDB library for every runtime; DuckDB.NET.Data alone has none. Checked 2026-11-04. -->
+    <PackageVersion Include="DuckDB.NET.Bindings.Full"                  Version="1.5.3" />
     <!-- gRPC for .NET (Apache-2.0). Grpc.Tools is build-time only (protoc codegen). -->
     <PackageVersion Include="Grpc.AspNetCore.Server"                    Version="2.84.0" />
     <PackageVersion Include="Grpc.AspNetCore.Server.ClientFactory"      Version="2.84.0" />

@@ -58,6 +58,7 @@ public sealed class AnalyticsBuilder
                 sp.GetRequiredService<IAnalyticsDatasetCatalog>(),
                 sp.GetRequiredService<IAnalyticsQueue>(),
                 sp.GetRequiredService<IAnalyticsEntitlement>(),
+                sp.GetRequiredService<IAnalyticsConsent>(),
                 sp)));
 
         // Broker consumers subscribe to the registry's routing keys, so a service that only captures an event still receives it.

@@ -17,6 +17,7 @@ internal sealed class AnalyticsCaptureHandler<TEvent>(
     IAnalyticsDatasetCatalog catalog,
     IAnalyticsQueue queue,
     IAnalyticsEntitlement entitlement,
+    IAnalyticsConsent consent,
     IServiceProvider services)
     : IIntegrationEventHandler<TEvent>
     where TEvent : class, IIntegrationEvent
@@ -35,6 +36,12 @@ internal sealed class AnalyticsCaptureHandler<TEvent>(
 
         // Plan gating: a tenant whose plan does not include the dataset's feature is not exported, quietly. (No tenant is let through to be rejected downstream.)
         if (tenantId != Guid.Empty && !entitlement.IsEntitled(tenantId, dataset))
+        {
+            return;
+        }
+
+        // Consent: a tenant that has not agreed to this dataset is not exported either. Nothing is queued, so nothing needs withdrawing later.
+        if (tenantId != Guid.Empty && !await consent.IsGrantedAsync(tenantId, dataset.Name, ct).ConfigureAwait(false))
         {
             return;
         }

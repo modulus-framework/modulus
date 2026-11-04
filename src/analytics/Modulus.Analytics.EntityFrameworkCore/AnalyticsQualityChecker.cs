@@ -11,8 +11,11 @@ public sealed class AnalyticsQualityChecker(
     IEnumerable<IAnalyticsSink> sinks,
     IAnalyticsTenantDirectory directory,
     IAnalyticsEntitlement entitlement,
-    TimeProvider clock)
+    TimeProvider clock,
+    IEnumerable<IAnalyticsQualityFindingSink>? findingSinks = null)
 {
+    private readonly IReadOnlyList<IAnalyticsQualityFindingSink> _findingSinks = [.. findingSinks ?? []];
+
     /// <summary>Checks one dataset version.</summary>
     /// <param name="dataset">The dataset name.</param>
     /// <param name="version">The dataset version.</param>
@@ -61,6 +64,7 @@ public sealed class AnalyticsQualityChecker(
                     foreach (var finding in findings)
                     {
                         AnalyticsMetrics.QualityFindings.Add(1, AnalyticsMetrics.Tags(sink.Name, dataset, finding.Check));
+                        Route(new AnalyticsQualityIssue(dataset, version, tenant, sink.Name, finding), errors);
                     }
 
                     results.Add(new AnalyticsQualityResult(dataset, version, tenant, sink.Name, profile.RowCount, findings));
@@ -73,5 +77,20 @@ public sealed class AnalyticsQualityChecker(
         }
 
         return new AnalyticsQualityReport(results, errors);
+    }
+
+    private void Route(AnalyticsQualityIssue issue, List<string> errors)
+    {
+        foreach (var findingSink in _findingSinks)
+        {
+            try
+            {
+                findingSink.Record(issue);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                errors.Add($"Finding sink {findingSink.GetType().Name} failed for tenant {issue.TenantId}, sink {issue.Sink}: {ex.Message}");
+            }
+        }
     }
 }

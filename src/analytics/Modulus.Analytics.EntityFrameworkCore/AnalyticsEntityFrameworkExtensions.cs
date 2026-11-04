@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Modulus.Analytics;
 using Modulus.Core.Abstractions;
 
 /// <summary>Registers durable analytics delivery.</summary>
@@ -68,6 +69,7 @@ public static class AnalyticsEntityFrameworkExtensions
         services.TryAddScoped<AnalyticsBackfillManager>();
         services.TryAddScoped<AnalyticsReconciler>();
         services.TryAddScoped<AnalyticsQualityChecker>();
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<IAnalyticsQualityFindingSink, LoggingAnalyticsQualityFindingSink>());
         services.TryAddScoped<AnalyticsBackfillProcessor>();
         services.AddHostedService<AnalyticsBackfillWorker>();
         services.RemoveAll<IAnalyticsQueue>();

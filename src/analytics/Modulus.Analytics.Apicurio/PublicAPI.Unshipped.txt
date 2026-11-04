@@ -1,0 +1,33 @@
+#nullable enable
+Modulus.Analytics.Apicurio.AnalyticsApicurioExtensions
+Modulus.Analytics.Apicurio.ApicurioOptions
+Modulus.Analytics.Apicurio.ApicurioOptions.ApiKey.get -> string?
+Modulus.Analytics.Apicurio.ApicurioOptions.ApiKey.set -> void
+Modulus.Analytics.Apicurio.ApicurioOptions.ApicurioOptions() -> void
+Modulus.Analytics.Apicurio.ApicurioOptions.BaseUrl.get -> System.Uri?
+Modulus.Analytics.Apicurio.ApicurioOptions.BaseUrl.set -> void
+Modulus.Analytics.Apicurio.ApicurioOptions.GroupId.get -> string!
+Modulus.Analytics.Apicurio.ApicurioOptions.GroupId.set -> void
+Modulus.Analytics.Apicurio.ApicurioOptions.Timeout.get -> System.TimeSpan
+Modulus.Analytics.Apicurio.ApicurioOptions.Timeout.set -> void
+Modulus.Analytics.Apicurio.ApicurioPublishResult
+Modulus.Analytics.Apicurio.ApicurioPublishResult.<Clone>$() -> Modulus.Analytics.Apicurio.ApicurioPublishResult!
+Modulus.Analytics.Apicurio.ApicurioPublishResult.ApicurioPublishResult(string! ArtifactId, bool Created) -> void
+Modulus.Analytics.Apicurio.ApicurioPublishResult.ArtifactId.get -> string!
+Modulus.Analytics.Apicurio.ApicurioPublishResult.ArtifactId.init -> void
+Modulus.Analytics.Apicurio.ApicurioPublishResult.Created.get -> bool
+Modulus.Analytics.Apicurio.ApicurioPublishResult.Created.init -> void
+Modulus.Analytics.Apicurio.ApicurioPublishResult.Deconstruct(out string! ArtifactId, out bool Created) -> void
+Modulus.Analytics.Apicurio.ApicurioPublishResult.Equals(Modulus.Analytics.Apicurio.ApicurioPublishResult? other) -> bool
+Modulus.Analytics.Apicurio.ApicurioSchemaPublisher
+Modulus.Analytics.Apicurio.ApicurioSchemaPublisher.ApicurioSchemaPublisher(System.Net.Http.HttpClient! http) -> void
+Modulus.Analytics.Apicurio.ApicurioSchemaPublisher.PublishAllAsync(Modulus.Analytics.IAnalyticsDatasetCatalog! catalog, string! group, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Analytics.Apicurio.ApicurioPublishResult!>!>!
+Modulus.Analytics.Apicurio.ApicurioSchemaPublisher.PublishAsync(Modulus.Analytics.AnalyticsDatasetDescriptor! dataset, string! group, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<Modulus.Analytics.Apicurio.ApicurioPublishResult!>!
+const Modulus.Analytics.Apicurio.ApicurioOptions.SectionName = "Analytics:Apicurio" -> string!
+override Modulus.Analytics.Apicurio.ApicurioPublishResult.Equals(object? obj) -> bool
+override Modulus.Analytics.Apicurio.ApicurioPublishResult.GetHashCode() -> int
+override Modulus.Analytics.Apicurio.ApicurioPublishResult.ToString() -> string!
+static Modulus.Analytics.Apicurio.AnalyticsApicurioExtensions.AddModulusApicurio(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.Analytics.Apicurio.ApicurioPublishResult.operator !=(Modulus.Analytics.Apicurio.ApicurioPublishResult? left, Modulus.Analytics.Apicurio.ApicurioPublishResult? right) -> bool
+static Modulus.Analytics.Apicurio.ApicurioPublishResult.operator ==(Modulus.Analytics.Apicurio.ApicurioPublishResult? left, Modulus.Analytics.Apicurio.ApicurioPublishResult? right) -> bool
+static Modulus.Analytics.Apicurio.ApicurioSchemaPublisher.ArtifactIdFor(Modulus.Analytics.AnalyticsDatasetDescriptor! dataset) -> string!

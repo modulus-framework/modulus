@@ -12,7 +12,8 @@ Every tool and NuGet package must be open source (OSI licence), production-prove
 |---|---|
 | ClickHouse.Driver 1.5.0 (MIT), Testcontainers.ClickHouse (MIT), Parquet.Net 6.1.0 (MIT) | Adopted and pinned |
 | JsonSchema.Net | Rejected (Open Source Maintenance Fee EULA) |
-| Apache.Arrow, Apache.Avro, DuckDB.NET.Data, NJsonSchema | Cleared, not pinned |
+| DuckDB.NET.Data and DuckDB.NET.Bindings.Full 1.5.3 (MIT) | Adopted and pinned (lake reconciliation) |
+| Apache.Arrow, Apache.Avro, NJsonSchema | Cleared, not pinned |
 
 ## Phases
 
@@ -41,6 +42,20 @@ Every tool and NuGet package must be open source (OSI licence), production-prove
 | Retention and erasure propagation (`AnalyticsTenantDataHandler`, `IAnalyticsErasableSink`; ClickHouse TTL, queue purge; Parquet by the lake's tools) | Done, 5 unit tests and 2 ClickHouse integration tests pass | `185034f` |
 | Lineage and OpenLineage emitter (`Modulus.Analytics.OpenLineage`; START, COMPLETE, FAIL per backfill; verified against Marquez 0.50.0) | Done, 10 unit tests and 2 Marquez integration tests pass | `a00c5dc` |
 
+## Framework gaps completed (2026-11-04)
+
+| Item | Status | Where | Tests |
+|---|---|---|---|
+| Circuit breaker on sinks (transient failures open a per-sink circuit; trial write after `OpenDuration`; permanent failures count as "sink answered") | Done | `AnalyticsCircuitBreaker` in `Modulus.Analytics`, used by `AnalyticsDispatcher`; options `Analytics:CircuitBreaker` | 9 unit tests (`AnalyticsResilienceTests`) |
+| Consent (`IAnalyticsConsent`): checked at capture (nothing queued) and at delivery (row withheld, not dead-lettered) | Done. Default grants everything, so existing apps are unchanged | `IAnalyticsConsent`, `AnalyticsDeliveryProcessor` | 2 capture/default unit tests, 1 delivery test |
+| Quality findings to sinks (`IAnalyticsQualityFindingSink`); default logs at warning | Done. Analytics-specific because `IDataQualityFindingSink` records authorization decisions | `Modulus.Analytics`, `Modulus.Analytics.EntityFrameworkCore` | 3 governance tests |
+| OpenMetadata catalog publisher (tables, typed columns, nullability and classification in descriptions) | Done, tested against a stub server. The service, database and schema must exist in OpenMetadata first | `Modulus.Analytics.OpenMetadata` | 12 unit tests |
+| Apicurio schema publisher (JSON Schema as artifacts; new version on conflict) | Done, tested against a stub server. Request shape follows the Apicurio v3 REST API; not run against a live registry | `Modulus.Analytics.Apicurio` | 6 unit tests |
+| DuckDB reconciliation reader (distinct records per tenant in the Parquet lake, read in place) | Done, tested against real Parquet files written by the sink. Local or mounted paths only | `Modulus.Analytics.DuckDB` (DuckDB.NET, MIT) | 6 unit tests |
+| MLflow guidance | Done as a runbook; no code, per the plan | `docs/runbooks/analytics-ml-mlflow.md` | none |
+
+Not built (not in the plan's gap list): live runs of OpenMetadata, Apicurio and DuckDB against servers; MLflow integration code.
+
 ## Test status
 
 Last full run of the analytics suites (both frameworks where applicable):
@@ -62,6 +77,9 @@ Last full run of the analytics suites (both frameworks where applicable):
 | Integration: OpenLineage with Marquez 0.50.0 | 2 pass (re-run after the run-observer change) |
 | Integration: EF (real PostgreSQL 16) | 8 pass (re-run after the run-observer change; this commit ran them against a local PostgreSQL 16.15 through `MODULUS_TEST_POSTGRES_CONNECTION`) |
 | Modulus.Analytics.Messaging.Tests | 6 pass (net8.0 and net10.0) |
+| Modulus.Analytics.Apicurio.Tests | 6 pass (net8.0 and net10.0) |
+| Modulus.Analytics.OpenMetadata.Tests | 12 pass (net8.0 and net10.0) |
+| Modulus.Analytics.DuckDB.Tests | 6 pass (net8.0 and net10.0) |
 
 `dotnet format --verify-no-changes` is clean for the analytics projects. Each changed project builds with 0 warnings.
 

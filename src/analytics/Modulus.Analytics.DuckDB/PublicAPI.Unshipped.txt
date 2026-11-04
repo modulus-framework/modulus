@@ -1,0 +1,5 @@
+#nullable enable
+Modulus.Analytics.DuckDb.DuckDbLakeReconciler
+Modulus.Analytics.DuckDb.DuckDbLakeReconciler.CountDistinctRecordsAsync(string! datasetDirectory, System.Guid tenantId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<long>!
+Modulus.Analytics.DuckDb.DuckDbLakeReconciler.DuckDbLakeReconciler() -> void
+static Modulus.Analytics.DuckDb.DuckDbLakeReconciler.DatasetDirectory(string! lakeRoot, Modulus.Analytics.AnalyticsDatasetDescriptor! dataset) -> string!

@@ -82,6 +82,9 @@
     <Project Path="src/analytics/Modulus.Analytics.Debezium/Modulus.Analytics.Debezium.csproj" />
     <Project Path="src/analytics/Modulus.Analytics.Doris/Modulus.Analytics.Doris.csproj" />
     <Project Path="src/analytics/Modulus.Analytics.Messaging/Modulus.Analytics.Messaging.csproj" />
+    <Project Path="src/analytics/Modulus.Analytics.Apicurio/Modulus.Analytics.Apicurio.csproj" />
+    <Project Path="src/analytics/Modulus.Analytics.OpenMetadata/Modulus.Analytics.OpenMetadata.csproj" />
+    <Project Path="src/analytics/Modulus.Analytics.DuckDB/Modulus.Analytics.DuckDB.csproj" />
     <Project Path="samples/Modulus.Analytics.MigrationSample/Modulus.Analytics.MigrationSample.csproj" />
     <Project Path="src/analytics/Modulus.Analytics.Testing/Modulus.Analytics.Testing.csproj" />
   </Folder>
@@ -134,6 +137,9 @@
     <Project Path="tests/unit/Modulus.Analytics.Debezium.Tests/Modulus.Analytics.Debezium.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Analytics.Doris.Tests/Modulus.Analytics.Doris.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Analytics.Messaging.Tests/Modulus.Analytics.Messaging.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.Analytics.Apicurio.Tests/Modulus.Analytics.Apicurio.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.Analytics.OpenMetadata.Tests/Modulus.Analytics.OpenMetadata.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.Analytics.DuckDB.Tests/Modulus.Analytics.DuckDB.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Analytics.Tests/Modulus.Analytics.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Webhooks.Tests/Modulus.Webhooks.Tests.csproj" />
     <Project Path="tests/unit/Modulus.AI.Connector.Tests/Modulus.AI.Connector.Tests.csproj" />

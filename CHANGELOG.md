@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **Analytics messaging sink** (`Modulus.Analytics.Messaging`): publishes analytics records as `AnalyticsRecordPublished` on the module bus. `IntegrationEventNaming.GetVersion` returns an event's declared contract version.
+- **Analytics governance and catalogs:** per-sink circuit breaker (`Analytics:CircuitBreaker`), tenant consent (`IAnalyticsConsent`, default grants all), analytics quality-finding sinks (`IAnalyticsQualityFindingSink`), and three optional packages: `Modulus.Analytics.OpenMetadata` (catalog tables), `Modulus.Analytics.Apicurio` (schema registry) and `Modulus.Analytics.DuckDB` (lake reconciliation). MLflow guidance in `docs/runbooks/analytics-ml-mlflow.md`.
 - **Analytics store migration sample** (`samples/Modulus.Analytics.MigrationSample`) and runbook `docs/runbooks/analytics-store-migrations.md`.
 - **`modulus ui add-component` now scaffolds 78 components** (was 17): every form input, Word-style documents, spreadsheets, PDF, code and rich-text editors, data grids, pivot and import wizard, the data-display, navigation, layout and feedback
   building blocks, and the Pro boards and builders, for MVC, Razor Pages and Blazor. See `modulus ui add-component --list`.

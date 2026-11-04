@@ -99,7 +99,6 @@ Modulus.Analytics.AnalyticsDispatchResult.Rejected.get -> System.Collections.Gen
 Modulus.Analytics.AnalyticsDispatchResult.Rejected.init -> void
 Modulus.Analytics.AnalyticsDispatchResult.ShouldRetry.get -> bool
 Modulus.Analytics.AnalyticsDispatcher
-Modulus.Analytics.AnalyticsDispatcher.AnalyticsDispatcher(Modulus.Analytics.IAnalyticsDatasetCatalog! catalog, System.Collections.Generic.IEnumerable<Modulus.Analytics.IAnalyticsSink!>! sinks, System.Collections.Generic.IEnumerable<Modulus.Analytics.IAnalyticsRecordUpcaster!>! upcasters, Modulus.Core.Abstractions.DataProtection.IPersonalDataProtector! protector) -> void
 Modulus.Analytics.AnalyticsDispatcher.DispatchAsync(System.Collections.Generic.IReadOnlyList<Modulus.Analytics.AnalyticsRecord!>! records, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Analytics.AnalyticsDispatchResult!>!
 Modulus.Analytics.AnalyticsDispatcher.HasSinks.get -> bool
 Modulus.Analytics.AnalyticsExtractPage
@@ -517,3 +516,42 @@ override Modulus.Analytics.AnalyticsRunCompleted.GetHashCode() -> int
 override Modulus.Analytics.AnalyticsRunCompleted.ToString() -> string!
 static Modulus.Analytics.AnalyticsRunCompleted.operator !=(Modulus.Analytics.AnalyticsRunCompleted? left, Modulus.Analytics.AnalyticsRunCompleted? right) -> bool
 static Modulus.Analytics.AnalyticsRunCompleted.operator ==(Modulus.Analytics.AnalyticsRunCompleted? left, Modulus.Analytics.AnalyticsRunCompleted? right) -> bool
+Modulus.Analytics.AnalyticsCircuitBreaker
+Modulus.Analytics.AnalyticsCircuitBreaker.AnalyticsCircuitBreaker(Microsoft.Extensions.Options.IOptions<Modulus.Analytics.AnalyticsCircuitBreakerOptions!>! options, System.TimeProvider! clock) -> void
+Modulus.Analytics.AnalyticsCircuitBreaker.IsOpen(string! sink) -> bool
+Modulus.Analytics.AnalyticsCircuitBreaker.RecordSuccess(string! sink) -> void
+Modulus.Analytics.AnalyticsCircuitBreaker.RecordTransientFailure(string! sink) -> void
+Modulus.Analytics.AnalyticsCircuitBreaker.Release(string! sink) -> void
+Modulus.Analytics.AnalyticsCircuitBreaker.TryEnter(string! sink) -> bool
+Modulus.Analytics.AnalyticsCircuitBreakerOptions
+Modulus.Analytics.AnalyticsCircuitBreakerOptions.AnalyticsCircuitBreakerOptions() -> void
+Modulus.Analytics.AnalyticsCircuitBreakerOptions.FailureThreshold.get -> int
+Modulus.Analytics.AnalyticsCircuitBreakerOptions.FailureThreshold.set -> void
+Modulus.Analytics.AnalyticsCircuitBreakerOptions.OpenDuration.get -> System.TimeSpan
+Modulus.Analytics.AnalyticsCircuitBreakerOptions.OpenDuration.set -> void
+Modulus.Analytics.AnalyticsDispatcher.AnalyticsDispatcher(Modulus.Analytics.IAnalyticsDatasetCatalog! catalog, System.Collections.Generic.IEnumerable<Modulus.Analytics.IAnalyticsSink!>! sinks, System.Collections.Generic.IEnumerable<Modulus.Analytics.IAnalyticsRecordUpcaster!>! upcasters, Modulus.Core.Abstractions.DataProtection.IPersonalDataProtector! protector, Modulus.Analytics.AnalyticsCircuitBreaker? breaker = null) -> void
+Modulus.Analytics.AnalyticsQualityIssue
+Modulus.Analytics.AnalyticsQualityIssue.<Clone>$() -> Modulus.Analytics.AnalyticsQualityIssue!
+Modulus.Analytics.AnalyticsQualityIssue.AnalyticsQualityIssue(string! Dataset, int Version, System.Guid TenantId, string! Sink, Modulus.Analytics.AnalyticsQualityFinding! Finding) -> void
+Modulus.Analytics.AnalyticsQualityIssue.Dataset.get -> string!
+Modulus.Analytics.AnalyticsQualityIssue.Dataset.init -> void
+Modulus.Analytics.AnalyticsQualityIssue.Deconstruct(out string! Dataset, out int Version, out System.Guid TenantId, out string! Sink, out Modulus.Analytics.AnalyticsQualityFinding! Finding) -> void
+Modulus.Analytics.AnalyticsQualityIssue.Equals(Modulus.Analytics.AnalyticsQualityIssue? other) -> bool
+Modulus.Analytics.AnalyticsQualityIssue.Finding.get -> Modulus.Analytics.AnalyticsQualityFinding!
+Modulus.Analytics.AnalyticsQualityIssue.Finding.init -> void
+Modulus.Analytics.AnalyticsQualityIssue.Sink.get -> string!
+Modulus.Analytics.AnalyticsQualityIssue.Sink.init -> void
+Modulus.Analytics.AnalyticsQualityIssue.TenantId.get -> System.Guid
+Modulus.Analytics.AnalyticsQualityIssue.TenantId.init -> void
+Modulus.Analytics.AnalyticsQualityIssue.Version.get -> int
+Modulus.Analytics.AnalyticsQualityIssue.Version.init -> void
+Modulus.Analytics.IAnalyticsConsent
+Modulus.Analytics.IAnalyticsConsent.IsGrantedAsync(System.Guid tenantId, string! dataset, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<bool>
+Modulus.Analytics.IAnalyticsQualityFindingSink
+Modulus.Analytics.IAnalyticsQualityFindingSink.Record(Modulus.Analytics.AnalyticsQualityIssue! issue) -> void
+const Modulus.Analytics.AnalyticsCircuitBreakerOptions.SectionName = "Analytics:CircuitBreaker" -> string!
+override Modulus.Analytics.AnalyticsQualityIssue.Equals(object? obj) -> bool
+override Modulus.Analytics.AnalyticsQualityIssue.GetHashCode() -> int
+override Modulus.Analytics.AnalyticsQualityIssue.ToString() -> string!
+static Modulus.Analytics.AnalyticsQualityIssue.operator !=(Modulus.Analytics.AnalyticsQualityIssue? left, Modulus.Analytics.AnalyticsQualityIssue? right) -> bool
+static Modulus.Analytics.AnalyticsQualityIssue.operator ==(Modulus.Analytics.AnalyticsQualityIssue? left, Modulus.Analytics.AnalyticsQualityIssue? right) -> bool

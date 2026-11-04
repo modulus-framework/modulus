@@ -19,18 +19,23 @@ public sealed class AnalyticsDispatcher
     private readonly IReadOnlyList<IAnalyticsRecordUpcaster> _upcasters;
     private readonly IPersonalDataProtector _protector;
     private readonly ConcurrentDictionary<(string Sink, string Dataset), bool> _ensured = new();
+    private readonly AnalyticsCircuitBreaker _breaker;
 
     /// <summary>Creates the dispatcher.</summary>
     /// <param name="catalog">The registered datasets.</param>
     /// <param name="sinks">The destinations.</param>
     /// <param name="upcasters">Version steps for old records.</param>
     /// <param name="protector">Supplies the keyed hash for masked fields.</param>
+    /// <param name="breaker">Pauses writes to a sink that keeps failing. Without one, each sink is always called.</param>
     public AnalyticsDispatcher(
         IAnalyticsDatasetCatalog catalog,
         IEnumerable<IAnalyticsSink> sinks,
         IEnumerable<IAnalyticsRecordUpcaster> upcasters,
-        IPersonalDataProtector protector)
+        IPersonalDataProtector protector,
+        AnalyticsCircuitBreaker? breaker = null)
     {
+        _breaker = breaker ?? new AnalyticsCircuitBreaker(
+            Microsoft.Extensions.Options.Options.Create(new AnalyticsCircuitBreakerOptions()), TimeProvider.System);
         _catalog = catalog ?? throw new ArgumentNullException(nameof(catalog));
         _sinks = [.. sinks ?? throw new ArgumentNullException(nameof(sinks))];
         _upcasters = [.. upcasters ?? throw new ArgumentNullException(nameof(upcasters))];
@@ -101,6 +106,15 @@ public sealed class AnalyticsDispatcher
     private async Task<AnalyticsSinkOutcome> WriteAsync(
         IAnalyticsSink sink, string key, AnalyticsDatasetDescriptor dataset, List<AnalyticsRecord> batch, CancellationToken cancellationToken)
     {
+        if (!_breaker.TryEnter(sink.Name))
+        {
+            // The records stay queued: the caller treats a transient outcome as a retry.
+            AnalyticsMetrics.Failed.Add(batch.Count, AnalyticsMetrics.Tags(sink.Name, dataset.Name));
+            return new AnalyticsSinkOutcome(sink.Name, key, batch.Count, false, true,
+                $"Circuit open for sink '{sink.Name}': writes are paused until it recovers.");
+        }
+
+        var answered = false;
         try
         {
             if (!_ensured.ContainsKey((sink.Name, key)))
@@ -110,19 +124,40 @@ public sealed class AnalyticsDispatcher
             }
 
             await sink.WriteAsync(dataset, batch, cancellationToken).ConfigureAwait(false);
+            answered = true;
+            _breaker.RecordSuccess(sink.Name);
             AnalyticsMetrics.Delivered.Add(batch.Count, AnalyticsMetrics.Tags(sink.Name, dataset.Name));
             return new AnalyticsSinkOutcome(sink.Name, key, batch.Count, true);
         }
         catch (AnalyticsSinkException ex)
         {
+            answered = true;
+            if (ex.IsTransient)
+            {
+                _breaker.RecordTransientFailure(sink.Name);
+            }
+            else
+            {
+                _breaker.RecordSuccess(sink.Name);
+            }
+
             AnalyticsMetrics.Failed.Add(batch.Count, AnalyticsMetrics.Tags(sink.Name, dataset.Name));
             return new AnalyticsSinkOutcome(sink.Name, key, batch.Count, false, ex.IsTransient, ex.Message);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             // An unexpected provider error is treated as transient: a sink that knows better throws AnalyticsSinkException.
+            answered = true;
+            _breaker.RecordTransientFailure(sink.Name);
             AnalyticsMetrics.Failed.Add(batch.Count, AnalyticsMetrics.Tags(sink.Name, dataset.Name));
             return new AnalyticsSinkOutcome(sink.Name, key, batch.Count, false, true, ex.Message);
+        }
+        finally
+        {
+            if (!answered)
+            {
+                _breaker.Release(sink.Name);
+            }
         }
     }
 }

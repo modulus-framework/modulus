@@ -15,6 +15,7 @@ internal sealed class AnalyticsDeliveryProcessor(
     AnalyticsDispatcher dispatcher,
     IAnalyticsDatasetCatalog catalog,
     IOptions<AnalyticsDeliveryOptions> options,
+    IAnalyticsConsent consent,
     TimeProvider clock,
     ILogger<AnalyticsDeliveryProcessor> logger)
 {
@@ -126,8 +127,25 @@ internal sealed class AnalyticsDeliveryProcessor(
         rows = current;
         var records = new List<AnalyticsRecord>(rows.Count);
         var byEventId = new Dictionary<(Guid Tenant, Guid Event), AnalyticsDelivery>();
+        var consentByTenant = new Dictionary<Guid, bool>();
         foreach (var row in rows)
         {
+            if (!consentByTenant.TryGetValue(row.TenantId, out var granted))
+            {
+                granted = await consent.IsGrantedAsync(row.TenantId, dataset, ct).ConfigureAwait(false);
+                consentByTenant[row.TenantId] = granted;
+            }
+
+            if (!granted)
+            {
+                // Withheld, not failed: the row is done and is never sent. Consent given later does not resend it; a new capture would.
+                row.DeliveredAt = finishedAt;
+                row.LastAttemptAt = finishedAt;
+                row.LastError = "Withheld: the tenant has not granted consent for this dataset.";
+                Release(row);
+                continue;
+            }
+
             try
             {
                 records.Add(new AnalyticsRecord(
