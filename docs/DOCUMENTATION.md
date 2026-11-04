@@ -6423,7 +6423,7 @@ Iceberg Kafka Connect sink commits the table.
 
 ### Checklist
 
-- [ ] Phase 0: licence gate run and recorded in `THIRD-PARTY-NOTICES.md`
+- [x] Phase 0: licence gate run and recorded in `THIRD-PARTY-NOTICES.md` (2026-11-04). `ClickHouse.Driver` 1.5.0 adopted; `JsonSchema.Net` rejected (OSMF EULA).
 - [ ] Phase 1: dataset and field metadata, `SchemaVersion` and upcasters, JSON Schema export, `IAnalyticsSink`, conformance tests
   - Done in `Modulus.Analytics` and `Modulus.Analytics.Testing` (29 unit tests, net8.0 and net10.0): dataset and field descriptors with validation,
     the versioned dataset catalog, `IAnalyticsSink` and `AnalyticsSinkException`, classification-driven batch masking (keep, hash, drop),
@@ -6441,7 +6441,13 @@ Iceberg Kafka Connect sink commits the table.
       Dead letters are kept. With no sink registered the worker leaves rows queued rather than counting them delivered.
   - Known limit: a failed sink makes the whole batch retry, so every sink sees the record again. Sinks must be idempotent (the conformance suite checks it).
     A per-sink delivery state is the fix if one slow sink holds back the rest.
-  - Still open: the ClickHouse sink (needs the licence gate), the messaging sink, management endpoints for dead letters and replay, an EF migration sample.
+  - ClickHouse sink (`Modulus.Analytics.ClickHouse`, official `ClickHouse.Driver`): one `ReplacingMergeTree` table per dataset *version*, ordered by
+    (`tenant_id`, day, `event_id`) so a redelivered record collapses on merge, `TTL` from the dataset's retention, column comments recording classification and
+    masking, an existing table checked against the contract (a changed version is refused, permanently), `CreateTables=false` for DBA-owned DDL, and failures
+    classified as transient (network, overload) or permanent (bad credentials, unknown table, type mismatch). Verified against a real ClickHouse 25.8 server
+    through Testcontainers (11 integration tests, net8.0 and net10.0) and 23 unit tests. Until parts merge a duplicate can be visible: read with `FINAL`.
+  - Sinks receive the declared CLR types (`AnalyticsValueSerializer.Normalize` runs at capture, so inline and queued delivery look the same).
+  - Still open: the messaging sink, management endpoints for dead letters and replay, an EF migration sample.
 - [ ] Phase 3: extraction, change journal, per-tenant backfill with checkpoints, Parquet sink
 - [ ] Phase 4: dataset permissions, plan gating, export audit, freshness, reconciliation, quality, retention and erasure, lineage
 - [ ] Phase 5: management API, CLI `add-analytics` with compose template, `analytics-admin` in `modulus-ui`

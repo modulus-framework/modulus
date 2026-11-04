@@ -1,0 +1,23 @@
+#nullable enable
+Modulus.Analytics.ClickHouse.ClickHouseAnalyticsExtensions
+Modulus.Analytics.ClickHouse.ClickHouseAnalyticsSink
+Modulus.Analytics.ClickHouse.ClickHouseAnalyticsSink.ClickHouseAnalyticsSink(ClickHouse.Driver.ClickHouseClient! client, Microsoft.Extensions.Options.IOptions<Modulus.Analytics.ClickHouse.ClickHouseSinkOptions!>! options) -> void
+Modulus.Analytics.ClickHouse.ClickHouseAnalyticsSink.EnsureDatasetAsync(Modulus.Analytics.AnalyticsDatasetDescriptor! dataset, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+Modulus.Analytics.ClickHouse.ClickHouseAnalyticsSink.Name.get -> string!
+Modulus.Analytics.ClickHouse.ClickHouseAnalyticsSink.WriteAsync(Modulus.Analytics.AnalyticsDatasetDescriptor! dataset, System.Collections.Generic.IReadOnlyList<Modulus.Analytics.AnalyticsRecord!>! records, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+Modulus.Analytics.ClickHouse.ClickHouseSinkOptions
+Modulus.Analytics.ClickHouse.ClickHouseSinkOptions.ClickHouseSinkOptions() -> void
+Modulus.Analytics.ClickHouse.ClickHouseSinkOptions.ConnectionString.get -> string!
+Modulus.Analytics.ClickHouse.ClickHouseSinkOptions.ConnectionString.set -> void
+Modulus.Analytics.ClickHouse.ClickHouseSinkOptions.CreateTables.get -> bool
+Modulus.Analytics.ClickHouse.ClickHouseSinkOptions.CreateTables.set -> void
+Modulus.Analytics.ClickHouse.ClickHouseSinkOptions.DecimalPrecision.get -> int
+Modulus.Analytics.ClickHouse.ClickHouseSinkOptions.DecimalPrecision.set -> void
+Modulus.Analytics.ClickHouse.ClickHouseSinkOptions.DecimalScale.get -> int
+Modulus.Analytics.ClickHouse.ClickHouseSinkOptions.DecimalScale.set -> void
+Modulus.Analytics.ClickHouse.ClickHouseSinkOptions.InsertBatchSize.get -> int
+Modulus.Analytics.ClickHouse.ClickHouseSinkOptions.InsertBatchSize.set -> void
+Modulus.Analytics.ClickHouse.ClickHouseSinkOptions.TablePrefix.get -> string!
+Modulus.Analytics.ClickHouse.ClickHouseSinkOptions.TablePrefix.set -> void
+const Modulus.Analytics.ClickHouse.ClickHouseSinkOptions.SectionName = "Analytics:ClickHouse" -> string!
+static Modulus.Analytics.ClickHouse.ClickHouseAnalyticsExtensions.AddClickHouse(this Modulus.Analytics.AnalyticsBuilder! builder, Microsoft.Extensions.Configuration.IConfiguration! configuration, System.Action<Modulus.Analytics.ClickHouse.ClickHouseSinkOptions!>? configure = null) -> Modulus.Analytics.AnalyticsBuilder!

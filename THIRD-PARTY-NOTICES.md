@@ -44,22 +44,24 @@ SkiaSharp 2.88.6 was the first decoder. Its managed code is MIT, but its native 
 PhotoSauce.MagicScaler 0.15.0 (MIT) was considered and not used. Its native component bundles libheif, which is under the LGPL 3.0, so it fails
 the complete-bundle rule.
 
-## Analytics Integration Layer: licence gate (planned, 2026-11-03; **Open**, not yet run)
+## Analytics Integration Layer: licence gate (run 2026-11-04)
 
-No analytics dependency is pinned yet. Before any `PackageVersion` is added for this feature, each candidate below must be checked against
-its upstream repository and its NuGet `license` metadata, and the verified result recorded here. The "expected" column is from memory and is
-**not** a verification.
+Checked against each package's `.nuspec` on nuget.org, which is the licence the publisher declares. This is not a legal review. Where a
+package declares a licence file instead of an SPDX expression, the file was read.
 
-| Candidate | Use | Expected licence | Status |
+| Package | Version | Declared licence | Decision |
 | --- | --- | --- | --- |
-| `ClickHouse.Client` (or its official successor) | ClickHouse sink | MIT | Open |
-| `Parquet.Net` | Parquet sink | MIT | Open |
-| `Apache.Arrow` | Parquet alternative | Apache-2.0 | Open |
-| `Apache.Avro` | Avro contracts | Apache-2.0 | Open |
-| `JsonSchema.Net` or `NJsonSchema` | JSON Schema export | MIT | Open |
-| `DuckDB.NET` | optional embedded reads | MIT | Open |
-| `Testcontainers.ClickHouse` | integration tests | MIT | Open |
+| `ClickHouse.Driver` (ClickHouse/clickhouse-cs, authored by ClickHouse) | 1.5.0 | MIT; its `THIRD-PARTY-NOTICES.txt` lists vendored MIT, MIT and BSD-3-Clause (chosen from a BSD-3-Clause / GPL-2.0 dual licence) code | **Adopted**: pinned in `Directory.Packages.props`, used by `Modulus.Analytics.ClickHouse` |
+| `NodaTime` (dependency of the driver) | 3.2.3 | Apache-2.0 | Adopted (transitive) |
+| `Microsoft.IO.RecyclableMemoryStream` (dependency of the driver) | 3.0.1 | MIT | Adopted (transitive) |
+| `Testcontainers.ClickHouse` | 4.16.0 | MIT | **Adopted**: pinned, integration tests only |
+| `ClickHouse.Client` (community client by DarkWanderer) | 7.14.0 | MIT | Not used: the official `ClickHouse.Driver` replaces it |
+| `Parquet.Net` | 6.1.0 | MIT | Cleared, not pinned yet (Phase 3 Parquet sink) |
+| `Apache.Arrow` | 23.0.0 | Apache-2.0 | Cleared, not pinned (alternative to `Parquet.Net`) |
+| `Apache.Avro` | 1.12.2 | Apache-2.0 (the `LICENSE` file in the package is the Apache License 2.0) | Cleared, not pinned yet |
+| `DuckDB.NET.Data` | 1.5.6.1 | MIT | Cleared, not pinned (optional embedded reads) |
+| `NJsonSchema` | 11.6.1 | MIT | Cleared, not needed: the JSON Schema export is written without a library |
+| `JsonSchema.Net` | 9.6.0 | **Open Source Maintenance Fee EULA** (`OSMFEULA.txt`), not a plain OSI licence | **Rejected**: fails the repository's OSI-only policy |
 
-Server-side tools (ClickHouse, Debezium, Iceberg, Spark, Flink, Trino, Superset and the rest) are not shipped or linked by Modulus; they are
-reached over HTTP, Kafka or S3. They are listed in `docs/DOCUMENTATION.md` (Analytics Integration Layer) with the policy that excludes
-BSL, SSPL, Elastic License, ELv2 and Confluent Community License products.
+Not covered here: the ClickHouse server (Apache-2.0, run by the operator, never shipped or linked by Modulus) and the other server-side tools
+listed in `docs/DOCUMENTATION.md` (Analytics Integration Layer).

@@ -19,7 +19,8 @@ public interface IAnalyticsSink
 
     /// <summary>
     /// Writes already-masked <paramref name="records"/>. Writing a record that was written before must not create a duplicate
-    /// (it is a no-op or an overwrite), because delivery is at least once.
+    /// (it is a no-op or an overwrite), because delivery is at least once. Values carry their declared CLR types: string, long,
+    /// decimal, double, bool, <see cref="DateTimeOffset"/>, <see cref="DateOnly"/> and <see cref="Guid"/>; a hashed field is a string.
     /// </summary>
     /// <param name="dataset">The dataset the records belong to.</param>
     /// <param name="records">The masked rows. All belong to <paramref name="dataset"/>.</param>

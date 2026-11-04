@@ -72,6 +72,7 @@
   <!-- ── AI ──────────────────────────────────────────────────────── -->
   <Folder Name="/src/analytics/">
     <Project Path="src/analytics/Modulus.Analytics/Modulus.Analytics.csproj" />
+    <Project Path="src/analytics/Modulus.Analytics.ClickHouse/Modulus.Analytics.ClickHouse.csproj" />
     <Project Path="src/analytics/Modulus.Analytics.EntityFrameworkCore/Modulus.Analytics.EntityFrameworkCore.csproj" />
     <Project Path="src/analytics/Modulus.Analytics.Testing/Modulus.Analytics.Testing.csproj" />
   </Folder>
@@ -114,6 +115,7 @@
     <Project Path="tests/unit/Modulus.Data.MongoDB.Tests/Modulus.Data.MongoDB.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Outbox.Tests/Modulus.Outbox.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Sagas.Tests/Modulus.Sagas.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.Analytics.ClickHouse.Tests/Modulus.Analytics.ClickHouse.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Analytics.EntityFrameworkCore.Tests/Modulus.Analytics.EntityFrameworkCore.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Analytics.Tests/Modulus.Analytics.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Webhooks.Tests/Modulus.Webhooks.Tests.csproj" />
@@ -151,6 +153,7 @@
     <Project Path="tests/integration/Modulus.Cli.Integration.Tests/Modulus.Cli.Integration.Tests.csproj" />
     <Project Path="tests/integration/Modulus.EFCore.Integration.Tests/Modulus.EFCore.Integration.Tests.csproj" />
     <Project Path="tests/integration/Modulus.Messaging.Integration.Tests/Modulus.Messaging.Integration.Tests.csproj" />
+    <Project Path="tests/integration/Modulus.Analytics.ClickHouse.Integration.Tests/Modulus.Analytics.ClickHouse.Integration.Tests.csproj" />
     <Project Path="tests/integration/Modulus.Outbox.Integration.Tests/Modulus.Outbox.Integration.Tests.csproj" />
     <Project Path="tests/integration/Modulus.BackgroundJobs.Quartz.Integration.Tests/Modulus.BackgroundJobs.Quartz.Integration.Tests.csproj" />
     <Project Path="tests/integration/Modulus.BackgroundJobs.Quartz.ClusterNode/Modulus.BackgroundJobs.Quartz.ClusterNode.csproj" />

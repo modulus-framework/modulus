@@ -58,6 +58,16 @@ public static class AnalyticsValueSerializer
         return Encoding.UTF8.GetString(stream.ToArray());
     }
 
+    /// <summary>
+    /// Returns <paramref name="values"/> with each declared field coerced to its declared CLR type (string, long, decimal, double, bool,
+    /// <see cref="DateTimeOffset"/>, <see cref="DateOnly"/>, <see cref="Guid"/>) and undeclared fields removed. Sinks can rely on these types.
+    /// </summary>
+    /// <param name="dataset">The dataset version the values follow.</param>
+    /// <param name="values">The values by field name.</param>
+    /// <exception cref="InvalidOperationException">A required field is missing or null, or a value cannot be read as its declared type.</exception>
+    public static IReadOnlyDictionary<string, object?> Normalize(AnalyticsDatasetDescriptor dataset, IReadOnlyDictionary<string, object?> values)
+        => Deserialize(dataset, Serialize(dataset, values));
+
     /// <summary>Reads JSON written by <see cref="Serialize"/> back into typed values.</summary>
     /// <param name="dataset">The dataset version the JSON follows.</param>
     /// <param name="json">The JSON object.</param>

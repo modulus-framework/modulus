@@ -182,4 +182,5 @@ static Modulus.Analytics.AnalyticsSinkOutcome.operator !=(Modulus.Analytics.Anal
 static Modulus.Analytics.AnalyticsSinkOutcome.operator ==(Modulus.Analytics.AnalyticsSinkOutcome? left, Modulus.Analytics.AnalyticsSinkOutcome? right) -> bool
 static Modulus.Analytics.AnalyticsUpcasting.UpcastTo(System.Collections.Generic.IEnumerable<Modulus.Analytics.IAnalyticsRecordUpcaster!>! upcasters, Modulus.Analytics.AnalyticsRecord! record, int targetVersion) -> Modulus.Analytics.AnalyticsRecord!
 static Modulus.Analytics.AnalyticsValueSerializer.Deserialize(Modulus.Analytics.AnalyticsDatasetDescriptor! dataset, string! json) -> System.Collections.Generic.IReadOnlyDictionary<string!, object?>!
+static Modulus.Analytics.AnalyticsValueSerializer.Normalize(Modulus.Analytics.AnalyticsDatasetDescriptor! dataset, System.Collections.Generic.IReadOnlyDictionary<string!, object?>! values) -> System.Collections.Generic.IReadOnlyDictionary<string!, object?>!
 static Modulus.Analytics.AnalyticsValueSerializer.Serialize(Modulus.Analytics.AnalyticsDatasetDescriptor! dataset, System.Collections.Generic.IReadOnlyDictionary<string!, object?>! values) -> string!

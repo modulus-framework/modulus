@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework />
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <!-- New package: nothing of this ID is on nuget.org yet, so there is no baseline to validate against. Remove this line after its first release. -->
+    <EnablePackageValidation>false</EnablePackageValidation>
+    <Description>ClickHouse sink for the Modulus Analytics Integration Layer: creates one tenant-keyed ReplacingMergeTree table per dataset version, verifies existing tables against the dataset contract, and writes masked batches with the official ClickHouse client, classifying failures as transient or permanent.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Modulus.Analytics/Modulus.Analytics.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="ClickHouse.Driver" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Modulus.Analytics.ClickHouse.Tests" />
+    <InternalsVisibleTo Include="Modulus.Analytics.ClickHouse.Integration.Tests" />
+  </ItemGroup>
+
+</Project>

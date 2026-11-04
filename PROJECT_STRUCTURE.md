@@ -43,6 +43,7 @@ modulus/
 | platform | `Modulus.Authorization.Management` | Admin REST API (`MapModulusAuthorizationManagement`) over the EF authorization stores, guarded by `authorization:manage` |
 | platform | `Modulus.AspNetCore.Redis` | Redis-backed shared HTTP idempotency store (`AddRedisIdempotencyStore`) |
 | platform | `Modulus.Caching.Redis`, `Modulus.Storage.{S3,AzureBlobs}`, `Modulus.SignalR.Backplane` | Dependency-heavy providers split from Platform |
+| analytics | `Modulus.Analytics.ClickHouse` | ClickHouse sink: tenant-keyed `ReplacingMergeTree` table per dataset version, contract check, failure classification (official `ClickHouse.Driver`, MIT) |
 | analytics | `Modulus.Analytics.EntityFrameworkCore` | Durable delivery for analytics: queue table, duplicate-safe enqueue, atomic claim, retry schedule, dead-letter, purge, background worker |
 | analytics | `Modulus.Analytics.Testing` | In-memory sink and a test-framework-neutral conformance suite for any `IAnalyticsSink` |
 | analytics | `Modulus.Analytics` | Analytics Integration Layer contracts (planned, see docs/DOCUMENTATION.md): versioned dataset and field metadata with classification, dataset catalog, provider-neutral `IAnalyticsSink`, batch masking, upcasters, JSON Schema export, `AnalyticsDispatcher`, event capture (`MapEvent`), typed value serializer, `IAnalyticsQueue`. Providers ship as separate packages |

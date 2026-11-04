@@ -30,11 +30,11 @@ internal sealed class AnalyticsCaptureHandler<TEvent>(
                 $"Event {typeof(TEvent).Name} is mapped to dataset '{mapping.Dataset}.v{mapping.Version}', which is not registered.");
         }
 
-        var values = mapping.Map(@event);
         var tenantId = services.GetService<ICurrentTenant>()?.TenantId ?? Guid.Empty;
 
         // Fail here, at capture, when the mapper's output does not fit the contract; a bad row must not sit in the queue.
-        AnalyticsValueSerializer.Serialize(dataset, values);
+        // Normalising also gives sinks the declared CLR types whether the record is delivered inline or from the queue.
+        var values = AnalyticsValueSerializer.Normalize(dataset, mapping.Map(@event));
 
         var record = new AnalyticsRecord(@event.EventId, dataset.Name, dataset.Version, tenantId, new DateTimeOffset(@event.OccurredAt), values);
         await queue.EnqueueAsync([record], ct).ConfigureAwait(false);
