@@ -1,0 +1,61 @@
+namespace Modulus.Analytics.Management;
+
+/// <summary>
+/// A dead-lettered analytics record as management sees it. It carries no record values on purpose: queued rows hold values before
+/// masking, so restricted fields must not leave through an operations API.
+/// </summary>
+/// <param name="Id">The queue row id.</param>
+/// <param name="TenantId">The record's tenant.</param>
+/// <param name="EventId">The record id (the integration event id).</param>
+/// <param name="Dataset">The dataset name.</param>
+/// <param name="SchemaVersion">The dataset version.</param>
+/// <param name="OccurredAt">When the business fact happened (UTC).</param>
+/// <param name="CreatedAt">When the record was queued (UTC).</param>
+/// <param name="DeadLetteredAt">When it was given up on (UTC).</param>
+/// <param name="AttemptCount">Failed attempts before it was given up on.</param>
+/// <param name="LastError">Why the last attempt failed.</param>
+public sealed record AnalyticsDeadLetter(
+    Guid Id,
+    Guid TenantId,
+    Guid EventId,
+    string Dataset,
+    int SchemaVersion,
+    DateTime OccurredAt,
+    DateTime CreatedAt,
+    DateTime? DeadLetteredAt,
+    int AttemptCount,
+    string? LastError);
+
+/// <summary>How the delivery queue stands.</summary>
+/// <param name="Pending">Records waiting for a first attempt or a retry.</param>
+/// <param name="Delivered">Delivered records not yet purged.</param>
+/// <param name="DeadLettered">Records given up on.</param>
+/// <param name="OldestPendingAt">When the oldest pending record was queued (UTC), or <see langword="null"/> when none is pending.</param>
+/// <param name="OldestPendingAgeSeconds">How long the oldest pending record has waited. A rising value means delivery is falling behind.</param>
+public sealed record AnalyticsQueueStatus(
+    int Pending,
+    int Delivered,
+    int DeadLettered,
+    DateTime? OldestPendingAt,
+    double? OldestPendingAgeSeconds);
+
+/// <summary>Request to replay dead-lettered records.</summary>
+/// <param name="Ids">The queue row ids, at most 1000.</param>
+public sealed record AnalyticsReplayRequest(Guid[] Ids);
+
+/// <summary>Response from a replay.</summary>
+/// <param name="Replayed">Rows put back in the queue.</param>
+/// <param name="NotFound">Ids that are not dead-lettered rows (unknown, or not failed).</param>
+public sealed record AnalyticsReplayResponse(int Replayed, int NotFound);
+
+/// <summary>Response from a purge.</summary>
+/// <param name="Purged">Dead letters deleted.</param>
+public sealed record AnalyticsPurgeResponse(int Purged);
+
+/// <summary>A page of results.</summary>
+/// <typeparam name="T">The item type.</typeparam>
+/// <param name="Items">This page.</param>
+/// <param name="Total">All matches.</param>
+/// <param name="Page">The page number, from 1.</param>
+/// <param name="PageSize">Items per page.</param>
+public sealed record AnalyticsPage<T>(IReadOnlyList<T> Items, int Total, int Page, int PageSize);

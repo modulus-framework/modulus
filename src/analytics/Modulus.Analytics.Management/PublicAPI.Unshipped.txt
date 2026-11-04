@@ -1,0 +1,111 @@
+#nullable enable
+Modulus.Analytics.Management.AnalyticsDeadLetter
+Modulus.Analytics.Management.AnalyticsDeadLetter.<Clone>$() -> Modulus.Analytics.Management.AnalyticsDeadLetter!
+Modulus.Analytics.Management.AnalyticsDeadLetter.AnalyticsDeadLetter(System.Guid Id, System.Guid TenantId, System.Guid EventId, string! Dataset, int SchemaVersion, System.DateTime OccurredAt, System.DateTime CreatedAt, System.DateTime? DeadLetteredAt, int AttemptCount, string? LastError) -> void
+Modulus.Analytics.Management.AnalyticsDeadLetter.AttemptCount.get -> int
+Modulus.Analytics.Management.AnalyticsDeadLetter.AttemptCount.init -> void
+Modulus.Analytics.Management.AnalyticsDeadLetter.CreatedAt.get -> System.DateTime
+Modulus.Analytics.Management.AnalyticsDeadLetter.CreatedAt.init -> void
+Modulus.Analytics.Management.AnalyticsDeadLetter.Dataset.get -> string!
+Modulus.Analytics.Management.AnalyticsDeadLetter.Dataset.init -> void
+Modulus.Analytics.Management.AnalyticsDeadLetter.DeadLetteredAt.get -> System.DateTime?
+Modulus.Analytics.Management.AnalyticsDeadLetter.DeadLetteredAt.init -> void
+Modulus.Analytics.Management.AnalyticsDeadLetter.Deconstruct(out System.Guid Id, out System.Guid TenantId, out System.Guid EventId, out string! Dataset, out int SchemaVersion, out System.DateTime OccurredAt, out System.DateTime CreatedAt, out System.DateTime? DeadLetteredAt, out int AttemptCount, out string? LastError) -> void
+Modulus.Analytics.Management.AnalyticsDeadLetter.Equals(Modulus.Analytics.Management.AnalyticsDeadLetter? other) -> bool
+Modulus.Analytics.Management.AnalyticsDeadLetter.EventId.get -> System.Guid
+Modulus.Analytics.Management.AnalyticsDeadLetter.EventId.init -> void
+Modulus.Analytics.Management.AnalyticsDeadLetter.Id.get -> System.Guid
+Modulus.Analytics.Management.AnalyticsDeadLetter.Id.init -> void
+Modulus.Analytics.Management.AnalyticsDeadLetter.LastError.get -> string?
+Modulus.Analytics.Management.AnalyticsDeadLetter.LastError.init -> void
+Modulus.Analytics.Management.AnalyticsDeadLetter.OccurredAt.get -> System.DateTime
+Modulus.Analytics.Management.AnalyticsDeadLetter.OccurredAt.init -> void
+Modulus.Analytics.Management.AnalyticsDeadLetter.SchemaVersion.get -> int
+Modulus.Analytics.Management.AnalyticsDeadLetter.SchemaVersion.init -> void
+Modulus.Analytics.Management.AnalyticsDeadLetter.TenantId.get -> System.Guid
+Modulus.Analytics.Management.AnalyticsDeadLetter.TenantId.init -> void
+Modulus.Analytics.Management.AnalyticsManagementExtensions
+Modulus.Analytics.Management.AnalyticsPage<T>
+Modulus.Analytics.Management.AnalyticsPage<T>.<Clone>$() -> Modulus.Analytics.Management.AnalyticsPage<T>!
+Modulus.Analytics.Management.AnalyticsPage<T>.AnalyticsPage(System.Collections.Generic.IReadOnlyList<T>! Items, int Total, int Page, int PageSize) -> void
+Modulus.Analytics.Management.AnalyticsPage<T>.Deconstruct(out System.Collections.Generic.IReadOnlyList<T>! Items, out int Total, out int Page, out int PageSize) -> void
+Modulus.Analytics.Management.AnalyticsPage<T>.Equals(Modulus.Analytics.Management.AnalyticsPage<T>? other) -> bool
+Modulus.Analytics.Management.AnalyticsPage<T>.Items.get -> System.Collections.Generic.IReadOnlyList<T>!
+Modulus.Analytics.Management.AnalyticsPage<T>.Items.init -> void
+Modulus.Analytics.Management.AnalyticsPage<T>.Page.get -> int
+Modulus.Analytics.Management.AnalyticsPage<T>.Page.init -> void
+Modulus.Analytics.Management.AnalyticsPage<T>.PageSize.get -> int
+Modulus.Analytics.Management.AnalyticsPage<T>.PageSize.init -> void
+Modulus.Analytics.Management.AnalyticsPage<T>.Total.get -> int
+Modulus.Analytics.Management.AnalyticsPage<T>.Total.init -> void
+Modulus.Analytics.Management.AnalyticsPurgeResponse
+Modulus.Analytics.Management.AnalyticsPurgeResponse.<Clone>$() -> Modulus.Analytics.Management.AnalyticsPurgeResponse!
+Modulus.Analytics.Management.AnalyticsPurgeResponse.AnalyticsPurgeResponse(int Purged) -> void
+Modulus.Analytics.Management.AnalyticsPurgeResponse.Deconstruct(out int Purged) -> void
+Modulus.Analytics.Management.AnalyticsPurgeResponse.Equals(Modulus.Analytics.Management.AnalyticsPurgeResponse? other) -> bool
+Modulus.Analytics.Management.AnalyticsPurgeResponse.Purged.get -> int
+Modulus.Analytics.Management.AnalyticsPurgeResponse.Purged.init -> void
+Modulus.Analytics.Management.AnalyticsQueueStatus
+Modulus.Analytics.Management.AnalyticsQueueStatus.<Clone>$() -> Modulus.Analytics.Management.AnalyticsQueueStatus!
+Modulus.Analytics.Management.AnalyticsQueueStatus.AnalyticsQueueStatus(int Pending, int Delivered, int DeadLettered, System.DateTime? OldestPendingAt, double? OldestPendingAgeSeconds) -> void
+Modulus.Analytics.Management.AnalyticsQueueStatus.DeadLettered.get -> int
+Modulus.Analytics.Management.AnalyticsQueueStatus.DeadLettered.init -> void
+Modulus.Analytics.Management.AnalyticsQueueStatus.Deconstruct(out int Pending, out int Delivered, out int DeadLettered, out System.DateTime? OldestPendingAt, out double? OldestPendingAgeSeconds) -> void
+Modulus.Analytics.Management.AnalyticsQueueStatus.Delivered.get -> int
+Modulus.Analytics.Management.AnalyticsQueueStatus.Delivered.init -> void
+Modulus.Analytics.Management.AnalyticsQueueStatus.Equals(Modulus.Analytics.Management.AnalyticsQueueStatus? other) -> bool
+Modulus.Analytics.Management.AnalyticsQueueStatus.OldestPendingAgeSeconds.get -> double?
+Modulus.Analytics.Management.AnalyticsQueueStatus.OldestPendingAgeSeconds.init -> void
+Modulus.Analytics.Management.AnalyticsQueueStatus.OldestPendingAt.get -> System.DateTime?
+Modulus.Analytics.Management.AnalyticsQueueStatus.OldestPendingAt.init -> void
+Modulus.Analytics.Management.AnalyticsQueueStatus.Pending.get -> int
+Modulus.Analytics.Management.AnalyticsQueueStatus.Pending.init -> void
+Modulus.Analytics.Management.AnalyticsReplayRequest
+Modulus.Analytics.Management.AnalyticsReplayRequest.<Clone>$() -> Modulus.Analytics.Management.AnalyticsReplayRequest!
+Modulus.Analytics.Management.AnalyticsReplayRequest.AnalyticsReplayRequest(System.Guid[]! Ids) -> void
+Modulus.Analytics.Management.AnalyticsReplayRequest.Deconstruct(out System.Guid[]! Ids) -> void
+Modulus.Analytics.Management.AnalyticsReplayRequest.Equals(Modulus.Analytics.Management.AnalyticsReplayRequest? other) -> bool
+Modulus.Analytics.Management.AnalyticsReplayRequest.Ids.get -> System.Guid[]!
+Modulus.Analytics.Management.AnalyticsReplayRequest.Ids.init -> void
+Modulus.Analytics.Management.AnalyticsReplayResponse
+Modulus.Analytics.Management.AnalyticsReplayResponse.<Clone>$() -> Modulus.Analytics.Management.AnalyticsReplayResponse!
+Modulus.Analytics.Management.AnalyticsReplayResponse.AnalyticsReplayResponse(int Replayed, int NotFound) -> void
+Modulus.Analytics.Management.AnalyticsReplayResponse.Deconstruct(out int Replayed, out int NotFound) -> void
+Modulus.Analytics.Management.AnalyticsReplayResponse.Equals(Modulus.Analytics.Management.AnalyticsReplayResponse? other) -> bool
+Modulus.Analytics.Management.AnalyticsReplayResponse.NotFound.get -> int
+Modulus.Analytics.Management.AnalyticsReplayResponse.NotFound.init -> void
+Modulus.Analytics.Management.AnalyticsReplayResponse.Replayed.get -> int
+Modulus.Analytics.Management.AnalyticsReplayResponse.Replayed.init -> void
+const Modulus.Analytics.Management.AnalyticsManagementExtensions.ManagePermission = "analytics:manage" -> string!
+override Modulus.Analytics.Management.AnalyticsDeadLetter.Equals(object? obj) -> bool
+override Modulus.Analytics.Management.AnalyticsDeadLetter.GetHashCode() -> int
+override Modulus.Analytics.Management.AnalyticsDeadLetter.ToString() -> string!
+override Modulus.Analytics.Management.AnalyticsPage<T>.Equals(object? obj) -> bool
+override Modulus.Analytics.Management.AnalyticsPage<T>.GetHashCode() -> int
+override Modulus.Analytics.Management.AnalyticsPage<T>.ToString() -> string!
+override Modulus.Analytics.Management.AnalyticsPurgeResponse.Equals(object? obj) -> bool
+override Modulus.Analytics.Management.AnalyticsPurgeResponse.GetHashCode() -> int
+override Modulus.Analytics.Management.AnalyticsPurgeResponse.ToString() -> string!
+override Modulus.Analytics.Management.AnalyticsQueueStatus.Equals(object? obj) -> bool
+override Modulus.Analytics.Management.AnalyticsQueueStatus.GetHashCode() -> int
+override Modulus.Analytics.Management.AnalyticsQueueStatus.ToString() -> string!
+override Modulus.Analytics.Management.AnalyticsReplayRequest.Equals(object? obj) -> bool
+override Modulus.Analytics.Management.AnalyticsReplayRequest.GetHashCode() -> int
+override Modulus.Analytics.Management.AnalyticsReplayRequest.ToString() -> string!
+override Modulus.Analytics.Management.AnalyticsReplayResponse.Equals(object? obj) -> bool
+override Modulus.Analytics.Management.AnalyticsReplayResponse.GetHashCode() -> int
+override Modulus.Analytics.Management.AnalyticsReplayResponse.ToString() -> string!
+static Modulus.Analytics.Management.AnalyticsDeadLetter.operator !=(Modulus.Analytics.Management.AnalyticsDeadLetter? left, Modulus.Analytics.Management.AnalyticsDeadLetter? right) -> bool
+static Modulus.Analytics.Management.AnalyticsDeadLetter.operator ==(Modulus.Analytics.Management.AnalyticsDeadLetter? left, Modulus.Analytics.Management.AnalyticsDeadLetter? right) -> bool
+static Modulus.Analytics.Management.AnalyticsManagementExtensions.AddModulusAnalyticsManagement(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.Analytics.Management.AnalyticsManagementExtensions.MapModulusAnalyticsManagement(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! prefix = "/analytics") -> Microsoft.AspNetCore.Routing.RouteGroupBuilder!
+static Modulus.Analytics.Management.AnalyticsPage<T>.operator !=(Modulus.Analytics.Management.AnalyticsPage<T>? left, Modulus.Analytics.Management.AnalyticsPage<T>? right) -> bool
+static Modulus.Analytics.Management.AnalyticsPage<T>.operator ==(Modulus.Analytics.Management.AnalyticsPage<T>? left, Modulus.Analytics.Management.AnalyticsPage<T>? right) -> bool
+static Modulus.Analytics.Management.AnalyticsPurgeResponse.operator !=(Modulus.Analytics.Management.AnalyticsPurgeResponse? left, Modulus.Analytics.Management.AnalyticsPurgeResponse? right) -> bool
+static Modulus.Analytics.Management.AnalyticsPurgeResponse.operator ==(Modulus.Analytics.Management.AnalyticsPurgeResponse? left, Modulus.Analytics.Management.AnalyticsPurgeResponse? right) -> bool
+static Modulus.Analytics.Management.AnalyticsQueueStatus.operator !=(Modulus.Analytics.Management.AnalyticsQueueStatus? left, Modulus.Analytics.Management.AnalyticsQueueStatus? right) -> bool
+static Modulus.Analytics.Management.AnalyticsQueueStatus.operator ==(Modulus.Analytics.Management.AnalyticsQueueStatus? left, Modulus.Analytics.Management.AnalyticsQueueStatus? right) -> bool
+static Modulus.Analytics.Management.AnalyticsReplayRequest.operator !=(Modulus.Analytics.Management.AnalyticsReplayRequest? left, Modulus.Analytics.Management.AnalyticsReplayRequest? right) -> bool
+static Modulus.Analytics.Management.AnalyticsReplayRequest.operator ==(Modulus.Analytics.Management.AnalyticsReplayRequest? left, Modulus.Analytics.Management.AnalyticsReplayRequest? right) -> bool
+static Modulus.Analytics.Management.AnalyticsReplayResponse.operator !=(Modulus.Analytics.Management.AnalyticsReplayResponse? left, Modulus.Analytics.Management.AnalyticsReplayResponse? right) -> bool
+static Modulus.Analytics.Management.AnalyticsReplayResponse.operator ==(Modulus.Analytics.Management.AnalyticsReplayResponse? left, Modulus.Analytics.Management.AnalyticsReplayResponse? right) -> bool

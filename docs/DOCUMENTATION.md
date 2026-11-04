@@ -6447,8 +6447,11 @@ Iceberg Kafka Connect sink commits the table.
     classified as transient (network, overload) or permanent (bad credentials, unknown table, type mismatch). Verified against a real ClickHouse 25.8 server
     through Testcontainers (11 integration tests, net8.0 and net10.0) and 23 unit tests. Until parts merge a duplicate can be visible: read with `FINAL`.
   - Sinks receive the declared CLR types (`AnalyticsValueSerializer.Normalize` runs at capture, so inline and queued delivery look the same).
-  - Still open: the messaging sink, management endpoints for dead letters and replay, an EF migration sample.
+  - Management API (`Modulus.Analytics.Management`, `analytics:manage`, Critical): `GET /analytics/status` (pending, delivered, dead-lettered, age of the oldest
+    pending record, so a rising age shows delivery falling behind), list and inspect dead letters, replay by id (at most 1000), purge old dead letters. Queued rows hold
+    values *before* masking, so no response ever carries record values (tests pin this). Replay and purge are logged with the acting user. 12 unit tests.
+  - Still open: the messaging sink, an EF migration sample.
 - [ ] Phase 3: extraction, change journal, per-tenant backfill with checkpoints, Parquet sink
 - [ ] Phase 4: dataset permissions, plan gating, export audit, freshness, reconciliation, quality, retention and erasure, lineage
-- [ ] Phase 5: management API, CLI `add-analytics` with compose template, `analytics-admin` in `modulus-ui`
+- [ ] Phase 5: management API (delivery operations done, see Phase 2; dataset catalog and freshness endpoints open), CLI `add-analytics` with compose template, `analytics-admin` in `modulus-ui`
 - [ ] Phase 6: Debezium reader, Airflow and dbt triggers, Superset helper, Doris sink, lakehouse runbooks
