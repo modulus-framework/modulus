@@ -184,3 +184,19 @@ static Modulus.Analytics.Management.AnalyticsReplayRequest.operator !=(Modulus.A
 static Modulus.Analytics.Management.AnalyticsReplayRequest.operator ==(Modulus.Analytics.Management.AnalyticsReplayRequest? left, Modulus.Analytics.Management.AnalyticsReplayRequest? right) -> bool
 static Modulus.Analytics.Management.AnalyticsReplayResponse.operator !=(Modulus.Analytics.Management.AnalyticsReplayResponse? left, Modulus.Analytics.Management.AnalyticsReplayResponse? right) -> bool
 static Modulus.Analytics.Management.AnalyticsReplayResponse.operator ==(Modulus.Analytics.Management.AnalyticsReplayResponse? left, Modulus.Analytics.Management.AnalyticsReplayResponse? right) -> bool
+Modulus.Analytics.Management.AnalyticsQualityRequest
+Modulus.Analytics.Management.AnalyticsQualityRequest.<Clone>$() -> Modulus.Analytics.Management.AnalyticsQualityRequest!
+Modulus.Analytics.Management.AnalyticsQualityRequest.AnalyticsQualityRequest(string! Dataset, int Version, System.Guid[]? TenantIds = null) -> void
+Modulus.Analytics.Management.AnalyticsQualityRequest.Dataset.get -> string!
+Modulus.Analytics.Management.AnalyticsQualityRequest.Dataset.init -> void
+Modulus.Analytics.Management.AnalyticsQualityRequest.Deconstruct(out string! Dataset, out int Version, out System.Guid[]? TenantIds) -> void
+Modulus.Analytics.Management.AnalyticsQualityRequest.Equals(Modulus.Analytics.Management.AnalyticsQualityRequest? other) -> bool
+Modulus.Analytics.Management.AnalyticsQualityRequest.TenantIds.get -> System.Guid[]?
+Modulus.Analytics.Management.AnalyticsQualityRequest.TenantIds.init -> void
+Modulus.Analytics.Management.AnalyticsQualityRequest.Version.get -> int
+Modulus.Analytics.Management.AnalyticsQualityRequest.Version.init -> void
+override Modulus.Analytics.Management.AnalyticsQualityRequest.Equals(object? obj) -> bool
+override Modulus.Analytics.Management.AnalyticsQualityRequest.GetHashCode() -> int
+override Modulus.Analytics.Management.AnalyticsQualityRequest.ToString() -> string!
+static Modulus.Analytics.Management.AnalyticsQualityRequest.operator !=(Modulus.Analytics.Management.AnalyticsQualityRequest? left, Modulus.Analytics.Management.AnalyticsQualityRequest? right) -> bool
+static Modulus.Analytics.Management.AnalyticsQualityRequest.operator ==(Modulus.Analytics.Management.AnalyticsQualityRequest? left, Modulus.Analytics.Management.AnalyticsQualityRequest? right) -> bool

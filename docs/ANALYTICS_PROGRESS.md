@@ -22,7 +22,7 @@ Every tool and NuGet package must be open source (OSI licence), production-prove
 | 1 | Contracts, catalog, schema versions, JSON Schema export, sink conformance | Done |
 | 2 | Capture, durable delivery queue, ClickHouse sink | Done. Open: messaging sink, EF migration sample, `SchemaVersion` on outbox rows |
 | 3 | Backfill, incremental sync, Parquet sink | Done. Open: backfill run against SQL Server |
-| 4 | Governance | In progress (see below) |
+| 4 | Governance | Done (see below) |
 | 5 | Operability: CLI `add-analytics`, `analytics-admin` in modulus-ui, catalog and freshness endpoints | Not started |
 | 6 | Enterprise providers: Debezium, Airflow/dbt triggers, Superset helper, Doris, lakehouse runbooks | Not started |
 
@@ -34,7 +34,7 @@ Every tool and NuGet package must be open source (OSI licence), production-prove
 | Reconciliation (per-tenant counts, `POST /analytics/reconciliations`) | Done | earlier |
 | Dataset permissions (`analytics:manage:{dataset}`) and plan gating (`RequiredFeature`) | Done | `51ec852` |
 | Export audit through `ISecurityAuditLog` (hash-chained, category `analytics`) | Done, tests pass on net8.0 and net10.0 | `0af9463` |
-| Data-quality findings beyond counts | Open | |
+| Data-quality findings beyond counts (`MaxNullRate`, future records; `POST /analytics/quality`) | Done, 6 core, 2 EF, 2 management and 1 ClickHouse integration test pass | pending commit |
 | Retention and erasure propagation (`AnalyticsTenantDataHandler`, `IAnalyticsErasableSink`; ClickHouse TTL, queue purge; Parquet by the lake's tools) | Done, 5 unit tests and 2 ClickHouse integration tests pass | `185034f` |
 | Lineage and OpenLineage emitter (`Modulus.Analytics.OpenLineage`; START, COMPLETE, FAIL per backfill; verified against Marquez 0.50.0) | Done, 10 unit tests and 2 Marquez integration tests pass | `a00c5dc` |
 
@@ -44,12 +44,12 @@ Last full run of the analytics suites (both frameworks where applicable):
 
 | Suite | Result |
 |---|---|
-| Modulus.Analytics.Tests | 56 pass |
-| Modulus.Analytics.EntityFrameworkCore.Tests | 87 pass |
-| Modulus.Analytics.Management.Tests | 33 pass |
+| Modulus.Analytics.Tests | 62 pass |
+| Modulus.Analytics.EntityFrameworkCore.Tests | 89 pass |
+| Modulus.Analytics.Management.Tests | 34 pass |
 | Modulus.Analytics.ClickHouse.Tests | 23 pass |
 | Modulus.Analytics.Parquet.Tests | 25 pass |
-| Integration: ClickHouse (real server) | 15 pass (after the erasure change) |
+| Integration: ClickHouse (real server) | 16 pass (after the data-quality change) |
 | Modulus.Analytics.OpenLineage.Tests | 8 pass (real HTTP receiver) |
 | Integration: OpenLineage with Marquez 0.50.0 | 2 pass |
 | Integration: EF (real PostgreSQL 16) | 8 pass (re-run after the lineage change) |
@@ -62,9 +62,8 @@ Last full run of the analytics suites (both frameworks where applicable):
 
 ## Next steps
 
-1. Phase 4 data-quality findings beyond counts (last open Phase 4 item).
-2. Phase 5: CLI `add-analytics`, `analytics-admin` in modulus-ui, catalog and freshness endpoints.
-3. Phase 6: enterprise providers.
+1. Phase 5: CLI `add-analytics`, `analytics-admin` in modulus-ui, catalog and freshness endpoints.
+2. Phase 6: enterprise providers.
 
 ## Decisions to know about
 

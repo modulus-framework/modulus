@@ -12,7 +12,7 @@ using Microsoft.Extensions.Options;
 /// Merging is eventual: until it happens a duplicate can be visible, so queries that need exact counts use <c>FINAL</c> (or
 /// <c>argMax</c>). A column's comment records its classification and masking, so the warehouse documents itself.
 /// </remarks>
-public sealed class ClickHouseAnalyticsSink(ClickHouseClient client, IOptions<ClickHouseSinkOptions> options) : IAnalyticsErasableSink
+public sealed class ClickHouseAnalyticsSink(ClickHouseClient client, IOptions<ClickHouseSinkOptions> options) : IAnalyticsErasableSink, IAnalyticsProfilableSink
 {
     /// <inheritdoc />
     public string Name => "clickhouse";
@@ -165,6 +165,56 @@ public sealed class ClickHouseAnalyticsSink(ClickHouseClient client, IOptions<Cl
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             throw ClickHouseErrors.Translate($"delete the rows of '{table}' for one tenant", ex);
+        }
+    }
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// One query with <c>FINAL</c>, so it profiles the same distinct records as <see cref="CountAsync"/>. Future occurrences and nulls are counted
+    /// in the warehouse; no value is read back.
+    /// </remarks>
+    public async Task<AnalyticsWarehouseProfile> ProfileAsync(AnalyticsDatasetDescriptor dataset, Guid tenantId, DateTimeOffset notAfter, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(dataset);
+        var table = ClickHouseDdl.TableName(options.Value, dataset);
+        var empty = new AnalyticsWarehouseProfile(0, 0, new Dictionary<string, long>(StringComparer.Ordinal));
+        if (!await TableExistsAsync(table, cancellationToken).ConfigureAwait(false))
+        {
+            return empty;
+        }
+
+        var nullable = dataset.Fields.Where(f => f.MaxNullRate is not null).ToArray();
+        var select = new System.Text.StringBuilder();
+        select.Append("count(), countIf(").Append(ClickHouseDdl.Quote(ClickHouseDdl.OccurredColumn)).Append(" > toDateTime64(")
+            .Append(ClickHouseDdl.Literal(notAfter.UtcDateTime.ToString("yyyy-MM-dd HH:mm:ss.ffffff", System.Globalization.CultureInfo.InvariantCulture)))
+            .Append(", 6))");
+        foreach (var field in nullable)
+        {
+            select.Append(", countIf(").Append(ClickHouseDdl.Quote(field.Name)).Append(" IS NULL)");
+        }
+
+        var sql = $"SELECT {select} FROM {ClickHouseDdl.Quote(table)} FINAL WHERE {ClickHouseDdl.Quote(ClickHouseDdl.TenantColumn)} = {ClickHouseDdl.Literal(tenantId.ToString("D"))}";
+        try
+        {
+            await using var reader = await client.ExecuteReaderAsync(sql, cancellationToken: cancellationToken).ConfigureAwait(false);
+            if (!await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+            {
+                return empty;
+            }
+
+            var rows = Convert.ToInt64(reader.GetValue(0), System.Globalization.CultureInfo.InvariantCulture);
+            var future = Convert.ToInt64(reader.GetValue(1), System.Globalization.CultureInfo.InvariantCulture);
+            var nulls = new Dictionary<string, long>(StringComparer.Ordinal);
+            for (var i = 0; i < nullable.Length; i++)
+            {
+                nulls[nullable[i].Name] = Convert.ToInt64(reader.GetValue(2 + i), System.Globalization.CultureInfo.InvariantCulture);
+            }
+
+            return new AnalyticsWarehouseProfile(rows, future, nulls);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            throw ClickHouseErrors.Translate($"profile the rows of '{table}' for one tenant", ex);
         }
     }
 

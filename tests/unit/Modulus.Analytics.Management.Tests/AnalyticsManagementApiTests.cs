@@ -452,6 +452,25 @@ public sealed class AnalyticsManagementApiTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task A_quality_check_needs_the_dataset_permission_and_is_audited_when_it_runs()
+    {
+        var tenant = Guid.NewGuid();
+        await SeedAsync(tenant: tenant);
+
+        using var scoped = AsUser("analytics:manage:plain");
+        (await scoped.PostAsJsonAsync("/analytics/quality", new AnalyticsQualityRequest("orders", 1, [tenant]))).StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        _audit.Events.Should().BeEmpty("a refused check is not recorded");
+
+        using var client = AsUser(Manage);
+        var response = await client.PostAsJsonAsync("/analytics/quality", new AnalyticsQualityRequest("orders", 1, [tenant]));
+        var report = await response.Content.ReadFromJsonAsync<AnalyticsQualityReport>();
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        report!.Results.Should().ContainSingle().Which.Findings.Should().BeEmpty("the orders dataset declares no quality rule");
+        _audit.Events.Should().ContainSingle().Which.Action.Should().Be("quality.check");
+    }
+
+    [Fact]
     public async Task Bad_backfill_requests_are_refused_with_a_reason()
     {
         using var client = AsUser(Manage);

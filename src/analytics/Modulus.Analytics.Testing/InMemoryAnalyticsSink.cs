@@ -6,7 +6,7 @@ using System.Collections.Concurrent;
 /// A sink that keeps rows in memory, one per (tenant, dataset, event id), the way a deduplicating warehouse table does.
 /// Use it in tests, and as the reference behaviour providers are checked against.
 /// </summary>
-public sealed class InMemoryAnalyticsSink : IAnalyticsErasableSink
+public sealed class InMemoryAnalyticsSink : IAnalyticsErasableSink, IAnalyticsProfilableSink
 {
     private readonly ConcurrentDictionary<(Guid Tenant, string Dataset, Guid EventId), AnalyticsRecord> _rows = new();
     private readonly ConcurrentDictionary<string, AnalyticsDatasetDescriptor> _datasets = new(StringComparer.Ordinal);
@@ -41,6 +41,16 @@ public sealed class InMemoryAnalyticsSink : IAnalyticsErasableSink
     /// <inheritdoc />
     public Task<long> CountAsync(AnalyticsDatasetDescriptor dataset, Guid tenantId, CancellationToken cancellationToken)
         => Task.FromResult((long)_rows.Keys.Count(k => k.Tenant == tenantId && k.Dataset == dataset.Name));
+
+    /// <inheritdoc />
+    public Task<AnalyticsWarehouseProfile> ProfileAsync(AnalyticsDatasetDescriptor dataset, Guid tenantId, DateTimeOffset notAfter, CancellationToken cancellationToken)
+    {
+        var rows = _rows.Values.Where(r => r.TenantId == tenantId && r.Dataset == dataset.Name).ToArray();
+        var nulls = dataset.Fields
+            .Where(f => f.MaxNullRate is not null)
+            .ToDictionary(f => f.Name, f => (long)rows.Count(r => !r.Values.TryGetValue(f.Name, out var value) || value is null), StringComparer.Ordinal);
+        return Task.FromResult(new AnalyticsWarehouseProfile(rows.Length, rows.Count(r => r.OccurredAt > notAfter), nulls));
+    }
 
     /// <inheritdoc />
     public Task<long> CountTenantAsync(AnalyticsDatasetDescriptor dataset, Guid tenantId, CancellationToken cancellationToken)

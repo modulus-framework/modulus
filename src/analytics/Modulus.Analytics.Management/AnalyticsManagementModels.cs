@@ -109,3 +109,6 @@ public sealed record AnalyticsBackfillRunInfo(
 /// <param name="Version">The dataset version.</param>
 /// <param name="TenantIds">The tenants to check (at most 1000), or <see langword="null"/> for every active tenant.</param>
 public sealed record AnalyticsReconcileRequest(string Dataset, int Version, Guid[]? TenantIds = null);
+
+/// <summary>A data-quality check of one dataset version, for some or all companies.</summary>
+public sealed record AnalyticsQualityRequest(string Dataset, int Version, Guid[]? TenantIds = null);

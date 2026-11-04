@@ -6494,7 +6494,7 @@ Iceberg Kafka Connect sink commits the table.
     records store 60 rows without an error; four concurrent delivery workers deliver 400 records exactly once each; two workers split two backfill runs (750 and 420 orders) and
     queue every order once; a claim that expired is taken over and a live one is not; the freshness and reconciliation aggregate queries and the purge run correctly. A
     mutation check (dropping the claim ownership filter) makes the exactly-once test fail, so it guards the behaviour.
-- [ ] Phase 4: dataset permissions, plan gating, export audit, freshness, reconciliation, quality, retention and erasure, lineage
+- [x] Phase 4: dataset permissions, plan gating, export audit, freshness, reconciliation, quality, retention and erasure, lineage
   - Done: **freshness and monitoring** (`Modulus.Analytics`, `.EntityFrameworkCore`, `.Management`; 14 more tests).
     - `AnalyticsFreshness.Evaluate`: lag is the age of the oldest captured-but-undelivered record, i.e. how far the warehouse is behind; a dataset is *stale* when
       the lag is greater than its `FreshnessSla` (equal is fresh), *untracked* when it has no SLA (the lag is still reported). `IAnalyticsFreshnessReader` reads it from
@@ -6547,7 +6547,18 @@ Iceberg Kafka Connect sink commits the table.
     - A post that fails (endpoint down, refused, timed out) is logged and dropped. It never fails or stalls a backfill; cancellation is still honoured.
     - Limits: incremental syncs are not reported (they never complete); the events are sent as they happen, with no retry queue (a lineage backend that is down for a run misses its events);
       the emitter runs inside the backfill cycle, so its timeout adds to the cycle's time.
-  - Still open: data-quality findings beyond counts (the framework's `IDataQualityFindingSink` is shaped for missing authorization attributes, so reconciliation has
-    its own report).
+  - Done: **data-quality findings** (`Modulus.Analytics`, `.ClickHouse`, `.EntityFrameworkCore`, `.Management`, `.Testing`; 6 core, 2 EF, 2 management, 1 ClickHouse integration test).
+    - Rules are declared on the dataset: `AnalyticsFieldDescriptor.MaxNullRate` (0 to 1, nullable fields only) limits the share of null values of a field.
+      Records timestamped more than 5 minutes ahead of the check (`AnalyticsQualityChecks.ClockSkew`) are a dataset-wide finding (`future_occurrence`).
+    - `IAnalyticsProfilableSink.ProfileAsync` returns counts only: the company's distinct rows, its future rows and the nulls of each rule's field, computed in the
+      warehouse (ClickHouse with `FINAL`, so it matches the reconciliation count). `AnalyticsQuality.Evaluate` is pure: the same profile always gives the same findings.
+    - Findings are reported, not stored: `POST /analytics/quality` (`analytics:manage` or the dataset's permission) returns each company's row count and findings
+      per sink, with an error per company or sink that could not be checked. Each finding also increments `modulus.analytics.quality.findings` (tags sink, dataset, rule).
+      The check is audited as `quality.check`.
+    - Why not in the capture path: a contract violation already fails capture (a missing required field, a wrong type), and masking drops restricted values by design.
+      Quality is judged on what the warehouse holds, so a broken mapping that slipped through shows up here.
+    - Limits: no history of findings (each check is a snapshot; keep the response if you need one), no value-level rules beyond nulls and timestamps, and a
+      sink that cannot be profiled (the Parquet lake) is reported in `Errors`, not checked. Quality of a lake is checked by its query engine.
+
 - [ ] Phase 5: management API (delivery operations done, see Phases 2 and 3; dataset catalog and freshness endpoints open), CLI `add-analytics` with compose template, `analytics-admin` in `modulus-ui`
 - [ ] Phase 6: Debezium reader, Airflow and dbt triggers, Superset helper, Doris sink, lakehouse runbooks

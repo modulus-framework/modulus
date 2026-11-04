@@ -25,6 +25,7 @@ public static class AnalyticsMetrics
     internal static readonly Counter<long> DeadLettered = Meter.CreateCounter<long>("modulus.analytics.records.dead_lettered", "{record}", "Records given up on.");
     internal static readonly Counter<long> BackfillRowsQueued = Meter.CreateCounter<long>("modulus.analytics.backfill.rows_queued", "{record}", "Records a backfill queued.");
 
+    internal static readonly Counter<long> QualityFindings = Meter.CreateCounter<long>("modulus.analytics.quality.findings", "{finding}", "Data-quality rules a warehouse broke, per sink, dataset and rule.");
     internal static readonly Counter<long> ReconciliationMismatches = Meter.CreateCounter<long>("modulus.analytics.reconciliation.mismatches", "{comparison}", "Reconciliations that found the warehouse missing records or holding extra ones.");
 
     static AnalyticsMetrics()

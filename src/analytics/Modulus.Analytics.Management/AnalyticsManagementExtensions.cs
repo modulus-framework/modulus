@@ -207,6 +207,51 @@ public static class AnalyticsManagementExtensions
         .WithSummary("Get one dead-lettered analytics record (metadata and error only)");
 
         // POST /analytics/dead-letters/replay
+        // POST /analytics/quality: profiles the warehouse rows per company and reports the data-quality rules they break (counts only, never values).
+        group.MapPost("/quality", async (
+            AnalyticsQualityRequest request,
+            ClaimsPrincipal user,
+            AnalyticsAccess access,
+            AnalyticsQualityChecker checker,
+            ICurrentUser currentUser,
+            ILoggerFactory loggerFactory,
+            IServiceProvider services,
+            CancellationToken ct) =>
+        {
+            if (string.IsNullOrWhiteSpace(request.Dataset) || request.Version < 1)
+            {
+                return Results.BadRequest("Dataset and a version of 1 or higher are required.");
+            }
+
+            if (!await access.CanAsync(user, request.Dataset))
+            {
+                return Forbidden();
+            }
+
+            if (request.TenantIds is { Length: > MaxBackfillTenants })
+            {
+                return Results.BadRequest($"At most {MaxBackfillTenants} tenants per request; omit TenantIds to cover every tenant.");
+            }
+
+            try
+            {
+                var report = await checker.CheckAsync(request.Dataset, request.Version, request.TenantIds, ct);
+                var findings = report.Results.Sum(r => r.Findings.Count);
+                loggerFactory.CreateLogger("Modulus.Analytics.Management").LogInformation(
+                    "Analytics quality check of {Dataset}.v{Version} by {User}: {Results} result(s), {Findings} finding(s), {Errors} error(s).",
+                    request.Dataset, request.Version, currentUser.UserId?.ToString() ?? "unknown", report.Results.Count, findings, report.Errors.Count);
+                AnalyticsAudit.Record(services, "quality.check", currentUser.UserId?.ToString(), $"dataset:{request.Dataset}.v{request.Version}",
+                    ("tenants", request.TenantIds is null ? "all" : request.TenantIds.Length), ("results", report.Results.Count),
+                    ("findings", findings), ("errors", report.Errors.Count));
+                return Results.Ok(report);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Results.BadRequest(ex.Message);
+            }
+        })
+        .WithSummary("Check the warehouse's data quality for a dataset version, per company");
+
         group.MapPost("/dead-letters/replay", async (
             AnalyticsReplayRequest request,
             ClaimsPrincipal user,

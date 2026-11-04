@@ -56,6 +56,24 @@ public sealed record AnalyticsDatasetDescriptor(
             return problems;
         }
 
+        foreach (var field in Fields)
+        {
+            if (field.MaxNullRate is not { } rate)
+            {
+                continue;
+            }
+
+            if (!field.IsNullable)
+            {
+                problems.Add($"Field '{field.Name}' of '{Name}' sets MaxNullRate but is not nullable: a required field has no nulls to limit.");
+            }
+
+            if (double.IsNaN(rate) || rate < 0 || rate > 1)
+            {
+                problems.Add($"Field '{field.Name}' of '{Name}' MaxNullRate must be between 0 and 1.");
+            }
+        }
+
         if (FreshnessSla is { } sla && sla <= TimeSpan.Zero)
         {
             problems.Add($"Dataset '{Name}' freshness SLA must be positive.");

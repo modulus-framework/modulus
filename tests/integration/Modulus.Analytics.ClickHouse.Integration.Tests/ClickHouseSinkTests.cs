@@ -80,6 +80,36 @@ public sealed class ClickHouseSinkTests(ClickHouseFixture clickHouse)
     }
 
     [Fact]
+    public async Task The_profile_counts_distinct_rows_future_records_and_nulls_for_one_company()
+    {
+        var sink = clickHouse.CreateSink(Prefix("profile"));
+        var dataset = new AnalyticsDatasetDescriptor("scored", 1, "qa",
+        [
+            new("label", AnalyticsFieldType.String, IsNullable: true, MaxNullRate: 0.5),
+            new("score", AnalyticsFieldType.Int64, IsNullable: true),
+        ]);
+        var a = Guid.NewGuid();
+        var b = Guid.NewGuid();
+        var now = DateTimeOffset.UtcNow;
+        await sink.EnsureDatasetAsync(dataset, CancellationToken.None);
+        await sink.WriteAsync(dataset,
+        [
+            new AnalyticsRecord(Guid.NewGuid(), "scored", 1, a, now, new Dictionary<string, object?> { ["label"] = null, ["score"] = 1L }),
+            new AnalyticsRecord(Guid.NewGuid(), "scored", 1, a, now, new Dictionary<string, object?> { ["label"] = "x", ["score"] = 2L }),
+            new AnalyticsRecord(Guid.NewGuid(), "scored", 1, a, now.AddHours(2), new Dictionary<string, object?> { ["label"] = null, ["score"] = null }),
+            new AnalyticsRecord(Guid.NewGuid(), "scored", 1, b, now, new Dictionary<string, object?> { ["label"] = "y", ["score"] = 3L }),
+        ], CancellationToken.None);
+
+        var profile = await sink.ProfileAsync(dataset, a, now.AddMinutes(5), CancellationToken.None);
+
+        profile.RowCount.Should().Be(3);
+        profile.FutureRows.Should().Be(1, "only the record two hours ahead is beyond the allowed skew");
+        profile.NullRows.Should().ContainKey("label").WhoseValue.Should().Be(2);
+        profile.NullRows.Should().NotContainKey("score", "only fields that declare a null-rate rule are counted");
+        (await sink.ProfileAsync(dataset, Guid.NewGuid(), now, CancellationToken.None)).RowCount.Should().Be(0);
+    }
+
+    [Fact]
     public async Task A_dataset_that_was_never_created_counts_and_erases_as_zero()
     {
         var sink = clickHouse.CreateSink(Prefix("never"));
