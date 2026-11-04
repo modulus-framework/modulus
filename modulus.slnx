@@ -158,6 +158,7 @@
     <Project Path="tests/integration/Modulus.EFCore.Integration.Tests/Modulus.EFCore.Integration.Tests.csproj" />
     <Project Path="tests/integration/Modulus.Messaging.Integration.Tests/Modulus.Messaging.Integration.Tests.csproj" />
     <Project Path="tests/integration/Modulus.Analytics.ClickHouse.Integration.Tests/Modulus.Analytics.ClickHouse.Integration.Tests.csproj" />
+    <Project Path="tests/integration/Modulus.Analytics.EntityFrameworkCore.Integration.Tests/Modulus.Analytics.EntityFrameworkCore.Integration.Tests.csproj" />
     <Project Path="tests/integration/Modulus.Outbox.Integration.Tests/Modulus.Outbox.Integration.Tests.csproj" />
     <Project Path="tests/integration/Modulus.BackgroundJobs.Quartz.Integration.Tests/Modulus.BackgroundJobs.Quartz.Integration.Tests.csproj" />
     <Project Path="tests/integration/Modulus.BackgroundJobs.Quartz.ClusterNode/Modulus.BackgroundJobs.Quartz.ClusterNode.csproj" />

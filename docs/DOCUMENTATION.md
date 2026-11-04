@@ -6473,7 +6473,11 @@ Iceberg Kafka Connect sink commits the table.
     none. 25 unit tests, and the files were read back by two independent engines (PyArrow 26 and DuckDB 2.0): exact types, microseconds, nullability, Hive partition
     discovery and both Snappy and Zstd. Spark, Trino and Iceberg were not run here.
   - Still open: a change journal for incremental sync (modelled on `AiChangeJournal`);
-    a backfill run against a real PostgreSQL or SQL Server database (the tests use SQLite).
+    a backfill run against SQL Server (the unit tests use SQLite).
+  - Real PostgreSQL 16 (Testcontainers, `Modulus.Analytics.EntityFrameworkCore.Integration.Tests`, 6 tests on net8.0 and net10.0): eight parallel enqueues of the same 60
+    records store 60 rows without an error; four concurrent delivery workers deliver 400 records exactly once each; two workers split two backfill runs (750 and 420 orders) and
+    queue every order once; a claim that expired is taken over and a live one is not; the freshness and reconciliation aggregate queries and the purge run correctly. A
+    mutation check (dropping the claim ownership filter) makes the exactly-once test fail, so it guards the behaviour.
 - [ ] Phase 4: dataset permissions, plan gating, export audit, freshness, reconciliation, quality, retention and erasure, lineage
   - Done: **freshness and monitoring** (`Modulus.Analytics`, `.EntityFrameworkCore`, `.Management`; 14 more tests).
     - `AnalyticsFreshness.Evaluate`: lag is the age of the oldest captured-but-undelivered record, i.e. how far the warehouse is behind; a dataset is *stale* when
