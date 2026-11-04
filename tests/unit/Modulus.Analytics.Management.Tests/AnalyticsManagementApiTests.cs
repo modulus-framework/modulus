@@ -44,7 +44,8 @@ public sealed class AnalyticsManagementApiTests : IAsyncLifetime
         builder.Services.AddSingleton<IAnalyticsSink>(new InMemoryAnalyticsSink());
         builder.Services.AddModulusAnalytics(a => a
             .AddDataset(new AnalyticsDatasetDescriptor("orders", 1, "sales", [new("order_id", AnalyticsFieldType.Int64)], FreshnessSla: TimeSpan.FromMinutes(1)))
-            .Services.AddScoped<IAnalyticsSource, StubSource>());
+            .AddDataset(new AnalyticsDatasetDescriptor("plain", 1, "sales", [new("order_id", AnalyticsFieldType.Int64)]))
+            .Services.AddScoped<IAnalyticsSource, StubSource>().AddScoped<IAnalyticsSource, PlainSource>());
         builder.Services.AddModulusAnalyticsStore<TestDb>(new ConfigurationBuilder().Build(), o => o.EnableDelivery = false, o => o.EnableWorker = false);
         builder.Services.AddModulusAnalyticsManagement();
 
@@ -85,6 +86,8 @@ public sealed class AnalyticsManagementApiTests : IAsyncLifetime
         (await other.DeleteAsync("/analytics/dead-letters/purge")).StatusCode.Should().Be(HttpStatusCode.Forbidden);
         (await other.GetAsync("/analytics/backfills")).StatusCode.Should().Be(HttpStatusCode.Forbidden);
         (await other.GetAsync("/analytics/freshness")).StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        (await other.PostAsync($"/analytics/backfills/{Guid.NewGuid()}/cancel", null)).StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        (await anonymous.PostAsync($"/analytics/backfills/{Guid.NewGuid()}/cancel", null)).StatusCode.Should().Be(HttpStatusCode.Unauthorized);
         (await other.PostAsJsonAsync("/analytics/reconciliations", new AnalyticsReconcileRequest("orders", 1))).StatusCode.Should().Be(HttpStatusCode.Forbidden);
         (await anonymous.PostAsJsonAsync("/analytics/reconciliations", new AnalyticsReconcileRequest("orders", 1))).StatusCode.Should().Be(HttpStatusCode.Unauthorized);
         (await anonymous.GetAsync("/analytics/freshness")).StatusCode.Should().Be(HttpStatusCode.Unauthorized);
@@ -143,8 +146,7 @@ public sealed class AnalyticsManagementApiTests : IAsyncLifetime
         var list = await client.GetFromJsonAsync<List<AnalyticsDatasetFreshness>>("/analytics/freshness");
 
         body.Should().Contain("\"state\":\"Stale\"");
-        var orders = list!.Single();
-        orders.Dataset.Should().Be("orders");
+        var orders = list!.Single(f => f.Dataset == "orders");
         orders.State.Should().Be(AnalyticsFreshnessState.Stale);
         orders.Pending.Should().Be(1);
         orders.Lag.TotalSeconds.Should().BeInRange(295, 400);
@@ -188,6 +190,53 @@ public sealed class AnalyticsManagementApiTests : IAsyncLifetime
         skipped.Should().Be(new AnalyticsBackfillStartResult(0, 0, 1));
         restarted.Should().Be(new AnalyticsBackfillStartResult(0, 1, 0));
         runs!.Single().Status.Should().Be("Pending");
+    }
+
+    [Fact]
+    public async Task An_incremental_run_is_a_separate_run_from_the_backfill_and_lists_its_kind()
+    {
+        var tenant = Guid.NewGuid();
+        using var client = AsUser(Manage);
+
+        var backfill = await (await client.PostAsJsonAsync("/analytics/backfills", new AnalyticsBackfillRequest("orders", 1, [tenant]))).Content.ReadFromJsonAsync<AnalyticsBackfillStartResult>();
+        var incremental = await (await client.PostAsJsonAsync("/analytics/backfills", new AnalyticsBackfillRequest("orders", 1, [tenant], Incremental: true))).Content.ReadFromJsonAsync<AnalyticsBackfillStartResult>();
+        var runs = await client.GetFromJsonAsync<List<AnalyticsBackfillRunInfo>>("/analytics/backfills");
+
+        backfill.Should().Be(new AnalyticsBackfillStartResult(1, 0, 0));
+        incremental.Should().Be(new AnalyticsBackfillStartResult(1, 0, 0));
+        runs!.Select(r => r.Kind).Should().BeEquivalentTo("Backfill", "Incremental");
+    }
+
+    [Fact]
+    public async Task An_incremental_run_is_refused_for_a_dataset_whose_source_cannot_report_changes()
+    {
+        using var client = AsUser(Manage);
+
+        var response = await client.PostAsJsonAsync("/analytics/backfills", new AnalyticsBackfillRequest("plain", 1, [Guid.NewGuid()], Incremental: true));
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await response.Content.ReadAsStringAsync()).Should().Contain("cannot report changes");
+    }
+
+    [Fact]
+    public async Task A_waiting_or_running_run_can_be_cancelled_once_and_then_restarted()
+    {
+        var tenant = Guid.NewGuid();
+        using var client = AsUser(Manage);
+        await client.PostAsJsonAsync("/analytics/backfills", new AnalyticsBackfillRequest("orders", 1, [tenant], Incremental: true));
+        var run = (await client.GetFromJsonAsync<List<AnalyticsBackfillRunInfo>>("/analytics/backfills"))!.Single();
+
+        var cancelled = await client.PostAsync($"/analytics/backfills/{run.Id}/cancel", null);
+        var again = await client.PostAsync($"/analytics/backfills/{run.Id}/cancel", null);
+        var unknown = await client.PostAsync($"/analytics/backfills/{Guid.NewGuid()}/cancel", null);
+        var afterCancel = (await client.GetFromJsonAsync<List<AnalyticsBackfillRunInfo>>("/analytics/backfills"))!.Single();
+        var restart = await (await client.PostAsJsonAsync("/analytics/backfills", new AnalyticsBackfillRequest("orders", 1, [tenant], Restart: true, Incremental: true))).Content.ReadFromJsonAsync<AnalyticsBackfillStartResult>();
+
+        cancelled.StatusCode.Should().Be(HttpStatusCode.OK);
+        again.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        unknown.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        afterCancel.Status.Should().Be("Cancelled");
+        restart.Should().Be(new AnalyticsBackfillStartResult(0, 1, 0));
     }
 
     [Fact]
@@ -428,8 +477,21 @@ public sealed class AnalyticsManagementApiTests : IAsyncLifetime
             .ExecuteUpdateAsync(s => s.SetProperty(r => r.Status, AnalyticsBackfillStatus.Completed).SetProperty(r => r.CompletedAt, (DateTime?)DateTime.UtcNow));
     }
 
-    private sealed class StubSource : IAnalyticsCountingSource
+    private sealed class PlainSource : IAnalyticsSource
     {
+        public string Dataset => "plain";
+
+        public int Version => 1;
+
+        public Task<AnalyticsExtractPage> ExtractAsync(AnalyticsExtractRequest request, CancellationToken cancellationToken)
+            => Task.FromResult(new AnalyticsExtractPage([], null));
+    }
+
+    private sealed class StubSource : IAnalyticsIncrementalSource
+    {
+        public Task<AnalyticsChangePage> ExtractChangesAsync(AnalyticsChangeRequest request, CancellationToken cancellationToken)
+            => Task.FromResult(new AnalyticsChangePage([], request.Cursor, false));
+
         public Task<long> CountAsync(Guid tenantId, CancellationToken cancellationToken) => Task.FromResult(3L);
 
         public string Dataset => "orders";

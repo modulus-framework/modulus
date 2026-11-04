@@ -44,36 +44,51 @@ internal sealed class AnalyticsBackfillProcessor(
         }
 
         var lockUntil = now + settings.LockDuration;
-        await db.AnalyticsBackfillRuns
-            .Where(r => candidates.Contains(r.Id)
-                     && (r.Status == AnalyticsBackfillStatus.Pending || r.Status == AnalyticsBackfillStatus.Running)
-                     && (r.LockedUntil == null || r.LockedUntil < now))
-            .ExecuteUpdateAsync(
-                s => s.SetProperty(r => r.LockedBy, _instanceId)
-                      .SetProperty(r => r.LockedUntil, (DateTime?)lockUntil)
-                      .SetProperty(r => r.Status, AnalyticsBackfillStatus.Running),
-                ct).ConfigureAwait(false);
+        try
+        {
+            await db.AnalyticsBackfillRuns
+                .Where(r => candidates.Contains(r.Id)
+                         && (r.Status == AnalyticsBackfillStatus.Pending || r.Status == AnalyticsBackfillStatus.Running)
+                         && (r.LockedUntil == null || r.LockedUntil < now))
+                .ExecuteUpdateAsync(
+                    s => s.SetProperty(r => r.LockedBy, _instanceId)
+                          .SetProperty(r => r.LockedUntil, (DateTime?)lockUntil)
+                          .SetProperty(r => r.Status, AnalyticsBackfillStatus.Running),
+                    ct).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (AnalyticsDbRaces.IsRace(ex))
+        {
+            // Another worker is claiming the same runs and the database chose this claim as the deadlock victim. Skip the cycle.
+            return 0;
+        }
 
         var claimed = await db.AnalyticsBackfillRuns.AsNoTracking()
             .Where(r => candidates.Contains(r.Id) && r.LockedBy == _instanceId && r.Status == AnalyticsBackfillStatus.Running)
             .OrderBy(r => r.CreatedAt)
-            .Select(r => new { r.Id, r.Dataset, r.SchemaVersion, r.TenantId })
+            .Select(r => new { r.Id, r.Dataset, r.SchemaVersion, r.TenantId, r.Kind })
             .ToListAsync(ct).ConfigureAwait(false);
 
         foreach (var run in claimed)
         {
-            await ProcessRunAsync(run.Id, run.Dataset, run.SchemaVersion, run.TenantId, settings, ct).ConfigureAwait(false);
+            await ProcessRunAsync(run.Id, run.Dataset, run.SchemaVersion, run.TenantId, run.Kind, settings, ct).ConfigureAwait(false);
         }
 
         return claimed.Count;
     }
 
-    private async Task ProcessRunAsync(Guid runId, string dataset, int version, Guid tenantId, AnalyticsBackfillOptions settings, CancellationToken ct)
+    private async Task ProcessRunAsync(Guid runId, string dataset, int version, Guid tenantId, AnalyticsRunKind kind, AnalyticsBackfillOptions settings, CancellationToken ct)
     {
         var source = sources.FirstOrDefault(s => s.Dataset == dataset && s.Version == version);
         if (source is null || !catalog.TryGet(dataset, version, out _))
         {
             await FailAsync(runId, $"No analytics source or dataset is registered for '{dataset}.v{version}'.").ConfigureAwait(false);
+            return;
+        }
+
+        var incremental = source as IAnalyticsIncrementalSource;
+        if (kind == AnalyticsRunKind.Incremental && incremental is null)
+        {
+            await FailAsync(runId, $"The source for '{dataset}.v{version}' cannot report changes, so the incremental run cannot continue.").ConfigureAwait(false);
             return;
         }
 
@@ -94,7 +109,10 @@ internal sealed class AnalyticsBackfillProcessor(
         {
             for (var page = 0; page < Math.Max(1, settings.PagesPerCycle); page++)
             {
-                if (await ReadPageAsync(runId, dataset, version, tenantId, source, settings, ct).ConfigureAwait(false))
+                var finished = kind == AnalyticsRunKind.Incremental
+                    ? await ReadChangesAsync(runId, dataset, version, tenantId, incremental!, settings, ct).ConfigureAwait(false)
+                    : await ReadPageAsync(runId, dataset, version, tenantId, source, settings, ct).ConfigureAwait(false);
+                if (finished)
                 {
                     return;
                 }
@@ -124,6 +142,11 @@ internal sealed class AnalyticsBackfillProcessor(
         {
             db.ChangeTracker.Clear();
             var run = await db.AnalyticsBackfillRuns.SingleAsync(r => r.Id == runId, ct).ConfigureAwait(false);
+            if (run.Status != AnalyticsBackfillStatus.Running)
+            {
+                return true; // cancelled while this cycle was running
+            }
+
             var page = await source.ExtractAsync(new AnalyticsExtractRequest(tenantId, run.Cursor, Math.Max(1, settings.PageSize)), ct).ConfigureAwait(false);
             foreach (var record in page.Records)
             {
@@ -168,10 +191,74 @@ internal sealed class AnalyticsBackfillProcessor(
 
                 return done;
             }
-            catch (DbUpdateException) when (attempt < 2)
+            catch (Exception ex) when (AnalyticsDbRaces.IsRace(ex) && attempt < 4)
             {
-                // A live event for the same record may have been queued meanwhile and won the unique index. Read the page again;
-                // staging now skips that record.
+                // A live event for the same record may have been queued meanwhile and won the unique index, or this save lost a deadlock.
+                // Read the page again; staging now skips what is already queued.
+                await AnalyticsDbRaces.BackoffAsync(attempt, ct).ConfigureAwait(false);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Reads one page of changes, queues it and saves the position. Returns true when the run has nothing more to do right now: it caught up (it will
+    /// poll again after <see cref="AnalyticsBackfillOptions.IncrementalPollInterval"/>) or was cancelled.
+    /// </summary>
+    private async Task<bool> ReadChangesAsync(
+        Guid runId, string dataset, int version, Guid tenantId, IAnalyticsIncrementalSource source, AnalyticsBackfillOptions settings, CancellationToken ct)
+    {
+        for (var attempt = 1; ; attempt++)
+        {
+            db.ChangeTracker.Clear();
+            var run = await db.AnalyticsBackfillRuns.SingleAsync(r => r.Id == runId, ct).ConfigureAwait(false);
+            if (run.Status != AnalyticsBackfillStatus.Running)
+            {
+                return true; // cancelled while this cycle was running
+            }
+
+            var settledBefore = Now() - settings.SettleDelay;
+            var page = await source.ExtractChangesAsync(
+                new AnalyticsChangeRequest(tenantId, run.Cursor, Math.Max(1, settings.PageSize), settledBefore, settings.Overlap), ct).ConfigureAwait(false);
+            foreach (var record in page.Records)
+            {
+                if (record.TenantId != tenantId || record.Dataset != dataset || record.SchemaVersion != version)
+                {
+                    throw new AnalyticsBackfillSourceException(
+                        $"The source for '{dataset}.v{version}' returned a record for '{record.Dataset}.v{record.SchemaVersion}' of tenant '{record.TenantId}' while reading tenant '{tenantId}'.");
+                }
+            }
+
+            var staged = await AnalyticsDeliveryStaging.StageAsync(db, catalog, clock, page.Records, ct).ConfigureAwait(false);
+
+            var now = Now();
+            run.Cursor = page.Cursor ?? run.Cursor;
+            run.RowsQueued += staged;
+            run.AttemptCount = 0;
+            run.LastError = null;
+            run.UpdatedAt = now;
+            if (page.HasMore)
+            {
+                run.NextAttemptAt = null;
+                run.LockedUntil = now + settings.LockDuration;
+            }
+            else
+            {
+                // Caught up: wait, then look again. The run stays Running; it only ends when an operator cancels it.
+                run.NextAttemptAt = now + settings.IncrementalPollInterval;
+                run.LockedBy = null;
+                run.LockedUntil = null;
+            }
+
+            try
+            {
+                await db.SaveChangesAsync(CancellationToken.None).ConfigureAwait(false);
+                AnalyticsMetrics.BackfillRowsQueued.Add(staged, AnalyticsMetrics.Tags(dataset));
+                return !page.HasMore;
+            }
+            catch (Exception ex) when (AnalyticsDbRaces.IsRace(ex) && attempt < 4)
+            {
+                // A live event for the same record revision won the unique index meanwhile, or this save lost a deadlock. Read the page again.
+                await AnalyticsDbRaces.BackoffAsync(attempt, ct).ConfigureAwait(false);
             }
         }
     }

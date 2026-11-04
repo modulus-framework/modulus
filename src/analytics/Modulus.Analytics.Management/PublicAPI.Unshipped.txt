@@ -1,11 +1,13 @@
 #nullable enable
 Modulus.Analytics.Management.AnalyticsBackfillRequest
 Modulus.Analytics.Management.AnalyticsBackfillRequest.<Clone>$() -> Modulus.Analytics.Management.AnalyticsBackfillRequest!
-Modulus.Analytics.Management.AnalyticsBackfillRequest.AnalyticsBackfillRequest(string! Dataset, int Version, System.Guid[]? TenantIds = null, bool Restart = false) -> void
+Modulus.Analytics.Management.AnalyticsBackfillRequest.AnalyticsBackfillRequest(string! Dataset, int Version, System.Guid[]? TenantIds = null, bool Restart = false, bool Incremental = false) -> void
 Modulus.Analytics.Management.AnalyticsBackfillRequest.Dataset.get -> string!
 Modulus.Analytics.Management.AnalyticsBackfillRequest.Dataset.init -> void
-Modulus.Analytics.Management.AnalyticsBackfillRequest.Deconstruct(out string! Dataset, out int Version, out System.Guid[]? TenantIds, out bool Restart) -> void
+Modulus.Analytics.Management.AnalyticsBackfillRequest.Deconstruct(out string! Dataset, out int Version, out System.Guid[]? TenantIds, out bool Restart, out bool Incremental) -> void
 Modulus.Analytics.Management.AnalyticsBackfillRequest.Equals(Modulus.Analytics.Management.AnalyticsBackfillRequest? other) -> bool
+Modulus.Analytics.Management.AnalyticsBackfillRequest.Incremental.get -> bool
+Modulus.Analytics.Management.AnalyticsBackfillRequest.Incremental.init -> void
 Modulus.Analytics.Management.AnalyticsBackfillRequest.Restart.get -> bool
 Modulus.Analytics.Management.AnalyticsBackfillRequest.Restart.init -> void
 Modulus.Analytics.Management.AnalyticsBackfillRequest.TenantIds.get -> System.Guid[]?
@@ -14,7 +16,7 @@ Modulus.Analytics.Management.AnalyticsBackfillRequest.Version.get -> int
 Modulus.Analytics.Management.AnalyticsBackfillRequest.Version.init -> void
 Modulus.Analytics.Management.AnalyticsBackfillRunInfo
 Modulus.Analytics.Management.AnalyticsBackfillRunInfo.<Clone>$() -> Modulus.Analytics.Management.AnalyticsBackfillRunInfo!
-Modulus.Analytics.Management.AnalyticsBackfillRunInfo.AnalyticsBackfillRunInfo(System.Guid Id, string! Dataset, int SchemaVersion, System.Guid TenantId, string! Status, long RowsQueued, int AttemptCount, System.DateTime CreatedAt, System.DateTime UpdatedAt, System.DateTime? CompletedAt, System.DateTime? NextAttemptAt, string? LastError, string? RequestedBy) -> void
+Modulus.Analytics.Management.AnalyticsBackfillRunInfo.AnalyticsBackfillRunInfo(System.Guid Id, string! Dataset, int SchemaVersion, System.Guid TenantId, string! Kind, string! Status, long RowsQueued, int AttemptCount, System.DateTime CreatedAt, System.DateTime UpdatedAt, System.DateTime? CompletedAt, System.DateTime? NextAttemptAt, string? LastError, string? RequestedBy) -> void
 Modulus.Analytics.Management.AnalyticsBackfillRunInfo.AttemptCount.get -> int
 Modulus.Analytics.Management.AnalyticsBackfillRunInfo.AttemptCount.init -> void
 Modulus.Analytics.Management.AnalyticsBackfillRunInfo.CompletedAt.get -> System.DateTime?
@@ -23,10 +25,12 @@ Modulus.Analytics.Management.AnalyticsBackfillRunInfo.CreatedAt.get -> System.Da
 Modulus.Analytics.Management.AnalyticsBackfillRunInfo.CreatedAt.init -> void
 Modulus.Analytics.Management.AnalyticsBackfillRunInfo.Dataset.get -> string!
 Modulus.Analytics.Management.AnalyticsBackfillRunInfo.Dataset.init -> void
-Modulus.Analytics.Management.AnalyticsBackfillRunInfo.Deconstruct(out System.Guid Id, out string! Dataset, out int SchemaVersion, out System.Guid TenantId, out string! Status, out long RowsQueued, out int AttemptCount, out System.DateTime CreatedAt, out System.DateTime UpdatedAt, out System.DateTime? CompletedAt, out System.DateTime? NextAttemptAt, out string? LastError, out string? RequestedBy) -> void
+Modulus.Analytics.Management.AnalyticsBackfillRunInfo.Deconstruct(out System.Guid Id, out string! Dataset, out int SchemaVersion, out System.Guid TenantId, out string! Kind, out string! Status, out long RowsQueued, out int AttemptCount, out System.DateTime CreatedAt, out System.DateTime UpdatedAt, out System.DateTime? CompletedAt, out System.DateTime? NextAttemptAt, out string? LastError, out string? RequestedBy) -> void
 Modulus.Analytics.Management.AnalyticsBackfillRunInfo.Equals(Modulus.Analytics.Management.AnalyticsBackfillRunInfo? other) -> bool
 Modulus.Analytics.Management.AnalyticsBackfillRunInfo.Id.get -> System.Guid
 Modulus.Analytics.Management.AnalyticsBackfillRunInfo.Id.init -> void
+Modulus.Analytics.Management.AnalyticsBackfillRunInfo.Kind.get -> string!
+Modulus.Analytics.Management.AnalyticsBackfillRunInfo.Kind.init -> void
 Modulus.Analytics.Management.AnalyticsBackfillRunInfo.LastError.get -> string?
 Modulus.Analytics.Management.AnalyticsBackfillRunInfo.LastError.init -> void
 Modulus.Analytics.Management.AnalyticsBackfillRunInfo.NextAttemptAt.get -> System.DateTime?

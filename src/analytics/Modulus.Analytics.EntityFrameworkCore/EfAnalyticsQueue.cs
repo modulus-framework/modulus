@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 /// <summary>
 /// The durable <see cref="IAnalyticsQueue"/>. It writes rows through the context it is given, so inside a unit of work the caller
-/// commits them with the rest. A record already queued (same tenant, dataset and event id) is skipped.
+/// commits them with the rest. A record revision already queued (same tenant, dataset, event id and revision) is skipped, and writers that collide retry.
 /// </summary>
 internal sealed class EfAnalyticsQueue(ModulusAnalyticsDbContext db, IAnalyticsDatasetCatalog catalog, TimeProvider clock) : IAnalyticsQueue
 {
@@ -16,26 +16,28 @@ internal sealed class EfAnalyticsQueue(ModulusAnalyticsDbContext db, IAnalyticsD
             return;
         }
 
-        var added = await AnalyticsDeliveryStaging.StageAsync(db, catalog, clock, records, cancellationToken).ConfigureAwait(false);
-        if (added == 0)
+        for (var attempt = 1; ; attempt++)
         {
-            return;
-        }
-
-        try
-        {
-            await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-        }
-        catch (DbUpdateException)
-        {
-            // A concurrent handler of the same event may have won the unique index; then its rows stand.
-            db.ChangeTracker.Clear();
-            var ids = records.Select(r => r.EventId).ToList();
-            var stored = await db.AnalyticsDeliveries.AsNoTracking().CountAsync(d => ids.Contains(d.EventId), cancellationToken).ConfigureAwait(false);
-            if (stored < records.Select(r => (r.TenantId, r.Dataset, r.EventId)).Distinct().Count())
+            var added = await AnalyticsDeliveryStaging.StageAsync(db, catalog, clock, records, cancellationToken).ConfigureAwait(false);
+            if (added == 0)
             {
-                throw;
+                return;
+            }
+
+            try
+            {
+                await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+                return;
+            }
+            catch (Exception ex) when (AnalyticsDbRaces.IsRace(ex) && attempt < MaxAttempts)
+            {
+                // Another writer queued the same record revision, or the database picked us as a deadlock victim. Stage again: rows the
+                // other writer committed are skipped now.
+                db.ChangeTracker.Clear();
+                await AnalyticsDbRaces.BackoffAsync(attempt, cancellationToken).ConfigureAwait(false);
             }
         }
     }
+
+    private const int MaxAttempts = 5;
 }

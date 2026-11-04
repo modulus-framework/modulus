@@ -213,10 +213,11 @@ public static class AnalyticsManagementExtensions
             var who = currentUser.UserId?.ToString() ?? "unknown";
             try
             {
-                var result = await manager.StartAsync(request.Dataset, request.Version, request.TenantIds, request.Restart, who, ct);
+                var result = await manager.StartAsync(
+                    request.Dataset, request.Version, request.TenantIds, request.Restart, who, ct, request.Incremental ? AnalyticsRunKind.Incremental : AnalyticsRunKind.Backfill);
                 loggerFactory.CreateLogger("Modulus.Analytics.Management").LogInformation(
-                    "Analytics backfill of {Dataset}.v{Version} started by {User}: {Created} created, {Restarted} restarted, {Skipped} skipped.",
-                    request.Dataset, request.Version, who, result.Created, result.Restarted, result.Skipped);
+                    "Analytics {Kind} of {Dataset}.v{Version} started by {User}: {Created} created, {Restarted} restarted, {Skipped} skipped.",
+                    request.Incremental ? "incremental sync" : "backfill", request.Dataset, request.Version, who, result.Created, result.Restarted, result.Skipped);
                 return Results.Ok(result);
             }
             catch (InvalidOperationException ex)
@@ -234,7 +235,7 @@ public static class AnalyticsManagementExtensions
             {
                 if (!Enum.TryParse<AnalyticsBackfillStatus>(status, ignoreCase: true, out var value) || !Enum.IsDefined(value))
                 {
-                    return Results.BadRequest("Status must be Pending, Running, Completed or Failed.");
+                    return Results.BadRequest("Status must be Pending, Running, Completed, Failed or Cancelled.");
                 }
 
                 parsed = value;
@@ -242,10 +243,25 @@ public static class AnalyticsManagementExtensions
 
             var runs = await manager.ListAsync(dataset, parsed, take ?? 100, ct);
             return Results.Ok(runs.Select(r => new AnalyticsBackfillRunInfo(
-                r.Id, r.Dataset, r.SchemaVersion, r.TenantId, r.Status.ToString(), r.RowsQueued, r.AttemptCount,
+                r.Id, r.Dataset, r.SchemaVersion, r.TenantId, r.Kind.ToString(), r.Status.ToString(), r.RowsQueued, r.AttemptCount,
                 r.CreatedAt, r.UpdatedAt, r.CompletedAt, r.NextAttemptAt, r.LastError, r.RequestedBy)).ToList());
         })
         .WithSummary("List analytics backfill runs");
+
+        // POST /analytics/backfills/{id}/cancel
+        group.MapPost("/backfills/{id:guid}/cancel", async (
+            Guid id, AnalyticsBackfillManager manager, ICurrentUser currentUser, ILoggerFactory loggerFactory, CancellationToken ct) =>
+        {
+            if (!await manager.CancelAsync(id, ct))
+            {
+                return Results.NotFound("No waiting or running run has that id.");
+            }
+
+            loggerFactory.CreateLogger("Modulus.Analytics.Management").LogInformation(
+                "Analytics run {Run} cancelled by {User}.", id, currentUser.UserId?.ToString() ?? "unknown");
+            return Results.Ok();
+        })
+        .WithSummary("Stop a waiting or running backfill or incremental run");
 
         return group;
     }

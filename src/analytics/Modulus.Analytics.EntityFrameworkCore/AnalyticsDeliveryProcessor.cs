@@ -51,11 +51,19 @@ internal sealed class AnalyticsDeliveryProcessor(
 
         var claimedAt = Now();
         var lockUntil = claimedAt + settings.LockDuration;
-        await db.AnalyticsDeliveries
-            .Where(d => candidates.Contains(d.Id) && d.DeliveredAt == null && d.DeadLetteredAt == null
-                     && (d.LockedUntil == null || d.LockedUntil < claimedAt))
-            .ExecuteUpdateAsync(s => s.SetProperty(d => d.LockedBy, _instanceId).SetProperty(d => d.LockedUntil, lockUntil), ct)
-            .ConfigureAwait(false);
+        try
+        {
+            await db.AnalyticsDeliveries
+                .Where(d => candidates.Contains(d.Id) && d.DeliveredAt == null && d.DeadLetteredAt == null
+                         && (d.LockedUntil == null || d.LockedUntil < claimedAt))
+                .ExecuteUpdateAsync(s => s.SetProperty(d => d.LockedBy, _instanceId).SetProperty(d => d.LockedUntil, lockUntil), ct)
+                .ConfigureAwait(false);
+        }
+        catch (Exception ex) when (AnalyticsDbRaces.IsRace(ex))
+        {
+            // Another worker is claiming overlapping rows and the database chose this claim as the deadlock victim. Skip the cycle.
+            return 0;
+        }
 
         var claimed = await db.AnalyticsDeliveries
             .Where(d => candidates.Contains(d.Id) && d.LockedBy == _instanceId && d.DeliveredAt == null && d.DeadLetteredAt == null)
@@ -90,6 +98,32 @@ internal sealed class AnalyticsDeliveryProcessor(
             return;
         }
 
+        // A newer revision of the same record makes an older one pointless (and delivering it later could overwrite newer data), so the older
+        // one is marked done without being sent.
+        var eventIds = rows.Select(r => r.EventId).Distinct().ToList();
+        var newest = (await db.AnalyticsDeliveries.AsNoTracking()
+            .Where(d => d.Dataset == dataset && d.DeadLetteredAt == null && eventIds.Contains(d.EventId))
+            .Select(d => new { d.TenantId, d.EventId, d.Revision })
+            .ToListAsync(ct).ConfigureAwait(false))
+            .GroupBy(d => (d.TenantId, d.EventId))
+            .ToDictionary(g => g.Key, g => g.Max(d => d.Revision));
+        var current = new List<AnalyticsDelivery>(rows.Count);
+        foreach (var row in rows)
+        {
+            if (newest.TryGetValue((row.TenantId, row.EventId), out var top) && top > row.Revision)
+            {
+                row.DeliveredAt = finishedAt;
+                row.LastAttemptAt = finishedAt;
+                row.LastError = "Superseded by a newer revision.";
+                Release(row);
+            }
+            else
+            {
+                current.Add(row);
+            }
+        }
+
+        rows = current;
         var records = new List<AnalyticsRecord>(rows.Count);
         var byEventId = new Dictionary<(Guid Tenant, Guid Event), AnalyticsDelivery>();
         foreach (var row in rows)
@@ -99,7 +133,8 @@ internal sealed class AnalyticsDeliveryProcessor(
                 records.Add(new AnalyticsRecord(
                     row.EventId, row.Dataset, row.SchemaVersion, row.TenantId,
                     new DateTimeOffset(DateTime.SpecifyKind(row.OccurredAt, DateTimeKind.Utc)),
-                    AnalyticsValueSerializer.Deserialize(descriptor, row.Payload)));
+                    AnalyticsValueSerializer.Deserialize(descriptor, row.Payload),
+                    row.Revision));
                 byEventId[(row.TenantId, row.EventId)] = row;
             }
             catch (InvalidOperationException ex)

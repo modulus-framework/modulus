@@ -18,7 +18,7 @@ public sealed class AnalyticsBackfillManager(
 {
     /// <summary>
     /// Creates one run per tenant for a dataset version. A tenant that already has a run is skipped, unless <paramref name="restart"/> is
-    /// set and that run has finished or failed; then it starts again from the beginning (rows already queued collapse, because ids are stable).
+    /// set and that run has finished, failed or been cancelled; then it starts again from the beginning (a row whose revision is already queued is skipped, a changed row is queued again).
     /// </summary>
     /// <param name="dataset">The dataset name.</param>
     /// <param name="version">The dataset version.</param>
@@ -26,14 +26,16 @@ public sealed class AnalyticsBackfillManager(
     /// <param name="restart">Whether to restart finished or failed runs.</param>
     /// <param name="requestedBy">Who asked, for the record.</param>
     /// <param name="cancellationToken">Cancels the call.</param>
-    /// <exception cref="InvalidOperationException">The dataset version or its source is not registered, or a tenant id is empty.</exception>
+    /// <param name="kind">A one-off backfill (the default), or an incremental run that keeps the dataset up to date. A tenant can have one of each.</param>
+    /// <exception cref="InvalidOperationException">The dataset version or its source is not registered (an incremental run needs an incremental source), or a tenant id is empty.</exception>
     public async Task<AnalyticsBackfillStartResult> StartAsync(
         string dataset,
         int version,
         IReadOnlyCollection<Guid>? tenantIds,
         bool restart,
         string? requestedBy,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        AnalyticsRunKind kind = AnalyticsRunKind.Backfill)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(dataset);
 
@@ -47,6 +49,11 @@ public sealed class AnalyticsBackfillManager(
             throw new InvalidOperationException($"No analytics source is registered for '{dataset}.v{version}', so it cannot be backfilled.");
         }
 
+        if (kind == AnalyticsRunKind.Incremental && !sources.OfType<IAnalyticsIncrementalSource>().Any(s => s.Dataset == dataset && s.Version == version))
+        {
+            throw new InvalidOperationException($"The source for '{dataset}.v{version}' cannot report changes, so it cannot be kept up to date incrementally.");
+        }
+
         var tenants = tenantIds is null
             ? await directory.ListTenantIdsAsync(cancellationToken).ConfigureAwait(false)
             : [.. tenantIds.Distinct()];
@@ -57,7 +64,7 @@ public sealed class AnalyticsBackfillManager(
 
         var now = clock.GetUtcNow().UtcDateTime;
         var existing = await db.AnalyticsBackfillRuns
-            .Where(r => r.Dataset == dataset && r.SchemaVersion == version && tenants.Contains(r.TenantId))
+            .Where(r => r.Dataset == dataset && r.SchemaVersion == version && r.Kind == kind && tenants.Contains(r.TenantId))
             .ToDictionaryAsync(r => r.TenantId, cancellationToken).ConfigureAwait(false);
 
         int created = 0, restarted = 0, skipped = 0;
@@ -70,6 +77,7 @@ public sealed class AnalyticsBackfillManager(
                     Dataset = dataset,
                     SchemaVersion = version,
                     TenantId = tenant,
+                    Kind = kind,
                     Status = AnalyticsBackfillStatus.Pending,
                     CreatedAt = now,
                     UpdatedAt = now,
@@ -77,7 +85,7 @@ public sealed class AnalyticsBackfillManager(
                 });
                 created++;
             }
-            else if (restart && run.Status is AnalyticsBackfillStatus.Completed or AnalyticsBackfillStatus.Failed)
+            else if (restart && run.Status is AnalyticsBackfillStatus.Completed or AnalyticsBackfillStatus.Failed or AnalyticsBackfillStatus.Cancelled)
             {
                 run.Status = AnalyticsBackfillStatus.Pending;
                 run.Cursor = null;
@@ -104,6 +112,24 @@ public sealed class AnalyticsBackfillManager(
         }
 
         return new AnalyticsBackfillStartResult(created, restarted, skipped);
+    }
+
+    /// <summary>Stops a run that is waiting or running. Nothing more is read for it; restart it to begin again.</summary>
+    /// <param name="runId">The run id.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns><see langword="true"/> when the run was stopped; <see langword="false"/> when it does not exist or had already finished.</returns>
+    public async Task<bool> CancelAsync(Guid runId, CancellationToken cancellationToken)
+    {
+        var now = clock.GetUtcNow().UtcDateTime;
+        var stopped = await db.AnalyticsBackfillRuns
+            .Where(r => r.Id == runId && (r.Status == AnalyticsBackfillStatus.Pending || r.Status == AnalyticsBackfillStatus.Running))
+            .ExecuteUpdateAsync(
+                s => s.SetProperty(r => r.Status, AnalyticsBackfillStatus.Cancelled)
+                      .SetProperty(r => r.UpdatedAt, now)
+                      .SetProperty(r => r.LockedBy, (string?)null)
+                      .SetProperty(r => r.LockedUntil, (DateTime?)null),
+                cancellationToken).ConfigureAwait(false);
+        return stopped > 0;
     }
 
     /// <summary>Lists runs, newest first.</summary>

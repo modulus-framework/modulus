@@ -14,6 +14,19 @@ public enum AnalyticsBackfillStatus
 
     /// <summary>Given up on (a permanent error, or the attempts were used up). Restart it from management.</summary>
     Failed = 3,
+
+    /// <summary>Stopped by an operator. Nothing more is read; restart it to begin again.</summary>
+    Cancelled = 4,
+}
+
+/// <summary>What a run does.</summary>
+public enum AnalyticsRunKind
+{
+    /// <summary>Reads the whole table once, by key, and completes.</summary>
+    Backfill = 0,
+
+    /// <summary>Keeps a dataset up to date: reads what changed since the last position, then polls again. It never completes; cancel it to stop.</summary>
+    Incremental = 1,
 }
 
 /// <summary>
@@ -34,10 +47,13 @@ public sealed class AnalyticsBackfillRun
     /// <summary>The tenant being read.</summary>
     public Guid TenantId { get; init; }
 
+    /// <summary>Whether the run backfills once or keeps the dataset up to date.</summary>
+    public AnalyticsRunKind Kind { get; init; }
+
     /// <summary>The state of the run.</summary>
     public AnalyticsBackfillStatus Status { get; set; }
 
-    /// <summary>Where the last queued page ended; <see langword="null"/> before the first page.</summary>
+    /// <summary>Where the last queued page ended; <see langword="null"/> before the first page. For an incremental run it is the position of the last change read.</summary>
     public string? Cursor { get; set; }
 
     /// <summary>Records queued so far.</summary>

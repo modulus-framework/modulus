@@ -9,11 +9,17 @@ public sealed class AnalyticsDelivery
     /// <summary>The record's tenant.</summary>
     public Guid TenantId { get; init; }
 
-    /// <summary>The record's id (the integration event id). With <see cref="TenantId"/> and <see cref="Dataset"/> it is unique, so a redelivered event queues once.</summary>
+    /// <summary>The record's id (the integration event id). With the tenant, dataset and <see cref="Revision"/> it is unique, so a redelivered event queues once.</summary>
     public Guid EventId { get; init; }
 
     /// <summary>The dataset name.</summary>
     public string Dataset { get; init; } = string.Empty;
+
+    /// <summary>
+    /// Which version of the record this row carries (see <see cref="AnalyticsRecord.Revision"/>). With the tenant, dataset and record id it is unique, so a
+    /// redelivery is skipped and an update is queued as a new row.
+    /// </summary>
+    public long Revision { get; init; }
 
     /// <summary>The dataset version the stored values follow.</summary>
     public int SchemaVersion { get; init; }

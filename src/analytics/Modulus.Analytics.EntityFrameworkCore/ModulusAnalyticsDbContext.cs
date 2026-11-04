@@ -44,7 +44,7 @@ public class ModulusAnalyticsDbContext : DbContext
             b.Property(d => d.Payload).IsRequired();
             b.Property(d => d.LockedBy).HasMaxLength(64);
             b.Property(d => d.LastError).HasMaxLength(2048);
-            b.HasIndex(d => new { d.TenantId, d.Dataset, d.EventId }).IsUnique();
+            b.HasIndex(d => new { d.TenantId, d.Dataset, d.EventId, d.Revision }).IsUnique();
             b.HasIndex(d => new { d.DeliveredAt, d.DeadLetteredAt, d.NextAttemptAt });
             b.HasIndex(d => new { d.TenantId, d.CreatedAt });
         });
@@ -58,7 +58,7 @@ public class ModulusAnalyticsDbContext : DbContext
             b.Property(r => r.LockedBy).HasMaxLength(64);
             b.Property(r => r.LastError).HasMaxLength(2048);
             b.Property(r => r.RequestedBy).HasMaxLength(128);
-            b.HasIndex(r => new { r.Dataset, r.SchemaVersion, r.TenantId }).IsUnique();
+            b.HasIndex(r => new { r.Dataset, r.SchemaVersion, r.TenantId, r.Kind }).IsUnique();
             b.HasIndex(r => new { r.Status, r.NextAttemptAt });
         });
     }

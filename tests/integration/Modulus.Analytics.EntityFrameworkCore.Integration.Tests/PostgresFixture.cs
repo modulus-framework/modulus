@@ -23,10 +23,30 @@ public sealed class Order : IHasTenantId
     public string Email { get; set; } = string.Empty;
 }
 
+/// <summary>An audit-stamped order, as the framework's data context stamps them on every save.</summary>
+public sealed class AuditedOrder : IHasTenantId, IAuditableEntity
+{
+    public long Id { get; set; }
+
+    public Guid TenantId { get; set; }
+
+    public decimal Total { get; set; }
+
+    public DateTime CreatedAt { get; set; }
+
+    public string? CreatedBy { get; set; }
+
+    public DateTime? UpdatedAt { get; set; }
+
+    public string? UpdatedBy { get; set; }
+}
+
 /// <summary>An application context that hosts the analytics tables next to its own, as an app does.</summary>
 public sealed class PgAnalyticsDb(DbContextOptions<PgAnalyticsDb> options) : ModulusAnalyticsDbContext(options)
 {
     public DbSet<Order> Orders => Set<Order>();
+
+    public DbSet<AuditedOrder> AuditedOrders => Set<AuditedOrder>();
 }
 
 public sealed class PostgresFixture : IAsyncLifetime

@@ -32,4 +32,19 @@ public sealed class AnalyticsBackfillOptions
 
     /// <summary>The wait after a failed cycle is this delay times the attempt number. Defaults to 30 seconds.</summary>
     public TimeSpan RetryDelay { get; set; } = TimeSpan.FromSeconds(30);
+
+    /// <summary>How long an incremental run waits before it looks for new changes again. Defaults to 30 seconds.</summary>
+    public TimeSpan IncrementalPollInterval { get; set; } = TimeSpan.FromSeconds(30);
+
+    /// <summary>
+    /// Incremental runs ignore changes newer than this, because a transaction that started earlier may still commit with an older timestamp and would
+    /// be skipped. Keep it above your longest write transaction. Defaults to 5 seconds.
+    /// </summary>
+    public TimeSpan SettleDelay { get; set; } = TimeSpan.FromSeconds(5);
+
+    /// <summary>
+    /// When an incremental run has caught up, it saves its position this much earlier, so the next poll re-reads that window and picks up changes that
+    /// committed late. Re-reading is harmless: a record revision that is already queued is skipped. Defaults to 1 minute.
+    /// </summary>
+    public TimeSpan Overlap { get; set; } = TimeSpan.FromMinutes(1);
 }

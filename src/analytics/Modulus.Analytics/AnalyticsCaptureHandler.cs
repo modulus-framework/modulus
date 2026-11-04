@@ -36,7 +36,7 @@ internal sealed class AnalyticsCaptureHandler<TEvent>(
         // Normalising also gives sinks the declared CLR types whether the record is delivered inline or from the queue.
         var values = AnalyticsValueSerializer.Normalize(dataset, mapping.Map(@event));
 
-        var record = new AnalyticsRecord(@event.EventId, dataset.Name, dataset.Version, tenantId, new DateTimeOffset(@event.OccurredAt), values);
+        var record = new AnalyticsRecord(@event.EventId, dataset.Name, dataset.Version, tenantId, new DateTimeOffset(@event.OccurredAt), values, new DateTimeOffset(@event.OccurredAt).UtcTicks);
         await queue.EnqueueAsync([record], ct).ConfigureAwait(false);
     }
 }

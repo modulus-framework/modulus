@@ -64,8 +64,12 @@ public sealed record AnalyticsPage<T>(IReadOnlyList<T> Items, int Total, int Pag
 /// <param name="Dataset">The dataset name.</param>
 /// <param name="Version">The dataset version.</param>
 /// <param name="TenantIds">The tenants to cover (at most 1000), or <see langword="null"/> for every active tenant.</param>
-/// <param name="Restart">Whether to restart runs that already finished or failed.</param>
-public sealed record AnalyticsBackfillRequest(string Dataset, int Version, Guid[]? TenantIds = null, bool Restart = false);
+/// <param name="Restart">Whether to restart runs that already finished, failed or were cancelled.</param>
+/// <param name="Incremental">
+/// <see langword="false"/> (the default) reads the whole table once. <see langword="true"/> starts a run that keeps the dataset up to date by reading what changed,
+/// and polls until it is cancelled.
+/// </param>
+public sealed record AnalyticsBackfillRequest(string Dataset, int Version, Guid[]? TenantIds = null, bool Restart = false, bool Incremental = false);
 
 /// <summary>
 /// A backfill run as management sees it. The cursor is left out: it is a position in the source table and means nothing to an operator.
@@ -74,7 +78,8 @@ public sealed record AnalyticsBackfillRequest(string Dataset, int Version, Guid[
 /// <param name="Dataset">The dataset name.</param>
 /// <param name="SchemaVersion">The dataset version.</param>
 /// <param name="TenantId">The tenant being read.</param>
-/// <param name="Status">Pending, Running, Completed or Failed.</param>
+/// <param name="Kind">Backfill or Incremental.</param>
+/// <param name="Status">Pending, Running, Completed, Failed or Cancelled.</param>
 /// <param name="RowsQueued">Records queued so far.</param>
 /// <param name="AttemptCount">Consecutive failed cycles.</param>
 /// <param name="CreatedAt">When the run was created (UTC).</param>
@@ -88,6 +93,7 @@ public sealed record AnalyticsBackfillRunInfo(
     string Dataset,
     int SchemaVersion,
     Guid TenantId,
+    string Kind,
     string Status,
     long RowsQueued,
     int AttemptCount,

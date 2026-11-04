@@ -22,6 +22,12 @@ public sealed class PostgresAnalyticsTests(PostgresFixture postgres)
     ],
     FreshnessSla: TimeSpan.FromMinutes(5));
 
+    private static readonly AnalyticsDatasetDescriptor AuditedDataset = new("audited", 1, "sales",
+    [
+        new("order_id", AnalyticsFieldType.Int64),
+        new("total", AnalyticsFieldType.Decimal),
+    ]);
+
     private sealed class FakeProtector : IPersonalDataProtector
     {
         public string Protect(string plaintext) => plaintext;
@@ -56,7 +62,8 @@ public sealed class PostgresAnalyticsTests(PostgresFixture postgres)
             => Task.FromResult((long)_writes.Where(w => w.Tenant == tenantId).Select(w => w.Event).Distinct().Count());
     }
 
-    private async Task<(ServiceProvider Provider, RecordingSink Sink)> BuildAsync(Action<AnalyticsDeliveryOptions>? delivery = null, Action<AnalyticsBackfillOptions>? backfill = null)
+    private async Task<(ServiceProvider Provider, RecordingSink Sink)> BuildAsync(
+        Action<AnalyticsDeliveryOptions>? delivery = null, Action<AnalyticsBackfillOptions>? backfill = null, bool incremental = false)
     {
         var connectionString = await postgres.CreateDatabaseAsync();
         var sink = new RecordingSink();
@@ -71,6 +78,14 @@ public sealed class PostgresAnalyticsTests(PostgresFixture postgres)
                 AnalyticsRecordIds.Deterministic("orders", o.Id.ToString(System.Globalization.CultureInfo.InvariantCulture)),
                 new DateTimeOffset(2026, 11, 3, 9, 0, 0, TimeSpan.Zero),
                 new Dictionary<string, object?> { ["order_id"] = o.Id, ["total"] = o.Total })));
+        if (incremental)
+        {
+            services.AddModulusAnalytics(a => a.AddIncrementalEntitySource<PgAnalyticsDb, AuditedOrder, long>("audited", 1, o => o.Id, o => new AnalyticsEntityRow(
+                AnalyticsRecordIds.Deterministic("audited", o.Id.ToString(System.Globalization.CultureInfo.InvariantCulture)),
+                o.CreatedAt,
+                new Dictionary<string, object?> { ["order_id"] = o.Id, ["total"] = o.Total })).AddDataset(AuditedDataset));
+        }
+
         services.AddModulusAnalyticsStore<PgAnalyticsDb>(
             new ConfigurationBuilder().Build(),
             o =>
@@ -129,6 +144,28 @@ public sealed class PostgresAnalyticsTests(PostgresFixture postgres)
 
         var stored = await InScope(provider, sp => sp.GetRequiredService<PgAnalyticsDb>().AnalyticsDeliveries.CountAsync());
         stored.Should().Be(60, "the unique index and the duplicate handling make a concurrent re-enqueue harmless");
+    }
+
+    [Fact]
+    public async Task Writers_that_enqueue_overlapping_batches_in_different_orders_neither_deadlock_nor_duplicate()
+    {
+        var (provider, _) = await BuildAsync();
+        await using var _ = provider;
+        var tenant = Guid.NewGuid();
+        var all = Enumerable.Range(1, 150).Select(n => Record(tenant, n)).ToList();
+
+        // Sixteen writers, each with the same 150 records in its own random order: the textbook recipe for lock-order deadlocks.
+        var tasks = Enumerable.Range(0, 16).Select(i => Task.Run(() => InScope(provider, async sp =>
+        {
+            var shuffled = all.OrderBy(_ => Random.Shared.Next()).ToList();
+            await sp.GetRequiredService<IAnalyticsQueue>().EnqueueAsync(shuffled, CancellationToken.None);
+            return 0;
+        })));
+        await Task.WhenAll(tasks);
+
+        var rows = await InScope(provider, sp => sp.GetRequiredService<PgAnalyticsDb>().AnalyticsDeliveries.AsNoTracking().ToListAsync());
+        rows.Should().HaveCount(150);
+        rows.Select(r => r.EventId).Distinct().Should().HaveCount(150);
     }
 
     [Fact]
@@ -274,5 +311,78 @@ public sealed class PostgresAnalyticsTests(PostgresFixture postgres)
         var rows = await InScope(provider, sp => sp.GetRequiredService<PgAnalyticsDb>().AnalyticsDeliveries.AsNoTracking().ToListAsync());
         rows.Should().ContainSingle().Which.Status.Should().Be(AnalyticsDeliveryStatus.Failed, "delivered rows are purged, the dead letter stays");
         sink.Writes.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public async Task Incremental_sync_on_postgres_reads_history_picks_up_updates_and_handles_ties_at_microsecond_precision()
+    {
+        var (provider, sink) = await BuildAsync(
+            backfill: o =>
+            {
+                o.PageSize = 7;
+                o.PagesPerCycle = 3;
+                o.SettleDelay = TimeSpan.FromMilliseconds(200);
+                o.Overlap = TimeSpan.FromSeconds(5);
+                o.IncrementalPollInterval = TimeSpan.Zero;
+            },
+            incremental: true);
+        await using var _ = provider;
+        var tenant = Guid.NewGuid();
+        var tie = DateTime.UtcNow.AddMinutes(-30);
+        await InScope(provider, async sp =>
+        {
+            var db = sp.GetRequiredService<PgAnalyticsDb>();
+            // 50 orders, ten of which share exactly the same change time: the key breaks the tie across page boundaries.
+            db.AuditedOrders.AddRange(Enumerable.Range(1, 50).Select(i => new AuditedOrder
+            {
+                Id = i,
+                TenantId = tenant,
+                Total = i,
+                CreatedAt = i <= 10 ? tie : DateTime.UtcNow.AddMinutes(-30).AddMilliseconds(i * 3),
+            }));
+            await db.SaveChangesAsync();
+            return 0;
+        });
+        await InScope(provider, sp => sp.GetRequiredService<AnalyticsBackfillManager>().StartAsync("audited", 1, [tenant], false, "test", CancellationToken.None, AnalyticsRunKind.Incremental));
+
+        for (var i = 0; i < 30; i++)
+        {
+            await InScope(provider, sp => sp.GetRequiredService<AnalyticsBackfillProcessor>().ProcessAsync());
+        }
+
+        var afterHistory = await InScope(provider, sp => sp.GetRequiredService<PgAnalyticsDb>().AnalyticsDeliveries.AsNoTracking().Where(d => d.Dataset == "audited").ToListAsync());
+        afterHistory.Should().HaveCount(50, "every order was read once, including the ten that share a timestamp");
+        afterHistory.Select(d => d.EventId).Distinct().Should().HaveCount(50);
+
+        await InScope(provider, async sp =>
+        {
+            var db = sp.GetRequiredService<PgAnalyticsDb>();
+            foreach (var order in await db.AuditedOrders.Where(o => o.Id <= 5).ToListAsync())
+            {
+                order.Total += 1000;
+                order.UpdatedAt = DateTime.UtcNow;
+            }
+
+            await db.SaveChangesAsync();
+            return 0;
+        });
+        await Task.Delay(400);
+        for (var i = 0; i < 30; i++)
+        {
+            await InScope(provider, sp => sp.GetRequiredService<AnalyticsBackfillProcessor>().ProcessAsync());
+        }
+
+        var queued = await InScope(provider, sp => sp.GetRequiredService<PgAnalyticsDb>().AnalyticsDeliveries.AsNoTracking().Where(d => d.Dataset == "audited").ToListAsync());
+        queued.Should().HaveCount(55, "five updated orders were queued again as new revisions; nothing else was");
+        queued.GroupBy(d => d.EventId).Count(g => g.Count() == 2).Should().Be(5);
+
+        while (await InScope(provider, sp => sp.GetRequiredService<AnalyticsDeliveryProcessor>().ProcessAsync()) > 0)
+        {
+        }
+
+        var written = sink.Writes.Where(w => w.Tenant == tenant).Select(w => w.Event).Distinct().Count();
+        written.Should().Be(50);
+        var run = await InScope(provider, sp => sp.GetRequiredService<PgAnalyticsDb>().AnalyticsBackfillRuns.AsNoTracking().SingleAsync(r => r.Dataset == "audited"));
+        run.Status.Should().Be(AnalyticsBackfillStatus.Running, "an incremental run keeps polling");
     }
 }

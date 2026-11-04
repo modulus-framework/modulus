@@ -23,6 +23,25 @@ public sealed class Order : IHasTenantId
     public string Email { get; set; } = string.Empty;
 }
 
+public sealed class AuditedOrder : IHasTenantId, IAuditableEntity
+{
+    public long Id { get; set; }
+
+    public Guid TenantId { get; set; }
+
+    public decimal Total { get; set; }
+
+    public string Email { get; set; } = string.Empty;
+
+    public DateTime CreatedAt { get; set; }
+
+    public string? CreatedBy { get; set; }
+
+    public DateTime? UpdatedAt { get; set; }
+
+    public string? UpdatedBy { get; set; }
+}
+
 public sealed class GuidOrder : IHasTenantId
 {
     public Guid Id { get; set; }
@@ -35,6 +54,8 @@ public sealed class OrdersDb(DbContextOptions<OrdersDb> options) : DbContext(opt
     public DbSet<Order> Orders => Set<Order>();
 
     public DbSet<GuidOrder> GuidOrders => Set<GuidOrder>();
+
+    public DbSet<AuditedOrder> AuditedOrders => Set<AuditedOrder>();
 }
 
 [Trait("Category", "Unit")]
