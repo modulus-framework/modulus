@@ -67,5 +67,7 @@ package declares a licence file instead of an SPDX expression, the file was read
 | `NJsonSchema` | 11.6.1 | MIT | Cleared, not needed: the JSON Schema export is written without a library |
 | `JsonSchema.Net` | 9.6.0 | **Open Source Maintenance Fee EULA** (`OSMFEULA.txt`), not a plain OSI licence | **Rejected**: fails the repository's OSI-only policy |
 
+Test-only container images (never shipped or linked by Modulus): `marquezproject/marquez:0.50.0`, the Marquez OpenLineage server, Apache-2.0 (checked against its upstream `LICENSE`), used by `tests/integration/Modulus.Analytics.OpenLineage.Integration.Tests`; and `postgres:16-alpine`, the PostgreSQL server, under the PostgreSQL licence, which is Marquez's metadata store in those tests.
+
 Not covered here: the ClickHouse server (Apache-2.0, run by the operator, never shipped or linked by Modulus) and the other server-side tools
 listed in `docs/DOCUMENTATION.md` (Analytics Integration Layer).

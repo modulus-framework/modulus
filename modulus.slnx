@@ -76,6 +76,7 @@
     <Project Path="src/analytics/Modulus.Analytics.EntityFrameworkCore/Modulus.Analytics.EntityFrameworkCore.csproj" />
     <Project Path="src/analytics/Modulus.Analytics.Management/Modulus.Analytics.Management.csproj" />
     <Project Path="src/analytics/Modulus.Analytics.Parquet/Modulus.Analytics.Parquet.csproj" />
+    <Project Path="src/analytics/Modulus.Analytics.OpenLineage/Modulus.Analytics.OpenLineage.csproj" />
     <Project Path="src/analytics/Modulus.Analytics.Testing/Modulus.Analytics.Testing.csproj" />
   </Folder>
   <Folder Name="/src/ai/">
@@ -121,6 +122,7 @@
     <Project Path="tests/unit/Modulus.Analytics.EntityFrameworkCore.Tests/Modulus.Analytics.EntityFrameworkCore.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Analytics.Management.Tests/Modulus.Analytics.Management.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Analytics.Parquet.Tests/Modulus.Analytics.Parquet.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.Analytics.OpenLineage.Tests/Modulus.Analytics.OpenLineage.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Analytics.Tests/Modulus.Analytics.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Webhooks.Tests/Modulus.Webhooks.Tests.csproj" />
     <Project Path="tests/unit/Modulus.AI.Connector.Tests/Modulus.AI.Connector.Tests.csproj" />
@@ -159,6 +161,7 @@
     <Project Path="tests/integration/Modulus.Messaging.Integration.Tests/Modulus.Messaging.Integration.Tests.csproj" />
     <Project Path="tests/integration/Modulus.Analytics.ClickHouse.Integration.Tests/Modulus.Analytics.ClickHouse.Integration.Tests.csproj" />
     <Project Path="tests/integration/Modulus.Analytics.EntityFrameworkCore.Integration.Tests/Modulus.Analytics.EntityFrameworkCore.Integration.Tests.csproj" />
+    <Project Path="tests/integration/Modulus.Analytics.OpenLineage.Integration.Tests/Modulus.Analytics.OpenLineage.Integration.Tests.csproj" />
     <Project Path="tests/integration/Modulus.Outbox.Integration.Tests/Modulus.Outbox.Integration.Tests.csproj" />
     <Project Path="tests/integration/Modulus.BackgroundJobs.Quartz.Integration.Tests/Modulus.BackgroundJobs.Quartz.Integration.Tests.csproj" />
     <Project Path="tests/integration/Modulus.BackgroundJobs.Quartz.ClusterNode/Modulus.BackgroundJobs.Quartz.ClusterNode.csproj" />

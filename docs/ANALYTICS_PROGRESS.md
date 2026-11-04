@@ -36,7 +36,7 @@ Every tool and NuGet package must be open source (OSI licence), production-prove
 | Export audit through `ISecurityAuditLog` (hash-chained, category `analytics`) | Done, tests pass on net8.0 and net10.0 | `0af9463` |
 | Data-quality findings beyond counts | Open | |
 | Retention and erasure propagation (`AnalyticsTenantDataHandler`, `IAnalyticsErasableSink`; ClickHouse TTL, queue purge; Parquet by the lake's tools) | Done, 5 unit tests and 2 ClickHouse integration tests pass | `185034f` |
-| Lineage and OpenLineage emitter (verify against Marquez) | Open (task #5) | |
+| Lineage and OpenLineage emitter (`Modulus.Analytics.OpenLineage`; START, COMPLETE, FAIL per backfill; verified against Marquez 0.50.0) | Done, 10 unit tests and 2 Marquez integration tests pass | pending commit |
 
 ## Test status
 
@@ -45,25 +45,26 @@ Last full run of the analytics suites (both frameworks where applicable):
 | Suite | Result |
 |---|---|
 | Modulus.Analytics.Tests | 56 pass |
-| Modulus.Analytics.EntityFrameworkCore.Tests | 85 pass |
+| Modulus.Analytics.EntityFrameworkCore.Tests | 87 pass |
 | Modulus.Analytics.Management.Tests | 33 pass |
 | Modulus.Analytics.ClickHouse.Tests | 23 pass |
 | Modulus.Analytics.Parquet.Tests | 25 pass |
 | Integration: ClickHouse (real server) | 15 pass (after the erasure change) |
-| Integration: EF (real PostgreSQL 16) | 8 pass (last run before the Phase 4 changes; not re-run since) |
+| Modulus.Analytics.OpenLineage.Tests | 8 pass (real HTTP receiver) |
+| Integration: OpenLineage with Marquez 0.50.0 | 2 pass |
+| Integration: EF (real PostgreSQL 16) | 8 pass (re-run after the lineage change) |
 
 `dotnet format --verify-no-changes` is clean for the analytics projects. Each changed project builds with 0 warnings.
 
-## Not yet verified
+## Verification
 
-- Full-solution build (`dotnet build modulus.slnx`) and the full unit suite have not been run. Only the analytics projects have.
-- Integration suites were not re-run after the Phase 4 permission and audit changes.
+- Verified on this commit: full-solution build (`dotnet build modulus.slnx`, 0 errors, 0 warnings); full unit suite (`--filter "Category=Unit"`, 95 assembly runs on net8.0 and net10.0, 0 failures).
 
 ## Next steps
 
-1. Phase 4 OpenLineage emitter, checked against a real Marquez container (task #5).
-2. Phase 4 data-quality findings beyond counts.
-3. Phase 5, then Phase 6.
+1. Phase 4 data-quality findings beyond counts (last open Phase 4 item).
+2. Phase 5: CLI `add-analytics`, `analytics-admin` in modulus-ui, catalog and freshness endpoints.
+3. Phase 6: enterprise providers.
 
 ## Decisions to know about
 

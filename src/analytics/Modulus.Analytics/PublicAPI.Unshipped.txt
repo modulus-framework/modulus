@@ -382,3 +382,31 @@ static Modulus.Analytics.AnalyticsValueSerializer.Serialize(Modulus.Analytics.An
 Modulus.Analytics.IAnalyticsErasableSink
 Modulus.Analytics.IAnalyticsErasableSink.CountTenantAsync(Modulus.Analytics.AnalyticsDatasetDescriptor! dataset, System.Guid tenantId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<long>!
 Modulus.Analytics.IAnalyticsErasableSink.EraseTenantAsync(Modulus.Analytics.AnalyticsDatasetDescriptor! dataset, System.Guid tenantId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<long>!
+Modulus.Analytics.AnalyticsLineageState
+Modulus.Analytics.AnalyticsLineageState.Complete = 1 -> Modulus.Analytics.AnalyticsLineageState
+Modulus.Analytics.AnalyticsLineageState.Fail = 2 -> Modulus.Analytics.AnalyticsLineageState
+Modulus.Analytics.AnalyticsLineageState.Start = 0 -> Modulus.Analytics.AnalyticsLineageState
+Modulus.Analytics.AnalyticsRunLineage
+Modulus.Analytics.AnalyticsRunLineage.<Clone>$() -> Modulus.Analytics.AnalyticsRunLineage!
+Modulus.Analytics.AnalyticsRunLineage.AnalyticsRunLineage(System.Guid RunId, Modulus.Analytics.AnalyticsLineageState State, string! Dataset, int Version, System.DateTimeOffset OccurredAt, string? Error = null) -> void
+Modulus.Analytics.AnalyticsRunLineage.Dataset.get -> string!
+Modulus.Analytics.AnalyticsRunLineage.Dataset.init -> void
+Modulus.Analytics.AnalyticsRunLineage.Deconstruct(out System.Guid RunId, out Modulus.Analytics.AnalyticsLineageState State, out string! Dataset, out int Version, out System.DateTimeOffset OccurredAt, out string? Error) -> void
+Modulus.Analytics.AnalyticsRunLineage.Equals(Modulus.Analytics.AnalyticsRunLineage? other) -> bool
+Modulus.Analytics.AnalyticsRunLineage.Error.get -> string?
+Modulus.Analytics.AnalyticsRunLineage.Error.init -> void
+Modulus.Analytics.AnalyticsRunLineage.OccurredAt.get -> System.DateTimeOffset
+Modulus.Analytics.AnalyticsRunLineage.OccurredAt.init -> void
+Modulus.Analytics.AnalyticsRunLineage.RunId.get -> System.Guid
+Modulus.Analytics.AnalyticsRunLineage.RunId.init -> void
+Modulus.Analytics.AnalyticsRunLineage.State.get -> Modulus.Analytics.AnalyticsLineageState
+Modulus.Analytics.AnalyticsRunLineage.State.init -> void
+Modulus.Analytics.AnalyticsRunLineage.Version.get -> int
+Modulus.Analytics.AnalyticsRunLineage.Version.init -> void
+Modulus.Analytics.IAnalyticsLineageEmitter
+Modulus.Analytics.IAnalyticsLineageEmitter.EmitAsync(Modulus.Analytics.AnalyticsRunLineage! lineage, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+override Modulus.Analytics.AnalyticsRunLineage.Equals(object? obj) -> bool
+override Modulus.Analytics.AnalyticsRunLineage.GetHashCode() -> int
+override Modulus.Analytics.AnalyticsRunLineage.ToString() -> string!
+static Modulus.Analytics.AnalyticsRunLineage.operator !=(Modulus.Analytics.AnalyticsRunLineage? left, Modulus.Analytics.AnalyticsRunLineage? right) -> bool
+static Modulus.Analytics.AnalyticsRunLineage.operator ==(Modulus.Analytics.AnalyticsRunLineage? left, Modulus.Analytics.AnalyticsRunLineage? right) -> bool

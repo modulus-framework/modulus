@@ -28,6 +28,7 @@ public static class AnalyticsServiceCollectionExtensions
         services.TryAddScoped<IAnalyticsQueue, InlineAnalyticsQueue>();
         services.TryAddSingleton<IAnalyticsTenantDirectory, NullAnalyticsTenantDirectory>();
         services.TryAddSingleton<IAnalyticsEntitlement, AllowAllAnalyticsEntitlement>();
+        services.TryAddSingleton<IAnalyticsLineageEmitter, NullAnalyticsLineageEmitter>();
         configure?.Invoke(new AnalyticsBuilder(services, catalog));
         return services;
     }

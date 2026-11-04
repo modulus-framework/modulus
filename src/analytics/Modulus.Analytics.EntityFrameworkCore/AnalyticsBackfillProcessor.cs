@@ -21,6 +21,7 @@ internal sealed class AnalyticsBackfillProcessor(
     IServiceProvider services,
     IOptions<AnalyticsBackfillOptions> options,
     TimeProvider clock,
+    IAnalyticsLineageEmitter lineage,
     ILogger<AnalyticsBackfillProcessor> logger)
 {
     private const int MaxErrorLength = 2000;
@@ -155,6 +156,12 @@ internal sealed class AnalyticsBackfillProcessor(
                 return true; // cancelled while this cycle was running
             }
 
+            if (run.Cursor is null && run.RowsQueued == 0)
+            {
+                // Lineage starts when the run starts reading the source. A retry before the first saved page may start it again.
+                await lineage.EmitAsync(new AnalyticsRunLineage(runId, AnalyticsLineageState.Start, dataset, version, Now()), ct).ConfigureAwait(false);
+            }
+
             var page = await source.ExtractAsync(new AnalyticsExtractRequest(tenantId, run.Cursor, Math.Max(1, settings.PageSize)), ct).ConfigureAwait(false);
             foreach (var record in page.Records)
             {
@@ -195,6 +202,7 @@ internal sealed class AnalyticsBackfillProcessor(
                 if (done)
                 {
                     logger.LogInformation("Analytics backfill of {Dataset}.v{Version} for tenant {Tenant} completed ({Rows} records queued).", dataset, version, tenantId, run.RowsQueued);
+                    await lineage.EmitAsync(new AnalyticsRunLineage(runId, AnalyticsLineageState.Complete, dataset, version, Now()), ct).ConfigureAwait(false);
                 }
 
                 return done;
@@ -290,6 +298,16 @@ internal sealed class AnalyticsBackfillProcessor(
                 .SetProperty(r => r.LockedBy, (string?)null)
                 .SetProperty(r => r.LockedUntil, (DateTime?)null)).ConfigureAwait(false);
         logger.LogWarning("Analytics backfill run {Run} failed: {Error}", runId, message);
+
+        // Only backfills are reported to lineage (see AnalyticsRunLineage). The run's own row says which kind it is.
+        var failed = await db.AnalyticsBackfillRuns.AsNoTracking()
+            .Where(r => r.Id == runId)
+            .Select(r => new { r.Dataset, r.SchemaVersion, r.Kind })
+            .FirstOrDefaultAsync().ConfigureAwait(false);
+        if (failed is { Kind: AnalyticsRunKind.Backfill })
+        {
+            await lineage.EmitAsync(new AnalyticsRunLineage(runId, AnalyticsLineageState.Fail, failed.Dataset, failed.SchemaVersion, now, message), CancellationToken.None).ConfigureAwait(false);
+        }
     }
 
     private async Task RetryLaterAsync(Guid runId, Exception exception, AnalyticsBackfillOptions settings)

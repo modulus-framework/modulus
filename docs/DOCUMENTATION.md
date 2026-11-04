@@ -6538,7 +6538,16 @@ Iceberg Kafka Connect sink commits the table.
       never reported as erased while copies remain. Erase such a lake with the table format's own row-level delete (Iceberg, Spark or Trino), then the handler works for the rest.
     - Retention: warehouse rows follow `RetentionDays` (ClickHouse TTL). Delivered queue rows are purged after `PurgeDeliveredAfter` (7 days by default). Backfill
       run history is kept until offboarding; a time-based purge for it is open. Parquet retention is the lake's job (table-format expiry), not this layer's.
+  - Done: **lineage** (`Modulus.Analytics` contract, `Modulus.Analytics.EntityFrameworkCore` events, new `Modulus.Analytics.OpenLineage` emitter; 10 unit tests, 2 against a real Marquez 0.50.0 with PostgreSQL 16).
+    - `IAnalyticsLineageEmitter` receives each backfill run's lifecycle: `START` on the run's first page, `COMPLETE` once its rows are saved, `FAIL` with the error when
+      it stops (source missing, plan withdrawn, tenant rejected, retries exhausted). Every event of a run carries the run id. The default emitter records nothing.
+    - `AddModulusOpenLineage(configuration)` (`Analytics:OpenLineage`: `Enabled`, `Url`, `Namespace`, `WarehouseNamespace`, `Producer`, `ApiKey`, `Timeout`) posts OpenLineage
+      run events (spec 2-0-2) over HTTP. The job is `analytics.backfill.{dataset}_v{version}`, the input is the operational source (`{Namespace}/{dataset}`), and the outputs
+      are the warehouse tables of every registered sink (`{WarehouseNamespace}`, `{sink}/{dataset}_v{version}`). A failed run carries an `errorMessage` facet.
+    - A post that fails (endpoint down, refused, timed out) is logged and dropped. It never fails or stalls a backfill; cancellation is still honoured.
+    - Limits: incremental syncs are not reported (they never complete); the events are sent as they happen, with no retry queue (a lineage backend that is down for a run misses its events);
+      the emitter runs inside the backfill cycle, so its timeout adds to the cycle's time.
   - Still open: data-quality findings beyond counts (the framework's `IDataQualityFindingSink` is shaped for missing authorization attributes, so reconciliation has
-    its own report); lineage and the OpenLineage emitter.
+    its own report).
 - [ ] Phase 5: management API (delivery operations done, see Phases 2 and 3; dataset catalog and freshness endpoints open), CLI `add-analytics` with compose template, `analytics-admin` in `modulus-ui`
 - [ ] Phase 6: Debezium reader, Airflow and dbt triggers, Superset helper, Doris sink, lakehouse runbooks
