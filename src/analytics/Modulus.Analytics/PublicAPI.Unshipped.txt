@@ -40,8 +40,8 @@ Modulus.Analytics.AnalyticsDatasetCatalog.Latest(string! name) -> Modulus.Analyt
 Modulus.Analytics.AnalyticsDatasetCatalog.TryGet(string! name, int version, out Modulus.Analytics.AnalyticsDatasetDescriptor? dataset) -> bool
 Modulus.Analytics.AnalyticsDatasetDescriptor
 Modulus.Analytics.AnalyticsDatasetDescriptor.<Clone>$() -> Modulus.Analytics.AnalyticsDatasetDescriptor!
-Modulus.Analytics.AnalyticsDatasetDescriptor.AnalyticsDatasetDescriptor(string! Name, int Version, string! Owner, System.Collections.Generic.IReadOnlyList<Modulus.Analytics.AnalyticsFieldDescriptor!>! Fields, string? Description = null, System.TimeSpan? FreshnessSla = null, int? RetentionDays = null) -> void
-Modulus.Analytics.AnalyticsDatasetDescriptor.Deconstruct(out string! Name, out int Version, out string! Owner, out System.Collections.Generic.IReadOnlyList<Modulus.Analytics.AnalyticsFieldDescriptor!>! Fields, out string? Description, out System.TimeSpan? FreshnessSla, out int? RetentionDays) -> void
+Modulus.Analytics.AnalyticsDatasetDescriptor.AnalyticsDatasetDescriptor(string! Name, int Version, string! Owner, System.Collections.Generic.IReadOnlyList<Modulus.Analytics.AnalyticsFieldDescriptor!>! Fields, string? Description = null, System.TimeSpan? FreshnessSla = null, int? RetentionDays = null, string? RequiredFeature = null) -> void
+Modulus.Analytics.AnalyticsDatasetDescriptor.Deconstruct(out string! Name, out int Version, out string! Owner, out System.Collections.Generic.IReadOnlyList<Modulus.Analytics.AnalyticsFieldDescriptor!>! Fields, out string? Description, out System.TimeSpan? FreshnessSla, out int? RetentionDays, out string? RequiredFeature) -> void
 Modulus.Analytics.AnalyticsDatasetDescriptor.Description.get -> string?
 Modulus.Analytics.AnalyticsDatasetDescriptor.Description.init -> void
 Modulus.Analytics.AnalyticsDatasetDescriptor.Equals(Modulus.Analytics.AnalyticsDatasetDescriptor? other) -> bool
@@ -54,6 +54,8 @@ Modulus.Analytics.AnalyticsDatasetDescriptor.Name.get -> string!
 Modulus.Analytics.AnalyticsDatasetDescriptor.Name.init -> void
 Modulus.Analytics.AnalyticsDatasetDescriptor.Owner.get -> string!
 Modulus.Analytics.AnalyticsDatasetDescriptor.Owner.init -> void
+Modulus.Analytics.AnalyticsDatasetDescriptor.RequiredFeature.get -> string?
+Modulus.Analytics.AnalyticsDatasetDescriptor.RequiredFeature.init -> void
 Modulus.Analytics.AnalyticsDatasetDescriptor.RetentionDays.get -> int?
 Modulus.Analytics.AnalyticsDatasetDescriptor.RetentionDays.init -> void
 Modulus.Analytics.AnalyticsDatasetDescriptor.Validate() -> System.Collections.Generic.IReadOnlyList<string!>!
@@ -267,6 +269,8 @@ Modulus.Analytics.IAnalyticsDatasetCatalog
 Modulus.Analytics.IAnalyticsDatasetCatalog.All.get -> System.Collections.Generic.IReadOnlyList<Modulus.Analytics.AnalyticsDatasetDescriptor!>!
 Modulus.Analytics.IAnalyticsDatasetCatalog.Latest(string! name) -> Modulus.Analytics.AnalyticsDatasetDescriptor?
 Modulus.Analytics.IAnalyticsDatasetCatalog.TryGet(string! name, int version, out Modulus.Analytics.AnalyticsDatasetDescriptor? dataset) -> bool
+Modulus.Analytics.IAnalyticsEntitlement
+Modulus.Analytics.IAnalyticsEntitlement.IsEntitled(System.Guid tenantId, Modulus.Analytics.AnalyticsDatasetDescriptor! dataset) -> bool
 Modulus.Analytics.IAnalyticsFreshnessReader
 Modulus.Analytics.IAnalyticsFreshnessReader.ReadAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Analytics.AnalyticsDatasetFreshness!>!>!
 Modulus.Analytics.IAnalyticsIncrementalSource

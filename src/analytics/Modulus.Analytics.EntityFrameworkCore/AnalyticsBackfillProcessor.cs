@@ -17,6 +17,7 @@ internal sealed class AnalyticsBackfillProcessor(
     ModulusAnalyticsDbContext db,
     IAnalyticsDatasetCatalog catalog,
     IEnumerable<IAnalyticsSource> sources,
+    IAnalyticsEntitlement entitlement,
     IServiceProvider services,
     IOptions<AnalyticsBackfillOptions> options,
     TimeProvider clock,
@@ -79,9 +80,16 @@ internal sealed class AnalyticsBackfillProcessor(
     private async Task ProcessRunAsync(Guid runId, string dataset, int version, Guid tenantId, AnalyticsRunKind kind, AnalyticsBackfillOptions settings, CancellationToken ct)
     {
         var source = sources.FirstOrDefault(s => s.Dataset == dataset && s.Version == version);
-        if (source is null || !catalog.TryGet(dataset, version, out _))
+        if (source is null || !catalog.TryGet(dataset, version, out var descriptor))
         {
             await FailAsync(runId, $"No analytics source or dataset is registered for '{dataset}.v{version}'.").ConfigureAwait(false);
+            return;
+        }
+
+        // Plan gating: a run for a tenant that is not (or is no longer) entitled stops here, visibly. Restart it after the plan changes.
+        if (!entitlement.IsEntitled(tenantId, descriptor))
+        {
+            await FailAsync(runId, $"Tenant '{tenantId}' is not entitled to dataset '{dataset}' (it needs the '{descriptor.RequiredFeature}' feature).").ConfigureAwait(false);
             return;
         }
 

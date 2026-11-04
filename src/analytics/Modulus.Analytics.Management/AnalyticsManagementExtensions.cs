@@ -1,5 +1,6 @@
 namespace Modulus.Analytics.Management;
 
+using System.Security.Claims;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -18,33 +19,55 @@ using Modulus.Core.Null;
 /// </summary>
 public static class AnalyticsManagementExtensions
 {
-    /// <summary>The permission guarding every management endpoint.</summary>
+    /// <summary>The permission that covers every dataset and the cross-dataset views (queue status, purge of all dead letters).</summary>
     public const string ManagePermission = "analytics:manage";
+
+    /// <summary>The permission that covers one dataset: <c>analytics:manage:{dataset}</c>. It is declared for every registered dataset.</summary>
+    /// <param name="dataset">The dataset name.</param>
+    public static string DatasetPermission(string dataset) => $"{ManagePermission}:{dataset}";
 
     private const int MaxReplayIds = 1000;
     private const int MaxBackfillTenants = 1000;
 
     /// <summary>
-    /// Declares <see cref="ManagePermission"/> (critical: it needs a step-up sign-in in production and cannot come from a wildcard grant).
-    /// Needs <c>AddModulusAnalyticsStore&lt;TContext&gt;()</c>, because the endpoints operate on the delivery store.
+    /// Declares <see cref="ManagePermission"/> and one <see cref="DatasetPermission"/> per registered dataset (all critical: they need a step-up sign-in in
+    /// production and cannot come from a wildcard grant). Needs <c>AddModulusAnalyticsStore&lt;TContext&gt;()</c>, because the endpoints operate on the delivery store.
     /// </summary>
+    /// <remarks>Datasets may be registered before or after this call; the permissions are declared when the permission registry is built.</remarks>
     /// <param name="services">The service collection.</param>
     public static IServiceCollection AddModulusAnalyticsManagement(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
+        services.AddModulusAnalytics();
         services.AddAuthorization();
         services.TryAddScoped<ICurrentUser, NullCurrentUser>();
         services.TryAddSingleton(TimeProvider.System);
+        services.TryAddScoped<AnalyticsAccess>();
 
+        // The same catalog instance AddModulusAnalytics fills, read when the registry is built, after every dataset is registered.
+        var catalog = (AnalyticsDatasetCatalog)services.First(d => d.ServiceType == typeof(AnalyticsDatasetCatalog)).ImplementationInstance!;
         return services.AddPermissions("Modulus.Analytics", registry =>
+        {
             registry.Add(
                 ManagePermission,
-                "Manage analytics delivery: see queue status, list, replay and purge dead-lettered records, and start and list backfill runs.",
+                "Manage analytics delivery for every dataset: queue status, freshness, dead letters, backfill and incremental runs, reconciliation.",
                 null,
-                PermissionSensitivity.Critical));
+                PermissionSensitivity.Critical);
+            foreach (var name in catalog.All.Select(d => d.Name).Distinct(StringComparer.Ordinal))
+            {
+                registry.Add(
+                    DatasetPermission(name),
+                    $"Manage analytics delivery for the '{name}' dataset only: its freshness, dead letters, backfill and incremental runs, and reconciliation.",
+                    null,
+                    PermissionSensitivity.Critical);
+            }
+        });
     }
 
-    /// <summary>Maps the endpoints under <paramref name="prefix"/>, all guarded by <see cref="ManagePermission"/>.</summary>
+    /// <summary>
+    /// Maps the endpoints under <paramref name="prefix"/>. A caller must be signed in; what they may do is decided per request from
+    /// <see cref="ManagePermission"/> and <see cref="DatasetPermission"/>. A caller with neither gets 403, and one limited to some datasets never sees another's.
+    /// </summary>
     /// <param name="endpoints">The route builder.</param>
     /// <param name="prefix">The route prefix. Defaults to <c>/analytics</c>.</param>
     /// <returns>The group, so hosts can attach further conventions.</returns>
@@ -52,12 +75,17 @@ public static class AnalyticsManagementExtensions
     {
         ArgumentNullException.ThrowIfNull(endpoints);
         var group = endpoints.MapGroup(prefix)
-            .RequireAuthorization(ManagePermission)
+            .RequireAuthorization()
             .WithTags("Analytics Management");
 
-        // GET /analytics/status
-        group.MapGet("/status", async (ModulusAnalyticsDbContext db, TimeProvider clock, CancellationToken ct) =>
+        // GET /analytics/status (cross-dataset: needs the global permission)
+        group.MapGet("/status", async (ClaimsPrincipal user, AnalyticsAccess access, ModulusAnalyticsDbContext db, TimeProvider clock, CancellationToken ct) =>
         {
+            if (!(await access.ScopeAsync(user)).IsGlobal)
+            {
+                return Forbidden();
+            }
+
             var rows = db.AnalyticsDeliveries.AsNoTracking();
             var pending = await rows.CountAsync(d => d.DeliveredAt == null && d.DeadLetteredAt == null, ct);
             var delivered = await rows.CountAsync(d => d.DeliveredAt != null, ct);
@@ -73,6 +101,8 @@ public static class AnalyticsManagementExtensions
         // POST /analytics/reconciliations
         group.MapPost("/reconciliations", async (
             AnalyticsReconcileRequest request,
+            ClaimsPrincipal user,
+            AnalyticsAccess access,
             AnalyticsReconciler reconciler,
             ICurrentUser currentUser,
             ILoggerFactory loggerFactory,
@@ -81,6 +111,11 @@ public static class AnalyticsManagementExtensions
             if (string.IsNullOrWhiteSpace(request.Dataset) || request.Version < 1)
             {
                 return Results.BadRequest("Dataset and a version of 1 or higher are required.");
+            }
+
+            if (!await access.CanAsync(user, request.Dataset))
+            {
+                return Forbidden();
             }
 
             if (request.TenantIds is { Length: > MaxBackfillTenants })
@@ -103,18 +138,38 @@ public static class AnalyticsManagementExtensions
         })
         .WithSummary("Compare the warehouse with the operational store, per tenant");
 
-        // GET /analytics/freshness
-        group.MapGet("/freshness", async (IAnalyticsFreshnessReader reader, CancellationToken ct)
-            => Results.Ok(await reader.ReadAsync(ct)))
+        // GET /analytics/freshness (a dataset-scoped caller sees only their datasets)
+        group.MapGet("/freshness", async (ClaimsPrincipal user, AnalyticsAccess access, IAnalyticsFreshnessReader reader, CancellationToken ct) =>
+        {
+            var scope = await access.ScopeAsync(user);
+            if (!scope.Any)
+            {
+                return Forbidden();
+            }
+
+            return Results.Ok((await reader.ReadAsync(ct)).Where(f => scope.Allows(f.Dataset)).ToList());
+        })
         .WithSummary("Show each dataset's lag against its freshness SLA");
 
         // GET /analytics/dead-letters?page=1&pageSize=20&dataset=...&tenant=...
         group.MapGet("/dead-letters", async (
-            int? page, int? pageSize, string? dataset, string? tenant, ModulusAnalyticsDbContext db, CancellationToken ct) =>
+            int? page, int? pageSize, string? dataset, string? tenant, ClaimsPrincipal user, AnalyticsAccess access, ModulusAnalyticsDbContext db, CancellationToken ct) =>
         {
+            var scope = await access.ScopeAsync(user);
+            if (!scope.Any)
+            {
+                return Forbidden();
+            }
+
             var p = Math.Max(1, page ?? 1);
             var ps = pageSize is >= 1 and <= 1000 ? pageSize.Value : 20;
             var query = db.AnalyticsDeliveries.AsNoTracking().Where(d => d.DeadLetteredAt != null);
+            if (!scope.IsGlobal)
+            {
+                var allowed = scope.Datasets.ToArray();
+                query = query.Where(d => allowed.Contains(d.Dataset));
+            }
+
             if (!string.IsNullOrWhiteSpace(dataset))
             {
                 query = query.Where(d => d.Dataset == dataset);
@@ -132,22 +187,38 @@ public static class AnalyticsManagementExtensions
         .WithSummary("List dead-lettered analytics records");
 
         // GET /analytics/dead-letters/{id}
-        group.MapGet("/dead-letters/{id:guid}", async (Guid id, ModulusAnalyticsDbContext db, CancellationToken ct) =>
+        group.MapGet("/dead-letters/{id:guid}", async (Guid id, ClaimsPrincipal user, AnalyticsAccess access, ModulusAnalyticsDbContext db, CancellationToken ct) =>
         {
+            var scope = await access.ScopeAsync(user);
+            if (!scope.Any)
+            {
+                return Forbidden();
+            }
+
             var row = await db.AnalyticsDeliveries.AsNoTracking().FirstOrDefaultAsync(d => d.Id == id && d.DeadLetteredAt != null, ct);
-            return row is null ? Results.NotFound() : Results.Ok(ToModel(row));
+
+            // A dataset the caller may not manage looks exactly like a record that does not exist.
+            return row is null || !scope.Allows(row.Dataset) ? Results.NotFound() : Results.Ok(ToModel(row));
         })
         .WithSummary("Get one dead-lettered analytics record (metadata and error only)");
 
         // POST /analytics/dead-letters/replay
         group.MapPost("/dead-letters/replay", async (
             AnalyticsReplayRequest request,
+            ClaimsPrincipal user,
+            AnalyticsAccess access,
             ModulusAnalyticsDbContext db,
             ICurrentUser currentUser,
             TimeProvider clock,
             ILoggerFactory loggerFactory,
             CancellationToken ct) =>
         {
+            var scope = await access.ScopeAsync(user);
+            if (!scope.Any)
+            {
+                return Forbidden();
+            }
+
             if (request.Ids is not { Length: > 0 })
             {
                 return Results.BadRequest("Ids must be non-empty.");
@@ -159,16 +230,22 @@ public static class AnalyticsManagementExtensions
                 return Results.BadRequest($"At most {MaxReplayIds} ids per request.");
             }
 
+            // Only the records of datasets the caller may manage are replayed; the rest count as not found, so an id of another dataset reveals nothing.
+            var candidates = db.AnalyticsDeliveries.Where(d => ids.Contains(d.Id) && d.DeadLetteredAt != null);
+            if (!scope.IsGlobal)
+            {
+                var allowed = scope.Datasets.ToArray();
+                candidates = candidates.Where(d => allowed.Contains(d.Dataset));
+            }
+
             var due = clock.GetUtcNow().UtcDateTime;
-            var replayed = await db.AnalyticsDeliveries
-                .Where(d => ids.Contains(d.Id) && d.DeadLetteredAt != null)
-                .ExecuteUpdateAsync(
-                    s => s.SetProperty(d => d.DeadLetteredAt, (DateTime?)null)
-                          .SetProperty(d => d.AttemptCount, 0)
-                          .SetProperty(d => d.NextAttemptAt, (DateTime?)due)
-                          .SetProperty(d => d.LockedBy, (string?)null)
-                          .SetProperty(d => d.LockedUntil, (DateTime?)null),
-                    ct);
+            var replayed = await candidates.ExecuteUpdateAsync(
+                s => s.SetProperty(d => d.DeadLetteredAt, (DateTime?)null)
+                      .SetProperty(d => d.AttemptCount, 0)
+                      .SetProperty(d => d.NextAttemptAt, (DateTime?)due)
+                      .SetProperty(d => d.LockedBy, (string?)null)
+                      .SetProperty(d => d.LockedUntil, (DateTime?)null),
+                ct);
 
             // LastError stays until the next attempt replaces it, so the history is not lost.
             loggerFactory.CreateLogger("Modulus.Analytics.Management").LogInformation(
@@ -178,16 +255,36 @@ public static class AnalyticsManagementExtensions
         })
         .WithSummary("Put dead-lettered analytics records back in the queue");
 
-        // DELETE /analytics/dead-letters/purge?beforeDays=30
+        // DELETE /analytics/dead-letters/purge?beforeDays=30&dataset=orders (without a dataset, it purges every dataset and needs the global permission)
         group.MapDelete("/dead-letters/purge", async (
-            int? beforeDays, ModulusAnalyticsDbContext db, ICurrentUser currentUser, TimeProvider clock, ILoggerFactory loggerFactory, CancellationToken ct) =>
+            int? beforeDays,
+            string? dataset,
+            ClaimsPrincipal user,
+            AnalyticsAccess access,
+            ModulusAnalyticsDbContext db,
+            ICurrentUser currentUser,
+            TimeProvider clock,
+            ILoggerFactory loggerFactory,
+            CancellationToken ct) =>
         {
+            var scope = await access.ScopeAsync(user);
+            if (!scope.Any || (string.IsNullOrWhiteSpace(dataset) && !scope.IsGlobal) || (!string.IsNullOrWhiteSpace(dataset) && !scope.Allows(dataset)))
+            {
+                return Forbidden();
+            }
+
             var days = Math.Max(0, beforeDays ?? 30);
             var cutoff = clock.GetUtcNow().UtcDateTime.AddDays(-days);
-            var purged = await db.AnalyticsDeliveries.Where(d => d.DeadLetteredAt != null && d.DeadLetteredAt < cutoff).ExecuteDeleteAsync(ct);
+            var doomed = db.AnalyticsDeliveries.Where(d => d.DeadLetteredAt != null && d.DeadLetteredAt < cutoff);
+            if (!string.IsNullOrWhiteSpace(dataset))
+            {
+                doomed = doomed.Where(d => d.Dataset == dataset);
+            }
+
+            var purged = await doomed.ExecuteDeleteAsync(ct);
             loggerFactory.CreateLogger("Modulus.Analytics.Management").LogInformation(
-                "Analytics purge by {User}: {Purged} dead letter(s) older than {Days} day(s) deleted.",
-                currentUser.UserId?.ToString() ?? "unknown", purged, days);
+                "Analytics purge by {User}: {Purged} dead letter(s) older than {Days} day(s) deleted ({Dataset}).",
+                currentUser.UserId?.ToString() ?? "unknown", purged, days, string.IsNullOrWhiteSpace(dataset) ? "all datasets" : dataset);
             return Results.Ok(new AnalyticsPurgeResponse(purged));
         })
         .WithSummary("Delete old dead-lettered analytics records");
@@ -195,6 +292,8 @@ public static class AnalyticsManagementExtensions
         // POST /analytics/backfills
         group.MapPost("/backfills", async (
             AnalyticsBackfillRequest request,
+            ClaimsPrincipal user,
+            AnalyticsAccess access,
             AnalyticsBackfillManager manager,
             ICurrentUser currentUser,
             ILoggerFactory loggerFactory,
@@ -203,6 +302,11 @@ public static class AnalyticsManagementExtensions
             if (string.IsNullOrWhiteSpace(request.Dataset) || request.Version < 1)
             {
                 return Results.BadRequest("Dataset and a version of 1 or higher are required.");
+            }
+
+            if (!await access.CanAsync(user, request.Dataset))
+            {
+                return Forbidden();
             }
 
             if (request.TenantIds is { Length: > MaxBackfillTenants })
@@ -216,8 +320,8 @@ public static class AnalyticsManagementExtensions
                 var result = await manager.StartAsync(
                     request.Dataset, request.Version, request.TenantIds, request.Restart, who, ct, request.Incremental ? AnalyticsRunKind.Incremental : AnalyticsRunKind.Backfill);
                 loggerFactory.CreateLogger("Modulus.Analytics.Management").LogInformation(
-                    "Analytics {Kind} of {Dataset}.v{Version} started by {User}: {Created} created, {Restarted} restarted, {Skipped} skipped.",
-                    request.Incremental ? "incremental sync" : "backfill", request.Dataset, request.Version, who, result.Created, result.Restarted, result.Skipped);
+                    "Analytics {Kind} of {Dataset}.v{Version} started by {User}: {Created} created, {Restarted} restarted, {Skipped} skipped, {NotEntitled} not entitled.",
+                    request.Incremental ? "incremental sync" : "backfill", request.Dataset, request.Version, who, result.Created, result.Restarted, result.Skipped, result.NotEntitled);
                 return Results.Ok(result);
             }
             catch (InvalidOperationException ex)
@@ -225,11 +329,18 @@ public static class AnalyticsManagementExtensions
                 return Results.BadRequest(ex.Message);
             }
         })
-        .WithSummary("Start analytics backfill runs for a dataset version");
+        .WithSummary("Start analytics backfill or incremental runs for a dataset version");
 
-        // GET /analytics/backfills?dataset=...&status=Running&take=100
-        group.MapGet("/backfills", async (string? dataset, string? status, int? take, AnalyticsBackfillManager manager, CancellationToken ct) =>
+        // GET /analytics/backfills?dataset=...&status=Running&take=100 (a dataset-scoped caller sees only their datasets)
+        group.MapGet("/backfills", async (
+            string? dataset, string? status, int? take, ClaimsPrincipal user, AnalyticsAccess access, AnalyticsBackfillManager manager, CancellationToken ct) =>
         {
+            var scope = await access.ScopeAsync(user);
+            if (!scope.Any)
+            {
+                return Forbidden();
+            }
+
             AnalyticsBackfillStatus? parsed = null;
             if (!string.IsNullOrWhiteSpace(status))
             {
@@ -241,18 +352,25 @@ public static class AnalyticsManagementExtensions
                 parsed = value;
             }
 
-            var runs = await manager.ListAsync(dataset, parsed, take ?? 100, ct);
+            var runs = await manager.ListAsync(dataset, parsed, take ?? 100, ct, scope.IsGlobal ? null : scope.Datasets);
             return Results.Ok(runs.Select(r => new AnalyticsBackfillRunInfo(
                 r.Id, r.Dataset, r.SchemaVersion, r.TenantId, r.Kind.ToString(), r.Status.ToString(), r.RowsQueued, r.AttemptCount,
                 r.CreatedAt, r.UpdatedAt, r.CompletedAt, r.NextAttemptAt, r.LastError, r.RequestedBy)).ToList());
         })
-        .WithSummary("List analytics backfill runs");
+        .WithSummary("List analytics backfill and incremental runs");
 
         // POST /analytics/backfills/{id}/cancel
         group.MapPost("/backfills/{id:guid}/cancel", async (
-            Guid id, AnalyticsBackfillManager manager, ICurrentUser currentUser, ILoggerFactory loggerFactory, CancellationToken ct) =>
+            Guid id, ClaimsPrincipal user, AnalyticsAccess access, AnalyticsBackfillManager manager, ICurrentUser currentUser, ILoggerFactory loggerFactory, CancellationToken ct) =>
         {
-            if (!await manager.CancelAsync(id, ct))
+            var scope = await access.ScopeAsync(user);
+            if (!scope.Any)
+            {
+                return Forbidden();
+            }
+
+            var run = await manager.GetAsync(id, ct);
+            if (run is null || !scope.Allows(run.Dataset) || !await manager.CancelAsync(id, ct))
             {
                 return Results.NotFound("No waiting or running run has that id.");
             }
@@ -265,6 +383,8 @@ public static class AnalyticsManagementExtensions
 
         return group;
     }
+
+    private static IResult Forbidden() => Results.StatusCode(StatusCodes.Status403Forbidden);
 
     private static AnalyticsDeadLetter ToModel(AnalyticsDelivery d)
         => new(d.Id, d.TenantId, d.EventId, d.Dataset, d.SchemaVersion, d.OccurredAt, d.CreatedAt, d.DeadLetteredAt, d.AttemptCount, d.LastError);

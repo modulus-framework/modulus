@@ -6,7 +6,8 @@ using Microsoft.EntityFrameworkCore;
 /// <param name="Created">New runs.</param>
 /// <param name="Restarted">Finished or failed runs that were reset to start again.</param>
 /// <param name="Skipped">Tenants whose run already exists and was left alone (still running, or finished and no restart was asked for).</param>
-public sealed record AnalyticsBackfillStartResult(int Created, int Restarted, int Skipped);
+/// <param name="NotEntitled">Tenants whose plan does not include the dataset's required feature. No run was created for them.</param>
+public sealed record AnalyticsBackfillStartResult(int Created, int Restarted, int Skipped, int NotEntitled = 0);
 
 /// <summary>Starts and lists backfill runs. The background worker does the reading.</summary>
 public sealed class AnalyticsBackfillManager(
@@ -14,6 +15,7 @@ public sealed class AnalyticsBackfillManager(
     IAnalyticsDatasetCatalog catalog,
     IEnumerable<IAnalyticsSource> sources,
     IAnalyticsTenantDirectory directory,
+    IAnalyticsEntitlement entitlement,
     TimeProvider clock)
 {
     /// <summary>
@@ -39,7 +41,7 @@ public sealed class AnalyticsBackfillManager(
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(dataset);
 
-        if (!catalog.TryGet(dataset, version, out _))
+        if (!catalog.TryGet(dataset, version, out var descriptor))
         {
             throw new InvalidOperationException($"Dataset '{dataset}.v{version}' is not registered.");
         }
@@ -67,10 +69,14 @@ public sealed class AnalyticsBackfillManager(
             .Where(r => r.Dataset == dataset && r.SchemaVersion == version && r.Kind == kind && tenants.Contains(r.TenantId))
             .ToDictionaryAsync(r => r.TenantId, cancellationToken).ConfigureAwait(false);
 
-        int created = 0, restarted = 0, skipped = 0;
+        int created = 0, restarted = 0, skipped = 0, notEntitled = 0;
         foreach (var tenant in tenants)
         {
-            if (!existing.TryGetValue(tenant, out var run))
+            if (!entitlement.IsEntitled(tenant, descriptor))
+            {
+                notEntitled++;
+            }
+            else if (!existing.TryGetValue(tenant, out var run))
             {
                 db.AnalyticsBackfillRuns.Add(new AnalyticsBackfillRun
                 {
@@ -111,7 +117,7 @@ public sealed class AnalyticsBackfillManager(
             await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         }
 
-        return new AnalyticsBackfillStartResult(created, restarted, skipped);
+        return new AnalyticsBackfillStartResult(created, restarted, skipped, notEntitled);
     }
 
     /// <summary>Stops a run that is waiting or running. Nothing more is read for it; restart it to begin again.</summary>
@@ -132,13 +138,24 @@ public sealed class AnalyticsBackfillManager(
         return stopped > 0;
     }
 
+    /// <summary>Finds a run by id, or <see langword="null"/>.</summary>
+    /// <param name="runId">The run id.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    public Task<AnalyticsBackfillRun?> GetAsync(Guid runId, CancellationToken cancellationToken)
+        => db.AnalyticsBackfillRuns.AsNoTracking().FirstOrDefaultAsync(r => r.Id == runId, cancellationToken);
+
     /// <summary>Lists runs, newest first.</summary>
     /// <param name="dataset">Only this dataset, or <see langword="null"/> for all.</param>
     /// <param name="status">Only this state, or <see langword="null"/> for all.</param>
     /// <param name="take">The most runs to return. Defaults to 100.</param>
     /// <param name="cancellationToken">Cancels the call.</param>
+    /// <param name="datasets">Only runs of these datasets, or <see langword="null"/> for all. Used to show a dataset-scoped operator only their own runs.</param>
     public async Task<IReadOnlyList<AnalyticsBackfillRun>> ListAsync(
-        string? dataset = null, AnalyticsBackfillStatus? status = null, int take = 100, CancellationToken cancellationToken = default)
+        string? dataset = null,
+        AnalyticsBackfillStatus? status = null,
+        int take = 100,
+        CancellationToken cancellationToken = default,
+        IReadOnlyCollection<string>? datasets = null)
     {
         var query = db.AnalyticsBackfillRuns.AsNoTracking().AsQueryable();
         if (!string.IsNullOrWhiteSpace(dataset))
@@ -149,6 +166,11 @@ public sealed class AnalyticsBackfillManager(
         if (status is { } s)
         {
             query = query.Where(r => r.Status == s);
+        }
+
+        if (datasets is not null)
+        {
+            query = query.Where(r => datasets.Contains(r.Dataset));
         }
 
         return await query.OrderByDescending(r => r.CreatedAt).ThenBy(r => r.Id).Take(Math.Clamp(take, 1, 1000)).ToListAsync(cancellationToken).ConfigureAwait(false);

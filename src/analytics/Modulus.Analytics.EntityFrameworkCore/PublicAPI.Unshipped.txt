@@ -1,8 +1,9 @@
 #nullable enable
 Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillManager
-Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillManager.AnalyticsBackfillManager(Modulus.Analytics.EntityFrameworkCore.ModulusAnalyticsDbContext! db, Modulus.Analytics.IAnalyticsDatasetCatalog! catalog, System.Collections.Generic.IEnumerable<Modulus.Analytics.IAnalyticsSource!>! sources, Modulus.Analytics.IAnalyticsTenantDirectory! directory, System.TimeProvider! clock) -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillManager.AnalyticsBackfillManager(Modulus.Analytics.EntityFrameworkCore.ModulusAnalyticsDbContext! db, Modulus.Analytics.IAnalyticsDatasetCatalog! catalog, System.Collections.Generic.IEnumerable<Modulus.Analytics.IAnalyticsSource!>! sources, Modulus.Analytics.IAnalyticsTenantDirectory! directory, Modulus.Analytics.IAnalyticsEntitlement! entitlement, System.TimeProvider! clock) -> void
 Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillManager.CancelAsync(System.Guid runId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<bool>!
-Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillManager.ListAsync(string? dataset = null, Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillStatus? status = null, int take = 100, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillRun!>!>!
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillManager.GetAsync(System.Guid runId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillRun?>!
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillManager.ListAsync(string? dataset = null, Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillStatus? status = null, int take = 100, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken), System.Collections.Generic.IReadOnlyCollection<string!>? datasets = null) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillRun!>!>!
 Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillManager.StartAsync(string! dataset, int version, System.Collections.Generic.IReadOnlyCollection<System.Guid>? tenantIds, bool restart, string? requestedBy, System.Threading.CancellationToken cancellationToken, Modulus.Analytics.EntityFrameworkCore.AnalyticsRunKind kind = Modulus.Analytics.EntityFrameworkCore.AnalyticsRunKind.Backfill) -> System.Threading.Tasks.Task<Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillStartResult!>!
 Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillOptions
 Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillOptions.AnalyticsBackfillOptions() -> void
@@ -66,11 +67,13 @@ Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillRun.UpdatedAt.get -> Syst
 Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillRun.UpdatedAt.set -> void
 Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillStartResult
 Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillStartResult.<Clone>$() -> Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillStartResult!
-Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillStartResult.AnalyticsBackfillStartResult(int Created, int Restarted, int Skipped) -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillStartResult.AnalyticsBackfillStartResult(int Created, int Restarted, int Skipped, int NotEntitled = 0) -> void
 Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillStartResult.Created.get -> int
 Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillStartResult.Created.init -> void
-Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillStartResult.Deconstruct(out int Created, out int Restarted, out int Skipped) -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillStartResult.Deconstruct(out int Created, out int Restarted, out int Skipped, out int NotEntitled) -> void
 Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillStartResult.Equals(Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillStartResult? other) -> bool
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillStartResult.NotEntitled.get -> int
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillStartResult.NotEntitled.init -> void
 Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillStartResult.Restarted.get -> int
 Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillStartResult.Restarted.init -> void
 Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillStartResult.Skipped.get -> int
@@ -154,7 +157,7 @@ Modulus.Analytics.EntityFrameworkCore.AnalyticsEntityRow.Values.get -> System.Co
 Modulus.Analytics.EntityFrameworkCore.AnalyticsEntityRow.Values.init -> void
 Modulus.Analytics.EntityFrameworkCore.AnalyticsEntitySourceExtensions
 Modulus.Analytics.EntityFrameworkCore.AnalyticsReconciler
-Modulus.Analytics.EntityFrameworkCore.AnalyticsReconciler.AnalyticsReconciler(Modulus.Analytics.EntityFrameworkCore.ModulusAnalyticsDbContext! db, Modulus.Analytics.IAnalyticsDatasetCatalog! catalog, System.Collections.Generic.IEnumerable<Modulus.Analytics.IAnalyticsSource!>! sources, System.Collections.Generic.IEnumerable<Modulus.Analytics.IAnalyticsSink!>! sinks, Modulus.Analytics.IAnalyticsTenantDirectory! directory, System.IServiceProvider! services, Microsoft.Extensions.Logging.ILogger<Modulus.Analytics.EntityFrameworkCore.AnalyticsReconciler!>! logger) -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsReconciler.AnalyticsReconciler(Modulus.Analytics.EntityFrameworkCore.ModulusAnalyticsDbContext! db, Modulus.Analytics.IAnalyticsDatasetCatalog! catalog, System.Collections.Generic.IEnumerable<Modulus.Analytics.IAnalyticsSource!>! sources, System.Collections.Generic.IEnumerable<Modulus.Analytics.IAnalyticsSink!>! sinks, Modulus.Analytics.IAnalyticsTenantDirectory! directory, Modulus.Analytics.IAnalyticsEntitlement! entitlement, System.IServiceProvider! services, Microsoft.Extensions.Logging.ILogger<Modulus.Analytics.EntityFrameworkCore.AnalyticsReconciler!>! logger) -> void
 Modulus.Analytics.EntityFrameworkCore.AnalyticsReconciler.ReconcileAsync(string! dataset, int version, System.Collections.Generic.IReadOnlyCollection<System.Guid>? tenantIds, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<Modulus.Analytics.AnalyticsReconciliationReport!>!
 Modulus.Analytics.EntityFrameworkCore.AnalyticsRunKind
 Modulus.Analytics.EntityFrameworkCore.AnalyticsRunKind.Backfill = 0 -> Modulus.Analytics.EntityFrameworkCore.AnalyticsRunKind

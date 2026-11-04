@@ -59,6 +59,8 @@ public static class AnalyticsEntityFrameworkExtensions
         }
 
         services.TryAddSingleton(TimeProvider.System);
+        services.RemoveAll<IAnalyticsEntitlement>();
+        services.AddSingleton<IAnalyticsEntitlement, FeatureAnalyticsEntitlement>();
         services.RemoveAll<IAnalyticsTenantDirectory>();
         services.AddSingleton<IAnalyticsTenantDirectory, TenantStoreAnalyticsTenantDirectory>();
         services.TryAddScoped<IAnalyticsFreshnessReader, EfAnalyticsFreshnessReader>();

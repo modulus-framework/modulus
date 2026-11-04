@@ -170,6 +170,7 @@ static Modulus.Analytics.Management.AnalyticsBackfillRunInfo.operator ==(Modulus
 static Modulus.Analytics.Management.AnalyticsDeadLetter.operator !=(Modulus.Analytics.Management.AnalyticsDeadLetter? left, Modulus.Analytics.Management.AnalyticsDeadLetter? right) -> bool
 static Modulus.Analytics.Management.AnalyticsDeadLetter.operator ==(Modulus.Analytics.Management.AnalyticsDeadLetter? left, Modulus.Analytics.Management.AnalyticsDeadLetter? right) -> bool
 static Modulus.Analytics.Management.AnalyticsManagementExtensions.AddModulusAnalyticsManagement(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.Analytics.Management.AnalyticsManagementExtensions.DatasetPermission(string! dataset) -> string!
 static Modulus.Analytics.Management.AnalyticsManagementExtensions.MapModulusAnalyticsManagement(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! prefix = "/analytics") -> Microsoft.AspNetCore.Routing.RouteGroupBuilder!
 static Modulus.Analytics.Management.AnalyticsPage<T>.operator !=(Modulus.Analytics.Management.AnalyticsPage<T>? left, Modulus.Analytics.Management.AnalyticsPage<T>? right) -> bool
 static Modulus.Analytics.Management.AnalyticsPage<T>.operator ==(Modulus.Analytics.Management.AnalyticsPage<T>? left, Modulus.Analytics.Management.AnalyticsPage<T>? right) -> bool

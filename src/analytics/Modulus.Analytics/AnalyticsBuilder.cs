@@ -57,6 +57,7 @@ public sealed class AnalyticsBuilder
                 sp.GetServices<AnalyticsEventMapping>().Last(m => m.Dataset == dataset && m.Version == version),
                 sp.GetRequiredService<IAnalyticsDatasetCatalog>(),
                 sp.GetRequiredService<IAnalyticsQueue>(),
+                sp.GetRequiredService<IAnalyticsEntitlement>(),
                 sp)));
 
         // Broker consumers subscribe to the registry's routing keys, so a service that only captures an event still receives it.

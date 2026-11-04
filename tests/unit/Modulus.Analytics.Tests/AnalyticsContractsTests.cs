@@ -100,6 +100,14 @@ public sealed class AnalyticsContractsTests
     }
 
     [Fact]
+    public void A_blank_required_feature_is_reported_and_a_named_or_absent_one_is_fine()
+    {
+        (Orders() with { RequiredFeature = " " }).Validate().Should().ContainSingle(p => p.Contains("required feature"));
+        (Orders() with { RequiredFeature = "analytics.advanced" }).Validate().Should().BeEmpty();
+        Orders().RequiredFeature.Should().BeNull();
+    }
+
+    [Fact]
     public void A_dataset_without_fields_is_reported()
         => new AnalyticsDatasetDescriptor("d", 1, "o", []).Validate().Should().ContainSingle(p => p.Contains("at least one field"));
 

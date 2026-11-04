@@ -15,6 +15,7 @@ public sealed class AnalyticsReconciler(
     IEnumerable<IAnalyticsSource> sources,
     IEnumerable<IAnalyticsSink> sinks,
     IAnalyticsTenantDirectory directory,
+    IAnalyticsEntitlement entitlement,
     IServiceProvider services,
     ILogger<AnalyticsReconciler> logger)
 {
@@ -53,6 +54,12 @@ public sealed class AnalyticsReconciler(
         var errors = new List<string>();
         foreach (var tenant in tenants)
         {
+            if (!entitlement.IsEntitled(tenant, descriptor))
+            {
+                errors.Add($"Tenant {tenant}: not entitled to dataset '{dataset}' (it needs the '{descriptor.RequiredFeature}' feature), so it was not checked.");
+                continue;
+            }
+
             long sourceCount;
             try
             {

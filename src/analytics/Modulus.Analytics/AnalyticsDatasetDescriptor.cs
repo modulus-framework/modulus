@@ -11,6 +11,10 @@ namespace Modulus.Analytics;
 /// <param name="Description">What the dataset holds.</param>
 /// <param name="FreshnessSla">How far behind the source the dataset may fall before it counts as stale, or <see langword="null"/> for no promise.</param>
 /// <param name="RetentionDays">How long a provider should keep the data, or <see langword="null"/> to keep it indefinitely.</param>
+/// <param name="RequiredFeature">
+/// The feature a tenant's plan must include for its data to be exported to this dataset (for example <c>analytics.advanced</c>), or <see langword="null"/>
+/// for no plan gating. Checked through <see cref="IAnalyticsEntitlement"/>.
+/// </param>
 public sealed record AnalyticsDatasetDescriptor(
     string Name,
     int Version,
@@ -18,7 +22,8 @@ public sealed record AnalyticsDatasetDescriptor(
     IReadOnlyList<AnalyticsFieldDescriptor> Fields,
     string? Description = null,
     TimeSpan? FreshnessSla = null,
-    int? RetentionDays = null)
+    int? RetentionDays = null,
+    string? RequiredFeature = null)
 {
     /// <summary>The catalog key, <c>name.vN</c>, in the same style as integration event names.</summary>
     public string Key => $"{Name}.v{Version}";
@@ -59,6 +64,11 @@ public sealed record AnalyticsDatasetDescriptor(
         if (RetentionDays is < 1)
         {
             problems.Add($"Dataset '{Name}' retention must be at least one day.");
+        }
+
+        if (RequiredFeature is not null && string.IsNullOrWhiteSpace(RequiredFeature))
+        {
+            problems.Add($"Dataset '{Name}' required feature must not be blank (use null for no plan gating).");
         }
 
         var seen = new HashSet<string>(StringComparer.Ordinal);

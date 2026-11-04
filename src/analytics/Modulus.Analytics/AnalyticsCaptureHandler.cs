@@ -16,6 +16,7 @@ internal sealed class AnalyticsCaptureHandler<TEvent>(
     AnalyticsEventMapping mapping,
     IAnalyticsDatasetCatalog catalog,
     IAnalyticsQueue queue,
+    IAnalyticsEntitlement entitlement,
     IServiceProvider services)
     : IIntegrationEventHandler<TEvent>
     where TEvent : class, IIntegrationEvent
@@ -31,6 +32,12 @@ internal sealed class AnalyticsCaptureHandler<TEvent>(
         }
 
         var tenantId = services.GetService<ICurrentTenant>()?.TenantId ?? Guid.Empty;
+
+        // Plan gating: a tenant whose plan does not include the dataset's feature is not exported, quietly. (No tenant is let through to be rejected downstream.)
+        if (tenantId != Guid.Empty && !entitlement.IsEntitled(tenantId, dataset))
+        {
+            return;
+        }
 
         // Fail here, at capture, when the mapper's output does not fit the contract; a bad row must not sit in the queue.
         // Normalising also gives sinks the declared CLR types whether the record is delivered inline or from the queue.

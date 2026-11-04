@@ -6514,7 +6514,15 @@ Iceberg Kafka Connect sink commits the table.
     (`analytics:manage`, at most 1000 tenants or every tenant). It reads counts only, never record values.
     Limits: it compares counts, not contents; it is meaningful only when the dataset and the source describe the same population with the same record ids (a snapshot
     dataset built from a backfill, not an event log); the Parquet sink cannot be counted through `IFileStorage` (no listing), so reconcile a lake from its query engine.
-  - Still open: dataset-level permissions and plan gating; export audit through the framework's audit store; data-quality findings beyond counts (the framework's
+  - Done: **dataset-level permissions and plan gating** (`Modulus.Analytics`, `.EntityFrameworkCore`, `.Management`; 16 more tests on both frameworks).
+    - `AnalyticsDatasetDescriptor.RequiredFeature` names a feature of the framework's entitlement catalog (`IFeatureEntitlementResolver`). `IAnalyticsEntitlement` decides per
+      tenant and dataset: the default allows everything, `FeatureAnalyticsEntitlement` (EF package) checks the feature when one is named. A tenant without the feature
+      is not captured (no record, no error), a backfill or incremental run for it fails with "not entitled" (restart it after the feature is granted), and the reconciler
+      reports it in `Errors` rather than as a mismatch.
+    - Permissions: `analytics:manage` (Critical) still covers everything; `analytics:manage:{dataset}` is declared for every registered dataset. Lists, replay, purge,
+      cancel, freshness and reconciliation are scoped to the datasets the caller holds. A dataset the caller cannot manage answers 403 on a request for it and 404 for a
+      record or run that belongs to another dataset.
+  - Still open: export audit through the framework's audit store; data-quality findings beyond counts (the framework's
     `IDataQualityFindingSink` is shaped for missing authorization attributes, so reconciliation has its own report); retention and erasure propagation
     (`ITenantDataHandler`); lineage and the OpenLineage emitter.
 - [ ] Phase 5: management API (delivery operations done, see Phases 2 and 3; dataset catalog and freshness endpoints open), CLI `add-analytics` with compose template, `analytics-admin` in `modulus-ui`

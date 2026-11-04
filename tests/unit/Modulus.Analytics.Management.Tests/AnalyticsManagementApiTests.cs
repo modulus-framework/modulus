@@ -75,6 +75,146 @@ public sealed class AnalyticsManagementApiTests : IAsyncLifetime
     }
 
     [Fact]
+    public void Every_registered_dataset_gets_its_own_critical_permission()
+    {
+        var registry = _app.Services.GetRequiredService<Modulus.Core.Abstractions.IPermissionRegistry>();
+
+        foreach (var dataset in new[] { "orders", "plain" })
+        {
+            registry.GetAll().Should().ContainSingle(d => d.Permission == $"analytics:manage:{dataset}")
+                .Which.Sensitivity.Should().Be(Modulus.Core.Abstractions.PermissionSensitivity.Critical);
+        }
+    }
+
+    [Fact]
+    public void Dataset_permissions_are_declared_even_when_management_is_registered_before_the_datasets()
+    {
+        var services = new ServiceCollection();
+        services.AddModulusAuthorization(o => o.TrustPermissionClaims = true);
+        services.AddModulusAnalyticsManagement();
+        services.AddModulusAnalytics(a => a.AddDataset(new AnalyticsDatasetDescriptor("registered_late", 1, "qa", [new("n", AnalyticsFieldType.Int64)])));
+        using var provider = services.BuildServiceProvider();
+        var registry = provider.GetRequiredService<Modulus.Core.Abstractions.IPermissionRegistry>();
+
+        // What the host's permission start-up step does: apply every module's deferred declarations.
+        foreach (var registration in provider.GetServices<Modulus.Authorization.IPermissionRegistration>())
+        {
+            registration.Apply(registry);
+        }
+
+        registry.Exists("analytics:manage:registered_late").Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task A_caller_limited_to_one_dataset_sees_and_changes_only_that_dataset()
+    {
+        var ordersDead = await SeedAsync(deadLettered: true, dataset: "orders");
+        var plainDead = await SeedAsync(deadLettered: true, dataset: "plain");
+        await SeedAsync(dataset: "plain", createdMinutesAgo: 30);
+        using var scoped = AsUser("analytics:manage:orders");
+
+        var list = await scoped.GetFromJsonAsync<AnalyticsPage<AnalyticsDeadLetter>>("/analytics/dead-letters");
+        var freshness = await scoped.GetFromJsonAsync<List<AnalyticsDatasetFreshness>>("/analytics/freshness");
+
+        list!.Items.Should().ContainSingle().Which.Id.Should().Be(ordersDead);
+        freshness!.Select(f => f.Dataset).Should().Equal("orders");
+        (await scoped.GetAsync($"/analytics/dead-letters/{ordersDead}")).StatusCode.Should().Be(HttpStatusCode.OK);
+        (await scoped.GetAsync($"/analytics/dead-letters/{plainDead}")).StatusCode.Should().Be(HttpStatusCode.NotFound, "another dataset's record looks like one that does not exist");
+        (await scoped.GetAsync("/analytics/status")).StatusCode.Should().Be(HttpStatusCode.Forbidden, "the queue status spans every dataset");
+    }
+
+    [Fact]
+    public async Task A_scoped_replay_requeues_only_the_callers_dataset_and_counts_the_rest_as_not_found()
+    {
+        var ordersDead = await SeedAsync(deadLettered: true, dataset: "orders");
+        var plainDead = await SeedAsync(deadLettered: true, dataset: "plain");
+        using var scoped = AsUser("analytics:manage:orders");
+
+        var result = await (await scoped.PostAsJsonAsync("/analytics/dead-letters/replay", new AnalyticsReplayRequest([ordersDead, plainDead]))).Content.ReadFromJsonAsync<AnalyticsReplayResponse>();
+
+        result.Should().Be(new AnalyticsReplayResponse(1, 1));
+        (await RowAsync(ordersDead)).DeadLetteredAt.Should().BeNull();
+        (await RowAsync(plainDead)).DeadLetteredAt.Should().NotBeNull("the other dataset was not touched");
+    }
+
+    [Fact]
+    public async Task A_scoped_purge_needs_a_dataset_it_may_manage_and_deletes_only_that_dataset()
+    {
+        var ordersOld = await SeedAsync(deadLettered: true, dataset: "orders", deadLetteredDaysAgo: 40);
+        var plainOld = await SeedAsync(deadLettered: true, dataset: "plain", deadLetteredDaysAgo: 40);
+        using var scoped = AsUser("analytics:manage:orders");
+
+        (await scoped.DeleteAsync("/analytics/dead-letters/purge?beforeDays=30")).StatusCode.Should().Be(HttpStatusCode.Forbidden, "purging every dataset is a global action");
+        (await scoped.DeleteAsync("/analytics/dead-letters/purge?beforeDays=30&dataset=plain")).StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        var purged = await (await scoped.DeleteAsync("/analytics/dead-letters/purge?beforeDays=30&dataset=orders")).Content.ReadFromJsonAsync<AnalyticsPurgeResponse>();
+
+        purged!.Purged.Should().Be(1);
+        (await ExistsAsync(ordersOld)).Should().BeFalse();
+        (await ExistsAsync(plainOld)).Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task A_scoped_caller_can_start_list_and_cancel_runs_only_for_their_dataset()
+    {
+        var tenant = Guid.NewGuid();
+        using var global = AsUser(Manage);
+        await global.PostAsJsonAsync("/analytics/backfills", new AnalyticsBackfillRequest("plain", 1, [tenant]));
+        using var scoped = AsUser("analytics:manage:orders");
+
+        var own = await scoped.PostAsJsonAsync("/analytics/backfills", new AnalyticsBackfillRequest("orders", 1, [tenant]));
+        var other = await scoped.PostAsJsonAsync("/analytics/backfills", new AnalyticsBackfillRequest("plain", 1, [Guid.NewGuid()]));
+        var visible = await scoped.GetFromJsonAsync<List<AnalyticsBackfillRunInfo>>("/analytics/backfills");
+        var all = await global.GetFromJsonAsync<List<AnalyticsBackfillRunInfo>>("/analytics/backfills");
+        var plainRun = all!.Single(r => r.Dataset == "plain");
+        var ordersRun = all!.Single(r => r.Dataset == "orders");
+
+        own.StatusCode.Should().Be(HttpStatusCode.OK);
+        other.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        visible!.Should().ContainSingle().Which.Dataset.Should().Be("orders");
+        (await scoped.PostAsync($"/analytics/backfills/{plainRun.Id}/cancel", null)).StatusCode.Should().Be(HttpStatusCode.NotFound);
+        (await scoped.PostAsync($"/analytics/backfills/{ordersRun.Id}/cancel", null)).StatusCode.Should().Be(HttpStatusCode.OK);
+        (await global.GetFromJsonAsync<List<AnalyticsBackfillRunInfo>>("/analytics/backfills"))!.Single(r => r.Dataset == "plain").Status.Should().Be("Pending");
+    }
+
+    [Fact]
+    public async Task A_scoped_caller_can_reconcile_only_their_dataset()
+    {
+        using var scoped = AsUser("analytics:manage:orders");
+
+        var own = await scoped.PostAsJsonAsync("/analytics/reconciliations", new AnalyticsReconcileRequest("orders", 1, [Guid.NewGuid()]));
+        var other = await scoped.PostAsJsonAsync("/analytics/reconciliations", new AnalyticsReconcileRequest("plain", 1, [Guid.NewGuid()]));
+
+        own.StatusCode.Should().Be(HttpStatusCode.OK);
+        other.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task Permissions_for_two_datasets_add_up_and_the_global_permission_covers_all()
+    {
+        await SeedAsync(deadLettered: true, dataset: "orders");
+        await SeedAsync(deadLettered: true, dataset: "plain");
+        using var both = AsUser("analytics:manage:orders,analytics:manage:plain");
+        using var plainOnly = AsUser("analytics:manage:plain");
+        using var global = AsUser(Manage);
+
+        (await both.GetFromJsonAsync<AnalyticsPage<AnalyticsDeadLetter>>("/analytics/dead-letters"))!.Total.Should().Be(2);
+        (await plainOnly.GetFromJsonAsync<AnalyticsPage<AnalyticsDeadLetter>>("/analytics/dead-letters"))!.Items.Should().ContainSingle().Which.Dataset.Should().Be("plain");
+        (await global.GetFromJsonAsync<AnalyticsPage<AnalyticsDeadLetter>>("/analytics/dead-letters"))!.Total.Should().Be(2);
+        (await both.GetAsync("/analytics/status")).StatusCode.Should().Be(HttpStatusCode.Forbidden, "two datasets are still not the global permission");
+        (await global.GetAsync("/analytics/status")).StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task A_permission_for_a_dataset_that_does_not_exist_grants_nothing()
+    {
+        await SeedAsync(deadLettered: true, dataset: "orders");
+        using var client = AsUser("analytics:manage:nope");
+
+        (await client.GetAsync("/analytics/dead-letters")).StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        (await client.GetAsync("/analytics/freshness")).StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
     public async Task Anonymous_callers_are_refused_and_callers_without_the_permission_are_forbidden()
     {
         using var anonymous = _app.GetTestClient();

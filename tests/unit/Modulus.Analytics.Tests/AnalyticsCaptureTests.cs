@@ -46,9 +46,19 @@ public sealed class AnalyticsCaptureTests
         new("placed_at", AnalyticsFieldType.Timestamp, IsNullable: true),
     ]);
 
-    private static ServiceProvider Build(InMemoryAnalyticsSink sink, Guid? tenant, Action<AnalyticsBuilder>? extra = null)
+    private sealed class FakeEntitlement(Func<Guid, bool> entitled) : IAnalyticsEntitlement
+    {
+        public bool IsEntitled(Guid tenantId, AnalyticsDatasetDescriptor dataset) => entitled(tenantId);
+    }
+
+    private static ServiceProvider Build(InMemoryAnalyticsSink sink, Guid? tenant, Action<AnalyticsBuilder>? extra = null, IAnalyticsEntitlement? entitlement = null)
     {
         var services = new ServiceCollection();
+        if (entitlement is not null)
+        {
+            services.AddSingleton(entitlement);
+        }
+
         services.AddSingleton<IPersonalDataProtector>(new FakeProtector());
         services.AddSingleton<ICurrentTenant>(new FixedTenant(tenant));
         services.AddSingleton<IAnalyticsSink>(sink);
@@ -111,6 +121,36 @@ public sealed class AnalyticsCaptureTests
 
         await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("*tenant*");
         sink.Rows.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task A_tenant_that_is_not_entitled_is_not_exported_and_one_that_is_still_is()
+    {
+        var entitled = Guid.NewGuid();
+        var notEntitled = Guid.NewGuid();
+        var sink = new InMemoryAnalyticsSink();
+        var gate = new FakeEntitlement(t => t == entitled);
+
+        foreach (var tenant in new[] { entitled, notEntitled })
+        {
+            using var provider = Build(sink, tenant, entitlement: gate);
+            using var scope = provider.CreateScope();
+            await scope.ServiceProvider.GetRequiredService<IIntegrationEventHandler<OrderPlaced>>().HandleAsync(new OrderPlaced(Guid.NewGuid(), 1m, "x"), CancellationToken.None);
+        }
+
+        sink.Rows.Should().ContainSingle().Which.TenantId.Should().Be(entitled);
+    }
+
+    [Fact]
+    public async Task Without_a_registered_entitlement_every_tenant_is_exported()
+    {
+        var sink = new InMemoryAnalyticsSink();
+        using var provider = Build(sink, Guid.NewGuid());
+        using var scope = provider.CreateScope();
+
+        await scope.ServiceProvider.GetRequiredService<IIntegrationEventHandler<OrderPlaced>>().HandleAsync(new OrderPlaced(Guid.NewGuid(), 1m, "x"), CancellationToken.None);
+
+        sink.Rows.Should().ContainSingle();
     }
 
     [Fact]
