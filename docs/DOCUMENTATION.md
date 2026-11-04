@@ -6472,9 +6472,25 @@ Iceberg Kafka Connect sink commits the table.
     record can appear twice and readers keep one row per (`tenant_id`, `event_id`) (compaction, Iceberg `MERGE`, or a dbt incremental model). Snappy by default, Zstd, Gzip or
     none. 25 unit tests, and the files were read back by two independent engines (PyArrow 26 and DuckDB 2.0): exact types, microseconds, nullability, Hive partition
     discovery and both Snappy and Zstd. Spark, Trino and Iceberg were not run here.
-  - Still open: a change journal for incremental sync (modelled on `AiChangeJournal`);
-    a backfill run against SQL Server (the unit tests use SQLite).
-  - Real PostgreSQL 16 (Testcontainers, `Modulus.Analytics.EntityFrameworkCore.Integration.Tests`, 6 tests on net8.0 and net10.0): eight parallel enqueues of the same 60
+  - Done: **incremental sync** (`IAnalyticsIncrementalSource`, `IncrementalEntityAnalyticsSource`, `AnalyticsRunKind.Incremental`).
+    Design choice: instead of a separate journal table written by a save hook (the `AiChangeJournal` approach, which adds a write to every business save and couples
+    the app's data context to analytics), changes are found by the row's own modification time, `UpdatedAt ?? CreatedAt`, which `ModuleDbContext` already stamps on every
+    save. Safeguards: a *settle delay* (default 5 s) so a transaction that commits late is not read half-way; the saved position is moved back by an *overlap* (default 1 min)
+    when the run catches up, so the next poll re-reads the window and picks up late commits; the cursor is (time, key), so rows changed at the same instant are all read even
+    across a page boundary; and every record carries a *revision* (its change time in ticks), so the queue skips a revision it already has and queues a changed row as a new one,
+    which also makes the overlap re-read free. At delivery an older revision is superseded by a newer one (never sent, so it cannot overwrite newer data). An incremental run never
+    completes; it polls every `IncrementalPollInterval` (30 s) and stops only when cancelled (`POST /analytics/backfills/{id}/cancel`). A tenant can have one backfill and one
+    incremental run per dataset version. Limits: a hard delete leaves no trace (reconciliation shows it as *extra*; Phase 6's Debezium reader is the complete answer);
+    index `(TenantId, UpdatedAt)` on the source table; keep `OccurredAt` stable across updates (the row's creation time) so a day-keyed warehouse replaces the old version.
+    Verified on SQLite (history in pages, updates, settle delay, late commit with and without the overlap, ties, tenant isolation, cancel, supersede) and on real PostgreSQL.
+    Writing the tests found a livelock in the first design (the overlap was re-applied at the start of every cycle, so a window bigger than a cycle's page budget never
+    advanced); the source now returns a cursor already moved back when it catches up, so progress is always forward.
+  - Real PostgreSQL also found a bug SQLite could not show: concurrent writers that enqueue overlapping batches **deadlocked** (`40P01`). EF Core inserts a batch in
+    primary-key order and the keys were random, so each writer locked in a different order. Queue rows now have a key derived from the record's identity (one lock order for
+    everyone), lost races are retried with jittered back-off (the provider wraps a deadlock in an `InvalidOperationException`, so the whole exception chain is searched), and a
+    claim that loses a deadlock skips the cycle. 24 consecutive runs of the PostgreSQL suite pass; it failed about once in twelve before.
+  - Still open: a backfill and incremental run against SQL Server (the unit tests use SQLite, the integration tests PostgreSQL).
+  - Real PostgreSQL 16 (Testcontainers, `Modulus.Analytics.EntityFrameworkCore.Integration.Tests`, 8 tests on net8.0 and net10.0): eight parallel enqueues of the same 60
     records store 60 rows without an error; four concurrent delivery workers deliver 400 records exactly once each; two workers split two backfill runs (750 and 420 orders) and
     queue every order once; a claim that expired is taken over and a live one is not; the freshness and reconciliation aggregate queries and the purge run correctly. A
     mutation check (dropping the claim ownership filter) makes the exactly-once test fail, so it guards the behaviour.
