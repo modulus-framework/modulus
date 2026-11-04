@@ -6574,4 +6574,29 @@ Iceberg Kafka Connect sink commits the table.
     (`AddModulusAnalyticsStore`) is wired, because that needs the application's DbContext. The packages are not on NuGet yet, so an app that runs the command can only
     build after the analytics packages are published.
   - Still open: `analytics-admin` in `modulus-ui`, which is a separate repository (the UI feature, its `ui-kit.json` entry and the mvc, razor-pages and blazor templates).
-- [ ] Phase 6: Debezium reader, Airflow and dbt triggers, Superset helper, Doris sink, lakehouse runbooks
+- [x] Phase 6: Debezium reader, Airflow and dbt triggers, Superset helper, Doris sink, lakehouse runbooks
+  - Done: **run observers** (`Modulus.Analytics`, `.EntityFrameworkCore`; 2 EF tests). `IAnalyticsRunObserver.OnBackfillCompletedAsync` is called once per
+    completed backfill run, after its rows are saved, with the run id, dataset, company, rows queued and completion time. An observer that throws is logged and the run
+    stays completed. Incremental syncs never complete and are not reported.
+  - Done: **Debezium reader** (`Modulus.Analytics.Debezium`, 12 unit tests, `DebeziumIngestor`). Maps change events of mapped source tables to records: inserts,
+    updates and snapshot reads from `after`; hard deletes from `before` with a Boolean delete marker set to true, so the warehouse follows deletes (closing the
+    hard-delete gap of the incremental sync). The record id is the key column, the revision is `source.lsn` (else the source timestamp). Reads the envelope and
+    the flat payload form; a decimal arriving in binary is refused rather than read wrongly. Mappings are checked at startup. The host consumes the Kafka topic and
+    calls `IngestAsync`; this package does not own the consumer.
+  - Done: **Airflow trigger** (`Modulus.Analytics.Airflow`, 8 tests over real HTTP). Starts the transform DAG per completed run through the Airflow stable REST API,
+    with `dag_run_id = modulus-<run id>` (a `409` means already started) and the company, dataset, rows and the dbt selector in `conf`. dbt Core has no REST API, so
+    dbt runs inside the DAG.
+  - Done: **Superset guest tokens** (`Modulus.Analytics.Superset`, 6 tests over real HTTP). Signs in as a service account and requests a guest token for one
+    dashboard with a row-level rule `{TenantColumn} = '<company>'`; the company id is a validated GUID and the dashboard id a validated identifier. A refused sign-in
+    is reported without the password.
+  - Done: **Doris sink** (`Modulus.Analytics.Doris`, 9 tests over real HTTP). Loads a batch with Stream Load into a unique-key table. The load label is a hash of the
+    batch's records, so a resent batch is accepted as already loaded rather than loaded twice. Redirects are followed by hand with the same credentials (HttpClient would
+    drop the `Authorization` header on the redirect; the test found this). A server error is transient; a refused load is permanent with Doris's message. Tables are
+    created by the operator (runbook DDL): unique key first, `revision` as the sequence column.
+  - Done: **runbooks** `docs/runbooks/lakehouse-cdc.md` (Debezium connector settings and mapping), `lakehouse-doris.md` (DDL, settings, checks),
+    `lakehouse-iceberg.md` (Spark or Kafka Connect commits, REST catalog, Trino, erasure through table deletes) and `lakehouse-orchestration.md` (Airflow, dbt,
+    Superset setup).
+  - Not verified here: a live Debezium connector and Kafka broker, a live Doris cluster, a live Airflow or Superset, Iceberg commits, and Trino. The Docker Hub
+    pull limit and the disk space left no room for the Doris image (several gigabytes) in this environment. The runbooks say which steps need checking against the
+    release you deploy.
+  - Still open: the `analytics-admin` feature in `modulus-ui` (Phase 5, a separate repository, blocked on push access).

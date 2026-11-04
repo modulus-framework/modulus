@@ -1,0 +1,32 @@
+#nullable enable
+Modulus.Analytics.Superset.ISupersetGuestTokens
+Modulus.Analytics.Superset.ISupersetGuestTokens.CreateAsync(System.Guid tenantId, string! dashboardId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<Modulus.Analytics.Superset.SupersetGuestToken!>!
+Modulus.Analytics.Superset.SupersetGuestToken
+Modulus.Analytics.Superset.SupersetGuestToken.<Clone>$() -> Modulus.Analytics.Superset.SupersetGuestToken!
+Modulus.Analytics.Superset.SupersetGuestToken.Deconstruct(out string! Token, out string! Username) -> void
+Modulus.Analytics.Superset.SupersetGuestToken.Equals(Modulus.Analytics.Superset.SupersetGuestToken? other) -> bool
+Modulus.Analytics.Superset.SupersetGuestToken.SupersetGuestToken(string! Token, string! Username) -> void
+Modulus.Analytics.Superset.SupersetGuestToken.Token.get -> string!
+Modulus.Analytics.Superset.SupersetGuestToken.Token.init -> void
+Modulus.Analytics.Superset.SupersetGuestToken.Username.get -> string!
+Modulus.Analytics.Superset.SupersetGuestToken.Username.init -> void
+Modulus.Analytics.Superset.SupersetOptions
+Modulus.Analytics.Superset.SupersetOptions.BaseUrl.get -> System.Uri?
+Modulus.Analytics.Superset.SupersetOptions.BaseUrl.set -> void
+Modulus.Analytics.Superset.SupersetOptions.Password.get -> string?
+Modulus.Analytics.Superset.SupersetOptions.Password.set -> void
+Modulus.Analytics.Superset.SupersetOptions.SupersetOptions() -> void
+Modulus.Analytics.Superset.SupersetOptions.TenantColumn.get -> string!
+Modulus.Analytics.Superset.SupersetOptions.TenantColumn.set -> void
+Modulus.Analytics.Superset.SupersetOptions.Timeout.get -> System.TimeSpan
+Modulus.Analytics.Superset.SupersetOptions.Timeout.set -> void
+Modulus.Analytics.Superset.SupersetOptions.Username.get -> string?
+Modulus.Analytics.Superset.SupersetOptions.Username.set -> void
+Modulus.Analytics.Superset.SupersetServiceCollectionExtensions
+const Modulus.Analytics.Superset.SupersetOptions.SectionName = "Analytics:Superset" -> string!
+override Modulus.Analytics.Superset.SupersetGuestToken.Equals(object? obj) -> bool
+override Modulus.Analytics.Superset.SupersetGuestToken.GetHashCode() -> int
+override Modulus.Analytics.Superset.SupersetGuestToken.ToString() -> string!
+static Modulus.Analytics.Superset.SupersetGuestToken.operator !=(Modulus.Analytics.Superset.SupersetGuestToken? left, Modulus.Analytics.Superset.SupersetGuestToken? right) -> bool
+static Modulus.Analytics.Superset.SupersetGuestToken.operator ==(Modulus.Analytics.Superset.SupersetGuestToken? left, Modulus.Analytics.Superset.SupersetGuestToken? right) -> bool
+static Modulus.Analytics.Superset.SupersetServiceCollectionExtensions.AddModulusSupersetGuestTokens(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!

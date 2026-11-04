@@ -22,6 +22,7 @@ internal sealed class AnalyticsBackfillProcessor(
     IOptions<AnalyticsBackfillOptions> options,
     TimeProvider clock,
     IAnalyticsLineageEmitter lineage,
+    IEnumerable<IAnalyticsRunObserver> observers,
     ILogger<AnalyticsBackfillProcessor> logger)
 {
     private const int MaxErrorLength = 2000;
@@ -203,6 +204,7 @@ internal sealed class AnalyticsBackfillProcessor(
                 {
                     logger.LogInformation("Analytics backfill of {Dataset}.v{Version} for tenant {Tenant} completed ({Rows} records queued).", dataset, version, tenantId, run.RowsQueued);
                     await lineage.EmitAsync(new AnalyticsRunLineage(runId, AnalyticsLineageState.Complete, dataset, version, Now()), ct).ConfigureAwait(false);
+                    await NotifyObserversAsync(new AnalyticsRunCompleted(runId, dataset, version, tenantId, now, run.RowsQueued), ct).ConfigureAwait(false);
                 }
 
                 return done;
@@ -284,6 +286,22 @@ internal sealed class AnalyticsBackfillProcessor(
         db.ChangeTracker.Clear();
         await db.AnalyticsBackfillRuns.Where(r => r.Id == runId && r.LockedBy == _instanceId)
             .ExecuteUpdateAsync(s => s.SetProperty(r => r.LockedBy, (string?)null).SetProperty(r => r.LockedUntil, (DateTime?)null)).ConfigureAwait(false);
+    }
+
+    // A reaction that fails is logged and dropped: the run's rows are already saved, and a pipeline that is down must not fail the backfill.
+    private async Task NotifyObserversAsync(AnalyticsRunCompleted completed, CancellationToken ct)
+    {
+        foreach (var observer in observers)
+        {
+            try
+            {
+                await observer.OnBackfillCompletedAsync(completed, ct).ConfigureAwait(false);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                logger.LogWarning(ex, "An analytics run observer failed for run {Run} ({Dataset}.v{Version}); the run stays completed.", completed.RunId, completed.Dataset, completed.Version);
+            }
+        }
     }
 
     private async Task FailAsync(Guid runId, string error)

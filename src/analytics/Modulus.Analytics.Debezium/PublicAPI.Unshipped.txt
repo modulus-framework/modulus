@@ -1,0 +1,47 @@
+#nullable enable
+Modulus.Analytics.Debezium.DebeziumChangeReader
+Modulus.Analytics.Debezium.DebeziumChangeReader.DebeziumChangeReader(System.Collections.Generic.IEnumerable<Modulus.Analytics.Debezium.DebeziumTableMapping!>! mappings) -> void
+Modulus.Analytics.Debezium.DebeziumChangeReader.Read(System.Collections.Generic.IEnumerable<string!>! messages) -> Modulus.Analytics.Debezium.DebeziumReadResult!
+Modulus.Analytics.Debezium.DebeziumIngestor
+Modulus.Analytics.Debezium.DebeziumIngestor.DebeziumIngestor(Modulus.Analytics.Debezium.DebeziumChangeReader! reader, Modulus.Analytics.IAnalyticsQueue! queue) -> void
+Modulus.Analytics.Debezium.DebeziumIngestor.IngestAsync(System.Collections.Generic.IEnumerable<string!>! messages, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<Modulus.Analytics.Debezium.DebeziumReadResult!>!
+Modulus.Analytics.Debezium.DebeziumReadResult
+Modulus.Analytics.Debezium.DebeziumReadResult.<Clone>$() -> Modulus.Analytics.Debezium.DebeziumReadResult!
+Modulus.Analytics.Debezium.DebeziumReadResult.DebeziumReadResult(System.Collections.Generic.IReadOnlyList<Modulus.Analytics.AnalyticsRecord!>! Records, int Ignored, System.Collections.Generic.IReadOnlyList<string!>! Problems) -> void
+Modulus.Analytics.Debezium.DebeziumReadResult.Deconstruct(out System.Collections.Generic.IReadOnlyList<Modulus.Analytics.AnalyticsRecord!>! Records, out int Ignored, out System.Collections.Generic.IReadOnlyList<string!>! Problems) -> void
+Modulus.Analytics.Debezium.DebeziumReadResult.Equals(Modulus.Analytics.Debezium.DebeziumReadResult? other) -> bool
+Modulus.Analytics.Debezium.DebeziumReadResult.Ignored.get -> int
+Modulus.Analytics.Debezium.DebeziumReadResult.Ignored.init -> void
+Modulus.Analytics.Debezium.DebeziumReadResult.Problems.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Modulus.Analytics.Debezium.DebeziumReadResult.Problems.init -> void
+Modulus.Analytics.Debezium.DebeziumReadResult.Records.get -> System.Collections.Generic.IReadOnlyList<Modulus.Analytics.AnalyticsRecord!>!
+Modulus.Analytics.Debezium.DebeziumReadResult.Records.init -> void
+Modulus.Analytics.Debezium.DebeziumServiceCollectionExtensions
+Modulus.Analytics.Debezium.DebeziumTableMapping
+Modulus.Analytics.Debezium.DebeziumTableMapping.<Clone>$() -> Modulus.Analytics.Debezium.DebeziumTableMapping!
+Modulus.Analytics.Debezium.DebeziumTableMapping.Dataset.get -> Modulus.Analytics.AnalyticsDatasetDescriptor!
+Modulus.Analytics.Debezium.DebeziumTableMapping.Dataset.init -> void
+Modulus.Analytics.Debezium.DebeziumTableMapping.DebeziumTableMapping(string! Table, Modulus.Analytics.AnalyticsDatasetDescriptor! Dataset, string! KeyColumn, string! TenantColumn = "tenant_id", string? DeletedField = null, string? Schema = null) -> void
+Modulus.Analytics.Debezium.DebeziumTableMapping.Deconstruct(out string! Table, out Modulus.Analytics.AnalyticsDatasetDescriptor! Dataset, out string! KeyColumn, out string! TenantColumn, out string? DeletedField, out string? Schema) -> void
+Modulus.Analytics.Debezium.DebeziumTableMapping.DeletedField.get -> string?
+Modulus.Analytics.Debezium.DebeziumTableMapping.DeletedField.init -> void
+Modulus.Analytics.Debezium.DebeziumTableMapping.Equals(Modulus.Analytics.Debezium.DebeziumTableMapping? other) -> bool
+Modulus.Analytics.Debezium.DebeziumTableMapping.KeyColumn.get -> string!
+Modulus.Analytics.Debezium.DebeziumTableMapping.KeyColumn.init -> void
+Modulus.Analytics.Debezium.DebeziumTableMapping.Schema.get -> string?
+Modulus.Analytics.Debezium.DebeziumTableMapping.Schema.init -> void
+Modulus.Analytics.Debezium.DebeziumTableMapping.Table.get -> string!
+Modulus.Analytics.Debezium.DebeziumTableMapping.Table.init -> void
+Modulus.Analytics.Debezium.DebeziumTableMapping.TenantColumn.get -> string!
+Modulus.Analytics.Debezium.DebeziumTableMapping.TenantColumn.init -> void
+override Modulus.Analytics.Debezium.DebeziumReadResult.Equals(object? obj) -> bool
+override Modulus.Analytics.Debezium.DebeziumReadResult.GetHashCode() -> int
+override Modulus.Analytics.Debezium.DebeziumReadResult.ToString() -> string!
+override Modulus.Analytics.Debezium.DebeziumTableMapping.Equals(object? obj) -> bool
+override Modulus.Analytics.Debezium.DebeziumTableMapping.GetHashCode() -> int
+override Modulus.Analytics.Debezium.DebeziumTableMapping.ToString() -> string!
+static Modulus.Analytics.Debezium.DebeziumReadResult.operator !=(Modulus.Analytics.Debezium.DebeziumReadResult? left, Modulus.Analytics.Debezium.DebeziumReadResult? right) -> bool
+static Modulus.Analytics.Debezium.DebeziumReadResult.operator ==(Modulus.Analytics.Debezium.DebeziumReadResult? left, Modulus.Analytics.Debezium.DebeziumReadResult? right) -> bool
+static Modulus.Analytics.Debezium.DebeziumServiceCollectionExtensions.AddModulusDebezium(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Collections.Generic.IEnumerable<Modulus.Analytics.Debezium.DebeziumTableMapping!>! mappings) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.Analytics.Debezium.DebeziumTableMapping.operator !=(Modulus.Analytics.Debezium.DebeziumTableMapping? left, Modulus.Analytics.Debezium.DebeziumTableMapping? right) -> bool
+static Modulus.Analytics.Debezium.DebeziumTableMapping.operator ==(Modulus.Analytics.Debezium.DebeziumTableMapping? left, Modulus.Analytics.Debezium.DebeziumTableMapping? right) -> bool

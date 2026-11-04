@@ -493,3 +493,27 @@ static Modulus.Analytics.AnalyticsWarehouseProfile.operator ==(Modulus.Analytics
 static readonly Modulus.Analytics.AnalyticsQualityChecks.ClockSkew -> System.TimeSpan
 Modulus.Analytics.AnalyticsFieldDescriptor.AnalyticsFieldDescriptor(string! Name, Modulus.Analytics.AnalyticsFieldType Type, bool IsNullable = false, Modulus.Core.Abstractions.Entities.FieldClassification Classification = Modulus.Core.Abstractions.Entities.FieldClassification.Public, Modulus.Analytics.AnalyticsMaskingAction? Masking = null, double? MaxNullRate = null) -> void
 Modulus.Analytics.AnalyticsFieldDescriptor.Deconstruct(out string! Name, out Modulus.Analytics.AnalyticsFieldType Type, out bool IsNullable, out Modulus.Core.Abstractions.Entities.FieldClassification Classification, out Modulus.Analytics.AnalyticsMaskingAction? Masking, out double? MaxNullRate) -> void
+Modulus.Analytics.AnalyticsRunCompleted
+Modulus.Analytics.AnalyticsRunCompleted.<Clone>$() -> Modulus.Analytics.AnalyticsRunCompleted!
+Modulus.Analytics.AnalyticsRunCompleted.AnalyticsRunCompleted(System.Guid RunId, string! Dataset, int Version, System.Guid TenantId, System.DateTimeOffset CompletedAt, long RowsQueued) -> void
+Modulus.Analytics.AnalyticsRunCompleted.CompletedAt.get -> System.DateTimeOffset
+Modulus.Analytics.AnalyticsRunCompleted.CompletedAt.init -> void
+Modulus.Analytics.AnalyticsRunCompleted.Dataset.get -> string!
+Modulus.Analytics.AnalyticsRunCompleted.Dataset.init -> void
+Modulus.Analytics.AnalyticsRunCompleted.Deconstruct(out System.Guid RunId, out string! Dataset, out int Version, out System.Guid TenantId, out System.DateTimeOffset CompletedAt, out long RowsQueued) -> void
+Modulus.Analytics.AnalyticsRunCompleted.Equals(Modulus.Analytics.AnalyticsRunCompleted? other) -> bool
+Modulus.Analytics.AnalyticsRunCompleted.RowsQueued.get -> long
+Modulus.Analytics.AnalyticsRunCompleted.RowsQueued.init -> void
+Modulus.Analytics.AnalyticsRunCompleted.RunId.get -> System.Guid
+Modulus.Analytics.AnalyticsRunCompleted.RunId.init -> void
+Modulus.Analytics.AnalyticsRunCompleted.TenantId.get -> System.Guid
+Modulus.Analytics.AnalyticsRunCompleted.TenantId.init -> void
+Modulus.Analytics.AnalyticsRunCompleted.Version.get -> int
+Modulus.Analytics.AnalyticsRunCompleted.Version.init -> void
+Modulus.Analytics.IAnalyticsRunObserver
+Modulus.Analytics.IAnalyticsRunObserver.OnBackfillCompletedAsync(Modulus.Analytics.AnalyticsRunCompleted! completed, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+override Modulus.Analytics.AnalyticsRunCompleted.Equals(object? obj) -> bool
+override Modulus.Analytics.AnalyticsRunCompleted.GetHashCode() -> int
+override Modulus.Analytics.AnalyticsRunCompleted.ToString() -> string!
+static Modulus.Analytics.AnalyticsRunCompleted.operator !=(Modulus.Analytics.AnalyticsRunCompleted? left, Modulus.Analytics.AnalyticsRunCompleted? right) -> bool
+static Modulus.Analytics.AnalyticsRunCompleted.operator ==(Modulus.Analytics.AnalyticsRunCompleted? left, Modulus.Analytics.AnalyticsRunCompleted? right) -> bool

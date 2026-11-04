@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework />
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <!-- New package: nothing of this ID is on nuget.org yet, so there is no baseline to validate against. Remove this line after its first release. -->
+    <EnablePackageValidation>false</EnablePackageValidation>
+    <Description>Debezium change reader for the Modulus Analytics Integration Layer: maps Debezium change events (inserts, updates, snapshot reads and deletes) of source tables to analytics records, so the warehouse follows hard deletes too. Works with the default JSON envelope and the flat payload form.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Modulus.Analytics/Modulus.Analytics.csproj" />
+  </ItemGroup>
+
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Modulus.Analytics.Debezium.Tests" />
+  </ItemGroup>
+
+</Project>

@@ -24,7 +24,7 @@ Every tool and NuGet package must be open source (OSI licence), production-prove
 | 3 | Backfill, incremental sync, Parquet sink | Done. Open: backfill run against SQL Server |
 | 4 | Governance | Done (see below) |
 | 5 | Operability: CLI `add-analytics`, catalog and freshness endpoints (done); `analytics-admin` in modulus-ui (open, separate repository) | In progress |
-| 6 | Enterprise providers: Debezium, Airflow/dbt triggers, Superset helper, Doris, lakehouse runbooks | Not started |
+| 6 | Enterprise providers: Debezium reader, Airflow/dbt trigger, Superset guest tokens, Doris sink, lakehouse runbooks | Done (live Debezium, Kafka, Doris, Airflow, Superset and Iceberg not run here; see DOCUMENTATION.md) |
 
 ## Phase 4 detail
 
@@ -45,15 +45,19 @@ Last full run of the analytics suites (both frameworks where applicable):
 | Suite | Result |
 |---|---|
 | Modulus.Analytics.Tests | 62 pass |
-| Modulus.Analytics.EntityFrameworkCore.Tests | 89 pass |
+| Modulus.Analytics.EntityFrameworkCore.Tests | 91 pass |
 | Modulus.Analytics.Management.Tests | 36 pass |
 | Modulus.Analytics.ClickHouse.Tests | 23 pass |
 | Modulus.Analytics.Parquet.Tests | 25 pass |
-| Integration: ClickHouse (real server) | 16 pass (after the data-quality change) |
+| Integration: ClickHouse (real server) | 16 pass |
 | Modulus.Analytics.OpenLineage.Tests | 8 pass (real HTTP receiver) |
+| Modulus.Analytics.Airflow.Tests | 8 pass (real HTTP, fake Airflow) |
+| Modulus.Analytics.Superset.Tests | 6 pass (real HTTP, fake Superset) |
+| Modulus.Analytics.Debezium.Tests | 12 pass |
+| Modulus.Analytics.Doris.Tests | 9 pass (real HTTP, fake frontend and backend) |
 | Modulus.Cli.Tests (add-analytics, 6 new) | 677 pass |
-| Integration: OpenLineage with Marquez 0.50.0 | 2 pass |
-| Integration: EF (real PostgreSQL 16) | 8 pass (re-run after the lineage change) |
+| Integration: OpenLineage with Marquez 0.50.0 | 2 pass (re-run after the run-observer change) |
+| Integration: EF (real PostgreSQL 16) | 8 pass (re-run after the run-observer change) |
 
 `dotnet format --verify-no-changes` is clean for the analytics projects. Each changed project builds with 0 warnings.
 
@@ -63,8 +67,8 @@ Last full run of the analytics suites (both frameworks where applicable):
 
 ## Next steps
 
-1. Phase 5: `analytics-admin` in modulus-ui (separate repository).
-2. Phase 6: enterprise providers.
+1. Phase 5: `analytics-admin` in modulus-ui (separate repository, blocked on push access).
+2. Live verification of Phase 6 against real Debezium, Kafka, Doris, Airflow, Superset and Iceberg (needs disk space and the Docker Hub pull limit cleared).
 
 ## Decisions to know about
 
