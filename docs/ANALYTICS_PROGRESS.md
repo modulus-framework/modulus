@@ -23,7 +23,7 @@ Every tool and NuGet package must be open source (OSI licence), production-prove
 | 2 | Capture, durable delivery queue, ClickHouse sink | Done. Open: messaging sink, EF migration sample, `SchemaVersion` on outbox rows |
 | 3 | Backfill, incremental sync, Parquet sink | Done. Open: backfill run against SQL Server |
 | 4 | Governance | Done (see below) |
-| 5 | Operability: CLI `add-analytics`, `analytics-admin` in modulus-ui, catalog and freshness endpoints | Not started |
+| 5 | Operability: CLI `add-analytics`, catalog and freshness endpoints (done); `analytics-admin` in modulus-ui (open, separate repository) | In progress |
 | 6 | Enterprise providers: Debezium, Airflow/dbt triggers, Superset helper, Doris, lakehouse runbooks | Not started |
 
 ## Phase 4 detail
@@ -46,11 +46,12 @@ Last full run of the analytics suites (both frameworks where applicable):
 |---|---|
 | Modulus.Analytics.Tests | 62 pass |
 | Modulus.Analytics.EntityFrameworkCore.Tests | 89 pass |
-| Modulus.Analytics.Management.Tests | 34 pass |
+| Modulus.Analytics.Management.Tests | 36 pass |
 | Modulus.Analytics.ClickHouse.Tests | 23 pass |
 | Modulus.Analytics.Parquet.Tests | 25 pass |
 | Integration: ClickHouse (real server) | 16 pass (after the data-quality change) |
 | Modulus.Analytics.OpenLineage.Tests | 8 pass (real HTTP receiver) |
+| Modulus.Cli.Tests (add-analytics, 6 new) | 677 pass |
 | Integration: OpenLineage with Marquez 0.50.0 | 2 pass |
 | Integration: EF (real PostgreSQL 16) | 8 pass (re-run after the lineage change) |
 
@@ -62,7 +63,7 @@ Last full run of the analytics suites (both frameworks where applicable):
 
 ## Next steps
 
-1. Phase 5: CLI `add-analytics`, `analytics-admin` in modulus-ui, catalog and freshness endpoints.
+1. Phase 5: `analytics-admin` in modulus-ui (separate repository).
 2. Phase 6: enterprise providers.
 
 ## Decisions to know about

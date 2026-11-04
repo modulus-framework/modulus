@@ -200,3 +200,51 @@ override Modulus.Analytics.Management.AnalyticsQualityRequest.GetHashCode() -> i
 override Modulus.Analytics.Management.AnalyticsQualityRequest.ToString() -> string!
 static Modulus.Analytics.Management.AnalyticsQualityRequest.operator !=(Modulus.Analytics.Management.AnalyticsQualityRequest? left, Modulus.Analytics.Management.AnalyticsQualityRequest? right) -> bool
 static Modulus.Analytics.Management.AnalyticsQualityRequest.operator ==(Modulus.Analytics.Management.AnalyticsQualityRequest? left, Modulus.Analytics.Management.AnalyticsQualityRequest? right) -> bool
+Modulus.Analytics.Management.AnalyticsDatasetInfo
+Modulus.Analytics.Management.AnalyticsDatasetInfo.<Clone>$() -> Modulus.Analytics.Management.AnalyticsDatasetInfo!
+Modulus.Analytics.Management.AnalyticsDatasetInfo.AnalyticsDatasetInfo(string! Name, int Version, string! Owner, string? Description, System.TimeSpan? FreshnessSla, int? RetentionDays, string? RequiredFeature, System.Collections.Generic.IReadOnlyList<Modulus.Analytics.Management.AnalyticsFieldInfo!>! Fields) -> void
+Modulus.Analytics.Management.AnalyticsDatasetInfo.Deconstruct(out string! Name, out int Version, out string! Owner, out string? Description, out System.TimeSpan? FreshnessSla, out int? RetentionDays, out string? RequiredFeature, out System.Collections.Generic.IReadOnlyList<Modulus.Analytics.Management.AnalyticsFieldInfo!>! Fields) -> void
+Modulus.Analytics.Management.AnalyticsDatasetInfo.Description.get -> string?
+Modulus.Analytics.Management.AnalyticsDatasetInfo.Description.init -> void
+Modulus.Analytics.Management.AnalyticsDatasetInfo.Equals(Modulus.Analytics.Management.AnalyticsDatasetInfo? other) -> bool
+Modulus.Analytics.Management.AnalyticsDatasetInfo.Fields.get -> System.Collections.Generic.IReadOnlyList<Modulus.Analytics.Management.AnalyticsFieldInfo!>!
+Modulus.Analytics.Management.AnalyticsDatasetInfo.Fields.init -> void
+Modulus.Analytics.Management.AnalyticsDatasetInfo.FreshnessSla.get -> System.TimeSpan?
+Modulus.Analytics.Management.AnalyticsDatasetInfo.FreshnessSla.init -> void
+Modulus.Analytics.Management.AnalyticsDatasetInfo.Name.get -> string!
+Modulus.Analytics.Management.AnalyticsDatasetInfo.Name.init -> void
+Modulus.Analytics.Management.AnalyticsDatasetInfo.Owner.get -> string!
+Modulus.Analytics.Management.AnalyticsDatasetInfo.Owner.init -> void
+Modulus.Analytics.Management.AnalyticsDatasetInfo.RequiredFeature.get -> string?
+Modulus.Analytics.Management.AnalyticsDatasetInfo.RequiredFeature.init -> void
+Modulus.Analytics.Management.AnalyticsDatasetInfo.RetentionDays.get -> int?
+Modulus.Analytics.Management.AnalyticsDatasetInfo.RetentionDays.init -> void
+Modulus.Analytics.Management.AnalyticsDatasetInfo.Version.get -> int
+Modulus.Analytics.Management.AnalyticsDatasetInfo.Version.init -> void
+Modulus.Analytics.Management.AnalyticsFieldInfo
+Modulus.Analytics.Management.AnalyticsFieldInfo.<Clone>$() -> Modulus.Analytics.Management.AnalyticsFieldInfo!
+Modulus.Analytics.Management.AnalyticsFieldInfo.AnalyticsFieldInfo(string! Name, string! Type, bool IsNullable, string! Classification, string! Masking, double? MaxNullRate) -> void
+Modulus.Analytics.Management.AnalyticsFieldInfo.Classification.get -> string!
+Modulus.Analytics.Management.AnalyticsFieldInfo.Classification.init -> void
+Modulus.Analytics.Management.AnalyticsFieldInfo.Deconstruct(out string! Name, out string! Type, out bool IsNullable, out string! Classification, out string! Masking, out double? MaxNullRate) -> void
+Modulus.Analytics.Management.AnalyticsFieldInfo.Equals(Modulus.Analytics.Management.AnalyticsFieldInfo? other) -> bool
+Modulus.Analytics.Management.AnalyticsFieldInfo.IsNullable.get -> bool
+Modulus.Analytics.Management.AnalyticsFieldInfo.IsNullable.init -> void
+Modulus.Analytics.Management.AnalyticsFieldInfo.Masking.get -> string!
+Modulus.Analytics.Management.AnalyticsFieldInfo.Masking.init -> void
+Modulus.Analytics.Management.AnalyticsFieldInfo.MaxNullRate.get -> double?
+Modulus.Analytics.Management.AnalyticsFieldInfo.MaxNullRate.init -> void
+Modulus.Analytics.Management.AnalyticsFieldInfo.Name.get -> string!
+Modulus.Analytics.Management.AnalyticsFieldInfo.Name.init -> void
+Modulus.Analytics.Management.AnalyticsFieldInfo.Type.get -> string!
+Modulus.Analytics.Management.AnalyticsFieldInfo.Type.init -> void
+override Modulus.Analytics.Management.AnalyticsDatasetInfo.Equals(object? obj) -> bool
+override Modulus.Analytics.Management.AnalyticsDatasetInfo.GetHashCode() -> int
+override Modulus.Analytics.Management.AnalyticsDatasetInfo.ToString() -> string!
+override Modulus.Analytics.Management.AnalyticsFieldInfo.Equals(object? obj) -> bool
+override Modulus.Analytics.Management.AnalyticsFieldInfo.GetHashCode() -> int
+override Modulus.Analytics.Management.AnalyticsFieldInfo.ToString() -> string!
+static Modulus.Analytics.Management.AnalyticsDatasetInfo.operator !=(Modulus.Analytics.Management.AnalyticsDatasetInfo? left, Modulus.Analytics.Management.AnalyticsDatasetInfo? right) -> bool
+static Modulus.Analytics.Management.AnalyticsDatasetInfo.operator ==(Modulus.Analytics.Management.AnalyticsDatasetInfo? left, Modulus.Analytics.Management.AnalyticsDatasetInfo? right) -> bool
+static Modulus.Analytics.Management.AnalyticsFieldInfo.operator !=(Modulus.Analytics.Management.AnalyticsFieldInfo? left, Modulus.Analytics.Management.AnalyticsFieldInfo? right) -> bool
+static Modulus.Analytics.Management.AnalyticsFieldInfo.operator ==(Modulus.Analytics.Management.AnalyticsFieldInfo? left, Modulus.Analytics.Management.AnalyticsFieldInfo? right) -> bool

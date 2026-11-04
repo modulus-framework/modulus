@@ -142,6 +142,33 @@ public static class AnalyticsManagementExtensions
         })
         .WithSummary("Compare the warehouse with the operational store, per tenant");
 
+        // GET /analytics/datasets (a dataset-scoped caller sees only their datasets): the catalog, with rules and fields, never values
+        group.MapGet("/datasets", async (ClaimsPrincipal user, AnalyticsAccess access, IAnalyticsDatasetCatalog catalog) =>
+        {
+            var scope = await access.ScopeAsync(user);
+            if (!scope.Any)
+            {
+                return Forbidden();
+            }
+
+            return Results.Ok(catalog.All.Where(d => scope.Allows(d.Name)).Select(ToDatasetInfo).ToList());
+        })
+        .WithSummary("List the registered datasets, their owners, rules and fields");
+
+        // GET /analytics/datasets/{name}/{version}/schema: the dataset's JSON Schema (2020-12), for a consumer that validates or generates code
+        group.MapGet("/datasets/{name}/{version:int}/schema", async (string name, int version, ClaimsPrincipal user, AnalyticsAccess access, IAnalyticsDatasetCatalog catalog) =>
+        {
+            if (!await access.CanAsync(user, name))
+            {
+                return Forbidden();
+            }
+
+            return catalog.TryGet(name, version, out var dataset)
+                ? Results.Content(AnalyticsDatasetSchema.ToJsonSchema(dataset), "application/schema+json")
+                : Results.NotFound();
+        })
+        .WithSummary("Get a dataset version's JSON Schema");
+
         // GET /analytics/freshness (a dataset-scoped caller sees only their datasets)
         group.MapGet("/freshness", async (ClaimsPrincipal user, AnalyticsAccess access, IAnalyticsFreshnessReader reader, CancellationToken ct) =>
         {
@@ -446,6 +473,10 @@ public static class AnalyticsManagementExtensions
     }
 
     private static IResult Forbidden() => Results.StatusCode(StatusCodes.Status403Forbidden);
+
+    private static AnalyticsDatasetInfo ToDatasetInfo(AnalyticsDatasetDescriptor d)
+        => new(d.Name, d.Version, d.Owner, d.Description, d.FreshnessSla, d.RetentionDays, d.RequiredFeature,
+            [.. d.Fields.Select(f => new AnalyticsFieldInfo(f.Name, f.Type.ToString(), f.IsNullable, f.Classification.ToString(), f.EffectiveMasking.ToString(), f.MaxNullRate))]);
 
     private static AnalyticsDeadLetter ToModel(AnalyticsDelivery d)
         => new(d.Id, d.TenantId, d.EventId, d.Dataset, d.SchemaVersion, d.OccurredAt, d.CreatedAt, d.DeadLetteredAt, d.AttemptCount, d.LastError);

@@ -6560,5 +6560,18 @@ Iceberg Kafka Connect sink commits the table.
     - Limits: no history of findings (each check is a snapshot; keep the response if you need one), no value-level rules beyond nulls and timestamps, and a
       sink that cannot be profiled (the Parquet lake) is reported in `Errors`, not checked. Quality of a lake is checked by its query engine.
 
-- [ ] Phase 5: management API (delivery operations done, see Phases 2 and 3; dataset catalog and freshness endpoints open), CLI `add-analytics` with compose template, `analytics-admin` in `modulus-ui`
+- [ ] Phase 5: management API, CLI `add-analytics` with compose template, `analytics-admin` in `modulus-ui`
+  - Done: **management API** (`Modulus.Analytics.Management`, 3 more tests). `GET /analytics/datasets` lists the datasets the caller may manage, with owner, description,
+    freshness SLA, retention, required feature and each field's type, classification, masking and null-rate rule (metadata only, never values).
+    `GET /analytics/datasets/{name}/{version}/schema` serves the dataset's JSON Schema (`application/schema+json`) to its managers. Freshness, reconciliation,
+    quality and the delivery operations were already there (Phases 2 to 4).
+  - Done: **CLI `modulus add-analytics [--no-compose]`** (`cli/Commands/AddAnalyticsCommand.cs`, `cli/Services/AnalyticsWiring.cs`, 6 tests, 677 CLI tests pass).
+    It adds the `Synvro.Modulus.Analytics.ClickHouse` and `Synvro.Modulus.Analytics.OpenLineage` packages to the API host, wires `AddModulusAnalytics(a => a.AddClickHouse(...))`
+    and `AddModulusOpenLineage(...)` before the app is built, writes the `Analytics` settings (ClickHouse local in Development with a placeholder password in production;
+    OpenLineage off), and writes `docker-compose.analytics.yml`: ClickHouse 25.8 and RabbitMQ 4 with health checks and development credentials that match the settings.
+    The compose stack was started with Docker and both services reported healthy; ClickHouse answered a query with the development credentials.
+    Limits: no datasets are generated (they are application-specific: the command leaves a comment to declare them), and delivery is inline until the durable queue
+    (`AddModulusAnalyticsStore`) is wired, because that needs the application's DbContext. The packages are not on NuGet yet, so an app that runs the command can only
+    build after the analytics packages are published.
+  - Still open: `analytics-admin` in `modulus-ui`, which is a separate repository (the UI feature, its `ui-kit.json` entry and the mvc, razor-pages and blazor templates).
 - [ ] Phase 6: Debezium reader, Airflow and dbt triggers, Superset helper, Doris sink, lakehouse runbooks

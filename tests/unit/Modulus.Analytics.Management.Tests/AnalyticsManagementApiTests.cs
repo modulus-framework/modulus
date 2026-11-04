@@ -471,6 +471,42 @@ public sealed class AnalyticsManagementApiTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task The_catalog_lists_the_datasets_the_caller_may_manage_with_their_fields_and_no_values()
+    {
+        using var global = AsUser(Manage);
+        using var scoped = AsUser("analytics:manage:orders");
+        using var none = AsUser("orders:read");
+
+        var everything = await global.GetFromJsonAsync<List<AnalyticsDatasetInfo>>("/analytics/datasets");
+        var onlyOrders = await scoped.GetFromJsonAsync<List<AnalyticsDatasetInfo>>("/analytics/datasets");
+        var refused = await none.GetAsync("/analytics/datasets");
+
+        everything!.Select(d => d.Name).Should().BeEquivalentTo(["orders", "plain"]);
+        onlyOrders!.Select(d => d.Name).Should().Equal("orders");
+        onlyOrders![0].Fields.Should().ContainSingle().Which.Should().Match<AnalyticsFieldInfo>(f =>
+            f.Name == "order_id" && f.Type == "Int64" && !f.IsNullable && f.Masking == "Keep");
+        refused.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task The_schema_of_a_dataset_version_is_served_to_its_managers_only()
+    {
+        using var scoped = AsUser("analytics:manage:orders");
+        using var other = AsUser("analytics:manage:plain");
+
+        var schema = await scoped.GetAsync("/analytics/datasets/orders/1/schema");
+        var body = await schema.Content.ReadAsStringAsync();
+        var missing = await scoped.GetAsync("/analytics/datasets/orders/9/schema");
+        var refused = await other.GetAsync("/analytics/datasets/orders/1/schema");
+
+        schema.StatusCode.Should().Be(HttpStatusCode.OK);
+        schema.Content.Headers.ContentType!.MediaType.Should().Be("application/schema+json");
+        body.Should().Contain("order_id").And.Contain("2020-12");
+        missing.StatusCode.Should().Be(HttpStatusCode.NotFound, "that version is not registered");
+        refused.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
     public async Task Bad_backfill_requests_are_refused_with_a_reason()
     {
         using var client = AsUser(Manage);

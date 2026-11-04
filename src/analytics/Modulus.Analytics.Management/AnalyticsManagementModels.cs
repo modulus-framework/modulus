@@ -112,3 +112,37 @@ public sealed record AnalyticsReconcileRequest(string Dataset, int Version, Guid
 
 /// <summary>A data-quality check of one dataset version, for some or all companies.</summary>
 public sealed record AnalyticsQualityRequest(string Dataset, int Version, Guid[]? TenantIds = null);
+
+/// <summary>A registered dataset version, as the catalog shows it: its owner, rules and fields. It never carries record values.</summary>
+/// <param name="Name">The dataset name.</param>
+/// <param name="Version">The dataset version.</param>
+/// <param name="Owner">The team that owns the dataset.</param>
+/// <param name="Description">What the dataset holds, if the owner wrote it down.</param>
+/// <param name="FreshnessSla">How far behind the source the dataset may fall, or <see langword="null"/> when there is no promise.</param>
+/// <param name="RetentionDays">How long the warehouse keeps the rows, or <see langword="null"/> for indefinitely.</param>
+/// <param name="RequiredFeature">The plan feature a company needs to receive the dataset, or <see langword="null"/> when every company does.</param>
+/// <param name="Fields">The fields, in declaration order.</param>
+public sealed record AnalyticsDatasetInfo(
+    string Name,
+    int Version,
+    string Owner,
+    string? Description,
+    TimeSpan? FreshnessSla,
+    int? RetentionDays,
+    string? RequiredFeature,
+    IReadOnlyList<AnalyticsFieldInfo> Fields);
+
+/// <summary>One field of a catalogued dataset.</summary>
+/// <param name="Name">The field name.</param>
+/// <param name="Type">The logical type.</param>
+/// <param name="IsNullable">Whether the value may be absent.</param>
+/// <param name="Classification">How sensitive the field is.</param>
+/// <param name="Masking">What is done to the value before delivery.</param>
+/// <param name="MaxNullRate">The largest share of nulls allowed by the data-quality rule, or <see langword="null"/> when there is no rule.</param>
+public sealed record AnalyticsFieldInfo(
+    string Name,
+    string Type,
+    bool IsNullable,
+    string Classification,
+    string Masking,
+    double? MaxNullRate);
