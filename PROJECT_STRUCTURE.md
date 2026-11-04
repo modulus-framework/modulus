@@ -45,7 +45,7 @@ modulus/
 | platform | `Modulus.Caching.Redis`, `Modulus.Storage.{S3,AzureBlobs}`, `Modulus.SignalR.Backplane` | Dependency-heavy providers split from Platform |
 | analytics | `Modulus.Analytics.ClickHouse` | ClickHouse sink: tenant-keyed `ReplacingMergeTree` table per dataset version, contract check, failure classification (official `ClickHouse.Driver`, MIT) |
 | analytics | `Modulus.Analytics.Management` | Operations API for analytics delivery (`analytics:manage`): queue status, list, replay and purge dead letters; never returns record values |
-| analytics | `Modulus.Analytics.EntityFrameworkCore` | Durable delivery for analytics: queue table, duplicate-safe enqueue, atomic claim, retry schedule, dead-letter, purge, background worker |
+| analytics | `Modulus.Analytics.EntityFrameworkCore` | Durable delivery and backfill for analytics: queue table, duplicate-safe enqueue, atomic claim, retry schedule, dead-letter, purge, per-tenant resumable backfill runs, entity-backed sources, background workers |
 | analytics | `Modulus.Analytics.Testing` | In-memory sink and a test-framework-neutral conformance suite for any `IAnalyticsSink` |
 | analytics | `Modulus.Analytics` | Analytics Integration Layer contracts (planned, see docs/DOCUMENTATION.md): versioned dataset and field metadata with classification, dataset catalog, provider-neutral `IAnalyticsSink`, batch masking, upcasters, JSON Schema export, `AnalyticsDispatcher`, event capture (`MapEvent`), typed value serializer, `IAnalyticsQueue`. Providers ship as separate packages |
 | observability | `Modulus.Observability` | OpenTelemetry wiring, tracing behavior, module health + module-graph endpoints |

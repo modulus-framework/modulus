@@ -6452,6 +6452,18 @@ Iceberg Kafka Connect sink commits the table.
     values *before* masking, so no response ever carries record values (tests pin this). Replay and purge are logged with the acting user. 12 unit tests.
   - Still open: the messaging sink, an EF migration sample.
 - [ ] Phase 3: extraction, change journal, per-tenant backfill with checkpoints, Parquet sink
+  - Done (`Modulus.Analytics` and `Modulus.Analytics.EntityFrameworkCore`, 36 tests across net8.0 and net10.0):
+    - `IAnalyticsSource`: reads one tenant at a time with a cursor. `EntityAnalyticsSource` / `AddEntitySource<TContext, TEntity, TKey>` is the EF version: the entity
+      must have `IHasTenantId`, the query filters on `TenantId` itself (on top of any global filter), and the paging key must be unique per tenant (integer, decimal or
+      timestamp; a Guid key is refused because providers order Guids differently).
+    - `AnalyticsBackfillRun`: one run per dataset, version and tenant, with a stored cursor. Each page is queued and the cursor saved in one transaction, so a
+      crash loses nothing and repeats nothing; claims expire so another worker resumes. A failed cycle retries with a growing delay and the run fails after
+      `MaxAttempts`; a source that returns another tenant's record, an unknown tenant or a missing source fails the run at once.
+    - `AnalyticsBackfillManager` starts runs for chosen tenants or every active tenant (through `ITenantStore`), and can restart a finished or failed run.
+    - `AnalyticsRecordIds.Deterministic(scope, key)`: stable record ids, so a re-run collapses onto earlier rows. To make a backfilled row meet the same
+      fact captured live, the live mapper must produce the same id (use the row key).
+  - Still open: the Parquet sink; backfill endpoints in the management API (start, list, restart); a change journal for incremental sync (modelled on `AiChangeJournal`);
+    a backfill run against a real PostgreSQL or SQL Server database (the tests use SQLite).
 - [ ] Phase 4: dataset permissions, plan gating, export audit, freshness, reconciliation, quality, retention and erasure, lineage
 - [ ] Phase 5: management API (delivery operations done, see Phase 2; dataset catalog and freshness endpoints open), CLI `add-analytics` with compose template, `analytics-admin` in `modulus-ui`
 - [ ] Phase 6: Debezium reader, Airflow and dbt triggers, Superset helper, Doris sink, lakehouse runbooks

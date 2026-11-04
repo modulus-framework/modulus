@@ -18,6 +18,9 @@ public class ModulusAnalyticsDbContext : DbContext
     /// <summary>Queued records of every tenant.</summary>
     public DbSet<AnalyticsDelivery> AnalyticsDeliveries => Set<AnalyticsDelivery>();
 
+    /// <summary>Backfill runs of every tenant.</summary>
+    public DbSet<AnalyticsBackfillRun> AnalyticsBackfillRuns => Set<AnalyticsBackfillRun>();
+
     /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -44,6 +47,19 @@ public class ModulusAnalyticsDbContext : DbContext
             b.HasIndex(d => new { d.TenantId, d.Dataset, d.EventId }).IsUnique();
             b.HasIndex(d => new { d.DeliveredAt, d.DeadLetteredAt, d.NextAttemptAt });
             b.HasIndex(d => new { d.TenantId, d.CreatedAt });
+        });
+
+        modelBuilder.Entity<AnalyticsBackfillRun>(b =>
+        {
+            b.ToTable("analytics_backfill_runs");
+            b.HasKey(r => r.Id);
+            b.Property(r => r.Dataset).HasMaxLength(128).IsRequired();
+            b.Property(r => r.Cursor).HasMaxLength(512);
+            b.Property(r => r.LockedBy).HasMaxLength(64);
+            b.Property(r => r.LastError).HasMaxLength(2048);
+            b.Property(r => r.RequestedBy).HasMaxLength(128);
+            b.HasIndex(r => new { r.Dataset, r.SchemaVersion, r.TenantId }).IsUnique();
+            b.HasIndex(r => new { r.Status, r.NextAttemptAt });
         });
     }
 }

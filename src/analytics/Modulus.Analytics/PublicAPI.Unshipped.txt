@@ -2,6 +2,7 @@
 Modulus.Analytics.AnalyticsBuilder
 Modulus.Analytics.AnalyticsBuilder.AddDataset(Modulus.Analytics.AnalyticsDatasetDescriptor! dataset) -> Modulus.Analytics.AnalyticsBuilder!
 Modulus.Analytics.AnalyticsBuilder.AddSink<TSink>() -> Modulus.Analytics.AnalyticsBuilder!
+Modulus.Analytics.AnalyticsBuilder.AddSource<TSource>() -> Modulus.Analytics.AnalyticsBuilder!
 Modulus.Analytics.AnalyticsBuilder.AddUpcaster<TUpcaster>() -> Modulus.Analytics.AnalyticsBuilder!
 Modulus.Analytics.AnalyticsBuilder.MapEvent<TEvent>(string! dataset, int version, System.Func<TEvent!, System.Collections.Generic.IReadOnlyDictionary<string!, object?>!>! map) -> Modulus.Analytics.AnalyticsBuilder!
 Modulus.Analytics.AnalyticsBuilder.Services.get -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
@@ -50,6 +51,26 @@ Modulus.Analytics.AnalyticsDispatcher
 Modulus.Analytics.AnalyticsDispatcher.AnalyticsDispatcher(Modulus.Analytics.IAnalyticsDatasetCatalog! catalog, System.Collections.Generic.IEnumerable<Modulus.Analytics.IAnalyticsSink!>! sinks, System.Collections.Generic.IEnumerable<Modulus.Analytics.IAnalyticsRecordUpcaster!>! upcasters, Modulus.Core.Abstractions.DataProtection.IPersonalDataProtector! protector) -> void
 Modulus.Analytics.AnalyticsDispatcher.DispatchAsync(System.Collections.Generic.IReadOnlyList<Modulus.Analytics.AnalyticsRecord!>! records, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Analytics.AnalyticsDispatchResult!>!
 Modulus.Analytics.AnalyticsDispatcher.HasSinks.get -> bool
+Modulus.Analytics.AnalyticsExtractPage
+Modulus.Analytics.AnalyticsExtractPage.<Clone>$() -> Modulus.Analytics.AnalyticsExtractPage!
+Modulus.Analytics.AnalyticsExtractPage.AnalyticsExtractPage(System.Collections.Generic.IReadOnlyList<Modulus.Analytics.AnalyticsRecord!>! Records, string? NextCursor) -> void
+Modulus.Analytics.AnalyticsExtractPage.Deconstruct(out System.Collections.Generic.IReadOnlyList<Modulus.Analytics.AnalyticsRecord!>! Records, out string? NextCursor) -> void
+Modulus.Analytics.AnalyticsExtractPage.Equals(Modulus.Analytics.AnalyticsExtractPage? other) -> bool
+Modulus.Analytics.AnalyticsExtractPage.NextCursor.get -> string?
+Modulus.Analytics.AnalyticsExtractPage.NextCursor.init -> void
+Modulus.Analytics.AnalyticsExtractPage.Records.get -> System.Collections.Generic.IReadOnlyList<Modulus.Analytics.AnalyticsRecord!>!
+Modulus.Analytics.AnalyticsExtractPage.Records.init -> void
+Modulus.Analytics.AnalyticsExtractRequest
+Modulus.Analytics.AnalyticsExtractRequest.<Clone>$() -> Modulus.Analytics.AnalyticsExtractRequest!
+Modulus.Analytics.AnalyticsExtractRequest.AnalyticsExtractRequest(System.Guid TenantId, string? Cursor, int Limit) -> void
+Modulus.Analytics.AnalyticsExtractRequest.Cursor.get -> string?
+Modulus.Analytics.AnalyticsExtractRequest.Cursor.init -> void
+Modulus.Analytics.AnalyticsExtractRequest.Deconstruct(out System.Guid TenantId, out string? Cursor, out int Limit) -> void
+Modulus.Analytics.AnalyticsExtractRequest.Equals(Modulus.Analytics.AnalyticsExtractRequest? other) -> bool
+Modulus.Analytics.AnalyticsExtractRequest.Limit.get -> int
+Modulus.Analytics.AnalyticsExtractRequest.Limit.init -> void
+Modulus.Analytics.AnalyticsExtractRequest.TenantId.get -> System.Guid
+Modulus.Analytics.AnalyticsExtractRequest.TenantId.init -> void
 Modulus.Analytics.AnalyticsFieldDescriptor
 Modulus.Analytics.AnalyticsFieldDescriptor.<Clone>$() -> Modulus.Analytics.AnalyticsFieldDescriptor!
 Modulus.Analytics.AnalyticsFieldDescriptor.AnalyticsFieldDescriptor(string! Name, Modulus.Analytics.AnalyticsFieldType Type, bool IsNullable = false, Modulus.Core.Abstractions.Entities.FieldClassification Classification = Modulus.Core.Abstractions.Entities.FieldClassification.Public, Modulus.Analytics.AnalyticsMaskingAction? Masking = null) -> void
@@ -97,6 +118,7 @@ Modulus.Analytics.AnalyticsRecord.TenantId.get -> System.Guid
 Modulus.Analytics.AnalyticsRecord.TenantId.init -> void
 Modulus.Analytics.AnalyticsRecord.Values.get -> System.Collections.Generic.IReadOnlyDictionary<string!, object?>!
 Modulus.Analytics.AnalyticsRecord.Values.init -> void
+Modulus.Analytics.AnalyticsRecordIds
 Modulus.Analytics.AnalyticsRejection
 Modulus.Analytics.AnalyticsRejection.<Clone>$() -> Modulus.Analytics.AnalyticsRejection!
 Modulus.Analytics.AnalyticsRejection.AnalyticsRejection(Modulus.Analytics.AnalyticsRecord! Record, string! Reason) -> void
@@ -143,6 +165,12 @@ Modulus.Analytics.IAnalyticsSink
 Modulus.Analytics.IAnalyticsSink.EnsureDatasetAsync(Modulus.Analytics.AnalyticsDatasetDescriptor! dataset, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 Modulus.Analytics.IAnalyticsSink.Name.get -> string!
 Modulus.Analytics.IAnalyticsSink.WriteAsync(Modulus.Analytics.AnalyticsDatasetDescriptor! dataset, System.Collections.Generic.IReadOnlyList<Modulus.Analytics.AnalyticsRecord!>! records, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+Modulus.Analytics.IAnalyticsSource
+Modulus.Analytics.IAnalyticsSource.Dataset.get -> string!
+Modulus.Analytics.IAnalyticsSource.ExtractAsync(Modulus.Analytics.AnalyticsExtractRequest! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<Modulus.Analytics.AnalyticsExtractPage!>!
+Modulus.Analytics.IAnalyticsSource.Version.get -> int
+Modulus.Analytics.IAnalyticsTenantDirectory
+Modulus.Analytics.IAnalyticsTenantDirectory.ListTenantIdsAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<System.Guid>!>!
 Modulus.Analytics.InlineAnalyticsQueue
 Modulus.Analytics.InlineAnalyticsQueue.EnqueueAsync(System.Collections.Generic.IReadOnlyList<Modulus.Analytics.AnalyticsRecord!>! records, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 Modulus.Analytics.InlineAnalyticsQueue.InlineAnalyticsQueue(Modulus.Analytics.AnalyticsDispatcher! dispatcher) -> void
@@ -152,6 +180,12 @@ override Modulus.Analytics.AnalyticsDatasetDescriptor.ToString() -> string!
 override Modulus.Analytics.AnalyticsDispatchResult.Equals(object? obj) -> bool
 override Modulus.Analytics.AnalyticsDispatchResult.GetHashCode() -> int
 override Modulus.Analytics.AnalyticsDispatchResult.ToString() -> string!
+override Modulus.Analytics.AnalyticsExtractPage.Equals(object? obj) -> bool
+override Modulus.Analytics.AnalyticsExtractPage.GetHashCode() -> int
+override Modulus.Analytics.AnalyticsExtractPage.ToString() -> string!
+override Modulus.Analytics.AnalyticsExtractRequest.Equals(object? obj) -> bool
+override Modulus.Analytics.AnalyticsExtractRequest.GetHashCode() -> int
+override Modulus.Analytics.AnalyticsExtractRequest.ToString() -> string!
 override Modulus.Analytics.AnalyticsFieldDescriptor.Equals(object? obj) -> bool
 override Modulus.Analytics.AnalyticsFieldDescriptor.GetHashCode() -> int
 override Modulus.Analytics.AnalyticsFieldDescriptor.ToString() -> string!
@@ -169,12 +203,17 @@ static Modulus.Analytics.AnalyticsDatasetDescriptor.operator ==(Modulus.Analytic
 static Modulus.Analytics.AnalyticsDatasetSchema.ToJsonSchema(Modulus.Analytics.AnalyticsDatasetDescriptor! dataset) -> string!
 static Modulus.Analytics.AnalyticsDispatchResult.operator !=(Modulus.Analytics.AnalyticsDispatchResult? left, Modulus.Analytics.AnalyticsDispatchResult? right) -> bool
 static Modulus.Analytics.AnalyticsDispatchResult.operator ==(Modulus.Analytics.AnalyticsDispatchResult? left, Modulus.Analytics.AnalyticsDispatchResult? right) -> bool
+static Modulus.Analytics.AnalyticsExtractPage.operator !=(Modulus.Analytics.AnalyticsExtractPage? left, Modulus.Analytics.AnalyticsExtractPage? right) -> bool
+static Modulus.Analytics.AnalyticsExtractPage.operator ==(Modulus.Analytics.AnalyticsExtractPage? left, Modulus.Analytics.AnalyticsExtractPage? right) -> bool
+static Modulus.Analytics.AnalyticsExtractRequest.operator !=(Modulus.Analytics.AnalyticsExtractRequest? left, Modulus.Analytics.AnalyticsExtractRequest? right) -> bool
+static Modulus.Analytics.AnalyticsExtractRequest.operator ==(Modulus.Analytics.AnalyticsExtractRequest? left, Modulus.Analytics.AnalyticsExtractRequest? right) -> bool
 static Modulus.Analytics.AnalyticsFieldDescriptor.operator !=(Modulus.Analytics.AnalyticsFieldDescriptor? left, Modulus.Analytics.AnalyticsFieldDescriptor? right) -> bool
 static Modulus.Analytics.AnalyticsFieldDescriptor.operator ==(Modulus.Analytics.AnalyticsFieldDescriptor? left, Modulus.Analytics.AnalyticsFieldDescriptor? right) -> bool
 static Modulus.Analytics.AnalyticsMasking.Apply(Modulus.Analytics.AnalyticsDatasetDescriptor! dataset, Modulus.Analytics.AnalyticsRecord! record, Modulus.Core.Abstractions.DataProtection.IPersonalDataProtector! protector) -> Modulus.Analytics.AnalyticsRecord!
 static Modulus.Analytics.AnalyticsMasking.DefaultFor(Modulus.Core.Abstractions.Entities.FieldClassification classification) -> Modulus.Analytics.AnalyticsMaskingAction
 static Modulus.Analytics.AnalyticsRecord.operator !=(Modulus.Analytics.AnalyticsRecord? left, Modulus.Analytics.AnalyticsRecord? right) -> bool
 static Modulus.Analytics.AnalyticsRecord.operator ==(Modulus.Analytics.AnalyticsRecord? left, Modulus.Analytics.AnalyticsRecord? right) -> bool
+static Modulus.Analytics.AnalyticsRecordIds.Deterministic(string! scope, string! key) -> System.Guid
 static Modulus.Analytics.AnalyticsRejection.operator !=(Modulus.Analytics.AnalyticsRejection? left, Modulus.Analytics.AnalyticsRejection? right) -> bool
 static Modulus.Analytics.AnalyticsRejection.operator ==(Modulus.Analytics.AnalyticsRejection? left, Modulus.Analytics.AnalyticsRejection? right) -> bool
 static Modulus.Analytics.AnalyticsServiceCollectionExtensions.AddModulusAnalytics(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<Modulus.Analytics.AnalyticsBuilder!>? configure = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!

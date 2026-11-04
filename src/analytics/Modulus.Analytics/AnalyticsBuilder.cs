@@ -64,6 +64,15 @@ public sealed class AnalyticsBuilder
         return this;
     }
 
+    /// <summary>Registers a source that backfills or re-synchronises a dataset version (see <see cref="IAnalyticsSource"/>).</summary>
+    /// <typeparam name="TSource">The source implementation.</typeparam>
+    public AnalyticsBuilder AddSource<TSource>()
+        where TSource : class, IAnalyticsSource
+    {
+        Services.AddScoped<IAnalyticsSource, TSource>();
+        return this;
+    }
+
     /// <summary>Registers an upcaster step for a dataset (see <see cref="IAnalyticsRecordUpcaster"/>).</summary>
     /// <typeparam name="TUpcaster">The step.</typeparam>
     public AnalyticsBuilder AddUpcaster<TUpcaster>()

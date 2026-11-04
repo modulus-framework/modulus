@@ -1,0 +1,130 @@
+namespace Modulus.Analytics.EntityFrameworkCore;
+
+using Microsoft.EntityFrameworkCore;
+
+/// <summary>What <see cref="AnalyticsBackfillManager.StartAsync"/> did.</summary>
+/// <param name="Created">New runs.</param>
+/// <param name="Restarted">Finished or failed runs that were reset to start again.</param>
+/// <param name="Skipped">Tenants whose run already exists and was left alone (still running, or finished and no restart was asked for).</param>
+public sealed record AnalyticsBackfillStartResult(int Created, int Restarted, int Skipped);
+
+/// <summary>Starts and lists backfill runs. The background worker does the reading.</summary>
+public sealed class AnalyticsBackfillManager(
+    ModulusAnalyticsDbContext db,
+    IAnalyticsDatasetCatalog catalog,
+    IEnumerable<IAnalyticsSource> sources,
+    IAnalyticsTenantDirectory directory,
+    TimeProvider clock)
+{
+    /// <summary>
+    /// Creates one run per tenant for a dataset version. A tenant that already has a run is skipped, unless <paramref name="restart"/> is
+    /// set and that run has finished or failed; then it starts again from the beginning (rows already queued collapse, because ids are stable).
+    /// </summary>
+    /// <param name="dataset">The dataset name.</param>
+    /// <param name="version">The dataset version.</param>
+    /// <param name="tenantIds">The tenants to cover, or <see langword="null"/> for every active tenant.</param>
+    /// <param name="restart">Whether to restart finished or failed runs.</param>
+    /// <param name="requestedBy">Who asked, for the record.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <exception cref="InvalidOperationException">The dataset version or its source is not registered, or a tenant id is empty.</exception>
+    public async Task<AnalyticsBackfillStartResult> StartAsync(
+        string dataset,
+        int version,
+        IReadOnlyCollection<Guid>? tenantIds,
+        bool restart,
+        string? requestedBy,
+        CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(dataset);
+
+        if (!catalog.TryGet(dataset, version, out _))
+        {
+            throw new InvalidOperationException($"Dataset '{dataset}.v{version}' is not registered.");
+        }
+
+        if (!sources.Any(s => s.Dataset == dataset && s.Version == version))
+        {
+            throw new InvalidOperationException($"No analytics source is registered for '{dataset}.v{version}', so it cannot be backfilled.");
+        }
+
+        var tenants = tenantIds is null
+            ? await directory.ListTenantIdsAsync(cancellationToken).ConfigureAwait(false)
+            : [.. tenantIds.Distinct()];
+        if (tenants.Any(t => t == Guid.Empty))
+        {
+            throw new InvalidOperationException("A backfill needs real tenants: the empty tenant id is not allowed.");
+        }
+
+        var now = clock.GetUtcNow().UtcDateTime;
+        var existing = await db.AnalyticsBackfillRuns
+            .Where(r => r.Dataset == dataset && r.SchemaVersion == version && tenants.Contains(r.TenantId))
+            .ToDictionaryAsync(r => r.TenantId, cancellationToken).ConfigureAwait(false);
+
+        int created = 0, restarted = 0, skipped = 0;
+        foreach (var tenant in tenants)
+        {
+            if (!existing.TryGetValue(tenant, out var run))
+            {
+                db.AnalyticsBackfillRuns.Add(new AnalyticsBackfillRun
+                {
+                    Dataset = dataset,
+                    SchemaVersion = version,
+                    TenantId = tenant,
+                    Status = AnalyticsBackfillStatus.Pending,
+                    CreatedAt = now,
+                    UpdatedAt = now,
+                    RequestedBy = requestedBy,
+                });
+                created++;
+            }
+            else if (restart && run.Status is AnalyticsBackfillStatus.Completed or AnalyticsBackfillStatus.Failed)
+            {
+                run.Status = AnalyticsBackfillStatus.Pending;
+                run.Cursor = null;
+                run.RowsQueued = 0;
+                run.AttemptCount = 0;
+                run.CompletedAt = null;
+                run.NextAttemptAt = null;
+                run.LockedBy = null;
+                run.LockedUntil = null;
+                run.LastError = null;
+                run.RequestedBy = requestedBy;
+                run.UpdatedAt = now;
+                restarted++;
+            }
+            else
+            {
+                skipped++;
+            }
+        }
+
+        if (created + restarted > 0)
+        {
+            await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        return new AnalyticsBackfillStartResult(created, restarted, skipped);
+    }
+
+    /// <summary>Lists runs, newest first.</summary>
+    /// <param name="dataset">Only this dataset, or <see langword="null"/> for all.</param>
+    /// <param name="status">Only this state, or <see langword="null"/> for all.</param>
+    /// <param name="take">The most runs to return. Defaults to 100.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    public async Task<IReadOnlyList<AnalyticsBackfillRun>> ListAsync(
+        string? dataset = null, AnalyticsBackfillStatus? status = null, int take = 100, CancellationToken cancellationToken = default)
+    {
+        var query = db.AnalyticsBackfillRuns.AsNoTracking().AsQueryable();
+        if (!string.IsNullOrWhiteSpace(dataset))
+        {
+            query = query.Where(r => r.Dataset == dataset);
+        }
+
+        if (status is { } s)
+        {
+            query = query.Where(r => r.Status == s);
+        }
+
+        return await query.OrderByDescending(r => r.CreatedAt).ThenBy(r => r.Id).Take(Math.Clamp(take, 1, 1000)).ToListAsync(cancellationToken).ConfigureAwait(false);
+    }
+}

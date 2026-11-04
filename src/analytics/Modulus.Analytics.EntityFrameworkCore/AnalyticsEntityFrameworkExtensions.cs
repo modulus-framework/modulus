@@ -16,11 +16,13 @@ public static class AnalyticsEntityFrameworkExtensions
     /// <typeparam name="TContext">The app's analytics store context.</typeparam>
     /// <param name="services">The service collection.</param>
     /// <param name="configuration">Supplies the <c>Analytics:Delivery</c> section.</param>
-    /// <param name="configure">Adjusts the options after binding.</param>
+    /// <param name="configure">Adjusts the delivery options after binding.</param>
+    /// <param name="configureBackfill">Adjusts the backfill options (<c>Analytics:Backfill</c>) after binding.</param>
     public static IServiceCollection AddModulusAnalyticsStore<TContext>(
         this IServiceCollection services,
         IConfiguration configuration,
-        Action<AnalyticsDeliveryOptions>? configure = null)
+        Action<AnalyticsDeliveryOptions>? configure = null,
+        Action<AnalyticsBackfillOptions>? configureBackfill = null)
         where TContext : ModulusAnalyticsDbContext
     {
         ArgumentNullException.ThrowIfNull(services);
@@ -45,7 +47,22 @@ public static class AnalyticsEntityFrameworkExtensions
             services.Configure(configure);
         }
 
+        services.AddOptions<AnalyticsBackfillOptions>()
+            .Bind(configuration.GetSection(AnalyticsBackfillOptions.SectionName))
+            .Validate(o => o.PageSize > 0 && o.PagesPerCycle > 0 && o.RunsPerCycle > 0 && o.MaxAttempts > 0, "Analytics:Backfill page, cycle and attempt limits must be positive.")
+            .Validate(o => o.PollingInterval > TimeSpan.Zero && o.LockDuration > TimeSpan.Zero && o.RetryDelay >= TimeSpan.Zero, "Analytics:Backfill intervals must be positive.")
+            .ValidateOnStart();
+        if (configureBackfill is not null)
+        {
+            services.Configure(configureBackfill);
+        }
+
         services.TryAddSingleton(TimeProvider.System);
+        services.RemoveAll<IAnalyticsTenantDirectory>();
+        services.AddSingleton<IAnalyticsTenantDirectory, TenantStoreAnalyticsTenantDirectory>();
+        services.TryAddScoped<AnalyticsBackfillManager>();
+        services.TryAddScoped<AnalyticsBackfillProcessor>();
+        services.AddHostedService<AnalyticsBackfillWorker>();
         services.RemoveAll<IAnalyticsQueue>();
         services.AddScoped<IAnalyticsQueue, EfAnalyticsQueue>();
         services.TryAddScoped<AnalyticsDeliveryProcessor>();
