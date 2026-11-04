@@ -46,6 +46,8 @@ public sealed class UiComponentTests
     [InlineData("popconfirm", "Popconfirm", "Feedback")]
     [InlineData("flow-editor", "FlowEditor", "Pro")]
     [InlineData("chat", "Chat", "Pro")]
+    [InlineData("approval-card", "ApprovalCard", "Pro")]
+    [InlineData("document-upload", "DocumentUpload", "Pro")]
     public void The_production_readiness_components_are_registered(string key, string pascal, string category)
     {
         var c = UiComponents.Find(key);

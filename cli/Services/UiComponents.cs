@@ -89,6 +89,8 @@ internal static class UiComponents
         new("file-manager", "Pro", "Browse folders and files; create, rename and delete."),
         new("flow-editor", "Pro", "A workflow designer like n8n: drag AI and automation nodes, draw connections, show run status."),
         new("chat", "Pro", "A conversation log and a question field: the answers, the notes under them, and a text box for the next question."),
+        new("approval-card", "Pro", "An approval waiting for a person: what it is, its details, and approve or reject buttons."),
+        new("document-upload", "Pro", "The upload field of a knowledge base: a file input for text documents and the documents already in it."),
         new("gantt", "Pro", "A project timeline with bars, dependencies and a today line."),
         new("kanban", "Pro", "A drag-and-drop board with columns and cards."),
         new("query-builder", "Pro", "Build a filter with fields, operators and nested AND/OR groups."),
