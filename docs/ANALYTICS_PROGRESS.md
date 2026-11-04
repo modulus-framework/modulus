@@ -36,7 +36,7 @@ Every tool and NuGet package must be open source (OSI licence), production-prove
 | Export audit through `ISecurityAuditLog` (hash-chained, category `analytics`) | Done, tests pass on net8.0 and net10.0 | `0af9463` |
 | Data-quality findings beyond counts | Open | |
 | Retention and erasure propagation (`AnalyticsTenantDataHandler`, `IAnalyticsErasableSink`; ClickHouse TTL, queue purge; Parquet by the lake's tools) | Done, 5 unit tests and 2 ClickHouse integration tests pass | `185034f` |
-| Lineage and OpenLineage emitter (`Modulus.Analytics.OpenLineage`; START, COMPLETE, FAIL per backfill; verified against Marquez 0.50.0) | Done, 10 unit tests and 2 Marquez integration tests pass | pending commit |
+| Lineage and OpenLineage emitter (`Modulus.Analytics.OpenLineage`; START, COMPLETE, FAIL per backfill; verified against Marquez 0.50.0) | Done, 10 unit tests and 2 Marquez integration tests pass | `a00c5dc` |
 
 ## Test status
 
