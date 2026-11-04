@@ -57,7 +57,9 @@ public sealed class UiCommandFlowTests : IDisposable
     {
         if (!HasPackage()) return;
 
-        Run("ui", "add-component", "alert", "data-table").Should().Be(0);
+        Run("ui", "add-component", "alert", "data-table", "tag-input", "popconfirm", "time-picker").Should().Be(0);
+        foreach (var name in new[] { "_TagInput", "_Popconfirm", "_TimePicker" })
+            File.Exists(P("Views", "Shared", "Components", $"{name}.cshtml")).Should().BeTrue(name);
         File.Exists(P("Views", "Shared", "Components", "_Alert.cshtml")).Should().BeTrue();
         File.Exists(P("Views", "Shared", "Components", "_DataTable.cshtml")).Should().BeTrue();
 
@@ -77,6 +79,11 @@ public sealed class UiCommandFlowTests : IDisposable
         File.Exists(P("Views", "Charts", "Donut.cshtml")).Should().BeTrue();
         File.Exists(P("Controllers", "ChartsController.cs")).Should().BeTrue();
         Run("ui", "add-chart", "--type", "line").Should().Be(1, "the page exists already");
+        foreach (var type in new[] { "radar", "candlestick", "sankey", "org" })
+        {
+            Run("ui", "add-chart", "--type", type).Should().Be(0, type);
+            File.Exists(P("Views", "Charts", char.ToUpperInvariant(type[0]) + type[1..] + ".cshtml")).Should().BeTrue(type);
+        }
         Run("ui", "add-chart", "--type", "pie").Should().Be(1);
 
         Run("ui", "add-auth").Should().Be(1, "the pages exist already");

@@ -40,6 +40,18 @@ public sealed class UiComponentTests
         => UiComponents.OutputPath(engine, "/app", UiComponents.Find("form-group"))
             .Should().Be(Path.Combine("/app", expected.Replace('/', Path.DirectorySeparatorChar)));
 
+    [Theory]
+    [InlineData("tag-input", "TagInput", "Inputs")]
+    [InlineData("time-picker", "TimePicker", "Inputs")]
+    [InlineData("popconfirm", "Popconfirm", "Feedback")]
+    public void The_production_readiness_components_are_registered(string key, string pascal, string category)
+    {
+        var c = UiComponents.Find(key);
+        c.PascalName.Should().Be(pascal);
+        c.Category.Should().Be(category);
+        c.Description.Should().NotBeNullOrWhiteSpace();
+    }
+
     [Fact]
     public void Every_component_exists_for_every_engine_and_renders_with_closed_comments()
     {

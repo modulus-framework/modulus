@@ -85,6 +85,10 @@ public sealed class UiPageScaffoldTests
                 ["column"] = ("app-column-chart", "<ColumnChart"),
                 ["donut"] = ("app-donut-chart", "<DonutChart"),
                 ["heatmap"] = ("app-heatmap", "<HeatmapChart"),
+                ["radar"] = ("app-radar-chart", "<RadarChart"),
+                ["candlestick"] = ("app-candlestick-chart", "<CandlestickChart"),
+                ["sankey"] = ("app-sankey-chart", "<SankeyChart"),
+                ["org"] = ("app-org-chart", "<OrgChart"),
             };
 
             foreach (var chart in UiCharts.All)
@@ -114,6 +118,6 @@ public sealed class UiPageScaffoldTests
     public void Unknown_chart_types_list_the_choices()
     {
         var act = () => UiCharts.Find("pie");
-        act.Should().Throw<ArgumentException>().WithMessage("*line*column*donut*heatmap*");
+        act.Should().Throw<ArgumentException>().WithMessage("*line*column*donut*heatmap*radar*candlestick*sankey*org*");
     }
 }

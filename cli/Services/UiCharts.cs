@@ -8,9 +8,9 @@ internal sealed record UiChart(string Key)
 
 internal static class UiCharts
 {
-    public const string TypeList = "line, column, donut or heatmap";
+    public const string TypeList = "line, column, donut, heatmap, radar, candlestick, sankey or org";
 
-    public static readonly IReadOnlyList<UiChart> All = [new("line"), new("column"), new("donut"), new("heatmap")];
+    public static readonly IReadOnlyList<UiChart> All = [new("line"), new("column"), new("donut"), new("heatmap"), new("radar"), new("candlestick"), new("sankey"), new("org")];
 
     public static UiChart Find(string type) =>
         All.FirstOrDefault(c => c.Key.Equals(type.Trim(), StringComparison.OrdinalIgnoreCase))

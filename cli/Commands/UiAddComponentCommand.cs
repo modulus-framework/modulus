@@ -71,10 +71,18 @@ internal sealed class UiAddComponentCommand : Command<UiAddComponentCommand.Sett
             var engineRenderer = new TemplateEngine();
             var added = new List<string>();
             var skipped = new List<string>();
+            var notInPackage = new List<string>();
             foreach (var component in selected)
             {
-                var file = UiScaffold.TemplateFile(templates, engine, component.Key)
-                    ?? throw new InvalidOperationException($"The package has no '{component.Key}' component for {engine}.");
+                var file = UiScaffold.TemplateFile(templates, engine, component.Key);
+                if (file is null)
+                {
+                    // --all adds what this package version ships; a component named on purpose must exist.
+                    if (s.All) { notInPackage.Add(component.Key); continue; }
+                    throw new InvalidOperationException(
+                        $"The {UiTemplatePackage.PackageId} {UiTemplatePackage.DefaultVersion} package has no '{component.Key}' component for {engine}. " +
+                        $"It is newer than this package: set {UiTemplatePackage.VersionEnvironmentVariable} to a newer Modulus UI version.");
+                }
                 var target = UiComponents.OutputPath(engine, uiDir, component);
                 if (File.Exists(target) && !Ux.Force)
                 {
@@ -89,6 +97,9 @@ internal sealed class UiAddComponentCommand : Command<UiAddComponentCommand.Sett
                 Ux.Success($"Added {added.Count} component{(added.Count == 1 ? "" : "s")}: {string.Join(", ", added)}");
             if (skipped.Count > 0)
                 Ux.Warning($"Already present, left alone (use --force to overwrite): {string.Join(", ", skipped)}");
+            if (notInPackage.Count > 0)
+                Ux.Warning($"Not in the {UiTemplatePackage.DefaultVersion} template package, so not added: {string.Join(", ", notInPackage)}. " +
+                           $"Set {UiTemplatePackage.VersionEnvironmentVariable} to a newer Modulus UI version to get them.");
             return 0;
         });
     }

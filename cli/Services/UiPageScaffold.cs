@@ -47,7 +47,9 @@ internal static class UiPageScaffold
         // Resolve and check everything before writing anything.
         var plan = pages.Select(p => (Page: p,
                 File: UiScaffold.TemplateFile(templates, engine, p.Template)
-                      ?? throw new InvalidOperationException($"The package has no '{p.Template}' page for {engine}."),
+                      ?? throw new InvalidOperationException(
+                          $"The {UiTemplatePackage.PackageId} {UiTemplatePackage.DefaultVersion} package has no '{p.Template}' page for {engine}. " +
+                          $"If it is newer than this package, set {UiTemplatePackage.VersionEnvironmentVariable} to a newer Modulus UI version."),
                 Target: UiScaffold.OutputPath(engine, uiDir, folder, p.PageName)))
             .ToList();
         var controller = engine == "mvc" ? Path.Combine(uiDir, "Controllers", controllerFile) : null;

@@ -95,6 +95,9 @@ modulus ui add-component alert card data-table
 modulus ui add-component --all
 ```
 
+`--all` adds every component the template package ships and lists the ones it does not have yet, so it keeps working while the CLI is newer than the pinned Modulus UI package (`MODULUS_UI_VERSION` points the CLI at another version). Naming a component the package lacks, such as `tag-input`, `time-picker` or `popconfirm` on a package that does not have it, stops with a message that says which version to use.
+
+
 Name the components to add, or pass `--all`. Use `--list` to see them all.
 
 ### `ui add-admin`
@@ -140,7 +143,7 @@ modulus ui add-chart --type donut
 modulus ui add-chart --type line --engine blazor
 ```
 
-`--type` is `line`, `column`, `donut` or `heatmap`.
+`--type` is `line`, `column`, `donut`, `heatmap`, `radar`, `candlestick`, `sankey` or `org` (an org chart). The last four need a Modulus UI template package newer than 1.8.2; with an older template package the command says so and writes nothing.
 
 ### `ui add-i18n`
 

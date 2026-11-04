@@ -12,8 +12,9 @@ internal static class UiTemplatePackage
 {
     public const string PackageId = "Synvro.Modulus.Ui.Templates";
     // MODULUS_UI_VERSION points generated apps and the template lookup at another build, e.g. a local pack (0.9.1-dev.<sha>).
+    public const string VersionEnvironmentVariable = "MODULUS_UI_VERSION";
     public static string DefaultVersion { get; } =
-        Environment.GetEnvironmentVariable("MODULUS_UI_VERSION") is { Length: > 0 } v ? v : "1.8.2";
+        Environment.GetEnvironmentVariable(VersionEnvironmentVariable) is { Length: > 0 } v ? v : "1.8.2";
     public const string FeedEnvironmentVariable = "MODULUS_LOCAL_FEED";
     public const string ManifestFile = "ui-kit.json";
     private const string NuGetFlatContainer = "https://api.nuget.org/v3-flatcontainer";

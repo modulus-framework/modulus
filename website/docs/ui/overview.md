@@ -64,7 +64,7 @@ Each package is named `Synvro.Modulus.<project>`. Add only the ones you use; `mo
 - **A menu from code**: implement `IMenuContributor` and the menu follows the same rules in every engine. Each item can require an authorization policy.
 - **Data components**: a data table with server paging, sorting and filters; an editable grid; a nested grid; a pivot grid; groups and totals. See [Data tables and grids](./data-grids).
 - **Forms and business fields**: money, quantity, duration, phone, masked input, lookups, a rich-text editor, a signature pad, and a form drawn from a schema. See [Components](./components).
-- **Charts with no JavaScript dependency**: line, column, bar, donut, heatmap, sparkline, and business charts such as waterfall, funnel and gauge.
+- **Charts with no JavaScript dependency**: line, column, bar, donut, heatmap, sparkline, and business charts such as waterfall, funnel, gauge, radar, candlestick, Sankey and org charts.
 - **Plugins**: a WYSIWYG editor, a map, a PDF viewer, a spreadsheet, an uploader, an image cropper, a code editor, a media player and a sortable list.
 - **Sign-in and admin starters**: sign-in, sign-out and password pages, plus an admin starter with users, roles, tenants, notifications, audit log and settings. See [Authentication](./authentication).
 - **Theming from one options object**: brand colours, radius, density and layout, with a generated 10-step palette and dark mode. See [Theming and localization](./theming).

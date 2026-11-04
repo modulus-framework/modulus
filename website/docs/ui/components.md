@@ -64,7 +64,7 @@ These follow the ProComponents conventions.
 
 ### Charts
 
-`app-line-chart`, `app-column-chart`, `app-bar-chart`, `app-donut-chart`, `app-heatmap`, `app-sparkline`, `app-mini-bar`, and the business charts (treemap, pareto, waterfall, variance, bullet, gauge, funnel, combo and more). The chart geometry is shared by Blazor and MVC, tooltips are CSS-only, and each chart carries a screen-reader data table. `legend-toggle` lets the legend hide series, and `links` makes columns and axis labels drill-down links.
+`app-line-chart`, `app-column-chart`, `app-bar-chart`, `app-donut-chart`, `app-heatmap`, `app-sparkline`, `app-mini-bar`, and the business charts (treemap, pareto, waterfall, variance, bullet, gauge, funnel, combo and more), plus `app-radar-chart`, `app-candlestick-chart`, `app-sankey-chart` and `app-org-chart`. The chart geometry is shared by Blazor and MVC, tooltips are CSS-only, and each chart carries a screen-reader data table. `legend-toggle` lets the legend hide series, and `links` makes columns and axis labels drill-down links.
 
 ### Plugins
 
