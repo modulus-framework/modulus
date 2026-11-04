@@ -17,6 +17,7 @@ using Microsoft.Extensions.Options;
 using Modulus.Analytics.EntityFrameworkCore;
 using Modulus.Analytics.Testing;
 using Modulus.Authorization.Extensions;
+using Modulus.Core.Abstractions;
 using Xunit;
 
 // Drives the API through a real TestServer host with an in-memory SQLite store. Authentication is header-driven:
@@ -29,17 +30,48 @@ public sealed class AnalyticsManagementApiTests : IAsyncLifetime
 
     private SqliteConnection _connection = null!;
     private WebApplication _app = null!;
+    private RecordingSecurityAudit _audit = null!;
+    private static readonly Guid Operator = Guid.Parse("8d1f0c2e-5b7a-4e39-9a61-2f4c6d8e0b11");
+
+    /// <summary>The acting user the audit entries must name.</summary>
+    private sealed class FixedCurrentUser(Guid userId) : ICurrentUser
+    {
+        public Guid? UserId { get; } = userId;
+
+        public string? UserName => "operator";
+
+        public string? Email => null;
+
+        public bool IsAuthenticated => true;
+
+        public bool IsInRole(string role) => false;
+
+        public bool HasPermission(string permission) => false;
+
+        public IReadOnlyList<string> Permissions => [];
+    }
+
+    /// <summary>Keeps the security audit events in memory, so a test can read what the management API recorded.</summary>
+    private sealed class RecordingSecurityAudit : ISecurityAuditLog
+    {
+        public List<SecurityAuditEvent> Events { get; } = [];
+
+        public void Record(SecurityAuditEvent auditEvent) => Events.Add(auditEvent);
+    }
 
     public async Task InitializeAsync()
     {
         _connection = new SqliteConnection("DataSource=:memory:");
         await _connection.OpenAsync();
+        _audit = new RecordingSecurityAudit();
 
         var builder = WebApplication.CreateBuilder();
         builder.Logging.ClearProviders();
         builder.WebHost.UseTestServer();
         builder.Services.AddAuthentication("Test").AddScheme<AuthenticationSchemeOptions, TestAuthHandler>("Test", null);
         builder.Services.AddModulusAuthorization(o => o.TrustPermissionClaims = true);
+        builder.Services.AddSingleton<ISecurityAuditLog>(_audit);
+        builder.Services.AddScoped<ICurrentUser>(_ => new FixedCurrentUser(Operator));
         builder.Services.AddDbContext<TestDb>(o => o.UseSqlite(_connection));
         builder.Services.AddSingleton<IAnalyticsSink>(new InMemoryAnalyticsSink());
         builder.Services.AddModulusAnalytics(a => a
@@ -377,6 +409,46 @@ public sealed class AnalyticsManagementApiTests : IAsyncLifetime
         unknown.StatusCode.Should().Be(HttpStatusCode.NotFound);
         afterCancel.Status.Should().Be("Cancelled");
         restart.Should().Be(new AnalyticsBackfillStartResult(0, 1, 0));
+    }
+
+    [Fact]
+    public async Task Every_export_and_change_is_audited_with_who_what_and_counts_but_never_values()
+    {
+        var tenant = Guid.NewGuid();
+        await SeedAsync(tenant: tenant, deadLettered: true, deadLetteredDaysAgo: 40);
+        using var client = AsUser(Manage);
+
+        await client.PostAsJsonAsync("/analytics/backfills", new AnalyticsBackfillRequest("orders", 1, [tenant]));
+        await client.PostAsJsonAsync("/analytics/reconciliations", new AnalyticsReconcileRequest("orders", 1, [tenant]));
+        await client.PostAsJsonAsync("/analytics/dead-letters/replay", new AnalyticsReplayRequest([Guid.NewGuid()]));
+        await client.DeleteAsync("/analytics/dead-letters/purge?beforeDays=30&dataset=orders");
+        var run = (await client.GetFromJsonAsync<List<AnalyticsBackfillRunInfo>>("/analytics/backfills"))!.Single();
+        await client.PostAsync($"/analytics/backfills/{run.Id}/cancel", null);
+
+        var events = _audit.Events;
+        events.Select(e => e.Action).Should().Equal("backfill.start", "reconciliation.run", "dead-letters.replay", "dead-letters.purge", "run.cancel");
+        events.Should().OnlyContain(e => e.Category == "analytics" && e.Actor == Operator.ToString());
+        events[0].Target.Should().Be("dataset:orders.v1");
+        events[0].Details["tenants"].Should().Be("1");
+        events[0].Details["created"].Should().Be("1");
+        events[1].Details["comparisons"].Should().Be("1");
+        events[2].Details["requested"].Should().Be("1");
+        events[2].Details["replayed"].Should().Be("0");
+        events[3].Details["purged"].Should().Be("1");
+        events[3].Target.Should().Be("dataset:orders");
+        events[4].Target.Should().Be($"run:{run.Id}");
+        string.Join("|", events.SelectMany(e => e.Details.Values)).Should().NotContain(SecretValue);
+    }
+
+    [Fact]
+    public async Task A_refused_request_is_not_audited()
+    {
+        using var client = AsUser("analytics:manage:plain");
+
+        var response = await client.PostAsJsonAsync("/analytics/backfills", new AnalyticsBackfillRequest("orders", 1, [Guid.NewGuid()]));
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        _audit.Events.Should().BeEmpty();
     }
 
     [Fact]

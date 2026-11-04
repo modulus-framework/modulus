@@ -106,6 +106,7 @@ public static class AnalyticsManagementExtensions
             AnalyticsReconciler reconciler,
             ICurrentUser currentUser,
             ILoggerFactory loggerFactory,
+            IServiceProvider services,
             CancellationToken ct) =>
         {
             if (string.IsNullOrWhiteSpace(request.Dataset) || request.Version < 1)
@@ -129,6 +130,9 @@ public static class AnalyticsManagementExtensions
                 loggerFactory.CreateLogger("Modulus.Analytics.Management").LogInformation(
                     "Analytics reconciliation of {Dataset}.v{Version} by {User}: {Results} comparison(s), {Errors} error(s), clean={Clean}.",
                     request.Dataset, request.Version, currentUser.UserId?.ToString() ?? "unknown", report.Results.Count, report.Errors.Count, report.IsClean);
+                AnalyticsAudit.Record(services, "reconciliation.run", currentUser.UserId?.ToString(), $"dataset:{request.Dataset}.v{request.Version}",
+                    ("tenants", request.TenantIds is null ? "all" : request.TenantIds.Length), ("comparisons", report.Results.Count),
+                    ("errors", report.Errors.Count), ("clean", report.IsClean));
                 return Results.Ok(report);
             }
             catch (InvalidOperationException ex)
@@ -211,6 +215,7 @@ public static class AnalyticsManagementExtensions
             ICurrentUser currentUser,
             TimeProvider clock,
             ILoggerFactory loggerFactory,
+            IServiceProvider services,
             CancellationToken ct) =>
         {
             var scope = await access.ScopeAsync(user);
@@ -251,6 +256,8 @@ public static class AnalyticsManagementExtensions
             loggerFactory.CreateLogger("Modulus.Analytics.Management").LogInformation(
                 "Analytics replay by {User}: {Replayed} dead-lettered record(s) requeued, {NotFound} not found.",
                 currentUser.UserId?.ToString() ?? "unknown", replayed, ids.Length - replayed);
+            AnalyticsAudit.Record(services, "dead-letters.replay", currentUser.UserId?.ToString(), "dead-letters",
+                ("requested", ids.Length), ("replayed", replayed));
             return Results.Ok(new AnalyticsReplayResponse(replayed, ids.Length - replayed));
         })
         .WithSummary("Put dead-lettered analytics records back in the queue");
@@ -265,6 +272,7 @@ public static class AnalyticsManagementExtensions
             ICurrentUser currentUser,
             TimeProvider clock,
             ILoggerFactory loggerFactory,
+            IServiceProvider services,
             CancellationToken ct) =>
         {
             var scope = await access.ScopeAsync(user);
@@ -285,6 +293,8 @@ public static class AnalyticsManagementExtensions
             loggerFactory.CreateLogger("Modulus.Analytics.Management").LogInformation(
                 "Analytics purge by {User}: {Purged} dead letter(s) older than {Days} day(s) deleted ({Dataset}).",
                 currentUser.UserId?.ToString() ?? "unknown", purged, days, string.IsNullOrWhiteSpace(dataset) ? "all datasets" : dataset);
+            AnalyticsAudit.Record(services, "dead-letters.purge", currentUser.UserId?.ToString(),
+                string.IsNullOrWhiteSpace(dataset) ? "dead-letters" : $"dataset:{dataset}", ("olderThanDays", days), ("purged", purged));
             return Results.Ok(new AnalyticsPurgeResponse(purged));
         })
         .WithSummary("Delete old dead-lettered analytics records");
@@ -297,6 +307,7 @@ public static class AnalyticsManagementExtensions
             AnalyticsBackfillManager manager,
             ICurrentUser currentUser,
             ILoggerFactory loggerFactory,
+            IServiceProvider services,
             CancellationToken ct) =>
         {
             if (string.IsNullOrWhiteSpace(request.Dataset) || request.Version < 1)
@@ -322,6 +333,9 @@ public static class AnalyticsManagementExtensions
                 loggerFactory.CreateLogger("Modulus.Analytics.Management").LogInformation(
                     "Analytics {Kind} of {Dataset}.v{Version} started by {User}: {Created} created, {Restarted} restarted, {Skipped} skipped, {NotEntitled} not entitled.",
                     request.Incremental ? "incremental sync" : "backfill", request.Dataset, request.Version, who, result.Created, result.Restarted, result.Skipped, result.NotEntitled);
+                AnalyticsAudit.Record(services, request.Incremental ? "incremental.start" : "backfill.start", who, $"dataset:{request.Dataset}.v{request.Version}",
+                    ("tenants", request.TenantIds is null ? "all" : request.TenantIds.Length), ("restart", request.Restart), ("created", result.Created),
+                    ("restarted", result.Restarted), ("skipped", result.Skipped), ("notEntitled", result.NotEntitled));
                 return Results.Ok(result);
             }
             catch (InvalidOperationException ex)
@@ -361,7 +375,8 @@ public static class AnalyticsManagementExtensions
 
         // POST /analytics/backfills/{id}/cancel
         group.MapPost("/backfills/{id:guid}/cancel", async (
-            Guid id, ClaimsPrincipal user, AnalyticsAccess access, AnalyticsBackfillManager manager, ICurrentUser currentUser, ILoggerFactory loggerFactory, CancellationToken ct) =>
+            Guid id, ClaimsPrincipal user, AnalyticsAccess access, AnalyticsBackfillManager manager, ICurrentUser currentUser, ILoggerFactory loggerFactory,
+            IServiceProvider services, CancellationToken ct) =>
         {
             var scope = await access.ScopeAsync(user);
             if (!scope.Any)
@@ -377,6 +392,7 @@ public static class AnalyticsManagementExtensions
 
             loggerFactory.CreateLogger("Modulus.Analytics.Management").LogInformation(
                 "Analytics run {Run} cancelled by {User}.", id, currentUser.UserId?.ToString() ?? "unknown");
+            AnalyticsAudit.Record(services, "run.cancel", currentUser.UserId?.ToString(), $"run:{id}", ("dataset", run.Dataset));
             return Results.Ok();
         })
         .WithSummary("Stop a waiting or running backfill or incremental run");

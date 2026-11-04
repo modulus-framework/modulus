@@ -6522,7 +6522,12 @@ Iceberg Kafka Connect sink commits the table.
     - Permissions: `analytics:manage` (Critical) still covers everything; `analytics:manage:{dataset}` is declared for every registered dataset. Lists, replay, purge,
       cancel, freshness and reconciliation are scoped to the datasets the caller holds. A dataset the caller cannot manage answers 403 on a request for it and 404 for a
       record or run that belongs to another dataset.
-  - Still open: export audit through the framework's audit store; data-quality findings beyond counts (the framework's
+  - Done: **export audit** (`Modulus.Analytics.Management`, 2 more tests). Successful backfill and incremental starts, reconciliations, replays, purges and cancellations
+    write a `ISecurityAuditLog` entry (hash-chained when `AddModulusSecurityAudit` is registered; category `analytics`, host chain): `backfill.start`,
+    `incremental.start`, `reconciliation.run`, `dead-letters.replay`, `dead-letters.purge`, `run.cancel`. The actor is the caller's user id, the target the dataset
+    version or run, and the details only counts and scope (tenants, created, skipped, replayed, purged, comparisons, errors). Record values are never written. Refused
+    requests are not recorded here (the framework's access-decision audit covers those). Without `AddModulusSecurityAudit` the entries are dropped and only the application log line remains.
+  - Still open: data-quality findings beyond counts (the framework's
     `IDataQualityFindingSink` is shaped for missing authorization attributes, so reconciliation has its own report); retention and erasure propagation
     (`ITenantDataHandler`); lineage and the OpenLineage emitter.
 - [ ] Phase 5: management API (delivery operations done, see Phases 2 and 3; dataset catalog and freshness endpoints open), CLI `add-analytics` with compose template, `analytics-admin` in `modulus-ui`
