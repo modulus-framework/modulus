@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Modulus.Core.Abstractions;
 
 /// <summary>Registers durable analytics delivery.</summary>
 public static class AnalyticsEntityFrameworkExtensions
@@ -60,6 +61,8 @@ public static class AnalyticsEntityFrameworkExtensions
         services.TryAddSingleton(TimeProvider.System);
         services.RemoveAll<IAnalyticsTenantDirectory>();
         services.AddSingleton<IAnalyticsTenantDirectory, TenantStoreAnalyticsTenantDirectory>();
+        services.TryAddScoped<IAnalyticsFreshnessReader, EfAnalyticsFreshnessReader>();
+        services.AddScoped<IModuleHealthCheck, AnalyticsHealthCheck>();
         services.TryAddScoped<AnalyticsBackfillManager>();
         services.TryAddScoped<AnalyticsBackfillProcessor>();
         services.AddHostedService<AnalyticsBackfillWorker>();

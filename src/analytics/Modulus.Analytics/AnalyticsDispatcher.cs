@@ -110,15 +110,18 @@ public sealed class AnalyticsDispatcher
             }
 
             await sink.WriteAsync(dataset, batch, cancellationToken).ConfigureAwait(false);
+            AnalyticsMetrics.Delivered.Add(batch.Count, AnalyticsMetrics.Tags(sink.Name, dataset.Name));
             return new AnalyticsSinkOutcome(sink.Name, key, batch.Count, true);
         }
         catch (AnalyticsSinkException ex)
         {
+            AnalyticsMetrics.Failed.Add(batch.Count, AnalyticsMetrics.Tags(sink.Name, dataset.Name));
             return new AnalyticsSinkOutcome(sink.Name, key, batch.Count, false, ex.IsTransient, ex.Message);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             // An unexpected provider error is treated as transient: a sink that knows better throws AnalyticsSinkException.
+            AnalyticsMetrics.Failed.Add(batch.Count, AnalyticsMetrics.Tags(sink.Name, dataset.Name));
             return new AnalyticsSinkOutcome(sink.Name, key, batch.Count, false, true, ex.Message);
         }
     }

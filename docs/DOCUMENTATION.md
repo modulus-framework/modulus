@@ -6475,5 +6475,17 @@ Iceberg Kafka Connect sink commits the table.
   - Still open: a change journal for incremental sync (modelled on `AiChangeJournal`);
     a backfill run against a real PostgreSQL or SQL Server database (the tests use SQLite).
 - [ ] Phase 4: dataset permissions, plan gating, export audit, freshness, reconciliation, quality, retention and erasure, lineage
+  - Done: **freshness and monitoring** (`Modulus.Analytics`, `.EntityFrameworkCore`, `.Management`; 14 more tests).
+    - `AnalyticsFreshness.Evaluate`: lag is the age of the oldest captured-but-undelivered record, i.e. how far the warehouse is behind; a dataset is *stale* when
+      the lag is greater than its `FreshnessSla` (equal is fresh), *untracked* when it has no SLA (the lag is still reported). `IAnalyticsFreshnessReader` reads it from
+      the queue: the latest version of every dataset, plus an older version only while it still has records waiting or dead-lettered.
+    - Metrics (`AnalyticsMetrics.MeterName` = `Modulus.Analytics`, add it with `AddMeter`): counters `modulus.analytics.records.delivered` / `.failed` (per sink and
+      dataset), `.dead_lettered` and `backfill.rows_queued` (per dataset); gauges `modulus.analytics.dataset.lag` (seconds), `.stale` (0 or 1), `.pending` and
+      `.dead_lettered` per dataset and version, refreshed by the delivery worker every `FreshnessRefreshInterval` (30 s by default).
+    - Health: `IModuleHealthCheck` "Modulus.Analytics" is **Degraded**, never Unhealthy, when a dataset is stale or has dead letters. A warehouse that is behind is
+      something to alert on, not a reason for an orchestrator to restart the application.
+    - `GET /analytics/freshness` (`analytics:manage`) lists every dataset's state, lag, SLA, pending and dead-lettered counts.
+  - Still open: dataset-level permissions and plan gating; export audit through the framework's audit store; reconciliation (source against sink counts); data-quality
+    findings (`IDataQualityFindingSink`); retention and erasure propagation (`ITenantDataHandler`); lineage and the OpenLineage emitter.
 - [ ] Phase 5: management API (delivery operations done, see Phases 2 and 3; dataset catalog and freshness endpoints open), CLI `add-analytics` with compose template, `analytics-admin` in `modulus-ui`
 - [ ] Phase 6: Debezium reader, Airflow and dbt triggers, Superset helper, Doris sink, lakehouse runbooks

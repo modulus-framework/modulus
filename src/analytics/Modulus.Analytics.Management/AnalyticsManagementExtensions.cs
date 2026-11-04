@@ -70,6 +70,11 @@ public static class AnalyticsManagementExtensions
         })
         .WithSummary("Show how the analytics delivery queue stands");
 
+        // GET /analytics/freshness
+        group.MapGet("/freshness", async (IAnalyticsFreshnessReader reader, CancellationToken ct)
+            => Results.Ok(await reader.ReadAsync(ct)))
+        .WithSummary("Show each dataset's lag against its freshness SLA");
+
         // GET /analytics/dead-letters?page=1&pageSize=20&dataset=...&tenant=...
         group.MapGet("/dead-letters", async (
             int? page, int? pageSize, string? dataset, string? tenant, ModulusAnalyticsDbContext db, CancellationToken ct) =>

@@ -180,6 +180,7 @@ internal sealed class AnalyticsDeliveryProcessor(
     private void DeadLetter(AnalyticsDelivery row, string error, DateTime at)
     {
         row.DeadLetteredAt = at;
+        AnalyticsMetrics.DeadLettered.Add(1, AnalyticsMetrics.Tags(row.Dataset));
         row.LastAttemptAt = at;
         row.LastError = Truncate(error);
         Release(row);

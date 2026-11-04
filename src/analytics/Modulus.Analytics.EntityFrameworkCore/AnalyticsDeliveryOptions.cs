@@ -38,6 +38,9 @@ public sealed class AnalyticsDeliveryOptions
         TimeSpan.FromHours(6),
     ];
 
+    /// <summary>How often the worker refreshes the freshness gauges from the queue. Defaults to 30 seconds.</summary>
+    public TimeSpan FreshnessRefreshInterval { get; set; } = TimeSpan.FromSeconds(30);
+
     /// <summary>How long delivered rows are kept before they are purged. Defaults to 7 days. Dead letters are never purged automatically.</summary>
     public TimeSpan PurgeDeliveredAfter { get; set; } = TimeSpan.FromDays(7);
 }

@@ -23,6 +23,7 @@ internal sealed class AnalyticsDeliveryService(
             return;
         }
 
+        var nextRefresh = DateTime.MinValue;
         while (!stoppingToken.IsCancellationRequested)
         {
             var picked = 0;
@@ -30,6 +31,11 @@ internal sealed class AnalyticsDeliveryService(
             {
                 await using var scope = scopes.CreateAsyncScope();
                 picked = await scope.ServiceProvider.GetRequiredService<AnalyticsDeliveryProcessor>().ProcessAsync(stoppingToken).ConfigureAwait(false);
+                if (DateTime.UtcNow >= nextRefresh)
+                {
+                    AnalyticsMetrics.Publish(await scope.ServiceProvider.GetRequiredService<IAnalyticsFreshnessReader>().ReadAsync(stoppingToken).ConfigureAwait(false));
+                    nextRefresh = DateTime.UtcNow + settings.FreshnessRefreshInterval;
+                }
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {

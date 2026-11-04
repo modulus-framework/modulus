@@ -41,7 +41,7 @@ public sealed class AnalyticsManagementApiTests : IAsyncLifetime
         builder.Services.AddModulusAuthorization(o => o.TrustPermissionClaims = true);
         builder.Services.AddDbContext<TestDb>(o => o.UseSqlite(_connection));
         builder.Services.AddModulusAnalytics(a => a
-            .AddDataset(new AnalyticsDatasetDescriptor("orders", 1, "sales", [new("order_id", AnalyticsFieldType.Int64)]))
+            .AddDataset(new AnalyticsDatasetDescriptor("orders", 1, "sales", [new("order_id", AnalyticsFieldType.Int64)], FreshnessSla: TimeSpan.FromMinutes(1)))
             .Services.AddScoped<IAnalyticsSource, StubSource>());
         builder.Services.AddModulusAnalyticsStore<TestDb>(new ConfigurationBuilder().Build(), o => o.EnableDelivery = false, o => o.EnableWorker = false);
         builder.Services.AddModulusAnalyticsManagement();
@@ -82,8 +82,28 @@ public sealed class AnalyticsManagementApiTests : IAsyncLifetime
         (await other.PostAsJsonAsync("/analytics/dead-letters/replay", new AnalyticsReplayRequest([Guid.NewGuid()]))).StatusCode.Should().Be(HttpStatusCode.Forbidden);
         (await other.DeleteAsync("/analytics/dead-letters/purge")).StatusCode.Should().Be(HttpStatusCode.Forbidden);
         (await other.GetAsync("/analytics/backfills")).StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        (await other.GetAsync("/analytics/freshness")).StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        (await anonymous.GetAsync("/analytics/freshness")).StatusCode.Should().Be(HttpStatusCode.Unauthorized);
         (await other.PostAsJsonAsync("/analytics/backfills", new AnalyticsBackfillRequest("orders", 1))).StatusCode.Should().Be(HttpStatusCode.Forbidden);
         (await anonymous.GetAsync("/analytics/backfills")).StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task Freshness_shows_each_datasets_lag_against_its_sla_with_the_state_as_text()
+    {
+        await SeedAsync(createdMinutesAgo: 5);
+        using var client = AsUser(Manage);
+
+        var body = await client.GetStringAsync("/analytics/freshness");
+        var list = await client.GetFromJsonAsync<List<AnalyticsDatasetFreshness>>("/analytics/freshness");
+
+        body.Should().Contain("\"state\":\"Stale\"");
+        var orders = list!.Single();
+        orders.Dataset.Should().Be("orders");
+        orders.State.Should().Be(AnalyticsFreshnessState.Stale);
+        orders.Pending.Should().Be(1);
+        orders.Lag.TotalSeconds.Should().BeInRange(295, 400);
+        orders.FreshnessSla.Should().Be(TimeSpan.FromMinutes(1));
     }
 
     [Fact]

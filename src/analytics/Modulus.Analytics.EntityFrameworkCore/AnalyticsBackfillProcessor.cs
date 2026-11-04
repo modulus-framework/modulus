@@ -134,7 +134,7 @@ internal sealed class AnalyticsBackfillProcessor(
                 }
             }
 
-            await AnalyticsDeliveryStaging.StageAsync(db, catalog, clock, page.Records, ct).ConfigureAwait(false);
+            var staged = await AnalyticsDeliveryStaging.StageAsync(db, catalog, clock, page.Records, ct).ConfigureAwait(false);
 
             var now = Now();
             var done = page.NextCursor is null;
@@ -160,6 +160,7 @@ internal sealed class AnalyticsBackfillProcessor(
             {
                 // The queued rows and the cursor commit together: a crash before this loses nothing and repeats nothing.
                 await db.SaveChangesAsync(CancellationToken.None).ConfigureAwait(false);
+                AnalyticsMetrics.BackfillRowsQueued.Add(staged, AnalyticsMetrics.Tags(dataset));
                 if (done)
                 {
                     logger.LogInformation("Analytics backfill of {Dataset}.v{Version} for tenant {Tenant} completed ({Rows} records queued).", dataset, version, tenantId, run.RowsQueued);

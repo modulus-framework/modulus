@@ -17,6 +17,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Modulus.Analytics.Tests" />
+    <InternalsVisibleTo Include="Modulus.Analytics.EntityFrameworkCore" />
   </ItemGroup>
 
 </Project>

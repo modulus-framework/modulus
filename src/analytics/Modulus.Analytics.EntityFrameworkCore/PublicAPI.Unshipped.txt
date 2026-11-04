@@ -112,6 +112,8 @@ Modulus.Analytics.EntityFrameworkCore.AnalyticsDeliveryOptions.BatchSize.get -> 
 Modulus.Analytics.EntityFrameworkCore.AnalyticsDeliveryOptions.BatchSize.set -> void
 Modulus.Analytics.EntityFrameworkCore.AnalyticsDeliveryOptions.EnableDelivery.get -> bool
 Modulus.Analytics.EntityFrameworkCore.AnalyticsDeliveryOptions.EnableDelivery.set -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDeliveryOptions.FreshnessRefreshInterval.get -> System.TimeSpan
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDeliveryOptions.FreshnessRefreshInterval.set -> void
 Modulus.Analytics.EntityFrameworkCore.AnalyticsDeliveryOptions.LockDuration.get -> System.TimeSpan
 Modulus.Analytics.EntityFrameworkCore.AnalyticsDeliveryOptions.LockDuration.set -> void
 Modulus.Analytics.EntityFrameworkCore.AnalyticsDeliveryOptions.PollingInterval.get -> System.TimeSpan
