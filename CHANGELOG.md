@@ -17,10 +17,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`ModulusMeters.OutboxDepth` is an `ObservableGauge<long>`** (was an `UpDownCounter<long>` fed with deltas). Each replica reads
   the same outbox table, so aggregate `modulus.outbox.depth` with `max` across replicas, not `sum`. Code that called `.Add` on the
   instrument must call `ModulusMeters.ReportOutboxDepth(source, depth)`. Recorded in `src/core/Modulus.Core/CompatibilitySuppressions.xml`.
+- **Outbox rows store `SchemaVersion`.** Every outbox row now records the event's contract version (`[IntegrationEvent<TModule>(Version = N)]`). Each module's `outbox_messages` table needs a nullable `SchemaVersion` column: generate the migration with `dotnet ef migrations add`. Existing rows keep `NULL`. See `docs/runbooks/analytics-store-migrations.md`.
 - **The example `Catalog` module is off by default.** `modulus app` creates no sample module unless `--with-example` is given
   (`--no-example` is still accepted). Interactive runs are asked, with "no" as the default. Scripts that relied on the example must add `--with-example`.
 
 ### Added
+- **Analytics messaging sink** (`Modulus.Analytics.Messaging`): publishes analytics records as `AnalyticsRecordPublished` on the module bus. `IntegrationEventNaming.GetVersion` returns an event's declared contract version.
+- **Analytics store migration sample** (`samples/Modulus.Analytics.MigrationSample`) and runbook `docs/runbooks/analytics-store-migrations.md`.
 - **`modulus ui add-component` now scaffolds 78 components** (was 17): every form input, Word-style documents, spreadsheets, PDF, code and rich-text editors, data grids, pivot and import wizard, the data-display, navigation, layout and feedback
   building blocks, and the Pro boards and builders, for MVC, Razor Pages and Blazor. See `modulus ui add-component --list`.
 - **Package validation** (`EnablePackageValidation`, baseline 1.8.2): every packed library is compared with the last published

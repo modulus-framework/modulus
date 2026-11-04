@@ -49,15 +49,42 @@ public sealed class PgAnalyticsDb(DbContextOptions<PgAnalyticsDb> options) : Mod
     public DbSet<AuditedOrder> AuditedOrders => Set<AuditedOrder>();
 }
 
+/// <summary>
+/// Supplies a PostgreSQL server for the tests. By default it starts a container (postgres:16-alpine). Set
+/// <c>MODULUS_TEST_POSTGRES_CONNECTION</c> to a superuser connection string to run against an existing server instead, for hosts without Docker.
+/// </summary>
 public sealed class PostgresFixture : IAsyncLifetime
 {
-    private readonly PostgreSqlContainer _container = new PostgreSqlBuilder("postgres:16-alpine").Build();
+    private const string ExternalVariable = "MODULUS_TEST_POSTGRES_CONNECTION";
 
-    public string ConnectionString => _container.GetConnectionString();
+    private readonly string? _external = Environment.GetEnvironmentVariable(ExternalVariable);
+    private readonly PostgreSqlContainer? _container;
 
-    public async Task InitializeAsync() => await _container.StartAsync();
+    public PostgresFixture()
+    {
+        if (_external is null)
+        {
+            _container = new PostgreSqlBuilder("postgres:16-alpine").Build();
+        }
+    }
 
-    public Task DisposeAsync() => _container.DisposeAsync().AsTask();
+    public string ConnectionString => _external ?? _container!.GetConnectionString();
+
+    public async Task InitializeAsync()
+    {
+        if (_container is not null)
+        {
+            await _container.StartAsync();
+        }
+    }
+
+    public async Task DisposeAsync()
+    {
+        if (_container is not null)
+        {
+            await _container.DisposeAsync();
+        }
+    }
 
     /// <summary>A fresh database per test, so tests never see each other's rows.</summary>
     public async Task<string> CreateDatabaseAsync()

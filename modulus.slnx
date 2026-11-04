@@ -81,6 +81,8 @@
     <Project Path="src/analytics/Modulus.Analytics.Superset/Modulus.Analytics.Superset.csproj" />
     <Project Path="src/analytics/Modulus.Analytics.Debezium/Modulus.Analytics.Debezium.csproj" />
     <Project Path="src/analytics/Modulus.Analytics.Doris/Modulus.Analytics.Doris.csproj" />
+    <Project Path="src/analytics/Modulus.Analytics.Messaging/Modulus.Analytics.Messaging.csproj" />
+    <Project Path="samples/Modulus.Analytics.MigrationSample/Modulus.Analytics.MigrationSample.csproj" />
     <Project Path="src/analytics/Modulus.Analytics.Testing/Modulus.Analytics.Testing.csproj" />
   </Folder>
   <Folder Name="/src/ai/">
@@ -131,6 +133,7 @@
     <Project Path="tests/unit/Modulus.Analytics.Superset.Tests/Modulus.Analytics.Superset.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Analytics.Debezium.Tests/Modulus.Analytics.Debezium.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Analytics.Doris.Tests/Modulus.Analytics.Doris.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.Analytics.Messaging.Tests/Modulus.Analytics.Messaging.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Analytics.Tests/Modulus.Analytics.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Webhooks.Tests/Modulus.Webhooks.Tests.csproj" />
     <Project Path="tests/unit/Modulus.AI.Connector.Tests/Modulus.AI.Connector.Tests.csproj" />

@@ -20,11 +20,11 @@ Every tool and NuGet package must be open source (OSI licence), production-prove
 |---|---|---|
 | 0 | Plan, licence gate | Done |
 | 1 | Contracts, catalog, schema versions, JSON Schema export, sink conformance | Done |
-| 2 | Capture, durable delivery queue, ClickHouse sink | Done. Open: messaging sink, EF migration sample, `SchemaVersion` on outbox rows |
-| 3 | Backfill, incremental sync, Parquet sink | Done. Open: backfill run against SQL Server |
+| 2 | Capture, durable delivery queue, ClickHouse sink, messaging sink, EF migration sample, `SchemaVersion` on outbox rows | Done |
+| 3 | Backfill, incremental sync, Parquet sink | Done. SQL Server run closed without a run (see Decisions) |
 | 4 | Governance | Done (see below) |
 | 5 | Operability: CLI `add-analytics`, catalog and freshness endpoints (done); `analytics-admin` in modulus-ui (open, separate repository) | In progress |
-| 6 | Enterprise providers: Debezium reader, Airflow/dbt trigger, Superset guest tokens, Doris sink, lakehouse runbooks | Done (live Debezium, Kafka, Doris, Airflow, Superset and Iceberg not run here; see DOCUMENTATION.md) |
+| 6 | Enterprise providers: Debezium reader, Airflow/dbt trigger, Superset guest tokens, Doris sink, lakehouse runbooks | Code and runbooks done. Live runs of Debezium, Kafka, Doris, Airflow, Superset and Iceberg still open (see Next steps) |
 
 ## Phase 4 detail
 
@@ -33,6 +33,9 @@ Every tool and NuGet package must be open source (OSI licence), production-prove
 | Freshness and monitoring (metrics, health check, `GET /analytics/freshness`) | Done | earlier |
 | Reconciliation (per-tenant counts, `POST /analytics/reconciliations`) | Done | earlier |
 | Dataset permissions (`analytics:manage:{dataset}`) and plan gating (`RequiredFeature`) | Done | `51ec852` |
+| Messaging sink (`Modulus.Analytics.Messaging`, `AnalyticsRecordPublished` on the module bus) | Done, 6 unit tests on net8.0 and net10.0 | this commit |
+| Outbox `SchemaVersion` (from `[IntegrationEvent<TModule>(Version = N)]`) | Done, 4 unit tests; column migration in `docs/runbooks/analytics-store-migrations.md` | this commit |
+| EF migration sample (`samples/Modulus.Analytics.MigrationSample`, migration `InitialAnalyticsStore`) | Done; script applied to PostgreSQL 16.15, EF integration suite 8/8 | this commit |
 | Export audit through `ISecurityAuditLog` (hash-chained, category `analytics`) | Done, tests pass on net8.0 and net10.0 | `0af9463` |
 | Data-quality findings beyond counts (`MaxNullRate`, future records; `POST /analytics/quality`) | Done, 6 core, 2 EF, 2 management and 1 ClickHouse integration test pass | `975c60e` |
 | Retention and erasure propagation (`AnalyticsTenantDataHandler`, `IAnalyticsErasableSink`; ClickHouse TTL, queue purge; Parquet by the lake's tools) | Done, 5 unit tests and 2 ClickHouse integration tests pass | `185034f` |
@@ -57,7 +60,8 @@ Last full run of the analytics suites (both frameworks where applicable):
 | Modulus.Analytics.Doris.Tests | 9 pass (real HTTP, fake frontend and backend) |
 | Modulus.Cli.Tests (add-analytics, 6 new) | 677 pass |
 | Integration: OpenLineage with Marquez 0.50.0 | 2 pass (re-run after the run-observer change) |
-| Integration: EF (real PostgreSQL 16) | 8 pass (re-run after the run-observer change) |
+| Integration: EF (real PostgreSQL 16) | 8 pass (re-run after the run-observer change; this commit ran them against a local PostgreSQL 16.15 through `MODULUS_TEST_POSTGRES_CONNECTION`) |
+| Modulus.Analytics.Messaging.Tests | 6 pass (net8.0 and net10.0) |
 
 `dotnet format --verify-no-changes` is clean for the analytics projects. Each changed project builds with 0 warnings.
 
@@ -67,11 +71,14 @@ Last full run of the analytics suites (both frameworks where applicable):
 
 ## Next steps
 
-1. Phase 5: `analytics-admin` in modulus-ui (separate repository, blocked on push access).
-2. Live verification of Phase 6 against real Debezium, Kafka, Doris, Airflow, Superset and Iceberg (needs disk space and the Docker Hub pull limit cleared).
+1. Phase 5: `analytics-admin` in modulus-ui. Not started: that repository is attached read-only and the user asked not to push to it.
+2. Live verification of Phase 6 against real Debezium, Kafka, Doris, Airflow, Superset and Iceberg. Not run. Starting a Kafka broker from a downloaded tarball was denied by the auto-mode permission classifier, so no broker was started. Doris, Airflow and Superset images were not pulled. To finish this, allow the local start of those services, or run the steps in `docs/runbooks/lakehouse-cdc.md` and `docs/runbooks/lakehouse-orchestration.md` on a host you control, then capture a real Debezium change event as a test fixture for `DebeziumChangeReader`.
 
 ## Decisions to know about
 
-- Commit trailers: no model name in commit messages (repo rule). The `Claude-Session` trailer is kept.
+- SQL Server run closed without a run. SQL Server is proprietary, so the open-source-only policy rules it out as a test dependency. The backfill code is provider-agnostic EF and is tested on PostgreSQL 16.15. Teams that run SQL Server can run it against their own instance.
+- The messaging sink is append-only, so it cannot erase a tenant. `AnalyticsTenantDataHandler` refuses to run while a non-erasable sink is registered, so enabling the messaging sink blocks tenant erasure until the consumer handles erasure too.
+
+- Commit trailers: no model name in commit messages (repo rule). The `Claude-Session` trailer is kept. The `Co-Authored-By` line that names the model is left out for the same rule.
 - Denied requests are not audited by the analytics management API; the framework's access-decision audit covers them.
 - Audit entries go to the host chain (`TenantId` null), because one request can span tenants.

@@ -1,0 +1,31 @@
+#nullable enable
+Modulus.Analytics.Messaging.AnalyticsMessagingArea
+Modulus.Analytics.Messaging.AnalyticsMessagingArea.AnalyticsMessagingArea() -> void
+Modulus.Analytics.Messaging.AnalyticsMessagingExtensions
+Modulus.Analytics.Messaging.AnalyticsRecordPublished
+Modulus.Analytics.Messaging.AnalyticsRecordPublished.AnalyticsRecordPublished(string! Dataset, int SchemaVersion, System.Guid TenantId, long Revision, string! ValuesJson) -> void
+Modulus.Analytics.Messaging.AnalyticsRecordPublished.Dataset.get -> string!
+Modulus.Analytics.Messaging.AnalyticsRecordPublished.Dataset.init -> void
+Modulus.Analytics.Messaging.AnalyticsRecordPublished.Deconstruct(out string! Dataset, out int SchemaVersion, out System.Guid TenantId, out long Revision, out string! ValuesJson) -> void
+Modulus.Analytics.Messaging.AnalyticsRecordPublished.Equals(Modulus.Analytics.Messaging.AnalyticsRecordPublished? other) -> bool
+Modulus.Analytics.Messaging.AnalyticsRecordPublished.Revision.get -> long
+Modulus.Analytics.Messaging.AnalyticsRecordPublished.Revision.init -> void
+Modulus.Analytics.Messaging.AnalyticsRecordPublished.SchemaVersion.get -> int
+Modulus.Analytics.Messaging.AnalyticsRecordPublished.SchemaVersion.init -> void
+Modulus.Analytics.Messaging.AnalyticsRecordPublished.TenantId.get -> System.Guid
+Modulus.Analytics.Messaging.AnalyticsRecordPublished.TenantId.init -> void
+Modulus.Analytics.Messaging.AnalyticsRecordPublished.ValuesJson.get -> string!
+Modulus.Analytics.Messaging.AnalyticsRecordPublished.ValuesJson.init -> void
+Modulus.Analytics.Messaging.MessagingAnalyticsSink
+Modulus.Analytics.Messaging.MessagingAnalyticsSink.EnsureDatasetAsync(Modulus.Analytics.AnalyticsDatasetDescriptor! dataset, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+Modulus.Analytics.Messaging.MessagingAnalyticsSink.MessagingAnalyticsSink(Modulus.Events.Abstractions.IModuleBus! bus) -> void
+Modulus.Analytics.Messaging.MessagingAnalyticsSink.Name.get -> string!
+Modulus.Analytics.Messaging.MessagingAnalyticsSink.WriteAsync(Modulus.Analytics.AnalyticsDatasetDescriptor! dataset, System.Collections.Generic.IReadOnlyList<Modulus.Analytics.AnalyticsRecord!>! records, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+override Modulus.Analytics.Messaging.AnalyticsRecordPublished.<Clone>$() -> Modulus.Analytics.Messaging.AnalyticsRecordPublished!
+override Modulus.Analytics.Messaging.AnalyticsRecordPublished.Equals(object? obj) -> bool
+override Modulus.Analytics.Messaging.AnalyticsRecordPublished.GetHashCode() -> int
+override Modulus.Analytics.Messaging.AnalyticsRecordPublished.ToString() -> string!
+override sealed Modulus.Analytics.Messaging.AnalyticsRecordPublished.Equals(Modulus.Events.Abstractions.IntegrationEventBase? other) -> bool
+static Modulus.Analytics.Messaging.AnalyticsMessagingExtensions.AddMessaging(this Modulus.Analytics.AnalyticsBuilder! builder) -> Modulus.Analytics.AnalyticsBuilder!
+static Modulus.Analytics.Messaging.AnalyticsRecordPublished.operator !=(Modulus.Analytics.Messaging.AnalyticsRecordPublished? left, Modulus.Analytics.Messaging.AnalyticsRecordPublished? right) -> bool
+static Modulus.Analytics.Messaging.AnalyticsRecordPublished.operator ==(Modulus.Analytics.Messaging.AnalyticsRecordPublished? left, Modulus.Analytics.Messaging.AnalyticsRecordPublished? right) -> bool

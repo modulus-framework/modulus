@@ -6450,7 +6450,7 @@ Iceberg Kafka Connect sink commits the table.
   - Management API (`Modulus.Analytics.Management`, `analytics:manage`, Critical): `GET /analytics/status` (pending, delivered, dead-lettered, age of the oldest
     pending record, so a rising age shows delivery falling behind), list and inspect dead letters, replay by id (at most 1000), purge old dead letters. Queued rows hold
     values *before* masking, so no response ever carries record values (tests pin this). Replay and purge are logged with the acting user. 12 unit tests.
-  - Still open: the messaging sink, an EF migration sample.
+  - Done since: the messaging sink (`Modulus.Analytics.Messaging`, publishes each record as `AnalyticsRecordPublished` on the module bus; append-only, so it blocks tenant erasure while registered) and an EF migration sample (`samples/Modulus.Analytics.MigrationSample`, migration `InitialAnalyticsStore`, applied to PostgreSQL 16.15). Outbox rows carry the event's `SchemaVersion`; the column migration is in `docs/runbooks/analytics-store-migrations.md`.
 - [ ] Phase 3: extraction, change journal, per-tenant backfill with checkpoints, Parquet sink
   - Done (`Modulus.Analytics` and `Modulus.Analytics.EntityFrameworkCore`, 36 tests across net8.0 and net10.0):
     - `IAnalyticsSource`: reads one tenant at a time with a cursor. `EntityAnalyticsSource` / `AddEntitySource<TContext, TEntity, TKey>` is the EF version: the entity
@@ -6489,7 +6489,7 @@ Iceberg Kafka Connect sink commits the table.
     primary-key order and the keys were random, so each writer locked in a different order. Queue rows now have a key derived from the record's identity (one lock order for
     everyone), lost races are retried with jittered back-off (the provider wraps a deadlock in an `InvalidOperationException`, so the whole exception chain is searched), and a
     claim that loses a deadlock skips the cycle. 24 consecutive runs of the PostgreSQL suite pass; it failed about once in twelve before.
-  - Still open: a backfill and incremental run against SQL Server (the unit tests use SQLite, the integration tests PostgreSQL).
+  - SQL Server run: closed without a run. SQL Server is proprietary, so the open-source-only policy rules it out as a test dependency. The backfill is provider-agnostic EF: the unit tests use SQLite and the integration tests PostgreSQL 16.15 (8 of 8 pass). Teams that run SQL Server can run the backfill against their own instance.
   - Real PostgreSQL 16 (Testcontainers, `Modulus.Analytics.EntityFrameworkCore.Integration.Tests`, 8 tests on net8.0 and net10.0): eight parallel enqueues of the same 60
     records store 60 rows without an error; four concurrent delivery workers deliver 400 records exactly once each; two workers split two backfill runs (750 and 420 orders) and
     queue every order once; a claim that expired is taken over and a live one is not; the freshness and reconciliation aggregate queries and the purge run correctly. A
@@ -6574,7 +6574,7 @@ Iceberg Kafka Connect sink commits the table.
     (`AddModulusAnalyticsStore`) is wired, because that needs the application's DbContext. The packages are not on NuGet yet, so an app that runs the command can only
     build after the analytics packages are published.
   - Still open: `analytics-admin` in `modulus-ui`, which is a separate repository (the UI feature, its `ui-kit.json` entry and the mvc, razor-pages and blazor templates).
-- [x] Phase 6: Debezium reader, Airflow and dbt triggers, Superset helper, Doris sink, lakehouse runbooks
+- [x] Phase 6: Debezium reader, Airflow and dbt triggers, Superset helper, Doris sink, lakehouse runbooks (live Kafka, Debezium, Doris, Airflow, Superset and Iceberg runs are still open; see docs/ANALYTICS_PROGRESS.md)
   - Done: **run observers** (`Modulus.Analytics`, `.EntityFrameworkCore`; 2 EF tests). `IAnalyticsRunObserver.OnBackfillCompletedAsync` is called once per
     completed backfill run, after its rows are saved, with the run id, dataset, company, rows queued and completion time. An observer that throws is logged and the run
     stays completed. Incremental syncs never complete and are not reported.

@@ -103,6 +103,18 @@ public static class IntegrationEventNaming
                ?? eventType.Name;
     }
 
+    /// <summary>
+    /// The contract version declared by <see cref="IntegrationEventAttribute{TModule}"/>, or null when the type uses the legacy
+    /// <see cref="IntegrationEventNameAttribute"/> (or no name attribute at all), which carries no version.
+    /// </summary>
+    public static int? GetVersion(Type eventType)
+    {
+        ArgumentNullException.ThrowIfNull(eventType);
+
+        return eventType.GetCustomAttributes(typeof(IntegrationEventAttributeBase), inherit: false)
+            .OfType<IntegrationEventAttributeBase>().FirstOrDefault()?.Version;
+    }
+
     /// <summary>True when the type declares its name with either attribute (so it does not rely on the CLR full name).</summary>
     public static bool HasDeclaredName(Type eventType)
     {
