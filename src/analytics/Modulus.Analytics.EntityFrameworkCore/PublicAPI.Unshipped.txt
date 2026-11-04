@@ -139,7 +139,11 @@ Modulus.Analytics.EntityFrameworkCore.AnalyticsEntityRow.RecordId.init -> void
 Modulus.Analytics.EntityFrameworkCore.AnalyticsEntityRow.Values.get -> System.Collections.Generic.IReadOnlyDictionary<string!, object?>!
 Modulus.Analytics.EntityFrameworkCore.AnalyticsEntityRow.Values.init -> void
 Modulus.Analytics.EntityFrameworkCore.AnalyticsEntitySourceExtensions
+Modulus.Analytics.EntityFrameworkCore.AnalyticsReconciler
+Modulus.Analytics.EntityFrameworkCore.AnalyticsReconciler.AnalyticsReconciler(Modulus.Analytics.EntityFrameworkCore.ModulusAnalyticsDbContext! db, Modulus.Analytics.IAnalyticsDatasetCatalog! catalog, System.Collections.Generic.IEnumerable<Modulus.Analytics.IAnalyticsSource!>! sources, System.Collections.Generic.IEnumerable<Modulus.Analytics.IAnalyticsSink!>! sinks, Modulus.Analytics.IAnalyticsTenantDirectory! directory, System.IServiceProvider! services, Microsoft.Extensions.Logging.ILogger<Modulus.Analytics.EntityFrameworkCore.AnalyticsReconciler!>! logger) -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsReconciler.ReconcileAsync(string! dataset, int version, System.Collections.Generic.IReadOnlyCollection<System.Guid>? tenantIds, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<Modulus.Analytics.AnalyticsReconciliationReport!>!
 Modulus.Analytics.EntityFrameworkCore.EntityAnalyticsSource<TContext, TEntity, TKey>
+Modulus.Analytics.EntityFrameworkCore.EntityAnalyticsSource<TContext, TEntity, TKey>.CountAsync(System.Guid tenantId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<long>!
 Modulus.Analytics.EntityFrameworkCore.EntityAnalyticsSource<TContext, TEntity, TKey>.Dataset.get -> string!
 Modulus.Analytics.EntityFrameworkCore.EntityAnalyticsSource<TContext, TEntity, TKey>.EntityAnalyticsSource(TContext! db, string! dataset, int version, System.Linq.Expressions.Expression<System.Func<TEntity!, TKey>!>! key, System.Func<TEntity!, Modulus.Analytics.EntityFrameworkCore.AnalyticsEntityRow!>! map) -> void
 Modulus.Analytics.EntityFrameworkCore.EntityAnalyticsSource<TContext, TEntity, TKey>.ExtractAsync(Modulus.Analytics.AnalyticsExtractRequest! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<Modulus.Analytics.AnalyticsExtractPage!>!

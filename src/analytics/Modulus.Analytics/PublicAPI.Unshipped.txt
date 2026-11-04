@@ -143,6 +143,46 @@ Modulus.Analytics.AnalyticsQueueStats.OldestPendingAt.get -> System.DateTime?
 Modulus.Analytics.AnalyticsQueueStats.OldestPendingAt.init -> void
 Modulus.Analytics.AnalyticsQueueStats.Pending.get -> int
 Modulus.Analytics.AnalyticsQueueStats.Pending.init -> void
+Modulus.Analytics.AnalyticsReconciliation
+Modulus.Analytics.AnalyticsReconciliationReport
+Modulus.Analytics.AnalyticsReconciliationReport.<Clone>$() -> Modulus.Analytics.AnalyticsReconciliationReport!
+Modulus.Analytics.AnalyticsReconciliationReport.AnalyticsReconciliationReport(System.Collections.Generic.IReadOnlyList<Modulus.Analytics.AnalyticsReconciliationResult!>! Results, System.Collections.Generic.IReadOnlyList<string!>! Errors) -> void
+Modulus.Analytics.AnalyticsReconciliationReport.Deconstruct(out System.Collections.Generic.IReadOnlyList<Modulus.Analytics.AnalyticsReconciliationResult!>! Results, out System.Collections.Generic.IReadOnlyList<string!>! Errors) -> void
+Modulus.Analytics.AnalyticsReconciliationReport.Equals(Modulus.Analytics.AnalyticsReconciliationReport? other) -> bool
+Modulus.Analytics.AnalyticsReconciliationReport.Errors.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Modulus.Analytics.AnalyticsReconciliationReport.Errors.init -> void
+Modulus.Analytics.AnalyticsReconciliationReport.IsClean.get -> bool
+Modulus.Analytics.AnalyticsReconciliationReport.Results.get -> System.Collections.Generic.IReadOnlyList<Modulus.Analytics.AnalyticsReconciliationResult!>!
+Modulus.Analytics.AnalyticsReconciliationReport.Results.init -> void
+Modulus.Analytics.AnalyticsReconciliationResult
+Modulus.Analytics.AnalyticsReconciliationResult.<Clone>$() -> Modulus.Analytics.AnalyticsReconciliationResult!
+Modulus.Analytics.AnalyticsReconciliationResult.AnalyticsReconciliationResult(string! Dataset, int Version, System.Guid TenantId, string! Sink, long SourceCount, long SinkCount, int Pending, int DeadLettered, Modulus.Analytics.AnalyticsReconciliationStatus Status) -> void
+Modulus.Analytics.AnalyticsReconciliationResult.Dataset.get -> string!
+Modulus.Analytics.AnalyticsReconciliationResult.Dataset.init -> void
+Modulus.Analytics.AnalyticsReconciliationResult.DeadLettered.get -> int
+Modulus.Analytics.AnalyticsReconciliationResult.DeadLettered.init -> void
+Modulus.Analytics.AnalyticsReconciliationResult.Deconstruct(out string! Dataset, out int Version, out System.Guid TenantId, out string! Sink, out long SourceCount, out long SinkCount, out int Pending, out int DeadLettered, out Modulus.Analytics.AnalyticsReconciliationStatus Status) -> void
+Modulus.Analytics.AnalyticsReconciliationResult.Difference.get -> long
+Modulus.Analytics.AnalyticsReconciliationResult.Equals(Modulus.Analytics.AnalyticsReconciliationResult? other) -> bool
+Modulus.Analytics.AnalyticsReconciliationResult.Pending.get -> int
+Modulus.Analytics.AnalyticsReconciliationResult.Pending.init -> void
+Modulus.Analytics.AnalyticsReconciliationResult.Sink.get -> string!
+Modulus.Analytics.AnalyticsReconciliationResult.Sink.init -> void
+Modulus.Analytics.AnalyticsReconciliationResult.SinkCount.get -> long
+Modulus.Analytics.AnalyticsReconciliationResult.SinkCount.init -> void
+Modulus.Analytics.AnalyticsReconciliationResult.SourceCount.get -> long
+Modulus.Analytics.AnalyticsReconciliationResult.SourceCount.init -> void
+Modulus.Analytics.AnalyticsReconciliationResult.Status.get -> Modulus.Analytics.AnalyticsReconciliationStatus
+Modulus.Analytics.AnalyticsReconciliationResult.Status.init -> void
+Modulus.Analytics.AnalyticsReconciliationResult.TenantId.get -> System.Guid
+Modulus.Analytics.AnalyticsReconciliationResult.TenantId.init -> void
+Modulus.Analytics.AnalyticsReconciliationResult.Version.get -> int
+Modulus.Analytics.AnalyticsReconciliationResult.Version.init -> void
+Modulus.Analytics.AnalyticsReconciliationStatus
+Modulus.Analytics.AnalyticsReconciliationStatus.Extra = 3 -> Modulus.Analytics.AnalyticsReconciliationStatus
+Modulus.Analytics.AnalyticsReconciliationStatus.InFlight = 1 -> Modulus.Analytics.AnalyticsReconciliationStatus
+Modulus.Analytics.AnalyticsReconciliationStatus.Match = 0 -> Modulus.Analytics.AnalyticsReconciliationStatus
+Modulus.Analytics.AnalyticsReconciliationStatus.Missing = 2 -> Modulus.Analytics.AnalyticsReconciliationStatus
 Modulus.Analytics.AnalyticsRecord
 Modulus.Analytics.AnalyticsRecord.<Clone>$() -> Modulus.Analytics.AnalyticsRecord!
 Modulus.Analytics.AnalyticsRecord.AnalyticsRecord(System.Guid EventId, string! Dataset, int SchemaVersion, System.Guid TenantId, System.DateTimeOffset OccurredAt, System.Collections.Generic.IReadOnlyDictionary<string!, object?>! Values) -> void
@@ -193,6 +233,8 @@ Modulus.Analytics.AnalyticsSinkOutcome.Succeeded.get -> bool
 Modulus.Analytics.AnalyticsSinkOutcome.Succeeded.init -> void
 Modulus.Analytics.AnalyticsUpcasting
 Modulus.Analytics.AnalyticsValueSerializer
+Modulus.Analytics.IAnalyticsCountingSource
+Modulus.Analytics.IAnalyticsCountingSource.CountAsync(System.Guid tenantId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<long>!
 Modulus.Analytics.IAnalyticsDatasetCatalog
 Modulus.Analytics.IAnalyticsDatasetCatalog.All.get -> System.Collections.Generic.IReadOnlyList<Modulus.Analytics.AnalyticsDatasetDescriptor!>!
 Modulus.Analytics.IAnalyticsDatasetCatalog.Latest(string! name) -> Modulus.Analytics.AnalyticsDatasetDescriptor?
@@ -201,6 +243,8 @@ Modulus.Analytics.IAnalyticsFreshnessReader
 Modulus.Analytics.IAnalyticsFreshnessReader.ReadAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Analytics.AnalyticsDatasetFreshness!>!>!
 Modulus.Analytics.IAnalyticsQueue
 Modulus.Analytics.IAnalyticsQueue.EnqueueAsync(System.Collections.Generic.IReadOnlyList<Modulus.Analytics.AnalyticsRecord!>! records, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+Modulus.Analytics.IAnalyticsReconcilableSink
+Modulus.Analytics.IAnalyticsReconcilableSink.CountAsync(Modulus.Analytics.AnalyticsDatasetDescriptor! dataset, System.Guid tenantId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<long>!
 Modulus.Analytics.IAnalyticsRecordUpcaster
 Modulus.Analytics.IAnalyticsRecordUpcaster.Dataset.get -> string!
 Modulus.Analytics.IAnalyticsRecordUpcaster.FromVersion.get -> int
@@ -240,6 +284,12 @@ override Modulus.Analytics.AnalyticsFieldDescriptor.ToString() -> string!
 override Modulus.Analytics.AnalyticsQueueStats.Equals(object? obj) -> bool
 override Modulus.Analytics.AnalyticsQueueStats.GetHashCode() -> int
 override Modulus.Analytics.AnalyticsQueueStats.ToString() -> string!
+override Modulus.Analytics.AnalyticsReconciliationReport.Equals(object? obj) -> bool
+override Modulus.Analytics.AnalyticsReconciliationReport.GetHashCode() -> int
+override Modulus.Analytics.AnalyticsReconciliationReport.ToString() -> string!
+override Modulus.Analytics.AnalyticsReconciliationResult.Equals(object? obj) -> bool
+override Modulus.Analytics.AnalyticsReconciliationResult.GetHashCode() -> int
+override Modulus.Analytics.AnalyticsReconciliationResult.ToString() -> string!
 override Modulus.Analytics.AnalyticsRecord.Equals(object? obj) -> bool
 override Modulus.Analytics.AnalyticsRecord.GetHashCode() -> int
 override Modulus.Analytics.AnalyticsRecord.ToString() -> string!
@@ -268,6 +318,11 @@ static Modulus.Analytics.AnalyticsMasking.DefaultFor(Modulus.Core.Abstractions.E
 static Modulus.Analytics.AnalyticsMetrics.Publish(System.Collections.Generic.IReadOnlyList<Modulus.Analytics.AnalyticsDatasetFreshness!>! datasets) -> void
 static Modulus.Analytics.AnalyticsQueueStats.operator !=(Modulus.Analytics.AnalyticsQueueStats? left, Modulus.Analytics.AnalyticsQueueStats? right) -> bool
 static Modulus.Analytics.AnalyticsQueueStats.operator ==(Modulus.Analytics.AnalyticsQueueStats? left, Modulus.Analytics.AnalyticsQueueStats? right) -> bool
+static Modulus.Analytics.AnalyticsReconciliation.Judge(long sourceCount, long sinkCount, long pending) -> Modulus.Analytics.AnalyticsReconciliationStatus
+static Modulus.Analytics.AnalyticsReconciliationReport.operator !=(Modulus.Analytics.AnalyticsReconciliationReport? left, Modulus.Analytics.AnalyticsReconciliationReport? right) -> bool
+static Modulus.Analytics.AnalyticsReconciliationReport.operator ==(Modulus.Analytics.AnalyticsReconciliationReport? left, Modulus.Analytics.AnalyticsReconciliationReport? right) -> bool
+static Modulus.Analytics.AnalyticsReconciliationResult.operator !=(Modulus.Analytics.AnalyticsReconciliationResult? left, Modulus.Analytics.AnalyticsReconciliationResult? right) -> bool
+static Modulus.Analytics.AnalyticsReconciliationResult.operator ==(Modulus.Analytics.AnalyticsReconciliationResult? left, Modulus.Analytics.AnalyticsReconciliationResult? right) -> bool
 static Modulus.Analytics.AnalyticsRecord.operator !=(Modulus.Analytics.AnalyticsRecord? left, Modulus.Analytics.AnalyticsRecord? right) -> bool
 static Modulus.Analytics.AnalyticsRecord.operator ==(Modulus.Analytics.AnalyticsRecord? left, Modulus.Analytics.AnalyticsRecord? right) -> bool
 static Modulus.Analytics.AnalyticsRecordIds.Deterministic(string! scope, string! key) -> System.Guid

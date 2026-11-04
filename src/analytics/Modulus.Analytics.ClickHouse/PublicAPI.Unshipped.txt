@@ -2,6 +2,7 @@
 Modulus.Analytics.ClickHouse.ClickHouseAnalyticsExtensions
 Modulus.Analytics.ClickHouse.ClickHouseAnalyticsSink
 Modulus.Analytics.ClickHouse.ClickHouseAnalyticsSink.ClickHouseAnalyticsSink(ClickHouse.Driver.ClickHouseClient! client, Microsoft.Extensions.Options.IOptions<Modulus.Analytics.ClickHouse.ClickHouseSinkOptions!>! options) -> void
+Modulus.Analytics.ClickHouse.ClickHouseAnalyticsSink.CountAsync(Modulus.Analytics.AnalyticsDatasetDescriptor! dataset, System.Guid tenantId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<long>!
 Modulus.Analytics.ClickHouse.ClickHouseAnalyticsSink.EnsureDatasetAsync(Modulus.Analytics.AnalyticsDatasetDescriptor! dataset, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 Modulus.Analytics.ClickHouse.ClickHouseAnalyticsSink.Name.get -> string!
 Modulus.Analytics.ClickHouse.ClickHouseAnalyticsSink.WriteAsync(Modulus.Analytics.AnalyticsDatasetDescriptor! dataset, System.Collections.Generic.IReadOnlyList<Modulus.Analytics.AnalyticsRecord!>! records, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!

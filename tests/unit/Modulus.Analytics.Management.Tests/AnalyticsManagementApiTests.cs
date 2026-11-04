@@ -15,6 +15,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Modulus.Analytics.EntityFrameworkCore;
+using Modulus.Analytics.Testing;
 using Modulus.Authorization.Extensions;
 using Xunit;
 
@@ -40,6 +41,7 @@ public sealed class AnalyticsManagementApiTests : IAsyncLifetime
         builder.Services.AddAuthentication("Test").AddScheme<AuthenticationSchemeOptions, TestAuthHandler>("Test", null);
         builder.Services.AddModulusAuthorization(o => o.TrustPermissionClaims = true);
         builder.Services.AddDbContext<TestDb>(o => o.UseSqlite(_connection));
+        builder.Services.AddSingleton<IAnalyticsSink>(new InMemoryAnalyticsSink());
         builder.Services.AddModulusAnalytics(a => a
             .AddDataset(new AnalyticsDatasetDescriptor("orders", 1, "sales", [new("order_id", AnalyticsFieldType.Int64)], FreshnessSla: TimeSpan.FromMinutes(1)))
             .Services.AddScoped<IAnalyticsSource, StubSource>());
@@ -83,9 +85,52 @@ public sealed class AnalyticsManagementApiTests : IAsyncLifetime
         (await other.DeleteAsync("/analytics/dead-letters/purge")).StatusCode.Should().Be(HttpStatusCode.Forbidden);
         (await other.GetAsync("/analytics/backfills")).StatusCode.Should().Be(HttpStatusCode.Forbidden);
         (await other.GetAsync("/analytics/freshness")).StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        (await other.PostAsJsonAsync("/analytics/reconciliations", new AnalyticsReconcileRequest("orders", 1))).StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        (await anonymous.PostAsJsonAsync("/analytics/reconciliations", new AnalyticsReconcileRequest("orders", 1))).StatusCode.Should().Be(HttpStatusCode.Unauthorized);
         (await anonymous.GetAsync("/analytics/freshness")).StatusCode.Should().Be(HttpStatusCode.Unauthorized);
         (await other.PostAsJsonAsync("/analytics/backfills", new AnalyticsBackfillRequest("orders", 1))).StatusCode.Should().Be(HttpStatusCode.Forbidden);
         (await anonymous.GetAsync("/analytics/backfills")).StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task Reconciliation_reports_a_warehouse_that_is_short_and_a_gap_that_is_only_in_flight()
+    {
+        var short1 = Guid.NewGuid();
+        var inFlight = Guid.NewGuid();
+        for (var i = 0; i < 3; i++)
+        {
+            await SeedAsync(tenant: inFlight);
+        }
+
+        using var client = AsUser(Manage);
+
+        var response = await client.PostAsJsonAsync("/analytics/reconciliations", new AnalyticsReconcileRequest("orders", 1, [short1, inFlight]));
+        var body = await response.Content.ReadAsStringAsync();
+        var report = await response.Content.ReadFromJsonAsync<AnalyticsReconciliationReport>();
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        body.Should().Contain("\"status\":\"Missing\"").And.Contain("\"status\":\"InFlight\"");
+        report!.Results.Single(r => r.TenantId == short1).Should().Match<AnalyticsReconciliationResult>(r => r.Status == AnalyticsReconciliationStatus.Missing && r.SourceCount == 3 && r.SinkCount == 0 && r.Sink == "memory");
+        report.Results.Single(r => r.TenantId == inFlight).Should().Match<AnalyticsReconciliationResult>(r => r.Status == AnalyticsReconciliationStatus.InFlight && r.Pending == 3);
+        report.Errors.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Bad_reconciliation_requests_are_refused_with_a_reason()
+    {
+        using var client = AsUser(Manage);
+
+        var unknown = await client.PostAsJsonAsync("/analytics/reconciliations", new AnalyticsReconcileRequest("nope", 1, [Guid.NewGuid()]));
+        var noVersion = await client.PostAsJsonAsync("/analytics/reconciliations", new AnalyticsReconcileRequest("orders", 0));
+        var empty = await client.PostAsJsonAsync("/analytics/reconciliations", new AnalyticsReconcileRequest("orders", 1, [Guid.Empty]));
+        var tooMany = await client.PostAsJsonAsync("/analytics/reconciliations", new AnalyticsReconcileRequest("orders", 1, [.. Enumerable.Range(0, 1001).Select(_ => Guid.NewGuid())]));
+
+        unknown.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await unknown.Content.ReadAsStringAsync()).Should().Contain("not registered");
+        noVersion.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        empty.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await empty.Content.ReadAsStringAsync()).Should().Contain("empty tenant");
+        tooMany.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
     [Fact]
@@ -383,8 +428,10 @@ public sealed class AnalyticsManagementApiTests : IAsyncLifetime
             .ExecuteUpdateAsync(s => s.SetProperty(r => r.Status, AnalyticsBackfillStatus.Completed).SetProperty(r => r.CompletedAt, (DateTime?)DateTime.UtcNow));
     }
 
-    private sealed class StubSource : IAnalyticsSource
+    private sealed class StubSource : IAnalyticsCountingSource
     {
+        public Task<long> CountAsync(Guid tenantId, CancellationToken cancellationToken) => Task.FromResult(3L);
+
         public string Dataset => "orders";
 
         public int Version => 1;

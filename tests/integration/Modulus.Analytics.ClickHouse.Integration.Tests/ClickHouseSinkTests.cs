@@ -219,6 +219,45 @@ public sealed class ClickHouseSinkTests(ClickHouseFixture clickHouse)
     }
 
     [Fact]
+    public async Task The_sink_counts_distinct_records_per_tenant_so_a_warehouse_can_be_reconciled()
+    {
+        var sink = clickHouse.CreateSink(Prefix("count"));
+        var a = Guid.NewGuid();
+        var b = Guid.NewGuid();
+        AnalyticsRecord Make(Guid tenant, Guid? id = null) => AnalyticsMasking.Apply(Everything, new AnalyticsRecord(id ?? Guid.NewGuid(), "everything", 1, tenant, DateTimeOffset.UtcNow, new Dictionary<string, object?>
+        {
+            ["a_guid"] = Guid.NewGuid(),
+            ["a_decimal"] = 1m,
+            ["a_double"] = 1.0,
+            ["a_long"] = 1L,
+            ["a_bool"] = false,
+            ["a_timestamp"] = DateTimeOffset.UtcNow,
+            ["a_date"] = new DateOnly(2026, 1, 1),
+            ["a_text"] = "x",
+            ["an_email"] = "p@q.r",
+        }), new FakeProtector());
+        await sink.EnsureDatasetAsync(Everything, CancellationToken.None);
+        var repeated = Make(a);
+
+        await sink.WriteAsync(Everything, [repeated, Make(a), Make(b)], CancellationToken.None);
+        await sink.WriteAsync(Everything, [repeated], CancellationToken.None);
+
+        (await sink.CountAsync(Everything, a, CancellationToken.None)).Should().Be(2, "the repeated record counts once");
+        (await sink.CountAsync(Everything, b, CancellationToken.None)).Should().Be(1);
+        (await sink.CountAsync(Everything, Guid.NewGuid(), CancellationToken.None)).Should().Be(0);
+    }
+
+    [Fact]
+    public async Task Counting_a_table_that_does_not_exist_is_a_permanent_failure()
+    {
+        var sink = clickHouse.CreateSink(Prefix("nocount"));
+
+        var act = () => sink.CountAsync(Everything, Guid.NewGuid(), CancellationToken.None);
+
+        (await act.Should().ThrowAsync<AnalyticsSinkException>()).Which.IsTransient.Should().BeFalse();
+    }
+
+    [Fact]
     public async Task Wrong_credentials_are_a_permanent_failure()
     {
         var parts = clickHouse.ConnectionString.Split(';').Where(p => !p.StartsWith("Password=", StringComparison.OrdinalIgnoreCase));

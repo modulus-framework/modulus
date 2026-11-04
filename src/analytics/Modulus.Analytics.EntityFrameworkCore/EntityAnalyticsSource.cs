@@ -27,7 +27,7 @@ public sealed class EntityAnalyticsSource<TContext, TEntity, TKey>(
     string dataset,
     int version,
     Expression<Func<TEntity, TKey>> key,
-    Func<TEntity, AnalyticsEntityRow> map) : IAnalyticsSource
+    Func<TEntity, AnalyticsEntityRow> map) : IAnalyticsCountingSource
     where TContext : DbContext
     where TEntity : class, IHasTenantId
     where TKey : struct, IComparable<TKey>
@@ -39,6 +39,17 @@ public sealed class EntityAnalyticsSource<TContext, TEntity, TKey>(
 
     /// <inheritdoc />
     public int Version => version;
+
+    /// <inheritdoc />
+    public async Task<long> CountAsync(Guid tenantId, CancellationToken cancellationToken)
+    {
+        if (tenantId == Guid.Empty)
+        {
+            throw new ArgumentException("A source counts for a real tenant.", nameof(tenantId));
+        }
+
+        return await db.Set<TEntity>().AsNoTracking().LongCountAsync(e => e.TenantId == tenantId, cancellationToken).ConfigureAwait(false);
+    }
 
     /// <inheritdoc />
     public async Task<AnalyticsExtractPage> ExtractAsync(AnalyticsExtractRequest request, CancellationToken cancellationToken)

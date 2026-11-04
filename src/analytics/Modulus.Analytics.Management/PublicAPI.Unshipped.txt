@@ -104,6 +104,17 @@ Modulus.Analytics.Management.AnalyticsQueueStatus.OldestPendingAt.get -> System.
 Modulus.Analytics.Management.AnalyticsQueueStatus.OldestPendingAt.init -> void
 Modulus.Analytics.Management.AnalyticsQueueStatus.Pending.get -> int
 Modulus.Analytics.Management.AnalyticsQueueStatus.Pending.init -> void
+Modulus.Analytics.Management.AnalyticsReconcileRequest
+Modulus.Analytics.Management.AnalyticsReconcileRequest.<Clone>$() -> Modulus.Analytics.Management.AnalyticsReconcileRequest!
+Modulus.Analytics.Management.AnalyticsReconcileRequest.AnalyticsReconcileRequest(string! Dataset, int Version, System.Guid[]? TenantIds = null) -> void
+Modulus.Analytics.Management.AnalyticsReconcileRequest.Dataset.get -> string!
+Modulus.Analytics.Management.AnalyticsReconcileRequest.Dataset.init -> void
+Modulus.Analytics.Management.AnalyticsReconcileRequest.Deconstruct(out string! Dataset, out int Version, out System.Guid[]? TenantIds) -> void
+Modulus.Analytics.Management.AnalyticsReconcileRequest.Equals(Modulus.Analytics.Management.AnalyticsReconcileRequest? other) -> bool
+Modulus.Analytics.Management.AnalyticsReconcileRequest.TenantIds.get -> System.Guid[]?
+Modulus.Analytics.Management.AnalyticsReconcileRequest.TenantIds.init -> void
+Modulus.Analytics.Management.AnalyticsReconcileRequest.Version.get -> int
+Modulus.Analytics.Management.AnalyticsReconcileRequest.Version.init -> void
 Modulus.Analytics.Management.AnalyticsReplayRequest
 Modulus.Analytics.Management.AnalyticsReplayRequest.<Clone>$() -> Modulus.Analytics.Management.AnalyticsReplayRequest!
 Modulus.Analytics.Management.AnalyticsReplayRequest.AnalyticsReplayRequest(System.Guid[]! Ids) -> void
@@ -139,6 +150,9 @@ override Modulus.Analytics.Management.AnalyticsPurgeResponse.ToString() -> strin
 override Modulus.Analytics.Management.AnalyticsQueueStatus.Equals(object? obj) -> bool
 override Modulus.Analytics.Management.AnalyticsQueueStatus.GetHashCode() -> int
 override Modulus.Analytics.Management.AnalyticsQueueStatus.ToString() -> string!
+override Modulus.Analytics.Management.AnalyticsReconcileRequest.Equals(object? obj) -> bool
+override Modulus.Analytics.Management.AnalyticsReconcileRequest.GetHashCode() -> int
+override Modulus.Analytics.Management.AnalyticsReconcileRequest.ToString() -> string!
 override Modulus.Analytics.Management.AnalyticsReplayRequest.Equals(object? obj) -> bool
 override Modulus.Analytics.Management.AnalyticsReplayRequest.GetHashCode() -> int
 override Modulus.Analytics.Management.AnalyticsReplayRequest.ToString() -> string!
@@ -159,6 +173,8 @@ static Modulus.Analytics.Management.AnalyticsPurgeResponse.operator !=(Modulus.A
 static Modulus.Analytics.Management.AnalyticsPurgeResponse.operator ==(Modulus.Analytics.Management.AnalyticsPurgeResponse? left, Modulus.Analytics.Management.AnalyticsPurgeResponse? right) -> bool
 static Modulus.Analytics.Management.AnalyticsQueueStatus.operator !=(Modulus.Analytics.Management.AnalyticsQueueStatus? left, Modulus.Analytics.Management.AnalyticsQueueStatus? right) -> bool
 static Modulus.Analytics.Management.AnalyticsQueueStatus.operator ==(Modulus.Analytics.Management.AnalyticsQueueStatus? left, Modulus.Analytics.Management.AnalyticsQueueStatus? right) -> bool
+static Modulus.Analytics.Management.AnalyticsReconcileRequest.operator !=(Modulus.Analytics.Management.AnalyticsReconcileRequest? left, Modulus.Analytics.Management.AnalyticsReconcileRequest? right) -> bool
+static Modulus.Analytics.Management.AnalyticsReconcileRequest.operator ==(Modulus.Analytics.Management.AnalyticsReconcileRequest? left, Modulus.Analytics.Management.AnalyticsReconcileRequest? right) -> bool
 static Modulus.Analytics.Management.AnalyticsReplayRequest.operator !=(Modulus.Analytics.Management.AnalyticsReplayRequest? left, Modulus.Analytics.Management.AnalyticsReplayRequest? right) -> bool
 static Modulus.Analytics.Management.AnalyticsReplayRequest.operator ==(Modulus.Analytics.Management.AnalyticsReplayRequest? left, Modulus.Analytics.Management.AnalyticsReplayRequest? right) -> bool
 static Modulus.Analytics.Management.AnalyticsReplayResponse.operator !=(Modulus.Analytics.Management.AnalyticsReplayResponse? left, Modulus.Analytics.Management.AnalyticsReplayResponse? right) -> bool

@@ -64,6 +64,7 @@ public static class AnalyticsEntityFrameworkExtensions
         services.TryAddScoped<IAnalyticsFreshnessReader, EfAnalyticsFreshnessReader>();
         services.AddScoped<IModuleHealthCheck, AnalyticsHealthCheck>();
         services.TryAddScoped<AnalyticsBackfillManager>();
+        services.TryAddScoped<AnalyticsReconciler>();
         services.TryAddScoped<AnalyticsBackfillProcessor>();
         services.AddHostedService<AnalyticsBackfillWorker>();
         services.RemoveAll<IAnalyticsQueue>();

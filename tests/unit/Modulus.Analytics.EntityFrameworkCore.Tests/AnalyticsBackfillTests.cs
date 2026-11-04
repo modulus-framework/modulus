@@ -38,7 +38,7 @@ public sealed class OrdersDb(DbContextOptions<OrdersDb> options) : DbContext(opt
 }
 
 [Trait("Category", "Unit")]
-public sealed class AnalyticsBackfillTests : IDisposable
+public sealed partial class AnalyticsBackfillTests : IDisposable
 {
     private static readonly AnalyticsDatasetDescriptor OrdersDataset = new("orders", 1, "sales",
     [

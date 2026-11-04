@@ -21,6 +21,7 @@ Modulus.Analytics.Testing.AnalyticsConformanceReport.Failures.get -> System.Coll
 Modulus.Analytics.Testing.AnalyticsConformanceReport.Passed.get -> bool
 Modulus.Analytics.Testing.AnalyticsSinkConformance
 Modulus.Analytics.Testing.InMemoryAnalyticsSink
+Modulus.Analytics.Testing.InMemoryAnalyticsSink.CountAsync(Modulus.Analytics.AnalyticsDatasetDescriptor! dataset, System.Guid tenantId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<long>!
 Modulus.Analytics.Testing.InMemoryAnalyticsSink.Datasets.get -> System.Collections.Generic.IReadOnlyDictionary<string!, Modulus.Analytics.AnalyticsDatasetDescriptor!>!
 Modulus.Analytics.Testing.InMemoryAnalyticsSink.EnsureCalls.get -> int
 Modulus.Analytics.Testing.InMemoryAnalyticsSink.EnsureDatasetAsync(Modulus.Analytics.AnalyticsDatasetDescriptor! dataset, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!

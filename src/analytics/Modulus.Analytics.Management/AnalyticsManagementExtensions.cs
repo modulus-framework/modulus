@@ -70,6 +70,39 @@ public static class AnalyticsManagementExtensions
         })
         .WithSummary("Show how the analytics delivery queue stands");
 
+        // POST /analytics/reconciliations
+        group.MapPost("/reconciliations", async (
+            AnalyticsReconcileRequest request,
+            AnalyticsReconciler reconciler,
+            ICurrentUser currentUser,
+            ILoggerFactory loggerFactory,
+            CancellationToken ct) =>
+        {
+            if (string.IsNullOrWhiteSpace(request.Dataset) || request.Version < 1)
+            {
+                return Results.BadRequest("Dataset and a version of 1 or higher are required.");
+            }
+
+            if (request.TenantIds is { Length: > MaxBackfillTenants })
+            {
+                return Results.BadRequest($"At most {MaxBackfillTenants} tenants per request; omit TenantIds to cover every tenant.");
+            }
+
+            try
+            {
+                var report = await reconciler.ReconcileAsync(request.Dataset, request.Version, request.TenantIds, ct);
+                loggerFactory.CreateLogger("Modulus.Analytics.Management").LogInformation(
+                    "Analytics reconciliation of {Dataset}.v{Version} by {User}: {Results} comparison(s), {Errors} error(s), clean={Clean}.",
+                    request.Dataset, request.Version, currentUser.UserId?.ToString() ?? "unknown", report.Results.Count, report.Errors.Count, report.IsClean);
+                return Results.Ok(report);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Results.BadRequest(ex.Message);
+            }
+        })
+        .WithSummary("Compare the warehouse with the operational store, per tenant");
+
         // GET /analytics/freshness
         group.MapGet("/freshness", async (IAnalyticsFreshnessReader reader, CancellationToken ct)
             => Results.Ok(await reader.ReadAsync(ct)))

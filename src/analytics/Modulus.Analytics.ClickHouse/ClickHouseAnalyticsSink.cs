@@ -12,7 +12,7 @@ using Microsoft.Extensions.Options;
 /// Merging is eventual: until it happens a duplicate can be visible, so queries that need exact counts use <c>FINAL</c> (or
 /// <c>argMax</c>). A column's comment records its classification and masking, so the warehouse documents itself.
 /// </remarks>
-public sealed class ClickHouseAnalyticsSink(ClickHouseClient client, IOptions<ClickHouseSinkOptions> options) : IAnalyticsSink
+public sealed class ClickHouseAnalyticsSink(ClickHouseClient client, IOptions<ClickHouseSinkOptions> options) : IAnalyticsReconcilableSink
 {
     /// <inheritdoc />
     public string Name => "clickhouse";
@@ -99,6 +99,25 @@ public sealed class ClickHouseAnalyticsSink(ClickHouseClient client, IOptions<Cl
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             throw ClickHouseErrors.Translate($"write {records.Count} row(s) to '{table}'", ex);
+        }
+    }
+
+    /// <inheritdoc />
+    /// <remarks>Counts with <c>FINAL</c>, so records not yet collapsed by a merge count once.</remarks>
+    public async Task<long> CountAsync(AnalyticsDatasetDescriptor dataset, Guid tenantId, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(dataset);
+        var table = ClickHouseDdl.TableName(options.Value, dataset);
+        try
+        {
+            var count = await client.ExecuteScalarAsync(
+                $"SELECT count() FROM {ClickHouseDdl.Quote(table)} FINAL WHERE {ClickHouseDdl.Quote(ClickHouseDdl.TenantColumn)} = {ClickHouseDdl.Literal(tenantId.ToString("D"))}",
+                cancellationToken: cancellationToken).ConfigureAwait(false);
+            return Convert.ToInt64(count, System.Globalization.CultureInfo.InvariantCulture);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            throw ClickHouseErrors.Translate($"count the rows of '{table}'", ex);
         }
     }
 

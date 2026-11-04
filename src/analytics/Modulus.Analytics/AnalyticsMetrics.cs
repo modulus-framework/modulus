@@ -8,7 +8,7 @@ using System.Diagnostics.Metrics;
 /// </summary>
 /// <remarks>
 /// Counters: <c>modulus.analytics.records.delivered</c> and <c>.failed</c> (tags <c>sink</c>, <c>dataset</c>), <c>modulus.analytics.records.dead_lettered</c>
-/// and <c>modulus.analytics.backfill.rows_queued</c> (tag <c>dataset</c>). Gauges per dataset and version (refreshed by the delivery worker):
+/// <c>modulus.analytics.backfill.rows_queued</c> (tag <c>dataset</c>) and <c>modulus.analytics.reconciliation.mismatches</c> (tags <c>sink</c>, <c>dataset</c>, <c>status</c>). Gauges per dataset and version (refreshed by the delivery worker):
 /// <c>modulus.analytics.dataset.lag</c> in seconds, <c>modulus.analytics.dataset.stale</c> (1 when over the SLA), <c>modulus.analytics.dataset.pending</c>
 /// and <c>modulus.analytics.dataset.dead_lettered</c>.
 /// </remarks>
@@ -25,6 +25,8 @@ public static class AnalyticsMetrics
     internal static readonly Counter<long> DeadLettered = Meter.CreateCounter<long>("modulus.analytics.records.dead_lettered", "{record}", "Records given up on.");
     internal static readonly Counter<long> BackfillRowsQueued = Meter.CreateCounter<long>("modulus.analytics.backfill.rows_queued", "{record}", "Records a backfill queued.");
 
+    internal static readonly Counter<long> ReconciliationMismatches = Meter.CreateCounter<long>("modulus.analytics.reconciliation.mismatches", "{comparison}", "Reconciliations that found the warehouse missing records or holding extra ones.");
+
     static AnalyticsMetrics()
     {
         Meter.CreateObservableGauge("modulus.analytics.dataset.lag", () => Read(f => f.Lag.TotalSeconds), "s", "Age of the oldest undelivered record.");
@@ -40,6 +42,8 @@ public static class AnalyticsMetrics
         ArgumentNullException.ThrowIfNull(datasets);
         snapshot = datasets;
     }
+
+    internal static TagList Tags(string sink, string dataset, string status) => new() { { "sink", sink }, { "dataset", dataset }, { "status", status } };
 
     internal static TagList Tags(string dataset) => new() { { "dataset", dataset } };
 

@@ -97,3 +97,9 @@ public sealed record AnalyticsBackfillRunInfo(
     DateTime? NextAttemptAt,
     string? LastError,
     string? RequestedBy);
+
+/// <summary>Request to reconcile a dataset version against its sinks.</summary>
+/// <param name="Dataset">The dataset name.</param>
+/// <param name="Version">The dataset version.</param>
+/// <param name="TenantIds">The tenants to check (at most 1000), or <see langword="null"/> for every active tenant.</param>
+public sealed record AnalyticsReconcileRequest(string Dataset, int Version, Guid[]? TenantIds = null);

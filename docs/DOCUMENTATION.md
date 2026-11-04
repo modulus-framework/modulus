@@ -6485,7 +6485,17 @@ Iceberg Kafka Connect sink commits the table.
     - Health: `IModuleHealthCheck` "Modulus.Analytics" is **Degraded**, never Unhealthy, when a dataset is stale or has dead letters. A warehouse that is behind is
       something to alert on, not a reason for an orchestrator to restart the application.
     - `GET /analytics/freshness` (`analytics:manage`) lists every dataset's state, lag, SLA, pending and dead-lettered counts.
-  - Still open: dataset-level permissions and plan gating; export audit through the framework's audit store; reconciliation (source against sink counts); data-quality
-    findings (`IDataQualityFindingSink`); retention and erasure propagation (`ITenantDataHandler`); lineage and the OpenLineage emitter.
+  - Done: **reconciliation** (21 more tests, plus 2 against a real ClickHouse server). `AnalyticsReconciler` counts the operational store (`IAnalyticsCountingSource`,
+    implemented by `EntityAnalyticsSource`, counted in each tenant's own context) and every `IAnalyticsReconcilableSink` (ClickHouse counts distinct records with `FINAL`;
+    the in-memory test sink also counts), per tenant. `AnalyticsReconciliation.Judge`: equal is a match; a warehouse shortfall no bigger than the records still queued is
+    *in flight*; a bigger one is *missing* (dead-lettered records never explain a gap, because they will not arrive on their own); a warehouse with more than the source is
+    *extra* (rows deleted in the source were never removed, or the dataset holds records from another population). Missing and extra increment
+    `modulus.analytics.reconciliation.mismatches`. A tenant or sink that cannot be counted is reported in `Errors` and the run continues. `POST /analytics/reconciliations`
+    (`analytics:manage`, at most 1000 tenants or every tenant). It reads counts only, never record values.
+    Limits: it compares counts, not contents; it is meaningful only when the dataset and the source describe the same population with the same record ids (a snapshot
+    dataset built from a backfill, not an event log); the Parquet sink cannot be counted through `IFileStorage` (no listing), so reconcile a lake from its query engine.
+  - Still open: dataset-level permissions and plan gating; export audit through the framework's audit store; data-quality findings beyond counts (the framework's
+    `IDataQualityFindingSink` is shaped for missing authorization attributes, so reconciliation has its own report); retention and erasure propagation
+    (`ITenantDataHandler`); lineage and the OpenLineage emitter.
 - [ ] Phase 5: management API (delivery operations done, see Phases 2 and 3; dataset catalog and freshness endpoints open), CLI `add-analytics` with compose template, `analytics-admin` in `modulus-ui`
 - [ ] Phase 6: Debezium reader, Airflow and dbt triggers, Superset helper, Doris sink, lakehouse runbooks
