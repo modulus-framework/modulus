@@ -6464,7 +6464,15 @@ Iceberg Kafka Connect sink commits the table.
       fact captured live, the live mapper must produce the same id (use the row key).
   - Management API: `POST /analytics/backfills` (dataset, version, optional tenant list of at most 1000 or every tenant, optional restart) and `GET /analytics/backfills`
     (filter by dataset and status). Responses leave out the cursor, which is a position in the source table. Bad requests get a 400 with the reason. 4 more unit tests.
-  - Still open: the Parquet sink; a change journal for incremental sync (modelled on `AiChangeJournal`);
+  - Parquet sink (`Modulus.Analytics.Parquet`, `Parquet.Net` 6.1.0): immutable files written through `IFileStorage` (local disk, S3, Azure Blob) as
+    `{root}/{dataset}_v{n}/tenant={id}/dt={yyyy-MM-dd}/part-{hash}.parquet`, with the dataset's JSON Schema published at `{root}/_schemas/`. Each file keeps
+    `tenant_id`, `event_id` and `occurred_at` inside, and the partition folders are named `tenant` and `dt` so a Hive engine does not see a partition key that is also
+    a column. Types: microsecond UTC timestamps, `DATE`, `DECIMAL(38,9)` (configurable), UTF-8 text, GUIDs as text; confidential fields are hashed and restricted ones
+    never written. The file name is a hash of its record ids, so the same batch overwrites the same file; a retry with different records writes a second file, so a
+    record can appear twice and readers keep one row per (`tenant_id`, `event_id`) (compaction, Iceberg `MERGE`, or a dbt incremental model). Snappy by default, Zstd, Gzip or
+    none. 25 unit tests, and the files were read back by two independent engines (PyArrow 26 and DuckDB 2.0): exact types, microseconds, nullability, Hive partition
+    discovery and both Snappy and Zstd. Spark, Trino and Iceberg were not run here.
+  - Still open: a change journal for incremental sync (modelled on `AiChangeJournal`);
     a backfill run against a real PostgreSQL or SQL Server database (the tests use SQLite).
 - [ ] Phase 4: dataset permissions, plan gating, export audit, freshness, reconciliation, quality, retention and erasure, lineage
 - [ ] Phase 5: management API (delivery operations done, see Phases 2 and 3; dataset catalog and freshness endpoints open), CLI `add-analytics` with compose template, `analytics-admin` in `modulus-ui`

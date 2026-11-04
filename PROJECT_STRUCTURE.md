@@ -44,6 +44,7 @@ modulus/
 | platform | `Modulus.AspNetCore.Redis` | Redis-backed shared HTTP idempotency store (`AddRedisIdempotencyStore`) |
 | platform | `Modulus.Caching.Redis`, `Modulus.Storage.{S3,AzureBlobs}`, `Modulus.SignalR.Backplane` | Dependency-heavy providers split from Platform |
 | analytics | `Modulus.Analytics.ClickHouse` | ClickHouse sink: tenant-keyed `ReplacingMergeTree` table per dataset version, contract check, failure classification (official `ClickHouse.Driver`, MIT) |
+| analytics | `Modulus.Analytics.Parquet` | Parquet sink: immutable files through `IFileStorage` in a Hive-style tenant and day layout (Spark, Trino, DuckDB, Iceberg), JSON Schema published beside the data (`Parquet.Net`, MIT) |
 | analytics | `Modulus.Analytics.Management` | Operations API for analytics delivery (`analytics:manage`): queue status, list, replay and purge dead letters, start and list backfill runs; never returns record values or cursors |
 | analytics | `Modulus.Analytics.EntityFrameworkCore` | Durable delivery and backfill for analytics: queue table, duplicate-safe enqueue, atomic claim, retry schedule, dead-letter, purge, per-tenant resumable backfill runs, entity-backed sources, background workers |
 | analytics | `Modulus.Analytics.Testing` | In-memory sink and a test-framework-neutral conformance suite for any `IAnalyticsSink` |

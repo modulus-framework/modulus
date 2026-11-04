@@ -56,7 +56,11 @@ package declares a licence file instead of an SPDX expression, the file was read
 | `Microsoft.IO.RecyclableMemoryStream` (dependency of the driver) | 3.0.1 | MIT | Adopted (transitive) |
 | `Testcontainers.ClickHouse` | 4.16.0 | MIT | **Adopted**: pinned, integration tests only |
 | `ClickHouse.Client` (community client by DarkWanderer) | 7.14.0 | MIT | Not used: the official `ClickHouse.Driver` replaces it |
-| `Parquet.Net` | 6.1.0 | MIT | Cleared, not pinned yet (Phase 3 Parquet sink) |
+| `Parquet.Net` | 6.1.0 | MIT | **Adopted** (2026-11-04): pinned, used by `Modulus.Analytics.Parquet` |
+| `CommunityToolkit.HighPerformance` (dependency of `Parquet.Net`) | 8.4.2 | MIT | Adopted (transitive) |
+| `Snappier` (dependency of `Parquet.Net`) | 1.3.1 | BSD-3-Clause | Adopted (transitive) |
+| `ZstdSharp.Port` (dependency of `Parquet.Net`) | 0.8.8 | MIT | Adopted (transitive) |
+| `K4os.Compression.LZ4` (dependency of `Parquet.Net`) | 1.3.8 | MIT, read from the repository `LICENSE` (the package carries only a licence URL, no expression or file) | Adopted (transitive) |
 | `Apache.Arrow` | 23.0.0 | Apache-2.0 | Cleared, not pinned (alternative to `Parquet.Net`) |
 | `Apache.Avro` | 1.12.2 | Apache-2.0 (the `LICENSE` file in the package is the Apache License 2.0) | Cleared, not pinned yet |
 | `DuckDB.NET.Data` | 1.5.6.1 | MIT | Cleared, not pinned (optional embedded reads) |

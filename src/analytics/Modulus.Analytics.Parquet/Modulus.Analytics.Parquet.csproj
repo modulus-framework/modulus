@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework />
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <!-- New package: nothing of this ID is on nuget.org yet, so there is no baseline to validate against. Remove this line after its first release. -->
+    <EnablePackageValidation>false</EnablePackageValidation>
+    <Description>Parquet sink for the Modulus Analytics Integration Layer: writes masked batches as immutable Parquet files through IFileStorage (local disk, S3, Azure Blob) in a Hive-style tenant and day layout that Spark, Trino, DuckDB and Iceberg can read, and publishes each dataset's JSON Schema next to the data.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Modulus.Analytics/Modulus.Analytics.csproj" />
+    <ProjectReference Include="../../platform/Modulus.Platform/Modulus.Platform.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Parquet.Net" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Modulus.Analytics.Parquet.Tests" />
+  </ItemGroup>
+
+</Project>
