@@ -87,6 +87,7 @@ internal static class UiComponents
         new("import-wizard", "Data grids", "Import an Excel or CSV file in steps: upload, match columns, check, import."),
         new("pivot-grid", "Data grids", "A pivot table: rows, columns and totals from your data, with CSV download."),
         new("file-manager", "Pro", "Browse folders and files; create, rename and delete."),
+        new("flow-editor", "Pro", "A workflow designer like n8n: drag AI and automation nodes, draw connections, show run status."),
         new("gantt", "Pro", "A project timeline with bars, dependencies and a today line."),
         new("kanban", "Pro", "A drag-and-drop board with columns and cards."),
         new("query-builder", "Pro", "Build a filter with fields, operators and nested AND/OR groups."),

@@ -44,6 +44,7 @@ public sealed class UiComponentTests
     [InlineData("tag-input", "TagInput", "Inputs")]
     [InlineData("time-picker", "TimePicker", "Inputs")]
     [InlineData("popconfirm", "Popconfirm", "Feedback")]
+    [InlineData("flow-editor", "FlowEditor", "Pro")]
     public void The_production_readiness_components_are_registered(string key, string pascal, string category)
     {
         var c = UiComponents.Find(key);

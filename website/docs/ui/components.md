@@ -82,6 +82,7 @@ Each plugin is a Blazor component and a tag helper over one renderer. The librar
 | `app-image-cropper` | Cropper.js | Aspect-ratio buttons. The crop goes to a form field as JSON. |
 | `app-code-editor` | CodeMirror 6 | Highlighting, folding and search for JavaScript, TypeScript, JSON, CSS and HTML |
 | `app-sortable` and `app-sortable-item` | (native) | Reorder a list, drag between lists, handles and keyboard moves. It posts the order. |
+| `app-flow-editor` | (native) | An n8n style workflow designer for AI and automation flows: drag nodes, draw connections, undo, show run status. The graph posts as JSON. `modulus ui add-component flow-editor` scaffolds it. |
 | `app-lightbox` | (native) | Image lightbox |
 | `app-barcode` | (native) | Code 128 and EAN-13 as SVG |
 

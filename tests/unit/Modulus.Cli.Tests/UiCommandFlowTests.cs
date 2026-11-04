@@ -57,8 +57,8 @@ public sealed class UiCommandFlowTests : IDisposable
     {
         if (!HasPackage()) return;
 
-        Run("ui", "add-component", "alert", "data-table", "tag-input", "popconfirm", "time-picker").Should().Be(0);
-        foreach (var name in new[] { "_TagInput", "_Popconfirm", "_TimePicker" })
+        Run("ui", "add-component", "alert", "data-table", "tag-input", "popconfirm", "time-picker", "flow-editor").Should().Be(0);
+        foreach (var name in new[] { "_TagInput", "_Popconfirm", "_TimePicker", "_FlowEditor" })
             File.Exists(P("Views", "Shared", "Components", $"{name}.cshtml")).Should().BeTrue(name);
         File.Exists(P("Views", "Shared", "Components", "_Alert.cshtml")).Should().BeTrue();
         File.Exists(P("Views", "Shared", "Components", "_DataTable.cshtml")).Should().BeTrue();
