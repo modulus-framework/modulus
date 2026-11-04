@@ -23,8 +23,8 @@ Every tool and NuGet package must be open source (OSI licence), production-prove
 | 2 | Capture, durable delivery queue, ClickHouse sink, messaging sink, EF migration sample, `SchemaVersion` on outbox rows | Done |
 | 3 | Backfill, incremental sync, Parquet sink | Done. SQL Server run closed without a run (see Decisions) |
 | 4 | Governance | Done (see below) |
-| 5 | Operability: CLI `add-analytics`, catalog and freshness endpoints (done); `analytics-admin` in modulus-ui (open, separate repository) | In progress |
-| 6 | Enterprise providers: Debezium reader, Airflow/dbt trigger, Superset guest tokens, Doris sink, lakehouse runbooks | Code and runbooks done. Live runs of Debezium, Kafka, Doris, Airflow, Superset and Iceberg still open (see Next steps) |
+| 5 | Operability: CLI `add-analytics`, catalog and freshness endpoints (done); `analytics-admin` in modulus-ui | Closed. Not built: the modulus-ui repository was not pushed to, as the owner asked |
+| 6 | Enterprise providers: Debezium reader, Airflow/dbt trigger, Superset guest tokens, Doris sink, lakehouse runbooks | Code and runbooks done. Closed without live runs: Debezium, Kafka, Doris, Airflow, Superset and Iceberg were tested against fakes only (see Decisions) |
 
 ## Phase 4 detail
 
@@ -71,11 +71,14 @@ Last full run of the analytics suites (both frameworks where applicable):
 
 ## Next steps
 
-1. Phase 5: `analytics-admin` in modulus-ui. Not started: that repository is attached read-only and the user asked not to push to it.
-2. Live verification of Phase 6 against real Debezium, Kafka, Doris, Airflow, Superset and Iceberg. Not run. Starting a Kafka broker from a downloaded tarball was denied by the auto-mode permission classifier, so no broker was started. Doris, Airflow and Superset images were not pulled. To finish this, allow the local start of those services, or run the steps in `docs/runbooks/lakehouse-cdc.md` and `docs/runbooks/lakehouse-orchestration.md` on a host you control, then capture a real Debezium change event as a test fixture for `DebeziumChangeReader`.
+No open items remain. Both items below were closed by the owner's decision, not completed:
+
+1. Phase 5 `analytics-admin` in modulus-ui: closed, not built.
+2. Phase 6 live runs against Debezium, Kafka, Doris, Airflow, Superset and Iceberg: closed, not run. A Kafka broker start was denied by the permission classifier, and the other images were not pulled. The code is covered by fake-server tests only.
 
 ## Decisions to know about
 
+- Closed by the owner: the modulus-ui `analytics-admin` feature (not built) and the live Phase 6 runs (not performed; fake-server tests only).
 - SQL Server run closed without a run. SQL Server is proprietary, so the open-source-only policy rules it out as a test dependency. The backfill code is provider-agnostic EF and is tested on PostgreSQL 16.15. Teams that run SQL Server can run it against their own instance.
 - The messaging sink is append-only, so it cannot erase a tenant. `AnalyticsTenantDataHandler` refuses to run while a non-erasable sink is registered, so enabling the messaging sink blocks tenant erasure until the consumer handles erasure too.
 

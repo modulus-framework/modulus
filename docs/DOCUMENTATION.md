@@ -6574,7 +6574,7 @@ Iceberg Kafka Connect sink commits the table.
     (`AddModulusAnalyticsStore`) is wired, because that needs the application's DbContext. The packages are not on NuGet yet, so an app that runs the command can only
     build after the analytics packages are published.
   - Still open: `analytics-admin` in `modulus-ui`, which is a separate repository (the UI feature, its `ui-kit.json` entry and the mvc, razor-pages and blazor templates).
-- [x] Phase 6: Debezium reader, Airflow and dbt triggers, Superset helper, Doris sink, lakehouse runbooks (live Kafka, Debezium, Doris, Airflow, Superset and Iceberg runs are still open; see docs/ANALYTICS_PROGRESS.md)
+- [x] Phase 6: Debezium reader, Airflow and dbt triggers, Superset helper, Doris sink, lakehouse runbooks (live Kafka, Debezium, Doris, Airflow, Superset and Iceberg runs closed without being performed; code tested against fakes only; see docs/ANALYTICS_PROGRESS.md)
   - Done: **run observers** (`Modulus.Analytics`, `.EntityFrameworkCore`; 2 EF tests). `IAnalyticsRunObserver.OnBackfillCompletedAsync` is called once per
     completed backfill run, after its rows are saved, with the run id, dataset, company, rows queued and completion time. An observer that throws is logged and the run
     stays completed. Incremental syncs never complete and are not reported.
