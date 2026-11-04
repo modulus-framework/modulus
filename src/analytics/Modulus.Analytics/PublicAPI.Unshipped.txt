@@ -379,3 +379,6 @@ static Modulus.Analytics.AnalyticsUpcasting.UpcastTo(System.Collections.Generic.
 static Modulus.Analytics.AnalyticsValueSerializer.Deserialize(Modulus.Analytics.AnalyticsDatasetDescriptor! dataset, string! json) -> System.Collections.Generic.IReadOnlyDictionary<string!, object?>!
 static Modulus.Analytics.AnalyticsValueSerializer.Normalize(Modulus.Analytics.AnalyticsDatasetDescriptor! dataset, System.Collections.Generic.IReadOnlyDictionary<string!, object?>! values) -> System.Collections.Generic.IReadOnlyDictionary<string!, object?>!
 static Modulus.Analytics.AnalyticsValueSerializer.Serialize(Modulus.Analytics.AnalyticsDatasetDescriptor! dataset, System.Collections.Generic.IReadOnlyDictionary<string!, object?>! values) -> string!
+Modulus.Analytics.IAnalyticsErasableSink
+Modulus.Analytics.IAnalyticsErasableSink.CountTenantAsync(Modulus.Analytics.AnalyticsDatasetDescriptor! dataset, System.Guid tenantId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<long>!
+Modulus.Analytics.IAnalyticsErasableSink.EraseTenantAsync(Modulus.Analytics.AnalyticsDatasetDescriptor! dataset, System.Guid tenantId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<long>!

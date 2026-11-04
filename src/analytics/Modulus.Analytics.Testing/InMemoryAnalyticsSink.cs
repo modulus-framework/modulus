@@ -6,7 +6,7 @@ using System.Collections.Concurrent;
 /// A sink that keeps rows in memory, one per (tenant, dataset, event id), the way a deduplicating warehouse table does.
 /// Use it in tests, and as the reference behaviour providers are checked against.
 /// </summary>
-public sealed class InMemoryAnalyticsSink : IAnalyticsReconcilableSink
+public sealed class InMemoryAnalyticsSink : IAnalyticsErasableSink
 {
     private readonly ConcurrentDictionary<(Guid Tenant, string Dataset, Guid EventId), AnalyticsRecord> _rows = new();
     private readonly ConcurrentDictionary<string, AnalyticsDatasetDescriptor> _datasets = new(StringComparer.Ordinal);
@@ -41,6 +41,25 @@ public sealed class InMemoryAnalyticsSink : IAnalyticsReconcilableSink
     /// <inheritdoc />
     public Task<long> CountAsync(AnalyticsDatasetDescriptor dataset, Guid tenantId, CancellationToken cancellationToken)
         => Task.FromResult((long)_rows.Keys.Count(k => k.Tenant == tenantId && k.Dataset == dataset.Name));
+
+    /// <inheritdoc />
+    public Task<long> CountTenantAsync(AnalyticsDatasetDescriptor dataset, Guid tenantId, CancellationToken cancellationToken)
+        => CountAsync(dataset, tenantId, cancellationToken);
+
+    /// <inheritdoc />
+    public Task<long> EraseTenantAsync(AnalyticsDatasetDescriptor dataset, Guid tenantId, CancellationToken cancellationToken)
+    {
+        long removed = 0;
+        foreach (var key in _rows.Keys.Where(k => k.Tenant == tenantId && k.Dataset == dataset.Name).ToArray())
+        {
+            if (_rows.TryRemove(key, out _))
+            {
+                removed++;
+            }
+        }
+
+        return Task.FromResult(removed);
+    }
 
     /// <inheritdoc />
     public Task WriteAsync(AnalyticsDatasetDescriptor dataset, IReadOnlyList<AnalyticsRecord> records, CancellationToken cancellationToken)

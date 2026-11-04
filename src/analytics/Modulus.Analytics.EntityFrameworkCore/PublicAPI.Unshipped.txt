@@ -196,3 +196,15 @@ static Modulus.Analytics.EntityFrameworkCore.AnalyticsEntityRow.operator ==(Modu
 static Modulus.Analytics.EntityFrameworkCore.AnalyticsEntitySourceExtensions.AddEntitySource<TContext, TEntity, TKey>(this Modulus.Analytics.AnalyticsBuilder! builder, string! dataset, int version, System.Linq.Expressions.Expression<System.Func<TEntity!, TKey>!>! key, System.Func<TEntity!, Modulus.Analytics.EntityFrameworkCore.AnalyticsEntityRow!>! map) -> Modulus.Analytics.AnalyticsBuilder!
 static Modulus.Analytics.EntityFrameworkCore.AnalyticsEntitySourceExtensions.AddIncrementalEntitySource<TContext, TEntity, TKey>(this Modulus.Analytics.AnalyticsBuilder! builder, string! dataset, int version, System.Linq.Expressions.Expression<System.Func<TEntity!, TKey>!>! key, System.Func<TEntity!, Modulus.Analytics.EntityFrameworkCore.AnalyticsEntityRow!>! map) -> Modulus.Analytics.AnalyticsBuilder!
 static Modulus.Analytics.EntityFrameworkCore.ModulusAnalyticsDbContext.ConfigureAnalytics(Microsoft.EntityFrameworkCore.ModelBuilder! modelBuilder) -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsTenantDataExtensions
+Modulus.Analytics.EntityFrameworkCore.AnalyticsTenantDataHandler
+Modulus.Analytics.EntityFrameworkCore.AnalyticsTenantDataHandler.AnalyticsTenantDataHandler(Modulus.Analytics.EntityFrameworkCore.ModulusAnalyticsDbContext! db, Modulus.Analytics.IAnalyticsDatasetCatalog! catalog, System.Collections.Generic.IEnumerable<Modulus.Analytics.IAnalyticsSink!>! sinks, Modulus.Core.Abstractions.ICurrentTenant! currentTenant) -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsTenantDataHandler.CountAsync(Modulus.Tenancy.Lifecycle.TenantDataset! dataset, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<long>!
+Modulus.Analytics.EntityFrameworkCore.AnalyticsTenantDataHandler.Datasets.get -> System.Collections.Generic.IReadOnlyList<Modulus.Tenancy.Lifecycle.TenantDataset!>!
+Modulus.Analytics.EntityFrameworkCore.AnalyticsTenantDataHandler.DeleteAsync(Modulus.Tenancy.Lifecycle.TenantDataset! dataset, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<long>!
+Modulus.Analytics.EntityFrameworkCore.AnalyticsTenantDataHandler.ExportAsync(Modulus.Tenancy.Lifecycle.TenantDataset! dataset, Modulus.Tenancy.Lifecycle.ITenantExportWriter! writer, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
+Modulus.Analytics.EntityFrameworkCore.AnalyticsTenantDataHandler.Module.get -> string!
+const Modulus.Analytics.EntityFrameworkCore.AnalyticsTenantDataHandler.BackfillDataset = "analytics.backfill" -> string!
+const Modulus.Analytics.EntityFrameworkCore.AnalyticsTenantDataHandler.QueueDataset = "analytics.queue" -> string!
+const Modulus.Analytics.EntityFrameworkCore.AnalyticsTenantDataHandler.WarehouseDataset = "analytics.warehouse" -> string!
+static Modulus.Analytics.EntityFrameworkCore.AnalyticsTenantDataExtensions.AddModulusAnalyticsTenantData(this Modulus.Tenancy.Lifecycle.TenantLifecycleBuilder! builder) -> Modulus.Tenancy.Lifecycle.TenantLifecycleBuilder!

@@ -35,7 +35,7 @@ Every tool and NuGet package must be open source (OSI licence), production-prove
 | Dataset permissions (`analytics:manage:{dataset}`) and plan gating (`RequiredFeature`) | Done | `51ec852` |
 | Export audit through `ISecurityAuditLog` (hash-chained, category `analytics`) | Done, tests pass on net8.0 and net10.0 | `0af9463` |
 | Data-quality findings beyond counts | Open | |
-| Retention and erasure propagation (`ITenantDataHandler`, Parquet retention) | Open (task #4) | |
+| Retention and erasure propagation (`AnalyticsTenantDataHandler`, `IAnalyticsErasableSink`; ClickHouse TTL, queue purge; Parquet by the lake's tools) | Done, 5 unit tests and 2 ClickHouse integration tests pass | pending commit |
 | Lineage and OpenLineage emitter (verify against Marquez) | Open (task #5) | |
 
 ## Test status
@@ -45,11 +45,12 @@ Last full run of the analytics suites (both frameworks where applicable):
 | Suite | Result |
 |---|---|
 | Modulus.Analytics.Tests | 56 pass |
-| Modulus.Analytics.EntityFrameworkCore.Tests | 80 pass |
+| Modulus.Analytics.EntityFrameworkCore.Tests | 85 pass |
 | Modulus.Analytics.Management.Tests | 33 pass |
 | Modulus.Analytics.ClickHouse.Tests | 23 pass |
 | Modulus.Analytics.Parquet.Tests | 25 pass |
-| Integration: ClickHouse (real server), EF (real PostgreSQL 16) | 13 and 8 pass (last run before the Phase 4 changes) |
+| Integration: ClickHouse (real server) | 15 pass (after the erasure change) |
+| Integration: EF (real PostgreSQL 16) | 8 pass (last run before the Phase 4 changes; not re-run since) |
 
 `dotnet format --verify-no-changes` is clean for the analytics projects. Each changed project builds with 0 warnings.
 
@@ -60,10 +61,9 @@ Last full run of the analytics suites (both frameworks where applicable):
 
 ## Next steps
 
-1. Commit and push the export audit (docs and code).
-2. Phase 4 retention and erasure propagation.
-3. Phase 4 OpenLineage emitter, checked against a real Marquez container.
-4. Phase 5, then Phase 6.
+1. Phase 4 OpenLineage emitter, checked against a real Marquez container (task #5).
+2. Phase 4 data-quality findings beyond counts.
+3. Phase 5, then Phase 6.
 
 ## Decisions to know about
 

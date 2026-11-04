@@ -14,6 +14,7 @@
     <ProjectReference Include="../Modulus.Analytics/Modulus.Analytics.csproj" />
     <ProjectReference Include="../../data/Modulus.Data.Abstractions/Modulus.Data.Abstractions.csproj" />
     <ProjectReference Include="../../platform/Modulus.Platform/Modulus.Platform.csproj" />
+    <ProjectReference Include="../../platform/Modulus.Tenancy.Lifecycle/Modulus.Tenancy.Lifecycle.csproj" />
   </ItemGroup>
 
   <ItemGroup>

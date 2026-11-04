@@ -22,3 +22,5 @@ Modulus.Analytics.ClickHouse.ClickHouseSinkOptions.TablePrefix.get -> string!
 Modulus.Analytics.ClickHouse.ClickHouseSinkOptions.TablePrefix.set -> void
 const Modulus.Analytics.ClickHouse.ClickHouseSinkOptions.SectionName = "Analytics:ClickHouse" -> string!
 static Modulus.Analytics.ClickHouse.ClickHouseAnalyticsExtensions.AddClickHouse(this Modulus.Analytics.AnalyticsBuilder! builder, Microsoft.Extensions.Configuration.IConfiguration! configuration, System.Action<Modulus.Analytics.ClickHouse.ClickHouseSinkOptions!>? configure = null) -> Modulus.Analytics.AnalyticsBuilder!
+Modulus.Analytics.ClickHouse.ClickHouseAnalyticsSink.CountTenantAsync(Modulus.Analytics.AnalyticsDatasetDescriptor! dataset, System.Guid tenantId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<long>!
+Modulus.Analytics.ClickHouse.ClickHouseAnalyticsSink.EraseTenantAsync(Modulus.Analytics.AnalyticsDatasetDescriptor! dataset, System.Guid tenantId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<long>!

@@ -12,7 +12,7 @@ using Microsoft.Extensions.Options;
 /// Merging is eventual: until it happens a duplicate can be visible, so queries that need exact counts use <c>FINAL</c> (or
 /// <c>argMax</c>). A column's comment records its classification and masking, so the warehouse documents itself.
 /// </remarks>
-public sealed class ClickHouseAnalyticsSink(ClickHouseClient client, IOptions<ClickHouseSinkOptions> options) : IAnalyticsReconcilableSink
+public sealed class ClickHouseAnalyticsSink(ClickHouseClient client, IOptions<ClickHouseSinkOptions> options) : IAnalyticsErasableSink
 {
     /// <inheritdoc />
     public string Name => "clickhouse";
@@ -118,6 +118,68 @@ public sealed class ClickHouseAnalyticsSink(ClickHouseClient client, IOptions<Cl
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             throw ClickHouseErrors.Translate($"count the rows of '{table}'", ex);
+        }
+    }
+
+    /// <inheritdoc />
+    /// <remarks>0 when the table was never created. Counts with <c>FINAL</c>, like <see cref="CountAsync"/>.</remarks>
+    public async Task<long> CountTenantAsync(AnalyticsDatasetDescriptor dataset, Guid tenantId, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(dataset);
+        var table = ClickHouseDdl.TableName(options.Value, dataset);
+        if (!await TableExistsAsync(table, cancellationToken).ConfigureAwait(false))
+        {
+            return 0;
+        }
+
+        return await CountAsync(dataset, tenantId, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// Deletes with a lightweight <c>DELETE</c> filtered on <c>tenant_id</c>, so the rows disappear from queries at once and their parts are
+    /// rewritten by later merges. Returns the distinct count taken just before the delete.
+    /// </remarks>
+    public async Task<long> EraseTenantAsync(AnalyticsDatasetDescriptor dataset, Guid tenantId, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(dataset);
+        var table = ClickHouseDdl.TableName(options.Value, dataset);
+        if (!await TableExistsAsync(table, cancellationToken).ConfigureAwait(false))
+        {
+            return 0;
+        }
+
+        var removed = await CountAsync(dataset, tenantId, cancellationToken).ConfigureAwait(false);
+        if (removed == 0)
+        {
+            return 0;
+        }
+
+        try
+        {
+            await client.ExecuteNonQueryAsync(
+                $"DELETE FROM {ClickHouseDdl.Quote(table)} WHERE {ClickHouseDdl.Quote(ClickHouseDdl.TenantColumn)} = {ClickHouseDdl.Literal(tenantId.ToString("D"))}",
+                cancellationToken: cancellationToken).ConfigureAwait(false);
+            return removed;
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            throw ClickHouseErrors.Translate($"delete the rows of '{table}' for one tenant", ex);
+        }
+    }
+
+    private async Task<bool> TableExistsAsync(string table, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var found = await client.ExecuteScalarAsync(
+                $"SELECT count() FROM system.tables WHERE database = currentDatabase() AND name = {ClickHouseDdl.Literal(table)}",
+                cancellationToken: cancellationToken).ConfigureAwait(false);
+            return Convert.ToInt64(found, System.Globalization.CultureInfo.InvariantCulture) > 0;
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            throw ClickHouseErrors.Translate($"look up the table '{table}'", ex);
         }
     }
 

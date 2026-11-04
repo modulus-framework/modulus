@@ -6527,8 +6527,18 @@ Iceberg Kafka Connect sink commits the table.
     `incremental.start`, `reconciliation.run`, `dead-letters.replay`, `dead-letters.purge`, `run.cancel`. The actor is the caller's user id, the target the dataset
     version or run, and the details only counts and scope (tenants, created, skipped, replayed, purged, comparisons, errors). Record values are never written. Refused
     requests are not recorded here (the framework's access-decision audit covers those). Without `AddModulusSecurityAudit` the entries are dropped and only the application log line remains.
-  - Still open: data-quality findings beyond counts (the framework's
-    `IDataQualityFindingSink` is shaped for missing authorization attributes, so reconciliation has its own report); retention and erasure propagation
-    (`ITenantDataHandler`); lineage and the OpenLineage emitter.
+  - Done: **retention and erasure propagation** (`Modulus.Analytics`, `.ClickHouse`, `.EntityFrameworkCore`, `.Testing`; 5 unit tests, 2 against a real ClickHouse server).
+    - `AnalyticsTenantDataHandler` (`AddModulusAnalyticsTenantData()` on the tenancy lifecycle builder) puts three owned datasets under offboarding: `analytics.queue`
+      (the company's queued and recently delivered records), `analytics.backfill` (its backfill and incremental runs) and `analytics.warehouse` (its rows in every
+      dataset version of every erasable sink). Count and delete are idempotent, run inside the company's tenant context, and never touch another company.
+    - `IAnalyticsErasableSink` (extends `IAnalyticsReconcilableSink`): `CountTenantAsync` and `EraseTenantAsync`, both 0 for a dataset version that was never created.
+      ClickHouse deletes with a lightweight `DELETE` filtered on `tenant_id`; the in-memory test sink implements the same semantics.
+    - Export writes nothing: the warehouse copies are derived from the source modules, which export their own records.
+    - Refusal, not silence: a registered sink that cannot delete one company's rows (the Parquet lake has no file listing) makes count and delete throw, so a company is
+      never reported as erased while copies remain. Erase such a lake with the table format's own row-level delete (Iceberg, Spark or Trino), then the handler works for the rest.
+    - Retention: warehouse rows follow `RetentionDays` (ClickHouse TTL). Delivered queue rows are purged after `PurgeDeliveredAfter` (7 days by default). Backfill
+      run history is kept until offboarding; a time-based purge for it is open. Parquet retention is the lake's job (table-format expiry), not this layer's.
+  - Still open: data-quality findings beyond counts (the framework's `IDataQualityFindingSink` is shaped for missing authorization attributes, so reconciliation has
+    its own report); lineage and the OpenLineage emitter.
 - [ ] Phase 5: management API (delivery operations done, see Phases 2 and 3; dataset catalog and freshness endpoints open), CLI `add-analytics` with compose template, `analytics-admin` in `modulus-ui`
 - [ ] Phase 6: Debezium reader, Airflow and dbt triggers, Superset helper, Doris sink, lakehouse runbooks

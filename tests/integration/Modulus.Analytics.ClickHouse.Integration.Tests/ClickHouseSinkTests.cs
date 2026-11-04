@@ -57,6 +57,40 @@ public sealed class ClickHouseSinkTests(ClickHouseFixture clickHouse)
     }
 
     [Fact]
+    public async Task Erasing_one_company_deletes_only_its_rows_and_a_second_erase_removes_nothing()
+    {
+        var sink = clickHouse.CreateSink(Prefix("erase"));
+        var dataset = new AnalyticsDatasetDescriptor("sample", 1, "qa", [new("label", AnalyticsFieldType.String)]);
+        var a = Guid.NewGuid();
+        var b = Guid.NewGuid();
+        await sink.EnsureDatasetAsync(dataset, CancellationToken.None);
+        await sink.WriteAsync(dataset,
+        [
+            new AnalyticsRecord(Guid.NewGuid(), "sample", 1, a, DateTimeOffset.UtcNow, new Dictionary<string, object?> { ["label"] = "a1" }),
+            new AnalyticsRecord(Guid.NewGuid(), "sample", 1, a, DateTimeOffset.UtcNow, new Dictionary<string, object?> { ["label"] = "a2" }),
+            new AnalyticsRecord(Guid.NewGuid(), "sample", 1, b, DateTimeOffset.UtcNow, new Dictionary<string, object?> { ["label"] = "b1" }),
+        ], CancellationToken.None);
+
+        (await sink.CountTenantAsync(dataset, a, CancellationToken.None)).Should().Be(2);
+        (await sink.EraseTenantAsync(dataset, a, CancellationToken.None)).Should().Be(2);
+
+        (await sink.CountTenantAsync(dataset, a, CancellationToken.None)).Should().Be(0);
+        (await sink.CountTenantAsync(dataset, b, CancellationToken.None)).Should().Be(1, "another company's rows are untouched");
+        (await sink.EraseTenantAsync(dataset, a, CancellationToken.None)).Should().Be(0);
+    }
+
+    [Fact]
+    public async Task A_dataset_that_was_never_created_counts_and_erases_as_zero()
+    {
+        var sink = clickHouse.CreateSink(Prefix("never"));
+        var dataset = new AnalyticsDatasetDescriptor("absent", 1, "qa", [new("label", AnalyticsFieldType.String)]);
+        var tenant = Guid.NewGuid();
+
+        (await sink.CountTenantAsync(dataset, tenant, CancellationToken.None)).Should().Be(0);
+        (await sink.EraseTenantAsync(dataset, tenant, CancellationToken.None)).Should().Be(0);
+    }
+
+    [Fact]
     public async Task Every_field_type_round_trips_and_masking_is_applied_on_the_way_in()
     {
         var sink = clickHouse.CreateSink(Prefix("types"));
