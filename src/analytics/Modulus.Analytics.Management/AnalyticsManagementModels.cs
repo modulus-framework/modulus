@@ -59,3 +59,41 @@ public sealed record AnalyticsPurgeResponse(int Purged);
 /// <param name="Page">The page number, from 1.</param>
 /// <param name="PageSize">Items per page.</param>
 public sealed record AnalyticsPage<T>(IReadOnlyList<T> Items, int Total, int Page, int PageSize);
+
+/// <summary>Request to start backfill runs.</summary>
+/// <param name="Dataset">The dataset name.</param>
+/// <param name="Version">The dataset version.</param>
+/// <param name="TenantIds">The tenants to cover (at most 1000), or <see langword="null"/> for every active tenant.</param>
+/// <param name="Restart">Whether to restart runs that already finished or failed.</param>
+public sealed record AnalyticsBackfillRequest(string Dataset, int Version, Guid[]? TenantIds = null, bool Restart = false);
+
+/// <summary>
+/// A backfill run as management sees it. The cursor is left out: it is a position in the source table and means nothing to an operator.
+/// </summary>
+/// <param name="Id">The run id.</param>
+/// <param name="Dataset">The dataset name.</param>
+/// <param name="SchemaVersion">The dataset version.</param>
+/// <param name="TenantId">The tenant being read.</param>
+/// <param name="Status">Pending, Running, Completed or Failed.</param>
+/// <param name="RowsQueued">Records queued so far.</param>
+/// <param name="AttemptCount">Consecutive failed cycles.</param>
+/// <param name="CreatedAt">When the run was created (UTC).</param>
+/// <param name="UpdatedAt">When it last made progress (UTC).</param>
+/// <param name="CompletedAt">When it completed (UTC).</param>
+/// <param name="NextAttemptAt">When the next attempt is due after a failure (UTC).</param>
+/// <param name="LastError">What went wrong last.</param>
+/// <param name="RequestedBy">Who started it.</param>
+public sealed record AnalyticsBackfillRunInfo(
+    Guid Id,
+    string Dataset,
+    int SchemaVersion,
+    Guid TenantId,
+    string Status,
+    long RowsQueued,
+    int AttemptCount,
+    DateTime CreatedAt,
+    DateTime UpdatedAt,
+    DateTime? CompletedAt,
+    DateTime? NextAttemptAt,
+    string? LastError,
+    string? RequestedBy);

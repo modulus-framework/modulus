@@ -40,7 +40,10 @@ public sealed class AnalyticsManagementApiTests : IAsyncLifetime
         builder.Services.AddAuthentication("Test").AddScheme<AuthenticationSchemeOptions, TestAuthHandler>("Test", null);
         builder.Services.AddModulusAuthorization(o => o.TrustPermissionClaims = true);
         builder.Services.AddDbContext<TestDb>(o => o.UseSqlite(_connection));
-        builder.Services.AddModulusAnalyticsStore<TestDb>(new ConfigurationBuilder().Build(), o => o.EnableDelivery = false);
+        builder.Services.AddModulusAnalytics(a => a
+            .AddDataset(new AnalyticsDatasetDescriptor("orders", 1, "sales", [new("order_id", AnalyticsFieldType.Int64)]))
+            .Services.AddScoped<IAnalyticsSource, StubSource>());
+        builder.Services.AddModulusAnalyticsStore<TestDb>(new ConfigurationBuilder().Build(), o => o.EnableDelivery = false, o => o.EnableWorker = false);
         builder.Services.AddModulusAnalyticsManagement();
 
         _app = builder.Build();
@@ -78,6 +81,82 @@ public sealed class AnalyticsManagementApiTests : IAsyncLifetime
         (await other.GetAsync("/analytics/status")).StatusCode.Should().Be(HttpStatusCode.Forbidden);
         (await other.PostAsJsonAsync("/analytics/dead-letters/replay", new AnalyticsReplayRequest([Guid.NewGuid()]))).StatusCode.Should().Be(HttpStatusCode.Forbidden);
         (await other.DeleteAsync("/analytics/dead-letters/purge")).StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        (await other.GetAsync("/analytics/backfills")).StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        (await other.PostAsJsonAsync("/analytics/backfills", new AnalyticsBackfillRequest("orders", 1))).StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        (await anonymous.GetAsync("/analytics/backfills")).StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task Starting_a_backfill_creates_a_run_per_tenant_and_lists_them_without_cursors()
+    {
+        var a = Guid.NewGuid();
+        var b = Guid.NewGuid();
+        using var client = AsUser(Manage);
+
+        var start = await client.PostAsJsonAsync("/analytics/backfills", new AnalyticsBackfillRequest("orders", 1, [a, b]));
+        var started = await start.Content.ReadFromJsonAsync<AnalyticsBackfillStartResult>();
+        var again = await (await client.PostAsJsonAsync("/analytics/backfills", new AnalyticsBackfillRequest("orders", 1, [a, b]))).Content.ReadFromJsonAsync<AnalyticsBackfillStartResult>();
+        await SeedRunCursorAsync(a, "secret-cursor-position");
+        var body = await client.GetStringAsync("/analytics/backfills");
+        var runs = await client.GetFromJsonAsync<List<AnalyticsBackfillRunInfo>>("/analytics/backfills?dataset=orders");
+
+        start.StatusCode.Should().Be(HttpStatusCode.OK);
+        started.Should().Be(new AnalyticsBackfillStartResult(2, 0, 0));
+        again.Should().Be(new AnalyticsBackfillStartResult(0, 0, 2));
+        runs!.Select(r => r.TenantId).Should().BeEquivalentTo([a, b]);
+        runs.Should().OnlyContain(r => r.Status == "Pending" && r.Dataset == "orders" && r.RequestedBy != null);
+        body.Should().NotContain("secret-cursor-position").And.NotContainEquivalentOf("cursor");
+    }
+
+    [Fact]
+    public async Task A_finished_backfill_is_restarted_only_when_asked()
+    {
+        var tenant = Guid.NewGuid();
+        using var client = AsUser(Manage);
+        await client.PostAsJsonAsync("/analytics/backfills", new AnalyticsBackfillRequest("orders", 1, [tenant]));
+        await CompleteRunAsync(tenant);
+
+        var skipped = await (await client.PostAsJsonAsync("/analytics/backfills", new AnalyticsBackfillRequest("orders", 1, [tenant]))).Content.ReadFromJsonAsync<AnalyticsBackfillStartResult>();
+        var restarted = await (await client.PostAsJsonAsync("/analytics/backfills", new AnalyticsBackfillRequest("orders", 1, [tenant], Restart: true))).Content.ReadFromJsonAsync<AnalyticsBackfillStartResult>();
+        var runs = await client.GetFromJsonAsync<List<AnalyticsBackfillRunInfo>>("/analytics/backfills");
+
+        skipped.Should().Be(new AnalyticsBackfillStartResult(0, 0, 1));
+        restarted.Should().Be(new AnalyticsBackfillStartResult(0, 1, 0));
+        runs!.Single().Status.Should().Be("Pending");
+    }
+
+    [Fact]
+    public async Task Bad_backfill_requests_are_refused_with_a_reason()
+    {
+        using var client = AsUser(Manage);
+
+        var unknown = await client.PostAsJsonAsync("/analytics/backfills", new AnalyticsBackfillRequest("nope", 1, [Guid.NewGuid()]));
+        var noVersion = await client.PostAsJsonAsync("/analytics/backfills", new AnalyticsBackfillRequest("orders", 0));
+        var empty = await client.PostAsJsonAsync("/analytics/backfills", new AnalyticsBackfillRequest("orders", 1, [Guid.Empty]));
+        var tooMany = await client.PostAsJsonAsync("/analytics/backfills", new AnalyticsBackfillRequest("orders", 1, [.. Enumerable.Range(0, 1001).Select(_ => Guid.NewGuid())]));
+
+        unknown.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await unknown.Content.ReadAsStringAsync()).Should().Contain("not registered");
+        noVersion.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        empty.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await empty.Content.ReadAsStringAsync()).Should().Contain("empty tenant");
+        tooMany.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task The_backfill_list_filters_by_status_and_refuses_an_unknown_status()
+    {
+        var done = Guid.NewGuid();
+        using var client = AsUser(Manage);
+        await client.PostAsJsonAsync("/analytics/backfills", new AnalyticsBackfillRequest("orders", 1, [done, Guid.NewGuid()]));
+        await CompleteRunAsync(done);
+
+        var completed = await client.GetFromJsonAsync<List<AnalyticsBackfillRunInfo>>("/analytics/backfills?status=completed");
+        var pending = await client.GetFromJsonAsync<List<AnalyticsBackfillRunInfo>>("/analytics/backfills?status=Pending");
+
+        completed!.Should().ContainSingle().Which.TenantId.Should().Be(done);
+        pending!.Should().ContainSingle().Which.TenantId.Should().NotBe(done);
+        (await client.GetAsync("/analytics/backfills?status=bogus")).StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
     [Fact]
@@ -267,6 +346,31 @@ public sealed class AnalyticsManagementApiTests : IAsyncLifetime
     {
         using var scope = _app.Services.CreateScope();
         return await scope.ServiceProvider.GetRequiredService<TestDb>().AnalyticsDeliveries.AnyAsync(d => d.Id == id);
+    }
+
+    private async Task SeedRunCursorAsync(Guid tenant, string cursor)
+    {
+        using var scope = _app.Services.CreateScope();
+        await scope.ServiceProvider.GetRequiredService<TestDb>().AnalyticsBackfillRuns
+            .Where(r => r.TenantId == tenant).ExecuteUpdateAsync(s => s.SetProperty(r => r.Cursor, cursor));
+    }
+
+    private async Task CompleteRunAsync(Guid tenant)
+    {
+        using var scope = _app.Services.CreateScope();
+        await scope.ServiceProvider.GetRequiredService<TestDb>().AnalyticsBackfillRuns
+            .Where(r => r.TenantId == tenant)
+            .ExecuteUpdateAsync(s => s.SetProperty(r => r.Status, AnalyticsBackfillStatus.Completed).SetProperty(r => r.CompletedAt, (DateTime?)DateTime.UtcNow));
+    }
+
+    private sealed class StubSource : IAnalyticsSource
+    {
+        public string Dataset => "orders";
+
+        public int Version => 1;
+
+        public Task<AnalyticsExtractPage> ExtractAsync(AnalyticsExtractRequest request, CancellationToken cancellationToken)
+            => Task.FromResult(new AnalyticsExtractPage([], null));
     }
 
     private sealed class TestDb(DbContextOptions<TestDb> options) : ModulusAnalyticsDbContext(options);

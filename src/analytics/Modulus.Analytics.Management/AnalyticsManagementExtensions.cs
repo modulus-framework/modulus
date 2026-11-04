@@ -13,8 +13,8 @@ using Modulus.Core.Abstractions;
 using Modulus.Core.Null;
 
 /// <summary>
-/// Operations API for analytics delivery: see how the queue stands, and list, inspect, replay and purge dead-lettered records, so an
-/// operator can recover from a failed sink without a redeploy. Every endpoint needs <see cref="ManagePermission"/>.
+/// Operations API for analytics delivery: see how the queue stands, list, inspect, replay and purge dead-lettered records, and start and
+/// watch backfill runs, so an operator can recover from a failed sink or load history without a redeploy. Every endpoint needs <see cref="ManagePermission"/>.
 /// </summary>
 public static class AnalyticsManagementExtensions
 {
@@ -22,6 +22,7 @@ public static class AnalyticsManagementExtensions
     public const string ManagePermission = "analytics:manage";
 
     private const int MaxReplayIds = 1000;
+    private const int MaxBackfillTenants = 1000;
 
     /// <summary>
     /// Declares <see cref="ManagePermission"/> (critical: it needs a step-up sign-in in production and cannot come from a wildcard grant).
@@ -38,7 +39,7 @@ public static class AnalyticsManagementExtensions
         return services.AddPermissions("Modulus.Analytics", registry =>
             registry.Add(
                 ManagePermission,
-                "Manage analytics delivery: see queue status, and list, replay and purge dead-lettered records.",
+                "Manage analytics delivery: see queue status, list, replay and purge dead-lettered records, and start and list backfill runs.",
                 null,
                 PermissionSensitivity.Critical));
     }
@@ -152,6 +153,61 @@ public static class AnalyticsManagementExtensions
             return Results.Ok(new AnalyticsPurgeResponse(purged));
         })
         .WithSummary("Delete old dead-lettered analytics records");
+
+        // POST /analytics/backfills
+        group.MapPost("/backfills", async (
+            AnalyticsBackfillRequest request,
+            AnalyticsBackfillManager manager,
+            ICurrentUser currentUser,
+            ILoggerFactory loggerFactory,
+            CancellationToken ct) =>
+        {
+            if (string.IsNullOrWhiteSpace(request.Dataset) || request.Version < 1)
+            {
+                return Results.BadRequest("Dataset and a version of 1 or higher are required.");
+            }
+
+            if (request.TenantIds is { Length: > MaxBackfillTenants })
+            {
+                return Results.BadRequest($"At most {MaxBackfillTenants} tenants per request; omit TenantIds to cover every tenant.");
+            }
+
+            var who = currentUser.UserId?.ToString() ?? "unknown";
+            try
+            {
+                var result = await manager.StartAsync(request.Dataset, request.Version, request.TenantIds, request.Restart, who, ct);
+                loggerFactory.CreateLogger("Modulus.Analytics.Management").LogInformation(
+                    "Analytics backfill of {Dataset}.v{Version} started by {User}: {Created} created, {Restarted} restarted, {Skipped} skipped.",
+                    request.Dataset, request.Version, who, result.Created, result.Restarted, result.Skipped);
+                return Results.Ok(result);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Results.BadRequest(ex.Message);
+            }
+        })
+        .WithSummary("Start analytics backfill runs for a dataset version");
+
+        // GET /analytics/backfills?dataset=...&status=Running&take=100
+        group.MapGet("/backfills", async (string? dataset, string? status, int? take, AnalyticsBackfillManager manager, CancellationToken ct) =>
+        {
+            AnalyticsBackfillStatus? parsed = null;
+            if (!string.IsNullOrWhiteSpace(status))
+            {
+                if (!Enum.TryParse<AnalyticsBackfillStatus>(status, ignoreCase: true, out var value) || !Enum.IsDefined(value))
+                {
+                    return Results.BadRequest("Status must be Pending, Running, Completed or Failed.");
+                }
+
+                parsed = value;
+            }
+
+            var runs = await manager.ListAsync(dataset, parsed, take ?? 100, ct);
+            return Results.Ok(runs.Select(r => new AnalyticsBackfillRunInfo(
+                r.Id, r.Dataset, r.SchemaVersion, r.TenantId, r.Status.ToString(), r.RowsQueued, r.AttemptCount,
+                r.CreatedAt, r.UpdatedAt, r.CompletedAt, r.NextAttemptAt, r.LastError, r.RequestedBy)).ToList());
+        })
+        .WithSummary("List analytics backfill runs");
 
         return group;
     }

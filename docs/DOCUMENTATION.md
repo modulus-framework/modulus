@@ -6462,8 +6462,10 @@ Iceberg Kafka Connect sink commits the table.
     - `AnalyticsBackfillManager` starts runs for chosen tenants or every active tenant (through `ITenantStore`), and can restart a finished or failed run.
     - `AnalyticsRecordIds.Deterministic(scope, key)`: stable record ids, so a re-run collapses onto earlier rows. To make a backfilled row meet the same
       fact captured live, the live mapper must produce the same id (use the row key).
-  - Still open: the Parquet sink; backfill endpoints in the management API (start, list, restart); a change journal for incremental sync (modelled on `AiChangeJournal`);
+  - Management API: `POST /analytics/backfills` (dataset, version, optional tenant list of at most 1000 or every tenant, optional restart) and `GET /analytics/backfills`
+    (filter by dataset and status). Responses leave out the cursor, which is a position in the source table. Bad requests get a 400 with the reason. 4 more unit tests.
+  - Still open: the Parquet sink; a change journal for incremental sync (modelled on `AiChangeJournal`);
     a backfill run against a real PostgreSQL or SQL Server database (the tests use SQLite).
 - [ ] Phase 4: dataset permissions, plan gating, export audit, freshness, reconciliation, quality, retention and erasure, lineage
-- [ ] Phase 5: management API (delivery operations done, see Phase 2; dataset catalog and freshness endpoints open), CLI `add-analytics` with compose template, `analytics-admin` in `modulus-ui`
+- [ ] Phase 5: management API (delivery operations done, see Phases 2 and 3; dataset catalog and freshness endpoints open), CLI `add-analytics` with compose template, `analytics-admin` in `modulus-ui`
 - [ ] Phase 6: Debezium reader, Airflow and dbt triggers, Superset helper, Doris sink, lakehouse runbooks
