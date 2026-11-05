@@ -3,6 +3,7 @@ namespace Modulus.Analytics.Tests;
 using FluentAssertions;
 using Xunit;
 
+[Trait("Category", "Unit")]
 public sealed class AnalyticsQualityTests
 {
     private static readonly AnalyticsDatasetDescriptor Dataset = new("orders", 1, "sales",
