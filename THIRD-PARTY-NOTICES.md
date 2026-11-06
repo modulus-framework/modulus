@@ -43,3 +43,31 @@ SkiaSharp 2.88.6 was the first decoder. Its managed code is MIT, but its native 
 
 PhotoSauce.MagicScaler 0.15.0 (MIT) was considered and not used. Its native component bundles libheif, which is under the LGPL 3.0, so it fails
 the complete-bundle rule.
+
+## Analytics Integration Layer: licence gate (run 2026-11-04)
+
+Checked against each package's `.nuspec` on nuget.org, which is the licence the publisher declares. This is not a legal review. Where a
+package declares a licence file instead of an SPDX expression, the file was read.
+
+| Package | Version | Declared licence | Decision |
+| --- | --- | --- | --- |
+| `ClickHouse.Driver` (ClickHouse/clickhouse-cs, authored by ClickHouse) | 1.5.0 | MIT; its `THIRD-PARTY-NOTICES.txt` lists vendored MIT, MIT and BSD-3-Clause (chosen from a BSD-3-Clause / GPL-2.0 dual licence) code | **Adopted**: pinned in `Directory.Packages.props`, used by `Modulus.Analytics.ClickHouse` |
+| `NodaTime` (dependency of the driver) | 3.2.3 | Apache-2.0 | Adopted (transitive) |
+| `Microsoft.IO.RecyclableMemoryStream` (dependency of the driver) | 3.0.1 | MIT | Adopted (transitive) |
+| `Testcontainers.ClickHouse` | 4.16.0 | MIT | **Adopted**: pinned, integration tests only |
+| `ClickHouse.Client` (community client by DarkWanderer) | 7.14.0 | MIT | Not used: the official `ClickHouse.Driver` replaces it |
+| `Parquet.Net` | 6.1.0 | MIT | **Adopted** (2026-11-04): pinned, used by `Modulus.Analytics.Parquet` |
+| `CommunityToolkit.HighPerformance` (dependency of `Parquet.Net`) | 8.4.2 | MIT | Adopted (transitive) |
+| `Snappier` (dependency of `Parquet.Net`) | 1.3.1 | BSD-3-Clause | Adopted (transitive) |
+| `ZstdSharp.Port` (dependency of `Parquet.Net`) | 0.8.8 | MIT | Adopted (transitive) |
+| `K4os.Compression.LZ4` (dependency of `Parquet.Net`) | 1.3.8 | MIT, read from the repository `LICENSE` (the package carries only a licence URL, no expression or file) | Adopted (transitive) |
+| `Apache.Arrow` | 23.0.0 | Apache-2.0 | Cleared, not pinned (alternative to `Parquet.Net`) |
+| `Apache.Avro` | 1.12.2 | Apache-2.0 (the `LICENSE` file in the package is the Apache License 2.0) | Cleared, not pinned yet |
+| `DuckDB.NET.Data` | 1.5.6.1 | MIT | Cleared, not pinned (optional embedded reads) |
+| `NJsonSchema` | 11.6.1 | MIT | Cleared, not needed: the JSON Schema export is written without a library |
+| `JsonSchema.Net` | 9.6.0 | **Open Source Maintenance Fee EULA** (`OSMFEULA.txt`), not a plain OSI licence | **Rejected**: fails the repository's OSI-only policy |
+
+Test-only container images (never shipped or linked by Modulus): `marquezproject/marquez:0.50.0`, the Marquez OpenLineage server, Apache-2.0 (checked against its upstream `LICENSE`), used by `tests/integration/Modulus.Analytics.OpenLineage.Integration.Tests`; and `postgres:16-alpine`, the PostgreSQL server, under the PostgreSQL licence, which is Marquez's metadata store in those tests.
+
+Not covered here: the ClickHouse server (Apache-2.0, run by the operator, never shipped or linked by Modulus) and the other server-side tools
+listed in `docs/DOCUMENTATION.md` (Analytics Integration Layer).

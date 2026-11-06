@@ -6375,3 +6375,229 @@ Consequences for upgraders:
   validation reports them as breaking against 1.8.2; they are listed in the affected projects' `CompatibilitySuppressions.xml`.
 - Generated apps no longer get the profile, company-admin, branch or audit-viewer pages, and `modulus app` no longer registers
   `DefaultCompanyMiddleware`.
+
+## Analytics Integration Layer (plan, 2026-11-03)
+
+Status: **planned, nothing implemented yet.** Phase 0 (this note and the licence gate) is written; Phases 1 to 6 are open.
+The full plan is kept with the session that produced it; the decisions below are the ones to keep.
+
+### Purpose and boundary
+
+Analytics Integration is an optional, cross-cutting capability that exports, synchronises, governs and exposes operational data to
+external analytics platforms. It is **not** an analytics engine. Modulus owns: analytics event and dataset contracts and metadata,
+event delivery, extraction, backfill, provider abstraction, tenant-aware analytics security, dataset and schema metadata, freshness and
+sync status, reconciliation, and configuration. It keeps external: the OLAP database, distributed compute, lakehouse storage, large-scale
+ETL, the BI engine, ML training and report rendering. A small app runs on PostgreSQL + RabbitMQ + ClickHouse; a large one adds Kafka,
+Spark, Iceberg, Trino and Flink, without any of those being a framework dependency.
+
+### Tool selection policy (applies to every tool and every NuGet package)
+
+1. Licence: OSI-approved permissive or weak copyleft (Apache-2.0, MIT, BSD, MPL-2.0), as AGENTS.md already requires.
+2. Not source-available: no BSL, SSPL, Elastic License, ELv2 or Confluent Community License, and no "open core" feature we depend on.
+3. AGPL only as a separate, optional, operator-run service, never a NuGet dependency.
+4. Production proof: foundation-governed, or widely deployed with an active release cadence.
+5. Licence gate: each licence is verified against the upstream repository, and each NuGet package's `license` metadata, before a
+   `PackageVersion` is added to `Directory.Packages.props`. The result is recorded in `THIRD-PARTY-NOTICES.md`.
+
+Vetted tools (licences are from memory until the gate runs): ClickHouse and Apache Doris (OLAP), Apache Kafka and RabbitMQ (messaging),
+Debezium (CDC), Apache Iceberg with Apache Polaris or Project Nessie (lakehouse), Apache Spark, Apache Flink and Trino (compute and SQL),
+dbt Core and Apache Airflow or Dagster (transformation and orchestration), Apache Superset (BI), OpenLineage and Marquez (lineage),
+OpenMetadata or DataHub (catalog), dbt tests, Great Expectations or Soda Core (quality), MLflow, DuckDB, Apicurio Registry (schemas).
+Avoid: Confluent Schema Registry and ksqlDB (Confluent Community License), Redpanda (BSL), Airbyte (ELv2), MinIO in production (AGPL),
+Redis 7.4+ (use Valkey), Grafana and Metabase as integration targets (AGPL), Terraform and Vault (BSL).
+No mature .NET writer exists for Iceberg or Delta: .NET writes Parquet to object storage or events to Kafka, and Spark, Flink or the
+Iceberg Kafka Connect sink commits the table.
+
+### Design summary
+
+- Package family under `src/analytics/`: `Modulus.Analytics` (contracts, catalog, mapper, `IAnalyticsSink`, delivery, masking, freshness),
+  `.EntityFrameworkCore` (queue, catalog, job-run, checkpoint and watermark stores), `.Management` (`analytics:manage`, Critical),
+  providers `.ClickHouse`, `.Parquet`, `.Messaging`, `.Debezium`, `.OpenLineage`, and `.Testing` (sink conformance suite).
+- Reuse, do not rebuild: the integration-event names and envelope (`Modulus.Events`), the outbox writer, the webhook delivery
+  processor pattern (claim, lease, retry, dead-letter), `AiChangeJournal` as the change feed, `CursorCodec` keyset paging for backfill,
+  `[Classified]` and `ModulusTaxonomy` for masking, `ITenantStore` and Quartz for per-tenant fan-out, `TenantDataRegistry` for retention
+  and erasure, and the export rules in the exports design note (own permission, tenant-filtered context only, audit row counts not rows).
+- New work: the sink SPI, the analytics mapper and masking policy, populating `SchemaVersion` with upcasters (it is carried today but
+  never written or read), the dataset catalog, a replayable log (the outbox purges after 7 days), job-run and checkpoint stores,
+  freshness, reconciliation, lineage, and dataset permissions.
+
+### Checklist
+
+- [x] Phase 0: licence gate run and recorded in `THIRD-PARTY-NOTICES.md` (2026-11-04). `ClickHouse.Driver` 1.5.0 adopted; `JsonSchema.Net` rejected (OSMF EULA).
+- [ ] Phase 1: dataset and field metadata, `SchemaVersion` and upcasters, JSON Schema export, `IAnalyticsSink`, conformance tests
+  - Done in `Modulus.Analytics` and `Modulus.Analytics.Testing` (29 unit tests, net8.0 and net10.0): dataset and field descriptors with validation,
+    the versioned dataset catalog, `IAnalyticsSink` and `AnalyticsSinkException`, classification-driven batch masking (keep, hash, drop),
+    record upcasters and `AnalyticsUpcasting`, JSON Schema export (`AnalyticsDatasetSchema`), `AddModulusAnalytics`, the in-memory sink and
+    the sink conformance suite (`AnalyticsSinkConformance`).
+  - Still open: writing `SchemaVersion` on outbox rows and envelopes (it is carried today but never set), so captured events can be upcast.
+- [ ] Phase 2: capture, mapper, masking, delivery queue, ClickHouse sink, messaging sink
+  - Done (51 unit tests across `Modulus.Analytics.Tests` and `Modulus.Analytics.EntityFrameworkCore.Tests`, net8.0 and net10.0):
+    - `AnalyticsDispatcher`: reject records with no tenant or dataset, upcast, mask, one batch per dataset to each sink, per-sink outcomes.
+    - Event tap: `AnalyticsBuilder.MapEvent<TEvent>(dataset, version, map)` registers a capture handler, so modules never reference analytics.
+      The event id is the record id and the current tenant is the record's tenant.
+    - `AnalyticsValueSerializer`: typed JSON for queued values. A mapper that does not fit the contract fails at capture, not in the queue.
+    - `IAnalyticsQueue` with the inline default (failures throw, so the event pipeline retries), and the durable `Modulus.Analytics.EntityFrameworkCore`:
+      `AddModulusAnalyticsStore<TContext>`, duplicate-safe enqueue, atomic claim with lease, retry schedule, dead-lettering, purge of delivered rows.
+      Dead letters are kept. With no sink registered the worker leaves rows queued rather than counting them delivered.
+  - Known limit: a failed sink makes the whole batch retry, so every sink sees the record again. Sinks must be idempotent (the conformance suite checks it).
+    A per-sink delivery state is the fix if one slow sink holds back the rest.
+  - ClickHouse sink (`Modulus.Analytics.ClickHouse`, official `ClickHouse.Driver`): one `ReplacingMergeTree` table per dataset *version*, ordered by
+    (`tenant_id`, day, `event_id`) so a redelivered record collapses on merge, `TTL` from the dataset's retention, column comments recording classification and
+    masking, an existing table checked against the contract (a changed version is refused, permanently), `CreateTables=false` for DBA-owned DDL, and failures
+    classified as transient (network, overload) or permanent (bad credentials, unknown table, type mismatch). Verified against a real ClickHouse 25.8 server
+    through Testcontainers (11 integration tests, net8.0 and net10.0) and 23 unit tests. Until parts merge a duplicate can be visible: read with `FINAL`.
+  - Sinks receive the declared CLR types (`AnalyticsValueSerializer.Normalize` runs at capture, so inline and queued delivery look the same).
+  - Management API (`Modulus.Analytics.Management`, `analytics:manage`, Critical): `GET /analytics/status` (pending, delivered, dead-lettered, age of the oldest
+    pending record, so a rising age shows delivery falling behind), list and inspect dead letters, replay by id (at most 1000), purge old dead letters. Queued rows hold
+    values *before* masking, so no response ever carries record values (tests pin this). Replay and purge are logged with the acting user. 12 unit tests.
+  - Gaps closed (2026-11-04): circuit breaker, consent, quality-finding sinks, and the optional OpenMetadata, Apicurio and DuckDB packages, plus the MLflow runbook. See the table in docs/ANALYTICS_PROGRESS.md.
+  - Done since: the messaging sink (`Modulus.Analytics.Messaging`, publishes each record as `AnalyticsRecordPublished` on the module bus; append-only, so it blocks tenant erasure while registered) and an EF migration sample (`samples/Modulus.Analytics.MigrationSample`, migration `InitialAnalyticsStore`, applied to PostgreSQL 16.15). Outbox rows carry the event's `SchemaVersion`; the column migration is in `docs/runbooks/analytics-store-migrations.md`.
+- [ ] Phase 3: extraction, change journal, per-tenant backfill with checkpoints, Parquet sink
+  - Done (`Modulus.Analytics` and `Modulus.Analytics.EntityFrameworkCore`, 36 tests across net8.0 and net10.0):
+    - `IAnalyticsSource`: reads one tenant at a time with a cursor. `EntityAnalyticsSource` / `AddEntitySource<TContext, TEntity, TKey>` is the EF version: the entity
+      must have `IHasTenantId`, the query filters on `TenantId` itself (on top of any global filter), and the paging key must be unique per tenant (integer, decimal or
+      timestamp; a Guid key is refused because providers order Guids differently).
+    - `AnalyticsBackfillRun`: one run per dataset, version and tenant, with a stored cursor. Each page is queued and the cursor saved in one transaction, so a
+      crash loses nothing and repeats nothing; claims expire so another worker resumes. A failed cycle retries with a growing delay and the run fails after
+      `MaxAttempts`; a source that returns another tenant's record, an unknown tenant or a missing source fails the run at once.
+    - `AnalyticsBackfillManager` starts runs for chosen tenants or every active tenant (through `ITenantStore`), and can restart a finished or failed run.
+    - `AnalyticsRecordIds.Deterministic(scope, key)`: stable record ids, so a re-run collapses onto earlier rows. To make a backfilled row meet the same
+      fact captured live, the live mapper must produce the same id (use the row key).
+  - Management API: `POST /analytics/backfills` (dataset, version, optional tenant list of at most 1000 or every tenant, optional restart) and `GET /analytics/backfills`
+    (filter by dataset and status). Responses leave out the cursor, which is a position in the source table. Bad requests get a 400 with the reason. 4 more unit tests.
+  - Parquet sink (`Modulus.Analytics.Parquet`, `Parquet.Net` 6.1.0): immutable files written through `IFileStorage` (local disk, S3, Azure Blob) as
+    `{root}/{dataset}_v{n}/tenant={id}/dt={yyyy-MM-dd}/part-{hash}.parquet`, with the dataset's JSON Schema published at `{root}/_schemas/`. Each file keeps
+    `tenant_id`, `event_id` and `occurred_at` inside, and the partition folders are named `tenant` and `dt` so a Hive engine does not see a partition key that is also
+    a column. Types: microsecond UTC timestamps, `DATE`, `DECIMAL(38,9)` (configurable), UTF-8 text, GUIDs as text; confidential fields are hashed and restricted ones
+    never written. The file name is a hash of its record ids, so the same batch overwrites the same file; a retry with different records writes a second file, so a
+    record can appear twice and readers keep one row per (`tenant_id`, `event_id`) (compaction, Iceberg `MERGE`, or a dbt incremental model). Snappy by default, Zstd, Gzip or
+    none. 25 unit tests, and the files were read back by two independent engines (PyArrow 26 and DuckDB 2.0): exact types, microseconds, nullability, Hive partition
+    discovery and both Snappy and Zstd. Spark, Trino and Iceberg were not run here.
+  - Done: **incremental sync** (`IAnalyticsIncrementalSource`, `IncrementalEntityAnalyticsSource`, `AnalyticsRunKind.Incremental`).
+    Design choice: instead of a separate journal table written by a save hook (the `AiChangeJournal` approach, which adds a write to every business save and couples
+    the app's data context to analytics), changes are found by the row's own modification time, `UpdatedAt ?? CreatedAt`, which `ModuleDbContext` already stamps on every
+    save. Safeguards: a *settle delay* (default 5 s) so a transaction that commits late is not read half-way; the saved position is moved back by an *overlap* (default 1 min)
+    when the run catches up, so the next poll re-reads the window and picks up late commits; the cursor is (time, key), so rows changed at the same instant are all read even
+    across a page boundary; and every record carries a *revision* (its change time in ticks), so the queue skips a revision it already has and queues a changed row as a new one,
+    which also makes the overlap re-read free. At delivery an older revision is superseded by a newer one (never sent, so it cannot overwrite newer data). An incremental run never
+    completes; it polls every `IncrementalPollInterval` (30 s) and stops only when cancelled (`POST /analytics/backfills/{id}/cancel`). A tenant can have one backfill and one
+    incremental run per dataset version. Limits: a hard delete leaves no trace (reconciliation shows it as *extra*; Phase 6's Debezium reader is the complete answer);
+    index `(TenantId, UpdatedAt)` on the source table; keep `OccurredAt` stable across updates (the row's creation time) so a day-keyed warehouse replaces the old version.
+    Verified on SQLite (history in pages, updates, settle delay, late commit with and without the overlap, ties, tenant isolation, cancel, supersede) and on real PostgreSQL.
+    Writing the tests found a livelock in the first design (the overlap was re-applied at the start of every cycle, so a window bigger than a cycle's page budget never
+    advanced); the source now returns a cursor already moved back when it catches up, so progress is always forward.
+  - Real PostgreSQL also found a bug SQLite could not show: concurrent writers that enqueue overlapping batches **deadlocked** (`40P01`). EF Core inserts a batch in
+    primary-key order and the keys were random, so each writer locked in a different order. Queue rows now have a key derived from the record's identity (one lock order for
+    everyone), lost races are retried with jittered back-off (the provider wraps a deadlock in an `InvalidOperationException`, so the whole exception chain is searched), and a
+    claim that loses a deadlock skips the cycle. 24 consecutive runs of the PostgreSQL suite pass; it failed about once in twelve before.
+  - SQL Server run: closed without a run. SQL Server is proprietary, so the open-source-only policy rules it out as a test dependency. The backfill is provider-agnostic EF: the unit tests use SQLite and the integration tests PostgreSQL 16.15 (8 of 8 pass). Teams that run SQL Server can run the backfill against their own instance.
+  - Real PostgreSQL 16 (Testcontainers, `Modulus.Analytics.EntityFrameworkCore.Integration.Tests`, 8 tests on net8.0 and net10.0): eight parallel enqueues of the same 60
+    records store 60 rows without an error; four concurrent delivery workers deliver 400 records exactly once each; two workers split two backfill runs (750 and 420 orders) and
+    queue every order once; a claim that expired is taken over and a live one is not; the freshness and reconciliation aggregate queries and the purge run correctly. A
+    mutation check (dropping the claim ownership filter) makes the exactly-once test fail, so it guards the behaviour.
+- [x] Phase 4: dataset permissions, plan gating, export audit, freshness, reconciliation, quality, retention and erasure, lineage
+  - Done: **freshness and monitoring** (`Modulus.Analytics`, `.EntityFrameworkCore`, `.Management`; 14 more tests).
+    - `AnalyticsFreshness.Evaluate`: lag is the age of the oldest captured-but-undelivered record, i.e. how far the warehouse is behind; a dataset is *stale* when
+      the lag is greater than its `FreshnessSla` (equal is fresh), *untracked* when it has no SLA (the lag is still reported). `IAnalyticsFreshnessReader` reads it from
+      the queue: the latest version of every dataset, plus an older version only while it still has records waiting or dead-lettered.
+    - Metrics (`AnalyticsMetrics.MeterName` = `Modulus.Analytics`, add it with `AddMeter`): counters `modulus.analytics.records.delivered` / `.failed` (per sink and
+      dataset), `.dead_lettered` and `backfill.rows_queued` (per dataset); gauges `modulus.analytics.dataset.lag` (seconds), `.stale` (0 or 1), `.pending` and
+      `.dead_lettered` per dataset and version, refreshed by the delivery worker every `FreshnessRefreshInterval` (30 s by default).
+    - Health: `IModuleHealthCheck` "Modulus.Analytics" is **Degraded**, never Unhealthy, when a dataset is stale or has dead letters. A warehouse that is behind is
+      something to alert on, not a reason for an orchestrator to restart the application.
+    - `GET /analytics/freshness` (`analytics:manage`) lists every dataset's state, lag, SLA, pending and dead-lettered counts.
+  - Done: **reconciliation** (21 more tests, plus 2 against a real ClickHouse server). `AnalyticsReconciler` counts the operational store (`IAnalyticsCountingSource`,
+    implemented by `EntityAnalyticsSource`, counted in each tenant's own context) and every `IAnalyticsReconcilableSink` (ClickHouse counts distinct records with `FINAL`;
+    the in-memory test sink also counts), per tenant. `AnalyticsReconciliation.Judge`: equal is a match; a warehouse shortfall no bigger than the records still queued is
+    *in flight*; a bigger one is *missing* (dead-lettered records never explain a gap, because they will not arrive on their own); a warehouse with more than the source is
+    *extra* (rows deleted in the source were never removed, or the dataset holds records from another population). Missing and extra increment
+    `modulus.analytics.reconciliation.mismatches`. A tenant or sink that cannot be counted is reported in `Errors` and the run continues. `POST /analytics/reconciliations`
+    (`analytics:manage`, at most 1000 tenants or every tenant). It reads counts only, never record values.
+    Limits: it compares counts, not contents; it is meaningful only when the dataset and the source describe the same population with the same record ids (a snapshot
+    dataset built from a backfill, not an event log); the Parquet sink cannot be counted through `IFileStorage` (no listing), so reconcile a lake from its query engine.
+  - Done: **dataset-level permissions and plan gating** (`Modulus.Analytics`, `.EntityFrameworkCore`, `.Management`; 16 more tests on both frameworks).
+    - `AnalyticsDatasetDescriptor.RequiredFeature` names a feature of the framework's entitlement catalog (`IFeatureEntitlementResolver`). `IAnalyticsEntitlement` decides per
+      tenant and dataset: the default allows everything, `FeatureAnalyticsEntitlement` (EF package) checks the feature when one is named. A tenant without the feature
+      is not captured (no record, no error), a backfill or incremental run for it fails with "not entitled" (restart it after the feature is granted), and the reconciler
+      reports it in `Errors` rather than as a mismatch.
+    - Permissions: `analytics:manage` (Critical) still covers everything; `analytics:manage:{dataset}` is declared for every registered dataset. Lists, replay, purge,
+      cancel, freshness and reconciliation are scoped to the datasets the caller holds. A dataset the caller cannot manage answers 403 on a request for it and 404 for a
+      record or run that belongs to another dataset.
+  - Done: **export audit** (`Modulus.Analytics.Management`, 2 more tests). Successful backfill and incremental starts, reconciliations, replays, purges and cancellations
+    write a `ISecurityAuditLog` entry (hash-chained when `AddModulusSecurityAudit` is registered; category `analytics`, host chain): `backfill.start`,
+    `incremental.start`, `reconciliation.run`, `dead-letters.replay`, `dead-letters.purge`, `run.cancel`. The actor is the caller's user id, the target the dataset
+    version or run, and the details only counts and scope (tenants, created, skipped, replayed, purged, comparisons, errors). Record values are never written. Refused
+    requests are not recorded here (the framework's access-decision audit covers those). Without `AddModulusSecurityAudit` the entries are dropped and only the application log line remains.
+  - Done: **retention and erasure propagation** (`Modulus.Analytics`, `.ClickHouse`, `.EntityFrameworkCore`, `.Testing`; 5 unit tests, 2 against a real ClickHouse server).
+    - `AnalyticsTenantDataHandler` (`AddModulusAnalyticsTenantData()` on the tenancy lifecycle builder) puts three owned datasets under offboarding: `analytics.queue`
+      (the company's queued and recently delivered records), `analytics.backfill` (its backfill and incremental runs) and `analytics.warehouse` (its rows in every
+      dataset version of every erasable sink). Count and delete are idempotent, run inside the company's tenant context, and never touch another company.
+    - `IAnalyticsErasableSink` (extends `IAnalyticsReconcilableSink`): `CountTenantAsync` and `EraseTenantAsync`, both 0 for a dataset version that was never created.
+      ClickHouse deletes with a lightweight `DELETE` filtered on `tenant_id`; the in-memory test sink implements the same semantics.
+    - Export writes nothing: the warehouse copies are derived from the source modules, which export their own records.
+    - Refusal, not silence: a registered sink that cannot delete one company's rows (the Parquet lake has no file listing) makes count and delete throw, so a company is
+      never reported as erased while copies remain. Erase such a lake with the table format's own row-level delete (Iceberg, Spark or Trino), then the handler works for the rest.
+    - Retention: warehouse rows follow `RetentionDays` (ClickHouse TTL). Delivered queue rows are purged after `PurgeDeliveredAfter` (7 days by default). Backfill
+      run history is kept until offboarding; a time-based purge for it is open. Parquet retention is the lake's job (table-format expiry), not this layer's.
+  - Done: **lineage** (`Modulus.Analytics` contract, `Modulus.Analytics.EntityFrameworkCore` events, new `Modulus.Analytics.OpenLineage` emitter; 10 unit tests, 2 against a real Marquez 0.50.0 with PostgreSQL 16).
+    - `IAnalyticsLineageEmitter` receives each backfill run's lifecycle: `START` on the run's first page, `COMPLETE` once its rows are saved, `FAIL` with the error when
+      it stops (source missing, plan withdrawn, tenant rejected, retries exhausted). Every event of a run carries the run id. The default emitter records nothing.
+    - `AddModulusOpenLineage(configuration)` (`Analytics:OpenLineage`: `Enabled`, `Url`, `Namespace`, `WarehouseNamespace`, `Producer`, `ApiKey`, `Timeout`) posts OpenLineage
+      run events (spec 2-0-2) over HTTP. The job is `analytics.backfill.{dataset}_v{version}`, the input is the operational source (`{Namespace}/{dataset}`), and the outputs
+      are the warehouse tables of every registered sink (`{WarehouseNamespace}`, `{sink}/{dataset}_v{version}`). A failed run carries an `errorMessage` facet.
+    - A post that fails (endpoint down, refused, timed out) is logged and dropped. It never fails or stalls a backfill; cancellation is still honoured.
+    - Limits: incremental syncs are not reported (they never complete); the events are sent as they happen, with no retry queue (a lineage backend that is down for a run misses its events);
+      the emitter runs inside the backfill cycle, so its timeout adds to the cycle's time.
+  - Done: **data-quality findings** (`Modulus.Analytics`, `.ClickHouse`, `.EntityFrameworkCore`, `.Management`, `.Testing`; 6 core, 2 EF, 2 management, 1 ClickHouse integration test).
+    - Rules are declared on the dataset: `AnalyticsFieldDescriptor.MaxNullRate` (0 to 1, nullable fields only) limits the share of null values of a field.
+      Records timestamped more than 5 minutes ahead of the check (`AnalyticsQualityChecks.ClockSkew`) are a dataset-wide finding (`future_occurrence`).
+    - `IAnalyticsProfilableSink.ProfileAsync` returns counts only: the company's distinct rows, its future rows and the nulls of each rule's field, computed in the
+      warehouse (ClickHouse with `FINAL`, so it matches the reconciliation count). `AnalyticsQuality.Evaluate` is pure: the same profile always gives the same findings.
+    - Findings are reported, not stored: `POST /analytics/quality` (`analytics:manage` or the dataset's permission) returns each company's row count and findings
+      per sink, with an error per company or sink that could not be checked. Each finding also increments `modulus.analytics.quality.findings` (tags sink, dataset, rule).
+      The check is audited as `quality.check`.
+    - Why not in the capture path: a contract violation already fails capture (a missing required field, a wrong type), and masking drops restricted values by design.
+      Quality is judged on what the warehouse holds, so a broken mapping that slipped through shows up here.
+    - Limits: no history of findings (each check is a snapshot; keep the response if you need one), no value-level rules beyond nulls and timestamps, and a
+      sink that cannot be profiled (the Parquet lake) is reported in `Errors`, not checked. Quality of a lake is checked by its query engine.
+
+- [ ] Phase 5: management API, CLI `add-analytics` with compose template, `analytics-admin` in `modulus-ui`
+  - Done: **management API** (`Modulus.Analytics.Management`, 3 more tests). `GET /analytics/datasets` lists the datasets the caller may manage, with owner, description,
+    freshness SLA, retention, required feature and each field's type, classification, masking and null-rate rule (metadata only, never values).
+    `GET /analytics/datasets/{name}/{version}/schema` serves the dataset's JSON Schema (`application/schema+json`) to its managers. Freshness, reconciliation,
+    quality and the delivery operations were already there (Phases 2 to 4).
+  - Done: **CLI `modulus add-analytics [--no-compose]`** (`cli/Commands/AddAnalyticsCommand.cs`, `cli/Services/AnalyticsWiring.cs`, 6 tests, 677 CLI tests pass).
+    It adds the `Synvro.Modulus.Analytics.ClickHouse` and `Synvro.Modulus.Analytics.OpenLineage` packages to the API host, wires `AddModulusAnalytics(a => a.AddClickHouse(...))`
+    and `AddModulusOpenLineage(...)` before the app is built, writes the `Analytics` settings (ClickHouse local in Development with a placeholder password in production;
+    OpenLineage off), and writes `docker-compose.analytics.yml`: ClickHouse 25.8 and RabbitMQ 4 with health checks and development credentials that match the settings.
+    The compose stack was started with Docker and both services reported healthy; ClickHouse answered a query with the development credentials.
+    Limits: no datasets are generated (they are application-specific: the command leaves a comment to declare them), and delivery is inline until the durable queue
+    (`AddModulusAnalyticsStore`) is wired, because that needs the application's DbContext. The packages are not on NuGet yet, so an app that runs the command can only
+    build after the analytics packages are published.
+  - Still open: `analytics-admin` in `modulus-ui`, which is a separate repository (the UI feature, its `ui-kit.json` entry and the mvc, razor-pages and blazor templates).
+- [x] Phase 6: Debezium reader, Airflow and dbt triggers, Superset helper, Doris sink, lakehouse runbooks (live Kafka, Debezium, Doris, Airflow, Superset and Iceberg runs closed without being performed; code tested against fakes only; see docs/ANALYTICS_PROGRESS.md)
+  - Done: **run observers** (`Modulus.Analytics`, `.EntityFrameworkCore`; 2 EF tests). `IAnalyticsRunObserver.OnBackfillCompletedAsync` is called once per
+    completed backfill run, after its rows are saved, with the run id, dataset, company, rows queued and completion time. An observer that throws is logged and the run
+    stays completed. Incremental syncs never complete and are not reported.
+  - Done: **Debezium reader** (`Modulus.Analytics.Debezium`, 12 unit tests, `DebeziumIngestor`). Maps change events of mapped source tables to records: inserts,
+    updates and snapshot reads from `after`; hard deletes from `before` with a Boolean delete marker set to true, so the warehouse follows deletes (closing the
+    hard-delete gap of the incremental sync). The record id is the key column, the revision is `source.lsn` (else the source timestamp). Reads the envelope and
+    the flat payload form; a decimal arriving in binary is refused rather than read wrongly. Mappings are checked at startup. The host consumes the Kafka topic and
+    calls `IngestAsync`; this package does not own the consumer.
+  - Done: **Airflow trigger** (`Modulus.Analytics.Airflow`, 8 tests over real HTTP). Starts the transform DAG per completed run through the Airflow stable REST API,
+    with `dag_run_id = modulus-<run id>` (a `409` means already started) and the company, dataset, rows and the dbt selector in `conf`. dbt Core has no REST API, so
+    dbt runs inside the DAG.
+  - Done: **Superset guest tokens** (`Modulus.Analytics.Superset`, 6 tests over real HTTP). Signs in as a service account and requests a guest token for one
+    dashboard with a row-level rule `{TenantColumn} = '<company>'`; the company id is a validated GUID and the dashboard id a validated identifier. A refused sign-in
+    is reported without the password.
+  - Done: **Doris sink** (`Modulus.Analytics.Doris`, 9 tests over real HTTP). Loads a batch with Stream Load into a unique-key table. The load label is a hash of the
+    batch's records, so a resent batch is accepted as already loaded rather than loaded twice. Redirects are followed by hand with the same credentials (HttpClient would
+    drop the `Authorization` header on the redirect; the test found this). A server error is transient; a refused load is permanent with Doris's message. Tables are
+    created by the operator (runbook DDL): unique key first, `revision` as the sequence column.
+  - Done: **runbooks** `docs/runbooks/lakehouse-cdc.md` (Debezium connector settings and mapping), `lakehouse-doris.md` (DDL, settings, checks),
+    `lakehouse-iceberg.md` (Spark or Kafka Connect commits, REST catalog, Trino, erasure through table deletes) and `lakehouse-orchestration.md` (Airflow, dbt,
+    Superset setup).
+  - Not verified here: a live Debezium connector and Kafka broker, a live Doris cluster, a live Airflow or Superset, Iceberg commits, and Trino. The Docker Hub
+    pull limit and the disk space left no room for the Doris image (several gigabytes) in this environment. The runbooks say which steps need checking against the
+    release you deploy.
+  - Still open: the `analytics-admin` feature in `modulus-ui` (Phase 5, a separate repository, blocked on push access).

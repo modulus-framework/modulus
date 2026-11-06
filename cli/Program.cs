@@ -48,6 +48,10 @@ public static class Program
             config.AddCommand<Commands.GenerateGraphQLCommand>("generate-graphql")
                 .WithDescription("Expose an entity's CRUD commands and queries over GraphQL (graph type, module fields, host wiring, optional BFF route).")
                 .WithExample("generate-graphql", "Product", "--module", "Catalog", "--bff", "mobile");
+            config.AddCommand<Commands.AddAnalyticsCommand>("add-analytics")
+                .WithDescription("Add the analytics layer: ClickHouse sink and OpenLineage emitter wiring, settings, and a local ClickHouse and RabbitMQ compose file.")
+                .WithExample("add-analytics")
+                .WithExample("add-analytics", "--no-compose");
             config.AddCommand<Commands.AddWebhooksCommand>("add-webhooks")
                 .WithDescription("Add outgoing webhooks: integration events delivered, signed, to tenant subscriptions (store module, host wiring, management API).")
                 .WithExample("add-webhooks")

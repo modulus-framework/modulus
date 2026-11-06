@@ -1,0 +1,213 @@
+#nullable enable
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillManager
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillManager.AnalyticsBackfillManager(Modulus.Analytics.EntityFrameworkCore.ModulusAnalyticsDbContext! db, Modulus.Analytics.IAnalyticsDatasetCatalog! catalog, System.Collections.Generic.IEnumerable<Modulus.Analytics.IAnalyticsSource!>! sources, Modulus.Analytics.IAnalyticsTenantDirectory! directory, Modulus.Analytics.IAnalyticsEntitlement! entitlement, System.TimeProvider! clock) -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillManager.CancelAsync(System.Guid runId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<bool>!
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillManager.GetAsync(System.Guid runId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillRun?>!
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillManager.ListAsync(string? dataset = null, Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillStatus? status = null, int take = 100, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken), System.Collections.Generic.IReadOnlyCollection<string!>? datasets = null) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillRun!>!>!
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillManager.StartAsync(string! dataset, int version, System.Collections.Generic.IReadOnlyCollection<System.Guid>? tenantIds, bool restart, string? requestedBy, System.Threading.CancellationToken cancellationToken, Modulus.Analytics.EntityFrameworkCore.AnalyticsRunKind kind = Modulus.Analytics.EntityFrameworkCore.AnalyticsRunKind.Backfill) -> System.Threading.Tasks.Task<Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillStartResult!>!
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillOptions
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillOptions.AnalyticsBackfillOptions() -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillOptions.EnableWorker.get -> bool
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillOptions.EnableWorker.set -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillOptions.IncrementalPollInterval.get -> System.TimeSpan
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillOptions.IncrementalPollInterval.set -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillOptions.LockDuration.get -> System.TimeSpan
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillOptions.LockDuration.set -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillOptions.MaxAttempts.get -> int
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillOptions.MaxAttempts.set -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillOptions.Overlap.get -> System.TimeSpan
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillOptions.Overlap.set -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillOptions.PageSize.get -> int
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillOptions.PageSize.set -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillOptions.PagesPerCycle.get -> int
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillOptions.PagesPerCycle.set -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillOptions.PollingInterval.get -> System.TimeSpan
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillOptions.PollingInterval.set -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillOptions.RetryDelay.get -> System.TimeSpan
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillOptions.RetryDelay.set -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillOptions.RunsPerCycle.get -> int
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillOptions.RunsPerCycle.set -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillOptions.SettleDelay.get -> System.TimeSpan
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillOptions.SettleDelay.set -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillRun
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillRun.AnalyticsBackfillRun() -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillRun.AttemptCount.get -> int
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillRun.AttemptCount.set -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillRun.CompletedAt.get -> System.DateTime?
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillRun.CompletedAt.set -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillRun.CreatedAt.get -> System.DateTime
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillRun.CreatedAt.init -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillRun.Cursor.get -> string?
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillRun.Cursor.set -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillRun.Dataset.get -> string!
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillRun.Dataset.init -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillRun.Id.get -> System.Guid
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillRun.Id.init -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillRun.Kind.get -> Modulus.Analytics.EntityFrameworkCore.AnalyticsRunKind
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillRun.Kind.init -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillRun.LastError.get -> string?
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillRun.LastError.set -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillRun.LockedBy.get -> string?
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillRun.LockedBy.set -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillRun.LockedUntil.get -> System.DateTime?
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillRun.LockedUntil.set -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillRun.NextAttemptAt.get -> System.DateTime?
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillRun.NextAttemptAt.set -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillRun.RequestedBy.get -> string?
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillRun.RequestedBy.set -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillRun.RowsQueued.get -> long
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillRun.RowsQueued.set -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillRun.SchemaVersion.get -> int
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillRun.SchemaVersion.init -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillRun.Status.get -> Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillStatus
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillRun.Status.set -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillRun.TenantId.get -> System.Guid
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillRun.TenantId.init -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillRun.UpdatedAt.get -> System.DateTime
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillRun.UpdatedAt.set -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillStartResult
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillStartResult.<Clone>$() -> Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillStartResult!
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillStartResult.AnalyticsBackfillStartResult(int Created, int Restarted, int Skipped, int NotEntitled = 0) -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillStartResult.Created.get -> int
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillStartResult.Created.init -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillStartResult.Deconstruct(out int Created, out int Restarted, out int Skipped, out int NotEntitled) -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillStartResult.Equals(Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillStartResult? other) -> bool
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillStartResult.NotEntitled.get -> int
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillStartResult.NotEntitled.init -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillStartResult.Restarted.get -> int
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillStartResult.Restarted.init -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillStartResult.Skipped.get -> int
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillStartResult.Skipped.init -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillStatus
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillStatus.Cancelled = 4 -> Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillStatus
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillStatus.Completed = 2 -> Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillStatus
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillStatus.Failed = 3 -> Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillStatus
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillStatus.Pending = 0 -> Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillStatus
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillStatus.Running = 1 -> Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillStatus
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDelivery
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDelivery.AnalyticsDelivery() -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDelivery.AttemptCount.get -> int
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDelivery.AttemptCount.set -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDelivery.CreatedAt.get -> System.DateTime
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDelivery.CreatedAt.init -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDelivery.Dataset.get -> string!
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDelivery.Dataset.init -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDelivery.DeadLetteredAt.get -> System.DateTime?
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDelivery.DeadLetteredAt.set -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDelivery.DeliveredAt.get -> System.DateTime?
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDelivery.DeliveredAt.set -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDelivery.EventId.get -> System.Guid
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDelivery.EventId.init -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDelivery.Id.get -> System.Guid
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDelivery.Id.init -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDelivery.LastAttemptAt.get -> System.DateTime?
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDelivery.LastAttemptAt.set -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDelivery.LastError.get -> string?
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDelivery.LastError.set -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDelivery.LockedBy.get -> string?
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDelivery.LockedBy.set -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDelivery.LockedUntil.get -> System.DateTime?
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDelivery.LockedUntil.set -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDelivery.NextAttemptAt.get -> System.DateTime?
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDelivery.NextAttemptAt.set -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDelivery.OccurredAt.get -> System.DateTime
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDelivery.OccurredAt.init -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDelivery.Payload.get -> string!
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDelivery.Payload.init -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDelivery.Revision.get -> long
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDelivery.Revision.init -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDelivery.SchemaVersion.get -> int
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDelivery.SchemaVersion.init -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDelivery.Status.get -> Modulus.Analytics.EntityFrameworkCore.AnalyticsDeliveryStatus
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDelivery.TenantId.get -> System.Guid
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDelivery.TenantId.init -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDeliveryOptions
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDeliveryOptions.AnalyticsDeliveryOptions() -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDeliveryOptions.BatchSize.get -> int
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDeliveryOptions.BatchSize.set -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDeliveryOptions.EnableDelivery.get -> bool
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDeliveryOptions.EnableDelivery.set -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDeliveryOptions.FreshnessRefreshInterval.get -> System.TimeSpan
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDeliveryOptions.FreshnessRefreshInterval.set -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDeliveryOptions.LockDuration.get -> System.TimeSpan
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDeliveryOptions.LockDuration.set -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDeliveryOptions.PollingInterval.get -> System.TimeSpan
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDeliveryOptions.PollingInterval.set -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDeliveryOptions.PurgeDeliveredAfter.get -> System.TimeSpan
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDeliveryOptions.PurgeDeliveredAfter.set -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDeliveryOptions.RetrySchedule.get -> System.TimeSpan[]!
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDeliveryOptions.RetrySchedule.set -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDeliveryStatus
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDeliveryStatus.Delivered = 1 -> Modulus.Analytics.EntityFrameworkCore.AnalyticsDeliveryStatus
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDeliveryStatus.Failed = 2 -> Modulus.Analytics.EntityFrameworkCore.AnalyticsDeliveryStatus
+Modulus.Analytics.EntityFrameworkCore.AnalyticsDeliveryStatus.Pending = 0 -> Modulus.Analytics.EntityFrameworkCore.AnalyticsDeliveryStatus
+Modulus.Analytics.EntityFrameworkCore.AnalyticsEntityFrameworkExtensions
+Modulus.Analytics.EntityFrameworkCore.AnalyticsEntityRow
+Modulus.Analytics.EntityFrameworkCore.AnalyticsEntityRow.<Clone>$() -> Modulus.Analytics.EntityFrameworkCore.AnalyticsEntityRow!
+Modulus.Analytics.EntityFrameworkCore.AnalyticsEntityRow.AnalyticsEntityRow(System.Guid RecordId, System.DateTimeOffset OccurredAt, System.Collections.Generic.IReadOnlyDictionary<string!, object?>! Values, long Revision = 0) -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsEntityRow.Deconstruct(out System.Guid RecordId, out System.DateTimeOffset OccurredAt, out System.Collections.Generic.IReadOnlyDictionary<string!, object?>! Values, out long Revision) -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsEntityRow.Equals(Modulus.Analytics.EntityFrameworkCore.AnalyticsEntityRow? other) -> bool
+Modulus.Analytics.EntityFrameworkCore.AnalyticsEntityRow.OccurredAt.get -> System.DateTimeOffset
+Modulus.Analytics.EntityFrameworkCore.AnalyticsEntityRow.OccurredAt.init -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsEntityRow.RecordId.get -> System.Guid
+Modulus.Analytics.EntityFrameworkCore.AnalyticsEntityRow.RecordId.init -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsEntityRow.Revision.get -> long
+Modulus.Analytics.EntityFrameworkCore.AnalyticsEntityRow.Revision.init -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsEntityRow.Values.get -> System.Collections.Generic.IReadOnlyDictionary<string!, object?>!
+Modulus.Analytics.EntityFrameworkCore.AnalyticsEntityRow.Values.init -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsEntitySourceExtensions
+Modulus.Analytics.EntityFrameworkCore.AnalyticsReconciler
+Modulus.Analytics.EntityFrameworkCore.AnalyticsReconciler.AnalyticsReconciler(Modulus.Analytics.EntityFrameworkCore.ModulusAnalyticsDbContext! db, Modulus.Analytics.IAnalyticsDatasetCatalog! catalog, System.Collections.Generic.IEnumerable<Modulus.Analytics.IAnalyticsSource!>! sources, System.Collections.Generic.IEnumerable<Modulus.Analytics.IAnalyticsSink!>! sinks, Modulus.Analytics.IAnalyticsTenantDirectory! directory, Modulus.Analytics.IAnalyticsEntitlement! entitlement, System.IServiceProvider! services, Microsoft.Extensions.Logging.ILogger<Modulus.Analytics.EntityFrameworkCore.AnalyticsReconciler!>! logger) -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsReconciler.ReconcileAsync(string! dataset, int version, System.Collections.Generic.IReadOnlyCollection<System.Guid>? tenantIds, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<Modulus.Analytics.AnalyticsReconciliationReport!>!
+Modulus.Analytics.EntityFrameworkCore.AnalyticsRunKind
+Modulus.Analytics.EntityFrameworkCore.AnalyticsRunKind.Backfill = 0 -> Modulus.Analytics.EntityFrameworkCore.AnalyticsRunKind
+Modulus.Analytics.EntityFrameworkCore.AnalyticsRunKind.Incremental = 1 -> Modulus.Analytics.EntityFrameworkCore.AnalyticsRunKind
+Modulus.Analytics.EntityFrameworkCore.EntityAnalyticsSource<TContext, TEntity, TKey>
+Modulus.Analytics.EntityFrameworkCore.EntityAnalyticsSource<TContext, TEntity, TKey>.CountAsync(System.Guid tenantId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<long>!
+Modulus.Analytics.EntityFrameworkCore.EntityAnalyticsSource<TContext, TEntity, TKey>.Dataset.get -> string!
+Modulus.Analytics.EntityFrameworkCore.EntityAnalyticsSource<TContext, TEntity, TKey>.EntityAnalyticsSource(TContext! db, string! dataset, int version, System.Linq.Expressions.Expression<System.Func<TEntity!, TKey>!>! key, System.Func<TEntity!, Modulus.Analytics.EntityFrameworkCore.AnalyticsEntityRow!>! map) -> void
+Modulus.Analytics.EntityFrameworkCore.EntityAnalyticsSource<TContext, TEntity, TKey>.ExtractAsync(Modulus.Analytics.AnalyticsExtractRequest! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<Modulus.Analytics.AnalyticsExtractPage!>!
+Modulus.Analytics.EntityFrameworkCore.EntityAnalyticsSource<TContext, TEntity, TKey>.Version.get -> int
+Modulus.Analytics.EntityFrameworkCore.IncrementalEntityAnalyticsSource<TContext, TEntity, TKey>
+Modulus.Analytics.EntityFrameworkCore.IncrementalEntityAnalyticsSource<TContext, TEntity, TKey>.CountAsync(System.Guid tenantId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<long>!
+Modulus.Analytics.EntityFrameworkCore.IncrementalEntityAnalyticsSource<TContext, TEntity, TKey>.Dataset.get -> string!
+Modulus.Analytics.EntityFrameworkCore.IncrementalEntityAnalyticsSource<TContext, TEntity, TKey>.ExtractAsync(Modulus.Analytics.AnalyticsExtractRequest! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<Modulus.Analytics.AnalyticsExtractPage!>!
+Modulus.Analytics.EntityFrameworkCore.IncrementalEntityAnalyticsSource<TContext, TEntity, TKey>.ExtractChangesAsync(Modulus.Analytics.AnalyticsChangeRequest! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<Modulus.Analytics.AnalyticsChangePage!>!
+Modulus.Analytics.EntityFrameworkCore.IncrementalEntityAnalyticsSource<TContext, TEntity, TKey>.IncrementalEntityAnalyticsSource(TContext! db, string! dataset, int version, System.Linq.Expressions.Expression<System.Func<TEntity!, TKey>!>! key, System.Func<TEntity!, Modulus.Analytics.EntityFrameworkCore.AnalyticsEntityRow!>! map) -> void
+Modulus.Analytics.EntityFrameworkCore.IncrementalEntityAnalyticsSource<TContext, TEntity, TKey>.Version.get -> int
+Modulus.Analytics.EntityFrameworkCore.ModulusAnalyticsDbContext
+Modulus.Analytics.EntityFrameworkCore.ModulusAnalyticsDbContext.AnalyticsBackfillRuns.get -> Microsoft.EntityFrameworkCore.DbSet<Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillRun!>!
+Modulus.Analytics.EntityFrameworkCore.ModulusAnalyticsDbContext.AnalyticsDeliveries.get -> Microsoft.EntityFrameworkCore.DbSet<Modulus.Analytics.EntityFrameworkCore.AnalyticsDelivery!>!
+Modulus.Analytics.EntityFrameworkCore.ModulusAnalyticsDbContext.ModulusAnalyticsDbContext(Microsoft.EntityFrameworkCore.DbContextOptions! options) -> void
+const Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillOptions.SectionName = "Analytics:Backfill" -> string!
+const Modulus.Analytics.EntityFrameworkCore.AnalyticsDeliveryOptions.SectionName = "Analytics:Delivery" -> string!
+override Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillStartResult.Equals(object? obj) -> bool
+override Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillStartResult.GetHashCode() -> int
+override Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillStartResult.ToString() -> string!
+override Modulus.Analytics.EntityFrameworkCore.AnalyticsEntityRow.Equals(object? obj) -> bool
+override Modulus.Analytics.EntityFrameworkCore.AnalyticsEntityRow.GetHashCode() -> int
+override Modulus.Analytics.EntityFrameworkCore.AnalyticsEntityRow.ToString() -> string!
+override Modulus.Analytics.EntityFrameworkCore.ModulusAnalyticsDbContext.OnModelCreating(Microsoft.EntityFrameworkCore.ModelBuilder! modelBuilder) -> void
+static Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillStartResult.operator !=(Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillStartResult? left, Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillStartResult? right) -> bool
+static Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillStartResult.operator ==(Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillStartResult? left, Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillStartResult? right) -> bool
+static Modulus.Analytics.EntityFrameworkCore.AnalyticsEntityFrameworkExtensions.AddModulusAnalyticsStore<TContext>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration, System.Action<Modulus.Analytics.EntityFrameworkCore.AnalyticsDeliveryOptions!>? configure = null, System.Action<Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillOptions!>? configureBackfill = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.Analytics.EntityFrameworkCore.AnalyticsEntityRow.operator !=(Modulus.Analytics.EntityFrameworkCore.AnalyticsEntityRow? left, Modulus.Analytics.EntityFrameworkCore.AnalyticsEntityRow? right) -> bool
+static Modulus.Analytics.EntityFrameworkCore.AnalyticsEntityRow.operator ==(Modulus.Analytics.EntityFrameworkCore.AnalyticsEntityRow? left, Modulus.Analytics.EntityFrameworkCore.AnalyticsEntityRow? right) -> bool
+static Modulus.Analytics.EntityFrameworkCore.AnalyticsEntitySourceExtensions.AddEntitySource<TContext, TEntity, TKey>(this Modulus.Analytics.AnalyticsBuilder! builder, string! dataset, int version, System.Linq.Expressions.Expression<System.Func<TEntity!, TKey>!>! key, System.Func<TEntity!, Modulus.Analytics.EntityFrameworkCore.AnalyticsEntityRow!>! map) -> Modulus.Analytics.AnalyticsBuilder!
+static Modulus.Analytics.EntityFrameworkCore.AnalyticsEntitySourceExtensions.AddIncrementalEntitySource<TContext, TEntity, TKey>(this Modulus.Analytics.AnalyticsBuilder! builder, string! dataset, int version, System.Linq.Expressions.Expression<System.Func<TEntity!, TKey>!>! key, System.Func<TEntity!, Modulus.Analytics.EntityFrameworkCore.AnalyticsEntityRow!>! map) -> Modulus.Analytics.AnalyticsBuilder!
+static Modulus.Analytics.EntityFrameworkCore.ModulusAnalyticsDbContext.ConfigureAnalytics(Microsoft.EntityFrameworkCore.ModelBuilder! modelBuilder) -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsTenantDataExtensions
+Modulus.Analytics.EntityFrameworkCore.AnalyticsTenantDataHandler
+Modulus.Analytics.EntityFrameworkCore.AnalyticsTenantDataHandler.AnalyticsTenantDataHandler(Modulus.Analytics.EntityFrameworkCore.ModulusAnalyticsDbContext! db, Modulus.Analytics.IAnalyticsDatasetCatalog! catalog, System.Collections.Generic.IEnumerable<Modulus.Analytics.IAnalyticsSink!>! sinks, Modulus.Core.Abstractions.ICurrentTenant! currentTenant) -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsTenantDataHandler.CountAsync(Modulus.Tenancy.Lifecycle.TenantDataset! dataset, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<long>!
+Modulus.Analytics.EntityFrameworkCore.AnalyticsTenantDataHandler.Datasets.get -> System.Collections.Generic.IReadOnlyList<Modulus.Tenancy.Lifecycle.TenantDataset!>!
+Modulus.Analytics.EntityFrameworkCore.AnalyticsTenantDataHandler.DeleteAsync(Modulus.Tenancy.Lifecycle.TenantDataset! dataset, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<long>!
+Modulus.Analytics.EntityFrameworkCore.AnalyticsTenantDataHandler.ExportAsync(Modulus.Tenancy.Lifecycle.TenantDataset! dataset, Modulus.Tenancy.Lifecycle.ITenantExportWriter! writer, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
+Modulus.Analytics.EntityFrameworkCore.AnalyticsTenantDataHandler.Module.get -> string!
+const Modulus.Analytics.EntityFrameworkCore.AnalyticsTenantDataHandler.BackfillDataset = "analytics.backfill" -> string!
+const Modulus.Analytics.EntityFrameworkCore.AnalyticsTenantDataHandler.QueueDataset = "analytics.queue" -> string!
+const Modulus.Analytics.EntityFrameworkCore.AnalyticsTenantDataHandler.WarehouseDataset = "analytics.warehouse" -> string!
+static Modulus.Analytics.EntityFrameworkCore.AnalyticsTenantDataExtensions.AddModulusAnalyticsTenantData(this Modulus.Tenancy.Lifecycle.TenantLifecycleBuilder! builder) -> Modulus.Tenancy.Lifecycle.TenantLifecycleBuilder!
+Modulus.Analytics.EntityFrameworkCore.AnalyticsQualityChecker
+Modulus.Analytics.EntityFrameworkCore.AnalyticsQualityChecker.CheckAsync(string! dataset, int version, System.Collections.Generic.IReadOnlyCollection<System.Guid>? tenantIds, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<Modulus.Analytics.AnalyticsQualityReport!>!
+Modulus.Analytics.EntityFrameworkCore.AnalyticsQualityChecker.AnalyticsQualityChecker(Modulus.Analytics.IAnalyticsDatasetCatalog! catalog, System.Collections.Generic.IEnumerable<Modulus.Analytics.IAnalyticsSink!>! sinks, Modulus.Analytics.IAnalyticsTenantDirectory! directory, Modulus.Analytics.IAnalyticsEntitlement! entitlement, System.TimeProvider! clock, System.Collections.Generic.IEnumerable<Modulus.Analytics.IAnalyticsQualityFindingSink!>? findingSinks = null) -> void

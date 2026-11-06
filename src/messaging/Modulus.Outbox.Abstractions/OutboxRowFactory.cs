@@ -50,6 +50,8 @@ public static class OutboxRowFactory
             ModuleName = moduleName,
             CorrelationId = correlationId,
             CausationId = causationId,
+            // The contract version the payload follows, so a replay or a consumer can tell v1 rows from v2 without parsing the payload.
+            SchemaVersion = IntegrationEventNaming.GetVersion(@event.GetType()),
             TraceParent = activity?.Id,
             TraceState = activity?.TraceStateString,
         };

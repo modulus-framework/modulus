@@ -1,0 +1,26 @@
+#nullable enable
+Modulus.Analytics.Parquet.ParquetAnalyticsExtensions
+Modulus.Analytics.Parquet.ParquetAnalyticsSink
+Modulus.Analytics.Parquet.ParquetAnalyticsSink.EnsureDatasetAsync(Modulus.Analytics.AnalyticsDatasetDescriptor! dataset, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+Modulus.Analytics.Parquet.ParquetAnalyticsSink.Name.get -> string!
+Modulus.Analytics.Parquet.ParquetAnalyticsSink.ParquetAnalyticsSink(Modulus.Storage.IFileStorage! storage, Microsoft.Extensions.Options.IOptions<Modulus.Analytics.Parquet.ParquetSinkOptions!>! options) -> void
+Modulus.Analytics.Parquet.ParquetAnalyticsSink.WriteAsync(Modulus.Analytics.AnalyticsDatasetDescriptor! dataset, System.Collections.Generic.IReadOnlyList<Modulus.Analytics.AnalyticsRecord!>! records, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+Modulus.Analytics.Parquet.ParquetCompression
+Modulus.Analytics.Parquet.ParquetCompression.Gzip = 2 -> Modulus.Analytics.Parquet.ParquetCompression
+Modulus.Analytics.Parquet.ParquetCompression.None = 3 -> Modulus.Analytics.Parquet.ParquetCompression
+Modulus.Analytics.Parquet.ParquetCompression.Snappy = 0 -> Modulus.Analytics.Parquet.ParquetCompression
+Modulus.Analytics.Parquet.ParquetCompression.Zstd = 1 -> Modulus.Analytics.Parquet.ParquetCompression
+Modulus.Analytics.Parquet.ParquetSinkOptions
+Modulus.Analytics.Parquet.ParquetSinkOptions.Compression.get -> Modulus.Analytics.Parquet.ParquetCompression
+Modulus.Analytics.Parquet.ParquetSinkOptions.Compression.set -> void
+Modulus.Analytics.Parquet.ParquetSinkOptions.DecimalPrecision.get -> int
+Modulus.Analytics.Parquet.ParquetSinkOptions.DecimalPrecision.set -> void
+Modulus.Analytics.Parquet.ParquetSinkOptions.DecimalScale.get -> int
+Modulus.Analytics.Parquet.ParquetSinkOptions.DecimalScale.set -> void
+Modulus.Analytics.Parquet.ParquetSinkOptions.MaxRowsPerFile.get -> int
+Modulus.Analytics.Parquet.ParquetSinkOptions.MaxRowsPerFile.set -> void
+Modulus.Analytics.Parquet.ParquetSinkOptions.ParquetSinkOptions() -> void
+Modulus.Analytics.Parquet.ParquetSinkOptions.RootPath.get -> string!
+Modulus.Analytics.Parquet.ParquetSinkOptions.RootPath.set -> void
+const Modulus.Analytics.Parquet.ParquetSinkOptions.SectionName = "Analytics:Parquet" -> string!
+static Modulus.Analytics.Parquet.ParquetAnalyticsExtensions.AddParquet(this Modulus.Analytics.AnalyticsBuilder! builder, Microsoft.Extensions.Configuration.IConfiguration! configuration, System.Action<Modulus.Analytics.Parquet.ParquetSinkOptions!>? configure = null) -> Modulus.Analytics.AnalyticsBuilder!

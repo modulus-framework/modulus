@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework />
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <!-- New package: nothing of this ID is on nuget.org yet, so there is no baseline to validate against. Remove this line after its first release. -->
+    <EnablePackageValidation>false</EnablePackageValidation>
+    <Description>Analytics Integration Layer contracts for Modulus: versioned dataset and field metadata with classification, a dataset catalog, a provider-neutral sink interface, and batch masking. Providers (ClickHouse, Parquet, messaging) ship as separate packages.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../core/Modulus.Core/Modulus.Core.csproj" />
+    <ProjectReference Include="../../messaging/Modulus.Events/Modulus.Events.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Modulus.Analytics.Tests" />
+    <InternalsVisibleTo Include="Modulus.Analytics.EntityFrameworkCore" />
+  </ItemGroup>
+
+</Project>

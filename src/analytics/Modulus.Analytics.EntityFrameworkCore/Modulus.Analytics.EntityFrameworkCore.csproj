@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework />
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <!-- New package: nothing of this ID is on nuget.org yet, so there is no baseline to validate against. Remove this line after its first release. -->
+    <EnablePackageValidation>false</EnablePackageValidation>
+    <Description>Durable analytics delivery and backfill for Modulus on EF Core: per-tenant resumable backfill runs with checkpoints, an entity-backed source, a transactional queue of captured analytics records with duplicate-safe enqueue, atomic claiming across replicas, a retry schedule, dead-lettering and purge, and the background worker that hands batches to the analytics sinks.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Modulus.Analytics/Modulus.Analytics.csproj" />
+    <ProjectReference Include="../../data/Modulus.Data.Abstractions/Modulus.Data.Abstractions.csproj" />
+    <ProjectReference Include="../../platform/Modulus.Platform/Modulus.Platform.csproj" />
+    <ProjectReference Include="../../platform/Modulus.Tenancy.Lifecycle/Modulus.Tenancy.Lifecycle.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Modulus.Analytics.EntityFrameworkCore.Tests" />
+    <InternalsVisibleTo Include="Modulus.Analytics.EntityFrameworkCore.Integration.Tests" />
+  </ItemGroup>
+
+</Project>

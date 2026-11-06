@@ -70,6 +70,24 @@
     <Project Path="src/observability/Modulus.Observability/Modulus.Observability.csproj" />
   </Folder>
   <!-- ── AI ──────────────────────────────────────────────────────── -->
+  <Folder Name="/src/analytics/">
+    <Project Path="src/analytics/Modulus.Analytics/Modulus.Analytics.csproj" />
+    <Project Path="src/analytics/Modulus.Analytics.ClickHouse/Modulus.Analytics.ClickHouse.csproj" />
+    <Project Path="src/analytics/Modulus.Analytics.EntityFrameworkCore/Modulus.Analytics.EntityFrameworkCore.csproj" />
+    <Project Path="src/analytics/Modulus.Analytics.Management/Modulus.Analytics.Management.csproj" />
+    <Project Path="src/analytics/Modulus.Analytics.Parquet/Modulus.Analytics.Parquet.csproj" />
+    <Project Path="src/analytics/Modulus.Analytics.OpenLineage/Modulus.Analytics.OpenLineage.csproj" />
+    <Project Path="src/analytics/Modulus.Analytics.Airflow/Modulus.Analytics.Airflow.csproj" />
+    <Project Path="src/analytics/Modulus.Analytics.Superset/Modulus.Analytics.Superset.csproj" />
+    <Project Path="src/analytics/Modulus.Analytics.Debezium/Modulus.Analytics.Debezium.csproj" />
+    <Project Path="src/analytics/Modulus.Analytics.Doris/Modulus.Analytics.Doris.csproj" />
+    <Project Path="src/analytics/Modulus.Analytics.Messaging/Modulus.Analytics.Messaging.csproj" />
+    <Project Path="src/analytics/Modulus.Analytics.Apicurio/Modulus.Analytics.Apicurio.csproj" />
+    <Project Path="src/analytics/Modulus.Analytics.OpenMetadata/Modulus.Analytics.OpenMetadata.csproj" />
+    <Project Path="src/analytics/Modulus.Analytics.DuckDB/Modulus.Analytics.DuckDB.csproj" />
+    <Project Path="samples/Modulus.Analytics.MigrationSample/Modulus.Analytics.MigrationSample.csproj" />
+    <Project Path="src/analytics/Modulus.Analytics.Testing/Modulus.Analytics.Testing.csproj" />
+  </Folder>
   <Folder Name="/src/ai/">
     <Project Path="src/ai/Modulus.AI.Connector/Modulus.AI.Connector.csproj" />
     <Project Path="src/ai/Modulus.AI.Connector.EntityFrameworkCore/Modulus.AI.Connector.EntityFrameworkCore.csproj" />
@@ -109,6 +127,20 @@
     <Project Path="tests/unit/Modulus.Data.MongoDB.Tests/Modulus.Data.MongoDB.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Outbox.Tests/Modulus.Outbox.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Sagas.Tests/Modulus.Sagas.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.Analytics.ClickHouse.Tests/Modulus.Analytics.ClickHouse.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.Analytics.EntityFrameworkCore.Tests/Modulus.Analytics.EntityFrameworkCore.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.Analytics.Management.Tests/Modulus.Analytics.Management.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.Analytics.Parquet.Tests/Modulus.Analytics.Parquet.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.Analytics.OpenLineage.Tests/Modulus.Analytics.OpenLineage.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.Analytics.Airflow.Tests/Modulus.Analytics.Airflow.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.Analytics.Superset.Tests/Modulus.Analytics.Superset.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.Analytics.Debezium.Tests/Modulus.Analytics.Debezium.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.Analytics.Doris.Tests/Modulus.Analytics.Doris.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.Analytics.Messaging.Tests/Modulus.Analytics.Messaging.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.Analytics.Apicurio.Tests/Modulus.Analytics.Apicurio.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.Analytics.OpenMetadata.Tests/Modulus.Analytics.OpenMetadata.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.Analytics.DuckDB.Tests/Modulus.Analytics.DuckDB.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.Analytics.Tests/Modulus.Analytics.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Webhooks.Tests/Modulus.Webhooks.Tests.csproj" />
     <Project Path="tests/unit/Modulus.AI.Connector.Tests/Modulus.AI.Connector.Tests.csproj" />
     <Project Path="tests/unit/Modulus.AI.Connector.EntityFrameworkCore.Tests/Modulus.AI.Connector.EntityFrameworkCore.Tests.csproj" />
@@ -144,6 +176,9 @@
     <Project Path="tests/integration/Modulus.Cli.Integration.Tests/Modulus.Cli.Integration.Tests.csproj" />
     <Project Path="tests/integration/Modulus.EFCore.Integration.Tests/Modulus.EFCore.Integration.Tests.csproj" />
     <Project Path="tests/integration/Modulus.Messaging.Integration.Tests/Modulus.Messaging.Integration.Tests.csproj" />
+    <Project Path="tests/integration/Modulus.Analytics.ClickHouse.Integration.Tests/Modulus.Analytics.ClickHouse.Integration.Tests.csproj" />
+    <Project Path="tests/integration/Modulus.Analytics.EntityFrameworkCore.Integration.Tests/Modulus.Analytics.EntityFrameworkCore.Integration.Tests.csproj" />
+    <Project Path="tests/integration/Modulus.Analytics.OpenLineage.Integration.Tests/Modulus.Analytics.OpenLineage.Integration.Tests.csproj" />
     <Project Path="tests/integration/Modulus.Outbox.Integration.Tests/Modulus.Outbox.Integration.Tests.csproj" />
     <Project Path="tests/integration/Modulus.BackgroundJobs.Quartz.Integration.Tests/Modulus.BackgroundJobs.Quartz.Integration.Tests.csproj" />
     <Project Path="tests/integration/Modulus.BackgroundJobs.Quartz.ClusterNode/Modulus.BackgroundJobs.Quartz.ClusterNode.csproj" />

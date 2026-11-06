@@ -1,0 +1,18 @@
+#nullable enable
+Modulus.Analytics.Doris.DorisAnalyticsExtensions
+Modulus.Analytics.Doris.DorisSinkOptions
+Modulus.Analytics.Doris.DorisSinkOptions.Database.get -> string!
+Modulus.Analytics.Doris.DorisSinkOptions.Database.set -> void
+Modulus.Analytics.Doris.DorisSinkOptions.DorisSinkOptions() -> void
+Modulus.Analytics.Doris.DorisSinkOptions.FeHttpUrl.get -> System.Uri?
+Modulus.Analytics.Doris.DorisSinkOptions.FeHttpUrl.set -> void
+Modulus.Analytics.Doris.DorisSinkOptions.Password.get -> string?
+Modulus.Analytics.Doris.DorisSinkOptions.Password.set -> void
+Modulus.Analytics.Doris.DorisSinkOptions.TablePrefix.get -> string!
+Modulus.Analytics.Doris.DorisSinkOptions.TablePrefix.set -> void
+Modulus.Analytics.Doris.DorisSinkOptions.Timeout.get -> System.TimeSpan
+Modulus.Analytics.Doris.DorisSinkOptions.Timeout.set -> void
+Modulus.Analytics.Doris.DorisSinkOptions.Username.get -> string?
+Modulus.Analytics.Doris.DorisSinkOptions.Username.set -> void
+const Modulus.Analytics.Doris.DorisSinkOptions.SectionName = "Analytics:Doris" -> string!
+static Modulus.Analytics.Doris.DorisAnalyticsExtensions.AddDoris(this Modulus.Analytics.AnalyticsBuilder! builder, Microsoft.Extensions.Configuration.IConfiguration! configuration, System.Action<Modulus.Analytics.Doris.DorisSinkOptions!>? configure = null) -> Modulus.Analytics.AnalyticsBuilder!

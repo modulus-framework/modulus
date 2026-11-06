@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="../../../src/analytics/Modulus.Analytics.OpenLineage/Modulus.Analytics.OpenLineage.csproj" />
+    <ProjectReference Include="../../../src/analytics/Modulus.Analytics.Testing/Modulus.Analytics.Testing.csproj" />
+    <PackageReference Include="Testcontainers.PostgreSql" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" />
+    <PackageReference Include="Microsoft.Extensions.Logging" />
+  </ItemGroup>
+
+</Project>

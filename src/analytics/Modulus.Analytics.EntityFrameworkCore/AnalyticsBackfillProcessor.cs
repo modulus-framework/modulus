@@ -1,0 +1,357 @@
+namespace Modulus.Analytics.EntityFrameworkCore;
+
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Modulus.Core.Abstractions;
+
+/// <summary>A source returned records that do not belong to the run. The run fails at once, because retrying cannot fix it.</summary>
+internal sealed class AnalyticsBackfillSourceException(string message) : Exception(message);
+
+/// <summary>
+/// One backfill cycle: claim runs (a conditional <c>UPDATE</c>, so replicas never read the same run), then for each run enter its tenant,
+/// read pages from the source and queue each page together with the new cursor in a single transaction. A worker that dies mid-run
+/// loses nothing: the claim expires and another worker continues from the saved cursor.
+/// </summary>
+internal sealed class AnalyticsBackfillProcessor(
+    ModulusAnalyticsDbContext db,
+    IAnalyticsDatasetCatalog catalog,
+    IEnumerable<IAnalyticsSource> sources,
+    IAnalyticsEntitlement entitlement,
+    IServiceProvider services,
+    IOptions<AnalyticsBackfillOptions> options,
+    TimeProvider clock,
+    IAnalyticsLineageEmitter lineage,
+    IEnumerable<IAnalyticsRunObserver> observers,
+    ILogger<AnalyticsBackfillProcessor> logger)
+{
+    private const int MaxErrorLength = 2000;
+    private readonly string _instanceId = Guid.NewGuid().ToString("N");
+
+    /// <summary>Runs one cycle; returns the number of runs it worked on.</summary>
+    public async Task<int> ProcessAsync(CancellationToken ct = default)
+    {
+        var settings = options.Value;
+        var now = Now();
+        var candidates = await db.AnalyticsBackfillRuns
+            .Where(r => (r.Status == AnalyticsBackfillStatus.Pending || r.Status == AnalyticsBackfillStatus.Running)
+                     && (r.LockedUntil == null || r.LockedUntil < now)
+                     && (r.NextAttemptAt == null || r.NextAttemptAt <= now))
+            .OrderBy(r => r.CreatedAt)
+            .Take(Math.Max(1, settings.RunsPerCycle))
+            .Select(r => r.Id)
+            .ToListAsync(ct).ConfigureAwait(false);
+        if (candidates.Count == 0)
+        {
+            return 0;
+        }
+
+        var lockUntil = now + settings.LockDuration;
+        try
+        {
+            await db.AnalyticsBackfillRuns
+                .Where(r => candidates.Contains(r.Id)
+                         && (r.Status == AnalyticsBackfillStatus.Pending || r.Status == AnalyticsBackfillStatus.Running)
+                         && (r.LockedUntil == null || r.LockedUntil < now))
+                .ExecuteUpdateAsync(
+                    s => s.SetProperty(r => r.LockedBy, _instanceId)
+                          .SetProperty(r => r.LockedUntil, (DateTime?)lockUntil)
+                          .SetProperty(r => r.Status, AnalyticsBackfillStatus.Running),
+                    ct).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (AnalyticsDbRaces.IsRace(ex))
+        {
+            // Another worker is claiming the same runs and the database chose this claim as the deadlock victim. Skip the cycle.
+            return 0;
+        }
+
+        var claimed = await db.AnalyticsBackfillRuns.AsNoTracking()
+            .Where(r => candidates.Contains(r.Id) && r.LockedBy == _instanceId && r.Status == AnalyticsBackfillStatus.Running)
+            .OrderBy(r => r.CreatedAt)
+            .Select(r => new { r.Id, r.Dataset, r.SchemaVersion, r.TenantId, r.Kind })
+            .ToListAsync(ct).ConfigureAwait(false);
+
+        foreach (var run in claimed)
+        {
+            await ProcessRunAsync(run.Id, run.Dataset, run.SchemaVersion, run.TenantId, run.Kind, settings, ct).ConfigureAwait(false);
+        }
+
+        return claimed.Count;
+    }
+
+    private async Task ProcessRunAsync(Guid runId, string dataset, int version, Guid tenantId, AnalyticsRunKind kind, AnalyticsBackfillOptions settings, CancellationToken ct)
+    {
+        var source = sources.FirstOrDefault(s => s.Dataset == dataset && s.Version == version);
+        if (source is null || !catalog.TryGet(dataset, version, out var descriptor))
+        {
+            await FailAsync(runId, $"No analytics source or dataset is registered for '{dataset}.v{version}'.").ConfigureAwait(false);
+            return;
+        }
+
+        // Plan gating: a run for a tenant that is not (or is no longer) entitled stops here, visibly. Restart it after the plan changes.
+        if (!entitlement.IsEntitled(tenantId, descriptor))
+        {
+            await FailAsync(runId, $"Tenant '{tenantId}' is not entitled to dataset '{dataset}' (it needs the '{descriptor.RequiredFeature}' feature).").ConfigureAwait(false);
+            return;
+        }
+
+        var incremental = source as IAnalyticsIncrementalSource;
+        if (kind == AnalyticsRunKind.Incremental && incremental is null)
+        {
+            await FailAsync(runId, $"The source for '{dataset}.v{version}' cannot report changes, so the incremental run cannot continue.").ConfigureAwait(false);
+            return;
+        }
+
+        TenantInfo tenant;
+        try
+        {
+            tenant = await services.VerifyTenantAsync(tenantId, ct).ConfigureAwait(false);
+        }
+        catch (TenantContextRejectedException)
+        {
+            await FailAsync(runId, $"Tenant '{tenantId}' is unknown or inactive.").ConfigureAwait(false);
+            return;
+        }
+
+        // The tenant is entered here, in the frame that runs the work, and left when this method returns.
+        using var scope = services.EnterTenant(tenant);
+        try
+        {
+            for (var page = 0; page < Math.Max(1, settings.PagesPerCycle); page++)
+            {
+                var finished = kind == AnalyticsRunKind.Incremental
+                    ? await ReadChangesAsync(runId, dataset, version, tenantId, incremental!, settings, ct).ConfigureAwait(false)
+                    : await ReadPageAsync(runId, dataset, version, tenantId, source, settings, ct).ConfigureAwait(false);
+                if (finished)
+                {
+                    return;
+                }
+            }
+
+            await ReleaseAsync(runId).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            await ReleaseAsync(runId).ConfigureAwait(false);
+        }
+        catch (AnalyticsBackfillSourceException ex)
+        {
+            await FailAsync(runId, ex.Message).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            await RetryLaterAsync(runId, ex, settings).ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>Reads, queues and checkpoints one page. Returns true when the run is finished.</summary>
+    private async Task<bool> ReadPageAsync(
+        Guid runId, string dataset, int version, Guid tenantId, IAnalyticsSource source, AnalyticsBackfillOptions settings, CancellationToken ct)
+    {
+        for (var attempt = 1; ; attempt++)
+        {
+            db.ChangeTracker.Clear();
+            var run = await db.AnalyticsBackfillRuns.SingleAsync(r => r.Id == runId, ct).ConfigureAwait(false);
+            if (run.Status != AnalyticsBackfillStatus.Running)
+            {
+                return true; // cancelled while this cycle was running
+            }
+
+            if (run.Cursor is null && run.RowsQueued == 0)
+            {
+                // Lineage starts when the run starts reading the source. A retry before the first saved page may start it again.
+                await lineage.EmitAsync(new AnalyticsRunLineage(runId, AnalyticsLineageState.Start, dataset, version, Now()), ct).ConfigureAwait(false);
+            }
+
+            var page = await source.ExtractAsync(new AnalyticsExtractRequest(tenantId, run.Cursor, Math.Max(1, settings.PageSize)), ct).ConfigureAwait(false);
+            foreach (var record in page.Records)
+            {
+                if (record.TenantId != tenantId || record.Dataset != dataset || record.SchemaVersion != version)
+                {
+                    throw new AnalyticsBackfillSourceException(
+                        $"The source for '{dataset}.v{version}' returned a record for '{record.Dataset}.v{record.SchemaVersion}' of tenant '{record.TenantId}' while reading tenant '{tenantId}'.");
+                }
+            }
+
+            var staged = await AnalyticsDeliveryStaging.StageAsync(db, catalog, clock, page.Records, ct).ConfigureAwait(false);
+
+            var now = Now();
+            var done = page.NextCursor is null;
+            run.Cursor = page.NextCursor;
+            run.RowsQueued += page.Records.Count;
+            run.AttemptCount = 0;
+            run.NextAttemptAt = null;
+            run.LastError = null;
+            run.UpdatedAt = now;
+            if (done)
+            {
+                run.Status = AnalyticsBackfillStatus.Completed;
+                run.CompletedAt = now;
+                run.LockedBy = null;
+                run.LockedUntil = null;
+            }
+            else
+            {
+                run.LockedUntil = now + settings.LockDuration;
+            }
+
+            try
+            {
+                // The queued rows and the cursor commit together: a crash before this loses nothing and repeats nothing.
+                await db.SaveChangesAsync(CancellationToken.None).ConfigureAwait(false);
+                AnalyticsMetrics.BackfillRowsQueued.Add(staged, AnalyticsMetrics.Tags(dataset));
+                if (done)
+                {
+                    logger.LogInformation("Analytics backfill of {Dataset}.v{Version} for tenant {Tenant} completed ({Rows} records queued).", dataset, version, tenantId, run.RowsQueued);
+                    await lineage.EmitAsync(new AnalyticsRunLineage(runId, AnalyticsLineageState.Complete, dataset, version, Now()), ct).ConfigureAwait(false);
+                    await NotifyObserversAsync(new AnalyticsRunCompleted(runId, dataset, version, tenantId, now, run.RowsQueued), ct).ConfigureAwait(false);
+                }
+
+                return done;
+            }
+            catch (Exception ex) when (AnalyticsDbRaces.IsRace(ex) && attempt < 4)
+            {
+                // A live event for the same record may have been queued meanwhile and won the unique index, or this save lost a deadlock.
+                // Read the page again; staging now skips what is already queued.
+                await AnalyticsDbRaces.BackoffAsync(attempt, ct).ConfigureAwait(false);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Reads one page of changes, queues it and saves the position. Returns true when the run has nothing more to do right now: it caught up (it will
+    /// poll again after <see cref="AnalyticsBackfillOptions.IncrementalPollInterval"/>) or was cancelled.
+    /// </summary>
+    private async Task<bool> ReadChangesAsync(
+        Guid runId, string dataset, int version, Guid tenantId, IAnalyticsIncrementalSource source, AnalyticsBackfillOptions settings, CancellationToken ct)
+    {
+        for (var attempt = 1; ; attempt++)
+        {
+            db.ChangeTracker.Clear();
+            var run = await db.AnalyticsBackfillRuns.SingleAsync(r => r.Id == runId, ct).ConfigureAwait(false);
+            if (run.Status != AnalyticsBackfillStatus.Running)
+            {
+                return true; // cancelled while this cycle was running
+            }
+
+            var settledBefore = Now() - settings.SettleDelay;
+            var page = await source.ExtractChangesAsync(
+                new AnalyticsChangeRequest(tenantId, run.Cursor, Math.Max(1, settings.PageSize), settledBefore, settings.Overlap), ct).ConfigureAwait(false);
+            foreach (var record in page.Records)
+            {
+                if (record.TenantId != tenantId || record.Dataset != dataset || record.SchemaVersion != version)
+                {
+                    throw new AnalyticsBackfillSourceException(
+                        $"The source for '{dataset}.v{version}' returned a record for '{record.Dataset}.v{record.SchemaVersion}' of tenant '{record.TenantId}' while reading tenant '{tenantId}'.");
+                }
+            }
+
+            var staged = await AnalyticsDeliveryStaging.StageAsync(db, catalog, clock, page.Records, ct).ConfigureAwait(false);
+
+            var now = Now();
+            run.Cursor = page.Cursor ?? run.Cursor;
+            run.RowsQueued += staged;
+            run.AttemptCount = 0;
+            run.LastError = null;
+            run.UpdatedAt = now;
+            if (page.HasMore)
+            {
+                run.NextAttemptAt = null;
+                run.LockedUntil = now + settings.LockDuration;
+            }
+            else
+            {
+                // Caught up: wait, then look again. The run stays Running; it only ends when an operator cancels it.
+                run.NextAttemptAt = now + settings.IncrementalPollInterval;
+                run.LockedBy = null;
+                run.LockedUntil = null;
+            }
+
+            try
+            {
+                await db.SaveChangesAsync(CancellationToken.None).ConfigureAwait(false);
+                AnalyticsMetrics.BackfillRowsQueued.Add(staged, AnalyticsMetrics.Tags(dataset));
+                return !page.HasMore;
+            }
+            catch (Exception ex) when (AnalyticsDbRaces.IsRace(ex) && attempt < 4)
+            {
+                // A live event for the same record revision won the unique index meanwhile, or this save lost a deadlock. Read the page again.
+                await AnalyticsDbRaces.BackoffAsync(attempt, ct).ConfigureAwait(false);
+            }
+        }
+    }
+
+    private async Task ReleaseAsync(Guid runId)
+    {
+        db.ChangeTracker.Clear();
+        await db.AnalyticsBackfillRuns.Where(r => r.Id == runId && r.LockedBy == _instanceId)
+            .ExecuteUpdateAsync(s => s.SetProperty(r => r.LockedBy, (string?)null).SetProperty(r => r.LockedUntil, (DateTime?)null)).ConfigureAwait(false);
+    }
+
+    // A reaction that fails is logged and dropped: the run's rows are already saved, and a pipeline that is down must not fail the backfill.
+    private async Task NotifyObserversAsync(AnalyticsRunCompleted completed, CancellationToken ct)
+    {
+        foreach (var observer in observers)
+        {
+            try
+            {
+                await observer.OnBackfillCompletedAsync(completed, ct).ConfigureAwait(false);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                logger.LogWarning(ex, "An analytics run observer failed for run {Run} ({Dataset}.v{Version}); the run stays completed.", completed.RunId, completed.Dataset, completed.Version);
+            }
+        }
+    }
+
+    private async Task FailAsync(Guid runId, string error)
+    {
+        db.ChangeTracker.Clear();
+        var now = Now();
+        var message = Truncate(error);
+        await db.AnalyticsBackfillRuns.Where(r => r.Id == runId)
+            .ExecuteUpdateAsync(s => s.SetProperty(r => r.Status, AnalyticsBackfillStatus.Failed)
+                .SetProperty(r => r.LastError, message)
+                .SetProperty(r => r.UpdatedAt, now)
+                .SetProperty(r => r.LockedBy, (string?)null)
+                .SetProperty(r => r.LockedUntil, (DateTime?)null)).ConfigureAwait(false);
+        logger.LogWarning("Analytics backfill run {Run} failed: {Error}", runId, message);
+
+        // Only backfills are reported to lineage (see AnalyticsRunLineage). The run's own row says which kind it is.
+        var failed = await db.AnalyticsBackfillRuns.AsNoTracking()
+            .Where(r => r.Id == runId)
+            .Select(r => new { r.Dataset, r.SchemaVersion, r.Kind })
+            .FirstOrDefaultAsync().ConfigureAwait(false);
+        if (failed is { Kind: AnalyticsRunKind.Backfill })
+        {
+            await lineage.EmitAsync(new AnalyticsRunLineage(runId, AnalyticsLineageState.Fail, failed.Dataset, failed.SchemaVersion, now, message), CancellationToken.None).ConfigureAwait(false);
+        }
+    }
+
+    private async Task RetryLaterAsync(Guid runId, Exception exception, AnalyticsBackfillOptions settings)
+    {
+        db.ChangeTracker.Clear();
+        var attempts = await db.AnalyticsBackfillRuns.AsNoTracking().Where(r => r.Id == runId).Select(r => r.AttemptCount).SingleAsync().ConfigureAwait(false) + 1;
+        if (attempts >= Math.Max(1, settings.MaxAttempts))
+        {
+            await FailAsync(runId, $"Gave up after {attempts} failed cycles: {exception.Message}").ConfigureAwait(false);
+            return;
+        }
+
+        var now = Now();
+        var next = now + (settings.RetryDelay * attempts);
+        var message = Truncate(exception.Message);
+        await db.AnalyticsBackfillRuns.Where(r => r.Id == runId)
+            .ExecuteUpdateAsync(s => s.SetProperty(r => r.AttemptCount, attempts)
+                .SetProperty(r => r.LastError, message)
+                .SetProperty(r => r.UpdatedAt, now)
+                .SetProperty(r => r.NextAttemptAt, (DateTime?)next)
+                .SetProperty(r => r.LockedBy, (string?)null)
+                .SetProperty(r => r.LockedUntil, (DateTime?)null)).ConfigureAwait(false);
+        logger.LogWarning(exception, "Analytics backfill run {Run} failed (attempt {Attempt}); retrying after {Delay}.", runId, attempts, next - now);
+    }
+
+    private static string Truncate(string value) => value.Length <= MaxErrorLength ? value : value[..MaxErrorLength];
+
+    private DateTime Now() => clock.GetUtcNow().UtcDateTime;
+}

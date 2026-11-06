@@ -1,0 +1,20 @@
+#nullable enable
+Modulus.Analytics.OpenLineage.OpenLineageOptions
+Modulus.Analytics.OpenLineage.OpenLineageOptions.ApiKey.get -> string?
+Modulus.Analytics.OpenLineage.OpenLineageOptions.ApiKey.set -> void
+Modulus.Analytics.OpenLineage.OpenLineageOptions.Enabled.get -> bool
+Modulus.Analytics.OpenLineage.OpenLineageOptions.Enabled.set -> void
+Modulus.Analytics.OpenLineage.OpenLineageOptions.Namespace.get -> string!
+Modulus.Analytics.OpenLineage.OpenLineageOptions.Namespace.set -> void
+Modulus.Analytics.OpenLineage.OpenLineageOptions.OpenLineageOptions() -> void
+Modulus.Analytics.OpenLineage.OpenLineageOptions.Producer.get -> string!
+Modulus.Analytics.OpenLineage.OpenLineageOptions.Producer.set -> void
+Modulus.Analytics.OpenLineage.OpenLineageOptions.Timeout.get -> System.TimeSpan
+Modulus.Analytics.OpenLineage.OpenLineageOptions.Timeout.set -> void
+Modulus.Analytics.OpenLineage.OpenLineageOptions.Url.get -> System.Uri?
+Modulus.Analytics.OpenLineage.OpenLineageOptions.Url.set -> void
+Modulus.Analytics.OpenLineage.OpenLineageOptions.WarehouseNamespace.get -> string!
+Modulus.Analytics.OpenLineage.OpenLineageOptions.WarehouseNamespace.set -> void
+Modulus.Analytics.OpenLineage.OpenLineageServiceCollectionExtensions
+const Modulus.Analytics.OpenLineage.OpenLineageOptions.SectionName = "Analytics:OpenLineage" -> string!
+static Modulus.Analytics.OpenLineage.OpenLineageServiceCollectionExtensions.AddModulusOpenLineage(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!

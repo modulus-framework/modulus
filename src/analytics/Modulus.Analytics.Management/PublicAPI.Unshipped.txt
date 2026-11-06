@@ -1,0 +1,250 @@
+#nullable enable
+Modulus.Analytics.Management.AnalyticsBackfillRequest
+Modulus.Analytics.Management.AnalyticsBackfillRequest.<Clone>$() -> Modulus.Analytics.Management.AnalyticsBackfillRequest!
+Modulus.Analytics.Management.AnalyticsBackfillRequest.AnalyticsBackfillRequest(string! Dataset, int Version, System.Guid[]? TenantIds = null, bool Restart = false, bool Incremental = false) -> void
+Modulus.Analytics.Management.AnalyticsBackfillRequest.Dataset.get -> string!
+Modulus.Analytics.Management.AnalyticsBackfillRequest.Dataset.init -> void
+Modulus.Analytics.Management.AnalyticsBackfillRequest.Deconstruct(out string! Dataset, out int Version, out System.Guid[]? TenantIds, out bool Restart, out bool Incremental) -> void
+Modulus.Analytics.Management.AnalyticsBackfillRequest.Equals(Modulus.Analytics.Management.AnalyticsBackfillRequest? other) -> bool
+Modulus.Analytics.Management.AnalyticsBackfillRequest.Incremental.get -> bool
+Modulus.Analytics.Management.AnalyticsBackfillRequest.Incremental.init -> void
+Modulus.Analytics.Management.AnalyticsBackfillRequest.Restart.get -> bool
+Modulus.Analytics.Management.AnalyticsBackfillRequest.Restart.init -> void
+Modulus.Analytics.Management.AnalyticsBackfillRequest.TenantIds.get -> System.Guid[]?
+Modulus.Analytics.Management.AnalyticsBackfillRequest.TenantIds.init -> void
+Modulus.Analytics.Management.AnalyticsBackfillRequest.Version.get -> int
+Modulus.Analytics.Management.AnalyticsBackfillRequest.Version.init -> void
+Modulus.Analytics.Management.AnalyticsBackfillRunInfo
+Modulus.Analytics.Management.AnalyticsBackfillRunInfo.<Clone>$() -> Modulus.Analytics.Management.AnalyticsBackfillRunInfo!
+Modulus.Analytics.Management.AnalyticsBackfillRunInfo.AnalyticsBackfillRunInfo(System.Guid Id, string! Dataset, int SchemaVersion, System.Guid TenantId, string! Kind, string! Status, long RowsQueued, int AttemptCount, System.DateTime CreatedAt, System.DateTime UpdatedAt, System.DateTime? CompletedAt, System.DateTime? NextAttemptAt, string? LastError, string? RequestedBy) -> void
+Modulus.Analytics.Management.AnalyticsBackfillRunInfo.AttemptCount.get -> int
+Modulus.Analytics.Management.AnalyticsBackfillRunInfo.AttemptCount.init -> void
+Modulus.Analytics.Management.AnalyticsBackfillRunInfo.CompletedAt.get -> System.DateTime?
+Modulus.Analytics.Management.AnalyticsBackfillRunInfo.CompletedAt.init -> void
+Modulus.Analytics.Management.AnalyticsBackfillRunInfo.CreatedAt.get -> System.DateTime
+Modulus.Analytics.Management.AnalyticsBackfillRunInfo.CreatedAt.init -> void
+Modulus.Analytics.Management.AnalyticsBackfillRunInfo.Dataset.get -> string!
+Modulus.Analytics.Management.AnalyticsBackfillRunInfo.Dataset.init -> void
+Modulus.Analytics.Management.AnalyticsBackfillRunInfo.Deconstruct(out System.Guid Id, out string! Dataset, out int SchemaVersion, out System.Guid TenantId, out string! Kind, out string! Status, out long RowsQueued, out int AttemptCount, out System.DateTime CreatedAt, out System.DateTime UpdatedAt, out System.DateTime? CompletedAt, out System.DateTime? NextAttemptAt, out string? LastError, out string? RequestedBy) -> void
+Modulus.Analytics.Management.AnalyticsBackfillRunInfo.Equals(Modulus.Analytics.Management.AnalyticsBackfillRunInfo? other) -> bool
+Modulus.Analytics.Management.AnalyticsBackfillRunInfo.Id.get -> System.Guid
+Modulus.Analytics.Management.AnalyticsBackfillRunInfo.Id.init -> void
+Modulus.Analytics.Management.AnalyticsBackfillRunInfo.Kind.get -> string!
+Modulus.Analytics.Management.AnalyticsBackfillRunInfo.Kind.init -> void
+Modulus.Analytics.Management.AnalyticsBackfillRunInfo.LastError.get -> string?
+Modulus.Analytics.Management.AnalyticsBackfillRunInfo.LastError.init -> void
+Modulus.Analytics.Management.AnalyticsBackfillRunInfo.NextAttemptAt.get -> System.DateTime?
+Modulus.Analytics.Management.AnalyticsBackfillRunInfo.NextAttemptAt.init -> void
+Modulus.Analytics.Management.AnalyticsBackfillRunInfo.RequestedBy.get -> string?
+Modulus.Analytics.Management.AnalyticsBackfillRunInfo.RequestedBy.init -> void
+Modulus.Analytics.Management.AnalyticsBackfillRunInfo.RowsQueued.get -> long
+Modulus.Analytics.Management.AnalyticsBackfillRunInfo.RowsQueued.init -> void
+Modulus.Analytics.Management.AnalyticsBackfillRunInfo.SchemaVersion.get -> int
+Modulus.Analytics.Management.AnalyticsBackfillRunInfo.SchemaVersion.init -> void
+Modulus.Analytics.Management.AnalyticsBackfillRunInfo.Status.get -> string!
+Modulus.Analytics.Management.AnalyticsBackfillRunInfo.Status.init -> void
+Modulus.Analytics.Management.AnalyticsBackfillRunInfo.TenantId.get -> System.Guid
+Modulus.Analytics.Management.AnalyticsBackfillRunInfo.TenantId.init -> void
+Modulus.Analytics.Management.AnalyticsBackfillRunInfo.UpdatedAt.get -> System.DateTime
+Modulus.Analytics.Management.AnalyticsBackfillRunInfo.UpdatedAt.init -> void
+Modulus.Analytics.Management.AnalyticsDeadLetter
+Modulus.Analytics.Management.AnalyticsDeadLetter.<Clone>$() -> Modulus.Analytics.Management.AnalyticsDeadLetter!
+Modulus.Analytics.Management.AnalyticsDeadLetter.AnalyticsDeadLetter(System.Guid Id, System.Guid TenantId, System.Guid EventId, string! Dataset, int SchemaVersion, System.DateTime OccurredAt, System.DateTime CreatedAt, System.DateTime? DeadLetteredAt, int AttemptCount, string? LastError) -> void
+Modulus.Analytics.Management.AnalyticsDeadLetter.AttemptCount.get -> int
+Modulus.Analytics.Management.AnalyticsDeadLetter.AttemptCount.init -> void
+Modulus.Analytics.Management.AnalyticsDeadLetter.CreatedAt.get -> System.DateTime
+Modulus.Analytics.Management.AnalyticsDeadLetter.CreatedAt.init -> void
+Modulus.Analytics.Management.AnalyticsDeadLetter.Dataset.get -> string!
+Modulus.Analytics.Management.AnalyticsDeadLetter.Dataset.init -> void
+Modulus.Analytics.Management.AnalyticsDeadLetter.DeadLetteredAt.get -> System.DateTime?
+Modulus.Analytics.Management.AnalyticsDeadLetter.DeadLetteredAt.init -> void
+Modulus.Analytics.Management.AnalyticsDeadLetter.Deconstruct(out System.Guid Id, out System.Guid TenantId, out System.Guid EventId, out string! Dataset, out int SchemaVersion, out System.DateTime OccurredAt, out System.DateTime CreatedAt, out System.DateTime? DeadLetteredAt, out int AttemptCount, out string? LastError) -> void
+Modulus.Analytics.Management.AnalyticsDeadLetter.Equals(Modulus.Analytics.Management.AnalyticsDeadLetter? other) -> bool
+Modulus.Analytics.Management.AnalyticsDeadLetter.EventId.get -> System.Guid
+Modulus.Analytics.Management.AnalyticsDeadLetter.EventId.init -> void
+Modulus.Analytics.Management.AnalyticsDeadLetter.Id.get -> System.Guid
+Modulus.Analytics.Management.AnalyticsDeadLetter.Id.init -> void
+Modulus.Analytics.Management.AnalyticsDeadLetter.LastError.get -> string?
+Modulus.Analytics.Management.AnalyticsDeadLetter.LastError.init -> void
+Modulus.Analytics.Management.AnalyticsDeadLetter.OccurredAt.get -> System.DateTime
+Modulus.Analytics.Management.AnalyticsDeadLetter.OccurredAt.init -> void
+Modulus.Analytics.Management.AnalyticsDeadLetter.SchemaVersion.get -> int
+Modulus.Analytics.Management.AnalyticsDeadLetter.SchemaVersion.init -> void
+Modulus.Analytics.Management.AnalyticsDeadLetter.TenantId.get -> System.Guid
+Modulus.Analytics.Management.AnalyticsDeadLetter.TenantId.init -> void
+Modulus.Analytics.Management.AnalyticsManagementExtensions
+Modulus.Analytics.Management.AnalyticsPage<T>
+Modulus.Analytics.Management.AnalyticsPage<T>.<Clone>$() -> Modulus.Analytics.Management.AnalyticsPage<T>!
+Modulus.Analytics.Management.AnalyticsPage<T>.AnalyticsPage(System.Collections.Generic.IReadOnlyList<T>! Items, int Total, int Page, int PageSize) -> void
+Modulus.Analytics.Management.AnalyticsPage<T>.Deconstruct(out System.Collections.Generic.IReadOnlyList<T>! Items, out int Total, out int Page, out int PageSize) -> void
+Modulus.Analytics.Management.AnalyticsPage<T>.Equals(Modulus.Analytics.Management.AnalyticsPage<T>? other) -> bool
+Modulus.Analytics.Management.AnalyticsPage<T>.Items.get -> System.Collections.Generic.IReadOnlyList<T>!
+Modulus.Analytics.Management.AnalyticsPage<T>.Items.init -> void
+Modulus.Analytics.Management.AnalyticsPage<T>.Page.get -> int
+Modulus.Analytics.Management.AnalyticsPage<T>.Page.init -> void
+Modulus.Analytics.Management.AnalyticsPage<T>.PageSize.get -> int
+Modulus.Analytics.Management.AnalyticsPage<T>.PageSize.init -> void
+Modulus.Analytics.Management.AnalyticsPage<T>.Total.get -> int
+Modulus.Analytics.Management.AnalyticsPage<T>.Total.init -> void
+Modulus.Analytics.Management.AnalyticsPurgeResponse
+Modulus.Analytics.Management.AnalyticsPurgeResponse.<Clone>$() -> Modulus.Analytics.Management.AnalyticsPurgeResponse!
+Modulus.Analytics.Management.AnalyticsPurgeResponse.AnalyticsPurgeResponse(int Purged) -> void
+Modulus.Analytics.Management.AnalyticsPurgeResponse.Deconstruct(out int Purged) -> void
+Modulus.Analytics.Management.AnalyticsPurgeResponse.Equals(Modulus.Analytics.Management.AnalyticsPurgeResponse? other) -> bool
+Modulus.Analytics.Management.AnalyticsPurgeResponse.Purged.get -> int
+Modulus.Analytics.Management.AnalyticsPurgeResponse.Purged.init -> void
+Modulus.Analytics.Management.AnalyticsQueueStatus
+Modulus.Analytics.Management.AnalyticsQueueStatus.<Clone>$() -> Modulus.Analytics.Management.AnalyticsQueueStatus!
+Modulus.Analytics.Management.AnalyticsQueueStatus.AnalyticsQueueStatus(int Pending, int Delivered, int DeadLettered, System.DateTime? OldestPendingAt, double? OldestPendingAgeSeconds) -> void
+Modulus.Analytics.Management.AnalyticsQueueStatus.DeadLettered.get -> int
+Modulus.Analytics.Management.AnalyticsQueueStatus.DeadLettered.init -> void
+Modulus.Analytics.Management.AnalyticsQueueStatus.Deconstruct(out int Pending, out int Delivered, out int DeadLettered, out System.DateTime? OldestPendingAt, out double? OldestPendingAgeSeconds) -> void
+Modulus.Analytics.Management.AnalyticsQueueStatus.Delivered.get -> int
+Modulus.Analytics.Management.AnalyticsQueueStatus.Delivered.init -> void
+Modulus.Analytics.Management.AnalyticsQueueStatus.Equals(Modulus.Analytics.Management.AnalyticsQueueStatus? other) -> bool
+Modulus.Analytics.Management.AnalyticsQueueStatus.OldestPendingAgeSeconds.get -> double?
+Modulus.Analytics.Management.AnalyticsQueueStatus.OldestPendingAgeSeconds.init -> void
+Modulus.Analytics.Management.AnalyticsQueueStatus.OldestPendingAt.get -> System.DateTime?
+Modulus.Analytics.Management.AnalyticsQueueStatus.OldestPendingAt.init -> void
+Modulus.Analytics.Management.AnalyticsQueueStatus.Pending.get -> int
+Modulus.Analytics.Management.AnalyticsQueueStatus.Pending.init -> void
+Modulus.Analytics.Management.AnalyticsReconcileRequest
+Modulus.Analytics.Management.AnalyticsReconcileRequest.<Clone>$() -> Modulus.Analytics.Management.AnalyticsReconcileRequest!
+Modulus.Analytics.Management.AnalyticsReconcileRequest.AnalyticsReconcileRequest(string! Dataset, int Version, System.Guid[]? TenantIds = null) -> void
+Modulus.Analytics.Management.AnalyticsReconcileRequest.Dataset.get -> string!
+Modulus.Analytics.Management.AnalyticsReconcileRequest.Dataset.init -> void
+Modulus.Analytics.Management.AnalyticsReconcileRequest.Deconstruct(out string! Dataset, out int Version, out System.Guid[]? TenantIds) -> void
+Modulus.Analytics.Management.AnalyticsReconcileRequest.Equals(Modulus.Analytics.Management.AnalyticsReconcileRequest? other) -> bool
+Modulus.Analytics.Management.AnalyticsReconcileRequest.TenantIds.get -> System.Guid[]?
+Modulus.Analytics.Management.AnalyticsReconcileRequest.TenantIds.init -> void
+Modulus.Analytics.Management.AnalyticsReconcileRequest.Version.get -> int
+Modulus.Analytics.Management.AnalyticsReconcileRequest.Version.init -> void
+Modulus.Analytics.Management.AnalyticsReplayRequest
+Modulus.Analytics.Management.AnalyticsReplayRequest.<Clone>$() -> Modulus.Analytics.Management.AnalyticsReplayRequest!
+Modulus.Analytics.Management.AnalyticsReplayRequest.AnalyticsReplayRequest(System.Guid[]! Ids) -> void
+Modulus.Analytics.Management.AnalyticsReplayRequest.Deconstruct(out System.Guid[]! Ids) -> void
+Modulus.Analytics.Management.AnalyticsReplayRequest.Equals(Modulus.Analytics.Management.AnalyticsReplayRequest? other) -> bool
+Modulus.Analytics.Management.AnalyticsReplayRequest.Ids.get -> System.Guid[]!
+Modulus.Analytics.Management.AnalyticsReplayRequest.Ids.init -> void
+Modulus.Analytics.Management.AnalyticsReplayResponse
+Modulus.Analytics.Management.AnalyticsReplayResponse.<Clone>$() -> Modulus.Analytics.Management.AnalyticsReplayResponse!
+Modulus.Analytics.Management.AnalyticsReplayResponse.AnalyticsReplayResponse(int Replayed, int NotFound) -> void
+Modulus.Analytics.Management.AnalyticsReplayResponse.Deconstruct(out int Replayed, out int NotFound) -> void
+Modulus.Analytics.Management.AnalyticsReplayResponse.Equals(Modulus.Analytics.Management.AnalyticsReplayResponse? other) -> bool
+Modulus.Analytics.Management.AnalyticsReplayResponse.NotFound.get -> int
+Modulus.Analytics.Management.AnalyticsReplayResponse.NotFound.init -> void
+Modulus.Analytics.Management.AnalyticsReplayResponse.Replayed.get -> int
+Modulus.Analytics.Management.AnalyticsReplayResponse.Replayed.init -> void
+const Modulus.Analytics.Management.AnalyticsManagementExtensions.ManagePermission = "analytics:manage" -> string!
+override Modulus.Analytics.Management.AnalyticsBackfillRequest.Equals(object? obj) -> bool
+override Modulus.Analytics.Management.AnalyticsBackfillRequest.GetHashCode() -> int
+override Modulus.Analytics.Management.AnalyticsBackfillRequest.ToString() -> string!
+override Modulus.Analytics.Management.AnalyticsBackfillRunInfo.Equals(object? obj) -> bool
+override Modulus.Analytics.Management.AnalyticsBackfillRunInfo.GetHashCode() -> int
+override Modulus.Analytics.Management.AnalyticsBackfillRunInfo.ToString() -> string!
+override Modulus.Analytics.Management.AnalyticsDeadLetter.Equals(object? obj) -> bool
+override Modulus.Analytics.Management.AnalyticsDeadLetter.GetHashCode() -> int
+override Modulus.Analytics.Management.AnalyticsDeadLetter.ToString() -> string!
+override Modulus.Analytics.Management.AnalyticsPage<T>.Equals(object? obj) -> bool
+override Modulus.Analytics.Management.AnalyticsPage<T>.GetHashCode() -> int
+override Modulus.Analytics.Management.AnalyticsPage<T>.ToString() -> string!
+override Modulus.Analytics.Management.AnalyticsPurgeResponse.Equals(object? obj) -> bool
+override Modulus.Analytics.Management.AnalyticsPurgeResponse.GetHashCode() -> int
+override Modulus.Analytics.Management.AnalyticsPurgeResponse.ToString() -> string!
+override Modulus.Analytics.Management.AnalyticsQueueStatus.Equals(object? obj) -> bool
+override Modulus.Analytics.Management.AnalyticsQueueStatus.GetHashCode() -> int
+override Modulus.Analytics.Management.AnalyticsQueueStatus.ToString() -> string!
+override Modulus.Analytics.Management.AnalyticsReconcileRequest.Equals(object? obj) -> bool
+override Modulus.Analytics.Management.AnalyticsReconcileRequest.GetHashCode() -> int
+override Modulus.Analytics.Management.AnalyticsReconcileRequest.ToString() -> string!
+override Modulus.Analytics.Management.AnalyticsReplayRequest.Equals(object? obj) -> bool
+override Modulus.Analytics.Management.AnalyticsReplayRequest.GetHashCode() -> int
+override Modulus.Analytics.Management.AnalyticsReplayRequest.ToString() -> string!
+override Modulus.Analytics.Management.AnalyticsReplayResponse.Equals(object? obj) -> bool
+override Modulus.Analytics.Management.AnalyticsReplayResponse.GetHashCode() -> int
+override Modulus.Analytics.Management.AnalyticsReplayResponse.ToString() -> string!
+static Modulus.Analytics.Management.AnalyticsBackfillRequest.operator !=(Modulus.Analytics.Management.AnalyticsBackfillRequest? left, Modulus.Analytics.Management.AnalyticsBackfillRequest? right) -> bool
+static Modulus.Analytics.Management.AnalyticsBackfillRequest.operator ==(Modulus.Analytics.Management.AnalyticsBackfillRequest? left, Modulus.Analytics.Management.AnalyticsBackfillRequest? right) -> bool
+static Modulus.Analytics.Management.AnalyticsBackfillRunInfo.operator !=(Modulus.Analytics.Management.AnalyticsBackfillRunInfo? left, Modulus.Analytics.Management.AnalyticsBackfillRunInfo? right) -> bool
+static Modulus.Analytics.Management.AnalyticsBackfillRunInfo.operator ==(Modulus.Analytics.Management.AnalyticsBackfillRunInfo? left, Modulus.Analytics.Management.AnalyticsBackfillRunInfo? right) -> bool
+static Modulus.Analytics.Management.AnalyticsDeadLetter.operator !=(Modulus.Analytics.Management.AnalyticsDeadLetter? left, Modulus.Analytics.Management.AnalyticsDeadLetter? right) -> bool
+static Modulus.Analytics.Management.AnalyticsDeadLetter.operator ==(Modulus.Analytics.Management.AnalyticsDeadLetter? left, Modulus.Analytics.Management.AnalyticsDeadLetter? right) -> bool
+static Modulus.Analytics.Management.AnalyticsManagementExtensions.AddModulusAnalyticsManagement(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.Analytics.Management.AnalyticsManagementExtensions.DatasetPermission(string! dataset) -> string!
+static Modulus.Analytics.Management.AnalyticsManagementExtensions.MapModulusAnalyticsManagement(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! prefix = "/analytics") -> Microsoft.AspNetCore.Routing.RouteGroupBuilder!
+static Modulus.Analytics.Management.AnalyticsPage<T>.operator !=(Modulus.Analytics.Management.AnalyticsPage<T>? left, Modulus.Analytics.Management.AnalyticsPage<T>? right) -> bool
+static Modulus.Analytics.Management.AnalyticsPage<T>.operator ==(Modulus.Analytics.Management.AnalyticsPage<T>? left, Modulus.Analytics.Management.AnalyticsPage<T>? right) -> bool
+static Modulus.Analytics.Management.AnalyticsPurgeResponse.operator !=(Modulus.Analytics.Management.AnalyticsPurgeResponse? left, Modulus.Analytics.Management.AnalyticsPurgeResponse? right) -> bool
+static Modulus.Analytics.Management.AnalyticsPurgeResponse.operator ==(Modulus.Analytics.Management.AnalyticsPurgeResponse? left, Modulus.Analytics.Management.AnalyticsPurgeResponse? right) -> bool
+static Modulus.Analytics.Management.AnalyticsQueueStatus.operator !=(Modulus.Analytics.Management.AnalyticsQueueStatus? left, Modulus.Analytics.Management.AnalyticsQueueStatus? right) -> bool
+static Modulus.Analytics.Management.AnalyticsQueueStatus.operator ==(Modulus.Analytics.Management.AnalyticsQueueStatus? left, Modulus.Analytics.Management.AnalyticsQueueStatus? right) -> bool
+static Modulus.Analytics.Management.AnalyticsReconcileRequest.operator !=(Modulus.Analytics.Management.AnalyticsReconcileRequest? left, Modulus.Analytics.Management.AnalyticsReconcileRequest? right) -> bool
+static Modulus.Analytics.Management.AnalyticsReconcileRequest.operator ==(Modulus.Analytics.Management.AnalyticsReconcileRequest? left, Modulus.Analytics.Management.AnalyticsReconcileRequest? right) -> bool
+static Modulus.Analytics.Management.AnalyticsReplayRequest.operator !=(Modulus.Analytics.Management.AnalyticsReplayRequest? left, Modulus.Analytics.Management.AnalyticsReplayRequest? right) -> bool
+static Modulus.Analytics.Management.AnalyticsReplayRequest.operator ==(Modulus.Analytics.Management.AnalyticsReplayRequest? left, Modulus.Analytics.Management.AnalyticsReplayRequest? right) -> bool
+static Modulus.Analytics.Management.AnalyticsReplayResponse.operator !=(Modulus.Analytics.Management.AnalyticsReplayResponse? left, Modulus.Analytics.Management.AnalyticsReplayResponse? right) -> bool
+static Modulus.Analytics.Management.AnalyticsReplayResponse.operator ==(Modulus.Analytics.Management.AnalyticsReplayResponse? left, Modulus.Analytics.Management.AnalyticsReplayResponse? right) -> bool
+Modulus.Analytics.Management.AnalyticsQualityRequest
+Modulus.Analytics.Management.AnalyticsQualityRequest.<Clone>$() -> Modulus.Analytics.Management.AnalyticsQualityRequest!
+Modulus.Analytics.Management.AnalyticsQualityRequest.AnalyticsQualityRequest(string! Dataset, int Version, System.Guid[]? TenantIds = null) -> void
+Modulus.Analytics.Management.AnalyticsQualityRequest.Dataset.get -> string!
+Modulus.Analytics.Management.AnalyticsQualityRequest.Dataset.init -> void
+Modulus.Analytics.Management.AnalyticsQualityRequest.Deconstruct(out string! Dataset, out int Version, out System.Guid[]? TenantIds) -> void
+Modulus.Analytics.Management.AnalyticsQualityRequest.Equals(Modulus.Analytics.Management.AnalyticsQualityRequest? other) -> bool
+Modulus.Analytics.Management.AnalyticsQualityRequest.TenantIds.get -> System.Guid[]?
+Modulus.Analytics.Management.AnalyticsQualityRequest.TenantIds.init -> void
+Modulus.Analytics.Management.AnalyticsQualityRequest.Version.get -> int
+Modulus.Analytics.Management.AnalyticsQualityRequest.Version.init -> void
+override Modulus.Analytics.Management.AnalyticsQualityRequest.Equals(object? obj) -> bool
+override Modulus.Analytics.Management.AnalyticsQualityRequest.GetHashCode() -> int
+override Modulus.Analytics.Management.AnalyticsQualityRequest.ToString() -> string!
+static Modulus.Analytics.Management.AnalyticsQualityRequest.operator !=(Modulus.Analytics.Management.AnalyticsQualityRequest? left, Modulus.Analytics.Management.AnalyticsQualityRequest? right) -> bool
+static Modulus.Analytics.Management.AnalyticsQualityRequest.operator ==(Modulus.Analytics.Management.AnalyticsQualityRequest? left, Modulus.Analytics.Management.AnalyticsQualityRequest? right) -> bool
+Modulus.Analytics.Management.AnalyticsDatasetInfo
+Modulus.Analytics.Management.AnalyticsDatasetInfo.<Clone>$() -> Modulus.Analytics.Management.AnalyticsDatasetInfo!
+Modulus.Analytics.Management.AnalyticsDatasetInfo.AnalyticsDatasetInfo(string! Name, int Version, string! Owner, string? Description, System.TimeSpan? FreshnessSla, int? RetentionDays, string? RequiredFeature, System.Collections.Generic.IReadOnlyList<Modulus.Analytics.Management.AnalyticsFieldInfo!>! Fields) -> void
+Modulus.Analytics.Management.AnalyticsDatasetInfo.Deconstruct(out string! Name, out int Version, out string! Owner, out string? Description, out System.TimeSpan? FreshnessSla, out int? RetentionDays, out string? RequiredFeature, out System.Collections.Generic.IReadOnlyList<Modulus.Analytics.Management.AnalyticsFieldInfo!>! Fields) -> void
+Modulus.Analytics.Management.AnalyticsDatasetInfo.Description.get -> string?
+Modulus.Analytics.Management.AnalyticsDatasetInfo.Description.init -> void
+Modulus.Analytics.Management.AnalyticsDatasetInfo.Equals(Modulus.Analytics.Management.AnalyticsDatasetInfo? other) -> bool
+Modulus.Analytics.Management.AnalyticsDatasetInfo.Fields.get -> System.Collections.Generic.IReadOnlyList<Modulus.Analytics.Management.AnalyticsFieldInfo!>!
+Modulus.Analytics.Management.AnalyticsDatasetInfo.Fields.init -> void
+Modulus.Analytics.Management.AnalyticsDatasetInfo.FreshnessSla.get -> System.TimeSpan?
+Modulus.Analytics.Management.AnalyticsDatasetInfo.FreshnessSla.init -> void
+Modulus.Analytics.Management.AnalyticsDatasetInfo.Name.get -> string!
+Modulus.Analytics.Management.AnalyticsDatasetInfo.Name.init -> void
+Modulus.Analytics.Management.AnalyticsDatasetInfo.Owner.get -> string!
+Modulus.Analytics.Management.AnalyticsDatasetInfo.Owner.init -> void
+Modulus.Analytics.Management.AnalyticsDatasetInfo.RequiredFeature.get -> string?
+Modulus.Analytics.Management.AnalyticsDatasetInfo.RequiredFeature.init -> void
+Modulus.Analytics.Management.AnalyticsDatasetInfo.RetentionDays.get -> int?
+Modulus.Analytics.Management.AnalyticsDatasetInfo.RetentionDays.init -> void
+Modulus.Analytics.Management.AnalyticsDatasetInfo.Version.get -> int
+Modulus.Analytics.Management.AnalyticsDatasetInfo.Version.init -> void
+Modulus.Analytics.Management.AnalyticsFieldInfo
+Modulus.Analytics.Management.AnalyticsFieldInfo.<Clone>$() -> Modulus.Analytics.Management.AnalyticsFieldInfo!
+Modulus.Analytics.Management.AnalyticsFieldInfo.AnalyticsFieldInfo(string! Name, string! Type, bool IsNullable, string! Classification, string! Masking, double? MaxNullRate) -> void
+Modulus.Analytics.Management.AnalyticsFieldInfo.Classification.get -> string!
+Modulus.Analytics.Management.AnalyticsFieldInfo.Classification.init -> void
+Modulus.Analytics.Management.AnalyticsFieldInfo.Deconstruct(out string! Name, out string! Type, out bool IsNullable, out string! Classification, out string! Masking, out double? MaxNullRate) -> void
+Modulus.Analytics.Management.AnalyticsFieldInfo.Equals(Modulus.Analytics.Management.AnalyticsFieldInfo? other) -> bool
+Modulus.Analytics.Management.AnalyticsFieldInfo.IsNullable.get -> bool
+Modulus.Analytics.Management.AnalyticsFieldInfo.IsNullable.init -> void
+Modulus.Analytics.Management.AnalyticsFieldInfo.Masking.get -> string!
+Modulus.Analytics.Management.AnalyticsFieldInfo.Masking.init -> void
+Modulus.Analytics.Management.AnalyticsFieldInfo.MaxNullRate.get -> double?
+Modulus.Analytics.Management.AnalyticsFieldInfo.MaxNullRate.init -> void
+Modulus.Analytics.Management.AnalyticsFieldInfo.Name.get -> string!
+Modulus.Analytics.Management.AnalyticsFieldInfo.Name.init -> void
+Modulus.Analytics.Management.AnalyticsFieldInfo.Type.get -> string!
+Modulus.Analytics.Management.AnalyticsFieldInfo.Type.init -> void
+override Modulus.Analytics.Management.AnalyticsDatasetInfo.Equals(object? obj) -> bool
+override Modulus.Analytics.Management.AnalyticsDatasetInfo.GetHashCode() -> int
+override Modulus.Analytics.Management.AnalyticsDatasetInfo.ToString() -> string!
+override Modulus.Analytics.Management.AnalyticsFieldInfo.Equals(object? obj) -> bool
+override Modulus.Analytics.Management.AnalyticsFieldInfo.GetHashCode() -> int
+override Modulus.Analytics.Management.AnalyticsFieldInfo.ToString() -> string!
+static Modulus.Analytics.Management.AnalyticsDatasetInfo.operator !=(Modulus.Analytics.Management.AnalyticsDatasetInfo? left, Modulus.Analytics.Management.AnalyticsDatasetInfo? right) -> bool
+static Modulus.Analytics.Management.AnalyticsDatasetInfo.operator ==(Modulus.Analytics.Management.AnalyticsDatasetInfo? left, Modulus.Analytics.Management.AnalyticsDatasetInfo? right) -> bool
+static Modulus.Analytics.Management.AnalyticsFieldInfo.operator !=(Modulus.Analytics.Management.AnalyticsFieldInfo? left, Modulus.Analytics.Management.AnalyticsFieldInfo? right) -> bool
+static Modulus.Analytics.Management.AnalyticsFieldInfo.operator ==(Modulus.Analytics.Management.AnalyticsFieldInfo? left, Modulus.Analytics.Management.AnalyticsFieldInfo? right) -> bool

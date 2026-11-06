@@ -101,6 +101,17 @@
     <PackageVersion Include="Microsoft.IdentityModel.JsonWebTokens"                   Version="8.23.0" />
   </ItemGroup>
   <ItemGroup Label="gRPC">
+    <!-- Analytics ClickHouse sink: the official ClickHouse C# client (MIT, authored by ClickHouse; checked against the .nuspec on 2026-11-04).
+         Its dependencies are Microsoft packages, NodaTime (Apache-2.0) and Microsoft.IO.RecyclableMemoryStream (MIT). -->
+    <PackageVersion Include="ClickHouse.Driver"                         Version="1.5.0" />
+    <!-- Analytics Parquet sink: Parquet.Net (MIT). Dependencies checked against their .nuspec on 2026-11-04: CommunityToolkit.HighPerformance (MIT),
+         Snappier (BSD-3-Clause), ZstdSharp.Port (MIT), Microsoft.IO.RecyclableMemoryStream (MIT) and K4os.Compression.LZ4 (MIT, read from its repository
+         LICENSE because the package only carries a licence URL). -->
+    <PackageVersion Include="Parquet.Net"                               Version="6.1.0" />
+    <!-- Analytics DuckDB lake reader: DuckDB.NET.Data 1.5.3 (MIT; the native DuckDB library it loads is MIT too). Checked against its .nuspec on 2026-11-04. -->
+    <PackageVersion Include="DuckDB.NET.Data"                           Version="1.5.3" />
+    <!-- DuckDB.NET.Bindings.Full (MIT): ships the native DuckDB library for every runtime; DuckDB.NET.Data alone has none. Checked 2026-11-04. -->
+    <PackageVersion Include="DuckDB.NET.Bindings.Full"                  Version="1.5.3" />
     <!-- gRPC for .NET (Apache-2.0). Grpc.Tools is build-time only (protoc codegen). -->
     <PackageVersion Include="Grpc.AspNetCore.Server"                    Version="2.84.0" />
     <PackageVersion Include="Grpc.AspNetCore.Server.ClientFactory"      Version="2.84.0" />
@@ -201,6 +212,7 @@
     <PackageVersion Include="Testcontainers.MsSql"                      Version="4.16.0" />
     <PackageVersion Include="Testcontainers.MySql"                      Version="4.16.0" />
     <PackageVersion Include="Testcontainers.Redis"                      Version="4.16.0" />
+    <PackageVersion Include="Testcontainers.ClickHouse"                 Version="4.16.0" />
     <PackageVersion Include="Testcontainers"                            Version="4.16.0" />
     <!-- Transitive pin (via Testcontainers): CVE-2026-48798 / GHSA-q939-rpr3-3284 -->
     <PackageVersion Include="SSH.NET"                                   Version="2026.0.0" />

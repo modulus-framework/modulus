@@ -28,7 +28,7 @@ public static class OutboxManagementExtensions
 
     /// <summary>
     /// Declares the <see cref="ManagePermission"/> permission in the registry.
-    /// Requires <c>AddModulusOutbox()</c> and EF Core <c>AddOutbox()</c> on at least
+    /// Requires EF Core <c>AddOutbox&lt;TContext&gt;()</c> on at least
     /// one module's DbContext — the endpoints operate on the concrete EF stores.
     /// </summary>
     public static IServiceCollection AddModulusOutboxManagement(

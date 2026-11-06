@@ -1,0 +1,557 @@
+#nullable enable
+Modulus.Analytics.AnalyticsBuilder
+Modulus.Analytics.AnalyticsBuilder.AddDataset(Modulus.Analytics.AnalyticsDatasetDescriptor! dataset) -> Modulus.Analytics.AnalyticsBuilder!
+Modulus.Analytics.AnalyticsBuilder.AddSink<TSink>() -> Modulus.Analytics.AnalyticsBuilder!
+Modulus.Analytics.AnalyticsBuilder.AddSource<TSource>() -> Modulus.Analytics.AnalyticsBuilder!
+Modulus.Analytics.AnalyticsBuilder.AddUpcaster<TUpcaster>() -> Modulus.Analytics.AnalyticsBuilder!
+Modulus.Analytics.AnalyticsBuilder.MapEvent<TEvent>(string! dataset, int version, System.Func<TEvent!, System.Collections.Generic.IReadOnlyDictionary<string!, object?>!>! map) -> Modulus.Analytics.AnalyticsBuilder!
+Modulus.Analytics.AnalyticsBuilder.Services.get -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+Modulus.Analytics.AnalyticsChangePage
+Modulus.Analytics.AnalyticsChangePage.<Clone>$() -> Modulus.Analytics.AnalyticsChangePage!
+Modulus.Analytics.AnalyticsChangePage.AnalyticsChangePage(System.Collections.Generic.IReadOnlyList<Modulus.Analytics.AnalyticsRecord!>! Records, string? Cursor, bool HasMore) -> void
+Modulus.Analytics.AnalyticsChangePage.Cursor.get -> string?
+Modulus.Analytics.AnalyticsChangePage.Cursor.init -> void
+Modulus.Analytics.AnalyticsChangePage.Deconstruct(out System.Collections.Generic.IReadOnlyList<Modulus.Analytics.AnalyticsRecord!>! Records, out string? Cursor, out bool HasMore) -> void
+Modulus.Analytics.AnalyticsChangePage.Equals(Modulus.Analytics.AnalyticsChangePage? other) -> bool
+Modulus.Analytics.AnalyticsChangePage.HasMore.get -> bool
+Modulus.Analytics.AnalyticsChangePage.HasMore.init -> void
+Modulus.Analytics.AnalyticsChangePage.Records.get -> System.Collections.Generic.IReadOnlyList<Modulus.Analytics.AnalyticsRecord!>!
+Modulus.Analytics.AnalyticsChangePage.Records.init -> void
+Modulus.Analytics.AnalyticsChangeRequest
+Modulus.Analytics.AnalyticsChangeRequest.<Clone>$() -> Modulus.Analytics.AnalyticsChangeRequest!
+Modulus.Analytics.AnalyticsChangeRequest.AnalyticsChangeRequest(System.Guid TenantId, string? Cursor, int Limit, System.DateTime SettledBefore, System.TimeSpan Overlap) -> void
+Modulus.Analytics.AnalyticsChangeRequest.Cursor.get -> string?
+Modulus.Analytics.AnalyticsChangeRequest.Cursor.init -> void
+Modulus.Analytics.AnalyticsChangeRequest.Deconstruct(out System.Guid TenantId, out string? Cursor, out int Limit, out System.DateTime SettledBefore, out System.TimeSpan Overlap) -> void
+Modulus.Analytics.AnalyticsChangeRequest.Equals(Modulus.Analytics.AnalyticsChangeRequest? other) -> bool
+Modulus.Analytics.AnalyticsChangeRequest.Limit.get -> int
+Modulus.Analytics.AnalyticsChangeRequest.Limit.init -> void
+Modulus.Analytics.AnalyticsChangeRequest.Overlap.get -> System.TimeSpan
+Modulus.Analytics.AnalyticsChangeRequest.Overlap.init -> void
+Modulus.Analytics.AnalyticsChangeRequest.SettledBefore.get -> System.DateTime
+Modulus.Analytics.AnalyticsChangeRequest.SettledBefore.init -> void
+Modulus.Analytics.AnalyticsChangeRequest.TenantId.get -> System.Guid
+Modulus.Analytics.AnalyticsChangeRequest.TenantId.init -> void
+Modulus.Analytics.AnalyticsDatasetCatalog
+Modulus.Analytics.AnalyticsDatasetCatalog.Add(Modulus.Analytics.AnalyticsDatasetDescriptor! dataset) -> void
+Modulus.Analytics.AnalyticsDatasetCatalog.All.get -> System.Collections.Generic.IReadOnlyList<Modulus.Analytics.AnalyticsDatasetDescriptor!>!
+Modulus.Analytics.AnalyticsDatasetCatalog.AnalyticsDatasetCatalog() -> void
+Modulus.Analytics.AnalyticsDatasetCatalog.Latest(string! name) -> Modulus.Analytics.AnalyticsDatasetDescriptor?
+Modulus.Analytics.AnalyticsDatasetCatalog.TryGet(string! name, int version, out Modulus.Analytics.AnalyticsDatasetDescriptor? dataset) -> bool
+Modulus.Analytics.AnalyticsDatasetDescriptor
+Modulus.Analytics.AnalyticsDatasetDescriptor.<Clone>$() -> Modulus.Analytics.AnalyticsDatasetDescriptor!
+Modulus.Analytics.AnalyticsDatasetDescriptor.AnalyticsDatasetDescriptor(string! Name, int Version, string! Owner, System.Collections.Generic.IReadOnlyList<Modulus.Analytics.AnalyticsFieldDescriptor!>! Fields, string? Description = null, System.TimeSpan? FreshnessSla = null, int? RetentionDays = null, string? RequiredFeature = null) -> void
+Modulus.Analytics.AnalyticsDatasetDescriptor.Deconstruct(out string! Name, out int Version, out string! Owner, out System.Collections.Generic.IReadOnlyList<Modulus.Analytics.AnalyticsFieldDescriptor!>! Fields, out string? Description, out System.TimeSpan? FreshnessSla, out int? RetentionDays, out string? RequiredFeature) -> void
+Modulus.Analytics.AnalyticsDatasetDescriptor.Description.get -> string?
+Modulus.Analytics.AnalyticsDatasetDescriptor.Description.init -> void
+Modulus.Analytics.AnalyticsDatasetDescriptor.Equals(Modulus.Analytics.AnalyticsDatasetDescriptor? other) -> bool
+Modulus.Analytics.AnalyticsDatasetDescriptor.Fields.get -> System.Collections.Generic.IReadOnlyList<Modulus.Analytics.AnalyticsFieldDescriptor!>!
+Modulus.Analytics.AnalyticsDatasetDescriptor.Fields.init -> void
+Modulus.Analytics.AnalyticsDatasetDescriptor.FreshnessSla.get -> System.TimeSpan?
+Modulus.Analytics.AnalyticsDatasetDescriptor.FreshnessSla.init -> void
+Modulus.Analytics.AnalyticsDatasetDescriptor.Key.get -> string!
+Modulus.Analytics.AnalyticsDatasetDescriptor.Name.get -> string!
+Modulus.Analytics.AnalyticsDatasetDescriptor.Name.init -> void
+Modulus.Analytics.AnalyticsDatasetDescriptor.Owner.get -> string!
+Modulus.Analytics.AnalyticsDatasetDescriptor.Owner.init -> void
+Modulus.Analytics.AnalyticsDatasetDescriptor.RequiredFeature.get -> string?
+Modulus.Analytics.AnalyticsDatasetDescriptor.RequiredFeature.init -> void
+Modulus.Analytics.AnalyticsDatasetDescriptor.RetentionDays.get -> int?
+Modulus.Analytics.AnalyticsDatasetDescriptor.RetentionDays.init -> void
+Modulus.Analytics.AnalyticsDatasetDescriptor.Validate() -> System.Collections.Generic.IReadOnlyList<string!>!
+Modulus.Analytics.AnalyticsDatasetDescriptor.Version.get -> int
+Modulus.Analytics.AnalyticsDatasetDescriptor.Version.init -> void
+Modulus.Analytics.AnalyticsDatasetFreshness
+Modulus.Analytics.AnalyticsDatasetFreshness.<Clone>$() -> Modulus.Analytics.AnalyticsDatasetFreshness!
+Modulus.Analytics.AnalyticsDatasetFreshness.AnalyticsDatasetFreshness(string! Dataset, int Version, System.TimeSpan? FreshnessSla, Modulus.Analytics.AnalyticsFreshnessState State, System.TimeSpan Lag, int Pending, int DeadLettered, System.DateTime? OldestPendingAt, System.DateTime? LastDeliveredAt) -> void
+Modulus.Analytics.AnalyticsDatasetFreshness.Dataset.get -> string!
+Modulus.Analytics.AnalyticsDatasetFreshness.Dataset.init -> void
+Modulus.Analytics.AnalyticsDatasetFreshness.DeadLettered.get -> int
+Modulus.Analytics.AnalyticsDatasetFreshness.DeadLettered.init -> void
+Modulus.Analytics.AnalyticsDatasetFreshness.Deconstruct(out string! Dataset, out int Version, out System.TimeSpan? FreshnessSla, out Modulus.Analytics.AnalyticsFreshnessState State, out System.TimeSpan Lag, out int Pending, out int DeadLettered, out System.DateTime? OldestPendingAt, out System.DateTime? LastDeliveredAt) -> void
+Modulus.Analytics.AnalyticsDatasetFreshness.Equals(Modulus.Analytics.AnalyticsDatasetFreshness? other) -> bool
+Modulus.Analytics.AnalyticsDatasetFreshness.FreshnessSla.get -> System.TimeSpan?
+Modulus.Analytics.AnalyticsDatasetFreshness.FreshnessSla.init -> void
+Modulus.Analytics.AnalyticsDatasetFreshness.Lag.get -> System.TimeSpan
+Modulus.Analytics.AnalyticsDatasetFreshness.Lag.init -> void
+Modulus.Analytics.AnalyticsDatasetFreshness.LastDeliveredAt.get -> System.DateTime?
+Modulus.Analytics.AnalyticsDatasetFreshness.LastDeliveredAt.init -> void
+Modulus.Analytics.AnalyticsDatasetFreshness.OldestPendingAt.get -> System.DateTime?
+Modulus.Analytics.AnalyticsDatasetFreshness.OldestPendingAt.init -> void
+Modulus.Analytics.AnalyticsDatasetFreshness.Pending.get -> int
+Modulus.Analytics.AnalyticsDatasetFreshness.Pending.init -> void
+Modulus.Analytics.AnalyticsDatasetFreshness.State.get -> Modulus.Analytics.AnalyticsFreshnessState
+Modulus.Analytics.AnalyticsDatasetFreshness.State.init -> void
+Modulus.Analytics.AnalyticsDatasetFreshness.Version.get -> int
+Modulus.Analytics.AnalyticsDatasetFreshness.Version.init -> void
+Modulus.Analytics.AnalyticsDatasetSchema
+Modulus.Analytics.AnalyticsDispatchResult
+Modulus.Analytics.AnalyticsDispatchResult.<Clone>$() -> Modulus.Analytics.AnalyticsDispatchResult!
+Modulus.Analytics.AnalyticsDispatchResult.Accepted.get -> int
+Modulus.Analytics.AnalyticsDispatchResult.Accepted.init -> void
+Modulus.Analytics.AnalyticsDispatchResult.AnalyticsDispatchResult(int Accepted, System.Collections.Generic.IReadOnlyList<Modulus.Analytics.AnalyticsRejection!>! Rejected, System.Collections.Generic.IReadOnlyList<Modulus.Analytics.AnalyticsSinkOutcome!>! Outcomes) -> void
+Modulus.Analytics.AnalyticsDispatchResult.Deconstruct(out int Accepted, out System.Collections.Generic.IReadOnlyList<Modulus.Analytics.AnalyticsRejection!>! Rejected, out System.Collections.Generic.IReadOnlyList<Modulus.Analytics.AnalyticsSinkOutcome!>! Outcomes) -> void
+Modulus.Analytics.AnalyticsDispatchResult.Equals(Modulus.Analytics.AnalyticsDispatchResult? other) -> bool
+Modulus.Analytics.AnalyticsDispatchResult.IsComplete.get -> bool
+Modulus.Analytics.AnalyticsDispatchResult.Outcomes.get -> System.Collections.Generic.IReadOnlyList<Modulus.Analytics.AnalyticsSinkOutcome!>!
+Modulus.Analytics.AnalyticsDispatchResult.Outcomes.init -> void
+Modulus.Analytics.AnalyticsDispatchResult.Rejected.get -> System.Collections.Generic.IReadOnlyList<Modulus.Analytics.AnalyticsRejection!>!
+Modulus.Analytics.AnalyticsDispatchResult.Rejected.init -> void
+Modulus.Analytics.AnalyticsDispatchResult.ShouldRetry.get -> bool
+Modulus.Analytics.AnalyticsDispatcher
+Modulus.Analytics.AnalyticsDispatcher.DispatchAsync(System.Collections.Generic.IReadOnlyList<Modulus.Analytics.AnalyticsRecord!>! records, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Analytics.AnalyticsDispatchResult!>!
+Modulus.Analytics.AnalyticsDispatcher.HasSinks.get -> bool
+Modulus.Analytics.AnalyticsExtractPage
+Modulus.Analytics.AnalyticsExtractPage.<Clone>$() -> Modulus.Analytics.AnalyticsExtractPage!
+Modulus.Analytics.AnalyticsExtractPage.AnalyticsExtractPage(System.Collections.Generic.IReadOnlyList<Modulus.Analytics.AnalyticsRecord!>! Records, string? NextCursor) -> void
+Modulus.Analytics.AnalyticsExtractPage.Deconstruct(out System.Collections.Generic.IReadOnlyList<Modulus.Analytics.AnalyticsRecord!>! Records, out string? NextCursor) -> void
+Modulus.Analytics.AnalyticsExtractPage.Equals(Modulus.Analytics.AnalyticsExtractPage? other) -> bool
+Modulus.Analytics.AnalyticsExtractPage.NextCursor.get -> string?
+Modulus.Analytics.AnalyticsExtractPage.NextCursor.init -> void
+Modulus.Analytics.AnalyticsExtractPage.Records.get -> System.Collections.Generic.IReadOnlyList<Modulus.Analytics.AnalyticsRecord!>!
+Modulus.Analytics.AnalyticsExtractPage.Records.init -> void
+Modulus.Analytics.AnalyticsExtractRequest
+Modulus.Analytics.AnalyticsExtractRequest.<Clone>$() -> Modulus.Analytics.AnalyticsExtractRequest!
+Modulus.Analytics.AnalyticsExtractRequest.AnalyticsExtractRequest(System.Guid TenantId, string? Cursor, int Limit) -> void
+Modulus.Analytics.AnalyticsExtractRequest.Cursor.get -> string?
+Modulus.Analytics.AnalyticsExtractRequest.Cursor.init -> void
+Modulus.Analytics.AnalyticsExtractRequest.Deconstruct(out System.Guid TenantId, out string? Cursor, out int Limit) -> void
+Modulus.Analytics.AnalyticsExtractRequest.Equals(Modulus.Analytics.AnalyticsExtractRequest? other) -> bool
+Modulus.Analytics.AnalyticsExtractRequest.Limit.get -> int
+Modulus.Analytics.AnalyticsExtractRequest.Limit.init -> void
+Modulus.Analytics.AnalyticsExtractRequest.TenantId.get -> System.Guid
+Modulus.Analytics.AnalyticsExtractRequest.TenantId.init -> void
+Modulus.Analytics.AnalyticsFieldDescriptor
+Modulus.Analytics.AnalyticsFieldDescriptor.<Clone>$() -> Modulus.Analytics.AnalyticsFieldDescriptor!
+Modulus.Analytics.AnalyticsFieldDescriptor.Classification.get -> Modulus.Core.Abstractions.Entities.FieldClassification
+Modulus.Analytics.AnalyticsFieldDescriptor.Classification.init -> void
+Modulus.Analytics.AnalyticsFieldDescriptor.EffectiveMasking.get -> Modulus.Analytics.AnalyticsMaskingAction
+Modulus.Analytics.AnalyticsFieldDescriptor.Equals(Modulus.Analytics.AnalyticsFieldDescriptor? other) -> bool
+Modulus.Analytics.AnalyticsFieldDescriptor.IsNullable.get -> bool
+Modulus.Analytics.AnalyticsFieldDescriptor.IsNullable.init -> void
+Modulus.Analytics.AnalyticsFieldDescriptor.Masking.get -> Modulus.Analytics.AnalyticsMaskingAction?
+Modulus.Analytics.AnalyticsFieldDescriptor.Masking.init -> void
+Modulus.Analytics.AnalyticsFieldDescriptor.Name.get -> string!
+Modulus.Analytics.AnalyticsFieldDescriptor.Name.init -> void
+Modulus.Analytics.AnalyticsFieldDescriptor.Type.get -> Modulus.Analytics.AnalyticsFieldType
+Modulus.Analytics.AnalyticsFieldDescriptor.Type.init -> void
+Modulus.Analytics.AnalyticsFieldType
+Modulus.Analytics.AnalyticsFieldType.Boolean = 4 -> Modulus.Analytics.AnalyticsFieldType
+Modulus.Analytics.AnalyticsFieldType.Date = 6 -> Modulus.Analytics.AnalyticsFieldType
+Modulus.Analytics.AnalyticsFieldType.Decimal = 2 -> Modulus.Analytics.AnalyticsFieldType
+Modulus.Analytics.AnalyticsFieldType.Double = 3 -> Modulus.Analytics.AnalyticsFieldType
+Modulus.Analytics.AnalyticsFieldType.Guid = 7 -> Modulus.Analytics.AnalyticsFieldType
+Modulus.Analytics.AnalyticsFieldType.Int64 = 1 -> Modulus.Analytics.AnalyticsFieldType
+Modulus.Analytics.AnalyticsFieldType.String = 0 -> Modulus.Analytics.AnalyticsFieldType
+Modulus.Analytics.AnalyticsFieldType.Timestamp = 5 -> Modulus.Analytics.AnalyticsFieldType
+Modulus.Analytics.AnalyticsFreshness
+Modulus.Analytics.AnalyticsFreshnessState
+Modulus.Analytics.AnalyticsFreshnessState.Fresh = 0 -> Modulus.Analytics.AnalyticsFreshnessState
+Modulus.Analytics.AnalyticsFreshnessState.Stale = 1 -> Modulus.Analytics.AnalyticsFreshnessState
+Modulus.Analytics.AnalyticsFreshnessState.Untracked = 2 -> Modulus.Analytics.AnalyticsFreshnessState
+Modulus.Analytics.AnalyticsMasking
+Modulus.Analytics.AnalyticsMaskingAction
+Modulus.Analytics.AnalyticsMaskingAction.Drop = 2 -> Modulus.Analytics.AnalyticsMaskingAction
+Modulus.Analytics.AnalyticsMaskingAction.Hash = 1 -> Modulus.Analytics.AnalyticsMaskingAction
+Modulus.Analytics.AnalyticsMaskingAction.Keep = 0 -> Modulus.Analytics.AnalyticsMaskingAction
+Modulus.Analytics.AnalyticsMetrics
+Modulus.Analytics.AnalyticsQueueStats
+Modulus.Analytics.AnalyticsQueueStats.<Clone>$() -> Modulus.Analytics.AnalyticsQueueStats!
+Modulus.Analytics.AnalyticsQueueStats.AnalyticsQueueStats(int Pending, int DeadLettered, System.DateTime? OldestPendingAt, System.DateTime? LastDeliveredAt) -> void
+Modulus.Analytics.AnalyticsQueueStats.DeadLettered.get -> int
+Modulus.Analytics.AnalyticsQueueStats.DeadLettered.init -> void
+Modulus.Analytics.AnalyticsQueueStats.Deconstruct(out int Pending, out int DeadLettered, out System.DateTime? OldestPendingAt, out System.DateTime? LastDeliveredAt) -> void
+Modulus.Analytics.AnalyticsQueueStats.Equals(Modulus.Analytics.AnalyticsQueueStats? other) -> bool
+Modulus.Analytics.AnalyticsQueueStats.LastDeliveredAt.get -> System.DateTime?
+Modulus.Analytics.AnalyticsQueueStats.LastDeliveredAt.init -> void
+Modulus.Analytics.AnalyticsQueueStats.OldestPendingAt.get -> System.DateTime?
+Modulus.Analytics.AnalyticsQueueStats.OldestPendingAt.init -> void
+Modulus.Analytics.AnalyticsQueueStats.Pending.get -> int
+Modulus.Analytics.AnalyticsQueueStats.Pending.init -> void
+Modulus.Analytics.AnalyticsReconciliation
+Modulus.Analytics.AnalyticsReconciliationReport
+Modulus.Analytics.AnalyticsReconciliationReport.<Clone>$() -> Modulus.Analytics.AnalyticsReconciliationReport!
+Modulus.Analytics.AnalyticsReconciliationReport.AnalyticsReconciliationReport(System.Collections.Generic.IReadOnlyList<Modulus.Analytics.AnalyticsReconciliationResult!>! Results, System.Collections.Generic.IReadOnlyList<string!>! Errors) -> void
+Modulus.Analytics.AnalyticsReconciliationReport.Deconstruct(out System.Collections.Generic.IReadOnlyList<Modulus.Analytics.AnalyticsReconciliationResult!>! Results, out System.Collections.Generic.IReadOnlyList<string!>! Errors) -> void
+Modulus.Analytics.AnalyticsReconciliationReport.Equals(Modulus.Analytics.AnalyticsReconciliationReport? other) -> bool
+Modulus.Analytics.AnalyticsReconciliationReport.Errors.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Modulus.Analytics.AnalyticsReconciliationReport.Errors.init -> void
+Modulus.Analytics.AnalyticsReconciliationReport.IsClean.get -> bool
+Modulus.Analytics.AnalyticsReconciliationReport.Results.get -> System.Collections.Generic.IReadOnlyList<Modulus.Analytics.AnalyticsReconciliationResult!>!
+Modulus.Analytics.AnalyticsReconciliationReport.Results.init -> void
+Modulus.Analytics.AnalyticsReconciliationResult
+Modulus.Analytics.AnalyticsReconciliationResult.<Clone>$() -> Modulus.Analytics.AnalyticsReconciliationResult!
+Modulus.Analytics.AnalyticsReconciliationResult.AnalyticsReconciliationResult(string! Dataset, int Version, System.Guid TenantId, string! Sink, long SourceCount, long SinkCount, int Pending, int DeadLettered, Modulus.Analytics.AnalyticsReconciliationStatus Status) -> void
+Modulus.Analytics.AnalyticsReconciliationResult.Dataset.get -> string!
+Modulus.Analytics.AnalyticsReconciliationResult.Dataset.init -> void
+Modulus.Analytics.AnalyticsReconciliationResult.DeadLettered.get -> int
+Modulus.Analytics.AnalyticsReconciliationResult.DeadLettered.init -> void
+Modulus.Analytics.AnalyticsReconciliationResult.Deconstruct(out string! Dataset, out int Version, out System.Guid TenantId, out string! Sink, out long SourceCount, out long SinkCount, out int Pending, out int DeadLettered, out Modulus.Analytics.AnalyticsReconciliationStatus Status) -> void
+Modulus.Analytics.AnalyticsReconciliationResult.Difference.get -> long
+Modulus.Analytics.AnalyticsReconciliationResult.Equals(Modulus.Analytics.AnalyticsReconciliationResult? other) -> bool
+Modulus.Analytics.AnalyticsReconciliationResult.Pending.get -> int
+Modulus.Analytics.AnalyticsReconciliationResult.Pending.init -> void
+Modulus.Analytics.AnalyticsReconciliationResult.Sink.get -> string!
+Modulus.Analytics.AnalyticsReconciliationResult.Sink.init -> void
+Modulus.Analytics.AnalyticsReconciliationResult.SinkCount.get -> long
+Modulus.Analytics.AnalyticsReconciliationResult.SinkCount.init -> void
+Modulus.Analytics.AnalyticsReconciliationResult.SourceCount.get -> long
+Modulus.Analytics.AnalyticsReconciliationResult.SourceCount.init -> void
+Modulus.Analytics.AnalyticsReconciliationResult.Status.get -> Modulus.Analytics.AnalyticsReconciliationStatus
+Modulus.Analytics.AnalyticsReconciliationResult.Status.init -> void
+Modulus.Analytics.AnalyticsReconciliationResult.TenantId.get -> System.Guid
+Modulus.Analytics.AnalyticsReconciliationResult.TenantId.init -> void
+Modulus.Analytics.AnalyticsReconciliationResult.Version.get -> int
+Modulus.Analytics.AnalyticsReconciliationResult.Version.init -> void
+Modulus.Analytics.AnalyticsReconciliationStatus
+Modulus.Analytics.AnalyticsReconciliationStatus.Extra = 3 -> Modulus.Analytics.AnalyticsReconciliationStatus
+Modulus.Analytics.AnalyticsReconciliationStatus.InFlight = 1 -> Modulus.Analytics.AnalyticsReconciliationStatus
+Modulus.Analytics.AnalyticsReconciliationStatus.Match = 0 -> Modulus.Analytics.AnalyticsReconciliationStatus
+Modulus.Analytics.AnalyticsReconciliationStatus.Missing = 2 -> Modulus.Analytics.AnalyticsReconciliationStatus
+Modulus.Analytics.AnalyticsRecord
+Modulus.Analytics.AnalyticsRecord.<Clone>$() -> Modulus.Analytics.AnalyticsRecord!
+Modulus.Analytics.AnalyticsRecord.AnalyticsRecord(System.Guid EventId, string! Dataset, int SchemaVersion, System.Guid TenantId, System.DateTimeOffset OccurredAt, System.Collections.Generic.IReadOnlyDictionary<string!, object?>! Values, long Revision = 0) -> void
+Modulus.Analytics.AnalyticsRecord.Dataset.get -> string!
+Modulus.Analytics.AnalyticsRecord.Dataset.init -> void
+Modulus.Analytics.AnalyticsRecord.Deconstruct(out System.Guid EventId, out string! Dataset, out int SchemaVersion, out System.Guid TenantId, out System.DateTimeOffset OccurredAt, out System.Collections.Generic.IReadOnlyDictionary<string!, object?>! Values, out long Revision) -> void
+Modulus.Analytics.AnalyticsRecord.Equals(Modulus.Analytics.AnalyticsRecord? other) -> bool
+Modulus.Analytics.AnalyticsRecord.EventId.get -> System.Guid
+Modulus.Analytics.AnalyticsRecord.EventId.init -> void
+Modulus.Analytics.AnalyticsRecord.OccurredAt.get -> System.DateTimeOffset
+Modulus.Analytics.AnalyticsRecord.OccurredAt.init -> void
+Modulus.Analytics.AnalyticsRecord.Revision.get -> long
+Modulus.Analytics.AnalyticsRecord.Revision.init -> void
+Modulus.Analytics.AnalyticsRecord.SchemaVersion.get -> int
+Modulus.Analytics.AnalyticsRecord.SchemaVersion.init -> void
+Modulus.Analytics.AnalyticsRecord.TenantId.get -> System.Guid
+Modulus.Analytics.AnalyticsRecord.TenantId.init -> void
+Modulus.Analytics.AnalyticsRecord.Values.get -> System.Collections.Generic.IReadOnlyDictionary<string!, object?>!
+Modulus.Analytics.AnalyticsRecord.Values.init -> void
+Modulus.Analytics.AnalyticsRecordIds
+Modulus.Analytics.AnalyticsRejection
+Modulus.Analytics.AnalyticsRejection.<Clone>$() -> Modulus.Analytics.AnalyticsRejection!
+Modulus.Analytics.AnalyticsRejection.AnalyticsRejection(Modulus.Analytics.AnalyticsRecord! Record, string! Reason) -> void
+Modulus.Analytics.AnalyticsRejection.Deconstruct(out Modulus.Analytics.AnalyticsRecord! Record, out string! Reason) -> void
+Modulus.Analytics.AnalyticsRejection.Equals(Modulus.Analytics.AnalyticsRejection? other) -> bool
+Modulus.Analytics.AnalyticsRejection.Reason.get -> string!
+Modulus.Analytics.AnalyticsRejection.Reason.init -> void
+Modulus.Analytics.AnalyticsRejection.Record.get -> Modulus.Analytics.AnalyticsRecord!
+Modulus.Analytics.AnalyticsRejection.Record.init -> void
+Modulus.Analytics.AnalyticsServiceCollectionExtensions
+Modulus.Analytics.AnalyticsSinkException
+Modulus.Analytics.AnalyticsSinkException.AnalyticsSinkException(string! message, bool isTransient, System.Exception? innerException = null) -> void
+Modulus.Analytics.AnalyticsSinkException.IsTransient.get -> bool
+Modulus.Analytics.AnalyticsSinkOutcome
+Modulus.Analytics.AnalyticsSinkOutcome.<Clone>$() -> Modulus.Analytics.AnalyticsSinkOutcome!
+Modulus.Analytics.AnalyticsSinkOutcome.AnalyticsSinkOutcome(string! Sink, string! Dataset, int Records, bool Succeeded, bool IsTransient = false, string? Error = null) -> void
+Modulus.Analytics.AnalyticsSinkOutcome.Dataset.get -> string!
+Modulus.Analytics.AnalyticsSinkOutcome.Dataset.init -> void
+Modulus.Analytics.AnalyticsSinkOutcome.Deconstruct(out string! Sink, out string! Dataset, out int Records, out bool Succeeded, out bool IsTransient, out string? Error) -> void
+Modulus.Analytics.AnalyticsSinkOutcome.Equals(Modulus.Analytics.AnalyticsSinkOutcome? other) -> bool
+Modulus.Analytics.AnalyticsSinkOutcome.Error.get -> string?
+Modulus.Analytics.AnalyticsSinkOutcome.Error.init -> void
+Modulus.Analytics.AnalyticsSinkOutcome.IsTransient.get -> bool
+Modulus.Analytics.AnalyticsSinkOutcome.IsTransient.init -> void
+Modulus.Analytics.AnalyticsSinkOutcome.Records.get -> int
+Modulus.Analytics.AnalyticsSinkOutcome.Records.init -> void
+Modulus.Analytics.AnalyticsSinkOutcome.Sink.get -> string!
+Modulus.Analytics.AnalyticsSinkOutcome.Sink.init -> void
+Modulus.Analytics.AnalyticsSinkOutcome.Succeeded.get -> bool
+Modulus.Analytics.AnalyticsSinkOutcome.Succeeded.init -> void
+Modulus.Analytics.AnalyticsUpcasting
+Modulus.Analytics.AnalyticsValueSerializer
+Modulus.Analytics.IAnalyticsCountingSource
+Modulus.Analytics.IAnalyticsCountingSource.CountAsync(System.Guid tenantId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<long>!
+Modulus.Analytics.IAnalyticsDatasetCatalog
+Modulus.Analytics.IAnalyticsDatasetCatalog.All.get -> System.Collections.Generic.IReadOnlyList<Modulus.Analytics.AnalyticsDatasetDescriptor!>!
+Modulus.Analytics.IAnalyticsDatasetCatalog.Latest(string! name) -> Modulus.Analytics.AnalyticsDatasetDescriptor?
+Modulus.Analytics.IAnalyticsDatasetCatalog.TryGet(string! name, int version, out Modulus.Analytics.AnalyticsDatasetDescriptor? dataset) -> bool
+Modulus.Analytics.IAnalyticsEntitlement
+Modulus.Analytics.IAnalyticsEntitlement.IsEntitled(System.Guid tenantId, Modulus.Analytics.AnalyticsDatasetDescriptor! dataset) -> bool
+Modulus.Analytics.IAnalyticsFreshnessReader
+Modulus.Analytics.IAnalyticsFreshnessReader.ReadAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Analytics.AnalyticsDatasetFreshness!>!>!
+Modulus.Analytics.IAnalyticsIncrementalSource
+Modulus.Analytics.IAnalyticsIncrementalSource.ExtractChangesAsync(Modulus.Analytics.AnalyticsChangeRequest! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<Modulus.Analytics.AnalyticsChangePage!>!
+Modulus.Analytics.IAnalyticsQueue
+Modulus.Analytics.IAnalyticsQueue.EnqueueAsync(System.Collections.Generic.IReadOnlyList<Modulus.Analytics.AnalyticsRecord!>! records, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+Modulus.Analytics.IAnalyticsReconcilableSink
+Modulus.Analytics.IAnalyticsReconcilableSink.CountAsync(Modulus.Analytics.AnalyticsDatasetDescriptor! dataset, System.Guid tenantId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<long>!
+Modulus.Analytics.IAnalyticsRecordUpcaster
+Modulus.Analytics.IAnalyticsRecordUpcaster.Dataset.get -> string!
+Modulus.Analytics.IAnalyticsRecordUpcaster.FromVersion.get -> int
+Modulus.Analytics.IAnalyticsRecordUpcaster.Upcast(System.Collections.Generic.IReadOnlyDictionary<string!, object?>! values) -> System.Collections.Generic.IReadOnlyDictionary<string!, object?>!
+Modulus.Analytics.IAnalyticsSink
+Modulus.Analytics.IAnalyticsSink.EnsureDatasetAsync(Modulus.Analytics.AnalyticsDatasetDescriptor! dataset, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+Modulus.Analytics.IAnalyticsSink.Name.get -> string!
+Modulus.Analytics.IAnalyticsSink.WriteAsync(Modulus.Analytics.AnalyticsDatasetDescriptor! dataset, System.Collections.Generic.IReadOnlyList<Modulus.Analytics.AnalyticsRecord!>! records, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+Modulus.Analytics.IAnalyticsSource
+Modulus.Analytics.IAnalyticsSource.Dataset.get -> string!
+Modulus.Analytics.IAnalyticsSource.ExtractAsync(Modulus.Analytics.AnalyticsExtractRequest! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<Modulus.Analytics.AnalyticsExtractPage!>!
+Modulus.Analytics.IAnalyticsSource.Version.get -> int
+Modulus.Analytics.IAnalyticsTenantDirectory
+Modulus.Analytics.IAnalyticsTenantDirectory.ListTenantIdsAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<System.Guid>!>!
+Modulus.Analytics.InlineAnalyticsQueue
+Modulus.Analytics.InlineAnalyticsQueue.EnqueueAsync(System.Collections.Generic.IReadOnlyList<Modulus.Analytics.AnalyticsRecord!>! records, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+Modulus.Analytics.InlineAnalyticsQueue.InlineAnalyticsQueue(Modulus.Analytics.AnalyticsDispatcher! dispatcher) -> void
+const Modulus.Analytics.AnalyticsMetrics.MeterName = "Modulus.Analytics" -> string!
+override Modulus.Analytics.AnalyticsChangePage.Equals(object? obj) -> bool
+override Modulus.Analytics.AnalyticsChangePage.GetHashCode() -> int
+override Modulus.Analytics.AnalyticsChangePage.ToString() -> string!
+override Modulus.Analytics.AnalyticsChangeRequest.Equals(object? obj) -> bool
+override Modulus.Analytics.AnalyticsChangeRequest.GetHashCode() -> int
+override Modulus.Analytics.AnalyticsChangeRequest.ToString() -> string!
+override Modulus.Analytics.AnalyticsDatasetDescriptor.Equals(object? obj) -> bool
+override Modulus.Analytics.AnalyticsDatasetDescriptor.GetHashCode() -> int
+override Modulus.Analytics.AnalyticsDatasetDescriptor.ToString() -> string!
+override Modulus.Analytics.AnalyticsDatasetFreshness.Equals(object? obj) -> bool
+override Modulus.Analytics.AnalyticsDatasetFreshness.GetHashCode() -> int
+override Modulus.Analytics.AnalyticsDatasetFreshness.ToString() -> string!
+override Modulus.Analytics.AnalyticsDispatchResult.Equals(object? obj) -> bool
+override Modulus.Analytics.AnalyticsDispatchResult.GetHashCode() -> int
+override Modulus.Analytics.AnalyticsDispatchResult.ToString() -> string!
+override Modulus.Analytics.AnalyticsExtractPage.Equals(object? obj) -> bool
+override Modulus.Analytics.AnalyticsExtractPage.GetHashCode() -> int
+override Modulus.Analytics.AnalyticsExtractPage.ToString() -> string!
+override Modulus.Analytics.AnalyticsExtractRequest.Equals(object? obj) -> bool
+override Modulus.Analytics.AnalyticsExtractRequest.GetHashCode() -> int
+override Modulus.Analytics.AnalyticsExtractRequest.ToString() -> string!
+override Modulus.Analytics.AnalyticsFieldDescriptor.Equals(object? obj) -> bool
+override Modulus.Analytics.AnalyticsFieldDescriptor.GetHashCode() -> int
+override Modulus.Analytics.AnalyticsFieldDescriptor.ToString() -> string!
+override Modulus.Analytics.AnalyticsQueueStats.Equals(object? obj) -> bool
+override Modulus.Analytics.AnalyticsQueueStats.GetHashCode() -> int
+override Modulus.Analytics.AnalyticsQueueStats.ToString() -> string!
+override Modulus.Analytics.AnalyticsReconciliationReport.Equals(object? obj) -> bool
+override Modulus.Analytics.AnalyticsReconciliationReport.GetHashCode() -> int
+override Modulus.Analytics.AnalyticsReconciliationReport.ToString() -> string!
+override Modulus.Analytics.AnalyticsReconciliationResult.Equals(object? obj) -> bool
+override Modulus.Analytics.AnalyticsReconciliationResult.GetHashCode() -> int
+override Modulus.Analytics.AnalyticsReconciliationResult.ToString() -> string!
+override Modulus.Analytics.AnalyticsRecord.Equals(object? obj) -> bool
+override Modulus.Analytics.AnalyticsRecord.GetHashCode() -> int
+override Modulus.Analytics.AnalyticsRecord.ToString() -> string!
+override Modulus.Analytics.AnalyticsRejection.Equals(object? obj) -> bool
+override Modulus.Analytics.AnalyticsRejection.GetHashCode() -> int
+override Modulus.Analytics.AnalyticsRejection.ToString() -> string!
+override Modulus.Analytics.AnalyticsSinkOutcome.Equals(object? obj) -> bool
+override Modulus.Analytics.AnalyticsSinkOutcome.GetHashCode() -> int
+override Modulus.Analytics.AnalyticsSinkOutcome.ToString() -> string!
+static Modulus.Analytics.AnalyticsChangePage.operator !=(Modulus.Analytics.AnalyticsChangePage? left, Modulus.Analytics.AnalyticsChangePage? right) -> bool
+static Modulus.Analytics.AnalyticsChangePage.operator ==(Modulus.Analytics.AnalyticsChangePage? left, Modulus.Analytics.AnalyticsChangePage? right) -> bool
+static Modulus.Analytics.AnalyticsChangeRequest.operator !=(Modulus.Analytics.AnalyticsChangeRequest? left, Modulus.Analytics.AnalyticsChangeRequest? right) -> bool
+static Modulus.Analytics.AnalyticsChangeRequest.operator ==(Modulus.Analytics.AnalyticsChangeRequest? left, Modulus.Analytics.AnalyticsChangeRequest? right) -> bool
+static Modulus.Analytics.AnalyticsDatasetDescriptor.operator !=(Modulus.Analytics.AnalyticsDatasetDescriptor? left, Modulus.Analytics.AnalyticsDatasetDescriptor? right) -> bool
+static Modulus.Analytics.AnalyticsDatasetDescriptor.operator ==(Modulus.Analytics.AnalyticsDatasetDescriptor? left, Modulus.Analytics.AnalyticsDatasetDescriptor? right) -> bool
+static Modulus.Analytics.AnalyticsDatasetFreshness.operator !=(Modulus.Analytics.AnalyticsDatasetFreshness? left, Modulus.Analytics.AnalyticsDatasetFreshness? right) -> bool
+static Modulus.Analytics.AnalyticsDatasetFreshness.operator ==(Modulus.Analytics.AnalyticsDatasetFreshness? left, Modulus.Analytics.AnalyticsDatasetFreshness? right) -> bool
+static Modulus.Analytics.AnalyticsDatasetSchema.ToJsonSchema(Modulus.Analytics.AnalyticsDatasetDescriptor! dataset) -> string!
+static Modulus.Analytics.AnalyticsDispatchResult.operator !=(Modulus.Analytics.AnalyticsDispatchResult? left, Modulus.Analytics.AnalyticsDispatchResult? right) -> bool
+static Modulus.Analytics.AnalyticsDispatchResult.operator ==(Modulus.Analytics.AnalyticsDispatchResult? left, Modulus.Analytics.AnalyticsDispatchResult? right) -> bool
+static Modulus.Analytics.AnalyticsExtractPage.operator !=(Modulus.Analytics.AnalyticsExtractPage? left, Modulus.Analytics.AnalyticsExtractPage? right) -> bool
+static Modulus.Analytics.AnalyticsExtractPage.operator ==(Modulus.Analytics.AnalyticsExtractPage? left, Modulus.Analytics.AnalyticsExtractPage? right) -> bool
+static Modulus.Analytics.AnalyticsExtractRequest.operator !=(Modulus.Analytics.AnalyticsExtractRequest? left, Modulus.Analytics.AnalyticsExtractRequest? right) -> bool
+static Modulus.Analytics.AnalyticsExtractRequest.operator ==(Modulus.Analytics.AnalyticsExtractRequest? left, Modulus.Analytics.AnalyticsExtractRequest? right) -> bool
+static Modulus.Analytics.AnalyticsFieldDescriptor.operator !=(Modulus.Analytics.AnalyticsFieldDescriptor? left, Modulus.Analytics.AnalyticsFieldDescriptor? right) -> bool
+static Modulus.Analytics.AnalyticsFieldDescriptor.operator ==(Modulus.Analytics.AnalyticsFieldDescriptor? left, Modulus.Analytics.AnalyticsFieldDescriptor? right) -> bool
+static Modulus.Analytics.AnalyticsFreshness.Evaluate(Modulus.Analytics.AnalyticsDatasetDescriptor! dataset, Modulus.Analytics.AnalyticsQueueStats! stats, System.DateTime nowUtc) -> Modulus.Analytics.AnalyticsDatasetFreshness!
+static Modulus.Analytics.AnalyticsMasking.Apply(Modulus.Analytics.AnalyticsDatasetDescriptor! dataset, Modulus.Analytics.AnalyticsRecord! record, Modulus.Core.Abstractions.DataProtection.IPersonalDataProtector! protector) -> Modulus.Analytics.AnalyticsRecord!
+static Modulus.Analytics.AnalyticsMasking.DefaultFor(Modulus.Core.Abstractions.Entities.FieldClassification classification) -> Modulus.Analytics.AnalyticsMaskingAction
+static Modulus.Analytics.AnalyticsMetrics.Publish(System.Collections.Generic.IReadOnlyList<Modulus.Analytics.AnalyticsDatasetFreshness!>! datasets) -> void
+static Modulus.Analytics.AnalyticsQueueStats.operator !=(Modulus.Analytics.AnalyticsQueueStats? left, Modulus.Analytics.AnalyticsQueueStats? right) -> bool
+static Modulus.Analytics.AnalyticsQueueStats.operator ==(Modulus.Analytics.AnalyticsQueueStats? left, Modulus.Analytics.AnalyticsQueueStats? right) -> bool
+static Modulus.Analytics.AnalyticsReconciliation.Judge(long sourceCount, long sinkCount, long pending) -> Modulus.Analytics.AnalyticsReconciliationStatus
+static Modulus.Analytics.AnalyticsReconciliationReport.operator !=(Modulus.Analytics.AnalyticsReconciliationReport? left, Modulus.Analytics.AnalyticsReconciliationReport? right) -> bool
+static Modulus.Analytics.AnalyticsReconciliationReport.operator ==(Modulus.Analytics.AnalyticsReconciliationReport? left, Modulus.Analytics.AnalyticsReconciliationReport? right) -> bool
+static Modulus.Analytics.AnalyticsReconciliationResult.operator !=(Modulus.Analytics.AnalyticsReconciliationResult? left, Modulus.Analytics.AnalyticsReconciliationResult? right) -> bool
+static Modulus.Analytics.AnalyticsReconciliationResult.operator ==(Modulus.Analytics.AnalyticsReconciliationResult? left, Modulus.Analytics.AnalyticsReconciliationResult? right) -> bool
+static Modulus.Analytics.AnalyticsRecord.operator !=(Modulus.Analytics.AnalyticsRecord? left, Modulus.Analytics.AnalyticsRecord? right) -> bool
+static Modulus.Analytics.AnalyticsRecord.operator ==(Modulus.Analytics.AnalyticsRecord? left, Modulus.Analytics.AnalyticsRecord? right) -> bool
+static Modulus.Analytics.AnalyticsRecordIds.Deterministic(string! scope, string! key) -> System.Guid
+static Modulus.Analytics.AnalyticsRejection.operator !=(Modulus.Analytics.AnalyticsRejection? left, Modulus.Analytics.AnalyticsRejection? right) -> bool
+static Modulus.Analytics.AnalyticsRejection.operator ==(Modulus.Analytics.AnalyticsRejection? left, Modulus.Analytics.AnalyticsRejection? right) -> bool
+static Modulus.Analytics.AnalyticsServiceCollectionExtensions.AddModulusAnalytics(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<Modulus.Analytics.AnalyticsBuilder!>? configure = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.Analytics.AnalyticsSinkOutcome.operator !=(Modulus.Analytics.AnalyticsSinkOutcome? left, Modulus.Analytics.AnalyticsSinkOutcome? right) -> bool
+static Modulus.Analytics.AnalyticsSinkOutcome.operator ==(Modulus.Analytics.AnalyticsSinkOutcome? left, Modulus.Analytics.AnalyticsSinkOutcome? right) -> bool
+static Modulus.Analytics.AnalyticsUpcasting.UpcastTo(System.Collections.Generic.IEnumerable<Modulus.Analytics.IAnalyticsRecordUpcaster!>! upcasters, Modulus.Analytics.AnalyticsRecord! record, int targetVersion) -> Modulus.Analytics.AnalyticsRecord!
+static Modulus.Analytics.AnalyticsValueSerializer.Deserialize(Modulus.Analytics.AnalyticsDatasetDescriptor! dataset, string! json) -> System.Collections.Generic.IReadOnlyDictionary<string!, object?>!
+static Modulus.Analytics.AnalyticsValueSerializer.Normalize(Modulus.Analytics.AnalyticsDatasetDescriptor! dataset, System.Collections.Generic.IReadOnlyDictionary<string!, object?>! values) -> System.Collections.Generic.IReadOnlyDictionary<string!, object?>!
+static Modulus.Analytics.AnalyticsValueSerializer.Serialize(Modulus.Analytics.AnalyticsDatasetDescriptor! dataset, System.Collections.Generic.IReadOnlyDictionary<string!, object?>! values) -> string!
+Modulus.Analytics.IAnalyticsErasableSink
+Modulus.Analytics.IAnalyticsErasableSink.CountTenantAsync(Modulus.Analytics.AnalyticsDatasetDescriptor! dataset, System.Guid tenantId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<long>!
+Modulus.Analytics.IAnalyticsErasableSink.EraseTenantAsync(Modulus.Analytics.AnalyticsDatasetDescriptor! dataset, System.Guid tenantId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<long>!
+Modulus.Analytics.AnalyticsLineageState
+Modulus.Analytics.AnalyticsLineageState.Complete = 1 -> Modulus.Analytics.AnalyticsLineageState
+Modulus.Analytics.AnalyticsLineageState.Fail = 2 -> Modulus.Analytics.AnalyticsLineageState
+Modulus.Analytics.AnalyticsLineageState.Start = 0 -> Modulus.Analytics.AnalyticsLineageState
+Modulus.Analytics.AnalyticsRunLineage
+Modulus.Analytics.AnalyticsRunLineage.<Clone>$() -> Modulus.Analytics.AnalyticsRunLineage!
+Modulus.Analytics.AnalyticsRunLineage.AnalyticsRunLineage(System.Guid RunId, Modulus.Analytics.AnalyticsLineageState State, string! Dataset, int Version, System.DateTimeOffset OccurredAt, string? Error = null) -> void
+Modulus.Analytics.AnalyticsRunLineage.Dataset.get -> string!
+Modulus.Analytics.AnalyticsRunLineage.Dataset.init -> void
+Modulus.Analytics.AnalyticsRunLineage.Deconstruct(out System.Guid RunId, out Modulus.Analytics.AnalyticsLineageState State, out string! Dataset, out int Version, out System.DateTimeOffset OccurredAt, out string? Error) -> void
+Modulus.Analytics.AnalyticsRunLineage.Equals(Modulus.Analytics.AnalyticsRunLineage? other) -> bool
+Modulus.Analytics.AnalyticsRunLineage.Error.get -> string?
+Modulus.Analytics.AnalyticsRunLineage.Error.init -> void
+Modulus.Analytics.AnalyticsRunLineage.OccurredAt.get -> System.DateTimeOffset
+Modulus.Analytics.AnalyticsRunLineage.OccurredAt.init -> void
+Modulus.Analytics.AnalyticsRunLineage.RunId.get -> System.Guid
+Modulus.Analytics.AnalyticsRunLineage.RunId.init -> void
+Modulus.Analytics.AnalyticsRunLineage.State.get -> Modulus.Analytics.AnalyticsLineageState
+Modulus.Analytics.AnalyticsRunLineage.State.init -> void
+Modulus.Analytics.AnalyticsRunLineage.Version.get -> int
+Modulus.Analytics.AnalyticsRunLineage.Version.init -> void
+Modulus.Analytics.IAnalyticsLineageEmitter
+Modulus.Analytics.IAnalyticsLineageEmitter.EmitAsync(Modulus.Analytics.AnalyticsRunLineage! lineage, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+override Modulus.Analytics.AnalyticsRunLineage.Equals(object? obj) -> bool
+override Modulus.Analytics.AnalyticsRunLineage.GetHashCode() -> int
+override Modulus.Analytics.AnalyticsRunLineage.ToString() -> string!
+static Modulus.Analytics.AnalyticsRunLineage.operator !=(Modulus.Analytics.AnalyticsRunLineage? left, Modulus.Analytics.AnalyticsRunLineage? right) -> bool
+static Modulus.Analytics.AnalyticsRunLineage.operator ==(Modulus.Analytics.AnalyticsRunLineage? left, Modulus.Analytics.AnalyticsRunLineage? right) -> bool
+Modulus.Analytics.AnalyticsFieldDescriptor.MaxNullRate.get -> double?
+Modulus.Analytics.AnalyticsFieldDescriptor.MaxNullRate.init -> void
+Modulus.Analytics.AnalyticsQuality
+Modulus.Analytics.AnalyticsQualityChecks
+Modulus.Analytics.AnalyticsQualityFinding
+Modulus.Analytics.AnalyticsQualityFinding.<Clone>$() -> Modulus.Analytics.AnalyticsQualityFinding!
+Modulus.Analytics.AnalyticsQualityFinding.AnalyticsQualityFinding(string! Check, string? Field, double Observed, double? Threshold, string! Message) -> void
+Modulus.Analytics.AnalyticsQualityFinding.Check.get -> string!
+Modulus.Analytics.AnalyticsQualityFinding.Check.init -> void
+Modulus.Analytics.AnalyticsQualityFinding.Deconstruct(out string! Check, out string? Field, out double Observed, out double? Threshold, out string! Message) -> void
+Modulus.Analytics.AnalyticsQualityFinding.Equals(Modulus.Analytics.AnalyticsQualityFinding? other) -> bool
+Modulus.Analytics.AnalyticsQualityFinding.Field.get -> string?
+Modulus.Analytics.AnalyticsQualityFinding.Field.init -> void
+Modulus.Analytics.AnalyticsQualityFinding.Message.get -> string!
+Modulus.Analytics.AnalyticsQualityFinding.Message.init -> void
+Modulus.Analytics.AnalyticsQualityFinding.Observed.get -> double
+Modulus.Analytics.AnalyticsQualityFinding.Observed.init -> void
+Modulus.Analytics.AnalyticsQualityFinding.Threshold.get -> double?
+Modulus.Analytics.AnalyticsQualityFinding.Threshold.init -> void
+Modulus.Analytics.AnalyticsQualityReport
+Modulus.Analytics.AnalyticsQualityReport.<Clone>$() -> Modulus.Analytics.AnalyticsQualityReport!
+Modulus.Analytics.AnalyticsQualityReport.AnalyticsQualityReport(System.Collections.Generic.IReadOnlyList<Modulus.Analytics.AnalyticsQualityResult!>! Results, System.Collections.Generic.IReadOnlyList<string!>! Errors) -> void
+Modulus.Analytics.AnalyticsQualityReport.Deconstruct(out System.Collections.Generic.IReadOnlyList<Modulus.Analytics.AnalyticsQualityResult!>! Results, out System.Collections.Generic.IReadOnlyList<string!>! Errors) -> void
+Modulus.Analytics.AnalyticsQualityReport.Equals(Modulus.Analytics.AnalyticsQualityReport? other) -> bool
+Modulus.Analytics.AnalyticsQualityReport.Errors.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Modulus.Analytics.AnalyticsQualityReport.Errors.init -> void
+Modulus.Analytics.AnalyticsQualityReport.IsClean.get -> bool
+Modulus.Analytics.AnalyticsQualityReport.Results.get -> System.Collections.Generic.IReadOnlyList<Modulus.Analytics.AnalyticsQualityResult!>!
+Modulus.Analytics.AnalyticsQualityReport.Results.init -> void
+Modulus.Analytics.AnalyticsQualityResult
+Modulus.Analytics.AnalyticsQualityResult.<Clone>$() -> Modulus.Analytics.AnalyticsQualityResult!
+Modulus.Analytics.AnalyticsQualityResult.AnalyticsQualityResult(string! Dataset, int Version, System.Guid TenantId, string! Sink, long RowCount, System.Collections.Generic.IReadOnlyList<Modulus.Analytics.AnalyticsQualityFinding!>! Findings) -> void
+Modulus.Analytics.AnalyticsQualityResult.Dataset.get -> string!
+Modulus.Analytics.AnalyticsQualityResult.Dataset.init -> void
+Modulus.Analytics.AnalyticsQualityResult.Deconstruct(out string! Dataset, out int Version, out System.Guid TenantId, out string! Sink, out long RowCount, out System.Collections.Generic.IReadOnlyList<Modulus.Analytics.AnalyticsQualityFinding!>! Findings) -> void
+Modulus.Analytics.AnalyticsQualityResult.Equals(Modulus.Analytics.AnalyticsQualityResult? other) -> bool
+Modulus.Analytics.AnalyticsQualityResult.Findings.get -> System.Collections.Generic.IReadOnlyList<Modulus.Analytics.AnalyticsQualityFinding!>!
+Modulus.Analytics.AnalyticsQualityResult.Findings.init -> void
+Modulus.Analytics.AnalyticsQualityResult.RowCount.get -> long
+Modulus.Analytics.AnalyticsQualityResult.RowCount.init -> void
+Modulus.Analytics.AnalyticsQualityResult.Sink.get -> string!
+Modulus.Analytics.AnalyticsQualityResult.Sink.init -> void
+Modulus.Analytics.AnalyticsQualityResult.TenantId.get -> System.Guid
+Modulus.Analytics.AnalyticsQualityResult.TenantId.init -> void
+Modulus.Analytics.AnalyticsQualityResult.Version.get -> int
+Modulus.Analytics.AnalyticsQualityResult.Version.init -> void
+Modulus.Analytics.AnalyticsWarehouseProfile
+Modulus.Analytics.AnalyticsWarehouseProfile.<Clone>$() -> Modulus.Analytics.AnalyticsWarehouseProfile!
+Modulus.Analytics.AnalyticsWarehouseProfile.AnalyticsWarehouseProfile(long RowCount, long FutureRows, System.Collections.Generic.IReadOnlyDictionary<string!, long>! NullRows) -> void
+Modulus.Analytics.AnalyticsWarehouseProfile.Deconstruct(out long RowCount, out long FutureRows, out System.Collections.Generic.IReadOnlyDictionary<string!, long>! NullRows) -> void
+Modulus.Analytics.AnalyticsWarehouseProfile.Equals(Modulus.Analytics.AnalyticsWarehouseProfile? other) -> bool
+Modulus.Analytics.AnalyticsWarehouseProfile.FutureRows.get -> long
+Modulus.Analytics.AnalyticsWarehouseProfile.FutureRows.init -> void
+Modulus.Analytics.AnalyticsWarehouseProfile.NullRows.get -> System.Collections.Generic.IReadOnlyDictionary<string!, long>!
+Modulus.Analytics.AnalyticsWarehouseProfile.NullRows.init -> void
+Modulus.Analytics.AnalyticsWarehouseProfile.RowCount.get -> long
+Modulus.Analytics.AnalyticsWarehouseProfile.RowCount.init -> void
+Modulus.Analytics.IAnalyticsProfilableSink
+Modulus.Analytics.IAnalyticsProfilableSink.ProfileAsync(Modulus.Analytics.AnalyticsDatasetDescriptor! dataset, System.Guid tenantId, System.DateTimeOffset notAfter, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<Modulus.Analytics.AnalyticsWarehouseProfile!>!
+const Modulus.Analytics.AnalyticsQualityChecks.FutureOccurrence = "future_occurrence" -> string!
+const Modulus.Analytics.AnalyticsQualityChecks.NullRateExceeded = "null_rate_exceeded" -> string!
+override Modulus.Analytics.AnalyticsQualityFinding.Equals(object? obj) -> bool
+override Modulus.Analytics.AnalyticsQualityFinding.GetHashCode() -> int
+override Modulus.Analytics.AnalyticsQualityFinding.ToString() -> string!
+override Modulus.Analytics.AnalyticsQualityReport.Equals(object? obj) -> bool
+override Modulus.Analytics.AnalyticsQualityReport.GetHashCode() -> int
+override Modulus.Analytics.AnalyticsQualityReport.ToString() -> string!
+override Modulus.Analytics.AnalyticsQualityResult.Equals(object? obj) -> bool
+override Modulus.Analytics.AnalyticsQualityResult.GetHashCode() -> int
+override Modulus.Analytics.AnalyticsQualityResult.ToString() -> string!
+override Modulus.Analytics.AnalyticsWarehouseProfile.Equals(object? obj) -> bool
+override Modulus.Analytics.AnalyticsWarehouseProfile.GetHashCode() -> int
+override Modulus.Analytics.AnalyticsWarehouseProfile.ToString() -> string!
+static Modulus.Analytics.AnalyticsQuality.Evaluate(Modulus.Analytics.AnalyticsDatasetDescriptor! dataset, Modulus.Analytics.AnalyticsWarehouseProfile! profile) -> System.Collections.Generic.IReadOnlyList<Modulus.Analytics.AnalyticsQualityFinding!>!
+static Modulus.Analytics.AnalyticsQualityFinding.operator !=(Modulus.Analytics.AnalyticsQualityFinding? left, Modulus.Analytics.AnalyticsQualityFinding? right) -> bool
+static Modulus.Analytics.AnalyticsQualityFinding.operator ==(Modulus.Analytics.AnalyticsQualityFinding? left, Modulus.Analytics.AnalyticsQualityFinding? right) -> bool
+static Modulus.Analytics.AnalyticsQualityReport.operator !=(Modulus.Analytics.AnalyticsQualityReport? left, Modulus.Analytics.AnalyticsQualityReport? right) -> bool
+static Modulus.Analytics.AnalyticsQualityReport.operator ==(Modulus.Analytics.AnalyticsQualityReport? left, Modulus.Analytics.AnalyticsQualityReport? right) -> bool
+static Modulus.Analytics.AnalyticsQualityResult.operator !=(Modulus.Analytics.AnalyticsQualityResult? left, Modulus.Analytics.AnalyticsQualityResult? right) -> bool
+static Modulus.Analytics.AnalyticsQualityResult.operator ==(Modulus.Analytics.AnalyticsQualityResult? left, Modulus.Analytics.AnalyticsQualityResult? right) -> bool
+static Modulus.Analytics.AnalyticsWarehouseProfile.operator !=(Modulus.Analytics.AnalyticsWarehouseProfile? left, Modulus.Analytics.AnalyticsWarehouseProfile? right) -> bool
+static Modulus.Analytics.AnalyticsWarehouseProfile.operator ==(Modulus.Analytics.AnalyticsWarehouseProfile? left, Modulus.Analytics.AnalyticsWarehouseProfile? right) -> bool
+static readonly Modulus.Analytics.AnalyticsQualityChecks.ClockSkew -> System.TimeSpan
+Modulus.Analytics.AnalyticsFieldDescriptor.AnalyticsFieldDescriptor(string! Name, Modulus.Analytics.AnalyticsFieldType Type, bool IsNullable = false, Modulus.Core.Abstractions.Entities.FieldClassification Classification = Modulus.Core.Abstractions.Entities.FieldClassification.Public, Modulus.Analytics.AnalyticsMaskingAction? Masking = null, double? MaxNullRate = null) -> void
+Modulus.Analytics.AnalyticsFieldDescriptor.Deconstruct(out string! Name, out Modulus.Analytics.AnalyticsFieldType Type, out bool IsNullable, out Modulus.Core.Abstractions.Entities.FieldClassification Classification, out Modulus.Analytics.AnalyticsMaskingAction? Masking, out double? MaxNullRate) -> void
+Modulus.Analytics.AnalyticsRunCompleted
+Modulus.Analytics.AnalyticsRunCompleted.<Clone>$() -> Modulus.Analytics.AnalyticsRunCompleted!
+Modulus.Analytics.AnalyticsRunCompleted.AnalyticsRunCompleted(System.Guid RunId, string! Dataset, int Version, System.Guid TenantId, System.DateTimeOffset CompletedAt, long RowsQueued) -> void
+Modulus.Analytics.AnalyticsRunCompleted.CompletedAt.get -> System.DateTimeOffset
+Modulus.Analytics.AnalyticsRunCompleted.CompletedAt.init -> void
+Modulus.Analytics.AnalyticsRunCompleted.Dataset.get -> string!
+Modulus.Analytics.AnalyticsRunCompleted.Dataset.init -> void
+Modulus.Analytics.AnalyticsRunCompleted.Deconstruct(out System.Guid RunId, out string! Dataset, out int Version, out System.Guid TenantId, out System.DateTimeOffset CompletedAt, out long RowsQueued) -> void
+Modulus.Analytics.AnalyticsRunCompleted.Equals(Modulus.Analytics.AnalyticsRunCompleted? other) -> bool
+Modulus.Analytics.AnalyticsRunCompleted.RowsQueued.get -> long
+Modulus.Analytics.AnalyticsRunCompleted.RowsQueued.init -> void
+Modulus.Analytics.AnalyticsRunCompleted.RunId.get -> System.Guid
+Modulus.Analytics.AnalyticsRunCompleted.RunId.init -> void
+Modulus.Analytics.AnalyticsRunCompleted.TenantId.get -> System.Guid
+Modulus.Analytics.AnalyticsRunCompleted.TenantId.init -> void
+Modulus.Analytics.AnalyticsRunCompleted.Version.get -> int
+Modulus.Analytics.AnalyticsRunCompleted.Version.init -> void
+Modulus.Analytics.IAnalyticsRunObserver
+Modulus.Analytics.IAnalyticsRunObserver.OnBackfillCompletedAsync(Modulus.Analytics.AnalyticsRunCompleted! completed, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+override Modulus.Analytics.AnalyticsRunCompleted.Equals(object? obj) -> bool
+override Modulus.Analytics.AnalyticsRunCompleted.GetHashCode() -> int
+override Modulus.Analytics.AnalyticsRunCompleted.ToString() -> string!
+static Modulus.Analytics.AnalyticsRunCompleted.operator !=(Modulus.Analytics.AnalyticsRunCompleted? left, Modulus.Analytics.AnalyticsRunCompleted? right) -> bool
+static Modulus.Analytics.AnalyticsRunCompleted.operator ==(Modulus.Analytics.AnalyticsRunCompleted? left, Modulus.Analytics.AnalyticsRunCompleted? right) -> bool
+Modulus.Analytics.AnalyticsCircuitBreaker
+Modulus.Analytics.AnalyticsCircuitBreaker.AnalyticsCircuitBreaker(Microsoft.Extensions.Options.IOptions<Modulus.Analytics.AnalyticsCircuitBreakerOptions!>! options, System.TimeProvider! clock) -> void
+Modulus.Analytics.AnalyticsCircuitBreaker.IsOpen(string! sink) -> bool
+Modulus.Analytics.AnalyticsCircuitBreaker.RecordSuccess(string! sink) -> void
+Modulus.Analytics.AnalyticsCircuitBreaker.RecordTransientFailure(string! sink) -> void
+Modulus.Analytics.AnalyticsCircuitBreaker.Release(string! sink) -> void
+Modulus.Analytics.AnalyticsCircuitBreaker.TryEnter(string! sink) -> bool
+Modulus.Analytics.AnalyticsCircuitBreakerOptions
+Modulus.Analytics.AnalyticsCircuitBreakerOptions.AnalyticsCircuitBreakerOptions() -> void
+Modulus.Analytics.AnalyticsCircuitBreakerOptions.FailureThreshold.get -> int
+Modulus.Analytics.AnalyticsCircuitBreakerOptions.FailureThreshold.set -> void
+Modulus.Analytics.AnalyticsCircuitBreakerOptions.OpenDuration.get -> System.TimeSpan
+Modulus.Analytics.AnalyticsCircuitBreakerOptions.OpenDuration.set -> void
+Modulus.Analytics.AnalyticsDispatcher.AnalyticsDispatcher(Modulus.Analytics.IAnalyticsDatasetCatalog! catalog, System.Collections.Generic.IEnumerable<Modulus.Analytics.IAnalyticsSink!>! sinks, System.Collections.Generic.IEnumerable<Modulus.Analytics.IAnalyticsRecordUpcaster!>! upcasters, Modulus.Core.Abstractions.DataProtection.IPersonalDataProtector! protector, Modulus.Analytics.AnalyticsCircuitBreaker? breaker = null) -> void
+Modulus.Analytics.AnalyticsQualityIssue
+Modulus.Analytics.AnalyticsQualityIssue.<Clone>$() -> Modulus.Analytics.AnalyticsQualityIssue!
+Modulus.Analytics.AnalyticsQualityIssue.AnalyticsQualityIssue(string! Dataset, int Version, System.Guid TenantId, string! Sink, Modulus.Analytics.AnalyticsQualityFinding! Finding) -> void
+Modulus.Analytics.AnalyticsQualityIssue.Dataset.get -> string!
+Modulus.Analytics.AnalyticsQualityIssue.Dataset.init -> void
+Modulus.Analytics.AnalyticsQualityIssue.Deconstruct(out string! Dataset, out int Version, out System.Guid TenantId, out string! Sink, out Modulus.Analytics.AnalyticsQualityFinding! Finding) -> void
+Modulus.Analytics.AnalyticsQualityIssue.Equals(Modulus.Analytics.AnalyticsQualityIssue? other) -> bool
+Modulus.Analytics.AnalyticsQualityIssue.Finding.get -> Modulus.Analytics.AnalyticsQualityFinding!
+Modulus.Analytics.AnalyticsQualityIssue.Finding.init -> void
+Modulus.Analytics.AnalyticsQualityIssue.Sink.get -> string!
+Modulus.Analytics.AnalyticsQualityIssue.Sink.init -> void
+Modulus.Analytics.AnalyticsQualityIssue.TenantId.get -> System.Guid
+Modulus.Analytics.AnalyticsQualityIssue.TenantId.init -> void
+Modulus.Analytics.AnalyticsQualityIssue.Version.get -> int
+Modulus.Analytics.AnalyticsQualityIssue.Version.init -> void
+Modulus.Analytics.IAnalyticsConsent
+Modulus.Analytics.IAnalyticsConsent.IsGrantedAsync(System.Guid tenantId, string! dataset, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<bool>
+Modulus.Analytics.IAnalyticsQualityFindingSink
+Modulus.Analytics.IAnalyticsQualityFindingSink.Record(Modulus.Analytics.AnalyticsQualityIssue! issue) -> void
+const Modulus.Analytics.AnalyticsCircuitBreakerOptions.SectionName = "Analytics:CircuitBreaker" -> string!
+override Modulus.Analytics.AnalyticsQualityIssue.Equals(object? obj) -> bool
+override Modulus.Analytics.AnalyticsQualityIssue.GetHashCode() -> int
+override Modulus.Analytics.AnalyticsQualityIssue.ToString() -> string!
+static Modulus.Analytics.AnalyticsQualityIssue.operator !=(Modulus.Analytics.AnalyticsQualityIssue? left, Modulus.Analytics.AnalyticsQualityIssue? right) -> bool
+static Modulus.Analytics.AnalyticsQualityIssue.operator ==(Modulus.Analytics.AnalyticsQualityIssue? left, Modulus.Analytics.AnalyticsQualityIssue? right) -> bool

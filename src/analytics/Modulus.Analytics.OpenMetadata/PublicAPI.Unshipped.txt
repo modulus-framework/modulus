@@ -1,0 +1,24 @@
+#nullable enable
+Modulus.Analytics.OpenMetadata.AnalyticsOpenMetadataExtensions
+Modulus.Analytics.OpenMetadata.OpenMetadataCatalogPublisher
+Modulus.Analytics.OpenMetadata.OpenMetadataCatalogPublisher.OpenMetadataCatalogPublisher(System.Net.Http.HttpClient! http, Modulus.Analytics.OpenMetadata.OpenMetadataOptions! options) -> void
+Modulus.Analytics.OpenMetadata.OpenMetadataCatalogPublisher.PublishAllAsync(Modulus.Analytics.IAnalyticsDatasetCatalog! catalog, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+Modulus.Analytics.OpenMetadata.OpenMetadataCatalogPublisher.PublishAsync(Modulus.Analytics.AnalyticsDatasetDescriptor! dataset, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+Modulus.Analytics.OpenMetadata.OpenMetadataOptions
+Modulus.Analytics.OpenMetadata.OpenMetadataOptions.ApiKey.get -> string?
+Modulus.Analytics.OpenMetadata.OpenMetadataOptions.ApiKey.set -> void
+Modulus.Analytics.OpenMetadata.OpenMetadataOptions.BaseUrl.get -> System.Uri?
+Modulus.Analytics.OpenMetadata.OpenMetadataOptions.BaseUrl.set -> void
+Modulus.Analytics.OpenMetadata.OpenMetadataOptions.DatabaseName.get -> string!
+Modulus.Analytics.OpenMetadata.OpenMetadataOptions.DatabaseName.set -> void
+Modulus.Analytics.OpenMetadata.OpenMetadataOptions.OpenMetadataOptions() -> void
+Modulus.Analytics.OpenMetadata.OpenMetadataOptions.SchemaName.get -> string!
+Modulus.Analytics.OpenMetadata.OpenMetadataOptions.SchemaName.set -> void
+Modulus.Analytics.OpenMetadata.OpenMetadataOptions.ServiceName.get -> string!
+Modulus.Analytics.OpenMetadata.OpenMetadataOptions.ServiceName.set -> void
+Modulus.Analytics.OpenMetadata.OpenMetadataOptions.Timeout.get -> System.TimeSpan
+Modulus.Analytics.OpenMetadata.OpenMetadataOptions.Timeout.set -> void
+const Modulus.Analytics.OpenMetadata.OpenMetadataOptions.SectionName = "Analytics:OpenMetadata" -> string!
+static Modulus.Analytics.OpenMetadata.AnalyticsOpenMetadataExtensions.AddModulusOpenMetadata(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.Analytics.OpenMetadata.OpenMetadataCatalogPublisher.ColumnTypeFor(Modulus.Analytics.AnalyticsFieldType type) -> string!
+static Modulus.Analytics.OpenMetadata.OpenMetadataCatalogPublisher.TableNameFor(Modulus.Analytics.AnalyticsDatasetDescriptor! dataset) -> string!

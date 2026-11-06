@@ -1,0 +1,22 @@
+#nullable enable
+Modulus.Analytics.Airflow.AirflowOptions
+Modulus.Analytics.Airflow.AirflowOptions.AirflowOptions() -> void
+Modulus.Analytics.Airflow.AirflowOptions.ApiToken.get -> string?
+Modulus.Analytics.Airflow.AirflowOptions.ApiToken.set -> void
+Modulus.Analytics.Airflow.AirflowOptions.BaseUrl.get -> System.Uri?
+Modulus.Analytics.Airflow.AirflowOptions.BaseUrl.set -> void
+Modulus.Analytics.Airflow.AirflowOptions.DagId.get -> string!
+Modulus.Analytics.Airflow.AirflowOptions.DagId.set -> void
+Modulus.Analytics.Airflow.AirflowOptions.DbtSelector.get -> string!
+Modulus.Analytics.Airflow.AirflowOptions.DbtSelector.set -> void
+Modulus.Analytics.Airflow.AirflowOptions.Enabled.get -> bool
+Modulus.Analytics.Airflow.AirflowOptions.Enabled.set -> void
+Modulus.Analytics.Airflow.AirflowOptions.Password.get -> string?
+Modulus.Analytics.Airflow.AirflowOptions.Password.set -> void
+Modulus.Analytics.Airflow.AirflowOptions.Timeout.get -> System.TimeSpan
+Modulus.Analytics.Airflow.AirflowOptions.Timeout.set -> void
+Modulus.Analytics.Airflow.AirflowOptions.Username.get -> string?
+Modulus.Analytics.Airflow.AirflowOptions.Username.set -> void
+Modulus.Analytics.Airflow.AirflowServiceCollectionExtensions
+const Modulus.Analytics.Airflow.AirflowOptions.SectionName = "Analytics:Airflow" -> string!
+static Modulus.Analytics.Airflow.AirflowServiceCollectionExtensions.AddModulusAirflow(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!

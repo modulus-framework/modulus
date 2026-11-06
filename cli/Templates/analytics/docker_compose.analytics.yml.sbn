@@ -1,0 +1,41 @@
+# Local ClickHouse and RabbitMQ for the analytics layer (modulus add-analytics). Development only: the credentials are the defaults
+# below, and the matching settings are in appsettings.Development.json. Production runs ClickHouse as a replicated cluster and RabbitMQ as a
+# clustered broker, both behind TLS, with credentials from a secret store.
+services:
+  clickhouse:
+    image: clickhouse/clickhouse-server:25.8-alpine
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+    environment:
+      CLICKHOUSE_DB: analytics
+      CLICKHOUSE_USER: modulus
+      CLICKHOUSE_PASSWORD: modulus-dev
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: "1"
+    volumes:
+      - clickhouse-data:/var/lib/clickhouse
+    healthcheck:
+      test: ["CMD-SHELL", "clickhouse-client --user modulus --password modulus-dev --query 'SELECT 1' || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  rabbitmq:
+    image: rabbitmq:4-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: modulus
+      RABBITMQ_DEFAULT_PASS: modulus-dev
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  clickhouse-data:
+  rabbitmq-data:
