@@ -35,10 +35,12 @@ public sealed class AnalyticsTenantDataHandler(
     /// <summary>The company's rows in every warehouse table (every dataset version, in every erasable sink).</summary>
     public const string WarehouseDataset = "analytics.warehouse";
 
+    // Upstream first: the runs that feed the queue, then the queue that feeds the warehouse, then the warehouse. Erasing in the other order
+    // lets a run that is still reading queue rows after the queue was emptied, and those rows would then reach the erased warehouse.
     private static readonly IReadOnlyList<TenantDataset> Owned =
     [
-        new(QueueDataset, TenantDataCategory.Owned),
         new(BackfillDataset, TenantDataCategory.Owned),
+        new(QueueDataset, TenantDataCategory.Owned),
         new(WarehouseDataset, TenantDataCategory.Owned),
     ];
 
@@ -110,13 +112,14 @@ public sealed class AnalyticsTenantDataHandler(
 public static class AnalyticsTenantDataExtensions
 {
     /// <summary>
-    /// Adds the analytics datasets (queue, backfill runs and warehouse copies) to company offboarding and erasure. Needs
+    /// Adds the analytics datasets (queue, backfill runs and warehouse copies) to company offboarding and erasure, and an offboarding step that
+    /// cancels the company's runs and parks its undelivered rows before anything is erased. Needs
     /// <c>AddModulusAnalyticsStore&lt;TContext&gt;()</c> and sinks that implement <see cref="IAnalyticsErasableSink"/>.
     /// </summary>
     /// <param name="builder">The lifecycle builder.</param>
     public static TenantLifecycleBuilder AddModulusAnalyticsTenantData(this TenantLifecycleBuilder builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
-        return builder.AddHandler<AnalyticsTenantDataHandler>();
+        return builder.AddHandler<AnalyticsTenantDataHandler>().AddOffboardingStep<AnalyticsOffboardingStep>();
     }
 }

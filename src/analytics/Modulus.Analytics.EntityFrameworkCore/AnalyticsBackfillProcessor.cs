@@ -154,7 +154,9 @@ internal sealed class AnalyticsBackfillProcessor(
             var run = await db.AnalyticsBackfillRuns.SingleAsync(r => r.Id == runId, ct).ConfigureAwait(false);
             if (run.Status != AnalyticsBackfillStatus.Running)
             {
-                return true; // cancelled while this cycle was running
+                // Cancelled while this cycle was running. Give the claim back now, so offboarding can tell that no worker is reading the company.
+                await ReleaseAsync(runId).ConfigureAwait(false);
+                return true;
             }
 
             if (run.Cursor is null && run.RowsQueued == 0)
@@ -231,6 +233,7 @@ internal sealed class AnalyticsBackfillProcessor(
             var run = await db.AnalyticsBackfillRuns.SingleAsync(r => r.Id == runId, ct).ConfigureAwait(false);
             if (run.Status != AnalyticsBackfillStatus.Running)
             {
+                await ReleaseAsync(runId).ConfigureAwait(false);
                 return true; // cancelled while this cycle was running
             }
 

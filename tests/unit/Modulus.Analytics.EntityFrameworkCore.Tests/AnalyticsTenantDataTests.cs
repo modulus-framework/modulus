@@ -1,6 +1,7 @@
 namespace Modulus.Analytics.EntityFrameworkCore.Tests;
 
 using FluentAssertions;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Modulus.Analytics.Testing;
 using Modulus.Core.Abstractions;
@@ -143,5 +144,89 @@ public sealed partial class AnalyticsBackfillTests
 
         (await sink.CountTenantAsync(dataset, _tenantA, CancellationToken.None)).Should().Be(0);
         (await sink.EraseTenantAsync(dataset, _tenantA, CancellationToken.None)).Should().Be(0);
+    }
+
+    private Task<int> DisableAnalytics(Guid tenant)
+    {
+        _current.TenantId = tenant;
+        return InScope(async sp =>
+        {
+            await ActivatorUtilities.CreateInstance<AnalyticsOffboardingStep>(sp).DisableAsync(CancellationToken.None);
+            return 0;
+        });
+    }
+
+    private Task<int> HoldClaim(Guid tenant, string? by, DateTime? until)
+        => InScope(async sp => await sp.GetRequiredService<TestAnalyticsDb>().AnalyticsDeliveries
+            .Where(d => d.TenantId == tenant)
+            .ExecuteUpdateAsync(s => s.SetProperty(d => d.LockedBy, by).SetProperty(d => d.LockedUntil, until)));
+
+    [Fact]
+    public async Task The_offboarding_step_stops_a_running_run_and_parks_the_queue_so_nothing_reaches_the_erased_warehouse()
+    {
+        Build(extra: s =>
+        {
+            s.AddSingleton<ICurrentTenant>(_current);
+            s.Configure<AnalyticsBackfillOptions>(o =>
+            {
+                o.PageSize = 1;
+                o.PagesPerCycle = 1;
+                o.RunsPerCycle = 10; // both companies' runs in one cycle, whatever order they are picked in
+            });
+        });
+        await SeedOrdersAsync(_tenantA, 3);
+        await SeedOrdersAsync(_tenantB, 1, firstId: 10);
+        await Start([_tenantA, _tenantB]);
+        await Cycle(); // one page each: company A's run is still reading, with rows already queued
+
+        (await Runs()).Single(r => r.TenantId == _tenantA).Status.Should().Be(AnalyticsBackfillStatus.Running);
+        (await Queued()).Count(q => q.TenantId == _tenantA).Should().Be(1);
+
+        await DisableAnalytics(_tenantA);
+
+        (await Runs()).Single(r => r.TenantId == _tenantA).Status.Should().Be(AnalyticsBackfillStatus.Cancelled);
+        (await Runs()).Single(r => r.TenantId == _tenantB).Status.Should().NotBe(AnalyticsBackfillStatus.Cancelled, "another company's run is untouched");
+
+        // The rest of the cycle: the cancelled run reads nothing more and the parked row is never sent.
+        await DrainRunsAsync();
+        await DrainDeliveriesAsync();
+        _sink.Rows.Count(r => r.TenantId == _tenantA).Should().Be(0);
+        (await Queued()).Where(q => q.TenantId == _tenantA).Should().OnlyContain(q => q.DeadLetteredAt != null && q.DeliveredAt == null);
+        _sink.Rows.Count(r => r.TenantId == _tenantB).Should().Be(1, "another company's records are still delivered");
+
+        // Then the erase, in the handler's order, leaves nothing behind.
+        foreach (var dataset in new[] { AnalyticsTenantDataHandler.BackfillDataset, AnalyticsTenantDataHandler.QueueDataset, AnalyticsTenantDataHandler.WarehouseDataset })
+        {
+            await Handle(_tenantA, dataset, delete: true);
+            (await Handle(_tenantA, dataset, delete: false)).Should().Be(0);
+        }
+    }
+
+    [Fact]
+    public async Task The_offboarding_step_fails_while_a_worker_still_holds_the_companys_rows_and_passes_once_it_lets_go()
+    {
+        Build(extra: s => s.AddSingleton<ICurrentTenant>(_current));
+        await SeedOrdersAsync(_tenantA, 2);
+        await Start([_tenantA]);
+        await DrainRunsAsync();
+        await HoldClaim(_tenantA, "another-worker", DateTime.UtcNow.AddHours(1)); // a batch that is being delivered right now
+
+        var step = () => DisableAnalytics(_tenantA);
+        await step.Should().ThrowAsync<InvalidOperationException>().WithMessage("*still handling*in flight*");
+
+        await HoldClaim(_tenantA, null, null);
+        await step.Should().NotThrowAsync("the step passes when it runs again after the claim is released");
+    }
+
+    [Fact]
+    public async Task The_handler_erases_the_runs_before_the_queue_and_the_queue_before_the_warehouse()
+    {
+        Build(extra: s => s.AddSingleton<ICurrentTenant>(_current));
+
+        var order = await InScope(sp => Task.FromResult(
+            ActivatorUtilities.CreateInstance<AnalyticsTenantDataHandler>(sp).Datasets.Select(d => d.Name).ToArray()));
+
+        order.Should().Equal(
+            AnalyticsTenantDataHandler.BackfillDataset, AnalyticsTenantDataHandler.QueueDataset, AnalyticsTenantDataHandler.WarehouseDataset);
     }
 }

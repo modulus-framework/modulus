@@ -101,5 +101,6 @@ No open items remain. Both items below were closed by the owner's decision, not 
 - The messaging sink is append-only, so it cannot erase a tenant. `AnalyticsTenantDataHandler` refuses to run while a non-erasable sink is registered, so enabling the messaging sink blocks tenant erasure until the consumer handles erasure too.
 
 - Commit trailers: no model name in commit messages (repo rule). The `Claude-Session` trailer is kept. The `Co-Authored-By` line that names the model is left out for the same rule.
+- Offboarding order (2026-11-08): a suspended company still resolves for background work, so `AddModulusAnalyticsTenantData` also registers `AnalyticsOffboardingStep`. It cancels the company's runs (an incremental run never ends on its own), parks its undelivered queue rows, and fails the operation while a worker still holds a claim on the company's runs or rows (a failed operation resumes at that step). The handler erases runs, then the queue, then the warehouse. Not covered: records captured for the company by background jobs after the step passes; disable those jobs with their own offboarding step.
 - Denied requests are not audited by the analytics management API; the framework's access-decision audit covers them.
 - Audit entries go to the host chain (`TenantId` null), because one request can span tenants.
