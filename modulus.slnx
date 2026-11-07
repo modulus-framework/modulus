@@ -106,6 +106,7 @@
   <!-- ── Tests · Unit ────────────────────────────────────────────── -->
   <Folder Name="/tests/benchmarks/">
     <Project Path="tests/benchmarks/Modulus.Benchmarks/Modulus.Benchmarks.csproj" />
+    <Project Path="tests/benchmarks/Modulus.Benchmarks.EfLatency/Modulus.Benchmarks.EfLatency.csproj" />
   </Folder>
   <Folder Name="/tests/unit/">
     <Project Path="tests/unit/Modulus.Core.Tests/Modulus.Core.Tests.csproj" />

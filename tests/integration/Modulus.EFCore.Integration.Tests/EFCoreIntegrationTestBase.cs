@@ -26,7 +26,14 @@ public abstract class EFCoreIntegrationTestBase
 
     protected EFCoreIntegrationTestBase(PostgreSqlFixture fixture)
     {
-        ConnectionString = fixture.ConnectionString;
+        // One database per test instance: EnsureCreated is a no-op once any other context has created
+        // tables in a shared database, which made table creation depend on test order.
+        var builder = new Npgsql.NpgsqlConnectionStringBuilder(fixture.ConnectionString)
+        {
+            Database = "t_" + Guid.NewGuid().ToString("N"),
+            Pooling = false,
+        };
+        ConnectionString = builder.ConnectionString;
     }
 
     protected TestDbContext BuildContext()

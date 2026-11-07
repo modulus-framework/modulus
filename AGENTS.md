@@ -5,7 +5,7 @@ Guidance for AI agents (and humans) working on the Modulus framework.
 ## Project
 
 Modulus is a modular-monolith framework for **.NET 10** (`net10.0`). It is a
-multi-project solution made of **45 libraries** under `src/` (core, data,
+multi-project solution made of **69 projects** under `src/` (68 packable libraries plus the Roslyn analyzer project) (core, data,
 identity, messaging, platform, observability, testing; the UI framework lives in the `modulus-ui` repository, see *UI and app kinds* below),
 unit/integration tests under `tests/` and a **CLI tool** (`Modulus.Cli`) for
 scaffolding.
@@ -68,7 +68,7 @@ src/
   data/          Modulus.Data.Abstractions, Modulus.EntityFrameworkCore,
                  EF Core providers (SqlServer, PostgreSQL, MySQL, SQLite, MongoDB)
   identity/      Modulus.Identity (OpenIddict server + 6 IdP adapters +
-                 EF Core mapping merged into one package)
+                 EF Core mapping merged into one package), Modulus.Identity.IntegrationEvents
   messaging/     Modulus.Events (abstractions merged), Modulus.Mediator
                  (abstractions merged), Modulus.Inbox, Modulus.Outbox,
                  Modulus.Outbox.Abstractions (kept — circular-dep seam),
@@ -96,7 +96,21 @@ src/
                  Modulus.Grpc (gRPC server/client wiring: status mapping, health,
                  resilient clients),
                  Modulus.GraphQL (one GraphQL.NET schema built from module
-                 contributors, resolvers through the mediator).
+                 contributors, resolvers through the mediator),
+                 Modulus.Tenancy.Lifecycle (+ .EntityFrameworkCore: tenant export, offboarding,
+                 legal holds, retention, signed deletion certificates),
+                 Modulus.Secrets.OpenBao (OpenBao/Vault KV v2 secret provider),
+                 Modulus.Media (+ .EntityFrameworkCore: validated uploads, tenant-scoped metadata),
+                 Modulus.Localization.EntityFrameworkCore (runtime-edited translations),
+                 Modulus.Notifications.EntityFrameworkCore (notification inbox + channel preferences).
+  analytics/     Analytics Integration Layer (plan and status: docs/ANALYTICS_PROGRESS.md).
+                 Modulus.Analytics (dataset/field contracts, catalog, sink interface, masking),
+                 .EntityFrameworkCore (durable queue, resumable backfill, delivery worker),
+                 .Management (queue status, dead-letter replay/purge, `analytics:manage`),
+                 sinks: .ClickHouse, .Parquet, .Doris, .Messaging; readers/triggers: .Debezium,
+                 .DuckDB (lake reconciliation), .Airflow; governance: .Apicurio, .OpenMetadata,
+                 .OpenLineage; .Superset (row-level-security guest tokens);
+                 .Testing (in-memory sink + sink conformance suite).
   observability/ Modulus.Observability (Diagnostics + OpenTelemetry merged)
   ai/            Modulus.AI.Connector (hosts the external AI platform's connector wire
                  contract v1: read-only capabilities, envelope auth, revocation, extract/changes,
@@ -105,7 +119,8 @@ src/
                  + Modulus.AI.Connector.Testing (fake platform + conformance suite)
   testing/       Modulus.Testing (WebApplicationFactory harness, RecordingModuleBus,
                  event assertions), Modulus.Testing.Architecture (module boundary
-                 rules: integration event naming, cross-module reference detection)
+                 rules: integration event naming, cross-module reference detection),
+                 Modulus.Testing.Authorization (permission-grant conformance kit)
   cli/           Modulus.Cli (Spectre.Console.Cli scaffolding tool)
 tests/
   unit/          xUnit + NSubstitute + FluentAssertions
