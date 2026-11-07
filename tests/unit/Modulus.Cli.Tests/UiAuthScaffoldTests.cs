@@ -60,7 +60,7 @@ public sealed class UiPageScaffoldTests
         var engine = new TemplateEngine();
 
         engine.Render("ui/AuthRecoveryController", new { Namespace = "Shop.Api.Controllers" })
-            .Should().Contain("namespace Shop.Api.Controllers;").And.Contain("[AllowAnonymous]").And.Contain("/auth/reset-password");
+            .Should().Contain("namespace Shop.Api.Controllers;").And.Contain("[AllowAnonymous, Loosened(").And.Contain("/auth/reset-password");
         engine.Render("ui/SessionsController", new { Namespace = "Shop.Api.Controllers" })
             .Should().Contain("[Authorize]").And.Contain("/auth/sessions");
         engine.Render("ui/TwoFactorController", new { Namespace = "Shop.Api.Controllers" })

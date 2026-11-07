@@ -1,152 +1,105 @@
 ---
+title: "Getting started"
+description: "Install Modulus UI, understand the four pieces every app has, and show a first page in Blazor, MVC or Razor Pages."
 sidebar_position: 2
 ---
 
-# Getting Started with the UI
+In this page you check the prerequisites, install the packages, and see the four pieces every Modulus app has. Then you show a first page in the flavour you chose. If you want a full app straight away, go to the [Blazor tutorial](./tutorial-blazor.md) or the [MVC tutorial](./tutorial-mvc.md).
 
-This page creates a web app with the Modulus UI, runs it, and shows where the code lives. It assumes you have the prerequisites from [Prerequisites](../getting-started/prerequisites) and the `modulus` CLI installed.
+## Prerequisites
 
-## 1. Create the app
+- **.NET 10 SDK.** Check with `dotnet --version`; it should print `10.0.x`.
+- **An editor.** Visual Studio, Rider or VS Code with the C# extension. Any of them can run the `dotnet` commands in these pages.
+- **Optional: the Modulus CLI** for scaffolding. See [CLI and the admin starter](./cli.md).
 
-Pick the engine with `--ui-engine`: `blazor`, `mvc` or `razor-pages`. The app kind must be `webapp+api`, which creates a web project on the UI framework and an API project for it to call.
+## Get the packages
 
-```bash
-modulus app Shop --kind webapp+api --ui-engine blazor --database SQLite --auth openiddict
-```
+Modulus ships as NuGet packages, all at the same version. This documentation uses `2.0.0`.
 
-Replace `blazor` with `mvc` or `razor-pages` to get the same app in another engine. Omitted options are asked for interactively.
+| Package | Use it for |
+| --- | --- |
+| `Synvro.Modulus.Blazor` | Blazor apps: `AddModulusBlazor`, the shell, the Pro components, charts and extras. It brings Ant Design Blazor with it. |
+| `Synvro.Modulus.AspNetCore.Mvc` | MVC and Razor Pages apps: `AddModulusMvc`, the tag helpers, `_ModulusLayout` and the htmx helpers. |
+| `Synvro.Modulus.AspNetCore.Fluid` | Liquid templates: `ModulusLiquid`, the Modulus tags and filters. |
+| `Synvro.Modulus.Ui.Assets` | The stylesheets, scripts and the vendored libraries (htmx, Alpine.js, the plugins). Every flavour needs it. |
+| `Synvro.Modulus.AspNetCore.Hosting` | `AddModulusHardening`, `AddModulusObservability` and the `/health` endpoint. |
+| `Synvro.Modulus.Ui.Abstractions` | Shared models: theme options, menus, `ProTableRequest`, `TableQuery`. It comes in as a dependency; you rarely add it yourself. |
+| `Synvro.Modulus.Documents` | Writing PDF and Word files from HTML, and spreadsheets (xlsx). Only if you need documents. |
 
-| Option | Meaning |
-|---|---|
-| `--kind webapp+api` | A web project (the UI) plus an API project. The single-project kind is retired. |
-| `--ui-engine` | `blazor`, `mvc` or `razor-pages` |
-| `--auth` | `openiddict` (the local token server, with sign-in pages), an external provider, or `none` |
-| `--with-example` | Add the example `Catalog` module (off by default) |
+Install from nuget.org, or from a local copy of the packages. To build your own copy from the repository:
 
-The generated solution has two projects that run side by side:
+````bash
+dotnet pack Modulus.slnx -c Release -o artifacts/packages
+````
 
-```
-Shop/
-└── src/
-    ├── API/Shop.Api/          the API and the token server (--auth openiddict)
-    └── Web/Shop.Web/          the UI host for the chosen engine
-        ├── Program.cs         composition root for the UI
-        ├── appsettings.json   Modulus:Theme, Api:BaseUrl, Bff clients
-        ├── security/loosening-allowlist.json   anonymous endpoints the app opens on purpose
-        └── (Blazor) Components/   App.razor, Routes.razor, Layout/, Pages/, Security/
-        └── (MVC / Razor Pages) Pages/ or Controllers/ and Views/
-```
+Then add that folder as a source to any command, for example `dotnet add package Synvro.Modulus.Blazor --version 2.0.0 --source ./artifacts/packages`.
 
-## 2. Run it
+## The four pieces every app has
 
-Start the API first, then the web host. The ports are in each project's `Properties/launchSettings.json`.
+Whichever flavour you choose, a Modulus app has the same four parts. The tutorials show each one in full.
 
-```bash
-dotnet run --project src/API/Shop.Api
-dotnet run --project src/Web/Shop.Web
-```
+| Piece | Blazor | MVC or Razor Pages |
+| --- | --- | --- |
+| **1. Services** | `builder.Services.AddModulusBlazor(...)` | `builder.Services.AddModulusMvc(...)` |
+| **2. Menu** | An `IMenuContributor` class, registered with `AddTransient` | The same class |
+| **3. Layout** | `<AppShell>@Body</AppShell>` in `MainLayout.razor` | `Layout = "_ModulusLayout"` in `_ViewStart.cshtml` |
+| **4. Pages** | Razor components with `@page` | Views or Razor Pages, with `app-*` tag helpers |
 
-With `--auth openiddict`, the API creates a development administrator the first time it starts. It prints the account once in the console:
+## A first page: Blazor
 
-```
-Development administrator created: admin@shop.local / <password> (random; shown once).
-```
+Follow [steps 1 to 9 of the Blazor tutorial](./tutorial-blazor.md#step-by-step). They create the project, add the packages, and set up `Program.cs`, the layout, the menu and the data, so the project builds. Then add this page, which uses the same two components as the tutorial:
 
-Copy the password then. To choose your own, set `Identity:Seed:AdminEmail` and `Identity:Seed:AdminPassword` before the first start.
+````markup title="Components/Pages/Hello.razor"
+@page "/hello"
 
-Open the web host's address. With sign-in configured, you go to the sign-in page first. Sign in with the administrator account.
+<PageHeading Pretitle="Hello" Title="My first page" Subtitle="Modulus gives this page the header, sidebar and theme.">
+    <Actions>
+        <Button Type="@ButtonType.Primary">Click me</Button>
+    </Actions>
+</PageHeading>
 
-## 3. Add a page
+<p>The page is rendered inside the Modulus shell.</p>
+````
 
-Each engine has its own way to add a page. Every page shows up in the shell with the same layout.
+Run the app and open `/hello`.
 
-### Blazor
+## A first page: MVC or Razor Pages
 
-A page is a Razor component with a route. The shell comes from `AppShell` in `MainLayout.razor`, so the component only has the content.
+Follow [steps 1 to 10 of the MVC tutorial](./tutorial-mvc.md#step-by-step). They set up the project, the layout, the menu, the data and the controllers, so the project builds. Then add a controller and a view:
 
-```razor
-@page "/customers"
-@attribute [Authorize]
+````csharp title="Controllers/HelloController.cs"
+using Microsoft.AspNetCore.Mvc;
 
-<PageContainer Title="Customers">
-    <ProTable TItem="Customer" HeaderTitle="Customer list" RowKey="c => c.Id" Request="LoadAsync">
-        <Columns>
-            <PropertyColumn Property="c => c.Name" Sortable />
-            <PropertyColumn Property="c => c.Company" />
-        </Columns>
-    </ProTable>
-</PageContainer>
+namespace ContosoMvc.Controllers;
 
-@code {
-    private Task<ProTableResponse<Customer>> LoadAsync(ProTableRequest request) =>
-        Task.FromResult(_customers.SortBy(request, "Name", c => c.Name).ToPage(request));
-}
-```
-
-Add a menu entry in an `IMenuContributor`:
-
-```csharp
-public sealed class AppMenuContributor : IMenuContributor
+public class HelloController : Controller
 {
-    public Task ConfigureMenuAsync(MenuConfigurationContext context)
+    public IActionResult Index()
     {
-        context.Add(new MenuItemDefinition("customers", "Customers", "customers", "team") { Order = 10, RequiredPolicy = "Customers.Read" });
-        return Task.CompletedTask;
+        ViewData["Title"] = "My first page";
+        return View();
     }
 }
-```
+````
 
-Register it with `builder.Services.AddTransient<IMenuContributor, AppMenuContributor>();` in `Program.cs`.
+````markup title="Views/Hello/Index.cshtml"
+<app-page-header pretitle="Hello" title="My first page" subtitle="Modulus gives this page the header, sidebar and theme.">
+    <app-button type="primary">Click me</app-button>
+</app-page-header>
 
-### MVC
+<p>The page is rendered inside the Modulus shell.</p>
+````
 
-A controller returns a view. The layout comes from `_ViewStart.cshtml` (`_ModulusLayout`).
+Run the app and open `/Hello`. For Razor Pages, put the same markup in a page with `@page`.
 
-```cshtml
-<app-page-container title="Customers">
-  <app-card title="Customer list">
-    <app-card-extra>
-      <app-button type="primary" icon="plus" hx-get="/customers/new" hx-target="#modulus-drawer-body"
-                  x-on:click="$store.drawer.show('New customer')">New customer</app-button>
-    </app-card-extra>
-    <div id="table" hx-get="/customers/table" hx-trigger="load, customers:refresh from:body"></div>
-  </app-card>
-</app-page-container>
-```
+:::tip[Check that it worked]
 
-After a save, the controller tells the page what happened with the htmx response helpers:
+The page shows the Modulus header and sidebar, and the button is blue. If it looks like plain HTML, see the troubleshooting tables in the tutorials.
 
-```csharp
-Response.HxMessage(MessageType.Success, $"Created {customer.Name}");
-Response.HxCloseDrawer();
-Response.HxTrigger("customers:refresh");
-return NoContent();
-```
+:::
 
-### Razor Pages
+## Where to next
 
-Razor Pages use the same tag helpers and the same response helpers as MVC. Put the page in `Pages/` with a `@page` directive, and the `_ViewStart.cshtml` gives it the shell.
-
-## 4. Generate the list and form from an entity
-
-If an entity already has an API (`modulus generate-crud Product`), the `ui` commands build its pages:
-
-```bash
-modulus ui create-crud Product --module Catalog --engine blazor
-modulus ui create-form-from-entity Product --module Catalog --engine blazor
-```
-
-See [The ui commands](./cli) for every command.
-
-## 5. Check the result
-
-- `modulus ui audit` checks the pages for accessibility problems.
-- `dotnet build` builds the solution as usual, and `dotnet test` runs the generated tests.
-
-## Next steps
-
-- [Components](./components): the tag helpers and Blazor components
-- [Data tables and grids](./data-grids): paging, sorting, filters and editing
-- [Authentication](./authentication): the sign-in flows, the security guard and the loosening allowlist
-- [Theming and localization](./theming): brand, layout and languages
-- [Hosting defaults](./hosting): compression, security headers and the Content Security Policy
+- [Build an app with Blazor](./tutorial-blazor.md) or [build an app with MVC](./tutorial-mvc.md), if you have not yet.
+- [How the pieces fit together](./concepts.md), for how the menu, the shell and htmx connect.
+- [Components](./components.md), to find the control you need.

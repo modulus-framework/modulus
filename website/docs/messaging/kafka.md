@@ -41,7 +41,7 @@ Binds from `"EventBus:Kafka"`:
 
 ```csharp
 // Module composition root
-services.AddKafkaEventBus(config);
+services.AddKafkaEventBus();    // binds the EventBus:Kafka section; pass a configure callback to override
 ```
 
 ### Publishing Events
@@ -56,7 +56,7 @@ await _bus.PublishAsync(new ProductCreatedIntegrationEvent(product.Id));
 public sealed class ProductCreatedConsumer
     : IIntegrationEventHandler<ProductCreatedIntegrationEvent>
 {
-    public async Task HandleAsync(ProductCreatedIntegrationEvent @event)
+    public async Task HandleAsync(ProductCreatedIntegrationEvent @event, CancellationToken ct)
     {
         // Process the event (must be idempotent — delivery is at-least-once)
     }
@@ -76,10 +76,11 @@ public sealed class ProductCreatedConsumer
 ## Topic Naming
 
 ```
-{TopicPrefix}.{Type.FullName}
+{TopicPrefix}.{wire name}
 
-Example (prefix "modulus"):
-modulus.MyApp.Modules.Catalog.Application.IntegrationEvents.ProductCreatedIntegrationEvent
+The wire name is the event's `[IntegrationEvent]` name (see [Events](events)). Example (prefix "modulus"),
+for an event declared with `[IntegrationEvent<CatalogArea>]` on `ProductCreatedIntegrationEvent`:
+modulus.catalog.product-created.v1
 ```
 
 ## See Also

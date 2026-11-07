@@ -22,7 +22,7 @@ internal sealed class UiAddAuthCommand : Command<UiAddAuthCommand.Settings>
         s.Apply();
         return CommandRunner.Run(() => UiPageScaffold.Run(
             UiPageScaffold.Recovery, "ui/AuthRecoveryController", "AuthRecoveryController.cs", s.Engine, s.Output, "password recovery pages",
-            callsApi: true));
+            callsApi: true, anonymous: true));
     }
 }
 

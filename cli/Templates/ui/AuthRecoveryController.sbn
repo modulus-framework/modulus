@@ -1,10 +1,11 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Modulus.Core.Abstractions.Security;
 
 namespace {{ namespace }};
 
 /// <summary>Serves the password recovery pages; they call the /account/* endpoints of Modulus.Identity.</summary>
-[AllowAnonymous]
+[AllowAnonymous, Loosened("Password recovery pages: a signed-out person must reach them to reset a forgotten password")]
 public class AuthRecoveryController : Controller
 {
     [HttpGet("/auth/forgot-password")]

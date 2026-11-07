@@ -87,9 +87,48 @@ const features = [
     ),
   },
   {
+    title: 'Service Edges',
+    description:
+      'Backends for frontends per client (web, mobile, partner), gRPC, GraphQL, realtime push and signed webhooks.',
+    icon: (
+      <>
+        <circle cx="5" cy="6" r="2.5" />
+        <circle cx="19" cy="6" r="2.5" />
+        <circle cx="12" cy="18" r="2.5" />
+        <path d="M7 7.5l3.5 8" />
+        <path d="M17 7.5l-3.5 8" />
+      </>
+    ),
+  },
+  {
+    title: 'Security Model',
+    description:
+      'Companies as tenants with membership checks, closed-by-default endpoints, scoped grants, step-up sign-in and a hash-chained audit log.',
+    icon: (
+      <>
+        <rect x="5" y="11" width="14" height="9" rx="2" />
+        <path d="M8 11V8a4 4 0 018 0v3" />
+        <path d="M12 15v2" />
+      </>
+    ),
+  },
+  {
+    title: 'Analytics',
+    description:
+      'Versioned datasets with masking, consent and quality checks, sent to ClickHouse, Parquet, Apache Doris or the module bus.',
+    icon: (
+      <>
+        <path d="M4 20V10" />
+        <path d="M10 20V4" />
+        <path d="M16 20v-7" />
+        <path d="M22 20H2" />
+      </>
+    ),
+  },
+  {
     title: 'Identity & Auth',
     description:
-      'OpenIddict server with 6 external IdP adapters (Auth0, Keycloak, Azure AD, Okta, etc.).',
+      'OpenIddict server with external IdP adapters, LDAP/AD, SAML, passkeys and SCIM provisioning.',
     icon: (
       <>
         <rect x="4" y="10" width="16" height="10" rx="2" />

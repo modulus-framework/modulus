@@ -43,7 +43,8 @@ The main service registration phase. Each module registers its:
 ```csharp
 public override void ConfigureServices(IServiceCollection services, IConfiguration config)
 {
-    services.AddModuleDatabase<CatalogDbContext>(config);
+    services.AddModuleDatabase<CatalogDbContext>(options =>
+        options.UseSqlite(config.GetConnectionString("Catalog")));
     services.AddMediatorHandlers(typeof(CatalogModule).Assembly);
 }
 ```
@@ -72,7 +73,8 @@ Runs after the host builds. Use this for:
 - Health check registration
 
 ```csharp
-public override async Task InitializeAsync(ModuleContext context)
+public override async Task InitializeAsync(
+    ModuleContext context, CancellationToken cancellationToken = default)
 {
     var db = context.ServiceProvider.GetRequiredService<CatalogDbContext>();
     await db.Database.MigrateAsync();
@@ -86,7 +88,7 @@ public override async Task InitializeAsync(ModuleContext context)
 Runs in **reverse registration order** when the application stops:
 
 ```csharp
-public override async Task ShutdownAsync()
+public override async Task ShutdownAsync(CancellationToken cancellationToken = default)
 {
     // Cleanup resources
     // Flush buffers
@@ -121,7 +123,8 @@ The execution order is:
 `InitializeAsync` receives a `ModuleContext` with access to:
 
 ```csharp
-public override async Task InitializeAsync(ModuleContext context)
+public override async Task InitializeAsync(
+    ModuleContext context, CancellationToken cancellationToken = default)
 {
     // Service provider for resolving services
     var services = context.ServiceProvider;

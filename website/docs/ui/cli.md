@@ -1,267 +1,66 @@
 ---
-sidebar_position: 7
+title: "CLI and the admin starter"
+description: "The modulus ui commands that scaffold pages, CRUD, the admin starter, auth pages, charts, languages and themes into a Modulus web app."
+sidebar_position: 13
 ---
 
-# The `ui` Commands
+The `modulus ui` commands add UI to a Modulus web app: pages, CRUD screens, the admin starter, auth pages, charts and themes. They read the app's engine from `.modulus.json`, which `modulus app --ui-engine` writes, or you can pass `--engine mvc`, `--engine razor-pages` or `--engine blazor`. Fluid is not scaffolded yet.
 
-The `modulus ui` commands add pages, components and themes to an app that has a UI. They write files into the app, using the templates in the `Synvro.Modulus.Ui.Templates` package, for the app's engine.
+Every command accepts `--dry-run`, `--force`, `--json`, `-v`, `-q` and `-o <app root>`. Use `--dry-run` first to see the files a command would write.
 
-## Engine and location
-
-Every command accepts two options:
-
-| Option | Meaning |
-|---|---|
-| `--engine` | `mvc`, `razor-pages` or `blazor`. The default is the engine recorded in `.modulus.json`, which `modulus app` writes. |
-| `-o, --output` | The app's root folder. The default is the current directory. |
-
-Commands that build a page for an entity also take `--module`, for when the entity name exists in more than one module.
+## Start a web app with UI
 
 ```bash
-modulus ui add-admin --engine blazor
+modulus app --kind webapp+api --ui-engine mvc     # or razor-pages
 ```
 
-## Command reference
+This builds a web project on the Modulus UI framework: `AddModulusMvc`, the `_ModulusLayout` shell, static assets, an auth frame for the sign-in pages, and a rule that every page needs a signed-in user except `/Account`. `fluid` and `none` have page templates but no app host yet, so `modulus app` refuses them for a web app.
 
-| Command | What it adds |
-|---|---|
-| [`ui theme`](#themes) | Named themes: create, set, list, export |
-| [`ui add-component`](#ui-add-component) | Reusable components (alert, card, data-table, ...) |
-| [`ui add-admin`](#ui-add-admin) | The admin starter: dashboards, users, roles, tenants, notifications, audit, settings, profile |
-| [`ui add-auth`](#ui-add-auth) | Forgot-password and reset-password pages |
-| [`ui add-2fa`](#ui-add-2fa) | A two-factor page |
-| [`ui add-session-manager`](#ui-add-session-manager) | A page listing the signed-in user's sessions |
-| [`ui add-chart`](#ui-add-chart) | A chart page with sample data |
-| [`ui add-i18n`](#ui-add-i18n) | Languages and request localization |
-| [`ui add-assistant`](#ui-add-assistant) | The embedded AI assistant (Razor Pages and MVC) |
-| [`ui create-dashboard`](#ui-create-dashboard) | A dashboard page: overview, analytics, reports or audit |
-| [`ui create-crud`](#ui-create-crud) | List, create, edit and delete pages for an entity |
-| [`ui create-form-from-entity`](#ui-create-form-from-entity) | A create and edit form from an entity's properties |
-| [`ui create-permission-matrix`](#ui-create-permission-matrix) | A role and permission grid for an entity |
-| [`ui audit`](#ui-audit) | An accessibility scan of the pages |
+## Commands
 
-Run `modulus ui <command> --help` for the full option list of your version.
+| Command | Adds |
+| --- | --- |
+| `ui add-component <names…> \| --all \| --list` | 85 components in nine groups: Inputs (auto-complete, button, cascader, checkbox, checkbox-group, color-picker, date-picker, date-range-picker, form-group, form-input, input-number, money-input, otp-input, radio-group, rate, search-input, segmented, select, slider, switch, tag-input, textarea, time-picker, transfer, tree-select, upload), Data display (avatar, badge, calendar, carousel, collapse, countdown, data-table, descriptions, image, list, popover, qr-code, stat-card, statistic, status-badge, tag, timeline, tooltip, tree), Navigation (back-top, breadcrumb, dropdown, menu, page-header, pagination, steps, tabs), Layout (card, divider, grid, space, splitter), Feedback (alert, drawer, empty-state, modal, popconfirm, progress, result, skeleton, spinner), Documents (document, pdf-viewer, spreadsheet), Editors (code-editor, rich-text-editor), Data grids (data-grid, import-wizard, pivot-grid) and Pro (file-manager, flow-editor, chat, approval-card, document-upload, gantt, kanban, query-builder, scheduler, schema-form). Run `--list` for descriptions. |
+| `ui create-dashboard <overview\|analytics\|reports\|audit> [--module]` | A dashboard page. |
+| `ui create-form-from-entity <Entity> [--module]` | A create and edit form. Its fields come from the public properties of the entity class. |
+| `ui add-admin [--pages a,b] [--engine] [--folder Admin] [--no-menu]` | The admin dashboard starter: 14 pages (dashboard, analytics, reports, users, roles, tenants with settings and members, settings, audit log, system health, profile, notifications and preferences). For MVC it adds an `AdminController`, and a `_ViewStart.cshtml` if the app has none. It also adds `AddModulusAdminUi()` with the matching menu. `--pages` limits both the files and the menu. The pages read data through `Modulus.Ui.Abstractions.Admin` services and show sample data until you register your own. They need a signed-in user. |
+| `ui add-auth` | Forgot-password and reset-password pages (`/auth/forgot-password`, `/auth/reset-password`). |
+| `ui add-2fa` | The two-factor page (`/auth/two-factor`): authenticator setup, recovery codes, and turning it off. |
+| `ui add-session-manager` | Sessions and recent sign-ins (`/auth/sessions`). |
+| `ui add-chart --type line\|column\|donut\|heatmap\|radar\|candlestick\|sankey\|org` | A chart page (`/charts/<type>`) built on the framework's chart components, with sample data to replace. |
+| `ui add-i18n --languages en,es,fr` | Sets `Modulus:Theme:Cultures` (the first is the default) and adds `app.UseModulusLocalization()`. With two or more languages the settings panel shows a language picker. |
+| `ui audit [--level A\|AA\|AAA] [--format json\|markdown\|html] [--out-file f] [--fail-on-issues]` | A static accessibility scan of every `.cshtml`, `.razor` and `.html` file under `src`. It checks seven rules, all WCAG level A: image alt text, form labels, button and link names, keyboard access, page language, table headers and positive tabindex. It does not check colour contrast or focus order, and it reads the markup, not the running page. |
+| `ui create-permission-matrix <Entity> [--module] [--roles Admin,Sales] [--permissions a:b:c,...]` | A role by permission matrix at `/permissions/<entity>`. It reads and changes grants through the `/authorization/grants` endpoints, so the host needs `MapModulusAuthorizationManagement`. |
+| `ui create-crud <Entity> [--module] [--engine razor-pages\|blazor]` | List, create and edit, and delete pages (`/<entities>`) over the entity's API, through a typed `<Entity>ApiClient`, plus a menu entry. Needs a `webapp+api` app, with `Api:BaseUrl` set in the web project. |
+| `ui add-assistant` | Hosts the AI platform's embedded assistant, disabled by default. It needs the SDK script under `wwwroot/lib/ai-sdk/`. Razor Pages and MVC. |
+| `ui theme create <name> [--base tabler\|minimal] [--colors]` | `Themes/<name>/theme.json` and `variables.css`. |
+| `ui theme set <name>` | Writes the theme to `Modulus:Theme` in `appsettings.json`. |
+| `ui theme list` | Lists the app's themes, and marks the active one. |
+| `ui theme export <name> --format css\|scss\|tailwind\|json` | The theme in another format. |
 
-## Themes
+The auth pages call the `/account/*` endpoints of Modulus.Identity on the same host. MVC gets a controller beside each view; Razor Pages and Blazor keep their route in the page.
 
-### `ui theme create`
+## Packages
 
-Creates a theme in the app's `Themes` folder from a base and a brand colour.
+The CLI reads the packages from three places, in this order:
 
-```bash
-modulus ui theme create corporate --colors blue
-modulus ui theme create mono --base minimal --colors "#0b7285"
-```
+1. `~/.modulus/cache`: templates unpacked from the package, unpacked again when the local `.nupkg` is newer.
+2. `~/.modulus/feed`, or the folder named by `MODULUS_LOCAL_FEED`: a local feed, used until the packages are on nuget.org.
+3. nuget.org, for any package that is in neither.
 
-| Option | Meaning |
-|---|---|
-| `--base` | `tabler` (the default) or `minimal` |
-| `--colors` | A brand colour: `#rrggbb` or a preset (`blue`, `indigo`, `purple`, `pink`, `red`, `orange`, `green`, `teal`) |
+To fill the local feed from a copy of the repository, run `dotnet pack Modulus.slnx -c Release -o ~/.modulus/feed`. Delete the feed once the packages are published.
 
-### `ui theme set`
+## Update notices
 
-Makes a theme the app's active theme. It writes `Modulus:Theme` in `appsettings.json`.
+When a newer `modulus` CLI is on nuget.org, the command you run ends with a short notice and the update command. The check asks nuget.org at most once a day and never delays a command. It stays silent for `--json`, `--quiet`, redirected output and CI. To turn it off, set `MODULUS_NO_UPDATE_CHECK=1`. Run `modulus doctor` to see the installed and latest versions at any time.
 
-```bash
-modulus ui theme set corporate
-```
+## Not built yet
 
-### `ui theme list`
+`add-chat`, `add-form-builder`, `add-collaboration`, `add-pwa`, `create-user-dashboard` (Identity has no endpoint that lists users) and `add-access-review`. They need template content or backend endpoints that do not exist yet. Self-service registration is not offered, because Identity supports only invitations.
 
-Lists the app's themes and marks the active one.
+## Known issues
 
-### `ui theme export`
-
-Writes a theme as CSS variables, SCSS variables, a Tailwind config or JSON.
-
-```bash
-modulus ui theme export corporate --format tailwind
-```
-
-| Option | Meaning |
-|---|---|
-| `--format` | `css`, `scss`, `tailwind` or `json` |
-| `--out-file` | The file to write. The default is `<name>.<format>` in the current directory. |
-
-## Components and pages
-
-### `ui add-component`
-
-Adds reusable components to the app.
-
-```bash
-modulus ui add-component --list
-modulus ui add-component alert card data-table
-modulus ui add-component --all
-```
-
-`--all` adds every component the template package ships and lists the ones it does not have yet, so it keeps working while the CLI is newer than the pinned Modulus UI package (`MODULUS_UI_VERSION` points the CLI at another version). Naming a component the package lacks, such as `tag-input`, `time-picker` or `popconfirm` on a package that does not have it, stops with a message that says which version to use.
-
-
-Name the components to add, or pass `--all`. Use `--list` to see them all.
-
-### `ui add-admin`
-
-Scaffolds the admin starter and its menu: a dashboard, users, roles, tenants, notifications, notification preferences, the audit log, settings, a health page, a profile, and the analytics and reports pages.
-
-```bash
-modulus ui add-admin
-modulus ui add-admin --pages dashboard,users,roles
-modulus ui add-admin --engine blazor --folder Backoffice
-```
-
-| Option | Meaning |
-|---|---|
-| `--pages` | Pages to add, comma-separated. The default is all of them. Names: `dashboard`, `analytics`, `reports`, `users`, `roles`, `tenants`, `settings`, `audit`, `health`, `profile`, `notifications`, `notification-preferences`. |
-| `--folder` | The folder (`Views`, `Pages` or `Components`) the pages go in |
-| `--no-menu` | Do not add the menu registration to `Program.cs` |
-
-The command adds `AddModulusAdminUi()` to `Program.cs` unless `--no-menu` is set. Admin pages are open to anyone who can reach the host when the app has no sign-in, so the command warns about that.
-
-### `ui add-auth`
-
-Adds the forgot-password and reset-password pages. They call the identity module's `/account` endpoints.
-
-```bash
-modulus ui add-auth --engine blazor
-```
-
-### `ui add-2fa`
-
-Adds a two-factor page: set up an authenticator app, show recovery codes, and turn two-factor sign-in off.
-
-### `ui add-session-manager`
-
-Adds a page that lists the signed-in user's sessions, with revoke for one session or all of them, and the recent sign-ins.
-
-### `ui add-chart`
-
-Adds a chart page with sample data.
-
-```bash
-modulus ui add-chart --type donut
-modulus ui add-chart --type line --engine blazor
-```
-
-`--type` is `line`, `column`, `donut`, `heatmap`, `radar`, `candlestick`, `sankey` or `org` (an org chart). The last four need a Modulus UI template package newer than 1.8.2; with an older template package the command says so and writes nothing.
-
-### `ui add-i18n`
-
-Sets the app's languages (`Modulus:Theme:Cultures`) and wires request localization. With two or more languages, a picker appears in the settings panel.
-
-```bash
-modulus ui add-i18n --languages en,es,fr
-```
-
-The first language is the default. Use culture names such as `fr-FR` when you need a region.
-
-### `ui add-assistant`
-
-Hosts the AI platform's embedded assistant: the `/ai/session` endpoint, the `ai:use` permission, the `Ai:Host` settings and a layout partial. It supports Razor Pages and MVC.
-
-## Data pages
-
-### `ui create-dashboard`
-
-Scaffolds a dashboard page for the app's engine. The `<template>` is one of `overview`, `analytics`, `reports` or `audit`.
-
-```bash
-modulus ui create-dashboard analytics
-modulus ui create-dashboard reports --module Admin --engine blazor
-```
-
-For MVC the command also writes a controller at the dashboard's route, which passes the figures from `IMetricsSource` or `IAuditTrail` to the view, so the page renders with data from the start.
-
-### `ui create-crud`
-
-Creates list, create, edit and delete pages for an entity, over its API through a typed client. Create the API first with `modulus generate-crud`.
-
-```bash
-modulus generate-crud Product --module Catalog
-modulus ui create-crud Product --module Catalog --engine blazor
-```
-
-| Engine | Files |
-|---|---|
-| `mvc` | `Controllers/<Module>/<Entities>Controller.cs`, `Views/<Entities>/Index.cshtml`, `Create.cshtml` and `Edit.cshtml` (both with `_Form.cshtml`) |
-| `razor-pages` | `Pages/<Module>/<Entities>/`: `Index.cshtml` (the list, with `_List.cshtml`), `Create.cshtml` and `Edit.cshtml` (both with `_Form.cshtml`), each page with its model, and `<Entity>ViewModels.cs` |
-| `blazor` | `Components/Pages/<Module>/<Entities>/`: `Index.razor`, `Create.razor` and `Edit.razor` (both with the `<Entity>Editor.razor` form component) |
-
-Every engine also gets the typed client `Services/ApiClients/<Entity>ApiClient.cs`, registered in `Services/ApiClientExtensions.cs`,
-and the menu entry `Components/Navigation/Menu/<Entities>MenuContributor.cs`. The Web project finds menu contributors by scan, so
-nothing is added to `Program.cs`.
-
-The entity's API must exist, because the pages call it through the client.
-
-### `ui create-form-from-entity`
-
-Creates a create and edit form whose fields come from the entity's properties.
-
-```bash
-modulus ui create-form-from-entity Order --module Orders --engine blazor
-```
-
-The command adds a reference to the module's Application project, so the form can use the module's DTOs. For Blazor, create the entity's client first with `ui create-crud`. The command stops with a message if the client is missing.
-
-### `ui create-permission-matrix`
-
-Scaffolds a role and permission grid for an entity. A tick grants a permission and a cleared box revokes it. The grid uses the authorization grants endpoint.
-
-```bash
-modulus ui create-permission-matrix Order
-modulus ui create-permission-matrix Order --roles Admin,Sales --permissions orders:order:manage,orders:order:export
-```
-
-| Option | Meaning |
-|---|---|
-| `--roles` | Roles to show as rows. The default is `Admin,Manager,User`. |
-| `--permissions` | Permissions to show as columns. The default is the entity's `<module>:<route>:manage`. |
-
-## Accessibility
-
-### `ui audit`
-
-Scans the app's pages for accessibility problems: missing alt text, labels, names, a missing `lang` attribute, and similar. The scan covers the app's `src` folder.
-
-```bash
-modulus ui audit
-modulus ui audit --format markdown --fail-on-issues
-```
-
-| Option | Meaning |
-|---|---|
-| `--level` | The WCAG level to check: `A`, `AA` or `AAA`. Every rule so far is level A. |
-| `--format` | A report as `json`, `markdown` or `html`, written next to `--out-file` |
-| `--out-file` | The report file. The default is `accessibility-audit.<format>` in the current directory. |
-| `--fail-on-issues` | Exit with code 1 when issues are found, for CI |
-
-## Sign-in and the API host
-
-A `webapp+api` app signs users in through the Web host's BFF session (`/bff/login`, `/bff/logout`). Three things
-changed in how the generated apps wire this:
-
-- **Return URLs.** The Web BFF client's `AllowedReturnOrigins` lists the Web origin. A `returnUrl` on the sign-in
-  page is honoured only when it stays on one of those origins; anything else falls back to the home page.
-- **External providers.** With an external OpenID Connect provider (`--auth keycloak`, Auth0, Okta, Entra ID and
-  others) the Web host sends the browser to `/bff/login` and the provider's own login page answers. The sign-in
-  page reports a service outage with its own message, distinct from a wrong password.
-- **Sign-in rate limiting.** The Web host limits sign-in attempts per client address. A client that exceeds the
-  limit gets `429 Too Many Requests`.
-
-The API host is set up in files, not in one `Program.cs`. Its `Program.cs` reads as a composition of named steps
-(`AddApiTokenServer`, `AddApiModules`, `AddApiCore`, `AddApiAuthentication`, `AddApiOpenApi`, `AddApiFeatures`,
-`InitializeApiAsync`, `UseApiPipeline`, `MapApiEndpoints`), and each step lives in its own folder: `Composition/`,
-`Configuration/`, `Security/`, `OpenApi/`, `Hosting/`, `Middleware/` and `Endpoints/`. The CLI reads the whole host
-when it needs to know what is wired, so `modulus add-webhooks`, `add-realtime` and the other `add-*` commands find
-their registrations wherever they were written.
-
-The CLI detects whether the API host has authentication by reading the whole host, not only `Program.cs`, so the
-`app.UseAuthentication()` call in a setup file counts. With `--auth none` no scheme is registered: endpoints need a
-signed-in user by default, so the API answers `500` until you add one. `modulus app` warns about this when you
-generate such an app.
-
-## Next steps
-
-- [Getting started](./getting-started): create an app and run it
-- [Components](./components): what the generated pages use
-- [Theming and localization](./theming): the theme options
+- The pages that use identity (`add-auth`, `add-2fa`, `add-session-manager`, the permission matrix) call same-origin `/account/*` and `/authorization/*` endpoints. In a `webapp+api` app the web host forwards only the recovery routes.
+- The `mvc` engine adds MVC to the web host for the landing page only: `HomeController` with `Views/Home/Index.cshtml`, plus `Views/_ViewStart.cshtml` and `Views/_ViewImports.cshtml`. The sign-in and status pages stay Razor Pages. Add your own controllers and views beside them.
+- The `admin-users`, `admin-settings`, `module-home` and `system-health` templates exist, but no command scaffolds them yet.
+- The `_content` assets of the UI packages are served by `dotnet run` only in the Development environment. A published app carries them in `wwwroot`.

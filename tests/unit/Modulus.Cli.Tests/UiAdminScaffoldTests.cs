@@ -94,8 +94,8 @@ public sealed class UiAdminScaffoldTests
             var program = Path.Combine(dir, "Program.cs");
             File.WriteAllText(program, "var builder = WebApplication.CreateBuilder(args);\nbuilder.Services.AddModulusMvc();\n\nvar app = builder.Build();\napp.Run();\n");
 
-            UiHostWiring.EnsureAdminMenu(program, "builder.Services.AddModulusAdminUi();").Should().HaveCount(1);
-            UiHostWiring.EnsureAdminMenu(program, "builder.Services.AddModulusAdminUi();").Should().BeEmpty();
+            UiHostWiring.EnsureAdminMenu(program, "builder.Services.AddModulusAdminUi();", "Modulus.AspNetCore.Mvc").Should().HaveCount(1);
+            UiHostWiring.EnsureAdminMenu(program, "builder.Services.AddModulusAdminUi();", "Modulus.AspNetCore.Mvc").Should().BeEmpty();
 
             var text = File.ReadAllText(program);
             text.Split("AddModulusAdminUi").Length.Should().Be(2);

@@ -95,14 +95,15 @@ public sealed class ProductsModule : ModulusModule
         services.AddMediatorHandlers(typeof(IUnitOfWork).Assembly);
     }
 
-    public override async Task InitializeAsync(ModuleContext context)
+    public override async Task InitializeAsync(
+    ModuleContext context, CancellationToken cancellationToken = default)
     {
         // Run after host builds (seeding, migrations, etc.)
         var db = context.ServiceProvider.GetRequiredService<ProductsDbContext>();
         await db.Database.MigrateAsync();
     }
 
-    public override async Task ShutdownAsync()
+    public override async Task ShutdownAsync(CancellationToken cancellationToken = default)
     {
         // Cleanup on graceful shutdown
     }

@@ -9,16 +9,20 @@ Modulus provides file storage abstraction with local and cloud providers.
 ## Setup
 
 ```csharp
-services.AddModulusStorage(config);
+services.AddFileStorage(config);   // binds the Storage section
 ```
 
 ## Providers
 
 | Provider | Package | Configuration |
 |----------|---------|---------------|
-| **Local** | `Modulus.Platform` | `Storage:BasePath: "./uploads"` |
-| **S3** | `Modulus.Storage.S3` | AWS credentials |
-| **Azure Blobs** | `Modulus.Storage.AzureBlobs` | Connection string |
+| **Local** | `Modulus.Platform` | `Storage:Provider: "Local"`, `Storage:BasePath: "./uploads"` |
+| **S3** | `Modulus.Storage.S3` | `services.AddS3FileStorage(config)`; `Storage:BucketName`, `Region`, `Endpoint`, `ForcePathStyle` (for MinIO and Ceph) |
+| **Azure Blobs** | `Modulus.Storage.AzureBlobs` | `services.AddAzureBlobFileStorage(config)`; `Storage:ConnectionString` |
+
+Each provider reads the `Storage` section. Register one provider per application. Use `IsolateTenants` (default: on once multi-tenancy is registered) to keep each company's files under its own prefix.
+
+`Storage:MaxUploadBytes` limits uploads through `UploadAsync` (default 100 MB). Presigned uploads are not limited by it; S3 presigned POST uploads take their own size limit.
 
 ## Usage
 

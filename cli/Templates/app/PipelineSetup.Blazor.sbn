@@ -9,6 +9,9 @@ internal static class PipelineSetup
     {
         app.UseModulusHardening();
         app.UseHttpsRedirection();
+        // Every error status re-runs the error page (Components/Pages/Error.razor), so a visitor never sees an empty response.
+        app.UseExceptionHandler("/Error/500");
+        app.UseStatusCodePagesWithReExecute("/Error/{0}");
         app.UseAntiforgery();
 {{ if use_auth }}        app.UseRateLimiter();
         app.UseAuthentication();

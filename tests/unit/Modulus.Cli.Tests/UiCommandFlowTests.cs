@@ -86,7 +86,7 @@ public sealed class UiCommandFlowTests : IDisposable
         }
         Run("ui", "add-chart", "--type", "pie").Should().Be(1);
 
-        Run("ui", "add-auth").Should().Be(1, "the pages exist already");
+        Run("ui", "add-auth").Should().Be(0, "the pages exist already, so there is nothing to add");
         Run("ui", "add-auth", "--force").Should().Be(0);
     }
 

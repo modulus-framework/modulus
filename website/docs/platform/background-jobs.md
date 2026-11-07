@@ -52,7 +52,7 @@ There is no options class.
   them.
 - **Everything is in-memory**: delayed/recurring work is lost on shutdown, and
   recurring jobs fire **once per replica per tick**. Production logs a warning
-  pointing at Quartz/Hangfire. For durable, clustered scheduling use the
+  pointing at Quartz. For durable, clustered scheduling use the
   Quartz package (`Modulus.BackgroundJobs.Quartz`).
 
 ## See Also

@@ -28,7 +28,12 @@ internal static class UiHostWiring
         var changed = new List<string>();
         if (!source.Contains("AddControllersWithViews(") && !source.Contains("AddControllers("))
         {
-            text = InsertBefore(text, "var app = builder.Build();", "builder.Services.AddControllersWithViews();");
+            // The Web host signs in through the API's token server. Modulus.Identity arrives with the API project reference, and its
+            // token controllers (/connect/*) would otherwise be served here without the password validator they need.
+            text = InsertBefore(text, "var app = builder.Build();",
+                "builder.Services.AddControllersWithViews().ConfigureApplicationPartManager(parts => parts.ApplicationParts" +
+                ".Where(p => p is Microsoft.AspNetCore.Mvc.ApplicationParts.AssemblyPart part && part.Assembly.GetName().Name == \"Modulus.Identity\")" +
+                ".ToList().ForEach(p => parts.ApplicationParts.Remove(p)));");
             changed.Add("AddControllersWithViews()");
         }
 
@@ -47,13 +52,26 @@ internal static class UiHostWiring
     /// Adds <paramref name="line"/> (the <c>AddModulusAdminUi</c> statement) before the app is built, so the admin pages get their menu.
     /// Returns the line it added, or an empty list when the host already calls <c>AddModulusAdminUi</c>.
     /// </summary>
-    public static IReadOnlyList<string> EnsureAdminMenu(string programPath, string line)
+    public static IReadOnlyList<string> EnsureAdminMenu(string programPath, string line, string engineNamespace)
     {
         if (HostSource(programPath).Contains("AddModulusAdminUi(", StringComparison.Ordinal))
             return [];
-        File.WriteAllText(programPath, InsertBefore(File.ReadAllText(programPath), "var app = builder.Build();", line));
+        var text = EnsureUsing(File.ReadAllText(programPath), engineNamespace);
+        File.WriteAllText(programPath, InsertBefore(text, "var app = builder.Build();", line));
         return [line];
     }
+
+    /// <summary>Adds <c>using &lt;ns&gt;;</c> at the top of the file when it is not already imported.</summary>
+    internal static string EnsureUsing(string text, string ns)
+    {
+        if (text.Contains($"using {ns};", StringComparison.Ordinal))
+            return text;
+        return $"using {ns};{Environment.NewLine}{text}";
+    }
+
+    /// <summary>The namespace of the <c>AddModulusAdminUi</c> extension for a UI engine.</summary>
+    public static string AdminUiNamespace(string engine) =>
+        engine == "blazor" ? "Modulus.Blazor" : "Modulus.AspNetCore.Mvc";
 
     /// <summary>
     /// Wires the forwarding controller into a split Web host: writes <see cref="ProxyControllerFile"/> into <c>Controllers/</c>,
@@ -88,7 +106,11 @@ internal static class UiHostWiring
     /// Adds the anonymous recovery routes to the allowlist's <c>endpoints</c> array, skipping any already listed. The file is
     /// edited as text because it carries comments. Returns true when it changed.
     /// </summary>
-    internal static bool AddAllowlistEntries(string path)
+    internal static bool AddAllowlistEntries(string path) =>
+        AddAllowlistEntries(path, AnonymousRoutes.Select(r => (r.Route, (string?)"POST", r.Reason)));
+
+    /// <summary>Adds loosening entries (route, optional HTTP method, reason) to the allowlist's <c>endpoints</c> array, skipping routes already listed.</summary>
+    internal static bool AddAllowlistEntries(string path, IEnumerable<(string Route, string? Method, string Reason)> routes)
     {
         var text = File.ReadAllText(path);
         var key = text.IndexOf("\"endpoints\"", StringComparison.Ordinal);
@@ -99,11 +121,12 @@ internal static class UiHostWiring
             return false;
 
         var entries = new List<string>();
-        foreach (var (route, reason) in AnonymousRoutes)
+        foreach (var (route, method, reason) in routes)
         {
             if (text.Contains($"\"route\": \"{route}\"", StringComparison.Ordinal))
                 continue;
-            entries.Add($"\n    {{ \"route\": \"{route}\", \"methods\": [\"POST\"], \"reason\": \"{reason}\" }}");
+            var methods = method is null ? string.Empty : $", \"methods\": [\"{method}\"]";
+            entries.Add($"\n    {{ \"route\": \"{route}\"{methods}, \"reason\": \"{reason}\" }}");
         }
 
         if (entries.Count == 0)

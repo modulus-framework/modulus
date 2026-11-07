@@ -10,7 +10,7 @@ Modulus provides in-memory caching with tag-based invalidation
 ## Setup
 
 ```csharp
-services.AddModulusCaching();   // in-memory default, no config
+services.AddModulusCaching();   // in-memory default, no configuration needed
 ```
 
 ## Usage

@@ -4,136 +4,89 @@ sidebar_position: 3
 
 # Events
 
-Modulus supports two types of events: domain events and integration events.
+Modulus has two kinds of events. **Domain events** happen inside one module and are dispatched in the same process. **Integration events** cross module and service boundaries and are delivered through the module bus, the transactional outbox and an optional broker.
 
 ## Domain Events
 
-Domain events represent things that happened within a module:
+A domain event implements `IDomainEvent`. An aggregate records one with `AddDomainEvent`, and the framework dispatches it to every `IDomainEventHandler<TEvent>` when the unit of work saves.
 
 ```csharp
-public sealed record ProductCreatedEvent : IDomainEvent
+public sealed record ProductCreatedDomainEvent(Guid ProductId, string Name) : IDomainEvent;
+
+public sealed class Product : AggregateRoot
 {
-    public Guid ProductId { get; init; }
-    public string Name { get; init; } = default!;
-    public decimal Price { get; init; }
-}
-```
-
-### Publishing Domain Events
-
-```csharp
-public sealed class CreateProductHandler : ICommandHandler<CreateProduct, ProductDto>
-{
-    private readonly IDomainEventDispatcher _dispatcher;
-
-    public async Task<ProductDto> HandleAsync(CreateProduct command, CancellationToken ct)
+    public Product(string name, decimal price)
     {
-        var product = new Product(command.Name, command.Price);
-
-        // Domain event is dispatched after SaveChanges
-        product.AddDomainEvent(new ProductCreatedEvent
-        {
-            ProductId = product.Id,
-            Name = product.Name,
-            Price = product.Price
-        });
-
-        await unitOfWork.SaveChangesAsync(ct);
-        return new ProductDto(product.Id, product.Name, product.Price);
+        Name = name;
+        Price = price;
+        AddDomainEvent(new ProductCreatedDomainEvent(Id, name));
     }
+
+    public string Name { get; private set; }
+    public decimal Price { get; private set; }
 }
 ```
+
+Handlers run inside the save, so a failing domain handler fails the command. Dispatch isolates handlers from each other: one handler throwing does not stop the others, and the failures are reported together.
 
 ## Integration Events
 
-Integration events are published to other modules or services:
+An integration event is the public contract of a module. It is a record that derives from `IntegrationEventBase`, so its wire name follows from the owning module.
 
 ```csharp
-public sealed record ProductCreatedEvent : IIntegrationEvent
-{
-    public Guid ProductId { get; init; }
-    public string Name { get; init; } = default!;
-    public decimal Price { get; init; }
-}
+// The marker names the owning module once.
+public sealed class CatalogArea;
+
+[IntegrationEvent<CatalogArea>]
+public sealed record ProductCreated(Guid ProductId, string Name, decimal Price) : IntegrationEventBase;
 ```
 
-### Publishing Integration Events
+The wire name is derived from the two type names, here `catalog.product-created.v1`. Renaming the event type changes the wire name, so the analyzer rule `MOD0003` and a contract snapshot test in generated apps catch accidental changes. `Version = 2` on the attribute starts a new version when the contract changes.
 
-Integration events are enqueued in the outbox during `SaveChangesAsync`:
+### Publishing
+
+Integration events are published through `IModuleBus`. The default bus runs in-process. A broker bus replaces it when registered after `AddModulusEvents`.
 
 ```csharp
-public sealed class CreateProductHandler : ICommandHandler<CreateProduct, ProductDto>
-{
-    public async Task<ProductDto> HandleAsync(CreateProduct command, CancellationToken ct)
-    {
-        var product = new Product(command.Name, command.Price);
-        unitOfWork.Products.Add(product);
-
-        // This automatically enqueues in the outbox
-        product.AddIntegrationEvent(new ProductCreatedEvent
-        {
-            ProductId = product.Id,
-            Name = product.Name,
-            Price = product.Price
-        });
-
-        await unitOfWork.SaveChangesAsync(ct);
-        return new ProductDto(product.Id, product.Name, product.Price);
-    }
-}
+await moduleBus.PublishAsync(new ProductCreated(product.Id, product.Name, product.Price), ct);
 ```
 
-### Handling Integration Events
+Prefer publishing through the outbox. When an integration event is raised in a `ModuleDbContext`, the context writes it to the outbox table in the same database transaction as the change, so the event is not lost if the process crashes. See [Outbox](./outbox).
+
+### Handling
 
 ```csharp
-public sealed class ProductCreatedHandler
-    : IIntegrationEventHandler<ProductCreatedEvent>
+public sealed class ProductCreatedHandler : IIntegrationEventHandler<ProductCreated>
 {
     private readonly IInventoryService _inventory;
 
-    public async Task HandleAsync(ProductCreatedEvent @event)
-    {
-        await _inventory.InitializeStockAsync(@event.ProductId);
-    }
+    public ProductCreatedHandler(IInventoryService inventory) => _inventory = inventory;
+
+    public Task HandleAsync(ProductCreated @event, CancellationToken ct) =>
+        _inventory.InitializeStockAsync(@event.ProductId, ct);
 }
 ```
 
-### Register Handlers
+Handlers are delivered at least once. Wrap them with the [inbox](./inbox) so a redelivered event is processed only once.
+
+## Registration
+
+`AddModulusEvents` scans the given assemblies. It registers the domain and integration event handlers it finds, and records the integration event types for the registry.
 
 ```csharp
-// Module-level
-services.AddIntegrationEventHandlers(typeof(OrdersModule).Assembly);
+// Program.cs (or a module's ConfigureServices)
+services.AddModulusEvents(typeof(CatalogArea).Assembly, typeof(OrdersArea).Assembly);
+
+// Optional: replace the in-process bus with a broker
+services.AddRabbitMqEventBus();    // or services.AddKafkaEventBus();
 ```
 
-## Event Registry
-
-Events are registered with stable names for serialization:
-
-```csharp
-public override void ConfigureServices(IServiceCollection services, IConfiguration config)
-{
-    services.AddEvents(builder =>
-    {
-        builder.Register<ProductCreatedEvent>("catalog.product.created");
-    });
-}
-```
-
-## In-Process Bus
-
-For same-process event dispatching:
-
-```csharp
-// Program.cs
-builder.Services.AddModulusEvents();
-
-// Publish
-await _bus.PublishAsync(new ProductCreatedEvent { ... });
-```
+Call `AddModulusEvents` once for the host and let each module contribute its own assembly. The registry is shared, so every module's events are known to the broker bindings.
 
 ## See Also
 
-- [Outbox](outbox) — Reliable event publishing
-- [Inbox](inbox) — Idempotent consumption
-- [RabbitMQ](rabbitmq) — External transport
-- [Kafka](kafka) — External transport
+- [Outbox](./outbox): reliable publishing
+- [Inbox](./inbox): idempotent consumption
+- [RabbitMQ](./rabbitmq) and [Kafka](./kafka): external transports
+- [Webhooks](./webhooks): deliver integration events to external endpoints
+- [Sagas](./sagas): long-running processes that react to events

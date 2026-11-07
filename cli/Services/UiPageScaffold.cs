@@ -26,7 +26,7 @@ internal static class UiPageScaffold
 
     public static int Run(IReadOnlyList<UiAuthPage> pages, string controllerTemplate, string controllerFile,
         string? engineOption, string? output, string what, string folder = "Auth", bool sharedController = false, object? model = null,
-        bool callsApi = false)
+        bool callsApi = false, bool anonymous = false)
     {
         var start = Path.GetFullPath(output ?? "./");
         var inventory = ModuleDiscovery.Inventory(start)
@@ -44,6 +44,11 @@ internal static class UiPageScaffold
         var uiDir = Path.GetDirectoryName(inventory.UiProjectPath)!;
         var renderer = new TemplateEngine();
 
+        // Anonymous pages (password recovery) must be reachable while signed out. Razor Pages puts them under /Account, where the
+        // host already allows anonymous access by folder; MVC and Blazor open their routes below.
+        if (anonymous && engine == "razor-pages")
+            folder = "Account";
+
         // Resolve and check everything before writing anything.
         var plan = pages.Select(p => (Page: p,
                 File: UiScaffold.TemplateFile(templates, engine, p.Template)
@@ -55,6 +60,12 @@ internal static class UiPageScaffold
         var controller = engine == "mvc" ? Path.Combine(uiDir, "Controllers", controllerFile) : null;
         // A shared controller (one for all the pages of a kind) is written once and then left alone.
         var existing = plan.Select(x => x.Target).Append(sharedController ? null : controller).OfType<string>().Where(File.Exists).ToList();
+        if (anonymous && plan.All(x => File.Exists(x.Target)) && !Ux.Force)
+        {
+            // The recovery pages were already generated (the Razor Pages app creates them with its sign-in pages).
+            Ux.Info($"{what[..1].ToUpperInvariant()}{what[1..]} are already in this app: {string.Join(", ", existing.Select(f => Path.GetRelativePath(start, f)))}. Nothing to add.");
+            return 0;
+        }
         if (existing.Count > 0 && !Ux.Force)
             throw new InvalidOperationException(
                 $"Already present: {string.Join(", ", existing.Select(f => Path.GetRelativePath(start, f)))}. Pass --force to overwrite.");
@@ -70,6 +81,22 @@ internal static class UiPageScaffold
         {
             renderer.RenderToFile(controllerTemplate, new { Namespace = rootNamespace + ".Controllers" }, controller);
             Ux.Success("Controller added", Path.GetRelativePath(start, controller));
+        }
+
+        // Recovery routes are anonymous on purpose, so the Web host's loosening allowlist must name them (the security guard refuses
+        // to start outside Development otherwise). Razor Pages reaches them through its /Account folder, which is a framework endpoint.
+        if (anonymous && engine != "razor-pages")
+        {
+            var allowlist = Path.Combine(uiDir, "Security", "loosening-allowlist.json");
+            // No method: the page answers GET (the form) and POST (the submit), and the guard matches the route with every method.
+            var routes = pages.Select(p => (p.Route, (string?)null, $"{what}: {p.PageName}")).ToList();
+            if (File.Exists(allowlist))
+            {
+                if (UiHostWiring.AddAllowlistEntries(allowlist, routes))
+                    Ux.Success("Web host updated", Path.GetRelativePath(start, allowlist));
+            }
+            else
+                Ux.Warning($"No Security/loosening-allowlist.json in {Path.GetRelativePath(start, uiDir)}; add {string.Join(", ", pages.Select(p => p.Route))} (GET) to the Web host's allowlist, or it will refuse to start outside Development.");
         }
 
         // The pages' scripts call /account/* and /authorization/* on their own host. On a split app those endpoints are in the

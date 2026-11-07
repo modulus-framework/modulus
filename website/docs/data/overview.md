@@ -54,7 +54,8 @@ Modules register their database in their composition root:
 ```csharp
 public override void ConfigureServices(IServiceCollection services, IConfiguration config)
 {
-    services.AddModuleDatabase<CatalogDbContext>(config);
+    services.AddModuleDatabase<CatalogDbContext>(options =>
+        options.UseSqlite(config.GetConnectionString("Catalog")));
 }
 ```
 

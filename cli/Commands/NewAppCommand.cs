@@ -596,6 +596,14 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
             GenerateBlazorWebPages(webDir, model);
             RenderBlazorWebSetup(webDir, model);
             _templates.RenderToFile("app/ApiClientExtensions.Web", model, Path.Combine(webDir, "Services", "ApiClientExtensions.cs"));
+            // ApiClientExtensions registers these clients whenever the host has an openiddict identity, so the Blazor host renders
+            // them too (the Razor Pages branch below does the same for its pages).
+            if (model.UseAuth && model.Auth == "openiddict")
+            {
+                _templates.RenderToFile("app/PasskeyApiClient.Web", model, Path.Combine(webDir, "Services", "ApiClients", "PasskeyApiClient.cs"));
+                _templates.RenderToFile("app/PasskeyLoginClient.Web", model, Path.Combine(webDir, "Services", "ApiClients", "PasskeyLoginClient.cs"));
+                _templates.RenderToFile("app/AccountApiClient.Web", model, Path.Combine(webDir, "Services", "ApiClients", "AccountApiClient.cs"));
+            }
             _templates.RenderToFile("app/MenuRegistration.Web", model, Path.Combine(webDir, "Composition", "MenuRegistration.cs"));
             RenderNavigationMenu(webDir, model);
             if (!model.NoExample)
@@ -767,6 +775,7 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         _templates.RenderToFile("app/blazor/_Imports.razor", model, Path.Combine(components, "_Imports.razor"));
         _templates.RenderToFile("app/blazor/Layout/MainLayout.razor", model, Path.Combine(components, "Layout", "MainLayout.razor"));
         _templates.RenderToFile("app/blazor/Pages/Home.razor", model, Path.Combine(components, "Pages", "Home.razor"));
+        _templates.RenderToFile("app/blazor/Pages/Error.razor", model, Path.Combine(components, "Pages", "Error.razor"));
         // The static file middleware warns about a missing wwwroot folder. An empty file keeps the folder in git.
         Ux.WriteFile(Path.Combine(webDir, "wwwroot", ".gitkeep"), "");
         if (model.UseAuth)

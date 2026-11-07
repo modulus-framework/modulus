@@ -4,61 +4,57 @@ sidebar_position: 1
 
 # Platform Services Overview
 
-`Modulus.Platform` provides cross-cutting concerns for multi-tenant applications.
+`Modulus.Platform` holds the cross-cutting services a multi-tenant application needs. The core package has no cloud SDKs. Each cloud or external provider is a separate package, so you only pull in the SDKs you use.
 
-## Included Services
+## Included services
 
-| Service | Description |
-|---------|-------------|
-| **Multi-Tenancy** | Per-tenant data isolation and resolution |
-| **Authorization** | Permission-based access control |
-| **Background Jobs** | In-process job queue with Quartz option |
-| **Caching** | In-memory cache with tag-based invalidation |
-| **Storage** | File storage (local/S3/Azure) |
-| **SignalR** | Real-time communication hub |
+| Service | Package | Page |
+|---------|---------|------|
+| Multi-tenancy (resolution, membership, tenant store) | `Modulus.Platform` (store in `Modulus.MultiTenancy.EntityFrameworkCore`) | [Multi-Tenancy](./multi-tenancy) |
+| Authorization (permissions, grants, scopes, approvals) | `Modulus.Platform`, `Modulus.Authorization.EntityFrameworkCore` | [Authorization](./authorization) |
+| Background jobs (in-process, or Quartz for durable clusters) | `Modulus.Platform`, `Modulus.BackgroundJobs.Quartz` | [Background Jobs](./background-jobs) |
+| Caching (memory, FusionCache hybrid, Redis) | `Modulus.Platform`, `Modulus.Caching.Redis` | [Caching](./caching) |
+| File storage (local, S3, Azure Blobs) | `Modulus.Platform`, `Modulus.Storage.S3`, `Modulus.Storage.AzureBlobs` | [Storage](./storage) |
+| Real-time hub (SignalR) | `Modulus.Platform`, `Modulus.SignalR.Backplane` | [SignalR](./signalr) |
+| Realtime push (SSE and SignalR) | `Modulus.Realtime` | [Realtime](./realtime) |
+| Backends for frontends | `Modulus.Bff` | [BFF](./bff) |
+| gRPC and GraphQL | `Modulus.Grpc`, `Modulus.GraphQL` | [gRPC](./grpc), [GraphQL](./graphql) |
+| Media, localization, notifications, secrets | see [Platform add-ons](./add-ons) | [Platform add-ons](./add-ons) |
 
-## Setup
+## Registration
 
-```bash
-modulus app MyApp  # Select features interactively
-```
-
-Or register individually:
+Register the services you need in the host's `Program.cs`. The sections below show the main entry points. Each page has the full options.
 
 ```csharp
-services.AddModulusMultiTenancy(config);
-services.AddModulusAuthorization(config);
-services.AddModulusBackgroundJobs(config);
-services.AddModulusCaching(config);
-services.AddModulusStorage(config);
-services.AddModulusSignalR(config);
+builder.Services.AddMultiTenancy(t => t
+    .UseJwtClaimResolver()
+    .UseHeaderResolver()
+    .RequireMembership());
+
+builder.Services.AddModulusAuthorization();
+builder.Services.AddBackgroundJobs(typeof(Program).Assembly);
+builder.Services.AddModulusCaching();
+builder.Services.AddFileStorage(builder.Configuration);
+builder.Services.AddModulusSignalR(builder.Configuration);
 ```
+
+`AddModulusFusionCache(configuration)` replaces the memory cache with a hybrid cache when you need stampede protection or a Redis layer.
 
 ## Configuration
 
-```json
-{
-  "MultiTenancy": {
-    "Enabled": true,
-    "Resolver": "header"
-  },
-  "Authorization": {
-    "PermissionPolicy": "Modulus"
-  },
-  "BackgroundJobs": {
-    "MaxConcurrentJobs": 5
-  },
-  "Caching": {
-    "DefaultExpirationMinutes": 5
-  }
-}
-```
+Each service binds its own section. These are the sections the platform reads:
 
-## See Also
+| Section | Used by | Example |
+|---------|---------|---------|
+| `Storage` | `AddFileStorage` | `"Storage": { "Provider": "Local", "BasePath": "./uploads" }` |
+| `Caching:Fusion` | `AddModulusFusionCache` | `"Caching": { "Fusion": { "CacheName": "catalog" } }` |
+| `Caching:Redis:ConnectionString` | `AddRedisCacheService` | Redis connection string |
+| `Localization` | Localization options | Culture settings |
+| `Secrets` | `AddModulusSecrets` | Secret store settings |
+| `Security:Audit` | `AddModulusSecurityAudit` | Audit spool and anchor files |
 
-- [Multi-Tenancy](multi-tenancy) — Tenant resolution and isolation
-- [Authorization](authorization) — Permission system
-- [Background Jobs](background-jobs) — Job scheduling
-- [Caching](caching) — Cache configuration
-- [Storage](storage) — File storage
-- [SignalR](signalr) — Real-time communication
+## See also
+
+- [Multi-Tenancy](./multi-tenancy): tenant resolution and isolation
+- [Security Model](../security/overview): how tenancy, permissions and audit fit together
+- [Platform add-ons](./add-ons): media, localization, notifications, secrets and tenant lifecycle

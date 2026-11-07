@@ -187,9 +187,11 @@ Resolve the connection string per scope and migrate per tenant:
 
 ```csharp
 // Per-tenant connection resolver (scoped options)
+// The resolver runs per scope. ICurrentTenant exposes the id and slug only; read the
+// company's connection string from its TenantInfo (your code) and fall back to the host.
 services.AddModuleDatabase<CatalogDbContext>(
-    sp => sp.GetRequiredService<ICurrentTenant>().ConnectionString ?? hostConnection,
-    options => options.UseNpgsql(...));
+    sp => ResolveTenantConnectionString(sp) ?? hostConnection,
+    (options, connectionString) => options.UseNpgsql(connectionString));
 
 // Migrator job / init container (not every replica)
 await services.MigrateModulusDatabasesForTenantsAsync(DatabaseInitializationMode.Migrate);

@@ -1,130 +1,134 @@
 ---
-sidebar_position: 3
+title: "Components"
+description: "Every Modulus component by category, with the Blazor name and the MVC tag helper for each."
+sidebar_position: 6
 ---
 
-# Components
+Modulus gives you every Ant Design Blazor component, in both flavours.
 
-Modulus UI gives you the same components in every engine. In Blazor they are Ant Design components with `App*` names. In MVC and Razor Pages they are tag helpers (`app-*`) that write the same markup.
+- **In Blazor** use the `App*` name, for example `AppButton`, which is an alias of `AntDesign.Button`. The alias keeps every upstream parameter, so new ones arrive with an upgrade. Components with no alias use the Ant Design name directly, such as `Table` or `Input`, and the tutorial's `Button` works the same way.
+- **In MVC and Razor Pages** use the `app-*` tag helpers. Add `@addTagHelper *, Modulus.AspNetCore.Mvc` to `_ViewImports.cshtml` once. Controls bind with `asp-for` (name, id, value and validation state); any other attribute, such as `placeholder`, `hx-*` or `x-*`, goes to the real element.
 
-The rule for both: a component's parameters are the Ant Design parameters, so the Ant Design documentation applies. Modulus adds only what Ant Design Blazor 1.6 does not have, and the business fields.
+The samples show every component at `/ui/components`, in the MVC sample and the Blazor sample alike.
 
-## Blazor and MVC names
+## General
 
-| Ant Design | Blazor | MVC / Razor Pages |
-|---|---|---|
-| Button | `AppButton` | `<app-button>` |
-| Form item | `AppFormItem` | `<app-form-item asp-for="...">` |
-| Table | `AppTable` | `<app-table>` |
-| Modal | `AppModal` | `<app-modal>` |
+| Blazor | MVC tag helper | Notes |
+| --- | --- | --- |
+| `AppButton` | `app-button` | `type`, `danger`, `loading`, `icon`, `html-type` |
+| `AppIcon` | `app-icon` | Ant Design icons by name |
+| `AppTitle`, `AppText`, `AppParagraph`, `AppLink` | `app-title`, `app-text`, `app-paragraph`, `app-link` | |
+| `AppFloatButton`, `AppFloatButtonGroup`, `AppFloatBackTop` | `app-float-button`, `app-float-button-group`, `app-float-back-top` | The group opens on click or hover |
 
-Blazor's `App*` names are thin subclasses of the Ant Design component (`AppButton : AntDesign.Button`), so every upstream parameter works and new ones arrive on upgrade.
+## Layout
 
-The MVC tag helpers bind to a model with `asp-for` (the name, the id, the value and the validation state). Any other attribute, such as `placeholder`, `hx-*` or `x-*`, goes to the real element. Forms are plain HTML and post normally, so they still work without JavaScript.
+| Blazor | MVC tag helper | Notes |
+| --- | --- | --- |
+| `AppDivider` | `app-divider` | |
+| `AppSpace` | `app-space` | |
+| `AppRow`, `AppCol` | `app-row`, `app-col` | 24-column grid, `gutter`, `xs` to `xxl` |
+| `AppFlex` | `app-flex` | |
+| `AppLayout`, `AppHeader`, `AppSider`, `AppContent`, `AppFooter` | `app-layout`, `app-layout-header`, `app-layout-sider`, `app-layout-content`, `app-layout-footer` | |
+| `AppSplitter`, `AppSplitterPanel` | `app-splitter`, `app-splitter-panel` | Drag, or use the arrow keys |
 
-## Components by category
+## Navigation
 
-### General
+| Blazor | MVC tag helper | Notes |
+| --- | --- | --- |
+| `AppBreadcrumb` | `app-breadcrumb` | |
+| `AppTabs`, `AppTabPane` | `app-tabs`, `app-tab` | |
+| `AppSteps`, `AppStep` | `app-steps`, `app-step` | |
+| `AppDropdown`, `AppDropdownButton` | `app-dropdown`, `app-dropdown-item`, `app-dropdown-button` | |
+| `AppMenu`, `AppSubMenu`, `AppMenuItem` | `app-menu`, `app-sub-menu`, `app-menu-item`, `app-menu-divider` | Horizontal, vertical or inline |
+| `AppPagination` | `app-pagination` | Plain links, or htmx |
+| `AppAnchor`, `AppAnchorLink` | `app-anchor`, `app-anchor-link` | Highlights the section in view |
+| `AppAffix`, `AppBackTop` | `app-affix`, `app-back-top` | |
 
-`app-button` (with `loading`), `app-icon`, `app-title`, `app-text`, `app-paragraph`, `app-link`, `app-float-button`, `app-float-button-group` (click or hover), `app-float-back-top`.
+## Data entry
 
-### Layout
+| Blazor | MVC tag helper | Notes |
+| --- | --- | --- |
+| `AppFormItem` | `app-form-item` | `asp-for` gives the label and the validation message |
+| `AppInput`, `AppInputPassword`, `AppSearch` | `app-input`, `app-input-search` | Affixes, addons, clear, password, datalist for autocomplete |
+| `AppTextArea` | `app-textarea` | `show-count` |
+| `AppInputNumber` | `app-input-number` | |
+| `AppSelect` | `app-select` | |
+| `DatePicker`, `RangePicker` | `app-date-picker`, `app-range-picker` | `picker` can be `date`, `week`, `month`, `time`, `quarter` or `year`; `presets` uses the built-in date periods |
+| `AppCheckbox`, `CheckboxGroup` | `app-checkbox`, `app-checkbox-group` | |
+| `RadioGroup` | `app-radio-group` | |
+| `AppSwitch` | `app-switch` | |
+| `Slider` | `app-slider` | |
+| `AppRate` | `app-rate` | |
+| `AppSegmented` | `app-segmented` | |
+| `AppUpload` | `app-upload` | Also `action`, `max-size`, `max-count` and `list-type="picture"` |
+| `AppCascader`, `TreeSelect`, `AppTransfer`, `AutoComplete`, `AppMentions` | `app-cascader`, `app-tree-select`, `app-transfer`, `app-auto-complete`, `app-mentions` | |
+| `AppInputGroup` | `app-input-group` | Compact mode |
+| `AppColorPicker` | `app-color-picker` | Hex or RGB, alpha, presets, clear |
+| `AppCreatableSelect` | `app-creatable-select` | An "Add item" row with tag colours |
+| `AppSchemaForm` | `app-schema-form` | A whole form drawn from a `FormSchema`; see [Forms](./forms.md) |
 
-`app-divider`, `app-space`, `app-row` and `app-col` (a 24-column grid with gutters and xs to xxl breakpoints), `app-flex`, `app-layout` with `app-layout-header`, `app-layout-sider`, `app-layout-content` and `app-layout-footer`, `app-splitter` and `app-splitter-panel` (drag and arrow keys).
+## Data display
 
-### Navigation
+| Blazor | MVC tag helper | Notes |
+| --- | --- | --- |
+| `AppCard` | `app-card` | `app-card-cover`, `app-card-meta`, `app-card-action` |
+| `AppComment` | `app-comment` | |
+| `AppCountDown` | `app-countdown` | |
+| `AppImage`, `AppImageGroup` | `app-image`, `app-image-group` | Shared preview |
+| `AppAvatar`, `AppAvatarGroup` | `app-avatar`, `app-avatar-group` | |
+| `AppBadge`, `AppBadgeRibbon` | `app-badge`, `app-badge-ribbon` | |
+| `AppTag` | `app-tag` | |
+| `AppStatistic` | `app-statistic` | |
+| `AppDescriptions` | `app-descriptions` | |
+| `AppTable` | `app-table` | `hidden-columns`, `density`, `scroll-x`, `table-footer` |
+| `AppList` | `app-list` | |
+| `AppTimeline` | `app-timeline` | |
+| `AppCollapse`, `AppPanel` | `app-collapse`, `app-panel` | |
+| `AppTooltip`, `AppPopover` | `app-tooltip`, `app-popover` | |
+| `AppPopconfirm` | `app-popconfirm` | Attributes such as `hx-delete` go on the OK button; OK also raises `modulus:popconfirm-ok` |
+| `AppTimePicker` | `app-time-picker` | Same as `app-date-picker picker="time"` |
+| `AppEmpty` | `app-empty` | |
+| `AppTree` | `app-tree` | Checkable |
+| `AppCalendar` | `app-calendar` | |
+| `AppCarousel` | `app-carousel`, `carousel-slide` | |
+| `AppQRCode` | `app-qr-code` | Icon and status overlays, drawn as SVG |
+| `AppTour`, `TourStep` | `app-tour`, `tour-step` | Spotlight, placement with flipping, keyboard |
 
-`app-breadcrumb`, `app-tabs` and `app-tab`, `app-steps` and `app-step`, `app-dropdown` and `app-dropdown-item`, `app-dropdown-button`, `app-menu` with `app-sub-menu`, `app-menu-item` and `app-menu-divider` (horizontal, vertical or inline), `app-pagination` (htmx or plain links), `app-anchor` and `app-anchor-link` (scroll spy), `app-affix`, `app-back-top`.
+## Feedback
 
-### Data entry
+| Blazor | MVC tag helper | Notes |
+| --- | --- | --- |
+| `AppAlert` | `app-alert` | |
+| `AppProgress` | `app-progress` | Line, circle or dashboard |
+| `AppResult` | `app-result` | |
+| `AppSkeleton` | `app-skeleton` | |
+| `AppSpin` | `app-spin` | |
+| `AppModal` | `app-modal` | |
+| `AppDrawer` | `app-drawer` | Right, left, top or bottom |
+| `AppWatermark` | `app-watermark` | |
 
-`app-form-item`, `app-input` (affixes, addons, clear, password, a datalist for autocomplete), `app-input-search`, `app-textarea` (with a count), `app-input-number`, `app-select`, `app-date-picker` (date, week, month, time, quarter, year), `app-range-picker` (with `presets`, from `DatePeriods`), `app-checkbox`, `app-checkbox-group`, `app-radio-group`, `app-switch`, `app-slider`, `app-rate`, `app-segmented`, `app-upload` (with `action`, `max-size`, `max-count` and `list-type="picture"`), `app-cascader`, `app-tree-select`, `app-transfer`, `app-auto-complete`, `app-mentions`, `app-input-group` (compact), `app-color-picker` (hex and RGB, alpha, presets, clear), `app-creatable-select` (an "Add item" row with tag colours), `app-schema-form` (a whole form from a `FormSchema`).
+For messages from a save, the MVC helpers are `Response.HxMessage`, `HxNotify` and `HxCloseModal` on the server. Add `hx-confirm` to a button to ask before it sends.
 
-### Data display
+## Charts
 
-`app-card` (with `app-card-cover`, `app-card-meta` and `app-card-action`), `app-comment`, `app-countdown`, `app-image-group`, `app-avatar` and `app-avatar-group`, `app-badge` and `app-badge-ribbon`, `app-tag`, `app-statistic`, `app-descriptions`, `app-table` (`hidden-columns`, `density`, `scroll-x`, `table-footer`), `app-table-columns` (a column picker), `app-table-settings` (reload and density), `app-list`, `app-timeline`, `app-collapse` and `app-panel`, `app-image`, `app-tooltip`, `app-popover`, `app-empty`, `app-tree` (checkable), `app-calendar`, `app-carousel` with `carousel-slide`, `app-qr-code` (with an icon and a status overlay), `app-tour` with `tour-step`.
+Charts have no JavaScript dependency. The geometry is shared by Blazor and MVC, the tooltips are CSS only, and each chart carries a screen-reader data table.
 
-### Feedback
+| Blazor | MVC tag helper |
+| --- | --- |
+| `LineChart` (line or area) | `app-line-chart` |
+| `ColumnChart` (grouped or stacked) | `app-column-chart` |
+| `BarChart` | `app-bar-chart` |
+| `DonutChart` | `app-donut-chart` |
+| `HeatmapChart` | `app-heatmap` |
+| `Sparkline` | `app-sparkline` |
+| `MiniBar` | `app-mini-bar` |
 
-`app-alert`, `app-progress` (line, circle or dashboard), `app-result`, `app-skeleton`, `app-spin`, `app-modal`, `app-drawer` (right, left, top or bottom), `app-watermark`. From the server, `Response.HxMessage`, `HxNotify`, `HxCloseModal` and the `hx-confirm` attribute drive these.
+Business charts (treemap, pareto, waterfall, variance, bullet, gauge, funnel, combo and more) are in the same family. `legend-toggle` lets the legend hide series, and `links` turns columns and axis labels into drill-down links.
 
-### Pro components
+## Icons
 
-These follow the ProComponents conventions.
+`app-icon` draws any Ant Design icon. `app-ti` draws an Ant Design outline icon by name, inline. Names starting with `tb:` are Tabler fallbacks, for the few icons Ant Design does not have.
 
-- `app-dashboard`: tiles on a 12-column grid, moved and resized with buttons and saved per user. Its model is `DashboardModel`, mapped with `MapModulusDashboard`.
-- `app-file-manager`: folders, a breadcrumb, search, create, rename and delete. Its model is `FileManagerModel`.
-- `app-page-container`, `app-page-header`, `app-statistic-card`, `app-trend`.
-- `app-editable-grid`: see [Data tables and grids](./data-grids).
-- `app-nested-grid`: see [Data tables and grids](./data-grids).
-- `app-pivot-grid`: an Odoo-style pivot. See [Data tables and grids](./data-grids).
+## Pro components, plugins and forms
 
-### Large data
-
-`app-load-more` (infinite scroll) and `app-virtual-table` (virtual scrolling, only the rows in view are in the page).
-
-### Charts
-
-`app-line-chart`, `app-column-chart`, `app-bar-chart`, `app-donut-chart`, `app-heatmap`, `app-sparkline`, `app-mini-bar`, and the business charts (treemap, pareto, waterfall, variance, bullet, gauge, funnel, combo and more), plus `app-radar-chart`, `app-candlestick-chart`, `app-sankey-chart` and `app-org-chart`. The chart geometry is shared by Blazor and MVC, tooltips are CSS-only, and each chart carries a screen-reader data table. `legend-toggle` lets the legend hide series, and `links` makes columns and axis labels drill-down links.
-
-### Plugins
-
-Each plugin is a Blazor component and a tag helper over one renderer. The library loads only on pages that use it.
-
-| Tag | Library | What it does |
-|---|---|---|
-| `app-editor` | Tiptap | WYSIWYG editor. The HTML is cleaned by `RichText.Sanitize(images: true)`. |
-| `app-map` | MapLibre GL JS | Tile map with markers and popups |
-| `app-vector-map` | jsVectorMap | Choropleth with hover values and a legend |
-| `app-pdf` | pdf.js | PDF viewer, one page at a time, with zoom and download. Same-site or http(s) addresses only. |
-| `app-spreadsheet` | Univer | Excel-style multi-sheet grid with formulas. It posts its sheets as JSON and follows the theme. |
-| `app-media-player` | (native) | Video and audio with custom controls, poster and captions |
-| `app-uploader` | Uppy | Drop area: each file uploads when dropped, with previews, progress and type, size and count limits |
-| `app-image-cropper` | Cropper.js | Aspect-ratio buttons. The crop goes to a form field as JSON. |
-| `app-code-editor` | CodeMirror 6 | Highlighting, folding and search for JavaScript, TypeScript, JSON, CSS and HTML |
-| `app-sortable` and `app-sortable-item` | (native) | Reorder a list, drag between lists, handles and keyboard moves. It posts the order. |
-| `app-flow-editor` | (native) | An n8n style workflow designer for AI and automation flows: drag nodes, draw connections, undo, show run status. The graph posts as JSON. `modulus ui add-component flow-editor` scaffolds it. |
-| `app-chat` | (native) | A conversation and its question field: the answers, the notes under each one, and the conversation and filter kept in hidden fields so a plain form posts them back. Ask a question in plain words and the answer is a filter (`FilterAssistant`) with a model you configure (`Modulus.Flow.Connectors`). Blazor: `AppChat`. |
-| `app-lightbox` | (native) | Image lightbox |
-| `app-barcode` | (native) | Code 128 and EAN-13 as SVG |
-
-### Ant Design 5 components Blazor 1.6 does not have
-
-`app-qr-code`, `app-color-picker`, `app-float-button` and `app-float-button-group`, `app-float-back-top`, and `app-tour`. They draw the Ant Design 5 markup in both engines.
-
-### Business fields
-
-These are for ERP-style forms. Each one posts a plain, invariant value, so the server reads the same value whatever the user typed.
-
-| Component | Input | Posted value |
-|---|---|---|
-| `AppMoneyInput` (`app-money-input`) | Grouped amount, currency picker, the currency's decimals | The amount |
-| `AppQuantityInput` (`app-quantity-input`) | A quantity with a unit of measure and its precision | The quantity and the unit |
-| `AppDurationInput` (`app-duration-input`) | `1:30`, `1.5` or `90m` | Minutes |
-| `AppNumberRange` (`app-number-range`) | A from and to range | Both numbers |
-| `AppPhoneInput` (`app-phone-input`) | A country picker and a national number | `+1 202 555-0111` |
-| `AppMaskedInput` (`app-masked-input`) | A mask such as `99-9999999` | The unmasked value |
-| `AppOtpInput` (`app-otp-input`) | One box per character. Paste and SMS autofill spread over the boxes. | The code |
-| `AppLookup` (`app-lookup`) | A many-to-one field with type-ahead and a "Search more" dialog | The selected value |
-| `AppStatusBar` (`app-status-bar`) | Workflow stages, with folded ones | The current stage |
-| `AppSignaturePad` (`app-signature-pad`) | A drawn signature | A PNG data URL |
-| `AppRichText` (`app-rich-text`) | A small editor: formatting, lists, links and tables | Sanitized HTML |
-
-`AppSchemaForm` (`app-schema-form`) draws a whole form from a `FormSchema`. Read a schema from JSON with `FormSchema.Parse`, or build it in code. The field types are text, multiline, number, money, date, choice and switch. The same rules run on the server: `Validate` first, then `Normalize` for what is stored. The parsing and checks live in `Modulus.Ui.Abstractions.Forms` (`NumberText`, `DurationText`, `Currency`, `UnitOfMeasure`, `InputMask`, `PhoneNumber`, `LookupSearch`, `RichText`, `SignatureImage`, `FormSchema`), so the server accepts exactly what the browser accepts.
-
-`AppLookup` and `AppCreatableSelect` search the server with `GET {search-href}?q=text&max=n`. The endpoint answers `[{ value, label, description, fields }]`.
-
-### Select with "Add item"
-
-`AppCreatableSelect` (`app-creatable-select`) ends its dropdown with a name, a tag colour and an Add button. The new option joins the list and is selected. `GridSchema.AddOption` checks it (unique, trimmed, at most 50). For real records, `OnAddNew` (Blazor) or `add-modal` (MVC) open a create form instead.
-
-### Icons
-
-`app-icon` draws any Ant Design icon. `app-ti` draws an Ant Design outline icon by name, inline, and the `tb:` names are the Tabler fallbacks where Ant Design has no icon.
-
-## Interactive widgets in MVC
-
-Cascader, TreeSelect, Transfer, Tree, Calendar, Carousel, Anchor, Mentions, Splitter, ColorPicker and Tour run on small Alpine components in `modulus-widgets.js`. Their form values post through hidden inputs, so the form still submits without script.
-
-## Localization of the components
-
-Ant Design's built-in strings, dates and numbers follow the request culture. The sample pages stay in English. See [Theming and localization](./theming).
+The data-heavy components are in [Pro components](./pro.md). The rich-text editor, maps, PDF viewer, spreadsheet, uploads, code editor and the others are in [Plugins](./plugins.md). Business fields such as money, phone and lookup are in [Forms](./forms.md).

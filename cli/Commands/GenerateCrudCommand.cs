@@ -64,6 +64,12 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
         var routeName = plural.ToLowerInvariant();
 
         var module = CodeGen.ResolveModule(s.Module);
+        // The module's namespace ends in its name, so an entity of the same name would be a type and a namespace with one name
+        // in the same scope (CS0118). Refuse it up front rather than generate code that does not compile.
+        if (string.Equals(entity, module.Name, StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException(
+                $"The entity '{entity}' has the same name as module '{module.Name}', so the generated code would not compile. " +
+                $"Name the module differently, for example {module.Name}s (`modulus add-module {module.Name}s`), or the entity differently.");
 
         // Locate the layer project directories.
         var domainDir = CodeGen.LayerDir(module.Directory, module.Namespace, "Domain");

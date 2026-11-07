@@ -77,7 +77,13 @@ const config: Config = {
           type: 'docSidebar',
           sidebarId: 'docsSidebar',
           position: 'left',
-          label: 'Docs',
+          label: 'Framework',
+        },
+        {
+          type: 'docSidebar',
+          sidebarId: 'uiSidebar',
+          position: 'left',
+          label: 'Modulus UI',
         },
         {
           type: 'docSidebar',

@@ -61,7 +61,7 @@ handler in the idempotent decorator when they dispatch — after every handler
 public sealed class ProductCreatedHandler
     : IIntegrationEventHandler<ProductCreatedIntegrationEvent>
 {
-    public async Task HandleAsync(ProductCreatedIntegrationEvent @event)
+    public async Task HandleAsync(ProductCreatedIntegrationEvent @event, CancellationToken ct)
     {
         // This runs once per event per handler
         await _inventory.InitializeStockAsync(@event.Id);

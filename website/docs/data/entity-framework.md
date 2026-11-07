@@ -75,9 +75,11 @@ services.AddModuleDatabase<CatalogDbContext>(options =>
 Per-tenant databases resolve the connection string per scope (scoped options):
 
 ```csharp
+// The resolver runs per scope. ICurrentTenant exposes the id and slug only; read the
+// company's connection string from its TenantInfo (your code) and fall back to the host.
 services.AddModuleDatabase<CatalogDbContext>(
-    sp => sp.GetRequiredService<ICurrentTenant>().ConnectionString ?? hostConnection,
-    options => options.UseNpgsql(...));
+    sp => ResolveTenantConnectionString(sp) ?? hostConnection,
+    (options, connectionString) => options.UseNpgsql(connectionString));
 ```
 
 ## Entity Configuration

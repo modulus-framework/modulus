@@ -46,7 +46,7 @@ Binds from `"EventBus:RabbitMq"`:
 
 ```csharp
 // Module composition root
-services.AddRabbitMqEventBus(config);
+services.AddRabbitMqEventBus();   // binds the EventBus:RabbitMq section; pass a configure callback to override
 ```
 
 ### Publishing Events
@@ -64,7 +64,7 @@ await _bus.PublishAsync(new ProductCreatedIntegrationEvent(product.Id));
 public sealed class ProductCreatedConsumer
     : IIntegrationEventHandler<ProductCreatedIntegrationEvent>
 {
-    public async Task HandleAsync(ProductCreatedIntegrationEvent @event)
+    public async Task HandleAsync(ProductCreatedIntegrationEvent @event, CancellationToken ct)
     {
         // Process the event (must be idempotent — delivery is at-least-once)
     }

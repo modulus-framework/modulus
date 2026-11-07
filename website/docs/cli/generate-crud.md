@@ -18,6 +18,7 @@ modulus generate-crud <Entity> [-m|--module <Module>] [options]
 |--------|-------------|
 | `-m, --module` | Target module name. Auto-detected when the app has a single module |
 | `--dry-run` | Preview without writing files |
+| `--ai` | Mark the entity for the AI connector: `[AiIndexed]`, `[AiQueryable]`, an `[AiResource]` lookup and an `AiCapabilityTests` class. Needs `modulus add-ai` first. See [AI Connector](../ai/connector). |
 
 ## What It Generates
 
@@ -114,6 +115,8 @@ modulus generate-crud Product --module Catalog
 modulus generate-crud Order --module Orders
 modulus generate-crud Customer --module Customers
 ```
+
+The entity and the module must have different names. `modulus generate-crud Order --module Order` is refused, because the module's namespace and the entity's type would share one name and the generated code would not compile. Name the module in the plural (`Orders`) instead.
 
 ## See Also
 

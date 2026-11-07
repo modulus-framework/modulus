@@ -46,6 +46,15 @@ const sidebars: SidebarsConfig = {
         'messaging/inbox',
         'messaging/rabbitmq',
         'messaging/kafka',
+        'messaging/webhooks',
+        'messaging/sagas',
+      ],
+    },
+    {
+      type: 'category',
+      label: 'Security Model',
+      items: [
+        'security/overview',
       ],
     },
     {
@@ -59,21 +68,6 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: 'category',
-      label: 'UI',
-      items: [
-        'ui/overview',
-        'ui/getting-started',
-        'ui/components',
-        'ui/data-grids',
-        'ui/authentication',
-        'ui/theming',
-        'ui/hosting',
-        'ui/cli',
-        'ui/limitations',
-      ],
-    },
-    {
-      type: 'category',
       label: 'Platform Services',
       items: [
         'platform/overview',
@@ -83,6 +77,27 @@ const sidebars: SidebarsConfig = {
         'platform/caching',
         'platform/storage',
         'platform/signalr',
+        'platform/bff',
+        'platform/grpc',
+        'platform/graphql',
+        'platform/realtime',
+        'platform/add-ons',
+      ],
+    },
+    {
+      type: 'category',
+      label: 'Analytics',
+      items: [
+        'analytics/overview',
+        'analytics/sinks',
+        'analytics/governance',
+      ],
+    },
+    {
+      type: 'category',
+      label: 'AI Connector',
+      items: [
+        'ai/connector',
       ],
     },
     {
@@ -128,6 +143,46 @@ const sidebars: SidebarsConfig = {
       ],
     },
     'deployment',
+  ],
+  uiSidebar: [
+    'ui/overview',
+    {
+      type: 'category',
+      label: 'Getting Started',
+      collapsed: false,
+      items: [
+        'ui/getting-started',
+        'ui/tutorial-blazor',
+        'ui/tutorial-mvc',
+        'ui/concepts',
+      ],
+    },
+    {
+      type: 'category',
+      label: 'Building Pages',
+      items: [
+        'ui/components',
+        'ui/pro',
+        'ui/forms',
+        'ui/plugins',
+        'ui/fluid',
+      ],
+    },
+    {
+      type: 'category',
+      label: 'Configuration',
+      items: [
+        'ui/theming',
+        'ui/production',
+      ],
+    },
+    {
+      type: 'category',
+      label: 'Tools',
+      items: [
+        'ui/cli',
+      ],
+    },
   ],
   cliSidebar: [
     'cli/index',

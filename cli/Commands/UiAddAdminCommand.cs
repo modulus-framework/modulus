@@ -98,7 +98,7 @@ internal sealed class UiAddAdminCommand : Command<UiAddAdminCommand.Settings>
                     foreach (var change in UiHostWiring.EnsureControllerRouting(programPath))
                         Ux.Success("Web host updated", change);
                 if (!s.NoMenu)
-                    foreach (var change in UiHostWiring.EnsureAdminMenu(programPath, UiAdminScaffold.WiringLine(keys)))
+                    foreach (var change in UiHostWiring.EnsureAdminMenu(programPath, UiAdminScaffold.WiringLine(keys), UiHostWiring.AdminUiNamespace(engine)))
                         Ux.Success("Web host updated", change);
             }
             else if (!s.NoMenu)

@@ -5,9 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.0.0] - not yet published
+## [2.0.0] - 2026-11-06
 
 ### Breaking changes
+- **`IDeferredDomainEventQueue` gained `HoldDispatch()` and `IsDispatchHeld`.** A custom implementation must add them. The change is recorded in `src/messaging/Modulus.Events/CompatibilitySuppressions.xml`.
 - **Premodule layer removed from the framework.** The user, role, permission, company, settings and audit administration APIs and
   their generated screens, the profile and company-switcher and branch-picker features, and the profile fields of `ModulusUser` are
   gone. Applications own these (see *Premodule removal* in `docs/DOCUMENTATION.md`). The removed public types are listed as `*REMOVED*`

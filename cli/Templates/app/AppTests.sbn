@@ -171,11 +171,11 @@ internal static class Companies
         await using var scope = services.CreateAsyncScope();
         var tenants = scope.ServiceProvider.GetRequiredService<TenantManager>();
         var company = await tenants.CreateAsync($"{name}-{Guid.NewGuid():N}", name);
-        // A company starts with the Admin role's grant of the example permission (the same as the default company at startup).
         using var inCompany = scope.ServiceProvider.GetRequiredService<ICurrentTenant>().Change(company);
+{{ if example_permission }}        // A company starts with the Admin role's grant of the example permission (the same as the default company at startup).
         var grants = scope.ServiceProvider.GetRequiredService<Modulus.Authorization.EntityFrameworkCore.EfPermissionGrantStore>();
         await grants.GrantToRoleAsync("{{ admin_role }}", ["{{ example_permission }}"]);
-        return company.TenantId;
+{{ end }}        return company.TenantId;
     }
 }
 {{ end }}
@@ -229,7 +229,7 @@ public sealed class WebAppSmokeTest(ModulusWebAppFactory<{{ if web_entry }}WebEn
         Assert.Contains("Page not found", body);
         Assert.DoesNotContain("traceId", body);
     }
-{{ if auth == "openiddict" }}
+{{ if auth == "openiddict" && ui_engine != "blazor" }}
     [Fact]
     public async Task Password_recovery_pages_are_public_and_a_reset_without_a_token_is_refused()
     {
@@ -477,7 +477,7 @@ public sealed class ModuleBoundaryTests
             ModuleBoundaryRules.WriteIntegrationEventContract(file);
     }
 
-    [Fact]
+{{ if !no_example || auth == "openiddict" || multi_tenancy }}    [Fact]
     public void AllModules_CanBeInstantiated()
     {
         // Verifies all IModule implementations can be instantiated without
@@ -485,7 +485,7 @@ public sealed class ModuleBoundaryTests
         var modules = ModuleBoundaryRules.FindModuleTypes();
         modules.Should().NotBeEmpty(because: "at least one module should exist");
     }
-
+{{ end }}
     [Fact]
     public void NoModule_UsesAnotherModulesDomainTypes()
     {

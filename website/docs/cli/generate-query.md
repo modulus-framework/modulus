@@ -35,13 +35,12 @@ public sealed class GetProductStatsHandler : IQueryHandler<GetProductStatsQuery,
         GetProductStatsQuery query,
         CancellationToken ct)
     {
-        // TODO: Implement GetProductStats logic here
-        return await Task.FromResult(new { });
+        throw new NotImplementedException(); // implement GetProductStats here
     }
 }
 ```
 
-The handler returns a placeholder object — replace `object` with a real DTO
+The handler throws `NotImplementedException` until you implement it. Replace `object` with a real DTO
 and inject the module's repository as needed.
 
 ## Example

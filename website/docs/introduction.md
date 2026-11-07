@@ -16,10 +16,17 @@ Modulus is a framework for building enterprise applications using a **modular-mo
 - **Clean Architecture** per module (Domain → Application → Infrastructure → Presentation)
 - **CQRS** via a built-in mediator with pipeline behaviors
 - **Event-driven** messaging with transactional outbox and inbox dedup
-- **Multi-tenancy** with per-tenant data isolation
-- **Identity** via OpenIddict with external IdP support
-- **Production hardening** (rate limiting, health checks, idempotency, security headers, PII encryption)
-- **CLI tool** for scaffolding apps, modules, and CRUD code
+- **Multi-tenancy** with per-tenant data isolation; a company is a tenant, with membership checks and database isolation ([Security Model](./security/overview))
+- **Identity** via OpenIddict with external IdP support (OIDC, LDAP/AD, SAML, passkeys, SCIM)
+- **Service edges**: per-client [backends for frontends](./platform/bff), [gRPC](./platform/grpc), [GraphQL](./platform/graphql), [realtime](./platform/realtime) push, and signed [webhooks](./messaging/webhooks)
+- **Production hardening** (rate limiting, health checks, idempotency, security headers, PII encryption, a startup security guard)
+- **Analytics**: versioned, masked datasets sent to ClickHouse, Parquet, Doris or the module bus ([Analytics](./analytics/overview))
+- **CLI tool** for scaffolding apps, modules, CRUD code and optional features
+- **[Modulus UI](./ui/overview)**: an admin-panel layer for Blazor, MVC, Razor Pages and Liquid templates, with one shell, menu and theme. It ships as separate `Synvro.Modulus.Ui.*` and `Synvro.Modulus.*` UI packages and works with any Modulus app that has a web project
+
+## Status
+
+The current release is **2.0.0**, published on NuGet as the `Synvro.Modulus.*` packages. The breaking changes from 1.8.x are listed in the [changelog](https://github.com/modulus-framework/modulus/blob/main/CHANGELOG.md). The docs describe the 2.0.0 line.
 
 ## Key Design Principles
 

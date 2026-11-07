@@ -91,9 +91,9 @@ public class ModulusTokenController(
     [Loosened("OAuth token endpoint: OpenIddict authenticates the client and the grant", Framework = true)]
     public async Task<IActionResult> Exchange()
     {
-        var request = HttpContext.GetOpenIddictServerRequest() ??
-            throw new InvalidOperationException(
-                "Unable to retrieve OpenIddict request.");
+        var request = HttpContext.GetOpenIddictServerRequest();
+        if (request is null)
+            return BadRequest(new { error = OpenIddictConstants.Errors.InvalidRequest, error_description = "The token endpoint takes an OAuth 2.0 token request." });
 
         if (request.IsPasswordGrantType())
             return await HandlePasswordGrantAsync(request);
@@ -585,7 +585,9 @@ public class ModulusTokenController(
     [AllowAnonymous]
     public async Task<IActionResult> Verify()
     {
-        var request = HttpContext.GetOpenIddictServerRequest() ?? throw new InvalidOperationException("Unable to retrieve OpenIddict request.");
+        var request = HttpContext.GetOpenIddictServerRequest();
+        if (request is null)
+            return BadRequest(new { error = OpenIddictConstants.Errors.InvalidRequest, error_description = "The verification endpoint takes a device user code." });
         var approver = await HttpContext.AuthenticateAsync(OpenIddict.Validation.AspNetCore.OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme);
         if (!approver.Succeeded || approver.Principal is null)
             return Unauthorized(new { error = "login_required", error_description = "Send your own access token to approve a device." });

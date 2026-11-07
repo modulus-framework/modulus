@@ -50,8 +50,9 @@ public static IServiceCollection AddModuleDatabase<TContext>(
 // Per-tenant variant: connection string resolved per scope
 public static IServiceCollection AddModuleDatabase<TContext>(
     this IServiceCollection services,
-    Func<IServiceProvider, string> connectionStringResolver,
-    Action<DbContextOptionsBuilder>? configure = null);
+    Func<IServiceProvider, string> resolveConnectionString,
+    Action<DbContextOptionsBuilder, string>? configure = null)
+    where TContext : ModuleDbContext;
 ```
 
 ## MigrateModulusDatabasesAsync

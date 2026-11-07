@@ -4,72 +4,86 @@ sidebar_position: 3
 
 # MongoDB
 
-Modulus supports MongoDB as an alternative to relational databases.
+`Modulus.Data.MongoDB` is an alternative to a relational context for a module. It provides a context base class, a repository base class, tenant-scoped collections and the outbox and inbox stores for MongoDB.
 
 ## Setup
 
 ```csharp
-public override void ConfigureServices(IServiceCollection services, IConfiguration config)
+services.AddMongoDatabase(o =>
 {
-    services.AddModuleDatabase<CatalogMongoContext>(config);
-}
+    o.ConnectionString = config.GetConnectionString("Catalog")!;
+    o.DatabaseName = "catalog";
+    o.CollectionPrefix = "catalog_";
+});
 ```
 
-## ModuleMongoContext
+`AddMongoDatabase` takes a configure callback. Read the connection string from configuration in the callback. For one database per tenant, use `AddMongoDatabasePerTenant(o => ..., id => $"shop_{id:N}")`.
+
+## Module context
+
+A module context derives from `ModuleMongoContext`. It exposes its collections and gets the tenant from `ICurrentTenant`.
 
 ```csharp
 public sealed class CatalogMongoContext : ModuleMongoContext
 {
-    public IMongoCollection<Product> Products =>
-        GetCollection<Product>("products");
+    public CatalogMongoContext(
+        IMongoDatabase database,
+        IOptions<MongoOptions> options,
+        ICurrentTenant tenant)
+        : base(database, options, tenant) { }
 
-    public CatalogMongoContext(IOptions<MongoDbOptions> options)
-        : base(options) { }
+    public IMongoCollection<ProductDocument> Products => GetCollection<ProductDocument>("products");
 }
 ```
 
-## MongoRepository
+Collections are `IMongoCollection<T>` from the MongoDB .NET driver. `GetTenantCollection<T>` returns a `TenantScopedCollection<T>` instead, which applies the tenant filter to every query and stamps the tenant on every insert.
+
+## Repository
+
+`MongoRepository<T, TDoc>` implements `IRepository<T>` for an aggregate `T`. The document type `TDoc` implements `IHasTenantId`, so the tenant can be enforced in the query.
 
 ```csharp
-public sealed class ProductRepository : MongoRepository<Product>, IProductRepository
+public sealed class ProductRepository : MongoRepository<Product, ProductDocument>
 {
-    public ProductRepository(CatalogMongoContext context) : base(context) { }
-
-    public async Task<Product?> GetByNameAsync(string name, CancellationToken ct)
-    {
-        return await Collection
-            .Find(p => p.Name == name)
-            .FirstOrDefaultAsync(ct);
-    }
+    public ProductRepository(IMongoCollection<ProductDocument> collection, ICurrentTenant tenant)
+        : base(collection, tenant) { }
 }
 ```
 
-## Tenant Filtering
+## Tenant filtering
 
-MongoDB repositories automatically apply tenant filtering:
+Filtering is fail-closed, the same as the EF Core path:
+
+- In the host context (multi-tenancy off, or `ICurrentTenant.Change(null)`), queries see all documents.
+- With no resolved tenant, queries match nothing.
+- Inside a tenant, `MongoTenantFilter.For<T>(tenant)` adds the tenant condition to the query.
+
+Use `TenantScopedCollection<T>.Unscoped(reason)` only when a query really needs every tenant. The call is recorded in the security audit.
+
+## Outbox and inbox
+
+The outbox and inbox have MongoDB stores:
 
 ```csharp
-// MongoTenantFilter.For<T>(tenant) adds { tenantId: X } to all queries.
-// Fail-closed like EF Core: host scope (multi-tenancy off or explicit
-// Change(null)) sees all; an unresolved tenant matches nothing.
-var filter = MongoTenantFilter.For<Product>(currentTenant);
+services.AddMongoOutbox();    // collection "outbox"
+services.AddMongoInbox();     // collection "inbox"
 ```
 
-## Health Checks
+The outbox joins the caller's Mongo session, when the unit of work supplies one, so an event is written in the same transaction as the change on a replica set.
 
-MongoDB includes built-in health checks:
+## Health
+
+`MongoHealthCheck` implements `IModuleHealthCheck`, so registering it adds the database to the module health endpoints.
 
 ```csharp
-// Registered automatically with AddModuleDatabase<MongoContext>
-services.AddHealthChecks()
-    .AddMongoDb(connectionString: "mongodb://localhost:27017");
+services.AddSingleton<IModuleHealthCheck, MongoHealthCheck>();
 ```
 
 ## Considerations
 
 | Aspect | Recommendation |
 |--------|----------------|
-| **Schema** | Use DTOs/projections rather than entity inheritance |
-| **Transactions** | Use MongoDB transactions for multi-document atomicity |
-| **Indexing** | Define indexes in `OnModelCreating` or via driver |
-| **Migrations** | Manual schema evolution (no migration framework) |
+| **Schema** | Use separate document types, not the aggregate type, so the persisted shape can change independently |
+| **Transactions** | Use MongoDB transactions for multi-document atomicity (replica set required) |
+| **Indexing** | Create indexes in the module's startup, through the driver |
+| **Migrations** | Manual schema evolution; no migration framework |

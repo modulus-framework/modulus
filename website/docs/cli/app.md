@@ -17,13 +17,16 @@ modulus app <name> [options]
 | Option | Description | Default |
 |--------|-------------|---------|
 | `-d, --database` | Database provider: `SQLite`, `SqlServer`, `PostgreSQL`, `MySQL` | prompted |
+| `--framework` | Target framework: `net10.0` or `net8.0` | `net10.0` |
 | `--auth` | Auth provider: `none`, `openiddict`, `auth0`, `authentik`, `azuread`, `duende`, `keycloak`, `okta` | prompted |
 | `--kind` | App kind: `api` (an API host, no UI) or `webapp+api` (a web project on the Modulus UI framework plus the API) | prompted |
-| `--ui-engine` | Web apps only: `blazor`, `mvc` or `razor-pages`. Use `none` for an API. See [the UI overview](../ui/overview). | prompted for web apps |
+| `--ui-engine` | Web apps only: `mvc`, `razor-pages`, `blazor`, `fluid` or `none`. Only `mvc`, `razor-pages` and `blazor` can be generated. See [the UI overview](../ui/overview). | prompted for web apps |
 | `--with-example` | Include the example Catalog module | off (no example) |
+| `--no-example` | Deprecated: the example is off by default | |
 | `--message-broker` | Message broker: `none`, `rabbitmq`, `kafka` | prompted |
 | `--caching` | Caching provider: `inmemory`, `redis` | prompted |
 | `--storage` | File storage: `local`, `s3`, `azureblobs` | prompted |
+| `--s3-provider` | With `--storage s3`: `aws`, `wasabi`, `b2`, `r2` or `minio` | `aws` |
 | `--signalr` | SignalR backplane: `none`, `redis`, `azure` | prompted |
 | `--enable-api-versioning` | Enable API versioning | `true` |
 | `--enable-rate-limiting` | Enable rate limiting | `true` |
@@ -35,7 +38,10 @@ modulus app <name> [options]
 | `--enable-correlation` | Enable request correlation | `true` |
 | `--enable-secrets-guard` | Enable secrets guard | `true` |
 | `--enable-personal-data-protection` | Enable personal data protection | `false` |
-| `--migration-engine` | Migration engine: `efcore`, `dbsh` | prompted |
+| `--migration-engine` | Migration engine: `efcore` (EF Core migrations) or `dbsh` (SQL-first migrations) | prompted |
+| `--bff` | Backends for frontends to generate: `web`, `mobile`, `partner` (comma-separated), or `none`. See [BFF](../platform/bff). | none |
+| `--services` | Microservices: upstream services the BFFs call besides the API, for example `catalog=http://localhost:5201,orders` | none |
+| `--multi-tenancy` | Companies as tenants: membership checks, a tenant store and isolation tests. Needs `--auth openiddict` for an API or web app. See [Security model](../security/overview). | off |
 | `--package-source` | Path to a local NuGet feed for the `Synvro.Modulus.*` packages | nuget.org only |
 | `-o, --output` | Output directory | current directory |
 
@@ -57,7 +63,7 @@ The CLI prompts for:
 
 ## Generated Structure
 
-The structure below is for `--kind api`. A `webapp+api` app adds a web project next to the API:
+The structure below is for `--kind api` with `--with-example`, which adds the sample Catalog module. A `webapp+api` app adds a web project next to the API:
 
 ```
 MyApp/src/Web/MyApp.Web/   the UI host for the chosen engine (Blazor components, or MVC / Razor Pages)

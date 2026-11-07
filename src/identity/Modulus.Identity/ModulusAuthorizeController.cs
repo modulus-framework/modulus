@@ -48,8 +48,10 @@ public class ModulusAuthorizeController : Controller
     [Loosened("OIDC authorization endpoint: signs the user in through the Identity cookie itself", Framework = true)]
     public async Task<IActionResult> Authorize()
     {
-        var request = HttpContext.GetOpenIddictServerRequest() ??
-            throw new InvalidOperationException("Unable to retrieve OpenIddict request.");
+        // A plain GET or POST without OpenID Connect parameters is a client error, not a server fault.
+        var request = HttpContext.GetOpenIddictServerRequest();
+        if (request is null)
+            return BadRequest(new { error = OpenIddictConstants.Errors.InvalidRequest, error_description = "This endpoint takes an OpenID Connect authorization request." });
 
         var signedIn = await HttpContext.AuthenticateAsync(IdentityConstants.ApplicationScheme);
         var needsLogin = !signedIn.Succeeded

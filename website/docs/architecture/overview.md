@@ -48,9 +48,9 @@ Modulus follows a **modular-monolith** architecture — a single deployable appl
 | **Microservices** | Multiple processes | Network (HTTP/gRPC) | Database per service |
 | **Monolith** | Single process | Direct method calls | Shared database |
 
-## Package Structure (45 libraries)
+## Package Structure
 
-The framework ships 45 libraries under `src/` (plus the `Synvro.Modulus.Cli` tool). Each library targets `net8.0` and `net10.0`:
+The repository has 69 projects under `src/`, including analyzers, test helpers and the analytics sinks. The main packages are below (plus the `Synvro.Modulus.Cli` tool). Most libraries target `net8.0` and `net10.0`; the UI packages and the analyzer are the exceptions:
 
 | Package | Purpose |
 |---------|---------|
@@ -70,7 +70,7 @@ The framework ships 45 libraries under `src/` (plus the `Synvro.Modulus.Cli` too
 | `Modulus.Outbox.MongoDB` | MongoDB outbox + management API |
 | `Modulus.EventBus.RabbitMQ` / `Modulus.EventBus.Kafka` | Message broker transports |
 | `Modulus.Sagas` | Rebus-based saga orchestration |
-| `Modulus.Identity` | OpenIddict + 6 external IdP adapters |
+| `Modulus.Identity` | OpenIddict, ASP.NET Core Identity, 6 external IdP adapters, LDAP, SAML, passkeys, SCIM, sessions |
 | `Modulus.Platform` | Multi-tenancy, authorization, jobs, caching, storage, SignalR |
 | `Modulus.MultiTenancy.EntityFrameworkCore` | EF tenant store + per-tenant migration fan-out |
 | `Modulus.Authorization.EntityFrameworkCore` | EF permission grant store |
@@ -80,22 +80,38 @@ The framework ships 45 libraries under `src/` (plus the `Synvro.Modulus.Cli` too
 | `Modulus.Storage.S3` / `Modulus.Storage.AzureBlobs` | Cloud file storage (opt-in SDKs) |
 | `Modulus.SignalR.Backplane` | Redis/Azure SignalR backplane (opt-in SDKs) |
 | `Modulus.Observability` | OpenTelemetry bootstrap, tracing, health endpoints |
-| `Modulus.Testing` / `Modulus.Testing.Architecture` | Test harness + module boundary rules |
+| `Modulus.Realtime` / `Modulus.Realtime.Redis` | Push integration events over SSE or SignalR (Redis backplane) |
+| `Modulus.Webhooks` | Signed delivery of integration events to external endpoints |
+| `Modulus.Bff` | Backends for frontends (web, mobile, partner) on YARP |
+| `Modulus.Grpc` / `Modulus.GraphQL` | gRPC and GraphQL surfaces over the mediator |
+| `Modulus.Media`, `Modulus.Localization.EntityFrameworkCore`, `Modulus.Notifications.EntityFrameworkCore` | Media, translation and notification stores |
+| `Modulus.Secrets.OpenBao` | Secrets from OpenBao |
+| `Modulus.Tenancy.Lifecycle` (+ `.EntityFrameworkCore`) | Tenant exports, legal holds, retention and deletion |
+| `Modulus.AI.Connector` (+ `.EntityFrameworkCore`, `.Testing`) | Read-only connector for an external AI platform |
+| `Modulus.Analytics` and its sinks, stores and catalogs | Versioned analytics datasets (see [Analytics](../analytics/overview)) |
+| `Modulus.Testing` / `Modulus.Testing.Architecture` / `Modulus.Testing.Authorization` | Test harness, module boundary rules and authorization test helpers |
 
 ## Solution Layout
 
 ```
 src/
-  core/          Modulus.Core, Modulus.AspNetCore (+ Redis idempotency store)
-  data/          Abstractions, EF Core, providers (SqlServer, PostgreSQL, MySQL, SQLite, MongoDB)
-  identity/      OpenIddict + 6 IdP adapters
-  messaging/     Events, Mediator, Inbox (+MongoDB), Outbox (+Abstractions, Management, MongoDB), RabbitMQ, Kafka, Sagas
-  platform/      Platform core + MultiTenancy.EFCore, Authorization.EFCore/Management,
-                 BackgroundJobs.Quartz, Caching.Redis, Storage.S3/AzureBlobs, SignalR.Backplane
+  core/          Modulus.Core, Modulus.AspNetCore
+  analyzers/     Modulus.Analyzers (MOD0001 to MOD0003, packed into Modulus.AspNetCore)
+  data/          Abstractions, EF Core, providers (SqlServer, PostgreSQL, MySQL, SQLite), MongoDB
+  identity/      Modulus.Identity (OpenIddict, IdP adapters), Modulus.Identity.IntegrationEvents
+  messaging/     Events, Mediator, Inbox, Outbox, Outbox.Management, RabbitMQ, Kafka,
+                 Sagas, Webhooks, Realtime (+ Redis)
+  platform/      Modulus.Platform (multi-tenancy, authorization, jobs, caching, storage, SignalR) and
+                 the add-on packages: Bff, Grpc, GraphQL, Caching.Redis, AuditLogging, Media,
+                 Localization, Notifications, Secrets.OpenBao, Tenancy.Lifecycle, storage and SignalR backplanes
+  analytics/     Analytics core, EF Core store, sinks (ClickHouse, Parquet, Doris, messaging),
+                 catalogs (OpenMetadata, Apicurio), lineage (OpenLineage), DuckDB reconciliation
+  ai/            AI platform connector, EF Core journal, conformance kit
   observability/ OpenTelemetry wiring
-  testing/       WebApplicationFactory harness + architecture rules
+  testing/       Test harness, architecture rules, authorization test helpers
   cli/           Modulus.Cli scaffolding tool
 tests/
-  unit/          23 xUnit test projects
-  integration/   Testcontainers-based tests
+  unit/          xUnit test projects (Category=Unit)
+  integration/   Testcontainers-based tests (Category=Integration)
+  benchmarks/    BenchmarkDotNet
 ```

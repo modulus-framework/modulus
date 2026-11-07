@@ -1,0 +1,50 @@
+@page "/Error/{Code:int?}"
+@attribute [AllowAnonymous]
+@attribute [Loosened("The error page is shown to every visitor", Framework = true)]
+@using Microsoft.AspNetCore.Authorization
+@using Modulus.Core.Abstractions.Security
+@using Microsoft.AspNetCore.Http
+
+<PageTitle>@Heading</PageTitle>
+
+<div class="m-card" style="max-width: 640px; margin: 48px auto;">
+    <div class="m-card-body">
+        <p class="m-muted">Error @Code</p>
+        <h1 class="m-page-title">@Heading</h1>
+        <p style="font-size: 15px; line-height: 1.7;">@Message</p>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px;">
+            <a class="ant-btn ant-btn-primary" href="/">Back to home</a>
+        </div>
+    </div>
+</div>
+
+@code {
+    /// <summary>The status the page is for. Status-code re-execution sets it from the route (/Error/404).</summary>
+    [Parameter] public int? Code { get; set; }
+
+    private int Status => Code ?? StatusCodes.Status500InternalServerError;
+
+    private string Heading => Status switch
+    {
+        StatusCodes.Status400BadRequest => "The request could not be processed",
+        StatusCodes.Status401Unauthorized => "Sign in to continue",
+        StatusCodes.Status403Forbidden => "Access denied",
+        StatusCodes.Status404NotFound => "Page not found",
+        StatusCodes.Status429TooManyRequests => "Too many requests",
+        StatusCodes.Status409Conflict => "This changed while you were editing",
+        >= StatusCodes.Status500InternalServerError => "Something went wrong",
+        _ => "Something went wrong",
+    };
+
+    private string Message => Status switch
+    {
+        StatusCodes.Status400BadRequest => "Check what you entered and try again.",
+        StatusCodes.Status401Unauthorized => "This page needs a signed-in account.",
+        StatusCodes.Status403Forbidden => "Your account does not have permission to open this page.",
+        StatusCodes.Status404NotFound => "The page you are looking for does not exist or has moved.",
+        StatusCodes.Status429TooManyRequests => "Wait a minute, then try again.",
+        StatusCodes.Status409Conflict => "Reload the page to see the latest version, then make your change again.",
+        >= StatusCodes.Status500InternalServerError => "An unexpected error occurred. It has been logged. Try again, or go back to the home page.",
+        _ => $"The request failed with status {Status}.",
+    };
+}

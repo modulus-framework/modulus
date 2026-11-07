@@ -150,4 +150,20 @@ public void AllModules_CanBeInstantiated()
 ## See Also
 
 - [Integration Tests](integration-tests) — WebApplicationFactory harness
-- [Features: Testing & DX](../features#testing--dx-package-e4) — Test doubles and assertions
+- [Features: Tooling](../features#tooling) — The test harness, architecture rules and security probes
+
+## Security probes
+
+`SecurityProbeSuite.RunAsync(factory, options)` (`Modulus.Testing`) checks every endpoint that is not opened with a loosening reason:
+
+- an anonymous request gets `401` (or a sign-in redirect);
+- a signed-in user without the endpoint's policy, permission or role gets `403`;
+- with a `ForeignTenantId`, a user who is not a member of that company gets `403`.
+
+Known exceptions go in `AnonymousStatusOverrides` and `ForeignTenantStatusOverrides`. Generated API hosts with the security guard include a `SecurityProbeTests` class.
+
+`TenantIsolationAssertions` checks that one company's rows cannot be read or written by another.
+
+## AI connector conformance
+
+`Modulus.AI.Connector.Testing` runs the connector contract against a fake platform. `AiConnectorConformance.RunAsync(...)` covers authentication, tenant isolation, the manifest, deny paths, query injection, field security, extraction, revocation and timeouts, and returns a report. See [AI Connector](../ai/connector#conformance).

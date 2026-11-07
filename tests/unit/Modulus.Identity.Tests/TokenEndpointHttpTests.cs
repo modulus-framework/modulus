@@ -223,6 +223,23 @@ public sealed class TokenEndpointHttpTests : OidcHostTestBase
         body.GetProperty("error").GetString().Should().Be("invalid_request");
     }
 
+    [Fact]
+    public async Task Bare_requests_to_the_protocol_endpoints_are_client_errors_not_server_faults()
+    {
+        // A GET or POST without OpenID Connect parameters must answer 400, not 500 (the endpoints used to throw).
+        using var client = NewClient();
+
+        using var token = await client.PostAsync("/connect/token", new FormUrlEncodedContent(Array.Empty<KeyValuePair<string, string>>()));
+        token.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        using var authorize = await client.GetAsync("/connect/authorize");
+        authorize.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        // The device approval step asks for the approver's own bearer token first, so an anonymous caller gets 401.
+        using var verify = await client.GetAsync("/connect/verify");
+        verify.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
     private static string Pkce(out string challenge)
     {
         var verifier = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32)).TrimEnd('=').Replace('+', '-').Replace('/', '_');

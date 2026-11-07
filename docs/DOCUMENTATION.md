@@ -2070,7 +2070,7 @@ Not production-ready as a released framework. Strong foundation: explicit module
 
 ### Release blockers (P0)
 
-- [ ] **F-24** Generated apps pin 1.6.0 (`cli/Services/Models.cs`), which is not on nuget.org; the 1.5.0 Platform lacks types the templates use. CHANGELOG has no 1.6.0 entry. *Decision for the owner: publish 1.6.0 or pin a published version.*
+- [x] **F-24** Generated apps pin 2.0.0 (`cli/Services/Models.cs`), which is now published on nuget.org with the CLI, UI templates and every framework package. (2026-11-06: 2.0.0 published; the CLI, a clean install from nuget.org with an isolated home, generated MVC, Razor Pages and Blazor apps that build with 0 warnings, pass their own tests (16/16, 16/16, 15/15) and render every GET page.) The earlier 1.6.0 pin and its decision are superseded.
 - [x] **F-23 (Medium)** *(Done 2026-11-01 for 2.0.0: the API baseline is in `PublicAPI.Shipped.txt`; `EnablePackageValidation` runs against the 1.8.2 release, and the one breaking change (`OutboxDepth`) is listed in `CompatibilitySuppressions.xml`. Move `PackageValidationBaselineVersion` to 2.0.0 after that release is published.)* No shipped public-API baseline (all 47 `PublicAPI.Shipped.txt` were empty) and no `EnablePackageValidation`. *Fix:* move Unshipped to Shipped at the release commit and enable package validation against it.
 
 ### Status after 1.7.0 (2026-10-25)

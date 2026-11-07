@@ -36,14 +36,12 @@ public sealed class ArchiveProductHandler
         ArchiveProductCommand command,
         CancellationToken ct)
     {
-        // TODO: Implement ArchiveProduct logic here
-        await Task.CompletedTask;
-        return Unit.Value;
+        throw new NotImplementedException(); // implement ArchiveProduct here
     }
 }
 ```
 
-The handler is a starting point with no injected dependencies — add the
+The handler throws `NotImplementedException` until you implement it. Add the
 module's `IUnitOfWork` / repositories as needed.
 
 ## Example

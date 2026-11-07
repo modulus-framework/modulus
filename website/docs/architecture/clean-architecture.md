@@ -37,7 +37,7 @@ The innermost layer with no dependencies on other layers:
 | Entities | `Product`, `Order`, `Customer` |
 | Value objects | `Money`, `Address`, `Quantity` |
 | Repository interfaces | `IProductRepository` |
-| Domain events | `ProductCreatedEvent` |
+| Domain events | `ProductCreatedDomainEvent` |
 
 ```csharp
 public sealed class Product : AggregateRoot<Guid>
@@ -66,13 +66,13 @@ Orchestrates business use cases:
 | Handlers | `CreateProductHandler`, `GetAllProductsHandler` |
 | DTOs | `ProductDto`, `CreateProductRequest` |
 | Unit of Work | `IUnitOfWork` interface |
-| Integration events | `ProductCreatedEvent` |
+| DTOs and handlers that publish integration events | `ProductDto`, `CreateProductHandler` |
 
 ```csharp
 public sealed record CreateProduct(string Name, decimal Price)
     : ICommand<ProductDto>;
 
-public sealed class CreateProductHandler(ICatalogUnitOfWork unitOfWork)
+public sealed class CreateProductHandler(IUnitOfWork unitOfWork)
     : ICommandHandler<CreateProduct, ProductDto>
 {
     public async Task<ProductDto> HandleAsync(
@@ -146,21 +146,26 @@ public sealed class ProductController : ControllerBase
 ## Project References
 
 ```
-Domain ────────────────────── no dependencies
+Domain ─────────── Shared.Domain, Modulus.Core, Modulus.Data.Abstractions
 
-Application ─── Domain ────── Modulus.Mediator, Modulus.Events
+IntegrationEvents ─ Modulus.Events
 
-Infrastructure ─── Application ─── Domain ─── Modulus.EntityFrameworkCore, Modulus.Events
+Application ────── Domain, IntegrationEvents, Shared.Application, Modulus.Mediator,
+                   Modulus.EntityFrameworkCore, Modulus.Events
 
-Presentation ─── Application ─── Shared.Presentation, Modulus.AspNetCore
+Infrastructure ─── Application, Domain, Shared.Infrastructure, Modulus.EntityFrameworkCore,
+                   Modulus.Events, the EF Core provider package
+
+Presentation ───── Application, Shared.Presentation, Modulus.AspNetCore
 ```
 
 ## Dependency Rules
 
-1. **Domain** depends on nothing (plus `Shared.Domain`, `Modulus.Core`)
-2. **Application** depends on Domain (plus `Shared.Application`, `Modulus.Mediator`, `Modulus.Events`)
-3. **Infrastructure** depends on Application and Domain
-4. **Presentation** depends on Application (plus `Shared.Presentation`, `Modulus.AspNetCore`)
+1. **Domain** depends on no other module layer (only the shared kernel and `Modulus.Core`)
+2. **IntegrationEvents** depends only on `Modulus.Events`, so other modules can reference it without taking the owner's Application layer
+3. **Application** depends on Domain and IntegrationEvents (plus the shared and framework packages above)
+4. **Infrastructure** depends on Application and Domain
+5. **Presentation** depends on Application (plus `Shared.Presentation`, `Modulus.AspNetCore`)
 
 Never reference Infrastructure from Presentation or Application. DTOs live
 under `Application/Dtos`; integration events live in the module's

@@ -14,7 +14,8 @@ public sealed class CatalogModule : ModulusModule
     public override void ConfigureServices(IServiceCollection services, IConfiguration config)
     {
         // Register module-specific services
-        services.AddModuleDatabase<CatalogDbContext>(config);
+        services.AddModuleDatabase<CatalogDbContext>(options =>
+            options.UseSqlite(config.GetConnectionString("Catalog")));
         services.AddMediatorHandlers(typeof(CatalogModule).Assembly);
     }
 }
@@ -74,7 +75,8 @@ Each module registers its own services in `ConfigureServices`:
 public override void ConfigureServices(IServiceCollection services, IConfiguration config)
 {
     // Database
-    services.AddModuleDatabase<CatalogDbContext>(config);
+    services.AddModuleDatabase<CatalogDbContext>(options =>
+        options.UseSqlite(config.GetConnectionString("Catalog")));
 
     // Unit of Work
     services.AddScoped<IUnitOfWork>(sp =>
@@ -97,18 +99,19 @@ Modules communicate through:
 3. **Shared kernel** — Common abstractions in `Modulus.Core`
 
 ```csharp
-// Module A publishes an event
-public sealed class ProductCreatedEvent : IIntegrationEvent
-{
-    public Guid ProductId { get; init; }
-    public string Name { get; init; } = default!;
-}
+// Module A: a marker type per module, then the event (in its IntegrationEvents project)
+public sealed class CatalogArea;
+
+[IntegrationEvent<CatalogArea>]
+public sealed record ProductCreatedIntegrationEvent(Guid ProductId, string Name)
+    : IntegrationEventBase;
 
 // Module B handles the event
 public sealed class ProductCreatedHandler
-    : IIntegrationEventHandler<ProductCreatedEvent>
+    : IIntegrationEventHandler<ProductCreatedIntegrationEvent>
 {
-    public async Task HandleAsync(ProductCreatedEvent @event)
+    public async Task HandleAsync(
+        ProductCreatedIntegrationEvent @event, CancellationToken ct)
     {
         // React to product creation
     }

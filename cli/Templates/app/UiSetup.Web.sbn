@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Mvc.ApplicationParts;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Modulus.AspNetCore.Mvc;
 using Modulus.AspNetCore.Security;
@@ -17,7 +18,7 @@ internal static class UiSetup
         services.AddRazorPages();
 {{ if ui_engine == "mvc" }}
         // MVC controllers and views for the landing page; the sign-in pages stay Razor Pages.
-        services.AddControllersWithViews();
+        services.AddControllersWithViews().ConfigureApplicationPartManager(RemoveIdentityControllers);
 {{ end }}
         // Brand and layout settings come from "Modulus:Theme" in appsettings.json; add menu entries with an IMenuContributor.
         services.AddModulusMvc(theme => configuration.GetSection("Modulus:Theme").Bind(theme));
@@ -39,4 +40,15 @@ internal static class UiSetup
 
         return services;
     }
+{{ if ui_engine == "mvc" }}
+    /// <summary>
+    /// The Web host signs users in through the API's token server. Modulus.Identity comes in with the API project reference,
+    /// and its token controllers (/connect/*) would otherwise be served here without the password validator they need.
+    /// </summary>
+    private static void RemoveIdentityControllers(ApplicationPartManager parts)
+    {
+        foreach (var part in parts.ApplicationParts.OfType<AssemblyPart>().Where(p => p.Assembly.GetName().Name == "Modulus.Identity").ToList())
+            parts.ApplicationParts.Remove(part);
+    }
+{{ end }}
 }

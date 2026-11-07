@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Text.RegularExpressions;
 using Modulus.Cli.Services;
 using Spectre.Console;
 using Spectre.Console.Cli;
@@ -69,6 +70,16 @@ internal sealed class UiCreateDashboardCommand : Command<UiCreateDashboardComman
                 MonthlyReports = 0,
                 AvgGenTime = "0s",
             }, target);
+
+            // The Blazor and Razor Pages dashboard templates hard-code the admin starter's routes (/analytics, /dashboard, /reports,
+            // /audit) in their @page directive, so a dashboard and an admin page of the same name would both answer one URL and the
+            // request would fail as ambiguous. Route it under its module instead, as the MVC dashboards already are.
+            if (engine is "blazor" or "razor-pages")
+            {
+                var text = File.ReadAllText(target);
+                var route = "/" + module.ToLowerInvariant() + "/" + page.Key;
+                File.WriteAllText(target, Regex.Replace(text, "^@page \"[^\"]*\"", $"@page \"{route}\"", RegexOptions.Multiline));
+            }
 
             Ux.Success($"{page.Title} page created", Path.GetRelativePath(start, target));
 

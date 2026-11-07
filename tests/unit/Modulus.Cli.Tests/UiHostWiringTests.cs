@@ -55,7 +55,8 @@ public sealed class UiHostWiringTests : IDisposable
 
         UiHostWiring.EnsureControllerRouting(program).Should().Equal("AddControllersWithViews()", "MapControllers()");
         var first = File.ReadAllText(program);
-        first.Should().Contain("builder.Services.AddControllersWithViews();")
+        first.Should().Contain("builder.Services.AddControllersWithViews().ConfigureApplicationPartManager(")
+            .And.Contain("\"Modulus.Identity\"")
             .And.Contain("app.MapControllers();");
         first.IndexOf("AddControllersWithViews", StringComparison.Ordinal).Should().BeLessThan(first.IndexOf("var app = builder.Build();", StringComparison.Ordinal));
         first.IndexOf("app.MapControllers();", StringComparison.Ordinal).Should().BeLessThan(first.IndexOf("app.Run();", StringComparison.Ordinal));

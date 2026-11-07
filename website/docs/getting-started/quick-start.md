@@ -46,13 +46,10 @@ MyApp/
     │   ├── MyApp.Shared.Application
     │   ├── MyApp.Shared.Infrastructure
     │   └── MyApp.Shared.Presentation
-    └── Modules/                          # Business modules
-        └── MyApp.Modules.Catalog/
-            ├── .Domain/
-            ├── .Application/
-            ├── .Infrastructure/
-            └── .Presentation/
+    └── Modules/                          # Business modules (empty until you add one)
 ```
+
+The sample `Catalog` module is created only with `modulus app MyApp --with-example`. Add your own module with `modulus add-module <Name>`.
 
 ## 4. Build and Run
 

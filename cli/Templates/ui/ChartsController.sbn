@@ -1,9 +1,11 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ViewEngines;
 
 namespace {{ namespace }};
 
 /// <summary>Serves the chart pages under Views/Charts (/charts/line, /charts/column, ...).</summary>
+[Authorize]
 public class ChartsController(ICompositeViewEngine views) : Controller
 {
     [HttpGet("/charts/{name}")]

@@ -18,7 +18,7 @@ Modulus provides a permission-based authorization system.
 ## Setup
 
 ```csharp
-services.AddModulusAuthorization(config);
+services.AddModulusAuthorization();
 ```
 
 ## Defining Permissions
