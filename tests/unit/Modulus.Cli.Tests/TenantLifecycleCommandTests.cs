@@ -71,6 +71,57 @@ public sealed class TenantLifecycleCommandTests : IDisposable
     }
 
     [Fact]
+    public void Administrators_of_each_new_company_start_with_the_export_permission()
+    {
+        GenerateApp(multiTenancy: true);
+
+        Run(AppDir).Should().Be(0);
+
+        var grants = WebhooksWiringTests.Parse(Read("src/API/Shop.Api/appsettings.json"))
+            .GetProperty("CompanyProvisioning").GetProperty("Grants");
+        grants.GetProperty("Admin").EnumerateArray().Select(e => e.GetString()).Should().Contain("tenant-data:export");
+    }
+
+    private const string ProvisioningWith = "{\n  \"CompanyProvisioning\": {\n    \"Grants\": {\n@@    }\n  }\n}\n";
+
+    private static string Provisioning(string grants) => ProvisioningWith.Replace("@@", grants, StringComparison.Ordinal);
+
+    [Fact]
+    public void EnsureCompanyGrant_appends_to_the_role_and_is_idempotent()
+    {
+        var json = Provisioning("      \"Admin\": [ \"catalog:products:manage\" ]\n");
+
+        var once = TenantLifecycleWiring.EnsureCompanyGrant(json, "Admin", "tenant-data:export");
+        var twice = TenantLifecycleWiring.EnsureCompanyGrant(once, "Admin", "tenant-data:export");
+
+        WebhooksWiringTests.Parse(once).GetProperty("CompanyProvisioning").GetProperty("Grants").GetProperty("Admin")
+            .EnumerateArray().Select(e => e.GetString()).Should().Equal("catalog:products:manage", "tenant-data:export");
+        twice.Should().Be(once);
+    }
+
+    [Fact]
+    public void EnsureCompanyGrant_adds_the_role_to_an_empty_or_other_roles_section()
+    {
+        var empty = TenantLifecycleWiring.EnsureCompanyGrant(Provisioning(string.Empty), "Admin", "tenant-data:export");
+        var other = TenantLifecycleWiring.EnsureCompanyGrant(
+            Provisioning("      \"Buyer\": [ \"orders:read\" ]\n"), "Admin", "tenant-data:export");
+
+        WebhooksWiringTests.Parse(empty).GetProperty("CompanyProvisioning").GetProperty("Grants").GetProperty("Admin")
+            .EnumerateArray().Select(e => e.GetString()).Should().Equal("tenant-data:export");
+        var grants = WebhooksWiringTests.Parse(other).GetProperty("CompanyProvisioning").GetProperty("Grants");
+        grants.GetProperty("Buyer").EnumerateArray().Select(e => e.GetString()).Should().Equal("orders:read");
+        grants.GetProperty("Admin").EnumerateArray().Select(e => e.GetString()).Should().Equal("tenant-data:export");
+    }
+
+    [Fact]
+    public void EnsureCompanyGrant_leaves_a_file_without_company_grants_alone()
+    {
+        const string json = "{\n  \"Logging\": {}\n}\n";
+
+        TenantLifecycleWiring.EnsureCompanyGrant(json, "Admin", "tenant-data:export").Should().Be(json);
+    }
+
+    [Fact]
     public void A_second_run_changes_nothing()
     {
         GenerateApp(multiTenancy: true);

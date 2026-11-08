@@ -65,6 +65,79 @@ internal static class TenantLifecycleWiring
         => WebhooksWiring.EnsureConnectionString(json, "TenantLifecycle", connectionString);
 
     /// <summary>
+    /// Adds <paramref name="permission"/> to the starting grants of <paramref name="role"/> in <c>CompanyProvisioning:Grants</c>. In a
+    /// multi-company host grants belong to a company, and a first-boot grant is written in the host context, which no company sees: the
+    /// company's own grants come from this setting. Without it the role cannot use the permission in any company. Idempotent; a file with
+    /// no <c>CompanyProvisioning:Grants</c> section, or an edit that would not leave valid JSON, is left as it is.
+    /// </summary>
+    public static string EnsureCompanyGrant(string json, string role, string permission)
+    {
+        var provisioning = json.IndexOf("\"CompanyProvisioning\"", StringComparison.Ordinal);
+        var grants = provisioning < 0 ? -1 : json.IndexOf("\"Grants\"", provisioning, StringComparison.Ordinal);
+        if (grants < 0)
+            return json;
+        var open = json.IndexOf('{', grants);
+        if (open < 0)
+            return json;
+        var depth = 0;
+        var close = -1;
+        for (var i = open; i < json.Length && close < 0; i++)
+        {
+            if (json[i] == '{')
+                depth++;
+            else if (json[i] == '}' && --depth == 0)
+                close = i;
+        }
+
+        if (close < 0)
+            return json;
+        var body = json[(open + 1)..close];
+        var quotedPermission = $"\"{permission}\"";
+        if (body.Contains(quotedPermission, StringComparison.Ordinal))
+            return json;
+
+        var nl = WebhooksWiring.NewLine(json);
+        var lineStart = json.LastIndexOf('\n', grants) + 1;
+        var keyIndent = json[lineStart..grants];
+        string newBody;
+        var roleAt = body.IndexOf($"\"{role}\"", StringComparison.Ordinal);
+        if (roleAt >= 0)
+        {
+            var arrayOpen = body.IndexOf('[', roleAt);
+            var arrayClose = arrayOpen < 0 ? -1 : body.IndexOf(']', arrayOpen);
+            if (arrayClose < 0)
+                return json;
+            var inner = body[(arrayOpen + 1)..arrayClose];
+            var kept = inner.TrimEnd();
+            var added = kept.Length == 0 ? $" {quotedPermission}" : $"{kept}, {quotedPermission}";
+            var tail = kept.Length == 0 ? " " : inner[kept.Length..];
+            newBody = body[..(arrayOpen + 1)] + added + tail + body[arrayClose..];
+        }
+        else
+        {
+            var entry = $"{keyIndent}  \"{role}\": [ {quotedPermission} ]";
+            newBody = body.Trim().Length == 0
+                ? nl + entry + nl + keyIndent
+                : body.TrimEnd() + "," + nl + entry + nl + keyIndent;
+        }
+
+        var result = json[..(open + 1)] + newBody + json[close..];
+        try
+        {
+            using var _ = System.Text.Json.JsonDocument.Parse(result, new System.Text.Json.JsonDocumentOptions
+            {
+                AllowTrailingCommas = true,
+                CommentHandling = System.Text.Json.JsonCommentHandling.Skip,
+            });
+            return result;
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            return json;
+        }
+    }
+
+    /// <summary>
     /// Registers a tenant-data handler in the lifecycle's <c>AddTenantLifecycle</c> call. Idempotent: a handler already registered is left
     /// alone. The plain call is widened to take the builder callback; a host that already customised the call is left as it is.
     /// </summary>

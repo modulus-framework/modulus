@@ -1662,6 +1662,38 @@ Opt-in package that delivers integration events to external HTTP endpoints, sign
   events received with valid signatures and marked `Delivered`; receiver down → `Pending` with a 5 s retry; `retry`
   delivered it. Covered by `Modulus.Webhooks.Tests` (84) and `WebhooksCommandTests` (13).
 
+## Tenant data lifecycle (`Modulus.Tenancy.Lifecycle`)
+
+Optional packages (`Modulus.Tenancy.Lifecycle`, `Modulus.Tenancy.Lifecycle.EntityFrameworkCore`) that export, offboard and erase one company's
+data (finding F-30 in `docs/DOCUMENTATION.md`). Each module owns what it holds per company; the lifecycle never deletes by generic SQL.
+
+- **Modules declare their data.** An `ITenantDataHandler` (`Module`, `Datasets`, `ExportAsync`, `CountAsync`, `DeleteAsync`) per module, registered with
+  `AddTenantLifecycle(configuration, l => l.AddHandler<T>().AddOffboardingStep<S>())`. Datasets are `Owned` (deleted), `Retained`, `Audit` (kept; the hash
+  chain stays verifiable) or `Global`. Handlers run inside the company's tenant context and must be idempotent. **List a module's dependents first**:
+  datasets are erased in registration order.
+- **Export.** `POST /tenant-data/exports` (`MapModulusTenantLifecycle`, permission `tenant-data:export`) is answered `202`; the hosted worker builds an encrypted
+  ZIP (chunked AES-256-GCM, a manifest with SHA-256 per entry) and `GET .../{id}/download` returns it to that company only (another company gets `404`).
+  Keys are secrets: `TenantLifecycle:ExportEncryptionKey`, `TenantLifecycle:CertificateSigningKey`. `TenantLifecycle:WorkerInterval` (default 1 minute) is how
+  often the worker looks for operations.
+- **Offboarding** (`ITenantLifecycleProvider.RequestOffboardingAsync` then `RunOperationAsync`; an operator action in code, not an HTTP endpoint): suspend, each
+  `ITenantOffboardingStep`, legal-hold check, optional export, datasets, signed deletion certificate. Every step is recorded, so a failed operation is run again
+  and resumes there. A suspended company still resolves for background work, so a module with background work **must** register an offboarding step that
+  stops it. Offboarding leaves the company `Suspended`; nothing closes it.
+- **Analytics.** `AddModulusAnalyticsTenantData()` adds the analytics handler (runs, then queue, then warehouse) and `AnalyticsOffboardingStep`, which cancels
+  the company's runs, parks its undelivered queue rows and fails the operation while a worker still holds a claim on them (an in-flight batch would
+  otherwise land after the erase). Records captured later by background jobs are not stopped by it.
+- **CLI.** `modulus add-tenant-lifecycle` (see the CLI table) writes the store module, host wiring and a `{Module}TenantDataHandler` per module with entities.
+  In a multi-company host **grants belong to a company** and a first-boot grant is written in the host context, which no company sees, so the command also adds
+  `tenant-data:export` to `CompanyProvisioning:Grants:Admin` (new companies get it; existing companies keep the grants they have, so grant it through the
+  authorization API). The generated tests include `TenantLifecycleExportTests` (request, wait for the worker, download, another company refused) and the
+  generated `Companies.CreateAsync` test helper provisions through `ICompanyProvisioner`, the path a real company takes.
+- **Registry after start.** `PermissionRegistry` takes no new or changed permission once frozen, but declaring one again unchanged is a no-op, so
+  `ICompanyProvisioner.ProvisionAsync` works at runtime (it replays module declarations while it validates the baseline; before, it threw
+  "PermissionRegistry is frozen" once the host had started).
+- **Not built / open.** The Quartz retention driver (`TenantLifecycle:RetentionDriver = Scheduler`) is unit-tested with a recording scheduler, not run against
+  a Quartz store. The decision's backup and retention periods are defaults the owner must confirm. Export archives go through `UploadAsync`, so
+  `Storage:MaxUploadBytes` caps their size.
+
 ## AI connector (`Modulus.AI.Connector`)
 
 Hosts the external AI platform's connector wire contract v1 inside an app (plan and as-built notes:

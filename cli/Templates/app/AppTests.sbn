@@ -172,10 +172,11 @@ internal static class Companies
         var tenants = scope.ServiceProvider.GetRequiredService<TenantManager>();
         var company = await tenants.CreateAsync($"{name}-{Guid.NewGuid():N}", name);
         using var inCompany = scope.ServiceProvider.GetRequiredService<ICurrentTenant>().Change(company);
-{{ if example_permission }}        // A company starts with the Admin role's grant of the example permission (the same as the default company at startup).
-        var grants = scope.ServiceProvider.GetRequiredService<Modulus.Authorization.EntityFrameworkCore.EfPermissionGrantStore>();
-        await grants.GrantToRoleAsync("{{ admin_role }}", ["{{ example_permission }}"]);
-{{ end }}        return company.TenantId;
+        // A company starts with its starting grants (CompanyProvisioning:Grants), as the default company does at startup and a company
+        // created through the company API does: the Admin role's grants of the example and of the features added later come from there.
+        if (scope.ServiceProvider.GetService<ICompanyProvisioner>() is { } provisioner)
+            await provisioner.ProvisionAsync(company);
+        return company.TenantId;
     }
 }
 {{ end }}

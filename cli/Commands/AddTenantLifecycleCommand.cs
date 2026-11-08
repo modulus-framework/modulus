@@ -81,6 +81,13 @@ internal sealed class AddTenantLifecycleCommand : Command<AddTenantLifecycleComm
             hints.Add("The host already registers file storage; exports are written there. Check that its MaxUploadBytes covers the largest export.");
 
         Edit(Path.Combine(apiDir, "appsettings.json"), t => TenantLifecycleWiring.EnsureSettings(t, model.ConnectionString), written, app);
+        if (grantsAdmin)
+        {
+            // Grants belong to a company: the first-boot grant above is written in the host context, which no company sees, so the
+            // administrators of each new company get the export permission from their starting grants.
+            Edit(Path.Combine(apiDir, "appsettings.json"), t => TenantLifecycleWiring.EnsureCompanyGrant(t, UiAccessGates.AdminRole, "tenant-data:export"), written, app);
+            hints.Add("Companies that already exist keep the grants they have: give their administrators tenant-data:export through the authorization API (POST grants). New companies get it from CompanyProvisioning:Grants.");
+        }
 
         // ── Tenant data of the modules ──────────────────────────────
         foreach (var module in app.Modules.Where(m => m.Entities.Count > 0))
@@ -90,6 +97,9 @@ internal sealed class AddTenantLifecycleCommand : Command<AddTenantLifecycleComm
         var testsDir = Path.Combine(app.SolutionDir, "tests", $"{app.RootNamespace}.Tests");
         if (Directory.Exists(testsDir))
             Write("tenantlifecycle/TenantLifecycleTests", model, Path.Combine(testsDir, "TenantLifecycleTests.cs"), written, app);
+        // The export round trip signs in as the Admin role, which holds the permission only when the host grants permissions.
+        if (Directory.Exists(testsDir) && grantsAdmin)
+            Write("tenantlifecycle/TenantLifecycleExportTests", model, Path.Combine(testsDir, "TenantLifecycleExportTests.cs"), written, app);
 
         AnsiConsole.MarkupLine("[green]✓[/] Tenant data lifecycle added");
         foreach (var f in written.Distinct())

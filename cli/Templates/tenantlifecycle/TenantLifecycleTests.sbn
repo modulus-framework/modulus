@@ -8,7 +8,7 @@ namespace {{ root_namespace }}.Tests;
 
 /// <summary>
 /// The tenant-data export endpoints (modulus add-tenant-lifecycle) on the in-memory test host: they are closed to anonymous and to
-/// signed-in callers without the export permission. Archives are not produced here (the test host has no encryption key).
+/// signed-in callers without the export permission. The export round trip is in TenantLifecycleExportTests.
 /// </summary>
 public sealed class TenantLifecycleTests(ModulusWebAppFactory<ApiEntryPoint> factory)
     : IClassFixture<ModulusWebAppFactory<ApiEntryPoint>>
