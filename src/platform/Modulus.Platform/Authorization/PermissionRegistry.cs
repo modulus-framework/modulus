@@ -30,9 +30,6 @@ public sealed class PermissionRegistry : IPermissionRegistry
         PermissionLifecycle lifecycle,
         string? replacedBy)
     {
-        if (_frozen)
-            throw new InvalidOperationException(
-                "PermissionRegistry is frozen. Declarations must happen in ConfigureServices.");
         if (lifecycle is PermissionLifecycle.Active && replacedBy is not null)
             throw new ArgumentException("Only a deprecated or retired permission can name its replacement.", nameof(replacedBy));
 
@@ -42,6 +39,16 @@ public sealed class PermissionRegistry : IPermissionRegistry
             Lifecycle = lifecycle,
             ReplacedBy = replacedBy,
         };
+
+        if (_frozen)
+        {
+            // Declaring the same permission again changes nothing, so it is harmless after start (a component that re-applies module
+            // declarations, such as the company provisioner, may run at any time). A new or changed one still has to happen at start-up.
+            if (_permissions.TryGetValue(permission, out var declared) && SameMeaning(declared, definition))
+                return;
+            throw new InvalidOperationException(
+                "PermissionRegistry is frozen. Declarations must happen in ConfigureServices.");
+        }
 
         // Redeclaring a permission is allowed only when it means the same thing. A changed sensitivity, lifecycle, replacement or
         // prerequisite would otherwise be decided by whichever module registers last.
