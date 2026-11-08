@@ -56,7 +56,8 @@ internal sealed partial class GenerateGraphQLCommand : Command<GenerateGraphQLCo
         if (!File.Exists(endpointFile) || !File.Exists(presCsproj))
             throw new InvalidOperationException($"No CRUD set for {s.Entity} in {module.Name} ({plural}Endpoint.cs). Run: modulus generate-crud {s.Entity} --module {module.Name}.");
 
-        var model = Model(app.RootNamespace, module, s.Entity, plural, GenerateGrpcCommand.ReadPermission(File.ReadAllText(endpointFile)));
+        var model = Model(app.RootNamespace, module, s.Entity, plural, GenerateGrpcCommand.ReadPermission(File.ReadAllText(endpointFile)),
+            ApiHostFiles.ReadAll(app.ProgramCsPath).Contains("AddMultiTenancy(", StringComparison.Ordinal));
         var apiDir = Path.GetDirectoryName(app.ApiProjectPath)!;
         var written = new List<string>();
         var hints = new List<string>();
@@ -105,7 +106,7 @@ internal sealed partial class GenerateGraphQLCommand : Command<GenerateGraphQLCo
         return 0;
     }
 
-    internal static GraphQLModel Model(string rootNamespace, ModuleDiscovery.ModuleSummary module, string entity, string plural, string? permission)
+    internal static GraphQLModel Model(string rootNamespace, ModuleDiscovery.ModuleSummary module, string entity, string plural, string? permission, bool multiTenancy = false)
         => new()
         {
             RootNamespace = rootNamespace,
@@ -118,6 +119,7 @@ internal sealed partial class GenerateGraphQLCommand : Command<GenerateGraphQLCo
             EntityPluralCamel = CodeGen.ToCamelCase(plural),
             RequiredPermission = permission,
             AdminRole = UiAccessGates.AdminRole,
+            MultiTenancy = multiTenancy,
         };
 
     internal sealed class GraphQLModel
@@ -132,6 +134,7 @@ internal sealed partial class GenerateGraphQLCommand : Command<GenerateGraphQLCo
         public string EntityPluralCamel { get; init; } = "";
         public string? RequiredPermission { get; init; }
         public string AdminRole { get; init; } = "";
+        public bool MultiTenancy { get; init; }
 
         /// <summary>The authorization call each field carries: the endpoints' permission, else a signed-in caller.</summary>
         public string Authorize => RequiredPermission is null ? ".Authorize()" : ".AuthorizeWithPolicy(Permission)";

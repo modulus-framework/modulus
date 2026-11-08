@@ -939,6 +939,11 @@ isolation, hash-chained security audit, probe suite), and the provider integrati
   `TenantManager.AddMemberAsync` / `RemoveMemberAsync`). Otherwise `403`. `HostTenantAccessPolicy` is the break-glass
   override. A `tid` claim still pins a token to one tenant. The library default is off; `modulus app --multi-tenancy`
   turns it on.
+- **Company grants in generated hosts.** Grants belong to a company; a first-boot grant (`AddPermissionGrants`) is written in the host context, which no company
+  sees. A generator that adds a permission for the Admin role (`add-webhooks`, `add-tenant-lifecycle`, ...) must also add it to
+  `CompanyProvisioning:Grants:{Admin}` in `appsettings.json` (`TenantLifecycleWiring.EnsureCompanyGrant`), and its generated tests must sign in pinned to a company
+  created through `Companies.CreateAsync` (which provisions through `ICompanyProvisioner`). Existing companies keep the grants they have. Check a new generator
+  by generating a `--multi-tenancy` app, adding every feature, and running its tests.
 - **Registration order.** `AddMultiTenancy` replaces the `NullCurrentTenant` default that `AddModulus` / `AddModulusUi` /
   the EF authorization store `TryAdd` (always the host: before this fix, `AddModulus` then `AddMultiTenancy` left every
   query seeing every company); a custom `ICurrentTenant` registered earlier is kept.

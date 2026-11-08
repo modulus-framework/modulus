@@ -56,7 +56,8 @@ internal sealed partial class GenerateGrpcCommand : Command<GenerateGrpcCommand.
         if (!File.Exists(endpointFile) || !File.Exists(presCsproj))
             throw new InvalidOperationException($"No CRUD set for {s.Entity} in {module.Name} ({plural}Endpoint.cs). Run: modulus generate-crud {s.Entity} --module {module.Name}.");
 
-        var model = Model(app.RootNamespace, module, s.Entity, plural, ReadPermission(File.ReadAllText(endpointFile)));
+        var model = Model(app.RootNamespace, module, s.Entity, plural, ReadPermission(File.ReadAllText(endpointFile)),
+            ApiHostFiles.ReadAll(app.ProgramCsPath).Contains("AddMultiTenancy(", StringComparison.Ordinal));
         var apiDir = Path.GetDirectoryName(app.ApiProjectPath)!;
         var written = new List<string>();
         var hints = new List<string>();
@@ -179,7 +180,7 @@ internal sealed partial class GenerateGrpcCommand : Command<GenerateGrpcCommand.
         return match.Success ? match.Groups[1].Value : null;
     }
 
-    internal static GrpcModel Model(string rootNamespace, ModuleDiscovery.ModuleSummary module, string entity, string plural, string? permission)
+    internal static GrpcModel Model(string rootNamespace, ModuleDiscovery.ModuleSummary module, string entity, string plural, string? permission, bool multiTenancy = false)
     {
         var snake = ToSnakeCase(entity);
         return new GrpcModel
@@ -194,6 +195,7 @@ internal sealed partial class GenerateGrpcCommand : Command<GenerateGrpcCommand.
             ProtoPackage = $"{ToSnakeCase(rootNamespace.Replace(".", "", StringComparison.Ordinal))}.{ToSnakeCase(module.Name)}.v1",
             RequiredPermission = permission,
             AdminRole = UiAccessGates.AdminRole,
+            MultiTenancy = multiTenancy,
         };
     }
 
@@ -212,6 +214,7 @@ internal sealed partial class GenerateGrpcCommand : Command<GenerateGrpcCommand.
         public string ProtoPackage { get; init; } = "";
         public string? RequiredPermission { get; init; }
         public string AdminRole { get; init; } = "";
+        public bool MultiTenancy { get; init; }
         public string GrpcNamespace => ModuleNamespace + ".Presentation.Grpc";
     }
 

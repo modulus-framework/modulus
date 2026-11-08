@@ -48,6 +48,7 @@ internal sealed class AddWebhooksCommand : Command<AddWebhooksCommand.Settings>
             Events = events,
             TargetFramework = AppFramework.Resolve(app.ProgramCsPath),
             HasAdminRole = hasAdminRole,
+            MultiTenancy = host.Contains("AddMultiTenancy(", StringComparison.Ordinal),
         };
 
         var written = new List<string>();
@@ -84,6 +85,13 @@ internal sealed class AddWebhooksCommand : Command<AddWebhooksCommand.Settings>
 
         Edit(Path.Combine(apiDir, "appsettings.json"), t => WebhooksWiring.EnsureSettings(t, "Production", model.WebhooksConnectionString), written, app);
         Edit(Path.Combine(apiDir, "appsettings.Development.json"), t => WebhooksWiring.EnsureSettings(t, "Development", null), written, app);
+        if (model.MultiTenancy && grantsAdmin)
+        {
+            // Grants belong to a company: the first-boot grant is written in the host context, which no company sees, so the administrators
+            // of each new company get the permission from their starting grants.
+            Edit(Path.Combine(apiDir, "appsettings.json"), t => TenantLifecycleWiring.EnsureCompanyGrant(t, UiAccessGates.AdminRole, "webhooks:manage"), written, app);
+            hints.Add("Companies that already exist keep the grants they have: give their administrators webhooks:manage through the authorization API (POST grants). New companies get it from CompanyProvisioning:Grants.");
+        }
 
         // ── Tests ───────────────────────────────────────────────────
         var testsDir = Path.Combine(app.SolutionDir, "tests", $"{app.RootNamespace}.Tests");
@@ -143,6 +151,7 @@ internal sealed class AddWebhooksCommand : Command<AddWebhooksCommand.Settings>
         public string TargetFramework { get; init; } = AppFramework.Default;
         public IReadOnlyList<WebhooksWiring.IntegrationEventInfo> Events { get; init; } = [];
         public bool HasAdminRole { get; init; }
+        public bool MultiTenancy { get; init; }
         public string AdminRole => UiAccessGates.AdminRole;
         public string WebhooksNamespace => $"{RootNamespace}.Modules.Webhooks";
         public string FrameworkVersion => Services.FrameworkVersion.Current;

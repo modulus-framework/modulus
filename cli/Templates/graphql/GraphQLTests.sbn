@@ -18,7 +18,7 @@ public sealed class {{ entity_name }}GraphQLTests(ModulusWebAppFactory<ApiEntryP
     [Fact]
     public async Task Create_read_update_and_delete_round_trip()
     {
-        var client = Manager();
+        var client = await ManagerAsync();
 
         var (_, created) = await PostAsync(client, "mutation($name: String!) { create{{ entity_name }}(name: $name) }", new { name = "From GraphQL" });
         var id = Data(created).GetProperty("create{{ entity_name }}").GetString();
@@ -57,12 +57,19 @@ public sealed class {{ entity_name }}GraphQLTests(ModulusWebAppFactory<ApiEntryP
     [Fact]
     public async Task A_malformed_id_is_a_validation_error()
     {
-        var (_, body) = await PostAsync(Manager(), "{ {{ entity_name_camel }}(id: \"not-a-guid\") { id } }");
+        var (_, body) = await PostAsync(await ManagerAsync(), "{ {{ entity_name_camel }}(id: \"not-a-guid\") { id } }");
 
         Code(body).Should().Be("VALIDATION_FAILED");
     }
 
-    private HttpClient Manager() => factory.CreateAuthenticatedClient({{ if required_permission }}roles: ["{{ admin_role }}"]{{ end }});
+{{ if multi_tenancy && required_permission }}    // A multi-company host answers only inside a company: the caller signs in pinned to a company that starts with its starting grants.
+    private async Task<HttpClient> ManagerAsync()
+    {
+        var company = await Companies.CreateAsync(factory.Services, "{{ entity_name_lower }}-graphql");
+        return factory.CreateAuthenticatedClient(roles: ["{{ admin_role }}"], tenantId: company, pinTenant: true);
+    }
+{{ else }}    private Task<HttpClient> ManagerAsync() => Task.FromResult(factory.CreateAuthenticatedClient({{ if required_permission }}roles: ["{{ admin_role }}"]{{ end }}));
+{{ end }}
 
     private static async Task<(HttpStatusCode Status, JsonElement Body)> PostAsync(HttpClient client, string query, object? variables = null)
     {

@@ -20,7 +20,7 @@ public sealed class {{ entity_name }}GrpcTests(ModulusWebAppFactory<ApiEntryPoin
     [Fact]
     public async Task Create_get_and_list_round_trip()
     {
-        var client = Client(factory.CreateAuthenticatedClient({{ if required_permission }}roles: ["{{ admin_role }}"]{{ end }}));
+        var client = Client(await AdminAsync());
 
         var created = await client.Create{{ entity_name }}Async(new Create{{ entity_name }}Request { Name = "From gRPC" });
         var item = await client.Get{{ entity_name }}Async(new Get{{ entity_name }}Request { Id = created.Id });
@@ -33,7 +33,7 @@ public sealed class {{ entity_name }}GrpcTests(ModulusWebAppFactory<ApiEntryPoin
     [Fact]
     public async Task Stream_returns_the_rows_one_message_at_a_time()
     {
-        var client = Client(factory.CreateAuthenticatedClient({{ if required_permission }}roles: ["{{ admin_role }}"]{{ end }}));
+        var client = Client(await AdminAsync());
         var created = await client.Create{{ entity_name }}Async(new Create{{ entity_name }}Request { Name = "Streamed" });
 
         using var call = client.Stream{{ entity_plural }}(new Stream{{ entity_plural }}Request());
@@ -67,7 +67,7 @@ public sealed class {{ entity_name }}GrpcTests(ModulusWebAppFactory<ApiEntryPoin
     [Fact]
     public async Task A_malformed_id_is_an_invalid_argument()
     {
-        var client = Client(factory.CreateAuthenticatedClient({{ if required_permission }}roles: ["{{ admin_role }}"]{{ end }}));
+        var client = Client(await AdminAsync());
 
         var call = () => client.Get{{ entity_name }}Async(new Get{{ entity_name }}Request { Id = "not-a-guid" }).ResponseAsync;
 
@@ -79,7 +79,7 @@ public sealed class {{ entity_name }}GrpcTests(ModulusWebAppFactory<ApiEntryPoin
     [Fact]
     public async Task An_unknown_id_is_not_found()
     {
-        var client = Client(factory.CreateAuthenticatedClient({{ if required_permission }}roles: ["{{ admin_role }}"]{{ end }}));
+        var client = Client(await AdminAsync());
 
         var call = () => client.Get{{ entity_name }}Async(new Get{{ entity_name }}Request { Id = Guid.NewGuid().ToString() }).ResponseAsync;
 
@@ -87,6 +87,14 @@ public sealed class {{ entity_name }}GrpcTests(ModulusWebAppFactory<ApiEntryPoin
     }
 
     // The test server speaks HTTP/2 to gRPC through the factory's own HttpClient (its test sign-in headers included).
+{{ if multi_tenancy && required_permission }}    // A multi-company host answers only inside a company: the caller signs in pinned to a company that starts with its starting grants.
+    private async Task<HttpClient> AdminAsync()
+    {
+        var company = await Companies.CreateAsync(factory.Services, "{{ entity_name_lower }}-grpc");
+        return factory.CreateAuthenticatedClient(roles: ["{{ admin_role }}"], tenantId: company, pinTenant: true);
+    }
+{{ else }}    private Task<HttpClient> AdminAsync() => Task.FromResult(factory.CreateAuthenticatedClient({{ if required_permission }}roles: ["{{ admin_role }}"]{{ end }}));
+{{ end }}
     private static {{ entity_name }}Service.{{ entity_name }}ServiceClient Client(HttpClient http)
         => new(GrpcChannel.ForAddress(http.BaseAddress!, new GrpcChannelOptions { HttpClient = http }));
 }

@@ -177,7 +177,7 @@ public sealed class GrpcCommandTests : IDisposable
 
     private const string Pres = "src/Modules/Shop.Modules.Catalog/Shop.Modules.Catalog.Presentation";
 
-    private void GenerateApp(AppKind kind = AppKind.Api, string[]? bff = null)
+    private void GenerateApp(AppKind kind = AppKind.Api, string[]? bff = null, bool multiTenancy = false)
     {
         Ux.Quiet = true;
         new NewAppCommand().GenerateAll(AppDir, new AppModel
@@ -186,6 +186,7 @@ public sealed class GrpcCommandTests : IDisposable
             AppName = "Shop",
             Auth = "openiddict",
             Kind = kind,
+            MultiTenancy = multiTenancy,
             Bff = bff ?? [],
             EnableCorrelation = true,
             EnableSecurityHeaders = true,
@@ -219,6 +220,26 @@ public sealed class GrpcCommandTests : IDisposable
 
         var tests = Read("tests/Shop.Tests/ProductGrpcTests.cs");
         tests.Should().Contain("roles: [\"Admin\"]").And.Contain("A_caller_without_the_permission_is_denied");
+    }
+
+    [Fact]
+    public void In_a_multi_company_host_the_generated_tests_sign_in_inside_a_company()
+    {
+        GenerateApp(multiTenancy: true);
+
+        Run(AppDir).Should().Be(0);
+
+        Read("tests/Shop.Tests/ProductGrpcTests.cs").Should().Contain("Companies.CreateAsync").And.Contain("pinTenant: true");
+    }
+
+    [Fact]
+    public void In_a_single_company_host_the_generated_tests_sign_in_without_a_company()
+    {
+        GenerateApp();
+
+        Run(AppDir).Should().Be(0);
+
+        Read("tests/Shop.Tests/ProductGrpcTests.cs").Should().NotContain("Companies.CreateAsync");
     }
 
     [Fact]

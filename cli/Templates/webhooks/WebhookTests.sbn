@@ -36,7 +36,7 @@ public sealed class WebhookTests(ModulusWebAppFactory<ApiEntryPoint> factory)
     [Fact]
     public async Task The_exposed_events_are_listed()
     {
-        var types = await Manager().GetFromJsonAsync<JsonElement>(new Uri("/api/webhooks/event-types", UriKind.Relative));
+        var types = await (await ManagerAsync()).GetFromJsonAsync<JsonElement>(new Uri("/api/webhooks/event-types", UriKind.Relative));
 
         types.EnumerateArray().Select(t => t.GetProperty("name").GetString()).Should().BeEquivalentTo(new string[]
         {
@@ -47,7 +47,7 @@ public sealed class WebhookTests(ModulusWebAppFactory<ApiEntryPoint> factory)
     [Fact]
     public async Task A_subscription_round_trips()
     {
-        var client = Manager();
+        var client = await ManagerAsync();
 
         var created = await client.PostAsJsonAsync(Subscriptions, new { url = "https://hooks.example.com/in", eventTypes = new[] { "*" } });
         created.StatusCode.Should().Be(HttpStatusCode.Created);
@@ -67,10 +67,17 @@ public sealed class WebhookTests(ModulusWebAppFactory<ApiEntryPoint> factory)
     [Fact]
     public async Task An_internal_address_is_refused()
     {
-        var response = await Manager().PostAsJsonAsync(Subscriptions, new { url = "https://169.254.169.254/latest", eventTypes = new[] { "*" } });
+        var response = await (await ManagerAsync()).PostAsJsonAsync(Subscriptions, new { url = "https://169.254.169.254/latest", eventTypes = new[] { "*" } });
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
-    private HttpClient Manager() => factory.CreateAuthenticatedClient({{ if has_admin_role }}roles: ["{{ admin_role }}"]{{ else }}permissions: ["webhooks:manage"]{{ end }});
+{{ if multi_tenancy && has_admin_role }}    // A multi-company host answers only inside a company: the manager signs in pinned to a company that starts with its starting grants.
+    private async Task<HttpClient> ManagerAsync()
+    {
+        var company = await Companies.CreateAsync(factory.Services, "webhooks");
+        return factory.CreateAuthenticatedClient(roles: ["{{ admin_role }}"], tenantId: company, pinTenant: true);
+    }
+{{ else }}    private Task<HttpClient> ManagerAsync() => Task.FromResult(factory.CreateAuthenticatedClient({{ if has_admin_role }}roles: ["{{ admin_role }}"]{{ else }}permissions: ["webhooks:manage"]{{ end }}));
+{{ end }}
 }

@@ -186,7 +186,7 @@ public sealed class WebhooksCommandTests : IDisposable
 
     private const string Infra = "src/Modules/Shop.Modules.Webhooks/Shop.Modules.Webhooks.Infrastructure";
 
-    private void GenerateApp(AppKind kind = AppKind.Api)
+    private void GenerateApp(AppKind kind = AppKind.Api, bool multiTenancy = false)
     {
         Ux.Quiet = true;
         new NewAppCommand().GenerateAll(AppDir, new AppModel
@@ -195,6 +195,7 @@ public sealed class WebhooksCommandTests : IDisposable
             AppName = "Shop",
             Auth = "openiddict",
             Kind = kind,
+            MultiTenancy = multiTenancy,
             EnableCorrelation = true,
             EnableSecurityHeaders = true,
             EnableSecretsGuard = true,
@@ -235,6 +236,30 @@ public sealed class WebhooksCommandTests : IDisposable
             .GetProperty("Webhooks").GetProperty("EnableDelivery").GetBoolean().Should().BeFalse();
 
         Read("tests/Shop.Tests/WebhookTests.cs").Should().Contain("\"catalog.product-created.v1\"").And.Contain("roles: [\"Admin\"]");
+    }
+
+    [Fact]
+    public void In_a_multi_company_host_the_administrators_of_each_company_start_with_the_permission_and_the_tests_sign_in_inside_a_company()
+    {
+        GenerateApp(multiTenancy: true);
+
+        Run(AppDir).Should().Be(0);
+
+        WebhooksWiringTests.Parse(Read("src/API/Shop.Api/appsettings.json"))
+            .GetProperty("CompanyProvisioning").GetProperty("Grants").GetProperty("Admin")
+            .EnumerateArray().Select(e => e.GetString()).Should().Contain("webhooks:manage");
+        Read("tests/Shop.Tests/WebhookTests.cs").Should().Contain("Companies.CreateAsync").And.Contain("pinTenant: true");
+    }
+
+    [Fact]
+    public void A_single_company_host_gets_no_company_grant()
+    {
+        GenerateApp();
+
+        Run(AppDir).Should().Be(0);
+
+        Read("src/API/Shop.Api/appsettings.json").Should().NotContain("CompanyProvisioning");
+        Read("tests/Shop.Tests/WebhookTests.cs").Should().NotContain("Companies.CreateAsync");
     }
 
     [Fact]
