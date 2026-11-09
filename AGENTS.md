@@ -1686,7 +1686,7 @@ data (finding F-30 in `docs/DOCUMENTATION.md`). Each module owns what it holds p
   stops it. Offboarding leaves the company `Suspended`; nothing closes it.
 - **Analytics.** `AddModulusAnalyticsTenantData()` adds the analytics handler (runs, then queue, then warehouse) and `AnalyticsOffboardingStep`, which cancels
   the company's runs, parks its undelivered queue rows and fails the operation while a worker still holds a claim on them (an in-flight batch would
-  otherwise land after the erase). Records captured later by background jobs are not stopped by it.
+  otherwise land after the erase). `AddModulusAnalyticsTenantData()` also wraps the registered `IAnalyticsConsent` (call it after `AddModulusAnalytics`), so once the company has an offboarding operation capture queues nothing and delivery sends nothing for it, even from a background job that keeps writing; another node notices within 10 seconds.
 - **CLI.** `modulus add-tenant-lifecycle` (see the CLI table) writes the store module, host wiring and a `{Module}TenantDataHandler` per module with entities.
   In a multi-company host **grants belong to a company** and a first-boot grant is written in the host context, which no company sees, so the command also adds
   `tenant-data:export` to `CompanyProvisioning:Grants:Admin` (new companies get it; existing companies keep the grants they have, so run `ICompanyProvisioner.TopUpAsync` for each or grant it through the

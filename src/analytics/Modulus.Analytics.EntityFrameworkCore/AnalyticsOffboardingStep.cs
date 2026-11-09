@@ -11,7 +11,7 @@ using Modulus.Tenancy.Lifecycle;
 /// in-flight batch would otherwise land in the warehouse after the erase. The refusal fails the operation, and a failed operation is run
 /// again from this step, so it passes as soon as the claims are released or expire.
 /// </summary>
-internal sealed class AnalyticsOffboardingStep(ModulusAnalyticsDbContext db, ICurrentTenant currentTenant, TimeProvider clock) : ITenantOffboardingStep
+internal sealed class AnalyticsOffboardingStep(ModulusAnalyticsDbContext db, ICurrentTenant currentTenant, TimeProvider clock, IEnumerable<IAnalyticsConsent> consents) : ITenantOffboardingStep
 {
     /// <summary>The marker written to a parked row's error, so an operator can tell why it was never delivered.</summary>
     internal const string ParkedReason = "Held back: the company is being offboarded.";
@@ -25,6 +25,11 @@ internal sealed class AnalyticsOffboardingStep(ModulusAnalyticsDbContext db, ICu
         var tenant = currentTenant.TenantId
             ?? throw new InvalidOperationException("The analytics offboarding step runs only inside a company's tenant context.");
         var now = clock.GetUtcNow().UtcDateTime;
+        foreach (var consent in consents.OfType<OffboardingAwareAnalyticsConsent>())
+        {
+            consent.MarkOffboarded(tenant); // capture and delivery refuse the company from here on, whatever a background job still does
+        }
+
 
         // Runs first: a run that is still reading would keep queueing rows behind the parking below. The claim is left alone; a worker in
         // the middle of a page releases it when it notices the cancellation.

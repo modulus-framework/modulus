@@ -84,6 +84,9 @@ public sealed class TenantLifecycleBuilder
 
     internal IReadOnlyList<Type> HandlerTypes => _handlers;
 
+    /// <summary>The service collection, for a module's lifecycle extension that has to register or wrap other services.</summary>
+    public IServiceCollection Services => _services;
+
     /// <summary>Registers a module's handler. It is resolved in the company's tenant context for each operation.</summary>
     public TenantLifecycleBuilder AddHandler<THandler>() where THandler : class, ITenantDataHandler
     {

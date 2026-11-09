@@ -1,6 +1,7 @@
 namespace Modulus.Analytics.EntityFrameworkCore;
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Modulus.Core.Abstractions;
 using Modulus.Tenancy.Lifecycle;
 
@@ -120,6 +121,36 @@ public static class AnalyticsTenantDataExtensions
     public static TenantLifecycleBuilder AddModulusAnalyticsTenantData(this TenantLifecycleBuilder builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+        WrapConsent(builder.Services);
         return builder.AddHandler<AnalyticsTenantDataHandler>().AddOffboardingStep<AnalyticsOffboardingStep>();
+    }
+
+    // Wraps the consent registered so far (the default allows everything), so call it after AddModulusAnalytics. Calling it twice wraps once.
+    private static void WrapConsent(IServiceCollection services)
+    {
+        if (services.Any(d => d.ServiceType == typeof(OffboardingAwareAnalyticsConsent)))
+        {
+            return;
+        }
+
+        var inner = services.LastOrDefault(d => d.ServiceType == typeof(IAnalyticsConsent));
+        if (inner is not null)
+        {
+            services.Remove(inner);
+        }
+
+        services.AddSingleton(sp => new OffboardingAwareAnalyticsConsent(
+            inner is null ? new AllowAll() : (IAnalyticsConsent)Resolve(sp, inner), sp.GetRequiredService<IServiceScopeFactory>(), sp.GetService<TimeProvider>() ?? TimeProvider.System));
+        services.AddSingleton<IAnalyticsConsent>(sp => sp.GetRequiredService<OffboardingAwareAnalyticsConsent>());
+    }
+
+    private static object Resolve(IServiceProvider sp, ServiceDescriptor d)
+        => d.ImplementationInstance
+            ?? d.ImplementationFactory?.Invoke(sp)
+            ?? ActivatorUtilities.CreateInstance(sp, d.ImplementationType!);
+
+    private sealed class AllowAll : IAnalyticsConsent
+    {
+        public ValueTask<bool> IsGrantedAsync(Guid tenantId, string dataset, CancellationToken cancellationToken) => ValueTask.FromResult(true);
     }
 }

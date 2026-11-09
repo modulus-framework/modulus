@@ -175,4 +175,21 @@ public sealed partial class AnalyticsBackfillTests
         result.Created.Should().Be(1, "company B still gets its run");
         (await Runs()).Should().OnlyContain(r => r.TenantId == _tenantB);
     }
+
+    [Fact]
+    public async Task Capture_and_delivery_refuse_a_company_once_it_is_offboarded_but_not_another_company()
+    {
+        BuildOffboarding();
+        await SeedOrdersAsync(_tenantA, 1);
+        var consent = () => InScope(sp => sp.GetRequiredService<IAnalyticsConsent>().IsGrantedAsync(_tenantA, "orders", CancellationToken.None).AsTask());
+
+        (await consent()).Should().BeTrue("nothing is wrong with the company yet");
+
+        var id = await RequestOffboarding(_tenantA);
+        await RunOperation(id);
+
+        (await consent()).Should().BeFalse("a background job that writes for the company later queues nothing and sends nothing");
+        (await InScope(sp => sp.GetRequiredService<IAnalyticsConsent>().IsGrantedAsync(_tenantB, "orders", CancellationToken.None).AsTask()))
+            .Should().BeTrue("another company is unaffected");
+    }
 }

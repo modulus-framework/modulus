@@ -350,3 +350,4 @@ override Modulus.Tenancy.Lifecycle.TenantRetentionArgs.GetHashCode() -> int
 override Modulus.Tenancy.Lifecycle.TenantRetentionArgs.ToString() -> string!
 static Modulus.Tenancy.Lifecycle.TenantRetentionArgs.operator !=(Modulus.Tenancy.Lifecycle.TenantRetentionArgs? left, Modulus.Tenancy.Lifecycle.TenantRetentionArgs? right) -> bool
 static Modulus.Tenancy.Lifecycle.TenantRetentionArgs.operator ==(Modulus.Tenancy.Lifecycle.TenantRetentionArgs? left, Modulus.Tenancy.Lifecycle.TenantRetentionArgs? right) -> bool
+Modulus.Tenancy.Lifecycle.TenantLifecycleBuilder.Services.get -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
