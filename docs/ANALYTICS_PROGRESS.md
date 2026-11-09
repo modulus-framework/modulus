@@ -92,7 +92,7 @@ Last full run of the analytics suites (both frameworks where applicable):
 No open items remain. Both items below were closed by the owner's decision, not completed:
 
 1. Phase 5 `analytics-admin` in modulus-ui: closed, not built.
-2. Phase 6 live runs against Debezium, Kafka, Doris, Airflow, Superset and Iceberg: closed, not run. A Kafka broker start was denied by the permission classifier, and the other images were not pulled. The code is covered by fake-server tests only.
+2. Phase 6 live runs (2026-11-09): Superset 4.1.2, Airflow 2.10.4 and Debezium 3.0 (with real PostgreSQL and Kafka) now run in `Modulus.Analytics.Providers.Integration.Tests`; Kafka runs in the messaging integration tests. Findings: Superset issues a guest token only for an *embedded* dashboard, so the dashboard id is the embedded uuid (`POST /api/v1/dashboard/{id}/embedded`); Debezium needs `decimal.handling.mode=string` for NUMERIC columns, and a PostgreSQL table needs `REPLICA IDENTITY FULL` or a delete event has no company id (the reader now says so in its problem text). Earlier note: closed, not run. A Kafka broker start was denied by the permission classifier, and the other images were not pulled. The code is covered by fake-server tests only.
 
 ## Decisions to know about
 

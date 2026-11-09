@@ -129,7 +129,8 @@ public sealed class DebeziumChangeReader
         if (!rowObject.TryGetProperty(mapping.TenantColumn, out var tenantElement) || tenantElement.ValueKind != JsonValueKind.String
             || !Guid.TryParse(tenantElement.GetString(), out var tenant) || tenant == Guid.Empty)
         {
-            problem = $"Event {position} ({mapping.Table}) has no valid company id in '{mapping.TenantColumn}'.";
+            problem = $"Event {position} ({mapping.Table}) has no valid company id in '{mapping.TenantColumn}'."
+                + (deleted ? " A delete carries only the old row: set REPLICA IDENTITY FULL on the table (PostgreSQL) so the old row holds the company id." : string.Empty);
             return Outcome.Problem;
         }
 
@@ -179,7 +180,8 @@ public sealed class DebeziumChangeReader
             }
             catch (Exception ex) when (ex is FormatException or InvalidOperationException or OverflowException or ArgumentOutOfRangeException)
             {
-                problem = $"Event {position} ({mapping.Table}): '{field.Name}' cannot be read as {field.Type}: {ex.Message}";
+                problem = $"Event {position} ({mapping.Table}): '{field.Name}' cannot be read as {field.Type}: {ex.Message}"
+                    + (field.Type == AnalyticsFieldType.Decimal ? " Set decimal.handling.mode=string on the connector: the default sends a decimal as binary." : string.Empty);
                 return Outcome.Problem;
             }
         }
