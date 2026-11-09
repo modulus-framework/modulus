@@ -38,7 +38,9 @@ public sealed class QuartzJobScheduler(
     {
         var map = new JobDataMap
         {
-            ["args"] = args!,
+            // A persistent store reads a stored value back as a string, a number, a boolean or a string dictionary, so an arguments
+            // record cannot be kept as an object: it is stored as JSON text and read back by the adapter.
+            ["argsJson"] = System.Text.Json.JsonSerializer.Serialize(args),
             ["tenantId"] = serviceProvider.GetService<ICurrentTenant>()?.TenantId?.ToString("N") ?? string.Empty,
             ["correlationId"] = serviceProvider.GetService<ICorrelationContext>()?.CorrelationId ?? string.Empty,
         };

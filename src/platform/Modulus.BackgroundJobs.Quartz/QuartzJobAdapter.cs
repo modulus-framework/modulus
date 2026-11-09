@@ -24,10 +24,22 @@ public sealed class QuartzJobAdapter<TJob, TArgs> : IJob
         _logger = logger;
     }
 
+    /// <summary>The job data key holding the arguments as JSON text.</summary>
+    internal const string ArgsKey = "argsJson";
+
+    // Jobs stored before the arguments became JSON text hold the object itself under "args" (a memory store, or a store that could read it).
+    private static TArgs ReadArgs(JobDataMap map)
+        => map.TryGetValue(ArgsKey, out var json) && json is string text
+            ? System.Text.Json.JsonSerializer.Deserialize<TArgs>(text)!
+            : (TArgs)map["args"]!;
+
+    // A persistent store's map throws on a missing key (a job run by the system has no initiator), so look before reading.
+    private static string? Text(JobDataMap map, string key) => map.TryGetValue(key, out var value) ? value as string : null;
+
     public async Task Execute(IJobExecutionContext context)
     {
         var jobDataMap = context.JobDetail.JobDataMap;
-        var args = (TArgs)jobDataMap["args"]!;
+        var args = ReadArgs(jobDataMap);
 
         // ── Restore ambient context ────────────────────────────────
         // The tenant id is verified (ITenantContextRestorer): a job scheduled for a tenant that
@@ -52,13 +64,13 @@ public sealed class QuartzJobAdapter<TJob, TArgs> : IJob
                 : null;
 
         // The actor the job runs as (A6-2): visible to the job through JobContext and to every log line of this job.
-        var actor = jobDataMap.GetString("actor") ?? JobActor.ForSystem(typeof(TJob).Name);
+        var actor = Text(jobDataMap, "actor") ?? JobActor.ForSystem(typeof(TJob).Name);
         if (_serviceProvider.GetService<JobContext>() is { } jobContext)
             jobContext.Actor = actor;
         using var actorScope = _logger.BeginScope(new Dictionary<string, object?> { ["JobActor"] = actor });
 
         // A job queued by a person runs only while that person may still start access (A6-1). A refused job is skipped, not retried.
-        if (jobDataMap.GetString("initiatorId") is { Length: > 0 } initiator
+        if (Text(jobDataMap, "initiatorId") is { Length: > 0 } initiator
             && Guid.TryParseExact(initiator, "N", out var initiatorId)
             && _serviceProvider.GetService<IJobInitiatorGuard>() is { } guard
             && !await guard.MayRunAsync(initiatorId, context.CancellationToken))

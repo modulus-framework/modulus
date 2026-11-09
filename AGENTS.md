@@ -1695,8 +1695,11 @@ data (finding F-30 in `docs/DOCUMENTATION.md`). Each module owns what it holds p
 - **Registry after start.** `PermissionRegistry` takes no new or changed permission once frozen, but declaring one again unchanged is a no-op, so
   `ICompanyProvisioner.ProvisionAsync` works at runtime (it replays module declarations while it validates the baseline; before, it threw
   "PermissionRegistry is frozen" once the host had started).
-- **Not built / open.** The Quartz retention driver (`TenantLifecycle:RetentionDriver = Scheduler`) is unit-tested with a recording scheduler, not run against
-  a Quartz store. The decision's backup and retention periods are defaults the owner must confirm. Export archives go through `UploadAsync`, so
+- **Not built / open.** The Quartz retention driver (`TenantLifecycle:RetentionDriver = Scheduler`) now runs in a test on a real Quartz scheduler with the SQLite store
+  (`QuartzRetentionJobTests`: stored, fired, survives a restart). That test found two defects in the Quartz package, fixed: job arguments are stored as
+  JSON text (`argsJson`; a persistent store could not keep an arguments record, so every `IJobScheduler` call failed with only a log line), and a system
+  job with no initiator no longer throws on the persistent store's strict job data map. `AddRecurring` is still fire-and-forget, so watch the log for
+  "Failed to schedule recurring job". The decision's backup and retention periods are defaults the owner must confirm. Export archives go through `UploadAsync`, so
   `Storage:MaxUploadBytes` caps their size.
 
 ## AI connector (`Modulus.AI.Connector`)
