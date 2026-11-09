@@ -1699,7 +1699,7 @@ data (finding F-30 in `docs/DOCUMENTATION.md`). Each module owns what it holds p
   (`QuartzRetentionJobTests`: stored, fired, survives a restart). That test found two defects in the Quartz package, fixed: job arguments are stored as
   JSON text (`argsJson`; a persistent store could not keep an arguments record, so every `IJobScheduler` call failed with only a log line), and a system
   job with no initiator no longer throws on the persistent store's strict job data map. `AddRecurring` is still fire-and-forget, so watch the log for
-  "Failed to schedule recurring job". The decision's backup and retention periods are defaults the owner must confirm. Export archives go through `UploadAsync`, so
+  "Failed to schedule recurring job". The backup and retention periods are the defaults in `TenantLifecycleOptions`, accepted by the owner on 2026-11-09 "for now" (backups 90 days; financial records and security audit unlimited until a legal period and an approved policy are set): revisit them before a customer relies on a deletion certificate, since the certificate states the backup period and it must match the real backup retention. Export archives go through `UploadAsync`, so
   `Storage:MaxUploadBytes` caps their size.
 
 ## AI connector (`Modulus.AI.Connector`)
