@@ -85,6 +85,42 @@ internal sealed class CompanyProvisioner(
         return granted;
     }
 
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<string>> TopUpAsync(TenantInfo company, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(company);
+        var baseline = Validate(options.Value.Grants);
+        var owner = ValidateOwner(options.Value.OwnerPermissions);
+        var wanted = baseline.ToDictionary(r => r.Key, r => r.Value, StringComparer.Ordinal);
+        if (owner.Length > 0)
+            wanted[CompanyProvisioningOptions.OwnerRole] = owner;
+
+        var added = new List<string>();
+        using (tenant.Change(company))
+        {
+            foreach (var (role, permissions) in wanted)
+            {
+                var held = (await grants.GetGrantsForHolderAsync(GrantHolderType.Role, role, ct)).Select(g => g.Permission).ToHashSet(StringComparer.Ordinal);
+                var missing = permissions.Where(p => !held.Contains(p)).ToArray();
+                if (missing.Length == 0)
+                    continue;
+                await grants.GrantToRoleAsync(role, missing, ct);
+                added.AddRange(missing.Select(p => $"{role}:{p}"));
+            }
+        }
+
+        (services.GetService(typeof(ISecurityAuditLog)) as ISecurityAuditLog ?? NullSecurityAuditLog.Instance).Record(new SecurityAuditEvent
+        {
+            Category = SecurityAuditCategories.Authorization,
+            Action = "company.topped-up",
+            TenantId = company.TenantId,
+            Target = $"tenant:{company.TenantId:D}",
+            Outcome = SecurityAuditOutcomes.Success,
+            Details = new Dictionary<string, string?> { ["addedGrants"] = added.Count.ToString(System.Globalization.CultureInfo.InvariantCulture) },
+        });
+        return added;
+    }
+
     // The owner list: registered permissions only, Critical allowed (the owner role is the one place a Critical permission is granted to a company).
     private string[] ValidateOwner(string[] permissions)
     {

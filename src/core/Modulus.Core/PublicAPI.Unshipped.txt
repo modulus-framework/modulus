@@ -47,3 +47,4 @@ Modulus.Core.Abstractions.ITenantStatusWriter.SetStatusAsync(System.Guid id, Mod
 *REMOVED*Modulus.Core.Null.NullUserDisplayNameDirectory.GetDisplayNamesAsync(System.Collections.Generic.IReadOnlyCollection<System.Guid>! userIds, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyDictionary<System.Guid, string!>!>
 *REMOVED*Modulus.Core.Null.NullUserDisplayNameDirectory.NullUserDisplayNameDirectory() -> void
 *REMOVED*static Modulus.Core.Null.NullUserDisplayNameDirectory.Instance.get -> Modulus.Core.Null.NullUserDisplayNameDirectory!
+Modulus.Core.Abstractions.ICompanyProvisioner.TopUpAsync(Modulus.Core.Abstractions.TenantInfo! company, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<string!>!>!

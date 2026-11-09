@@ -60,6 +60,35 @@ public sealed class CompanyProvisionerAfterStartTests : IDisposable
             .Select(g => g.Permission).Should().Equal("orders:read");
     }
 
+    [Fact]
+    public async Task Top_up_adds_a_new_baseline_permission_to_an_existing_company_and_keeps_deliberate_changes()
+    {
+        var company = new TenantInfo(Guid.NewGuid(), "old-co");
+        var provisioner = _provider.GetRequiredService<ICompanyProvisioner>();
+        await provisioner.ProvisionAsync(company); // the company as it was created: Admin holds orders:read
+
+        _tenant.Enter(company);
+        var store = _provider.GetRequiredService<EfPermissionGrantStore>();
+        await store.DenyToRoleAsync("Admin", ["orders:read"]); // a deliberate change
+        _tenant.Enter(null);
+
+        // A release adds a permission to the baseline.
+        var registry = _provider.GetRequiredService<IPermissionRegistry>();
+        registry.Add("orders:export", "Export orders", null, PermissionSensitivity.Normal);
+        _provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<CompanyProvisioningOptions>>().Value.Grants["Admin"] = ["orders:read", "orders:export"];
+
+        (await provisioner.ProvisionAsync(company)).Should().BeEmpty("a role that holds grants is left alone");
+        var added = await provisioner.TopUpAsync(company);
+
+        added.Should().Equal("Admin:orders:export");
+        _tenant.Enter(company);
+        var grants = await store.GetGrantsForHolderAsync(GrantHolderType.Role, "Admin");
+        grants.Should().Contain(g => g.Permission == "orders:export" && g.Type == PermissionGrantType.Allow);
+        grants.Should().Contain(g => g.Permission == "orders:read" && g.Type == PermissionGrantType.Deny, "the deny stays");
+        _tenant.Enter(null);
+        (await provisioner.TopUpAsync(company)).Should().BeEmpty("it is safe to repeat");
+    }
+
     private sealed class Company : ICurrentTenant
     {
         private TenantInfo? _current;

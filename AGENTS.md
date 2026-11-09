@@ -942,7 +942,7 @@ isolation, hash-chained security audit, probe suite), and the provider integrati
 - **Company grants in generated hosts.** Grants belong to a company; a first-boot grant (`AddPermissionGrants`) is written in the host context, which no company
   sees. A generator that adds a permission for the Admin role (`add-webhooks`, `add-tenant-lifecycle`, ...) must also add it to
   `CompanyProvisioning:Grants:{Admin}` in `appsettings.json` (`TenantLifecycleWiring.EnsureCompanyGrant`), and its generated tests must sign in pinned to a company
-  created through `Companies.CreateAsync` (which provisions through `ICompanyProvisioner`). Existing companies keep the grants they have. Check a new generator
+  created through `Companies.CreateAsync` (which provisions through `ICompanyProvisioner`). Existing companies keep the grants they have; `ICompanyProvisioner.TopUpAsync(company)` adds the baseline permissions a company's roles lack (add-only: an existing allow or deny row is never changed, audited as `company.topped-up`), so run it per company after a release that adds one. Check a new generator
   by generating a `--multi-tenancy` app, adding every feature, and running its tests.
 - **Registration order.** `AddMultiTenancy` replaces the `NullCurrentTenant` default that `AddModulus` / `AddModulusUi` /
   the EF authorization store `TryAdd` (always the host: before this fix, `AddModulus` then `AddMultiTenancy` left every
@@ -1689,7 +1689,7 @@ data (finding F-30 in `docs/DOCUMENTATION.md`). Each module owns what it holds p
   otherwise land after the erase). Records captured later by background jobs are not stopped by it.
 - **CLI.** `modulus add-tenant-lifecycle` (see the CLI table) writes the store module, host wiring and a `{Module}TenantDataHandler` per module with entities.
   In a multi-company host **grants belong to a company** and a first-boot grant is written in the host context, which no company sees, so the command also adds
-  `tenant-data:export` to `CompanyProvisioning:Grants:Admin` (new companies get it; existing companies keep the grants they have, so grant it through the
+  `tenant-data:export` to `CompanyProvisioning:Grants:Admin` (new companies get it; existing companies keep the grants they have, so run `ICompanyProvisioner.TopUpAsync` for each or grant it through the
   authorization API). The generated tests include `TenantLifecycleExportTests` (request, wait for the worker, download, another company refused) and the
   generated `Companies.CreateAsync` test helper provisions through `ICompanyProvisioner`, the path a real company takes.
 - **Registry after start.** `PermissionRegistry` takes no new or changed permission once frozen, but declaring one again unchanged is a no-op, so
