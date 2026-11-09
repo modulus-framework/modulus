@@ -25,7 +25,7 @@ Every tool and NuGet package must be open source (OSI licence), production-prove
 | 3 | Backfill, incremental sync, Parquet sink | Done. SQL Server run closed without a run (see Decisions) |
 | 4 | Governance | Done (see below) |
 | 5 | Operability: CLI `add-analytics`, catalog and freshness endpoints (done); `analytics-admin` in modulus-ui | Closed. Not built: the modulus-ui repository was not pushed to, as the owner asked |
-| 6 | Enterprise providers: Debezium reader, Airflow/dbt trigger, Superset guest tokens, Doris sink, lakehouse runbooks | Code and runbooks done. Closed without live runs: Debezium, Kafka, Doris, Airflow, Superset and Iceberg were tested against fakes only (see Decisions) |
+| 6 | Enterprise providers: Debezium reader, Airflow/dbt trigger, Superset guest tokens, Doris sink, lakehouse runbooks | Code and runbooks done. Debezium, Kafka, Airflow and Superset now also run against real services (`Modulus.Analytics.Providers.Integration.Tests`). Doris and Iceberg were tested against fakes only: the Doris all-in-one image (`apache/doris:doris-all-in-one-2.1.0`) takes 6+ minutes to start on a 14 GB machine and its container stopped mid-run three times, so no live Doris test was kept (see Decisions) |
 
 ## Phase 4 detail
 
