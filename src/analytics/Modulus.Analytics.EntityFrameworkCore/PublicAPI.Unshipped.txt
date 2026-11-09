@@ -1,6 +1,6 @@
 #nullable enable
 Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillManager
-Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillManager.AnalyticsBackfillManager(Modulus.Analytics.EntityFrameworkCore.ModulusAnalyticsDbContext! db, Modulus.Analytics.IAnalyticsDatasetCatalog! catalog, System.Collections.Generic.IEnumerable<Modulus.Analytics.IAnalyticsSource!>! sources, Modulus.Analytics.IAnalyticsTenantDirectory! directory, Modulus.Analytics.IAnalyticsEntitlement! entitlement, System.TimeProvider! clock) -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillManager.AnalyticsBackfillManager(Modulus.Analytics.EntityFrameworkCore.ModulusAnalyticsDbContext! db, Modulus.Analytics.IAnalyticsDatasetCatalog! catalog, System.Collections.Generic.IEnumerable<Modulus.Analytics.IAnalyticsSource!>! sources, Modulus.Analytics.IAnalyticsTenantDirectory! directory, Modulus.Analytics.IAnalyticsEntitlement! entitlement, System.TimeProvider! clock, Modulus.Tenancy.Lifecycle.ITenantLifecycleProvider? lifecycle = null) -> void
 Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillManager.CancelAsync(System.Guid runId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<bool>!
 Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillManager.GetAsync(System.Guid runId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillRun?>!
 Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillManager.ListAsync(string? dataset = null, Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillStatus? status = null, int take = 100, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken), System.Collections.Generic.IReadOnlyCollection<string!>? datasets = null) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillRun!>!>!
@@ -67,13 +67,15 @@ Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillRun.UpdatedAt.get -> Syst
 Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillRun.UpdatedAt.set -> void
 Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillStartResult
 Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillStartResult.<Clone>$() -> Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillStartResult!
-Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillStartResult.AnalyticsBackfillStartResult(int Created, int Restarted, int Skipped, int NotEntitled = 0) -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillStartResult.AnalyticsBackfillStartResult(int Created, int Restarted, int Skipped, int NotEntitled = 0, int Offboarded = 0) -> void
 Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillStartResult.Created.get -> int
 Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillStartResult.Created.init -> void
-Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillStartResult.Deconstruct(out int Created, out int Restarted, out int Skipped, out int NotEntitled) -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillStartResult.Deconstruct(out int Created, out int Restarted, out int Skipped, out int NotEntitled, out int Offboarded) -> void
 Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillStartResult.Equals(Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillStartResult? other) -> bool
 Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillStartResult.NotEntitled.get -> int
 Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillStartResult.NotEntitled.init -> void
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillStartResult.Offboarded.get -> int
+Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillStartResult.Offboarded.init -> void
 Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillStartResult.Restarted.get -> int
 Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillStartResult.Restarted.init -> void
 Modulus.Analytics.EntityFrameworkCore.AnalyticsBackfillStartResult.Skipped.get -> int

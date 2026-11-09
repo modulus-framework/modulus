@@ -158,4 +158,21 @@ public sealed partial class AnalyticsBackfillTests
         (await HeldFor(_tenantA, AnalyticsTenantDataHandler.QueueDataset)).Should().Be(0);
         (await HeldFor(_tenantA, AnalyticsTenantDataHandler.WarehouseDataset)).Should().Be(0);
     }
+
+    [Fact]
+    public async Task A_backfill_for_every_company_skips_a_company_that_was_offboarded()
+    {
+        BuildOffboarding();
+        await SeedOrdersAsync(_tenantA, 2);
+        await SeedOrdersAsync(_tenantB, 1, firstId: 10);
+        var id = await RequestOffboarding(_tenantA);
+        await RunOperation(id);
+
+        var result = await InScope(sp => sp.GetRequiredService<AnalyticsBackfillManager>()
+            .StartAsync("orders", 1, null, restart: true, "operator", CancellationToken.None));
+
+        result.Offboarded.Should().Be(1);
+        result.Created.Should().Be(1, "company B still gets its run");
+        (await Runs()).Should().OnlyContain(r => r.TenantId == _tenantB);
+    }
 }

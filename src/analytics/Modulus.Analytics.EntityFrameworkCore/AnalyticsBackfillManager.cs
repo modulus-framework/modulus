@@ -1,13 +1,15 @@
 namespace Modulus.Analytics.EntityFrameworkCore;
 
 using Microsoft.EntityFrameworkCore;
+using Modulus.Tenancy.Lifecycle;
 
 /// <summary>What <see cref="AnalyticsBackfillManager.StartAsync"/> did.</summary>
 /// <param name="Created">New runs.</param>
 /// <param name="Restarted">Finished or failed runs that were reset to start again.</param>
 /// <param name="Skipped">Tenants whose run already exists and was left alone (still running, or finished and no restart was asked for).</param>
 /// <param name="NotEntitled">Tenants whose plan does not include the dataset's required feature. No run was created for them.</param>
-public sealed record AnalyticsBackfillStartResult(int Created, int Restarted, int Skipped, int NotEntitled = 0);
+/// <param name="Offboarded">Tenants that are being offboarded or were offboarded. No run was created for them: it would copy their data back into the warehouse.</param>
+public sealed record AnalyticsBackfillStartResult(int Created, int Restarted, int Skipped, int NotEntitled = 0, int Offboarded = 0);
 
 /// <summary>Starts and lists backfill runs. The background worker does the reading.</summary>
 public sealed class AnalyticsBackfillManager(
@@ -16,7 +18,8 @@ public sealed class AnalyticsBackfillManager(
     IEnumerable<IAnalyticsSource> sources,
     IAnalyticsTenantDirectory directory,
     IAnalyticsEntitlement entitlement,
-    TimeProvider clock)
+    TimeProvider clock,
+    ITenantLifecycleProvider? lifecycle = null)
 {
     /// <summary>
     /// Creates one run per tenant for a dataset version. A tenant that already has a run is skipped, unless <paramref name="restart"/> is
@@ -69,12 +72,16 @@ public sealed class AnalyticsBackfillManager(
             .Where(r => r.Dataset == dataset && r.SchemaVersion == version && r.Kind == kind && tenants.Contains(r.TenantId))
             .ToDictionaryAsync(r => r.TenantId, cancellationToken).ConfigureAwait(false);
 
-        int created = 0, restarted = 0, skipped = 0, notEntitled = 0;
+        int created = 0, restarted = 0, skipped = 0, notEntitled = 0, offboarded = 0;
         foreach (var tenant in tenants)
         {
             if (!entitlement.IsEntitled(tenant, descriptor))
             {
                 notEntitled++;
+            }
+            else if (await IsOffboardedAsync(tenant, cancellationToken).ConfigureAwait(false))
+            {
+                offboarded++;
             }
             else if (!existing.TryGetValue(tenant, out var run))
             {
@@ -117,8 +124,14 @@ public sealed class AnalyticsBackfillManager(
             await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         }
 
-        return new AnalyticsBackfillStartResult(created, restarted, skipped, notEntitled);
+        return new AnalyticsBackfillStartResult(created, restarted, skipped, notEntitled, offboarded);
     }
+
+    // An offboarding leaves the company Suspended, which still lists as active, so the tenant directory cannot tell. Any offboarding
+    // operation (open, failed or completed) closes the company to new runs: starting one would copy its rows back after the erase.
+    private async Task<bool> IsOffboardedAsync(Guid tenant, CancellationToken ct)
+        => lifecycle is not null
+            && (await lifecycle.ListOperationsAsync(tenant, ct).ConfigureAwait(false)).Any(o => o.Kind == OperationKind.Offboarding);
 
     /// <summary>Stops a run that is waiting or running. Nothing more is read for it; restart it to begin again.</summary>
     /// <param name="runId">The run id.</param>

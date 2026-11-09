@@ -403,11 +403,11 @@ public static class AnalyticsManagementExtensions
                 var result = await manager.StartAsync(
                     request.Dataset, request.Version, request.TenantIds, request.Restart, who, ct, request.Incremental ? AnalyticsRunKind.Incremental : AnalyticsRunKind.Backfill);
                 loggerFactory.CreateLogger("Modulus.Analytics.Management").LogInformation(
-                    "Analytics {Kind} of {Dataset}.v{Version} started by {User}: {Created} created, {Restarted} restarted, {Skipped} skipped, {NotEntitled} not entitled.",
-                    request.Incremental ? "incremental sync" : "backfill", request.Dataset, request.Version, who, result.Created, result.Restarted, result.Skipped, result.NotEntitled);
+                    "Analytics {Kind} of {Dataset}.v{Version} started by {User}: {Created} created, {Restarted} restarted, {Skipped} skipped, {NotEntitled} not entitled, {Offboarded} offboarded.",
+                    request.Incremental ? "incremental sync" : "backfill", request.Dataset, request.Version, who, result.Created, result.Restarted, result.Skipped, result.NotEntitled, result.Offboarded);
                 AnalyticsAudit.Record(services, request.Incremental ? "incremental.start" : "backfill.start", who, $"dataset:{request.Dataset}.v{request.Version}",
                     ("tenants", request.TenantIds is null ? "all" : request.TenantIds.Length), ("restart", request.Restart), ("created", result.Created),
-                    ("restarted", result.Restarted), ("skipped", result.Skipped), ("notEntitled", result.NotEntitled));
+                    ("restarted", result.Restarted), ("skipped", result.Skipped), ("notEntitled", result.NotEntitled), ("offboarded", result.Offboarded));
                 return Results.Ok(result);
             }
             catch (InvalidOperationException ex)
