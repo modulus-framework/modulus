@@ -30,6 +30,22 @@ public sealed class TenantDataWiringTests
     }
 
     [Fact]
+    public void A_second_module_is_added_to_the_widened_call()
+    {
+        var first = TenantLifecycleWiring.EnsureHandlerRegistration(Host, "CatalogTenantDataHandler", "Shop.Modules.Catalog.Infrastructure.TenantData");
+
+        var second = TenantLifecycleWiring.EnsureHandlerRegistration(first, "OrdersTenantDataHandler", "Shop.Modules.Orders.Infrastructure.TenantData");
+
+        second.Should().Contain(".AddHandler<CatalogTenantDataHandler>()")
+            .And.Contain(".AddHandler<OrdersTenantDataHandler>());")
+            .And.Contain("using Shop.Modules.Orders.Infrastructure.TenantData;");
+        second.IndexOf("CatalogTenantDataHandler>()", StringComparison.Ordinal)
+            .Should().BeLessThan(second.IndexOf("OrdersTenantDataHandler>()", StringComparison.Ordinal), "datasets are erased in registration order");
+        TenantLifecycleWiring.EnsureHandlerRegistration(second, "OrdersTenantDataHandler", "Shop.Modules.Orders.Infrastructure.TenantData")
+            .Should().Be(second, "a second run changes nothing");
+    }
+
+    [Fact]
     public void A_host_without_the_plain_call_is_left_alone()
     {
         const string custom = "builder.Services.AddTenantLifecycle(builder.Configuration, o => o.RetentionDriver = 0);";

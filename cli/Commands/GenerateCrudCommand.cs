@@ -411,12 +411,32 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
         var wired = ApiPermissionWiring.EnsurePermission(
             original, ApiHostFiles.ReadAll(host.ProgramCs), module.Name, permission, UiAccessGates.CrudPermissionDescription(model.EntityPlural ?? module.Name),
             withChecker: identityPackage);
-        if (wired == original)
-            return;
+        if (wired != original)
+        {
+            if (!Ux.DryRun)
+                Ux.WriteFile(target, wired);
+            generated.Add(CodeGen.Rel(host.ApiDir, Path.GetRelativePath(host.ApiDir, target).Replace(Path.DirectorySeparatorChar, '/') + " (updated)"));
+        }
 
+        // Grants belong to a company in a multi-company host: the first-boot grant above is written in the host context, which no company
+        // sees, so each new company's administrators get the permission from CompanyProvisioning:Grants (idempotent; companies that
+        // already exist get it at the next start from TopUpCompanyGrantsAsync(), or through ICompanyProvisioner.TopUpAsync or the authorization API).
+        if (model.MultiTenant && EnsureCompanyAdminGrant(Path.Combine(host.ApiDir, "appsettings.json"), permission))
+            generated.Add(CodeGen.Rel(host.ApiDir, "appsettings.json (updated)"));
+    }
+
+    /// <summary>Adds <paramref name="permission"/> to <c>CompanyProvisioning:Grants:Admin</c> in the settings file; false when nothing changed.</summary>
+    internal static bool EnsureCompanyAdminGrant(string settingsPath, string permission)
+    {
+        if (!File.Exists(settingsPath))
+            return false;
+        var json = File.ReadAllText(settingsPath);
+        var granted = TenantLifecycleWiring.EnsureCompanyGrant(json, UiAccessGates.AdminRole, permission);
+        if (granted == json)
+            return false;
         if (!Ux.DryRun)
-            Ux.WriteFile(target, wired);
-        generated.Add(CodeGen.Rel(host.ApiDir, Path.GetRelativePath(host.ApiDir, target).Replace(Path.DirectorySeparatorChar, '/') + " (updated)"));
+            Ux.WriteFile(settingsPath, granted);
+        return true;
     }
 
     /// <summary>

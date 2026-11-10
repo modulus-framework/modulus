@@ -13,11 +13,11 @@ public static class HomeEndpoints
     public static IEndpointRouteBuilder MapHomeEndpoints(this IEndpointRouteBuilder endpoints)
     {
         endpoints.MapBffClient("{{ client_name }}")
-            .MapGet("/home", async ({{ example_module }}Api {{ example_module_camel }}, BffComposer composer, CancellationToken ct) =>
+            .MapGet("/home", async ({{ example_module }}Api api, BffComposer composer, CancellationToken ct) =>
             {
                 var composition = composer.Begin(defaultTimeout: TimeSpan.FromSeconds(3));
-                var {{ example_route }} = composition.Optional("{{ example_route }}", {{ example_module_camel }}.Get{{ example_route_pascal }}Async);
-                return await composition.ExecuteAsync(() => new { {{ example_route }} = {{ example_route }}.Value }, ct);
+                var section = composition.Optional("{{ example_route }}", api.Get{{ example_route_pascal }}Async);
+                return await composition.ExecuteAsync(() => new { {{ example_route }} = section.Value }, ct);
             })
             .WithName("{{ client_pascal }}Home");
         return endpoints;

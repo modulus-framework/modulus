@@ -146,9 +146,22 @@ internal static class TenantLifecycleWiring
         if (text.Contains($"AddHandler<{handlerType}>()", StringComparison.Ordinal))
             return text;
         const string plain = "builder.Services.AddTenantLifecycle(builder.Configuration);";
+        const string widenedHead = "builder.Services.AddTenantLifecycle(builder.Configuration, lifecycle => lifecycle";
         var at = text.IndexOf(plain, StringComparison.Ordinal);
         if (at < 0)
-            return text;
+        {
+            // An earlier module already widened the call to the builder callback: add this module's handler to its chain (datasets are
+            // erased in registration order, so a module added later is listed after the ones it may depend on).
+            var chain = text.IndexOf(widenedHead, StringComparison.Ordinal);
+            var end = chain < 0 ? -1 : text.IndexOf(';', chain);
+            if (end < 1 || text[end - 1] != ')')
+                return text;
+            var chainLineStart = text.LastIndexOf('\n', chain) + 1;
+            var chainIndent = text[chainLineStart..chain];
+            var chainNl = WebhooksWiring.NewLine(text);
+            text = text[..(end - 1)] + chainNl + chainIndent + "    .AddHandler<" + handlerType + ">()" + text[(end - 1)..];
+            return WebhooksWiring.EnsureUsing(text, "using " + handlerNamespace + ";");
+        }
         var lineStart = text.LastIndexOf('\n', at) + 1;
         var indent = text[lineStart..at];
         var nl = WebhooksWiring.NewLine(text);

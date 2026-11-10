@@ -107,7 +107,10 @@ public sealed class BffTemplateTests
         var model = BffHostModel.For(App(bff: ["mobile"]), "mobile", 0);
 
         var endpoints = _engine.Render("bff/HomeEndpoints", model);
-        endpoints.Should().Contain("MapBffClient(\"mobile\")").And.Contain("catalog.GetProductsAsync");
+        endpoints.Should().Contain("MapBffClient(\"mobile\")").And.Contain("api.GetProductsAsync");
+        // The parameter and the local never take the module's or the route's name, so a module called "Orders" (route "orders")
+        // does not declare `orders` twice (CS0136).
+        endpoints.Should().Contain("CatalogApi api,").And.Contain("var section = composition.Optional(").And.Contain("= section.Value");
 
         var client = BffApiClients.RenderModule(_engine, model.Modules.Single());
         client.Should().Contain("public sealed class CatalogApi(HttpClient http)");

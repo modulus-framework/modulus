@@ -120,14 +120,20 @@ internal sealed class DoctorCommand : Command<DoctorCommand.Settings>
                     Path.Combine(infraDir, m.Namespace + ".Infrastructure.csproj"),
                     inventory.SolutionDir));
 
-                checks.Add(CheckFile(
+                // A business module names them {Module}DbContext; an infrastructure-only module (Identity, Audit, Webhooks, ...)
+                // uses App{Module}DbContext, so any *DbContext.cs / *DbContextFactory.cs in the project counts.
+                checks.Add(CheckAnyFile(
                     $"{m.Name}: DbContext",
-                    Path.Combine(infraDir, m.Name + "DbContext.cs"),
+                    infraDir,
+                    "*DbContext.cs",
+                    m.Name + "DbContext.cs",
                     inventory.SolutionDir));
 
-                checks.Add(CheckFile(
+                checks.Add(CheckAnyFile(
                     $"{m.Name}: design-time factory",
-                    Path.Combine(infraDir, m.Name + "DbContextFactory.cs"),
+                    infraDir,
+                    "*DbContextFactory.cs",
+                    m.Name + "DbContextFactory.cs",
                     inventory.SolutionDir));
 
                 checks.Add(MigrateSupport.IsDbshModule(infraDir)
@@ -346,6 +352,16 @@ internal sealed class DoctorCommand : Command<DoctorCommand.Settings>
                 "dbsh tool",
                 $"dbsh not found on PATH ({ex.Message}). Install: dotnet tool install --global dbsh");
         }
+    }
+
+    internal static CheckResult CheckAnyFile(string name, string directory, string pattern, string expectedName, string solutionDir)
+    {
+        var found = Directory.Exists(directory)
+            ? Directory.EnumerateFiles(directory, pattern, SearchOption.TopDirectoryOnly).OrderBy(f => f, StringComparer.Ordinal).FirstOrDefault()
+            : null;
+        return found is not null
+            ? CheckFile(name, found, solutionDir)
+            : CheckFile(name, Path.Combine(directory, expectedName), solutionDir);
     }
 
     private static CheckResult CheckFile(string name, string fullPath, string solutionDir)
