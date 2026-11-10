@@ -49,7 +49,12 @@ internal static class DatabaseStartup
         // The default company and the administrators' memberships in it (see TenancySeeding).
         await app.Services.SeedTenancyAsync(app.Environment);
 {{ if multi_tenancy }}        await app.Services.SeedCompanyGrantsAsync(app.Configuration);
-{{ end }}{{ end }}    }
+{{ if example_permission }}
+        // Companies created before a module or permission was added keep the grants they have, so each start gives every company the baseline
+        // grants it lacks (CompanyProvisioning:Grants). It only adds: an administrator's own allows and denies stay. Turn it off with
+        // CompanyProvisioning:TopUpOnStartup=false on replicas when a migrator job or an operator runs it instead.
+        await app.Services.TopUpCompanyGrantsAsync();
+{{ end }}{{ end }}{{ end }}    }
 
 {{ if multi_tenancy }}    /// <summary>
     /// Gives the default company its configured starting grants (CompanyProvisioning:Grants, the same baseline a new company gets through the

@@ -29,6 +29,12 @@ public sealed class CompanyProvisioningOptions
     /// permission. Empty means no owner baseline.
     /// </summary>
     public string[] OwnerPermissions { get; set; } = [];
+
+    /// <summary>
+    /// Whether <see cref="CompanyProvisioningExtensions.TopUpCompanyGrantsAsync"/> does its work (default <see langword="true"/>). Set it to
+    /// <see langword="false"/> on the replicas of a deployment where a migrator job or an operator runs the top-up instead.
+    /// </summary>
+    public bool TopUpOnStartup { get; set; } = true;
 }
 
 /// <summary>

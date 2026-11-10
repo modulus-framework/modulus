@@ -64,6 +64,22 @@ public sealed class MultiTenancyTemplateTests
     }
 
     [Fact]
+    public void A_multi_tenant_host_tops_up_the_grants_of_every_company_at_startup()
+    {
+        var startup = _engine.Render("app/api/DatabaseStartup", Model());
+
+        startup.Should().Contain("await app.Services.TopUpCompanyGrantsAsync();");
+        startup.IndexOf("TopUpCompanyGrantsAsync", StringComparison.Ordinal)
+            .Should().BeGreaterThan(startup.IndexOf("SeedCompanyGrantsAsync(app.Configuration)", StringComparison.Ordinal), "the default company is provisioned first");
+        startup.IndexOf("TopUpCompanyGrantsAsync", StringComparison.Ordinal)
+            .Should().BeGreaterThan(startup.IndexOf("MigrateModulusDatabasesAsync", StringComparison.Ordinal), "the schema exists first");
+
+        _engine.Render("app/api/DatabaseStartup", Model(multiTenancy: false)).Should().NotContain("TopUpCompanyGrantsAsync");
+        _engine.Render("app/api/DatabaseStartup", new AppModel { RootNamespace = "Shop", AppName = "Shop", Auth = "openiddict", Kind = AppKind.Api, MultiTenancy = true, NoExample = true })
+            .Should().NotContain("TopUpCompanyGrantsAsync", "without the example there is no authorization store");
+    }
+
+    [Fact]
     public void Without_the_option_nothing_tenant_specific_is_generated()
     {
         var model = Model(multiTenancy: false);

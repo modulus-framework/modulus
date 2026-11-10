@@ -1,1 +1,5 @@
 #nullable enable
+Modulus.Authorization.EntityFrameworkCore.CompanyProvisioningOptions.TopUpOnStartup.get -> bool
+Modulus.Authorization.EntityFrameworkCore.CompanyProvisioningOptions.TopUpOnStartup.set -> void
+Modulus.Authorization.EntityFrameworkCore.CompanyProvisioningExtensions
+static Modulus.Authorization.EntityFrameworkCore.CompanyProvisioningExtensions.TopUpCompanyGrantsAsync(this System.IServiceProvider! services, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<int>!

@@ -74,7 +74,8 @@
   },
   "CompanyProvisioning": {
 {{ if auth == "openiddict" }}    "OwnerPermissions": [ "identity:accounts:manage", "identity:accounts:personal-data", "identity:accounts:organization", "identity:accounts:organization:manage" ],
-{{ end }}    "Grants": {
+{{ end }}    "TopUpOnStartup": true,
+    "Grants": {
 {{ if example_permission }}      "{{ admin_role }}": [ "{{ example_permission }}" ]
 {{ end }}    }
   },
