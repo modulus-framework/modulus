@@ -283,7 +283,7 @@ tracked as a checklist item, with file:line, fix and test, in
 [`docs/DOCUMENTATION.md#production-readiness-review-findings-and-plan`](docs/DOCUMENTATION.md#production-readiness-review-findings-and-plan). Tick an item there when its fix lands.
 Completed plans are in `docs/DOCUMENTATION.md`, in the archive sections.
 
-The 2026-10-25 audit (tenancy, bulk operations, per-tenant databases, OpenBao, generated-command permissions, AI fail-open paths, release packaging) is a plan with a checkbox per finding (F-01 to F-30) in [`docs/DOCUMENTATION.md#production-readiness-audit-2026-10-25-findings-and-remediation-plan`](docs/DOCUMENTATION.md#production-readiness-audit-2026-10-25-findings-and-remediation-plan). Its P0 fixes are not started; work them in the order given there.
+The 2026-10-25 audit (tenancy, bulk operations, per-tenant databases, OpenBao, generated-command permissions, AI fail-open paths, release packaging) is a plan with a checkbox per finding (F-01 to F-30) in [`docs/DOCUMENTATION.md#production-readiness-audit-2026-10-25-findings-and-remediation-plan`](docs/DOCUMENTATION.md#production-readiness-audit-2026-10-25-findings-and-remediation-plan). 29 of 30 findings are fixed and ticked (re-checked 2026-11-09); only F-25 (signing with the commercial code-signing certificate, which the owner must obtain) is open.
 
 ## Earlier review findings (all fixed)
 
@@ -942,7 +942,7 @@ isolation, hash-chained security audit, probe suite), and the provider integrati
 - **Company grants in generated hosts.** Grants belong to a company; a first-boot grant (`AddPermissionGrants`) is written in the host context, which no company
   sees. A generator that adds a permission for the Admin role (`add-webhooks`, `add-tenant-lifecycle`, ...) must also add it to
   `CompanyProvisioning:Grants:{Admin}` in `appsettings.json` (`TenantLifecycleWiring.EnsureCompanyGrant`), and its generated tests must sign in pinned to a company
-  created through `Companies.CreateAsync` (which provisions through `ICompanyProvisioner`). Existing companies keep the grants they have; `ICompanyProvisioner.TopUpAsync(company)` adds the baseline permissions a company's roles lack (add-only: an existing allow or deny row is never changed, audited as `company.topped-up`), so run it per company after a release that adds one. Check a new generator
+  created through `Companies.CreateAsync` (which provisions through `ICompanyProvisioner`). Existing companies keep the grants they have; `ICompanyProvisioner.TopUpAsync(company)` adds the baseline permissions a company's roles lack (add-only: an existing allow or deny row is never changed, audited as `company.topped-up`), generated multi-tenant hosts call `app.Services.TopUpCompanyGrantsAsync()` at every start (after the default company is provisioned) and top up every existing company, so a new module or permission reaches companies created before it. `CompanyProvisioning:TopUpOnStartup=false` turns it off on replicas when a migrator job runs it instead; a host generated before this version runs `TopUpAsync` per company itself. Check a new generator
   by generating a `--multi-tenancy` app, adding every feature, and running its tests.
 - **Registration order.** `AddMultiTenancy` replaces the `NullCurrentTenant` default that `AddModulus` / `AddModulusUi` /
   the EF authorization store `TryAdd` (always the host: before this fix, `AddModulus` then `AddMultiTenancy` left every
@@ -1698,8 +1698,8 @@ data (finding F-30 in `docs/DOCUMENTATION.md`). Each module owns what it holds p
 - **Not built / open.** The Quartz retention driver (`TenantLifecycle:RetentionDriver = Scheduler`) now runs in a test on a real Quartz scheduler with the SQLite store
   (`QuartzRetentionJobTests`: stored, fired, survives a restart). That test found two defects in the Quartz package, fixed: job arguments are stored as
   JSON text (`argsJson`; a persistent store could not keep an arguments record, so every `IJobScheduler` call failed with only a log line), and a system
-  job with no initiator no longer throws on the persistent store's strict job data map. `AddRecurring` is still fire-and-forget, so watch the log for
-  "Failed to schedule recurring job". The backup and retention periods are the defaults in `TenantLifecycleOptions`, accepted by the owner on 2026-11-09 "for now" (backups 90 days; financial records and security audit unlimited until a legal period and an approved policy are set): revisit them before a customer relies on a deletion certificate, since the certificate states the backup period and it must match the real backup retention. Export archives go through `UploadAsync`, so
+  job with no initiator no longer throws on the persistent store's strict job data map. `AddRecurring` is still fire-and-forget, but a transient store failure is now retried (4 attempts, 2/4/8 s back-off) and a schedule that never takes hold logs at
+  **Critical** ("Recurring job ... was NOT scheduled"; an invalid cron expression fails at once), so alert on that message (`QuartzRecurringScheduleTests`). The backup and retention periods are the defaults in `TenantLifecycleOptions`, accepted by the owner on 2026-11-09 "for now" (backups 90 days; financial records and security audit unlimited until a legal period and an approved policy are set): revisit them before a customer relies on a deletion certificate, since the certificate states the backup period and it must match the real backup retention. Export archives go through `UploadAsync`, so
   `Storage:MaxUploadBytes` caps their size.
 
 ## AI connector (`Modulus.AI.Connector`)
@@ -1809,3 +1809,5 @@ layout pattern, so a new page looks like the rest of the app:
 - Without Docker, Podman works: `DOCKER_HOST=unix:///run/user/$UID/podman/podman.sock TESTCONTAINERS_RYUK_DISABLED=true dotnet test ...`.
 - Integration tests spin up real containers; prefer `IClassFixture`/collection
   fixtures rather than a container-per-test.
+- Running the whole `Category=Integration` set at once on rootless Podman overloads it (container start timeouts, `rootlessport ... address already in use`);
+  run a project at a time (`dotnet test tests/integration/<Project> -p:ModulusTestTfm=net10.0`). `Modulus.Cli.Integration.Tests` also needs the `modulus-ui` packages in a local feed and a full `dotnet pack` (about 10 minutes).

@@ -2351,7 +2351,7 @@ Tests: `tests/unit/Modulus.Data.MongoDB.Tests`, `Modulus.Outbox.Tests`, `Modulus
   - a Security section (S1–S6);
   - the breaking defaults (S7, S8, S13, D4) with their opt-outs;
   - the other fixes.
-- [ ] **Open, blocks Step 5 until 1.6.0 is published:** the CLI 1.5.5 module templates (`cli/Templates/module/Application/CreateHandler.sbn` and `UpdateHandler.sbn`, added in `e625a0e`) use `Modulus.Authorization.Dimensions` (`IDimensionValueRegistry`) and `Modulus.Authorization.Resources` (`IResourceScopeGuard`), which live in `Synvro.Modulus.Platform`. Checked 2026-10-23 with a fresh download from nuget.org (`Synvro.Modulus.Platform` 1.5.0, 374 KB): those types are **not** in the published package, so a generated app fails with CS0234/CS0246 in the module Application project (6 errors in the probe; the API project was not reached). An earlier check that said they were present read the global NuGet cache, which holds a locally packed 1.5.0 (428 KB) and is not the published package. Fix by publishing a Platform release that contains them and pinning the CLI to it (publishing needs an explicit instruction), or by removing the scope and dimension checks from the two handler templates (a security feature, so a decision for the owner). Do not tick Step 5 until a generated app builds from nuget.org.
+- [x] **Resolved (verified 2026-11-09):** the CLI templates' use of `IDimensionValueRegistry` / `IResourceScopeGuard` was a gap in the published 1.5.0 Platform. Published `Synvro.Modulus.Platform` 2.0.0 (and 1.6.0 onward) contains both types, and the published CLI 2.0.0 pins 2.0.0. Installing CLI 2.0.0 from nuget.org, running `modulus app Shop --with-example --kind api --auth openiddict --multi-tenancy` with no local feed, then `dotnet build` gave 0 warnings, 0 errors, and `dotnet test` passed 13/13.
 - [x] **Found 2026-10-23, reverted (Step 5 blocker):** the navigation wiring in the API templates (`cli/Templates/app/api/FeatureServicesSetup.sbn` `using Modulus.Navigation;` and `AddModulusNavigation()`, `FeatureEndpoints.sbn` `MapModulusNavigation()`) does not compile against the published `Synvro.Modulus.Platform` 1.5.0: its DLL has no `Modulus.Navigation` namespace. A `webapp+api` app generated today with the default packages fails with CS0234 in `Shop.Api`. It builds with 0 warnings against the local `1.5.0-local.4` feed (`feed4`), which has the namespace. Restored 2026-10-23 for the 1.6.0 release, which contains navigation: generated OpenIddict APIs wire the menu again. Generated apps must use 1.6.0.
 - [x] Mongo, EF Core and RLS integration tests run for this wrap-up (2026-10-23, Podman containers, `Category=Integration`):
   `Modulus.EFCore.Integration.Tests` 46/46 (net8.0) and 49/49 (net10.0), including PostgreSQL and SQL Server row-level security,
@@ -6424,13 +6424,13 @@ Iceberg Kafka Connect sink commits the table.
 ### Checklist
 
 - [x] Phase 0: licence gate run and recorded in `THIRD-PARTY-NOTICES.md` (2026-11-04). `ClickHouse.Driver` 1.5.0 adopted; `JsonSchema.Net` rejected (OSMF EULA).
-- [ ] Phase 1: dataset and field metadata, `SchemaVersion` and upcasters, JSON Schema export, `IAnalyticsSink`, conformance tests
+- [x] Phase 1: dataset and field metadata, `SchemaVersion` and upcasters, JSON Schema export, `IAnalyticsSink`, conformance tests
   - Done in `Modulus.Analytics` and `Modulus.Analytics.Testing` (29 unit tests, net8.0 and net10.0): dataset and field descriptors with validation,
     the versioned dataset catalog, `IAnalyticsSink` and `AnalyticsSinkException`, classification-driven batch masking (keep, hash, drop),
     record upcasters and `AnalyticsUpcasting`, JSON Schema export (`AnalyticsDatasetSchema`), `AddModulusAnalytics`, the in-memory sink and
     the sink conformance suite (`AnalyticsSinkConformance`).
   - Still open: writing `SchemaVersion` on outbox rows and envelopes (it is carried today but never set), so captured events can be upcast.
-- [ ] Phase 2: capture, mapper, masking, delivery queue, ClickHouse sink, messaging sink
+- [x] Phase 2: capture, mapper, masking, delivery queue, ClickHouse sink, messaging sink
   - Done (51 unit tests across `Modulus.Analytics.Tests` and `Modulus.Analytics.EntityFrameworkCore.Tests`, net8.0 and net10.0):
     - `AnalyticsDispatcher`: reject records with no tenant or dataset, upcast, mask, one batch per dataset to each sink, per-sink outcomes.
     - Event tap: `AnalyticsBuilder.MapEvent<TEvent>(dataset, version, map)` registers a capture handler, so modules never reference analytics.
@@ -6452,7 +6452,7 @@ Iceberg Kafka Connect sink commits the table.
     values *before* masking, so no response ever carries record values (tests pin this). Replay and purge are logged with the acting user. 12 unit tests.
   - Gaps closed (2026-11-04): circuit breaker, consent, quality-finding sinks, and the optional OpenMetadata, Apicurio and DuckDB packages, plus the MLflow runbook. See the table in docs/ANALYTICS_PROGRESS.md.
   - Done since: the messaging sink (`Modulus.Analytics.Messaging`, publishes each record as `AnalyticsRecordPublished` on the module bus; append-only, so it blocks tenant erasure while registered) and an EF migration sample (`samples/Modulus.Analytics.MigrationSample`, migration `InitialAnalyticsStore`, applied to PostgreSQL 16.15). Outbox rows carry the event's `SchemaVersion`; the column migration is in `docs/runbooks/analytics-store-migrations.md`.
-- [ ] Phase 3: extraction, change journal, per-tenant backfill with checkpoints, Parquet sink
+- [x] Phase 3: extraction, change journal, per-tenant backfill with checkpoints, Parquet sink
   - Done (`Modulus.Analytics` and `Modulus.Analytics.EntityFrameworkCore`, 36 tests across net8.0 and net10.0):
     - `IAnalyticsSource`: reads one tenant at a time with a cursor. `EntityAnalyticsSource` / `AddEntitySource<TContext, TEntity, TKey>` is the EF version: the entity
       must have `IHasTenantId`, the query filters on `TenantId` itself (on top of any global filter), and the paging key must be unique per tenant (integer, decimal or
@@ -6561,7 +6561,7 @@ Iceberg Kafka Connect sink commits the table.
     - Limits: no history of findings (each check is a snapshot; keep the response if you need one), no value-level rules beyond nulls and timestamps, and a
       sink that cannot be profiled (the Parquet lake) is reported in `Errors`, not checked. Quality of a lake is checked by its query engine.
 
-- [ ] Phase 5: management API, CLI `add-analytics` with compose template, `analytics-admin` in `modulus-ui`
+- [ ] Phase 5: management API, CLI `add-analytics` with compose template, `analytics-admin` in `modulus-ui` *(2026-11-09: management API, catalog and freshness endpoints and CLI `add-analytics` are done; `analytics-admin` in `modulus-ui` is deliberately not built, as the owner asked, so this stays open. See `docs/ANALYTICS_PROGRESS.md`.)*
   - Done: **management API** (`Modulus.Analytics.Management`, 3 more tests). `GET /analytics/datasets` lists the datasets the caller may manage, with owner, description,
     freshness SLA, retention, required feature and each field's type, classification, masking and null-rate rule (metadata only, never values).
     `GET /analytics/datasets/{name}/{version}/schema` serves the dataset's JSON Schema (`application/schema+json`) to its managers. Freshness, reconciliation,
