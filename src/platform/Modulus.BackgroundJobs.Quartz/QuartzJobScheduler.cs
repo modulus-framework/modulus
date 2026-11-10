@@ -117,6 +117,8 @@ public sealed class QuartzJobScheduler(
         _ = AddRecurringAsync<TJob, TArgs>(jobId, cronExpression, args, firstRunAt);
     }
 
+    private const int RecurringScheduleAttempts = 4;
+
     private async Task AddRecurringAsync<TJob, TArgs>(
         string jobId,
         string cronExpression,
@@ -124,37 +126,64 @@ public sealed class QuartzJobScheduler(
         DateTime? firstRunAt)
         where TJob : IBackgroundJob<TArgs>
     {
-        try
+        // AddRecurring is fire-and-forget, so a failure cannot reach the caller. A transient store error (database
+        // restart, lock timeout) is retried with back-off; a bad cron expression cannot succeed, so it fails at once.
+        for (var attempt = 1; ; attempt++)
         {
-            var scheduler = await GetSchedulerAsync();
-
-            var jobDetail = JobBuilder.Create<QuartzJobAdapter<TJob, TArgs>>()
-                .WithIdentity(jobId, "recurring")
-                .SetJobData(BuildJobDataMap(args, jobId, queuedByPerson: false))
-                .StoreDurably()
-                .Build();
-
-            var start = firstRunAt is { } earliest
-                ? new DateTimeOffset(DateTime.SpecifyKind(earliest, DateTimeKind.Utc))
-                : DateTimeOffset.UtcNow;
-            var trigger = TriggerBuilder.Create()
-                .WithIdentity($"{jobId}_trigger", "recurring")
-                .WithCronSchedule(cronExpression)
-                .StartAt(start)
-                .Build();
-
-            var jobKey = jobDetail.Key;
-            if (await scheduler.CheckExists(jobKey))
-                await scheduler.RescheduleJob(trigger.Key, trigger);
-            else
-                await scheduler.ScheduleJob(jobDetail, trigger);
+            try
+            {
+                await ScheduleRecurringOnceAsync<TJob, TArgs>(jobId, cronExpression, args, firstRunAt);
+                return;
+            }
+            catch (FormatException ex)
+            {
+                logger.LogCritical(ex, "Recurring job {JobId} was NOT scheduled: invalid cron expression '{Cron}'", jobId, cronExpression);
+                return;
+            }
+            catch (Exception ex) when (attempt < RecurringScheduleAttempts)
+            {
+                var delay = TimeSpan.FromSeconds(Math.Pow(2, attempt));
+                logger.LogWarning(ex, "Scheduling recurring job {JobId} failed (attempt {Attempt}/{Max}); retrying in {Delay}",
+                    jobId, attempt, RecurringScheduleAttempts, delay);
+                await Task.Delay(delay);
+            }
+            catch (Exception ex)
+            {
+                logger.LogCritical(ex, "Recurring job {JobId} was NOT scheduled after {Max} attempts and will not run until the process restarts",
+                    jobId, RecurringScheduleAttempts);
+                return;
+            }
         }
-        catch (Exception ex)
-        {
-            // Log but don't throw — AddRecurring is fire-and-forget, so schedule errors
-            // won't propagate to the caller. This is consistent with the ChannelJobQueue.
-            logger.LogError(ex, "Failed to schedule recurring job {JobId}", jobId);
-        }
+    }
+
+    private async Task ScheduleRecurringOnceAsync<TJob, TArgs>(
+        string jobId,
+        string cronExpression,
+        TArgs args,
+        DateTime? firstRunAt)
+        where TJob : IBackgroundJob<TArgs>
+    {
+        var scheduler = await GetSchedulerAsync();
+
+        var jobDetail = JobBuilder.Create<QuartzJobAdapter<TJob, TArgs>>()
+            .WithIdentity(jobId, "recurring")
+            .SetJobData(BuildJobDataMap(args, jobId, queuedByPerson: false))
+            .StoreDurably()
+            .Build();
+
+        var start = firstRunAt is { } earliest
+            ? new DateTimeOffset(DateTime.SpecifyKind(earliest, DateTimeKind.Utc))
+            : DateTimeOffset.UtcNow;
+        var trigger = TriggerBuilder.Create()
+            .WithIdentity($"{jobId}_trigger", "recurring")
+            .WithCronSchedule(cronExpression)
+            .StartAt(start)
+            .Build();
+
+        if (await scheduler.CheckExists(jobDetail.Key))
+            await scheduler.RescheduleJob(trigger.Key, trigger);
+        else
+            await scheduler.ScheduleJob(jobDetail, trigger);
     }
 
     public void RemoveRecurring(string jobId)
