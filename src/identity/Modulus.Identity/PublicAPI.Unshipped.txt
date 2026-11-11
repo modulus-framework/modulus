@@ -66,3 +66,7 @@ static Modulus.Identity.Extensions.ShopFloorExtensions.AddModulusShopFloor<TUser
 Modulus.Identity.Abstractions.IShopFloorAccountService.CreateAsync(System.Guid tenantId, string! employeeCode, string! pin, System.Collections.Generic.IEnumerable<string!>? roles = null, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Identity.IdentityResult!>!
 Modulus.Identity.Abstractions.ShopFloorImportRow.Deconstruct(out string! EmployeeCode, out System.Collections.Generic.IReadOnlyList<string!>? Roles, out string? InitialPin) -> void
 Modulus.Identity.Abstractions.ShopFloorImportRow.ShopFloorImportRow(string! EmployeeCode, System.Collections.Generic.IReadOnlyList<string!>? Roles = null, string? InitialPin = null) -> void
+const Modulus.Identity.Extensions.IntegrationClientAdministrationExtensions.ManagePermission = "identity:integration-clients:manage" -> string!
+Modulus.Identity.Extensions.IntegrationClientAdministrationExtensions
+static Modulus.Identity.Extensions.IntegrationClientAdministrationExtensions.AddModulusIntegrationClientAdministration(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.Identity.Extensions.IntegrationClientAdministrationExtensions.MapModulusIntegrationClients(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! prefix = "/identity/integration-clients") -> Microsoft.AspNetCore.Routing.RouteGroupBuilder!

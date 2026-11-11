@@ -1,0 +1,14 @@
+using Microsoft.EntityFrameworkCore;
+using Modulus.Authorization.EntityFrameworkCore;
+using Modulus.Core.Abstractions;
+
+namespace {{ authorization_namespace }}.Infrastructure;
+
+/// <summary>
+/// The application's authorization store: permission grants, organization units, delegations and the rest of the
+/// authorization tables, in their own database. It derives from the framework's organization-aware context with the
+/// framework's own organization entities; the migrations of this project define the schema that the API host and the
+/// provisioning host share. Register it with <c>AddAuthorizationStore</c>.
+/// </summary>
+public sealed class AppAuthorizationDbContext(DbContextOptions<AppAuthorizationDbContext> options, ICurrentTenant currentTenant)
+    : AuthorizationStoreDbContext<OrgUnitRow, OrgUnitParentRow, OrgUnitProfileRow, CompanyProfileRow>(options, currentTenant);

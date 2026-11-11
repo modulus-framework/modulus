@@ -1,0 +1,21 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Modulus.Authorization.EntityFrameworkCore;
+
+namespace {{ authorization_namespace }}.Infrastructure;
+
+/// <summary>
+/// Registers the application's authorization store (grants, organization units, delegations) on its own database
+/// (<c>ConnectionStrings:Authorization</c>), with the migrations of this project. The API host calls it in place of the
+/// framework's default context, so the store's schema is authored in the application (production refuses to create it
+/// without migrations).
+/// </summary>
+public static class AuthorizationStoreRegistration
+{
+    public static IServiceCollection AddAuthorizationStore(this IServiceCollection services, IConfiguration configuration)
+        => services.AddEfCoreAuthorizationStores<AppAuthorizationDbContext, OrgUnitRow, OrgUnitParentRow, OrgUnitProfileRow, CompanyProfileRow>(options =>
+            options.{{ use_db_method }}(
+                configuration.GetConnectionString("Authorization") ?? throw new InvalidOperationException("ConnectionStrings:Authorization is not configured."),
+                db => db.MigrationsAssembly(typeof(AuthorizationStoreRegistration).Assembly.GetName().Name)));
+}

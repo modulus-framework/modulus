@@ -24,7 +24,8 @@ public static class {{ name }}Endpoints
                 return await composition.ExecuteAsync(() => new
                 {
 {{~ for x in sections ~}}
-                    {{ x.variable }} = {{ x.variable }}.Value,
+                    // A degraded section has no value: null, not the undefined JsonElement that default would be (writing it throws).
+                    {{ x.variable }} = {{ x.variable }}.Succeeded ? {{ x.variable }}.Value : (System.Text.Json.JsonElement?)null,
 {{~ end ~}}
                 }, ct);
             })

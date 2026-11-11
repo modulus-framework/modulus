@@ -116,6 +116,20 @@ public static class EfAuthorizationStoreExtensions
         services.AddScoped<IPermissionGrantStore>(sp =>
             new CachedPermissionGrantStore(sp.GetRequiredService<TtlPermissionGrantStore>(), sp.GetService<ICurrentTenant>()));
 
+        // The management API and the framework's endpoints take the non-generic organization stores, which are these generic ones over the
+        // framework's own rows. An application that keeps those rows (its own context, its own module) gets the same forwarding as the
+        // default overload, so both types resolve to one instance and one cache. TryAdd: a registration that is already there wins.
+        if (typeof(TOrgUnit) == typeof(OrgUnitRow) && typeof(TOrgUnitParent) == typeof(OrgUnitParentRow)
+            && typeof(TOrgUnitProfile) == typeof(OrgUnitProfileRow) && typeof(TCompanyProfile) == typeof(CompanyProfileRow))
+        {
+            services.TryAddSingleton<EfOrgHierarchy>();
+            services.TryAddSingleton<EfOrgHierarchy<TOrgUnit, TOrgUnitParent, TOrgUnitProfile, TCompanyProfile>>(
+                sp => (EfOrgHierarchy<TOrgUnit, TOrgUnitParent, TOrgUnitProfile, TCompanyProfile>)(object)sp.GetRequiredService<EfOrgHierarchy>());
+            services.TryAddSingleton<EfOrganizationProfileStore>();
+            services.TryAddSingleton<EfOrganizationProfileStore<TOrgUnit, TOrgUnitParent, TOrgUnitProfile, TCompanyProfile>>(
+                sp => (EfOrganizationProfileStore<TOrgUnit, TOrgUnitParent, TOrgUnitProfile, TCompanyProfile>)(object)sp.GetRequiredService<EfOrganizationProfileStore>());
+        }
+
         services.TryAddSingleton<EfOrgHierarchy<TOrgUnit, TOrgUnitParent, TOrgUnitProfile, TCompanyProfile>>();
         services.TryAddSingleton<IOrgUnitAdministration>(sp => sp.GetRequiredService<EfOrgHierarchy<TOrgUnit, TOrgUnitParent, TOrgUnitProfile, TCompanyProfile>>());
         services.RemoveAll<IOrgHierarchy>();

@@ -393,6 +393,14 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
             projects.Add(IdentityProjectPath(model));
         }
 
+        // Authorization store (permission grants, organization units) on its own database, with its migrations: production
+        // cannot create the schema without them. Generated whenever the API host registers the store (the example permission).
+        if (model.ExamplePermission is not null)
+        {
+            GenerateAuthorizationModule(Path.Combine(projectDir, "src", "Modules", model.AuthorizationNamespace), model);
+            projects.Add(AuthorizationProjectPath(model));
+        }
+
         // Tenant store (companies and memberships) for --multi-tenancy.
         if (model.MultiTenancy)
         {
@@ -826,6 +834,20 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
     /// </summary>
     internal static string TenancyProjectPath(AppModel model)
         => $"src/Modules/{model.TenancyNamespace}/{model.TenancyNamespace}.Infrastructure/{model.TenancyNamespace}.Infrastructure.csproj";
+
+    internal static string AuthorizationProjectPath(AppModel model)
+        => $"src/Modules/{model.AuthorizationNamespace}/{model.AuthorizationNamespace}.Infrastructure/{model.AuthorizationNamespace}.Infrastructure.csproj";
+
+    /// <summary>The authorization store module: the application's context over the framework's organization-aware store, its design-time factory and its registration.</summary>
+    internal void GenerateAuthorizationModule(string moduleDir, AppModel model)
+    {
+        var infraDir = Path.Combine(moduleDir, $"{model.AuthorizationNamespace}.Infrastructure");
+        _templates.RenderToFile("authorization/infrastructure.csproj", model,
+            Path.Combine(infraDir, $"{model.AuthorizationNamespace}.Infrastructure.csproj"));
+        _templates.RenderToFile("authorization/AppAuthorizationDbContext", model, Path.Combine(infraDir, "AppAuthorizationDbContext.cs"));
+        _templates.RenderToFile("authorization/AppAuthorizationDbContextFactory", model, Path.Combine(infraDir, "AppAuthorizationDbContextFactory.cs"));
+        _templates.RenderToFile("authorization/AuthorizationStoreRegistration", model, Path.Combine(infraDir, "AuthorizationStoreRegistration.cs"));
+    }
 
     /// <summary>The tenant store module of <c>--multi-tenancy</c>: companies and memberships, its design-time factory and seeding.</summary>
     internal void GenerateTenancyModule(string moduleDir, AppModel model)

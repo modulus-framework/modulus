@@ -17,7 +17,8 @@ public static class HomeEndpoints
             {
                 var composition = composer.Begin(defaultTimeout: TimeSpan.FromSeconds(3));
                 var section = composition.Optional("{{ example_route }}", api.Get{{ example_route_pascal }}Async);
-                return await composition.ExecuteAsync(() => new { {{ example_route }} = section.Value }, ct);
+                // A degraded section has no value: send null, not the undefined JsonElement that default would be (writing it throws).
+                return await composition.ExecuteAsync(() => new { {{ example_route }} = section.Succeeded ? section.Value : (System.Text.Json.JsonElement?)null }, ct);
             })
             .WithName("{{ client_pascal }}Home");
         return endpoints;

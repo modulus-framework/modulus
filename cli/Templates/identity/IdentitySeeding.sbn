@@ -34,6 +34,9 @@ public static class IdentitySeeding
 {
     public const string AdminRole = "Admin";
 
+    /// <summary>The platform operator: holds the host-level operator routes (integration clients). Assigned to host accounts only.</summary>
+    public const string PlatformOperatorRole = "PlatformOperator";
+
     /// <summary>The company owner role (holds the account permissions by default; see <c>AuthenticationSetup</c>).</summary>
     public const string OwnerRole = "TenantOwner";
 
@@ -62,6 +65,11 @@ public static class IdentitySeeding
             Require(await roles.CreateAsync(new ModulusRole { Name = AdminRole, DisplayName = "Administrator" }), "create the Admin role");
         }
 
+        if (!await roles.RoleExistsAsync(PlatformOperatorRole))
+        {
+            Require(await roles.CreateAsync(new ModulusRole { Name = PlatformOperatorRole, DisplayName = "Platform operator" }), "create the Platform operator role");
+        }
+
         if (!await roles.RoleExistsAsync(OwnerRole))
         {
             Require(await roles.CreateAsync(new ModulusRole { Name = OwnerRole, DisplayName = "Tenant Owner" }), "create the Tenant Owner role");
@@ -85,11 +93,30 @@ public static class IdentitySeeding
             }
         }
 
-        if (users.Users.Any())
+        // The first administrator comes first, so Identity:Seed:PlatformOperatorEmail can name it on the very first start.
+        if (!users.Users.Any())
+            await CreateFirstAdministratorAsync(provider, users, configuration, environment, logger);
+
+        // Recovery for the platform operator, like the Tenant Owner above: Identity:Seed:PlatformOperatorEmail names an existing account
+        // that gets the role on every start (added only, never removed). The account is chosen by configuration, never by the seeder.
+        var operatorEmail = configuration["Identity:Seed:PlatformOperatorEmail"];
+        if (!string.IsNullOrWhiteSpace(operatorEmail))
         {
-            return;
+            var operatorAccount = await users.FindByEmailAsync(operatorEmail);
+            if (operatorAccount is null)
+                logger.LogWarning("Identity:Seed:PlatformOperatorEmail names no account: no platform operator was assigned.");
+            else if (!await users.IsInRoleAsync(operatorAccount, PlatformOperatorRole))
+            {
+                Require(await users.AddToRoleAsync(operatorAccount, PlatformOperatorRole), "make the account a platform operator");
+                logger.LogWarning("Platform operator {Email} assigned from Identity:Seed:PlatformOperatorEmail.", operatorEmail);
+            }
         }
 
+    }
+
+    private static async Task CreateFirstAdministratorAsync(
+        IServiceProvider provider, UserManager<ModulusUser> users, IConfiguration configuration, IHostEnvironment environment, ILogger logger)
+    {
         var email = configuration["Identity:Seed:AdminEmail"];
         var password = configuration["Identity:Seed:AdminPassword"];
         var generated = false;
@@ -111,6 +138,9 @@ public static class IdentitySeeding
         Require(await users.CreateAsync(admin, password), "create the administrator");
         Require(await users.AddToRoleAsync(admin, AdminRole), "add the administrator to the Admin role");
         Require(await users.AddToRoleAsync(admin, OwnerRole), "make the first administrator a Tenant Owner");
+        // A development administrator is also the platform operator, so the operator routes can be tried at once. Production names one by configuration.
+        if (generated)
+            Require(await users.AddToRoleAsync(admin, PlatformOperatorRole), "make the development administrator a platform operator");
         RecordOwnershipChange(provider, "identity.tenant-owner.granted", admin.Id, "seeding");
 
         if (generated)

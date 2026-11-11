@@ -62,6 +62,9 @@ public static class Program
             config.AddCommand<Commands.AddAuditStoreCommand>("add-audit-store")
                 .WithDescription("Keep the business audit log and the hash-chained security audit in a database (store module, host wiring, settings).")
                 .WithExample("add-audit-store");
+            config.AddCommand<Commands.AddAuthorizationStoreCommand>("add-authorization-store")
+                .WithDescription("Move an app's authorization store to its own context with migrations (Authorization module), so production can create its schema.")
+                .WithExample("add-authorization-store");
             config.AddCommand<Commands.AddOpenBaoCommand>("add-openbao")
                 .WithDescription("Keep secrets in OpenBao (read-only in the API host), with --tenant-databases for per-tenant connection strings; settings and dev bootstrap.")
                 .WithExample("add-openbao")
@@ -301,6 +304,7 @@ internal sealed class DefaultCommand : Command
         table.AddRow("[cyan]add-webhooks[/]", "Add webhook infrastructure (outbox, dispatcher)");
         table.AddRow("[cyan]add-tenant-lifecycle[/]", "Add tenant data export, offboarding and retention (multi-tenant apps)");
         table.AddRow("[cyan]add-audit-store[/]", "Add change auditing to entities");
+        table.AddRow("[cyan]add-authorization-store[/]", "Move the authorization store to the app's own migrated context (production schema)");
         table.AddRow("[cyan]add-realtime[/]", "Add SignalR realtime messaging");
         table.AddRow("[cyan]add-ai[/]", "Add AI features (embedding, semantic search)");
 

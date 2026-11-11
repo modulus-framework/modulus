@@ -27,6 +27,23 @@ public sealed class MigrateContextTests
     }
 
     [Fact]
+    public void A_module_whose_context_lives_in_a_library_is_named_by_its_design_time_factory()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "modulus-migrate-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        try
+        {
+            File.WriteAllText(Path.Combine(dir, "TenantStoreDbContextFactory.cs"), "public sealed class TenantStoreDbContextFactory : IDesignTimeDbContextFactory<TenantStoreDbContext> { }");
+
+            MigrateSupport.FindDbContextName(dir).Should().Be("TenantStoreDbContext");
+        }
+        finally
+        {
+            Directory.Delete(dir, recursive: true);
+        }
+    }
+
+    [Fact]
     public void No_context_file_means_no_name_and_dotnet_ef_chooses()
     {
         var dir = Path.Combine(Path.GetTempPath(), "modulus-migrate-" + Guid.NewGuid().ToString("N"));

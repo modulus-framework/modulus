@@ -1,7 +1,7 @@
 using Modulus.EntityFrameworkCore.Extensions;
 {{ if example_permission }}using Modulus.Authorization.EntityFrameworkCore;
 {{ end }}{{ if auth == "openiddict" }}using {{ identity_namespace }}.Infrastructure;
-{{ end }}{{ if multi_tenancy }}using Modulus.Core.Abstractions;
+{{ end }}{{ if multi_tenancy || example_permission }}using Modulus.Core.Abstractions;
 using Modulus.Core.Abstractions.Tenancy;
 using Modulus.MultiTenancy;
 using Modulus.MultiTenancy.EntityFrameworkCore;
@@ -45,7 +45,9 @@ internal static class DatabaseStartup
 {{ end }}{{ if auth == "openiddict" }}
         // Roles, and the first administrator where that is safe (see IdentitySeeding).
         await app.Services.SeedIdentityAsync(app.Environment);
-{{ end }}{{ if multi_tenancy }}
+{{ if example_permission }}        // The platform operator's host-level grants (the operator routes run in the host context). Added on every start, never removed.
+        await app.Services.SeedPlatformOperatorGrantsAsync();
+{{ end }}{{ end }}{{ if multi_tenancy }}
         // The default company and the administrators' memberships in it (see TenancySeeding).
         await app.Services.SeedTenancyAsync(app.Environment);
 {{ if multi_tenancy }}        await app.Services.SeedCompanyGrantsAsync(app.Configuration);
@@ -56,7 +58,48 @@ internal static class DatabaseStartup
         await app.Services.TopUpCompanyGrantsAsync();
 {{ end }}{{ end }}{{ end }}    }
 
-{{ if multi_tenancy }}    /// <summary>
+{{ if example_permission && auth == "openiddict" }}    /// <summary>
+    /// Gives the platform operator role its host-level grants: the permissions of the operator routes (integration clients), which run
+    /// in the host context. Each start adds what is missing; nothing is removed. Only holders of the role get them.
+    /// </summary>
+    private static async Task SeedPlatformOperatorGrantsAsync(this IServiceProvider services)
+    {
+        using var host = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions
+            .GetRequiredService<Modulus.Core.Abstractions.ICurrentTenant>(services).Change(null);
+        await Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions
+            .GetRequiredService<EfPermissionGrantStore>(services)
+            .GrantToRoleAsync("PlatformOperator", ["identity:integration-clients:manage"], CancellationToken.None);
+    }
+
+{{ end }}{{ if multi_tenancy && example_permission }}    /// <summary>
+    /// Applies the operator's configured grants for one company (<c>Authorization:CompanyBootstrap:{slug}:{role}</c>): the first grants
+    /// of its administrators. The company baseline (CompanyProvisioning:Grants) cannot carry a Critical permission, so this is the
+    /// explicit, operator-owned way to give one. It only adds, every permission must be registered, and it runs on every start.
+    /// </summary>
+    private static async Task ApplyCompanyBootstrapAsync(IServiceProvider provider, IConfiguration configuration, TenantInfo tenant)
+    {
+        var roles = configuration.GetSection($"Authorization:CompanyBootstrap:{tenant.TenantSlug}").GetChildren().ToList();
+        if (roles.Count == 0)
+            return;
+
+        var registry = provider.GetRequiredService<IPermissionRegistry>();
+        var store = provider.GetRequiredService<EfPermissionGrantStore>();
+        using var company = provider.GetRequiredService<ICurrentTenant>().Change(tenant);
+        foreach (var role in roles)
+        {
+            var permissions = role.Get<string[]>() ?? [];
+            foreach (var permission in permissions)
+            {
+                if (!registry.GetAll().Any(d => string.Equals(d.Permission, permission, StringComparison.OrdinalIgnoreCase)))
+                    throw new InvalidOperationException(
+                        $"Authorization:CompanyBootstrap:{tenant.TenantSlug}:{role.Key} names '{permission}', which is not a registered permission.");
+            }
+
+            await store.GrantToRoleAsync(role.Key, permissions, CancellationToken.None);
+        }
+    }
+
+{{ end }}{{ if multi_tenancy }}    /// <summary>
     /// Gives the default company its configured starting grants (CompanyProvisioning:Grants, the same baseline a new company gets through the
     /// company API). Grants are per company, so a company sees only its own: the first-boot grant is written in the host context and would be
     /// invisible to the company. A role that already holds grants in the company is left alone, so a later change by an administrator survives
@@ -74,5 +117,7 @@ internal static class DatabaseStartup
         // Without the authorization stores there are no grants to give; the company then has none, as before.
         if (provider.GetService<ICompanyProvisioner>() is { } provisioner)
             await provisioner.ProvisionAsync(tenant, CancellationToken.None);
-    }
+{{ if example_permission }}
+        await ApplyCompanyBootstrapAsync(provider, configuration, tenant);
+{{ end }}    }
 {{ end }}}

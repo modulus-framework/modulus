@@ -95,11 +95,16 @@ internal sealed partial class InMemoryStoreCheck(
 
     public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 
-    /// <summary>The framework's in-memory implementations among the effective registrations (the last one per contract).</summary>
+    /// <summary>
+    /// The framework's in-memory implementations among the effective registrations (the last one per contract). Only interface
+    /// contracts count: the framework also registers its in-memory class as its own service (the backing instance a durable
+    /// store wraps, or this check's own registration), and those say nothing about what a consumer receives. The interface
+    /// registration is checked on its own, so a durable store that replaces it is not reported.
+    /// </summary>
     internal static IReadOnlyList<InMemoryStore> Find(IServiceCollection registrations, IServiceProvider services)
     {
         var effective = registrations
-            .Where(d => !d.IsKeyedService && !d.ServiceType.IsGenericTypeDefinition)
+            .Where(d => !d.IsKeyedService && !d.ServiceType.IsGenericTypeDefinition && d.ServiceType.IsInterface)
             .GroupBy(d => d.ServiceType)
             .Select(g => g.Last());
 

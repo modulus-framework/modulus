@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Authentication;
 {{ if auth == "openiddict" }}using Modulus.Core.Abstractions;
 {{ end }}{{ end }}{{ if example_permission }}using Microsoft.EntityFrameworkCore;
 using Modulus.Authorization.EntityFrameworkCore;
+using {{ authorization_namespace }}.Infrastructure;
 {{ end }}{{ if use_security_guard }}using Modulus.AspNetCore.Security.Policy;
 using Modulus.AuditLogging.Security;
 {{ end }}{{ if multi_tenancy }}using Modulus.MultiTenancy.EntityFrameworkCore;
@@ -97,11 +98,13 @@ internal static class AuthenticationSetup
             foreach (var (role, permissions) in seededRolePermissions)
                 grants.GrantToRole(role, permissions);
         });
-        builder.Services.AddEfCoreAuthorizationStores(options => options.{{ use_db_method }}(builder.Configuration.GetConnectionString("Authorization") ?? throw new InvalidOperationException("ConnectionStrings:Authorization is not configured.")));
+        // The application's own authorization context (Authorization database, its migrations in the Authorization module).
+        builder.Services.AddAuthorizationStore(builder.Configuration);
         // The starting grants of every new company (D-10): CompanyProvisioning:Grants, checked against the registered permissions.
         builder.Services.Configure<Modulus.Authorization.EntityFrameworkCore.CompanyProvisioningOptions>(builder.Configuration.GetSection(Modulus.Authorization.EntityFrameworkCore.CompanyProvisioningOptions.SectionName));
 {{ if auth == "openiddict" }}        // Role-permission administration (the Roles page's grants) uses the grant store and the grant rules.
         builder.Services.AddModulusAuthorizationManagement();
+        builder.Services.AddModulusIntegrationClientAdministration();
 {{ end }}
 {{ end }}{{ if use_security_guard }}
 {{ if needs_fallback_authorization }}        // Closed by default: AddModulusAuthorization makes "a signed-in user" the fallback policy, so an endpoint that

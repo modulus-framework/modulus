@@ -189,8 +189,9 @@ public sealed class ApiPermissionTests
         var startup = _engine.Render("app/api/DatabaseStartup", model);
         var settings = _engine.Render("app/appsettings.json", model);
 
-        program.Should().Contain("builder.Services.AddEfCoreAuthorizationStores(options => options.UseSqlite(builder.Configuration.GetConnectionString(\"Authorization\") ?? throw new InvalidOperationException(\"ConnectionStrings:Authorization is not configured.\")));")
-            .And.Contain("using Modulus.Authorization.EntityFrameworkCore;");
+        // The store is the application's own context, registered by its Authorization module (its migrations live there).
+        program.Should().Contain("builder.Services.AddAuthorizationStore(builder.Configuration);")
+            .And.Contain(".Modules.Authorization.Infrastructure;");
         startup.Should().Contain("MigrateAuthorizationStoreAsync(ensureCreatedIfNoMigrations: !app.Environment.IsProduction());")
             .And.Contain("await app.Services.SeedPermissionGrantsAsync();");
         startup.IndexOf("SeedPermissionGrantsAsync", StringComparison.Ordinal)

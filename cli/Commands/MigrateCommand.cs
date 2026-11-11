@@ -38,6 +38,16 @@ internal static class MigrateSupport
                 return match.Groups[1].Value;
         }
 
+        // A module whose context lives in a library (the tenant store) has no DbContext class of its own, only a design-time
+        // factory naming it: IDesignTimeDbContextFactory<TenantStoreDbContext>. Without this, dotnet ef cannot choose a context.
+        foreach (var file in Directory.EnumerateFiles(infraDir, "*.cs", SearchOption.AllDirectories)
+                     .OrderBy(f => f, StringComparer.Ordinal))
+        {
+            if (File.ReadAllText(file) is var text
+                && System.Text.RegularExpressions.Regex.Match(text, @"IDesignTimeDbContextFactory<\s*(\w+DbContext)\s*>") is { Success: true } factory)
+                return factory.Groups[1].Value;
+        }
+
         return null;
     }
 
@@ -325,10 +335,16 @@ internal sealed class MigrateUpdateCommand : Command<MigrateUpdateCommand.Settin
                 }
                 else
                 {
-                    code = MigrateSupport.RunDotnetEf(root,
+                    var updateArgs = new List<string>
+                    {
                         "database", "update",
                         "--project", projRel,
-                        "--startup-project", startupRel);
+                        "--startup-project", startupRel,
+                    };
+                    // Same as migrate add: name the module's own context, the startup project holds several.
+                    if (MigrateSupport.FindDbContextName(infraDir) is { } context)
+                        updateArgs.AddRange(["--context", context]);
+                    code = MigrateSupport.RunDotnetEf(root, updateArgs.ToArray());
                 }
 
                 if (code != 0)

@@ -15,7 +15,11 @@ internal static class FeatureEndpoints
 {{ if auth == "openiddict" }}        app.MapModulusNavigation();
 {{ if example_permission }}        // Settings administration: the registered settings, read and written per scope (settings:manage; global needs settings:global:manage).
         Modulus.Settings.SettingsAdministrationEndpoints.MapModulusSettingAdministration(app);
-{{ end }}{{ end }}
+        // Authorization administration: grants, scoped grants, organization, delegations (authorization:manage; the Critical ones need their own grants).
+        app.MapModulusAuthorizationManagement();
+{{ end }}        // Integration (machine) clients: the company a partner or agent client acts in (identity:integration-clients:manage, platform operators only).
+        app.MapModulusIntegrationClients();
+{{ end }}
         return app;
     }
 }

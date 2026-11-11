@@ -121,7 +121,7 @@ public sealed class IdentityBackendTests : IDisposable
             .And.Contain("Permissions.GrantTypes.Password").And.Contain("Permissions.GrantTypes.RefreshToken");
         seeding.Should().Contain("environment.IsDevelopment()").And.Contain("admin@shop.local")
             .And.Contain("Identity:Seed:AdminEmail").And.Contain("Identity:Seed:AdminPassword");
-        seeding.Should().Contain("if (users.Users.Any())", "an existing user base is never touched");
+        seeding.Should().Contain("if (!users.Users.Any())", "an existing user base is never touched");
         seeding.Should().NotContain("Password = \"", "no password is ever written into generated source");
     }
 
@@ -135,6 +135,17 @@ public sealed class IdentityBackendTests : IDisposable
         seeding.Should().Contain("Identity:Seed:TenantOwnerEmail", "a lost owner is restored by configuration")
             .And.Contain("GetUsersInRoleAsync(OwnerRole)");
         seeding.Should().Contain("identity.tenant-owner.granted", "the initial and recovered assignments are audited");
+    }
+
+    [Fact]
+    public void The_platform_operator_is_assigned_after_the_first_administrator_exists()
+    {
+        // On a first boot the operator account named in configuration is the administrator created just before it;
+        // assigning the operator first would find no account and skip it until the next start.
+        var seeding = Render("identity/IdentitySeeding", Model());
+
+        seeding.IndexOf("await CreateFirstAdministratorAsync(provider", StringComparison.Ordinal).Should()
+            .BeLessThan(seeding.IndexOf("configuration[\"Identity:Seed:PlatformOperatorEmail\"]", StringComparison.Ordinal));
     }
 
     // ── The host ─────────────────────────────────────────────────

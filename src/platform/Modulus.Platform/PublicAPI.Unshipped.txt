@@ -68,3 +68,7 @@ static Modulus.Storage.PresignedPost.operator ==(Modulus.Storage.PresignedPost? 
 *REMOVED*static Modulus.MultiTenancy.CompanySwitcherEndpoints.MapModulusCompanySwitcher(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! path = "/api/account/companies") -> Microsoft.AspNetCore.Builder.RouteHandlerBuilder!
 Modulus.Storage.StorageOptions.ForcePathStyle.get -> bool
 Modulus.Storage.StorageOptions.ForcePathStyle.set -> void
+Modulus.MultiTenancy.HostTenantContextEndpointExtensions
+Modulus.MultiTenancy.HostTenantContextMetadata
+static Modulus.MultiTenancy.HostTenantContextEndpointExtensions.RequireHostTenantContext<TBuilder>(this TBuilder builder) -> TBuilder
+static Modulus.MultiTenancy.HostTenantContextMetadata.Instance.get -> Modulus.MultiTenancy.HostTenantContextMetadata!

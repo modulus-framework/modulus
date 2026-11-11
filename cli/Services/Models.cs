@@ -225,6 +225,12 @@ internal sealed class AppModel
     /// </summary>
     public string AuthorizationConnectionString => DbProviderInfo.ConnectionString(DbProvider, "Authorization");
 
+    /// <summary>
+    /// Namespace of the application's authorization store module (<c>{Root}.Modules.Authorization</c>): its own context, design-time
+    /// factory and migrations, generated with the example module (the API host's permission grants live there).
+    /// </summary>
+    public string AuthorizationNamespace => $"{RootNamespace}.Modules.Authorization";
+
     /// <summary>True when an external identity provider is selected.</summary>
     public bool UseExternalProvider => AuthProviders.IsExternalProvider(Auth);
 

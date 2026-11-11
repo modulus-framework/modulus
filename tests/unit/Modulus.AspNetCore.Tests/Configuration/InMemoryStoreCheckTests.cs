@@ -49,6 +49,19 @@ public sealed class InMemoryStoreCheckTests
     }
 
     [Fact]
+    public void A_durable_store_behind_an_in_memory_backing_class_is_not_reported()
+    {
+        // The framework registers its in-memory class as its own service too; the interface a consumer injects is what counts.
+        var (services, provider) = Host(s =>
+        {
+            s.AddSingleton<InMemoryIdempotencyStore>();
+            s.AddSingleton<IIdempotencyStore>(_ => new DurableStore());
+        });
+
+        InMemoryStoreCheck.Find(services, provider).Should().BeEmpty();
+    }
+
+    [Fact]
     public async Task Fail_mode_refuses_to_start_in_production()
     {
         var (services, provider) = Host();

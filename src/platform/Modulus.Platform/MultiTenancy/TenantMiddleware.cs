@@ -130,6 +130,15 @@ public sealed class TenantMiddleware(
             ["UserId"] = ctx.User.Identity?.IsAuthenticated == true && TryGetUserId(ctx.User, out var userId) ? userId : null,
         });
 
+        // A platform-operator route runs in the host context, whatever company the caller selected. The checks above already refused a
+        // selected company the caller may not enter, and authorization runs inside this scope, so it decides with the host's grants.
+        if (ctx.GetEndpoint()?.Metadata.GetMetadata<HostTenantContextMetadata>() is not null)
+        {
+            using (tenant.Change(null))
+                await next(ctx);
+            return;
+        }
+
         await next(ctx);
     }
 
@@ -166,7 +175,18 @@ public sealed class TenantMiddleware(
 
         foreach (var scheme in await schemes.GetAllSchemesAsync())
         {
-            var result = await authentication.AuthenticateAsync(ctx, scheme.Name);
+            // A scheme that cannot read this request throws instead of failing (the OpenIddict server does so for a request to an
+            // endpoint it does not manage). It then contributes no principal: the caller stays anonymous, and the endpoint's policy decides.
+            AuthenticateResult result;
+            try
+            {
+                result = await authentication.AuthenticateAsync(ctx, scheme.Name);
+            }
+            catch (InvalidOperationException)
+            {
+                continue;
+            }
+
             if (result.Succeeded && result.Principal?.Identity?.IsAuthenticated == true)
                 return result.Principal;
         }

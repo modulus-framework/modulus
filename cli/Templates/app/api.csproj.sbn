@@ -48,6 +48,10 @@
   <ItemGroup>
     <ProjectReference Include="../../Modules/{{ tenancy_namespace }}/{{ tenancy_namespace }}.Infrastructure/{{ tenancy_namespace }}.Infrastructure.csproj" />
   </ItemGroup>
+{{ end }}{{ if example_permission }}
+  <ItemGroup>
+    <ProjectReference Include="../../Modules/{{ authorization_namespace }}/{{ authorization_namespace }}.Infrastructure/{{ authorization_namespace }}.Infrastructure.csproj" />
+  </ItemGroup>
 {{ end }}{{ if !no_example }}
   <ItemGroup>
     <ProjectReference Include="../../Modules/{{ root_namespace }}.Modules.{{ example_module }}/{{ root_namespace }}.Modules.{{ example_module }}.Infrastructure/{{ root_namespace }}.Modules.{{ example_module }}.Infrastructure.csproj" />
