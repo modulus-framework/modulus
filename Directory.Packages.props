@@ -8,8 +8,11 @@
     <PackageVersion Include="Microsoft.AspNetCore.OpenApi"              Version="10.0.13" Condition="'$(TargetFramework)' != 'net8.0'" />
     <PackageVersion Include="Microsoft.AspNetCore.OpenApi"              Version="8.0.32" Condition="'$(TargetFramework)' == 'net8.0'" />
     <PackageVersion Include="Microsoft.OpenApi"                          Version="2.13.0" />
-    <PackageVersion Include="Microsoft.AspNetCore.SignalR.StackExchangeRedis" Version="10.0.13" Condition="'$(TargetFramework)' != 'net8.0'" />
-    <PackageVersion Include="Microsoft.AspNetCore.SignalR.StackExchangeRedis" Version="8.0.32" Condition="'$(TargetFramework)' == 'net8.0'" />
+    <PackageVersion Include="Microsoft.AspNetCore.SignalR.StackExchangeRedis" Version="10.0.15" Condition="'$(TargetFramework)' != 'net8.0'" />
+    <PackageVersion Include="Microsoft.AspNetCore.SignalR.StackExchangeRedis" Version="8.0.34" Condition="'$(TargetFramework)' == 'net8.0'" />
+    <!-- Pinned for transitive vulnerability fixes (NU1902 on System.Formats.Cbor 9.0.0 pulled in by the identity tests). -->
+    <PackageVersion Include="System.Formats.Cbor" Version="10.0.15" Condition="'$(TargetFramework)' != 'net8.0'" />
+    <PackageVersion Include="System.Formats.Cbor" Version="9.0.24" Condition="'$(TargetFramework)' == 'net8.0'" />
     <PackageVersion Include="Microsoft.Azure.SignalR"                   Version="1.33.1" />
     <PackageVersion Include="Microsoft.FeatureManagement.AspNetCore"     Version="4.8.0" />
   </ItemGroup>
