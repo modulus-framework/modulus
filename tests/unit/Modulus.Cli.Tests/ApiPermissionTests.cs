@@ -200,6 +200,17 @@ public sealed class ApiPermissionTests
     }
 
     [Fact]
+    public void A_single_tenant_app_with_the_example_does_not_import_the_tenancy_module()
+    {
+        // The example permission needs the core tenancy abstractions only; the Tenancy module and the EF multi-tenancy
+        // package exist only in a multi-tenant app, so importing them here would not compile.
+        var startup = _engine.Render("app/api/DatabaseStartup", App());
+
+        startup.Should().NotContain(".Modules.Tenancy.Infrastructure;").And.NotContain("Modulus.MultiTenancy.EntityFrameworkCore;");
+        startup.Should().Contain("using Modulus.Core.Abstractions.Tenancy;");
+    }
+
+    [Fact]
     public void An_app_without_the_example_module_has_no_authorization_database()
     {
         var model = App(noExample: true);

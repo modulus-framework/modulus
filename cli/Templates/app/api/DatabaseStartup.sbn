@@ -3,7 +3,7 @@ using Modulus.EntityFrameworkCore.Extensions;
 {{ end }}{{ if auth == "openiddict" }}using {{ identity_namespace }}.Infrastructure;
 {{ end }}{{ if multi_tenancy || example_permission }}using Modulus.Core.Abstractions;
 using Modulus.Core.Abstractions.Tenancy;
-using Modulus.MultiTenancy;
+{{ end }}{{ if multi_tenancy }}using Modulus.MultiTenancy;
 using Modulus.MultiTenancy.EntityFrameworkCore;
 using {{ tenancy_namespace }}.Infrastructure;
 {{ end }}{{ if multi_tenancy }}{{ if example_permission }}using Microsoft.Extensions.Configuration;

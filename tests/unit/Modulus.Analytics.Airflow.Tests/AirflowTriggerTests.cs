@@ -47,6 +47,7 @@ internal sealed class AirflowReceiver : IAsyncDisposable
     public async ValueTask DisposeAsync() => await _app.DisposeAsync();
 }
 
+[Trait("Category", "Unit")]
 public sealed class AirflowTriggerTests
 {
     private static readonly Guid RunId = Guid.Parse("c3a9e8f1-2b4d-4e6a-9f0b-1d2c3e4f5a6b");
