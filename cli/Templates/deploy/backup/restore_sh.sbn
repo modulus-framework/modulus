@@ -1,0 +1,37 @@
+#!/bin/sh
+# Restores the newest {{ root_namespace }} app-data snapshot. Run it only with the API stopped:
+#   docker compose stop api
+#   docker compose --profile restore run --rm -e RESTORE_INTO_DATA=yes restore
+#   docker compose start api
+# Without RESTORE_INTO_DATA=yes the snapshot is only unpacked to /restore in the container, so you can inspect it first.
+set -eu
+
+: "${RESTIC_REPOSITORY:?set RESTIC_REPOSITORY in .env}"
+: "${RESTIC_PASSWORD:?set RESTIC_PASSWORD in .env}"
+
+SRC=/restore/var/tmp/app-data-stage
+rm -rf /restore
+mkdir -p /restore
+restic restore latest --tag app-data --target /restore
+echo "restored the newest snapshot to $SRC"
+
+if [ "${RESTORE_INTO_DATA:-no}" = "yes" ]; then
+  set -- "$SRC"/*.db
+  if [ ! -f "$1" ]; then
+    echo "the snapshot holds no databases; nothing was copied into /data" >&2
+    exit 1
+  fi
+  for db in "$SRC"/*.db; do
+    [ -f "$db" ] || continue
+    name=$(basename "$db")
+    # The WAL files belong to the database being replaced: a stale one would be replayed onto the restored file.
+    rm -f "/data/$name-wal" "/data/$name-shm"
+    # Copy under a temporary name and move it into place, so an interrupted copy never leaves a half-written database.
+    cp "$db" "/data/.$name.restore"
+    # The restore runs as root, so the copy must be handed to the API's user (the image's uid 10001), or the API cannot write it.
+    chown "${APP_UID:-10001}:${APP_UID:-10001}" "/data/.$name.restore"
+    chmod 644 "/data/.$name.restore"
+    mv -f "/data/.$name.restore" "/data/$name"
+  done
+  echo "databases restored into /data; start the API again"
+fi

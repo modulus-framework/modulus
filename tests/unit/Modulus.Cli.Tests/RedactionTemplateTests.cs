@@ -60,6 +60,18 @@ public sealed class RedactionTemplateTests
     }
 
     [Fact]
+    public void Every_project_takes_the_patched_System_Formats_Cbor_because_Fido2_still_depends_on_the_vulnerable_one()
+    {
+        // Fido2 (passkeys) pulls System.Formats.Cbor 9.0.0 (GHSA-vmv3-wvjp-wqpj). The direct reference is the fix; NU1510 is
+        // expected because the .NET 10 shared framework provides the package.
+        var props = XDocument.Parse(_engine.Render("app/Directory.Build.props", App()));
+        var cbor = props.Descendants("PackageReference").Single(e => (string?)e.Attribute("Include") == "System.Formats.Cbor");
+
+        cbor.Attribute("Version")!.Value.Should().Be("10.0.15");
+        props.Descendants("NoWarn").Single().Value.Should().Contain("NU1510");
+    }
+
+    [Fact]
     public void Every_project_gets_the_classification_aware_logging_generator_at_the_frameworks_version()
     {
         var props = XDocument.Parse(_engine.Render("app/Directory.Build.props", App()));

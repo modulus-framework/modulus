@@ -1,0 +1,48 @@
+name: Security scan
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Weekly, so a vulnerability published after the last change is still found.
+    - cron: "0 3 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  repository:
+    name: Repository (Trivy filesystem)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Vulnerabilities and misconfigurations in the source tree
+        run: >
+          docker run --rm -v "$PWD:/src:ro" aquasec/trivy:0.58.1 fs
+          --scanners vuln,misconfig --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 /src
+
+  container:
+    name: Generated API (Trivy image, OWASP ZAP baseline)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - name: Pack the framework packages
+        run: dotnet pack modulus.slnx -c Release --output artifacts/packages
+      - name: Generate, build, scan and run the API
+        env:
+          CONTAINER_CLI: docker
+          TRIVY_SOCKET: /var/run/docker.sock
+          SCAN_WORK: ${{ runner.temp }}/scan
+        run: build/container-scan.sh artifacts/packages "$SCAN_WORK"
+      - name: Upload the ZAP report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-report
+          path: ${{ runner.temp }}/scan/zap-report.*
+          if-no-files-found: ignore

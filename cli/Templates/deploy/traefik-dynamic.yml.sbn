@@ -1,0 +1,15 @@
+# Traefik routes for the public host. Traefik reads this file at startup and watches it for changes.
+http:
+  routers:
+    api:
+      rule: "Host(`{{ public_host }}`)"
+      entryPoints:
+        - websecure
+      service: api
+      tls:
+        certResolver: letsencrypt
+  services:
+    api:
+      loadBalancer:
+        servers:
+          - url: "http://api:8080"

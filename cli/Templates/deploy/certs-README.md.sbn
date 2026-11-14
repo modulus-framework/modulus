@@ -1,0 +1,19 @@
+# Token-server certificates
+
+Put the token server's signing and encryption keys here, as PFX files:
+
+- `signing.pfx` (Identity__Certificates__Signing__Path=/app/certs/signing.pfx)
+- `encryption.pfx` (Identity__Certificates__Encryption__Path=/app/certs/encryption.pfx)
+
+Set their passwords in `.env`. Never commit these files: `.gitignore` and `.dockerignore` already exclude them.
+
+## Permissions
+
+The API runs as uid 10001 inside its container, and this folder is mounted read-only at `/app/certs`. The files must be readable by that user:
+
+    sudo chown 10001:10001 deploy/certs/signing.pfx deploy/certs/encryption.pfx
+    sudo chmod 400 deploy/certs/signing.pfx deploy/certs/encryption.pfx
+
+On a host with SELinux enforcing (Fedora, RHEL), the bind mount must be relabelled. Change the `api` volume in `docker-compose.yml` from `./deploy/certs:/app/certs:ro` to `./deploy/certs:/app/certs:ro,Z`.
+
+If the API logs "Access denied" when it reads a certificate, it is one of these two problems.

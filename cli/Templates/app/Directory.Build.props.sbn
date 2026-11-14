@@ -17,7 +17,16 @@
          [ProtectedPersonalData], ...) on [LoggerMessage] parameters; the built-in generator ignores them, so a
          classified value would be logged as is. -->
     <PackageReference Include="Microsoft.Extensions.Telemetry.Abstractions" Version="{{ telemetry_abstractions_version }}" />
+    <!-- Fido2 (passkeys) and the LDAP and event-log packages depend on System.Formats.Cbor 9.0.0, which has a known moderate
+         vulnerability (GHSA-vmv3-wvjp-wqpj). Fido2 4.3.2 still depends on 9.0.0, so the fix is here: a direct reference wins over
+         the transitive one in every project of the app. The .NET 10 shared framework provides this package, so NuGet reports the
+         reference as unnecessary (NU1510); that note is expected and does not affect the build. -->
+    <PackageReference Include="System.Formats.Cbor" Version="10.0.15" />
   </ItemGroup>
+
+  <PropertyGroup>
+    <NoWarn>$(NoWarn);NU1510</NoWarn>
+  </PropertyGroup>
 
   <ItemGroup>
     <Using Include="Microsoft.Extensions.Configuration" />

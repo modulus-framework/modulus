@@ -1,0 +1,30 @@
+# The API host: a multi-stage build that publishes the framework's host project and runs it as a non-root user.
+# The packages come from the NuGet.config of the solution. A local feed (modulus app --package-source) is copied into deploy/feed
+# and the build uses deploy/nuget.docker.config, which points at those copies. Re-run modulus add-deployment after changing the feeds.
+
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /src
+COPY . .
+{{ if local_feeds }}COPY deploy/nuget.docker.config ./NuGet.config
+{{ end }}RUN dotnet publish "src/API/{{ root_namespace }}.Api/{{ root_namespace }}.Api.csproj" -c Release -o /out --no-self-contained
+
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
+# The aspnet image already has a user named "app", so the runtime user gets its own name.
+RUN groupadd --system --gid 10001 modulus && useradd --system --uid 10001 --gid modulus --home /app modulus \
+    && mkdir -p /app/data && chown -R modulus:modulus /app/data
+WORKDIR /app
+COPY --from=build /out ./
+# Content root stays /app (the appsettings files live there); the working directory holds the SQLite files in /app/data.
+# DataProtection keeps its key ring in the user profile. With no profile it keeps the keys in memory, so every restart would
+# invalidate the cookies and protected data. The profile is the data volume, so the keys survive restarts and are backed up.
+ENV ASPNETCORE_URLS=http://+:8080 \
+    ASPNETCORE_CONTENTROOT=/app \
+    ASPNETCORE_ENVIRONMENT=Production \
+    HOME=/app/data
+EXPOSE 8080
+USER 10001
+WORKDIR /app/data
+# Liveness through the app's own probe. The aspnet image has bash, so no extra tools are needed.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+    CMD bash -c 'exec 3<>/dev/tcp/127.0.0.1/8080 && printf "GET /health/live HTTP/1.0\r\nHost: localhost\r\n\r\n" >&3 && head -n1 <&3 | grep -q " 200 "'
+ENTRYPOINT ["dotnet", "/app/{{ root_namespace }}.Api.dll"]

@@ -1,0 +1,26 @@
+# Traefik static configuration: HTTP redirects to HTTPS, certificates from Let's Encrypt (TLS challenge), routes from dynamic.yml.
+entryPoints:
+  web:
+    address: ":80"
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+  websecure:
+    address: ":443"
+
+certificatesResolvers:
+  letsencrypt:
+    acme:
+      email: "{{ acme_email }}"
+      storage: /letsencrypt/acme.json
+      tlsChallenge: {}
+
+providers:
+  file:
+    filename: /etc/traefik/dynamic.yml
+    watch: true
+
+api:
+  dashboard: false

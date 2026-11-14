@@ -1,0 +1,77 @@
+#nullable enable
+const Modulus.Search.SearchOptions.SectionName = "Search" -> string!
+Modulus.Search.ISearchIndex
+Modulus.Search.ISearchIndex.DeleteAsync(string! index, string! id, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Search.ISearchIndex.EnsureIndexAsync(string! index, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Search.ISearchIndex.IndexAsync(string! index, string! id, System.Collections.Generic.IReadOnlyDictionary<string!, object?>! document, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Search.ISearchIndex.SearchAsync(string! index, Modulus.Search.SearchQuery! query, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Search.SearchResult!>!
+Modulus.Search.OpenSearchIndex
+Modulus.Search.OpenSearchIndex.DeleteAsync(string! index, string! id, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Search.OpenSearchIndex.EnsureIndexAsync(string! index, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Search.OpenSearchIndex.IndexAsync(string! index, string! id, System.Collections.Generic.IReadOnlyDictionary<string!, object?>! document, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Search.OpenSearchIndex.OpenSearchIndex(System.Net.Http.HttpClient! http, Microsoft.Extensions.Options.IOptions<Modulus.Search.SearchOptions!>! options) -> void
+Modulus.Search.OpenSearchIndex.SearchAsync(string! index, Modulus.Search.SearchQuery! query, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Search.SearchResult!>!
+Modulus.Search.SearchExtensions
+Modulus.Search.SearchHit
+Modulus.Search.SearchHit.<Clone>$() -> Modulus.Search.SearchHit!
+Modulus.Search.SearchHit.Deconstruct(out string! Id, out System.Text.Json.JsonElement Document) -> void
+Modulus.Search.SearchHit.Document.get -> System.Text.Json.JsonElement
+Modulus.Search.SearchHit.Document.init -> void
+Modulus.Search.SearchHit.Equals(Modulus.Search.SearchHit? other) -> bool
+Modulus.Search.SearchHit.Id.get -> string!
+Modulus.Search.SearchHit.Id.init -> void
+Modulus.Search.SearchHit.SearchHit(string! Id, System.Text.Json.JsonElement Document) -> void
+Modulus.Search.SearchOptions
+Modulus.Search.SearchOptions.BaseUrl.get -> string?
+Modulus.Search.SearchOptions.BaseUrl.set -> void
+Modulus.Search.SearchOptions.Password.get -> string?
+Modulus.Search.SearchOptions.Password.set -> void
+Modulus.Search.SearchOptions.RefreshOnWrite.get -> bool
+Modulus.Search.SearchOptions.RefreshOnWrite.set -> void
+Modulus.Search.SearchOptions.SearchOptions() -> void
+Modulus.Search.SearchOptions.Username.get -> string?
+Modulus.Search.SearchOptions.Username.set -> void
+Modulus.Search.SearchQuery
+Modulus.Search.SearchQuery.<Clone>$() -> Modulus.Search.SearchQuery!
+Modulus.Search.SearchQuery.Equals(Modulus.Search.SearchQuery? other) -> bool
+Modulus.Search.SearchQuery.Filters.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+Modulus.Search.SearchQuery.Filters.init -> void
+Modulus.Search.SearchQuery.From.get -> int
+Modulus.Search.SearchQuery.From.init -> void
+Modulus.Search.SearchQuery.SearchQuery() -> void
+Modulus.Search.SearchQuery.Size.get -> int
+Modulus.Search.SearchQuery.Size.init -> void
+Modulus.Search.SearchQuery.Text.get -> string!
+Modulus.Search.SearchQuery.Text.init -> void
+Modulus.Search.SearchResult
+Modulus.Search.SearchResult.<Clone>$() -> Modulus.Search.SearchResult!
+Modulus.Search.SearchResult.Deconstruct(out long Total, out System.Collections.Generic.IReadOnlyList<Modulus.Search.SearchHit!>! Hits) -> void
+Modulus.Search.SearchResult.Equals(Modulus.Search.SearchResult? other) -> bool
+Modulus.Search.SearchResult.Hits.get -> System.Collections.Generic.IReadOnlyList<Modulus.Search.SearchHit!>!
+Modulus.Search.SearchResult.Hits.init -> void
+Modulus.Search.SearchResult.SearchResult(long Total, System.Collections.Generic.IReadOnlyList<Modulus.Search.SearchHit!>! Hits) -> void
+Modulus.Search.SearchResult.Total.get -> long
+Modulus.Search.SearchResult.Total.init -> void
+Modulus.Search.SolrIndex
+Modulus.Search.SolrIndex.DeleteAsync(string! index, string! id, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Search.SolrIndex.EnsureIndexAsync(string! index, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Search.SolrIndex.IndexAsync(string! index, string! id, System.Collections.Generic.IReadOnlyDictionary<string!, object?>! document, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Search.SolrIndex.SearchAsync(string! index, Modulus.Search.SearchQuery! query, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Search.SearchResult!>!
+Modulus.Search.SolrIndex.SolrIndex(System.Net.Http.HttpClient! http, Microsoft.Extensions.Options.IOptions<Modulus.Search.SearchOptions!>! options) -> void
+override Modulus.Search.SearchHit.Equals(object? obj) -> bool
+override Modulus.Search.SearchHit.GetHashCode() -> int
+override Modulus.Search.SearchHit.ToString() -> string!
+override Modulus.Search.SearchQuery.Equals(object? obj) -> bool
+override Modulus.Search.SearchQuery.GetHashCode() -> int
+override Modulus.Search.SearchQuery.ToString() -> string!
+override Modulus.Search.SearchResult.Equals(object? obj) -> bool
+override Modulus.Search.SearchResult.GetHashCode() -> int
+override Modulus.Search.SearchResult.ToString() -> string!
+static Modulus.Search.SearchExtensions.AddModulusOpenSearch(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.Search.SearchExtensions.AddModulusSolr(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.Search.SearchHit.operator !=(Modulus.Search.SearchHit? left, Modulus.Search.SearchHit? right) -> bool
+static Modulus.Search.SearchHit.operator ==(Modulus.Search.SearchHit? left, Modulus.Search.SearchHit? right) -> bool
+static Modulus.Search.SearchQuery.operator !=(Modulus.Search.SearchQuery? left, Modulus.Search.SearchQuery? right) -> bool
+static Modulus.Search.SearchQuery.operator ==(Modulus.Search.SearchQuery? left, Modulus.Search.SearchQuery? right) -> bool
+static Modulus.Search.SearchResult.operator !=(Modulus.Search.SearchResult? left, Modulus.Search.SearchResult? right) -> bool
+static Modulus.Search.SearchResult.operator ==(Modulus.Search.SearchResult? left, Modulus.Search.SearchResult? right) -> bool

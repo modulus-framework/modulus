@@ -155,6 +155,7 @@
   </ItemGroup>
   <ItemGroup Label="Cloud Storage">
     <PackageVersion Include="AWSSDK.S3"                              Version="4.0.104.6" />
+    <PackageVersion Include="Google.Cloud.Storage.V1"                Version="5.0.0" />
     <PackageVersion Include="Azure.Storage.Blobs"                    Version="12.30.1" />
   </ItemGroup>
   <ItemGroup Label="Background Jobs">

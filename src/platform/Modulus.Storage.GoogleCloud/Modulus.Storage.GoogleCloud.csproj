@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework />
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <!-- First release: there is no published baseline to compare with yet (see build/Modulus.Packaging.props). Remove this line
+         once the package is on nuget.org, so later breaking changes are caught. -->
+    <EnablePackageValidation>false</EnablePackageValidation>
+    <Description>Google Cloud Storage file storage provider for Modulus (Google.Cloud.Storage.V1).</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Modulus.Platform/Modulus.Platform.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Google.Cloud.Storage.V1" />
+  </ItemGroup>
+
+</Project>

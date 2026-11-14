@@ -1,0 +1,15 @@
+#nullable enable
+Modulus.Storage.GoogleCloudFileStorage
+Modulus.Storage.GoogleCloudFileStorage.DeleteAsync(string! path, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Storage.GoogleCloudFileStorage.DownloadAsync(string! path, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.IO.Stream!>!
+Modulus.Storage.GoogleCloudFileStorage.ExistsAsync(string! path, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.Storage.GoogleCloudFileStorage.GetPresignedUploadUrlAsync(string! path, System.TimeSpan expiry, string? contentType = null, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<string!>!
+Modulus.Storage.GoogleCloudFileStorage.GetPresignedUrlAsync(string! path, System.TimeSpan expiry, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<string!>!
+Modulus.Storage.GoogleCloudFileStorage.GoogleCloudFileStorage(Google.Cloud.Storage.V1.StorageClient! client, Microsoft.Extensions.Options.IOptions<Modulus.Storage.StorageOptions!>! storage, Microsoft.Extensions.Options.IOptions<Modulus.Storage.GoogleCloudStorageOptions!>! google) -> void
+Modulus.Storage.GoogleCloudFileStorage.UploadAsync(string! path, System.IO.Stream! content, string? contentType = null, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Storage.GoogleCloudStorageExtensions
+Modulus.Storage.GoogleCloudStorageOptions
+Modulus.Storage.GoogleCloudStorageOptions.CredentialsPath.get -> string?
+Modulus.Storage.GoogleCloudStorageOptions.CredentialsPath.set -> void
+Modulus.Storage.GoogleCloudStorageOptions.GoogleCloudStorageOptions() -> void
+static Modulus.Storage.GoogleCloudStorageExtensions.AddGoogleCloudFileStorage(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!

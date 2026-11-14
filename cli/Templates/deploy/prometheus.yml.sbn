@@ -1,0 +1,4 @@
+# Prometheus for {{ root_namespace }}. The app pushes its metrics over OTLP (--web.enable-otlp-receiver), so there are no scrape jobs.
+global:
+  scrape_interval: 30s
+  evaluation_interval: 30s

@@ -1,0 +1,30 @@
+#!/bin/sh
+# Backups for {{ root_namespace }}: a consistent copy of every SQLite database in /data (SQLite's online backup API, so a write
+# during the copy cannot tear the file), the other files in /data, then restic to RESTIC_REPOSITORY. Runs every
+# BACKUP_INTERVAL_SECONDS (default one day) and prunes old snapshots. Restore with restore.sh.
+set -eu
+
+: "${RESTIC_REPOSITORY:?set RESTIC_REPOSITORY in .env, for example s3:https://s3.example.com/bucket/shop}"
+: "${RESTIC_PASSWORD:?set RESTIC_PASSWORD in .env; keep a copy outside this server, without it the backups cannot be read}"
+INTERVAL="${BACKUP_INTERVAL_SECONDS:-86400}"
+STAGE=/var/tmp/app-data-stage
+
+# Create the repository on first run; an existing one is left alone.
+restic cat config >/dev/null 2>&1 || restic init
+
+while true; do
+  rm -rf "$STAGE"
+  mkdir -p "$STAGE"
+  for db in /data/*.db; do
+    [ -f "$db" ] || continue
+    sqlite3 "$db" ".backup '$STAGE/$(basename "$db")'"
+  done
+  # The live databases are excluded by their absolute paths: a bare '*.db' would also exclude the copies in the stage folder.
+  restic backup /data "$STAGE" --exclude /data/'*.db' --exclude /data/'*.db-wal' --exclude /data/'*.db-shm' \
+    --tag app-data --host {{ root_namespace }} --quiet
+  rm -rf "$STAGE"
+  restic forget --tag app-data --keep-daily "${BACKUP_KEEP_DAILY:-7}" --keep-weekly "${BACKUP_KEEP_WEEKLY:-4}" \
+    --keep-monthly "${BACKUP_KEEP_MONTHLY:-6}" --prune --quiet
+  echo "backup finished $(date -u +%FT%TZ)"
+  sleep "$INTERVAL"
+done

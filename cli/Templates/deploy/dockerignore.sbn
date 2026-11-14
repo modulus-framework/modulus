@@ -1,0 +1,19 @@
+# Keep build output, local state and secrets out of the image build context.
+**/bin/
+**/obj/
+**/.vs/
+**/.idea/
+.git/
+.github/
+*.db
+*.db-shm
+*.db-wal
+*.user
+.env
+# Token-server keys and certificates are mounted at run time, never baked into the image.
+deploy/certs/
+**/*.pfx
+**/*.key
+secrets.json
+appsettings.Development.json
+appsettings.Testing.json

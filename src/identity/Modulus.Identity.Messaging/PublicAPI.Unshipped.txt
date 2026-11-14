@@ -1,0 +1,32 @@
+#nullable enable
+const Modulus.Identity.Messaging.SendGridOptions.SectionName = "Identity:Email:SendGrid" -> string!
+const Modulus.Identity.Messaging.TwilioOptions.SectionName = "Identity:Sms:Twilio" -> string!
+Modulus.Identity.Messaging.IIdentitySmsSender
+Modulus.Identity.Messaging.IIdentitySmsSender.SendAsync(string! phoneNumber, string! message, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Identity.Messaging.MessagingExtensions
+Modulus.Identity.Messaging.SendGridIdentityEmailTransport
+Modulus.Identity.Messaging.SendGridIdentityEmailTransport.SendAsync(System.Net.Mail.MailMessage! message, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
+Modulus.Identity.Messaging.SendGridIdentityEmailTransport.SendGridIdentityEmailTransport(System.Net.Http.HttpClient! http, Microsoft.Extensions.Options.IOptions<Modulus.Identity.Messaging.SendGridOptions!>! options) -> void
+Modulus.Identity.Messaging.SendGridOptions
+Modulus.Identity.Messaging.SendGridOptions.ApiKey.get -> string?
+Modulus.Identity.Messaging.SendGridOptions.ApiKey.set -> void
+Modulus.Identity.Messaging.SendGridOptions.BaseUrl.get -> string!
+Modulus.Identity.Messaging.SendGridOptions.BaseUrl.set -> void
+Modulus.Identity.Messaging.SendGridOptions.SendGridOptions() -> void
+Modulus.Identity.Messaging.TwilioIdentitySmsSender
+Modulus.Identity.Messaging.TwilioIdentitySmsSender.SendAsync(string! phoneNumber, string! message, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Identity.Messaging.TwilioIdentitySmsSender.TwilioIdentitySmsSender(System.Net.Http.HttpClient! http, Microsoft.Extensions.Options.IOptions<Modulus.Identity.Messaging.TwilioOptions!>! options) -> void
+Modulus.Identity.Messaging.TwilioOptions
+Modulus.Identity.Messaging.TwilioOptions.AccountSid.get -> string?
+Modulus.Identity.Messaging.TwilioOptions.AccountSid.set -> void
+Modulus.Identity.Messaging.TwilioOptions.AuthToken.get -> string?
+Modulus.Identity.Messaging.TwilioOptions.AuthToken.set -> void
+Modulus.Identity.Messaging.TwilioOptions.BaseUrl.get -> string!
+Modulus.Identity.Messaging.TwilioOptions.BaseUrl.set -> void
+Modulus.Identity.Messaging.TwilioOptions.FromNumber.get -> string?
+Modulus.Identity.Messaging.TwilioOptions.FromNumber.set -> void
+Modulus.Identity.Messaging.TwilioOptions.MessagingServiceSid.get -> string?
+Modulus.Identity.Messaging.TwilioOptions.MessagingServiceSid.set -> void
+Modulus.Identity.Messaging.TwilioOptions.TwilioOptions() -> void
+static Modulus.Identity.Messaging.MessagingExtensions.AddModulusSendGridEmail(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.Identity.Messaging.MessagingExtensions.AddModulusTwilioSms(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
