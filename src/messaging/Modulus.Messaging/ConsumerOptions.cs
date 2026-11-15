@@ -45,6 +45,35 @@ public sealed class ConsumerOptions
     /// </summary>
     public int? ConcurrentMessageLimit { get; set; }
 
+    /// <summary>
+    /// Only handle messages sent for a tenant (FR-21). A message without one is moved to <c>_skipped</c> with reason
+    /// <c>no-tenant</c>, and no consumer runs. Unset means false.
+    /// </summary>
+    public bool? RequireTenant { get; set; }
+
+    /// <summary>
+    /// Most deliveries of one message this consumer accepts (D3). A delivery past the limit is parked to <c>_error</c>
+    /// with reason <c>delivery-limit</c> without running the consumer, so a message that crashes its host on every
+    /// attempt stops looping. Unset means <see cref="DefaultMaxDeliveryCount"/>.
+    /// </summary>
+    public int? MaxDeliveryCount { get; set; }
+
+    /// <summary>
+    /// Seal the body of every message to this consumer, not only the marked types (D6). Needs
+    /// <see cref="IMessageEncryptionKeys"/>. Unset means false.
+    /// </summary>
+    public bool? EncryptPayload { get; set; }
+
+    /// <summary>
+    /// Only one host at a time receives this endpoint's messages, so they are handled in send order across hosts (D10,
+    /// FR-14). Needs a transport that supports it (RabbitMQ). Unset means false. On RabbitMQ the queue argument is set when
+    /// the queue is declared; a queue that already exists keeps its arguments until it is recreated.
+    /// </summary>
+    public bool? SingleActiveConsumer { get; set; }
+
+    /// <summary>The delivery limit when none is set (RabbitMQ quorum queues use the same default).</summary>
+    internal const int DefaultMaxDeliveryCount = 20;
+
     internal void Validate()
     {
         RateLimit?.Validate();
@@ -52,6 +81,11 @@ public sealed class ConsumerOptions
         if (TimeToLive is { } ttl && ttl <= TimeSpan.Zero)
         {
             throw new ArgumentOutOfRangeException(nameof(TimeToLive), "Must be positive.");
+        }
+
+        if (MaxDeliveryCount is { } maxDeliveries && maxDeliveries < 1)
+        {
+            throw new ArgumentOutOfRangeException(nameof(MaxDeliveryCount), "Must be at least 1.");
         }
 
         if (ConcurrentMessageLimit is { } limit && limit < 1)
@@ -71,5 +105,9 @@ public sealed class ConsumerOptions
         Priority = Priority ?? defaults.Priority,
         Ordered = Ordered ?? defaults.Ordered,
         ConcurrentMessageLimit = ConcurrentMessageLimit ?? defaults.ConcurrentMessageLimit,
+        RequireTenant = RequireTenant ?? defaults.RequireTenant,
+        MaxDeliveryCount = MaxDeliveryCount ?? defaults.MaxDeliveryCount,
+        EncryptPayload = EncryptPayload ?? defaults.EncryptPayload,
+        SingleActiveConsumer = SingleActiveConsumer ?? defaults.SingleActiveConsumer,
     };
 }

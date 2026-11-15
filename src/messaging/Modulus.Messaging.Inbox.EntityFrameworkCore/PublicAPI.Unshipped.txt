@@ -13,3 +13,5 @@ Modulus.Messaging.Inbox.EntityFrameworkCore.MessagingInboxModelBuilderExtensions
 static Modulus.Messaging.Inbox.EntityFrameworkCore.InboxMaintenance.PurgeExpiredAsync<TContext>(TContext! db, System.TimeSpan detectionWindow, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<int>!
 static Modulus.Messaging.Inbox.EntityFrameworkCore.MessagingEntityFrameworkInboxExtensions.AddModulusMessagingEntityFrameworkInbox<TContext>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static Modulus.Messaging.Inbox.EntityFrameworkCore.MessagingInboxModelBuilderExtensions.ApplyModulusMessagingInbox(this Microsoft.EntityFrameworkCore.ModelBuilder! modelBuilder, string! tableName = "messaging_inbox") -> Microsoft.EntityFrameworkCore.ModelBuilder!
+Modulus.Messaging.Inbox.EntityFrameworkCore.InboxRecord.TenantId.get -> string?
+Modulus.Messaging.Inbox.EntityFrameworkCore.InboxRecord.TenantId.set -> void

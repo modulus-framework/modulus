@@ -11,8 +11,11 @@ namespace Modulus.Messaging.Transports.RabbitMQ;
 /// Delayed redelivery uses a TTL queue that dead-letters back to the endpoint, which works on any RabbitMQ 3.13+
 /// broker without the delayed-message plugin (BRS R-09).
 /// </summary>
-public sealed class RabbitMqTransport : IMessageTransport, IConcurrentDeliveryTransport, IScheduledMessageTransport, IAsyncDisposable
+public sealed class RabbitMqTransport : IMessageTransport, IMessageTransportHealth, IConcurrentDeliveryTransport, ISingleActiveConsumerTransport, IScheduledMessageTransport, IAsyncDisposable
 {
+    /// <inheritdoc/>
+    public string SystemName => "rabbitmq";
+
     private const string QuorumQueueType = "quorum";
 
     // Scheduling without the delayed-message plugin: a message waits in a TTL bucket queue (one per power-of-two
@@ -35,6 +38,7 @@ public sealed class RabbitMqTransport : IMessageTransport, IConcurrentDeliveryTr
     private readonly List<System.Threading.Channels.ChannelWriter<Incoming>> _pending = [];
     private readonly CancellationTokenSource _abort = new();
     private IReadOnlyDictionary<string, int> _limits = new Dictionary<string, int>(StringComparer.Ordinal);
+    private HashSet<string> _singleActive = new(StringComparer.Ordinal);
 
     private IConnection? _connection;
     private IChannel? _publishChannel;
@@ -78,6 +82,18 @@ public sealed class RabbitMqTransport : IMessageTransport, IConcurrentDeliveryTr
         _limits = limitsByEndpoint.ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.Ordinal);
     }
 
+    /// <inheritdoc/>
+    public void ConfigureSingleActiveConsumer(IReadOnlyCollection<string> endpoints)
+    {
+        ArgumentNullException.ThrowIfNull(endpoints);
+        if (_receive is not null)
+        {
+            throw new InvalidOperationException("Single-active consumers must be configured before the RabbitMQ transport starts.");
+        }
+
+        _singleActive = new HashSet<string>(endpoints, StringComparer.Ordinal);
+    }
+
     public async Task Start(
         IReadOnlyCollection<string> endpoints,
         Func<MessageEnvelope, CancellationToken, Task> receive,
@@ -102,6 +118,26 @@ public sealed class RabbitMqTransport : IMessageTransport, IConcurrentDeliveryTr
         }
 
         await StartScheduleConsumer(cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// True when the broker answers a round trip on a short-lived channel: a passive declare of a built-in exchange,
+    /// within five seconds. The connection's flag alone can stay true after the broker goes away, and a channel can
+    /// open on a half-dead socket, so only an answer proves the broker is there.
+    /// </summary>
+    public async Task<bool> IsAvailableAsync(CancellationToken cancellationToken)
+    {
+        var connection = _connection;
+        if (connection is not { IsOpen: true })
+        {
+            return false;
+        }
+
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        timeout.CancelAfter(TimeSpan.FromSeconds(5));
+        await using var probe = await connection.CreateChannelAsync(cancellationToken: timeout.Token).ConfigureAwait(false);
+        await probe.ExchangeDeclarePassiveAsync("amq.direct", timeout.Token).ConfigureAwait(false);
+        return true;
     }
 
     public async Task Stop(CancellationToken cancellationToken)
@@ -304,7 +340,7 @@ public sealed class RabbitMqTransport : IMessageTransport, IConcurrentDeliveryTr
         var channel = await _connection!.CreateChannelAsync(
             new CreateChannelOptions(publisherConfirmationsEnabled: false, publisherConfirmationTrackingEnabled: false),
             cancellationToken).ConfigureAwait(false);
-        await DeclareQueueAsync(channel, endpoint, EndpointArguments(), cancellationToken).ConfigureAwait(false);
+        await DeclareQueueAsync(channel, endpoint, EndpointArguments(endpoint), cancellationToken).ConfigureAwait(false);
 
         // Enough unacknowledged deliveries for every worker to have one (a prefetch below the limit would starve it).
         var prefetch = (ushort)Math.Clamp(Math.Max((int)_options.Prefetch, limit), 1, ushort.MaxValue);
@@ -508,7 +544,7 @@ public sealed class RabbitMqTransport : IMessageTransport, IConcurrentDeliveryTr
         {
             if (!_declaredQueues.ContainsKey(queue))
             {
-                await DeclareQueueAsync(channel, queue, queueArguments ?? EndpointArguments(), cancellationToken).ConfigureAwait(false);
+                await DeclareQueueAsync(channel, queue, queueArguments ?? EndpointArguments(queue), cancellationToken).ConfigureAwait(false);
                 _declaredQueues[queue] = 0;
             }
         }
@@ -528,9 +564,23 @@ public sealed class RabbitMqTransport : IMessageTransport, IConcurrentDeliveryTr
             cancellationToken: cancellationToken);
 
     /// <summary>Arguments of an endpoint or parked queue: bounded with reject-publish when MaxQueueLength is set.</summary>
-    private Dictionary<string, object?> EndpointArguments() => _options.MaxQueueLength is { } maxLength
-        ? QueueArguments(("x-max-length", (long)maxLength), ("x-overflow", "reject-publish"))
-        : QueueArguments();
+    private Dictionary<string, object?> EndpointArguments(string endpoint)
+    {
+        // A single-active endpoint lets one consumer at a time take its messages (D10, FR-14).
+        var extra = new List<(string Key, object Value)>();
+        if (_options.MaxQueueLength is { } maxLength)
+        {
+            extra.Add(("x-max-length", (long)maxLength));
+            extra.Add(("x-overflow", "reject-publish"));
+        }
+
+        if (_singleActive.Contains(endpoint))
+        {
+            extra.Add(("x-single-active-consumer", true));
+        }
+
+        return QueueArguments(extra.ToArray());
+    }
 
     private static Dictionary<string, object?> QueueArguments(params (string Key, object Value)[] extra)
     {

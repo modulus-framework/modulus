@@ -133,6 +133,32 @@ public sealed class InboxTests : IAsyncLifetime
     private Modulus.Messaging.Transports.InMemory.InMemoryTransport Transport() =>
         (Modulus.Messaging.Transports.InMemory.InMemoryTransport)_provider.GetRequiredService<Modulus.Messaging.IMessageTransport>();
 
+    [Fact]
+    public async Task D7_the_inbox_row_names_the_company_the_message_was_handled_for()
+    {
+        await StartAsync(b => b.AddConsumer<RecordingConsumer, OrderPlaced>("orders"));
+        var headers = new Dictionary<string, string> { [Modulus.Messaging.MessagingHeaders.TenantId] = "company-a" };
+        var envelope = Envelope("orders", new OrderPlaced(Guid.NewGuid()), typeof(RecordingConsumer)) with { Headers = headers };
+
+        await Transport().Send(envelope, CancellationToken.None);
+
+        var deadline = DateTimeOffset.UtcNow + TimeSpan.FromSeconds(5);
+        while (await CountRowsAsync() != 1 && DateTimeOffset.UtcNow < deadline)
+        {
+            await Task.Delay(20);
+        }
+
+        await using var scope = _provider.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<InboxTestDb>();
+        (await db.Set<InboxRecord>().SingleAsync()).TenantId.Should().Be("company-a");
+    }
+
+    private async Task<int> CountRowsAsync()
+    {
+        await using var scope = _provider.CreateAsyncScope();
+        return await scope.ServiceProvider.GetRequiredService<InboxTestDb>().Set<InboxRecord>().CountAsync();
+    }
+
     private static Modulus.Messaging.MessageEnvelope Envelope(string endpoint, object message, Type consumer) =>
         new(Guid.NewGuid(), endpoint, message, new Dictionary<string, string>(), consumer.FullName);
 

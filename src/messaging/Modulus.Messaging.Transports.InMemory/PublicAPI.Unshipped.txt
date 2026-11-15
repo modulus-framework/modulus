@@ -30,3 +30,4 @@ static Modulus.Messaging.Transports.InMemory.DeadLetter.operator ==(Modulus.Mess
 static Modulus.Messaging.Transports.InMemory.InMemoryMessagingBuilderExtensions.UseInMemory(this Modulus.Messaging.MessagingBusBuilder! builder) -> Modulus.Messaging.MessagingBusBuilder!
 static readonly Modulus.Messaging.Transports.InMemory.InMemoryTransport.DefaultStopTimeout -> System.TimeSpan
 Modulus.Messaging.Transports.InMemory.InMemoryTransport.ConfigureConcurrency(System.Collections.Generic.IReadOnlyDictionary<string!, int>! limitsByEndpoint) -> void
+Modulus.Messaging.Transports.InMemory.InMemoryTransport.SystemName.get -> string!

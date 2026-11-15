@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Hosting;
 using Xunit;
 
@@ -56,6 +57,37 @@ public sealed class PostgreSqlOutageTests(PostgreSqlBroker database) : IClassFix
         received.OrderIds.Should().Contain(before);
 
         await host.StopAsync(CancellationToken.None);
+    }
+
+    [Fact]
+    public async Task FR_24_the_health_check_reports_unhealthy_while_the_database_is_down_and_healthy_after_it_returns()
+    {
+        var services = new ServiceCollection();
+        services.AddModulusMessaging(b => b.UsePostgreSql(o =>
+        {
+            var options = database.Options();
+            o.ConnectionString = options.ConnectionString;
+        }));
+        await using var provider = services.BuildServiceProvider();
+        var check = new MessagingHealthCheck(provider.GetRequiredService<IMessageTransport>());
+
+        (await check.CheckHealthAsync(new HealthCheckContext())).Status.Should().Be(HealthStatus.Healthy);
+
+        await database.StopDatabaseAsync();
+        (await check.CheckHealthAsync(new HealthCheckContext())).Status.Should().Be(HealthStatus.Unhealthy);
+
+        await database.StartDatabaseAsync();
+        var recovered = false;
+        for (var attempt = 0; attempt < 120 && !recovered; attempt++)
+        {
+            recovered = (await check.CheckHealthAsync(new HealthCheckContext())).Status == HealthStatus.Healthy;
+            if (!recovered)
+            {
+                await Task.Delay(500);
+            }
+        }
+
+        recovered.Should().BeTrue("the check reports healthy again once the database accepts queries");
     }
 
     private static async Task SendWhenRecovered(IBus bus, string endpoint, Guid orderId)

@@ -26,4 +26,28 @@ public static class MessagingHeaders
     /// ahead of the messages sent after it. Set by the transport when it claims the message.
     /// </summary>
     public const string Sequence = "mod-sequence";
+
+    /// <summary>
+    /// W3C trace context (<c>traceparent</c>) of the span that sent the message. The consumer's span continues that
+    /// trace. Absent when no trace was active or no listener was attached.
+    /// </summary>
+    public const string TraceParent = "mod-traceparent";
+
+    /// <summary>
+    /// Tenant the message was sent for (FR-21). Set from <see cref="MessageTenant.Current"/> when the message is created;
+    /// a consumer runs with it, and a consumer that requires a tenant parks a message without one.
+    /// </summary>
+    public const string TenantId = "mod-tenant-id";
+
+    /// <summary>
+    /// How many times the transport has delivered this copy, counting this one (1 on the first delivery). A transport
+    /// that tracks deliveries sets it when it hands the message over; the bus also counts its own redeliveries (D3).
+    /// </summary>
+    public const string DeliveryCount = "mod-delivery-count";
+
+    /// <summary>
+    /// The CLR type name of a sealed message's body (D6). The envelope's body is then an <see cref="EncryptedPayload"/>, and
+    /// the bus opens it as this type before a consumer sees it.
+    /// </summary>
+    public const string EncryptedType = "mod-encrypted-type";
 }

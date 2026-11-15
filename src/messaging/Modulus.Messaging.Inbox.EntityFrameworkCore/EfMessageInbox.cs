@@ -22,6 +22,7 @@ internal sealed class EfMessageInbox<TContext>(TContext db) : IMessageInbox
             MessageId = messageId,
             ConsumerKey = consumerKey,
             ReceivedAt = DateTime.UtcNow,
+            TenantId = MessageTenant.Current,
         });
         return true;
     }

@@ -15,7 +15,9 @@ public static class MessagingInboxModelBuilderExtensions
             b.ToTable(tableName);
             b.HasKey(r => new { r.MessageId, r.ConsumerKey });
             b.Property(r => r.ConsumerKey).HasMaxLength(512);
+            b.Property(r => r.TenantId).HasMaxLength(128);
             b.HasIndex(r => r.ReceivedAt);
+            b.HasIndex(r => r.TenantId);
         });
 
         return modelBuilder;

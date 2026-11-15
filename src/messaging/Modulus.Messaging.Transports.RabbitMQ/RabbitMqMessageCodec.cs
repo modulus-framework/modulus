@@ -11,6 +11,7 @@ namespace Modulus.Messaging.Transports.RabbitMQ;
 internal static class RabbitMqMessageCodec
 {
     internal const string MessageTypeHeader = "mod-message-type";
+    private const string QuorumDeliveryCountHeader = "x-delivery-count";
     internal const string ConsumerKeyHeader = "mod-consumer-key";
     internal const string ErrorTypeHeader = "mod-error-type";
     internal const string ErrorMessageHeader = "mod-error-message";
@@ -82,6 +83,13 @@ internal static class RabbitMqMessageCodec
         {
             reason = "Body is empty.";
             return false;
+        }
+
+        // A quorum queue counts the deliveries returned before this one in x-delivery-count (D3): this delivery is one more.
+        if (headers.TryGetValue(QuorumDeliveryCountHeader, out var returned) &&
+            long.TryParse(returned, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var count))
+        {
+            headers[MessagingHeaders.DeliveryCount] = (count + 1).ToString(System.Globalization.CultureInfo.InvariantCulture);
         }
 
         headers.Remove(MessageTypeHeader);

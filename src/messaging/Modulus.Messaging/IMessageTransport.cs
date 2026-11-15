@@ -27,4 +27,10 @@ public interface IMessageTransport
     Task MoveToError(MessageEnvelope envelope, Exception exception, CancellationToken cancellationToken);
 
     Task MoveToSkipped(MessageEnvelope envelope, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// The transport's name for <c>messaging.system</c> on spans and metrics (D9). A registered OpenTelemetry value
+    /// (for example <c>rabbitmq</c>) is used as is; any other name is a custom value. The default is <c>modulus</c>.
+    /// </summary>
+    string SystemName => "modulus";
 }

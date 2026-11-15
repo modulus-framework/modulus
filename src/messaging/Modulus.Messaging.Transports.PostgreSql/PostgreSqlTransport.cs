@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Diagnostics.Metrics;
 using Npgsql;
 using NpgsqlTypes;
 
@@ -11,14 +12,20 @@ namespace Modulus.Messaging.Transports.PostgreSql;
 /// the bus has finished with it (RULE-02). A row whose host dies keeps its lease until it expires, then another host
 /// receives it (at-least-once). Delayed redelivery is a row with a visibility time in the future.
 /// </summary>
-public sealed class PostgreSqlTransport : IMessageTransport, IScheduledMessageTransport, IConcurrentDeliveryTransport, IAsyncDisposable
+public sealed class PostgreSqlTransport : IMessageTransport, IScheduledMessageTransport, IConcurrentDeliveryTransport, IMessageTransportHealth, IAsyncDisposable
 {
+    /// <inheritdoc/>
+    public string SystemName => "postgresql";
+
     private const string ErrorSuffix = "_error";
     private const string SkippedSuffix = "_skipped";
 
     private readonly PostgreSqlTransportOptions _options;
     private IReadOnlyDictionary<string, int> _limits = new Dictionary<string, int>(StringComparer.Ordinal);
     private readonly NpgsqlDataSource _dataSource;
+    // The same meter as the bus (Modulus.Messaging), so the OpenTelemetry setup already exports this gauge.
+    private readonly Meter _meter = new("Modulus.Messaging");
+    private IReadOnlyList<Measurement<long>> _depths = [];
     private readonly CancellationTokenSource _stopping = new();
     private readonly CancellationTokenSource _abort = new();
     private readonly ConcurrentBag<Task> _loops = [];
@@ -78,6 +85,56 @@ public sealed class PostgreSqlTransport : IMessageTransport, IScheduledMessageTr
         {
             _loops.Add(Task.Run(() => PurgeLoopAsync(retention, _stopping.Token), CancellationToken.None));
         }
+
+        if (_options.QueueDepthInterval is { } depthInterval)
+        {
+            _meter.CreateObservableGauge(
+                "modulus.messaging.queue.depth",
+                () => _depths,
+                "{message}",
+                "Rows waiting in each queue, claimed or parked, from the last sample.");
+            _loops.Add(Task.Run(() => DepthLoopAsync(depthInterval, _stopping.Token), CancellationToken.None));
+        }
+    }
+
+    /// <summary>Counts the rows of each queue every <paramref name="interval"/>, until stopping. A failed count keeps the last sample.</summary>
+    private async Task DepthLoopAsync(TimeSpan interval, CancellationToken stopping)
+    {
+        try
+        {
+            while (!stopping.IsCancellationRequested)
+            {
+                try
+                {
+                    _depths = await CountQueuesAsync(stopping).ConfigureAwait(false);
+                }
+                catch (Exception) when (!stopping.IsCancellationRequested)
+                {
+                    // The last sample stays until the next one succeeds; the database health check reports the outage.
+                }
+
+                await Task.Delay(interval, stopping).ConfigureAwait(false);
+            }
+        }
+        catch (OperationCanceledException) when (stopping.IsCancellationRequested)
+        {
+            // Stopping: the sampler ends.
+        }
+    }
+
+    private async Task<IReadOnlyList<Measurement<long>>> CountQueuesAsync(CancellationToken cancellationToken)
+    {
+        await using var command = _dataSource.CreateCommand(PostgreSqlQueueSql.QueueDepth(_table));
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+        var counts = new List<Measurement<long>>();
+        while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+        {
+            counts.Add(new Measurement<long>(
+                reader.GetInt64(1),
+                new KeyValuePair<string, object?>("messaging.destination.name", reader.GetString(0))));
+        }
+
+        return counts;
     }
 
     /// <summary>Purges parked messages older than the retention now and then every <see cref="PostgreSqlTransportOptions.PurgeInterval"/>, until stopping.</summary>
@@ -103,6 +160,14 @@ public sealed class PostgreSqlTransport : IMessageTransport, IScheduledMessageTr
         {
             // Stopping: the purge loop ends.
         }
+    }
+
+    /// <summary>Runs a trivial query, so a database that is down or refusing connections reports unavailable.</summary>
+    public async Task<bool> IsAvailableAsync(CancellationToken cancellationToken)
+    {
+        await using var command = _dataSource.CreateCommand("SELECT 1");
+        await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
+        return true;
     }
 
     public async Task Stop(CancellationToken cancellationToken)
@@ -204,6 +269,7 @@ public sealed class PostgreSqlTransport : IMessageTransport, IScheduledMessageTr
     {
         _stopping.Dispose();
         _abort.Dispose();
+        _meter.Dispose();
         await _dataSource.DisposeAsync().ConfigureAwait(false);
     }
 
@@ -284,7 +350,11 @@ public sealed class PostgreSqlTransport : IMessageTransport, IScheduledMessageTr
             // The claim's sequence travels with the envelope, so a redelivery keeps the message's place in its partition (FR-14).
             var delivered = envelope! with
             {
-                Headers = WithHeaders(envelope!.Headers, (MessagingHeaders.Sequence, item.Sequence.ToString(System.Globalization.CultureInfo.InvariantCulture))),
+                // The delivery count is this claim's count: the row's deliveries so far, this one included (D3).
+                Headers = WithHeaders(
+                    envelope!.Headers,
+                    (MessagingHeaders.Sequence, item.Sequence.ToString(System.Globalization.CultureInfo.InvariantCulture)),
+                    (MessagingHeaders.DeliveryCount, item.DeliveryCount.ToString(System.Globalization.CultureInfo.InvariantCulture))),
             };
 
             try
@@ -337,7 +407,8 @@ public sealed class PostgreSqlTransport : IMessageTransport, IScheduledMessageTr
                 Body: reader.GetString(5),
                 Headers: reader.GetString(6),
                 Priority: reader.GetInt32(7),
-                Sequence: reader.GetInt64(8)));
+                Sequence: reader.GetInt64(8),
+                DeliveryCount: reader.GetInt32(9)));
         }
 
         // The claim does not promise an order: handle the batch highest priority first, then in enqueue order (FR-13).
@@ -452,5 +523,6 @@ public sealed class PostgreSqlTransport : IMessageTransport, IScheduledMessageTr
         string Body,
         string Headers,
         int Priority,
-        long Sequence);
+        long Sequence,
+        int DeliveryCount);
 }

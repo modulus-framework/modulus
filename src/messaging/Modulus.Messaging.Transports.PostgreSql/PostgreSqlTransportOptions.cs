@@ -44,6 +44,12 @@ public sealed partial class PostgreSqlTransportOptions
     /// <summary>Called when an automatic purge fails. The purge is tried again at the next interval.</summary>
     public Action<Exception>? PurgeFailed { get; set; }
 
+    /// <summary>
+    /// How often the transport counts the rows of each queue for the <c>modulus.messaging.queue.depth</c> gauge. The
+    /// gauge reports the last count, so a slow count never blocks a metrics scrape. Null turns the sampling off.
+    /// </summary>
+    public TimeSpan? QueueDepthInterval { get; set; } = TimeSpan.FromSeconds(15);
+
     internal void Validate()
     {
         if (string.IsNullOrWhiteSpace(ConnectionString))
@@ -84,6 +90,11 @@ public sealed partial class PostgreSqlTransportOptions
         if (ParkedRetention is { } retention && retention < TimeSpan.Zero)
         {
             throw new ArgumentOutOfRangeException(nameof(ParkedRetention), "Must not be negative.");
+        }
+
+        if (QueueDepthInterval is { } depthInterval && depthInterval <= TimeSpan.Zero)
+        {
+            throw new ArgumentOutOfRangeException(nameof(QueueDepthInterval), "Must be positive, or null to turn the sampling off.");
         }
 
         if (PurgeInterval <= TimeSpan.Zero)

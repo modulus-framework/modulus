@@ -39,3 +39,7 @@ Modulus.Messaging.Transports.PostgreSql.PostgreSqlTransportOptions.PurgeFailed.g
 Modulus.Messaging.Transports.PostgreSql.PostgreSqlTransportOptions.PurgeFailed.set -> void
 Modulus.Messaging.Transports.PostgreSql.PostgreSqlTransportOptions.PurgeInterval.get -> System.TimeSpan
 Modulus.Messaging.Transports.PostgreSql.PostgreSqlTransportOptions.PurgeInterval.set -> void
+Modulus.Messaging.Transports.PostgreSql.PostgreSqlTransport.IsAvailableAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<bool>!
+Modulus.Messaging.Transports.PostgreSql.PostgreSqlTransport.SystemName.get -> string!
+Modulus.Messaging.Transports.PostgreSql.PostgreSqlTransportOptions.QueueDepthInterval.get -> System.TimeSpan?
+Modulus.Messaging.Transports.PostgreSql.PostgreSqlTransportOptions.QueueDepthInterval.set -> void

@@ -59,12 +59,15 @@ internal sealed class EndpointControl
         }
     }
 
-    /// <summary>Records the final outcome of one message and pauses the endpoint if the kill switch trips.</summary>
-    internal void Record(bool succeeded)
+    /// <summary>
+    /// Records the final outcome of one message and pauses the endpoint if the kill switch trips. Returns the pause
+    /// when this outcome tripped it, otherwise null.
+    /// </summary>
+    internal TimeSpan? Record(bool succeeded)
     {
         if (_killSwitch is null)
         {
-            return;
+            return null;
         }
 
         lock (_gate)
@@ -85,12 +88,15 @@ internal sealed class EndpointControl
 
             var tripped = _window.Count >= _killSwitch.WindowSize &&
                           (double)_failures / _window.Count >= _killSwitch.FailureRatio;
-            if (tripped)
+            if (!tripped)
             {
-                _pausedUntil = DateTimeOffset.UtcNow + _killSwitch.RestartTimeout;
-                _window.Clear();
-                _failures = 0;
+                return null;
             }
+
+            _pausedUntil = DateTimeOffset.UtcNow + _killSwitch.RestartTimeout;
+            _window.Clear();
+            _failures = 0;
+            return _killSwitch.RestartTimeout;
         }
     }
 }

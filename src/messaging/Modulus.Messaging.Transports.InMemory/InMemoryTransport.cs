@@ -9,6 +9,9 @@ namespace Modulus.Messaging.Transports.InMemory;
 /// </summary>
 public sealed class InMemoryTransport : IMessageTransport, IScheduledMessageTransport, IConcurrentDeliveryTransport
 {
+    /// <inheritdoc/>
+    public string SystemName => "in-memory";
+
     /// <summary>NFR-18: in-flight messages are drained within 30 seconds by default.</summary>
     public static readonly TimeSpan DefaultStopTimeout = TimeSpan.FromSeconds(30);
 

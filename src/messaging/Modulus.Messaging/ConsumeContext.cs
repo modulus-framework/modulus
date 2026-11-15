@@ -20,5 +20,8 @@ public sealed class ConsumeContext<TMessage> where TMessage : class
 
     public IReadOnlyDictionary<string, string> Headers => _envelope.Headers;
 
+    /// <summary>The tenant the message was sent for, or null when it has none (FR-21).</summary>
+    public string? TenantId => _envelope.Headers.TryGetValue(MessagingHeaders.TenantId, out var tenant) && tenant.Length > 0 ? tenant : null;
+
     public CancellationToken CancellationToken { get; }
 }

@@ -152,6 +152,37 @@ public sealed class RetryFaultAndDrainTests
     }
 
     [Fact]
+    public async Task D3_a_delivery_past_the_limit_is_parked_without_running_the_consumer()
+    {
+        await using var harness = await MessagingTestHarness.StartAsync(b => b
+            .AddConsumer<AlwaysFailingConsumer, OrderSubmitted>("billing-limit", o =>
+            {
+                o.MaxDeliveryCount = 2;
+                o.Redelivery = RedeliveryPolicy.Intervals(
+                    TimeSpan.FromMilliseconds(20), TimeSpan.FromMilliseconds(20), TimeSpan.FromMilliseconds(20));
+            })
+            .UseInMemory(), RegisterTestServices);
+
+        await harness.Bus.Publish(new OrderSubmitted(Guid.NewGuid()));
+
+        (await MessagingTestHarness.WaitUntilAsync(() => harness.Transport.Errors("billing-limit").Count == 1)).Should().BeTrue();
+        // Two deliveries ran the consumer; the third was over the limit and was parked before any consumer ran.
+        harness.Services.GetRequiredService<Attempts>().Value.Should().Be(2);
+        harness.Transport.Errors("billing-limit").Single().Exception.Should().BeOfType<MessageParkException>()
+            .Which.Reason.Should().Be("delivery-limit");
+    }
+
+    [Fact]
+    public void D3_a_delivery_limit_below_one_is_refused()
+    {
+        var options = new ConsumerOptions { MaxDeliveryCount = 0 };
+
+        var act = () => options.Validate();
+
+        act.Should().Throw<ArgumentOutOfRangeException>().Which.ParamName.Should().Be("MaxDeliveryCount");
+    }
+
+    [Fact]
     public async Task FR_05_a_parked_message_publishes_a_fault_that_a_fault_consumer_receives()
     {
         await using var harness = await MessagingTestHarness.StartAsync(b => b

@@ -1,3 +1,5 @@
+using Modulus.Messaging.Internal;
+
 namespace Modulus.Messaging;
 
 /// <summary>
@@ -9,13 +11,20 @@ internal sealed class OutboxBus(MessagingBus bus, IMessageOutbox outbox) : IBus
     public async Task Publish<TMessage>(TMessage message, CancellationToken cancellationToken = default)
         where TMessage : class
     {
+        // The producer span starts before the envelopes are built, so they carry its trace context (FR-24). The outbox
+        // row keeps that context until the dispatcher sends it, so the consumer's span still joins this trace.
+        using var activity = MessagingTelemetry.StartProducer("publish " + typeof(TMessage).Name, typeof(TMessage).Name, bus.Transport.SystemName);
         foreach (var envelope in bus.EnvelopesForPublish(message))
         {
             await outbox.Add(envelope, cancellationToken).ConfigureAwait(false);
         }
     }
 
-    public Task Send<TMessage>(Uri address, TMessage message, CancellationToken cancellationToken = default)
-        where TMessage : class =>
-        outbox.Add(bus.EnvelopeForSend(address, message), cancellationToken);
+    public async Task Send<TMessage>(Uri address, TMessage message, CancellationToken cancellationToken = default)
+        where TMessage : class
+    {
+        var endpoint = MessagingBus.EndpointFromAddress(address);
+        using var activity = MessagingTelemetry.StartProducer("send " + endpoint, endpoint, bus.Transport.SystemName);
+        await outbox.Add(bus.EnvelopeForSend(address, message), cancellationToken).ConfigureAwait(false);
+    }
 }

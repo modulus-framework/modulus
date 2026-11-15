@@ -126,6 +126,33 @@ public sealed class PostgreSqlTransportTests(PostgreSqlBroker database) : IClass
     }
 
     [Fact]
+    public async Task D3_a_row_claimed_past_the_delivery_limit_is_parked_without_running_the_consumer()
+    {
+        var endpoint = Endpoint();
+        var received = new Received();
+        await using var host = await StartBus(b => b.AddConsumer<RecordingConsumer, OrderPlaced>(endpoint), received);
+        var orderId = Guid.NewGuid();
+
+        // A row already claimed 20 times (a crash loop): its next claim is delivery 21, over the default limit of 20.
+        await using (var command = database.DataSource().CreateCommand("""
+            INSERT INTO messaging_queue (queue, message_id, message_type, consumer_key, body, headers, delivery_count)
+            VALUES (@queue, @id, @type, NULL, @body, '{}'::jsonb, 20)
+            """))
+        {
+            command.Parameters.AddWithValue("queue", endpoint);
+            command.Parameters.AddWithValue("id", Guid.NewGuid());
+            command.Parameters.AddWithValue("type", typeof(OrderPlaced).AssemblyQualifiedName!);
+            command.Parameters.AddWithValue("body", $"{{\"orderId\":\"{orderId}\"}}");
+            await command.ExecuteNonQueryAsync();
+        }
+
+        var parked = await WaitForRow($"{endpoint}_error");
+        parked.Should().NotBeNull("the row is parked once it is claimed over the limit");
+        parked!.Headers["mod-error-message"].Should().Contain("delivered 21 times");
+        received.OrderIds.Should().BeEmpty("no consumer runs for a delivery past the limit");
+    }
+
+    [Fact]
     public async Task FR_12_a_scheduled_send_arrives_at_its_time_on_postgresql()
     {
         var endpoint = Endpoint();

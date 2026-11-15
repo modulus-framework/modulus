@@ -60,7 +60,7 @@ internal static class PostgreSqlQueueSql
             delivery_count = q.delivery_count + 1
         FROM claimed
         WHERE q.id = claimed.id
-        RETURNING q.id, q.lock_token, q.message_id, q.message_type, q.consumer_key, q.body, q.headers::text, q.priority, q.sequence
+        RETURNING q.id, q.lock_token, q.message_id, q.message_type, q.consumer_key, q.body, q.headers::text, q.priority, q.sequence, q.delivery_count
         """;
 
     /// <summary>
@@ -68,6 +68,10 @@ internal static class PostgreSqlQueueSql
     /// A parked row's visible_at is the time it was parked. A live queue whose name ends in those suffixes is matched too,
     /// so an endpoint should not be named like one.
     /// </summary>
+    /// <summary>Counts the rows of each queue (ready, claimed, and parked alike) for the queue-depth gauge.</summary>
+    public static string QueueDepth(string table) =>
+        $"SELECT queue, count(*) FROM {table} GROUP BY queue";
+
     public static string PurgeParked(string table) =>
         $"DELETE FROM {table} WHERE (queue LIKE '%' || @error_suffix OR queue LIKE '%' || @skipped_suffix) AND lock_token IS NULL AND visible_at < @cutoff";
 

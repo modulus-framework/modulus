@@ -132,6 +132,7 @@ Modulus.Messaging.RetryPolicy.IsIgnored(System.Exception! exception) -> bool
 Modulus.Messaging.RetryPolicy.Retries.get -> int
 const Modulus.Messaging.MessagingHeaders.ExpiresAt = "mod-expires-at" -> string!
 const Modulus.Messaging.MessagingHeaders.PartitionKey = "mod-partition-key" -> string!
+const Modulus.Messaging.MessagingHeaders.TraceParent = "mod-traceparent" -> string!
 const Modulus.Messaging.MessagingHeaders.Priority = "mod-priority" -> string!
 const Modulus.Messaging.MessagingHeaders.Sequence = "mod-sequence" -> string!
 const Modulus.Messaging.MessagingHeaders.SkipReason = "mod-skip-reason" -> string!
@@ -165,3 +166,63 @@ Modulus.Messaging.IConcurrentDeliveryTransport
 Modulus.Messaging.IConcurrentDeliveryTransport.ConfigureConcurrency(System.Collections.Generic.IReadOnlyDictionary<string!, int>! limitsByEndpoint) -> void
 Modulus.Messaging.IMessageOutbox.AddScheduled(Modulus.Messaging.MessageEnvelope! envelope, System.DateTimeOffset deliverAt, System.Guid scheduleToken, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 Modulus.Messaging.IMessageOutbox.CancelScheduled(System.Guid scheduleToken, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<bool>!
+Modulus.Messaging.IMessageTransportHealth
+Modulus.Messaging.IMessageTransportHealth.IsAvailableAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<bool>!
+Modulus.Messaging.MessagingHealthCheck
+Modulus.Messaging.MessagingHealthCheck.CheckHealthAsync(Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckContext! context, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult>!
+Modulus.Messaging.MessagingHealthCheck.MessagingHealthCheck(Modulus.Messaging.IMessageTransport! transport) -> void
+Modulus.Messaging.MessagingHealthCheckExtensions
+static Modulus.Messaging.MessagingHealthCheckExtensions.AddModulusMessagingHealthCheck(this Microsoft.Extensions.DependencyInjection.IHealthChecksBuilder! builder, string! name = "messaging") -> Microsoft.Extensions.DependencyInjection.IHealthChecksBuilder!
+const Modulus.Messaging.MessagingHeaders.TenantId = "mod-tenant-id" -> string!
+Modulus.Messaging.ConsumeContext<TMessage>.TenantId.get -> string?
+Modulus.Messaging.ConsumerOptions.RequireTenant.get -> bool?
+Modulus.Messaging.ConsumerOptions.RequireTenant.set -> void
+Modulus.Messaging.MessageTenant
+static Modulus.Messaging.MessageTenant.Current.get -> string?
+static Modulus.Messaging.MessageTenant.Enter(string? tenantId) -> System.IDisposable!
+Modulus.Messaging.IConsumeScope
+Modulus.Messaging.IConsumeScope.PrepareAsync(System.IServiceProvider! services, Modulus.Messaging.MessageEnvelope! envelope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Func<System.IDisposable?>?>
+Modulus.Messaging.IMessageAmbientContext
+Modulus.Messaging.IMessageAmbientContext.Enter(System.IServiceProvider! scope) -> System.IDisposable?
+Modulus.Messaging.MessageParkException
+Modulus.Messaging.MessageParkException.MessageParkException(string! reason, string! message, System.Exception? inner = null) -> void
+Modulus.Messaging.MessageParkException.Reason.get -> string!
+const Modulus.Messaging.MessagingHeaders.DeliveryCount = "mod-delivery-count" -> string!
+Modulus.Messaging.ConsumerOptions.MaxDeliveryCount.get -> int?
+Modulus.Messaging.ConsumerOptions.MaxDeliveryCount.set -> void
+Modulus.Messaging.IMessageTransport.SystemName.get -> string!
+const Modulus.Messaging.MessagingHeaders.EncryptedType = "mod-encrypted-type" -> string!
+Modulus.Messaging.ConsumerOptions.EncryptPayload.get -> bool?
+Modulus.Messaging.ConsumerOptions.EncryptPayload.set -> void
+Modulus.Messaging.EncryptedMessageAttribute
+Modulus.Messaging.EncryptedMessageAttribute.EncryptedMessageAttribute() -> void
+Modulus.Messaging.EncryptedPayload
+Modulus.Messaging.EncryptedPayload.Ciphertext.get -> string!
+Modulus.Messaging.EncryptedPayload.Ciphertext.init -> void
+Modulus.Messaging.EncryptedPayload.<Clone>$() -> Modulus.Messaging.EncryptedPayload!
+Modulus.Messaging.EncryptedPayload.Deconstruct(out string! KeyId, out string! Nonce, out string! Tag, out string! Ciphertext) -> void
+Modulus.Messaging.EncryptedPayload.EncryptedPayload(string! KeyId, string! Nonce, string! Tag, string! Ciphertext) -> void
+Modulus.Messaging.EncryptedPayload.Equals(Modulus.Messaging.EncryptedPayload? other) -> bool
+Modulus.Messaging.EncryptedPayload.KeyId.get -> string!
+Modulus.Messaging.EncryptedPayload.KeyId.init -> void
+Modulus.Messaging.EncryptedPayload.Nonce.get -> string!
+Modulus.Messaging.EncryptedPayload.Nonce.init -> void
+Modulus.Messaging.EncryptedPayload.Tag.get -> string!
+Modulus.Messaging.EncryptedPayload.Tag.init -> void
+Modulus.Messaging.IFault.FaultedMessage.get -> object?
+Modulus.Messaging.IMessageEncryptionKeys
+Modulus.Messaging.IMessageEncryptionKeys.CurrentKeyId.get -> string!
+Modulus.Messaging.IMessageEncryptionKeys.GetKey(string! keyId) -> byte[]?
+Modulus.Messaging.StaticMessageEncryptionKeys
+Modulus.Messaging.StaticMessageEncryptionKeys.CurrentKeyId.get -> string!
+Modulus.Messaging.StaticMessageEncryptionKeys.GetKey(string! keyId) -> byte[]?
+Modulus.Messaging.StaticMessageEncryptionKeys.StaticMessageEncryptionKeys(string! currentKeyId, System.Collections.Generic.IReadOnlyDictionary<string!, string!>! base64Keys) -> void
+override Modulus.Messaging.EncryptedPayload.Equals(object? obj) -> bool
+override Modulus.Messaging.EncryptedPayload.GetHashCode() -> int
+override Modulus.Messaging.EncryptedPayload.ToString() -> string!
+static Modulus.Messaging.EncryptedPayload.operator !=(Modulus.Messaging.EncryptedPayload? left, Modulus.Messaging.EncryptedPayload? right) -> bool
+static Modulus.Messaging.EncryptedPayload.operator ==(Modulus.Messaging.EncryptedPayload? left, Modulus.Messaging.EncryptedPayload? right) -> bool
+Modulus.Messaging.ConsumerOptions.SingleActiveConsumer.get -> bool?
+Modulus.Messaging.ConsumerOptions.SingleActiveConsumer.set -> void
+Modulus.Messaging.ISingleActiveConsumerTransport
+Modulus.Messaging.ISingleActiveConsumerTransport.ConfigureSingleActiveConsumer(System.Collections.Generic.IReadOnlyCollection<string!>! endpoints) -> void

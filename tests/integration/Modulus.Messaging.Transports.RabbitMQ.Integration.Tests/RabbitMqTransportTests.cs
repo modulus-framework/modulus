@@ -44,6 +44,25 @@ public sealed class RabbitMqTransportTests(RabbitMqBroker broker) : IClassFixtur
     }
 
     [Fact]
+    public void D3_a_quorum_redelivery_count_becomes_the_delivery_number()
+    {
+        // A quorum queue reports the deliveries returned before this one; this delivery is one more.
+        var properties = new BasicProperties
+        {
+            MessageId = Guid.NewGuid().ToString(),
+            Headers = new Dictionary<string, object?>
+            {
+                [RabbitMqMessageCodec.MessageTypeHeader] = typeof(OrderPlaced).AssemblyQualifiedName,
+                ["x-delivery-count"] = 19L,
+            },
+        };
+        var body = System.Text.Encoding.UTF8.GetBytes($"{{\"orderId\":\"{Guid.NewGuid()}\"}}");
+
+        RabbitMqMessageCodec.TryDecode("billing", body, properties, out var envelope, out var reason).Should().BeTrue(reason);
+        envelope!.Headers[MessagingHeaders.DeliveryCount].Should().Be("20");
+    }
+
+    [Fact]
     public async Task FR_09_a_message_no_consumer_handles_is_parked_in_skipped()
     {
         var endpoint = Endpoint();
@@ -135,11 +154,15 @@ public sealed class RabbitMqTransportTests(RabbitMqBroker broker) : IClassFixtur
             }
             catch (OperationInterruptedException)
             {
-                // The queue does not exist yet: the message has not been parked.
+                // The queue does not exist yet, or the broker closed the channel after a failed poll (AlreadyClosedException
+                // derives from it): the message has not been parked yet.
             }
             finally
             {
-                await channel.CloseAsync();
+                if (channel.IsOpen)
+                {
+                    await channel.CloseAsync();
+                }
             }
 
             await Task.Delay(100);

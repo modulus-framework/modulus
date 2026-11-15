@@ -28,13 +28,17 @@ public static class MessagingServiceCollectionExtensions
         {
             var bus = sp.GetRequiredService<MessagingBus>();
             var outbox = sp.GetService<IMessageOutbox>();
-            return outbox is null ? bus : new OutboxMessageScheduler(bus, outbox);
+            IMessageScheduler scheduler = outbox is null ? bus : new OutboxMessageScheduler(bus, outbox);
+            var ambient = sp.GetService<IMessageAmbientContext>();
+            return ambient is null ? scheduler : new AmbientScheduler(scheduler, sp, ambient);
         });
         services.AddScoped<IBus>(sp =>
         {
             var bus = sp.GetRequiredService<MessagingBus>();
             var outbox = sp.GetService<IMessageOutbox>();
-            return outbox is null ? bus : new OutboxBus(bus, outbox);
+            IBus publisher = outbox is null ? bus : new OutboxBus(bus, outbox);
+            var ambient = sp.GetService<IMessageAmbientContext>();
+            return ambient is null ? publisher : new AmbientBus(publisher, sp, ambient);
         });
         return services;
     }

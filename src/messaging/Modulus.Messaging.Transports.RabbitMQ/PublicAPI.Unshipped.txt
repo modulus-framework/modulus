@@ -41,3 +41,6 @@ Modulus.Messaging.Transports.RabbitMQ.RabbitMqTransportOptions.TlsCertificateVal
 Modulus.Messaging.Transports.RabbitMQ.RabbitMqTransportOptions.TlsCertificateValidation.set -> void
 Modulus.Messaging.Transports.RabbitMQ.RabbitMqTransportOptions.MaxQueueLength.get -> int?
 Modulus.Messaging.Transports.RabbitMQ.RabbitMqTransportOptions.MaxQueueLength.set -> void
+Modulus.Messaging.Transports.RabbitMQ.RabbitMqTransport.IsAvailableAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<bool>!
+Modulus.Messaging.Transports.RabbitMQ.RabbitMqTransport.SystemName.get -> string!
+Modulus.Messaging.Transports.RabbitMQ.RabbitMqTransport.ConfigureSingleActiveConsumer(System.Collections.Generic.IReadOnlyCollection<string!>! endpoints) -> void
