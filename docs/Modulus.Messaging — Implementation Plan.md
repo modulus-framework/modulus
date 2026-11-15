@@ -291,7 +291,7 @@ Grouped by what unblocks them. Each item names the requirement it closes.
 **Progress, fifth pass (2026-11-15)**
 
 - [x] Outbox and inbox on Npgsql (`Modulus.Messaging.Outbox.Npgsql`, `Modulus.Messaging.Inbox.Npgsql`): a unit of work shared by the app's writes, the outbox rows and the inbox record; the dispatcher claims with `FOR UPDATE SKIP LOCKED`. 7 of 7 integration tests on PostgreSQL 17.
-- [x] Request/response, FR-06 (`IRequestClient.GetResponse`, `ConsumeContext.RespondAsync`, `AddRequestClient<TResponse>()`): replies go to a per-process reply endpoint; a timeout raises `RequestTimeoutException`; an encrypted response is sealed. Saga `Request` steps are not built.
+- [x] Request/response, FR-06 (`IRequestClient.GetResponse`, `ConsumeContext.RespondAsync`, `AddRequestClient<TResponse>()`): replies go to a per-process reply endpoint; a timeout raises `RequestTimeoutException`; an encrypted response is sealed. Saga request steps: no dedicated `Request` API. A saga sends the request with `Send`, moves to a waiting state, and completes on the reply, which is correlated by its key (`SagaRequestReplyTests`, net8.0 and net10.0). A dedicated API would only wrap these three calls.
 - [x] Circuit breaker (optional, FR-15): `ConsumerOptions.CircuitBreaker`; opens after consecutive failures, admits one trial message after `OpenDuration`, closes on success, opens again on failure. 3 unit tests.
 - [x] Public API baseline frozen: the unshipped entries of the messaging packages moved into `PublicAPI.Shipped.txt`; a change is a new unshipped entry.
 - [x] Migration guide from MassTransit v8: `docs/messaging/migration-from-masstransit.md` (NFR-19).
