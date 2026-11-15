@@ -97,7 +97,7 @@ internal sealed class UiAddComponentCommand : Command<UiAddComponentCommand.Sett
                     skipped.Add(component.Key);
                     continue;
                 }
-                engineRenderer.RenderToFile(file, new { ComponentName = component.PascalName }, target);
+                engineRenderer.RenderToFile(file, new { ComponentName = engine == "blazor" ? UiComponents.BlazorName(component) : component.PascalName }, target);
                 added.Add(component.Key);
             }
 

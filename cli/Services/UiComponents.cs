@@ -147,6 +147,28 @@ internal static class UiComponents
         new("trend", "Data display", "A value with an arrow showing its change up or down.", ["blazor"]),
     ];
 
+    /// <summary>
+    /// Components whose Blazor class would share a name with an AntDesign or Modulus.Blazor component (Button, Gantt, Trend, ...).
+    /// Their Blazor wrapper is written as Modulus&lt;Name&gt;, so a page that imports both namespaces never sees two of the same name.
+    /// Regenerate the list when a component clashes: the names come from the AntDesign and Modulus.Blazor assemblies.
+    /// </summary>
+    private static readonly HashSet<string> PrefixedInBlazor = new(StringComparer.Ordinal)
+    {
+        "button", "cascader", "checkbox", "rate", "switch", "transfer",
+        "upload", "avatar", "badge", "calendar", "carousel", "collapse",
+        "descriptions", "image", "popover", "status-badge", "tag", "timeline",
+        "tooltip", "back-top", "breadcrumb", "dropdown", "menu", "page-header",
+        "pagination", "steps", "tabs", "card", "divider", "space",
+        "splitter", "alert", "drawer", "modal", "popconfirm", "progress",
+        "result", "skeleton", "import-wizard", "file-manager", "gantt", "query-builder",
+        "scheduler", "theme-toggle", "header-actions", "footer-toolbar", "column-header", "column-value-list",
+        "editable-grid", "nested-grid", "print-table", "label-sheet", "trend",
+    };
+
+    /// <summary>The Blazor class name: the Pascal name, or Modulus&lt;Name&gt; where it clashes.</summary>
+    public static string BlazorName(UiComponent component) =>
+        PrefixedInBlazor.Contains(component.Key) ? "Modulus" + component.PascalName : component.PascalName;
+
     public static UiComponent Find(string key) =>
         All.FirstOrDefault(c => c.Key.Equals(key.Trim(), StringComparison.OrdinalIgnoreCase))
         ?? throw new ArgumentException($"Unknown component '{key}'. Run 'modulus ui add-component --list' to see them.");
@@ -156,7 +178,7 @@ internal static class UiComponents
     {
         "mvc" => Path.Combine(uiProjectDir, "Views", "Shared", "Components", $"_{component.PascalName}.cshtml"),
         "razor-pages" => Path.Combine(uiProjectDir, "Pages", "Shared", "Components", $"_{component.PascalName}.cshtml"),
-        "blazor" => Path.Combine(uiProjectDir, "Components", "Shared", $"{component.PascalName}.razor"),
+        "blazor" => Path.Combine(uiProjectDir, "Components", "Shared", $"{BlazorName(component)}.razor"),
         _ => throw new ArgumentException($"Unknown UI engine '{engine}'."),
     };
 }

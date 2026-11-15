@@ -28,6 +28,14 @@ public sealed class UiComponentTests
         act.Should().Throw<ArgumentException>().WithMessage("*--list*");
     }
 
+    [Theory]
+    [InlineData("button", "ModulusButton")]
+    [InlineData("gantt", "ModulusGantt")]
+    [InlineData("alert", "ModulusAlert")]
+    [InlineData("chart-bar", "ChartBar")]
+    public void Blazor_classes_that_clash_with_a_framework_component_are_prefixed(string key, string blazorName)
+        => UiComponents.BlazorName(UiComponents.Find(key)).Should().Be(blazorName);
+
     [Fact]
     public void Component_keys_are_unique()
         => UiComponents.All.Select(c => c.Key).Should().OnlyHaveUniqueItems();

@@ -111,7 +111,7 @@ public sealed class UiCommandFlowTests : IDisposable
         if (!HasPackage()) return;
 
         Run("ui", "add-component", "alert", "--engine", "blazor").Should().Be(0);
-        File.Exists(P("Components", "Shared", "Alert.razor")).Should().BeTrue();
+        File.Exists(P("Components", "Shared", "ModulusAlert.razor")).Should().BeTrue();
 
         Run("ui", "add-component", "alert", "--engine", "fluid").Should().Be(1);
     }
