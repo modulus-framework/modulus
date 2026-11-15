@@ -50,4 +50,10 @@ public static class MessagingHeaders
     /// the bus opens it as this type before a consumer sees it.
     /// </summary>
     public const string EncryptedType = "mod-encrypted-type";
+
+    /// <summary>The request id a reply names (FR-06). Set by the requester; the responder copies nothing, it sends the id back in the reply.</summary>
+    public const string RequestId = "mod-request-id";
+
+    /// <summary>The endpoint a request's reply goes to (FR-06). Set by the requester.</summary>
+    public const string ReplyTo = "mod-reply-to";
 }

@@ -9,6 +9,8 @@ public sealed class MessagingBusBuilder
     private readonly List<(ConsumerRegistration Registration, ConsumerOptions Own)> _consumers = [];
     private readonly ConsumerOptions _defaults = new();
     private Func<IServiceProvider, IMessageTransport>? _transportFactory;
+    private string _replyEndpoint = "replies-" + Guid.NewGuid().ToString("N");
+    private readonly HashSet<Type> _replyTypes = [];
 
     /// <summary>
     /// Registers <typeparamref name="TConsumer"/> for <typeparamref name="TMessage"/> on an endpoint.
@@ -36,7 +38,7 @@ public sealed class MessagingBusBuilder
             {
                 // A consumer is resolved from the scope of the attempt being run (RULE-07).
                 var consumer = ActivatorUtilities.GetServiceOrCreateInstance<TConsumer>(services);
-                return consumer.Consume(new ConsumeContext<TMessage>(envelope, cancellationToken));
+                return consumer.Consume(new ConsumeContext<TMessage>(envelope, cancellationToken) { Services = services });
             },
             new ConsumerOptions(),
             static (bus, envelope, exception, cancellationToken) => bus.Publish(
@@ -51,6 +53,41 @@ public sealed class MessagingBusBuilder
 
         _consumers.Add((registration, own));
         return this;
+    }
+
+    /// <summary>
+    /// Names the reply endpoint of this process (FR-06). The default is unique per process; a fixed name lets one instance
+    /// keep its reply queue across restarts. Call it before <see cref="AddRequestClient{TResponse}"/>.
+    /// </summary>
+    public MessagingBusBuilder UseReplyEndpoint(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            throw new ArgumentException("The reply endpoint name must not be empty.", nameof(name));
+        }
+
+        if (_replyTypes.Count > 0)
+        {
+            throw new InvalidOperationException("Call UseReplyEndpoint before AddRequestClient.");
+        }
+
+        _replyEndpoint = name;
+        return this;
+    }
+
+    /// <summary>
+    /// Lets this process receive responses of type <typeparamref name="TResponse"/> for <see cref="IRequestClient"/>.
+    /// Each response type is received on the reply endpoint once.
+    /// </summary>
+    public MessagingBusBuilder AddRequestClient<TResponse>()
+        where TResponse : class
+    {
+        if (!_replyTypes.Add(typeof(TResponse)))
+        {
+            return this;
+        }
+
+        return AddConsumer<ReplyReceiver<TResponse>, RequestReply<TResponse>>(_replyEndpoint);
     }
 
     /// <summary>Sets retry, redelivery or timeout for every consumer that does not set its own.</summary>
@@ -83,6 +120,6 @@ public sealed class MessagingBusBuilder
                 return c.Registration with { Options = effective };
             })
             .ToArray();
-        return new MessagingOptions(consumers, _transportFactory);
+        return new MessagingOptions(consumers, _transportFactory, _replyEndpoint);
     }
 }

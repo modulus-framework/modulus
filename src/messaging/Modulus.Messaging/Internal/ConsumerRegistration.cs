@@ -16,4 +16,5 @@ internal sealed record ConsumerRegistration(
 /// <summary>Configuration produced by <see cref="MessagingBusBuilder"/>.</summary>
 internal sealed record MessagingOptions(
     IReadOnlyList<ConsumerRegistration> Consumers,
-    Func<IServiceProvider, IMessageTransport> TransportFactory);
+    Func<IServiceProvider, IMessageTransport> TransportFactory,
+    string ReplyEndpoint);

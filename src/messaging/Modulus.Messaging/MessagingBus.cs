@@ -22,6 +22,7 @@ internal sealed class MessagingBus : IBus, IMessageScheduler, IHostedService
     private readonly IReadOnlyList<ConsumerRegistration> _consumers;
     private readonly IMessageTransport _transport;
     private readonly IMessageEncryptionKeys? _keys;
+    private readonly string _replyEndpoint;
     private readonly ConcurrentDictionary<string, EndpointControl> _endpoints = new(StringComparer.Ordinal);
 
     internal MessagingBus(IServiceProvider services, MessagingOptions options)
@@ -30,6 +31,7 @@ internal sealed class MessagingBus : IBus, IMessageScheduler, IHostedService
         _logger = services.GetService<ILoggerFactory>()?.CreateLogger("Modulus.Messaging") ?? NullLogger.Instance;
         _scopes = services.GetRequiredService<IServiceScopeFactory>();
         _consumers = options.Consumers;
+        _replyEndpoint = options.ReplyEndpoint;
         _transport = options.TransportFactory(services);
     }
 
@@ -86,6 +88,33 @@ internal sealed class MessagingBus : IBus, IMessageScheduler, IHostedService
 
     /// <summary>The transport this bus sends and receives over.</summary>
     internal IMessageTransport Transport => _transport;
+
+    /// <summary>The endpoint this process receives replies on (FR-06).</summary>
+    internal string ReplyEndpoint => _replyEndpoint;
+
+    /// <summary>True when a consumer of this message type is registered on some endpoint.</summary>
+    internal bool HasConsumerFor(Type messageType) => _consumers.Any(c => c.MessageType == messageType);
+
+    /// <summary>
+    /// Sends a message with extra headers (a request's id and reply endpoint). Sent at once, with the producer span, like
+    /// <see cref="Send{TMessage}"/>.
+    /// </summary>
+    internal async Task SendWithHeaders<TMessage>(Uri address, TMessage message, IReadOnlyDictionary<string, string> extraHeaders, CancellationToken cancellationToken)
+        where TMessage : class
+    {
+        ArgumentNullException.ThrowIfNull(extraHeaders);
+        var endpoint = EndpointFromAddress(address);
+        using var activity = MessagingTelemetry.StartProducer("send " + endpoint, endpoint, _transport.SystemName);
+        var built = EnvelopeForSend(address, message);
+        var headers = new Dictionary<string, string>(built.Headers, StringComparer.Ordinal);
+        foreach (var (key, value) in extraHeaders)
+        {
+            headers[key] = value;
+        }
+
+        await _transport.Send(built with { Headers = headers }, cancellationToken).ConfigureAwait(false);
+        MessagingMetrics.Sent.Add(1, MessagingMetrics.Destination(endpoint));
+    }
 
     public async Task Publish<TMessage>(TMessage message, CancellationToken cancellationToken = default)
         where TMessage : class
@@ -557,7 +586,9 @@ internal sealed class MessagingBus : IBus, IMessageScheduler, IHostedService
             return true;
         }
 
-        var subject = message is IFault fault && fault.FaultedMessage is { } faulted ? faulted : message;
+        var subject = message is IFault fault && fault.FaultedMessage is { } faulted ? faulted
+            : message is IRequestResponse reply && reply.ResponseMessage is { } response ? response
+            : message;
         return EncryptedTypes.GetOrAdd(subject.GetType(), static type => type.GetCustomAttribute<EncryptedMessageAttribute>(inherit: true) is not null);
     }
 
