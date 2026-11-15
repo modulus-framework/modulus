@@ -52,6 +52,10 @@ public static class Program
                 .WithDescription("Add the analytics layer: ClickHouse sink and OpenLineage emitter wiring, settings, and a local ClickHouse and RabbitMQ compose file.")
                 .WithExample("add-analytics")
                 .WithExample("add-analytics", "--no-compose");
+            config.AddCommand<Commands.AddMessagingCommand>("add-messaging")
+                .WithDescription("Add the messaging bus to the API host: packages, bus and transport (PostgreSQL with the transactional outbox and inbox, RabbitMQ or in-memory), settings.")
+                .WithExample("add-messaging")
+                .WithExample("add-messaging", "--transport", "rabbitmq");
             config.AddCommand<Commands.AddWebhooksCommand>("add-webhooks")
                 .WithDescription("Add outgoing webhooks: integration events delivered, signed, to tenant subscriptions (store module, host wiring, management API).")
                 .WithExample("add-webhooks")
