@@ -1,0 +1,35 @@
+#nullable enable
+Modulus.Messaging.Outbox.Npgsql.INpgsqlUnitOfWork
+Modulus.Messaging.Outbox.Npgsql.INpgsqlUnitOfWork.BeginAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<Npgsql.NpgsqlTransaction!>!
+Modulus.Messaging.Outbox.Npgsql.INpgsqlUnitOfWork.CommitAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+Modulus.Messaging.Outbox.Npgsql.INpgsqlUnitOfWork.Connection.get -> Npgsql.NpgsqlConnection?
+Modulus.Messaging.Outbox.Npgsql.INpgsqlUnitOfWork.RollbackAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+Modulus.Messaging.Outbox.Npgsql.INpgsqlUnitOfWork.Transaction.get -> Npgsql.NpgsqlTransaction?
+Modulus.Messaging.Outbox.Npgsql.MessagingNpgsqlOutboxExtensions
+Modulus.Messaging.Outbox.Npgsql.NpgsqlOutboxDispatch
+Modulus.Messaging.Outbox.Npgsql.NpgsqlOutboxOptions
+Modulus.Messaging.Outbox.Npgsql.NpgsqlOutboxOptions.BatchSize.get -> int
+Modulus.Messaging.Outbox.Npgsql.NpgsqlOutboxOptions.BatchSize.set -> void
+Modulus.Messaging.Outbox.Npgsql.NpgsqlOutboxOptions.CreateSchema.get -> bool
+Modulus.Messaging.Outbox.Npgsql.NpgsqlOutboxOptions.CreateSchema.set -> void
+Modulus.Messaging.Outbox.Npgsql.NpgsqlOutboxOptions.LeaseDuration.get -> System.TimeSpan
+Modulus.Messaging.Outbox.Npgsql.NpgsqlOutboxOptions.LeaseDuration.set -> void
+Modulus.Messaging.Outbox.Npgsql.NpgsqlOutboxOptions.NpgsqlOutboxOptions() -> void
+Modulus.Messaging.Outbox.Npgsql.NpgsqlOutboxOptions.PollInterval.get -> System.TimeSpan
+Modulus.Messaging.Outbox.Npgsql.NpgsqlOutboxOptions.PollInterval.set -> void
+Modulus.Messaging.Outbox.Npgsql.NpgsqlOutboxOptions.RunDispatcher.get -> bool
+Modulus.Messaging.Outbox.Npgsql.NpgsqlOutboxOptions.RunDispatcher.set -> void
+Modulus.Messaging.Outbox.Npgsql.NpgsqlOutboxOptions.Table.get -> string!
+Modulus.Messaging.Outbox.Npgsql.NpgsqlOutboxOptions.Table.set -> void
+Modulus.Messaging.Outbox.Npgsql.NpgsqlUnitOfWork
+Modulus.Messaging.Outbox.Npgsql.NpgsqlUnitOfWork.BeginAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<Npgsql.NpgsqlTransaction!>!
+Modulus.Messaging.Outbox.Npgsql.NpgsqlUnitOfWork.CommitAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+Modulus.Messaging.Outbox.Npgsql.NpgsqlUnitOfWork.Connection.get -> Npgsql.NpgsqlConnection?
+Modulus.Messaging.Outbox.Npgsql.NpgsqlUnitOfWork.DisposeAsync() -> System.Threading.Tasks.ValueTask
+Modulus.Messaging.Outbox.Npgsql.NpgsqlUnitOfWork.NpgsqlUnitOfWork(Npgsql.NpgsqlDataSource! dataSource) -> void
+Modulus.Messaging.Outbox.Npgsql.NpgsqlUnitOfWork.RollbackAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+Modulus.Messaging.Outbox.Npgsql.NpgsqlUnitOfWork.Transaction.get -> Npgsql.NpgsqlTransaction?
+static Modulus.Messaging.Outbox.Npgsql.MessagingNpgsqlOutboxExtensions.AddModulusMessagingNpgsqlOutbox(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<Modulus.Messaging.Outbox.Npgsql.NpgsqlOutboxOptions!>? configure = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.Messaging.Outbox.Npgsql.MessagingNpgsqlOutboxExtensions.AddModulusMessagingNpgsqlUnitOfWork(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.Messaging.Outbox.Npgsql.MessagingNpgsqlOutboxExtensions.OutboxSchemaScript(string! table = "messaging_outbox") -> string!
+static Modulus.Messaging.Outbox.Npgsql.NpgsqlOutboxDispatch.DispatchOnceAsync(Npgsql.NpgsqlDataSource! dataSource, Modulus.Messaging.IMessageTransport! transport, Modulus.Messaging.Outbox.Npgsql.NpgsqlOutboxOptions! options, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<int>!

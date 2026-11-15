@@ -42,6 +42,8 @@
     <Project Path="src/messaging/Modulus.Messaging.Inbox.EntityFrameworkCore/Modulus.Messaging.Inbox.EntityFrameworkCore.csproj" />
     <Project Path="src/messaging/Modulus.Messaging.Transports.RabbitMQ/Modulus.Messaging.Transports.RabbitMQ.csproj" />
     <Project Path="src/messaging/Modulus.Messaging.Transports.PostgreSql/Modulus.Messaging.Transports.PostgreSql.csproj" />
+    <Project Path="src/messaging/Modulus.Messaging.Outbox.Npgsql/Modulus.Messaging.Outbox.Npgsql.csproj" />
+    <Project Path="src/messaging/Modulus.Messaging.Inbox.Npgsql/Modulus.Messaging.Inbox.Npgsql.csproj" />
     <Project Path="src/messaging/Modulus.Messaging.Modulus/Modulus.Messaging.Modulus.csproj" />
     <Project Path="src/messaging/Modulus.Webhooks/Modulus.Webhooks.csproj" />
     <Project Path="src/messaging/Modulus.Realtime/Modulus.Realtime.csproj" />
@@ -148,6 +150,7 @@
     <Project Path="tests/unit/Modulus.Messaging.Sagas.EntityFrameworkCore.Tests/Modulus.Messaging.Sagas.EntityFrameworkCore.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Messaging.Outbox.EntityFrameworkCore.Tests/Modulus.Messaging.Outbox.EntityFrameworkCore.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Messaging.Inbox.EntityFrameworkCore.Tests/Modulus.Messaging.Inbox.EntityFrameworkCore.Tests.csproj" />
+    <Project Path="tests/integration/Modulus.Messaging.Outbox.Npgsql.Integration.Tests/Modulus.Messaging.Outbox.Npgsql.Integration.Tests.csproj" />
     <Project Path="tests/integration/Modulus.Messaging.Transports.RabbitMQ.Integration.Tests/Modulus.Messaging.Transports.RabbitMQ.Integration.Tests.csproj" />
     <Project Path="tests/integration/Modulus.Messaging.Transports.PostgreSql.Integration.Tests/Modulus.Messaging.Transports.PostgreSql.Integration.Tests.csproj" />
     <Project Path="tests/integration/Modulus.Messaging.Sagas.PostgreSql.Integration.Tests/Modulus.Messaging.Sagas.PostgreSql.Integration.Tests.csproj" />

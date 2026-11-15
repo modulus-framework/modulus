@@ -1,0 +1,6 @@
+#nullable enable
+Modulus.Messaging.Inbox.Npgsql.MessagingNpgsqlInboxExtensions
+Modulus.Messaging.Inbox.Npgsql.NpgsqlInboxMaintenance
+static Modulus.Messaging.Inbox.Npgsql.MessagingNpgsqlInboxExtensions.AddModulusMessagingNpgsqlInbox(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, string! table = "messaging_inbox") -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.Messaging.Inbox.Npgsql.MessagingNpgsqlInboxExtensions.InboxSchemaScript(string! table = "messaging_inbox") -> string!
+static Modulus.Messaging.Inbox.Npgsql.NpgsqlInboxMaintenance.PurgeExpiredAsync(Npgsql.NpgsqlDataSource! dataSource, System.TimeSpan detectionWindow, System.Threading.CancellationToken cancellationToken, string! table = "messaging_inbox") -> System.Threading.Tasks.Task<int>!
