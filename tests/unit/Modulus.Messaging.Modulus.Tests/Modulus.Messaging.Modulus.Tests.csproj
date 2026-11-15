@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="../../../src/messaging/Modulus.Messaging/Modulus.Messaging.csproj" />
+    <ProjectReference Include="../../../src/messaging/Modulus.Messaging.Transports.InMemory/Modulus.Messaging.Transports.InMemory.csproj" />
+    <ProjectReference Include="../../../src/messaging/Modulus.Messaging.Testing/Modulus.Messaging.Testing.csproj" />
+    <ProjectReference Include="../../../src/messaging/Modulus.Messaging.Modulus/Modulus.Messaging.Modulus.csproj" />
+    <ProjectReference Include="../../../src/core/Modulus.Core/Modulus.Core.csproj" />
+    <ProjectReference Include="../../../src/data/Modulus.EntityFrameworkCore/Modulus.EntityFrameworkCore.csproj" />
+    <ProjectReference Include="../../../src/messaging/Modulus.Events/Modulus.Events.csproj" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+  </ItemGroup>
+
+</Project>

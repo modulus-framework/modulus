@@ -42,6 +42,7 @@
     <Project Path="src/messaging/Modulus.Messaging.Inbox.EntityFrameworkCore/Modulus.Messaging.Inbox.EntityFrameworkCore.csproj" />
     <Project Path="src/messaging/Modulus.Messaging.Transports.RabbitMQ/Modulus.Messaging.Transports.RabbitMQ.csproj" />
     <Project Path="src/messaging/Modulus.Messaging.Transports.PostgreSql/Modulus.Messaging.Transports.PostgreSql.csproj" />
+    <Project Path="src/messaging/Modulus.Messaging.Modulus/Modulus.Messaging.Modulus.csproj" />
     <Project Path="src/messaging/Modulus.Webhooks/Modulus.Webhooks.csproj" />
     <Project Path="src/messaging/Modulus.Realtime/Modulus.Realtime.csproj" />
     <Project Path="src/messaging/Modulus.Realtime.Redis/Modulus.Realtime.Redis.csproj" />
@@ -142,6 +143,7 @@
     <Project Path="tests/unit/Modulus.Outbox.Tests/Modulus.Outbox.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Sagas.Tests/Modulus.Sagas.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Messaging.Tests/Modulus.Messaging.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.Messaging.Modulus.Tests/Modulus.Messaging.Modulus.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Messaging.Sagas.Tests/Modulus.Messaging.Sagas.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Messaging.Sagas.EntityFrameworkCore.Tests/Modulus.Messaging.Sagas.EntityFrameworkCore.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Messaging.Outbox.EntityFrameworkCore.Tests/Modulus.Messaging.Outbox.EntityFrameworkCore.Tests.csproj" />
