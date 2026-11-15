@@ -37,6 +37,26 @@ public sealed class UiComponentTests
         => UiComponents.BlazorName(UiComponents.Find(key)).Should().Be(blazorName);
 
     [Fact]
+    public void The_prefixed_set_matches_the_templates_manifest()
+    {
+        var nupkg = Package();
+        if (nupkg is null) return;
+
+        var dir = Directory.CreateTempSubdirectory("pfx").FullName;
+        try
+        {
+            UiTemplatePackage.Extract(nupkg, Path.Combine(dir, "templates"));
+            var kit = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(Path.Combine(dir, UiTemplatePackage.ManifestFile)))!;
+            var fromKit = kit["blazorPrefixed"]!.AsArray().Select(n => n!.GetValue<string>()).ToHashSet(StringComparer.Ordinal);
+            UiComponents.PrefixedInBlazor.Should().BeEquivalentTo(fromKit);
+        }
+        finally
+        {
+            Directory.Delete(dir, recursive: true);
+        }
+    }
+
+    [Fact]
     public void Component_keys_are_unique()
         => UiComponents.All.Select(c => c.Key).Should().OnlyHaveUniqueItems();
 

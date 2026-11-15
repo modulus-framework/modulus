@@ -150,19 +150,21 @@ internal static class UiComponents
     /// <summary>
     /// Components whose Blazor class would share a name with an AntDesign or Modulus.Blazor component (Button, Gantt, Trend, ...).
     /// Their Blazor wrapper is written as Modulus&lt;Name&gt;, so a page that imports both namespaces never sees two of the same name.
-    /// Regenerate the list when a component clashes: the names come from the AntDesign and Modulus.Blazor assemblies.
+    /// The source is ui-kit.json (blazorPrefixed), which tools/antd-drift keeps in step with the assemblies.
     /// </summary>
-    private static readonly HashSet<string> PrefixedInBlazor = new(StringComparer.Ordinal)
+    internal static readonly HashSet<string> PrefixedInBlazor = new(StringComparer.Ordinal)
     {
-        "button", "cascader", "checkbox", "rate", "switch", "transfer",
-        "upload", "avatar", "badge", "calendar", "carousel", "collapse",
-        "descriptions", "image", "popover", "status-badge", "tag", "timeline",
-        "tooltip", "back-top", "breadcrumb", "dropdown", "menu", "page-header",
-        "pagination", "steps", "tabs", "card", "divider", "space",
-        "splitter", "alert", "drawer", "modal", "popconfirm", "progress",
-        "result", "skeleton", "import-wizard", "file-manager", "gantt", "query-builder",
-        "scheduler", "theme-toggle", "header-actions", "footer-toolbar", "column-header", "column-value-list",
-        "editable-grid", "nested-grid", "print-table", "label-sheet", "trend",
+        "alert", "auto-complete", "avatar", "back-top", "badge", "breadcrumb",
+        "button", "calendar", "card", "carousel", "cascader", "checkbox",
+        "checkbox-group", "collapse", "column-header", "column-value-list", "date-picker", "descriptions",
+        "divider", "drawer", "dropdown", "editable-grid", "file-manager", "footer-toolbar",
+        "gantt", "header-actions", "image", "import-wizard", "input-number", "label-sheet",
+        "menu", "modal", "nested-grid", "page-header", "pagination", "popconfirm",
+        "popover", "print-table", "progress", "query-builder", "query-filter", "radio-group",
+        "rate", "result", "scheduler", "segmented", "select", "skeleton",
+        "slider", "space", "splitter", "statistic", "status-badge", "steps",
+        "switch", "tabs", "tag", "theme-toggle", "time-picker", "timeline",
+        "tooltip", "transfer", "tree", "tree-select", "trend", "upload",
     };
 
     /// <summary>The Blazor class name: the Pascal name, or Modulus&lt;Name&gt; where it clashes.</summary>
