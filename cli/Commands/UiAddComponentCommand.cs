@@ -72,8 +72,16 @@ internal sealed class UiAddComponentCommand : Command<UiAddComponentCommand.Sett
             var added = new List<string>();
             var skipped = new List<string>();
             var notInPackage = new List<string>();
+            var notForEngine = new List<string>();
             foreach (var component in selected)
             {
+                // Some components exist for one engine only (for example the Blazor charts): --all skips them, a named one is refused.
+                if (!component.Supports(engine))
+                {
+                    if (s.All) { notForEngine.Add(component.Key); continue; }
+                    throw new InvalidOperationException(
+                        $"{component.Key} is not available for {engine}. It is for: {string.Join(", ", component.Engines!)}. Use --engine {component.Engines![0]} or another component.");
+                }
                 var file = UiScaffold.TemplateFile(templates, engine, component.Key);
                 if (file is null)
                 {
@@ -97,6 +105,8 @@ internal sealed class UiAddComponentCommand : Command<UiAddComponentCommand.Sett
                 Ux.Success($"Added {added.Count} component{(added.Count == 1 ? "" : "s")}: {string.Join(", ", added)}");
             if (skipped.Count > 0)
                 Ux.Warning($"Already present, left alone (use --force to overwrite): {string.Join(", ", skipped)}");
+            if (notForEngine.Count > 0 && added.Count == 0 && skipped.Count == 0)
+                Ux.Info($"No components for {engine} in this selection; {notForEngine.Count} are for other engines.");
             if (notInPackage.Count > 0)
                 Ux.Warning($"Not in the {UiTemplatePackage.DefaultVersion} template package, so not added: {string.Join(", ", notInPackage)}. " +
                            $"Set {UiTemplatePackage.VersionEnvironmentVariable} to a newer Modulus UI version to get them.");

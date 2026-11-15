@@ -1,10 +1,13 @@
 namespace Modulus.Cli.Services;
 
-/// <summary>A reusable UI component the <c>Modulus.Ui.Templates</c> package ships for every engine.</summary>
-internal sealed record UiComponent(string Key, string Category, string Description)
+/// <summary>A reusable UI component the <c>Modulus.Ui.Templates</c> package ships, for the engines it lists (every engine when none is listed).</summary>
+internal sealed record UiComponent(string Key, string Category, string Description, IReadOnlyList<string>? Engines = null)
 {
     /// <summary>"form-group" → "FormGroup".</summary>
     public string PascalName => string.Concat(Key.Split('-').Select(w => char.ToUpperInvariant(w[0]) + w[1..]));
+
+    /// <summary>Whether the package has a template for this component in the engine. A null <see cref="Engines"/> means every engine.</summary>
+    public bool Supports(string engine) => Engines is null || Engines.Contains(engine);
 }
 
 internal static class UiComponents
@@ -96,6 +99,52 @@ internal static class UiComponents
         new("query-builder", "Pro", "Build a filter with fields, operators and nested AND/OR groups."),
         new("scheduler", "Pro", "A day, week and month calendar of events with categories."),
         new("schema-form", "Pro", "A whole form drawn from a schema of fields."),
+        new("chart-bar", "Charts", "Horizontal or vertical bars for one value per category.", ["blazor"]),
+        new("chart-bullet", "Charts", "A bar against a target, with qualitative bands behind it.", ["blazor"]),
+        new("chart-combo", "Charts", "Columns and lines on one axis, optionally stacked.", ["blazor"]),
+        new("chart-funnel", "Charts", "Stages of a process, each a share of the one before.", ["blazor"]),
+        new("chart-gauge", "Charts", "A single value on a dial, against a target.", ["blazor"]),
+        new("chart-mini-bar", "Charts", "A compact bar strip for a table cell.", ["blazor"]),
+        new("chart-pareto", "Charts", "Bars sorted by size with a cumulative line, to show the few causes behind most of the total.", ["blazor"]),
+        new("chart-ranked-bar", "Charts", "Items ranked by value, the largest first, with an optional top-N limit.", ["blazor"]),
+        new("chart-scatter", "Charts", "Points on two axes, grouped and sized, with optional quadrants.", ["blazor"]),
+        new("chart-sparkline", "Charts", "A small trend line with an optional filled area.", ["blazor"]),
+        new("chart-stacked-bar", "Charts", "Bars split into parts, optionally normalised to 100%.", ["blazor"]),
+        new("chart-treemap", "Charts", "Nested rectangles sized by value.", ["blazor"]),
+        new("chart-variance", "Charts", "Differences from a plan, coloured by whether each one is favourable.", ["blazor"]),
+        new("chart-waterfall", "Charts", "How a starting value moves up and down to an end value, step by step.", ["blazor"]),
+        new("creatable-select", "Inputs", "A select where the user can add a new option.", ["blazor"]),
+        new("duration-input", "Inputs", "A number of hours or minutes with a unit suffix.", ["blazor"]),
+        new("lookup", "Inputs", "A search box that picks a record from a list or a dialog.", ["blazor"]),
+        new("masked-input", "Inputs", "A text field with a fixed pattern, such as a date or a part number.", ["blazor"]),
+        new("number-range", "Inputs", "A from and a to number for a range filter.", ["blazor"]),
+        new("phone-input", "Inputs", "A phone number with a country calling code.", ["blazor"]),
+        new("quantity-input", "Inputs", "An amount with a unit of measure.", ["blazor"]),
+        new("signature-pad", "Inputs", "A drawn or typed signature.", ["blazor"]),
+        new("status-bar", "Inputs", "A workflow's stages as a bar; click a stage to move the record.", ["blazor"]),
+        new("barcode", "Media", "A Code 128 or EAN-13 barcode as an image."),
+        new("image-cropper", "Media", "Crop an image to a fixed ratio."),
+        new("lightbox", "Media", "A grid of images that open full size.", ["blazor"]),
+        new("map", "Media", "A map with markers.", ["blazor"]),
+        new("media-player", "Media", "A video or audio player with captions.", ["blazor"]),
+        new("pdf-button", "Media", "A button that submits a form and downloads a PDF."),
+        new("vector-map", "Media", "A world or regional map shaded by value.", ["blazor"]),
+        new("float-button", "Navigation", "A floating action button, fixed to a screen corner.", ["blazor"]),
+        new("float-button-group", "Navigation", "A floating button that opens a set of actions.", ["blazor"]),
+        new("tour", "Navigation", "A step-by-step guide over the page.", ["blazor"]),
+        new("theme-toggle", "Navigation", "A switch between light and dark themes.", ["blazor"]),
+        new("header-actions", "Navigation", "The account, notices and actions at the top right of the shell.", ["blazor"]),
+        new("sortable", "Layout", "A list the user can drag into a new order.", ["blazor"]),
+        new("footer-toolbar", "Layout", "A toolbar pinned to the bottom of a page or drawer.", ["blazor"]),
+        new("saved-views", "Pro", "Named views of a table's filters and columns, saved per user."),
+        new("query-filter", "Pro", "A search form for a table with Search and Reset buttons.", ["blazor"]),
+        new("column-header", "Data grids", "A column heading with sort, search and value filters.", ["blazor"]),
+        new("column-value-list", "Data grids", "The value list shown in a column's filter.", ["blazor"]),
+        new("editable-grid", "Data grids", "A grid where rows are edited inline, with add and delete.", ["blazor"]),
+        new("nested-grid", "Data grids", "A tree of tables: each row opens its children.", ["blazor"]),
+        new("print-table", "Documents", "A table laid out for printing, with an optional total row.", ["blazor"]),
+        new("label-sheet", "Documents", "Labels laid out on a printable sheet.", ["blazor"]),
+        new("trend", "Data display", "A value with an arrow showing its change up or down.", ["blazor"]),
     ];
 
     public static UiComponent Find(string key) =>

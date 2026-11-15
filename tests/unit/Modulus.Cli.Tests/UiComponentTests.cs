@@ -71,7 +71,7 @@ public sealed class UiComponentTests
 
             var problems = new List<string>();
             foreach (var e in UiScaffold.Engines)
-                foreach (var c in UiComponents.All)
+                foreach (var c in UiComponents.All.Where(c => c.Supports(e)))
                 {
                     var file = UiScaffold.TemplateFile(templates, e, c.Key);
                     if (file is null) { problems.Add($"{e}/{c.Key}: missing"); continue; }
