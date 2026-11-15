@@ -37,7 +37,7 @@ Modulus.Messaging has no Kafka or Azure Service Bus transport. The transports ar
 | `r.Immediate(3)` | `o.Retry = RetryPolicy.Immediate(3)` |
 | `r.Interval(3, TimeSpan.FromSeconds(1))` | `o.Retry = RetryPolicy.Interval(3, TimeSpan.FromSeconds(1))` |
 | `r.Exponential(...)` | `RetryPolicy.Exponential(...)` |
-| `r.Ignore<TException>()` | `RetryPolicy.Ignore<TException>()`: the message goes straight to `_error` |
+| `r.Ignore<TException>()` | `RetryPolicy.Immediate(3).Ignore<TException>()`: that exception sends the message straight to `_error` |
 | `r.Handle<TException>()` (retry only some) | not supported directly; `Ignore` is the inverse. Throw `MessageParkException` to park at once |
 | `r.Redelivery` (delayed redelivery) | `o.Redelivery = RedeliveryPolicy.Intervals(...)` |
 | `_error` queue and `Fault<T>` | `_error` queue; `Fault<TMessage>` is published when a message is parked |
@@ -63,7 +63,7 @@ message that crashes its host on every attempt stops looping. MassTransit has no
 | `If` / `IfElse` activity | `When(E).If(condition, block)` / `.IfElse(condition, whenTrue, whenFalse)` |
 | `Catch<T>` activity | `When(E).Then(...).Catch<T>(compensation => ...)`: the attempt is discarded and the compensation runs on the saga as it was |
 | `Request` / `Respond` | not yet: needs request/response (FR-06) |
-| `InstanceState` repository (EF Core, Redis, MongoDB) | in-memory, EF Core (`AddEntityFrameworkSagaRepository`) or PostgreSQL JSONB (`PostgreSqlSagaRepository`) |
+| `InstanceState` repository (EF Core, Redis, MongoDB) | in-memory (`AddInMemorySagaRepository<TSaga>`), EF Core (`AddEntityFrameworkSagaRepository<TSaga, TContext>`) or PostgreSQL JSONB (`AddPostgreSqlSagaRepository<TSaga>`). Redis and MongoDB have no repository |
 | Consumer sagas (`ISaga` + `InitiatedBy`) | `AddConsumerSaga<TSaga>(endpoint)` with `IInitiatedBy<TSaga, TMessage>` and `ICorrelatedBy<TMessage>` |
 
 Differences that matter for a port:
