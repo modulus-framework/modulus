@@ -76,6 +76,15 @@ public sealed class PostgreSqlTransport : IMessageTransport, IScheduledMessageTr
             await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
         }
 
+        // The policy and its role are owner work: a session that is not the table owner cannot enable row-level security.
+        // A transport that does not create the schema relies on the owner's migration (docs/messaging/postgresql-tenant-rls.sql).
+        if (_options.TenantRowLevelSecurity && _options.CreateSchema)
+        {
+            await using var policy = _dataSource.CreateCommand(
+                PostgreSqlQueueSql.TenantRowLevelSecurity(_options.Schema, _options.Table, _options.TransportRole));
+            await policy.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+        }
+
         foreach (var endpoint in endpoints.Distinct(StringComparer.Ordinal))
         {
             _loops.Add(Task.Run(() => PollLoopAsync(endpoint, _stopping.Token), CancellationToken.None));
@@ -435,6 +444,7 @@ public sealed class PostgreSqlTransport : IMessageTransport, IScheduledMessageTr
         command.Parameters.AddWithValue("priority", PriorityOf(envelope));
         command.Parameters.AddWithValue("partition_key", (object?)PartitionKeyOf(envelope) ?? DBNull.Value);
         command.Parameters.AddWithValue("sequence", (object?)SequenceOf(envelope) ?? DBNull.Value);
+        command.Parameters.AddWithValue("tenant_id", (object?)TenantOf(envelope) ?? DBNull.Value);
         if (deliverAt is { } visibleAt)
         {
             command.Parameters.AddWithValue("visible_at", visibleAt);
@@ -487,6 +497,10 @@ public sealed class PostgreSqlTransport : IMessageTransport, IScheduledMessageTr
         envelope.Headers.TryGetValue(MessagingHeaders.Sequence, out var text) && long.TryParse(text, out var sequence) ? sequence : null;
 
     /// <summary>The priority the bus stamped on the envelope (FR-13); 0 when absent or not a number.</summary>
+    /// <summary>The company the message was sent for (FR-21), stored with the row for row-level isolation.</summary>
+    private static string? TenantOf(MessageEnvelope envelope) =>
+        envelope.Headers.TryGetValue(MessagingHeaders.TenantId, out var tenant) && tenant.Length > 0 ? tenant : null;
+
     private static int PriorityOf(MessageEnvelope envelope) =>
         envelope.Headers.TryGetValue(MessagingHeaders.Priority, out var text) && int.TryParse(text, out var priority) ? priority : 0;
 

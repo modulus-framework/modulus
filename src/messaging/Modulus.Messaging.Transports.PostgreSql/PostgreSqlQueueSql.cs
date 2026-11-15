@@ -25,8 +25,11 @@ internal static class PostgreSqlQueueSql
                 schedule_id uuid NULL,
                 priority integer NOT NULL DEFAULT 0,
                 partition_key text NULL,
-                sequence bigint NOT NULL DEFAULT nextval('{sequence}')
+                sequence bigint NOT NULL DEFAULT nextval('{sequence}'),
+                tenant_id text NULL
             );
+            ALTER TABLE {qualified} ADD COLUMN IF NOT EXISTS tenant_id text NULL;
+            CREATE INDEX IF NOT EXISTS "{table}_tenant_idx" ON {qualified} (tenant_id) WHERE tenant_id IS NOT NULL;
             CREATE INDEX IF NOT EXISTS "{table}_ready_idx" ON {qualified} (queue, visible_at, id);
             CREATE INDEX IF NOT EXISTS "{table}_claim_idx" ON {qualified} (queue, priority DESC, id);
             CREATE INDEX IF NOT EXISTS "{table}_schedule_idx" ON {qualified} (schedule_id) WHERE schedule_id IS NOT NULL;
@@ -84,16 +87,44 @@ internal static class PostgreSqlQueueSql
     /// </summary>
     public static string Enqueue(string table, string sequence, bool scheduled) => scheduled
         ? $"""
-        INSERT INTO {table} (queue, message_id, message_type, consumer_key, body, headers, visible_at, schedule_id, priority, partition_key, sequence)
+        INSERT INTO {table} (queue, message_id, message_type, consumer_key, body, headers, visible_at, schedule_id, priority, partition_key, sequence, tenant_id)
         VALUES (@queue, @message_id, @message_type, @consumer_key, @body, @headers::jsonb, @visible_at, @schedule_id, @priority, NULL,
-                COALESCE(@sequence, nextval('{sequence}')))
+                COALESCE(@sequence, nextval('{sequence}')), @tenant_id)
         """
         : $"""
-        INSERT INTO {table} (queue, message_id, message_type, consumer_key, body, headers, visible_at, priority, partition_key, sequence)
+        INSERT INTO {table} (queue, message_id, message_type, consumer_key, body, headers, visible_at, priority, partition_key, sequence, tenant_id)
         VALUES (@queue, @message_id, @message_type, @consumer_key, @body, @headers::jsonb,
                 now() + (@delay_ms * interval '1 millisecond'), @priority, @partition_key,
-                COALESCE(@sequence, nextval('{sequence}')))
+                COALESCE(@sequence, nextval('{sequence}')), @tenant_id)
         """;
+
+    /// <summary>
+    /// Row-level isolation by company (FR-21, defense in depth). A session sees the rows of its company (<c>modulus.tenant</c>),
+    /// and the untagged rows only when it sets <c>modulus.tenant</c> to <c>host</c>. A session that is a member of the transport
+    /// role sees and writes every row: that is the transport, which serves all companies. Any other session with no company set
+    /// sees nothing (fail closed). Table owners bypass policies unless they are forced, so the owner should not run applications.
+    /// </summary>
+    public static string TenantRowLevelSecurity(string schema, string table, string transportRole)
+    {
+        var qualified = $"\"{schema}\".\"{table}\"";
+        var predicate = $"""
+            (tenant_id = current_setting('modulus.tenant', true)
+             OR (tenant_id IS NULL AND current_setting('modulus.tenant', true) = 'host')
+             OR pg_has_role(current_user, '{transportRole}', 'MEMBER'))
+            """;
+        return $"""
+            DO $$ BEGIN
+                IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = '{transportRole}') THEN
+                    CREATE ROLE "{transportRole}" NOLOGIN;
+                END IF;
+            END $$;
+            ALTER TABLE {qualified} ENABLE ROW LEVEL SECURITY;
+            DROP POLICY IF EXISTS modulus_queue_tenant ON {qualified};
+            CREATE POLICY modulus_queue_tenant ON {qualified}
+                USING {predicate}
+                WITH CHECK {predicate};
+            """;
+    }
 
     /// <summary>Deletes the rows of a schedule that no host has claimed; a claimed row (lock_token set) is already on its way to a consumer.</summary>
     public static string CancelScheduled(string table) =>

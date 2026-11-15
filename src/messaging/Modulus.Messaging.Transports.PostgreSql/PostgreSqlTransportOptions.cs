@@ -17,6 +17,17 @@ public sealed partial class PostgreSqlTransportOptions
     /// <summary>Creates the table and index on start when missing. Turn off when a migration owns the schema.</summary>
     public bool CreateSchema { get; set; } = true;
 
+    /// <summary>
+    /// Turns on row-level isolation of the queue table by company (FR-21). Off by default, so existing deployments are
+    /// unchanged. The owner creates the policy: the transport creates it on start only when it also creates the schema. The transport connects as a member of <see cref="TransportRole"/>, which sees every row; any other
+    /// session sees only its company's rows (<c>set_config('modulus.tenant', ..., false)</c>). Read
+    /// docs/messaging/postgresql-tenant-rls.sql for the policy.
+    /// </summary>
+    public bool TenantRowLevelSecurity { get; set; }
+
+    /// <summary>The role whose members see every queue row (the transport). Created on start when missing.</summary>
+    public string TransportRole { get; set; } = "modulus_transport";
+
     /// <summary>Messages claimed per poll, per endpoint.</summary>
     public int BatchSize { get; set; } = 16;
 
@@ -60,6 +71,11 @@ public sealed partial class PostgreSqlTransportOptions
         if (!Identifier().IsMatch(Schema))
         {
             throw new ArgumentException("Schema must be a plain SQL identifier (letters, digits, underscores).", nameof(Schema));
+        }
+
+        if (!Identifier().IsMatch(TransportRole))
+        {
+            throw new ArgumentException("TransportRole must be a plain SQL identifier (letters, digits, underscores).", nameof(TransportRole));
         }
 
         if (!Identifier().IsMatch(Table))
