@@ -27,7 +27,7 @@ Modulus.Messaging has no Kafka or Azure Service Bus transport. The transports ar
 | `IConsumer<T>.Consume(ConsumeContext<T> ctx)` | unchanged: `IConsumer<T>` with `ConsumeContext<T>` |
 | `ctx.Message`, `ctx.CancellationToken`, `ctx.MessageId` | unchanged; `ctx.Endpoint` names the endpoint; `ctx.TenantId` names the company |
 | Headers (`ctx.Headers`) | `ctx.Envelope.Headers` (keys are `mod-*`) |
-| `ctx.RespondAsync` / `IRequestClient<T>` | not yet: request/response (FR-06) is not built. Send a reply message to a known endpoint instead |
+| `ctx.RespondAsync` / `IRequestClient<T>` (`GetResponse`) | `ConsumeContext.RespondAsync(response)` and `IRequestClient.GetResponse<TRequest, TResponse>(address, request, timeout)`. Register the response type with `AddRequestClient<TResponse>()`. Timeouts raise `RequestTimeoutException` |
 | Message scope per consume (DI) | unchanged: a new DI scope per attempt (RULE-07) |
 
 ## Retries, redelivery and faults
@@ -40,9 +40,10 @@ Modulus.Messaging has no Kafka or Azure Service Bus transport. The transports ar
 | `r.Ignore<TException>()` | `RetryPolicy.Immediate(3).Ignore<TException>()`: that exception sends the message straight to `_error` |
 | `r.Handle<TException>()` (retry only some) | not supported directly; `Ignore` is the inverse. Throw `MessageParkException` to park at once |
 | `r.Redelivery` (delayed redelivery) | `o.Redelivery = RedeliveryPolicy.Intervals(...)` |
-| `_error` queue and `Fault<T>` | `_error` queue; `Fault<TMessage>` is published when a message is parked |
+| `_error` queue and `Fault<T>` | `_error` queue; `Fault<TMessage>` is published when a message is parked. A fault of an encrypted message is encrypted too |
 | `_skipped` | `_skipped` for messages with no consumer, expired, or without a required company |
-| Per-endpoint kill switch (circuit breaker) | `o.KillSwitch`: pauses the endpoint after too many failures |
+| Per-endpoint kill switch | `o.KillSwitch`: pauses the endpoint after too many failures, then restarts with an empty window |
+| Circuit breaker | `o.CircuitBreaker = new CircuitBreakerOptions { FailureThreshold, OpenDuration }`: opens after consecutive failures and tests the consumer with one trial message before it resumes |
 | Rate limit | `o.RateLimit` |
 | Concurrency limit | `o.ConcurrentMessageLimit` (needs a transport that delivers concurrently: RabbitMQ and PostgreSQL) |
 | `UseMessageRetry` per-consumer | `b.AddConsumer<T, M>("endpoint", o => { ... })`: options set per consumer, or with `b.ConfigureDefaults(...)` for all |
@@ -62,7 +63,7 @@ message that crashes its host on every attempt stops looping. MassTransit has no
 | `.Ignore(E)` | `When(E).Ignore()` |
 | `If` / `IfElse` activity | `When(E).If(condition, block)` / `.IfElse(condition, whenTrue, whenFalse)` |
 | `Catch<T>` activity | `When(E).Then(...).Catch<T>(compensation => ...)`: the attempt is discarded and the compensation runs on the saga as it was |
-| `Request` / `Respond` | not yet: needs request/response (FR-06) |
+| `Request` / `Respond` (saga activities) | not yet: request/response (FR-06) is built, but a saga's `Request` step is not. Use `IRequestClient` from the handler, or a reply message |
 | `InstanceState` repository (EF Core, Redis, MongoDB) | in-memory (`AddInMemorySagaRepository<TSaga>`), EF Core (`AddEntityFrameworkSagaRepository<TSaga, TContext>`) or PostgreSQL JSONB (`AddPostgreSqlSagaRepository<TSaga>`). Redis and MongoDB have no repository |
 | Consumer sagas (`ISaga` + `InitiatedBy`) | `AddConsumerSaga<TSaga>(endpoint)` with `IInitiatedBy<TSaga, TMessage>` and `ICorrelatedBy<TMessage>` |
 
@@ -80,6 +81,9 @@ Differences that matter for a port:
   message is skipped and counted (`messaging.inbox.duplicates`). Purge the records with `InboxMaintenance.PurgeExpiredAsync`.
 - Both need a migration in the consuming service: the outbox table, and the inbox table with `TenantId` (added in this
   version). Run `dotnet ef migrations add` for the consuming DbContext.
+- On PostgreSQL without EF Core, use the Npgsql pair: `AddModulusMessagingNpgsqlOutbox()` and `AddModulusMessagingNpgsqlInbox()`.
+  A publish needs an open transaction: `await uow.BeginAsync(ct)` on `INpgsqlUnitOfWork`, then `uow.CommitAsync(ct)`.
+  The schema is `OutboxSchemaScript()` and `InboxSchemaScript()`.
 
 ## Transports
 
