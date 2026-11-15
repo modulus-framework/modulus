@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework />
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <!-- New package: nothing of this ID is on nuget.org yet, so there is no baseline to validate against. Remove this line after its first release. -->
+    <EnablePackageValidation>false</EnablePackageValidation>
+    <Description>Modulus.Messaging core: MassTransit-style consumers, publish and send, per-message DI scopes, error and skipped routing. Transports are separate packages.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Modulus.Messaging.Tests" />
+  </ItemGroup>
+
+</Project>

@@ -51,6 +51,9 @@
     <PackageVersion Include="SQLitePCLRaw.bundle_e_sqlite3"            Version="3.0.5" />
     <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" Condition="'$(TargetFramework)' != 'net8.0'" />
     <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.11" Condition="'$(TargetFramework)' == 'net8.0'" />
+    <!-- Modulus.Messaging PostgreSQL transport: the same Npgsql line as the EF Core provider above. -->
+    <PackageVersion Include="Npgsql" Version="10.0.3" Condition="'$(TargetFramework)' != 'net8.0'" />
+    <PackageVersion Include="Npgsql" Version="8.0.9" Condition="'$(TargetFramework)' == 'net8.0'" />
     <PackageVersion Include="MySql.EntityFrameworkCore" Version="10.0.12" Condition="'$(TargetFramework)' != 'net8.0'" />
     <PackageVersion Include="MySql.EntityFrameworkCore" Version="8.0.31" Condition="'$(TargetFramework)' == 'net8.0'" />
     <PackageVersion Include="EFCore.NamingConventions" Version="10.0.1" Condition="'$(TargetFramework)' != 'net8.0'" />

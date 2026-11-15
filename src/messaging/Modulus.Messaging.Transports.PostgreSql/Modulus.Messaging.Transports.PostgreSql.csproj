@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework />
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <!-- New package: nothing of this ID is on nuget.org yet, so there is no baseline to validate against. Remove this line after its first release. -->
+    <EnablePackageValidation>false</EnablePackageValidation>
+    <Description>PostgreSQL transport for Modulus.Messaging: a durable queue table claimed with FOR UPDATE SKIP LOCKED, lease-based redelivery after a crash, and delayed redelivery through the table.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Modulus.Messaging/Modulus.Messaging.csproj" />
+    <PackageReference Include="Npgsql" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Modulus.Messaging.Transports.PostgreSql.Integration.Tests" />
+  </ItemGroup>
+
+</Project>

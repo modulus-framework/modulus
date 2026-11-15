@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework />
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <!-- New package: nothing of this ID is on nuget.org yet, so there is no baseline to validate against. Remove this line after its first release. -->
+    <EnablePackageValidation>false</EnablePackageValidation>
+    <Description>Transactional outbox for Modulus.Messaging on Entity Framework Core: messages are stored in the producer's DbContext and sent only after its transaction commits (RULE-01).</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Modulus.Messaging/Modulus.Messaging.csproj" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Modulus.Messaging.Outbox.EntityFrameworkCore.Tests" />
+  </ItemGroup>
+
+</Project>

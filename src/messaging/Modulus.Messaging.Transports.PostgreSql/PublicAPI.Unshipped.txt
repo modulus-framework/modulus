@@ -1,0 +1,32 @@
+#nullable enable
+Modulus.Messaging.Transports.PostgreSql.PostgreSqlMessagingBuilderExtensions
+Modulus.Messaging.Transports.PostgreSql.PostgreSqlTransport
+Modulus.Messaging.Transports.PostgreSql.PostgreSqlTransport.CancelScheduled(System.Guid scheduleToken, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<bool>!
+Modulus.Messaging.Transports.PostgreSql.PostgreSqlTransport.DisposeAsync() -> System.Threading.Tasks.ValueTask
+Modulus.Messaging.Transports.PostgreSql.PostgreSqlTransport.MoveToError(Modulus.Messaging.MessageEnvelope! envelope, System.Exception! exception, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+Modulus.Messaging.Transports.PostgreSql.PostgreSqlTransport.MoveToSkipped(Modulus.Messaging.MessageEnvelope! envelope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+Modulus.Messaging.Transports.PostgreSql.PostgreSqlTransport.PostgreSqlTransport(Modulus.Messaging.Transports.PostgreSql.PostgreSqlTransportOptions! options) -> void
+Modulus.Messaging.Transports.PostgreSql.PostgreSqlTransport.Redeliver(Modulus.Messaging.MessageEnvelope! envelope, System.TimeSpan delay, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+Modulus.Messaging.Transports.PostgreSql.PostgreSqlTransport.Schedule(System.Guid scheduleToken, Modulus.Messaging.MessageEnvelope! envelope, System.DateTimeOffset deliverAt, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+Modulus.Messaging.Transports.PostgreSql.PostgreSqlTransport.Send(Modulus.Messaging.MessageEnvelope! envelope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+Modulus.Messaging.Transports.PostgreSql.PostgreSqlTransport.Start(System.Collections.Generic.IReadOnlyCollection<string!>! endpoints, System.Func<Modulus.Messaging.MessageEnvelope!, System.Threading.CancellationToken, System.Threading.Tasks.Task!>! receive, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+Modulus.Messaging.Transports.PostgreSql.PostgreSqlTransport.Stop(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+Modulus.Messaging.Transports.PostgreSql.PostgreSqlTransportOptions
+Modulus.Messaging.Transports.PostgreSql.PostgreSqlTransportOptions.BatchSize.get -> int
+Modulus.Messaging.Transports.PostgreSql.PostgreSqlTransportOptions.BatchSize.set -> void
+Modulus.Messaging.Transports.PostgreSql.PostgreSqlTransportOptions.ConnectionString.get -> string!
+Modulus.Messaging.Transports.PostgreSql.PostgreSqlTransportOptions.ConnectionString.set -> void
+Modulus.Messaging.Transports.PostgreSql.PostgreSqlTransportOptions.CreateSchema.get -> bool
+Modulus.Messaging.Transports.PostgreSql.PostgreSqlTransportOptions.CreateSchema.set -> void
+Modulus.Messaging.Transports.PostgreSql.PostgreSqlTransportOptions.LeaseDuration.get -> System.TimeSpan
+Modulus.Messaging.Transports.PostgreSql.PostgreSqlTransportOptions.LeaseDuration.set -> void
+Modulus.Messaging.Transports.PostgreSql.PostgreSqlTransportOptions.PollInterval.get -> System.TimeSpan
+Modulus.Messaging.Transports.PostgreSql.PostgreSqlTransportOptions.PollInterval.set -> void
+Modulus.Messaging.Transports.PostgreSql.PostgreSqlTransportOptions.PostgreSqlTransportOptions() -> void
+Modulus.Messaging.Transports.PostgreSql.PostgreSqlTransportOptions.Schema.get -> string!
+Modulus.Messaging.Transports.PostgreSql.PostgreSqlTransportOptions.Schema.set -> void
+Modulus.Messaging.Transports.PostgreSql.PostgreSqlTransportOptions.StopTimeout.get -> System.TimeSpan
+Modulus.Messaging.Transports.PostgreSql.PostgreSqlTransportOptions.StopTimeout.set -> void
+Modulus.Messaging.Transports.PostgreSql.PostgreSqlTransportOptions.Table.get -> string!
+Modulus.Messaging.Transports.PostgreSql.PostgreSqlTransportOptions.Table.set -> void
+static Modulus.Messaging.Transports.PostgreSql.PostgreSqlMessagingBuilderExtensions.UsePostgreSql(this Modulus.Messaging.MessagingBusBuilder! builder, System.Action<Modulus.Messaging.Transports.PostgreSql.PostgreSqlTransportOptions!>! configure) -> Modulus.Messaging.MessagingBusBuilder!

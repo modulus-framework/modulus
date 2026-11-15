@@ -32,6 +32,13 @@
     <Project Path="src/messaging/Modulus.EventBus.RabbitMQ/Modulus.EventBus.RabbitMQ.csproj" />
     <Project Path="src/messaging/Modulus.EventBus.Kafka/Modulus.EventBus.Kafka.csproj" />
     <Project Path="src/messaging/Modulus.Sagas/Modulus.Sagas.csproj" />
+    <Project Path="src/messaging/Modulus.Messaging/Modulus.Messaging.csproj" />
+    <Project Path="src/messaging/Modulus.Messaging.Transports.InMemory/Modulus.Messaging.Transports.InMemory.csproj" />
+    <Project Path="src/messaging/Modulus.Messaging.Testing/Modulus.Messaging.Testing.csproj" />
+    <Project Path="src/messaging/Modulus.Messaging.Outbox.EntityFrameworkCore/Modulus.Messaging.Outbox.EntityFrameworkCore.csproj" />
+    <Project Path="src/messaging/Modulus.Messaging.Inbox.EntityFrameworkCore/Modulus.Messaging.Inbox.EntityFrameworkCore.csproj" />
+    <Project Path="src/messaging/Modulus.Messaging.Transports.RabbitMQ/Modulus.Messaging.Transports.RabbitMQ.csproj" />
+    <Project Path="src/messaging/Modulus.Messaging.Transports.PostgreSql/Modulus.Messaging.Transports.PostgreSql.csproj" />
     <Project Path="src/messaging/Modulus.Webhooks/Modulus.Webhooks.csproj" />
     <Project Path="src/messaging/Modulus.Realtime/Modulus.Realtime.csproj" />
     <Project Path="src/messaging/Modulus.Realtime.Redis/Modulus.Realtime.Redis.csproj" />
@@ -131,6 +138,11 @@
     <Project Path="tests/unit/Modulus.Data.MongoDB.Tests/Modulus.Data.MongoDB.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Outbox.Tests/Modulus.Outbox.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Sagas.Tests/Modulus.Sagas.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.Messaging.Tests/Modulus.Messaging.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.Messaging.Outbox.EntityFrameworkCore.Tests/Modulus.Messaging.Outbox.EntityFrameworkCore.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.Messaging.Inbox.EntityFrameworkCore.Tests/Modulus.Messaging.Inbox.EntityFrameworkCore.Tests.csproj" />
+    <Project Path="tests/integration/Modulus.Messaging.Transports.RabbitMQ.Integration.Tests/Modulus.Messaging.Transports.RabbitMQ.Integration.Tests.csproj" />
+    <Project Path="tests/integration/Modulus.Messaging.Transports.PostgreSql.Integration.Tests/Modulus.Messaging.Transports.PostgreSql.Integration.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Analytics.ClickHouse.Tests/Modulus.Analytics.ClickHouse.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Analytics.EntityFrameworkCore.Tests/Modulus.Analytics.EntityFrameworkCore.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Analytics.Management.Tests/Modulus.Analytics.Management.Tests.csproj" />

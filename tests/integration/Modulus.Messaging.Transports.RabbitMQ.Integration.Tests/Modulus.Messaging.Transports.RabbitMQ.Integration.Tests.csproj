@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="../../../src/messaging/Modulus.Messaging/Modulus.Messaging.csproj" />
+    <ProjectReference Include="../../../src/messaging/Modulus.Messaging.Transports.RabbitMQ/Modulus.Messaging.Transports.RabbitMQ.csproj" />
+    <PackageReference Include="Testcontainers.RabbitMq" />
+    <PackageReference Include="RabbitMQ.Client" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+  </ItemGroup>
+
+</Project>

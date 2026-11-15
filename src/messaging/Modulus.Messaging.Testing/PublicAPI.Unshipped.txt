@@ -1,0 +1,9 @@
+#nullable enable
+Modulus.Messaging.Testing.MessagingTestHarness
+Modulus.Messaging.Testing.MessagingTestHarness.Bus.get -> Modulus.Messaging.IBus!
+Modulus.Messaging.Testing.MessagingTestHarness.DisposeAsync() -> System.Threading.Tasks.ValueTask
+Modulus.Messaging.Testing.MessagingTestHarness.Services.get -> System.IServiceProvider!
+Modulus.Messaging.Testing.MessagingTestHarness.StopAsync() -> System.Threading.Tasks.Task!
+Modulus.Messaging.Testing.MessagingTestHarness.Transport.get -> Modulus.Messaging.Transports.InMemory.InMemoryTransport!
+static Modulus.Messaging.Testing.MessagingTestHarness.StartAsync(System.Action<Modulus.Messaging.MessagingBusBuilder!>! configure, System.Action<Microsoft.Extensions.DependencyInjection.IServiceCollection!>? services = null) -> System.Threading.Tasks.Task<Modulus.Messaging.Testing.MessagingTestHarness!>!
+static Modulus.Messaging.Testing.MessagingTestHarness.WaitUntilAsync(System.Func<bool>! condition, System.TimeSpan? timeout = null) -> System.Threading.Tasks.Task<bool>!
