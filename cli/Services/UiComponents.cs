@@ -99,6 +99,12 @@ internal static class UiComponents
         new("query-builder", "Pro", "Build a filter with fields, operators and nested AND/OR groups."),
         new("scheduler", "Pro", "A day, week and month calendar of events with categories."),
         new("schema-form", "Pro", "A whole form drawn from a schema of fields."),
+        new("approval-timeline", "Pro", "The steps of an approval in order, with who acted, when and any note.", ["blazor"]),
+        new("audit-trail", "Pro", "A log of who changed what and when, grouped by day, with an action filter.", ["blazor"]),
+        new("dashboard-grid", "Pro", "Dashboard tiles the user can resize and reorder; the layout is kept under an id.", ["blazor"]),
+        new("pro-table", "Data grids", "A server-paged table with filters, batch actions, row detail, export and URL-kept state.", ["blazor"]),
+        new("modal-form", "Feedback", "A dialog holding a validated form; it closes when the form is accepted.", ["blazor"]),
+        new("drawer-form", "Feedback", "A side panel holding a validated form, for editing a record without leaving the list.", ["blazor"]),
         new("chart-bar", "Charts", "Horizontal or vertical bars for one value per category.", ["blazor"]),
         new("chart-bullet", "Charts", "A bar against a target, with qualitative bands behind it.", ["blazor"]),
         new("chart-combo", "Charts", "Columns and lines on one axis, optionally stacked.", ["blazor"]),
@@ -165,6 +171,7 @@ internal static class UiComponents
         "slider", "space", "splitter", "statistic", "status-badge", "steps",
         "switch", "tabs", "tag", "theme-toggle", "time-picker", "timeline",
         "tooltip", "transfer", "tree", "tree-select", "trend", "upload",
+        "approval-timeline", "audit-trail", "dashboard-grid", "drawer-form", "modal-form", "pro-table",
     };
 
     /// <summary>The Blazor class name: the Pascal name, or Modulus&lt;Name&gt; where it clashes.</summary>
