@@ -51,6 +51,8 @@ public sealed class MessagingWiringTests
         var twice = MessagingWiring.EnsureApiServices(once, MessagingWiring.PostgreSql);
 
         once.Should().Contain("messaging.UsePostgreSql(");
+        once.Should().Contain("using Modulus.Messaging.Outbox.Npgsql;", "the extension methods' namespaces are imported");
+        once.Should().Contain("using Modulus.Messaging.Inbox.Npgsql;");
         once.Should().Contain("AddModulusMessagingNpgsqlOutbox()");
         once.IndexOf("AddModulusMessaging(", StringComparison.Ordinal).Should().BeLessThan(once.IndexOf("var app = builder.Build();", StringComparison.Ordinal));
         twice.Should().Be(once);

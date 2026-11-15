@@ -28,3 +28,15 @@ public static partial class NpgsqlInboxMaintenance
     [GeneratedRegex("^[A-Za-z_][A-Za-z0-9_]{0,62}$")]
     private static partial Regex Identifier();
 }
+
+/// <summary>Creates the inbox table and its indexes when the host starts.</summary>
+internal sealed class NpgsqlInboxSchemaService(NpgsqlDataSource dataSource, string table) : Microsoft.Extensions.Hosting.IHostedService
+{
+    public async Task StartAsync(CancellationToken cancellationToken)
+    {
+        await using var command = dataSource.CreateCommand(NpgsqlInboxSql.Schema(table));
+        await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+}

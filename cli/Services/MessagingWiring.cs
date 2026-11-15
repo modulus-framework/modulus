@@ -60,8 +60,26 @@ internal static class MessagingWiring
             InMemory => InMemoryBlock(nl),
             _ => throw new ArgumentException($"Unknown transport '{transport}'.", nameof(transport)),
         };
-        return ApiHostFiles.InsertFeatureServices(text, block, nl);
+        var inserted = ApiHostFiles.InsertFeatureServices(text, block, nl);
+        foreach (var ns in UsingsFor(transport))
+            inserted = WebhooksWiring.EnsureUsing(inserted, $"using {ns};");
+        return inserted;
     }
+
+    /// <summary>The namespaces the bus block's extension methods live in, so the feature services file compiles.</summary>
+    public static IReadOnlyList<string> UsingsFor(string transport) => transport switch
+    {
+        PostgreSql =>
+        [
+            "Modulus.Messaging",
+            "Modulus.Messaging.Transports.PostgreSql",
+            "Modulus.Messaging.Outbox.Npgsql",
+            "Modulus.Messaging.Inbox.Npgsql",
+        ],
+        RabbitMq => ["Modulus.Messaging", "Modulus.Messaging.Transports.RabbitMQ"],
+        InMemory => ["Modulus.Messaging", "Modulus.Messaging.Transports.InMemory"],
+        _ => throw new ArgumentException($"Unknown transport '{transport}'.", nameof(transport)),
+    };
 
     /// <summary>
     /// Sets <c>Messaging:Transport</c>, and <c>ConnectionStrings:Messaging</c> for the development settings only: the
