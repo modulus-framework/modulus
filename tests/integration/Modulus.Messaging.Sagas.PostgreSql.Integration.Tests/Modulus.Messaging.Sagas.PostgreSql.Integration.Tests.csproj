@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="../../../src/messaging/Modulus.Messaging/Modulus.Messaging.csproj" />
+    <ProjectReference Include="../../../src/messaging/Modulus.Messaging.Testing/Modulus.Messaging.Testing.csproj" />
+    <ProjectReference Include="../../../src/messaging/Modulus.Messaging.Transports.InMemory/Modulus.Messaging.Transports.InMemory.csproj" />
+    <ProjectReference Include="../../../src/messaging/Modulus.Messaging.Sagas/Modulus.Messaging.Sagas.csproj" />
+    <ProjectReference Include="../../../src/messaging/Modulus.Messaging.Sagas.PostgreSql/Modulus.Messaging.Sagas.PostgreSql.csproj" />
+    <PackageReference Include="Testcontainers.PostgreSql" />
+    <PackageReference Include="Npgsql" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+  </ItemGroup>
+
+</Project>

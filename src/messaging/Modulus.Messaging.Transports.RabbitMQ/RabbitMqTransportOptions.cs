@@ -26,6 +26,21 @@ public sealed class RabbitMqTransportOptions
 
     public SslProtocols TlsVersion { get; set; } = SslProtocols.Tls12 | SslProtocols.Tls13;
 
+    /// <summary>
+    /// Decides whether the broker's certificate is accepted when <see cref="UseTls"/> is set. Null (the default) applies the
+    /// normal check: the certificate must chain to a trusted root and name the server. Set it only to trust a private CA
+    /// or to pin one certificate; a callback that accepts everything disables the protection TLS gives.
+    /// </summary>
+    public System.Net.Security.RemoteCertificateValidationCallback? TlsCertificateValidation { get; set; }
+
+    /// <summary>
+    /// Bounds the queues the transport declares (endpoints, parked queues) to this many messages. A publish the broker
+    /// refuses because the queue is full fails with an error; it is never reported as sent. Null (the default) leaves
+    /// queues unbounded. Queues that already exist keep their arguments: RabbitMQ refuses to redeclare them with a
+    /// different bound, so set this before the queues are first created, or remove them first.
+    /// </summary>
+    public int? MaxQueueLength { get; set; }
+
     /// <summary>Unacknowledged deliveries per endpoint (basic.qos prefetch).</summary>
     public ushort Prefetch { get; set; } = 16;
 

@@ -47,14 +47,45 @@ Source requirements: [BRS](Cobytelabs.Messaging%20—%20Business%20Requirements%
 
 ## Status
 
-As of 2026-11-15: M0 done. M1 partly done (outbox, inbox, retries, redelivery, faults, timeout, drain, settings, rate limit, kill switch); its concurrency limit, circuit breaker and chaos run are open. M2 RabbitMQ transport built and integration-tested; G2 throughput measured at about 31k msg/s on the development machine, with latency overhead not yet measured. M3 in progress: PostgreSQL transport, scheduler with cancel, TTL, priority (not on RabbitMQ, see its section), and ordered processing by partition are built; sagas (FR-17 to FR-19), tenant context and the TradeFlow sample are not started.
+As of 2026-11-15 (third pass). M0 done: core API, in-memory transport, harness, conformance suite (run on InMemory, PostgreSQL and RabbitMQ). M1 mostly done: outbox and inbox on EF Core, retries, redelivery, error and skipped queues, faults, consume timeout, drain, rate limit, kill switch, concurrency limit. Open in M1: circuit breaker (optional), chaos run (G1). M2 RabbitMQ transport built and integration-tested: concurrency, TLS, scheduling through TTL buckets, bounded queues with publisher-confirm refusal; restart tests fail on Docker Desktop. M3 mostly built: PostgreSQL transport (concurrency, purge, migration script, auto-purge), scheduler with cancel (PostgreSQL, in-memory, outbox; not RabbitMQ), TTL, priority (not on RabbitMQ, by decision), ordered processing by partition, sagas: state machine (FR-17, core), consumer sagas (FR-18), and repositories on in-memory, EF Core and Npgsql JSONB with optimistic concurrency (FR-19). Not started: tenant context (FR-21), TradeFlow sample (G3). M4 not started.
 
 ### Still open
 
-- **FR-14, "under concurrency 16":** needs the concurrency limit (`ConcurrentMessageLimit`) in M1, which needs a transport that delivers concurrently. Ordering is tested today only sequentially across hosts. The PostgreSQL per-partition claim is the rule that concurrent delivery must keep.
-- **Sagas, M3:** state-machine sagas (FR-17), consumer sagas (FR-18), and saga repositories on EF Core, Npgsql JSONB and in-memory (FR-19). Not started.
+- **FR-14, "under concurrency 16":** done on all three transports. Within a host, RabbitMQ and in-memory keep each partition in order under concurrency, and PostgreSQL claims one row per partition across hosts. Across hosts, RabbitMQ does not enforce partition order under competing consumers (see M3 ordered processing).
+- **Sagas, M3:** state-machine sagas (FR-17) core, consumer sagas (FR-18), and the three repositories (FR-19) are built. Open parts are listed under Open tasks.
 - **Tenant context, M3:** tenant context on messages with RLS-aware scope (FR-21). Not started.
-- **TradeFlow sample, M3 gate G3:** orders to billing on PostgreSQL. Not started.
+- **TradeFlow sample, M3 gate G3:** orders to billing on PostgreSQL. Not started. The sample folder is off-limits until the owner allows it.
+
+### Open tasks
+
+Grouped by what unblocks them. Each item names the requirement it closes.
+
+**Needs an owner decision**
+- RabbitMQ priority: keep quorum queues (no priority) or switch to classic queues (FR-13).
+- RabbitMQ cancel of a scheduled message: stays unsupported, cancel is through the outbox or PostgreSQL (FR-12). Decision recorded 2026-11-15.
+- Per-endpoint delivery-count limit: recorded, not enforced. Not in the BRS, so it needs a policy first.
+- Commit of the current work: not committed, AGENTS.md says commit only when asked.
+
+**Needs permission or an environment change**
+- Consumer-shape generator for the M0 gate (G0): needs the samples, which are off-limits until allowed.
+- TradeFlow sample on PostgreSQL (G3): needs the sample folder.
+- Restart tests on Docker Desktop, both transports (NFR-02): the restarted container gets a new host port, the cause is not confirmed. Run on Podman or a clean Docker host.
+- Latency at 5 µs p50 and throughput at 25k msg/s with confirms (NFR-06, NFR-04, gate G2): need the target hardware and a CI regression gate.
+- PostgreSQL index tuning for 25k msg/s and the throughput measurement: need the target hardware.
+- Chaos run of 1M messages with random kills, zero lost and zero double-applied (NFR-01, gate G1): needs durable transports and a long run.
+
+**Engineering, next**
+- Sagas, FR-17 leftovers: `If`, `Catch`, `Ignore`, `Request` in the reaction API.
+- Sagas: cancel a saga's pending timeout when it completes (today a late timeout is faulted, not dropped).
+- RabbitMQ and in-memory: cross-host partition order under competing consumers (FR-14). RabbitMQ holds order per queue only.
+- Circuit breaker as a separate mechanism (optional: the kill switch covers the BRS criterion).
+- RabbitMQ `MaxQueueLength` (done, off by default): existing queues keep their arguments, so a migration step is needed before a deployment turns it on.
+
+**Larger, not started**
+- Tenant context on messages with RLS-aware scope (FR-21, M3).
+- M4 release (gate G4, needs two weeks in production): payload encryption (FR-22), `[Sensitive]` redaction (NFR-12), OpenTelemetry messaging conventions for spans and metrics (FR-24, NFR-17), health checks, host adapter and CLI scaffolding (FR-23), migration guide from MassTransit v8 (NFR-19), frozen API baseline, signed packages.
+- Test coverage target of 85% on core (NFR-16): not measured yet.
+- Outbox and inbox on Npgsql: status not confirmed in this plan.
 
 ### Progress
 
@@ -63,7 +94,7 @@ As of 2026-11-15: M0 done. M1 partly done (outbox, inbox, retries, redelivery, f
 - [x] Core project (`src/messaging/Modulus.Messaging`): consumers, publish, send, per-message DI scope, `_error` and `_skipped` routing, `AddModulusMessaging`
 - [x] InMemory transport (`src/messaging/Modulus.Messaging.Transports.InMemory`): per-endpoint pump, `_error` and `_skipped` queues
 - [x] Test harness (`src/messaging/Modulus.Messaging.Testing`): `MessagingTestHarness`, `WaitUntilAsync`
-- [ ] M0 conformance kit (transport conformance suite): not started
+- [x] M0 conformance kit: `TransportConformance.RunAsync(factory)` in `Modulus.Messaging.Testing` runs six transport checks (each once, one endpoint in send order, redeliver after delay, moved to error and to skipped are not redelivered, stop completes), each on its own endpoint. Run against InMemory (unit, the G0 gate), PostgreSQL and RabbitMQ (integration): all pass on net8.0 and net10.0 where the project runs
 - [ ] M0 generator for consumer shapes: not started
 
 **M1 slice 1 (done)**
@@ -97,7 +128,7 @@ As of 2026-11-15: M0 done. M1 partly done (outbox, inbox, retries, redelivery, f
 - [x] Rate limit per endpoint: at most N deliveries per period, sliding window (FR-15); own implementation, no new package
 - [x] Kill switch: when the failure ratio over the last N outcomes reaches the threshold, the endpoint pauses for the restart timeout, then restarts with an empty window (FR-15)
 - [x] 2 tests: deliveries spaced by the rate limit; the kill switch pauses after four failures and restarts after the timeout
-- [ ] Concurrency limit (`ConcurrentMessageLimit`): needs a transport that delivers concurrently. The InMemory pump is sequential; the RabbitMQ transport is sequential per endpoint too (prefetch only buffers). Deferred until a transport delivers concurrently
+- [x] Concurrency limit (`ConsumerOptions.ConcurrentMessageLimit`, default 1) through `IConcurrentDeliveryTransport`, which the bus calls before start. Implemented in all three transports (in-memory, RabbitMQ, PostgreSQL). Transports without the interface refuse a limit above 1 at start (`ConcurrencyTests`). Tests: in-memory unit 3, PostgreSQL integration 2 (ordered under 16 across two hosts, limit reached on one host), RabbitMQ integration 2
 - [ ] Circuit breaker as a separate mechanism: not built. The kill switch covers the BRS acceptance criterion; Polly's circuit breaker is already used in `Modulus.Sagas`
 
 **M1 remaining**
@@ -114,10 +145,11 @@ As of 2026-11-15: M0 done. M1 partly done (outbox, inbox, retries, redelivery, f
 - [x] TLS option and credentials from options (NFR-09); the message body is JSON, metadata in `mod-*` headers
 - [x] `IMessageTransport.Start` now receives the consumer endpoints, so a transport can declare their queues
 - [x] 4 integration tests on a real RabbitMQ 4 broker (Testcontainers on Podman): publish and send round trip, failing message redelivered then parked in `_error` with its fault headers, unhandled message parked in `_skipped`, in-flight message delivered again to the next host after a stop
-- [x] Broker outage and recovery (NFR-02, `NFR_02_the_bus_recovers_when_the_broker_restarts_without_a_host_restart`): the broker is stopped, a send during the outage fails (never reported as sent), the broker starts again, and the bus recovers and delivers without a host restart; 5 integration tests pass on net8.0 and net10.0
+- [ ] Broker outage and recovery (NFR-02, `NFR_02_the_bus_recovers_when_the_broker_restarts_without_a_host_restart`; passed on Podman, fails on Docker Desktop; the cause is not confirmed: a forwarder on a fixed port, which follows the container, did not fix it, and a restarted container did not answer on its new port within 60 s): the broker is stopped, a send during the outage fails (never reported as sent), the broker starts again, and the bus recovers and delivers without a host restart; 5 integration tests pass on net8.0 and net10.0
 - [x] Throughput (G2, `G2_measures_end_to_end_throughput_with_publisher_confirms`): 50,000 messages sent through the bus with publisher confirms and consumed by one host take about 1.6 s, about 31–32k msg/s on the development machine (two runs), above the 25k target. Publishes do not hold the channel lock while waiting for confirms (a lock across the confirm wait had capped publishing at about 430 msg/s; the broker itself handles about 60k msg/s with concurrent confirms in a raw probe)
 - [ ] Not yet measured: the 5 µs p50 overhead (NFR-06) and the 10% regression gate in CI; the throughput run is a single host on a laptop-class machine through a Podman port proxy, so G2 must be judged again on the target hardware
-- [ ] Not tested yet: TLS, publisher-confirm failure
+- [x] TLS tested (NFR-09): RabbitMQ over AMQP TLS on its own container (5671), with the conformance suite passing when the certificate is trusted and a certificate nobody trusts refused. PostgreSQL with SSL on, verified as an encrypted session (`pg_stat_ssl`), the conformance suite passing with `SSL Mode=VerifyFull`, and an untrusted certificate refused. Both refusals must fail on a certificate error. Test certificates are created per fixture, never committed. The RabbitMQ transport gained `TlsCertificateValidation` (default: normal checks) to trust a private CA or pin one certificate
+- [x] Publisher-confirm failure (a nacked publish, not an outage): `MaxQueueLength` (default unbounded) bounds the queues the transport declares with reject-publish; a publish the broker refuses throws `PublishException` and is never reported as sent (`RabbitMqPublishConfirmTests`). Queues that already exist keep their arguments, so set it before they are created
 - [ ] Limit: a stop with the connection already down cannot requeue in-flight messages from this process; the broker requeues them when the connection drops, so no message is lost, but the handler's attempt is repeated
 
 **M3 PostgreSQL transport (in progress)**
@@ -126,7 +158,7 @@ As of 2026-11-15: M0 done. M1 partly done (outbox, inbox, retries, redelivery, f
 - [x] Competing hosts claim batches with `FOR UPDATE SKIP LOCKED` under a lease, so a row is handled by one host at a time (`RULE_02_competing_hosts_handle_each_message_exactly_once`: 300 messages over two hosts, each once)
 - [x] A row is deleted only after the bus has finished with it (RULE-02); a stop releases unfinished rows at the stop timeout (NFR-18); a host that dies keeps its lease until it expires, then another host receives the row (at-least-once)
 - [x] Delayed redelivery is a row with a visibility time in the future (FR-08); `_error` (with `mod-error-message`) and `_skipped` are queues in the same table (FR-09)
-- [x] Database outage: sends fail with an error and polling resumes after the database restarts (NFR-02)
+- [ ] Database outage: sends fail with an error and polling resumes after the database restarts (NFR-02; passed on Podman, fails on Docker Desktop for the same port reason; the test now has its own class, so it no longer breaks other tests)
 - [x] 7 integration tests on a real PostgreSQL 17 container (Testcontainers on Podman), net10.0; net8.0 run recorded below
 **M3 scheduler with cancel (FR-12, in progress)**
 
@@ -135,7 +167,10 @@ As of 2026-11-15: M0 done. M1 partly done (outbox, inbox, retries, redelivery, f
 - [x] In-memory transport: one timer per scheduled envelope; a cancel and the due time race under one lock, so a cancelled message never arrives and a delivered one cannot be cancelled
 - [x] PostgreSQL transport: a scheduled row is visible at its time (`schedule_id` column, indexed); cancel deletes the unclaimed rows of the token, so a claimed row (already with a host) cannot be cancelled
 - [x] Tests: 5 unit tests (arrives at its time, cancelled never arrives, publish reaches every consumer when due, cancel after delivery reports nothing, refusal on a transport without scheduling); 2 PostgreSQL integration tests (arrives at its time, cancelled never arrives)
-- [ ] Not yet: scheduling through the transactional outbox (a scheduled message is written to the transport directly, not captured by the outbox), RabbitMQ scheduling (delayed plugin or TTL fallback, R-09), scheduling by delay (`TimeSpan`)
+- [x] RabbitMQ scheduling (R-09): TTL fallback, no delayed-message plugin. A scheduled message waits in a power-of-two TTL bucket queue (`mod-schedule.{ms}`) that dead-letters into `mod-schedule.due`; the due consumer forwards it to its endpoint once its time has come, or into the next bucket for the rest of the delay. Tests: arrives at its time through several buckets, a past time is delivered at once, cancel is refused (3 integration tests). The delayed-message plugin is not used
+- [ ] Decision (2026-11-15, recorded): RabbitMQ scheduled-message cancel stays unsupported; the outbox path cancels by token instead. RabbitMQ scheduling: cancelling a scheduled message is not supported yet (it waits in a bucket that cannot be searched by token; `CancelScheduled` throws `NotSupportedException`). A failed schedule still rolls back best effort and reports its own error (`ScheduleRollbackTests`). A multi-envelope publish that fails partway can leave its first envelopes scheduled
+- [x] Scheduling through the transactional outbox: inside a scope with an outbox, `IMessageScheduler` (now scoped, as `IBus` is) stores the message with its due time (`OutboxRecord.DeliverAt`), so it is sent only after the transaction commits and once it is due; the dispatcher skips rows that are not due (3 tests, `ScheduledOutboxTests`). Cancelling by token deletes the unclaimed rows of that schedule (`CancelScheduled`; the test covers a second cancel returning false). **Upgrade note:** the `messaging_outbox` table gets nullable `DeliverAt` and `ScheduleToken` columns; apps that use the EF outbox need a migration for them
+- [x] Scheduling by delay: `ScheduleSend` and `SchedulePublish` take a `TimeSpan` measured from the call; a negative delay is refused (`ScheduleTests`, 2 new unit tests)
 - [ ] Limit: on PostgreSQL the due time is the caller's timestamp, compared with the database clock; a skew between the app and database clocks moves delivery by the skew
 
 **M3 time-to-live and priority (FR-13, in progress)**
@@ -144,7 +179,25 @@ As of 2026-11-15: M0 done. M1 partly done (outbox, inbox, retries, redelivery, f
 - [x] Priority: `ConsumerOptions.Priority` or `[MessagePriority(n)]` (attribute wins); the bus stamps `mod-priority`; PostgreSQL stores it in a `priority` column and claims the highest priority first (`FR_13_higher_priority_is_consumed_first_on_postgresql`)
 - [x] Tests: 3 unit (expired goes to `_skipped` unprocessed, within TTL is consumed, type attribute overrides the consumer); 2 PostgreSQL integration (expired goes to `_skipped`, higher priority first). PostgreSQL 11 of 11 on net10.0
 - [x] RabbitMQ priority checked against a RabbitMQ 4 broker: quorum queues refuse `x-max-priority` (406 PRECONDITION_FAILED); classic queues accept it. Decision (owner, 2026-11-15): keep quorum queues, so RabbitMQ does not give priority. This is a documented limit (FR-13 says "higher priority is consumed first on RabbitMQ"; the BRS needs an owner decision to change it: an opt-in classic priority queue, or classic for all endpoints)
-- [ ] Not built: priority on the in-memory transport (FIFO channel)
+- [x] Priority on the in-memory transport: a per-endpoint priority queue (highest first, FIFO within a priority), replacing the FIFO channel (`FR_13_on_the_in_memory_transport_the_highest_priority_is_consumed_first`)
+
+**M3 sagas, state machine (FR-17, in progress)**
+
+- [x] `SagaStateMachine<TSaga>` in `Modulus.Messaging.Sagas`: `State`, `Event<T>().CorrelateBy(...)`, `Initially`, `During`, `When(...).Then(...).TransitionTo(...).Complete()`; `Publish`, `Send` and `Schedule` in the handler context run after the state is saved
+- [x] Events are correlated to one instance; an event that does not start a saga throws `SagaNotStartedException` and is redelivered (UC-05); an event the state does not handle throws `UnexpectedSagaEventException` and changes nothing; a machine with an event without `CorrelateBy` is refused at start
+- [x] `AddSaga<TMachine,TSaga>(endpoint)` registers one consumer per event type on one endpoint; `AddInMemorySagaRepository<TSaga>()` stores copies as JSON
+- [x] Tests (`OrderSagaTests`, 6 unit): happy path, timeout path from a schedule, cancel path (the late timeout publishes nothing), early event redelivered, unhandled event, uncorrelated event refused
+- [ ] Not yet: `If`, `Catch`, `Ignore` and `Request` in the reaction API; the schedule is not cancelled when a saga completes, so a late timeout is faulted, not dropped (the bus records it in the error queue); `Finalize` is named `Complete()`
+- [x] Concurrency control in the in-memory repository (FR-19, optimistic): `SagaInstance.Version`; a save or delete of a copy whose version is no longer stored throws `SagaConcurrencyException`, and the bus redelivers the message, which re-reads and applies its change. Tests: a stale save is refused; 50 increments with 8 workers, each forced to overlap, all apply (without the version check the same test ends at 7, so it proves the fix)
+- [x] EF Core saga repository (FR-19) in `Modulus.Messaging.Sagas.EntityFrameworkCore`: `SagaRecord` table (`messaging_sagas`, keyed by saga type and correlation id), `AddEntityFrameworkSagaRepository<TSaga,TContext>()`. A save is an insert for a new instance (a racing insert is a conflict) or one `UPDATE ... WHERE Version = read version`; a delete checks the version the same way. Tests on SQLite: a stale save is refused; 50 increments with 8 workers on the database all apply (without the check the same test ends at 7). Found and fixed on the way: the version must be read from the column, not the JSON
+- [x] Npgsql JSONB saga repository (FR-19) in `Modulus.Messaging.Sagas.PostgreSql`: `PostgreSqlSagaRepository<TSaga>` with `SchemaScript`; a save is an `INSERT ... ON CONFLICT DO NOTHING` or one `UPDATE ... WHERE version = read version`, a delete checks the version the same way. Tests on a PostgreSQL 17 container: a stale save is refused; 50 increments with 8 workers all apply. With the UPDATE check removed the same test fails (it ends at 0, not at 7 as the in-memory and EF runs do; the cause of the different count is not yet explained)
+- [ ] Not yet: the FR-17 leftovers `If`, `Catch`, `Ignore`, `Request`, and cancelling a saga's pending timeout on completion
+
+**M3 consumer sagas (FR-18, done)**
+
+- [x] A saga class implements `IInitiatedBy<TSaga,TMessage>`, `IOrchestrates<TSaga,TMessage>` or `IInitiatedByOrOrchestrates<TSaga,TMessage>` per message, and `ICorrelatedBy<TMessage>` (a static key) for each; `AddConsumerSaga<TSaga>(endpoint)` registers them. A missing `ICorrelatedBy` is refused at registration
+- [x] The initiating message creates the instance; a later message moves it on; `Complete()` removes it; a message that arrives before its instance is redelivered; a second initiating message for an existing instance is refused and changes nothing
+- [x] Tests (`ConsumerSagaTests`, 5 unit): creation and completion, early message redelivered, second initiation refused, timeout that orchestrates the saga, uncorrelated saga refused. 11 saga tests pass on net8.0 and net10.0
 
 **M3 ordered processing (FR-14, in progress)**
 
@@ -154,10 +207,13 @@ As of 2026-11-15: M0 done. M1 partly done (outbox, inbox, retries, redelivery, f
 - [x] A retried message keeps its sequence, so the messages sent after it wait for it (`FR_14_a_retried_message_keeps_its_place_in_its_partition`)
 - [x] Scheduled messages have no partition: their send time is not their order, so they do not hold back other messages
 - [x] Unit tests (in-memory): the key is stamped, an ordered consumer without a key uses its endpoint, priority is ignored for an ordered consumer, and 300 interleaved messages in 3 partitions stay in order. 30 of 30 core tests pass on net10.0 and net8.0
-- [ ] Not yet: "under concurrency 16" (the BRS acceptance criterion). Every current transport delivers one message at a time per endpoint, so the test is sequential per partition across hosts, not concurrent within a host. The concurrency limit needs a concurrent delivery mode, which is still open (see the M1 concurrency item). The per-partition rule in PostgreSQL is already the one that concurrency will need
-- [ ] Not yet: the RabbitMQ and in-memory transports do not enforce partitions across concurrent consumers (RabbitMQ is sequential per endpoint, so its order holds today; the in-memory pump is one loop)
+- [x] "Under concurrency 16" tested on in-memory (unit), PostgreSQL (2 hosts x 16, 500 messages in 5 partitions) and RabbitMQ (1 host x 16: 400 messages in 4 partitions kept in order; 200 unordered messages reach more than one in flight)
+- [ ] Not yet: RabbitMQ does not enforce partitions across competing hosts (its order holds per queue only). Within one host, RabbitMQ and in-memory keep each partition in order under concurrency
 
-- [ ] Not built yet: retention/purge of delivered rows, a per-endpoint delivery-count limit (the count is recorded, not enforced), an index tuned for the 25k msg/s target (not measured), the migration script for the schema, and the PostgreSQL throughput measurement
+- [x] Retention: a delivered row is deleted on success, so there is nothing to keep. Parked rows (`_error`, `_skipped`) are purged by `PurgeParkedAsync(olderThan)` (unclaimed rows only; 2 integration tests). Nothing purges on a timer: a maintenance job must call it
+- [x] Migration script: `docs/messaging/postgresql-queue-schema.sql` (default schema and table); `PostgreSqlTransport.SchemaScript(options)` generates it for others. `SchemaScriptTests` fails if the file and the code differ
+- [x] Purge timer: `ParkedRetention` (null keeps parked rows) with `PurgeInterval` (default 1 hour) runs the purge while the transport runs; a failure goes to `PurgeFailed` and is retried at the next interval (2 integration tests). The PostgreSQL integration assembly runs its tests one at a time, because a purge removes every parked row and other tests wait for parked rows
+- [ ] Not built yet: a per-endpoint delivery-count limit (the count is recorded, not enforced), an index tuned for the 25k msg/s target (not measured), the migration script for the schema, and the PostgreSQL throughput measurement
 - [ ] Limit: the readiness wait for the test container uses the TCP port, because rootless Podman cannot exec the default `pg_isready` check here; the test fixture also waits for a real query and clears pooled connections after a database restart
 
 ### Known limits

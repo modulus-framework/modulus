@@ -11,12 +11,13 @@ namespace Modulus.Messaging.Transports.PostgreSql;
 /// the bus has finished with it (RULE-02). A row whose host dies keeps its lease until it expires, then another host
 /// receives it (at-least-once). Delayed redelivery is a row with a visibility time in the future.
 /// </summary>
-public sealed class PostgreSqlTransport : IMessageTransport, IScheduledMessageTransport, IAsyncDisposable
+public sealed class PostgreSqlTransport : IMessageTransport, IScheduledMessageTransport, IConcurrentDeliveryTransport, IAsyncDisposable
 {
     private const string ErrorSuffix = "_error";
     private const string SkippedSuffix = "_skipped";
 
     private readonly PostgreSqlTransportOptions _options;
+    private IReadOnlyDictionary<string, int> _limits = new Dictionary<string, int>(StringComparer.Ordinal);
     private readonly NpgsqlDataSource _dataSource;
     private readonly CancellationTokenSource _stopping = new();
     private readonly CancellationTokenSource _abort = new();
@@ -34,6 +35,18 @@ public sealed class PostgreSqlTransport : IMessageTransport, IScheduledMessageTr
         _table = $"\"{options.Schema}\".\"{options.Table}\"";
         _sequence = $"\"{options.Schema}\".\"{options.Table}_seq\"";
         _dataSource = NpgsqlDataSource.Create(options.ConnectionString);
+    }
+
+    /// <inheritdoc />
+    public void ConfigureConcurrency(IReadOnlyDictionary<string, int> limitsByEndpoint)
+    {
+        ArgumentNullException.ThrowIfNull(limitsByEndpoint);
+        if (_started)
+        {
+            throw new InvalidOperationException("Concurrency must be configured before the PostgreSQL transport starts.");
+        }
+
+        _limits = limitsByEndpoint.ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.Ordinal);
     }
 
     public async Task Start(
@@ -59,6 +72,36 @@ public sealed class PostgreSqlTransport : IMessageTransport, IScheduledMessageTr
         foreach (var endpoint in endpoints.Distinct(StringComparer.Ordinal))
         {
             _loops.Add(Task.Run(() => PollLoopAsync(endpoint, _stopping.Token), CancellationToken.None));
+        }
+
+        if (_options.ParkedRetention is { } retention)
+        {
+            _loops.Add(Task.Run(() => PurgeLoopAsync(retention, _stopping.Token), CancellationToken.None));
+        }
+    }
+
+    /// <summary>Purges parked messages older than the retention now and then every <see cref="PostgreSqlTransportOptions.PurgeInterval"/>, until stopping.</summary>
+    private async Task PurgeLoopAsync(TimeSpan retention, CancellationToken stopping)
+    {
+        try
+        {
+            while (!stopping.IsCancellationRequested)
+            {
+                try
+                {
+                    await PurgeParkedAsync(retention, stopping).ConfigureAwait(false);
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    _options.PurgeFailed?.Invoke(ex);
+                }
+
+                await Task.Delay(_options.PurgeInterval, stopping).ConfigureAwait(false);
+            }
+        }
+        catch (OperationCanceledException) when (stopping.IsCancellationRequested)
+        {
+            // Stopping: the purge loop ends.
         }
     }
 
@@ -94,6 +137,35 @@ public sealed class PostgreSqlTransport : IMessageTransport, IScheduledMessageTr
         await using var command = _dataSource.CreateCommand(PostgreSqlQueueSql.CancelScheduled(_table));
         command.Parameters.AddWithValue("schedule_id", scheduleToken);
         return await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false) > 0;
+    }
+
+    /// <summary>
+    /// The SQL that creates the queue table, its sequence and indexes, for a database administrator who applies the schema
+    /// by hand (set <c>CreateSchema</c> to false then). It is the same script <c>StartAsync</c> runs.
+    /// </summary>
+    public static string SchemaScript(PostgreSqlTransportOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        options.Validate();
+        return PostgreSqlQueueSql.CreateSchema(options.Schema, options.Table);
+    }
+
+    /// <summary>
+    /// Deletes the parked messages (<c>_error</c> and <c>_skipped</c>) parked more than <paramref name="olderThan"/> ago and
+    /// returns how many rows were removed (retention). Run it from a maintenance job; nothing purges on a timer.
+    /// </summary>
+    public async Task<int> PurgeParkedAsync(TimeSpan olderThan, CancellationToken cancellationToken)
+    {
+        if (olderThan < TimeSpan.Zero)
+        {
+            throw new ArgumentOutOfRangeException(nameof(olderThan), "Must not be negative.");
+        }
+
+        await using var command = _dataSource.CreateCommand(PostgreSqlQueueSql.PurgeParked(_table));
+        command.Parameters.AddWithValue("error_suffix", ErrorSuffix);
+        command.Parameters.AddWithValue("skipped_suffix", SkippedSuffix);
+        command.Parameters.AddWithValue("cutoff", DateTimeOffset.UtcNow - olderThan);
+        return await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
     }
 
     public Task Redeliver(MessageEnvelope envelope, TimeSpan delay, CancellationToken cancellationToken)
@@ -135,45 +207,69 @@ public sealed class PostgreSqlTransport : IMessageTransport, IScheduledMessageTr
         await _dataSource.DisposeAsync().ConfigureAwait(false);
     }
 
+    /// <summary>
+    /// Claims batches for one endpoint and hands each row to a worker, at most <c>ConcurrentMessageLimit</c> at a time.
+    /// Claiming goes on while the workers run: a partitioned row is claimable only when no earlier row of its partition
+    /// exists (see <see cref="PostgreSqlQueueSql.Claim"/>), so the rows in flight never include two of one partition.
+    /// The loop returns only after its workers have finished (or were aborted at the stop timeout).
+    /// </summary>
     private async Task PollLoopAsync(string endpoint, CancellationToken stopping)
     {
-        while (!stopping.IsCancellationRequested)
+        var limit = _limits.TryGetValue(endpoint, out var configured) ? configured : 1;
+        using var slots = new SemaphoreSlim(limit, limit);
+        var workers = new List<Task>();
+        try
         {
-            IReadOnlyList<Claimed> batch;
-            try
+            while (!stopping.IsCancellationRequested)
             {
-                batch = await ClaimAsync(endpoint, stopping).ConfigureAwait(false);
-            }
-            catch (OperationCanceledException) when (stopping.IsCancellationRequested)
-            {
-                return;
-            }
-            catch (Exception exception) when (exception is not OutOfMemoryException)
-            {
-                // The database is unreachable or restarting: keep polling; the bus has no other way to learn of it.
-                await DelayQuietly(_options.PollInterval, stopping).ConfigureAwait(false);
-                continue;
-            }
+                IReadOnlyList<Claimed> batch;
+                try
+                {
+                    batch = await ClaimAsync(endpoint, stopping).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException) when (stopping.IsCancellationRequested)
+                {
+                    break;
+                }
+                catch (Exception exception) when (exception is not OutOfMemoryException)
+                {
+                    // The database is unreachable or restarting: keep polling; the bus has no other way to learn of it.
+                    await DelayQuietly(_options.PollInterval, stopping).ConfigureAwait(false);
+                    continue;
+                }
 
-            if (batch.Count == 0)
-            {
-                await DelayQuietly(_options.PollInterval, stopping).ConfigureAwait(false);
-                continue;
-            }
+                if (batch.Count == 0)
+                {
+                    await DelayQuietly(_options.PollInterval, stopping).ConfigureAwait(false);
+                    continue;
+                }
 
-            await HandleBatchAsync(batch).ConfigureAwait(false);
+                foreach (var item in batch)
+                {
+                    // Waits for a free worker. A claimed row keeps its lease while it waits.
+                    await slots.WaitAsync(CancellationToken.None).ConfigureAwait(false);
+                    workers.Add(HandleItemAsync(item, slots));
+                }
+
+                workers.RemoveAll(t => t.IsCompleted);
+            }
+        }
+        finally
+        {
+            await Task.WhenAll(workers).ConfigureAwait(false);
         }
     }
 
-    private async Task HandleBatchAsync(IReadOnlyList<Claimed> batch)
+    /// <summary>Runs one claimed row through the bus and settles it. Always releases its worker slot.</summary>
+    private async Task HandleItemAsync(Claimed item, SemaphoreSlim slots)
     {
-        foreach (var item in batch)
+        try
         {
             if (_abort.IsCancellationRequested)
             {
-                // Aborted at the stop timeout: give the rest of the batch back right away.
+                // Aborted at the stop timeout: give the row back right away.
                 await ReleaseAsync(item).ConfigureAwait(false);
-                continue;
+                return;
             }
 
             if (!PostgreSqlMessageCodec.TryDecode(
@@ -182,7 +278,7 @@ public sealed class PostgreSqlTransport : IMessageTransport, IScheduledMessageTr
             {
                 // Cannot be rebuilt: park the row in the error queue so an operator can read it.
                 await ParkAsync(item, reason ?? "Message cannot be rebuilt.").ConfigureAwait(false);
-                continue;
+                return;
             }
 
             // The claim's sequence travels with the envelope, so a redelivery keeps the message's place in its partition (FR-14).
@@ -206,6 +302,16 @@ public sealed class PostgreSqlTransport : IMessageTransport, IScheduledMessageTr
                 // Release the row so it is delivered again rather than held until its lease expires.
                 await ReleaseAsync(item).ConfigureAwait(false);
             }
+        }
+        catch (Exception exception) when (exception is not OutOfMemoryException)
+        {
+            // Database trouble while settling: the row keeps its lease and another host takes it when the lease expires
+            // (at-least-once). Nothing may escape here, or the loop would stop waiting for its other workers.
+            _ = exception;
+        }
+        finally
+        {
+            slots.Release();
         }
     }
 

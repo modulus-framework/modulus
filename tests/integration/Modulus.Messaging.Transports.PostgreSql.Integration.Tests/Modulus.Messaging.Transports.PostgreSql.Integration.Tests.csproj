@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../../../src/messaging/Modulus.Messaging/Modulus.Messaging.csproj" />
+    <ProjectReference Include="../../../src/messaging/Modulus.Messaging.Testing/Modulus.Messaging.Testing.csproj" />
     <ProjectReference Include="../../../src/messaging/Modulus.Messaging.Transports.PostgreSql/Modulus.Messaging.Transports.PostgreSql.csproj" />
     <PackageReference Include="Testcontainers.PostgreSql" />
     <PackageReference Include="Npgsql" />

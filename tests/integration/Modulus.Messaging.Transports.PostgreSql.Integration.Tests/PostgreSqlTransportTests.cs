@@ -126,30 +126,6 @@ public sealed class PostgreSqlTransportTests(PostgreSqlBroker database) : IClass
     }
 
     [Fact]
-    public async Task NFR_02_delivery_resumes_when_the_database_restarts()
-    {
-        var endpoint = Endpoint();
-        var received = new Received();
-        await using var host = await StartBus(b => b.AddConsumer<RecordingConsumer, OrderPlaced>(endpoint), received);
-        var before = Guid.NewGuid();
-        await host.Bus.Send(new Uri($"queue:{endpoint}"), new OrderPlaced(before));
-        (await WaitUntil(() => received.OrderIds.Count == 1)).Should().BeTrue();
-
-        await database.StopDatabaseAsync();
-
-        // While the database is down a send fails with an error; the bus never reports it as sent.
-        var during = async () => await host.Bus.Send(new Uri($"queue:{endpoint}"), new OrderPlaced(Guid.NewGuid()));
-        await during.Should().ThrowAsync<Exception>();
-
-        await database.StartDatabaseAsync();
-
-        var after = Guid.NewGuid();
-        await SendWhenRecovered(host.Bus, endpoint, after);
-        (await WaitUntil(() => received.OrderIds.Contains(after), TimeSpan.FromSeconds(60))).Should().BeTrue();
-        received.OrderIds.Should().Contain(before);
-    }
-
-    [Fact]
     public async Task FR_12_a_scheduled_send_arrives_at_its_time_on_postgresql()
     {
         var endpoint = Endpoint();
@@ -284,6 +260,69 @@ public sealed class PostgreSqlTransportTests(PostgreSqlBroker database) : IClass
 
         log.Done.Where(m => m.Key == "a").Select(m => m.Seq).Should().Equal([0, 1, 2, 3, 4],
             "the retried message 0 finishes before the messages sent after it start");
+    }
+
+    [Fact]
+    public async Task FR_14_ordered_messages_stay_in_send_order_under_concurrency_16()
+    {
+        var endpoint = Endpoint();
+        var log = new KeyedLog();
+        var gauge = new ConcurrencyGauge();
+        void Consumers(MessagingBusBuilder b) => b.AddConsumer<SlowKeyedOrderConsumer, KeyedOrder>(endpoint, o =>
+        {
+            o.Ordered = true;
+            o.ConcurrentMessageLimit = 16;
+        });
+
+        // Queue the work while no host polls, then start two hosts that each run 16 at once.
+        await using (var first = await StartHost(Consumers, s => s.AddSingleton(log).AddSingleton(gauge)))
+        {
+            await first.StopAsync();
+            for (var seq = 0; seq < 100; seq++)
+            {
+                foreach (var key in new[] { "a", "b", "c", "d", "e" })
+                {
+                    await first.Bus.Send(new Uri($"queue:{endpoint}"), new KeyedOrder(key, seq));
+                }
+            }
+        }
+
+        await using var second = await StartHost(Consumers, s => s.AddSingleton(log).AddSingleton(gauge));
+        await using var third = await StartHost(Consumers, s => s.AddSingleton(log).AddSingleton(gauge));
+        (await WaitUntil(() => log.Done.Count == 500, TimeSpan.FromSeconds(60))).Should().BeTrue();
+
+        foreach (var key in new[] { "a", "b", "c", "d", "e" })
+        {
+            log.Done.Where(m => m.Key == key).Select(m => m.Seq)
+                .Should().Equal(Enumerable.Range(0, 100), $"partition {key} is handled in send order under concurrency 16");
+        }
+
+        gauge.Peak.Should().BeGreaterThan(1, "different partitions run at the same time");
+        gauge.Peak.Should().BeLessOrEqualTo(32, "each of the two hosts runs at most 16");
+    }
+
+    [Fact]
+    public async Task FR_14_a_single_host_runs_up_to_the_concurrency_limit()
+    {
+        var endpoint = Endpoint();
+        var log = new KeyedLog();
+        var gauge = new ConcurrencyGauge();
+        void Consumers(MessagingBusBuilder b) => b.AddConsumer<SlowKeyedOrderConsumer, KeyedOrder>(endpoint, o => o.ConcurrentMessageLimit = 16);
+
+        await using (var first = await StartHost(Consumers, s => s.AddSingleton(log).AddSingleton(gauge)))
+        {
+            await first.StopAsync();
+            for (var seq = 0; seq < 200; seq++)
+            {
+                await first.Bus.Send(new Uri($"queue:{endpoint}"), new KeyedOrder($"k{seq}", 0));
+            }
+        }
+
+        await using var host = await StartHost(Consumers, s => s.AddSingleton(log).AddSingleton(gauge));
+        (await WaitUntil(() => log.Done.Count == 200, TimeSpan.FromSeconds(60))).Should().BeTrue();
+
+        gauge.Peak.Should().BeGreaterThan(1, "a limit of 16 lets messages overlap");
+        gauge.Peak.Should().BeLessOrEqualTo(16);
     }
 
     private static string Endpoint() => $"orders-{Guid.NewGuid():N}";

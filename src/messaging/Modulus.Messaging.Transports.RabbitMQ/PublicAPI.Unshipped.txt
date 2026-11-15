@@ -34,3 +34,10 @@ Modulus.Messaging.Transports.RabbitMQ.RabbitMqTransportOptions.UserName.set -> v
 Modulus.Messaging.Transports.RabbitMQ.RabbitMqTransportOptions.VirtualHost.get -> string!
 Modulus.Messaging.Transports.RabbitMQ.RabbitMqTransportOptions.VirtualHost.set -> void
 static Modulus.Messaging.Transports.RabbitMQ.RabbitMqMessagingBuilderExtensions.UseRabbitMq(this Modulus.Messaging.MessagingBusBuilder! builder, System.Action<Modulus.Messaging.Transports.RabbitMQ.RabbitMqTransportOptions!>! configure) -> Modulus.Messaging.MessagingBusBuilder!
+Modulus.Messaging.Transports.RabbitMQ.RabbitMqTransport.ConfigureConcurrency(System.Collections.Generic.IReadOnlyDictionary<string!, int>! limitsByEndpoint) -> void
+Modulus.Messaging.Transports.RabbitMQ.RabbitMqTransport.CancelScheduled(System.Guid scheduleToken, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<bool>!
+Modulus.Messaging.Transports.RabbitMQ.RabbitMqTransport.Schedule(System.Guid scheduleToken, Modulus.Messaging.MessageEnvelope! envelope, System.DateTimeOffset deliverAt, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+Modulus.Messaging.Transports.RabbitMQ.RabbitMqTransportOptions.TlsCertificateValidation.get -> System.Net.Security.RemoteCertificateValidationCallback?
+Modulus.Messaging.Transports.RabbitMQ.RabbitMqTransportOptions.TlsCertificateValidation.set -> void
+Modulus.Messaging.Transports.RabbitMQ.RabbitMqTransportOptions.MaxQueueLength.get -> int?
+Modulus.Messaging.Transports.RabbitMQ.RabbitMqTransportOptions.MaxQueueLength.set -> void

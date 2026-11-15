@@ -56,6 +56,8 @@ Modulus.Messaging.IMessageInbox.Claim(System.Guid messageId, string! consumerKey
 Modulus.Messaging.IMessageOutbox
 Modulus.Messaging.IMessageOutbox.Add(Modulus.Messaging.MessageEnvelope! envelope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 Modulus.Messaging.IMessageScheduler
+Modulus.Messaging.IMessageScheduler.ScheduleSend<TMessage>(System.Uri! address, System.TimeSpan delay, TMessage! message, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Guid>!
+Modulus.Messaging.IMessageScheduler.SchedulePublish<TMessage>(System.TimeSpan delay, TMessage! message, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Guid>!
 Modulus.Messaging.IMessageScheduler.CancelScheduled(System.Guid token, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
 Modulus.Messaging.IMessageScheduler.SchedulePublish<TMessage>(System.DateTimeOffset deliverAt, TMessage! message, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Guid>!
 Modulus.Messaging.IMessageScheduler.ScheduleSend<TMessage>(System.Uri! address, System.DateTimeOffset deliverAt, TMessage! message, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Guid>!
@@ -157,3 +159,9 @@ static Modulus.Messaging.RetryPolicy.Intervals(params System.TimeSpan[]! interva
 ~Modulus.Messaging.Fault<TMessage>.Equals(Modulus.Messaging.Fault<TMessage>? other) -> bool
 ~static Modulus.Messaging.Fault<TMessage>.operator !=(Modulus.Messaging.Fault<TMessage>? left, Modulus.Messaging.Fault<TMessage>? right) -> bool
 ~static Modulus.Messaging.Fault<TMessage>.operator ==(Modulus.Messaging.Fault<TMessage>? left, Modulus.Messaging.Fault<TMessage>? right) -> bool
+Modulus.Messaging.ConsumerOptions.ConcurrentMessageLimit.get -> int?
+Modulus.Messaging.ConsumerOptions.ConcurrentMessageLimit.set -> void
+Modulus.Messaging.IConcurrentDeliveryTransport
+Modulus.Messaging.IConcurrentDeliveryTransport.ConfigureConcurrency(System.Collections.Generic.IReadOnlyDictionary<string!, int>! limitsByEndpoint) -> void
+Modulus.Messaging.IMessageOutbox.AddScheduled(Modulus.Messaging.MessageEnvelope! envelope, System.DateTimeOffset deliverAt, System.Guid scheduleToken, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+Modulus.Messaging.IMessageOutbox.CancelScheduled(System.Guid scheduleToken, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<bool>!

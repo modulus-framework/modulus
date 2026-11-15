@@ -23,8 +23,37 @@ internal sealed class MessagingBus : IBus, IMessageScheduler, IHostedService
         _transport = options.TransportFactory(services);
     }
 
-    public Task StartAsync(CancellationToken cancellationToken) =>
-        _transport.Start(_consumers.Select(c => c.Endpoint).Distinct(StringComparer.Ordinal).ToArray(), Receive, cancellationToken);
+    public Task StartAsync(CancellationToken cancellationToken)
+    {
+        var limits = ConcurrencyByEndpoint();
+        if (_transport is IConcurrentDeliveryTransport concurrent)
+        {
+            concurrent.ConfigureConcurrency(limits);
+        }
+        else if (limits.Values.Any(limit => limit > 1))
+        {
+            throw new InvalidOperationException(
+                $"The {_transport.GetType().Name} transport delivers one message at a time per endpoint, so ConcurrentMessageLimit above 1 is not supported on it.");
+        }
+
+        return _transport.Start(_consumers.Select(c => c.Endpoint).Distinct(StringComparer.Ordinal).ToArray(), Receive, cancellationToken);
+    }
+
+    /// <summary>
+    /// The limit of each endpoint: the largest <see cref="ConsumerOptions.ConcurrentMessageLimit"/> of its consumers,
+    /// or 1 when none sets one. Consumers on one endpoint share its workers.
+    /// </summary>
+    private Dictionary<string, int> ConcurrencyByEndpoint()
+    {
+        var limits = new Dictionary<string, int>(StringComparer.Ordinal);
+        foreach (var registration in _consumers)
+        {
+            var limit = registration.Options.ConcurrentMessageLimit ?? 1;
+            limits[registration.Endpoint] = Math.Max(limit, limits.GetValueOrDefault(registration.Endpoint, 1));
+        }
+
+        return limits;
+    }
 
     public Task StopAsync(CancellationToken cancellationToken) =>
         _transport.Stop(cancellationToken);
@@ -64,6 +93,23 @@ internal sealed class MessagingBus : IBus, IMessageScheduler, IHostedService
         return token;
     }
 
+    public Task<Guid> ScheduleSend<TMessage>(Uri address, TimeSpan delay, TMessage message, CancellationToken cancellationToken = default)
+        where TMessage : class =>
+        ScheduleSend(address, DueAfter(delay), message, cancellationToken);
+
+    public Task<Guid> SchedulePublish<TMessage>(TimeSpan delay, TMessage message, CancellationToken cancellationToken = default)
+        where TMessage : class =>
+        SchedulePublish(DueAfter(delay), message, cancellationToken);
+
+    internal static DateTimeOffset DueAfter(TimeSpan delay)
+    {
+        if (delay < TimeSpan.Zero)
+        {
+            throw new ArgumentOutOfRangeException(nameof(delay), delay, "A scheduled delay cannot be negative.");
+        }
+        return DateTimeOffset.UtcNow + delay;
+    }
+
     public Task<bool> CancelScheduled(Guid token, CancellationToken cancellationToken = default) =>
         ScheduledTransport().CancelScheduled(token, cancellationToken);
 
@@ -84,7 +130,16 @@ internal sealed class MessagingBus : IBus, IMessageScheduler, IHostedService
         }
         catch
         {
-            await scheduled.CancelScheduled(token, CancellationToken.None).ConfigureAwait(false);
+            // Best effort: a transport that cannot cancel (RabbitMQ, for now) must not hide the original failure.
+            try
+            {
+                await scheduled.CancelScheduled(token, CancellationToken.None).ConfigureAwait(false);
+            }
+            catch (Exception cancelFailure) when (cancelFailure is not OutOfMemoryException)
+            {
+                _ = cancelFailure;
+            }
+
             throw;
         }
     }

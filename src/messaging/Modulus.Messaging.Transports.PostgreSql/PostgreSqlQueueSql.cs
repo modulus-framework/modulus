@@ -64,6 +64,14 @@ internal static class PostgreSqlQueueSql
         """;
 
     /// <summary>
+    /// Deletes the parked rows (the <c>_error</c> and <c>_skipped</c> queues) parked before @cutoff that no host has claimed.
+    /// A parked row's visible_at is the time it was parked. A live queue whose name ends in those suffixes is matched too,
+    /// so an endpoint should not be named like one.
+    /// </summary>
+    public static string PurgeParked(string table) =>
+        $"DELETE FROM {table} WHERE (queue LIKE '%' || @error_suffix OR queue LIKE '%' || @skipped_suffix) AND lock_token IS NULL AND visible_at < @cutoff";
+
+    /// <summary>
     /// Inserts a row. A delayed redelivery becomes visible after @delay_ms from the database clock; a scheduled row
     /// (<paramref name="scheduled"/>) becomes visible at @visible_at and carries @schedule_id for cancellation. A scheduled
     /// row has no partition (its send time is not its order), so it never holds back other messages. @sequence keeps a

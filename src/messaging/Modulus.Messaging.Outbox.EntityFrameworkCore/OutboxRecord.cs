@@ -22,6 +22,12 @@ public sealed class OutboxRecord
     /// <summary>UTC. A DateTime (not DateTimeOffset) so every provider can translate the dispatch queries.</summary>
     public DateTime EnqueuedAt { get; set; }
 
+    /// <summary>UTC time the message becomes due. Null when it is sent at once; a row is not dispatched before it.</summary>
+    public DateTime? DeliverAt { get; set; }
+
+    /// <summary>Token of the schedule the row belongs to, or null for a message sent at once. Cancelling by it deletes unclaimed rows.</summary>
+    public Guid? ScheduleToken { get; set; }
+
     /// <summary>Set while a dispatcher holds the row; an expired lease lets another dispatcher take it.</summary>
     public Guid? LockToken { get; set; }
 

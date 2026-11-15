@@ -37,3 +37,7 @@ Modulus.Messaging.Outbox.EntityFrameworkCore.OutboxRecord.Parked.set -> void
 static Modulus.Messaging.Outbox.EntityFrameworkCore.MessagingEntityFrameworkOutboxExtensions.AddModulusMessagingEntityFrameworkOutbox<TContext>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<Modulus.Messaging.Outbox.EntityFrameworkCore.EfOutboxOptions!>? configure = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static Modulus.Messaging.Outbox.EntityFrameworkCore.MessagingOutboxModelBuilderExtensions.ApplyModulusMessagingOutbox(this Microsoft.EntityFrameworkCore.ModelBuilder! modelBuilder, string! tableName = "messaging_outbox") -> Microsoft.EntityFrameworkCore.ModelBuilder!
 static Modulus.Messaging.Outbox.EntityFrameworkCore.OutboxDispatch.DispatchOnceAsync<TContext>(TContext! db, Modulus.Messaging.IMessageTransport! transport, int batchSize, System.TimeSpan leaseDuration, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<int>!
+Modulus.Messaging.Outbox.EntityFrameworkCore.OutboxRecord.DeliverAt.get -> System.DateTime?
+Modulus.Messaging.Outbox.EntityFrameworkCore.OutboxRecord.DeliverAt.set -> void
+Modulus.Messaging.Outbox.EntityFrameworkCore.OutboxRecord.ScheduleToken.get -> System.Guid?
+Modulus.Messaging.Outbox.EntityFrameworkCore.OutboxRecord.ScheduleToken.set -> void

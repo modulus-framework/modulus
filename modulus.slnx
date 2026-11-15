@@ -35,6 +35,9 @@
     <Project Path="src/messaging/Modulus.Messaging/Modulus.Messaging.csproj" />
     <Project Path="src/messaging/Modulus.Messaging.Transports.InMemory/Modulus.Messaging.Transports.InMemory.csproj" />
     <Project Path="src/messaging/Modulus.Messaging.Testing/Modulus.Messaging.Testing.csproj" />
+    <Project Path="src/messaging/Modulus.Messaging.Sagas/Modulus.Messaging.Sagas.csproj" />
+    <Project Path="src/messaging/Modulus.Messaging.Sagas.EntityFrameworkCore/Modulus.Messaging.Sagas.EntityFrameworkCore.csproj" />
+    <Project Path="src/messaging/Modulus.Messaging.Sagas.PostgreSql/Modulus.Messaging.Sagas.PostgreSql.csproj" />
     <Project Path="src/messaging/Modulus.Messaging.Outbox.EntityFrameworkCore/Modulus.Messaging.Outbox.EntityFrameworkCore.csproj" />
     <Project Path="src/messaging/Modulus.Messaging.Inbox.EntityFrameworkCore/Modulus.Messaging.Inbox.EntityFrameworkCore.csproj" />
     <Project Path="src/messaging/Modulus.Messaging.Transports.RabbitMQ/Modulus.Messaging.Transports.RabbitMQ.csproj" />
@@ -139,10 +142,13 @@
     <Project Path="tests/unit/Modulus.Outbox.Tests/Modulus.Outbox.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Sagas.Tests/Modulus.Sagas.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Messaging.Tests/Modulus.Messaging.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.Messaging.Sagas.Tests/Modulus.Messaging.Sagas.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.Messaging.Sagas.EntityFrameworkCore.Tests/Modulus.Messaging.Sagas.EntityFrameworkCore.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Messaging.Outbox.EntityFrameworkCore.Tests/Modulus.Messaging.Outbox.EntityFrameworkCore.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Messaging.Inbox.EntityFrameworkCore.Tests/Modulus.Messaging.Inbox.EntityFrameworkCore.Tests.csproj" />
     <Project Path="tests/integration/Modulus.Messaging.Transports.RabbitMQ.Integration.Tests/Modulus.Messaging.Transports.RabbitMQ.Integration.Tests.csproj" />
     <Project Path="tests/integration/Modulus.Messaging.Transports.PostgreSql.Integration.Tests/Modulus.Messaging.Transports.PostgreSql.Integration.Tests.csproj" />
+    <Project Path="tests/integration/Modulus.Messaging.Sagas.PostgreSql.Integration.Tests/Modulus.Messaging.Sagas.PostgreSql.Integration.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Analytics.ClickHouse.Tests/Modulus.Analytics.ClickHouse.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Analytics.EntityFrameworkCore.Tests/Modulus.Analytics.EntityFrameworkCore.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Analytics.Management.Tests/Modulus.Analytics.Management.Tests.csproj" />

@@ -82,3 +82,47 @@ public sealed class KeyedOrderConsumer(KeyedLog log) : IConsumer<KeyedOrder>
         return Task.CompletedTask;
     }
 }
+
+/// <summary>Counts the handlers running at once across the hosts that share it (FR-14 under concurrency).</summary>
+public sealed class ConcurrencyGauge
+{
+    private int _inFlight;
+    private int _peak;
+
+    public int Peak => Volatile.Read(ref _peak);
+
+    public void Enter()
+    {
+        var now = Interlocked.Increment(ref _inFlight);
+        int seen;
+        do
+        {
+            seen = Volatile.Read(ref _peak);
+            if (now <= seen)
+            {
+                break;
+            }
+        }
+        while (Interlocked.CompareExchange(ref _peak, now, seen) != seen);
+    }
+
+    public void Exit() => Interlocked.Decrement(ref _inFlight);
+}
+
+/// <summary>Like <see cref="KeyedOrderConsumer"/>, but each message takes a few milliseconds so several run at once.</summary>
+public sealed class SlowKeyedOrderConsumer(KeyedLog log, ConcurrencyGauge gauge) : IConsumer<KeyedOrder>
+{
+    public async Task Consume(ConsumeContext<KeyedOrder> context)
+    {
+        gauge.Enter();
+        try
+        {
+            await Task.Delay(Random.Shared.Next(1, 4));
+            log.Done.Enqueue(context.Message);
+        }
+        finally
+        {
+            gauge.Exit();
+        }
+    }
+}

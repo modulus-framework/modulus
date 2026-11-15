@@ -30,3 +30,12 @@ Modulus.Messaging.Transports.PostgreSql.PostgreSqlTransportOptions.StopTimeout.s
 Modulus.Messaging.Transports.PostgreSql.PostgreSqlTransportOptions.Table.get -> string!
 Modulus.Messaging.Transports.PostgreSql.PostgreSqlTransportOptions.Table.set -> void
 static Modulus.Messaging.Transports.PostgreSql.PostgreSqlMessagingBuilderExtensions.UsePostgreSql(this Modulus.Messaging.MessagingBusBuilder! builder, System.Action<Modulus.Messaging.Transports.PostgreSql.PostgreSqlTransportOptions!>! configure) -> Modulus.Messaging.MessagingBusBuilder!
+Modulus.Messaging.Transports.PostgreSql.PostgreSqlTransport.ConfigureConcurrency(System.Collections.Generic.IReadOnlyDictionary<string!, int>! limitsByEndpoint) -> void
+Modulus.Messaging.Transports.PostgreSql.PostgreSqlTransport.PurgeParkedAsync(System.TimeSpan olderThan, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<int>!
+static Modulus.Messaging.Transports.PostgreSql.PostgreSqlTransport.SchemaScript(Modulus.Messaging.Transports.PostgreSql.PostgreSqlTransportOptions! options) -> string!
+Modulus.Messaging.Transports.PostgreSql.PostgreSqlTransportOptions.ParkedRetention.get -> System.TimeSpan?
+Modulus.Messaging.Transports.PostgreSql.PostgreSqlTransportOptions.ParkedRetention.set -> void
+Modulus.Messaging.Transports.PostgreSql.PostgreSqlTransportOptions.PurgeFailed.get -> System.Action<System.Exception!>?
+Modulus.Messaging.Transports.PostgreSql.PostgreSqlTransportOptions.PurgeFailed.set -> void
+Modulus.Messaging.Transports.PostgreSql.PostgreSqlTransportOptions.PurgeInterval.get -> System.TimeSpan
+Modulus.Messaging.Transports.PostgreSql.PostgreSqlTransportOptions.PurgeInterval.set -> void

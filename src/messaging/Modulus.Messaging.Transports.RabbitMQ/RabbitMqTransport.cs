@@ -11,9 +11,19 @@ namespace Modulus.Messaging.Transports.RabbitMQ;
 /// Delayed redelivery uses a TTL queue that dead-letters back to the endpoint, which works on any RabbitMQ 3.13+
 /// broker without the delayed-message plugin (BRS R-09).
 /// </summary>
-public sealed class RabbitMqTransport : IMessageTransport, IAsyncDisposable
+public sealed class RabbitMqTransport : IMessageTransport, IConcurrentDeliveryTransport, IScheduledMessageTransport, IAsyncDisposable
 {
     private const string QuorumQueueType = "quorum";
+
+    // Scheduling without the delayed-message plugin: a message waits in a TTL bucket queue (one per power-of-two
+    // milliseconds) that dead-letters into the due queue; the due queue forwards it to its endpoint once its time has
+    // come, or into the next bucket for the rest of the delay. Each hop takes the largest bucket that does not overshoot.
+    private const string ScheduledAtHeader = "mod-scheduled-at";
+    private const string ScheduledTargetHeader = "mod-scheduled-target";
+    private const string ScheduleTokenHeader = "mod-schedule-token";
+    private const string ScheduleBucketPrefix = "mod-schedule.";
+    private const string ScheduleDueQueue = "mod-schedule.due";
+    private const long LargestScheduleHopMilliseconds = 1L << 31;
 
     private readonly RabbitMqTransportOptions _options;
     private readonly ConnectionFactory _factory;
@@ -22,7 +32,9 @@ public sealed class RabbitMqTransport : IMessageTransport, IAsyncDisposable
     private readonly ConcurrentDictionary<string, byte> _declaredQueues = new(StringComparer.Ordinal);
     private readonly ConcurrentDictionary<Task, byte> _inFlight = new();
     private readonly List<(IChannel Channel, string Tag)> _consumers = [];
+    private readonly List<System.Threading.Channels.ChannelWriter<Incoming>> _pending = [];
     private readonly CancellationTokenSource _abort = new();
+    private IReadOnlyDictionary<string, int> _limits = new Dictionary<string, int>(StringComparer.Ordinal);
 
     private IConnection? _connection;
     private IChannel? _publishChannel;
@@ -49,8 +61,21 @@ public sealed class RabbitMqTransport : IMessageTransport, IAsyncDisposable
                 Enabled = options.UseTls,
                 ServerName = options.TlsServerName ?? options.HostName,
                 Version = options.TlsVersion,
+                CertificateValidationCallback = options.TlsCertificateValidation,
             },
         };
+    }
+
+    /// <inheritdoc />
+    public void ConfigureConcurrency(IReadOnlyDictionary<string, int> limitsByEndpoint)
+    {
+        ArgumentNullException.ThrowIfNull(limitsByEndpoint);
+        if (_receive is not null)
+        {
+            throw new InvalidOperationException("Concurrency must be configured before the RabbitMQ transport starts.");
+        }
+
+        _limits = limitsByEndpoint.ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.Ordinal);
     }
 
     public async Task Start(
@@ -75,6 +100,8 @@ public sealed class RabbitMqTransport : IMessageTransport, IAsyncDisposable
         {
             await StartConsumer(endpoint, cancellationToken).ConfigureAwait(false);
         }
+
+        await StartScheduleConsumer(cancellationToken).ConfigureAwait(false);
     }
 
     public async Task Stop(CancellationToken cancellationToken)
@@ -83,6 +110,12 @@ public sealed class RabbitMqTransport : IMessageTransport, IAsyncDisposable
         foreach (var (channel, tag) in _consumers)
         {
             await channel.BasicCancelAsync(tag, cancellationToken: cancellationToken).ConfigureAwait(false);
+        }
+
+        // Deliveries already received still run; each pump ends once its queue is empty and its workers have settled.
+        foreach (var writer in _pending)
+        {
+            writer.TryComplete();
         }
 
         var inFlight = Task.WhenAll(_inFlight.Keys.ToArray());
@@ -138,6 +171,126 @@ public sealed class RabbitMqTransport : IMessageTransport, IAsyncDisposable
         return Publish(envelope.Endpoint + "_skipped", envelope, cancellationToken);
     }
 
+    /// <summary>
+    /// Schedules the message for <paramref name="deliverAt"/>. It is delivered by RabbitMQ at or after that time, in
+    /// hops through the bucket queues (see the constants above). Cancelling it is not supported on this transport yet.
+    /// </summary>
+    public Task Schedule(Guid scheduleToken, MessageEnvelope envelope, DateTimeOffset deliverAt, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(envelope);
+        var (body, properties) = RabbitMqMessageCodec.Encode(envelope);
+        properties.Headers![ScheduledAtHeader] = deliverAt.ToString("O", System.Globalization.CultureInfo.InvariantCulture);
+        properties.Headers[ScheduledTargetHeader] = envelope.Endpoint;
+        properties.Headers[ScheduleTokenHeader] = scheduleToken.ToString("N");
+        return Hop(body, properties, deliverAt, envelope.Endpoint, cancellationToken);
+    }
+
+    /// <summary>Not supported yet: a scheduled message waits in a TTL bucket that cannot be searched by its token.</summary>
+    public Task<bool> CancelScheduled(Guid scheduleToken, CancellationToken cancellationToken) =>
+        throw new NotSupportedException("Cancelling a scheduled message is not supported by the RabbitMQ transport yet.");
+
+    private async Task StartScheduleConsumer(CancellationToken cancellationToken)
+    {
+        var channel = await _connection!.CreateChannelAsync(
+            new CreateChannelOptions(publisherConfirmationsEnabled: false, publisherConfirmationTrackingEnabled: false),
+            cancellationToken).ConfigureAwait(false);
+        await DeclareQueueAsync(channel, ScheduleDueQueue, QueueArguments(), cancellationToken).ConfigureAwait(false);
+        await channel.BasicQosAsync(0, 16, global: false, cancellationToken).ConfigureAwait(false);
+
+        var consumer = new AsyncEventingBasicConsumer(channel);
+        consumer.ReceivedAsync += (_, delivery) => ForwardDueAsync(channel, delivery);
+        var tag = await channel.BasicConsumeAsync(ScheduleDueQueue, autoAck: false, consumer: consumer, cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
+        _consumers.Add((channel, tag));
+    }
+
+    /// <summary>Forwards a due scheduled message: to its endpoint once its time has come, else into the next bucket.</summary>
+    private async Task ForwardDueAsync(IChannel channel, BasicDeliverEventArgs delivery)
+    {
+        try
+        {
+            var headers = RabbitMqMessageCodec.StringHeaders(delivery.BasicProperties.Headers);
+            if (!headers.TryGetValue(ScheduledAtHeader, out var at)
+                || !DateTimeOffset.TryParse(at, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.RoundtripKind, out var deliverAt)
+                || !headers.TryGetValue(ScheduledTargetHeader, out var target))
+            {
+                await PublishRaw(ScheduleDueQueue + "_error", delivery.Body, delivery.BasicProperties, "The scheduled message has no schedule headers.").ConfigureAwait(false);
+            }
+            else
+            {
+                await Hop(delivery.Body.ToArray(), CopyProperties(delivery.BasicProperties), deliverAt, target, CancellationToken.None).ConfigureAwait(false);
+            }
+
+            await channel.BasicAckAsync(delivery.DeliveryTag, multiple: false).ConfigureAwait(false);
+        }
+        catch (Exception exception) when (exception is not OutOfMemoryException)
+        {
+            // Not acknowledged: the broker requeues it and the next attempt forwards it again.
+            _ = exception;
+            try
+            {
+                await channel.BasicNackAsync(delivery.DeliveryTag, multiple: false, requeue: true).ConfigureAwait(false);
+            }
+            catch (Exception nackFailure) when (nackFailure is not OutOfMemoryException)
+            {
+                // The channel is already gone; the broker requeues the unacknowledged delivery when it closes.
+                _ = nackFailure;
+            }
+        }
+    }
+
+    /// <summary>Sends the message to its endpoint when <paramref name="deliverAt"/> has passed, else to the bucket for the rest of the delay.</summary>
+    private Task Hop(byte[] body, BasicProperties properties, DateTimeOffset deliverAt, string target, CancellationToken cancellationToken)
+    {
+        var remaining = deliverAt - DateTimeOffset.UtcNow;
+        if (remaining <= TimeSpan.Zero)
+        {
+            return PublishBytes(target, body, properties, cancellationToken, queueArguments: null);
+        }
+
+        var milliseconds = LargestPowerOfTwoAtMost(Math.Min(remaining.TotalMilliseconds, LargestScheduleHopMilliseconds));
+        return PublishBytes(
+            ScheduleBucketPrefix + milliseconds.ToString(System.Globalization.CultureInfo.InvariantCulture),
+            body,
+            properties,
+            cancellationToken,
+            QueueArguments(
+                ("x-message-ttl", milliseconds),
+                ("x-dead-letter-exchange", string.Empty),
+                ("x-dead-letter-routing-key", ScheduleDueQueue)));
+    }
+
+    private static long LargestPowerOfTwoAtMost(double value)
+    {
+        var power = 1L;
+        while (power * 2 <= value)
+        {
+            power *= 2;
+        }
+
+        return power;
+    }
+
+    private static BasicProperties CopyProperties(IReadOnlyBasicProperties original)
+    {
+        var headers = new Dictionary<string, object?>(StringComparer.Ordinal);
+        if (original.Headers is not null)
+        {
+            foreach (var (key, value) in original.Headers)
+            {
+                headers[key] = value;
+            }
+        }
+
+        return new BasicProperties
+        {
+            Persistent = true,
+            ContentType = original.ContentType,
+            MessageId = original.MessageId,
+            Headers = headers,
+        };
+    }
+
     public async ValueTask DisposeAsync()
     {
         await CloseConnectionAsync().ConfigureAwait(false);
@@ -147,56 +300,129 @@ public sealed class RabbitMqTransport : IMessageTransport, IAsyncDisposable
 
     private async Task StartConsumer(string endpoint, CancellationToken cancellationToken)
     {
+        var limit = _limits.TryGetValue(endpoint, out var configured) ? configured : 1;
         var channel = await _connection!.CreateChannelAsync(
             new CreateChannelOptions(publisherConfirmationsEnabled: false, publisherConfirmationTrackingEnabled: false),
             cancellationToken).ConfigureAwait(false);
-        await DeclareQueueAsync(channel, endpoint, QueueArguments(), cancellationToken).ConfigureAwait(false);
-        await channel.BasicQosAsync(0, _options.Prefetch, global: false, cancellationToken).ConfigureAwait(false);
+        await DeclareQueueAsync(channel, endpoint, EndpointArguments(), cancellationToken).ConfigureAwait(false);
+
+        // Enough unacknowledged deliveries for every worker to have one (a prefetch below the limit would starve it).
+        var prefetch = (ushort)Math.Clamp(Math.Max((int)_options.Prefetch, limit), 1, ushort.MaxValue);
+        await channel.BasicQosAsync(0, prefetch, global: false, cancellationToken).ConfigureAwait(false);
+
+        // Deliveries are queued in the order the broker sent them; the pump runs them, keeping partitions in order.
+        var incoming = System.Threading.Channels.Channel.CreateUnbounded<Incoming>(new System.Threading.Channels.UnboundedChannelOptions
+        {
+            SingleReader = true,
+        });
+        _pending.Add(incoming.Writer);
+        _inFlight.TryAdd(Task.Run(() => PumpAsync(endpoint, incoming.Reader, limit), CancellationToken.None), 0);
 
         var consumer = new AsyncEventingBasicConsumer(channel);
-        consumer.ReceivedAsync += (_, delivery) => Track(() => Handle(endpoint, channel, delivery));
+        consumer.ReceivedAsync += (_, delivery) =>
+        {
+            var decoded = RabbitMqMessageCodec.TryDecode(endpoint, delivery.Body, delivery.BasicProperties, out var envelope, out var reason);
+            incoming.Writer.TryWrite(new Incoming(channel, delivery, decoded ? envelope : null, reason));
+            return Task.CompletedTask;
+        };
 
         var tag = await channel.BasicConsumeAsync(endpoint, autoAck: false, consumer: consumer, cancellationToken: cancellationToken)
             .ConfigureAwait(false);
         _consumers.Add((channel, tag));
     }
 
-    /// <summary>Remembers a running handler so a stop can wait for it.</summary>
-    private async Task Track(Func<Task> start)
+    /// <summary>
+    /// Runs the endpoint's deliveries at most <paramref name="limit"/> at a time. A message with a partition key runs only
+    /// after the previous message of its partition has settled, so one partition is never in flight twice (FR-14).
+    /// Returns when the deliveries are finished or were given back at the stop timeout.
+    /// </summary>
+    private async Task PumpAsync(string endpoint, System.Threading.Channels.ChannelReader<Incoming> reader, int limit)
     {
-        var handling = start();
-        _inFlight.TryAdd(handling, 0);
+        using var slots = new SemaphoreSlim(limit, limit);
+        var tails = new Dictionary<string, Task<bool>>(StringComparer.Ordinal);
+        var workers = new List<Task<bool>>();
+        await foreach (var item in reader.ReadAllAsync(CancellationToken.None).ConfigureAwait(false))
+        {
+            await slots.WaitAsync(CancellationToken.None).ConfigureAwait(false);
+            string? partition = null;
+            if (item.Envelope is not null && item.Envelope.Headers.TryGetValue(MessagingHeaders.PartitionKey, out var key))
+            {
+                partition = key;
+            }
+
+#pragma warning disable VSTHRD003 // Every awaited predecessor is a Task.Run worker started by this pump, so waiting on it cannot deadlock.
+            var previous = partition is not null && tails.TryGetValue(partition, out var tail) ? tail : null;
+            var task = Task.Run(() => SettleAsync(previous, item, endpoint, slots), CancellationToken.None);
+#pragma warning restore VSTHRD003
+            if (partition is not null)
+            {
+                tails[partition] = task;
+            }
+
+            workers.Add(task);
+            workers.RemoveAll(t => t.IsCompleted);
+        }
+
+        await Task.WhenAll(workers).ConfigureAwait(false);
+    }
+
+#pragma warning disable VSTHRD003 // Predecessors are Task.Run workers started by this pump; awaiting them cannot deadlock.
+    /// <summary>Runs one delivery and settles it. Always releases its worker slot and never throws.</summary>
+    private async Task<bool> SettleAsync(Task<bool>? previous, Incoming item, string endpoint, SemaphoreSlim slots)
+    {
         try
         {
-            await handling.ConfigureAwait(false);
+            return await DeliverAsync(previous, item, endpoint).ConfigureAwait(false);
+        }
+        catch (Exception exception) when (exception is not OutOfMemoryException)
+        {
+            // The channel failed while settling: the broker requeues every delivery still unacknowledged (at-least-once).
+            _ = exception;
+            return false;
         }
         finally
         {
-            _inFlight.TryRemove(handling, out _);
+            slots.Release();
         }
     }
 
-    private async Task Handle(string endpoint, IChannel channel, BasicDeliverEventArgs delivery)
+    /// <summary>Waits for the partition predecessor, then runs the delivery and acknowledges it.</summary>
+    /// <returns>True when the delivery was acknowledged; false when it was given back, so the rest of its partition goes back too.</returns>
+
+    private async Task<bool> DeliverAsync(Task<bool>? previous, Incoming item, string endpoint)
     {
-        if (!RabbitMqMessageCodec.TryDecode(endpoint, delivery.Body, delivery.BasicProperties, out var envelope, out var reason))
+        if (previous is not null && !await previous.ConfigureAwait(false))
+        {
+            await item.Channel.BasicNackAsync(item.Args.DeliveryTag, multiple: false, requeue: true).ConfigureAwait(false);
+            return false;
+        }
+
+        if (item.Envelope is null)
         {
             // Cannot be rebuilt: park the raw message so an operator can read it, then acknowledge it.
-            await PublishRaw(endpoint + "_error", delivery.Body, delivery.BasicProperties, reason).ConfigureAwait(false);
-            await channel.BasicAckAsync(delivery.DeliveryTag, multiple: false).ConfigureAwait(false);
-            return;
+            await PublishRaw(endpoint + "_error", item.Args.Body, item.Args.BasicProperties, item.Reason).ConfigureAwait(false);
+            await item.Channel.BasicAckAsync(item.Args.DeliveryTag, multiple: false).ConfigureAwait(false);
+            return true;
         }
 
         try
         {
-            await _receive!(envelope!, _abort.Token).ConfigureAwait(false);
-            await channel.BasicAckAsync(delivery.DeliveryTag, multiple: false).ConfigureAwait(false);
+            await _receive!(item.Envelope, _abort.Token).ConfigureAwait(false);
+            await item.Channel.BasicAckAsync(item.Args.DeliveryTag, multiple: false).ConfigureAwait(false);
+            return true;
         }
         catch (OperationCanceledException) when (_abort.IsCancellationRequested)
         {
             // Aborted at the stop timeout: give the message back to the broker.
-            await channel.BasicNackAsync(delivery.DeliveryTag, multiple: false, requeue: true).ConfigureAwait(false);
+            await item.Channel.BasicNackAsync(item.Args.DeliveryTag, multiple: false, requeue: true).ConfigureAwait(false);
+            return false;
         }
     }
+
+#pragma warning restore VSTHRD003
+
+    /// <summary>One delivery as the broker sent it, with its decoded envelope when it could be decoded.</summary>
+    private sealed record Incoming(IChannel Channel, BasicDeliverEventArgs Args, MessageEnvelope? Envelope, string? Reason);
 
     private Task Publish(
         string queue,
@@ -282,7 +508,7 @@ public sealed class RabbitMqTransport : IMessageTransport, IAsyncDisposable
         {
             if (!_declaredQueues.ContainsKey(queue))
             {
-                await DeclareQueueAsync(channel, queue, queueArguments ?? QueueArguments(), cancellationToken).ConfigureAwait(false);
+                await DeclareQueueAsync(channel, queue, queueArguments ?? EndpointArguments(), cancellationToken).ConfigureAwait(false);
                 _declaredQueues[queue] = 0;
             }
         }
@@ -300,6 +526,11 @@ public sealed class RabbitMqTransport : IMessageTransport, IAsyncDisposable
             autoDelete: false,
             arguments: arguments,
             cancellationToken: cancellationToken);
+
+    /// <summary>Arguments of an endpoint or parked queue: bounded with reject-publish when MaxQueueLength is set.</summary>
+    private Dictionary<string, object?> EndpointArguments() => _options.MaxQueueLength is { } maxLength
+        ? QueueArguments(("x-max-length", (long)maxLength), ("x-overflow", "reject-publish"))
+        : QueueArguments();
 
     private static Dictionary<string, object?> QueueArguments(params (string Key, object Value)[] extra)
     {

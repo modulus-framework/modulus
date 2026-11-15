@@ -23,7 +23,13 @@ public static class MessagingServiceCollectionExtensions
         services.AddSingleton(sp => new MessagingBus(sp, options));
         services.AddSingleton<IMessageTransport>(sp => sp.GetRequiredService<MessagingBus>().Transport);
         services.AddSingleton<IHostedService>(sp => sp.GetRequiredService<MessagingBus>());
-        services.AddSingleton<IMessageScheduler>(sp => sp.GetRequiredService<MessagingBus>());
+        // Scoped like IBus: inside a scope with an outbox, a scheduled message is stored with its transaction.
+        services.AddScoped<IMessageScheduler>(sp =>
+        {
+            var bus = sp.GetRequiredService<MessagingBus>();
+            var outbox = sp.GetService<IMessageOutbox>();
+            return outbox is null ? bus : new OutboxMessageScheduler(bus, outbox);
+        });
         services.AddScoped<IBus>(sp =>
         {
             var bus = sp.GetRequiredService<MessagingBus>();

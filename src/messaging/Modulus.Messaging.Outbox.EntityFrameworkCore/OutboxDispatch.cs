@@ -29,7 +29,7 @@ public static class OutboxDispatch
         var rows = db.Set<OutboxRecord>();
         var now = DateTime.UtcNow;
         var candidates = await rows
-            .Where(r => !r.Parked && (r.LockedUntil == null || r.LockedUntil < now))
+            .Where(r => !r.Parked && (r.LockedUntil == null || r.LockedUntil < now) && (r.DeliverAt == null || r.DeliverAt <= now))
             .OrderBy(r => r.EnqueuedAt)
             .Select(r => r.MessageId)
             .Take(batchSize)
@@ -43,7 +43,7 @@ public static class OutboxDispatch
         // Claim: only rows still unclaimed get our token, so two dispatchers never send the same row twice in one lease.
         var token = Guid.NewGuid();
         await rows
-            .Where(r => candidates.Contains(r.MessageId) && !r.Parked && (r.LockedUntil == null || r.LockedUntil < now))
+            .Where(r => candidates.Contains(r.MessageId) && !r.Parked && (r.LockedUntil == null || r.LockedUntil < now) && (r.DeliverAt == null || r.DeliverAt <= now))
             .ExecuteUpdateAsync(s => s
                 .SetProperty(r => r.LockToken, token)
                 .SetProperty(r => r.LockedUntil, now + leaseDuration), cancellationToken)

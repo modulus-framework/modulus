@@ -19,6 +19,7 @@ public sealed class PostgreSqlBroker : IAsyncLifetime
 
     public string ConnectionString => _container.GetConnectionString();
 
+
     /// <summary>A data source for the tests' own SQL (inspection and seeding rows). Shared, disposed with the fixture.</summary>
     public NpgsqlDataSource DataSource() => _dataSource ?? throw new InvalidOperationException("The database is not started.");
 

@@ -32,6 +32,18 @@ public sealed partial class PostgreSqlTransportOptions
     /// <summary>How long a stop waits for in-flight messages before they are released for another host (NFR-18).</summary>
     public TimeSpan StopTimeout { get; set; } = TimeSpan.FromSeconds(30);
 
+    /// <summary>
+    /// How long parked messages (<c>_error</c>, <c>_skipped</c>) are kept. When set, the transport purges older ones while
+    /// it runs, every <see cref="PurgeInterval"/>. Null (the default) keeps them until a job calls <c>PurgeParkedAsync</c>.
+    /// </summary>
+    public TimeSpan? ParkedRetention { get; set; }
+
+    /// <summary>How often the automatic purge of parked messages runs, when <see cref="ParkedRetention"/> is set.</summary>
+    public TimeSpan PurgeInterval { get; set; } = TimeSpan.FromHours(1);
+
+    /// <summary>Called when an automatic purge fails. The purge is tried again at the next interval.</summary>
+    public Action<Exception>? PurgeFailed { get; set; }
+
     internal void Validate()
     {
         if (string.IsNullOrWhiteSpace(ConnectionString))
@@ -67,6 +79,16 @@ public sealed partial class PostgreSqlTransportOptions
         if (StopTimeout < TimeSpan.Zero)
         {
             throw new ArgumentOutOfRangeException(nameof(StopTimeout), "Must not be negative.");
+        }
+
+        if (ParkedRetention is { } retention && retention < TimeSpan.Zero)
+        {
+            throw new ArgumentOutOfRangeException(nameof(ParkedRetention), "Must not be negative.");
+        }
+
+        if (PurgeInterval <= TimeSpan.Zero)
+        {
+            throw new ArgumentOutOfRangeException(nameof(PurgeInterval), "Must be positive.");
         }
     }
 

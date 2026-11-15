@@ -15,6 +15,14 @@ public interface IMessageScheduler
     Task<Guid> SchedulePublish<TMessage>(DateTimeOffset deliverAt, TMessage message, CancellationToken cancellationToken = default)
         where TMessage : class;
 
+    /// <summary>Sends <paramref name="message"/> to <paramref name="address"/> after <paramref name="delay"/>, measured from now.</summary>
+    Task<Guid> ScheduleSend<TMessage>(Uri address, TimeSpan delay, TMessage message, CancellationToken cancellationToken = default)
+        where TMessage : class;
+
+    /// <summary>Publishes <paramref name="message"/> to every endpoint that handles it after <paramref name="delay"/>, measured from now.</summary>
+    Task<Guid> SchedulePublish<TMessage>(TimeSpan delay, TMessage message, CancellationToken cancellationToken = default)
+        where TMessage : class;
+
     /// <summary>
     /// Cancels the scheduled messages of <paramref name="token"/> that no consumer has taken yet. Returns <c>false</c>
     /// when there was nothing left to cancel (already delivered, or an unknown token).

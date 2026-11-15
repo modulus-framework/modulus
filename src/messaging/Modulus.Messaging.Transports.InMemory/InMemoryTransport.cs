@@ -1,5 +1,4 @@
 using System.Collections.Concurrent;
-using System.Threading.Channels;
 
 namespace Modulus.Messaging.Transports.InMemory;
 
@@ -8,18 +7,19 @@ namespace Modulus.Messaging.Transports.InMemory;
 /// Stopping stops taking new messages and lets in-flight ones finish; after the stop timeout the in-flight
 /// message is put back in its queue. Messages are lost if the process exits: use a durable transport in production.
 /// </summary>
-public sealed class InMemoryTransport : IMessageTransport, IScheduledMessageTransport
+public sealed class InMemoryTransport : IMessageTransport, IScheduledMessageTransport, IConcurrentDeliveryTransport
 {
     /// <summary>NFR-18: in-flight messages are drained within 30 seconds by default.</summary>
     public static readonly TimeSpan DefaultStopTimeout = TimeSpan.FromSeconds(30);
 
-    private readonly ConcurrentDictionary<string, Channel<MessageEnvelope>> _queues = new(StringComparer.Ordinal);
+    private readonly ConcurrentDictionary<string, EndpointQueue> _queues = new(StringComparer.Ordinal);
     private readonly ConcurrentDictionary<string, ConcurrentQueue<DeadLetter>> _deadLetters = new(StringComparer.Ordinal);
     private readonly List<Task> _pumps = [];
     private readonly object _gate = new();
     private readonly object _scheduleGate = new();
     private readonly Dictionary<Guid, List<ScheduledItem>> _scheduled = new();
     private readonly TimeSpan _stopTimeout;
+    private IReadOnlyDictionary<string, int> _limits = new Dictionary<string, int>(StringComparer.Ordinal);
 
     private Func<MessageEnvelope, CancellationToken, Task>? _receive;
     private CancellationTokenSource? _stopping;
@@ -45,6 +45,21 @@ public sealed class InMemoryTransport : IMessageTransport, IScheduledMessageTran
 
     /// <summary>Messages no consumer on the endpoint handled. Endpoint <c>x</c> parks in <c>x_skipped</c>.</summary>
     public IReadOnlyList<DeadLetter> Skipped(string endpoint) => Snapshot(endpoint + "_skipped");
+
+    /// <inheritdoc />
+    public void ConfigureConcurrency(IReadOnlyDictionary<string, int> limitsByEndpoint)
+    {
+        ArgumentNullException.ThrowIfNull(limitsByEndpoint);
+        lock (_gate)
+        {
+            if (_receive is not null)
+            {
+                throw new InvalidOperationException("Concurrency must be configured before the in-memory transport starts.");
+            }
+
+            _limits = limitsByEndpoint.ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.Ordinal);
+        }
+    }
 
     public Task Start(
         IReadOnlyCollection<string> endpoints,
@@ -115,11 +130,12 @@ public sealed class InMemoryTransport : IMessageTransport, IScheduledMessageTran
         abort.Dispose();
     }
 
-    public async Task Send(MessageEnvelope envelope, CancellationToken cancellationToken)
+    public Task Send(MessageEnvelope envelope, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(envelope);
         var queue = QueueFor(envelope.Endpoint);
-        await queue.Writer.WriteAsync(envelope, cancellationToken).ConfigureAwait(false);
+        queue.Enqueue(envelope);
+        return Task.CompletedTask;
     }
 
     public Task Redeliver(MessageEnvelope envelope, TimeSpan delay, CancellationToken cancellationToken)
@@ -230,7 +246,7 @@ public sealed class InMemoryTransport : IMessageTransport, IScheduledMessageTran
         public CancellationTokenSource Cancellation { get; } = cancellation;
     }
 
-    private Channel<MessageEnvelope> QueueFor(string endpoint)
+    private EndpointQueue QueueFor(string endpoint)
     {
         if (string.IsNullOrWhiteSpace(endpoint))
         {
@@ -239,11 +255,7 @@ public sealed class InMemoryTransport : IMessageTransport, IScheduledMessageTran
 
         return _queues.GetOrAdd(endpoint, name =>
         {
-            var queue = Channel.CreateUnbounded<MessageEnvelope>(new UnboundedChannelOptions
-            {
-                SingleReader = true,
-                AllowSynchronousContinuations = false,
-            });
+            var queue = new EndpointQueue();
 
             // Endpoints first seen after Start still get a pump, so unhandled messages are parked, not stuck.
             lock (_gate)
@@ -258,40 +270,94 @@ public sealed class InMemoryTransport : IMessageTransport, IScheduledMessageTran
         });
     }
 
-    private Task Pump(string endpoint, Channel<MessageEnvelope> queue)
+    // VSTHRD003: every awaited predecessor is a Task.Run delivery started by this pump, so waiting on it cannot deadlock.
+#pragma warning disable VSTHRD003
+    /// <summary>
+    /// Reads the endpoint's channel in order and runs up to its concurrency limit at once. Messages that carry a
+    /// partition key (ordered consumers) run in send order within that partition: each one waits for the previous
+    /// message of its partition to finish, so one partition is never in flight twice (FR-14).
+    /// </summary>
+    private Task Pump(string endpoint, EndpointQueue queue)
     {
         var receive = _receive!;
         var stopping = _stopping!.Token;
         var abort = _abort!.Token;
+        var limit = _limits.TryGetValue(endpoint, out var configured) ? configured : 1;
         return Task.Run(async () =>
         {
+            var slots = new SemaphoreSlim(limit, limit);
+            var tails = new Dictionary<string, Task<bool>>(StringComparer.Ordinal);
+            var running = new List<Task<bool>>();
             try
             {
-                await foreach (var envelope in queue.Reader.ReadAllAsync(stopping).ConfigureAwait(false))
+                await foreach (var envelope in queue.ReadAllAsync(stopping).ConfigureAwait(false))
                 {
-                    try
+                    // Already taken from the channel, so wait for a slot even when stopping: the message must run or be requeued.
+                    await slots.WaitAsync(CancellationToken.None).ConfigureAwait(false);
+                    var partition = envelope.Headers.TryGetValue(MessagingHeaders.PartitionKey, out var key) ? key : null;
+                    var previous = partition is not null && tails.TryGetValue(partition, out var tail) ? tail : null;
+                    var task = Task.Run(() => Deliver(previous, envelope, endpoint, queue, receive, abort, slots), CancellationToken.None);
+                    if (partition is not null)
                     {
-                        await receive(envelope, abort).ConfigureAwait(false);
+                        tails[partition] = task;
                     }
-                    catch (OperationCanceledException) when (abort.IsCancellationRequested)
-                    {
-                        // Aborted at the stop timeout: put it back so a restart delivers it.
-                        queue.Writer.TryWrite(envelope);
-                        throw;
-                    }
-                    catch (Exception exception)
-                    {
-                        // The bus handles consumer failures; anything reaching here is a transport bug.
-                        // Park it so one bad message never stops the endpoint.
-                        Park(endpoint + "_error", new DeadLetter(envelope, exception));
-                    }
+
+                    running.Add(task);
+                    running.RemoveAll(t => t.IsCompleted);
                 }
             }
             catch (OperationCanceledException)
             {
-                // Stopped.
+                // Stopped: no new messages. The ones in flight are awaited below.
             }
+
+            await Task.WhenAll(running).ConfigureAwait(false);
         }, CancellationToken.None);
+    }
+
+    /// <summary>
+    /// Runs one message after its partition predecessor. Returns false when the message was put back instead of
+    /// handled (aborted at the stop timeout, or its predecessor was), so the messages after it go back in order too.
+    /// </summary>
+    private async Task<bool> Deliver(
+        Task<bool>? previous,
+        MessageEnvelope envelope,
+        string endpoint,
+        EndpointQueue queue,
+        Func<MessageEnvelope, CancellationToken, Task> receive,
+        CancellationToken abort,
+        SemaphoreSlim slots)
+    {
+        try
+        {
+            if (previous is not null && !await previous.ConfigureAwait(false))
+            {
+                queue.Enqueue(envelope);
+                return false;
+            }
+
+            await receive(envelope, abort).ConfigureAwait(false);
+            return true;
+        }
+        catch (OperationCanceledException) when (abort.IsCancellationRequested)
+        {
+            // Aborted at the stop timeout: put it back so a restart delivers it.
+            queue.Enqueue(envelope);
+            return false;
+        }
+        catch (Exception exception)
+        {
+            // The bus handles consumer failures; anything reaching here is a transport bug.
+            // Park it so one bad message never stops the endpoint.
+            Park(endpoint + "_error", new DeadLetter(envelope, exception));
+            return true;
+        }
+        finally
+        {
+            slots.Release();
+        }
+#pragma warning restore VSTHRD003
+
     }
 
     private void Park(string queueName, DeadLetter letter) =>

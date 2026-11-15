@@ -38,6 +38,13 @@ public sealed class ConsumerOptions
     /// </summary>
     public bool? Ordered { get; set; }
 
+    /// <summary>
+    /// How many messages of the endpoint one host handles at once (FR-14 "under concurrency 16"). Unset means 1.
+    /// Ordered messages still run in send order within their partition. Needs a transport that delivers
+    /// concurrently (see <see cref="IConcurrentDeliveryTransport"/>); the bus refuses a higher value otherwise.
+    /// </summary>
+    public int? ConcurrentMessageLimit { get; set; }
+
     internal void Validate()
     {
         RateLimit?.Validate();
@@ -45,6 +52,11 @@ public sealed class ConsumerOptions
         if (TimeToLive is { } ttl && ttl <= TimeSpan.Zero)
         {
             throw new ArgumentOutOfRangeException(nameof(TimeToLive), "Must be positive.");
+        }
+
+        if (ConcurrentMessageLimit is { } limit && limit < 1)
+        {
+            throw new ArgumentOutOfRangeException(nameof(ConcurrentMessageLimit), "Must be at least 1.");
         }
     }
 
@@ -58,5 +70,6 @@ public sealed class ConsumerOptions
         TimeToLive = TimeToLive ?? defaults.TimeToLive,
         Priority = Priority ?? defaults.Priority,
         Ordered = Ordered ?? defaults.Ordered,
+        ConcurrentMessageLimit = ConcurrentMessageLimit ?? defaults.ConcurrentMessageLimit,
     };
 }

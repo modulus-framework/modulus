@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework />
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <!-- New package: nothing of this ID is on nuget.org yet, so there is no baseline to validate against. Remove this line after its first release. -->
+    <EnablePackageValidation>false</EnablePackageValidation>
+    <Description>PostgreSQL (Npgsql, JSONB) saga repository for Modulus.Messaging: instances are stored with optimistic concurrency on a version column.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Modulus.Messaging.Sagas/Modulus.Messaging.Sagas.csproj" />
+    <PackageReference Include="Npgsql" />
+  </ItemGroup>
+
+</Project>
