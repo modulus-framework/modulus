@@ -22,5 +22,6 @@ CREATE TABLE IF NOT EXISTS "public"."messaging_queue" (
     sequence bigint NOT NULL DEFAULT nextval('"public"."messaging_queue_seq"')
 );
 CREATE INDEX IF NOT EXISTS "messaging_queue_ready_idx" ON "public"."messaging_queue" (queue, visible_at, id);
+CREATE INDEX IF NOT EXISTS "messaging_queue_claim_idx" ON "public"."messaging_queue" (queue, priority DESC, id);
 CREATE INDEX IF NOT EXISTS "messaging_queue_schedule_idx" ON "public"."messaging_queue" (schedule_id) WHERE schedule_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS "messaging_queue_partition_idx" ON "public"."messaging_queue" (queue, partition_key, sequence) WHERE partition_key IS NOT NULL;

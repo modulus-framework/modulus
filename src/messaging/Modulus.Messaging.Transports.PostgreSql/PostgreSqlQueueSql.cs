@@ -28,6 +28,7 @@ internal static class PostgreSqlQueueSql
                 sequence bigint NOT NULL DEFAULT nextval('{sequence}')
             );
             CREATE INDEX IF NOT EXISTS "{table}_ready_idx" ON {qualified} (queue, visible_at, id);
+            CREATE INDEX IF NOT EXISTS "{table}_claim_idx" ON {qualified} (queue, priority DESC, id);
             CREATE INDEX IF NOT EXISTS "{table}_schedule_idx" ON {qualified} (schedule_id) WHERE schedule_id IS NOT NULL;
             CREATE INDEX IF NOT EXISTS "{table}_partition_idx" ON {qualified} (queue, partition_key, sequence) WHERE partition_key IS NOT NULL;
             """;
