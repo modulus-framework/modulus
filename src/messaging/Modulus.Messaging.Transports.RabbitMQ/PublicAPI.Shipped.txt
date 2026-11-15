@@ -1,1 +1,46 @@
 #nullable enable
+Modulus.Messaging.Transports.RabbitMQ.RabbitMqMessagingBuilderExtensions
+Modulus.Messaging.Transports.RabbitMQ.RabbitMqTransport
+Modulus.Messaging.Transports.RabbitMQ.RabbitMqTransport.DisposeAsync() -> System.Threading.Tasks.ValueTask
+Modulus.Messaging.Transports.RabbitMQ.RabbitMqTransport.MoveToError(Modulus.Messaging.MessageEnvelope! envelope, System.Exception! exception, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+Modulus.Messaging.Transports.RabbitMQ.RabbitMqTransport.MoveToSkipped(Modulus.Messaging.MessageEnvelope! envelope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+Modulus.Messaging.Transports.RabbitMQ.RabbitMqTransport.RabbitMqTransport(Modulus.Messaging.Transports.RabbitMQ.RabbitMqTransportOptions! options) -> void
+Modulus.Messaging.Transports.RabbitMQ.RabbitMqTransport.Redeliver(Modulus.Messaging.MessageEnvelope! envelope, System.TimeSpan delay, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+Modulus.Messaging.Transports.RabbitMQ.RabbitMqTransport.Send(Modulus.Messaging.MessageEnvelope! envelope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+Modulus.Messaging.Transports.RabbitMQ.RabbitMqTransport.Start(System.Collections.Generic.IReadOnlyCollection<string!>! endpoints, System.Func<Modulus.Messaging.MessageEnvelope!, System.Threading.CancellationToken, System.Threading.Tasks.Task!>! receive, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+Modulus.Messaging.Transports.RabbitMQ.RabbitMqTransport.Stop(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+Modulus.Messaging.Transports.RabbitMQ.RabbitMqTransportOptions
+Modulus.Messaging.Transports.RabbitMQ.RabbitMqTransportOptions.ClientName.get -> string!
+Modulus.Messaging.Transports.RabbitMQ.RabbitMqTransportOptions.ClientName.set -> void
+Modulus.Messaging.Transports.RabbitMQ.RabbitMqTransportOptions.HostName.get -> string!
+Modulus.Messaging.Transports.RabbitMQ.RabbitMqTransportOptions.HostName.set -> void
+Modulus.Messaging.Transports.RabbitMQ.RabbitMqTransportOptions.Password.get -> string!
+Modulus.Messaging.Transports.RabbitMQ.RabbitMqTransportOptions.Password.set -> void
+Modulus.Messaging.Transports.RabbitMQ.RabbitMqTransportOptions.Port.get -> int
+Modulus.Messaging.Transports.RabbitMQ.RabbitMqTransportOptions.Port.set -> void
+Modulus.Messaging.Transports.RabbitMQ.RabbitMqTransportOptions.Prefetch.get -> ushort
+Modulus.Messaging.Transports.RabbitMQ.RabbitMqTransportOptions.Prefetch.set -> void
+Modulus.Messaging.Transports.RabbitMQ.RabbitMqTransportOptions.RabbitMqTransportOptions() -> void
+Modulus.Messaging.Transports.RabbitMQ.RabbitMqTransportOptions.StopTimeout.get -> System.TimeSpan
+Modulus.Messaging.Transports.RabbitMQ.RabbitMqTransportOptions.StopTimeout.set -> void
+Modulus.Messaging.Transports.RabbitMQ.RabbitMqTransportOptions.TlsServerName.get -> string?
+Modulus.Messaging.Transports.RabbitMQ.RabbitMqTransportOptions.TlsServerName.set -> void
+Modulus.Messaging.Transports.RabbitMQ.RabbitMqTransportOptions.TlsVersion.get -> System.Security.Authentication.SslProtocols
+Modulus.Messaging.Transports.RabbitMQ.RabbitMqTransportOptions.TlsVersion.set -> void
+Modulus.Messaging.Transports.RabbitMQ.RabbitMqTransportOptions.UseTls.get -> bool
+Modulus.Messaging.Transports.RabbitMQ.RabbitMqTransportOptions.UseTls.set -> void
+Modulus.Messaging.Transports.RabbitMQ.RabbitMqTransportOptions.UserName.get -> string!
+Modulus.Messaging.Transports.RabbitMQ.RabbitMqTransportOptions.UserName.set -> void
+Modulus.Messaging.Transports.RabbitMQ.RabbitMqTransportOptions.VirtualHost.get -> string!
+Modulus.Messaging.Transports.RabbitMQ.RabbitMqTransportOptions.VirtualHost.set -> void
+static Modulus.Messaging.Transports.RabbitMQ.RabbitMqMessagingBuilderExtensions.UseRabbitMq(this Modulus.Messaging.MessagingBusBuilder! builder, System.Action<Modulus.Messaging.Transports.RabbitMQ.RabbitMqTransportOptions!>! configure) -> Modulus.Messaging.MessagingBusBuilder!
+Modulus.Messaging.Transports.RabbitMQ.RabbitMqTransport.ConfigureConcurrency(System.Collections.Generic.IReadOnlyDictionary<string!, int>! limitsByEndpoint) -> void
+Modulus.Messaging.Transports.RabbitMQ.RabbitMqTransport.CancelScheduled(System.Guid scheduleToken, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<bool>!
+Modulus.Messaging.Transports.RabbitMQ.RabbitMqTransport.Schedule(System.Guid scheduleToken, Modulus.Messaging.MessageEnvelope! envelope, System.DateTimeOffset deliverAt, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+Modulus.Messaging.Transports.RabbitMQ.RabbitMqTransportOptions.TlsCertificateValidation.get -> System.Net.Security.RemoteCertificateValidationCallback?
+Modulus.Messaging.Transports.RabbitMQ.RabbitMqTransportOptions.TlsCertificateValidation.set -> void
+Modulus.Messaging.Transports.RabbitMQ.RabbitMqTransportOptions.MaxQueueLength.get -> int?
+Modulus.Messaging.Transports.RabbitMQ.RabbitMqTransportOptions.MaxQueueLength.set -> void
+Modulus.Messaging.Transports.RabbitMQ.RabbitMqTransport.IsAvailableAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<bool>!
+Modulus.Messaging.Transports.RabbitMQ.RabbitMqTransport.SystemName.get -> string!
+Modulus.Messaging.Transports.RabbitMQ.RabbitMqTransport.ConfigureSingleActiveConsumer(System.Collections.Generic.IReadOnlyCollection<string!>! endpoints) -> void

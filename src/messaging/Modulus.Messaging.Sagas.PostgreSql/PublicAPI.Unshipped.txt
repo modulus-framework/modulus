@@ -1,9 +1,1 @@
 #nullable enable
-Modulus.Messaging.Sagas.PostgreSql.PostgreSqlSagaRepository<TSaga>
-Modulus.Messaging.Sagas.PostgreSql.PostgreSqlSagaRepository<TSaga>.DeleteAsync(TSaga! saga, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
-Modulus.Messaging.Sagas.PostgreSql.PostgreSqlSagaRepository<TSaga>.FindAsync(System.Guid correlationId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<TSaga?>!
-Modulus.Messaging.Sagas.PostgreSql.PostgreSqlSagaRepository<TSaga>.PostgreSqlSagaRepository(Npgsql.NpgsqlDataSource! dataSource, string! table = "messaging_sagas") -> void
-Modulus.Messaging.Sagas.PostgreSql.PostgreSqlSagaRepository<TSaga>.SaveAsync(TSaga! saga, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
-Modulus.Messaging.Sagas.PostgreSql.SagaPostgreSqlServiceCollectionExtensions
-static Modulus.Messaging.Sagas.PostgreSql.PostgreSqlSagaRepository<TSaga>.SchemaScript(string! table = "messaging_sagas") -> string!
-static Modulus.Messaging.Sagas.PostgreSql.SagaPostgreSqlServiceCollectionExtensions.AddPostgreSqlSagaRepository<TSaga>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, string! table = "messaging_sagas") -> Microsoft.Extensions.DependencyInjection.IServiceCollection!

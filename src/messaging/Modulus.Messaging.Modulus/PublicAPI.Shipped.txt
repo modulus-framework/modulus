@@ -1,1 +1,9 @@
 #nullable enable
+Modulus.Messaging.Modulus.ModulusTenantAmbientContext
+Modulus.Messaging.Modulus.ModulusTenantAmbientContext.Enter(System.IServiceProvider! scope) -> System.IDisposable?
+Modulus.Messaging.Modulus.ModulusTenantAmbientContext.ModulusTenantAmbientContext() -> void
+Modulus.Messaging.Modulus.ModulusTenantConsumeScope
+Modulus.Messaging.Modulus.ModulusTenantConsumeScope.ModulusTenantConsumeScope() -> void
+Modulus.Messaging.Modulus.ModulusTenantConsumeScope.PrepareAsync(System.IServiceProvider! services, Modulus.Messaging.MessageEnvelope! envelope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Func<System.IDisposable?>?>
+Modulus.Messaging.Modulus.ModulusTenantMessagingExtensions
+static Modulus.Messaging.Modulus.ModulusTenantMessagingExtensions.AddModulusTenantMessaging(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!

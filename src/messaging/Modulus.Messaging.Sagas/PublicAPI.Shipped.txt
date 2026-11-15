@@ -1,1 +1,87 @@
 #nullable enable
+Modulus.Messaging.Sagas.ISagaRepository<TSaga>
+Modulus.Messaging.Sagas.ISagaRepository<TSaga>.SaveAsync(TSaga! saga, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+Modulus.Messaging.Sagas.InMemorySagaRepository<TSaga>
+Modulus.Messaging.Sagas.InMemorySagaRepository<TSaga>.FindAsync(System.Guid correlationId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<TSaga?>!
+Modulus.Messaging.Sagas.InMemorySagaRepository<TSaga>.InMemorySagaRepository() -> void
+Modulus.Messaging.Sagas.InMemorySagaRepository<TSaga>.SaveAsync(TSaga! saga, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+Modulus.Messaging.Sagas.MessagingBusBuilderSagaExtensions
+Modulus.Messaging.Sagas.SagaContext<TSaga, TMessage>
+Modulus.Messaging.Sagas.SagaContext<TSaga, TMessage>.Message.get -> TMessage!
+Modulus.Messaging.Sagas.SagaContext<TSaga, TMessage>.Publish<T>(T! message) -> void
+Modulus.Messaging.Sagas.SagaContext<TSaga, TMessage>.Saga.get -> TSaga!
+Modulus.Messaging.Sagas.SagaContext<TSaga, TMessage>.Schedule<T>(System.TimeSpan delay, T! message) -> void
+Modulus.Messaging.Sagas.SagaContext<TSaga, TMessage>.Send<T>(System.Uri! address, T! message) -> void
+Modulus.Messaging.Sagas.SagaEvent<TMessage>
+Modulus.Messaging.Sagas.SagaEvent<TMessage>.CorrelateBy(System.Func<TMessage!, System.Guid>! key) -> Modulus.Messaging.Sagas.SagaEvent<TMessage!>!
+Modulus.Messaging.Sagas.SagaEventConsumer<TMachine, TSaga, TMessage>
+Modulus.Messaging.Sagas.SagaEventConsumer<TMachine, TSaga, TMessage>.Consume(Modulus.Messaging.ConsumeContext<TMessage!>! context) -> System.Threading.Tasks.Task!
+Modulus.Messaging.Sagas.SagaEventConsumer<TMachine, TSaga, TMessage>.SagaEventConsumer(Modulus.Messaging.Sagas.ISagaRepository<TSaga!>! repository, Modulus.Messaging.IBus! bus, Modulus.Messaging.IMessageScheduler! scheduler) -> void
+Modulus.Messaging.Sagas.SagaInstance
+Modulus.Messaging.Sagas.SagaInstance.CorrelationId.get -> System.Guid
+Modulus.Messaging.Sagas.SagaInstance.CorrelationId.set -> void
+Modulus.Messaging.Sagas.SagaInstance.CurrentState.get -> string!
+Modulus.Messaging.Sagas.SagaInstance.CurrentState.set -> void
+Modulus.Messaging.Sagas.SagaInstance.SagaInstance() -> void
+Modulus.Messaging.Sagas.SagaNotStartedException
+Modulus.Messaging.Sagas.SagaNotStartedException.CorrelationId.get -> System.Guid
+Modulus.Messaging.Sagas.SagaNotStartedException.SagaNotStartedException(System.Type! sagaType, System.Type! messageType, System.Guid correlationId) -> void
+Modulus.Messaging.Sagas.SagaReaction<TSaga, TMessage>
+Modulus.Messaging.Sagas.SagaReaction<TSaga, TMessage>.Ignore() -> Modulus.Messaging.Sagas.SagaReaction<TSaga!, TMessage!>!
+Modulus.Messaging.Sagas.SagaReaction<TSaga, TMessage>.Complete() -> Modulus.Messaging.Sagas.SagaReaction<TSaga!, TMessage!>!
+Modulus.Messaging.Sagas.SagaReaction<TSaga, TMessage>.Then(System.Action<Modulus.Messaging.Sagas.SagaContext<TSaga!, TMessage!>!>! handler) -> Modulus.Messaging.Sagas.SagaReaction<TSaga!, TMessage!>!
+Modulus.Messaging.Sagas.SagaReaction<TSaga, TMessage>.TransitionTo(Modulus.Messaging.Sagas.SagaState! state) -> Modulus.Messaging.Sagas.SagaReaction<TSaga!, TMessage!>!
+Modulus.Messaging.Sagas.SagaReaction<TSaga>
+Modulus.Messaging.Sagas.SagaRepositoryServiceCollectionExtensions
+Modulus.Messaging.Sagas.SagaState
+Modulus.Messaging.Sagas.SagaState.<Clone>$() -> Modulus.Messaging.Sagas.SagaState!
+Modulus.Messaging.Sagas.SagaState.Deconstruct(out string! Name) -> void
+Modulus.Messaging.Sagas.SagaState.Equals(Modulus.Messaging.Sagas.SagaState? other) -> bool
+Modulus.Messaging.Sagas.SagaState.Name.get -> string!
+Modulus.Messaging.Sagas.SagaState.Name.init -> void
+Modulus.Messaging.Sagas.SagaState.SagaState(string! Name) -> void
+Modulus.Messaging.Sagas.SagaStateMachine<TSaga>
+Modulus.Messaging.Sagas.SagaStateMachine<TSaga>.During(Modulus.Messaging.Sagas.SagaState! state, params Modulus.Messaging.Sagas.SagaReaction<TSaga!>![]! reactions) -> void
+Modulus.Messaging.Sagas.SagaStateMachine<TSaga>.Event<TMessage>() -> Modulus.Messaging.Sagas.SagaEvent<TMessage!>!
+Modulus.Messaging.Sagas.SagaStateMachine<TSaga>.Initially(params Modulus.Messaging.Sagas.SagaReaction<TSaga!>![]! reactions) -> void
+Modulus.Messaging.Sagas.SagaStateMachine<TSaga>.SagaStateMachine() -> void
+Modulus.Messaging.Sagas.SagaStateMachine<TSaga>.State(string! name) -> Modulus.Messaging.Sagas.SagaState!
+Modulus.Messaging.Sagas.SagaStateMachine<TSaga>.When<TMessage>(Modulus.Messaging.Sagas.SagaEvent<TMessage!>! sagaEvent) -> Modulus.Messaging.Sagas.SagaReaction<TSaga!, TMessage!>!
+Modulus.Messaging.Sagas.UnexpectedSagaEventException
+Modulus.Messaging.Sagas.UnexpectedSagaEventException.UnexpectedSagaEventException(System.Type! sagaType, string! state, System.Type! messageType) -> void
+override Modulus.Messaging.Sagas.SagaState.Equals(object? obj) -> bool
+override Modulus.Messaging.Sagas.SagaState.GetHashCode() -> int
+override Modulus.Messaging.Sagas.SagaState.ToString() -> string!
+static Modulus.Messaging.Sagas.MessagingBusBuilderSagaExtensions.AddSaga<TMachine, TSaga>(this Modulus.Messaging.MessagingBusBuilder! builder, string! endpointName, System.Action<Modulus.Messaging.ConsumerOptions!>? configure = null) -> Modulus.Messaging.MessagingBusBuilder!
+static Modulus.Messaging.Sagas.SagaRepositoryServiceCollectionExtensions.AddInMemorySagaRepository<TSaga>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.Messaging.Sagas.SagaState.operator !=(Modulus.Messaging.Sagas.SagaState? left, Modulus.Messaging.Sagas.SagaState? right) -> bool
+static Modulus.Messaging.Sagas.SagaState.operator ==(Modulus.Messaging.Sagas.SagaState? left, Modulus.Messaging.Sagas.SagaState? right) -> bool
+Modulus.Messaging.Sagas.ConsumerSagaEventConsumer<TSaga, TMessage>
+Modulus.Messaging.Sagas.ConsumerSagaEventConsumer<TSaga, TMessage>.Consume(Modulus.Messaging.ConsumeContext<TMessage!>! context) -> System.Threading.Tasks.Task!
+Modulus.Messaging.Sagas.ConsumerSagaEventConsumer<TSaga, TMessage>.ConsumerSagaEventConsumer(Modulus.Messaging.Sagas.ISagaRepository<TSaga!>! repository, Modulus.Messaging.IBus! bus, Modulus.Messaging.IMessageScheduler! scheduler) -> void
+Modulus.Messaging.Sagas.ICorrelatedBy<TMessage>
+Modulus.Messaging.Sagas.ICorrelatedBy<TMessage>.CorrelationKeyOf(TMessage! message) -> System.Guid
+Modulus.Messaging.Sagas.IInitiatedBy<TSaga, TMessage>
+Modulus.Messaging.Sagas.IInitiatedBy<TSaga, TMessage>.Initiate(Modulus.Messaging.Sagas.SagaContext<TSaga!, TMessage!>! context) -> void
+Modulus.Messaging.Sagas.IInitiatedByOrOrchestrates<TSaga, TMessage>
+Modulus.Messaging.Sagas.IInitiatedByOrOrchestrates<TSaga, TMessage>.InitiateOrOrchestrate(Modulus.Messaging.Sagas.SagaContext<TSaga!, TMessage!>! context) -> void
+Modulus.Messaging.Sagas.IOrchestrates<TSaga, TMessage>
+Modulus.Messaging.Sagas.IOrchestrates<TSaga, TMessage>.Orchestrate(Modulus.Messaging.Sagas.SagaContext<TSaga!, TMessage!>! context) -> void
+Modulus.Messaging.Sagas.MessagingBusBuilderConsumerSagaExtensions
+Modulus.Messaging.Sagas.SagaContext<TSaga, TMessage>.Complete() -> void
+static Modulus.Messaging.Sagas.MessagingBusBuilderConsumerSagaExtensions.AddConsumerSaga<TSaga>(this Modulus.Messaging.MessagingBusBuilder! builder, string! endpointName, System.Action<Modulus.Messaging.ConsumerOptions!>? configure = null) -> Modulus.Messaging.MessagingBusBuilder!
+Modulus.Messaging.Sagas.ISagaRepository<TSaga>.DeleteAsync(TSaga! saga, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+Modulus.Messaging.Sagas.ISagaRepository<TSaga>.FindAsync(System.Guid correlationId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<TSaga?>!
+Modulus.Messaging.Sagas.InMemorySagaRepository<TSaga>.DeleteAsync(TSaga! saga, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+Modulus.Messaging.Sagas.SagaConcurrencyException
+Modulus.Messaging.Sagas.SagaConcurrencyException.CorrelationId.get -> System.Guid
+Modulus.Messaging.Sagas.SagaConcurrencyException.SagaConcurrencyException(System.Type! sagaType, System.Guid correlationId) -> void
+Modulus.Messaging.Sagas.SagaInstance.Version.get -> long
+Modulus.Messaging.Sagas.SagaInstance.Version.set -> void
+Modulus.Messaging.Sagas.SagaInstance.PendingTimeouts.get -> System.Collections.Generic.List<System.Guid>!
+Modulus.Messaging.Sagas.SagaInstance.PendingTimeouts.set -> void
+Modulus.Messaging.Sagas.SagaKeys
+static Modulus.Messaging.Sagas.SagaKeys.ForTenant(string? tenantId, System.Guid correlationKey) -> System.Guid
+Modulus.Messaging.Sagas.SagaReaction<TSaga, TMessage>.If(System.Func<Modulus.Messaging.Sagas.SagaContext<TSaga!, TMessage!>!, bool>! condition, System.Action<Modulus.Messaging.Sagas.SagaReaction<TSaga!, TMessage!>!>! whenTrue) -> Modulus.Messaging.Sagas.SagaReaction<TSaga!, TMessage!>!
+Modulus.Messaging.Sagas.SagaReaction<TSaga, TMessage>.IfElse(System.Func<Modulus.Messaging.Sagas.SagaContext<TSaga!, TMessage!>!, bool>! condition, System.Action<Modulus.Messaging.Sagas.SagaReaction<TSaga!, TMessage!>!>! whenTrue, System.Action<Modulus.Messaging.Sagas.SagaReaction<TSaga!, TMessage!>!>? whenFalse) -> Modulus.Messaging.Sagas.SagaReaction<TSaga!, TMessage!>!
+Modulus.Messaging.Sagas.SagaReaction<TSaga, TMessage>.Catch<TException>(System.Action<Modulus.Messaging.Sagas.SagaReaction<TSaga!, TMessage!>!>! compensation) -> Modulus.Messaging.Sagas.SagaReaction<TSaga!, TMessage!>!

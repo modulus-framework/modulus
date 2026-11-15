@@ -1,1 +1,43 @@
 #nullable enable
+Modulus.Messaging.Outbox.EntityFrameworkCore.EfOutboxOptions
+Modulus.Messaging.Outbox.EntityFrameworkCore.EfOutboxOptions.BatchSize.get -> int
+Modulus.Messaging.Outbox.EntityFrameworkCore.EfOutboxOptions.BatchSize.set -> void
+Modulus.Messaging.Outbox.EntityFrameworkCore.EfOutboxOptions.EfOutboxOptions() -> void
+Modulus.Messaging.Outbox.EntityFrameworkCore.EfOutboxOptions.LeaseDuration.get -> System.TimeSpan
+Modulus.Messaging.Outbox.EntityFrameworkCore.EfOutboxOptions.LeaseDuration.set -> void
+Modulus.Messaging.Outbox.EntityFrameworkCore.EfOutboxOptions.PollInterval.get -> System.TimeSpan
+Modulus.Messaging.Outbox.EntityFrameworkCore.EfOutboxOptions.PollInterval.set -> void
+Modulus.Messaging.Outbox.EntityFrameworkCore.EfOutboxOptions.RunDispatcher.get -> bool
+Modulus.Messaging.Outbox.EntityFrameworkCore.EfOutboxOptions.RunDispatcher.set -> void
+Modulus.Messaging.Outbox.EntityFrameworkCore.MessagingEntityFrameworkOutboxExtensions
+Modulus.Messaging.Outbox.EntityFrameworkCore.MessagingOutboxModelBuilderExtensions
+Modulus.Messaging.Outbox.EntityFrameworkCore.OutboxDispatch
+Modulus.Messaging.Outbox.EntityFrameworkCore.OutboxRecord
+Modulus.Messaging.Outbox.EntityFrameworkCore.OutboxRecord.Body.get -> string!
+Modulus.Messaging.Outbox.EntityFrameworkCore.OutboxRecord.Body.set -> void
+Modulus.Messaging.Outbox.EntityFrameworkCore.OutboxRecord.ConsumerKey.get -> string?
+Modulus.Messaging.Outbox.EntityFrameworkCore.OutboxRecord.ConsumerKey.set -> void
+Modulus.Messaging.Outbox.EntityFrameworkCore.OutboxRecord.Endpoint.get -> string!
+Modulus.Messaging.Outbox.EntityFrameworkCore.OutboxRecord.Endpoint.set -> void
+Modulus.Messaging.Outbox.EntityFrameworkCore.OutboxRecord.EnqueuedAt.get -> System.DateTime
+Modulus.Messaging.Outbox.EntityFrameworkCore.OutboxRecord.EnqueuedAt.set -> void
+Modulus.Messaging.Outbox.EntityFrameworkCore.OutboxRecord.Headers.get -> string!
+Modulus.Messaging.Outbox.EntityFrameworkCore.OutboxRecord.Headers.set -> void
+Modulus.Messaging.Outbox.EntityFrameworkCore.OutboxRecord.LockToken.get -> System.Guid?
+Modulus.Messaging.Outbox.EntityFrameworkCore.OutboxRecord.LockToken.set -> void
+Modulus.Messaging.Outbox.EntityFrameworkCore.OutboxRecord.LockedUntil.get -> System.DateTime?
+Modulus.Messaging.Outbox.EntityFrameworkCore.OutboxRecord.LockedUntil.set -> void
+Modulus.Messaging.Outbox.EntityFrameworkCore.OutboxRecord.MessageId.get -> System.Guid
+Modulus.Messaging.Outbox.EntityFrameworkCore.OutboxRecord.MessageId.set -> void
+Modulus.Messaging.Outbox.EntityFrameworkCore.OutboxRecord.MessageType.get -> string!
+Modulus.Messaging.Outbox.EntityFrameworkCore.OutboxRecord.MessageType.set -> void
+Modulus.Messaging.Outbox.EntityFrameworkCore.OutboxRecord.OutboxRecord() -> void
+Modulus.Messaging.Outbox.EntityFrameworkCore.OutboxRecord.Parked.get -> bool
+Modulus.Messaging.Outbox.EntityFrameworkCore.OutboxRecord.Parked.set -> void
+static Modulus.Messaging.Outbox.EntityFrameworkCore.MessagingEntityFrameworkOutboxExtensions.AddModulusMessagingEntityFrameworkOutbox<TContext>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<Modulus.Messaging.Outbox.EntityFrameworkCore.EfOutboxOptions!>? configure = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.Messaging.Outbox.EntityFrameworkCore.MessagingOutboxModelBuilderExtensions.ApplyModulusMessagingOutbox(this Microsoft.EntityFrameworkCore.ModelBuilder! modelBuilder, string! tableName = "messaging_outbox") -> Microsoft.EntityFrameworkCore.ModelBuilder!
+static Modulus.Messaging.Outbox.EntityFrameworkCore.OutboxDispatch.DispatchOnceAsync<TContext>(TContext! db, Modulus.Messaging.IMessageTransport! transport, int batchSize, System.TimeSpan leaseDuration, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<int>!
+Modulus.Messaging.Outbox.EntityFrameworkCore.OutboxRecord.DeliverAt.get -> System.DateTime?
+Modulus.Messaging.Outbox.EntityFrameworkCore.OutboxRecord.DeliverAt.set -> void
+Modulus.Messaging.Outbox.EntityFrameworkCore.OutboxRecord.ScheduleToken.get -> System.Guid?
+Modulus.Messaging.Outbox.EntityFrameworkCore.OutboxRecord.ScheduleToken.set -> void

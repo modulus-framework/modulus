@@ -1,1 +1,20 @@
 #nullable enable
+Modulus.Messaging.Sagas.EntityFrameworkCore.EfSagaRepository<TSaga>
+Modulus.Messaging.Sagas.EntityFrameworkCore.EfSagaRepository<TSaga>.DeleteAsync(TSaga! saga, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+Modulus.Messaging.Sagas.EntityFrameworkCore.EfSagaRepository<TSaga>.EfSagaRepository(Microsoft.EntityFrameworkCore.DbContext! db) -> void
+Modulus.Messaging.Sagas.EntityFrameworkCore.EfSagaRepository<TSaga>.FindAsync(System.Guid correlationId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<TSaga?>!
+Modulus.Messaging.Sagas.EntityFrameworkCore.EfSagaRepository<TSaga>.SaveAsync(TSaga! saga, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+Modulus.Messaging.Sagas.EntityFrameworkCore.SagaEntityFrameworkServiceCollectionExtensions
+Modulus.Messaging.Sagas.EntityFrameworkCore.SagaModelBuilderExtensions
+Modulus.Messaging.Sagas.EntityFrameworkCore.SagaRecord
+Modulus.Messaging.Sagas.EntityFrameworkCore.SagaRecord.CorrelationId.get -> System.Guid
+Modulus.Messaging.Sagas.EntityFrameworkCore.SagaRecord.CorrelationId.set -> void
+Modulus.Messaging.Sagas.EntityFrameworkCore.SagaRecord.Data.get -> string!
+Modulus.Messaging.Sagas.EntityFrameworkCore.SagaRecord.Data.set -> void
+Modulus.Messaging.Sagas.EntityFrameworkCore.SagaRecord.SagaRecord() -> void
+Modulus.Messaging.Sagas.EntityFrameworkCore.SagaRecord.SagaType.get -> string!
+Modulus.Messaging.Sagas.EntityFrameworkCore.SagaRecord.SagaType.set -> void
+Modulus.Messaging.Sagas.EntityFrameworkCore.SagaRecord.Version.get -> long
+Modulus.Messaging.Sagas.EntityFrameworkCore.SagaRecord.Version.set -> void
+static Modulus.Messaging.Sagas.EntityFrameworkCore.SagaEntityFrameworkServiceCollectionExtensions.AddEntityFrameworkSagaRepository<TSaga, TContext>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Modulus.Messaging.Sagas.EntityFrameworkCore.SagaModelBuilderExtensions.ApplyModulusSagas(this Microsoft.EntityFrameworkCore.ModelBuilder! modelBuilder, string! tableName = "messaging_sagas") -> Microsoft.EntityFrameworkCore.ModelBuilder!
