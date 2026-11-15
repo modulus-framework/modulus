@@ -49,6 +49,13 @@ Source requirements: [BRS](Cobytelabs.Messaging%20—%20Business%20Requirements%
 
 As of 2026-11-15: M0 done. M1 partly done (outbox, inbox, retries, redelivery, faults, timeout, drain, settings, rate limit, kill switch); its concurrency limit, circuit breaker and chaos run are open. M2 RabbitMQ transport built and integration-tested; G2 throughput measured at about 31k msg/s on the development machine, with latency overhead not yet measured. M3 in progress: PostgreSQL transport, scheduler with cancel, TTL, priority (not on RabbitMQ, see its section), and ordered processing by partition are built; sagas (FR-17 to FR-19), tenant context and the TradeFlow sample are not started.
 
+### Still open
+
+- **FR-14, "under concurrency 16":** needs the concurrency limit (`ConcurrentMessageLimit`) in M1, which needs a transport that delivers concurrently. Ordering is tested today only sequentially across hosts. The PostgreSQL per-partition claim is the rule that concurrent delivery must keep.
+- **Sagas, M3:** state-machine sagas (FR-17), consumer sagas (FR-18), and saga repositories on EF Core, Npgsql JSONB and in-memory (FR-19). Not started.
+- **Tenant context, M3:** tenant context on messages with RLS-aware scope (FR-21). Not started.
+- **TradeFlow sample, M3 gate G3:** orders to billing on PostgreSQL. Not started.
+
 ### Progress
 
 **M0 (done)**
