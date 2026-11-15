@@ -22,6 +22,9 @@ public sealed class ConsumerOptions
     /// <summary>Pauses the endpoint when too many recent messages failed (FR-15).</summary>
     public KillSwitchOptions? KillSwitch { get; set; }
 
+    /// <summary>Stops the endpoint while its consumer keeps failing, and tests it with a trial message (optional, FR-15).</summary>
+    public CircuitBreakerOptions? CircuitBreaker { get; set; }
+
     /// <summary>
     /// Time-to-live of messages to this consumer, counted from when they are sent. An older message is moved to
     /// <c>_skipped</c> unprocessed (FR-13). A <see cref="MessageTimeToLiveAttribute"/> on the message type overrides it.
@@ -78,6 +81,7 @@ public sealed class ConsumerOptions
     {
         RateLimit?.Validate();
         KillSwitch?.Validate();
+        CircuitBreaker?.Validate();
         if (TimeToLive is { } ttl && ttl <= TimeSpan.Zero)
         {
             throw new ArgumentOutOfRangeException(nameof(TimeToLive), "Must be positive.");
@@ -101,6 +105,7 @@ public sealed class ConsumerOptions
         ConsumeTimeout = ConsumeTimeout ?? defaults.ConsumeTimeout,
         RateLimit = RateLimit ?? defaults.RateLimit,
         KillSwitch = KillSwitch ?? defaults.KillSwitch,
+        CircuitBreaker = CircuitBreaker ?? defaults.CircuitBreaker,
         TimeToLive = TimeToLive ?? defaults.TimeToLive,
         Priority = Priority ?? defaults.Priority,
         Ordered = Ordered ?? defaults.Ordered,

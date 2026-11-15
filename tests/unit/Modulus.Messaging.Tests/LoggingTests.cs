@@ -128,10 +128,10 @@ public sealed class LoggingTests
         await harness.Bus.Send(new Uri($"queue:{endpoint}"), new CreateInvoice(Guid.NewGuid()));
         await harness.Bus.Send(new Uri($"queue:{endpoint}"), new CreateInvoice(Guid.NewGuid()));
 
-        (await MessagingTestHarness.WaitUntilAsync(() => logs.Entries.Any(e => e.Message.Contains("kill switch")))).Should().BeTrue();
-        var entry = logs.Entries.Single(e => e.Message.Contains("kill switch"));
+        (await MessagingTestHarness.WaitUntilAsync(() => logs.Entries.Any(e => e.Message.Contains("held back")))).Should().BeTrue();
+        var entry = logs.Entries.Single(e => e.Message.Contains("held back"));
         entry.Level.Should().Be(LogLevel.Warning);
-        entry.Message.Should().Contain(endpoint).And.Contain("paused");
+        entry.Message.Should().Contain(endpoint).And.Contain("held back");
     }
 
     /// <summary>Keeps every formatted log entry, so a test can read what the bus wrote.</summary>

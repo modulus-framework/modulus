@@ -26,3 +26,11 @@ override Modulus.Messaging.RequestReply<TResponse>.GetHashCode() -> int
 override Modulus.Messaging.RequestReply<TResponse>.ToString() -> string!
 ~static Modulus.Messaging.RequestReply<TResponse>.operator !=(Modulus.Messaging.RequestReply<TResponse>? left, Modulus.Messaging.RequestReply<TResponse>? right) -> bool
 ~static Modulus.Messaging.RequestReply<TResponse>.operator ==(Modulus.Messaging.RequestReply<TResponse>? left, Modulus.Messaging.RequestReply<TResponse>? right) -> bool
+Modulus.Messaging.CircuitBreakerOptions
+Modulus.Messaging.CircuitBreakerOptions.CircuitBreakerOptions() -> void
+Modulus.Messaging.CircuitBreakerOptions.FailureThreshold.get -> int
+Modulus.Messaging.CircuitBreakerOptions.FailureThreshold.set -> void
+Modulus.Messaging.CircuitBreakerOptions.OpenDuration.get -> System.TimeSpan
+Modulus.Messaging.CircuitBreakerOptions.OpenDuration.set -> void
+Modulus.Messaging.ConsumerOptions.CircuitBreaker.get -> Modulus.Messaging.CircuitBreakerOptions?
+Modulus.Messaging.ConsumerOptions.CircuitBreaker.set -> void

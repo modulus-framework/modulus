@@ -304,7 +304,7 @@ internal sealed class MessagingBus : IBus, IMessageScheduler, IHostedService
     {
         if (pause is { } duration)
         {
-            _logger.LogWarning("Endpoint {Endpoint} paused for {Pause}: the kill switch tripped on recent failures", endpoint, duration);
+            _logger.LogWarning("Endpoint {Endpoint} held back for {Pause}: its kill switch or circuit breaker tripped on recent failures", endpoint, duration);
         }
     }
 
