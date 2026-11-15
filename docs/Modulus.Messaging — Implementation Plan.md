@@ -288,6 +288,21 @@ Grouped by what unblocks them. Each item names the requirement it closes.
 - [x] `Modulus.Messaging.Integration.Tests`: 6 of 6
 - [ ] Not run in this pass: `Modulus.Messaging.Transports.InMemory` has no integration project; the Docker Desktop restart-test caveat above still applies
 
+**Progress, fifth pass (2026-11-15)**
+
+- [x] Outbox and inbox on Npgsql (`Modulus.Messaging.Outbox.Npgsql`, `Modulus.Messaging.Inbox.Npgsql`): a unit of work shared by the app's writes, the outbox rows and the inbox record; the dispatcher claims with `FOR UPDATE SKIP LOCKED`. 7 of 7 integration tests on PostgreSQL 17.
+- [x] Request/response, FR-06 (`IRequestClient.GetResponse`, `ConsumeContext.RespondAsync`, `AddRequestClient<TResponse>()`): replies go to a per-process reply endpoint; a timeout raises `RequestTimeoutException`; an encrypted response is sealed. Saga `Request` steps are not built.
+- [x] Circuit breaker (optional, FR-15): `ConsumerOptions.CircuitBreaker`; opens after consecutive failures, admits one trial message after `OpenDuration`, closes on success, opens again on failure. 3 unit tests.
+- [x] Public API baseline frozen: the unshipped entries of the messaging packages moved into `PublicAPI.Shipped.txt`; a change is a new unshipped entry.
+- [x] Migration guide from MassTransit v8: `docs/messaging/migration-from-masstransit.md` (NFR-19).
+- [x] Claim index on the PostgreSQL queue table: `(queue, priority DESC, id)`. The claim sorted the whole backlog on every poll (a sequential scan and a sort of a million rows, 427 ms per claim); with the index it is 0.5 ms. Existing deployments add the index with the migration script. Found by the G1 chaos run.
+- [x] G1 chaos run (NFR-01, 2026-11-15): 1,000,000 messages through PostgreSQL with 105 worker processes killed at random and restarted. Result: every message applied once (ledger count 1,000,000), nothing parked, every message recorded in the inbox, 16 min 53 s. Harness in `tests/integration/Modulus.Messaging.Chaos.Tests` (`--filter Category=Chaos`). The first run stalled at about 130 messages a second (the claim sorted the whole backlog); the claim index fixed it. One machine, one run: not the 1M-under-chaos evidence the owner may want for a release, which is a repeat on target hardware.
+- [x] (G1 harness committed, see above.)
+- [ ] Row-level isolation on the PostgreSQL queue table (FR-21): not built. Needs a decision on the role model first.
+- [ ] CLI scaffolding (FR-23): not built; deferred until after G4.
+- [ ] Signed packages: needs the code-signing certificate the owner has to obtain (F-25).
+- [ ] Owner-only and environment items: hardware measurements (NFR-06, G2), Docker Desktop restart tests, the TradeFlow sample (G3, `samples/` off-limits), G0 consumer-shape generator (samples), G4 production gate.
+
 ### Known limits
 
 - In-memory messages are lost if the process exits (no durability).

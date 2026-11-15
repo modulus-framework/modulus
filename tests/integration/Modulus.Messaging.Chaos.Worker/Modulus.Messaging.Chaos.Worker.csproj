@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- A process the chaos run starts and kills: it is not a test project, so it does not take the test SDK. -->
+    <IsTestProject>false</IsTestProject>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>net10.0</TargetFrameworks>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <IsPackable>false</IsPackable>
+    <!-- tests/Directory.Build.props brings the test SDK; its generated entry point must not clash with Program.cs. -->
+    <GenerateProgramFile>false</GenerateProgramFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../../src/messaging/Modulus.Messaging/Modulus.Messaging.csproj" />
+    <ProjectReference Include="../../../src/messaging/Modulus.Messaging.Transports.PostgreSql/Modulus.Messaging.Transports.PostgreSql.csproj" />
+    <ProjectReference Include="../../../src/messaging/Modulus.Messaging.Outbox.Npgsql/Modulus.Messaging.Outbox.Npgsql.csproj" />
+    <ProjectReference Include="../../../src/messaging/Modulus.Messaging.Inbox.Npgsql/Modulus.Messaging.Inbox.Npgsql.csproj" />
+    <PackageReference Include="Npgsql" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+  </ItemGroup>
+
+</Project>
