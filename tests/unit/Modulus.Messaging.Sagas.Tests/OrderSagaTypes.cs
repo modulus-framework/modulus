@@ -20,6 +20,8 @@ public sealed record OrderAccepted(Guid OrderId);
 
 public sealed record OrderFailed(Guid OrderId);
 
+public sealed record OrderNoted(Guid OrderId);
+
 public sealed class OrderStateMachine : SagaStateMachine<OrderSaga>
 {
     public static readonly TimeSpan PaymentWindow = TimeSpan.FromSeconds(2);
@@ -31,6 +33,7 @@ public sealed class OrderStateMachine : SagaStateMachine<OrderSaga>
         var paymentEvent = Event<PaymentReceived>().CorrelateBy(message => message.OrderId);
         var cancelledEvent = Event<OrderCancelled>().CorrelateBy(message => message.OrderId);
         var timedOutEvent = Event<OrderTimedOut>().CorrelateBy(message => message.OrderId);
+        var notedEvent = Event<OrderNoted>().CorrelateBy(message => message.OrderId);
 
         Initially(
             When(submittedEvent)
@@ -49,6 +52,7 @@ public sealed class OrderStateMachine : SagaStateMachine<OrderSaga>
             When(timedOutEvent)
                 .Then(context => context.Publish(new OrderFailed(context.Message.OrderId)))
                 .Complete(),
+            When(notedEvent).Ignore(),
             When(cancelledEvent).Complete());
     }
 }

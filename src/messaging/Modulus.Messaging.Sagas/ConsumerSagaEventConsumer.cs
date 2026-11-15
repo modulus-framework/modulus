@@ -16,7 +16,7 @@ public sealed class ConsumerSagaEventConsumer<TSaga, TMessage>(
         ArgumentNullException.ThrowIfNull(context);
         var message = context.Message;
         var cancellationToken = context.CancellationToken;
-        var key = TSaga.CorrelationKeyOf(message);
+        var key = SagaKeys.ForTenant(MessageTenant.Current, TSaga.CorrelationKeyOf(message));
 
         var stored = await repository.FindAsync(key, cancellationToken).ConfigureAwait(false);
         var instance = stored ?? new TSaga { CorrelationId = key };
@@ -51,15 +51,6 @@ public sealed class ConsumerSagaEventConsumer<TSaga, TMessage>(
             throw new UnexpectedSagaEventException(typeof(TSaga), instance.CurrentState, typeof(TMessage));
         }
 
-        if (sagaContext.IsCompleted)
-        {
-            await repository.DeleteAsync(instance, cancellationToken).ConfigureAwait(false);
-        }
-        else
-        {
-            await repository.SaveAsync(instance, cancellationToken).ConfigureAwait(false);
-        }
-
-        await effects.RunAsync(bus, scheduler, cancellationToken).ConfigureAwait(false);
+        await SagaCommit.CommitAsync(repository, instance, sagaContext.IsCompleted, effects, bus, scheduler, cancellationToken).ConfigureAwait(false);
     }
 }

@@ -14,4 +14,10 @@ public abstract class SagaInstance
     /// no longer the stored one fails (optimistic concurrency, FR-19), so no concurrent update is lost.
     /// </summary>
     public long Version { get; set; }
+
+    /// <summary>
+    /// Tokens of the timeouts this saga scheduled. A saga that completes cancels them, so a timeout it no longer needs
+    /// never reaches it. A token whose message already arrived cancels nothing, which is harmless.
+    /// </summary>
+    public List<Guid> PendingTimeouts { get; set; } = [];
 }

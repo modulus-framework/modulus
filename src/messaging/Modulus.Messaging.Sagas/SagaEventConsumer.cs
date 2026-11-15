@@ -18,7 +18,7 @@ public sealed class SagaEventConsumer<TMachine, TSaga, TMessage>(
         var machine = SagaMachine<TSaga, TMachine>.Instance;
         var message = context.Message;
         var cancellationToken = context.CancellationToken;
-        var key = machine.CorrelationKey(typeof(TMessage), message);
+        var key = SagaKeys.ForTenant(MessageTenant.Current, machine.CorrelationKey(typeof(TMessage), message));
 
         var saga = await repository.FindAsync(key, cancellationToken).ConfigureAwait(false);
         SagaReaction<TSaga> reaction;
@@ -35,21 +35,14 @@ public sealed class SagaEventConsumer<TMachine, TSaga, TMessage>(
         }
 
         var effects = new SagaEffects();
-        var completed = reaction.Execute(saga, message, effects);
-        if (completed)
+        var outcome = reaction.Execute(saga, message, effects);
+        saga = outcome.Saga;
+        var completed = outcome.Completes;
+        if (!completed && saga.CurrentState.Length == 0)
         {
-            await repository.DeleteAsync(saga, cancellationToken).ConfigureAwait(false);
-        }
-        else
-        {
-            if (saga.CurrentState.Length == 0)
-            {
-                throw new InvalidOperationException($"{typeof(TSaga).Name} did not move out of its initial state on {typeof(TMessage).Name}; add TransitionTo or Complete.");
-            }
-
-            await repository.SaveAsync(saga, cancellationToken).ConfigureAwait(false);
+            throw new InvalidOperationException($"{typeof(TSaga).Name} did not move out of its initial state on {typeof(TMessage).Name}; add TransitionTo or Complete.");
         }
 
-        await effects.RunAsync(bus, scheduler, cancellationToken).ConfigureAwait(false);
+        await SagaCommit.CommitAsync(repository, saga, completed, effects, bus, scheduler, cancellationToken).ConfigureAwait(false);
     }
 }

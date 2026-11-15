@@ -66,6 +66,80 @@ public sealed class OrderSagaTests
     }
 
     [Fact]
+    public async Task FR_17_completing_cancels_the_pending_timeout_so_it_never_reaches_the_saga()
+    {
+        var orderId = Guid.NewGuid();
+        await using var harness = await StartAsync(configure: null);
+        var repository = harness.Services.GetRequiredService<ISagaRepository<OrderSaga>>();
+
+        await harness.Bus.Send(new Uri($"queue:{SagaEndpoint}"), new OrderSubmitted(orderId, 10m));
+        (await WaitForAsync(async () => await repository.FindAsync(orderId, CancellationToken.None) is not null)).Should().BeTrue();
+        await harness.Bus.Send(new Uri($"queue:{SagaEndpoint}"), new OrderCancelled(orderId));
+        (await WaitForAsync(async () => await repository.FindAsync(orderId, CancellationToken.None) is null)).Should().BeTrue();
+
+        // Past the window: a timeout that was not cancelled would reach the saga, find no instance and be parked.
+        await Task.Delay(OrderStateMachine.PaymentWindow + TimeSpan.FromMilliseconds(1500));
+        harness.Transport.Errors(SagaEndpoint).Should().BeEmpty("the completed saga cancelled its timeout");
+    }
+
+    [Fact]
+    public async Task FR_17_an_ignored_event_changes_nothing_and_the_saga_still_completes()
+    {
+        var orderId = Guid.NewGuid();
+        await using var harness = await StartAsync(configure: null);
+        var repository = harness.Services.GetRequiredService<ISagaRepository<OrderSaga>>();
+        var observed = harness.Services.GetRequiredService<Observed>();
+
+        await harness.Bus.Send(new Uri($"queue:{SagaEndpoint}"), new OrderSubmitted(orderId, 42m));
+        (await WaitForAsync(async () => await repository.FindAsync(orderId, CancellationToken.None) is not null)).Should().BeTrue();
+
+        await harness.Bus.Send(new Uri($"queue:{SagaEndpoint}"), new OrderNoted(orderId));
+        await Task.Delay(300);
+        var stored = await repository.FindAsync(orderId, CancellationToken.None);
+        stored!.CurrentState.Should().Be("Submitted");
+        stored.Amount.Should().Be(42m);
+        harness.Transport.Errors(SagaEndpoint).Should().BeEmpty("an ignored event is accepted, not parked");
+
+        await harness.Bus.Send(new Uri($"queue:{SagaEndpoint}"), new PaymentReceived(orderId));
+        (await WaitForAsync(() => observed.Messages.OfType<OrderAccepted>().Any(m => m.OrderId == orderId))).Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task FR_21_the_same_correlation_key_in_two_tenants_is_two_saga_instances()
+    {
+        var orderId = Guid.NewGuid();
+        await using var harness = await StartAsync(configure: null);
+        var repository = harness.Services.GetRequiredService<ISagaRepository<OrderSaga>>();
+        var observed = harness.Services.GetRequiredService<Observed>();
+
+        using (MessageTenant.Enter("tenant-a"))
+        {
+            await harness.Bus.Send(new Uri($"queue:{SagaEndpoint}"), new OrderSubmitted(orderId, 10m));
+        }
+
+        using (MessageTenant.Enter("tenant-b"))
+        {
+            await harness.Bus.Send(new Uri($"queue:{SagaEndpoint}"), new OrderSubmitted(orderId, 99m));
+        }
+
+        var keyA = SagaKeys.ForTenant("tenant-a", orderId);
+        var keyB = SagaKeys.ForTenant("tenant-b", orderId);
+        (await WaitForAsync(async () => await repository.FindAsync(keyA, CancellationToken.None) is not null
+            && await repository.FindAsync(keyB, CancellationToken.None) is not null)).Should().BeTrue();
+        (await repository.FindAsync(keyA, CancellationToken.None))!.Amount.Should().Be(10m);
+        (await repository.FindAsync(keyB, CancellationToken.None))!.Amount.Should().Be(99m, "tenant B's submit is its own instance, not a second event for tenant A's");
+
+        using (MessageTenant.Enter("tenant-a"))
+        {
+            await harness.Bus.Send(new Uri($"queue:{SagaEndpoint}"), new PaymentReceived(orderId));
+        }
+
+        (await WaitForAsync(() => observed.Messages.OfType<OrderAccepted>().Any(m => m.OrderId == orderId))).Should().BeTrue();
+        (await repository.FindAsync(keyA, CancellationToken.None)).Should().BeNull("tenant A's saga completed");
+        (await repository.FindAsync(keyB, CancellationToken.None))!.CurrentState.Should().Be("Submitted", "tenant B's saga is untouched");
+    }
+
+    [Fact]
     public async Task FR_17_an_event_that_arrives_before_its_saga_is_redelivered_and_handled()
     {
         var orderId = Guid.NewGuid();

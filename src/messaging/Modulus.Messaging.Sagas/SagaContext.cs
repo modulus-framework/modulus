@@ -39,10 +39,13 @@ public sealed class SagaContext<TSaga, TMessage>
         _effects.Add((bus, _, ct) => bus.Send(address, message, ct));
     }
 
-    /// <summary>Publishes a message after <paramref name="delay"/>, measured from when the state is saved. A timeout is a schedule.</summary>
+    /// <summary>
+    /// Publishes a message after <paramref name="delay"/>, measured from the call. A timeout is a schedule. Its token is
+    /// stored with the saga, so the saga cancels it when it completes; a save that fails cancels it too.
+    /// </summary>
     public void Schedule<T>(TimeSpan delay, T message) where T : class
     {
         ArgumentNullException.ThrowIfNull(message);
-        _effects.Add(async (_, scheduler, ct) => await scheduler.SchedulePublish(delay, message, ct).ConfigureAwait(false));
+        _effects.AddSchedule((scheduler, ct) => scheduler.SchedulePublish(delay, message, ct));
     }
 }

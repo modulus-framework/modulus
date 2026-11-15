@@ -27,6 +27,7 @@ Modulus.Messaging.Sagas.SagaNotStartedException
 Modulus.Messaging.Sagas.SagaNotStartedException.CorrelationId.get -> System.Guid
 Modulus.Messaging.Sagas.SagaNotStartedException.SagaNotStartedException(System.Type! sagaType, System.Type! messageType, System.Guid correlationId) -> void
 Modulus.Messaging.Sagas.SagaReaction<TSaga, TMessage>
+Modulus.Messaging.Sagas.SagaReaction<TSaga, TMessage>.Ignore() -> Modulus.Messaging.Sagas.SagaReaction<TSaga!, TMessage!>!
 Modulus.Messaging.Sagas.SagaReaction<TSaga, TMessage>.Complete() -> Modulus.Messaging.Sagas.SagaReaction<TSaga!, TMessage!>!
 Modulus.Messaging.Sagas.SagaReaction<TSaga, TMessage>.Then(System.Action<Modulus.Messaging.Sagas.SagaContext<TSaga!, TMessage!>!>! handler) -> Modulus.Messaging.Sagas.SagaReaction<TSaga!, TMessage!>!
 Modulus.Messaging.Sagas.SagaReaction<TSaga, TMessage>.TransitionTo(Modulus.Messaging.Sagas.SagaState! state) -> Modulus.Messaging.Sagas.SagaReaction<TSaga!, TMessage!>!
@@ -77,3 +78,10 @@ Modulus.Messaging.Sagas.SagaConcurrencyException.CorrelationId.get -> System.Gui
 Modulus.Messaging.Sagas.SagaConcurrencyException.SagaConcurrencyException(System.Type! sagaType, System.Guid correlationId) -> void
 Modulus.Messaging.Sagas.SagaInstance.Version.get -> long
 Modulus.Messaging.Sagas.SagaInstance.Version.set -> void
+Modulus.Messaging.Sagas.SagaInstance.PendingTimeouts.get -> System.Collections.Generic.List<System.Guid>!
+Modulus.Messaging.Sagas.SagaInstance.PendingTimeouts.set -> void
+Modulus.Messaging.Sagas.SagaKeys
+static Modulus.Messaging.Sagas.SagaKeys.ForTenant(string? tenantId, System.Guid correlationKey) -> System.Guid
+Modulus.Messaging.Sagas.SagaReaction<TSaga, TMessage>.If(System.Func<Modulus.Messaging.Sagas.SagaContext<TSaga!, TMessage!>!, bool>! condition, System.Action<Modulus.Messaging.Sagas.SagaReaction<TSaga!, TMessage!>!>! whenTrue) -> Modulus.Messaging.Sagas.SagaReaction<TSaga!, TMessage!>!
+Modulus.Messaging.Sagas.SagaReaction<TSaga, TMessage>.IfElse(System.Func<Modulus.Messaging.Sagas.SagaContext<TSaga!, TMessage!>!, bool>! condition, System.Action<Modulus.Messaging.Sagas.SagaReaction<TSaga!, TMessage!>!>! whenTrue, System.Action<Modulus.Messaging.Sagas.SagaReaction<TSaga!, TMessage!>!>? whenFalse) -> Modulus.Messaging.Sagas.SagaReaction<TSaga!, TMessage!>!
+Modulus.Messaging.Sagas.SagaReaction<TSaga, TMessage>.Catch<TException>(System.Action<Modulus.Messaging.Sagas.SagaReaction<TSaga!, TMessage!>!>! compensation) -> Modulus.Messaging.Sagas.SagaReaction<TSaga!, TMessage!>!
