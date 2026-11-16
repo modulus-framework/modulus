@@ -16,6 +16,13 @@ internal sealed class AmbientBus(IBus inner, IServiceProvider scope, IMessageAmb
         using var entered = ambient.Enter(scope);
         await inner.Send(address, message, cancellationToken).ConfigureAwait(false);
     }
+
+    public async Task SendRequest<TMessage>(Uri address, TMessage message, Guid requestId, string replyEndpoint, CancellationToken cancellationToken = default)
+        where TMessage : class
+    {
+        using var entered = ambient.Enter(scope);
+        await inner.SendRequest(address, message, requestId, replyEndpoint, cancellationToken).ConfigureAwait(false);
+    }
 }
 
 /// <summary>Wraps the scoped scheduler the same way, so a scheduled message carries the caller's ambient state.</summary>

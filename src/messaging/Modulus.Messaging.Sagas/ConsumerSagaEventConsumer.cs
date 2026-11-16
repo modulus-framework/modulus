@@ -20,7 +20,7 @@ public sealed class ConsumerSagaEventConsumer<TSaga, TMessage>(
 
         var stored = await repository.FindAsync(key, cancellationToken).ConfigureAwait(false);
         var instance = stored ?? new TSaga { CorrelationId = key };
-        var effects = new SagaEffects();
+        var effects = new SagaEffects(context.Endpoint);
         var sagaContext = new SagaContext<TSaga, TMessage>(instance, message, effects);
 
         if (stored is null)

@@ -1,1 +1,2 @@
 #nullable enable
+Modulus.Messaging.Sagas.SagaContext<TSaga, TMessage>.Request<TRequest>(System.Uri! address, TRequest! request) -> void

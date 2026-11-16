@@ -34,7 +34,7 @@ public sealed class SagaEventConsumer<TMachine, TSaga, TMessage>(
                 ?? throw new UnexpectedSagaEventException(typeof(TSaga), saga.CurrentState, typeof(TMessage));
         }
 
-        var effects = new SagaEffects();
+        var effects = new SagaEffects(context.Endpoint);
         var outcome = reaction.Execute(saga, message, effects);
         saga = outcome.Saga;
         var completed = outcome.Completes;

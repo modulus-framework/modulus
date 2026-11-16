@@ -26,6 +26,7 @@ public sealed class TransactionalOutboxTests : IAsyncLifetime
         services.AddDbContext<OutboxTestDb>(o => o.UseSqlite(_connection));
         services.AddModulusMessaging(b => b
             .AddConsumer<OrderPlacedConsumer, OrderPlaced>("orders")
+            .AddConsumer<RequestHeaderConsumer, PriceQuoteRequested>("requests")
             .UseInMemory());
         services.AddModulusMessagingEntityFrameworkOutbox<OutboxTestDb>(o => o.RunDispatcher = false);
 
@@ -49,6 +50,32 @@ public sealed class TransactionalOutboxTests : IAsyncLifetime
 
         await _provider.DisposeAsync();
         await _connection.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task A_saga_request_sent_through_the_outbox_keeps_its_request_id_and_reply_endpoint()
+    {
+        var requestId = Guid.NewGuid();
+        await using (var scope = _provider.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<OutboxTestDb>();
+            var bus = scope.ServiceProvider.GetRequiredService<IBus>();
+            await using var transaction = await db.Database.BeginTransactionAsync();
+            await bus.SendRequest(new Uri("queue:requests"), new PriceQuoteRequested(Guid.NewGuid()), requestId, "saga-replies");
+            await db.SaveChangesAsync();
+            await transaction.CommitAsync();
+        }
+
+        await DispatchOnce();
+
+        var log = _provider.GetRequiredService<DeliveredLog>();
+        var deadline = DateTimeOffset.UtcNow + TimeSpan.FromSeconds(10);
+        while (log.Requests.IsEmpty && DateTimeOffset.UtcNow < deadline)
+        {
+            await Task.Delay(20);
+        }
+
+        log.Requests.Should().ContainSingle().Which.Should().Be(new RequestHeaders(requestId.ToString("N"), "saga-replies"));
     }
 
     [Fact]

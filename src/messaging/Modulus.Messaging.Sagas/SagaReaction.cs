@@ -184,7 +184,7 @@ public sealed class SagaReaction<TSaga, TMessage> : SagaReaction<TSaga>
 
         // With a catch, the attempt works on a copy and buffers its effects, so a throw discards both.
         var working = CopyOf(saga);
-        var attemptEffects = new SagaEffects();
+        var attemptEffects = new SagaEffects(effects.ReplyEndpoint);
         try
         {
             var completes = Run(new SagaContext<TSaga, TMessage>(working, (TMessage)message, attemptEffects));

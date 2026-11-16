@@ -27,4 +27,21 @@ internal sealed class OutboxBus(MessagingBus bus, IMessageOutbox outbox) : IBus
         using var activity = MessagingTelemetry.StartProducer("send " + endpoint, endpoint, bus.Transport.SystemName);
         await outbox.Add(bus.EnvelopeForSend(address, message), cancellationToken).ConfigureAwait(false);
     }
+
+    public async Task SendRequest<TMessage>(Uri address, TMessage message, Guid requestId, string replyEndpoint, CancellationToken cancellationToken = default)
+        where TMessage : class
+    {
+        ArgumentNullException.ThrowIfNull(address);
+        ArgumentNullException.ThrowIfNull(message);
+        var endpoint = MessagingBus.EndpointFromAddress(address);
+        using var activity = MessagingTelemetry.StartProducer("send " + endpoint, endpoint, bus.Transport.SystemName);
+        var envelope = bus.EnvelopeForSend(address, message);
+        var headers = new Dictionary<string, string>(envelope.Headers, StringComparer.Ordinal);
+        foreach (var (key, value) in MessagingBus.RequestHeaders(requestId, replyEndpoint))
+        {
+            headers[key] = value;
+        }
+
+        await outbox.Add(envelope with { Headers = headers }, cancellationToken).ConfigureAwait(false);
+    }
 }

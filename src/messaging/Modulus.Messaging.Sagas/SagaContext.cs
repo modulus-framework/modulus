@@ -40,6 +40,22 @@ public sealed class SagaContext<TSaga, TMessage>
     }
 
     /// <summary>
+    /// Asks another endpoint for something once the saga's state is saved. The answer comes back to the saga's endpoint as an
+    /// ordinary message the saga declares with <c>Event</c>. A consumer that fails sends a <see cref="RequestFault"/> instead,
+    /// which the saga declares as <c>Event&lt;RequestFault&gt;().CorrelateBy(f =&gt; f.RequestId)</c>.
+    /// The request id is the saga instance's <c>CorrelationId</c>, so one request is outstanding per saga instance.
+    /// </summary>
+    public void Request<TRequest>(Uri address, TRequest request) where TRequest : class
+    {
+        ArgumentNullException.ThrowIfNull(address);
+        ArgumentNullException.ThrowIfNull(request);
+        var replyEndpoint = _effects.ReplyEndpoint
+            ?? throw new InvalidOperationException("A saga request needs a saga endpoint to answer to.");
+        var requestId = Saga.CorrelationId;
+        _effects.Add((bus, _, ct) => bus.SendRequest(address, request, requestId, replyEndpoint, ct));
+    }
+
+    /// <summary>
     /// Publishes a message after <paramref name="delay"/>, measured from the call. A timeout is a schedule. Its token is
     /// stored with the saga, so the saga cancels it when it completes; a save that fails cancels it too.
     /// </summary>

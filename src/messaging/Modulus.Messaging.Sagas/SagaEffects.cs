@@ -9,6 +9,14 @@ internal sealed class SagaEffects
     private readonly List<Func<IBus, IMessageScheduler, CancellationToken, Task>> _effects = [];
     private readonly List<Func<IMessageScheduler, CancellationToken, Task<Guid>>> _schedules = [];
 
+    /// <summary>
+    /// The saga's own endpoint: where the answer to a request, or its fault, is sent (see <c>SagaContext.Request</c>).
+    /// Null when the effects are not run by a saga endpoint.
+    /// </summary>
+    internal string? ReplyEndpoint { get; }
+
+    internal SagaEffects(string? replyEndpoint = null) => ReplyEndpoint = replyEndpoint;
+
     internal void Add(Func<IBus, IMessageScheduler, CancellationToken, Task> effect) => _effects.Add(effect);
 
     internal void AddSchedule(Func<IMessageScheduler, CancellationToken, Task<Guid>> schedule) => _schedules.Add(schedule);

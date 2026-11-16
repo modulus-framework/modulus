@@ -206,6 +206,25 @@ internal sealed class MessagingBus : IBus, IMessageScheduler, IHostedService, IM
         MessagingMetrics.Sent.Add(1, MessagingMetrics.Destination(endpoint));
     }
 
+    public Task SendRequest<TMessage>(Uri address, TMessage message, Guid requestId, string replyEndpoint, CancellationToken cancellationToken = default)
+        where TMessage : class
+    {
+        ArgumentNullException.ThrowIfNull(address);
+        ArgumentNullException.ThrowIfNull(message);
+        return SendWithHeaders(address, message, RequestHeaders(requestId, replyEndpoint), cancellationToken);
+    }
+
+    /// <summary>The headers that make a send a request: its id, and where the answer or a fault goes.</summary>
+    internal static Dictionary<string, string> RequestHeaders(Guid requestId, string replyEndpoint)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(replyEndpoint);
+        return new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            [MessagingHeaders.RequestId] = requestId.ToString("N"),
+            [MessagingHeaders.ReplyTo] = replyEndpoint,
+        };
+    }
+
     public async Task Publish<TMessage>(TMessage message, CancellationToken cancellationToken = default)
         where TMessage : class
     {

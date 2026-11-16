@@ -124,3 +124,20 @@ override Modulus.Messaging.Batch<TMessage>.Equals(object? obj) -> bool
 Modulus.Messaging.Batch<TMessage>.Deconstruct(out System.Collections.Generic.IReadOnlyList<Modulus.Messaging.ConsumeContext<TMessage!>!>! Messages) -> void
 Modulus.Messaging.Batch<TMessage>.Batch(System.Collections.Generic.IReadOnlyList<Modulus.Messaging.ConsumeContext<TMessage!>!>! Messages) -> void
 const Modulus.Messaging.MessagingHeaders.RedeliveryCount = "mod-redelivery-count" -> string!
+Modulus.Messaging.RequestFault.ExceptionType.get -> string!
+Modulus.Messaging.RequestFault.Message.get -> string!
+Modulus.Messaging.RequestFault.RequestId.get -> System.Guid
+Modulus.Messaging.RequestFault.ExceptionType.init -> void
+Modulus.Messaging.RequestFault.RequestId.init -> void
+Modulus.Messaging.RequestFault.Message.init -> void
+Modulus.Messaging.RequestFault
+override Modulus.Messaging.RequestFault.ToString() -> string!
+static Modulus.Messaging.RequestFault.operator !=(Modulus.Messaging.RequestFault? left, Modulus.Messaging.RequestFault? right) -> bool
+static Modulus.Messaging.RequestFault.operator ==(Modulus.Messaging.RequestFault? left, Modulus.Messaging.RequestFault? right) -> bool
+override Modulus.Messaging.RequestFault.GetHashCode() -> int
+override Modulus.Messaging.RequestFault.Equals(object? obj) -> bool
+Modulus.Messaging.RequestFault.Equals(Modulus.Messaging.RequestFault? other) -> bool
+Modulus.Messaging.RequestFault.<Clone>$() -> Modulus.Messaging.RequestFault!
+Modulus.Messaging.RequestFault.Deconstruct(out System.Guid RequestId, out string! ExceptionType, out string! Message) -> void
+Modulus.Messaging.IBus.SendRequest<TMessage>(System.Uri! address, TMessage! message, System.Guid requestId, string! replyEndpoint, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Messaging.RequestFault.RequestFault(System.Guid RequestId, string! ExceptionType, string! Message) -> void
