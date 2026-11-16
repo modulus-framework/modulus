@@ -191,6 +191,46 @@ Grouped by what unblocks them.
 - A circuit breaker separate from the kill switch: built as an option (D11), so this is no longer open.
 - An in-memory health signal (D13).
 
+## Production readiness (2026-11-16)
+
+What blocks a production release, or remains to be done before one. The status of each requirement is in the
+[BRS audit](messaging/brs-audit-2026-11-16.md).
+
+### Blocked on the owner or the environment
+- **Code-signing certificate (NFR-21, F-25):** no package can be released without it.
+- **Release gate G4:** a real product runs on the bus in production for two weeks.
+- **Target hardware for throughput:** RabbitMQ 25k msg/s (G2; 23.4k here), in-memory 1M msg/s on 8 cores (NFR-03; 564k on 12 threads), PostgreSQL 2k to 5k msg/s (NFR-05; 1,220 on Docker Desktop, where the VM overhead is a likely cause).
+- **Outage tests on a proper host:** the four restart tests (NFR-02, FR-24 on PostgreSQL and RabbitMQ) fail on Docker Desktop because the port changes. Run them on Podman or a Docker host that keeps its port.
+- **Runs not yet done:** the Sagas PostgreSQL and Npgsql outbox/inbox integration projects, and the messaging CLI suites.
+- **`samples/` folder:** needs the owner's permission. It blocks the G0 consumer-shape generator and the G3 TradeFlow sample.
+
+### Must fix before production (engineering)
+- **Outbox stores the .NET type name.** The outbox rebuilds a row with `Type.GetType`, so a message type renamed while rows are pending can't be sent. The outbox should store the URN, as the wire does.
+- **Rolling upgrade across the URN change.** Producers now send URNs, and a service still on a build from before that change expects the .NET name and can't decode them. Fine while nothing is released; it must be handled before the first release.
+- **Npgsql saga repository (item 14).** A concurrency test ends at 0 instead of 7, and the cause isn't explained.
+- **Partial schedule on a failed multi-envelope publish (item 15).** Some envelopes can stay scheduled.
+- **RULE-06 saga atomicity.** Saved saga state, the inbox row and outgoing messages commit together by design, but no test checks the saga case.
+- **FR-17 saga request timeout.** Open; the workaround is `Schedule`.
+- **FR-20 transaction filter.** The BRS lists it as Must; it's recorded as not built. Needs a decision.
+- **Unattributed message types.** A type without `[MessageUrn]` changes identity when renamed. An analyzer should require the attribute on released messages.
+- **RULE-11 in CI.** Nothing enforces a new URN for a breaking change.
+- **FR-C3 defaults (test) and FR-C4 overhead (measurement).** Neither is verified.
+- **Saga repository conformance (NFR-16).** The conformance suite covers the transports, not the saga repositories.
+
+### Decided not to build; review before production
+- **Native AOT (NFR-13).** 14 trimming warnings in the core; the decision stands unless the owner reopens it.
+- **CLI replay (FR-09).** The operator endpoint is the only route.
+- **RabbitMQ priority (FR-13) and RabbitMQ scheduled cancel (FR-12).** Not supported by quorum queues and the TTL-bucket scheduling.
+- **Row-level isolation (FR-21).** PostgreSQL RLS is built but off by default.
+
+### Operations and release
+- **Monitoring:** health checks and metrics exist; no dashboards or alert rules are written.
+- **Runbooks:** the operator replay procedure needs writing down.
+- **Schema rollout:** migration scripts must be versioned and additive (BRS).
+- **Public API:** move `PublicAPI.Unshipped.txt` to Shipped at the first release, and turn `EnablePackageValidation` on then.
+- **Docs site (NFR-20):** quick start and configuration reference are written; there's no hosting decision.
+- **Allocation count (NFR-06):** time is measured; allocations per message are not counted.
+
 ## Known limits
 
 - In-memory messages are lost if the process exits (no durability). It cannot pass G1 on its own.
