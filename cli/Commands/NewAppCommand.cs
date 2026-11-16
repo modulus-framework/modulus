@@ -183,9 +183,6 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         var useUiFramework = UsesUiFramework(kind, uiEngine);
 
         var auth = ResolveAuth(s.Auth);
-        // The Fluid host has no sign-in pages yet: they are Razor Pages, and the Liquid host has no Razor Pages.
-        if (uiEngine == "fluid" && auth != "none")
-            throw new ArgumentException("The fluid engine has no sign-in pages yet (they are Razor Pages). Use --auth none, or pick mvc, razor-pages or blazor for a sign-in.");
         var multiTenancy = ResolveMultiTenancy(s.MultiTenancy, auth);
 
         // Resolve infrastructure options
@@ -617,6 +614,8 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
             File.Copy(Path.Combine(packageTemplates, "fluid", "host-layout.liquid"), Path.Combine(pagesDir, "_layout.liquid"), overwrite: true);
             File.Copy(Path.Combine(packageTemplates, "fluid", "host-index.liquid"), Path.Combine(pagesDir, "index.liquid"), overwrite: true);
             File.Copy(Path.Combine(packageTemplates, "fluid", "host-error.liquid"), Path.Combine(pagesDir, "error.liquid"), overwrite: true);
+            if (model.UseAuth)
+                RenderFluidSignIn(webDir, model, pagesDir, packageTemplates);
             projects.Add($"src/Web/{rootNs}.Web/{rootNs}.Web.csproj");
             return;
         }
@@ -769,6 +768,20 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         _templates.RenderToFile("app/PipelineSetup.Web", model, Path.Combine(webDir, "Middleware", "PipelineSetup.cs"));
         _templates.RenderToFile("app/WebEndpoints.Web", model, Path.Combine(webDir, "Endpoints", "WebEndpoints.cs"));
         _templates.RenderToFile("app/HealthChecksSetup.Web", model, Path.Combine(webDir, "Observability", "HealthChecksSetup.cs"));
+    }
+
+    /// <summary>
+    /// The Fluid host's sign-in: the BFF gateway and session, as the Razor Pages host has them, the rate limits, the sign-in endpoints and the
+    /// Liquid sign-in page (Templates/auth/login.liquid). The page posts to the BFF, which checks the credentials.
+    /// </summary>
+    private void RenderFluidSignIn(string webDir, AppModel model, string pagesDir, string packageTemplates)
+    {
+        RenderBffGatewaySecurity(webDir, model);
+        _templates.RenderToFile("app/PrincipalCurrentUser", model, Path.Combine(webDir, "Security", "PrincipalCurrentUser.cs"));
+        _templates.RenderToFile("app/loosening-allowlist.Web.json", model, Path.Combine(webDir, "Security", "loosening-allowlist.json"));
+        _templates.RenderToFile("app/AuthEndpoints.Fluid", model, Path.Combine(webDir, "Endpoints", "AuthEndpoints.cs"));
+        var authDir = Directory.CreateDirectory(Path.Combine(pagesDir, "auth")).FullName;
+        File.Copy(Path.Combine(packageTemplates, "fluid", "auth-login.liquid"), Path.Combine(authDir, "login.liquid"), overwrite: true);
     }
 
     /// <summary>

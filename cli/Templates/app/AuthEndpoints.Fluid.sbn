@@ -1,0 +1,86 @@
+using Microsoft.AspNetCore.Antiforgery;
+using Modulus.AspNetCore.Fluid;
+using Modulus.AspNetCore.Security.Policy;
+using {{ root_namespace }}.Web.Configuration;
+using {{ root_namespace }}.Web.Security;
+
+namespace {{ root_namespace }}.Web.Endpoints;
+
+/// <summary>
+/// The Liquid sign-in page and its POST, plus sign-out. The credentials go to the BFF (see <see cref="BffSessionClient"/>), which runs
+/// the sign-in; the browser keeps only the BFF session cookie. The same messages as the Razor Pages sign-in page.
+/// </summary>
+internal static class AuthEndpoints
+{
+    public static WebApplication MapFluidAuthEndpoints(this WebApplication app, string templates)
+    {
+        app.MapGet("/auth/login", (HttpContext context, IAntiforgery antiforgery, ModulusLiquid liquid) =>
+            AuthPage(liquid, templates, "auth/login", "Sign in", context, antiforgery, new Dictionary<string, object?>
+            {
+                ["reset"] = context.Request.Query["reset"].ToString() == "1",
+                ["return_url"] = SafeReturnUrl(context.Request.Query["returnUrl"].ToString()),
+            }))
+            .Loosen("Sign-in page: anonymous by design");
+
+        app.MapPost("/auth/login", async (HttpContext context, IAntiforgery antiforgery, BffSessionClient session, ModulusLiquid liquid) =>
+        {
+            if (!await ValidAntiforgery(context, antiforgery)) return Results.BadRequest();
+            var form = await context.Request.ReadFormAsync();
+            var email = form["email"].ToString().Trim();
+            var returnUrl = SafeReturnUrl(form["return_url"].ToString());
+            var result = await session.SignInAsync(email, form["password"].ToString(), rememberMe: form["remember"] == "true", context.RequestAborted);
+            if (result.Succeeded) return Results.LocalRedirect(returnUrl);
+
+            var error = result.Error == "temporarily_unavailable"
+                ? "The sign-in service is not available right now. Try again in a moment."
+                : "Wrong email or password.";
+            return AuthPage(liquid, templates, "auth/login", "Sign in", context, antiforgery, new Dictionary<string, object?>
+            {
+                ["error"] = error,
+                ["email"] = email,
+                ["return_url"] = returnUrl,
+            });
+        }).RequireRateLimiting(RateLimitingSetup.SignInPolicy)
+          .Loosen("Sign-in: the BFF checks the credentials");
+
+        app.MapPost("/auth/logout", async (HttpContext context, IAntiforgery antiforgery, BffSessionClient session) =>
+        {
+            if (!await ValidAntiforgery(context, antiforgery)) return Results.BadRequest();
+            await session.SignOutAsync(null, context.RequestAborted);
+            return Results.LocalRedirect("/auth/login");
+        }).Loosen("Ends the BFF session; it only removes the caller's own session cookie");
+
+        return app;
+    }
+
+    // Only a path on this site: a return URL to another host, or a protocol-relative one, goes to the home page.
+    private static string SafeReturnUrl(string? url) =>
+        url is { Length: > 0 } u && u[0] == '/' && (u.Length == 1 || (u[1] != '/' && u[1] != '\\')) && !u.Contains("://", StringComparison.Ordinal)
+            ? u
+            : "/";
+
+    private static IResult AuthPage(ModulusLiquid liquid, string templates, string page, string title, HttpContext context, IAntiforgery antiforgery, Dictionary<string, object?> values)
+    {
+        values["title"] = title;
+        values["app_name"] = "{{ root_namespace }}";
+        values["antiforgery_token"] = antiforgery.GetAndStoreTokens(context).RequestToken;
+        var html = liquid.RenderPage(
+            liquid.Load(Path.Combine(templates, page + ".liquid")),
+            liquid.Load(Path.Combine(templates, "_layout.liquid")),
+            values);
+        return Results.Content(html, "text/html; charset=utf-8");
+    }
+
+    private static async Task<bool> ValidAntiforgery(HttpContext context, IAntiforgery antiforgery)
+    {
+        try
+        {
+            await antiforgery.ValidateRequestAsync(context);
+            return true;
+        }
+        catch (AntiforgeryValidationException)
+        {
+            return false;
+        }
+    }
+}
