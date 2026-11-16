@@ -1,0 +1,6 @@
+{
+  "SendAndHandle": {
+    "medianNs": 4645,
+    "recordedOn": "2026-11-16, development machine (Ryzen 5 8600G), BenchmarkDotNet default job, in-memory transport"
+  }
+}

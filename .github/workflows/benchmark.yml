@@ -1,0 +1,24 @@
+name: Messaging benchmark (NFR-06)
+
+# Runs on demand only. Shared runners are noisy: a 10% threshold on a shared machine fails at random, so this is not
+# a pull-request check. Run it on a dedicated runner (set runs-on to its label) before the number is relied on.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - name: Run the messaging benchmark
+        run: dotnet run -c Release --project tests/benchmarks/Modulus.Benchmarks -- --filter "*MessagingBenchmarks*"
+      - name: Compare the median with the baseline
+        run: python3 build/check-benchmark-regression.py BenchmarkDotNet.Artifacts 10
